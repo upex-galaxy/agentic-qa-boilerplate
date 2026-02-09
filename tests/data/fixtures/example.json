@@ -1,0 +1,24 @@
+{
+  "_comment": "KATA Framework - Example Test Data Fixture",
+  "_warning": "REFERENCE ONLY - This is sample data structure, not real test data",
+  "_usage": "Copy this file and update with your actual test data",
+  "users": [
+    {
+      "role": "admin",
+      "email": "admin@example.com",
+      "password": "AdminPass123!"
+    },
+    {
+      "role": "user",
+      "email": "user@example.com",
+      "password": "UserPass123!"
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-001",
+      "name": "Example Product",
+      "price": 99.99
+    }
+  ]
+}

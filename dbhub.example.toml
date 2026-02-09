@@ -1,0 +1,18 @@
+# ============================================
+# DBHub Configuration Template
+# ============================================
+# Copy this file to dbhub.toml and fill in your database credentials.
+# NEVER commit dbhub.toml to version control!
+#
+# For more information, see: .context/guidelines/MCP/dbhub.md
+# ============================================
+
+[[sources]]
+id = "your-project"
+type = "sqlserver"  # Options: sqlserver, postgres, mysql, sqlite
+host = "your-database-server.database.windows.net"
+port = 1433
+database = "your-database-name"
+user = "your_username"
+password = "your_password"
+sslmode = "require"

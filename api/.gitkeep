@@ -1,0 +1,41 @@
+# API Documentation Directory
+
+This directory contains:
+- openapi.yaml - OpenAPI specification (synced from backend repo)
+- types.ts - Generated TypeScript types from OpenAPI
+- .openapi-config.json - Sync configuration
+
+## Commands
+
+```bash
+# First time setup - interactive
+bun run api:sync
+
+# Quick sync using saved config
+bun run api:sync -c
+
+# Sync and generate TypeScript types
+bun run api:sync:types
+
+# Generate types only (spec must exist)
+bun run api:types
+```
+
+## MCP OpenAPI Server Configuration
+
+Add to your Claude Code configuration:
+
+```json
+{
+  "mcpServers": {
+    "openapi": {
+      "command": "npx",
+      "args": ["-y", "mcp-openapi-server"],
+      "env": {
+        "OPENAPI_SPEC_PATH": "./api/openapi.yaml",
+        "API_BASE_URL": "https://your-api.com"
+      }
+    }
+  }
+}
+```

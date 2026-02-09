@@ -1,0 +1,55 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "moduleDetection": "force",
+    "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@/*": ["./*"],
+      "@ui/*": ["./tests/components/ui/*"],
+      "@api/*": ["./tests/components/api/*"],
+      "@flows/*": ["./tests/components/flows/*"],
+      "@utils/*": ["./tests/utils/*"],
+      "@data/*": ["./tests/data/*"],
+      "@variables": ["./config/variables.ts"],
+      "@TestContext": ["./tests/components/TestContext.ts"],
+      "@UiFixture": ["./tests/components/UiFixture.ts"],
+      "@ApiFixture": ["./tests/components/ApiFixture.ts"],
+      "@TestFixture": ["./tests/components/TestFixture.ts"],
+      "@DataFactory": ["./tests/data/DataFactory.ts"],
+      "@openapi": ["./api/openapi-types.ts"]
+    },
+    "resolveJsonModule": true,
+    "types": ["bun", "node", "@playwright/test"],
+    "allowImportingTsExtensions": true,
+    "allowJs": true,
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noEmit": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": false,
+    "skipLibCheck": true
+  },
+  "include": [
+    "config/**/*.ts",
+    "tests/**/*.ts",
+    "api/**/*.ts",
+    "scripts/**/*.ts",
+    "cli/**/*.ts",
+    "playwright.config.ts",
+    "eslint.config.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "playwright-report",
+    "test-results",
+    "allure-results",
+    "allure-report",
+    "reports"
+  ]
+}

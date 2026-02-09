@@ -1,0 +1,228 @@
+# ============================================
+# KATA Framework - Sanity Test Pipeline
+# ============================================
+# Purpose: Run specific tests by grep pattern or file path.
+# Useful for validating new tests in CI before merging PRs.
+
+name: Sanity Tests
+run-name: ${{ github.actor }} triggered Sanity Tests on ${{ github.event.inputs.environment || 'staging' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Select the Test Environment
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - local
+          - staging
+      test_type:
+        description: Select Test Type
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - e2e
+          - integration
+      grep:
+        description: Test name pattern (grep filter)
+        required: false
+        default: ''
+        type: string
+      test_file:
+        description: Specific test file path (optional)
+        required: false
+        default: ''
+        type: string
+      generate_allure:
+        description: Generate Allure Report
+        required: true
+        default: true
+        type: boolean
+      custom_allure_url:
+        description: Custom Allure Report Endpoint
+        required: false
+        default: 'sanity'
+        type: string
+
+env:
+  CI: true
+  TEST_ENV: ${{ github.event.inputs.environment || 'staging' }}
+  # Credentials (required for test execution)
+  LOCAL_USER_EMAIL: ${{ secrets.LOCAL_USER_EMAIL }}
+  LOCAL_USER_PASSWORD: ${{ secrets.LOCAL_USER_PASSWORD }}
+  STAGING_USER_EMAIL: ${{ secrets.STAGING_USER_EMAIL }}
+  STAGING_USER_PASSWORD: ${{ secrets.STAGING_USER_PASSWORD }}
+
+jobs:
+  SanityTest:
+    name: Sanity Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment:
+      name: ${{ github.event.inputs.environment || 'staging' }}
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Install Playwright Browsers
+        run: bun run pw:install
+
+      - name: Run Sanity Tests on ${{ env.TEST_ENV }}
+        shell: bash
+        run: |
+          GREP_OPTION=""
+          if [ -n "${{ github.event.inputs.grep }}" ]; then
+            GREP_OPTION="--grep='${{ github.event.inputs.grep }}'"
+          fi
+
+          # Determine which test command to run
+          if [ -n "${{ github.event.inputs.test_file }}" ]; then
+            echo "Running specific test file: ${{ github.event.inputs.test_file }}"
+            eval "bun run test ${{ github.event.inputs.test_file }} $GREP_OPTION"
+          elif [ "${{ github.event.inputs.test_type }}" == "e2e" ]; then
+            echo "Running E2E tests"
+            eval "bun run test:e2e $GREP_OPTION"
+          elif [ "${{ github.event.inputs.test_type }}" == "integration" ]; then
+            echo "Running Integration tests"
+            eval "bun run test:integration $GREP_OPTION"
+          else
+            echo "Running all tests"
+            eval "bun run test $GREP_OPTION"
+          fi
+
+      - name: Upload Allure Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanity-allure-results
+          path: allure-results/
+          retention-days: 10
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanity-test-results
+          path: test-results/
+          retention-days: 10
+
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanity-playwright-report
+          path: playwright-report/
+          retention-days: 10
+
+      - name: Upload Failure Evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanity-failure-evidence
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 10
+
+      - name: Cleanup Workspace
+        if: always()
+        run: |
+          rm -rf node_modules
+          rm -rf allure-results
+          rm -rf test-results
+          rm -rf playwright-report
+
+  allure-report:
+    name: Build & Deploy Allure Report
+    needs: SanityTest
+    runs-on: ubuntu-latest
+    if: ${{ always() && github.event.inputs.generate_allure != 'false' }}
+
+    steps:
+      - name: Get Allure History
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+          fetch-depth: 1
+        continue-on-error: true
+
+      - name: Download Sanity Test Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: sanity-allure-results
+          path: sanity-artifacts/allure-results
+        continue-on-error: true
+
+      - name: Check Allure Results
+        id: check_allure
+        shell: bash
+        run: |
+          if [ -d "sanity-artifacts/allure-results" ] && [ -n "$(ls -A sanity-artifacts/allure-results 2>/dev/null)" ]; then
+            echo "Allure results found."
+            echo "has_results=true" >> $GITHUB_OUTPUT
+          else
+            echo "No Allure results found. Skipping report generation."
+            echo "has_results=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build Allure Report
+        if: steps.check_allure.outputs.has_results == 'true'
+        uses: simple-elf/allure-report-action@master
+        with:
+          gh_pages: gh-pages
+          subfolder: ${{ env.TEST_ENV }}/${{ github.event.inputs.custom_allure_url }}
+          allure_results: sanity-artifacts/allure-results
+          allure_report: allure-report
+          allure_history: allure-history
+          keep_reports: 3
+
+      - name: Deploy to GitHub Pages
+        if: steps.check_allure.outputs.has_results == 'true'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history/${{ env.TEST_ENV }}/${{ github.event.inputs.custom_allure_url }}
+          destination_dir: ${{ env.TEST_ENV }}/${{ github.event.inputs.custom_allure_url }}
+          keep_files: true
+
+      - name: Post Report URL
+        if: steps.check_allure.outputs.has_results == 'true'
+        run: |
+          echo "## Allure Report" >> $GITHUB_STEP_SUMMARY
+          echo "View the report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ env.TEST_ENV }}/${{ github.event.inputs.custom_allure_url }}/" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # TODO: Implement Slack notification job
+  # ============================================
+  # slack-notification:
+  #   name: Slack Notification
+  #   needs: [SanityTest, allure-report]
+  #   runs-on: ubuntu-latest
+  #   if: always()
+  #   steps:
+  #     - name: Send Slack Notification
+  #       uses: slackapi/slack-github-action@v1.24.0
+  #       with:
+  #         webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+  #         payload: |
+  #           {
+  #             "text": "Sanity Tests: ${{ needs.SanityTest.result }}",
+  #             "blocks": [...]
+  #           }

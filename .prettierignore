@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+
+# Test artifacts
+test-results/
+playwright-report/
+allure-results/
+allure-report/
+reports/
+
+# Generated files
+api/types.ts
+kata-manifest.json
+bun.lock
+package-lock.json
+yarn.lock
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# ===========================================
+# TypeScript/JavaScript - ESLint handles these
+# ===========================================
+*.ts
+*.tsx
+*.js
+*.jsx
+
+# ===========================================
+# Documentation - Preserve manual formatting
+# ===========================================
+.context/
+.prompts/

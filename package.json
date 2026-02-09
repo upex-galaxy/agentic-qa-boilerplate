@@ -1,0 +1,85 @@
+{
+  "name": "kata-playwright-boilerplate",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KATA Framework - AI-Driven Playwright Test Automation Boilerplate",
+  "author": "UPEX Galaxy",
+  "license": "MIT",
+  "homepage": "https://github.com/upex-galaxy/kata-playwright-boilerplate#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/upex-galaxy/kata-playwright-boilerplate.git"
+  },
+  "bugs": {
+    "url": "https://github.com/upex-galaxy/kata-playwright-boilerplate/issues"
+  },
+  "keywords": [
+    "playwright",
+    "testing",
+    "e2e",
+    "integration",
+    "kata",
+    "automation",
+    "bun",
+    "typescript",
+    "boilerplate",
+    "ai-driven"
+  ],
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:headed": "playwright test --headed",
+    "test:retries": "playwright test --retries=2",
+    "test:last-failed": "playwright test --last-failed",
+    "test:e2e": "playwright test --project=e2e",
+    "test:e2e:critical": "playwright test --project=e2e --grep @critical",
+    "test:integration": "playwright test --project=integration",
+    "test:report": "playwright show-report",
+    "test:allure": "allure generate ./allure-results -o ./allure-report --clean && allure open ./allure-report",
+    "test:allure:generate": "allure generate ./allure-results -o ./allure-report --clean",
+    "test:allure:open": "allure open ./allure-report",
+    "test:sync": "bun run tests/utils/jiraSync.ts",
+    "clean": "rm -rf test-results playwright-report allure-results allure-report reports",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
+    "format:check": "prettier --check '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
+    "type-check": "tsc --noEmit",
+    "env:validate": "bun run config/validateEnv.ts",
+    "api:sync": "bun run cli/sync-openapi.ts",
+    "api:types": "bunx openapi-typescript api/openapi.json -o api/openapi-types.ts",
+    "kata:manifest": "bun run scripts/kata-manifest.ts",
+    "kata:manifest:watch": "bun run scripts/kata-manifest.ts --watch",
+    "up": "bun run cli/update-prompts.js",
+    "xray": "bun run cli/xray.ts",
+    "pw:install": "playwright install --with-deps chromium",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.1.0"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^4.16.0",
+    "@faker-js/faker": "^9.8.0",
+    "@playwright/test": "^1.58.2",
+    "@types/bun": "^1.3.7",
+    "@types/node": "^24.10.1",
+    "allure-playwright": "^3.2.1",
+    "eslint": "^9.28.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "openapi-typescript": "^7.10.1",
+    "prettier": "^3.7.4",
+    "typescript": "^5.8.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix"
+    ],
+    "*.{json,yml,yaml,css,scss,html}": [
+      "prettier --write --ignore-path .prettierignore"
+    ]
+  }
+}

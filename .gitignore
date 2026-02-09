@@ -1,0 +1,62 @@
+# ====================================
+# KATA Framework - .gitignore
+# ====================================
+
+# Dependencies
+node_modules/
+
+# ===== Playwright Test Artifacts =====
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# ===== Auth Storage (Session State) =====
+/.auth/
+
+# ===== Test Data (Downloads) =====
+/tests/data/downloads/*
+!/tests/data/downloads/.gitkeep
+
+# ===== API Documentation (OpenAPI) =====
+# Regenerate with: bun run api:sync
+# openapi.json is intermediate (downloaded from backend)
+# types.ts is committed (used in code)
+/api/openapi.json
+/api/.openapi-config.json
+
+# ===== Allure Reports =====
+/allure-results/
+/allure-report/
+
+# ===== Custom Reports =====
+/reports/
+*.json.bak
+
+# ===== Environment =====
+.env
+.env.local
+.env.*.local
+
+# ===== IDE & Editor =====
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ===== Build Artifacts =====
+dist/
+build/
+*.tsbuildinfo
+
+# ===== AI/Tools Configuration =====
+.mcp.json
+.mcp.catalog.json
+dbhub.toml
+.backups/
+.gemini/settings.json
+.gemini/settings.catalog.json
+
+# ===== Local Useful Files =====
