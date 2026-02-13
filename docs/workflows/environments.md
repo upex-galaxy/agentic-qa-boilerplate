@@ -1,191 +1,211 @@
-# Development Environments - Guide for QA Engineers
+# Ambientes de Desarrollo - Guía para QA Engineers
 
-## What are environments
+> **Idioma:** Español
+> **Nivel:** Introductorio
+> **Audiencia:** QA Engineers que necesitan entender los ambientes de desarrollo
 
-An environment is an **independent copy of your application** where code is executed. Each environment has its own database, configuration, and specific purpose.
+---
 
-Environments allow you to test changes without affecting real users. They're like rehearsing a play before opening night.
+## ¿Qué son los ambientes?
 
-## The 4 standard industry environments
+Un ambiente es una **copia independiente de tu aplicación** donde se ejecuta el código. Cada ambiente tiene su propia base de datos, configuración y propósito específico.
+
+Los ambientes te permiten probar cambios sin afectar a usuarios reales. Son como ensayar una obra de teatro antes de la noche de estreno.
+
+---
+
+## Los 4 Ambientes Estándar de la Industria
 
 ### 1. Development (dev)
 
-**Purpose:** Active code development.
+**Propósito:** Desarrollo activo de código.
 
-This is where developers write new features, experiment, and make frequent changes. Code can break several times a day.
+Aquí es donde los desarrolladores escriben nuevas funcionalidades, experimentan y hacen cambios frecuentes. El código puede romperse varias veces al día.
 
-**Characteristics:**
+**Características:**
 
-- Constant changes
-- Basic tests (unit, integration)
-- Simple test data
-- May be temporarily "broken"
+- Cambios constantes
+- Tests básicos (unitarios, integración)
+- Datos de prueba simples
+- Puede estar temporalmente "roto"
 
-**Who uses it:** Primarily developers
+**Quién lo usa:** Principalmente desarrolladores
 
-**Real example:** A dev is creating a new login form. They test it here first before sharing it.
+**Ejemplo real:** Un dev está creando un nuevo formulario de login. Lo prueba aquí primero antes de compartirlo.
 
 ---
 
 ### 2. Staging (stage/pre-prod)
 
-**Purpose:** Formal testing before production.
+**Propósito:** Testing formal antes de producción.
 
-This is an **almost exact replica of production**. All QA tests, validations, and final rehearsals are executed here.
+Es una **réplica casi exacta de producción**. Aquí se ejecutan todas las pruebas de QA, validaciones y ensayos finales.
 
-**Characteristics:**
+**Características:**
 
-- Production replica (same OS, versions, configuration)
-- Data similar to production (but not real)
-- Complete QA tests
-- Stability is important
+- Réplica de producción (mismo SO, versiones, configuración)
+- Datos similares a producción (pero no reales)
+- Tests completos de QA
+- La estabilidad es importante
 
-**Who uses it:** QA Engineers, Product Owners, Stakeholders
+**Quién lo usa:** QA Engineers, Product Owners, Stakeholders
 
-**Real example:** You finished automating checkout tests. You run them in staging because it imitates exactly how production works.
+**Ejemplo real:** Terminaste de automatizar tests de checkout. Los ejecutas en staging porque imita exactamente cómo funciona producción.
 
 ---
 
 ### 3. Production (prod)
 
-**Purpose:** Real users using the application.
+**Propósito:** Usuarios reales usando la aplicación.
 
-The environment your customers see. **Never test here**, only monitor.
+El ambiente que ven tus clientes. **Nunca hagas tests aquí**, solo monitoreo.
 
-**Characteristics:**
+**Características:**
 
-- Real users
-- Real data
-- Maximum stability required
-- 24/7 monitoring
-- Quick rollback if something fails
+- Usuarios reales
+- Datos reales
+- Máxima estabilidad requerida
+- Monitoreo 24/7
+- Rollback rápido si algo falla
 
-**Who uses it:** End users
+**Quién lo usa:** Usuarios finales
 
-**Real example:** Your e-commerce app processing real purchases from real customers.
+**Ejemplo real:** Tu e-commerce procesando compras reales de clientes reales.
 
 ---
 
-### 4. Local (your computer)
+### 4. Local (tu computadora)
 
-**Purpose:** Individual development and testing.
+**Propósito:** Desarrollo y testing individual.
 
-Not technically a "shared environment," but where you spend most of your time as QA.
+Técnicamente no es un "ambiente compartido", pero es donde pasas la mayor parte de tu tiempo como QA.
 
-**Characteristics:**
+**Características:**
 
-- Only you see it
-- You can break everything without consequences
-- Fast iteration
-- Personalized test data
+- Solo tú lo ves
+- Puedes romper todo sin consecuencias
+- Iteración rápida
+- Datos de prueba personalizados
 
-**Who uses it:** Each developer/QA on their machine
+**Quién lo usa:** Cada desarrollador/QA en su máquina
 
-**Real example:** You're writing a Cypress test. You run it locally 20 times until it works perfectly.
+**Ejemplo real:** Estás escribiendo un test de Playwright. Lo ejecutas localmente 20 veces hasta que funciona perfectamente.
 
-## Typical code flow
+---
+
+## Flujo Típico del Código
 
 ```
 Local → Development → Staging → Production
   ↓          ↓           ↓           ↓
- Dev       Devs        QA         Users
-tests    integrate  validate     use
+ Dev       Devs         QA       Usuarios
+tests    integran    validan       usan
 ```
 
-**Step by step:**
+**Paso a paso:**
 
-1. **Local:** Write code/tests on your computer
-2. **Development:** Commit and push, integrates with others' code
-3. **Staging:** Team validates everything works correctly
-4. **Production:** If staging passes, deploy to real users
+1. **Local:** Escribes código/tests en tu computadora
+2. **Development:** Commit y push, se integra con el código de otros
+3. **Staging:** El equipo valida que todo funcione correctamente
+4. **Production:** Si staging pasa, se despliega a usuarios reales
 
-## Variations in companies
+---
 
-Not all companies use the same names or number of environments.
+## Variaciones en Empresas
 
-### Small companies (startup)
+No todas las empresas usan los mismos nombres o cantidad de ambientes.
+
+### Empresas pequeñas (startup)
 
 ```
 Local → Staging → Production
 ```
 
-Only 2 shared environments. Development and staging are combined.
+Solo 2 ambientes compartidos. Development y staging están combinados.
 
-### Medium companies (most common)
+### Empresas medianas (más común)
 
 ```
 Local → Development → Staging → Production
 ```
 
-The industry standard.
+El estándar de la industria.
 
-### Large companies (enterprise)
+### Empresas grandes (enterprise)
 
 ```
 Local → Development → QA → Staging → Production
 ```
 
-Separate QA environment for extensive testing. Staging only for final validation.
+Ambiente QA separado para testing extensivo. Staging solo para validación final.
 
-### Very large companies (tech giants)
+### Empresas muy grandes (tech giants)
 
 ```
 Local → Dev → QA → Staging → Canary → Production
 ```
 
-Multiple intermediate environments. "Canary" deploys to a small % of real users first.
+Múltiples ambientes intermedios. "Canary" despliega a un pequeño % de usuarios reales primero.
 
-## Environments in this template repository
+---
 
-For this educational project, we use **3 environments**:
+## Ambientes en Este Template
 
-### Local (your machine)
+Para este proyecto educativo, usamos **3 ambientes**:
 
-You develop and test your automation tests here.
+### Local (tu máquina)
+
+Aquí desarrollas y pruebas tus tests de automatización.
 
 ### Staging (branch `staging`)
 
-Integration environment where all changes are validated before production.
+Ambiente de integración donde todos los cambios son validados antes de producción.
 
-**This is your main work environment as QA.**
+**Este es tu ambiente principal de trabajo como QA.**
 
 ### Production (branch `main`)
 
-Stable and approved code.
+Código estable y aprobado.
 
-## Why we DON'T use "qa" as a branch name
+---
 
-Although some companies have environments called "qa", **staging is the standard term** you'll find in:
+## Por Qué NO Usamos "qa" Como Nombre de Branch
 
-- 90% of job postings
-- CI/CD documentation (GitHub Actions, GitLab CI, Jenkins)
-- Tutorials and courses
-- Industry conventions
+Aunque algunas empresas tienen ambientes llamados "qa", **staging es el término estándar** que encontrarás en:
 
-QA engineers **work in staging**, they don't need a separate environment called "qa".
+- 90% de las ofertas de trabajo
+- Documentación de CI/CD (GitHub Actions, GitLab CI, Jenkins)
+- Tutoriales y cursos
+- Convenciones de la industria
 
-## How Git branches relate to environments
+Los QA engineers **trabajan en staging**, no necesitan un ambiente separado llamado "qa".
 
-Each branch usually has an associated environment:
+---
+
+## Cómo Se Relacionan las Branches de Git con los Ambientes
+
+Cada branch usualmente tiene un ambiente asociado:
 
 ```
-Git Branch           Environment        Auto-deploy?
+Git Branch           Ambiente           Auto-deploy?
 ─────────────────────────────────────────────────────
 feature/login    →    Local              No
-staging          →    Staging            Yes (automatic)
-main             →    Production         Yes (with approval)
+staging          →    Staging            Sí (automático)
+main             →    Production         Sí (con aprobación)
 ```
 
-**Auto-deploy:** When you push to `staging`, it automatically deploys to the staging environment via CI/CD.
+**Auto-deploy:** Cuando haces push a `staging`, automáticamente se despliega al ambiente staging via CI/CD.
 
-## Configuration per environment
+---
 
-Each environment has its own configuration:
+## Configuración por Ambiente
+
+Cada ambiente tiene su propia configuración:
 
 **Development/Staging:**
 
 ```
-DATABASE_URL=postgres://staging-db.company.com
+DATABASE_URL=postgres://staging-db.empresa.com
 API_KEY=test_key_12345
 DEBUG_MODE=true
 ```
@@ -193,98 +213,122 @@ DEBUG_MODE=true
 **Production:**
 
 ```
-DATABASE_URL=postgres://prod-db.company.com
+DATABASE_URL=postgres://prod-db.empresa.com
 API_KEY=live_key_67890
 DEBUG_MODE=false
 ```
 
-This is managed with `.env` files or environment variables on the server.
+Esto se maneja con archivos `.env` o variables de entorno en el servidor.
 
-## Testing in each environment
+---
 
-### Local
-
-- Unit tests
-- Component tests
-- Test debugging
-
-### Staging
-
-- Complete test suites (E2E)
-- Regression testing
-- Basic performance testing
-- New feature validation
-
-### Production
-
-- **NO tests are run**
-- Only monitoring and alerts
-- Post-deploy smoke tests (quick verification)
-
-## Data in each environment
+## Testing en Cada Ambiente
 
 ### Local
 
-Fictional data you create. You can reset it whenever you want.
+- Tests unitarios
+- Tests de componentes
+- Debugging de tests
 
 ### Staging
 
-Realistic but not real test data. Fictional users with names like "Test User 1".
-
-**Important:** Never use real customer data in staging.
+- Suites completas de tests (E2E)
+- Testing de regresión
+- Testing básico de rendimiento
+- Validación de nuevas features
 
 ### Production
 
-Real data from real users. Protected by laws (GDPR, etc).
+- **NO se ejecutan tests**
+- Solo monitoreo y alertas
+- Smoke tests post-deploy (verificación rápida)
 
-## Common mistakes to avoid
+---
 
-**❌ Testing in production**
-Never run experimental tests in production. Always use staging.
+## Datos en Cada Ambiente
 
-**❌ Using production data in staging**
-You would violate user privacy and possible legal regulations.
+### Local
 
-**❌ Pushing directly to main**
-Always go through staging first.
+Datos ficticios que tú creas. Puedes resetearlos cuando quieras.
 
-**❌ Assuming staging = production**
-Although they're similar, they can have subtle differences. Monitor production post-deploy.
+### Staging
 
-## Vocabulary you'll hear
+Datos de prueba realistas pero no reales. Usuarios ficticios con nombres como "Usuario Test 1".
 
-**Deploy:** Upload code to an environment
-**Rollback:** Revert to previous version if something fails
-**Hotfix:** Urgent fix that goes straight to production
-**Smoke test:** Quick test of basic functionality
-**Sanity test:** Similar to smoke test, verifies the system is "sane"
+**Importante:** Nunca uses datos reales de clientes en staging.
 
-## Frequently asked questions
+### Production
 
-**Why can't I test in production?**
-Because you would affect real users. A bug in a test can delete data, crash the app, or create a bad experience.
+Datos reales de usuarios reales. Protegidos por leyes (GDPR, etc).
 
-**Is staging always identical to production?**
-Ideally yes, but sometimes there are differences in resources (staging uses smaller servers to save costs).
+---
 
-**How many environments are enough?**
-For learning: Local + Staging + Production is perfect. In real work, it depends on company size.
+## Errores Comunes a Evitar
 
-**What happens if I find a bug in production?**
-An immediate hotfix is created. Some teams test it quickly in staging first, others go straight to production if it's urgent.
+**❌ Hacer tests en producción**
+Nunca ejecutes tests experimentales en producción. Siempre usa staging.
 
-## Resources to dive deeper
+**❌ Usar datos de producción en staging**
+Violarías la privacidad de usuarios y posibles regulaciones legales.
 
-- **The Twelve-Factor App** - Best practices for modern applications
-- **GitFlow Workflow** - More detailed branching strategy
-- **CI/CD Pipelines** - Deploy automation between environments
+**❌ Hacer push directamente a main**
+Siempre pasa por staging primero.
 
-## Executive summary
+**❌ Asumir que staging = producción**
+Aunque son similares, pueden tener diferencias sutiles. Monitorea producción post-deploy.
 
-Environments protect you from costly errors. You test locally, integrate in staging, deploy to production only when everything is validated.
+---
 
-**As a QA Engineer, your main environment is staging.** There you execute your test suites, validate features, and ensure quality before code reaches real users.
+## Vocabulario que Escucharás
 
-The market mainly uses: Local → Dev → Staging → Production.
+| Término | Significado |
+|---------|-------------|
+| **Deploy** | Subir código a un ambiente |
+| **Rollback** | Volver a versión anterior si algo falla |
+| **Hotfix** | Corrección urgente que va directo a producción |
+| **Smoke test** | Test rápido de funcionalidad básica |
+| **Sanity test** | Similar a smoke test, verifica que el sistema está "sano" |
 
-This template uses: Local → Staging → Production (simplified for learning).
+---
+
+## Preguntas Frecuentes
+
+**¿Por qué no puedo hacer tests en producción?**
+Porque afectarías a usuarios reales. Un bug en un test puede borrar datos, crashear la app, o crear una mala experiencia.
+
+**¿Staging siempre es idéntico a producción?**
+Idealmente sí, pero a veces hay diferencias en recursos (staging usa servidores más pequeños para ahorrar costos).
+
+**¿Cuántos ambientes son suficientes?**
+Para aprender: Local + Staging + Production es perfecto. En trabajo real, depende del tamaño de la empresa.
+
+**¿Qué pasa si encuentro un bug en producción?**
+Se crea un hotfix inmediato. Algunos equipos lo prueban rápidamente en staging primero, otros van directo a producción si es urgente.
+
+---
+
+## Recursos para Profundizar
+
+- **The Twelve-Factor App** - Best practices para aplicaciones modernas
+- **GitFlow Workflow** - Estrategia de branching más detallada
+- **CI/CD Pipelines** - Automatización de deploys entre ambientes
+
+---
+
+## Resumen Ejecutivo
+
+Los ambientes te protegen de errores costosos. Pruebas localmente, integras en staging, despliegas a producción solo cuando todo está validado.
+
+**Como QA Engineer, tu ambiente principal es staging.** Ahí ejecutas tus suites de tests, validas features, y aseguras calidad antes de que el código llegue a usuarios reales.
+
+El mercado usa principalmente: Local → Dev → Staging → Production.
+
+Este template usa: Local → Staging → Production (simplificado para aprendizaje).
+
+---
+
+## Navegación
+
+- [Git Flow](./git-flow.md) - Flujo de trabajo con Git
+- [TMLC](./test-manual-lifecycle.md) - Ciclo de vida del testing manual
+- [TALC](./test-automation-lifecycle.md) - Ciclo de vida de la automatización

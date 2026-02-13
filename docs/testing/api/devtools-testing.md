@@ -1,435 +1,363 @@
-# API Testing with DevTools
+# Testing de APIs con DevTools
 
-This guide explains how to intercept and analyze API requests using browser DevTools.
-
----
-
-## Why Requests Look "Weird"
-
-### The Problem You Notice
-
-When you open DevTools > Network, you probably see:
-
-```
-# What you expected (traditional API):
-POST /api/reviews          --> {"product_id": "abc", "rating": 5}
-GET  /api/products/abc     --> {"name": "Product", "price": 99.99}
-
-# What you see (Supabase PostgREST):
-GET  /rest/v1/products?category=eq.electronics&select=id,name,price...
-POST /rest/v1/reviews?select=*
-GET  /rest/v1/orders?or=(user_id.eq.xxx,seller_id.eq.xxx)&order=created_at.desc
-```
-
-### Why It's Different
-
-| Aspect              | Traditional API | Supabase PostgREST             |
-| ------------------- | --------------- | ------------------------------ |
-| **URL**             | `/api/products` | `/rest/v1/products`            |
-| **Query Params**    | `?id=abc`       | `?id=eq.abc`                   |
-| **Filters**         | In backend      | In URL (PostgREST syntax)      |
-| **Field Selection** | Backend decides | `?select=id,name,price`        |
-| **Ordering**        | Backend decides | `?order=created_at.desc`       |
+> **Idioma:** Español
+> **Nivel:** Introductorio
+> **Audiencia:** QA Engineers que hacen testing manual/exploratorio de APIs
 
 ---
 
-## PostgREST Syntax (Cheatsheet)
+## ¿Por qué DevTools?
 
-```bash
-# Equality
-?column=eq.value              # column = 'value'
+Los DevTools del navegador son tu primera herramienta para:
+- **Explorar** cómo la aplicación se comunica con el backend
+- **Debuguear** problemas de red y autenticación
+- **Capturar** requests para replicar en Postman o tests
+- **Validar** responses sin escribir código
 
-# Comparisons
-?column=gt.5                  # column > 5
-?column=gte.5                 # column >= 5
-?column=lt.5                  # column < 5
-?column=lte.5                 # column <= 5
-?column=neq.value             # column != 'value'
-
-# Null checks
-?column=is.null               # column IS NULL
-?column=not.is.null           # column IS NOT NULL
-
-# Lists
-?column=in.(a,b,c)            # column IN ('a', 'b', 'c')
-
-# Text
-?column=like.*pattern*        # column LIKE '%pattern%'
-?column=ilike.*pattern*       # ILIKE (case insensitive)
-
-# Logic
-?or=(col1.eq.a,col2.eq.b)     # col1 = 'a' OR col2 = 'b'
-?and=(col1.gt.5,col2.lt.10)   # col1 > 5 AND col2 < 10
-
-# Field selection
-?select=id,name,price         # Only those fields
-?select=*                     # All fields
-?select=*,reviews(*)          # With relation (JOIN)
-
-# Ordering
-?order=created_at.desc        # ORDER BY created_at DESC
-?order=name.asc,id.desc       # Multiple columns
-
-# Pagination
-?limit=10&offset=20           # LIMIT 10 OFFSET 20
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FLUJO DE TESTING CON DEVTOOLS                 │
+│                                                                  │
+│   1. Abrir DevTools > Network                                   │
+│   2. Interactuar con la aplicación                              │
+│   3. Observar requests que se generan                           │
+│   4. Analizar headers, body, response                           │
+│   5. Copiar como cURL para replicar                             │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Configure DevTools for API Testing
+## Configurar DevTools
 
-### Step 1: Open DevTools
+### Abrir DevTools
 
-1. Open the app in browser: `http://localhost:3000`
-2. F12 or Cmd+Option+I (Mac) / Ctrl+Shift+I (Windows)
-3. Go to **Network** tab
+| Browser | Shortcut |
+|---------|----------|
+| Chrome/Edge | `F12` o `Ctrl+Shift+I` (Win) / `Cmd+Option+I` (Mac) |
+| Firefox | `F12` o `Ctrl+Shift+I` |
+| Safari | `Cmd+Option+I` (activar primero en Preferencias > Avanzado) |
 
-### Step 2: Filter by Type
+### Tab Network
 
-Use these filters to see only relevant content:
+1. Abre DevTools
+2. Ve a la pestaña **Network**
+3. Recarga la página para capturar requests
 
-| Filter      | Shows                         |
-| ----------- | ----------------------------- |
-| `Fetch/XHR` | API requests (AJAX)           |
-| `Doc`       | Page navigations              |
-| `WS`        | WebSocket (Supabase realtime) |
+### Filtros Útiles
 
-**Recommended:** Click on `Fetch/XHR` to see only API calls.
+| Filtro | Muestra |
+|--------|---------|
+| `Fetch/XHR` | Solo requests AJAX (APIs) |
+| `Doc` | Navegaciones de página |
+| `WS` | WebSockets (tiempo real) |
+| `JS` | Archivos JavaScript |
 
-### Step 3: Filter by URL
+**Recomendado:** Activa solo `Fetch/XHR` para ver las llamadas a API.
 
-In the search field:
+### Filtrar por URL
+
+En el campo de búsqueda:
 
 ```
-# Only Supabase REST
-rest/v1
-
-# Only Next.js API Routes
-/api/
-
-# Specific endpoints
-products
-orders
-users
+/api/            → Solo requests a /api/
+products         → Requests que contengan "products"
+-analytics       → Excluir requests con "analytics"
 ```
 
 ---
 
-## Intercept Authentication Requests
+## Anatomía de un Request en DevTools
 
-### Login Flow
+Al hacer clic en un request, verás varias pestañas:
 
-1. Go to `/login`
-2. Open DevTools > Network
-3. Enter test credentials:
-   - Email: `{{TEST_USER_EMAIL}}`
-   - Password: `{{TEST_USER_PASSWORD}}`
-   - Example: `test.user@myproject.com` / `TestPassword123!`
-4. Click "Sign In"
-
-### Request You'll See
+### Headers
 
 ```
-POST {{SUPABASE_URL}}/auth/v1/token?grant_type=password
-# Example: POST https://abcdefghijklmnop.supabase.co/auth/v1/token?grant_type=password
+General:
+  Request URL: https://api.example.com/api/orders
+  Request Method: GET
+  Status Code: 200 OK
+
+Request Headers:
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+  Content-Type: application/json
+  Accept: application/json
+
+Response Headers:
+  Content-Type: application/json
+  X-Request-Id: req_abc123
 ```
 
-**Headers:**
+### Payload (Request Body)
 
-```
-apikey: eyJhbGciOiJIUzI1NiIs...  (anon key)
-Content-Type: application/json
-```
-
-**Request Body:**
+Para POST/PUT/PATCH, verás el body enviado:
 
 ```json
 {
-  "email": "test.user@myproject.com",
-  "password": "TestPassword123!"
+  "name": "Test Product",
+  "price": 99.99,
+  "category": "electronics"
 }
 ```
 
-**Response (200 OK):**
+### Response
+
+El body de la respuesta:
 
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzA...",
-  "token_type": "bearer",
-  "expires_in": 3600,
-  "expires_at": 1703123456,
+  "id": "prod_123",
+  "name": "Test Product",
+  "price": 99.99,
+  "created_at": "2025-01-15T10:30:00Z"
+}
+```
+
+### Timing
+
+Desglose del tiempo:
+
+```
+Queueing:     0.5 ms
+DNS Lookup:   12 ms
+Connection:   45 ms
+TLS:          30 ms
+Request:      1 ms
+Waiting:      150 ms  ← Tiempo del servidor
+Download:     5 ms
+────────────────────
+Total:        243.5 ms
+```
+
+---
+
+## Interceptar Flujo de Login
+
+### Pasos
+
+1. Abre DevTools > Network
+2. Activa `Preserve log` (para mantener requests entre navegaciones)
+3. Ve a la página de login
+4. Ingresa credenciales y haz login
+5. Observa el request de autenticación
+
+### Qué Buscar
+
+**Request de Login:**
+```
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "********"
+}
+```
+
+**Response:**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
   "refresh_token": "abc123...",
   "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "test.user@myproject.com",
-    "role": "authenticated",
-    "user_metadata": {
-      "name": "Test User",
-      "role": "customer"
-    }
+    "id": "user_123",
+    "email": "user@example.com"
   }
 }
 ```
 
-### Copy the Token
+### Copiar el Token
 
-1. Right-click on the login request
+1. Click derecho en el request de login
 2. Copy > Copy response
-3. Extract the `access_token` - This is your JWT for other requests
+3. Extrae el `access_token` para usar en otros requests
 
 ---
 
-## Analyze Authenticated Requests
+## Validar Responses
 
-### Example: View My Orders
+### Checklist por Request
 
-After logging in, navigate to `/dashboard/orders`:
+| Aspecto | Qué Verificar |
+|---------|---------------|
+| **Status** | 200, 201, 204 según operación |
+| **Headers** | `content-type: application/json` |
+| **Estructura** | Campos esperados presentes |
+| **Tipos** | Strings, numbers, dates correctos |
+| **Datos** | Valores tienen sentido |
 
-**Request:**
-
-```
-GET {{SUPABASE_URL}}/rest/v1/orders
-    ?select=*,products:order_items(product:products(id,name,image_url))
-    &user_id=eq.550e8400-e29b-41d4-a716-446655440000
-    &order=created_at.desc
-
-# Example:
-# GET https://abcdefghijklmnop.supabase.co/rest/v1/orders?select=*,...
-```
-
-**Important Headers:**
+### Códigos de Status Comunes
 
 ```
-apikey: eyJhbGciOiJIUzI1NiIs...           # Anon key (always)
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...  # Your JWT from login
-```
+2xx - Éxito
+├── 200 OK           → GET exitoso
+├── 201 Created      → POST exitoso (recurso creado)
+├── 204 No Content   → DELETE exitoso
 
-**URL Breakdown:**
+4xx - Error del Cliente
+├── 400 Bad Request  → Datos inválidos
+├── 401 Unauthorized → Sin autenticación
+├── 403 Forbidden    → Sin permisos
+├── 404 Not Found    → Recurso no existe
+├── 422 Unprocessable→ Validación fallida
 
-| Part                                 | Meaning                            |
-| ------------------------------------ | ---------------------------------- |
-| `/rest/v1/orders`                    | Orders table                       |
-| `select=*,products:order_items(...)` | All fields + JOIN with products    |
-| `user_id=eq.xxx`                     | Where I'm the user                 |
-| `order=created_at.desc`              | Order by date descending           |
-
-**Response (200 OK):**
-
-```json
-[
-  {
-    "id": "order-uuid-1",
-    "user_id": "550e8400-e29b-41d4-a716-446655440000",
-    "status": "delivered",
-    "total": 149.99,
-    "created_at": "2025-01-29T15:00:00Z",
-    "products": [
-      {
-        "product": {
-          "id": "product-uuid",
-          "name": "Laptop Stand",
-          "image_url": "https://..."
-        }
-      }
-    ]
-  }
-]
+5xx - Error del Servidor
+├── 500 Internal     → Bug en el servidor
+├── 502 Bad Gateway  → Servicio upstream falló
+├── 503 Unavailable  → Servidor sobrecargado
 ```
 
 ---
 
-## Test RLS Policies in DevTools
+## Copiar Requests para Reusar
 
-### Experiment: Try to View Another User's Orders
+### Copy as cURL
 
-1. You're logged in as user A
-2. In DevTools > Console, execute:
+Click derecho en request > Copy > Copy as cURL
+
+```bash
+curl 'https://api.example.com/api/orders' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIs...' \
+  -H 'Content-Type: application/json'
+```
+
+Puedes pegar esto en:
+- Terminal
+- Postman (Import > Raw text)
+- Scripts de test
+
+### Copy as Fetch
+
+Para usar en JavaScript:
 
 ```javascript
-// Get the Supabase client
-const { createClient } = await import('@supabase/supabase-js');
-const supabase = createClient(
-  '{{SUPABASE_URL}}', // Example: 'https://abcdefghijklmnop.supabase.co'
-  '{{SUPABASE_ANON_KEY}}'
-);
-
-// Try to view orders from ANOTHER user
-const { data, error } = await supabase.from('orders').select('*').eq('user_id', 'other-user-id');
-
-console.log('Data:', data); // [] - Empty array!
-console.log('Error:', error); // null - No error, but no data
-```
-
-**Result:** RLS policy blocks access. You don't see an error, but no data either.
-
-### See the Policy in Action
-
-In Network tab, you'll see:
-
-```
-GET /rest/v1/orders?user_id=eq.other-user-id
-Status: 200 OK
-Response: []
-```
-
-The policy `"Users can view their own orders"` automatically filters:
-
-```sql
--- Only returns rows where:
-auth.uid() = user_id
-```
-
----
-
-## Validate Responses
-
-### What to Validate in Each Request
-
-| Aspect             | What to Check                              |
-| ------------------ | ------------------------------------------ |
-| **Status Code**    | 200 (OK), 201 (Created), 204 (No Content) |
-| **Headers**        | `content-type: application/json`           |
-| **Body Structure** | Expected fields present                    |
-| **Data Types**     | Strings, numbers, dates correct            |
-| **Relationships**  | JOINs include related data                 |
-| **Pagination**     | `content-range` header if applicable       |
-
-### Common Status Codes
-
-| Code  | Meaning       | When                         |
-| ----- | ------------- | ---------------------------- |
-| `200` | OK            | Successful GET               |
-| `201` | Created       | Successful POST              |
-| `204` | No Content    | Successful DELETE            |
-| `400` | Bad Request   | Incorrect syntax             |
-| `401` | Unauthorized  | Missing JWT or expired       |
-| `403` | Forbidden     | RLS blocked the operation    |
-| `404` | Not Found     | Resource doesn't exist       |
-| `409` | Conflict      | Unique constraint violation  |
-| `422` | Unprocessable | Validation failed            |
-
-### Example: Create Review (POST)
-
-**Request:**
-
-```
-POST /rest/v1/reviews
-Headers:
-  apikey: ...
-  Authorization: Bearer ...
-  Content-Type: application/json
-  Prefer: return=representation
-
-Body:
-{
-  "product_id": "product-uuid",
-  "user_id": "my-uuid",
-  "rating": 5,
-  "comment": "Excellent product!"
-}
-```
-
-**Expected Response (201 Created):**
-
-```json
-[
-  {
-    "id": "new-review-uuid",
-    "product_id": "product-uuid",
-    "user_id": "my-uuid",
-    "rating": 5,
-    "comment": "Excellent product!",
-    "created_at": "2025-01-29T10:30:00Z"
+fetch("https://api.example.com/api/orders", {
+  headers: {
+    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIs...",
+    "Content-Type": "application/json"
   }
-]
+});
 ```
-
-**Validations:**
-
-- [ ] Status: 201
-- [ ] `id` automatically generated
-- [ ] `created_at` has current timestamp
-- [ ] All body fields are present
 
 ---
 
-## Tips and Tricks
+## Testing de Autenticación
+
+### Test: Request sin Token
+
+1. Abre una nueva pestaña incógnito
+2. Intenta acceder a un endpoint protegido directamente
+3. Debería devolver 401 Unauthorized
+
+### Test: Token de Otro Usuario
+
+1. Login como Usuario A
+2. Copia un ID de recurso de Usuario B
+3. Intenta acceder via URL directa
+4. Debería devolver 403 o array vacío
+
+### Usar Console para Tests Rápidos
+
+En la Console de DevTools:
+
+```javascript
+// Test rápido de un endpoint
+const response = await fetch('/api/orders', {
+  headers: {
+    'Authorization': 'Bearer ' + localStorage.getItem('token')
+  }
+});
+const data = await response.json();
+console.log(data);
+```
+
+---
+
+## Simular Condiciones
+
+### Throttling (Conexión Lenta)
+
+1. Network > Throttling dropdown
+2. Selecciona "Slow 3G" o "Offline"
+3. Observa cómo maneja la app la conexión lenta
+
+### Bloquear Requests
+
+Para probar manejo de errores:
+
+1. Click derecho en un request
+2. "Block request URL"
+3. Recarga - la app debería manejar el error gracefully
+
+### Offline Mode
+
+1. Network > Offline checkbox
+2. Interactúa con la app
+3. Verifica que muestra estados de error apropiados
+
+---
+
+## Tips y Trucos
 
 ### 1. Preserve Log
 
-Enable **"Preserve log"** to keep requests between navigations:
-
+Activa `Preserve log` para mantener requests entre navegaciones:
 ```
 [x] Preserve log
 ```
 
-### 2. Copy as cURL
+### 2. Disable Cache
 
-To replicate a request in terminal or Postman:
-
-1. Right-click on the request
-2. Copy > Copy as cURL
-
-```bash
-curl '{{SUPABASE_URL}}/rest/v1/products?category=eq.electronics' \
-  -H 'apikey: eyJ...' \
-  -H 'Authorization: Bearer eyJ...'
-
-# Example:
-# curl 'https://abcdefghijklmnop.supabase.co/rest/v1/products?category=eq.electronics' \
-#   -H 'apikey: eyJ...' \
-#   -H 'Authorization: Bearer eyJ...'
+Para ver siempre requests frescos:
+```
+[x] Disable cache
 ```
 
-### 3. Copy as Fetch
+### 3. Filtrar por Status
 
-To replicate in JavaScript:
-
-```javascript
-fetch('{{SUPABASE_URL}}/rest/v1/products?category=eq.electronics', {
-  headers: {
-    apikey: 'eyJ...',
-    Authorization: 'Bearer eyJ...',
-  },
-});
-
-// Example:
-// fetch("https://abcdefghijklmnop.supabase.co/rest/v1/products?category=eq.electronics", {...})
+```
+status-code:404    → Solo errores 404
+status-code:500    → Solo errores 500
+status-code:2*     → Solo exitosos (2xx)
 ```
 
-### 4. Throttling
+### 4. Ver Request Iniciador
 
-Simulate slow connections for testing:
+La columna "Initiator" muestra qué código disparó el request. Útil para debugging.
 
-1. Network tab > Throttling dropdown
-2. Select "Slow 3G" or "Offline"
+### 5. Replay Request
 
-### 5. Block Requests
-
-Block endpoints to test error handling:
-
-1. Right-click on a request
-2. Block request URL
-3. Reload the page - see how the app handles the failure
+Click derecho > Replay XHR para reejecutar un request sin recargar la página.
 
 ---
 
-## Testing Checklist with DevTools
+## Checklist de Testing Manual
 
-### For each feature:
+### Para cada feature:
 
-- [ ] Identify all involved requests
-- [ ] Verify correct headers (apikey, Authorization)
-- [ ] Validate request body (POST/PATCH)
-- [ ] Verify expected status code
-- [ ] Validate response structure
-- [ ] Test with user without permissions (RLS)
-- [ ] Test with invalid data
-- [ ] Verify UI error handling
+```
+[ ] Identificar todos los requests involucrados
+[ ] Verificar headers correctos (Authorization, Content-Type)
+[ ] Validar body del request (POST/PATCH)
+[ ] Verificar status code esperado
+[ ] Validar estructura del response
+[ ] Probar sin autenticación (401 esperado)
+[ ] Probar con datos inválidos (400/422 esperado)
+[ ] Verificar manejo de errores en la UI
+```
 
 ---
 
-## Next Step
+## Próximos Pasos
 
-If you want to create reusable and organized requests, continue with:
---> [postman-testing.md](./postman-testing.md)
+- [postman-testing.md](./postman-testing.md) - Organizar requests en colecciones
+- [authentication.md](./authentication.md) - Patrones de autenticación
+- [fundamentals.md](./fundamentals.md) - Conceptos de API testing
+
+---
+
+## Referencias
+
+- [Chrome DevTools Network Reference](https://developer.chrome.com/docs/devtools/network/)
+- [Firefox Network Monitor](https://firefox-source-docs.mozilla.org/devtools-user/network_monitor/)

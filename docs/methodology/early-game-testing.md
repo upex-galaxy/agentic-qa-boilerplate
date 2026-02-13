@@ -1,22 +1,23 @@
 # Early-Game Testing
 
-> **IQL Phase 1** · Shift-Left · BDD · Risk-Based
+> **Idioma:** Español
+> **Fase IQL 1** · Shift-Left · BDD · Risk-Based
 
 ## Overview
 
-**"Let's build it right from the start"**
+**"Construyamos bien desde el inicio"**
 
-**Prevention** phase - Focus on preventing defects through early collaboration and analysis.
+Fase de **Prevención** - Enfoque en prevenir defectos a través de colaboración y análisis temprano.
 
-The **first phase of the Integrated Quality Lifecycle** where the **QA Analyst** leads the early strategy. Like in gaming: **Mastering the Early-Game** gives you a decisive advantage for the entire match.
+La **primera fase del Integrated Quality Lifecycle** donde el **QA Analyst** lidera la estrategia temprana. Como en gaming: **Dominar el Early-Game** te da una ventaja decisiva para toda la partida.
 
 ---
 
-## Early-Game: First Phase of IQL
+## Early-Game: Primera Fase de IQL
 
-**Early-Game Testing** is the foundational phase of the **Integrated Quality Lifecycle** where strategic quality foundations are established for the entire project.
+**Early-Game Testing** es la fase fundacional del **Integrated Quality Lifecycle** donde se establecen las bases estratégicas de calidad para todo el proyecto.
 
-### Position in IQL Timeline
+### Posición en la Línea de Tiempo de IQL
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -25,7 +26,7 @@ The **first phase of the Integrated Quality Lifecycle** where the **QA Analyst**
 │                                                                 │
 │  ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐│
 │  │  EARLY-GAME     │──▶│   MID-GAME      │──▶│   LATE-GAME     ││
-│  │  ✅ CURRENT PHASE│   │   Next          │   │   Future        ││
+│  │  ✅ FASE ACTUAL │   │   Siguiente     │   │   Futuro        ││
 │  │                 │   │                 │   │                 ││
 │  │  Steps 1-4      │   │   Steps 5-9     │   │   Steps 10-15   ││
 │  │  QA Analyst     │   │   QA Automation │   │   QA + DevOps   ││
@@ -34,300 +35,300 @@ The **first phase of the Integrated Quality Lifecycle** where the **QA Analyst**
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Early-Game Characteristics
+### Características del Early-Game
 
-| Aspect            | Detail                      |
+| Aspecto           | Detalle                     |
 | ----------------- | --------------------------- |
-| **Steps**         | 1-4 of IQL                  |
-| **Approaches**    | Shift-Left, BDD, Risk-Based |
-| **Main Role**     | QA Analyst                  |
-| **Tools**         | Jira, Confluence, Postman   |
+| **Steps**         | 1-4 de IQL                  |
+| **Enfoques**      | Shift-Left, BDD, Risk-Based |
+| **Rol Principal** | QA Analyst                  |
+| **Herramientas**  | Jira, Confluence, Postman   |
 
-> _"🎮 Early-Game: The Foundation of Strategic Advantage"_
+> _"🎮 Early-Game: La Base de la Ventaja Estratégica"_
 >
-> Like in MOBAs, **mastering the early-game gives you an advantage for the entire match**. In IQL, this phase establishes the **strategic quality foundation** that facilitates success in Mid-Game and Late-Game phases.
+> Como en los MOBAs, **dominar el early-game te da ventaja para toda la partida**. En IQL, esta fase establece la **base estratégica de calidad** que facilita el éxito en las fases Mid-Game y Late-Game.
 
 ---
 
-## The 4 Steps of Early-Game Testing
+## Los 4 Steps del Early-Game Testing
 
-**Early-Game Testing** is executed through **4 specific steps** corresponding to Steps 1-4 of IQL.
+**Early-Game Testing** se ejecuta a través de **4 steps específicos** correspondientes a los Steps 1-4 de IQL.
 
-> _"Each step has a specific objective within the TMLC (Test Manual Life Cycle) and integrates perfectly with the development workflow."_
+> _"Cada step tiene un objetivo específico dentro del TMLC (Test Manual Life Cycle) y se integra perfectamente con el flujo de desarrollo."_
 
-### Step 1: Requirements Analysis and Planning
+### Step 1: Análisis de Requisitos y Planificación
 
-**TMLC - Test Manual Life Cycle (1st Stage)**
+**TMLC - Test Manual Life Cycle (1er Stage)**
 
-Understand requirements and finalize acceptance criteria of the US before starting implementation.
+Entender los requisitos y finalizar los criterios de aceptación de la US antes de iniciar la implementación.
 
-**Key Activities:**
+**Actividades Clave:**
 
-- QA discusses ambiguities with stakeholders
-- QA creates a Feature Test Plan (FTP) describing initial scenarios
-- The subtask 'QA: AC Review' and 'QA: Feature Test Plan' moves from Open → In Progress → Done
+- QA discute ambigüedades con stakeholders
+- QA crea un Feature Test Plan (FTP) describiendo escenarios iniciales
+- La subtarea 'QA: AC Review' y 'QA: Feature Test Plan' pasa de Open → In Progress → Done
 
-**Expected Result:**
-A clear set of acceptance criteria and an FTP to guide specific testing in the US.
+**Resultado Esperado:**
+Un conjunto claro de criterios de aceptación y un FTP para guiar el testing específico en la US.
 
-**Tools:** Jira, Confluence, Slack, Claude Code
-
----
-
-### Step 2: Development and Implementation
-
-**Parallel work (Not a direct QA task)**
-
-Build and deploy the US in a staging environment while QA prepares the strategy.
-
-**Key Activities:**
-
-- Developers create a branch and implement the US code
-- Code is deployed to the corresponding Environment
-- QA can test the US in the same development branch if possible
-
-**Expected Result:**
-A functional environment where the QA team can start testing.
-
-**Tools:** GitHub, Docker, TypeScript, Python
+**Herramientas:** Jira, Confluence, Slack, Claude Code
 
 ---
 
-### Step 3: Early Exploratory Test Execution
+### Step 2: Desarrollo e Implementación
 
-**TMLC - Test Manual Life Cycle (2nd Stage) - Early-Gank**
+**Trabajo paralelo (No es una tarea directa de QA)**
 
-Quickly validate the US using Feature Test Execution (FTX) defined in the FTP.
+Construir y desplegar la US en un ambiente de staging mientras QA prepara la estrategia.
 
-**Key Activities:**
+**Actividades Clave:**
 
-- The subtask 'QA: Feature Testing' moves from Open → In Progress → Done
-- QA performs targeted exploratory testing in critical or high-risk areas
-- Findings and defects are reported immediately
+- Los desarrolladores crean una branch e implementan el código de la US
+- El código se despliega al Ambiente correspondiente
+- QA puede probar la US en la misma branch de desarrollo si es posible
 
-**Expected Result:**
-The User Story can be deployed to production once QA approves it. The US is closed in Jira.
+**Resultado Esperado:**
+Un ambiente funcional donde el equipo de QA puede comenzar a testear.
 
-**Tools:** Browser DevTools, Postman, Jira
-
----
-
-### Step 4: Risk-Based Prioritization
-
-**TMLC - Test Manual Life Cycle (3rd Stage) - Risk-Based**
-
-Decide which FTP scenarios deserve formal test cases vs remaining as exploratory.
-
-**Key Activities:**
-
-- QA evaluates potential impact and probability of defects for each scenario
-- High-value scenarios are selected to become Test Cases
-- Decisions are recorded in a Test Repository (Epic in Jira)
-
-**Expected Result:**
-Refined list of scenarios ready to become scripted test cases.
-
-**Tools:** Jira, Xray, Confluence
+**Herramientas:** GitHub, Docker, TypeScript, Python
 
 ---
 
-## Key Concepts of Early-Game Testing
+### Step 3: Ejecución de Testing Exploratorio Temprano
+
+**TMLC - Test Manual Life Cycle (2do Stage) - Early-Gank**
+
+Validar rápidamente la US usando Feature Test Execution (FTX) definido en el FTP.
+
+**Actividades Clave:**
+
+- La subtarea 'QA: Feature Testing' pasa de Open → In Progress → Done
+- QA realiza testing exploratorio dirigido en áreas críticas o de alto riesgo
+- Los hallazgos y defectos se reportan inmediatamente
+
+**Resultado Esperado:**
+La User Story puede desplegarse a producción una vez que QA la aprueba. La US se cierra en Jira.
+
+**Herramientas:** Browser DevTools, Postman, Jira
+
+---
+
+### Step 4: Priorización Basada en Riesgo
+
+**TMLC - Test Manual Life Cycle (3er Stage) - Risk-Based**
+
+Decidir qué escenarios del FTP merecen test cases formales vs quedarse como exploratorios.
+
+**Actividades Clave:**
+
+- QA evalúa el impacto potencial y probabilidad de defectos para cada escenario
+- Los escenarios de alto valor se seleccionan para convertirse en Test Cases
+- Las decisiones se registran en un Test Repository (Epic en Jira)
+
+**Resultado Esperado:**
+Lista refinada de escenarios listos para convertirse en test cases con scripts.
+
+**Herramientas:** Jira, Xray, Confluence
+
+---
+
+## Conceptos Clave del Early-Game Testing
 
 ### Shift-Left Testing
 
-- **Description:** Involve QA from the start to discover defects sooner and reduce rework.
-- **Benefit:** Early Prevention = Optimized Economy
+- **Descripción:** Involucrar a QA desde el inicio para descubrir defectos antes y reducir retrabajo.
+- **Beneficio:** Prevención Temprana = Economía Optimizada
 
-### Exploratory Testing
+### Testing Exploratorio
 
-- **Description:** 'Exploratory' Feature Testing provides quick validation before US closure.
-- **Benefit:** Agile and Flexible Feedback
+- **Descripción:** El Feature Testing 'Exploratorio' proporciona validación rápida antes del cierre de la US.
+- **Beneficio:** Feedback Ágil y Flexible
 
-### Risk-Based Selection
+### Selección Basada en Riesgo
 
-- **Description:** Dedicate QA resources to highest-impact scenarios for documentation and automation.
-- **Benefit:** Time Invested in What Matters
+- **Descripción:** Dedicar recursos de QA a los escenarios de mayor impacto para documentación y automatización.
+- **Beneficio:** Tiempo Invertido en lo que Importa
 
-### Async Documentation
+### Documentación Asíncrona
 
-- **Description:** Designing test cases after US approval keeps the process agile without blockers.
-- **Benefit:** Delivery Without Delays
+- **Descripción:** Diseñar test cases después de la aprobación de la US mantiene el proceso ágil sin bloqueadores.
+- **Beneficio:** Entrega Sin Retrasos
 
 ---
 
-## Integrated Approaches in Early-Game Testing
+## Enfoques Integrados en Early-Game Testing
 
-Our methodology integrates **multiple testing types and strategies** organized into five main categories to create comprehensive and strategic coverage.
+Nuestra metodología integra **múltiples tipos de testing y estrategias** organizados en cinco categorías principales para crear cobertura comprensiva y estratégica.
 
-### 1. Strategic Macro-Approaches
+### 1. Macro-Enfoques Estratégicos
 
-The three fundamental approaches that guide all work methodology at UPEX:
+Los tres enfoques fundamentales que guían toda la metodología de trabajo en UPEX:
 
 #### Shift-Left Testing
 
-- **Main approach:** Involve QA team from the earliest stages of the development cycle.
-- **Objective:** Detect defects and ambiguities at the start to reduce costs and rework.
+- **Enfoque principal:** Involucrar al equipo de QA desde las etapas más tempranas del ciclo de desarrollo.
+- **Objetivo:** Detectar defectos y ambigüedades al inicio para reducir costos y retrabajo.
 
 #### Risk-Based Testing
 
-- **Smart approach:** Develop and prioritize tests classifying scenarios by impact and criticality.
-- **Objective:** Focus efforts on Value-Cost-Risk, avoiding unnecessary documentation overload.
+- **Enfoque inteligente:** Desarrollar y priorizar tests clasificando escenarios por impacto y criticidad.
+- **Objetivo:** Enfocar esfuerzos en Valor-Costo-Riesgo, evitando sobrecarga innecesaria de documentación.
 
 #### Continuous Testing
 
-- **Automation approach:** Integrate automated tests in CI/CD pipeline for immediate feedback.
-- **Objective:** Maintain software quality through constant validation and early regression detection.
+- **Enfoque de automatización:** Integrar tests automatizados en el pipeline CI/CD para feedback inmediato.
+- **Objetivo:** Mantener la calidad del software mediante validación constante y detección temprana de regresiones.
 
-### 2. Approaches by Design and Execution Method
+### 2. Enfoques por Método de Diseño y Ejecución
 
-Define how test cases are designed and executed:
+Definen cómo se diseñan y ejecutan los test cases:
 
 #### Scripted Testing
 
-- **Scripted Tests:** Designed with concrete steps, input data and expected results.
-- **Ideal for:** Repetitive scenarios like regression and when traceability is priority.
+- **Tests con Script:** Diseñados con pasos concretos, datos de entrada y resultados esperados.
+- **Ideal para:** Escenarios repetitivos como regresión y cuando la trazabilidad es prioridad.
 
 #### Exploratory Testing
 
-- **Exploratory Tests:** Based on objectives or hypotheses (charters) without rigidly defined steps.
-- **Allow:** Investigating software freely and creatively, discovering defects in less explored "corners".
+- **Tests Exploratorios:** Basados en objetivos o hipótesis (charters) sin pasos rígidamente definidos.
+- **Permiten:** Investigar el software libre y creativamente, descubriendo defectos en "rincones" menos explorados.
 
-### 3. The "Testing Trident" - Key Technical Competencies
+### 3. El "Tridente de Testing" - Competencias Técnicas Clave
 
-Considered the **minimum essential knowledge** at UPEX. Defines the **fundamental technical competencies** that are learned and applied with Early-Game Testing methodology.
+Considerado el **conocimiento mínimo esencial** en UPEX. Define las **competencias técnicas fundamentales** que se aprenden y aplican con la metodología Early-Game Testing.
 
-> **Important note:** The Trident is not methodology approaches, but the **technical knowledge areas** that every QA must master.
+> **Nota importante:** El Tridente no son enfoques metodológicos, sino las **áreas de conocimiento técnico** que todo QA debe dominar.
 
-#### E2E / Frontend Testing (System Testing)
+#### E2E / Frontend Testing (Testing de Sistema)
 
-Tests that validate the complete flow from the UI, simulating how a real user would interact with the system.
+Tests que validan el flujo completo desde la UI, simulando cómo un usuario real interactuaría con el sistema.
 
-#### API Testing / Backend (Logic Layer Testing)
+#### API Testing / Backend (Testing de Capa Lógica)
 
-Logic-level tests to validate communication and responses between different services.
+Tests a nivel lógico para validar la comunicación y respuestas entre diferentes servicios.
 
-#### Database Testing (Data Layer Testing)
+#### Database Testing (Testing de Capa de Datos)
 
-Focuses on the data layer to ensure information integrity and consistency.
+Se enfoca en la capa de datos para asegurar la integridad y consistencia de la información.
 
-### 4. Non-Functional Testing - Quality Aspects
+### 4. Testing No Funcional - Aspectos de Calidad
 
-Tests that evaluate quality aspects beyond functionality:
+Tests que evalúan aspectos de calidad más allá de la funcionalidad:
 
-| Type                      | Description                                                                |
-| ------------------------- | -------------------------------------------------------------------------- |
-| **Performance Testing**   | Measures load and stress the system can support                           |
-| **Usability Testing**     | Evaluates how easy and intuitive the system is for the user               |
-| **Security Testing**      | Focuses on identifying security vulnerabilities                           |
-| **Accessibility Testing** | Ensures the application is usable by people with diverse capabilities     |
+| Tipo                        | Descripción                                                             |
+| --------------------------- | ----------------------------------------------------------------------- |
+| **Performance Testing**     | Mide la carga y estrés que el sistema puede soportar                    |
+| **Usability Testing**       | Evalúa qué tan fácil e intuitivo es el sistema para el usuario          |
+| **Security Testing**        | Se enfoca en identificar vulnerabilidades de seguridad                  |
+| **Accessibility Testing**   | Asegura que la aplicación sea usable por personas con diversas capacidades |
 
-### 5. Approaches by Execution Strategy
+### 5. Enfoques por Estrategia de Ejecución
 
-Applied at specific moments in the lifecycle to meet concrete objectives:
+Se aplican en momentos específicos del ciclo de vida para cumplir objetivos concretos:
 
-| Approach               | Description                                                                                                                        |
+| Enfoque                | Descripción                                                                                                                        |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **Smoke Testing**      | Quick check to validate that essential functionalities work. Decides if a version is stable for deep testing.                     |
-| **Sanity Testing**     | Quick and shallow tests after minor changes to validate that main functionalities are still operating.                            |
-| **Regression Testing** | Execute broad set of tests to confirm new modifications didn't affect existing functionalities.                                   |
-| **Re-Testing**         | Specifically focuses on retesting functionalities that previously had defects to confirm successful correction.                   |
-| **Feature Testing**    | Comprehensive testing of individual features or user stories to validate complete functionality before integration.                |
+| **Smoke Testing**      | Verificación rápida para validar que las funcionalidades esenciales funcionan. Decide si una versión es estable para testing profundo. |
+| **Sanity Testing**     | Tests rápidos y superficiales después de cambios menores para validar que las funcionalidades principales siguen operando.         |
+| **Regression Testing** | Ejecutar un conjunto amplio de tests para confirmar que nuevas modificaciones no afectaron funcionalidades existentes.              |
+| **Re-Testing**         | Se enfoca específicamente en re-testear funcionalidades que previamente tenían defectos para confirmar la corrección exitosa.       |
+| **Feature Testing**    | Testing comprensivo de features individuales o user stories para validar funcionalidad completa antes de integración.               |
 
-> _"🎮 Early-Game Testing: Comprehensive Methodology"_
+> _"🎮 Early-Game Testing: Metodología Integral"_
 >
-> This **strategic combination of approaches** allows QAs trained at UPEX to approach any project with a **decisive early advantage**, applying the right approach at the precise moment to maximize impact and optimize resources.
+> Esta **combinación estratégica de enfoques** permite a los QAs entrenados en UPEX abordar cualquier proyecto con una **ventaja temprana decisiva**, aplicando el enfoque correcto en el momento preciso para maximizar impacto y optimizar recursos.
 
 ---
 
-## Why "Early-Game"?
+## ¿Por qué "Early-Game"?
 
-### The Winning Strategy
+### La Estrategia Ganadora
 
-In competitive video games (MOBA), professional players know that **mastering the "early game"** is crucial to winning the match. The decisions and actions you take in the first minutes determine your advantage for the rest of the game.
+En videojuegos competitivos (MOBA), los jugadores profesionales saben que **dominar el "early game"** es crucial para ganar la partida. Las decisiones y acciones que tomas en los primeros minutos determinan tu ventaja para el resto del juego.
 
-| In Competitive Gaming                                                                                                                  | In Strategic QA                                                                                                      |
-| -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Control resources early, position strategically and take initial advantage to dominate the complete game. **Optimized team economy.** | Apply quality feedback from the beginning to give decisive advantage to the project. **Optimized development economy.** |
-
----
-
-## Early-Game Testing in Practice
-
-As a QA trained at UPEX, you don't wait for development to finish. **You orchestrate quality from analysis** to create early strategic advantage.
-
-### Strategic Control
-
-You participate in **requirements analysis** and **strategic planning** to identify weak points and create early mitigation plans.
-
-- _Advantage from the Origin_
-
-### Optimized Economy
-
-You perform **early exploratory testing** and **risk analysis** to optimize budget and reduce rework costs.
-
-- _Optimized Resources_
-
-### Solid Foundation
-
-You build a **solid quality foundation** that facilitates automation, scalability and long-term maintenance.
-
-- _Strategic Foundation_
+| En Gaming Competitivo                                                                                                                  | En QA Estratégico                                                                                                      |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Controlar recursos temprano, posicionarse estratégicamente y tomar ventaja inicial para dominar el juego completo. **Economía de equipo optimizada.** | Aplicar feedback de calidad desde el inicio para dar ventaja decisiva al proyecto. **Economía de desarrollo optimizada.** |
 
 ---
 
-## Your Competitive Advantage in the Market
+## Early-Game Testing en la Práctica
 
-QAs trained in Early-Game Testing are highly valued because they **think strategically** and provide value from day one.
+Como QA entrenado en UPEX, no esperas a que el desarrollo termine. **Orquestas la calidad desde el análisis** para crear ventaja estratégica temprana.
 
-### Key Benefits
+### Control Estratégico
 
-| Benefit                              | Description                                                                                                                      |
+Participas en **análisis de requisitos** y **planificación estratégica** para identificar puntos débiles y crear planes de mitigación temprana.
+
+- _Ventaja desde el Origen_
+
+### Economía Optimizada
+
+Realizas **testing exploratorio temprano** y **análisis de riesgos** para optimizar presupuesto y reducir costos de retrabajo.
+
+- _Recursos Optimizados_
+
+### Base Sólida
+
+Construyes una **base de calidad sólida** que facilita la automatización, escalabilidad y mantenimiento a largo plazo.
+
+- _Fundamento Estratégico_
+
+---
+
+## Tu Ventaja Competitiva en el Mercado
+
+Los QAs entrenados en Early-Game Testing son altamente valorados porque **piensan estratégicamente** y aportan valor desde el día uno.
+
+### Beneficios Clave
+
+| Beneficio                            | Descripción                                                                                                                      |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| **Dramatic Cost Reduction**          | Detecting and correcting defects early is up to 100x more economical than doing it in production. You optimize project economy. |
-| **Optimized Development Time**       | You avoid rework and delays by identifying problems before they propagate. Total timeline control.                              |
-| **Natural Leadership**               | You integrate as technical leader with development and product teams, orchestrating quality from analysis.                      |
-| **Measurable Strategic Impact**      | Your work has direct and quantifiable impact on product success. You're part of the core strategy team.                         |
-| **Competitive Gaming Mindset**       | You develop strategic thinking, risk analysis and resource optimization that are highly valued.                                 |
-| **Unique CV Differentiation**        | You stand out as a QA who understands the business, thinks strategically and masters advanced methodologies.                    |
+| **Reducción Dramática de Costos**    | Detectar y corregir defectos temprano es hasta 100x más económico que hacerlo en producción. Optimizas la economía del proyecto. |
+| **Tiempo de Desarrollo Optimizado**  | Evitas retrabajo y retrasos identificando problemas antes de que se propaguen. Control total de timeline.                        |
+| **Liderazgo Natural**                | Te integras como líder técnico con equipos de desarrollo y producto, orquestando calidad desde el análisis.                     |
+| **Impacto Estratégico Medible**      | Tu trabajo tiene impacto directo y cuantificable en el éxito del producto. Eres parte del equipo estratégico central.           |
+| **Mentalidad de Gaming Competitivo** | Desarrollas pensamiento estratégico, análisis de riesgos y optimización de recursos que son altamente valorados.                 |
+| **Diferenciación Única de CV**       | Destacas como QA que entiende el negocio, piensa estratégicamente y domina metodologías avanzadas.                               |
 
 ---
 
-## Work Environment Setup
+## Configuración del Ambiente de Trabajo
 
-At UPEX Galaxy you work with the **same professional tools** you'll use in real companies. Your experience will be **100% transferable** to the job market.
+En UPEX Galaxy trabajas con las **mismas herramientas profesionales** que usarás en empresas reales. Tu experiencia será **100% transferible** al mercado laboral.
 
 ### Jira + Xray Integration
 
-**Project Management & Test Management**
+**Gestión de Proyectos & Gestión de Tests**
 
-- **Jira:** Complete project management, user stories, bugs and progress tracking with agile methodologies.
-- **Xray:** Integrated test management for design, execution and reporting of test cases with complete traceability.
+- **Jira:** Gestión completa de proyectos, user stories, bugs y seguimiento de progreso con metodologías ágiles.
+- **Xray:** Gestión de tests integrada para diseño, ejecución y reportes de test cases con trazabilidad completa.
 
-_📋 Professional documentation and traceability_
+_📋 Documentación y trazabilidad profesional_
 
 ### GitHub + Actions CI/CD
 
-**Version Control & Automation**
+**Control de Versiones & Automatización**
 
-- **GitHub:** Version control, collaboration on automation code and project documentation.
-- **GitHub Actions:** CI/CD pipelines for automatic test execution and build deployment.
+- **GitHub:** Control de versiones, colaboración en código de automatización y documentación de proyectos.
+- **GitHub Actions:** Pipelines CI/CD para ejecución automática de tests y despliegue de builds.
 
-_⚡ Automation and Continuous Testing_
+_⚡ Automatización y Testing Continuo_
 
-### Complementary Tools
+### Herramientas Complementarias
 
-| Tool                   | Use                                                  |
+| Herramienta            | Uso                                                  |
 | ---------------------- | ---------------------------------------------------- |
-| **Slack**              | Real-time communication with distributed teams       |
-| **Postman**            | API testing and service documentation                |
-| **Playwright/Cypress** | Web and E2E test automation                          |
+| **Slack**              | Comunicación en tiempo real con equipos distribuidos |
+| **Postman**            | Testing de APIs y documentación de servicios         |
+| **Playwright/Cypress** | Automatización de tests web y E2E                    |
 
-**100% professional experience:** The same tools, workflows and methodologies you'll find in top-tier technology companies.
+**Experiencia 100% profesional:** Las mismas herramientas, workflows y metodologías que encontrarás en empresas de tecnología de primer nivel.
 
 ---
 
-## Navigation
+## Navegación
 
-- [IQL Methodology](./IQL-methodology.md) - Complete view of Integrated Quality Lifecycle
-- [Mid-Game Testing](./mid-game-testing.md) - Phase 2: Detection and implementation
-- [Late-Game Testing](./late-game-testing.md) - Phase 3: Observation and production
+- [Metodología IQL](./IQL-methodology.md) - Vista completa del Integrated Quality Lifecycle
+- [Mid-Game Testing](./mid-game-testing.md) - Fase 2: Detección e implementación
+- [Late-Game Testing](./late-game-testing.md) - Fase 3: Observación y producción

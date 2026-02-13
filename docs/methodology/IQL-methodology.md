@@ -1,86 +1,87 @@
 # Integrated Quality Lifecycle (IQL)
 
-> **Comprehensive UPEX Methodology that Replaces Traditional STLC**
+> **Idioma:** Español
+> **Metodología UPEX Integral que Reemplaza el STLC Tradicional**
 
 ## Overview
 
-**Does your current testing approach feel fragmented and reactive?**
+**¿Tu enfoque actual de testing se siente fragmentado y reactivo?**
 
-IQL integrates **strategic testing** from inception to continuous operation. It's a **comprehensive and modern methodology** that evolves from traditional STLC towards a **comprehensive and integrated** approach to quality management throughout the software lifecycle.
+IQL integra **testing estratégico** desde la concepción hasta la operación continua. Es una **metodología integral y moderna** que evoluciona del STLC tradicional hacia un enfoque **comprensivo e integrado** de gestión de calidad a lo largo del ciclo de vida del software.
 
 ---
 
-## The Three Phases of IQL
+## Las Tres Fases de IQL
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   EARLY-GAME    │───▶│    MID-GAME     │───▶│   LATE-GAME     │
 │    Testing      │    │     Testing     │    │    Testing      │
 │                 │    │                 │    │                 │
-│  "Let's build   │    │"Does the        │    │"How does it     │
-│  it right from  │    │software meet    │    │behave in the    │
-│  the start"     │    │requirements?"   │    │real world?"     │
+│  "Construyamos  │    │"¿El software    │    │"¿Cómo se        │
+│  bien desde el  │    │cumple los       │    │comporta en el   │
+│  inicio"        │    │requisitos?"     │    │mundo real?"     │
 │                 │    │                 │    │                 │
-│  ► Prevention   │    │  ► Detection    │    │  ► Observation  │
+│  ► Prevención   │    │  ► Detección    │    │  ► Observación  │
 │  ► QA Analyst   │    │  ► QA Automation│    │  ► QA + DevOps  │
 │  ► Steps 1-4    │    │  ► Steps 5-9    │    │  ► Steps 10-15  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-### Early-Game Testing (Phase 1)
+### Early-Game Testing (Fase 1)
 
-- **Key question:** "Let's build it right from the start"
-- **Focus:** Prevention
-- **Main role:** QA Analyst
-- **Activities:**
-  - Requirements Analysis
-  - Risk Assessment
-  - BDD Scenarios
-  - Component Testing
+- **Pregunta clave:** "Construyamos bien desde el inicio"
+- **Enfoque:** Prevención
+- **Rol principal:** QA Analyst
+- **Actividades:**
+  - Análisis de Requisitos
+  - Evaluación de Riesgos
+  - Escenarios BDD
+  - Testing de Componentes
 
-### Mid-Game Testing (Phase 2)
+### Mid-Game Testing (Fase 2)
 
-- **Key question:** "Does the software meet requirements?"
-- **Focus:** Detection
-- **Main role:** QA Automation Engineer
-- **Activities:**
-  - Exploratory Testing
-  - Test Documentation
-  - Test Automation
-  - CI/CD Integration
+- **Pregunta clave:** "¿El software cumple los requisitos?"
+- **Enfoque:** Detección
+- **Rol principal:** QA Automation Engineer
+- **Actividades:**
+  - Testing Exploratorio
+  - Documentación de Tests
+  - Automatización de Tests
+  - Integración CI/CD
 
-### Late-Game Testing (Phase 3)
+### Late-Game Testing (Fase 3)
 
-- **Key question:** "How does it behave in the real world?"
-- **Focus:** Observation
+- **Pregunta clave:** "¿Cómo se comporta en el mundo real?"
+- **Enfoque:** Observación
 - **Roles:** QA + DevOps + SRE
-- **Activities:**
-  - Production Monitoring
+- **Actividades:**
+  - Monitoreo de Producción
   - Canary Releases
   - A/B Testing
   - Chaos Engineering
 
 ---
 
-## Evolution from STLC to IQL
+## Evolución del STLC a IQL
 
-> _"Quality is not a separate phase, but an integral part of development from the beginning."_
+> _"La calidad no es una fase separada, sino una parte integral del desarrollo desde el inicio."_
 
-### Traditional STLC vs IQL
+### STLC Tradicional vs IQL
 
 ```
-TRADITIONAL STLC (Linear)
+STLC TRADICIONAL (Lineal)
 ═══════════════════════════════════════════════════════════════
-Requirements → Design → Code → [STLC] → Deploy
+Requisitos → Diseño → Código → [STLC] → Deploy
 
-❌ STLC Problems:
-  • Testing only at the end of the cycle
-  • Late and costly feedback
-  • Silos between development and testing
-  • Doesn't consider production
+❌ Problemas del STLC:
+  • Testing solo al final del ciclo
+  • Feedback tardío y costoso
+  • Silos entre desarrollo y testing
+  • No considera producción
 
 
-MODERN IQL (Cyclical and Integrated)
+IQL MODERNO (Cíclico e Integrado)
 ═══════════════════════════════════════════════════════════════
             ┌─────────────────────────────┐
             │         IQL CORE            │
@@ -90,309 +91,311 @@ MODERN IQL (Cyclical and Integrated)
             │  └─────┘ └─────┘ └─────┘   │
             └─────────────────────────────┘
 
-✅ IQL Advantages:
-  • Integrated quality from the start
-  • Continuous and early feedback
-  • Native DevOps collaboration
-  • Production monitoring
+✅ Ventajas de IQL:
+  • Calidad integrada desde el inicio
+  • Feedback continuo y temprano
+  • Colaboración DevOps nativa
+  • Monitoreo de producción
 ```
 
-### Performance Comparison: STLC vs IQL
+### Comparación de Rendimiento: STLC vs IQL
 
-| Metric                          | Traditional STLC   | IQL                   | Improvement    |
-| ------------------------------- | ------------------ | --------------------- | -------------- |
-| Defect Detection Time           | At End of Cycle    | Throughout Cycle      | 70% faster     |
-| Feedback Loop                   | Delayed            | Continuous            | Real-time      |
-| Integration                     | Isolated (Silos)   | DevOps Native         | 100% integrated|
-| Automation Coverage             | 20-30%             | 60-80%                | 3x increase    |
+| Métrica                         | STLC Tradicional    | IQL                   | Mejora         |
+| ------------------------------- | ------------------- | --------------------- | -------------- |
+| Tiempo de Detección de Defectos | Al Final del Ciclo  | Durante Todo el Ciclo | 70% más rápido |
+| Ciclo de Feedback               | Tardío              | Continuo              | Tiempo real    |
+| Integración                     | Aislada (Silos)     | DevOps Nativo         | 100% integrado |
+| Cobertura de Automatización     | 20-30%              | 60-80%                | 3x más         |
 
-> _"IQL effectively replaces traditional STLC by merging and becoming an integral part of the SDLC."_
-> — UPEX IQL Methodology
+> _"IQL reemplaza efectivamente el STLC tradicional fusionándose y convirtiéndose en parte integral del SDLC."_
+> — Metodología IQL de UPEX
 
 ---
 
-## 8 Integrated Approaches of IQL
+## 8 Enfoques Integrados de IQL
 
-The **Integrated Quality Lifecycle** integrates 8 complementary approaches that are strategically applied in different phases, creating a system powered by **artificial intelligence**.
+El **Integrated Quality Lifecycle** integra 8 enfoques complementarios que se aplican estratégicamente en diferentes fases, creando un sistema potenciado por **inteligencia artificial**.
 
 ### 1. Shift-Left Testing
 
-- **Description:** Move quality activities earlier in the SDLC
-- **Phase:** Early Game Testing
+- **Descripción:** Mover actividades de calidad más temprano en el SDLC
+- **Fase:** Early Game Testing
 
 ### 2. Shift-Right Testing
 
-- **Description:** Extend quality validation towards production
-- **Phase:** Late Game Testing
+- **Descripción:** Extender la validación de calidad hacia producción
+- **Fase:** Late Game Testing
 
 ### 3. Risk-Based Testing
 
-- **Description:** Prioritize testing based on impact and probability of failure
-- **Phases:** Early Game Testing + Mid Game Testing
+- **Descripción:** Priorizar testing basado en impacto y probabilidad de fallo
+- **Fases:** Early Game Testing + Mid Game Testing
 
 ### 4. Continuous Testing
 
-- **Description:** Automated testing integrated in CI/CD pipelines
-- **Phase:** Mid Game Testing
+- **Descripción:** Testing automatizado integrado en pipelines CI/CD
+- **Fase:** Mid Game Testing
 
 ### 5. Agile Testing
 
-- **Description:** Fast and efficient testing cycles within sprints
-- **Phase:** Mid Game Testing
+- **Descripción:** Ciclos de testing rápidos y eficientes dentro de sprints
+- **Fase:** Mid Game Testing
 
 ### 6. Exploratory Testing
 
-- **Description:** Leverage human intelligence to find unexpected issues
-- **Phase:** Mid Game Testing
+- **Descripción:** Aprovechar la inteligencia humana para encontrar problemas inesperados
+- **Fase:** Mid Game Testing
 
 ### 7. BDD (Behavior-Driven Development)
 
-- **Description:** Collaborative specification using Given-When-Then scenarios
-- **Phase:** Early Game Testing
+- **Descripción:** Especificación colaborativa usando escenarios Given-When-Then
+- **Fase:** Early Game Testing
 
 ### 8. AI-Driven Testing
 
-- **Description:** Use artificial intelligence to improve testing efficiency and coverage
-- **Phases:** Early Game Testing + Mid Game Testing + Late Game Testing
+- **Descripción:** Usar inteligencia artificial para mejorar eficiencia y cobertura de testing
+- **Fases:** Early Game Testing + Mid Game Testing + Late Game Testing
 
 ---
 
-## The Complete Flow: 15 Steps of IQL
+## El Flujo Completo: 15 Steps de IQL
 
-From requirements analysis to production monitoring: **the complete methodology** in a unified view.
+Desde análisis de requisitos hasta monitoreo de producción: **la metodología completa** en una vista unificada.
 
-### Early-Game Testing (Steps 1-4: Prevention)
+### Early-Game Testing (Steps 1-4: Prevención)
 
-| Step | Name                                | Stage          |
-| ---- | ----------------------------------- | -------------- |
-| 1    | Requirements Analysis               | TMLC 1st Stage |
-| 2    | Development and Implementation      | Parallel Work  |
-| 3    | Early Exploratory Testing           | TMLC 2nd Stage |
-| 4    | Risk-Based Prioritization           | TMLC 3rd Stage |
+| Step | Nombre                           | Etapa          |
+| ---- | -------------------------------- | -------------- |
+| 1    | Análisis de Requisitos           | TMLC 1er Stage |
+| 2    | Desarrollo e Implementación      | Trabajo Paralelo |
+| 3    | Testing Exploratorio Temprano    | TMLC 2do Stage |
+| 4    | Priorización Basada en Riesgo    | TMLC 3er Stage |
 
-### Mid-Game Testing (Steps 5-9: Detection)
+### Mid-Game Testing (Steps 5-9: Detección)
 
-| Step | Name                               | Stage          |
-| ---- | ---------------------------------- | -------------- |
-| 5    | Test Case Documentation            | TMLC 4th Stage |
-| 6    | Automation Assessment              | TALC 1st Stage |
-| 7    | TAUS Automation                    | TALC 2nd Stage |
-| 8    | CI Verification                    | TALC 3rd Stage |
-| 9    | Pull Request Review                | TALC 4th Stage |
+| Step | Nombre                            | Etapa          |
+| ---- | --------------------------------- | -------------- |
+| 5    | Documentación de Test Cases       | TMLC 4to Stage |
+| 6    | Assessment de Automatización      | TALC 1er Stage |
+| 7    | Automatización TAUS               | TALC 2do Stage |
+| 8    | Verificación en CI                | TALC 3er Stage |
+| 9    | Revisión de Pull Request          | TALC 4to Stage |
 
-### Late-Game Testing (Steps 10-15: Observation)
+### Late-Game Testing (Steps 10-15: Observación)
 
-| Step | Name                      | Stage               |
-| ---- | ------------------------- | ------------------- |
-| 10   | Continuous Maintenance    | Production Ops      |
-| 11   | Canary Release Monitoring | Shift-Right         |
-| 12   | A/B Testing               | Experimentation     |
-| 13   | Real User Monitoring      | Observability       |
-| 14   | Chaos Engineering         | Resilience          |
-| 15   | Feedback Loop             | Continuous Learning |
+| Step | Nombre                       | Etapa               |
+| ---- | ---------------------------- | ------------------- |
+| 10   | Mantenimiento Continuo       | Production Ops      |
+| 11   | Monitoreo de Canary Releases | Shift-Right         |
+| 12   | A/B Testing                  | Experimentación     |
+| 13   | Real User Monitoring         | Observabilidad      |
+| 14   | Chaos Engineering            | Resiliencia         |
+| 15   | Feedback Loop                | Aprendizaje Continuo |
 
 ---
 
-## The Collaboration Model: Analyst + Automation Engineer
+## El Modelo de Colaboración: Analyst + Automation Engineer
 
-IQL defines a **perfect symbiosis** between two specialized roles that work asynchronously and in parallel.
+IQL define una **simbiosis perfecta** entre dos roles especializados que trabajan de forma asíncrona y en paralelo.
 
-### QA Analyst - The "What" and "Why"
+### QA Analyst - El "Qué" y "Por qué"
 
-**Key Responsibilities:**
+**Responsabilidades Clave:**
 
-- Requirements analysis and risk assessment
-- AI-assisted analysis of requirements and AC
-- Writing acceptance criteria (BDD)
-- Creating strategic testing plans
-- Identifying automation candidates
-- Generating test cases with AI and exploratory testing
+- Análisis de requisitos y evaluación de riesgos
+- Análisis asistido por AI de requisitos y AC
+- Escritura de criterios de aceptación (BDD)
+- Creación de planes de testing estratégicos
+- Identificación de candidatos a automatización
+- Generación de test cases con AI y testing exploratorio
 
-> _"The Analyst acts as 'navigator', using their understanding of the product and user to draw the map (testing plan) and highlight the most important destinations (automation candidates)."_
+> _"El Analyst actúa como 'navegante', usando su comprensión del producto y usuario para trazar el mapa (plan de testing) y resaltar los destinos más importantes (candidatos a automatización)."_
 
-### QA Automation Engineer - The "How" and "Where"
+### QA Automation Engineer - El "Cómo" y "Dónde"
 
-**Key Responsibilities:**
+**Responsabilidades Clave:**
 
-- Designing and building automation frameworks
-- Implementing self-healing tests with AI
-- Writing robust and maintainable scripts
-- Integrating tests in CI/CD pipelines
-- Predictive analysis and suite maintenance
+- Diseño y construcción de frameworks de automatización
+- Implementación de tests auto-reparables con AI
+- Escritura de scripts robustos y mantenibles
+- Integración de tests en pipelines CI/CD
+- Análisis predictivo y mantenimiento de suite
 
-> _"The Engineer acts as 'driver', using their technical expertise to build a fast and reliable vehicle (automation framework) and skillfully navigate to the destinations defined by the analyst."_
+> _"El Engineer actúa como 'conductor', usando su expertise técnico para construir un vehículo rápido y confiable (framework de automatización) y navegar hábilmente hacia los destinos definidos por el analyst."_
 
-### Asynchronous Collaboration Workflow
+### Flujo de Colaboración Asíncrona
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                 │
-│  Phase 1: Analyst Defines the 'WHAT'                           │
-│  ────────────────────────────────                               │
-│  Creates specific acceptance criteria for the development       │
-│  team                                                           │
+│  Fase 1: El Analyst Define el 'QUÉ'                            │
+│  ──────────────────────────────────                             │
+│  Crea criterios de aceptación específicos para el equipo       │
+│  de desarrollo                                                  │
 │                          │                                      │
 │                          ▼                                      │
-│  Phase 2: Analyst Prioritizes the 'WHY'                        │
-│  ──────────────────────────────────────                         │
-│  Identifies priority automation candidates and documents them   │
+│  Fase 2: El Analyst Prioriza el 'POR QUÉ'                      │
+│  ────────────────────────────────────────                       │
+│  Identifica candidatos prioritarios a automatización y         │
+│  los documenta                                                  │
 │                          │                                      │
 │                          ▼                                      │
-│  Phase 3: Engineer Builds the 'HOW'                            │
-│  ─────────────────────────────────────                          │
-│  Implements automation based on analyst's prioritization        │
+│  Fase 3: El Engineer Construye el 'CÓMO'                       │
+│  ───────────────────────────────────────                        │
+│  Implementa automatización basada en la priorización           │
+│  del analyst                                                    │
 │                                                                 │
 │  ═══════════════════════════════════════════════════════════   │
-│  Result: Virtuous Quality Cycle                                │
-│  This workflow creates a "symbiotic relationship" where both   │
-│  roles specialize and scale efficiently.                       │
+│  Resultado: Ciclo Virtuoso de Calidad                          │
+│  Este flujo crea una "relación simbiótica" donde ambos         │
+│  roles se especializan y escalan eficientemente.               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## IQL Operational Workflow in Jira
+## Flujo Operacional de IQL en Jira
 
-Visualize how the IQL methodology is implemented in practice with **the integration of multiple work cycles** operating in coordinated fashion in Jira.
+Visualiza cómo la metodología IQL se implementa en la práctica con **la integración de múltiples ciclos de trabajo** operando de forma coordinada en Jira.
 
-### The Three Main Cycles
+### Los Tres Ciclos Principales
 
-| Cycle   | Name                 | Description                                  |
-| ------- | -------------------- | -------------------------------------------- |
-| **SDC** | Story Delivery Cycle | User Story Management                        |
-| **TDC** | Test Delivery Cycle  | Manual Testing and Automation Collaboration  |
-| **BLC** | Bug Life Cycle       | Defect Management                            |
+| Ciclo   | Nombre                | Descripción                                     |
+| ------- | --------------------- | ----------------------------------------------- |
+| **SDC** | Story Delivery Cycle  | Gestión de User Stories                         |
+| **TDC** | Test Delivery Cycle   | Testing Manual y Colaboración con Automatización |
+| **BLC** | Bug Life Cycle        | Gestión de Defectos                             |
 
 ### Story Delivery Cycle (SDC)
 
-Defines how **User Stories flow** from conception to implementation, integrating QA from initial design.
+Define cómo **fluyen las User Stories** desde la concepción hasta la implementación, integrando QA desde el diseño inicial.
 
-**SDC Phases:**
+**Fases del SDC:**
 
-- **Creation:** BDD and acceptance criteria
-- **Refinement:** Risk and complexity analysis
-- **Development:** Implementation by Devs
-- **Validation:** Testing and QA approval
+- **Creación:** BDD y criterios de aceptación
+- **Refinamiento:** Análisis de riesgo y complejidad
+- **Desarrollo:** Implementación por Devs
+- **Validación:** Testing y aprobación de QA
 
 ### Test Delivery Cycle (TDC)
 
-Defines how **QA Analysts document** critical cases that **QA Automation converts** into automated tests.
+Define cómo **los QA Analysts documentan** casos críticos que **QA Automation convierte** en tests automatizados.
 
-**TDC Phases:**
+**Fases del TDC:**
 
-- **Exploration:** Manual testing and discovery
-- **Documentation:** Risk-prioritized cases
-- **Automation:** Scripts for critical cases
-- **Maintenance:** Monitoring and refinement
+- **Exploración:** Testing manual y descubrimiento
+- **Documentación:** Casos priorizados por riesgo
+- **Automatización:** Scripts para casos críticos
+- **Mantenimiento:** Monitoreo y refinamiento
 
-> **SDC** and **TDC** work in **perfect symbiosis**: while SDC ensures quality from design, TDC optimizes test execution and automation for maximum efficiency.
+> **SDC** y **TDC** trabajan en **simbiosis perfecta**: mientras SDC asegura calidad desde el diseño, TDC optimiza la ejecución y automatización de tests para máxima eficiencia.
 
-### Operational Workflow Diagram
+### Diagrama de Flujo Operacional
 
-**Link to complete diagram:**
+**Link al diagrama completo:**
 `https://jzhxmrtqnbfcmmqxbaoo.supabase.co/storage/v1/object/public/infografia_online/IQL/IQL_WORKFLOW.png`
 
 ---
 
-## Integration with ATLAS Model
+## Integración con el Modelo ATLAS
 
-The **Integrated Quality Lifecycle** is implemented through the **ATLAS Model**, our unique pedagogical framework.
+El **Integrated Quality Lifecycle** se implementa a través del **Modelo ATLAS**, nuestro framework pedagógico único.
 
-### How They Connect
+### Cómo se Conectan
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                                                              │
-│  1  IQL defines WHAT to do                                  │
+│  1  IQL define QUÉ hacer                                    │
+│  ───────────────────────                                     │
+│  Las fases, actividades y objetivos estratégicos de         │
+│  gestión de calidad                                          │
+│                          │                                   │
+│                          ▼                                   │
+│  2  ATLAS define CÓMO aprenderlo                            │
+│  ───────────────────────────────                             │
+│  La estructura pedagógica, herramientas y progresión        │
+│  de competencias                                             │
+│                          │                                   │
+│                          ▼                                   │
+│  3  Resultado: QA Completo                                  │
 │  ─────────────────────────                                   │
-│  The phases, activities and strategic objectives of         │
-│  quality management                                          │
-│                          │                                   │
-│                          ▼                                   │
-│  2  ATLAS defines HOW to learn it                           │
-│  ─────────────────────────────────                           │
-│  The pedagogical structure, tools and competency            │
-│  progression                                                 │
-│                          │                                   │
-│                          ▼                                   │
-│  3  Result: Complete QA                                     │
-│  ────────────────────────────                                │
-│  Professional with comprehensive methodology and solid      │
-│  technical competencies                                      │
+│  Profesional con metodología integral y competencias        │
+│  técnicas sólidas                                            │
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 ### IQL vs ATLAS
 
-| Aspect    | IQL (Real Methodology)                          | ATLAS (Learning Strategy)                                            |
-| --------- | ----------------------------------------------- | -------------------------------------------------------------------- |
-| Purpose   | The professional process you'll use at work     | Simulate ALL roles with AI to practice IQL without depending on anyone |
-| Requirement | Requires team (BA/PO, Devs, QAs)              | Autonomous learning with AI                                          |
+| Aspecto     | IQL (Metodología Real)                          | ATLAS (Estrategia de Aprendizaje)                                     |
+| ----------- | ----------------------------------------------- | --------------------------------------------------------------------- |
+| Propósito   | El proceso profesional que usarás en el trabajo | Simular TODOS los roles con AI para practicar IQL sin depender de nadie |
+| Requisito   | Requiere equipo (BA/PO, Devs, QAs)              | Aprendizaje autónomo con AI                                           |
 
 ---
 
-## The "Amazing Toy Factory" Analogy
+## La Analogía de la "Fábrica de Juguetes Increíble"
 
-To explain IQL simply, let's imagine we're building the most amazing LEGO spaceship for our friends.
+Para explicar IQL de forma simple, imaginemos que estamos construyendo la nave espacial LEGO más increíble para nuestros amigos.
 
-### Step 1: Ana Writes the "Fun Rules"
+### Paso 1: Ana Escribe las "Reglas de Diversión"
 
-Before touching any LEGO piece, Ana takes a notebook and thinks about what will make the spaceship super fun for our friends.
+Antes de tocar cualquier pieza LEGO, Ana toma un cuaderno y piensa qué hará que la nave sea súper divertida para nuestros amigos.
 
-- Rule #1: The ship must have two wings that don't fall off
-- Rule #2: The pilot door must open and close easily
-- Rule #3: It must have a big red button that goes 'Beep-Boop!'
+- Regla #1: La nave debe tener dos alas que no se caigan
+- Regla #2: La puerta del piloto debe abrir y cerrar fácilmente
+- Regla #3: Debe tener un botón rojo grande que haga '¡Bip-Bup!'
 
-### Step 2: Leo Builds his "Verification Robots"
+### Paso 2: Leo Construye sus "Robots Verificadores"
 
-While others build the ship using Ana's rules, Leo builds small LEGO robots to verify each rule automatically.
+Mientras otros construyen la nave usando las reglas de Ana, Leo construye pequeños robots LEGO para verificar cada regla automáticamente.
 
-- Robot 1: Automatically verifies that the ship has exactly two wings
-- Robot 2: Opens and closes the door over and over to ensure it doesn't break
-- Robot 3: Presses the red button to verify it always goes 'Beep-Boop!'
+- Robot 1: Verifica automáticamente que la nave tenga exactamente dos alas
+- Robot 2: Abre y cierra la puerta una y otra vez para asegurar que no se rompa
+- Robot 3: Presiona el botón rojo para verificar que siempre haga '¡Bip-Bup!'
 
-### Step 3: The Big Verification
+### Paso 3: La Gran Verificación
 
-Once the ship is finished, we don't have to verify everything manually. Leo's Verification Robots do their job!
+Una vez que la nave está terminada, ¡no tenemos que verificar todo manualmente. Los Robots Verificadores de Leo hacen su trabajo!
 
-- Zap! Pop! Beep-Boop! In one minute they verify everything on the list
-- If they find a problem, we know exactly what to fix
-- Ana watches our friends play and uses their ideas to write even better rules
+- ¡Zap! ¡Pop! ¡Bip-Bup! En un minuto verifican todo en la lista
+- Si encuentran un problema, sabemos exactamente qué arreglar
+- Ana observa a nuestros amigos jugar y usa sus ideas para escribir reglas aún mejores
 
-### What is the "Amazing Toy Factory Plan"?
+### ¿Qué es el "Plan de la Fábrica de Juguetes Increíble"?
 
-Instead of building the entire spaceship and only verifying it at the end, our plan is much smarter:
+En lugar de construir toda la nave y verificarla solo al final, nuestro plan es mucho más inteligente:
 
-**First** we decide what makes it fun (Ana's rules), **then** we build special robots to verify our work during the process (Leo's robots), and **finally** we watch people play to learn how to make it even better next time.
+**Primero** decidimos qué la hace divertida (las reglas de Ana), **luego** construimos robots especiales para verificar nuestro trabajo durante el proceso (los robots de Leo), y **finalmente** observamos a la gente jugar para aprender cómo hacerla aún mejor la próxima vez.
 
-This way we find problems early, save a lot of time, and always build the most fun toys for everyone.
-
----
-
-## Key Difference: Cycle vs Phase
-
-### ❌ Traditional STLC
-
-Testing as a **separate phase** at the end of development.
-
-- Linear and sequential
-- Reactive (only after developing)
-- Silos between teams
-- Doesn't consider production
-
-### ✅ Modern IQL
-
-Quality as a **continuous cycle** integrated throughout the SDLC.
-
-- Circular and continuous
-- Proactive (from design)
-- DevOps collaboration
-- Includes production monitoring
+De esta manera encontramos problemas temprano, ahorramos mucho tiempo, y siempre construimos los juguetes más divertidos para todos.
 
 ---
 
-## Tools by Phase
+## Diferencia Clave: Ciclo vs Fase
+
+### ❌ STLC Tradicional
+
+Testing como una **fase separada** al final del desarrollo.
+
+- Lineal y secuencial
+- Reactivo (solo después de desarrollar)
+- Silos entre equipos
+- No considera producción
+
+### ✅ IQL Moderno
+
+Calidad como un **ciclo continuo** integrado en todo el SDLC.
+
+- Circular y continuo
+- Proactivo (desde el diseño)
+- Colaboración DevOps
+- Incluye monitoreo de producción
+
+---
+
+## Herramientas por Fase
 
 ### Early-Game Testing
 
@@ -414,16 +417,16 @@ Quality as a **continuous cycle** integrated throughout the SDLC.
 
 ---
 
-## Current Availability Status
+## Estado de Disponibilidad Actual
 
-- ✅ **Early-Game Testing:** Fully available
-- ✅ **Mid-Game Testing:** Fully available
-- 🔄 **Late-Game Testing:** In active development, available during 2026
+- ✅ **Early-Game Testing:** Completamente disponible
+- ✅ **Mid-Game Testing:** Completamente disponible
+- 🔄 **Late-Game Testing:** En desarrollo activo, disponible durante 2026
 
 ---
 
-## Navigation
+## Navegación
 
-- [Early-Game Testing](./early-game-testing.md) - Phase 1: Prevention and early strategy
-- [Mid-Game Testing](./mid-game-testing.md) - Phase 2: Detection and implementation
-- [Late-Game Testing](./late-game-testing.md) - Phase 3: Observation and production
+- [Early-Game Testing](./early-game-testing.md) - Fase 1: Prevención y estrategia temprana
+- [Mid-Game Testing](./mid-game-testing.md) - Fase 2: Detección e implementación
+- [Late-Game Testing](./late-game-testing.md) - Fase 3: Observación y producción

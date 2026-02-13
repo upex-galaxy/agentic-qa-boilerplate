@@ -1,22 +1,23 @@
 # Mid-Game Testing
 
-> **IQL Phase 2** · Continuous Testing · Agile Testing · AI-Driven
+> **Idioma:** Español
+> **Fase IQL 2** · Continuous Testing · Agile Testing · AI-Driven
 
 ## Overview
 
-**"Does the software meet requirements?"**
+**"¿El software cumple los requisitos?"**
 
-**Detection** phase - Focus on detecting defects before release through structured testing.
+Fase de **Detección** - Enfoque en detectar defectos antes del release a través de testing estructurado.
 
-The **second phase of the Integrated Quality Lifecycle** where the **QA Automation Engineer** leads technical implementation. Like in gaming: **consolidate early-game advantage** and prepare for late-game.
+La **segunda fase del Integrated Quality Lifecycle** donde el **QA Automation Engineer** lidera la implementación técnica. Como en gaming: **consolidar la ventaja del early-game** y prepararse para el late-game.
 
 ---
 
-## Mid-Game: Second Phase of IQL
+## Mid-Game: Segunda Fase de IQL
 
-**Mid-Game Testing** is the central phase of the **Integrated Quality Lifecycle** where the testing strategy defined in Early-Game is implemented.
+**Mid-Game Testing** es la fase central del **Integrated Quality Lifecycle** donde se implementa la estrategia de testing definida en Early-Game.
 
-### Position in IQL Timeline
+### Posición en la Línea de Tiempo de IQL
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -25,7 +26,7 @@ The **second phase of the Integrated Quality Lifecycle** where the **QA Automati
 │                                                                 │
 │  ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐│
 │  │  EARLY-GAME     │──▶│   MID-GAME      │──▶│   LATE-GAME     ││
-│  │  Completed      │   │   ✅ CURRENT PHASE│   │   Next        ││
+│  │  Completado     │   │   ✅ FASE ACTUAL │   │   Siguiente     ││
 │  │                 │   │                 │   │                 ││
 │  │  Steps 1-4      │   │   Steps 5-9     │   │   Steps 10-15   ││
 │  │  QA Analyst     │   │   QA Automation │   │   QA + DevOps   ││
@@ -34,219 +35,219 @@ The **second phase of the Integrated Quality Lifecycle** where the **QA Automati
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Mid-Game Characteristics
+### Características del Mid-Game
 
-| Aspect            | Detail                       |
+| Aspecto           | Detalle                      |
 | ----------------- | ---------------------------- |
-| **Steps**         | 5-9 of IQL                   |
-| **Approaches**    | Continuous, Agile, AI-Driven |
-| **Main Role**     | QA Automation Engineer       |
-| **Tools**         | Playwright, Jenkins, CI/CD   |
+| **Steps**         | 5-9 de IQL                   |
+| **Enfoques**      | Continuous, Agile, AI-Driven |
+| **Rol Principal** | QA Automation Engineer       |
+| **Herramientas**  | Playwright, Jenkins, CI/CD   |
 
-> _"⚡ Mid-Game: Implementation and Automation"_
+> _"⚡ Mid-Game: Implementación y Automatización"_
 >
-> Like in MOBAs, **the mid-game is where you consolidate the advantage** obtained in early-game. In IQL, this phase **technically implements the testing strategy** to create a robust continuous defect detection system.
+> Como en los MOBAs, **el mid-game es donde consolidas la ventaja** obtenida en el early-game. En IQL, esta fase **implementa técnicamente la estrategia de testing** para crear un sistema robusto de detección continua de defectos.
 
 ---
 
-## The 5 Steps of Mid-Game Testing
+## Los 5 Steps del Mid-Game Testing
 
-**Mid-Game Testing** is executed through **5 specific steps** corresponding to Steps 5-9 of IQL.
+**Mid-Game Testing** se ejecuta a través de **5 steps específicos** correspondientes a los Steps 5-9 de IQL.
 
-> _"Transition from TMLC (Test Manual Life Cycle) to TALC (Test Automation Life Cycle) with focus on automation and CI/CD."_
+> _"Transición del TMLC (Test Manual Life Cycle) al TALC (Test Automation Life Cycle) con enfoque en automatización y CI/CD."_
 
-### Step 5: Asynchronous Test Case Documentation
+### Step 5: Documentación Asíncrona de Test Cases
 
-**TMLC - Test Manual Life Cycle (4th Stage)**
+**TMLC - Test Manual Life Cycle (4to Stage)**
 
-Create formal 'Test' tickets for each prioritized scripted scenario, without blocking US delivery.
+Crear tickets 'Test' formales para cada escenario con script priorizado, sin bloquear la entrega de la US.
 
-**Key Activities:**
+**Actividades Clave:**
 
-- The status normally starts as 'Draft'
-- QA documents test steps, data and expected results in 'Test' tickets
-- Each ticket is linked to the Epic Test Repository in Jira for centralized management
+- El estado normalmente comienza como 'Draft'
+- QA documenta pasos de test, datos y resultados esperados en tickets 'Test'
+- Cada ticket se vincula al Epic Test Repository en Jira para gestión centralizada
 
-**Expected Result:**
-A healthy backlog of high-value test cases, ready for manual or automated execution.
+**Resultado Esperado:**
+Un backlog saludable de test cases de alto valor, listos para ejecución manual o automatizada.
 
-**Tools:** Jira, Xray, Confluence
-
----
-
-### Step 6: Automation Candidate Test Assessment
-
-**TALC - Test Automation Life Cycle (1st Stage)**
-
-Review newly documented test cases to determine if they should be automated.
-
-**Key Activities:**
-
-- The test moves to 'In Review' status
-- QA Automation inspects each 'Test' ticket to check feasibility
-- If viable, it's marked as 'Candidate'; otherwise, it remains 'Manual'
-- The Automation Backlog is updated accordingly
-
-**Expected Result:**
-Clear differentiation between manual tests and automation candidates.
-
-**Tools:** Jira, Xray, Claude Code
+**Herramientas:** Jira, Xray, Confluence
 
 ---
 
-### Step 7: Candidate Test Case Automation
+### Step 6: Assessment de Tests Candidatos a Automatización
 
-**TALC - Test Automation Life Cycle (2nd Stage) - TAUS Model**
+**TALC - Test Automation Life Cycle (1er Stage)**
 
-Convert candidate tests into automated scripts for CI using the TAUS model.
+Revisar test cases recién documentados para determinar si deben automatizarse.
 
-**Key Activities:**
+**Actividades Clave:**
 
-- Status transitions: Candidate → In Automation
-- A new branch is created, test scripts are implemented
-- Changes are pushed following the TAUS pattern
+- El test pasa a estado 'In Review'
+- QA Automation inspecciona cada ticket 'Test' para verificar factibilidad
+- Si es viable, se marca como 'Candidate'; de lo contrario, permanece como 'Manual'
+- El Automation Backlog se actualiza correspondientemente
 
-**Expected Result:**
-Scripted tests ready for continuous integration.
+**Resultado Esperado:**
+Clara diferenciación entre tests manuales y candidatos a automatización.
 
-**Tools:** GitHub, Playwright, Cypress, Docker
-
----
-
-### Step 8: Automated Test Verification in CI
-
-**TALC - Test Automation Life Cycle (3rd Stage)**
-
-Validate new automated tests in the Continuous Integration pipeline.
-
-**Key Activities:**
-
-- The automated test suite runs in CI (nightly builds or each commit)
-- Confirm tests pass stably (without flakiness)
-- Any failures or script issues are fixed quickly
-
-**Expected Result:**
-Stable automated tests reliably integrated in CI/CD.
-
-**Tools:** GitHub Actions, Docker, Slack
+**Herramientas:** Jira, Xray, Claude Code
 
 ---
 
-### Step 9: Test Code Review (Pull Request)
+### Step 7: Automatización de Test Cases Candidatos
 
-**TALC - Test Automation Life Cycle (4th Stage)**
+**TALC - Test Automation Life Cycle (2do Stage) - Modelo TAUS**
 
-Create a detailed Pull Request for review and approval of new automated tests.
+Convertir tests candidatos en scripts automatizados para CI usando el modelo TAUS.
 
-**Key Activities:**
+**Actividades Clave:**
 
-- Status Transitions: Merge Request → Automated
-- A Pull Request is created detailing the new Repository changes
-- The Pull Request is reviewed and approved by another QA/Dev
-- Merge is performed once approved
+- Transiciones de estado: Candidate → In Automation
+- Se crea una nueva branch, se implementan los scripts de test
+- Los cambios se pushean siguiendo el patrón TAUS
 
-**Expected Result:**
-Pull Request MERGED. Stable automated tests reliably integrated in CI/CD.
+**Resultado Esperado:**
+Tests con scripts listos para integración continua.
 
-**Tools:** GitHub, Visual Studio Code, Cursor
+**Herramientas:** GitHub, Playwright, Cypress, Docker
 
 ---
 
-## Test Automation Pyramid
+### Step 8: Verificación de Tests Automatizados en CI
 
-**Strategic architecture** to organize test automation with **balance between speed, coverage and maintenance**.
+**TALC - Test Automation Life Cycle (3er Stage)**
+
+Validar nuevos tests automatizados en el pipeline de Integración Continua.
+
+**Actividades Clave:**
+
+- La suite de tests automatizados corre en CI (nightly builds o cada commit)
+- Confirmar que los tests pasan de forma estable (sin flakiness)
+- Cualquier fallo o problema de script se corrige rápidamente
+
+**Resultado Esperado:**
+Tests automatizados estables integrados confiablemente en CI/CD.
+
+**Herramientas:** GitHub Actions, Docker, Slack
+
+---
+
+### Step 9: Code Review de Tests (Pull Request)
+
+**TALC - Test Automation Life Cycle (4to Stage)**
+
+Crear un Pull Request detallado para revisión y aprobación de nuevos tests automatizados.
+
+**Actividades Clave:**
+
+- Transiciones de Estado: Merge Request → Automated
+- Se crea un Pull Request detallando los nuevos cambios del Repository
+- El Pull Request es revisado y aprobado por otro QA/Dev
+- El Merge se realiza una vez aprobado
+
+**Resultado Esperado:**
+Pull Request MERGED. Tests automatizados estables integrados confiablemente en CI/CD.
+
+**Herramientas:** GitHub, Visual Studio Code, Cursor
+
+---
+
+## Pirámide de Automatización de Tests
+
+**Arquitectura estratégica** para organizar la automatización de tests con **balance entre velocidad, cobertura y mantenimiento**.
 
 ```
                     ┌─────────────┐
                     │  E2E UI     │  10%
-                    │   Tests     │  Slowest but comprehensive
+                    │   Tests     │  Más lentos pero comprensivos
                     └─────────────┘
                ┌─────────────────────────┐
                │    Integration/Service   │  20%
-               │         Tests            │  Medium speed, good coverage
+               │         Tests            │  Velocidad media, buena cobertura
                └─────────────────────────┘
     ┌─────────────────────────────────────────────────┐
     │                 Unit Tests                       │  70%
-    │          Extremely fast                          │  Developers test individual
-    │                                                  │  functions/components
+    │          Extremadamente rápidos                  │  Devs testean funciones/
+    │                                                  │  componentes individuales
     └─────────────────────────────────────────────────┘
 ```
 
-### Pyramid Layers
+### Capas de la Pirámide
 
 #### E2E UI Tests (10%)
 
-- **Description:** Automate BDD scenarios, simulate full user journeys
-- **Characteristics:** Slowest but comprehensive
-- **Examples:** Login flow, Purchase workflow, User registration
+- **Descripción:** Automatizar escenarios BDD, simular journeys completos de usuario
+- **Características:** Más lentos pero comprensivos
+- **Ejemplos:** Flujo de login, Workflow de compra, Registro de usuario
 
 #### Integration/Service Tests (20%)
 
-- **Description:** Test interactions between components/microservices
-- **Characteristics:** Medium speed, good coverage
-- **Examples:** API integration, Database operations, Service communication
+- **Descripción:** Testear interacciones entre componentes/microservicios
+- **Características:** Velocidad media, buena cobertura
+- **Ejemplos:** Integración de API, Operaciones de base de datos, Comunicación de servicios
 
 #### Unit Tests (70%)
 
-- **Description:** Developers test individual functions/components
-- **Characteristics:** Extremely fast
-- **Examples:** Function validation, Component isolation, Business logic
+- **Descripción:** Developers testean funciones/componentes individuales
+- **Características:** Extremadamente rápidos
+- **Ejemplos:** Validación de funciones, Aislamiento de componentes, Lógica de negocio
 
-### Why the Pyramid Works
+### Por qué Funciona la Pirámide
 
-| Aspect                       | Benefit                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------ |
-| **Optimized Speed**          | 70% unit tests execute in seconds, providing immediate feedback                |
-| **Smart Coverage**           | Each layer covers different aspects: logic, integration and user experience    |
-| **Sustainable Maintenance**  | Fewer E2E tests means less fragility and maintenance effort                    |
+| Aspecto                         | Beneficio                                                                          |
+| ------------------------------- | ---------------------------------------------------------------------------------- |
+| **Velocidad Optimizada**        | 70% unit tests se ejecutan en segundos, proporcionando feedback inmediato          |
+| **Cobertura Inteligente**       | Cada capa cubre diferentes aspectos: lógica, integración y experiencia de usuario  |
+| **Mantenimiento Sostenible**    | Menos tests E2E significa menos fragilidad y esfuerzo de mantenimiento             |
 
 ---
 
-## The 4 Approaches of Mid-Game Testing
+## Los 4 Enfoques del Mid-Game Testing
 
-**Mid-Game Testing** integrates four complementary approaches that work in synergy to create a **robust detection system**.
+**Mid-Game Testing** integra cuatro enfoques complementarios que trabajan en sinergia para crear un **sistema de detección robusto**.
 
 ### Continuous Testing
 
-- **Description:** Automated testing integrated in CI/CD pipelines for immediate feedback on every change.
-- **Benefit:** Instant Feedback
+- **Descripción:** Testing automatizado integrado en pipelines CI/CD para feedback inmediato en cada cambio.
+- **Beneficio:** Feedback Instantáneo
 
 ### Agile Testing
 
-- **Description:** Fast and efficient testing cycles within sprints to accelerate delivery.
-- **Benefit:** Optimized Speed
+- **Descripción:** Ciclos de testing rápidos y eficientes dentro de sprints para acelerar la entrega.
+- **Beneficio:** Velocidad Optimizada
 
 ### Exploratory Testing
 
-- **Description:** Leverage human intelligence to find unexpected issues that automation doesn't detect.
-- **Benefit:** Smart Coverage
+- **Descripción:** Aprovechar la inteligencia humana para encontrar problemas inesperados que la automatización no detecta.
+- **Beneficio:** Cobertura Inteligente
 
 ### AI-Driven Testing
 
-- **Description:** Use artificial intelligence to accelerate and improve testing activities.
-- **Benefit:** Amplified Power
+- **Descripción:** Usar inteligencia artificial para acelerar y mejorar las actividades de testing.
+- **Beneficio:** Poder Amplificado
 
-> _"⚡ Mid-Game: Consolidating the Advantage"_
+> _"⚡ Mid-Game: Consolidando la Ventaja"_
 >
-> These **four integrated approaches** allow the QA Automation Engineer to build a **continuous detection system** that consolidates the strategic advantage obtained in Early-Game and prepares the ground for success in Late-Game.
+> Estos **cuatro enfoques integrados** permiten al QA Automation Engineer construir un **sistema de detección continua** que consolida la ventaja estratégica obtenida en Early-Game y prepara el terreno para el éxito en Late-Game.
 
 ---
 
-## Mid-Game Tools
+## Herramientas del Mid-Game
 
-| Category            | Tools                      |
-| ------------------- | -------------------------- |
-| **Test Management** | Jira, Xray, Confluence     |
-| **Automation**      | Playwright, Cypress        |
-| **CI/CD**           | GitHub Actions, Docker     |
-| **IDE**             | Visual Studio Code, Cursor |
-| **AI Assistance**   | Claude Code                |
-| **Communication**   | Slack                      |
+| Categoría             | Herramientas                 |
+| --------------------- | ---------------------------- |
+| **Test Management**   | Jira, Xray, Confluence       |
+| **Automatización**    | Playwright, Cypress          |
+| **CI/CD**             | GitHub Actions, Docker       |
+| **IDE**               | Visual Studio Code, Cursor   |
+| **Asistencia AI**     | Claude Code                  |
+| **Comunicación**      | Slack                        |
 
 ---
 
-## Navigation
+## Navegación
 
-- [IQL Methodology](./IQL-methodology.md) - Complete view of Integrated Quality Lifecycle
-- [Early-Game Testing](./early-game-testing.md) - Phase 1: Prevention and early strategy
-- [Late-Game Testing](./late-game-testing.md) - Phase 3: Observation and production
+- [Metodología IQL](./IQL-methodology.md) - Vista completa del Integrated Quality Lifecycle
+- [Early-Game Testing](./early-game-testing.md) - Fase 1: Prevención y estrategia temprana
+- [Late-Game Testing](./late-game-testing.md) - Fase 3: Observación y producción

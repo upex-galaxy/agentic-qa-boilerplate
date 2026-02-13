@@ -1,375 +1,420 @@
-# Authentication - Unified Token Strategy
+# Autenticación en API Testing
 
-> How to use ONE SINGLE TOKEN to authenticate to both APIs (Supabase REST and Next.js API Routes).
+> **Idioma:** Español
+> **Nivel:** Intermedio
+> **Audiencia:** QA Engineers que necesitan autenticar requests en sus tests
 
 ---
 
-## Key Concept
+## Overview
 
-The Supabase JWT is **the same token** for everything. Only the transport method changes:
+La mayoría de APIs requieren autenticación para acceder a recursos protegidos. Este documento cubre los patrones más comunes y cómo implementarlos en tus tests.
 
 ```
-+-----------------------------------------------------------------------------+
-|                      ONE TOKEN, TWO WAYS TO USE IT                          |
-+-----------------------------------------------------------------------------+
-|                                                                             |
-|   SUPABASE REST API          |         NEXT.JS API ROUTES                  |
-|   (/rest/v1/*)               |         (/api/*)                            |
-|                              |                                             |
-|   Header:                    |         Cookie:                             |
-|   Authorization: Bearer JWT  |         sb-xxx-auth-token = base64(JWT)     |
-|                              |                                             |
-|   --------------------------------------------------------------------     |
-|                              |                                             |
-|               IT'S THE SAME JWT, ONLY THE TRANSPORT CHANGES                |
-|                                                                             |
-+-----------------------------------------------------------------------------+
+┌─────────────────────────────────────────────────────────────────┐
+│                    FLUJO DE AUTENTICACIÓN                        │
+│                                                                  │
+│   1. Obtener credenciales (login, API key, etc.)                │
+│                          ↓                                       │
+│   2. Incluir credenciales en cada request                       │
+│                          ↓                                       │
+│   3. Servidor valida y responde                                 │
+│                          ↓                                       │
+│   4. Renovar si es necesario (refresh token)                    │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Step 1: Obtain the Token (Login via API)
+## Métodos de Autenticación
 
-### Request
+### 1. API Key
+
+Una clave estática que identifica al cliente:
 
 ```http
-POST {{SUPABASE_URL}}/auth/v1/token?grant_type=password
-# Example: POST https://abcdefghijklmnop.supabase.co/auth/v1/token?grant_type=password
-
-Content-Type: application/json
-apikey: {{SUPABASE_ANON_KEY}}
-# Example: apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-{
-  "email": "{{TEST_USER_EMAIL}}",
-  "password": "{{TEST_USER_PASSWORD}}"
-}
-# Example:
-# {
-#   "email": "test.user@myproject.com",
-#   "password": "TestPassword123!"
-# }
+GET /api/products
+X-API-Key: sk_live_abc123xyz
 ```
 
-### Response
+**Características:**
+- ✅ Simple de implementar
+- ✅ No expira (generalmente)
+- ❌ Si se filtra, acceso permanente
+- ❌ No identifica usuarios individuales
+
+**Uso común:** APIs públicas, servicios de terceros
+
+### 2. Bearer Token (JWT)
+
+Token temporal que contiene información del usuario:
+
+```http
+GET /api/orders
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+**Características:**
+- ✅ Identifica al usuario
+- ✅ Expira automáticamente
+- ✅ Contiene claims (roles, permisos)
+- ❌ Requiere flujo de login
+
+**Uso común:** Aplicaciones web, móviles
+
+### 3. Basic Auth
+
+Usuario y contraseña codificados en base64:
+
+```http
+GET /api/data
+Authorization: Basic dXNlcjpwYXNzd29yZA==
+```
+
+```bash
+# El valor es base64(user:password)
+echo -n "user:password" | base64
+# dXNlcjpwYXNzd29yZA==
+```
+
+**Características:**
+- ✅ Muy simple
+- ❌ Credenciales en cada request
+- ❌ Fácil de decodificar (no es encriptación)
+
+**Uso común:** APIs internas, desarrollo
+
+### 4. OAuth 2.0
+
+Delegación de acceso a terceros:
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│    User     │────▶│   App       │────▶│  Provider   │
+│             │     │  (Client)   │     │ (Google,    │
+│             │◀────│             │◀────│  GitHub)    │
+└─────────────┘     └─────────────┘     └─────────────┘
+     Grant              Token            Validate
+```
+
+**Uso común:** "Login con Google", "Login con GitHub"
+
+### 5. Cookie-Based
+
+Token almacenado en cookie del navegador:
+
+```http
+GET /api/profile
+Cookie: session=abc123; auth_token=eyJhbG...
+```
+
+**Características:**
+- ✅ Automático en browsers
+- ✅ HttpOnly previene XSS
+- ❌ Vulnerable a CSRF
+- ❌ No funciona cross-domain fácilmente
+
+**Uso común:** Aplicaciones web tradicionales
+
+---
+
+## JWT (JSON Web Token)
+
+### Estructura
+
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4ifQ.SflKxwRJ
+└──────────── Header ────────────┘.└────────── Payload ──────────────┘.└── Signature ──┘
+```
+
+### Decodificar (Debug)
+
+```javascript
+// En JavaScript
+const token = 'eyJhbGciOiJIUzI1NiIs...';
+const [header, payload, signature] = token.split('.');
+const decoded = JSON.parse(atob(payload));
+console.log(decoded);
+// { sub: "user-123", email: "user@example.com", exp: 1703123456 }
+```
+
+O usa https://jwt.io para visualizar.
+
+### Claims Comunes
+
+| Claim | Descripción | Ejemplo |
+|-------|-------------|---------|
+| `sub` | Subject (user ID) | `"user-123"` |
+| `email` | Email del usuario | `"user@example.com"` |
+| `exp` | Expiration time | `1703123456` |
+| `iat` | Issued at | `1703119856` |
+| `role` | Rol del usuario | `"admin"` |
+
+### Verificar Expiración
+
+```javascript
+function isTokenExpired(token) {
+  const payload = JSON.parse(atob(token.split('.')[1]));
+  const expiration = payload.exp * 1000; // convertir a ms
+  return Date.now() > expiration;
+}
+```
+
+---
+
+## Flujo de Login Típico
+
+### 1. Login con Credenciales
+
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "securepassword"
+}
+```
+
+### 2. Response con Tokens
 
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzAzMTIzNDU2LCJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InRlc3QudXNlckBtaXByb3llY3RvLmNvbSIsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.xxx",
-  "token_type": "bearer",
-  "expires_in": 3600,
-  "expires_at": 1703123456,
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
   "refresh_token": "abc123...",
+  "expires_in": 3600,
+  "token_type": "bearer",
   "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "test.user@myproject.com",
-    "user_metadata": {
-      "name": "Test User",
-      "role": "customer"
-    }
+    "id": "user-123",
+    "email": "user@example.com"
   }
 }
 ```
 
-**Save:**
-
-- `access_token` --> To use in requests
-- `user.id` --> For filters and validations
-- `refresh_token` --> To renew the token when it expires
-
----
-
-## Step 2: Use the Token in Supabase REST API
-
-### Required Headers
+### 3. Usar el Token
 
 ```http
-GET {{SUPABASE_URL}}/rest/v1/orders?user_id=eq.550e8400-e29b-41d4-a716-446655440000
-# Example: GET https://abcdefghijklmnop.supabase.co/rest/v1/orders?user_id=eq.550e8400-...
-
-apikey: {{SUPABASE_ANON_KEY}}           # <-- ANON KEY (always)
-Authorization: Bearer {{ACCESS_TOKEN}}  # <-- ACCESS TOKEN from login
+GET /api/protected-resource
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
-### cURL Example
-
-```bash
-curl -X GET \
-  '{{SUPABASE_URL}}/rest/v1/orders?user_id=eq.550e8400-e29b-41d4-a716-446655440000' \
-  -H 'apikey: {{SUPABASE_ANON_KEY}}' \
-  -H 'Authorization: Bearer {{ACCESS_TOKEN}}'
-
-# Real example:
-# curl -X GET \
-#   'https://abcdefghijklmnop.supabase.co/rest/v1/orders?user_id=eq.550e8400-...' \
-#   -H 'apikey: eyJhbGciOiJIUzI1NiIs...' \
-#   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIs...'
-```
-
-### JavaScript Example
-
-```javascript
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-const response = await fetch(`${SUPABASE_URL}/rest/v1/orders?user_id=eq.${userId}`, {
-  headers: {
-    apikey: ANON_KEY,
-    Authorization: `Bearer ${accessToken}`,
-  },
-});
-```
-
----
-
-## Step 3: Use the Token in Next.js API Routes
-
-Next.js endpoints (`/api/*`) expect the token in a **cookie**, not in a header.
-
-### Cookie Structure
-
-```
-Name: sb-{{PROJECT_REF}}-auth-token
-# Example: sb-abcdefghijklmnop-auth-token
-
-Value:  base64(JSON with the token)
-```
-
-### JSON Content (before base64)
-
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "abc123...",
-  "expires_at": 1703123456,
-  "expires_in": 3600,
-  "token_type": "bearer",
-  "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "test.user@myproject.com"
-  }
-}
-```
-
-### Example: Create the Cookie Manually
-
-```javascript
-// 1. Build the token object
-const tokenData = {
-  access_token: accessToken,
-  refresh_token: refreshToken,
-  expires_at: Math.floor(Date.now() / 1000) + 3600,
-  expires_in: 3600,
-  token_type: 'bearer',
-  user: {
-    id: userId,
-    email: userEmail,
-  },
-};
-
-// 2. Encode in base64
-const cookieValue = btoa(JSON.stringify(tokenData));
-
-// 3. The cookie name (replace PROJECT_REF with your Supabase project ref)
-const cookieName = 'sb-{{PROJECT_REF}}-auth-token';
-// Example: 'sb-abcdefghijklmnop-auth-token'
-```
-
-### cURL Example with Cookie
-
-```bash
-# First, build the cookie value (base64 of the JSON)
-TOKEN_JSON='{"access_token":"eyJ...","refresh_token":"abc...","expires_at":1703123456,"token_type":"bearer","user":{"id":"550e...","email":"test@..."}}'
-COOKIE_VALUE=$(echo -n "$TOKEN_JSON" | base64)
-
-# Then, make the request
-curl -X GET \
-  'http://localhost:3000/api/notifications/unread' \
-  -H "Cookie: sb-{{PROJECT_REF}}-auth-token=$COOKIE_VALUE"
-
-# Real example:
-# curl -X GET \
-#   'http://localhost:3000/api/notifications/unread' \
-#   -H "Cookie: sb-abcdefghijklmnop-auth-token=$COOKIE_VALUE"
-```
-
----
-
-## Step 4: Use in Postman
-
-### For Supabase REST API
-
-1. In **Headers**, add:
-   - `apikey`: `{{anon_key}}`
-   - `Authorization`: `Bearer {{access_token}}`
-
-2. Use the Login request to obtain and save the token automatically (see [04-testing-postman.md](./04-testing-postman.md))
-
-### For Next.js API Routes
-
-1. In **Headers**, add:
-   - `Cookie`: `sb-{{PROJECT_REF}}-auth-token={{cookie_value}}`
-
-2. Create a Pre-request Script to build the cookie:
-
-```javascript
-// Pre-request Script in Postman
-const tokenData = {
-  access_token: pm.environment.get('access_token'),
-  refresh_token: pm.environment.get('refresh_token'),
-  expires_at: Math.floor(Date.now() / 1000) + 3600,
-  token_type: 'bearer',
-  user: {
-    id: pm.environment.get('user_id'),
-    email: pm.environment.get('user_email'),
-  },
-};
-
-const cookieValue = btoa(JSON.stringify(tokenData));
-pm.environment.set('cookie_value', cookieValue);
-```
-
----
-
-## Step 5: Use in Playwright
-
-### Concept
-
-```
-+-----------------------------------------------------------------------------+
-|                   AUTHENTICATION FLOW IN PLAYWRIGHT                         |
-+-----------------------------------------------------------------------------+
-|                                                                             |
-|   1. Login via API Request (request fixture)                               |
-|      +-- Obtain access_token, refresh_token, user_id                       |
-|                                                                             |
-|   2. Inject Cookie in Browser Context                                      |
-|      +-- page.context().addCookies([...])                                  |
-|                                                                             |
-|   3. Now you can:                                                           |
-|      |-- Navigate in UI (cookies go automatically)                         |
-|      |-- Make requests to /rest/v1/* (with Authorization header)           |
-|      +-- Make requests to /api/* (cookies go automatically)                |
-|                                                                             |
-+-----------------------------------------------------------------------------+
-```
-
-### Steps in Code
-
-```typescript
-// Configuration
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const PROJECT_REF = SUPABASE_URL.split('//')[1].split('.')[0];
-// Example: 'abcdefghijklmnop' from 'https://abcdefghijklmnop.supabase.co'
-
-// 1. Login via API
-const loginResponse = await request.post(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-  headers: { apikey: ANON_KEY },
-  data: { email, password },
-});
-const { access_token, refresh_token, user } = await loginResponse.json();
-
-// 2. Build cookie
-const cookieData = {
-  access_token,
-  refresh_token,
-  expires_at: Math.floor(Date.now() / 1000) + 3600,
-  token_type: 'bearer',
-  user: { id: user.id, email: user.email },
-};
-const cookieValue = Buffer.from(JSON.stringify(cookieData)).toString('base64');
-
-// 3. Inject in browser
-await page.context().addCookies([
-  {
-    name: `sb-${PROJECT_REF}-auth-token`,
-    value: cookieValue,
-    domain: 'localhost',
-    path: '/',
-  },
-]);
-
-// 4. Now the browser is authenticated!
-await page.goto('/dashboard'); // You're already logged in, without going through /login
-
-// 5. For API requests in the same test:
-//    - Supabase REST: use access_token in header
-//    - Next.js API: cookies are already there, they go automatically via page.request
-```
-
----
-
-## Summary Table
-
-| API                              | Auth Method | How to Send                              |
-| -------------------------------- | ----------- | ---------------------------------------- |
-| **Supabase REST** (`/rest/v1/*`) | Header      | `Authorization: Bearer <access_token>`   |
-| **Next.js API** (`/api/*`)       | Cookie      | `sb-{{PROJECT_REF}}-auth-token=<base64>` |
-| **Browser (UI)**                 | Cookie      | Same cookie, sent automatically          |
-
----
-
-## Test Users (Example)
-
-| Role         | Email                  | Password                  |
-| ------------ | ---------------------- | ------------------------- |
-| **Customer** | `{{TEST_USER_EMAIL}}`  | `{{TEST_USER_PASSWORD}}`  |
-| **Admin**    | `{{TEST_ADMIN_EMAIL}}` | `{{TEST_ADMIN_PASSWORD}}` |
-
-Example:
-
-| Role         | Email                          | Password       |
-| ------------ | ------------------------------ | -------------- |
-| **Customer** | `test.customer@myproject.com` | `Customer123!` |
-| **Admin**    | `test.admin@myproject.com`    | `Admin123!`    |
-
----
-
-## Refresh Token (Renew Session)
-
-When the `access_token` expires (1 hour by default), use the `refresh_token`:
+### 4. Renovar Cuando Expira
 
 ```http
-POST {{SUPABASE_URL}}/auth/v1/token?grant_type=refresh_token
-# Example: POST https://abcdefghijklmnop.supabase.co/auth/v1/token?grant_type=refresh_token
-
+POST /auth/refresh
 Content-Type: application/json
-apikey: {{SUPABASE_ANON_KEY}}
 
 {
   "refresh_token": "abc123..."
 }
 ```
 
-Response: New `access_token` and `refresh_token`.
-
 ---
 
-## Verify Token (Debug)
+## Implementación en Tests
 
-To see what a JWT contains, decode it at https://jwt.io or:
+### Playwright (TypeScript)
 
-```javascript
-// Decode JWT payload (without verifying signature)
-const [header, payload, signature] = accessToken.split('.');
-const decoded = JSON.parse(atob(payload));
-console.log(decoded);
-// { sub: "user-id", email: "...", exp: 1703123456, ... }
+```typescript
+import { test, expect } from '@playwright/test';
+
+// Variables de entorno
+const API_URL = process.env.API_BASE_URL!;
+const TEST_EMAIL = process.env.TEST_USER_EMAIL!;
+const TEST_PASSWORD = process.env.TEST_USER_PASSWORD!;
+
+// Helper para login
+async function getAuthToken(request: any): Promise<string> {
+  const response = await request.post(`${API_URL}/auth/login`, {
+    data: {
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
+    },
+  });
+
+  const data = await response.json();
+  return data.access_token;
+}
+
+test('authenticated request', async ({ request }) => {
+  // 1. Obtener token
+  const token = await getAuthToken(request);
+
+  // 2. Hacer request autenticado
+  const response = await request.get(`${API_URL}/api/orders`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  expect(response.ok()).toBeTruthy();
+});
 ```
 
-**Important JWT fields:**
+### Fixture Reutilizable
 
-- `sub`: User ID
-- `email`: User email
-- `exp`: Expiration timestamp
-- `role`: Always "authenticated" for logged in users
-- `user_metadata`: Additional user data
+```typescript
+// fixtures/auth.ts
+import { test as base } from '@playwright/test';
+
+type AuthFixtures = {
+  authToken: string;
+  authenticatedRequest: (url: string, options?: object) => Promise<any>;
+};
+
+export const test = base.extend<AuthFixtures>({
+  authToken: async ({ request }, use) => {
+    const response = await request.post(`${API_URL}/auth/login`, {
+      data: { email: TEST_EMAIL, password: TEST_PASSWORD },
+    });
+    const { access_token } = await response.json();
+    await use(access_token);
+  },
+
+  authenticatedRequest: async ({ request, authToken }, use) => {
+    const makeRequest = async (url: string, options: any = {}) => {
+      return request.fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+    };
+    await use(makeRequest);
+  },
+});
+
+// Uso en test
+test('get my orders', async ({ authenticatedRequest }) => {
+  const response = await authenticatedRequest(`${API_URL}/api/orders`);
+  expect(response.ok()).toBeTruthy();
+});
+```
+
+### Postman
+
+**Variables de entorno:**
+```
+access_token: (vacío inicialmente)
+test_email: user@example.com
+test_password: securepassword
+```
+
+**Request de Login - Tests:**
+```javascript
+pm.test('Login successful', function () {
+  pm.response.to.have.status(200);
+  const response = pm.response.json();
+  pm.environment.set('access_token', response.access_token);
+});
+```
+
+**Requests autenticados - Headers:**
+```
+Authorization: Bearer {{access_token}}
+```
 
 ---
 
-## Next Step
+## Testing de Autenticación
 
-- For manual testing with UI: [03-testing-devtools.md](./03-testing-devtools.md)
-- For testing with Postman: [04-testing-postman.md](./04-testing-postman.md)
-- For automated testing: [06-testing-playwright.md](./06-testing-playwright.md)
+### Casos a Probar
+
+| Escenario | Expected |
+|-----------|----------|
+| Sin token | 401 Unauthorized |
+| Token inválido | 401 Unauthorized |
+| Token expirado | 401 Unauthorized |
+| Token de otro usuario | 403 Forbidden o datos vacíos |
+| Token válido | 200 OK + datos |
+| Refresh con token inválido | 401 Unauthorized |
+| Refresh exitoso | Nuevo access_token |
+
+### Ejemplo de Tests
+
+```typescript
+test.describe('Authentication', () => {
+  test('rejects request without token', async ({ request }) => {
+    const response = await request.get(`${API_URL}/api/orders`);
+    expect(response.status()).toBe(401);
+  });
+
+  test('rejects invalid token', async ({ request }) => {
+    const response = await request.get(`${API_URL}/api/orders`, {
+      headers: { Authorization: 'Bearer invalid-token' },
+    });
+    expect(response.status()).toBe(401);
+  });
+
+  test('accepts valid token', async ({ request }) => {
+    const token = await getAuthToken(request);
+    const response = await request.get(`${API_URL}/api/orders`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(response.ok()).toBeTruthy();
+  });
+});
+```
+
+---
+
+## Seguridad en Tests
+
+### Variables de Entorno
+
+```bash
+# .env (nunca commitear)
+TEST_USER_EMAIL=qa@example.com
+TEST_USER_PASSWORD=SecureTestPassword123!
+API_KEY=sk_test_abc123
+```
+
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  use: {
+    baseURL: process.env.API_BASE_URL,
+  },
+});
+```
+
+### Usuarios de Test
+
+Crea usuarios específicos para testing:
+
+| Usuario | Propósito | Permisos |
+|---------|-----------|----------|
+| `qa.customer@test` | Tests de cliente | Lectura/escritura propios datos |
+| `qa.admin@test` | Tests de admin | Todos los permisos |
+| `qa.readonly@test` | Tests de lectura | Solo lectura |
+
+### No Hardcodear Credenciales
+
+```typescript
+// ❌ Malo
+const token = 'eyJhbGciOiJIUzI1NiIs...';
+
+// ✅ Bueno
+const token = process.env.TEST_AUTH_TOKEN;
+// O mejor, obtener dinámicamente con login
+```
+
+---
+
+## Próximos Pasos
+
+### Genéricos
+- [fundamentals.md](./fundamentals.md) - Conceptos básicos de API testing
+- [contract-testing.md](./contract-testing.md) - Validación de contratos
+
+### Específicos por Stack
+- [../../architectures/supabase-nextjs/auth-tokens.md](../../architectures/supabase-nextjs/auth-tokens.md) - Tokens en Supabase
+
+---
+
+## Referencias
+
+- [JWT.io](https://jwt.io/)
+- [OAuth 2.0 Simplified](https://oauth.net/2/)
+- [MDN - HTTP Authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication)

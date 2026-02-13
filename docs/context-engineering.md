@@ -1,487 +1,250 @@
-# BIG PICTURE - Complete Repository Architecture
+# Context Engineering Strategy
 
-## Complete Visual Structure
+> **Purpose**: Explain the context engineering strategy for AI-driven test automation.
+> **Audience**: Humans learning the system + AI when needing to understand "why".
+> **Related**: `CLAUDE.md` contains the operational context loaded each session.
+
+---
+
+## 1. What is Context Engineering?
+
+**Context Engineering** is the practice of structuring information so AI assistants can work effectively on a codebase. Instead of the AI reading everything (expensive, slow), we provide curated context based on the task.
+
+### Core Principles
+
+| Principle | Description |
+|-----------|-------------|
+| **Token Efficiency** | Load only what's needed for the current task |
+| **Progressive Loading** | Start with summary, load details on demand |
+| **Context Relevance** | Different tasks need different context |
+| **Single Source of Truth** | One place for each type of information |
+
+---
+
+## 2. Repository Philosophy
+
+This repository separates concerns into distinct directories, each with a specific purpose:
 
 ```
 ai-driven-test-automation-boilerplate/
 │
-├── .context/                              For: Context engineering documentation (AI reads this)
-│   │
-│   ├── README.md                          For: Master index, entry point
-│   │
-│   ├── idea/                              For: PHASE 1 - Business constitution
-│   │   ├── README.md                      For: Explain Phase 1
-│   │   ├── business-model.md              For: Business Model Canvas (9 blocks)
-│   │   └── domain-glossary.md             For: Domain vocabulary and terms
-│   │
-│   ├── PRD/                               For: PHASE 2 - Product Requirements (business vision)
-│   │   ├── README.md                      For: Explain what PRD is
-│   │   ├── executive-summary.md           For: Problem statement + KPIs + target users
-│   │   ├── user-personas.md               For: 2-3 detailed user profiles
-│   │   ├── feature-inventory.md           For: Feature catalog
-│   │   └── user-journeys.md               For: User flows (happy path + edge cases)
-│   │
-│   ├── SRS/                               For: PHASE 2-3 - Software Requirements (technical vision)
-│   │   ├── README.md                      For: Explain what SRS is
-│   │   ├── functional-specs.md            For: Functional requirements (FRs)
-│   │   ├── non-functional-specs.md        For: Performance, security, scalability
-│   │   ├── architecture-specs.md          For: C4 diagrams, ERD, tech stack
-│   │   ├── api-contracts.md               For: API documentation
-│   │   └── infrastructure.md              For: CI/CD, deployment, environments
-│   │
-│   ├── PBI/                               For: PHASE 4 - Product Backlog Items
-│   │   └── README.md                      For: Backlog structure explanation
-│   │
-│   ├── business-data-map.md               For: Generated system flow documentation
-│   ├── api-architecture.md                For: Generated API documentation
-│   ├── project-test-guide.md              For: Generated testing guide
-│   │
-│   └── guidelines/                        For: Reference material for AI
-│       ├── README.md                      For: Guidelines overview
-│       │
-│       ├── TAE/                           For: Test Automation Engineering
-│       │   ├── README.md                  For: TAE overview
-│       │   ├── KATA-AI-GUIDE.md           For: AI entry point for KATA
-│       │   ├── kata-architecture.md       For: KATA framework architecture
-│       │   ├── automation-standards.md    For: Test automation coding standards
-│       │   ├── openapi-integration.md         For: API testing setup
-│       │   ├── test-data-management.md    For: Test data strategies
-│       │   ├── data-testid-usage.md       For: data-testid conventions
-│       │   ├── ci-cd-integration.md       For: CI/CD pipeline integration
-│       │   └── tms-integration.md         For: Test Management System integration
-│       │
-│       ├── QA/                            For: Quality Assurance
-│       │   ├── README.md                  For: QA overview
-│       │   ├── exploratory-testing.md     For: Exploratory testing guidelines
-│       │   ├── spec-driven-testing.md     For: Specification-based testing
-│       │   └── jira-test-management.md    For: Jira/Xray test management
-│       │
-│       └── MCP/                           For: MCP Server guides
-│           ├── README.md                  For: MCP overview
-│           ├── atlassian.md               For: Jira/Confluence integration
-│           ├── context7.md                For: Research and documentation
-│           ├── dbhub.md                   For: Database connection
-│           ├── openapi.md                 For: API endpoints context
-│           ├── playwright.md              For: Playwright MCP (UI testing)
-│           ├── postman.md                 For: Postman MCP (API testing)
-│           └── tavily.md                  For: Web research
+├── .context/       → Documentation THAT the AI reads (context)
+├── .prompts/       → Instructions FOR the AI to execute tasks
+├── docs/           → Documentation for humans
+├── tests/          → KATA framework implementation
+└── CLAUDE.md       → Project memory (loaded every session)
+```
+
+### Why This Separation?
+
+| Directory | Contains | When Loaded |
+|-----------|----------|-------------|
+| `.context/` | Facts about the system (what exists, how it works) | When AI needs to understand the system |
+| `.prompts/` | Task instructions (what to do, step by step) | When AI needs to perform a specific task |
+| `docs/` | Learning material for humans | When humans need to learn |
+| `CLAUDE.md` | Operational rules + project state | Every session automatically |
+
+---
+
+## 3. Directory Structure
+
+### .context/ - AI Context
+
+```
+.context/
+├── guidelines/           → Rules and patterns for development
+│   ├── TAE/             → Test Automation Engineering (KATA framework)
+│   ├── QA/              → Manual testing guidelines
+│   └── MCP/             → MCP integration guides
 │
-├── .prompts/                              For: AI prompts to generate documentation
-│   │
-│   ├── README.md                          For: Instructions on using prompts
-│   │
-│   ├── discovery/                         For: PROJECT DISCOVERY (one-time setup)
-│   │   ├── README.md                      For: Discovery overview
-│   │   │
-│   │   ├── phase-1-constitution/          For: Project onboarding
-│   │   │   ├── project-connection.md      For: Connect to repos, tools, envs
-│   │   │   ├── project-assessment.md      For: Evaluate project maturity
-│   │   │   ├── business-model-discovery.md For: Understand business context
-│   │   │   └── domain-glossary.md         For: Build domain vocabulary
-│   │   │
-│   │   ├── phase-2-architecture/          For: PRD + SRS discovery
-│   │   │   ├── prd-executive-summary.md   For: Product overview prompt
-│   │   │   ├── prd-user-personas.md       For: User personas prompt
-│   │   │   ├── prd-user-journeys.md       For: User journeys prompt
-│   │   │   ├── prd-feature-inventory.md   For: Feature catalog prompt
-│   │   │   ├── srs-architecture-specs.md  For: Architecture + C4 prompt
-│   │   │   ├── srs-api-contracts.md       For: API spec prompt
-│   │   │   ├── srs-functional-specs.md    For: Functional requirements prompt
-│   │   │   └── srs-non-functional-specs.md For: NFRs prompt
-│   │   │
-│   │   ├── phase-3-infrastructure/        For: Technical infrastructure
-│   │   │   ├── backend-discovery.md       For: Backend stack analysis
-│   │   │   ├── frontend-discovery.md      For: Frontend stack analysis
-│   │   │   └── infrastructure-mapping.md  For: CI/CD, deployment mapping
-│   │   │
-│   │   └── phase-4-specification/         For: Backlog integration
-│   │       ├── pbi-backlog-mapping.md     For: Map backlog location
-│   │       └── pbi-story-template.md      For: Story templates
-│   │
-│   ├── context-generators/                For: CONTEXT FILE GENERATORS
-│   │   ├── README.md                      For: How to use generators
-│   │   ├── business-data-map.md           For: Generate business-data-map.md
-│   │   ├── api-architecture.md            For: Generate api-architecture.md
-│   │   └── project-test-guide.md          For: Generate project-test-guide.md
-│   │
-│   ├── stage-1-shift-left/                For: SHIFT-LEFT TESTING (per story)
-│   │   ├── README.md                      For: Stage overview
-│   │   ├── feature-test-plan.md           For: Feature test planning
-│   │   └── story-test-cases.md            For: Story test case design
-│   │
-│   ├── stage-2-exploratory/               For: EXPLORATORY TESTING (per story)
-│   │   ├── README.md                      For: Stage overview
-│   │   ├── ui-exploration.md              For: UI exploratory testing (Playwright MCP)
-│   │   ├── api-exploration.md             For: API exploratory testing (Postman MCP)
-│   │   ├── database-exploration.md        For: DB exploratory testing (DBHub MCP)
-│   │   ├── smoke-test.md                  For: Quick deployment validation
-│   │   └── bug-report.md                  For: Defect documentation
-│   │
-│   ├── stage-3-documentation/             For: TEST DOCUMENTATION (per story)
-│   │   ├── README.md                      For: Stage overview
-│   │   ├── test-analysis.md               For: Test coverage analysis
-│   │   ├── test-documentation.md          For: Document tests in TMS
-│   │   └── test-prioritization.md         For: Prioritize for automation
-│   │
-│   ├── stage-4-automation/                For: TEST AUTOMATION (per story)
-│   │   ├── README.md                      For: Stage overview
-│   │   ├── automation-planning.md         For: Plan automation approach
-│   │   ├── automation-e2e.md              For: Implement E2E tests
-│   │   ├── automation-integration.md      For: Implement integration tests
-│   │   └── code-review.md                 For: Review automation code
-│   │
-│   ├── stage-5-shift-right/               For: SHIFT-RIGHT / OPERATIONS
-│   │   ├── README.md                      For: Stage overview
-│   │   ├── ci-cd-integration.md           For: Pipeline integration
-│   │   ├── monitoring-setup.md            For: Monitoring configuration
-│   │   ├── smoke-tests.md                 For: Production smoke tests
-│   │   └── incident-response.md           For: Incident handling
-│   │
-│   ├── utilities/                         For: UTILITY PROMPTS
-│   │   ├── README.md                      For: Utilities overview
-│   │   ├── kata-framework-setup.md        For: KATA framework setup
-│   │   ├── framework-doc-setup.md         For: Generate README + CLAUDE.md
-│   │   ├── git-flow.md                    For: Git workflow assistance
-│   │   └── git-conflict-fix.md            For: Git conflict resolution
-│   │
-│   └── us-qa-workflow.md                  For: Complete QA workflow orchestrator
+├── PRD/                 → Product Requirements (generated)
+├── SRS/                 → Software Requirements (generated)
+├── idea/                → Business context (generated)
+├── PBI/                 → Backlog items (generated)
 │
-├── docs/                                  For: Human learning documentation
-│   ├── README.md                          For: Documentation index
-│   │
-│   ├── mcp/                               For: MCP setup guides
-│   │   ├── README.md                      For: MCP general guide
-│   │   ├── builder-strategy.md            For: Token optimization strategy
-│   │   ├── claude-code.md                 For: Claude Code configuration
-│   │   ├── gemini-cli.md                  For: Gemini CLI configuration
-│   │   ├── copilot-cli.md                 For: GitHub Copilot CLI
-│   │   └── vscode.md                      For: VS Code integration
-│   │
-│   ├── testing/                           For: Testing guides
-│   │   ├── api-guide/                     For: API testing documentation
-│   │   ├── database-guide/                For: Database testing documentation
-│   │   └── test-architecture/             For: KATA architecture documentation
-│   │
-│   └── workflows/                         For: Workflow guides
-│       ├── git-flow-guide.md              For: Git workflow documentation
-│       ├── environments.md                For: Environment configuration
-│       └── ...
+├── business-data-map.md    → System flows (generated)
+├── api-architecture.md     → API documentation (generated)
+└── project-test-guide.md   → Testing guide (generated)
+```
+
+**Key Files (Fixed Names)**:
+- `guidelines/TAE/kata-ai-index.md` - Entry point for test automation
+- `guidelines/MCP/README.md` - MCP decision tree
+
+### .prompts/ - AI Operations Center
+
+```
+.prompts/
+├── discovery/           → One-time project setup (phases 1-4)
+│   ├── phase-1-constitution/
+│   ├── phase-2-architecture/
+│   ├── phase-3-infrastructure/
+│   └── phase-4-specification/
 │
-├── tests/                                 For: KATA Framework implementation
-│   ├── components/                        For: KATA Components
-│   │   ├── TestContext.ts                 For: Layer 1 - Base utilities
-│   │   ├── TestFixture.ts                 For: Layer 4 - Unified fixture
-│   │   ├── ApiFixture.ts                  For: Layer 4 - API container
-│   │   ├── UiFixture.ts                   For: Layer 4 - UI container
-│   │   ├── api/                           For: API components (Layer 2-3)
-│   │   ├── ui/                            For: UI components (Layer 2-3)
-│   │   └── preconditions/                 For: Reusable setup flows
-│   │
-│   ├── e2e/                               For: E2E tests (browser + API)
-│   ├── integration/                       For: Integration tests (API only)
-│   ├── data/                              For: Test data (fixtures, uploads)
-│   └── utils/                             For: Decorators, reporters, TMS sync
+├── stage-1-shift-left/  → Test planning (per story)
+├── stage-2-exploratory/ → Manual testing (per story)
+├── stage-3-documentation/ → TMS documentation (per story)
+├── stage-4-automation/  → Test automation (per story)
+├── stage-5-regression/  → Regression testing (per release)
 │
-├── CLAUDE.md                              For: AI context memory
-├── README.md                              For: Project documentation
-└── playwright.config.ts                   For: Playwright configuration
+├── utilities/           → Helpers + context generators
+└── us-qa-workflow.md    → QA workflow orchestrator
+```
+
+**Key Files (Fixed Names)**:
+- `us-qa-workflow.md` - Orchestrates the entire QA workflow
+- `utilities/context-engineering-setup.md` - Generates README.md + CLAUDE.md
+
+### docs/ - Human Documentation
+
+```
+docs/
+├── architectures/       → Target application architecture
+├── methodology/         → Testing methodology (IQL, KATA phases)
+├── setup/               → Setup guides (MCP, tools)
+├── testing/             → Testing guides (API, DB, automation)
+├── workflows/           → Workflow guides (git, environments)
+└── context-engineering.md → This file
+```
+
+### tests/ - KATA Implementation
+
+```
+tests/
+├── components/          → KATA components (Layers 1-4)
+│   ├── TestContext.ts   → Layer 1: Config, Faker, utilities
+│   ├── api/             → Layers 2-3: ApiBase + domain APIs
+│   ├── ui/              → Layers 2-3: UiBase + domain pages
+│   ├── flows/           → Reusable ATC chains
+│   └── TestFixture.ts   → Layer 4: Dependency injection
+│
+├── e2e/                 → E2E tests (UI + API)
+├── integration/         → Integration tests (API only)
+├── data/                → Test data (fixtures, uploads)
+└── utils/               → Decorators, reporters
 ```
 
 ---
 
-## COMPLETE WORKFLOW
+## 4. Key Files (Stable Names)
 
-### **DISCOVERY PHASES** (One-time setup for existing projects)
+These files have stable names and locations. Reference them confidently:
 
-#### Phase 1: Constitution (Project Onboarding)
+| File | Purpose |
+|------|---------|
+| `CLAUDE.md` | Project memory, loaded every session |
+| `.context/guidelines/TAE/kata-ai-index.md` | Entry point for writing tests |
+| `.context/guidelines/MCP/README.md` | MCP decision tree |
+| `.prompts/us-qa-workflow.md` | QA workflow orchestrator |
+| `.prompts/utilities/context-engineering-setup.md` | Generate project documentation |
 
-```
-Input: Access to existing project
-Use: .prompts/discovery/phase-1-constitution/
-Output: .context/idea/ (business-model.md, domain-glossary.md)
-Who: QA Lead, TAE Lead, anyone onboarding
-```
+---
 
-#### Phase 2: Architecture (PRD + SRS Discovery)
+## 5. Workflow Overview
 
-```
-Input: .context/idea/ + project codebase
-Use: .prompts/discovery/phase-2-architecture/
-Output:
-  - .context/PRD/ (executive-summary, user-personas, feature-inventory, user-journeys)
-  - .context/SRS/ (functional-specs, non-functional-specs, architecture-specs, api-contracts)
-Who: QA Analyst, Solution Architect
-```
-
-#### Phase 3: Infrastructure (Technical Discovery)
+### One-Time Setup (Discovery)
 
 ```
-Input: .context/PRD/ + .context/SRS/ + project codebase
-Use: .prompts/discovery/phase-3-infrastructure/
-Output: .context/SRS/infrastructure.md
-Who: TAE, DevOps
+Phase 1: Constitution    → Understand the business
+Phase 2: Architecture    → Document PRD + SRS
+Phase 3: Infrastructure  → Map technical stack
+Phase 4: Specification   → Connect to backlog
 ```
 
-#### Phase 4: Specification (Backlog Mapping)
+**Output**: Populated `.context/` directories
+
+### Context Generators
+
+After discovery, generate operational context:
 
 ```
-Input: Project backlog (Jira, GitHub Issues, etc.)
-Use: .prompts/discovery/phase-4-specification/
-Output: .context/PBI/
-Who: QA Lead, Product Owner
+.prompts/utilities/business-data-map.md    → .context/business-data-map.md
+.prompts/utilities/api-architecture.md     → .context/api-architecture.md
+.prompts/utilities/project-test-guide.md   → .context/project-test-guide.md
 ```
 
-### **CONTEXT GENERATORS** (Run after Discovery)
+### QA Stages (Per User Story)
 
 ```
-Input: Discovery outputs + project codebase
-Use: .prompts/context-generators/
-Output:
-  - .context/business-data-map.md (system flows)
-  - .context/api-architecture.md (API documentation)
-  - .context/project-test-guide.md (testing guide)
-Who: QA Lead, TAE Lead
+Stage 1: Shift-Left     → Plan tests BEFORE development
+Stage 2: Exploratory    → Manual validation BEFORE automation
+Stage 3: Documentation  → Document tests in TMS
+Stage 4: Automation     → Write automated tests
+Stage 5: Regression     → Execute and report
 ```
 
 ---
 
-### **QA STAGES** (Iterative - per user story/sprint)
+## 6. Progressive Loading Strategy
 
-#### Stage 1: Shift-Left Testing (QA)
+### By Task Type
 
-```
-Input: User Story (from backlog)
-Use: .prompts/stage-1-shift-left/
-Output: Feature test plan + story test cases
-Who: QA Engineer, Test Lead
-Purpose: Plan tests BEFORE implementation
-```
+| Task | Load First | Load If Needed |
+|------|------------|----------------|
+| **Write E2E Test** | `kata-ai-index.md` | `e2e-testing-patterns.md` |
+| **Write API Test** | `kata-ai-index.md` | `api-testing-patterns.md` |
+| **Exploratory Testing** | `project-test-guide.md` | MCP guides |
+| **Understand System** | `business-data-map.md` | `PRD/*`, `SRS/*` |
+| **Use MCP** | `MCP/README.md` | Specific MCP guide |
 
-#### Stage 2: Exploratory Testing (QA)
+### By Role
 
-```
-Input: Deployed feature (staging environment)
-Use: .prompts/stage-2-exploratory/
-Output: Exploration findings + bug reports
-Who: QA Engineer
-Purpose: Manual validation before automation
-
-MCPs Used:
-- ui-exploration.md → Playwright MCP
-- api-exploration.md → Postman MCP, OpenAPI MCP
-- database-exploration.md → DBHub MCP
-```
-
-#### Stage 3: Test Documentation (QA)
-
-```
-Input: Exploratory findings
-Use: .prompts/stage-3-documentation/
-Output: Test cases documented in TMS (Jira/Xray)
-Who: QA Engineer
-Purpose: Document what to test and why
-```
-
-#### Stage 4: Test Automation (TAE)
-
-```
-Input: Documented test cases
-Use: .prompts/stage-4-automation/
-Output: Automated E2E + Integration tests
-Who: QA Automation Engineer, SDET
-Purpose: Automate validated scenarios
-
-KATA Framework Architecture:
-- Layer 1: TestContext (utilities, faker)
-- Layer 2: Base classes (ApiBase, UiBase)
-- Layer 3: Domain components (with ATCs)
-- Layer 4: Fixtures (dependency injection)
-```
-
-#### Stage 5: Shift-Right Testing (TAE/DevOps)
-
-```
-Input: Automated tests + production environment
-Use: .prompts/stage-5-shift-right/
-Output: CI/CD integration + monitoring + incident playbooks
-Who: TAE, SRE, DevOps
-Purpose: Continuous testing in production
-```
+| Role | Primary Context |
+|------|-----------------|
+| **TAE (Test Automation)** | `guidelines/TAE/*` |
+| **QA (Manual Testing)** | `guidelines/QA/*` + `stage-2-exploratory/*` |
+| **DevOps** | `ci-cd-integration.md` + `stage-5-regression/*` |
 
 ---
 
-## KEY CONCEPTS
+## 7. Token Optimization Tips
 
-### Documentation vs Prompts
+### DO
 
-| Type              | Location    | Purpose                             |
-| ----------------- | ----------- | ----------------------------------- |
-| **Documentation** | `.context/` | Information that AI reads to work   |
-| **Prompts**       | `.prompts/` | Templates to GENERATE documentation |
-| **Guides**        | `docs/`     | Human learning documentation        |
+- Load `CLAUDE.md` first (automatic)
+- Load task-specific guidelines
+- Use prompts from `.prompts/` for structured tasks
+- Reference code in `tests/components/` as living examples
 
-### Roles by Stage
+### DON'T
 
-| Stage         | Name           | Type      | Role        | Input                | Output                   |
-| ------------- | -------------- | --------- | ----------- | -------------------- | ------------------------ |
-| **DISCOVERY** |                |           |             |                      |                          |
-| Phase 1       | Constitution   | One-time  | QA Lead     | Project access       | `.context/idea/`         |
-| Phase 2       | Architecture   | One-time  | QA Analyst  | idea + codebase      | `.context/PRD/` + `SRS/` |
-| Phase 3       | Infrastructure | One-time  | TAE         | PRD + SRS + codebase | `.context/SRS/infra`     |
-| Phase 4       | Specification  | One-time  | QA Lead     | Project backlog      | `.context/PBI/`          |
-| **QA STAGES** |                |           |             |                      |                          |
-| Stage 1       | Shift-Left     | Iterative | QA Engineer | User Story           | Test plans + cases       |
-| Stage 2       | Exploratory    | Iterative | QA Engineer | Staging deploy       | Findings + bugs          |
-| Stage 3       | Documentation  | Iterative | QA Engineer | Exploratory findings | Tests in TMS             |
-| Stage 4       | Automation     | Iterative | TAE/SDET    | Documented tests     | Automated tests          |
-| Stage 5       | Shift-Right    | Iterative | TAE/DevOps  | Automated tests      | CI/CD + monitoring       |
-
-### Testing: Manual Before Automated
-
-**Exploratory (Stage 2) before Automation (Stage 4):**
-
-| Aspect      | Exploratory     | Automation |
-| ----------- | --------------- | ---------- |
-| Speed       | 5-30 minutes    | Hours/days |
-| Coverage    | UX + logic bugs | Logic only |
-| Investment  | Low             | High       |
-| Flexibility | Total           | Rigid      |
-
-**Principle:** Only automate what has been validated manually.
-
-**Reason:** Don't waste time automating broken functionality or features that will change.
-
-### KATA Framework Architecture
-
-**KATA** = Komponent Action Test Architecture
-
-Organizes tests in 4 layers:
-
-```
-┌─────────────────────────────────────────┐
-│         Test Files (.test.ts)           │
-└────────────────┬────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────┐
-│       Layer 4: Fixtures (DI)            │
-│   TestFixture → api + ui containers     │
-└────────────────┬────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────┐
-│    Layer 3: Domain Components           │
-│   ExampleApi, ExamplePage (with ATCs)   │
-└────────────────┬────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────┐
-│      Layer 2: Base Classes              │
-│      ApiBase, UiBase (utilities)        │
-└────────────────┬────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────┐
-│      Layer 1: Test Context              │
-│   Config, Faker, Utilities              │
-└─────────────────────────────────────────┘
-```
+- Load all guidelines at once
+- Include full file trees in prompts
+- Duplicate information across files
+- Load PRD/SRS for simple test writing
 
 ---
 
-## STATISTICS
+## 8. Maintenance Guidelines
 
-### Total Files Created
+### When to Update CLAUDE.md
 
-| Directory              | Files       | Purpose                          |
-| ---------------------- | ----------- | -------------------------------- |
-| `.context/idea/`       | 2-3         | Phase 1: Constitution            |
-| `.context/PRD/`        | 4           | Phase 2: Architecture (business) |
-| `.context/SRS/`        | 5           | Phase 2-3: Architecture (tech)   |
-| `.context/PBI/`        | Variable    | Phase 4: Specification           |
-| `.context/guidelines/` | ~25         | Reference material               |
-| `.prompts/`            | ~40         | Prompt templates                 |
-| `docs/`                | ~20         | Human documentation              |
-| `tests/`               | Variable    | KATA framework implementation    |
-| **TOTAL BASE**         | **~90-100** | Complete system                  |
+- Project identity changes
+- New MCPs configured
+- New CLI tools added
+- Testing decisions documented
 
----
+### When to Update Guidelines
 
-## KEY POINTS TO REMEMBER
+- Framework patterns change
+- New conventions adopted
+- Best practices refined
 
-### DO's
+### When to Update Prompts
 
-1. **Follow sequential order** for Discovery (phases 1-4), then iterate on QA Stages (1-5)
-2. **Use prompts** from `.prompts/` to generate docs in `.context/`
-3. **Discovery BEFORE QA Stages** - Understand the system before testing
-4. **Exploratory BEFORE Automation** - Manual (Stage 2) before automating (Stage 4)
-5. **Read guidelines** before implementing tests
-6. **Use MCP tools** (Playwright, Postman, DBHub) for real exploration
-7. **Maintain traceability** between test cases and requirements
-8. **Use KATA architecture** for all automated tests
-
-### DON'Ts
-
-1. **DON'T skip** Discovery phases (context is essential)
-2. **DON'T automate** before manual validation
-3. **DON'T duplicate** information (DRY always)
-4. **DON'T mix** prompts with documentation
-5. **DON'T create** unnecessary files
-6. **DON'T skip** smoke tests after deployment
-7. **DON'T ignore** the layer architecture in KATA
+- Workflow steps change
+- New outputs required
+- Better instructions discovered
 
 ---
 
-## NEXT STEPS
+## Related Documentation
 
-1. **For new projects**: Start with `.prompts/discovery/phase-1-constitution/`
-2. **Run Context Generators**: After Discovery, run all 3 generators
-3. **For each User Story**: Follow QA Stages 1-5 iteratively
-4. **Setup KATA Framework**: Use `utilities/kata-framework-setup.md`
-5. **Integrate with CI/CD**: Use `stage-5-shift-right/ci-cd-integration.md`
-
----
-
-## CODE QUALITY TOOLS
-
-This template includes pre-configured code quality tools:
-
-### Included Tools
-
-| Tool             | Purpose                          | Configuration      |
-| ---------------- | -------------------------------- | ------------------ |
-| **Prettier**     | Automatic code formatting        | `.prettierrc`      |
-| **ESLint**       | Linting and error detection      | `eslint.config.js` |
-| **Husky**        | Automated git hooks              | `.husky/`          |
-| **lint-staged**  | Run linters only on staged files | `package.json`     |
-| **EditorConfig** | Style consistency across editors | `.editorconfig`    |
-
-### Available Scripts
-
-```bash
-# Formatting
-bun run format          # Format all files
-bun run format:check    # Check format without modifying
-
-# Linting
-bun run lint            # Run ESLint
-bun run lint:fix        # Run ESLint with auto-fix
-```
-
-### Pre-commit Hook
-
-The pre-commit hook automatically runs:
-
-1. **ESLint** with auto-fix on `.ts`, `.tsx`, `.js`, `.jsx` files
-2. **Prettier** on modified files
-
-This ensures all committed code meets project standards.
+- **CLAUDE.md** - Operational context (project root)
+- **README.md** - Project overview for humans
+- `.context/guidelines/TAE/kata-ai-index.md` - KATA framework entry point
+- `.prompts/README.md` - How to use prompts
 
 ---
 
-**This system is your "second brain" for AI-driven test automation. Each file has a specific purpose in the complete QA workflow.**
-
----
-
-**Version 4.0** - Restructured for QA/Test Automation focus
-**Last updated:** 2026-01-29
+**Last Updated**: 2026-02-12

@@ -1,143 +1,153 @@
-# OpenAPI MCP Setup Guide
+# Guía de Configuración de OpenAPI MCP
 
-This guide walks you through connecting Claude Code to your API using the OpenAPI MCP server. This allows AI-assisted API testing by dynamically generating tools from your OpenAPI/Swagger specification.
-
-## Prerequisites
-
-Before starting, ensure you have:
-
-- [ ] Node.js or Bun installed
-- [ ] Claude Code installed and configured
-- [ ] An OpenAPI/Swagger specification (v2 or v3)
-- [ ] API base URL accessible
-- [ ] API authentication credentials (if required)
-
-## How It Works
-
-The OpenAPI MCP server reads your API specification and dynamically creates tools for each endpoint:
-
-```
-OpenAPI Spec → MCP Server → Dynamic Tools → Claude
-     ↓              ↓              ↓
-GET /users   →   api_get_users   →   "List all users"
-POST /users  →   api_post_users  →   "Create a user"
-```
-
-## Quick Start
-
-### 1. Identify Your OpenAPI Specification
-
-Your spec can be:
-- A local file: `./openapi.json` or `./swagger.yaml`
-- A remote URL: `https://api.example.com/openapi.json`
-- A dynamic endpoint: `https://api.example.com/docs/spec`
-
-### 2. Configure MCP in Claude Code
-
-Add to your `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "my-api": {
-      "command": "npx",
-      "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
-      "env": {
-        "API_BASE_URL": "https://api.example.com",
-        "OPENAPI_SPEC_PATH": "https://api.example.com/openapi.json"
-      }
-    }
-  }
-}
-```
-
-### 3. Test the Connection
-
-Start Claude Code and ask:
-
-```
-What API endpoints are available?
-```
-
-You should see Claude use the MCP tools to list available operations.
+> **Idioma:** Español
+> **Nivel:** Intermedio
+> **Audiencia:** QA Engineers configurando testing de APIs via MCP
 
 ---
 
-## Configuration Options
+Esta guía te ayuda a conectar Claude Code a tu API usando el servidor MCP de OpenAPI. Esto permite testing de APIs asistido por AI generando herramientas dinámicamente desde tu especificación OpenAPI/Swagger.
 
-### Environment Variables
+## Prerrequisitos
 
-| Variable          | Required | Description                                      |
-| ----------------- | -------- | ------------------------------------------------ |
-| `API_BASE_URL`    | Yes      | Base URL for API requests                        |
-| `OPENAPI_SPEC_PATH` | Yes    | Path or URL to OpenAPI spec                      |
-| `API_HEADERS`     | No       | Custom headers (format: `key:value,key2:value2`) |
+Antes de comenzar, asegúrate de tener:
 
-### Command Arguments
-
-| Argument    | Default   | Description                           |
-| ----------- | --------- | ------------------------------------- |
-| `--tools`   | `dynamic` | Tool generation mode                  |
-| `--verbose` | `false`   | Enable verbose logging                |
+- [ ] Node.js o Bun instalado
+- [ ] Claude Code instalado y configurado
+- [ ] Una especificación OpenAPI/Swagger (v2 o v3)
+- [ ] URL base de la API accesible
+- [ ] Credenciales de autenticación de API (si se requieren)
 
 ---
 
-## Configuration Examples
+## Cómo Funciona
 
-### Public API (No Auth)
+El servidor MCP de OpenAPI lee tu especificación de API y crea herramientas dinámicamente para cada endpoint:
+
+```
+Spec OpenAPI → Servidor MCP → Herramientas Dinámicas → Claude
+     ↓              ↓                   ↓
+GET /users   →   api_get_users   →   "Listar todos los usuarios"
+POST /users  →   api_post_users  →   "Crear un usuario"
+```
+
+---
+
+## Inicio Rápido
+
+### 1. Identificar Tu Especificación OpenAPI
+
+Tu spec puede ser:
+- Un archivo local: `./openapi.json` o `./swagger.yaml`
+- Una URL remota: `https://api.ejemplo.com/openapi.json`
+- Un endpoint dinámico: `https://api.ejemplo.com/docs/spec`
+
+### 2. Configurar MCP en Claude Code
+
+Agrega a tu `.mcp.json`:
 
 ```json
 {
   "mcpServers": {
-    "public-api": {
+    "mi-api": {
       "command": "npx",
       "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
       "env": {
-        "API_BASE_URL": "https://api.example.com/v1",
-        "OPENAPI_SPEC_PATH": "https://api.example.com/v1/openapi.json"
+        "API_BASE_URL": "https://api.ejemplo.com",
+        "OPENAPI_SPEC_PATH": "https://api.ejemplo.com/openapi.json"
       }
     }
   }
 }
 ```
 
-### API with API Key
+### 3. Probar la Conexión
+
+Inicia Claude Code y pregunta:
+
+```
+¿Qué endpoints de API están disponibles?
+```
+
+Deberías ver a Claude usar las herramientas MCP para listar las operaciones disponibles.
+
+---
+
+## Opciones de Configuración
+
+### Variables de Entorno
+
+| Variable | Requerida | Descripción |
+|----------|-----------|-------------|
+| `API_BASE_URL` | Sí | URL base para requests de API |
+| `OPENAPI_SPEC_PATH` | Sí | Ruta o URL a la spec OpenAPI |
+| `API_HEADERS` | No | Headers personalizados (formato: `clave:valor,clave2:valor2`) |
+
+### Argumentos de Comando
+
+| Argumento | Default | Descripción |
+|-----------|---------|-------------|
+| `--tools` | `dynamic` | Modo de generación de herramientas |
+| `--verbose` | `false` | Habilitar logging verbose |
+
+---
+
+## Ejemplos de Configuración
+
+### API Pública (Sin Auth)
 
 ```json
 {
   "mcpServers": {
-    "api-with-key": {
+    "api-publica": {
       "command": "npx",
       "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
       "env": {
-        "API_BASE_URL": "https://api.example.com/v1",
-        "OPENAPI_SPEC_PATH": "https://api.example.com/v1/openapi.json",
-        "API_HEADERS": "x-api-key:your-api-key-here"
+        "API_BASE_URL": "https://api.ejemplo.com/v1",
+        "OPENAPI_SPEC_PATH": "https://api.ejemplo.com/v1/openapi.json"
       }
     }
   }
 }
 ```
 
-### API with Bearer Token
+### API con API Key
 
 ```json
 {
   "mcpServers": {
-    "api-with-bearer": {
+    "api-con-key": {
       "command": "npx",
       "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
       "env": {
-        "API_BASE_URL": "https://api.example.com/v1",
-        "OPENAPI_SPEC_PATH": "https://api.example.com/v1/openapi.json",
-        "API_HEADERS": "Authorization:Bearer your-jwt-token"
+        "API_BASE_URL": "https://api.ejemplo.com/v1",
+        "OPENAPI_SPEC_PATH": "https://api.ejemplo.com/v1/openapi.json",
+        "API_HEADERS": "x-api-key:tu-api-key-aqui"
       }
     }
   }
 }
 ```
 
-### API with Multiple Headers
+### API con Bearer Token
+
+```json
+{
+  "mcpServers": {
+    "api-con-bearer": {
+      "command": "npx",
+      "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
+      "env": {
+        "API_BASE_URL": "https://api.ejemplo.com/v1",
+        "OPENAPI_SPEC_PATH": "https://api.ejemplo.com/v1/openapi.json",
+        "API_HEADERS": "Authorization:Bearer tu-jwt-token"
+      }
+    }
+  }
+}
+```
+
+### API con Múltiples Headers
 
 ```json
 {
@@ -146,26 +156,26 @@ You should see Claude use the MCP tools to list available operations.
       "command": "npx",
       "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
       "env": {
-        "API_BASE_URL": "https://api.example.com/v1",
-        "OPENAPI_SPEC_PATH": "https://api.example.com/v1/openapi.json",
-        "API_HEADERS": "apikey:your-anon-key,Authorization:Bearer your-jwt,Content-Type:application/json"
+        "API_BASE_URL": "https://api.ejemplo.com/v1",
+        "OPENAPI_SPEC_PATH": "https://api.ejemplo.com/v1/openapi.json",
+        "API_HEADERS": "apikey:tu-anon-key,Authorization:Bearer tu-jwt,Content-Type:application/json"
       }
     }
   }
 }
 ```
 
-### Local OpenAPI File
+### Archivo OpenAPI Local
 
 ```json
 {
   "mcpServers": {
-    "local-api": {
+    "api-local": {
       "command": "npx",
       "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
       "env": {
         "API_BASE_URL": "http://localhost:3000/api",
-        "OPENAPI_SPEC_PATH": "/absolute/path/to/openapi.json"
+        "OPENAPI_SPEC_PATH": "/ruta/absoluta/a/openapi.json"
       }
     }
   }
@@ -181,9 +191,9 @@ You should see Claude use the MCP tools to list available operations.
       "command": "npx",
       "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
       "env": {
-        "API_BASE_URL": "https://your-project.supabase.co/rest/v1",
-        "OPENAPI_SPEC_PATH": "https://your-project.supabase.co/rest/v1/?apikey=your-anon-key",
-        "API_HEADERS": "apikey:your-anon-key"
+        "API_BASE_URL": "https://tu-proyecto.supabase.co/rest/v1",
+        "OPENAPI_SPEC_PATH": "https://tu-proyecto.supabase.co/rest/v1/?apikey=tu-anon-key",
+        "API_HEADERS": "apikey:tu-anon-key"
       }
     }
   }
@@ -192,87 +202,87 @@ You should see Claude use the MCP tools to list available operations.
 
 ---
 
-## Generated Tools
+## Herramientas Generadas
 
-The MCP dynamically creates tools based on your OpenAPI schema:
+El MCP crea herramientas dinámicamente basándose en tu schema OpenAPI:
 
-| OpenAPI Endpoint          | Generated Tool              | Description               |
-| ------------------------- | --------------------------- | ------------------------- |
-| `GET /users`              | `mcp__api__get_users`       | List all users            |
-| `POST /users`             | `mcp__api__post_users`      | Create a new user         |
-| `GET /users/{id}`         | `mcp__api__get_users_by_id` | Get user by ID            |
-| `PATCH /users/{id}`       | `mcp__api__patch_users`     | Update user               |
-| `DELETE /users/{id}`      | `mcp__api__delete_users`    | Delete user               |
-| `GET /products`           | `mcp__api__get_products`    | List products             |
-| `POST /orders`            | `mcp__api__post_orders`     | Create order              |
-
----
-
-## Usage Examples
-
-### List Resources
-
-```
-User: "Show me all products in the database"
-
-AI uses: mcp__api__get_products
-Response: [{ id: 1, name: "Laptop", price: 999 }, ...]
-```
-
-### Get Single Resource
-
-```
-User: "Get details for user with ID abc123"
-
-AI uses: mcp__api__get_users_by_id with id="abc123"
-Response: { id: "abc123", name: "John Doe", email: "john@example.com" }
-```
-
-### Create Resource
-
-```
-User: "Create a new product called 'Keyboard' priced at $79"
-
-AI uses: mcp__api__post_products with body={ name: "Keyboard", price: 79 }
-Response: { id: "xyz789", name: "Keyboard", price: 79, created_at: "..." }
-```
-
-### Filter Resources
-
-```
-User: "List all orders with status 'pending'"
-
-AI uses: mcp__api__get_orders with query params status=pending
-Response: [{ id: 1, status: "pending", ... }, ...]
-```
+| Endpoint OpenAPI | Herramienta Generada | Descripción |
+|------------------|---------------------|-------------|
+| `GET /users` | `mcp__api__get_users` | Listar todos los usuarios |
+| `POST /users` | `mcp__api__post_users` | Crear un nuevo usuario |
+| `GET /users/{id}` | `mcp__api__get_users_by_id` | Obtener usuario por ID |
+| `PATCH /users/{id}` | `mcp__api__patch_users` | Actualizar usuario |
+| `DELETE /users/{id}` | `mcp__api__delete_users` | Eliminar usuario |
+| `GET /products` | `mcp__api__get_products` | Listar productos |
+| `POST /orders` | `mcp__api__post_orders` | Crear orden |
 
 ---
 
-## Authentication Considerations
+## Ejemplos de Uso
 
-### Static Token (Simple)
+### Listar Recursos
 
-Best for:
-- API keys that don't expire
-- Development/testing environments
-- Personal projects
+```
+Usuario: "Muéstrame todos los productos en la base de datos"
 
-### JWT Tokens (Complex)
+AI usa: mcp__api__get_products
+Respuesta: [{ id: 1, name: "Laptop", price: 999 }, ...]
+```
 
-**Limitation:** JWT tokens typically expire (1 hour by default). You'll need to:
+### Obtener Recurso Individual
 
-1. **Manually refresh**: Update the token in `.mcp.json` when it expires
-2. **Use a refresh script**: Create a script that gets a fresh token and updates the config
-3. **Use long-lived tokens**: If your API supports it (not recommended for production)
+```
+Usuario: "Dame los detalles del usuario con ID abc123"
 
-For authenticated user testing, consider using:
-- **DBHub MCP** with a QA user that bypasses authentication
-- **Postman** for manual authenticated requests
-- **Playwright MCP** for full E2E flows with login
+AI usa: mcp__api__get_users_by_id con id="abc123"
+Respuesta: { id: "abc123", name: "John Doe", email: "john@ejemplo.com" }
+```
+
+### Crear Recurso
+
+```
+Usuario: "Crea un nuevo producto llamado 'Teclado' con precio $79"
+
+AI usa: mcp__api__post_products con body={ name: "Teclado", price: 79 }
+Respuesta: { id: "xyz789", name: "Teclado", price: 79, created_at: "..." }
+```
+
+### Filtrar Recursos
+
+```
+Usuario: "Lista todas las órdenes con estado 'pendiente'"
+
+AI usa: mcp__api__get_orders con query params status=pending
+Respuesta: [{ id: 1, status: "pending", ... }, ...]
+```
 
 ---
 
-## Troubleshooting
+## Consideraciones de Autenticación
+
+### Token Estático (Simple)
+
+Mejor para:
+- API keys que no expiran
+- Ambientes de desarrollo/testing
+- Proyectos personales
+
+### Tokens JWT (Complejo)
+
+**Limitación:** Los tokens JWT típicamente expiran (1 hora por defecto). Necesitarás:
+
+1. **Refrescar manualmente**: Actualizar el token en `.mcp.json` cuando expire
+2. **Usar un script de refresh**: Crear un script que obtenga un token fresco y actualice la config
+3. **Usar tokens de larga duración**: Si tu API lo soporta (no recomendado para producción)
+
+Para testing de usuarios autenticados, considera usar:
+- **DBHub MCP** con un usuario QA que bypasee autenticación
+- **Postman** para requests autenticados manuales
+- **Playwright MCP** para flujos E2E completos con login
+
+---
+
+## Solución de Problemas
 
 ### Error: Cannot fetch OpenAPI spec
 
@@ -280,12 +290,12 @@ For authenticated user testing, consider using:
 Error: Failed to fetch OpenAPI specification from URL
 ```
 
-**Possible causes:**
-- Incorrect spec URL
-- Spec requires authentication
-- Network/firewall blocking the request
+**Posibles causas:**
+- URL de spec incorrecta
+- Spec requiere autenticación
+- Red/firewall bloqueando el request
 
-**Solution:** Try accessing the spec URL in your browser first to verify it works.
+**Solución:** Intenta acceder a la URL de la spec en tu navegador primero para verificar que funciona.
 
 ### Error: Invalid OpenAPI specification
 
@@ -293,12 +303,12 @@ Error: Failed to fetch OpenAPI specification from URL
 Error: Invalid OpenAPI specification format
 ```
 
-**Possible causes:**
-- Spec is not valid JSON/YAML
-- Spec is OpenAPI v1 (not supported)
-- Spec has validation errors
+**Posibles causas:**
+- Spec no es JSON/YAML válido
+- Spec es OpenAPI v1 (no soportado)
+- Spec tiene errores de validación
 
-**Solution:** Validate your spec at [editor.swagger.io](https://editor.swagger.io/)
+**Solución:** Valida tu spec en [editor.swagger.io](https://editor.swagger.io/)
 
 ### Error: 401 Unauthorized
 
@@ -306,12 +316,12 @@ Error: Invalid OpenAPI specification format
 Error: Request failed with status 401
 ```
 
-**Possible causes:**
-- Missing or invalid API key
-- Token expired
-- Wrong header format
+**Posibles causas:**
+- API key faltante o inválida
+- Token expirado
+- Formato de header incorrecto
 
-**Solution:** Verify your `API_HEADERS` configuration matches what the API expects.
+**Solución:** Verifica que tu configuración `API_HEADERS` coincida con lo que la API espera.
 
 ### Error: No tools generated
 
@@ -319,58 +329,58 @@ Error: Request failed with status 401
 No MCP tools available
 ```
 
-**Possible causes:**
-- Empty OpenAPI spec
-- Spec has no operations defined
-- MCP failed to parse the spec
+**Posibles causas:**
+- Spec OpenAPI vacía
+- Spec no tiene operaciones definidas
+- MCP falló al parsear la spec
 
-**Solution:** Check that your spec has actual endpoint definitions with operations.
+**Solución:** Verifica que tu spec tenga definiciones de endpoints reales con operaciones.
 
 ---
 
-## Best Practices
+## Buenas Prácticas
 
-### 1. Start with Read-Only Operations
+### 1. Empezar con Operaciones de Solo Lectura
 
-Test GET endpoints first before trying POST/PUT/DELETE:
-
-```
-"List all users" ✓ (safe)
-"Delete user X" ✗ (verify first!)
-```
-
-### 2. Verify Before Modifying
-
-Ask Claude to show what it will do before executing:
+Prueba endpoints GET primero antes de intentar POST/PUT/DELETE:
 
 ```
-User: "Delete order abc123"
+"Listar todos los usuarios" ✓ (seguro)
+"Eliminar usuario X" ✗ (verifica primero!)
+```
 
-AI (correct approach):
-"First let me verify this order exists:
+### 2. Verificar Antes de Modificar
+
+Pídele a Claude que muestre qué va a hacer antes de ejecutar:
+
+```
+Usuario: "Eliminar orden abc123"
+
+AI (enfoque correcto):
+"Primero déjame verificar que esta orden existe:
 GET /orders/abc123 → { id: 'abc123', status: 'pending', total: 99.99 }
 
-This order is pending with a total of $99.99.
-Do you want me to proceed with deletion?"
+Esta orden está pendiente con un total de $99.99.
+¿Quieres que proceda con la eliminación?"
 ```
 
-### 3. Use Meaningful Names
+### 3. Usar Nombres Significativos
 
-Name your MCP server descriptively:
+Nombra tu servidor MCP descriptivamente:
 
 ```json
-// Good
-"my-api-dev": { ... }
-"my-api-staging": { ... }
+// Bueno
+"mi-api-dev": { ... }
+"mi-api-staging": { ... }
 
-// Less clear
+// Menos claro
 "api": { ... }
 "mcp1": { ... }
 ```
 
-### 4. Separate Environments
+### 4. Separar Ambientes
 
-Configure different MCP servers for different environments:
+Configura diferentes servidores MCP para diferentes ambientes:
 
 ```json
 {
@@ -383,7 +393,7 @@ Configure different MCP servers for different environments:
     },
     "api-staging": {
       "env": {
-        "API_BASE_URL": "https://staging.example.com/api",
+        "API_BASE_URL": "https://staging.ejemplo.com/api",
         ...
       }
     }
@@ -393,50 +403,53 @@ Configure different MCP servers for different environments:
 
 ---
 
-## Integration with KATA Framework
+## Integración con Framework KATA
 
-For automated API tests, use the KATA framework's `ApiBase` instead of the MCP:
+Para tests de API automatizados, usa el `ApiBase` del framework KATA en lugar del MCP:
 
-| Use Case                    | Tool                  |
-| --------------------------- | --------------------- |
-| Exploratory testing         | OpenAPI MCP           |
-| Manual verification         | OpenAPI MCP           |
-| Automated test suite        | KATA ApiBase          |
-| CI/CD integration           | KATA ApiBase          |
+| Caso de Uso | Herramienta |
+|-------------|-------------|
+| Testing exploratorio | OpenAPI MCP |
+| Verificación manual | OpenAPI MCP |
+| Suite de tests automatizados | KATA ApiBase |
+| Integración CI/CD | KATA ApiBase |
 
-See `../guidelines/TAE/api-testing-patterns.md` for KATA API testing patterns.
+Ver `docs/testing/automation/playwright-api-testing.md` para patrones de API testing con KATA.
 
 ---
 
-## Quick Reference
+## Referencia Rápida
 
-### MCP Configuration Template
+### Template de Configuración MCP
 
 ```json
 {
   "mcpServers": {
-    "my-api": {
+    "mi-api": {
       "command": "npx",
       "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
       "env": {
-        "API_BASE_URL": "<base-url>",
-        "OPENAPI_SPEC_PATH": "<spec-path-or-url>",
-        "API_HEADERS": "<header1>:<value1>,<header2>:<value2>"
+        "API_BASE_URL": "<url-base>",
+        "OPENAPI_SPEC_PATH": "<ruta-o-url-spec>",
+        "API_HEADERS": "<header1>:<valor1>,<header2>:<valor2>"
       }
     }
   }
 }
 ```
 
-### Common Header Formats
+### Formatos de Header Comunes
 
-| Auth Type    | Header Format                              |
-| ------------ | ------------------------------------------ |
-| API Key      | `x-api-key:your-key`                       |
-| Bearer Token | `Authorization:Bearer your-token`          |
-| Basic Auth   | `Authorization:Basic base64-credentials`   |
-| Custom       | `X-Custom-Header:value`                    |
+| Tipo de Auth | Formato de Header |
+|--------------|-------------------|
+| API Key | `x-api-key:tu-key` |
+| Bearer Token | `Authorization:Bearer tu-token` |
+| Basic Auth | `Authorization:Basic credenciales-base64` |
+| Custom | `X-Custom-Header:valor` |
 
 ---
 
-*Last updated: February 2026*
+## Navegación
+
+- [DBHub MCP](./mcp-dbhub.md) - Configuración de DBHub MCP
+- [Testing de APIs](../testing/api/) - Guías de testing de APIs

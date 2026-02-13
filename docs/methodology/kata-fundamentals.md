@@ -12,7 +12,7 @@
 >
 > For implementation-specific guides (mandatory for AI), see:
 >
-> - **AI Entry Point**: `.context/guidelines/TAE/KATA-AI-GUIDE.md`
+> - **AI Entry Point**: `.context/guidelines/TAE/kata-ai-index.md`
 > - **Architecture**: `.context/guidelines/TAE/kata-architecture.md`
 > - **Standards**: `.context/guidelines/TAE/automation-standards.md`
 >

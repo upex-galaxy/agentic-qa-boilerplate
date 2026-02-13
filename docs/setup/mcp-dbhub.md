@@ -1,47 +1,57 @@
-# DBHub MCP Setup Guide
+# Guía de Configuración de DBHub MCP
 
-This guide walks you through connecting Claude Code to a database using the DBHub MCP server. Examples use Azure SQL Server, but the same principles apply to other databases.
+> **Idioma:** Español
+> **Nivel:** Intermedio
+> **Audiencia:** QA Engineers configurando acceso a base de datos via MCP
 
-## Prerequisites
+---
 
-Before starting, ensure you have:
+Esta guía te ayuda a conectar Claude Code a una base de datos usando el servidor MCP de DBHub. Los ejemplos usan Azure SQL Server, pero los mismos principios aplican a otras bases de datos.
 
-- [ ] Node.js or Bun installed
-- [ ] Claude Code installed and configured
-- [ ] Access credentials for the database (SQL authentication user)
-- [ ] Your IP address whitelisted in the database firewall (if applicable)
+## Prerrequisitos
 
-## Supported Databases
+Antes de comenzar, asegúrate de tener:
 
-DBHub supports multiple database types:
+- [ ] Node.js o Bun instalado
+- [ ] Claude Code instalado y configurado
+- [ ] Credenciales de acceso a la base de datos (usuario SQL)
+- [ ] Tu dirección IP en la whitelist del firewall de la base de datos (si aplica)
 
-| Database   | Type Value   | Default Port | Notes                          |
-| ---------- | ------------ | ------------ | ------------------------------ |
-| PostgreSQL | `postgresql` | 5432         | Most common for web apps       |
-| MySQL      | `mysql`      | 3306         | Popular for PHP projects       |
-| SQL Server | `sqlserver`  | 1433         | Common in enterprise/.NET      |
-| SQLite     | `sqlite`     | N/A          | File-based, no server needed   |
-| MariaDB    | `mariadb`    | 3306         | MySQL-compatible               |
+---
 
-## Quick Start (Recommended)
+## Bases de Datos Soportadas
 
-The most reliable method is using a **TOML configuration file**. The DSN method has known issues with some databases' encryption requirements.
+DBHub soporta múltiples tipos de base de datos:
 
-### 1. Create a config file
+| Base de Datos | Valor de Tipo | Puerto Default | Notas |
+|---------------|---------------|----------------|-------|
+| PostgreSQL | `postgresql` | 5432 | Más común para web apps |
+| MySQL | `mysql` | 3306 | Popular para proyectos PHP |
+| SQL Server | `sqlserver` | 1433 | Común en enterprise/.NET |
+| SQLite | `sqlite` | N/A | Basado en archivo, sin servidor |
+| MariaDB | `mariadb` | 3306 | Compatible con MySQL |
 
-Create `dbhub.toml` in your project root:
+---
+
+## Inicio Rápido (Recomendado)
+
+El método más confiable es usar un **archivo de configuración TOML**. El método DSN tiene problemas conocidos con los requisitos de encriptación de algunas bases de datos.
+
+### 1. Crear Archivo de Configuración
+
+Crea `dbhub.toml` en la raíz de tu proyecto:
 
 #### SQL Server (Azure)
 
 ```toml
 [[sources]]
-id = "my-database"
+id = "mi-base-de-datos"
 type = "sqlserver"
-host = "your-server.database.windows.net"
+host = "tu-servidor.database.windows.net"
 port = 1433
-database = "your-database-name"
-user = "your_sql_user"
-password = "your_password"
+database = "nombre-de-tu-base"
+user = "tu_usuario_sql"
+password = "tu_password"
 sslmode = "require"
 ```
 
@@ -49,160 +59,160 @@ sslmode = "require"
 
 ```toml
 [[sources]]
-id = "my-database"
+id = "mi-base-de-datos"
 type = "postgresql"
 host = "localhost"
 port = 5432
-database = "your_database"
+database = "tu_base_de_datos"
 user = "postgres"
-password = "your_password"
-sslmode = "disable"  # or "require" for production
+password = "tu_password"
+sslmode = "disable"  # o "require" para producción
 ```
 
 #### MySQL
 
 ```toml
 [[sources]]
-id = "my-database"
+id = "mi-base-de-datos"
 type = "mysql"
 host = "localhost"
 port = 3306
-database = "your_database"
+database = "tu_base_de_datos"
 user = "root"
-password = "your_password"
+password = "tu_password"
 ```
 
 #### SQLite
 
 ```toml
 [[sources]]
-id = "my-database"
+id = "mi-base-de-datos"
 type = "sqlite"
 path = "./data/local.db"
 ```
 
-### 2. Configure MCP in Claude Code
+### 2. Configurar MCP en Claude Code
 
-Add to your `.mcp.json`:
+Agrega a tu `.mcp.json`:
 
 ```json
 {
   "mcpServers": {
-    "my-database": {
+    "mi-base-de-datos": {
       "command": "bunx",
       "args": [
         "-y",
         "@bytebase/dbhub@latest",
         "--config",
-        "/absolute/path/to/dbhub.toml"
+        "/ruta/absoluta/a/dbhub.toml"
       ]
     }
   }
 }
 ```
 
-### 3. Test the connection
+### 3. Probar la Conexión
 
 ```bash
 bunx @bytebase/dbhub@latest --config dbhub.toml
 ```
 
-You should see:
+Deberías ver:
 ```
 DBHub MCP Server running on stdio
 ```
 
 ---
 
-## Creating a SQL User for DBHub
+## Crear Usuario SQL para DBHub
 
-DBHub requires **SQL authentication** (username/password). Azure AD/Entra authentication is not supported.
+DBHub requiere **autenticación SQL** (usuario/contraseña). La autenticación Azure AD/Entra no está soportada.
 
-### Option 1: Use an existing SQL user
+### Opción 1: Usar un Usuario SQL Existente
 
-If your team has a shared SQL user, get the credentials from:
-- Environment variables
-- Team password manager
-- Backend configuration
+Si tu equipo tiene un usuario SQL compartido, obtén las credenciales de:
+- Variables de entorno
+- Gestor de contraseñas del equipo
+- Configuración del backend
 
-### Option 2: Create a dedicated SQL user
+### Opción 2: Crear un Usuario SQL Dedicado
 
-#### For SQL Server
+#### Para SQL Server
 
 ```sql
--- Create the SQL user
-CREATE USER [qa_automation] WITH PASSWORD = 'YourSecurePassword123!';
+-- Crear el usuario SQL
+CREATE USER [qa_automation] WITH PASSWORD = 'TuPasswordSeguro123!';
 
--- Grant read permissions
+-- Otorgar permisos de lectura
 ALTER ROLE db_datareader ADD MEMBER [qa_automation];
 
--- Grant write permissions (optional, for test data setup)
+-- Otorgar permisos de escritura (opcional, para setup de datos de prueba)
 ALTER ROLE db_datawriter ADD MEMBER [qa_automation];
 ```
 
-#### For PostgreSQL
+#### Para PostgreSQL
 
 ```sql
--- Create the user
-CREATE USER qa_automation WITH PASSWORD 'YourSecurePassword123!';
+-- Crear el usuario
+CREATE USER qa_automation WITH PASSWORD 'TuPasswordSeguro123!';
 
--- Grant read permissions
+-- Otorgar permisos de lectura
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO qa_automation;
 
--- Grant write permissions (optional)
+-- Otorgar permisos de escritura (opcional)
 GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO qa_automation;
 ```
 
-#### For MySQL
+#### Para MySQL
 
 ```sql
--- Create the user
-CREATE USER 'qa_automation'@'%' IDENTIFIED BY 'YourSecurePassword123!';
+-- Crear el usuario
+CREATE USER 'qa_automation'@'%' IDENTIFIED BY 'TuPasswordSeguro123!';
 
--- Grant read permissions
-GRANT SELECT ON your_database.* TO 'qa_automation'@'%';
+-- Otorgar permisos de lectura
+GRANT SELECT ON tu_base_de_datos.* TO 'qa_automation'@'%';
 
--- Grant write permissions (optional)
-GRANT INSERT, UPDATE, DELETE ON your_database.* TO 'qa_automation'@'%';
+-- Otorgar permisos de escritura (opcional)
+GRANT INSERT, UPDATE, DELETE ON tu_base_de_datos.* TO 'qa_automation'@'%';
 
 FLUSH PRIVILEGES;
 ```
 
 ---
 
-## Alternative: DSN Method
+## Alternativa: Método DSN
 
-> **Warning:** The DSN method has known issues with some databases' encryption requirements. Use the TOML method above instead when possible.
+> **Advertencia:** El método DSN tiene problemas conocidos con los requisitos de encriptación de algunas bases de datos. Usa el método TOML cuando sea posible.
 
-### DSN Format by Database Type
+### Formato DSN por Tipo de Base de Datos
 
 #### SQL Server
 ```
-sqlserver://username:password@server.database.windows.net:1433/database?encrypt=true
+sqlserver://usuario:password@servidor.database.windows.net:1433/base_datos?encrypt=true
 ```
 
 #### PostgreSQL
 ```
-postgresql://username:password@localhost:5432/database?sslmode=disable
+postgresql://usuario:password@localhost:5432/base_datos?sslmode=disable
 ```
 
 #### MySQL
 ```
-mysql://username:password@localhost:3306/database
+mysql://usuario:password@localhost:3306/base_datos
 ```
 
-### DSN Configuration
+### Configuración DSN
 
 ```json
 {
   "mcpServers": {
-    "my-database": {
+    "mi-base-de-datos": {
       "command": "bunx",
       "args": [
         "-y",
         "@bytebase/dbhub@latest",
         "--dsn",
-        "postgresql://username:password@localhost:5432/database"
+        "postgresql://usuario:password@localhost:5432/base_datos"
       ]
     }
   }
@@ -211,43 +221,45 @@ mysql://username:password@localhost:3306/database
 
 ---
 
-## Testing the Connection
+## Probar la Conexión
 
-### Test via terminal
+### Probar via Terminal
 
 ```bash
 bunx @bytebase/dbhub@latest --config dbhub.toml
 ```
 
-### Test with web interface
+### Probar con Interfaz Web
 
 ```bash
 bunx @bytebase/dbhub@latest --config dbhub.toml --transport http --port 8080
 ```
 
-Open `http://localhost:8080` in your browser to access the Workbench interface.
+Abre `http://localhost:8080` en tu navegador para acceder a la interfaz Workbench.
 
-## Verify in Claude Code
+## Verificar en Claude Code
 
-### Start Claude Code
+### Iniciar Claude Code
 
 ```bash
 claude
 ```
 
-### Check MCP Connection Status
+### Verificar Estado de Conexión MCP
 
-Type `/mcp` to see the list of connected MCP servers. Your database should appear as **connected**.
+Escribe `/mcp` para ver la lista de servidores MCP conectados. Tu base de datos debería aparecer como **connected**.
 
-### Test with a Query
+### Probar con una Query
 
 ```
-Look at the database and tell me how many tables there are.
+Mira la base de datos y dime cuántas tablas hay.
 ```
 
-If you see the MCP tool being called and returning results, your connection is working correctly.
+Si ves que se llama la herramienta MCP y devuelve resultados, tu conexión está funcionando correctamente.
 
-## Troubleshooting
+---
+
+## Solución de Problemas
 
 ### Error: Server requires encryption
 
@@ -255,7 +267,7 @@ If you see the MCP tool being called and returning results, your connection is w
 ConnectionError: Server requires encryption, set 'encrypt' config option to true.
 ```
 
-**Solution:** Use the TOML configuration method with `sslmode = "require"`.
+**Solución:** Usa el método de configuración TOML con `sslmode = "require"`.
 
 ### Error: Login failed
 
@@ -263,12 +275,12 @@ ConnectionError: Server requires encryption, set 'encrypt' config option to true
 ConnectionError: Login failed for user '<username>'
 ```
 
-**Possible causes:**
-- Incorrect username or password
-- Password contains special characters not supported by your terminal
-- User doesn't have access to the specified database
+**Posibles causas:**
+- Usuario o contraseña incorrectos
+- Password contiene caracteres especiales no soportados por tu terminal
+- El usuario no tiene acceso a la base de datos especificada
 
-> **Tip:** If you have issues with special characters in the password, use a TOML configuration file instead of the DSN string.
+> **Tip:** Si tienes problemas con caracteres especiales en la contraseña, usa un archivo de configuración TOML en lugar del string DSN.
 
 ### Error: Cannot connect to server
 
@@ -276,12 +288,12 @@ ConnectionError: Login failed for user '<username>'
 ConnectionError: Failed to connect to <server>:1433
 ```
 
-**Possible causes:**
-- Your IP is not whitelisted in the database firewall
-- Server name is incorrect
-- Network/firewall blocking the port
+**Posibles causas:**
+- Tu IP no está en la whitelist del firewall de la base de datos
+- El nombre del servidor es incorrecto
+- Red/firewall bloqueando el puerto
 
-**Solution:** Whitelist your IP in the database server's firewall settings.
+**Solución:** Agrega tu IP a la whitelist en la configuración del firewall del servidor de base de datos.
 
 ### Error: Database not found
 
@@ -289,68 +301,77 @@ ConnectionError: Failed to connect to <server>:1433
 ConnectionError: Cannot open database "<database>" requested by the login
 ```
 
-**Solution:** Verify the exact database name. Database names are case-sensitive in some systems.
+**Solución:** Verifica el nombre exacto de la base de datos. Los nombres de base de datos son case-sensitive en algunos sistemas.
 
-## Available MCP Tools
+---
 
-Once connected, DBHub provides the following tools to Claude:
+## Herramientas MCP Disponibles
 
-| Tool             | Description                                            |
-| ---------------- | ------------------------------------------------------ |
-| `execute_sql`    | Execute SQL queries with transaction support           |
-| `search_objects` | Explore database schemas, tables, columns, and indexes |
+Una vez conectado, DBHub proporciona las siguientes herramientas a Claude:
 
-## Security Recommendations
+| Herramienta | Descripción |
+|-------------|-------------|
+| `execute_sql` | Ejecutar queries SQL con soporte de transacciones |
+| `search_objects` | Explorar schemas, tablas, columnas e índices |
 
-- [ ] Never commit connection strings with credentials to version control
-- [ ] Add `dbhub.toml` to your `.gitignore`
-- [ ] Use environment variables for sensitive data when possible
-- [ ] Create a dedicated database user with minimal required permissions
-- [ ] Regularly rotate database passwords
-- [ ] Use read-only users for query-only access
+---
 
-## Quick Reference
+## Recomendaciones de Seguridad
 
-### TOML Configuration Template
+- [ ] Nunca commitees strings de conexión con credenciales al control de versiones
+- [ ] Agrega `dbhub.toml` a tu `.gitignore`
+- [ ] Usa variables de entorno para datos sensibles cuando sea posible
+- [ ] Crea un usuario de base de datos dedicado con permisos mínimos requeridos
+- [ ] Rota las contraseñas de base de datos regularmente
+- [ ] Usa usuarios de solo lectura para acceso de consulta solamente
+
+---
+
+## Referencia Rápida
+
+### Template de Configuración TOML
 
 ```toml
 [[sources]]
-id = "my-database"
+id = "mi-base-de-datos"
 type = "<postgresql|mysql|sqlserver|sqlite>"
-host = "<server-hostname>"
-port = <port-number>
-database = "<database-name>"
-user = "<sql-user>"
+host = "<hostname-del-servidor>"
+port = <numero-de-puerto>
+database = "<nombre-de-base>"
+user = "<usuario-sql>"
 password = "<password>"
 sslmode = "<require|disable>"
 ```
 
-### MCP Configuration Template
+### Template de Configuración MCP
 
 ```json
 {
   "mcpServers": {
-    "my-database": {
+    "mi-base-de-datos": {
       "command": "bunx",
       "args": [
         "-y",
         "@bytebase/dbhub@latest",
         "--config",
-        "/absolute/path/to/dbhub.toml"
+        "/ruta/absoluta/a/dbhub.toml"
       ]
     }
   }
 }
 ```
 
-### Useful Commands
+### Comandos Útiles
 
-| Command                                                                   | Description              |
-| ------------------------------------------------------------------------- | ------------------------ |
-| `bunx @bytebase/dbhub@latest --help`                                      | Show DBHub help          |
-| `bunx @bytebase/dbhub@latest --config dbhub.toml`                         | Start with TOML config   |
-| `bunx @bytebase/dbhub@latest --config dbhub.toml --transport http --port 8080` | Start with web interface |
+| Comando | Descripción |
+|---------|-------------|
+| `bunx @bytebase/dbhub@latest --help` | Mostrar ayuda de DBHub |
+| `bunx @bytebase/dbhub@latest --config dbhub.toml` | Iniciar con config TOML |
+| `bunx @bytebase/dbhub@latest --config dbhub.toml --transport http --port 8080` | Iniciar con interfaz web |
 
 ---
 
-*Last updated: February 2026*
+## Navegación
+
+- [OpenAPI MCP](./mcp-openapi.md) - Configuración de OpenAPI MCP
+- [Testing de APIs](../testing/api/) - Guías de testing de APIs

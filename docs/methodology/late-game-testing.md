@@ -1,22 +1,23 @@
 # Late-Game Testing
 
-> **IQL Phase 3** · Shift-Right · Production Monitoring · Chaos Engineering
+> **Idioma:** Español
+> **Fase IQL 3** · Shift-Right · Monitoreo de Producción · Chaos Engineering
 
 ## Overview
 
-**"How does it behave in the real world?"**
+**"¿Cómo se comporta en el mundo real?"**
 
-**Observation** phase - Focus on monitoring and ensuring reliability in production.
+Fase de **Observación** - Enfoque en monitorear y asegurar la confiabilidad en producción.
 
-The **third phase of the Integrated Quality Lifecycle** where **both QA + DevOps/SRE roles** collaborate in production. Like in gaming: **mastering the late-game** ensures victory and total control.
+La **tercera fase del Integrated Quality Lifecycle** donde **QA + DevOps/SRE** colaboran en producción. Como en gaming: **dominar el late-game** asegura la victoria y control total.
 
 ---
 
-## Late-Game: Third Phase of IQL
+## Late-Game: Tercera Fase de IQL
 
-**Late-Game Testing** is the final phase of the **Integrated Quality Lifecycle** where system behavior in the real world is validated.
+**Late-Game Testing** es la fase final del **Integrated Quality Lifecycle** donde se valida el comportamiento del sistema en el mundo real.
 
-### Position in IQL Timeline
+### Posición en la Línea de Tiempo de IQL
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -25,7 +26,7 @@ The **third phase of the Integrated Quality Lifecycle** where **both QA + DevOps
 │                                                                 │
 │  ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐│
 │  │  EARLY-GAME     │──▶│   MID-GAME      │──▶│   LATE-GAME     ││
-│  │  Completed      │   │   Completed     │   │   ✅ CURRENT PHASE││
+│  │  Completado     │   │   Completado    │   │   ✅ FASE ACTUAL ││
 │  │                 │   │                 │   │                 ││
 │  │  Steps 1-4      │   │   Steps 5-9     │   │   Steps 10-15   ││
 │  │  QA Analyst     │   │   QA Automation │   │   QA + DevOps   ││
@@ -34,252 +35,252 @@ The **third phase of the Integrated Quality Lifecycle** where **both QA + DevOps
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Late-Game Characteristics
+### Características del Late-Game
 
-| Aspect           | Detail                         |
-| ---------------- | ------------------------------ |
-| **Steps**        | 10-15 of IQL                   |
-| **Approaches**   | Shift-Right, Chaos Engineering |
-| **Roles**        | QA + DevOps + SRE              |
-| **Tools**        | Sentry, Grafana, k6            |
+| Aspecto           | Detalle                        |
+| ----------------- | ------------------------------ |
+| **Steps**         | 10-15 de IQL                   |
+| **Enfoques**      | Shift-Right, Chaos Engineering |
+| **Roles**         | QA + DevOps + SRE              |
+| **Herramientas**  | Sentry, Grafana, k6            |
 
-> _"🏆 Late-Game: Total Mastery and Observability"_
+> _"🏆 Late-Game: Dominio Total y Observabilidad"_
 >
-> Like in MOBAs, **mastering the late-game means total control**. In IQL, this phase ensures that **quality is maintained in production** and provides valuable insights for future development cycles.
+> Como en los MOBAs, **dominar el late-game significa control total**. En IQL, esta fase asegura que **la calidad se mantenga en producción** y proporciona insights valiosos para futuros ciclos de desarrollo.
 
 ---
 
-## The 6 Steps of Late-Game Testing
+## Los 6 Steps del Late-Game Testing
 
-**Late-Game Testing** expands the original Step 10 of IQL and adds **5 additional steps** focused on production and observability.
+**Late-Game Testing** expande el Step 10 original de IQL y agrega **5 steps adicionales** enfocados en producción y observabilidad.
 
-> _"The transition towards Shift-Right Testing with focus on observability, resilience and continuous improvement."_
+> _"La transición hacia Shift-Right Testing con enfoque en observabilidad, resiliencia y mejora continua."_
 
-### Step 10: Continuous Maintenance & Monitoring
+### Step 10: Mantenimiento Continuo & Monitoreo
 
-**TMLC + TALC Combined - Production Operations**
+**TMLC + TALC Combinados - Production Operations**
 
-Ensure the application is stable for launch and remains so after deployment.
+Asegurar que la aplicación es estable para el lanzamiento y permanece así después del despliegue.
 
-**Key Activities:**
+**Actividades Clave:**
 
-- Execute manual regression tests (TMLC) and automated suite (TALC)
-- Perform smoke or sanity tests in production environment
-- Log urgent issues for immediate resolution
-- Periodically review and remove obsolete or redundant test cases
+- Ejecutar tests de regresión manuales (TMLC) y suite automatizada (TALC)
+- Realizar smoke o sanity tests en ambiente de producción
+- Registrar issues urgentes para resolución inmediata
+- Revisar periódicamente y eliminar test cases obsoletos o redundantes
 
-**Expected Result:**
-Launch of User Stories to production with confidence and early detection of post-release issues.
+**Resultado Esperado:**
+Lanzamiento de User Stories a producción con confianza y detección temprana de issues post-release.
 
-**Tools:** GitHub Actions, Docker, Sentry, Slack
-
----
-
-### Step 11: Canary Release Monitoring
-
-**Shift-Right Testing - Controlled Deployment**
-
-Deploy new features to a small percentage of users to monitor behavior.
-
-**Key Activities:**
-
-- Configure canary deployment with controlled user percentage
-- Monitor key metrics during gradual rollout
-- Analyze user behavior and application performance
-- Decide rollback or expansion based on observed data
-
-**Expected Result:**
-Safe validation of new features in production with minimal risk.
-
-**Tools:** Docker, GitHub, Grafana, Slack
+**Herramientas:** GitHub Actions, Docker, Sentry, Slack
 
 ---
 
-### Step 12: A/B Testing & Experimentation
+### Step 11: Monitoreo de Canary Releases
 
-**Production Testing - User Behavior Analysis**
+**Shift-Right Testing - Despliegue Controlado**
 
-Test different versions of features to optimize user experience.
+Desplegar nuevas features a un pequeño porcentaje de usuarios para monitorear comportamiento.
 
-**Key Activities:**
+**Actividades Clave:**
 
-- Design A/B experiments with clear hypotheses and success metrics
-- Implement feature variations for different segments
-- Collect real-time user behavior data
-- Analyze results statistically to make informed decisions
+- Configurar despliegue canary con porcentaje de usuarios controlado
+- Monitorear métricas clave durante el rollout gradual
+- Analizar comportamiento de usuarios y rendimiento de la aplicación
+- Decidir rollback o expansión basado en datos observados
 
-**Expected Result:**
-Continuous product optimization based on real user data.
+**Resultado Esperado:**
+Validación segura de nuevas features en producción con riesgo mínimo.
 
-**Tools:** Google Analytics, Grafana, Python, Slack
+**Herramientas:** Docker, GitHub, Grafana, Slack
+
+---
+
+### Step 12: A/B Testing & Experimentación
+
+**Testing de Producción - Análisis de Comportamiento de Usuario**
+
+Testear diferentes versiones de features para optimizar la experiencia de usuario.
+
+**Actividades Clave:**
+
+- Diseñar experimentos A/B con hipótesis claras y métricas de éxito
+- Implementar variaciones de features para diferentes segmentos
+- Recolectar datos de comportamiento de usuario en tiempo real
+- Analizar resultados estadísticamente para tomar decisiones informadas
+
+**Resultado Esperado:**
+Optimización continua del producto basada en datos reales de usuarios.
+
+**Herramientas:** Google Analytics, Grafana, Python, Slack
 
 ---
 
 ### Step 13: Real User Monitoring (RUM)
 
-**Production Observability - Performance & UX**
+**Observabilidad de Producción - Rendimiento & UX**
 
-Monitor real user experience in production to identify performance issues.
+Monitorear la experiencia real de usuarios en producción para identificar problemas de rendimiento.
 
-**Key Activities:**
+**Actividades Clave:**
 
-- Instrument application to capture real performance metrics
-- Monitor Core Web Vitals and user experience metrics
-- Configure alerts for performance degradation
-- Analyze geographic and device patterns in behavior
+- Instrumentar aplicación para capturar métricas reales de rendimiento
+- Monitorear Core Web Vitals y métricas de experiencia de usuario
+- Configurar alertas para degradación de rendimiento
+- Analizar patrones geográficos y de dispositivos en el comportamiento
 
-**Expected Result:**
-Complete visibility of real user experience and proactive optimization.
+**Resultado Esperado:**
+Visibilidad completa de la experiencia real de usuario y optimización proactiva.
 
-**Tools:** Sentry, Google Analytics, Grafana, UptimeRobot
-
----
-
-### Step 14: Chaos Engineering & Resilience Testing
-
-**Production Reliability - System Resilience**
-
-Introduce controlled failures in production to validate system resistance.
-
-**Key Activities:**
-
-- Design chaos experiments with resilience hypotheses
-- Introduce controlled failures in non-critical services
-- Monitor system response and recovery mechanisms
-- Document found weaknesses and improve architecture
-
-**Expected Result:**
-More robust system with validated recovery capacity against failures.
-
-**Tools:** Docker, k6, GitHub Actions, Sentry
+**Herramientas:** Sentry, Google Analytics, Grafana, UptimeRobot
 
 ---
 
-### Step 15: Feedback Loop & Continuous Improvement
+### Step 14: Chaos Engineering & Testing de Resiliencia
 
-**Data-Driven QA - Learning & Optimization**
+**Confiabilidad de Producción - Resiliencia del Sistema**
 
-Analyze user feedback and production metrics to feed the next Early-Game cycle.
+Introducir fallos controlados en producción para validar la resistencia del sistema.
 
-**Key Activities:**
+**Actividades Clave:**
 
-- Collect and analyze feedback from customer support and app store reviews
-- Review production metrics to identify failure patterns
-- Update acceptance criteria based on learnings
-- Influence product roadmap with production insights
+- Diseñar experimentos de chaos con hipótesis de resiliencia
+- Introducir fallos controlados en servicios no críticos
+- Monitorear respuesta del sistema y mecanismos de recuperación
+- Documentar debilidades encontradas y mejorar arquitectura
 
-**Expected Result:**
-Continuous improvement of product and QA process based on real data.
+**Resultado Esperado:**
+Sistema más robusto con capacidad de recuperación validada contra fallos.
 
-**Tools:** Slack, Google Analytics, Jira, Claude Code
+**Herramientas:** Docker, k6, GitHub Actions, Sentry
 
 ---
 
-## Key Metrics of Late-Game Testing
+### Step 15: Feedback Loop & Mejora Continua
 
-**6 fundamental metrics** that measure Late-Game Testing success and ensure **sustainable quality in production**.
+**QA Data-Driven - Aprendizaje & Optimización**
+
+Analizar feedback de usuarios y métricas de producción para alimentar el siguiente ciclo Early-Game.
+
+**Actividades Clave:**
+
+- Recolectar y analizar feedback de soporte al cliente y reseñas de app store
+- Revisar métricas de producción para identificar patrones de fallos
+- Actualizar criterios de aceptación basado en aprendizajes
+- Influenciar el roadmap del producto con insights de producción
+
+**Resultado Esperado:**
+Mejora continua del producto y proceso de QA basada en datos reales.
+
+**Herramientas:** Slack, Google Analytics, Jira, Claude Code
+
+---
+
+## Métricas Clave del Late-Game Testing
+
+**6 métricas fundamentales** que miden el éxito del Late-Game Testing y aseguran **calidad sostenible en producción**.
 
 ### MTTD - Mean Time To Detect
 
-- **Description:** Average time to detect a problem in production
-- **Target:** < 5 minutes
-- **Importance:** Critical to minimize incident impact
+- **Descripción:** Tiempo promedio para detectar un problema en producción
+- **Objetivo:** < 5 minutos
+- **Importancia:** Crítico para minimizar el impacto de incidentes
 
 ### MTTR - Mean Time To Resolution
 
-- **Description:** Average time to resolve a detected problem
-- **Target:** < 30 minutes
-- **Importance:** Key to maintaining SLA and customer satisfaction
+- **Descripción:** Tiempo promedio para resolver un problema detectado
+- **Objetivo:** < 30 minutos
+- **Importancia:** Clave para mantener SLA y satisfacción del cliente
 
-### Error Rate - Application Error Rate
+### Error Rate - Tasa de Errores de Aplicación
 
-- **Description:** Percentage of requests resulting in errors (5xx)
-- **Target:** < 0.1%
-- **Importance:** Direct indicator of system stability
+- **Descripción:** Porcentaje de requests que resultan en errores (5xx)
+- **Objetivo:** < 0.1%
+- **Importancia:** Indicador directo de estabilidad del sistema
 
 ### CSAT - Customer Satisfaction Score
 
-- **Description:** Customer satisfaction score based on feedback
-- **Target:** > 4.5/5
-- **Importance:** Business metric reflecting perceived quality
+- **Descripción:** Puntuación de satisfacción del cliente basada en feedback
+- **Objetivo:** > 4.5/5
+- **Importancia:** Métrica de negocio que refleja calidad percibida
 
-### SLO Compliance - Service Level Objective Compliance
+### SLO Compliance - Cumplimiento de Service Level Objectives
 
-- **Description:** Percentage of time service objectives are met
-- **Target:** > 99.9%
-- **Importance:** Ensures service reliability and availability
+- **Descripción:** Porcentaje de tiempo en que se cumplen los objetivos de servicio
+- **Objetivo:** > 99.9%
+- **Importancia:** Asegura confiabilidad y disponibilidad del servicio
 
-### Performance Score - Core Web Vitals Score
+### Performance Score - Puntuación de Core Web Vitals
 
-- **Description:** Performance score based on Google metrics
-- **Target:** > 90/100
-- **Importance:** Affects SEO, conversion and user experience
+- **Descripción:** Puntuación de rendimiento basada en métricas de Google
+- **Objetivo:** > 90/100
+- **Importancia:** Afecta SEO, conversión y experiencia de usuario
 
-### Late-Game Success Dashboard
+### Dashboard de Éxito del Late-Game
 
-These metrics work together to provide a complete view of **production system health** and **real user experience**.
+Estas métricas trabajan juntas para proporcionar una vista completa de la **salud del sistema en producción** y **experiencia real de usuario**.
 
-| Group                       | Metrics            | Focus             |
+| Grupo                       | Métricas           | Enfoque           |
 | --------------------------- | ------------------ | ----------------- |
-| **Response Speed**          | MTTD + MTTR        | Against incidents |
-| **System Stability**        | Error Rate + SLO   | Reliability       |
-| **User Experience**         | CSAT + Performance | Perceived quality |
+| **Velocidad de Respuesta**  | MTTD + MTTR        | Ante incidentes   |
+| **Estabilidad del Sistema** | Error Rate + SLO   | Confiabilidad     |
+| **Experiencia de Usuario**  | CSAT + Performance | Calidad percibida |
 
 ---
 
-## The 4 Approaches of Late-Game Testing
+## Los 4 Enfoques del Late-Game Testing
 
-**Late-Game Testing** applies four strategic approaches that extend quality validation **beyond development**.
+**Late-Game Testing** aplica cuatro enfoques estratégicos que extienden la validación de calidad **más allá del desarrollo**.
 
 ### Shift-Right Testing
 
-- **Description:** Extend quality validation towards production with testing in real environment.
-- **Benefit:** Real Validation
+- **Descripción:** Extender la validación de calidad hacia producción con testing en ambiente real.
+- **Beneficio:** Validación Real
 
-### Production Monitoring
+### Monitoreo de Producción
 
-- **Description:** Continuous system observability in production to detect anomalies early.
-- **Benefit:** Proactive Detection
+- **Descripción:** Observabilidad continua del sistema en producción para detectar anomalías temprano.
+- **Beneficio:** Detección Proactiva
 
 ### Chaos Engineering
 
-- **Description:** Introduce controlled failures to validate resilience and improve system robustness.
-- **Benefit:** Validated Resilience
+- **Descripción:** Introducir fallos controlados para validar resiliencia y mejorar robustez del sistema.
+- **Beneficio:** Resiliencia Validada
 
 ### AI Ops
 
-- **Description:** Use artificial intelligence for predictive analysis and anomaly detection.
-- **Benefit:** Predictive Intelligence
+- **Descripción:** Usar inteligencia artificial para análisis predictivo y detección de anomalías.
+- **Beneficio:** Inteligencia Predictiva
 
-> _"🏆 Late-Game: Mastery and Total Control"_
+> _"🏆 Late-Game: Dominio y Control Total"_
 >
-> These **four integrated approaches** allow QA teams to maintain **total control over production quality**, detect issues before users and continuously improve the product.
+> Estos **cuatro enfoques integrados** permiten a los equipos de QA mantener **control total sobre la calidad en producción**, detectar problemas antes que los usuarios y mejorar continuamente el producto.
 
 ---
 
-## Late-Game Tools
+## Herramientas del Late-Game
 
-| Category                | Tools                         |
-| ----------------------- | ----------------------------- |
-| **Error Tracking**      | Sentry                        |
-| **Observability**       | Grafana, Google Analytics     |
-| **Performance Testing** | k6                            |
-| **Uptime Monitoring**   | UptimeRobot                   |
-| **CI/CD**               | GitHub Actions, Docker        |
-| **Communication**       | Slack                         |
-| **Project Management**  | Jira                          |
-| **AI Assistance**       | Claude Code                   |
-
----
-
-## Availability Status
-
-> **Next step:** Late-Game Testing will be fully available during 2026. Explore the Early-Game and Mid-Game phases that are already ready for your learning.
+| Categoría                 | Herramientas                  |
+| ------------------------- | ----------------------------- |
+| **Error Tracking**        | Sentry                        |
+| **Observabilidad**        | Grafana, Google Analytics     |
+| **Performance Testing**   | k6                            |
+| **Monitoreo de Uptime**   | UptimeRobot                   |
+| **CI/CD**                 | GitHub Actions, Docker        |
+| **Comunicación**          | Slack                         |
+| **Gestión de Proyectos**  | Jira                          |
+| **Asistencia AI**         | Claude Code                   |
 
 ---
 
-## Navigation
+## Estado de Disponibilidad
 
-- [IQL Methodology](./IQL-methodology.md) - Complete view of Integrated Quality Lifecycle
-- [Early-Game Testing](./early-game-testing.md) - Phase 1: Prevention and early strategy
-- [Mid-Game Testing](./mid-game-testing.md) - Phase 2: Detection and implementation
+> **Próximo paso:** Late-Game Testing estará completamente disponible durante 2026. Explora las fases Early-Game y Mid-Game que ya están listas para tu aprendizaje.
+
+---
+
+## Navegación
+
+- [Metodología IQL](./IQL-methodology.md) - Vista completa del Integrated Quality Lifecycle
+- [Early-Game Testing](./early-game-testing.md) - Fase 1: Prevención y estrategia temprana
+- [Mid-Game Testing](./mid-game-testing.md) - Fase 2: Detección e implementación

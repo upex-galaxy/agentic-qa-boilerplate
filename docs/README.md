@@ -1,189 +1,175 @@
-# Project Documentation
+# Documentación del Proyecto
 
-Welcome to the **AI-Driven Software Project Template** documentation.
+> **Idioma:** Español
 
-This documentation is oriented to **humans** - to learn concepts, understand architectures, and follow step-by-step guides.
+Bienvenido a la documentación del **AI-Driven Test Automation Boilerplate**.
 
-> **Note**: For **AI-oriented** documentation, consult `.context/guidelines/`.
+Esta documentación está orientada a **humanos** - para aprender conceptos, entender metodologías y seguir guías paso a paso.
+
+> **Nota**: Para documentación **orientada a AI**, consulta `.context/guidelines/`.
 
 ---
 
-## Document Structure
+## Estructura de Documentos
 
 ```
 docs/
-├── architecture/          # Project architecture
-│   └── ai-driven-blueprint.md
+├── methodology/              # Metodologías de testing
+│   ├── IQL-methodology.md    # Integrated Quality Lifecycle
+│   ├── early-game-testing.md # Fase shift-left
+│   ├── mid-game-testing.md   # Fase de desarrollo activo
+│   ├── late-game-testing.md  # Fase de regresión
+│   └── kata-fundamentals.md  # Filosofía del framework KATA
 │
-├── workflows/             # Workflows
-│   ├── ambientes.md       # Development environments (dev, staging, prod)
-│   └── git-flow-guide.md  # Git Flow guide
+├── testing/                  # Guías de testing por tipo
+│   ├── api/                  # Testing de APIs
+│   ├── database/             # Testing de base de datos
+│   └── automation/           # Automatización de tests
 │
-├── mcp/                   # Model Context Protocol
-│   ├── README.md          # General MCP concepts
-│   ├── builder-strategy.md
-│   ├── claude-code.md
-│   ├── gemini-cli.md
-│   ├── copilot-cli.md
-│   └── vscode.md
+├── setup/                    # Guías de configuración
+│   ├── mcp-dbhub.md          # Configuración de DBHub MCP
+│   └── mcp-openapi.md        # Configuración de OpenAPI MCP
 │
-└── testing/               # Testing and QA
-    ├── api-guide/         # API Testing (Supabase + Next.js)
-    ├── database-guide/    # Database Testing with MCPs
-    └── test-architecture/ # Testing architectures (KATA)
+├── workflows/                # Flujos de trabajo
+│   ├── environments.md       # Ambientes dev, staging, prod
+│   ├── git-flow.md           # Flujo Git para desarrollo AI
+│   ├── test-manual-lifecycle.md   # Flujo TMLC
+│   └── test-automation-lifecycle.md # Flujo TALC
+│
+└── architectures/            # Guías específicas por stack
+    └── supabase-nextjs/      # Configuración Supabase + Next.js
 ```
 
 ---
 
-## Architecture
+## Metodología
 
-### [AI-Driven Software Project Blueprint](./architecture/ai-driven-blueprint.md)
+La metodología de testing está basada en **IQL (Integrated Quality Lifecycle)** con tres fases:
 
-Complete documentation of the methodology and project structure. Includes the 13 phases of AI-driven development (3 synchronous + 10 asynchronous).
+| Documento | Descripción |
+|-----------|-------------|
+| [IQL-methodology.md](./methodology/IQL-methodology.md) | Vista completa de IQL |
+| [early-game-testing.md](./methodology/early-game-testing.md) | Testing shift-left (Steps 1-4) |
+| [mid-game-testing.md](./methodology/mid-game-testing.md) | Automatización (Steps 5-9) |
+| [late-game-testing.md](./methodology/late-game-testing.md) | Producción (Steps 10-15) |
+| [kata-fundamentals.md](./methodology/kata-fundamentals.md) | Filosofía del framework KATA |
+
+---
+
+## Guías de Testing
+
+### [API Testing](./testing/api/)
+
+| Documento | Descripción | Estado |
+|-----------|-------------|--------|
+| [authentication.md](./testing/api/authentication.md) | Patrones de autenticación de APIs | ✅ Disponible |
+| [contract-testing.md](./testing/api/contract-testing.md) | Contract testing con OpenAPI/Zod | ✅ Disponible |
+| [devtools-testing.md](./testing/api/devtools-testing.md) | Testing manual con DevTools | ✅ Disponible |
+| [postman-testing.md](./testing/api/postman-testing.md) | Testing con Postman | ✅ Disponible |
+
+### [Database Testing](./testing/database/)
+
+| Documento | Descripción | Estado |
+|-----------|-------------|--------|
+| [fundamentals.md](./testing/database/fundamentals.md) | Conceptos API vs DB testing | ✅ Disponible |
+
+### [Test Automation](./testing/automation/)
+
+| Documento | Descripción | Estado |
+|-----------|-------------|--------|
+| [dependency-injection.md](./testing/automation/dependency-injection.md) | Estrategia DI en arquitectura de tests | ✅ Disponible |
+| [playwright-framework.md](./testing/automation/playwright-framework.md) | Guía de proyectos Playwright | ✅ Disponible |
+| [playwright-api-testing.md](./testing/automation/playwright-api-testing.md) | API testing con Playwright + KATA | ✅ Disponible |
+
+---
+
+## Guías de Configuración
+
+| Documento | Descripción |
+|-----------|-------------|
+| [mcp-dbhub.md](./setup/mcp-dbhub.md) | DBHub MCP para exploración de base de datos |
+| [mcp-openapi.md](./setup/mcp-openapi.md) | OpenAPI MCP para schema de APIs |
 
 ---
 
 ## Workflows
 
-### [Development Environments](./workflows/ambientes.md)
-
-Educational guide on development environments:
-
-- Local, Development, Staging, Production
-- Differences between companies
-- Relationship between Git branches and environments
-
-### [Git Flow Guide](./workflows/git-flow-guide.md)
-
-Tutorial on simplified Git Flow for working with AI:
-
-- Branch structure (main, staging, feature/\*)
-- Typical work cycle
-- Semantic commits
-- Pull Requests
+| Documento | Descripción | Estado |
+|-----------|-------------|--------|
+| [environments.md](./workflows/environments.md) | Guía de ambientes de desarrollo | ✅ Disponible |
+| [git-flow.md](./workflows/git-flow.md) | Flujo Git para desarrollo AI | ✅ Disponible |
+| [test-manual-lifecycle.md](./workflows/test-manual-lifecycle.md) | TMLC - Flujo de testing manual | ✅ Disponible |
+| [test-automation-lifecycle.md](./workflows/test-automation-lifecycle.md) | TALC - Flujo de automatización | ✅ Disponible |
 
 ---
 
-## MCP (Model Context Protocol)
+## Guías Específicas por Arquitectura
 
-### [General Concepts](./mcp/README.md)
+Guías para stacks tecnológicos específicos:
 
-Introduction to MCP:
+| Arquitectura | Descripción | Ruta |
+|--------------|-------------|------|
+| **Supabase + Next.js** | PostgreSQL + PostgREST + Next.js | [supabase-nextjs/](./architectures/supabase-nextjs/) |
 
-- What MCP is and how it works
-- Types of transport (stdio, SSE, HTTP)
-- Security and authentication
-- Common use cases
-
-### [MCP Builder Strategy](./mcp/builder-strategy.md)
-
-Dynamic MCP configuration system:
-
-- The "Token Hell" problem
-- Session-based MCP loading
-- Token usage optimization (80-90% reduction)
-
-### Configuration by Tool
-
-| Tool               | Document                               |
-| ------------------ | -------------------------------------- |
-| Claude Code        | [claude-code.md](./mcp/claude-code.md) |
-| Gemini CLI         | [gemini-cli.md](./mcp/gemini-cli.md)   |
-| GitHub Copilot CLI | [copilot-cli.md](./mcp/copilot-cli.md) |
-| VS Code            | [vscode.md](./mcp/vscode.md)           |
+> **Nota**: Los conceptos genéricos de testing pertenecen a `testing/`. Solo las configuraciones específicas de cada stack van en `architectures/`.
 
 ---
 
-## Testing
+## Inicio Rápido
 
-### [API Testing Guide](./testing/api-guide/README.md)
+### 1. Entender la Metodología
 
-Complete API Testing guide for Supabase + Next.js projects:
+Lee la [Metodología IQL](./methodology/IQL-methodology.md) para entender las fases de testing.
 
-| Document                                                       | Description                      |
-| -------------------------------------------------------------- | -------------------------------- |
-| [architecture.md](./testing/api-guide/architecture.md)         | Overview of the 2 APIs           |
-| [authentication.md](./testing/api-guide/authentication.md)     | How to use tokens for both APIs  |
-| [devtools-testing.md](./testing/api-guide/devtools-testing.md) | Manual testing with DevTools     |
-| [postman-testing.md](./testing/api-guide/postman-testing.md)   | Testing with Postman             |
-| [mcp-testing.md](./testing/api-guide/mcp-testing.md)           | AI-assisted testing              |
-| [playwright-testing.md](./testing/api-guide/playwright-testing.md) | Automated testing            |
+### 2. Configurar Tus Herramientas
 
-### [Database Testing Guide](./testing/database-guide/README.md)
+Configura los MCPs que necesites:
+- Acceso a base de datos: [mcp-dbhub.md](./setup/mcp-dbhub.md)
+- Schema de API: [mcp-openapi.md](./setup/mcp-openapi.md)
 
-Database testing guide with MCPs:
+### 3. Aprender Patrones de Testing
 
-| Document                                                      | Description                    |
-| ------------------------------------------------------------- | ------------------------------ |
-| [concepts.md](./testing/database-guide/concepts.md)           | API vs DB testing concepts     |
-| [mcp-dbhub.md](./testing/database-guide/mcp-dbhub.md)         | DBHub MCP configuration        |
-| [mcp-openapi.md](./testing/database-guide/mcp-openapi.md)     | OpenAPI MCP configuration      |
-| [troubleshooting.md](./testing/database-guide/troubleshooting.md) | Troubleshooting            |
+Elige según tus necesidades de testing:
+- Testing de APIs → [testing/api/](./testing/api/)
+- Testing de base de datos → [testing/database/](./testing/database/)
+- Automatización de tests → [testing/automation/](./testing/automation/)
 
-### [Test Architecture](./testing/test-architecture/)
+### 4. Seguir los Workflows
 
-Conceptual documentation of testing architectures:
-
-| Document                                                             | Description                             |
-| -------------------------------------------------------------------- | --------------------------------------- |
-| [kata-fundamentals.md](./testing/test-architecture/kata-fundamentals.md) | KATA Framework philosophy and concepts |
+- [Flujo Git](./workflows/git-flow.md) para control de versiones
+- [Ambientes](./workflows/environments.md) para etapas de deployment
 
 ---
 
-## Quick Start
+## Relación con `.context/`
 
-### 1. Choose your AI tool
+| Directorio | Audiencia | Propósito |
+|------------|-----------|-----------|
+| `docs/` | Humanos | Aprendizaje, tutoriales, referencia |
+| `.context/` | AI | Guidelines, memoria persistente, instrucciones |
 
-- Claude Code → [Configuration](./mcp/claude-code.md)
-- Gemini CLI → [Configuration](./mcp/gemini-cli.md)
-- GitHub Copilot CLI → [Configuration](./mcp/copilot-cli.md)
-- VS Code → [Configuration](./mcp/vscode.md)
+**Regla general**:
 
-### 2. Configure MCP Builder
-
-```bash
-# Read the strategy
-cat docs/mcp/builder-strategy.md
-
-# Copy template
-cp templates/mcp/gemini.template.json .gemini/settings.catalog.json
-
-# Add your API keys to the copied file
-
-# Run the builder
-node scripts/mcp-builder.js backend
-```
-
-### 3. Start developing
-
-- Follow the [Blueprint](./architecture/ai-driven-blueprint.md)
-- Read the [workflows](./workflows/)
-- Implement tests following the [testing guides](./testing/)
+- Si necesitas **aprender** algo → `docs/`
+- Si la AI necesita **recordar** algo → `.context/guidelines/`
 
 ---
 
-## Relationship with `.context/`
+## Contribuir
 
-| Directory   | Audience | Purpose                                    |
-| ----------- | -------- | ------------------------------------------ |
-| `docs/`     | Humans   | Learning, tutorials, reference             |
-| `.context/` | AI       | Guidelines, persistent memory, instructions |
+Para agregar documentación:
 
-**General rule**:
+1. **Educacional/Tutorial** → Agregar al subdirectorio apropiado de `docs/`
+2. **Guidelines para AI** → Agregar a `.context/guidelines/`
+3. **Prompts ejecutables** → Agregar a `.prompts/`
 
-- If you need to **learn** something → `docs/`
-- If AI needs to **remember** something → `.context/guidelines/`
+### Agregar Nuevas Arquitecturas
 
----
-
-## Contributing
-
-To add documentation:
-
-1. **Educational/Tutorial** → Add to appropriate `docs/`
-2. **Guidelines for AI** → Add to `.context/guidelines/`
-3. **Executable prompts** → Add to `.prompts/`
+1. Crear carpeta: `docs/architectures/{nombre-stack}/`
+2. Agregar `README.md` con overview de la arquitectura
+3. Agregar guías de configuración específicas
+4. Mantener conceptos genéricos en `docs/testing/`
 
 ---
 
-**Last updated**: 2025-01-29
+**Última actualización**: 2026-02-12

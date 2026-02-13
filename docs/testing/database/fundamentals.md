@@ -1,148 +1,80 @@
-# API and Database Testing: Conceptual Guide
+# Testing de API y Base de Datos: Guía Conceptual
 
-## Introduction
-
-In modern software development, a QA Engineer needs to understand how to test both the API layer and the database directly. This guide explains the fundamental concepts so you can perform effective testing at both layers.
-
----
-
-## How is an API documented in the industry?
-
-In mature teams, **you shouldn't need to ask the Tech Lead** how to use the API. The expectation is that accessible dynamic documentation exists, generally at a URL like `/docs`, `/swagger`, or `/api-docs`.
-
-If you find yourself asking the team or reading code directly to understand the API, that's a symptom of **technical debt**.
-
-### The current standard: OpenAPI
-
-**OpenAPI Specification (OAS)** is the de facto standard for describing REST APIs. It used to be called Swagger, and many people still use both terms interchangeably.
-
-It's a YAML or JSON file that describes:
-
-- All available endpoints
-- HTTP methods (GET, POST, PUT, DELETE...)
-- Request parameters and bodies
-- Possible responses with their types
-- Authentication schemes
-
-### How is documentation generated?
-
-There are two main approaches:
-
-**Code-first**: The code is the source of truth. You use decorators or annotations in your framework, and documentation is generated automatically.
-
-Examples of frameworks that support it:
-
-- **FastAPI** (Python): generates OpenAPI without extra configuration
-- **NestJS** (Node): with decorators `@ApiProperty()`, `@ApiResponse()`
-- **Spring Boot** (Java): with springdoc-openapi
-
-**Design-first**: You write the OpenAPI specification first, and then generate code or mocks from it. Useful when there are contracts between teams.
-
-### Visualization tools
-
-Once you have the OpenAPI file, you render it with:
-
-- **Swagger UI**: interactive interface where you can test endpoints directly
-- **Redoc**: cleaner documentation, reference style
-- **Stoplight**: complete API design platform
+> **Idioma:** Español
+> **Nivel:** Intermedio
+> **Audiencia:** QA Engineers que trabajan con APIs y bases de datos
 
 ---
 
-## Authentication: The current standard
+## Introducción
 
-**JWT with Bearer tokens** is the dominant standard for private APIs.
-
-The typical flow:
-
-1. You login to `/auth/login` with credentials
-2. You receive a JWT token
-3. You send that token in the `Authorization: Bearer <token>` header in each request
-
-OAuth 2.0 is used when you need to delegate access (for example, "Sign in with Google").
+En el desarrollo de software moderno, un QA Engineer necesita entender cómo testear tanto la capa de API como la base de datos directamente. Esta guía explica los conceptos fundamentales para que puedas realizar testing efectivo en ambas capas.
 
 ---
 
-## Specific case: Supabase
+## ¿Cómo se documenta una API en la industria?
 
-### What is PostgREST?
+En equipos maduros, **no deberías necesitar preguntarle al Tech Lead** cómo usar la API. La expectativa es que exista documentación dinámica accesible, generalmente en una URL como `/docs`, `/swagger`, o `/api-docs`.
 
-Supabase uses **PostgREST** internally. This service automatically generates a REST API based on your PostgreSQL database structure.
+Si te encuentras preguntando al equipo o leyendo código directamente para entender la API, eso es un síntoma de **deuda técnica**.
 
-**What you get without doing anything:**
+### El estándar actual: OpenAPI
 
-- Complete REST API for all your tables
-- Auto-generated documentation accessible from the Supabase dashboard ("API Docs" section)
-- TypeScript type generation with `supabase gen types`
+**OpenAPI Specification (OAS)** es el estándar de facto para describir APIs REST. Antes se llamaba Swagger, y muchas personas aún usan ambos términos de forma intercambiable.
 
-### Automatically generated endpoints
+Es un archivo YAML o JSON que describe:
 
-For each table in your `public` schema, you automatically have:
+- Todos los endpoints disponibles
+- Métodos HTTP (GET, POST, PUT, DELETE...)
+- Parámetros de request y bodies
+- Posibles respuestas con sus tipos
+- Esquemas de autenticación
 
-| Operation      | HTTP Method | Endpoint                          |
-| -------------- | ----------- | --------------------------------- |
-| Read all       | `GET`       | `/rest/v1/table`                  |
-| Read filtered  | `GET`       | `/rest/v1/table?column=eq.value`  |
-| Insert         | `POST`      | `/rest/v1/table`                  |
-| Update         | `PATCH`     | `/rest/v1/table?id=eq.123`        |
-| Delete         | `DELETE`    | `/rest/v1/table?id=eq.123`        |
+### ¿Cómo se genera la documentación?
 
-### Authentication in Supabase
+Hay dos enfoques principales:
 
-```
-Required headers:
-  apikey: <SUPABASE_ANON_KEY>
-  Authorization: Bearer <JWT_TOKEN>  // optional, for authenticated users
-```
+**Code-first**: El código es la fuente de verdad. Usas decoradores o anotaciones en tu framework, y la documentación se genera automáticamente.
 
-The `anon key` gives basic access, but RLS (Row Level Security) policies determine what data each role can see/modify.
+Ejemplos de frameworks que lo soportan:
 
-### OpenAPI in Supabase
+- **FastAPI** (Python): genera OpenAPI sin configuración extra
+- **NestJS** (Node): con decoradores `@ApiProperty()`, `@ApiResponse()`
+- **Spring Boot** (Java): con springdoc-openapi
 
-**PostgREST serves the OpenAPI specification (Swagger 2.0) automatically.**
+**Design-first**: Escribes la especificación OpenAPI primero, y luego generas código o mocks desde ella. Útil cuando hay contratos entre equipos.
 
-```
-GET https://<project-ref>.supabase.co/rest/v1/?apikey=<SUPABASE_ANON_KEY>
-```
+### Herramientas de visualización
 
-This returns a JSON with the complete specification: all tables, columns, types, relationships.
+Una vez que tienes el archivo OpenAPI, lo renderizas con:
 
-The specification **is generated dynamically** based on:
-
-- The tables exposed in the `public` schema
-- The permissions of the role making the request (anon or authenticated)
-- The SQL comments you've put on tables/columns
-
-### Relationships (JOINs) in the API
-
-Something many people don't know: PostgREST uses "embedding" to do automatic JOINs based on foreign keys:
-
-```bash
-# Get orders WITH customer data (equivalent to a JOIN)
-GET /rest/v1/orders?select=id,total,customers(name,email)
-
-# Roughly equivalent to:
-SELECT orders.id, orders.total, customers.name, customers.email
-FROM orders
-JOIN customers ON orders.customer_id = customers.id
-```
-
-**API limitations:**
-
-- You can't do arbitrary JOINs (only those defined by foreign keys)
-- You can't do complex aggregations (`GROUP BY`, `HAVING`, subqueries)
-- You can't do `UNION`, CTEs, window functions, etc.
-
-For that you need **RPC functions** (SQL functions you expose as endpoints) or **direct SQL access**.
+- **Swagger UI**: interfaz interactiva donde puedes probar endpoints directamente
+- **Redoc**: documentación más limpia, estilo referencia
+- **Stoplight**: plataforma completa de diseño de APIs
 
 ---
 
-## Difference between API vs Database Testing
+## Autenticación: El estándar actual
 
-### Is the API "disguised" SQL?
+**JWT con Bearer tokens** es el estándar dominante para APIs privadas.
 
-Yes and no. PostgREST translates HTTP requests to SQL queries, but with limitations and some extra capabilities.
+El flujo típico:
 
-### The system layers
+1. Haces login a `/auth/login` con credenciales
+2. Recibes un token JWT
+3. Envías ese token en el header `Authorization: Bearer <token>` en cada request
+
+OAuth 2.0 se usa cuando necesitas delegar acceso (por ejemplo, "Iniciar sesión con Google").
+
+---
+
+## Diferencia entre Testing de API vs Base de Datos
+
+### ¿Es la API SQL "disfrazado"?
+
+Sí y no. PostgREST traduce requests HTTP a queries SQL, pero con limitaciones y algunas capacidades extra.
+
+### Las capas del sistema
 
 ```
 ┌─────────────────────────────────────────┐
@@ -150,112 +82,112 @@ Yes and no. PostgREST translates HTTP requests to SQL queries, but with limitati
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
-│         API Layer (PostgREST)            │  ← API Testing
-│  • JWT Authentication                    │
+│         Capa de API (PostgREST)          │  ← API Testing
+│  • Autenticación JWT                     │
 │  • Row Level Security (RLS)              │
-│  • Input validations                     │
-│  • Response transformation               │
+│  • Validaciones de input                 │
+│  • Transformación de respuestas          │
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
-│         Database (Postgres)              │  ← DB Testing
+│         Base de Datos (Postgres)         │  ← DB Testing
 │  • Constraints (FK, UNIQUE, CHECK)       │
 │  • Triggers                              │
-│  • "Raw" data                            │
+│  • Datos "crudos"                        │
 └─────────────────────────────────────────┘
 ```
 
-### Direct comparison
+### Comparación directa
 
-| Aspect                       | Testing via API                                   | Testing via direct SQL |
-| ---------------------------- | ------------------------------------------------- | ---------------------- |
-| **What you test**            | The API contract (endpoints, auth, validations)   | The data itself        |
-| **Access layer**             | Goes through RLS, validations, middleware         | Direct to the DB       |
-| **Authentication**           | JWT tokens, API keys                              | Connection string      |
-| **Permissions**              | User's RLS policies                               | Postgres role permissions |
-| **Response format**          | Structured JSON                                   | Rows/columns           |
-| **Complex joins**            | Limited to foreign keys                           | Any query              |
-| **Business validations**     | Applied (triggers, constraints via API)           | Depends on how you insert |
+| Aspecto | Testing via API | Testing via SQL directo |
+|---------|-----------------|-------------------------|
+| **Qué testeas** | El contrato de la API (endpoints, auth, validaciones) | Los datos mismos |
+| **Capa de acceso** | Pasa por RLS, validaciones, middleware | Directo a la DB |
+| **Autenticación** | JWT tokens, API keys | Connection string |
+| **Permisos** | Políticas RLS del usuario | Permisos del rol Postgres |
+| **Formato de respuesta** | JSON estructurado | Filas/columnas |
+| **Joins complejos** | Limitado a foreign keys | Cualquier query |
+| **Validaciones de negocio** | Aplicadas (triggers, constraints via API) | Depende de cómo insertes |
 
 ---
 
-## When to use each type of testing?
+## ¿Cuándo usar cada tipo de testing?
 
-### API testing is better for:
+### API testing es mejor para:
 
-**Validating the API contract:**
-
-```
-POST /rest/v1/users with invalid email
-→ Should return 400 Bad Request
-→ The error message should be clear
-```
-
-**Validating authorization:**
+**Validar el contrato de la API:**
 
 ```
-GET /rest/v1/orders (without token)
-→ Should return 401
-
-GET /rest/v1/orders (with user A token)
-→ Should only see user A's orders (RLS)
+POST /rest/v1/users con email inválido
+→ Debería devolver 400 Bad Request
+→ El mensaje de error debería ser claro
 ```
 
-**Validating that the response has the expected format:**
+**Validar autorización:**
+
+```
+GET /rest/v1/orders (sin token)
+→ Debería devolver 401
+
+GET /rest/v1/orders (con token de usuario A)
+→ Solo debería ver las órdenes del usuario A (RLS)
+```
+
+**Validar que la respuesta tiene el formato esperado:**
 
 ```
 GET /rest/v1/products?select=id,name,price
-→ The JSON should have exactly those fields
-→ The types should be correct
+→ El JSON debería tener exactamente esos campos
+→ Los tipos deberían ser correctos
 ```
 
-### SQL testing is better for:
+### SQL testing es mejor para:
 
-**Verifying data integrity after an operation:**
+**Verificar integridad de datos después de una operación:**
 
 ```sql
--- The frontend did a checkout, I verify all entities were created
+-- El frontend hizo un checkout, verifico que todas las entidades se crearon
 SELECT COUNT(*) FROM orders WHERE user_id = 'X' AND created_at > NOW() - INTERVAL '1 minute';
 SELECT COUNT(*) FROM order_items WHERE order_id = (SELECT id FROM orders WHERE...);
-SELECT balance FROM wallets WHERE user_id = 'X'; -- Was it deducted correctly?
+SELECT balance FROM wallets WHERE user_id = 'X'; -- ¿Se dedujo correctamente?
 ```
 
-**Validation queries that the API doesn't expose:**
+**Queries de validación que la API no expone:**
 
 ```sql
--- Are there orphaned orders (without user)?
+-- ¿Hay órdenes huérfanas (sin usuario)?
 SELECT * FROM orders WHERE user_id NOT IN (SELECT id FROM users);
 
--- Do the totals match?
-SELECT o.id, o.total, SUM(oi.price * oi.quantity) as calculated
+-- ¿Los totales coinciden?
+SELECT o.id, o.total, SUM(oi.price * oi.quantity) as calculado
 FROM orders o
 JOIN order_items oi ON o.id = oi.order_id
 GROUP BY o.id, o.total
 HAVING o.total != SUM(oi.price * oi.quantity);
 ```
 
-**Verifying side effects (triggers, cascades):**
+**Verificar efectos secundarios (triggers, cascades):**
 
 ```sql
--- If I deleted a user, were their related data deleted?
-SELECT * FROM orders WHERE user_id = 'deleted_user';
-SELECT * FROM sessions WHERE user_id = 'deleted_user';
+-- Si eliminé un usuario, ¿se eliminaron sus datos relacionados?
+SELECT * FROM orders WHERE user_id = 'usuario_eliminado';
+SELECT * FROM sessions WHERE user_id = 'usuario_eliminado';
 ```
 
-### The combined approach (the most powerful)
+### El enfoque combinado (el más poderoso)
 
 ```
-1. I perform an action via UI or API
-2. I verify with SQL that the data is correct
-3. I verify with API that the response is correct
+1. Realizo una acción via UI o API
+2. Verifico con SQL que los datos son correctos
+3. Verifico con API que la respuesta es correcta
 ```
 
-**Concrete example:**
+**Ejemplo concreto:**
 
 ```javascript
-// Test: Create purchase order
-test('checkout creates order with correct items', async () => {
-  // 1. Action via API (simulates what the frontend would do)
+// Test: Crear orden de compra
+test('checkout crea orden con items correctos', async () => {
+  // 1. Acción via API (simula lo que haría el frontend)
   const response = await api.post('/checkout', {
     items: [{ product_id: 1, quantity: 2 }],
   });
@@ -263,11 +195,11 @@ test('checkout creates order with correct items', async () => {
   expect(response.status).toBe(201);
   const orderId = response.data.id;
 
-  // 2. Verification via API (what the user would see)
+  // 2. Verificación via API (lo que vería el usuario)
   const orderResponse = await api.get(`/orders/${orderId}`);
   expect(orderResponse.data.status).toBe('pending');
 
-  // 3. Verification via SQL (what's actually in the DB)
+  // 3. Verificación via SQL (lo que realmente está en la DB)
   const dbResult = await sql`
     SELECT
       o.total,
@@ -286,46 +218,54 @@ test('checkout creates order with correct items', async () => {
 
 ---
 
-## Bugs detected by each type of testing
+## Bugs detectados por cada tipo de testing
 
-### Only detectable with SQL:
+### Solo detectables con SQL:
 
-- Orphaned data due to misconfigured cascades
-- Incorrect timestamps due to timezone issues
-- Fields the API doesn't expose but are wrong
-- Inconsistencies between related tables
+- Datos huérfanos por cascadas mal configuradas
+- Timestamps incorrectos por problemas de timezone
+- Campos que la API no expone pero están mal
+- Inconsistencias entre tablas relacionadas
 
-### Only detectable with API:
+### Solo detectables con API:
 
-- Responses with incorrect format
-- RLS policies that filter data incorrectly
-- Input validations that don't work
-- Incorrect cache headers
-
----
-
-## Security: DDL vs DML
-
-There's a key distinction to understand permissions:
-
-| Level            | What it controls                                 | How it's configured                            |
-| ---------------- | ------------------------------------------------ | ---------------------------------------------- |
-| **DDL** (schema) | Create/modify/delete tables, columns, types      | Postgres roles (`postgres`, `service_role`)    |
-| **DML** (data)   | SELECT, INSERT, UPDATE, DELETE on rows           | RLS policies + roles `anon`/`authenticated`    |
-
-**Important point:** Supabase's `anon key` and `service_role key` **CANNOT modify the schema**. Only the `postgres` role (direct DB access) can do DDL.
-
-When you use the REST API with the `anon key`, **you can only do DML operations** (read, insert, update, delete data). You can't touch columns or types.
+- Respuestas con formato incorrecto
+- Políticas RLS que filtran datos incorrectamente
+- Validaciones de input que no funcionan
+- Headers de cache incorrectos
 
 ---
 
-## Summary
+## Seguridad: DDL vs DML
 
-| Question                      | Answer                                                     |
-| ----------------------------- | ---------------------------------------------------------- |
-| Is the API disguised SQL?     | Partially. It translates HTTP to SQL but with limitations  |
-| Does Supabase do JOINs?       | Yes, via "embedding" based on foreign keys                 |
-| Is testing API vs DB the same?| No. You test different layers with different concerns      |
-| Which to use for QA?          | **Both**, because each detects different types of bugs     |
+Hay una distinción clave para entender permisos:
 
-The combination of both types of testing is what makes a complete QA Engineer: not just verifying that "it works" but that the data is **correct, consistent, and complete**.
+| Nivel | Qué controla | Cómo se configura |
+|-------|--------------|-------------------|
+| **DDL** (schema) | Crear/modificar/eliminar tablas, columnas, tipos | Roles Postgres (`postgres`, `service_role`) |
+| **DML** (datos) | SELECT, INSERT, UPDATE, DELETE en filas | Políticas RLS + roles `anon`/`authenticated` |
+
+**Punto importante:** La `anon key` y `service_role key` de Supabase **NO PUEDEN modificar el schema**. Solo el rol `postgres` (acceso directo a la DB) puede hacer DDL.
+
+Cuando usas la REST API con la `anon key`, **solo puedes hacer operaciones DML** (leer, insertar, actualizar, eliminar datos). No puedes tocar columnas ni tipos.
+
+---
+
+## Resumen
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| ¿Es la API SQL disfrazado? | Parcialmente. Traduce HTTP a SQL pero con limitaciones |
+| ¿Hace JOINs la API? | Sí, via "embedding" basado en foreign keys |
+| ¿Es lo mismo testear API vs DB? | No. Testeas diferentes capas con diferentes preocupaciones |
+| ¿Cuál usar para QA? | **Ambos**, porque cada uno detecta diferentes tipos de bugs |
+
+La combinación de ambos tipos de testing es lo que hace a un QA Engineer completo: no solo verificar que "funciona" sino que los datos son **correctos, consistentes y completos**.
+
+---
+
+## Navegación
+
+- [Conexión a DB](./connection-db.md) - Patrones de conexión
+- [Validación de Datos](./data-validation-testing.md) - Estrategias de validación
+- [DBHub MCP](../../setup/mcp-dbhub.md) - Configuración de MCP
