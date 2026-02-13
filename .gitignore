@@ -60,3 +60,6 @@ dbhub.toml
 .gemini/settings.catalog.json
 
 # ===== Local Useful Files =====
+
+# AI Tool Specific (not portable)
+.claude/
