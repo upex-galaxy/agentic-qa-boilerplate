@@ -68,13 +68,13 @@ const QA_STAGES = {
   'stage-2': { name: 'Exploratory Testing', dir: 'stage-2-exploratory' },
   'stage-3': { name: 'Test Documentation', dir: 'stage-3-documentation' },
   'stage-4': { name: 'Test Automation', dir: 'stage-4-automation' },
-  'stage-5': { name: 'Shift-Right Testing', dir: 'stage-5-shift-right' },
+  'stage-5': { name: 'Regression Testing', dir: 'stage-5-regression' },
 };
 
 /**
  * Extra directories in .prompts/
  */
-const EXTRA_DIRS = ['context-generators', 'utilities'];
+const EXTRA_DIRS = ['utilities'];
 
 /**
  * Role-based presets for quick updates
@@ -82,7 +82,7 @@ const EXTRA_DIRS = ['context-generators', 'utilities'];
 const ROLE_PRESETS = {
   qa: {
     stages: ['stage-1', 'stage-2', 'stage-3', 'stage-4', 'stage-5'],
-    description: 'All QA stages (Shift-Left → Automation → Shift-Right)',
+    description: 'All QA stages (Shift-Left → Automation → Regression)',
   },
   'qa-manual': {
     stages: ['stage-1', 'stage-2', 'stage-3'],
@@ -90,7 +90,7 @@ const ROLE_PRESETS = {
   },
   'qa-automation': {
     stages: ['stage-4', 'stage-5'],
-    description: 'Automation only (Test Automation, Shift-Right)',
+    description: 'Automation only (Test Automation, Regression)',
   },
   discovery: {
     phases: ['phase-1', 'phase-2', 'phase-3', 'phase-4'],
@@ -285,7 +285,7 @@ ${colors.bold}FLAGS FOR 'prompts':${colors.reset}
   --stage N     Specific stages (e.g., --stage 1 or --stage 1,2,3)
   --phase N     Specific phases (e.g., --phase 1 or --phase 1,2)
   --role ROLE   By role preset (see available roles)
-  --extras      Only extra directories (context-generators, utilities)
+  --extras      Only extra directories (utilities)
 
 ${colors.bold}AVAILABLE ROLES:${colors.reset}
   qa            ${colors.dim}-> Stages 1-5 (Full QA workflow)${colors.reset}
@@ -343,7 +343,7 @@ async function showPromptsMenu() {
       { name: 'By role preset...', value: 'role' },
       { name: 'QA Stages (1-5)...', value: 'stages' },
       { name: 'Discovery Phases (1-4)...', value: 'phases' },
-      { name: 'Only extras (context-generators, utilities)', value: 'extras' },
+      { name: 'Only extras (utilities)', value: 'extras' },
     ],
   });
 

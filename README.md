@@ -164,13 +164,12 @@ bun run test:e2e:critical  # Tests marked @critical
 │
 ├── .prompts/                     # AI Prompts Library
 │   ├── discovery/                # Project discovery
-│   ├── context-generators/       # Generate .context/ files
 │   ├── stage-1-shift-left/       # Test planning
 │   ├── stage-2-exploratory/      # Manual testing
 │   ├── stage-3-documentation/    # TMS documentation
 │   ├── stage-4-automation/       # Test automation
-│   ├── stage-5-shift-right/      # Production testing
-│   └── utilities/                # Helper prompts
+│   ├── stage-5-regression/       # Regression testing
+│   └── utilities/                # Helper prompts + context generators
 │
 ├── .github/workflows/            # CI/CD pipelines
 │   ├── build.yml                 # PR validation
@@ -231,7 +230,7 @@ test.describe('User Dashboard', () => {
 });
 ```
 
-See `.context/guidelines/TAE/KATA-AI-GUIDE.md` for complete documentation.
+See `.context/guidelines/TAE/kata-ai-index.md` for complete documentation.
 
 ---
 
@@ -314,6 +313,66 @@ AUTO_SYNC
 
 This boilerplate is optimized for AI-assisted test development.
 
+### Complete Adaptation Flow
+
+When you clone this template, follow this flow to adapt it to your project:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. CLONE TEMPLATE                                           │
+│    git clone https://github.com/upex-galaxy/               │
+│      ai-driven-test-automation-boilerplate.git my-tests    │
+│    bun install && bun run pw:install                       │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. RUN DISCOVERY (generate .context/)                       │
+│    @.prompts/discovery/phase-1-constitution/*.md            │
+│    @.prompts/discovery/phase-2-architecture/*.md            │
+│    @.prompts/discovery/business-data-map.md                 │
+│    @.prompts/discovery/api-architecture.md                  │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 3. ADAPT KATA FRAMEWORK                                     │
+│    @.prompts/setup/kata-framework-adaptation.md             │
+│                                                             │
+│    This prompt:                                             │
+│    • Reads all your context (SRS, PRD, idea)               │
+│    • Analyzes the template structure                        │
+│    • Generates an adaptation plan                           │
+│    • Configures auth (globalSetup, UI, API)                │
+│    • Creates first domain components                        │
+│                                                             │
+│    OUTPUT: .context/PBI/kata-framework-adaptation-plan.md   │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 4. GENERATE DOCUMENTATION                                   │
+│    @.prompts/utilities/context-engineering-setup.md         │
+│    @.prompts/utilities/project-test-guide.md                │
+│                                                             │
+│    OUTPUT: README.md, CLAUDE.md, project-test-guide.md      │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 5. VERIFY SETUP                                             │
+│    bun run type-check                                       │
+│    bun run lint                                             │
+│    bun run test --grep @smoke                               │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 6. START QA WORKFLOW                                        │
+│    @.prompts/us-qa-workflow.md                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ### Context Engineering
 
 The `.context/` directory contains structured documentation for AI:
@@ -330,21 +389,34 @@ The `.context/` directory contains structured documentation for AI:
 └── PBI/                  # What to test (generated)
 ```
 
-### Prompt Workflow
+### Prompts Directory Structure
 
-Use the prompts in `.prompts/` for structured AI assistance:
-
-```bash
-# 1. Discovery (once per project)
-@.prompts/discovery/project-constitution.md
-
-# 2. Generate Context
-@.prompts/context-generators/business-data-map.md
-@.prompts/context-generators/api-architecture.md
-
-# 3. Per User Story
-@.prompts/stage-1-shift-left/feature-test-plan.md
-@.prompts/stage-4-automation/automation-e2e.md
+```
+.prompts/
+├── discovery/                      # Project discovery (one-time)
+│   ├── phase-1-constitution/       # Business context
+│   ├── phase-2-architecture/       # PRD + SRS
+│   ├── phase-3-infrastructure/     # Technical stack
+│   ├── phase-4-specification/      # Backlog mapping
+│   ├── api-architecture.md         # API documentation
+│   └── business-data-map.md        # Business flow mapping
+│
+├── setup/                          # One-time setup
+│   └── kata-framework-adaptation.md # Adapt template to project
+│
+├── utilities/                      # Reusable utilities
+│   ├── context-engineering-setup.md # Generate README + CLAUDE.md
+│   ├── project-test-guide.md       # Testing guide
+│   ├── git-flow.md                 # Git workflow
+│   └── git-conflict-fix.md         # Resolve conflicts
+│
+├── stage-1-shift-left/             # Test planning
+├── stage-2-exploratory/            # Manual testing
+├── stage-3-documentation/          # TMS documentation
+├── stage-4-automation/             # Test automation
+├── stage-5-regression/             # Regression testing
+│
+└── us-qa-workflow.md               # QA workflow orchestrator
 ```
 
 ### CLAUDE.md
@@ -437,7 +509,7 @@ Run discovery prompts to generate project-specific context:
 
 ## Contributing
 
-1. Read `.context/guidelines/TAE/KATA-AI-GUIDE.md`
+1. Read `.context/guidelines/TAE/kata-ai-index.md`
 2. Follow `.context/guidelines/TAE/automation-standards.md`
 3. Use conventional commits
 4. Ensure all tests pass before PR
@@ -446,7 +518,7 @@ Run discovery prompts to generate project-specific context:
 
 ## Documentation
 
-- [KATA AI Guide](.context/guidelines/TAE/KATA-AI-GUIDE.md)
+- [KATA AI Guide](.context/guidelines/TAE/kata-ai-index.md)
 - [Automation Standards](.context/guidelines/TAE/automation-standards.md)
 - [TypeScript Patterns](.context/guidelines/TAE/typescript-patterns.md)
 - [TMS Integration](.context/guidelines/TAE/tms-integration.md)
