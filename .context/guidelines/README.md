@@ -15,7 +15,7 @@ guidelines/
 │
 ├── TAE/                    # Test Automation Engineering
 │   ├── README.md           # TAE index
-│   ├── KATA-AI-GUIDE.md    # AI entry point (START HERE)
+│   ├── kata-ai-index.md    # AI entry point (START HERE)
 │   ├── kata-architecture.md    # KATA layer architecture
 │   ├── automation-standards.md # ATC rules and patterns
 │   ├── typescript-patterns.md  # TypeScript conventions
@@ -52,7 +52,7 @@ guidelines/
 
 ```
 Read BEFORE writing tests:
-1. TAE/KATA-AI-GUIDE.md      ← Start here (AI entry point)
+1. TAE/kata-ai-index.md      ← Start here (AI entry point)
 2. TAE/kata-architecture.md  ← Understand layers
 3. TAE/automation-standards.md ← ATC rules
 4. code-standards.md         ← General coding standards
@@ -128,8 +128,8 @@ Guidelines are **constant principles**. For step-by-step workflows, see:
 ## See Also
 
 - `CLAUDE.md` (project root) - Project memory and quick start
-- `TAE/KATA-AI-GUIDE.md` - AI implementation guide
+- `TAE/kata-ai-index.md` - AI implementation guide
 
 ---
 
-**Last Updated**: 2026-02-09
+**Last Updated**: 2026-02-12

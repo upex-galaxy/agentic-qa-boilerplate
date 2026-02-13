@@ -1,56 +1,56 @@
 # Test Data Management
 
-Guía para gestión de datos de prueba en KATA framework con TypeScript + Playwright.
+Guide for test data management in KATA framework with TypeScript + Playwright.
 
 ---
 
-## 1. Filosofía
+## 1. Philosophy
 
-### Regla de Oro
+### Golden Rule
 
-**NUNCA usar datos estáticos** (excepto credenciales de login). Siempre generar datos dinámicos con Faker.
+**NEVER use static data** (except login credentials). Always generate dynamic data with Faker.
 
-### Principios
+### Principles
 
-| Principio        | Descripción                                 |
-| ---------------- | ------------------------------------------- |
-| **Dinámico**     | Datos generados en runtime, no hardcodeados |
-| **Aislamiento**  | Cada test crea sus propios datos            |
-| **Unicidad**     | UUIDs/timestamps para prevenir conflictos   |
-| **Realismo**     | Datos que simulan escenarios de producción  |
-| **Trazabilidad** | Prefijos identificables para cleanup        |
+| Principle         | Description                                    |
+| ----------------- | ---------------------------------------------- |
+| **Dynamic**       | Data generated at runtime, not hardcoded       |
+| **Isolation**     | Each test creates its own data                 |
+| **Uniqueness**    | UUIDs/timestamps to prevent conflicts          |
+| **Realism**       | Data that simulates production scenarios       |
+| **Traceability**  | Identifiable prefixes for cleanup              |
 
 ---
 
-## 2. Arquitectura
+## 2. Architecture
 
 ### DataFactory
 
-Clase estática centralizada en `tests/data/DataFactory.ts`.
+Centralized static class in `tests/data/DataFactory.ts`.
 
 ```
 tests/data/
-├── DataFactory.ts      # Generador centralizado
-├── types.ts            # Tipos internos
-├── fixtures/           # Datos estáticos de referencia
+├── DataFactory.ts      # Centralized generator
+├── types.ts            # Internal types
+├── fixtures/           # Static reference data
 │   └── example.json
-├── uploads/            # Archivos para tests de upload
-└── downloads/          # Destino de archivos descargados
+├── uploads/            # Files for upload tests
+└── downloads/          # Destination for downloaded files
 ```
 
-### Acceso
+### Access
 
-DataFactory se propaga a través de TestContext:
+DataFactory propagates through TestContext:
 
 ```typescript
-// Desde componentes (heredan de TestContext)
+// From components (inherit from TestContext)
 const user = this.data.createUser();
 
-// Desde tests (via fixtures)
+// From tests (via fixtures)
 const user = ui.data.createUser();
 const user = api.data.createUser();
 
-// Import directo (cuando no hay contexto)
+// Direct import (when no context available)
 import { DataFactory } from '@DataFactory';
 const user = DataFactory.createUser();
 ```
@@ -59,17 +59,17 @@ const user = DataFactory.createUser();
 
 ## 3. DataFactory API
 
-### Métodos Disponibles
+### Available Methods
 
-| Método                          | Retorna           | Descripción                                |
+| Method                          | Returns           | Description                                |
 | ------------------------------- | ----------------- | ------------------------------------------ |
-| `createUser(overrides?)`        | `TestUser`        | Usuario completo con email, password, name |
-| `createCredentials(overrides?)` | `TestCredentials` | Solo email + password                      |
-| `createTestId(prefix?)`         | `string`          | ID único para tracking                     |
-| `createProduct(overrides?)`     | `TestProduct`     | Datos de producto (ejemplo)                |
-| `createOrder(overrides?)`       | `TestOrder`       | Datos de pedido (ejemplo)                  |
+| `createUser(overrides?)`        | `TestUser`        | Complete user with email, password, name   |
+| `createCredentials(overrides?)` | `TestCredentials` | Only email + password                      |
+| `createTestId(prefix?)`         | `string`          | Unique ID for tracking                     |
+| `createProduct(overrides?)`     | `TestProduct`     | Product data (example)                     |
+| `createOrder(overrides?)`       | `TestOrder`       | Order data (example)                       |
 
-### Tipos
+### Types
 
 ```typescript
 // tests/data/types.ts
@@ -104,20 +104,20 @@ interface TestBooking {
 
 ---
 
-## 4. Patrones de Uso
+## 4. Usage Patterns
 
-### 4.1 Objeto Completo
+### 4.1 Complete Object
 
 ```typescript
-// Genera todos los campos con Faker
+// Generates all fields with Faker
 const user = this.data.createUser();
 // → { email: 'test.john.x7k2m9@example.com', password: 'TestAb3kL9mN!', name: 'John Doe', ... }
 ```
 
-### 4.2 Con Overrides
+### 4.2 With Overrides
 
 ```typescript
-// Genera todo pero sobreescribe campos específicos
+// Generates everything but overrides specific fields
 const admin = this.data.createUser({
   email: 'admin@example.com',
   name: 'Admin User',
@@ -125,27 +125,27 @@ const admin = this.data.createUser({
 // → { email: 'admin@example.com', password: 'TestAb3kL9mN!', name: 'Admin User', ... }
 ```
 
-### 4.3 Solo Credenciales
+### 4.3 Credentials Only
 
 ```typescript
-// Cuando solo necesitas email + password
+// When you only need email + password
 const creds = this.data.createCredentials();
 await this.loginPage.login(creds.email, creds.password);
 ```
 
-### 4.4 ID para Tracking
+### 4.4 ID for Tracking
 
 ```typescript
-// Genera ID único para identificar datos de test
+// Generates unique ID to identify test data
 const testId = this.data.createTestId('booking');
 // → 'booking-1707312000000-x7k2m9'
 ```
 
 ---
 
-## 5. Uso en Componentes
+## 5. Usage in Components
 
-### En ATCs (Layer 3)
+### In ATCs (Layer 3)
 
 ```typescript
 // tests/components/api/BookingsApi.ts
@@ -154,7 +154,7 @@ import { ApiBase } from './ApiBase';
 export class BookingsApi extends ApiBase {
   @atc('BOOK-API-001')
   async createBookingSuccessfully(overrides?: Partial<TestBooking>) {
-    // Genera datos dinámicos
+    // Generate dynamic data
     const booking = this.data.createBooking(overrides);
 
     const response = await this.post('/api/bookings', { data: booking });
@@ -165,7 +165,7 @@ export class BookingsApi extends ApiBase {
 }
 ```
 
-### En UI Components
+### In UI Components
 
 ```typescript
 // tests/components/ui/RegistrationPage.ts
@@ -189,7 +189,7 @@ export class RegistrationPage extends UiBase {
 
 ---
 
-## 6. Uso en Tests
+## 6. Usage in Tests
 
 ### E2E Tests
 
@@ -199,10 +199,10 @@ import { test, expect } from '@TestFixture';
 
 test.describe('User Registration', () => {
   test('should register new user successfully', async ({ ui }) => {
-    // ARRANGE - DataFactory genera datos dinámicos
+    // ARRANGE - DataFactory generates dynamic data
     const user = ui.data.createUser();
 
-    // ACT - ATC usa los datos
+    // ACT - ATC uses the data
     await ui.registration.registerNewUser(user);
 
     // ASSERT
@@ -210,7 +210,7 @@ test.describe('User Registration', () => {
   });
 
   test('should register user with specific email', async ({ ui }) => {
-    // Override específico para este test
+    // Specific override for this test
     const user = ui.data.createUser({
       email: 'vip@example.com',
     });
@@ -230,8 +230,8 @@ test.describe('Bookings API', () => {
   test('should create booking with generated data', async ({ api }) => {
     // ARRANGE
     const booking = api.data.createBooking({
-      hotelId: 123, // Hotel específico
-      stayValue: 500, // Valor fijo para validar
+      hotelId: 123, // Specific hotel
+      stayValue: 500, // Fixed value for validation
     });
 
     // ACT
@@ -246,18 +246,18 @@ test.describe('Bookings API', () => {
 
 ---
 
-## 7. Extender DataFactory
+## 7. Extending DataFactory
 
-### Agregar Nuevos Generadores
+### Adding New Generators
 
 ```typescript
 // tests/data/DataFactory.ts
 
 export class DataFactory {
-  // ... métodos existentes ...
+  // ... existing methods ...
 
   /**
-   * Genera datos de Newsletter para testing
+   * Generates Newsletter data for testing
    */
   static createNewsletter(overrides?: Partial<TestNewsletter>): TestNewsletter {
     return {
@@ -271,7 +271,7 @@ export class DataFactory {
 }
 ```
 
-### Agregar Nuevos Tipos
+### Adding New Types
 
 ```typescript
 // tests/data/types.ts
@@ -286,20 +286,20 @@ export interface TestNewsletter {
 
 ---
 
-## 8. Fixtures Estáticos
+## 8. Static Fixtures
 
-Para datos de referencia que no cambian, usar `tests/data/fixtures/`.
+For reference data that doesn't change, use `tests/data/fixtures/`.
 
-### Cuándo Usar Fixtures
+### When to Use Fixtures
 
-| Usar Fixtures Para      | Usar DataFactory Para       |
-| ----------------------- | --------------------------- |
-| Roles/permisos fijos    | Usuarios de test            |
-| Catálogos de referencia | Datos transaccionales       |
-| Respuestas mock de API  | Payloads de request         |
-| Configuraciones         | Datos con lógica de negocio |
+| Use Fixtures For         | Use DataFactory For          |
+| ------------------------ | ---------------------------- |
+| Fixed roles/permissions  | Test users                   |
+| Reference catalogs       | Transactional data           |
+| API mock responses       | Request payloads             |
+| Configurations           | Data with business logic     |
 
-### Ejemplo de Fixture
+### Fixture Example
 
 ```json
 // tests/data/fixtures/roles.json
@@ -319,55 +319,55 @@ Para datos de referencia que no cambian, usar `tests/data/fixtures/`.
 }
 ```
 
-### Uso de Fixtures
+### Using Fixtures
 
 ```typescript
 import roles from '@data/fixtures/roles.json';
 
 test('admin can delete', async ({ api }) => {
   const user = api.data.createUser();
-  // Usar rol fijo del fixture
+  // Use fixed role from fixture
   await api.users.assignRole(user.id, roles.admin);
 });
 ```
 
 ---
 
-## 9. Aislamiento de Datos
+## 9. Data Isolation
 
-### Identificadores Únicos
+### Unique Identifiers
 
-DataFactory genera identificadores únicos automáticamente:
+DataFactory automatically generates unique identifiers:
 
 ```typescript
-// Email único: test.john.x7k2m9@example.com
-// Patrón: {prefix}.{nombre}.{6-chars-random}@example.com
+// Unique email: test.john.x7k2m9@example.com
+// Pattern: {prefix}.{name}.{6-chars-random}@example.com
 
-// TestId único: test-1707312000000-x7k2m9
-// Patrón: {prefix}-{timestamp}-{6-chars-random}
+// Unique TestId: test-1707312000000-x7k2m9
+// Pattern: {prefix}-{timestamp}-{6-chars-random}
 ```
 
-### Ejecución Paralela
+### Parallel Execution
 
-Para tests en paralelo, los datos generados son automáticamente únicos por timestamp + random string.
+For parallel tests, generated data is automatically unique by timestamp + random string.
 
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  workers: 4, // 4 tests en paralelo
+  workers: 4, // 4 tests in parallel
 });
 
-// Cada worker genera datos únicos automáticamente
-// No hay colisiones gracias a timestamp + random
+// Each worker generates unique data automatically
+// No collisions thanks to timestamp + random
 ```
 
 ---
 
-## 10. Credenciales y Datos Sensibles
+## 10. Credentials and Sensitive Data
 
-### Credenciales de Login
+### Login Credentials
 
-**Excepción a la regla**: Credenciales de usuarios existentes vienen de variables de entorno.
+**Exception to the rule**: Credentials for existing users come from environment variables.
 
 ```typescript
 // config/variables.ts
@@ -378,15 +378,15 @@ export const config = {
   },
 };
 
-// Uso en tests
+// Usage in tests
 const { email, password } = api.config.testUser;
 await api.auth.loginSuccessfully({ email, password });
 ```
 
-### Variables de Entorno
+### Environment Variables
 
 ```env
-# .env (no commitear)
+# .env (do not commit)
 LOCAL_USER_EMAIL=test@example.com
 LOCAL_USER_PASSWORD=SecurePassword123!
 DEVSTAGE_USER_EMAIL=staging@example.com
@@ -399,48 +399,48 @@ DEVSTAGE_USER_PASSWORD=StagingPassword123!
 
 ### DO
 
-- Usar `this.data.createX()` en componentes
-- Usar `ui.data.createX()` o `api.data.createX()` en tests
-- Pasar overrides solo cuando sea necesario
-- Generar datos nuevos para cada test
-- Usar prefijos identificables (`test.`, `CONF-`)
+- Use `this.data.createX()` in components
+- Use `ui.data.createX()` or `api.data.createX()` in tests
+- Pass overrides only when necessary
+- Generate new data for each test
+- Use identifiable prefixes (`test.`, `CONF-`)
 
 ### DON'T
 
-- Hardcodear emails, nombres, o valores
-- Compartir datos entre tests
-- Usar datos de producción en tests
-- Crear generadores sin tipos TypeScript
-- Importar faker directamente (usar DataFactory)
+- Hardcode emails, names, or values
+- Share data between tests
+- Use production data in tests
+- Create generators without TypeScript types
+- Import faker directly (use DataFactory)
 
 ---
 
-## 12. Referencia Rápida
+## 12. Quick Reference
 
 ```typescript
-// Acceso desde componentes
+// Access from components
 this.data.createUser();
 this.data.createCredentials();
 this.data.createTestId('prefix');
 this.data.createHotel();
 this.data.createBooking();
 
-// Acceso desde tests
+// Access from tests
 ui.data.createUser();
 api.data.createUser();
 
-// Import directo
+// Direct import
 import { DataFactory } from '@DataFactory';
 DataFactory.createUser();
 
-// Con overrides
+// With overrides
 this.data.createUser({ email: 'fixed@test.com' });
 this.data.createBooking({ hotelId: 123, stayValue: 500 });
 ```
 
 ---
 
-## 13. Recursos
+## 13. Resources
 
 - **Faker Documentation**: https://fakerjs.dev/
 - **Playwright Test Fixtures**: https://playwright.dev/docs/test-fixtures

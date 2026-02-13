@@ -6,7 +6,7 @@
 
 ## AI Entry Point
 
-**For AI agents**: Start here → **`KATA-AI-GUIDE.md`**
+**For AI agents**: Start here → **`kata-ai-index.md`**
 
 Quick orientation, critical rules, and task-based navigation.
 
@@ -20,7 +20,7 @@ Quick orientation, critical rules, and task-based navigation.
 
 | File                      | Purpose                                            |
 | ------------------------- | -------------------------------------------------- |
-| `KATA-AI-GUIDE.md`        | **AI Entry Point** - Quick reference for AI agents |
+| `kata-ai-index.md`        | **AI Entry Point** - Quick reference for AI agents |
 | `kata-architecture.md`    | Architecture layers (TypeScript implementation)    |
 | `automation-standards.md` | Code standards, naming, anti-patterns              |
 | `typescript-patterns.md`  | TypeScript coding patterns and DRY principles      |
@@ -32,16 +32,10 @@ Quick orientation, critical rules, and task-based navigation.
 
 ### Conceptual Deep Dives
 
-| File (in `/docs/testing/test-architecture/`) | Purpose                                    |
-| -------------------------------------------- | ------------------------------------------ |
-| `kata-fundamentals.md`                       | KATA philosophy and conceptual foundations |
-| `dependency-injection-strategy.md`           | DI architecture, Playwright lazy loading   |
-
-### Conceptual Documentation
-
-| File                                                  | Purpose                      |
-| ----------------------------------------------------- | ---------------------------- |
-| `docs/testing/test-architecture/kata-fundamentals.md` | KATA philosophy and concepts |
+| File                                            | Purpose                                    |
+| ----------------------------------------------- | ------------------------------------------ |
+| `docs/methodology/kata-fundamentals.md`         | KATA philosophy and conceptual foundations |
+| `docs/testing/automation/dependency-injection.md` | DI architecture, Playwright lazy loading   |
 
 ### Auto-Generated
 
@@ -57,7 +51,7 @@ Generate with: `bun run kata:manifest`
 
 ### For AI Agents
 
-1. Read `KATA-AI-GUIDE.md` for orientation
+1. Read `kata-ai-index.md` for orientation
 2. Follow `.prompts/stage-4-automation/` prompts for implementation
 3. Run `bun run kata:manifest` to see existing components
 
@@ -73,9 +67,9 @@ Generate with: `bun run kata:manifest`
 
 ## References
 
-- **AI Guide**: `KATA-AI-GUIDE.md`
+- **AI Guide**: `kata-ai-index.md`
 - **AI Workflow**: `.prompts/stage-4-automation/`
 - **Framework Setup**: `.prompts/utilities/kata-framework-setup.md`
-- **Fundamentals**: `docs/testing/test-architecture/kata-fundamentals.md` (conceptual reference only)
-- **DI Strategy**: `docs/testing/test-architecture/dependency-injection-strategy.md` (Playwright lazy loading)
+- **Fundamentals**: `docs/methodology/kata-fundamentals.md` (conceptual reference only)
+- **DI Strategy**: `docs/testing/automation/dependency-injection.md` (Playwright lazy loading)
 - **Component Catalog**: `kata-manifest.json` (run `bun run kata:manifest`)

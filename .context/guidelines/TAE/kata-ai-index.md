@@ -33,8 +33,8 @@ KATA (Komponent Action Test Architecture) is a test automation framework where:
 | ---------------------------------- | ----------------------------------------------------------------- |
 | Understand KATA concepts           | `kata-architecture.md` or `docs/kata-fundamentals.md`             |
 | **Understand DI and lazy loading** | `docs/testing/test-architecture/dependency-injection-strategy.md` |
-| Create a new UI component          | `.prompts/stage-4-automation/automation-e2e-test.md`              |
-| Create a new API component         | `.prompts/stage-4-automation/automation-integration-test.md`      |
+| Create a new UI component          | `.prompts/stage-4-automation/e2e-test-automation-coding.md`       |
+| Create a new API component         | `.prompts/stage-4-automation/integration-test-automation-coding.md` |
 | Know naming conventions            | `automation-standards.md` (section 2)                             |
 | See anti-patterns (what NOT to do) | `automation-standards.md` (section 11)                            |
 | Setup project from scratch         | `.prompts/utilities/kata-framework-setup.md`                      |
@@ -194,11 +194,11 @@ import { config } from '../../../config/variables';
 
 These files are marked as **EXAMPLE COMPONENT** and demonstrate all KATA principles:
 
-| Type              | File                                  | What it demonstrates                                |
-| ----------------- | ------------------------------------- | --------------------------------------------------- |
-| **UI Component**  | `tests/components/ui/SignupPage.ts`   | Inline locators, shared locators, `@atc` decorator  |
-| **API Component** | `tests/components/api/AuthApi.ts`     | Tuple returns, fixed assertions, type-safe generics |
-| **Flows**         | `tests/components/flows/AuthFlows.ts` | Reusable ATC chains                                 |
+| Type              | File                                    | What it demonstrates                                |
+| ----------------- | --------------------------------------- | --------------------------------------------------- |
+| **UI Component**  | `tests/components/ui/ExamplePage.ts`    | Inline locators, shared locators, `@atc` decorator  |
+| **API Component** | `tests/components/api/ExampleApi.ts`    | Tuple returns, fixed assertions, type-safe generics |
+| **Flows**         | `tests/components/flows/ExampleFlows.ts`| Reusable ATC chains                                 |
 
 ---
 
@@ -217,9 +217,9 @@ These files are marked as **EXAMPLE COMPONENT** and demonstrate all KATA princip
 │   │   └── AuthApi.ts        # Layer 3: Example API component
 │   ├── /ui
 │   │   ├── UiBase.ts         # Layer 2: Playwright helpers
-│   │   └── SignupPage.ts     # Layer 3: Example UI component
+│   │   └── ExamplePage.ts    # Layer 3: Example UI component
 │   └── /flows
-│       └── AuthFlows.ts      # Layer 3.5: Reusable flows
+│       └── ExampleFlows.ts   # Layer 3.5: Reusable flows
 │
 ├── /e2e                       # E2E tests (UI + API)
 ├── /integration               # API-only tests
@@ -335,7 +335,8 @@ TEST_USER_PASSWORD=secret123
 
 For implementing ATCs from User Stories using the Playwright MCP, see:
 
-**`.prompts/stage-4-automation/kata-workflow.md`**
+- **E2E Tests**: `.prompts/stage-4-automation/e2e-test-automation-coding.md`
+- **API Tests**: `.prompts/stage-4-automation/integration-test-automation-coding.md`
 
 ### Workflow Phases Overview
 
@@ -386,12 +387,11 @@ This provides context without scanning the entire codebase.
 
 ## References
 
-| Document                                | Purpose                                     |
-| --------------------------------------- | ------------------------------------------- |
-| `docs/kata-fundamentals.md`             | Conceptual KATA documentation               |
-| `docs/dependency-injection-strategy.md` | DI architecture and Playwright lazy loading |
-| `kata-architecture.md`                  | Full architecture documentation             |
-| `automation-standards.md`               | All rules and standards                     |
-| `openapi-integration.md`                | OpenAPI integration and MCP setup           |
-| `PROJECT-SETUP.md` (root)               | Project setup guide                         |
-| `kata-manifest.json` (root)             | Auto-generated component catalog            |
+| Document                                                     | Purpose                                     |
+| ------------------------------------------------------------ | ------------------------------------------- |
+| `docs/testing/test-architecture/kata-fundamentals.md`        | Conceptual KATA documentation               |
+| `docs/testing/test-architecture/dependency-injection-strategy.md` | DI architecture and Playwright lazy loading |
+| `kata-architecture.md`                                       | Full architecture documentation             |
+| `automation-standards.md`                                    | All rules and standards                     |
+| `openapi-integration.md`                                     | OpenAPI integration and MCP setup           |
+| `kata-manifest.json` (root)                                  | Auto-generated component catalog            |

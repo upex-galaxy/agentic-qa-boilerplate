@@ -137,8 +137,8 @@ MCPs complement the KATA test automation framework:
 3. **Automation** (KATA): Write automated tests using KATA patterns
 4. **Verification** (MCP): Use MCPs for quick data verification
 
-See `../TAE/KATA-AI-GUIDE.md` for KATA framework details.
+See `../TAE/kata-ai-index.md` for KATA framework details.
 
 ---
 
-**Last Updated**: 2026-02
+**Last Updated**: 2026-02-12

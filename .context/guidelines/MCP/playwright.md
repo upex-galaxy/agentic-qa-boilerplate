@@ -148,4 +148,4 @@ See `../TAE/kata-architecture.md` for architecture details.
 
 ---
 
-**Last Updated**: 2026-02
+**Last Updated**: 2026-02-12

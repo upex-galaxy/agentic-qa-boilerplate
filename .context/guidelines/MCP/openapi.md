@@ -121,4 +121,4 @@ See `docs/mcp/openapi-mcp-setup.md` for:
 
 ---
 
-**Last Updated**: 2026-02
+**Last Updated**: 2026-02-12

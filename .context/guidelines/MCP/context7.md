@@ -102,15 +102,15 @@
 2. **Then**: Check KATA guidelines for project patterns
 3. **Finally**: Implement following KATA architecture
 
-See `../TAE/KATA-AI-GUIDE.md` for project-specific patterns.
+See `../TAE/kata-ai-index.md` for project-specific patterns.
 
 ---
 
 ## Related Documentation
 
 - `./tavily.md` - For web searches and troubleshooting
-- `../TAE/KATA-AI-GUIDE.md` - AI entry point for KATA patterns
+- `../TAE/kata-ai-index.md` - AI entry point for KATA patterns
 
 ---
 
-**Last Updated**: 2026-02
+**Last Updated**: 2026-02-12

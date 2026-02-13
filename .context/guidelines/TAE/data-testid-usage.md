@@ -342,4 +342,4 @@ test('list all testids', async ({ page }) => {
 
 - `./automation-standards.md` - General automation standards
 - `./kata-architecture.md` - KATA Architecture
-- `./KATA-AI-GUIDE.md` - AI implementation guide
+- `./kata-ai-index.md` - AI implementation guide

@@ -111,8 +111,8 @@
 ## Related Documentation
 
 - `./context7.md` - For official documentation lookup
-- `../TAE/KATA-AI-GUIDE.md` - Project-specific patterns
+- `../TAE/kata-ai-index.md` - Project-specific patterns
 
 ---
 
-**Last Updated**: 2026-02
+**Last Updated**: 2026-02-12

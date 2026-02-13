@@ -254,6 +254,6 @@ import { attachRequestResponseToAllure } from '@utils/allure';
 
 ## See Also
 
-- [KATA-AI-GUIDE.md](./KATA-AI-GUIDE.md) - Full KATA framework guide
+- [kata-ai-index.md](./kata-ai-index.md) - Full KATA framework guide
 - [kata-architecture.md](./kata-architecture.md) - Layer architecture
 - [automation-standards.md](./automation-standards.md) - Test writing standards

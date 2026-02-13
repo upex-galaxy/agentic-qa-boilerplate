@@ -2,33 +2,38 @@
 
 This directory contains all the documentation that the AI reads to work on the project.
 
-## 📂 Structure
+## Structure
 
 ```
 .context/
-├── system-prompt.md    # System prompt to copy to claude.md/gemini.md
 ├── idea/               PHASE 1: Constitution (business)
 ├── PRD/                PHASE 2: Architecture - Product Requirements
 ├── SRS/                PHASE 2: Architecture - Software Requirements
-├── PBI/                PHASES 4-6: Product Backlog (Specification, Testing, Planning)
-└── guidelines/         PHASES 7-14: Reference material by ROLE
-    ├── QA/             Quality Engineering Guidelines
-    ├── TAE/            Test Automation Engineering
-    └── MCP/            MCP Guidelines (atomized)
+├── PBI/                PHASES 4+: Product Backlog (Specification, Testing)
+├── guidelines/         Reference material by ROLE
+│   ├── QA/             Quality Engineering Guidelines
+│   ├── TAE/            Test Automation Engineering
+│   └── MCP/            MCP Guidelines
+├── business-data-map.md    # Generated: System flows
+├── api-architecture.md     # Generated: API documentation
+└── project-test-guide.md   # Generated: Testing guide
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
-### System Prompt
+### Project Memory Setup
 
-Before starting, configure your AI:
+Configure your AI tool's project memory:
 
-1. Read `system-prompt.md`
-2. Copy its content to your configuration file:
-   - Claude Code: `.claude/claude.md`
-   - Gemini CLI: `.gemini/gemini.md`
-   - GitHub Copilot: `.github/copilot-instructions.md`
-   - Cursor: `.cursor/rules`
+```bash
+# Run this prompt to generate/update documentation
+@.prompts/utilities/context-engineering-setup.md
+```
+
+This prompt will:
+1. Detect your AI tool (Claude Code, Gemini CLI, Cursor, Copilot, etc.)
+2. Generate the correct configuration file (`CLAUDE.md`, `GEMINI.md`, etc.)
+3. Generate a professional `README.md`
 
 ### Project Phases
 
@@ -45,9 +50,9 @@ Before starting, configure your AI:
 - **Stage 2**: Use `.prompts/stage-2-exploratory/` → exploratory testing
 - **Stage 3**: Use `.prompts/stage-3-documentation/` → test documentation
 - **Stage 4**: Use `.prompts/stage-4-automation/` → test automation
-- **Stage 5**: Use `.prompts/stage-5-shift-right/` → production monitoring
+- **Stage 5**: Use `.prompts/stage-5-regression/` → regression testing
 
-## 📖 Guidelines by Role
+## Guidelines by Role
 
 | Role          | Folder            | When to Read      |
 | ------------- | ----------------- | ----------------- |
@@ -55,11 +60,12 @@ Before starting, configure your AI:
 | QA Automation | `guidelines/TAE/` | Stage 4           |
 | Any role      | `guidelines/MCP/` | When using MCPs   |
 
-## 📖 References
+## References
 
-- **System Prompt**: `system-prompt.md`
+- **Project Memory**: `CLAUDE.md` (or equivalent for your AI tool)
+- **Context Engineering**: `docs/context-engineering.md`
 - **Prompt instructions**: `.prompts/README.md`
 
 ---
 
-**Last Updated**: 2026-02-09
+**Last Updated**: 2026-02-12

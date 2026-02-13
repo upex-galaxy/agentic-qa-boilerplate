@@ -104,4 +104,4 @@ See `.context/guidelines/QA/jira-test-management.md` for details.
 
 ---
 
-**Last Updated**: 2026-02
+**Last Updated**: 2026-02-12

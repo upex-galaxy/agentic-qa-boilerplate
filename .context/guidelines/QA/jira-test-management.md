@@ -339,4 +339,4 @@ See `.context/guidelines/MCP/atlassian.md` for more details.
 
 ---
 
-**Last updated**: 2026-02
+**Last Updated**: 2026-02-12
