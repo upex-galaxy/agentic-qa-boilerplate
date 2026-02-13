@@ -427,7 +427,7 @@ Copy this template to track progress for a specific US:
 
 ### Utilities
 
-- `.prompts/utilities/kata-framework-setup.md` - Initial setup
+- `.prompts/setup/kata-framework-adaptation.md` - Framework adaptation
 - `.prompts/utilities/git-flow.md` - Git workflow
 
 ---

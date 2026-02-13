@@ -106,7 +106,7 @@ SELECT * FROM orders WHERE total < 0;
 
 ## Configuration
 
-See `docs/mcp/dbhub-mcp-setup.md` for:
+See `docs/setup/mcp-dbhub.md` for:
 - TOML configuration for different databases
 - DSN connection strings
 - Creating database users
@@ -116,8 +116,7 @@ See `docs/mcp/dbhub-mcp-setup.md` for:
 
 ## Related Documentation
 
-- `docs/mcp/dbhub-mcp-setup.md` - Full setup guide
-- `docs/mcp/mcp-testing.md` - Testing workflows with MCPs
+- `docs/setup/mcp-dbhub.md` - Full setup guide
 - `../TAE/test-data-management.md` - Test data strategies
 
 ---

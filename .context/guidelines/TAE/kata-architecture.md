@@ -4,7 +4,7 @@
 
 > _"Like a kata in martial arts, where each movement is practiced repeatedly until perfection, the KATA framework converts system actions into reusable and precise blocks."_
 
-**Full Documentation**: See `/docs/kata-test-architecture.md` for complete KATA framework documentation.
+**Full Documentation**: See `docs/methodology/kata-fundamentals.md` for complete KATA framework documentation.
 
 ---
 

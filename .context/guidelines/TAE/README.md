@@ -69,7 +69,7 @@ Generate with: `bun run kata:manifest`
 
 - **AI Guide**: `kata-ai-index.md`
 - **AI Workflow**: `.prompts/stage-4-automation/`
-- **Framework Setup**: `.prompts/utilities/kata-framework-setup.md`
+- **Framework Adaptation**: `.prompts/setup/kata-framework-adaptation.md`
 - **Fundamentals**: `docs/methodology/kata-fundamentals.md` (conceptual reference only)
 - **DI Strategy**: `docs/testing/automation/dependency-injection.md` (Playwright lazy loading)
 - **Component Catalog**: `kata-manifest.json` (run `bun run kata:manifest`)

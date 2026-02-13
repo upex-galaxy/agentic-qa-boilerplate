@@ -821,6 +821,6 @@ export default defineConfig({
 ## References
 
 - **KATA Architecture**: `kata-architecture.md`
-- **Framework Setup**: `.prompts/kata-framework-setup.md`
-- **E2E Automation**: `.prompts/stage-4-automation/automation-e2e-test.md`
-- **API Automation**: `.prompts/stage-4-automation/automation-integration-test.md`
+- **Framework Adaptation**: `.prompts/setup/kata-framework-adaptation.md`
+- **E2E Automation**: `.prompts/stage-4-automation/e2e-test-automation-coding.md`
+- **API Automation**: `.prompts/stage-4-automation/integration-test-automation-coding.md`

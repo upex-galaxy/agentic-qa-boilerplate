@@ -104,7 +104,7 @@ POST /orders →   mcp__api__post_orders
 
 ## Configuration
 
-See `docs/mcp/openapi-mcp-setup.md` for:
+See `docs/setup/mcp-openapi.md` for:
 - Environment variable configuration
 - Authentication setup (API keys, JWT, etc.)
 - Multiple environment configuration
@@ -114,9 +114,7 @@ See `docs/mcp/openapi-mcp-setup.md` for:
 
 ## Related Documentation
 
-- `docs/mcp/openapi-mcp-setup.md` - Full setup guide
-- `docs/mcp/mcp-testing.md` - Testing workflows with MCPs
-- `../TAE/api-testing-patterns.md` - API testing patterns
+- `docs/setup/mcp-openapi.md` - Full setup guide
 - `../TAE/openapi-integration.md` - OpenAPI in test automation
 
 ---

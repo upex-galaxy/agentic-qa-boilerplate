@@ -435,7 +435,7 @@ Use tavily to search for solutions
 Use dbhub to see DB data
 ```
 
-**See more**: `docs/mcp/builder-strategy.md`
+**See more**: Check the MCP guidelines in `.context/guidelines/MCP/` for detailed integration strategies.
 
 ---
 

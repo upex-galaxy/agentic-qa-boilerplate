@@ -122,9 +122,8 @@ Secondary: tavily (error investigation)
 
 For detailed configuration instructions:
 
-- `docs/mcp/dbhub-mcp-setup.md` - Database connection
-- `docs/mcp/openapi-mcp-setup.md` - API configuration
-- `docs/mcp/mcp-testing.md` - Testing workflows
+- `docs/setup/mcp-dbhub.md` - Database connection
+- `docs/setup/mcp-openapi.md` - API configuration
 
 ---
 
