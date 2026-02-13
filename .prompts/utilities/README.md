@@ -1,57 +1,74 @@
 # Utilities
 
-> **Purpose**: Helper prompts for common development tasks.
+> **Purpose**: Reusable helper prompts for common development tasks.
 > **When to use**: As needed during development workflow.
 
 ## Overview
 
-Utility prompts provide assistance for common tasks that aren't part of the main QA workflow but are frequently needed during development.
+Utility prompts provide assistance for common tasks that can be executed multiple times during development. Unlike setup prompts (one-time) or discovery prompts (project onboarding), utilities are designed for repeated use.
+
+This includes:
+
+- **Context Generation**: Create test guides and documentation
+- **Project Documentation**: Generate/update README and project memory files
+- **Git Workflow**: Manage commits, push, PRs, and resolve conflicts
 
 ## Prompts in This Folder
 
-| Prompt                     | Purpose                              | When to Use                   |
-| -------------------------- | ------------------------------------ | ----------------------------- |
-| `kata-framework-setup.md`  | Setup KATA test automation framework | New projects or reconstruction|
-| `framework-doc-setup.md`   | Generate README + update CLAUDE.md   | After discovery complete      |
-| `git-flow.md`              | Manage commits, push, and PRs        | During development cycle      |
-| `git-conflict-fix.md`      | Resolve Git conflicts and errors     | When Git problems occur       |
+| Prompt | Purpose | When to Use |
+|--------|---------|-------------|
+| **Context Generation** | | |
+| `project-test-guide.md` | Guide on what to test | After discovery |
+| **Documentation** | | |
+| `context-engineering-setup.md` | Generate README + update CLAUDE.md | After discovery or adaptation |
+| **Git Workflow** | | |
+| `git-flow.md` | Manage commits, push, and PRs | During development cycle |
+| `git-conflict-fix.md` | Resolve Git conflicts and errors | When Git problems occur |
 
-## Prompt Categories
+---
 
-### Framework Setup
+## Context Generation
 
-**`kata-framework-setup.md`**
+### `project-test-guide.md`
 
-Sets up the complete KATA (Komponent Action Test Architecture) framework:
+Generates a conversational guide on what to test:
 
-- Downloads core files from template repository
-- Creates directory structure
-- Installs dependencies
-- Configures code quality tools (Prettier, Husky, lint-staged)
-- Generates domain-specific components
+- Scenarios for each business flow
+- State machine validations
+- Edge cases and integration scenarios
+- Prioritization recommendations
 
-**Use when:**
-- Starting test automation in a new project
-- Reconstructing KATA framework after cloning
+**Prerequisite**: Discovery completed + `business-data-map.md`
+**Output**: `.context/project-test-guide.md`
 
-### Documentation
+**Use when**:
+- Discovery is complete
+- Before QA planning
+- Onboarding new testers
 
-**`framework-doc-setup.md`**
+---
+
+## Documentation
+
+### `context-engineering-setup.md`
 
 Generates professional project documentation:
 
-- Creates/updates README.md with test automation info
-- Updates CLAUDE.md with project-specific context
+- Creates/updates `README.md` with test automation info
+- Creates/updates project memory file (`CLAUDE.md`, `GEMINI.md`, etc.)
 - Documents test coverage, tech stack, and scripts
+- Validates security (no secrets exposed)
 
-**Use when:**
-- Discovery phases (1-3) are complete
-- KATA framework is configured
-- Ready to formalize project documentation
+**Use when**:
+- Discovery phases are complete
+- After KATA framework adaptation
+- When project documentation needs refresh
 
-### Git Workflow
+---
 
-**`git-flow.md`**
+## Git Workflow
+
+### `git-flow.md`
 
 Intelligent Git workflow assistant:
 
@@ -60,12 +77,12 @@ Intelligent Git workflow assistant:
 - Proposes semantic commits
 - Manages push and PR creation
 
-**Use when:**
+**Use when**:
 - Ready to commit changes
 - Need to create a Pull Request
 - Want guided Git workflow
 
-**`git-conflict-fix.md`**
+### `git-conflict-fix.md`
 
 Specialized Git troubleshooter:
 
@@ -74,10 +91,24 @@ Specialized Git troubleshooter:
 - Handles rebase issues
 - Fixes push rejections
 
-**Use when:**
+**Use when**:
 - Encountering Git errors
 - Merge conflicts need resolution
 - Understanding what went wrong
+
+---
+
+## Moved to Other Directories
+
+Some prompts have been reorganized:
+
+| Prompt | New Location | Reason |
+|--------|--------------|--------|
+| `kata-framework-setup.md` | `setup/kata-framework-adaptation.md` | Renamed + moved to setup (one-time) |
+| `api-architecture.md` | `discovery/api-architecture.md` | Discovery prompt (one-time) |
+| `business-data-map.md` | `discovery/business-data-map.md` | Discovery prompt (one-time) |
+
+---
 
 ## Usage Pattern
 
@@ -85,42 +116,45 @@ Specialized Git troubleshooter:
 Development Task
        │
        ▼
-┌──────────────────────┐
-│ Is it framework      │
-│ setup?               │
-└──────────┬───────────┘
+┌─────────────────────────────────┐
+│ Is it documentation setup?      │
+└──────────┬──────────────────────┘
            │
     YES ───┼─── NO
            │     │
            ▼     ▼
-     kata-       ┌──────────────────────┐
-     framework   │ Is it documentation? │
-     -setup.md   └──────────┬───────────┘
-                            │
-                     YES ───┼─── NO
-                            │     │
-                            ▼     ▼
-                      framework-  ┌──────────────────────┐
-                      doc-        │ Is it Git related?   │
-                      setup.md    └──────────┬───────────┘
+   context-       ┌──────────────────────────┐
+   engineering-   │ Need testing guide?      │
+   setup.md       └──────────┬───────────────┘
+                             │
+                      YES ───┼─── NO
+                             │     │
+                             ▼     ▼
+                    project-test- ┌──────────────────────┐
+                    guide.md      │ Is it Git related?   │
+                                  └──────────┬───────────┘
                                              │
                                       YES ───┼
                                              │
-                            ┌────────────────┴────────────────┐
-                            │                                 │
-                     Normal workflow                   Problem/Error
-                            │                                 │
-                            ▼                                 ▼
-                      git-flow.md                   git-conflict-fix.md
+                        ┌────────────────────┴──────────────┐
+                        │                                   │
+                 Normal workflow                     Problem/Error
+                        │                                   │
+                        ▼                                   ▼
+                  git-flow.md                     git-conflict-fix.md
 ```
-
-## Best Practices
-
-1. **kata-framework-setup.md**: Run once per project, don't overwrite existing files
-2. **framework-doc-setup.md**: Run after discovery is complete for accurate documentation
-3. **git-flow.md**: Use for organized, semantic commits
-4. **git-conflict-fix.md**: Read explanations to learn and prevent future issues
 
 ---
 
-**Related**: [Context Generators](../context-generators/) | [Discovery Phases](../discovery/)
+## Related Directories
+
+| Directory | Purpose |
+|-----------|---------|
+| `setup/` | One-time setup prompts (KATA adaptation) |
+| `discovery/` | Project onboarding prompts (phases 1-4, context generators) |
+| `stage-1-shift-left/` | QA workflow - test planning |
+| `stage-2-exploratory/` | QA workflow - exploratory testing |
+
+---
+
+**Last Updated**: 2026-02-13

@@ -1,205 +1,232 @@
 # Stage 1: Shift-Left Testing
 
-> **Purpose**: Early test planning and analysis BEFORE implementation begins.
-> **When to use**: When a new epic or story is being refined, BEFORE sprint starts.
+## Purpose
 
-## Overview
+Design the testing strategy **BEFORE** writing code. Analyze Epics and Stories from a QA perspective to identify test scenarios, risks, and refined acceptance criteria.
 
-Shift-Left Testing is the practice of moving testing activities earlier in the development lifecycle. Instead of waiting for code to be written, QA analyzes requirements, identifies risks, and creates test plans during refinement.
+**Why this stage exists:**
 
-**Benefits:**
-- Early detection of ambiguities and gaps in requirements
-- Reduced rework and bug fixing costs
-- Better collaboration between PO, Dev, and QA
-- Higher quality code from the start
+- Shift-left testing = earlier feedback = fewer bugs
+- Identifies requirement ambiguities before implementation
+- Defines testable acceptance criteria
+- Creates foundation for test automation later (Stage 4)
+
+---
+
+## Prerequisites
+
+- Previous phases completed:
+  - Product Backlog in Jira
+  - `.context/PBI/` structure with Epics and Stories
+- Business context:
+  - `.context/idea/business-model.md`
+  - `.context/PRD/*.md`
+- Technical context:
+  - `.context/SRS/*.md`
+- Atlassian MCP available
+
+---
 
 ## Prompts in This Stage
 
-| Order | Prompt                   | Purpose                              | Output                                    |
-| ----- | ------------------------ | ------------------------------------ | ----------------------------------------- |
-| 1     | `feature-test-plan.md`   | Test plan for entire epic            | `.context/PBI/epics/EPIC-*/feature-test-plan.md` |
-| 2     | `story-test-cases.md`    | Detailed test cases per story        | `.context/PBI/epics/EPIC-*/stories/STORY-*/test-cases.md` |
+| Order | Prompt                    | Level | Purpose                                        |
+| ----- | ------------------------- | ----- | ---------------------------------------------- |
+| 1     | `feature-test-plan.md`    | Epic  | Test strategy at feature level                 |
+| 2     | `acceptance-test-plan.md` | Story | Acceptance test plan with test cases per story |
 
-## Workflow Principle: JIRA-FIRST → LOCAL MIRROR
-
-Both prompts follow this principle:
-
-```
-1. Analyze story/epic locally
-         ↓
-2. Update Jira FIRST (refinements, comments)
-         ↓
-3. Generate LOCAL file as MIRROR
-         ↓
-4. Git version control
-```
-
-This ensures:
-- Single source of truth in Jira
-- Team visibility via Jira comments
-- Offline access via local files
-- Version control via Git
+---
 
 ## Execution Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    SHIFT-LEFT TESTING WORKFLOW                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-         ┌─────────────────────────────────────────┐
-         │  New Epic Ready for Refinement          │
-         └────────────────┬────────────────────────┘
-                          │
-                          ▼
-         ┌─────────────────────────────────────────┐
-         │  1. feature-test-plan.md                │
-         │     - Analyze epic business value       │
-         │     - Identify technical risks          │
-         │     - Define test strategy              │
-         │     - Estimate test cases per story     │
-         │     → Updates Jira epic + creates local  │
-         └────────────────┬────────────────────────┘
-                          │
-                          ▼
-         ┌─────────────────────────────────────────┐
-         │  ⏸️ Wait for PO/Dev feedback           │
-         │     - Answer critical questions         │
-         │     - Clarify ambiguities               │
-         └────────────────┬────────────────────────┘
-                          │
-                          ▼
-         ┌─────────────────────────────────────────┐
-         │  2. story-test-cases.md (per story)     │
-         │     - Critical analysis                 │
-         │     - Refine acceptance criteria        │
-         │     - Design test cases                 │
-         │     - Identify edge cases               │
-         │     → Updates Jira story + creates local │
-         └────────────────┬────────────────────────┘
-                          │
-                          ▼
-         ┌─────────────────────────────────────────┐
-         │  ⏸️ Wait for PO/Dev feedback           │
-         │     - Validate refined criteria         │
-         │     - Answer technical questions        │
-         └────────────────┬────────────────────────┘
-                          │
-                          ▼
-         ┌─────────────────────────────────────────┐
-         │  ✅ Ready for Sprint                   │
-         │     - All questions answered            │
-         │     - Test cases reviewed               │
-         │     - Dev starts implementation         │
-         └─────────────────────────────────────────┘
+Epic in Jira + Local
+        ↓
+┌───────────────────────────────────────┐
+│  [1] Feature Test Plan (Epic)          │
+├───────────────────────────────────────┤
+│                                        │
+│  Input:                                │
+│  - Local epic path                     │
+│  - Business context (PRD)              │
+│  - Technical context (SRS)             │
+│                                        │
+│  Analysis:                             │
+│  - Feature risks                       │
+│  - Critical scenarios                  │
+│  - Technical dependencies              │
+│  - Success criteria                    │
+│                                        │
+│  Output:                               │
+│  - feature-test-plan.md (local)        │
+│  - Comment in Epic (Jira)              │
+│  - Epic updated with findings          │
+│                                        │
+└───────────────────────────────────────┘
+        ↓
+┌───────────────────────────────────────┐
+│  [2] Acceptance Test Plan (Story)      │
+├───────────────────────────────────────┤
+│                                        │
+│  Input:                                │
+│  - Local story path                    │
+│  - Feature test plan (parent Epic)     │
+│  - Story Acceptance Criteria           │
+│                                        │
+│  Analysis:                             │
+│  - Positive cases (happy path)         │
+│  - Negative cases (edge cases)         │
+│  - Input validations                   │
+│  - Error states                        │
+│                                        │
+│  Output:                               │
+│  - acceptance-test-plan.md (local)     │
+│  - Comment in Story (Jira)             │
+│  - Story refined with testable ACs     │
+│                                        │
+└───────────────────────────────────────┘
 ```
-
-## Prerequisites
-
-Before running these prompts:
-
-- [ ] Context files complete (`.context/idea/`, `.context/PRD/`, `.context/SRS/`)
-- [ ] Epic and stories exist locally (`.context/PBI/epics/`)
-- [ ] Epic and stories exist in Jira
-- [ ] Atlassian MCP configured and working
-- [ ] `epic.md` and `story.md` contain `**Jira Key:**` field
-
-## Key Concepts
-
-### Epic-Level Analysis
-
-The `feature-test-plan.md` prompt:
-- Analyzes business value and user impact
-- Maps technical architecture and integration points
-- Identifies risks (technical, business, integration)
-- Defines test strategy and scope
-- Estimates test coverage per story
-
-### Story-Level Analysis
-
-The `story-test-cases.md` prompt:
-- Inherits context from epic test plan
-- Performs critical analysis of acceptance criteria
-- Identifies ambiguities and gaps
-- Designs detailed test cases
-- Creates working branch for version control
-
-### Critical Questions
-
-Both prompts generate questions for PO/Dev that MUST be answered before implementation:
-
-| Question Type | Target | Purpose |
-|--------------|--------|---------|
-| Business | PO | Clarify expected behavior, edge cases |
-| Technical | Dev | Clarify implementation approach |
-| Risk | Both | Validate risk mitigation strategies |
-
-**⚠️ BLOCKER:** Implementation should NOT start until critical questions are resolved.
-
-## Jira Integration
-
-### Labels Added
-
-| Label | When Added | Meaning |
-|-------|------------|---------|
-| `test-plan-ready` | Epic analyzed | Epic has test strategy |
-| `shift-left-reviewed` | Story analyzed | Story has test cases |
-
-### Comment Structure
-
-Test plans and test cases are added as comments in Jira with:
-- Complete analysis content
-- Action items for PO/Dev/QA
-- Team member mentions (@PO, @Dev, @QA)
-- Link to local documentation
-
-## Git Branch Convention
-
-Story test cases create a working branch:
-
-```
-test/{JIRA_KEY}/{short-description}
-```
-
-Examples:
-- `test/UPEX-45/user-login-flow`
-- `test/UPEX-123/checkout-validation`
-
-Rules:
-- Always branch from `staging`
-- Only contains documentation changes
-- Follows conventional commits
-
-## When to Re-run
-
-| Situation | Action |
-|-----------|--------|
-| Epic scope changes significantly | Re-run `feature-test-plan.md` |
-| Story acceptance criteria change | Re-run `story-test-cases.md` |
-| New stories added to epic | Run `story-test-cases.md` for new stories |
-| Questions answered | Update local files to match Jira |
-
-## Output Files Location
-
-```
-.context/PBI/epics/
-└── EPIC-UPEX-13-feature-name/
-    ├── epic.md                    # Epic description
-    ├── feature-test-plan.md       # Test plan for epic (Stage 1)
-    └── stories/
-        └── STORY-UPEX-45-login/
-            ├── story.md           # Story description
-            └── test-cases.md      # Test cases for story (Stage 1)
-```
-
-## Integration with Other Stages
-
-After Shift-Left is complete and implementation begins:
-
-- **Stage 2 (Exploratory)**: Execute exploratory testing sessions
-- **Stage 3 (Documentation)**: Update test documentation based on findings
-- **Stage 4 (Automation)**: Automate test cases using Playwright
 
 ---
 
-**Related**: [Context Generators](../context-generators/) | [Stage 2 - Exploratory](../stage-2-exploratory/)
+## Testing Levels (IQL Hierarchy)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    SHIFT-LEFT TESTING                        │
+│                    Step 1: Requirements Analysis             │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│   [1a] EPIC LEVEL (First)          [1b] STORY LEVEL (After) │
+│   ────────────────────────         ─────────────────────────│
+│                                                              │
+│   FTP (Feature Test Plan)          ATP (Acceptance Test Plan)│
+│   - Risks                          - Scenarios per AC        │
+│   - Critical scenarios             - Happy path              │
+│   - Dependencies                   - Edge cases              │
+│   - Success criteria               - Error states            │
+│                                                              │
+│   feature-test-plan.md             acceptance-test-plan.md   │
+│   (1 per Epic)                     (1 per Story)             │
+│   Provides CONTEXT for →           ← Informed by FTP         │
+│                                                              │
+│                                        ↓                     │
+│                              ATCs (Mid-Game Step 6)          │
+│                              Documented in Jira              │
+│                                        ↓                     │
+│                              KATA Automation (Steps 8-10)    │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+> **Important order:** FTP is created FIRST (macro context), ATP is created AFTER (informed by FTP). Both occur BEFORE sprint during refinement.
+
+**Full traceability:** FTP (Epic) → ATP (Story) → ATCs (Jira) → KATA (Automation)
+
+---
+
+## Generated File Structure
+
+```
+.context/PBI/epics/
+└── EPIC-{KEY}-{NUM}-{name}/
+    ├── epic.md
+    ├── feature-test-plan.md          # ← Generated by feature-test-plan.md
+    └── stories/
+        └── STORY-{KEY}-{NUM}-{name}/
+            ├── story.md
+            └── acceptance-test-plan.md  # ← Generated by acceptance-test-plan.md
+```
+
+---
+
+## Jira-First Workflow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│               JIRA-FIRST → LOCAL MIRROR                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  1. Read local Epic/Story (get Jira Key)                    │
+│  2. Read current Epic/Story from Jira (MCP)                 │
+│  3. Analyze with PRD + SRS context                          │
+│  4. Update Epic/Story in Jira with findings (MCP)           │
+│  5. Add comment with test plan/cases (MCP)                  │
+│  6. Generate local file (mirror)                            │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## AI Roles Assumed
+
+| Prompt                    | Role                            |
+| ------------------------- | ------------------------------- |
+| `feature-test-plan.md`    | QA Lead, Test Strategy Expert   |
+| `acceptance-test-plan.md` | QA Engineer, Test Case Designer |
+
+---
+
+## Required Tools
+
+| Tool          | Purpose                        |
+| ------------- | ------------------------------ |
+| Atlassian MCP | Read/update Epics and Stories  |
+| Filesystem    | Read context, write test plans |
+
+---
+
+## Output from This Stage
+
+- **Per Epic:** `feature-test-plan.md` with testing strategy
+- **Per Story:** `acceptance-test-plan.md` with acceptance test cases
+- **In Jira:** Comments with test strategy and cases
+- **Refinement:** More specific and testable ACs
+- **Foundation for:** Stage 4 (Test Automation)
+
+---
+
+## Connection with Mid-Game Testing
+
+The artifacts from this stage directly feed into **Mid-Game Testing (Steps 6-10)**:
+
+| Stage 1 Artifact    | → Mid-Game        | Purpose                            |
+| ------------------- | ----------------- | ---------------------------------- |
+| ATP (Story-level)   | → ATCs (Step 6)   | Scenarios are formalized in Jira   |
+| Critical scenarios  | → Candidates      | Prioritized for automation         |
+| Acceptance Criteria | → KATA decorators | Traceability `@atc('PROJECT-XXX')` |
+
+**See:** `docs/testing/test-architecture/mid-game-testing.md`
+
+---
+
+## Next Stage
+
+With test plans and cases defined:
+
+- Proceed to **Stage 2: Exploratory Testing**
+- Execute manual validation
+- Discover additional edge cases
+
+---
+
+## FAQ
+
+**Q: Should I run this for ALL stories?**
+A: Recommended for critical stories. Trivial stories can be skipped or have simplified test cases.
+
+**Q: Are test cases executed in this stage?**
+A: No. This stage is design only. Execution happens in Stage 2 (Exploratory) and Stage 4 (Automation).
+
+**Q: What if requirements change?**
+A: Re-run the prompt with updated context. Files will be overwritten.
+
+---
+
+## Related Documentation
+
+- **Product Backlog:** `.context/PBI/`
+- **Main README:** `.prompts/README.md`
+- **Stage 2:** `.prompts/stage-2-exploratory/README.md`
+- **Stage 3:** `.prompts/stage-3-documentation/README.md`
+- **Stage 4:** `.prompts/stage-4-automation/README.md`

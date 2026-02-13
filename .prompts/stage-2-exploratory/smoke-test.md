@@ -1,20 +1,20 @@
 # Smoke Test
 
-Act as a Senior QA Engineer specialized in smoke testing and post-deployment validation.
+> Act as a Senior QA Engineer specialized in smoke testing and post-deployment validation.
 
 ---
 
-## 🎯 TASK
+## Task
 
-**STAGE 2: SMOKE TEST ON STAGING**
+**STAGE 2: SMOKE TEST IN STAGING**
 
-Validate that the staging deployment is functional BEFORE starting full exploratory testing.
+Validate that the deployment in staging is functional BEFORE beginning full exploratory testing.
 
-**This prompt is executed IMMEDIATELY** after deployment to staging and BEFORE exploratory testing.
+**This prompt is executed IMMEDIATELY** after deployment to staging and BEFORE ui-exploration.md.
 
 ---
 
-## 📥 INPUT REQUIRED
+## Input Required
 
 ### 1. Staging Deployment
 
@@ -27,18 +27,18 @@ Validate that the staging deployment is functional BEFORE starting full explorat
 **Information needed from user:**
 
 - Staging URL: `https://[project]-develop.vercel.app`
-- Recently deployed Feature/Story: `STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}`
+- Feature/Story just deployed: `STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}`
 
 ### 2. Current Story
 
 **Read:**
 
 - `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/story.md` - **CRITICAL** - Acceptance criteria
-- `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/test-cases.md` - Defined test cases (Stage 1)
+- `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/acceptance-test-plan.md` - Test cases defined (Stage 1)
 
 **What to identify:**
 
-1. What is the story's happy path?
+1. What is the happy path of the story?
 2. What critical functionality must be validated?
 3. Is there backend/auth integration to validate?
 
@@ -52,46 +52,46 @@ Validate that the staging deployment is functional BEFORE starting full explorat
 
 ---
 
-## ⚙️ TOOLS VERIFICATION (MCP)
+## Tool Verification (MCP)
 
-**MCP tools are NOT required for this phase.**
+**NO MCPs required for this phase.**
 
 ### Manual Tools
 
 - Browser (Chrome/Firefox/Safari)
-- DevTools (F12) to check console/network
+- DevTools (F12) to review console/network
 - Access to staging URL
 
 ---
 
-## 🎯 OBJECTIVE
+## Objective
 
-Create a smoke test checklist to validate functional deployment:
+Create smoke test checklist to validate functional deployment:
 
 **Includes:**
 
-- ✅ Validate application loads without 500 errors
-- ✅ Verify assets load (CSS, JS, images)
-- ✅ Validate authentication works (if applicable)
-- ✅ Validate story happy path works end-to-end
-- ✅ Verify backend integration (APIs, DB)
-- ✅ Validate basic navigation works
+- Validate that application loads without 500 errors
+- Verify assets load (CSS, JS, images)
+- Validate authentication works (if applicable)
+- Validate happy path of the story works end-to-end
+- Verify integration with backend (APIs, DB)
+- Validate basic navigation works
 
 **Does NOT include:**
 
-- ❌ Full exploratory testing (that's ui-exploration.md)
-- ❌ Edge cases or negative testing (that's exploratory testing)
-- ❌ Automated tests (that's Stage 4: Test Automation)
+- Full exploratory testing (that's ui-exploration.md)
+- Edge cases or negative testing (that's exploratory testing)
+- Automated tests (that's Stage 4: Test Automation)
 
 **Result:** Checklist that QA executes in **5-10 minutes** to confirm functional deployment.
 
 ---
 
-## 📤 OUTPUT GENERATED
+## Output Generated
 
 ### Smoke Test Checklist
 
-- ✅ `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/smoke-test.md` - Executable checklist
+- `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/smoke-test.md` - Executable checklist
 
 **Checklist structure:**
 
@@ -105,7 +105,7 @@ Create a smoke test checklist to validate functional deployment:
 
 ---
 
-## ✅ Checklist
+## Checklist
 
 ### 1. Basic Access
 
@@ -133,40 +133,40 @@ Create a smoke test checklist to validate functional deployment:
 
 ---
 
-## ✅ Result
+## Result
 
-- [ ] **PASSED:** Functional deployment, continue with exploratory testing
-- [ ] **FAILED:** Broken deployment, DO NOT continue, report critical bug
+- [ ] **PASSED:** Deployment functional, continue with exploratory testing
+- [ ] **FAILED:** Deployment broken, DO NOT continue, report critical bug
 ```
 
 ---
 
-## 🚨 CRITICAL RESTRICTIONS
+## Critical Restrictions
 
-### ❌ DO NOT
+### DO NOT
 
 - **DO NOT do full exploratory testing** - Only quick smoke test
 - **DO NOT test edge cases yet** - That's for exploratory testing
-- **DO NOT create minor UX bugs** - Only critical bugs that block functionality
+- **DO NOT create bugs for minor UX issues** - Only critical bugs that block functionality
 - **DO NOT spend more than 10 minutes** - Smoke test must be quick
 - **DO NOT assume deployment works** - Validate manually
 
-### ✅ DO
+### DO
 
-- **Validate the bare minimum** - Application loads + happy path works
+- **Validate the minimum necessary** - Application loads + happy path works
 - **Check console and network** - Identify technical errors
-- **Report immediately if it fails** - Don't continue if smoke test fails
+- **Report immediately if it fails** - Do not continue if smoke test fails
 - **Document result** - PASSED or FAILED with evidence
 
 ---
 
-## 🔄 WORKFLOW
+## Workflow
 
 ---
 
-## 📋 STEP 1: READ STORY ACCEPTANCE CRITERIA
+## STEP 1: READ STORY ACCEPTANCE CRITERIA
 
-**Objective:** Understand what should work in staging.
+**Objective:** Understand what must work in staging.
 
 ### Step 1.1: Read Story
 
@@ -175,7 +175,7 @@ Create a smoke test checklist to validate functional deployment:
 **Identify:**
 
 1. **Acceptance Criteria (AC):**
-   - What should work?
+   - What must work?
    - What is the happy path?
 
 2. **Critical functionality:**
@@ -187,18 +187,18 @@ Create a smoke test checklist to validate functional deployment:
 
 ### Step 1.2: Read Test Cases
 
-**Action:** Read `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/test-cases.md`
+**Action:** Read `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/acceptance-test-plan.md`
 
 **Identify:**
 
-- Test case #1 (happy path) → Smoke test should cover this
+- Test case #1 (happy path) → Smoke test must cover this
 - Minimum functionality that must work
 
 ---
 
-## 🌐 STEP 2: OPEN STAGING URL AND VALIDATE BASIC ACCESS
+## STEP 2: OPEN STAGING URL AND VALIDATE BASIC ACCESS
 
-**Objective:** Verify application loads without critical errors.
+**Objective:** Verify that application loads without critical errors.
 
 ### Step 2.1: Open Staging URL
 
@@ -217,7 +217,7 @@ Create a smoke test checklist to validate functional deployment:
 **1. Application loads without 500 errors:**
 
 - [ ] Landing page loads completely
-- [ ] No 500 or 404 error screens
+- [ ] No 500 or 404 error screen
 - [ ] Loading states complete correctly
 
 **2. No errors in console:**
@@ -235,7 +235,7 @@ Create a smoke test checklist to validate functional deployment:
 **If something fails here:**
 
 ```markdown
-## ❌ SMOKE TEST FAILED - Basic Access
+## SMOKE TEST FAILED - Basic Access
 
 **Blocker:** [Error description]
 
@@ -243,20 +243,17 @@ Create a smoke test checklist to validate functional deployment:
 
 - Screenshot: [Attach]
 - Console errors:
-```
 
-[Copy console errors]
-
-```
+[Copy errors from console]
 
 **Action:** Report to Development immediately, DO NOT continue.
 ```
 
 ---
 
-## 🔐 STEP 3: VALIDATE AUTHENTICATION (If applicable)
+## STEP 3: VALIDATE AUTHENTICATION (If applicable)
 
-**Objective:** Verify auth flow works.
+**Objective:** Verify that auth flow works.
 
 ### Step 3.1: Login
 
@@ -272,7 +269,7 @@ Create a smoke test checklist to validate functional deployment:
 - [ ] Login form appears correctly
 - [ ] Submit login works
 - [ ] Redirect to dashboard/home after successful login
-- [ ] No console errors during login
+- [ ] No errors in console during login
 
 ---
 
@@ -304,22 +301,22 @@ Create a smoke test checklist to validate functional deployment:
 **If auth fails:**
 
 ```markdown
-## ❌ SMOKE TEST FAILED - Authentication
+## SMOKE TEST FAILED - Authentication
 
 **Blocker:** [Login/Logout doesn't work]
 
 **Steps to reproduce:**
 
-1. [Failing step]
+1. [Step that fails]
 
 **Action:** Report immediately, auth is critical.
 ```
 
 ---
 
-## ✅ STEP 4: VALIDATE STORY HAPPY PATH
+## STEP 4: VALIDATE STORY HAPPY PATH
 
-**Objective:** Verify main story functionality works.
+**Objective:** Verify that main story functionality works.
 
 ### Step 4.1: Execute Happy Path
 
@@ -369,7 +366,7 @@ Examples: mentors/skills in MYM, products/price in SHOP, posts/author in BLOG)
 **If happy path fails:**
 
 ```markdown
-## ❌ SMOKE TEST FAILED - Happy Path
+## SMOKE TEST FAILED - Happy Path
 
 **Blocker:** [Description of what doesn't work]
 
@@ -384,11 +381,11 @@ Examples: mentors/skills in MYM, products/price in SHOP, posts/author in BLOG)
 
 ---
 
-## 🔗 STEP 5: VALIDATE BACKEND INTEGRATION
+## STEP 5: VALIDATE BACKEND INTEGRATION
 
-**Objective:** Verify APIs and DB work.
+**Objective:** Verify that APIs and DB work.
 
-### Step 5.1: Check Network Tab
+### Step 5.1: Review Network Tab
 
 **Action:**
 
@@ -399,20 +396,20 @@ Examples: mentors/skills in MYM, products/price in SHOP, posts/author in BLOG)
 **Validate:**
 
 - [ ] API calls to backend return 200 OK (not 500, not 404)
-- [ ] Data sends correctly (payload in request)
-- [ ] Data receives correctly (response has expected data)
-- [ ] No continuously failing requests
+- [ ] Data is sent correctly (payload in request)
+- [ ] Data is received correctly (response has expected data)
+- [ ] No requests failing continuously
 
 **Validation example:**
 
 ```
 GET /api/[entities] → 200 OK
-Response: { "data": [...entities] }  ✅
+Response: { "data": [...entities] }
 
 POST /api/[resources] → 201 Created
-Response: { "id": "xxx", "status": "created" }  ✅
+Response: { "id": "xxx", "status": "created" }
 
-(Where [entities/resources] depend on your project's domain.
+(Where [entities/resources] depend on your project domain.
 Examples: mentors/sessions in MYM, products/orders in SHOP, posts/comments in BLOG)
 ```
 
@@ -424,7 +421,7 @@ Examples: mentors/sessions in MYM, products/orders in SHOP, posts/comments in BL
 
 1. Create/modify data via UI (e.g.: create entity, edit profile, etc.)
 2. Refresh page (F5)
-3. Validate changes persist
+3. Validate that changes persist
 
 **Validate:**
 
@@ -434,7 +431,7 @@ Examples: mentors/sessions in MYM, products/orders in SHOP, posts/comments in BL
 
 ---
 
-## 📝 STEP 6: GENERATE SMOKE TEST CHECKLIST
+## STEP 6: GENERATE SMOKE TEST CHECKLIST
 
 **Objective:** Document smoke test for QA reference.
 
@@ -454,13 +451,13 @@ Examples: mentors/sessions in MYM, products/orders in SHOP, posts/comments in BL
 
 ---
 
-## ✅ Smoke Test Checklist
+## Smoke Test Checklist
 
 ### 1. Basic Access
 
 - [ ] **Application loads without 500 errors**
   - URL: https://[project]-develop.vercel.app
-  - Landing page should load completely
+  - Landing page must load completely
 
 - [ ] **No errors in console (F12)**
   - Console tab should not show red errors
@@ -481,7 +478,7 @@ Examples: mentors/sessions in MYM, products/orders in SHOP, posts/comments in BL
   - Should redirect to dashboard after login
 
 - [ ] **Session persists on refresh**
-  - Refresh page (F5) → Session should maintain
+  - Refresh page (F5) → Session should remain
 
 - [ ] **Logout works**
   - Click logout → Should redirect to landing/login
@@ -521,19 +518,19 @@ Examples: mentors/sessions in MYM, products/orders in SHOP, posts/comments in BL
 - [ ] **API calls return 200 OK**
   - Open DevTools → Network tab
   - Execute happy path
-  - Validate requests to `/api/*` return 200
+  - Validate that requests to `/api/*` return 200
 
 - [ ] **Data saves to DB (if applicable)**
   - Create/modify data via UI
   - Refresh page (F5)
-  - Validate changes persist
+  - Validate that changes persist
 
 - [ ] **Data retrieves correctly**
   - Data shown in UI matches expected
 
 ---
 
-## 📊 Smoke Test Result
+## Smoke Test Result
 
 **Executed by:** [Name]
 **Date:** [Date]
@@ -541,8 +538,8 @@ Examples: mentors/sessions in MYM, products/orders in SHOP, posts/comments in BL
 
 ### Final Result:
 
-- [ ] **✅ PASSED:** Functional deployment, continue with exploratory testing
-- [ ] **❌ FAILED:** Broken deployment, report critical bug immediately
+- [ ] **PASSED:** Deployment functional, continue with exploratory testing
+- [ ] **FAILED:** Deployment broken, report critical bug immediately
 
 ---
 
@@ -554,7 +551,7 @@ Examples: mentors/sessions in MYM, products/orders in SHOP, posts/comments in BL
 
 ### If FAILED:
 
-**Blocker:** [Error description that blocks]
+**Blocker:** [Description of blocking error]
 
 **Evidence:**
 
@@ -569,12 +566,12 @@ Examples: mentors/sessions in MYM, products/orders in SHOP, posts/comments in BL
 
 ---
 
-## 🎉 FINAL REPORT
+## Final Report
 
 **Show to user:**
 
 ````markdown
-# ✅ SMOKE TEST CHECKLIST GENERATED
+# SMOKE TEST CHECKLIST GENERATED
 
 ## File Created:
 
@@ -584,25 +581,28 @@ Examples: mentors/sessions in MYM, products/orders in SHOP, posts/comments in BL
 
 ## Next Steps:
 
-### ✅ If Smoke Test PASSED:
+### If Smoke Test PASSED:
 
 Continue with exploratory testing:
 
 ```bash
-# 1. Execute UI exploration
+# 1. UI Exploration
 Use: .prompts/stage-2-exploratory/ui-exploration.md
 
-# 2. Execute API exploration (if applicable)
+# 2. API Exploration (if applicable)
 Use: .prompts/stage-2-exploratory/api-exploration.md
 
-# 3. If you find bugs
+# 3. DB Exploration (if applicable)
+Use: .prompts/stage-2-exploratory/db-exploration.md
+
+# 4. If you find bugs
 Use: .prompts/stage-2-exploratory/bug-report.md
 ```
 ````
 
 ---
 
-### ❌ If Smoke Test FAILED
+### If Smoke Test FAILED
 
 **DO NOT continue with exploratory testing.**
 
@@ -615,19 +615,19 @@ Use: .prompts/stage-2-exploratory/bug-report.md
 **Fix flow:**
 
 ```
-Bug reported → Development fix → Re-deploy to staging → Re-run smoke test
+Bug reported → Development fix → Re-deploy to staging → Re-execute smoke test
 ```
 
 ---
 
-## 📊 Generated Checklist
+## Checklist Generated
 
 **Sections included:**
 
-- ✅ Basic access (app loads, console no errors, assets OK)
-- ✅ Authentication (login, logout, session persists)
-- ✅ Story happy path (specific steps)
-- ✅ Backend integration (API calls, data persistence)
+- Basic access (app loads, console without errors, assets OK)
+- Authentication (login, logout, session persists)
+- Story happy path (specific steps)
+- Backend integration (API calls, data persistence)
 
 **Estimated duration:** 5-10 minutes
 
@@ -637,7 +637,7 @@ Bug reported → Development fix → Re-deploy to staging → Re-run smoke test
 
 ---
 
-## 📋 INTERNAL CHECKLIST (DO NOT SHOW)
+## Internal Checklist (DO NOT SHOW)
 
 **Validations before finishing:**
 
@@ -661,13 +661,13 @@ Bug reported → Development fix → Re-deploy to staging → Re-run smoke test
 
 ---
 
-## 💡 BEST PRACTICES
+## Best Practices
 
 ### **1. Smoke Test ≠ Exploratory Testing**
 
 **Smoke test (5-10 min):**
 - Happy path only
-- Validate deployment works
+- Validate that deployment works
 - Go/No-Go decision
 
 **Exploratory testing (60-90 min):**
@@ -683,10 +683,10 @@ Bug reported → Development fix → Re-deploy to staging → Re-run smoke test
 ### **2. FAILED Smoke Test = STOP**
 
 **If smoke test fails:**
-- ❌ DO NOT continue with exploratory testing
-- ❌ DO NOT invest time testing something broken
-- ✅ Report immediately
-- ✅ Development fix → Re-deploy → Re-test
+- DO NOT continue with exploratory testing
+- DO NOT invest time testing something broken
+- Report immediately
+- Development fix → Re-deploy → Re-test
 
 **Benefit:** Don't waste QA time on broken deployment.
 
@@ -696,8 +696,8 @@ Bug reported → Development fix → Re-deploy to staging → Re-run smoke test
 
 **Even if UI looks good:**
 - Check Network tab (F12)
-- Validate APIs return 200
-- Validate data persists
+- Validate that APIs return 200
+- Validate that data persists
 
 **Why:** UI can render mock/hardcoded data but backend could be broken.
 
@@ -707,7 +707,7 @@ Bug reported → Development fix → Re-deploy to staging → Re-run smoke test
 
 **If smoke test fails, include:**
 - Screenshot of the error
-- Console errors (copy complete text)
+- Console errors (copy full text)
 - Network tab errors (copy request/response)
 - Exact steps that caused the error
 
@@ -725,7 +725,7 @@ Bug reported → Development fix → Re-deploy to staging → Re-run smoke test
 
 ---
 
-## 📚 REFERENCES
+## References
 
 **Smoke testing best practices:**
 - https://www.guru99.com/smoke-testing.html
@@ -734,9 +734,9 @@ Bug reported → Development fix → Re-deploy to staging → Re-run smoke test
 - `.prompts/stage-2-exploratory/ui-exploration.md` - UI exploration
 
 **Testing strategy:**
-- `.prompts/stage-4-automation/test-strategy.md` - Complete strategy
+- `.prompts/stage-4-automation/README.md` - Complete strategy
 
 ---
 
-**✅ Smoke Test = Quick validation (5-10 min) + Go/No-Go decision + Foundation for exploratory testing**
+**Smoke Test = Quick validation (5-10 min) + Go/No-Go decision + Foundation for exploratory testing**
 ```

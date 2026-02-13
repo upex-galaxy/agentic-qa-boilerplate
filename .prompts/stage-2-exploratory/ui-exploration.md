@@ -1,4 +1,4 @@
-# UI Exploratory Testing Session
+# Exploratory Testing Session
 
 > AI-guided exploratory testing using Playwright MCP tools.
 
@@ -29,7 +29,7 @@ If the project has Shift-Left Testing documentation:
 
 ```
 Provide:
-- Path to test-cases.md file
+- Path to acceptance-test-plan.md file
 - OR Jira issue with test cases in comments
 - OR test cases directly in the prompt
 ```
@@ -40,7 +40,7 @@ If no Shift-Left documentation exists:
 
 ```
 Provide:
-- User Story ID (e.g., PROJ-123)
+- User Story ID (e.g., MYM-123)
 - OR path to story.md file
 - OR acceptance criteria directly in the prompt
 ```
@@ -276,7 +276,7 @@ After exploration, decide:
 This exploratory testing phase feeds into:
 
 1. **Bug Reports** - Issues found → `bug-report.md`
-2. **Test Documentation** - Validated scenarios → Jira/Xray Test issues
+2. **Test Documentation** - Validated scenarios → Jira Test issues
 3. **Automation Candidates** - Stable scenarios → ATCs
 
 The goal is to validate functionality BEFORE investing in automation.

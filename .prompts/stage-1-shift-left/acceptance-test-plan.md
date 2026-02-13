@@ -1,5 +1,3 @@
-# Story Test Cases
-
 Act as a QA Engineer expert in Shift-Left Testing, Test Case Design, and Critical Analysis.
 
 **⚠️ WORKFLOW:** This prompt follows the **JIRA-FIRST → LOCAL MIRROR** principle
@@ -18,7 +16,7 @@ Act as a QA Engineer expert in Shift-Left Testing, Test Case Design, and Critica
 - **Local Path (folder):** `STORY-UPEX-45-login` ← Folder naming convention
 - **Jira Key (real):** `UPEX-45` ← Real issue key in Jira
 
-**Note:** Issue numbers are identical in both formats (e.g., 45). The difference is only in the STORY- prefix
+**Note:** Issue numbers are identical in both formats (e.g., 45). The difference is only in the STORY- prefix.
 
 **Process:**
 
@@ -33,7 +31,7 @@ Act as a QA Engineer expert in Shift-Left Testing, Test Case Design, and Critica
 - Read current story from Jira with MCP (Step 5)
 - Update story in Jira with refinements (Step 5)
 - Add comment with test cases (Step 6)
-- Generate test-cases.md file in that folder (Step 7)
+- Generate acceptance-test-plan.md file in that folder (Step 7)
 
 ---
 
@@ -62,12 +60,12 @@ Act as a QA Engineer expert in Shift-Left Testing, Test Case Design, and Critica
 - Story (local): [read {STORY_PATH}/story.md provided by user]
 - **Extract from story.md:**
   - `**Jira Key:**` field of the story (e.g., UPEX-456)
-  - `**Epic:**` field to get local epic path
+  - `**Epic:**` field to get the local epic path
 - **Save:** Real Jira Keys to use in MCP operations
 
 **Step 2: Read Local Epic and Extract Epic Jira Key**
 
-- Epic (local): [read epic.md from epic path found in story]
+- Epic (local): [read epic.md from the epic path found in the story]
 - **Extract from epic.md:** `**Jira Key:**` field of the epic (e.g., UPEX-123)
 - **Save:** Real Epic Jira Key to read comments
 
@@ -98,8 +96,8 @@ Act as a QA Engineer expert in Shift-Left Testing, Test Case Design, and Critica
 
 ### Locally:
 
-1. **File:** `.context/PBI/epics/EPIC-{...}/stories/STORY-{...}/test-cases.md`
-2. **Content:** Exact mirror of Jira comment
+1. **File:** `.context/PBI/epics/EPIC-{...}/stories/STORY-{...}/acceptance-test-plan.md`
+2. **Content:** Exact mirror of the Jira comment
 
 ### For User:
 
@@ -124,9 +122,9 @@ Act as a QA Engineer expert in Shift-Left Testing, Test Case Design, and Critica
 
 **⚠️ IMPORTANT:**
 
-- This branch should ONLY contain changes to story documentation files (test-cases.md)
+- This branch should ONLY contain changes to story documentation files (acceptance-test-plan.md)
 - DO NOT include production code, testing framework configuration, or implementation
-- Branch name must be derived from the analyzed story context
+- Branch name should be derived from the analyzed story context
 
 ---
 
@@ -150,7 +148,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 #### Step 1: Critical Analysis
 
-- Analyze story from business perspective
+- Analyze the story from business perspective
 - Identify ambiguities in acceptance criteria
 - Identify what's missing in the story
 
@@ -162,7 +160,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 #### Step 3: Test Strategy Planning
 
-- Determine how many test cases are really needed
+- Determine how many test cases are actually needed
 - Identify parametrization opportunities
 - Plan integration/API tests if applicable
 
@@ -184,22 +182,22 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 - Add complete test cases as comment with team tags
 
-#### Step 7: Generate Local test-cases.md
+#### Step 7: Generate Local acceptance-test-plan.md
 
-- Create local mirror of Jira comment
+- Create local mirror of the Jira comment
 
 #### Step 8: Final QA Feedback Report
 
 - Generate executive summary for user
 
-#### Step 9: Commit test-cases.md file
+#### Step 9: Commit the acceptance-test-plan.md file
 
-- Commit `test-cases.md` file to working branch
+- Commit the `acceptance-test-plan.md` file in the working branch
 - Commit message: `test({JIRA_KEY}): add shift-left test cases for {story-title}`
 
 ---
 
-# Test Cases: STORY-{PROJECT_KEY}-{ISSUE_NUM} - [Story Title]
+# Acceptance Test Plan: STORY-{PROJECT_KEY}-{ISSUE_NUM} - [Story Title]
 
 **Date:** [YYYY-MM-DD]
 **QA Engineer:** [Name or "TBD"]
@@ -220,16 +218,16 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 - **Secondary:** [Persona name] - [If applicable]
 
 **Business Value:**
-[From Business Model and Executive Summary, explain this story's value]
+[From Business Model and Executive Summary, explain the value of this story]
 
 - **Value Proposition:** [What value it provides to user]
 - **Business Impact:** [How it contributes to business KPIs]
 
 **Related User Journey:**
-[From User Journeys, identify which journey this story fits into]
+[From User Journeys, identify which journey this story fits in]
 
 - Journey: [Journey name]
-- Step: [Which step of the journey this functionality is in]
+- Step: [Which step in the journey this functionality is in]
 
 ---
 
@@ -246,13 +244,13 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 **Backend:**
 
-- API Endpoints: [List endpoints - per api-contracts.yaml]
-- Services: [Business services involved]
+- API Endpoints: [List endpoints - from api-contracts.yaml]
+- Services: [Involved business services]
 - Database: [Affected tables/collections]
 
 **External Services:**
 
-- [If story integrates with external services - list]
+- [If story integrates with external services - list them]
 
 **Integration Points:**
 
@@ -278,20 +276,20 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 ### Epic-Level Context (From Feature Test Plan in Jira)
 
-**⚠️ IMPORTANT:** This section extracts information from the "Feature Test Plan" comment in the epic in Jira to provide updated context.
+**⚠️ IMPORTANT:** This section extracts information from the "Feature Test Plan" comment in the Jira epic to provide updated context.
 
 **Critical Risks Already Identified at Epic Level:**
 
-[Extract from epic comment in Jira - "Critical Risks" section]
+[Extract from epic comment in Jira - section "Critical Risks"]
 
-- Risk 1: [Risk description identified at epic level]
+- Risk 1: [Description of risk identified at epic level]
   - **Relevance to This Story:** [How this risk specifically affects this story]
-- Risk 2: [If applicable to this story]
+- Risk 2: [If applies to this story]
   - **Relevance to This Story:** [How it affects]
 
 **Integration Points from Epic Analysis:**
 
-[Extract from epic comment - "Integration Points" section]
+[Extract from epic comment - section "Integration Points"]
 
 - Integration Point 1: [E.g., Frontend ↔ Backend API]
   - **Applies to This Story:** ✅ Yes | ❌ No
@@ -301,44 +299,44 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 **Critical Questions Already Asked at Epic Level:**
 
-[Extract from epic comment - "Critical Questions" section]
+[Extract from epic comment - section "Critical Questions"]
 
 **Questions for PO:**
 
 - Question 1: [Question already asked at epic level]
   - **Status:** ⏳ Pending | ✅ Answered | ❌ Not Relevant to This Story
-  - **If Answered:** [PO's answer - search in epic comments in Jira]
+  - **If Answered:** [PO answer - look in epic comments]
   - **Impact on This Story:** [How the answer affects this story]
 
 **Questions for Dev:**
 
 - Question 1: [Question already asked at epic level]
   - **Status:** ⏳ Pending | ✅ Answered | ❌ Not Relevant to This Story
-  - **If Answered:** [Dev's answer - search in epic comments in Jira]
+  - **If Answered:** [Dev answer - look in epic comments]
   - **Impact on This Story:** [How the answer affects this story]
 
 **Test Strategy from Epic:**
 
-[Extract from epic comment - "Test Strategy" section]
+[Extract from epic comment - section "Test Strategy"]
 
-- Test Levels: [Unit, Integration, E2E, API - per epic]
-- Tools: [Playwright, Vitest, etc. - per epic]
+- Test Levels: [Unit, Integration, E2E, API - from epic]
+- Tools: [Playwright, Vitest, etc. - from epic]
 - **How This Story Aligns:** [Explain which levels/tools apply to this specific story]
 
 **Updates and Clarifications from Epic Refinement:**
 
-[If there are PO/Dev answers in Jira epic comments after initial test plan, extract them here]
+[If there are PO/Dev answers in epic comments after initial test plan, extract them here]
 
 - Update 1: [Important clarification]
 - Update 2: [If applicable]
 
 **Summary: How This Story Fits in Epic:**
 
-[Synthesize how this specific story fits into the broader epic context based on all the above information]
+[Synthesize how this specific story fits in the broader epic context based on all previous information]
 
 - **Story Role in Epic:** [E.g., "This story implements the frontend of the integration point identified in the epic"]
-- **Inherited Risks:** [Which epic risks directly apply]
-- **Unique Considerations:** [What is unique to this story that was NOT covered at epic level]
+- **Inherited Risks:** [Which epic risks apply directly]
+- **Unique Considerations:** [What's unique to this story that was NOT covered at epic level]
 
 ---
 
@@ -352,7 +350,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 - **Location in Story:** [Where it is - acceptance criteria, description, etc.]
 - **Question for PO/Dev:** [Specific question to clarify]
-- **Impact on Testing:** [What we can't test without clarifying this]
+- **Impact on Testing:** [What we can't test without clarification]
 - **Suggested Clarification:** [How it should be clarified]
 
 **Ambiguity 2:** [If applicable]
@@ -375,7 +373,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 - **Type:** [Acceptance Criteria | Technical Details | Business Rule | etc.]
 - **Why It's Critical:** [Why we need it for testing]
 - **Suggested Addition:** [What should be added to the story]
-- **Impact if Not Added:** [What risk not adding it poses]
+- **Impact if Not Added:** [What risk it poses]
 
 **Gap 2:** [If applicable]
 
@@ -390,12 +388,12 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 ### Edge Cases NOT Covered in Original Story
 
-[Identify edge cases the story does NOT mention but are critical]
+[Identify edge cases that the story does NOT mention but are critical]
 
 **Edge Case 1:** [Edge case description]
 
 - **Scenario:** [What happens if...]
-- **Expected Behavior:** [How system should behave - infer or ask]
+- **Expected Behavior:** [How the system should behave - infer or ask]
 - **Criticality:** High | Medium | Low
 - **Action Required:** [Add to story | Add to test cases only | Ask PO]
 
@@ -430,7 +428,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 ## ✅ Step 3: Refined Acceptance Criteria
 
-[Take acceptance criteria from story.md and refine them with specific data + add identified edge cases]
+[Take acceptance criteria from story.md and refine with specific data + add identified edge cases]
 
 ### Scenario 1: [Refined scenario name - Happy Path]
 
@@ -463,18 +461,18 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
   - [Initial state]
 
 - **When:**
-  - [Action with SPECIFIC INVALID data]
+  - [Action with specific INVALID data]
   - [E.g., User enters invalid email "notanemail"]
 
 - **Then:**
-  - [EXACT error message that should display]
+  - [EXACT error message that should be displayed]
   - [Status code: 400 Bad Request]
   - [Response: {success: false, error: {code: "INVALID_EMAIL", message: "Email format is invalid"}}]
   - [Verification: system did NOT change state/DB]
 
 ---
 
-### Scenario 3: [Edge case - boundary]
+### Scenario 3: [Edge case - boundary case]
 
 **Type:** Boundary
 **Priority:** Medium/High
@@ -567,9 +565,54 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 ---
 
-### Test Cases
+### Test Outline Naming Convention (Shift-Left)
 
-#### **TC-001: [Descriptive and specific title]**
+**Context:** In Shift-Left Testing, test cases are **Test Outlines** - guides for exploratory testing, not formal test cases. Naming is simpler than in Test Documentation (Stage 3).
+
+**Format:**
+
+```
+Should <BEHAVIOR> <CONDITION>
+```
+
+**Component definitions:**
+
+| Component   | What it is                                                       | Examples                                                                              |
+| ----------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `BEHAVIOR`  | **The main behavior** being validated (verb + object)            | `login successfully`, `display error`, `create user`, `calculate total`               |
+| `CONDITION` | **The condition or context** that makes this scenario unique     | `with valid credentials`, `when field is empty`, `for premium users`, `at limit`      |
+
+**Mental formula:**
+
+```
+"Should [WHAT behavior] [UNDER WHAT condition]"
+```
+
+**Examples by test type:**
+
+| Type     | BEHAVIOR                     | CONDITION                              | Full Title                                                   |
+| -------- | ---------------------------- | -------------------------------------- | ------------------------------------------------------------ |
+| Positive | `login successfully`         | `with valid credentials`               | Should login successfully with valid credentials             |
+| Negative | `display authentication error` | `when password is incorrect`         | Should display authentication error when password is incorrect |
+| Boundary | `accept character limit`     | `when entering exactly 50 chars`       | Should accept character limit when entering exactly 50 chars |
+| Edge     | `handle cart behavior`       | `when there are multiple same items`   | Should handle cart behavior when there are multiple same items |
+
+**Anti-patterns (avoid):**
+
+| ❌ Incorrect          | ✅ Correct                                                | Why                                     |
+| --------------------- | --------------------------------------------------------- | --------------------------------------- |
+| `Login test`          | `Should login successfully with valid credentials`        | Missing specific BEHAVIOR and CONDITION |
+| `Login - error`       | `Should display authentication error with invalid password` | Too vague, doesn't describe context   |
+| `Test the form`       | `Should submit form with all fields`                      | Doesn't indicate what behavior          |
+| `Negative case`       | `Should reject registration when email already exists`    | Doesn't describe the scenario           |
+
+**Note:** In Stage 3 (Test Documentation), the prefix `<TS_ID>: TC#:` is added for formal test cases in Jira/Xray. See `.context/guidelines/QA/jira-test-management.md`.
+
+---
+
+### Test Outlines
+
+#### **Should [BEHAVIOR: main behavior] [CONDITION: specific condition]**
 
 **Related Scenario:** Scenario 1 (Refined AC above)
 **Type:** Positive | Negative | Boundary
@@ -584,7 +627,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 - [Required initial system state]
 - [Pre-existing data in DB if applicable - BE SPECIFIC]
 - [User logged in as: [role/email]]
-- [Necessary system configuration]
+- [Required system configuration]
 
 ---
 
@@ -620,7 +663,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
   - Table: [table]
   - Record: [what record was created/modified/deleted]
   - Fields: [specific fields with expected values]
-- **System State:** [Changes in system state]
+- **System State:** [System state changes]
 
 ---
 
@@ -649,7 +692,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 ---
 
-#### **TC-002: [Title - negative test]**
+#### **Should [BEHAVIOR: error/rejection] [CONDITION: error condition]**
 
 **Related Scenario:** Scenario 2
 **Type:** Negative
@@ -663,7 +706,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 **Test Steps:**
 
-1. [Step with SPECIFIC INVALID data]
+1. [Step with specific INVALID data]
 2. [Verify error response]
 
 **Expected Result:**
@@ -683,7 +726,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
   ```
 
 - **Database:** NO changes (verify data was NOT created/modified)
-- **UI:** [If applicable - error message should display]
+- **UI:** [If applicable - error message should be displayed]
 
 **Test Data:**
 
@@ -698,7 +741,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 ---
 
-#### **TC-003: [Title - boundary test]**
+#### **Should [BEHAVIOR: boundary behavior] [CONDITION: boundary value/condition]**
 
 **Related Scenario:** Scenario 3
 **Type:** Boundary
@@ -791,12 +834,12 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 ### Data Categories
 
-| Data Type       | Count | Purpose         | Examples                |
-| --------------- | ----- | --------------- | ----------------------- |
-| Valid data      | [X]   | Positive tests  | [Specific examples]     |
-| Invalid data    | [Y]   | Negative tests  | [Specific examples]     |
-| Boundary values | [Z]   | Boundary tests  | [min, max, empty, null] |
-| Edge case data  | [W]   | Edge case tests | [Specific examples]     |
+| Data Type       | Count | Purpose         | Examples               |
+| --------------- | ----- | --------------- | ---------------------- |
+| Valid data      | [X]   | Positive tests  | [Specific examples]    |
+| Invalid data    | [Y]   | Negative tests  | [Specific examples]    |
+| Boundary values | [Z]   | Boundary tests  | [min, max, empty, null]|
+| Edge case data  | [W]   | Edge case tests | [Specific examples]    |
 
 ### Data Generation Strategy
 
@@ -807,7 +850,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 - [Example 2]
 
 **Dynamic Test Data (using Faker.js):**
-[Data generated dynamically]
+[Data that is dynamically generated]
 
 - User data: `faker.internet.email()`, `faker.person.firstName()`
 - Numbers: `faker.number.int({ min: X, max: Y })`
@@ -829,7 +872,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 ### Step 5: Update Story in Jira
 
-**Objective:** Refine story in Jira WITH refinements identified in Step 2, BEFORE generating test cases.
+**Objective:** Refine the story in Jira WITH refinements identified in Step 2, BEFORE generating test cases.
 
 **Tool:** Atlassian MCP
 
@@ -839,7 +882,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
    - Use Atlassian MCP to get the issue
    - Input: Real Jira Key extracted from story.md (e.g., UPEX-45)
    - ⚠️ **DO NOT use** folder naming convention (STORY-UPEX-45)
-   - Get: description, current acceptance criteria
+   - Get: current description, acceptance criteria
 
 2. **Prepare refined content:**
 
@@ -852,7 +895,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
    - Use Atlassian MCP to edit the issue
    - Add new section to description with the following content:
 
-   ***
+   ---
 
    ## 🧪 QA Refinements (Shift-Left Analysis)
 
@@ -871,7 +914,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
    [Add clarifications from Step 2]
 
-   ***
+   ---
    - Add label: `shift-left-reviewed`
 
 **Expected output:**
@@ -884,14 +927,14 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 ### Step 6: Add Test Cases Comment in Jira
 
-**Objective:** Add ALL test cases as comment in Jira story for maximum team visibility.
+**Objective:** Add ALL test cases as a comment in the Jira story for maximum team visibility.
 
 **Tool:** Atlassian MCP
 
 **Comment structure:**
 
 ```
-## 🧪 Shift-Left Test Cases - Generated [Date]
+## 🧪 Acceptance Test Plan - Generated [Date]
 
 **QA Engineer:** [Name or "AI-Generated"]
 **Status:** Draft - Pending PO/Dev Review
@@ -934,7 +977,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 ---
 
 **Documentation:** Full test cases also available at:
-`.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/test-cases.md`
+`.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/acceptance-test-plan.md`
 ```
 
 **Steps to execute:**
@@ -951,17 +994,17 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 ---
 
-### Step 7: Generate Local test-cases.md (Mirroring)
+### Step 7: Generate Local acceptance-test-plan.md (Mirroring)
 
-**Objective:** Create local `.md` file as MIRROR of Jira comment for version control and offline documentation.
+**Objective:** Create local `.md` file as MIRROR of the Jira comment for version control and offline documentation.
 
-**Path:** `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/test-cases.md`
+**Path:** `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/acceptance-test-plan.md`
 
-**Content:** IDENTICAL to content generated in Step 6 (entire Test Cases template)
+**Content:** IDENTICAL to content generated in Step 6 (complete Test Cases template)
 
 **Expected output:**
 
-- ✅ `test-cases.md` file created locally
+- ✅ `acceptance-test-plan.md` file created locally
 - ✅ Content is EXACT MIRROR of Jira comment
 - ✅ Available for git versioning
 
@@ -975,7 +1018,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 ---
 
-## ✅ Shift-Left Test Cases - Execution Summary
+## ✅ Acceptance Test Plan - Execution Summary
 
 **Story:** [STORY-KEY] - [Title]
 **Analysis Date:** [YYYY-MM-DD]
@@ -1016,7 +1059,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 [Technical questions that affect testing approach]
 
-**Question 1:** [Technical question - e.g., how concurrency is handled]
+**Question 1:** [Technical question - e.g., how is concurrency handled]
 
 - **Context:** [Why we're asking]
 - **Impact on Testing:** [How it affects our test cases]
@@ -1030,7 +1073,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 ### 💡 Suggested Story Improvements
 
-[Suggestions to improve story BEFORE implementing - based on Step 2 analysis]
+[Suggestions to improve the story BEFORE implementation - based on Step 2 analysis]
 
 **Improvement 1:** [Specific suggestion]
 
@@ -1096,12 +1139,12 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 
 - ✅ Story refined in Jira with acceptance criteria improvements
 - ✅ Label `shift-left-reviewed` added
-- ✅ Test cases added as comment in Jira story
+- ✅ Acceptance test cases added as comment in Jira story
 - ✅ Team members tagged for review (@PO, @Dev, @QA)
 
 **Local Files:**
 
-- ✅ `test-cases.md` created at: `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/`
+- ✅ `acceptance-test-plan.md` created at: `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/`
 
 **Test Coverage:**
 
@@ -1126,7 +1169,7 @@ This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the
 **⚠️ BLOCKER:** Dev should NOT start implementation until critical questions are answered by PO.
 
 **Jira Link:** [Link to story in Jira]
-**Local Test Cases:** `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/test-cases.md`
+**Local Test Cases:** `.context/PBI/epics/EPIC-{PROJECT_KEY}-{ISSUE_NUM}-{name}/stories/STORY-{PROJECT_KEY}-{ISSUE_NUM}-{name}/acceptance-test-plan.md`
 
 ---
 
@@ -1202,7 +1245,7 @@ This story is considered "Done" from QA when:
 - ✅ **Story.md must contain `Jira Key:` field** with real key (e.g., UPEX-45)
 - ✅ **Epic.md must contain `Jira Key:` field** with real epic key (e.g., UPEX-13)
 - ✅ **Atlassian MCP access configured and working**
-- ✅ Time to critically analyze and not just mechanically generate test cases
+- ✅ Time to critically analyze, not just mechanically generate test cases
 
 **⚠️ story.md Validation:**
 
@@ -1213,7 +1256,7 @@ The story.md file must contain in its metadata:
 **Epic:** EPIC-UPEX-13-feature-name
 ```
 
-These are the real data. Note: The issue number (45, 13) is the same in the folder naming convention and in the Jira Key.
+These are the real data. Note: The issue number (45, 13) is the same in folder naming convention and in Jira Key.
 
 ---
 
@@ -1226,7 +1269,7 @@ These are the real data. Note: The issue number (45, 13) is the same in the fold
 **Steps to execute:**
 
 1. Checkout from `staging`: `git checkout staging && git pull`
-2. Create branch using format: `test/{CODA_KEY}/{short-description}`
+2. Create branch using format: `test/{JIRA_KEY}/{short-description}`
 3. `{JIRA_KEY}` is extracted from `**Jira Key:**` field in story.md
 4. `{short-description}` is derived from story name/title in kebab-case (max 3-4 words)
 
@@ -1237,7 +1280,7 @@ git checkout staging && git pull
 git checkout -b test/UPEX-45/user-login-flow
 ```
 
-**⚠️ IMPORTANT:** This branch will only contain the generated `test-cases.md` file. DO NOT include other changes.
+**⚠️ IMPORTANT:** This branch will only contain the generated `acceptance-test-plan.md` file. DO NOT include other changes.
 
 ---
 
@@ -1265,21 +1308,37 @@ Story Path: .context/PBI/epics/EPIC-UPEX-13-name/stories/STORY-UPEX-45-name/
 4. Execute: `git checkout staging && git pull`
 5. Create branch: `git checkout -b test/{JIRA_KEY}/{short-description}`
 
-**Pre-requisite: Extract Jira Keys** 6. Extract `**Epic:**` field to get epic path 7. Read epic.md and extract Epic Jira Key (e.g., UPEX-13) 8. Save both real Jira Keys for Steps 5 and 6
+**Prerequisite: Extract Jira Keys**
+6. Extract `**Epic:**` field to get epic path
+7. Read epic.md and extract Epic Jira Key (e.g., UPEX-13)
+8. Save both real Jira Keys for Steps 5 and 6
 
-**Read Complete Context:** 9. Read all context files (PRD, SRS, local epic.md, feature-test-plan.md, story.md) 10. Read current story from Jira with MCP (using real Story Jira Key) 11. Read epic from Jira with MCP (using real Epic Jira Key) 12. **Read epic comments in Jira** - especially "Feature Test Plan"
+**Read Complete Context:**
+9. Read all context files (PRD, SRS, local epic.md, feature-test-plan.md, story.md)
+10. Read current story from Jira with MCP (using real Story Jira Key)
+11. Read epic from Jira with MCP (using real Epic Jira Key)
+12. **Read epic comments in Jira** - especially "Feature Test Plan"
 
-**PART 1 - Analysis and Design:** 13. **Step 1:** Critical Analysis (includes Epic-Level Context from comments) 14. **Step 2:** Story Quality Analysis 15. **Step 3:** Refined Acceptance Criteria 16. **Step 4:** Test Design
+**PART 1 - Analysis and Design:**
+13. **Step 1:** Critical Analysis (includes Epic-Level Context from comments)
+14. **Step 2:** Story Quality Analysis
+15. **Step 3:** Refined Acceptance Criteria
+16. **Step 4:** Test Design
 
-**PART 2 - Integration and Output:** 17. **Step 5:** Update story in Jira with refinements (MCP + real Story Jira Key) 18. **Step 6:** Create comment in Jira with complete test cases (MCP + real Story Jira Key) 19. **Step 7:** Generate local `test-cases.md` file in {STORY_PATH}/ (Write tool) 20. **Step 8:** Report summary to user (Output) 21. **Step 9:** Commit `test-cases.md` file to working branch
+**PART 2 - Integration and Output:**
+17. **Step 5:** Update story in Jira with refinements (MCP + real Story Jira Key)
+18. **Step 6:** Create comment in Jira with complete test cases (MCP + real Story Jira Key)
+19. **Step 7:** Generate local `acceptance-test-plan.md` file in {STORY_PATH}/ (Write tool)
+20. **Step 8:** Report summary to user (Output)
+21. **Step 9:** Commit `acceptance-test-plan.md` file in working branch
 
 ### Tools to use:
 
 **Git (Bash):**
 
-- To checkout from `staging` and pull recent changes
-- To create working branch with format `test/{JIRA_KEY}/{short-description}`
-- To commit the generated `test-cases.md` file
+- For checkout from `staging` and pull recent changes
+- For creating working branch with format `test/{JIRA_KEY}/{short-description}`
+- For committing generated `acceptance-test-plan.md` file
 
 **Atlassian MCP:**
 
@@ -1291,7 +1350,7 @@ Story Path: .context/PBI/epics/EPIC-UPEX-13-name/stories/STORY-UPEX-45-name/
 
 **File Operations:**
 
-- To create local test-cases.md file
+- To create local acceptance-test-plan.md file
 - To read context files (PRD, SRS, epic, feature-test-plan, story.md)
 
 ---
@@ -1302,8 +1361,8 @@ Story Path: .context/PBI/epics/EPIC-UPEX-13-name/stories/STORY-UPEX-45-name/
 
 - ✅ **Critical analysis first, test design second**
 - ✅ **Early feedback is MORE valuable than perfect test cases**
-- ✅ **Refine story BEFORE implementation** (shift-left!)
-- ✅ **Exploratory test cases = comments in Jira** (not separate issues)
+- ✅ **Refine the story BEFORE implementation** (shift-left!)
+- ✅ **Exploratory test cases = Jira comments** (not separate issues)
 - ✅ **Epic context is critical** - ALWAYS read epic comments in Jira to get:
   - Already identified risks
   - Questions already answered by PO/Dev
@@ -1312,7 +1371,7 @@ Story Path: .context/PBI/epics/EPIC-UPEX-13-name/stories/STORY-UPEX-45-name/
 
 ### Test Design Guidelines:
 
-- ❌ **DON'T force minimum number of test cases** - depends on complexity
+- ❌ **DO NOT force minimum number of test cases** - depends on complexity
 - ✅ **Use parametrization when applicable** - reduces duplication
 - ✅ **Identify edge cases NOT covered** in original story
 - ✅ **Ask critical questions to PO/Dev** - better to clarify than assume
@@ -1320,7 +1379,7 @@ Story Path: .context/PBI/epics/EPIC-UPEX-13-name/stories/STORY-UPEX-45-name/
 ### Jira-First Workflow:
 
 - ✅ **ALWAYS update Jira first, then local** (consistency with story flow)
-- ✅ **Test cases go in comments, NOT in subtasks** (exploratory nature)
+- ✅ **Test cases go in comments, NOT subtasks** (exploratory nature)
 - ✅ **Tag the team** (@PO, @Dev, @QA) for visibility
 - ✅ **Add label `shift-left-reviewed`** for tracking
 
@@ -1340,7 +1399,7 @@ Story Path: .context/PBI/epics/EPIC-UPEX-13-name/stories/STORY-UPEX-45-name/
    - Review comment in Jira with test cases
    - Answer "Technical Questions for Dev" in Step 8
    - Validate integration points and test approach
-   - **DO NOT start implementation** until critical questions resolved
+   - **DO NOT start implementation** until critical questions are resolved
 
 3. **QA must:**
    - Wait for PO/Dev answers
@@ -1356,7 +1415,7 @@ Story Path: .context/PBI/epics/EPIC-UPEX-13-name/stories/STORY-UPEX-45-name/
 
 ## 🚀 Test Cases Evolution (Post Shift-Left)
 
-### Options for formalizing test cases:
+### Options to formalize test cases:
 
 Once PO/Dev have clarified all questions and story is refined:
 
@@ -1366,16 +1425,16 @@ Once PO/Dev have clarified all questions and story is refined:
 - Local file serves as documentation
 - QA executes from local file or comment
 
-**Option B: Migrate to Xray Test Repository** (For complex or critical stories)
+**Option B: Migrate to Xray/Zephyr** (For complex or critical stories)
 
 - Create Test Set/Suite in test management tool
 - Link with story using "IsTestedBy"
-- Maintain local file as mirror
+- Keep local file as mirror
 
 **Option C: Automate** (Once test cases are stable)
 
 - Use test cases as base for automation scripts
-- Generate tests with Playwright/Cypress based on test-cases.md
+- Generate tests with Playwright/Cypress based on acceptance-test-plan.md
 - Integrate into CI/CD pipeline
 
 ---
@@ -1389,75 +1448,150 @@ Once PO/Dev have clarified all questions and story is refined:
                            ↓
 2. PO/Dev answer questions in Epic comments
                            ↓
-3. Story Test Cases reads Epic comments
+3. Acceptance Test Plan reads Epic comments
                            ↓
-4. Story Test Cases inherits context:
+4. Acceptance Test Plan inherits context:
    - Identified risks
    - Already answered questions
    - Integration points
    - Test strategy
                            ↓
-5. Story Test Cases focuses on story-specific gaps
+5. Acceptance Test Plan focuses on story-specific gaps
                            ↓
 6. Comment added to Story (Jira) with test cases
                            ↓
 7. PO/Dev answer story-specific questions
                            ↓
-8. Implementation begins with complete context
+8. Implementation starts with complete context
 ```
 
 **Benefits of this flow:**
 
 - ✅ **Avoids duplication** of questions between epic and stories
-- ✅ **Cumulative context** - each story inherits epic knowledge
-- ✅ **Complete traceability** - everything documented in Jira comments
+- ✅ **Cumulative context** - each story inherits knowledge from epic
+- ✅ **Full traceability** - everything documented in Jira comments
 - ✅ **Improved collaboration** - PO/Dev see analysis evolution
 - ✅ **Informed decisions** - Dev implements with complete risk context
 
 ---
 
-## 📚 KATA Philosophy (Komponent-Action-Test-Architecture)
+## 📚 Testing Artifacts Hierarchy (IQL)
 
-This prompt follows KATA principles:
+This prompt generates artifacts that follow the **Integrated Quality Lifecycle** hierarchy:
 
-- **Komponent:** Stories in Jira + local .md files
-- **Action:** Shift-Left Testing - early analysis and refinement
-- **Test:** Exploratory test cases in comments → later formalization
-- **Architecture:** Jira-First → Local Mirror → Version Control → Automation (eventual)
+### IQL Artifacts
 
-**Traceability:**
+| Artifact                       | Level | Description                            | IQL Phase         |
+| ------------------------------ | ----- | -------------------------------------- | ----------------- |
+| **FTP** (Feature Test Plan)    | Epic  | Testing strategy and scope             | Early-Game Step 1 |
+| **ATP** (Acceptance Test Plan) | Story | This document - plan to validate ACs   | Early-Game Step 1 |
+| **ATC** (Acceptance Test Case) | Test  | Individual cases documented in Jira    | Mid-Game Step 6   |
+
+> **Note:** FTP and ATP are BOTH created in Step 1 (Requirements Analysis). First the Epic is analyzed to create FTP (macro context), then Stories are analyzed to create ATPs informed by FTP.
+
+### KATA: Automation Architecture
+
+**KATA** (Komponent Action Test Architecture) **is not an IQL artifact**, but the native automation architecture:
+
+- Used in Mid-Game (Steps 8-10) to automate ATCs
+- The `@atc('PROJECT-XXX')` decorator links scripts with Jira tickets
+- Provides bidirectional traceability between code and test management
+
+**Full traceability:**
 
 ```
 Epic (Jira)
-  ↓ contains
+  ↓ [Step 1a] FTP (Feature Test Plan) → Macro context
 Story (Jira + .md)
-  ↓ IsTestedBy (via comment)
-Test Cases (Comment + test-cases.md)
-  ↓ eventually migrates to
-Test Suite (Xray Test Repository - optional)
-  ↓ automates to
-Test Scripts (Playwright/Cypress - optional)
+  ↓ [Step 1b] ATP (Acceptance Test Plan) → This document (informed by FTP)
+  ↓ AC → Refined Acceptance Criteria
+ATCs (Acceptance Test Cases) → Step 6
+  ↓ Documented in Jira as Test tickets
+  ↓ Each ATC maps 1:1 with Jira ticket
+KATA Automation → Steps 8-10
+  ↓ @atc('PROJECT-XXX') decorator
+  ↓ Automated scripts with traceability
 ```
+
+**Connection with Mid-Game:**
+
+The "Test Outlines" generated in this ATP become **formal ATCs** during Mid-Game Step 6. Each ATC:
+
+- Is documented as 'Test' ticket in Jira/Xray
+- Is evaluated for automation (Step 7)
+- Is automated with KATA architecture (Steps 8-10)
+
+See documentation:
+
+- [IQL Methodology](docs/testing/test-architecture/IQL-methodology.md)
+- [Mid-Game Testing](docs/testing/test-architecture/mid-game-testing.md)
+- [KATA Fundamentals](docs/testing/test-architecture/kata-fundamentals.md)
 
 ---
 
-**Version:** 3.2 - Git Branch Naming Convention + Step 0
-**Last updated:** 2025-12-06
+**Version:** 3.3 - Git Branch Naming Convention + Step 0 + Custom Field Sync
+**Last updated:** 2025-02-05
 **Main changes:**
 
 - ✅ Added Jira-First flow (Steps 5-8)
 - ✅ Integration with Atlassian MCP
 - ✅ Test cases in comments (not subtasks)
 - ✅ Automatic story refinement in Jira
-- ✅ KATA philosophy integrated
+- ✅ Integrated CATA philosophy
 - ✅ **Reading epic comments in Jira** for updated context
-- ✅ **New "Epic-Level Context" sub-section** in Step 1 that extracts:
+- ✅ **New sub-section "Epic-Level Context"** in Step 1 that extracts:
   - Critical risks identified at epic level
   - Integration points from epic analysis
   - Critical questions already asked and answered
   - Test strategy from epic
   - Updates and clarifications from refinement
   - How story fits in epic
-- ✅ **Git Branch Naming Convention** - format `test/{CODA_KEY}/{short-description}`
+- ✅ **Branch Naming Convention for Git** - format `test/{JIRA_KEY}/{short-description}`
 - ✅ **Step 0: Create working branch** - checkout from `staging` before generating test cases
-- ✅ **Step 9: Commit file** - commit `test-cases.md` to working branch
+- ✅ **Step 9: Commit file** - commit `acceptance-test-plan.md` in working branch
+- ✅ **Conditional sync with Jira custom field**
+
+---
+
+## 📤 JIRA SYNC (Conditional - UPEX Workspace)
+
+### Custom Field for Acceptance Test Plan
+
+| Field ID            | Name                        | Type     | Level |
+| ------------------- | --------------------------- | -------- | ----- |
+| `customfield_12400` | Acceptance Test Plan (QA)🧪 | Textarea | Story |
+
+### Sync Instructions
+
+**AFTER generating the `acceptance-test-plan.md` file locally:**
+
+1. **Check if Story has the custom field:**
+   - Use Atlassian MCP to get Story: `jira_get_issue`
+   - Check if `customfield_12400` exists and is available in response
+
+2. **If field exists:**
+   - Copy COMPLETE content from generated `acceptance-test-plan.md`
+   - Update Story in Jira using MCP `jira_update_issue`:
+     ```
+     fields: {
+       "customfield_12400": "[acceptance-test-plan.md content]"
+     }
+     ```
+   - Add label: `test-plan-ready`
+
+3. **If field does NOT exist (non-UPEX Workspace):**
+   - Look for equivalent field with similar name ("Test Plan", "QA Plan", "Acceptance Tests")
+   - If no equivalent field exists, add as **comment** in Story:
+
+     ```
+     🧪 **Acceptance Test Plan (QA)**
+
+     [acceptance-test-plan.md content]
+     ```
+
+### Expected Output
+
+- [ ] `acceptance-test-plan.md` file created in `.context/PBI/epics/.../stories/.../`
+- [ ] Custom field `customfield_12400` updated in Jira (if exists)
+- [ ] Label `test-plan-ready` added to Story
+- [ ] Comment added as fallback (if field doesn't exist)

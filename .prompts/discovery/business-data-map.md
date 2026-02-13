@@ -473,8 +473,8 @@ When finished, show:
 
 For development and testing guides based on this map, run:
 
-- `.prompts/context-generators/api-architecture.md`
-- `.prompts/context-generators/project-test-guide.md`
+- `.prompts/utilities/api-architecture.md`
+- `.prompts/utilities/project-test-guide.md`
 ```
 
 ---

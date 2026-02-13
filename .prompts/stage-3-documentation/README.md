@@ -1,165 +1,196 @@
 # Stage 3: Test Documentation
 
-> **Purpose**: Document test cases in Jira/Xray AFTER the feature has passed exploratory testing.
-> **When to use**: When US status is "QA Approved" and test cases need formal documentation.
+## Purpose
 
-## Overview
-
-Test Documentation is the asynchronous process of formalizing test cases in Jira/Xray for traceability and regression management.
+Asynchronous documentation of **ATCs (Acceptance Test Cases)** in Jira **AFTER** the functionality has passed exploratory testing.
 
 **Why this stage exists:**
 
 - Features are validated first (rapid feedback)
-- Documentation happens when feature is stable
-- Tests are documented for regression (manual or automated)
-- Clear traceability between requirements and tests
+- Documentation happens when the feature is stable
+- ATCs are documented for regression (manual or automated)
+- Clear traceability: **ATP (Stage 1) → ATCs (Stage 3) → KATA (Stage 4)**
+- Automation decisions based on ROI
 
-**Benefits:**
-- Formal test case management in Jira/Xray
-- Clear automation vs manual classification
-- Risk-based prioritization
-- Traceability to requirements
+**IQL Connection:**
+This stage corresponds to **Step 6 of Mid-Game Testing** - where scenarios from the ATP become formal ATCs.
 
-## Prompts in This Stage
-
-| Order | Prompt                   | Purpose                                   | Output                  |
-| ----- | ------------------------ | ----------------------------------------- | ----------------------- |
-| 1     | `test-analysis.md`       | Analyze candidates for regression testing | Analysis report         |
-| 2     | `test-prioritization.md` | Prioritize which tests to document        | Prioritization report   |
-| 3     | `test-documentation.md`  | Create Test issues in Jira/Xray           | Test issues in Xray     |
+---
 
 ## Prerequisites
 
 - US status: "QA Approved" (exploratory testing passed)
 - Exploratory session notes with validated scenarios
-- Access to Atlassian MCP tools
+- Access to tools:
+  - MCP Atlassian (required)
+  - Xray CLI (`bun xray`) if the project uses Xray
+
+**Required context:**
+
+```
+Read first: .context/guidelines/QA/jira-test-management.md
+```
+
+---
+
+## Prompts in This Stage
+
+| Order | Prompt                   | Purpose                                    |
+| ----- | ------------------------ | ------------------------------------------ |
+| 1     | `test-analysis.md`       | Analyze US, comments, and complete context |
+| 2     | `test-prioritization.md` | Calculate ROI and decide path              |
+| 3     | `test-documentation.md`  | Create Tests in Jira, transit workflow     |
+
+---
 
 ## Execution Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    TEST DOCUMENTATION WORKFLOW                               │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-         ┌─────────────────────────────────────────┐
-         │  US Status: QA Approved                 │
-         └────────────────┬────────────────────────┘
-                          │
-                          ▼
-         ┌─────────────────────────────────────────┐
-         │  1. test-analysis.md                    │
-         │     - Review exploratory findings       │
-         │     - Identify scenarios for regression │
-         │     - Classify: automatable vs manual   │
-         └────────────────┬────────────────────────┘
-                          │
-                          ▼
-         ┌─────────────────────────────────────────┐
-         │  2. test-prioritization.md              │
-         │     - Apply risk-based prioritization   │
-         │     - Determine which tests go to       │
-         │       regression                        │
-         │     - Mark automation candidates        │
-         └────────────────┬────────────────────────┘
-                          │
-                          ▼
-         ┌─────────────────────────────────────────┐
-         │  3. test-documentation.md               │
-         │     - Create Test issues in Xray        │
-         │     - Format: Gherkin (recommended)     │
-         │       or Traditional                    │
-         │     - Link to related User Story        │
-         └────────────────┬────────────────────────┘
-                          │
-                          ▼
-         ┌─────────────────────────────────────────┐
-         │  Output: Test cases documented in Xray  │
-         │     - Some marked for automation        │
-         │       → Stage 4                         │
-         │     - Some marked manual-only           │
-         │       → Manual regression               │
-         └─────────────────────────────────────────┘
+US Status: QA Approved
+        ↓
+[1] Test Analysis
+    ├── Read US, comments, linked issues (MCP Atlassian)
+    ├── Identify test scenarios
+    ├── Classify by type (E2E, Integration, Functional)
+    └── Map reusable components (Lego)
+        ↓
+[2] Test Prioritization
+    ├── Calculate ROI per scenario
+    ├── Apply reusability bonus
+    ├── Decide path: Candidate vs Manual vs Deferred
+    └── Order by implementation priority
+        ↓
+[3] Test Documentation
+    ├── Verify modality (native Jira vs Xray)
+    ├── Verify/create regression epic
+    ├── Create Tests (MCP Atlassian or Xray CLI)
+    ├── Link to User Story
+    └── Transit workflow: Draft → In Design → Ready → [Manual|Candidate]
+        ↓
+Output:
+    ├── Candidates → Stage 4: Test Automation
+    └── Manual → Manual regression suite
 ```
-
-## Test Case Classification
-
-| Type            | Description                  | Next Step             |
-| --------------- | ---------------------------- | --------------------- |
-| **Automatable** | Can be automated with KATA   | → Stage 4: Automation |
-| **Manual-only** | Requires human judgment      | → Manual regression   |
-| **Deferred**    | Low priority, document later | → Backlog             |
-
-## Xray Test Issue Type
-
-**Required fields:**
-
-- Issue Type: `Test` (Custom Issue Type)
-- Summary: Clear test case name
-- Description: Test case in Gherkin or Traditional format
-- Custom Field: `Test Status` (New, Automated, Manual)
-- Labels: `regression`, `automation-candidate`, etc.
-- Link: Related User Story
-
-## Test Case Formats
-
-### Gherkin (KATA Standard - Recommended)
-
-```gherkin
-Feature: User Login
-
-Scenario: Successful login with valid credentials
-  Given I am on the login page
-  When I enter valid email "user@example.com"
-  And I enter valid password "Password123!"
-  And I click the submit button
-  Then I should be redirected to the dashboard
-  And I should see a welcome message
-
-Scenario Outline: Login with invalid credentials
-  Given I am on the login page
-  When I enter email "<email>"
-  And I enter password "<password>"
-  And I click the submit button
-  Then I should see an error message "<error>"
-
-  Examples:
-    | email              | password    | error                    |
-    | invalid            | Password1!  | Invalid email format     |
-    | user@example.com   | wrong       | Invalid credentials      |
-    | user@example.com   |             | Password is required     |
-```
-
-### Traditional Format (Alternative)
-
-| Step | Action                 | Test Data          | Expected Result         |
-| ---- | ---------------------- | ------------------ | ----------------------- |
-| 1    | Navigate to login page | -                  | Login form is displayed |
-| 2    | Enter email            | <user@example.com> | Email field populated   |
-| 3    | Enter password         | Password123!       | Password field masked   |
-| 4    | Click submit           | -                  | Redirect to dashboard   |
-
-## Tools Required
-
-| Tool                                               | Purpose                 |
-| -------------------------------------------------- | ----------------------- |
-| `mcp__atlassian__createJiraIssue`            | Create Test issues      |
-| `mcp__atlassian__getJiraIssue`               | Get Test issue schema   |
-| `mcp__atlassian__addJiraComment`             | Link to related stories |
-
-## Output
-
-- Test cases created in Xray as "Test" issue type
-- Tests linked to related User Stories
-- Tests classified (automation candidate vs manual)
-- Ready for automation (Stage 4) or manual regression
-
-## Next Stage
-
-For tests marked as **automation candidates**:
-
-- Proceed to **Stage 4: Test Automation**
-- Implement ATCs following KATA architecture
 
 ---
 
-**Related**: [Stage 2 - Exploratory](../stage-2-exploratory/) | [Stage 4 - Automation](../stage-4-automation/)
+## Test Management Modalities
+
+### Key Question
+
+```
+Does the project use Xray as a plugin?
+
+- YES → Xray CLI (`bun xray`) + MCP Atlassian
+- NO → Only MCP Atlassian with Issue Type "Test"
+```
+
+### Tools by Modality
+
+| Modality    | Tools                      |
+| ----------- | -------------------------- |
+| Native Jira | MCP Atlassian              |
+| Jira + Xray | MCP Atlassian + `bun xray` |
+
+---
+
+## ATC Workflow
+
+```
+DRAFT → IN DESIGN → READY → [MANUAL | IN REVIEW → CANDIDATE]
+
+Final regression states:
+- MANUAL: ATC for manual regression
+- AUTOMATED: ATC automated with KATA (after Stage 4)
+```
+
+**KATA Traceability:** Each ATC marked as CANDIDATE uses the `@atc('PROJECT-XXX')` decorator in Stage 4.
+
+Complete visual reference in: `.context/guidelines/QA/jira-test-management.md`
+
+---
+
+## Regression Epic
+
+**REQUIRED:** All tests must belong to a regression epic.
+
+```
+Search: project = PROJ AND issuetype = Epic AND (summary ~ "regression" OR labels = "test-repository")
+
+If not exists → Create "{PROJECT} Test Repository"
+```
+
+---
+
+## Test Classification
+
+| Type            | Description                      | Automatable   |
+| --------------- | -------------------------------- | ------------- |
+| **E2E**         | Complete user flow               | Yes           |
+| **Integration** | Communication between systems    | Yes           |
+| **Functional**  | Specific isolated functionality  | Yes           |
+| **Smoke**       | Basic verification               | Yes           |
+| **Visual**      | Visual validation                | No (manual)   |
+
+---
+
+## Path Decisions
+
+| ROI Score | Path                  | Final Status |
+| --------- | --------------------- | ------------ |
+| > 1.5     | → Candidate           | CANDIDATE    |
+| 0.5 - 1.5 | → Evaluate / In Review| IN REVIEW    |
+| < 0.5     | → Manual or Defer     | MANUAL       |
+
+---
+
+## Xray CLI Commands
+
+```bash
+# Authentication
+bun xray auth login --client-id "$XRAY_CLIENT_ID" --client-secret "$XRAY_CLIENT_SECRET"
+bun xray auth status
+
+# Create test
+bun xray test create --project PROJ --summary "Test name" \
+  --step "Action|Expected"
+
+# Create Cucumber test
+bun xray test create --project PROJ --type Cucumber \
+  --summary "Feature" --gherkin "Feature: X\n  Scenario: Y"
+
+# List tests
+bun xray test list --project PROJ
+```
+
+---
+
+## Output from This Stage
+
+- Tests created in Jira as Issue Type "Test"
+- Tests linked to related User Stories
+- Tests within Regression Epic
+- States transitioned according to workflow
+- Automation candidates ready for Stage 4
+- Manual tests in regression suite
+
+---
+
+## Next Stage
+
+For ATCs marked as **Candidate**:
+
+- Proceed to **Stage 4: Test Automation**
+- Implement ATCs following KATA architecture
+- Each ATC is linked with `@atc('PROJECT-XXX')` for traceability
+
+**IQL Connection:** This transition corresponds to Steps 7-10 of Mid-Game Testing (evaluation, automation, CI, and PR).
+
+---
+
+## Related Documentation
+
+- **Guidelines:** `.context/guidelines/QA/jira-test-management.md`
+- **QA Workflow:** `.prompts/us-qa-workflow.md`
+- **KATA Guidelines:** `.context/guidelines/TAE/`
+- **TMS Integration:** `.context/guidelines/TAE/tms-integration.md`

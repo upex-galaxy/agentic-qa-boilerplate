@@ -1,60 +1,81 @@
-# API Exploratory Testing Session
+# Exploratory API Testing Session
 
-> AI-guided API exploratory testing using Postman MCP or direct HTTP tools.
+> AI-guided exploratory testing at the API layer using Postman MCP and OpenAPI MCP tools.
 
 ---
 
 ## Purpose
 
-Execute exploratory testing on API endpoints to validate contracts, discover edge cases, and identify potential defects before automation.
+Execute exploratory testing on API endpoints to validate backend functionality, verify data contracts, test authentication flows, and discover integration defects before automation.
 
 **This prompt is executed AFTER:**
 
 - Smoke test passed (deployment is functional)
-- API endpoints are deployed to staging
+- Feature is deployed to staging
+- API endpoints are accessible
 
-**Prerequisites:**
+**When to use API Exploratory Testing:**
 
-- Access to Postman MCP tools (`mcp__postman__*`) OR HTTP client
-- API base URL accessible
-- API documentation or OpenAPI spec available
-- Test cases or acceptance criteria as input
+- Testing endpoints that don't have UI yet
+- Validating API contracts (request/response schemas)
+- Testing authentication and authorization (RLS policies)
+- Verifying data transformations and business logic
+- Testing error handling and edge cases at API level
+
+---
+
+## Prerequisites
+
+**MCPs Required:**
+
+| MCP                | Purpose                                  | Required |
+| ------------------ | ---------------------------------------- | -------- |
+| `postman`          | Execute authenticated flows, collections | Yes      |
+| `openapi` (api)    | Explore endpoints, schema validation     | Optional |
+| `dbhub` (sql)      | Verify data after API operations         | Optional |
+| `mcp__atlassian__` | Bug creation, story transitions          | Optional |
+
+**Environment:**
+
+- Staging URL accessible
+- Test user credentials available
+- Postman workspace configured (if using `postman` MCP)
 
 ---
 
 ## Input Required
 
-### Option 1: OpenAPI/Swagger Spec (Recommended)
+### Option 1: Shift-Left Test Cases (Recommended)
 
-If the project has API documentation:
-
-```
-Provide:
-- Path to openapi.yaml or swagger.json
-- OR URL to Swagger UI
-- OR API documentation link
-```
-
-### Option 2: Endpoint List
-
-If no formal spec exists:
+If the project has Shift-Left Testing documentation:
 
 ```
 Provide:
-- List of endpoints to test
-- Base URL for staging
-- Authentication method (if any)
+- Path to acceptance-test-plan.md file
+- OR Jira issue with test cases in comments
+- OR test cases directly in the prompt
 ```
 
-### Option 3: User Story Context
+### Option 2: Acceptance Criteria
 
-For story-specific testing:
+If no Shift-Left documentation exists:
 
 ```
 Provide:
-- User Story ID (e.g., PROJ-123)
-- Expected API calls for the feature
-- Related backend changes
+- User Story ID (e.g., MYM-123)
+- OR path to story.md file
+- OR acceptance criteria directly in the prompt
+```
+
+### Option 3: API Contract/OpenAPI Spec
+
+For contract-focused exploration:
+
+```
+Provide:
+- OpenAPI spec URL or file path
+- Specific endpoints to test
+- Expected request/response schemas
 ```
 
 ---
@@ -65,191 +86,306 @@ Provide:
 
 **Actions:**
 
-1. **Read API documentation** from provided input
-2. **Identify key endpoints** to explore:
-   - CRUD operations (Create, Read, Update, Delete)
-   - Authentication flows
-   - Business logic endpoints
+1. **Read test requirements** from the provided input
+2. **Identify API endpoints** to explore:
+   - Endpoints involved in the User Story
+   - Related endpoints (dependencies)
+   - Authentication endpoints (if auth is involved)
 3. **Determine exploration scope:**
-   - Request/response contracts
-   - Error handling
-   - Edge cases and boundaries
+   - CRUD operations to test
+   - Authentication scenarios
+   - Error conditions to verify
+   - Data validation rules
 
 **Output to user:**
 
 ```markdown
 ## API Exploration Plan
 
-**API Base URL:** [URL]
-**Authentication:** [Method]
-**Scope:** [Feature/Story being tested]
+**Feature:** [Feature name]
+**Scope:** [US/Epic being tested]
+**Base URL:** [API Base URL]
 
 ### Endpoints to Explore:
 
-| Method | Endpoint        | Purpose           |
-| ------ | --------------- | ----------------- |
-| GET    | /api/resource   | List resources    |
-| POST   | /api/resource   | Create resource   |
-| PUT    | /api/resource/1 | Update resource   |
-| DELETE | /api/resource/1 | Delete resource   |
+| Method | Endpoint          | Purpose             |
+| ------ | ----------------- | ------------------- |
+| POST   | /auth/v1/token    | User authentication |
+| GET    | /rest/v1/products | List products       |
+| POST   | /rest/v1/orders   | Create order        |
+| ...    | ...               | ...                 |
 
-Shall I proceed with the exploration?
+### Test Scenarios:
+
+1. [Scenario 1 - Happy path]
+2. [Scenario 2 - Auth required]
+3. [Scenario 3 - Error handling]
+   ...
+
+Shall I proceed with the API exploration?
 ```
 
 ---
 
-### Phase 2: API Exploration
+### Phase 2: Authentication Setup
 
-**Tools to use (Postman MCP):**
+**If testing authenticated endpoints:**
 
-| Tool                                | Purpose                    |
-| ----------------------------------- | -------------------------- |
-| `mcp__postman__send_api_request`    | Execute API requests       |
-| `mcp__postman__get_collection`      | Load Postman collection    |
-| `mcp__postman__get_environment`     | Load environment variables |
+Using `postman` MCP:
 
-**For each endpoint:**
+```
+1. Check if environment exists:
+   → getEnvironments()
 
-1. **Happy Path Test:**
-   - Valid request with expected data
-   - Verify response status (200, 201, etc.)
-   - Validate response schema
+2. If needed, create/update environment:
+   → createEnvironment() or putEnvironment()
+   Variables: base_url, anon_key, access_token, test_user_email, test_user_password
 
-2. **Error Handling:**
-   - Invalid authentication
-   - Missing required fields
-   - Invalid data types
-   - Non-existent resources
+3. Execute login:
+   → Use existing "Login" request from collection
+   → OR create ad-hoc request to /auth/v1/token
 
-3. **Edge Cases:**
-   - Empty payloads
-   - Maximum size payloads
-   - Special characters in strings
-   - Boundary values for numbers
-
-**Session Notes Format:**
-
-```markdown
-### Endpoint: [METHOD /path]
-
-**Happy Path:**
-- Request: [Summary of request]
-- Response: [Status code] - [Summary]
-- Status: [PASSED / FAILED]
-
-**Error Handling:**
-- [Error case 1]: [Status code] - [Result]
-- [Error case 2]: [Status code] - [Result]
-
-**Edge Cases:**
-- [Edge case 1]: [Result]
-- [Edge case 2]: [Result]
-
-**Issues Found:**
-- [Description if any]
+4. Store the access_token for subsequent requests
 ```
 
----
+Using `openapi` MCP (for anonymous requests only):
 
-### Phase 3: Contract Validation
+```
+Note: The openapi MCP uses anon_key only.
+For authenticated tests, use postman MCP or document manual steps.
+```
 
-**Validate for each endpoint:**
-
-1. **Request Contract:**
-   - Required vs optional fields
-   - Data types match spec
-   - Validation rules enforced
-
-2. **Response Contract:**
-   - Response structure matches spec
-   - All expected fields present
-   - Correct data types returned
-
-3. **HTTP Standards:**
-   - Correct status codes used
-   - Appropriate error messages
-   - Headers properly set (Content-Type, CORS, etc.)
-
-**Contract Checklist:**
+**Authentication Test Cases:**
 
 ```markdown
-### Contract Validation: [Endpoint]
+### Auth Scenario: Valid Login
 
 **Request:**
-- [ ] Required fields enforced
-- [ ] Optional fields accepted
-- [ ] Invalid types rejected
-- [ ] Validation errors clear
+POST /auth/v1/token?grant_type=password
+Body: { "email": "test@example.com", "password": "xxx" }
 
-**Response:**
-- [ ] Schema matches spec
-- [ ] All fields present
-- [ ] Types correct
-- [ ] Pagination works (if applicable)
+**Expected:**
 
-**Status Codes:**
-- [ ] 200 for successful GET
-- [ ] 201 for successful POST
-- [ ] 400 for validation errors
-- [ ] 401 for unauthorized
-- [ ] 404 for not found
-- [ ] 500 handled gracefully
+- Status: 200
+- Response contains: access_token, refresh_token, user.id
+
+**Actual:** [Document result]
+**Status:** [PASSED/FAILED]
 ```
 
 ---
 
-### Phase 4: Security Checks
+### Phase 3: API Exploration
 
-**Basic security validations:**
+**For each endpoint/scenario:**
 
-1. **Authentication:**
-   - Endpoints require auth when expected
-   - Invalid tokens rejected
-   - Token expiration handled
+#### Using `postman` MCP:
 
-2. **Authorization:**
-   - Users can only access their data
-   - Role restrictions enforced
-   - Resource ownership validated
+```
+1. Find or create the request:
+   → getCollections() → find relevant collection
+   → getCollection(id) → see available requests
+   → OR createCollectionRequest() for new tests
 
-3. **Input Validation:**
-   - SQL injection attempts rejected
-   - XSS payloads sanitized
-   - Path traversal prevented
+2. Execute the request:
+   → runCollection() for full flow
+   → OR execute individual request
 
-**Security Checklist:**
+3. Validate response:
+   - Status code matches expected
+   - Response body schema is correct
+   - Data values are accurate
+   - Headers are appropriate
+
+4. Document findings
+```
+
+#### Using `openapi` MCP:
+
+```
+1. Explore available endpoints:
+   → list-api-endpoints (if using dynamic mode)
+   → OR use mcp__openapi__get-[resource] directly
+
+2. Execute the request:
+   → mcp__openapi__get-products
+   → mcp__openapi__post-orders
+   → etc.
+
+3. Validate response structure against OpenAPI schema
+
+4. Document findings
+```
+
+**Test Documentation Format:**
 
 ```markdown
-### Security Validation
+### Scenario: [Name]
 
-**Authentication:**
-- [ ] Missing token returns 401
-- [ ] Invalid token returns 401
-- [ ] Expired token returns 401
+**Endpoint:** [METHOD] [PATH]
 
-**Authorization:**
-- [ ] Cannot access other users' data
-- [ ] Role restrictions work
-- [ ] Resource ownership checked
+**Request:**
 
-**Input Validation:**
-- [ ] SQL injection: `' OR 1=1 --` → Rejected
-- [ ] XSS: `<script>alert(1)</script>` → Sanitized
-- [ ] Large payload: [Max size] → Handled
+- Headers: [List headers]
+- Body: [Request body if applicable]
+- Query params: [If applicable]
+
+**Expected Response:**
+
+- Status: [Expected status code]
+- Body: [Expected structure/values]
+
+**Actual Response:**
+
+- Status: [Actual status code]
+- Body: [Actual response - summarized]
+
+**Assertions:**
+
+- [ ] Status code matches
+- [ ] Response schema is valid
+- [ ] Data values are correct
+- [ ] No unexpected fields
+
+**Outcome:** [PASSED / FAILED / OBSERVATION]
+
+**Notes:**
+
+- [Any observations]
 ```
 
 ---
 
-### Phase 5: Session Summary
+### Phase 4: RLS Policy Testing
 
-**Generate comprehensive report:**
+**Critical for Supabase projects:**
+
+Test that Row Level Security policies work correctly:
+
+```markdown
+### RLS Test: User can only see own orders
+
+**Setup:**
+
+- Login as User A (get token_A)
+- Login as User B (get token_B)
+
+**Test 1: User A requests their orders**
+GET /rest/v1/orders (with token_A)
+Expected: Only User A's orders
+Actual: [Result]
+
+**Test 2: User A tries to access User B's orders**
+GET /rest/v1/orders?user_id=eq.[user_b_id] (with token_A)
+Expected: Empty array (RLS filters out)
+Actual: [Result]
+
+**Test 3: User A tries to update User B's data**
+PATCH /rest/v1/users?id=eq.[user_b_id] (with token_A)
+Expected: No rows affected (RLS blocks)
+Actual: [Result]
+
+**RLS Status:** [WORKING / VULNERABLE]
+```
+
+---
+
+### Phase 5: Error Handling & Edge Cases
+
+**Test Categories:**
+
+#### 1. Input Validation
+
+```markdown
+### Edge Case: Empty required field
+
+**Request:** POST /rest/v1/products
+Body: { "name": "", "price": 100 }
+
+**Expected:** 400 Bad Request with validation error
+**Actual:** [Result]
+**Status:** [PASSED/FAILED]
+```
+
+#### 2. Authentication Errors
+
+```markdown
+### Edge Case: Expired token
+
+**Request:** GET /rest/v1/orders
+Headers: Authorization: Bearer [expired_token]
+
+**Expected:** 401 Unauthorized
+**Actual:** [Result]
+**Status:** [PASSED/FAILED]
+```
+
+#### 3. Not Found Scenarios
+
+```markdown
+### Edge Case: Non-existent resource
+
+**Request:** GET /rest/v1/products?id=eq.non-existent-uuid
+
+**Expected:** 200 with empty array (PostgREST behavior)
+**Actual:** [Result]
+**Status:** [PASSED/FAILED]
+```
+
+#### 4. Boundary Testing
+
+```markdown
+### Edge Case: Maximum field length
+
+**Request:** POST /rest/v1/reviews
+Body: { "comment": "[10000 character string]", ... }
+
+**Expected:** Either accepted or 400 with length error
+**Actual:** [Result]
+**Status:** [PASSED/FAILED]
+```
+
+---
+
+### Phase 6: Data Verification (Optional - with dbhub MCP)
+
+**After API operations, verify data in database:**
+
+```markdown
+### Data Verification: Order Creation
+
+**API Action:**
+POST /rest/v1/orders → Created order ID: abc123
+
+**DB Verification (using dbhub MCP):**
+
+1. Verify order exists:
+   SELECT * FROM orders WHERE id = 'abc123'
+   Result: [Found/Not Found]
+
+2. Verify order items:
+   SELECT COUNT(*) FROM order_items WHERE order_id = 'abc123'
+   Result: [Count matches expected]
+
+3. Verify triggers executed:
+   SELECT total FROM orders WHERE id = 'abc123'
+   Result: [Total calculated correctly by trigger]
+
+**Data Integrity:** [VERIFIED / DISCREPANCY FOUND]
+```
+
+---
+
+### Phase 7: Session Summary
+
+**Generate comprehensive API testing notes:**
 
 ```markdown
 # API Exploratory Testing Session Notes
 
 **Date:** [Date]
+**Feature:** [Feature/US being tested]
 **API Base URL:** [URL]
-**Feature/Story:** [Scope]
 **Duration:** [Time spent]
 
 ---
@@ -257,22 +393,47 @@ Shall I proceed with the exploration?
 ## Executive Summary
 
 - **Overall Status:** [PASSED / ISSUES FOUND / BLOCKED]
-- **Endpoints Tested:** [X of Y]
+- **Endpoints Tested:** [X endpoints]
+- **Scenarios Executed:** [X of Y]
 - **Issues Found:** [Number]
+- **RLS Policies:** [VERIFIED / NOT TESTED / VULNERABLE]
 
 ---
 
-## Endpoints Tested
+## Authentication Testing
 
-### 1. [METHOD /endpoint] - [PASSED/FAILED]
+| Scenario         | Status | Notes       |
+| ---------------- | ------ | ----------- |
+| Valid login      | PASSED | -           |
+| Invalid password | PASSED | Returns 400 |
+| Expired token    | PASSED | Returns 401 |
+| Missing auth     | PASSED | Returns 401 |
 
-**Happy Path:** [Summary]
-**Error Handling:** [Summary]
-**Edge Cases:** [Summary]
+---
 
-### 2. [METHOD /endpoint] - [PASSED/FAILED]
+## Endpoint Testing
 
-[Details...]
+### 1. GET /rest/v1/products - [PASSED]
+
+- Happy path: Works correctly
+- Filtering: eq, like, order work
+- Pagination: limit/offset work
+
+### 2. POST /rest/v1/orders - [FAILED]
+
+- Happy path: Works
+- **Issue:** Missing validation for negative quantities
+- Edge case: Duplicate order prevention not working
+
+---
+
+## RLS Policy Testing
+
+| Policy                    | Status     | Notes                   |
+| ------------------------- | ---------- | ----------------------- |
+| Users see own orders      | VERIFIED   | -                       |
+| Users can't update others | VERIFIED   | -                       |
+| Admins see all orders     | NOT TESTED | No admin user available |
 
 ---
 
@@ -280,91 +441,126 @@ Shall I proceed with the exploration?
 
 ### Issue 1: [Title]
 
-- **Endpoint:** [METHOD /path]
 - **Severity:** [Critical/High/Medium/Low]
-- **Description:** [What's wrong]
-- **Request:**
-  ```json
-  { "example": "request" }
-  ```
-- **Expected Response:** [What should happen]
-- **Actual Response:**
-  ```json
-  { "example": "response" }
-  ```
+- **Endpoint:** [METHOD] [PATH]
+- **Request:** [How to reproduce]
+- **Expected:** [Expected behavior]
+- **Actual:** [Actual behavior]
+- **Impact:** [Business impact]
 
 ---
 
-## Contract Deviations
+## Observations & Recommendations
 
-| Endpoint | Issue | Expected | Actual |
-| -------- | ----- | -------- | ------ |
-| [Path]   | [Desc]| [Spec]   | [Real] |
+### Positive Findings:
 
----
+- [What worked well]
 
-## Security Findings
+### Areas of Concern:
 
-- [Any security concerns discovered]
+- [Potential issues to monitor]
 
----
+### Recommendations for Automation:
 
-## Recommendations
-
-### For Development:
-- [Fix suggestions]
-
-### For Automation:
-- [Endpoints to prioritize for automated tests]
-- [Test scenarios to automate]
+- [API tests that should be automated]
+- [Integration tests to add]
 
 ---
 
 ## Next Steps
 
-- [ ] Report bugs found (use bug-report.md)
-- [ ] Update API documentation if needed
-- [ ] Proceed to API automation (Stage 4)
+- [ ] Report critical bugs (use bug-report.md)
+- [ ] Verify data integrity with DB testing (if needed)
+- [ ] Transition US status if PASSED
+- [ ] Proceed to Test Documentation phase
 ```
 
 ---
 
 ## Decision Point
 
-After exploration, decide:
+After API exploration, decide:
 
-| Result           | Action                                            |
-| ---------------- | ------------------------------------------------- |
-| **PASSED**       | Proceed to automation, document findings          |
-| **ISSUES FOUND** | Report bugs, wait for fixes, re-test              |
-| **BLOCKED**      | Critical API failures, escalate to development    |
+| Result           | Action                                                        |
+| ---------------- | ------------------------------------------------------------- |
+| **PASSED**       | Proceed to DB verification (optional) or UI testing           |
+| **ISSUES FOUND** | Use `bug-report.md` for each issue, wait for fixes            |
+| **BLOCKED**      | Report blocker, do not proceed                                |
+| **RLS ISSUE**    | Critical security bug - report immediately with high priority |
+
+---
+
+## MCP Tools Reference
+
+### postman MCP
+
+| Tool                | Use Case                            |
+| ------------------- | ----------------------------------- |
+| `getCollections`    | List available test collections     |
+| `getCollection`     | Get collection details and requests |
+| `runCollection`     | Execute full test flow              |
+| `getEnvironments`   | List environments                   |
+| `createEnvironment` | Set up test environment             |
+| `putEnvironment`    | Update environment variables        |
+
+### openapi MCP
+
+| Tool                          | Use Case                     |
+| ----------------------------- | ---------------------------- |
+| `list-api-endpoints`          | Discover available endpoints |
+| `get-api-endpoint-schema`     | View request/response schema |
+| `mcp__openapi__get-[table]`   | Execute GET request          |
+| `mcp__openapi__post-[table]`  | Execute POST request         |
+| `mcp__openapi__patch-[table]` | Execute PATCH request        |
 
 ---
 
 ## Best Practices
 
-1. **Test the contract, not just success** - Verify error responses too
-2. **Use realistic test data** - Avoid `test123` style data
-3. **Check response times** - Note slow endpoints
-4. **Validate pagination** - Test with many records
-5. **Test concurrency** - Same request simultaneously
-6. **Document everything** - Include request/response examples
+1. **Test auth first** - Many issues stem from authentication problems
+2. **Verify RLS policies** - Critical for multi-tenant apps
+3. **Check response schemas** - Don't just check status codes
+4. **Test with different users** - Verify role-based access
+5. **Document exact requests** - Makes bug reproduction easier
+6. **Combine with DB verification** - API might return success but data is wrong
+7. **Test error messages** - Users see these, they should be helpful
 
 ---
 
-## Integration with KATA
+## Integration with Triforce Testing
 
-This API exploration feeds into:
+This API testing is one part of complete feature validation:
 
-1. **Bug Reports** - API issues → `bug-report.md`
-2. **API Architecture** - Findings update `.context/api-architecture.md`
-3. **API Automation** - Validated endpoints → Stage 4 automation
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    TRIFORCE TESTING                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │     UI      │  │     API     │  │     DB      │         │
+│  │  Testing    │  │  Testing    │  │  Testing    │         │
+│  │             │  │   (THIS)    │  │             │         │
+│  │ Playwright  │  │  Postman/   │  │   DBHub     │         │
+│  │    MCP      │  │ OpenAPI MCP │  │    MCP      │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+│        │                │                │                  │
+│        └────────────────┴────────────────┘                  │
+│                         │                                   │
+│              Complete Feature Validation                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Recommended flow:**
+
+1. **API Testing** - Validate backend logic works
+2. **DB Testing** - Verify data integrity
+3. **UI Testing** - Confirm user experience
 
 ---
 
 ## Output
 
-- API session notes with all findings
-- List of issues ready for bug reporting
-- Contract deviation report
-- Recommendations for API automation
+- API testing session notes with all findings
+- RLS policy verification results
+- List of issues (if any) ready for bug reporting
+- Recommendations for automation and documentation
