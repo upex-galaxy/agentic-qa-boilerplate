@@ -52,7 +52,8 @@
     "api:types": "bunx openapi-typescript api/openapi.json -o api/openapi-types.ts",
     "kata:manifest": "bun run scripts/kata-manifest.ts",
     "kata:manifest:watch": "bun run scripts/kata-manifest.ts --watch",
-    "up": "bun run cli/update-prompts.js",
+    "update": "bun run cli/update-boilerplate.ts",
+    "resend": "bun run cli/resend.ts",
     "xray": "bun run cli/xray.ts",
     "pw:install": "playwright install --with-deps chromium",
     "prepare": "husky"

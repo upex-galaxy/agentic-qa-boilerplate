@@ -2,11 +2,12 @@
 
 /**
  * ============================================================================
- * RESEND EMAIL CHECKER CLI
+ * RESEND CLI - Email Verification & Inspection Tool
  * ============================================================================
  *
- * A command-line tool to verify and inspect emails using Resend API.
- * Designed to be AI-friendly with clear documentation and JSON output.
+ * A command-line interface for verifying and inspecting emails using the
+ * Resend API. Designed for test automation workflows where email verification
+ * is needed (e.g., registration flows, password resets, notifications).
  *
  * OFFICIAL DOCUMENTATION:
  *   - Resend API Reference: https://resend.com/docs/api-reference/introduction
@@ -17,7 +18,7 @@
  * REQUIREMENTS
  * ============================================================================
  *
- * 1. Bun runtime (https://bun.sh) - Install with: curl -fsSL https://bun.sh/install | bash
+ * 1. Bun runtime (https://bun.sh)
  * 2. Environment variable: RESEND_API_KEY
  * 3. A verified domain in Resend with email receiving enabled
  *
@@ -27,12 +28,12 @@
  * ENVIRONMENT SETUP
  * ============================================================================
  *
- * Create a .env file in your project root or export the variable:
+ * Create a .env file in your project root:
  *
- *   # Option 1: .env file (Bun loads it automatically)
  *   RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
  *
- *   # Option 2: Export in terminal
+ * Or export in terminal:
+ *
  *   export RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
  *
  * Get your API key at: https://resend.com/api-keys
@@ -42,7 +43,10 @@
  * ============================================================================
  *
  * Run with Bun:
- *   bun email-checker.js <command> [options]
+ *   bun cli/resend.ts <command> [options]
+ *
+ * Or via package.json script:
+ *   bun run resend <command> [options]
  *
  * COMMANDS:
  *
@@ -89,23 +93,23 @@
  *   }
  *
  * ============================================================================
- * EXAMPLES FOR AI
+ * EXAMPLES
  * ============================================================================
  *
- * # Check if any emails arrived in the inbox
- * bun email-checker.js inbox --limit 5
+ * # Check inbox for recent emails
+ * bun run resend inbox --limit 5
  *
  * # Read a specific email content
- * bun email-checker.js read a39999a6-88e3-48b1-888b-beaabcde1b33
+ * bun run resend read a39999a6-88e3-48b1-888b-beaabcde1b33
  *
  * # Verify if a sent email was delivered
- * bun email-checker.js status 4ef9a417-02e9-4d39-ad75-9611e0fcc33c
+ * bun run resend status 4ef9a417-02e9-4d39-ad75-9611e0fcc33c
  *
  * # Search for emails from a specific sender
- * bun email-checker.js search "noreply@github.com" --field from
+ * bun run resend search "noreply@github.com" --field from
  *
  * # Search for emails with specific subject
- * bun email-checker.js search "Password Reset"
+ * bun run resend search "Password Reset"
  *
  * ============================================================================
  * EMAIL STATUS VALUES (for 'status' command)
@@ -126,12 +130,94 @@
  *
  * 1. Your application sends an email to: inbox@your-verified-domain.com
  * 2. Wait 2-5 seconds for delivery
- * 3. Check inbox: bun email-checker.js inbox --limit 1
- * 4. Read email content: bun email-checker.js read <id-from-step-3>
+ * 3. Check inbox: bun run resend inbox --limit 1
+ * 4. Read email content: bun run resend read <id-from-step-3>
  * 5. Verify the content matches what was expected
  *
  * ============================================================================
  */
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface ParsedArgs {
+  command: string
+  positional: string[]
+  options: Record<string, string | boolean>
+}
+
+interface ApiResponse {
+  data?: unknown[]
+  has_more?: boolean
+  message?: string
+  error?: string
+  [key: string]: unknown
+}
+
+interface EmailListItem {
+  id: string
+  from: string
+  to: string
+  subject: string
+  created_at: string
+  attachments?: Array<{ id: string, filename: string, content_type: string, size: number }>
+}
+
+interface EmailDetail {
+  id: string
+  from: string
+  to: string
+  subject: string
+  created_at: string
+  message_id?: string
+  reply_to?: string
+  cc?: string
+  bcc?: string
+  headers?: Record<string, string>
+  html?: string
+  text?: string
+  attachments?: Array<{ id: string, filename: string, content_type: string, size: number }>
+}
+
+interface SentEmailStatus {
+  id: string
+  to: string
+  from: string
+  subject: string
+  last_event: string
+  created_at: string
+  scheduled_at?: string
+}
+
+interface AttachmentDetail {
+  id: string
+  filename: string
+  content_type: string
+  size: number
+}
+
+interface AttachmentDownload {
+  filename: string
+  content_type: string
+  content: string
+}
+
+interface OutputSuccess {
+  success: true
+  command: string
+  data: unknown
+  statusExplanation?: string
+}
+
+interface OutputError {
+  success: false
+  error: string
+  hint?: string
+  docs?: string
+}
+
+type Output = OutputSuccess | OutputError;
 
 // ============================================================================
 // CONFIGURATION & VALIDATION
@@ -140,7 +226,7 @@
 const API_BASE_URL = 'https://api.resend.com';
 const API_KEY = process.env.RESEND_API_KEY;
 
-function validateEnvironment() {
+function validateEnvironment(): void {
   if (!API_KEY) {
     output({
       success: false,
@@ -155,7 +241,7 @@ function validateEnvironment() {
     output({
       success: false,
       error: 'Invalid RESEND_API_KEY format',
-      hint: "Resend API keys start with 're_'. Check your key at https://resend.com/api-keys",
+      hint: 'Resend API keys start with \'re_\'. Check your key at https://resend.com/api-keys',
     });
     process.exit(1);
   }
@@ -165,19 +251,22 @@ function validateEnvironment() {
 // HTTP CLIENT
 // ============================================================================
 
-async function apiRequest(endpoint, options = {}) {
+async function apiRequest<T = ApiResponse>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
     headers: {
-      Authorization: `Bearer ${API_KEY}`,
+      'Authorization': `Bearer ${API_KEY}`,
       'Content-Type': 'application/json',
       ...options.headers,
     },
   });
 
-  const data = await response.json();
+  const data = (await response.json()) as T & { message?: string, error?: string };
 
   if (!response.ok) {
     throw new Error(data.message || data.error || `API error: ${response.status}`);
@@ -190,13 +279,15 @@ async function apiRequest(endpoint, options = {}) {
 // OUTPUT HELPERS
 // ============================================================================
 
-function output(data) {
+function output(data: Output): void {
   console.log(JSON.stringify(data, null, 2));
 }
 
-function errorExit(message, hint = null) {
-  const error = { success: false, error: message };
-  if (hint) error.hint = hint;
+function errorExit(message: string, hint?: string): never {
+  const error: OutputError = { success: false, error: message };
+  if (hint) {
+    error.hint = hint;
+  }
   output(error);
   process.exit(1);
 }
@@ -205,8 +296,8 @@ function errorExit(message, hint = null) {
 // ARGUMENT PARSER
 // ============================================================================
 
-function parseArgs(args) {
-  const result = {
+function parseArgs(args: string[]): ParsedArgs {
+  const result: ParsedArgs = {
     command: args[0] || 'help',
     positional: [],
     options: {},
@@ -223,11 +314,13 @@ function parseArgs(args) {
       if (next && !next.startsWith('--')) {
         result.options[key] = next;
         i += 2;
-      } else {
+      }
+      else {
         result.options[key] = true;
         i += 1;
       }
-    } else {
+    }
+    else {
       result.positional.push(arg);
       i += 1;
     }
@@ -237,28 +330,45 @@ function parseArgs(args) {
 }
 
 // ============================================================================
+// UTILITIES
+// ============================================================================
+
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes === 0) {
+    return '0 B';
+  }
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${(bytes / 1024 ** i).toFixed(1)} ${units[i]}`;
+}
+
+// ============================================================================
 // COMMANDS
 // ============================================================================
 
-async function commandInbox(options) {
+async function commandInbox(options: Record<string, string | boolean>): Promise<void> {
   const params = new URLSearchParams();
 
   if (options.limit) {
-    const limit = parseInt(options.limit);
-    if (isNaN(limit) || limit < 1 || limit > 100) {
+    const limit = Number.parseInt(options.limit as string);
+    if (Number.isNaN(limit) || limit < 1 || limit > 100) {
       errorExit('Invalid --limit value', 'Must be a number between 1 and 100');
     }
     params.set('limit', limit.toString());
   }
 
-  if (options.after) params.set('after', options.after);
-  if (options.before) params.set('before', options.before);
+  if (options.after) {
+    params.set('after', options.after as string);
+  }
+  if (options.before) {
+    params.set('before', options.before as string);
+  }
 
   const queryString = params.toString();
   const endpoint = `/emails/receiving${queryString ? `?${queryString}` : ''}`;
 
   try {
-    const response = await apiRequest(endpoint);
+    const response = await apiRequest<{ data?: EmailListItem[], has_more?: boolean }>(endpoint);
 
     output({
       success: true,
@@ -277,23 +387,25 @@ async function commandInbox(options) {
         })),
       },
     });
-  } catch (err) {
-    errorExit(err.message, 'Check your API key and domain configuration');
+  }
+  catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    errorExit(message, 'Check your API key and domain configuration');
   }
 }
 
-async function commandRead(positional) {
+async function commandRead(positional: string[]): Promise<void> {
   const emailId = positional[0];
 
   if (!emailId) {
     errorExit(
       'Missing email ID',
-      'Usage: bun email-checker.js read <email-id>\nGet the ID from: bun email-checker.js inbox'
+      'Usage: bun run resend read <email-id>\nGet the ID from: bun run resend inbox',
     );
   }
 
   try {
-    const email = await apiRequest(`/emails/receiving/${emailId}`);
+    const email = await apiRequest<EmailDetail>(`/emails/receiving/${emailId}`);
 
     output({
       success: true,
@@ -319,29 +431,40 @@ async function commandRead(positional) {
         })),
       },
     });
-  } catch (err) {
+  }
+  catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     errorExit(
-      err.message,
-      'Make sure the email ID exists. List emails with: bun email-checker.js inbox'
+      message,
+      'Make sure the email ID exists. List emails with: bun run resend inbox',
     );
   }
 }
 
-async function commandStatus(positional) {
+async function commandStatus(positional: string[]): Promise<void> {
   const emailId = positional[0];
 
   if (!emailId) {
     errorExit(
       'Missing email ID',
-      "Usage: bun email-checker.js status <email-id>\nThis ID comes from Resend's send API response"
+      'Usage: bun run resend status <email-id>\nThis ID comes from Resend\'s send API response',
     );
   }
 
   try {
-    const email = await apiRequest(`/emails/${emailId}`);
+    const email = await apiRequest<SentEmailStatus>(`/emails/${emailId}`);
 
     const successStatuses = ['delivered', 'opened', 'clicked'];
     const isDelivered = successStatuses.includes(email.last_event);
+
+    const statusExplanations: Record<string, string> = {
+      sent: 'Email accepted by Resend servers',
+      delivered: 'Email delivered to recipient\'s mail server',
+      bounced: 'Email bounced - address may be invalid',
+      complained: 'Recipient marked email as spam',
+      opened: 'Recipient opened the email',
+      clicked: 'Recipient clicked a link in the email',
+    };
 
     output({
       success: true,
@@ -352,40 +475,36 @@ async function commandStatus(positional) {
         from: email.from,
         subject: email.subject,
         status: email.last_event,
-        isDelivered: isDelivered,
+        isDelivered,
         sentAt: email.created_at,
         scheduledAt: email.scheduled_at,
       },
-      statusExplanation:
-        {
-          sent: 'Email accepted by Resend servers',
-          delivered: "Email delivered to recipient's mail server",
-          bounced: 'Email bounced - address may be invalid',
-          complained: 'Recipient marked email as spam',
-          opened: 'Recipient opened the email',
-          clicked: 'Recipient clicked a link in the email',
-        }[email.last_event] || 'Unknown status',
+      statusExplanation: statusExplanations[email.last_event] || 'Unknown status',
     });
-  } catch (err) {
-    errorExit(err.message, "Make sure this is a SENT email ID from Resend's send API response");
+  }
+  catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    errorExit(message, 'Make sure this is a SENT email ID from Resend\'s send API response');
   }
 }
 
-async function commandAttachments(positional) {
+async function commandAttachments(positional: string[]): Promise<void> {
   const emailId = positional[0];
 
   if (!emailId) {
-    errorExit('Missing email ID', 'Usage: bun email-checker.js attachments <email-id>');
+    errorExit('Missing email ID', 'Usage: bun run resend attachments <email-id>');
   }
 
   try {
-    const response = await apiRequest(`/emails/receiving/${emailId}/attachments`);
+    const response = await apiRequest<{ data?: AttachmentDetail[] }>(
+      `/emails/receiving/${emailId}/attachments`,
+    );
 
     output({
       success: true,
       command: 'attachments',
       data: {
-        emailId: emailId,
+        emailId,
         count: response.data?.length || 0,
         attachments: (response.data || []).map(att => ({
           id: att.id,
@@ -396,74 +515,85 @@ async function commandAttachments(positional) {
         })),
       },
     });
-  } catch (err) {
-    errorExit(err.message, 'Make sure the email ID exists and has attachments');
+  }
+  catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    errorExit(message, 'Make sure the email ID exists and has attachments');
   }
 }
 
-async function commandDownload(positional) {
+async function commandDownload(positional: string[]): Promise<void> {
   const emailId = positional[0];
   const attachmentId = positional[1];
 
   if (!emailId || !attachmentId) {
     errorExit(
       'Missing email ID or attachment ID',
-      'Usage: bun email-checker.js download <email-id> <attachment-id>\nGet IDs from: bun email-checker.js attachments <email-id>'
+      'Usage: bun run resend download <email-id> <attachment-id>\nGet IDs from: bun run resend attachments <email-id>',
     );
   }
 
   try {
-    const response = await apiRequest(`/emails/receiving/${emailId}/attachments/${attachmentId}`);
+    const response = await apiRequest<AttachmentDownload>(
+      `/emails/receiving/${emailId}/attachments/${attachmentId}`,
+    );
 
     output({
       success: true,
       command: 'download',
       data: {
-        emailId: emailId,
-        attachmentId: attachmentId,
+        emailId,
+        attachmentId,
         filename: response.filename,
         contentType: response.content_type,
         content: response.content,
       },
     });
-  } catch (err) {
-    errorExit(err.message, 'Make sure both email ID and attachment ID are valid');
+  }
+  catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    errorExit(message, 'Make sure both email ID and attachment ID are valid');
   }
 }
 
-async function commandSearch(positional, options) {
+async function commandSearch(
+  positional: string[],
+  options: Record<string, string | boolean>,
+): Promise<void> {
   const query = positional[0];
 
   if (!query) {
     errorExit(
       'Missing search query',
-      'Usage: bun email-checker.js search <query> [--field from|subject]'
+      'Usage: bun run resend search <query> [--field from|subject]',
     );
   }
 
-  const field = options.field || 'subject';
-  const limit = parseInt(options.limit) || 50;
+  const field = (options.field as string) || 'subject';
+  const limit = Number.parseInt((options.limit as string) || '50');
 
   if (!['from', 'subject'].includes(field)) {
-    errorExit('Invalid --field value', "Must be 'from' or 'subject'");
+    errorExit('Invalid --field value', 'Must be \'from\' or \'subject\'');
   }
 
   try {
-    const response = await apiRequest(`/emails/receiving?limit=${Math.min(limit, 100)}`);
+    const response = await apiRequest<{ data?: EmailListItem[] }>(
+      `/emails/receiving?limit=${Math.min(limit, 100)}`,
+    );
     const emails = response.data || [];
 
     const queryLower = query.toLowerCase();
-    const matches = emails.filter(email => {
-      const value = (email[field] || '').toLowerCase();
-      return value.includes(queryLower);
+    const matches = emails.filter((email) => {
+      const value = (field === 'from' ? email.from : email.subject) || '';
+      return value.toLowerCase().includes(queryLower);
     });
 
     output({
       success: true,
       command: 'search',
       data: {
-        query: query,
-        field: field,
+        query,
+        field,
         scanned: emails.length,
         matchCount: matches.length,
         matches: matches.map(email => ({
@@ -475,15 +605,17 @@ async function commandSearch(positional, options) {
         })),
       },
     });
-  } catch (err) {
-    errorExit(err.message, 'Check your API key and try again');
+  }
+  catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    errorExit(message, 'Check your API key and try again');
   }
 }
 
-function commandHelp() {
+function commandHelp(): void {
   const helpText = `
-RESEND EMAIL CHECKER CLI
-========================
+RESEND CLI - Email Verification & Inspection Tool
+==================================================
 
 A tool to verify and inspect emails using Resend API.
 All output is JSON for easy parsing by AI and scripts.
@@ -495,22 +627,22 @@ SETUP:
 COMMANDS:
 
   inbox [--limit N]              List received emails
-                                 Example: bun email-checker.js inbox --limit 5
+                                 Example: bun run resend inbox --limit 5
 
   read <email-id>                Read full email content (html, text, headers)
-                                 Example: bun email-checker.js read abc123
+                                 Example: bun run resend read abc123
 
   status <email-id>              Check if a SENT email was delivered
-                                 Example: bun email-checker.js status xyz789
+                                 Example: bun run resend status xyz789
 
   attachments <email-id>         List attachments of an email
-                                 Example: bun email-checker.js attachments abc123
+                                 Example: bun run resend attachments abc123
 
   download <email-id> <att-id>   Download attachment (base64)
-                                 Example: bun email-checker.js download abc123 att456
+                                 Example: bun run resend download abc123 att456
 
   search <query> [--field F]     Search inbox by subject or sender
-                                 Example: bun email-checker.js search "welcome" --field subject
+                                 Example: bun run resend search "welcome" --field subject
 
   help                           Show this help message
 
@@ -521,8 +653,8 @@ DOCUMENTATION:
 
 TYPICAL WORKFLOW:
   1. Your app sends email to inbox@your-domain.com
-  2. Run: bun email-checker.js inbox --limit 1
-  3. Run: bun email-checker.js read <id-from-step-2>
+  2. Run: bun run resend inbox --limit 1
+  3. Run: bun run resend read <id-from-step-2>
   4. Verify content matches expectations
 `;
 
@@ -530,21 +662,10 @@ TYPICAL WORKFLOW:
 }
 
 // ============================================================================
-// UTILITIES
-// ============================================================================
-
-function formatBytes(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
-}
-
-// ============================================================================
 // MAIN ENTRY POINT
 // ============================================================================
 
-async function main() {
+async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
 
   if (args.command === 'help' || args.options.help || args.options.h) {
@@ -577,12 +698,14 @@ async function main() {
       default:
         errorExit(
           `Unknown command: ${args.command}`,
-          "Run 'bun email-checker.js help' to see available commands"
+          'Run \'bun run resend help\' to see available commands',
         );
     }
-  } catch (err) {
-    errorExit(`Unexpected error: ${err.message}`, 'Check your network connection and API key');
+  }
+  catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    errorExit(`Unexpected error: ${message}`, 'Check your network connection and API key');
   }
 }
 
-main();
+await main();
