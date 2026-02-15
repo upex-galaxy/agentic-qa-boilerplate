@@ -4,11 +4,12 @@
  * UI component for authentication via the login page.
  * Handles login flows for E2E tests.
  *
- * Page: /login
- * Locators (verified):
- * - Username: input[name="username"]
- * - Password: input[name="password"]
- * - Submit: button[type="submit"]
+ * Page: /login (UPEX Dojo)
+ * Locators (data-testid):
+ * - Email: [data-testid="login-email-input"]
+ * - Password: [data-testid="login-password-input"]
+ * - Submit: [data-testid="login-submit-button"]
+ * - Error: [data-testid="login-error"]
  */
 
 import type { TestContextOptions } from '@TestContext';
@@ -23,9 +24,10 @@ import { atc } from '@utils/decorators';
 
 /**
  * Login credentials for UI authentication
+ * Note: UPEX Dojo uses 'email' field instead of 'username'
  */
 export interface LoginCredentials {
-  username: string
+  email: string
   password: string
 }
 
@@ -47,9 +49,9 @@ export class LoginPage extends UiBase {
    * Helper that combines fill + submit actions
    */
   private async fillAndSubmitLoginForm(credentials: LoginCredentials): Promise<void> {
-    await this.page.locator('input[name="username"]').fill(credentials.username);
-    await this.page.locator('input[name="password"]').fill(credentials.password);
-    await this.page.locator('button[type="submit"]').click();
+    await this.page.locator('[data-testid="login-email-input"]').fill(credentials.email);
+    await this.page.locator('[data-testid="login-password-input"]').fill(credentials.password);
+    await this.page.locator('[data-testid="login-submit-button"]').click();
   }
 
   // ============================================
@@ -74,13 +76,13 @@ export class LoginPage extends UiBase {
    * IMPORTANT: Call goto() before this ATC.
    * Fills credentials, submits, and verifies redirect away from login page.
    *
-   * @param credentials - Username (email) and password
+   * @param credentials - Email and password
    */
-  @atc('CUR-LOGIN-001')
+  @atc('PROJ-LOGIN-001')
   async loginSuccessfully(credentials: LoginCredentials): Promise<void> {
     await this.fillAndSubmitLoginForm(credentials);
 
-    // Fixed assertion - user should be redirected away from login page
+    // Wait for authentication to complete and redirect
     await this.page.waitForURL(url => !url.pathname.includes('/login'), { timeout: 15000 });
     await expect(this.page).not.toHaveURL(/.*\/login.*/);
   }
@@ -91,20 +93,15 @@ export class LoginPage extends UiBase {
    * IMPORTANT: Call goto() before this ATC.
    * Fills invalid credentials, submits, and verifies error message.
    *
-   * @param credentials - Invalid username or password
+   * @param credentials - Invalid email or password
    */
-  @atc('CUR-LOGIN-002')
+  @atc('PROJ-LOGIN-002')
   async loginWithInvalidCredentials(credentials: LoginCredentials): Promise<void> {
     await this.fillAndSubmitLoginForm(credentials);
 
-    // Fixed assertion - error should be visible and user stays on login page
-    const errorIndicator = this.page
-      .locator('[role="alert"]')
-      .or(this.page.locator('.error-message'))
-      .or(this.page.locator('.alert-danger'))
-      .or(this.page.locator('[class*="error"]'));
-
-    await expect(errorIndicator.first()).toBeVisible({ timeout: 5000 });
+    // Fixed assertion - error should be visible (UPEX Dojo uses data-testid="login-error")
+    const errorIndicator = this.page.locator('[data-testid="login-error"]');
+    await expect(errorIndicator).toBeVisible({ timeout: 5000 });
     await expect(this.page).toHaveURL(/.*\/login.*/);
   }
 }

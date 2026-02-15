@@ -124,8 +124,8 @@ export async function attachJsonToAllure(args: AttachJsonArgs): Promise<void> {
  * await attachRequestResponseToAllure({
  *   url: '/api/auth/login',
  *   method: 'POST',
- *   requestBody: { username: 'test', password: '***' },
- *   responseBody: { token: '...' }
+ *   requestBody: { email: 'test@example.com', password: '***' },
+ *   responseBody: { access_token: '...' }
  * });
  */
 export async function attachRequestResponseToAllure(

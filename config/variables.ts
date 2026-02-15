@@ -18,7 +18,7 @@ process.loadEnvFile(); // ? Loads .env file into process.env just in case the Pl
 // Environment Type Definitions
 // ============================================
 
-export type Environment = 'local' | 'devstage'; // Add more when needed (e.g., 'production')
+export type Environment = 'local' | 'staging'; // Add more when needed (e.g., 'production')
 
 // ============================================
 // Destructure Environment Variables (Single Access)
@@ -33,8 +33,8 @@ const {
   // === Test User Credentials (only current TEST_ENV required) ===
   LOCAL_USER_EMAIL, // Required if TEST_ENV=local
   LOCAL_USER_PASSWORD, // Required if TEST_ENV=local
-  DEVSTAGE_USER_EMAIL, // Required if TEST_ENV=devstage
-  DEVSTAGE_USER_PASSWORD, // Required if TEST_ENV=devstage
+  STAGING_USER_EMAIL, // Required if TEST_ENV=staging
+  STAGING_USER_PASSWORD, // Required if TEST_ENV=staging
 
   // === TMS Configuration ===
   TMS_PROVIDER = 'xray', // Used: config.tms.provider (jiraSync) - 'xray' | 'jira'
@@ -72,8 +72,8 @@ validateEnvironment({
   TMS_PROVIDER,
   LOCAL_USER_EMAIL,
   LOCAL_USER_PASSWORD,
-  DEVSTAGE_USER_EMAIL,
-  DEVSTAGE_USER_PASSWORD,
+  STAGING_USER_EMAIL,
+  STAGING_USER_PASSWORD,
   XRAY_CLIENT_ID,
   XRAY_CLIENT_SECRET,
   JIRA_URL,
@@ -88,7 +88,7 @@ validateEnvironment({
 export const env = {
   current: TEST_ENV as Environment,
   isLocal: TEST_ENV === 'local' || TEST_ENV === undefined,
-  isDevstage: TEST_ENV === 'devstage',
+  isStaging: TEST_ENV === 'staging',
   isCI: CI === 'true',
   buildId: BUILD_ID ?? 'local',
 } as const;
@@ -103,9 +103,9 @@ const userCredentialsMap: Record<Environment, { email: string, password: string 
     email: LOCAL_USER_EMAIL ?? '',
     password: LOCAL_USER_PASSWORD ?? '',
   },
-  devstage: {
-    email: DEVSTAGE_USER_EMAIL ?? '',
-    password: DEVSTAGE_USER_PASSWORD ?? '',
+  staging: {
+    email: STAGING_USER_EMAIL ?? '',
+    password: STAGING_USER_PASSWORD ?? '',
   },
 };
 
@@ -118,14 +118,14 @@ const envDataMap: Record<
   { base: string, api: string, user: { email: string, password: string } }
 > = {
   local: {
-    base: 'http://localhost:8080',
+    base: 'http://localhost:3000',
     api: 'http://localhost:3000/api',
     user: userCredentialsMap.local,
   },
-  devstage: {
-    base: 'https://your-project-devstage.example.com',
-    api: 'https://your-project-devstage.example.com/api',
-    user: userCredentialsMap.devstage,
+  staging: {
+    base: 'https://dojo.upexgalaxy.com',
+    api: 'https://dojo.upexgalaxy.com/api',
+    user: userCredentialsMap.staging,
   },
 };
 const envData = envDataMap[env.current];
@@ -139,13 +139,11 @@ export const config = {
   baseUrl: envData.base,
   apiUrl: envData.api,
 
-  // Authentication config
+  // Authentication config (UPEX Dojo endpoints - relative to apiUrl)
   auth: {
     loginEndpoint: '/auth/login',
     meEndpoint: '/auth/me',
-    refreshEndpoint: '/auth/refresh',
-    tokenLifetimeSeconds: 172800, // 48 hours (2 days)
-    clientId: 'public',
+    tokenLifetimeSeconds: 86400, // 24 hours (1 day)
     // Storage paths for authenticated sessions
     storageStatePath: '.auth/user.json',
     apiStatePath: '.auth/api-state.json',

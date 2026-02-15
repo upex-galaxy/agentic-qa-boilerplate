@@ -26,10 +26,10 @@ export type { TokenResponse } from '@data/types';
 
 /**
  * Login request payload
- * Note: 'username' field accepts email addresses
+ * UPEX Dojo uses 'email' field for authentication
  */
 export interface LoginPayload {
-  username: string
+  email: string
   password: string
 }
 
@@ -47,18 +47,17 @@ export interface AuthErrorResponse {
 }
 
 /**
- * User info response from /auth/me
- * Note: API uses PascalCase for properties
+ * User info response from /api/auth/me
+ * UPEX Dojo returns user object with camelCase properties
  */
 export interface UserInfoResponse {
-  UserId: string
-  Username: string
-  Email: string
-  Roles: string[]
-  Claims?: Array<{
-    Type: string
-    Value: string
-  }>
+  user: {
+    id: string
+    email: string
+    name: string
+    createdAt: string
+    updatedAt: string
+  }
 }
 
 // ============================================
@@ -80,15 +79,15 @@ export class AuthApi extends ApiBase {
    * Complete flow: POST credentials, validate token response, store token.
    * The token is automatically set for subsequent API requests.
    *
-   * @param credentials - Username (email) and password
+   * @param credentials - Email and password
    * @returns Tuple with response, token data, and sent payload
    */
-  @atc('CUR-AUTH-001')
+  @atc('PROJ-AUTH-001')
   async authenticateSuccessfully(
     credentials: LoginPayload,
   ): Promise<[APIResponse, TokenResponse, LoginPayload]> {
     const [response, body, sentPayload] = await this.apiPOST<TokenResponse, LoginPayload>(
-      '/auth/login',
+      this.config.auth.loginEndpoint,
       credentials,
     );
 
@@ -105,24 +104,25 @@ export class AuthApi extends ApiBase {
   }
 
   /**
-   * ATC: Login with invalid credentials - expects error (400)
+   * ATC: Login with invalid credentials - expects error (401)
    *
    * Validates that invalid credentials return appropriate error response.
+   * UPEX Dojo returns 401 for invalid credentials.
    *
-   * @param credentials - Invalid username or password
+   * @param credentials - Invalid email or password
    * @returns Tuple with error response and sent payload
    */
-  @atc('CUR-AUTH-002')
+  @atc('PROJ-AUTH-002')
   async loginWithInvalidCredentials(
     credentials: LoginPayload,
   ): Promise<[APIResponse, AuthErrorResponse, LoginPayload]> {
     const [response, body, sentPayload] = await this.apiPOST<AuthErrorResponse, LoginPayload>(
-      '/auth/login',
+      this.config.auth.loginEndpoint,
       credentials,
     );
 
-    // Fixed assertions - validates error response
-    expect(response.status()).toBe(400);
+    // Fixed assertions - validates error response (UPEX Dojo returns 401)
+    expect(response.status()).toBe(401);
     expect(response.ok()).toBe(false);
     expect(body.error).toBeDefined();
 
@@ -137,14 +137,15 @@ export class AuthApi extends ApiBase {
    *
    * @returns Tuple with response and user info
    */
-  @atc('CUR-AUTH-003')
+  @atc('PROJ-AUTH-003')
   async getCurrentUserSuccessfully(): Promise<[APIResponse, UserInfoResponse]> {
-    const [response, body] = await this.apiGET<UserInfoResponse>('/auth/me');
+    const [response, body] = await this.apiGET<UserInfoResponse>(this.config.auth.meEndpoint);
 
-    // Fixed assertions - validates user info response
+    // Fixed assertions - validates user info response (UPEX Dojo format)
     expect(response.status()).toBe(200);
-    expect(body.UserId).toBeDefined();
-    expect(body.Email).toBeDefined();
+    expect(body.user).toBeDefined();
+    expect(body.user.id).toBeDefined();
+    expect(body.user.email).toBeDefined();
 
     return [response, body];
   }
@@ -154,13 +155,13 @@ export class AuthApi extends ApiBase {
    *
    * Validates that unauthenticated requests are rejected.
    */
-  @atc('CUR-AUTH-004')
+  @atc('PROJ-AUTH-004')
   async getCurrentUserUnauthorized(): Promise<[APIResponse, Record<string, unknown>]> {
     // Temporarily clear auth token
     const savedToken = this.authToken;
     this.clearAuthToken();
 
-    const [response, body] = await this.apiGET<Record<string, unknown>>('/auth/me');
+    const [response, body] = await this.apiGET<Record<string, unknown>>(this.config.auth.meEndpoint);
 
     // Restore token if it was set
     if (savedToken) {

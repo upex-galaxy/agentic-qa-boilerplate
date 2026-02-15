@@ -27,9 +27,9 @@ setup('API Setup: authenticate via API', async ({ api }) => {
   console.log('[API Setup] Starting API authentication...');
   console.log(`[API Setup] Target: ${config.apiUrl}${config.auth.loginEndpoint}`);
 
-  // Use AuthApi ATC
+  // Use AuthApi ATC (UPEX Dojo uses 'email' field)
   const credentials = {
-    username: config.testUser.email,
+    email: config.testUser.email,
     password: config.testUser.password,
   };
   const [response, tokenData] = await api.auth.authenticateSuccessfully(credentials);
@@ -39,7 +39,7 @@ setup('API Setup: authenticate via API', async ({ api }) => {
     url: response.url(),
     method: 'POST',
     responseBody: tokenData,
-    requestBody: { username: credentials.username, password: '***' },
+    requestBody: { email: credentials.email, password: '***' },
   });
 
   console.log('[API Setup] Authentication successful');

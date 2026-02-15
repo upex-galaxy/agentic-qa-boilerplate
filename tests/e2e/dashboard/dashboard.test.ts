@@ -44,9 +44,9 @@ test.describe('Dashboard', () => {
     // when making requests through the page context
     const [response, userInfo] = await fixture.api.auth.getCurrentUserSuccessfully();
 
-    // Verify user info matches test user (API uses PascalCase)
+    // Verify user info matches test user (UPEX Dojo format: { user: {...} })
     expect(response.ok()).toBe(true);
-    expect(userInfo.Email).toBeDefined();
-    expect(userInfo.UserId).toBeDefined();
+    expect(userInfo.user.email).toBeDefined();
+    expect(userInfo.user.id).toBeDefined();
   });
 });

@@ -19,9 +19,9 @@ test.describe('User Session API', () => {
     // This tests that token propagation works correctly
     const [_response, userData] = await api.auth.getCurrentUserSuccessfully();
 
-    // Additional assertions beyond the ATC's fixed assertions
-    expect(userData.Roles).toBeDefined();
-    expect(Array.isArray(userData.Roles)).toBe(true);
+    // Additional assertions beyond the ATC's fixed assertions (UPEX Dojo format)
+    expect(userData.user.name).toBeDefined();
+    expect(typeof userData.user.name).toBe('string');
   });
 
   /**
@@ -44,9 +44,9 @@ test.describe('User Session API', () => {
     // Clear existing token
     api.clearAuthToken();
 
-    // Re-authenticate using the ATC
+    // Re-authenticate using the ATC (UPEX Dojo uses 'email' field)
     const credentials = {
-      username: config.testUser.email,
+      email: config.testUser.email,
       password: config.testUser.password,
     };
 

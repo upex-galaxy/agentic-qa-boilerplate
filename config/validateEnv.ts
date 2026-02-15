@@ -2,7 +2,7 @@
  * KATA Framework - Environment Variables Validator
  *
  * Validates required variables based on context:
- * - Credentials: Only for current TEST_ENV (local or devstage)
+ * - Credentials: Only for current TEST_ENV (local or staging)
  * - TMS: Only if AUTO_SYNC=true (validates Xray or Jira based on TMS_PROVIDER)
  *
  * Usage:
@@ -17,8 +17,8 @@ export interface EnvVarsToValidate {
   TMS_PROVIDER?: string
   LOCAL_USER_EMAIL?: string
   LOCAL_USER_PASSWORD?: string
-  DEVSTAGE_USER_EMAIL?: string
-  DEVSTAGE_USER_PASSWORD?: string
+  STAGING_USER_EMAIL?: string
+  STAGING_USER_PASSWORD?: string
   XRAY_CLIENT_ID?: string
   XRAY_CLIENT_SECRET?: string
   JIRA_URL?: string
@@ -44,16 +44,16 @@ export function validateEnvironment(vars: EnvVarsToValidate): void {
       errors.push('LOCAL_USER_PASSWORD is required for TEST_ENV=local');
     }
   }
-  else if (vars.TEST_ENV === 'devstage') {
-    if (!vars.DEVSTAGE_USER_EMAIL) {
-      errors.push('DEVSTAGE_USER_EMAIL is required for TEST_ENV=devstage');
+  else if (vars.TEST_ENV === 'staging') {
+    if (!vars.STAGING_USER_EMAIL) {
+      errors.push('STAGING_USER_EMAIL is required for TEST_ENV=staging');
     }
-    if (!vars.DEVSTAGE_USER_PASSWORD) {
-      errors.push('DEVSTAGE_USER_PASSWORD is required for TEST_ENV=devstage');
+    if (!vars.STAGING_USER_PASSWORD) {
+      errors.push('STAGING_USER_PASSWORD is required for TEST_ENV=staging');
     }
   }
   else {
-    errors.push(`Unknown TEST_ENV: ${vars.TEST_ENV}. Valid values: local, devstage`);
+    errors.push(`Unknown TEST_ENV: ${vars.TEST_ENV}. Valid values: local, staging`);
   }
 
   // Validate TMS config only if AUTO_SYNC=true
@@ -98,8 +98,8 @@ if (import.meta.main) {
     TMS_PROVIDER: process.env.TMS_PROVIDER || 'xray',
     LOCAL_USER_EMAIL: process.env.LOCAL_USER_EMAIL,
     LOCAL_USER_PASSWORD: process.env.LOCAL_USER_PASSWORD,
-    DEVSTAGE_USER_EMAIL: process.env.DEVSTAGE_USER_EMAIL,
-    DEVSTAGE_USER_PASSWORD: process.env.DEVSTAGE_USER_PASSWORD,
+    STAGING_USER_EMAIL: process.env.STAGING_USER_EMAIL,
+    STAGING_USER_PASSWORD: process.env.STAGING_USER_PASSWORD,
     XRAY_CLIENT_ID: process.env.XRAY_CLIENT_ID,
     XRAY_CLIENT_SECRET: process.env.XRAY_CLIENT_SECRET,
     JIRA_URL: process.env.JIRA_URL,
