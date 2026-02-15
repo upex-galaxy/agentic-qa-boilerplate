@@ -9,7 +9,7 @@
 
 [[sources]]
 id = "your-project"
-type = "sqlserver"  # Options: sqlserver, postgres, mysql, sqlite
+type = "sqlserver" # Options: sqlserver, postgres, mysql, sqlite
 host = "your-database-server.database.windows.net"
 port = 1433
 database = "your-database-name"

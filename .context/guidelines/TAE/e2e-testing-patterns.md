@@ -183,7 +183,7 @@ export class BookingsPage extends UiBase {
   // ATCs - Complete Test Cases
   // ============================================
 
-  @atc('CUR-BOOK-UI-001')
+  @atc('PROJ-BOOK-UI-001')
   async viewBookingsSuccessfully(filter: BookingFilter) {
     await this.goto();
 
@@ -203,7 +203,7 @@ export class BookingsPage extends UiBase {
     await expect(this.page.locator('[data-testid="booking-row"]').first()).toBeVisible();
   }
 
-  @atc('CUR-BOOK-UI-002')
+  @atc('PROJ-BOOK-UI-002')
   async viewEmptyBookingsState(filter: BookingFilter) {
     await this.goto();
 
@@ -266,7 +266,7 @@ UiBase provides helpers to intercept API responses during UI actions:
 #### interceptResponse - Capture API response from an action
 
 ```typescript
-@atc('CUR-LOGIN-001')
+@atc('PROJ-LOGIN-001')
 async loginAndCaptureToken(credentials: LoginCredentials) {
   await this.goto();
 
@@ -292,7 +292,7 @@ async loginAndCaptureToken(credentials: LoginCredentials) {
 #### waitForApiResponse - Wait for an already-triggered response
 
 ```typescript
-@atc('CUR-BOOK-UI-003')
+@atc('PROJ-BOOK-UI-003')
 async loadBookingsAndVerifyCount() {
   await this.goto();
 
@@ -373,17 +373,17 @@ test('hybrid approach with separate fixtures', async ({ ui, api }) => {
 
 ```typescript
 // Success scenarios
-@atc('CUR-LOGIN-001') async loginSuccessfully(...) { ... }
-@atc('CUR-BOOK-001') async viewBookingsSuccessfully(...) { ... }
-@atc('CUR-BOOK-002') async createBookingSuccessfully(...) { ... }
+@atc('PROJ-LOGIN-001') async loginSuccessfully(...) { ... }
+@atc('PROJ-BOOK-001') async viewBookingsSuccessfully(...) { ... }
+@atc('PROJ-BOOK-002') async createBookingSuccessfully(...) { ... }
 
 // Error scenarios
-@atc('CUR-LOGIN-010') async loginWithInvalidCredentials(...) { ... }
-@atc('CUR-BOOK-010') async submitBookingWithInvalidData(...) { ... }
+@atc('PROJ-LOGIN-010') async loginWithInvalidCredentials(...) { ... }
+@atc('PROJ-BOOK-010') async submitBookingWithInvalidData(...) { ... }
 
 // State scenarios
-@atc('CUR-BOOK-020') async viewBookingsEmptyState(...) { ... }
-@atc('CUR-DASH-001') async viewDashboardWithNoData(...) { ... }
+@atc('PROJ-BOOK-020') async viewBookingsEmptyState(...) { ... }
+@atc('PROJ-DASH-001') async viewDashboardWithNoData(...) { ... }
 ```
 
 ---
@@ -396,7 +396,7 @@ Locators go directly inside ATCs. No separate locator objects needed:
 
 ```typescript
 // ✅ CORRECT - Locators inline
-@atc('CUR-LOGIN-001')
+@atc('PROJ-LOGIN-001')
 async loginSuccessfully(credentials: LoginCredentials) {
   await this.page.locator('input[name="username"]').fill(credentials.username);
   await this.page.locator('input[name="password"]').fill(credentials.password);
@@ -422,14 +422,14 @@ class BookingsPage extends UiBase {
     return this.page.locator('[data-testid="apply-filter"]');
   }
 
-  @atc('CUR-BOOK-001')
+  @atc('PROJ-BOOK-001')
   async viewBookingsSuccessfully(filter: BookingFilter) {
     // ... apply filter
     await this.filterButton.click();
     // ...
   }
 
-  @atc('CUR-BOOK-002')
+  @atc('PROJ-BOOK-002')
   async viewBookingsWithDifferentFilter(filter: BookingFilter) {
     // ... apply different filter
     await this.filterButton.click();
@@ -549,7 +549,7 @@ bun run test:allure
 Every ATC must include **fixed assertions** that validate the expected behavior:
 
 ```typescript
-@atc('CUR-LOGIN-001')
+@atc('PROJ-LOGIN-001')
 async loginSuccessfully(credentials: LoginCredentials) {
   await this.goto();
 
@@ -586,7 +586,7 @@ ATCs are atomic units. They should NOT call other ATCs. Use **Flows** for reusab
 ```typescript
 // ❌ WRONG - ATC calling another ATC
 class BookingsPage extends UiBase {
-  @atc('CUR-BOOK-001')
+  @atc('PROJ-BOOK-001')
   async createBookingSuccessfully(...) {
     await this.loginPage.loginSuccessfully(...); // WRONG!
     // ...

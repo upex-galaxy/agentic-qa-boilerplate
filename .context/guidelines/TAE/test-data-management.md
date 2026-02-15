@@ -389,8 +389,8 @@ await api.auth.loginSuccessfully({ email, password });
 # .env (do not commit)
 LOCAL_USER_EMAIL=test@example.com
 LOCAL_USER_PASSWORD=SecurePassword123!
-DEVSTAGE_USER_EMAIL=staging@example.com
-DEVSTAGE_USER_PASSWORD=StagingPassword123!
+STAGING_USER_EMAIL=staging@example.com
+STAGING_USER_PASSWORD=StagingPassword123!
 ```
 
 ---

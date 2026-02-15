@@ -175,8 +175,7 @@ bun run test:e2e:critical  # Tests marked @critical
 │   ├── build.yml                 # PR validation
 │   ├── smoke.yml                 # Daily smoke tests
 │   ├── sanity.yml                # Pattern-based tests
-│   ├── regression.yml            # Full regression
-│   └── playwright.yml            # Template workflow
+│   └── regression.yml            # Full regression
 │
 ├── docs/                         # Documentation
 │   └── testing/                  # Testing documentation
@@ -275,8 +274,16 @@ See `.context/guidelines/TAE/kata-ai-index.md` for complete documentation.
 |--------|-------------|
 | `bun run pw:install` | Install browsers |
 | `bun run env:validate` | Validate environment |
-| `bun run xray` | Xray CLI for test management |
 | `bun run clean` | Remove test artifacts |
+
+### CLI Tools
+
+| Script | Description |
+|--------|-------------|
+| `bun run update` | Sync project with template (prompts, guidelines, docs) |
+| `bun run xray` | Xray CLI for test management |
+| `bun run resend` | Email verification CLI (Resend API) |
+| `bun run api:sync` | Sync OpenAPI spec and generate types |
 
 ---
 
@@ -290,7 +297,6 @@ See `.context/guidelines/TAE/kata-ai-index.md` for complete documentation.
 | `smoke.yml` | Daily 2AM UTC | Run @critical tests |
 | `sanity.yml` | Manual | Run tests by grep pattern |
 | `regression.yml` | Daily midnight | Full test suite |
-| `playwright.yml` | - | Template (customize) |
 
 ### Environment Secrets Required
 

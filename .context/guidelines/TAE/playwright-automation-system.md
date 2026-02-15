@@ -197,19 +197,19 @@ this.api.setAuthToken(apiState.token);
 
 | Component | Test ID       | Method                      | Assertions                                        |
 | --------- | ------------- | --------------------------- | ------------------------------------------------- |
-| AuthApi   | CUR-AUTH-001  | authenticateSuccessfully    | status=200, token defined, type=Bearer, expires>0 |
-| AuthApi   | CUR-AUTH-002  | loginWithInvalidCredentials | status=400, ok=false, error defined               |
-| AuthApi   | CUR-AUTH-003  | getCurrentUserSuccessfully  | status=200, userId defined, email defined         |
-| AuthApi   | CUR-AUTH-004  | getCurrentUserUnauthorized  | status=401, ok=false                              |
-| LoginPage | CUR-LOGIN-001 | loginSuccessfully           | URL not contains /login (requiere goto() previo)  |
-| LoginPage | CUR-LOGIN-002 | loginWithInvalidCredentials | error visible, URL contains /login                |
+| AuthApi   | PROJ-AUTH-001  | authenticateSuccessfully    | status=200, token defined, type=Bearer, expires>0 |
+| AuthApi   | PROJ-AUTH-002  | loginWithInvalidCredentials | status=400, ok=false, error defined               |
+| AuthApi   | PROJ-AUTH-003  | getCurrentUserSuccessfully  | status=200, userId defined, email defined         |
+| AuthApi   | PROJ-AUTH-004  | getCurrentUserUnauthorized  | status=401, ok=false                              |
+| LoginPage | PROJ-LOGIN-001 | loginSuccessfully           | URL not contains /login (requiere goto() previo)  |
+| LoginPage | PROJ-LOGIN-002 | loginWithInvalidCredentials | error visible, URL contains /login                |
 
 5.2 Patrón de Assertions (Fixed vs Flexible)
 
 Los ATCs tienen assertions fijas (hardcoded en el método):
 
 // AuthApi.ts - getCurrentUserSuccessfully
-@atc('CUR-AUTH-003')
+@atc('PROJ-AUTH-003')
 async getCurrentUserSuccessfully(): Promise<[APIResponse, UserInfoResponse]> {
 const [response, body] = await this.apiGET<UserInfoResponse>('/auth/me');
 
@@ -238,14 +238,14 @@ Problema potencial: Si un test quiere verificar algo diferente (ej: que NO exist
 
 6.1 @atc Decorator
 
-@atc('CUR-AUTH-001', { severity: 'critical', softFail: false })
+@atc('PROJ-AUTH-001', { severity: 'critical', softFail: false })
 async loginSuccessfully(credentials) { ... }
 
 Funcionalidad:
 
 - Wraps método en allure.step()
 - Captura duración y resultado
-- Console logs: ✅ [CUR-AUTH-001] loginSuccessfully - PASS (234ms)
+- Console logs: ✅ [PROJ-AUTH-001] loginSuccessfully - PASS (234ms)
 - Almacena en atcResults Map para report final
 - Soporta softFail: true para continuar en error
 
@@ -257,7 +257,7 @@ await generateAtcReport('reports/atc_results.json');
 {
 "generatedAt": "2026-02-08T...",
 "summary": { "total": 5, "passed": 4, "failed": 1, "skipped": 0 },
-"results": { "CUR-AUTH-001": [...], ... }
+"results": { "PROJ-AUTH-001": [...], ... }
 }
 
 ---
