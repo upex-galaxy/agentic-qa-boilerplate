@@ -39,6 +39,9 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
+      - name: Validate Environment Variables
+        run: bun run config/validateEnv.ts
+
       - name: TypeScript Check
         run: bun run type-check
 

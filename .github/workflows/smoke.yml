@@ -58,6 +58,9 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
+      - name: Validate Environment Variables
+        run: bun run config/validateEnv.ts
+
       - name: Install Playwright Browsers
         run: bun run pw:install
 
@@ -98,6 +101,16 @@ jobs:
           rm -rf test-results
           rm -rf playwright-report
 
+  # ============================================
+  # Build & Deploy Allure Report
+  # ============================================
+  # NOTE: GitHub Pages is a temporary solution for hosting Allure reports.
+  # For production, consider implementing a dedicated Test Portal with:
+  # - Authentication and protected access
+  # - API to upload Allure results to a database
+  # - Centralized report management across projects
+  # See: KATA Test Portal (future enhancement)
+  # ============================================
   allure-report:
     name: Build & Deploy Allure Report
     needs: SmokeTest
