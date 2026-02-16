@@ -295,11 +295,11 @@ const API_URL = process.env.API_BASE_URL;
 
 ## Próximos Pasos
 
-1. **Autenticación:** [authentication.md](./authentication.md) - Cómo manejar tokens
-2. **Contract Testing:** [contract-testing.md](./contract-testing.md) - Validar contratos de API
-3. **Testing con OpenAPI:** [openapi-contract-testing.md](./openapi-contract-testing.md) - Usar specs para testing
-4. **DevTools:** [devtools-testing.md](./devtools-testing.md) - Testing manual en el navegador
-5. **Postman:** [postman-testing.md](./postman-testing.md) - Colecciones y environments
+1. **Autenticación:** [authentication.md](docs/testing/api/authentication.md) - Cómo manejar tokens
+2. **Contract Testing:** [contract-testing.md](docs/testing/api/contract-testing.md) - Validar contratos de API
+3. **Testing con OpenAPI:** [openapi-contract-testing.md](docs/testing/api/openapi-contract-testing.md) - Usar specs para testing
+4. **DevTools:** [devtools-testing.md](docs/testing/api/devtools-testing.md) - Testing manual en el navegador
+5. **Postman:** [postman-testing.md](docs/testing/api/postman-testing.md) - Colecciones y environments
 
 ---
 

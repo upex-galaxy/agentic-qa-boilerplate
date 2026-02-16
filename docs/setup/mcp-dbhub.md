@@ -373,5 +373,5 @@ sslmode = "<require|disable>"
 
 ## Navegación
 
-- [OpenAPI MCP](./mcp-openapi.md) - Configuración de OpenAPI MCP
-- [Testing de APIs](../testing/api/) - Guías de testing de APIs
+- [OpenAPI MCP](docs/setup/mcp-openapi.md) - Configuración de OpenAPI MCP
+- [Testing de APIs](docs/testing/api/) - Guías de testing de APIs

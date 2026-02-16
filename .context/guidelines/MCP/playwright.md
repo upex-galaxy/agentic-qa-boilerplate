@@ -113,7 +113,7 @@ The Playwright MCP integrates with the KATA framework:
 - **Page Objects**: Component-based architecture
 - **Test Fixtures**: Dependency injection for pages
 
-See `../TAE/kata-architecture.md` for architecture details.
+See `.context/guidelines/TAE/kata-architecture.md` for architecture details.
 
 ---
 
@@ -142,9 +142,9 @@ See `../TAE/kata-architecture.md` for architecture details.
 
 ## Related Documentation
 
-- `../TAE/kata-architecture.md` - KATA framework architecture
-- `../TAE/e2e-testing-patterns.md` - E2E testing patterns
-- `../TAE/data-testid-usage.md` - data-testid conventions
+- `.context/guidelines/TAE/kata-architecture.md` - KATA framework architecture
+- `.context/guidelines/TAE/e2e-testing-patterns.md` - E2E testing patterns
+- `.context/guidelines/TAE/data-testid-usage.md` - data-testid conventions
 
 ---
 

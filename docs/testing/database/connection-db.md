@@ -169,7 +169,7 @@ Luego se referencia desde tu configuración de MCP:
 }
 ```
 
-> Ver [mcp-dbhub.md](../../setup/mcp-dbhub.md) para configuración completa.
+> Ver [mcp-dbhub.md](docs/setup/mcp-dbhub.md) para configuración completa.
 
 ### Usando Playwright (en tests)
 
@@ -319,9 +319,9 @@ FATAL: SSL connection is required
 
 ## Próximos Pasos
 
-1. **Configurar MCP:** [mcp-dbhub.md](../../setup/mcp-dbhub.md) - Setup de DBHub MCP
-2. **Validar datos:** [data-validation-testing.md](./data-validation-testing.md) - Estrategias de validación
-3. **API vs DB Testing:** [fundamentals.md](./fundamentals.md) - Cuándo usar cada approach
+1. **Configurar MCP:** [mcp-dbhub.md](docs/setup/mcp-dbhub.md) - Setup de DBHub MCP
+2. **Validar datos:** [data-validation-testing.md](docs/testing/database/data-validation-testing.md) - Estrategias de validación
+3. **API vs DB Testing:** [fundamentals.md](docs/testing/database/fundamentals.md) - Cuándo usar cada approach
 
 ---
 

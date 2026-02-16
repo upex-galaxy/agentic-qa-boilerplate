@@ -351,9 +351,9 @@ Click derecho > Replay XHR para reejecutar un request sin recargar la página.
 
 ## Próximos Pasos
 
-- [postman-testing.md](./postman-testing.md) - Organizar requests en colecciones
-- [authentication.md](./authentication.md) - Patrones de autenticación
-- [fundamentals.md](./fundamentals.md) - Conceptos de API testing
+- [postman-testing.md](docs/testing/api/postman-testing.md) - Organizar requests en colecciones
+- [authentication.md](docs/testing/api/authentication.md) - Patrones de autenticación
+- [fundamentals.md](docs/testing/api/fundamentals.md) - Conceptos de API testing
 
 ---
 

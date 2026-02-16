@@ -40,7 +40,6 @@ node_modules/
 .env.*.local
 
 # ===== IDE & Editor =====
-.vscode/
 .idea/
 *.swp
 *.swo

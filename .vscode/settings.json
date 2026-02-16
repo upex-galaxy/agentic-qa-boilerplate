@@ -1,0 +1,345 @@
+{
+  // =====================================================
+  // VSCode Workspace Settings - Optimizado para Equipos
+  // =====================================================
+  // Este archivo contiene configuraciones del workspace que aplican a todo el equipo.
+  // Las preferencias personales (temas, cursor, etc.) están marcadas como opcionales.
+  //
+  // Última actualización: 2025
+  // Para más info: https://code.visualstudio.com/docs/getstarted/settings
+  // =====================
+  //? File Associations
+  // =====================
+  "files.associations": {
+    "*.yml": "yaml",
+    "*.json": "jsonc",
+    "*.env*": "dotenv"
+  },
+  // =====================
+  //? Files Configuration
+  // =====================
+  "files.eol": "\n", // Usa LF (Unix) para consistencia entre OS
+  "files.autoSave": "onFocusChange", // Auto-guarda al cambiar de archivo
+  "files.trimTrailingWhitespace": true, // Elimina espacios al final de línea
+  "files.insertFinalNewline": true, // Agrega línea final (POSIX standard)
+  "files.trimFinalNewlines": true, // Elimina líneas vacías extras al final
+  // Excluye carpetas del watcher para mejor rendimiento
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.hg/store/**": true,
+    "**/docs/**": true,
+    "**/test/data/**": true,
+    "**/test/downloads/**": true,
+    "**/test/screenshots/**": true,
+    "**/test-results/**": true,
+    "**/allure-results/**": true,
+    "**/allure-report/**": true,
+    "**/reports/**": true,
+    "**/__pycache__/**": true,
+    "**/.pytest_cache/**": true,
+    "**/venv/**": true,
+    "**/.venv/**": true
+  },
+  // =====================
+  //? Search Configuration
+  // =====================
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/.venv": true,
+    "**/venv": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/coverage": true,
+    "**/.nyc_output": true
+  },
+  // =====================
+  //? Editor Settings (Core)
+  // =====================
+  "editor.formatOnSave": true, // Formatea automáticamente al guardar
+  "editor.formatOnPaste": true, // Formatea al pegar código
+  "editor.formatOnType": false, // No formatea mientras escribes (evita distracciones)
+  "editor.formatOnSaveMode": "file", // Formatea todo el archivo, no solo modificaciones
+  "editor.autoIndent": "full", // Indentación inteligente completa
+  "editor.detectIndentation": true, // Detecta indentación del archivo automáticamente
+  "editor.tabSize": 2, // Tab size por defecto (puede ser sobreescrito por lenguaje)
+  "editor.insertSpaces": true, // Usa espacios en lugar de tabs
+  "editor.wordWrap": "off", // Ajusta líneas largas (mejora lectura)
+  "editor.wordWrapColumn": 120, // Límite de columna para wrap
+  "editor.wrappingIndent": "indent", // Mantiene indentación en líneas wrapped
+  // =====================
+  //? Editor - Code Actions & Fixes
+  // =====================
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit", // Ejecuta fix all de todos los linters
+    "source.organizeImports": "never", // Desactivado: usa perfectionist/sort-imports de ESLint
+    "source.fixAll.eslint": "explicit", // ESLint fixes (incluye ordenar imports)
+    "source.fixAll.markdownlint": "explicit" // Markdown lint fixes
+  },
+  // =====================
+  //? Editor - IntelliSense & Suggestions
+  // =====================
+  "editor.quickSuggestions": {
+    "other": "on",
+    "comments": "on", // Sugerencias en comentarios (útil para JSDoc)
+    "strings": "on" // Sugerencias en strings (útil para paths)
+  },
+  "editor.suggestOnTriggerCharacters": true,
+  "editor.acceptSuggestionOnEnter": "on",
+  "editor.tabCompletion": "on",
+  "editor.snippetSuggestions": "top", // Snippets aparecen primero
+  "editor.wordBasedSuggestions": "matchingDocuments",
+  // =====================
+  //? Editor - Visual Improvements
+  // =====================
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.guides.indentation": true,
+  "editor.renderWhitespace": "boundary", // Muestra espacios en blanco útiles
+  "editor.renderControlCharacters": true,
+  "editor.cursorBlinking": "smooth", // Animación suave del cursor
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.smoothScrolling": true,
+  "editor.lineHeight": 0, // Usa el valor por defecto (mejor compatibilidad)
+  // Minimap
+  "editor.minimap.enabled": true,
+  "editor.minimap.renderCharacters": false, // Minimap más rápido
+  "editor.minimap.showSlider": "always",
+  // =====================
+  //? Editor - Semantic Features
+  // =====================
+  "editor.semanticHighlighting.enabled": true,
+  "editor.inlineSuggest.enabled": true,
+  "editor.linkedEditing": true, // Edita tags HTML/XML relacionados
+  // =====================
+  //? Language Specific Settings
+  // =====================
+  // Python
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  // Black Formatter Configuration
+  "black-formatter.args": [
+    "--line-length=88", // Estándar Black (cambiado de 200 para seguir convenciones)
+    "--skip-string-normalization"
+  ],
+  // JavaScript / TypeScript
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  // JSON / JSONC
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+  // YAML
+  "[yaml]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.formatOnSave": true
+  },
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  // XML
+  "[xml]": {
+    "editor.defaultFormatter": "redhat.vscode-xml",
+    "editor.formatOnSave": true
+  },
+  // Markdown
+  "[markdown]": {
+    "editor.defaultFormatter": "yzhang.markdown-all-in-one",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "comments": "on",
+      "strings": "on",
+      "other": "on"
+    }
+  },
+  // CSS / SCSS / LESS
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  // HTML
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  // =====================
+  //? JSON & YAML Settings
+  // =====================
+  "json.validate.enable": true,
+  "json.format.enable": true,
+  "json.schemas": [],
+  "yaml.validate": true,
+  "yaml.format.enable": true,
+  "yaml.completion": true,
+  // =====================
+  //? Explorer Settings
+  // =====================
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml",
+    "*.ts": "${capture}.js, ${capture}.d.ts",
+    "*.js": "${capture}.js.map, ${capture}.min.js",
+    "*.jsx": "${capture}.js",
+    "*.tsx": "${capture}.ts",
+    "tsconfig.json": "tsconfig.*.json",
+    "*.env": "${capture}.env.*"
+  },
+  "explorer.compactFolders": false, // Mejor visibilidad de estructura
+  "explorer.confirmDelete": true,
+  "explorer.confirmDragAndDrop": true,
+  // =====================
+  //? Git Settings
+  // =====================
+  "git.enableSmartCommit": true, // Commit automático de todos los cambios
+  "git.autofetch": true, // Fetch automático periódico
+  "git.confirmSync": false, // No confirmar sync
+  "git.enableCommitSigning": false, // Cambiar a true si usas GPG signing
+  "diffEditor.ignoreTrimWhitespace": false,
+  // =====================
+  //? Terminal Settings
+  // =====================
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.cursorStyle": "line",
+  "terminal.integrated.fontSize": 14,
+  "terminal.integrated.fontFamily": "monospace",
+  "terminal.integrated.tabs.enabled": true,
+  "terminal.integrated.tabs.defaultColor": "terminal.ansiGreen",
+  "terminal.integrated.tabs.defaultIcon": "terminal",
+  "terminal.integrated.enablePersistentSessions": true,
+  "terminal.integrated.scrollback": 10000,
+  // =====================
+  //? Testing Settings
+  // =====================
+  "testing.alwaysRevealTestOnStateChange": true,
+  "testing.automaticallyOpenPeekView": "failureInVisibleDocument",
+  // =====================
+  //? Workbench Settings
+  // =====================
+  "workbench.editor.enablePreview": false, // Siempre abre archivos en nueva tab
+  "workbench.editor.closeEmptyGroups": true,
+  "workbench.editor.highlightModifiedTabs": true,
+  "workbench.list.smoothScrolling": true,
+  "workbench.settings.editor": "json", // Preferir JSON sobre UI
+  "workbench.tree.enableStickyScroll": true,
+  "workbench.tree.indent": 16,
+  "workbench.startupEditor": "welcomePage",
+  // =====================
+  //? Breadcrumbs
+  // =====================
+  "breadcrumbs.enabled": true,
+  "breadcrumbs.filePath": "on",
+  "breadcrumbs.symbolPath": "on",
+  // =====================
+  //? Extension Specific Settings
+  // =====================
+  // ESLint
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  // Prettier
+  "prettier.requireConfig": false, // Funciona sin archivo de config
+  "prettier.useEditorConfig": true, // Respeta .editorconfig
+  // Error Lens
+  "errorLens.enabledDiagnosticLevels": [
+    "error",
+    "warning",
+    "info"
+  ],
+  // Todo Highlight
+  "todohighlight.isEnable": true,
+  "todohighlight.keywords": [
+    {
+      "text": "TODO:",
+      "color": "#fff",
+      "backgroundColor": "#ffbd2a",
+      "overviewRulerColor": "#ffbd2a"
+    },
+    {
+      "text": "FIXME:",
+      "color": "#fff",
+      "backgroundColor": "#f06292",
+      "overviewRulerColor": "#f06292"
+    },
+    {
+      "text": "NOTE:",
+      "color": "#fff",
+      "backgroundColor": "#64b5f6",
+      "overviewRulerColor": "#64b5f6"
+    }
+  ],
+  // =====================================================
+  //? Preferencias Visuales Recomendadas (OPCIONALES)
+  // =====================================================
+  // Estas configuraciones son recomendaciones del autor del proyecto
+  // para mejorar la experiencia visual. Puedes removerlas o cambiarlas
+  // según tu preferencia personal.
+  // Tema recomendado: Winter is Coming (Dark Blue)
+  // Para instalarlo: busca "Winter is Coming" en extensiones
+  "workbench.colorTheme": "Winter is Coming (Dark Blue)",
+  // Icon Theme recomendado: Material Icon Theme
+  // Mejora significativamente la visualización de la estructura del proyecto
+  "workbench.iconTheme": "material-icon-theme",
+  // =====================
+  //? Material Icon Theme Settings (OPCIONAL)
+  // =====================
+  // Configuraciones para mejorar los iconos de archivos/carpetas específicos
+  "material-icon-theme.folders.color": "#7cb342",
+  "material-icon-theme.files.associations": {
+    "conftest.py": "test-jsx",
+    "pytest.ini": "test-py",
+    "requirements.txt": "requirements",
+    ".env*": "dotenv"
+  },
+  "material-icon-theme.folders.associations": {
+    "utils": "tools",
+    "test-results": "temp",
+    "tests": "test",
+    "__tests__": "test"
+  },
+  // =====================
+  //? Postman Extension
+  // =====================
+  "postman.settings.dotenv-detection-notification-visibility": false
+}

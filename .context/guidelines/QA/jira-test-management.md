@@ -199,7 +199,7 @@ If the project uses Xray:
 
 1. Tests in Jira have Xray `Test` type
 2. Results are imported automatically
-3. See `../TAE/tms-integration.md` for configuration
+3. See `.context/guidelines/TAE/tms-integration.md` for configuration
 
 ### Jira Direct (Budget-Friendly)
 

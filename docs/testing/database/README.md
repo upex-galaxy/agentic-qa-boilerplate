@@ -9,9 +9,9 @@
 
 | Documento | Descripción | Estado |
 |-----------|-------------|--------|
-| [fundamentals.md](./fundamentals.md) | API vs Database testing, cuándo usar cada uno | ✅ Disponible |
-| [connection-db.md](./connection-db.md) | Patrones de conexión a base de datos | ✅ Disponible |
-| [data-validation-testing.md](./data-validation-testing.md) | Estrategias de validación de datos | ✅ Disponible |
+| [fundamentals.md](docs/testing/database/fundamentals.md) | API vs Database testing, cuándo usar cada uno | ✅ Disponible |
+| [connection-db.md](docs/testing/database/connection-db.md) | Patrones de conexión a base de datos | ✅ Disponible |
+| [data-validation-testing.md](docs/testing/database/data-validation-testing.md) | Estrategias de validación de datos | ✅ Disponible |
 
 ---
 

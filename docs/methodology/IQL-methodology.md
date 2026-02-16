@@ -427,6 +427,6 @@ Calidad como un **ciclo continuo** integrado en todo el SDLC.
 
 ## Navegación
 
-- [Early-Game Testing](./early-game-testing.md) - Fase 1: Prevención y estrategia temprana
-- [Mid-Game Testing](./mid-game-testing.md) - Fase 2: Detección e implementación
-- [Late-Game Testing](./late-game-testing.md) - Fase 3: Observación y producción
+- [Early-Game Testing](docs/methodology/early-game-testing.md) - Fase 1: Prevención y estrategia temprana
+- [Mid-Game Testing](docs/methodology/mid-game-testing.md) - Fase 2: Detección e implementación
+- [Late-Game Testing](docs/methodology/late-game-testing.md) - Fase 3: Observación y producción

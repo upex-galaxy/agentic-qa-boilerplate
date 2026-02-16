@@ -281,6 +281,6 @@ Estas métricas trabajan juntas para proporcionar una vista completa de la **sal
 
 ## Navegación
 
-- [Metodología IQL](./IQL-methodology.md) - Vista completa del Integrated Quality Lifecycle
-- [Early-Game Testing](./early-game-testing.md) - Fase 1: Prevención y estrategia temprana
-- [Mid-Game Testing](./mid-game-testing.md) - Fase 2: Detección e implementación
+- [Metodología IQL](docs/methodology/IQL-methodology.md) - Vista completa del Integrated Quality Lifecycle
+- [Early-Game Testing](docs/methodology/early-game-testing.md) - Fase 1: Prevención y estrategia temprana
+- [Mid-Game Testing](docs/methodology/mid-game-testing.md) - Fase 2: Detección e implementación

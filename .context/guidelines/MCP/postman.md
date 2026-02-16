@@ -96,16 +96,16 @@ export class UsersApi extends ApiBase {
 ```
 
 See:
-- `../TAE/api-testing-patterns.md` - API testing patterns
-- `../TAE/kata-architecture.md` - KATA architecture
+- `.context/guidelines/TAE/api-testing-patterns.md` - API testing patterns
+- `.context/guidelines/TAE/kata-architecture.md` - KATA architecture
 
 ---
 
 ## Related Documentation
 
-- `../TAE/api-testing-patterns.md` - API testing patterns
-- `../TAE/openapi-integration.md` - OpenAPI integration
-- `./openapi.md` - OpenAPI MCP guide
+- `.context/guidelines/TAE/api-testing-patterns.md` - API testing patterns
+- `.context/guidelines/TAE/openapi-integration.md` - OpenAPI integration
+- `.context/guidelines/MCP/openapi.md` - OpenAPI MCP guide
 
 ---
 

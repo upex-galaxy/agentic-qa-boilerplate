@@ -123,5 +123,5 @@ curl -u email:token https://your-domain.atlassian.net/rest/api/3/issue/PROJ-123
 
 ---
 
-**Previous Phase**: [Phase 3 - Infrastructure](./../discovery/phase-3-infrastructure/README.md)
-**Next Phase**: [Phase 5 - Shift-Left Testing](./../stage-1-shift-left/README.md)
+**Previous Phase**: [Phase 3 - Infrastructure](.prompts/discovery/phase-3-infrastructure/README.md)
+**Next Phase**: [Phase 5 - Shift-Left Testing](.prompts/stage-1-shift-left/README.md)

@@ -523,9 +523,9 @@ project/
 
 ## Próximos Pasos
 
-- [devtools-testing.md](./devtools-testing.md) - Capturar requests del browser
-- [authentication.md](./authentication.md) - Patrones de autenticación
-- [fundamentals.md](./fundamentals.md) - Conceptos de API testing
+- [devtools-testing.md](docs/testing/api/devtools-testing.md) - Capturar requests del browser
+- [authentication.md](docs/testing/api/authentication.md) - Patrones de autenticación
+- [fundamentals.md](docs/testing/api/fundamentals.md) - Conceptos de API testing
 
 ---
 

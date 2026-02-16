@@ -266,6 +266,6 @@ La combinación de ambos tipos de testing es lo que hace a un QA Engineer comple
 
 ## Navegación
 
-- [Conexión a DB](./connection-db.md) - Patrones de conexión
-- [Validación de Datos](./data-validation-testing.md) - Estrategias de validación
-- [DBHub MCP](../../setup/mcp-dbhub.md) - Configuración de MCP
+- [Conexión a DB](docs/testing/database/connection-db.md) - Patrones de conexión
+- [Validación de Datos](docs/testing/database/data-validation-testing.md) - Estrategias de validación
+- [DBHub MCP](docs/setup/mcp-dbhub.md) - Configuración de MCP

@@ -9,7 +9,7 @@
 
 | Arquitectura | Descripción | Ruta |
 |--------------|-------------|------|
-| **Supabase + Next.js** | PostgreSQL + PostgREST + Next.js API | [supabase-nextjs/](./supabase-nextjs/) |
+| **Supabase + Next.js** | PostgreSQL + PostgREST + Next.js API | [supabase-nextjs/](docs/supabase-nextjs/) |
 
 ---
 

@@ -94,7 +94,7 @@ paths:
 - ✅ Genera documentación automática
 - ✅ Muchas herramientas disponibles
 
-**Ver:** [openapi-contract-testing.md](./openapi-contract-testing.md)
+**Ver:** [openapi-contract-testing.md](docs/testing/api/openapi-contract-testing.md)
 
 ### 2. JSON Schema
 
@@ -415,9 +415,9 @@ Cambios **seguros**:
 
 ## Próximos Pasos
 
-1. **OpenAPI + Zod:** [openapi-contract-testing.md](./openapi-contract-testing.md) - Implementación con OpenAPI y Zod
-2. **Fundamentos API:** [fundamentals.md](./fundamentals.md) - Conceptos básicos de API testing
-3. **Setup OpenAPI MCP:** [../../setup/mcp-openapi.md](../../setup/mcp-openapi.md) - Configurar MCP para OpenAPI
+1. **OpenAPI + Zod:** [openapi-contract-testing.md](docs/testing/api/openapi-contract-testing.md) - Implementación con OpenAPI y Zod
+2. **Fundamentos API:** [fundamentals.md](docs/testing/api/fundamentals.md) - Conceptos básicos de API testing
+3. **Setup OpenAPI MCP:** [docs/setup/mcp-openapi.md](docs/setup/mcp-openapi.md) - Configurar MCP para OpenAPI
 
 ---
 

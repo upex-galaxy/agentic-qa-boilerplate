@@ -361,10 +361,10 @@ En este boilerplate usamos **Playwright** por su versatilidad (E2E + API) y exce
 
 ## Próximos Pasos
 
-1. **Dependency Injection:** [dependency-injection.md](./dependency-injection.md) - Arquitectura de tests
-2. **Playwright:** [playwright-framework.md](./playwright-framework.md) - Configurar el framework
-3. **API Testing:** [playwright-api-testing.md](./playwright-api-testing.md) - Tests de API con Playwright
-4. **Data-Driven:** [data-driven-testing.md](./data-driven-testing.md) - Parametrización de tests
+1. **Dependency Injection:** [dependency-injection.md](docs/testing/automation/dependency-injection.md) - Arquitectura de tests
+2. **Playwright:** [playwright-framework.md](docs/testing/automation/playwright-framework.md) - Configurar el framework
+3. **API Testing:** [playwright-api-testing.md](docs/testing/automation/playwright-api-testing.md) - Tests de API con Playwright
+4. **Data-Driven:** [data-driven-testing.md](docs/testing/automation/data-driven-testing.md) - Parametrización de tests
 
 ---
 

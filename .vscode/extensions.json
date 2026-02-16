@@ -1,0 +1,62 @@
+{
+  // =====================
+  // Extensiones Recomendadas para el Equipo
+  // =====================
+  // Este archivo define las extensiones que VSCode sugerirá instalar
+  // cuando alguien abra este proyecto por primera vez.
+  //
+  // Para instalar todas: Cmd/Ctrl+Shift+P > "Extensions: Show Recommended Extensions"
+  "recommendations": [
+    // =====================
+    // Formatters & Linters (Esenciales para consistencia del código)
+    // =====================
+    "esbenp.prettier-vscode", // Prettier - Formateador universal (JS, TS, JSON, CSS, etc.)
+    "dbaeumer.vscode-eslint", // ESLint - Linter para JavaScript/TypeScript
+    "ms-python.python", // Python - Soporte completo para Python
+    "ms-python.vscode-pylance", // Pylance - IntelliSense avanzado para Python
+    // =====================
+    // Formatters Específicos
+    // =====================
+    "redhat.vscode-xml", // XML - Formateador y validador XML
+    "kennylong.kubernetes-yaml-formatter", // YAML - Formateador Kubernetes/YAML
+    "redhat.vscode-yaml", // YAML - Language Server para YAML
+    // =====================
+    // Git & Control de Versiones
+    // =====================
+    "eamodio.gitlens", // GitLens - Git supercharged (historia, blame, etc.)
+    "github.vscode-github-actions", // GitHub Actions - Soporte para workflows
+    // =====================
+    // Productividad & DX
+    // =====================
+    "wayou.vscode-todo-highlight", // Todo Highlight - Resalta TODOs, FIXMEs, etc.
+    "usernamehw.errorlens", // Error Lens - Muestra errores inline
+    "christian-kohler.path-intellisense", // Path Intellisense - Autocompletado de rutas
+    // =====================
+    // Testing
+    // =====================
+    "ms-playwright.playwright", // Playwright - Testing E2E
+    // =====================
+    // Markdown & Documentation
+    // =====================
+    "yzhang.markdown-all-in-one", // Markdown All in One - Herramientas para Markdown
+    // =====================
+    // Temas & Iconos (Recomendaciones visuales)
+    // =====================
+    // Estos son opcionales pero mejoran mucho la experiencia visual.
+    // Puedes removerlos si prefieres tus propios temas.
+    "pkief.material-icon-theme", // Material Icon Theme - Iconos excelentes para estructura
+    "johnpapa.winteriscoming", // Winter is Coming - Tema oscuro recomendado
+    // =====================
+    // Utilidades
+    // =====================
+    "bierner.github-markdown-preview", // GitHub Markdown Preview - Preview como en GitHub
+  ],
+  // =====================
+  // Extensiones No Deseadas
+  // =====================
+  // Extensiones que pueden causar conflictos o no son recomendadas para este proyecto
+  "unwantedRecommendations": [
+    "hookyqr.beautify", // Conflicto con Prettier
+    "hbenl.vscode-test-explorer" // Deprecada
+  ]
+}

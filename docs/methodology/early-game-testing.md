@@ -329,6 +329,6 @@ _⚡ Automatización y Testing Continuo_
 
 ## Navegación
 
-- [Metodología IQL](./IQL-methodology.md) - Vista completa del Integrated Quality Lifecycle
-- [Mid-Game Testing](./mid-game-testing.md) - Fase 2: Detección e implementación
-- [Late-Game Testing](./late-game-testing.md) - Fase 3: Observación y producción
+- [Metodología IQL](docs/methodology/IQL-methodology.md) - Vista completa del Integrated Quality Lifecycle
+- [Mid-Game Testing](docs/methodology/mid-game-testing.md) - Fase 2: Detección e implementación
+- [Late-Game Testing](docs/methodology/late-game-testing.md) - Fase 3: Observación y producción

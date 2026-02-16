@@ -9,15 +9,15 @@
 
 | Documento | Descripción |
 |-----------|-------------|
-| [mcp-dbhub.md](./mcp-dbhub.md) | Configuración de DBHub MCP para acceso a base de datos |
-| [mcp-openapi.md](./mcp-openapi.md) | Configuración de OpenAPI MCP para testing de APIs |
+| [mcp-dbhub.md](docs/setup/mcp-dbhub.md) | Configuración de DBHub MCP para acceso a base de datos |
+| [mcp-openapi.md](docs/setup/mcp-openapi.md) | Configuración de OpenAPI MCP para testing de APIs |
 
 ---
 
 ## Inicio Rápido
 
-1. **¿Necesitas acceso a base de datos?** → [mcp-dbhub.md](./mcp-dbhub.md)
-2. **¿Necesitas testing de APIs?** → [mcp-openapi.md](./mcp-openapi.md)
+1. **¿Necesitas acceso a base de datos?** → [mcp-dbhub.md](docs/setup/mcp-dbhub.md)
+2. **¿Necesitas testing de APIs?** → [mcp-openapi.md](docs/setup/mcp-openapi.md)
 
 ---
 

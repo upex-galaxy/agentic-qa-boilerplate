@@ -110,8 +110,8 @@
 
 ## Related Documentation
 
-- `./context7.md` - For official documentation lookup
-- `../TAE/kata-ai-index.md` - Project-specific patterns
+- `.context/guidelines/MCP/context7.md` - For official documentation lookup
+- `.context/guidelines/TAE/kata-ai-index.md` - Project-specific patterns
 
 ---
 

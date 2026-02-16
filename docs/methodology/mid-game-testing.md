@@ -248,6 +248,6 @@ Pull Request MERGED. Tests automatizados estables integrados confiablemente en C
 
 ## Navegación
 
-- [Metodología IQL](./IQL-methodology.md) - Vista completa del Integrated Quality Lifecycle
-- [Early-Game Testing](./early-game-testing.md) - Fase 1: Prevención y estrategia temprana
-- [Late-Game Testing](./late-game-testing.md) - Fase 3: Observación y producción
+- [Metodología IQL](docs/methodology/IQL-methodology.md) - Vista completa del Integrated Quality Lifecycle
+- [Early-Game Testing](docs/methodology/early-game-testing.md) - Fase 1: Prevención y estrategia temprana
+- [Late-Game Testing](docs/methodology/late-game-testing.md) - Fase 3: Observación y producción

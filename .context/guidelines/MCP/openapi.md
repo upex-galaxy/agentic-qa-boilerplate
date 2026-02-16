@@ -115,7 +115,7 @@ See `docs/setup/mcp-openapi.md` for:
 ## Related Documentation
 
 - `docs/setup/mcp-openapi.md` - Full setup guide
-- `../TAE/openapi-integration.md` - OpenAPI in test automation
+- `.context/guidelines/TAE/openapi-integration.md` - OpenAPI in test automation
 
 ---
 

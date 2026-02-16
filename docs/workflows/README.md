@@ -9,10 +9,10 @@
 
 | Documento | Descripción | Estado |
 |-----------|-------------|--------|
-| [environments.md](./environments.md) | Ambientes de desarrollo (dev, staging, prod) | ✅ Disponible |
-| [git-flow.md](./git-flow.md) | Flujo de trabajo Git para desarrollo AI-driven | ✅ Disponible |
-| [test-manual-lifecycle.md](./test-manual-lifecycle.md) | TMLC - Flujo de testing manual | ✅ Disponible |
-| [test-automation-lifecycle.md](./test-automation-lifecycle.md) | TALC - Flujo de automatización | ✅ Disponible |
+| [environments.md](docs/workflows/environments.md) | Ambientes de desarrollo (dev, staging, prod) | ✅ Disponible |
+| [git-flow.md](docs/workflows/git-flow.md) | Flujo de trabajo Git para desarrollo AI-driven | ✅ Disponible |
+| [test-manual-lifecycle.md](docs/workflows/test-manual-lifecycle.md) | TMLC - Flujo de testing manual | ✅ Disponible |
+| [test-automation-lifecycle.md](docs/workflows/test-automation-lifecycle.md) | TALC - Flujo de automatización | ✅ Disponible |
 
 ---
 

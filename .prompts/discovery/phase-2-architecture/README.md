@@ -129,5 +129,5 @@ Recommended parallel execution:
 
 ---
 
-**Previous Phase**: [Phase 1 - Constitution](../phase-1-constitution/)
-**Next Phase**: [Phase 3 - Infrastructure](../phase-3-infrastructure/)
+**Previous Phase**: [Phase 1 - Constitution](.prompts/discovery/phase-1-constitution/)
+**Next Phase**: [Phase 3 - Infrastructure](.prompts/discovery/phase-3-infrastructure/)

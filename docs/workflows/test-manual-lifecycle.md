@@ -363,6 +363,6 @@ Para ejecutar cada stage con ayuda de AI:
 
 ## Referencias
 
-- [IQL Methodology](../methodology/IQL-methodology.md)
-- [Early-Game Testing](../methodology/early-game-testing.md)
-- [TALC - Automation Lifecycle](./test-automation-lifecycle.md)
+- [IQL Methodology](docs/methodology/IQL-methodology.md)
+- [Early-Game Testing](docs/methodology/early-game-testing.md)
+- [TALC - Automation Lifecycle](docs/workflows/test-automation-lifecycle.md)

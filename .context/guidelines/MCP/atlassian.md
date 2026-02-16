@@ -97,8 +97,8 @@ See `.context/guidelines/QA/jira-test-management.md` for details.
 
 ## Related Documentation
 
-- `../QA/jira-test-management.md` - Jira test management guide
-- `../TAE/tms-integration.md` - TMS integration for automation
+- `.context/guidelines/QA/jira-test-management.md` - Jira test management guide
+- `.context/guidelines/TAE/tms-integration.md` - TMS integration for automation
 - `cli/xray.ts` - Xray CLI commands
 - `tests/utils/jiraSync.ts` - Jira sync utilities
 

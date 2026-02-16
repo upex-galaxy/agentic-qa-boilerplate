@@ -39,9 +39,9 @@
 
 | Documento | Descripción | Estado |
 |-----------|-------------|--------|
-| [connection-setup.md](./connection-setup.md) | Strings de conexión Supabase, config de pooler | ✅ Disponible |
-| [auth-tokens.md](./auth-tokens.md) | Cómo obtener tokens de autenticación Supabase | ✅ Disponible |
-| [troubleshooting.md](./troubleshooting.md) | Problemas comunes y soluciones | ✅ Disponible |
+| [connection-setup.md](docs/architectures/supabase-nextjs/connection-setup.md) | Strings de conexión Supabase, config de pooler | ✅ Disponible |
+| [auth-tokens.md](docs/architectures/supabase-nextjs/auth-tokens.md) | Cómo obtener tokens de autenticación Supabase | ✅ Disponible |
+| [troubleshooting.md](docs/architectures/supabase-nextjs/troubleshooting.md) | Problemas comunes y soluciones | ✅ Disponible |
 
 ---
 
@@ -69,9 +69,9 @@ Login Usuario → Supabase Auth → JWT Token → Usar para ambas APIs
 
 ## Inicio Rápido
 
-1. **Obtener string de conexión:** Ver [connection-setup.md](./connection-setup.md)
-2. **Obtener tokens de auth:** Ver [auth-tokens.md](./auth-tokens.md)
-3. **¿Tienes problemas?** Revisa [troubleshooting.md](./troubleshooting.md)
+1. **Obtener string de conexión:** Ver [connection-setup.md](docs/architectures/supabase-nextjs/connection-setup.md)
+2. **Obtener tokens de auth:** Ver [auth-tokens.md](docs/architectures/supabase-nextjs/auth-tokens.md)
+3. **¿Tienes problemas?** Revisa [troubleshooting.md](docs/architectures/supabase-nextjs/troubleshooting.md)
 
 ---
 

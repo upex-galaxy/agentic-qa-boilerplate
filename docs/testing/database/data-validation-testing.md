@@ -411,9 +411,9 @@ GROUP BY o.id;
 
 ## Próximos Pasos
 
-1. **Conectarse a DB:** [connection-db.md](./connection-db.md) - Configurar conexiones
-2. **Setup MCP:** [../../setup/mcp-dbhub.md](../../setup/mcp-dbhub.md) - Habilitar DB en AI assistant
-3. **API vs DB Testing:** [fundamentals.md](./fundamentals.md) - Cuándo usar cada approach
+1. **Conectarse a DB:** [connection-db.md](docs/testing/database/connection-db.md) - Configurar conexiones
+2. **Setup MCP:** [docs/setup/mcp-dbhub.md](docs/setup/mcp-dbhub.md) - Habilitar DB en AI assistant
+3. **API vs DB Testing:** [fundamentals.md](docs/testing/database/fundamentals.md) - Cuándo usar cada approach
 
 ---
 

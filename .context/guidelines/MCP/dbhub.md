@@ -117,7 +117,7 @@ See `docs/setup/mcp-dbhub.md` for:
 ## Related Documentation
 
 - `docs/setup/mcp-dbhub.md` - Full setup guide
-- `../TAE/test-data-management.md` - Test data strategies
+- `.context/guidelines/TAE/test-data-management.md` - Test data strategies
 
 ---
 

@@ -592,7 +592,7 @@ Para ejecutar cada stage con ayuda de AI:
 
 ## Referencias
 
-- [IQL Methodology](../methodology/IQL-methodology.md)
-- [Mid-Game Testing](../methodology/mid-game-testing.md)
-- [TMLC - Manual Lifecycle](./test-manual-lifecycle.md)
-- [KATA Architecture](../../.context/guidelines/TAE/kata-architecture.md)
+- [IQL Methodology](docs/methodology/IQL-methodology.md)
+- [Mid-Game Testing](docs/methodology/mid-game-testing.md)
+- [TMLC - Manual Lifecycle](docs/workflows/test-manual-lifecycle.md)
+- [KATA Architecture](.context/guidelines/TAE/kata-architecture.md)

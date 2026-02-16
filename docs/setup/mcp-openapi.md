@@ -451,5 +451,5 @@ Ver `docs/testing/automation/playwright-api-testing.md` para patrones de API tes
 
 ## Navegación
 
-- [DBHub MCP](./mcp-dbhub.md) - Configuración de DBHub MCP
-- [Testing de APIs](../testing/api/) - Guías de testing de APIs
+- [DBHub MCP](docs/setup/mcp-dbhub.md) - Configuración de DBHub MCP
+- [Testing de APIs](docs/testing/api/) - Guías de testing de APIs

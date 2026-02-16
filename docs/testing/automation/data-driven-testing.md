@@ -478,9 +478,9 @@ tests/
 
 ## Próximos Pasos
 
-1. **Fundamentos:** [fundamentals.md](./fundamentals.md) - Conceptos base de automatización
-2. **Playwright:** [playwright-framework.md](./playwright-framework.md) - Configurar el framework
-3. **Dependency Injection:** [dependency-injection.md](./dependency-injection.md) - Arquitectura avanzada
+1. **Fundamentos:** [fundamentals.md](docs/testing/automation/fundamentals.md) - Conceptos base de automatización
+2. **Playwright:** [playwright-framework.md](docs/testing/automation/playwright-framework.md) - Configurar el framework
+3. **Dependency Injection:** [dependency-injection.md](docs/testing/automation/dependency-injection.md) - Arquitectura avanzada
 
 ---
 

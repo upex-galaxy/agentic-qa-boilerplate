@@ -21,7 +21,7 @@ Phase 3 focuses on understanding HOW the project is deployed and operated:
 | 2     | `frontend-discovery.md`     | Document frontend setup        | Updates `.context/SRS/`          |
 | 3     | `infrastructure-mapping.md` | Map cloud/CI/CD infrastructure | `.context/SRS/infrastructure.md` |
 
-> **Note:** After completing Phase 3, run `framework-doc-setup.md` (in `.prompts/` root) to generate project documentation.
+> **Note:** After completing Phase 3, run `.prompts/utilities/context-engineering-setup.md` to generate project documentation.
 
 ## Prerequisites
 
@@ -98,8 +98,8 @@ Phase 3 focuses on understanding HOW the project is deployed and operated:
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  (Optional) framework-doc-setup.md                           │
-│  Located in: .prompts/framework-doc-setup.md                 │
+│  (Optional) context-engineering-setup.md                     │
+│  Located in: .prompts/utilities/context-engineering-setup.md │
 │  → Generates: README.md + updates CLAUDE.md                  │
 └─────────────────────────────────────────────────────────────┘
                             │
@@ -134,5 +134,5 @@ In these cases, create a minimal `.context/SRS/infrastructure.md` with:
 
 ---
 
-**Previous Phase**: [Phase 2 - Architecture](./../discovery/phase-2-architecture/README.md)
-**Next Phase**: [Phase 4 - Specification](./../discovery/phase-4-specification/README.md)
+**Previous Phase**: [Phase 2 - Architecture](.prompts/discovery/phase-2-architecture/README.md)
+**Next Phase**: [Phase 4 - Specification](.prompts/discovery/phase-4-specification/README.md)

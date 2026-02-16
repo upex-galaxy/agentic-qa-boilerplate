@@ -382,9 +382,9 @@ VALUES (
 
 ## Próximos Pasos
 
-1. **Connection Setup:** [connection-setup.md](./connection-setup.md) - Configurar conexión DB
-2. **Troubleshooting:** [troubleshooting.md](./troubleshooting.md) - Problemas comunes
-3. **Generic Auth:** [../../testing/api/authentication.md](../../testing/api/authentication.md) - Conceptos genéricos
+1. **Connection Setup:** [connection-setup.md](docs/architectures/supabase-nextjs/connection-setup.md) - Configurar conexión DB
+2. **Troubleshooting:** [troubleshooting.md](docs/architectures/supabase-nextjs/troubleshooting.md) - Problemas comunes
+3. **Generic Auth:** [docs/testing/api/authentication.md](docs/testing/api/authentication.md) - Conceptos genéricos
 
 ---
 

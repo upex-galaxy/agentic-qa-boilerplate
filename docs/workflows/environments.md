@@ -329,6 +329,6 @@ Este template usa: Local → Staging → Production (simplificado para aprendiza
 
 ## Navegación
 
-- [Git Flow](./git-flow.md) - Flujo de trabajo con Git
-- [TMLC](./test-manual-lifecycle.md) - Ciclo de vida del testing manual
-- [TALC](./test-automation-lifecycle.md) - Ciclo de vida de la automatización
+- [Git Flow](docs/workflows/git-flow.md) - Flujo de trabajo con Git
+- [TMLC](docs/workflows/test-manual-lifecycle.md) - Ciclo de vida del testing manual
+- [TALC](docs/workflows/test-automation-lifecycle.md) - Ciclo de vida de la automatización

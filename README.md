@@ -534,7 +534,7 @@ Run discovery prompts to generate project-specific context:
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License
 
 ---
 
