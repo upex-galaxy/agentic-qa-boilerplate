@@ -23,8 +23,8 @@
  *   templates/mcp/      MCP configuration templates
  *   .vscode/            IDE configuration (extensions, settings)
  *   .husky/             Git hooks
- *   tooling/            Config files (prettier, eslint, tsconfig, editorconfig)
- *   examples/           Example templates (.env.example, .mcp.example.json, etc.)
+ *   tooling/            Config files (editorconfig, prettier)
+ *   examples/           Example templates (.mcp.example.json, dbhub.example.toml)
  *
  * ============================================================================
  * WHAT NEVER GETS SYNCED (Project-specific)
@@ -41,6 +41,9 @@
  *   CLAUDE.md|AGENTS.md|GEMINI.md  Your AI memory files
  *   README.md           Your project documentation
  *   package.json        Your dependencies
+ *   eslint.config.js    Your linting rules
+ *   tsconfig.json       Your TypeScript config
+ *   .env.example        Your environment variables
  *
  * ============================================================================
  * REQUIREMENTS
@@ -728,13 +731,12 @@ function updateHusky(): void {
 
 /**
  * Config files that are universal across all KATA projects
+ * NOTE: eslint.config.js and tsconfig.json are project-specific (not synced)
  */
 const TOOLING_FILES = [
   '.editorconfig',
   '.prettierrc',
   '.prettierignore',
-  'eslint.config.js',
-  'tsconfig.json',
 ];
 
 function updateTooling(): void {
@@ -755,9 +757,9 @@ function updateTooling(): void {
 
 /**
  * Example/template files that help users configure their project
+ * NOTE: .env.example is project-specific (not synced)
  */
 const EXAMPLE_FILES = [
-  '.env.example',
   '.mcp.example.json',
   'dbhub.example.toml',
 ];
@@ -960,14 +962,17 @@ ${colors.bold}WHAT GETS SYNCED:${colors.reset}
   ${colors.green}  templates/mcp/${colors.reset}        MCP configuration templates
   ${colors.green}  .vscode/${colors.reset}              IDE configuration
   ${colors.green}  .husky/${colors.reset}               Git hooks
-  ${colors.green}  tooling${colors.reset}               prettier, eslint, tsconfig, editorconfig
-  ${colors.green}  examples${colors.reset}              .env.example, .mcp.example.json, dbhub.example.toml
+  ${colors.green}  tooling${colors.reset}               editorconfig, prettier
+  ${colors.green}  examples${colors.reset}              .mcp.example.json, dbhub.example.toml
 
 ${colors.bold}WHAT NEVER GETS SYNCED (project-specific):${colors.reset}
   ${colors.red}  .github/workflows/${colors.reset}    Your CI/CD pipelines
   ${colors.red}  config/${colors.reset}               Your environment config
   ${colors.red}  tests/${colors.reset}                Your test components
   ${colors.red}  playwright.config${colors.reset}     Your test config
+  ${colors.red}  eslint.config.js${colors.reset}      Your linting rules
+  ${colors.red}  tsconfig.json${colors.reset}         Your TypeScript config
+  ${colors.red}  .env.example${colors.reset}          Your env variables
   ${colors.red}  CLAUDE.md${colors.reset}             Your AI memory
   ${colors.red}  README.md${colors.reset}             Your project docs
   ${colors.red}  package.json${colors.reset}          Your dependencies
