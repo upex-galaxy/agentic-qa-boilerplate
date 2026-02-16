@@ -21,6 +21,10 @@
  *   docs/               General documentation
  *   cli/                CLI tools (this file auto-updates itself)
  *   templates/mcp/      MCP configuration templates
+ *   .vscode/            IDE configuration (extensions, settings)
+ *   .husky/             Git hooks
+ *   tooling/            Config files (prettier, eslint, tsconfig, editorconfig)
+ *   examples/           Example templates (.env.example, .mcp.example.json, etc.)
  *
  * ============================================================================
  * WHAT NEVER GETS SYNCED (Project-specific)
@@ -34,6 +38,9 @@
  *   tests/setup/        Your auth setup
  *   playwright.config   Your test configuration
  *   .context/PRD|SRS|idea|PBI  Your generated discovery content
+ *   CLAUDE.md|AGENTS.md|GEMINI.md  Your AI memory files
+ *   README.md           Your project documentation
+ *   package.json        Your dependencies
  *
  * ============================================================================
  * REQUIREMENTS
@@ -53,6 +60,10 @@
  *   bun run update docs             Update docs/
  *   bun run update cli              Update cli/
  *   bun run update templates        Update templates/mcp/
+ *   bun run update vscode           Update .vscode/
+ *   bun run update husky            Update .husky/
+ *   bun run update tooling          Update config files (prettier, eslint, etc.)
+ *   bun run update examples         Update example templates
  *
  * PROMPTS OPTIONS:
  *   bun run update prompts --all           All stages + phases + extras
@@ -310,7 +321,7 @@ function parseArgs(args: string[]): ParsedArgs {
     help: false,
   };
 
-  const validCommands = ['all', 'prompts', 'guidelines', 'docs', 'cli', 'templates', 'help'];
+  const validCommands = ['all', 'prompts', 'guidelines', 'docs', 'cli', 'templates', 'vscode', 'husky', 'tooling', 'examples', 'help'];
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -427,6 +438,8 @@ function createBackup(components: string[]): string {
     docs: { src: 'docs', dest: 'docs' },
     cli: { src: 'cli', dest: 'cli' },
     templates: { src: 'templates/mcp', dest: 'templates/mcp' },
+    vscode: { src: '.vscode', dest: '.vscode' },
+    husky: { src: '.husky', dest: '.husky' },
   };
 
   for (const comp of components) {
@@ -687,6 +700,84 @@ function updateTemplates(): void {
   mergeDirectory(templatesPath, 'templates/mcp');
 }
 
+function updateVscode(): void {
+  log.step('Updating .vscode/ (merge)...');
+
+  const vscodePath = join(TEMP_DIR, '.vscode');
+  if (!existsSync(vscodePath)) {
+    log.warning('.vscode directory not found in template');
+    return;
+  }
+
+  log.merge('Syncing VS Code configuration...');
+  mergeDirectory(vscodePath, '.vscode');
+}
+
+function updateHusky(): void {
+  log.step('Updating .husky/ (merge)...');
+
+  const huskyPath = join(TEMP_DIR, '.husky');
+  if (!existsSync(huskyPath)) {
+    log.warning('.husky directory not found in template');
+    return;
+  }
+
+  log.merge('Syncing Git hooks...');
+  mergeDirectory(huskyPath, '.husky');
+}
+
+/**
+ * Config files that are universal across all KATA projects
+ */
+const TOOLING_FILES = [
+  '.editorconfig',
+  '.prettierrc',
+  '.prettierignore',
+  'eslint.config.js',
+  'tsconfig.json',
+];
+
+function updateTooling(): void {
+  log.step('Updating tooling config files...');
+
+  log.merge('Syncing config files...');
+  for (const file of TOOLING_FILES) {
+    const srcPath = join(TEMP_DIR, file);
+    if (existsSync(srcPath)) {
+      cpSync(srcPath, file);
+      log.success(file);
+    }
+    else {
+      log.warning(`${file} not found in template`);
+    }
+  }
+}
+
+/**
+ * Example/template files that help users configure their project
+ */
+const EXAMPLE_FILES = [
+  '.env.example',
+  '.mcp.example.json',
+  'dbhub.example.toml',
+];
+
+function updateExamples(): void {
+  log.step('Updating example templates...');
+
+  log.merge('Syncing example files...');
+  for (const file of EXAMPLE_FILES) {
+    const srcPath = join(TEMP_DIR, file);
+    if (existsSync(srcPath)) {
+      cpSync(srcPath, file);
+      log.success(file);
+    }
+    else {
+      log.warning(`${file} not found in template`);
+    }
+  }
+}
+
 function selfUpdate(): boolean {
   const currentScriptPath = join(process.cwd(), 'cli', 'update-boilerplate.ts');
   const templateScriptPath = join(TEMP_DIR, 'cli', 'update-boilerplate.ts');
@@ -731,6 +822,10 @@ async function showMainMenu(): Promise<string[]> {
       { name: 'Documentation (docs/)', value: 'docs' },
       { name: 'CLI Tools (cli/)', value: 'cli' },
       { name: 'MCP Templates (templates/mcp/)', value: 'templates' },
+      { name: 'VS Code Config (.vscode/)', value: 'vscode' },
+      { name: 'Git Hooks (.husky/)', value: 'husky' },
+      { name: 'Tooling (prettier, eslint, tsconfig)', value: 'tooling' },
+      { name: 'Example Templates (.env.example, etc.)', value: 'examples' },
     ],
   });
 }
@@ -836,6 +931,10 @@ ${colors.bold}COMMANDS:${colors.reset}
   docs          Update docs/ (documentation)
   cli           Update cli/ (CLI tools)
   templates     Update templates/mcp/ (MCP configs)
+  vscode        Update .vscode/ (IDE configuration)
+  husky         Update .husky/ (Git hooks)
+  tooling       Update config files (prettier, eslint, tsconfig)
+  examples      Update example templates (.env.example, etc.)
   help          Show this help
 
 ${colors.bold}FLAGS FOR 'prompts':${colors.reset}
@@ -859,12 +958,19 @@ ${colors.bold}WHAT GETS SYNCED:${colors.reset}
   ${colors.green}  docs/${colors.reset}                 General documentation
   ${colors.green}  cli/${colors.reset}                  CLI tools (auto-updates)
   ${colors.green}  templates/mcp/${colors.reset}        MCP configuration templates
+  ${colors.green}  .vscode/${colors.reset}              IDE configuration
+  ${colors.green}  .husky/${colors.reset}               Git hooks
+  ${colors.green}  tooling${colors.reset}               prettier, eslint, tsconfig, editorconfig
+  ${colors.green}  examples${colors.reset}              .env.example, .mcp.example.json, dbhub.example.toml
 
 ${colors.bold}WHAT NEVER GETS SYNCED (project-specific):${colors.reset}
   ${colors.red}  .github/workflows/${colors.reset}    Your CI/CD pipelines
   ${colors.red}  config/${colors.reset}               Your environment config
   ${colors.red}  tests/${colors.reset}                Your test components
   ${colors.red}  playwright.config${colors.reset}     Your test config
+  ${colors.red}  CLAUDE.md${colors.reset}             Your AI memory
+  ${colors.red}  README.md${colors.reset}             Your project docs
+  ${colors.red}  package.json${colors.reset}          Your dependencies
 
 ${colors.bold}INTELLIGENT MERGE:${colors.reset}
   - Updates/adds files from template
@@ -905,7 +1011,7 @@ async function main(): Promise<void> {
     await validatePrerequisites();
 
     const components = selected.includes('all')
-      ? ['prompts', 'guidelines', 'docs', 'cli', 'templates']
+      ? ['prompts', 'guidelines', 'docs', 'cli', 'templates', 'vscode', 'husky', 'tooling', 'examples']
       : selected;
 
     createBackup(components);
@@ -919,6 +1025,10 @@ async function main(): Promise<void> {
       updateDocs();
       updateCli();
       updateTemplates();
+      updateVscode();
+      updateHusky();
+      updateTooling();
+      updateExamples();
     }
     else {
       for (const cmd of selected) {
@@ -937,6 +1047,18 @@ async function main(): Promise<void> {
         }
         else if (cmd === 'templates') {
           updateTemplates();
+        }
+        else if (cmd === 'vscode') {
+          updateVscode();
+        }
+        else if (cmd === 'husky') {
+          updateHusky();
+        }
+        else if (cmd === 'tooling') {
+          updateTooling();
+        }
+        else if (cmd === 'examples') {
+          updateExamples();
         }
       }
     }
@@ -965,7 +1087,7 @@ async function main(): Promise<void> {
 
   // Expand 'all' command
   if (parsed.commands.includes('all')) {
-    parsed.commands = ['prompts', 'guidelines', 'docs', 'cli', 'templates'];
+    parsed.commands = ['prompts', 'guidelines', 'docs', 'cli', 'templates', 'vscode', 'husky', 'tooling', 'examples'];
     parsed.all = true;
   }
 
@@ -1004,6 +1126,18 @@ async function main(): Promise<void> {
         break;
       case 'templates':
         updateTemplates();
+        break;
+      case 'vscode':
+        updateVscode();
+        break;
+      case 'husky':
+        updateHusky();
+        break;
+      case 'tooling':
+        updateTooling();
+        break;
+      case 'examples':
+        updateExamples();
         break;
     }
   }
