@@ -1,11 +1,11 @@
 /**
- * KATA Framework - UI Auth Setup (UPEX Dojo)
+ * KATA Framework - UI Auth Setup
  *
- * Authenticates via the login page UI and then obtains an API token
- * by calling the /api/auth/login endpoint with the same credentials.
+ * Authenticates via the login page UI and obtains an API token.
  *
- * UPEX Dojo uses NextAuth which handles authentication via cookies.
- * The /api/auth/login endpoint was added to provide JWT tokens for API testing.
+ * Auth Flow Support:
+ * - NextAuth (UPEX Dojo): Uses cookies for session, requires separate API call for JWT
+ * - Supabase/Token-based: Can intercept token from login response via page.waitForResponse()
  *
  * This provides BOTH:
  * - Browser session (storageState) for UI tests
@@ -26,16 +26,19 @@ const storageStateFile = config.auth.storageStatePath;
 const apiStateFile = config.auth.apiStatePath;
 
 /**
- * UI Authentication Setup for UPEX Dojo
+ * UI Authentication Setup
  *
  * 1. Navigates to login page (via LoginPage.goto())
- * 2. Uses LoginPage.loginSuccessfully() ATC (NextAuth handles session)
+ * 2. Uses LoginPage.loginSuccessfully() ATC
  * 3. Saves storageState (cookies) for UI tests
- * 4. Calls /api/auth/login to get JWT token for API calls
+ * 4. Obtains JWT token via API call (for NextAuth apps that don't expose token in login response)
  * 5. Saves api-state (token) for API integration
+ *
+ * Note: For apps that return token in login response (e.g., Supabase),
+ * you can use page.waitForResponse() to intercept the token instead of step 4.
  */
 setup('UI Setup: authenticate via UI', async ({ ui, page, request }) => {
-  console.log('[UI Setup] Starting UI authentication (UPEX Dojo)...');
+  console.log('[UI Setup] Starting UI authentication...');
   console.log('[UI Setup] Target: /login');
 
   // Navigate to login page (outside of ATC)
@@ -47,7 +50,7 @@ setup('UI Setup: authenticate via UI', async ({ ui, page, request }) => {
     password: config.testUser.password,
   };
 
-  // Use LoginPage ATC - NextAuth will set session cookie
+  // Use LoginPage ATC - handles session (cookies/localStorage)
   await ui.login.loginSuccessfully(credentials);
   console.log('[UI Setup] UI login successful');
 
@@ -55,7 +58,9 @@ setup('UI Setup: authenticate via UI', async ({ ui, page, request }) => {
   await page.context().storageState({ path: storageStateFile });
   console.log(`[UI Setup] Storage state saved to ${storageStateFile}`);
 
-  // Now get JWT token via API for API testing within E2E
+  // Obtain JWT token via API for API testing within E2E
+  // Note: NextAuth stores session in cookies, so we need a separate call to get JWT
+  // For token-based auth (Supabase), use page.waitForResponse() instead
   console.log('[UI Setup] Obtaining API token...');
   const tokenResponse = await request.post(`${config.apiUrl}${config.auth.loginEndpoint}`, {
     data: credentials,

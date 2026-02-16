@@ -8,7 +8,7 @@
   // Última actualización: 2025
   // Para más info: https://code.visualstudio.com/docs/getstarted/settings
   // =====================
-  //? File Associations
+  // ? File Associations
   // =====================
   "files.associations": {
     "*.yml": "yaml",
@@ -16,7 +16,7 @@
     "*.env*": "dotenv"
   },
   // =====================
-  //? Files Configuration
+  // ? Files Configuration
   // =====================
   "files.eol": "\n", // Usa LF (Unix) para consistencia entre OS
   "files.autoSave": "onFocusChange", // Auto-guarda al cambiar de archivo
@@ -43,7 +43,7 @@
     "**/.venv/**": true
   },
   // =====================
-  //? Search Configuration
+  // ? Search Configuration
   // =====================
   "search.exclude": {
     "**/node_modules": true,
@@ -59,7 +59,7 @@
     "**/.nyc_output": true
   },
   // =====================
-  //? Editor Settings (Core)
+  // ? Editor Settings (Core)
   // =====================
   "editor.formatOnSave": true, // Formatea automáticamente al guardar
   "editor.formatOnPaste": true, // Formatea al pegar código
@@ -73,7 +73,7 @@
   "editor.wordWrapColumn": 120, // Límite de columna para wrap
   "editor.wrappingIndent": "indent", // Mantiene indentación en líneas wrapped
   // =====================
-  //? Editor - Code Actions & Fixes
+  // ? Editor - Code Actions & Fixes
   // =====================
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit", // Ejecuta fix all de todos los linters
@@ -82,7 +82,7 @@
     "source.fixAll.markdownlint": "explicit" // Markdown lint fixes
   },
   // =====================
-  //? Editor - IntelliSense & Suggestions
+  // ? Editor - IntelliSense & Suggestions
   // =====================
   "editor.quickSuggestions": {
     "other": "on",
@@ -95,7 +95,7 @@
   "editor.snippetSuggestions": "top", // Snippets aparecen primero
   "editor.wordBasedSuggestions": "matchingDocuments",
   // =====================
-  //? Editor - Visual Improvements
+  // ? Editor - Visual Improvements
   // =====================
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": "active",
@@ -111,13 +111,13 @@
   "editor.minimap.renderCharacters": false, // Minimap más rápido
   "editor.minimap.showSlider": "always",
   // =====================
-  //? Editor - Semantic Features
+  // ? Editor - Semantic Features
   // =====================
   "editor.semanticHighlighting.enabled": true,
   "editor.inlineSuggest.enabled": true,
   "editor.linkedEditing": true, // Edita tags HTML/XML relacionados
   // =====================
-  //? Language Specific Settings
+  // ? Language Specific Settings
   // =====================
   // Python
   "[python]": {
@@ -201,7 +201,7 @@
     "editor.formatOnSave": true
   },
   // =====================
-  //? JSON & YAML Settings
+  // ? JSON & YAML Settings
   // =====================
   "json.validate.enable": true,
   "json.format.enable": true,
@@ -210,7 +210,7 @@
   "yaml.format.enable": true,
   "yaml.completion": true,
   // =====================
-  //? Explorer Settings
+  // ? Explorer Settings
   // =====================
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.expand": false,
@@ -227,7 +227,7 @@
   "explorer.confirmDelete": true,
   "explorer.confirmDragAndDrop": true,
   // =====================
-  //? Git Settings
+  // ? Git Settings
   // =====================
   "git.enableSmartCommit": true, // Commit automático de todos los cambios
   "git.autofetch": true, // Fetch automático periódico
@@ -235,7 +235,7 @@
   "git.enableCommitSigning": false, // Cambiar a true si usas GPG signing
   "diffEditor.ignoreTrimWhitespace": false,
   // =====================
-  //? Terminal Settings
+  // ? Terminal Settings
   // =====================
   "terminal.integrated.cursorBlinking": true,
   "terminal.integrated.cursorStyle": "line",
@@ -247,12 +247,12 @@
   "terminal.integrated.enablePersistentSessions": true,
   "terminal.integrated.scrollback": 10000,
   // =====================
-  //? Testing Settings
+  // ? Testing Settings
   // =====================
   "testing.alwaysRevealTestOnStateChange": true,
   "testing.automaticallyOpenPeekView": "failureInVisibleDocument",
   // =====================
-  //? Workbench Settings
+  // ? Workbench Settings
   // =====================
   "workbench.editor.enablePreview": false, // Siempre abre archivos en nueva tab
   "workbench.editor.closeEmptyGroups": true,
@@ -263,13 +263,13 @@
   "workbench.tree.indent": 16,
   "workbench.startupEditor": "welcomePage",
   // =====================
-  //? Breadcrumbs
+  // ? Breadcrumbs
   // =====================
   "breadcrumbs.enabled": true,
   "breadcrumbs.filePath": "on",
   "breadcrumbs.symbolPath": "on",
   // =====================
-  //? Extension Specific Settings
+  // ? Extension Specific Settings
   // =====================
   // ESLint
   "eslint.validate": [
@@ -310,7 +310,7 @@
     }
   ],
   // =====================================================
-  //? Preferencias Visuales Recomendadas (OPCIONALES)
+  // ? Preferencias Visuales Recomendadas (OPCIONALES)
   // =====================================================
   // Estas configuraciones son recomendaciones del autor del proyecto
   // para mejorar la experiencia visual. Puedes removerlas o cambiarlas
@@ -322,7 +322,7 @@
   // Mejora significativamente la visualización de la estructura del proyecto
   "workbench.iconTheme": "material-icon-theme",
   // =====================
-  //? Material Icon Theme Settings (OPCIONAL)
+  // ? Material Icon Theme Settings (OPCIONAL)
   // =====================
   // Configuraciones para mejorar los iconos de archivos/carpetas específicos
   "material-icon-theme.folders.color": "#7cb342",
@@ -339,7 +339,7 @@
     "__tests__": "test"
   },
   // =====================
-  //? Postman Extension
+  // ? Postman Extension
   // =====================
   "postman.settings.dotenv-detection-notification-visibility": false
 }

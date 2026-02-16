@@ -13,7 +13,14 @@
 
 import { validateEnvironment } from './validateEnv';
 
-process.loadEnvFile(); // ? Loads .env file into process.env just in case the Playwright VSCode extension needs it
+// Load .env file into process.env (Playwright VSCode extension needs it)
+// In CI, env vars come from GitHub Secrets, so .env doesn't exist - hence try/catch
+try {
+  process.loadEnvFile();
+}
+catch {
+  // .env file doesn't exist (expected in CI environments)
+}
 // ============================================
 // Environment Type Definitions
 // ============================================
@@ -142,6 +149,7 @@ export const config = {
   // Authentication config (UPEX Dojo endpoints - relative to apiUrl)
   auth: {
     loginEndpoint: '/auth/login',
+    tokenEndpoint: '/auth/login', // Endpoint to intercept for token (used by page.waitForResponse)
     meEndpoint: '/auth/me',
     tokenLifetimeSeconds: 86400, // 24 hours (1 day)
     // Storage paths for authenticated sessions
