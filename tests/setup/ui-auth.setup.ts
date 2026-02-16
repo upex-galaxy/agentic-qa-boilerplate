@@ -1,15 +1,12 @@
 /**
  * KATA Framework - UI Auth Setup
  *
- * Authenticates via the login page UI and obtains an API token.
- *
- * Auth Flow Support:
- * - NextAuth (UPEX Dojo): Uses cookies for session, requires separate API call for JWT
- * - Supabase/Token-based: Can intercept token from login response via page.waitForResponse()
+ * Authenticates via the login page UI and intercepts the JWT token
+ * using page.waitForResponse() - single authentication, no separate API call.
  *
  * This provides BOTH:
  * - Browser session (storageState) for UI tests
- * - API token for API calls within E2E tests
+ * - API token (intercepted) for API calls within E2E tests
  *
  * Dependencies: global-setup
  * Dependents: e2e
@@ -29,15 +26,13 @@ const apiStateFile = config.auth.apiStatePath;
  * UI Authentication Setup
  *
  * 1. Navigates to login page (via LoginPage.goto())
- * 2. Uses LoginPage.loginSuccessfully() ATC
- * 3. Saves storageState (cookies) for UI tests
- * 4. Obtains JWT token via API call (for NextAuth apps that don't expose token in login response)
- * 5. Saves api-state (token) for API integration
- *
- * Note: For apps that return token in login response (e.g., Supabase),
- * you can use page.waitForResponse() to intercept the token instead of step 4.
+ * 2. Sets up response interception BEFORE triggering login
+ * 3. Uses LoginPage.loginSuccessfully() ATC (triggers login + token fetch)
+ * 4. Captures JWT token from intercepted response
+ * 5. Saves storageState (cookies) for UI tests
+ * 6. Saves api-state (token) for API integration
  */
-setup('UI Setup: authenticate via UI', async ({ ui, page, request }) => {
+setup('UI Setup: authenticate via UI', async ({ ui, page }) => {
   console.log('[UI Setup] Starting UI authentication...');
   console.log('[UI Setup] Target: /login');
 
@@ -50,33 +45,27 @@ setup('UI Setup: authenticate via UI', async ({ ui, page, request }) => {
     password: config.testUser.password,
   };
 
-  // Use LoginPage ATC - handles session (cookies/localStorage)
+  // Set up response interception BEFORE triggering login
+  // The login UI calls /api/auth/login after successful NextAuth sign-in
+  const tokenPromise = page.waitForResponse(
+    resp => resp.url().includes(config.auth.tokenEndpoint)
+      && resp.request().method() === 'POST'
+      && resp.status() === 200,
+    { timeout: 30000 },
+  );
+
+  // Use LoginPage ATC - triggers NextAuth sign-in + token fetch
   await ui.login.loginSuccessfully(credentials);
   console.log('[UI Setup] UI login successful');
 
-  // Save storage state (cookies + localStorage) for UI tests
-  await page.context().storageState({ path: storageStateFile });
-  console.log(`[UI Setup] Storage state saved to ${storageStateFile}`);
-
-  // Obtain JWT token via API for API testing within E2E
-  // Note: NextAuth stores session in cookies, so we need a separate call to get JWT
-  // For token-based auth (Supabase), use page.waitForResponse() instead
-  console.log('[UI Setup] Obtaining API token...');
-  const tokenResponse = await request.post(`${config.apiUrl}${config.auth.loginEndpoint}`, {
-    data: credentials,
-  });
-
-  if (!tokenResponse.ok()) {
-    const status = tokenResponse.status();
-    console.error(`[UI Setup] API token request failed: ${status}`);
-    throw new Error(`Failed to obtain API token: ${status}`);
-  }
-
-  const tokenData = (await tokenResponse.json()) as TokenResponse;
+  // Capture JWT token from intercepted response
+  console.log('[UI Setup] Intercepting token from login response...');
+  const response = await tokenPromise;
+  const tokenData = (await response.json()) as TokenResponse;
 
   // Attach to Allure for debugging
   await attachRequestResponseToAllure({
-    url: `${config.apiUrl}${config.auth.loginEndpoint}`,
+    url: response.url(),
     method: 'POST',
     responseBody: tokenData,
     requestBody: { email: credentials.email, password: '***' },
@@ -84,17 +73,21 @@ setup('UI Setup: authenticate via UI', async ({ ui, page, request }) => {
 
   // Verify token was obtained
   if (!tokenData?.access_token) {
-    throw new Error('API token response missing access_token');
+    throw new Error('Token response missing access_token');
   }
 
-  console.log('[UI Setup] API token obtained successfully');
+  console.log('[UI Setup] Token intercepted successfully');
+
+  // Save storage state (cookies + localStorage) for UI tests
+  await page.context().storageState({ path: storageStateFile });
+  console.log(`[UI Setup] Storage state saved to ${storageStateFile}`);
 
   // Save the token for API calls within E2E tests
   const apiState: ApiState = {
     token: tokenData.access_token,
     tokenType: tokenData.token_type,
     expiresIn: tokenData.expires_in,
-    refreshToken: null,
+    refreshToken: tokenData.refresh_token ?? null,
     source: 'ui-login',
     createdAt: new Date().toISOString(),
   };
