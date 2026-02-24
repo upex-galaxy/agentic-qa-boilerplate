@@ -18,7 +18,7 @@ export default antfu({
     'allure-results',
     'allure-report',
     'reports',
-    'cli/*.js',
+    'cli/legacy/**',
     '*.min.js',
     // Documentation files (contain code examples that shouldn't be linted)
     '**/*.md',

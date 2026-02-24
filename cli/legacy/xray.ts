@@ -115,6 +115,23 @@
  *
  *   plan list               List test plans
  *
+ * TEST SETS:
+ *   set create              Create a test set
+ *     --project <key>       Project key (required)
+ *     --summary <text>      Test set summary (required)
+ *     --description <text>  Description
+ *     --tests <id1,id2>     Test issue IDs to include
+ *
+ *   set get <id>            Get test set details with tests
+ *   set list                List test sets
+ *   set add-tests           Add tests to a test set
+ *     --set <id>            Test set issue ID
+ *     --tests <id1,id2>     Test issue IDs to add
+ *
+ *   set remove-tests        Remove tests from a test set
+ *     --set <id>            Test set issue ID
+ *     --tests <id1,id2>     Test issue IDs to remove
+ *
  * IMPORT RESULTS:
  *   import junit            Import JUnit XML results
  *     --file <path>         XML file path (required)
@@ -140,6 +157,7 @@
  *     --file <path>         Backup file path (required)
  *     --project <key>       Target project key (required)
  *     --dry-run             Preview changes without making them
+ *     --sync                Update existing tests instead of creating duplicates
  *     --map-keys <file>     CSV file with old_key,new_key mappings
  *
  * ============================================================================
@@ -181,6 +199,9 @@
  *
  * # Backup project data before migration
  * bun xray.ts backup export --project OLD_PROJ --include-runs --output backup.json
+ *
+ * # Backup only tests with actual Xray data (excludes tests without steps/gherkin/definition)
+ * bun xray.ts backup export --project OLD_PROJ --only-with-data --include-runs --output backup.json
  *
  * # Restore to new project (preview first)
  * bun xray.ts backup restore --file backup.json --project NEW_PROJ --dry-run
@@ -233,10 +254,12 @@
  *   3. Xray automatically creates execution and updates test statuses
  *
  * WORKFLOW 3: Project Migration / Backup
- *   1. Export: bun xray.ts backup export --project OLD --include-runs --output backup.json
- *   2. Preview: bun xray.ts backup restore --file backup.json --project NEW --dry-run
- *   3. Restore: bun xray.ts backup restore --file backup.json --project NEW
+ *   1. Export: bun xray.ts backup export --project OLD --include-runs --only-with-data --output backup.json
+ *   2. Preview: bun xray.ts backup restore --file backup.json --project NEW --dry-run --sync
+ *   3. Restore: bun xray.ts backup restore --file backup.json --project NEW --sync
  *   4. Key mapping saved to: key-mapping-NEW-<timestamp>.csv
+ *
+ *   Note: --sync mode will automatically change test types (Manual→Cucumber/Generic) if needed
  *
  * ============================================================================
  * CONFIG FILES
@@ -291,6 +314,10 @@ interface Config {
   client_id: string
   client_secret: string
   default_project?: string
+  // Jira REST API credentials (optional, for sync features)
+  jira_base_url?: string
+  jira_email?: string
+  jira_api_token?: string
 }
 
 interface TokenData {
@@ -314,7 +341,7 @@ interface JiraFields {
   key?: string
   summary?: string
   description?: string
-  status?: string
+  status?: string | { name: string }
   labels?: string[]
 }
 
@@ -630,6 +657,154 @@ async function restApi<T = any>(
 }
 
 // ============================================================================
+// JIRA REST API CLIENT (for looking up issue IDs)
+// ============================================================================
+
+interface JiraIssue {
+  id: string
+  key: string
+  fields?: {
+    issuetype?: { name: string }
+  }
+}
+
+/**
+ * Look up a Jira issue by key to get its numeric ID
+ * Requires Jira credentials configured via auth login --jira-*
+ */
+async function getJiraIssueId(key: string): Promise<string | null> {
+  const config = loadConfig();
+
+  // Check for Jira credentials in config or env vars
+  const baseUrl = config?.jira_base_url || process.env.JIRA_BASE_URL;
+  const email = config?.jira_email || process.env.JIRA_EMAIL;
+  const token = config?.jira_api_token || process.env.JIRA_API_TOKEN;
+
+  if (!baseUrl || !email || !token) {
+    return null; // Jira not configured
+  }
+
+  try {
+    const auth = Buffer.from(`${email}:${token}`).toString('base64');
+    const response = await fetch(`${baseUrl}/rest/api/3/issue/${key}?fields=issuetype`, {
+      headers: {
+        Authorization: `Basic ${auth}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const issue = (await response.json()) as JiraIssue;
+    return issue.id;
+  }
+  catch {
+    return null;
+  }
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+interface ExistingTest {
+  issueId: string
+  key: string
+  testType: string
+  hasSteps: boolean
+  fromXray: boolean // true if found via Xray, false if assuming from key
+}
+
+/**
+ * Check if a test exists by key and return its details
+ * First tries Xray GraphQL, then Jira REST API, then assumes the issue exists
+ */
+async function findTestByKey(key: string, assumeExists = false): Promise<ExistingTest | null> {
+  try {
+    const result = await graphql<{ getTests: { results: Array<{
+      issueId: string
+      testType: { name: string }
+      steps?: Array<{ id: string }>
+      jira: { key: string }
+    }> } }>(QUERIES.getTest, { jql: `key = ${key}` });
+
+    if (result.getTests.results && result.getTests.results.length > 0) {
+      const test = result.getTests.results[0];
+      return {
+        issueId: test.issueId,
+        key: test.jira.key || key,
+        testType: test.testType.name,
+        hasSteps: (test.steps?.length || 0) > 0,
+        fromXray: true,
+      };
+    }
+
+    // If not found via Xray but assumeExists is true, try Jira REST API
+    if (assumeExists) {
+      // Try to get the numeric issueId from Jira REST API
+      const jiraIssueId = await getJiraIssueId(key);
+
+      if (jiraIssueId) {
+        return {
+          issueId: jiraIssueId, // Use numeric ID from Jira
+          key,
+          testType: 'Unknown',
+          hasSteps: false,
+          fromXray: false,
+        };
+      }
+
+      // Last resort: use key as issueId (may not work for all mutations)
+      return {
+        issueId: key,
+        key,
+        testType: 'Unknown',
+        hasSteps: false,
+        fromXray: false,
+      };
+    }
+
+    return null;
+  }
+  catch {
+    // On error, if assumeExists, try Jira then fall back to key
+    if (assumeExists) {
+      const jiraIssueId = await getJiraIssueId(key);
+      return {
+        issueId: jiraIssueId || key,
+        key,
+        testType: 'Unknown',
+        hasSteps: false,
+        fromXray: false,
+      };
+    }
+    return null;
+  }
+}
+
+/**
+ * Sync steps to an existing test (delete old steps, add new ones)
+ */
+async function syncTestSteps(
+  issueId: string,
+  steps: Array<{ action: string, data?: string, result?: string }>,
+): Promise<void> {
+  // Add each step
+  for (const step of steps) {
+    await graphql(MUTATIONS.addTestStep, {
+      issueId,
+      step: {
+        action: step.action,
+        data: step.data || '',
+        result: step.result || '',
+      },
+    });
+  }
+}
+
+// ============================================================================
 // ARGUMENT PARSER
 // ============================================================================
 
@@ -711,13 +886,15 @@ function getFlag(
 const QUERIES = {
   // Get a single test by issue ID or key
   getTest: `
-    query GetTest($issueId: String, $jql: String) {
+    query GetTest($jql: String!) {
       getTests(jql: $jql, limit: 1) {
         results {
           issueId
           projectId
           testType { name }
           steps { id action data result }
+          gherkin
+          unstructured
           preconditions(limit: 10) { results { issueId jira(fields: ["key", "summary"]) } }
           jira(fields: ["key", "summary", "description", "status", "labels"])
         }
@@ -727,7 +904,7 @@ const QUERIES = {
 
   // List tests with optional JQL filter
   getTests: `
-    query GetTests($jql: String, $limit: Int) {
+    query GetTests($jql: String, $limit: Int!) {
       getTests(jql: $jql, limit: $limit) {
         total
         results {
@@ -794,7 +971,7 @@ const QUERIES = {
 
   // List test executions
   getTestExecutions: `
-    query GetTestExecutions($jql: String, $limit: Int) {
+    query GetTestExecutions($jql: String, $limit: Int!) {
       getTestExecutions(jql: $jql, limit: $limit) {
         total
         results {
@@ -807,7 +984,7 @@ const QUERIES = {
 
   // Get test plans
   getTestPlans: `
-    query GetTestPlans($jql: String, $limit: Int) {
+    query GetTestPlans($jql: String, $limit: Int!) {
       getTestPlans(jql: $jql, limit: $limit) {
         total
         results {
@@ -818,9 +995,40 @@ const QUERIES = {
     }
   `,
 
+  // Get test sets
+  getTestSets: `
+    query GetTestSets($jql: String, $limit: Int!) {
+      getTestSets(jql: $jql, limit: $limit) {
+        total
+        results {
+          issueId
+          jira(fields: ["key", "summary", "status"])
+        }
+      }
+    }
+  `,
+
+  // Get single test set with tests
+  getTestSet: `
+    query GetTestSet($issueId: String!) {
+      getTestSet(issueId: $issueId) {
+        issueId
+        jira(fields: ["key", "summary", "status", "description"])
+        tests(limit: 100) {
+          total
+          results {
+            issueId
+            testType { name }
+            jira(fields: ["key", "summary"])
+          }
+        }
+      }
+    }
+  `,
+
   // Get tests with full data for backup
   getTestsFullData: `
-    query GetTestsFullData($jql: String, $limit: Int, $start: Int) {
+    query GetTestsFullData($jql: String, $limit: Int!, $start: Int!) {
       getTests(jql: $jql, limit: $limit, start: $start) {
         total
         start
@@ -840,7 +1048,7 @@ const QUERIES = {
 
   // Get test executions with test runs for backup
   getExecutionsFullData: `
-    query GetExecutionsFullData($jql: String, $limit: Int) {
+    query GetExecutionsFullData($jql: String, $limit: Int!) {
       getTestExecutions(jql: $jql, limit: $limit) {
         total
         results {
@@ -873,8 +1081,8 @@ const MUTATIONS = {
   // Create a new test
   createTest: `
     mutation CreateTest(
-      $testType: TestTypeInput!,
-      $steps: [StepInput],
+      $testType: UpdateTestTypeInput!,
+      $steps: [CreateStepInput],
       $unstructured: String,
       $gherkin: String,
       $projectKey: String!,
@@ -910,7 +1118,7 @@ const MUTATIONS = {
 
   // Add a step to existing test
   addTestStep: `
-    mutation AddTestStep($issueId: String!, $step: StepInput!) {
+    mutation AddTestStep($issueId: String!, $step: CreateStepInput!) {
       addTestStep(issueId: $issueId, step: $step) {
         id
         action
@@ -922,8 +1130,8 @@ const MUTATIONS = {
 
   // Update test step
   updateTestStep: `
-    mutation UpdateTestStep($issueId: String!, $stepId: String!, $step: StepInput!) {
-      updateTestStep(issueId: $issueId, stepId: $stepId, step: $step) {
+    mutation UpdateTestStep($stepId: String!, $step: UpdateStepInput!) {
+      updateTestStep(stepId: $stepId, step: $step) {
         id
         action
         data
@@ -936,6 +1144,39 @@ const MUTATIONS = {
   deleteTestStep: `
     mutation DeleteTestStep($issueId: String!, $stepId: String!) {
       deleteTestStep(issueId: $issueId, stepId: $stepId)
+    }
+  `,
+
+  // Update Gherkin Test Definition (Cucumber tests)
+  updateGherkinTestDefinition: `
+    mutation UpdateGherkinTestDefinition($issueId: String!, $gherkin: String!) {
+      updateGherkinTestDefinition(issueId: $issueId, gherkin: $gherkin) {
+        issueId
+        gherkin
+      }
+    }
+  `,
+
+  // Update Unstructured Test Definition (Generic tests)
+  updateUnstructuredTestDefinition: `
+    mutation UpdateUnstructuredTestDefinition($issueId: String!, $unstructured: String!) {
+      updateUnstructuredTestDefinition(issueId: $issueId, unstructured: $unstructured) {
+        issueId
+        unstructured
+      }
+    }
+  `,
+
+  // Update Test Type (Manual, Cucumber, Generic)
+  updateTestType: `
+    mutation UpdateTestType($issueId: String!, $testType: UpdateTestTypeInput!) {
+      updateTestType(issueId: $issueId, testType: $testType) {
+        issueId
+        testType {
+          name
+          kind
+        }
+      }
     }
   `,
 
@@ -1045,6 +1286,53 @@ const MUTATIONS = {
       }
     }
   `,
+
+  // Create test set
+  createTestSet: `
+    mutation CreateTestSet(
+      $projectKey: String!,
+      $summary: String!,
+      $description: String,
+      $testIssueIds: [String]
+    ) {
+      createTestSet(
+        testIssueIds: $testIssueIds,
+        jira: {
+          fields: {
+            summary: $summary,
+            description: $description,
+            project: { key: $projectKey }
+          }
+        }
+      ) {
+        testSet {
+          issueId
+          jira(fields: ["key", "summary"])
+        }
+        warnings
+      }
+    }
+  `,
+
+  // Add tests to test set
+  addTestsToTestSet: `
+    mutation AddTestsToTestSet($issueId: String!, $testIssueIds: [String!]!) {
+      addTestsToTestSet(issueId: $issueId, testIssueIds: $testIssueIds) {
+        addedTests
+        warning
+      }
+    }
+  `,
+
+  // Remove tests from test set
+  removeTestsFromTestSet: `
+    mutation RemoveTestsFromTestSet($issueId: String!, $testIssueIds: [String!]!) {
+      removeTestsFromTestSet(issueId: $issueId, testIssueIds: $testIssueIds) {
+        removedTests
+        warning
+      }
+    }
+  `,
 };
 
 // ============================================================================
@@ -1060,6 +1348,11 @@ async function cmdAuthLogin(flags: Record<string, string | boolean>): Promise<vo
   const clientSecret = getFlag(flags, 'client-secret') || process.env.XRAY_CLIENT_SECRET;
   const defaultProject = getFlag(flags, 'project');
 
+  // Optional Jira credentials for sync features
+  const jiraBaseUrl = getFlag(flags, 'jira-url') || process.env.JIRA_BASE_URL;
+  const jiraEmail = getFlag(flags, 'jira-email') || process.env.JIRA_EMAIL;
+  const jiraApiToken = getFlag(flags, 'jira-token') || process.env.JIRA_API_TOKEN;
+
   if (!clientId || !clientSecret) {
     log.error('Missing credentials. Provide them via flags or environment variables:');
     console.log(`
@@ -1072,6 +1365,11 @@ async function cmdAuthLogin(flags: Record<string, string | boolean>): Promise<vo
     xray auth login
 
   Get your API keys from: Jira → Apps → Xray → Settings → API Keys
+
+  Optional Jira credentials (for backup restore --sync):
+    --jira-url <url>       Jira base URL (e.g., https://company.atlassian.net)
+    --jira-email <email>   Jira account email
+    --jira-token <token>   Jira API token (from id.atlassian.com)
 `);
     throw new Error('Client ID and Client Secret are required');
   }
@@ -1079,17 +1377,23 @@ async function cmdAuthLogin(flags: Record<string, string | boolean>): Promise<vo
   log.dim('Authenticating with Xray...');
   const token = await authenticate(clientId, clientSecret);
 
-  // Save config
+  // Save config (including optional Jira credentials)
   saveConfig({
     client_id: clientId,
     client_secret: clientSecret,
     default_project: defaultProject,
+    jira_base_url: jiraBaseUrl,
+    jira_email: jiraEmail,
+    jira_api_token: jiraApiToken,
   });
 
   // Save token
   saveToken(token);
 
   log.success('Successfully logged in to Xray Cloud');
+  if (jiraBaseUrl && jiraEmail && jiraApiToken) {
+    log.success('Jira REST API credentials saved (for sync features)');
+  }
   log.dim(`Config saved to: ${CONFIG_FILE}`);
 }
 
@@ -1219,7 +1523,8 @@ async function cmdTestGet(
   log.title(`Test: ${test.jira.key}`);
   console.log(`Summary: ${test.jira.summary}`);
   console.log(`Type: ${test.testType.name}`);
-  console.log(`Status: ${test.jira.status}`);
+  const testStatus = typeof test.jira.status === 'object' && test.jira.status !== null ? test.jira.status.name : (test.jira.status || 'Unknown');
+  console.log(`Status: ${testStatus}`);
   console.log(`Issue ID: ${test.issueId}`);
 
   if (test.jira.labels && test.jira.labels.length > 0) {
@@ -1237,6 +1542,16 @@ async function cmdTestGet(
         console.log(`     Expected: ${s.result}`);
       }
     });
+  }
+
+  if (test.gherkin) {
+    console.log('\nGherkin:');
+    console.log(`  ${test.gherkin.split('\n').join('\n  ')}`);
+  }
+
+  if (test.unstructured) {
+    console.log('\nDefinition:');
+    console.log(`  ${test.unstructured}`);
   }
 
   if (test.preconditions?.results?.length > 0) {
@@ -1265,7 +1580,8 @@ async function cmdTestList(flags: Record<string, string | boolean>): Promise<voi
   }
 
   result.getTests.results.forEach((t: TestResult) => {
-    const status = t.jira.status || 'Unknown';
+    const rawStatus = t.jira.status;
+    const status = typeof rawStatus === 'object' && rawStatus !== null ? rawStatus.name : (rawStatus || 'Unknown');
     console.log(`${t.jira.key}  [${t.testType.name}]  ${status}  ${t.jira.summary}`);
   });
 }
@@ -1330,7 +1646,8 @@ async function cmdExecGet(
 
   log.title(`Test Execution: ${exec.jira.key}`);
   console.log(`Summary: ${exec.jira.summary}`);
-  console.log(`Status: ${exec.jira.status}`);
+  const execStatus = typeof exec.jira.status === 'object' && exec.jira.status !== null ? exec.jira.status.name : (exec.jira.status || 'Unknown');
+  console.log(`Status: ${execStatus}`);
   console.log(`Tests: ${exec.tests.total}`);
   console.log(`Test Runs: ${exec.testRuns.total}`);
 
@@ -1363,7 +1680,8 @@ async function cmdExecList(flags: Record<string, string | boolean>): Promise<voi
   }
 
   result.getTestExecutions.results.forEach((e: TestExecutionResult) => {
-    console.log(`${e.jira.key}  ${e.jira.status}  ${e.jira.summary}`);
+    const eStatus = typeof e.jira.status === 'object' && e.jira.status !== null ? e.jira.status.name : (e.jira.status || 'Unknown');
+    console.log(`${e.jira.key}  ${eStatus}  ${e.jira.summary}`);
   });
 }
 
@@ -1417,6 +1735,7 @@ async function cmdRunGet(
       const statusIcon
         = s.status?.name === 'PASSED' ? '✔' : s.status?.name === 'FAILED' ? '✖' : '○';
       console.log(`  ${statusIcon} ${i + 1}. ${s.action} [${s.status?.name || 'TODO'}]`);
+      console.log(`     ID: ${s.id}`);
     });
   }
 }
@@ -1514,8 +1833,124 @@ async function cmdPlanList(flags: Record<string, string | boolean>): Promise<voi
   }
 
   result.getTestPlans.results.forEach((p: TestPlanResult) => {
-    console.log(`${p.jira.key}  ${p.jira.status}  ${p.jira.summary}`);
+    const pStatus = typeof p.jira.status === 'object' && p.jira.status !== null ? p.jira.status.name : (p.jira.status || 'Unknown');
+    console.log(`${p.jira.key}  ${pStatus}  ${p.jira.summary}`);
   });
+}
+
+// --- TEST SET COMMANDS ---
+
+async function cmdSetCreate(flags: Record<string, string | boolean>): Promise<void> {
+  const config = loadConfig();
+  const projectKey = requireFlag(flags, 'project') || config?.default_project;
+  const summary = requireFlag(flags, 'summary');
+  const description = getFlag(flags, 'description');
+  const testsStr = getFlag(flags, 'tests');
+  const testIssueIds = testsStr ? testsStr.split(',').map(t => t.trim()) : [];
+
+  log.dim(`Creating Test Set in project ${projectKey}...`);
+
+  const result = await graphql(MUTATIONS.createTestSet, {
+    projectKey,
+    summary,
+    description,
+    testIssueIds,
+  });
+
+  const testSet = result.createTestSet.testSet;
+  log.success(`Test Set created: ${testSet.jira.key}`);
+  console.log(`  Summary: ${testSet.jira.summary}`);
+  console.log(`  Issue ID: ${testSet.issueId}`);
+
+  if (result.createTestSet.warnings?.length > 0) {
+    log.warn('Warnings:');
+    result.createTestSet.warnings.forEach((w: string) => console.log(`  - ${w}`));
+  }
+}
+
+async function cmdSetGet(
+  flags: Record<string, string | boolean>,
+  positional: string[],
+): Promise<void> {
+  const issueId = positional[0] || requireFlag(flags, 'id');
+
+  const result = await graphql(QUERIES.getTestSet, { issueId });
+  const testSet = result.getTestSet;
+
+  log.title(`Test Set: ${testSet.jira.key}`);
+  console.log(`Summary: ${testSet.jira.summary}`);
+  const setStatus = typeof testSet.jira.status === 'object' && testSet.jira.status !== null ? testSet.jira.status.name : (testSet.jira.status || 'Unknown');
+  console.log(`Status: ${setStatus}`);
+  console.log(`Issue ID: ${testSet.issueId}`);
+  console.log(`Tests: ${testSet.tests.total}`);
+
+  if (testSet.tests.results.length > 0) {
+    console.log('\nIncluded Tests:');
+    testSet.tests.results.forEach((t: TestResult) => {
+      console.log(`  ${t.jira.key}  [${t.testType.name}]  ${t.jira.summary}`);
+    });
+  }
+}
+
+async function cmdSetList(flags: Record<string, string | boolean>): Promise<void> {
+  const config = loadConfig();
+  const project = getFlag(flags, 'project') || config?.default_project;
+  const limit = Number.parseInt(getFlag(flags, 'limit', '20') || '20', 10);
+  const jql
+    = getFlag(flags, 'jql')
+      || (project ? `project = ${project} AND issuetype = "Test Set"` : 'issuetype = "Test Set"');
+
+  const result = await graphql(QUERIES.getTestSets, { jql, limit });
+
+  log.title(`Test Sets (${result.getTestSets.total} total)`);
+
+  if (result.getTestSets.results.length === 0) {
+    log.warn('No test sets found');
+    return;
+  }
+
+  result.getTestSets.results.forEach((s: TestPlanResult) => {
+    const sStatus = typeof s.jira.status === 'object' && s.jira.status !== null ? s.jira.status.name : (s.jira.status || 'Unknown');
+    console.log(`${s.jira.key}  ${sStatus}  ${s.jira.summary}`);
+  });
+}
+
+async function cmdSetAddTests(flags: Record<string, string | boolean>): Promise<void> {
+  const issueId = requireFlag(flags, 'set');
+  const testsStr = requireFlag(flags, 'tests');
+  const testIssueIds = testsStr.split(',').map(t => t.trim());
+
+  log.dim(`Adding ${testIssueIds.length} tests to test set...`);
+
+  const result = await graphql(MUTATIONS.addTestsToTestSet, {
+    issueId,
+    testIssueIds,
+  });
+
+  log.success(`Added ${result.addTestsToTestSet.addedTests.length} tests`);
+
+  if (result.addTestsToTestSet.warning) {
+    log.warn(result.addTestsToTestSet.warning);
+  }
+}
+
+async function cmdSetRemoveTests(flags: Record<string, string | boolean>): Promise<void> {
+  const issueId = requireFlag(flags, 'set');
+  const testsStr = requireFlag(flags, 'tests');
+  const testIssueIds = testsStr.split(',').map(t => t.trim());
+
+  log.dim(`Removing ${testIssueIds.length} tests from test set...`);
+
+  const result = await graphql(MUTATIONS.removeTestsFromTestSet, {
+    issueId,
+    testIssueIds,
+  });
+
+  log.success(`Removed ${result.removeTestsFromTestSet.removedTests.length} tests`);
+
+  if (result.removeTestsFromTestSet.warning) {
+    log.warn(result.removeTestsFromTestSet.warning);
+  }
 }
 
 // --- IMPORT COMMANDS ---
@@ -1633,9 +2068,13 @@ async function cmdBackupExport(flags: Record<string, string | boolean>): Promise
   }
   const output = getFlag(flags, 'output') || `xray-backup-${project}-${Date.now()}.json`;
   const includeRuns = flags['include-runs'] === true || flags['include-runs'] === 'true';
+  const onlyWithData = flags['only-with-data'] === true || flags['only-with-data'] === 'true';
   const limit = Number.parseInt(getFlag(flags, 'limit', '100') || '100', 10);
 
   log.title(`Xray Backup Export - Project: ${project}`);
+  if (onlyWithData) {
+    log.info('Only exporting tests with Xray data (steps, gherkin, or definition)');
+  }
 
   // Step 1: Fetch all tests with full data
   log.dim('Fetching tests...');
@@ -1665,18 +2104,27 @@ async function cmdBackupExport(flags: Record<string, string | boolean>): Promise
       };
 
       // Add type-specific data
+      let hasXrayData = false;
       if (testType === 'Manual' && t.steps?.length > 0) {
         backupTest.steps = t.steps.map((s: TestStepResponse) => ({
           action: s.action || '',
           data: s.data || undefined,
           result: s.result || undefined,
         }));
+        hasXrayData = true;
       }
       else if (testType === 'Cucumber' && t.gherkin) {
         backupTest.gherkin = t.gherkin;
+        hasXrayData = true;
       }
       else if (testType === 'Generic' && t.unstructured) {
         backupTest.unstructured = t.unstructured;
+        hasXrayData = true;
+      }
+
+      // Skip tests without Xray data if --only-with-data flag is set
+      if (onlyWithData && !hasXrayData) {
+        continue;
       }
 
       testsData.push(backupTest);
@@ -1686,7 +2134,12 @@ async function cmdBackupExport(flags: Record<string, string | boolean>): Promise
     log.dim(`  Fetched ${Math.min(start, totalTests)}/${totalTests} tests...`);
   } while (start < totalTests);
 
-  log.success(`Exported ${testsData.length} tests`);
+  if (onlyWithData && testsData.length < totalTests) {
+    log.success(`Exported ${testsData.length}/${totalTests} tests (${totalTests - testsData.length} skipped - no Xray data)`);
+  }
+  else {
+    log.success(`Exported ${testsData.length} tests`);
+  }
 
   // Step 2: Fetch executions with runs (if requested)
   const executionsData: BackupExecution[] = [];
@@ -1764,6 +2217,7 @@ async function cmdBackupRestore(flags: Record<string, string | boolean>): Promis
   const file = requireFlag(flags, 'file');
   const targetProject = requireFlag(flags, 'project');
   const dryRun = flags['dry-run'] === true;
+  const syncMode = flags.sync === true;
   const mapKeysFile = getFlag(flags, 'map-keys');
 
   if (!existsSync(file)) {
@@ -1784,6 +2238,9 @@ async function cmdBackupRestore(flags: Record<string, string | boolean>): Promis
   if (dryRun) {
     log.warn('DRY RUN MODE - No changes will be made');
   }
+  if (syncMode) {
+    log.info('SYNC MODE - Will update existing tests instead of creating duplicates');
+  }
 
   // Load key mapping if provided
   const keyMap: Map<string, string> = new Map();
@@ -1801,18 +2258,96 @@ async function cmdBackupRestore(flags: Record<string, string | boolean>): Promis
 
   // Restore tests
   let testsCreated = 0;
-  const testsSkipped = 0;
+  let testsUpdated = 0;
+  let testsSkipped = 0;
   let testsFailed = 0;
 
   console.log('\nRestoring tests...');
 
   for (const test of backup.tests) {
-    // Check if we already have a mapping for this key (skip if exists)
+    // Check if we already have a mapping for this key (skip if exists in map)
     if (keyMap.has(test.originalKey)) {
       log.dim(`  Skipping ${test.originalKey} (already mapped)`);
+      testsSkipped++;
       continue;
     }
 
+    // In sync mode, check if test already exists in Xray (or assume it exists in Jira)
+    if (syncMode) {
+      // Pass assumeExists=true to use key as issueId when Xray doesn't have the test indexed
+      const existingTest = await findTestByKey(test.originalKey, true);
+
+      if (existingTest) {
+        const source = existingTest.fromXray ? 'Xray' : 'Jira (assumed)';
+
+        if (dryRun) {
+          console.log(`  [DRY] Would sync: ${test.originalKey} (${test.testType}) - found via ${source}`);
+          testsUpdated++;
+          continue;
+        }
+
+        try {
+          // Check if we need to update test type first (important after Xray reinstall)
+          // This is needed when:
+          // 1. Current type is Manual but backup has Cucumber/Generic data
+          // 2. Current type is Unknown (from Jira REST) and backup has Cucumber/Generic data
+          const hasXrayData = (test.testType === 'Cucumber' && test.gherkin)
+            || (test.testType === 'Generic' && test.unstructured);
+          const needsTypeChange = hasXrayData
+            && existingTest.testType !== test.testType
+            && (existingTest.testType === 'Manual' || existingTest.testType === 'Unknown');
+
+          if (needsTypeChange) {
+            log.dim(`  Changing test type: ${existingTest.testType || 'Manual'} → ${test.testType}`);
+            await graphql(MUTATIONS.updateTestType, {
+              issueId: existingTest.issueId,
+              testType: { name: test.testType },
+            });
+          }
+
+          // Update Xray-specific data based on test type
+          if (test.testType === 'Manual' && test.steps && test.steps.length > 0) {
+            // Only add steps if test doesn't have any (avoid duplicates)
+            // If fromXray is false, we assume no steps exist yet
+            if (!existingTest.hasSteps || !existingTest.fromXray) {
+              await syncTestSteps(existingTest.issueId, test.steps);
+              log.success(`Synced steps: ${test.originalKey} (${test.steps.length} steps added)`);
+            }
+            else {
+              log.dim(`  Skipping steps for ${test.originalKey} (already has steps)`);
+            }
+          }
+          else if (test.testType === 'Cucumber' && test.gherkin) {
+            await graphql(MUTATIONS.updateGherkinTestDefinition, {
+              issueId: existingTest.issueId,
+              gherkin: test.gherkin,
+            });
+            log.success(`Synced gherkin: ${test.originalKey}`);
+          }
+          else if (test.testType === 'Generic' && test.unstructured) {
+            await graphql(MUTATIONS.updateUnstructuredTestDefinition, {
+              issueId: existingTest.issueId,
+              unstructured: test.unstructured,
+            });
+            log.success(`Synced definition: ${test.originalKey}`);
+          }
+          else {
+            log.dim(`  No Xray data to sync for ${test.originalKey}`);
+          }
+
+          keyMap.set(test.originalKey, existingTest.key);
+          testsUpdated++;
+        }
+        catch (error) {
+          const errMsg = error instanceof Error ? error.message : String(error);
+          log.error(`Failed to sync ${test.originalKey}: ${errMsg}`);
+          testsFailed++;
+        }
+        continue;
+      }
+    }
+
+    // Create new test (normal mode or test not found in sync mode)
     if (dryRun) {
       console.log(`  [DRY] Would create: ${test.summary} (${test.testType})`);
       testsCreated++;
@@ -1912,6 +2447,7 @@ async function cmdBackupRestore(flags: Record<string, string | boolean>): Promis
   console.log(`\n${'='.repeat(50)}`);
   log.title('Restore Summary');
   console.log(`  Tests created: ${testsCreated}`);
+  console.log(`  Tests updated: ${testsUpdated}`);
   console.log(`  Tests skipped: ${testsSkipped}`);
   console.log(`  Tests failed: ${testsFailed}`);
   if (backup.executions.length > 0) {
@@ -2013,6 +2549,23 @@ ${colors.bold}TEST PLANS${colors.reset}
 
   plan list          List test plans
 
+${colors.bold}TEST SETS${colors.reset}
+  set create     Create a test set
+                 --project <key>        Project key (required)
+                 --summary <text>       Summary (required)
+                 --description <text>   Description
+                 --tests <id1,id2>      Test issue IDs to include
+
+  set get <id>       Get test set details with included tests
+  set list           List test sets
+  set add-tests      Add tests to a test set
+                     --set <id>         Test set issue ID
+                     --tests <id1,id2>  Test issue IDs to add
+
+  set remove-tests   Remove tests from a test set
+                     --set <id>         Test set issue ID
+                     --tests <id1,id2>  Test issue IDs to remove
+
 ${colors.bold}IMPORT RESULTS${colors.reset}
   import junit       Import JUnit XML results
                      --file <path>      XML file path (required)
@@ -2032,12 +2585,14 @@ ${colors.bold}BACKUP & RESTORE${colors.reset}
                      --project <key>    Project key (required)
                      --output <file>    Output file path (default: xray-backup-<project>-<timestamp>.json)
                      --include-runs     Include test execution runs and statuses
+                     --only-with-data   Only export tests that have Xray data (steps, gherkin, definition)
                      --limit <n>        Batch size for fetching (default: 100)
 
   backup restore     Restore Xray data to a project
                      --file <path>      Backup file path (required)
                      --project <key>    Target project key (required)
                      --dry-run          Preview changes without making them
+                     --sync             Update existing tests instead of creating duplicates
                      --map-keys <file>  CSV file with old_key,new_key mappings
 
 ${colors.bold}EXAMPLES${colors.reset}
@@ -2055,8 +2610,11 @@ ${colors.bold}EXAMPLES${colors.reset}
   # Import JUnit results
   xray import junit --file results.xml --project DEMO
 
-  # Backup project data
+  # Backup project data (all tests)
   xray backup export --project DEMO --output demo-backup.json --include-runs
+
+  # Backup only tests with Xray data (excludes empty tests)
+  xray backup export --project DEMO --only-with-data --include-runs
 
   # Restore to a new project (dry run first)
   xray backup restore --file demo-backup.json --project NEW_PROJ --dry-run
@@ -2184,6 +2742,30 @@ async function main(): Promise<void> {
           default:
             log.error(`Unknown plan command: ${subcommand}`);
             log.info('Available: create, list');
+        }
+        break;
+
+      case 'set':
+      case 'testset':
+        switch (subcommand) {
+          case 'create':
+            await cmdSetCreate(flags);
+            break;
+          case 'get':
+            await cmdSetGet(flags, positional);
+            break;
+          case 'list':
+            await cmdSetList(flags);
+            break;
+          case 'add-tests':
+            await cmdSetAddTests(flags);
+            break;
+          case 'remove-tests':
+            await cmdSetRemoveTests(flags);
+            break;
+          default:
+            log.error(`Unknown set command: ${subcommand}`);
+            log.info('Available: create, get, list, add-tests, remove-tests');
         }
         break;
 

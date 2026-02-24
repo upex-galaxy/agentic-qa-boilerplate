@@ -54,7 +54,8 @@
     "kata:manifest:watch": "bun run scripts/kata-manifest.ts --watch",
     "update": "bun run cli/update-boilerplate.ts",
     "resend": "bun run cli/resend.ts",
-    "xray": "bun run cli/xray.ts",
+    "xray": "bun run cli/xray/index.ts",
+    "xray:skills": "cp -r cli/xray/skills/ .claude/skills/xray-cli/",
     "pw:install": "playwright install --with-deps chromium",
     "prepare": "husky"
   },
