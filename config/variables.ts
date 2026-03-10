@@ -11,8 +11,6 @@
  *   import { config, env } from '@variables';
  */
 
-import { validateEnvironment } from './validateEnv';
-
 // Load .env file into process.env (Playwright VSCode extension needs it)
 // In CI, env vars come from GitHub Secrets, so .env doesn't exist - hence try/catch
 try {
@@ -67,26 +65,6 @@ const {
   SCREENSHOT_ON_FAILURE = 'true', // Used: config.reporting.screenshotOnFailure (playwright.config)
   VIDEO_ON_FAILURE = 'true', // Used: config.reporting.videoOnFailure (playwright.config, CI only)
 } = process.env;
-
-// ============================================
-// Environment Validation (Fail Fast)
-// ============================================
-// Pass pre-extracted vars to avoid multiple process.env reads
-
-validateEnvironment({
-  TEST_ENV,
-  AUTO_SYNC,
-  TMS_PROVIDER,
-  LOCAL_USER_EMAIL,
-  LOCAL_USER_PASSWORD,
-  STAGING_USER_EMAIL,
-  STAGING_USER_PASSWORD,
-  XRAY_CLIENT_ID,
-  XRAY_CLIENT_SECRET,
-  JIRA_URL,
-  JIRA_USER,
-  JIRA_API_TOKEN,
-});
 
 // ============================================
 // Environment Detection
