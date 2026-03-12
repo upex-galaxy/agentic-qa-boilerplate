@@ -231,7 +231,7 @@ cat package.json | jq '.scripts'
 The project memory file should contain:
 
 ```markdown
-# {TOOL_NAME}.md - Project Memory
+# Project Memory
 
 > **Purpose**: Operational context loaded every AI session.
 > **Usage**: AI reads this file automatically at session start.
@@ -260,6 +260,11 @@ The project memory file should contain:
 
 ## CLI Tools
 [Table: Script → Usage → Documentation location]
+
+## Skills (Claude Code)
+[Table: Skill → Trigger → Description]
+[Include playwright-cli and xray-cli from .claude/skills/]
+[Note that skills are committed to repo, settings.local.json is gitignored]
 
 ## Test Project Structure
 [Simplified tree]
@@ -301,6 +306,7 @@ Keep these sections unchanged (stable rules):
 - Context Loading by Task
 - MCPs Available
 - CLI Tools
+- Skills (Claude Code)
 
 ### 4.4 Reference to This Prompt
 

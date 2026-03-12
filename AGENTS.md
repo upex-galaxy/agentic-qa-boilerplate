@@ -1,4 +1,4 @@
-# CLAUDE.md - Project Memory
+# Project Memory
 
 > **Purpose**: Operational context loaded every AI session.
 > **Usage**: AI reads this file automatically at session start.
@@ -185,6 +185,19 @@ feature/* ← Task-specific branches
 | `bun run kata:manifest` | Extract ATCs from codebase | See `package.json` |
 
 **Run `bun <script> --help`** for usage details.
+
+---
+
+## Skills (Claude Code)
+
+> Pre-built skills available in `.claude/skills/`. These are loaded automatically by Claude Code.
+
+| Skill | Trigger | Description |
+|-------|---------|-------------|
+| **playwright-cli** | `/playwright-cli` | Browser automation: screenshots, tracing, video recording, session management, request mocking, test generation |
+| **xray-cli** | `/xray-cli` | Xray Cloud test management: create tests, manage executions, import results, backup/restore |
+
+**Note:** Skills are committed to the repo so anyone who clones the project gets them out of the box. User-specific settings (`.claude/settings.local.json`) are gitignored.
 
 ---
 
