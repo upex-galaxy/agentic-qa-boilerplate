@@ -60,5 +60,5 @@ dbhub.toml
 
 # ===== Local Useful Files =====
 
-# AI Tool Specific (not portable)
-.claude/
+# AI Tool Specific (user-local settings only)
+.claude/settings.local.json
