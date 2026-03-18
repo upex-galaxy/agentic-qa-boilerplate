@@ -9,56 +9,16 @@
  * - GET /api/auth/me - Get current user info (requires auth)
  */
 
-import type { TokenResponse } from '@data/types';
 import type { APIResponse } from '@playwright/test';
+import type { AuthErrorResponse, LoginPayload, TokenResponse, UserInfoResponse } from '@schemas/auth.types';
 import type { TestContextOptions } from '@TestContext';
 
 import { ApiBase } from '@api/ApiBase';
 import { expect } from '@playwright/test';
 import { atc } from '@utils/decorators';
 
-// Re-export TokenResponse for consumers that import from AuthApi
-export type { TokenResponse } from '@data/types';
-
-// ============================================
-// Types - Auth API data structures
-// ============================================
-
-/**
- * Login request payload
- * UPEX Dojo uses 'email' field for authentication
- */
-export interface LoginPayload {
-  email: string
-  password: string
-}
-
-/**
- * Error response for failed login
- */
-export interface AuthErrorResponse {
-  error: string
-  statusCode?: number
-  identityServerError?: {
-    error: string
-    error_description: string
-  }
-  hint?: string
-}
-
-/**
- * User info response from /api/auth/me
- * UPEX Dojo returns user object with camelCase properties
- */
-export interface UserInfoResponse {
-  user: {
-    id: string
-    email: string
-    name: string
-    createdAt: string
-    updatedAt: string
-  }
-}
+// Re-export types for consumers that import from AuthApi
+export type { AuthErrorResponse, LoginPayload, TokenResponse, UserInfoResponse } from '@schemas/auth.types';
 
 // ============================================
 // Auth API Component

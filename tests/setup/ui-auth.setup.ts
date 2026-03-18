@@ -12,7 +12,8 @@
  * Dependents: e2e
  */
 
-import type { ApiState, TokenResponse } from '@data/types';
+import type { ApiState } from '@data/types';
+import type { TokenResponse } from '@schemas/auth.types';
 
 import { writeFileSync } from 'node:fs';
 import { test as setup } from '@TestFixture';

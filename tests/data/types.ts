@@ -1,8 +1,11 @@
 /**
- * KATA Framework - Data Factory Types
+ * KATA Framework - Test Data Types
  *
- * Tipos internos para generación de datos de prueba.
- * Diseñados para ser compatibles con OpenAPI types cuando sea necesario.
+ * Types for test data generation and fixture state.
+ * These are TEST-ONLY concepts — NOT API contract types.
+ *
+ * API contract types (request/response schemas) belong in:
+ *   api/schemas/{domain}.types.ts → import from '@schemas/{domain}.types'
  */
 
 // ============================================
@@ -41,20 +44,8 @@ export interface TestBooking {
 }
 
 // ============================================
-// Auth Types
+// Auth/Fixture State Types
 // ============================================
-
-/**
- * Token response from authentication endpoints
- * Compatible with IdentityServer4 token response
- */
-export interface TokenResponse {
-  access_token: string
-  token_type: string
-  expires_in: number
-  refresh_token?: string
-  scope?: string
-}
 
 /**
  * Stored API state for test fixtures

@@ -22,34 +22,15 @@
  */
 
 import type { APIResponse } from '@playwright/test';
+import type { CreateExampleRequest, CreateExampleResponse, GetExampleResponse } from '@schemas/example.types';
 import type { TestContextOptions } from '@TestContext';
 
 import { ApiBase } from '@api/ApiBase';
 import { expect } from '@playwright/test';
 import { atc } from '@utils/decorators';
 
-// ============================================
-// Types - Define your API's data structures
-// ============================================
-
-/**
- * TODO: Update with your actual request payload structure
- */
-export interface ExamplePayload {
-  email: string
-  password: string
-}
-
-/**
- * TODO: Update with your actual response structure
- */
-export interface ExampleResponse {
-  user: {
-    id: string
-    email: string
-  }
-  token?: string
-}
+// Re-export types for consumers that import from ExampleApi
+export type { CreateExampleRequest, CreateExampleResponse, GetExampleResponse } from '@schemas/example.types';
 
 // ============================================
 // Example API Component
@@ -75,10 +56,10 @@ export class ExampleApi extends ApiBase {
    */
   @atc('PROJ-API-001')
   async createResourceSuccessfully(
-    payload: ExamplePayload,
-  ): Promise<[APIResponse, ExampleResponse, ExamplePayload]> {
+    payload: CreateExampleRequest,
+  ): Promise<[APIResponse, CreateExampleResponse, CreateExampleRequest]> {
     // TODO: Update endpoint
-    const [response, body, sentPayload] = await this.apiPOST<ExampleResponse, ExamplePayload>(
+    const [response, body, sentPayload] = await this.apiPOST<CreateExampleResponse, CreateExampleRequest>(
       '/api/example',
       payload,
     );
@@ -106,12 +87,12 @@ export class ExampleApi extends ApiBase {
    */
   @atc('PROJ-API-002')
   async createResourceWithInvalidData(
-    payload: ExamplePayload,
-  ): Promise<[APIResponse, Record<string, unknown>, ExamplePayload]> {
+    payload: CreateExampleRequest,
+  ): Promise<[APIResponse, Record<string, unknown>, CreateExampleRequest]> {
     // TODO: Update endpoint
     const [response, body, sentPayload] = await this.apiPOST<
       Record<string, unknown>,
-      ExamplePayload
+      CreateExampleRequest
     >('/api/example', payload);
 
     // Fixed assertions - validates error response
@@ -130,9 +111,9 @@ export class ExampleApi extends ApiBase {
    * TODO: Update endpoint path
    */
   @atc('PROJ-API-003')
-  async getResourceSuccessfully(resourceId: string): Promise<[APIResponse, ExampleResponse]> {
+  async getResourceSuccessfully(resourceId: string): Promise<[APIResponse, GetExampleResponse]> {
     // TODO: Update endpoint
-    const [response, body] = await this.apiGET<ExampleResponse>(`/api/example/${resourceId}`);
+    const [response, body] = await this.apiGET<GetExampleResponse>(`/api/example/${resourceId}`);
 
     // Fixed assertions
     expect(response.status()).toBe(200);

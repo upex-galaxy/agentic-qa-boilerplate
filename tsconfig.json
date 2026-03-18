@@ -19,7 +19,9 @@
       "@ApiFixture": ["./tests/components/ApiFixture.ts"],
       "@TestFixture": ["./tests/components/TestFixture.ts"],
       "@DataFactory": ["./tests/data/DataFactory.ts"],
-      "@openapi": ["./api/openapi-types.ts"]
+      "@openapi": ["./api/openapi-types.ts"],
+      "@schemas/*": ["./api/schemas/*"],
+      "@schemas": ["./api/schemas/index.ts"]
     },
     "resolveJsonModule": true,
     "types": ["bun", "node", "@playwright/test"],

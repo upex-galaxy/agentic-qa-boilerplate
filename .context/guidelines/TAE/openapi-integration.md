@@ -136,11 +136,137 @@ type CreateBookingBody =
 
 ---
 
+## Type Facade Pattern
+
+### Problem
+
+Importing directly from `openapi-types.ts` in every component leads to verbose, fragile code:
+
+```typescript
+// ❌ AVOID - Direct @openapi imports scattered across components
+import type { components, paths } from '@openapi';
+type LoginBody = paths['/api/auth/login']['post']['requestBody']['content']['application/json'];
+```
+
+### Solution: Domain Type Facades
+
+Create **one facade file per domain** in `api/schemas/` that re-exports OpenAPI types with readable names:
+
+```
+api/openapi-types.ts          ← Auto-generated (NEVER hand-edit)
+        ↓ import type
+api/schemas/{domain}.types.ts  ← Hand-written facades (readable aliases)
+        ↓ import type
+tests/components/api/{Domain}Api.ts  ← Components consume facades
+```
+
+**Rule:** Only facade files import from `@openapi`. Components import from `@schemas/*`.
+
+### Facade File Structure
+
+Each `{domain}.types.ts` has up to 3 sections:
+
+```typescript
+import type { components, paths } from '@openapi';
+
+// ============================================================================
+// Schema Types (domain models from components.schemas)
+// ============================================================================
+export type Booking = components['schemas']['BookingListModel'];
+export type Invoice = components['schemas']['InvoiceModel'];
+
+// ============================================================================
+// Endpoint Types - POST /api/bookings
+// ============================================================================
+type CreateBookingPath = paths['/api/bookings']['post'];
+export type CreateBookingRequest = CreateBookingPath['requestBody']['content']['application/json'];
+export type CreateBookingResponse = CreateBookingPath['responses']['201']['content']['application/json'];
+
+// ============================================================================
+// Endpoint Types - GET /api/bookings/{id}
+// ============================================================================
+type GetBookingPath = paths['/api/bookings/{id}']['get'];
+export type GetBookingParams = GetBookingPath['parameters']['path'];
+export type GetBookingResponse = GetBookingPath['responses']['200']['content']['application/json'];
+
+// ============================================================================
+// Custom Types (not in OpenAPI spec)
+// ============================================================================
+export interface BookingErrorResponse {
+  error: string
+  statusCode?: number
+}
+```
+
+### Section Rules
+
+| Section | Source | When to Use |
+|---------|--------|-------------|
+| **Schema Types** | `components['schemas']` | Domain models/entities |
+| **Endpoint Types** | `paths[...][method]` | Request/response per endpoint |
+| **Custom Types** | Plain interfaces | Types not in spec (errors, test helpers) |
+
+**Endpoint Types pattern:** Use a private `type XPath = paths[...][method]` helper, then export the specific parts:
+
+```typescript
+type CreateBookingPath = paths['/api/bookings']['post'];  // private helper
+export type CreateBookingRequest = CreateBookingPath['requestBody']['content']['application/json'];
+export type CreateBookingResponse = CreateBookingPath['responses']['201']['content']['application/json'];
+```
+
+### Type Placement Decision
+
+| Type Origin | Location | Import From |
+|-------------|----------|-------------|
+| OpenAPI schema | `api/schemas/{domain}.types.ts` | `@schemas/{domain}.types` |
+| OpenAPI endpoint | `api/schemas/{domain}.types.ts` | `@schemas/{domain}.types` |
+| Not in spec, domain-specific | `api/schemas/{domain}.types.ts` § Custom | `@schemas/{domain}.types` |
+| Test data generation | `tests/data/types.ts` | `@data/types` |
+
+### Import Examples
+
+```typescript
+// In API component (single domain)
+import type { LoginPayload, TokenResponse } from '@schemas/auth.types';
+
+// In test file (cross-domain)
+import type { LoginPayload } from '@schemas/auth.types';
+import type { Booking } from '@schemas/bookings.types';
+
+// Or via barrel (cross-domain shorthand)
+import type { LoginPayload, Booking } from '@schemas';
+```
+
+### Creating a New Facade
+
+1. Copy `api/schemas/example.types.ts` to `api/schemas/{domain}.types.ts`
+2. Replace placeholder schemas with real names from `api/openapi-types.ts`
+3. Add re-export to `api/schemas/index.ts`: `export type * from './{domain}.types'`
+4. Import in your component: `import type { X } from '@schemas/{domain}.types'`
+
+### Directory Structure
+
+```
+api/
+├── openapi.json              # Downloaded spec (gitignored)
+├── openapi-types.ts          # Auto-generated types (committed)
+├── .openapi-config.json      # Sync metadata (gitignored)
+└── schemas/                  # Type facade files
+    ├── index.ts              # Barrel re-export
+    ├── auth.types.ts         # Auth domain types
+    ├── bookings.types.ts     # Bookings domain types
+    └── example.types.ts      # Template/reference
+```
+
+---
+
 ## Best Practices
 
 1. **Sync before writing tests** - Run `bun run api:sync` to get latest types
 2. **Commit types.ts** - The generated types file should be committed
-3. **Use type aliases** - Create readable aliases for complex schema paths
+3. **Use type facades** - Create `api/schemas/{domain}.types.ts` for readable type aliases
+4. **One facade per domain** - Matches the API component it serves (e.g., `auth.types.ts` → `AuthApi.ts`)
+5. **Only facades import @openapi** - Components never import directly from `@openapi`
 
 ---
 

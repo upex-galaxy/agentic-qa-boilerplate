@@ -67,11 +67,12 @@ bun run test:allure
 | **Parameters** | Max 2 positional. 3+ → use object parameter |
 | **Utilities** | Only agnostic utilities go to `tests/utils/` |
 | **Locators** | Inline in ATCs. Extract only if used 2+ times |
-| **Imports** | Always use aliases (`@api/`, `@utils/`). No relative imports |
+| **Imports** | Always use aliases (`@api/`, `@schemas/`, `@utils/`). No relative imports |
 | **Types** | Define interfaces at top of file, after imports |
 | **Errors** | Public methods: fail fast. Utilities: silent fail (return null) |
 
 **DRY - Context Matters:**
+- `api/schemas/` = OpenAPI type facades (`@schemas/{domain}.types`)
 - `tests/utils/` = Agnostic utilities only (works for API + UI)
 - `UiBase` = All Playwright/Page helpers
 - `ApiBase` = All HTTP helpers

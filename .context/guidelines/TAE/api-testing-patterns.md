@@ -139,19 +139,12 @@ test.describe('Auth API', () => {
 
 ```typescript
 // tests/components/api/BookingsApi.ts
+import type { Booking, CreateBookingRequest } from '@schemas/bookings.types';
 import type { APIResponse } from '@playwright/test';
-import type { components } from '@api/openapi-types';
 
 import { ApiBase } from '@api/ApiBase';
 import { expect } from '@playwright/test';
 import { atc } from '@utils/decorators';
-
-// ============================================
-// Types - Use OpenAPI generated types
-// ============================================
-
-type Booking = components['schemas']['BookingListModel'];
-type BookingPayload = components['schemas']['CreateBookingRequest'];
 
 // ============================================
 // API Component
@@ -175,9 +168,9 @@ export class BookingsApi extends ApiBase {
 
   @atc('PROJ-BOOK-002')
   async createBookingSuccessfully(
-    payload: BookingPayload
-  ): Promise<[APIResponse, Booking, BookingPayload]> {
-    const [response, body, sentPayload] = await this.apiPOST<Booking, BookingPayload>(
+    payload: CreateBookingRequest
+  ): Promise<[APIResponse, Booking, CreateBookingRequest]> {
+    const [response, body, sentPayload] = await this.apiPOST<Booking, CreateBookingRequest>(
       '/bookings',
       payload
     );
@@ -316,24 +309,36 @@ api.clearAuthToken();
 
 ## Using OpenAPI Types
 
-After running `bun run api:sync`, use generated types for type safety:
+After running `bun run api:sync`, types are available through **type facades** in `api/schemas/`:
 
 ```typescript
-import type { components, paths } from '@api/openapi-types';
-
-// Extract schema types
-type Booking = components['schemas']['BookingListModel'];
-type Invoice = components['schemas']['InvoiceModel'];
-type Hotel = components['schemas']['HotelModel'];
+// Import from domain facade — NOT directly from @openapi
+import type { Booking, CreateBookingRequest, CreateBookingResponse } from '@schemas/bookings.types';
 
 // Use in ATCs
 @atc('PROJ-BOOK-001')
+async createBookingSuccessfully(
+  payload: CreateBookingRequest
+): Promise<[APIResponse, CreateBookingResponse, CreateBookingRequest]> {
+  const [response, body, sentPayload] = await this.apiPOST<CreateBookingResponse, CreateBookingRequest>(
+    '/bookings',
+    payload,
+  );
+  expect(response.status()).toBe(201);
+  return [response, body, sentPayload];
+}
+
+@atc('PROJ-BOOK-002')
 async getBookingsSuccessfully(hotelId: number): Promise<[APIResponse, Booking[]]> {
   const [response, body] = await this.apiGET<Booking[]>(`/bookings?hotelId=${hotelId}`);
-  // body is typed as Booking[]
+  expect(response.status()).toBe(200);
   return [response, body];
 }
 ```
+
+> **Type Facade Pattern:** Domain types live in `api/schemas/{domain}.types.ts`.
+> Components import from `@schemas/{domain}.types`, never directly from `@openapi`.
+> See: `openapi-integration.md` → Type Facade Pattern for full details.
 
 ---
 
@@ -370,8 +375,8 @@ Every ATC must include **fixed assertions** that validate the expected behavior:
 
 ```typescript
 @atc('PROJ-BOOK-001')
-async createBookingSuccessfully(payload: BookingPayload): Promise<[APIResponse, Booking, BookingPayload]> {
-  const [response, body, sentPayload] = await this.apiPOST<Booking, BookingPayload>(
+async createBookingSuccessfully(payload: CreateBookingRequest): Promise<[APIResponse, Booking, CreateBookingRequest]> {
+  const [response, body, sentPayload] = await this.apiPOST<Booking, CreateBookingRequest>(
     '/bookings',
     payload,
   );
