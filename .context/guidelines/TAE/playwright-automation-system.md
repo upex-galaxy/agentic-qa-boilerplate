@@ -228,12 +228,14 @@ private loadTokenFromFile(): void {
 
 ### 5.1 Implemented ATCs
 
+> Test IDs below are real issue IDs from the project's issue tracker (Jira, Xray, etc.).
+
 | Component | Test ID        | Method                      | Assertions                                        |
 | --------- | -------------- | --------------------------- | ------------------------------------------------- |
-| AuthApi   | PROJ-AUTH-001  | authenticateSuccessfully    | status=200, token defined, type=Bearer, expires>0 |
-| AuthApi   | PROJ-AUTH-002  | loginWithInvalidCredentials | status=400, ok=false, error defined               |
-| LoginPage | PROJ-LOGIN-001 | loginSuccessfully           | URL does not contain /login (requires goto() before) |
-| LoginPage | PROJ-LOGIN-002 | loginWithInvalidCredentials | error visible, URL contains /login                |
+| AuthApi   | TK-101  | authenticateSuccessfully    | status=200, token defined, type=Bearer, expires>0 |
+| AuthApi   | TK-102  | loginWithInvalidCredentials | status=400, ok=false, error defined               |
+| LoginPage | TK-301 | loginSuccessfully           | URL does not contain /login (requires goto() before) |
+| LoginPage | TK-302 | loginWithInvalidCredentials | error visible, URL contains /login                |
 
 **Note**: `getCurrentUser()` is a **helper** method (no `@atc` decorator). It is used as a verification step inside ATCs like `authenticateSuccessfully()`, not as a standalone ATC. See [test-design-principles.md](test-design-principles.md) for why GETs are always helpers.
 
@@ -243,7 +245,7 @@ ATCs have fixed assertions (hardcoded in the method):
 
 ```typescript
 // AuthApi.ts - authenticateSuccessfully
-@atc('PROJ-AUTH-001')
+@atc('TK-101')
 async authenticateSuccessfully(credentials: Credentials): Promise<[APIResponse, TokenResponse, Credentials]> {
   const [response, body, payload] = await this.apiPOST<TokenResponse, Credentials>('/auth/login', credentials);
 
@@ -277,7 +279,7 @@ async authenticateSuccessfully(credentials: Credentials): Promise<[APIResponse, 
 ### 6.1 @atc Decorator
 
 ```typescript
-@atc('PROJ-AUTH-001', { softFail: false, severity: 'critical' })
+@atc('TK-101', { softFail: false, severity: 'critical' })
 async loginSuccessfully(credentials) { ... }
 ```
 
@@ -292,7 +294,7 @@ async loginSuccessfully(credentials) { ... }
 
 - Wraps method in `allure.step()`
 - Captures duration and result
-- Console logs: `✅ [PROJ-AUTH-001] loginSuccessfully - PASS (234ms)`
+- Console logs: `✅ [TK-101] loginSuccessfully - PASS (234ms)`
 - Stores in `atcResults` Map for final report
 - Supports `softFail: true` to continue on error
 
@@ -305,7 +307,7 @@ await generateAtcReport('reports/atc_results.json');
 {
   "generatedAt": "2026-02-08T...",
   "summary": { "total": 5, "passed": 4, "failed": 1, "skipped": 0 },
-  "results": { "PROJ-AUTH-001": [...], ... }
+  "results": { "TK-101": [...], ... }
 }
 ```
 
@@ -336,58 +338,3 @@ this.data.createBooking()      // Booking with confirmation#, stayValue, etc.
 | tests/data/DataFactory.ts | Data generation with Faker                  |
 | tests/data/types.ts       | Interfaces for test data                    |
 
----
-
-## 9. Detected Issues Status
-
-| #   | Issue                          | Severity | Status       | Notes                                    |
-| --- | ------------------------------ | -------- | ------------ | ---------------------------------------- |
-| 1   | Token not propagated in E2E    | CRITICAL | RESOLVED     | TestFixture.loadTokenFromFile()          |
-| 2   | Fixed assertions in ATCs       | MEDIUM   | CLARIFIED    | Intentional: ATCs = specific test cases  |
-| 3   | Steps module only as example   | LOW      | PENDING      | ExampleSteps.ts is a template            |
-| 4   | No real Integration tests      | LOW      | RESOLVED     | tests/integration/auth/user-session.test |
-
----
-
-## 10. Implemented Changes (2026-02-08)
-
-### 10.1 Token Propagation
-
-- `TestFixture.loadTokenFromFile()`: Automatic token loading from `.auth/api-state.json`
-- `TestFixture.setAuthToken()/clearAuthToken()`: Public methods for runtime
-- `ApiFixture` also loads token in its Playwright fixture
-
-### 10.2 Setup Files Refactored
-
-- Now use KATA fixtures (import test from @TestFixture)
-- `ui-auth.setup.ts`: Uses `ui.login.goto()` + `ui.login.loginSuccessfully()`
-- `api-auth.setup.ts`: Uses `api.auth.authenticateSuccessfully()`
-
-### 10.3 LoginPage Refactored
-
-- `goto()` extracted from ATCs (call before the ATC)
-- Private helper `fillAndSubmitLoginForm()` (combines fill + submit)
-- ATCs are more atomic: only action + assertions
-
-### 10.4 AuthApi Renamed
-
-- `loginSuccessfully()` → `authenticateSuccessfully()` (differentiate from UI)
-
-### 10.5 Structure Renamed
-
-- `tests/components/preconditions/` → `tests/components/steps/`
-- Alias `@preconditions/*` → `@steps/*`
-
-### 10.6 Shared Types
-
-- `TokenResponse` and `ApiState` in `tests/data/types.ts`
-- `AuthApi` re-exports `TokenResponse` for consumers
-
----
-
-## 11. Recommended Next Steps
-
-1. Create real steps: `BookingSteps`, `ReconciliationSteps`
-2. Create real E2E tests: Dashboard, Bookings, etc.
-3. Add more API components: `BookingsApi`, `InvoicesApi`
-4. Add more UI components: `DashboardPage`, `BookingsPage`

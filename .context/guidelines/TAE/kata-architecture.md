@@ -36,9 +36,12 @@ KATA (Komponent Action Test Architecture) is a testing framework that solves com
 
 ### Test ID Format
 
-- Format: `PROJECT-XXX` (e.g., `UPEX-123`, `UPEX-456`)
-- Maps directly to Jira issue IDs
-- Used in `@atc('PROJECT-XXX')` decorators
+- **The ATC ID is the real issue ID from the project's issue tracker** (Jira, Xray, Coda, etc.) — not an invented convention
+- Format: `{PROJECT_KEY}-{NUMBER}` (e.g., `TK-101`, `UPEX-123`, `GX-456`)
+- The project key comes from the issue tracker project (e.g., `TK`, `UPEX`, `GX`)
+- Used in `@atc('{TICKET_ID}')` decorators — e.g., `@atc('TK-101')`
+- Each ATC maps 1:1 to a Test Case ticket in the tracker
+- In documentation examples, `TK-XXX` is a placeholder meaning "replace with the actual ticket ID"
 
 ### Language Convention
 
@@ -412,7 +415,7 @@ The `@atc` decorator connects code with Jira/Xray using **TC39 Stage 3 decorator
 
 ```typescript
 // TC39 Stage 3 format - NOT legacy TypeScript decorators
-@atc('PROJ-API-001')
+@atc('TK-101')
 async signInSuccessfully(payload: SignInPayload): Promise<[APIResponse, AuthResponse, SignInPayload]> {
   const [response, body, sentPayload] = await this.apiPOST<AuthResponse, SignInPayload>(
     '/auth/signin',
@@ -443,7 +446,7 @@ export function atc(testId: string, options: AtcOptions = {}) {
 - Automatic traceability to Jira/Xray test cases
 - Granular reporting (which ATCs passed/failed)
 - Synchronization with TMS (Jira/Xray)
-- Console output: `[ATC-PASS] PROJ-API-001 | signInSuccessfully`
+- Console output: `[ATC-PASS] TK-101 | signInSuccessfully`
 
 ### Test Results Synchronization
 

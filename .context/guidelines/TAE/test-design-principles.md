@@ -20,7 +20,7 @@
 
 ### ATC = An Action in the System
 
-An ATC (Acceptance Test Case) represents a **complete action** that changes or validates system state. It maps 1:1 with a test case in Coda (TMS) via the `@atc` decorator.
+An ATC (Acceptance Test Case) represents a **complete action** that changes or validates system state. It maps 1:1 with a test case ticket in your issue tracker (Jira, Xray, Coda, etc.) via the `@atc('TICKET-ID')` decorator, where the ID is the real issue ID (e.g., `TK-101`, `UPEX-456`).
 
 **An ATC is:**
 - An action the user or system performs (create, update, delete, submit, import)
@@ -81,10 +81,10 @@ The GET is not a standalone ATC. It exists to verify the action succeeded. This 
 
 ```
 // WRONG: These are helpers, not ATCs
-@atc('CUR-AUTH-003')
+@atc('TK-103')
 async getCurrentUserSuccessfully() { ... }  // Just a GET, no action
 
-@atc('CUR-AUTH-004')
+@atc('TK-104')
 async getCurrentUserUnauthorized() { ... }  // Just a GET, no action
 ```
 
@@ -92,14 +92,14 @@ async getCurrentUserUnauthorized() { ... }  // Just a GET, no action
 
 ```
 // RIGHT: These are real actions in the system
-@atc('CUR-AUTH-001')
+@atc('TK-101')
 async authenticateSuccessfully(credentials) {
   // ACTION: POST to login
   // VERIFICATION: GET /auth/me to confirm session is valid
   // ASSERTIONS: token defined, user info matches
 }
 
-@atc('CUR-AUTH-002')
+@atc('TK-102')
 async loginWithInvalidCredentials(credentials) {
   // ACTION: POST to login with bad creds
   // VERIFICATION: GET /auth/me returns 401 (proves session was NOT created)
@@ -145,7 +145,7 @@ BookingsApi.ts:
   getMonthStatus(hotelId, month) → GET /bookings/month-status
 
   // --- ATCs (@atc decorator) ---
-  @atc('CUR-BOOK-001')
+  @atc('TK-201')
   importBookingsSuccessfully(file, hotelId) → POST /bookings/import + GET verification
 ```
 

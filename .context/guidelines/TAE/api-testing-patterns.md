@@ -103,6 +103,8 @@ tests/
 
 ### 1. Test File Structure
 
+> **Note**: `TK-XXX` in examples represents the actual issue ID from your tracker (Jira, Xray, etc.). Replace with the real ticket ID (e.g., `TK-101`, `UPEX-456`).
+
 ```typescript
 // tests/integration/auth/auth.test.ts
 import { expect, test } from '@TestFixture';
@@ -155,7 +157,7 @@ export class BookingsApi extends ApiBase {
   // ATCs - Complete Test Cases
   // ============================================
 
-  @atc('PROJ-BOOK-001')
+  @atc('TK-201')
   async getBookingsSuccessfully(hotelId: number): Promise<[APIResponse, Booking[]]> {
     const [response, body] = await this.apiGET<Booking[]>(`/bookings?hotelId=${hotelId}`);
 
@@ -166,7 +168,7 @@ export class BookingsApi extends ApiBase {
     return [response, body];
   }
 
-  @atc('PROJ-BOOK-002')
+  @atc('TK-202')
   async createBookingSuccessfully(
     payload: CreateBookingRequest
   ): Promise<[APIResponse, Booking, CreateBookingRequest]> {
@@ -182,7 +184,7 @@ export class BookingsApi extends ApiBase {
     return [response, body, sentPayload];
   }
 
-  @atc('PROJ-BOOK-003')
+  @atc('TK-203')
   async getBookingNotFound(bookingId: number): Promise<[APIResponse, Record<string, unknown>]> {
     const [response, body] = await this.apiGET<Record<string, unknown>>(`/bookings/${bookingId}`);
 
@@ -316,7 +318,7 @@ After running `bun run api:sync`, types are available through **type facades** i
 import type { Booking, CreateBookingRequest, CreateBookingResponse } from '@schemas/bookings.types';
 
 // Use in ATCs
-@atc('PROJ-BOOK-001')
+@atc('TK-201')
 async createBookingSuccessfully(
   payload: CreateBookingRequest
 ): Promise<[APIResponse, CreateBookingResponse, CreateBookingRequest]> {
@@ -328,7 +330,7 @@ async createBookingSuccessfully(
   return [response, body, sentPayload];
 }
 
-@atc('PROJ-BOOK-002')
+@atc('TK-202')
 async getBookingsSuccessfully(hotelId: number): Promise<[APIResponse, Booking[]]> {
   const [response, body] = await this.apiGET<Booking[]>(`/bookings?hotelId=${hotelId}`);
   expect(response.status()).toBe(200);
@@ -356,15 +358,15 @@ async getBookingsSuccessfully(hotelId: number): Promise<[APIResponse, Booking[]]
 
 ```typescript
 // Success scenarios
-@atc('PROJ-BOOK-001') async getBookingsSuccessfully(...) { ... }
-@atc('PROJ-BOOK-002') async createBookingSuccessfully(...) { ... }
-@atc('PROJ-BOOK-003') async updateBookingSuccessfully(...) { ... }
+@atc('TK-201') async getBookingsSuccessfully(...) { ... }
+@atc('TK-202') async createBookingSuccessfully(...) { ... }
+@atc('TK-203') async updateBookingSuccessfully(...) { ... }
 
 // Error scenarios
-@atc('PROJ-BOOK-010') async getBookingNotFound(...) { ... }
-@atc('PROJ-BOOK-011') async createBookingWithInvalidData(...) { ... }
-@atc('PROJ-BOOK-012') async deleteBookingForbidden(...) { ... }
-@atc('PROJ-BOOK-013') async getBookingsUnauthorized(...) { ... }
+@atc('TK-204') async getBookingNotFound(...) { ... }
+@atc('TK-205') async createBookingWithInvalidData(...) { ... }
+@atc('TK-206') async deleteBookingForbidden(...) { ... }
+@atc('TK-207') async getBookingsUnauthorized(...) { ... }
 ```
 
 ---
@@ -374,7 +376,7 @@ async getBookingsSuccessfully(hotelId: number): Promise<[APIResponse, Booking[]]
 Every ATC must include **fixed assertions** that validate the expected behavior:
 
 ```typescript
-@atc('PROJ-BOOK-001')
+@atc('TK-201')
 async createBookingSuccessfully(payload: CreateBookingRequest): Promise<[APIResponse, Booking, CreateBookingRequest]> {
   const [response, body, sentPayload] = await this.apiPOST<Booking, CreateBookingRequest>(
     '/bookings',
@@ -435,14 +437,14 @@ Each ATC should have a unique expected outcome. Don't create separate ATCs for t
 
 ```typescript
 // ✅ CORRECT - One ATC for valid login
-@atc('PROJ-AUTH-001')
+@atc('TK-101')
 async loginSuccessfully(credentials: LoginPayload) { ... }
 
 // ❌ WRONG - Multiple ATCs for same outcome
-@atc('PROJ-AUTH-001')
+@atc('TK-101')
 async loginWithEmail(email: string) { ... }
 
-@atc('PROJ-AUTH-002')
+@atc('TK-102')
 async loginWithUsername(username: string) { ... }
 ```
 

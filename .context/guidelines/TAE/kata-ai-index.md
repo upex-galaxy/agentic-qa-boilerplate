@@ -14,7 +14,7 @@ KATA (Komponent Action Test Architecture) is a test automation framework where:
 - Each ATC = **One unique expected output** (Equivalence Partitioning)
 - **Locators are inline** within ATCs, not in separate files
 - Tests call ATCs, **ATCs don't call other ATCs**
-- Uses **TC39 Stage 3 decorators** (`@atc('TEST-ID')`)
+- Uses **TC39 Stage 3 decorators** (`@atc('TICKET-ID')`) where TICKET-ID is the issue ID from your tracker (Jira, Xray, etc.)
 
 **Tech Stack:**
 
@@ -56,13 +56,13 @@ An ATC is a **mini-flow**, not a single interaction:
 
 ```typescript
 // ❌ WRONG - Single interaction, NOT an ATC
-@atc('PROJ-001')
+@atc('TK-101')
 async clickLoginButton() {
   await this.page.click('#login');
 }
 
 // ✅ CORRECT - Complete test case
-@atc('PROJ-001')
+@atc('TK-101')
 async loginWithValidCredentials(credentials: Credentials) {
   await this.goto();
   await this.page.fill('#email', credentials.email);
@@ -78,12 +78,12 @@ async loginWithValidCredentials(credentials: Credentials) {
 
 ```typescript
 // ❌ WRONG - 3 ATCs with same output (401 error)
-@atc('PROJ-001') async loginWithWrongEmail() { /* → 401 */ }
-@atc('PROJ-002') async loginWithWrongPassword() { /* → 401 */ }
-@atc('PROJ-003') async loginWithEmptyFields() { /* → 401 */ }
+@atc('TK-101') async loginWithWrongEmail() { /* → 401 */ }
+@atc('TK-102') async loginWithWrongPassword() { /* → 401 */ }
+@atc('TK-103') async loginWithEmptyFields() { /* → 401 */ }
 
 // ✅ CORRECT - ONE ATC for invalid credentials
-@atc('PROJ-001')
+@atc('TK-101')
 async loginWithInvalidCredentials(payload: LoginPayload) {
   // Test file parameterizes different invalid inputs
   // All lead to same output: 401 error
@@ -100,7 +100,7 @@ No separate locator files. Locators go directly in ATCs:
 export const LOCATORS = { email: '#email', password: '#password' };
 
 // ✅ CORRECT - Locators inline in ATC
-@atc('PROJ-001')
+@atc('TK-101')
 async loginWithValidCredentials(data: LoginData) {
   await this.page.fill('#email', data.email);
   await this.page.fill('#password', data.password);
@@ -115,12 +115,12 @@ class LoginPage extends UiBase {
   // Shared locator (used in multiple ATCs)
   private readonly submitButton = () => this.page.locator('button[type="submit"]');
 
-  @atc('PROJ-001')
+  @atc('TK-101')
   async loginSuccessfully(data: LoginData) {
     await this.submitButton().click();
   }
 
-  @atc('PROJ-002')
+  @atc('TK-102')
   async loginWithInvalidCredentials(data: LoginData) {
     await this.submitButton().click();
   }
@@ -133,7 +133,7 @@ ATCs are atomic. Use **Steps module** for reusable steps:
 
 ```typescript
 // ❌ WRONG - ATC calling another ATC
-@atc('PROJ-001')
+@atc('TK-101')
 async checkoutWithNewUser() {
   await this.signupSuccessfully(userData);  // Another ATC!
   await this.addToCartSuccessfully(product);

@@ -71,13 +71,13 @@ class CheckoutPage extends UiBase {
   // Simple locator for static elements
   private readonly submitButton = () => this.page.locator('button[type="submit"]');
 
-  @atc('PROJ-001')
+  @atc('TK-101')
   async addProductSuccessfully(product: string) {
     await this.productRow(product).click();
     await this.submitButton().click();
   }
 
-  @atc('PROJ-002')
+  @atc('TK-102')
   async removeProductSuccessfully(product: string) {
     await this.productRow(product).locator('[data-action="remove"]').click();
   }

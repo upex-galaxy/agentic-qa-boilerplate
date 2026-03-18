@@ -16,17 +16,17 @@ This is the most important rule for creating ATCs. An ATC is a complete test cas
 
 ```typescript
 // ❌ WRONG - These 3 ATCs have the SAME output (401 error)
-@atc('PROJ-001')
+@atc('TK-101')
 async signInWithWrongPassword() { ... }  // → 401
 
-@atc('PROJ-002')
+@atc('TK-102')
 async signInWithWrongEmail() { ... }     // → 401
 
-@atc('PROJ-003')
+@atc('TK-103')
 async signInWithEmptyFields() { ... }    // → 401
 
 // ✅ CORRECT - ONE ATC that covers invalid credentials (same output)
-@atc('PROJ-001')
+@atc('TK-101')
 async signInWithInvalidCredentials(payload: SignInPayload) {
   // The test file can parameterize different invalid inputs
   // All lead to the same output: 401 error
@@ -51,7 +51,7 @@ Fixed assertions validate the invariant output. Use conditionals sparingly for s
 
 ```typescript
 // ✅ ACCEPTABLE - Minor conditional for slight output variation
-@atc('PROJ-001')
+@atc('TK-101')
 async createOrderSuccessfully(payload: OrderPayload) {
   const [response, body] = await this.apiPOST<Order, OrderPayload>('/orders', payload);
   expect(response.status()).toBe(201);
@@ -66,7 +66,7 @@ async createOrderSuccessfully(payload: OrderPayload) {
 }
 
 // ❌ WRONG - Behavior is fundamentally different, should be separate ATCs
-@atc('PROJ-001')
+@atc('TK-101')
 async processPayment(payload: PaymentPayload) {
   if (payload.type === 'refund') {
     // Completely different endpoint and behavior
@@ -95,7 +95,7 @@ class SignupPage extends UiBase {
     await this.page.locator('#email').fill(email);
   }
 
-  @atc('PROJ-001')
+  @atc('TK-101')
   async signupSuccessfully(data: SignUpData) {
     await this.fillEmail(data.email); // Why abstract a one-liner?
   }
@@ -103,7 +103,7 @@ class SignupPage extends UiBase {
 
 // ✅ CORRECT - Locators inline within ATCs
 class SignupPage extends UiBase {
-  @atc('PROJ-001')
+  @atc('TK-101')
   async signupWithValidCredentials(data: SignUpData) {
     await this.goto();
 
@@ -128,7 +128,7 @@ class CheckoutPage extends UiBase {
   // Store just the testid string - simple and clear
   private readonly cartTotalTestId = 'cart-total';
 
-  @atc('PROJ-001')
+  @atc('TK-101')
   async addProductSuccessfully(product: string) {
     await expect(this.page.getByTestId(this.cartTotalTestId)).toContainText('$');
   }
@@ -143,7 +143,7 @@ class CheckoutPage extends UiBase {
   private readonly cartTotal = () => this.page.locator('[data-testid="cart-total"]');
   private readonly productRow = (name: string) => this.page.locator(`[data-product="${name}"]`);
 
-  @atc('PROJ-001')
+  @atc('TK-101')
   async addProductSuccessfully(product: string) {
     await expect(this.cartTotal()).toContainText('$');
     await this.productRow(product).click();
@@ -206,7 +206,7 @@ Think of ATCs like Gherkin scenarios:
 
 ```typescript
 // ❌ WRONG - ATC calling another ATC
-@atc('PROJ-001')
+@atc('TK-101')
 async checkoutWithNewUser(userData: UserData) {
   await this.signupWithValidCredentials(userData);  // Another ATC - DON'T DO THIS
   await this.addToCartSuccessfully(product);
@@ -536,6 +536,8 @@ tests/components/steps/
 
 ### File Template (API Component)
 
+> **Note**: `TK-XXX` in `@atc()` represents the actual issue ID from your tracker (Jira, Xray, etc.). Replace with the real ticket ID (e.g., `TK-101`, `UPEX-456`).
+
 ```typescript
 /**
  * KATA Framework - Layer 3: {Resource} API Component
@@ -566,7 +568,7 @@ export class ResourceApi extends ApiBase {
   // ATCs
   // ============================================
 
-  @atc('PROJ-XXX')
+  @atc('TK-XXX')
   async createResourceSuccessfully(payload: ResourcePayload): Promise<[APIResponse, ResourceResponse, ResourcePayload]> {
     // Implementation
   }
@@ -589,7 +591,7 @@ export default ResourceApi;
 All ATCs follow the **Arrange-Act-Assert** pattern:
 
 ```typescript
-@atc('PROJ-001')
+@atc('TK-101')
 async signInSuccessfully(payload: SignInPayload): Promise<[APIResponse, AuthResponse, SignInPayload]> {
   // ACT - Perform the action
   const [response, body, sentPayload] = await this.apiPOST<AuthResponse, SignInPayload>(
@@ -628,7 +630,7 @@ async signInSuccessfully(payload: SignInPayload): Promise<[APIResponse, AuthResp
  * Sign in with valid credentials.
  * Returns: [APIResponse, AuthResponse, SignInPayload]
  */
-@atc('PROJ-001')
+@atc('TK-101')
 async signInSuccessfully(payload: SignInPayload) { ... }
 ```
 
@@ -698,7 +700,7 @@ test('TK-XXX: should complete flow', async ({ test }) => {
 The `@atc` decorator accepts an optional second argument with the following options:
 
 ```typescript
-@atc('PROJ-001', { softFail: true, severity: 'critical' })
+@atc('TK-101', { softFail: true, severity: 'critical' })
 async verifyOptionalField() {
   // softFail: failure won't stop test execution, just logs it
   // severity: associates criticality level for reporting
@@ -827,15 +829,15 @@ Common mistakes to avoid when implementing KATA:
 
 ```typescript
 // ❌ Anti-pattern: ATC with single interaction
-@atc('PROJ-001')
+@atc('TK-101')
 async clickAddToCartButton() {
   await this.page.click('[data-testid="add-to-cart"]');
 }
 
 // ❌ Anti-pattern: Multiple ATCs for same output
-@atc('PROJ-001') async loginWithWrongEmail() { /* → 401 */ }
-@atc('PROJ-002') async loginWithWrongPassword() { /* → 401 */ }
-@atc('PROJ-003') async loginWithEmptyFields() { /* → 401 */ }
+@atc('TK-101') async loginWithWrongEmail() { /* → 401 */ }
+@atc('TK-102') async loginWithWrongPassword() { /* → 401 */ }
+@atc('TK-103') async loginWithEmptyFields() { /* → 401 */ }
 
 // ❌ Anti-pattern: Locator file
 // locators/checkout.ts
