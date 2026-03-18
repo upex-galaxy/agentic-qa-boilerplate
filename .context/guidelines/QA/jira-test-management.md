@@ -334,8 +334,6 @@ See `.context/guidelines/MCP/atlassian.md` for more details.
 - `.context/guidelines/QA/exploratory-testing.md` - Exploratory testing
 - `.context/guidelines/TAE/tms-integration.md` - TMS integration
 - `.context/jira-platform.md` - Jira platform documentation
-- `.prompts/stage-3-documentation/` - Documentation prompts
-- `.prompts/us-qa-workflow.md` - Complete QA workflow
 
 ---
 

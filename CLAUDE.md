@@ -96,7 +96,7 @@ Test Files - Orchestrate ATCs
 **ATC Rules:**
 - ATC = Complete test case (mini-flow), NOT single interaction
 - ATCs are atomic: don't call other ATCs
-- Use Flows module for reusable ATC chains
+- Use Steps module for reusable ATC chains
 - Fixed assertions inside ATC, test-level assertions in test file
 - Equivalence Partitioning: same output = one parameterized ATC
 
@@ -214,7 +214,7 @@ tests/
 │   ├── ui/
 │   │   ├── UiBase.ts         # Layer 2: Page base
 │   │   └── [YourPage.ts]     # Layer 3: Domain components
-│   └── flows/                # Reusable setup flows
+│   └── steps/                # Reusable step chains (preconditions)
 ├── e2e/                      # E2E tests
 ├── integration/              # API tests
 └── data/fixtures/            # Test data JSON

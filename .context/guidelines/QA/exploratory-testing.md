@@ -259,8 +259,6 @@ Stage 4: Test Automation
 
 **See also:**
 
-- `.prompts/us-qa-workflow.md` - Complete QA workflow
-- `.prompts/stage-2-exploratory/` - Detailed prompts
 - `.context/guidelines/MCP/playwright.md` - Playwright MCP usage
 
 ---

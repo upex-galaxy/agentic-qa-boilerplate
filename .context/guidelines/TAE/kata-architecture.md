@@ -52,21 +52,22 @@ KATA (Komponent Action Test Architecture) is a testing framework that solves com
 ```
 ┌─────────────────────────────────────────────────────┐
 │                  Test Files Layer                   │
-│    (test_user_journey.e2e.ts, test_api.test.ts)    │
+│   (processCheckout.test.ts, authenticateUser.test.ts) │
 └────────────────────┬────────────────────────────────┘
-                     │ imports fixture + flows
+                     │ imports fixture + steps
                      ▼
 ┌─────────────────────────────────────────────────────┐
 │               Fixture Layer (DI)                    │
 │   TestFixture - Unified Entry Point                 │
 │   ├── api: ApiFixture                               │
-│   └── ui: UiFixture                                 │
+│   ├── ui: UiFixture                                 │
+│   └── steps: StepsFixture                           │
 └────────┬────────────────────────────────────────────┘
          │ instantiates components
          ▼
 ┌─────────────────────────────────────────────────────┐
-│        Flows Layer (Optional)               │
-│   (AuthFlows, CheckoutFlows) - Reusable ATC chains  │
+│        Steps Layer (Optional)               │
+│   (AuthSteps, CheckoutSteps) - Reusable ATC chains  │
 │         ← Orchestrates ATCs, NOT an ATC itself      │
 └────────┬────────────────────────────────────────────┘
          │ uses
@@ -97,9 +98,9 @@ KATA (Komponent Action Test Architecture) is a testing framework that solves com
 | **Test Context**        | Global utilities (config, logger, faker, HTTP client)     | `TestContext.ts`                                  |
 | **Base Components**     | Helpers for API or UI (HTTP methods, Playwright wrappers) | `ApiBase.ts`, `UiBase.ts`                         |
 | **Specific Components** | Business-specific logic, contains ATCs                    | `UsersApi.ts`, `LoginPage.ts`                     |
-| **Flows**               | Reusable ATC chains for test setup (optional)             | `AuthFlows.ts`, `CheckoutFlows.ts`                |
+| **Steps**               | Reusable ATC chains for test setup (optional)             | `AuthSteps.ts`, `CheckoutSteps.ts`                |
 | **Fixtures**            | Dependency Injection entry point                          | `ApiFixture.ts`, `UiFixture.ts`, `TestFixture.ts` |
-| **Test Files**          | Orchestrate ATCs to validate flows                        | `test_checkout_flow.e2e.ts`                       |
+| **Test Files**          | Orchestrate ATCs to validate steps                        | `test_checkout_flow.e2e.ts`                       |
 
 ---
 
@@ -125,8 +126,8 @@ KATA (Komponent Action Test Architecture) is a testing framework that solves com
 │   │   ├── UiBase.ts               # Layer 2: Minimal base (direct Playwright)
 │   │   └── SignupPage.ts           # Layer 3: SignupPage with ATCs
 │   │
-│   └── /flows               # Layer 3.5: Reusable ATC chains (optional)
-│       └── AuthFlows.ts            # Combines ATCs for test setup
+│   └── /steps               # Layer 3.5: Reusable ATC chains (optional)
+│       └── AuthSteps.ts            # Combines ATCs for test setup
 │
 ├── /data                            # Test data files
 │   ├── /fixtures                   # JSON, CSV for parameterization
@@ -207,7 +208,7 @@ An **ATC** is an automated acceptance test case that represents a **complete tes
 
 3. **No Unnecessary Helpers**: If Playwright does it in one line, don't abstract it.
 
-4. **ATCs Don't Call ATCs**: ATCs are atomic. They should NOT call other ATCs. Use the **Flows** module for reusable ATC chains (see `automation-standards.md` section 1.7).
+4. **ATCs Don't Call ATCs**: ATCs are atomic. They should NOT call other ATCs. Use the **Steps** module for reusable ATC chains (see `automation-standards.md` section 1.7).
 
 **Example (API):**
 
@@ -310,12 +311,12 @@ Playwright only creates fixtures that are actually requested:
 
 ```typescript
 // This test NEVER opens a browser
-test('API test', async ({ api }) => {
+test('TK-XXX: should execute API test', async ({ api }) => {
   await api.bookings.getAll(); // Only request context used
 });
 
 // This test opens a browser
-test('E2E test', async ({ ui }) => {
+test('TK-XXX: should execute E2E test', async ({ ui }) => {
   await ui.login.authenticate(user, password); // page context used
 });
 ```
@@ -323,7 +324,7 @@ test('E2E test', async ({ ui }) => {
 **Usage in tests:**
 
 ```typescript
-test('complete purchase flow', async ({ test: fixture }) => {
+test('TK-XXX: should complete purchase flow', async ({ test: fixture }) => {
   // Use API for fast setup (same context as UI)
   const user = await fixture.api.users.createUserSuccessfully({
     name: 'John',
@@ -389,7 +390,7 @@ test('complete purchase flow', async ({ test: fixture }) => {
 
 - Always camelCase
 - Always English
-- **Must be complete test cases (mini-flows), NOT single interactions**
+- **Must be complete test cases (mini-steps), NOT single interactions**
 - Success scenarios: `Successfully` or `WithValidCredentials` suffix
 - Error scenarios: `WithInvalid{X}`, `WithExpired{Y}`, `WithNonExistent{Z}`
 
@@ -397,8 +398,8 @@ test('complete purchase flow', async ({ test: fixture }) => {
 
 | Type                 | Pattern              | Example                              |
 | -------------------- | -------------------- | ------------------------------------ |
-| **E2E Test**         | `{feature}.test.ts`  | `signUp.test.ts`, `checkout.test.ts` |
-| **Integration Test** | `{resource}.test.ts` | `auth.test.ts`, `users.test.ts`      |
+| **E2E Test**         | `{verb}{Feature}.test.ts`  | `processCheckout.test.ts`, `createSignup.test.ts` |
+| **Integration Test** | `{verb}{Resource}.test.ts` | `authenticateUser.test.ts`, `importBookings.test.ts` |
 | **Utility Test**     | `{util}.test.ts`     | `decorators.test.ts`                 |
 
 ---
@@ -526,4 +527,3 @@ For a complete list of implemented components and their ATCs, see:
 - **Automation Standards**: `.context/guidelines/TAE/automation-standards.md`
 - **TMS Integration**: `.context/guidelines/TAE/tms-integration.md`
 - **CI/CD Integration**: `.context/guidelines/TAE/ci-cd-integration.md`
-- **Framework Setup**: `.prompts/utilities/kata-framework-setup.md`

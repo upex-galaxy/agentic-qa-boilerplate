@@ -108,7 +108,7 @@ tests/
 import { expect, test } from '@TestFixture';
 
 test.describe('Auth API', () => {
-  test('should login with valid credentials', async ({ api }) => {
+  test('TK-XXX: should login with valid credentials', async ({ api }) => {
     // ARRANGE - Prepare test data
     const credentials = {
       username: 'test@example.com',
@@ -122,7 +122,7 @@ test.describe('Auth API', () => {
     expect(body.access_token).toContain('eyJ'); // JWT format
   });
 
-  test('should reject invalid credentials', async ({ api }) => {
+  test('TK-XXX: should reject invalid credentials', async ({ api }) => {
     // ARRANGE
     const invalidCredentials = {
       username: 'fake@example.com',
@@ -290,7 +290,7 @@ const [response, body] = await this.apiGET<SearchResults>('/search', {
 ### Login and Store Token
 
 ```typescript
-test('authenticated API call', async ({ api }) => {
+test('TK-XXX: should make authenticated API call', async ({ api }) => {
   // Login first - token is automatically stored
   await api.auth.loginSuccessfully({
     username: 'admin@example.com',
@@ -390,7 +390,7 @@ async createBookingSuccessfully(payload: BookingPayload): Promise<[APIResponse, 
 Additional assertions can be added in test files for flow validation:
 
 ```typescript
-test('booking flow', async ({ api }) => {
+test('TK-XXX: should complete booking flow', async ({ api }) => {
   const payload = { hotelId: 123, guestEmail: 'test@example.com', ... };
 
   // ATC has fixed assertions
@@ -444,7 +444,7 @@ async loginWithUsername(username: string) { ... }
 ### 2. Use Test Data Generation
 
 ```typescript
-test('create booking', async ({ api }) => {
+test('TK-XXX: should create booking with generated data', async ({ api }) => {
   const payload = {
     guestEmail: api.generateEmail('booking-test'),
     guestName: api.generateName(),
@@ -458,7 +458,7 @@ test('create booking', async ({ api }) => {
 ### 3. Chain ATCs for Complex Flows
 
 ```typescript
-test('complete booking flow', async ({ api }) => {
+test('TK-XXX: should complete booking flow end to end', async ({ api }) => {
   // Login first
   await api.auth.loginSuccessfully(credentials);
 

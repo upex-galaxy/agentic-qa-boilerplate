@@ -198,7 +198,7 @@ export class RegistrationPage extends UiBase {
 import { test, expect } from '@TestFixture';
 
 test.describe('User Registration', () => {
-  test('should register new user successfully', async ({ ui }) => {
+  test('TK-XXX: should register new user successfully', async ({ ui }) => {
     // ARRANGE - DataFactory generates dynamic data
     const user = ui.data.createUser();
 
@@ -209,7 +209,7 @@ test.describe('User Registration', () => {
     await expect(ui.page.locator('[data-testid="welcome"]')).toContainText(user.name);
   });
 
-  test('should register user with specific email', async ({ ui }) => {
+  test('TK-XXX: should register user with specific email', async ({ ui }) => {
     // Specific override for this test
     const user = ui.data.createUser({
       email: 'vip@example.com',
@@ -227,7 +227,7 @@ test.describe('User Registration', () => {
 import { test, expect } from '@TestFixture';
 
 test.describe('Bookings API', () => {
-  test('should create booking with generated data', async ({ api }) => {
+  test('TK-XXX: should create booking with generated data', async ({ api }) => {
     // ARRANGE
     const booking = api.data.createBooking({
       hotelId: 123, // Specific hotel

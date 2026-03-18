@@ -10,7 +10,7 @@
 
 Quick orientation, critical rules, and task-based navigation.
 
-**For implementing ATCs**: See **`.prompts/stage-4-automation/`**
+**For implementing ATCs**: See the project's prompts directory
 
 ---
 
@@ -22,6 +22,7 @@ Quick orientation, critical rules, and task-based navigation.
 | ------------------------- | -------------------------------------------------- |
 | `kata-ai-index.md`        | **AI Entry Point** - Quick reference for AI agents |
 | `kata-architecture.md`    | Architecture layers (TypeScript implementation)    |
+| `test-design-principles.md` | **Source of truth** for ATC rules and test design |
 | `automation-standards.md` | Code standards, naming, anti-patterns              |
 | `typescript-patterns.md`  | TypeScript coding patterns and DRY principles      |
 | `openapi-integration.md`  | OpenAPI integration and MCP setup                  |
@@ -52,24 +53,48 @@ Generate with: `bun run kata:manifest`
 ### For AI Agents
 
 1. Read `kata-ai-index.md` for orientation
-2. Follow `.prompts/stage-4-automation/` prompts for implementation
 3. Run `bun run kata:manifest` to see existing components
 
 ### For QA Engineers
 
 1. Read `kata-architecture.md` to understand KATA
 2. Read `automation-standards.md` for coding rules
-3. Follow `.prompts/stage-4-automation/` prompts to create components
 4. Reference `tms-integration.md` for Jira/Xray setup
 5. Reference `ci-cd-integration.md` for CI/CD
+
+---
+
+## From QA to TAE
+
+The bridge between QA test documentation and KATA automation:
+
+```
+QA (Stage 3: Test Documentation)          TAE (Stage 4: Automation)
+─────────────────────────────             ──────────────────────────
+Test Cases in Jira (TK-XXX)     ───►      @atc('TK-XXX') in Components
+  └── Acceptance criteria                    └── Action + Verification + Assertions
+
+E2E/Integration tickets (TK-YYY) ───►    test('TK-YYY: should...') in Test Files
+  └── Complete user flow                     └── Combines multiple ATCs
+```
+
+- QA creates **Acceptance Test Cases** in Jira during exploratory testing and test documentation
+- TAE implements those test cases as **ATCs** in KATA components via `@atc('TK-XXX')`
+- E2E and Integration tests combine multiple ATCs into complete flows
+- Results sync back to Jira/Xray via TMS integration
+
+**Related files:**
+- **ATC Definition Strategy** (the bridge document): `.context/guidelines/QA/atc-definition-strategy.md`
+- QA test documentation: `.context/guidelines/QA/jira-test-management.md`
+- TMS integration: `tms-integration.md`
+- Test design principles: `test-design-principles.md`
+- IQL Methodology: `docs/methodology/IQL-methodology.md`
 
 ---
 
 ## References
 
 - **AI Guide**: `kata-ai-index.md`
-- **AI Workflow**: `.prompts/stage-4-automation/`
-- **Framework Adaptation**: `.prompts/setup/kata-framework-adaptation.md`
 - **Fundamentals**: `docs/methodology/kata-fundamentals.md` (conceptual reference only)
 - **DI Strategy**: `docs/testing/automation/dependency-injection.md` (Playwright lazy loading)
 - **Component Catalog**: `kata-manifest.json` (run `bun run kata:manifest`)

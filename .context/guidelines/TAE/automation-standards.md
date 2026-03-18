@@ -45,6 +45,38 @@ async signInWithInvalidCredentials(payload: SignInPayload) {
 - Same error message for different invalid inputs
 - Same redirect for different valid data
 
+**Conditionals in ATCs:**
+
+Fixed assertions validate the invariant output. Use conditionals sparingly for slight output variations within the same behavior. If the actions or behavior fundamentally differ, create a separate ATC.
+
+```typescript
+// ✅ ACCEPTABLE - Minor conditional for slight output variation
+@atc('PROJ-001')
+async createOrderSuccessfully(payload: OrderPayload) {
+  const [response, body] = await this.apiPOST<Order, OrderPayload>('/orders', payload);
+  expect(response.status()).toBe(201);
+  expect(body.id).toBeDefined();
+
+  // Slight variation: express orders get expedited status
+  if (payload.isExpress) {
+    expect(body.status).toBe('expedited');
+  } else {
+    expect(body.status).toBe('pending');
+  }
+}
+
+// ❌ WRONG - Behavior is fundamentally different, should be separate ATCs
+@atc('PROJ-001')
+async processPayment(payload: PaymentPayload) {
+  if (payload.type === 'refund') {
+    // Completely different endpoint and behavior
+    await this.apiPOST('/refunds', payload);
+  } else {
+    await this.apiPOST('/payments', payload);
+  }
+}
+```
+
 ### 1.2 Locators Inside ATCs (No Abstraction)
 
 **All locators must be defined inline within ATCs. No separate locator objects or helper methods for single Playwright actions.**
@@ -168,7 +200,7 @@ private async waitForLoadingComplete() {
 
 Think of ATCs like Gherkin scenarios:
 
-- **Given**: Flows (data passed as arguments)
+- **Given**: Steps (data passed as arguments)
 - **When**: The action being tested
 - **Then**: Expected outcome (fixed assertions)
 
@@ -181,7 +213,7 @@ async checkoutWithNewUser(userData: UserData) {
 }
 
 // ✅ CORRECT - ATCs are atomic, combined in test files
-test('checkout with new user', async ({ ui, api }) => {
+test('TK-XXX: should checkout with new user', async ({ ui, api }) => {
   // Each ATC is called separately
   await ui.signup.signupWithValidCredentials(userData);
   await ui.cart.addToCartSuccessfully(product);
@@ -196,7 +228,7 @@ test('checkout with new user', async ({ ui, api }) => {
 - Failures are easier to diagnose
 - Test files orchestrate the flow, ATCs execute actions
 
-**For reusable flows, see Section 1.7: Flows Module**
+**For reusable step chains, see Section 1.7: Steps Module**
 
 ### 1.5 Test Data Strategy
 
@@ -222,7 +254,7 @@ export const config = {
 Generated during test execution using `TestContext` utilities:
 
 ```typescript
-test('create user', async ({ api }) => {
+test('TK-XXX: should create user with dynamic data', async ({ api }) => {
   // Dynamic data generated at runtime
   const userData = api.generateUserData();
   await api.users.createUserSuccessfully(userData);
@@ -323,15 +355,15 @@ await Promise.all([
 ]);
 ```
 
-### 1.7 Flows Module
+### 1.7 Steps Module
 
-When multiple tests need the same sequence of ATCs, create a **Flows** component.
+When multiple tests need the same sequence of ATCs, create a **Steps** component.
 
 **Problem**: Repetitive ATC chains across test files
 
 ```typescript
 // Repeated in 10 test files - hard to maintain
-test('test 1', async ({ ui }) => {
+test('TK-XXX: should complete test scenario', async ({ ui }) => {
   await ui.auth.loginSuccessfully(credentials);
   await ui.profile.completeOnboardingSuccessfully();
   await ui.settings.enableFeatureSuccessfully();
@@ -339,13 +371,13 @@ test('test 1', async ({ ui }) => {
 });
 ```
 
-**Solution**: Flows module
+**Solution**: Steps module
 
 ```typescript
-// tests/components/flows/AuthFlows.ts
+// tests/components/steps/AuthSteps.ts
 import { UiFixture } from '@UiFixture';
 
-export class AuthFlows {
+export class AuthSteps {
   constructor(private ui: UiFixture) {}
 
   /**
@@ -373,9 +405,9 @@ export class AuthFlows {
 **Usage in tests:**
 
 ```typescript
-test('checkout flow', async ({ ui }) => {
-  const flows = new AuthFlows(ui);
-  await flows.setupUserWithCart(credentials, ['Laptop', 'Mouse']);
+test('TK-XXX: should complete checkout flow', async ({ ui }) => {
+  const steps = new AuthSteps(ui);
+  await steps.setupUserWithCart(credentials, ['Laptop', 'Mouse']);
 
   // Now test the actual checkout
   await ui.checkout.completeCheckoutSuccessfully();
@@ -384,10 +416,86 @@ test('checkout flow', async ({ ui }) => {
 
 **Key points:**
 
-- Flows are NOT ATCs (no `@atc` decorator)
+- Steps are NOT ATCs (no `@atc` decorator)
 - They orchestrate ATCs, not replace them
 - Changes to flow = edit one file, not 10 test files
 - Named clearly: `setup*`, `prepare*`
+- Used primarily for **preconditions** — reusable setup chains that multiple test files need
+
+#### StepsFixture (Dependency Injection)
+
+Like `ApiFixture` and `UiFixture`, Steps have their own fixture for DI:
+
+```typescript
+// tests/components/StepsFixture.ts
+import type { TestContextOptions } from '@TestContext';
+import { TestContext } from '@TestContext';
+import { ApiFixture } from '@ApiFixture';
+import { UiFixture } from '@UiFixture';
+import { AuthSteps } from '@steps/AuthSteps';
+
+export class StepsFixture extends TestContext {
+  readonly auth: AuthSteps;
+
+  constructor(options: TestContextOptions, api: ApiFixture, ui: UiFixture) {
+    super(options);
+    this.auth = new AuthSteps(ui, api);
+    // Add more steps as needed:
+    // this.checkout = new CheckoutSteps(ui, api);
+  }
+}
+```
+
+**Integration in TestFixture:**
+
+```typescript
+// TestFixture.ts - add steps alongside api and ui
+export const test = base.extend<{
+  test: TestFixture;
+  api: ApiFixture;
+  ui: UiFixture;
+  steps: StepsFixture;
+}>({
+  // ... existing fixtures ...
+
+  steps: async ({ page, request }, use) => {
+    const options = { page, request };
+    const api = new ApiFixture(options);
+    const ui = new UiFixture(options);
+    const stepsFixture = new StepsFixture(options, api, ui);
+    await use(stepsFixture);
+  },
+});
+```
+
+**Usage with `{ steps }` fixture:**
+
+```typescript
+// Preconditions via steps fixture, then test the actual scenario
+test('TK-XXX: should display order confirmation after checkout', async ({ steps, ui }) => {
+  await steps.auth.setupAuthenticatedUser(credentials);
+  await ui.checkout.completeCheckoutSuccessfully();
+  await expect(ui.page.locator('[data-testid="confirmation"]')).toBeVisible();
+});
+```
+
+#### Steps Directory Structure
+
+```
+tests/components/steps/
+├── AuthSteps.ts          # Authentication + onboarding setup
+├── BookingSteps.ts       # Booking precondition chains
+└── ExampleSteps.ts       # Reference template (EXAMPLE ONLY)
+```
+
+#### When to Use Steps vs Direct ATC Calls
+
+| Scenario | Use Steps | Use Direct ATCs |
+|----------|-----------|-----------------|
+| Same 3+ ATC chain in 3+ test files | Yes | No |
+| One-off precondition | No | Yes |
+| Complex setup with 5+ ATCs | Yes | No |
+| Simple single-ATC setup | No | Yes |
 
 ---
 
@@ -419,8 +527,8 @@ test('checkout flow', async ({ ui }) => {
 
 | Type        | Pattern              | Example          |
 | ----------- | -------------------- | ---------------- |
-| E2E Test    | `{feature}.test.ts`  | `signUp.test.ts` |
-| Integration | `{resource}.test.ts` | `auth.test.ts`   |
+| E2E Test    | `{verb}{Feature}.test.ts`  | `createSignup.test.ts` |
+| Integration | `{verb}{Resource}.test.ts` | `authenticateUser.test.ts` |
 
 ---
 
@@ -573,7 +681,7 @@ await expect(this.page).toHaveURL(/.*dashboard.*/);
 Validate results after combining multiple ATCs:
 
 ```typescript
-test('complete flow', async ({ test }) => {
+test('TK-XXX: should complete flow', async ({ test }) => {
   const user = await test.api.auth.signInSuccessfully(credentials);
 
   // Test-level assertion - validates business logic
@@ -587,14 +695,22 @@ test('complete flow', async ({ test }) => {
 
 ### Soft Fail Option
 
-Use `softFail: true` for non-blocking assertions:
+The `@atc` decorator accepts an optional second argument with the following options:
 
 ```typescript
-@atc('PROJ-001', { softFail: true })
+@atc('PROJ-001', { softFail: true, severity: 'critical' })
 async verifyOptionalField() {
-  // Failure won't stop test execution
+  // softFail: failure won't stop test execution, just logs it
+  // severity: associates criticality level for reporting
 }
 ```
+
+**Options:**
+
+| Option     | Type    | Default | Description                                                    |
+| ---------- | ------- | ------- | -------------------------------------------------------------- |
+| `softFail` | boolean | `false` | When `true`, ATC failure doesn't block the test flow — only logs the failure |
+| `severity` | string  | —       | Criticality level for reporting: `critical`, `high`, `medium`, `low` |
 
 ### When to Use Soft Fail
 
@@ -654,7 +770,7 @@ import { config } from '../../../config/variables';
 ### Example
 
 ```typescript
-test('create user', async ({ api }) => {
+test('TK-XXX: should create user', async ({ api }) => {
   // Generate unique data for this test
   const userData = api.generateUserData();
 
@@ -702,7 +818,7 @@ Common mistakes to avoid when implementing KATA:
 | **Separate locator storage file**  | Maintenance overhead, disconnected from tests | Locators inline in ATCs          |
 | **Multiple ATCs with same output** | Violates equivalence partitioning             | One parameterized ATC            |
 | **Helper for `page.fill()`**       | Playwright already does this                  | Delete helper, use inline        |
-| **ATC calling another ATC**        | Breaks atomicity and traceability             | Use Flows module                 |
+| **ATC calling another ATC**        | Breaks atomicity and traceability             | Use Steps module                 |
 | **`waitForTimeout(3000)`**         | Arbitrary, flaky, slow                        | Wait for specific condition      |
 | **Relying on retries**             | Masks real issues                             | Investigate failures immediately |
 | **Shared state between tests**     | Tests become order-dependent                  | Each test creates own data       |
@@ -759,7 +875,7 @@ Tools: axe-core, Playwright accessibility snapshots
 // Using @axe-core/playwright
 import AxeBuilder from '@axe-core/playwright';
 
-test('accessibility', async ({ page }) => {
+test('TK-XXX: should pass accessibility checks', async ({ page }) => {
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 });
@@ -821,6 +937,3 @@ export default defineConfig({
 ## References
 
 - **KATA Architecture**: `kata-architecture.md`
-- **Framework Adaptation**: `.prompts/setup/kata-framework-adaptation.md`
-- **E2E Automation**: `.prompts/stage-4-automation/e2e-test-automation-coding.md`
-- **API Automation**: `.prompts/stage-4-automation/integration-test-automation-coding.md`

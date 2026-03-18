@@ -118,10 +118,7 @@ See `mcp-usage-tips.md` for usage patterns and `MCP/` folder for detailed guides
 
 ## Workflows
 
-Guidelines are **constant principles**. For step-by-step workflows, see:
-
-- `.prompts/stage-4-automation/` - Test automation prompts
-- `.prompts/us-qa-workflow.md` - Complete QA workflow
+Guidelines are **constant principles**. See the project's prompts directory for workflow guides.
 
 ---
 

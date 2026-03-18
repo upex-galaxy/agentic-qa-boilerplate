@@ -10,7 +10,7 @@
 
 KATA (Komponent Action Test Architecture) is a test automation framework where:
 
-- **ATCs** (Acceptance Test Cases) are **complete test flows**, NOT single clicks
+- **ATCs** (Acceptance Test Cases) are **complete test steps**, NOT single clicks
 - Each ATC = **One unique expected output** (Equivalence Partitioning)
 - **Locators are inline** within ATCs, not in separate files
 - Tests call ATCs, **ATCs don't call other ATCs**
@@ -33,14 +33,14 @@ KATA (Komponent Action Test Architecture) is a test automation framework where:
 | ---------------------------------- | ----------------------------------------------------------------- |
 | Understand KATA concepts           | `kata-architecture.md` or `docs/kata-fundamentals.md`             |
 | **Understand DI and lazy loading** | `docs/testing/automation/dependency-injection.md`                 |
-| Create a new UI component          | `.prompts/stage-4-automation/e2e-test-automation-coding.md`       |
-| Create a new API component         | `.prompts/stage-4-automation/integration-test-automation-coding.md` |
+| Create a new UI component          | `automation-standards.md` + `kata-architecture.md`                |
+| Create a new API component         | `automation-standards.md` + `kata-architecture.md`                |
 | Know naming conventions            | `automation-standards.md` (section 2)                             |
 | See anti-patterns (what NOT to do) | `automation-standards.md` (section 11)                            |
-| Adapt KATA to your project         | `.prompts/setup/kata-framework-adaptation.md`                     |
+| Adapt KATA to your project         | `kata-architecture.md` + `automation-standards.md`                |
 | Review ATC fundamental rules       | `automation-standards.md` (section 1)                             |
 | Understand test data strategy      | `test-data-management.md`                                         |
-| Learn about Flows module           | `automation-standards.md` (section 1.7)                           |
+| Learn about Steps module           | `automation-standards.md` (section 1.7)                           |
 | Configure TMS integration          | `tms-integration.md`                                              |
 | Configure CI/CD                    | `ci-cd-integration.md`                                            |
 | Configure OpenAPI/MCP              | `openapi-integration.md`                                          |
@@ -129,7 +129,7 @@ class LoginPage extends UiBase {
 
 ### 4. ATCs Don't Call ATCs
 
-ATCs are atomic. Use **Flows module** for reusable flows:
+ATCs are atomic. Use **Steps module** for reusable steps:
 
 ```typescript
 // ❌ WRONG - ATC calling another ATC
@@ -139,9 +139,9 @@ async checkoutWithNewUser() {
   await this.addToCartSuccessfully(product);
 }
 
-// ✅ CORRECT - Use Flows module
-// tests/components/flows/AuthFlows.ts
-export class AuthFlows {
+// ✅ CORRECT - Use Steps module
+// tests/components/steps/AuthSteps.ts
+export class AuthSteps {
   constructor(private ui: UiFixture) {}
 
   async setupAuthenticatedUser(credentials: Credentials) {
@@ -151,9 +151,9 @@ export class AuthFlows {
 }
 
 // In test file:
-test('checkout flow', async ({ ui }) => {
-  const flows = new AuthFlows(ui);
-  await flows.setupAuthenticatedUser(credentials);
+test('TK-XXX: should complete checkout flow', async ({ ui }) => {
+  const steps = new AuthSteps(ui);
+  await steps.setupAuthenticatedUser(credentials);
   await ui.checkout.completeCheckoutSuccessfully();
 });
 ```
@@ -198,7 +198,7 @@ These files are marked as **EXAMPLE COMPONENT** and demonstrate all KATA princip
 | ----------------- | --------------------------------------- | --------------------------------------------------- |
 | **UI Component**  | `tests/components/ui/ExamplePage.ts`    | Inline locators, shared locators, `@atc` decorator  |
 | **API Component** | `tests/components/api/ExampleApi.ts`    | Tuple returns, fixed assertions, type-safe generics |
-| **Flows**         | `tests/components/flows/ExampleFlows.ts`| Reusable ATC chains                                 |
+| **Steps**         | `tests/components/steps/ExampleSteps.ts`| Reusable ATC chains                                 |
 
 ---
 
@@ -218,8 +218,8 @@ These files are marked as **EXAMPLE COMPONENT** and demonstrate all KATA princip
 │   ├── /ui
 │   │   ├── UiBase.ts         # Layer 2: Playwright helpers
 │   │   └── ExamplePage.ts    # Layer 3: Example UI component
-│   └── /flows
-│       └── ExampleFlows.ts   # Layer 3.5: Reusable flows
+│   └── /steps
+│       └── ExampleSteps.ts   # Layer 3.5: Reusable steps
 │
 ├── /e2e                       # E2E tests (UI + API)
 ├── /integration               # API-only tests
@@ -240,20 +240,21 @@ These files are marked as **EXAMPLE COMPONENT** and demonstrate all KATA princip
 | API only  | `{ api }`      | No (lazy)      |
 | UI only   | `{ ui }`       | Yes            |
 | Hybrid    | `{ test }`     | Yes            |
+| Steps     | `{ steps }`    | Depends on steps used |
 
 ```typescript
 // API test - no browser overhead
-test('get bookings', async ({ api }) => {
+test('TK-XXX: should get bookings', async ({ api }) => {
   await api.bookings.getAll();
 });
 
 // E2E test - browser opens
-test('view bookings', async ({ ui }) => {
+test('TK-XXX: should view bookings', async ({ ui }) => {
   await ui.bookings.navigateTo();
 });
 
 // Hybrid - shared context between API and UI
-test('create via API, verify via UI', async ({ test: fixture }) => {
+test('TK-XXX: should create via API and verify via UI', async ({ test: fixture }) => {
   const booking = await fixture.api.bookings.create(data);
   await fixture.ui.bookings.verifyExists(booking.id);
 });
@@ -302,8 +303,8 @@ Playwright → TestContextOptions → TestContext → Base → Component → Fix
 
 | Type        | Pattern              | Example            |
 | ----------- | -------------------- | ------------------ |
-| E2E         | `{feature}.test.ts`  | `checkout.test.ts` |
-| Integration | `{resource}.test.ts` | `auth.test.ts`     |
+| E2E         | `{verb}{Feature}.test.ts`  | `processCheckout.test.ts` |
+| Integration | `{verb}{Resource}.test.ts` | `authenticateUser.test.ts` |
 
 ---
 
@@ -333,10 +334,7 @@ TEST_USER_PASSWORD=secret123
 
 ## AI Implementation Workflow
 
-For implementing ATCs from User Stories using the Playwright MCP, see:
-
-- **E2E Tests**: `.prompts/stage-4-automation/e2e-test-automation-coding.md`
-- **API Tests**: `.prompts/stage-4-automation/integration-test-automation-coding.md`
+See the project's prompts directory for workflow guides.
 
 ### Workflow Phases Overview
 
@@ -377,7 +375,7 @@ Phase 5: Validation & Git Commit
 
 Run `bun run kata:manifest` to generate `kata-manifest.json` with:
 
-- All components (API, UI, Flows)
+- All components (API, UI, Steps)
 - All ATCs with their Jira/Xray IDs
 - File locations and method names
 

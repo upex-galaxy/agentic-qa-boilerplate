@@ -178,7 +178,11 @@ testUser('user can update profile', async ({ user, page }) => {
 });
 ```
 
-### Page Objects
+### Patrones de Abstracción de UI
+
+Existen varios patrones para organizar la interacción con la UI en tests automatizados. A continuación los más comunes:
+
+#### Page Objects (Patrón Tradicional)
 
 Encapsulan la estructura de una página en un objeto reutilizable:
 
@@ -208,6 +212,47 @@ test('login', async ({ page }) => {
   await loginPage.login('test@example.com', 'password123');
 });
 ```
+
+#### Component-Based Architecture (KATA)
+
+En lugar de agrupar locators en un objeto, los **componentes** agrupan acciones completas (ATCs) con assertions incluidas:
+
+```typescript
+// Component-based (KATA framework)
+class LoginPage extends UiBase {
+  @atc('PROJ-001')
+  async loginSuccessfully(email: string, password: string) {
+    await this.page.goto('/login');
+    await this.page.fill('#email', email);
+    await this.page.fill('#password', password);
+    await this.page.click('button[type="submit"]');
+    // Assertions included in the component
+    await expect(this.page).toHaveURL(/.*dashboard.*/);
+  }
+}
+```
+
+**Ventajas**: Cada método es un test case completo (acción + verificación), reutilizable, y con trazabilidad directa a tickets del TMS.
+
+> **Nota**: Este boilerplate usa el enfoque Component-based (KATA). Para más detalles, ver `.context/guidelines/TAE/automation-standards.md`.
+
+#### Screenplay Pattern
+
+Modela las interacciones como tareas que realizan actores:
+
+```typescript
+// Screenplay pattern (conceptual)
+await actor.attemptsTo(
+  Navigate.to('/login'),
+  Fill.field('#email', email),
+  Click.on('button[type="submit"]'),
+  Ensure.that(CurrentPage.url(), containsString('dashboard')),
+);
+```
+
+**Ventajas**: Muy legible, desacopla "qué" de "cómo". Usado en frameworks como Serenity/JS.
+
+---
 
 ### Assertions
 

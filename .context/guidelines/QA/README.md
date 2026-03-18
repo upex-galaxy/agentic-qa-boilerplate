@@ -33,9 +33,10 @@ This folder contains the guidelines for **general Quality Engineering**, focused
 
 | File                      | Purpose                                |
 | ------------------------- | -------------------------------------- |
-| `exploratory-testing.md`  | Exploratory testing principles         |
-| `jira-test-management.md` | Test management in Jira                |
-| `spec-driven-testing.md`  | Spec-driven testing principle          |
+| `exploratory-testing.md`    | Exploratory testing principles                          |
+| `jira-test-management.md`  | Test management in Jira                                 |
+| `spec-driven-testing.md`   | Spec-driven testing principle                           |
+| `atc-definition-strategy.md` | **How to define, name, and document ATCs** (QA↔TAE bridge) |
 
 **Note**: For `data-testid` usage in automation, see `TAE/data-testid-usage.md`.
 
@@ -65,11 +66,7 @@ The AI MUST read these guidelines **BEFORE**:
 
 ## QA Workflow
 
-For the detailed step-by-step workflow, see:
-
-- `.prompts/us-qa-workflow.md` - Complete QA workflow
-- `.prompts/stage-2-exploratory/` - Exploratory testing prompts
-- `.prompts/stage-3-documentation/` - Documentation prompts
+See the project's prompts directory for workflow guides.
 
 ---
 

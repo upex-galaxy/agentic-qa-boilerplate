@@ -1,232 +1,270 @@
-PANORAMA DEL CÓDIGO DE PRUEBA
+# Test Code Overview
 
-1. Arquitectura de Capas (KATA Framework)
+## 1. Layer Architecture (KATA Framework)
 
+```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ LAYER 4: FIXTURES (Entry Points) │
+│ LAYER 4: FIXTURES (Entry Points)                                            │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ TestFixture.ts │
-│ ├── test: TestFixture (page + request → UI + API) │
-│ ├── ui: UiFixture (page only) │
-│ └── api: ApiFixture (request only, NO browser) │
-│ │
-│ ApiFixture.ts UiFixture.ts │
-│ ├── auth: AuthApi ├── login: LoginPage │
-│ └── example: ExampleApi └── example: ExamplePage │
+│ TestFixture.ts                                                              │
+│ ├── test: TestFixture (page + request → UI + API)                           │
+│ ├── ui: UiFixture (page only)                                               │
+│ ├── api: ApiFixture (request only, NO browser)                              │
+│ └── steps: StepsFixture (reusable precondition chains)                      │
+│                                                                             │
+│ ApiFixture.ts                UiFixture.ts                                   │
+│ ├── auth: AuthApi            ├── login: LoginPage                           │
+│ └── example: ExampleApi      └── example: ExamplePage                       │
 └─────────────────────────────────────────────────────────────────────────────┘
 │
 ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ LAYER 3: DOMAIN COMPONENTS (ATCs) │
+│ LAYER 3: DOMAIN COMPONENTS (ATCs)                                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ AuthApi.ts LoginPage.ts │
-│ ├── @atc authenticateSuccessfully() ├── @atc loginSuccessfully() │
-│ ├── @atc loginWithInvalidCreds() ├── @atc loginWithInvalidCredentials() │
-│ ├── @atc getCurrentUserOK() └── goto() [llamar ANTES del ATC] │
-│ └── @atc getCurrentUserUnauth() │
+│ AuthApi.ts                         LoginPage.ts                             │
+│ ├── getCurrentUser() [HELPER]      ├── @atc loginSuccessfully()             │
+│ ├── @atc authenticateSuccessfully()├── @atc loginWithInvalidCredentials()   │
+│ └── @atc loginWithInvalidCreds()   └── goto() [call BEFORE ATC]            │
 └─────────────────────────────────────────────────────────────────────────────┘
 │
 ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ LAYER 2: BASE COMPONENTS (Helpers) │
+│ LAYER 3.5: STEPS (Reusable ATC Chains)                                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ ApiBase.ts UiBase.ts │
-│ ├── apiGET/POST/PUT/PATCH/DELETE ├── page (getter) │
-│ ├── setAuthToken/clearAuthToken ├── buildUrl() │
-│ ├── buildHeaders() ├── interceptResponse() │
-│ └── apiEndpoint() └── waitForApiResponse() │
+│ AuthSteps.ts                                                                │
+│ ├── setupAuthenticatedUser()                                                │
+│ └── setupUserWithCart()                                                     │
 └─────────────────────────────────────────────────────────────────────────────┘
 │
 ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ LAYER 1: TEST CONTEXT (Foundation) │
+│ LAYER 2: BASE COMPONENTS (Helpers)                                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ TestContext.ts │
-│ ├── \_page: Page (protected) │
-│ ├── \_request: APIRequestContext (protected) │
-│ ├── env: Environment │
-│ ├── config: Config object │
-│ └── data: DataFactory (static) │
+│ ApiBase.ts                         UiBase.ts                                │
+│ ├── apiGET/POST/PUT/PATCH/DELETE   ├── page (getter)                        │
+│ ├── setAuthToken/clearAuthToken    ├── buildUrl()                           │
+│ ├── buildHeaders()                 ├── interceptResponse()                  │
+│ └── apiEndpoint()                  └── waitForApiResponse()                 │
 └─────────────────────────────────────────────────────────────────────────────┘
+│
+▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ LAYER 1: TEST CONTEXT (Foundation)                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ TestContext.ts                                                               │
+│ ├── _page: Page (protected)                                                 │
+│ ├── _request: APIRequestContext (protected)                                 │
+│ ├── env: Environment                                                        │
+│ ├── config: Config object                                                   │
+│ └── data: DataFactory (static)                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-2. Flujo de Inyección de Dependencias
+## 2. Dependency Injection Flow
 
-2.1 Test → Fixture → Component
+### 2.1 Test → Fixture → Component
 
-// Test file usa Playwright fixtures
-test('example', async ({ test }) => { // ← Playwright inyecta `test`
-await test.ui.login.loginSuccessfully(creds); // test → ui → login → método
-await test.api.auth.getCurrentUserSuccessfully(); // test → api → auth → método
+```typescript
+// Test file uses Playwright fixtures
+test('example', async ({ test }) => {         // ← Playwright injects `test`
+  await test.ui.login.loginSuccessfully(creds);       // test → ui → login → method
+  await test.api.auth.authenticateSuccessfully(creds); // test → api → auth → method
 });
+```
 
-2.2 Cadena de Creación
+### 2.2 Creation Chain
 
+```
 Playwright creates:
-page: Page
-request: APIRequestContext
-│
-▼
+  page: Page
+  request: APIRequestContext
+  │
+  ▼
 TestFixture.ts (Layer 4):
-test: async ({ page, request }, use) => {
-const fixture = new TestFixture(page, request); // ← Crea fixture
-await use(fixture);
-}
-│
-▼
+  test: async ({ page, request }, use) => {
+    const fixture = new TestFixture(page, request);  // ← Creates fixture
+    await use(fixture);
+  }
+  │
+  ▼
 TestFixture (constructor):
-super({ page, request, environment }); // ← Pasa a TestContext
-this.api = new ApiFixture(options); // ← Crea ApiFixture con mismas options
-this.ui = new UiFixture(options); // ← Crea UiFixture con mismas options
-│
-▼
+  super({ page, request, environment });  // ← Passes to TestContext
+  this.api = new ApiFixture(options);     // ← Creates ApiFixture with same options
+  this.ui = new UiFixture(options);       // ← Creates UiFixture with same options
+  │
+  ▼
 ApiFixture (constructor):
-super(options); // ← Hereda de ApiBase
-this.auth = new AuthApi(options); // ← Crea AuthApi con mismas options
-this.example = new ExampleApi(options);
-│
-▼
+  super(options);                         // ← Inherits from ApiBase
+  this.auth = new AuthApi(options);       // ← Creates AuthApi with same options
+  this.example = new ExampleApi(options);
+  │
+  ▼
 AuthApi (constructor):
-super(options); // ← Hereda de ApiBase → TestContext
+  super(options);                         // ← Inherits from ApiBase → TestContext
+```
 
-2.3 Diagrama Visual
+### 2.3 Visual Diagram
 
+```
 ┌──────────────────────────────────────────────────────────────────┐
-│ PLAYWRIGHT TEST RUNNER │
-│ Provides: { page, request } │
+│ PLAYWRIGHT TEST RUNNER                                            │
+│ Provides: { page, request }                                       │
 └──────────────────────────────────────────────────────────────────┘
 │
 ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│ test fixture │
-│ TestFixture { page, request } │
-│ ├── api: ApiFixture { request } │
-│ │ ├── auth: AuthApi { request } │
-│ │ └── example: ExampleApi { request } │
-│ └── ui: UiFixture { page, request } │
-│ ├── login: LoginPage { page } │
-│ └── example: ExamplePage { page } │
+│ test fixture                                                      │
+│ TestFixture { page, request }                                     │
+│ ├── api: ApiFixture { request }                                   │
+│ │   ├── auth: AuthApi { request }                                 │
+│ │   └── example: ExampleApi { request }                           │
+│ └── ui: UiFixture { page, request }                               │
+│     ├── login: LoginPage { page }                                 │
+│     └── example: ExamplePage { page }                             │
 └──────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-3. Configuración de Playwright Projects
+## 3. Playwright Projects Configuration
 
-3.1 Estructura de Projects
+### 3.1 Project Structure
 
+```
 ┌─────────────────────────────────────────────────────────────────┐
-│ global-setup (teardown: 'global-teardown') │
-│ └─ tests/setup/global.setup.ts │
-│ • Crea directorios │
-│ • Valida environment │
+│ global-setup (teardown: 'global-teardown')                       │
+│ └─ tests/setup/global.setup.ts                                   │
+│   • Creates directories                                          │
+│   • Validates environment                                        │
 └────────────────────────┬────────────────────────────────────────┘
-│
-┌────────────┴────────────┐
-▼ ▼
-┌───────────────────┐ ┌───────────────────┐
-│ ui-setup │ │ api-setup │
-│ (depends: global)│ │ (depends: global)│
-│ ui-auth.setup.ts │ │ api-auth.setup.ts│
-│ • Login via UI │ │ • Login via API │
-│ • Guarda token │ │ • Guarda token │
-│ • storageState │ │ • api-state.json │
-└─────────┬─────────┘ └─────────┬─────────┘
-│ │
-▼ ▼
-┌───────────────────┐ ┌───────────────────┐
-│ e2e │ │ integration │
-│ (depends: ui-setup)│ │(depends: api-setup)│
-│ tests/e2e/**/\*.ts │ │tests/integration/**│
-│ storageState used │ │ │
-└───────────────────┘ └───────────────────┘
-│ │
-└────────────┬──────────────┘
-▼
+                         │
+          ┌──────────────┴────────────┐
+          ▼                           ▼
+┌───────────────────┐    ┌───────────────────┐
+│ ui-setup          │    │ api-setup          │
+│ (depends: global) │    │ (depends: global)  │
+│ ui-auth.setup.ts  │    │ api-auth.setup.ts  │
+│ • Login via UI    │    │ • Login via API    │
+│ • Saves token     │    │ • Saves token      │
+│ • storageState    │    │ • api-state.json   │
+└─────────┬─────────┘    └─────────┬─────────┘
+          │                        │
+          ▼                        ▼
+┌───────────────────┐    ┌───────────────────┐
+│ e2e               │    │ integration        │
+│(depends: ui-setup)│    │(depends: api-setup)│
+│ tests/e2e/**/*.ts │    │tests/integration/**│
+│ storageState used │    │                    │
+└───────────────────┘    └───────────────────┘
+          │                        │
+          └────────────┬───────────┘
+                       ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ global-teardown │
-│ └─ tests/teardown/global.teardown.ts │
-│ • Genera ATC report │
-│ • Sync to TMS (si AUTO_SYNC=true) │
+│ global-teardown                                                  │
+│ └─ tests/teardown/global.teardown.ts                             │
+│   • Generates ATC report                                         │
+│   • Sync to TMS (if AUTO_SYNC=true)                              │
 └─────────────────────────────────────────────────────────────────┘
+```
 
-3.2 Archivos de Autenticación Generados
+### 3.2 Generated Authentication Files
 
+```
 .auth/
-├── user.json ← storageState (cookies, localStorage) para E2E
-└── api-state.json ← Token JWT para API tests
+├── user.json       ← storageState (cookies, localStorage) for E2E
+└── api-state.json  ← JWT token for API tests
+```
 
 ---
 
-4. Token Propagation (RESUELTO ✅)
+## 4. Token Propagation (RESOLVED)
 
-4.1 Flujo Actual (FUNCIONANDO)
+### 4.1 Current Flow (WORKING)
 
-Setup Files (ui-auth.setup.ts / api-auth.setup.ts): 1. Usan fixtures KATA (importan test de @TestFixture) 2. Llaman ATCs: ui.login.loginSuccessfully() / api.auth.authenticateSuccessfully() 3. Guardan token en .auth/api-state.json ✅ 4. Para UI: También guardan storageState en .auth/user.json ✅
+**Setup Files** (ui-auth.setup.ts / api-auth.setup.ts):
+1. Use KATA fixtures (import test from @TestFixture)
+2. Call ATCs: `ui.login.loginSuccessfully()` / `api.auth.authenticateSuccessfully()`
+3. Save token to `.auth/api-state.json`
+4. For UI: Also save storageState to `.auth/user.json`
 
-Tests E2E/Integration: 1. TestFixture.constructor() llama loadTokenFromFile() ✅ 2. Lee .auth/api-state.json y extrae token ✅ 3. Llama api.setAuthToken(token) → propaga a todos los componentes ✅ 4. Todos los apiGET/POST/PUT/DELETE incluyen Authorization header ✅
+**E2E/Integration Tests**:
+1. `TestFixture.constructor()` calls `loadTokenFromFile()`
+2. Reads `.auth/api-state.json` and extracts token
+3. Calls `api.setAuthToken(token)` → propagates to all components
+4. All apiGET/POST/PUT/DELETE include Authorization header
 
-4.2 Métodos de Token Propagation
+### 4.2 Token Propagation Methods
 
-// Automático: Al crear el fixture
+```typescript
+// Automatic: When creating the fixture
 const fixture = new TestFixture(page, request);
-// → loadTokenFromFile() se llama en constructor
+// → loadTokenFromFile() is called in constructor
 
-// Manual: En runtime (para cambiar usuario, re-login, etc.)
-test.setAuthToken(nuevoToken); // Actualiza token
-test.clearAuthToken(); // Limpia para probar sin auth
+// Manual: At runtime (to change user, re-login, etc.)
+test.setAuthToken(newToken);   // Updates token
+test.clearAuthToken();          // Clears to test unauthenticated scenarios
+```
 
-4.3 Código Clave
+### 4.3 Key Code
 
+```typescript
 // TestFixture.ts
 private loadTokenFromFile(): void {
-const apiStatePath = config.auth.apiStatePath;
-if (existsSync(apiStatePath)) {
-const apiState: ApiState = JSON.parse(readFileSync(apiStatePath, 'utf-8'));
-if (apiState.token) {
-this.api.setAuthToken(apiState.token);
+  const apiStatePath = config.auth.apiStatePath;
+  if (existsSync(apiStatePath)) {
+    const apiState: ApiState = JSON.parse(readFileSync(apiStatePath, 'utf-8'));
+    if (apiState.token) {
+      this.api.setAuthToken(apiState.token);
+    }
+  }
 }
-}
-}
+```
 
 ---
 
-5. Análisis de ATCs y Assertions
+## 5. ATCs and Assertions Analysis
 
-5.1 ATCs Implementados
+### 5.1 Implemented ATCs
 
-| Component | Test ID       | Method                      | Assertions                                        |
-| --------- | ------------- | --------------------------- | ------------------------------------------------- |
+| Component | Test ID        | Method                      | Assertions                                        |
+| --------- | -------------- | --------------------------- | ------------------------------------------------- |
 | AuthApi   | PROJ-AUTH-001  | authenticateSuccessfully    | status=200, token defined, type=Bearer, expires>0 |
 | AuthApi   | PROJ-AUTH-002  | loginWithInvalidCredentials | status=400, ok=false, error defined               |
-| AuthApi   | PROJ-AUTH-003  | getCurrentUserSuccessfully  | status=200, userId defined, email defined         |
-| AuthApi   | PROJ-AUTH-004  | getCurrentUserUnauthorized  | status=401, ok=false                              |
-| LoginPage | PROJ-LOGIN-001 | loginSuccessfully           | URL not contains /login (requiere goto() previo)  |
+| LoginPage | PROJ-LOGIN-001 | loginSuccessfully           | URL does not contain /login (requires goto() before) |
 | LoginPage | PROJ-LOGIN-002 | loginWithInvalidCredentials | error visible, URL contains /login                |
 
-5.2 Patrón de Assertions (Fixed vs Flexible)
+**Note**: `getCurrentUser()` is a **helper** method (no `@atc` decorator). It is used as a verification step inside ATCs like `authenticateSuccessfully()`, not as a standalone ATC. See [test-design-principles.md](test-design-principles.md) for why GETs are always helpers.
 
-Los ATCs tienen assertions fijas (hardcoded en el método):
+### 5.2 Assertion Pattern (Fixed Assertions)
 
-// AuthApi.ts - getCurrentUserSuccessfully
-@atc('PROJ-AUTH-003')
-async getCurrentUserSuccessfully(): Promise<[APIResponse, UserInfoResponse]> {
-const [response, body] = await this.apiGET<UserInfoResponse>('/auth/me');
+ATCs have fixed assertions (hardcoded in the method):
 
-    // Fixed assertions - SIEMPRE se ejecutan
-    expect(response.status()).toBe(200);      // ← No configurable
-    expect(body.userId).toBeDefined();        // ← No configurable
-    expect(body.email).toBeDefined();         // ← No configurable
+```typescript
+// AuthApi.ts - authenticateSuccessfully
+@atc('PROJ-AUTH-001')
+async authenticateSuccessfully(credentials: Credentials): Promise<[APIResponse, TokenResponse, Credentials]> {
+  const [response, body, payload] = await this.apiPOST<TokenResponse, Credentials>('/auth/login', credentials);
 
-    return [response, body];
+  // Fixed assertions - ALWAYS execute
+  expect(response.status()).toBe(200);
+  expect(body.access_token).toBeDefined();
+  expect(body.token_type).toBe('Bearer');
 
+  // Verification via helper
+  const currentUser = await this.getCurrentUser();
+  expect(currentUser.userId).toBeDefined();
+
+  return [response, body, payload];
 }
+```
 
-Problema potencial: Si un test quiere verificar algo diferente (ej: que NO exista userId), no puede usar este ATC.
+**Design note**: Fixed assertions validate the invariant output of an ATC. If a test needs to verify a different outcome (e.g., that access is denied), that is a different ATC with its own assertions (e.g., `loginWithInvalidCredentials`). See Equivalence Partitioning in `automation-standards.md`.
 
-5.3 Retorno de ATCs
+### 5.3 ATC Return Pattern
 
-| Tipo     | Patrón de Retorno              | Ejemplo                        |
+| Type     | Return Pattern                 | Example                        |
 | -------- | ------------------------------ | ------------------------------ |
 | API GET  | [APIResponse, TBody]           | [response, userInfo]           |
 | API POST | [APIResponse, TBody, TPayload] | [response, token, credentials] |
@@ -234,109 +272,122 @@ Problema potencial: Si un test quiere verificar algo diferente (ej: que NO exist
 
 ---
 
-6. Decoradores y Tracking
+## 6. Decorators and Tracking
 
-6.1 @atc Decorator
+### 6.1 @atc Decorator
 
-@atc('PROJ-AUTH-001', { severity: 'critical', softFail: false })
+```typescript
+@atc('PROJ-AUTH-001', { softFail: false, severity: 'critical' })
 async loginSuccessfully(credentials) { ... }
+```
 
-Funcionalidad:
+**Options:**
 
-- Wraps método en allure.step()
-- Captura duración y resultado
-- Console logs: ✅ [PROJ-AUTH-001] loginSuccessfully - PASS (234ms)
-- Almacena en atcResults Map para report final
-- Soporta softFail: true para continuar en error
+| Option     | Type    | Description                                                    |
+| ---------- | ------- | -------------------------------------------------------------- |
+| `softFail` | boolean | When `true`, ATC failure doesn't block the test flow — it only logs the failure |
+| `severity` | string  | Associates criticality level to the ATC for reporting (`critical`, `high`, `medium`, `low`) |
 
-  6.2 Report Generation
+**Functionality:**
 
-// En global.teardown.ts
+- Wraps method in `allure.step()`
+- Captures duration and result
+- Console logs: `✅ [PROJ-AUTH-001] loginSuccessfully - PASS (234ms)`
+- Stores in `atcResults` Map for final report
+- Supports `softFail: true` to continue on error
+
+### 6.2 Report Generation
+
+```typescript
+// In global.teardown.ts
 await generateAtcReport('reports/atc_results.json');
 // Output:
 {
-"generatedAt": "2026-02-08T...",
-"summary": { "total": 5, "passed": 4, "failed": 1, "skipped": 0 },
-"results": { "PROJ-AUTH-001": [...], ... }
+  "generatedAt": "2026-02-08T...",
+  "summary": { "total": 5, "passed": 4, "failed": 1, "skipped": 0 },
+  "results": { "PROJ-AUTH-001": [...], ... }
 }
+```
 
 ---
 
-7. Data Factory
+## 7. Data Factory
 
-// Acceso desde componentes
-this.data.createUser() // TestUser con email, password, name
-this.data.createCredentials() // Solo email + password
-this.data.createHotel() // Hotel con name, orgId, invoiceCap
-this.data.createBooking() // Booking con confirmation#, stayValue, etc.
+```typescript
+// Access from components
+this.data.createUser()         // TestUser with email, password, name
+this.data.createCredentials()  // Only email + password
+this.data.createHotel()        // Hotel with name, orgId, invoiceCap
+this.data.createBooking()      // Booking with confirmation#, stayValue, etc.
+```
 
-Principio: Datos siempre dinámicos via Faker, nunca estáticos.
-
----
-
-8. Archivos de Soporte
-
-| Archivo                   | Propósito                                      |
-| ------------------------- | ---------------------------------------------- |
-| config/variables.ts       | SINGLE SOURCE para env vars, URLs, credentials |
-| tests/utils/decorators.ts | @atc decorator y result tracking               |
-| tests/utils/allure.ts     | Helpers para attachments a Allure              |
-| tests/KataReporter.ts     | Custom reporter con output colorido            |
-| tests/data/DataFactory.ts | Generación de datos con Faker                  |
-| tests/data/types.ts       | Interfaces para datos de prueba                |
+**Principle**: Data is always dynamic via Faker, never static.
 
 ---
 
-9. Estado de Problemas Detectados
+## 8. Support Files
 
-| #   | Problema                           | Severidad | Estado       | Notas                                    |
-| --- | ---------------------------------- | --------- | ------------ | ---------------------------------------- |
-| 1   | Token no propagado en E2E          | CRÍTICO   | ✅ RESUELTO  | TestFixture.loadTokenFromFile()          |
-| 2   | Assertions fijas en ATCs           | MEDIO     | ✅ ACLARADO  | Es intencional: ATCs = casos específicos |
-| 3   | Flows solo de ejemplo              | BAJO      | ⏳ PENDIENTE | ExampleFlows.ts es template              |
-| 4   | No hay tests de Integration reales | BAJO      | ✅ RESUELTO  | tests/integration/auth/user-session.test |
-
----
-
-10. Cambios Implementados (2026-02-08)
-
-    10.1 Token Propagation
-
-- TestFixture.loadTokenFromFile(): Carga automática del token desde .auth/api-state.json
-- TestFixture.setAuthToken()/clearAuthToken(): Métodos públicos para runtime
-- ApiFixture también carga token en su fixture de Playwright
-
-  10.2 Setup Files Refactorizados
-
-- Ahora usan fixtures KATA (importan test de @TestFixture)
-- ui-auth.setup.ts: Usa ui.login.goto() + ui.login.loginSuccessfully()
-- api-auth.setup.ts: Usa api.auth.authenticateSuccessfully()
-
-  10.3 LoginPage Refactorizado
-
-- goto() sacado de los ATCs (llamar antes del ATC)
-- Helper privado fillAndSubmitLoginForm() (combina fill + submit)
-- ATCs más atómicos: solo acción + assertions
-
-  10.4 AuthApi Renombrado
-
-- loginSuccessfully() → authenticateSuccessfully() (diferenciar de UI)
-
-  10.5 Estructura Renombrada
-
-- tests/components/preconditions/ → tests/components/flows/
-- Alias @preconditions/_ → @flows/_
-
-  10.6 Tipos Compartidos
-
-- TokenResponse y ApiState en tests/data/types.ts
-- AuthApi re-exporta TokenResponse para consumidores
+| File                      | Purpose                                     |
+| ------------------------- | ------------------------------------------- |
+| config/variables.ts       | SINGLE SOURCE for env vars, URLs, credentials |
+| tests/utils/decorators.ts | @atc decorator and result tracking          |
+| tests/utils/allure.ts     | Helpers for Allure attachments              |
+| tests/KataReporter.ts     | Custom reporter with colored output         |
+| tests/data/DataFactory.ts | Data generation with Faker                  |
+| tests/data/types.ts       | Interfaces for test data                    |
 
 ---
 
-11. Próximos Pasos Recomendados
+## 9. Detected Issues Status
 
-1. Crear más flows reales: BookingFlows, ReconciliationFlows
-1. Crear tests E2E reales: Dashboard, Bookings, etc.
-1. Agregar más componentes API: BookingsApi, InvoicesApi
-1. Agregar más componentes UI: DashboardPage, BookingsPage
+| #   | Issue                          | Severity | Status       | Notes                                    |
+| --- | ------------------------------ | -------- | ------------ | ---------------------------------------- |
+| 1   | Token not propagated in E2E    | CRITICAL | RESOLVED     | TestFixture.loadTokenFromFile()          |
+| 2   | Fixed assertions in ATCs       | MEDIUM   | CLARIFIED    | Intentional: ATCs = specific test cases  |
+| 3   | Steps module only as example   | LOW      | PENDING      | ExampleSteps.ts is a template            |
+| 4   | No real Integration tests      | LOW      | RESOLVED     | tests/integration/auth/user-session.test |
+
+---
+
+## 10. Implemented Changes (2026-02-08)
+
+### 10.1 Token Propagation
+
+- `TestFixture.loadTokenFromFile()`: Automatic token loading from `.auth/api-state.json`
+- `TestFixture.setAuthToken()/clearAuthToken()`: Public methods for runtime
+- `ApiFixture` also loads token in its Playwright fixture
+
+### 10.2 Setup Files Refactored
+
+- Now use KATA fixtures (import test from @TestFixture)
+- `ui-auth.setup.ts`: Uses `ui.login.goto()` + `ui.login.loginSuccessfully()`
+- `api-auth.setup.ts`: Uses `api.auth.authenticateSuccessfully()`
+
+### 10.3 LoginPage Refactored
+
+- `goto()` extracted from ATCs (call before the ATC)
+- Private helper `fillAndSubmitLoginForm()` (combines fill + submit)
+- ATCs are more atomic: only action + assertions
+
+### 10.4 AuthApi Renamed
+
+- `loginSuccessfully()` → `authenticateSuccessfully()` (differentiate from UI)
+
+### 10.5 Structure Renamed
+
+- `tests/components/preconditions/` → `tests/components/steps/`
+- Alias `@preconditions/*` → `@steps/*`
+
+### 10.6 Shared Types
+
+- `TokenResponse` and `ApiState` in `tests/data/types.ts`
+- `AuthApi` re-exports `TokenResponse` for consumers
+
+---
+
+## 11. Recommended Next Steps
+
+1. Create real steps: `BookingSteps`, `ReconciliationSteps`
+2. Create real E2E tests: Dashboard, Bookings, etc.
+3. Add more API components: `BookingsApi`, `InvoicesApi`
+4. Add more UI components: `DashboardPage`, `BookingsPage`

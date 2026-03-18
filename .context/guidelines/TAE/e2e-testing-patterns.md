@@ -115,7 +115,7 @@ tests/
 import { expect, test } from '@TestFixture';
 
 test.describe('Login Flow', () => {
-  test('should login with valid credentials @critical', async ({ ui }) => {
+  test('TK-XXX: should login with valid credentials @critical', async ({ ui }) => {
     // ARRANGE - Prepare test data
     const credentials = {
       username: 'admin@example.com',
@@ -129,7 +129,7 @@ test.describe('Login Flow', () => {
     await expect(ui.page).toHaveURL(/.*dashboard.*/);
   });
 
-  test('should show error for invalid credentials', async ({ ui }) => {
+  test('TK-XXX: should show error for invalid credentials', async ({ ui }) => {
     // ARRANGE
     const invalidCredentials = {
       username: 'fake@example.com',
@@ -322,7 +322,7 @@ The most powerful pattern: use API for setup and verification, UI for the actual
 import { expect, test } from '@TestFixture';
 
 test.describe('Create Booking Flow', () => {
-  test('should create booking via UI and verify via API', async ({ test: fixture }) => {
+  test('TK-XXX: should create booking via UI and verify via API', async ({ test: fixture }) => {
     const { api, ui } = fixture;
 
     // SETUP via API - fast, reliable
@@ -349,7 +349,7 @@ test.describe('Create Booking Flow', () => {
 ### Accessing Both Fixtures Separately
 
 ```typescript
-test('hybrid approach with separate fixtures', async ({ ui, api }) => {
+test('TK-XXX: hybrid approach with separate fixtures', async ({ ui, api }) => {
   // API for data setup (no browser needed for this step)
   await api.auth.loginSuccessfully(credentials);
 
@@ -568,7 +568,7 @@ async loginSuccessfully(credentials: LoginCredentials) {
 Additional assertions can be added in test files:
 
 ```typescript
-test('login flow', async ({ ui }) => {
+test('TK-XXX: should complete login flow successfully', async ({ ui }) => {
   await ui.login.loginSuccessfully(credentials);
 
   // Additional test-level assertions
@@ -581,7 +581,7 @@ test('login flow', async ({ ui }) => {
 
 ## ATCs Don't Call ATCs
 
-ATCs are atomic units. They should NOT call other ATCs. Use **Flows** for reusable ATC chains:
+ATCs are atomic units. They should NOT call other ATCs. Use **Steps** for reusable ATC chains:
 
 ```typescript
 // ❌ WRONG - ATC calling another ATC
@@ -593,8 +593,8 @@ class BookingsPage extends UiBase {
   }
 }
 
-// ✅ CORRECT - Use flows or setup in test file
-test('create booking', async ({ ui }) => {
+// ✅ CORRECT - Use steps or setup in test file
+test('TK-XXX: should create booking successfully', async ({ ui }) => {
   await ui.login.loginSuccessfully(credentials); // Setup in test
   await ui.bookings.createBookingSuccessfully(data); // Then the actual ATC
 });
@@ -624,13 +624,13 @@ Each test should be able to run independently:
 
 ```typescript
 // ✅ CORRECT - Test is self-contained
-test('view bookings', async ({ ui }) => {
+test('TK-XXX: should view bookings after login', async ({ ui }) => {
   await ui.login.loginSuccessfully(credentials);
   await ui.bookings.viewBookingsSuccessfully({ hotelId: 123 });
 });
 
 // ❌ WRONG - Depends on previous test
-test('create booking', async ({ ui }) => {
+test('TK-XXX: should create booking', async ({ ui }) => {
   // Assumes login happened in previous test
   await ui.bookings.createBookingSuccessfully(data);
 });
@@ -639,8 +639,8 @@ test('create booking', async ({ ui }) => {
 ### 3. Use Tags for Test Organization
 
 ```typescript
-test('critical login flow @critical @smoke', async ({ ui }) => { ... });
-test('edge case login @regression', async ({ ui }) => { ... });
+test('TK-XXX: should login successfully @critical @smoke', async ({ ui }) => { ... });
+test('TK-XXX: should handle edge case login @regression', async ({ ui }) => { ... });
 ```
 
 Run by tag: `bun run test --grep @critical`

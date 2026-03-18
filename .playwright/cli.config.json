@@ -1,0 +1,24 @@
+{
+  "browser": {
+    "browserName": "chromium",
+    "launchOptions": {
+      "headless": false
+    },
+    "contextOptions": {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    }
+  },
+  "outputDir": ".playwright/output",
+  "outputMode": "file",
+  "console": {
+    "level": "warning"
+  },
+  "testIdAttribute": "data-testid",
+  "timeouts": {
+    "action": 10000,
+    "navigation": 30000
+  }
+}
