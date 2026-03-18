@@ -277,9 +277,10 @@ class KataReporter implements Reporter {
       '\n',
     );
 
-    // Individual test results
+    // Individual test results (sorted by execution order)
+    const sorted = [...this.testResults].sort((a, b) => a.testNumber - b.testNumber);
     console.group();
-    for (const test of this.testResults) {
+    for (const test of sorted) {
       if (test.testDuration === undefined) {
         continue;
       }
