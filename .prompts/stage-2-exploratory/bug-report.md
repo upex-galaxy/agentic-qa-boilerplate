@@ -431,7 +431,7 @@ Tool: mcp__atlassian__jira_create_issue
 Tool: mcp__atlassian__jira_update_issue
 
 {
-  "issue_key": "[PROJ-XXX]",
+  "issue_key": "[TICKET-ID]",
   "fields": {},
   "attachments": "/absolute/path/to/file1.png,/absolute/path/to/file2.mp4"
 }
@@ -465,8 +465,8 @@ Tool: mcp__atlassian__jira_update_issue
    ```
    Bug created successfully!
 
-   Issue Key: [PROJ-XXX]
-   URL: https://[workspace].atlassian.net/browse/[PROJ-XXX]
+   Issue Key: [TICKET-ID]
+   URL: https://[workspace].atlassian.net/browse/[TICKET-ID]
 
    All custom fields populated
    Attachments uploaded (if any)
@@ -479,7 +479,7 @@ Tool: mcp__atlassian__jira_update_issue
    Tool: mcp__atlassian__jira_add_comment
 
    Add comment to the original story:
-   "Bug found during exploratory testing: [PROJ-XXX] - [Title]"
+   "Bug found during exploratory testing: [TICKET-ID] - [Title]"
    ```
 
 3. **Assign to team member** (if specified):
@@ -488,7 +488,7 @@ Tool: mcp__atlassian__jira_update_issue
    Tool: mcp__atlassian__jira_update_issue
 
    Parameters:
-   - issue_key: "[PROJ-XXX]"
+   - issue_key: "[TICKET-ID]"
    - fields: {"assignee": "email@example.com"}
    ```
 

@@ -4,6 +4,8 @@
  * UI component for authentication via the login page.
  * Handles login flows for E2E tests.
  *
+ * TODO: Replace 'PROJ' in @atc IDs with your Jira project key (e.g., 'UPEX-101', 'MYM-101')
+ *
  * Page: /login (UPEX Dojo)
  * Locators (data-testid):
  * - Email: [data-testid="login-email-input"]
@@ -78,7 +80,7 @@ export class LoginPage extends UiBase {
    *
    * @param credentials - Email and password
    */
-  @atc('PROJ-LOGIN-001')
+  @atc('PROJ-101')
   async loginSuccessfully(credentials: LoginCredentials): Promise<void> {
     await this.fillAndSubmitLoginForm(credentials);
 
@@ -95,7 +97,7 @@ export class LoginPage extends UiBase {
    *
    * @param credentials - Invalid email or password
    */
-  @atc('PROJ-LOGIN-002')
+  @atc('PROJ-102')
   async loginWithInvalidCredentials(credentials: LoginCredentials): Promise<void> {
     await this.fillAndSubmitLoginForm(credentials);
 

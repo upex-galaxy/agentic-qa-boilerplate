@@ -1,4 +1,4 @@
-# E2E Test Automation Coding
+# E2E Test Coding
 
 > **Phase**: 2 of 3 (Plan → Coding → Review)
 > **Purpose**: Implement the KATA component and test file based on the approved plan.
@@ -22,7 +22,7 @@
 
 ## Input Required
 
-1. **Approved Plan** from Phase 1 (`e2e-test-automation-plan.md`)
+1. **Approved Plan** from Phase 1 (`planning/test-implementation-plan.md`)
 2. **Original Test Case** (Gherkin from Stage 3)
 
 ---
@@ -563,4 +563,4 @@ After completing the Coding phase:
 
 Once implementation is complete and tests pass:
 
-→ **Proceed to**: `e2e-test-code-review.md` (Phase 3)
+→ **Proceed to**: `review/e2e-test-review.md` (Phase 3)

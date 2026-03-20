@@ -1,4 +1,4 @@
-# Integration Test Automation Coding
+# Integration Test Coding
 
 > **Phase**: 2 of 3 (Plan → Coding → Review)
 > **Purpose**: Implement the API component and test file based on the approved plan.
@@ -19,7 +19,7 @@
 
 ## Input Required
 
-1. **Approved Plan** from Phase 1 (`integration-test-automation-plan.md`)
+1. **Approved Plan** from Phase 1 (`planning/test-implementation-plan.md`)
 2. **Original Test Case** (API spec from Stage 3)
 
 ---
@@ -928,4 +928,4 @@ After completing the Coding phase:
 
 Once implementation is complete and tests pass:
 
-→ **Proceed to**: `integration-test-code-review.md` (Phase 3)
+→ **Proceed to**: `review/integration-test-review.md` (Phase 3)

@@ -208,12 +208,12 @@ Automate prioritized test cases following KATA architecture. Uses 3-phase workfl
 | Prompt | Phase | Purpose |
 |--------|-------|---------|
 | `stage-4-automation/README.md` | - | Stage overview + workflow diagram |
-| `stage-4-automation/e2e-test-automation-plan.md` | 1 | Plan E2E test implementation |
-| `stage-4-automation/e2e-test-automation-coding.md` | 2 | Implement UI component + test |
-| `stage-4-automation/e2e-test-code-review.md` | 3 | KATA compliance review |
-| `stage-4-automation/integration-test-automation-plan.md` | 1 | Plan API test implementation |
-| `stage-4-automation/integration-test-automation-coding.md` | 2 | Implement API component + test |
-| `stage-4-automation/integration-test-code-review.md` | 3 | API code quality review |
+| `stage-4-automation/planning/test-implementation-plan.md` | 1 | Plan E2E or API test implementation |
+| `stage-4-automation/planning/atc-implementation-plan.md` | 1 | Plan ATC spec implementation |
+| `stage-4-automation/coding/e2e-test-coding.md` | 2 | Implement UI component + test |
+| `stage-4-automation/coding/integration-test-coding.md` | 2 | Implement API component + test |
+| `stage-4-automation/review/e2e-test-review.md` | 3 | KATA compliance review |
+| `stage-4-automation/review/integration-test-review.md` | 3 | API code quality review |
 
 ### Stage 5: Regression Testing
 

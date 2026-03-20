@@ -93,9 +93,9 @@ export class ExamplePage extends UiBase {
    * Complete flow: navigate, fill form, submit, verify success.
    * Expected Output: Success state (e.g., redirect, success message)
    *
-   * TODO: Update ATC ID with your Jira/Xray project key (e.g., 'MYPROJ-UI-001')
+   * TODO: Replace 'PROJ' with your Jira project key (e.g., @atc('UPEX-101'))
    */
-  @atc('PROJ-UI-001')
+  @atc('PROJ-101')
   async submitFormWithValidData(data: ExampleFormData) {
     await this.goto();
 
@@ -116,9 +116,9 @@ export class ExamplePage extends UiBase {
    * Complete error flow: navigate, fill invalid data, submit, verify error.
    * Expected Output: Error message displayed (different from success)
    *
-   * TODO: Update ATC ID with your Jira/Xray project key
+   * TODO: Replace 'PROJ' with your Jira project key (e.g., @atc('UPEX-102'))
    */
-  @atc('PROJ-UI-002')
+  @atc('PROJ-102')
   async submitFormWithInvalidEmail(email: string, password: string) {
     await this.goto();
 

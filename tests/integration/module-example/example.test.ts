@@ -20,12 +20,12 @@
 
 import { expect, test } from '@TestFixture';
 
-test.describe('Example API', () => {
+test.describe('PROJ-100: Example API', () => {
   /**
    * Tests successful resource creation.
-   * ATC: PROJ-API-001
+   * ATC: PROJ-101
    */
-  test('should create resource successfully', async ({ api }) => {
+  test('PROJ-100: should create resource successfully', async ({ api }) => {
     // ARRANGE - Prepare test data using DataFactory (available via api.data)
     const payload = api.data.createCredentials();
 
@@ -38,9 +38,9 @@ test.describe('Example API', () => {
 
   /**
    * Tests error handling for invalid data.
-   * ATC: PROJ-API-002
+   * ATC: PROJ-102
    */
-  test('should return error for invalid data', async ({ api }) => {
+  test('PROJ-100: should return error for invalid data', async ({ api }) => {
     // ARRANGE - Invalid payload
     const invalidPayload = {
       email: 'invalid-email',

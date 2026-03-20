@@ -27,7 +27,7 @@ bun run test:allure
 
 **Write a New Test:**
 1. Load: `.context/guidelines/TAE/kata-ai-index.md`
-2. Use prompt: `.prompts/stage-4-automation/e2e-test-automation-coding.md`
+2. Use prompt: `.prompts/stage-4-automation/coding/e2e-test-coding.md`
 3. Follow KATA patterns
 
 **Generate/Update Project Documentation:**

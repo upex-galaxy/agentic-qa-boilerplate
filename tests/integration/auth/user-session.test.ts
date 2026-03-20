@@ -9,30 +9,37 @@
 
 import { config, expect, test } from '@TestFixture';
 
-test.describe('User Session API', () => {
+test.describe('UPEX-100: User Session API', () => {
   /**
    * Validates that the auth token is automatically loaded from api-state.json
    * and can be used to make authenticated API calls.
    */
-  test('should get current user with valid token', async ({ api }) => {
+  test('UPEX-100: should get current user with valid token', async ({ api }) => {
     // The token is automatically loaded from api-state.json by ApiFixture
-    // This tests that token propagation works correctly
-    const [_response, userData] = await api.auth.getCurrentUserSuccessfully();
+    // Use helper (not ATC) — this is a read-only verification
+    const [response, userData] = await api.auth.getCurrentUser();
 
-    // Additional assertions beyond the ATC's fixed assertions (UPEX Dojo format)
+    // Test-level assertions (UPEX Dojo format)
+    expect(response.status()).toBe(200);
+    expect(userData.user).toBeDefined();
+    expect(userData.user.id).toBeDefined();
+    expect(userData.user.email).toBeDefined();
     expect(userData.user.name).toBeDefined();
     expect(typeof userData.user.name).toBe('string');
   });
 
   /**
-   * Validates that the getCurrentUserUnauthorized ATC correctly
-   * handles unauthenticated requests.
+   * Validates that unauthenticated requests are rejected.
+   * Uses the helper directly with token cleared.
    */
-  test('should fail without token', async ({ api }) => {
-    // The ATC temporarily clears and restores the token
-    const [response] = await api.auth.getCurrentUserUnauthorized();
+  test('UPEX-100: should fail without token', async ({ api }) => {
+    // Temporarily clear token to test unauthorized access
+    api.clearAuthToken();
 
-    // Assertion is already in the ATC, this confirms it ran
+    const [response] = await api.auth.getCurrentUser();
+
+    // Test-level assertions — no session should exist
+    expect(response.status()).toBe(401);
     expect(response.ok()).toBe(false);
   });
 
@@ -40,7 +47,7 @@ test.describe('User Session API', () => {
    * Validates that we can re-authenticate and get a new token.
    * This tests the runtime token refresh capability.
    */
-  test('should be able to re-authenticate', async ({ api }) => {
+  test('UPEX-100: should be able to re-authenticate', async ({ api }) => {
     // Clear existing token
     api.clearAuthToken();
 
@@ -55,9 +62,5 @@ test.describe('User Session API', () => {
     // Verify new token was obtained and set
     expect(response.status()).toBe(200);
     expect(tokenData.access_token).toBeDefined();
-
-    // Now the token should be available for subsequent requests
-    const [userResponse] = await api.auth.getCurrentUserSuccessfully();
-    expect(userResponse.status()).toBe(200);
   });
 });

@@ -552,10 +552,10 @@ Para ejecutar cada stage con ayuda de AI:
 
 | Stage | Prompt |
 |-------|--------|
-| Stage 1 | `.prompts/stage-4-automation/e2e-test-automation-plan.md` |
-| Stage 2 | `.prompts/stage-4-automation/e2e-test-automation-coding.md` |
+| Stage 1 | `.prompts/stage-4-automation/planning/test-implementation-plan.md` |
+| Stage 2 | `.prompts/stage-4-automation/coding/e2e-test-coding.md` |
 | Stage 3 | Verificación manual en CI |
-| Stage 4 | `.prompts/stage-4-automation/e2e-test-code-review.md` |
+| Stage 4 | `.prompts/stage-4-automation/review/e2e-test-review.md` |
 
 ---
 

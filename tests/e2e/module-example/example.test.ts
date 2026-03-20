@@ -20,14 +20,14 @@
 
 import { expect, test } from '@TestFixture';
 
-test.describe('Example Feature', () => {
+test.describe('PROJ-200: Example Feature', () => {
   /**
    * @critical - Included in smoke tests
    *
    * Tests the happy path for the example feature.
-   * ATC: PROJ-UI-001
+   * ATC: PROJ-101
    */
-  test('should complete example flow successfully @critical', async ({ ui }) => {
+  test('PROJ-200: should complete example flow successfully @critical', async ({ ui }) => {
     // ARRANGE - Generate test data using DataFactory (available via ui.data)
     const testData = ui.data.createCredentials();
 
@@ -43,9 +43,9 @@ test.describe('Example Feature', () => {
 
   /**
    * Tests error handling for invalid input.
-   * ATC: PROJ-UI-002
+   * ATC: PROJ-102
    */
-  test('should show error for invalid input', async ({ ui }) => {
+  test('PROJ-200: should show error for invalid input', async ({ ui }) => {
     // ARRANGE
     const invalidEmail = 'not-an-email';
     const password = 'ValidPassword123!';

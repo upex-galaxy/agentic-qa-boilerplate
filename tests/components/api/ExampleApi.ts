@@ -51,10 +51,10 @@ export class ExampleApi extends ApiBase {
    * Complete flow: POST data, validate response structure.
    * Returns the response tuple for test assertions.
    *
-   * TODO: Update ATC ID with your Jira/Xray project key (e.g., 'MYPROJ-API-001')
+   * TODO: Replace 'PROJ' with your Jira project key (e.g., @atc('UPEX-101'))
    * TODO: Update endpoint path
    */
-  @atc('PROJ-API-001')
+  @atc('PROJ-101')
   async createResourceSuccessfully(
     payload: CreateExampleRequest,
   ): Promise<[APIResponse, CreateExampleResponse, CreateExampleRequest]> {
@@ -82,10 +82,10 @@ export class ExampleApi extends ApiBase {
    *
    * Validates that invalid data returns appropriate error.
    *
-   * TODO: Update ATC ID with your Jira/Xray project key
+   * TODO: Replace 'PROJ' with your Jira project key (e.g., @atc('UPEX-102'))
    * TODO: Update endpoint path
    */
-  @atc('PROJ-API-002')
+  @atc('PROJ-102')
   async createResourceWithInvalidData(
     payload: CreateExampleRequest,
   ): Promise<[APIResponse, Record<string, unknown>, CreateExampleRequest]> {
@@ -107,10 +107,10 @@ export class ExampleApi extends ApiBase {
    *
    * Example of a GET ATC for fetching resources.
    *
-   * TODO: Update ATC ID with your Jira/Xray project key
+   * TODO: Replace 'PROJ' with your Jira project key (e.g., @atc('UPEX-103'))
    * TODO: Update endpoint path
    */
-  @atc('PROJ-API-003')
+  @atc('PROJ-103')
   async getResourceSuccessfully(resourceId: string): Promise<[APIResponse, GetExampleResponse]> {
     // TODO: Update endpoint
     const [response, body] = await this.apiGET<GetExampleResponse>(`/api/example/${resourceId}`);

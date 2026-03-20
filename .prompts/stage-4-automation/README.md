@@ -29,12 +29,13 @@ Stage 3 Output (Gherkin + Variables + Test IDs)
                     │
                     ▼
     ┌───────────────────────────────────┐
-    │  PHASE 1: PLAN                    │
+    │  PHASE 1: PLANNING               │
     │  ─────────────────────────        │
-    │  • Analyze test case              │
+    │  • Analyze test case / ticket     │
     │  • Architecture decisions         │
     │  • Identify components needed     │
     │  • Define ATCs and assertions     │
+    │  • ATC spec (if needed)           │
     └───────────────┬───────────────────┘
                     │
                     ▼
@@ -65,23 +66,46 @@ Stage 3 Output (Gherkin + Variables + Test IDs)
 
 ---
 
-## Prompts by Test Type
+## Directory Structure
 
-### E2E Tests (UI + API)
+```
+stage-4-automation/
+├── README.md                                  # This file
+├── planning/
+│   ├── test-implementation-plan.md            # Unified (E2E + Integration)
+│   └── atc-implementation-plan.md             # ATC spec (API + UI)
+├── coding/
+│   ├── e2e-test-coding.md                     # UI components + locators
+│   └── integration-test-coding.md             # API components + tuples
+└── review/
+    ├── e2e-test-review.md                     # E2E code review checklist
+    └── integration-test-review.md             # Integration code review checklist
+```
 
-| Phase | Prompt | Purpose |
-|-------|--------|---------|
-| Plan | `e2e-test-automation-plan.md` | Analyze test case, plan KATA implementation |
-| Coding | `e2e-test-automation-coding.md` | Implement UI component and test file |
-| Review | `e2e-test-code-review.md` | Validate KATA compliance and code quality |
+---
 
-### Integration Tests (API Only)
+## Prompts by Phase
 
-| Phase | Prompt | Purpose |
-|-------|--------|---------|
-| Plan | `integration-test-automation-plan.md` | Analyze API test case, plan implementation |
-| Coding | `integration-test-automation-coding.md` | Implement API component and test file |
-| Review | `integration-test-code-review.md` | Validate KATA compliance and code quality |
+### Phase 1: Planning
+
+| Prompt | Scope | Purpose |
+|--------|-------|---------|
+| `planning/test-implementation-plan.md` | E2E + Integration | Full implementation plan for a test ticket (scenarios, ATCs, data strategy, file map) |
+| `planning/atc-implementation-plan.md` | API + UI | Detailed spec for a single ATC (contract, assertions, code template) |
+
+### Phase 2: Coding
+
+| Prompt | Test Type | Purpose |
+|--------|-----------|---------|
+| `coding/e2e-test-coding.md` | E2E | Implement UI component and test file |
+| `coding/integration-test-coding.md` | Integration | Implement API component and test file |
+
+### Phase 3: Review
+
+| Prompt | Test Type | Purpose |
+|--------|-----------|---------|
+| `review/e2e-test-review.md` | E2E | Validate KATA compliance and code quality |
+| `review/integration-test-review.md` | Integration | Validate KATA compliance and code quality |
 
 ---
 
@@ -157,39 +181,24 @@ Each prompt expects documented test cases with:
 | **ATC = Complete Test Case** | Each ATC is a mini-flow, NOT a single click |
 | **Equivalence Partitioning** | Same output = One parameterized ATC |
 | **Inline Locators** | Locators defined IN the ATC, not separately |
-| **ATCs Don't Call ATCs** | Use Flows module for reusable sequences |
+| **ATCs Don't Call ATCs** | Use Steps module for reusable sequences |
 | **Fixed Assertions** | Assertions inside ATCs validate success |
 | **No Hardcoded Waits** | Use conditions: `waitForSelector`, `waitForResponse` |
 | **Import Aliases** | Always use `@components/`, `@utils/`, etc. |
 
 ---
 
-## Test Directory Structure
+## Ticket ID Convention
 
-```
-tests/
-├── components/
-│   ├── TestContext.ts        # Layer 1
-│   ├── TestFixture.ts        # Layer 4 (unified)
-│   ├── ApiFixture.ts         # Layer 4 (API)
-│   ├── UiFixture.ts          # Layer 4 (UI)
-│   ├── api/
-│   │   ├── ApiBase.ts        # Layer 2
-│   │   └── {Resource}Api.ts  # Layer 3 (your components)
-│   ├── ui/
-│   │   ├── UiBase.ts         # Layer 2
-│   │   └── {Page}Page.ts     # Layer 3 (your components)
-│   └── flows/
-│       └── {Domain}Flows.ts  # Layer 3.5 (reusable chains)
-├── e2e/
-│   └── {feature}/
-│       └── {feature}.test.ts # E2E tests
-├── integration/
-│   └── {resource}/
-│       └── {resource}.test.ts # API tests
-└── data/
-    └── fixtures/              # Test data JSON
-```
+The `@atc('{TICKET-ID}')` decorator and `test('{TICKET-ID}: should...')` naming use the **real issue key from your Jira project**. The prefix depends on your project configuration:
+
+| Project | ATC Example | Test Example |
+|---------|-------------|--------------|
+| UPEX | `@atc('UPEX-101')` | `test('UPEX-411: should...')` |
+| MYM | `@atc('MYM-45')` | `test('MYM-200: should...')` |
+| QA | `@atc('QA-33')` | `test('QA-100: should...')` |
+
+See `.context/guidelines/TAE/test-design-principles.md` for the full traceability model.
 
 ---
 
@@ -200,24 +209,6 @@ tests/
 | API only | `{ api }` | No (lazy) | Pure API testing |
 | UI only | `{ ui }` | Yes | UI-focused testing |
 | Hybrid | `{ test }` | Yes | API setup + UI verification |
-
-```typescript
-// API test - no browser overhead
-test('create booking', async ({ api }) => {
-  await api.bookings.createSuccessfully(data);
-});
-
-// E2E test - browser opens
-test('view dashboard', async ({ ui }) => {
-  await ui.dashboard.viewSuccessfully();
-});
-
-// Hybrid - shared context
-test('create via API, verify via UI', async ({ test: fixture }) => {
-  await fixture.api.bookings.createSuccessfully(data);
-  await fixture.ui.bookings.verifyExists(data.id);
-});
-```
 
 ---
 
@@ -244,4 +235,4 @@ After completing all three phases:
 
 ---
 
-**Next**: Start with the appropriate Plan prompt based on test type.
+**Next**: Start with `planning/test-implementation-plan.md` to plan your implementation.

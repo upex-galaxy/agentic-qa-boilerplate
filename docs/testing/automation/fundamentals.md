@@ -220,7 +220,7 @@ En lugar de agrupar locators en un objeto, los **componentes** agrupan acciones 
 ```typescript
 // Component-based (KATA framework)
 class LoginPage extends UiBase {
-  @atc('PROJ-001')
+  @atc('UPEX-101')
   async loginSuccessfully(email: string, password: string) {
     await this.page.goto('/login');
     await this.page.fill('#email', email);

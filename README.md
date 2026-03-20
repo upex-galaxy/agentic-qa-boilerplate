@@ -219,7 +219,7 @@ Test Files ← Orchestrate ATCs
 import { test, expect } from '@TestFixture';
 
 test.describe('User Dashboard', () => {
-  test('@atc:PROJ-E2E-001 should display user profile', async ({ dashboardPage }) => {
+  test('@atc:UPEX-101 should display user profile', async ({ dashboardPage }) => {
     await dashboardPage.navigateToDashboard();
     await dashboardPage.openUserProfile();
 
@@ -464,7 +464,7 @@ AUTO_SYNC=true bun run test
 
 ```typescript
 // Use @atc decorator with Jira key
-test('@atc:PROJ-TC-001 should validate login', async ({ loginPage }) => {
+test('@atc:UPEX-101 should validate login', async ({ loginPage }) => {
   // Test implementation
 });
 ```

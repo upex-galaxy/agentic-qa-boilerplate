@@ -16,7 +16,7 @@
  * Usage in E2E tests:
  *   test('example', async ({ test }) => {
  *     await test.ui.login.loginSuccessfully(credentials);
- *     await test.api.auth.getCurrentUserSuccessfully();
+ *     await test.api.auth.getCurrentUser();
  *   });
  *
  * Usage in API-only tests:

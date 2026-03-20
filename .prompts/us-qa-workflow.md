@@ -37,7 +37,7 @@ This orchestrator guides the complete QA process for **one User Story**. Execute
 │ USER STORY INFORMATION                                                      │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│ Story ID:        _________________________________ (e.g., PROJ-123)        │
+│ Story ID:        _________________________________ (e.g., UPEX-123)        │
 │                                                                             │
 │ Story Title:     _________________________________ (brief description)     │
 │                                                                             │
@@ -211,31 +211,31 @@ For each test case to automate:
 #### Phase 1: Plan
 
 ```markdown
-# For E2E (UI) tests:
-Use: `.prompts/stage-4-automation/e2e-test-automation-plan.md`
+# For E2E (UI) or Integration (API) tests:
+Use: `.prompts/stage-4-automation/planning/test-implementation-plan.md`
 
-# For Integration (API) tests:
-Use: `.prompts/stage-4-automation/integration-test-automation-plan.md`
+# For ATC spec planning:
+Use: `.prompts/stage-4-automation/planning/atc-implementation-plan.md`
 ```
 
 #### Phase 2: Coding
 
 ```markdown
 # For E2E (UI) tests:
-Use: `.prompts/stage-4-automation/e2e-test-automation-coding.md`
+Use: `.prompts/stage-4-automation/coding/e2e-test-coding.md`
 
 # For Integration (API) tests:
-Use: `.prompts/stage-4-automation/integration-test-automation-coding.md`
+Use: `.prompts/stage-4-automation/coding/integration-test-coding.md`
 ```
 
 #### Phase 3: Review
 
 ```markdown
 # For E2E (UI) tests:
-Use: `.prompts/stage-4-automation/e2e-test-code-review.md`
+Use: `.prompts/stage-4-automation/review/e2e-test-review.md`
 
 # For Integration (API) tests:
-Use: `.prompts/stage-4-automation/integration-test-code-review.md`
+Use: `.prompts/stage-4-automation/review/integration-test-review.md`
 ```
 
 ### Validation

@@ -856,7 +856,7 @@ When finished, show:
 For automated testing, run:
 
 - `.prompts/stage-2-exploratory/api-exploration.md`
-- `.prompts/stage-4-automation/api-tests.md`
+- `.prompts/stage-4-automation/coding/integration-test-coding.md`
 ```
 
 ---

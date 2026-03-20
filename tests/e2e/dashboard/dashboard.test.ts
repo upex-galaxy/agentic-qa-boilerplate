@@ -14,14 +14,14 @@
 
 import { expect, test } from '@TestFixture';
 
-test.describe('Dashboard', () => {
+test.describe('UPEX-200: Dashboard', () => {
   /**
    * @critical - Validates Global Setup authentication
    *
    * This test verifies that the authenticated session from e2e-setup
    * is correctly loaded and allows access to protected pages.
    */
-  test('should load dashboard with authenticated session @critical', async ({ page }) => {
+  test('UPEX-200: should load dashboard with authenticated session @critical', async ({ page }) => {
     // Navigate to home/dashboard - should work because we're authenticated
     await page.goto('/');
 
@@ -38,14 +38,13 @@ test.describe('Dashboard', () => {
    * Validates that the test user info is accessible via API.
    * Uses the same session from the browser to verify API access.
    */
-  test('should access user info via API with session token', async ({ test: fixture }) => {
-    // Try to get current user - this validates the API can use the session
-    // Note: In E2E tests, the API client shares the browser's session context
-    // when making requests through the page context
-    const [response, userInfo] = await fixture.api.auth.getCurrentUserSuccessfully();
+  test('UPEX-200: should access user info via API with session token', async ({ test: fixture }) => {
+    // Use helper (not ATC) — this is a read-only verification
+    const [response, userInfo] = await fixture.api.auth.getCurrentUser();
 
-    // Verify user info matches test user (UPEX Dojo format: { user: {...} })
+    // Test-level assertions (UPEX Dojo format: { user: {...} })
     expect(response.ok()).toBe(true);
+    expect(response.status()).toBe(200);
     expect(userInfo.user.email).toBeDefined();
     expect(userInfo.user.id).toBeDefined();
   });

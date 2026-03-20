@@ -54,7 +54,7 @@ const atcResults: Map<string, AtcResult[]> = new Map();
  *
  * Uses TC39 Stage 3 decorator format (Bun/modern TypeScript).
  *
- * @param testId - The Jira/Xray Test ID (e.g., 'PROJ-001')
+ * @param testId - The Jira/Xray Test ID (e.g., 'UPEX-101')
  * @param options - Optional configuration
  * @param options.softFail - If true, continues execution on failure (default: false)
  * @param options.severity - Allure severity level: 'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'
@@ -62,7 +62,7 @@ const atcResults: Map<string, AtcResult[]> = new Map();
  * @examples - Usage
  * Basic Usage - UI Component
  * ```typescript
- * @atc('PROJ-001')
+ * @atc('UPEX-101')
  * async fillEmailSuccessfully(email: string) {
  *   const input = this.page.locator('[data-testid="email"]');
  *   await input.fill(email);
@@ -72,7 +72,7 @@ const atcResults: Map<string, AtcResult[]> = new Map();
  *
  * Basic Usage - API Component
  * ```typescript
- *  @atc('PROJ-001')
+ *  @atc('UPEX-101')
  * async createUserSuccessfully(data: UserPayload): Promise<[APIResponse, User, UserPayload]> {
  *   const [response, body, payload] = await this.apiPOST<User, UserPayload>('/users', data);
  *   expect(response.status()).toBe(201);
@@ -82,13 +82,13 @@ const atcResults: Map<string, AtcResult[]> = new Map();
  *
  * With Options
  * ```typescript
- * @atc('PROJ-002', {
+ * @atc('UPEX-102', {
  *   severity: 'critical',
  *   description: 'Validates the complete checkout flow'
  * })
  * async completeCheckoutSuccessfully() { ... }
  *
- * @atc('PROJ-UI-003', { softFail: true })
+ * @atc('UPEX-103', { softFail: true })
  * async verifyOptionalBanner() {
  *   // Won't fail the test if this assertion fails
  * }
@@ -96,9 +96,9 @@ const atcResults: Map<string, AtcResult[]> = new Map();
  *
  * Console Output
  * ```typescript
- * ✅ [PROJ-001] fillEmailSuccessfully - PASS (234ms)
- * ❌ [PROJ-002] submitFormSuccessfully - FAIL: Element not found
- * ⚠️ [PROJ-UI-003] Soft fail enabled - continuing execution
+ * ✅ [UPEX-101] fillEmailSuccessfully - PASS (234ms)
+ * ❌ [UPEX-102] submitFormSuccessfully - FAIL: Element not found
+ * ⚠️ [UPEX-103] Soft fail enabled - continuing execution
  * ```
  */
 export function atc(testId: string, options: AtcOptions = {}) {

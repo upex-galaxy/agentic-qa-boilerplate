@@ -4,6 +4,11 @@
  * API component for authentication operations.
  * Handles login, token management, and user info retrieval.
  *
+ * ATCs follow flow-based design: each ATC is an ACTION + VERIFICATION,
+ * not a simple GET. Read-only operations are helpers (no @atc).
+ *
+ * TODO: Replace 'PROJ' in @atc IDs with your Jira project key (e.g., 'UPEX-101', 'MYM-101')
+ *
  * Endpoints:
  * - POST /api/auth/login - Authenticate and get JWT token
  * - GET /api/auth/me - Get current user info (requires auth)
@@ -30,22 +35,45 @@ export class AuthApi extends ApiBase {
   }
 
   // ============================================
-  // ATCs - Complete Test Cases
+  // Helpers - Read-only operations (no @atc)
+  // ============================================
+
+  /**
+   * Helper: Get current authenticated user info.
+   *
+   * Read-only GET — used as a verification step inside ATCs
+   * or for test-level assertions. Not an ATC because it's
+   * just a data retrieval, not a complete action flow.
+   *
+   * @returns Tuple with response and user info
+   */
+  async getCurrentUser(): Promise<[APIResponse, UserInfoResponse]> {
+    const [response, body] = await this.apiGET<UserInfoResponse>(this.config.auth.meEndpoint);
+    return [response, body];
+  }
+
+  // ============================================
+  // ATCs - Complete Test Cases (ACTION + VERIFICATION)
   // ============================================
 
   /**
    * ATC: Authenticate with valid credentials - expects success (200)
    *
-   * Complete flow: POST credentials, validate token response, store token.
+   * Complete flow:
+   * 1. POST credentials to /auth/login (ACTION)
+   * 2. GET /auth/me to confirm session is valid (VERIFICATION)
+   * 3. Validate token response and user info
+   *
    * The token is automatically set for subsequent API requests.
    *
    * @param credentials - Email and password
    * @returns Tuple with response, token data, and sent payload
    */
-  @atc('PROJ-AUTH-001')
+  @atc('PROJ-101')
   async authenticateSuccessfully(
     credentials: LoginPayload,
   ): Promise<[APIResponse, TokenResponse, LoginPayload]> {
+    // ACTION: POST login credentials
     const [response, body, sentPayload] = await this.apiPOST<TokenResponse, LoginPayload>(
       this.config.auth.loginEndpoint,
       credentials,
@@ -60,22 +88,31 @@ export class AuthApi extends ApiBase {
     // Store token for subsequent requests
     this.setAuthToken(body.access_token);
 
+    // VERIFICATION: Confirm the session is valid via GET /auth/me
+    const [meResponse, meBody] = await this.getCurrentUser();
+    expect(meResponse.status()).toBe(200);
+    expect(meBody.user).toBeDefined();
+    expect(meBody.user.email).toBe(credentials.email);
+
     return [response, body, sentPayload];
   }
 
   /**
    * ATC: Login with invalid credentials - expects error (401)
    *
-   * Validates that invalid credentials return appropriate error response.
-   * UPEX Dojo returns 401 for invalid credentials.
+   * Complete flow:
+   * 1. POST invalid credentials to /auth/login (ACTION)
+   * 2. GET /auth/me to confirm NO session was created (VERIFICATION)
+   * 3. Validate error response and unauthorized access
    *
    * @param credentials - Invalid email or password
    * @returns Tuple with error response and sent payload
    */
-  @atc('PROJ-AUTH-002')
+  @atc('PROJ-102')
   async loginWithInvalidCredentials(
     credentials: LoginPayload,
   ): Promise<[APIResponse, AuthErrorResponse, LoginPayload]> {
+    // ACTION: POST invalid credentials
     const [response, body, sentPayload] = await this.apiPOST<AuthErrorResponse, LoginPayload>(
       this.config.auth.loginEndpoint,
       credentials,
@@ -86,52 +123,16 @@ export class AuthApi extends ApiBase {
     expect(response.ok()).toBe(false);
     expect(body.error).toBeDefined();
 
-    return [response, body, sentPayload];
-  }
-
-  /**
-   * ATC: Get current user info - expects success (200)
-   *
-   * Retrieves authenticated user information.
-   * Requires a valid auth token to be set.
-   *
-   * @returns Tuple with response and user info
-   */
-  @atc('PROJ-AUTH-003')
-  async getCurrentUserSuccessfully(): Promise<[APIResponse, UserInfoResponse]> {
-    const [response, body] = await this.apiGET<UserInfoResponse>(this.config.auth.meEndpoint);
-
-    // Fixed assertions - validates user info response (UPEX Dojo format)
-    expect(response.status()).toBe(200);
-    expect(body.user).toBeDefined();
-    expect(body.user.id).toBeDefined();
-    expect(body.user.email).toBeDefined();
-
-    return [response, body];
-  }
-
-  /**
-   * ATC: Get current user without auth - expects unauthorized (401)
-   *
-   * Validates that unauthenticated requests are rejected.
-   */
-  @atc('PROJ-AUTH-004')
-  async getCurrentUserUnauthorized(): Promise<[APIResponse, Record<string, unknown>]> {
-    // Temporarily clear auth token
+    // VERIFICATION: Confirm no session was created via GET /auth/me → 401
     const savedToken = this.authToken;
     this.clearAuthToken();
-
-    const [response, body] = await this.apiGET<Record<string, unknown>>(this.config.auth.meEndpoint);
-
-    // Restore token if it was set
+    const [meResponse] = await this.getCurrentUser();
+    expect(meResponse.status()).toBe(401);
+    // Restore token if one existed before this ATC
     if (savedToken) {
       this.setAuthToken(savedToken);
     }
 
-    // Fixed assertions - validates unauthorized response
-    expect(response.status()).toBe(401);
-    expect(response.ok()).toBe(false);
-
-    return [response, body];
+    return [response, body, sentPayload];
   }
 }
