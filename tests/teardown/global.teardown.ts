@@ -13,11 +13,11 @@ import { generateAtcReport, getAtcSummary } from '@utils/decorators';
 import { syncResults } from '@utils/jiraSync';
 
 /**
- * Generate reports and cleanup
+ * Global Teardown: generate reports and sync TMS
  *
  * Generates ATC execution report and syncs results to TMS if enabled.
  */
-teardown('generate reports and cleanup', async () => {
+teardown('Global Teardown: generate reports and sync TMS', async () => {
   console.log(`\n${'='.repeat(60)}`);
   console.log('KATA Framework - Global Teardown');
   console.log('='.repeat(60));
