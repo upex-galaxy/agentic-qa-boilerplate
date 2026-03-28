@@ -545,7 +545,7 @@ tests/components/steps/
 
 import { expect, type APIResponse } from '@playwright/test';
 import { ApiBase } from '@api/ApiBase';
-import { atc } from '@utils/decorators';
+import { atc, step } from '@utils/decorators';
 import type { Environment } from '@variables';
 
 // ============================================
@@ -565,7 +565,16 @@ export class ResourceApi extends ApiBase {
   }
 
   // ============================================
-  // ATCs
+  // Helpers (read-only, @step for tracing)
+  // ============================================
+
+  @step
+  async getResourceById(id: string): Promise<[APIResponse, ResourceResponse]> {
+    return this.apiGET<ResourceResponse>(`/api/resource/${id}`);
+  }
+
+  // ============================================
+  // ATCs (state-changing, @atc for TMS)
   // ============================================
 
   @atc('TK-XXX')

@@ -448,6 +448,39 @@ export function atc(testId: string, options: AtcOptions = {}) {
 - Synchronization with TMS (Jira/Xray)
 - Console output: `[ATC-PASS] TK-101 | signInSuccessfully`
 
+### @step Decorator
+
+The `@step` decorator traces helper method execution in KataReporter's terminal output. It wraps the method in Playwright's `test.step()`, which is also auto-captured by `allure-playwright` for Allure reports.
+
+```typescript
+import { atc, step } from '@utils/decorators';
+
+// ─── HELPERS (read-only, @step for tracing) ────────────
+
+@step
+async getCurrentUser(): Promise<[APIResponse, UserInfoResponse]> {
+  return this.apiGET<UserInfoResponse>('/auth/me');
+}
+
+// ─── ATCs (state-changing, @atc for TMS) ───────────────
+
+@atc('TK-101')
+async authenticateSuccessfully(credentials: LoginPayload) { ... }
+```
+
+**@atc vs @step:**
+
+| Aspect | `@atc` | `@step` |
+|--------|--------|---------|
+| **Purpose** | TMS traceability + tracing | Method tracing only |
+| **Terminal output** | `ATC [TK-101]: methodName(args)` | `methodName(args)` |
+| **Allure** | Metadata + step (automatic) | Step only (automatic) |
+| **NDJSON results** | Yes (for TMS sync) | No |
+| **Apply to** | Layer 3 ATCs (state-changing) | Layer 3 helpers (read-only) |
+| **Do NOT apply to** | Helpers, Layer 2 base methods | ATCs, Layer 2 base methods, private methods |
+
+Both decorators include **parameter formatting** with sensitive data masking (`password`, `token`, `secret` → `"***"`).
+
 ### Test Results Synchronization
 
 After test execution, results are synced to Jira/Xray:
