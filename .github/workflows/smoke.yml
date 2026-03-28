@@ -65,7 +65,7 @@ jobs:
         run: bun run pw:install
 
       - name: Run Smoke Tests (@critical) on ${{ env.TEST_ENV }}
-        run: bun run test:e2e:critical
+        run: bun run test:smoke
 
       - name: Upload Allure Results
         if: always()

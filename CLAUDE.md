@@ -18,6 +18,9 @@ bun run test:e2e
 # API tests only
 bun run test:integration
 
+# Smoke tests (@critical tagged)
+bun run test:smoke
+
 # Visual UI mode
 bun run test:ui
 

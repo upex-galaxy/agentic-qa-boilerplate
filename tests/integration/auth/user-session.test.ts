@@ -9,7 +9,7 @@
 
 import { config, expect, test } from '@TestFixture';
 
-test.describe('UPEX-100: User Session API', () => {
+test.describe('UPEX-100: User Session API', { tag: ['@critical'] }, () => {
   /**
    * Validates that the auth token is automatically loaded from api-state.json
    * and can be used to make authenticated API calls.

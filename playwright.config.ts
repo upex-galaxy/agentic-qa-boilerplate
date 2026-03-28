@@ -146,6 +146,21 @@ export default defineConfig({
     },
 
     // ============================================
+    // Smoke Tests - @critical tagged tests from any suite
+    // Usage: bun run test:smoke
+    // ============================================
+    {
+      name: 'smoke',
+      grep: /@critical/,
+      testMatch: '**/{e2e,integration}/**/*.test.ts',
+      dependencies: ['ui-setup', 'api-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: config.auth.storageStatePath,
+      },
+    },
+
+    // ============================================
     // Global Teardown - Runs LAST (reports, TMS sync)
     // Activated by `teardown` property on global-setup, NOT by dependencies
     // ============================================

@@ -25,7 +25,7 @@ test.describe('PROJ-100: Example API', () => {
    * Tests successful resource creation.
    * ATC: PROJ-101
    */
-  test('PROJ-100: should create resource successfully', async ({ api }) => {
+  test('PROJ-100: should create resource successfully', { tag: ['@critical'] }, async ({ api }) => {
     // ARRANGE - Prepare test data using DataFactory (available via api.data)
     const payload = api.data.createCredentials();
 

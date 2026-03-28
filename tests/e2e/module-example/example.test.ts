@@ -15,7 +15,7 @@
  * Key Pattern:
  * - ATCs are complete test cases with fixed assertions
  * - Test file orchestrates ATCs and adds test-level assertions
- * - Use @critical tag for smoke tests
+ * - Use tag: ['@critical'] property for smoke tests (not in title)
  */
 
 import { expect, test } from '@TestFixture';
@@ -27,7 +27,7 @@ test.describe('PROJ-200: Example Feature', () => {
    * Tests the happy path for the example feature.
    * ATC: PROJ-101
    */
-  test('PROJ-200: should complete example flow successfully @critical', async ({ ui }) => {
+  test('PROJ-200: should complete example flow successfully', { tag: ['@critical'] }, async ({ ui }) => {
     // ARRANGE - Generate test data using DataFactory (available via ui.data)
     const testData = ui.data.createCredentials();
 

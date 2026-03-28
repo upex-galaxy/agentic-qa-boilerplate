@@ -14,14 +14,14 @@
 
 import { expect, test } from '@TestFixture';
 
-test.describe('UPEX-200: Dashboard', () => {
+test.describe('UPEX-200: Dashboard', { tag: ['@critical'] }, () => {
   /**
    * @critical - Validates Global Setup authentication
    *
    * This test verifies that the authenticated session from e2e-setup
    * is correctly loaded and allows access to protected pages.
    */
-  test('UPEX-200: should load dashboard with authenticated session @critical', async ({ page }) => {
+  test('UPEX-200: should load dashboard with authenticated session', async ({ page }) => {
     // Navigate to home/dashboard - should work because we're authenticated
     await page.goto('/');
 

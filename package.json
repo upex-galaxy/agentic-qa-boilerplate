@@ -34,7 +34,7 @@
     "test:retries": "playwright test --retries=2",
     "test:last-failed": "playwright test --last-failed",
     "test:e2e": "playwright test --project=e2e",
-    "test:e2e:critical": "playwright test --project=e2e --grep @critical",
+    "test:smoke": "playwright test --project=smoke",
     "test:integration": "playwright test --project=integration",
     "test:report": "playwright show-report",
     "test:allure": "allure generate ./allure-results -o ./allure-report --clean && allure open ./allure-report",
