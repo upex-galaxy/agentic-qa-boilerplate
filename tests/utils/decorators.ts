@@ -7,9 +7,10 @@
  * Logging happens ONLY within the decorator - not in base components.
  */
 
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 
+import { test } from '@playwright/test';
 import { config } from '@variables';
 import * as allure from 'allure-js-commons';
 
@@ -147,8 +148,9 @@ export function atc(testId: string, options: AtcOptions = {}) {
       }
 
       try {
-        // Execute within Allure step
-        const returnValue = await allure.step(`ATC: ${testId} - ${methodName}`, async () => {
+        // Execute within test.step (visible in KataReporter + auto-captured by allure-playwright)
+        const stepTitle = `ATC [${testId}]: ${methodName}${formatArgs(args)}`;
+        const returnValue = await test.step(stepTitle, async () => {
           return originalMethod.apply(this, args);
         });
 
@@ -190,10 +192,117 @@ export function atc(testId: string, options: AtcOptions = {}) {
 }
 
 // ============================================
+// Step Decorator (helper tracing)
+// ============================================
+
+/**
+ * @step decorator for helper method tracing
+ *
+ * Wraps the method in Playwright's test.step() so it appears in KataReporter.
+ * Shows method name and formatted parameters in the terminal.
+ *
+ * Use on Layer 3 public helper methods (read-only queries).
+ * Do NOT use on @atc methods or Layer 2 base methods.
+ *
+ * @example
+ * @step
+ * async getBookings(filters: BookingFilters) {
+ *   return this.apiGET<BookingVmContainer>('/bookings', { params });
+ * }
+ * // Terminal: ---- ✓ getBookings({ start: "2024-09-01", end: "2024-09-30" })
+ */
+// eslint-disable-next-line ts/no-explicit-any -- Required for decorator flexibility with strict mode
+export function step<T extends (...args: any[]) => Promise<any>>(
+  originalMethod: T,
+  context: ClassMethodDecoratorContext,
+): T {
+  const methodName = String(context.name);
+
+  // eslint-disable-next-line ts/no-explicit-any -- Matches generic T signature
+  async function replacement(this: unknown, ...args: any[]) {
+    const stepTitle = `${methodName}${formatArgs(args)}`;
+    return test.step(stepTitle, async () => {
+      return originalMethod.apply(this, args);
+    });
+  }
+
+  return replacement as T;
+}
+
+// ============================================
+// Parameter Formatting (for step titles)
+// ============================================
+
+const SENSITIVE_KEYS = new Set(['password', 'token', 'secret', 'authorization', 'access_token']);
+const MAX_STRING_LEN = 80;
+const MAX_OBJECT_LEN = 120;
+
+function formatValue(value: unknown, key?: string): string {
+  if (key && SENSITIVE_KEYS.has(key.toLowerCase())) {
+    return '"***"';
+  }
+  if (value === null) {
+    return 'null';
+  }
+  if (value === undefined) {
+    return 'undefined';
+  }
+  if (typeof value === 'function') {
+    return '[Function]';
+  }
+
+  if (typeof value === 'string') {
+    return value.length > MAX_STRING_LEN
+      ? `"${value.slice(0, MAX_STRING_LEN)}..."`
+      : `"${value}"`;
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return `[Array(${value.length})]`;
+  }
+
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>);
+    const formatted = entries
+      .slice(0, 5)
+      .map(([k, v]) => `${k}: ${formatValue(v, k)}`)
+      .join(', ');
+    const suffix = entries.length > 5 ? ', ...' : '';
+    const result = `{ ${formatted}${suffix} }`;
+    return result.length > MAX_OBJECT_LEN
+      ? `${result.slice(0, MAX_OBJECT_LEN)}...}`
+      : result;
+  }
+
+  return String(value);
+}
+
+function formatArgs(args: unknown[]): string {
+  if (args.length === 0) {
+    return '()';
+  }
+  return `(${args.map(a => formatValue(a)).join(', ')})`;
+}
+
+// ============================================
 // Result Storage Functions
 // ============================================
 
+/**
+ * NDJSON file path for cross-process ATC result persistence.
+ *
+ * Playwright runs each project (setup, e2e, integration, teardown) in
+ * separate worker processes. In-memory Maps don't survive across them.
+ * Each @atc execution appends one JSON line here; the teardown reads
+ * and aggregates all lines into the final report.
+ */
+const NDJSON_PATH = resolve('reports/atc_results.ndjson');
+
 function storeResult(testId: string, result: AtcResult) {
+  // In-memory (useful within the same worker)
   const existing = atcResults.get(testId);
   if (existing) {
     existing.push(result);
@@ -201,6 +310,36 @@ function storeResult(testId: string, result: AtcResult) {
   else {
     atcResults.set(testId, [result]);
   }
+
+  // Persist to NDJSON (survives across worker processes)
+  mkdirSync(dirname(NDJSON_PATH), { recursive: true });
+  appendFileSync(NDJSON_PATH, `${JSON.stringify(result)}\n`);
+}
+
+/**
+ * Read all ATC results from the NDJSON file (cross-process aggregation).
+ * Groups results by testId for the final report.
+ */
+function readNdjsonResults(): Record<string, AtcResult[]> {
+  const results: Record<string, AtcResult[]> = {};
+
+  if (!existsSync(NDJSON_PATH)) {
+    return results;
+  }
+
+  const lines = readFileSync(NDJSON_PATH, 'utf-8').split('\n').filter(Boolean);
+
+  for (const line of lines) {
+    const result = JSON.parse(line) as AtcResult;
+    if (results[result.testId]) {
+      results[result.testId].push(result);
+    }
+    else {
+      results[result.testId] = [result];
+    }
+  }
+
+  return results;
 }
 
 export function getAtcResults() {
@@ -249,15 +388,64 @@ export function getAtcSummary() {
 // Report Generation
 // ============================================
 
-export async function generateAtcReport(outputPath = 'reports/atc_results.json') {
+/**
+ * Generates the final ATC report by reading the NDJSON file
+ * (which was populated by all worker processes during test execution).
+ *
+ * This is called from the global teardown, which runs in its own process.
+ * The in-memory Map would be empty here — NDJSON is the source of truth.
+ */
+export interface AtcSummary {
+  total: number
+  passed: number
+  failed: number
+  skipped: number
+  testIds: string[]
+}
+
+export async function generateAtcReport(outputPath = 'reports/atc_results.json'): Promise<AtcSummary> {
+  // Read from NDJSON (cross-process results)
+  const allResults = readNdjsonResults();
+
+  // Compute summary from disk results
+  let total = 0;
+  let passed = 0;
+  let failed = 0;
+  let skipped = 0;
+  const testIds: string[] = [];
+
+  for (const [testId, results] of Object.entries(allResults)) {
+    testIds.push(testId);
+    for (const r of results) {
+      total++;
+      if (r.status === 'PASS') {
+        passed++;
+      }
+      else if (r.status === 'FAIL') {
+        failed++;
+      }
+      else {
+        skipped++;
+      }
+    }
+  }
+
+  const summary: AtcSummary = { total, passed, failed, skipped, testIds };
+
   const report = {
     generatedAt: new Date().toISOString(),
-    summary: getAtcSummary(),
-    results: getAtcResultsObject(),
+    summary,
+    results: allResults,
   };
 
-  // Create parent directories if they don't exist
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, JSON.stringify(report, null, 2));
   console.log(`📊 ATC Report generated: ${outputPath}`);
+
+  // Clean up NDJSON after aggregation
+  if (existsSync(NDJSON_PATH)) {
+    unlinkSync(NDJSON_PATH);
+  }
+
+  return summary;
 }

@@ -9,7 +9,7 @@
  */
 
 import { test as teardown } from '@playwright/test';
-import { generateAtcReport, getAtcSummary } from '@utils/decorators';
+import { generateAtcReport } from '@utils/decorators';
 import { syncResults } from '@utils/jiraSync';
 
 /**
@@ -24,9 +24,8 @@ teardown('Global Teardown: generate reports and sync TMS', async () => {
 
   // Generate ATC results report
   try {
-    await generateAtcReport('reports/atc_results.json');
+    const summary = await generateAtcReport('reports/atc_results.json');
 
-    const summary = getAtcSummary();
     console.log('\nATC Execution Summary:');
     console.log(`   Total: ${summary.total}`);
     console.log(`   Passed: ${summary.passed}`);

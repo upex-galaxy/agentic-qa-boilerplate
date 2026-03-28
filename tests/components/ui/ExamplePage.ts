@@ -29,7 +29,7 @@ import type { TestContextOptions } from '@TestContext';
 
 import { expect } from '@playwright/test';
 import { UiBase } from '@ui/UiBase';
-import { atc } from '@utils/decorators';
+import { atc, step } from '@utils/decorators';
 
 // ============================================
 // Types - Define your component's data structures
@@ -77,6 +77,7 @@ export class ExamplePage extends UiBase {
   // Navigation
   // ============================================
 
+  @step
   async goto() {
     // TODO: Update with your page path
     await this.page.goto('/example');

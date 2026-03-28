@@ -18,7 +18,7 @@ import type { TestContextOptions } from '@TestContext';
 
 import { expect } from '@playwright/test';
 import { UiBase } from '@ui/UiBase';
-import { atc } from '@utils/decorators';
+import { atc, step } from '@utils/decorators';
 
 // ============================================
 // Types - Login data structures
@@ -64,6 +64,7 @@ export class LoginPage extends UiBase {
    * Navigate to the login page
    * Call this BEFORE using login ATCs
    */
+  @step
   async goto(): Promise<void> {
     await this.page.goto(this.buildUrl('/login'));
   }
