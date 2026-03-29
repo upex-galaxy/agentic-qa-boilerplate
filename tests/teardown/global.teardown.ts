@@ -8,8 +8,10 @@
  * Dependents: None (this is the final step)
  */
 
+import { existsSync, readFileSync } from 'node:fs';
+
 import { test as teardown } from '@playwright/test';
-import { generateAtcReport } from '@utils/decorators';
+import { ATC_PARTIAL_PATH } from '@utils/decorators';
 import { syncResults } from '@utils/jiraSync';
 
 /**
@@ -22,19 +24,56 @@ teardown('Global Teardown: generate reports and sync TMS', async () => {
   console.log('KATA Framework - Global Teardown');
   console.log('='.repeat(60));
 
-  // Generate ATC results report
-  try {
-    const summary = await generateAtcReport('reports/atc_results.json');
+  // Read NDJSON directly (KataReporter.onEnd() hasn't fired yet)
+  if (existsSync(ATC_PARTIAL_PATH)) {
+    try {
+      const lines = readFileSync(ATC_PARTIAL_PATH, 'utf-8').split('\n').filter(Boolean);
+      const grouped: Record<string, { hasFail: boolean, allSkip: boolean, count: number }> = {};
 
-    console.log('\nATC Execution Summary:');
-    console.log(`   Total: ${summary.total}`);
-    console.log(`   Passed: ${summary.passed}`);
-    console.log(`   Failed: ${summary.failed}`);
-    console.log(`   Skipped: ${summary.skipped}`);
-    console.log(`   Test IDs: ${summary.testIds.length}`);
+      for (const line of lines) {
+        const entry = JSON.parse(line) as { testId: string, status: string };
+        if (!grouped[entry.testId]) {
+          grouped[entry.testId] = { hasFail: false, allSkip: true, count: 0 };
+        }
+        grouped[entry.testId].count++;
+        if (entry.status === 'FAIL') {
+          grouped[entry.testId].hasFail = true;
+        }
+        if (entry.status !== 'SKIP') {
+          grouped[entry.testId].allSkip = false;
+        }
+      }
+
+      let passed = 0;
+      let failed = 0;
+      let skipped = 0;
+      let executions = 0;
+
+      for (const g of Object.values(grouped)) {
+        executions += g.count;
+        if (g.hasFail) {
+          failed++;
+        }
+        else if (g.allSkip) {
+          skipped++;
+        }
+        else {
+          passed++;
+        }
+      }
+
+      const total = Object.keys(grouped).length;
+
+      console.log('\nATC Coverage:');
+      console.log(`   ${total} unique ATC tracked (${executions} total executions)`);
+      console.log(`   ✅ Passed: ${passed} | ❌ Failed: ${failed} | ⏭️ Skipped: ${skipped}`);
+    }
+    catch (error) {
+      console.warn('[WARN] Could not read ATC partial results:', error);
+    }
   }
-  catch (error) {
-    console.warn('[WARN] Could not generate ATC report:', error);
+  else {
+    console.log('\n[INFO] No ATC results found (no @atc decorators executed)');
   }
 
   // Sync results to TMS

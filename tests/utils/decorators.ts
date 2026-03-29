@@ -7,7 +7,7 @@
  * Logging happens ONLY within the decorator - not in base components.
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 import { test } from '@playwright/test';
@@ -36,12 +36,6 @@ export interface AtcOptions {
   description?: string
   severity?: 'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'
 }
-
-// ============================================
-// Global Results Storage
-// ============================================
-
-const atcResults: Map<string, AtcResult[]> = new Map();
 
 // ============================================
 // ATC Decorator
@@ -296,156 +290,12 @@ function formatArgs(args: unknown[]): string {
  *
  * Playwright runs each project (setup, e2e, integration, teardown) in
  * separate worker processes. In-memory Maps don't survive across them.
- * Each @atc execution appends one JSON line here; the teardown reads
- * and aggregates all lines into the final report.
+ * Each @atc execution appends one JSON line here; KataReporter.onEnd()
+ * aggregates all lines into the final report.
  */
-const NDJSON_PATH = resolve('reports/atc_results.ndjson');
+export const ATC_PARTIAL_PATH = resolve('reports/.atc_partial.ndjson');
 
-function storeResult(testId: string, result: AtcResult) {
-  // In-memory (useful within the same worker)
-  const existing = atcResults.get(testId);
-  if (existing) {
-    existing.push(result);
-  }
-  else {
-    atcResults.set(testId, [result]);
-  }
-
-  // Persist to NDJSON (survives across worker processes)
-  mkdirSync(dirname(NDJSON_PATH), { recursive: true });
-  appendFileSync(NDJSON_PATH, `${JSON.stringify(result)}\n`);
-}
-
-/**
- * Read all ATC results from the NDJSON file (cross-process aggregation).
- * Groups results by testId for the final report.
- */
-function readNdjsonResults(): Record<string, AtcResult[]> {
-  const results: Record<string, AtcResult[]> = {};
-
-  if (!existsSync(NDJSON_PATH)) {
-    return results;
-  }
-
-  const lines = readFileSync(NDJSON_PATH, 'utf-8').split('\n').filter(Boolean);
-
-  for (const line of lines) {
-    const result = JSON.parse(line) as AtcResult;
-    if (results[result.testId]) {
-      results[result.testId].push(result);
-    }
-    else {
-      results[result.testId] = [result];
-    }
-  }
-
-  return results;
-}
-
-export function getAtcResults() {
-  return new Map(atcResults);
-}
-
-export function getAtcResultsObject() {
-  const obj: Record<string, AtcResult[]> = {};
-  atcResults.forEach((value, key) => {
-    obj[key] = value;
-  });
-  return obj;
-}
-
-export function clearAtcResults() {
-  atcResults.clear();
-}
-
-export function getAtcSummary() {
-  let total = 0;
-  let passed = 0;
-  let failed = 0;
-  let skipped = 0;
-  const testIds: string[] = [];
-
-  atcResults.forEach((results, testId) => {
-    testIds.push(testId);
-    results.forEach((r) => {
-      total++;
-      if (r.status === 'PASS') {
-        passed++;
-      }
-      else if (r.status === 'FAIL') {
-        failed++;
-      }
-      else {
-        skipped++;
-      }
-    });
-  });
-
-  return { total, passed, failed, skipped, testIds };
-}
-
-// ============================================
-// Report Generation
-// ============================================
-
-/**
- * Generates the final ATC report by reading the NDJSON file
- * (which was populated by all worker processes during test execution).
- *
- * This is called from the global teardown, which runs in its own process.
- * The in-memory Map would be empty here — NDJSON is the source of truth.
- */
-export interface AtcSummary {
-  total: number
-  passed: number
-  failed: number
-  skipped: number
-  testIds: string[]
-}
-
-export async function generateAtcReport(outputPath = 'reports/atc_results.json'): Promise<AtcSummary> {
-  // Read from NDJSON (cross-process results)
-  const allResults = readNdjsonResults();
-
-  // Compute summary from disk results
-  let total = 0;
-  let passed = 0;
-  let failed = 0;
-  let skipped = 0;
-  const testIds: string[] = [];
-
-  for (const [testId, results] of Object.entries(allResults)) {
-    testIds.push(testId);
-    for (const r of results) {
-      total++;
-      if (r.status === 'PASS') {
-        passed++;
-      }
-      else if (r.status === 'FAIL') {
-        failed++;
-      }
-      else {
-        skipped++;
-      }
-    }
-  }
-
-  const summary: AtcSummary = { total, passed, failed, skipped, testIds };
-
-  const report = {
-    generatedAt: new Date().toISOString(),
-    summary,
-    results: allResults,
-  };
-
-  mkdirSync(dirname(outputPath), { recursive: true });
-  writeFileSync(outputPath, JSON.stringify(report, null, 2));
-  console.log(`📊 ATC Report generated: ${outputPath}`);
-
-  // Clean up NDJSON after aggregation
-  if (existsSync(NDJSON_PATH)) {
-    unlinkSync(NDJSON_PATH);
-  }
-
-  return summary;
+function storeResult(_testId: string, result: AtcResult) {
+  mkdirSync(dirname(ATC_PARTIAL_PATH), { recursive: true });
+  appendFileSync(ATC_PARTIAL_PATH, `${JSON.stringify(result)}\n`);
 }

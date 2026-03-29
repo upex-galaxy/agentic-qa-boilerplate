@@ -10,7 +10,6 @@
  */
 
 import type { AtcResult } from '@utils/decorators';
-import { getAtcResultsObject } from '@utils/decorators';
 import { config, env } from '@variables';
 
 // ============================================
@@ -48,7 +47,8 @@ export async function syncResults(reportPath = 'reports/atc_results.json'): Prom
     results = reportData.results ?? {};
   }
   else {
-    results = getAtcResultsObject();
+    console.warn('[WARN] ATC report file not found:', reportPath);
+    results = {};
   }
 
   if (Object.keys(results).length === 0) {

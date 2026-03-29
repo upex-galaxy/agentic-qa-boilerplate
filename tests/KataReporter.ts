@@ -18,6 +18,12 @@ import type {
   TestResult,
   TestStep,
 } from '@playwright/test/reporter';
+import type { AtcResult } from './utils/decorators';
+
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+
+import { ATC_PARTIAL_PATH } from './utils/decorators';
 
 // ANSI Color Codes
 const colors = {
@@ -260,6 +266,8 @@ class KataReporter implements Reporter {
   }
 
   onEnd(result: FullResult) {
+    this.generateAtcReport();
+
     this.endTime = Date.now();
     const duration = (this.endTime - this.startTime) / 1000;
 
@@ -320,6 +328,71 @@ class KataReporter implements Reporter {
   }
 
   // Helper Methods
+
+  /**
+   * Aggregate NDJSON partial results into the final JSON report.
+   * Runs in the coordinator process (not a worker), so the file is
+   * guaranteed to be complete by the time onEnd() fires.
+   */
+  private generateAtcReport(outputPath = 'reports/atc_results.json') {
+    if (!existsSync(ATC_PARTIAL_PATH)) {
+      return;
+    }
+
+    const results: Record<string, AtcResult[]> = {};
+    const lines = readFileSync(ATC_PARTIAL_PATH, 'utf-8').split('\n').filter(Boolean);
+
+    for (const line of lines) {
+      const entry = JSON.parse(line) as AtcResult;
+      if (results[entry.testId]) {
+        results[entry.testId].push(entry);
+      }
+      else {
+        results[entry.testId] = [entry];
+      }
+    }
+
+    // Count unique ATCs with conservative status:
+    // ALL executions passed → PASS, ANY failed → FAIL
+    let passed = 0;
+    let failed = 0;
+    let skipped = 0;
+    let executions = 0;
+    const testIds: string[] = [];
+
+    for (const [testId, entries] of Object.entries(results)) {
+      testIds.push(testId);
+      executions += entries.length;
+
+      const hasFail = entries.some(r => r.status === 'FAIL');
+      const allSkip = entries.every(r => r.status === 'SKIP');
+
+      if (hasFail) {
+        failed++;
+      }
+      else if (allSkip) {
+        skipped++;
+      }
+      else {
+        passed++;
+      }
+    }
+
+    const total = testIds.length;
+
+    const report = {
+      generatedAt: new Date().toISOString(),
+      summary: { total, passed, failed, skipped, executions, testIds },
+      results,
+    };
+
+    mkdirSync(dirname(outputPath), { recursive: true });
+    writeFileSync(outputPath, JSON.stringify(report, null, 2));
+    console.log(`📊 ATC Report generated: ${outputPath}`);
+
+    // Clean up partial NDJSON
+    unlinkSync(ATC_PARTIAL_PATH);
+  }
 
   private logTestError(result: TestResult, testName: string) {
     const statusIcons: Record<string, string> = {
