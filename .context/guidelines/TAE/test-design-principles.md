@@ -9,10 +9,11 @@
 ## Quick Summary
 
 1. **ATCs are ACTIONS, not reads.** A simple GET is a helper, not an ATC.
-2. **Tests validate complete FLOWS, not individual properties.** Don't create 6 tests checking 6 fields of the same response.
-3. **Test names use verbs.** Files: camelCase with a verb. Tests: `should [behavior] when [condition]`.
-4. **ATCs are equivalent partitions.** Same ATC with different data must produce the same type of output. Conditionals are allowed sparingly for slight output variations; truly different behavior requires a separate ATC.
-5. **Assertions are micro-validations during a flow**, not standalone tests.
+2. **A TC is defined by its Precondition + Action.** All expected results from the same precondition and action belong to the same TC — regardless of which panel, endpoint, or UI section they validate.
+3. **Tests validate complete FLOWS, not individual properties.** Don't create 6 tests checking 6 fields of the same response.
+4. **Test names use verbs.** Files: camelCase with a verb. Tests: `should [behavior] when [condition]`.
+5. **ATCs are equivalent partitions.** Same ATC with different data must produce the same type of output. Conditionals are allowed sparingly for slight output variations; truly different behavior requires a separate ATC.
+6. **Assertions are micro-validations during a flow**, not standalone tests.
 
 ---
 
@@ -38,6 +39,66 @@ An ATC (Acceptance Test Case) represents a **complete action** that changes or v
 | Minor output variation → use conditionals sparingly | Different endpoint, different UI flow, or different assertions |
 
 **Rule of thumb**: If the **actions** inside the ATC change, it's a different ATC. If only the **data** changes but the system behaves identically, it's the same ATC with parameterized input.
+
+### TC Identity Rule: Precondition + Action
+
+A Test Case's identity is determined by exactly two elements:
+
+1. **Precondition**: The state the system must be in before the test
+2. **Action**: What the user does (the trigger)
+
+**All expected results** that follow from the same precondition + action are assertions within the **same TC**. This holds true regardless of which panel, section, endpoint, or UI area the assertion validates.
+
+```
+TC Identity = Precondition + Action
+              ↓
+              All expected outputs are assertions of THIS TC
+```
+
+#### Why This Matters
+
+When designing tests, the natural instinct is to organize by **concern** (commission panel, bookings panel, status bar). But this leads to multiple TCs that share the same precondition and action — which means duplicated test execution, duplicated setup, and fundamentally: the same test split across multiple tickets.
+
+#### Anti-Pattern: Splitting by Concern
+
+```
+// WRONG: 3 separate TCs for the same input
+TC-A: Select hotel with processed data → verify Commission panel values
+TC-B: Select hotel with processed data → verify Matched Bookings values
+TC-C: Select hotel with processed data → verify dashboard structure
+
+// These share the SAME precondition (hotel with processed data)
+// and the SAME action (select hotel/month in filters)
+// → They are the SAME TC with different assertions
+```
+
+#### Correct Approach: One TC, All Assertions
+
+```
+// CORRECT: One TC with all expected results listed
+TC: Select hotel with processed data
+  Precondition: Hotel has fully processed booking data for the target month
+  Action: User selects the hotel and month in filters
+  Expected Output:
+    - Dashboard structure visible (Commission Invoice heading, Matched Bookings heading)
+    - Commission values correct (Standard + Boosted + Platform Fee = total)
+    - Matched Bookings metrics correct (counts, nights, revenue, ADR)
+    - Bookings chart visible with proportional bars
+    - Status bar reflects correct reconciliation stage
+    - Awaiting/Processing messages NOT visible
+```
+
+#### When IS It a Different TC?
+
+A TC is different when the **precondition** or **action** changes — not when you want to check a different aspect of the output:
+
+| Different TC? | Reason |
+|--------------|--------|
+| Yes | Different **precondition**: hotel with NO booking data vs hotel with processed data |
+| Yes | Different **action**: select hotel/month vs click export button |
+| Yes | Different **equivalent partition**: estimated invoice vs finalized invoice |
+| **No** | Same precondition + same action, but checking commission panel vs bookings panel |
+| **No** | Same precondition + same action, but checking one more field in the response |
 
 **An ATC is NOT:**
 - A simple GET endpoint that retrieves data
@@ -206,6 +267,8 @@ More examples:
 ---
 
 ## 4. Tests Validate FLOWS, Not Individual Properties
+
+This section is the code-level application of the **TC Identity Rule** (Section 1). Just as a TC is defined by Precondition + Action at the design level, a test at the code level should validate ALL expected outputs of a given flow — not split them across multiple tests.
 
 ### The Anti-Pattern (WRONG)
 

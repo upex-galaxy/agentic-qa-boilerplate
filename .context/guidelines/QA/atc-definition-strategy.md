@@ -8,11 +8,24 @@
 
 ## Quick Summary
 
-1. **ATCs originate in Jira** as test cases during Stage 3 (Test Documentation)
+1. **ATCs originate in the TMS** as test cases during Stage 3 (Test Documentation)
 2. **ATCs are implemented in code** via the `@atc('TK-XXX')` decorator in KATA components
-3. **An ATC = one acceptance criterion** — a short, precise action with a verifiable outcome
+3. **A TC is defined by Precondition + Action** — all expected results from the same combination belong to the same TC
 4. **E2E and Integration tests combine multiple ATCs** into complete flows
-5. **Traceability is end-to-end**: Jira ticket ↔ `@atc` decorator ↔ test report ↔ back to Jira
+5. **Traceability is end-to-end**: TMS ticket ↔ `@atc` decorator ↔ test report ↔ back to TMS
+
+## Terminology
+
+Before diving in, clarify these terms — they are often confused:
+
+| Term | What It Is | What It Is NOT |
+|------|-----------|----------------|
+| **Test Ticket** | A **task tracking item** (like any Jira/Coda task) used to group and track the creation/automation of a set of TCs | NOT a test artifact. It's an organizational unit for project management |
+| **Test Case (TC)** | An individual acceptance test defined by a unique **Precondition + Action** combination, with one or more expected results | NOT defined by what it validates. Two checks on different panels from the same action = same TC |
+| **Test Scenario (TS)** | A multi-step flow that chains 2+ actions with intermediate verifications | NOT a single action with multiple assertions (that's a TC) |
+| **ATC** | The code implementation of a TC as a method with the `@atc` decorator | NOT a helper method (helpers are read-only, ATCs are actions) |
+
+**Key insight**: A test ticket is like a Jira task titled "Automate Monthly Statement page state tests." It contains 3-7 TCs. The ticket tracks the work; the TCs define what to test.
 
 ---
 
@@ -90,9 +103,43 @@ For full IQL details, see `docs/methodology/IQL-methodology.md`.
 
 ## 3. How to Define an ATC
 
-### Step 1: Start from User Story Acceptance Criteria
+### Step 1: Identify Unique Precondition + Action Combinations
 
-Each acceptance criterion is a potential ATC:
+**Do NOT start by listing assertions.** Start by identifying the **unique actions** a user performs under **different preconditions**. Each unique combination is a potential TC.
+
+```
+User Story: US-101 - User Authentication
+
+Step 1a: What are the user ACTIONS?
+  → Submit login form
+
+Step 1b: What PRECONDITIONS create different behaviors?
+  → Valid credentials (active account)          → TC: authenticateSuccessfully
+  → Invalid credentials (wrong email/password)  → TC: loginWithInvalidCredentials
+  → Valid credentials but account locked         → TC: loginWithLockedAccount
+```
+
+Each TC above has a different precondition that produces a different system behavior. That's why they are separate TCs.
+
+**What about multiple assertions?** Each TC should list ALL expected outputs:
+
+```
+TC: authenticateSuccessfully
+  Precondition: User has valid credentials and active account
+  Action: Submit login form
+  Expected Output:
+    - Redirect to dashboard
+    - Auth token is present in response
+    - User profile info is accessible via GET /auth/me
+    - Session cookie is set
+    - Welcome message shows user's name
+```
+
+All of these are assertions of the **same TC** because the precondition and action are identical.
+
+#### From Acceptance Criteria to TCs
+
+Each acceptance criterion maps to one or more TCs:
 
 ```
 User Story: US-101 - User Authentication
@@ -379,6 +426,7 @@ Example:
 | Anti-Pattern | Why it's wrong | Correct approach |
 |-------------|---------------|-----------------|
 | One ATC per field check | 6 ATCs checking 6 fields of same response | One ATC with multiple assertions |
+| Splitting by UI concern | 3 TCs for same action: "check panel A", "check panel B", "check panel C" | One TC with assertions for all panels |
 | GET-only ATC | A simple read is not an action | Make it a helper method |
 | Hardcoded test data | Data changes across environments | Use variables pattern |
 | ATC without Jira ticket | No traceability | Always create ticket first |

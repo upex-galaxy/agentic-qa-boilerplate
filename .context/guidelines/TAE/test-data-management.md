@@ -8,17 +8,43 @@ Guide for test data management in KATA framework with TypeScript + Playwright.
 
 ### Golden Rule
 
-**NEVER use static data** (except login credentials). Always generate dynamic data with Faker.
+**NEVER hardcode test data.** Tests must obtain their data dynamically at runtime — whether by creating it, discovering it, or modifying existing data.
+
+### Test Data Strategy (Priority Order)
+
+Every test needs data. Before writing any test code, determine HOW the test will get its data using this priority hierarchy:
+
+| Priority | Pattern | What It Does | When to Use | Example |
+|----------|---------|-------------|-------------|---------|
+| **1. Generate** | Create data from scratch via API/DB | Produces a clean, isolated data state | When the system supports full CRUD for the entity | POST /orders to create an order, then test it |
+| **2. Discover** | Query the system to find existing data that matches preconditions | Finds a real entity already in the desired state | When the entity can't be created from scratch (complex workflows, dependencies) | Query DB for an account with `status = 'active'` |
+| **3. Modify** | Find existing data and alter it via API to match preconditions | Adjusts an entity to reach the required state | When the entity exists but isn't in the right state, and the API supports the mutation | Find an account, then PUT to update its status |
+
+**Priority 1 (Generate) is always preferred** because it gives full control and isolation. Use Pattern 2 or 3 only when Pattern 1 isn't feasible.
+
+**Important**: All three patterns happen at **runtime** in precondition steps (`beforeAll`, `beforeEach`, or test setup). Never assume specific data exists in the environment — always verify or create it.
+
+### Feasibility Check (During Planning)
+
+**Before a test is an automation candidate**, validate which data pattern is feasible:
+
+1. Can the data be **created** from scratch via API? → Check available POST/PUT endpoints
+2. Can existing data be **discovered** reliably? → Query DB/API for entities in the required state
+3. Can existing data be **modified** to reach the required state? → Check available mutation endpoints
+4. **If none of the above is possible** → The test is NOT an automation candidate (flag as blocker)
+
+This check should happen during the **planning phase** (`test-implementation-plan.md` Step 4: Data Discovery), not during coding. Discovering a data feasibility issue while coding wastes time.
 
 ### Principles
 
 | Principle         | Description                                    |
 | ----------------- | ---------------------------------------------- |
-| **Dynamic**       | Data generated at runtime, not hardcoded       |
-| **Isolation**     | Each test creates its own data                 |
+| **Dynamic**       | Data obtained at runtime, never hardcoded      |
+| **Isolation**     | Each test creates or discovers its own data    |
 | **Uniqueness**    | UUIDs/timestamps to prevent conflicts          |
 | **Realism**       | Data that simulates production scenarios       |
 | **Traceability**  | Identifiable prefixes for cleanup              |
+| **Resilience**    | Tests don't break when environment data changes |
 
 ---
 
@@ -143,7 +169,148 @@ const testId = this.data.createTestId('booking');
 
 ---
 
-## 5. Usage in Components
+## 5. Precondition Placement Strategy
+
+Once you know HOW to get data (Generate, Discover, or Modify), you need to decide WHERE to place the precondition code and how to pass the data to tests.
+
+### 5.1 beforeAll vs beforeEach
+
+| Use | When | Reason | Example |
+|-----|------|--------|---------|
+| `beforeAll` | Data is **read-only** — tests observe but don't mutate | Query runs once, not N times. Faster. | Discover an entity with specific state → all tests in the suite use it |
+| `beforeEach` | Data is **mutated** by each test (POST, PUT, DELETE) | Each test needs a fresh, isolated state | Create an order → test updates it → next test needs its own order |
+| `beforeAll` | Setup is **expensive** and shared (login, heavy API calls) | Avoids repeating costly setup per test | Authenticate once → reuse token for all tests |
+| `beforeEach` | Setup is **cheap** and must be **isolated** | Ensures test independence even if one test fails | Navigate to a page before each test |
+
+**Rule of thumb**: If the test **reads** data → `beforeAll`. If the test **writes** data → `beforeEach`.
+
+### 5.2 Passing Data from Setup to Tests
+
+Declare variables at the `describe` scope. `beforeAll` discovers the data (no assertions), and **each test validates its own precondition** with `test.skip()`.
+
+```typescript
+test.describe('Order Dashboard: Page States', () => {
+  // Declare at describe scope — accessible by beforeAll AND all tests
+  let completedOrder: OrderCandidate | null;
+  let pendingOrder: OrderCandidate | null;
+
+  test.beforeAll(async ({ api }) => {
+    // DISCOVER ONLY — no assertions here
+    completedOrder = await api.orders.findOrderWithState('completed');
+    pendingOrder = await api.orders.findOrderWithState('pending');
+  });
+
+  test('should display details when order is completed', async ({ ui }) => {
+    if (!completedOrder) return test.skip(true, 'No completed order found');
+
+    await ui.orders.selectOrder({
+      orderId: completedOrder.id,
+      status: completedOrder.status,
+    });
+  });
+
+  test('should display pending state when order is processing', async ({ ui }) => {
+    if (!pendingOrder) return test.skip(true, 'No pending order found');
+
+    await ui.orders.selectOrder({
+      orderId: pendingOrder.id,
+      status: pendingOrder.status,
+    });
+  });
+});
+```
+
+### 5.3 Precondition Validation Pattern
+
+**CRITICAL: Never use `expect` in `beforeAll` for precondition data.** If a `beforeAll` assertion fails, ALL tests in the describe block fail — even tests that don't need that specific data.
+
+```typescript
+// ❌ WRONG — expect in beforeAll kills ALL tests if one precondition is missing
+test.beforeAll(async ({ api }) => {
+  pendingOrder = await api.orders.findByState('pending');
+  completedOrder = await api.orders.findByState('completed');
+
+  expect(pendingOrder, 'No pending order found').toBeDefined();   // If this fails →
+  expect(completedOrder, 'No completed order found').toBeDefined(); // ALL tests fail
+});
+
+// ❌ WRONG — cryptic error if data is null
+test('should display pending state', async ({ ui }) => {
+  await ui.orders.selectOrder(pendingOrder.id); // TypeError: Cannot read 'id' of null
+});
+
+// ✅ CORRECT — beforeAll discovers, each test uses guard clause to skip
+test.beforeAll(async ({ api }) => {
+  // Discovery only — NO assertions
+  pendingOrder = await api.orders.findByState('pending');
+  completedOrder = await api.orders.findByState('completed');
+});
+
+test('should display pending state', async ({ ui }) => {
+  if (!pendingOrder) return test.skip(true, 'No pending order found');
+
+  await ui.orders.selectOrder(pendingOrder.id); // Safe: TypeScript narrowed
+});
+
+test('should display completed details', async ({ ui }) => {
+  if (!completedOrder) return test.skip(true, 'No completed order found');
+
+  await ui.orders.selectOrder(completedOrder.id); // Runs independently
+});
+```
+
+**Why this matters:**
+- `beforeAll` is for **shared setup** — discovery, login, navigation
+- `beforeAll` must NEVER contain assertions that could block unrelated tests
+- Each test is **responsible for its own preconditions** via `test.skip()`
+- The test report shows exactly which tests were skipped and why (not a blanket "beforeAll failed")
+- Skipped tests signal "environment data issue", not "code bug" — important distinction
+
+### 5.4 Cleanup with afterAll / afterEach
+
+If the setup **modifies** data (Pattern 3: Modify), restore the original state to avoid polluting the environment.
+
+| Hook | When to Use |
+|------|------------|
+| `afterEach` | Each test modified data independently → restore after each |
+| `afterAll` | One shared modification in beforeAll → restore once at end |
+
+```typescript
+test.describe('Order Status Actions', () => {
+  let originalStatus: string;
+
+  test.beforeAll(async ({ api }) => {
+    // Save original state
+    const [, order] = await api.orders.getStatus(orderId);
+    originalStatus = order.status;
+
+    // MODIFY: Set to required state
+    await api.orders.resetToProcessing(orderId);
+  });
+
+  test.afterAll(async ({ api }) => {
+    // CLEANUP: Restore original state
+    await api.orders.setStatus(orderId, originalStatus);
+  });
+
+  // ... tests ...
+});
+```
+
+**If Pattern 1 (Generate) was used**: cleanup means deleting the created data.
+**If Pattern 2 (Discover) was used**: no cleanup needed (data was only read).
+
+### 5.5 Summary Table
+
+| Data Pattern | Placement | Variables | Cleanup |
+|-------------|-----------|-----------|---------|
+| Generate (create fresh) | `beforeEach` (isolated per test) | Describe scope or inline | `afterEach` to delete |
+| Discover (find existing) | `beforeAll` (query once) | Describe scope | None needed |
+| Modify (alter existing) | `beforeAll` or `beforeEach` | Describe scope | `afterAll` / `afterEach` to restore |
+
+---
+
+## 6. Usage in Components
 
 ### In ATCs (Layer 3)
 
@@ -189,7 +356,7 @@ export class RegistrationPage extends UiBase {
 
 ---
 
-## 6. Usage in Tests
+## 7. Usage in Tests
 
 ### E2E Tests
 
@@ -246,7 +413,7 @@ test.describe('Bookings API', () => {
 
 ---
 
-## 7. Extending DataFactory
+## 8. Extending DataFactory
 
 ### Adding New Generators
 
@@ -286,7 +453,7 @@ export interface TestNewsletter {
 
 ---
 
-## 8. Static Fixtures
+## 9. Static Fixtures
 
 For reference data that doesn't change, use `tests/data/fixtures/`.
 
@@ -333,7 +500,7 @@ test('admin can delete', async ({ api }) => {
 
 ---
 
-## 9. Data Isolation
+## 10. Data Isolation
 
 ### Unique Identifiers
 
@@ -363,7 +530,7 @@ export default defineConfig({
 
 ---
 
-## 10. Credentials and Sensitive Data
+## 11. Credentials and Sensitive Data
 
 ### Login Credentials
 
@@ -395,7 +562,7 @@ STAGING_USER_PASSWORD=StagingPassword123!
 
 ---
 
-## 11. Best Practices
+## 12. Best Practices
 
 ### DO
 
@@ -415,7 +582,7 @@ STAGING_USER_PASSWORD=StagingPassword123!
 
 ---
 
-## 12. Quick Reference
+## 13. Quick Reference
 
 ```typescript
 // Access from components
@@ -440,7 +607,7 @@ this.data.createBooking({ hotelId: 123, stayValue: 500 });
 
 ---
 
-## 13. Resources
+## 14. Resources
 
 - **Faker Documentation**: https://fakerjs.dev/
 - **Playwright Test Fixtures**: https://playwright.dev/docs/test-fixtures

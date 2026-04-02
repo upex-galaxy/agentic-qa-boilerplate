@@ -37,6 +37,8 @@ This folder contains the guidelines for **general Quality Engineering**, focused
 | `jira-test-management.md`  | Test management in Jira                                 |
 | `spec-driven-testing.md`   | Spec-driven testing principle                           |
 | `atc-definition-strategy.md` | **How to define, name, and document ATCs** (QA↔TAE bridge) |
+| `test-spec-standards.md`  | **Test spec standards: TC discovery, design, and documentation** |
+| `test-hierarchy.md`       | **KATA test hierarchy: 5 levels from Module to ATC, doc↔code mapping** |
 
 **Note**: For `data-testid` usage in automation, see `TAE/data-testid-usage.md`.
 
