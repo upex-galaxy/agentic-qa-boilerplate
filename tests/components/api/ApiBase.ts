@@ -40,7 +40,9 @@ export class ApiBase extends TestContext {
 
   /** Default request headers */
   requestHeaders: Record<string, string> = {
-    'Accept': 'application/json',
+    // Use */* to avoid 406 errors on servers that don't accept application/json explicitly
+    // The response will still be JSON, but the server won't reject the request
+    'Accept': '*/*',
     'Content-Type': 'application/json',
   };
 
@@ -58,6 +60,13 @@ export class ApiBase extends TestContext {
    * Throws if request is not available.
    */
   get request(): APIRequestContext {
+    // Prefer page.request if page is available (E2E tests)
+    // page.request shares cookies and storage with the browser
+    if (this._page) {
+      return this._page.request;
+    }
+
+    // Fallback to standalone request (API-only tests)
     if (!this._request) {
       throw new Error(
         'Request context is not available. ApiBase requires a request instance. '
@@ -271,6 +280,56 @@ export class ApiBase extends TestContext {
     });
 
     return [response, body, data];
+  }
+
+  /**
+   * Generic POST request with form-urlencoded data (for OAuth2/token endpoints).
+   *
+   * @param endpoint - The API endpoint URL (can be absolute or relative)
+   * @param formData - Form data as key-value pairs
+   * @param options - Optional request options (headers, params, timeout)
+   * @returns Tuple [APIResponse, TBody, Record<string, string>] - Response, parsed body, and form data
+   *
+   * @example
+   * const [response, token, payload] = await this.apiPOSTForm<TokenResponse>(
+   *   '/connect/token',
+   *   { grant_type: 'password', username: 'user', password: 'pass', client_id: 'public' }
+   * );
+   */
+  async apiPOSTForm<TBody = Record<string, unknown>>(
+    endpoint: string,
+    formData: Record<string, string>,
+    options: RequestOptions = {},
+  ): Promise<[APIResponse, TBody, Record<string, string>]> {
+    // Support absolute URLs (for endpoints outside /api/)
+    const url = endpoint.startsWith('http') ? endpoint : this.apiEndpoint(endpoint);
+    const headers = {
+      ...this.buildHeaders(options.headers),
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
+
+    const response = await this.request.post(url, {
+      headers,
+      form: formData,
+      params: options.params,
+      timeout: options.timeout ?? this.config.browser.defaultTimeout,
+    });
+
+    const body = await this.getResponseJsonObject<TBody>(response);
+
+    // Allure attachments (mask password)
+    const safeFormData = { ...formData };
+    if (safeFormData.password) {
+      safeFormData.password = '***';
+    }
+    await attachRequestResponseToAllure({
+      url: endpoint,
+      method: 'POST',
+      responseBody: body,
+      requestBody: safeFormData,
+    });
+
+    return [response, body, formData];
   }
 
   /**

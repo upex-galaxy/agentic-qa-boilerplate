@@ -2128,7 +2128,7 @@ ${colors.bold}PULL SUBCOMMANDS${colors.reset}
   pull bugs           Sync Bugs → .context/PBI/bugs/
   pull defects        Sync Defects → inside Story folders
   pull improvements   Sync Improvements → .context/PBI/improvements/
-  pull tests          Sync Tests → .context/PBI/tests/
+  pull tests          Sync Tests → .context/PBI/{module}/test-specs/
 
 ${colors.bold}OPTIONS${colors.reset}
   --epic <key>        Sync specific epic with all its stories

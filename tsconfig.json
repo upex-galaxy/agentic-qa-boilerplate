@@ -37,7 +37,15 @@
     "verbatimModuleSyntax": false,
     "skipLibCheck": true
   },
-  "include": ["**/*.ts", "playwright.config.ts", "eslint.config.js"],
+  "include": [
+    "config/**/*.ts",
+    "tests/**/*.ts",
+    "api/**/*.ts",
+    "scripts/**/*.ts",
+    "cli/**/*.ts",
+    "playwright.config.ts",
+    "eslint.config.js"
+  ],
   "exclude": [
     "node_modules",
     "playwright-report",
