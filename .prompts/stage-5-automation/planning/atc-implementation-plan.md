@@ -184,13 +184,13 @@ Check against `automation-standards.md`:
 
 ### Step 7: Generate the Document
 
-Create the spec in the correct folder:
+Create the spec **inside the ticket's test-specs directory**:
 
 ```
-.context/PBI/tests/atc/{module-name}/{TICKET-ID}-{brief-title}.md
+.context/PBI/{module-name}/test-specs/{PREFIX}-T{NN}-{name}/atc/{TICKET-ID}-{brief-title}.md
 ```
 
-Where `{module-name}` is kebab-case from the Jira "Roadmap Project" field or the domain module.
+Where `{module-name}` is the module being tested, and the ATC spec lives alongside the ticket's `spec.md` and `implementation-plan.md`.
 
 ---
 
@@ -544,10 +544,10 @@ test('should {behavior} when {condition}', async ({ ui }) => {
 
 ## REFERENCE
 
-**Gold standard examples:**
-- Integration test plan: `.context/PBI/tests/integration/UPEX-100-user-session-validation/test-implementation-plan.md`
-- ATC spec (API): `.context/PBI/tests/atc/auth/UPEX-101-authenticate-successfully.md`
-- ATC spec (UI): `.context/PBI/tests/atc/auth/UPEX-105-login-successfully.md`
+**Real example (auth module):**
+- Implementation plan: `.context/PBI/auth/test-specs/AUTH-T01-user-session-validation/implementation-plan.md`
+- ATC spec (API): `.context/PBI/auth/test-specs/AUTH-T01-user-session-validation/atc/UPEX-101-authenticate-successfully.md`
+- ATC spec (UI): `.context/PBI/auth/test-specs/AUTH-T01-user-session-validation/atc/UPEX-105-login-successfully.md`
 
 Read these files to understand the quality bar and level of detail expected.
 
@@ -564,7 +564,7 @@ Read these files to understand the quality bar and level of detail expected.
 2. Loads required reading (API conditional files)
 3. Identifies component: `BookingsApi`
 4. Determines type: Mutation (POST)
-5. Generates spec at `.context/PBI/tests/atc/bookings/UPEX-045-create-booking.md`
+5. Generates spec at `.context/PBI/bookings/test-specs/{PREFIX}-T{NN}-{name}/atc/UPEX-045-create-booking.md`
 
 ### Example 2: Triggering for a UI ATC
 
@@ -575,7 +575,7 @@ Read these files to understand the quality bar and level of detail expected.
 2. Loads required reading (UI conditional files)
 3. Identifies component: `LoginPage`
 4. Determines type: Validation (error display)
-5. Generates spec at `.context/PBI/tests/atc/auth/UPEX-789-login-validation.md`
+5. Generates spec at `.context/PBI/auth/test-specs/{PREFIX}-T{NN}-{name}/atc/UPEX-789-login-validation.md`
 
 ### Example 3: Manual description (no ticket)
 

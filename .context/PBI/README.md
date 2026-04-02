@@ -1,37 +1,103 @@
 # Product Backlog Items (PBI)
 
-This directory contains the User Stories and PBIs for the testing project.
+This directory contains User Stories, module-level test planning, and automation tracking for the testing project.
 
 ## Structure
 
 ```
 PBI/
-├── README.md                  # This file
-├── {TICKET-ID}-feature-name.md # User Story with ticket ID (e.g., UPEX-101-login-flow.md)
-├── tests/                     # Test implementation plans and ATC specs
-│   ├── integration/           # Integration test plans
-│   │   └── {TICKET-ID}-{brief-title}/
-│   │       └── test-implementation-plan.md
-│   ├── e2e/                   # E2E test plans
-│   │   └── {TICKET-ID}-{brief-title}/
-│   │       └── test-implementation-plan.md
-│   └── atc/                   # ATC specification documents
-│       └── {module-name}/
-│           └── {TICKET-ID}-{brief-title}.md
-└── ...
+├── README.md                           # This file
+├── templates/                          # Templates for per-module structure
+│   ├── module-context-template.md      # Module technical context
+│   ├── ROADMAP-template.md             # Module roadmap with phases
+│   ├── PROGRESS-template.md            # Cross-session progress tracker
+│   └── SESSION-PROMPT-template.md      # Reusable AI session starter
+│
+├── ── PER-STORY (simple) ────────────
+├── {TICKET-ID}-feature-name.md         # User Story with ticket ID
+│
+├── ── PER-MODULE (complex) ──────────
+├── {module-name}/                      # Module-level testing folder
+│   ├── {module}-test-plan.md           # Master module test plan
+│   ├── TK-{id}-{feature}/             # Per-ticket context
+│   │   ├── context.md                  # AC summary, code locations, test data
+│   │   └── evidence/                   # Screenshots, logs (gitignored)
+│   └── test-specs/                     # Unified test specifications + implementation
+│       ├── ROADMAP.md                  # Roadmap with phases + dependencies
+│       ├── PROGRESS.md                 # Session-by-session progress tracker
+│       ├── SESSION-PROMPT.md           # Reusable AI session starter
+│       └── {PREFIX}-T01-{name}/        # Ticket directory (one per functional area)
+│           ├── spec.md                 # Business-level: TCs in Gherkin
+│           ├── implementation-plan.md  # Technical-level: KATA components, fixtures
+│           └── atc/                    # Individual ATC specs (for complex ATCs)
+│               └── {TICKET-ID}-{name}.md
+│
+├── ── REAL EXAMPLE ──────────────────
+└── auth/                               # Complete example: Auth module
+    ├── auth-test-plan.md
+    └── test-specs/
+        ├── ROADMAP.md
+        ├── PROGRESS.md
+        ├── SESSION-PROMPT.md
+        └── AUTH-T01-user-session-validation/
+            ├── spec.md
+            ├── implementation-plan.md
+            └── atc/
+                ├── UPEX-101-authenticate-successfully.md
+                └── UPEX-105-login-successfully.md
 ```
 
-### Gold Standard References
+## When to Use Each Structure
 
-The `tests/` subdirectory contains gold standard examples of completed plans:
+| Structure | When | Example |
+|-----------|------|---------|
+| **Per-Story** | Single story, few TCs, no cross-session tracking needed | Bug fix, small feature |
+| **Per-Module** | Module with multiple tickets, many TCs, multi-session automation | Dashboard, checkout flow, admin panel |
+
+## Templates
+
+Templates are provided for the per-module structure. Copy them into your module folder and fill in the placeholders.
+
+| Template | Purpose | Copy To |
+|----------|---------|---------|
+| `module-context-template.md` | Technical context: routes, APIs, DB, business rules | `{module}/` |
+| `ROADMAP-template.md` | Roadmap with phases, dependencies, TC counts | `{module}/test-specs/ROADMAP.md` |
+| `PROGRESS-template.md` | Track progress across AI sessions | `{module}/test-specs/PROGRESS.md` |
+| `SESSION-PROMPT-template.md` | Reusable prompt to start each AI session | `{module}/test-specs/SESSION-PROMPT.md` |
+
+### Workflow
+
+```
+1. Create module folder: .context/PBI/{module-name}/
+2. Copy templates into the folder structure above
+3. Fill in module-context and roadmap
+4. Use SESSION-PROMPT at the start of each AI session
+5. AI updates PROGRESS.md at end of each session
+```
+
+## Real Example: Auth Module
+
+The `auth/` directory contains a complete, real example of the per-module structure applied to the authentication module. Use it as a reference for:
 
 | Document | Path | Purpose |
 |----------|------|---------|
-| Integration test plan | `tests/integration/UPEX-100-user-session-validation/test-implementation-plan.md` | Reference for test implementation plans |
-| ATC spec (API) | `tests/atc/auth/UPEX-101-authenticate-successfully.md` | Reference for API ATC specifications |
-| ATC spec (UI) | `tests/atc/auth/UPEX-105-login-successfully.md` | Reference for UI ATC specifications |
+| Master test plan | `auth/auth-test-plan.md` | How the module was analyzed |
+| Business spec | `auth/test-specs/AUTH-T01-.../spec.md` | TC definitions in Gherkin |
+| Implementation plan | `auth/test-specs/AUTH-T01-.../implementation-plan.md` | KATA components and architecture |
+| ATC spec (API) | `auth/test-specs/AUTH-T01-.../atc/UPEX-101-*.md` | Individual ATC contract |
+| ATC spec (UI) | `auth/test-specs/AUTH-T01-.../atc/UPEX-105-*.md` | Individual ATC contract |
 
-## File Format
+## Test Specs: Unified Documentation
+
+Each ticket directory in `test-specs/` contains **both** levels of documentation:
+
+| File | Level | Created By | When |
+|------|-------|------------|------|
+| `spec.md` | Business (QUE testear) | Test-Manager Agent | During test planning |
+| `implementation-plan.md` | Technical (COMO implementar) | Test-Automation Agent | Before coding |
+| `atc/*.md` | ATC contract (method spec) | Test-Automation Agent | For complex ATCs only |
+
+## Per-Story File Format
 
 Each PBI should follow this format:
 
@@ -63,9 +129,12 @@ Files in this directory are used as context by the AI to:
 - Create page object components
 - Design precondition flows
 - Document test scenarios
+- Track automation progress across sessions
+- Resume work without losing context
 
 ## Conventions
 
 - **Prefix**: Use your Jira project key as prefix (e.g., `UPEX-`, `MYM-`, `QA-`)
 - **Names**: Use kebab-case for file names
 - **Status**: Mark ACs as `[x]` when covered by tests
+- **Evidence**: Add `evidence/` to `.gitignore` (screenshots, logs are ephemeral)

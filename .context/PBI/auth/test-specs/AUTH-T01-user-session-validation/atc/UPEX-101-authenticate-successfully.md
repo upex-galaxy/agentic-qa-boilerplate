@@ -266,7 +266,7 @@ test('should be able to re-authenticate', async ({ api }) => {
 
 ## Cross-References
 
-- **Test plan**: `.context/PBI/tests/integration/UPEX-100-user-session-validation/test-implementation-plan.md`
+- **Test plan**: `.context/PBI/auth/test-specs/AUTH-T01-user-session-validation/implementation-plan.md`
 - **Companion ATC**: UPEX-102 (`loginWithInvalidCredentials`) — same component, negative path
 - **Component**: `tests/components/api/AuthApi.ts`
 - **Guidelines**: `.context/guidelines/TAE/test-design-principles.md`

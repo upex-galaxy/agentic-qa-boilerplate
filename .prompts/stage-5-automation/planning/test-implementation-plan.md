@@ -199,13 +199,13 @@ Based on the ticket's Acceptance Criteria, identify:
 
 ### Step 6: Generate the Document
 
-Create the plan in the correct folder:
+Create the plan **inside the ticket's test-specs directory**:
 
 ```
-.context/PBI/tests/{type}/{TICKET-ID}-{brief-title}/test-implementation-plan.md
+.context/PBI/{module-name}/test-specs/{PREFIX}-T{NN}-{name}/implementation-plan.md
 ```
 
-Where `{type}` is `integration` or `e2e`, and `{TICKET-ID}` is the full Jira issue key (e.g., `UPEX-101`).
+Where `{module-name}` is the module being tested, and `{PREFIX}-T{NN}-{name}` is the ticket directory from the module's test-specs.
 
 ---
 
@@ -438,16 +438,16 @@ Before generating the plan, verify:
 - [ ] `@atc` decorator search completed — no ID collisions
 - [ ] Data strategy defined (Step 4)
 - [ ] Test scenarios follow `test-design-principles.md` rules
-- [ ] Plan saved to `.context/PBI/tests/{type}/{TICKET-ID}-{brief-title}/`
+- [ ] Plan saved to `.context/PBI/{module}/test-specs/{PREFIX}-T{NN}-{name}/implementation-plan.md`
 
 ---
 
 ## REFERENCE
 
-**Gold standard examples:**
-- Integration test plan: `.context/PBI/tests/integration/UPEX-100-user-session-validation/test-implementation-plan.md`
-- ATC spec (API): `.context/PBI/tests/atc/auth/UPEX-101-authenticate-successfully.md`
-- ATC spec (UI): `.context/PBI/tests/atc/auth/UPEX-105-login-successfully.md`
+**Real example (auth module):**
+- Implementation plan: `.context/PBI/auth/test-specs/AUTH-T01-user-session-validation/implementation-plan.md`
+- ATC spec (API): `.context/PBI/auth/test-specs/AUTH-T01-user-session-validation/atc/UPEX-101-authenticate-successfully.md`
+- ATC spec (UI): `.context/PBI/auth/test-specs/AUTH-T01-user-session-validation/atc/UPEX-105-login-successfully.md`
 
 Read these files to understand the quality bar and level of detail expected.
 

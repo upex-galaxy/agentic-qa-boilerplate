@@ -181,7 +181,7 @@ Teardown: None
 
 ## Cross-References
 
-- **ATC Spec (PROJ-101)**: `.context/PBI/tests/atc/auth/UPEX-101-authenticate-successfully.md`
+- **ATC Spec (PROJ-101)**: `.context/PBI/auth/test-specs/AUTH-T01-user-session-validation/atc/UPEX-101-authenticate-successfully.md`
 - **ATC Spec (PROJ-102)**: Part of AuthApi, follows same pattern as PROJ-101
 - **Component**: `tests/components/api/AuthApi.ts`
 - **Test file**: `tests/integration/auth/user-session.test.ts`
@@ -189,4 +189,4 @@ Teardown: None
 ## Next Step
 
 Proceed to Phase 2 (Coding) with:
-- **Integration tests**: `.prompts/stage-4-automation/coding/integration-test-coding.md`
+- **Integration tests**: `.prompts/stage-5-automation/coding/integration-test-coding.md`
