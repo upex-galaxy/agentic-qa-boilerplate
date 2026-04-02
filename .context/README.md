@@ -46,11 +46,12 @@ This prompt will:
 
 **QA Stages (iterative per user story):**
 
-- **Stage 1**: Use `.prompts/stage-1-shift-left/` → test planning BEFORE implementation
-- **Stage 2**: Use `.prompts/stage-2-exploratory/` → exploratory testing
-- **Stage 3**: Use `.prompts/stage-3-documentation/` → test documentation
-- **Stage 4**: Use `.prompts/stage-4-automation/` → test automation
-- **Stage 5**: Use `.prompts/stage-5-regression/` → regression testing
+- **Stage 1**: Use `.prompts/stage-1-planning/` → test planning BEFORE implementation
+- **Stage 2**: Use `.prompts/stage-2-execution/` → test execution (exploratory + smoke)
+- **Stage 3**: Use `.prompts/stage-3-reporting/` → test reporting + bug reporting
+- **Stage 4**: Use `.prompts/stage-4-documentation/` → test documentation + prioritization
+- **Stage 5**: Use `.prompts/stage-5-automation/` → test automation (KATA)
+- **Stage 6**: Use `.prompts/stage-6-regression/` → regression execution
 
 ## Guidelines by Role
 

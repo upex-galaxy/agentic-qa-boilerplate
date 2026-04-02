@@ -15,15 +15,15 @@ This orchestrator guides the complete QA process for **one User Story**. Execute
 │                     QA WORKFLOW FOR ONE USER STORY                          │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-  │ Stage 1  │───►│ Stage 2  │───►│ Stage 3  │───►│ Stage 4  │───►│ Stage 5  │
-  │ Shift-   │    │ Explora- │    │ Document │    │ Automate │    │ Regres-  │
-  │ Left     │    │ tory     │    │ ation    │    │          │    │ sion     │
-  └──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
-       │               │               │               │               │
-       ▼               ▼               ▼               ▼               ▼
-    ATP/Test        Bugs +         ATCs in        Automated      Execution
-    Plan            Findings        TMS           Tests          Report
+  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
+  │ Stage 1  │───►│ Stage 2  │───►│ Stage 3  │───►│ Stage 4  │───►│ Stage 5  │───►│ Stage 6  │
+  │ Planning │    │ Execu-   │    │ Report-  │    │ Document │    │ Automate │    │ Regres-  │
+  │          │    │ tion     │    │ ing      │    │ ation    │    │          │    │ sion     │
+  └──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
+       │               │               │               │               │               │
+       ▼               ▼               ▼               ▼               ▼               ▼
+    ATP/Test        Bugs +          Bug           ATCs in        Automated      Execution
+    Plan            Findings        Reports        TMS           Tests          Report
 
   ◄────────────────── FEEDBACK LOOP ──────────────────────────────────────────►
 ```
@@ -74,9 +74,9 @@ Load these files before starting:
 
 ---
 
-## Stage 1: Shift-Left Testing
+## Stage 1: Planning
 
-> **Prompt**: `.prompts/stage-1-shift-left/acceptance-test-plan.md`
+> **Prompt**: `.prompts/stage-1-planning/acceptance-test-plan.md`
 > **When**: Before or during development (optional if US is already in QA)
 > **Output**: Acceptance Test Plan (ATP) with test scenarios
 
@@ -104,38 +104,38 @@ Load these files before starting:
 - [ ] ATP created with N test scenarios
 - [ ] Test nomenclature applied
 - [ ] Variables identified
-- [ ] Ready for exploratory testing
+- [ ] Ready for execution testing
 ```
 
 ---
 
-## Stage 2: Exploratory Testing
+## Stage 2: Execution Testing
 
-> **Prompts**: `.prompts/stage-2-exploratory/*.md`
+> **Prompts**: `.prompts/stage-2-execution/*.md`
 > **When**: Feature deployed to staging
 > **Output**: Exploration findings, bugs reported
 
 ### Actions
 
 1. **Smoke Test** (5-10 min)
-   - Use: `.prompts/stage-2-exploratory/smoke-test.md`
+   - Use: `.prompts/stage-2-execution/smoke-test.md`
    - Verify basic functionality works
    - Check no blocking errors
 
 2. **Deep Exploration** (varies)
-   - Use: `.prompts/stage-2-exploratory/ui-exploration.md` (for UI)
-   - Use: `.prompts/stage-2-exploratory/api-exploration.md` (for API)
-   - Use: `.prompts/stage-2-exploratory/db-exploration.md` (for data validation)
+   - Use: `.prompts/stage-2-execution/ui-exploration.md` (for UI)
+   - Use: `.prompts/stage-2-execution/api-exploration.md` (for API)
+   - Use: `.prompts/stage-2-execution/db-exploration.md` (for data validation)
    - Test happy paths and edge cases
    - Document findings
 
 3. **Bug Reporting** (if issues found)
-   - Use: `.prompts/stage-2-exploratory/bug-report.md`
+   - Use: `.prompts/stage-3-reporting/bug-report.md`
    - Create bugs in Jira (confirm with user first)
    - Link bugs to User Story
 
 4. **Decision Point**
-   - **PASSED**: Continue to Stage 3
+   - **PASSED**: Continue to Stage 3 (Reporting)
    - **BLOCKED**: Wait for fixes, return to Step 1
    - **FAILED**: Report issues, escalate
 
@@ -159,27 +159,63 @@ Load these files before starting:
 
 ---
 
-## Stage 3: Test Documentation
+## Stage 3: Reporting
 
-> **Prompts**: `.prompts/stage-3-documentation/*.md`
-> **When**: After exploratory testing passes
+> **Prompts**: `.prompts/stage-3-reporting/*.md`
+> **When**: After execution testing, when bugs are found
+> **Output**: Formal bug reports, defect documentation
+
+### Actions
+
+1. **Document Bugs**
+   - Use: `.prompts/stage-3-reporting/bug-report.md`
+   - Create formal bug reports for all issues found during execution
+   - Include reproduction steps, expected vs actual behavior
+   - Attach screenshots/evidence
+
+2. **Classify and Prioritize**
+   - Assign severity and priority to each bug
+   - Link bugs to User Story
+   - Create bugs in Jira (confirm with user first)
+
+3. **Decision Point**
+   - **All bugs reported**: Continue to Stage 4 (Documentation)
+   - **Critical bugs found**: Wait for fixes, return to Stage 2
+
+### Output Checkpoint
+
+```markdown
+## Stage 3 Complete
+
+- [ ] All bugs formally documented
+- [ ] Bugs linked to User Story
+- [ ] Bugs created in Jira (if applicable)
+- [ ] Ready for test documentation
+```
+
+---
+
+## Stage 4: Test Documentation
+
+> **Prompts**: `.prompts/stage-4-documentation/*.md`
+> **When**: After execution testing passes
 > **Output**: Test cases documented in TMS
 
 ### Actions
 
 1. **Analyze Test Candidates**
-   - Use: `.prompts/stage-3-documentation/test-analysis.md`
+   - Use: `.prompts/stage-4-documentation/test-analysis.md`
    - Review exploration findings
    - Identify scenarios for regression suite
    - Separate: automatable vs manual-only
 
 2. **Prioritize for Automation**
-   - Use: `.prompts/stage-3-documentation/test-prioritization.md`
+   - Use: `.prompts/stage-4-documentation/test-prioritization.md`
    - Apply ROI formula
    - Rank by business impact
 
 3. **Document in TMS**
-   - Use: `.prompts/stage-3-documentation/test-documentation.md`
+   - Use: `.prompts/stage-4-documentation/test-documentation.md`
    - Create test cases with Gherkin format
    - Use variable pattern (no hardcoded data)
    - Link to User Story
@@ -187,7 +223,7 @@ Load these files before starting:
 ### Output Checkpoint
 
 ```markdown
-## Stage 3 Complete
+## Stage 4 Complete
 
 - [ ] Test analysis completed
 - [ ] N tests identified for automation
@@ -198,9 +234,9 @@ Load these files before starting:
 
 ---
 
-## Stage 4: Test Automation
+## Stage 5: Test Automation
 
-> **Prompts**: `.prompts/stage-4-automation/*.md`
+> **Prompts**: `.prompts/stage-5-automation/*.md`
 > **When**: After test cases documented
 > **Output**: Automated tests following KATA architecture
 
@@ -212,30 +248,30 @@ For each test case to automate:
 
 ```markdown
 # For E2E (UI) or Integration (API) tests:
-Use: `.prompts/stage-4-automation/planning/test-implementation-plan.md`
+Use: `.prompts/stage-5-automation/planning/test-implementation-plan.md`
 
 # For ATC spec planning:
-Use: `.prompts/stage-4-automation/planning/atc-implementation-plan.md`
+Use: `.prompts/stage-5-automation/planning/atc-implementation-plan.md`
 ```
 
 #### Phase 2: Coding
 
 ```markdown
 # For E2E (UI) tests:
-Use: `.prompts/stage-4-automation/coding/e2e-test-coding.md`
+Use: `.prompts/stage-5-automation/coding/e2e-test-coding.md`
 
 # For Integration (API) tests:
-Use: `.prompts/stage-4-automation/coding/integration-test-coding.md`
+Use: `.prompts/stage-5-automation/coding/integration-test-coding.md`
 ```
 
 #### Phase 3: Review
 
 ```markdown
 # For E2E (UI) tests:
-Use: `.prompts/stage-4-automation/review/e2e-test-review.md`
+Use: `.prompts/stage-5-automation/review/e2e-test-review.md`
 
 # For Integration (API) tests:
-Use: `.prompts/stage-4-automation/review/integration-test-review.md`
+Use: `.prompts/stage-5-automation/review/integration-test-review.md`
 ```
 
 ### Validation
@@ -257,7 +293,7 @@ bun run type-check
 ### Output Checkpoint
 
 ```markdown
-## Stage 4 Complete
+## Stage 5 Complete
 
 - [ ] Test plan created
 - [ ] Component implemented (if needed)
@@ -270,9 +306,9 @@ bun run type-check
 
 ---
 
-## Stage 5: Regression (Optional per US)
+## Stage 6: Regression (Optional per US)
 
-> **Prompts**: `.prompts/stage-5-regression/*.md`
+> **Prompts**: `.prompts/stage-6-regression/*.md`
 > **When**: After automation complete OR at release time
 > **Output**: Execution report, GO/NO-GO decision
 
@@ -287,17 +323,17 @@ bun run type-check
 ### Actions
 
 1. **Execute Tests**
-   - Use: `.prompts/stage-5-regression/regression-execution.md`
+   - Use: `.prompts/stage-6-regression/regression-execution.md`
    - Trigger appropriate workflow via `gh` CLI
    - Monitor to completion
 
 2. **Analyze Results**
-   - Use: `.prompts/stage-5-regression/regression-analysis.md`
+   - Use: `.prompts/stage-6-regression/regression-analysis.md`
    - Classify any failures
    - Calculate metrics
 
 3. **Generate Report** (for releases)
-   - Use: `.prompts/stage-5-regression/regression-report.md`
+   - Use: `.prompts/stage-6-regression/regression-report.md`
    - Create GO/NO-GO recommendation
    - Share with stakeholders
 
@@ -313,7 +349,7 @@ gh workflow run sanity.yml \
 ### Output Checkpoint
 
 ```markdown
-## Stage 5 Complete
+## Stage 6 Complete
 
 - [ ] Tests executed successfully
 - [ ] New test passes in CI
@@ -330,28 +366,31 @@ gh workflow run sanity.yml \
 │                    COMPLETE WORKFLOW FOR US: {US-ID}                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  Stage 1: Shift-Left                                                        │
+│  Stage 1: Planning                                                          │
 │  ├─ [ ] ATP created with test scenarios                                    │
 │  └─ [ ] Variables and test data identified                                 │
 │                                                                             │
-│  Stage 2: Exploratory                                                       │
+│  Stage 2: Execution                                                         │
 │  ├─ [ ] Smoke test PASSED                                                  │
 │  ├─ [ ] Deep exploration complete                                          │
-│  ├─ [ ] Bugs reported (if any)                                             │
 │  └─ [ ] Decision: APPROVE / REJECT                                         │
 │                                                                             │
-│  Stage 3: Documentation                                                     │
+│  Stage 3: Reporting                                                         │
+│  ├─ [ ] Bugs formally documented                                           │
+│  └─ [ ] Bugs reported in Jira (if any)                                     │
+│                                                                             │
+│  Stage 4: Documentation                                                     │
 │  ├─ [ ] Test analysis complete                                             │
 │  ├─ [ ] Tests prioritized for automation                                   │
 │  └─ [ ] Test cases created in TMS                                          │
 │                                                                             │
-│  Stage 4: Automation                                                        │
+│  Stage 5: Automation                                                        │
 │  ├─ [ ] Plan created for each test                                         │
 │  ├─ [ ] Code implemented (component + test)                                │
 │  ├─ [ ] Code review APPROVED                                               │
 │  └─ [ ] Tests pass locally                                                 │
 │                                                                             │
-│  Stage 5: Regression                                                        │
+│  Stage 6: Regression                                                        │
 │  ├─ [ ] Sanity run with new test(s)                                        │
 │  └─ [ ] No regressions introduced                                          │
 │                                                                             │
@@ -375,30 +414,33 @@ Copy this template to track progress for a specific US:
 - **Status**: Ready For QA → In Testing → QA Approved
 - **Staging URL**: {URL}
 
-## Stage 1: Shift-Left
+## Stage 1: Planning
 - [ ] ATP created
 - Scenarios: {N}
 - Notes: {any notes}
 
-## Stage 2: Exploratory
+## Stage 2: Execution
 - [ ] Smoke: PASS / FAIL
 - [ ] Exploration: PASS / FAIL
-- Bugs: {list or "none"}
 - Decision: {APPROVE / REJECT}
 
-## Stage 3: Documentation
+## Stage 3: Reporting
+- Bugs: {list or "none"}
+- [ ] Bugs documented and linked
+
+## Stage 4: Documentation
 - [ ] Analysis complete
 - [ ] Tests in TMS: {TEST-001, TEST-002, ...}
 - Automation candidates: {N}
 - Manual only: {N}
 
-## Stage 4: Automation
+## Stage 5: Automation
 | Test ID | Type | Status | File |
 |---------|------|--------|------|
-| TEST-001 | E2E | ✅ Done | tests/e2e/... |
-| TEST-002 | API | 🔄 In Progress | tests/integration/... |
+| TEST-001 | E2E | Done | tests/e2e/... |
+| TEST-002 | API | In Progress | tests/integration/... |
 
-## Stage 5: Regression
+## Stage 6: Regression
 - [ ] Sanity: PASS / FAIL
 - [ ] Regression: N/A (single US)
 
@@ -413,11 +455,12 @@ Copy this template to track progress for a specific US:
 
 | Stage | Prompts Directory |
 |-------|-------------------|
-| Stage 1 | `.prompts/stage-1-shift-left/` |
-| Stage 2 | `.prompts/stage-2-exploratory/` |
-| Stage 3 | `.prompts/stage-3-documentation/` |
-| Stage 4 | `.prompts/stage-4-automation/` |
-| Stage 5 | `.prompts/stage-5-regression/` |
+| Stage 1 - Planning | `.prompts/stage-1-planning/` |
+| Stage 2 - Execution | `.prompts/stage-2-execution/` |
+| Stage 3 - Reporting | `.prompts/stage-3-reporting/` |
+| Stage 4 - Documentation | `.prompts/stage-4-documentation/` |
+| Stage 5 - Automation | `.prompts/stage-5-automation/` |
+| Stage 6 - Regression | `.prompts/stage-6-regression/` |
 
 ### Guidelines
 

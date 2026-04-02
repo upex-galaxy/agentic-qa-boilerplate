@@ -51,6 +51,9 @@ This directory contains optimized prompts for QA and Test Automation using the K
 ```
 .prompts/
 ├── README.md                       # This file
+├── session-start.md                # SESSION ENTRY POINT (per ticket)
+├── us-qa-workflow.md               # Complete QA workflow orchestrator
+├── bug-qa-workflow.md              # Bug retesting workflow
 │
 ├── discovery/                      # PROJECT DISCOVERY (one-time)
 │   ├── phase-1-constitution/       # Project onboarding
@@ -69,11 +72,12 @@ This directory contains optimized prompts for QA and Test Automation using the K
 │   ├── git-flow.md                 # Git workflow guide
 │   └── git-conflict-fix.md         # Resolve merge conflicts
 │
-├── stage-1-shift-left/             # SHIFT-LEFT TESTING (per story)
-├── stage-2-exploratory/            # EXPLORATORY TESTING (per story)
-├── stage-3-documentation/          # TEST DOCUMENTATION (per story)
-├── stage-4-automation/             # TEST AUTOMATION (per story)
-├── stage-5-regression/             # REGRESSION TESTING (per release)
+├── stage-1-planning/               # TEST PLANNING (per story)
+├── stage-2-execution/              # EXPLORATORY TESTING (per story)
+├── stage-3-reporting/              # TEST REPORTING (per story)
+├── stage-4-documentation/          # TEST DOCUMENTATION (per story)
+├── stage-5-automation/             # TEST AUTOMATION (per story)
+├── stage-6-regression/             # REGRESSION TESTING (per release)
 │
 └── us-qa-workflow.md               # Complete QA workflow orchestrator
 ```
@@ -100,7 +104,9 @@ Reusable prompts for common tasks.
 | `utilities/project-test-guide.md` | Generate testing guide |
 | `utilities/git-flow.md` | Commits and branching guide |
 | `utilities/git-conflict-fix.md` | Resolve merge conflicts |
+| `session-start.md` | Initialize testing session (entry point) |
 | `us-qa-workflow.md` | Complete QA workflow orchestrator |
+| `bug-qa-workflow.md` | Bug retesting workflow |
 
 ---
 
@@ -167,64 +173,103 @@ Entry point for existing projects. Combines onboarding + business context.
 
 ## QA STAGES
 
-### Stage 1: Shift-Left Testing
+### Stage 1: Planning
 
 Test planning and design BEFORE development.
 
 | Prompt | Purpose |
 |--------|---------|
-| `stage-1-shift-left/README.md` | Stage overview |
-| `stage-1-shift-left/feature-test-plan.md` | Test planning for features/epics |
-| `stage-1-shift-left/acceptance-test-plan.md` | Acceptance Test Plan (ATP) per story |
+| `stage-1-planning/README.md` | Stage overview |
+| `stage-1-planning/feature-test-plan.md` | Test planning for features/epics |
+| `stage-1-planning/acceptance-test-plan.md` | Acceptance Test Plan (ATP) per story |
 
-### Stage 2: Exploratory Testing
+### Stage 2: Execution
 
 Manual exploratory testing with Triforce approach (UI, API, DB).
 
 | Prompt | Purpose |
 |--------|---------|
-| `stage-2-exploratory/README.md` | Stage overview + Triforce |
-| `stage-2-exploratory/smoke-test.md` | Quick deployment validation |
-| `stage-2-exploratory/ui-exploration.md` | UI testing with Playwright MCP |
-| `stage-2-exploratory/api-exploration.md` | API testing with Postman MCP |
-| `stage-2-exploratory/db-exploration.md` | DB testing with DBHub MCP |
-| `stage-2-exploratory/bug-report.md` | Report bugs to Jira |
+| `stage-2-execution/README.md` | Stage overview + Triforce |
+| `stage-2-execution/smoke-test.md` | Quick deployment validation |
+| `stage-2-execution/ui-exploration.md` | UI testing with Playwright MCP |
+| `stage-2-execution/api-exploration.md` | API testing with Postman MCP |
+| `stage-2-execution/db-exploration.md` | DB testing with DBHub MCP |
 
-### Stage 3: Test Documentation
+### Stage 3: Reporting
+
+Fill ATR test report, summarize results, and document bugs.
+
+| Prompt | Purpose |
+|--------|---------|
+| `stage-3-reporting/README.md` | Stage overview |
+| `stage-3-reporting/test-report.md` | Fill ATR, summarize results, complete workflow |
+| `stage-3-reporting/bug-report.md` | Document and report bugs |
+
+### Stage 4: Test Documentation
 
 Document tests in TMS with ROI-based prioritization.
 
 | Prompt | Purpose |
 |--------|---------|
-| `stage-3-documentation/README.md` | Stage overview + ATC workflow |
-| `stage-3-documentation/test-analysis.md` | Analyze US and identify tests |
-| `stage-3-documentation/test-prioritization.md` | ROI-based test prioritization |
-| `stage-3-documentation/test-documentation.md` | Create tests in Jira/Xray |
+| `stage-4-documentation/README.md` | Stage overview + ATC workflow |
+| `stage-4-documentation/test-analysis.md` | Analyze US and identify tests |
+| `stage-4-documentation/test-prioritization.md` | ROI-based test prioritization |
+| `stage-4-documentation/test-documentation.md` | Create tests in Jira/Xray |
 
-### Stage 4: Test Automation
+### Stage 5: Test Automation
 
 Automate prioritized test cases following KATA architecture. Uses 3-phase workflow.
 
 | Prompt | Phase | Purpose |
 |--------|-------|---------|
-| `stage-4-automation/README.md` | - | Stage overview + workflow diagram |
-| `stage-4-automation/planning/test-implementation-plan.md` | 1 | Plan E2E or API test implementation |
-| `stage-4-automation/planning/atc-implementation-plan.md` | 1 | Plan ATC spec implementation |
-| `stage-4-automation/coding/e2e-test-coding.md` | 2 | Implement UI component + test |
-| `stage-4-automation/coding/integration-test-coding.md` | 2 | Implement API component + test |
-| `stage-4-automation/review/e2e-test-review.md` | 3 | KATA compliance review |
-| `stage-4-automation/review/integration-test-review.md` | 3 | API code quality review |
+| `stage-5-automation/README.md` | - | Stage overview + workflow diagram |
+| `stage-5-automation/planning/test-implementation-plan.md` | 1 | Plan E2E or API test implementation |
+| `stage-5-automation/planning/atc-implementation-plan.md` | 1 | Plan ATC spec implementation |
+| `stage-5-automation/coding/e2e-test-coding.md` | 2 | Implement UI component + test |
+| `stage-5-automation/coding/integration-test-coding.md` | 2 | Implement API component + test |
+| `stage-5-automation/review/e2e-test-review.md` | 3 | KATA compliance review |
+| `stage-5-automation/review/integration-test-review.md` | 3 | API code quality review |
 
-### Stage 5: Regression Testing
+### Stage 6: Regression Testing
 
 Execute automated tests, analyze results, and generate quality reports.
 
 | Prompt | Phase | Purpose |
 |--------|-------|---------|
-| `stage-5-regression/README.md` | - | Stage overview + `gh` CLI reference |
-| `stage-5-regression/regression-execution.md` | 1 | Trigger and monitor test execution |
-| `stage-5-regression/regression-analysis.md` | 2 | Analyze results and classify failures |
-| `stage-5-regression/regression-report.md` | 3 | Generate GO/NO-GO quality report |
+| `stage-6-regression/README.md` | - | Stage overview + `gh` CLI reference |
+| `stage-6-regression/regression-execution.md` | 1 | Trigger and monitor test execution |
+| `stage-6-regression/regression-analysis.md` | 2 | Analyze results and classify failures |
+| `stage-6-regression/regression-report.md` | 3 | Generate GO/NO-GO quality report |
+
+---
+
+## TC WORKFLOW STATUS
+
+| Status | Description | Next Step |
+|--------|-------------|-----------|
+| **Draft** | TC identified during analysis | Refine with preconditions + steps |
+| **Ready** | TC fully specified in TMS | Prioritize for automation |
+| **Candidate** | Prioritized for automation (ROI approved) | Create implementation plan |
+| **Manual** | Deferred from automation (low ROI) | Keep as manual regression |
+| **In Automation** | Implementation in progress | Complete + review |
+| **In Review** | Code review / KATA compliance check | Merge or fix |
+| **Automated** | Merged and running in CI | Monitor in regression |
+
+---
+
+## CLI QUICK REFERENCE
+
+| Command | Purpose |
+|---------|---------|
+| `bun run test` | Run all tests |
+| `bun run test:e2e` | Run E2E tests only |
+| `bun run test:integration` | Run API tests only |
+| `bun run test:smoke` | Run @critical tagged tests |
+| `bun run test:ui` | Visual UI mode |
+| `bun run test:allure` | Generate Allure report |
+| `bun xray --help` | Xray TMS CLI (sync tests) |
+| `bun run api:sync` | Sync OpenAPI spec + generate types |
+| `bun run kata:manifest` | Extract ATCs from codebase |
 
 ---
 
@@ -292,23 +337,23 @@ Execute automated tests, analyze results, and generate quality reports.
                               │
                               ▼
 ┌───────────────────────────────────────────────────────────────────┐
-│  QA STAGES (1-5) - Per User Story                                 │
+│  QA STAGES (1-6) - Per User Story                                 │
 │                                                                   │
-│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐       │
-│  │ Stage 1  │──►│ Stage 2  │──►│ Stage 3  │──►│ Stage 4  │       │
-│  │ Shift-   │   │ Explora- │   │ Document │   │ Automate │       │
-│  │ Left     │   │ tory     │   │ ation    │   │          │       │
-│  └──────────┘   └──────────┘   └──────────┘   └──────────┘       │
-│                                                     │             │
-│                               ┌─────────────────────┘             │
-│                               ▼                                   │
-│                         ┌──────────┐                              │
-│                         │ Stage 5  │                              │
-│                         │ Regres-  │                              │
-│                         │ sion     │                              │
-│                         └──────────┘                              │
-│                               │                                   │
-│                  ◄──── Feedback Loop ────┘                        │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐          │
+│  │ Stage 1  │─►│ Stage 2  │─►│ Stage 3  │─►│ Stage 4  │          │
+│  │ Planning │  │ Execu-   │  │ Report-  │  │ Document │          │
+│  │          │  │ tion     │  │ ing      │  │ ation    │          │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘          │
+│                                                  │                │
+│                              ┌────────────────────┘                │
+│                              ▼                                    │
+│                  ┌──────────┐   ┌──────────┐                      │
+│                  │ Stage 5  │──►│ Stage 6  │                      │
+│                  │ Automate │   │ Regres-  │                      │
+│                  │          │   │ sion     │                      │
+│                  └──────────┘   └──────────┘                      │
+│                                      │                            │
+│                     ◄──── Feedback Loop ────┘                     │
 └───────────────────────────────────────────────────────────────────┘
 ```
 
@@ -345,4 +390,4 @@ Use the `setup/kata-framework-adaptation.md` prompt to adapt it to your project.
 
 ---
 
-**Last Updated**: 2026-02-13
+**Last Updated**: 2026-04-01

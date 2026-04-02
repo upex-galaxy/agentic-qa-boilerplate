@@ -152,8 +152,12 @@ Development Task
 |-----------|---------|
 | `setup/` | One-time setup prompts (KATA adaptation) |
 | `discovery/` | Project onboarding prompts (phases 1-4, context generators) |
-| `stage-1-shift-left/` | QA workflow - test planning |
-| `stage-2-exploratory/` | QA workflow - exploratory testing |
+| `stage-1-planning/` | QA workflow - test planning |
+| `stage-2-execution/` | QA workflow - test execution |
+| `stage-3-reporting/` | QA workflow - test reporting + bugs |
+| `stage-4-documentation/` | QA workflow - test documentation + prioritization |
+| `stage-5-automation/` | QA workflow - test automation (KATA) |
+| `stage-6-regression/` | QA workflow - regression execution |
 
 ---
 
