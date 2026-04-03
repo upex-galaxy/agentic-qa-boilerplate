@@ -12,7 +12,7 @@
 
 1. `.context/guidelines/TAE/kata-ai-index.md` → Core KATA patterns
 2. `.context/guidelines/TAE/automation-standards.md` → Rules and anti-patterns
-3. `.context/guidelines/TAE/typescript-patterns.md` → TypeScript conventions
+3. `.context/guidelines/TAE/test-design-principles.md` → ATCs vs helpers, flow-based tests
 
 ---
 

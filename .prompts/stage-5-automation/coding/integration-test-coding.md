@@ -1,52 +1,112 @@
 # Integration Test Coding
 
 > **Phase**: 2 of 3 (Plan → Coding → Review)
-> **Purpose**: Implement the API component and test file based on the approved plan.
-> **Input**: Approved plan from Phase 1.
+> **Purpose**: Implement API Integration test automation following KATA architecture.
+> **Input**: Approved plan from `planning/test-implementation-plan.md`.
 
 ---
 
-## Context Loading
+## Purpose
 
-**Load these files before proceeding:**
+Create API Integration automated tests for validated scenarios using the KATA framework.
 
-1. `.context/guidelines/TAE/kata-ai-index.md` → Core KATA patterns
-2. `.context/guidelines/TAE/typescript-patterns.md` → TypeScript conventions
-3. `.context/guidelines/TAE/api-testing-patterns.md` → API patterns
-4. `.context/playwright-automation-system.md` → Code architecture
+**This prompt is executed AFTER:**
+
+- Test documented in TMS (Stage 4)
+- Test marked as "automation-candidate"
+- KATA framework configured in project
+
+**Prerequisites:**
+
+- KATA framework configured in project
+- API documentation available (OpenAPI preferred)
+- Test case documented in TMS
+
+---
+
+## CRITICAL: Read KATA Guidelines First
+
+**Before implementing ANY automation, read:**
+
+```
+MANDATORY READING (in order):
+1. .context/guidelines/TAE/kata-ai-index.md       # Quick orientation
+2. .context/guidelines/TAE/automation-standards.md # Rules and patterns
+3. .context/guidelines/TAE/api-testing-patterns.md # API testing specifics
+```
+
+**Key KATA principles for API testing:**
+
+- Use `ApiBase` methods: `apiGET`, `apiPOST`, `apiPUT`, `apiPATCH`, `apiDELETE`
+- Return tuples: `[APIResponse, TBody]` or `[APIResponse, TBody, TPayload]`
+- Type-safe generics for request/response
+- Fixed assertions validate status codes and response structure
 
 ---
 
 ## Input Required
 
-1. **Approved Plan** from Phase 1 (`planning/test-implementation-plan.md`)
-2. **Original Test Case** (API spec from Stage 3)
+Provide ONE of the following:
+
+1. **TMS Test ID** - Test case ID to fetch details from TMS
+2. **Test case content** - API spec or traditional format directly
+3. **Multiple Test IDs** - For batch automation
+
+**Also specify:**
+
+- Target component (existing or new)
+- Related User Story ID
 
 ---
 
-## Implementation Workflow
+## Workflow
 
-### Step 1: Verify Prerequisites
+### Phase 1: Understand the Test Case
 
-Before coding, verify:
+**Read the test case from TMS or input:**
 
-```bash
-# Check if base classes exist
-cat tests/components/api/ApiBase.ts
+```
+Extract:
+├── Test name/summary
+├── Endpoint (method, URL, headers)
+├── Request payload structure
+├── Expected response (status, body shape)
+└── Test data requirements
+```
 
-# Check fixture structure
-cat tests/components/ApiFixture.ts
+**Map to KATA structure:**
 
-# Verify import aliases
-grep -A 10 '"paths"' tsconfig.json
+| Test Element  | KATA Element                               |
+| ------------- | ------------------------------------------ |
+| Endpoint      | ApiBase method (apiGET, apiPOST, etc.)     |
+| Payload       | Typed interface (CreateXPayload)           |
+| Response      | Typed interface (XResponse)                |
+| Assertions    | Fixed assertions in ATC                    |
 
-# Check existing types
-cat tests/data/types.ts
+---
+
+### Phase 2: Architecture Decision
+
+**Determine what to create/modify:**
+
+```
+Questions:
+1. Does the API component exist? (e.g., ResourceApi.ts)
+   └── YES → Add new ATC to existing component
+   └── NO  → Create new component
+
+2. Do the types exist?
+   └── YES → Import and use existing types
+   └── NO  → Create type definitions first
+
+3. Does the ATC already exist?
+   └── YES → Use existing ATC
+   └── NO  → Create new ATC
 ```
 
 ---
 
-### Step 2: Create Type Definitions
+### Phase 3: Create Type Definitions
 
 Add all types needed for the API component:
 
@@ -116,7 +176,7 @@ export interface ApiErrorResponse {
 
 ---
 
-### Step 3: Implement API Component
+### Phase 4: Implement API Component
 
 Create the KATA API component following Layer 3 structure:
 
@@ -469,7 +529,7 @@ export class {Resource}Api extends ApiBase {
 
 ---
 
-### Step 4: Register Component in Fixture
+### Phase 5: Register Component in Fixture
 
 Add the new component to `ApiFixture.ts`:
 
@@ -505,7 +565,7 @@ export class ApiFixture extends ApiBase {
 
 ---
 
-### Step 5: Implement Test File
+### Phase 6: Implement Test File
 
 Create the test file following KATA patterns:
 
@@ -740,7 +800,7 @@ test.describe('{Resource} API', () => {
 
 ---
 
-### Step 6: Run and Validate
+### Phase 7: Run and Validate
 
 Execute the test to verify implementation:
 
@@ -754,6 +814,16 @@ bun run test --reporter=list tests/integration/{resource}/{resource}.test.ts
 # Run only specific test
 bun run test --grep "should create {resource}" tests/integration/{resource}/
 ```
+
+---
+
+### Phase 8: Update TMS
+
+**Mark test as automated in TMS:**
+
+- Update test case with automation plan (file path and description)
+- Link to test file location
+- Update status if needed
 
 ---
 

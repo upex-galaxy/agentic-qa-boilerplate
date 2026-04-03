@@ -1,5 +1,7 @@
 {
   "browser": {
+    "isolated": false,
+    "userDataDir": ".playwright/user-data",
     "browserName": "chromium",
     "launchOptions": {
       "headless": false

@@ -1,82 +1,159 @@
 # E2E Test Coding
 
 > **Phase**: 2 of 3 (Plan → Coding → Review)
-> **Purpose**: Implement the KATA component and test file based on the approved plan.
-> **Input**: Approved plan from Phase 1.
+> **Purpose**: Implement E2E test automation following KATA architecture.
+> **Input**: Approved plan from `planning/test-implementation-plan.md`.
 
 ---
 
-## Context Loading
+## Purpose
 
-**Load these files before proceeding:**
+Create E2E (End-to-End) automated tests for validated scenarios using the KATA framework.
 
-1. `.context/guidelines/TAE/kata-ai-index.md` → Core KATA patterns
-2. `.context/guidelines/TAE/typescript-patterns.md` → TypeScript conventions
-3. `.context/guidelines/TAE/automation-standards.md` → Rules and standards
-4. `.context/playwright-automation-system.md` → Code architecture
+**This prompt is executed AFTER:**
 
-**Optional (for UI exploration):**
-- Use Playwright MCP (`mcp__playwright__*`) to explore UI and capture locators
+- Test documented in TMS (Stage 4)
+- Test marked as "automation-candidate"
+- KATA framework configured in project
+
+**Prerequisites:**
+
+- Access to Playwright MCP tools (for exploration)
+- KATA framework configured in project
+- Test case documented in TMS
+
+---
+
+## CRITICAL: Read KATA Guidelines First
+
+**Before implementing ANY automation, read:**
+
+```
+MANDATORY READING (in order):
+1. .context/guidelines/TAE/kata-ai-index.md       # Quick orientation
+2. .context/guidelines/TAE/automation-standards.md # Rules and patterns
+3. .context/guidelines/TAE/kata-architecture.md    # Layer structure
+```
+
+**Key KATA principles to follow:**
+
+- ATCs represent UNIQUE expected outputs
+- Locators INLINE within ATCs (no separate storage)
+- NO helper methods for single Playwright actions
+- ATCs do NOT call other ATCs
+- Fixed assertions INSIDE ATCs
 
 ---
 
 ## Input Required
 
-1. **Approved Plan** from Phase 1 (`planning/test-implementation-plan.md`)
-2. **Original Test Case** (Gherkin from Stage 3)
+Provide ONE of the following:
+
+1. **TMS Test ID** - Test case ID to fetch details from TMS
+2. **Test case content** - Gherkin or traditional format directly
+3. **Multiple Test IDs** - For batch automation
+
+**Also specify:**
+
+- Target component (existing or new)
+- Related User Story ID
 
 ---
 
-## Implementation Workflow
+## Workflow
 
-### Step 1: Verify Prerequisites
+### Phase 1: Understand the Test Case
 
-Before coding, verify:
+**Read the test case from TMS or input:**
+
+```
+Extract:
+├── Test name/summary
+├── Preconditions
+├── Steps (Given/When/Then or traditional)
+├── Expected outcomes
+└── Test data requirements
+```
+
+**Map to KATA structure:**
+
+| Test Element  | KATA Element                               |
+| ------------- | ------------------------------------------ |
+| Preconditions | Setup in test file or Steps module         |
+| Steps         | ATC method calls                           |
+| Assertions    | Fixed assertions in ATC                    |
+
+---
+
+### Phase 2: UI Exploration (Optional)
+
+**If locators are unknown, explore with Playwright CLI:**
 
 ```bash
-# Check if base classes exist
-cat tests/components/ui/UiBase.ts
+# Use skill first
+Use skill: playwright-cli
 
-# Check fixture structure
-cat tests/components/UiFixture.ts
+# Then explore
+playwright-cli goto "{url}"
+playwright-cli snapshot
+playwright-cli click "{selector}"
+```
 
-# Verify import aliases in tsconfig
-grep -A 10 '"paths"' tsconfig.json
+**Document locators found:**
+
+```markdown
+## Locators Identified
+
+| Element       | Locator                 | Backup Locator                |
+| ------------- | ----------------------- | ----------------------------- |
+| Email input   | `#email`                | `[data-testid="email-input"]` |
+| Submit button | `button[type="submit"]` | `[data-testid="submit"]`      |
 ```
 
 ---
 
-### Step 2: Create Type Definitions (if needed)
+### Phase 3: Architecture Decision
 
-If the plan requires new types, add them first:
+**Determine what to create/modify:**
 
-```typescript
-// tests/data/types.ts
+```
+Questions:
+1. Does the UI component exist? (e.g., LoginPage.ts)
+   └── YES → Add new ATC to existing component
+   └── NO  → Create new component
 
-// Add new type for your component
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
+2. Does the ATC already exist?
+   └── YES → Use existing ATC
+   └── NO  → Create new ATC
 
-export interface UserRegistrationData {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-}
+3. Is this a reusable flow (2+ tests)?
+   └── YES → Consider Steps module
+   └── NO  → Keep in test file
+```
 
-// Type for ATC parameters
-export interface CheckoutData {
-  productId: string;
-  quantity: number;
-  shippingAddress: ShippingAddress;
-}
+**Output plan to user:**
+
+```markdown
+## Implementation Plan
+
+**Files to CREATE:**
+
+- tests/components/ui/CheckoutPage.ts
+  └── ATC: completeCheckoutSuccessfully
+
+**Files to MODIFY:**
+
+- tests/components/UiFixture.ts
+  └── Add: readonly checkout: CheckoutPage
+
+**Test file:**
+
+- tests/e2e/checkout/checkout.test.ts
 ```
 
 ---
 
-### Step 3: Implement UI Component
+### Phase 4: Implement UI Component
 
 Create the KATA component following Layer 3 structure:
 
@@ -228,7 +305,7 @@ export class {PageName}Page extends UiBase {
 
 ---
 
-### Step 4: Register Component in Fixture
+### Phase 5: Register Component in Fixture
 
 Add the new component to `UiFixture.ts`:
 
@@ -264,7 +341,7 @@ export class UiFixture extends UiBase {
 
 ---
 
-### Step 5: Implement Test File
+### Phase 6: Implement Test File
 
 Create the test file following KATA patterns:
 
@@ -376,7 +453,7 @@ test.describe('{Feature Name}', () => {
 
 ---
 
-### Step 6: Run and Validate
+### Phase 7: Run and Validate
 
 Execute the test to verify implementation:
 
@@ -390,6 +467,16 @@ bun run test:ui --grep "{test name}"
 # Run with trace for detailed debugging
 bun run test --trace on tests/e2e/{feature}/{feature}.test.ts
 ```
+
+---
+
+### Phase 8: Update TMS
+
+**Mark test as automated in TMS:**
+
+- Update test case with automation plan (file path and description)
+- Link to test file location
+- Update status if needed
 
 ---
 
@@ -534,12 +621,11 @@ async checkoutFlow() {
 }
 ```
 
-### ✅ Correct: Use Flows Module
+### ✅ Correct: Use Steps Module
 
 ```typescript
-// In test file
-const flows = new CheckoutFlows(ui);
-await flows.setupAuthenticatedUserWithCart(creds, product);
+// In test file (preconditions via Steps)
+await steps.checkout.setupAuthenticatedUserWithCart(creds, product);
 await ui.checkout.completeCheckoutSuccessfully();
 ```
 

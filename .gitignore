@@ -11,6 +11,8 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+.playwright/user-data
+.playwright/output
 
 # ===== Auth Storage (Session State) =====
 /.auth/

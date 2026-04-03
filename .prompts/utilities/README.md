@@ -21,6 +21,8 @@ This includes:
 | `project-test-guide.md` | Guide on what to test | After discovery |
 | **Documentation** | | |
 | `context-engineering-setup.md` | Generate README + update CLAUDE.md | After discovery or adaptation |
+| **Test Verification** | | |
+| `test-execution-breakdown.md` | Human-readable breakdown of test execution | After implementing/reviewing tests |
 | **Git Workflow** | | |
 | `git-flow.md` | Manage commits, push, and PRs | During development cycle |
 | `git-conflict-fix.md` | Resolve Git conflicts and errors | When Git problems occur |
@@ -63,6 +65,25 @@ Generates professional project documentation:
 - Discovery phases are complete
 - After KATA framework adaptation
 - When project documentation needs refresh
+
+---
+
+## Test Verification
+
+### `test-execution-breakdown.md`
+
+Generates a human-readable pseudo-code breakdown of automated tests:
+
+- Shows exactly what each test validates and which ATCs run
+- Details assertions (positive and negative) per ATC
+- Maps data flow between tests (shared setup, reused variables)
+- Includes summary table and reused variables table
+
+**Use when**:
+- After writing or updating ATCs and test files
+- Before creating a PR (include breakdown in PR description)
+- When reviewing someone else's test implementation
+- When onboarding someone to understand test suite coverage
 
 ---
 
@@ -161,4 +182,4 @@ Development Task
 
 ---
 
-**Last Updated**: 2026-02-13
+**Last Updated**: 2026-04-03

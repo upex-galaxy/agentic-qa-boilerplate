@@ -1,4 +1,4 @@
-# Stage 5: Regression Testing
+# Stage 6: Regression Testing
 
 > **Purpose**: Execute automated test suites, analyze results, and generate quality reports to make GO/NO-GO decisions.
 > **Iteration**: Per release, sprint, or on-demand (post-deployment validation).
@@ -7,20 +7,20 @@
 
 ## Overview
 
-Stage 5 closes the testing cycle by executing automated tests and analyzing results. While Stages 1-4 focus on creating and automating tests, Stage 5 focuses on **running them systematically** and **making decisions based on results**.
+Stage 6 closes the testing cycle by executing automated tests and analyzing results. While Stages 1-5 focus on creating and automating tests, Stage 6 focuses on **running them systematically** and **making decisions based on results**.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          TESTING LIFECYCLE                                   │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-  Stage 1          Stage 2          Stage 3          Stage 4          Stage 5
-  ───────          ───────          ───────          ───────          ───────
-  Shift-Left   →   Exploratory  →   Documentation →  Automation   →   REGRESSION
-  (Plan)           (Explore)        (Document)       (Implement)      (Execute)
-     │                 │                 │                │                │
-     ▼                 ▼                 ▼                ▼                ▼
-  ATP/KATA        Manual tests      ATCs in TMS     Code in repo    Run & Report
+  Stage 1          Stage 2          Stage 3          Stage 4          Stage 5          Stage 6
+  ───────          ───────          ───────          ───────          ───────          ───────
+  Shift-Left   →   Exploratory  →   Reporting    →   Documentation → Automation   →   REGRESSION
+  (Plan)           (Execute)        (Report)         (Document)       (Implement)      (Execute)
+     │                 │                 │                │                │                │
+     ▼                 ▼                 ▼                ▼                ▼                ▼
+  ATP/TCs        Manual tests      ATR + Bugs      ATCs in TMS     Code in repo    Run & Report
                                                                           │
                   ◄────────────── Feedback Loop ────────────────────────◄─┘
 ```
@@ -31,7 +31,7 @@ Stage 5 closes the testing cycle by executing automated tests and analyzing resu
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                       STAGE 5: REGRESSION WORKFLOW                          │
+│                       STAGE 6: REGRESSION WORKFLOW                          │
 └─────────────────────────────────────────────────────────────────────────────┘
 
                        ┌─────────────────────┐
@@ -239,12 +239,12 @@ Examples:
 - Identify undertested areas from failure patterns
 - Suggest new test cases based on regressions
 
-### Feedback to Stage 4 (Automation)
+### Feedback to Stage 5 (Automation)
 
 - Report flaky tests for stabilization
 - Identify tests needing maintenance
 
-### TMS Sync (Stage 3 Integration)
+### TMS Sync (Stage 3/4 Integration)
 
 - Update test execution status
 - Link failures to test cases
@@ -261,4 +261,4 @@ Examples:
 
 ---
 
-**Stage 5 completes the cycle**: Automated tests from Stage 4 are executed, analyzed, and reported to stakeholders for informed release decisions.
+**Stage 6 completes the cycle**: Automated tests from Stage 5 are executed, analyzed, and reported to stakeholders for informed release decisions.

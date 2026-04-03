@@ -401,6 +401,74 @@ gh workflow run sanity.yml \
 
 ---
 
+## Traceability Model
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    TRACEABILITY HIERARCHY                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  USER STORY (US-XXX)                                            │
+│       │                                                          │
+│       ├──► ATP (Test Plan: US-XXX)                              │
+│       │         │                                                │
+│       │         └──► ATR (Test Results: US-XXX)                 │
+│       │                    │                                     │
+│       └──► TCs ────────────┘                                    │
+│            (linked to Story + ATP + ATR)                        │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**All artifacts are created in Stage 1 with complete links.**
+
+---
+
+## TC Workflow Status Lifecycle
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        TC WORKFLOW STATUS LIFECYCLE                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  Stage 1                Stage 4                    Stage 5                   │
+│  ─────────              ─────────                  ─────────                 │
+│  (Planning)             (Prioritize)               (Automate)                │
+│                                                                              │
+│  ┌──────┐   ┌──────┐   ┌───────────┐              ┌──────────────┐          │
+│  │ Draft│──►│ Ready│──►│ Candidate │ ──────────►  │ In Automation│          │
+│  └──────┘   └──────┘   └───────────┘              └──────────────┘          │
+│     ↑           ↑            │                           │                   │
+│   (create)  (traceability    │     ┌──────────┐          ▼                  │
+│              verified)       └───► │  Manual  │   ┌──────────────┐          │
+│                                    └──────────┘   │  In Review   │          │
+│                                                   └──────────────┘          │
+│                              │     (deferred)            │                   │
+│                              └───► stays Ready           ▼                  │
+│                                                   ┌──────────────┐          │
+│                                                   │  Automated   │          │
+│                                                   └──────────────┘          │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Stage 1 transitions:** Draft → Ready (after TC has full traceability: Story + ATP + ATR)
+
+---
+
+## TMS Artifacts Summary
+
+| Stage | Artifact | Name Format |
+|-------|----------|-------------|
+| 1 | ATP | `Test Plan: US-{number}` |
+| 1 | ATR | `Test Results: US-{number}` |
+| 1 | TCs | `Should X when Y` |
+| 3 | Bug | Bug report linked to US |
+| 4 | TC Docs | Precondition, Spec, Automation Plan |
+| 5 | Code | `tests/e2e/{module}/{test}.test.ts` |
+
+---
+
 ## Progress Tracking Template
 
 Copy this template to track progress for a specific US:
@@ -499,4 +567,35 @@ Copy this template to track progress for a specific US:
 
 ---
 
-**Last Updated**: 2026-02-11
+## Bug Workflow (Alternative Path)
+
+For **bugs**, use a different workflow:
+
+```
+session-start.md (Entry Point)
+    ↓
+bug-qa-workflow.md (Complete Bug Workflow)
+├── PHASE 1: Triage + Planning
+├── PHASE 2: Execution
+└── PHASE 3: Reporting
+    ↓
+Done
+```
+
+**Key Differences:**
+
+| Aspect | User Story | Bug |
+|--------|------------|-----|
+| Entry Point | `session-start.md` | `session-start.md` |
+| Workflow | 6 stages (separate prompts) | 1 workflow (all phases in one) |
+| TCs | Created in Stage 1 | Not needed (bug = test case) |
+| ATP | Full Test Analysis | Bug Analysis |
+| Automation | Stage 5 (after QA Approved) | Assessed in PHASE 3 |
+
+**Bugs do NOT go through Stage 2-6.** The `bug-qa-workflow.md` is a hybrid that combines planning + execution + reporting.
+
+**See:** [Bug QA Workflow](./bug-qa-workflow.md)
+
+---
+
+**Last Updated**: 2026-04-02
