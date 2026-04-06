@@ -16,11 +16,13 @@ Every test needs data. Before writing any test code, determine HOW the test will
 
 | Priority | Pattern | What It Does | When to Use | Example |
 |----------|---------|-------------|-------------|---------|
-| **1. Generate** | Create data from scratch via API/DB | Produces a clean, isolated data state | When the system supports full CRUD for the entity | POST /orders to create an order, then test it |
-| **2. Discover** | Query the system to find existing data that matches preconditions | Finds a real entity already in the desired state | When the entity can't be created from scratch (complex workflows, dependencies) | Query DB for an account with `status = 'active'` |
-| **3. Modify** | Find existing data and alter it via API to match preconditions | Adjusts an entity to reach the required state | When the entity exists but isn't in the right state, and the API supports the mutation | Find an account, then PUT to update its status |
+| **1. Discover** | Query the system to find existing data that matches preconditions | Finds a real entity already in the desired state | When the entity already exists in the required state (most common) | Query DB for an account with `status = 'active'` |
+| **2. Modify** | Find existing data and alter it via API to match preconditions | Adjusts an entity to reach the required state | When the entity exists but isn't in the right state, and the API supports the mutation | Find an account, then PUT to update its status |
+| **3. Generate** | Create data from scratch via API/DB | Produces a clean, isolated data state | Last resort — when no usable data exists and the system supports full CRUD | POST /orders to create an order, then test it |
 
-**Priority 1 (Generate) is always preferred** because it gives full control and isolation. Use Pattern 2 or 3 only when Pattern 1 isn't feasible.
+**Priority 1 (Discover) is always preferred** because it has zero impact on the database and uses real, production-like data. Use Pattern 2 when data exists but needs adjustment, and Pattern 3 only when nothing usable exists.
+
+**Exception**: When the test **mutates** data (POST/PUT/DELETE that changes state), Generate may be preferred to avoid contaminating shared data. Use `beforeEach` for these cases to ensure isolation per test.
 
 **Important**: All three patterns happen at **runtime** in precondition steps (`beforeAll`, `beforeEach`, or test setup). Never assume specific data exists in the environment — always verify or create it.
 
@@ -28,9 +30,9 @@ Every test needs data. Before writing any test code, determine HOW the test will
 
 **Before a test is an automation candidate**, validate which data pattern is feasible:
 
-1. Can the data be **created** from scratch via API? → Check available POST/PUT endpoints
-2. Can existing data be **discovered** reliably? → Query DB/API for entities in the required state
-3. Can existing data be **modified** to reach the required state? → Check available mutation endpoints
+1. Can existing data be **discovered** reliably? → Query DB/API for entities in the required state
+2. Can existing data be **modified** to reach the required state? → Check available mutation endpoints
+3. Can the data be **created** from scratch via API? → Check available POST/PUT endpoints
 4. **If none of the above is possible** → The test is NOT an automation candidate (flag as blocker)
 
 This check should happen during the **planning phase** (`test-implementation-plan.md` Step 4: Data Discovery), not during coding. Discovering a data feasibility issue while coding wastes time.
@@ -130,48 +132,98 @@ interface TestBooking {
 
 ---
 
-## 4. Usage Patterns
+## 4. Data Patterns: Discover, Modify, Generate
 
-### 4.1 Complete Object
+### 4.1 Pattern 1: Discover (Preferred)
 
-```typescript
-// Generates all fields with Faker
-const user = this.data.createUser();
-// → { email: 'test.john.x7k2m9@example.com', password: 'TestAb3kL9mN!', name: 'John Doe', ... }
-```
-
-### 4.2 With Overrides
+Query the system (API or DB) to find existing data that matches the test's preconditions. The test adapts to whatever data exists rather than assuming specific IDs or names. This is the preferred approach because it has zero impact on the database and uses real, production-like data.
 
 ```typescript
-// Generates everything but overrides specific fields
-const admin = this.data.createUser({
-  email: 'admin@example.com',
-  name: 'Admin User',
+// In beforeAll: discover an entity in the required state
+let testProduct: { id: number; name: string } | null;
+
+test.beforeAll(async ({ api }) => {
+  // DISCOVER: Query API/DB for a product in the required state
+  const candidates = await api.products.getAvailableProducts();
+  testProduct = candidates[0] ?? null;
 });
-// → { email: 'admin@example.com', password: 'TestAb3kL9mN!', name: 'Admin User', ... }
+
+test('TK-XXX: should display product details', async ({ ui }) => {
+  if (!testProduct) return test.skip(true, 'No available product found');
+
+  // Test uses dynamically discovered data
+  await ui.products.selectProductById({
+    productId: testProduct.id,
+    name: testProduct.name,
+  });
+});
 ```
 
-### 4.3 Credentials Only
+**Use when**: The entity already exists in the required state in the environment (most common case).
+
+**Important**: Use the `test.skip()` guard pattern instead of `expect` in `beforeAll`. If no data matches, the test skips with a clear message — not a cryptic error. See Section 5.3 for the full pattern.
+
+### 4.2 Pattern 2: Modify (When Discovery Alone Is Not Enough)
+
+Find existing data and alter it via API to reach the required state. This is a combination of discovery + mutation.
 
 ```typescript
-// When you only need email + password
-const creds = this.data.createCredentials();
-await this.loginPage.login(creds.email, creds.password);
+test.beforeAll(async ({ api }) => {
+  // DISCOVER: Find an order
+  const [, orders] = await api.orders.getOrders();
+  const order = orders[0];
+
+  // MODIFY: Change its state via API to match preconditions
+  await api.orders.resetToProcessing(order.id);
+  // Now order is in "processing" state
+});
 ```
 
-### 4.4 ID for Tracking
+**Use when**: Data exists but isn't in the right state, and the API supports the required mutation.
+
+**Cleanup**: If you modify data, consider restoring it in `afterAll` to avoid polluting the environment for other tests.
+
+### 4.3 Pattern 3: Generate (Last Resort)
+
+Create data from scratch using DataFactory + API calls. This gives full control over the data state but has the most impact on the database.
 
 ```typescript
-// Generates unique ID to identify test data
-const testId = this.data.createTestId('booking');
-// → 'booking-1707312000000-x7k2m9'
+// In test setup or beforeAll
+test('TK-XXX: should create order successfully', async ({ api }) => {
+  // GENERATE: Create fresh data via API
+  const orderData = api.data.createOrder({ productId: 42, quantity: 2 });
+  const [, order] = await api.orders.createOrderSuccessfully(orderData);
+
+  // Test uses the freshly created data
+  expect(order.id).toBeDefined();
+});
+```
+
+**Use when**: No usable data exists in the environment and the system supports full CRUD for the entity. Also preferred when the test **mutates** the data (POST/PUT/DELETE) and needs a fresh, isolated state per test — use `beforeEach` for these cases.
+
+### 4.4 Decision Flowchart
+
+```
+Need test data for entity X?
+  │
+  ├─ Does X already exist in the required state?
+  │   └─ YES → Pattern 1: Discover (preferred)
+  │
+  ├─ Can existing X be modified to reach the required state?
+  │   └─ YES → Pattern 2: Modify
+  │
+  ├─ Can X be created from scratch via API?
+  │   └─ YES → Pattern 3: Generate (last resort)
+  │
+  └─ None of the above?
+      └─ Flag as BLOCKER — test is not an automation candidate
 ```
 
 ---
 
 ## 5. Precondition Placement Strategy
 
-Once you know HOW to get data (Generate, Discover, or Modify), you need to decide WHERE to place the precondition code and how to pass the data to tests.
+Once you know HOW to get data (Discover, Modify, or Generate), you need to decide WHERE to place the precondition code and how to pass the data to tests.
 
 ### 5.1 beforeAll vs beforeEach
 
@@ -268,7 +320,7 @@ test('should display completed details', async ({ ui }) => {
 
 ### 5.4 Cleanup with afterAll / afterEach
 
-If the setup **modifies** data (Pattern 3: Modify), restore the original state to avoid polluting the environment.
+If the setup **modifies** data (Pattern 2: Modify), restore the original state to avoid polluting the environment.
 
 | Hook | When to Use |
 |------|------------|
@@ -297,20 +349,60 @@ test.describe('Order Status Actions', () => {
 });
 ```
 
-**If Pattern 1 (Generate) was used**: cleanup means deleting the created data.
-**If Pattern 2 (Discover) was used**: no cleanup needed (data was only read).
+**If Pattern 1 (Discover) was used**: no cleanup needed (data was only read).
+**If Pattern 2 (Modify) was used**: cleanup means restoring the original state.
+**If Pattern 3 (Generate) was used**: cleanup means deleting the created data.
 
 ### 5.5 Summary Table
 
 | Data Pattern | Placement | Variables | Cleanup |
 |-------------|-----------|-----------|---------|
-| Generate (create fresh) | `beforeEach` (isolated per test) | Describe scope or inline | `afterEach` to delete |
 | Discover (find existing) | `beforeAll` (query once) | Describe scope | None needed |
 | Modify (alter existing) | `beforeAll` or `beforeEach` | Describe scope | `afterAll` / `afterEach` to restore |
+| Generate (create fresh) | `beforeEach` (isolated per test) | Describe scope or inline | `afterEach` to delete |
 
 ---
 
-## 6. Usage in Components
+## 6. Usage Patterns (DataFactory)
+
+### 6.1 Complete Object
+
+```typescript
+// Generates all fields with Faker
+const user = this.data.createUser();
+// → { email: 'test.john.x7k2m9@example.com', password: 'TestAb3kL9mN!', name: 'John Doe', ... }
+```
+
+### 6.2 With Overrides
+
+```typescript
+// Generates everything but overrides specific fields
+const admin = this.data.createUser({
+  email: 'admin@example.com',
+  name: 'Admin User',
+});
+// → { email: 'admin@example.com', password: 'TestAb3kL9mN!', name: 'Admin User', ... }
+```
+
+### 6.3 Credentials Only
+
+```typescript
+// When you only need email + password
+const creds = this.data.createCredentials();
+await this.loginPage.login(creds.email, creds.password);
+```
+
+### 6.4 ID for Tracking
+
+```typescript
+// Generates unique ID to identify test data
+const testId = this.data.createTestId('booking');
+// → 'booking-1707312000000-x7k2m9'
+```
+
+---
+
+## 7. Usage in Components
 
 ### In ATCs (Layer 3)
 
@@ -356,7 +448,7 @@ export class RegistrationPage extends UiBase {
 
 ---
 
-## 7. Usage in Tests
+## 8. Usage in Tests
 
 ### E2E Tests
 
@@ -413,7 +505,7 @@ test.describe('Bookings API', () => {
 
 ---
 
-## 8. Extending DataFactory
+## 9. Extending DataFactory
 
 ### Adding New Generators
 
@@ -453,7 +545,7 @@ export interface TestNewsletter {
 
 ---
 
-## 9. Static Fixtures
+## 10. Static Fixtures
 
 For reference data that doesn't change, use `tests/data/fixtures/`.
 
@@ -500,7 +592,7 @@ test('admin can delete', async ({ api }) => {
 
 ---
 
-## 10. Data Isolation
+## 11. Data Isolation
 
 ### Unique Identifiers
 
@@ -530,7 +622,7 @@ export default defineConfig({
 
 ---
 
-## 11. Credentials and Sensitive Data
+## 12. Credentials and Sensitive Data
 
 ### Login Credentials
 
@@ -562,7 +654,7 @@ STAGING_USER_PASSWORD=StagingPassword123!
 
 ---
 
-## 12. Best Practices
+## 13. Best Practices
 
 ### DO
 
@@ -582,7 +674,7 @@ STAGING_USER_PASSWORD=StagingPassword123!
 
 ---
 
-## 13. Quick Reference
+## 14. Quick Reference
 
 ```typescript
 // Access from components
@@ -607,7 +699,7 @@ this.data.createBooking({ hotelId: 123, stayValue: 500 });
 
 ---
 
-## 14. Resources
+## 15. Resources
 
 - **Faker Documentation**: https://fakerjs.dev/
 - **Playwright Test Fixtures**: https://playwright.dev/docs/test-fixtures

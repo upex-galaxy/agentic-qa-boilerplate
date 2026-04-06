@@ -85,6 +85,47 @@ Extract:
 
 ---
 
+### Phase 1.5: Apply Test Data Strategy
+
+> **Reference**: `.context/guidelines/TAE/test-data-management.md`
+
+**Before writing any test code, verify the data strategy from the implementation plan:**
+
+1. **How is precondition data obtained?** (Discover / Modify / Generate)
+2. **Where is it placed?** (`beforeAll` for read-only, `beforeEach` for mutations)
+3. **Is cleanup needed?** (`afterAll`/`afterEach` for Modify/Generate patterns)
+
+**Precondition validation pattern (CRITICAL):**
+
+```typescript
+// ✅ CORRECT — beforeAll discovers, each test guards with test.skip()
+let testResource: ResourceCandidate | null;
+
+test.beforeAll(async ({ api }) => {
+  // Discovery only — NO assertions here
+  testResource = await api.resources.findResourceWithState('active');
+});
+
+test('TK-XXX: should return resource data', async ({ api }) => {
+  if (!testResource) return test.skip(true, 'No active resource found');
+  const [, body] = await api.resources.getResource(testResource.id);
+  expect(body.status).toBe('active');
+});
+
+// ❌ WRONG — expect in beforeAll kills ALL tests
+test.beforeAll(async ({ api }) => {
+  testResource = await api.resources.findResourceWithState('active');
+  expect(testResource).toBeDefined(); // If fails → ALL tests fail
+});
+```
+
+**Data rules:**
+- NEVER hardcode entity names, IDs, or dates in test files
+- Use `DataFactory` for generated data, API/DB queries for discovered data
+- Each test is responsible for its own precondition via `test.skip()`
+
+---
+
 ### Phase 2: Architecture Decision
 
 **Determine what to create/modify:**
@@ -576,7 +617,6 @@ Create the test file following KATA patterns:
 
 import { expect } from '@playwright/test';
 import { test } from '@TestFixture';
-import { faker } from '@faker-js/faker';
 import type {
   Create{Resource}Payload,
   Update{Resource}Payload,
@@ -589,58 +629,29 @@ import type {
 
 test.describe('{Resource} API', () => {
   // ==========================================================================
-  // AUTHENTICATION SETUP
+  // PRECONDITION DATA (Discover pattern — see test-data-management.md)
   // ==========================================================================
 
-  /**
-   * Authenticate before each test.
-   * Uses credentials from environment variables.
-   */
-  test.beforeEach(async ({ api }) => {
-    await api.auth.authenticateSuccessfully({
-      email: process.env.TEST_USER_EMAIL!,
-      password: process.env.TEST_USER_PASSWORD!,
-    });
-  });
+  // Discover data in beforeAll — NO assertions
+  let testResource: ResourceCandidate | null;
 
-  // ==========================================================================
-  // TEST DATA FACTORIES
-  // ==========================================================================
-
-  /**
-   * Generate valid creation payload using Faker.
-   * Called fresh in each test for unique data.
-   */
-  const createValidPayload = (): Create{Resource}Payload => ({
-    name: faker.person.fullName(),
-    email: faker.internet.email(),
-    roleId: faker.number.int({ min: 1, max: 5 }),
-  });
-
-  /**
-   * Generate update payload with partial data.
-   */
-  const createUpdatePayload = (): Update{Resource}Payload => ({
-    name: faker.person.fullName(),
-  });
-
-  /**
-   * Generate invalid payload for negative tests.
-   */
-  const createInvalidPayload = (): Partial<Create{Resource}Payload> => ({
-    name: '', // Empty name should fail validation
-    email: 'not-an-email', // Invalid email format
+  test.beforeAll(async ({ api }) => {
+    await api.auth.signInSuccessfully();
+    testResource = await api.resources.findAvailableResource();
   });
 
   // ==========================================================================
   // TESTS: CREATE (POST)
   // ==========================================================================
 
-  test('should create {resource} successfully @integration @{resource}', async ({ api }) => {
+  test('TK-XXX: should create {resource} successfully @critical', async ({ api }) => {
+    // Guard: skip if precondition data not found
+    if (!testResource) return test.skip(true, 'No available resource found');
+
     // -------------------------------------------------------------------------
-    // ARRANGE
+    // ARRANGE: Dynamic test data via DataFactory
     // -------------------------------------------------------------------------
-    const payload = createValidPayload();
+    const payload = api.data.createResource({ parentId: testResource.id });
 
     // -------------------------------------------------------------------------
     // ACT
@@ -648,17 +659,22 @@ test.describe('{Resource} API', () => {
     const [response, body, sentPayload] = await api.{resource}.create{Resource}Successfully(payload);
 
     // -------------------------------------------------------------------------
-    // ASSERT (optional - beyond ATC assertions)
+    // ASSERT: Additional test-level assertions
     // -------------------------------------------------------------------------
     expect(body.name).toBe(sentPayload.name);
-    expect(body.email).toBe(sentPayload.email);
+    expect(body.parentId).toBe(testResource.id);
   });
 
-  test('should fail to create with invalid payload @integration @{resource}', async ({ api }) => {
+  test('TK-XXX: should reject {resource} with invalid payload @high', async ({ api }) => {
+    if (!testResource) return test.skip(true, 'No available resource found');
+
     // -------------------------------------------------------------------------
-    // ARRANGE
+    // ARRANGE: Invalid data via DataFactory with override
     // -------------------------------------------------------------------------
-    const invalidPayload = createInvalidPayload();
+    const invalidPayload = api.data.createResource({
+      parentId: testResource.id,
+      name: '', // Invalid override
+    });
 
     // -------------------------------------------------------------------------
     // ACT

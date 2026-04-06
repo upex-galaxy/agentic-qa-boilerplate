@@ -113,6 +113,24 @@ Extract:
 
 ---
 
+### Step 3.5: Data Context (for standalone use)
+
+> **Skip this step if** this ATC spec is part of a `test-implementation-plan.md` that already covers data strategy.
+>
+> **Required reading**: `.context/guidelines/TAE/test-data-management.md` — Section 1 (Philosophy) and Section 4 (Data Patterns)
+
+When this ATC is being created standalone (regression-driven or exploratory-driven), document how the test calling this ATC will obtain its precondition data:
+
+| Precondition | Data Pattern | Source | Placement |
+|-------------|-------------|--------|-----------|
+| {what state is needed} | Discover / Modify / Generate | {API endpoint or DB query} | beforeAll / beforeEach |
+
+**Pattern priority**: Discover (find existing, zero DB impact) > Modify (alter existing) > Generate (create from scratch, last resort). See the guideline for the full decision flowchart.
+
+**Important**: This ATC will be called from a test file. That test file needs data. If the data strategy isn't documented in a parent plan, document it here so the coding phase doesn't hardcode values.
+
+---
+
 ### Step 4: Identify ATC Type
 
 #### API ATCs
@@ -514,7 +532,19 @@ test('should {behavior} when {condition}', async ({ ui }) => {
 
 ---
 
-## 8. Checklist
+## 8. Data Context
+
+> Skip if covered in parent `test-implementation-plan.md`. Required for standalone (regression/exploratory) use.
+
+| Precondition | Data Pattern | Source | Placement | Cleanup |
+|-------------|-------------|--------|-----------|---------|
+| {state needed} | {Discover/Modify/Generate} | {endpoint/query} | {beforeAll/beforeEach} | {Yes/No — describe} |
+
+{Or: "Covered in parent plan: test-implementation-plan.md for TK-XXX"}
+
+---
+
+## 9. Checklist
 
 - [ ] Method name follows `{verb}{Resource}{Scenario}` convention
 - [ ] Parameters: max 2 positional (3+ use object param)
@@ -538,6 +568,7 @@ test('should {behavior} when {condition}', async ({ ui }) => {
 - **KATA guidelines**: `.context/guidelines/TAE/kata-ai-index.md`
 - **Test design principles**: `.context/guidelines/TAE/test-design-principles.md`
 - **Automation standards**: `.context/guidelines/TAE/automation-standards.md`
+- **Test data management**: `.context/guidelines/TAE/test-data-management.md`
 ````
 
 ---

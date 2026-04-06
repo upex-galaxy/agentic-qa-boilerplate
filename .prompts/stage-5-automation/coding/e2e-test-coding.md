@@ -85,6 +85,46 @@ Extract:
 
 ---
 
+### Phase 1.5: Apply Test Data Strategy
+
+> **Reference**: `.context/guidelines/TAE/test-data-management.md`
+
+**Before writing any test code, verify the data strategy from the implementation plan:**
+
+1. **How is precondition data obtained?** (Discover / Modify / Generate)
+2. **Where is it placed?** (`beforeAll` for read-only, `beforeEach` for mutations)
+3. **Is cleanup needed?** (`afterAll`/`afterEach` for Modify/Generate patterns)
+
+**Precondition validation pattern (CRITICAL):**
+
+```typescript
+// ✅ CORRECT — beforeAll discovers, each test guards with test.skip()
+let testProduct: ProductCandidate | null;
+
+test.beforeAll(async ({ api }) => {
+  // Discovery only — NO assertions here
+  testProduct = await api.products.findAvailableProduct();
+});
+
+test('TK-XXX: should display product details', async ({ ui }) => {
+  if (!testProduct) return test.skip(true, 'No available product found');
+  // Safe to use testProduct — TypeScript narrowed
+});
+
+// ❌ WRONG — expect in beforeAll kills ALL tests
+test.beforeAll(async ({ api }) => {
+  testProduct = await api.products.findAvailableProduct();
+  expect(testProduct).toBeDefined(); // If fails → ALL tests fail
+});
+```
+
+**Data rules:**
+- NEVER hardcode entity names, IDs, or dates in test files
+- Use `DataFactory` for generated data, API/DB queries for discovered data
+- Each test is responsible for its own precondition via `test.skip()`
+
+---
+
 ### Phase 2: UI Exploration (Optional)
 
 **If locators are unknown, explore with Playwright CLI:**
@@ -360,39 +400,35 @@ import type { {TypeName} } from '@ui/{PageName}Page';
 
 test.describe('{Feature Name}', () => {
   // ==========================================================================
-  // TEST DATA FACTORY
+  // PRECONDITION DATA (Discover pattern — see test-data-management.md)
   // ==========================================================================
 
-  /**
-   * Generate test data using Faker.
-   * Called in each test to ensure unique data.
-   */
-  const createValidData = (): {TypeName} => ({
-    email: `test-${Date.now()}@example.com`,
-    password: 'SecurePassword123!',
-    // Use TestContext.data.createXxx() if available
-  });
+  // Discover data in beforeAll — NO assertions
+  let product: ProductCandidate | null;
 
-  const createInvalidData = (): {TypeName} => ({
-    email: 'invalid-email',
-    password: 'short',
+  test.beforeAll(async ({ api }) => {
+    product = await api.products.findAvailableProduct();
   });
 
   // ==========================================================================
   // TESTS: Happy Path
   // ==========================================================================
 
-  test('should {action} successfully @regression @{feature}', async ({ ui }) => {
-    // -------------------------------------------------------------------------
-    // ARRANGE: Prepare test data
-    // -------------------------------------------------------------------------
-    const data = createValidData();
+  test('TK-XXX: should {action} successfully @critical', async ({ ui }) => {
+    // Guard: skip if precondition data not found
+    if (!product) return test.skip(true, 'No available product found');
 
     // -------------------------------------------------------------------------
-    // ACT: Navigate and execute ATC
+    // ARRANGE: Dynamic test data via DataFactory
     // -------------------------------------------------------------------------
+    const checkoutData = ui.data.createCheckoutData();
+
+    // -------------------------------------------------------------------------
+    // ACT: Preconditions + ATC
+    // -------------------------------------------------------------------------
+    await ui.auth.loginSuccessfully(credentials);
     await ui.{pageName}.goto();
-    await ui.{pageName}.{atcName}(data);
+    await ui.{pageName}.{atcName}(checkoutData);
 
     // -------------------------------------------------------------------------
     // ASSERT: Optional test-level assertions (beyond ATC assertions)
@@ -405,17 +441,21 @@ test.describe('{Feature Name}', () => {
   // TESTS: Edge Cases / Negative
   // ==========================================================================
 
-  test('should show error with invalid {field} @regression @{feature}', async ({ ui }) => {
+  test('TK-XXX: should show error with invalid {field} @high', async ({ ui }) => {
+    if (!product) return test.skip(true, 'No available product found');
+
     // -------------------------------------------------------------------------
-    // ARRANGE
+    // ARRANGE: Invalid data via DataFactory with override
     // -------------------------------------------------------------------------
-    const data = createInvalidData();
+    const invalidData = ui.data.createCheckoutData({
+      email: 'invalid-email', // Invalid override
+    });
 
     // -------------------------------------------------------------------------
     // ACT
     // -------------------------------------------------------------------------
     await ui.{pageName}.goto();
-    await ui.{pageName}.{atcName}WithInvalid{X}(data);
+    await ui.{pageName}.{atcName}WithInvalid{X}(invalidData);
 
     // -------------------------------------------------------------------------
     // ASSERT: Additional negative case assertions
@@ -427,15 +467,14 @@ test.describe('{Feature Name}', () => {
   // TESTS: With API Setup (Hybrid)
   // ==========================================================================
 
-  test('should {action} with existing data @regression', async ({ test: fixture }) => {
+  test('TK-XXX: should {action} with existing data @regression', async ({ test: fixture }) => {
     const { api, ui } = fixture;
 
     // -------------------------------------------------------------------------
-    // ARRANGE: Create data via API (fast setup)
+    // ARRANGE: Create data via API (Generate pattern — for mutations)
     // -------------------------------------------------------------------------
-    const [, createdResource] = await api.{resource}.createSuccessfully({
-      // Resource data
-    });
+    const resourceData = api.data.createResource();
+    const [, createdResource] = await api.{resource}.createSuccessfully(resourceData);
 
     // -------------------------------------------------------------------------
     // ACT: Verify via UI

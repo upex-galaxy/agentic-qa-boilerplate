@@ -194,8 +194,29 @@ Before moving to Step 2, you should be able to answer:
    - Dependencies between test suites
 
 ## 7. Test Data Strategy
-   - What data configurations are needed
-   - SQL queries to discover suitable test data
+
+   > Reference: `.context/guidelines/TAE/test-data-management.md`
+
+   For each test ticket, determine the data pattern (priority order):
+
+   | Priority | Pattern | Description | Feasibility Check |
+   |----------|---------|-------------|-------------------|
+   | **1. Discover** | Query system for existing data in required state | Zero DB impact, uses real data (preferred) | Can we query DB/API for entities matching preconditions? |
+   | **2. Modify** | Find existing data and alter via API | When data exists but in wrong state | Does the API support the mutation needed? |
+   | **3. Generate** | Create data from scratch via API | Last resort — when no usable data exists | Does a POST/PUT endpoint exist for this entity? |
+   | **Blocker** | None feasible | Flag test as not automatable | Document reason and escalate |
+
+   ### Preliminary Feasibility per Ticket
+
+   {For each test ticket produced in Step 3, note:}
+
+   | Ticket | Precondition | Pattern | Feasibility | Notes |
+   |--------|-------------|---------|-------------|-------|
+   | {PREFIX}-T01 | {what state is needed} | {Discover/Modify/Generate} | {Feasible / Risky / Blocker} | {API endpoint or DB query} |
+
+   ### Data Discovery Queries
+
+   {SQL queries or API calls to find suitable test data in the environment}
 
 ## 8. Key Selectors Reference
    - CSS selectors or accessibility identifiers for Playwright

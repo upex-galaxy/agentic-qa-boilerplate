@@ -146,19 +146,28 @@ Use MCP: mcp__atlassian__search_jql("issue in linkedIssues({TICKET-ID}) AND issu
 
 ---
 
-### Step 4: Data Discovery
+### Step 4: Data Strategy & Feasibility Check
 
-**Identify test data strategy:**
+> **Required reading**: `.context/guidelines/TAE/test-data-management.md` — Section 1 (Philosophy) and Section 4 (Data Patterns)
 
-1. Check if relevant test data already exists in `tests/data/fixtures/`
-2. Use Database MCP (if available) to query relevant data:
-   ```sql
-   -- Example: Check if test entity has relevant data
-   SELECT COUNT(*) FROM {table} WHERE {condition};
-   ```
-3. Determine what can be mutated via API vs what requires existing data
-4. Document API mutation capabilities and limitations
-5. Design setup/teardown strategy for mutation tests
+**For each test precondition, determine the data pattern (in priority order):**
+
+| Priority | Pattern | Check | Tool |
+|----------|---------|-------|------|
+| **1. Discover** | Does data already exist in the required state? | Query DB/API for matching entities | Database MCP or API MCP |
+| **2. Modify** | Can existing data be altered to match preconditions? | Check available mutation endpoints | API MCP |
+| **3. Generate** | Can the data be created from scratch via API? | Check available POST/PUT endpoints | API MCP or OpenAPI spec |
+| **Blocker** | None of the above is feasible | Flag test as NOT automatable | Document reason |
+
+**For each precondition, document:**
+1. Which pattern will be used (Discover / Modify / Generate)
+2. The specific API endpoint or DB query that obtains the data
+3. How the data is passed to the test (beforeAll, beforeEach, test setup)
+4. Cleanup/teardown needed (for Modify or Generate patterns)
+
+**Important**: Never hardcode specific entity names, IDs, or dates in test files. Data must be obtained dynamically at runtime. If using Pattern 1 (Discover), the discovery query runs in `beforeAll` and the test skips gracefully if no matching data is found.
+
+**Precondition validation**: When using Pattern 1 (Discover) or Pattern 2 (Modify) in `beforeAll`, apply the `test.skip()` guard pattern — never use `expect` in `beforeAll` for precondition data. Each test validates its own precondition with `test.skip()` so unrelated tests are not blocked. See `test-data-management.md` Section 5.3 for the full pattern.
 
 **Conditional — E2E only:**
 - Identify which data must be created via API before UI interaction
