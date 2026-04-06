@@ -52,6 +52,39 @@ Extract and note:
 - **Sprint**: Current sprint
 - **Acceptance Criteria**: All ACs to test
 - **Dependencies**: Related tickets
+- **Comments/Discussions**: Team discussions (included in jira_get_issue response)
+
+---
+
+### Step 1b: Extract Team Discussions from Ticket Comments
+
+The `jira_get_issue` response from Step 1 includes ticket comments. Process them now.
+
+**Extract from comments:**
+- **Decisions**: Agreed-upon behavior, scope changes, AC clarifications
+- **Technical notes**: Implementation details shared by developers
+- **Edge cases**: Scenarios or concerns raised by team members
+- **Blockers/warnings**: Known issues or constraints
+
+**Formatting rules:**
+
+| Rule | Detail |
+|------|--------|
+| Format | `[Author] (date): key point` per relevant comment |
+| Grouping | If 5+ comments, group by theme (decisions, technical, edge cases) |
+| Skip | Automated comments (bot messages, status transitions, CI notifications) |
+| Skip | Social comments ("thanks!", "looks good", emoji-only) |
+| Images | Note as `[image attachment: {filename}]` — not downloadable |
+| >10 threads | Include 10 most recent substantive comments, note total count |
+
+**This step is NON-BLOCKING:**
+
+| Scenario | Action |
+|----------|--------|
+| Comments exist | Format into "Team Discussion" section for context.md (Step 7) |
+| No comments | Note: "No team discussions found on this ticket" |
+| MCP unavailable | Log warning, note "Comments not loaded (MCP unavailable)", continue |
+| Step 1 failed entirely | Skip Step 1b, continue to Step 2 |
 
 ---
 
@@ -63,6 +96,7 @@ Provide a brief, easy-to-understand summary:
 - What is this feature about?
 - How does it work?
 - What will we be testing?
+- Any important team decisions from ticket comments (scope changes, dev notes, PO clarifications)
 
 **Example:**
 ```
@@ -76,8 +110,15 @@ We'll test 4 acceptance criteria:
 - AC3: Only one empty state at a time
 - AC4: Show file reception date
 
+The team discussed in the comments:
+- Dev confirmed: API returns 204 (No Content) when no data exists
+- PM clarified: admin view is out of scope for this story
+
 Shall we proceed?
 ```
+
+> **Note:** If team discussions reveal decisions that modify or extend the ACs,
+> highlight them explicitly so the user is aware of context beyond the original ticket.
 
 **WAIT for user confirmation before continuing.**
 
@@ -261,6 +302,25 @@ Write the context.md file with all gathered information:
 
 ---
 
+## Team Discussion
+
+> Extracted from ticket comments. Reflects team decisions and context
+> beyond the formal AC definitions.
+
+### Key Decisions
+- [{Author}] ({date}): {decision or clarification}
+
+### Technical Notes
+- [{Author}] ({date}): {implementation detail or constraint}
+
+### Edge Cases Raised
+- [{Author}] ({date}): {edge case or concern}
+
+{If no comments: "No team discussions found on this ticket."}
+{If MCP failed: "Comments not loaded (MCP unavailable)."}
+
+---
+
 ## Related Code
 
 ### Backend
@@ -308,6 +368,7 @@ After completing all steps, provide summary:
 **Ticket:** {Title}
 **Module:** {module-name}
 **ACs to Test:** {count}
+**Team Discussions:** {count} relevant comments extracted
 
 ### Context Loaded (3-Level Hierarchy)
 **Project Level:**
@@ -358,6 +419,9 @@ After completing all steps, provide summary:
 | No ACs defined | Request ACs before testing |
 | No test data found | Expand query, ask user for alternatives |
 | Code not found | Search with alternative terms |
+| No comments on ticket | Continue — note in context.md |
+| Too many comments (>10) | Summarize 10 most recent, note earlier omitted |
+| Comments contain only images | Note as `[image attachment]`, continue |
 
 ---
 
@@ -368,6 +432,7 @@ After completing all steps, provide summary:
 3. **Document in English** — All files and TMS content in English
 4. **ALWAYS explore code** — Never skip the code exploration step
 5. **Save context** — Everything goes to PBI for persistence
+6. **Include team discussions** — Extract and use ticket comments to enrich context
 
 ---
 
