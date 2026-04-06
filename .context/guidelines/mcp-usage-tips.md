@@ -435,7 +435,7 @@ Use tavily to search for solutions
 Use dbhub to see DB data
 ```
 
-**See more**: Check the MCP guidelines in `.context/guidelines/MCP/` for detailed integration strategies.
+**See more**: All MCP usage patterns are consolidated in this file.
 
 ---
 
@@ -547,4 +547,4 @@ Use dbhub to see DB data
 ---
 
 **Last Updated**: 2026-02-12
-**See also**: `guidelines/MCP/README.md`
+**See also**: `guidelines/README.md`

@@ -27,21 +27,11 @@ guidelines/
 │   ├── tms-integration.md      # Jira/Xray TMS sync
 │   └── ci-cd-integration.md    # GitHub Actions CI/CD
 │
-├── QA/                     # Quality Engineering (Reference)
-│   ├── README.md           # QA index
-│   ├── spec-driven-testing.md  # Spec-driven testing principle
-│   ├── exploratory-testing.md  # Manual exploratory testing
-│   └── jira-test-management.md # Test case documentation in Jira
-│
-└── MCP/                    # MCP Server Guides
-    ├── README.md           # MCP index and overview
-    ├── atlassian.md        # Jira/Confluence integration
-    ├── dbhub.md            # Database connection
-    ├── openapi.md          # API endpoints context
-    ├── playwright.md       # Browser automation
-    ├── postman.md          # API testing with Postman
-    ├── context7.md         # Documentation lookup
-    └── tavily.md           # Web research
+└── QA/                     # Quality Engineering (Reference)
+    ├── README.md           # QA index
+    ├── spec-driven-testing.md  # Spec-driven testing principle
+    ├── exploratory-testing.md  # Manual exploratory testing
+    └── jira-test-management.md # Test case documentation in Jira
 ```
 
 ---
@@ -69,19 +59,6 @@ Read for context:
 
 **Note**: The QA folder is maintained as reference material. The primary focus of this repository is test automation (TAE).
 
-### MCP Server Guides
-
-```
-Available MCP guides:
-├── MCP/atlassian.md   ← Jira/Confluence for test management
-├── MCP/dbhub.md       ← Database queries for validation
-├── MCP/openapi.md     ← API endpoint discovery
-├── MCP/playwright.md  ← Browser automation
-├── MCP/postman.md     ← API testing
-├── MCP/context7.md    ← Documentation lookup
-└── MCP/tavily.md      ← Web research
-```
-
 ---
 
 ## Key Concepts
@@ -102,17 +79,17 @@ This is a **Test Automation Engineering** repository. All guidelines prioritize:
 
 ### 3. MCP Tools
 
-See `mcp-usage-tips.md` for usage patterns and `MCP/` folder for detailed guides:
+See `mcp-usage-tips.md` for usage patterns and decision rules.
 
-| MCP         | Purpose                          | Guide              |
-| ----------- | -------------------------------- | ------------------ |
-| Atlassian   | Jira/Confluence integration      | `MCP/atlassian.md` |
-| DBHub       | Database queries and validation  | `MCP/dbhub.md`     |
-| OpenAPI     | API endpoint discovery           | `MCP/openapi.md`   |
-| Playwright  | Browser automation               | `MCP/playwright.md`|
-| Postman     | API testing                      | `MCP/postman.md`   |
-| Context7    | Documentation lookup             | `MCP/context7.md`  |
-| Tavily      | Web research                     | `MCP/tavily.md`    |
+| MCP         | Purpose                          |
+| ----------- | -------------------------------- |
+| Atlassian   | Jira/Confluence integration      |
+| DBHub       | Database queries and validation  |
+| OpenAPI     | API endpoint discovery           |
+| Playwright  | Browser automation               |
+| Postman     | API testing                      |
+| Context7    | Documentation lookup             |
+| Tavily      | Web research                     |
 
 ---
 

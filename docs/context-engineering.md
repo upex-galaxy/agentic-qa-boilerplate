@@ -69,7 +69,7 @@ ai-driven-test-automation-boilerplate/
 
 **Key Files (Fixed Names)**:
 - `guidelines/TAE/kata-ai-index.md` - Entry point for test automation
-- `guidelines/MCP/README.md` - MCP decision tree
+- `guidelines/mcp-usage-tips.md` - MCP usage patterns
 
 ### .prompts/ - AI Operations Center
 
@@ -134,7 +134,7 @@ These files have stable names and locations. Reference them confidently:
 |------|---------|
 | `CLAUDE.md` | Project memory, loaded every session |
 | `.context/guidelines/TAE/kata-ai-index.md` | Entry point for writing tests |
-| `.context/guidelines/MCP/README.md` | MCP decision tree |
+| `.context/guidelines/mcp-usage-tips.md` | MCP usage patterns |
 | `.prompts/us-qa-workflow.md` | QA workflow orchestrator |
 | `.prompts/utilities/context-engineering-setup.md` | Generate project documentation |
 

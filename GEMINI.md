@@ -144,11 +144,9 @@ feature/* ← Task-specific branches
 |------|------------------|
 | **Write E2E Test** | `kata-ai-index.md` + `e2e-testing-patterns.md` |
 | **Write API Test** | `kata-ai-index.md` + `api-testing-patterns.md` |
-| **Exploratory Testing** | `project-test-guide.md` + MCP guides |
+| **Exploratory Testing** | `project-test-guide.md` + `guidelines/mcp-usage-tips.md` |
 | **Understand System** | `business-data-map.md` + `PRD/user-journeys.md` |
-| **Use Database MCP** | `guidelines/MCP/dbhub.md` |
-| **Use Playwright MCP** | `guidelines/MCP/playwright.md` |
-| **Use OpenAPI MCP** | `guidelines/MCP/openapi.md` |
+| **Use MCP Tools** | `guidelines/mcp-usage-tips.md` |
 
 **Living Code Examples:**
 - API Component: `tests/components/api/` (any `*Api.ts`)
@@ -159,20 +157,20 @@ feature/* ← Task-specific branches
 
 ## MCPs Available
 
-| MCP | When to Use | Guide |
-|-----|-------------|-------|
-| **Playwright** | E2E testing, UI automation, screenshots | `guidelines/MCP/playwright.md` |
-| **OpenAPI** | API endpoint exploration, contract testing | `guidelines/MCP/openapi.md` |
-| **DBHub** | Database queries, data validation | `guidelines/MCP/dbhub.md` |
-| **Atlassian** | Jira/Xray test management | `guidelines/MCP/atlassian.md` |
-| **Context7** | Official library documentation | `guidelines/MCP/context7.md` |
-| **Tavily** | Web search, troubleshooting | `guidelines/MCP/tavily.md` |
+| MCP | When to Use |
+|-----|-------------|
+| **Playwright** | E2E testing, UI automation, screenshots |
+| **OpenAPI** | API endpoint exploration, contract testing |
+| **DBHub** | Database queries, data validation |
+| **Atlassian** | Jira/Xray test management |
+| **Context7** | Official library documentation |
+| **Tavily** | Web search, troubleshooting |
 
 **Decision Rule:**
 - Context7 for "how to use X" (official docs)
 - Tavily for "how to solve X" (community solutions)
 
-→ **Full decision tree**: `.context/guidelines/MCP/README.md`
+→ **Usage tips**: `.context/guidelines/mcp-usage-tips.md`
 
 ---
 
