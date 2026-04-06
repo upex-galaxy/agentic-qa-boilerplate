@@ -8,6 +8,8 @@
 
 Execute exploratory testing directly on the database to verify data integrity, validate constraints and triggers, confirm business rules at the data level, and discover issues that API/UI testing might miss.
 
+> **TCs as Guides**: If Test Cases exist from Stage 1 planning, use them as a guide but explore freely. Update TC statuses (PASSED/FAILED) as you validate. Discovering new scenarios beyond the TCs is expected and encouraged.
+
 **This prompt is executed:**
 
 - AFTER API testing (to verify data was stored correctly)

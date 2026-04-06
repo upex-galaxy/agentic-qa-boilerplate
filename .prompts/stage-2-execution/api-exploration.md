@@ -8,6 +8,8 @@
 
 Execute exploratory testing on API endpoints to validate backend functionality, verify data contracts, test authentication flows, and discover integration defects before automation.
 
+> **TCs as Guides**: If Test Cases exist from Stage 1 planning, use them as a guide but explore freely. Update TC statuses (PASSED/FAILED) as you validate. Discovering new scenarios beyond the TCs is expected and encouraged.
+
 **This prompt is executed AFTER:**
 
 - Smoke test passed (deployment is functional)

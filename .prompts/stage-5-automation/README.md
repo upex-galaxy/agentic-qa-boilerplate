@@ -212,6 +212,21 @@ See `.context/guidelines/TAE/test-design-principles.md` for the full traceabilit
 
 ---
 
+## TMS Workflow Status Transitions
+
+Update the test case status in your TMS as you progress through each phase:
+
+| Phase | Action | Status Transition |
+|-------|--------|-------------------|
+| **Before starting** | Pick up test case for implementation | `Candidate` → `In Automation` |
+| **After Phase 2** | Code complete, PR created | `In Automation` → `In Review` |
+| **After Phase 3** | Review passed, PR merged | `In Review` → `Automated` |
+| **If blocked** | Missing data, unclear spec, environment issue | `In Automation` → `Candidate` (with note) |
+
+**Full lifecycle reference:** `.prompts/README.md` → TC Workflow Status section
+
+---
+
 ## Output
 
 After completing all three phases:

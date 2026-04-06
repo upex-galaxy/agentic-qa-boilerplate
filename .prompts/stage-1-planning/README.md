@@ -36,6 +36,39 @@ Design the testing strategy **BEFORE** writing code. Analyze Epics and Stories f
 
 ---
 
+## Triage Decision (acceptance-test-plan.md Phase 0)
+
+Before full planning, `acceptance-test-plan.md` runs a triage:
+
+| Decision | Result |
+|----------|--------|
+| **SKIP veto** (backend-only, infra, docs, CSS, tech debt) | Code Review only — no test plan |
+| **REQUIRE veto** (money, data integrity, auth, integrations) | Full Testing — skip risk scoring |
+| **Risk Score 0-3** (LOW) | Code Review only |
+| **Risk Score 4-7** (MEDIUM) | Full Testing (standard workflow) |
+| **Risk Score 8+** (HIGH) | Full Testing + extended edge cases |
+
+---
+
+## Entry / Exit Criteria
+
+### Entry Criteria
+
+- [ ] User Story exists in Jira with Acceptance Criteria
+- [ ] Epic context available (`.context/PBI/epics/EPIC-*/epic.md`)
+- [ ] Business context loaded (`PRD/`, `idea/`)
+- [ ] Atlassian MCP configured and accessible
+
+### Exit Criteria
+
+- [ ] Feature Test Plan generated (if Epic-level)
+- [ ] Acceptance Test Plan generated with test cases
+- [ ] Triage decision documented (SKIP / Code Review / Full Testing)
+- [ ] Jira comment posted with test plan
+- [ ] Local mirror files created in `.context/PBI/`
+
+---
+
 ## Execution Flow
 
 ```

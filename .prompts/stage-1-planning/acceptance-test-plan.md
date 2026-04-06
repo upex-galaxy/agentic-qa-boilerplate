@@ -130,13 +130,84 @@ Act as a QA Engineer expert in Shift-Left Testing, Test Case Design, and Critica
 
 ## 🎯 WORKFLOW
 
-This prompt works in **10 steps** (Step 0-9) organized in 3 parts, following the **JIRA-FIRST → LOCAL MIRROR** principle:
+This prompt works in **11 steps** (Phase 0 + Steps 0-9) organized in 4 parts, following the **JIRA-FIRST → LOCAL MIRROR** principle:
 
 ---
 
-### 🌿 PART 0: GIT PREPARATION
+### PHASE 0: TRIAGE (Required First Step)
 
-#### Step 0: Create working branch
+Before any planning begins, determine whether this ticket needs full testing.
+
+#### Step 0.0: Check Veto Conditions
+
+**Veto conditions bypass risk scoring entirely.** Check these FIRST:
+
+**SKIP TESTING (Code Review only):**
+
+| Condition | Examples |
+|-----------|----------|
+| Backend-only code (no UI exposed) | Internal refactor, server config |
+| Infrastructure / DevOps | CI/CD changes, deployment scripts |
+| Static content (hardcoded, no API) | Help text updates, legal copy |
+| Pure visual / CSS changes | Color adjustments, spacing fixes |
+| Documentation only | README updates, inline comments |
+| Tech debt refactor | Code reorganization, dependency updates |
+| Database setup (no business logic) | Migrations, seed data, index creation |
+
+**REQUIRE TESTING (regardless of score):**
+
+| Condition | Examples |
+|-----------|----------|
+| Affects money / billing | Payment flows, invoicing, pricing |
+| Affects data integrity | CRUD on core entities, cascading deletes |
+| Auth / Authorization | Login, permissions, role changes |
+| External integrations | Third-party APIs, webhooks |
+| Bug in critical module | Fix for a high-severity production bug |
+| Calculations / formulas | Business logic, aggregations, reports |
+
+- If a **SKIP** veto applies → Perform lightweight Code Review only (verify fix in code, add comment to ticket, no test cases)
+- If a **REQUIRE** veto applies → Proceed to Full Testing (skip risk scoring)
+- If no veto applies → Calculate Risk Score below
+
+#### Step 0.1: Calculate Risk Score (if no veto)
+
+| Factor | Score | Condition |
+|--------|-------|-----------|
+| New feature | +3 | New functionality (vs change to existing) |
+| Data from API/DB | +3 | Uses dynamic data (vs hardcoded/static) |
+| Has explicit ACs | +2 | Acceptance criteria are defined |
+| User-facing | +2 | Affects UI or user-visible behavior |
+| High effort | +2 | Person-hours > 4 |
+| High priority | +1 | Priority = High or Critical |
+| Multi-component | +1 | Multiple areas of codebase affected |
+
+**Score interpretation:**
+
+| Score | Risk Level | Action |
+|-------|-----------|--------|
+| 0-3 | LOW | Code Review only (same as SKIP veto) |
+| 4-7 | MEDIUM | Full Testing (standard workflow) |
+| 8+ | HIGH | Full Testing + extended edge case coverage |
+
+**Present triage result to user before proceeding.**
+
+#### Step 0.2: Data Feasibility Check (if Full Testing)
+
+> **Reference**: `.context/guidelines/TAE/test-data-management.md`
+
+For each Acceptance Criterion, assess whether test data is obtainable:
+
+| AC | Precondition Needed | Data Found? | Pattern | Notes |
+|----|---------------------|-------------|---------|-------|
+| AC1 | {state needed} | Yes / No | Discover / Modify / Generate | {entity found or issue} |
+
+If no data can be obtained for a critical precondition → Flag as **risk** in the test plan.
+
+---
+
+### PART 0: GIT PREPARATION
+
+#### Step 0.5: Create Working Branch
 
 - Checkout from `staging` and pull changes
 - Create branch with format `test/{JIRA_KEY}/{short-description}`

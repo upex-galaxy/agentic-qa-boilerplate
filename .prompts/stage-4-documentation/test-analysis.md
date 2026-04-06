@@ -2,6 +2,8 @@
 
 > Analyze the complete context of a User Story to identify regression test candidates.
 
+> **Note**: If you completed Stage 1 planning (`acceptance-test-plan.md`), the test analysis was already performed during shift-left testing. You can **skip this prompt** and proceed directly to `test-prioritization.md`. Use this prompt only if Stage 1 was skipped or if additional analysis is needed.
+
 ---
 
 ## Purpose

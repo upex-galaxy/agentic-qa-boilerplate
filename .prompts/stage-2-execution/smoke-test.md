@@ -12,6 +12,8 @@ Validate that the deployment in staging is functional BEFORE beginning full expl
 
 **This prompt is executed IMMEDIATELY** after deployment to staging and BEFORE ui-exploration.md.
 
+> **TCs as Guides**: If Test Cases exist from Stage 1 planning, use them as a guide but explore freely. Update TC statuses (PASSED/FAILED) as you validate. Discovering new scenarios beyond the TCs is expected and encouraged.
+
 ---
 
 ## Input Required

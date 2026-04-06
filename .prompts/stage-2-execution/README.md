@@ -55,6 +55,26 @@ This stage supports **complete feature validation** through three testing layers
 
 ---
 
+## Entry / Exit Criteria
+
+### Entry Criteria
+
+- [ ] Feature deployed to staging environment
+- [ ] User Story in "Ready For QA" status
+- [ ] Test cases or Acceptance Criteria available (from Stage 1 or Jira)
+- [ ] Required MCPs configured (Playwright, Postman, DBHub as needed)
+- [ ] Staging URL accessible
+
+### Exit Criteria
+
+- [ ] Smoke test PASSED (or blocker reported)
+- [ ] Exploratory testing completed for relevant layers (UI/API/DB)
+- [ ] Session notes documented with findings
+- [ ] Bugs reported in Jira (if any found)
+- [ ] US transitioned to "QA Approved" (if PASSED) or "Failed" (if issues)
+
+---
+
 ## Prompts in This Stage
 
 | Order | Prompt                 | Purpose                               | MCP Required     |
