@@ -69,6 +69,7 @@ This directory contains optimized prompts for QA and Test Automation using the K
 ├── utilities/                      # REUSABLE UTILITIES
 │   ├── context-engineering-setup.md # Generate README + CLAUDE.md
 │   ├── project-test-guide.md       # Testing guide
+│   ├── traceability-fix.md         # Fix TMS traceability links
 │   ├── git-flow.md                 # Git workflow guide
 │   └── git-conflict-fix.md         # Resolve merge conflicts
 │
@@ -102,11 +103,24 @@ Reusable prompts for common tasks.
 |--------|---------|
 | `utilities/context-engineering-setup.md` | Generate README + update CLAUDE.md |
 | `utilities/project-test-guide.md` | Generate testing guide |
+| `utilities/traceability-fix.md` | Fix TMS traceability links |
 | `utilities/git-flow.md` | Commits and branching guide |
 | `utilities/git-conflict-fix.md` | Resolve merge conflicts |
 | `session-start.md` | Initialize testing session (entry point) |
 | `us-qa-workflow.md` | Complete QA workflow orchestrator |
 | `bug-qa-workflow.md` | Bug retesting workflow |
+
+---
+
+## TEMPLATES (Copy-Paste)
+
+Templates are NOT terminal prompts. They are copy-paste documents that you adapt and paste into a chat session.
+
+| Template | Purpose | Location |
+|----------|---------|----------|
+| `sprint-testing-prompt.md` | Sprint testing orchestration (multi-ticket) | `templates/` |
+
+**Usage**: Copy the content between the `--- START COPY ---` and `--- END COPY ---` markers, edit the session notes, and paste into your chat.
 
 ---
 
@@ -254,6 +268,42 @@ Execute automated tests, analyze results, and generate quality reports.
 | **In Automation** | Implementation in progress | Complete + review |
 | **In Review** | Code review / KATA compliance check | Merge or fix |
 | **Automated** | Merged and running in CI | Monitor in regression |
+
+---
+
+## TMS ARTIFACTS & TRACEABILITY
+
+### Artifact Model
+
+Each User Story produces a chain of traceable artifacts:
+
+```
+User Story (Jira)
+    ↓
+ATP (Acceptance Test Plan)        ← Stage 1
+    ↓
+ATR (Acceptance Test Report)      ← Stage 3
+    ↓
+TCs (Test Cases in TMS)           ← Stage 4
+    ↓
+ATCs (Automated Test Cases)       ← Stage 5
+    ↓
+Regression Results                ← Stage 6
+```
+
+### Naming Conventions
+
+| Artifact | Format | Example |
+|----------|--------|---------|
+| **ATP** | `Acceptance Test Plan: STORY-XXX` | `Acceptance Test Plan: MYM-123` |
+| **ATR** | `Acceptance Test Report: STORY-XXX` | `Acceptance Test Report: MYM-123` |
+| **TC** | `Validate <CORE> <CONDITIONAL>` | `Validate login with valid credentials` |
+| **ATC** | `@atc('TICKET-ID')` | `@atc('MYM-456')` |
+
+### Verification
+
+When traceability breaks (missing links, orphan TCs), use:
+- **Fix utility:** `.prompts/utilities/traceability-fix.md`
 
 ---
 
