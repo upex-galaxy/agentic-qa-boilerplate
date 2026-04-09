@@ -864,7 +864,7 @@ def sync_results(report_path: str = "reports/atc_results.json"):
         For Xray Cloud (ACTIVE):
             XRAY_CLIENT_ID: Xray Client ID
             XRAY_CLIENT_SECRET: Xray Client Secret
-            CODA_TESTS_TABLE: Project key (e.g.: "DEMO")
+            XRAY_PROJECT_KEY: Project key (e.g.: "DEMO")
     """
     if not os.getenv("AUTO_SYNC") == "true":
         print("⏭️  Auto-sync disabled. Set AUTO_SYNC=true to enable.")

@@ -119,7 +119,7 @@ Existing TC (from Sprint 5):
   Action: Select hotel and month in filters
   Expected Output:
     - "Commission Invoice" heading visible
-    - "Curacity Matched Bookings" heading visible
+    - "Matched Bookings" heading visible
     - Awaiting/Processing messages NOT visible
 
 New User Story (Sprint 7): "US-450: Show commission breakdown"
@@ -134,7 +134,7 @@ Analysis:
 Updated MS-003:
   Expected Output:
     - "Commission Invoice" heading visible
-    - "Curacity Matched Bookings" heading visible
+    - "Matched Bookings" heading visible
     - Awaiting/Processing messages NOT visible
     - Standard Bookings amount displayed          ← NEW from US-450
     - Boosted Bookings amount displayed            ← NEW from US-450
@@ -215,7 +215,7 @@ TC: Select hotel/month with fully processed data (P3 + A1)
   Expected Output:
     Structure:
       - "Commission Invoice" heading visible
-      - "Curacity Matched Bookings" heading visible
+      - "Matched Bookings" heading visible
       - Bookings chart visible
       - Reconciliation status bar visible
       - "Awaiting" and "Processing" messages NOT visible
@@ -226,7 +226,7 @@ TC: Select hotel/month with fully processed data (P3 + A1)
       - Total equals sum of above
     Matched Bookings Panel:
       - Total Bookings card shows count, nights, revenue, ADR
-      - Curacity Matched card shows count with percentage
+      - Matched card shows count with percentage
       - Commissionable card shows count with percentage
       - Chart shows 3 bars with proportional lengths
     Status Bar:

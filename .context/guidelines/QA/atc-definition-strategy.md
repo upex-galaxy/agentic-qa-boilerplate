@@ -20,7 +20,7 @@ Before diving in, clarify these terms — they are often confused:
 
 | Term | What It Is | What It Is NOT |
 |------|-----------|----------------|
-| **Test Ticket** | A **task tracking item** (like any Jira/Coda task) used to group and track the creation/automation of a set of TCs | NOT a test artifact. It's an organizational unit for project management |
+| **Test Ticket** | A **task tracking item** (like any Jira task) used to group and track the creation/automation of a set of TCs | NOT a test artifact. It's an organizational unit for project management |
 | **Test Case (TC)** | An individual acceptance test defined by a unique **Precondition + Action** combination, with one or more expected results | NOT defined by what it validates. Two checks on different panels from the same action = same TC |
 | **Test Scenario (TS)** | A multi-step flow that chains 2+ actions with intermediate verifications | NOT a single action with multiple assertions (that's a TC) |
 | **ATC** | The code implementation of a TC as a method with the `@atc` decorator | NOT a helper method (helpers are read-only, ATCs are actions) |

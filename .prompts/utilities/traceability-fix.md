@@ -31,7 +31,7 @@ Use this prompt when:
 ## PREREQUISITE
 
 > **Before executing any TMS commands**, ensure the TMS CLI tool is available and authenticated.
-> Check your project's TMS integration (Jira/Xray, Coda, or other) and load the appropriate skill.
+> Check your project's TMS integration (Jira/Xray, or other) and load the appropriate skill.
 
 ---
 

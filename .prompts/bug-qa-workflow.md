@@ -1,6 +1,6 @@
 # Bug QA Workflow
 
-> Complete workflow for Bug Retesting using your TMS (Jira, Xray, Coda, etc.).
+> Complete workflow for Bug Retesting using your TMS (Jira, Xray, etc.).
 > Based on IQL (Iterative Quality Leadership) methodology.
 
 ---

@@ -36,7 +36,7 @@ KATA (Komponent Action Test Architecture) is a testing framework that solves com
 
 ### Test ID Format
 
-- **The ATC ID is the real issue ID from the project's issue tracker** (Jira, Xray, Coda, etc.) — not an invented convention
+- **The ATC ID is the real issue ID from the project's issue tracker** (Jira, Xray, etc.) — not an invented convention
 - Format: `{PROJECT_KEY}-{NUMBER}` (e.g., `TK-101`, `UPEX-123`, `GX-456`)
 - The project key comes from the issue tracker project (e.g., `TK`, `UPEX`, `GX`)
 - Used in `@atc('{TICKET_ID}')` decorators — e.g., `@atc('TK-101')`

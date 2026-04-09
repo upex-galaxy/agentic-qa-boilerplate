@@ -21,7 +21,7 @@
 
 ### ATC = An Action in the System
 
-An ATC (Acceptance Test Case) represents a **complete action** that changes or validates system state. It maps 1:1 with a test case ticket in your issue tracker (Jira, Xray, Coda, etc.) via the `@atc('TICKET-ID')` decorator, where the ID is the real issue ID (e.g., `TK-101`, `UPEX-456`).
+An ATC (Acceptance Test Case) represents a **complete action** that changes or validates system state. It maps 1:1 with a test case ticket in your issue tracker (Jira, Xray, etc.) via the `@atc('TICKET-ID')` decorator, where the ID is the real issue ID (e.g., `TK-101`, `UPEX-456`).
 
 **An ATC is:**
 - An action the user or system performs (create, update, delete, submit, import)
@@ -382,7 +382,7 @@ The ATC assertions validate that each individual action worked. The test-level a
 ### The Relationship
 
 ```
-TMS (Coda)                          Code (KATA)
+TMS (Jira/Xray)                          Code (KATA)
 ──────────                          ──────────
 Test Case ticket (TK-XXX)    ───►   @atc('TK-XXX') method in a Component
                                       │
@@ -421,7 +421,7 @@ The TMS tracks both levels:
 | Test Case ticket | `@atc('TK-XXX')` in a component | `TK-101: Import bookings successfully` |
 | Integration/E2E ticket | `test()` block in a test file | `TK-411: Detect repeat guests` |
 
-Both are tickets in Coda, but they serve different purposes. Test cases validate individual actions. Integration/E2E tickets validate complete flows that combine those actions.
+Both are tickets in your TMS, but they serve different purposes. Test cases validate individual actions. Integration/E2E tickets validate complete flows that combine those actions.
 
 ### Ticket ID as Prefix (Required)
 
