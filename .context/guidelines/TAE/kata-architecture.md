@@ -1,16 +1,16 @@
 # KATA Architecture - Project Reference
 
-**Komponent Action Test Architecture**
+**Component Action Test Architecture**
 
-> _"Like a kata in martial arts, where each movement is practiced repeatedly until perfection, the KATA framework converts system actions into reusable and precise blocks."_
+> _"Like a kata in martial arts, where each movement is practiced repeatedly until perfection, the KATA architecture converts system actions into reusable and precise blocks."_
 
-**Full Documentation**: See `docs/methodology/kata-fundamentals.md` for complete KATA framework documentation.
+**Full Documentation**: See `docs/methodology/kata-fundamentals.md` for complete KATA (Component Action Test Architecture) documentation.
 
 ---
 
 ## 1. Executive Summary
 
-KATA (Komponent Action Test Architecture) is a testing framework that solves common test automation problems:
+KATA (Component Action Test Architecture) is a test automation architecture that solves common problems:
 
 - **Code Duplication**: Reusable ATCs (Acceptance Test Cases) instead of copy-paste
 - **Maintenance Nightmare**: Changes in one component, not scattered across 100 tests
@@ -315,7 +315,7 @@ Playwright only creates fixtures that are actually requested:
 ```typescript
 // This test NEVER opens a browser
 test('TK-XXX: should execute API test', async ({ api }) => {
-  await api.bookings.getAll(); // Only request context used
+  await api.orders.getAll(); // Only request context used
 });
 
 // This test opens a browser
@@ -402,7 +402,7 @@ test('TK-XXX: should complete purchase flow', async ({ test: fixture }) => {
 | Type                 | Pattern              | Example                              |
 | -------------------- | -------------------- | ------------------------------------ |
 | **E2E Test**         | `{verb}{Feature}.test.ts`  | `processCheckout.test.ts`, `createSignup.test.ts` |
-| **Integration Test** | `{verb}{Resource}.test.ts` | `authenticateUser.test.ts`, `importBookings.test.ts` |
+| **Integration Test** | `{verb}{Resource}.test.ts` | `authenticateUser.test.ts`, `createOrder.test.ts` |
 | **Utility Test**     | `{util}.test.ts`     | `decorators.test.ts`                 |
 
 ---

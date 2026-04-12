@@ -1,6 +1,6 @@
 # Test Automation Engineering (TAE)
 
-**KATA Framework** - Komponent Action Test Architecture
+**KATA Architecture** - Component Action Test Architecture
 
 ---
 

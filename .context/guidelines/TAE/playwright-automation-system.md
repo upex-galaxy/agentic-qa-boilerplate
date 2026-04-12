@@ -1,6 +1,6 @@
 # Test Code Overview
 
-## 1. Layer Architecture (KATA Framework)
+## 1. Layer Architecture (KATA Architecture)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -319,8 +319,8 @@ await generateAtcReport('reports/atc_results.json');
 // Access from components
 this.data.createUser()         // TestUser with email, password, name
 this.data.createCredentials()  // Only email + password
-this.data.createHotel()        // Hotel with name, orgId, invoiceCap
-this.data.createBooking()      // Booking with confirmation#, stayValue, etc.
+this.data.createProduct()      // Product with name, sku, price, categoryId
+this.data.createOrder()        // Order with referenceNumber, productId, quantity, totalAmount
 ```
 
 **Principle**: Data is always dynamic via Faker, never static.

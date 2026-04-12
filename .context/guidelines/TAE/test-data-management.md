@@ -1,6 +1,6 @@
 # Test Data Management
 
-Guide for test data management in KATA framework with TypeScript + Playwright.
+Guide for test data management in KATA (Component Action Test Architecture) with TypeScript + Playwright.
 
 ---
 
@@ -21,6 +21,15 @@ Every test needs data. Before writing any test code, determine HOW the test will
 | **3. Generate** | Create data from scratch via API/DB | Produces a clean, isolated data state | Last resort — when no usable data exists and the system supports full CRUD | POST /orders to create an order, then test it |
 
 **Priority 1 (Discover) is always preferred** because it has zero impact on the database and uses real, production-like data. Use Pattern 2 when data exists but needs adjustment, and Pattern 3 only when nothing usable exists.
+
+### Precondition Data Principle — Discover → Modify → Generate
+
+> When a test (manual or automated) needs preconditioned data, always follow this order:
+> 1. **Discover** — search for existing reusable data that meets the test's needs.
+> 2. **Modify** — if no exact match exists, adjust existing data to make it reusable.
+> 3. **Generate** — if neither of the above is feasible, generate fresh data from scratch.
+>
+> This principle applies uniformly to E2E, API, integration, and manual tests.
 
 **Exception**: When the test **mutates** data (POST/PUT/DELETE that changes state), Generate may be preferred to avoid contaminating shared data. Use `beforeEach` for these cases to ensure isolation per test.
 
@@ -115,18 +124,19 @@ interface TestCredentials {
   password: string;
 }
 
-interface TestHotel {
+interface TestProduct {
   name: string;
-  organizationId?: number;
-  invoiceCap?: number;
+  sku?: string;
+  price?: number;
+  categoryId?: number;
 }
 
-interface TestBooking {
-  confirmationNumber: string;
-  hotelId: number;
-  stayValue: number;
-  checkInDate: string;
-  emailHash?: string;
+interface TestOrder {
+  referenceNumber: string;
+  productId: number;
+  quantity: number;
+  totalAmount: number;
+  createdAt: string;
 }
 ```
 
@@ -396,8 +406,8 @@ await this.loginPage.login(creds.email, creds.password);
 
 ```typescript
 // Generates unique ID to identify test data
-const testId = this.data.createTestId('booking');
-// → 'booking-1707312000000-x7k2m9'
+const testId = this.data.createTestId('order');
+// → 'order-1707312000000-x7k2m9'
 ```
 
 ---
@@ -407,19 +417,19 @@ const testId = this.data.createTestId('booking');
 ### In ATCs (Layer 3)
 
 ```typescript
-// tests/components/api/BookingsApi.ts
+// tests/components/api/OrdersApi.ts
 import { ApiBase } from './ApiBase';
 
-export class BookingsApi extends ApiBase {
-  @atc('BOOK-API-001')
-  async createBookingSuccessfully(overrides?: Partial<TestBooking>) {
+export class OrdersApi extends ApiBase {
+  @atc('ORDER-API-001')
+  async createOrderSuccessfully(overrides?: Partial<TestOrder>) {
     // Generate dynamic data
-    const booking = this.data.createBooking(overrides);
+    const order = this.data.createOrder(overrides);
 
-    const response = await this.post('/api/bookings', { data: booking });
+    const response = await this.post('/api/orders', { data: order });
     expect(response.status()).toBe(201);
 
-    return [response, await response.json(), booking] as const;
+    return [response, await response.json(), order] as const;
   }
 }
 ```
@@ -482,23 +492,23 @@ test.describe('User Registration', () => {
 ### Integration Tests
 
 ```typescript
-// tests/integration/bookings/bookings.test.ts
+// tests/integration/orders/orders.test.ts
 import { test, expect } from '@TestFixture';
 
-test.describe('Bookings API', () => {
-  test('TK-XXX: should create booking with generated data', async ({ api }) => {
+test.describe('Orders API', () => {
+  test('TK-XXX: should create order with generated data', async ({ api }) => {
     // ARRANGE
-    const booking = api.data.createBooking({
-      hotelId: 123, // Specific hotel
-      stayValue: 500, // Fixed value for validation
+    const order = api.data.createOrder({
+      productId: 123,   // Specific product
+      totalAmount: 500, // Fixed value for validation
     });
 
     // ACT
-    const [response, body] = await api.bookings.createBookingSuccessfully(booking);
+    const [response, body] = await api.orders.createOrderSuccessfully(order);
 
     // ASSERT
-    expect(body.stayValue).toBe(500);
-    expect(body.confirmationNumber).toMatch(/^CONF-[A-Z0-9]{8}$/);
+    expect(body.totalAmount).toBe(500);
+    expect(body.referenceNumber).toMatch(/^ORD-[A-Z0-9]{8}$/);
   });
 });
 ```
@@ -516,14 +526,14 @@ export class DataFactory {
   // ... existing methods ...
 
   /**
-   * Generates Newsletter data for testing
+   * Generates Category data for testing
    */
-  static createNewsletter(overrides?: Partial<TestNewsletter>): TestNewsletter {
+  static createCategory(overrides?: Partial<TestCategory>): TestCategory {
     return {
-      name: `Newsletter ${faker.date.month()} ${faker.date.year()}`,
-      hotelId: faker.number.int({ min: 1, max: 1000 }),
-      sentDate: faker.date.recent().toISOString(),
-      recipientCount: faker.number.int({ min: 100, max: 10000 }),
+      name: `Category ${faker.commerce.department()} ${faker.number.int({ min: 1, max: 999 })}`,
+      parentId: faker.number.int({ min: 1, max: 1000 }),
+      createdAt: faker.date.recent().toISOString(),
+      productCount: faker.number.int({ min: 0, max: 500 }),
       ...overrides,
     };
   }
@@ -535,11 +545,11 @@ export class DataFactory {
 ```typescript
 // tests/data/types.ts
 
-export interface TestNewsletter {
+export interface TestCategory {
   name: string;
-  hotelId: number;
-  sentDate: string;
-  recipientCount: number;
+  parentId: number;
+  createdAt: string;
+  productCount: number;
 }
 ```
 
@@ -567,9 +577,9 @@ For reference data that doesn't change, use `tests/data/fixtures/`.
     "name": "Administrator",
     "permissions": ["read", "write", "delete", "admin"]
   },
-  "hotel_manager": {
-    "name": "Hotel Manager",
-    "permissions": ["read", "write", "reconcile"]
+  "catalog_manager": {
+    "name": "Catalog Manager",
+    "permissions": ["read", "write", "publish"]
   },
   "viewer": {
     "name": "Viewer",
@@ -681,8 +691,8 @@ STAGING_USER_PASSWORD=StagingPassword123!
 this.data.createUser();
 this.data.createCredentials();
 this.data.createTestId('prefix');
-this.data.createHotel();
-this.data.createBooking();
+this.data.createProduct();
+this.data.createOrder();
 
 // Access from tests
 ui.data.createUser();
@@ -694,7 +704,7 @@ DataFactory.createUser();
 
 // With overrides
 this.data.createUser({ email: 'fixed@test.com' });
-this.data.createBooking({ hotelId: 123, stayValue: 500 });
+this.data.createOrder({ productId: 123, totalAmount: 500 });
 ```
 
 ---

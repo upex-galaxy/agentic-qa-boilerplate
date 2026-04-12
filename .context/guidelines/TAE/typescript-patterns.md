@@ -1,6 +1,6 @@
-# TypeScript Patterns for KATA Framework
+# TypeScript Patterns for KATA Architecture
 
-> **Purpose**: Coding patterns and conventions for the KATA Framework.
+> **Purpose**: Coding patterns and conventions for the KATA (Component Action Test Architecture).
 > **Audience**: AI assistants and developers writing code.
 > **Principle**: Consistency, readability, and maintainability.
 
@@ -254,6 +254,6 @@ import { attachRequestResponseToAllure } from '@utils/allure';
 
 ## See Also
 
-- [kata-ai-index.md](.context/guidelines/TAE/kata-ai-index.md) - Full KATA framework guide
+- [kata-ai-index.md](.context/guidelines/TAE/kata-ai-index.md) - Full KATA architecture guide
 - [kata-architecture.md](.context/guidelines/TAE/kata-architecture.md) - Layer architecture
 - [automation-standards.md](.context/guidelines/TAE/automation-standards.md) - Test writing standards

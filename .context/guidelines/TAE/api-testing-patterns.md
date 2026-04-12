@@ -1,6 +1,6 @@
 # API Testing Patterns (Integration Level)
 
-> How to write API/Integration tests using the KATA framework.
+> How to write API/Integration tests using the KATA (Component Action Test Architecture).
 
 ---
 
@@ -17,7 +17,7 @@ API Testing in KATA follows the **Integration Testing** paradigm: tests that val
 │        │                                                                 │
 │        ▼                                                                 │
 │   ┌───────────┐     ┌─────────────────────────────────────────────────┐ │
-│   │ ApiFixture│────▶│  API Components (AuthApi, BookingsApi, etc.)    │ │
+│   │ ApiFixture│────▶│  API Components (AuthApi, OrdersApi, etc.)    │ │
 │   └───────────┘     │       │                                         │ │
 │                     │       ▼                                         │ │
 │                     │  ┌─────────┐   ┌──────────────────────────────┐ │ │
@@ -44,8 +44,8 @@ tests/
 │   │   └── example.test.ts      # Example tests (reference only)
 │   ├── auth/
 │   │   └── auth.test.ts         # Auth API tests
-│   └── bookings/
-│       └── bookings.test.ts     # Bookings API tests
+│   └── orders/
+│       └── orders.test.ts     # Orders API tests
 │
 ├── components/
 │   ├── TestContext.ts           # Layer 1: Config, Faker, Environment
@@ -53,7 +53,7 @@ tests/
 │   └── api/
 │       ├── ApiBase.ts           # Layer 2: HTTP methods (GET, POST, PUT, etc.)
 │       ├── AuthApi.ts           # Layer 3: Auth ATCs
-│       └── BookingsApi.ts       # Layer 3: Bookings ATCs
+│       └── OrdersApi.ts       # Layer 3: Orders ATCs
 ```
 
 ---
@@ -70,13 +70,13 @@ tests/
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  ApiFixture (tests/components/ApiFixture.ts)                            │
 │  → Dependency Injection container                                        │
-│  → Exposes all API components: api.auth, api.bookings, etc.             │
+│  → Exposes all API components: api.auth, api.orders, etc.             │
 └────────────────────────┬────────────────────────────────────────────────┘
                          │ instantiates
                          ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  API Components (tests/components/api/*.ts)                              │
-│  → AuthApi, BookingsApi, InvoicesApi, etc.                               │
+│  → AuthApi, OrdersApi, InvoicesApi, etc.                               │
 │  → Contains ATCs (@atc decorator) with fixed assertions                  │
 └────────────────────────┬────────────────────────────────────────────────┘
                          │ extends
@@ -140,8 +140,8 @@ test.describe('Auth API', () => {
 ### 2. API Component Structure
 
 ```typescript
-// tests/components/api/BookingsApi.ts
-import type { Booking, CreateBookingRequest } from '@schemas/bookings.types';
+// tests/components/api/OrdersApi.ts
+import type { Order, CreateOrderRequest } from '@schemas/orders.types';
 import type { APIResponse } from '@playwright/test';
 
 import { ApiBase } from '@api/ApiBase';
@@ -152,14 +152,14 @@ import { atc } from '@utils/decorators';
 // API Component
 // ============================================
 
-export class BookingsApi extends ApiBase {
+export class OrdersApi extends ApiBase {
   // ============================================
   // ATCs - Complete Test Cases
   // ============================================
 
   @atc('TK-201')
-  async getBookingsSuccessfully(hotelId: number): Promise<[APIResponse, Booking[]]> {
-    const [response, body] = await this.apiGET<Booking[]>(`/bookings?hotelId=${hotelId}`);
+  async getOrdersSuccessfully(customerId: number): Promise<[APIResponse, Order[]]> {
+    const [response, body] = await this.apiGET<Order[]>(`/orders?customerId=${customerId}`);
 
     // Fixed assertions
     expect(response.status()).toBe(200);
@@ -169,11 +169,11 @@ export class BookingsApi extends ApiBase {
   }
 
   @atc('TK-202')
-  async createBookingSuccessfully(
-    payload: CreateBookingRequest
-  ): Promise<[APIResponse, Booking, CreateBookingRequest]> {
-    const [response, body, sentPayload] = await this.apiPOST<Booking, CreateBookingRequest>(
-      '/bookings',
+  async createOrderSuccessfully(
+    payload: CreateOrderRequest
+  ): Promise<[APIResponse, Order, CreateOrderRequest]> {
+    const [response, body, sentPayload] = await this.apiPOST<Order, CreateOrderRequest>(
+      '/orders',
       payload
     );
 
@@ -185,8 +185,8 @@ export class BookingsApi extends ApiBase {
   }
 
   @atc('TK-203')
-  async getBookingNotFound(bookingId: number): Promise<[APIResponse, Record<string, unknown>]> {
-    const [response, body] = await this.apiGET<Record<string, unknown>>(`/bookings/${bookingId}`);
+  async getOrderNotFound(orderId: number): Promise<[APIResponse, Record<string, unknown>]> {
+    const [response, body] = await this.apiGET<Record<string, unknown>>(`/orders/${orderId}`);
 
     // Fixed assertions
     expect(response.status()).toBe(404);
@@ -202,34 +202,34 @@ export class BookingsApi extends ApiBase {
 // tests/components/ApiFixture.ts
 import { ApiBase } from '@api/ApiBase';
 import { AuthApi } from '@api/AuthApi';
-import { BookingsApi } from '@api/BookingsApi'; // Import new component
+import { OrdersApi } from '@api/OrdersApi'; // Import new component
 
 export class ApiFixture extends ApiBase {
   readonly auth: AuthApi;
-  readonly bookings: BookingsApi; // Add new component
+  readonly orders: OrdersApi; // Add new component
 
   constructor(environment?: Environment) {
     super(environment);
     this.auth = new AuthApi(environment);
-    this.bookings = new BookingsApi(environment); // Initialize
+    this.orders = new OrdersApi(environment); // Initialize
   }
 
   override setRequestContext(request: APIRequestContext) {
     super.setRequestContext(request);
     this.auth.setRequestContext(request);
-    this.bookings.setRequestContext(request); // Propagate
+    this.orders.setRequestContext(request); // Propagate
   }
 
   override setAuthToken(token: string) {
     super.setAuthToken(token);
     this.auth.setAuthToken(token);
-    this.bookings.setAuthToken(token); // Propagate
+    this.orders.setAuthToken(token); // Propagate
   }
 
   override clearAuthToken() {
     super.clearAuthToken();
     this.auth.clearAuthToken();
-    this.bookings.clearAuthToken(); // Propagate
+    this.orders.clearAuthToken(); // Propagate
   }
 }
 ```
@@ -293,7 +293,7 @@ test('TK-XXX: should make authenticated API call', async ({ api }) => {
   });
 
   // Subsequent calls include Authorization header automatically
-  const [response, bookings] = await api.bookings.getBookingsSuccessfully(123);
+  const [response, orders] = await api.orders.getOrdersSuccessfully(123);
 });
 ```
 
@@ -315,15 +315,15 @@ After running `bun run api:sync`, types are available through **type facades** i
 
 ```typescript
 // Import from domain facade — NOT directly from @openapi
-import type { Booking, CreateBookingRequest, CreateBookingResponse } from '@schemas/bookings.types';
+import type { Order, CreateOrderRequest, CreateOrderResponse } from '@schemas/orders.types';
 
 // Use in ATCs
 @atc('TK-201')
-async createBookingSuccessfully(
-  payload: CreateBookingRequest
-): Promise<[APIResponse, CreateBookingResponse, CreateBookingRequest]> {
-  const [response, body, sentPayload] = await this.apiPOST<CreateBookingResponse, CreateBookingRequest>(
-    '/bookings',
+async createOrderSuccessfully(
+  payload: CreateOrderRequest
+): Promise<[APIResponse, CreateOrderResponse, CreateOrderRequest]> {
+  const [response, body, sentPayload] = await this.apiPOST<CreateOrderResponse, CreateOrderRequest>(
+    '/orders',
     payload,
   );
   expect(response.status()).toBe(201);
@@ -331,8 +331,8 @@ async createBookingSuccessfully(
 }
 
 @atc('TK-202')
-async getBookingsSuccessfully(hotelId: number): Promise<[APIResponse, Booking[]]> {
-  const [response, body] = await this.apiGET<Booking[]>(`/bookings?hotelId=${hotelId}`);
+async getOrdersSuccessfully(customerId: number): Promise<[APIResponse, Order[]]> {
+  const [response, body] = await this.apiGET<Order[]>(`/orders?customerId=${customerId}`);
   expect(response.status()).toBe(200);
   return [response, body];
 }
@@ -348,25 +348,25 @@ async getBookingsSuccessfully(hotelId: number): Promise<[APIResponse, Booking[]]
 
 | Scenario               | Pattern                      | Example                        |
 | ---------------------- | ---------------------------- | ------------------------------ |
-| Success (200/201)      | `{action}Successfully`       | `getBookingsSuccessfully`      |
-| Validation error (400) | `{action}WithInvalid{Field}` | `createBookingWithInvalidData` |
-| Unauthorized (401)     | `{action}Unauthorized`       | `getBookingsUnauthorized`      |
-| Not found (404)        | `{action}NotFound`           | `getBookingNotFound`           |
-| Forbidden (403)        | `{action}Forbidden`          | `deleteBookingForbidden`       |
+| Success (200/201)      | `{action}Successfully`       | `getOrdersSuccessfully`      |
+| Validation error (400) | `{action}WithInvalid{Field}` | `createOrderWithInvalidData` |
+| Unauthorized (401)     | `{action}Unauthorized`       | `getOrdersUnauthorized`      |
+| Not found (404)        | `{action}NotFound`           | `getOrderNotFound`           |
+| Forbidden (403)        | `{action}Forbidden`          | `deleteOrderForbidden`       |
 
 ### Examples
 
 ```typescript
 // Success scenarios
-@atc('TK-201') async getBookingsSuccessfully(...) { ... }
-@atc('TK-202') async createBookingSuccessfully(...) { ... }
-@atc('TK-203') async updateBookingSuccessfully(...) { ... }
+@atc('TK-201') async getOrdersSuccessfully(...) { ... }
+@atc('TK-202') async createOrderSuccessfully(...) { ... }
+@atc('TK-203') async updateOrderSuccessfully(...) { ... }
 
 // Error scenarios
-@atc('TK-204') async getBookingNotFound(...) { ... }
-@atc('TK-205') async createBookingWithInvalidData(...) { ... }
-@atc('TK-206') async deleteBookingForbidden(...) { ... }
-@atc('TK-207') async getBookingsUnauthorized(...) { ... }
+@atc('TK-204') async getOrderNotFound(...) { ... }
+@atc('TK-205') async createOrderWithInvalidData(...) { ... }
+@atc('TK-206') async deleteOrderForbidden(...) { ... }
+@atc('TK-207') async getOrdersUnauthorized(...) { ... }
 ```
 
 ---
@@ -377,16 +377,16 @@ Every ATC must include **fixed assertions** that validate the expected behavior:
 
 ```typescript
 @atc('TK-201')
-async createBookingSuccessfully(payload: CreateBookingRequest): Promise<[APIResponse, Booking, CreateBookingRequest]> {
-  const [response, body, sentPayload] = await this.apiPOST<Booking, CreateBookingRequest>(
-    '/bookings',
+async createOrderSuccessfully(payload: CreateOrderRequest): Promise<[APIResponse, Order, CreateOrderRequest]> {
+  const [response, body, sentPayload] = await this.apiPOST<Order, CreateOrderRequest>(
+    '/orders',
     payload,
   );
 
   // Fixed assertions - ALWAYS validate these
   expect(response.status()).toBe(201);           // Expected status
   expect(body.id).toBeDefined();                  // Required field
-  expect(body.hotelId).toBe(payload.hotelId);    // Business rule
+  expect(body.customerId).toBe(payload.customerId);    // Business rule
 
   return [response, body, sentPayload];
 }
@@ -397,15 +397,15 @@ async createBookingSuccessfully(payload: CreateBookingRequest): Promise<[APIResp
 Additional assertions can be added in test files for flow validation:
 
 ```typescript
-test('TK-XXX: should complete booking flow', async ({ api }) => {
-  const payload = { hotelId: 123, guestEmail: 'test@example.com', ... };
+test('TK-XXX: should complete order flow', async ({ api }) => {
+  const payload = { customerId: 123, customerEmail: 'test@example.com', productId: 42, quantity: 1 };
 
   // ATC has fixed assertions
-  const [, booking, sentPayload] = await api.bookings.createBookingSuccessfully(payload);
+  const [, order, sentPayload] = await api.orders.createOrderSuccessfully(payload);
 
   // Additional test-level assertions
-  expect(booking.guestEmail).toBe(sentPayload.guestEmail);
-  expect(booking.status).toBe('pending');
+  expect(order.customerEmail).toBe(sentPayload.customerEmail);
+  expect(order.status).toBe('pending');
 });
 ```
 
@@ -451,30 +451,30 @@ async loginWithUsername(username: string) { ... }
 ### 2. Use Test Data Generation
 
 ```typescript
-test('TK-XXX: should create booking with generated data', async ({ api }) => {
+test('TK-XXX: should create order with generated data', async ({ api }) => {
   const payload = {
-    guestEmail: api.generateEmail('booking-test'),
-    guestName: api.generateName(),
-    confirmationNumber: api.faker.string.alphanumeric(10),
+    customerEmail: api.generateEmail('order-test'),
+    customerName: api.generateName(),
+    referenceNumber: api.faker.string.alphanumeric(10),
   };
 
-  await api.bookings.createBookingSuccessfully(payload);
+  await api.orders.createOrderSuccessfully(payload);
 });
 ```
 
 ### 3. Chain ATCs for Complex Flows
 
 ```typescript
-test('TK-XXX: should complete booking flow end to end', async ({ api }) => {
+test('TK-XXX: should complete order flow end to end', async ({ api }) => {
   // Login first
   await api.auth.loginSuccessfully(credentials);
 
-  // Create booking
-  const [, booking] = await api.bookings.createBookingSuccessfully(bookingData);
+  // Create order
+  const [, order] = await api.orders.createOrderSuccessfully(orderData);
 
-  // Verify booking appears in list
-  const [, bookings] = await api.bookings.getBookingsSuccessfully(hotelId);
-  expect(bookings.some(b => b.id === booking.id)).toBe(true);
+  // Verify order appears in list
+  const [, orders] = await api.orders.getOrdersSuccessfully(customerId);
+  expect(orders.some(b => b.id === order.id)).toBe(true);
 });
 ```
 

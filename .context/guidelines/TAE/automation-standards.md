@@ -1,6 +1,6 @@
 # Automation Standards
 
-> Standards and conventions for the KATA Framework implementation.
+> Standards and conventions for the KATA (Component Action Test Architecture) implementation.
 
 ---
 
@@ -484,7 +484,7 @@ test('TK-XXX: should display order confirmation after checkout', async ({ steps,
 ```
 tests/components/steps/
 ├── AuthSteps.ts          # Authentication + onboarding setup
-├── BookingSteps.ts       # Booking precondition chains
+├── OrdersSteps.ts        # Order precondition chains
 └── ExampleSteps.ts       # Reference template (EXAMPLE ONLY)
 ```
 
@@ -530,6 +530,33 @@ tests/components/steps/
 | E2E Test    | `{verb}{Feature}.test.ts`  | `createSignup.test.ts` |
 | Integration | `{verb}{Resource}.test.ts` | `authenticateUser.test.ts` |
 
+### Test File Hierarchy
+
+Test files follow a 4-level hierarchy that maps to how work is organized:
+
+```
+Module (directory)          → tests/e2e/orders/
+  Feature (file .test.ts)   → applyDiscount.test.ts
+    Ticket/US (describe)    → 'UPEX-411: Apply Discount Code'
+      Scenario (test)       → 'UPEX-411: should apply percentage discount when...'
+```
+
+| Level | Maps To | Naming | Example |
+|-------|---------|--------|---------|
+| **Directory** | Module / product area | kebab-case | `orders/`, `products/`, `auth/` |
+| **File** | Feature / functional area | `{verb}{Feature}.test.ts` (camelCase) | `applyDiscount.test.ts` |
+| **describe()** | Ticket / User Story | `'{TK-ID}: {Title}'` | `'UPEX-411: Apply Discount Code'` |
+| **test()** | Scenario / test case | `'{TK-ID}: should {behavior} when {condition}'` | `'UPEX-411: should apply percentage discount when code is valid'` |
+
+**Key rules:**
+
+- **One file = one feature**, but a feature can have **multiple describes** (tickets) that touch the same functionality
+- **Multiple tickets in one file** is valid when they test different aspects of the same feature (e.g., UPEX-411 discount logic + UPEX-412 discount UI both involve applying a code)
+- **One ticket = one describe** — never split a ticket across files
+- The **file name verb** describes the user action (e.g., `apply`, `create`, `submit`), not a test verb like `verify` or `check`
+- The **describe name** includes the ticket ID for traceability
+- The **test name** includes the ticket ID + follows `should {behavior} when {condition}` format
+
 ---
 
 ## 2. Component Structure
@@ -540,7 +567,7 @@ tests/components/steps/
 
 ```typescript
 /**
- * KATA Framework - Layer 3: {Resource} API Component
+ * KATA Architecture - Layer 3: {Resource} API Component
  */
 
 import { expect, type APIResponse } from '@playwright/test';
@@ -622,7 +649,7 @@ async signInSuccessfully(payload: SignInPayload): Promise<[APIResponse, AuthResp
 
 ```typescript
 /**
- * KATA Framework - Layer 3: Auth API Component
+ * KATA Architecture - Layer 3: Auth API Component
  *
  * Handles authentication operations: sign in, sign out, user profile.
  */

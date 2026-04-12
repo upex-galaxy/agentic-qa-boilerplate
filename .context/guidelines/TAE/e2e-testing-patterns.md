@@ -1,6 +1,6 @@
 # E2E Testing Patterns
 
-> How to write End-to-End tests using the KATA framework.
+> How to write End-to-End tests using the KATA (Component Action Test Architecture).
 
 ---
 
@@ -17,7 +17,7 @@ E2E Testing in KATA validates complete user journeys through the browser. These 
 │        │                                                                 │
 │        ▼                                                                 │
 │   ┌───────────┐     ┌─────────────────────────────────────────────────┐ │
-│   │ UiFixture │────▶│  Page Components (LoginPage, BookingsPage, etc.)│ │
+│   │ UiFixture │────▶│  Page Components (LoginPage, OrdersPage, etc.)│ │
 │   └───────────┘     │       │                                         │ │
 │                     │       ▼                                         │ │
 │                     │  ┌─────────┐   ┌──────────────────────────────┐ │ │
@@ -46,8 +46,8 @@ tests/
 │   │   └── example.test.ts       # Example tests (reference only)
 │   ├── auth/
 │   │   └── login.test.ts         # Login flow tests
-│   └── bookings/
-│       └── bookings.test.ts      # Bookings flow tests
+│   └── orders/
+│       └── orders.test.ts      # Orders flow tests
 │
 ├── components/
 │   ├── TestContext.ts            # Layer 1: Config, Faker, Environment
@@ -56,7 +56,7 @@ tests/
 │   └── ui/
 │       ├── UiBase.ts             # Layer 2: Page helpers, interception
 │       ├── LoginPage.ts          # Layer 3: Login ATCs
-│       └── BookingsPage.ts       # Layer 3: Bookings ATCs
+│       └── OrdersPage.ts       # Layer 3: Orders ATCs
 │
 ├── setup/                        # Auth setup (authenticated state)
 │   └── ui-auth.setup.ts          # Login and save storageState
@@ -76,13 +76,13 @@ tests/
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  UiFixture (tests/components/UiFixture.ts)                              │
 │  → Dependency Injection container                                        │
-│  → Exposes all UI components: ui.login, ui.bookings, etc.               │
+│  → Exposes all UI components: ui.login, ui.orders, etc.               │
 └────────────────────────┬────────────────────────────────────────────────┘
                          │ instantiates
                          ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  Page Components (tests/components/ui/*.ts)                              │
-│  → LoginPage, BookingsPage, InvoicesPage, etc.                           │
+│  → LoginPage, OrdersPage, InvoicesPage, etc.                           │
 │  → Contains ATCs (@atc decorator) with fixed assertions                  │
 │  → Locators defined inline within ATCs                                   │
 └────────────────────────┬────────────────────────────────────────────────┘
@@ -147,7 +147,7 @@ test.describe('Login Flow', () => {
 ### 2. Page Component Structure
 
 ```typescript
-// tests/components/ui/BookingsPage.ts
+// tests/components/ui/OrdersPage.ts
 import type { Page } from '@playwright/test';
 
 import type { Environment } from '@variables';
@@ -159,8 +159,8 @@ import { atc } from '@utils/decorators';
 // Types
 // ============================================
 
-export interface BookingFilter {
-  hotelId?: number;
+export interface OrderFilter {
+  customerId?: number;
   month?: string;
 }
 
@@ -168,7 +168,7 @@ export interface BookingFilter {
 // Page Component
 // ============================================
 
-export class BookingsPage extends UiBase {
+export class OrdersPage extends UiBase {
   constructor(page: Page, environment?: Environment) {
     super(page, environment);
   }
@@ -178,7 +178,7 @@ export class BookingsPage extends UiBase {
   // ============================================
 
   async goto() {
-    await this.page.goto('/bookings');
+    await this.page.goto('/orders');
   }
 
   // ============================================
@@ -186,12 +186,12 @@ export class BookingsPage extends UiBase {
   // ============================================
 
   @atc('TK-401')
-  async viewBookingsSuccessfully(filter: BookingFilter) {
+  async viewOrdersSuccessfully(filter: OrderFilter) {
     await this.goto();
 
     // Apply filters - locators inline
-    if (filter.hotelId) {
-      await this.page.locator('[data-testid="hotel-filter"]').selectOption(String(filter.hotelId));
+    if (filter.customerId) {
+      await this.page.locator('[data-testid="customer-filter"]').selectOption(String(filter.customerId));
     }
     if (filter.month) {
       await this.page.locator('[data-testid="month-filter"]').fill(filter.month);
@@ -201,24 +201,24 @@ export class BookingsPage extends UiBase {
     await this.page.locator('[data-testid="apply-filter"]').click();
 
     // Fixed assertions
-    await expect(this.page.locator('[data-testid="bookings-table"]')).toBeVisible();
-    await expect(this.page.locator('[data-testid="booking-row"]').first()).toBeVisible();
+    await expect(this.page.locator('[data-testid="orders-table"]')).toBeVisible();
+    await expect(this.page.locator('[data-testid="order-row"]').first()).toBeVisible();
   }
 
   @atc('TK-402')
-  async viewEmptyBookingsState(filter: BookingFilter) {
+  async viewEmptyOrdersState(filter: OrderFilter) {
     await this.goto();
 
     // Apply filters that return no results
-    if (filter.hotelId) {
-      await this.page.locator('[data-testid="hotel-filter"]').selectOption(String(filter.hotelId));
+    if (filter.customerId) {
+      await this.page.locator('[data-testid="customer-filter"]').selectOption(String(filter.customerId));
     }
 
     await this.page.locator('[data-testid="apply-filter"]').click();
 
     // Fixed assertions - empty state should be visible
     await expect(this.page.locator('[data-testid="empty-state"]')).toBeVisible();
-    await expect(this.page.locator('[data-testid="booking-row"]')).toHaveCount(0);
+    await expect(this.page.locator('[data-testid="order-row"]')).toHaveCount(0);
   }
 }
 ```
@@ -230,18 +230,18 @@ export class BookingsPage extends UiBase {
 import type { Page } from '@playwright/test';
 
 import type { Environment } from '@variables';
-import { BookingsPage } from '@ui/BookingsPage'; // Import new component
+import { OrdersPage } from '@ui/OrdersPage'; // Import new component
 import { LoginPage } from '@ui/LoginPage';
 import { UiBase } from '@ui/UiBase';
 
 export class UiFixture extends UiBase {
   readonly login: LoginPage;
-  readonly bookings: BookingsPage; // Add new component
+  readonly orders: OrdersPage; // Add new component
 
   constructor(page: Page, environment?: Environment) {
     super(page, environment);
     this.login = new LoginPage(page, environment);
-    this.bookings = new BookingsPage(page, environment); // Initialize
+    this.orders = new OrdersPage(page, environment); // Initialize
   }
 }
 ```
@@ -256,7 +256,7 @@ All UI components have direct access to the Playwright Page:
 
 ```typescript
 // In any Page component
-await this.page.goto('/bookings');
+await this.page.goto('/orders');
 await this.page.locator('button').click();
 await this.page.waitForURL(/.*dashboard.*/);
 ```
@@ -295,19 +295,19 @@ async loginAndCaptureToken(credentials: LoginCredentials) {
 
 ```typescript
 @atc('TK-403')
-async loadBookingsAndVerifyCount() {
+async loadOrdersAndVerifyCount() {
   await this.goto();
 
   // Click filter and wait for response
   await this.page.locator('[data-testid="apply-filter"]').click();
 
-  const { responseBody } = await this.waitForApiResponse<void, Booking[]>({
-    urlPattern: /\/api\/bookings/,
+  const { responseBody } = await this.waitForApiResponse<void, Order[]>({
+    urlPattern: /\/api\/orders/,
   });
 
   // Use API response to verify UI state
   const expectedCount = responseBody?.length ?? 0;
-  await expect(this.page.locator('[data-testid="booking-row"]')).toHaveCount(expectedCount);
+  await expect(this.page.locator('[data-testid="order-row"]')).toHaveCount(expectedCount);
 }
 ```
 
@@ -320,11 +320,11 @@ The most powerful pattern: use API for setup and verification, UI for the actual
 ### Using the Full Test Fixture
 
 ```typescript
-// tests/e2e/bookings/create-booking.test.ts
+// tests/e2e/orders/create-order.test.ts
 import { expect, test } from '@TestFixture';
 
-test.describe('Create Booking Flow', () => {
-  test('TK-XXX: should create booking via UI and verify via API', async ({ test: fixture }) => {
+test.describe('Create Order Flow', () => {
+  test('TK-XXX: should create order via UI and verify via API', async ({ test: fixture }) => {
     const { api, ui } = fixture;
 
     // SETUP via API - fast, reliable
@@ -334,16 +334,16 @@ test.describe('Create Booking Flow', () => {
     });
 
     // ACT via UI - test the actual user flow
-    await ui.bookings.goto();
-    await ui.bookings.createBookingSuccessfully({
-      hotelId: 123,
-      guestEmail: ui.generateEmail('booking-test'),
+    await ui.orders.goto();
+    await ui.orders.createOrderSuccessfully({
+      customerId: 123,
+      guestEmail: ui.generateEmail('order-test'),
       confirmationNumber: ui.faker.string.alphanumeric(10),
     });
 
     // VERIFY via API - reliable data verification
-    const [, bookings] = await api.bookings.getBookingsSuccessfully(123);
-    expect(bookings.length).toBeGreaterThan(0);
+    const [, orders] = await api.orders.getOrdersSuccessfully(123);
+    expect(orders.length).toBeGreaterThan(0);
   });
 });
 ```
@@ -356,7 +356,7 @@ test('TK-XXX: hybrid approach with separate fixtures', async ({ ui, api }) => {
   await api.auth.loginSuccessfully(credentials);
 
   // UI for the flow
-  await ui.bookings.viewBookingsSuccessfully({ hotelId: 123 });
+  await ui.orders.viewOrdersSuccessfully({ customerId: 123 });
 });
 ```
 
@@ -368,7 +368,7 @@ test('TK-XXX: hybrid approach with separate fixtures', async ({ ui, api }) => {
 | ---------------- | ---------------------------- | ---------------------------- |
 | Success flow     | `{action}Successfully`       | `loginSuccessfully`          |
 | Validation error | `{action}WithInvalid{Field}` | `submitFormWithInvalidEmail` |
-| Empty state      | `view{Resource}EmptyState`   | `viewBookingsEmptyState`     |
+| Empty state      | `view{Resource}EmptyState`   | `viewOrdersEmptyState`     |
 | Specific state   | `{action}With{State}`        | `loginWithExpiredSession`    |
 
 ### Examples
@@ -376,15 +376,15 @@ test('TK-XXX: hybrid approach with separate fixtures', async ({ ui, api }) => {
 ```typescript
 // Success scenarios
 @atc('TK-301') async loginSuccessfully(...) { ... }
-@atc('TK-201') async viewBookingsSuccessfully(...) { ... }
-@atc('TK-202') async createBookingSuccessfully(...) { ... }
+@atc('TK-201') async viewOrdersSuccessfully(...) { ... }
+@atc('TK-202') async createOrderSuccessfully(...) { ... }
 
 // Error scenarios
 @atc('TK-303') async loginWithInvalidCredentials(...) { ... }
-@atc('TK-204') async submitBookingWithInvalidData(...) { ... }
+@atc('TK-204') async submitOrderWithInvalidData(...) { ... }
 
 // State scenarios
-@atc('TK-208') async viewBookingsEmptyState(...) { ... }
+@atc('TK-208') async viewOrdersEmptyState(...) { ... }
 @atc('TK-501') async viewDashboardWithNoData(...) { ... }
 ```
 
@@ -419,20 +419,20 @@ class LoginPage extends UiBase {
 
 ```typescript
 // ✅ CORRECT - Extracted because used in multiple ATCs
-class BookingsPage extends UiBase {
+class OrdersPage extends UiBase {
   get filterButton() {
     return this.page.locator('[data-testid="apply-filter"]');
   }
 
   @atc('TK-201')
-  async viewBookingsSuccessfully(filter: BookingFilter) {
+  async viewOrdersSuccessfully(filter: OrderFilter) {
     // ... apply filter
     await this.filterButton.click();
     // ...
   }
 
   @atc('TK-202')
-  async viewBookingsWithDifferentFilter(filter: BookingFilter) {
+  async viewOrdersWithDifferentFilter(filter: OrderFilter) {
     // ... apply different filter
     await this.filterButton.click();
     // ...
@@ -587,18 +587,18 @@ ATCs are atomic units. They should NOT call other ATCs. Use **Steps** for reusab
 
 ```typescript
 // ❌ WRONG - ATC calling another ATC
-class BookingsPage extends UiBase {
+class OrdersPage extends UiBase {
   @atc('TK-201')
-  async createBookingSuccessfully(...) {
+  async createOrderSuccessfully(...) {
     await this.loginPage.loginSuccessfully(...); // WRONG!
     // ...
   }
 }
 
 // ✅ CORRECT - Use steps or setup in test file
-test('TK-XXX: should create booking successfully', async ({ ui }) => {
+test('TK-XXX: should create order successfully', async ({ ui }) => {
   await ui.login.loginSuccessfully(credentials); // Setup in test
-  await ui.bookings.createBookingSuccessfully(data); // Then the actual ATC
+  await ui.orders.createOrderSuccessfully(data); // Then the actual ATC
 });
 ```
 
@@ -626,15 +626,15 @@ Each test should be able to run independently:
 
 ```typescript
 // ✅ CORRECT - Test is self-contained
-test('TK-XXX: should view bookings after login', async ({ ui }) => {
+test('TK-XXX: should view orders after login', async ({ ui }) => {
   await ui.login.loginSuccessfully(credentials);
-  await ui.bookings.viewBookingsSuccessfully({ hotelId: 123 });
+  await ui.orders.viewOrdersSuccessfully({ customerId: 123 });
 });
 
 // ❌ WRONG - Depends on previous test
-test('TK-XXX: should create booking', async ({ ui }) => {
+test('TK-XXX: should create order', async ({ ui }) => {
   // Assumes login happened in previous test
-  await ui.bookings.createBookingSuccessfully(data);
+  await ui.orders.createOrderSuccessfully(data);
 });
 ```
 

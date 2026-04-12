@@ -67,14 +67,14 @@ This single command:
 import type { components } from '@api/openapi-types';
 
 // Extract types from schemas
-type Booking = components['schemas']['BookingListModel'];
-type Invoice = components['schemas']['InvoiceModel'];
-type Hotel = components['schemas']['HotelModel'];
+type Order = components['schemas']['OrderListModel'];
+type Product = components['schemas']['ProductModel'];
+type Customer = components['schemas']['CustomerModel'];
 
 // Use in API classes
-export class BookingsApi extends ApiBase {
-  async getBookings(hotelId: number): Promise<Booking[]> {
-    return this.apiGET<Booking[]>(`/bookings?hotelId=${hotelId}`);
+export class OrdersApi extends ApiBase {
+  async getOrders(customerId: number): Promise<Order[]> {
+    return this.apiGET<Order[]>(`/orders?customerId=${customerId}`);
   }
 }
 ```
@@ -115,13 +115,13 @@ The generated `openapi-types.ts` file provides full type access:
 import type { components, paths } from '@api/openapi-types';
 
 // Access schemas directly
-type Booking = components['schemas']['BookingListModel'];
+type Order = components['schemas']['OrderListModel'];
 
 // Access endpoint types
-type GetBookingsResponse =
-  paths['/api/bookings']['get']['responses']['200']['content']['application/json'];
-type CreateBookingBody =
-  paths['/api/bookings']['post']['requestBody']['content']['application/json'];
+type GetOrdersResponse =
+  paths['/api/orders']['get']['responses']['200']['content']['application/json'];
+type CreateOrderBody =
+  paths['/api/orders']['post']['requestBody']['content']['application/json'];
 ```
 
 ---
@@ -172,27 +172,27 @@ import type { components, paths } from '@openapi';
 // ============================================================================
 // Schema Types (domain models from components.schemas)
 // ============================================================================
-export type Booking = components['schemas']['BookingListModel'];
-export type Invoice = components['schemas']['InvoiceModel'];
+export type Order = components['schemas']['OrderListModel'];
+export type Product = components['schemas']['ProductModel'];
 
 // ============================================================================
-// Endpoint Types - POST /api/bookings
+// Endpoint Types - POST /api/orders
 // ============================================================================
-type CreateBookingPath = paths['/api/bookings']['post'];
-export type CreateBookingRequest = CreateBookingPath['requestBody']['content']['application/json'];
-export type CreateBookingResponse = CreateBookingPath['responses']['201']['content']['application/json'];
+type CreateOrderPath = paths['/api/orders']['post'];
+export type CreateOrderRequest = CreateOrderPath['requestBody']['content']['application/json'];
+export type CreateOrderResponse = CreateOrderPath['responses']['201']['content']['application/json'];
 
 // ============================================================================
-// Endpoint Types - GET /api/bookings/{id}
+// Endpoint Types - GET /api/orders/{id}
 // ============================================================================
-type GetBookingPath = paths['/api/bookings/{id}']['get'];
-export type GetBookingParams = GetBookingPath['parameters']['path'];
-export type GetBookingResponse = GetBookingPath['responses']['200']['content']['application/json'];
+type GetOrderPath = paths['/api/orders/{id}']['get'];
+export type GetOrderParams = GetOrderPath['parameters']['path'];
+export type GetOrderResponse = GetOrderPath['responses']['200']['content']['application/json'];
 
 // ============================================================================
 // Custom Types (not in OpenAPI spec)
 // ============================================================================
-export interface BookingErrorResponse {
+export interface OrderErrorResponse {
   error: string
   statusCode?: number
 }
@@ -209,9 +209,9 @@ export interface BookingErrorResponse {
 **Endpoint Types pattern:** Use a private `type XPath = paths[...][method]` helper, then export the specific parts:
 
 ```typescript
-type CreateBookingPath = paths['/api/bookings']['post'];  // private helper
-export type CreateBookingRequest = CreateBookingPath['requestBody']['content']['application/json'];
-export type CreateBookingResponse = CreateBookingPath['responses']['201']['content']['application/json'];
+type CreateOrderPath = paths['/api/orders']['post'];  // private helper
+export type CreateOrderRequest = CreateOrderPath['requestBody']['content']['application/json'];
+export type CreateOrderResponse = CreateOrderPath['responses']['201']['content']['application/json'];
 ```
 
 ### Type Placement Decision
@@ -231,10 +231,10 @@ import type { LoginPayload, TokenResponse } from '@schemas/auth.types';
 
 // In test file (cross-domain)
 import type { LoginPayload } from '@schemas/auth.types';
-import type { Booking } from '@schemas/bookings.types';
+import type { Order } from '@schemas/orders.types';
 
 // Or via barrel (cross-domain shorthand)
-import type { LoginPayload, Booking } from '@schemas';
+import type { LoginPayload, Order } from '@schemas';
 ```
 
 ### Creating a New Facade
@@ -254,7 +254,7 @@ api/
 └── schemas/                  # Type facade files
     ├── index.ts              # Barrel re-export
     ├── auth.types.ts         # Auth domain types
-    ├── bookings.types.ts     # Bookings domain types
+    ├── orders.types.ts       # Orders domain types
     └── example.types.ts      # Template/reference
 ```
 
