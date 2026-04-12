@@ -5,6 +5,8 @@
 > The sync effort compared this boilerplate against `/home/sai/Desktop/work-projects/curacity/qa-automation` to port generic improvements back. Task 1 covered the audit + sync, Task 2 built the sprint-testing orchestrator and Project Variables table in `CLAUDE.md`. The items below were either explicitly deferred by the user, blocked on an upstream decision, or identified as planned next phases.
 >
 > Each task below is self-contained: a future session should be able to read a single entry and resume the work without rehydrating the entire sync history.
+>
+> **Note**: Curacity-only tasks (deleting `system-prompt.md`, fixing Supabase refs in `mcp-usage-tips.md`) have been moved to the Curacity repo's own tracking. They are not tracked here.
 
 ---
 
@@ -12,9 +14,11 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Pending (planned next phase) |
+| **Status** | Deferred (next session, after other priorities) |
 | **Owner** | Unassigned |
 | **Priority** | High |
+
+**Note**: User wants to enter an analysis phase first to determine if propagation is worthwhile now. The idea is considered strong but needs exploration alongside other ideas before committing. This will be tackled in a dedicated future session as "Task 3" per the original plan.
 
 **Scope**
 
@@ -58,9 +62,11 @@ Consequence: the CLAUDE.md Project Variables table is expected to **grow** durin
 
 | Field | Value |
 |---|---|
-| **Status** | Needs decision |
+| **Status** | Ready (decision resolved: text/comments only, no breaking changes) |
 | **Owner** | Unassigned |
 | **Priority** | Medium |
+
+**Decision**: Only fix comments and string literals. Do NOT rename TypeScript identifiers, variables, or filenames. This avoids breaking changes to imports and downstream projects.
 
 **Scope**
 
@@ -84,14 +90,13 @@ Inconsistency between docs ("KATA Architecture") and code ("KATA Framework") is 
 
 **Dependencies**
 
-- **Decision needed**: Rename only text comments and string literals (safe), or also rename TypeScript identifiers like `KataReporter`, `KataFixture`, etc. (breaking change — requires updating all imports and any downstream projects).
+- ~~Decision needed: Rename only text comments and string literals (safe), or also rename TypeScript identifiers.~~ **Resolved**: text/comments only. No identifier renames, no breaking changes.
 
 **Suggested approach**
 
-1. Decide: text-only rename vs full identifier rename.
+1. ~~Decide: text-only rename vs full identifier rename.~~ Done — text-only.
 2. Grep for "KATA Framework" across all code files and replace with "KATA Architecture".
-3. If doing the full rename, update identifiers + all imports + downstream consumers in a separate commit.
-4. Run the test suite to confirm nothing broke.
+3. Run the test suite to confirm nothing broke.
 
 ---
 
@@ -105,7 +110,7 @@ Inconsistency between docs ("KATA Architecture") and code ("KATA Framework") is 
 
 **Scope**
 
-- New file under `.context/guidelines/` **or** `.context/docs/` (classification TBD)
+- New file under `.context/guidelines/` **or** `docs/` (classification TBD)
 - Filename proposal: `jira-test-management.md`
 
 **Context**
@@ -116,15 +121,23 @@ Curacity has `.context/guidelines/coda-test-management.md`, which describes how 
 
 Without a TMS-specific reference, AI agents cannot correctly create/update test cases in Jira/Xray. The file is a key input for the `xray-cli` skill and any sync between local PBI folders and Xray.
 
+**Classification guidance** (to be applied in a future session):
+
+- First, analyze Curacity's `coda-test-management.md` to understand its nature.
+- If it prescribes HOW to work in the issue tracker (procedures, conventions, rules) --> guideline (`.context/guidelines/`).
+- If it is conceptual/explanatory about how something works (reference, description) --> doc (`docs/`).
+- Analyze and decide in a future session based on this criteria.
+
 **Dependencies**
 
 - Classification decision: guideline (how-to, prescriptive) vs doc (reference, descriptive).
 - The decision should align with how other TMS references are classified in the project.
+- Linked with Task 4 — resolve both together for consistency.
 
 **Suggested approach**
 
-1. Decide guideline vs doc classification.
-2. Read Curacity's `coda-test-management.md` as a structural template.
+1. Read and analyze Curacity's `coda-test-management.md` using the classification criteria above.
+2. Decide guideline vs doc classification.
 3. Port the structure while replacing Coda-specific terminology with Jira/Xray equivalents (issue types, Xray test types, test plans, test executions, etc.).
 4. Reference the new file from `CLAUDE.md` "Context Loading by Task" table.
 
@@ -140,7 +153,7 @@ Without a TMS-specific reference, AI agents cannot correctly create/update test 
 
 **Scope**
 
-- New file under `.context/guidelines/` **or** `.context/docs/` (same classification decision as item 3)
+- New file under `.context/guidelines/` **or** `docs/` (same classification decision as item 3)
 - Filename proposal: `jira-tms-workflow.md`
 
 **Context**
@@ -154,91 +167,26 @@ Complements item 3: item 3 describes the *structure* of the TMS, item 4 describe
 **Dependencies**
 
 - Same guideline vs doc decision as item 3. Resolve both together for consistency.
+- Linked decision — will be resolved together with Task 3 in a future session.
 
 **Suggested approach**
 
-1. Resolve classification alongside item 3.
+1. Resolve classification alongside item 3 using the same criteria (prescriptive -> guideline, descriptive -> doc).
 2. Port structure from Curacity's `coda-tms-workflow.md`.
-3. Rewrite workflow steps using Jira/Xray transitions (Open → In Progress → Ready for QA → Done, etc.).
+3. Rewrite workflow steps using Jira/Xray transitions (Open -> In Progress -> Ready for QA -> Done, etc.).
 4. Link from `.prompts/us-qa-workflow.md` and `.prompts/bug-qa-workflow.md`.
 
 ---
 
-## 5. Delete `.context/system-prompt.md` from Curacity (redundant)
-
-| Field | Value |
-|---|---|
-| **Status** | Pending (Curacity-side action) |
-| **Owner** | Unassigned |
-| **Priority** | Low |
-
-**Scope**
-
-- **Curacity repo only** (`/home/sai/Desktop/work-projects/curacity/qa-automation`)
-- File: `.context/system-prompt.md`
-- **No changes in the boilerplate** — boilerplate does not have this file.
-
-**Context**
-
-During the Task 1 audit, `.context/system-prompt.md` in Curacity was identified as redundant — its content overlaps with `CLAUDE.md` and no prompt/guideline references it. This is a heads-up recorded here so future sync sessions remember to propose its deletion in Curacity.
-
-**Rationale**
-
-Reduces drift between CLAUDE.md and a parallel "system prompt" file that can silently diverge.
-
-**Dependencies**
-
-- Curacity-side approval per the `curacity_sync_protocol` memory (always inform and justify before changes).
-
-**Suggested approach**
-
-1. Re-confirm no references to `system-prompt.md` exist in Curacity.
-2. Propose deletion to the Curacity maintainer with justification.
-3. On approval, delete in Curacity (not here).
-
----
-
-## 6. Fix Curacity's `mcp-usage-tips.md` — remove Supabase references
-
-| Field | Value |
-|---|---|
-| **Status** | Pending (Curacity-side action) |
-| **Owner** | Unassigned |
-| **Priority** | Low |
-
-**Scope**
-
-- **Curacity repo only**
-- File: `.context/guidelines/mcp-usage-tips.md`
-- **No changes in the boilerplate.**
-
-**Context**
-
-During Task 1, Curacity's `mcp-usage-tips.md` was found to reference Supabase as an available MCP, but Curacity does not use Supabase. This was not a boilerplate task but is recorded here so the next sync session can address it.
-
-**Rationale**
-
-Keeping MCP references accurate prevents AI agents from trying to call tools that do not exist in the environment.
-
-**Dependencies**
-
-- Curacity-side approval per sync protocol.
-
-**Suggested approach**
-
-1. Confirm Supabase MCP is not configured in Curacity's `.mcp.json` or equivalent.
-2. Propose edit to Curacity maintainer.
-3. On approval, remove Supabase references in Curacity.
-
----
-
-## 7. Implement `cli/api-login.ts` + auto token refresh scripts
+## 5. Implement `cli/api-login.ts` + auto token refresh scripts
 
 | Field | Value |
 |---|---|
 | **Status** | Pending |
 | **Owner** | Unassigned |
-| **Priority** | High |
+| **Priority** | Medium |
+
+**Note**: Priority lowered from High to Medium. The CLI is useful for CI/CD automation (avoids manual token refresh) but is not critical for the boilerplate template itself. Implementation should adapt to the specific project's auth mechanism. The token is stored in `tests/.auth/token.json` (gitignored) and consumed by `ApiBase.ts`.
 
 **Scope**
 
@@ -259,25 +207,27 @@ Unattended API test runs are a core requirement. Without auto-refresh, CI runs f
 **Dependencies**
 
 - `.env` must expose credential keys in a generic form (e.g., `LOCAL_USER_EMAIL`, `STAGING_USER_EMAIL`, etc.) — already in place.
-- May depend on Task 3 (variables) if the script references project-specific URLs.
+- May depend on Task 1 (variables) if the script references project-specific URLs.
 
 **Suggested approach**
 
 1. Port `cli/api-login.ts` from Curacity, replacing project-specific paths and endpoints with variables from `CLAUDE.md` / `.env`.
-2. Store the refreshed token in a well-known location (e.g., `tests/.auth/token.json`) that is gitignored.
+2. Store the refreshed token in `tests/.auth/token.json` (gitignored), consumed by `ApiBase.ts`.
 3. Add `api:login:local` and `api:login:staging` scripts to `package.json`.
 4. Document usage in `README.md` under the "Authentication" section.
 5. Consider wiring the login into Playwright's `globalSetup` for fully automated test runs.
 
 ---
 
-## 8. Update `cli/update-boilerplate.ts` before next push
+## 6. Update `cli/update-boilerplate.ts` before next push
 
 | Field | Value |
 |---|---|
-| **Status** | Pending |
+| **Status** | Pending — Last (after all other tasks) |
 | **Owner** | Unassigned |
 | **Priority** | High (blocking next boilerplate release) |
+
+**Note**: This is explicitly the LAST task to do. Only after ALL other tasks are complete and the repository is fully polished. The script needs to handle migration for consumers who do not have the variable system yet.
 
 **Scope**
 
@@ -298,7 +248,7 @@ If the CLI is not updated, downstream consumers will pull variables-based templa
 
 **Dependencies**
 
-- Should happen **after** Task 3 (variable propagation) to ensure the CLI handles the fully variable-ized template.
+- Should happen **after** all other tasks (especially Task 1 variable propagation) to ensure the CLI handles the fully variable-ized template.
 
 **Suggested approach**
 
@@ -309,7 +259,7 @@ If the CLI is not updated, downstream consumers will pull variables-based templa
 
 ---
 
-## 9. Unify `.prompts/discovery/business-data-map.md` with its generator prompt output
+## 7. Unify `.prompts/discovery/business-data-map.md` with its generator prompt output
 
 | Field | Value |
 |---|---|
@@ -319,9 +269,10 @@ If the CLI is not updated, downstream consumers will pull variables-based templa
 
 **Scope**
 
-- `.prompts/discovery/business-data-map.md`
-- Possibly the generator prompt under `.prompts/discovery/` (if present)
-- The resulting `.context/business-data-map.md` template
+- `.prompts/discovery/business-data-map.md` (the generator prompt)
+- The resulting `.context/business-data-map.md` (the output template)
+
+**Clarification**: The "drift" means the generator prompt (`.prompts/discovery/business-data-map.md`) outputs a structure that does not match the expected output template (`.context/business-data-map.md`). Sections have different names or missing fields. The fix is to pick one as the source of truth and align the other.
 
 **Context**
 
@@ -344,42 +295,17 @@ When the template and the generator disagree, consumers get either an empty temp
 
 ---
 
-## 10. Deeper inspection of `.prompts/stage-6-regression/`
-
-| Field | Value |
-|---|---|
-| **Status** | Pending (verification task) |
-| **Owner** | Unassigned |
-| **Priority** | Low |
-
-**Scope**
-
-- `.prompts/stage-6-regression/` (all files)
-- Comparison target: Curacity's equivalent folder
-
-**Context**
-
-During Task 1 Phase 3, the sub-agents confirmed that the boilerplate's `stage-6-regression/` folder was *longer* than Curacity's and decided it did not need porting. However, a **deep content comparison was not exhaustive** — it is possible Curacity has specific valuable sections (step templates, checklists, ATC patterns) that the boilerplate is missing, even though its total length is shorter.
-
-**Rationale**
-
-Stage 6 covers regression after bug fixes — a critical moment where missing guidance directly causes escaped defects. Worth a second, more careful pass.
-
-**Dependencies**
-
-- None. Purely an audit task.
-
-**Suggested approach**
-
-1. Side-by-side diff of `.prompts/stage-6-regression/` in both repos.
-2. For each file, list sections present in Curacity but missing in the boilerplate.
-3. For each missing section, decide: port as-is, adapt to variables, or skip as project-specific.
-4. Commit any ported content with a commit message referencing this future-task item.
-
----
-
 ## How to consume this document
 
-- **Pick one task, read its entire entry, then act.** Each task is self-contained — do not try to tackle multiple items in one session unless they share dependencies (e.g., items 3 and 4, or items 2, 3, 7 and 8 which all depend on Task 3).
+- **Pick one task, read its entire entry, then act.** Each task is self-contained — do not try to tackle multiple items in one session unless they share dependencies (e.g., items 3 and 4 share a classification decision).
 - **Check "Status" and "Dependencies" first.** A task marked "Needs decision" or "Blocked" should not be started without first resolving the blocker.
 - **Update this file when a task is completed.** Delete the entry or move it to a "Completed" section with the commit SHA and date. This file is a *living* document — stale items are worse than missing items.
+
+**Readiness groupings:**
+
+| Readiness | Tasks |
+|---|---|
+| **Ready** (can start now) | 2 (KATA comments fix), 7 (business-data-map unification) |
+| **Needs decision** | 3 (Jira test management classification), 4 (Jira TMS workflow classification) |
+| **Deferred** | 1 (variable propagation — analysis phase first) |
+| **Pending** | 5 (api-login CLI), 6 (update-boilerplate — last) |
