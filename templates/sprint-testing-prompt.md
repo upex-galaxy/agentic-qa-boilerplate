@@ -29,7 +29,7 @@ Read the sprint testing file (SPRINT-X-TESTING.md). Scan in this order:
 3. **If all tickets in current wave are done** — check if a new wave has formed (tickets recently moved to the testing-ready state).
 
 Once you identify the next ticket:
-- Note the ticket ID ({{TICKET_PREFIX}}XXXX), type (Bug vs Feature/Product Roadmap/UX-UI/Task), title, and priority.
+- Note the ticket ID ({{PROJECT_KEY}}XXXX), type (Bug vs Feature/Product Roadmap/UX-UI/Task), title, and priority.
 - Check if a `test-session-memory.md` already exists for this ticket (interrupted session recovery).
 - Tell the user which ticket you're picking up and why.
 
@@ -94,7 +94,7 @@ Use these templates when dispatching each sub-agent. Replace all {variables} wit
 ### Sub-agent 1: SESSION START
 
 ```
-ROLE: You are a QA sub-agent executing SESSION START for ticket {{TICKET_PREFIX}}{number}.
+ROLE: You are a QA sub-agent executing SESSION START for ticket {{PROJECT_KEY}}{number}.
 
 INSTRUCTIONS FILE: Read and execute the instructions in:
   .prompts/session-start.md
@@ -104,7 +104,7 @@ CONTEXT FILES TO READ (CLAUDE.md files are auto-loaded, skip them):
   2. .context/api-architecture.md
   3. .context/project-test-guide.md
 
-TICKET: {{TICKET_PREFIX}}{number} — {ticket title}
+TICKET: {{PROJECT_KEY}}{number} — {ticket title}
 TYPE: {Bug/Feature/Product Roadmap/etc}
 PRIORITY: {priority}
 DEVELOPER: {developer name}
@@ -113,7 +113,7 @@ PLATFORM: {platform}
 
 TASK:
 Execute Session Start as defined in the instructions file. This includes:
-  1. Fetch ticket from {{ISSUE_TRACKER}} ({{ISSUE_TRACKER_CLI}} for ticket {{TICKET_PREFIX}}{number})
+  1. Fetch ticket from {{ISSUE_TRACKER}} ({{ISSUE_TRACKER_CLI}} for ticket {{PROJECT_KEY}}{number})
   2. Fetch comments from {{ISSUE_TRACKER}} (use the appropriate MCP or CLI)
   3. Load project context files (listed above)
   4. Check/Load module context:
@@ -121,7 +121,7 @@ Execute Session Start as defined in the instructions file. This includes:
      - If it DOES NOT EXIST → explore code fully, then create it using .context/PBI/templates/module-context-template.md
   5. Explore code in backend ({{BACKEND_REPO}}) and frontend ({{FRONTEND_REPO}}) as applicable
   6. Find test data candidates via database queries ({{DB_MCP_STAGING}} MCP)
-  7. Create PBI folder: .context/PBI/{module-name}/{{TICKET_PREFIX}}{number}-{brief-title}/
+  7. Create PBI folder: .context/PBI/{module-name}/{{PROJECT_KEY}}{number}-{brief-title}/
   8. Create context.md inside PBI folder
   9. Create test-session-memory.md inside PBI folder (template below)
   10. Configure .playwright/cli.config.json if UI testing needed
@@ -135,17 +135,17 @@ IMPORTANT — Login Credentials:
   ALWAYS read from .env file. NEVER hardcode or guess passwords.
 
 TEST-SESSION-MEMORY TEMPLATE:
-  Create the file at: .context/PBI/{module-name}/{{TICKET_PREFIX}}{number}-{brief-title}/test-session-memory.md
+  Create the file at: .context/PBI/{module-name}/{{PROJECT_KEY}}{number}-{brief-title}/test-session-memory.md
   With this structure:
 
 ---begin template---
-# Test Session Memory: {{TICKET_PREFIX}}{number}
+# Test Session Memory: {{PROJECT_KEY}}{number}
 
 > Shared memory across sub-agents. Each stage updates its section.
 > Last updated: {YYYY-MM-DD HH:MM} by Session Start
 
 ## Ticket
-- ID: {{TICKET_PREFIX}}{number}
+- ID: {{PROJECT_KEY}}{number}
 - Title: {title}
 - Type: {type}
 - Priority: {priority}
@@ -196,7 +196,7 @@ Written for the user (QA lead) to understand and confirm before proceeding.}
 | TC   | -  | -    | -      |
 
 ## Paths
-- PBI: .context/PBI/{module-name}/{{TICKET_PREFIX}}{number}-{brief-title}/
+- PBI: .context/PBI/{module-name}/{{PROJECT_KEY}}{number}-{brief-title}/
 - Module Context: .context/PBI/{module-name}/module-context.md
 
 ## Stage Results
@@ -299,7 +299,7 @@ REPORT BACK: Return a structured summary:
 ### Sub-agent 2: PLANNING (Feature)
 
 ```
-ROLE: You are a QA sub-agent executing PLANNING (Stage 1) for ticket {{TICKET_PREFIX}}{number}.
+ROLE: You are a QA sub-agent executing PLANNING (Stage 1) for ticket {{PROJECT_KEY}}{number}.
 
 INSTRUCTIONS FILE: Read and execute the instructions in:
   .prompts/stage-1-planning/acceptance-test-plan.md
@@ -310,7 +310,7 @@ CONTEXT FILES TO READ (in this order):
   3. {module-context.md path} — module knowledge (routes, DB, business rules, test data tips)
   4. .context/project-test-guide.md
 
-TICKET: {{TICKET_PREFIX}}{number} — {ticket title}
+TICKET: {{PROJECT_KEY}}{number} — {ticket title}
 TYPE: {type}
 
 TASK:
@@ -319,11 +319,11 @@ Execute Stage 1 Planning as defined in the instructions file. This includes:
   2. Discover test data via database queries ({{DB_MCP_STAGING}} MCP)
   3. Create ATP linked to User Story ({{TMS_CLI}} atp create --story "{full title}")
   4. Create ATR linked to User Story ({{TMS_CLI}} atr create --story "{full title}")
-  5. Link ATP to ATR ({{TMS_CLI}} atp update {id} --results "Test Results: {{TICKET_PREFIX}}{number}")
+  5. Link ATP to ATR ({{TMS_CLI}} atp update {id} --results "Test Results: {{PROJECT_KEY}}{number}")
   6. Fill Test Analysis in ATP ({{TMS_CLI}} atp update {id} --analysis "...")
-  7. Write AC Gaps if found ({{ISSUE_TRACKER_CLI}} or {{TMS_CLI}} backlog update {{TICKET_PREFIX}}{number} --ac-gaps "...")
+  7. Write AC Gaps if found ({{ISSUE_TRACKER_CLI}} or {{TMS_CLI}} backlog update {{PROJECT_KEY}}{number} --ac-gaps "...")
   8. Create TCs with full traceability (--story + --test-plan + --test-result)
-  9. Verify traceability ({{TMS_CLI}} trace {{TICKET_PREFIX}}{number})
+  9. Verify traceability ({{TMS_CLI}} trace {{PROJECT_KEY}}{number})
   10. Mark ATP complete ({{TMS_CLI}} atp update {id} --complete true)
   11. Transition TCs to Ready ({{TMS_CLI}} tc update {id} --workflow-status Ready)
   12. Create test-analysis.md in PBI folder (local mirror of ATP)
@@ -353,7 +353,7 @@ REPORT BACK: Return a structured summary:
 ### Sub-agent 2: PLANNING (Bug)
 
 ```
-ROLE: You are a QA sub-agent executing BUG PLANNING (Phase 1) for ticket {{TICKET_PREFIX}}{number}.
+ROLE: You are a QA sub-agent executing BUG PLANNING (Phase 1) for ticket {{PROJECT_KEY}}{number}.
 
 INSTRUCTIONS FILE: Read and execute Phase 1 (Triage + Planning) from:
   .prompts/bug-qa-workflow.md
@@ -363,7 +363,7 @@ CONTEXT FILES TO READ (in this order):
   2. {context.md path} — ticket context with bug details
   3. {module-context.md path} — module knowledge (routes, DB, business rules, test data tips)
 
-TICKET: {{TICKET_PREFIX}}{number} — {ticket title}
+TICKET: {{PROJECT_KEY}}{number} — {ticket title}
 TYPE: Bug
 
 TASK:
@@ -401,7 +401,7 @@ REPORT BACK: Return a structured summary:
 ### Sub-agent 3: EXECUTION (Feature)
 
 ```
-ROLE: You are a QA sub-agent executing EXECUTION (Stage 2) for ticket {{TICKET_PREFIX}}{number}.
+ROLE: You are a QA sub-agent executing EXECUTION (Stage 2) for ticket {{PROJECT_KEY}}{number}.
 
 INSTRUCTIONS FILES: Read and execute in this order:
   1. .prompts/stage-2-execution/smoke-test.md (ALWAYS first)
@@ -415,7 +415,7 @@ CONTEXT FILES TO READ (in this order):
   2. {context.md path} — ticket context with ACs
   3. {module-context.md path} — module knowledge (routes, DB, business rules, test data tips)
 
-TICKET: {{TICKET_PREFIX}}{number} — {ticket title}
+TICKET: {{PROJECT_KEY}}{number} — {ticket title}
 TYPE: {type}
 TCs TO EXECUTE: {list TC IDs and names from test-session-memory.md TMS Artifacts}
 TEST DATA: {from test-session-memory.md Test Data section}
@@ -423,7 +423,7 @@ TEST DATA: {from test-session-memory.md Test Data section}
 TASK:
 Execute Stage 2 as defined in the instructions files:
   1. SMOKE TEST (mandatory, always first):
-     - Configure Playwright evidence directory: .context/PBI/{module}/{{TICKET_PREFIX}}{N}-{title}/evidence/
+     - Configure Playwright evidence directory: .context/PBI/{module}/{{PROJECT_KEY}}{N}-{title}/evidence/
      - Navigate to feature X, verify page loads
      - Execute happy path (primary AC)
      - Result: Go (proceed) or No-Go (STOP and report)
@@ -469,7 +469,7 @@ REPORT BACK: Return a structured summary:
 ### Sub-agent 3: EXECUTION (Bug)
 
 ```
-ROLE: You are a QA sub-agent executing BUG EXECUTION (Phase 2) for ticket {{TICKET_PREFIX}}{number}.
+ROLE: You are a QA sub-agent executing BUG EXECUTION (Phase 2) for ticket {{PROJECT_KEY}}{number}.
 
 INSTRUCTIONS FILE: Read and execute Phase 2 (Execution) from:
   .prompts/bug-qa-workflow.md
@@ -479,7 +479,7 @@ CONTEXT FILES TO READ (in this order):
   2. {context.md path} — ticket context with bug details
   3. {module-context.md path} — module knowledge (routes, DB, business rules, test data tips)
 
-TICKET: {{TICKET_PREFIX}}{number} — {ticket title}
+TICKET: {{PROJECT_KEY}}{number} — {ticket title}
 TYPE: Bug
 TEST DATA: {from test-session-memory.md Test Data section}
 
@@ -513,7 +513,7 @@ REPORT BACK: Return a structured summary:
 ### Sub-agent 4: REPORTING (Feature and Bug)
 
 ```
-ROLE: You are a QA sub-agent executing REPORTING (Stage 3) for ticket {{TICKET_PREFIX}}{number}.
+ROLE: You are a QA sub-agent executing REPORTING (Stage 3) for ticket {{PROJECT_KEY}}{number}.
 
 INSTRUCTIONS FILE: Read and execute the instructions in:
   .prompts/stage-3-reporting/test-report.md
@@ -523,7 +523,7 @@ CONTEXT FILES TO READ (in this order):
   2. {context.md path} — ticket context
   3. {module-context.md path} — module knowledge (for accurate reporting context)
 
-TICKET: {{TICKET_PREFIX}}{number} — {ticket title}
+TICKET: {{PROJECT_KEY}}{number} — {ticket title}
 TYPE: {Bug or Feature type}
 TMS ARTIFACTS: {ATP ID, ATR ID, TC IDs from test-session-memory.md}
 
@@ -534,7 +534,7 @@ Execute Stage 3 Reporting as defined in the instructions file:
   3. Mark ATR complete ({{TMS_CLI}} atr update {ATR-ID} --complete true)
   4. Create test-report.md in PBI folder (local mirror of ATR)
   5. Copy QA comment to clipboard (xclip) for user to paste in {{ISSUE_TRACKER}}
-  6. Transition ticket to tested state ({{ISSUE_TRACKER_CLI}} or {{TMS_CLI}} backlog update {{TICKET_PREFIX}}{number} --status Tested)
+  6. Transition ticket to tested state ({{ISSUE_TRACKER_CLI}} or {{TMS_CLI}} backlog update {{PROJECT_KEY}}{number} --status Tested)
 
 IMPORTANT — test-session-memory.md UPDATE:
   Before finishing, update {test-session-memory.md path}:
@@ -570,7 +570,7 @@ After Sub-agent 4 completes:
    - Update stats section
 4. Present per-ticket summary to user:
    ```
-   TICKET: {{TICKET_PREFIX}}{XXX} — {title}
+   TICKET: {{PROJECT_KEY}}{XXX} — {title}
    TYPE: {Bug/Product Roadmap/Feature/etc}
    PRIORITY: {Critical/High/Medium/Not as Important}
    RESULT: {PASSED/FAILED}
@@ -590,7 +590,7 @@ After Sub-agent 4 completes:
 
 If a test-session-memory.md already exists for the next ticket:
 1. Read it to determine which stage was last completed
-2. Inform the user: "Found interrupted session for {{TICKET_PREFIX}}XXXX. Last completed stage: {stage}. Resuming from {next stage}."
+2. Inform the user: "Found interrupted session for {{PROJECT_KEY}}XXXX. Last completed stage: {stage}. Resuming from {next stage}."
 3. Skip completed stages and dispatch the next sub-agent in sequence
 4. The sub-agent will read the existing test-session-memory.md and continue from where it left off
 
@@ -618,7 +618,7 @@ When the user indicates they are done testing (no more tickets) or before wrappi
 
 | # | Ticket | Type | Priority | Title | Result | Board Status | Dev | TCs | AC Gaps | Bugs | Artifacts |
 |---|--------|------|----------|-------|--------|--------------|-----|-----|---------|------|-----------|
-| 1 | {{TICKET_PREFIX}}{X} | {type} | {priority} | {title} | {PASSED/FAILED/SKIPPED} | {current board status} | {dev name} | {X/Y (rate%)} | {count or None} | {count or None} | ATP-{N}, ATR-{N}, TCs {list} |
+| 1 | {{PROJECT_KEY}}{X} | {type} | {priority} | {title} | {PASSED/FAILED/SKIPPED} | {current board status} | {dev name} | {X/Y (rate%)} | {count or None} | {count or None} | ATP-{N}, ATR-{N}, TCs {list} |
 {... one row per ticket processed}
 ```
 

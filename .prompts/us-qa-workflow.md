@@ -54,7 +54,7 @@ Execute stages sequentially, completing each before moving to the next.
 │ USER STORY INFORMATION                                                      │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│ Story ID:        _________________________________ (e.g., {{TICKET_PREFIX}}123)        │
+│ Story ID:        _________________________________ (e.g., {{PROJECT_KEY}}123)        │
 │                                                                             │
 │ Story Title:     _________________________________ (brief description)     │
 │                                                                             │

@@ -6,7 +6,7 @@
 >
 > Each task below is self-contained: a future session should be able to read a single entry and resume the work without rehydrating the entire sync history.
 >
-> **Note**: Curacity-only tasks (deleting `system-prompt.md`, fixing Supabase refs in `mcp-usage-tips.md`) have been moved to the Curacity repo's own tracking. They are not tracked here.
+> **Note**: Curacity-only tasks (deleting `system-prompt.md`) have been moved to the Curacity repo's own tracking. They are not tracked here.
 
 ---
 
@@ -24,7 +24,7 @@
 
 - All files under `.prompts/`
 - All files under `.context/guidelines/`
-- Any template files still holding hardcoded project-specific values (URLs, CLI commands, ticket prefixes, credential env-var names, repository paths)
+- Any template files still holding hardcoded project-specific values (URLs, CLI commands, project keys, credential env-var names, repository paths)
 
 **Context**
 
@@ -41,7 +41,7 @@ Variable propagation eliminates multi-file maintenance and makes the boilerplate
 
 **Suggested approach**
 
-1. Grep `.prompts/` and `.context/guidelines/` for hardcoded examples (staging URLs, ticket prefixes, local paths, env-var names, product name mentions).
+1. Grep `.prompts/` and `.context/guidelines/` for hardcoded examples (staging URLs, project keys, local paths, env-var names, product name mentions).
 2. Replace each hit with the corresponding `{{VARIABLE_NAME}}` from the CLAUDE.md table.
 3. Verify every new variable reference has a corresponding entry in the CLAUDE.md table — add missing entries as needed.
 4. Run a final grep to confirm no stray hardcoded values remain.
@@ -49,7 +49,7 @@ Variable propagation eliminates multi-file maintenance and makes the boilerplate
 
 **Strategy: Progressive Discovery**
 
-This task is not a one-shot scan-and-replace. The execution strategy is progressive and iterative: we will walk through `.prompts/`, `.context/guidelines/`, and the rest of `.context/` file by file, inspecting each for hardcoded values (specific tools, environment assumptions, domain-specific names, URLs, ticket prefixes, paths). For every hardcoded value discovered, we take one of two actions:
+This task is not a one-shot scan-and-replace. The execution strategy is progressive and iterative: we will walk through `.prompts/`, `.context/guidelines/`, and the rest of `.context/` file by file, inspecting each for hardcoded values (specific tools, environment assumptions, domain-specific names, URLs, project keys, paths). For every hardcoded value discovered, we take one of two actions:
 
 1. If an existing variable in the CLAUDE.md Project Variables table already fits, replace the hardcoded value with that `{{VARIABLE_NAME}}`.
 2. If no existing variable fits, add a new entry to the CLAUDE.md Project Variables table first, then reference it from the prompt/guideline.
