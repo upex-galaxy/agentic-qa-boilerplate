@@ -10,23 +10,34 @@
 
 ---
 
+## Session Summary — 2026-04-12
+
+Three tasks were completed and a major new initiative (Pseudocode Convention) was executed:
+
+- **Task 2 (KATA Framework rename in code)** -- Completed. 36 code files updated (comments and strings only, no breaking changes). Commit `817fc0a`.
+- **Task 7 (business-data-map unification)** -- Completed. Created `.context/business-data-map.md` placeholder template aligned with generator prompt. Commit `3614d6a`.
+- **Task 1 (variable propagation)** -- Partially completed. `{{DEFAULT_ENV}}` and `{{PROJECT_KEY}}` propagated. The scope was largely superseded by the Pseudocode Convention (see below).
+- **Pseudocode Convention** (new work) -- All hardcoded CLI/MCP commands across `.prompts/` and `.context/guidelines/` replaced with domain-level pseudocode tags (`[TMS_TOOL]`, `[ISSUE_TRACKER_TOOL]`, `[AUTOMATION_TOOL]`, `[DB_TOOL]`, `[API_TOOL]`). Tool Resolution section added to `CLAUDE.md`. 25 files transformed, ~176 replacements across 3 phases. This superseded much of the original variable propagation plan for tool-specific values.
+- **mcp-usage-tips.md deletion** -- File deleted and all references cleaned up. Commit `90086c3`.
+
+---
+
 ## 1. Task 3 — Propagate `{{VARIABLES}}` globally across prompts, guidelines, and templates
 
 | Field | Value |
 |---|---|
-| **Status** | Deferred (next session, after other priorities) |
+| **Status** | Partially completed (2026-04-12) -- scope reduced by Pseudocode Convention |
 | **Owner** | Unassigned |
-| **Priority** | High |
+| **Priority** | Low (reduced from High) |
 
-**Note**: User wants to enter an analysis phase first to determine if propagation is worthwhile now. The idea is considered strong but needs exploration alongside other ideas before committing. This will be tackled in a dedicated future session as "Task 3" per the original plan.
+**Update (2026-04-12)**: Partial propagation was completed: `{{DEFAULT_ENV}}` and `{{PROJECT_KEY}}` (renamed from `{{TICKET_PREFIX}}`) are now propagated to relevant prompts. The Pseudocode Convention initiative (same session) replaced all hardcoded CLI/MCP tool references with domain-level pseudocode tags (`[TMS_TOOL]`, `[ISSUE_TRACKER_TOOL]`, `[AUTOMATION_TOOL]`, `[DB_TOOL]`, `[API_TOOL]`), which covered the largest category of hardcoded values that this task originally targeted. The remaining scope is limited to non-tool variables (URLs, credential env-var names, repository paths) that are still hardcoded in some files. Priority lowered to Low since the most impactful work is done.
 
-**Scope**
+**Remaining scope**
 
-- All files under `.prompts/`
-- All files under `.context/guidelines/`
-- Any template files still holding hardcoded project-specific values (URLs, CLI commands, project keys, credential env-var names, repository paths)
+- Non-tool hardcoded values in `.prompts/` and `.context/guidelines/` (URLs, credential keys, repo paths)
+- Verifying all CLAUDE.md Project Variables table entries are consumed somewhere
 
-**Context**
+**Original context preserved below for reference.**
 
 `CLAUDE.md` now defines a canonical Project Variables table (added in Task 2), but only `templates/sprint-testing-prompt.md` currently consumes those variables via `{{VARIABLE_NAME}}` placeholders. The rest of the prompt library still contains hardcoded examples (e.g., `staging.example.com`, `UPEX-###`, `bun run test:e2e`), which means every downstream consumer of the boilerplate has to search-and-replace the same examples in multiple locations.
 
@@ -36,67 +47,26 @@ Variable propagation eliminates multi-file maintenance and makes the boilerplate
 
 **Dependencies**
 
-- Task 2 (sprint-testing orchestrator + CLAUDE.md variable table) — done.
+- Task 2 (sprint-testing orchestrator + CLAUDE.md variable table) -- done.
 - Any consumer that reads prompts raw (non-templated) must be updated to render `{{VARIABLES}}` before use, or the prompts must be usable with placeholders intact.
 
-**Suggested approach**
+**Suggested approach (revised)**
 
-1. Grep `.prompts/` and `.context/guidelines/` for hardcoded examples (staging URLs, project keys, local paths, env-var names, product name mentions).
+1. Grep `.prompts/` and `.context/guidelines/` for remaining hardcoded examples (staging URLs, credential env-var names, local paths, product name mentions). Tool-specific commands are already handled by pseudocode tags.
 2. Replace each hit with the corresponding `{{VARIABLE_NAME}}` from the CLAUDE.md table.
-3. Verify every new variable reference has a corresponding entry in the CLAUDE.md table — add missing entries as needed.
+3. Verify every new variable reference has a corresponding entry in the CLAUDE.md table.
 4. Run a final grep to confirm no stray hardcoded values remain.
-5. Update `templates/sprint-testing-prompt.md` example section if new variables were introduced.
-
-**Strategy: Progressive Discovery**
-
-This task is not a one-shot scan-and-replace. The execution strategy is progressive and iterative: we will walk through `.prompts/`, `.context/guidelines/`, and the rest of `.context/` file by file, inspecting each for hardcoded values (specific tools, environment assumptions, domain-specific names, URLs, project keys, paths). For every hardcoded value discovered, we take one of two actions:
-
-1. If an existing variable in the CLAUDE.md Project Variables table already fits, replace the hardcoded value with that `{{VARIABLE_NAME}}`.
-2. If no existing variable fits, add a new entry to the CLAUDE.md Project Variables table first, then reference it from the prompt/guideline.
-
-Consequence: the CLAUDE.md Project Variables table is expected to **grow** during Task 3. It is not frozen at its current 21 variables — new variables will be introduced mid-propagation as discovery surfaces values the original table did not anticipate. Likewise, variables that are currently defined but unused (for example the `LOCAL_*` credential variants and `DEFAULT_ENV`) will naturally start being referenced during this phase as the relevant prompts are touched. The current "unused variables" gap is therefore expected and will resolve organically as Task 3 progresses, rather than requiring a separate cleanup pass.
 
 ---
 
-## 2. Fix "KATA Framework" references in code files
+## 2. Fix "KATA Framework" references in code files -- COMPLETED
 
 | Field | Value |
 |---|---|
-| **Status** | Ready (decision resolved: text/comments only, no breaking changes) |
-| **Owner** | Unassigned |
-| **Priority** | Medium |
+| **Status** | Completed (2026-04-12) |
+| **Commit** | `817fc0a` |
 
-**Decision**: Only fix comments and string literals. Do NOT rename TypeScript identifiers, variables, or filenames. This avoids breaking changes to imports and downstream projects.
-
-**Scope**
-
-- `tests/` (test files, components, fixtures)
-- `api/schemas/`
-- `config/`
-- `.github/workflows/`
-- `package.json`
-- `playwright.config.ts`
-- `.env.example`
-- `.gitignore`
-- Any other code or config file containing the term "KATA Framework" in comments, string literals, or identifiers
-
-**Context**
-
-During Task 1, all documentation, prompts, and guidelines were renamed from "KATA Framework" to "KATA Architecture" to reflect that KATA is not a standalone framework but an architectural pattern layered on Playwright. **Code files were explicitly out of scope** for that rename, so they still contain the old term.
-
-**Rationale**
-
-Inconsistency between docs ("KATA Architecture") and code ("KATA Framework") is confusing for new contributors and AI agents alike. Unifying the term removes ambiguity.
-
-**Dependencies**
-
-- ~~Decision needed: Rename only text comments and string literals (safe), or also rename TypeScript identifiers.~~ **Resolved**: text/comments only. No identifier renames, no breaking changes.
-
-**Suggested approach**
-
-1. ~~Decide: text-only rename vs full identifier rename.~~ Done — text-only.
-2. Grep for "KATA Framework" across all code files and replace with "KATA Architecture".
-3. Run the test suite to confirm nothing broke.
+36 code files updated -- comments and string literals only, no breaking changes. All "KATA Framework" references in code now read "KATA Architecture", consistent with documentation.
 
 ---
 
@@ -259,39 +229,14 @@ If the CLI is not updated, downstream consumers will pull variables-based templa
 
 ---
 
-## 7. Unify `.prompts/discovery/business-data-map.md` with its generator prompt output
+## 7. Unify `.prompts/discovery/business-data-map.md` with its generator prompt output -- COMPLETED
 
 | Field | Value |
 |---|---|
-| **Status** | Pending |
-| **Owner** | Unassigned |
-| **Priority** | Medium |
+| **Status** | Completed (2026-04-12) |
+| **Commit** | `3614d6a` |
 
-**Scope**
-
-- `.prompts/discovery/business-data-map.md` (the generator prompt)
-- The resulting `.context/business-data-map.md` (the output template)
-
-**Clarification**: The "drift" means the generator prompt (`.prompts/discovery/business-data-map.md`) outputs a structure that does not match the expected output template (`.context/business-data-map.md`). Sections have different names or missing fields. The fix is to pick one as the source of truth and align the other.
-
-**Context**
-
-Curacity has a generator prompt that produces a `business-data-map.md` document describing system entities and flows. The boilerplate has a version of this prompt, but the expected output structure in the boilerplate template does not fully match what the generator actually produces. This drift was identified during Task 1 but fixing it was out of scope.
-
-**Rationale**
-
-When the template and the generator disagree, consumers get either an empty template they have to fill manually, or a generated output that cannot be validated against a known schema.
-
-**Dependencies**
-
-- None.
-
-**Suggested approach**
-
-1. Compare the current `.prompts/discovery/business-data-map.md` generator prompt output to the `.context/business-data-map.md` template.
-2. Pick one as the source of truth (probably the generator output, since it is real-world).
-3. Update the other to match.
-4. Regenerate a sample `business-data-map.md` to validate alignment.
+Created `.context/business-data-map.md` placeholder template aligned with the generator prompt structure. Generator and output template are now consistent.
 
 ---
 
@@ -305,7 +250,7 @@ When the template and the generator disagree, consumers get either an empty temp
 
 | Readiness | Tasks |
 |---|---|
-| **Ready** (can start now) | 2 (KATA comments fix), 7 (business-data-map unification) |
+| **Completed** | 2 (KATA comments fix), 7 (business-data-map unification) |
 | **Needs decision** | 3 (Jira test management classification), 4 (Jira TMS workflow classification) |
-| **Deferred** | 1 (variable propagation — analysis phase first) |
-| **Pending** | 5 (api-login CLI), 6 (update-boilerplate — last) |
+| **Low priority** | 1 (variable propagation -- remaining scope reduced) |
+| **Pending** | 5 (api-login CLI), 6 (update-boilerplate -- last) |
