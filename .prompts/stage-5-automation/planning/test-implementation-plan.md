@@ -27,9 +27,10 @@ Create a structured implementation plan that documents everything needed to auto
 > `Use skill: xray-cli`
 
 Verify authentication:
-```bash
-bun xray auth status
 ```
+[TMS_TOOL] Authenticate
+```
+> Resolved via [TMS_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 
@@ -45,10 +46,12 @@ bun xray auth status
 
 ### Step 1: Fetch Ticket from Jira/Xray
 
-Use MCP Atlassian to fetch the Jira issue details:
+Fetch the Jira issue details:
 ```
-Use MCP: mcp__atlassian__get_issue({TICKET-ID})
+[ISSUE_TRACKER_TOOL] Get Issue:
+  - issue: {TICKET-ID}
 ```
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 Extract and note:
 - **Summary**: Full ticket title (for `{brief-title}` generation)
@@ -58,15 +61,15 @@ Extract and note:
 - **Sprint**: Current sprint
 - **Labels/Components**: Module classification
 
-Also check for linked Xray Test issues:
-```bash
-bun xray test list --label "{TICKET-ID}"
+Also check for linked test issues:
 ```
+[TMS_TOOL] List Tests:
+  - filter: linked to {TICKET-ID}
 
-Or search via Atlassian MCP:
+[ISSUE_TRACKER_TOOL] Search Issues:
+  - query: issues linked to {TICKET-ID} of type Test
 ```
-Use MCP: mcp__atlassian__search_jql("issue in linkedIssues({TICKET-ID}) AND issuetype = Test")
-```
+> Resolved via [TMS_TOOL] and [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 
@@ -141,7 +144,7 @@ Use MCP: mcp__atlassian__search_jql("issue in linkedIssues({TICKET-ID}) AND issu
 **Conditional — E2E only:**
 - What pages/views need UI components
 - What locator strategies to use (data-testid preferred, CSS fallback)
-- Whether Playwright MCP should be used for locator discovery
+- Whether `[AUTOMATION_TOOL]` should be used for locator discovery
 - What precondition APIs are needed (setup data via API before UI verification)
 
 ---
@@ -154,9 +157,9 @@ Use MCP: mcp__atlassian__search_jql("issue in linkedIssues({TICKET-ID}) AND issu
 
 | Priority | Pattern | Check | Tool |
 |----------|---------|-------|------|
-| **1. Discover** | Does data already exist in the required state? | Query DB/API for matching entities | Database MCP or API MCP |
-| **2. Modify** | Can existing data be altered to match preconditions? | Check available mutation endpoints | API MCP |
-| **3. Generate** | Can the data be created from scratch via API? | Check available POST/PUT endpoints | API MCP or OpenAPI spec |
+| **1. Discover** | Does data already exist in the required state? | Query DB/API for matching entities | `[DB_TOOL]` or `[API_TOOL]` |
+| **2. Modify** | Can existing data be altered to match preconditions? | Check available mutation endpoints | `[API_TOOL]` |
+| **3. Generate** | Can the data be created from scratch via API? | Check available POST/PUT endpoints | `[API_TOOL]` or OpenAPI spec |
 | **Blocker** | None of the above is feasible | Flag test as NOT automatable | Document reason |
 
 **For each precondition, document:**
@@ -268,7 +271,7 @@ Use the template below. Sections marked with `[E2E ONLY]` or `[INTEGRATION ONLY]
 | {element name} | `getByText` | `{text value}` |
 
 **Locator Discovery Method:**
-- [ ] Playwright MCP screenshot + inspection
+- [ ] `[AUTOMATION_TOOL]` screenshot + inspection
 - [ ] Source code `data-testid` attributes
 - [ ] DevTools manual inspection
 <!-- [END E2E ONLY] -->
@@ -406,10 +409,12 @@ Teardown: {cleanup needed? yes/no}
 - [ ] **Step 7**: Run tests and validate
 - [ ] **Step 8**: Update Xray test status to "Automated"
 
-```bash
-# After tests pass, update Xray status
-bun xray test update {TICKET-ID} --status Automated
 ```
+[TMS_TOOL] Update Test:
+  - test: {TICKET-ID}
+  - status: Automated
+```
+> See /xray-cli skill for current CLI syntax.
 
 ---
 
@@ -441,7 +446,7 @@ Pass this plan as input to the coding prompt.
 
 Before generating the plan, verify:
 
-- [ ] Ticket fetched from Jira (via MCP Atlassian or `bun xray`)
+- [ ] Ticket fetched from Jira (via `[ISSUE_TRACKER_TOOL]` or `[TMS_TOOL]`)
 - [ ] All REQUIRED files from Step 2 loaded and read
 - [ ] Existing components inventoried (Step 3)
 - [ ] `@atc` decorator search completed — no ID collisions

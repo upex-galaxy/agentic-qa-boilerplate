@@ -1,6 +1,6 @@
 # Exploratory Database Testing Session
 
-> AI-guided exploratory testing at the database layer using DBHub MCP for data integrity verification.
+> AI-guided exploratory testing at the database layer for data integrity verification.
 
 ---
 
@@ -30,14 +30,16 @@ Execute exploratory testing directly on the database to verify data integrity, v
 
 ## Prerequisites
 
-**MCPs Required:**
+**Capabilities Required:**
 
-| MCP                | Purpose                         | Required |
-| ------------------ | ------------------------------- | -------- |
-| `dbhub` (sql)      | Execute SQL queries directly    | Yes      |
-| `openapi` (api)    | Execute API calls for setup     | Optional |
-| `postman`          | Execute authenticated API flows | Optional |
-| `mcp__atlassian__` | Bug creation                    | Optional |
+| Capability                       | Tag                    | Required |
+| -------------------------------- | ---------------------- | -------- |
+| Execute SQL queries directly     | `[DB_TOOL]`            | Yes      |
+| Execute API calls for setup      | `[API_TOOL]`           | Optional |
+| Execute authenticated API flows  | `[API_TOOL]`           | Optional |
+| Bug creation                     | `[ISSUE_TRACKER_TOOL]` | Optional |
+
+> Resolved via respective tags — see Tool Resolution in CLAUDE.md
 
 **Database Access:**
 
@@ -137,7 +139,7 @@ Shall I proceed with the database exploration?
 
 ### Phase 2: Schema Exploration
 
-**Using `dbhub` MCP:**
+**Using database query tools:**
 
 ```sql
 -- List all tables in public schema
@@ -595,15 +597,17 @@ After database exploration, decide:
 
 ---
 
-## MCP Tools Reference
+## Tool Capabilities Reference
 
-### dbhub MCP
+### Database Query & Exploration (`[DB_TOOL]`)
 
-| Tool                  | Use Case                          |
-| --------------------- | --------------------------------- |
-| `mcp__dbhub__query`   | Execute SELECT queries            |
-| `mcp__dbhub__execute` | Execute INSERT/UPDATE/DELETE      |
-| `mcp__dbhub__describe`| Explore schema, tables, columns   |
+| Capability                  | Use Case                          |
+| --------------------------- | --------------------------------- |
+| Query (SELECT)              | Execute SELECT queries            |
+| Execute (INSERT/UPDATE/DELETE) | Execute data modification      |
+| Describe schema             | Explore schema, tables, columns   |
+
+> Resolved via [DB_TOOL] — see Tool Resolution in CLAUDE.md
 
 ### Common Query Patterns
 
@@ -651,8 +655,8 @@ Database testing completes the verification triangle:
 │  │     UI      │  │     API     │  │     DB      │         │
 │  │  Testing    │  │  Testing    │  │  Testing    │         │
 │  │             │  │             │  │   (THIS)    │         │
-│  │ Playwright  │  │  Postman/   │  │   DBHub     │         │
-│  │    MCP      │  │ OpenAPI MCP │  │    MCP      │         │
+│  │ [AUTOMATION │  │  [API_TOOL] │  │ [DB_TOOL]   │         │
+│  │    _TOOL]   │  │             │  │             │         │
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘         │
 │         │                │                │                 │
 │         └────────────────┴────────────────┘                 │

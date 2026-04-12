@@ -51,9 +51,11 @@ Create a structured ATC specification that documents everything needed to implem
 
 **If the test case exists in Jira/Xray:**
 
-```bash
-bun xray get {TICKET-ID}
 ```
+[TMS_TOOL] Get Test:
+  - test: {TICKET-ID}
+```
+> See /xray-cli skill for current CLI syntax.
 
 Extract:
 - **Name**: Test case name
@@ -591,7 +593,7 @@ Read these files to understand the quality bar and level of detail expected.
 **User says**: "Plan ATC for UPEX-045"
 
 **AI does**:
-1. Runs `bun xray get UPEX-045`
+1. Runs `[TMS_TOOL] Get Test` for UPEX-045
 2. Loads required reading (API conditional files)
 3. Identifies component: `BookingsApi`
 4. Determines type: Mutation (POST)
@@ -602,7 +604,7 @@ Read these files to understand the quality bar and level of detail expected.
 **User says**: "Document ATC for the login validation flow, ticket UPEX-789"
 
 **AI does**:
-1. Runs `bun xray get UPEX-789`
+1. Runs `[TMS_TOOL] Get Test` for UPEX-789
 2. Loads required reading (UI conditional files)
 3. Identifies component: `LoginPage`
 4. Determines type: Validation (error display)
@@ -635,4 +637,4 @@ Read these files to understand the quality bar and level of detail expected.
 | **Automation standards** | `.context/guidelines/TAE/automation-standards.md` |
 | **API testing patterns** | `.context/guidelines/TAE/api-testing-patterns.md` |
 | **E2E testing patterns** | `.context/guidelines/TAE/e2e-testing-patterns.md` |
-| **Xray CLI** | `bun xray --help` |
+| **TMS CLI** | See /xray-cli skill for current CLI syntax |

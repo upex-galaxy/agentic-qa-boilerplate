@@ -254,26 +254,33 @@ Both approaches use the same test ID format:
 
 ---
 
-## 8. Xray CLI Commands
+## 8. TMS Operations
 
-The Xray CLI is available in `cli/xray.ts`:
+Common test management operations:
 
-```bash
-# Authenticate
-bun xray auth --client-id "xxx" --client-secret "xxx"
-
-# Import test results
-bun xray results import --file test-results/results.json
-
-# Create test execution
-bun xray execution create --project UPEX --summary "Sprint 10 Regression"
-
-# Update test status
-bun xray test update UPEX-123 --status PASS
-
-# List tests
-bun xray test list --project UPEX --status FAIL
 ```
+[TMS_TOOL] Authenticate:
+  - credentials: {from environment variables}
+
+[TMS_TOOL] Import Results:
+  - file: {from test execution output}
+
+[TMS_TOOL] Create Execution:
+  - project: {{PROJECT_KEY}}
+  - summary: {from sprint/cycle context}
+
+[TMS_TOOL] Update Test Status:
+  - test: {per TC naming convention}
+  - status: PASS | FAIL
+
+[TMS_TOOL] List Tests:
+  - project: {{PROJECT_KEY}}
+  - status: {from query criteria}
+```
+
+> Resolved via [TMS_TOOL] — see Tool Resolution in CLAUDE.md
+
+> See /xray-cli skill for current CLI syntax.
 
 ---
 
@@ -374,7 +381,7 @@ In GitHub Actions, enable sync only on `main` branch:
 - **Jira Cloud API**: <https://developer.atlassian.com/cloud/jira/platform/rest/v3/>
 - **Xray Pricing**: <https://marketplace.atlassian.com/apps/1211769/xray-test-management-for-jira>
 - **Jira API Tokens**: <https://id.atlassian.com/manage-profile/security/api-tokens>
-- **Xray CLI**: `cli/xray.ts` in this repo
+- **TMS CLI**: `cli/xray.ts` in this repo (see /xray-cli skill)
 - **Jira Sync**: `tests/utils/jiraSync.ts` in this repo
 
 ---

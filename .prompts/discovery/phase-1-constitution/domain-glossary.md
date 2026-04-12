@@ -14,12 +14,14 @@
 
 ### From Discovery Sources:
 
-| Information     | MCP                    | CLI | Code Analysis              |
+| Information     | Tool Capability        | CLI | Code Analysis              |
 | --------------- | ---------------------- | --- | -------------------------- |
-| Entity names    | `mcp__supabase` schema | -   | Model files, DB migrations |
-| Business terms  | Atlassian MCP       | -   | Code comments, enums       |
-| Relationships   | `mcp__supabase`        | -   | Foreign keys, associations |
+| Entity names    | `[DB_TOOL]` schema     | -   | Model files, DB migrations |
+| Business terms  | `[ISSUE_TRACKER_TOOL]` | -   | Code comments, enums       |
+| Relationships   | `[DB_TOOL]`            | -   | Foreign keys, associations |
 | States/statuses | -                      | -   | Enum files, constants      |
+
+> Resolved via [DB_TOOL] and [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 
@@ -52,11 +54,15 @@ Create a comprehensive glossary of domain terms that:
    ls src/entities/ src/models/ 2>/dev/null
    ```
 
-2. If Supabase MCP available:
+2. If database tool available:
 
    ```
-   Use mcp__supabase to list all tables and their columns
+   [DB_TOOL] List Tables:
+     - schema: {from project database}
+     - include: columns, types, constraints
    ```
+
+   > Resolved via [DB_TOOL] — see Tool Resolution in CLAUDE.md
 
 3. Extract entity names and their attributes
 

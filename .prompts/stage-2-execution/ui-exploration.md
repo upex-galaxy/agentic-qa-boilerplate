@@ -1,6 +1,6 @@
 # Exploratory Testing Session
 
-> AI-guided exploratory testing using Playwright MCP tools.
+> AI-guided exploratory testing using browser automation tools.
 
 ---
 
@@ -17,7 +17,7 @@ Execute exploratory testing on a deployed feature to validate functionality, dis
 
 **Prerequisites:**
 
-- Access to Playwright MCP tools (`mcp__playwright__*`)
+- Access to browser automation tools
 - Staging URL accessible
 - Test cases or acceptance criteria as input
 
@@ -96,17 +96,19 @@ Shall I proceed with the exploration?
 
 ---
 
-### Phase 2: UI Exploration (Playwright MCP)
+### Phase 2: UI Exploration
 
-**Tools to use:**
+**Capabilities needed:**
 
-| Tool                                       | Purpose                 |
-| ------------------------------------------ | ----------------------- |
-| `mcp__playwright__browser_navigate`        | Navigate to pages       |
-| `mcp__playwright__browser_snapshot`        | Capture page structure  |
-| `mcp__playwright__browser_click`           | Interact with elements  |
-| `mcp__playwright__browser_type`            | Fill form fields        |
-| `mcp__playwright__browser_take_screenshot` | Capture visual evidence |
+| Capability        | Tag                | Purpose                 |
+| ----------------- | ------------------ | ----------------------- |
+| Navigate          | `[AUTOMATION_TOOL]` | Navigate to pages       |
+| Snapshot          | `[AUTOMATION_TOOL]` | Capture page structure  |
+| Click             | `[AUTOMATION_TOOL]` | Interact with elements  |
+| Type              | `[AUTOMATION_TOOL]` | Fill form fields        |
+| Take screenshot   | `[AUTOMATION_TOOL]` | Capture visual evidence |
+
+> Resolved via [AUTOMATION_TOOL] — see Tool Resolution in CLAUDE.md
 
 **For each scenario:**
 

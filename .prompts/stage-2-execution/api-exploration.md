@@ -1,6 +1,6 @@
 # Exploratory API Testing Session
 
-> AI-guided exploratory testing at the API layer using Postman MCP and OpenAPI MCP tools.
+> AI-guided exploratory testing at the API layer using API exploration and execution tools.
 
 ---
 
@@ -28,20 +28,21 @@ Execute exploratory testing on API endpoints to validate backend functionality, 
 
 ## Prerequisites
 
-**MCPs Required:**
+**Capabilities Required:**
 
-| MCP                | Purpose                                  | Required |
-| ------------------ | ---------------------------------------- | -------- |
-| `postman`          | Execute authenticated flows, collections | Yes      |
-| `openapi` (api)    | Explore endpoints, schema validation     | Optional |
-| `dbhub` (sql)      | Verify data after API operations         | Optional |
-| `mcp__atlassian__` | Bug creation, story transitions          | Optional |
+| Capability                       | Tag                    | Required |
+| -------------------------------- | ---------------------- | -------- |
+| Execute authenticated API flows  | `[API_TOOL]`           | Yes      |
+| Explore endpoints, schema validation | `[API_TOOL]`       | Optional |
+| Verify data after API operations | `[DB_TOOL]`            | Optional |
+| Bug creation, story transitions  | `[ISSUE_TRACKER_TOOL]` | Optional |
+
+> Resolved via respective tags — see Tool Resolution in CLAUDE.md
 
 **Environment:**
 
 - Staging URL accessible
 - Test user credentials available
-- Postman workspace configured (if using `postman` MCP)
 
 ---
 
@@ -133,29 +134,19 @@ Shall I proceed with the API exploration?
 
 **If testing authenticated endpoints:**
 
-Using `postman` MCP:
-
 ```
-1. Check if environment exists:
-   → getEnvironments()
+[API_TOOL] Setup environment:
+  - variables: base_url, anon_key, access_token, test_user_email, test_user_password
 
-2. If needed, create/update environment:
-   → createEnvironment() or putEnvironment()
-   Variables: base_url, anon_key, access_token, test_user_email, test_user_password
+[API_TOOL] Execute login:
+  - endpoint: /auth/v1/token
+  - method: POST
+  - credentials: {from .env}
 
-3. Execute login:
-   → Use existing "Login" request from collection
-   → OR create ad-hoc request to /auth/v1/token
-
-4. Store the access_token for subsequent requests
+[API_TOOL] Store access_token for subsequent requests
 ```
 
-Using `openapi` MCP (for anonymous requests only):
-
-```
-Note: The openapi MCP uses anon_key only.
-For authenticated tests, use postman MCP or document manual steps.
-```
+> Resolved via [API_TOOL] — see Tool Resolution in CLAUDE.md
 
 **Authentication Test Cases:**
 
@@ -181,43 +172,28 @@ Body: { "email": "test@example.com", "password": "xxx" }
 
 **For each endpoint/scenario:**
 
-#### Using `postman` MCP:
+**For each endpoint:**
 
 ```
-1. Find or create the request:
-   → getCollections() → find relevant collection
-   → getCollection(id) → see available requests
-   → OR createCollectionRequest() for new tests
+[API_TOOL] Explore available endpoints:
+  - action: list endpoints or inspect schema
 
-2. Execute the request:
-   → runCollection() for full flow
-   → OR execute individual request
+[API_TOOL] Execute request:
+  - method: {from test scenario}
+  - endpoint: {from test scenario}
+  - headers: {from auth setup}
+  - body: {from test scenario}
 
-3. Validate response:
-   - Status code matches expected
-   - Response body schema is correct
-   - Data values are accurate
-   - Headers are appropriate
+Validate response:
+  - Status code matches expected
+  - Response body schema is correct
+  - Data values are accurate
+  - Headers are appropriate
 
-4. Document findings
+Document findings
 ```
 
-#### Using `openapi` MCP:
-
-```
-1. Explore available endpoints:
-   → list-api-endpoints (if using dynamic mode)
-   → OR use mcp__openapi__get-[resource] directly
-
-2. Execute the request:
-   → mcp__openapi__get-products
-   → mcp__openapi__post-orders
-   → etc.
-
-3. Validate response structure against OpenAPI schema
-
-4. Document findings
-```
+> Resolved via [API_TOOL] — see Tool Resolution in CLAUDE.md
 
 **Test Documentation Format:**
 
@@ -349,7 +325,7 @@ Body: { "comment": "[10000 character string]", ... }
 
 ---
 
-### Phase 6: Data Verification (Optional - with dbhub MCP)
+### Phase 6: Data Verification (Optional)
 
 **After API operations, verify data in database:**
 
@@ -359,7 +335,7 @@ Body: { "comment": "[10000 character string]", ... }
 **API Action:**
 POST /rest/v1/orders → Created order ID: abc123
 
-**DB Verification (using dbhub MCP):**
+**DB Verification:**
 
 1. Verify order exists:
    SELECT * FROM orders WHERE id = 'abc123'
@@ -492,28 +468,21 @@ After API exploration, decide:
 
 ---
 
-## MCP Tools Reference
+## Tool Capabilities Reference
 
-### postman MCP
+### API Exploration & Execution (`[API_TOOL]`)
 
-| Tool                | Use Case                            |
-| ------------------- | ----------------------------------- |
-| `getCollections`    | List available test collections     |
-| `getCollection`     | Get collection details and requests |
-| `runCollection`     | Execute full test flow              |
-| `getEnvironments`   | List environments                   |
-| `createEnvironment` | Set up test environment             |
-| `putEnvironment`    | Update environment variables        |
+| Capability                  | Use Case                            |
+| --------------------------- | ----------------------------------- |
+| List collections/endpoints  | Discover available API resources    |
+| Inspect endpoint schema     | View request/response schema        |
+| Execute GET request         | Retrieve resources                  |
+| Execute POST request        | Create resources                    |
+| Execute PATCH request       | Update resources                    |
+| Execute full test flow      | Run collection or sequence          |
+| Manage environments         | Set up/update test environment      |
 
-### openapi MCP
-
-| Tool                          | Use Case                     |
-| ----------------------------- | ---------------------------- |
-| `list-api-endpoints`          | Discover available endpoints |
-| `get-api-endpoint-schema`     | View request/response schema |
-| `mcp__openapi__get-[table]`   | Execute GET request          |
-| `mcp__openapi__post-[table]`  | Execute POST request         |
-| `mcp__openapi__patch-[table]` | Execute PATCH request        |
+> Resolved via [API_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 
@@ -542,8 +511,8 @@ This API testing is one part of complete feature validation:
 │  │     UI      │  │     API     │  │     DB      │         │
 │  │  Testing    │  │  Testing    │  │  Testing    │         │
 │  │             │  │   (THIS)    │  │             │         │
-│  │ Playwright  │  │  Postman/   │  │   DBHub     │         │
-│  │    MCP      │  │ OpenAPI MCP │  │    MCP      │         │
+│  │ [AUTOMATION │  │  [API_TOOL] │  │ [DB_TOOL]   │         │
+│  │    _TOOL]   │  │             │  │             │         │
 │  └─────────────┘  └─────────────┘  └─────────────┘         │
 │        │                │                │                  │
 │        └────────────────┴────────────────┘                  │

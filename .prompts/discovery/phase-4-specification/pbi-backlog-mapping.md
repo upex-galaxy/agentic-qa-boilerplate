@@ -65,16 +65,21 @@ Document backlog access by:
 
 **For Jira:**
 
-1. With Atlassian MCP:
+1. With issue tracker tool:
 
    ```
-   jira project list
-   jira board list --project=PROJ
+   [ISSUE_TRACKER_TOOL] List Projects:
+     - filter: {from user context}
+
+   [ISSUE_TRACKER_TOOL] List Boards:
+     - project: {{PROJECT_KEY}}
    ```
 
-2. Without MCP, ask user:
+   > Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
+
+2. Without tool access, ask user:
    ```
-   "What is the Jira project key? (e.g., PROJ, MYAPP)"
+   "What is the project key? (e.g., PROJ, MYAPP)"
    "What board type do you use? (Scrum/Kanban)"
    ```
 
@@ -104,14 +109,15 @@ Document backlog access by:
 3. **API (Fallback)**: Direct REST calls
 4. **Manual (Last resort)**: Web UI only
 
-**Check MCP availability:**
+**Check tool availability:**
 
 ```
-Is Atlassian MCP available? → Use MCP
-Is jira-cli installed? → Use CLI
+Is [ISSUE_TRACKER_TOOL] available? → Use it
 Has API token? → Use API
 None → Document manual process
 ```
+
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 **Output:**
 
@@ -183,36 +189,26 @@ claude mcp add atlassian
 - Create issue
 - Update issue
 
-### Fallback Method: Jira CLI
+### Fallback Method: Issue Tracker CLI
 
-**Installation:**
+> Ensure your issue tracker CLI is configured. See Tool Resolution in CLAUDE.md
 
-```bash
-# Install jira-cli
-brew install jira-cli  # macOS
-# or
-go install github.com/ankitpokhrel/jira-cli/cmd/jira@latest
+**Common operations:**
+
+```
+[ISSUE_TRACKER_TOOL] List Issues:
+  - project: {{PROJECT_KEY}}
+
+[ISSUE_TRACKER_TOOL] View Issue:
+  - key: {per TC naming convention}
+
+[ISSUE_TRACKER_TOOL] Create Issue:
+  - project: {{PROJECT_KEY}}
+  - type: Story
+  - summary: {from context}
 ```
 
-**Configuration:**
-
-```bash
-jira init
-# Enter: server URL, email, API token
-```
-
-**Common commands:**
-
-```bash
-# List issues
-jira issue list -p PROJECT_KEY
-
-# View issue
-jira issue view PROJ-123
-
-# Create issue
-jira issue create -p PROJECT_KEY -t Story -s "Summary"
-```
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 ### API Access (if needed)
 
@@ -285,28 +281,23 @@ stateDiagram-v2
 | My testing tasks             | `project = PROJ AND status = Testing AND assignee = currentUser()`       |
 | Recently updated             | `project = PROJ AND updated >= -1d ORDER BY updated DESC`                |
 
-### Using MCP
+### Using Issue Tracker Tool
 
-```bash
-# Get stories ready for testing
-jira issue list --project=PROJ --status="Ready for QA"
+```
+[ISSUE_TRACKER_TOOL] Query Issues:
+  - project: {{PROJECT_KEY}}
+  - status: "Ready for QA"
+  - type: Story
 
-# Get specific story details
-jira issue view PROJ-123
+[ISSUE_TRACKER_TOOL] View Issue:
+  - key: {per TC naming convention}
+
+[ISSUE_TRACKER_TOOL] List Sprint Issues:
+  - project: {{PROJECT_KEY}}
+  - sprint: current
 ```
 
-### Using CLI
-
-```bash
-# Stories ready for QA
-jira issue list -p PROJ -s "Ready for QA" -t Story
-
-# Current sprint stories
-jira sprint list -p PROJ --current
-
-# My assigned issues
-jira issue list -a$(jira me)
-```
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 
@@ -382,43 +373,42 @@ JIRA_URL=https://your-domain.atlassian.net
 
 ### Fetch a Story for Testing
 
-```bash
+```
 # 1. Get story details
-jira issue view PROJ-123 --plain
+[ISSUE_TRACKER_TOOL] View Issue:
+  - key: {per TC naming convention}
+  - format: plain
 
 # 2. Create local folder
-mkdir -p .context/PBI/sprint-X/PROJ-123
+mkdir -p .context/PBI/sprint-X/{TICKET-ID}
 
-# 3. Save story details
-jira issue view PROJ-123 --plain > .context/PBI/sprint-X/PROJ-123/story.md
+# 3. Save story details to local context
 
 # 4. Create test plan using Phase 5 prompts
 ```
 
 ### Report a Bug
 
-```bash
-# Using CLI
-jira issue create \
-  -p PROJ \
-  -t Bug \
-  -s "Bug title" \
-  -b "Description with steps to reproduce"
-
-# Using MCP
-jira issue create --project=PROJ --type=Bug --summary="Bug title" --description="Steps to reproduce..."
 ```
+[ISSUE_TRACKER_TOOL] Create Issue:
+  - project: {{PROJECT_KEY}}
+  - type: Bug
+  - summary: {from defect analysis}
+  - description: {from reproduction steps}
+```
+
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 
 ## Troubleshooting
 
-| Issue              | Solution                      |
-| ------------------ | ----------------------------- |
-| MCP not connecting | Check credentials, verify URL |
-| CLI auth error     | Re-run `jira init`            |
-| Permission denied  | Verify project access         |
-| JQL syntax error   | Test query in Jira UI first   |
+| Issue                    | Solution                             |
+| ------------------------ | ------------------------------------ |
+| Tool not connecting      | Check credentials, verify URL        |
+| Authentication error     | Reconfigure tool credentials         |
+| Permission denied        | Verify project access                |
+| Query syntax error       | Test query in issue tracker UI first |
 
 ````
 

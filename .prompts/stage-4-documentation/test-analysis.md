@@ -33,7 +33,7 @@ Read: .context/guidelines/QA/jira-test-management.md
 
 **Required tools:**
 
-- MCP Atlassian (to read Jira)
+- `[ISSUE_TRACKER_TOOL]` (to read Jira)
 
 ---
 
@@ -72,31 +72,36 @@ Provide **at least one** of the following:
 
 ### Phase 1: Gather Context from Jira
 
-**Use MCP Atlassian to obtain:**
+**Obtain from issue tracker:**
 
 ```
-1. Complete User Story:
-   Tool: mcp__atlassian__jira_get_issue
+[ISSUE_TRACKER_TOOL] Get Issue:
+  - issue: {STORY-ID}
+  - include: description, comments, linked issues
+```
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
+
+Extract the following:
+
+1. **Complete User Story:**
    - Summary, Description, Acceptance Criteria
    - Current status (must be QA Approved)
    - Labels and components
 
-2. US Comments:
-   Tool: mcp__atlassian__jira_get_issue (includes comments)
+2. **US Comments:**
    - Development notes
    - QA feedback
    - Technical discussions
 
-3. Linked Issues:
-   - Related bugs (is blocked by, causes) ← CRITICAL for risk
+3. **Linked Issues:**
+   - Related bugs (is blocked by, causes) -- CRITICAL for risk
    - Sub-tasks
    - Other related stories (relates to)
    - Existing tests (is tested by)
 
-4. Parent Epic (if applicable):
+4. **Parent Epic (if applicable):**
    - Broader business context
    - Other stories from the same epic
-```
 
 **Extract from each source:**
 

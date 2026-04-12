@@ -105,13 +105,13 @@ Before starting, confirm you have access to:
 
 | If the input is... | Scope | Do this |
 |--------------------|-------|---------|
-| A TMS ticket ID | **Story-driven** | Fetch the ticket from Jira/Xray (MCP Atlassian + `bun xray`), extract ACs and context |
+| A TMS ticket ID | **Story-driven** | Fetch the ticket from Jira/Xray via `[ISSUE_TRACKER_TOOL]` + `[TMS_TOOL]`, extract ACs and context |
 | A bug description | **Bug-driven** | Understand the root cause, identify the regression risk |
 | A gap/edge case description | **Gap-driven** | Understand the uncovered behavior, assess risk |
 
 **For story-driven (TMS ticket):**
 
-Use the MCP Atlassian integration (or `bun xray test list`) to fetch the ticket. Extract:
+Use `[ISSUE_TRACKER_TOOL]` (or `[TMS_TOOL]` List Tests) to fetch the ticket. Extract:
 
 - **Title**: Full ticket title
 - **Module / Component**: Used for directory placement
@@ -123,10 +123,12 @@ Use the MCP Atlassian integration (or `bun xray test list`) to fetch the ticket.
 
 **TMS is the source of truth for TCs.** Before defining anything locally, check whether TCs already exist in your test management system for this ticket. Stage 4 (`test-documentation.md`) may have already created them.
 
-```bash
-# Xray example — list tests linked to a ticket
-bun xray test list --project PROJ --jql "issue in linkedIssues('TK-XXX')"
 ```
+[TMS_TOOL] List Tests:
+  - project: {{PROJECT_KEY}}
+  - filter: linked to TK-XXX
+```
+> Resolved via [TMS_TOOL] — see Tool Resolution in CLAUDE.md
 
 **Decision tree:**
 
@@ -138,19 +140,20 @@ bun xray test list --project PROJ --jql "issue in linkedIssues('TK-XXX')"
 
 **Creating new TCs in TMS** (when missing):
 
-```bash
-# Xray — Gherkin test
-bun xray test create --project PROJ --type Cucumber \
-  --summary "Should {behavior} when {condition}" \
-  --gherkin "Given {precondition}
-When {user action}
-Then {expected output}"
-
-# Xray — Steps test
-bun xray test create --project PROJ --type Manual \
-  --summary "Should {behavior} when {condition}" \
-  --step "Action | Data | Expected"
 ```
+[TMS_TOOL] Create Test:
+  - project: {{PROJECT_KEY}}
+  - type: Cucumber
+  - summary: {per TC naming convention}
+  - gherkin: {from test analysis}
+
+[TMS_TOOL] Create Test:
+  - project: {{PROJECT_KEY}}
+  - type: Manual
+  - summary: {per TC naming convention}
+  - steps: {from test analysis}
+```
+> See /xray-cli skill for current CLI syntax.
 
 **Record the TMS-generated TC IDs** returned by each `create` (e.g., `TC-47`, `PROJ-123`). These are the canonical IDs you will use:
 
@@ -168,7 +171,7 @@ Focused investigation (NOT a full module scan like the macro prompt):
 | **Feature behavior** | ACs, ticket description, related docs | What the feature does, user actions, expected outcomes |
 | **API endpoints** | `.context/api-architecture.md`, backend controllers, OpenAPI spec | Endpoints called, request/response shapes, business rules |
 | **UI behavior** | Frontend state files, route/page components | Page states, conditional rendering, filters |
-| **Data model** | Database MCP or code models | Relevant tables, fields, relationships |
+| **Data model** | `[DB_TOOL]` or code models | Relevant tables, fields, relationships |
 
 **Key questions to answer before defining TCs:**
 
@@ -271,7 +274,7 @@ Group inputs that produce the **same behavior** into one TC:
 #### 3d. TC IDs from TMS
 
 - TC IDs come from Step 1b (TMS query or creation). Do NOT number them locally.
-- If you discovered the need for additional TCs during Step 3 investigation that are NOT yet in TMS, create them in TMS now (using the `bun xray test create` commands from Step 1b) before writing them into spec.md.
+- If you discovered the need for additional TCs during Step 3 investigation that are NOT yet in TMS, create them in TMS now (using `[TMS_TOOL] Create Test` from Step 1b) before writing them into spec.md.
 
 #### 3e. Multi-step flows
 

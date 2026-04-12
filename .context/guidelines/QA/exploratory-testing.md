@@ -29,8 +29,8 @@ Complete feature validation requires testing across **three layers**:
 │  │     UI      │  │     API     │  │     DB      │         │
 │  │  Testing    │  │  Testing    │  │  Testing    │         │
 │  │             │  │             │  │             │         │
-│  │ Playwright  │  │  Postman/   │  │   DBHub     │         │
-│  │    CLI      │  │ OpenAPI MCP │  │    MCP      │         │
+│  │ AUTOMATION  │  │  API_TOOL   │  │  DB_TOOL    │         │
+│  │    TOOL     │  │             │  │             │         │
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘         │
 │         │                │                │                 │
 │         └────────────────┴────────────────┘                 │
@@ -41,12 +41,12 @@ Complete feature validation requires testing across **three layers**:
 
 ### When to Use Each Layer
 
-| Feature Type  | Recommended Testing     | Tools                          |
-| ------------- | ----------------------- | ------------------------------ |
-| UI-focused    | UI → API → DB           | playwright-cli → API MCP → DB  |
-| API-first     | API → DB → UI (if any)  | API MCP → DB MCP → UI         |
-| Data-focused  | DB → API → UI (if any)  | DB MCP → API MCP → UI         |
-| Full-stack    | All (full Trifuerza)    | All three in sequence          |
+| Feature Type  | Recommended Testing     | Tools                                          |
+| ------------- | ----------------------- | ---------------------------------------------- |
+| UI-focused    | UI → API → DB           | `[AUTOMATION_TOOL]` → `[API_TOOL]` → `[DB_TOOL]` |
+| API-first     | API → DB → UI (if any)  | `[API_TOOL]` → `[DB_TOOL]` → `[AUTOMATION_TOOL]` |
+| Data-focused  | DB → API → UI (if any)  | `[DB_TOOL]` → `[API_TOOL]` → `[AUTOMATION_TOOL]` |
+| Full-stack    | All (full Trifuerza)    | All three in sequence                          |
 
 ### Verification Flow
 
@@ -88,11 +88,11 @@ Before starting an exploratory testing session:
 
 **Per layer:**
 
-| Layer | Required Tools                    |
+| Layer | Required Capability               |
 | ----- | --------------------------------- |
-| UI    | `playwright-cli` (Claude Skill)   |
-| API   | `postman` and/or `openapi` MCP    |
-| DB    | `dbhub` MCP                       |
+| UI    | `[AUTOMATION_TOOL]`               |
+| API   | `[API_TOOL]`                      |
+| DB    | `[DB_TOOL]`                       |
 | Full  | All of the above (Trifuerza)      |
 
 ---
@@ -101,13 +101,12 @@ Before starting an exploratory testing session:
 
 The Trifuerza uses different tools depending on the testing layer:
 
-| Tool            | Type          | Layer    | Purpose                            |
-| --------------- | ------------- | -------- | ---------------------------------- |
-| `playwright-cli`| Claude Skill  | UI       | Visual exploration, interactions   |
-| `postman`       | MCP Server    | API      | Collections, auth flows            |
-| `openapi` (api) | MCP Server    | API      | Direct requests via spec           |
-| `dbhub` (sql)   | MCP Server    | DB       | SQL queries, data verification     |
-| `atlassian`     | MCP Server    | Workflow | Create bugs, transition stories    |
+| Capability             | Tag                    | Layer    | Purpose                            |
+| ---------------------- | ---------------------- | -------- | ---------------------------------- |
+| Browser automation     | `[AUTOMATION_TOOL]`    | UI       | Visual exploration, interactions   |
+| API requests via spec  | `[API_TOOL]`           | API      | Direct requests, contract testing  |
+| SQL queries            | `[DB_TOOL]`            | DB       | SQL queries, data verification     |
+| Issue management       | `[ISSUE_TRACKER_TOOL]` | Workflow | Create bugs, transition stories    |
 
 ---
 
@@ -160,11 +159,13 @@ Validate endpoints, contracts, and authentication:
 | `getEnvironments`         | View configured environments  |
 | `createCollectionRequest` | Create new requests           |
 
-| Tool (OpenAPI)                | Use                      |
+| Capability [API_TOOL]         | Use                      |
 | ----------------------------- | ------------------------ |
-| `mcp__openapi__get-[table]`   | GET request to endpoint  |
-| `mcp__openapi__post-[table]`  | POST request to endpoint |
-| `mcp__openapi__patch-[table]` | PATCH request to endpoint|
+| GET request to endpoint       | Read resource data       |
+| POST request to endpoint      | Create new resources     |
+| PATCH request to endpoint     | Update existing resources|
+
+> Resolved via [API_TOOL] — see Tool Resolution in CLAUDE.md
 
 **Typical API Testing flow:**
 
@@ -182,11 +183,13 @@ Validate endpoints, contracts, and authentication:
 
 Verify data, constraints, and triggers:
 
-| Tool                   | Use                           |
-| ---------------------- | ----------------------------- |
-| `mcp__dbhub__query`    | Execute SELECT queries        |
-| `mcp__dbhub__execute`  | Execute INSERT/UPDATE/DELETE  |
-| `mcp__dbhub__describe` | Describe tables and schemas   |
+| Capability [DB_TOOL]               | Use                           |
+| ---------------------------------- | ----------------------------- |
+| Execute SELECT queries             | Read and verify data          |
+| Execute INSERT/UPDATE/DELETE       | Modify data for test setup    |
+| Describe tables and schemas        | Explore database structure    |
+
+> Resolved via [DB_TOOL] — see Tool Resolution in CLAUDE.md
 
 **Typical DB Testing flow:**
 
