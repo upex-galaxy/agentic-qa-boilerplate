@@ -101,12 +101,13 @@ For each ATC, verify:
 
 | Check | Criteria | Status |
 |-------|----------|--------|
-| TS-01 | Request payload types defined | [ ] PASS / [ ] FAIL |
-| TS-02 | Response types defined | [ ] PASS / [ ] FAIL |
-| TS-03 | Error response type defined | [ ] PASS / [ ] FAIL |
-| TS-04 | No `any` types | [ ] PASS / [ ] FAIL |
-| TS-05 | Types exported for test file use | [ ] PASS / [ ] FAIL |
-| TS-06 | Generic types on API methods | [ ] PASS / [ ] FAIL |
+| TS-01 | Uses OpenAPI types from `api/openapi-types.ts` (not custom interfaces for API responses) | [ ] PASS / [ ] FAIL |
+| TS-02 | Request payload types defined | [ ] PASS / [ ] FAIL |
+| TS-03 | Response types defined | [ ] PASS / [ ] FAIL |
+| TS-04 | Error response type defined | [ ] PASS / [ ] FAIL |
+| TS-05 | No `any` types | [ ] PASS / [ ] FAIL |
+| TS-06 | Types exported for test file use | [ ] PASS / [ ] FAIL |
+| TS-07 | Generic types on API methods | [ ] PASS / [ ] FAIL |
 
 #### 3.2 Type Usage
 
@@ -147,8 +148,10 @@ For each ATC, verify:
 |-------|----------|--------|
 | AS-01 | Status code always asserted | [ ] PASS / [ ] FAIL |
 | AS-02 | At least one body field asserted | [ ] PASS / [ ] FAIL |
-| AS-03 | Using Playwright expect | [ ] PASS / [ ] FAIL |
-| AS-04 | Assertions match expected behavior | [ ] PASS / [ ] FAIL |
+| AS-03 | Fixed assertions inside ATCs are INVARIANTS (not scenario-dependent values) | [ ] PASS / [ ] FAIL |
+| AS-04 | Variable/test-level assertions left to the test file (not baked into ATC) | [ ] PASS / [ ] FAIL |
+| AS-05 | Using Playwright expect | [ ] PASS / [ ] FAIL |
+| AS-06 | Assertions match expected behavior | [ ] PASS / [ ] FAIL |
 
 ---
 
@@ -162,8 +165,9 @@ For each ATC, verify:
 | TF-02 | Uses `test.describe()` for grouping | [ ] PASS / [ ] FAIL |
 | TF-03 | `beforeEach` for authentication | [ ] PASS / [ ] FAIL |
 | TF-04 | ARRANGE-ACT-ASSERT structure | [ ] PASS / [ ] FAIL |
-| TF-05 | Descriptive test names | [ ] PASS / [ ] FAIL |
-| TF-06 | Appropriate tags (`@integration`, etc.) | [ ] PASS / [ ] FAIL |
+| TF-05 | Test names follow `TICKET-ID: should [behavior] when [condition]` | [ ] PASS / [ ] FAIL |
+| TF-06 | Tests validate FLOWS (end-to-end behavior), not individual response properties | [ ] PASS / [ ] FAIL |
+| TF-07 | Appropriate tags (`@integration`, `@critical`, etc.) | [ ] PASS / [ ] FAIL |
 
 #### 5.2 Test Independence
 
@@ -337,6 +341,55 @@ All the following checks passed:
 ---
 
 ## Common Issues Reference
+
+### Issue: Helper Disguised as ATC
+
+**Pattern**: A read-only GET method is decorated with `@atc()` when it should be a plain helper.
+
+```typescript
+// ❌ WRONG - A simple GET used as a precondition query should NOT be an ATC
+@atc('PROJ-123')
+async getResourceById(id: string): Promise<[APIResponse, Resource]> {
+  const [response, body] = await this.apiGET<Resource>(`/resources/${id}`);
+  expect(response.status()).toBe(200);
+  return [response, body];
+}
+```
+
+**Fix**: ATCs are ACTIONS (POST/PUT/PATCH/DELETE) that validate a complete test case. Read-only discovery methods are helpers — no `@atc` decorator.
+
+```typescript
+// ✅ CORRECT - Helper for data discovery (no decorator)
+async findResourceInState(state: string): Promise<Resource | null> {
+  const [, body] = await this.apiGET<ResourceList>('/resources', { state });
+  return body.items[0] ?? null;
+}
+```
+
+---
+
+### Issue: Custom Interface Instead of OpenAPI Type
+
+**Pattern**: Hand-written interface duplicates a schema that already exists in `api/openapi-types.ts`.
+
+```typescript
+// ❌ WRONG - Duplicating the API contract
+export interface UserResponse {
+  id: string;
+  email: string;
+  createdAt: string;
+}
+```
+
+**Fix**: Import the generated OpenAPI type (single source of truth; auto-updates on contract change).
+
+```typescript
+// ✅ CORRECT
+import type { components } from '@api/openapi-types';
+type UserResponse = components['schemas']['User'];
+```
+
+---
 
 ### Issue: Missing Type Generics
 

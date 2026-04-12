@@ -114,52 +114,52 @@ For each Acceptance Criterion or discovered behavior:
 
 ```
 Existing TC (from Sprint 5):
-  MS-003: Select hotel/month with processed data
-  Precondition: Hotel has fully processed booking data
-  Action: Select hotel and month in filters
+  UPEX-103: Validate product detail view when product is published
+  Precondition: Product exists and is published
+  Action: Open the product detail page
   Expected Output:
-    - "Commission Invoice" heading visible
-    - "Matched Bookings" heading visible
-    - Awaiting/Processing messages NOT visible
+    - "Product Details" heading visible
+    - "Add to Cart" button visible
+    - "Out of Stock" banner NOT visible
 
-New User Story (Sprint 7): "US-450: Show commission breakdown"
-  AC: When viewing a hotel with processed data, the commission panel
-      should display Standard, Boosted, and Platform Fee amounts
+New User Story (Sprint 7): "US-450: Show pricing breakdown on product page"
+  AC: When viewing a published product, the price block should display
+      Base price, Discount, and Final price.
 
 Analysis:
-  Precondition → Hotel with processed data (SAME as MS-003)
-  Action → Select hotel/month (SAME as MS-003)
-  → This is NOT a new TC. Add assertions to MS-003:
+  Precondition → Published product (SAME as UPEX-103)
+  Action → Open product detail page (SAME as UPEX-103)
+  → This is NOT a new TC. Add assertions to UPEX-103:
 
-Updated MS-003:
+Updated UPEX-103:
   Expected Output:
-    - "Commission Invoice" heading visible
-    - "Matched Bookings" heading visible
-    - Awaiting/Processing messages NOT visible
-    - Standard Bookings amount displayed          ← NEW from US-450
-    - Boosted Bookings amount displayed            ← NEW from US-450
-    - Platform Fee amount displayed                ← NEW from US-450
-    - Total equals sum of Standard + Boosted + Fee ← NEW from US-450
+    - "Product Details" heading visible
+    - "Add to Cart" button visible
+    - "Out of Stock" banner NOT visible
+    - Base price displayed                       ← NEW from US-450
+    - Discount amount displayed                   ← NEW from US-450
+    - Final price displayed                       ← NEW from US-450
+    - Final price equals Base - Discount          ← NEW from US-450
 ```
 
 #### Example: Bug Fix Adds to Existing TC
 
 ```
-Bug: "ADR shows NaN when hotel has 0 bookings"
-  Precondition → Hotel with 0 bookings for the month
-  Action → Select hotel/month
+Bug: "Stock counter shows NaN when product has 0 units in inventory"
+  Precondition → Product with 0 units in stock
+  Action → Open product detail page
 
 Existing TC:
-  MS-023: Select hotel/month with zero bookings
+  UPEX-123: Validate product detail view when product is out of stock
   Expected Output:
-    - All three metric cards show 0
-    - ADR shows "$0" or "N/A"
+    - Stock counter shows "0"
+    - "Add to Cart" button is disabled
 
 This bug reveals the TC was already correct but the code wasn't.
-No TC change needed — just fix the code and ensure MS-023 catches it.
+No TC change needed — just fix the code and ensure UPEX-123 catches it.
 
-BUT if MS-023 didn't exist:
-  → Create it as a new TC (different precondition from MS-003)
+BUT if UPEX-123 didn't exist:
+  → Create it as a new TC (different precondition from UPEX-103)
 ```
 
 ---
@@ -171,13 +171,13 @@ BUT if MS-023 didn't exist:
 Start by listing what the user **DOES** in the module. Not what you want to check — what the user performs.
 
 ```
-Module: Monthly Statement
+Module: Product Catalog
 User Actions:
-  A1: Select hotel and month in filters (the primary action)
-  A2: Click "Upload Booking File" button
-  A3: Click Export button
-  A4: Navigate to Bookings page from Monthly Statement
-  A5: Click "Confirm Invoice" button
+  A1: Open a product detail page (the primary action)
+  A2: Click "Add to Cart" button
+  A3: Click "Apply Discount Code" button
+  A4: Navigate to Category page from Product detail
+  A5: Click "Checkout" button
 ```
 
 ### Step 2: Identify Precondition Partitions
@@ -185,14 +185,14 @@ User Actions:
 For each action, identify the **different system states** (preconditions) that produce different behaviors:
 
 ```
-A1: Select hotel/month in filters
+A1: Open product detail page
   Preconditions:
-    P1: Hotel has NO booking file for that month          → awaiting state
-    P2: Hotel has file uploaded but NOT processed          → processing state
-    P3: Hotel has fully processed data                     → dashboard state
-    P4: Hotel has processed data with finalized invoice    → dashboard with invoice number
-    P5: Hotel has processed data with commission adjustment → dashboard with adjustment line
-    P6: Hotel has processed data with 0 bookings           → dashboard with empty metrics
+    P1: Product does NOT exist (404)                       → not found state
+    P2: Product exists but is unpublished                  → restricted state
+    P3: Product is published and in stock                  → detail page with buy actions
+    P4: Product is published and has an active discount    → detail page with discount badge
+    P5: Product is published but out of stock              → detail page with disabled CTA
+    P6: Product is published with 0 reviews                → detail page with empty reviews block
 ```
 
 Each unique `P + A` combination is a TC candidate.
@@ -202,8 +202,8 @@ Each unique `P + A` combination is a TC candidate.
 Before creating a new TC, check if a TC with this precondition + action already exists:
 
 ```
-P3 + A1 → Exists as MS-003? → YES → Add assertions to MS-003
-P4 + A1 → Exists? → NO → Create new TC: MS-014
+P3 + A1 → Exists as UPEX-103? → YES → Add assertions to UPEX-103
+P4 + A1 → Exists? → NO → Create new TC in Jira (e.g., UPEX-114)
 ```
 
 ### Step 4: List ALL Expected Results Per TC
@@ -211,26 +211,26 @@ P4 + A1 → Exists? → NO → Create new TC: MS-014
 For each TC (new or updated), list **every single thing** you expect after the action — across ALL panels, sections, and data points:
 
 ```
-TC: Select hotel/month with fully processed data (P3 + A1)
+TC: Open product detail page (P3 + A1)
   Expected Output:
     Structure:
-      - "Commission Invoice" heading visible
-      - "Matched Bookings" heading visible
-      - Bookings chart visible
-      - Reconciliation status bar visible
-      - "Awaiting" and "Processing" messages NOT visible
-    Commission Panel:
-      - Standard Bookings amount displayed
-      - Boosted Bookings amount displayed
-      - Platform Fee amount displayed
-      - Total equals sum of above
-    Matched Bookings Panel:
-      - Total Bookings card shows count, nights, revenue, ADR
-      - Matched card shows count with percentage
-      - Commissionable card shows count with percentage
-      - Chart shows 3 bars with proportional lengths
-    Status Bar:
-      - Current reconciliation stage highlighted
+      - "Product Details" heading visible
+      - "Add to Cart" button visible
+      - Image gallery visible
+      - Reviews section visible
+      - "Out of Stock" and "Unavailable" banners NOT visible
+    Pricing Block:
+      - Base price displayed
+      - Discount amount displayed (0 when no discount)
+      - Final price displayed
+      - Final price equals Base - Discount
+    Inventory Block:
+      - Stock counter shows > 0
+      - Delivery estimate visible
+    Reviews Block:
+      - Average rating displayed
+      - Review count displayed
+      - At least 1 review card visible when count > 0
 ```
 
 **All of these are assertions of ONE TC** because they share the same precondition and action.
@@ -240,20 +240,22 @@ TC: Select hotel/month with fully processed data (P3 + A1)
 NOW — after defining TCs correctly — group them into test tickets by functional area for tracking:
 
 ```
-MS-T01: Page State Transitions
-  → MS-001 (P1+A1): awaiting state
-  → MS-002 (P2+A1): processing state
-  → MS-003 (P3+A1): processed data (ALL assertions: structure + data + metrics)
-  → MS-004 (TS): transition between states
+UPEX-T01: Product Page States
+  → UPEX-101 (P1+A1): not found state
+  → UPEX-102 (P2+A1): restricted/unpublished state
+  → UPEX-103 (P3+A1): published in-stock (ALL assertions: structure + pricing + inventory + reviews)
+  → UPEX-104 (TS):    transition between states when stock drops to 0
 
-MS-T03: Invoice-Specific Scenarios
-  → MS-013 (P3a+A1): estimated invoice (no finalized invoice exists)
-  → MS-014 (P4+A1): finalized invoice
-  → MS-015 (P5+A1): commission adjustment visible
-  → MS-016 (P5b+A1): no adjustment (original = adjusted)
+UPEX-T03: Discount-Specific Scenarios
+  → UPEX-113 (P3a+A1): base price (no active discount)
+  → UPEX-114 (P4+A1):  active percentage discount applied
+  → UPEX-115 (P4b+A1): active fixed-amount discount applied
+  → UPEX-116 (P4c+A1): expired discount no longer applied
 ```
 
-Notice: MS-003 includes ALL dashboard assertions (structure, commission, bookings, chart). MS-T03 only contains TCs with **genuinely different preconditions** (invoice states).
+Notice: UPEX-103 includes ALL product detail assertions (structure, pricing, inventory, reviews). UPEX-T03 only contains TCs with **genuinely different preconditions** (discount states).
+
+> `UPEX-T01` / `UPEX-T03` are **ticket** IDs (work-tracking containers). `UPEX-101`, `UPEX-114` are **Test Case** IDs generated by Jira/Xray — they are the canonical identifiers used in `@atc()` decorators.
 
 ---
 
@@ -262,11 +264,11 @@ Notice: MS-003 includes ALL dashboard assertions (structure, commission, booking
 A **test ticket** is the testing equivalent of a user story — a functional piece of work that groups related test cases for tracking and implementation.
 
 ```
-Test Ticket: "MS-T01: Page State Transitions"
-├── TC: MS-001 - Select hotel/month with no booking data
-├── TC: MS-002 - Select hotel/month with unprocessed data
-├── TC: MS-003 - Select hotel/month with processed data
-└── TS: MS-004 - Transition from awaiting to dashboard on month change
+Test Ticket: "UPEX-T01: Product Page States"
+├── TC: UPEX-101 - Open product detail page when product does not exist
+├── TC: UPEX-102 - Open product detail page when product is unpublished
+├── TC: UPEX-103 - Open product detail page when product is published and in stock
+└── TS: UPEX-104 - Transition from in-stock to out-of-stock when last unit is sold
 ```
 
 ### What a Test Ticket IS
@@ -300,15 +302,15 @@ Test Ticket: "MS-T01: Page State Transitions"
 ### Mistake 1: Creating a New TC When You Should Update an Existing One
 
 ```
-Sprint 5: TC-A exists: "Select hotel with processed data → verify dashboard"
-Sprint 7: New US says "show commission breakdown for processed hotels"
+Sprint 5: TC-A exists: "Open product detail page for in-stock product → verify detail view"
+Sprint 7: New US says "show pricing breakdown on product detail page"
 
 WRONG:
-  Create TC-B: "Select hotel with processed data → verify commission values"
+  Create TC-B: "Open product detail page for in-stock product → verify pricing values"
   (Same precondition + action as TC-A!)
 
 CORRECT:
-  Update TC-A: Add commission value assertions to TC-A's expected output
+  Update TC-A: Add pricing value assertions to TC-A's expected output
 ```
 
 **Prevention**: Before creating any TC, search existing TCs for the same precondition + action.
@@ -317,11 +319,11 @@ CORRECT:
 
 ```
 WRONG:
-  TC-A: Select processed hotel → verify Commission panel renders
-  TC-B: Select processed hotel → verify Matched Bookings panel renders
+  TC-A: Open in-stock product → verify Pricing block renders
+  TC-B: Open in-stock product → verify Reviews block renders
 
 CORRECT:
-  TC-A: Select processed hotel → verify ALL panels, metrics, and structure
+  TC-A: Open in-stock product → verify ALL blocks, metrics, and structure
 ```
 
 **Prevention**: Ask "Is there another TC with the same precondition and action?" If yes, merge.
@@ -330,12 +332,12 @@ CORRECT:
 
 ```
 WRONG workflow:
-  "I need to check commission total" → TC-1
-  "I need to check booking count" → TC-2
+  "I need to check final price" → TC-1
+  "I need to check review count" → TC-2
 
 CORRECT workflow:
-  "What action produces these outputs?" → Select hotel/month
-  "What precondition?" → Hotel with processed data
+  "What action produces these outputs?" → Open product detail page
+  "What precondition?" → Product is published and in stock
   → ONE TC with all assertions
 ```
 
@@ -345,13 +347,13 @@ CORRECT workflow:
 
 ```
 WRONG:
-  Ticket "Commission Panel Tests" → TC checks only commission
-  Ticket "Bookings Panel Tests" → TC checks only bookings
+  Ticket "Pricing Block Tests" → TC checks only pricing
+  Ticket "Reviews Block Tests" → TC checks only reviews
   (But both TCs have same precondition + action!)
 
 CORRECT:
-  Ticket "Page State Transitions" → TC checks ALL panels for each state
-  Ticket "Invoice Scenarios" → TC checks invoice-specific behaviors (different preconditions)
+  Ticket "Product Page States" → TC checks ALL blocks for each state
+  Ticket "Discount Scenarios" → TC checks discount-specific behaviors (different preconditions)
 ```
 
 **Prevention**: Define TCs first, group into tickets second. Never the reverse.
@@ -381,6 +383,20 @@ Gherkin:
     And {assertion 2}
     And {assertion 3}
 ```
+
+> **Note:** `{ID}` is the canonical TC ID generated by the TMS (e.g., `UPEX-47` from Jira/Xray). See the "ID Management (Jira/Xray as Source of Truth)" section below for how TMS IDs flow into code.
+
+### ID Management (Jira/Xray as Source of Truth)
+
+The canonical identifier for every TC is the ID generated by the TMS (Jira issue key or Xray test key — e.g., `UPEX-47`). This ID is what appears in:
+
+- The `@atc('UPEX-47')` decorator in code
+- The `test()` function name: `test('UPEX-47: should ... when ...')`
+- The spec.md heading: `### UPEX-47: Validate {CORE} when {CONDITIONAL}`
+
+**Module prefixes** (e.g., `MS-`, `ORD-`) are used ONLY for local folder/file organization within `test-specs/` directories — they provide module context but are NOT the canonical ID. Example folder name: `MS-UPEX47-select-item-no-data/`.
+
+**Workflow rule:** Every ATC must exist in Jira/Xray BEFORE it is implemented in code. The TC issue must be created first; the generated issue key is then used in the `@atc` decorator.
 
 ### Rules for Expected Output
 

@@ -67,7 +67,7 @@ Read for context:
 
 This is a **Test Automation Engineering** repository. All guidelines prioritize:
 
-- **KATA Framework**: 4-layer architecture for test automation
+- **KATA Architecture** (Component Action Test Architecture): 4-layer structure for test automation
 - **Playwright**: E2E and API testing
 - **TypeScript**: Strict patterns for maintainability
 

@@ -1,6 +1,6 @@
 # KATA Test Hierarchy
 
-> **Purpose**: Defines how test concepts map between documentation and code across the KATA framework.
+> **Purpose**: Defines how test concepts map between documentation and code across the KATA (Component Action Test Architecture).
 > **Audience**: QA Engineers and AI agents at any stage — planning, documentation, or automation.
 > **Rule**: Read this when confused about what a TC, ATC, TS, or Test Ticket actually is, and where each one lives.
 
@@ -8,7 +8,7 @@
 
 ## The 5-Level Hierarchy
 
-The KATA framework organizes tests in 5 levels, from broadest (module) to most granular (ATC):
+The KATA architecture organizes tests in 5 levels, from broadest (module) to most granular (ATC):
 
 ```
 Module (directory)         → tests/e2e/{module-name}/
@@ -22,11 +22,11 @@ Module (directory)         → tests/e2e/{module-name}/
 
 | Level | What It Is | Documentation | Code | Example |
 |-------|-----------|---------------|------|---------|
-| **Module** | Top-level grouping of related features | `PBI/{module}/` directory | `tests/e2e/{module}/` directory | `monthly-statement`, `auth`, `orders` |
-| **Feature** | A cohesive area of functionality within a module | Master test plan | 1 test file (`.test.ts`) | `selectHotelMonth.test.ts`, `user-session.test.ts` |
-| **Ticket** | A tracking task that groups 3-7 related TCs | `test-specs/{PREFIX}-T01-{name}/spec.md` | `test.describe()` block | `MS-T01: Page State Transitions` |
-| **Scenario** | A single test that executes one or more ATCs | TC or TS definition in spec.md | `test()` block | `should show awaiting state when no data` |
-| **ATC** | Atomic action with assertions (implements a TC) | ATC spec in `atc/` directory | `@atc()` method in Component | `selectHotelMonthWithNoData()` |
+| **Module** | Top-level grouping of related features | `PBI/{module}/` directory | `tests/e2e/{module}/` directory | `products`, `auth`, `orders` |
+| **Feature** | A cohesive area of functionality within a module | Master test plan | 1 test file (`.test.ts`) | `openProductDetail.test.ts`, `user-session.test.ts` |
+| **Ticket** | A tracking task that groups 3-7 related TCs | `test-specs/{PREFIX}-T01-{name}/spec.md` | `test.describe()` block | `UPEX-T01: Product Page States` |
+| **Scenario** | A single test that executes one or more ATCs | TC or TS definition in spec.md | `test()` block | `should show out-of-stock state when inventory is 0` |
+| **ATC** | Atomic action with assertions (implements a TC) | ATC spec in `atc/` directory | `@atc()` method in Component | `openProductDetailOutOfStock()` |
 
 ---
 
@@ -51,12 +51,12 @@ A Test Scenario is a `test()` block that **chains multiple ATCs** into a flow. I
 
 ```typescript
 // TS = test() block, chains multiple ATCs
-test('MS-T01: should transition from awaiting to dashboard', async ({ ui }) => {
-  // Step 1: Verify awaiting state (calls ATC MS-001)
-  await ui.monthlyStatement.selectHotelMonthWithNoData(hotel, monthA);
+test('UPEX-T01: should transition from out-of-stock to in-stock after restock', async ({ ui }) => {
+  // Step 1: Verify out-of-stock state (calls ATC UPEX-001)
+  await ui.products.openProductDetailOutOfStock(productId);
 
-  // Step 2: Change month and verify dashboard (calls ATC MS-003)
-  await ui.monthlyStatement.selectHotelMonthWithProcessedData(hotel, monthB);
+  // Step 2: Restock via API, then verify in-stock state (calls ATC UPEX-003)
+  await ui.products.openProductDetailInStock(productId);
 });
 ```
 
@@ -79,15 +79,15 @@ Test Ticket scope:
 A ticket maps to a `test.describe()` block in code. Multiple tickets can live in the same `.test.ts` file if they belong to the same feature:
 
 ```typescript
-// selectHotelMonth.test.ts  ← 1 file = 1 feature
+// openProductDetail.test.ts  ← 1 file = 1 feature
 
-test.describe('MS-T01: Page State Transitions', () => {
-  test('MS-T01: should show awaiting state when no data', ...);
-  test('MS-T01: should show full dashboard when processed', ...);
+test.describe('UPEX-T01: Product Page States', () => {
+  test('UPEX-T01: should show out-of-stock state when inventory is 0', ...);
+  test('UPEX-T01: should show full detail view when product is in stock', ...);
 });
 
-test.describe('MS-T02: Data Refresh on Filter Change', () => {
-  test('MS-T02: should refresh panels when hotel changes', ...);
+test.describe('UPEX-T02: Detail Refresh on Variant Change', () => {
+  test('UPEX-T02: should refresh pricing and stock when variant changes', ...);
 });
 ```
 
@@ -117,8 +117,10 @@ tests/e2e/{module}/                      ← Module
 
 tests/components/{api|ui}/               ← Components (Layer 3)
   {Module}Api.ts or {Module}Page.ts
-    @atc('TC-XXX') async method()        ← ATC definition
+    @atc('TC-XXX') async method()        ← ATC definition (TC-XXX = TMS-generated ID)
 ```
+
+> **Canonical TC ID**: The `TC-XXX` inside `@atc()` is the ID the TMS (Jira/Xray) generates when the test case is created. Every ATC must exist in Jira/Xray BEFORE it is implemented in code — the TMS is the source of truth for TC IDs. Module prefixes like `AUTH-`, `ORD-` are used only for local folder/file organization in `test-specs/` directories (e.g., `AUTH-TC47-login-locked-account/`), they are NOT the canonical identifier.
 
 ---
 

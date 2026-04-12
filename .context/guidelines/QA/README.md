@@ -25,7 +25,7 @@ This folder contains the guidelines for **general Quality Engineering**, focused
 | **Focus**        | Manual Testing           | Automated Testing          |
 | **Stages**       | 2, 3                     | 4                          |
 | **Activities**   | Exploratory, bugs, docs  | E2E, Integration, CI/CD    |
-| **Tools**        | Jira, manual browser     | Playwright, KATA framework |
+| **Tools**        | Jira, manual browser     | Playwright, KATA architecture |
 
 ---
 
