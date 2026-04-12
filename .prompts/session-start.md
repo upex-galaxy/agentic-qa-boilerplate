@@ -38,12 +38,15 @@ This is the ENTRY POINT for all QA testing. Execute all steps before proceeding 
 
 Retrieve ticket details using the configured TMS tool:
 
-```bash
-# Examples by TMS:
-# Xray:  bun xray test list --project PROJ
-# Jira MCP: Use MCP Atlassian to fetch issue
-# Other: Use your project's TMS CLI
 ```
+[TMS_TOOL] List Tests:
+  - project: {{PROJECT_KEY}}
+
+[ISSUE_TRACKER_TOOL] Fetch Issue:
+  - issueId: {TICKET-ID}
+```
+
+> Resolved via [TMS_TOOL] / [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 Extract and note:
 - **Title**: Full ticket title
@@ -58,7 +61,7 @@ Extract and note:
 
 ### Step 1b: Extract Team Discussions from Ticket Comments
 
-The `jira_get_issue` response from Step 1 includes ticket comments. Process them now.
+The issue tracker response from Step 1 includes ticket comments. Process them now.
 
 **Extract from comments:**
 - **Decisions**: Agreed-upon behavior, scope changes, AC clarifications

@@ -13,12 +13,14 @@
 
 ### From Discovery Sources:
 
-| Information       | MCP                       | CLI            | Code Analysis                   | User           |
-| ----------------- | ------------------------- | -------------- | ------------------------------- | -------------- |
-| Product overview  | `mcp__github` README      | `gh repo view` | README.md                       | Last resort    |
-| Value proposition | -                         | -              | Landing page, marketing copy    | Ask if unclear |
-| User types        | Atlassian MCP personas | -              | Auth/roles code                 | Ask if unclear |
-| Revenue model     | -                         | -              | Pricing page, subscription code | Ask if needed  |
+| Information       | Tool/Capability                    | CLI            | Code Analysis                   | User           |
+| ----------------- | ---------------------------------- | -------------- | ------------------------------- | -------------- |
+| Product overview  | GitHub (read README)               | `gh repo view` | README.md                       | Last resort    |
+| Value proposition | -                                  | -              | Landing page, marketing copy    | Ask if unclear |
+| User types        | `[ISSUE_TRACKER_TOOL]` (personas)  | -              | Auth/roles code                 | Ask if unclear |
+| Revenue model     | -                                  | -              | Pricing page, subscription code | Ask if needed  |
+
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 

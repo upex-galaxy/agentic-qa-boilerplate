@@ -30,8 +30,13 @@ Use this prompt when:
 
 ## PREREQUISITE
 
-> **Before executing any TMS commands**, ensure the TMS CLI tool is available and authenticated.
-> Check your project's TMS integration (Jira/Xray, or other) and load the appropriate skill.
+> **Before executing any TMS commands**, ensure the TMS tool is available and authenticated.
+>
+> ```
+> [TMS_TOOL] Authenticate
+> ```
+>
+> Resolved via [TMS_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 
@@ -47,15 +52,15 @@ Use this prompt when:
 
 Use your TMS CLI tool to verify all artifact links:
 
-```bash
-# Example with Xray:
-bun xray test list --issue {TICKET-ID}
-
-# Example with other TMS:
-[TMS_CLI] trace {TICKET-ID}
-
-# Or use Atlassian MCP to check links manually
 ```
+[TMS_TOOL] List Tests:
+  - issue: {TICKET-ID}
+
+[TMS_TOOL] Verify Traceability:
+  - issue: {TICKET-ID}
+```
+
+> Resolved via [TMS_TOOL] — see Tool Resolution in CLAUDE.md
 
 **Expected output:** All links verified (Story <-> ATP <-> ATR <-> TCs)
 
@@ -65,9 +70,12 @@ bun xray test list --issue {TICKET-ID}
 
 Fetch the ticket to get its full title and current links:
 
-```bash
-# Use your TMS CLI or MCP to get ticket details
 ```
+[ISSUE_TRACKER_TOOL] Get Issue:
+  - issueId: {TICKET-ID}
+```
+
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 **Extract the full title** — this is needed for linking operations.
 

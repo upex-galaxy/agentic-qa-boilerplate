@@ -19,12 +19,14 @@
 
 ### From Available Tools (try before asking user):
 
-| Information     | MCP                       | CLI                | Fallback |
-| --------------- | ------------------------- | ------------------ | -------- |
-| Repo structure  | `mcp__github`             | `gh repo view`     | Ask user |
-| Jira project    | Atlassian MCP          | -                  | Ask user |
-| Database schema | `mcp__supabase`           | DB CLI             | Ask user |
-| CI/CD config    | Read `.github/workflows/` | `gh workflow list` | Ask user |
+| Information     | Tool/Capability                    | CLI                | Fallback |
+| --------------- | ---------------------------------- | ------------------ | -------- |
+| Repo structure  | GitHub (read repo structure)       | `gh repo view`     | Ask user |
+| Jira project    | `[ISSUE_TRACKER_TOOL]`             | -                  | Ask user |
+| Database schema | `[DB_TOOL]`                        | DB CLI             | Ask user |
+| CI/CD config    | Read `.github/workflows/`          | `gh workflow list` | Ask user |
+
+> Resolved via [ISSUE_TRACKER_TOOL] / [DB_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 
@@ -116,7 +118,7 @@ Establish connections to all project resources and create a configuration file t
 **For other tools:**
 
 - GitHub: Usually available via `gh` CLI
-- Database: Check for MCP (Supabase) or connection strings
+- Database: Check for `[DB_TOOL]` availability or connection strings
 - CI/CD: Usually in repo (.github/workflows, azure-pipelines.yml)
 
 ### Step 5: Team Contacts (Optional)

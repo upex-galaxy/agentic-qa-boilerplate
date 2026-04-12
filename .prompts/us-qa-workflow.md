@@ -170,12 +170,14 @@ Load these files before starting (ordered by priority):
    - **BLOCKED**: Wait for fixes, return to Step 1
    - **FAILED**: Report issues, escalate
 
-### MCP Tools (if available)
+### Tool Capabilities
 
-```
-- mcp__playwright__* → Browser automation for UI testing
-- mcp__atlassian__* → Jira for bug creation
-```
+| Capability | Tag |
+|------------|-----|
+| Browser automation for UI testing | `[AUTOMATION_TOOL]` |
+| Issue tracking for bug creation | `[ISSUE_TRACKER_TOOL]` |
+
+> Resolved via [AUTOMATION_TOOL] / [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 ### Output Checkpoint
 

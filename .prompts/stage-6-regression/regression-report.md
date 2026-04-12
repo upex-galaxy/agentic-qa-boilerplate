@@ -182,9 +182,15 @@ If TMS sync is configured in `.context/test-management-system.md`:
 # }
 ```
 
-#### For Atlassian MCP (if available)
+#### For Issue Tracker Integration (if available)
 
-Use `mcp__atlassian__*` tools to update test execution in Jira/Xray.
+```
+[ISSUE_TRACKER_TOOL] Update Test Execution:
+  - executionKey: {execution-key}
+  - results: {from regression analysis}
+```
+
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 

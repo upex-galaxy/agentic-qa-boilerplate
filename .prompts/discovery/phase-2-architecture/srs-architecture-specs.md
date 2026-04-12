@@ -76,11 +76,14 @@ Document the existing architecture by:
 
 **Actions:**
 
-1. If Supabase MCP available:
+1. If database tool available:
 
    ```
-   Use mcp__supabase to query table structure
+   [DB_TOOL] Query Table Structure:
+     - schema: public
    ```
+
+   > Resolved via [DB_TOOL] — see Tool Resolution in CLAUDE.md
 
 2. Analyze schema files:
 

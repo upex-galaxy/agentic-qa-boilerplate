@@ -362,15 +362,17 @@ Phase 5: Validation & Git Commit
        Run tests, verify KATA compliance, push & PR
 ```
 
-### Key Tools Used
+### Key Capabilities
 
-| Tool                            | Purpose                        |
+| Capability                      | Tag                            |
 | ------------------------------- | ------------------------------ |
-| `mcp__playwright__*`            | UI exploration and interaction |
-| `mcp__atlassian__*`             | Fetch US from Jira             |
-| `Read/Write/Edit`               | File operations                |
-| `Glob/Grep`                     | Search codebase                |
-| `AskUserQuestion`               | Clarify requirements           |
+| UI exploration and interaction  | `[AUTOMATION_TOOL]`            |
+| Fetch US from issue tracker     | `[ISSUE_TRACKER_TOOL]`         |
+| File operations                 | `Read/Write/Edit`              |
+| Search codebase                 | `Glob/Grep`                    |
+| Clarify requirements            | `AskUserQuestion`              |
+
+> Resolved via [AUTOMATION_TOOL] / [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 
