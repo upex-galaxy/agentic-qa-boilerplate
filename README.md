@@ -26,7 +26,7 @@ This boilerplate solves common challenges in test automation:
 
 | Feature | Description |
 |---------|-------------|
-| **KATA Framework** | Komponent Action Test Architecture for clean test organization |
+| **KATA Architecture** | Component Action Test Architecture for clean test organization |
 | **Playwright** | Modern browser automation with auto-waiting and tracing |
 | **Allure Reports** | Rich test reports with history and trends |
 | **TMS Sync** | Automatic sync of test results to Jira/Xray |
@@ -187,9 +187,9 @@ bun run test:e2e:critical  # Tests marked @critical
 
 ---
 
-## KATA Framework
+## KATA Architecture
 
-This boilerplate implements **KATA** (Komponent Action Test Architecture).
+This boilerplate implements **KATA** (Component Action Test Architecture).
 
 ### Architecture Layers
 
@@ -343,7 +343,7 @@ When you clone this template, follow this flow to adapt it to your project:
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 3. ADAPT KATA FRAMEWORK                                     │
-│    @.prompts/setup/kata-framework-adaptation.md             │
+│    @.prompts/setup/kata-architecture-adaptation.md             │
 │                                                             │
 │    This prompt:                                             │
 │    • Reads all your context (SRS, PRD, idea)               │
@@ -352,7 +352,7 @@ When you clone this template, follow this flow to adapt it to your project:
 │    • Configures auth (globalSetup, UI, API)                │
 │    • Creates first domain components                        │
 │                                                             │
-│    OUTPUT: .context/PBI/kata-framework-adaptation-plan.md   │
+│    OUTPUT: .context/PBI/kata-architecture-adaptation-plan.md   │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
@@ -408,7 +408,7 @@ The `.context/` directory contains structured documentation for AI:
 │   └── business-data-map.md        # Business flow mapping
 │
 ├── setup/                          # One-time setup
-│   └── kata-framework-adaptation.md # Adapt template to project
+│   └── kata-architecture-adaptation.md # Adapt template to project
 │
 ├── utilities/                      # Reusable utilities
 │   ├── context-engineering-setup.md # Generate README + CLAUDE.md

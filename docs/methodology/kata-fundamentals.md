@@ -1,12 +1,12 @@
-# KATA: Komponent Action Test Architecture
+# KATA: Component Action Test Architecture
 
-**Komponent Action Test Architecture**
+**Component Action Test Architecture**
 
-> _"Like a kata in martial arts, where each movement is practiced repeatedly until perfection, KATA framework converts system actions into reusable and precise blocks."_
+> _"Like a kata in martial arts, where each movement is practiced repeatedly until perfection, KATA Architecture converts system actions into reusable and precise blocks."_
 
 ---
 
-> **Note**: This is the **conceptual fundamentals document** for KATA Framework.
+> **Note**: This is the **conceptual fundamentals document** for KATA (Component Action Test Architecture).
 > This document is for **reference only** - it provides philosophical and conceptual context.
 > **AI agents should NOT load this automatically** - use TAE guidelines instead.
 >
@@ -34,7 +34,7 @@ Traditional test automation faces recurring problems:
 
 KATA solves these problems through two complementary strategies:
 
-1. **Komponent Strategy**: Organizes code into clear layers with dependency injection
+1. **Component Strategy**: Organizes code into clear layers with dependency injection
 2. **Action Strategy**: Converts test cases into reusable actions with automatic traceability
 
 ### What problems does KATA solve
@@ -96,7 +96,7 @@ A **Shared Action** is an ATC implemented as a reusable method in code.
 - ❌ `open_menu_panel()` - too small, it's a technical interaction
 - ❌ `complete_purchase_journey()` - too large, it's a complete E2E flow
 
-### 2.3 Component (Komponent)
+### 2.3 Component
 
 A **Component** is a class that encapsulates related functionality of the system under test.
 
@@ -186,7 +186,7 @@ async fillOptionalSection(data: FormData) {
 
 ---
 
-## 3. Layer Architecture (Komponent Strategy)
+## 3. Layer Architecture (Component Strategy)
 
 KATA organizes code into hierarchical layers with clear responsibilities.
 
@@ -341,7 +341,7 @@ export class UiBase extends TestContext {
 - Library wrappers (requests, Playwright)
 - Technical utility methods (logging, timeouts, retries)
 
-### 3.4 Layer 3: Specific Components (Komponents)
+### 3.4 Layer 3: Specific Components
 
 **Purpose**: Encapsulate functionality of a specific system area. **ATCs live here.**
 
@@ -917,7 +917,7 @@ def _sync_to_xray_cloud(results: dict):
         "info": {
             "project": project_key,
             "summary": f"KATA Execution - {os.getenv('BUILD_ID', datetime.now().strftime('%Y%m%d-%H%M%S'))}",
-            "description": "Automated test execution via KATA Framework"
+            "description": "Automated test execution via KATA Architecture"
         },
         "tests": []
     }
@@ -993,7 +993,7 @@ def _sync_to_xray_cloud(results: dict):
 #     if not run_id:
 #         run_payload = {
 #             "name": f"KATA Execution - {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-#             "description": "Automated execution via KATA Framework",
+#             "description": "Automated execution via KATA Architecture",
 #             "include_all": True
 #         }
 #
@@ -1832,7 +1832,7 @@ def test_multi_section_form(fixture):
 | ------------------------- | ---------------------------------------------------------------------- |
 | **ATC**                   | Acceptance Test Case - Automated acceptance test case                  |
 | **Shared Action**         | An ATC implemented as a reusable method                                |
-| **Komponent**             | Class that encapsulates related system functionality                   |
+| **Component**             | Class that encapsulates related system functionality                   |
 | **Fixture**               | Entry point that groups components via Dependency Injection            |
 | **Fixed Assertions**      | Validations embedded in ATCs that always execute                       |
 | **Test-Level Assertions** | Validations in the test that verify complete flow                      |
@@ -1855,7 +1855,7 @@ def test_multi_section_form(fixture):
 
 ### Articles and Presentations
 
-- "Introduction to KATA Framework" _(pending)_
+- "Introduction to KATA Architecture" _(pending)_
 - "Migrating from Page Object Model to KATA" _(pending)_
 - "Automated Traceability with KATA" _(pending)_
 
@@ -1868,7 +1868,7 @@ def test_multi_section_form(fixture):
 
 ## 13. Conclusion
 
-KATA Framework is more than a design pattern: it's a complete philosophy for test automation that:
+KATA Architecture is more than a design pattern: it's a complete philosophy for test automation that:
 
 ✅ **Structures your code** in clear layers with defined responsibilities
 ✅ **Reuses actions** through ATCs shared across multiple tests
@@ -1878,7 +1878,7 @@ KATA Framework is more than a design pattern: it's a complete philosophy for tes
 ✅ **Flexibility** to handle complex scenarios with soft-fail
 ✅ **Keeps your suite clean** by avoiding duplication and promoting composition
 
-Like a kata in martial arts, KATA Framework invites you to practice good habits repeatedly until building maintainable and traceable tests becomes natural.
+Like a kata in martial arts, KATA Architecture invites you to practice good habits repeatedly until building maintainable and traceable tests becomes natural.
 
 ---
 

@@ -218,7 +218,7 @@ test('login', async ({ page }) => {
 En lugar de agrupar locators en un objeto, los **componentes** agrupan acciones completas (ATCs) con assertions incluidas:
 
 ```typescript
-// Component-based (KATA framework)
+// Component-based (KATA Architecture)
 class LoginPage extends UiBase {
   @atc('UPEX-101')
   async loginSuccessfully(email: string, password: string) {

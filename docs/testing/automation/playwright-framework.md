@@ -1,6 +1,6 @@
 # Playwright Projects - Complete Guide
 
-> This document explains how Playwright projects work, their configuration, and how to use them effectively in the KATA Framework.
+> This document explains how Playwright projects work, their configuration, and how to use them effectively in the KATA Architecture.
 
 ---
 

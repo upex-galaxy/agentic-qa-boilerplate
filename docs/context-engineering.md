@@ -31,7 +31,7 @@ ai-driven-test-automation-boilerplate/
 ├── .context/       → Documentation THAT the AI reads (context)
 ├── .prompts/       → Instructions FOR the AI to execute tasks
 ├── docs/           → Documentation for humans
-├── tests/          → KATA framework implementation
+├── tests/          → KATA Architecture implementation
 └── CLAUDE.md       → Project memory (loaded every session)
 ```
 
@@ -53,7 +53,7 @@ ai-driven-test-automation-boilerplate/
 ```
 .context/
 ├── guidelines/           → Rules and patterns for development
-│   ├── TAE/             → Test Automation Engineering (KATA framework)
+│   ├── TAE/             → Test Automation Engineering (KATA Architecture)
 │   ├── QA/              → Manual testing guidelines
 │   └── MCP/             → MCP integration guides
 │
@@ -242,7 +242,7 @@ Stage 5: Regression     → Execute and report
 
 - **CLAUDE.md** - Operational context (project root)
 - **README.md** - Project overview for humans
-- `.context/guidelines/TAE/kata-ai-index.md` - KATA framework entry point
+- `.context/guidelines/TAE/kata-ai-index.md` - KATA Architecture entry point
 - `.prompts/README.md` - How to use prompts
 
 ---
