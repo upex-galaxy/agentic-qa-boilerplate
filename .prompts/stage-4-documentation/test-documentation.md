@@ -33,20 +33,10 @@ Read: .context/guidelines/QA/jira-test-management.md
 
 **Tools by modality:**
 
-- **Native Jira:** MCP Atlassian
-- **Jira + Xray:** MCP Atlassian + Xray CLI (`bun xray`)
+- **Native Jira:** `[ISSUE_TRACKER_TOOL]`
+- **Jira + Xray:** `[TMS_TOOL]` + `[ISSUE_TRACKER_TOOL]`
 
-**Xray CLI - Documentation and Configuration:**
-
-```
-File: scripts/xray.ts
-```
-
-The Xray CLI is self-documented. **MANDATORY to read it** before use to:
-
-- Know available commands and their options
-- Verify required environment variables (`XRAY_CLIENT_ID`, `XRAY_CLIENT_SECRET`)
-- Understand the output format of each command
+> See /xray-cli skill for current CLI syntax. Tool Resolution in CLAUDE.md handles priority.
 
 ---
 
@@ -98,8 +88,8 @@ The only change is adding the `{US_ID}: TC#:` prefix when documenting in Jira.
 ```
 QUESTION 1: What Test Management tool does the project use?
 
-1. Xray (Jira plugin) → Use Xray CLI (`bun xray`) + MCP Atlassian
-2. Only native Jira → Use only MCP Atlassian with Issue Type "Test"
+1. Xray (Jira plugin) → Use [TMS_TOOL] + [ISSUE_TRACKER_TOOL]
+2. Only native Jira → Use only [ISSUE_TRACKER_TOOL] with Issue Type "Test"
 ```
 
 ```
@@ -111,24 +101,20 @@ QUESTION 2: In what format do you want to document the test cases?
 
 **Valid combinations:**
 
-| Tool        | Format  | How to create                                          |
-| ----------- | ------- | ------------------------------------------------------ |
-| Xray        | Gherkin | `bun xray test create --type Cucumber --gherkin "..."` |
-| Xray        | Steps   | `bun xray test create --step "Action\|Data\|Expected"` |
-| Native Jira | Gherkin | MCP Atlassian with Gherkin in Description              |
-| Native Jira | Steps   | MCP Atlassian with steps table in Description          |
+| Tool        | Format  | How to create                                                    |
+| ----------- | ------- | ---------------------------------------------------------------- |
+| Xray        | Gherkin | `[TMS_TOOL] Create Test:` type: Cucumber, gherkin: {from test design} |
+| Xray        | Steps   | `[TMS_TOOL] Create Test:` type: Manual, steps: {from test design}    |
+| Native Jira | Gherkin | `[ISSUE_TRACKER_TOOL] Create Issue:` with Gherkin in description |
+| Native Jira | Steps   | `[ISSUE_TRACKER_TOOL] Create Issue:` with steps table in description |
 
-**Verify Xray authentication (if applicable):**
+**Verify TMS authentication (if applicable):**
 
-```bash
-bun xray auth status
+```
+[TMS_TOOL] Authenticate
 ```
 
-If not authenticated:
-
-```bash
-bun xray auth login --client-id "$XRAY_CLIENT_ID" --client-secret "$XRAY_CLIENT_SECRET"
-```
+> Resolved via [TMS_TOOL] — see Tool Resolution in CLAUDE.md. See /xray-cli skill for current CLI syntax.
 
 ---
 
@@ -139,13 +125,10 @@ bun xray auth login --client-id "$XRAY_CLIENT_ID" --client-secret "$XRAY_CLIENT_
 **Search for existing epic:**
 
 ```
-Tool: mcp__atlassian__searchJiraIssues
-
-JQL: project = {PROJECT_KEY} AND issuetype = Epic AND (
-  summary ~ "regression" OR
-  summary ~ "test repository" OR
-  labels = "test-repository"
-)
+[ISSUE_TRACKER_TOOL] Search Issues:
+  - project: {{PROJECT_KEY}}
+  - issueType: Epic
+  - query: summary contains "regression" OR "test repository" OR label "test-repository"
 ```
 
 **If epic does NOT exist:**
@@ -163,15 +146,12 @@ JQL: project = {PROJECT_KEY} AND issuetype = Epic AND (
 2. If accepted, create:
 
    ```
-   Tool: mcp__atlassian__createJiraIssue
-
-   {
-     "project": "{PROJECT_KEY}",
-     "issueType": "Epic",
-     "summary": "{PROJECT_KEY} Test Repository",
-     "description": "Container epic for all project regression tests.",
-     "labels": ["test-repository", "regression", "qa"]
-   }
+   [ISSUE_TRACKER_TOOL] Create Issue:
+     - project: {{PROJECT_KEY}}
+     - issueType: Epic
+     - title: "{{PROJECT_KEY}} Test Repository"
+     - description: "Container epic for all project regression tests."
+     - labels: test-repository, regression, qa
    ```
 
 **Save reference:**
@@ -304,36 +284,38 @@ data-testid="other-component"
 
 ### Phase 3: Create Tests
 
-#### Modality A: With Xray CLI
+#### Modality A: With Xray ([TMS_TOOL])
 
 **⚠️ IMPORTANT:** Xray requires 2 steps for complete documentation:
 
-1. **Step 1:** Create the Test with Xray CLI (registers in Xray)
-2. **Step 2:** Update issue Description with complete template (backup + context)
+1. **Step 1:** Create the Test with `[TMS_TOOL]` (registers in Xray)
+2. **Step 2:** Update issue Description with `[ISSUE_TRACKER_TOOL]` (backup + context)
 
-##### Step 1: Create Test in Xray
+##### Step 1: Create Test in TMS
 
 **For each prioritized test:**
 
-```bash
+```
 # Manual test with steps
-bun xray test create \
-  --project {PROJECT_KEY} \
-  --summary "[{PRIORITY}] {Test Name}" \
-  --labels "regression,{test-type},{priority}" \
-  --step "{Step 1}|{Expected result 1}" \
-  --step "{Step 2}|{Data}|{Expected result 2}"
+[TMS_TOOL] Create Test:
+  - project: {{PROJECT_KEY}}
+  - title: {per TC naming convention}
+  - type: Manual
+  - labels: regression, {from test analysis: test-type}, {from test analysis: priority}
+  - steps: {from test design}
 
 # Cucumber test (for automation) - See high-quality Gherkin format below
-bun xray test create \
-  --project {PROJECT_KEY} \
-  --type Cucumber \
-  --summary "[{PRIORITY}] {Test Name}" \
-  --labels "regression,automation-candidate,{test-type}" \
-  --gherkin "{HIGH_QUALITY_GHERKIN}"
+[TMS_TOOL] Create Test:
+  - project: {{PROJECT_KEY}}
+  - title: {per TC naming convention}
+  - type: Cucumber
+  - labels: regression, automation-candidate, {from test analysis: test-type}
+  - gherkin: {from test design}
 ```
 
-**Save the TEST_KEY returned by Xray CLI** for the next step.
+> See /xray-cli skill for current CLI syntax.
+
+**Save the TEST_KEY returned by the tool** for the next step.
 
 ##### High-Quality Gherkin Format for Xray
 
@@ -406,98 +388,55 @@ Feature: {Feature Name}
 **MANDATORY after creating each test in Xray:**
 
 ```
-Tool: mcp__atlassian__jira_update_issue
-
-{
-  "issue_key": "{TEST_KEY}",
-  "fields": {
-    "description": "{XRAY_GHERKIN + ADDITIONAL_TEMPLATE}"
-  }
-}
+[ISSUE_TRACKER_TOOL] Update Issue:
+  - issue: {TEST_KEY}
+  - description: {from test design gherkin + additional template sections}
 ```
 
 **The Jira Description contains:**
 
-1. **Copy of Xray Gherkin** (same as passed to `--gherkin`)
+1. **Copy of Xray Gherkin** (same as the gherkin parameter in Step 1)
 2. **Additional template sections:** Variables, Implementation Code, Architecture, Test IDs, etc.
 
 **Use the "Description Format - Complete Template" documented in Modality B.**
 
 ##### Concrete example (both steps):
 
-```bash
-# Step 1: Create in Xray with high-quality Gherkin
-bun xray test create \
-  --project MYM \
-  --type Cucumber \
-  --summary "[Critical] MYM-35: TC1: Validate reviews and average rating display" \
-  --labels "regression,automation-candidate,e2e,critical" \
-  --gherkin "Feature: Reviews Display on Mentor Profile
-
-  @critical @regression @automation-candidate @MYM-35-TC1
-  Scenario Outline: User views mentor profile with reviews and average rating
-    \"\"\"
-    Bugs covered: MYM-99, MYM-100
-    Related Story: MYM-35
-    \"\"\"
-
-    # === PRECONDITIONS ===
-    Given a verified mentor exists with <mentor_id> in the database
-    And the mentor has <N> reviews where <N> <condition>
-    And the average rating is <average>
-    And the user is NOT authenticated
-
-    # === ACTION ===
-    When the user navigates to \"/mentors/<mentor_id>\"
-    And the page completes loading
-
-    # === VALIDATIONS ===
-    Then the rating display shows \"<average>/5.0\"
-    And the count shows \"<count_format>\"
-    And the distribution histogram is <histogram_state>
-
-    Examples: With multiple reviews (Happy Path)
-      | mentor_id | N | condition | average | count_format | histogram_state |
-      | {mentor_id} | {N} | > 1 | {average} | ({N} reviews) | visible with 5 bars |
-
-    Examples: With a single review (Singular)
-      | mentor_id | N | condition | average | count_format | histogram_state |
-      | {mentor_id} | 1 | = 1 | {average} | (1 review) | visible with 5 bars |
-
-    Examples: Without reviews (Edge Case)
-      | mentor_id | N | condition | average | count_format | histogram_state |
-      | {mentor_id} | 0 | = 0 | N/A | No reviews | hidden |"
-
-# Output: Created test MYM-138
 ```
+# Step 1: Create in TMS with high-quality Gherkin
+[TMS_TOOL] Create Test:
+  - project: {{PROJECT_KEY}}
+  - type: Cucumber
+  - title: {per TC naming convention}
+  - labels: regression, automation-candidate, e2e, critical
+  - gherkin: {from test design — see High-Quality Gherkin Format above}
+
+# Output: Created test {TEST_KEY}
+```
+
+> See /xray-cli skill for current CLI syntax.
 
 ```
 # Step 2: Update Description with Gherkin + Template
-Tool: mcp__atlassian__jira_update_issue
-
-{
-  "issue_key": "MYM-138",
-  "fields": {
-    "description": "h2. Test Case Information\n\n_Related Story:_ MYM-35\n_Type:_ E2E\n...\n\nh2. Test Design\n\n{code:language=gherkin}\n[COPY OF GHERKIN ABOVE]\n{code}\n\nh2. Test Case Variables\n\n|| Variable || Description || How to obtain ||\n| {mentor_id} | Verified mentor UUID | SELECT id FROM profiles WHERE role='mentor' LIMIT 1 |\n...\n\nh2. Implementation Code\n\n|| File || Purpose ||\n| src/app/(main)/mentors/[id]/page.tsx | Main page |\n..."
-  }
-}
+[ISSUE_TRACKER_TOOL] Update Issue:
+  - issue: {TEST_KEY}
+  - description: {from test design gherkin + complete template with variables, implementation code, architecture}
 ```
+
+> Use the "Description Format - Complete Template" documented in Modality B below.
 
 ---
 
 #### Modality B: Jira Only (without Xray)
 
 ```
-Tool: mcp__atlassian__createJiraIssue
-
-{
-  "project": "{PROJECT_KEY}",
-  "issueType": "Test",
-  "summary": "[{PRIORITY}] {Test Name}",
-  "description": "{Content in Gherkin or traditional format}",
-  "labels": ["regression", "{test-type}", "{priority}"],
-  "parent": "{REGRESSION_EPIC_KEY}"
-}
+[ISSUE_TRACKER_TOOL] Create Issue:
+  - project: {{PROJECT_KEY}}
+  - issueType: Test
+  - title: {per TC naming convention}
+  - description: {from test design in Gherkin or traditional format}
+  - labels: regression, {from test analysis: test-type}, {from test analysis: priority}
+  - parent: {REGRESSION_EPIC_KEY}
 ```
 
 **Description Format (Gherkin) - Complete Template:**
@@ -585,21 +524,18 @@ _Changes:_
 **After creating each Test:**
 
 ```
-Tool: mcp__atlassian__updateJiraIssue
-
-Add link:
-- Type: "is tested by" / "tests"
-- Outward: Test issue
-- Inward: User Story
+[ISSUE_TRACKER_TOOL] Link Issues:
+  - linkType: "tests" / "is tested by"
+  - outward: {TEST_KEY}
+  - inward: {STORY_KEY}
 ```
 
 **Or add comment to the US:**
 
 ```
-Tool: mcp__atlassian__addCommentToJiraIssue
-
-Issue: {STORY-XXX}
-Comment: "Test case documented: [{TEST-XXX}] - {Test Name}"
+[ISSUE_TRACKER_TOOL] Add Comment:
+  - issue: {STORY_KEY}
+  - comment: "Test case documented: [{TEST_KEY}] - {from test design: test name}"
 ```
 
 ---
@@ -612,29 +548,35 @@ Comment: "Test case documented: [{TEST-XXX}] - {Test Name}"
 1. Test created → Status: DRAFT (automatic on creation)
 
 2. Start documentation:
-   Tool: mcp__atlassian__transitionJiraIssue
-   Transition: "start design"
+   [ISSUE_TRACKER_TOOL] Transition Issue:
+     - issue: {TEST_KEY}
+     - transition: "start design"
    → Status: IN DESIGN
 
 3. Complete documentation:
-   Tool: mcp__atlassian__transitionJiraIssue
-   Transition: "ready to run"
+   [ISSUE_TRACKER_TOOL] Transition Issue:
+     - issue: {TEST_KEY}
+     - transition: "ready to run"
    → Status: READY
 
 4. Decide path based on prioritization:
 
    IF (Path = Candidate):
-     Tool: mcp__atlassian__transitionJiraIssue
-     Transition: "automation review"
+     [ISSUE_TRACKER_TOOL] Transition Issue:
+       - issue: {TEST_KEY}
+       - transition: "automation review"
      → Status: IN REVIEW
 
      Then (if ROI confirmed):
-     Transition: "approve to automate"
+     [ISSUE_TRACKER_TOOL] Transition Issue:
+       - issue: {TEST_KEY}
+       - transition: "approve to automate"
      → Status: CANDIDATE
 
    IF (Path = Manual):
-     Tool: mcp__atlassian__transitionJiraIssue
-     Transition: "for manual"
+     [ISSUE_TRACKER_TOOL] Transition Issue:
+       - issue: {TEST_KEY}
+       - transition: "for manual"
      → Status: MANUAL
 ```
 
@@ -848,53 +790,68 @@ Then I should be redirected to the dashboard
 
 ---
 
-## Xray CLI Command Reference
+## TMS Action Reference
 
 ### Create Tests
 
-```bash
+```
 # Manual with steps
-bun xray test create --project PROJ --summary "Test name" \
-  --step "Action|Expected" \
-  --step "Action|Data|Expected"
+[TMS_TOOL] Create Test:
+  - project: {{PROJECT_KEY}}
+  - title: {per TC naming convention}
+  - type: Manual
+  - steps: {from test design}
 
 # Cucumber
-bun xray test create --project PROJ --type Cucumber \
-  --summary "Feature name" \
-  --gherkin "Feature: X\n  Scenario: Y\n    Given Z"
+[TMS_TOOL] Create Test:
+  - project: {{PROJECT_KEY}}
+  - title: {per TC naming convention}
+  - type: Cucumber
+  - gherkin: {from test design}
 
 # Generic (for scripts)
-bun xray test create --project PROJ --type Generic \
-  --summary "Automation script" \
-  --definition "path/to/script.ts"
+[TMS_TOOL] Create Test:
+  - project: {{PROJECT_KEY}}
+  - title: {per TC naming convention}
+  - type: Generic
+  - definition: {from automation script path}
 ```
 
 ### List and Query
 
-```bash
+```
 # List tests
-bun xray test list --project PROJ --limit 50
+[TMS_TOOL] List Tests:
+  - project: {{PROJECT_KEY}}
 
 # View details
-bun xray test get PROJ-123
+[TMS_TOOL] Get Test:
+  - issue: {TEST_KEY}
 
 # Add step to existing test
-bun xray test add-step --test {issueId} \
-  --action "Step action" \
-  --data "Test data" \
-  --result "Expected result"
+[TMS_TOOL] Add Step:
+  - issue: {TEST_KEY}
+  - action: {from test design: step action}
+  - data: {from test design: test data}
+  - result: {from test design: expected result}
 ```
 
 ### Test Executions (for regression)
 
-```bash
+```
 # Create execution
-bun xray exec create --project PROJ --summary "Sprint X Regression" \
-  --tests "123,456,789"
+[TMS_TOOL] Create Execution:
+  - project: {{PROJECT_KEY}}
+  - title: {per execution naming convention}
+  - tests: {from regression candidate list}
 
 # Add tests to existing execution
-bun xray exec add-tests --execution {execId} --tests "123,456"
+[TMS_TOOL] Add Tests to Execution:
+  - execution: {EXEC_KEY}
+  - tests: {from regression candidate list}
 ```
+
+> See /xray-cli skill for current CLI syntax.
 
 ---
 
@@ -1078,18 +1035,18 @@ Always include a section explaining how to build preconditions:
 
 ## Common Errors
 
-| Error                       | Solution                          |
-| --------------------------- | --------------------------------- |
-| "Not logged in"             | Execute `bun xray auth login`     |
-| "Issue type Test not found" | Verify Xray is installed          |
-| "Epic not found"            | Create regression epic first      |
-| "Transition not allowed"    | Verify current issue status       |
+| Error                       | Solution                                     |
+| --------------------------- | -------------------------------------------- |
+| "Not logged in"             | `[TMS_TOOL] Authenticate` (reads from .env)  |
+| "Issue type Test not found" | Verify Xray is installed in the project      |
+| "Epic not found"            | Create regression epic first (Phase 1)       |
+| "Transition not allowed"    | Verify current issue status                  |
 
 ---
 
 ## Output
 
-### If using Xray CLI (`bun xray`):
+### If using [TMS_TOOL] (Xray):
 
 - Tests created in Jira with Xray "Test" Issue Type
 - Structured steps (if Steps format) or embedded Gherkin (if Cucumber format)
@@ -1097,7 +1054,7 @@ Always include a section explaining how to build preconditions:
 - Tests within Regression Epic
 - States transitioned according to workflow
 
-### If using native Jira only (MCP Atlassian):
+### If using [ISSUE_TRACKER_TOOL] only (native Jira):
 
 - Tests created in Jira with "Test" Issue Type (custom)
 - Content in Description (Gherkin or Steps table)

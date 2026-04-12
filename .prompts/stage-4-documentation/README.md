@@ -29,8 +29,8 @@ This stage corresponds to **Step 6 of Mid-Game Testing** — where scenarios fro
 - US status: "QA Approved" (exploratory testing passed)
 - Exploratory session notes with validated scenarios
 - Access to tools:
-  - MCP Atlassian (required)
-  - Xray CLI (`bun xray`) if the project uses Xray
+  - `[ISSUE_TRACKER_TOOL]` (required)
+  - `[TMS_TOOL]` if the project uses Xray
 
 **Required context:**
 
@@ -124,7 +124,7 @@ Target per User Story:
 US Status: QA Approved
         ↓
 [1] Test Analysis
-    ├── Read US, comments, linked issues (MCP Atlassian)
+    ├── Read US, comments, linked issues ([ISSUE_TRACKER_TOOL])
     ├── Identify test scenarios
     ├── Classify by type (E2E, Integration, Functional)
     └── Map reusable components (Lego)
@@ -138,7 +138,7 @@ US Status: QA Approved
 [3] Test Documentation
     ├── Verify modality (native Jira vs Xray)
     ├── Verify/create regression epic
-    ├── Create Tests (MCP Atlassian or Xray CLI)
+    ├── Create Tests ([ISSUE_TRACKER_TOOL] or [TMS_TOOL])
     ├── Link to User Story
     └── Transit workflow: Draft → In Design → Ready → [Manual|Candidate]
         ↓
@@ -156,16 +156,16 @@ Output:
 ```
 Does the project use Xray as a plugin?
 
-- YES → Xray CLI (`bun xray`) + MCP Atlassian
-- NO → Only MCP Atlassian with Issue Type "Test"
+- YES → [TMS_TOOL] + [ISSUE_TRACKER_TOOL]
+- NO → Only [ISSUE_TRACKER_TOOL] with Issue Type "Test"
 ```
 
 ### Tools by Modality
 
 | Modality | Tools |
 |----------|-------|
-| Native Jira | MCP Atlassian |
-| Jira + Xray | MCP Atlassian + `bun xray` |
+| Native Jira | `[ISSUE_TRACKER_TOOL]` |
+| Jira + Xray | `[ISSUE_TRACKER_TOOL]` + `[TMS_TOOL]` |
 
 ---
 
@@ -209,24 +209,32 @@ If not exists → Create "{PROJECT} Test Repository"
 
 ---
 
-## Xray CLI Commands
+## TMS Action Reference
 
-```bash
+```
 # Authentication
-bun xray auth login --client-id "$XRAY_CLIENT_ID" --client-secret "$XRAY_CLIENT_SECRET"
-bun xray auth status
+[TMS_TOOL] Authenticate
 
-# Create test
-bun xray test create --project PROJ --summary "Test name" \
-  --step "Action|Expected"
+# Create test (Manual)
+[TMS_TOOL] Create Test:
+  - project: {{PROJECT_KEY}}
+  - title: {per TC naming convention}
+  - type: Manual
+  - steps: {from test design}
 
-# Create Cucumber test
-bun xray test create --project PROJ --type Cucumber \
-  --summary "Feature" --gherkin "Feature: X\n  Scenario: Y"
+# Create test (Cucumber)
+[TMS_TOOL] Create Test:
+  - project: {{PROJECT_KEY}}
+  - title: {per TC naming convention}
+  - type: Cucumber
+  - gherkin: {from test design}
 
 # List tests
-bun xray test list --project PROJ
+[TMS_TOOL] List Tests:
+  - project: {{PROJECT_KEY}}
 ```
+
+> See /xray-cli skill for current CLI syntax.
 
 ---
 

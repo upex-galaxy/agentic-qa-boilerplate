@@ -19,16 +19,18 @@ Test Management in Jira begins **AFTER** a functionality is **stable and functio
 
 ## Test Management Modes
 
-### Key Question Before Starting
+### Capabilities
 
-Before documenting tests, determine:
+Test management operations use the following tool tags:
 
-```
-Does the project use Xray as a Test Management plugin?
+| Capability                  | Tool Tag               |
+| --------------------------- | ---------------------- |
+| Create/update Jira issues   | `[ISSUE_TRACKER_TOOL]` |
+| Create/manage Xray tests    | `[TMS_TOOL]`           |
+| Import automation results   | `[TMS_TOOL]`           |
+| Search/query issues         | `[ISSUE_TRACKER_TOOL]` |
 
-- YES → Use Xray CLI (`bun xray`) + MCP Atlassian
-- NO  → Use only MCP Atlassian with native "Test" Issue Type
-```
+> Tool Resolution in CLAUDE.md determines which concrete tool to use.
 
 ### Mode Comparison
 
@@ -38,7 +40,7 @@ Does the project use Xray as a Test Management plugin?
 | **Test Steps**       | In Description (markdown)  | Structured field with individual steps    |
 | **Execution**        | Custom field "Test Status" | Test Execution issues with runs           |
 | **Traceability**     | Manual links               | Automatic bidirectional links             |
-| **Tool**             | MCP Atlassian              | MCP Atlassian + Xray CLI (`bun xray`)    |
+| **Tool Tags**        | `[ISSUE_TRACKER_TOOL]`     | `[ISSUE_TRACKER_TOOL]` + `[TMS_TOOL]`    |
 | **CI/CD Results**    | Custom API                 | Native JUnit/Cucumber import              |
 
 ---
@@ -196,55 +198,65 @@ EPIC: Test Repository (always In Progress)
 
 ---
 
-## Tools by Mode
+## Operations by Mode
 
 ### Jira Native (no Xray)
 
-| Tool                                               | Use                        |
-| -------------------------------------------------- | -------------------------- |
-| `mcp__atlassian__createJiraIssue`                  | Create Test issues         |
-| `mcp__atlassian__getJiraIssue`                     | Read story/test details    |
-| `mcp__atlassian__searchJiraIssues`                 | Search regression epic     |
-| `mcp__atlassian__updateJiraIssue`                  | Update status/fields       |
-| `mcp__atlassian__addCommentToJiraIssue`            | Add notes/results          |
-| `mcp__atlassian__getJiraProjectIssueTypesMetadata` | Get Test schema            |
-| `mcp__atlassian__transitionJiraIssue`              | Move between states        |
+All operations use `[ISSUE_TRACKER_TOOL]`:
+
+| Capability               | Action                   |
+| ------------------------ | ------------------------ |
+| Create Test issues       | `Create issue`           |
+| Read story/test details  | `Get issue`              |
+| Search regression epic   | `Search issues`          |
+| Update status/fields     | `Update issue`           |
+| Add notes/results        | `Add comment`            |
+| Get Test schema          | `Get issue type metadata`|
+| Move between states      | `Transition issue`       |
+
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 ### Jira + Xray
 
-Use **both** tools:
+Use **both** tool tags:
 
-**MCP Atlassian** (for standard Jira operations):
+**`[ISSUE_TRACKER_TOOL]`** (for standard Jira operations):
 
 - Create/read generic issues
 - Search epics
 - Add comments
 - Links between issues
 
-**Xray CLI** (for Xray-specific operations):
+**`[TMS_TOOL]`** (for Xray-specific operations):
 
-```bash
-# Authentication (once per session)
-bun xray auth login --client-id "$XRAY_CLIENT_ID" --client-secret "$XRAY_CLIENT_SECRET"
-
-# Create test with structured steps
-bun xray test create --project PROJ --summary "Successful login" \
-  --step "Navigate to /login|Form visible" \
-  --step "Enter credentials|user@test.com|Login successful"
-
-# Create Cucumber test
-bun xray test create --project PROJ --type Cucumber --summary "Login feature" \
-  --gherkin "Feature: Login\n  Scenario: Valid login\n    Given I am on login"
-
-# List project tests
-bun xray test list --project PROJ
-
-# Create Test Execution
-bun xray exec create --project PROJ --summary "Sprint 10 Regression"
-
-# Import automation results
-bun xray import junit --file results.xml --project PROJ
 ```
+[TMS_TOOL] Authenticate
+
+[TMS_TOOL] Create test:
+  - project: {{PROJECT_KEY}}
+  - title: {per TC naming convention}
+  - steps: {from test analysis}
+
+[TMS_TOOL] Create test (Cucumber):
+  - project: {{PROJECT_KEY}}
+  - type: Cucumber
+  - title: {per TC naming convention}
+  - gherkin: {from test scenario}
+
+[TMS_TOOL] List tests:
+  - project: {{PROJECT_KEY}}
+
+[TMS_TOOL] Create execution:
+  - project: {{PROJECT_KEY}}
+  - title: {per TX naming convention}
+
+[TMS_TOOL] Import results:
+  - format: junit
+  - file: {from test results path}
+  - project: {{PROJECT_KEY}}
+```
+
+> See /xray-cli skill for current CLI syntax.
 
 ---
 
@@ -568,15 +580,23 @@ CheckoutFlow: Payment: PRC: For processing credit card payment
 
 ### With Xray
 
-```yaml
-# GitHub Actions example
-- name: Import test results to Xray
-  run: bun xray import junit --file ./test-results/junit.xml --project PROJ
 ```
+[TMS_TOOL] Import results:
+  - format: junit
+  - file: ./test-results/junit.xml
+  - project: {{PROJECT_KEY}}
+```
+
+> See /xray-cli skill for current CLI syntax.
 
 ### Without Xray (Jira native)
 
-Update "Test Status" field via API or MCP after execution.
+```
+[ISSUE_TRACKER_TOOL] Update issue:
+  - issue: {from test issue key}
+  - fields:
+    - Test Status: {from execution result}
+```
 
 ### Results Flow
 

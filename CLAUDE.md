@@ -88,11 +88,65 @@ bun run test:allure       # Generate Allure report
 | `{{API_URL_STAGING}}` | API base URL (staging) | api-staging.myproject.com |
 | `{{ISSUE_TRACKER}}` | Issue tracking tool | Jira |
 | `{{ISSUE_TRACKER_CLI}}` | CLI command to query tickets | jira-cli / gh issue |
-| `{{TICKET_PREFIX}}` | Ticket ID format | PROJ- |
+| `{{PROJECT_KEY}}` | Project key in issue tracker (e.g., PROJ, OB, UPEX) | PROJ |
 | `{{TMS_CLI}}` | Test management CLI command | bun xray |
 | `{{DEFAULT_ENV}}` | Default testing environment | staging |
 
 **Note**: Variables are substituted lazily — a prompt containing `{{API_URL_STAGING}}` will read this table at load time. Keep values accurate.
+
+---
+
+## Tool Resolution
+
+> When prompts use `[TAG_TOOL]` pseudocode, the AI resolves to the actual tool using this table.
+> **Priority rule**: CLI tools first (fewer tokens, faster execution), MCP as fallback.
+> Skills are self-documenting — the AI reads the skill file to learn exact syntax.
+
+### Resolution Table
+
+| Tag | Domain | Primary Tool | Fallback | Skill/Reference |
+|-----|--------|-------------|----------|-----------------|
+| `[TMS_TOOL]` | Test Management | `/xray-cli` skill | MCP Atlassian | `.claude/skills/xray-cli/` |
+| `[ISSUE_TRACKER_TOOL]` | Issue Tracking | Atlassian CLI (`acli`) | MCP Atlassian | MCP tool list |
+| `[AUTOMATION_TOOL]` | Browser Automation | `/playwright-cli` skill | MCP Playwright | `.claude/skills/playwright-cli/` |
+| `[DB_TOOL]` | Database | DBHub MCP | Supabase MCP / raw SQL | MCP tool list |
+| `[API_TOOL]` | API Exploration | OpenAPI MCP | Postman / curl | MCP tool list |
+
+### How It Works
+
+1. Prompts describe WHAT to do using `[TAG_TOOL]` pseudocode
+2. The AI reads this table to determine WHICH tool to use
+3. The AI reads the skill/MCP documentation to learn HOW to execute
+4. If the primary tool is unavailable, try the fallback
+5. If all tools are unavailable, inform the user
+
+### Pseudocode Syntax
+
+```
+[TAG_TOOL] Action:
+  - parameter: value
+  - parameter: {per convention name}
+  - parameter: {{PROJECT_VARIABLE}}
+```
+
+**Value types in pseudocode:**
+
+| Type | Syntax | Example | When to use |
+|------|--------|---------|-------------|
+| Fixed/domain | Literal value | `type: Manual` | Domain concepts that never change |
+| Convention reference | `{per <convention>}` | `title: {per TC naming convention}` | Forces AI to consult guidelines |
+| Project variable | `{{VARIABLE}}` | `project: {{PROJECT_KEY}}` | Configured once per project |
+| Context-derived | `{from <source>}` | `steps: {from test analysis}` | Derived during session |
+
+### Convention References
+
+| Convention | Guideline Location |
+|-----------|-------------------|
+| TC naming convention | `.context/guidelines/TAE/test-design-principles.md` |
+| TC specification convention | `.context/guidelines/TAE/test-design-principles.md` |
+| Labeling convention | `.prompts/stage-4-documentation/test-documentation.md` § Labels |
+| Bug naming convention | `.prompts/stage-3-reporting/bug-report.md` § Summary format |
+| Execution naming convention | `.prompts/stage-4-documentation/test-documentation.md` § Test Executions |
 
 ---
 
@@ -253,9 +307,9 @@ gh pr create --base staging
 |------|------------------|
 | **Write E2E Test** | `kata-ai-index.md` + `e2e-testing-patterns.md` |
 | **Write API Test** | `kata-ai-index.md` + `api-testing-patterns.md` |
-| **Exploratory Testing** | `project-test-guide.md` + `guidelines/mcp-usage-tips.md` |
+| **Exploratory Testing** | `project-test-guide.md` + `CLAUDE.md § Tool Resolution` |
 | **Understand System** | `business-data-map.md` + `PRD/user-journeys.md` |
-| **Use MCP Tools** | `guidelines/mcp-usage-tips.md` |
+| **Use MCP Tools** | `CLAUDE.md § Tool Resolution` |
 
 **Living Code Examples:**
 
@@ -281,7 +335,6 @@ gh pr create --base staging
 - Context7 for "how to use X" (official docs)
 - Tavily for "how to solve X" (community solutions)
 
-→ **Usage tips**: `.context/guidelines/mcp-usage-tips.md`
 
 ---
 

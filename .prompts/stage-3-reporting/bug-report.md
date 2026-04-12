@@ -16,8 +16,8 @@ Identify, validate, and report defects found during exploratory testing. This pr
 **Prerequisites:**
 
 - Bug identified during exploratory testing
-- Access to Playwright MCP tools (`mcp__playwright__*`)
-- Access to Atlassian MCP tools (`mcp__atlassian__*`)
+- `[AUTOMATION_TOOL]` available for browser-based retesting
+- `[ISSUE_TRACKER_TOOL]` available for Jira bug creation
 
 **Important:** This prompt is primarily configured for the **UPEX Galaxy Jira Workspace**. The custom field IDs below are shared across all projects in this workspace. For external workspaces, see the **Fallback Strategy** section.
 
@@ -160,15 +160,14 @@ The custom field IDs in this prompt are specific to UPEX Galaxy workspace. For o
 
 ### Fallback 1: Search for Equivalent Field
 
-When a custom field ID fails (e.g., `customfield_10116` doesn't exist), use `mcp__atlassian__jira_search_fields` to find the equivalent field:
+When a custom field ID fails (e.g., `customfield_10116` doesn't exist), search for the equivalent field:
 
 ```
-# Search for the field by name
-Tool: mcp__atlassian__jira_search_fields
-{
-  "keyword": "severity"  // or "root cause", "error type", etc.
-}
+[ISSUE_TRACKER_TOOL] Search fields:
+  - keyword: {from failed field name}
 ```
+
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 If a matching field is found:
 
@@ -199,7 +198,7 @@ Wait for user response before proceeding.
 
 As a last resort, if the custom field cannot be resolved:
 
-1. **Omit the custom field** from `additional_fields`
+1. **Omit the custom field** from the issue creation
 2. **Add the information to the Description** using this format:
 
 ```markdown
@@ -259,22 +258,26 @@ Would you like me to:
 
 **Determine retest approach based on bug type:**
 
-| Bug Type     | Retest Method                         |
-| ------------ | ------------------------------------- |
-| **UI Bug**   | Use Playwright MCP to reproduce steps |
-| **API Bug**  | Use API calls or network observation  |
-| **Data Bug** | Query database or verify via API      |
+| Bug Type     | Retest Method                                  |
+| ------------ | ---------------------------------------------- |
+| **UI Bug**   | `[AUTOMATION_TOOL]` — reproduce steps in browser |
+| **API Bug**  | `[API_TOOL]` — replay API calls                  |
+| **Data Bug** | `[DB_TOOL]` — query database or verify via API   |
 
 **For UI Retest:**
 
 ```
-Tools:
-- mcp__playwright__browser_navigate
-- mcp__playwright__browser_snapshot
-- mcp__playwright__browser_click
-- mcp__playwright__browser_type
-- mcp__playwright__browser_take_screenshot
+[AUTOMATION_TOOL] Navigate:
+  - url: {from bug reproduction steps}
+
+[AUTOMATION_TOOL] Interact:
+  - actions: {from steps to reproduce}
+
+[AUTOMATION_TOOL] Capture screenshot:
+  - purpose: bug evidence
 ```
+
+> Resolved via [AUTOMATION_TOOL] — see Tool Resolution in CLAUDE.md
 
 **Document retest results:**
 
@@ -309,8 +312,8 @@ Tools:
 ```markdown
 ## Bug Details
 
-**Title:** [Standard format: <EPICNAME>: <COMPONENT>: <ISSUE_SUMMARY>]
-Example: "CheckoutFlow: Payment: Error message not shown for incorrect password"
+**Title:** {per bug naming convention}
+Format: `<EPICNAME>: <COMPONENT>: <ISSUE_SUMMARY>`
 
 **Error Type:** [Functional/Visual/Content/Performance/Crash/Data/Integration/Security]
 
@@ -390,57 +393,61 @@ Do you want me to:
 
 **Step 1: Create the issue with all custom fields**
 
-Use the EXACT JSON structure below. Replace only the values in `[brackets]`:
-
-```json
-Tool: mcp__atlassian__jira_create_issue
-
-{
-  "project_key": "[PROJECT_KEY]",
-  "summary": "[Format: <EPICNAME>: <COMPONENT>: <ISSUE_SUMMARY>]",
-  "issue_type": "Bug",
-  "description": "[See Jira Description Template below]",
-  "additional_fields": {
-    "priority": {"name": "[Highest|High|Medium|Low]"},
-    "labels": ["bug", "exploratory-testing"],
-
-    "customfield_10109": "[ACTUAL RESULT: What happened - the bug behavior]",
-    "customfield_10110": "[EXPECTED RESULT: What should have happened]",
-    "customfield_10112": {"value": "[Functional|Visual|Content|Performance|Crash|Data|Integration|Security]"},
-    "customfield_10116": {"value": "[Critical|Major|Moderate|Minor|Trivial]"},
-    "customfield_12210": {"value": "[Dev|QA|UAT|Staging|Production]"},
-    "customfield_10701": {"value": "[Code Error|Config/Env Error|Environment Error|Requirement Error|Working As Designed (WAD)|Third-Party Error|Integration Error|Data Error]"},
-    "customfield_10049": "[ROOT CAUSE TEXT: Technical analysis or 'Investigation needed']",
-
-    "customfield_10111": "[WORKAROUND: Temporary solution - omit if none]",
-    "customfield_10607": "[EVIDENCE: Notes about attachments - omit if using attachments parameter]",
-    "customfield_12212": {"value": "Bugfix"}
-  }
-}
 ```
+[ISSUE_TRACKER_TOOL] Create issue:
+  - project: {{PROJECT_KEY}}
+  - type: Bug
+  - title: {per bug naming convention}
+  - description: {from Jira Description Template below}
+  - priority: {from severity mapping}
+  - labels: bug, exploratory-testing
+  - custom fields:
+    - Actual Result:      {from bug documentation}
+    - Expected Result:    {from bug documentation}
+    - Error Type:         {from error type analysis}
+    - SEVERITY:           {from severity analysis}
+    - Test Environment:   {from environment detection}
+    - Root Cause:         {from root cause analysis}
+    - Root Cause Text:    {from technical analysis}
+    - Workaround:         {from bug documentation, omit if none}
+    - Evidence:           {from evidence notes, omit if using attachments}
+    - Fix:                Bugfix
+```
+
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
+
+**Custom Field ID Mapping (UPEX Galaxy Workspace):**
+
+| Domain Field     | Field ID            | Format   |
+| ---------------- | ------------------- | -------- |
+| Actual Result    | `customfield_10109` | String   |
+| Expected Result  | `customfield_10110` | String   |
+| Error Type       | `customfield_10112` | Dropdown |
+| SEVERITY         | `customfield_10116` | Dropdown |
+| Test Environment | `customfield_12210` | Dropdown |
+| Root Cause       | `customfield_10701` | Dropdown |
+| Root Cause Text  | `customfield_10049` | String   |
+| Workaround       | `customfield_10111` | String   |
+| Evidence         | `customfield_10607` | String   |
+| Fix              | `customfield_12212` | Dropdown |
 
 **Field Format Rules:**
 
-- **Textarea fields** (`customfield_10109`, `10110`, `10049`, `10111`, `10607`): Plain string
-- **Dropdown fields** (`customfield_10112`, `10116`, `10701`, `12210`, `12212`): Object with `{"value": "Option"}`
+- **String fields**: Plain string value
+- **Dropdown fields**: Object with `{"value": "Option"}`
 - **Omit optional fields** by not including them (don't set to `null`)
 
 **Step 2: Attach evidence files (if user provided)**
 
-```json
-Tool: mcp__atlassian__jira_update_issue
-
-{
-  "issue_key": "[TICKET-ID]",
-  "fields": {},
-  "attachments": "/absolute/path/to/file1.png,/absolute/path/to/file2.mp4"
-}
+```
+[ISSUE_TRACKER_TOOL] Attach files:
+  - issue: {from created issue key}
+  - files: {from evidence file paths}
 ```
 
 **Attachment Rules:**
 
-- Use **absolute paths** only (e.g., `/home/user/screenshots/bug.png`)
-- Comma-separated for multiple files
+- Use **absolute paths** only
 - Supported formats: `.png`, `.jpg`, `.gif`, `.mp4`, `.log`, `.txt`, `.pdf`
 - If user says "attach this file" or provides a path, use it here
 
@@ -476,21 +483,20 @@ Tool: mcp__atlassian__jira_update_issue
 2. **Link to related story** (if applicable):
 
    ```
-   Tool: mcp__atlassian__jira_add_comment
-
-   Add comment to the original story:
-   "Bug found during exploratory testing: [TICKET-ID] - [Title]"
+   [ISSUE_TRACKER_TOOL] Add comment:
+     - issue: {from related story key}
+     - comment: "Bug found during exploratory testing: {from created issue key} - {from bug title}"
    ```
 
 3. **Assign to team member** (if specified):
 
    ```
-   Tool: mcp__atlassian__jira_update_issue
-
-   Parameters:
-   - issue_key: "[TICKET-ID]"
-   - fields: {"assignee": "email@example.com"}
+   [ISSUE_TRACKER_TOOL] Update issue:
+     - issue: {from created issue key}
+     - assignee: {from user specification}
    ```
+
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 
@@ -658,17 +664,19 @@ API: Users: PUT /users/settings returns 500 on save
 
 ---
 
-## Quick Reference: MCP Tools
+## Quick Reference: Capabilities
 
-| Action                | Tool                                       |
-| --------------------- | ------------------------------------------ |
-| Create bug            | `mcp__atlassian__jira_create_issue`        |
-| Update/attach files   | `mcp__atlassian__jira_update_issue`        |
-| Add comment           | `mcp__atlassian__jira_add_comment`         |
-| Search for duplicates | `mcp__atlassian__jira_search`              |
-| Get issue details     | `mcp__atlassian__jira_get_issue`           |
-| Transition status     | `mcp__atlassian__jira_transition_issue`    |
-| Take screenshot       | `mcp__playwright__browser_take_screenshot` |
+| Action                | Tool Tag               |
+| --------------------- | ---------------------- |
+| Create bug            | `[ISSUE_TRACKER_TOOL]` |
+| Update/attach files   | `[ISSUE_TRACKER_TOOL]` |
+| Add comment           | `[ISSUE_TRACKER_TOOL]` |
+| Search for duplicates | `[ISSUE_TRACKER_TOOL]` |
+| Get issue details     | `[ISSUE_TRACKER_TOOL]` |
+| Transition status     | `[ISSUE_TRACKER_TOOL]` |
+| Take screenshot       | `[AUTOMATION_TOOL]`    |
+
+> Resolved via respective tool tags — see Tool Resolution in CLAUDE.md
 
 ---
 
@@ -676,34 +684,32 @@ API: Users: PUT /users/settings returns 500 on save
 
 Here's a real example of creating a bug with all fields:
 
-```json
-// Step 1: Create the bug
-mcp__atlassian__jira_create_issue({
-  "project_key": "SQ",
-  "summary": "ClientManagement: AddClient: Email case-insensitive validation missing",
-  "issue_type": "Bug",
-  "description": "_SUMMARY_\nThe system allows creating duplicate clients when the email uses different capitalization (e.g., user@email.com vs USER@email.com).\n\n----\n\n_STEPS TO REPRODUCE_\n\nh4. Create client with email 'test@email.com'\n\nh4. Create another client with email 'TEST@email.com'\n\nh4. Observe that both clients are created without error\n\n----\n\n_TECHNICAL ANALYSIS_\n\n* _File:_ src/app/(app)/clients/page.tsx\n* _Function:_ handleSubmit\n* _Problem:_ Email comparison is case-sensitive\n\n----\n\n_IMPACT_\n\n* Users can accidentally create duplicate clients\n* Data inconsistency in the database",
-  "additional_fields": {
-    "priority": {"name": "High"},
-    "labels": ["bug", "exploratory-testing", "clients"],
-    "customfield_10109": "When trying to create a client with email 'TEST@email.com' when 'test@email.com' already exists, the system accepts it and creates a duplicate client.",
-    "customfield_10110": "The system should detect that the email already exists (case-insensitive comparison) and show a warning message.",
-    "customfield_10112": {"value": "Functional"},
-    "customfield_10116": {"value": "Major"},
-    "customfield_12210": {"value": "Staging"},
-    "customfield_10701": {"value": "Code Error"},
-    "customfield_10049": "The duplicate validation in handleSubmit function compares emails with === instead of using toLowerCase() for case-insensitive comparison.",
-    "customfield_12212": {"value": "Bugfix"}
-  }
-})
-
-// Step 2: Attach screenshot (if user provided one)
-mcp__atlassian__jira_update_issue({
-  "issue_key": "SQ-69",
-  "fields": {},
-  "attachments": "/home/user/screenshots/duplicate-email-bug.png"
-})
 ```
+# Step 1: Create the bug
+[ISSUE_TRACKER_TOOL] Create issue:
+  - project: {{PROJECT_KEY}}
+  - type: Bug
+  - title: {per bug naming convention}
+  - description: {from Jira Description Template}
+  - priority: High
+  - labels: bug, exploratory-testing, clients
+  - custom fields:
+    - Actual Result:      {from bug observation}
+    - Expected Result:    {from expected behavior}
+    - Error Type:         Functional
+    - SEVERITY:           Major
+    - Test Environment:   Staging
+    - Root Cause:         Code Error
+    - Root Cause Text:    {from technical analysis}
+    - Fix:                Bugfix
+
+# Step 2: Attach screenshot (if user provided one)
+[ISSUE_TRACKER_TOOL] Attach files:
+  - issue: {from created issue key}
+  - files: {from evidence file paths}
+```
+
+> Resolved via [ISSUE_TRACKER_TOOL] — see Tool Resolution in CLAUDE.md
 
 ---
 
