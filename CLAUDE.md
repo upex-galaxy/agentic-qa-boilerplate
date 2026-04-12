@@ -9,35 +9,90 @@
 ## Quick Start
 
 ```bash
-# Run all tests
-bun run test
+# READY TO WRITE TESTS:
+# When you start a new test session, load these context files FIRST:
+# 1. .context/business-data-map.md     → System flows and entities
+# 2. .context/api-architecture.md      → API endpoints reference
+# 3. .context/project-test-guide.md    → What to test and why
+# 4. .context/guidelines/TAE/kata-ai-index.md → How to write tests (KATA)
 
-# E2E tests only
-bun run test:e2e
+# PLAN BEFORE CODING:
+# Testing follows a Plan → Code → Review workflow. Never jump straight to code.
+# See "Test Planning Scopes" below to choose the right planning prompt.
+# Full automation workflow: .prompts/stage-5-automation/README.md
 
-# API tests only
-bun run test:integration
-
-# Smoke tests (@critical tagged)
-bun run test:smoke
-
-# Visual UI mode
-bun run test:ui
-
-# Generate Allure report
-bun run test:allure
+# WRITE A NEW TEST:
+# 1. Pick planning prompt by scope (module / ticket / regression)
+# 2. Use .prompts/stage-5-automation/coding/e2e-test-coding.md (E2E)
+#    or .prompts/stage-5-automation/coding/integration-test-coding.md (API)
+# 3. Follow KATA patterns in .context/guidelines/TAE/kata-ai-index.md
 ```
 
-**Write a New Test:**
-1. Load: `.context/guidelines/TAE/kata-ai-index.md`
-2. Use prompt: `.prompts/stage-5-automation/coding/e2e-test-coding.md`
-3. Follow KATA patterns
+**Common test commands:**
+
+```bash
+bun run test              # Run all tests
+bun run test:e2e          # E2E tests only
+bun run test:integration  # API tests only
+bun run test:smoke        # Smoke tests (@critical tagged)
+bun run test:ui           # Visual UI mode
+bun run test:allure       # Generate Allure report
+```
 
 **Generate/Update Project Documentation:**
+
 ```bash
 # Use this prompt to regenerate README.md and update CLAUDE.md
 @.prompts/utilities/context-engineering-setup.md
 ```
+
+---
+
+## ⚠️ Critical Reminders
+
+> These rules override defaults and must always be in context.
+
+1. **Login Credentials**: ALWAYS read from `.env` file — NEVER hardcode or guess passwords.
+   - Example keys: `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD`, `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD`
+2. **Plan before coding**: Always produce a test plan (`spec.md` / implementation plan) before writing test code.
+3. **No AI attribution in commits**: Never include "Generated with Claude Code", "Co-Authored-By: Claude", or similar lines in commit messages.
+4. **Shift-Left**: Evaluate Acceptance Criteria for clarity, testability, and completeness. Raise questions only when genuine gaps exist — never force questions to fill a checklist.
+5. **Confirm before push to main**: Never push to `main` without explicit user confirmation.
+6. [Add project-specific reminders here — e.g., "SPA and API are on different hosts — use correct base URLs"]
+
+---
+
+## Project Variables
+
+> **Purpose**: Centralized project configuration referenced by all `.prompts/` and templates via `{{VARIABLE_NAME}}` syntax.
+> **Usage**: Fill in real values once here. All prompts that use `{{VARIABLES}}` will auto-adapt.
+> **Rationale**: Prevents multi-file maintenance — change a value once, it propagates everywhere.
+
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `{{PROJECT_NAME}}` | Project name | MyProject |
+| `{{BACKEND_REPO}}` | Relative path to backend repository | ../my-backend |
+| `{{BACKEND_STACK}}` | Backend technology stack | Node.js + Express |
+| `{{BACKEND_ENTRY}}` | Backend source entry point | src/ |
+| `{{FRONTEND_REPO}}` | Relative path to frontend repository | ../my-frontend |
+| `{{FRONTEND_STACK}}` | Frontend technology stack | React + TypeScript |
+| `{{FRONTEND_ENTRY}}` | Frontend source entry point | src/ |
+| `{{DB_TYPE}}` | Database engine | PostgreSQL |
+| `{{DB_MCP_LOCAL}}` | MCP server name for local DB | myproject-local-db |
+| `{{DB_MCP_STAGING}}` | MCP server name for staging DB | myproject-staging-db |
+| `{{API_MCP_LOCAL}}` | MCP server name for local API | myproject-local-api |
+| `{{API_MCP_STAGING}}` | MCP server name for staging API | myproject-staging-api |
+| `{{SPA_URL_LOCAL}}` | Frontend URL (local) | localhost:3000 |
+| `{{SPA_URL_STAGING}}` | Frontend URL (staging) | staging.myproject.com |
+| `{{API_URL_LOCAL}}` | API base URL (local) | localhost:3000/api |
+| `{{API_URL_STAGING}}` | API base URL (staging) | api-staging.myproject.com |
+| `{{ISSUE_TRACKER}}` | Issue tracking tool | Jira |
+| `{{ISSUE_TRACKER_CLI}}` | CLI command to query tickets | jira-cli / gh issue |
+| `{{TICKET_PREFIX}}` | Ticket ID format | PROJ- |
+| `{{TMS_CLI}}` | Test management CLI command | bun xray |
+| `{{DEFAULT_ENV}}` | Default testing environment | staging |
+
+**Note**: Variables are substituted lazily — a prompt containing `{{API_URL_STAGING}}` will read this table at load time. Keep values accurate.
 
 ---
 
@@ -55,19 +110,24 @@ bun run test:allure
 | **Test Framework** | Playwright + KATA + Allure |
 
 **TL;DR Flow:**
+
 ```
 [User Action] → [System Process] → [Outcome]
 ```
 
 ---
 
-## Critical Reminders
+## Environment URLs
 
-> Add project-specific rules that must always be in context.
+> Replace with your project URLs. Keep the same structure so tooling and context files can reference it.
 
-1. Login Credentials: ALWAYS read from `.env` file, NEVER hardcode
-2. [Add your project-critical reminders here]
-3. [e.g., "SPA and API are on different hosts — use correct base URLs"]
+| Environment | Frontend | Backend (API) |
+|---|---|---|
+| **Local** | `http://localhost:3000` | `http://localhost:3000/api` |
+| **Staging** | `https://staging.example.com` | `https://staging.example.com/api` |
+| **Production** | `https://example.com` | `https://example.com/api` |
+
+> If the Frontend and Backend are on **different hosts**, document it here and make sure API tests target the API host directly.
 
 ---
 
@@ -104,6 +164,7 @@ bun run test:allure
 | **Errors** | Public methods: fail fast. Utilities: silent fail (return null) |
 
 **DRY - Context Matters:**
+
 - `api/schemas/` = OpenAPI type facades (`@schemas/{domain}.types`)
 - `tests/utils/` = Agnostic utilities only (works for API + UI)
 - `UiBase` = All Playwright/Page helpers
@@ -127,6 +188,7 @@ Test Files - Orchestrate ATCs
 ```
 
 **ATC Rules:**
+
 - ATC = Complete test case (mini-flow), NOT single interaction
 - ATCs are atomic: don't call other ATCs
 - Use Steps module for reusable ATC chains
@@ -134,6 +196,7 @@ Test Files - Orchestrate ATCs
 - Equivalence Partitioning: same output = one parameterized ATC
 
 **Fixture Selection:**
+
 | Test Type | Fixture | Browser? |
 |-----------|---------|----------|
 | API only | `{ api }` | No (lazy) |
@@ -142,30 +205,43 @@ Test Files - Orchestrate ATCs
 
 → **Full details**: `.context/guidelines/TAE/kata-architecture.md`
 
-### Git Flow
+---
 
-**Branches:**
+## Git Workflow
+
+### Branch Strategy
+
+| Branch | Role |
+|---|---|
+| `main` | Production. PRs merged from `staging` or `feature/*` after review. |
+| `staging` | Integration branch for AI commits and pre-release validation. |
+| `feature/*` | Task-specific branches for new work. Use `feature/TICKET-ID-desc`. |
+| `fix/*` | Bug-fix branches. Use `fix/TICKET-ID-desc`. |
+
+### Commit Rules
+
+- **Semantic prefixes**: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`
+- **One commit = one responsibility**
+- **Clear messages**: Someone should understand the change without reading the diff
+- **NO AI attribution**: Never include "Generated with Claude Code", "Co-Authored-By: Claude", or similar lines. Commits must look human-authored.
+- **Confirm before push to main**: Always ask user confirmation before pushing to `main`.
+
+### Example Flow
+
+```bash
+# General work (no ticket)
+git add <files>
+git commit -m "docs: update context files"
+# → Ask: "Confirm push to main?"
+git push origin main
+
+# Ticket-based work
+git checkout -b feature/UPEX-123-add-login-tests
+git add <files>
+git commit -m "test: add login API tests"
+git push -u origin feature/UPEX-123-add-login-tests
+gh pr create --base staging
 ```
-main     ← Production (PRs from staging)
-staging  ← Integration (AI commits here)
-feature/* ← Task-specific branches
-```
-
-**Commit Prefixes:**
-| Prefix | Use |
-|--------|-----|
-| `feat:` | New functionality |
-| `fix:` | Bug correction |
-| `test:` | Tests added/modified |
-| `docs:` | Documentation only |
-| `refactor:` | Code restructuring |
-| `chore:` | Maintenance tasks |
-
-**Rules:**
-- One commit = one responsibility
-- Clear messages (someone should understand without seeing code)
-- Push to `main` only after user confirmation
-- PRs for ticket work: `feature/TICKET-ID-desc` → staging/main
 
 → **Full details**: `docs/workflows/git-flow.md`
 
@@ -182,6 +258,7 @@ feature/* ← Task-specific branches
 | **Use MCP Tools** | `guidelines/mcp-usage-tips.md` |
 
 **Living Code Examples:**
+
 - API Component: `tests/components/api/` (any `*Api.ts`)
 - UI Component: `tests/components/ui/` (any `*Page.ts`)
 - Test File: `tests/e2e/` or `tests/integration/`
@@ -200,10 +277,72 @@ feature/* ← Task-specific branches
 | **Tavily** | Web search, troubleshooting |
 
 **Decision Rule:**
+
 - Context7 for "how to use X" (official docs)
 - Tavily for "how to solve X" (community solutions)
 
 → **Usage tips**: `.context/guidelines/mcp-usage-tips.md`
+
+---
+
+## AI Behavior During Testing
+
+### Explanations and Confirmations
+
+When working on testing a User Story or bug:
+
+1. **Explain the story**: Once you understand the ticket, explain briefly:
+   - What the feature is about
+   - How it works (in simple terms)
+   - What we'll be testing
+
+2. **Wait for confirmation**: After important explanations, WAIT for the user to respond before continuing. This allows the user to:
+   - Read and understand
+   - Ask questions if needed
+   - Confirm whether to proceed
+
+3. **Explain defects**: When you find a bug or unexpected behavior:
+   - Describe what you observed
+   - Explain why it's a problem
+   - Suggest the impact (severity, affected users, business risk)
+
+4. **Language**: Default to **English**. If the user writes in another language, mirror that language for user-facing communication. Documentation and code are always written in English.
+
+### Environment Selection
+
+- Ask the user which environment they're working on (e.g., "local or staging?") when it's ambiguous.
+- Default to **staging** unless the user specifies otherwise.
+- Use the environment URLs from the "Environment URLs" table above and credentials from `.env`.
+
+---
+
+## Local Context (PBI)
+
+For every ticket being tested, maintain local documentation under `.context/PBI/`:
+
+```
+.context/PBI/{module-name}/{TICKET-ID}-{brief-title}/
+├── context.md          # Main file: ACs, test data, session notes, open questions
+├── test-analysis.md    # Test plan / Acceptance Test Plan (ATP) mirror
+├── test-report.md      # Test report / Acceptance Test Report (ATR) mirror
+└── evidence/           # Screenshots, traces, logs (gitignored)
+```
+
+**Variables:**
+
+- `{module-name}`: kebab-case of the module or epic (e.g., `user-management`)
+- `{TICKET-ID}`: TMS ticket identifier (e.g., `UPEX-277`)
+- `{brief-title}`: AI-generated summary of the ticket title, max ~5 words, kebab-case (e.g., `empty-states`)
+
+**Entry point:** Start with `.prompts/session-start.md`, which:
+
+1. Fetches ticket from the TMS (Jira/Xray)
+2. Explains the story to the user → waits for confirmation
+3. Loads project context files
+4. Explores code in repositories
+5. Identifies test data candidates
+6. Creates the PBI folder
+7. Configures any local tool settings (e.g., `.playwright/cli.config.json`)
 
 ---
 
@@ -281,17 +420,23 @@ tests/
 ## Access Configuration
 
 ### Configured
+
 - [ ] Playwright MCP (browser automation)
 - [ ] Database MCP (data validation)
-- [ ] Atlassian MCP (Jira integration)
+- [ ] Atlassian MCP (Jira/Xray integration)
 - [ ] OpenAPI MCP (API exploration)
-- [ ] Bun runtime
+- [ ] Context7 MCP (library documentation)
+- [ ] Bun runtime installed
+- [ ] Playwright browsers installed
 - [ ] GitHub Actions workflows
 
-### Pending
-- [ ] Staging environment URLs in `.env`
-- [ ] Test user credentials in `.env`
-- [ ] TMS credentials (Xray)
+### Pending / Manual Steps
+
+- [ ] Populate `.env` with staging/production URLs
+- [ ] Populate `.env` with test user credentials (`LOCAL_*`, `STAGING_*`)
+- [ ] Configure TMS credentials (Xray Cloud: `XRAY_CLIENT_ID`, `XRAY_CLIENT_SECRET`)
+- [ ] Run `bun run env:validate` to check configuration
+- [ ] Restart Claude Code after any MCP credential change (configs are cached)
 
 ---
 
@@ -319,6 +464,7 @@ tests/
 > Log significant changes per session. Delete old entries as needed.
 
 ### [DATE] - [Session Title]
+
 - [Change 1]
 - [Change 2]
 - Result: [Outcome]
