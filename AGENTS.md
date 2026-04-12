@@ -144,9 +144,8 @@ feature/* ← Task-specific branches
 |------|------------------|
 | **Write E2E Test** | `kata-ai-index.md` + `e2e-testing-patterns.md` |
 | **Write API Test** | `kata-ai-index.md` + `api-testing-patterns.md` |
-| **Exploratory Testing** | `project-test-guide.md` + `guidelines/mcp-usage-tips.md` |
+| **Exploratory Testing** | `project-test-guide.md` + `guidelines/QA/exploratory-testing.md` |
 | **Understand System** | `business-data-map.md` + `PRD/user-journeys.md` |
-| **Use MCP Tools** | `guidelines/mcp-usage-tips.md` |
 
 **Living Code Examples:**
 - API Component: `tests/components/api/` (any `*Api.ts`)
@@ -169,8 +168,6 @@ feature/* ← Task-specific branches
 **Decision Rule:**
 - Context7 for "how to use X" (official docs)
 - Tavily for "how to solve X" (community solutions)
-
-→ **Usage tips**: `.context/guidelines/mcp-usage-tips.md`
 
 ---
 

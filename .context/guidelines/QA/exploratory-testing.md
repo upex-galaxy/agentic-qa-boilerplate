@@ -393,7 +393,7 @@ Stage 4: Test Automation
 **See also:**
 
 - `.claude/skills/playwright-cli/SKILL.md` - Playwright CLI skill reference
-- `.context/guidelines/mcp-usage-tips.md` - MCP usage patterns
+- `CLAUDE.md` MCPs Available section - MCP tool reference
 
 ---
 

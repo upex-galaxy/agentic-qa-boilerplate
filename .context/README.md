@@ -12,8 +12,7 @@ This directory contains all the documentation that the AI reads to work on the p
 ├── PBI/                PHASES 4+: Product Backlog (Specification, Testing)
 ├── guidelines/         Reference material by ROLE
 │   ├── QA/             Quality Engineering Guidelines
-│   ├── TAE/            Test Automation Engineering
-│   └── mcp-usage-tips.md  MCP usage patterns
+│   └── TAE/            Test Automation Engineering
 ├── business-data-map.md    # Generated: System flows
 ├── api-architecture.md     # Generated: API documentation
 └── project-test-guide.md   # Generated: Testing guide
@@ -59,7 +58,7 @@ This prompt will:
 | ------------- | ----------------- | ----------------- |
 | QA Engineer   | `guidelines/QA/`  | Stages 2, 3       |
 | QA Automation | `guidelines/TAE/` | Stage 4           |
-| Any role      | `guidelines/mcp-usage-tips.md` | When using MCPs   |
+| Any role      | `CLAUDE.md` MCPs Available section | When using MCPs   |
 
 ## Recommended Context Files
 

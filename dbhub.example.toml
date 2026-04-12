@@ -4,7 +4,7 @@
 # Copy this file to dbhub.toml and fill in your database credentials.
 # NEVER commit dbhub.toml to version control!
 #
-# For more information, see: .context/guidelines/mcp-usage-tips.md
+# For more information, see CLAUDE.md MCPs Available section
 # ============================================
 
 [[sources]]

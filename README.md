@@ -528,7 +528,7 @@ Run discovery prompts to generate project-specific context:
 - [Automation Standards](.context/guidelines/TAE/automation-standards.md)
 - [TypeScript Patterns](.context/guidelines/TAE/typescript-patterns.md)
 - [TMS Integration](.context/guidelines/TAE/tms-integration.md)
-- [MCP Usage Tips](.context/guidelines/mcp-usage-tips.md)
+
 
 ---
 

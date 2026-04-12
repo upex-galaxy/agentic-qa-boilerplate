@@ -11,7 +11,6 @@
 guidelines/
 ├── README.md               # This file (index)
 ├── code-standards.md       # DRY, KISS, naming, TypeScript
-├── mcp-usage-tips.md       # When/how to use MCP tools
 │
 ├── TAE/                    # Test Automation Engineering
 │   ├── README.md           # TAE index
@@ -79,7 +78,7 @@ This is a **Test Automation Engineering** repository. All guidelines prioritize:
 
 ### 3. MCP Tools
 
-See `mcp-usage-tips.md` for usage patterns and decision rules.
+See `CLAUDE.md` MCPs Available section for usage patterns and decision rules.
 
 | MCP         | Purpose                          |
 | ----------- | -------------------------------- |
