@@ -96,7 +96,7 @@ This workflow guides QA through the complete bug retesting process, from session
 ## INPUT REQUIRED
 
 **Ticket ID:** `TK-{number}`
-**Environment:** Staging (default) or localhost
+**Environment:** {{DEFAULT_ENV}} (default) or localhost
 
 ---
 

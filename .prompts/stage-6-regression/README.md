@@ -108,7 +108,7 @@ Stage 6 closes the testing cycle by executing automated tests and analyzing resu
 
 | Input | Type | Default | Description |
 |-------|------|---------|-------------|
-| `environment` | choice | staging | `local` \| `staging` |
+| `environment` | choice | {{DEFAULT_ENV}} | `local` \| `staging` |
 | `video_record` | boolean | false | Enable video recording |
 | `generate_allure` | boolean | true | Generate Allure report |
 
@@ -116,14 +116,14 @@ Stage 6 closes the testing cycle by executing automated tests and analyzing resu
 
 | Input | Type | Default | Description |
 |-------|------|---------|-------------|
-| `environment` | choice | staging | `local` \| `staging` |
+| `environment` | choice | {{DEFAULT_ENV}} | `local` \| `staging` |
 | `generate_allure` | boolean | true | Generate Allure report |
 
 #### sanity.yml
 
 | Input | Type | Default | Description |
 |-------|------|---------|-------------|
-| `environment` | choice | staging | `local` \| `staging` |
+| `environment` | choice | {{DEFAULT_ENV}} | `local` \| `staging` |
 | `test_type` | choice | all | `all` \| `e2e` \| `integration` |
 | `grep` | string | - | Test name pattern filter |
 | `test_file` | string | - | Specific test file path |

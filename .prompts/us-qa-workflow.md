@@ -54,7 +54,7 @@ Execute stages sequentially, completing each before moving to the next.
 │ USER STORY INFORMATION                                                      │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│ Story ID:        _________________________________ (e.g., UPEX-123)        │
+│ Story ID:        _________________________________ (e.g., {{TICKET_PREFIX}}123)        │
 │                                                                             │
 │ Story Title:     _________________________________ (brief description)     │
 │                                                                             │
@@ -373,7 +373,7 @@ bun run type-check
 ```bash
 # Run only the new test(s)
 gh workflow run sanity.yml \
-  -f environment=staging \
+  -f environment={{DEFAULT_ENV}} \
   -f test_file="tests/e2e/{module}/{test}.test.ts"
 ```
 

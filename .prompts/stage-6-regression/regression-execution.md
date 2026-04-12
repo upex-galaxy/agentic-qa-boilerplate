@@ -28,7 +28,7 @@ Specify what type of regression to execute:
 │                                                                             │
 │ Suite Type:      ○ regression (full)    ○ smoke (critical)    ○ sanity     │
 │                                                                             │
-│ Environment:     ○ staging (default)    ○ local                            │
+│ Environment:     ○ {{DEFAULT_ENV}} (default)    ○ local                            │
 │                                                                             │
 │ Generate Allure: ○ yes (default)        ○ no                               │
 │                                                                             │
