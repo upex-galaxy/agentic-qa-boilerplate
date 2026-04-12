@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Layer 3: Auth API Component
+ * KATA Architecture - Layer 3: Auth API Component
  *
  * API component for authentication operations.
  * Handles login, token management, and user info retrieval.

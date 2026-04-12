@@ -1,5 +1,5 @@
 # ============================================
-# KATA Framework - TestBuild Pipeline
+# KATA Architecture - TestBuild Pipeline
 # ============================================
 # Purpose: Validate framework compiles and passes static checks before merging PRs.
 # This pipeline acts as a smoke test for the test framework itself.

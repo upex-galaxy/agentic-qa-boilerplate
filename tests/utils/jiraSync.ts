@@ -1,5 +1,5 @@
 /**
- * KATA Framework - TMS Synchronization
+ * KATA Architecture - TMS Synchronization
  *
  * Syncs ATC results to Test Management Systems.
  * Supports: X-Ray Cloud, Jira Direct
@@ -128,7 +128,7 @@ async function syncToXray(results: Record<string, AtcResult[]>): Promise<SyncRes
       info: {
         project: projectKey,
         summary: `KATA Execution - ${env.buildId}`,
-        description: `Automated test execution via KATA Framework\nEnvironment: ${env.current}`,
+        description: `Automated test execution via KATA Architecture\nEnvironment: ${env.current}`,
       },
       tests,
     };

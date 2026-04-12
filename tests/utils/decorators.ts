@@ -1,5 +1,5 @@
 /**
- * KATA Framework - ATC Decorator & Result Tracking
+ * KATA Architecture - ATC Decorator & Result Tracking
  *
  * The @atc decorator connects test methods to Jira/Xray test cases
  * and tracks execution results for reporting and TMS synchronization.

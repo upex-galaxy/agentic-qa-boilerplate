@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Layer 1: Test Context
+ * KATA Architecture - Layer 1: Test Context
  *
  * TestContext is the foundation layer that centralizes Playwright drivers
  * and shared configuration for all test components.

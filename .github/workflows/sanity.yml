@@ -1,5 +1,5 @@
 # ============================================
-# KATA Framework - Sanity Test Pipeline
+# KATA Architecture - Sanity Test Pipeline
 # ============================================
 # Purpose: Run specific tests by grep pattern or file path.
 # Useful for validating new tests in CI before merging PRs.

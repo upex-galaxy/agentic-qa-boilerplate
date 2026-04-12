@@ -1,5 +1,5 @@
 /**
- * KATA Framework - API Auth Setup (Project)
+ * KATA Architecture - API Auth Setup (Project)
  *
  * Authenticates via API directly using AuthApi.authenticateSuccessfully() ATC.
  * Generates a JWT token for use by Integration tests.

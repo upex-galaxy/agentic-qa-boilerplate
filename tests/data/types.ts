@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Test Data Types
+ * KATA Architecture - Test Data Types
  *
  * Types for test data generation and fixture state.
  * These are TEST-ONLY concepts — NOT API contract types.

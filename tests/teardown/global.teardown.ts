@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Global Teardown (Project)
+ * KATA Architecture - Global Teardown (Project)
  *
  * Runs LAST after all test projects complete.
  * Generates reports, syncs to TMS, cleans up resources.
@@ -21,7 +21,7 @@ import { syncResults } from '@utils/jiraSync';
  */
 teardown('Global Teardown: generate reports and sync TMS', async () => {
   console.log(`\n${'='.repeat(60)}`);
-  console.log('KATA Framework - Global Teardown');
+  console.log('KATA Architecture - Global Teardown');
   console.log('='.repeat(60));
 
   // Read NDJSON directly (KataReporter.onEnd() hasn't fired yet)

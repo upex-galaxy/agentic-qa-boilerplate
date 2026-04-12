@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Layer 4: Unified Test Fixture
+ * KATA Architecture - Layer 4: Unified Test Fixture
  *
  * Main entry point for all test types (E2E, Integration).
  * Combines API and UI fixtures for seamless hybrid testing.

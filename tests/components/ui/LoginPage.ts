@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Layer 3: Login Page Component
+ * KATA Architecture - Layer 3: Login Page Component
  *
  * UI component for authentication via the login page.
  * Handles login flows for E2E tests.

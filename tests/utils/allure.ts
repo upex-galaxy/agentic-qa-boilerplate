@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Shared Allure Utilities
+ * KATA Architecture - Shared Allure Utilities
  *
  * Provides common Allure attachment helpers used across the framework.
  * Centralizes Allure functionality to avoid duplication (DRY principle).

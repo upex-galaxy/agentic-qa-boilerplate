@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Environment Variables Configuration
+ * KATA Architecture - Environment Variables Configuration
  *
  * SINGLE SOURCE OF TRUTH for all environment variables.
  * This is the ONLY file that should read process.env.

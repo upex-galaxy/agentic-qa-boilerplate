@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Example E2E Test
+ * KATA Architecture - Example E2E Test
  *
  * ⚠️  REFERENCE ONLY - THIS TEST IS NOT FUNCTIONAL
  *

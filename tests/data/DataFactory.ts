@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Data Factory
+ * KATA Architecture - Data Factory
  *
  * Generador centralizado de datos de prueba.
  * Regla de oro: NUNCA datos estáticos, siempre dinámicos con Faker.

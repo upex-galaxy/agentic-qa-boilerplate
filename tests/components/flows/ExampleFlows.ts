@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Example Flows
+ * KATA Architecture - Example Flows
  *
  * ⚠️  REFERENCE ONLY - THIS MODULE USES FICTIONAL ENDPOINTS
  *

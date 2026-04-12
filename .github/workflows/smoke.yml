@@ -1,5 +1,5 @@
 # ============================================
-# KATA Framework - Smoke Test Pipeline
+# KATA Architecture - Smoke Test Pipeline
 # ============================================
 # Purpose: Daily health check running only @critical tagged tests.
 # Perfect for verifying app components work after deployments and releases.

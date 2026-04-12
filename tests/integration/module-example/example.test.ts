@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Example Integration Test
+ * KATA Architecture - Example Integration Test
  *
  * ⚠️  REFERENCE ONLY - THIS TEST IS NOT FUNCTIONAL
  *

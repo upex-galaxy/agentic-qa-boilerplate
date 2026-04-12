@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Global Setup (Project)
+ * KATA Architecture - Global Setup (Project)
  *
  * Runs FIRST before all other projects.
  * Prepares the test environment: creates directories, validates config.
@@ -20,7 +20,7 @@ import { env } from '@variables';
  */
 setup('Global Setup: prepare environment', async () => {
   console.log(`\n${'='.repeat(60)}`);
-  console.log('KATA Framework - Global Setup');
+  console.log('KATA Architecture - Global Setup');
   console.log('='.repeat(60));
   console.log(`Environment: ${env.current}`);
   console.log(`CI Mode: ${env.isCI ? 'Yes' : 'No'}`);

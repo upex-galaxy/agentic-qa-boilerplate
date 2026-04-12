@@ -1,5 +1,5 @@
 /**
- * KATA Framework - UI Auth Setup
+ * KATA Architecture - UI Auth Setup
  *
  * Authenticates via the login page UI and intercepts the JWT token
  * using page.waitForResponse() - single authentication, no separate API call.

@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Layer 2: UI Base Component
+ * KATA Architecture - Layer 2: UI Base Component
  *
  * UiBase is the base class for all UI components.
  * Extends TestContext to inherit Playwright drivers and configuration.

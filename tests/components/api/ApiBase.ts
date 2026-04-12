@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Layer 2: API Base Component
+ * KATA Architecture - Layer 2: API Base Component
  *
  * ApiBase provides type-safe HTTP methods for all API components.
  * Uses Playwright's native APIRequestContext for requests.

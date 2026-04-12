@@ -1,5 +1,5 @@
 /**
- * KATA Framework - User Session Integration Tests
+ * KATA Architecture - User Session Integration Tests
  *
  * Tests for authenticated user session via API.
  * Validates that token propagation works correctly.

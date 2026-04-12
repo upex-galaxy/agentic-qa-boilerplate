@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Layer 4: UI Fixture
+ * KATA Architecture - Layer 4: UI Fixture
  *
  * Dependency Injection container for all UI components.
  * Provides unified access to UI testing capabilities.

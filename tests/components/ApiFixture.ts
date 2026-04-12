@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Layer 4: API Fixture
+ * KATA Architecture - Layer 4: API Fixture
  *
  * Dependency Injection container for all API components.
  * Provides unified access to API testing capabilities.

@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Playwright Configuration
+ * KATA Architecture - Playwright Configuration
  *
  * Comprehensive configuration for E2E and Integration testing
  * with Allure reporting and multi-environment support.

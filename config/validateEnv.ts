@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Environment Variables Validator
+ * KATA Architecture - Environment Variables Validator
  *
  * Validates required variables based on context:
  * - Credentials: Only for current TEST_ENV (local or staging)

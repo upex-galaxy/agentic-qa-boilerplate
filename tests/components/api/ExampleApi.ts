@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Layer 3: Example API Component
+ * KATA Architecture - Layer 3: Example API Component
  *
  * ⚠️  REFERENCE ONLY - THIS COMPONENT USES FICTIONAL ENDPOINTS
  *

@@ -3,7 +3,7 @@
   "type": "module",
   "version": "1.0.0",
   "private": true,
-  "description": "KATA Framework - AI-Driven Playwright Test Automation Boilerplate",
+  "description": "KATA Architecture - AI-Driven Playwright Test Automation Boilerplate",
   "author": "UPEX Galaxy",
   "license": "MIT",
   "homepage": "https://github.com/upex-galaxy/kata-playwright-boilerplate#readme",

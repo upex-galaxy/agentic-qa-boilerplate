@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Custom Reporter
+ * KATA Architecture - Custom Reporter
  *
  * Rich terminal output for test execution with colorful status indicators.
  * Provides detailed step-by-step logging, error snippets, and summary reports.

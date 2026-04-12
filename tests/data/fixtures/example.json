@@ -1,5 +1,5 @@
 {
-  "_comment": "KATA Framework - Example Test Data Fixture",
+  "_comment": "KATA Architecture - Example Test Data Fixture",
   "_warning": "REFERENCE ONLY - This is sample data structure, not real test data",
   "_usage": "Copy this file and update with your actual test data",
   "users": [

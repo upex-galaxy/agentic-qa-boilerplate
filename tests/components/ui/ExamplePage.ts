@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Layer 3: Example Page Component
+ * KATA Architecture - Layer 3: Example Page Component
  *
  * ⚠️  REFERENCE ONLY - THIS COMPONENT USES FICTIONAL PAGES
  *

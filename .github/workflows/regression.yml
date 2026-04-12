@@ -1,5 +1,5 @@
 # ============================================
-# KATA Framework - Regression Test Pipeline
+# KATA Architecture - Regression Test Pipeline
 # ============================================
 # Purpose: Complete test coverage - Integration tests first, then E2E tests.
 # This is the main test pipeline for full regression testing.

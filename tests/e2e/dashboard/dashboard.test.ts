@@ -1,5 +1,5 @@
 /**
- * KATA Framework - Dashboard E2E Test
+ * KATA Architecture - Dashboard E2E Test
  *
  * Simple validation test to verify the Global Setup authentication works.
  * This test relies on the e2e-auth.setup.ts to have already logged in
