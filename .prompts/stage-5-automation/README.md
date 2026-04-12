@@ -1,13 +1,13 @@
 # Stage 5: Test Automation
 
-> **Purpose**: Implement automated tests for documented test cases using the KATA framework.
+> **Purpose**: Implement automated tests for documented test cases using the KATA architecture.
 > **When to use**: After tests are documented in the TMS and marked as "automation-candidate".
 
 ---
 
 ## Overview
 
-Test Automation is the implementation phase where validated test cases become automated tests following the KATA (Komponent Action Test Architecture) framework.
+Test Automation is the implementation phase where validated test cases become automated tests following the KATA (Component Action Test Architecture).
 
 **IMPORTANT:** This stage comes AFTER:
 
@@ -115,7 +115,7 @@ Before using these prompts:
 
 1. **Tests documented in TMS** (Stage 4 completed)
 2. **Tests marked as "automation-candidate"**
-3. **KATA framework configured** (see `.prompts/setup/kata-framework-adaptation.md`)
+3. **KATA architecture configured** (see `.prompts/setup/kata-architecture-adaptation.md`)
 
 ### Context Files Required
 

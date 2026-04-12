@@ -8,19 +8,29 @@
 
 ## Purpose
 
-Create E2E (End-to-End) automated tests for validated scenarios using the KATA framework.
+Create E2E (End-to-End) automated tests for validated scenarios using the KATA architecture.
 
 **This prompt is executed AFTER:**
 
 - Test documented in TMS (Stage 4)
 - Test marked as "automation-candidate"
-- KATA framework configured in project
+- KATA architecture configured in project
 
 **Prerequisites:**
 
 - Access to Playwright MCP tools (for exploration)
-- KATA framework configured in project
+- KATA architecture configured in project
 - Test case documented in TMS
+
+---
+
+## PREREQUISITE CHECK
+
+Before proceeding, verify that an implementation plan exists for this ticket:
+
+1. Check for `{ticket-dir}/implementation-plan.md`
+2. If it does **NOT** exist: **STOP**. Create it first using `.prompts/stage-5-automation/planning/test-implementation-plan.md`
+3. If it **DOES** exist: Read it and use it as your blueprint for this phase.
 
 ---
 
@@ -667,6 +677,16 @@ async checkoutFlow() {
 await steps.checkout.setupAuthenticatedUserWithCart(creds, product);
 await ui.checkout.completeCheckoutSuccessfully();
 ```
+
+---
+
+## PROGRESS UPDATE (Module Workflow Only)
+
+If this ticket is part of a module workflow with `PROGRESS.md`:
+
+- Update test file path and done count in the ticket progress table
+- Add session log entry with date and summary
+- **Next step**: Run the review using `.prompts/stage-5-automation/review/e2e-test-review.md`
 
 ---
 

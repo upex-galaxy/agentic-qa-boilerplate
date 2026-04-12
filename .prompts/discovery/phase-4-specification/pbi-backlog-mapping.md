@@ -310,7 +310,7 @@ jira issue list -a$(jira me)
 
 ---
 
-## Integration with KATA Framework
+## Integration with KATA Architecture
 
 ### When to Fetch from Backlog
 

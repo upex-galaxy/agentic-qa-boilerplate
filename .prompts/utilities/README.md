@@ -63,7 +63,7 @@ Generates professional project documentation:
 
 **Use when**:
 - Discovery phases are complete
-- After KATA framework adaptation
+- After KATA architecture adaptation
 - When project documentation needs refresh
 
 ---
@@ -125,7 +125,7 @@ Some prompts have been reorganized:
 
 | Prompt | New Location | Reason |
 |--------|--------------|--------|
-| `kata-framework-setup.md` | `setup/kata-framework-adaptation.md` | Renamed + moved to setup (one-time) |
+| `kata-framework-setup.md` | `setup/kata-architecture-adaptation.md` | Renamed + moved to setup (one-time) |
 | `api-architecture.md` | `discovery/api-architecture.md` | Discovery prompt (one-time) |
 | `business-data-map.md` | `discovery/business-data-map.md` | Discovery prompt (one-time) |
 

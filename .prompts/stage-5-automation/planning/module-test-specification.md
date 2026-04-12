@@ -557,6 +557,6 @@ Session N with Test-Automation Agent
 
 - `guidelines/QA/atc-definition-strategy.md` — How to define and name ATCs
 - `guidelines/QA/test-spec-standards.md` — TC discovery scopes, New vs Update TC workflow
-- `guidelines/TAE/kata-ai-index.md` — KATA framework for Test-Automation Agent
+- `guidelines/TAE/kata-ai-index.md` — KATA architecture for Test-Automation Agent
 - `guidelines/TAE/test-design-principles.md` — TC Identity Rule, assertion rules
 - `guidelines/TAE/automation-standards.md` — Implementation standards for Test-Automation Agent

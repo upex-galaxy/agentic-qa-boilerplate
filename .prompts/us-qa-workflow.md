@@ -1,14 +1,31 @@
 # US QA Workflow
 
-> **Purpose**: Complete QA workflow for a single User Story, from exploratory testing to test automation.
+> **Purpose**: Complete In-Sprint Testing workflow for a single User Story, from planning to test automation.
 > **Scope**: One US at a time - complete all stages before moving to the next US.
 > **Output**: Tested feature, documented test cases, automated tests.
+> Based on IQL (Integrated Quality Lifecycle) methodology.
 
 ---
 
 ## Overview
 
-This orchestrator guides the complete QA process for **one User Story**. Execute stages sequentially, completing each before moving to the next.
+This orchestrator guides the complete QA process for **one User Story**, from session initialization to automation. It integrates with your TMS (Jira, Xray, etc.) for full traceability and uses local PBI documentation for AI context persistence.
+
+**Entry Point + 6 Stages:**
+0. **Session Start** (REQUIRED): Initialize session, load context, create PBI folder
+1. **Planning (Shift-Left)**: Triage + Create ATP/ATR/TCs with full traceability
+2. **Execution**: Execute TCs, update statuses (PASSED/FAILED)
+3. **Reporting**: Complete ATR Test Report, report bugs
+4. **Documentation**: Prioritize TCs for regression (ROI analysis)
+5. **Automation**: Implement automated tests for Candidate TCs
+6. **Regression**: Execute automated suites, analyze results, GO/NO-GO
+
+**Key Principle:**
+- **Stage 1 creates ALL TMS artifacts** (ATP, ATR, TCs) with complete traceability
+- **Stage 2 executes** what was planned (no TC creation)
+- **Stage 3 reports** results and bugs
+
+Execute stages sequentially, completing each before moving to the next.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -54,8 +71,20 @@ This orchestrator guides the complete QA process for **one User Story**. Execute
 
 ## Prerequisites
 
+> **Run `session-start.md` FIRST** to initialize the testing session.
+>
+> Session Start provides:
+> - Project context loaded (business-data-map, api-architecture, project-test-guide)
+> - Module context loaded/created
+> - PBI folder created: `.context/PBI/{module-name}/TK-{number}-{brief-title}/`
+> - Skills loaded (TMS CLI, Playwright CLI)
+> - Initial context.md with ACs and code locations
+>
+> **If session not initialized:** Run `session-start.md` before continuing.
+
 Before starting, verify:
 
+- [ ] Session Start executed (`session-start.md`)
 - [ ] User Story is in "Ready For QA" status
 - [ ] Feature is deployed to staging environment
 - [ ] Access to staging URL is available
@@ -64,12 +93,14 @@ Before starting, verify:
 ### Context Loading
 
 ```markdown
-Load these files before starting:
+Load these files before starting (ordered by priority):
 
-1. `.context/guidelines/TAE/kata-ai-index.md` → KATA patterns
-2. `.context/guidelines/TAE/automation-standards.md` → Coding standards
-3. `.context/test-management-system.md` → TMS configuration (if exists)
-4. `.context/project-test-guide.md` → What to test (if exists)
+1. `.context/business-data-map.md` → Business flows and state machines
+2. `.context/api-architecture.md` → API endpoints and authentication
+3. `.context/project-test-guide.md` → What to test (if exists)
+4. `.context/guidelines/TAE/kata-ai-index.md` → KATA patterns (for automation)
+5. `.context/guidelines/TAE/automation-standards.md` → Coding standards (for automation)
+6. `.context/test-management-system.md` → TMS configuration (if exists)
 ```
 
 ---
@@ -538,7 +569,7 @@ Copy this template to track progress for a specific US:
 
 ### Utilities
 
-- `.prompts/setup/kata-framework-adaptation.md` - Framework adaptation
+- `.prompts/setup/kata-architecture-adaptation.md` - Framework adaptation
 - `.prompts/utilities/git-flow.md` - Git workflow
 
 ---

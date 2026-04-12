@@ -1562,7 +1562,7 @@ This prompt generates artifacts that follow the **Integrated Quality Lifecycle**
 
 ### KATA: Automation Architecture
 
-**KATA** (Komponent Action Test Architecture) **is not an IQL artifact**, but the native automation architecture:
+**KATA** (Component Action Test Architecture) **is not an IQL artifact**, but the native automation architecture:
 
 - Used in Mid-Game (Steps 8-10) to automate ATCs
 - The `@atc('PROJECT-XXX')` decorator links scripts with Jira tickets

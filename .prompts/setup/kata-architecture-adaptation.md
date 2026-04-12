@@ -1,8 +1,8 @@
-# KATA Framework Adaptation
+# KATA Architecture Adaptation
 
 > **Purpose**: Adapt the KATA template to your specific project's application under test.
 > **When to Use**: After cloning this template and completing Discovery.
-> **Output**: `.context/PBI/kata-framework-adaptation-plan.md` + Implementation (on approval).
+> **Output**: `.context/PBI/kata-architecture-adaptation-plan.md` + Implementation (on approval).
 
 ---
 
@@ -218,12 +218,12 @@ To complete the adaptation plan, I need clarification:
 
 ### STEP 1.8: Generate Adaptation Plan
 
-Create file: `.context/PBI/kata-framework-adaptation-plan.md`
+Create file: `.context/PBI/kata-architecture-adaptation-plan.md`
 
 **Use this template:**
 
 ```markdown
-# KATA Framework Adaptation Plan
+# KATA Architecture Adaptation Plan
 
 > **Generated**: {DATE}
 > **Project**: {PROJECT_NAME}
@@ -431,7 +431,7 @@ Before proceeding to implementation, confirm:
 
 ### STEP 2.1: Read Approved Plan
 
-Read `.context/PBI/kata-framework-adaptation-plan.md` to understand:
+Read `.context/PBI/kata-architecture-adaptation-plan.md` to understand:
 
 - Exact changes needed for each file
 - Order of implementation

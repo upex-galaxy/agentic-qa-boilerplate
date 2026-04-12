@@ -186,7 +186,7 @@ Example:
           │                    │          │
           ▼                    ▼          ▼
 ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
-│    bookings     │  │     reviews     │  │    messages     │
+│     orders      │  │     reviews     │  │    messages     │
 └─────────────────┘  └─────────────────┘  └─────────────────┘
 
 ### Entities and Their Business Role

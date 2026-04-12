@@ -1,7 +1,7 @@
 # Context Engineering Setup
 
 > **Purpose:** Generate/update README.md and AI project memory file for the test automation project.
-> **When to Use:** After KATA framework setup, after discovery, or to refresh documentation.
+> **When to Use:** After KATA architecture setup, after discovery, or to refresh documentation.
 > **Output:** Updated `README.md` + AI-specific project memory file.
 
 ---
@@ -72,7 +72,7 @@ Based on detection or user response:
 Run these checks to understand the current state:
 
 ```bash
-# KATA Framework
+# KATA Architecture
 ls tests/components/TestContext.ts 2>/dev/null && echo "✓ TestContext exists"
 ls tests/components/api/ApiBase.ts 2>/dev/null && echo "✓ ApiBase exists"
 ls tests/components/ui/UiBase.ts 2>/dev/null && echo "✓ UiBase exists"
@@ -95,7 +95,7 @@ Based on what exists:
 |-----------|------|--------|
 | KATA + Context files exist | **Full Update** | Generate complete README + Update all sections |
 | KATA exists, no context | **Minimal Update** | Generate basic README + Keep placeholders |
-| No KATA framework | **Stop** | Guide user to run `setup/kata-framework-adaptation.md` first |
+| No KATA architecture | **Stop** | Guide user to run `setup/kata-architecture-adaptation.md` first |
 
 ---
 
@@ -179,7 +179,7 @@ Generate README.md with this structure:
 # {Project Name} - Test Automation
 
 > Test automation suite for [{Target Project Name}]({repo URL})
-> Built with **KATA Framework** + Playwright
+> Built with **KATA Architecture** + Playwright
 
 ## Overview
 [Brief description of what this test suite covers]
@@ -203,7 +203,7 @@ Generate README.md with this structure:
 ## Project Structure
 [Simplified tree of tests/ directory]
 
-## KATA Framework
+## KATA Architecture
 [Brief explanation with link to kata-ai-index.md]
 
 ## AI-Assisted Development
@@ -388,7 +388,7 @@ After completion, report:
 - Installation and setup guide
 - Available scripts (synced with package.json)
 - Project structure
-- KATA framework reference
+- KATA architecture reference
 
 **{PROJECT_MEMORY_FILE} updated with:**
 - Project Identity: {name, type, stack}
@@ -410,7 +410,7 @@ After completion, report:
 ```markdown
 # Detected
 ✓ AI Tool: Claude Code
-✓ KATA Framework configured
+✓ KATA Architecture configured
 ✓ Context files exist
 
 # Output
@@ -423,7 +423,7 @@ After completion, report:
 ```markdown
 # Detected
 ✓ AI Tool: Cursor
-✓ KATA Framework configured
+✓ KATA Architecture configured
 ✗ No context files
 
 # Output
@@ -436,7 +436,7 @@ After completion, report:
 ```markdown
 # Detected
 ✓ AI Tool: GitHub Copilot
-✓ KATA Framework configured
+✓ KATA Architecture configured
 ✗ No existing config
 
 # Output

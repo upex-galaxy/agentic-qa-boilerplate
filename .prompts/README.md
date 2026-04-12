@@ -1,6 +1,6 @@
 # AI PROMPTS - Test Automation Boilerplate
 
-This directory contains optimized prompts for QA and Test Automation using the KATA framework.
+This directory contains optimized prompts for QA and Test Automation using the KATA architecture (Component Action Test Architecture).
 
 ---
 
@@ -26,7 +26,7 @@ This directory contains optimized prompts for QA and Test Automation using the K
    - api-architecture.md        → Document APIs
 
 4. Adapt Framework (setup/):
-   - kata-framework-adaptation.md → Configure KATA for your project
+   - kata-architecture-adaptation.md → Configure KATA for your project
 
 5. Generate Documentation (utilities/):
    - context-engineering-setup.md → Generate README + CLAUDE.md
@@ -39,7 +39,7 @@ This directory contains optimized prompts for QA and Test Automation using the K
 ### For User Story QA
 
 ```
-1. Is KATA framework adapted? → setup/kata-framework-adaptation.md
+1. Is KATA architecture adapted? → setup/kata-architecture-adaptation.md
 2. Is system documented? → discovery/business-data-map.md + api-architecture.md
 3. Run: us-qa-workflow.md (orchestrates all QA stages)
 ```
@@ -64,7 +64,7 @@ This directory contains optimized prompts for QA and Test Automation using the K
 │   └── business-data-map.md        # Business flow mapping (context generator)
 │
 ├── setup/                          # ONE-TIME SETUP
-│   └── kata-framework-adaptation.md # Adapt KATA template to project
+│   └── kata-architecture-adaptation.md # Adapt KATA template to project
 │
 ├── utilities/                      # REUSABLE UTILITIES
 │   ├── context-engineering-setup.md # Generate README + CLAUDE.md
@@ -91,7 +91,7 @@ One-time prompts for initial project configuration.
 
 | Prompt | Purpose |
 |--------|---------|
-| `setup/kata-framework-adaptation.md` | Adapt KATA template to your specific project |
+| `setup/kata-architecture-adaptation.md` | Adapt KATA template to your specific project |
 
 ---
 
@@ -363,15 +363,15 @@ When traceability breaks (missing links, orphan TCs), use:
                               │
                               ▼
 ┌───────────────────────────────────────────────────────────────────┐
-│  SETUP: KATA FRAMEWORK ADAPTATION                                 │
+│  SETUP: KATA ARCHITECTURE ADAPTATION                              │
 │  ┌─────────────────────────────────────────┐                      │
-│  │ setup/kata-framework-adaptation.md      │                      │
+│  │ setup/kata-architecture-adaptation.md      │                      │
 │  │ • Reads all context (SRS, PRD, idea)    │                      │
 │  │ • Generates adaptation plan              │                      │
 │  │ • Configures auth (global, UI, API)     │                      │
 │  │ • Creates first domain components       │                      │
 │  └─────────────────────────────────────────┘                      │
-│  OUTPUT: .context/PBI/kata-framework-adaptation-plan.md           │
+│  OUTPUT: .context/PBI/kata-architecture-adaptation-plan.md           │
 └───────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -429,14 +429,14 @@ Before automating, read the documentation in:
 
 ## TEMPLATE REPOSITORY
 
-This repository is the KATA framework template:
+This repository is the KATA architecture template:
 
 ```
 https://github.com/upex-galaxy/ai-driven-test-automation-boilerplate
 Branch: main
 ```
 
-Use the `setup/kata-framework-adaptation.md` prompt to adapt it to your project.
+Use the `setup/kata-architecture-adaptation.md` prompt to adapt it to your project.
 
 ---
 

@@ -13,11 +13,11 @@ Setup prompts are executed once when adapting this template to a real project. U
 
 | Prompt | Purpose | Output |
 |--------|---------|--------|
-| `kata-framework-adaptation.md` | Adapt KATA template to your project | `.context/PBI/kata-framework-adaptation-plan.md` |
+| `kata-architecture-adaptation.md` | Adapt KATA template to your project | `.context/PBI/kata-architecture-adaptation-plan.md` |
 
 ---
 
-## KATA Framework Adaptation
+## KATA Architecture Adaptation
 
 ### What It Does
 
@@ -36,7 +36,7 @@ PHASE 1: ANALYSIS + PLAN
 ├── Read KATA guidelines (TAE/)
 ├── Analyze template (tests/)
 ├── Ask questions (if info missing)
-└── OUTPUT: .context/PBI/kata-framework-adaptation-plan.md
+└── OUTPUT: .context/PBI/kata-architecture-adaptation-plan.md
 
 PHASE 2: IMPLEMENTATION (user approval required)
 ├── Read approved plan
@@ -77,7 +77,7 @@ The adaptation ensures:
 2. Run Discovery (phases 1-4)
    └─ Generates .context/ with project information
 
-3. Run kata-framework-adaptation.md
+3. Run kata-architecture-adaptation.md
    └─ Generates adaptation plan
    └─ Waits for your approval
    └─ Implements on confirmation
