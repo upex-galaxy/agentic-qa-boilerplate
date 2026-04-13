@@ -162,15 +162,17 @@ Unattended API test runs are a core requirement. Without auto-refresh, CI runs f
 
 | Field | Value |
 |---|---|
-| **Status** | Pending — Last (after all other tasks) |
+| **Status** | Planned — Implementation plan ready |
 | **Owner** | Unassigned |
 | **Priority** | High (blocking next boilerplate release) |
+| **Plan** | `docs/plan-update-boilerplate-refactor.md` |
 
-**Note**: This is explicitly the LAST task to do. Only after ALL other tasks are complete and the repository is fully polished. The script needs to handle migration for consumers who do not have the variable system yet.
+**Note**: All prerequisite tasks (1-5, 7) are now complete. Implementation plan created with 4 fixes + 4 enhancements, estimated ~4-5 hours. See plan document for full details.
 
 **Scope**
 
 - `cli/update-boilerplate.ts`
+- New: `.boilerplate-version.json` (version tracking)
 - Possibly its README or usage docs
 
 **Context**
