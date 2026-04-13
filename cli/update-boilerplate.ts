@@ -16,11 +16,10 @@
  * WHAT GETS SYNCED (Universal - same across all projects)
  * ============================================================================
  *
- *   .prompts/           QA workflow prompts (stages, phases, utilities)
+ *   .prompts/           QA workflow prompts (stages, phases, utilities, orchestrators)
  *   .context/guidelines/ Framework documentation (TAE, QA, MCP guides)
  *   docs/               General documentation
  *   cli/                CLI tools (this file auto-updates itself)
- *   templates/          Sprint testing prompt, templates
  *   .vscode/            IDE configuration (extensions, settings)
  *   .husky/             Git hooks
  *   tooling/            Config files (editorconfig, prettier)
@@ -62,7 +61,6 @@
  *   bun run update guidelines       Update .context/guidelines/
  *   bun run update docs             Update docs/
  *   bun run update cli              Update cli/
- *   bun run update templates        Update templates/
  *   bun run update vscode           Update .vscode/
  *   bun run update husky            Update .husky/
  *   bun run update tooling          Update config files (prettier, eslint, etc.)
@@ -355,7 +353,7 @@ function parseArgs(args: string[]): ParsedArgs {
     rollback: false,
   };
 
-  const validCommands = ['all', 'prompts', 'guidelines', 'docs', 'cli', 'templates', 'vscode', 'husky', 'tooling', 'examples', 'help', 'rollback'];
+  const validCommands = ['all', 'prompts', 'guidelines', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples', 'help', 'rollback'];
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -477,7 +475,6 @@ function createBackup(components: string[]): string {
     guidelines: { src: '.context/guidelines', dest: '.context/guidelines' },
     docs: { src: 'docs', dest: 'docs' },
     cli: { src: 'cli', dest: 'cli' },
-    templates: { src: 'templates', dest: 'templates' },
     vscode: { src: '.vscode', dest: '.vscode' },
     husky: { src: '.husky', dest: '.husky' },
   };
@@ -697,9 +694,6 @@ function executeDryRun(commands: string[], allMode: boolean): void {
   if (commands.includes('cli') || allMode) {
     components.push({ name: 'CLI Tools (cli/)', dir: join(TEMP_DIR, 'cli') });
   }
-  if (commands.includes('templates') || allMode) {
-    components.push({ name: 'Templates (templates/)', dir: join(TEMP_DIR, 'templates') });
-  }
   if (commands.includes('vscode') || allMode) {
     components.push({ name: 'VS Code (.vscode/)', dir: join(TEMP_DIR, '.vscode') });
   }
@@ -908,19 +902,6 @@ function updateCli(): MergeResult {
   return mergeDirectory(cliPath, 'cli');
 }
 
-function updateTemplates(): MergeResult {
-  log.step('Updating templates/ (merge)...');
-
-  const templatesPath = join(TEMP_DIR, 'templates');
-  if (!existsSync(templatesPath)) {
-    log.warning('templates directory not found in template');
-    return { success: 0, errors: 0 };
-  }
-
-  log.merge('Syncing templates...');
-  return mergeDirectory(templatesPath, 'templates');
-}
-
 function updateVscode(): MergeResult {
   log.step('Updating .vscode/ (merge)...');
 
@@ -1067,7 +1048,6 @@ async function showMainMenu(): Promise<string[]> {
       { name: 'Guidelines (.context/guidelines/)', value: 'guidelines' },
       { name: 'Documentation (docs/)', value: 'docs' },
       { name: 'CLI Tools (cli/)', value: 'cli' },
-      { name: 'Templates (templates/)', value: 'templates' },
       { name: 'VS Code Config (.vscode/)', value: 'vscode' },
       { name: 'Git Hooks (.husky/)', value: 'husky' },
       { name: 'Tooling (prettier, eslint, tsconfig)', value: 'tooling' },
@@ -1176,7 +1156,6 @@ ${colors.bold}COMMANDS:${colors.reset}
   guidelines    Update .context/guidelines/ (TAE, QA, MCP guides)
   docs          Update docs/ (documentation)
   cli           Update cli/ (CLI tools)
-  templates     Update templates/ (sprint testing prompt, etc.)
   vscode        Update .vscode/ (IDE configuration)
   husky         Update .husky/ (Git hooks)
   tooling       Update config files (prettier, eslint, tsconfig)
@@ -1208,7 +1187,6 @@ ${colors.bold}WHAT GETS SYNCED:${colors.reset}
   ${colors.green}  .context/guidelines/${colors.reset}  Framework documentation
   ${colors.green}  docs/${colors.reset}                 General documentation
   ${colors.green}  cli/${colors.reset}                  CLI tools (auto-updates)
-  ${colors.green}  templates/${colors.reset}            Sprint testing prompt, templates
   ${colors.green}  .vscode/${colors.reset}              IDE configuration
   ${colors.green}  .husky/${colors.reset}               Git hooks
   ${colors.green}  tooling${colors.reset}               editorconfig, prettier
@@ -1362,7 +1340,7 @@ function detectUnfilledVariables(): void {
 
   // Scan synced directories for {{VARIABLE}} usage
   const VARIABLE_REGEX = /\{\{([A-Z][A-Z_]+)\}\}/g;
-  const syncedDirs = ['.prompts', '.context/guidelines', 'docs', 'templates'];
+  const syncedDirs = ['.prompts', '.context/guidelines', 'docs'];
   const varUsage = new Map<string, number>(); // varName -> file count
 
   for (const dir of syncedDirs) {
@@ -1529,7 +1507,7 @@ async function main(): Promise<void> {
     checkMigrationNeeded();
 
     const components = selected.includes('all')
-      ? ['prompts', 'guidelines', 'docs', 'cli', 'templates', 'vscode', 'husky', 'tooling', 'examples']
+      ? ['prompts', 'guidelines', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples']
       : selected;
 
     createBackup(components);
@@ -1565,9 +1543,6 @@ async function main(): Promise<void> {
         }
         else if (cmd === 'cli') {
           addResult(updateCli());
-        }
-        else if (cmd === 'templates') {
-          addResult(updateTemplates());
         }
         else if (cmd === 'vscode') {
           addResult(updateVscode());
@@ -1617,7 +1592,7 @@ async function main(): Promise<void> {
 
   // Expand 'all' command
   if (parsed.commands.includes('all')) {
-    parsed.commands = ['prompts', 'guidelines', 'docs', 'cli', 'templates', 'vscode', 'husky', 'tooling', 'examples'];
+    parsed.commands = ['prompts', 'guidelines', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples'];
     parsed.all = true;
   }
 
@@ -1664,9 +1639,6 @@ async function main(): Promise<void> {
         break;
       case 'cli':
         addResult(updateCli());
-        break;
-      case 'templates':
-        addResult(updateTemplates());
         break;
       case 'vscode':
         addResult(updateVscode());

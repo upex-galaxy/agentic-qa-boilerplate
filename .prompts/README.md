@@ -112,15 +112,15 @@ Reusable prompts for common tasks.
 
 ---
 
-## TEMPLATES (Copy-Paste)
+## ORCHESTRATORS
 
-Templates are NOT terminal prompts. They are copy-paste documents that you adapt and paste into a chat session.
+Orchestrators manage multi-step workflows by dispatching sub-agents. Load them directly with `@`.
 
-| Template | Purpose | Location |
-|----------|---------|----------|
-| `sprint-testing-prompt.md` | Sprint testing orchestration (multi-ticket) | `templates/` |
+| Orchestrator | Purpose | Location |
+|--------------|---------|----------|
+| `sprint-testing-agent.md` | Sprint testing orchestration (multi-ticket, auto-progression) | `.prompts/orchestrators/` |
 
-**Usage**: Copy the content between the `--- START COPY ---` and `--- END COPY ---` markers, edit the session notes, and paste into your chat.
+**Usage**: Load via `@.prompts/orchestrators/sprint-testing-agent.md` and provide the required parameters (sprint file path, optional resume ticket).
 
 ---
 
