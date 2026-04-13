@@ -11,55 +11,68 @@
  *   bun run api:login local           # Authenticate against local environment
  *   bun run api:login staging         # Authenticate against staging environment
  *   bun run api:login --help          # Show help
+ *
+ * Environment URLs, credentials, and auth endpoints are sourced from
+ * config/variables.ts (single source of truth). See that file to add
+ * new environments or change URLs.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import type { ApiState } from '@data/types';
+
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 // ============================================
-// Types
+// Logging (must be defined early for validation errors)
 // ============================================
 
-interface EnvConfig {
-  apiBaseUrl: string
-  authEndpoint: string
-  envVarPrefix: string
-  mcpServerKey: string
+const PREFIX = '[api-login]';
+
+function log(msg: string, type: 'info' | 'success' | 'warn' | 'error' = 'info') {
+  const icons = { info: '\u2139', success: '\u2713', warn: '\u26A0', error: '\u2717' };
+  const colors = { info: '\x1B[36m', success: '\x1B[32m', warn: '\x1B[33m', error: '\x1B[31m' };
+  console.log(`${colors[type]}${icons[type]}\x1B[0m ${PREFIX} ${msg}`);
 }
 
-interface ApiState {
-  token: string
-  tokenType: string
-  expiresIn: number
-  refreshToken: string | null
-  source: 'api-login'
-  createdAt: string
+// ============================================
+// CLI Argument Parsing (BEFORE config import)
+// ============================================
+
+const args = process.argv.slice(2);
+
+if (args.includes('--help') || args.includes('-h')) {
+  showHelp();
+  process.exit(0);
 }
 
-interface McpConfig {
-  mcpServers?: Record<string, {
-    command?: string
-    args?: string[]
-    env?: Record<string, string>
-    [key: string]: unknown
-  }>
-  [key: string]: unknown
+// Validate and override TEST_ENV BEFORE importing config,
+// because config/variables.ts reads TEST_ENV at evaluation time.
+const validEnvs = ['local', 'staging']; // Must match Environment type in config/variables.ts
+const envArg = args[0];
+if (envArg) {
+  if (!validEnvs.includes(envArg)) {
+    log(`Unknown environment: "${envArg}"`, 'error');
+    log(`Available environments: ${validEnvs.join(', ')}`, 'info');
+    process.exit(1);
+  }
+  process.env.TEST_ENV = envArg;
 }
+
+// Dynamic import: config/variables.ts reads TEST_ENV at evaluation time,
+// so we must set it above BEFORE this import runs.
+const { config, env } = await import('@variables');
 
 // ============================================
 // Constants
 // ============================================
 
 const PROJECT_ROOT = resolve(import.meta.dir, '..');
-const AUTH_DIR = resolve(PROJECT_ROOT, '.auth');
-const API_STATE_FILE = resolve(AUTH_DIR, 'api-state.json');
 const MCP_CONFIG_FILE = resolve(PROJECT_ROOT, '.mcp.json');
-const PREFIX = '[api-login]';
 
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║  PROJECT-SPECIFIC AUTHENTICATION CONFIGURATION                  ║
 // ║  Adapt this section to match YOUR project's auth mechanism.     ║
-// ║  The boilerplate default uses POST /api/auth/login with         ║
+// ║  The boilerplate default uses POST /auth/login with             ║
 // ║  { email, password } → { access_token }.                       ║
 // ║  Your project may use OAuth2, API keys, or a different format.  ║
 // ╚══════════════════════════════════════════════════════════════════╝
@@ -76,7 +89,7 @@ function buildAuthPayload(email: string, password: string): Record<string, strin
  * Extract token fields from the auth response.
  * Override this if your API returns tokens in a different shape.
  *
- * Expected response format (UPEX Dojo default):
+ * Expected response format (default):
  *   { access_token: string, token_type: string, expires_in: number, refresh_token?: string }
  */
 function extractTokenFromResponse(body: Record<string, unknown>): {
@@ -93,9 +106,6 @@ function extractTokenFromResponse(body: Record<string, unknown>): {
   };
 }
 
-/** Auth endpoint path (appended to apiBaseUrl). */
-const AUTH_ENDPOINT = '/auth/login';
-
 /** Key used to find the OpenAPI MCP server in .mcp.json */
 const MCP_SERVER_KEY = 'openapi';
 
@@ -104,66 +114,26 @@ const MCP_SERVER_KEY = 'openapi';
 // ╚══════════════════════════════════════════════════════════════════╝
 
 // ============================================
-// Environment Configuration
+// Authentication
 // ============================================
 
-const ENV_CONFIGS: Record<string, EnvConfig> = {
-  local: {
-    apiBaseUrl: 'http://localhost:3000/api',
-    authEndpoint: AUTH_ENDPOINT,
-    envVarPrefix: 'LOCAL',
-    mcpServerKey: MCP_SERVER_KEY,
-  },
-  staging: {
-    apiBaseUrl: 'https://dojo.upexgalaxy.com/api',
-    authEndpoint: AUTH_ENDPOINT,
-    envVarPrefix: 'STAGING',
-    mcpServerKey: MCP_SERVER_KEY,
-  },
-};
-
-// ============================================
-// Logging (matches sync-openapi.ts style)
-// ============================================
-
-function log(msg: string, type: 'info' | 'success' | 'warn' | 'error' = 'info') {
-  const icons = { info: '\u2139', success: '\u2713', warn: '\u26A0', error: '\u2717' };
-  const colors = { info: '\x1B[36m', success: '\x1B[32m', warn: '\x1B[33m', error: '\x1B[31m' };
-  console.log(`${colors[type]}${icons[type]}\x1B[0m ${PREFIX} ${msg}`);
-}
-
-// ============================================
-// Credential Lookup
-// ============================================
-
-function getCredentials(envVarPrefix: string): { email: string, password: string } | null {
-  const emailKey = `${envVarPrefix}_USER_EMAIL`;
-  const passwordKey = `${envVarPrefix}_USER_PASSWORD`;
-
-  const email = process.env[emailKey];
-  const password = process.env[passwordKey];
+async function authenticate(): Promise<ApiState | null> {
+  const url = `${config.apiUrl}${config.auth.loginEndpoint}`;
+  const { email, password } = config.testUser;
 
   if (!email || !password) {
+    const prefix = env.current.toUpperCase();
     log('Missing credentials in .env file:', 'error');
-    if (!email) { log(`  - ${emailKey} is not set`, 'error'); }
-    if (!password) { log(`  - ${passwordKey} is not set`, 'error'); }
+    if (!email) { log(`  - ${prefix}_USER_EMAIL is not set`, 'error'); }
+    if (!password) { log(`  - ${prefix}_USER_PASSWORD is not set`, 'error'); }
     log('Set these in your .env file and try again.', 'info');
     return null;
   }
 
-  return { email, password };
-}
-
-// ============================================
-// Authentication
-// ============================================
-
-async function authenticate(envConfig: EnvConfig, credentials: { email: string, password: string }): Promise<ApiState | null> {
-  const url = `${envConfig.apiBaseUrl}${envConfig.authEndpoint}`;
   log(`Authenticating against ${url}...`);
 
   try {
-    const payload = buildAuthPayload(credentials.email, credentials.password);
+    const payload = buildAuthPayload(email, password);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -211,19 +181,26 @@ async function authenticate(envConfig: EnvConfig, credentials: { email: string, 
 // ============================================
 
 function saveApiState(apiState: ApiState): void {
-  if (!existsSync(AUTH_DIR)) {
-    mkdirSync(AUTH_DIR, { recursive: true });
-  }
-
-  writeFileSync(API_STATE_FILE, JSON.stringify(apiState, null, 2));
-  log(`Token saved to ${API_STATE_FILE}`, 'success');
+  const apiStatePath = config.auth.apiStatePath;
+  writeFileSync(apiStatePath, JSON.stringify(apiState, null, 2));
+  log(`Token saved to ${apiStatePath}`, 'success');
 }
 
 // ============================================
 // Token Storage: .mcp.json (OpenAPI MCP)
 // ============================================
 
-function updateMcpConfig(token: string, mcpServerKey: string): void {
+interface McpConfig {
+  mcpServers?: Record<string, {
+    command?: string
+    args?: string[]
+    env?: Record<string, string>
+    [key: string]: unknown
+  }>
+  [key: string]: unknown
+}
+
+function updateMcpConfig(token: string): void {
   if (!existsSync(MCP_CONFIG_FILE)) {
     log(`.mcp.json not found at ${MCP_CONFIG_FILE} — skipping MCP update.`, 'warn');
     return;
@@ -233,13 +210,13 @@ function updateMcpConfig(token: string, mcpServerKey: string): void {
     const raw = readFileSync(MCP_CONFIG_FILE, 'utf-8');
     const mcpConfig: McpConfig = JSON.parse(raw);
 
-    if (!mcpConfig.mcpServers?.[mcpServerKey]) {
-      log(`No "${mcpServerKey}" server found in .mcp.json — skipping MCP update.`, 'warn');
+    if (!mcpConfig.mcpServers?.[MCP_SERVER_KEY]) {
+      log(`No "${MCP_SERVER_KEY}" server found in .mcp.json — skipping MCP update.`, 'warn');
       log('Token is still saved for Playwright tests.', 'info');
       return;
     }
 
-    const server = mcpConfig.mcpServers[mcpServerKey];
+    const server = mcpConfig.mcpServers[MCP_SERVER_KEY];
 
     if (!server.env) {
       server.env = {};
@@ -250,20 +227,18 @@ function updateMcpConfig(token: string, mcpServerKey: string): void {
     const bearerPattern = /Authorization:\s*Bearer\s+\S+/;
 
     if (bearerPattern.test(currentHeaders)) {
-      // Replace existing Bearer token
       server.env.API_HEADERS = currentHeaders.replace(
         bearerPattern,
         `Authorization:Bearer ${token}`,
       );
     }
     else {
-      // Set new Authorization header
       const separator = currentHeaders ? ' | ' : '';
       server.env.API_HEADERS = `${currentHeaders}${separator}Authorization:Bearer ${token}`;
     }
 
     writeFileSync(MCP_CONFIG_FILE, `${JSON.stringify(mcpConfig, null, 2)}\n`);
-    log(`MCP config updated: ${mcpServerKey} server API_HEADERS`, 'success');
+    log(`MCP config updated: ${MCP_SERVER_KEY} server API_HEADERS`, 'success');
   }
   catch (error) {
     log('Failed to update .mcp.json — token is still saved for tests.', 'warn');
@@ -299,46 +274,26 @@ function showHelp(): void {
   For local:    LOCAL_USER_EMAIL, LOCAL_USER_PASSWORD
   For staging:  STAGING_USER_EMAIL, STAGING_USER_PASSWORD
 
+\x1B[1mCONFIGURATION\x1B[0m
+  Environment URLs:   config/variables.ts (envDataMap)
+  Auth format:        cli/api-login.ts (PROJECT-SPECIFIC section)
+  MCP server key:     cli/api-login.ts (MCP_SERVER_KEY constant)
+
 \x1B[1mOPTIONS\x1B[0m
   -h, --help    Show this help
 `);
 }
 
 // ============================================
-// CLI Entry Point
+// Main Execution
 // ============================================
 
-const args = process.argv.slice(2);
+console.log(`\n\x1B[1mAPI Login\x1B[0m — ${env.current}\n`);
 
-if (args.includes('--help') || args.includes('-h')) {
-  showHelp();
-  process.exit(0);
-}
+log(`User: ${config.testUser.email}`);
 
-// Resolve environment: CLI arg > TEST_ENV from .env > default 'local'
-const envArg = args[0];
-const environment = envArg ?? process.env.TEST_ENV ?? 'local';
-
-if (!ENV_CONFIGS[environment]) {
-  log(`Unknown environment: "${environment}"`, 'error');
-  log(`Available environments: ${Object.keys(ENV_CONFIGS).join(', ')}`, 'info');
-  process.exit(1);
-}
-
-const envConfig = ENV_CONFIGS[environment];
-
-console.log(`\n\x1B[1mAPI Login\x1B[0m — ${environment}\n`);
-
-// 1. Get credentials
-const credentials = getCredentials(envConfig.envVarPrefix);
-if (!credentials) {
-  process.exit(1);
-}
-
-log(`User: ${credentials.email}`);
-
-// 2. Authenticate
-const apiState = await authenticate(envConfig, credentials);
+// 1. Authenticate
+const apiState = await authenticate();
 if (!apiState) {
   process.exit(1);
 }
@@ -347,10 +302,10 @@ log('Authentication successful', 'success');
 log(`Token type: ${apiState.tokenType}`);
 log(`Expires in: ${apiState.expiresIn} seconds`);
 
-// 3. Save token to api-state.json
+// 2. Save token to api-state.json
 saveApiState(apiState);
 
-// 4. Update .mcp.json (best-effort)
-updateMcpConfig(apiState.token, envConfig.mcpServerKey);
+// 3. Update .mcp.json (best-effort)
+updateMcpConfig(apiState.token);
 
 console.log('\n\x1B[32m\u2713 Login completed!\x1B[0m\n');
