@@ -246,7 +246,7 @@ Create smoke test checklist to validate functional deployment:
 - Screenshot: [Attach]
 - Console errors:
 
-[Copy errors from console]
+[Capture console errors via [AUTOMATION_TOOL]]
 
 **Action:** Report to Development immediately, DO NOT continue.
 ```
@@ -558,7 +558,7 @@ Examples: mentors/sessions in MYM, products/orders in SHOP, posts/comments in BL
 **Evidence:**
 
 - Screenshot: [Attach]
-- Console errors: [Copy]
+- Console errors: [Capture via [AUTOMATION_TOOL]]
 
 **Next step:**
 
@@ -709,8 +709,8 @@ Bug reported → Development fix → Re-deploy to staging → Re-execute smoke t
 
 **If smoke test fails, include:**
 - Screenshot of the error
-- Console errors (copy full text)
-- Network tab errors (copy request/response)
+- Console errors (capture via [AUTOMATION_TOOL] console)
+- Network tab errors (capture via [AUTOMATION_TOOL] network)
 - Exact steps that caused the error
 
 **Benefit:** Development can reproduce and fix faster.

@@ -975,7 +975,7 @@ Should <BEHAVIOR> <CONDITION>
 
    ### Refined Acceptance Criteria
 
-   [Paste refined scenarios from Step 3]
+   [Insert refined scenarios from Step 3 above]
 
    ### Edge Cases Identified
 
@@ -1012,7 +1012,7 @@ Should <BEHAVIOR> <CONDITION>
 
 ---
 
-[PASTE HERE ALL CONTENT GENERATED FROM "Test Cases: STORY-..." TO "Test Execution Tracking"]
+> The AI must compile all generated content from "Test Cases: STORY-..." through "Test Execution Tracking" into this section. Do not ask the user to paste anything.
 
 ---
 

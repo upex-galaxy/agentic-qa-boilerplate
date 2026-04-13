@@ -183,7 +183,7 @@ Based on project entities, determine which components are needed:
 **Type Facades (api/schemas/):**
 
 - auth.types.ts (always needed — update existing)
-- {domain}.types.ts for each domain entity (copy from `example.types.ts`)
+- {domain}.types.ts for each domain entity (use `example.types.ts` as reference)
 
 **Flows (tests/components/flows/):**
 
@@ -299,7 +299,7 @@ Create file: `.context/PBI/kata-architecture-adaptation-plan.md`
 ### 3.3 Facade Migration Notes
 
 - `auth.types.ts`: Uncomment `@openapi` imports, replace Custom Types with OpenAPI types
-- New facades: Copy `api/schemas/example.types.ts` as template, replace placeholder names
+- New facades: Use `api/schemas/example.types.ts` as reference template, replace placeholder names
 - Update `api/schemas/index.ts` barrel to include new facades
 
 ---
@@ -371,7 +371,7 @@ XRAY_CLIENT_SECRET=
 
 ### Phase B: First Domain Components (High)
 
-9. [ ] Create `api/schemas/{domain}.types.ts` facade (copy from example.types.ts)
+9. [ ] Create `api/schemas/{domain}.types.ts` facade (based on example.types.ts pattern)
 10. [ ] Update `api/schemas/index.ts` barrel
 11. [ ] Create `{Entity}Api.ts` component (import from @schemas)
 12. [ ] Create `{Entity}Page.ts` component
@@ -947,7 +947,7 @@ grep "schemas" api/openapi-types.ts | head -20
 
 | File | Purpose |
 |------|---------|
-| `api/schemas/{domain}.types.ts` | Domain type facades (copy from `example.types.ts`) |
+| `api/schemas/{domain}.types.ts` | Domain type facades (based on `example.types.ts` pattern) |
 | `tests/components/api/{Entity}Api.ts` | Domain API components (import from `@schemas`) |
 | `tests/components/ui/{Entity}Page.ts` | Domain UI components |
 | `tests/e2e/{feature}/*.test.ts` | E2E test files |

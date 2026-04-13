@@ -801,7 +801,7 @@ Epic is considered "Done" from QA perspective when:
 
 ---
 
-[PASTE HERE ALL CONTENT GENERATED FROM "Feature Test Plan: EPIC-..." TO "Metrics & Reporting"]
+> The AI must compile all generated content from "Feature Test Plan: EPIC-..." through "Metrics & Reporting" into this section. Do not ask the user to paste anything.
 
 ---
 

@@ -11,7 +11,7 @@ PBI/
 │   ├── module-context-template.md      # Module technical context
 │   ├── ROADMAP-template.md             # Module roadmap with phases
 │   ├── PROGRESS-template.md            # Cross-session progress tracker
-│   └── SESSION-PROMPT-template.md      # Reusable AI session starter
+│   └── SESSION-PROMPT-template.md      # @-loadable AI session starter (fill placeholders per module)
 │
 ├── ── PER-STORY (simple) ────────────
 ├── {TICKET-ID}-feature-name.md         # User Story with ticket ID
@@ -25,7 +25,7 @@ PBI/
 │   └── test-specs/                     # Unified test specifications + implementation
 │       ├── ROADMAP.md                  # Roadmap with phases + dependencies
 │       ├── PROGRESS.md                 # Session-by-session progress tracker
-│       ├── SESSION-PROMPT.md           # Reusable AI session starter
+│       ├── SESSION-PROMPT.md           # @-loadable session starter (load via @path)
 │       └── {PREFIX}-T01-{name}/        # Ticket directory (one per functional area)
 │           ├── spec.md                 # Business-level: TCs in Gherkin
 │           ├── implementation-plan.md  # Technical-level: KATA components, fixtures
@@ -56,14 +56,14 @@ PBI/
 
 ## Templates
 
-Templates are provided for the per-module structure. Copy them into your module folder and fill in the placeholders.
+Templates are provided for the per-module structure. Use them as reference when generating your module folder contents.
 
 | Template | Purpose | Copy To |
 |----------|---------|---------|
 | `module-context-template.md` | Technical context: routes, APIs, DB, business rules | `{module}/` |
 | `ROADMAP-template.md` | Roadmap with phases, dependencies, TC counts | `{module}/test-specs/ROADMAP.md` |
 | `PROGRESS-template.md` | Track progress across AI sessions | `{module}/test-specs/PROGRESS.md` |
-| `SESSION-PROMPT-template.md` | Reusable prompt to start each AI session | `{module}/test-specs/SESSION-PROMPT.md` |
+| `SESSION-PROMPT-template.md` | Session starter -- fill placeholders, then load via `@` | `{module}/test-specs/SESSION-PROMPT.md` |
 
 ### Workflow
 
@@ -71,7 +71,8 @@ Templates are provided for the per-module structure. Copy them into your module 
 1. Create module folder: .context/PBI/{module-name}/
 2. Copy templates into the folder structure above
 3. Fill in module-context and roadmap
-4. Use SESSION-PROMPT at the start of each AI session
+4. Load SESSION-PROMPT.md via @ at the start of each AI session
+   (or use @.prompts/orchestrators/test-automation-agent.md for full orchestration)
 5. AI updates PROGRESS.md at end of each session
 ```
 

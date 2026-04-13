@@ -193,7 +193,7 @@ import { config } from '../../../config/variables';
 
 ---
 
-## Example Components (Copy These)
+## Example Components (Reference These)
 
 These files are marked as **EXAMPLE COMPONENT** and demonstrate all KATA principles:
 

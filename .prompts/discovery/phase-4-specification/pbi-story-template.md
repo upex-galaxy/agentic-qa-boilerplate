@@ -264,19 +264,19 @@ jira issue create -p PROJECT_KEY -t Bug \
 ## Evidence
 
 ### Screenshots
-[Attach screenshots or paste image links]
+[Attach screenshots or include image links]
 
 ### Console Logs
 ````
 
-[Paste relevant console errors]
+[Include relevant console errors]
 
 ```
 
 ### Network Requests
 ```
 
-[Paste relevant failed requests]
+[Include relevant failed requests]
 
 ```
 
@@ -343,7 +343,7 @@ EOF
 
 ## Story Summary
 
-[Paste or summarize the user story]
+[Summarize the user story from ticket metadata]
 
 ### Acceptance Criteria Reference
 
@@ -559,7 +559,7 @@ EOF
 **Logs:**
 ```
 
-[Paste relevant logs]
+[Include relevant logs]
 
 ```
 

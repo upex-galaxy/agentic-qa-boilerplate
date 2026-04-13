@@ -8,7 +8,7 @@
 
 ## Purpose
 
-Create a structured ATC specification that documents everything needed to implement a single Acceptance Test Case: method signature, assertions split (fixed vs test-level), endpoint/page details, types, and a copy-paste ready code template.
+Create a structured ATC specification that documents everything needed to implement a single Acceptance Test Case: method signature, assertions split (fixed vs test-level), endpoint/page details, types, and an implementation-ready code template.
 
 **This prompt is executed WHEN:**
 

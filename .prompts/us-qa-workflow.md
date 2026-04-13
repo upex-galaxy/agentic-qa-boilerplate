@@ -504,7 +504,7 @@ gh workflow run sanity.yml \
 
 ## Progress Tracking Template
 
-Copy this template to track progress for a specific US:
+Generate the progress tracking structure below using the ticket metadata from session-start:
 
 ```markdown
 # QA Progress: {US-ID} - {Title}

@@ -306,7 +306,7 @@ Ready for Tested status.
 
 #### CR-4: Post Comment to TMS
 
-Copy the comment and post it to the ticket in your TMS.
+Post the QA comment directly to the ticket using [ISSUE_TRACKER_TOOL].
 
 **END OF CODE REVIEW WORKFLOW** - Do not continue.
 

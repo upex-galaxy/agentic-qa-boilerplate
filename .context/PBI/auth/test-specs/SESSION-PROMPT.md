@@ -1,35 +1,54 @@
-# Auth - Test Automation Session Prompt
+# Auth - Session Initialization
 
-> **Usage**: Copy the prompt below and paste it at the start of each new session with the AI working in your test automation repository.
+> **What this is**: Load this file via `@` at the start of each AI session to resume module automation work.
+> **For full orchestration** (planning + coding + review pipeline): use `@.prompts/orchestrators/test-automation-agent.md` instead.
 
 ---
 
-## PROMPT (copy from here)
+## Context
 
-```
-We are working on UI/API test automation for the Auth module. This is a structured project with tickets organized in a roadmap. Your role is to implement automated tests ticket by ticket.
+- **Module**: Auth
+- **Module path**: `.context/PBI/auth/`
+- **Ticket prefix**: AUTH
 
-## STEP 1: Read current progress
+## Instructions
 
-Read this file FIRST to know what has been done and what comes next:
+You are resuming test automation work for the **Auth** module. Follow these steps in order.
 
-.context/PBI/auth/test-specs/PROGRESS.md
+### 1. Read progress state
 
-## STEP 2: Load the necessary context
+Read `.context/PBI/auth/test-specs/PROGRESS.md` first. It tells you:
+- Which ticket is in progress or next
+- Which test cases are already automated
+- Shared components that exist
+- Decisions and learnings from previous sessions
 
-### Always (base context):
-1. `CLAUDE.md` (repo root) → Project config, stack, commands, MCPs
-2. `.context/PBI/auth/test-specs/ROADMAP.md` → Full roadmap with dependencies
-3. The current ticket spec: `.context/PBI/auth/test-specs/{AUTH}-T{XX}-{name}/spec.md`
+### 2. Load context for the current ticket
 
-### To understand the module:
-4. `.context/PBI/auth/auth-test-plan.md` → Master document with endpoints, selectors, data strategy
+Based on what PROGRESS.md says, load these files:
 
-## STEP 3: Work on the ticket
+**Always**:
+1. `.context/PBI/auth/test-specs/ROADMAP.md` -- full roadmap with dependencies
+2. The current ticket spec: `.context/PBI/auth/test-specs/AUTH-T{XX}-{name}/spec.md`
 
-Each ticket's `spec.md` has TCs in Gherkin format. Work in order per the roadmap.
+**If you need module context**:
+3. `.context/PBI/auth/auth-test-plan.md` -- endpoints, selectors, data strategy
 
-## STEP 4: Update progress
+**If you need business context**:
+4. `.context/business-data-map.md`
+5. `.context/api-architecture.md`
 
-When done, UPDATE the PROGRESS.md file with status changes, test file paths, and session log.
-```
+### 3. Work on the ticket
+
+Each ticket's `spec.md` contains TCs in Gherkin format and acceptance criteria. Work in roadmap order (Phase 1 -> 2 -> 3). Do not skip tickets unless there is a documented blocker.
+
+Work ONE ticket at a time. Finish or mark as blocked before moving to the next.
+
+### 4. Update progress
+
+Before closing the session, UPDATE PROGRESS.md:
+- Change ticket status (not-started -> in-progress -> done)
+- Record test file paths created
+- Update TC automation counts
+- Log any discovered test data, shared components, or decisions
+- Add a session entry with date and summary

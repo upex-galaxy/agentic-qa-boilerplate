@@ -1,129 +1,54 @@
-# {Module Name} - Test Automation Session Prompt
+# {MODULE_NAME} - Session Initialization
 
-> **Usage**: Copy the prompt below and paste it at the start of each new session with the AI working in your test automation repository. The prompt is self-contained and reusable across sessions.
+> **What this is**: Load this file via `@` at the start of each AI session to resume module automation work.
+> **For full orchestration** (planning + coding + review pipeline): use `@.prompts/orchestrators/test-automation-agent.md` instead.
 
 ---
 
-## PROMPT (copy from here)
+## Context
 
-```
-We are working on UI/API test automation for the {Module Name} module. This is a structured project with tickets organized in a roadmap. Your role is to implement automated tests ticket by ticket.
+- **Module**: {MODULE_NAME}
+- **Module path**: `.context/PBI/{MODULE_PATH}/`
+- **Ticket prefix**: {MODULE_PREFIX}
 
-## STEP 1: Read current progress
+## Instructions
 
-Read this file FIRST to know what has been done and what comes next:
+You are resuming test automation work for the **{MODULE_NAME}** module. Follow these steps in order.
 
-.context/PBI/{module-name}/test-specs/PROGRESS.md
+### 1. Read progress state
 
-This file tells you:
-- Which ticket is in progress or is next
+Read `.context/PBI/{MODULE_PATH}/test-specs/PROGRESS.md` first. It tells you:
+- Which ticket is in progress or next
 - Which test cases are already automated
-- What test data has been discovered
-- What shared components already exist
+- Shared components that exist
 - Decisions and learnings from previous sessions
 
-## STEP 2: Load the necessary context
+### 2. Load context for the current ticket
 
-Based on the ticket you will work on, load these files in this order:
+Based on what PROGRESS.md says, load these files:
 
-### Always (base context):
-1. `CLAUDE.md` (repo root) → Project config, stack, commands, MCPs
-2. `.context/PBI/{module-name}/test-specs/ROADMAP.md` → Full roadmap with dependencies
-3. The current ticket spec: `.context/PBI/{module-name}/test-specs/{MODULE}-T{XX}-{name}/spec.md`
+**Always**:
+1. `.context/PBI/{MODULE_PATH}/test-specs/ROADMAP.md` -- full roadmap with dependencies
+2. The current ticket spec: `.context/PBI/{MODULE_PATH}/test-specs/{MODULE_PREFIX}-T{XX}-{name}/spec.md`
 
-### To understand the module:
-4. `.context/PBI/{module-name}/{module-name}-test-plan.md` → Master document with:
-   - Page architecture (states, layout)
-   - All API endpoints consumed
-   - Business logic and calculations
-   - CSS selectors / locators reference
-   - Test data strategy
+**If you need module context**:
+3. `.context/PBI/{MODULE_PATH}/{MODULE_PATH}-test-plan.md` -- endpoints, selectors, data strategy
 
-### To understand the business (only if you need more context):
-5. `.context/business-data-map.md` → Business flows and data entities
-6. `.context/api-architecture.md` → API catalog and auth
+**If you need business context**:
+4. `.context/business-data-map.md`
+5. `.context/api-architecture.md`
 
-### To understand the codebase (only if you need to explore code):
-7. The target application's frontend and backend code paths
-   (documented in the module context file)
+### 3. Work on the ticket
 
-## STEP 3: Work on the ticket
+Each ticket's `spec.md` contains TCs in Gherkin format and acceptance criteria. Work in roadmap order (Phase 1 -> 2 -> 3). Do not skip tickets unless there is a documented blocker.
 
-Each ticket's `spec.md` has:
-- Summary (what and why)
-- Preconditions (what test data you need)
-- Test Cases in Gherkin format (scenarios to automate)
-- Acceptance Criteria (checklist to consider the ticket done)
+Work ONE ticket at a time. Finish or mark as blocked before moving to the next.
 
-Work in order per the roadmap (Phase 1 → 2 → 3 → ...). Within each phase, follow ticket order. Do not skip tickets unless there is a documented blocker.
+### 4. Update progress
 
-## STEP 4: Update progress
-
-When done working (or before closing the session), UPDATE the PROGRESS.md file:
-
-1. Change the ticket status (not-started → in-progress → done)
-2. Record the test file path created
-3. Update TC automation counts
-4. If you discovered useful test data, record it in "Test Data Discovered"
-5. If you created shared components (page objects, fixtures), record them
-6. If you made an important decision or found a workaround, record it
-7. Add a session entry in the Session Log with date and summary
-8. Update "Current Status" in the header
-
-This is CRITICAL so the next session can continue without losing context.
-
-## GENERAL RULES
-
-- Work ONE ticket at a time. Finish or mark as blocked before moving to the next.
-- If a ticket requires test data that doesn't exist, document the blocker in PROGRESS.md and move to the next ticket you can work on.
-- If you create reusable page objects, fixtures, or helpers, document them to avoid duplication.
-- The Gherkin scenarios in the tickets are the specification. Do not add or remove test cases without consulting me.
-```
-
----
-
-## NOTES FOR THE USER
-
-### How to use this prompt
-
-1. Open a new AI session in your test automation repository
-2. Copy the content of the PROMPT block above
-3. Paste it as your first message
-4. Optionally, add additional instructions like:
-   - "Start with {MODULE}-T01"
-   - "Continue where you left off"
-   - "There is a blocker on T02, skip to T03"
-   - "I only need you to investigate test data for T04"
-
-### What to add based on your needs
-
-If you want the AI to follow specific automation guidelines, add after the prompt:
-
-```
-Additionally, for implementation follow these guidelines:
-- Read: .context/guidelines/TAE/kata-ai-index.md
-- Read: .context/guidelines/TAE/automation-standards.md
-- Read: .context/guidelines/TAE/typescript-patterns.md
-```
-
-### Expected workflow
-
-```
-Session 1: "Start with {MODULE}-T01"
-  → AI reads PROGRESS.md (all not-started)
-  → Reads context + ticket T01 spec.md
-  → Implements tests
-  → Updates PROGRESS.md
-
-Session 2: (paste prompt)
-  → AI reads PROGRESS.md (T01 done, T02 not-started)
-  → "Continue where you left off"
-  → Reads context + ticket T02 spec.md
-  → Implements tests
-  → Updates PROGRESS.md
-
-Session N: (paste prompt)
-  → AI reads PROGRESS.md (knows full history)
-  → Picks up next ticket automatically
-  → ...
-```
+Before closing the session, UPDATE PROGRESS.md:
+- Change ticket status (not-started -> in-progress -> done)
+- Record test file paths created
+- Update TC automation counts
+- Log any discovered test data, shared components, or decisions
+- Add a session entry with date and summary
