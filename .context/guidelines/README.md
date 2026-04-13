@@ -11,6 +11,9 @@
 guidelines/
 ├── README.md               # This file (index)
 ├── code-standards.md       # DRY, KISS, naming, TypeScript
+├── tms-architecture.md     # TMS entity model, traceability, linking order
+├── tms-conventions.md      # TMS rules, states, formats, automation criteria
+├── tms-workflow.md         # 5-stage In-Sprint Testing workflow (IQL-aligned)
 │
 ├── TAE/                    # Test Automation Engineering
 │   ├── README.md           # TAE index

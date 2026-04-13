@@ -310,6 +310,9 @@ gh pr create --base staging
 | **Exploratory Testing** | `project-test-guide.md` + `CLAUDE.md § Tool Resolution` |
 | **Understand System** | `business-data-map.md` + `PRD/user-journeys.md` |
 | **Use MCP Tools** | `CLAUDE.md § Tool Resolution` |
+| **TMS Operations** | `tms-architecture.md` + `tms-conventions.md` + `tms-workflow.md` |
+| **Create/Link TMS Artifacts** | `tms-architecture.md` (entity model + linking order) |
+| **In-Sprint Testing** | `tms-workflow.md` + `tms-conventions.md` |
 
 **Living Code Examples:**
 

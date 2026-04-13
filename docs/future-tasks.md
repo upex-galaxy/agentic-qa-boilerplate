@@ -10,7 +10,20 @@
 
 ---
 
-## Session Summary — 2026-04-12
+## Session Summary — 2026-04-12 (Session 2)
+
+Tasks 3+4 completed — TMS guidelines created as tool-agnostic files:
+
+- **Tasks 3+4 (TMS guidelines)** -- Completed. Created 3 tool-agnostic guideline files (expanded from original 2-file scope after analysis showed `coda-tms-overview.md` contained unique content):
+  - `.context/guidelines/tms-architecture.md` — Entity model, traceability, linking order
+  - `.context/guidelines/tms-conventions.md` — Rules, states, formats, automation criteria
+  - `.context/guidelines/tms-workflow.md` — 5-stage In-Sprint Testing workflow (IQL-aligned)
+- **Key decisions**: Files are tool-agnostic (not Jira/Xray-specific), use `[TMS_TOOL]` pseudocode, Jira/Xray as reference implementation only. Named by content (`architecture`, `conventions`, `workflow`) not by tool.
+- **Integration**: CLAUDE.md Context Loading table updated, guidelines README.md updated, IQL methodology explicitly referenced throughout.
+
+---
+
+## Session Summary — 2026-04-12 (Session 1)
 
 Three tasks were completed and a major new initiative (Pseudocode Convention) was executed:
 
@@ -70,81 +83,37 @@ Variable propagation eliminates multi-file maintenance and makes the boilerplate
 
 ---
 
-## 3. Decide and create Jira/Xray equivalent of `coda-test-management.md`
+## 3. Create TMS guidelines (equivalent of Coda TMS files) -- COMPLETED
 
 | Field | Value |
 |---|---|
-| **Status** | Needs decision |
-| **Owner** | Unassigned |
-| **Priority** | Medium |
+| **Status** | Completed (2026-04-12) |
 
-**Scope**
+**Decisions made:**
+- **Classification**: Guideline (prescriptive) → `.context/guidelines/`
+- **Tool scope**: Tool-agnostic with `[TMS_TOOL]` pseudocode (not Jira/Xray specific). Jira/Xray included as reference implementation only.
+- **Naming**: Files named by content, not by tool: `tms-architecture.md`, `tms-conventions.md`, `tms-workflow.md`
+- **Scope expanded**: Originally 2 files (Tasks 3+4), expanded to 3 files after analysis showed `coda-tms-overview.md` contained unique architectural content not covered by the other two.
 
-- New file under `.context/guidelines/` **or** `docs/` (classification TBD)
-- Filename proposal: `jira-test-management.md`
+**Files created:**
+- `.context/guidelines/tms-architecture.md` — TMS entity model (ATP, ATR, TC), traceability rules, linking order
+- `.context/guidelines/tms-conventions.md` — Test case states, naming, formats, automation criteria, labels, best practices
+- `.context/guidelines/tms-workflow.md` — 5-stage In-Sprint Testing workflow (IQL-aligned)
 
-**Context**
-
-Curacity has `.context/guidelines/coda-test-management.md`, which describes how their TMS (Coda) is organized — test hierarchies, labeling conventions, workflow states, and so on. The boilerplate needs an equivalent for Jira/Xray, but during the audit it was unclear whether the file belongs under `guidelines/` (how-to content) or `docs/` (reference content).
-
-**Rationale**
-
-Without a TMS-specific reference, AI agents cannot correctly create/update test cases in Jira/Xray. The file is a key input for the `xray-cli` skill and any sync between local PBI folders and Xray.
-
-**Classification guidance** (to be applied in a future session):
-
-- First, analyze Curacity's `coda-test-management.md` to understand its nature.
-- If it prescribes HOW to work in the issue tracker (procedures, conventions, rules) --> guideline (`.context/guidelines/`).
-- If it is conceptual/explanatory about how something works (reference, description) --> doc (`docs/`).
-- Analyze and decide in a future session based on this criteria.
-
-**Dependencies**
-
-- Classification decision: guideline (how-to, prescriptive) vs doc (reference, descriptive).
-- The decision should align with how other TMS references are classified in the project.
-- Linked with Task 4 — resolve both together for consistency.
-
-**Suggested approach**
-
-1. Read and analyze Curacity's `coda-test-management.md` using the classification criteria above.
-2. Decide guideline vs doc classification.
-3. Port the structure while replacing Coda-specific terminology with Jira/Xray equivalents (issue types, Xray test types, test plans, test executions, etc.).
-4. Reference the new file from `CLAUDE.md` "Context Loading by Task" table.
+**Integration:**
+- CLAUDE.md Context Loading table updated with TMS task entries
+- Guidelines README.md updated with all 3 files
+- IQL methodology explicitly referenced throughout
 
 ---
 
-## 4. Decide and create Jira/Xray equivalent of `coda-tms-workflow.md`
+## 4. (Merged into Task 3) -- COMPLETED
 
 | Field | Value |
 |---|---|
-| **Status** | Needs decision |
-| **Owner** | Unassigned |
-| **Priority** | Medium |
+| **Status** | Completed (2026-04-12) — merged into Task 3 |
 
-**Scope**
-
-- New file under `.context/guidelines/` **or** `docs/` (same classification decision as item 3)
-- Filename proposal: `jira-tms-workflow.md`
-
-**Context**
-
-Curacity has `.context/guidelines/coda-tms-workflow.md`, which describes the end-to-end TMS workflow: how tickets move between states, who owns transitions, how test results are reported back, etc. The boilerplate needs the Jira/Xray version. Deferred for the same classification reason as item 3.
-
-**Rationale**
-
-Complements item 3: item 3 describes the *structure* of the TMS, item 4 describes the *workflow* through it. Both are needed for an AI agent to operate a ticket end-to-end.
-
-**Dependencies**
-
-- Same guideline vs doc decision as item 3. Resolve both together for consistency.
-- Linked decision — will be resolved together with Task 3 in a future session.
-
-**Suggested approach**
-
-1. Resolve classification alongside item 3 using the same criteria (prescriptive -> guideline, descriptive -> doc).
-2. Port structure from Curacity's `coda-tms-workflow.md`.
-3. Rewrite workflow steps using Jira/Xray transitions (Open -> In Progress -> Ready for QA -> Done, etc.).
-4. Link from `.prompts/us-qa-workflow.md` and `.prompts/bug-qa-workflow.md`.
+Task 4 was resolved together with Task 3 as planned. The `tms-workflow.md` file covers the workflow content that Task 4 originally targeted. See Task 3 above for details.
 
 ---
 
@@ -250,7 +219,6 @@ Created `.context/business-data-map.md` placeholder template aligned with the ge
 
 | Readiness | Tasks |
 |---|---|
-| **Completed** | 2 (KATA comments fix), 7 (business-data-map unification) |
-| **Needs decision** | 3 (Jira test management classification), 4 (Jira TMS workflow classification) |
-| **Low priority** | 1 (variable propagation -- remaining scope reduced) |
-| **Pending** | 5 (api-login CLI), 6 (update-boilerplate -- last) |
+| **Completed** | 2 (KATA comments fix), 3+4 (TMS guidelines — 3 files created), 7 (business-data-map unification) |
+| **Low priority** | 1 (variable propagation — remaining scope reduced) |
+| **Pending** | 5 (api-login CLI), 6 (update-boilerplate — last) |
