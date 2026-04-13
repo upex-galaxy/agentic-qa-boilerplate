@@ -131,7 +131,7 @@ const QA_STAGES: Record<string, { name: string, dir: string }> = {
 /**
  * Extra directories in .prompts/
  */
-const EXTRA_PROMPT_DIRS = ['utilities', 'setup'];
+const EXTRA_PROMPT_DIRS = ['utilities', 'setup', 'orchestrators'];
 
 /**
  * Config files that are universal across all KATA projects
@@ -825,7 +825,7 @@ function updatePrompts(stages: string[], phases: string[], includeExtras: boolea
     }
   }
 
-  // Update extras (utilities, setup, root files)
+  // Update extras (utilities, setup, orchestrators, root files)
   if (includeExtras) {
     log.merge('Extra directories:');
     for (const extraDir of EXTRA_PROMPT_DIRS) {
@@ -1066,7 +1066,7 @@ async function showPromptsMenu(): Promise<PromptsConfig> {
       { name: 'By role preset...', value: 'role' },
       { name: 'QA Stages (1-5)...', value: 'stages' },
       { name: 'Discovery Phases (1-4)...', value: 'phases' },
-      { name: 'Only extras (utilities, setup)', value: 'extras' },
+      { name: 'Only extras (utilities, setup, orchestrators)', value: 'extras' },
     ],
   });
 
@@ -1172,7 +1172,7 @@ ${colors.bold}FLAGS FOR 'prompts':${colors.reset}
   --stage N     Specific stages (e.g., --stage 4 or --stage 1,2,3)
   --phase N     Specific phases (e.g., --phase 1 or --phase 1,2)
   --role ROLE   By role preset (see available roles)
-  --extras      Only extra directories (utilities, setup)
+  --extras      Only extra directories (utilities, setup, orchestrators)
 
 ${colors.bold}AVAILABLE ROLES:${colors.reset}
   qa            ${colors.dim}-> Stages 1-5 (Full QA workflow)${colors.reset}
@@ -1523,7 +1523,6 @@ async function main(): Promise<void> {
       addResult(updateGuidelines());
       addResult(updateDocs());
       addResult(updateCli());
-      addResult(updateTemplates());
       addResult(updateVscode());
       addResult(updateHusky());
       addResult(updateTooling());
