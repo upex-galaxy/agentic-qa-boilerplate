@@ -145,7 +145,7 @@ AUTO_SYNC=true
 TMS_PROVIDER=jira
 
 # Jira Direct
-JIRA_URL=https://your-domain.atlassian.net
+JIRA_URL={{JIRA_URL}}
 JIRA_USER=your-email@example.com
 JIRA_API_TOKEN=your_api_token_here
 JIRA_TEST_STATUS_FIELD=customfield_10100
@@ -224,8 +224,8 @@ Both approaches use the same test ID format:
 
 **Examples:**
 
-- `UPEX-123` - Maps to <https://your-domain.atlassian.net/browse/UPEX-123>
-- `DEMO-456` - Maps to <https://your-domain.atlassian.net/browse/DEMO-456>
+- `UPEX-123` - Maps to <{{JIRA_URL}}/browse/UPEX-123>
+- `DEMO-456` - Maps to <{{JIRA_URL}}/browse/DEMO-456>
 
 **Requirements:**
 
@@ -316,7 +316,7 @@ Common test management operations:
 
   ```bash
   curl -u email@example.com:api_token \
-    https://your-domain.atlassian.net/rest/api/3/field | grep -i "test status"
+    {{JIRA_URL}}/rest/api/3/field | grep -i "test status"
   ```
 
 - Update `JIRA_TEST_STATUS_FIELD` in `.env`

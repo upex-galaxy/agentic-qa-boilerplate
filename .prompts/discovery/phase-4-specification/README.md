@@ -118,7 +118,7 @@ jira issue list -p PROJECT -t Story
 jira issue view PROJ-123
 
 # Using curl
-curl -u email:token https://your-domain.atlassian.net/rest/api/3/issue/PROJ-123
+curl -u email:token {{JIRA_URL}}/rest/api/3/issue/{{PROJECT_KEY}}-123
 ```
 
 ---

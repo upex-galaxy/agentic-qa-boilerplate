@@ -744,7 +744,7 @@ data-testid="component-2"
 ```markdown
 # GX-101-TC1: Validate successful login with valid credentials
 
-**Jira:** [GX-101-TC1](https://company.atlassian.net/browse/GX-101-TC1)
+**Jira:** [GX-101-TC1]({{JIRA_URL}}/browse/GX-101-TC1)
 **Status:** CANDIDATE
 **Type:** Functional
 **Related Story:** GX-100
@@ -770,7 +770,7 @@ Then I should be redirected to the dashboard
 ```markdown
 # GX-101-TC2: Validate error when entering incorrect password
 
-**Jira:** [GX-101-TC2](https://company.atlassian.net/browse/GX-101-TC2)
+**Jira:** [GX-101-TC2]({{JIRA_URL}}/browse/GX-101-TC2)
 **Status:** MANUAL
 **Type:** Functional
 **Related Story:** GX-100

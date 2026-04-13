@@ -203,8 +203,8 @@ Reports are deployed to GitHub Pages at:
 https://{owner}.github.io/{repo}/{environment}/{suite}/
 
 Examples:
-- https://upex-galaxy.github.io/ai-driven-test-automation-boilerplate/staging/regression/
-- https://upex-galaxy.github.io/ai-driven-test-automation-boilerplate/staging/smoke/
+- https://<org>.github.io/<repo>/staging/regression/
+- https://<org>.github.io/<repo>/staging/smoke/
 ```
 
 ---

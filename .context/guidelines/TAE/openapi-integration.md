@@ -43,7 +43,7 @@ KATA uses **OpenAPI/Swagger specifications** to generate TypeScript types for AP
 The backend must be running and exposing Swagger at:
 
 ```
-http://localhost:64422/swagger/v1/swagger.json
+http://{{API_URL_LOCAL}}/swagger/v1/swagger.json
 ```
 
 > Consult your backend documentation for how to start the API server.
@@ -130,7 +130,7 @@ type CreateOrderBody =
 
 | Issue                    | Solution                                           |
 | ------------------------ | -------------------------------------------------- |
-| Connection refused       | Ensure backend is running on localhost:64422       |
+| Connection refused       | Ensure backend is running on {{API_URL_LOCAL}}     |
 | Types not generating     | Check openapi.json is valid JSON                   |
 | Import error for @api/\* | Verify tsconfig.json has the path alias configured |
 

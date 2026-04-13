@@ -353,9 +353,9 @@ Both `@atc` and `@step` wrap methods in `test.step()`, which KataReporter captur
 ```
 🧪 Running Test [3/6] => UPEX-100: should be able to re-authenticate
     ---- ✓ ATC [PROJ-101]: authenticateSuccessfully({ email: "user@test.com", password: "***" })
-    ---- API OK: 200 - https://dojo.upexgalaxy.com/api/auth/login
+    ---- API OK: 200 - https://app.example.com/api/auth/login
         ---- ✓ getCurrentUser()
-        ---- API OK: 200 - https://dojo.upexgalaxy.com/api/auth/me
+        ---- API OK: 200 - https://app.example.com/api/auth/me
             ---- step passed ✅ [195ms]
         ---- step passed ✅ [820ms]
     ✅ [PROJ-101] authenticateSuccessfully - PASS (825ms)

@@ -159,7 +159,7 @@ Document these patterns for the specific project.
 | Aspect          | Value                               |
 | --------------- | ----------------------------------- |
 | **Tool**        | Jira Cloud                          |
-| **URL**         | https://[your-domain].atlassian.net |
+| **URL**         | {{JIRA_URL}} |
 | **Project Key** | [PROJECT_KEY]                       |
 | **Board**       | [Board name]                        |
 | **Board Type**  | Scrum / Kanban                      |
@@ -212,14 +212,14 @@ claude mcp add atlassian
 
 ### API Access (if needed)
 
-**Base URL:** `https://[domain].atlassian.net/rest/api/3`
+**Base URL:** `{{JIRA_URL}}/rest/api/3`
 
 **Authentication:**
 
 ```bash
 # Basic auth with API token
 curl -u email@example.com:API_TOKEN \
-  https://[domain].atlassian.net/rest/api/3/issue/PROJ-123
+  {{JIRA_URL}}/rest/api/3/issue/{{PROJECT_KEY}}-123
 ```
 
 ---
@@ -345,7 +345,7 @@ stateDiagram-v2
 # .env.local (never commit)
 JIRA_API_TOKEN=your-api-token
 JIRA_EMAIL=your-email@example.com
-JIRA_URL=https://your-domain.atlassian.net
+JIRA_URL={{JIRA_URL}}
 ```
 
 ### MCP Configuration
@@ -358,7 +358,7 @@ JIRA_URL=https://your-domain.atlassian.net
       "command": "npx",
       "args": ["-y", "@anthropic/mcp-atlassian"],
       "env": {
-        "JIRA_URL": "https://your-domain.atlassian.net",
+        "JIRA_URL": "{{JIRA_URL}}",
         "JIRA_EMAIL": "your-email@example.com",
         "JIRA_API_TOKEN": "your-token"
       }

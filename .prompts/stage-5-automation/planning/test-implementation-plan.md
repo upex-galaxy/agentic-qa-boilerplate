@@ -228,7 +228,7 @@ Use the template below. Sections marked with `[E2E ONLY]` or `[INTEGRATION ONLY]
 ````markdown
 # Test Implementation Plan: {TICKET-ID}
 
-> **Ticket**: [{TICKET-ID}: {Ticket Title}](https://your-domain.atlassian.net/browse/{TICKET-ID})
+> **Ticket**: [{TICKET-ID}: {Ticket Title}]({{JIRA_URL}}/browse/{TICKET-ID})
 > **Type**: `integration` | `e2e`
 > **Sprint**: {Sprint Name}
 > **Created**: {date}

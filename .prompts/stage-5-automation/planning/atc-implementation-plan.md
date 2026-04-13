@@ -221,7 +221,7 @@ Use this template for the generated spec document:
 ````markdown
 # ATC Spec: {TICKET-ID} — {ATC Name}
 
-> **Ticket**: [{TICKET-ID}](https://your-jira-instance.atlassian.net/browse/{TICKET-ID})
+> **Ticket**: [{TICKET-ID}]({{JIRA_URL}}/browse/{TICKET-ID})
 > **Component**: `{ComponentName}` (`tests/components/{api|ui}/{ComponentName}.ts`)
 > **Type**: {API | UI} — {Mutation | Verification | Negative | Happy path | Validation | Navigation | State change}
 > **Parent Story**: {PARENT-TICKET-ID} (if applicable)

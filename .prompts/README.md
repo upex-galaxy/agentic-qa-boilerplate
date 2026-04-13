@@ -432,7 +432,7 @@ Before automating, read the documentation in:
 This repository is the KATA architecture template:
 
 ```
-https://github.com/upex-galaxy/ai-driven-test-automation-boilerplate
+https://github.com/<org>/<repo>
 Branch: main
 ```
 

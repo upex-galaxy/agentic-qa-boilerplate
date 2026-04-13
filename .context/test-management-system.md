@@ -1022,4 +1022,4 @@ This document serves as the foundation for implementing a Test Management System
 
 *Document Version: 2.0*
 *Methodology: Integrated Quality Lifecycle (IQL)*
-*Reference: upexgalaxy.com/metodologia*
+*Reference: {{WEBAPP_DOMAIN}}/metodologia*

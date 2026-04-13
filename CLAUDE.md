@@ -91,6 +91,8 @@ bun run test:allure       # Generate Allure report
 | `{{PROJECT_KEY}}` | Project key in issue tracker (e.g., PROJ, OB, UPEX) | PROJ |
 | `{{TMS_CLI}}` | Test management CLI command | bun xray |
 | `{{DEFAULT_ENV}}` | Default testing environment | staging |
+| `{{JIRA_URL}}` | Jira instance base URL | https://company.atlassian.net |
+| `{{WEBAPP_DOMAIN}}` | Domain of the web application under test | myproject.com |
 
 **Note**: Variables are substituted lazily — a prompt containing `{{API_URL_STAGING}}` will read this table at load time. Keep values accurate.
 
