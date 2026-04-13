@@ -1,8 +1,6 @@
 # Project Memory
 
-> **Purpose**: Operational context loaded every AI session.
-> **Usage**: AI reads this file automatically at session start.
-> **Customize**: Replace `[PLACEHOLDER]` values with your project specifics.
+> Operational context loaded every AI session. Replace `[PLACEHOLDER]` values with your project specifics.
 
 ---
 
@@ -11,15 +9,20 @@
 ```bash
 # READY TO WRITE TESTS:
 # When you start a new test session, load these context files FIRST:
-# 1. .context/business-data-map.md     → System flows and entities
-# 2. .context/api-architecture.md      → API endpoints reference
-# 3. .context/project-test-guide.md    → What to test and why
-# 4. .context/guidelines/TAE/kata-ai-index.md → How to write tests (KATA)
+# 1. .context/business-data-map.md     -> System flows and entities
+# 2. .context/api-architecture.md      -> API endpoints reference
+# 3. .context/project-test-guide.md    -> What to test and why
+# 4. .context/guidelines/TAE/kata-ai-index.md -> How to write tests (KATA)
 
 # PLAN BEFORE CODING:
-# Testing follows a Plan → Code → Review workflow. Never jump straight to code.
+# Testing follows a Plan -> Code -> Review workflow. Never jump straight to code.
 # See "Test Planning Scopes" below to choose the right planning prompt.
 # Full automation workflow: .prompts/stage-5-automation/README.md
+
+# SPRINT-LEVEL WORK:
+# For multi-ticket sprint testing, use the orchestrators:
+# @.prompts/utilities/sprint-test-framework-generator.md -> generates SPRINT-{N}-TESTING.md
+# @.prompts/orchestrators/sprint-testing-agent.md -> orchestrates Stages 1-3 per ticket
 
 # WRITE A NEW TEST:
 # 1. Pick planning prompt by scope (module / ticket / regression)
@@ -39,34 +42,43 @@ bun run test:ui           # Visual UI mode
 bun run test:allure       # Generate Allure report
 ```
 
-**Generate/Update Project Documentation:**
-
-```bash
-# Use this prompt to regenerate README.md and update CLAUDE.md
-@.prompts/utilities/context-engineering-setup.md
-```
+**Regenerate docs**: `@.prompts/utilities/context-engineering-setup.md`
 
 ---
 
-## ⚠️ Critical Reminders
+## Critical Rules (Always Apply)
 
-> These rules override defaults and must always be in context.
-
-1. **Login Credentials**: ALWAYS read from `.env` file — NEVER hardcode or guess passwords.
+1. **Login Credentials**: ALWAYS read from `.env` file -- NEVER hardcode or guess passwords.
    - Example keys: `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD`, `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD`
-2. **Plan before coding**: Always produce a test plan (`spec.md` / implementation plan) before writing test code.
-3. **No AI attribution in commits**: Never include "Generated with Claude Code", "Co-Authored-By: Claude", or similar lines in commit messages.
-4. **Shift-Left**: Evaluate Acceptance Criteria for clarity, testability, and completeness. Raise questions only when genuine gaps exist — never force questions to fill a checklist.
-5. **Confirm before push to main**: Never push to `main` without explicit user confirmation.
-6. [Add project-specific reminders here — e.g., "SPA and API are on different hosts — use correct base URLs"]
+
+2. **Plan Before Coding**: Always produce a test plan (`spec.md` / implementation plan) before writing test code. Testing follows Plan -> Code -> Review.
+
+3. **No AI Attribution**: Never include "Generated with Claude Code", "Co-Authored-By: Claude", or similar lines in commit messages. Commits must look human-authored.
+
+4. **Shift-Left**: Evaluate Acceptance Criteria for clarity, testability, and completeness. Raise questions only when genuine gaps exist -- never force questions to fill a checklist.
+
+5. **Confirm Before Push to Main**: Never push to `main` without explicit user confirmation.
+
+6. **Git History Management**:
+   - NEVER rewrite pushed history (`rebase`, `amend` on pushed commits)
+   - NEVER force push to any shared branch
+   - NEVER delete remote branches without confirmation
+   - ALWAYS add forward (new commits to fix, not rewrite)
+   - ALWAYS preserve merge history
+
+7. **Quality Verification**: After code changes, verify in order: run tests -> check types -> lint. Do not skip steps.
+
+8. **File Operations**: Always read a file before editing it. Preserve existing formatting and indentation. Never overwrite files without reading first.
+
+9. **No Copy-Paste in Prompts**: All prompts are @-loadable. Never ask users to copy-paste prompt content. Use `[TAG_TOOL]` pseudocode and `{{VARIABLES}}` for dynamic content.
+
+10. **Playwright CLI Usage**: For browser automation, load the `/playwright-cli` skill. It provides screenshots, tracing, video recording, session management, and request mocking. See `.claude/skills/playwright-cli/` for details.
 
 ---
 
 ## Project Variables
 
-> **Purpose**: Centralized project configuration referenced by all `.prompts/` and templates via `{{VARIABLE_NAME}}` syntax.
-> **Usage**: Fill in real values once here. All prompts that use `{{VARIABLES}}` will auto-adapt.
-> **Rationale**: Prevents multi-file maintenance — change a value once, it propagates everywhere.
+> Centralized configuration referenced by all `.prompts/` via `{{VARIABLE_NAME}}` syntax. Fill in real values once; all prompts auto-adapt.
 
 | Variable | Description | Example Value |
 |----------|-------------|---------------|
@@ -94,15 +106,12 @@ bun run test:allure       # Generate Allure report
 | `{{JIRA_URL}}` | Jira instance base URL | https://company.atlassian.net |
 | `{{WEBAPP_DOMAIN}}` | Domain of the web application under test | myproject.com |
 
-**Note**: Variables are substituted lazily — a prompt containing `{{API_URL_STAGING}}` will read this table at load time. Keep values accurate.
-
 ---
 
 ## Tool Resolution
 
-> When prompts use `[TAG_TOOL]` pseudocode, the AI resolves to the actual tool using this table.
-> **Priority rule**: CLI tools first (fewer tokens, faster execution), MCP as fallback.
-> Skills are self-documenting — the AI reads the skill file to learn exact syntax.
+> When prompts use `[TAG_TOOL]` pseudocode, resolve to the actual tool using this table.
+> **Priority**: CLI tools first (fewer tokens), MCP as fallback. Skills are self-documenting.
 
 ### Resolution Table
 
@@ -114,31 +123,15 @@ bun run test:allure       # Generate Allure report
 | `[DB_TOOL]` | Database | DBHub MCP | Supabase MCP / raw SQL | MCP tool list |
 | `[API_TOOL]` | API Exploration | OpenAPI MCP | Postman / curl | MCP tool list |
 
-### How It Works
-
-1. Prompts describe WHAT to do using `[TAG_TOOL]` pseudocode
-2. The AI reads this table to determine WHICH tool to use
-3. The AI reads the skill/MCP documentation to learn HOW to execute
-4. If the primary tool is unavailable, try the fallback
-5. If all tools are unavailable, inform the user
+**Resolution flow**: Prompt uses `[TAG_TOOL]` -> AI reads this table for WHICH tool -> reads skill/MCP docs for HOW -> if unavailable, try fallback -> if all unavailable, inform user.
 
 ### Pseudocode Syntax
 
-```
-[TAG_TOOL] Action:
-  - parameter: value
-  - parameter: {per convention name}
-  - parameter: {{PROJECT_VARIABLE}}
-```
-
-**Value types in pseudocode:**
-
-| Type | Syntax | Example | When to use |
-|------|--------|---------|-------------|
-| Fixed/domain | Literal value | `type: Manual` | Domain concepts that never change |
-| Convention reference | `{per <convention>}` | `title: {per TC naming convention}` | Forces AI to consult guidelines |
-| Project variable | `{{VARIABLE}}` | `project: {{PROJECT_KEY}}` | Configured once per project |
-| Context-derived | `{from <source>}` | `steps: {from test analysis}` | Derived during session |
+Format: `[TAG_TOOL] Action:` with parameters using these value types:
+- **Literal value** (`type: Manual`) -- fixed domain concepts
+- **Convention ref** (`{per TC naming convention}`) -- forces AI to consult guidelines
+- **Project variable** (`{{PROJECT_KEY}}`) -- configured once per project
+- **Context-derived** (`{from test analysis}`) -- derived during session
 
 ### Convention References
 
@@ -146,9 +139,9 @@ bun run test:allure       # Generate Allure report
 |-----------|-------------------|
 | TC naming convention | `.context/guidelines/TAE/test-design-principles.md` |
 | TC specification convention | `.context/guidelines/TAE/test-design-principles.md` |
-| Labeling convention | `.prompts/stage-4-documentation/test-documentation.md` § Labels |
-| Bug naming convention | `.prompts/stage-3-reporting/bug-report.md` § Summary format |
-| Execution naming convention | `.prompts/stage-4-documentation/test-documentation.md` § Test Executions |
+| Labeling convention | `.prompts/stage-4-documentation/test-documentation.md` -- Labels |
+| Bug naming convention | `.prompts/stage-3-reporting/bug-report.md` -- Summary format |
+| Execution naming convention | `.prompts/stage-4-documentation/test-documentation.md` -- Test Executions |
 
 ---
 
@@ -168,7 +161,7 @@ bun run test:allure       # Generate Allure report
 **TL;DR Flow:**
 
 ```
-[User Action] → [System Process] → [Outcome]
+[User Action] -> [System Process] -> [Outcome]
 ```
 
 ---
@@ -187,12 +180,46 @@ bun run test:allure       # Generate Allure report
 
 ---
 
-## QA Workflow by Work Type
+## Orchestration Mode (Subagent Strategy)
 
-| Work Type | Workflow | Entry Point |
-|-----------|---------|-------------|
-| **User Story** | Full 6-stage workflow | `.prompts/session-start.md` → `.prompts/us-qa-workflow.md` |
-| **Bug** | Triage → Verify → Report | `.prompts/session-start.md` → `.prompts/bug-qa-workflow.md` |
+**Core Principle**: Main conversation = command center. Subagents = executors.
+
+**Use subagents for**: Reading/writing multiple files, MCP operations, research across repos, git operations, verification (tests/types/lint), multi-file edits.
+
+**Do NOT use subagents for**: Quick lookups, memory reads/writes, task tracking, asking the user, planning.
+
+**Briefing format** -- every dispatch must include:
+1. **Goal**: One-sentence description
+2. **Context docs**: Which files to read first
+3. **Skills to load**: Which skills the subagent needs (e.g., `/playwright-cli`)
+4. **Exact instructions**: Step-by-step, not vague goals
+5. **Report format**: What to return (files changed, tests passed/failed, blockers)
+6. **Rules**: Relevant Critical Rules to follow
+
+### Execution Patterns
+
+| Pattern | When | Example |
+|---------|------|---------|
+| **Parallel** | Independent tasks | Read 3 context files simultaneously |
+| **Sequential** | Dependent tasks | Plan -> Code -> Test |
+| **Background** | Long-running | Test suite execution while planning next ticket |
+| **Single** | Simple task | One file edit with verification |
+
+**Error protocol**: On subagent error -- STOP, report to user with full context, do NOT fix without approval, present options (retry/skip/abort).
+
+**Planning**: Present plan -> wait for approval -> track progress -> report results.
+
+---
+
+## Usage Modes & Entry Points
+
+| Mode | Entry Point | Stages | When to Use |
+|------|-------------|--------|-------------|
+| **Sprint Testing** | `@.prompts/utilities/sprint-test-framework-generator.md` then `@.prompts/orchestrators/sprint-testing-agent.md` | 1-3 per ticket | Multiple tickets in a sprint. Params: `sprint-file` (req), `continue-from` (opt) |
+| **User Story** | `@.prompts/session-start.md` then `@.prompts/us-qa-workflow.md` | 1-6 | Single story, full QA cycle |
+| **Bug** | `@.prompts/session-start.md` then `@.prompts/bug-qa-workflow.md` | Triage/Verify/Report | Bug retesting |
+| **Automation** | `@.prompts/orchestrators/test-automation-agent.md` | 5 (Plan/Code/Review) | Automate existing specs. Params: `module` (req), `ticket-id` (opt), `type` (opt) |
+| **Regression** | `@.prompts/stage-6-regression/regression-execution.md` | 6 | Post-release validation |
 
 ---
 
@@ -212,7 +239,7 @@ bun run test:allure       # Generate Allure report
 
 | Pattern | Rule |
 |---------|------|
-| **Parameters** | Max 2 positional. 3+ → use object parameter |
+| **Parameters** | Max 2 positional. 3+ -> use object parameter |
 | **Utilities** | Only agnostic utilities go to `tests/utils/` |
 | **Locators** | Inline in ATCs. Extract only if used 2+ times |
 | **Imports** | Always use aliases (`@api/`, `@schemas/`, `@utils/`). No relative imports |
@@ -227,19 +254,19 @@ bun run test:allure       # Generate Allure report
 - `ApiBase` = All HTTP helpers
 - `TestContext` = Shared across both (config, faker)
 
-→ **Full details**: `.context/guidelines/TAE/typescript-patterns.md`
+-> **Full details**: `.context/guidelines/TAE/typescript-patterns.md`
 
 ### KATA Architecture
 
 ```
 TestContext (Layer 1) - Config, Faker, utilities
-    ↓ extends
+    | extends
 ApiBase / UiBase (Layer 2) - HTTP / Playwright helpers
-    ↓ extends
+    | extends
 YourApi / YourPage (Layer 3) - ATCs live here
-    ↓ used by
+    | used by
 TestFixture (Layer 4) - Dependency injection
-    ↓ used by
+    | used by
 Test Files - Orchestrate ATCs
 ```
 
@@ -259,7 +286,7 @@ Test Files - Orchestrate ATCs
 | UI only | `{ ui }` | Yes |
 | Hybrid | `{ test }` | Yes |
 
-→ **Full details**: `.context/guidelines/TAE/kata-architecture.md`
+-> **Full details**: `.context/guidelines/TAE/kata-architecture.md`
 
 ---
 
@@ -282,45 +309,56 @@ Test Files - Orchestrate ATCs
 - **NO AI attribution**: Never include "Generated with Claude Code", "Co-Authored-By: Claude", or similar lines. Commits must look human-authored.
 - **Confirm before push to main**: Always ask user confirmation before pushing to `main`.
 
-### Example Flow
+**Example**: `git checkout -b feature/UPEX-123-add-login-tests` -> commit -> push with `-u` -> `gh pr create --base staging`. For general work on `main`, always ask "Confirm push to main?" before pushing.
 
-```bash
-# General work (no ticket)
-git add <files>
-git commit -m "docs: update context files"
-# → Ask: "Confirm push to main?"
-git push origin main
-
-# Ticket-based work
-git checkout -b feature/UPEX-123-add-login-tests
-git add <files>
-git commit -m "test: add login API tests"
-git push -u origin feature/UPEX-123-add-login-tests
-gh pr create --base staging
-```
-
-→ **Full details**: `docs/workflows/git-flow.md`
+-> **Full details**: `docs/workflows/git-flow.md`
 
 ---
 
-## Context Loading by Task
+## Context System (3-Level Hierarchy)
+
+### Level 1: Project-Wide (loaded at session start)
+
+```
+.context/business-data-map.md      -> System flows and entities
+.context/api-architecture.md       -> API endpoints reference
+.context/project-test-guide.md     -> What to test and why
+```
+
+### Level 2: Module-Level (shared across tickets in a module)
+
+```
+.context/PBI/{module}/
+  module-context.md                -> Module overview and shared context
+  test-specs/
+    ROADMAP.md                     -> All tickets and their automation status
+    PROGRESS.md                    -> Current progress tracker
+    SESSION-PROMPT.md              -> @-loadable session resume prompt
+```
+
+### Level 3: Ticket-Level (per ticket)
+
+```
+.context/PBI/{module}/test-specs/{PREFIX}-T{id}-{name}/
+  spec.md                         -> Test specification
+  implementation-plan.md           -> Automation plan
+  atc/*.md                         -> Individual ATC designs
+```
+
+### Context Loading by Task
 
 | Task | Load These Files |
 |------|------------------|
 | **Write E2E Test** | `kata-ai-index.md` + `e2e-testing-patterns.md` |
 | **Write API Test** | `kata-ai-index.md` + `api-testing-patterns.md` |
-| **Exploratory Testing** | `project-test-guide.md` + `CLAUDE.md § Tool Resolution` |
+| **Exploratory Testing** | `project-test-guide.md` + `CLAUDE.md -- Tool Resolution` |
 | **Understand System** | `business-data-map.md` + `PRD/user-journeys.md` |
-| **Use MCP Tools** | `CLAUDE.md § Tool Resolution` |
+| **Use MCP Tools** | `CLAUDE.md -- Tool Resolution` |
 | **TMS Operations** | `tms-architecture.md` + `tms-conventions.md` + `tms-workflow.md` |
 | **Create/Link TMS Artifacts** | `tms-architecture.md` (entity model + linking order) |
 | **In-Sprint Testing** | `tms-workflow.md` + `tms-conventions.md` |
 
-**Living Code Examples:**
-
-- API Component: `tests/components/api/` (any `*Api.ts`)
-- UI Component: `tests/components/ui/` (any `*Page.ts`)
-- Test File: `tests/e2e/` or `tests/integration/`
+**Living examples**: API components in `tests/components/api/*Api.ts`, UI components in `tests/components/ui/*Page.ts`, tests in `tests/e2e/` or `tests/integration/`.
 
 ---
 
@@ -340,19 +378,42 @@ gh pr create --base staging
 - Context7 for "how to use X" (official docs)
 - Tavily for "how to solve X" (community solutions)
 
+---
+
+## Skills & Decision Tree
+
+> Pre-built skills available in `.claude/skills/`. Loaded automatically by Claude Code.
+
+| Skill | Trigger | Description |
+|-------|---------|-------------|
+| **playwright-cli** | `/playwright-cli` | Browser automation: screenshots, tracing, video recording, session management, request mocking, test generation |
+| **xray-cli** | `/xray-cli` | Xray Cloud test management: create tests, manage executions, import results, backup/restore |
+
+**Decision Tree:**
+
+| Need | Tool |
+|------|------|
+| Browser interaction | `/playwright-cli` |
+| TMS operation | `/xray-cli` |
+| API exploration | OpenAPI MCP |
+| Database query | DBHub MCP |
+| Library docs | Context7 MCP |
+| Community solutions | Tavily MCP |
+
+Skills are committed to the repo. User-specific settings (`.claude/settings.local.json`) are gitignored.
 
 ---
 
-## AI Behavior During Testing
+## AI Behavior
 
-### Explanations and Confirmations
+**Workflow**: Plan first (wait for approval) -> delegate to subagents -> use skills -> track progress -> report results -> verify quality.
 
-When working on testing a User Story or bug:
+### During Testing
 
 1. **Explain the story**: Once you understand the ticket, explain briefly:
    - What the feature is about
    - How it works (in simple terms)
-   - What we'll be testing
+   - What we will be testing
 
 2. **Wait for confirmation**: After important explanations, WAIT for the user to respond before continuing. This allows the user to:
    - Read and understand
@@ -361,16 +422,18 @@ When working on testing a User Story or bug:
 
 3. **Explain defects**: When you find a bug or unexpected behavior:
    - Describe what you observed
-   - Explain why it's a problem
+   - Explain why it is a problem
    - Suggest the impact (severity, affected users, business risk)
 
 4. **Language**: Default to **English**. If the user writes in another language, mirror that language for user-facing communication. Documentation and code are always written in English.
 
 ### Environment Selection
 
-- Ask the user which environment they're working on (e.g., "local or staging?") when it's ambiguous.
-- Default to **staging** unless the user specifies otherwise.
-- Use the environment URLs from the "Environment URLs" table above and credentials from `.env`.
+Default to **staging** unless the user specifies otherwise. Ask when ambiguous. Use URLs from "Environment URLs" table and credentials from `.env`.
+
+### Context Efficiency
+
+Main conversation stays lean (no large file reads). Subagents do heavy reading. Load only what the current step needs.
 
 ---
 
@@ -380,27 +443,17 @@ For every ticket being tested, maintain local documentation under `.context/PBI/
 
 ```
 .context/PBI/{module-name}/{TICKET-ID}-{brief-title}/
-├── context.md          # Main file: ACs, test data, session notes, open questions
-├── test-analysis.md    # Test plan / Acceptance Test Plan (ATP) mirror
-├── test-report.md      # Test report / Acceptance Test Report (ATR) mirror
-└── evidence/           # Screenshots, traces, logs (gitignored)
+  context.md          # Main file: ACs, test data, session notes, open questions
+  test-analysis.md    # Test plan / Acceptance Test Plan (ATP) mirror
+  test-report.md      # Test report / Acceptance Test Report (ATR) mirror
+  evidence/           # Screenshots, traces, logs (gitignored)
 ```
 
-**Variables:**
+**Variables**: `{module-name}` = kebab-case module (e.g., `user-management`), `{TICKET-ID}` = TMS identifier (e.g., `UPEX-277`), `{brief-title}` = max ~5 words kebab-case (e.g., `empty-states`).
 
-- `{module-name}`: kebab-case of the module or epic (e.g., `user-management`)
-- `{TICKET-ID}`: TMS ticket identifier (e.g., `UPEX-277`)
-- `{brief-title}`: AI-generated summary of the ticket title, max ~5 words, kebab-case (e.g., `empty-states`)
+**Entry point**: `@.prompts/session-start.md` -- fetches ticket, explains story, loads context, explores code, creates PBI folder.
 
-**Entry point:** Start with `.prompts/session-start.md`, which:
-
-1. Fetches ticket from the TMS (Jira/Xray)
-2. Explains the story to the user → waits for confirmation
-3. Loads project context files
-4. Explores code in repositories
-5. Identifies test data candidates
-6. Creates the PBI folder
-7. Configures any local tool settings (e.g., `.playwright/cli.config.json`)
+**Resume a session**: `@.context/PBI/{module}/test-specs/SESSION-PROMPT.md` -- @-loadable, restores full context without copy-paste.
 
 ---
 
@@ -416,129 +469,41 @@ For every ticket being tested, maintain local documentation under `.context/PBI/
 
 ---
 
-## Skills (Claude Code)
-
-> Pre-built skills available in `.claude/skills/`. These are loaded automatically by Claude Code.
-
-| Skill | Trigger | Description |
-|-------|---------|-------------|
-| **playwright-cli** | `/playwright-cli` | Browser automation: screenshots, tracing, video recording, session management, request mocking, test generation |
-| **xray-cli** | `/xray-cli` | Xray Cloud test management: create tests, manage executions, import results, backup/restore |
-
-**Note:** Skills are committed to the repo so anyone who clones the project gets them out of the box. User-specific settings (`.claude/settings.local.json`) are gitignored.
-
----
-
 ## Test Project Structure
 
 ```
 tests/
-├── components/
-│   ├── TestContext.ts        # Layer 1: Config + Faker
-│   ├── TestFixture.ts        # Layer 4: Unified fixture
-│   ├── api/
-│   │   ├── ApiBase.ts        # Layer 2: HTTP client
-│   │   └── [YourApi.ts]      # Layer 3: Domain components
-│   ├── ui/
-│   │   ├── UiBase.ts         # Layer 2: Page base
-│   │   └── [YourPage.ts]     # Layer 3: Domain components
-│   └── steps/                # Reusable step chains (preconditions)
-├── e2e/                      # E2E tests
-├── integration/              # API tests
-└── data/fixtures/            # Test data JSON
+  components/
+    TestContext.ts        # Layer 1: Config + Faker
+    TestFixture.ts        # Layer 4: Unified fixture
+    api/
+      ApiBase.ts          # Layer 2: HTTP client
+      [YourApi.ts]        # Layer 3: Domain components
+    ui/
+      UiBase.ts           # Layer 2: Page base
+      [YourPage.ts]       # Layer 3: Domain components
+    steps/                # Reusable step chains (preconditions)
+  e2e/                    # E2E tests
+  integration/            # API tests
+  data/fixtures/          # Test data JSON
 ```
 
 ---
 
-## Critical Test Priorities
+## Quick Reference
 
-> Update with your project's priorities.
+**Pre-flight checklist:**
 
-| Priority | Flow | Business Impact | Status |
-|----------|------|-----------------|--------|
-| Critical | [Flow 1] | [Why it matters] | [ ] |
-| Critical | [Flow 2] | [Why it matters] | [ ] |
-| High | [Flow 3] | [Why it matters] | [ ] |
+- [ ] Plan presented and approved before coding
+- [ ] KATA architecture followed (layers, ATCs, fixtures)
+- [ ] Aliases used for imports (`@api/`, `@schemas/`, `@utils/`)
+- [ ] Credentials from `.env`, never hardcoded
+- [ ] Tests run and pass
+- [ ] No AI attribution in commits
+- [ ] Context loaded progressively (not all at once)
 
----
-
-## Discovery Progress
-
-> Track which discovery prompts have been completed.
-
-| Phase | Status | Output Files |
-|-------|--------|--------------|
-| Phase 1: Constitution | [Pending/Done] | `idea/*` |
-| Phase 2: Architecture | [Pending/Done] | `PRD/*`, `SRS/*` |
-| Phase 3: Infrastructure | [Pending/Done] | `SRS/infrastructure.md` |
-| Context Generators | [Pending/Done] | `business-data-map`, `api-architecture`, `project-test-guide` |
+See "Quick Start" above for common test commands.
 
 ---
 
-## Access Configuration
-
-### Configured
-
-- [ ] Playwright MCP (browser automation)
-- [ ] Database MCP (data validation)
-- [ ] Atlassian MCP (Jira/Xray integration)
-- [ ] OpenAPI MCP (API exploration)
-- [ ] Context7 MCP (library documentation)
-- [ ] Bun runtime installed
-- [ ] Playwright browsers installed
-- [ ] GitHub Actions workflows
-
-### Pending / Manual Steps
-
-- [ ] Populate `.env` with staging/production URLs
-- [ ] Populate `.env` with test user credentials (`LOCAL_*`, `STAGING_*`)
-- [ ] Configure TMS credentials (Xray Cloud: `XRAY_CLIENT_ID`, `XRAY_CLIENT_SECRET`)
-- [ ] Run `bun run env:validate` to check configuration
-- [ ] Restart Claude Code after any MCP credential change (configs are cached)
-
----
-
-## Testing Decisions
-
-| Aspect | Decision | Rationale |
-|--------|----------|-----------|
-| **Priority** | [API first / E2E first] | [Reason] |
-| **Browsers** | [Chromium / multi-browser] | [Reason] |
-| **Test Data** | [Faker / fixtures / both] | [Reason] |
-| **Isolation** | Each test independent | Standard practice |
-
----
-
-## Known Issues & Blockers
-
-| Issue | Severity | Status |
-|-------|----------|--------|
-| [Issue description] | [HIGH/MEDIUM/LOW] | [Open/Resolved] |
-
----
-
-## Session Log
-
-> Log significant changes per session. Delete old entries as needed.
-
-### [DATE] - [Session Title]
-
-- [Change 1]
-- [Change 2]
-- Result: [Outcome]
-
----
-
-## Next Actions
-
-1. **[Priority 1]**
-   - [ ] [Subtask]
-   - [ ] [Subtask]
-
-2. **[Priority 2]**
-   - [ ] [Subtask]
-
----
-
-**Last Updated**: [DATE]
-**Session Count**: [N]
+*Update this file when skills, core rules, or workflow patterns change.*
