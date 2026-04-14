@@ -13,11 +13,25 @@
  *   Only sync UNIVERSAL framework files, never project-specific configs.
  *
  * ============================================================================
+ * AGENT SKILLS MODEL
+ * ============================================================================
+ *
+ * Operational workflows live as agent skills under `.claude/skills/`. The
+ * canonical location is the Claude Code directory:
+ *
+ *   .claude/skills/                Canonical skills directory (one folder per skill)
+ *   .agents/skills  -> ../.claude/skills  Relative symlink for portability
+ *                                          (Codex / Copilot / Cursor / OpenCode)
+ *
+ * The CLI syncs the canonical directory only. The `.agents/skills` symlink is
+ * ensured after every successful skills sync so other agent platforms see the
+ * same content without duplication.
+ *
+ * ============================================================================
  * WHAT GETS SYNCED (Universal - same across all projects)
  * ============================================================================
  *
- *   .prompts/           QA workflow prompts (stages, phases, utilities, orchestrators)
- *   .context/guidelines/ Framework documentation (TAE, QA, MCP guides)
+ *   .claude/skills/     Agent skills (project-discovery, sprint-testing, ...)
  *   docs/               General documentation
  *   cli/                CLI tools (this file auto-updates itself)
  *   .vscode/            IDE configuration (extensions, settings)
@@ -55,25 +69,20 @@
  * USAGE
  * ============================================================================
  *
- *   bun run update                  Interactive menu
- *   bun run update all              Update everything (allowed dirs only)
- *   bun run update prompts          Update .prompts/
- *   bun run update guidelines       Update .context/guidelines/
- *   bun run update docs             Update docs/
- *   bun run update cli              Update cli/
- *   bun run update vscode           Update .vscode/
- *   bun run update husky            Update .husky/
- *   bun run update tooling          Update config files (prettier, eslint, etc.)
- *   bun run update examples         Update example templates
- *   bun run update all --dry-run    Preview changes without modifying
- *   bun run update --rollback       Restore from most recent backup
- *
- * PROMPTS OPTIONS:
- *   bun run update prompts --all           All stages + phases + extras
- *   bun run update prompts --stage 4,5     Specific stages
- *   bun run update prompts --phase 1,2     Specific phases
- *   bun run update prompts --role qa       QA role preset (stages 1-5)
- *   bun run update prompts --role discovery Discovery preset (phases 1-4)
+ *   bun run update                                    Interactive menu
+ *   bun run update all                                Update everything (allowed dirs only)
+ *   bun run update skills                             Sync all agent skills
+ *   bun run update skills --skill sprint-testing      Sync a specific skill
+ *   bun run update skills --skill a,b,c               Sync several skills
+ *   bun run update skills --list                      List skills available in the template
+ *   bun run update docs                               Update docs/
+ *   bun run update cli                                Update cli/
+ *   bun run update vscode                             Update .vscode/
+ *   bun run update husky                              Update .husky/
+ *   bun run update tooling                            Update config files (prettier, etc.)
+ *   bun run update examples                           Update example templates
+ *   bun run update all --dry-run                      Preview changes without modifying
+ *   bun run update --rollback                         Restore from most recent backup
  *
  * ============================================================================
  * INTELLIGENT MERGE
@@ -88,11 +97,22 @@
  * ============================================================================
  *
  * @author UPEX Galaxy
- * @version 5.1
+ * @version 5.2
  */
 
 import { execSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  readlinkSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -101,37 +121,18 @@ import { createInterface } from 'node:readline';
 // CONFIGURATION
 // ============================================================================
 
-const CLI_VERSION = '5.1';
+const CLI_VERSION = '5.2';
 const TEMPLATE_REPO = 'upex-galaxy/ai-driven-test-automation-boilerplate';
 const TEMP_DIR = join(tmpdir(), 'kata-boilerplate-update');
 
 /**
- * Discovery phases configuration
- * Located in: .prompts/discovery/
+ * Canonical skills location (Claude Code) and portability symlink target.
+ * The CLI syncs the canonical path; the symlink is ensured after sync so
+ * Codex / Copilot / Cursor / OpenCode resolve skills from the same source.
  */
-const DISCOVERY_PHASES: Record<string, { name: string, dir: string }> = {
-  'phase-1': { name: 'Constitution', dir: 'discovery/phase-1-constitution' },
-  'phase-2': { name: 'Architecture', dir: 'discovery/phase-2-architecture' },
-  'phase-3': { name: 'Infrastructure', dir: 'discovery/phase-3-infrastructure' },
-  'phase-4': { name: 'Specification', dir: 'discovery/phase-4-specification' },
-};
-
-/**
- * QA Stages configuration
- * Located in: .prompts/stage-X-name/
- */
-const QA_STAGES: Record<string, { name: string, dir: string }> = {
-  'stage-1': { name: 'Shift-Left Testing', dir: 'stage-1-shift-left' },
-  'stage-2': { name: 'Exploratory Testing', dir: 'stage-2-exploratory' },
-  'stage-3': { name: 'Test Documentation', dir: 'stage-3-documentation' },
-  'stage-4': { name: 'Test Automation', dir: 'stage-4-automation' },
-  'stage-5': { name: 'Regression Testing', dir: 'stage-5-regression' },
-};
-
-/**
- * Extra directories in .prompts/
- */
-const EXTRA_PROMPT_DIRS = ['utilities', 'setup', 'orchestrators'];
+const SKILLS_CANONICAL_DIR = join('.claude', 'skills');
+const SKILLS_SYMLINK_PATH = join('.agents', 'skills');
+const SKILLS_SYMLINK_TARGET = join('..', '.claude', 'skills');
 
 /**
  * Config files that are universal across all KATA projects
@@ -152,61 +153,18 @@ const EXAMPLE_FILES = [
   'dbhub.example.toml',
 ];
 
-/**
- * Role-based presets for quick updates
- */
-const ROLE_PRESETS: Record<string, {
-  description: string
-  stages?: string[]
-  phases?: string[]
-  extras?: boolean
-}> = {
-  'qa': {
-    description: 'All QA stages (Shift-Left to Regression)',
-    stages: ['stage-1', 'stage-2', 'stage-3', 'stage-4', 'stage-5'],
-  },
-  'qa-manual': {
-    description: 'Manual QA (Shift-Left, Exploratory, Documentation)',
-    stages: ['stage-1', 'stage-2', 'stage-3'],
-  },
-  'qa-automation': {
-    description: 'Automation only (Test Automation, Regression)',
-    stages: ['stage-4', 'stage-5'],
-  },
-  'discovery': {
-    description: 'Project onboarding (all phases)',
-    phases: ['phase-1', 'phase-2', 'phase-3', 'phase-4'],
-  },
-  'discovery-lite': {
-    description: 'Quick onboarding (Constitution + Architecture)',
-    phases: ['phase-1', 'phase-2'],
-  },
-  'framework': {
-    description: 'Framework updates (guidelines + CLI + docs)',
-    extras: true,
-  },
-};
-
 // ============================================================================
 // TYPES
 // ============================================================================
 
 interface ParsedArgs {
   commands: string[]
-  stages: string[] | null
-  phases: string[] | null
-  role: string | null
-  extras: boolean
+  skills: string[] | null
+  listSkills: boolean
   all: boolean
   help: boolean
   dryRun: boolean
   rollback: boolean
-}
-
-interface PromptsConfig {
-  stages: string[]
-  phases: string[]
-  extras: boolean
 }
 
 interface MergeResult {
@@ -293,9 +251,9 @@ ${colors.yellow}━━━━━━━━━━━━━━━━━━━━━�
 This dependency is required for the ${colors.cyan}interactive menu${colors.reset}.
 
 ${colors.dim}Without it, you can only use direct commands like:${colors.reset}
-  ${colors.green}bun run update all${colors.reset}              - Update everything
-  ${colors.green}bun run update prompts --role qa${colors.reset} - Update prompts for QA
-  ${colors.green}bun run update cli${colors.reset}              - Update CLI tools
+  ${colors.green}bun run update all${colors.reset}                      - Update everything
+  ${colors.green}bun run update skills${colors.reset}                   - Sync agent skills
+  ${colors.green}bun run update cli${colors.reset}                      - Update CLI tools
 
 ${colors.bold}Do you want to install the dependency now?${colors.reset}
 `);
@@ -343,17 +301,15 @@ Run the script again:
 function parseArgs(args: string[]): ParsedArgs {
   const result: ParsedArgs = {
     commands: [],
-    stages: null,
-    phases: null,
-    role: null,
-    extras: false,
+    skills: null,
+    listSkills: false,
     all: false,
     help: false,
     dryRun: false,
     rollback: false,
   };
 
-  const validCommands = ['all', 'prompts', 'guidelines', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples', 'help', 'rollback'];
+  const validCommands = ['all', 'skills', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples', 'help', 'rollback'];
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -370,40 +326,16 @@ function parseArgs(args: string[]): ParsedArgs {
     else if (arg === '--rollback' || arg === 'rollback') {
       result.rollback = true;
     }
-    else if (arg === '--extras') {
-      result.extras = true;
+    else if (arg === '--list') {
+      result.listSkills = true;
     }
-    else if (arg === '--stage' || arg === '--stages') {
+    else if (arg === '--skill' || arg === '--skills') {
       const nextArg = args[++i];
       if (nextArg) {
-        result.stages = nextArg
+        result.skills = nextArg
           .split(',')
-          .map(n => `stage-${n.trim()}`)
-          .filter(s => QA_STAGES[s]);
-      }
-    }
-    else if (arg === '--phase' || arg === '--phases') {
-      const nextArg = args[++i];
-      if (nextArg) {
-        result.phases = nextArg
-          .split(',')
-          .map(n => `phase-${n.trim()}`)
-          .filter(p => DISCOVERY_PHASES[p]);
-      }
-    }
-    else if (arg === '--role') {
-      const nextArg = args[++i];
-      if (nextArg && ROLE_PRESETS[nextArg]) {
-        result.role = nextArg;
-        const preset = ROLE_PRESETS[nextArg];
-        result.stages = preset.stages || [];
-        result.phases = preset.phases || [];
-        result.extras = preset.extras || false;
-      }
-      else if (nextArg) {
-        log.error(`Unknown role: ${nextArg}`);
-        log.info(`Available roles: ${Object.keys(ROLE_PRESETS).join(', ')}`);
-        process.exit(1);
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
       }
     }
     else if (validCommands.includes(arg)) {
@@ -471,8 +403,7 @@ function createBackup(components: string[]): string {
   mkdirSync(backupDir, { recursive: true });
 
   const backupMap: Record<string, { src: string, dest: string }> = {
-    prompts: { src: '.prompts', dest: '.prompts' },
-    guidelines: { src: '.context/guidelines', dest: '.context/guidelines' },
+    skills: { src: '.claude/skills', dest: '.claude/skills' },
     docs: { src: 'docs', dest: 'docs' },
     cli: { src: 'cli', dest: 'cli' },
     vscode: { src: '.vscode', dest: '.vscode' },
@@ -551,6 +482,10 @@ function rollbackFromBackup(): void {
   try {
     restoreDir(backupPath, process.cwd());
     log.success(`Restored ${restored} files from ${latest}`);
+    // Recreate the .agents/skills symlink if the skills directory was restored
+    if (existsSync(SKILLS_CANONICAL_DIR)) {
+      ensureAgentsSkillsSymlink();
+    }
   }
   catch (err) {
     log.error(`Rollback failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -676,17 +611,27 @@ function countFilesInDir(dir: string): number {
 /**
  * Execute a dry-run: preview what would change without modifying files.
  */
-function executeDryRun(commands: string[], allMode: boolean): void {
+function executeDryRun(commands: string[], allMode: boolean, skillsFilter: string[] | null): void {
   log.header('  DRY RUN — No files will be modified');
   console.log('');
 
   const components: { name: string, dir: string }[] = [];
 
-  if (commands.includes('prompts') || allMode) {
-    components.push({ name: 'Prompts (.prompts/)', dir: join(TEMP_DIR, '.prompts') });
-  }
-  if (commands.includes('guidelines') || allMode) {
-    components.push({ name: 'Guidelines (.context/guidelines/)', dir: join(TEMP_DIR, '.context', 'guidelines') });
+  if (commands.includes('skills') || allMode) {
+    const templateSkillsPath = join(TEMP_DIR, SKILLS_CANONICAL_DIR);
+    const available = listTemplateSkills(templateSkillsPath);
+    const selected = skillsFilter && skillsFilter.length > 0
+      ? available.filter(s => skillsFilter.includes(s))
+      : available;
+
+    if (selected.length === 0) {
+      console.log(`   ${colors.dim}Skills  →  None selected or template directory missing${colors.reset}`);
+    }
+    else {
+      for (const skill of selected) {
+        components.push({ name: `Skill: ${skill}`, dir: join(templateSkillsPath, skill) });
+      }
+    }
   }
   if (commands.includes('docs') || allMode) {
     components.push({ name: 'Documentation (docs/)', dir: join(TEMP_DIR, 'docs') });
@@ -728,152 +673,190 @@ function executeDryRun(commands: string[], allMode: boolean): void {
 }
 
 // ============================================================================
+// SKILLS HELPERS
+// ============================================================================
+
+/**
+ * Return the skill folder names present in a `.claude/skills/` directory.
+ */
+function listTemplateSkills(skillsDir: string): string[] {
+  if (!existsSync(skillsDir)) { return []; }
+  return readdirSync(skillsDir, { withFileTypes: true })
+    .filter(d => d.isDirectory())
+    .map(d => d.name)
+    .sort();
+}
+
+/**
+ * Print the list of skills available in the template and exit.
+ */
+function printSkillsList(): void {
+  const templateSkillsPath = join(TEMP_DIR, SKILLS_CANONICAL_DIR);
+  const skills = listTemplateSkills(templateSkillsPath);
+
+  log.header('  Skills available in the template');
+  if (skills.length === 0) {
+    log.warning('No skills found in the template (.claude/skills/).');
+    return;
+  }
+  for (const skill of skills) {
+    console.log(`   ${colors.cyan}${skill}${colors.reset}`);
+  }
+  console.log('');
+  log.info(`Total: ${skills.length} skill${skills.length === 1 ? '' : 's'}`);
+  log.info('Use `bun run update skills --skill <name[,name,...]>` to sync specific skills.');
+}
+
+/**
+ * Ensure `.agents/skills` is a relative symlink pointing at `../.claude/skills`.
+ *
+ * Behavior:
+ *   - Absent        -> create the symlink.
+ *   - Correct link  -> leave untouched, log confirmation.
+ *   - Wrong target  -> warn the user, do not overwrite.
+ *   - Real dir/file -> warn the user, do not overwrite.
+ *   - Windows EPERM -> print elevation instructions.
+ */
+function ensureAgentsSkillsSymlink(): void {
+  const parentDir = '.agents';
+
+  try {
+    mkdirSync(parentDir, { recursive: true });
+  }
+  catch (err) {
+    log.warning(`Could not create ${parentDir}/: ${err instanceof Error ? err.message : String(err)}`);
+    return;
+  }
+
+  if (existsSync(SKILLS_SYMLINK_PATH)) {
+    let stats;
+    try {
+      stats = lstatSync(SKILLS_SYMLINK_PATH);
+    }
+    catch (err) {
+      log.warning(`Could not inspect ${SKILLS_SYMLINK_PATH}: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+
+    if (stats.isSymbolicLink()) {
+      let currentTarget = '';
+      try {
+        currentTarget = readlinkSync(SKILLS_SYMLINK_PATH);
+      }
+      catch {
+        // Ignore read failure, treat as wrong target
+      }
+
+      if (currentTarget === SKILLS_SYMLINK_TARGET) {
+        log.dim(`${SKILLS_SYMLINK_PATH} symlink already configured`);
+        return;
+      }
+
+      log.warning(
+        `${SKILLS_SYMLINK_PATH} is a symlink pointing to "${currentTarget}" (expected "${SKILLS_SYMLINK_TARGET}").`,
+      );
+      log.info(`Remove it manually and re-run: rm "${SKILLS_SYMLINK_PATH}" && bun run update skills`);
+      return;
+    }
+
+    // Real directory or file — never overwrite user data
+    log.warning(
+      `${SKILLS_SYMLINK_PATH} exists as a regular ${stats.isDirectory() ? 'directory' : 'file'}; not overwriting.`,
+    );
+    log.info(
+      'To enable multi-agent portability, back up and remove it, then re-run the skills sync so the symlink can be created.',
+    );
+    return;
+  }
+
+  // Absent — create the symlink
+  try {
+    symlinkSync(SKILLS_SYMLINK_TARGET, SKILLS_SYMLINK_PATH, 'dir');
+    log.success(`Created symlink ${SKILLS_SYMLINK_PATH} -> ${SKILLS_SYMLINK_TARGET}`);
+  }
+  catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const code = (err as NodeJS.ErrnoException | undefined)?.code;
+
+    if (process.platform === 'win32' && code === 'EPERM') {
+      log.warning(
+        'Symlink creation requires elevated permissions on Windows. '
+        + `Run this command as Administrator, or manually create "${SKILLS_SYMLINK_PATH}" `
+        + `as a directory junction / symlink to "${SKILLS_CANONICAL_DIR}".`,
+      );
+      return;
+    }
+
+    if (process.platform === 'win32') {
+      log.warning(`Could not create ${SKILLS_SYMLINK_PATH}: ${message}`);
+      log.info(
+        'On Windows, creating symlinks may require elevated permissions. '
+        + `Run this command as Administrator, or manually create "${SKILLS_SYMLINK_PATH}" `
+        + `as a directory junction / symlink to "${SKILLS_CANONICAL_DIR}".`,
+      );
+      return;
+    }
+
+    log.warning(`Could not create ${SKILLS_SYMLINK_PATH}: ${message}`);
+  }
+}
+
+// ============================================================================
 // UPDATE FUNCTIONS
 // ============================================================================
 
-function updatePrompts(stages: string[], phases: string[], includeExtras: boolean): MergeResult {
-  log.step('Updating .prompts/ (merge)...');
+/**
+ * Sync skills at skill-folder granularity.
+ *
+ * Each folder inside the template's `.claude/skills/` is treated as the atomic
+ * unit of sync. User skills that don't exist in the template are preserved.
+ */
+function updateSkills(skillsFilter: string[] | null): MergeResult {
+  log.step(`Updating ${SKILLS_CANONICAL_DIR}/ (merge)...`);
 
   const totals: MergeResult = { success: 0, errors: 0 };
 
-  const templatePromptsPath = join(TEMP_DIR, '.prompts');
-  if (!existsSync(templatePromptsPath)) {
-    log.warning('.prompts directory not found in template');
+  const templateSkillsPath = join(TEMP_DIR, SKILLS_CANONICAL_DIR);
+  if (!existsSync(templateSkillsPath)) {
+    log.warning(`${SKILLS_CANONICAL_DIR} directory not found in template`);
     return totals;
   }
 
-  mkdirSync('.prompts', { recursive: true });
+  const availableSkills = listTemplateSkills(templateSkillsPath);
+  if (availableSkills.length === 0) {
+    log.warning(`No skill folders found under ${SKILLS_CANONICAL_DIR} in the template`);
+    return totals;
+  }
 
-  // Check if this is a full update
-  const allStages = Object.keys(QA_STAGES);
-  const allPhases = Object.keys(DISCOVERY_PHASES);
-  const isFullUpdate
-    = includeExtras
-      && stages.length === allStages.length
-      && allStages.every(s => stages.includes(s))
-      && phases.length === allPhases.length
-      && allPhases.every(p => phases.includes(p));
+  let selectedSkills = availableSkills;
 
-  if (isFullUpdate) {
-    log.merge('Syncing full directory...');
-    const result = mergeDirectory(templatePromptsPath, '.prompts');
+  if (skillsFilter && skillsFilter.length > 0) {
+    const unknown = skillsFilter.filter(s => !availableSkills.includes(s));
+    if (unknown.length > 0) {
+      log.error(`Unknown skill${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}`);
+      log.info(`Available skills: ${availableSkills.join(', ')}`);
+      process.exit(1);
+    }
+    selectedSkills = skillsFilter;
+  }
+
+  mkdirSync(SKILLS_CANONICAL_DIR, { recursive: true });
+
+  log.merge(`Syncing ${selectedSkills.length} skill${selectedSkills.length === 1 ? '' : 's'}:`);
+  for (const skill of selectedSkills) {
+    const srcPath = join(templateSkillsPath, skill);
+    const destPath = join(SKILLS_CANONICAL_DIR, skill);
+
+    console.log(`  ${colors.cyan}${skill}${colors.reset}`);
+    const result = mergeDirectory(srcPath, destPath, '    ');
     totals.success += result.success;
     totals.errors += result.errors;
-    return totals;
   }
 
-  // Update specific stages
-  if (stages && stages.length > 0) {
-    log.merge('QA Stages:');
-    for (const stageKey of stages) {
-      const stageConfig = QA_STAGES[stageKey];
-      if (!stageConfig) {
-        continue;
-      }
-
-      const srcPath = join(templatePromptsPath, stageConfig.dir);
-      const destPath = join('.prompts', stageConfig.dir);
-
-      if (existsSync(srcPath)) {
-        console.log(`  ${colors.cyan}${stageKey}: ${stageConfig.name}${colors.reset}`);
-        const result = mergeDirectory(srcPath, destPath, '    ');
-        totals.success += result.success;
-        totals.errors += result.errors;
-      }
-      else {
-        log.warning(`${stageKey} not found in template`);
-      }
-    }
-  }
-
-  // Update specific phases
-  if (phases && phases.length > 0) {
-    log.merge('Discovery Phases:');
-    for (const phaseKey of phases) {
-      const phaseConfig = DISCOVERY_PHASES[phaseKey];
-      if (!phaseConfig) {
-        continue;
-      }
-
-      const srcPath = join(templatePromptsPath, phaseConfig.dir);
-      const destPath = join('.prompts', phaseConfig.dir);
-
-      if (existsSync(srcPath)) {
-        console.log(`  ${colors.cyan}${phaseKey}: ${phaseConfig.name}${colors.reset}`);
-        const result = mergeDirectory(srcPath, destPath, '    ');
-        totals.success += result.success;
-        totals.errors += result.errors;
-      }
-      else {
-        log.warning(`${phaseKey} not found in template`);
-      }
-    }
-
-    // Also sync the discovery parent directory README if exists
-    const discoveryReadmeSrc = join(templatePromptsPath, 'discovery', 'README.md');
-    const discoveryReadmeDest = join('.prompts', 'discovery', 'README.md');
-    if (existsSync(discoveryReadmeSrc)) {
-      mkdirSync(join('.prompts', 'discovery'), { recursive: true });
-      try {
-        cpSync(discoveryReadmeSrc, discoveryReadmeDest);
-        totals.success++;
-      }
-      catch (err) {
-        log.warning(`Skipped discovery/README.md: ${err instanceof Error ? err.message : String(err)}`);
-        totals.errors++;
-      }
-    }
-  }
-
-  // Update extras (utilities, setup, orchestrators, root files)
-  if (includeExtras) {
-    log.merge('Extra directories:');
-    for (const extraDir of EXTRA_PROMPT_DIRS) {
-      const srcPath = join(templatePromptsPath, extraDir);
-      const destPath = join('.prompts', extraDir);
-
-      if (existsSync(srcPath)) {
-        console.log(`  ${colors.cyan}${extraDir}/${colors.reset}`);
-        const result = mergeDirectory(srcPath, destPath, '    ');
-        totals.success += result.success;
-        totals.errors += result.errors;
-      }
-    }
-
-    // Also sync root files (README.md, us-qa-workflow.md, etc.)
-    log.merge('Root files:');
-    const items = readdirSync(templatePromptsPath, { withFileTypes: true });
-    for (const item of items) {
-      if (!item.isDirectory()) {
-        const srcPath = join(templatePromptsPath, item.name);
-        const destPath = join('.prompts', item.name);
-        try {
-          cpSync(srcPath, destPath);
-          log.success(`  ${item.name}`);
-          totals.success++;
-        }
-        catch (err) {
-          log.warning(`  Skipped ${item.name}: ${err instanceof Error ? err.message : String(err)}`);
-          totals.errors++;
-        }
-      }
-    }
-  }
+  // Ensure the portability symlink exists after a successful sync
+  ensureAgentsSkillsSymlink();
 
   return totals;
-}
-
-function updateGuidelines(): MergeResult {
-  log.step('Updating .context/guidelines/ (merge)...');
-
-  const guidelinesPath = join(TEMP_DIR, '.context', 'guidelines');
-  if (!existsSync(guidelinesPath)) {
-    log.warning('.context/guidelines directory not found in template');
-    return { success: 0, errors: 0 };
-  }
-
-  log.merge('Syncing guidelines...');
-  return mergeDirectory(guidelinesPath, '.context/guidelines');
 }
 
 function updateDocs(): MergeResult {
@@ -1044,97 +1027,38 @@ async function showMainMenu(): Promise<string[]> {
     message: 'What do you want to update? (SPACE to select, ENTER to confirm)',
     choices: [
       { name: 'Everything (all allowed directories)', value: 'all' },
-      { name: 'Prompts (.prompts/)', value: 'prompts' },
-      { name: 'Guidelines (.context/guidelines/)', value: 'guidelines' },
+      { name: 'Skills (.claude/skills/)', value: 'skills' },
       { name: 'Documentation (docs/)', value: 'docs' },
       { name: 'CLI Tools (cli/)', value: 'cli' },
       { name: 'VS Code Config (.vscode/)', value: 'vscode' },
       { name: 'Git Hooks (.husky/)', value: 'husky' },
-      { name: 'Tooling (prettier, eslint, tsconfig)', value: 'tooling' },
-      { name: 'Example Templates (.env.example, etc.)', value: 'examples' },
+      { name: 'Tooling (prettier, editorconfig)', value: 'tooling' },
+      { name: 'Example Templates (.mcp.example.json, etc.)', value: 'examples' },
     ],
   });
 }
 
-async function showPromptsMenu(): Promise<PromptsConfig> {
-  const { select } = await import('@inquirer/prompts');
+/**
+ * Show a checkbox listing the skills discovered in the template.
+ * Returns the subset selected by the user (defaults to all).
+ */
+async function showSkillsMenu(): Promise<string[]> {
+  const { checkbox } = await import('@inquirer/prompts');
 
-  const mode = await select({
-    message: 'What do you want to update?',
-    choices: [
-      { name: 'Everything (all stages + phases + extras)', value: 'all' },
-      { name: 'By role preset...', value: 'role' },
-      { name: 'QA Stages (1-5)...', value: 'stages' },
-      { name: 'Discovery Phases (1-4)...', value: 'phases' },
-      { name: 'Only extras (utilities, setup, orchestrators)', value: 'extras' },
-    ],
-  });
+  const templateSkillsPath = join(TEMP_DIR, SKILLS_CANONICAL_DIR);
+  const available = listTemplateSkills(templateSkillsPath);
 
-  switch (mode) {
-    case 'all':
-      return {
-        stages: Object.keys(QA_STAGES),
-        phases: Object.keys(DISCOVERY_PHASES),
-        extras: true,
-      };
-    case 'role':
-      return showRoleMenu();
-    case 'stages':
-      return showStagesMenu();
-    case 'phases':
-      return showPhasesMenu();
-    case 'extras':
-      return { stages: [], phases: [], extras: true };
-    default:
-      return { stages: [], phases: [], extras: false };
+  if (available.length === 0) {
+    log.warning(`No skills found under ${SKILLS_CANONICAL_DIR} in the template.`);
+    return [];
   }
-}
 
-async function showRoleMenu(): Promise<PromptsConfig> {
-  const { select } = await import('@inquirer/prompts');
-
-  const role = await select({
-    message: 'Select a role preset:',
-    choices: Object.entries(ROLE_PRESETS).map(([key, value]) => ({
-      name: `${key.toUpperCase()} - ${value.description}`,
-      value: key,
-    })),
+  const selected = await checkbox({
+    message: 'Select skills to sync: (SPACE to toggle, ENTER to confirm)',
+    choices: available.map(name => ({ name, value: name, checked: true })),
   });
 
-  const preset = ROLE_PRESETS[role];
-  return {
-    stages: preset.stages || [],
-    phases: preset.phases || [],
-    extras: preset.extras || false,
-  };
-}
-
-async function showStagesMenu(): Promise<PromptsConfig> {
-  const { checkbox } = await import('@inquirer/prompts');
-
-  const stages = await checkbox({
-    message: 'Select QA stages to update: (SPACE to select, ENTER to confirm)',
-    choices: Object.entries(QA_STAGES).map(([key, config]) => ({
-      name: `${key}: ${config.name}`,
-      value: key,
-    })),
-  });
-
-  return { stages, phases: [], extras: false };
-}
-
-async function showPhasesMenu(): Promise<PromptsConfig> {
-  const { checkbox } = await import('@inquirer/prompts');
-
-  const phases = await checkbox({
-    message: 'Select Discovery phases to update: (SPACE to select, ENTER to confirm)',
-    choices: Object.entries(DISCOVERY_PHASES).map(([key, config]) => ({
-      name: `${key}: ${config.name}`,
-      value: key,
-    })),
-  });
-
-  return { stages: [], phases, extras: false };
+  return selected;
 }
 
 // ============================================================================
@@ -1152,14 +1076,13 @@ ${colors.bold}USAGE:${colors.reset}
 
 ${colors.bold}COMMANDS:${colors.reset}
   all           Update all allowed directories
-  prompts       Update .prompts/ (QA workflow prompts)
-  guidelines    Update .context/guidelines/ (TAE, QA, MCP guides)
+  skills        Sync .claude/skills/ (agent skills)
   docs          Update docs/ (documentation)
   cli           Update cli/ (CLI tools)
   vscode        Update .vscode/ (IDE configuration)
   husky         Update .husky/ (Git hooks)
-  tooling       Update config files (prettier, eslint, tsconfig)
-  examples      Update example templates (.env.example, etc.)
+  tooling       Update config files (prettier, editorconfig)
+  examples      Update example templates (.mcp.example.json, etc.)
   rollback      Restore from the most recent backup
   help          Show this help
 
@@ -1167,30 +1090,20 @@ ${colors.bold}GLOBAL FLAGS:${colors.reset}
   --dry-run     Preview what would change without modifying files
   --rollback    Restore from the most recent backup
 
-${colors.bold}FLAGS FOR 'prompts':${colors.reset}
-  --all         All stages + phases + extras
-  --stage N     Specific stages (e.g., --stage 4 or --stage 1,2,3)
-  --phase N     Specific phases (e.g., --phase 1 or --phase 1,2)
-  --role ROLE   By role preset (see available roles)
-  --extras      Only extra directories (utilities, setup, orchestrators)
-
-${colors.bold}AVAILABLE ROLES:${colors.reset}
-  qa            ${colors.dim}-> Stages 1-5 (Full QA workflow)${colors.reset}
-  qa-manual     ${colors.dim}-> Stages 1-3 (Manual testing only)${colors.reset}
-  qa-automation ${colors.dim}-> Stages 4-5 (Automation + Regression)${colors.reset}
-  discovery     ${colors.dim}-> Phases 1-4 (Project onboarding)${colors.reset}
-  discovery-lite ${colors.dim}-> Phases 1-2 (Quick onboarding)${colors.reset}
-  framework     ${colors.dim}-> Guidelines + CLI + docs${colors.reset}
+${colors.bold}FLAGS FOR 'skills':${colors.reset}
+  --skill NAME  Sync a specific skill folder (e.g., --skill sprint-testing)
+                Accepts a comma-separated list: --skill sprint-testing,test-automation
+  --list        List the skills available in the template and exit
 
 ${colors.bold}WHAT GETS SYNCED:${colors.reset}
-  ${colors.green}  .prompts/${colors.reset}             QA workflow prompts
-  ${colors.green}  .context/guidelines/${colors.reset}  Framework documentation
-  ${colors.green}  docs/${colors.reset}                 General documentation
-  ${colors.green}  cli/${colors.reset}                  CLI tools (auto-updates)
-  ${colors.green}  .vscode/${colors.reset}              IDE configuration
-  ${colors.green}  .husky/${colors.reset}               Git hooks
-  ${colors.green}  tooling${colors.reset}               editorconfig, prettier
-  ${colors.green}  examples${colors.reset}              .mcp.example.json, dbhub.example.toml
+  ${colors.green}  .claude/skills/${colors.reset}        Agent skills (canonical location)
+  ${colors.green}  .agents/skills${colors.reset}         Relative symlink to .claude/skills (auto-managed)
+  ${colors.green}  docs/${colors.reset}                  General documentation
+  ${colors.green}  cli/${colors.reset}                   CLI tools (auto-updates)
+  ${colors.green}  .vscode/${colors.reset}               IDE configuration
+  ${colors.green}  .husky/${colors.reset}                Git hooks
+  ${colors.green}  tooling${colors.reset}                editorconfig, prettier
+  ${colors.green}  examples${colors.reset}               .mcp.example.json, dbhub.example.toml
 
 ${colors.bold}WHAT NEVER GETS SYNCED (project-specific):${colors.reset}
   ${colors.red}  .github/workflows/${colors.reset}    Your CI/CD pipelines
@@ -1211,13 +1124,15 @@ ${colors.bold}INTELLIGENT MERGE:${colors.reset}
   - Creates automatic backup before changes
 
 ${colors.bold}EXAMPLES:${colors.reset}
-  bun run update                     ${colors.dim}# Interactive menu${colors.reset}
-  bun run update all                 ${colors.dim}# Update everything${colors.reset}
-  bun run update prompts --role qa   ${colors.dim}# All QA stages${colors.reset}
-  bun run update prompts --stage 4,5 ${colors.dim}# Stages 4 and 5${colors.reset}
-  bun run update cli guidelines      ${colors.dim}# Multiple components${colors.reset}
-  bun run update all --dry-run       ${colors.dim}# Preview without changes${colors.reset}
-  bun run update --rollback          ${colors.dim}# Restore last backup${colors.reset}
+  bun run update                                       ${colors.dim}# Interactive menu${colors.reset}
+  bun run update all                                   ${colors.dim}# Update everything${colors.reset}
+  bun run update skills                                ${colors.dim}# Sync all skills${colors.reset}
+  bun run update skills --skill sprint-testing         ${colors.dim}# Sync one skill${colors.reset}
+  bun run update skills --skill sprint-testing,test-automation ${colors.dim}# Sync a subset${colors.reset}
+  bun run update skills --list                         ${colors.dim}# List available skills${colors.reset}
+  bun run update cli docs                              ${colors.dim}# Multiple components${colors.reset}
+  bun run update all --dry-run                         ${colors.dim}# Preview without changes${colors.reset}
+  bun run update --rollback                            ${colors.dim}# Restore last backup${colors.reset}
 `);
 }
 
@@ -1340,7 +1255,7 @@ function detectUnfilledVariables(): void {
 
   // Scan synced directories for {{VARIABLE}} usage
   const VARIABLE_REGEX = /\{\{([A-Z][A-Z_]+)\}\}/g;
-  const syncedDirs = ['.prompts', '.context/guidelines', 'docs'];
+  const syncedDirs = ['.claude/skills', 'docs'];
   const varUsage = new Map<string, number>(); // varName -> file count
 
   for (const dir of syncedDirs) {
@@ -1414,8 +1329,7 @@ function detectUnfilledVariables(): void {
 
   console.log('');
   log.info('Open CLAUDE.md and fill the Project Variables table.');
-  log.info('Or run this prompt in your AI assistant:\n');
-  console.log(`   ${colors.cyan}@.prompts/utilities/context-engineering-setup.md${colors.reset}\n`);
+  log.info('Skills auto-load their own operational detail; invoke any skill by its trigger (e.g., `/project-discovery`).');
 }
 
 // ============================================================================
@@ -1454,15 +1368,12 @@ ${colors.yellow}║${colors.reset}${colors.bold}                      UPGRADE NO
 ${colors.yellow}╠══════════════════════════════════════════════════════════════╣${colors.reset}
 ${colors.yellow}║${colors.reset}                                                            ${colors.yellow}║${colors.reset}
 ${colors.yellow}║${colors.reset}  This boilerplate now uses ${colors.cyan}Project Variables${colors.reset}.               ${colors.yellow}║${colors.reset}
-${colors.yellow}║${colors.reset}  All prompts use ${colors.cyan}{{VARIABLE}}${colors.reset} placeholders that resolve    ${colors.yellow}║${colors.reset}
+${colors.yellow}║${colors.reset}  Skills use ${colors.cyan}{{VARIABLE}}${colors.reset} placeholders that resolve         ${colors.yellow}║${colors.reset}
 ${colors.yellow}║${colors.reset}  from your CLAUDE.md configuration.                        ${colors.yellow}║${colors.reset}
 ${colors.yellow}║${colors.reset}                                                            ${colors.yellow}║${colors.reset}
-${colors.yellow}║${colors.reset}  ${colors.bold}AFTER${colors.reset} this update completes, run this prompt:            ${colors.yellow}║${colors.reset}
-${colors.yellow}║${colors.reset}                                                            ${colors.yellow}║${colors.reset}
-${colors.yellow}║${colors.reset}    ${colors.green}@.prompts/utilities/context-engineering-setup.md${colors.reset}        ${colors.yellow}║${colors.reset}
-${colors.yellow}║${colors.reset}                                                            ${colors.yellow}║${colors.reset}
-${colors.yellow}║${colors.reset}  This will update your CLAUDE.md with the new variables     ${colors.yellow}║${colors.reset}
-${colors.yellow}║${colors.reset}  table and configure it for your project.                   ${colors.yellow}║${colors.reset}
+${colors.yellow}║${colors.reset}  ${colors.bold}AFTER${colors.reset} this update completes, invoke any skill by its     ${colors.yellow}║${colors.reset}
+${colors.yellow}║${colors.reset}  trigger (e.g., ${colors.green}/project-discovery${colors.reset}). Skills auto-load    ${colors.yellow}║${colors.reset}
+${colors.yellow}║${colors.reset}  the operational detail and will update your CLAUDE.md.    ${colors.yellow}║${colors.reset}
 ${colors.yellow}║${colors.reset}                                                            ${colors.yellow}║${colors.reset}
 ${colors.yellow}╚══════════════════════════════════════════════════════════════╝${colors.reset}
 `);
@@ -1507,7 +1418,7 @@ async function main(): Promise<void> {
     checkMigrationNeeded();
 
     const components = selected.includes('all')
-      ? ['prompts', 'guidelines', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples']
+      ? ['skills', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples']
       : selected;
 
     createBackup(components);
@@ -1519,8 +1430,7 @@ async function main(): Promise<void> {
     const addResult = (r: MergeResult) => { totals.success += r.success; totals.errors += r.errors; };
 
     if (selected.includes('all')) {
-      addResult(updatePrompts(Object.keys(QA_STAGES), Object.keys(DISCOVERY_PHASES), true));
-      addResult(updateGuidelines());
+      addResult(updateSkills(null));
       addResult(updateDocs());
       addResult(updateCli());
       addResult(updateVscode());
@@ -1530,12 +1440,13 @@ async function main(): Promise<void> {
     }
     else {
       for (const cmd of selected) {
-        if (cmd === 'prompts') {
-          const promptsConfig = await showPromptsMenu();
-          addResult(updatePrompts(promptsConfig.stages, promptsConfig.phases, promptsConfig.extras));
-        }
-        else if (cmd === 'guidelines') {
-          addResult(updateGuidelines());
+        if (cmd === 'skills') {
+          const skillSelection = await showSkillsMenu();
+          if (skillSelection.length === 0) {
+            log.warning('No skills selected. Skipping skills sync.');
+            continue;
+          }
+          addResult(updateSkills(skillSelection));
         }
         else if (cmd === 'docs') {
           addResult(updateDocs());
@@ -1580,6 +1491,15 @@ async function main(): Promise<void> {
     return;
   }
 
+  // `skills --list` short-circuits before any write operation
+  if (parsed.listSkills) {
+    await validatePrerequisites();
+    await cloneTemplate();
+    printSkillsList();
+    cleanup();
+    return;
+  }
+
   if (parsed.commands.length === 0) {
     log.error('No valid command specified');
     showHelp();
@@ -1591,7 +1511,7 @@ async function main(): Promise<void> {
 
   // Expand 'all' command
   if (parsed.commands.includes('all')) {
-    parsed.commands = ['prompts', 'guidelines', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples'];
+    parsed.commands = ['skills', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples'];
     parsed.all = true;
   }
 
@@ -1599,7 +1519,7 @@ async function main(): Promise<void> {
 
   // Dry-run mode: preview changes without modifying files
   if (parsed.dryRun) {
-    executeDryRun(parsed.commands, parsed.all);
+    executeDryRun(parsed.commands, parsed.all, parsed.skills);
     cleanup();
     return;
   }
@@ -1614,24 +1534,8 @@ async function main(): Promise<void> {
   // Execute commands
   for (const cmd of parsed.commands) {
     switch (cmd) {
-      case 'prompts':
-        if (parsed.all) {
-          addResult(updatePrompts(Object.keys(QA_STAGES), Object.keys(DISCOVERY_PHASES), true));
-        }
-        else if (parsed.stages || parsed.phases) {
-          addResult(updatePrompts(parsed.stages || [], parsed.phases || [], parsed.extras));
-        }
-        else if (parsed.extras) {
-          addResult(updatePrompts([], [], true));
-        }
-        else {
-          await ensureDependencies();
-          const promptsConfig = await showPromptsMenu();
-          addResult(updatePrompts(promptsConfig.stages, promptsConfig.phases, promptsConfig.extras));
-        }
-        break;
-      case 'guidelines':
-        addResult(updateGuidelines());
+      case 'skills':
+        addResult(updateSkills(parsed.skills));
         break;
       case 'docs':
         addResult(updateDocs());
