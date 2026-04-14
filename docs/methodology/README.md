@@ -26,5 +26,5 @@
 ---
 
 **Ver También:**
-- `.context/guidelines/TAE/` - Guías de implementación para AI
+- `/test-automation` skill - Guías de implementación para AI (KATA)
 - `docs/testing/automation/` - Guías prácticas de automatización

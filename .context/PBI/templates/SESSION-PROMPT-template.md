@@ -1,7 +1,7 @@
 # {MODULE_NAME} - Session Initialization
 
 > **What this is**: Load this file via `@` at the start of each AI session to resume module automation work.
-> **For full orchestration** (planning + coding + review pipeline): use `@.prompts/orchestrators/test-automation-agent.md` instead.
+> **For full orchestration** (planning + coding + review pipeline): load the `/test-automation` skill instead.
 
 ---
 

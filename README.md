@@ -153,23 +153,19 @@ bun run test:e2e:critical  # Tests marked @critical
 │   └── validateEnv.ts            # Environment validation
 │
 ├── .context/                     # AI Context Engineering
-│   ├── guidelines/               # Project guidelines
-│   │   ├── TAE/                  # Test Automation guidelines
-│   │   ├── QA/                   # QA process guidelines
-│   │   └── MCP/                  # MCP integration guides
 │   ├── PRD/                      # Product requirements (generated)
 │   ├── SRS/                      # Technical specs (generated)
 │   ├── idea/                     # Business context (generated)
 │   └── PBI/                      # Backlog items (generated)
 │
-├── .prompts/                     # AI Prompts Library
-│   ├── discovery/                # Project discovery
-│   ├── stage-1-shift-left/       # Test planning
-│   ├── stage-2-exploratory/      # Manual testing
-│   ├── stage-3-documentation/    # TMS documentation
-│   ├── stage-4-automation/       # Test automation
-│   ├── stage-5-regression/       # Regression testing
-│   └── utilities/                # Helper prompts + context generators
+├── .claude/skills/               # Claude Code Skills (workflows)
+│   ├── project-discovery/        # Onboarding + context generation
+│   ├── sprint-testing/           # Planning + execution + reporting
+│   ├── test-documentation/       # TMS documentation + prioritization
+│   ├── test-automation/          # KATA planning + coding + review
+│   ├── regression-testing/       # Regression execution + GO/NO-GO
+│   ├── playwright-cli/           # Browser automation helper
+│   └── xray-cli/                 # Xray TMS helper
 │
 ├── .github/workflows/            # CI/CD pipelines
 │   ├── build.yml                 # PR validation
@@ -229,7 +225,7 @@ test.describe('User Dashboard', () => {
 });
 ```
 
-See `.context/guidelines/TAE/kata-ai-index.md` for complete documentation.
+See the `/test-automation` skill (`references/kata-ai-index.md`) for complete documentation.
 
 ---
 
@@ -280,7 +276,7 @@ See `.context/guidelines/TAE/kata-ai-index.md` for complete documentation.
 
 | Script | Description |
 |--------|-------------|
-| `bun run update` | Sync project with template (prompts, guidelines, docs) |
+| `bun run update` | Sync project with template (skills, docs) |
 | `bun run xray` | Xray CLI for test management |
 | `bun run resend` | Email verification CLI (Resend API) |
 | `bun run api:sync` | Sync OpenAPI spec and generate types |
@@ -333,40 +329,21 @@ When you clone this template, follow this flow to adapt it to your project:
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 2. RUN DISCOVERY (generate .context/)                       │
-│    @.prompts/discovery/phase-1-constitution/*.md            │
-│    @.prompts/discovery/phase-2-architecture/*.md            │
-│    @.prompts/discovery/business-data-map.md                 │
-│    @.prompts/discovery/api-architecture.md                  │
+│ 2. RUN DISCOVERY + ADAPT KATA FRAMEWORK                     │
+│    Load the /project-discovery skill                        │
+│                                                             │
+│    This skill:                                              │
+│    • Discovers business/architecture/infrastructure context│
+│    • Generates .context/ (idea/, PRD/, SRS/)               │
+│    • Generates business-data-map / api-architecture /      │
+│      project-test-guide                                     │
+│    • Adapts KATA to your stack                             │
+│    • Regenerates README.md and CLAUDE.md                   │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 3. ADAPT KATA FRAMEWORK                                     │
-│    @.prompts/setup/kata-architecture-adaptation.md             │
-│                                                             │
-│    This prompt:                                             │
-│    • Reads all your context (SRS, PRD, idea)               │
-│    • Analyzes the template structure                        │
-│    • Generates an adaptation plan                           │
-│    • Configures auth (globalSetup, UI, API)                │
-│    • Creates first domain components                        │
-│                                                             │
-│    OUTPUT: .context/PBI/kata-architecture-adaptation-plan.md   │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 4. GENERATE DOCUMENTATION                                   │
-│    @.prompts/utilities/context-engineering-setup.md         │
-│    @.prompts/utilities/project-test-guide.md                │
-│                                                             │
-│    OUTPUT: README.md, CLAUDE.md, project-test-guide.md      │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 5. VERIFY SETUP                                             │
+│ 3. VERIFY SETUP                                             │
 │    bun run type-check                                       │
 │    bun run lint                                             │
 │    bun run test --grep @smoke                               │
@@ -374,8 +351,9 @@ When you clone this template, follow this flow to adapt it to your project:
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 6. START QA WORKFLOW                                        │
-│    @.prompts/us-qa-workflow.md                              │
+│ 4. START QA WORKFLOW                                        │
+│    Load the /sprint-testing skill for in-sprint QA         │
+│    Load the /test-automation skill to write tests          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -385,44 +363,25 @@ The `.context/` directory contains structured documentation for AI:
 
 ```
 .context/
-├── guidelines/           # How to do things
-│   ├── TAE/              # Test automation standards
-│   ├── QA/               # QA process standards
-│   └── MCP/              # MCP integration guides
 ├── PRD/                  # What to build (generated)
 ├── SRS/                  # How it works (generated)
 ├── idea/                 # Business context (generated)
-└── PBI/                  # What to test (generated)
+└── PBI/                  # What to test (generated, per ticket)
 ```
 
-### Prompts Directory Structure
+Guidelines and workflow instructions live inside the Claude Code skills under `.claude/skills/` (each skill ships with its own `references/`).
+
+### Skills (Workflow Entry Points)
 
 ```
-.prompts/
-├── discovery/                      # Project discovery (one-time)
-│   ├── phase-1-constitution/       # Business context
-│   ├── phase-2-architecture/       # PRD + SRS
-│   ├── phase-3-infrastructure/     # Technical stack
-│   ├── phase-4-specification/      # Backlog mapping
-│   ├── api-architecture.md         # API documentation
-│   └── business-data-map.md        # Business flow mapping
-│
-├── setup/                          # One-time setup
-│   └── kata-architecture-adaptation.md # Adapt template to project
-│
-├── utilities/                      # Reusable utilities
-│   ├── context-engineering-setup.md # Generate README + CLAUDE.md
-│   ├── project-test-guide.md       # Testing guide
-│   ├── git-flow.md                 # Git workflow
-│   └── git-conflict-fix.md         # Resolve conflicts
-│
-├── stage-1-shift-left/             # Test planning
-├── stage-2-exploratory/            # Manual testing
-├── stage-3-documentation/          # TMS documentation
-├── stage-4-automation/             # Test automation
-├── stage-5-regression/             # Regression testing
-│
-└── us-qa-workflow.md               # QA workflow orchestrator
+.claude/skills/
+├── project-discovery/     # Onboarding, context generation, KATA adaptation
+├── sprint-testing/        # In-sprint QA: plan + execute + report (per ticket)
+├── test-documentation/    # TMS documentation and test prioritization
+├── test-automation/       # KATA planning + coding + review pipeline
+├── regression-testing/    # Regression execution + GO/NO-GO decisions
+├── playwright-cli/        # Browser automation helper (screenshots, tracing, ...)
+└── xray-cli/              # Xray TMS helper (tests, executions, imports, ...)
 ```
 
 ### CLAUDE.md
@@ -504,19 +463,14 @@ touch tests/e2e/your-module/your-feature.test.ts
 
 ### 4. Generate Context
 
-Run discovery prompts to generate project-specific context:
-
-```bash
-# Load prompt in AI assistant
-@.prompts/discovery/project-constitution.md
-```
+Load the `/project-discovery` skill in your AI assistant to generate project-specific context (idea, PRD, SRS, business-data-map, api-architecture, project-test-guide).
 
 ---
 
 ## Contributing
 
-1. Read `.context/guidelines/TAE/kata-ai-index.md`
-2. Follow `.context/guidelines/TAE/automation-standards.md`
+1. Load the `/test-automation` skill and read its `references/kata-ai-index.md`
+2. Follow the automation standards referenced by that skill
 3. Use conventional commits
 4. Ensure all tests pass before PR
 
@@ -524,10 +478,12 @@ Run discovery prompts to generate project-specific context:
 
 ## Documentation
 
-- [KATA AI Guide](.context/guidelines/TAE/kata-ai-index.md)
-- [Automation Standards](.context/guidelines/TAE/automation-standards.md)
-- [TypeScript Patterns](.context/guidelines/TAE/typescript-patterns.md)
-- [TMS Integration](.context/guidelines/TAE/tms-integration.md)
+- `/test-automation` skill -- KATA planning + coding + review (includes KATA guide, automation standards, TypeScript patterns, TMS integration)
+- `/sprint-testing` skill -- In-sprint QA (planning, execution, reporting)
+- `/test-documentation` skill -- TMS test documentation and prioritization
+- `/regression-testing` skill -- Regression execution and GO/NO-GO decisions
+- `/project-discovery` skill -- Onboarding and context generation
+- `docs/` -- Human-facing docs (methodology, workflows, architectures)
 
 
 ---

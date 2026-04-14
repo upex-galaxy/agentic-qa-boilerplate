@@ -535,9 +535,9 @@ api: async ({ request }, use) => {  // <-- No page, no browser
 | Document | Location | Purpose |
 |----------|----------|---------|
 | KATA Fundamentals | `/docs/testing/test-architecture/kata-fundamentals.md` | KATA philosophy and component design |
-| KATA Architecture | `/.context/guidelines/TAE/kata-architecture.md` | Layer structure and project reference |
-| TypeScript Patterns | `/.context/guidelines/TAE/typescript-patterns.md` | Coding patterns and DRY principles |
-| KATA AI Guide | `/.context/guidelines/TAE/kata-ai-index.md` | Quick reference for AI agents |
+| KATA Architecture | `/test-automation` skill -- `references/kata-architecture.md` | Layer structure and project reference |
+| TypeScript Patterns | `/test-automation` skill -- `references/typescript-patterns.md` | Coding patterns and DRY principles |
+| KATA AI Guide | `/test-automation` skill -- `references/kata-ai-index.md` | Quick reference for AI agents |
 
 ### Source Code
 

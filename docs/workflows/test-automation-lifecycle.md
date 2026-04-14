@@ -202,7 +202,7 @@ TAUS = Test Automation User Story
    - ¿Existe código reutilizable?
 
 4. **Implementa siguiendo KATA**
-   - Carga las guidelines: `.context/guidelines/TAE/KATA-AI-GUIDE.md`
+   - Carga el skill `/test-automation` (las guidelines viven en `references/`)
    - Sigue la arquitectura de capas
    - Usa ATCs (Atomic Test Components)
 
@@ -546,16 +546,16 @@ Con los tests pasando en CI, creas un **Pull Request para revisión** por otro m
 
 ---
 
-## Prompts Relacionados
+## Skills Relacionadas
 
-Para ejecutar cada stage con ayuda de AI:
+Para ejecutar cada stage con ayuda de AI, carga el skill `/test-automation`. Cubre:
 
-| Stage | Prompt |
-|-------|--------|
-| Stage 1 | `.prompts/stage-4-automation/planning/test-implementation-plan.md` |
-| Stage 2 | `.prompts/stage-4-automation/coding/e2e-test-coding.md` |
+| Stage | Referencia dentro del skill |
+|-------|-----------------------------|
+| Stage 1 | planning/test-implementation-plan |
+| Stage 2 | coding/e2e-test-coding |
 | Stage 3 | Verificación manual en CI |
-| Stage 4 | `.prompts/stage-4-automation/review/e2e-test-review.md` |
+| Stage 4 | review/e2e-test-review |
 
 ---
 
@@ -595,4 +595,4 @@ Para ejecutar cada stage con ayuda de AI:
 - [IQL Methodology](docs/methodology/IQL-methodology.md)
 - [Mid-Game Testing](docs/methodology/mid-game-testing.md)
 - [TMLC - Manual Lifecycle](docs/workflows/test-manual-lifecycle.md)
-- [KATA Architecture](.context/guidelines/TAE/kata-architecture.md)
+- KATA Architecture: skill `/test-automation` (references/kata-architecture.md)

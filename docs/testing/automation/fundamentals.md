@@ -234,7 +234,7 @@ class LoginPage extends UiBase {
 
 **Ventajas**: Cada método es un test case completo (acción + verificación), reutilizable, y con trazabilidad directa a tickets del TMS.
 
-> **Nota**: Este boilerplate usa el enfoque Component-based (KATA). Para más detalles, ver `.context/guidelines/TAE/automation-standards.md`.
+> **Nota**: Este boilerplate usa el enfoque Component-based (KATA). Para más detalles, ver el skill `/test-automation` (`references/automation-standards.md`).
 
 #### Screenplay Pattern
 

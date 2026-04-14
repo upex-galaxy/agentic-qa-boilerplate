@@ -46,4 +46,4 @@ Thumbs.db
 # Documentation - Preserve manual formatting
 # ===========================================
 .context/
-.prompts/
+.claude/skills/

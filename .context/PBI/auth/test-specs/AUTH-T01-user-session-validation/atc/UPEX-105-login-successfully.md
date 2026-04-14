@@ -213,4 +213,4 @@ test('should login and see dashboard', async ({ ui }) => {
 - **Companion ATC**: UPEX-106 (`loginWithInvalidCredentials`) — same component, negative path
 - **Component**: `tests/components/ui/LoginPage.ts`
 - **E2E test**: `tests/e2e/dashboard/dashboard.test.ts`
-- **Guidelines**: `.context/guidelines/TAE/test-design-principles.md`
+- **Guidelines**: `/test-automation` skill -- `references/test-design-principles.md`

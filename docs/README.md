@@ -6,7 +6,7 @@ Bienvenido a la documentación del **AI-Driven Test Automation Boilerplate**.
 
 Esta documentación está orientada a **humanos** - para aprender conceptos, entender metodologías y seguir guías paso a paso.
 
-> **Nota**: Para documentación **orientada a AI**, consulta `.context/guidelines/`.
+> **Nota**: Para documentación **orientada a AI**, consulta las skills en `.claude/skills/` (cada skill trae su propio `references/`).
 
 ---
 
@@ -151,7 +151,7 @@ Elige según tus necesidades de testing:
 **Regla general**:
 
 - Si necesitas **aprender** algo → `docs/`
-- Si la AI necesita **recordar** algo → `.context/guidelines/`
+- Si la AI necesita **recordar** algo → skills en `.claude/skills/`
 
 ---
 
@@ -160,8 +160,7 @@ Elige según tus necesidades de testing:
 Para agregar documentación:
 
 1. **Educacional/Tutorial** → Agregar al subdirectorio apropiado de `docs/`
-2. **Guidelines para AI** → Agregar a `.context/guidelines/`
-3. **Prompts ejecutables** → Agregar a `.prompts/`
+2. **Guidelines/flujos para AI** → Agregar como skill o reference en `.claude/skills/`
 
 ### Agregar Nuevas Arquitecturas
 

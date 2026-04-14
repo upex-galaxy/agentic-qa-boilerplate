@@ -188,5 +188,4 @@ Teardown: None
 
 ## Next Step
 
-Proceed to Phase 2 (Coding) with:
-- **Integration tests**: `.prompts/stage-5-automation/coding/integration-test-coding.md`
+Proceed to Phase 2 (Coding) via the `/test-automation` skill (coding/integration-test-coding reference).

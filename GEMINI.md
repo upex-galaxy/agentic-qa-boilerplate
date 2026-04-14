@@ -26,15 +26,11 @@ bun run test:allure
 ```
 
 **Write a New Test:**
-1. Load: `.context/guidelines/TAE/kata-ai-index.md`
-2. Use prompt: `.prompts/stage-4-automation/coding/e2e-test-coding.md`
-3. Follow KATA patterns
+1. Load the `/test-automation` skill (KATA planning + coding + review)
+2. Follow KATA patterns via the skill's `references/`
 
 **Generate/Update Project Documentation:**
-```bash
-# Use this prompt to regenerate README.md and update CLAUDE.md
-@.prompts/utilities/context-engineering-setup.md
-```
+Load the `/project-discovery` skill -- it regenerates README.md / CLAUDE.md and the `.context/` files.
 
 ---
 
@@ -77,7 +73,7 @@ bun run test:allure
 - `ApiBase` = All HTTP helpers
 - `TestContext` = Shared across both (config, faker)
 
-→ **Full details**: `.context/guidelines/TAE/typescript-patterns.md`
+→ **Full details**: `/test-automation` skill (references/typescript-patterns.md)
 
 ### KATA Architecture
 
@@ -107,7 +103,7 @@ Test Files - Orchestrate ATCs
 | UI only | `{ ui }` | Yes |
 | Hybrid | `{ test }` | Yes |
 
-→ **Full details**: `.context/guidelines/TAE/kata-architecture.md`
+→ **Full details**: `/test-automation` skill (references/kata-architecture.md)
 
 ### Git Flow
 
@@ -144,7 +140,7 @@ feature/* ← Task-specific branches
 |------|------------------|
 | **Write E2E Test** | `kata-ai-index.md` + `e2e-testing-patterns.md` |
 | **Write API Test** | `kata-ai-index.md` + `api-testing-patterns.md` |
-| **Exploratory Testing** | `project-test-guide.md` + `guidelines/QA/exploratory-testing.md` |
+| **Exploratory Testing** | `project-test-guide.md` + `/sprint-testing` skill (execution references) |
 | **Understand System** | `business-data-map.md` + `PRD/user-journeys.md` |
 
 **Living Code Examples:**

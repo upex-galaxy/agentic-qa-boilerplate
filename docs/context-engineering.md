@@ -28,11 +28,11 @@ This repository separates concerns into distinct directories, each with a specif
 ```
 ai-driven-test-automation-boilerplate/
 │
-├── .context/       → Documentation THAT the AI reads (context)
-├── .prompts/       → Instructions FOR the AI to execute tasks
-├── docs/           → Documentation for humans
-├── tests/          → KATA Architecture implementation
-└── CLAUDE.md       → Project memory (loaded every session)
+├── .context/         → Documentation THAT the AI reads (context)
+├── .claude/skills/   → Workflow skills (task instructions + references)
+├── docs/             → Documentation for humans
+├── tests/            → KATA Architecture implementation
+└── CLAUDE.md         → Project memory (loaded every session)
 ```
 
 ### Why This Separation?
@@ -40,7 +40,7 @@ ai-driven-test-automation-boilerplate/
 | Directory | Contains | When Loaded |
 |-----------|----------|-------------|
 | `.context/` | Facts about the system (what exists, how it works) | When AI needs to understand the system |
-| `.prompts/` | Task instructions (what to do, step by step) | When AI needs to perform a specific task |
+| `.claude/skills/` | Task instructions + references (what to do, step by step) | When AI loads a skill for a specific task |
 | `docs/` | Learning material for humans | When humans need to learn |
 | `CLAUDE.md` | Operational rules + project state | Every session automatically |
 
@@ -52,11 +52,6 @@ ai-driven-test-automation-boilerplate/
 
 ```
 .context/
-├── guidelines/           → Rules and patterns for development
-│   ├── TAE/             → Test Automation Engineering (KATA Architecture)
-│   ├── QA/              → Manual testing guidelines
-│   └── MCP/             → MCP integration guides
-│
 ├── PRD/                 → Product Requirements (generated)
 ├── SRS/                 → Software Requirements (generated)
 ├── idea/                → Business context (generated)
@@ -67,31 +62,25 @@ ai-driven-test-automation-boilerplate/
 └── project-test-guide.md   → Testing guide (generated)
 ```
 
-**Key Files (Fixed Names)**:
-- `guidelines/TAE/kata-ai-index.md` - Entry point for test automation
-### .prompts/ - AI Operations Center
+Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live inside Claude Code skills under `.claude/skills/`.
+
+### .claude/skills/ - AI Operations Center
 
 ```
-.prompts/
-├── discovery/           → One-time project setup (phases 1-4)
-│   ├── phase-1-constitution/
-│   ├── phase-2-architecture/
-│   ├── phase-3-infrastructure/
-│   └── phase-4-specification/
-│
-├── stage-1-shift-left/  → Test planning (per story)
-├── stage-2-exploratory/ → Manual testing (per story)
-├── stage-3-documentation/ → TMS documentation (per story)
-├── stage-4-automation/  → Test automation (per story)
-├── stage-5-regression/  → Regression testing (per release)
-│
-├── utilities/           → Helpers + context generators
-└── us-qa-workflow.md    → QA workflow orchestrator
+.claude/skills/
+├── project-discovery/     → One-time project setup (phases 1-4) + README/CLAUDE.md generation
+├── sprint-testing/        → In-sprint QA (planning + execution + reporting, per ticket)
+├── test-documentation/    → TMS documentation + test prioritization
+├── test-automation/       → KATA test planning + coding + review
+├── regression-testing/    → Regression execution + GO/NO-GO
+├── playwright-cli/        → Browser automation helper
+└── xray-cli/              → Xray TMS helper
 ```
 
-**Key Files (Fixed Names)**:
-- `us-qa-workflow.md` - Orchestrates the entire QA workflow
-- `utilities/context-engineering-setup.md` - Generates README.md + CLAUDE.md
+**Key Skills**:
+- `/test-automation` - KATA test writing pipeline
+- `/sprint-testing` - End-to-end in-sprint QA
+- `/project-discovery` - Generates README.md + CLAUDE.md + `.context/` artifacts
 
 ### docs/ - Human Documentation
 
@@ -128,12 +117,12 @@ tests/
 
 These files have stable names and locations. Reference them confidently:
 
-| File | Purpose |
-|------|---------|
+| File / Skill | Purpose |
+|--------------|---------|
 | `CLAUDE.md` | Project memory, loaded every session |
-| `.context/guidelines/TAE/kata-ai-index.md` | Entry point for writing tests |
-| `.prompts/us-qa-workflow.md` | QA workflow orchestrator |
-| `.prompts/utilities/context-engineering-setup.md` | Generate project documentation |
+| `/test-automation` skill | Entry point for writing tests (KATA) |
+| `/sprint-testing` skill | QA workflow orchestrator (plan + execute + report) |
+| `/project-discovery` skill | Generate project documentation + `.context/` |
 
 ---
 
@@ -152,12 +141,12 @@ Phase 4: Specification   → Connect to backlog
 
 ### Context Generators
 
-After discovery, generate operational context:
+After discovery, generate operational context via the `/project-discovery` skill:
 
 ```
-.prompts/utilities/business-data-map.md    → .context/business-data-map.md
-.prompts/utilities/api-architecture.md     → .context/api-architecture.md
-.prompts/utilities/project-test-guide.md   → .context/project-test-guide.md
+/project-discovery (business-data-map flow)    → .context/business-data-map.md
+/project-discovery (api-architecture flow)     → .context/api-architecture.md
+/project-discovery (project-test-guide flow)   → .context/project-test-guide.md
 ```
 
 ### QA Stages (Per User Story)
@@ -186,11 +175,11 @@ Stage 5: Regression     → Execute and report
 
 ### By Role
 
-| Role | Primary Context |
-|------|-----------------|
-| **TAE (Test Automation)** | `guidelines/TAE/*` |
-| **QA (Manual Testing)** | `guidelines/QA/*` + `stage-2-exploratory/*` |
-| **DevOps** | `ci-cd-integration.md` + `stage-5-regression/*` |
+| Role | Primary Skill(s) |
+|------|------------------|
+| **TAE (Test Automation)** | `/test-automation` |
+| **QA (Manual Testing)** | `/sprint-testing` + `/test-documentation` |
+| **DevOps** | `/regression-testing` |
 
 ---
 
@@ -200,7 +189,7 @@ Stage 5: Regression     → Execute and report
 
 - Load `CLAUDE.md` first (automatic)
 - Load task-specific guidelines
-- Use prompts from `.prompts/` for structured tasks
+- Use skills from `.claude/skills/` for structured tasks
 - Reference code in `tests/components/` as living examples
 
 ### DON'T
@@ -221,17 +210,11 @@ Stage 5: Regression     → Execute and report
 - New CLI tools added
 - Testing decisions documented
 
-### When to Update Guidelines
+### When to Update Skills
 
-- Framework patterns change
-- New conventions adopted
-- Best practices refined
-
-### When to Update Prompts
-
-- Workflow steps change
-- New outputs required
-- Better instructions discovered
+- Framework patterns or conventions change (update the relevant skill's `references/`)
+- Workflow steps change (update the SKILL.md orchestration)
+- New outputs required or better instructions discovered
 
 ---
 
@@ -239,8 +222,8 @@ Stage 5: Regression     → Execute and report
 
 - **CLAUDE.md** - Operational context (project root)
 - **README.md** - Project overview for humans
-- `.context/guidelines/TAE/kata-ai-index.md` - KATA Architecture entry point
-- `.prompts/README.md` - How to use prompts
+- `/test-automation` skill - KATA Architecture entry point
+- `.claude/skills/` - Workflow skills (each one self-describes via its SKILL.md)
 
 ---
 

@@ -10,11 +10,11 @@
 > This document is for **reference only** - it provides philosophical and conceptual context.
 > **AI agents should NOT load this automatically** - use TAE guidelines instead.
 >
-> For implementation-specific guides (mandatory for AI), see:
+> For implementation-specific guides (mandatory for AI), load the `/test-automation` skill. Its `references/` directory includes:
 >
-> - **AI Entry Point**: `.context/guidelines/TAE/kata-ai-index.md`
-> - **Architecture**: `.context/guidelines/TAE/kata-architecture.md`
-> - **Standards**: `.context/guidelines/TAE/automation-standards.md`
+> - **AI Entry Point**: `references/kata-ai-index.md`
+> - **Architecture**: `references/kata-architecture.md`
+> - **Standards**: `references/automation-standards.md`
 >
 > All code examples use **TypeScript + Playwright + Bun**.
 

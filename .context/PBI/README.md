@@ -72,7 +72,7 @@ Templates are provided for the per-module structure. Use them as reference when 
 2. Copy templates into the folder structure above
 3. Fill in module-context and roadmap
 4. Load SESSION-PROMPT.md via @ at the start of each AI session
-   (or use @.prompts/orchestrators/test-automation-agent.md for full orchestration)
+   (or load the /test-automation skill for full orchestration)
 5. AI updates PROGRESS.md at end of each session
 ```
 

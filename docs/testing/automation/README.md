@@ -28,4 +28,4 @@
 
 **Ver También:**
 - `docs/methodology/kata-fundamentals.md` - Filosofía KATA
-- `.context/guidelines/TAE/` - Guías de implementación
+- `/test-automation` skill - Guías de implementación (KATA)

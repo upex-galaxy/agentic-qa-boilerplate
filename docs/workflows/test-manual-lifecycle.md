@@ -348,16 +348,16 @@ Con la lista priorizada, creas **Test Cases formales** para los escenarios impor
 
 ---
 
-## Prompts Relacionados
+## Skills Relacionadas
 
 Para ejecutar cada stage con ayuda de AI:
 
-| Stage | Prompt |
-|-------|--------|
-| Stage 1 | `.prompts/stage-1-shift-left/acceptance-test-plan.md` |
-| Stage 2 | `.prompts/stage-2-exploratory/*.md` |
-| Stage 3 | `.prompts/stage-3-documentation/test-prioritization.md` |
-| Stage 4 | `.prompts/stage-3-documentation/test-documentation.md` |
+| Stage | Skill |
+|-------|-------|
+| Stage 1 (Planning) | `/sprint-testing` -- planificación (acceptance test plan) |
+| Stage 2 (Exploratory) | `/sprint-testing` -- ejecución exploratoria |
+| Stage 3 (Prioritization) | `/test-documentation` -- priorización |
+| Stage 4 (Documentation) | `/test-documentation` -- documentación TMS |
 
 ---
 
