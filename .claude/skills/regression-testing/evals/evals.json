@@ -1,0 +1,77 @@
+{
+  "skill_name": "regression-testing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Trigger the regression suite on staging and tell me if we can deploy to production.",
+      "expected_output": "The assistant invokes the regression-testing skill, triggers gh workflow run regression.yml with environment=staging, captures the run ID, monitors until completion, downloads artifacts, classifies any failures, computes a GO / CAUTION / NO-GO verdict using the scoring matrix, and produces a stakeholder report.",
+      "files": [],
+      "expectations": [
+        "The response references running `gh workflow run regression.yml` with an environment flag",
+        "The response captures or references a run ID via `gh run list` or `gh run view`",
+        "The response mentions monitoring the run with `gh run watch` or polling `gh run view --json status,conclusion`",
+        "The response includes a GO, CAUTION, or NO-GO verdict",
+        "The verdict is backed by the scoring matrix or the hard-veto rules (e.g. any @critical failure, any HIGH/CRITICAL regression, pass rate < 90%)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The nightly smoke test failed. Analyze the results and classify the failures.",
+      "expected_output": "The assistant retrieves the failing smoke run, downloads failed logs and artifacts, and classifies each failed test into REGRESSION, FLAKY, KNOWN ISSUE, ENVIRONMENT, or NEW TEST FAILURE following the decision tree.",
+      "files": [],
+      "expectations": [
+        "The response uses `gh run view --log-failed` or `gh run download` to gather evidence",
+        "Every failed test is placed into exactly one of the five classification buckets",
+        "At least one classification includes the error pattern that drove the decision (e.g. ECONNREFUSED -> ENVIRONMENT, or 'element not found after deploy' -> REGRESSION)",
+        "The response notes severity (CRITICAL / HIGH / MEDIUM / LOW) alongside classification for any failure in a core flow",
+        "The response does not classify a test as REGRESSION without history evidence (or explicitly flags 'insufficient history')"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Generate a quality report for tomorrow's stakeholder meeting. Include pass rate and trend.",
+      "expected_output": "The assistant produces an executive-summary quality report with verdict, metrics table (pass rate, regressions, critical failures, flaky count), trend against the previous run(s), failure details section, release blockers, and recommendations.",
+      "files": [],
+      "expectations": [
+        "The report contains an Executive Summary with a GO / CAUTION / NO-GO verdict",
+        "The report contains a metrics table with Pass Rate, Regressions, Critical failures, Flaky count, and each metric is compared to its threshold",
+        "The report includes a trend section comparing the current run's pass rate to at least one previous run",
+        "The report includes separate sections for each non-empty failure category (Regressions, Flaky, Known, Environment)",
+        "The report ends with Immediate / Short-term / Long-term recommendations and is saved under .context/reports/"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Write a regression test for the bug they just fixed in the login flow.",
+      "expected_output": "This request is authoring new test code, not executing regression. The regression-testing skill should NOT be the primary one invoked — the assistant should instead defer to the test-automation skill (or at minimum make clear that regression-testing is not the right fit).",
+      "files": [],
+      "expectations": [
+        "The response does NOT trigger `gh workflow run` or otherwise invoke the regression-testing pipeline",
+        "The response either invokes or recommends the test-automation skill",
+        "The response does not produce a GO/NO-GO verdict"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Manually test whether the bug fix for UPEX-123 actually works.",
+      "expected_output": "This is manual retest work owned by the sprint-testing skill (single-ticket QA flow), not regression-testing. The assistant should not trigger the regression pipeline.",
+      "files": [],
+      "expectations": [
+        "The response does NOT trigger `gh workflow run` for regression, smoke, or sanity",
+        "The response does not produce a GO/NO-GO release verdict",
+        "The response either invokes or recommends the sprint-testing skill (or a manual QA workflow)"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Set up GitHub Actions to run our tests on every pull request.",
+      "expected_output": "This is a general CI/CD setup question, not a regression-execution request. The regression-testing skill's `references/ci-cd-integration.md` may be useful, but the skill's primary workflow (execute -> analyze -> report) should not trigger. The assistant may reference the skill's ci-cd-integration material but should not invoke a regression run.",
+      "files": [],
+      "expectations": [
+        "The response does NOT trigger `gh workflow run regression.yml` or similar",
+        "The response does not attempt to classify failures or produce a GO/NO-GO verdict",
+        "Any CI/CD advice given is consistent with the patterns in references/ci-cd-integration.md (PR = integration only, E2E critical on main, sharded nightly)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "evals": [
+    {
+      "name": "should-trigger-fresh-onboarding",
+      "prompt": "I need to set up this boilerplate for the Curacity project. Backend is Node.js + Express, frontend is React. Start by discovering the architecture.",
+      "expected_behavior": "Activates project-discovery. Confirms scope (Fresh onboarding). Begins Phase 1: Constitution -- asks for repo paths/access, detects stack, produces project-connection, then proceeds through project-assessment, business-model, domain-glossary. Waits for confirmation between phases before advancing.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-business-data-map-regeneration",
+      "prompt": "Generate the business-data-map.md for this project. Look at the source code and the database.",
+      "expected_behavior": "Activates project-discovery. Loads references/context-generators.md. Reads source code + schema, extracts entities, flows, triggers, cron jobs, webhooks, and writes .context/business-data-map.md. If prior phases missing, runs minimum prerequisites (project-connection + backend-discovery) first.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-api-architecture-refresh",
+      "prompt": "The api-architecture.md is stale. Regenerate it with the current endpoints.",
+      "expected_behavior": "Activates project-discovery. Loads references/context-generators.md. Scans backend routes/controllers, groups endpoints by auth level (Public/Protected/Admin/Owner), regenerates .context/api-architecture.md. Diffs against existing file and confirms overwrite vs merge with the user before writing.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-write-e2e-test",
+      "prompt": "Write an E2E test for the login flow.",
+      "expected_behavior": "Does NOT activate project-discovery. Should route to test-automation (KATA test authoring). project-discovery is for onboarding and context generation, not writing test code.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-kata-concept-question",
+      "prompt": "What is KATA and how does it work?",
+      "expected_behavior": "Does NOT activate project-discovery. General conceptual question answerable without a skill. project-discovery adapts KATA to a project but does not exist to explain the framework in the abstract.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-run-regression",
+      "prompt": "Run the regression suite.",
+      "expected_behavior": "Does NOT activate project-discovery. Should route to regression-testing. project-discovery never executes test suites.",
+      "category": "negative"
+    }
+  ]
+}

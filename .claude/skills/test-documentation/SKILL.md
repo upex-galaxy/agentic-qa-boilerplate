@@ -1,0 +1,347 @@
+---
+name: test-documentation
+description: Analyze, prioritize, and document test cases in TMS (Jira/Xray) -- the bridge between manual QA and test automation. Use when creating Test/ATP/ATR artifacts, calculating ROI to choose which tests to automate, maintaining US-ATP-ATR-TC traceability, or repairing broken TMS links. Supports four scopes: module-driven (exhaustive module exploration), ticket-driven (QA-approved user story), bug-driven (regression TC for a closed bug), and ad-hoc/exploratory. Produces three outcomes per TC: Candidate (feeds test-automation), Manual (terminal), Deferred (terminal). Triggers on "document tests", "create test cases in Jira/Xray", "prioritize for automation", "ROI analysis", "which tests to automate", "Candidate vs Manual", "link ATP to ATR", "fix TMS traceability", "stage 4", "turn this bug into a regression test". Do NOT use for writing test code (test-automation) or running suites (regression-testing).
+license: MIT
+compatibility: claude-code, copilot, cursor, codex, opencode
+---
+
+# Test Documentation — QA Bridge
+
+Take already-validated tests and formalize them in the TMS (Jira, Xray, or equivalent) with full traceability, the right priority, and a clear automation verdict.
+
+Three phases, always in this order: **Analyze -> Prioritize (ROI) -> Document**. Never skip prioritization: most scenarios should end up Deferred, not automated.
+
+One hard prerequisite: the tests being documented must describe behavior that was **already validated** (QA Approved story, closed bug, or finished exploratory session). The TMS is a documentation and regression-protection tool, not an exploration tool.
+
+---
+
+## When to use each scope
+
+Pick the scope based on the input, not the output. All four scopes share the same Analyze -> Prioritize -> Document pipeline; only the input source and defaults differ.
+
+| Scope | Input | Typical volume | Default labels | Notes |
+|-------|-------|----------------|----------------|-------|
+| **Module-driven** | A module of the system explored end-to-end | 20-100+ scenarios | `regression`, `e2e` or `integration` | Batch of TCs grouped under the Regression Epic. Most scenarios will be Deferred. |
+| **Ticket-driven** | A QA Approved user story from a sprint | 3-8 scenarios | `regression`, plus the test type | Output of a `sprint-testing` session. ATP/ATR created per US. |
+| **Bug-driven** | A closed bug with a verified fix | 1-2 scenarios | `regression`, `automation-candidate` (usually) | One regression TC per bug. ROI is biased up: "it failed once, it can fail again." |
+| **Ad-hoc / Exploratory** | New scenarios found in exploratory testing | 1-10 scenarios | `regression` | Apply the 3 Phase-0 questions harshly; ad-hoc scenarios are often one-time validations. |
+
+If the user gives you a story ID, use ticket-driven. If they give you a bug ID, use bug-driven. If they give you a module name or a session output, use module- or ad-hoc accordingly.
+
+---
+
+## Phase 1 — Analyze
+
+### Inputs you must gather
+
+| Source | What to read | Why |
+|--------|--------------|-----|
+| User Story / Epic | Description, ACs, comments, linked issues | Scenario identification, risk signals |
+| Closed bugs linked to the story | Summary, root cause, fix area | Prior-bug prioritization rule |
+| Exploratory session notes | Validated scenarios, observations | Reuse nomenclature already used |
+| Existing ATP (if present) | `.context/PBI/.../acceptance-test-plan.md` or TMS ATP | Scenarios may already exist — do not reinvent |
+| Implementation plan / source code | Actual files, APIs, test IDs | Validate design matches implementation before documenting |
+
+### Separate real scenarios from cross-cutting characteristics
+
+Cross-cutting traits are **validated inside every test**, not as separate TCs.
+
+| Cross-cutting (NOT a TC) | Validated by |
+|--------------------------|--------------|
+| Mobile responsive | Running each test in mobile viewport |
+| XSS prevention | Using special-character test data inside tests |
+| Performance | Timing assertions inside tests |
+| Accessibility | A11y assertions inside UI tests |
+| API contract | Response schema checks inside API tests |
+| Generic "error handling" | Specific negative-path scenarios |
+
+A real scenario is a **user flow**: clear business objective, concrete precondition + action, verifiable outcome. Name format: `Validate <CORE> <CONDITIONAL>`.
+
+### Source-code validation (mandatory before documenting)
+
+The design in the ATP was written before code existed. Before creating any TC:
+
+1. Open the implementation plan (if any) and list the files it touches.
+2. Grep the actual code for `data-testid=`, route handlers, API paths, and text formats.
+3. Compare the ATP's assumptions against what the code does. If they diverge, correct the TC design and add a Refinement Notes section.
+
+Common discrepancies to check for:
+- An API the ATP assumed exists turns out to be SSR/direct DB.
+- UI text format in the ATP ("based on N reviews") vs reality ("(N reviews)").
+- Hardcoded IDs in the ATP vs variable pattern required in TMS.
+
+Skipping this step is the single most common cause of invalid automated tests later.
+
+### TC identity rule (load-bearing)
+
+**A TC is defined by Precondition + Action**. All expected results from the same (precondition, action) pair belong to the **same TC**, not separate TCs.
+
+```
+Same TC:                                    Different TCs:
+  Precondition: valid credentials             Precondition: valid credentials     -> TC-A
+  Action:       submit login                  Precondition: locked account        -> TC-B
+  Assertions:   redirect + token + welcome    Precondition: invalid credentials   -> TC-C
+                (all one TC)                  (all same action, but preconditions differ)
+```
+
+Splitting one (precondition, action) into N "check panel A / check panel B / check panel C" TCs is a textbook anti-pattern. One TC, multiple assertions.
+
+### Equivalence Partitioning
+
+Inputs that produce the **same output** -> one parameterized TC (Scenario Outline + Examples). Inputs that produce **different outputs** -> separate TCs.
+
+---
+
+## Phase 2 — Prioritize (ROI)
+
+Every scenario passes three gates in order. Fail any gate -> Deferred.
+
+### Phase 0: The three filter questions
+
+1. **Does it protect against FUTURE regressions?** If the bug was a one-time typo in a stable area, the answer is no. Defer.
+2. **Are there PRIOR bugs in this area?** Yes -> prioritize even with moderate ROI ("it failed once, it can fail again").
+3. **Is it an APP-level concern or a FEATURE-level concern?** XSS / a11y / performance / responsive are APP-level suites, not per-feature TCs. Defer from this scope.
+
+### ROI formula (load-bearing)
+
+```
+ROI = (Frequency x Impact x Stability) / (Effort x Dependencies)
+```
+
+Each factor is scored 1-5 independently:
+
+| Factor | 1 | 2 | 3 | 4 | 5 |
+|--------|---|---|---|---|---|
+| Frequency (how often run) | Yearly / rarely | Every release | Every sprint | Daily | Every PR / commit |
+| Impact (if it fails) | Cosmetic | Minor inconvenience | Degrades UX | Blocks feature | Revenue / core business |
+| Stability (of the flow) | Very volatile | Unstable | Moderate | Stable, minor changes | Unchanged for months |
+| Effort (to automate) | Trivial | Low (hours) | Moderate (1-2 days) | High (several days) | Very high (week+) |
+| Dependencies | None | 1-2 simple | 3-4 | 5+ | Complex externals |
+
+Note: Effort and Dependencies are **divisors** — higher score = worse. The other three are multipliers.
+
+### Component value bonus
+
+If a TC is reusable across multiple E2E flows:
+
+```
+Component Value = Base ROI x (1 + 0.2 x N)
+```
+
+where `N` = number of E2E flows that consume it. A low-ROI atomic like `authenticateSuccessfully` can become automate-worthy purely through reuse.
+
+### Three outcomes (load-bearing)
+
+Every scenario ends in exactly one of these buckets. There is no fourth.
+
+| Outcome | Triggers it | Where it goes next | TMS status flow |
+|---------|------------|--------------------|------------------|
+| **Candidate** | ROI > 3.0, OR (ROI 1.5-3.0 AND prior bug), OR critical happy path | Feeds `test-automation` skill | Draft -> In Design -> Ready -> In Review -> Candidate |
+| **Manual** | ROI 0.5-1.5 AND not automatable (human judgment, visual inspection), OR explicitly manual-only | Terminal: manual regression suite | Draft -> In Design -> Ready -> Manual |
+| **Deferred** | ROI < 0.5, OR failed Phase-0 filter, OR one-time validation | Terminal: not in regression. Can be revisited if system changes | Do not create TC in TMS; document as Deferred in the prioritization report |
+
+**Rule of thumb**: if more than 50% of candidates end up Candidate or Manual, re-apply Phase 0 more strictly. Most scenarios should be Deferred.
+
+---
+
+## Phase 3 — Document in TMS
+
+### Preflight: Regression Epic
+
+Every documented TC must have a parent Regression Epic (single test repository for the project).
+
+```
+[ISSUE_TRACKER_TOOL] Search Issues:
+  project: {{PROJECT_KEY}}
+  query: type = Epic AND (summary ~ "regression" OR summary ~ "test repository" OR labels = "test-repository")
+```
+
+If none exists, ask the user before creating one with name `{{PROJECT_KEY}} Test Repository` and labels `test-repository, regression`.
+
+### Entity model: ATP / ATR / TC
+
+Four entities, always linked US <-> ATP <-> ATR <-> TC:
+
+| Entity | Created | Naming | Main content |
+|--------|---------|--------|--------------|
+| **US** (Story) | Pre-existing | `{{PROJECT_KEY}}-{n}` | The requirement |
+| **ATP** | Stage 1 (or now, if missing) | `Test Plan: {{PROJECT_KEY}}-{n}` | Test Analysis + AC-to-TC coverage |
+| **ATR** | Stage 1 (or now, if missing) | `Test Results: {{PROJECT_KEY}}-{n}` | Test Report + execution results |
+| **TC** | Stage 4 (this phase) | `{US_ID}: TC#: Validate <CORE> <CONDITIONAL>` | Precondition + Action + Expected |
+
+Read `references/tms-architecture.md` when creating ATP/ATR/TC for a ticket, checking required links, or validating that a story is fully documented.
+
+### Linking order (always)
+
+```
+1. Create ATP -> link to US
+2. Create ATR -> link to US
+3. Update ATP -> link to ATR (bidirectional plan/results)
+4. For each TC:
+     Create TC -> link to US + ATP + ATR + AC
+```
+
+Creating a TC before the ATP and ATR exist leaves orphaned references. Fix any broken links with `references/tms-architecture.md` §Traceability Rules.
+
+### Creating TCs — modality matrix
+
+| TMS stack | Manual test | Automation-candidate test |
+|-----------|-------------|---------------------------|
+| **Xray on Jira** | `[TMS_TOOL] Create Test: type=Manual, steps=...` then `[ISSUE_TRACKER_TOOL] Update Issue` to paste the complete Description template | `[TMS_TOOL] Create Test: type=Cucumber, gherkin=<high-quality gherkin>` then `[ISSUE_TRACKER_TOOL] Update Issue` with the Description template |
+| **Native Jira (no Xray)** | `[ISSUE_TRACKER_TOOL] Create Issue: issueType=Test, description=<steps table>` | `[ISSUE_TRACKER_TOOL] Create Issue: issueType=Test, description=<gherkin in Description>` |
+
+Always populate Description with the full TC template (Related Story, Priority, ROI, Prior bugs, Test Design gherkin/steps, Variables table, Implementation Code table, Architecture, Available Test IDs, Preconditions, Expected Results). Read `references/jira-test-management.md` when choosing between Xray and native Jira, or when the Description must be filled.
+
+### High-quality Gherkin (for Candidates)
+
+```gherkin
+@{priority} @regression @automation-candidate @{US_ID}
+Scenario Outline: Validate <core> <conditional>
+  """
+  Bugs covered: BUG-1, BUG-2
+  Related Story: {US_ID}
+  """
+
+  # === PRECONDITIONS (tester / script builds them) ===
+  Given <entity> exists with <identifier>
+  And <entity> has <quantity> <elements> where <quantity> <condition>
+
+  # === ACTION ===
+  When the user navigates to "<route>"
+  And the user <main_action>
+
+  # === VALIDATIONS ===
+  Then <ui_element> is displayed with format "<expected_format>"
+  And <additional_validation>
+
+  # === EQUIVALENT PARTITIONS ===
+  Examples: Happy path
+    | ... |
+  Examples: Edge case
+    | ... |
+```
+
+Rules that always apply:
+- **Variables, never hardcoded data**: `{mentor_id}` not `550e8400-...`. Include a Variables table with how to obtain each.
+- **Tags always include**: priority (`@critical|@high|@medium|@low`), suite (`@regression`, `@smoke` if critical path), automation flag (`@automation-candidate`), traceability (`@{US_ID}`).
+- **Structured comments**: `# === PRECONDITIONS ===`, `# === ACTION ===`, `# === VALIDATIONS ===`, `# === EQUIVALENT PARTITIONS ===`.
+- **Docstring with metadata**: related story, bugs covered, ROI.
+
+### Workflow transitions
+
+```
+Draft --start design--> In Design --ready to run--> Ready --+-- for manual        --> Manual    (terminal manual)
+                                                            +-- automation review --> In Review
+                                                                                       |
+                                                                                       +-- approve to automate --> Candidate (feeds test-automation)
+```
+
+Never jump states. If a TC needs rework, use the "back" transition to In Design.
+
+### Naming — the one rule that matters
+
+```
+{US_ID or TS_ID}: TC#: Validate <CORE> <CONDITIONAL>
+```
+
+- `CORE`: verb + object — the behavior itself (`successful login`, `authentication error`, `order creation`).
+- `CONDITIONAL`: the distinguishing condition (`with valid credentials`, `when password is incorrect`, `when exceeding 5 failed attempts`).
+- In code (KATA): `@atc('{US_ID}-TC#')` decorator and `Should <behavior> when <condition>` in `test()` blocks.
+
+Anti-patterns to reject: `"Login test"`, `"Login - error"`, `"TC1: Test form"`.
+
+### Labels — baseline per TC
+
+Every TC gets at least one scope label and one status label:
+
+- Scope (required, one+): `regression` (almost always), `smoke` (critical path only — aim for 10-20% of suite), `e2e`, `integration`, `functional`.
+- Status (applied as it moves): `automation-candidate`, `manual-only`, `automated`. `automation-candidate` and `manual-only` are mutually exclusive; remove `automation-candidate` once it becomes `automated`.
+- Priority (optional): `critical`, `high`, `medium`, `low`.
+
+Full reference in `references/tms-conventions.md` §Labels.
+
+### Local cache (Claude Code convention)
+
+After TMS creation, write one markdown file per TC into `.context/PBI/{module}/{story}/tests/{TC-ID}-{slug}.md`. Template in `references/jira-test-management.md` §Local cache. This prevents re-reading the TMS in future sessions and gives `test-automation` an immediate handoff.
+
+---
+
+## Gotchas
+
+- **ROI divisors matter**: Effort and Dependencies go in the denominator. A "critical flow" with Effort=5 and Dependencies=5 has low ROI by design — that is correct, not a bug in the formula.
+- **Prior-bug rule overrides ROI thresholds**: a scenario tied to a closed bug enters regression even at ROI 1.5-3.0. Source: `test-prioritization.md` + `atc-definition-strategy.md` — both agree.
+- **Cross-cutting is not a TC**: "Mobile responsive", "XSS prevention", "Performance" are never TCs on their own. They are validated inside other TCs or in an app-level suite.
+- **Linking order is not optional**: create ATP and ATR BEFORE the first TC. If you create TCs first, you get orphaned references and `traceability-fix` is the only way out.
+- **Xray requires two calls**: one `[TMS_TOOL] Create Test` (registers in Xray), then one `[ISSUE_TRACKER_TOOL] Update Issue` to paste the full Description. Skipping the second call leaves a TC with no readable documentation in Jira.
+- **Never hardcode UUIDs or emails** in Gherkin. Always use `{variable}` with a Variables table and a query showing how to obtain the real value at runtime.
+- **One (precondition, action) = one TC**. Multiple expected results all belong to the same TC. Splitting assertions into separate TCs is the single most-diagnosed anti-pattern in reviews.
+- **Bug-driven TCs default to Candidate**. A closed bug is empirical evidence that the area regresses. Start at "automate" unless automation is technically impossible.
+- **Source-code validation is mandatory**: the ATP was written before code. Grep for `data-testid=`, routes, text formats. Log discrepancies in a Refinement Notes section on the TC.
+- **Most candidates should be Deferred**. If a module produces 80 scenarios and 60 end up in regression, re-apply Phase 0 more harshly. Target: a few well-chosen TCs per story (1-3 simple, 3-5 complex).
+- **Test Plan / Test Set ID (Xray) vs User Story ID (native Jira)**: the TC prefix depends on stack. In Xray with a Test Set, prefix is the TS ID. In native Jira, prefix is the US ID. Both work — pick one per project and stay consistent.
+
+---
+
+## Specific tasks
+
+- **Creating ATP/ATR/TC for a story or checking links** -> read `references/tms-architecture.md` (entity model, required fields, linking sequence, completeness criteria).
+- **Naming a TC, filling fields, picking labels, or choosing Gherkin vs Traditional** -> read `references/tms-conventions.md` (naming formulas, label taxonomy, workflow state machine, ROI table).
+- **Working in Jira native or Jira+Xray mode, creating tests via the right tool, or producing the full Description template** -> read `references/jira-test-management.md` (mode comparison, Xray issue types, Description template, local cache template, CI/CD sync).
+- **Fixing broken traceability (TC not linked to US/ATP/ATR, name wrong)** -> use the procedure in the Linking Order section above, backed by `references/tms-architecture.md` §Traceability Rules.
+- **Deciding if a bug deserves a regression TC** -> apply Phase 0 question 2 (prior bug = prioritize), then ROI; bug-driven scope defaults to Candidate.
+- **TMS operations** -> load `/xray-cli` skill for concrete CLI syntax. Issue-tracker operations resolve via `[ISSUE_TRACKER_TOOL]` per CLAUDE.md Tool Resolution.
+
+---
+
+## Quick reference
+
+```
+# Pseudocode — resolve [TMS_TOOL] / [ISSUE_TRACKER_TOOL] via CLAUDE.md Tool Resolution
+
+# Verify regression epic
+[ISSUE_TRACKER_TOOL] Search Issues:
+  project: {{PROJECT_KEY}}
+  query: type = Epic AND labels = "test-repository"
+
+# Create ATP
+[TMS_TOOL] Create ATP:
+  name: Test Plan: {{PROJECT_KEY}}-{n}
+  story: {{PROJECT_KEY}}-{n}
+
+# Create ATR
+[TMS_TOOL] Create ATR:
+  name: Test Results: {{PROJECT_KEY}}-{n}
+  story: {{PROJECT_KEY}}-{n}
+
+# Link ATP <-> ATR
+[TMS_TOOL] Update ATP:
+  id: {ATP_KEY}
+  results: {ATR_NAME}
+
+# Create a Candidate TC (Xray + Cucumber)
+[TMS_TOOL] Create Test:
+  project: {{PROJECT_KEY}}
+  type: Cucumber
+  title: {US_ID}: TC#: Validate <CORE> <CONDITIONAL>
+  labels: regression, automation-candidate, e2e, critical
+  gherkin: {from high-quality gherkin}
+
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {TEST_KEY}
+  description: {full Description template}
+
+# Link TC to story + ATP + ATR
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: "is tested by"
+  outward: {TEST_KEY}
+  inward: {STORY_KEY}
+
+# Transition
+[ISSUE_TRACKER_TOOL] Transition Issue:
+  issue: {TEST_KEY}
+  transition: start design   # Draft -> In Design
+  # later: ready to run       # In Design -> Ready
+  # later: automation review  # Ready -> In Review
+  # later: approve to automate # In Review -> Candidate
+  # OR:    for manual          # Ready -> Manual
+```

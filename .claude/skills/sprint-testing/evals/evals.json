@@ -1,0 +1,40 @@
+{
+  "evals": [
+    {
+      "name": "should-trigger-single-user-story",
+      "prompt": "Test the user story UPEX-277. It's a story about empty states in the dashboard.",
+      "expected_behavior": "Activates sprint-testing in single-ticket / user-story mode. Runs session-start (fetch ticket, load context, create PBI folder, write Story Explanation, wait for user OK), then Stage 1 Planning (triage + ATP + ATR + TCs with traceability), Stage 2 Execution (smoke first, then UI/API/DB exploration), Stage 3 Reporting (ATR + QA comment + ticket transition).",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-bug-verification",
+      "prompt": "I need to retest bug PROJ-445. The checkout button was broken on mobile and dev says it's fixed now.",
+      "expected_behavior": "Activates sprint-testing in single-ticket / bug mode. Runs session-start, then Triage (veto table first -> risk score if no veto), presents decision and waits for user OK, creates ATP + ATR (no TCs) with Bug Analysis, verifies fix + regression + DB cross-validation, posts QA verification comment (Template C or D) with evidence paths.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-batch-sprint",
+      "prompt": "Run QA on this sprint. We have 8 tickets to process in Sprint 5. Generate the framework and work through them.",
+      "expected_behavior": "Activates sprint-testing in batch-sprint mode. Generates SPRINT-5-TESTING.md if not present, then loops: auto-detects next Wave 1 PENDING ticket, dispatches per-stage sub-agents sequentially, updates the framework file after Stage 3, presents per-ticket summary and waits for user OK before next ticket. Stops on TOOL FAILURE, pauses on BUG_FOUND.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-automation",
+      "prompt": "Automate the test cases for ticket UPEX-277. Write the Playwright E2E test.",
+      "expected_behavior": "Does NOT activate sprint-testing. Should route to test-automation (Stage 5 — Plan -> Code -> Review for KATA component + test file). sprint-testing ends at Stage 3 and hands off.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-tms-documentation",
+      "prompt": "Document these test cases in Xray with full traceability and calculate ROI to decide which to automate.",
+      "expected_behavior": "Does NOT activate sprint-testing. Should route to test-documentation (Stage 4 — Analyze -> Prioritize (ROI) -> Document in TMS, produces Candidate / Manual / Deferred verdicts). sprint-testing produces the inputs only.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-regression-suite",
+      "prompt": "Run the regression suite against staging and tell me if we can release. I need a GO/NO-GO.",
+      "expected_behavior": "Does NOT activate sprint-testing. Should route to regression-testing (Stage 6 — trigger CI workflow via gh, monitor, classify failures, emit GO/CAUTION/NO-GO). sprint-testing's Stage 2 smoke is local-manual, not the CI suite.",
+      "category": "negative"
+    }
+  ]
+}

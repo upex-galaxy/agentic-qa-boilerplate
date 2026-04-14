@@ -1,0 +1,40 @@
+{
+  "evals": [
+    {
+      "name": "should-trigger-roi-analysis",
+      "prompt": "Analyze the tests for ticket UPEX-300 and decide which ones should be automated. Use the ROI framework.",
+      "expected_behavior": "Activates test-documentation. Calculates ROI per scenario and classifies each as Candidate, Manual, or Deferred.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-create-tcs-in-jira",
+      "prompt": "Create the test cases in Jira for the scenarios we designed. Use Gherkin format.",
+      "expected_behavior": "Activates test-documentation. Creates TCs in Jira via [TMS_TOOL] with the correct naming convention and Gherkin in the Description.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-fix-traceability",
+      "prompt": "The traceability links between the ATP and the TCs are broken. Fix them.",
+      "expected_behavior": "Activates test-documentation. Identifies and repairs ATP/ATR/TC links in the TMS per the linking order rules.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-manual-exploration",
+      "prompt": "Manually test the login flow in staging.",
+      "expected_behavior": "Does NOT activate test-documentation. Should route to sprint-testing.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-writing-test-code",
+      "prompt": "Write the automated test code for the login flow.",
+      "expected_behavior": "Does NOT activate test-documentation. Should route to test-automation.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-commit-conventions",
+      "prompt": "What are the naming conventions for commits?",
+      "expected_behavior": "Does NOT activate test-documentation. No skill needed; the answer is in CLAUDE.md.",
+      "category": "negative"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "evals": [
+    {
+      "name": "should-trigger-write-e2e-test",
+      "prompt": "Write an E2E test for the checkout flow. The user adds a product to the cart, goes to checkout, and confirms the purchase.",
+      "expected_behavior": "Activates test-automation. Plans ATCs first (CheckoutPage + supporting Api components), writes implementation plan, then codes the KATA component and test file using the correct fixture. Runs tests, type-check, and lint before marking done.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-create-api-component",
+      "prompt": "I need an API component for the endpoint POST /api/orders. Follow the KATA pattern.",
+      "expected_behavior": "Activates test-automation. Creates OrdersApi in Layer 3 extending ApiBase, uses tuple returns [APIResponse, Body, Payload], decorates state-changing methods with @atc('TICKET-ID'), registers in ApiFixture, and writes an integration test using the { api } fixture.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-review-test-code",
+      "prompt": "Review the test I wrote at tests/e2e/processCheckout.test.ts. Verify it follows KATA.",
+      "expected_behavior": "Activates test-automation. Runs the E2E review checklist: layer placement, ATC naming, inline locators, no ATC-calling-ATC, fixture choice, ticket-ID prefixes, no hardcoded waits, import aliases. Reports each failed item as a blocker.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-run-regression-suite",
+      "prompt": "Trigger the regression suite and tell me whether we can ship to production.",
+      "expected_behavior": "Does NOT activate test-automation. Should route to regression-testing, which handles gh workflow run, Allure analysis, failure classification, and GO/NO-GO verdicts.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-document-test-case",
+      "prompt": "Document these test cases in Jira as Xray Tests and compute the ROI for which ones to automate.",
+      "expected_behavior": "Does NOT activate test-automation. Should route to test-documentation, which handles TMS artifact creation, ROI scoring, and automation-candidate tagging.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-onboard-project",
+      "prompt": "Set up this new project in the testing boilerplate and generate the business-data-map and api-architecture context files.",
+      "expected_behavior": "Does NOT activate test-automation. Should route to project-discovery, which runs the 4-phase discovery pipeline and adapts the KATA layers to the target stack.",
+      "category": "negative"
+    }
+  ]
+}
