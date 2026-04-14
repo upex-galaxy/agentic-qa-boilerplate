@@ -6,30 +6,15 @@
 
 ## Quick Start
 
-```bash
-# READY TO WRITE TESTS:
-# When you start a new test session, load these context files FIRST:
-# 1. .context/business-data-map.md     -> System flows and entities
-# 2. .context/api-architecture.md      -> API endpoints reference
-# 3. .context/project-test-guide.md    -> What to test and why
-# 4. .context/guidelines/TAE/kata-ai-index.md -> How to write tests (KATA)
+This project is driven by **agent skills**. Each skill owns an end-to-end slice of the QA lifecycle and self-loads its own operational detail. Invoke a skill by its trigger phrase (e.g. "run regression", "write E2E test", "document these tests", "onboard this repo") and the matching skill will take over.
 
-# PLAN BEFORE CODING:
-# Testing follows a Plan -> Code -> Review workflow. Never jump straight to code.
-# See "Test Planning Scopes" below to choose the right planning prompt.
-# Full automation workflow: .prompts/stage-5-automation/README.md
+The Stages 1-6 pipeline is distributed across skills:
 
-# SPRINT-LEVEL WORK:
-# For multi-ticket sprint testing, use the orchestrators:
-# @.prompts/utilities/sprint-test-framework-generator.md -> generates SPRINT-{N}-TESTING.md
-# @.prompts/orchestrators/sprint-testing-agent.md -> orchestrates Stages 1-3 per ticket
-
-# WRITE A NEW TEST:
-# 1. Pick planning prompt by scope (module / ticket / regression)
-# 2. Use .prompts/stage-5-automation/coding/e2e-test-coding.md (E2E)
-#    or .prompts/stage-5-automation/coding/integration-test-coding.md (API)
-# 3. Follow KATA patterns in .context/guidelines/TAE/kata-ai-index.md
-```
+- **Stages 1-3** (plan, execute, report per ticket) -> `/sprint-testing`
+- **Stage 4** (TMS documentation + ROI) -> `/test-documentation`
+- **Stage 5** (automation: plan, code, review) -> `/test-automation`
+- **Stage 6** (regression, GO/NO-GO) -> `/regression-testing`
+- **Project setup / onboarding** -> `/project-discovery`
 
 **Common test commands:**
 
@@ -41,8 +26,6 @@ bun run test:smoke        # Smoke tests (@critical tagged)
 bun run test:ui           # Visual UI mode
 bun run test:allure       # Generate Allure report
 ```
-
-**Regenerate docs**: `@.prompts/utilities/context-engineering-setup.md`
 
 ---
 
@@ -70,7 +53,7 @@ bun run test:allure       # Generate Allure report
 
 8. **File Operations**: Always read a file before editing it. Preserve existing formatting and indentation. Never overwrite files without reading first.
 
-9. **No Copy-Paste in Prompts**: All prompts are @-loadable. Never ask users to copy-paste prompt content. Use `[TAG_TOOL]` pseudocode and `{{VARIABLES}}` for dynamic content.
+9. **Skills-First**: All operational workflows live in `.claude/skills/`. Never ask users to copy-paste instructions. Invoke the relevant skill and let it self-load its detail. Use `[TAG_TOOL]` pseudocode and `{{VARIABLES}}` for dynamic content.
 
 10. **Playwright CLI Usage**: For browser automation, load the `/playwright-cli` skill. It provides screenshots, tracing, video recording, session management, and request mocking. See `.claude/skills/playwright-cli/` for details.
 
@@ -78,7 +61,7 @@ bun run test:allure       # Generate Allure report
 
 ## Project Variables
 
-> Centralized configuration referenced by all `.prompts/` via `{{VARIABLE_NAME}}` syntax. Fill in real values once; all prompts auto-adapt.
+> Centralized configuration referenced by all skills via `{{VARIABLE_NAME}}` syntax. Fill in real values once; all skills auto-adapt.
 
 | Variable | Description | Example Value |
 |----------|-------------|---------------|
@@ -110,7 +93,7 @@ bun run test:allure       # Generate Allure report
 
 ## Tool Resolution
 
-> When prompts use `[TAG_TOOL]` pseudocode, resolve to the actual tool using this table.
+> When skills use `[TAG_TOOL]` pseudocode, resolve to the actual tool using this table.
 > **Priority**: CLI tools first (fewer tokens), MCP as fallback. Skills are self-documenting.
 
 ### Resolution Table
@@ -123,25 +106,17 @@ bun run test:allure       # Generate Allure report
 | `[DB_TOOL]` | Database | DBHub MCP | Supabase MCP / raw SQL | MCP tool list |
 | `[API_TOOL]` | API Exploration | OpenAPI MCP | Postman / curl | MCP tool list |
 
-**Resolution flow**: Prompt uses `[TAG_TOOL]` -> AI reads this table for WHICH tool -> reads skill/MCP docs for HOW -> if unavailable, try fallback -> if all unavailable, inform user.
+**Resolution flow**: Skill uses `[TAG_TOOL]` -> AI reads this table for WHICH tool -> reads skill/MCP docs for HOW -> if unavailable, try fallback -> if all unavailable, inform user.
 
 ### Pseudocode Syntax
 
 Format: `[TAG_TOOL] Action:` with parameters using these value types:
 - **Literal value** (`type: Manual`) -- fixed domain concepts
-- **Convention ref** (`{per TC naming convention}`) -- forces AI to consult guidelines
+- **Convention ref** (`{per TC naming convention}`) -- forces AI to consult skill references
 - **Project variable** (`{{PROJECT_KEY}}`) -- configured once per project
 - **Context-derived** (`{from test analysis}`) -- derived during session
 
-### Convention References
-
-| Convention | Guideline Location |
-|-----------|-------------------|
-| TC naming convention | `.context/guidelines/TAE/test-design-principles.md` |
-| TC specification convention | `.context/guidelines/TAE/test-design-principles.md` |
-| Labeling convention | `.prompts/stage-4-documentation/test-documentation.md` -- Labels |
-| Bug naming convention | `.prompts/stage-3-reporting/bug-report.md` -- Summary format |
-| Execution naming convention | `.prompts/stage-4-documentation/test-documentation.md` -- Test Executions |
+Conventions (TC naming, labeling, bug summary format, execution naming, etc.) live inside the owning skill's `references/` directory. The skill loads them on demand.
 
 ---
 
@@ -211,29 +186,43 @@ Format: `[TAG_TOOL] Action:` with parameters using these value types:
 
 ---
 
-## Usage Modes & Entry Points
+## Skills Available
 
-| Mode | Entry Point | Stages | When to Use |
-|------|-------------|--------|-------------|
-| **Sprint Testing** | `@.prompts/utilities/sprint-test-framework-generator.md` then `@.prompts/orchestrators/sprint-testing-agent.md` | 1-3 per ticket | Multiple tickets in a sprint. Params: `sprint-file` (req), `continue-from` (opt) |
-| **User Story** | `@.prompts/session-start.md` then `@.prompts/us-qa-workflow.md` | 1-6 | Single story, full QA cycle |
-| **Bug** | `@.prompts/session-start.md` then `@.prompts/bug-qa-workflow.md` | Triage/Verify/Report | Bug retesting |
-| **Automation** | `@.prompts/orchestrators/test-automation-agent.md` | 5 (Plan/Code/Review) | Automate existing specs. Params: `module` (req), `ticket-id` (opt), `type` (opt) |
-| **Regression** | `@.prompts/stage-6-regression/regression-execution.md` | 6 | Post-release validation |
+> All workflows live in `.claude/skills/`. Skills auto-load their own operational detail (phases, references, checklists). Invoke by trigger phrase.
 
----
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| **project-discovery** | `/project-discovery` | Onboard a project to this boilerplate. 4-phase discovery (Constitution -> Architecture -> Infrastructure -> Specification) that generates PRD, SRS, domain glossary, `business-data-map.md`, `api-architecture.md`, and adapts KATA to the target stack. Setup / rediscovery. |
+| **sprint-testing** | `/sprint-testing` | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting). Single-ticket or batch-sprint mode. Produces PBI folder, ATP, ATR, QA comment, bug reports. |
+| **test-documentation** | `/test-documentation` | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS (Jira/Xray). Bridge between manual QA and automation. Four scopes: module / ticket / bug / ad-hoc. Produces Candidate / Manual / Deferred verdicts. |
+| **test-automation** | `/test-automation` | **Stage 5**. Plan -> Code -> Review automated tests on KATA + Playwright + TypeScript. Three planning scopes (module, ticket, ATC). Writes E2E and API/integration tests, registers fixtures, enforces KATA compliance. |
+| **regression-testing** | `/regression-testing` | **Stage 6**. Execute regression / smoke / sanity suites via CI/CD, classify failures (REGRESSION / FLAKY / KNOWN / ENVIRONMENT / NEW TEST), compute pass-rate and trend metrics, emit GO / CAUTION / NO-GO verdict + stakeholder report. |
+| **playwright-cli** | `/playwright-cli` | Browser automation CLI: screenshots, tracing, video recording, session management, request mocking, test generation. |
+| **xray-cli** | `/xray-cli` | Xray Cloud test management CLI: create tests, manage executions and plans, import JUnit/Cucumber/Xray JSON results, back up and restore project data. |
 
-## Test Planning Scopes
+**Decision Tree:**
 
-| Scope | Prompt | When to Use |
-|-------|--------|-------------|
-| **Module-driven** (Macro) | `stage-5-automation/planning/module-test-specification.md` | Batch automation of entire module |
-| **Ticket-driven** (Medium) | `stage-5-automation/planning/test-implementation-plan.md` | Automating a specific ticket |
-| **Regression-driven** (Micro) | `stage-5-automation/planning/atc-implementation-plan.md` | Adding regression test after bug fix |
+| Need | Tool |
+|------|------|
+| Onboard a new repo / regenerate context | `/project-discovery` |
+| Test a user story or retest a bug | `/sprint-testing` |
+| Create TMS artifacts, ROI, traceability | `/test-documentation` |
+| Write or review automated tests | `/test-automation` |
+| Run regression, decide release | `/regression-testing` |
+| Browser interaction | `/playwright-cli` |
+| Xray/TMS CLI operation | `/xray-cli` |
+| API exploration | OpenAPI MCP |
+| Database query | DBHub MCP |
+| Library docs | Context7 MCP |
+| Community solutions | Tavily MCP |
+
+Skills are committed to the repo. User-specific settings (`.claude/settings.local.json`) are gitignored.
 
 ---
 
 ## Fundamental Rules (Always in Memory)
+
+> Quick-reference summary. Detailed patterns live inside the `test-automation` skill's `references/` directory, loaded on demand.
 
 ### TypeScript Patterns
 
@@ -253,8 +242,6 @@ Format: `[TAG_TOOL] Action:` with parameters using these value types:
 - `UiBase` = All Playwright/Page helpers
 - `ApiBase` = All HTTP helpers
 - `TestContext` = Shared across both (config, faker)
-
--> **Full details**: `.context/guidelines/TAE/typescript-patterns.md`
 
 ### KATA Architecture
 
@@ -286,8 +273,6 @@ Test Files - Orchestrate ATCs
 | UI only | `{ ui }` | Yes |
 | Hybrid | `{ test }` | Yes |
 
--> **Full details**: `.context/guidelines/TAE/kata-architecture.md`
-
 ---
 
 ## Git Workflow
@@ -311,52 +296,33 @@ Test Files - Orchestrate ATCs
 
 **Example**: `git checkout -b feature/UPEX-123-add-login-tests` -> commit -> push with `-u` -> `gh pr create --base staging`. For general work on `main`, always ask "Confirm push to main?" before pushing.
 
--> **Full details**: `docs/workflows/git-flow.md`
-
 ---
 
-## Context System (3-Level Hierarchy)
+## Context System
 
-### Level 1: Project-Wide (loaded at session start)
+### Level 1: Project-Wide (generated by `/project-discovery`)
 
 ```
 .context/business-data-map.md      -> System flows and entities
 .context/api-architecture.md       -> API endpoints reference
 .context/project-test-guide.md     -> What to test and why
+.context/test-management-system.md -> TMS architecture + conventions + workflow
 ```
 
-### Level 2: Module-Level (shared across tickets in a module)
+### Level 2 + 3: PBI (per module / per ticket)
 
 ```
 .context/PBI/{module}/
-  module-context.md                -> Module overview and shared context
+  module-context.md                            -> Module overview
   test-specs/
-    ROADMAP.md                     -> All tickets and their automation status
-    PROGRESS.md                    -> Current progress tracker
-    SESSION-PROMPT.md              -> @-loadable session resume prompt
+    ROADMAP.md                                 -> All tickets + automation status
+    PROGRESS.md                                -> Current progress
+    SESSION-PROMPT.md                          -> @-loadable session resume
+    {PREFIX}-T{id}-{name}/
+      spec.md                                  -> Test specification
+      implementation-plan.md                   -> Automation plan
+      atc/*.md                                 -> Individual ATC designs
 ```
-
-### Level 3: Ticket-Level (per ticket)
-
-```
-.context/PBI/{module}/test-specs/{PREFIX}-T{id}-{name}/
-  spec.md                         -> Test specification
-  implementation-plan.md           -> Automation plan
-  atc/*.md                         -> Individual ATC designs
-```
-
-### Context Loading by Task
-
-| Task | Load These Files |
-|------|------------------|
-| **Write E2E Test** | `kata-ai-index.md` + `e2e-testing-patterns.md` |
-| **Write API Test** | `kata-ai-index.md` + `api-testing-patterns.md` |
-| **Exploratory Testing** | `project-test-guide.md` + `CLAUDE.md -- Tool Resolution` |
-| **Understand System** | `business-data-map.md` + `PRD/user-journeys.md` |
-| **Use MCP Tools** | `CLAUDE.md -- Tool Resolution` |
-| **TMS Operations** | `tms-architecture.md` + `tms-conventions.md` + `tms-workflow.md` |
-| **Create/Link TMS Artifacts** | `tms-architecture.md` (entity model + linking order) |
-| **In-Sprint Testing** | `tms-workflow.md` + `tms-conventions.md` |
 
 **Living examples**: API components in `tests/components/api/*Api.ts`, UI components in `tests/components/ui/*Page.ts`, tests in `tests/e2e/` or `tests/integration/`.
 
@@ -377,30 +343,6 @@ Test Files - Orchestrate ATCs
 
 - Context7 for "how to use X" (official docs)
 - Tavily for "how to solve X" (community solutions)
-
----
-
-## Skills & Decision Tree
-
-> Pre-built skills available in `.claude/skills/`. Loaded automatically by Claude Code.
-
-| Skill | Trigger | Description |
-|-------|---------|-------------|
-| **playwright-cli** | `/playwright-cli` | Browser automation: screenshots, tracing, video recording, session management, request mocking, test generation |
-| **xray-cli** | `/xray-cli` | Xray Cloud test management: create tests, manage executions, import results, backup/restore |
-
-**Decision Tree:**
-
-| Need | Tool |
-|------|------|
-| Browser interaction | `/playwright-cli` |
-| TMS operation | `/xray-cli` |
-| API exploration | OpenAPI MCP |
-| Database query | DBHub MCP |
-| Library docs | Context7 MCP |
-| Community solutions | Tavily MCP |
-
-Skills are committed to the repo. User-specific settings (`.claude/settings.local.json`) are gitignored.
 
 ---
 
@@ -433,7 +375,7 @@ Default to **staging** unless the user specifies otherwise. Ask when ambiguous. 
 
 ### Context Efficiency
 
-Main conversation stays lean (no large file reads). Subagents do heavy reading. Load only what the current step needs.
+Main conversation stays lean (no large file reads). Subagents do heavy reading. Skills load only the references the current phase needs.
 
 ---
 
@@ -451,7 +393,7 @@ For every ticket being tested, maintain local documentation under `.context/PBI/
 
 **Variables**: `{module-name}` = kebab-case module (e.g., `user-management`), `{TICKET-ID}` = TMS identifier (e.g., `UPEX-277`), `{brief-title}` = max ~5 words kebab-case (e.g., `empty-states`).
 
-**Entry point**: `@.prompts/session-start.md` -- fetches ticket, explains story, loads context, explores code, creates PBI folder.
+**Entry point**: invoke `/sprint-testing` -- it fetches the ticket, explains the story, loads context, explores code, creates the PBI folder.
 
 **Resume a session**: `@.context/PBI/{module}/test-specs/SESSION-PROMPT.md` -- @-loadable, restores full context without copy-paste.
 
