@@ -31,7 +31,7 @@ This boilerplate solves common challenges in test automation:
 | **Allure Reports** | Rich test reports with history and trends |
 | **TMS Sync** | Automatic sync of test results to Jira/Xray |
 | **Context Engineering** | `.context/` directory with AI-friendly documentation |
-| **Prompt Library** | Pre-built prompts for AI-assisted test development |
+| **Skills-based Workflows** | Agent skills under `.claude/skills/` drive the AI-assisted QA and automation flows |
 | **MCP Integration** | Ready for Playwright, Database, and API MCPs |
 
 ---
@@ -313,7 +313,9 @@ AUTO_SYNC
 
 ## AI-Assisted Development
 
-This boilerplate is optimized for AI-assisted test development.
+This boilerplate's AI-assisted workflows are delivered as **agent skills** following the [agentskills.io](https://agentskills.io) spec. Every skill lives under `.claude/skills/` and bundles its own instructions, `references/`, and progressive-disclosure assets, so the AI loads only what the current task needs.
+
+Structured project context (`.context/` with `PRD/`, `SRS/`, `idea/`, `PBI/`) is generated and maintained by these skills -- you do not hand-author it.
 
 ### Complete Adaptation Flow
 
@@ -357,20 +359,6 @@ When you clone this template, follow this flow to adapt it to your project:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Context Engineering
-
-The `.context/` directory contains structured documentation for AI:
-
-```
-.context/
-├── PRD/                  # What to build (generated)
-├── SRS/                  # How it works (generated)
-├── idea/                 # Business context (generated)
-└── PBI/                  # What to test (generated, per ticket)
-```
-
-Guidelines and workflow instructions live inside the Claude Code skills under `.claude/skills/` (each skill ships with its own `references/`).
-
 ### Skills (Workflow Entry Points)
 
 ```
@@ -382,7 +370,89 @@ Guidelines and workflow instructions live inside the Claude Code skills under `.
 ├── regression-testing/    # Regression execution + GO/NO-GO decisions
 ├── playwright-cli/        # Browser automation helper (screenshots, tracing, ...)
 └── xray-cli/              # Xray TMS helper (tests, executions, imports, ...)
+
+.agents/skills/            # Symlink to .claude/skills/ (agentskills.io path)
 ```
+
+### How to Use Each Skill
+
+Each skill auto-activates when your prompt matches its description triggers. You can also invoke a skill explicitly in Claude Code by typing its slash trigger (e.g. `/sprint-testing`). The sample prompts below are plain user utterances -- type them into the agent terminal as-is.
+
+#### 1. Onboarding a new project
+
+- **Situation**: You just cloned the boilerplate against a new target app and need `.context/`, CLAUDE.md, and KATA adapted to the real stack.
+- **Skill**: `/project-discovery`
+- **Sample prompts**:
+  - "Adapt this repo to my new backend stack at `../my-backend`."
+  - "Generate the `.context/` files for this project."
+  - "Onboard this boilerplate to the app in `../my-frontend`."
+- **What happens next**: The skill discovers business/architecture/infrastructure context, generates `.context/` (`idea/`, `PRD/`, `SRS/`, `business-data-map.md`, `api-architecture.md`, `project-test-guide.md`), adapts KATA to your stack, and refreshes CLAUDE.md.
+
+#### 2. Running an in-sprint QA loop
+
+- **Situation**: You have one or more sprint tickets (user stories or bug fixes) that need manual QA before release.
+- **Skill**: `/sprint-testing`
+- **Sample prompts**:
+  - "Test the user story UPEX-123."
+  - "Verify the fix for bug UPEX-456."
+  - "Run QA on this sprint's tickets."
+- **What happens next**: The skill orchestrates Stages 1 (Planning), 2 (Execution), and 3 (Reporting) per ticket, creates the `.context/PBI/` folder, and produces an ATP and ATR for each ticket.
+
+#### 3. Documenting tests in Jira/Xray
+
+- **Situation**: You need to turn manual test cases into TMS artifacts and decide which ones deserve automation.
+- **Skill**: `/test-documentation`
+- **Sample prompts**:
+  - "Document test cases for ticket UPEX-200 in Xray."
+  - "Score these tests by ROI to decide automation priority."
+  - "Create the ATP for UPEX-300 in Xray and link it to the story."
+- **What happens next**: The skill creates Test / ATP / ATR entities in Xray following the project's naming conventions and prioritizes candidates using an ROI rubric.
+
+#### 4. Writing automated tests
+
+- **Situation**: You have approved test specs and need E2E or API tests implemented on KATA + Playwright.
+- **Skill**: `/test-automation`
+- **Sample prompts**:
+  - "Automate the ATCs from UPEX-100."
+  - "Write an E2E test for the login flow."
+  - "Review this integration test."
+- **What happens next**: The skill runs the Plan -> Code -> Review pipeline: proposes an implementation plan, writes KATA-compliant tests, and reviews them against the project's automation standards.
+
+#### 5. Running regression and the release decision
+
+- **Situation**: Release candidate ready; you need the full regression executed and a GO/NO-GO call.
+- **Skill**: `/regression-testing`
+- **Sample prompts**:
+  - "Run the full regression and give me a GO/NO-GO."
+  - "Analyze the failures in the latest smoke run."
+  - "Trigger the regression workflow on staging and summarize the results."
+- **What happens next**: The skill kicks off the CI workflow (or local run), classifies failures (product bug / flake / environment), and produces a release-decision report.
+
+#### 6. Browser automation helper
+
+- **Situation**: You need quick Playwright-powered actions inside a session -- screenshots, traces, video, request mocking.
+- **Skill**: `/playwright-cli`
+- **Sample prompts**:
+  - "Take a screenshot of the login page."
+  - "Record a Playwright trace of this flow."
+  - "Mock the `/api/users` response and reload."
+- **What happens next**: The skill drives a Playwright browser session with the right flags for screenshots, tracing, video, storage state, or request interception.
+
+#### 7. Xray API operations
+
+- **Situation**: You need to talk to Xray Cloud directly (create artifacts, import results, back up a project).
+- **Skill**: `/xray-cli`
+- **Sample prompts**:
+  - "Create a new test in Xray for UPEX-100."
+  - "Import JUnit results to Xray."
+  - "Back up project UPEX."
+- **What happens next**: The skill maps your request to the `bun xray` CLI commands (tests, executions, plans, imports, backup/restore) and runs them with the project-specific conventions.
+
+### How Skills Activate
+
+- **Description-matching**: Skills auto-activate when your prompt matches the triggers declared in each skill's `description` frontmatter. You normally do not need to name the skill.
+- **Explicit slash trigger** (Claude Code only): You can force-load a skill by typing `/skill-name` (e.g. `/sprint-testing`).
+- **Other agents** (Codex, Cursor, Copilot, OpenCode): Slash commands are not available, but the same `description` triggers cause the skills to auto-activate from natural prompts -- the portability path is the `.agents/skills/` symlink.
 
 ### CLAUDE.md
 
@@ -392,6 +462,23 @@ The `CLAUDE.md` file serves as AI memory. Customize it for your project:
 2. Document critical test priorities
 3. Track context files
 4. Log decisions and progress
+
+### Multi-Agent Portability
+
+Skills follow the [agentskills.io](https://agentskills.io) spec, so they are portable across Claude Code, Codex, GitHub Copilot, Cursor, and OpenCode. A relative symlink exposes the canonical Claude Code location at the shared agentskills path, avoiding duplicated files.
+
+| Platform | Directory |
+|----------|-----------|
+| Claude Code | `.claude/skills/` (canonical) |
+| Codex / Copilot / Cursor / OpenCode | `.agents/skills/` (symlink -> `.claude/skills/`) |
+
+The `.agents/skills/` symlink keeps a single source of truth while exposing the agentskills.io standard path. You do not need to maintain both.
+
+**Portability constraints** (features that degrade gracefully outside Claude Code):
+
+- Slash commands (`/skill-name`) are Claude Code specific. In other agents, skills auto-activate from the `description` triggers -- prompt the agent in plain language and the right skill loads.
+- Sub-agent dispatch used by the batch modes of `/sprint-testing` and `/test-automation` falls back to sequential execution in agents that lack a sub-agent primitive; throughput is lower but the flow still completes.
+- Everything else -- frontmatter, `references/`, progressive disclosure, pseudocode tags (`[TMS_TOOL]`, `[AUTOMATION_TOOL]`, ...) -- is fully portable.
 
 ---
 
@@ -483,6 +570,7 @@ Load the `/project-discovery` skill in your AI assistant to generate project-spe
 - `/test-documentation` skill -- TMS test documentation and prioritization
 - `/regression-testing` skill -- Regression execution and GO/NO-GO decisions
 - `/project-discovery` skill -- Onboarding and context generation
+- `.agents/skills/` is a symlink to `.claude/skills/` for agentskills.io spec compatibility
 - `docs/` -- Human-facing docs (methodology, workflows, architectures)
 
 
