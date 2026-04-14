@@ -1,0 +1,41 @@
+{
+  "skill_name": "xray-cli",
+  "evals": [
+    {
+      "name": "should-trigger-create-test",
+      "prompt": "Create a manual test in Xray project DEMO titled 'Verify user login' with three steps.",
+      "expected_behavior": "Activates xray-cli. Invokes `bun xray test create --project DEMO --summary 'Verify user login' --type Manual --step ... --step ... --step ...` and reports the created Jira key.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-import-results",
+      "prompt": "Import the JUnit results from test-results/junit.xml into Xray for project DEMO.",
+      "expected_behavior": "Activates xray-cli. Runs `bun xray import junit --file test-results/junit.xml --project DEMO` and surfaces the import summary or created execution key.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-backup-project",
+      "prompt": "Back up all tests from Xray project DEMO including execution runs, save it to demo-backup.json.",
+      "expected_behavior": "Activates xray-cli. Runs `bun xray backup export --project DEMO --output demo-backup.json --include-runs` and confirms the file was written.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-write-automation",
+      "prompt": "Write a Playwright test that verifies the login flow on the staging site.",
+      "expected_behavior": "Does NOT activate xray-cli. Should route to test-automation skill for authoring Playwright/KATA test code. No `bun xray` commands are expected.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-document-tests",
+      "prompt": "Document the acceptance tests for UPEX-277 with ROI scoring and decide which to automate.",
+      "expected_behavior": "Does NOT activate xray-cli as the primary skill. Should route to test-documentation for ROI analysis and the TMS documentation pipeline. xray-cli may be used later as a sub-step to create the artifacts but is not the entry point.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-project-discovery",
+      "prompt": "Generate the project test guide and business data map for this codebase.",
+      "expected_behavior": "Does NOT activate xray-cli. Should route to project-discovery, which owns context-file generation. No Xray commands are involved.",
+      "category": "negative"
+    }
+  ]
+}
