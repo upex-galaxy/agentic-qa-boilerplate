@@ -1,598 +1,448 @@
 # Test Automation Lifecycle (TALC)
 
 > **Idioma:** Español
-> **Fase IQL:** Mid-Game (Steps 6-9)
-> **Audiencia:** QA Automation Engineers que ejecutan el ciclo de automatización
+> **Audiencia:** QA Automation Engineers y cualquiera que escriba o revise tests automatizados
+> **Skills:** `/test-automation` (plan → code → review) · `/regression-testing` (ejecución + GO/NO-GO)
 
 ---
 
 ## ¿Qué es TALC?
 
-El **Test Automation Lifecycle** es el flujo de trabajo que sigue un QA Automation Engineer desde que recibe test cases documentados hasta que los tests automatizados están integrados en CI/CD.
+El **Test Automation Lifecycle** es el flujo que va desde un Test Case marcado como **Candidate** (por `/test-documentation`) hasta que ese test vive en `main`, se ejecuta en CI/CD y participa de la decisión de release.
+
+Dos skills cubren el ciclo:
+
+- `/test-automation` — plan, código y review del test individual (Plan → Code → Review).
+- `/regression-testing` — ejecución de la suite completa en CI/CD, clasificación de fallos, y veredicto GO / CAUTION / NO-GO.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    TEST AUTOMATION LIFECYCLE                     │
 │                                                                  │
-│   Stage 1          Stage 2          Stage 3          Stage 4    │
-│   ────────         ────────         ────────         ────────   │
+│   /test-automation                       /regression-testing     │
+│   ──────────────────────────────         ─────────────────────── │
 │                                                                  │
-│   Assessment   →   Automation   →   CI Verify   →   PR Review   │
-│   de Candidatos    de Tests         en Pipeline      y Merge    │
+│   Plan    →   Code    →   Review   →    CI Execution +          │
+│   (spec)      (KATA)      (gates)       GO/NO-GO verdict         │
 │                                                                  │
-│   ┌───────┐       ┌───────┐       ┌───────┐       ┌───────┐    │
-│   │ Eval  │   →   │ Code  │   →   │ CI/CD │   →   │  PR   │    │
-│   │Feasib │       │ Tests │       │ Green │       │Merged │    │
-│   └───────┘       └───────┘       └───────┘       └───────┘    │
-│                                                                  │
-│   IQL Step 6      IQL Step 7      IQL Step 8      IQL Step 9   │
+│   ┌───────┐   ┌───────┐   ┌───────┐     ┌───────┐               │
+│   │ Plan  │ → │ Code  │ → │Review │  →  │  CI   │               │
+│   │  +    │   │ KATA  │   │ gates │     │+report│               │
+│   │ ATCs  │   │ tests │   │       │     │       │               │
+│   └───────┘   └───────┘   └───────┘     └───────┘               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Pre-requisito: Handoff desde TMLC
+## Pre-requisito: handoff desde TMLC
 
-Antes de empezar TALC, el QA Analyst debe haber completado TMLC:
+Antes de invocar `/test-automation`, `/test-documentation` ya debe haber producido TCs marcados como **Candidate**:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│   TMLC (QA Analyst)                TALC (QA Automation)         │
-│   ─────────────────                ────────────────────          │
+│   TMLC (`/test-documentation`)      TALC (`/test-automation`)    │
+│   ────────────────────────────      ──────────────────────────   │
 │                                                                  │
-│   Stage 4: Test Case               Stage 1: Assessment          │
-│   Documentation                    de Candidatos                 │
-│         │                                │                       │
-│         │  Test Cases con label:         │                       │
-│         │  "automation-candidate"        │                       │
-│         └───────────────────────────────▶│                       │
-│                                                                  │
-│   Output: TCs formales             Input: TCs con label         │
-│   en Jira/Xray                     "automation-candidate"       │
+│   Output: TCs en Jira/Xray          Input: mismos TCs            │
+│   con veredicto "Candidate"         + PBI context                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**¿Qué necesitas del QA Analyst?**
-- Test Cases documentados con pasos claros
-- Datos de prueba definidos
-- Label `automation-candidate` en los TCs prioritarios
-- Contexto del feature (US vinculada)
+**Qué necesita `/test-automation`:**
+
+- Test Cases con pasos claros y datos de prueba definidos.
+- Veredicto `Candidate` (del skill de documentación).
+- Contexto del feature en `.context/PBI/{module}/{TICKET}/`.
 
 ---
 
-## Stage 1: Assessment de Candidatos
+## Test Automation (`/test-automation`)
 
-> **IQL Step 6** · TALC 1st Stage
-> **Output:** TCs clasificados como "Candidate" o "Manual Only"
+El skill `/test-automation` corre el pipeline **Plan → Code → Review** dentro de una sola invocación. Nunca salta directo a código.
 
-### ¿Qué hago en esta etapa?
-
-Cuando recibes test cases con label `automation-candidate`, tu primera tarea es **evaluar si realmente conviene automatizarlos**.
-
-### Criterios de Evaluación
-
-| Criterio | Preguntas | Si es NO... |
-|----------|-----------|-------------|
-| **Estabilidad del Feature** | ¿El feature está estable o cambiará pronto? | Esperar a que estabilice |
-| **Frecuencia de Ejecución** | ¿Se ejecutará en cada build/nightly? | Quizás no vale la inversión |
-| **Complejidad Técnica** | ¿Es factible automatizarlo con las herramientas actuales? | Evaluar alternativas |
-| **ROI** | ¿El tiempo de automatizar vs ejecutar manual vale la pena? | Mantener manual |
-| **Dependencias** | ¿Hay APIs/servicios disponibles para setup? | Resolver dependencias primero |
-
-### Matriz de Decisión
+### Ejemplo de invocación
 
 ```
-                    Alta Frecuencia de Ejecución
-                              │
-         ┌────────────────────┼────────────────────┐
-         │                    │                    │
-         │    AUTOMATIZAR     │    AUTOMATIZAR     │
-         │    (Prioridad      │    (Prioridad      │
-         │     Media)         │     Alta)          │
-         │                    │                    │
-   Baja  ├────────────────────┼────────────────────┤ Alta
- Complejidad                  │                    Complejidad
-         │                    │                    │
-         │    EVALUAR         │    MANUAL          │
-         │    (Caso por       │    (Por ahora)     │
-         │     caso)          │                    │
-         │                    │                    │
-         └────────────────────┼────────────────────┘
-                              │
-                    Baja Frecuencia de Ejecución
+Automate the ATCs from UPEX-100.
+Write an E2E test for the login flow.
+Review this integration test.
 ```
 
-### Pasos
+### Pick the planning scope first
 
-1. **Revisa el backlog de automation-candidates**
-   - Filtra en Jira por label `automation-candidate`
-   - Ordena por prioridad (del Analyst)
+Toda sesión arranca eligiendo uno de tres alcances:
 
-2. **Para cada TC, evalúa factibilidad**
-   - ¿Hay acceso al ambiente?
-   - ¿Los datos de prueba están disponibles?
-   - ¿El feature tiene APIs que puedes usar para setup?
+| Alcance | Input | Output | Cuándo usarlo |
+|---------|-------|--------|----------------|
+| **Module-driven** (macro) | Nombre del módulo + lista de TCs candidatos | Un spec de módulo + N ATC specs | Primera pasada sobre un área nueva, 10+ tests. |
+| **Ticket-driven** (medium) | Un ticket / story ID con escenarios | Un implementation plan para ese ticket | Automatizar una user story completa. Default del sprint. |
+| **Regression-driven** (micro) | Un TC específico (usualmente post-bug) | Un ATC implementation plan | Añadir un test regresivo tras un fix. |
 
-3. **Clasifica el TC**
-   - ✅ `Candidate` → Listo para automatizar
-   - ⏳ `Pending` → Necesita algo antes (acceso, APIs, etc.)
-   - ❌ `Manual Only` → No conviene automatizar
-
-4. **Actualiza el estado en Jira**
-   - Cambia status a "In Review" → "Candidate" o "Manual"
-   - Agrega notas de por qué
-
-### Ejemplo de Evaluación
-
-```markdown
-## Evaluación: TC-001 - Checkout con tarjeta de crédito
-
-### Análisis:
-- ✅ Feature estable (en producción hace 3 meses)
-- ✅ Se ejecutará en cada PR (crítico para negocio)
-- ✅ API de pagos disponible para mock
-- ⚠️ Necesita sandbox de Stripe configurado
-
-### Decisión: ✅ CANDIDATE
-### Dependencia: Configurar variables de Stripe en CI
-
-### Notas para automatización:
-- Usar API para crear usuario y carrito (no UI)
-- Solo el checkout necesita ser E2E
-- Mock de Stripe para evitar flakiness
-```
-
-### Herramientas
-
-- **Jira/Xray**: Gestión de TCs y estados
-- **Slack**: Comunicación con Analyst si hay dudas
-- **Documentación del proyecto**: Entender contexto técnico
+En duda, el skill pregunta. Nunca asume "module" solo por ver varios TC IDs en el briefing.
 
 ---
 
-## Stage 2: Automatización de Tests
+### Fase 1 — Plan
 
-> **IQL Step 7** · TALC 2nd Stage · Modelo TAUS
-> **Output:** Tests automatizados en una branch de feature
+El skill genera el plan bajo `.context/PBI/{module}/test-specs/{TICKET-ID}/`. El plan responde:
 
-### ¿Qué hago en esta etapa?
+- ¿Qué escenarios se vuelven tests, cuáles ATCs, cuáles preconditions compartidas (Steps)?
+- ¿Qué componentes ya existen en `tests/components/api/*Api.ts` / `tests/components/ui/*Page.ts` y cuáles faltan?
+- ¿Qué test data se necesita? Clasificada como **Discover / Modify / Generate** (nunca asume que existe en staging).
+- ¿Qué fixture usa el test: `{api}`, `{ui}`, `{test}`, `{steps}`?
+- ¿Qué ATC IDs (del TMS) mapean a qué métodos de componente?
 
-Con los TCs marcados como "Candidate", es hora de **escribir el código de los tests automatizados**.
+El skill **presenta el plan y espera aprobación** antes de codificar.
 
-### El Modelo TAUS
+---
 
-TAUS = Test Automation User Story
+### Fase 2 — Code
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         MODELO TAUS                              │
-│                                                                  │
-│   1. Crear branch           feature/TAUS-123-checkout-test      │
-│                                      │                           │
-│   2. Analizar TC            Entender pasos, datos, expected     │
-│                                      │                           │
-│   3. Identificar            ¿Qué componentes necesito?          │
-│      componentes            ¿Page Objects? ¿API clients?        │
-│                                      │                           │
-│   4. Implementar            Escribir el test siguiendo KATA     │
-│      tests                                                       │
-│                                      │                           │
-│   5. Ejecutar local         Verificar que pasa consistentemente │
-│                                      │                           │
-│   6. Push & CI              Verificar en pipeline               │
-└─────────────────────────────────────────────────────────────────┘
+El skill implementa en este orden:
+
+1. **Types** al tope del archivo de componente (payloads, responses, DTOs).
+2. **Componente** extendiendo `ApiBase` o `UiBase`. Helpers primero (sin decorator), ATCs después (`@atc('TICKET-ID')`).
+3. **Registrar** el componente en `ApiFixture.ts` / `UiFixture.ts` / `StepsFixture.ts`.
+4. **Test file** bajo `tests/e2e/{module}/` o `tests/integration/{module}/`, con la fixture correcta.
+5. **Validar localmente** en este orden exacto — no se salta ninguna:
+
+```bash
+bun run test <path/to/new.test.ts>   # ¿pasa?
+bun run type-check                   # tsc --noEmit, sin errores
+bun run lint                         # ESLint, sin errores
 ```
 
-### Pasos
+Si cualquiera falla, el skill corrige antes de pasar a Review.
 
-1. **Crea una branch de feature**
-   ```bash
-   git checkout -b feature/TAUS-123-checkout-test
-   ```
+#### Fixture selection (inline — obligatorio)
 
-2. **Analiza el Test Case**
-   - Lee los pasos detallados
-   - Identifica precondiciones
-   - Entiende los datos de prueba
-   - Clarifica el resultado esperado
+| Tipo de test | Fixture | ¿Abre browser? | Cuándo |
+|--------------|---------|-----------------|--------|
+| API only (integration) | `{ api }` | No (lazy) | API pura, sin UI. |
+| UI only | `{ ui }` | Sí | UI-focused, sin setup vía API. |
+| Hybrid (UI + API setup) | `{ test }` | Sí | Setup vía API, flujo vía UI, verificación vía API. |
+| Cadenas de precondition reusables | `{ steps }` | Depende | 3+ ATCs repetidos en 3+ archivos. |
 
-3. **Diseña la estructura del test**
-   - ¿E2E o Integration?
-   - ¿Qué Page Objects/API Clients necesitas?
-   - ¿Existe código reutilizable?
+Regla: nunca pedir `{ ui }` para un test que no toca la UI — abre un browser para nada.
 
-4. **Implementa siguiendo KATA**
-   - Carga el skill `/test-automation` (las guidelines viven en `references/`)
-   - Sigue la arquitectura de capas
-   - Usa ATCs (Atomic Test Components)
-
-5. **Ejecuta localmente múltiples veces**
-   ```bash
-   # Ejecutar 5 veces para verificar estabilidad
-   for i in {1..5}; do bun run test:e2e -- checkout.spec.ts; done
-   ```
-
-6. **Commit y push**
-   ```bash
-   git add .
-   git commit -m "test: add checkout payment test TAUS-123"
-   git push -u origin feature/TAUS-123-checkout-test
-   ```
-
-### Estructura de un Test E2E
+#### Ejemplo de test E2E
 
 ```typescript
-// tests/e2e/checkout/payment.spec.ts
+// tests/e2e/checkout/payment.test.ts
+import { test, expect } from '@TestFixture';
+import testCard from '@data/fixtures/cards.json';
 
-import { test, expect } from '@playwright/test';
-import { TestFixture } from '../../components/TestFixture';
+test.describe('UPEX-123: Checkout Payment', () => {
+  test('UPEX-123: should complete payment when credit card is valid', async ({ test: ctx }) => {
+    // Setup vía API (rápido, determinista)
+    const user = await ctx.api.auth.loginSuccessfully(credentials);
+    await ctx.api.cart.addProductSuccessfully({ productId });
 
-test.describe('Checkout Payment', () => {
-  let fixture: TestFixture;
+    // Flujo vía UI
+    await ctx.ui.checkout.navigateToCheckout();
+    await ctx.ui.checkout.payWithCardSuccessfully(testCard);
 
-  test.beforeEach(async ({ page }) => {
-    fixture = new TestFixture(page);
-    // Setup: crear usuario y carrito via API
-    await fixture.api.auth.login(testUser);
-    await fixture.api.cart.addProduct(productId);
-  });
-
-  test('TC-001: successful payment with credit card', async () => {
-    // Arrange
-    await fixture.ui.checkout.navigate();
-
-    // Act
-    await fixture.ui.checkout.fillCardDetails(testCard);
-    await fixture.ui.checkout.submitPayment();
-
-    // Assert
-    await expect(fixture.ui.checkout.successMessage).toBeVisible();
-    await expect(fixture.ui.checkout.orderNumber).toHaveText(/ORD-\d+/);
+    // Verificación de outcome
+    await expect(ctx.ui.checkout.successMessage).toBeVisible();
+    await expect(ctx.ui.checkout.orderNumber).toHaveText(/ORD-\d+/);
   });
 });
 ```
 
-### Buenas Prácticas
+#### Reglas no-negociables (las que más se rechazan en review)
 
 ```
-✅ DO:
-- Setup via API, validación via UI
-- Tests independientes (no dependen de orden)
-- Datos únicos por ejecución (Faker)
+DO:
+- Setup vía API, validación vía UI
+- Tests independientes (sin orden implícito)
+- Data única por ejecución (faker)
 - Assertions específicas y claras
-- Cleanup después de cada test
+- Credenciales desde .env (LOCAL_USER_EMAIL / STAGING_USER_EMAIL)
 
-❌ DON'T:
+DON'T:
 - Hardcodear datos
-- Depender de estado de otros tests
-- Sleeps fijos (usar waitFor)
-- Tests que fallan intermitentemente (flaky)
-- Ignorar failures "porque a veces pasa"
+- Depender del estado de otros tests
+- Usar page.waitForTimeout (usar waitFor condicional)
+- Tests flakey ("a veces pasa")
+- Import relativo (../../); usar aliases @api/ @ui/ @utils/ @schemas/
 ```
-
-### Herramientas
-
-- **IDE**: VS Code / Cursor con extensiones de Playwright
-- **AI Assistant**: Claude Code para generar código
-- **Terminal**: Ejecución local de tests
-- **Git**: Control de versiones
 
 ---
 
-## Stage 3: Verificación en CI
+### Fase 3 — Review
 
-> **IQL Step 8** · TALC 3rd Stage
-> **Output:** Tests pasando consistentemente en CI/CD
+El skill corre el checklist de review sobre los archivos nuevos / modificados. Cada item fallado es un blocker. Revisión limpia = gate de merge.
 
-### ¿Qué hago en esta etapa?
+```markdown
+## Review checklist (resumen)
 
-Después de push, los tests deben **ejecutarse en el pipeline de CI** y pasar consistentemente.
+### KATA
+- [ ] Sigue la arquitectura de capas (TestContext → ApiBase/UiBase → YourApi/YourPage → Fixture)
+- [ ] ATC = caso de prueba completo, no un click individual
+- [ ] TC Identity: Precondition + Action = 1 TC (asserts agrupados)
+- [ ] ATCs atómicos (no llaman a otros ATCs; chains en Steps)
+- [ ] Locators inline en ATCs (no `locators/*.ts`)
+- [ ] Fixed assertions dentro del ATC; test-level assertions en test file
 
-### Flujo de CI
+### TypeScript
+- [ ] Max 2 parámetros posicionales; 3+ → object param
+- [ ] Aliases `@api/` `@ui/` `@utils/` `@schemas/`; nada de relativos
+- [ ] Types definidos al tope del archivo
+
+### Calidad
+- [ ] Tests pasan local, sin retries
+- [ ] `bun run type-check` sin errores
+- [ ] `bun run lint` sin errores
+- [ ] Componente registrado en su Fixture
+- [ ] `@atc('X')` linkea a un TC real del TMS
+- [ ] Ticket ID prefix en cada `test('TICKET-ID: ...')`
+```
+
+El detalle completo vive en el skill (`references/review-checklists.md`) y se carga solo cuando se necesita.
+
+---
+
+### Plan → Code → Review en diagrama
+
+```
+Phase 1: Plan         →  Phase 2: Code             →  Phase 3: Review
+(spec / plan)            (component + test file)       (KATA compliance)
+        │                         │                             │
+  .context/PBI/{module}/     tests/components/**         Review checklist
+    test-specs/              tests/e2e/** or                (pass/fail)
+    spec.md                  tests/integration/**
+    implementation-plan.md
+    atc/*.md                 Register in fixture
+```
+
+Cada fase tiene un gate. No arrancar Code antes de Plan aprobado. No cerrar el ticket hasta que Review pase.
+
+---
+
+## KATA Architecture (referencia rápida)
+
+La arquitectura es estable y se documenta en profundidad dentro del skill (`references/kata-architecture.md`). Layers:
+
+```
+TestContext (Layer 1)  - Config, Faker, utilities
+    │ extends
+ApiBase / UiBase (Layer 2)  - HTTP / Playwright helpers
+    │ extends
+YourApi / YourPage (Layer 3)  - ATCs viven aquí
+    │ usado por
+TestFixture (Layer 4)  - Inyección de dependencias
+    │ usado por
+Test Files  - Orquestan ATCs
+```
+
+### Templates KATA (inline, load-bearing)
+
+```typescript
+// API component — Layer 3
+export class UsersApi extends ApiBase {
+  constructor(options: TestContextOptions) { super(options); }
+
+  @step
+  async getUserById(id: string): Promise<[APIResponse, UserResponse]> {
+    return this.apiGET<UserResponse>(`/users/${id}`);
+  }
+
+  @atc('UPEX-123')
+  async createUserSuccessfully(payload: UserPayload): Promise<[APIResponse, UserResponse, UserPayload]> {
+    const [response, body, sent] = await this.apiPOST<UserResponse, UserPayload>('/users', payload);
+    expect(response.status()).toBe(201);
+    expect(body.id).toBeDefined();
+    return [response, body, sent];
+  }
+}
+```
+
+```typescript
+// UI component — Layer 3
+export class LoginPage extends UiBase {
+  constructor(options: TestContextOptions) { super(options); }
+
+  @atc('UPEX-123')
+  async loginWithValidCredentials(data: LoginData): Promise<void> {
+    await this.page.goto('/login');
+    await this.page.locator('#email').fill(data.email);
+    await this.page.locator('#password').fill(data.password);
+    await this.page.locator('button[type="submit"]').click();
+    await expect(this.page).toHaveURL(/.*dashboard.*/);
+  }
+}
+```
+
+---
+
+## Regression Testing (`/regression-testing`)
+
+Una vez que los tests viven en `main`, el skill `/regression-testing` se encarga de ejecutar la suite completa y emitir veredicto de release.
+
+### Ejemplo de invocación
+
+```
+Run the full regression and give me a GO/NO-GO.
+Analyze the failures in the latest smoke run.
+Trigger the regression workflow on staging and summarize the results.
+```
+
+### Qué hace el skill
+
+1. **Ejecuta la suite** (regression / smoke / sanity) vía GitHub Actions o localmente.
+2. **Clasifica fallos** en cinco categorías:
+   - `REGRESSION` — bug real reintroducido.
+   - `FLAKY` — pasa al rehacer, requiere investigación.
+   - `KNOWN` — bug conocido con ticket abierto.
+   - `ENVIRONMENT` — infra / datos / servicio externo.
+   - `NEW TEST` — test recién agregado fallando.
+3. **Computa métricas**: pass-rate actual vs. baseline, tendencia de flakiness.
+4. **Emite veredicto** GO / CAUTION / NO-GO con justificación por ticket.
+5. **Genera stakeholder report** para compartir con el equipo.
+
+### Pipeline de CI (contexto)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         CI PIPELINE                              │
 │                                                                  │
 │   Push to       ┌──────────┐      ┌──────────┐      ┌────────┐  │
-│   Branch    ──▶ │  Lint &  │ ──▶  │   Run    │ ──▶  │ Report │  │
-│                 │ TypeCheck│      │  Tests   │      │ Allure │  │
+│   Branch    ──▶ │  Lint &  │ ──▶  │   Run    │ ──▶  │ Allure │  │
+│                 │ TypeCheck│      │  Tests   │      │ Report │  │
 │                 └──────────┘      └──────────┘      └────────┘  │
 │                                        │                         │
 │                                        ▼                         │
 │                              ┌─────────────────┐                │
-│                              │   ✅ All Pass   │                │
-│                              │   ❌ Failures   │                │
+│                              │  /regression-    │                │
+│                              │   testing parse  │                │
+│                              │  & classify      │                │
 │                              └─────────────────┘                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Pasos
-
-1. **Verifica que CI se dispara**
-   - Ve a GitHub Actions / tu CI
-   - Confirma que el workflow inició
-
-2. **Monitorea la ejecución**
-   - Observa los logs en tiempo real
-   - Identifica si hay fallos tempranos
-
-3. **Si los tests pasan** ✅
-   - Verifica que pasaron en todos los browsers configurados
-   - Revisa el reporte de Allure
-   - Procede a Stage 4 (PR)
-
-4. **Si los tests fallan** ❌
-   - Descarga los artifacts (screenshots, videos, traces)
-   - Analiza la causa raíz
-   - Fix y re-push
-
-### Análisis de Fallos
-
-```markdown
-## Checklist de Debugging
-
-### 1. ¿Es un fallo real o flaky?
-- [ ] Ejecutar localmente 5+ veces
-- [ ] Verificar si es consistente
-
-### 2. ¿Es problema de ambiente?
-- [ ] ¿Variables de entorno correctas?
-- [ ] ¿Servicios disponibles en CI?
-- [ ] ¿Timeouts suficientes?
-
-### 3. ¿Es problema del test?
-- [ ] ¿Selectores correctos?
-- [ ] ¿Race conditions?
-- [ ] ¿Dependencias de estado?
-
-### 4. ¿Es bug real de la app?
-- [ ] Reproducir manualmente
-- [ ] Si es bug → Reportar al Dev
-```
-
-### Estrategias Anti-Flakiness
+### Estrategias anti-flakiness
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    ESTRATEGIAS ANTI-FLAKY                        │
-│                                                                  │
-│   1. Retries automáticos                                        │
-│      playwright.config.ts → retries: 2                          │
-│                                                                  │
-│   2. Timeouts apropiados                                        │
-│      expect.toBeVisible({ timeout: 10000 })                     │
-│                                                                  │
-│   3. Waits explícitos                                           │
-│      await page.waitForLoadState('networkidle')                 │
-│                                                                  │
-│   4. Datos únicos                                               │
-│      faker.internet.email() en lugar de "test@test.com"         │
-│                                                                  │
-│   5. Isolación                                                  │
-│      Cada test crea su propio estado                            │
-└─────────────────────────────────────────────────────────────────┘
+1. Retries = 0 por default. Si pasa en retry, el test es flaky.
+2. Timeouts explícitos: expect.toBeVisible({ timeout: 10000 })
+3. Waits por condición: waitForSelector / waitForResponse / waitForLoadState('networkidle')
+4. Data única: faker.internet.email() en vez de "test@test.com"
+5. Aislamiento: cada test crea y limpia su propio estado
 ```
-
-### Herramientas
-
-- **GitHub Actions**: Visualizar workflows
-- **Allure Report**: Análisis detallado de resultados
-- **Playwright Trace Viewer**: Debugging visual
-- **Slack**: Notificaciones de CI
 
 ---
 
-## Stage 4: Code Review y Merge
+## Flujo PR + merge (gates finales)
 
-> **IQL Step 9** · TALC 4th Stage
-> **Output:** PR aprobado y mergeado a main
-
-### ¿Qué hago en esta etapa?
-
-Con los tests pasando en CI, creas un **Pull Request para revisión** por otro miembro del equipo.
-
-### Flujo de PR
+El skill `/test-automation` deja los tests listos; el merge es trabajo humano, pero estos son los gates:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         PR WORKFLOW                              │
 │                                                                  │
-│   1. Crear PR         gh pr create --title "..."                │
+│   1. gh pr create --base staging                                │
 │         │                                                        │
-│         ▼                                                        │
-│   2. Descripción      - Qué tests se agregan                    │
-│      detallada        - Link a TC en Jira                       │
-│                       - Screenshots/evidencia                    │
+│   2. Descripción PR:                                            │
+│      - TCs automatizados (IDs + link a Jira)                    │
+│      - Link al CI run y al Allure report                        │
+│      - Checklist KATA cumplido                                  │
 │         │                                                        │
-│         ▼                                                        │
-│   3. Code Review      - Otro QA/Dev revisa                      │
-│                       - Comentarios y fixes                      │
+│   3. Code Review (otro QA / Dev)                                │
 │         │                                                        │
-│         ▼                                                        │
-│   4. Approval         - Aprobación del reviewer                 │
+│   4. CI verde y estable                                         │
 │         │                                                        │
-│         ▼                                                        │
-│   5. Merge            - Squash and merge a main                 │
+│   5. Merge a staging → (luego) main                             │
 │         │                                                        │
-│         ▼                                                        │
-│   6. Update Jira      - TC status → "Automated"                 │
+│   6. Update TMS: TC.status → Automated; link al PR              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Pasos
-
-1. **Crea el Pull Request**
-   ```bash
-   gh pr create --title "test: add checkout payment tests" --body "..."
-   ```
-
-2. **Escribe una descripción completa**
-   ```markdown
-   ## Summary
-   - Added E2E tests for checkout payment flow
-   - Covers TC-001, TC-002, TC-003 from TAUS-123
-
-   ## Test Cases Automated
-   | TC ID | Description | Type |
-   |-------|-------------|------|
-   | TC-001 | Successful payment | E2E |
-   | TC-002 | Payment declined | E2E |
-   | TC-003 | Invalid card format | E2E |
-
-   ## Test Results
-   ✅ All tests passing in CI
-   - [Allure Report](link-to-report)
-   - [CI Run](link-to-workflow)
-
-   ## Checklist
-   - [x] Tests pass locally
-   - [x] Tests pass in CI
-   - [x] No flaky tests
-   - [x] Follows KATA patterns
-   - [x] Jira tickets linked
-   ```
-
-3. **Solicita review**
-   - Asigna a un reviewer (otro QA o Dev)
-   - Usa labels apropiados (`test`, `automation`)
-
-4. **Responde a comentarios**
-   - Discute sugerencias
-   - Implementa fixes si es necesario
-   - Re-push y espera CI verde
-
-5. **Merge cuando esté aprobado**
-   ```bash
-   gh pr merge --squash
-   ```
-
-6. **Actualiza Jira**
-   - Cambia status de TCs a "Automated"
-   - Vincula el PR al ticket
-   - Cierra la TAUS
-
-### Checklist de Code Review
+### Template de descripción de PR
 
 ```markdown
-## Para el Reviewer
+## Summary
+- Added E2E tests for checkout payment flow
+- Covers UPEX-123 ATCs (TC-001, TC-002, TC-003)
 
-### Estructura y Patrones
-- [ ] ¿Sigue la arquitectura KATA?
-- [ ] ¿ATCs son atómicos?
-- [ ] ¿Page Objects bien organizados?
+## Test Cases Automated
+| TC ID  | Description          | Type |
+|--------|----------------------|------|
+| TC-001 | Successful payment   | E2E  |
+| TC-002 | Payment declined     | E2E  |
+| TC-003 | Invalid card format  | E2E  |
 
-### Calidad del Test
-- [ ] ¿Test es independiente?
-- [ ] ¿Assertions claras y específicas?
-- [ ] ¿Datos no hardcodeados?
+## Test Results
+- All tests passing in CI
+- [Allure Report](link)
+- [CI Run](link)
 
-### Mantenibilidad
-- [ ] ¿Selectores robustos (data-testid)?
-- [ ] ¿Sin sleeps fijos?
-- [ ] ¿Código DRY pero no sobre-abstraído?
-
-### CI/CD
-- [ ] ¿Tests pasan consistentemente?
-- [ ] ¿Tiempo de ejecución razonable?
-- [ ] ¿Reporte Allure correcto?
+## Checklist
+- [x] Tests pass locally (no retries)
+- [x] Tests pass in CI
+- [x] KATA review passed
+- [x] TMS TCs linked (@atc decorators)
 ```
-
-### Herramientas
-
-- **GitHub**: PRs y code review
-- **Jira/Xray**: Actualizar estados
-- **Slack**: Coordinar con reviewer
 
 ---
 
-## Resumen del Flujo TALC
+## Resumen del flujo TALC
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                  │
 │   Handoff desde TMLC                                            │
-│   (TCs con label automation-candidate)                          │
+│   (TCs con veredicto "Candidate" en /test-documentation)        │
 │         │                                                        │
-│         ▼                                                        │
+│         ▼   /test-automation                                    │
 │   ┌─────────────┐                                               │
-│   │  Stage 1    │  "¿Vale la pena automatizar?"                 │
-│   │  Assessment │  → TCs clasificados                           │
+│   │    Plan     │  "¿Cuál es el scope y el plan?"               │
+│   │   (spec)    │  → spec.md + implementation-plan.md + atc/    │
 │   └──────┬──────┘                                               │
 │          │                                                       │
 │          ▼                                                       │
 │   ┌─────────────┐                                               │
-│   │  Stage 2    │  "Escribir los tests"                         │
-│   │  Automation │  → Tests en branch                            │
+│   │    Code     │  "Escribir el test en KATA"                   │
+│   │  (KATA)     │  → componentes + test + fixture registrada    │
 │   └──────┬──────┘                                               │
 │          │                                                       │
 │          ▼                                                       │
 │   ┌─────────────┐                                               │
-│   │  Stage 3    │  "¿Funcionan en CI?"                          │
-│   │  CI Verify  │  → Tests verdes en pipeline                   │
+│   │   Review    │  "¿Cumple los gates?"                         │
+│   │  (gates)    │  → checklist verde (tests/types/lint)         │
 │   └──────┬──────┘                                               │
 │          │                                                       │
-│          ▼                                                       │
+│          ▼   PR + merge a staging / main                        │
 │   ┌─────────────┐                                               │
-│   │  Stage 4    │  "Review y merge"                             │
-│   │  PR Review  │  → PR mergeado, TCs "Automated"               │
+│   │    CI       │  /regression-testing                          │
+│   │  + verdict  │  → GO / CAUTION / NO-GO                       │
 │   └──────┬──────┘                                               │
 │          │                                                       │
 │          ▼                                                       │
-│   Tests en main, ejecutándose en cada build                     │
+│   Tests en main, corriendo en cada build, con veredicto claro   │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
-
----
-
-## Skills Relacionadas
-
-Para ejecutar cada stage con ayuda de AI, carga el skill `/test-automation`. Cubre:
-
-| Stage | Referencia dentro del skill |
-|-------|-----------------------------|
-| Stage 1 | planning/test-implementation-plan |
-| Stage 2 | coding/e2e-test-coding |
-| Stage 3 | Verificación manual en CI |
-| Stage 4 | review/e2e-test-review |
 
 ---
 
 ## Métricas de TALC
 
-### KPIs a Monitorear
+KPIs sugeridos para medir la salud del ciclo:
 
-| Métrica | Target | Cómo Medir |
+| Métrica | Target | Cómo medir |
 |---------|--------|------------|
-| **Assessment Throughput** | 10 TCs/semana | TCs evaluados por semana |
-| **Automation Velocity** | 5 tests/semana | Tests automatizados por semana |
-| **CI Pass Rate** | >95% | Tests que pasan en primer intento |
-| **Flakiness Rate** | <5% | Tests que fallan intermitentemente |
-| **PR Cycle Time** | <2 días | Tiempo desde PR hasta merge |
-
-### Dashboard Sugerido
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    TALC DASHBOARD                                │
-│                                                                  │
-│   Automation Backlog        CI Health          PR Status        │
-│   ─────────────────         ─────────          ─────────        │
-│   📋 Candidates: 15         ✅ Pass: 98%       🔄 Open: 3       │
-│   🔄 In Progress: 3         ⚠️ Flaky: 2%      ✅ Merged: 12     │
-│   ✅ Automated: 45          ❌ Fail: 0%       ⏱️ Avg: 1.5 días  │
-│                                                                  │
-│   ───────────────────────────────────────────────────────────   │
-│   This Week: +5 tests automated | CI runs: 47 | All green ✅    │
-└─────────────────────────────────────────────────────────────────┘
-```
+| **Assessment throughput** | 10 TCs/semana | TCs evaluados por `/test-documentation` |
+| **Automation velocity** | 5 tests/semana | Tests mergeados por `/test-automation` |
+| **CI pass rate** | > 95 % | Tests que pasan al primer intento |
+| **Flakiness rate** | < 5 % | Tests con fallos intermitentes |
+| **PR cycle time** | < 2 días | Tiempo desde PR creado hasta merge |
 
 ---
 
 ## Referencias
 
-- [IQL Methodology](docs/methodology/IQL-methodology.md)
-- [Mid-Game Testing](docs/methodology/mid-game-testing.md)
-- [TMLC - Manual Lifecycle](docs/workflows/test-manual-lifecycle.md)
-- KATA Architecture: skill `/test-automation` (references/kata-architecture.md)
+- [TMLC — Manual Lifecycle](test-manual-lifecycle.md)
+- Skills: `.claude/skills/test-automation/`, `.claude/skills/regression-testing/`
+- KATA architecture: `/test-automation` (carga `references/kata-architecture.md` bajo demanda)
+- Boilerplate overview: `README.md` sección "How to Use Each Skill"

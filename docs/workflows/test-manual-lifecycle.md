@@ -1,142 +1,121 @@
 # Test Manual Lifecycle (TMLC)
 
 > **Idioma:** Español
-> **Fase IQL:** Early-Game + Mid-Game (Stages 1-4)
-> **Audiencia:** QA Analysts que ejecutan el ciclo de testing manual
+> **Audiencia:** QA Analysts que ejecutan el ciclo de testing manual in-sprint
+> **Skills:** `/sprint-testing` (planificación, ejecución, reporte) · `/test-documentation` (TMS + priorización)
 
 ---
 
 ## ¿Qué es TMLC?
 
-El **Test Manual Lifecycle** es el flujo de trabajo que sigue un QA Analyst desde que recibe una User Story hasta que documenta los casos de prueba formales.
+El **Test Manual Lifecycle** es el flujo de trabajo manual que sigue un QA Analyst desde que recibe una User Story hasta que los casos de prueba quedan documentados en el TMS y listos para handoff a automatización.
+
+El trabajo se reparte en dos skills complementarios:
+
+- `/sprint-testing` cubre el ciclo in-sprint por ticket: planificar, ejecutar, reportar.
+- `/test-documentation` toma los resultados y produce documentación formal + priorización por ROI.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    TEST MANUAL LIFECYCLE                         │
 │                                                                  │
-│   Stage 1          Stage 2          Stage 3          Stage 4    │
-│   ────────         ────────         ────────         ────────   │
+│   /sprint-testing                           /test-documentation  │
+│   ────────────────────────────────────      ──────────────────── │
 │                                                                  │
-│   Análisis    →   Exploratory  →   Priorización →  Documentación│
-│   de AC            Testing          por Riesgo      de Test Cases│
+│   Planning  →  Execution  →  Reporting  →   Documentation +     │
+│   (ATP)        (Smoke +      (ATR + QA      Priorización ROI    │
+│                 UI/API/DB)    comment)       (TMS artifacts)     │
 │                                                                  │
-│   ┌───────┐       ┌───────┐       ┌───────┐       ┌───────┐    │
-│   │  FTP  │   →   │  FTX  │   →   │ Risk  │   →   │ Test  │    │
-│   │ Plan  │       │Execute│       │Assess │       │ Cases │    │
-│   └───────┘       └───────┘       └───────┘       └───────┘    │
-│                                                                  │
-│   IQL Step 1      IQL Step 3      IQL Step 4      IQL Step 5   │
+│   ┌───────┐    ┌───────┐     ┌───────┐      ┌───────┐           │
+│   │  ATP  │ →  │  FTX  │  →  │  ATR  │   →  │  TMS  │           │
+│   │ Plan  │    │Execute│     │Report │      │ + ROI │           │
+│   └───────┘    └───────┘     └───────┘      └───────┘           │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Stage 1: Análisis de Requisitos y AC
+## Sprint Testing (`/sprint-testing`)
 
-> **IQL Step 1** · Shift-Left Testing
-> **Output:** Feature Test Plan (FTP)
+El skill `/sprint-testing` orquesta el ciclo completo por ticket: planning, ejecución y reporte. Invócalo con una frase natural o con su slash trigger.
 
-### ¿Qué hago en esta etapa?
+### Ejemplo de invocación
 
-Cuando llega una nueva User Story al sprint, tu primera tarea es **entender completamente qué se va a construir** antes de que Development empiece.
-
-### Pasos
-
-1. **Lee la User Story completa**
-   - Título, descripción, criterios de aceptación
-   - Si hay mockups o diseños, revísalos
-
-2. **Identifica ambigüedades**
-   - ¿Hay AC que no están claros?
-   - ¿Faltan casos edge?
-   - ¿Qué pasa si el usuario hace X?
-
-3. **Pregunta al PO/BA/Dev**
-   - No asumas - pregunta
-   - Documenta las respuestas en la US
-
-4. **Crea el Feature Test Plan (FTP)**
-   - Lista de escenarios que vas a probar
-   - No tienen que ser detallados, solo identificados
-   - Prioriza: ¿cuáles son críticos?
-
-### Ejemplo de FTP
-
-```markdown
-## FTP: US-123 - Checkout con múltiples métodos de pago
-
-### Escenarios a probar:
-1. ✅ Happy path: Pago con tarjeta válida
-2. ✅ Pago con tarjeta rechazada
-3. ✅ Pago con PayPal
-4. ⚠️ Cambiar método de pago después de seleccionar
-5. ⚠️ Checkout con carrito vacío (edge case)
-6. ❓ Timeout de la pasarela de pago (verificar con Dev)
-
-### Dependencias:
-- Necesito credenciales de sandbox de Stripe
-- Cuenta de prueba PayPal
+```
+Test the user story UPEX-123.
+Verify the fix for bug UPEX-456.
+Run QA on this sprint's tickets.
 ```
 
-### Herramientas
-
-- **Jira**: Crear subtask "QA: AC Review" y "QA: Feature Test Plan"
-- **Slack**: Comunicación con PO/Dev para aclarar dudas
-- **AI Assistant**: Ayuda para generar escenarios iniciales
+El skill crea el PBI folder (`.context/PBI/{module}/{TICKET}/`) con `context.md`, `test-session-memory.md` y `evidence/`, explica la historia y **espera tu confirmación** antes de continuar.
 
 ---
 
-## Stage 2: Exploratory Testing
+### Planning — del AC al ATP
 
-> **IQL Step 3** · Early-Gank
-> **Output:** Bugs reportados, US validada
+Cuando llega una User Story al sprint, la primera tarea es **entender completamente qué se va a construir** antes de que Development empiece (shift-left).
 
-### ¿Qué hago en esta etapa?
+**Qué hace el skill:**
 
-Una vez que Development despliega la US en staging, ejecutas **testing exploratorio** para validar que funciona correctamente.
+1. **Lee la User Story completa**: título, descripción, criterios de aceptación, mockups si existen.
+2. **Identifica ambigüedades**: AC poco claros, edge cases faltantes, comportamientos no especificados.
+3. **Registra preguntas al PO/BA/Dev** dentro del PBI folder (no las asume).
+4. **Genera el Acceptance Test Plan (ATP)** en el TMS: escenarios prioritizados, dependencias, datos de prueba necesarios.
 
-### Pasos
+**Ejemplo de escenarios en el ATP:**
 
-1. **Verifica que el ambiente está listo**
-   - ¿La US está deployada?
-   - ¿Tienes acceso al ambiente de staging?
-   - ¿Hay datos de prueba disponibles?
+```markdown
+## ATP: UPEX-123 — Checkout con múltiples métodos de pago
 
-2. **Ejecuta el Feature Test Execution (FTX)**
-   - Usa tu FTP como guía
-   - Empieza por el happy path
-   - Luego prueba los edge cases
+### Escenarios a probar:
+1. Happy path: Pago con tarjeta válida
+2. Pago con tarjeta rechazada
+3. Pago con PayPal
+4. Cambiar método de pago después de seleccionar
+5. Checkout con carrito vacío (edge case)
+6. Timeout de la pasarela de pago (verificar con Dev)
 
-3. **Documenta lo que encuentras**
-   - Si encuentras bug → crea ticket inmediatamente
-   - Si algo no está claro → pregunta
-   - Si todo está OK → marca como aprobado
+### Dependencias:
+- Credenciales de sandbox de Stripe
+- Cuenta de prueba PayPal
+```
 
-4. **Prueba más allá del FTP**
-   - Testing exploratorio = creatividad
-   - ¿Qué pasa si...?
-   - Prueba combinaciones no obvias
+**Herramientas:** `[ISSUE_TRACKER_TOOL]` para fetch del ticket, `[TMS_TOOL]` para crear el ATP y los TCs con traceability completa.
 
-### Técnicas de Exploratory Testing
+---
+
+### Execution — Exploratory Testing
+
+Una vez que Development despliega la US en staging, el skill ejecuta **testing exploratorio** validando la funcionalidad.
+
+**Qué hace el skill:**
+
+1. **Verifica ambiente**: deploy presente, acceso a staging, datos de prueba disponibles.
+2. **Smoke test primero** (Go / No-Go). Si falla, detiene el flujo.
+3. **Ejecuta el ATP** usando `trifuerza` (UI / API / DB) según qué haya cambiado.
+4. **Registra evidencia** en `.context/PBI/{module}/{TICKET}/evidence/`.
+5. **Documenta hallazgos**: bugs se crean inmediatamente vía `[ISSUE_TRACKER_TOOL]`.
+
+**Técnicas aplicadas:**
 
 ```
-📋 Session-Based Testing:
+Session-Based Testing:
    - Timeboxed (30-60 min)
    - Enfocado en un área
-   - Documentas hallazgos al final
+   - Documenta hallazgos al final
 
-🎯 Tour-Based Testing:
-   - "Tour del dinero": Sigue el flujo de transacciones
-   - "Tour del principiante": Actúa como usuario nuevo
-   - "Tour del hacker": Intenta romper cosas
+Tour-Based Testing:
+   - Tour del dinero (flujo de transacciones)
+   - Tour del principiante (usuario nuevo)
+   - Tour del hacker (intenta romper cosas)
 
-🔍 Heurísticas:
+Heurísticas:
    - CRUD: Create, Read, Update, Delete
-   - Boundaries: Límites, valores extremos
-   - Interruptions: ¿Qué pasa si cancelo a mitad?
+   - Boundaries: límites, valores extremos
+   - Interruptions: ¿qué pasa si cancelo a mitad?
 ```
 
-### Reporte de Bug
+**Template de bug (el skill lo emite automáticamente):**
 
 ```markdown
 ## BUG: Checkout falla con tarjetas American Express
@@ -152,120 +131,101 @@ Una vez que Development despliega la US en staging, ejecutas **testing explorato
 Error genérico "Payment failed" sin más detalle
 
 **Resultado esperado:**
-- Si Amex no está soportada: Mensaje claro indicándolo
-- Si está soportada: Pago debería procesarse
+- Si Amex no está soportada: mensaje claro
+- Si está soportada: pago procesado
 
 **Ambiente:** Staging
 **Browser:** Chrome 120
 **Screenshots:** [adjuntos]
 ```
 
-### Herramientas
-
-- **Browser**: Chrome/Firefox con DevTools abierto
-- **Postman**: Para probar APIs directamente
-- **Jira**: Crear bugs, actualizar US
-- **Screenshots**: Loom, Screenshot tool
+**Herramientas:** `[AUTOMATION_TOOL]` (playwright-cli) para screenshots/trazas, `[API_TOOL]` para probar endpoints, `[DB_TOOL]` para validar data integrity.
 
 ---
 
-## Stage 3: Priorización por Riesgo
+### Reporting — del ATR al QA comment
 
-> **IQL Step 4** · Risk-Based Testing
-> **Output:** Lista priorizada de escenarios para documentar
+Cerrar el ciclo con un reporte formal y traceabilidad completa.
 
-### ¿Qué hago en esta etapa?
+**Qué hace el skill:**
 
-Después de validar la US, decides **cuáles escenarios merecen documentación formal** vs cuáles quedan como testing exploratorio.
+1. **Completa el Acceptance Test Report (ATR)** en el TMS con resultados por TC.
+2. **Emite el QA comment** en la ticket (Template PASSED / FAILED) vía `[ISSUE_TRACKER_TOOL]`.
+3. **Transiciona el ticket** (`Tested`, `Ready for Release`, etc.).
+4. **Mirror local** del reporte en `test-report.md` dentro del PBI folder.
 
-### Criterios de Priorización
+Tras Reporting, el skill identifica el handoff: para documentación formal + ROI, carga `/test-documentation`.
 
-| Criterio | Preguntas | Si es Alto... |
+---
+
+## Test Documentation (`/test-documentation`)
+
+El skill `/test-documentation` toma los outputs de `/sprint-testing` y produce documentación estable en el TMS, priorizando qué casos merecen automatización.
+
+### Ejemplo de invocación
+
+```
+Document test cases for ticket UPEX-200 in Xray.
+Score these tests by ROI to decide automation priority.
+Create the ATP for UPEX-300 in Xray and link it to the story.
+```
+
+### Priorización por riesgo
+
+El skill evalúa cada escenario contra criterios estándar y emite un veredicto por test: **Candidate**, **Manual**, o **Deferred**.
+
+| Criterio | Preguntas | Si es alto... |
 |----------|-----------|---------------|
-| **Impacto de negocio** | ¿Afecta revenue? ¿Usuarios críticos? | Documentar + Automatizar |
-| **Frecuencia de uso** | ¿Cuántos usuarios lo usan? | Documentar |
-| **Complejidad técnica** | ¿Hay muchos componentes involucrados? | Documentar |
-| **Historial de bugs** | ¿Ha fallado antes? | Documentar + Automatizar |
-| **Cambios frecuentes** | ¿El código cambia seguido? | Automatizar |
+| **Impacto de negocio** | ¿Afecta revenue? ¿Usuarios críticos? | Documentar + Candidate |
+| **Frecuencia de uso** | ¿Cuántos usuarios lo ejecutan? | Documentar |
+| **Complejidad técnica** | ¿Muchos componentes involucrados? | Documentar |
+| **Historial de bugs** | ¿Ha fallado antes? | Documentar + Candidate |
+| **Cambios frecuentes** | ¿El código cambia seguido? | Candidate |
 
-### Matriz de Decisión
+### Matriz de decisión
 
 ```
                     Alta Probabilidad de Fallo
                               │
          ┌────────────────────┼────────────────────┐
          │                    │                    │
-         │    DOCUMENTAR      │    DOCUMENTAR +    │
-         │    + MONITOREAR    │    AUTOMATIZAR     │
+         │    DOCUMENTAR      │    CANDIDATE       │
+         │    + MONITOREAR    │    (a automatizar) │
          │                    │                    │
    Bajo  ├────────────────────┼────────────────────┤ Alto
  Impacto │                    │                    │ Impacto
-         │    EXPLORATORY     │    DOCUMENTAR      │
-         │    SOLO            │                    │
+         │    DEFERRED        │    MANUAL          │
+         │    (exploratory)   │    (documentar)    │
          │                    │                    │
          └────────────────────┼────────────────────┘
                               │
                     Baja Probabilidad de Fallo
 ```
 
-### Output: Lista Priorizada
+### Output: lista priorizada
 
 ```markdown
-## Priorización de Escenarios - US-123 Checkout
+## Priorización — UPEX-123 Checkout
 
-### 🔴 Críticos (Documentar + Candidato a Automatizar)
+### Candidate (documentar + handoff a /test-automation)
 1. Happy path pago con tarjeta
 2. Pago rechazado muestra error correcto
 3. Validación de campos obligatorios
 
-### 🟡 Importantes (Documentar)
+### Manual (documentar, no automatizar)
 4. Cambio de método de pago
 5. Aplicar código de descuento
 6. Checkout con múltiples productos
 
-### 🟢 Bajo Riesgo (Solo Exploratorio)
+### Deferred (solo exploratorio)
 7. Checkout con carrito de un solo item
 8. UI en diferentes resoluciones
 ```
 
-### Herramientas
-
-- **Jira**: Etiquetas de prioridad
-- **Confluence**: Documentar decisiones de riesgo
-- **Spreadsheet**: Matriz de riesgo si es necesario
-
----
-
-## Stage 4: Documentación de Test Cases
-
-> **IQL Step 5** · Async Documentation
-> **Output:** Test Cases formales en el repositorio
-
-### ¿Qué hago en esta etapa?
-
-Con la lista priorizada, creas **Test Cases formales** para los escenarios importantes. Esto se hace **asincrónicamente** - no bloquea el delivery de la US.
-
-### Pasos
-
-1. **Crea el Test Case en Jira/Xray**
-   - Título descriptivo
-   - Precondiciones claras
-   - Pasos numerados
-   - Datos de prueba
-   - Resultado esperado
-
-2. **Vincula al Epic de Tests**
-   - Cada feature tiene un "Test Repository" (Epic)
-   - El Test Case se vincula ahí
-
-3. **Marca como candidato a automatización (si aplica)**
-   - Label: "automation-candidate"
-   - Esto lo verá el QA Automation en TALC
-
-### Estructura de un Test Case
+### Estructura de un Test Case (el skill lo genera)
 
 ```markdown
-## TC-001: Checkout - Pago exitoso con tarjeta de crédito
+## TC-001: Checkout — Pago exitoso con tarjeta de crédito
 
 **Precondiciones:**
 - Usuario logueado
@@ -296,73 +256,66 @@ Con la lista priorizada, creas **Test Cases formales** para los escenarios impor
 
 ### Cuándo NO documentar
 
-- Escenarios triviales (login básico si ya está documentado)
+- Escenarios triviales ya cubiertos (login básico si existe)
 - Tests one-time (migración de datos)
 - Casos que cambian constantemente
-- Escenarios cubiertos por otros test cases
+- Escenarios cubiertos por otros TCs
 
-### Herramientas
-
-- **Jira + Xray**: Test Management
-- **Confluence**: Documentación adicional
-- **AI Assistant**: Ayuda para generar test cases desde FTP
+**Herramientas:** `[TMS_TOOL]` (xray-cli) para crear / actualizar / linkear artifacts.
 
 ---
 
-## Resumen del Flujo TMLC
+## Resumen del flujo TMLC
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                  │
-│   US Llega al Sprint                                            │
+│   US llega al sprint                                            │
 │         │                                                        │
-│         ▼                                                        │
+│         ▼  /sprint-testing                                      │
 │   ┌─────────────┐                                               │
-│   │  Stage 1    │  "¿Qué vamos a probar?"                       │
-│   │  AC Review  │  → FTP creado                                 │
+│   │  Planning   │  "¿Qué vamos a probar?"                       │
+│   │  (ATP)      │  → ATP + TCs + traceability                   │
 │   └──────┬──────┘                                               │
 │          │                                                       │
 │          ▼  (Dev implementa, deploya a staging)                 │
 │   ┌─────────────┐                                               │
-│   │  Stage 2    │  "¿Funciona correctamente?"                   │
-│   │  Exploratory│  → Bugs reportados, US validada              │
+│   │  Execution  │  "¿Funciona correctamente?"                   │
+│   │  (smoke +   │  → Bugs reportados, US validada              │
+│   │   UI/API/DB)│                                               │
 │   └──────┬──────┘                                               │
 │          │                                                       │
 │          ▼                                                       │
 │   ┌─────────────┐                                               │
-│   │  Stage 3    │  "¿Qué merece documentación?"                 │
-│   │  Risk-Based │  → Lista priorizada                           │
+│   │  Reporting  │  "Cerrar y comunicar"                         │
+│   │  (ATR)      │  → ATR + QA comment + ticket transitioned   │
 │   └──────┬──────┘                                               │
 │          │                                                       │
-│          ▼  (Async - no bloquea delivery)                       │
+│          ▼  /test-documentation                                 │
 │   ┌─────────────┐                                               │
-│   │  Stage 4    │  "Documentar formalmente"                     │
-│   │  Test Cases │  → TCs en repositorio                         │
+│   │  TMS Docs   │  "¿Qué merece automatización?"                │
+│   │  + ROI      │  → Candidate / Manual / Deferred              │
 │   └──────┬──────┘                                               │
 │          │                                                       │
 │          ▼                                                       │
-│   Handoff a TALC (Automation)                                   │
+│   Handoff a TALC (/test-automation)                             │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Skills Relacionadas
+## Qué viene después
 
-Para ejecutar cada stage con ayuda de AI:
+Para los TCs marcados como **Candidate**, carga el Test Automation Lifecycle:
 
-| Stage | Skill |
-|-------|-------|
-| Stage 1 (Planning) | `/sprint-testing` -- planificación (acceptance test plan) |
-| Stage 2 (Exploratory) | `/sprint-testing` -- ejecución exploratoria |
-| Stage 3 (Prioritization) | `/test-documentation` -- priorización |
-| Stage 4 (Documentation) | `/test-documentation` -- documentación TMS |
+- `/test-automation` — Plan → Code → Review (ver `docs/workflows/test-automation-lifecycle.md`).
+- `/regression-testing` — ejecución de suites regresivas y decisión GO / NO-GO cuando haya un release candidate.
 
 ---
 
 ## Referencias
 
-- [IQL Methodology](docs/methodology/IQL-methodology.md)
-- [Early-Game Testing](docs/methodology/early-game-testing.md)
-- [TALC - Automation Lifecycle](docs/workflows/test-automation-lifecycle.md)
+- [TALC — Automation Lifecycle](test-automation-lifecycle.md)
+- Skills: `.claude/skills/sprint-testing/`, `.claude/skills/test-documentation/`
+- Boilerplate overview: `README.md` sección "How to Use Each Skill"
