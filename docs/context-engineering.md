@@ -26,7 +26,7 @@
 This repository separates concerns into distinct directories, each with a specific purpose:
 
 ```
-ai-driven-test-automation-boilerplate/
+agentic-qa-boilerplate/
 │
 ├── .context/         → Documentation THAT the AI reads (context)
 ├── .claude/skills/   → Workflow skills (task instructions + references)

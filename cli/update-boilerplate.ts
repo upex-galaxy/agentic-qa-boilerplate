@@ -6,7 +6,7 @@
  * ============================================================================
  *
  * Keeps your project synchronized with the official KATA template
- * (ai-driven-test-automation-boilerplate) without overwriting your
+ * (agentic-qa-boilerplate) without overwriting your
  * project-specific customizations.
  *
  * PRINCIPLE:
@@ -122,7 +122,7 @@ import { createInterface } from 'node:readline';
 // ============================================================================
 
 const CLI_VERSION = '5.2';
-const TEMPLATE_REPO = 'upex-galaxy/ai-driven-test-automation-boilerplate';
+const TEMPLATE_REPO = 'upex-galaxy/agentic-qa-boilerplate';
 const TEMP_DIR = join(tmpdir(), 'kata-boilerplate-update');
 
 /**

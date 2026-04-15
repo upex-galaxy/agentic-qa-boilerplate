@@ -1,18 +1,18 @@
 {
-  "name": "kata-playwright-boilerplate",
+  "name": "agentic-qa-boilerplate",
   "type": "module",
   "version": "1.0.0",
   "private": true,
-  "description": "KATA Architecture - AI-Driven Playwright Test Automation Boilerplate",
+  "description": "Agentic QA boilerplate built on Playwright + KATA + TypeScript. Skills-based AI workflows for the full QA lifecycle — planning, manual testing, TMS docs, automation, and regression. Portable across Claude Code, Codex, Cursor, Copilot, and OpenCode.",
   "author": "UPEX Galaxy",
   "license": "MIT",
-  "homepage": "https://github.com/upex-galaxy/kata-playwright-boilerplate#readme",
+  "homepage": "https://github.com/upex-galaxy/agentic-qa-boilerplate#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/upex-galaxy/kata-playwright-boilerplate.git"
+    "url": "git+https://github.com/upex-galaxy/agentic-qa-boilerplate.git"
   },
   "bugs": {
-    "url": "https://github.com/upex-galaxy/kata-playwright-boilerplate/issues"
+    "url": "https://github.com/upex-galaxy/agentic-qa-boilerplate/issues"
   },
   "keywords": [
     "playwright",
@@ -24,7 +24,13 @@
     "bun",
     "typescript",
     "boilerplate",
-    "ai-driven"
+    "ai-driven",
+    "agent-skills",
+    "agentskills",
+    "claude-code",
+    "quality-engineering",
+    "shift-left-testing",
+    "agentic"
   ],
   "scripts": {
     "test": "playwright test",

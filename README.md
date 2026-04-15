@@ -1,7 +1,6 @@
-# AI-Driven Test Automation Boilerplate
+# Agentic QA Boilerplate
 
-> A production-ready test automation framework built with **Playwright**, **TypeScript**, and **KATA Architecture**.
-> Designed for AI-assisted test development with comprehensive context engineering.
+> Skills-based AI workflows for the full QA lifecycle, built on Playwright + KATA + TypeScript.
 
 [![Playwright Tests](https://img.shields.io/badge/Playwright-1.50+-green?logo=playwright)](https://playwright.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -47,8 +46,8 @@ This boilerplate solves common challenges in test automation:
 
 ```bash
 # Clone the repository
-git clone https://github.com/upex-galaxy/ai-driven-test-automation-boilerplate.git
-cd ai-driven-test-automation-boilerplate
+git clone https://github.com/upex-galaxy/agentic-qa-boilerplate.git
+cd agentic-qa-boilerplate
 
 # Install dependencies
 bun install
@@ -325,7 +324,7 @@ When you clone this template, follow this flow to adapt it to your project:
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. CLONE TEMPLATE                                           │
 │    git clone https://github.com/upex-galaxy/               │
-│      ai-driven-test-automation-boilerplate.git my-tests    │
+│      agentic-qa-boilerplate.git my-tests                   │
 │    bun install && bun run pw:install                       │
 └────────────────────────┬────────────────────────────────────┘
                          │
