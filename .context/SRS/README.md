@@ -30,7 +30,7 @@ Load the `/project-discovery` skill:
 
 ### Prerequisites
 
-- `.context/idea/` must be populated (Phase 1)
+- `.context/PRD/business/` must be populated (Phase 1)
 - `.context/PRD/` must be populated (Phase 2 PRD prompts)
 - Access to source code (backend, frontend)
 - Access to database schema

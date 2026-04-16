@@ -874,7 +874,7 @@ Dos caminos posibles (decisión en Fase 6):
 - `project-test-guide.md` — Idem
 - `PBI/` — Se mantiene completo (es working directory, no instrucciones)
 - `guidelines/` — Los archivos originales pueden mantenerse como "source of truth" que las skills referencian, o los contenidos migran a `references/` de cada skill
-- `idea/`, `PRD/`, `SRS/` — Se mantienen (son output de Discovery)
+- `PRD/` (including `PRD/business/`), `SRS/` — Se mantienen (son output de Discovery)
 
 **`CLAUDE.md` — Se simplifica:**
 - **QUEDA**: Quick Start commands, Critical Rules, Project Variables, Tool Resolution, Project Identity, Environment URLs, Git Workflow, MCPs Available, Test Project Structure
@@ -1329,7 +1329,7 @@ Los siguientes archivos son **output**, no instrucciones. No deben migrar a skil
 - `.context/api-architecture.md` (generado por Discovery)
 - `.context/project-test-guide.md` (generado por utility)
 - `.context/PBI/**/*` (working directory del testing)
-- `.context/idea/**/*` (output de Phase 1)
+- `.context/PRD/business/**/*` (output de Phase 1)
 - `.context/PRD/**/*` (output de Phase 2)
 - `.context/SRS/**/*` (output de Phase 2)
 

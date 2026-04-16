@@ -45,7 +45,7 @@ Mandatory inputs (assumes Phase 1-3 of discovery already ran):
 .context/SRS/architecture.md           # tech stack, services
 .context/SRS/api-contracts.md          # endpoints + auth model
 .context/PRD/feature-inventory.md      # entities to scaffold
-.context/idea/domain-glossary.md       # entity names, casing
+.context/PRD/business/domain-glossary.md       # entity names, casing
 .context/api-architecture.md           # endpoint inventory
 .context/business-data-map.md          # main flows
 .context/infrastructure/backend.md     # auth flow, env vars

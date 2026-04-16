@@ -154,7 +154,7 @@ bun run test:e2e:critical  # Tests marked @critical
 ├── .context/                     # AI Context Engineering
 │   ├── PRD/                      # Product requirements (generated)
 │   ├── SRS/                      # Technical specs (generated)
-│   ├── idea/                     # Business context (generated)
+│   ├── PRD/business/             # Business context (generated)
 │   └── PBI/                      # Backlog items (generated)
 │
 ├── .claude/skills/               # Claude Code Skills (workflows)
@@ -314,7 +314,7 @@ AUTO_SYNC
 
 This boilerplate's AI-assisted workflows are delivered as **agent skills** following the [agentskills.io](https://agentskills.io) spec. Every skill lives under `.claude/skills/` and bundles its own instructions, `references/`, and progressive-disclosure assets, so the AI loads only what the current task needs.
 
-Structured project context (`.context/` with `PRD/`, `SRS/`, `idea/`, `PBI/`) is generated and maintained by these skills -- you do not hand-author it.
+Structured project context (`.context/` with `PRD/`, `SRS/`, `PBI/`) is generated and maintained by these skills -- you do not hand-author it.
 
 ### Complete Adaptation Flow
 
@@ -335,7 +335,7 @@ When you clone this template, follow this flow to adapt it to your project:
 │                                                             │
 │    This skill:                                              │
 │    • Discovers business/architecture/infrastructure context│
-│    • Generates .context/ (idea/, PRD/, SRS/)               │
+│    • Generates .context/ (PRD/, SRS/)                      │
 │    • Generates business-data-map / api-architecture /      │
 │      project-test-guide                                     │
 │    • Adapts KATA to your stack                             │
@@ -385,7 +385,7 @@ Each skill auto-activates when your prompt matches its description triggers. You
   - "Adapt this repo to my new backend stack at `../my-backend`."
   - "Generate the `.context/` files for this project."
   - "Onboard this boilerplate to the app in `../my-frontend`."
-- **What happens next**: The skill discovers business/architecture/infrastructure context, generates `.context/` (`idea/`, `PRD/`, `SRS/`, `business-data-map.md`, `api-architecture.md`, `project-test-guide.md`), adapts KATA to your stack, and refreshes CLAUDE.md.
+- **What happens next**: The skill discovers business/architecture/infrastructure context, generates `.context/` (`PRD/`, `SRS/`, `business-data-map.md`, `api-architecture.md`, `project-test-guide.md`), adapts KATA to your stack, and refreshes CLAUDE.md.
 
 #### 2. Running an in-sprint QA loop
 

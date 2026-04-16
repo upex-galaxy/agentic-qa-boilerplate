@@ -1,10 +1,10 @@
-# idea/ - Business Context (Phase 1: Constitution)
+# PRD/business/ - Business Context (Phase 1: Constitution)
 
 This directory contains the **business context** discovered from an existing project.
 
 ## Purpose
 
-The `idea/` folder stores high-level business information that helps understand:
+The `PRD/business/` folder stores high-level business information that helps understand:
 
 - What problem the product solves
 - Who the target users are

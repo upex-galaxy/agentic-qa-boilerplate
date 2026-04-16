@@ -37,7 +37,7 @@ Default to "Fresh onboarding" when in doubt. Confirm the scope with the user bef
 Phase 1: Constitution        -> Phase 2: Architecture       -> Phase 3: Infrastructure    -> Phase 4: Specification
 (who/what/why)                 (PRD + SRS)                    (backend/frontend/infra)       (PBI mapping)
                 |                      |                              |                              |
-   .context/idea/               .context/PRD/*.md           .context/infrastructure/*.md     .context/PBI/backlog.md
+   .context/PRD/business/        .context/PRD/*.md           .context/infrastructure/*.md     .context/PBI/backlog.md
    business-model.md            .context/SRS/*.md                                             templates/*.md
    domain-glossary.md
    project-config.md
@@ -62,7 +62,7 @@ Four sub-steps, in order:
 3. **Business Model Discovery** -- problem statement, target users, value proposition, revenue model (if any). Business Model Canvas recommended.
 4. **Domain Glossary** -- core entities, relationships, state machines, enumerations, UI-label vs code-identifier mapping.
 
-**Completion gate**: `.context/idea/business-model.md`, `.context/idea/domain-glossary.md`, `.context/project-config.md` all exist and are non-empty.
+**Completion gate**: `.context/PRD/business/business-model.md`, `.context/PRD/business/domain-glossary.md`, `.context/project-config.md` all exist and are non-empty.
 
 Read `references/phase-1-constitution.md` when running any Phase 1 sub-step. Contains the discovery process, stack-detection commands, required output sections, and quality checklists.
 

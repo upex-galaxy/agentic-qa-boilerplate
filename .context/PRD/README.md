@@ -26,7 +26,7 @@ Load the `/project-discovery` skill and run its Phase 2 (Architecture) flow afte
 
 ### Prerequisites
 
-- `.context/idea/` must be populated (Phase 1 completed)
+- `.context/PRD/business/` must be populated (Phase 1 completed)
 - Access to source code (frontend routes, UI components)
 - (Optional) Access to analytics data
 - (Optional) Access to user research documents

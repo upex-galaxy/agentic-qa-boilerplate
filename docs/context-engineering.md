@@ -54,7 +54,7 @@ agentic-qa-boilerplate/
 .context/
 ├── PRD/                 → Product Requirements (generated)
 ├── SRS/                 → Software Requirements (generated)
-├── idea/                → Business context (generated)
+├── PRD/business/        → Business context (generated)
 ├── PBI/                 → Backlog items (generated)
 │
 ├── business-data-map.md    → System flows (generated)
