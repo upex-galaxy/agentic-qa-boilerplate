@@ -250,7 +250,7 @@ Consistent naming enables searching, filtering, and automatic linking across TMS
 ### Naming Rules
 
 1. **ATP and ATR names always include the User Story ID**. This makes them searchable and unique per story.
-2. **TC names follow the TC naming convention** defined in `.context/guidelines/TAE/test-design-principles.md` (see "Test Case (TC)" section).
+2. **TC names follow the TC naming convention** defined in `docs/guidelines/TAE/test-design-principles.md` (see "Test Case (TC)" section).
 3. **The `{{PROJECT_KEY}}` variable** is resolved from `CLAUDE.md` Project Variables. Replace it with the actual project key (e.g., `UPEX`, `TK`, `GX`).
 4. **TC IDs in code** use the issue tracker's real ID (e.g., `@atc('PROJ-456')`), not an invented convention.
 

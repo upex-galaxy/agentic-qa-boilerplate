@@ -450,10 +450,10 @@ Example:
 
 ## References
 
-- **Test Design Principles** (source of truth for ATC rules): `.context/guidelines/TAE/test-design-principles.md`
-- **Test Spec Standards** (TC discovery, design, and documentation): `.context/guidelines/QA/test-spec-standards.md`
-- **KATA Architecture**: `.context/guidelines/TAE/kata-architecture.md`
-- **Automation Standards**: `.context/guidelines/TAE/automation-standards.md`
+- **Test Design Principles** (source of truth for ATC rules): `docs/guidelines/TAE/test-design-principles.md`
+- **Test Spec Standards** (TC discovery, design, and documentation): `docs/guidelines/QA/test-spec-standards.md`
+- **KATA Architecture**: `docs/guidelines/TAE/kata-architecture.md`
+- **Automation Standards**: `docs/guidelines/TAE/automation-standards.md`
 - **IQL Methodology**: `docs/methodology/IQL-methodology.md`
-- **Jira Test Management**: `.context/guidelines/QA/jira-test-management.md`
-- **TMS Integration**: `.context/guidelines/TAE/tms-integration.md`
+- **Jira Test Management**: `docs/guidelines/QA/jira-test-management.md`
+- **TMS Integration**: `docs/guidelines/TAE/tms-integration.md`

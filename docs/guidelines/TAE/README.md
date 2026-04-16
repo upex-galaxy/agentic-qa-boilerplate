@@ -84,8 +84,8 @@ E2E/Integration tickets (TK-YYY) ───►    test('TK-YYY: should...') in Te
 - Results sync back to Jira/Xray via TMS integration
 
 **Related files:**
-- **ATC Definition Strategy** (the bridge document): `.context/guidelines/QA/atc-definition-strategy.md`
-- QA test documentation: `.context/guidelines/QA/jira-test-management.md`
+- **ATC Definition Strategy** (the bridge document): `docs/guidelines/QA/atc-definition-strategy.md`
+- QA test documentation: `docs/guidelines/QA/jira-test-management.md`
 - TMS integration: `tms-integration.md`
 - Test design principles: `test-design-principles.md`
 - IQL Methodology: `docs/methodology/IQL-methodology.md`

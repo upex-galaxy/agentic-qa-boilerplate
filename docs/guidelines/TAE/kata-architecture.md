@@ -560,6 +560,6 @@ For a complete list of implemented components and their ATCs, see:
 
 - **Full KATA Documentation**: `/docs/testing/test-architecture/kata-fundamentals.md`
 - **Dependency Injection Strategy**: `/docs/testing/test-architecture/dependency-injection-strategy.md`
-- **Automation Standards**: `.context/guidelines/TAE/automation-standards.md`
-- **TMS Integration**: `.context/guidelines/TAE/tms-integration.md`
-- **CI/CD Integration**: `.context/guidelines/TAE/ci-cd-integration.md`
+- **Automation Standards**: `docs/guidelines/TAE/automation-standards.md`
+- **TMS Integration**: `docs/guidelines/TAE/tms-integration.md`
+- **CI/CD Integration**: `docs/guidelines/TAE/ci-cd-integration.md`

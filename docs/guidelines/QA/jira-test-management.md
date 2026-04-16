@@ -670,9 +670,9 @@ Comment with execution details
 
 ## See Also
 
-- `.context/guidelines/QA/spec-driven-testing.md` - SDT principle
-- `.context/guidelines/QA/atc-definition-strategy.md` - ATC definition strategy
-- `.context/guidelines/TAE/tms-integration.md` - TMS integration
+- `docs/guidelines/QA/spec-driven-testing.md` - SDT principle
+- `docs/guidelines/QA/atc-definition-strategy.md` - ATC definition strategy
+- `docs/guidelines/TAE/tms-integration.md` - TMS integration
 - `.context/jira-platform.md` - Jira platform documentation
 
 ---

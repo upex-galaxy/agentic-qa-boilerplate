@@ -508,7 +508,7 @@ bun run test:allure
 
 ## References
 
-- **KATA Architecture**: `.context/guidelines/TAE/kata-architecture.md`
-- **Automation Standards**: `.context/guidelines/TAE/automation-standards.md`
-- **OpenAPI Integration**: `.context/guidelines/TAE/openapi-integration.md`
-- **TypeScript Patterns**: `.context/guidelines/TAE/typescript-patterns.md`
+- **KATA Architecture**: `docs/guidelines/TAE/kata-architecture.md`
+- **Automation Standards**: `docs/guidelines/TAE/automation-standards.md`
+- **OpenAPI Integration**: `docs/guidelines/TAE/openapi-integration.md`
+- **TypeScript Patterns**: `docs/guidelines/TAE/typescript-patterns.md`

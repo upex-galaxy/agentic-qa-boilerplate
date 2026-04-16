@@ -169,7 +169,7 @@ After testing:
 
 - `exploratory-testing.md` - Exploratory testing techniques
 - `jira-test-management.md` - Jira test management
-- `.context/guidelines/TAE/data-testid-usage.md` - data-testid usage
+- `docs/guidelines/TAE/data-testid-usage.md` - data-testid usage
 
 ---
 

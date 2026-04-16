@@ -6,7 +6,7 @@
 > **Related files**:
 > - `tms-architecture.md` -- Entity model: WHAT entities exist and HOW they relate
 > - `tms-workflow.md` -- Lifecycle: HOW work flows through the system stage by stage
-> - `.context/guidelines/TAE/tms-integration.md` -- Technical sync between KATA and Jira/Xray
+> - `docs/guidelines/TAE/tms-integration.md` -- Technical sync between KATA and Jira/Xray
 
 ---
 
@@ -76,7 +76,7 @@ Every test case in the TMS must contain the following fields. The exact field na
 
 ### Naming Convention
 
-Test case summaries follow a strict naming convention. See `.context/guidelines/TAE/test-design-principles.md` and `.context/guidelines/QA/jira-test-management.md` (section: "Ticket Naming Conventions") for the full specification.
+Test case summaries follow a strict naming convention. See `docs/guidelines/TAE/test-design-principles.md` and `docs/guidelines/QA/jira-test-management.md` (section: "Ticket Naming Conventions") for the full specification.
 
 **Quick reference format**:
 
@@ -585,8 +585,8 @@ The examples in this file use generic `[TMS_TOOL]` pseudocode. For Jira + Xray a
 | CLI tool | `bun xray` (see `/xray-cli` skill) |
 
 For implementation details specific to Jira/Xray, see:
-- `.context/guidelines/QA/jira-test-management.md` -- Jira-specific workflow and fields
-- `.context/guidelines/TAE/tms-integration.md` -- Technical sync configuration
+- `docs/guidelines/QA/jira-test-management.md` -- Jira-specific workflow and fields
+- `docs/guidelines/TAE/tms-integration.md` -- Technical sync configuration
 
 ---
 
@@ -594,10 +594,10 @@ For implementation details specific to Jira/Xray, see:
 
 - `tms-architecture.md` -- Entity model and relationships
 - `tms-workflow.md` -- Stage-by-stage lifecycle
-- `.context/guidelines/TAE/test-design-principles.md` -- TC identity rule, ATC conventions, naming
-- `.context/guidelines/QA/jira-test-management.md` -- Jira-specific test management
-- `.context/guidelines/QA/spec-driven-testing.md` -- Spec-driven testing principle
-- `.context/guidelines/TAE/tms-integration.md` -- KATA-to-TMS sync implementation
+- `docs/guidelines/TAE/test-design-principles.md` -- TC identity rule, ATC conventions, naming
+- `docs/guidelines/QA/jira-test-management.md` -- Jira-specific test management
+- `docs/guidelines/QA/spec-driven-testing.md` -- Spec-driven testing principle
+- `docs/guidelines/TAE/tms-integration.md` -- KATA-to-TMS sync implementation
 
 ---
 
