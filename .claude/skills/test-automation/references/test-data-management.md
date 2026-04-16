@@ -368,7 +368,7 @@ TestId:  order-1707312000000-x7k2m9
 
 That is enough to avoid collisions across workers AND across retries. Do not design tests that rely on sequential data (e.g., "the first order in the DB"); always tag with a unique marker first.
 
-For stabilization rules (no hardcoded waits, no retries, specific-condition waiting), see `automation-standards.md` §6.
+For stabilization rules (no hardcoded waits, no retries, specific-condition waiting), see `automation-standards.md` §7.
 
 ---
 

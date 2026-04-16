@@ -75,7 +75,164 @@ Every `test()` must include the ticket ID as a prefix. `describe` blocks may inc
 
 ---
 
-## 2. Folder Structure
+## 2. ATC Design Philosophy
+
+This section codifies the rules that determine what is an ATC, when two scenarios collapse into one ATC, and how assertions relate to test cases. These rules are the source of truth for KATA test design.
+
+### What is an ATC (and what is NOT)
+
+An ATC represents a **complete action** that changes or validates system state. It maps 1:1 with a test case ticket in the TMS via `@atc('TICKET-ID')`.
+
+| Type | What it does | Example | Has `@atc`? |
+|------|-------------|---------|-------------|
+| **ATC** | Action that changes system state | `authenticateSuccessfully()`, `createOrderSuccessfully()` | Yes |
+| **Helper** | Reads data (no state change) | `getOrders(filters)`, `getCurrentUser()` | No (use `@step`) |
+
+A simple GET is a helper, not an ATC. A GET that verifies an action's outcome belongs **inside** the ATC as a verification step:
+
+```typescript
+@atc('TICKET-ID')
+async createOrderSuccessfully(orderData) {
+  // ACTION
+  const [response, body, sent] = await this.apiPOST(...);
+  // VERIFICATION (GET to confirm persistence)
+  const [, persisted] = await this.apiGET(`/orders/${body.id}`);
+  // ASSERTIONS
+  expect(response.status()).toBe(201);
+  expect(persisted.id).toBe(body.id);
+  return [response, body, sent];
+}
+```
+
+### TC Identity Rule: Precondition + Action
+
+A test case's identity is determined by exactly two elements:
+
+1. **Precondition**: the state the system must be in
+2. **Action**: the user trigger
+
+**All expected results** from the same (precondition, action) pair belong to the **same TC** — regardless of which panel, endpoint, or UI section they validate.
+
+```
+TC Identity = Precondition + Action
+              |
+              All expected outputs are assertions of THIS TC
+```
+
+| Different TC? | Reason |
+|--------------|--------|
+| Yes | Different **precondition**: product out-of-stock vs in-stock |
+| Yes | Different **action**: open detail page vs click "Add to Cart" |
+| Yes | Different **equivalent partition**: percentage discount vs fixed-amount |
+| **No** | Same precondition + action, checking pricing block vs reviews block |
+| **No** | Same precondition + action, checking one more field in the response |
+
+**Anti-pattern — splitting by concern:**
+
+```
+// WRONG: 3 separate TCs for the same input
+TC-A: Open published product -> verify Pricing block values
+TC-B: Open published product -> verify Reviews block values
+TC-C: Open published product -> verify detail page structure
+// These share the SAME precondition and action -> they are ONE TC
+```
+
+**Correct — one TC, all assertions:**
+
+```
+TC: Open product detail page for published in-stock product
+  Precondition: Product is published and has stock > 0
+  Action: Navigate to product detail page
+  Expected Output:
+    - Page structure visible (heading, image gallery, reviews section)
+    - Pricing values correct (base - discount = final)
+    - Inventory metrics correct (stock count, delivery estimate)
+    - Add to Cart button enabled
+    - Reviews block shows rating + review count
+```
+
+### Equivalence Partitioning
+
+Inputs that produce the **same output type** collapse into one parameterized ATC. Inputs that produce **different outputs** require separate ATCs.
+
+| Same ATC (parameterize) | Different ATC (create new) |
+|--------------------------|---------------------------|
+| Different **data** but same **behavior** | Different **actions** or **behavior** |
+| All inputs produce the same output type | Outputs are fundamentally different |
+| Buy 1 product vs buy 5 products (same checkout flow) | Credit card checkout vs bank transfer (different steps) |
+| Minor output variation -> use conditionals sparingly | Different endpoint, UI flow, or assertion set |
+
+```typescript
+// WRONG: three ATCs that all produce HTTP 401
+@atc('T1') async loginWithWrongEmail() { /* -> 401 */ }
+@atc('T2') async loginWithWrongPassword() { /* -> 401 */ }
+@atc('T3') async loginWithEmptyFields() { /* -> 401 */ }
+
+// RIGHT: one parameterized ATC
+@atc('T1')
+async loginWithInvalidCredentials(payload: LoginPayload) {
+  // All variations produce 401 with an error message
+  const [response, body] = await this.apiPOST<ErrorResponse, LoginPayload>('/auth/login', payload);
+  expect(response.status()).toBe(401);
+  expect(body.error).toBeDefined();
+  return [response, body, payload];
+}
+```
+
+**Rule of thumb**: if the **actions** inside the ATC change, it is a different ATC. If only the **data** changes but the system behaves identically, it is the same ATC.
+
+### Tests validate FLOWS, not individual properties
+
+Do not create N tests checking N fields of the same response. One test validates the complete flow with multiple assertions.
+
+```typescript
+// WRONG: 3 tests for the same API call
+test('should return orders', async ({ api }) => {
+  const orders = await api.orders.getOrders(filters);
+  expect(orders.length).toBeGreaterThan(0);
+});
+test('should have referenceNumber', async ({ api }) => {
+  const orders = await api.orders.getOrders(filters);  // same call
+  expect(orders[0].referenceNumber).toBeDefined();
+});
+
+// RIGHT: one test, multiple assertions on the same flow
+test('TICKET-ID: should create order with correct totals when discount applied', async ({ api }) => {
+  const [, order] = await api.orders.createOrderSuccessfully(orderData);
+  const totals = await api.orders.getTotals({ orderId: order.id });
+  expect(order.id).toBeDefined();
+  expect(order.discountApplied).toBe(true);
+  expect(totals.finalAmount).toBe(totals.baseAmount - totals.discountAmount);
+});
+```
+
+Separate tests only when the **scenario is fundamentally different** (different flow, different preconditions, different user role) — not when checking a different field of the same response.
+
+### Assertion layers
+
+Assertions exist at two levels and serve different purposes:
+
+```
+Test Flow
+  |
+  +-- ATC 1: createOrderSuccessfully()
+  |     +-- [ATC assertions: status 201, order persisted]
+  |
+  +-- ATC 2: applyDiscountSuccessfully()
+  |     +-- [ATC assertions: discount applied, total recalculated]
+  |
+  +-- Test-level assertions:
+        +-- [Final state: total matches base - discount, tax correct]
+```
+
+- **ATC assertions** (fixed, inside the ATC): validate that the individual action succeeded. These run every time the ATC is called, in every test.
+- **Test-level assertions** (in the test file): validate the overall outcome after combining multiple ATCs. These are specific to the scenario.
+
+Assertions are checkpoints along a flow, not the purpose of the test. The test is the journey; assertions are road signs.
+
+---
+
+## 3. Folder Structure
 
 ```
 /config
@@ -137,7 +294,7 @@ export default defineConfig({
 
 ---
 
-## 3. Tagging Strategy
+## 4. Tagging Strategy
 
 Use Playwright tags on `test()` and `describe()` to group runs and drive the CI matrix.
 
@@ -173,7 +330,7 @@ Every `@critical` test is also `@smoke` in practice. Tags are additive — you c
 
 ---
 
-## 4. Component Structure
+## 5. Component Structure
 
 ### File template (API component)
 
@@ -287,7 +444,7 @@ async signInSuccessfully(payload: SignInPayload) { ... }
 
 ---
 
-## 5. Test Data Strategy
+## 6. Test Data Strategy
 
 KATA distinguishes three sources of test data. Classify every data need in the plan before coding.
 
@@ -350,7 +507,7 @@ The full data strategy (when to reuse staging data, when to mutate it, when to g
 
 ---
 
-## 6. Stability (Anti-Flakiness)
+## 7. Stability (Anti-Flakiness)
 
 ### No retries by default
 
@@ -405,7 +562,7 @@ async verifyOptionalField() { ... }
 
 ---
 
-## 7. Error Handling
+## 8. Error Handling
 
 ### Inside ATCs (public methods)
 
@@ -435,7 +592,7 @@ Never swallow errors inside an ATC without re-throwing — the test must fail vi
 
 ---
 
-## 8. Code Quality
+## 9. Code Quality
 
 ### Linting
 
@@ -469,7 +626,7 @@ See `typescript-patterns.md` for the full alias list.
 
 ---
 
-## 9. Review Checklists
+## 10. Review Checklists
 
 Every component and every test file is gated by a checklist before merge. Paste this into PR reviews.
 
@@ -510,7 +667,7 @@ Every component and every test file is gated by a checklist before merge. Paste 
 
 ---
 
-## 10. Anti-Patterns
+## 11. Anti-Patterns
 
 Common mistakes that fail code review.
 
@@ -558,7 +715,7 @@ private async fillEmail(email: string) {
 
 ---
 
-## 11. Quality Gates (Must Pass Before Merge)
+## 12. Quality Gates (Must Pass Before Merge)
 
 These gates block PR merge. Run them locally before opening the PR.
 
@@ -595,7 +752,7 @@ Order matters. Do not chase lint errors before tests pass — the test may remov
 
 ---
 
-## 12. Complementary Testing (Optional)
+## 13. Complementary Testing (Optional)
 
 KATA covers functional testing. For other testing types, integrate as needed without breaking the architecture.
 
@@ -609,7 +766,7 @@ These live alongside functional tests but are out of KATA's core scope. Add them
 
 ---
 
-## 13. Quick Reference
+## 14. Quick Reference
 
 ```bash
 # Local validation loop

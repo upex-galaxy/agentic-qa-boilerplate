@@ -83,24 +83,81 @@ Method order inside the class: shared locators → constructor → navigation �
 
 Never mix priorities in one selector (`.container [data-testid="x"]`). Never chain DOM structure (`div > form > button:nth-child(3)`). Never reach for `.btn-primary` or other class hooks — styling can change.
 
+### Playwright selector syntax
+
+```typescript
+// CORRECT — getByTestId (preferred)
+const loginButton = page.getByTestId('login-submit-button');
+
+// CORRECT — locator with CSS attribute (also valid, same stability)
+const loginButton = page.locator('[data-testid="login-submit-button"]');
+
+// CORRECT — role-based when no testid exists
+const loginButton = page.getByRole('button', { name: /submit/i });
+
+// WRONG — CSS class (fragile, changes with styling)
+const loginButton = page.locator('.btn-primary');
+
+// WRONG — DOM structure (fragile, changes with layout refactors)
+const loginButton = page.locator('div > form > button:last-child');
+```
+
 ### `data-testid` naming contract (used in application code)
 
 The product code owns the contract; tests only read it. Expect:
 
-| Context | Convention | Example |
-|---------|-----------|---------|
-| Component root | camelCase | `data-testid="shoppingCart"` |
-| Specific element | snake_case | `data-testid="email_input"` |
-| Section | snake_case | `data-testid="billing_section"` |
-| Action button | snake_case | `data-testid="checkout_button"` |
+| Context | Convention | Pattern | Example |
+|---------|-----------|---------|---------|
+| Component root | camelCase | `{componentName}` | `data-testid="shoppingCart"` |
+| Text input | snake_case | `{description}_input` | `data-testid="email_input"` |
+| Button | snake_case | `{description}_button` | `data-testid="checkout_button"` |
+| Link | snake_case | `{description}_link` | `data-testid="forgot_password_link"` |
+| Section / container | snake_case | `{description}_section` | `data-testid="billing_section"` |
+| List container | snake_case | `{description}_list` | `data-testid="order_list"` |
+| List item | snake_case | `{description}_item` | `data-testid="order_item"` |
+| Error message | snake_case | `{description}_error` | `data-testid="form_email_error"` |
+| Loading state | snake_case | `{description}_loading` | `data-testid="products_loading"` |
+| Empty state | snake_case | `{description}_empty_state` | `data-testid="products_empty_state"` |
 
-General pattern: `{description}_{type}` where `type` ∈ `input`, `button`, `link`, `section`, `list`, `item`.
+General pattern: `{description}_{type}` where `type` identifies the element's role. Component roots use camelCase; all nested elements use snake_case.
+
+### Locator anti-patterns
+
+```typescript
+// WRONG: CSS class selectors — break when styling changes
+page.locator('.btn-primary');
+
+// WRONG: DOM structure selectors — break when layout changes
+page.locator('div > form > button:last-child');
+
+// WRONG: Text that may change (copy updates, i18n)
+page.getByText('Sign In'); // may change to 'Login' or 'Iniciar sesión'
+
+// WRONG: Hardcoded index without reason
+page.locator('[data-testid="card"]').nth(2); // why the third one?
+
+// WRONG: Mixing CSS with data-testid
+page.locator('.container [data-testid="button"]');
+
+// RIGHT: Direct data-testid
+page.getByTestId('login-submit-button');
+
+// RIGHT: Role-based for semantic elements without testid
+page.getByRole('button', { name: /submit/i });
+
+// RIGHT: Filter by content when needed
+page.getByTestId('product-card').filter({ hasText: 'iPhone' });
+
+// RIGHT: Specific dynamic testid
+page.getByTestId(`product-card-${productSlug}`);
+```
 
 ### When a `data-testid` is missing
 
-1. File a ticket against the application repo with component path, route, element description, and a proposed name.
-2. Work around temporarily with `getByRole` or a semantic selector and leave a `// TODO: replace with getByTestId('X')` comment.
-3. Never ship a brittle CSS/XPath fallback without the TODO — otherwise it hides the tech debt.
+1. **Verify it exists** — use browser DevTools: `document.querySelectorAll('[data-testid]')` or the testid enumeration snippet in section 10.
+2. **File a ticket** against the application repo with: component path, route, element description, and a proposed name following the naming contract above.
+3. **Work around temporarily** with `getByRole` or `getByLabel` and leave a `// TODO: replace with getByTestId('X') when DEV adds the testid` comment.
+4. Never ship a brittle CSS/XPath fallback without the TODO — otherwise it hides the tech debt.
 
 ### Inline vs shared locators
 

@@ -1,6 +1,6 @@
 # Review Checklists — E2E and API Deltas
 
-Load during Phase 3 (Review) of the Plan → Code → Review pipeline. This file is a **delta**: it assumes the shared KATA review checklists from `automation-standards.md` §9 (Component review, ATC review, Test file review) have already been applied. Only the E2E-specific and API-specific additions live here, plus the final handoff checklist that gates "ready for CI".
+Load during Phase 3 (Review) of the Plan → Code → Review pipeline. This file is a **delta**: it assumes the shared KATA review checklists from `automation-standards.md` §10 (Component review, ATC review, Test file review) have already been applied. Only the E2E-specific and API-specific additions live here, plus the final handoff checklist that gates "ready for CI".
 
 Severity model for all findings below matches the shared severity scale — CRITICAL (blocks merge), HIGH (blocks merge), MEDIUM (recommended), LOW (nice to have).
 
@@ -10,9 +10,9 @@ Severity model for all findings below matches the shared severity scale — CRIT
 
 Run these **three shared checklists first**, in order. They cover the rules that are identical for E2E and API tests: file naming, class extension, decorator placement, ATC identity, tuple returns, locator rule, max-2-positional-param rule, inline assertions, fixture registration, no relative imports, ticket-ID prefix, no `test.only`/`test.skip` left behind, no hardcoded waits.
 
-1. **Component review** — `automation-standards.md` §9 → "Component review"
-2. **ATC review** — `automation-standards.md` §9 → "ATC review"
-3. **Test file review** — `automation-standards.md` §9 → "Test file review"
+1. **Component review** — `automation-standards.md` §10 → "Component review"
+2. **ATC review** — `automation-standards.md` §10 → "ATC review"
+3. **Test file review** — `automation-standards.md` §10 → "Test file review"
 
 Only after the shared list is clean should you layer the deltas in §2 (E2E) or §3 (API) below. Do not merge a PR until both the shared checklist and the applicable delta are clean.
 
@@ -205,7 +205,7 @@ Before marking the ticket complete and opening the PR, **every** box below must 
 
 ### 4.1 Code state
 
-- [ ] Shared checklist (`automation-standards.md` §9) — zero CRITICAL, zero HIGH.
+- [ ] Shared checklist (`automation-standards.md` §10) — zero CRITICAL, zero HIGH.
 - [ ] Applicable delta (§2 E2E or §3 API) — zero CRITICAL, zero HIGH.
 - [ ] `bun run test <path>` — green, zero retries used.
 - [ ] `bun run type-check` — no errors.

@@ -8,6 +8,72 @@ For feature / multi-story scope see `feature-test-planning.md`.
 
 ---
 
+## The 4 Pillars of Spec-Driven Testing
+
+Every phase in this document is an application of **Spec-Driven Testing (SDT)**: the specification defines what to test, not the tester's intuition. The four pillars are:
+
+### 1. Test from Specs
+
+```
+BAD:  "I'm going to test the login and see what I find"
+GOOD: "I'm going to verify that STORY-XXX meets its acceptance criteria"
+```
+
+Before testing: read the complete story, understand its ACs, and review documented test cases. The specification already defines coverage — testing does not invent it.
+
+### 2. Traceability
+
+```
+BAD:  Bug: "The button doesn't work"
+GOOD: Bug: "AC-3 of STORY-XXX fails: The submit button doesn't respond after click"
+```
+
+Every finding (pass, fail, or bug) must reference the story AND the specific AC it validates or violates. Phase 6 of this reference enforces this.
+
+### 3. Coverage from Requirements
+
+```
+BAD:  "I tested everything I could think of"
+GOOD: "I verified each AC and its documented edge cases"
+```
+
+Coverage is measured by: % of ACs verified, % of test outlines executed, and edge cases covered. Phase 4 builds the outline set that makes this measurable.
+
+### 4. Exploratory with Purpose
+
+```
+BAD:  Random clicking through the application
+GOOD: Focused exploration on the story's risk areas
+```
+
+Exploratory testing starts from the story and its ACs, looks for undocumented edge cases, and documents findings with full traceability. Phase 2 surfaces these; Phase 5 catalogs them.
+
+### SDT anti-patterns (reject on sight)
+
+| Anti-pattern | Problem | SDT correction |
+|--------------|---------|----------------|
+| **Random testing** — "click around and see what happens" | No focus, no measurable coverage, no traceability | Start from story + ACs, produce outlines first |
+| **Test without spec** — "I didn't read the story but I'll test anyway" | Cannot distinguish bug from expected behavior | Read the full ticket in Session Start before planning |
+| **Bug without context** — "Bug: the button doesn't work" | Dev cannot determine intended behavior | Reference story ID + AC number + reproduction steps |
+| **Coverage by intuition** — "I tested everything I could think of" | Subjective, gaps invisible | Measure against AC list + outline checklist |
+
+### SDT workflow (how this reference implements it)
+
+```
+Specification              Testing                    Feedback
+     |                         |                          |
+     v                         v                          v
++---------+    +---------+    +---------+    +---------+
+|  Story  | -> |  Test   | -> | Execute | -> | Report  |
+|   +AC   |    | Outlines|    | & Find  |    | & Doc   |
++---------+    +---------+    +---------+    +---------+
+  Phase 1-3      Phase 4       Stage 2        Stage 3
+```
+
+The phases below (0-8) are the concrete implementation of this pipeline for a single ticket.
+
+---
+
 ## Inputs
 
 Read every item before planning. Fail fast if any project-wide context file is missing — hand off to `project-discovery`.
