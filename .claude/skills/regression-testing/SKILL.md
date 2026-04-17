@@ -1,8 +1,8 @@
 ---
 name: regression-testing
-description: Execute regression test suites via CI/CD, analyze results, classify failures, and produce GO/NO-GO release decisions. Use when running regression, smoke, or sanity suites through GitHub Actions, monitoring workflow runs, downloading Allure or Playwright artifacts, classifying failures (REGRESSION vs FLAKY vs KNOWN vs ENVIRONMENT vs NEW TEST), computing pass-rate and trend metrics, deciding release readiness, generating executive quality reports, or creating regression issues. Triggers on: run regression, trigger test workflow, analyze test results, quality report, GO/NO-GO decision, release readiness, flaky tests, Allure report, smoke suite, pass rate, nightly test failure, stage 6. Do NOT use for writing new regression tests (that belongs to test-automation) or for manual fix verification (that belongs to sprint-testing).
+description: "Execute regression test suites via CI/CD, analyze results, classify failures, and produce GO/NO-GO release decisions. Use when running regression, smoke, or sanity suites through GitHub Actions, monitoring workflow runs, downloading Allure or Playwright artifacts, classifying failures (REGRESSION vs FLAKY vs KNOWN vs ENVIRONMENT vs NEW TEST), computing pass-rate and trend metrics, deciding release readiness, generating executive quality reports, or creating regression issues. Triggers on: run regression, trigger test workflow, analyze test results, quality report, GO/NO-GO decision, release readiness, flaky tests, Allure report, smoke suite, pass rate, nightly test failure, stage 6. Do NOT use for writing new regression tests (that belongs to test-automation) or for manual fix verification (that belongs to sprint-testing)."
 license: MIT
-compatibility: claude-code, copilot, cursor, codex, opencode
+compatibility: [claude-code, copilot, cursor, codex, opencode]
 ---
 
 # Regression Testing — Execute, Analyze, Decide

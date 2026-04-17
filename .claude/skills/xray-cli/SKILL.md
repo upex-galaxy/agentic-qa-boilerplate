@@ -1,6 +1,6 @@
 ---
 name: xray-cli
-description: Xray Cloud test management via `bun xray` CLI: create/list tests, manage test executions and plans, import JUnit/Cucumber/Xray JSON results, update run statuses, back up and restore projects, link defects. Triggers on: create a test in Xray, import test results to Xray, list Xray executions, update run status, backup Xray project, restore Xray tests, link defect to run, sync tests, Xray auth login. Do NOT use for: writing automated tests (test-automation); documenting test cases or ROI analysis (test-documentation); running CI regression suites (regression-testing); browser automation (playwright-cli).
+description: "Xray Cloud test management via `bun xray` CLI: create/list tests, manage test executions and plans, import JUnit/Cucumber/Xray JSON results, update run statuses, back up and restore projects, link defects. Triggers on: create a test in Xray, import test results to Xray, list Xray executions, update run status, backup Xray project, restore Xray tests, link defect to run, sync tests, Xray auth login. Do NOT use for: writing automated tests (test-automation); documenting test cases or ROI analysis (test-documentation); running CI regression suites (regression-testing); browser automation (playwright-cli)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 allowed-tools: Bash(bun xray:*)

@@ -1,8 +1,8 @@
 ---
 name: project-discovery
-description: Onboard a project to this testing boilerplate, generate the context files that every QA and automation session depends on, and adapt the KATA test architecture to the target stack. Runs a 4-phase discovery (Constitution, Architecture, Infrastructure, Specification) that produces PRD, SRS, domain glossary, business-data-map, api-architecture, and test-ready fixtures. Use when the user says "set up this project", "onboard this repo", "connect to project", "discover the architecture", "generate business-data-map", "regenerate api-architecture", "create PRD/SRS", "adapt KATA to this project", or "set up testing framework". Also use when .context/business-data-map.md or .context/api-architecture.md is missing or stale. Do NOT use for writing tests (test-automation), documenting TCs (test-documentation), running suites (regression-testing), or testing a ticket (sprint-testing).
+description: "Onboard a project to this testing boilerplate, generate the context files that every QA and automation session depends on, and adapt the KATA test architecture to the target stack. Runs a 4-phase discovery (Constitution, Architecture, Infrastructure, Specification) that produces PRD, SRS, domain glossary, business-data-map, api-architecture, and test-ready fixtures. Use when the user says: set up this project, onboard this repo, connect to project, discover the architecture, generate business-data-map, regenerate api-architecture, create PRD/SRS, adapt KATA to this project, or set up testing framework. Also use when .context/business-data-map.md or .context/api-architecture.md is missing or stale. Do NOT use for writing tests (test-automation), documenting TCs (test-documentation), running suites (regression-testing), or testing a ticket (sprint-testing)."
 license: MIT
-compatibility: claude-code, copilot, cursor, codex, opencode
+compatibility: [claude-code, copilot, cursor, codex, opencode]
 ---
 
 # Project Discovery — Onboarding Orchestrator
