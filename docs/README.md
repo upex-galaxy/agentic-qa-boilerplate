@@ -10,6 +10,15 @@ Esta documentación está orientada a **humanos** - para aprender conceptos, ent
 
 ---
 
+## Empieza Aquí
+
+| Documento | Descripción |
+|-----------|-------------|
+| [agentic-quality-engineering.md](agentic-quality-engineering.md) | **El documento por excelencia** — qué es esta práctica, cómo funciona, y qué entrega. Estrategia, arquitectura, skills, modelo de orquestación, KATA y quality gate en un solo lugar. |
+| [context-engineering.md](context-engineering.md) | Estrategia de estructuración de contexto para AI (docs/ vs .context/ vs .claude/skills/). |
+
+---
+
 ## Estructura de Documentos
 
 ```
