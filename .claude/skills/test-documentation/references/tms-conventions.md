@@ -120,6 +120,37 @@ Every TC in the TMS must have these fields populated. Exact field names vary by 
 | Automation Comment | When Automation Candidate = Yes | Justification: ROI score, reasoning |
 | Test Data | When the test needs specific data | Inputs, preconditions, DB state |
 
+### IQL: Test Status (Workflow) vs Execution Status (Run) — load-bearing
+
+These are **two independent fields** with two independent lifecycles. Mixing them is the most common cause of bad dashboards, bad JQL, and stale triage decisions.
+
+| Dimension | **Test Status (Workflow)** | **Execution Status (Run)** |
+|-----------|----------------------------|-----------------------------|
+| Lives on | The Test issue itself | A single Test Run inside a Test Execution (Xray) or a Test Status custom field on the Test issue (Jira-native) |
+| Answers | "Where is this TC in its documentation / automation lifecycle?" | "Did the TC pass the last time we ran it?" |
+| Values | `Draft` / `In Design` / `Ready` / `Manual` / `In Review` / `Candidate` / `In Automation` / `Pull Request` / `Automated` / `Deprecated` | `TODO` / `EXECUTING` / `PASS` / `FAIL` / `ABORTED` / `BLOCKED` |
+| Changed by | QA analyst, QA engineer (manual transitions) | Execution — either a human runner or `[TMS_TOOL] Import Results` in CI |
+| Persists across runs | Yes (workflow is the long-lived state) | No (each Test Run carries its own status; history lives in the Test Execution) |
+| Used by | Planning, ROI prioritization, automation intake | Regression reporting, GO / NO-GO, CI health |
+
+**Canonical Execution Status values** (used in every TMS):
+
+| Value | Icon | Meaning | Next action |
+|-------|------|---------|-------------|
+| `TODO` | gray | Not yet executed in this run | Execute or skip |
+| `EXECUTING` | blue | Currently running | Wait for completion |
+| `PASS` | green | Passed in this run | Keep in regression |
+| `FAIL` | red | Failed in this run | Investigate / file bug |
+| `ABORTED` | orange | Execution stopped (crash, timeout, user-abort) | Review environment, retry |
+| `BLOCKED` | yellow | Could not execute (missing data, dep down) | Resolve blocker, retry |
+
+**What this means for reporting**:
+
+- "TC is `Automated`" (workflow) is compatible with "last Test Run was `FAIL`" (run). The TC is live in CI, but it failed today.
+- ATR's "PASSED / FAILED / PASSED WITH ISSUES" rollup comes from the **Execution Status** across all TCs in the ATR, not from the Test Status.
+- A TC in `Draft` (workflow) never has an Execution Status — it has not been executed yet.
+- When the legacy / current skill says "Test Status: NOT RUN / PASSED / FAILED", that refers to the **Execution Status** field in Jira-native mode (where there is no separate Test Run entity); in Xray mode, the equivalent lives on the Test Run and `NOT RUN` maps to `TODO`.
+
 ---
 
 ## 5. Workflow state machine

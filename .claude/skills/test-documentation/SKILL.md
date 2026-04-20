@@ -15,6 +15,47 @@ One hard prerequisite: the tests being documented must describe behavior that wa
 
 ---
 
+## Phase 0 — Resolve TMS modality (mandatory gate)
+
+Every project runs in one of two modalities. Resolve it **before** Phase 1. The same ATP/ATR/TC concepts have **different containers** in each mode.
+
+### The question you MUST answer first
+
+```
+Does this project have Xray installed and licensed on Jira?
+  A. Yes -> Modality A: Xray on Jira
+  B. No  -> Modality B: Jira-native (no Xray)
+```
+
+### How to resolve it without asking (in order)
+
+1. Check `CLAUDE.md` for `{{TMS_CLI}}`. Value `bun xray` (or any Xray CLI) -> **Modality A**. Value is unset, `acli`-only, or `{{TMS_CLI}}` matches `{{ISSUE_TRACKER_CLI}}` -> **Modality B**.
+2. If `CLAUDE.md` is ambiguous, look for a `.context/master-test-plan.md` line such as `TMS: Xray on Jira` or `TMS: Jira native`.
+3. If still ambiguous, list existing issue types in the project via `[ISSUE_TRACKER_TOOL] List issue types`. If the project exposes `Test Plan` / `Test Execution` / `Test Set` / `Pre-Condition`, it is **Modality A**. Otherwise **Modality B**.
+4. **Only if all three checks fail**, ask the user the question above. Do NOT ask by default — autoresolve first.
+
+### What changes per modality
+
+| Artifact | Modality A (Xray on Jira) | Modality B (Jira-native) |
+|----------|---------------------------|---------------------------|
+| **ATP** (Acceptance Test Plan) | Xray `Test Plan` issue, named `Test Plan: {{PROJECT_KEY}}-{n}`, linked to US | Story `customfield_ATP` (e.g. `customfield_12400`) + comment mirror on the Story. No separate issue. |
+| **ATR** (Acceptance Test Results) | Xray `Test Execution` issue with Test Runs per TC, Environment, Begin/End Date, named `Test Results: {{PROJECT_KEY}}-{n}` | Story `customfield_ATR` + comment mirror on the Story. No separate issue. |
+| **TC** (Test Case) | Xray `Test` issue (type Manual / Cucumber / Generic) | Jira-native `Test` issue type (or `Task` with custom type), Description carries the full TC template |
+| **Test Set / Precondition / Test Plan** | First-class Xray issue types | Not available — use labels + Epic grouping |
+| **Result sync** | CI imports JUnit/Cucumber via `[TMS_TOOL] Import Results` -> Test Runs auto-update | Custom script updates Test Status field on each TC + comment with build context |
+| **CLI tag** | `[TMS_TOOL]` resolves to `bun xray` or equivalent | `[TMS_TOOL]` falls through to `[ISSUE_TRACKER_TOOL]` (acli / Jira MCP) |
+
+### Persist the decision
+
+Once resolved, save the modality into `test-session-memory.md` for the ticket (if one exists) and treat it as sticky: do not re-resolve mid-session. If you detect drift (e.g. `[TMS_TOOL]` suddenly fails), stop and ask the user before re-resolving.
+
+Reference implementations:
+- Modality A concepts + Xray REST/GraphQL/CLI -> `references/xray-platform.md`
+- Modality B project setup (Test issue type, Screen Scheme, custom fields) -> `references/jira-setup.md`
+- Both modes side-by-side (field mapping, workflow, Description template) -> `references/jira-test-management.md`
+
+---
+
 ## When to use each scope
 
 Pick the scope based on the input, not the output. All four scopes share the same Analyze -> Prioritize -> Document pipeline; only the input source and defaults differ.
@@ -293,32 +334,53 @@ After TMS creation, write one markdown file per TC into `.context/PBI/{module}/{
 
 ---
 
-## Quick reference
+## Quick reference — pseudocode per modality
+
+Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution. The shape of the calls differs by modality — the two blocks below are parallel, pick one based on Phase 0.
+
+### Regression epic (both modalities, run once per project)
 
 ```
-# Pseudocode — resolve [TMS_TOOL] / [ISSUE_TRACKER_TOOL] via CLAUDE.md Tool Resolution
-
-# Verify regression epic
 [ISSUE_TRACKER_TOOL] Search Issues:
   project: {{PROJECT_KEY}}
   query: type = Epic AND labels = "test-repository"
 
-# Create ATP
-[TMS_TOOL] Create ATP:
-  name: Test Plan: {{PROJECT_KEY}}-{n}
-  story: {{PROJECT_KEY}}-{n}
+# If none, ask the user before creating:
+[ISSUE_TRACKER_TOOL] Create Issue:
+  project: {{PROJECT_KEY}}
+  issueType: Epic
+  title: "{{PROJECT_KEY}} Test Repository"
+  labels: test-repository, regression, qa
+```
 
-# Create ATR
-[TMS_TOOL] Create ATR:
-  name: Test Results: {{PROJECT_KEY}}-{n}
-  story: {{PROJECT_KEY}}-{n}
+### Modality A — Xray on Jira
 
-# Link ATP <-> ATR
-[TMS_TOOL] Update ATP:
-  id: {ATP_KEY}
-  results: {ATR_NAME}
+```
+# ATP = Xray Test Plan issue
+[TMS_TOOL] Create TestPlan:
+  project: {{PROJECT_KEY}}
+  title: Test Plan: {{PROJECT_KEY}}-{n}
+  tests: []                       # filled as TCs are created
 
-# Create a Candidate TC (Xray + Cucumber)
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: "tests"
+  outward: {ATP_KEY}
+  inward:  {STORY_KEY}
+
+# ATR = Xray Test Execution issue
+[TMS_TOOL] Create Execution:
+  project: {{PROJECT_KEY}}
+  title: Test Results: {{PROJECT_KEY}}-{n}
+  testPlan: {ATP_KEY}
+  environment: {from .env or session context}
+  tests: []                       # filled at Stage 3 or via CI import
+
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: "is tested by"
+  outward: {ATR_KEY}
+  inward:  {STORY_KEY}
+
+# TC = Xray Test issue (Cucumber for Candidates; Manual for Manual-only)
 [TMS_TOOL] Create Test:
   project: {{PROJECT_KEY}}
   type: Cucumber
@@ -330,13 +392,87 @@ After TMS creation, write one markdown file per TC into `.context/PBI/{module}/{
   issue: {TEST_KEY}
   description: {full Description template}
 
-# Link TC to story + ATP + ATR
+# Link TC to ATP, ATR, Story
+[TMS_TOOL] AddTests:
+  testPlan: {ATP_KEY}
+  tests: [{TEST_KEY}]
+[TMS_TOOL] AddTests:
+  execution: {ATR_KEY}
+  tests: [{TEST_KEY}]
 [ISSUE_TRACKER_TOOL] Link Issues:
   linkType: "is tested by"
   outward: {TEST_KEY}
-  inward: {STORY_KEY}
+  inward:  {STORY_KEY}
 
-# Transition
+# CI result flow (Stage 6)
+[TMS_TOOL] Import Results:
+  format: junit        # or cucumber, xray-json
+  file:   ./test-results/junit.xml
+  execution: {ATR_KEY}
+```
+
+### Modality B — Jira-native (no Xray)
+
+```
+# ATP = Story customfield + comment mirror. NO separate issue.
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {STORY_KEY}
+  fields:
+    customfield_ATP: {Test Analysis body}       # e.g. customfield_12400
+  labels: +shift-left-reviewed
+
+[ISSUE_TRACKER_TOOL] Add Comment:
+  issue: {STORY_KEY}
+  body: |
+    === Acceptance Test Plan ({{PROJECT_KEY}}-{n}) ===
+    {Test Analysis body — byte-for-byte mirror of customfield_ATP}
+
+# ATR = Story customfield + comment mirror. NO separate issue.
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {STORY_KEY}
+  fields:
+    customfield_ATR: {Test Report body}          # e.g. customfield_12401
+
+[ISSUE_TRACKER_TOOL] Add Comment:
+  issue: {STORY_KEY}
+  body: |
+    === Acceptance Test Results ({{PROJECT_KEY}}-{n}) ===
+    {Test Report body — byte-for-byte mirror of customfield_ATR}
+
+# TC = Jira-native Test issue (custom issue type configured per jira-setup.md)
+[ISSUE_TRACKER_TOOL] Create Issue:
+  project: {{PROJECT_KEY}}
+  issueType: Test                               # or Task with customfield_TestType
+  summary: {US_ID}: TC#: Validate <CORE> <CONDITIONAL>
+  priority: {Critical|High|Medium|Low}
+  labels: [regression, automation-candidate, e2e, critical]
+  epic: {REGRESSION_EPIC_KEY}
+
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {TEST_KEY}
+  description: {full Description template — includes Gherkin if Candidate}
+  fields:
+    Test Status: Draft                          # custom field per jira-setup.md
+
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: "is tested by"
+  outward: {TEST_KEY}
+  inward:  {STORY_KEY}
+
+# CI result flow (Stage 6) — custom script, no auto-import
+for each {TEST_KEY} in run:
+  [ISSUE_TRACKER_TOOL] Update Issue:
+    issue: {TEST_KEY}
+    fields:
+      Test Status: {PASSED|FAILED|BLOCKED}
+  [ISSUE_TRACKER_TOOL] Add Comment:
+    issue: {TEST_KEY}
+    body: "Run {date}: {result}. Env: {env}. CI: {url}"
+```
+
+### Workflow transition (both modalities — same state machine)
+
+```
 [ISSUE_TRACKER_TOOL] Transition Issue:
   issue: {TEST_KEY}
   transition: start design   # Draft -> In Design

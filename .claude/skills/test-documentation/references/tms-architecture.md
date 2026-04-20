@@ -15,14 +15,23 @@ Every QA-tested user story produces four artifact types. The model is tool-agnos
 | **ATR** | Acceptance Test Results | Execution results, findings, evidence. Contains the Test Report. | Stage 1 (created early), filled Stage 3 | ATR issue body |
 | **TC** | Test Case | Individual test: precondition + action + expected. Lives in a test repository. | Stage 4 (Documentation) | TC issue body |
 
-Reference implementation in Jira+Xray:
+### Container per modality (load-bearing)
 
-| Entity | Jira issue type |
-|--------|----------------|
-| US | Story |
-| ATP | Test Plan (Xray) or Story with a custom field |
-| ATR | Test Execution (Xray) or custom |
-| TC | Test (Xray) |
+The entity model is tool-agnostic, but the **container** each entity lives in changes with the TMS modality. Resolve modality via `test-documentation/SKILL.md` §Phase 0 before using these mappings.
+
+| Entity | Modality A — Xray on Jira | Modality B — Jira-native (no Xray) |
+|--------|---------------------------|-------------------------------------|
+| **US** | Jira `Story` | Jira `Story` |
+| **ATP** | Xray `Test Plan` issue. Named `Test Plan: {{PROJECT_KEY}}-{n}`. Linked to the Story via "tests". | Story's `customfield_ATP` (e.g. `customfield_12400`) + comment mirror on the same Story. **No separate issue created.** |
+| **ATR** | Xray `Test Execution` issue. Named `Test Results: {{PROJECT_KEY}}-{n}`. Holds `Test Runs` per TC, plus Environment, Begin/End Date. Gets populated by CI import. | Story's `customfield_ATR` (e.g. `customfield_12401`) + comment mirror. **No separate issue.** CI updates Test Status field on each TC directly. |
+| **TC** | Xray `Test` issue (type Manual / Cucumber / Generic) | Jira-native `Test` custom issue type (set up per `references/jira-setup.md`) or `Task` with a `Test Type` custom field. |
+| **Test Set / Precondition / Test Plan hierarchy** | First-class Xray issue types | Not available — group by labels + Regression Epic. |
+
+Key consequences:
+
+- In **Modality B**, there is no separate "Test Plan issue" to link to — all ATP/ATR content lives on the Story itself. Traceability from a TC back to the plan/results walks via the "is tested by" link to the Story, then reads the Story's custom fields.
+- In **Modality A**, the `Test Plan` and `Test Execution` issues are real, queryable, filterable by JQL, and (critically) the Test Execution is the target of `[TMS_TOOL] Import Results` at the end of every CI run.
+- The naming convention (`Test Plan: {{PROJECT_KEY}}-{n}` / `Test Results: {{PROJECT_KEY}}-{n}`) stays the same in both modalities — in B it identifies the section header in the Story comment, not an issue key.
 
 ---
 
@@ -326,24 +335,87 @@ All operations use `[TMS_TOOL]` for TMS-specific actions and `[ISSUE_TRACKER_TOO
 
 ### Create
 
+Pseudocode splits by TMS modality — pick the block matching the resolution from SKILL.md §Phase 0. Full per-modality reference in SKILL.md §Quick reference.
+
+#### Modality A — Xray on Jira
+
 ```
-[TMS_TOOL] Create ATP:
-  name: Test Plan: {{PROJECT_KEY}}-{n}
-  story: {from User Story title}
+[TMS_TOOL] Create TestPlan:
   project: {{PROJECT_KEY}}
+  title: Test Plan: {{PROJECT_KEY}}-{n}
 
-[TMS_TOOL] Create ATR:
-  name: Test Results: {{PROJECT_KEY}}-{n}
-  story: {from User Story title}
+[TMS_TOOL] Create Execution:
   project: {{PROJECT_KEY}}
+  title: Test Results: {{PROJECT_KEY}}-{n}
+  testPlan: {ATP_KEY}
+  environment: {from session context}
 
-[TMS_TOOL] Create TC:
-  name: {per TC naming convention}
-  story: {from User Story title}
-  ac: {from AC being covered}
-  test-plan: {from ATP name}
-  test-result: {from ATR name}
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: "tests"
+  outward: {ATP_KEY}
+  inward:  {STORY_KEY}
+
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: "is tested by"
+  outward: {ATR_KEY}
+  inward:  {STORY_KEY}
+
+[TMS_TOOL] Create Test:
   project: {{PROJECT_KEY}}
+  type: Cucumber | Manual | Generic
+  title: {per TC naming convention}
+  steps-or-gherkin: {from test design}
+
+[TMS_TOOL] AddTests:
+  testPlan: {ATP_KEY}
+  tests: [{TEST_KEY}]
+[TMS_TOOL] AddTests:
+  execution: {ATR_KEY}
+  tests: [{TEST_KEY}]
+```
+
+#### Modality B — Jira-native (no Xray)
+
+```
+# ATP — lives on the Story, no new issue
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {STORY_KEY}
+  fields:
+    {customfield_ATP}: {Test Analysis body}   # confirm field id via jira-setup.md
+  labels: +shift-left-reviewed
+
+[ISSUE_TRACKER_TOOL] Add Comment:
+  issue: {STORY_KEY}
+  body: "=== Test Plan: {{PROJECT_KEY}}-{n} ===\n{Test Analysis body}"
+
+# ATR — lives on the Story, no new issue
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {STORY_KEY}
+  fields:
+    {customfield_ATR}: {Test Report body}
+
+[ISSUE_TRACKER_TOOL] Add Comment:
+  issue: {STORY_KEY}
+  body: "=== Test Results: {{PROJECT_KEY}}-{n} ===\n{Test Report body}"
+
+# TC — Jira-native Test issue
+[ISSUE_TRACKER_TOOL] Create Issue:
+  project: {{PROJECT_KEY}}
+  issueType: Test                              # or Task + customfield_TestType
+  summary: {per TC naming convention}
+  epic: {REGRESSION_EPIC_KEY}
+  labels: [regression, ...]
+
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {TEST_KEY}
+  description: {full TC template}
+  fields:
+    Test Status: Draft
+
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: "is tested by"
+  outward: {TEST_KEY}
+  inward:  {STORY_KEY}
 ```
 
 ### Update
