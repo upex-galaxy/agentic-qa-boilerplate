@@ -83,7 +83,7 @@ Read every item before planning. Fail fast if any project-wide context file is m
 | Ticket (title, description, ACs, priority, comments) | `[ISSUE_TRACKER_TOOL]` using Jira Key from `{STORY_PATH}/context.md` |
 | Team Discussion | Ticket comments — extract decisions, tech notes, edge cases (see `session-entry-points.md`) |
 | Parent epic + feature plan | `.context/PBI/{module}/{EPIC}/feature-test-plan.md` if it exists (+ epic comments) |
-| Project-wide context | `.context/business-data-map.md`, `.context/api-architecture.md`, `.context/project-test-guide.md` |
+| Project-wide context | `.context/mapping/business-data-map.md`, `.context/mapping/business-feature-map.md`, `.context/mapping/business-api-map.md`, `.context/master-test-plan.md` |
 | Module context | `.context/PBI/{module}/module-context.md` |
 | Code | `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` + `{{FRONTEND_REPO}}/{{FRONTEND_ENTRY}}` (targeted reads only) |
 | Test data candidates | `[DB_TOOL]` on `{{DB_MCP_STAGING}}` |
@@ -169,7 +169,7 @@ Anchor the ticket to business + technical context.
 
 ### Technical context
 - Frontend: components, pages/routes, state management (if any)
-- Backend: endpoints from `api-architecture.md` / `api-contracts.yaml`, services, DB tables
+- Backend: endpoints from `business-api-map.md` / `api/schemas/` / `api-contracts.yaml`, services, DB tables
 - External services (if any)
 - Integration points specific to this ticket
 
@@ -315,9 +315,74 @@ Append "QA Refinements (Shift-Left Analysis)" section to the ticket description:
 
 Add label `shift-left-reviewed`.
 
+### Create ATP + ATR — branch on TMS modality
+
+The modality was resolved in Session Start (§0) and persisted into `test-session-memory.md`. Apply the matching branch. Full reference: `test-documentation/references/tms-architecture.md` §Container per modality.
+
+#### Modality A — Xray on Jira
+
+ATP = `Test Plan` issue. ATR = `Test Execution` issue. Both linked bidirectionally to the Story.
+
+```
+[TMS_TOOL] Create TestPlan:
+  project: {{PROJECT_KEY}}
+  title: Test Plan: {{PROJECT_KEY}}-{n}
+
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {ATP_KEY}
+  description: {full test-analysis.md body}
+
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: "tests"
+  outward: {ATP_KEY}
+  inward:  {STORY_KEY}
+
+[TMS_TOOL] Create Execution:
+  project: {{PROJECT_KEY}}
+  title: Test Results: {{PROJECT_KEY}}-{n}
+  testPlan: {ATP_KEY}
+  environment: {from session context, e.g. "Staging"}
+  # tests: [] — filled at Stage 3 or by CI import
+
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: "is tested by"
+  outward: {ATR_KEY}
+  inward:  {STORY_KEY}
+```
+
+Load `/xray-cli` skill for the concrete CLI syntax.
+
+#### Modality B — Jira-native (no Xray)
+
+ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md` (UPEX workspace default: `customfield_12400` = ATP, `customfield_12401` = ATR; per-project ids differ).
+
+```
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {STORY_KEY}
+  fields:
+    {customfield_ATP}: {full test-analysis.md body}
+  labels: +shift-left-reviewed
+
+[ISSUE_TRACKER_TOOL] Add Comment:
+  issue: {STORY_KEY}
+  body: |
+    === Test Plan: {{PROJECT_KEY}}-{n} ===
+    {full test-analysis.md body — byte-for-byte mirror of customfield_ATP}
+
+# ATR container is created empty now and filled at Stage 3:
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {STORY_KEY}
+  fields:
+    {customfield_ATR}: "Test Results: {{PROJECT_KEY}}-{n} — pending execution"
+```
+
+Load `/acli` skill for the concrete Jira CLI syntax.
+
 ### Comment with full outlines
 
 Post the full `test-analysis.md` body as a comment with mentions for @PO, @Dev, @QA per project convention. Include an Action Required checklist (review ambiguities, answer critical questions, confirm edge-case behavior, validate parametrization strategy).
+
+In Modality B this comment doubles as the ATP mirror — the custom-field + comment pair is what `traceability-fix` checks later.
 
 ### Mirror local file
 
@@ -325,7 +390,7 @@ Write `test-analysis.md` at the ticket's PBI folder with **identical** content t
 
 ### Traceability check
 
-After writing, run `[TMS_TOOL] trace {TICKET}` and verify Ticket → ATP link exists. TCs are not created in this skill — the trace is for the ATP artifact alone. Bugs produce ATP + ATR with no TCs (the bug is the implicit test case); "missing TC" warnings on bugs are expected.
+After writing, run `[TMS_TOOL] trace {TICKET}` (Modality A) or verify the Story's `customfield_ATP` is populated and the comment mirror exists (Modality B). TCs are not created in this skill — the trace is for the ATP artifact alone. Bugs produce ATP + ATR with no TCs (the bug is the implicit test case); "missing TC" warnings on bugs are expected.
 
 ---
 

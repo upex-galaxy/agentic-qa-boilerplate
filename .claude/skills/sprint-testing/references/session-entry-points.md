@@ -119,12 +119,13 @@ If team discussions reveal decisions that modify or extend the ACs, highlight th
 Read these files to understand the system:
 
 ```
-.context/business-data-map.md      # business flows and state machines
-.context/api-architecture.md       # API endpoints and authentication
-.context/project-test-guide.md     # testing guide (what to test)
+.context/mapping/business-data-map.md       # business flows and state machines
+.context/mapping/business-feature-map.md    # feature catalog, CRUD matrix, integrations
+.context/mapping/business-api-map.md        # auth model, critical journey endpoints, external integrations
+.context/master-test-plan.md                # testing guide (what to test and why)
 ```
 
-These provide business flows, API contracts, authentication model, and the test strategy. If ALL three files are missing, stop and hand off to the `project-discovery` skill — sprint-testing cannot plan without them.
+These provide business flows, feature inventory, API contracts + authentication model, and the test strategy. If ALL four files are missing, stop and hand off to the `project-discovery` skill (or invoke the individual `/business-*-map` + `/master-test-plan` commands). Sprint-testing cannot plan without them.
 
 ### Step 4 — Module context (3-level hierarchy)
 

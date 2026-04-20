@@ -27,8 +27,8 @@ Read before starting. All paths relative to repo root.
 |-------|--------|
 | Epic / feature ticket | `[ISSUE_TRACKER_TOOL]` using Jira Key from epic.md |
 | Child story list | `[ISSUE_TRACKER_TOOL]` (children of the epic) |
-| Business context | `.context/business-data-map.md` + `.context/project-test-guide.md` |
-| API context | `.context/api-architecture.md` |
+| Business context | `.context/mapping/business-data-map.md` + `.context/master-test-plan.md` |
+| API context | `.context/mapping/business-api-map.md` (business angle) + `api/schemas/` (generated types from `bun run api:sync`) |
 | Architecture + SRS (if present) | `.context/SRS/*.md`, `.context/SRS/api-contracts.yaml` |
 | Prior epic discussions | Epic comments (Team Discussion extraction — see `session-entry-points.md`) |
 
@@ -65,10 +65,10 @@ Keep to 5-10 bullets. The goal is to anchor risk analysis, not reproduce the PRD
 
 ### 2. Technical Architecture
 
-From `api-architecture.md` + `SRS/*` + backend/frontend code exploration:
+From `business-api-map.md` + `SRS/*` + `api/schemas/` + backend/frontend code exploration:
 
 - Frontend components / pages / routes touched
-- Backend endpoints + services (reference IDs from `api-architecture.md` or `api-contracts.yaml`)
+- Backend endpoints + services (reference IDs from `business-api-map.md`, `api/schemas/`, or `api-contracts.yaml`)
 - Database tables + critical queries
 - External services (payment, email, auth provider, webhooks)
 - Integration points table (internal: FE↔API, API↔DB, API↔Auth; external: API↔Stripe, API↔Email, …)

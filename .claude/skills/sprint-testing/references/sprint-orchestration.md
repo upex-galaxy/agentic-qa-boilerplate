@@ -31,9 +31,9 @@ You are the ORCHESTRATOR for in-sprint QA on `{{PROJECT_NAME}}`. Manage the work
 
 ---
 
-## Part 1 — Generating the framework file
+## Part 1 — Sprint Roadmap Generator
 
-Use when the user asks "generate the sprint testing framework", "set up sprint N", or when `sprint-file` is missing.
+Use when the user asks "generate the sprint testing framework", "set up sprint N", or when `sprint-file` is missing. **Auto-invoked by `SKILL.md` §Session Start step 0.5** in batch-sprint mode whenever `.context/PBI/SPRINT-{N}-TESTING.md` is missing or stale (>24h). Never run as a standalone command — it is a precondition of the skill.
 
 ### Inputs
 
@@ -215,7 +215,7 @@ CONTEXT FILES TO READ (in order):
   1. {test-session-memory.md path}   # READ THIS FIRST (except Session Start — writes it)
   2. {context.md path}
   3. {module-context.md path}
-  # Session Start reads instead: .context/business-data-map.md, .context/api-architecture.md, .context/project-test-guide.md
+  # Session Start reads instead: .context/mapping/business-data-map.md, .context/mapping/business-feature-map.md, .context/mapping/business-api-map.md, .context/master-test-plan.md
 
 TICKET: {{PROJECT_KEY}}-{number} -- {title}
 TYPE: {type}

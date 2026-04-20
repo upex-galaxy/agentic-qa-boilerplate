@@ -67,9 +67,17 @@ Session-start is the universal entry. Single-ticket modes run the pipeline once.
 
 Every invocation starts by initializing the session, even in batch mode. Session Start:
 
+0. **Resolve TMS modality** (Xray on Jira vs Jira-native). This determines whether ATP/ATR will be created as Xray `Test Plan` / `Test Execution` issues (Modality A) or as Story custom-field + comment mirrors (Modality B). Full resolution algorithm lives in `test-documentation/SKILL.md` §Phase 0 — apply the same four-step probe here (CLAUDE.md -> master-test-plan.md -> list issue types -> ask the user). Persist the result into `test-session-memory.md`.
+0.5. **Sprint roadmap checkpoint** (batch-sprint mode only — skip in single-ticket mode):
+   - Detect batch mode from the user invocation ("process sprint N", "continue sprint", a `sprint-file` parameter, or any phrase that implies a sprint loop).
+   - Check whether `.context/PBI/SPRINT-{N}-TESTING.md` exists for the target sprint.
+     - **Missing** -> generate it before entering the ticket loop. Delegate to `sprint-orchestration.md` §Part 1 — Sprint Roadmap Generator.
+     - **Present but older than 24h, OR the user explicitly asks for a refresh** -> regenerate (warn + confirm overwrite).
+     - **Present and fresh** -> proceed.
+   - Single-ticket and bug-only invocations skip this step entirely — they do not need a roadmap file.
 1. Fetches the ticket from `[ISSUE_TRACKER_TOOL]` (title, ACs, priority, comments).
 2. Extracts Team Discussion from comments (decisions, tech notes, edge cases, blockers). Non-blocking.
-3. Loads the three project-wide context files: `.context/business-data-map.md`, `.context/api-architecture.md`, `.context/project-test-guide.md`.
+3. Loads the project-wide context files: `.context/mapping/business-data-map.md`, `.context/mapping/business-feature-map.md`, `.context/mapping/business-api-map.md`, `.context/master-test-plan.md`.
 4. Loads or creates `module-context.md` (3-level hierarchy: project -> module -> ticket).
 5. Explores backend (`{{BACKEND_REPO}}`) + frontend (`{{FRONTEND_REPO}}`) code.
 6. Finds test data candidates via `[DB_TOOL]` on `{{DB_MCP_STAGING}}`.
@@ -136,9 +144,9 @@ Details, templates and error table live in `references/session-entry-points.md`.
 | Formalize TCs in Jira/Xray, calculate ROI, decide Candidate / Manual / Deferred | `test-documentation` | Stage 4. This skill produces the inputs; `test-documentation` produces the formal regression backlog. |
 | Write the automated test code (KATA Page / Api + test file) | `test-automation` | Stage 5. Plan -> Code -> Review pipeline. |
 | Run the regression or smoke suite in CI and emit a GO/NO-GO verdict | `regression-testing` | Stage 6. This skill's Stage 2 smoke is local-manual, not the CI suite. |
-| Generate `business-data-map.md`, `api-architecture.md`, `project-test-guide.md` | `project-discovery` | Sprint-testing consumes these; it does not create them. |
+| Generate `business-data-map.md`, `business-feature-map.md`, `business-api-map.md`, `master-test-plan.md` | `project-discovery` (or the individual `/business-*-map` and `/master-test-plan` commands) | Sprint-testing consumes these; it does not create them. |
 
-If Session Start reports that any of the three project-wide context files are missing, stop and hand off to `project-discovery`. Do not continue without them.
+If Session Start reports that any of the project-wide context files are missing, stop and hand off to `project-discovery` (or the relevant command). Do not continue without them.
 
 ---
 
