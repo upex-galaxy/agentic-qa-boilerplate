@@ -1,6 +1,6 @@
 # Business Data Map Generator
 
-Generate or update `.context/business-data-map.md` — a visual and narrative map of the system under test.
+Generate or update `.context/mapping/business-data-map.md` — a visual and narrative map of the system under test.
 
 **Target**: $ARGUMENTS (project path, or leave blank for current repo)
 
@@ -39,7 +39,7 @@ Exhaust every source before writing. Do not rely on a single one.
 ## Mode detection
 
 ```
-Does .context/business-data-map.md exist?
+Does .context/mapping/business-data-map.md exist?
   → NO:  CREATE mode — generate from scratch
   → YES: UPDATE mode — generate new version, show diff summary, ask
          for confirmation before overwriting. NEVER auto-overwrite.
@@ -94,7 +94,7 @@ For each third-party service:
 
 ## Output structure
 
-Write `.context/business-data-map.md` with this structure:
+Write `.context/mapping/business-data-map.md` with this structure:
 
 1. **Visual header** — project name + short description in ASCII box
 2. **Executive summary** — 2-3 paragraphs on business purpose, actors (ASCII diagram), value proposition
@@ -111,6 +111,6 @@ Write `.context/business-data-map.md` with this structure:
 
 ## After generation
 
-- Update the project system prompt (`CLAUDE.md` / `AGENTS.md`) with a reference to the generated file if not already present.
+- Update the AI memory file (`CLAUDE.md` / `AGENTS.md`) with a reference to the generated file if not already present.
 - In UPDATE mode: show the diff summary and wait for explicit confirmation.
 - Report: entities documented, flows traced, state machines found, integrations mapped, discovery gaps.

@@ -1,6 +1,6 @@
 # Business Feature Map Generator
 
-Generate or update `.context/PRD/business-feature-map.md` — a comprehensive inventory of every feature in the system under test.
+Generate or update `.context/mapping/business-feature-map.md` — a comprehensive inventory of every feature in the system under test.
 
 **Target**: $ARGUMENTS (project path, module filter, or leave blank for full system)
 
@@ -33,7 +33,7 @@ Exhaust every source. Do not rely on code alone — cross-reference with DB, API
 | Backend services | Business logic, validation, processing | Read `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` — focus on services, controllers, handlers |
 | Package dependencies | Third-party integrations (payments, email, auth, analytics) | Read `package.json`, `requirements.txt`, `Gemfile`, etc. |
 | Feature flags / env vars | Disabled or experimental features | Grep for `FEATURE_`, `isEnabled`, `feature.*flag` in codebase and `.env.example` |
-| Existing context | PRD, SRS, business-data-map, domain glossary | `.context/PRD/`, `.context/SRS/`, `.context/business-data-map.md`, `.context/PRD/business/` |
+| Existing context | PRD, SRS, business-data-map, domain glossary | `.context/PRD/`, `.context/SRS/`, `.context/mapping/business-data-map.md`, `.context/PRD/business/` |
 | Git history (recent) | Recently added or changed features | `git log --oneline -30` for activity patterns |
 
 **Golden rule**: a feature is any **capability the system offers** — API endpoints, UI actions, background processes, integrations. If a user or system can DO it, it's a feature.
@@ -43,7 +43,7 @@ Exhaust every source. Do not rely on code alone — cross-reference with DB, API
 ## Mode detection
 
 ```
-Does .context/PRD/business-feature-map.md exist?
+Does .context/mapping/business-feature-map.md exist?
   → NO:  CREATE mode — generate from scratch
   → YES: UPDATE mode — generate new version, show diff summary, ask
          for confirmation before overwriting. NEVER auto-overwrite.
@@ -90,7 +90,7 @@ Scan for:
 
 ### Phase 5 — Cross-reference with business-data-map
 
-If `.context/business-data-map.md` exists:
+If `.context/mapping/business-data-map.md` exists:
 - Verify every entity in the data map has corresponding CRUD features
 - Verify every business flow maps to at least one feature
 - Flag entities without features (orphaned data?)
@@ -100,7 +100,7 @@ If `.context/business-data-map.md` exists:
 
 ## Output structure
 
-Write `.context/PRD/business-feature-map.md` with:
+Write `.context/mapping/business-feature-map.md` with:
 
 ### 1. Inventory summary
 
@@ -192,6 +192,6 @@ MANDATORY. List features that:
 ## After generation
 
 - Cross-reference with `business-data-map.md` if it exists — note any mismatches.
-- Update the project system prompt (`CLAUDE.md` / `AGENTS.md`) with a reference if not already present.
+- Update the AI memory file (`CLAUDE.md` / `AGENTS.md`) with a reference if not already present.
 - In UPDATE mode: show diff summary, wait for confirmation.
 - Report: total features, features by status, CRUD coverage, integrations found, discovery gaps.
