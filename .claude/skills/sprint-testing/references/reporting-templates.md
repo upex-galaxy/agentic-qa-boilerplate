@@ -116,7 +116,7 @@ _RELATED STORIES_
 | Config/Env Error | Env var, feature flag, config |
 | Environment Error | Infra / deploy / CI |
 | Requirement Error | Spec wrong or ambiguous |
-| Working As Designed | Not a bug |
+| Working As Designed (WAD) | Not a bug |
 | Third-Party Error | Library / framework defect |
 | Integration Error | External service failure |
 | Data Error | DB corruption, bad migration |
@@ -144,7 +144,41 @@ Always include: `bug`, `exploratory-testing`. Append module or domain labels whe
 
 **Field format rules:** string fields pass a plain string; dropdowns pass `{"value": "Option"}`; omit optional fields (do not pass `null`).
 
-**Non-UPEX workspaces:** try `[ISSUE_TRACKER_TOOL] Search fields` with the field name as keyword. If no equivalent exists, ask the user for the correct ID, or as last resort embed the values in the Description under a `_ADDITIONAL FIELDS_` block and note which fields are missing.
+#### 1.10.1 Error handling when a custom-field create fails
+
+**DO NOT** attempt to discover or query for alternative field IDs when a `customfield_*` value fails to apply during bug creation. Jira custom-field IDs are tenant-specific — guessing leads to silent data corruption in other tickets.
+
+**Protocol on failure**:
+
+1. Inform the user with the **Custom Field Error** template below.
+2. Create the bug anyway with the fields that succeed.
+3. Add a comment to the created bug noting which field failed and why.
+
+**Custom Field Error template** (user-facing):
+
+> ⚠️ Custom field `{FIELD_NAME}` (id `{CUSTOMFIELD_ID}`) could not be set on `{BUG-KEY}`.
+> The bug was created without it. Please contact your Jira admin to verify the field id
+> for this project, then update `test-documentation/references/jira-setup.md` and re-run
+> `/traceability-fix` if other tickets were affected.
+
+#### 1.10.2 Non-UPEX workspaces (3-step fallback)
+
+When the project is **not** UPEX and the `customfield_*` IDs above do not exist in the target Jira instance, follow this strategy in order:
+
+1. **Search** — run `[ISSUE_TRACKER_TOOL] Search fields` using the UPEX field name as the keyword; match against the Field Mapping Guide below.
+2. **Ask** — if no equivalent is found, ask the user for the project-specific field id and store it in `test-documentation/references/jira-setup.md` §Custom fields.
+3. **Embed in Description** — as a last resort, embed the values in the bug Description under an `_ADDITIONAL FIELDS_` block and note which fields are missing so the user can wire them up later.
+
+**Field Mapping Guide** — UPEX field names and their common alternatives across tenants:
+
+| UPEX field | Common alternatives |
+|---|---|
+| SEVERITY | Bug Severity, Impact, Priority Level |
+| Error Type | Defect Type, Bug Category, Issue Type Detail |
+| Test Environment | Found In, Detected In, Environment |
+| Root Cause | Cause Category, Resolution Category, RCA Type |
+| Actual Result | Actual Behavior, Observed Behavior |
+| Expected Result | Expected Behavior, Desired Outcome |
 
 ### 1.11 Attachments
 
@@ -169,8 +203,11 @@ Before calling `[ISSUE_TRACKER_TOOL] Create issue`, present the full draft (titl
 - All Stage 2 TCs have final status PASSED or FAILED (no NOT RUN).
 - Evidence under `.context/PBI/{module}/{ticket}/evidence/`.
 - Bugs, if any, already filed per §1.
+- TMS modality resolved in Session Start (§0) and persisted in `test-session-memory.md`.
 
 ### 2.2 ATR plain-text body
+
+The same body text is used in both modalities; only the container differs (§2.4).
 
 ```
 {{PROJECT_KEY}}-{number} TEST RESULTS
@@ -200,7 +237,71 @@ RECOMMENDATIONS
   {Automation candidates, future testing, improvements}
 ```
 
-Upload via `[TMS_TOOL]` and mark ATR complete.
+"Result" values: `PASSED` (all TCs pass), `FAILED` (one or more fail), `PASSED WITH ISSUES` (all pass but with notable observations). The per-TC statuses come from the Execution Status field (Run), not the Test Status workflow — see `test-documentation/references/tms-conventions.md` §IQL.
+
+### 2.3 Upload by modality
+
+Apply the branch that matches the resolved modality (do not mix).
+
+#### Modality A — Xray on Jira (ATR = Test Execution)
+
+```
+# Update the Test Execution description with the ATR body
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {ATR_KEY}
+  description: {ATR body from §2.2}
+  fields:
+    Environment: {from body}
+    Begin Date: {from body "Tested"}
+    End Date:   {now}
+
+# Update Test Runs for each TC that executed in this session
+for each {TEST_KEY, result} in run:
+  [TMS_TOOL] Update Run:
+    execution: {ATR_KEY}
+    test:      {TEST_KEY}
+    status:    PASS | FAIL | BLOCKED | ABORTED | TODO
+    comment:   "{optional note, e.g. bug key if FAIL}"
+
+# Close the Execution
+[ISSUE_TRACKER_TOOL] Transition Issue:
+  issue: {ATR_KEY}
+  transition: done
+```
+
+If the run was already imported from CI via `[TMS_TOOL] Import Results`, the Test Runs are already populated — only the description + Environment + Begin/End need the manual update.
+
+#### Modality B — Jira-native (ATR = Story customfield + comment)
+
+```
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {STORY_KEY}
+  fields:
+    {customfield_ATR}: {ATR body from §2.2}
+
+[ISSUE_TRACKER_TOOL] Add Comment:
+  issue: {STORY_KEY}
+  body: |
+    === Test Results: {{PROJECT_KEY}}-{number} ===
+    {ATR body — byte-for-byte mirror of customfield_ATR}
+
+# Update each TC's Test Status field (Execution Status in Jira-native)
+for each {TEST_KEY, result} in run:
+  [ISSUE_TRACKER_TOOL] Update Issue:
+    issue: {TEST_KEY}
+    fields:
+      Test Status: PASSED | FAILED | BLOCKED
+  [ISSUE_TRACKER_TOOL] Add Comment:
+    issue: {TEST_KEY}
+    body: "Run {date}: {result}. Env: {env}. Session: {STORY_KEY}"
+```
+
+### 2.4 "Mark ATR complete" semantics
+
+| Modality | Completion signal |
+|----------|-------------------|
+| A (Xray) | Test Execution issue transitioned to `Done`; all Test Runs have terminal status (PASS/FAIL/BLOCKED/ABORTED, not TODO/EXECUTING). |
+| B (Jira-native) | `customfield_ATR` populated with full body (not placeholder); mirror comment present on the Story; every linked TC has a terminal Test Status. |
 
 ### 2.3 Local mirror (`test-report.md`)
 
