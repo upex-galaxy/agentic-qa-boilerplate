@@ -15,7 +15,7 @@ Three document types, each tied to a scope. Every scope produces at least `spec.
 | `spec.md` | Module (N specs), Ticket (1), Regression (1) | `.context/PBI/{module}/test-specs/{PREFIX}-T{NN}-{name}/spec.md` |
 | `implementation-plan.md` | Ticket, Regression | Same folder as spec.md — `implementation-plan.md` |
 | `atc/{TICKET-ID}-{brief-title}.md` | Complex ATCs from any scope | Same folder — `atc/{TICKET-ID}-{brief-title}.md` |
-| `ROADMAP.md`, `PROGRESS.md`, `SESSION-PROMPT.md` | Module only | `.context/PBI/{module}/test-specs/` |
+| `ROADMAP.md`, `PROGRESS.md` | Module only | `.context/PBI/{module}/test-specs/` |
 
 Canonical folder naming:
 
@@ -46,7 +46,6 @@ Outputs:
   test-specs/
     ROADMAP.md                    # Ticket index, phases, dependency graph
     PROGRESS.md                   # Session-persistent tracker
-    SESSION-PROMPT.md             # Reusable prompt for the coding agent
     {PREFIX}-T01-{name}/spec.md   # 3–7 TCs per ticket
     {PREFIX}-T02-{name}/spec.md
     …
@@ -441,7 +440,7 @@ On approval, Phase 2 begins. If approval is not forthcoming, revise the plan —
 - [ ] Each ticket has 3–7 TCs; none exceed 10.
 - [ ] Equivalence Partitioning applied across TCs; merges documented.
 - [ ] Every TC has a TMS-generated ID (§3).
-- [ ] ROADMAP.md, PROGRESS.md, SESSION-PROMPT.md created.
+- [ ] ROADMAP.md, PROGRESS.md created.
 - [ ] Data strategy table filled for every ticket (§7).
 
 ### Ticket-driven
@@ -463,3 +462,120 @@ On approval, Phase 2 begins. If approval is not forthcoming, revise the plan —
 - [ ] Component placement decided — existing component vs new + fixture update.
 
 When every box is checked, the plan is ready to hand off to Phase 2 (Code). Until then, the plan is not complete and the approval gate (§10) has not been reached.
+
+---
+
+## 12. Interrupted-session recovery
+
+When `/test-automation` is invoked mid-flow (or resumed after context loss), determine the resume step from the PBI state. The skill reads `PROGRESS.md` + `ROADMAP.md` directly — no `@`-loadable session file needed.
+
+| Has plan? (`implementation-plan.md`) | Has test code? (`tests/e2e/**` or `tests/integration/**`) | Resume from |
+|---|---|---|
+| No  | No  | **STEP 2 (Planning)** |
+| Yes | No  | **STEP 3 (Coding)** |
+| Yes | Yes | **STEP 4 (Review)** |
+
+Before classifying state, read the current ticket in `PROGRESS.md` §Current status to confirm which ticket the resume applies to.
+
+### 12.1 Revision-loop ceiling (Phase 3 · Review)
+
+Maximum revision loops: **2**. If the test is still not APPROVED after 2 revision rounds, present all remaining issues to the user and ask for guidance. Do not enter an infinite loop of reviewer ↔ coder mutations.
+
+### 12.2 Quality Gates G1–G4
+
+Named phase-transition checkpoints. Each gate blocks progression until its criteria are met.
+
+| Gate | Between | Criteria |
+|---|---|---|
+| **G1 · Plan exists** | STEP 2 → STEP 3 | `implementation-plan.md` created with ATCs defined (see §10 Approval gate) |
+| **G2 · Tests pass** | STEP 3 → STEP 4 | All ATCs green locally — soft override allowed only after §12.3 bug-detection sub-protocol |
+| **G3 · Review OK** | STEP 4 → STEP 5 | Reviewer verdict = APPROVED, or §12.1 ceiling (2 rounds) reached and the user decided next steps |
+| **G4 · Progress updated** | STEP 5 → STEP 6 | `PROGRESS.md` reflects the completed ticket (status, test file path, done count, Session Log entry) |
+
+### 12.3 G2 failure protocol — legitimate bugs during automation
+
+If G2 fails because a test uncovers a real product bug (not flaky, not a coding error), follow this sub-protocol **before** invoking the soft override:
+
+1. **Search the issue tracker** for an existing bug that matches the observed vs expected behaviour (`[ISSUE_TRACKER_TOOL] Search Issues`).
+2. **If the bug is already reported**:
+   - Add a test annotation tying the failure to the bug key — e.g. `test.fail('Blocked by {BUG-KEY}')` or a `@blocked:{BUG-KEY}` tag.
+   - Keep the test in the suite during automation runs (no silent skip — the failure is informative).
+   - The `@blocked:{BUG-KEY}` tag lets `/regression-testing` filter the test out of GO/NO-GO decisions until the bug is fixed.
+3. **If the bug is NOT reported**:
+   - Present the observed vs expected diff to the user and wait for explicit confirmation that it is a real defect.
+   - On approval, delegate bug-report creation to `/sprint-testing` (Stage 3 Reporting — see `sprint-testing/references/reporting-templates.md` §1).
+   - Once the bug key is issued, apply step 2 above.
+4. **Document in `PROGRESS.md`** — record each blocked test + bug key in the Session Log (and the Blocked tests table, see §13.2) so the next session does not re-investigate the same failure.
+
+Only after steps 1–4 can G2 be overridden and STEP 4 (Review) start. A failing test without a bug key behind it is never an acceptable override.
+
+---
+
+## 13. Shared state files — templates
+
+Both files live under `.context/PBI/{module}/test-specs/` and are the single source of truth for module-wide automation progress. Populate the template blocks verbatim (copy, then fill); keep section headings stable so future sessions can grep reliably.
+
+### 13.1 `ROADMAP.md` (ticket index + dependencies)
+
+````md
+# {MODULE} · Automation Roadmap
+
+## Tickets
+
+| ID | Title | Priority | Phase | Dependencies | TCs |
+|---|---|---|---|---|---|
+| {PREFIX}-T01-{slug} | ... | P0 | Plan | — | 3 |
+| {PREFIX}-T02-{slug} | ... | P1 | Code | T01 | 5 |
+
+## Dependency graph
+
+```
+T01 ──┬──► T02 ──► T04
+      └──► T03
+```
+
+## Phase progress
+
+- Plan:   ▓▓▓▓░ 4/5
+- Code:   ▓▓░░░ 2/5
+- Review: ▓░░░░ 1/5
+````
+
+### 13.2 `PROGRESS.md` (session-persistent tracker)
+
+````md
+# {MODULE} · Automation Progress
+
+## Current status
+
+- Current ticket: {PREFIX}-T02-{slug}
+- Completed: 1/5
+- Remaining: 4/5
+
+## Tickets
+
+| Ticket | Status | Test file | Done | Notes |
+|---|---|---|---|---|
+| T01 | done | tests/e2e/login.spec.ts | 3/3 | — |
+| T02 | in-progress | tests/e2e/signup.spec.ts | 1/5 | Fixture blocked on email-verify mock |
+
+## Session log
+
+| Date | Action | Actor | Artifacts |
+|---|---|---|---|
+| 2026-04-19 | Planned T02 | AI | implementation-plan.md |
+| 2026-04-20 | Coded T02 ATC1 | AI | tests/e2e/signup.spec.ts |
+
+## Shared components created
+
+- `UserFormPage` (`tests/components/ui/UserFormPage.ts`) — used by T02, T05
+- `AuthApi.signupWithRetry` — used by T02, T04
+
+## Blocked tests
+
+| Test | Bug key | Reason | Since |
+|---|---|---|---|
+| `signup > invalid email rejects` | {PROJECT_KEY}-999 | Server-side validation missing | 2026-04-20 |
+````
+
+The Blocked tests table is populated from §12.3 — every `@blocked:{BUG-KEY}` test must appear here with the reason and the date the block began. Remove a row only when the bug is closed and the test goes green.
