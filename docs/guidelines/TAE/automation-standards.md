@@ -971,9 +971,5 @@ export default defineConfig({
 ## References
 
 - **KATA Architecture**: `kata-architecture.md`
-- **E2E Automation**: `.prompts/stage-5-automation/coding/e2e-test-coding.md`
-- **API Automation**: `.prompts/stage-5-automation/coding/integration-test-coding.md`
-- **E2E Review**: `.prompts/stage-5-automation/review/e2e-test-review.md`
-- **API Review**: `.prompts/stage-5-automation/review/integration-test-review.md`
-- **Module Test Spec**: `.prompts/stage-5-automation/planning/module-test-specification.md`
-- **Test Implementation Plan**: `.prompts/stage-5-automation/planning/test-implementation-plan.md`
+
+For AI-orchestrated variants of coding, review, and planning workflows, consult your AI assistant's skills catalog.

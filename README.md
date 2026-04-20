@@ -337,7 +337,7 @@ When you clone this template, follow this flow to adapt it to your project:
 │    • Discovers business/architecture/infrastructure context│
 │    • Generates .context/ (PRD/, SRS/)                      │
 │    • Generates business-data-map / api-architecture /      │
-│      project-test-guide                                     │
+│      master-test-plan                                     │
 │    • Adapts KATA to your stack                             │
 │    • Regenerates README.md and CLAUDE.md                   │
 └────────────────────────┬────────────────────────────────────┘
@@ -385,7 +385,7 @@ Each skill auto-activates when your prompt matches its description triggers. You
   - "Adapt this repo to my new backend stack at `../my-backend`."
   - "Generate the `.context/` files for this project."
   - "Onboard this boilerplate to the app in `../my-frontend`."
-- **What happens next**: The skill discovers business/architecture/infrastructure context, generates `.context/` (`PRD/`, `SRS/`, `business-data-map.md`, `api-architecture.md`, `project-test-guide.md`), adapts KATA to your stack, and refreshes CLAUDE.md.
+- **What happens next**: The skill discovers business/architecture/infrastructure context, generates `.context/` (`PRD/`, `SRS/`, `mapping/business-data-map.md`, `mapping/business-feature-map.md`, `mapping/business-api-map.md`, `master-test-plan.md`), adapts KATA to your stack, and refreshes CLAUDE.md.
 
 #### 2. Running an in-sprint QA loop
 
@@ -549,7 +549,7 @@ touch tests/e2e/your-module/your-feature.test.ts
 
 ### 4. Generate Context
 
-Load the `/project-discovery` skill in your AI assistant to generate project-specific context (idea, PRD, SRS, business-data-map, api-architecture, project-test-guide).
+Load the `/project-discovery` skill in your AI assistant to generate project-specific context (idea, PRD, SRS, business-data-map, api-architecture, master-test-plan).
 
 ---
 

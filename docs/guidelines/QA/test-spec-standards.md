@@ -427,6 +427,3 @@ Before finalizing test specs, verify:
 
 - **TC Identity Rule (source of truth)**: `docs/guidelines/TAE/test-design-principles.md` (Section 1)
 - **ATC Definition Strategy**: `docs/guidelines/QA/atc-definition-strategy.md`
-- **Planning Scopes**: `.prompts/stage-5-automation/README.md` (Section: Planning Scope)
-- **Module Test Specification** (macro planning): `.prompts/stage-5-automation/planning/module-test-specification.md`
-- **Test Implementation Plan** (per ticket): `.prompts/stage-5-automation/planning/test-implementation-plan.md`

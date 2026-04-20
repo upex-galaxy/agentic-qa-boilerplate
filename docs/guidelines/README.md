@@ -97,7 +97,7 @@ See `CLAUDE.md` MCPs Available section for usage patterns and decision rules.
 
 ## Workflows
 
-Guidelines are **constant principles**. See the project's prompts directory for workflow guides.
+Guidelines are **constant principles** that outlive tool changes. Workflow orchestration lives in the project's AI tooling (skills + commands); refer to the AI memory file at the repo root for the current catalog.
 
 ---
 

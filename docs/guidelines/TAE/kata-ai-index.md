@@ -337,7 +337,7 @@ TEST_USER_PASSWORD=secret123
 
 ## AI Implementation Workflow
 
-See the project's prompts directory for workflow guides.
+Workflow orchestration lives in the project's AI tooling -- refer to the AI memory file for the current catalog.
 
 ### Workflow Phases Overview
 

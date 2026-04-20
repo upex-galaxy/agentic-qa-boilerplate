@@ -231,9 +231,11 @@ The knowledge layer is organised in three tiers, mirroring the scope at which th
 
 ```
 .context/
-├── business-data-map.md          # Project level — system flows and entities
-├── api-architecture.md           # Project level — endpoints, schemas
-├── project-test-guide.md         # Project level — what to test and why
+├── mapping/                      # Project level — business maps (command-generated)
+│   ├── business-data-map.md      #   System flows and entities         (/business-data-map)
+│   ├── business-feature-map.md   #   Feature catalog, CRUD, flags      (/business-feature-map)
+│   └── business-api-map.md       #   Auth model, critical endpoints    (/business-api-map)
+├── master-test-plan.md           # Project level — what to test and why (/master-test-plan)
 ├── PRD/                          # Project level — product requirements (phase 2 of discovery)
 │   └── business/                 #   Business constitution, domain glossary
 ├── SRS/                          # Project level — software requirements (phase 2 of discovery)
@@ -243,7 +245,6 @@ The knowledge layer is organised in three tiers, mirroring the scope at which th
         └── test-specs/
             ├── ROADMAP.md        # All tickets + automation status
             ├── PROGRESS.md       # Current progress
-            ├── SESSION-PROMPT.md # @-loadable session resume
             └── {PROJECT_KEY}-XXX-{title}/
                 ├── spec.md                # Test specification
                 ├── implementation-plan.md # Automation plan
@@ -404,7 +405,7 @@ The `sprint-testing` skill handles the per-ticket work across Stages 1, 2 and 3.
 
 - Fetch the ticket via `[ISSUE_TRACKER_TOOL]` (title, ACs, comments, linked artefacts).
 - Explain the story back to the user in plain English and wait for confirmation.
-- Load project context (`.context/project-test-guide.md`, `api-architecture.md`, `business-data-map.md`).
+- Load project context (`.context/master-test-plan.md`, `.context/mapping/business-data-map.md`, `.context/mapping/business-feature-map.md`, `.context/mapping/business-api-map.md`).
 - Explore the frontend and backend code related to the ticket.
 - Query the database via `[DB_TOOL]` for test data candidates (**generate > discover > modify** hierarchy — never hardcode).
 - Create or update the PBI folder (`.context/PBI/{module}/{PROJECT_KEY}-XXX-{title}/`).

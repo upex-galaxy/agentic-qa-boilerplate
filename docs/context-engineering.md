@@ -57,9 +57,11 @@ agentic-qa-boilerplate/
 ├── PRD/business/        → Business context (generated)
 ├── PBI/                 → Backlog items (generated)
 │
-├── business-data-map.md    → System flows (generated)
-├── api-architecture.md     → API documentation (generated)
-└── project-test-guide.md   → Testing guide (generated)
+├── mapping/                → Business maps (command-generated)
+│   ├── business-data-map.md       → System flows            (/business-data-map)
+│   ├── business-feature-map.md    → Feature catalog         (/business-feature-map)
+│   └── business-api-map.md        → Auth + critical API     (/business-api-map)
+└── master-test-plan.md     → Testing guide                   (/master-test-plan)
 ```
 
 Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live inside Claude Code skills under `.claude/skills/`.
@@ -144,9 +146,11 @@ Phase 4: Specification   → Connect to backlog
 After discovery, generate operational context via the `/project-discovery` skill:
 
 ```
-/project-discovery (business-data-map flow)    → .context/business-data-map.md
-/project-discovery (api-architecture flow)     → .context/api-architecture.md
-/project-discovery (project-test-guide flow)   → .context/project-test-guide.md
+/business-data-map          → .context/mapping/business-data-map.md
+/business-feature-map       → .context/mapping/business-feature-map.md
+/business-api-map           → .context/mapping/business-api-map.md
+/master-test-plan           → .context/master-test-plan.md
+bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 ```
 
 ### QA Stages (Per User Story)
@@ -169,7 +173,7 @@ Stage 5: Regression     → Execute and report
 |------|------------|----------------|
 | **Write E2E Test** | `kata-ai-index.md` | `e2e-testing-patterns.md` |
 | **Write API Test** | `kata-ai-index.md` | `api-testing-patterns.md` |
-| **Exploratory Testing** | `project-test-guide.md` | MCP guides |
+| **Exploratory Testing** | `master-test-plan.md` | MCP guides |
 | **Understand System** | `business-data-map.md` | `PRD/*`, `SRS/*` |
 | **Use MCP** | `MCP/README.md` | Specific MCP guide |
 

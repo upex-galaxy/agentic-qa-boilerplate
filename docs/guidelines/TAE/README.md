@@ -10,7 +10,7 @@
 
 Quick orientation, critical rules, and task-based navigation.
 
-**For implementing ATCs**: See the project's prompts directory
+**For implementing ATCs**: consult your AI assistant's test automation workflow (see the AI memory file for the current catalog of skills + commands).
 
 ---
 
