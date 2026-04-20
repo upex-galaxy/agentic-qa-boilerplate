@@ -6,7 +6,8 @@ Produce the Product Requirements Documents by reading the code, not by interview
 1. Executive Summary     -> .context/PRD/executive-summary.md
 2. User Personas         -> .context/PRD/user-personas.md
 3. User Journeys         -> .context/PRD/user-journeys.md
-4. Feature Inventory     -> .context/PRD/feature-inventory.md
+4. Feature Inventory     -> delegated to /business-feature-map command
+                            (output: .context/mapping/business-feature-map.md)
 ```
 
 Prereqs (from Phase 1): `.context/PRD/business/business-model.md` and `.context/PRD/business/domain-glossary.md` must exist. Personas link to roles already identified in the glossary; journeys link to features already identified in the business model.
@@ -192,60 +193,15 @@ grep -rE "redirect\(|router\.(push|replace)" --include="*.ts" --include="*.tsx" 
 
 ---
 
-## 4. Feature Inventory
+## 4. Feature Inventory — delegated to `/business-feature-map`
 
-Comprehensive catalog. Later consumed by `test-documentation` for coverage mapping and by `test-automation` for scope selection.
+Feature inventory work lives in the `/business-feature-map` command, **not** in this phase. After the PRD sections above are complete (Executive Summary, User Personas, User Journeys), invoke `/business-feature-map` to produce `.context/mapping/business-feature-map.md`.
 
-### Discovery commands
+The command covers everything that used to be section 4: feature catalog by domain (with stable `FEAT-NNN` IDs), CRUD matrix per entity, API endpoint inventory, UI component inventory (forms + dashboards), third-party integrations, feature flags, planned/WIP features, and the QA relevance matrix. Do not duplicate that logic inside this reference.
 
-```bash
-# API endpoints (feature per endpoint)
-find <repo-root>/src/app/api -name "route.ts" | sort        # Next.js App Router
-find <repo-root>/src/pages/api -name "*.ts" | sort           # Next.js Pages Router
-grep -rE "@(Get|Post|Put|Patch|Delete)\(|app\.(get|post|put|patch|delete)\(|router\.(get|post|put|patch|delete)\(" --include="*.ts" <repo-root>/src
-cat <repo-root>/openapi.yaml <repo-root>/swagger.json 2>/dev/null
+**Why split?** The feature map is now also useful outside the discovery pipeline (e.g. when only the backlog changes), so it lives as a standalone command that can be re-run on demand without going through the four-phase discovery again. It also keeps phase-2-prd.md focused on the human-readable PRD docs (summary, personas, journeys), with feature taxonomy as a sibling artifact rather than a section.
 
-# Group by resource
-find <repo-root>/src/app/api -name "route.ts" -exec dirname {} \; | sort -u
-
-# UI feature components
-ls <repo-root>/src/components/features <repo-root>/src/features 2>/dev/null
-find <repo-root>/src -iname "*Form*.tsx" | head -30
-find <repo-root>/src -iname "*Modal*.tsx" -o -iname "*Dialog*.tsx" | head -30
-
-# Feature flags
-grep -rE "FEATURE_|featureFlag|isEnabled\(|useFeature" --include="*.ts" <repo-root>/src | head -30
-grep -rE "process\.env\.(NEXT_PUBLIC_)?FEATURE_" --include="*.ts" <repo-root>/src | head -20
-
-# Integrations (from deps)
-cat <repo-root>/package.json | jq '.dependencies + .devDependencies | keys[]' | grep -E "stripe|twilio|sendgrid|mailgun|auth0|firebase|aws-sdk|@aws|supabase|clerk|algolia"
-```
-
-### Required sections in `.context/PRD/feature-inventory.md`
-
-1. **Inventory Summary** -- `Category | Features (count) | Status (Stable/Beta/Planned)`.
-2. **Feature Catalog** grouped by Category (use the domain areas from the glossary). Each feature:
-   - ID (`FEAT-NNN`), Status (Stable / Beta / Planned), Endpoints, UI Components, User Types, Dependencies, Evidence (code path).
-   - Capabilities checklist (done / partial / not-implemented).
-3. **CRUD Matrix** -- one row per entity, columns Create / Read / Update / Delete. Use `Full / Partial / None` markers. Soft-delete is Partial.
-4. **API Endpoint Inventory** -- one table per resource path, columns `Method | Endpoint | Purpose | Auth Required`.
-5. **UI Component Inventory** -- two tables:
-   - Forms: `Component | Purpose | Route | Features`.
-   - Dashboards/Views: `Component | Purpose | Route | Data Source`.
-6. **Third-Party Integrations** -- summary table (`Service | Purpose | Package | Status`) and then one subsection per active integration with aspects + endpoints used.
-7. **Feature Flags** -- `Flag | Description | Default | Environment`.
-8. **Planned/WIP Features** -- `Feature | Evidence (TODO comment, disabled flag, empty handler) | Estimated Status`.
-9. **Discovery Gaps**.
-10. **QA Relevance**
-    - Feature Test Coverage Matrix: `Feature ID | Unit | Integration | E2E | Status`.
-    - High-Risk Features (Prioritize Testing): `Feature | Risk Factor | Reason`.
-
-### Quality rules
-
-- Feature IDs are stable (`FEAT-NNN`). Once assigned, do not renumber in future regenerations -- consumers depend on them.
-- CRUD Matrix entries must match real endpoints. `DELETE /users/:id` returning 403 for non-admins is still `Full` if admins can do it; add a note.
-- Third-Party Integrations: require a real call site, not just a dependency import. `@sentry/nextjs` in `package.json` alone does not prove Sentry is integrated -- look for `Sentry.init(...)`.
-- "Beta" vs "Stable" comes from: explicit feature flag + staging-only default = Beta; shipped-by-default = Stable.
+When the PRD is assembled, link from `executive-summary.md` and `user-journeys.md` to `business-feature-map.md` for the canonical feature list — never paste a feature catalog into those docs.
 
 ---
 
@@ -256,9 +212,9 @@ Before moving to the SRS half of Phase 2:
 - [ ] `.context/PRD/executive-summary.md` exists, 5-or-fewer core capabilities, every row has evidence.
 - [ ] `.context/PRD/user-personas.md` exists, 2-4 personas, Permission Matrix filled in, test-account mapping to `.env` complete.
 - [ ] `.context/PRD/user-journeys.md` exists, Route Map has all three tables filled in, 3-5 journeys each with Evidence column populated, error paths included.
-- [ ] `.context/PRD/feature-inventory.md` exists, CRUD matrix complete for every core entity in the glossary, FEAT-NNN IDs assigned.
-- [ ] All four docs include a Discovery Gaps section.
-- [ ] `## Phase 2 Progress - PRD` block present in `CLAUDE.md`, checkmarks on all four PRD files.
+- [ ] `.context/mapping/business-feature-map.md` exists (produced by the `/business-feature-map` command, NOT by this phase). CRUD matrix complete for every core entity in the glossary, FEAT-NNN IDs assigned.
+- [ ] All three PRD docs (executive-summary, user-personas, user-journeys) include a Discovery Gaps section. The feature map has its own gaps section.
+- [ ] `## Phase 2 Progress - PRD` block present in `CLAUDE.md`, checkmarks on the three in-phase docs + a pointer to `business-feature-map.md`.
 
 Proceed to `phase-2-srs.md` once the gate is met.
 
@@ -269,9 +225,6 @@ Proceed to `phase-2-srs.md` once the gate is met.
 - **PRDs are discovery, not creation.** Do not re-scope the product. Describe what it does today; aspirational content goes in Discovery Gaps.
 - **Personas = roles.** In existing systems, personas are the roles the authorization code recognizes. Do not invent "Sarah the busy marketer" -- document "admin", "editor", "viewer" with their actual permissions.
 - **Journeys need step-level evidence.** Every step row needs a file path. If you cannot cite a file for a step, the step does not exist in the code; it is either a guess or a future feature -- flag accordingly.
-- **Feature IDs are load-bearing.** Once assigned (`FEAT-001`, `FEAT-002`, ...), they are referenced from test plans, test cases, and bug reports downstream. Never renumber on regeneration.
-- **CRUD matrix checks schema-level, not endpoint-level.** If only admins can DELETE, it is still Full (admin role exists). But if there is no DELETE handler at all, it is None. A soft-delete column (`deletedAt`) plus no DELETE endpoint = Partial.
-- **Third-party integration requires a call site.** Presence in `package.json` is necessary but not sufficient; find `.init()`, `new Client()`, or a real service wrapper.
-- **Feature flags must declare their default.** A flag with no default in config is an unresolved risk and belongs in Discovery Gaps.
+- **Feature IDs and the catalog live in `business-feature-map.md`.** Stable `FEAT-NNN` IDs, CRUD matrix, third-party integration call-site rule, feature-flag defaults — all of that is owned by `/business-feature-map`. PRD docs (summary, personas, journeys) link to it instead of re-listing features.
 - **Happy paths without error paths are incomplete.** Refuse to ship a journey doc that lists only the success flow. Error handling is half the behavior.
 - **Breadcrumb patterns reveal hierarchy.** If a project uses breadcrumbs, their patterns are the canonical nesting model -- prefer them over navigation group names.

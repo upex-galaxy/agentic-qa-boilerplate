@@ -45,7 +45,7 @@ IQL stitches together eight complementary approaches; each is most useful at a s
 | BDD | Collaborative specification with Given-When-Then | Early-Game |
 | AI-Driven Testing | Use AI to improve coverage and efficiency | All phases |
 
-The discovery outputs (PRD, SRS, business-data-map, api-architecture, project-test-guide) are the substrate every approach above relies on. Without them, Shift-Left has nothing to shift; Risk-Based has nothing to score; AI-Driven has nothing to ground its prompts in.
+The discovery outputs (PRD, SRS, business-data-map, master-test-plan) are the substrate every approach above relies on. Without them, Shift-Left has nothing to shift; Risk-Based has nothing to score; AI-Driven has nothing to ground its prompts in. (API endpoint shape is sourced separately from `bun run api:sync` outputs and the `/business-api-map` command.)
 
 ---
 
@@ -102,12 +102,12 @@ The four discovery phases are not arbitrary. Each one produces the inputs a spec
 | Discovery phase | Output | IQL step that consumes it | Why |
 |-----------------|--------|---------------------------|-----|
 | Phase 1 — Constitution | `business-model.md`, `domain-glossary.md`, `project-config.md` | Step 1 (AC Review) | Cannot review ACs against a system you do not understand. Glossary disambiguates "user" vs "account" vs "tenant". |
-| Phase 2 — PRD | `executive-summary.md`, `user-personas.md`, `user-journeys.md`, `feature-inventory.md` | Step 1 (Risk-Based scoping) + Step 3 (Exploratory charters) | Personas drive role-based test design. Journeys become charter starting points. |
+| Phase 2 — PRD | `executive-summary.md`, `user-personas.md`, `user-journeys.md` (+ `business-feature-map.md` from `/business-feature-map` command) | Step 1 (Risk-Based scoping) + Step 3 (Exploratory charters) | Personas drive role-based test design. Journeys become charter starting points. |
 | Phase 2 — SRS | `architecture.md`, `api-contracts.md`, `functional-specs.md`, `non-functional-specs.md` | Step 5 (TC Documentation) + Step 6 (Automation Candidate Evaluation) | TCs cite FR-N entries; API contracts define request/response oracles for automation. |
 | Phase 3 — Infrastructure | `backend.md`, `frontend.md`, `infrastructure.md` | Step 7 (Implementation) + Step 8 (CI Verification) | Cannot script auth without knowing how auth works. Cannot configure CI without knowing run/deploy commands. |
 | Phase 4 — Specification | `PBI/README.md`, `templates/*.md` | Step 4 (Defect Reporting) + Step 5 (TC Documentation) | Bug reports and TC tickets must follow the team's tracker conventions. |
 | Setup — KATA Adaptation | `tests/components/**`, `.env` | Step 7 (Implementation) | Automation framework wired to the actual stack — no template, no automation. |
-| Context Generators | `business-data-map.md`, `api-architecture.md`, `project-test-guide.md` | Steps 1, 3, 5, 6, 7 | The three highest-traffic context files. Used by every QA and automation session to ground prompts in reality. |
+| Context Generators | `business-data-map.md`, `master-test-plan.md` | Steps 1, 3, 5, 6, 7 | The two highest-traffic context files this skill owns. Used by every QA and automation session to ground prompts in reality. (API context comes from `bun run api:sync` types + `/business-api-map`, both outside this skill.) |
 
 ---
 
@@ -136,7 +136,7 @@ Discovery dependency: needs Phase 3 (env URLs, run commands) so QA can stand the
 
 QA runs directed exploratory sessions in critical/high-risk areas using FTP charters. Feedback flows back to development immediately.
 
-Discovery dependency: needs `project-test-guide.md` so QA knows which flows are critical and where the historical pain lives.
+Discovery dependency: needs `master-test-plan.md` so QA knows which flows are critical and where the historical pain lives.
 
 ### Step 4 — Defect Reporting (TMLC Stage 3)
 
@@ -179,7 +179,7 @@ Discovery dependency: needs Phase 2 SRS (functional specs to cite as oracles) an
 
 QA reviews each TC against an automation decision matrix (frequency, ROI, stability, risk). Result: TC is marked Candidate or Manual; Candidates land in the Automation Backlog.
 
-Discovery dependency: needs `project-test-guide.md` and ROI rubric (covered by `test-documentation` skill).
+Discovery dependency: needs `master-test-plan.md` and ROI rubric (covered by `test-documentation` skill).
 
 ### Step 7 — Test Automation Implementation (TALC Stage 2)
 
@@ -203,7 +203,7 @@ Discovery dependency: project conventions captured in `project-config.md` (branc
 
 Run regression (manual + automated), smoke/sanity in staging, remove obsolete tests.
 
-Discovery dependency: needs `project-test-guide.md` for the regression-suite definition. Owned by `regression-testing` skill at execution time.
+Discovery dependency: needs `master-test-plan.md` for the regression-suite definition. Owned by `regression-testing` skill at execution time.
 
 ---
 
@@ -213,9 +213,20 @@ Three concrete reasons the discovery skill enforces this framing:
 
 1. **Earlier defect detection is cheaper.** A defect found in Early-Game (during AC review or exploratory testing) costs a conversation. The same defect found in Late-Game (production) costs an incident response, a hotfix, a postmortem, and trust capital with users. The discovery artifacts (PRD/SRS/glossary) make Early-Game possible for a project the team is new to — without them, "shift-left" is a slogan with no surface area.
 
-2. **Async TC documentation keeps delivery fast.** STLC blocked merges on a complete test plan. IQL signs off the User Story on exploratory evidence (Step 3-4) and writes formal TCs after the fact (Step 5). The discovery's `project-test-guide.md` gives QA the prioritization it needs to know which TCs to write first when the backlog is long — without it, the async pattern collapses into "we never wrote them."
+2. **Async TC documentation keeps delivery fast.** STLC blocked merges on a complete test plan. IQL signs off the User Story on exploratory evidence (Step 3-4) and writes formal TCs after the fact (Step 5). The discovery's `master-test-plan.md` gives QA the prioritization it needs to know which TCs to write first when the backlog is long — without it, the async pattern collapses into "we never wrote them."
 
-3. **Automation needs a context anchor.** AI-Driven Testing prompts (test-automation skill) reference `business-data-map.md` and `api-architecture.md` to ground generation in real entities and real endpoints. Without those files, the AI hallucinates. The discovery skill exists to remove that hallucination surface before the rest of the lifecycle starts.
+3. **Automation needs a context anchor.** AI-Driven Testing prompts (test-automation skill) reference `business-data-map.md` (entities + flows) and the OpenAPI types under `api/schemas/` produced by `bun run api:sync` (real request/response shapes) to ground generation. Without those, the AI hallucinates. The discovery skill exists to remove that hallucination surface — at least for the business side — before the rest of the lifecycle starts.
+
+---
+
+## Operational cycles — SDC and TDC
+
+Two complementary cycles run in parallel across IQL phases. They are not new phases — they are *how work moves through Jira*.
+
+- **Story Delivery Cycle (SDC)**: the Story's own lifecycle. PM writes AC → Dev implements → QA validates via exploratory + ATP/ATR artifacts → Story → `Done`. Each Story produces one ATP and one ATR (see `test-documentation/references/tms-architecture.md` for the containers per modality). Owner: PM + Dev + QA Analyst.
+- **Test Delivery Cycle (TDC)**: the Test's own lifecycle. QA identifies scenarios during SDC exploration → Analyst documents them in Stage 4 → Engineer automates Candidates in Stage 5 → Regression suite runs them forever. Owner: QA Analyst + QA Engineer.
+
+SDC and TDC overlap every sprint: SDC produces validated behaviour; TDC turns the subset worth protecting into regression. A healthy project measures both — SDC throughput (Stories/sprint, time-to-Done) and TDC coverage (% of Candidates Automated, regression pass-rate). `/project-discovery` seeds both cycles; `/sprint-testing` runs SDC per Story; `/test-documentation` + `/test-automation` run TDC per TC.
 
 ---
 

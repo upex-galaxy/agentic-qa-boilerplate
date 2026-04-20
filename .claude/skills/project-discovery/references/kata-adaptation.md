@@ -2,7 +2,7 @@
 
 > Read this during the Setup phase (after Phase 3 Infrastructure is complete). Adapts the boilerplate's KATA layers to the target project's stack, auth, and domain. Two strict sub-phases: **Plan** (no writes) -> user approval -> **Implement** (writes).
 
-This reference is purely about KATA mechanics: layer templates, auth strategy, OpenAPI integration, validation. It does NOT cover regenerating context files (`business-data-map.md`, `api-architecture.md`, `project-test-guide.md`) — those are in `context-generators.md`.
+This reference is purely about KATA mechanics: layer templates, auth strategy, OpenAPI integration, validation. It does NOT cover regenerating context files (`business-data-map.md`, `master-test-plan.md`) — those are in `context-generators.md`. API endpoint sync is owned by `bun run api:sync` (technical types) and the `/business-api-map` command (business angle).
 
 ---
 
@@ -44,11 +44,11 @@ Mandatory inputs (assumes Phase 1-3 of discovery already ran):
 ```
 .context/SRS/architecture.md           # tech stack, services
 .context/SRS/api-contracts.md          # endpoints + auth model
-.context/PRD/feature-inventory.md      # entities to scaffold
+.context/mapping/business-feature-map.md   # entities to scaffold (from /business-feature-map command)
 .context/PRD/business/domain-glossary.md       # entity names, casing
-.context/api-architecture.md           # endpoint inventory
-.context/business-data-map.md          # main flows
+.context/mapping/business-data-map.md          # main flows
 .context/infrastructure/backend.md     # auth flow, env vars
+api/schemas/                           # endpoint types from `bun run api:sync` (if available)
 ```
 
 If any of these is missing, route the user back to the missing discovery phase. Do not try to scaffold KATA against guesses.
@@ -136,7 +136,7 @@ Pick during planning. If "None", the plan must call out that all type facades wi
 
 ### 5. Identify components to create
 
-Map domain entities (from `domain-glossary.md` and `feature-inventory.md`) to components.
+Map domain entities (from `domain-glossary.md` and `business-feature-map.md`) to components.
 
 | Always needed | Per entity |
 |---------------|------------|
@@ -144,7 +144,7 @@ Map domain entities (from `domain-glossary.md` and `feature-inventory.md`) to co
 | `LoginPage.ts` (modify existing) | `{Entity}Page.ts` for each main page/feature |
 | `auth.types.ts` (modify existing) | `{domain}.types.ts` for each domain |
 
-Do not scaffold every entity at once. Pick the **first priority entity** (highest-traffic flow per `project-test-guide.md`) and ship that end-to-end before adding more.
+Do not scaffold every entity at once. Pick the **first priority entity** (highest-traffic flow per `master-test-plan.md`) and ship that end-to-end before adding more.
 
 ### 6. Generate the adaptation plan
 

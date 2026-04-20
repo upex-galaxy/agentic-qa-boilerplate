@@ -9,13 +9,13 @@
     {
       "name": "should-trigger-business-data-map-regeneration",
       "prompt": "Generate the business-data-map.md for this project. Look at the source code and the database.",
-      "expected_behavior": "Activates project-discovery. Loads references/context-generators.md. Reads source code + schema, extracts entities, flows, triggers, cron jobs, webhooks, and writes .context/business-data-map.md. If prior phases missing, runs minimum prerequisites (project-connection + backend-discovery) first.",
+      "expected_behavior": "Activates project-discovery. Loads references/context-generators.md. Reads source code + schema, extracts entities, flows, triggers, cron jobs, webhooks, and writes .context/mapping/business-data-map.md. If prior phases missing, runs minimum prerequisites (project-connection + backend-discovery) first.",
       "category": "positive"
     },
     {
-      "name": "should-trigger-api-architecture-refresh",
+      "name": "should-redirect-api-architecture-request",
       "prompt": "The api-architecture.md is stale. Regenerate it with the current endpoints.",
-      "expected_behavior": "Activates project-discovery. Loads references/context-generators.md. Scans backend routes/controllers, groups endpoints by auth level (Public/Protected/Admin/Owner), regenerates .context/api-architecture.md. Diffs against existing file and confirms overwrite vs merge with the user before writing.",
+      "expected_behavior": "Does NOT regenerate api-architecture.md inside this skill. Either declines (if invoked) or activates only to redirect: explains the split — `bun run api:sync` for technical endpoint sync (TypeScript types from OpenAPI) and the `/business-api-map` command for the business angle (auth flows, critical paths). Points to `references/context-generators.md` §API context — deferred for the canonical deferral note.",
       "category": "positive"
     },
     {

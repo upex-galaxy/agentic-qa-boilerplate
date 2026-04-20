@@ -1,6 +1,6 @@
 ---
 name: project-discovery
-description: "Onboard a project to this testing boilerplate, generate the context files that every QA and automation session depends on, and adapt the KATA test architecture to the target stack. Runs a 4-phase discovery (Constitution, Architecture, Infrastructure, Specification) that produces PRD, SRS, domain glossary, business-data-map, api-architecture, and test-ready fixtures. Use when the user says: set up this project, onboard this repo, connect to project, discover the architecture, generate business-data-map, regenerate api-architecture, create PRD/SRS, adapt KATA to this project, or set up testing framework. Also use when .context/business-data-map.md or .context/api-architecture.md is missing or stale. Do NOT use for writing tests (test-automation), documenting TCs (test-documentation), running suites (regression-testing), or testing a ticket (sprint-testing)."
+description: "Onboard a project to this testing boilerplate, generate the context files that every QA and automation session depends on, and adapt the KATA test architecture to the target stack. Runs a 4-phase discovery (Constitution, Architecture, Infrastructure, Specification) that produces PRD, SRS, domain glossary, business-data-map, and test-ready fixtures. Use when the user says: set up this project, onboard this repo, connect to project, discover the architecture, generate business-data-map, create PRD/SRS, adapt KATA to this project, or set up testing framework. Also use when .context/mapping/business-data-map.md is missing or stale. Do NOT use for writing tests (test-automation), documenting TCs (test-documentation), running suites (regression-testing), testing a ticket (sprint-testing), or syncing API endpoints (use `bun run api:sync` for technical sync; the `/business-api-map` command for the business angle)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 ---
@@ -24,7 +24,7 @@ All projects go through the same 4 phases, but depth varies. Pick once, then fol
 | **Fresh onboarding** (greenfield or unseen project) | Repo URL or local path(s), no existing context files | 1 -> 2 -> 3 -> 4 -> Setup | Full. All docs generated. |
 | **Boilerplate adoption** (this repo adopted for a new project) | Target app repo(s), this repo as the test framework | 1 (project-connection) -> 3 -> Setup -> Context generators | Skip 2+4 if PRD/SRS already exist upstream; always run Setup to adapt KATA. |
 | **Brownfield** (project already documented, tests missing) | Existing `.context/` partially filled | 2 (gaps) -> 3 (gaps) -> Setup -> Context generators | Targeted. Only regenerate what's missing/stale. |
-| **Context refresh** | User says "regenerate business-data-map" or "api-architecture is outdated" | Context generators only | One-file refresh. Confirm diffs before overwriting. |
+| **Context refresh** | User says "regenerate business-data-map" | Context generators only | One-file refresh. Confirm diffs before overwriting. For the test plan, redirect to `/master-test-plan`. For API endpoints, redirect to `bun run api:sync` (technical) or `/business-api-map` (business angle). |
 | **KATA adaptation only** | Stack changed (new auth, new API framework) | Setup only | Read current `tests/` + new source, update KATA components. |
 
 Default to "Fresh onboarding" when in doubt. Confirm the scope with the user before starting Phase 1.
@@ -45,8 +45,12 @@ Phase 1: Constitution        -> Phase 2: Architecture       -> Phase 3: Infrastr
                                                  |
                                                  v
                                     Setup: KATA Adaptation + Context Generators
-                                    (.context/business-data-map.md, api-architecture.md,
-                                     project-test-guide.md, tests/components/**)
+                                    (.context/mapping/business-data-map.md,
+                                     tests/components/**)
+                                    Test strategy (.context/master-test-plan.md) is
+                                    produced by the /master-test-plan command.
+                                    API context by `bun run api:sync` (technical) +
+                                    `/business-api-map` (business angle).
 ```
 
 Each phase has a **completion gate**: before moving on, the required output files must exist on disk with non-placeholder content. Ask the user to confirm after each phase; never auto-chain.
@@ -74,7 +78,7 @@ PRD sub-steps (can run in parallel):
 1. **Executive Summary** -- problem, solution, success metrics, scope.
 2. **User Personas** -- roles, permissions, primary/secondary users, role hierarchy.
 3. **User Journeys** -- critical paths through the UI, route map, journey diagrams.
-4. **Feature Inventory** -- every feature with a description, route, state (shipped/in-progress), and owner.
+4. **Feature Inventory** -- delegated to the `/business-feature-map` command. Output: `.context/mapping/business-feature-map.md`. Run after the three PRD docs above.
 
 SRS sub-steps (can run in parallel after PRD):
 1. **Architecture Specs** -- C4 context and container diagrams, component structure, database schema, external services, security model.
@@ -82,7 +86,7 @@ SRS sub-steps (can run in parallel after PRD):
 3. **Functional Specs** -- FR-N entries with preconditions, business rules, validations, state machines.
 4. **Non-Functional Specs** -- performance budgets, security posture, reliability (RTO/RPO), scalability, observability, compliance.
 
-**Completion gate**: `.context/PRD/executive-summary.md`, `user-personas.md`, `user-journeys.md`, `feature-inventory.md`, `.context/SRS/architecture.md`, `api-contracts.md`, `functional-specs.md`, `non-functional-specs.md` all exist.
+**Completion gate**: `.context/PRD/executive-summary.md`, `user-personas.md`, `user-journeys.md`, `business-feature-map.md` (produced by `/business-feature-map`), `.context/SRS/architecture.md`, `api-contracts.md`, `functional-specs.md`, `non-functional-specs.md` all exist.
 
 Read `references/phase-2-prd.md` when working on any PRD doc. Read `references/phase-2-srs.md` when working on any SRS doc. They are independent -- do not load both unless you are straddling both sides.
 
@@ -125,15 +129,17 @@ Read `references/kata-adaptation.md` during Setup. Contains the component templa
 
 ### Context Generators — the final deliverables
 
-Three files, always generated last (they pull from every prior phase):
+Two files, always generated last (they pull from every prior phase):
 
 | File | Generator reference | What it contains |
 |------|---------------------|------------------|
-| `.context/business-data-map.md` | `context-generators.md` §Business Data Map | System flows, entities, triggers, cron jobs, webhooks, integration points. The canonical "what this system does" map. |
-| `.context/api-architecture.md` | `context-generators.md` §API Architecture | Every endpoint grouped by auth level, with method, path, request/response shape, auth model, examples. |
-| `.context/project-test-guide.md` | `context-generators.md` §Project Test Guide | The most critical flows to test, flow dependency diagram, entity states, prioritization, pre-release checklist. |
+| `.context/mapping/business-data-map.md` | `context-generators.md` §Generator 1 | System flows, entities, triggers, cron jobs, webhooks, integration points. The canonical "what this system does" map. |
 
-Read `references/context-generators.md` when (re)generating any of the three files. This is where 90% of "regenerate X" user requests land.
+`.context/master-test-plan.md` is **not** produced by this skill — the `/master-test-plan` command owns it (reads `business-data-map.md` + optional `business-feature-map.md`). Run it after `business-data-map.md` exists.
+
+Read `references/context-generators.md` when (re)generating `business-data-map.md`. This is where most "regenerate business-data-map" user requests land.
+
+**API context is NOT a project-discovery output.** Endpoint sync is delegated to `bun run api:sync` (technical, OpenAPI -> TypeScript types) and the `/business-api-map` command (business angle: auth flows, critical paths, architecture behind the API). See `references/context-generators.md` §API context — deferred for the deferral note.
 
 ---
 
@@ -171,11 +177,12 @@ If multiple signals conflict (e.g., Next.js + Express), it is almost always a mo
 - **Do not duplicate the backlog.** Jira/Linear/GitHub Issues is the source of truth for tickets. `.context/PBI/` holds local templates and working notes, never a copy of the full backlog.
 - **Monorepos require scoped discovery.** Run Phase 1 once (project as a whole) but Phases 2-3 per package. Merge findings into a single `.context/infrastructure/` with sub-sections per package.
 - **Database schemas over ORM models.** If both exist, prefer the migration files / schema dump over the ORM definitions -- ORM definitions can drift from the live schema.
-- **API base URL vs route prefix.** `{{API_URL_LOCAL}}` includes the protocol+host; route prefixes (e.g., `/api/v1`) belong in the path. Do not concatenate them twice in `api-architecture.md`.
+- **API base URL vs route prefix.** `{{API_URL_LOCAL}}` includes the protocol+host; route prefixes (e.g., `/api/v1`) belong in the path. Do not concatenate them twice in any context file that documents endpoints (e.g., `business-api-map.md`).
 - **Auth flow is the single most error-prone part of KATA adaptation.** Session tokens, cookies, JWT, OAuth redirects, CSRF -- every project does it differently. Read the real login request in DevTools before writing the `LoginApi` / auth fixture.
-- **Never generate from stale context.** If `.context/business-data-map.md` already exists but the user asks to "refresh" it, diff the current code against the existing file and ask whether to overwrite or merge. Auto-overwrite loses prior human edits.
-- **Context generators need ALL prior phases.** If the user jumps to "regenerate api-architecture" on a fresh repo, do Phase 1 (at minimum project-connection) and Phase 3 (backend discovery) first -- the generator relies on them.
-- **IQL framing is optional.** Mention it only if the user asks "why this structure?" -- do not lecture them on methodology when they just want a working `api-architecture.md`.
+- **Never generate from stale context.** If `.context/mapping/business-data-map.md` already exists but the user asks to "refresh" it, diff the current code against the existing file and ask whether to overwrite or merge. Auto-overwrite loses prior human edits.
+- **Context generators need ALL prior phases.** If the user jumps to "regenerate business-data-map" on a fresh repo, do Phase 1 (at minimum project-connection) and Phase 3 (backend discovery) first -- the generator relies on them.
+- **IQL framing is optional.** Mention it only if the user asks "why this structure?" -- do not lecture them on methodology when they just want a working `business-data-map.md`.
+- **API requests get redirected.** "Regenerate api-architecture" / "I need an API map" / "document the endpoints" -> stop and explain the split: `bun run api:sync` for technical types, `/business-api-map` for the business angle. This skill does not generate API documentation directly anymore.
 
 ---
 
@@ -235,7 +242,8 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 - **Phase 3 (backend, frontend, infrastructure)** -> read `references/phase-3-infrastructure.md`.
 - **Phase 4 (backlog mapping, templates)** -> read `references/phase-4-specification.md`.
 - **KATA adaptation (Setup)** -> read `references/kata-adaptation.md`.
-- **Generating `business-data-map.md`, `api-architecture.md`, or `project-test-guide.md`** -> read `references/context-generators.md`.
+- **Generating `business-data-map.md`** -> read `references/context-generators.md`. For the test plan, run `/master-test-plan` (command, not skill).
+- **API endpoint sync (technical) or business-API map** -> NOT this skill. Use `bun run api:sync` (technical types) or `/business-api-map` command (business angle).
 - **User asks about IQL methodology** -> read `references/iql-methodology.md`.
 - **Code exploration (grep, read files)** -> use built-in tools. If the user wants a browser-driven exploration instead (UI-first discovery), load `/playwright-cli` skill.
 - **Issue-tracker operations (Phase 4)** -> resolve `[ISSUE_TRACKER_TOOL]` via CLAUDE.md Tool Resolution. For Jira/Xray, load `/xray-cli` skill if present.
@@ -271,10 +279,12 @@ bun run test:smoke                         # validate login + one flow
 bun run typecheck                          # no type errors
 
 # Context generators (final step)
-# Output paths:
-#   .context/business-data-map.md
-#   .context/api-architecture.md
-#   .context/project-test-guide.md
+# Output path:
+#   .context/mapping/business-data-map.md
+# Test strategy and API context are produced separately (NOT by this skill):
+#   /master-test-plan               # test strategy (reads data-map + feature-map)
+#   bun run api:sync                # API technical types from OpenAPI
+#   /business-api-map               # API business angle: auth flows, critical paths
 
 # Issue tracker (Phase 4) — example placeholder
 [ISSUE_TRACKER_TOOL] Get Issue:
