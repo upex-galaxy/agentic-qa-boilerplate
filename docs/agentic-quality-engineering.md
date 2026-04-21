@@ -512,14 +512,7 @@ A pure API test does not open Chromium. Across hundreds of runs, this saves minu
 
 The AI writes the implementation plan first — scenarios, components that exist, components that need to be created, required test data. The plan is approved **before** a single line of code is written. Code is then generated following the KATA pattern. Review runs a quality checklist (naming, locator hygiene, fixture choice, assertion placement, `@atc` decorator presence). Two revision loops maximum, then the work escalates to the engineer. This cap prevents the AI from grinding on a bad design.
 
-Full details live in the KATA references:
-
-- `docs/guidelines/TAE/kata-architecture.md`
-- `docs/guidelines/TAE/automation-standards.md`
-- `docs/guidelines/TAE/atc-tracing-system.md`
-- `docs/guidelines/TAE/typescript-patterns.md`
-
-And in the skill's own references:
+Full details live in the skill's own references:
 
 - `.claude/skills/test-automation/references/`
 
@@ -693,8 +686,7 @@ The rest is execution.
 - `CLAUDE.md` — AI project memory, Tool Resolution, and skill routing
 - `docs/context-engineering.md` — strategy behind the three-tier context split
 - `docs/methodology/IQL-methodology.md` — phased methodology deep-dive
-- `docs/guidelines/TAE/kata-architecture.md` — KATA architecture reference
-- `docs/guidelines/TAE/atc-tracing-system.md` — `@atc` decorator and traceability chain
+- `.claude/skills/test-automation/references/` — KATA architecture, `@atc` decorator, and traceability chain
 - `.context/README.md` — canonical context layout
 - `.claude/skills/project-discovery/SKILL.md` — onboarding skill internals
 - `.claude/skills/sprint-testing/SKILL.md` — Stages 1–3 skill internals
