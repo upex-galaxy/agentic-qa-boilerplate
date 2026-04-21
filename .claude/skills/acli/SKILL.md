@@ -22,6 +22,33 @@ This skill teaches how to drive `acli` for any intent: one-off commands, batch m
 
 The body below covers the core that applies to almost every session. The `references/` directory holds the deep material — load only the one you need.
 
+## Fallback: Atlassian MCP
+
+If `acli` is not installed or authenticated, fall back to the Atlassian MCP server (MCP tool namespace: `mcp__atlassian__*` or similar — check the MCP tool list for the exact prefix in the current environment).
+
+**When to prefer MCP over acli**:
+
+- `acli` binary is not installed in the environment.
+- `acli` auth fails and cannot be fixed in the current session.
+- The specific operation is not yet supported by `acli` (rare; `acli` covers most Jira Cloud operations GA 2025).
+
+**When to prefer acli over MCP**:
+
+- Bulk operations (acli consumes far fewer tokens per call).
+- Scripting / CI pipelines.
+- Operations that return large result sets (MCP payloads inflate token usage).
+
+**Coverage parity**: MCP and `acli` expose overlapping functionality for issues, projects, boards, sprints, and comments. For org-admin operations (`acli admin`), `acli` is more complete.
+
+## Role in TMS Modality B (Jira-native, no Xray)
+
+When the project operates without the Xray plugin (Modality B resolved by `test-documentation/SKILL.md` §Phase 0), this skill also serves as the owner of the `[TMS_TOOL]` tag. All TMS operations (Test issue creation, Test Plan, Test Execution equivalents) map to native Jira operations handled by `acli`:
+
+- Test → Jira work item with `--type "Test"` (or the configured custom issue type).
+- Test Plan / Test Execution → Jira work items linked via custom fields (see `test-documentation/references/jira-setup.md`).
+
+In Modality A (Xray present), TMS operations route to `/xray-cli` instead; this skill handles only `[ISSUE_TRACKER_TOOL]` operations (story, bug, epic).
+
 ## Command structure
 
 ```

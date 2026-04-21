@@ -23,7 +23,7 @@ Every output MUST include a `## Discovery Gaps` section if a field could not be 
 1. **Do NOT copy the backlog.** The issue tracker is the source of truth for tickets. `.context/PBI/` holds only templates and per-sprint working notes.
 2. **Cleanup rule:** per-sprint folders (`.context/PBI/<sprint-name>/<TICKET-ID>/`) are temporary. Delete after the sprint ends — story details can always be re-fetched.
 3. **Credentials live in `.env`, never in markdown.** `JIRA_API_TOKEN`, `JIRA_EMAIL`, `JIRA_URL`. If the user pastes a token in chat, scrub it and redirect them to `.env`.
-4. **Tool resolution.** When you see `[ISSUE_TRACKER_TOOL]` in this document, resolve via the project's CLAUDE.md Tool Resolution table. Priority order: MCP -> CLI -> API -> manual.
+4. **Tool resolution.** When you see `[ISSUE_TRACKER_TOOL]` in this document, resolve via the project's CLAUDE.md Tool Resolution table. Priority order: CLI (fewer tokens) -> MCP (fallback) -> REST API -> manual. For Jira, that means load `/acli` skill first; only fall back to Atlassian MCP if acli is unavailable.
 
 ---
 
@@ -54,6 +54,8 @@ What is the project key or board name?
 ---
 
 ## Step 2 — Project Structure Mapping
+
+> **Prerequisite**: Load `/acli` skill before executing the commands below.
 
 ### Jira
 
@@ -94,7 +96,7 @@ If tool access is unavailable, ask the user for project key + board type and fla
 | Rank | Method | When it fits |
 |------|--------|--------------|
 | 1 | MCP (e.g., Atlassian MCP) | Preferred — rich integration, live queries, schema-aware |
-| 2 | CLI (e.g., `acli`, `jira-cli`, `az boards`) | Scriptable, no MCP available |
+| 2 | CLI (e.g., `acli` for Jira, `gh issue` for GitHub, `az boards` for Azure DevOps) | Scriptable, no MCP available |
 | 3 | REST API + token | Fallback, document `curl` recipe |
 | 4 | Manual (Web UI) | Last resort; note in Discovery Gaps |
 

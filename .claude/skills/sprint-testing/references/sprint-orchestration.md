@@ -45,6 +45,8 @@ Use when the user asks "generate the sprint testing framework", "set up sprint N
 
 Output path: `.context/PBI/SPRINT-{sprint_number}-TESTING.md`. If it already exists, warn + ask before overwriting.
 
+> **Prerequisite**: Load `/acli` skill before the `[ISSUE_TRACKER_TOOL]` call in Step 1 below. Sprint Roadmap Generator runs before per-ticket Session Start, so §0.1 has not yet executed — load it explicitly here.
+
 ### Steps
 
 1. **Query tickets** via `[ISSUE_TRACKER_TOOL]` for `Sprint {N}` with fields: Ticket ID, Type, Title, Priority, Status, QA Assignee, Developer, Project/Epic, Platform. Sort by Priority DESC, Status ASC.
@@ -237,6 +239,8 @@ IMPORTANT: credentials always from .env. Never hardcode. Never ask the user for
 ```
 
 ### Per-stage matrix
+
+> **Prerequisite (every row that mentions `[ISSUE_TRACKER_TOOL]` or `[TMS_TOOL]`)**: the dispatched sub-agent must load `/acli` before executing the task; in Modality A (Xray) also load `/xray-cli`. Sub-agents inherit the orchestrator's skill registry, so the orchestrator only needs to load them once at Session Start §0.1 — but include the reminder in the sub-agent TASK block if it executes standalone.
 
 | Stage | Reference to load | TASK (summary) | REPORT BACK |
 |-------|-------------------|----------------|-------------|

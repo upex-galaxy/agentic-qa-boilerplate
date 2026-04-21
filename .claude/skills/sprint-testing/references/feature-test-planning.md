@@ -23,6 +23,8 @@ A feature plan exists to capture shared risks, integration points, and critical 
 
 Read before starting. All paths relative to repo root.
 
+> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call (epic fetch, child story list, epic-description update, epic comment). Skip if Session Start §0.1 in `SKILL.md` already loaded it.
+
 | Input | Source |
 |-------|--------|
 | Epic / feature ticket | `[ISSUE_TRACKER_TOOL]` using Jira Key from epic.md |

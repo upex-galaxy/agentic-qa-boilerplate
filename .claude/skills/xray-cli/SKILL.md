@@ -8,6 +8,15 @@ allowed-tools: Bash(bun xray:*)
 
 # Xray CLI - Test Management
 
+## Modality check (critical)
+
+This skill owns `[TMS_TOOL]` **only in Modality A** (Jira Cloud + Xray plugin installed). Before invoking any command from this skill:
+
+1. Confirm the project is in Modality A. Resolution logic lives in `test-documentation/SKILL.md` §Phase 0.
+2. If the project is in Modality B (Jira-native, no Xray plugin) -> **do not use this skill**. Instead, load `/acli` — TMS operations map to native Jira issues (see `test-documentation/references/jira-setup.md`).
+
+Agents arriving here from a `[TMS_TOOL] ...` pseudocode block without having resolved modality first should pause and consult the modality resolver before proceeding.
+
 ## Quick start
 
 ```bash
@@ -192,6 +201,20 @@ JIRA_API_TOKEN      # Jira API token
 
 - `~/.xray-cli/config.json` - Stored credentials and default project
 - `~/.xray-cli/token.json` - Cached auth token (24h validity)
+
+## Fallback: Atlassian MCP
+
+If `xray` CLI is not installed or authenticated, fall back to the Atlassian MCP server for Xray-compatible operations that the MCP exposes (coverage is partial — MCP surfaces basic Xray entities but lacks bulk import/export).
+
+**When to prefer MCP over xray-cli**:
+- `xray` binary is not installed in the environment.
+- Auth cannot be completed in the current session.
+- Operation is simple (single test status update, small query).
+
+**When to prefer xray-cli over MCP**:
+- Bulk test import (JUnit/Cucumber/Xray JSON).
+- Backup / restore / large sync operations.
+- Anything involving Test Plans or Test Executions at scale (xray-cli is far more complete).
 
 ## Example: Complete Test Workflow
 

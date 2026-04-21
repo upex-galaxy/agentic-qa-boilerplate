@@ -468,6 +468,8 @@ Phase 0 fails -> Deferred. Phase 0 passes -> apply ROI.
 
 ### Marking a Candidate in the TMS
 
+> **Prerequisite**: Load `/xray-cli` skill (Modality A). In Modality B, load `/acli` — the `[TMS_TOOL] Update test` call becomes `[ISSUE_TRACKER_TOOL] Update Issue` on the Test issue.
+
 ```
 [TMS_TOOL] Update test:
   test: {TEST_KEY}
@@ -531,6 +533,8 @@ Test at the edges of equivalence classes. 7 chars (just below min) and 65 chars 
 
 All TCs must belong to a Regression Epic — the permanent repository for the project. Before creating any TC:
 
+> **Prerequisite**: Load `/acli` skill before executing the commands in this section.
+
 ```
 [ISSUE_TRACKER_TOOL] Search Issues:
   project: {{PROJECT_KEY}}
@@ -582,6 +586,8 @@ Automated results flow from CI to the TMS:
 4. **Handle failures gracefully** — a sync failure must not break the CI pipeline.
 
 ### Pseudocode
+
+> **Prerequisite**: Load `/xray-cli` skill (Modality A). In Modality B, load `/acli` — result sync loops over `[ISSUE_TRACKER_TOOL] Update Issue` per TC instead.
 
 ```
 [TMS_TOOL] Import results:

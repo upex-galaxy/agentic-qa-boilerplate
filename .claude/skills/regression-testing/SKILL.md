@@ -223,13 +223,13 @@ Save the returned issue number to reference in the report.
 
 ### TMS sync (optional, when `.context/test-management-system.md` is configured)
 
+> **Prerequisite**: Load `/xray-cli` skill (Modality A) before executing the `[TMS_TOOL]` commands below. In Modality B (Jira-native), load `/acli` instead and map test-execution operations to native Jira issues (see `test-documentation/references/jira-setup.md`).
+
 ```
 [TMS_TOOL] Update Test Execution:
   executionKey: {execution-key}
   results: {per-ATC status + failure comments from Phase 2}
 ```
-
-Resolve `[TMS_TOOL]` via CLAUDE.md Tool Resolution (typically `/xray-cli` skill — load it if available).
 
 ### Write the report
 

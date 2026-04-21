@@ -8,6 +8,8 @@ This reference is for manual, in-sprint reporting RIGHT NOW. It does NOT cover S
 
 ## 1. Bug Report Template
 
+> **Prerequisite**: Load `/acli` skill before executing any `[ISSUE_TRACKER_TOOL]` call in this section (duplicate search, Create issue, comment back-reference, search fields). Skip if Session Start §0.1 in `SKILL.md` already loaded it.
+
 ### 1.1 When to file a bug
 
 File a bug when Stage 2 execution reveals a confirmed defect. Before filing:
@@ -242,6 +244,8 @@ RECOMMENDATIONS
 ### 2.3 Upload by modality
 
 Apply the branch that matches the resolved modality (do not mix).
+
+> **Prerequisite (both modalities)**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call below. In Modality A additionally load `/xray-cli` for `[TMS_TOOL] Update Run` and `[TMS_TOOL] Import Results`. Skip if Session Start §0.1 in `SKILL.md` already loaded them.
 
 #### Modality A — Xray on Jira (ATR = Test Execution)
 

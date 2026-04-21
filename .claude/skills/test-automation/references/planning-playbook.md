@@ -97,6 +97,8 @@ A regression-driven plan is the smallest unit of work. Often it is just `spec.md
 
 TCs in `spec.md` must reference TMS-generated IDs, never local-only IDs. Before writing TCs:
 
+> **Prerequisite**: Load `/xray-cli` skill (Modality A) or `/acli` (Modality B) before executing the TMS commands below.
+
 1. Query the TMS for tests already linked to the ticket (via `[TMS_TOOL] List Tests` — resolve per CLAUDE.md Tool Resolution).
 2. **If TCs exist** — consume them as the base for `spec.md`; do not duplicate.
 3. **If TCs are missing** — create them in the TMS first (`[TMS_TOOL] Create Test`), capture the returned IDs, then write `spec.md`.
@@ -495,6 +497,8 @@ Named phase-transition checkpoints. Each gate blocks progression until its crite
 ### 12.3 G2 failure protocol — legitimate bugs during automation
 
 If G2 fails because a test uncovers a real product bug (not flaky, not a coding error), follow this sub-protocol **before** invoking the soft override:
+
+> **Prerequisite**: Load `/acli` skill before executing the `[ISSUE_TRACKER_TOOL]` commands below.
 
 1. **Search the issue tracker** for an existing bug that matches the observed vs expected behaviour (`[ISSUE_TRACKER_TOOL] Search Issues`).
 2. **If the bug is already reported**:

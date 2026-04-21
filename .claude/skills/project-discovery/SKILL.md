@@ -246,7 +246,7 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 - **API endpoint sync (technical) or business-API map** -> NOT this skill. Use `bun run api:sync` (technical types) or `/business-api-map` command (business angle).
 - **User asks about IQL methodology** -> read `references/iql-methodology.md`.
 - **Code exploration (grep, read files)** -> use built-in tools. If the user wants a browser-driven exploration instead (UI-first discovery), load `/playwright-cli` skill.
-- **Issue-tracker operations (Phase 4)** -> resolve `[ISSUE_TRACKER_TOOL]` via CLAUDE.md Tool Resolution. For Jira/Xray, load `/xray-cli` skill if present.
+- **Issue-tracker operations (Phase 4)** -> resolve `[ISSUE_TRACKER_TOOL]` via CLAUDE.md Tool Resolution. For Jira, load `/acli` skill (primary) or fall back to the Atlassian MCP. If the project also uses Xray for TMS, load `/xray-cli` additionally.
 - **Database inspection** -> resolve `[DB_TOOL]`; read-only queries only during discovery.
 
 ---
@@ -287,6 +287,7 @@ bun run typecheck                          # no type errors
 #   /business-api-map               # API business angle: auth flows, critical paths
 
 # Issue tracker (Phase 4) — example placeholder
+# Prerequisite: Load /acli skill before executing the commands below.
 [ISSUE_TRACKER_TOOL] Get Issue:
   key: {{PROJECT_KEY}}-1
 [ISSUE_TRACKER_TOOL] Search Issues:

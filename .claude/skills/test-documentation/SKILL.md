@@ -191,6 +191,8 @@ Every scenario ends in exactly one of these buckets. There is no fourth.
 
 Every documented TC must have a parent Regression Epic (single test repository for the project).
 
+> **Prerequisite**: Load `/acli` skill before executing commands below.
+
 ```
 [ISSUE_TRACKER_TOOL] Search Issues:
   project: {{PROJECT_KEY}}
@@ -340,6 +342,8 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
 
 ### Regression epic (both modalities, run once per project)
 
+> **Prerequisite**: Load `/acli` skill before executing commands below.
+
 ```
 [ISSUE_TRACKER_TOOL] Search Issues:
   project: {{PROJECT_KEY}}
@@ -354,6 +358,8 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
 ```
 
 ### Modality A — Xray on Jira
+
+> **Prerequisite**: Load `/xray-cli` and `/acli` skills before executing commands below.
 
 ```
 # ATP = Xray Test Plan issue
@@ -413,6 +419,8 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
 
 ### Modality B — Jira-native (no Xray)
 
+> **Prerequisite**: Load `/acli` skill before executing commands below.
+
 ```
 # ATP = Story customfield + comment mirror. NO separate issue.
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -471,6 +479,8 @@ for each {TEST_KEY} in run:
 ```
 
 ### Workflow transition (both modalities — same state machine)
+
+> **Prerequisite**: Load `/acli` skill before executing commands below.
 
 ```
 [ISSUE_TRACKER_TOOL] Transition Issue:

@@ -38,6 +38,8 @@ Act as a Senior QA Engineer preparing a testing session for a ticket (User Story
 
 ### Step 1 — Fetch the ticket from the issue tracker
 
+> **Prerequisite**: Load `/acli` skill before executing the commands below. In Modality A (Xray) also load `/xray-cli` for `[TMS_TOOL]` calls. If Session Start §0.1 in `SKILL.md` already loaded them, skip.
+
 ```
 [ISSUE_TRACKER_TOOL] Fetch Issue:
   - issueId: {TICKET-ID}
@@ -280,6 +282,8 @@ Prompts / references:
 - `references/acceptance-test-planning.md` — ATP body, Test Analysis, TC nomenclature, traceability.
 - `references/feature-test-planning.md` — higher-granularity feature plan (optional).
 
+> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call. In Modality A (Xray) also load `/xray-cli` for `[TMS_TOOL]` calls. If Session Start §0.1 already loaded them, skip. Modality B: `/acli` covers both tags.
+
 Actions:
 
 1. Read the story (ACs, business rules, dependencies).
@@ -333,6 +337,8 @@ Output checkpoint:
 ### Stage 3 — Reporting (overview)
 
 Reference: `references/reporting-templates.md`.
+
+> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call (QA comment, transition, bug filing). In Modality A (Xray) also load `/xray-cli` for `[TMS_TOOL]` ATR update / Run update. Modality B: `/acli` covers both tags. Skip if Session Start §0.1 already loaded them.
 
 Actions:
 
@@ -456,6 +462,8 @@ Score: 0-3 LOW (Code Review only); 4-7 MEDIUM (ask user); 8+ HIGH (Full Retestin
 Present the decision with sections for VETO SKIP, VETO REQUIRE, or SCORE-BASED. Include bug summary, reproduction steps, decision, rationale, environment, recommendation. MANDATORY: wait for user confirmation. The user may ask questions, request more context, or override.
 
 #### Code Review workflow (low-risk path)
+
+> **Prerequisite**: Load `/acli` skill before the final `[ISSUE_TRACKER_TOOL]` post in step 4. Skip if Session Start §0.1 already loaded it.
 
 If triage is Code Review, skip Phases 2-3:
 

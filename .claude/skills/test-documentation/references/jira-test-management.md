@@ -279,6 +279,8 @@ Notes:
 
 ### Jira Native (Manual or Gherkin)
 
+> **Prerequisite**: Load `/acli` skill before executing commands below.
+
 ```
 [ISSUE_TRACKER_TOOL] Create Issue:
   project: {{PROJECT_KEY}}
@@ -306,6 +308,8 @@ Notes:
 ```
 
 ### Jira + Xray (Cucumber)
+
+> **Prerequisite**: Load `/xray-cli` and `/acli` skills before executing commands below.
 
 ```
 [TMS_TOOL] Create Test:
@@ -336,6 +340,8 @@ Notes:
 
 ### Jira + Xray (Manual)
 
+> **Prerequisite**: Load `/xray-cli` and `/acli` skills before executing commands below.
+
 ```
 [TMS_TOOL] Create Test:
   project: {{PROJECT_KEY}}
@@ -358,6 +364,8 @@ The two-call pattern (Xray + Update Issue) is mandatory in Xray mode. Skipping t
 ---
 
 ## 9. Test Plan / Test Set / Test Execution — Xray only
+
+> **Prerequisite**: Load `/xray-cli` and `/acli` skills before executing the commands in this section. `Test Plan` and `Test Set` are created via `[ISSUE_TRACKER_TOOL]` (acli); `Test Execution` result imports use `[TMS_TOOL]` (xray-cli).
 
 ### Test Plan
 
@@ -429,6 +437,8 @@ Test Plan rolls up execution status across all Tests
 ```
 
 ### Jira Native
+
+> **Prerequisite**: Load `/acli` skill before executing commands below.
 
 ```
 Playwright runs tests

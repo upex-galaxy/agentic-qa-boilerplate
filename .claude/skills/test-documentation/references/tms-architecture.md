@@ -191,6 +191,8 @@ Step 4. For each TC (as Stage 4 progresses):
 
 ### Pseudocode — full sequence
 
+> **Prerequisite**: Load `/xray-cli` skill (Modality A) — in Modality B these `[TMS_TOOL]` calls fall through to `[ISSUE_TRACKER_TOOL]`, so load `/acli` instead. See §9 for the per-modality split.
+
 ```
 [TMS_TOOL] Create ATP:
   name: Test Plan: {{PROJECT_KEY}}-{n}
@@ -316,6 +318,8 @@ All operations use `[TMS_TOOL]` for TMS-specific actions and `[ISSUE_TRACKER_TOO
 
 ### List and read
 
+> **Prerequisite**: Load `/xray-cli` skill (Modality A). In Modality B, load `/acli` — these calls map to JQL/search via `[ISSUE_TRACKER_TOOL]`.
+
 ```
 [TMS_TOOL] List ATPs:
   project: {{PROJECT_KEY}}
@@ -338,6 +342,8 @@ All operations use `[TMS_TOOL]` for TMS-specific actions and `[ISSUE_TRACKER_TOO
 Pseudocode splits by TMS modality — pick the block matching the resolution from SKILL.md §Phase 0. Full per-modality reference in SKILL.md §Quick reference.
 
 #### Modality A — Xray on Jira
+
+> **Prerequisite**: Load `/xray-cli` and `/acli` skills before executing commands below.
 
 ```
 [TMS_TOOL] Create TestPlan:
@@ -375,6 +381,8 @@ Pseudocode splits by TMS modality — pick the block matching the resolution fro
 ```
 
 #### Modality B — Jira-native (no Xray)
+
+> **Prerequisite**: Load `/acli` skill before executing commands below.
 
 ```
 # ATP — lives on the Story, no new issue
@@ -420,6 +428,8 @@ Pseudocode splits by TMS modality — pick the block matching the resolution fro
 
 ### Update
 
+> **Prerequisite**: Load `/xray-cli` skill (Modality A). In Modality B, load `/acli` — these update calls become `[ISSUE_TRACKER_TOOL] Update Issue` on the Story or Test customfields.
+
 ```
 [TMS_TOOL] Update ATP:
   id: {from ATP ID}
@@ -441,6 +451,8 @@ Pseudocode splits by TMS modality — pick the block matching the resolution fro
 ```
 
 ### Verify traceability
+
+> **Prerequisite**: Load `/xray-cli` skill (Modality A). In Modality B, load `/acli` and walk the links manually via `[ISSUE_TRACKER_TOOL] Search Issues`.
 
 ```
 [TMS_TOOL] Verify Traceability:

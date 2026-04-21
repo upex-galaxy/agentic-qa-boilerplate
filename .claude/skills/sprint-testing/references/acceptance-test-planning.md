@@ -78,6 +78,8 @@ The phases below (0-8) are the concrete implementation of this pipeline for a si
 
 Read every item before planning. Fail fast if any project-wide context file is missing — hand off to `project-discovery`.
 
+> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call. Skip if Session Start §0.1 in `SKILL.md` already loaded it.
+
 | Input | Source |
 |-------|--------|
 | Ticket (title, description, ACs, priority, comments) | `[ISSUE_TRACKER_TOOL]` using Jira Key from `{STORY_PATH}/context.md` |
@@ -318,6 +320,8 @@ Add label `shift-left-reviewed`.
 ### Create ATP + ATR — branch on TMS modality
 
 The modality was resolved in Session Start (§0) and persisted into `test-session-memory.md`. Apply the matching branch. Full reference: `test-documentation/references/tms-architecture.md` §Container per modality.
+
+> **Prerequisite (both modalities)**: Load `/acli` skill before executing any `[ISSUE_TRACKER_TOOL]` block below. In Modality A, additionally load `/xray-cli` for `[TMS_TOOL]` calls. Skip if Session Start §0.1 in `SKILL.md` already loaded them.
 
 #### Modality A — Xray on Jira
 
