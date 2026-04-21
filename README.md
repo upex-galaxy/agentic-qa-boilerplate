@@ -477,11 +477,18 @@ The `.agents/skills/` symlink keeps a single source of truth while exposing the 
 
 - Slash commands (`/skill-name`) are Claude Code specific. In other agents, skills auto-activate from the `description` triggers -- prompt the agent in plain language and the right skill loads.
 - Sub-agent dispatch used by the batch modes of `/sprint-testing` and `/test-automation` falls back to sequential execution in agents that lack a sub-agent primitive; throughput is lower but the flow still completes.
-- Everything else -- frontmatter, `references/`, progressive disclosure, pseudocode tags (`[TMS_TOOL]`, `[AUTOMATION_TOOL]`, ...) -- is fully portable.
+- Everything else -- frontmatter, `references/`, progressive disclosure, pseudocode tags (`[ISSUE_TRACKER_TOOL]`, `[TMS_TOOL]`, `[AUTOMATION_TOOL]`, ...) -- is fully portable. For how these tags resolve to concrete tools (and why `[ISSUE_TRACKER_TOOL]` -> `/acli` and `[TMS_TOOL]` -> `/xray-cli` or `/acli` depending on modality), see `CLAUDE.md` §Tool Resolution.
 
 ---
 
 ## TMS Integration (Jira/Xray)
+
+Two TMS modalities are supported out of the box:
+
+- **Modality A -- Xray on Jira**: full Xray entities (Test, Test Plan, Test Execution, Test Run, Pre-Condition). Primary tooling is the `/xray-cli` skill plus `/acli` for generic Jira issues.
+- **Modality B -- Jira-native (no Xray)**: ATP/ATR live as Story custom fields + comment mirrors; TCs live as Jira `Test` issues. All TMS operations fall through to `/acli`. See `.claude/skills/test-documentation/references/jira-setup.md`.
+
+For how skills resolve `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` tags to concrete CLIs or MCPs, see `CLAUDE.md` §Tool Resolution.
 
 ### Configuration
 

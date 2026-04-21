@@ -82,7 +82,7 @@ bun run test:allure       # Generate Allure report
 | `{{API_URL_LOCAL}}` | API base URL (local) | localhost:3000/api |
 | `{{API_URL_STAGING}}` | API base URL (staging) | api-staging.myproject.com |
 | `{{ISSUE_TRACKER}}` | Issue tracking tool | Jira |
-| `{{ISSUE_TRACKER_CLI}}` | CLI command to query tickets | jira-cli / gh issue |
+| `{{ISSUE_TRACKER_CLI}}` | CLI command to query tickets | acli (Jira) / gh issue (GitHub) |
 | `{{PROJECT_KEY}}` | Project key in issue tracker (e.g., PROJ, OB, UPEX) | PROJ |
 | `{{TMS_CLI}}` | Test management CLI command | bun xray |
 | `{{DEFAULT_ENV}}` | Default testing environment | staging |
@@ -100,17 +100,31 @@ bun run test:allure       # Generate Allure report
 
 | Tag | Domain | Primary Tool | Fallback | Skill/Reference |
 |-----|--------|-------------|----------|-----------------|
-| `[TMS_TOOL]` | Test Management | `/xray-cli` skill (if Modality A) | `[ISSUE_TRACKER_TOOL]` (if Modality B — Jira-native, no Xray) | `.claude/skills/xray-cli/` + `test-documentation/SKILL.md` §Phase 0 |
-| `[ISSUE_TRACKER_TOOL]` | Issue Tracking | `/acli` skill (Atlassian CLI) | MCP Atlassian | `.claude/skills/acli/` |
+| `[ISSUE_TRACKER_TOOL]` | Issue Tracking (Project Management: Jira Cloud, story/bug/epic) | `/acli` skill (Atlassian CLI) | MCP Atlassian | `.claude/skills/acli/` |
+| `[TMS_TOOL]` | Test Management (Xray or Jira-native: Test/Test Plan/Test Execution) | Modality A: `/xray-cli` skill. Modality B: `/acli` skill (Jira-native, no Xray plugin) | MCP Atlassian | `.claude/skills/xray-cli/` + `.claude/skills/acli/` + `test-documentation/SKILL.md` §Phase 0 |
 | `[AUTOMATION_TOOL]` | Browser Automation | `/playwright-cli` skill | MCP Playwright | `.claude/skills/playwright-cli/` |
 | `[DB_TOOL]` | Database | DBHub MCP | Supabase MCP / raw SQL | MCP tool list |
 | `[API_TOOL]` | API Exploration | OpenAPI MCP | Postman / curl | MCP tool list |
+
+### Regla crítica: cargar la skill antes de invocar la herramienta
+
+Las skills de testing (`sprint-testing`, `test-documentation`, `regression-testing`, etc.) solo contienen el **CUÁNDO** y el **QUÉ** (acción de alto nivel usando el tag pseudocode: `[ISSUE_TRACKER_TOOL] Create Issue: ...`). El **CÓMO** (sintaxis concreta, flags, auth, paginación, manejo de errores) vive exclusivamente dentro de las skills propietarias de cada herramienta.
+
+**Obligatorio**:
+
+- Antes de ejecutar cualquier `[ISSUE_TRACKER_TOOL] ...` -> cargar la skill `/acli` (o MCP Atlassian si acli no está disponible).
+- Antes de ejecutar cualquier `[TMS_TOOL] ...` en Modalidad A -> cargar la skill `/xray-cli`.
+- Antes de ejecutar cualquier `[TMS_TOOL] ...` en Modalidad B -> cargar la skill `/acli` (las operaciones TMS se mapean a operaciones Jira nativas).
+
+Nunca invoques `acli`, `xray` ni ningún comando concreto sin haber cargado primero su skill propietaria. Las skills invocadoras no duplican el CÓMO -- es responsabilidad del agente consultar la skill propietaria al resolver el tag.
 
 **Resolution flow**: Skill uses `[TAG_TOOL]` -> AI reads this table for WHICH tool -> reads skill/MCP docs for HOW -> if unavailable, try fallback -> if all unavailable, inform user.
 
 **TMS modality fallback**: `[TMS_TOOL]` behavior depends on the TMS modality resolved by `test-documentation/SKILL.md` §Phase 0.
 - **Modality A (Xray on Jira)**: `[TMS_TOOL]` -> `/xray-cli` skill for Xray-specific entities (Test Plan, Test Execution, Test Runs, Pre-Condition) + `[ISSUE_TRACKER_TOOL]` for generic Jira operations.
 - **Modality B (Jira-native, no Xray)**: `[TMS_TOOL]` is **not resolvable** — all TMS operations fall through to `[ISSUE_TRACKER_TOOL]` (`/acli` skill). ATP/ATR live as Story custom fields + comment mirrors; TCs live as Jira `Test` issues. See `test-documentation/references/jira-setup.md` for setup.
+
+**Branch por modalidad**: Skills que usan `[TMS_TOOL]` en su pseudocode (como `test-documentation`, `sprint-testing`) **deben** incluir ramas alternativas para ambas modalidades. La rama Modalidad A usa pseudocode `[TMS_TOOL]` contra `/xray-cli`; la rama Modalidad B reescribe las mismas acciones como `[ISSUE_TRACKER_TOOL]` contra `/acli`, mapeando entidades Xray a sus equivalentes Jira-native (ver `test-documentation/references/jira-setup.md`).
 
 When a skill writes `[TMS_TOOL] Create Execution`, that call is only valid in Modality A. In Modality B, follow the parallel pseudocode branch in the same skill's references (always labeled "Modality B — Jira-native").
 
