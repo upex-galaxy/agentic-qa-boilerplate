@@ -27,7 +27,7 @@
     {
       "name": "should-not-trigger-kata-concept-question",
       "prompt": "What is KATA and how does it work?",
-      "expected_behavior": "Does NOT activate project-discovery. General conceptual question answerable without a skill. project-discovery adapts KATA to a project but does not exist to explain the framework in the abstract.",
+      "expected_behavior": "Does NOT activate project-discovery. General conceptual question answerable without a skill. project-discovery is for reverse engineering a target project; KATA adaptation belongs to `/adapt-framework`, and neither exists to explain the framework in the abstract.",
       "category": "negative"
     },
     {

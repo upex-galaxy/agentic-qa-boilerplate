@@ -106,8 +106,9 @@ The four discovery phases are not arbitrary. Each one produces the inputs a spec
 | Phase 2 — SRS | `architecture.md`, `api-contracts.md`, `functional-specs.md`, `non-functional-specs.md` | Step 5 (TC Documentation) + Step 6 (Automation Candidate Evaluation) | TCs cite FR-N entries; API contracts define request/response oracles for automation. |
 | Phase 3 — Infrastructure | `backend.md`, `frontend.md`, `infrastructure.md` | Step 7 (Implementation) + Step 8 (CI Verification) | Cannot script auth without knowing how auth works. Cannot configure CI without knowing run/deploy commands. |
 | Phase 4 — Specification | `PBI/README.md`, `templates/*.md` | Step 4 (Defect Reporting) + Step 5 (TC Documentation) | Bug reports and TC tickets must follow the team's tracker conventions. |
-| Setup — KATA Adaptation | `tests/components/**`, `.env` | Step 7 (Implementation) | Automation framework wired to the actual stack — no template, no automation. |
 | Context Generators | `business-data-map.md`, `master-test-plan.md` | Steps 1, 3, 5, 6, 7 | The two highest-traffic context files this skill owns. Used by every QA and automation session to ground prompts in reality. (API context comes from `bun run api:sync` types + `/business-api-map`, both outside this skill.) |
+
+> KATA adaptation is owned by the `/adapt-framework` command, not this skill. It feeds IQL Step 7 (Implementation) with `tests/components/**` wired to the project's stack, but runs after all discovery outputs exist.
 
 ---
 
@@ -185,7 +186,7 @@ Discovery dependency: needs `master-test-plan.md` and ROI rubric (covered by `te
 
 Engineer creates a branch, implements scripts following framework patterns (KATA layers in this repo), pushes changes.
 
-Discovery dependency: needs the Setup output — a working KATA adaptation with TestContext, ApiBase, UiBase, TestFixture wired to the project's stack and auth flow.
+Discovery dependency: needs a working KATA adaptation with TestContext, ApiBase, UiBase, TestFixture wired to the project's stack and auth flow. That adaptation is produced by the `/adapt-framework` command (not this skill), which consumes the discovery outputs.
 
 ### Step 8 — CI Verification (TALC Stage 3)
 

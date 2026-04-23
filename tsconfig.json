@@ -10,7 +10,7 @@
       "@/*": ["./*"],
       "@ui/*": ["./tests/components/ui/*"],
       "@api/*": ["./tests/components/api/*"],
-      "@flows/*": ["./tests/components/flows/*"],
+      "@steps/*": ["./tests/components/steps/*"],
       "@utils/*": ["./tests/utils/*"],
       "@data/*": ["./tests/data/*"],
       "@variables": ["./config/variables.ts"],

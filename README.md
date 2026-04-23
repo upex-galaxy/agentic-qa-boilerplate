@@ -129,7 +129,7 @@ bun run test:e2e:critical  # Tests marked @critical
 │   │   ├── ui/                   # UI components
 │   │   │   ├── UiBase.ts         # Layer 2: Page base
 │   │   │   └── ExamplePage.ts    # Layer 3: Domain component
-│   │   └── flows/                # Reusable setup flows
+│   │   └── steps/                # Reusable ATC chains (preconditions)
 │   │
 │   ├── e2e/                      # E2E test specs
 │   │   └── module-example/       # Example module
@@ -206,7 +206,7 @@ Test Files ← Orchestrate ATCs
 |-----------|---------|----------|
 | **Api** | HTTP interactions | `tests/components/api/` |
 | **Page** | UI interactions | `tests/components/ui/` |
-| **Flow** | Reusable setup flows | `tests/components/flows/` |
+| **Step** | Reusable ATC chains | `tests/components/steps/` |
 
 ### Example Test
 
@@ -330,7 +330,7 @@ When you clone this template, follow this flow to adapt it to your project:
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 2. RUN DISCOVERY + ADAPT KATA FRAMEWORK                     │
+│ 2. RUN DISCOVERY (reverse engineering)                      │
 │    Load the /project-discovery skill                        │
 │                                                             │
 │    This skill:                                              │
@@ -338,13 +338,24 @@ When you clone this template, follow this flow to adapt it to your project:
 │    • Generates .context/ (PRD/, SRS/)                      │
 │    • Generates business-data-map / api-architecture /      │
 │      master-test-plan                                     │
-│    • Adapts KATA to your stack                             │
 │    • Regenerates README.md and CLAUDE.md                   │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 3. VERIFY SETUP                                             │
+│ 3. ADAPT KATA FRAMEWORK TO YOUR STACK                       │
+│    Run the /adapt-framework command                         │
+│                                                             │
+│    This command:                                            │
+│    • Consumes .context/ from step 2                        │
+│    • Plan phase (no writes) -> user approval               │
+│    • Implement phase writes config/, api/schemas/,         │
+│      tests/components/** wired to your auth + stack        │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 4. VERIFY SETUP                                             │
 │    bun run type-check                                       │
 │    bun run lint                                             │
 │    bun run test --grep @smoke                               │
@@ -352,7 +363,7 @@ When you clone this template, follow this flow to adapt it to your project:
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 4. START QA WORKFLOW                                        │
+│ 5. START QA WORKFLOW                                        │
 │    Load the /sprint-testing skill for in-sprint QA         │
 │    Load the /test-automation skill to write tests          │
 └─────────────────────────────────────────────────────────────┘
@@ -362,7 +373,7 @@ When you clone this template, follow this flow to adapt it to your project:
 
 ```
 .claude/skills/
-├── project-discovery/     # Onboarding, context generation, KATA adaptation
+├── project-discovery/     # Onboarding and context generation (reverse engineering)
 ├── sprint-testing/        # In-sprint QA: plan + execute + report (per ticket)
 ├── test-documentation/    # TMS documentation and test prioritization
 ├── test-automation/       # KATA planning + coding + review pipeline
@@ -379,13 +390,13 @@ Each skill auto-activates when your prompt matches its description triggers. You
 
 #### 1. Onboarding a new project
 
-- **Situation**: You just cloned the boilerplate against a new target app and need `.context/`, CLAUDE.md, and KATA adapted to the real stack.
-- **Skill**: `/project-discovery`
+- **Situation**: You just cloned the boilerplate against a new target app and need `.context/` + CLAUDE.md generated, then the KATA framework adapted to the real stack.
+- **Skill**: `/project-discovery` (discovery) -> **Command**: `/adapt-framework` (KATA adaptation)
 - **Sample prompts**:
-  - "Adapt this repo to my new backend stack at `../my-backend`."
-  - "Generate the `.context/` files for this project."
   - "Onboard this boilerplate to the app in `../my-frontend`."
-- **What happens next**: The skill discovers business/architecture/infrastructure context, generates `.context/` (`PRD/`, `SRS/`, `mapping/business-data-map.md`, `mapping/business-feature-map.md`, `mapping/business-api-map.md`, `master-test-plan.md`), adapts KATA to your stack, and refreshes CLAUDE.md.
+  - "Generate the `.context/` files for this project."
+  - After discovery completes: "Adapt the KATA framework to this project."
+- **What happens next**: `/project-discovery` discovers business/architecture/infrastructure context, generates `.context/` (`PRD/`, `SRS/`, `mapping/business-data-map.md`, `mapping/business-feature-map.md`, `mapping/business-api-map.md`, `master-test-plan.md`), and refreshes CLAUDE.md. After discovery outputs exist, `/adapt-framework` wires `config/`, `api/schemas/`, and `tests/components/**` to your stack through a Plan -> Approval -> Implement flow.
 
 #### 2. Running an in-sprint QA loop
 

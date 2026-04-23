@@ -33,7 +33,7 @@
     {
       "name": "should-not-trigger-onboard-project",
       "prompt": "Set up this new project in the testing boilerplate and generate the business-data-map and api-architecture context files.",
-      "expected_behavior": "Does NOT activate test-automation. Should route to project-discovery, which runs the 4-phase discovery pipeline and adapts the KATA layers to the target stack.",
+      "expected_behavior": "Does NOT activate test-automation. Should route to project-discovery, which runs the 4-phase discovery pipeline and generates the .context/ artifacts; KATA adaptation follows via the `/adapt-framework` command.",
       "category": "negative"
     }
   ]

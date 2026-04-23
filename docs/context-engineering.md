@@ -104,7 +104,7 @@ tests/
 │   ├── TestContext.ts   → Layer 1: Config, Faker, utilities
 │   ├── api/             → Layers 2-3: ApiBase + domain APIs
 │   ├── ui/              → Layers 2-3: UiBase + domain pages
-│   ├── flows/           → Reusable ATC chains
+│   ├── steps/           → Reusable ATC chains
 │   └── TestFixture.ts   → Layer 4: Dependency injection
 │
 ├── e2e/                 → E2E tests (UI + API)

@@ -265,4 +265,4 @@ Before reporting Phase 4 complete:
 - [ ] Sprint folder convention documented; cleanup rule stated.
 - [ ] User has confirmed the workflow diagram matches reality (manual transition test or recent ticket review).
 
-Emit the phase completion ping and wait for user confirmation before moving to the Setup (KATA adaptation) step.
+Emit the phase completion ping and wait for user confirmation before moving to the context generators. KATA adaptation is out of scope for this skill — it is owned by the `/adapt-framework` command and runs after discovery outputs exist.

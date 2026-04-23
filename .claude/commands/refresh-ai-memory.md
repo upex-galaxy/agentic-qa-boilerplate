@@ -60,7 +60,7 @@ ls .context/PRD/business/business-model.md .context/PRD/business/domain-glossary
 |---|---|---|
 | KATA + at least one Level 1 context file | **Full Update** | Rewrite README + refresh memory file with real values |
 | KATA only, no `.context/` | **Minimal Update** | Generate README + memory file with `{{PLACEHOLDER}}` values |
-| No KATA architecture | **Stop** | Tell the user to run `/project-discovery` first (it loads `references/kata-adaptation.md`) |
+| No KATA architecture | **Stop** | Tell the user to run `/project-discovery` first, then `/adapt-framework` to wire KATA to the target stack |
 
 ---
 
@@ -154,7 +154,7 @@ A redaction never silently succeeds — the user must see what was removed befor
 {Simplified `tests/` tree}
 
 ## KATA architecture
-{One-paragraph explanation + link to `.claude/skills/project-discovery/references/kata-adaptation.md`}
+{One-paragraph explanation + link to `.claude/commands/adapt-framework.md` and `.claude/skills/test-automation/references/kata-architecture.md`}
 
 ## AI-assisted development
 {Reference to the AI memory file from Step 0 + a note about `/project-discovery`}

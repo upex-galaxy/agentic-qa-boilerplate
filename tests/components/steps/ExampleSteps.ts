@@ -1,24 +1,25 @@
 /**
- * KATA Architecture - Example Flows
+ * KATA Architecture - Example Steps
  *
  * ⚠️  REFERENCE ONLY - THIS MODULE USES FICTIONAL ENDPOINTS
  *
- * This file demonstrates the KATA pattern for flow modules.
+ * This file demonstrates the KATA pattern for the Steps module (Layer 3.5).
  * Endpoints like '/api/auth/login' are placeholders.
  * Use this as a structural guide, not as runnable code.
  *
- * To create your own functional flows:
- * 1. Copy this file to tests/components/flows/YourFlows.ts
+ * To create your own functional steps:
+ * 1. Copy this file to tests/components/steps/YourSteps.ts
  * 2. Replace fictional endpoints with your real API endpoints
  * 3. Update authentication logic to match your app's auth flow
  * 4. Import and use in your test fixtures or tests
  *
- * Flows are reusable setup sequences that prepare test state.
- * They are NOT ATCs - they don't have fixed assertions.
- * They combine multiple actions/ATCs to reach a specific state.
+ * Steps are reusable precondition chains that prepare test state.
+ * They are NOT ATCs - they don't have fixed assertions and are not
+ * decorated with @atc. They combine multiple actions/ATCs to reach a
+ * specific state before the real test runs.
  *
  * Common uses:
- * - Authentication flows (login, get token)
+ * - Authentication (login, get token)
  * - Data setup (create user, seed database)
  * - State preparation (navigate to specific page with data)
  */
@@ -37,22 +38,22 @@ export interface AuthState {
 }
 
 // ============================================
-// Example Flows Class
+// Example Steps Class
 // ============================================
 
-export class ExampleFlows extends TestContext {
+export class ExampleSteps extends TestContext {
   constructor(options: TestContextOptions = {}) {
     super(options);
   }
 
   // ============================================
-  // Flow Methods (NOT ATCs)
+  // Step Methods (NOT ATCs)
   // ============================================
 
   /**
-   * Flow: Authenticate and get token
+   * Step: Authenticate and get token
    *
-   * This is a SETUP flow, not an ATC.
+   * This is a SETUP step, not an ATC.
    * It doesn't verify the auth worked - just gets the token.
    *
    * @returns Auth state with token and userId
@@ -76,9 +77,9 @@ export class ExampleFlows extends TestContext {
   }
 
   /**
-   * Flow: Navigate to authenticated page
+   * Step: Navigate to authenticated page
    *
-   * Combines login + navigation into a reusable flow.
+   * Combines login + navigation into a reusable precondition chain.
    */
   async navigateAsAuthenticatedUser(path: string, email: string, password: string) {
     if (!this._page || !this._request) {
@@ -102,7 +103,7 @@ export class ExampleFlows extends TestContext {
   }
 
   /**
-   * Flow: Create test data via API
+   * Step: Create test data via API
    *
    * Sets up test data before running UI tests.
    */

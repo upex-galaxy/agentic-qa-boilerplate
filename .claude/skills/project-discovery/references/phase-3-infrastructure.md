@@ -201,7 +201,7 @@ curl http://localhost:<port>/api/health
 - Performance Configuration table (image opt / font opt / prefetching / script opt)
 - SEO Configuration (metadata / OG / sitemap / robots)
 - Browser Support / Polyfills
-- Routing + State + Auth integration points (for KATA adaptation)
+- Routing + State + Auth integration points (consumed later by `/adapt-framework`)
 - Discovery Gaps
 
 ---
@@ -299,4 +299,4 @@ Before the Phase 3 completion gate, verify:
 - [ ] No secret values committed; only keys + example formats.
 - [ ] Monorepos have per-package sub-sections.
 - [ ] Each environment URL is reachable (or flagged as gap if cannot verify from code).
-- [ ] User confirms "Phase 3 complete" before Setup (KATA adaptation) begins.
+- [ ] User confirms "Phase 3 complete" before Phase 4 begins. KATA adaptation happens later via `/adapt-framework`, outside this skill.

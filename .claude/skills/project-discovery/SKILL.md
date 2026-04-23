@@ -1,6 +1,6 @@
 ---
 name: project-discovery
-description: "Onboard a project to this testing boilerplate, generate the context files that every QA and automation session depends on, and adapt the KATA test architecture to the target stack. Runs a 4-phase discovery (Constitution, Architecture, Infrastructure, Specification) that produces PRD, SRS, domain glossary, business-data-map, and test-ready fixtures. Use when the user says: set up this project, onboard this repo, connect to project, discover the architecture, generate business-data-map, create PRD/SRS, adapt KATA to this project, or set up testing framework. Also use when .context/mapping/business-data-map.md is missing or stale. Do NOT use for writing tests (test-automation), documenting TCs (test-documentation), running suites (regression-testing), testing a ticket (sprint-testing), or syncing API endpoints (use `bun run api:sync` for technical sync; the `/business-api-map` command for the business angle)."
+description: "Onboard a project to this testing boilerplate and generate the context files that every QA and automation session depends on. Runs a 4-phase discovery (Constitution, Architecture, Infrastructure, Specification) that produces PRD, SRS, domain glossary, business-data-map, and test-ready fixtures. Use when the user says: set up this project, onboard this repo, connect to project, discover the architecture, generate business-data-map, or create PRD/SRS. Also use when .context/mapping/business-data-map.md is missing or stale. Do NOT use for writing tests (test-automation), documenting TCs (test-documentation), running suites (regression-testing), testing a ticket (sprint-testing), adapting the KATA architecture to the target stack (that is `/adapt-framework`), or syncing API endpoints (use `bun run api:sync` for technical sync; the `/business-api-map` command for the business angle)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 ---
@@ -21,11 +21,10 @@ All projects go through the same 4 phases, but depth varies. Pick once, then fol
 
 | Scenario | Input | Phases to run | Typical depth |
 |----------|-------|---------------|---------------|
-| **Fresh onboarding** (greenfield or unseen project) | Repo URL or local path(s), no existing context files | 1 -> 2 -> 3 -> 4 -> Setup | Full. All docs generated. |
-| **Boilerplate adoption** (this repo adopted for a new project) | Target app repo(s), this repo as the test framework | 1 (project-connection) -> 3 -> Setup -> Context generators | Skip 2+4 if PRD/SRS already exist upstream; always run Setup to adapt KATA. |
-| **Brownfield** (project already documented, tests missing) | Existing `.context/` partially filled | 2 (gaps) -> 3 (gaps) -> Setup -> Context generators | Targeted. Only regenerate what's missing/stale. |
+| **Fresh onboarding** (greenfield or unseen project) | Repo URL or local path(s), no existing context files | 1 -> 2 -> 3 -> 4 -> Context generators | Full. All docs generated. After discovery complete, run `/adapt-framework` to modify the boilerplate. |
+| **Boilerplate adoption** (this repo adopted for a new project) | Target app repo(s), this repo as the test framework | 1 (project-connection) -> 3 -> Context generators | Skip 2+4 if PRD/SRS already exist upstream. After discovery complete, run `/adapt-framework` to modify the boilerplate. |
+| **Brownfield** (project already documented, tests missing) | Existing `.context/` partially filled | 2 (gaps) -> 3 (gaps) -> Context generators | Targeted. Only regenerate what's missing/stale. |
 | **Context refresh** | User says "regenerate business-data-map" | Context generators only | One-file refresh. Confirm diffs before overwriting. For the test plan, redirect to `/master-test-plan`. For API endpoints, redirect to `bun run api:sync` (technical) or `/business-api-map` (business angle). |
-| **KATA adaptation only** | Stack changed (new auth, new API framework) | Setup only | Read current `tests/` + new source, update KATA components. |
 
 Default to "Fresh onboarding" when in doubt. Confirm the scope with the user before starting Phase 1.
 
@@ -44,14 +43,15 @@ Phase 1: Constitution        -> Phase 2: Architecture       -> Phase 3: Infrastr
 
                                                  |
                                                  v
-                                    Setup: KATA Adaptation + Context Generators
-                                    (.context/mapping/business-data-map.md,
-                                     tests/components/**)
+                                    Context Generators
+                                    (.context/mapping/business-data-map.md)
                                     Test strategy (.context/master-test-plan.md) is
                                     produced by the /master-test-plan command.
                                     API context by `bun run api:sync` (technical) +
                                     `/business-api-map` (business angle).
 ```
+
+> KATA adaptation is a separate command: `/adapt-framework`. It runs after discovery outputs exist and modifies this boilerplate's `tests/`, `api/schemas/`, and `config/` against the target stack.
 
 Each phase has a **completion gate**: before moving on, the required output files must exist on disk with non-placeholder content. Ask the user to confirm after each phase; never auto-chain.
 
@@ -115,18 +115,6 @@ Two sub-steps:
 
 Read `references/phase-4-specification.md` when running Phase 4. Contains issue-tracker connection recipes, query conventions, and the full template set.
 
-### Setup — KATA Adaptation
-
-Runs after Phase 3 is complete. Adapts this repo's KATA layers (TestContext, ApiBase, UiBase, TestFixture) to the target project's stack.
-
-Two sub-phases, in strict order:
-1. **Analysis + Plan** -- read `tests/components/**`, read target auth flow, decide OpenAPI source (URL vs file), decide which components to create, write the adaptation plan; ask the user to approve before writing code.
-2. **Implementation** -- execute the approved plan: write `.env`, run `bun run api:sync` (or equivalent), create/modify components, run tests, fix failures.
-
-**Completion gate**: `bun run test:smoke` passes on at least one test against staging, AND `bun run typecheck` passes.
-
-Read `references/kata-adaptation.md` during Setup. Contains the component templates, auth-strategy decision tree, OpenAPI integration recipe, validation checklist.
-
 ### Context Generators — the final deliverables
 
 Two files, always generated last (they pull from every prior phase):
@@ -140,6 +128,8 @@ Two files, always generated last (they pull from every prior phase):
 Read `references/context-generators.md` when (re)generating `business-data-map.md`. This is where most "regenerate business-data-map" user requests land.
 
 **API context is NOT a project-discovery output.** Endpoint sync is delegated to `bun run api:sync` (technical, OpenAPI -> TypeScript types) and the `/business-api-map` command (business angle: auth flows, critical paths, architecture behind the API). See `references/context-generators.md` §API context — deferred for the deferral note.
+
+**See also:** After discovery outputs exist, run `/adapt-framework` to adapt this boilerplate's `tests/`, `api/schemas/`, and `config/` to the target stack.
 
 ---
 
@@ -170,7 +160,7 @@ If multiple signals conflict (e.g., Next.js + Express), it is almost always a mo
 
 ## Gotchas
 
-- **Discovery is read-only until the user approves writes.** Phase 1-4 read code and ask questions. Only the Setup phase (KATA adaptation) modifies the target repo, and only after the user approves the plan.
+- **Discovery is read-only on the target repo.** `.context/` is the only write target. For modifications to this boilerplate's `tests/`, `api/schemas/`, and `config/`, use `/adapt-framework`.
 - **Credentials never live in discovery docs.** Read them from `.env` (`LOCAL_USER_EMAIL`, `STAGING_USER_EMAIL`, etc.). If missing, ask the user to create `.env.example` or hand over secrets out-of-band -- do not paste them into markdown.
 - **"Discovery Gaps" section is mandatory in every output.** If you could not verify something from the code (e.g., traffic volume, uptime targets), list it in a `## Discovery Gaps` section rather than inventing a number. This signals to future sessions what still needs human input.
 - **PRD/SRS discovered from code is authoritative, not aspirational.** Describe what the system does, not what product wants it to do. If the user wants a "to-be" doc, that is PRD/SRS *creation* (out of scope for this skill); point them to their own product workflow.
@@ -178,7 +168,7 @@ If multiple signals conflict (e.g., Next.js + Express), it is almost always a mo
 - **Monorepos require scoped discovery.** Run Phase 1 once (project as a whole) but Phases 2-3 per package. Merge findings into a single `.context/infrastructure/` with sub-sections per package.
 - **Database schemas over ORM models.** If both exist, prefer the migration files / schema dump over the ORM definitions -- ORM definitions can drift from the live schema.
 - **API base URL vs route prefix.** `{{API_URL_LOCAL}}` includes the protocol+host; route prefixes (e.g., `/api/v1`) belong in the path. Do not concatenate them twice in any context file that documents endpoints (e.g., `business-api-map.md`).
-- **Auth flow is the single most error-prone part of KATA adaptation.** Session tokens, cookies, JWT, OAuth redirects, CSRF -- every project does it differently. Read the real login request in DevTools before writing the `LoginApi` / auth fixture.
+- **Auth flow is the single most important input for downstream `/adapt-framework`.** Session tokens, cookies, JWT, OAuth redirects, CSRF -- every project does it differently. Capture the real login request (DevTools / curl) in `backend.md` so the adaptation phase has a concrete contract to code against.
 - **Never generate from stale context.** If `.context/mapping/business-data-map.md` already exists but the user asks to "refresh" it, diff the current code against the existing file and ask whether to overwrite or merge. Auto-overwrite loses prior human edits.
 - **Context generators need ALL prior phases.** If the user jumps to "regenerate business-data-map" on a fresh repo, do Phase 1 (at minimum project-connection) and Phase 3 (backend discovery) first -- the generator relies on them.
 - **IQL framing is optional.** Mention it only if the user asks "why this structure?" -- do not lecture them on methodology when they just want a working `business-data-map.md`.
@@ -241,7 +231,6 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 - **Phase 2 SRS (architecture, API contracts, functional, non-functional)** -> read `references/phase-2-srs.md`.
 - **Phase 3 (backend, frontend, infrastructure)** -> read `references/phase-3-infrastructure.md`.
 - **Phase 4 (backlog mapping, templates)** -> read `references/phase-4-specification.md`.
-- **KATA adaptation (Setup)** -> read `references/kata-adaptation.md`.
 - **Generating `business-data-map.md`** -> read `references/context-generators.md`. For the test plan, run `/master-test-plan` (command, not skill).
 - **API endpoint sync (technical) or business-API map** -> NOT this skill. Use `bun run api:sync` (technical types) or `/business-api-map` command (business angle).
 - **User asks about IQL methodology** -> read `references/iql-methodology.md`.
@@ -271,12 +260,6 @@ find <target-repo> -maxdepth 2 -name "docker-compose*.yml" -o -name "Dockerfile"
 cat <target-repo>/.env.example             # env var contract
 grep -r "process.env\." <target-repo>/src  # env vars actually read
 cat <target-repo>/.github/workflows/*.yml  # CI/CD pipeline
-
-# Setup — KATA adaptation
-cp .env.example .env                       # populate with project values
-bun run api:sync                           # sync OpenAPI + regenerate types
-bun run test:smoke                         # validate login + one flow
-bun run typecheck                          # no type errors
 
 # Context generators (final step)
 # Output path:

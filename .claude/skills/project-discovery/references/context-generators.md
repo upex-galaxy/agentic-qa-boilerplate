@@ -130,7 +130,7 @@ Do not regenerate that file from this skill. If the user asks to refresh it, red
 - **RLS, row-level security, policies.** Do NOT dump RLS policies verbatim into `business-data-map.md`. Note that they exist and the high-level rule ("only the owner can read their rows"). Live policy enumeration belongs in `[DB_TOOL]` sessions, not static markdown.
 - **Dynamic routes and catch-alls.** Next.js `[...slug]`, Express wildcards, FastAPI path converters — these expand at runtime. Document them explicitly with a `[...]` annotation and Discovery Gap note.
 - **Monorepos with multiple backends.** When the `/business-api-map` is run, scope it per backend service rather than flattening packages. Capture per-service auth, base URL, and ownership in `business-data-map.md`'s "External Integrations" section as a stop-gap.
-- **Auth flows with refresh tokens.** Document the refresh recipe separately — KATA adaptation and the `/business-api-map` will both depend on it.
+- **Auth flows with refresh tokens.** Document the refresh recipe separately — `/adapt-framework` and `/business-api-map` will both depend on it.
 - **Stale schema drift.** If `business-data-map.md` claims an entity exists but the current DB does not have it (or vice versa), that is a Discovery Gap — not a licence to silently rewrite the map. Ask the user before overwriting.
 - **Webhooks from sandbox-only services.** Stripe test keys, Resend dev tokens, etc. — webhooks only fire in specific environments. Document which env each integration works in.
 - **Mixed auth schemes.** Some projects have JWT for mobile + session cookies for web + API keys for machine-to-machine. Treat each as its own auth level, not "Protected".

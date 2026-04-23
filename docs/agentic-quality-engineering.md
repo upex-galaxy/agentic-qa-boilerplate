@@ -41,7 +41,7 @@ SESSION START  →  STAGE 1   →  STAGE 2   →  STAGE 3   →  STAGE 4    → 
 
 | Stage | Owning skill | Output |
 | ----- | ------------ | ------ |
-| **Onboarding** (one-time) | `project-discovery` | `CLAUDE.md`, `.context/` artifacts, KATA adapted to the target stack |
+| **Onboarding** (one-time) | `project-discovery` (discovery) + `/adapt-framework` (KATA adaptation) | `CLAUDE.md`, `.context/` artifacts, and KATA wired to the target stack |
 | **1 — Planning** | `sprint-testing` | ATP + TCs linked to ACs |
 | **2 — Execution** | `sprint-testing` | Smoke + trifuerza (UI/API/DB) exploration, evidence captured |
 | **3 — Reporting** | `sprint-testing` | ATR, bug tickets, QA comment on the source ticket |
@@ -114,7 +114,7 @@ Agents change the equation:
 
 - **Context loading is automatic.** Skills read the relevant business rules, API docs, and test priorities on session start — no human has to prepare a briefing.
 - **Test plan generation is minutes, not hours.** The AI drafts a risk triage, scenarios, and test data requirements from the ticket and its context.
-- **Traceability is verified programmatically.** The `traceability-fix` command and the `xray-cli` skill walk the full chain — story → ATP → ATR → TCs — and catch missing links automatically.
+- **Traceability is verified programmatically.** The `fix-traceability` command and the `xray-cli` skill walk the full chain — story → ATP → ATR → TCs — and catch missing links automatically.
 
 The rest of this document describes how that strategy is implemented in code and skills.
 
@@ -308,7 +308,7 @@ The daily workflow is plain English. The QA engineer tells Claude Code what is n
 ### Example invocations
 
 ```text
-> Read @.context/PBI/SPRINT-10-TESTING.md and process this sprint
+> Read @.context/reports/SPRINT-10-TESTING.md and process this sprint
   → Auto-triggers: sprint-testing skill in sprint mode
 
 > Test {{PROJECT_KEY}}-450
@@ -530,7 +530,7 @@ The practice uses three complementary kinds of AI capability:
 
 | Skill                 | Stage        | When it fires                                                                  |
 | --------------------- | ------------ | ------------------------------------------------------------------------------ |
-| `project-discovery`   | Onboarding   | "set up this project", "onboard this repo", "generate business-data-map", "adapt KATA" |
+| `project-discovery`   | Onboarding   | "set up this project", "onboard this repo", "generate business-data-map", "discover the architecture" |
 | `sprint-testing`      | 1 · 2 · 3    | "test {{PROJECT_KEY}}-XXX", "process sprint N", "retest bug", "QA this story", "mode yolo" |
 | `test-documentation`  | 4            | "document tests", "ROI analysis", "Candidate vs Manual", "fix traceability"    |
 | `test-automation`     | 5            | "automate TC", "write E2E test", "KATA component", "review test code"          |
@@ -546,12 +546,13 @@ Commands are deterministic, single-purpose prompts invoked explicitly. Unlike sk
 
 | Command                       | Purpose                                                  |
 | ----------------------------- | -------------------------------------------------------- |
+| `/adapt-framework`            | Adapt this boilerplate's KATA test architecture to a project already reverse-engineered by `/project-discovery` (Plan -> Approval -> Implement) |
 | `/business-data-map`          | Discover and document system data flow and entities      |
 | `/business-feature-map`       | Catalog and document platform features                   |
-| `/git-flow`                   | Commit + push + PR workflow                              |
-| `/git-conflict-fix`           | Resolve git conflicts safely                             |
-| `/traceability-fix`           | Repair broken TMS traceability links (US → ATP → ATR → TC) |
-| `/test-execution-breakdown`   | Break a test case into executable pseudo-code            |
+| `/commit-push-pr`                   | Commit + push + PR workflow                              |
+| `/fix-git-conflict`           | Resolve git conflicts safely                             |
+| `/fix-traceability`           | Repair broken TMS traceability links (US → ATP → ATR → TC) |
+| `/break-down-tests`   | Break a test case into executable pseudo-code            |
 
 All command definitions live under `.claude/commands/<name>.md`.
 
@@ -622,7 +623,7 @@ Consider a ticket `{{PROJECT_KEY}}-XXX` with a handful of acceptance criteria co
 2. **Stage 1 — Planning.** Risk triage across each AC. Test cases are designed per AC using equivalence partitioning and boundary analysis. An ATP is created in `[TMS_TOOL]` and TCs are linked to the ATP and to the ACs they cover. The plan is presented to the engineer for approval.
 3. **Stage 2 — Execution.** The smoke test runs first as a Go/No-Go gate. If it passes, the skill executes the planned UI, API, and DB checks, capturing evidence into the PBI `evidence/` folder.
 4. **Stage 3 — Reporting.** The ATR is filled in `[TMS_TOOL]` with status per TC. Any bugs are filed following the naming convention. A QA-done comment is posted on the ticket and the tracker status is transitioned.
-5. **Traceability verification.** The `/traceability-fix` command (or the `xray-cli` skill's trace operation) walks the chain and confirms every link — Story → ATP → ATR → TCs — is present and correct.
+5. **Traceability verification.** The `/fix-traceability` command (or the `xray-cli` skill's trace operation) walks the chain and confirms every link — Story → ATP → ATR → TCs — is present and correct.
 
 Every artefact lives in the TMS and in the PBI folder on disk. The AI produces the plan, runs the tests, files the results, and verifies traceability. The engineer reviews and approves at each checkpoint.
 
@@ -667,7 +668,7 @@ Treat these as a starting point, not a canon. Add fields that map to your team's
 - **A library of utility commands** — deterministic, single-purpose, invoked with `/<name>`. The current library is enumerated in Section 12.
 - **Live system integrations** — MCPs for the database, API, TMS, and library documentation, plus first-party CLIs for TMS operations and browser automation. The current set is enumerated in Section 12.
 - **A structured context layer** — project, module, and ticket-level knowledge, on disk and version-controlled. Contains business rules, API documentation, per-ticket memory, and team guidelines.
-- **TMS integration with traceability** — ATPs, ATRs, TCs linked to user stories, with programmatic traceability verification via `/traceability-fix` and the `xray-cli` skill.
+- **TMS integration with traceability** — ATPs, ATRs, TCs linked to user stories, with programmatic traceability verification via `/fix-traceability` and the `xray-cli` skill.
 - **A KATA automated test suite scaffold** — four-layer architecture, `@atc` decorators tracing every test to a TMS TC, smart fixtures, ROI-curated scope.
 - **A CI/CD pipeline** — build, smoke, sanity, and regression workflows in GitHub Actions.
 - **A data-driven quality gate** — GO / CAUTION / NO-GO, with AI-classified failures.

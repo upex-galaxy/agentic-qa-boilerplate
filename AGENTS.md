@@ -14,7 +14,7 @@ The Stages 1-6 pipeline is distributed across skills:
 - **Stage 4** (TMS documentation + ROI) -> `/test-documentation`
 - **Stage 5** (automation: plan, code, review) -> `/test-automation`
 - **Stage 6** (regression, GO/NO-GO) -> `/regression-testing`
-- **Project setup / onboarding** -> `/project-discovery`
+- **Project setup / onboarding** -> `/project-discovery` (discovery) + `/adapt-framework` (KATA adaptation)
 
 **Common test commands:**
 
@@ -212,7 +212,7 @@ Conventions (TC naming, labeling, bug summary format, execution naming, etc.) li
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
-| **project-discovery** | `/project-discovery` | Onboard a project to this boilerplate. 4-phase discovery (Constitution -> Architecture -> Infrastructure -> Specification) that generates PRD, SRS, domain glossary, and orchestrates the `/business-*-map` and `/master-test-plan` commands. Adapts KATA to the target stack. Setup / rediscovery. |
+| **project-discovery** | `/project-discovery` | Onboard a project to this boilerplate. 4-phase discovery (Constitution -> Architecture -> Infrastructure -> Specification) that generates PRD, SRS, domain glossary, and orchestrates the `/business-*-map` and `/master-test-plan` commands. Reverse-engineering only — for KATA adaptation run `/adapt-framework` afterwards. |
 | **sprint-testing** | `/sprint-testing` | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting). Single-ticket or batch-sprint mode. Produces PBI folder, ATP, ATR, QA comment, bug reports. |
 | **test-documentation** | `/test-documentation` | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS (Jira/Xray). Bridge between manual QA and automation. Four scopes: module / ticket / bug / ad-hoc. Produces Candidate / Manual / Deferred verdicts. |
 | **test-automation** | `/test-automation` | **Stage 5**. Plan -> Code -> Review automated tests on KATA + Playwright + TypeScript. Three planning scopes (module, ticket, ATC). Writes E2E and API/integration tests, registers fixtures, enforces KATA compliance. |
@@ -225,6 +225,7 @@ Conventions (TC naming, labeling, bug summary format, execution naming, etc.) li
 | Need | Tool |
 |------|------|
 | Onboard a new repo / regenerate context | `/project-discovery` |
+| Adapt this boilerplate's `tests/` to the target stack after discovery | `/adapt-framework` |
 | Test a user story or retest a bug | `/sprint-testing` |
 | Create TMS artifacts, ROI, traceability | `/test-documentation` |
 | Write or review automated tests | `/test-automation` |
@@ -246,12 +247,13 @@ Skills are committed to the repo. User-specific settings (`.claude/settings.loca
 
 | Command | Purpose |
 |---------|---------|
+| `/adapt-framework` | Adapt this boilerplate's KATA test architecture (`tests/`, `api/schemas/`, `config/`) to a project already reverse-engineered by `/project-discovery`. Two sub-phases: Plan (no writes) -> user approval -> Implement (writes). Modifies THIS repo only. |
 | `/refresh-ai-memory` | Regenerate `README.md` and the AI memory file (`CLAUDE.md` / `GEMINI.md` / `AGENTS.md` / `.cursor/rules` / etc., auto-detected) so they reflect the current `.context/` and `package.json` state. Run when documentation drifts. |
 | `/business-data-map` | Generate or refresh `.context/mapping/business-data-map.md` (entities, flows, state machines). |
 | `/business-feature-map` | Generate or refresh `.context/mapping/business-feature-map.md` (feature catalog, CRUD matrix, integrations). |
-| `/test-execution-breakdown` | Plain-English breakdown of automated tests for a given module / spec. |
-| `/traceability-fix` | Repair broken US-ATP-ATR-TC traceability links in the TMS. |
-| `/git-flow`, `/git-conflict-fix` | Git workflow helpers. |
+| `/break-down-tests` | Plain-English breakdown of automated tests for a given module / spec. |
+| `/fix-traceability` | Repair broken US-ATP-ATR-TC traceability links in the TMS. |
+| `/commit-push-pr`, `/fix-git-conflict` | Git workflow helpers. |
 
 ---
 
