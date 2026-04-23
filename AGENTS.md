@@ -316,12 +316,25 @@ Test Files - Orchestrate ATCs
 
 ### Branch Strategy
 
+Protected branches:
+
 | Branch | Role |
 |---|---|
-| `main` | Production. PRs merged from `staging` or `feature/*` after review. |
+| `main` | Production. PRs merged from `staging` or a semantic branch after review. |
 | `staging` | Integration branch for AI commits and pre-release validation. |
-| `feature/*` | Task-specific branches for new work. Use `feature/TICKET-ID-desc`. |
-| `fix/*` | Bug-fix branches. Use `fix/TICKET-ID-desc`. |
+
+Task branches follow the **same semantic vocabulary as commits** — the prefix announces the contract of the work. Pick the prefix that matches the *dominant* change (weight: `feat` > `fix` > `refactor` > `test` > `docs` > `chore`).
+
+| Prefix | Use when the dominant change is… | Example |
+|---|---|---|
+| `feat/` | A new feature or capability | `feat/UPEX-123-bulk-assign-users` |
+| `fix/` | A bug fix | `fix/UPEX-45-empty-reservation-list` |
+| `test/` | Writing or updating automated tests (no product-code changes) | `test/UPEX-277-login-smoke-tests` |
+| `docs/` | Documentation only | `docs/UPEX-310-clarify-kata-fixtures` |
+| `refactor/` | Code change without behaviour change | `refactor/split-kata-fixtures` |
+| `chore/` | Tooling, config, deps, housekeeping | `chore/bump-playwright-1.50` |
+
+Name format: `{prefix}/{ISSUE-KEY}-{kebab-slug}` when an issue key exists, `{prefix}/{kebab-slug}` otherwise.
 
 ### Commit Rules
 
@@ -331,7 +344,14 @@ Test Files - Orchestrate ATCs
 - **NO AI attribution**: Never include "Generated with Claude Code", "Co-Authored-By: Claude", or similar lines. Commits must look human-authored.
 - **Confirm before push to main**: Always ask user confirmation before pushing to `main`.
 
-**Example**: `git checkout -b feature/UPEX-123-add-login-tests` -> commit -> push with `-u` -> `gh pr create --base staging`. For general work on `main`, always ask "Confirm push to main?" before pushing.
+### Pull Requests
+
+- Test-automation PRs use `templates/pr-test-automation.md`. `/commit-push-pr` loads and fills this template automatically.
+- Title format: `{type}({ISSUE-KEY}): {description}` — include the issue key whenever one exists. Fallback: `{type}: {description}`.
+- Branch names follow the semantic prefix vocabulary documented in the Branch Strategy table above.
+- The template body is intentionally NOT inlined here; it lives in `templates/` so it can evolve without bloating `AGENTS.md` / `CLAUDE.md`.
+
+**Example**: `git checkout -b test/UPEX-123-add-login-tests` -> commit -> push with `-u` -> `gh pr create --base staging`. For general work on `main`, always ask "Confirm push to main?" before pushing.
 
 ---
 
