@@ -75,7 +75,7 @@ Every invocation starts by initializing the session, even in batch mode. Session
    This step is **mandatory before any pseudocode block below executes**. The skills carry the concrete syntax, flags, and JSON payloads this skill intentionally omits.
 0.5. **Sprint roadmap checkpoint** (batch-sprint mode only — skip in single-ticket mode):
    - Detect batch mode from the user invocation ("process sprint N", "continue sprint", a `sprint-file` parameter, or any phrase that implies a sprint loop).
-   - Check whether `.context/PBI/SPRINT-{N}-TESTING.md` exists for the target sprint.
+   - Check whether `.context/reports/SPRINT-{N}-TESTING.md` exists for the target sprint.
      - **Missing** -> generate it before entering the ticket loop. Delegate to `sprint-orchestration.md` §Part 1 — Sprint Roadmap Generator.
      - **Present but older than 24h, OR the user explicitly asks for a refresh** -> regenerate (warn + confirm overwrite).
      - **Present and fresh** -> proceed.

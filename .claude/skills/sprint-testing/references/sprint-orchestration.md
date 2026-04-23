@@ -8,7 +8,7 @@ Use this reference when iterating multiple tickets in a sprint. Covers: generati
 
 | Parameter | Required | Meaning |
 |-----------|----------|---------|
-| `sprint-file` | YES | Path to the framework file, e.g. `.context/PBI/SPRINT-5-TESTING.md`. |
+| `sprint-file` | YES | Path to the framework file, e.g. `.context/reports/SPRINT-5-TESTING.md`. |
 | `continue-from` | NO | Ticket ID (e.g. `{{PROJECT_KEY}}-277`) to resume from. |
 
 If a parameter is missing, ASK the user before proceeding. Before starting, verify:
@@ -33,7 +33,7 @@ You are the ORCHESTRATOR for in-sprint QA on `{{PROJECT_NAME}}`. Manage the work
 
 ## Part 1 — Sprint Roadmap Generator
 
-Use when the user asks "generate the sprint testing framework", "set up sprint N", or when `sprint-file` is missing. **Auto-invoked by `SKILL.md` §Session Start step 0.5** in batch-sprint mode whenever `.context/PBI/SPRINT-{N}-TESTING.md` is missing or stale (>24h). Never run as a standalone command — it is a precondition of the skill.
+Use when the user asks "generate the sprint testing framework", "set up sprint N", or when `sprint-file` is missing. **Auto-invoked by `SKILL.md` §Session Start step 0.5** in batch-sprint mode whenever `.context/reports/SPRINT-{N}-TESTING.md` is missing or stale (>24h). Never run as a standalone command — it is a precondition of the skill.
 
 ### Inputs
 
@@ -41,9 +41,9 @@ Use when the user asks "generate the sprint testing framework", "set up sprint N
 |-----------|----------|-------------|---------|
 | `sprint_number` | YES | Sprint to generate | `10` |
 | `qa_lead` | NO | Defaults to `git config user.name`, ask if missing | `Jane Doe` |
-| `previous_sprint_file` | NO | For carryover detection | `.context/PBI/SPRINT-9-TESTING.md` |
+| `previous_sprint_file` | NO | For carryover detection | `.context/reports/SPRINT-9-TESTING.md` |
 
-Output path: `.context/PBI/SPRINT-{sprint_number}-TESTING.md`. If it already exists, warn + ask before overwriting.
+Output path: `.context/reports/SPRINT-{sprint_number}-TESTING.md`. If it already exists, warn + ask before overwriting.
 
 > **Prerequisite**: Load `/acli` skill before the `[ISSUE_TRACKER_TOOL]` call in Step 1 below. Sprint Roadmap Generator runs before per-ticket Session Start, so §0.1 has not yet executed — load it explicitly here.
 

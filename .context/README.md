@@ -10,6 +10,7 @@ This directory contains all the documentation that the AI reads to work on the p
 ├── PRD/                PHASE 2: Architecture - Product Requirements
 ├── SRS/                PHASE 2: Architecture - Software Requirements
 ├── PBI/                PHASES 4+: Product Backlog (Specification, Testing)
+├── reports/            Sprint-level testing frameworks (managed by /sprint-testing)
 ├── mapping/                            # Business maps (command-generated)
 │   ├── business-data-map.md            #   /business-data-map
 │   ├── business-feature-map.md         #   /business-feature-map
