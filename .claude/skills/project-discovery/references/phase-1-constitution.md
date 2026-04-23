@@ -187,7 +187,7 @@ grep -rE "(api[_-]?key|secret|password|token)\s*[:=]\s*['\"]" <repo-root>/src
 
 ### Output
 
-Append to `CLAUDE.md` in a `## Project Assessment (Phase 1)` block:
+Append to `AGENTS.md` (the canonical file — `CLAUDE.md` is a symlink to it) in a `## Project Assessment (Phase 1)` block:
 
 ```markdown
 ## Project Assessment (Phase 1)
@@ -235,7 +235,7 @@ If HIGH risks exist, also write `.context/risk-assessment.md` with per-risk Seve
 
 ### Completion criteria
 
-- `## Project Assessment (Phase 1)` section present in `CLAUDE.md`.
+- `## Project Assessment (Phase 1)` section present in `AGENTS.md` (CLAUDE.md is a symlink to it).
 - HIGH risks (if any) captured in `.context/risk-assessment.md`.
 
 ---
@@ -373,7 +373,7 @@ Required sections:
 Before proceeding to Phase 2:
 
 - [ ] `.context/project-config.md` exists and is non-empty.
-- [ ] `## Project Assessment (Phase 1)` block present in `CLAUDE.md`.
+- [ ] `## Project Assessment (Phase 1)` block present in `AGENTS.md` (CLAUDE.md is a symlink to it).
 - [ ] `.context/PRD/business/business-model.md` exists with real sources cited.
 - [ ] `.context/PRD/business/domain-glossary.md` exists with at least Core Entities + Relationships Diagram.
 - [ ] All Discovery Gaps are listed explicitly (no silent skipping).

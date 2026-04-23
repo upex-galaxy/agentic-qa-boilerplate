@@ -22,7 +22,7 @@ All projects go through the same 4 phases, but depth varies. Pick once, then fol
 | Scenario | Input | Phases to run | Typical depth |
 |----------|-------|---------------|---------------|
 | **Fresh onboarding** (greenfield or unseen project) | Repo URL or local path(s), no existing context files | 1 -> 2 -> 3 -> 4 -> Context generators | Full. All docs generated. After discovery complete, run `/adapt-framework` to modify the boilerplate. |
-| **Boilerplate adoption** (this repo adopted for a new project) | Target app repo(s), this repo as the test framework | 1 (project-connection) -> 3 -> Context generators | Skip 2+4 if PRD/SRS already exist upstream. After discovery complete, run `/adapt-framework` to modify the boilerplate. |
+| **Boilerplate adoption** (this repo adopted for a new project) | Target app repo(s), this repo as the test framework | 1 (project-connection) -> 3 -> Context generators | Skipping Phase 2 or Phase 4 is allowed **only** if every required input for `/adapt-framework` is already on disk: `.context/SRS/architecture.md`, `.context/mapping/business-data-map.md`, one of (`api/openapi-types.ts` non-stub / reachable OpenAPI spec URL / `.context/mapping/business-api-map.md`), plus `.context/infrastructure/{backend,frontend}.md`. If any is missing, fall back to the corresponding phase before invoking `/adapt-framework`. Do not skip phases on a hand-wave like "the docs exist elsewhere" — verify each file is on disk first. |
 | **Brownfield** (project already documented, tests missing) | Existing `.context/` partially filled | 2 (gaps) -> 3 (gaps) -> Context generators | Targeted. Only regenerate what's missing/stale. |
 | **Context refresh** | User says "regenerate business-data-map" | Context generators only | One-file refresh. Confirm diffs before overwriting. For the test plan, redirect to `/master-test-plan`. For API endpoints, redirect to `bun run api:sync` (technical) or `/business-api-map` (business angle). |
 
@@ -36,7 +36,7 @@ Default to "Fresh onboarding" when in doubt. Confirm the scope with the user bef
 Phase 1: Constitution        -> Phase 2: Architecture       -> Phase 3: Infrastructure    -> Phase 4: Specification
 (who/what/why)                 (PRD + SRS)                    (backend/frontend/infra)       (PBI mapping)
                 |                      |                              |                              |
-   .context/PRD/business/        .context/PRD/*.md           .context/infrastructure/*.md     .context/PBI/backlog.md
+   .context/PRD/business/        .context/PRD/*.md           .context/infrastructure/*.md     .context/PBI/README.md
    business-model.md            .context/SRS/*.md                                             templates/*.md
    domain-glossary.md
    project-config.md
@@ -66,7 +66,12 @@ Four sub-steps, in order:
 3. **Business Model Discovery** -- problem statement, target users, value proposition, revenue model (if any). Business Model Canvas recommended.
 4. **Domain Glossary** -- core entities, relationships, state machines, enumerations, UI-label vs code-identifier mapping.
 
-**Completion gate**: `.context/PRD/business/business-model.md`, `.context/PRD/business/domain-glossary.md`, `.context/project-config.md` all exist and are non-empty.
+**Completion gate**: `.context/PRD/business/business-model.md`, `.context/PRD/business/domain-glossary.md`, `.context/project-config.md` all exist and are non-empty. Plus a `## Project Assessment (Phase 1)` block in `AGENTS.md` (CLAUDE.md is a symlink to it). Sanity-check content — these are soft gates, surfaced to the human as warnings, not hard aborts:
+- `domain-glossary.md` contains at least 5 core-entity subsections (grep `^### ` yields 5+ matches, ignoring top-level H3s from "Enumerations" etc. — aim for real entities).
+- `business-model.md` cites at least one concrete source (`Source:` or `Found in:` literal appears 3+ times).
+- `project-config.md` has a `## Tech Stack` section AND a `## Environments` section.
+
+After the automated sanity check, show the human the output paths and wait for explicit "Phase 1 complete, continue" before moving on.
 
 Read `references/phase-1-constitution.md` when running any Phase 1 sub-step. Contains the discovery process, stack-detection commands, required output sections, and quality checklists.
 
@@ -74,19 +79,26 @@ Read `references/phase-1-constitution.md` when running any Phase 1 sub-step. Con
 
 **Goal**: produce the Product and Software Requirements docs from code (not the other way round -- that is the "creation" direction, this is the "discovery" direction).
 
-PRD sub-steps (can run in parallel):
+PRD sub-steps (run first, in parallel or sequentially — user choice):
 1. **Executive Summary** -- problem, solution, success metrics, scope.
 2. **User Personas** -- roles, permissions, primary/secondary users, role hierarchy.
 3. **User Journeys** -- critical paths through the UI, route map, journey diagrams.
-4. **Feature Inventory** -- delegated to the `/business-feature-map` command. Output: `.context/mapping/business-feature-map.md`. Run after the three PRD docs above.
 
-SRS sub-steps (can run in parallel after PRD):
+> **Feature catalog is post-discovery.** The full feature inventory (`.context/mapping/business-feature-map.md`) is produced by the `/business-feature-map` command after all four discovery phases complete. Do not attempt to invoke it from here — it is token-heavy and the user is advised to run it in a clean session (see "Next recommended steps" at the end of this skill).
+
+SRS sub-steps (run after PRD, serially):
 1. **Architecture Specs** -- C4 context and container diagrams, component structure, database schema, external services, security model.
-2. **API Contracts** -- endpoints grouped by auth level (Public / Protected / Admin / Owner), request/response shapes, auth flow.
-3. **Functional Specs** -- FR-N entries with preconditions, business rules, validations, state machines.
-4. **Non-Functional Specs** -- performance budgets, security posture, reliability (RTO/RPO), scalability, observability, compliance.
+2. **Functional Specs** -- FR-N entries with preconditions, business rules, validations, state machines.
+3. **Non-Functional Specs** -- performance budgets, security posture, reliability (RTO/RPO), scalability, observability, compliance.
 
-**Completion gate**: `.context/PRD/executive-summary.md`, `user-personas.md`, `user-journeys.md`, `business-feature-map.md` (produced by `/business-feature-map`), `.context/SRS/architecture.md`, `api-contracts.md`, `functional-specs.md`, `non-functional-specs.md` all exist.
+> **API contracts are NOT an SRS output.** The technical surface is owned by `bun run api:sync` (generates `api/openapi-types.ts` from the project's OpenAPI spec). The business angle is owned by the `/business-api-map` command (`.context/mapping/business-api-map.md`). Phase 2 SRS only records where the spec lives (or flags its absence as a Discovery Gap). See `references/phase-2-srs.md` §2.
+
+**Completion gate**: `.context/PRD/executive-summary.md`, `user-personas.md`, `user-journeys.md`, `.context/SRS/architecture.md`, `functional-specs.md`, `non-functional-specs.md` all exist. API contract source (OpenAPI URL, `api/openapi-types.ts`, or "Discovery Gap — no spec") is recorded in `.context/project-config.md`. `business-feature-map.md` is produced post-discovery by `/business-feature-map` (see "Next recommended steps" after Phase 4). Soft content checks:
+- `architecture.md` contains at least one ` ```mermaid` block AND one of (`## Data Flow`, `## Database Schema`, `## Component Structure`).
+- `functional-specs.md` contains at least one `FR-` identifier and one `BR-` identifier.
+- `user-personas.md` lists at least 2 role entries (`### ` or table rows with role names).
+
+Show outputs to the human and wait for "Phase 2 complete, continue" before moving on.
 
 Read `references/phase-2-prd.md` when working on any PRD doc. Read `references/phase-2-srs.md` when working on any SRS doc. They are independent -- do not load both unless you are straddling both sides.
 
@@ -99,7 +111,12 @@ Three sub-steps:
 2. **Frontend Discovery** -- framework, bundler, routing, state management, design system, component library, test IDs strategy.
 3. **Infrastructure Mapping** -- CI/CD providers, deployment targets, environments (dev/staging/prod), infra-as-code, monitoring, rollback procedure.
 
-**Completion gate**: `.context/infrastructure/backend.md`, `frontend.md`, `infrastructure.md` all exist with the key facts (auth flow, test commands, deploy URLs) filled in.
+**Completion gate**: `.context/infrastructure/backend.md`, `frontend.md`, `infrastructure.md` all exist with the key facts (auth flow, test commands, deploy URLs) filled in. Soft content checks:
+- `backend.md` AND `frontend.md` each contain a `## Runtime` (or `## Build Configuration`) section AND a commands block (`bash` fenced) covering install + run.
+- `infrastructure.md` lists environments explicitly (`| Staging |` or `| Production |` table row).
+- At least one auth-flow pointer exists in `backend.md` (e.g., mentions `/auth/login`, `session`, `JWT`, `cookie`, `OAuth`).
+
+Show outputs to the human and wait for "Phase 3 complete, continue" before moving on.
 
 Read `references/phase-3-infrastructure.md` when running any Phase 3 sub-step. Contains framework-detection heuristics, required sections per artifact, and common gotchas (SSR vs CSR, edge vs serverless, monorepo vs split repos).
 
@@ -111,7 +128,11 @@ Two sub-steps:
 1. **PBI Backlog Mapping** -- connect to `{{ISSUE_TRACKER}}` via `[ISSUE_TRACKER_TOOL]`, discover project key, map hierarchy (Epic/Story/Task/Bug), record queries used to fetch tickets.
 2. **PBI Story Template** -- produce the local templates (`.context/PBI/templates/user-story.md`, `bug.md`, `test-plan.md`, `test-case.md`) that future `sprint-testing` runs will fill, one file per ticket.
 
-**Completion gate**: `.context/PBI/backlog.md` exists with project key + auth recipe; `.context/PBI/templates/*.md` exist.
+**Completion gate**: `.context/PBI/README.md` exists with project key + auth recipe; `.context/PBI/templates/*.md` exist. Soft content checks:
+- `PBI/README.md` contains the configured `{{PROJECT_KEY}}` literal AND a `## Common Queries` section (or JQL / WIQL snippet).
+- `.context/PBI/templates/user-story.md`, `bug-report.md`, `test-plan.md`, `test-case.md` each exist and are non-empty.
+
+Show outputs to the human and wait for "Phase 4 complete" before running the context generators / emitting the Next Recommended Steps block.
 
 Read `references/phase-4-specification.md` when running Phase 4. Contains issue-tracker connection recipes, query conventions, and the full template set.
 
@@ -130,6 +151,38 @@ Read `references/context-generators.md` when (re)generating `business-data-map.m
 **API context is NOT a project-discovery output.** Endpoint sync is delegated to `bun run api:sync` (technical, OpenAPI -> TypeScript types) and the `/business-api-map` command (business angle: auth flows, critical paths, architecture behind the API). See `references/context-generators.md` §API context — deferred for the deferral note.
 
 **See also:** After discovery outputs exist, run `/adapt-framework` to adapt this boilerplate's `tests/`, `api/schemas/`, and `config/` to the target stack.
+
+---
+
+## Next recommended steps (emit after Phase 4 completes)
+
+Discovery populates PRD, SRS, glossary, and `business-data-map.md`. It does NOT invoke the business-context commands — they are standalone, token-heavy, and best run in a clean session so the AI has full budget.
+
+When Phase 4 is confirmed complete, print this block to the user verbatim:
+
+```
+Discovery complete. `/project-discovery` has populated:
+- .context/PRD/business/business-model.md, domain-glossary.md
+- .context/project-config.md
+- .context/PRD/executive-summary.md, user-personas.md, user-journeys.md
+- .context/SRS/architecture.md, functional-specs.md, non-functional-specs.md
+- .context/infrastructure/backend.md, frontend.md, infrastructure.md
+- .context/PBI/README.md + templates/*.md
+- .context/mapping/business-data-map.md
+
+**Recommended next commands** (run each in order — ideally in a clean session; they are token-heavy):
+
+1. `/business-feature-map` — catalog features, CRUD matrix, flags. Output: .context/mapping/business-feature-map.md
+2. `/business-api-map`     — auth model, critical endpoints, architecture behind the API. Output: .context/mapping/business-api-map.md
+3. `/master-test-plan`     — what to test and why, ranked by risk. Output: .context/master-test-plan.md
+
+These are STANDALONE and can be re-run any time you want to refresh them.
+`/project-discovery` itself is typically run once per project (or occasionally to refresh business model / glossary).
+
+After running the three commands above, you are ready for `/adapt-framework`, which wires this boilerplate's KATA architecture against the target stack.
+```
+
+If the user asks to chain them automatically: decline politely. Each command consumes significant tokens and produces better output in its own session.
 
 ---
 
@@ -152,7 +205,7 @@ Most discovery starts with "what stack is this?" Do NOT ask the user -- detect, 
 | Monorepo signals (`pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `lerna.json`) | Split backend/frontend by package. Run Phase 3 per package. |
 | Dockerfile + `docker-compose.yml` | Prefer reading compose for service inventory over scanning source. |
 | `.github/workflows/*.yml` | GitHub Actions. Extract test job for Phase 3 Infrastructure. |
-| No test framework deps | Greenfield test story. Setup phase will install everything. |
+| No test framework deps | Greenfield test story. Phase 3 documents the absence as a Discovery Gap — do NOT install tooling in the target repo. `/adapt-framework` wires this boilerplate's own test stack; it never modifies the target. |
 
 If multiple signals conflict (e.g., Next.js + Express), it is almost always a monorepo -- treat frontend and backend as separate discoveries.
 

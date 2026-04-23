@@ -89,7 +89,7 @@ Read every item before planning. Fail fast if any project-wide context file is m
 | Module context | `.context/PBI/{module}/module-context.md` |
 | Code | `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` + `{{FRONTEND_REPO}}/{{FRONTEND_ENTRY}}` (targeted reads only) |
 | Test data candidates | `[DB_TOOL]` on `{{DB_MCP_STAGING}}` |
-| Architecture + API contracts (if present) | `.context/SRS/*.md`, `.context/SRS/api-contracts.yaml` |
+| Architecture + API contracts (if present) | `.context/SRS/architecture.md`, `.context/SRS/functional-specs.md`, `.context/SRS/non-functional-specs.md`; API contract from `api/openapi-types.ts` (types) + `.context/mapping/business-api-map.md` (business) |
 
 ---
 
