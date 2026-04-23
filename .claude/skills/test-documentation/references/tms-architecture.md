@@ -144,7 +144,7 @@ Given any one of the four, you must be able to navigate to the other three. That
 | **TC** | Test Result (ATR) | ATR ID or name | At creation (if ATR exists) |
 | **TC** | Acceptance Criterion | AC reference | At creation |
 
-A TC that is missing even one of Story / ATP / ATR is broken — use `traceability-fix` to repair.
+A TC that is missing even one of Story / ATP / ATR is broken — use `fix-traceability` to repair.
 
 ### Validation checklist (before marking Complete)
 

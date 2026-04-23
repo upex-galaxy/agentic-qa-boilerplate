@@ -161,7 +161,7 @@ Always include: `bug`, `exploratory-testing`. Append module or domain labels whe
 > ⚠️ Custom field `{FIELD_NAME}` (id `{CUSTOMFIELD_ID}`) could not be set on `{BUG-KEY}`.
 > The bug was created without it. Please contact your Jira admin to verify the field id
 > for this project, then update `test-documentation/references/jira-setup.md` and re-run
-> `/traceability-fix` if other tickets were affected.
+> `/fix-traceability` if other tickets were affected.
 
 #### 1.10.2 Non-UPEX workspaces (3-step fallback)
 

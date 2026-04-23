@@ -7,7 +7,7 @@ Configuration checklist for Jira projects used by this boilerplate. Covers both 
 
 Which modality is active is resolved by `test-documentation/SKILL.md` §Phase 0. Run the applicable section(s) once per project as part of `/project-discovery` onboarding.
 
-Skills that depend on this setup: `sprint-testing`, `test-documentation`, `regression-testing`, `traceability-fix`.
+Skills that depend on this setup: `sprint-testing`, `test-documentation`, `regression-testing`, `fix-traceability`.
 
 ---
 

@@ -386,7 +386,7 @@ Load `/acli` skill for the concrete Jira CLI syntax.
 
 Post the full `test-analysis.md` body as a comment with mentions for @PO, @Dev, @QA per project convention. Include an Action Required checklist (review ambiguities, answer critical questions, confirm edge-case behavior, validate parametrization strategy).
 
-In Modality B this comment doubles as the ATP mirror — the custom-field + comment pair is what `traceability-fix` checks later.
+In Modality B this comment doubles as the ATP mirror — the custom-field + comment pair is what `fix-traceability` checks later.
 
 ### Mirror local file
 
