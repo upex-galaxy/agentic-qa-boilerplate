@@ -210,7 +210,7 @@ During Phase 2 SRS, your job is **not** to document endpoints — it is to confi
 - **Rate limits you cannot verify.** If middleware config references an external service (Upstash, Redis), you may only see "rateLimit = true" without the actual numbers. Record what you can see and list the gap.
 - **NFR numbers must be evidenced or flagged.** "P95 < 500ms" with no load test evidence is a Discovery Gap, not a spec. Prefer "Target: [unknown] — inferred from `timeout: 30000` config" over inventing a number.
 - **Security posture is never "complete".** A codebase without Helmet is not a failing grade — it's "Helmet not present, CSP not configured — recommend security review". Avoid pass/fail framing.
-- **Do not scrape secrets.** If you stumble onto hard-coded keys in the source, do NOT paste them into the SRS. Document "hard-coded secret detected at `<path>`" as a security finding.
+- **Do not scrape secrets.** If you stumble onto hard-coded keys in the source, do NOT paste them into the SRS. Document "hard-coded secret detected at `<path>`" as a security finding. Also see SKILL.md §Gotchas for the broader credential policy when reading `.env` and `project-config.md`.
 - **Paginate entity lists.** For large schemas (50+ tables) split the ER diagram into subsystem-level diagrams. One giant diagram is unreadable.
 
 ---

@@ -11,7 +11,23 @@ Turn an unknown codebase into a testable project. Four phases, always in order, 
 
 The discovery is **conversational**: you read the code, ask when ambiguous, confirm before writing files. Never fabricate -- if you cannot verify a claim from the source, mark it as a "Discovery Gap" and move on.
 
-Grounding methodology: **IQL (Integrated Quality Lifecycle)** -- QA is continuous from requirement to release, not a gate at the end. Phase 1-2 outputs correspond to IQL Steps 1-4 (Early Game), Phase 3-4 to Steps 5-10 (Mid Game). Read `references/iql-methodology.md` only if the user asks what IQL is or why the discovery is structured this way.
+Grounding methodology: **IQL (Integrated Quality Lifecycle)** — QA is continuous from requirement to release, not a gate at the end. The full rationale and step breakdown live in `docs/methodology/IQL-methodology.md` (shared across all QA skills). This skill does not depend on reading it — only point the user there if they ask why the discovery is structured this way.
+
+---
+
+## Before starting: target repo location
+
+`/project-discovery` runs **read-only** against a project under test — the **target repo** — that is NOT this boilerplate. Before Phase 1 starts, lock down where the target lives. Block Phase 1 if the target path is ambiguous.
+
+| Layout | What to declare | How to detect |
+|--------|-----------------|---------------|
+| **Monorepo** (single repo contains FE + BE) | Absolute or relative path from this repo | Check the candidate path for `pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `lerna.json`, or a top-level `package.json` with no deps of its own |
+| **Split sibling repos** (FE and BE cloned separately) | One path per repo (or a common parent dir) | Look at `../`-level siblings with plausible names (`*-backend`, `*-frontend`, `*-api`, `*-web`); confirm with the user |
+| **Remote (not cloned yet)** | Repo URL + branch, then ask the user to clone locally before Phase 1 | `gh repo view` only returns metadata; real discovery needs local file access — do not try to discover from a URL |
+
+Record the resolved path(s) in `.context/project-config.md` §Repositories during Phase 1 sub-step 1 (Project Connection). Every `<target-repo>` reference in later phases resolves to the path declared here.
+
+If the layout is "split sibling repos", run Phase 1 sub-steps once per repo and merge findings into a single `project-config.md`; do not interleave.
 
 ---
 
@@ -19,12 +35,12 @@ Grounding methodology: **IQL (Integrated Quality Lifecycle)** -- QA is continuou
 
 All projects go through the same 4 phases, but depth varies. Pick once, then follow the common pipeline.
 
-| Scenario | Input | Phases to run | Typical depth |
-|----------|-------|---------------|---------------|
-| **Fresh onboarding** (greenfield or unseen project) | Repo URL or local path(s), no existing context files | 1 -> 2 -> 3 -> 4 -> Context generators | Full. All docs generated. After discovery complete, run `/adapt-framework` to modify the boilerplate. |
-| **Boilerplate adoption** (this repo adopted for a new project) | Target app repo(s), this repo as the test framework | 1 (project-connection) -> 3 -> Context generators | Skipping Phase 2 or Phase 4 is allowed **only** if every required input for `/adapt-framework` is already on disk: `.context/SRS/architecture.md`, `.context/mapping/business-data-map.md`, one of (`api/openapi-types.ts` non-stub / reachable OpenAPI spec URL / `.context/mapping/business-api-map.md`), plus `.context/infrastructure/{backend,frontend}.md`. If any is missing, fall back to the corresponding phase before invoking `/adapt-framework`. Do not skip phases on a hand-wave like "the docs exist elsewhere" — verify each file is on disk first. |
-| **Brownfield** (project already documented, tests missing) | Existing `.context/` partially filled | 2 (gaps) -> 3 (gaps) -> Context generators | Targeted. Only regenerate what's missing/stale. |
-| **Context refresh** | User says "regenerate business-data-map" | Context generators only | One-file refresh. Confirm diffs before overwriting. For the test plan, redirect to `/master-test-plan`. For API endpoints, redirect to `bun run api:sync` (technical) or `/business-api-map` (business angle). |
+| Scenario | Input | Phases to run | Typical depth | Context weight & subagent hint |
+|----------|-------|---------------|---------------|--------------------------------|
+| **Fresh onboarding** (greenfield or unseen project) | Repo URL or local path(s), no existing context files | 1 -> 2 -> 3 -> 4 -> Context generators | Full. All docs generated. After discovery complete, run `/adapt-framework` to modify the boilerplate. | **Heavy.** Delegate each phase's code survey to a dedicated subagent (Phase 1 project-connection + assessment, Phase 2 PRD/SRS drafting, Phase 3 infra mapping). Main session orchestrates, reviews outputs, and gates user confirmation between phases. |
+| **Boilerplate adoption** (this repo adopted for a new project) | Target app repo(s), this repo as the test framework | 1 (project-connection) -> 3 -> Context generators | Skipping Phase 2 or Phase 4 is allowed **only** if every required input for `/adapt-framework` is already on disk: `.context/SRS/architecture.md`, `.context/mapping/business-data-map.md`, one of (`api/openapi-types.ts` non-stub / reachable OpenAPI spec URL / `.context/mapping/business-api-map.md`), plus `.context/infrastructure/{backend,frontend}.md`. If any is missing, fall back to the corresponding phase before invoking `/adapt-framework`. Do not skip phases on a hand-wave like "the docs exist elsewhere" — verify each file is on disk first. | **Medium.** Delegate Phase 1 project-connection + Phase 3 infra mapping to a subagent if the target is a monorepo (one subagent per package). Main session stays lean for `/adapt-framework` handoff. |
+| **Brownfield** (project already documented, tests missing) | Existing `.context/` partially filled | 2 (gaps) -> 3 (gaps) -> Context generators | Targeted. Only regenerate what's missing/stale. | **Light.** Run in main session unless gaps span many files — then delegate the gap-filling pass per phase to a subagent. |
+| **Context refresh** (data-map only) | User says "regenerate business-data-map" / "refresh the entity map" | Context generators only (just `business-data-map.md`) | One-file refresh. Confirm diffs before overwriting. **For PBI template refresh** (tracker moved, new custom fields), re-run Phase 4 in full instead — this scope handles data-map updates only, not templates. For the test plan, redirect to `/master-test-plan`. For API endpoints, redirect to `bun run api:sync` (technical) or `/business-api-map` (business angle). | **Minimal.** Main session only. No delegation needed. |
 
 Default to "Fresh onboarding" when in doubt. Confirm the scope with the user before starting Phase 1.
 
@@ -142,7 +158,7 @@ Two files, always generated last (they pull from every prior phase):
 
 | File | Generator reference | What it contains |
 |------|---------------------|------------------|
-| `.context/mapping/business-data-map.md` | `context-generators.md` §Generator 1 | System flows, entities, triggers, cron jobs, webhooks, integration points. The canonical "what this system does" map. |
+| `.context/mapping/business-data-map.md` | `context-generators.md` §Generator | System flows, entities, triggers, cron jobs, webhooks, integration points. The canonical "what this system does" map. |
 
 `.context/master-test-plan.md` is **not** produced by this skill — the `/master-test-plan` command owns it (reads `business-data-map.md` + optional `business-feature-map.md`). Run it after `business-data-map.md` exists.
 
@@ -184,30 +200,38 @@ After running the three commands above, you are ready for `/adapt-framework`, wh
 
 If the user asks to chain them automatically: decline politely. Each command consumes significant tokens and produces better output in its own session.
 
+### Pre-adapt-framework checklist
+
+<!-- keep in sync with .claude/commands/adapt-framework.md §Hard prerequisites -->
+
+Before the user invokes `/adapt-framework`, verify every file below is on disk. If any is missing, re-run the phase that produces it (or the corresponding post-discovery command) before invoking `/adapt-framework`:
+
+- [ ] `.context/PRD/` populated (at least `README.md` + one business document in `.context/PRD/business/`)
+- [ ] `.context/SRS/architecture.md`
+- [ ] `.context/infrastructure/backend.md` and `.context/infrastructure/frontend.md`
+- [ ] `.context/mapping/business-data-map.md`
+- [ ] API contract source: one of `api/openapi-types.ts` (non-stub) OR reachable OpenAPI spec URL OR `.context/mapping/business-api-map.md` (business-angle fallback)
+- [ ] `.env.example` (and `.env` either present or created from it during `/adapt-framework` Phase 2)
+
+Handoff line to print to the user:
+
+> Discovery handoff complete. Ready for `/adapt-framework` iff the 6 bullets above are on disk. Missing any? Re-run the phase listed in the "Phases to run" column of the scopes table that produces it — or review the "Boilerplate adoption" row for phases you can skip when inputs already exist elsewhere.
+
 ---
 
-## Stack detection rules (inline -- load-bearing every invocation)
+## Stack-specific discovery rules
 
-Most discovery starts with "what stack is this?" Do NOT ask the user -- detect, then confirm.
+Base stack detection (package.json → Node, pyproject.toml → Python, go.mod → Go, `next.config.*` → Next.js, etc.) is a baseline skill any AI has. This section only lists **actions the skill should take based on what is detected** — rules that are not obvious from general programming knowledge.
 
-| Signal | Likely stack |
-|--------|--------------|
-| `package.json` with `next` dep | Next.js (SSR/SSG). Assume `app/` or `pages/` router; check which. |
-| `package.json` with `react` + `vite` | Vite + React SPA. Tests usually in `src/`. |
-| `package.json` with `@angular/core` | Angular. Tests co-located (`*.spec.ts`) or in `e2e/`. |
-| `package.json` with `vue` + (`nuxt` or `vite`) | Nuxt or Vue-Vite. |
-| `package.json` with `express`/`fastify`/`@nestjs/core` | Node backend. Check `src/` for controllers/routes. |
-| `pyproject.toml` + `django` | Django. `urls.py` is the route map. |
-| `pyproject.toml` + `fastapi` | FastAPI. `@app.get`/`@app.post` decorators = routes. |
-| `composer.json` + `laravel/framework` | Laravel. `routes/*.php` = routes. |
-| `Gemfile` + `rails` | Rails. `config/routes.rb` = routes. |
-| `go.mod` + `gin`/`echo`/`fiber` | Go web framework. Grep `GET`/`POST` handler registrations. |
-| Monorepo signals (`pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `lerna.json`) | Split backend/frontend by package. Run Phase 3 per package. |
-| Dockerfile + `docker-compose.yml` | Prefer reading compose for service inventory over scanning source. |
-| `.github/workflows/*.yml` | GitHub Actions. Extract test job for Phase 3 Infrastructure. |
-| No test framework deps | Greenfield test story. Phase 3 documents the absence as a Discovery Gap — do NOT install tooling in the target repo. `/adapt-framework` wires this boilerplate's own test stack; it never modifies the target. |
-
-If multiple signals conflict (e.g., Next.js + Express), it is almost always a monorepo -- treat frontend and backend as separate discoveries.
+| Signal | Action for discovery |
+|--------|----------------------|
+| Monorepo (`pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `lerna.json`, or top-level `package.json` with no deps of its own) | Split backend/frontend per package. Run Phase 1 **once** (project-level), Phase 2-3 **per package**. Merge outputs under `.context/infrastructure/` with sub-sections per package. |
+| Multiple coexisting signals in one repo (e.g., Next.js + Express) | Almost always a monorepo — treat frontend and backend as separate discoveries even if workspace config is missing. Do NOT produce a merged SRS. |
+| `Dockerfile` + `docker-compose.yml` present | Read compose for service inventory **before** scanning source — it is the authoritative runtime topology. Use source only to fill gaps. |
+| No test framework deps detected | Greenfield test story. Phase 3 documents the absence as a Discovery Gap. **Do NOT install tooling in the target repo.** `/adapt-framework` wires this boilerplate's own test stack; it never modifies the target. |
+| `.github/workflows/*.yml` present | Extract the test job from CI for Phase 3 Infrastructure — usually the cleanest source for "how CI runs tests". |
+| API handlers found but no OpenAPI spec | Flag as Discovery Gap in Phase 2 SRS. Do NOT hand-write an OpenAPI inside project-discovery — either ask the user to expose one (so `bun run api:sync` works), or defer the business angle to `/business-api-map`. |
+| Hardcoded secrets detected (grep hits in source) | HIGH risk. Record path in `.context/risk-assessment.md` §Phase 1 Project Assessment. Do NOT paste the secret into any discovery doc — reference path only. |
 
 ---
 
@@ -286,7 +310,7 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 - **Phase 4 (backlog mapping, templates)** -> read `references/phase-4-specification.md`.
 - **Generating `business-data-map.md`** -> read `references/context-generators.md`. For the test plan, run `/master-test-plan` (command, not skill).
 - **API endpoint sync (technical) or business-API map** -> NOT this skill. Use `bun run api:sync` (technical types) or `/business-api-map` command (business angle).
-- **User asks about IQL methodology** -> read `references/iql-methodology.md`.
+- **User asks about IQL methodology** -> point them to `docs/methodology/IQL-methodology.md` (shared across QA skills). This skill no longer carries its own IQL reference.
 - **Code exploration (grep, read files)** -> use built-in tools. If the user wants a browser-driven exploration instead (UI-first discovery), load `/playwright-cli` skill.
 - **Issue-tracker operations (Phase 4)** -> resolve `[ISSUE_TRACKER_TOOL]` via CLAUDE.md Tool Resolution. For Jira, load `/acli` skill (primary) or fall back to the Atlassian MCP. If the project also uses Xray for TMS, load `/xray-cli` additionally.
 - **Database inspection** -> resolve `[DB_TOOL]`; read-only queries only during discovery.

@@ -32,7 +32,7 @@ Every output MUST include a `## Discovery Gaps` section for anything not verifia
 
 ---
 
-## Generator 1 — `business-data-map.md`
+## Generator — `business-data-map.md`
 
 ### Phase 0: detect configuration
 

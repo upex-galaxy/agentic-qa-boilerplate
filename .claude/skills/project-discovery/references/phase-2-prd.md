@@ -1,5 +1,7 @@
 # Phase 2 — PRD Discovery
 
+> Read this when running any Phase 2 PRD sub-step (Executive Summary, User Personas, User Journeys), or when the Phase 2 PRD section of SKILL.md §Phases points here.
+
 Produce the Product Requirements Documents by reading the code, not by interviewing stakeholders. Four docs, produced in order. Each one builds on the previous.
 
 ```

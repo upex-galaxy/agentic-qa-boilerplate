@@ -101,7 +101,7 @@ If any of these are present: Phase 3 must be run ONCE PER PACKAGE. Each package 
    - Start with `.env.example` / `.env.template`.
    - Cross-check against code: `grep -rh "process\.env\." src/ | sed 's/.*process\.env\.\([A-Z_]*\).*/\1/' | sort -u` (or `os.environ.get` / `ENV[]` for other langs).
    - Classify each var: Required (app won't start without it), Optional (has default), External Service (only needed when feature enabled), Build-time vs Runtime.
-   - NEVER paste actual secret values — document the KEY and provide an example format only.
+   - Credentials: see SKILL.md §Gotchas. Never paste actual values in these docs — document the KEY and example format only.
 
 4. **Database setup**:
    - Provider from DATABASE_URL format (`postgres://`, `mysql://`, `mongodb://`).

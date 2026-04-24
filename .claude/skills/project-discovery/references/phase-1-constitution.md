@@ -1,5 +1,7 @@
 # Phase 1 — Constitution
 
+> Read this when running any Phase 1 sub-step (Project Connection, Project Assessment, Business Model, Domain Glossary), or when the Phase 1 section of SKILL.md §Workflow points here.
+
 The first phase of project discovery. Goal: make the project legible. Produces four outputs, in this exact order. Each sub-step reads the previous one's output.
 
 ```
@@ -386,7 +388,7 @@ Never auto-advance. Phase 2 only starts after explicit user confirmation.
 ## Phase 1 gotchas
 
 - **Ask incrementally.** Do not dump all five Project Connection questions at once -- get repo first, then tech stack, then environments.
-- **Credentials never land in these docs.** Point to `.env` keys instead.
+- **Credentials:** see SKILL.md §Gotchas "Credentials never live in discovery docs". Point to `.env` keys, never paste secrets.
 - **Confidence levels are mandatory.** Business-model discovery especially -- if the README is marketing prose, mark Medium or Low.
 - **Do not invent sources.** If something is not in the code, it goes in Discovery Gaps.
 - **Monorepo caveat.** If the repo is a monorepo, Tech Stack in project-config lists per-package entries, and Core Entities in the glossary note which package they belong to.

@@ -22,7 +22,7 @@ Every output MUST include a `## Discovery Gaps` section if a field could not be 
 
 1. **Do NOT copy the backlog.** The issue tracker is the source of truth for tickets. `.context/PBI/` holds only templates and per-sprint working notes.
 2. **Cleanup rule:** per-sprint folders (`.context/PBI/<sprint-name>/<TICKET-ID>/`) are temporary. Delete after the sprint ends — story details can always be re-fetched.
-3. **Credentials live in `.env`, never in markdown.** `JIRA_API_TOKEN`, `JIRA_EMAIL`, `JIRA_URL`. If the user pastes a token in chat, scrub it and redirect them to `.env`.
+3. **Tracker credentials in `.env` only.** `JIRA_API_TOKEN`, `JIRA_EMAIL`, `JIRA_URL` — never paste in markdown. If the user pastes a token in chat, scrub it and redirect them to `.env`. See SKILL.md §Gotchas for the general credential policy.
 4. **Tool resolution.** When you see `[ISSUE_TRACKER_TOOL]` in this document, resolve via the project's CLAUDE.md Tool Resolution table. Priority order: CLI (fewer tokens) -> MCP (fallback) -> REST API -> manual. For Jira, that means load `/acli` skill first; only fall back to Atlassian MCP if acli is unavailable.
 
 ---
@@ -50,6 +50,8 @@ What is the project key or board name?
 - PM tool name + instance URL
 - Project key / board name
 - Whether the team uses sprints (Scrum), continuous flow (Kanban), or hybrid
+
+> **Tooling coverage by tracker**: Jira uses `/acli` (primary skill); GitHub Issues uses `gh issue` CLI. Azure DevOps / Linear / ClickUp have no dedicated skill in this ecosystem — fall back to MCP (if available) or document REST API + token in `.context/PBI/README.md`. Flag the absence of a proprietary skill as a Discovery Gap so future adopters know what's unsupported.
 
 ---
 
@@ -137,7 +139,7 @@ Produce with these sections, in order:
 4. **Project Structure** — issue types table, workflow state diagram (Mermaid), sprint cadence.
 5. **Common Queries** — the four canonical queries above, plus any project-specific ones.
 6. **Integration with KATA** — when to fetch (during sprint-testing, bug triage, documentation, automation handoff), local storage rules.
-7. **Credentials** — which env vars must be set; never paste secrets.
+7. **Credentials** — which env vars must be set; never paste secrets (see SKILL.md §Gotchas).
 8. **Discovery Gaps** — anything not verifiable from code or tracker access.
 
 ### Local storage layout
