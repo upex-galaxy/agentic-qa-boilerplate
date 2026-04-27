@@ -1,5 +1,7 @@
 # E2E Patterns — Page Components, Locators, Waits
 
+> **Subagent context**: when the test-automation Code phase is dispatched (Sequential, see SKILL.md §Subagent Dispatch Strategy), this file is part of the subagent's "Context docs" briefing component.
+
 How to write a KATA `Page` component and E2E test that drives Playwright. Load when writing UI ATCs, picking locators, handling waits, or wiring API-assisted UI flows. Architecture, fixture selection, AAA, ATC naming, and test-file structure live in `kata-architecture.md` and `automation-standards.md` — this reference focuses on Playwright-specific mechanics.
 
 ---

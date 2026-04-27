@@ -6,6 +6,42 @@ Scope-selection rules (which scope to pick, the one-line summary of each) live i
 
 ---
 
+## Plan dispatch (Single subagent)
+
+The Plan phase is delegated to a single subagent. The orchestrator does NOT read the KATA references, the existing component code, or the OpenAPI schemas during planning — that exploration lives entirely in the subagent's context.
+
+**Briefing** (6 components per `framework-core/references/briefing-template.md`):
+
+```
+Goal: Produce spec.md + implementation-plan.md for scope <SCOPE> (module|ticket|ATC) <SCOPE_KEY>.
+Context docs:
+  - .context/PBI/<module>/<TICKET-ID>/context.md (if exists — ticket scope)
+  - .context/master-test-plan.md
+  - .context/mapping/business-data-map.md
+  - .context/mapping/business-feature-map.md
+  - .claude/skills/test-automation/references/kata-architecture.md
+  - .claude/skills/test-automation/references/atc-tracing.md
+  - tests/components/<api|ui>/ (existing components for the scope)
+  - api/schemas/ (TypeScript types for API tests)
+Skills to load: (none — planning skill is loaded by orchestrator already)
+Exact instructions:
+  1. Read context docs to understand scope, business risks, and existing component coverage.
+  2. Draft spec.md with: scope summary, ATCs (with ATC-identity rule applied), parameter sets (Equivalence Partitioning), data fixtures needed.
+  3. Draft implementation-plan.md with: target file paths, fixture selection (api / ui / test), reused-vs-new components, dependency order, estimated complexity per ATC.
+  4. Write both files to <PBI_FOLDER>/test-specs/<scope-slug>/.
+Report format:
+  JSON: { "spec_path": "...", "plan_path": "...", "atc_count": <int>, "new_components": [...], "reused_components": [...], "open_questions": [...] }
+Rules:
+  - Apply the inline-locator rule (locators inline in ATCs, extract only when reused 2+ times).
+  - Apply ATC-identity rule (same output = one parameterized ATC).
+  - Do NOT write actual test code — only spec + plan.
+  - Surface open questions to the orchestrator instead of guessing.
+```
+
+The orchestrator reads the JSON report, surfaces open_questions to the user if any, and only proceeds to Code dispatch after user approval.
+
+---
+
 ## 1. Plan document map
 
 Three document types, each tied to a scope. Every scope produces at least `spec.md`; ticket and regression scopes add `implementation-plan.md`; complex ATCs add per-ATC specs under `atc/`.

@@ -13,6 +13,24 @@ KATA (Component Action Test Architecture) rewires the usual Page Object pattern.
 
 ---
 
+## Subagent Dispatch Strategy
+
+This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/framework-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/framework-core/references/dispatch-patterns.md`. The Plan, Code, and Review phases each carry distinct context-isolation needs — Plan keeps KATA architectural reads out of the orchestrator, Code isolates multi-file edits, Review fans out three independent verifiers in parallel.
+
+| Stage                                          | Pattern              | Subagent role                                                                                                                  |
+|------------------------------------------------|----------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| Plan (`spec.md` + `implementation-plan.md`)    | Single               | one Plan subagent returns the two artifacts; protects orchestrator from KATA architectural reads                                |
+| Code (writing E2E or API tests)                | Sequential           | one Code subagent per scope (module = 1 subagent per TC; ticket = 1 subagent total); edits-many-files inside isolates context  |
+| Review — `bun run test`                        | Parallel (sub-stage) | one Verifier subagent runs the test suite                                                                                       |
+| Review — `bun run type-check`                  | Parallel (sub-stage) | one Verifier subagent runs typecheck                                                                                            |
+| Review — `bun run lint`                        | Parallel (sub-stage) | one Verifier subagent runs lint                                                                                                 |
+| Review aggregation + merge/reject decision    | Single               | inline — orchestrator reads the 3 Verifier reports and decides                                                                  |
+
+- **Code phase scope rule**: each Code subagent edits multiple files in isolation, returns a list of changed files + a one-line summary per file. The orchestrator never reads the diffs — only the summary. If the user wants to see actual diffs, the orchestrator runs `git diff` inline after the subagent returns.
+- **On any Verifier failure**: STOP, return the failing report verbatim to the user, do NOT auto-fix the test code, do NOT re-dispatch the Code phase without user approval. See `.claude/skills/framework-core/references/orchestration-doctrine.md`.
+
+---
+
 ## Pick the planning scope first
 
 Every automation session starts by choosing one of three planning scopes. Pick once, then follow the Plan → Code → Review pipeline.
@@ -52,9 +70,13 @@ Write the plan file(s) for the chosen scope under `.context/PBI/{module}/test-sp
 - Which fixture will the test use -- `{api}`, `{ui}`, `{test}`, or `{steps}`?
 - Which ATC IDs (from the TMS) map to which component methods?
 
+Use the dispatch defined in §Subagent Dispatch Strategy: **Single**. Full briefing in `references/planning-playbook.md` §Plan dispatch.
+
 Present the plan to the user. Wait for approval before coding.
 
 ### Phase 2 — Code
+
+Use the dispatch defined in §Subagent Dispatch Strategy: **Sequential** (one subagent per scope unit). The subagent loads `references/e2e-patterns.md` and `references/api-patterns.md` per scope.
 
 Implement in this order:
 
@@ -73,6 +95,8 @@ bun run lint                         # ESLint, no errors
 If any step fails, fix before moving to Review.
 
 ### Phase 3 — Review
+
+Use the dispatch defined in §Subagent Dispatch Strategy: **Parallel** (3 simultaneous Verifiers). Full briefings in `references/review-checklists.md` §Parallel verification dispatch.
 
 Run the review checklist on the new/modified files. Treat every failed item as a blocker. A clean review is the merge gate. See `references/review-checklists.md` for the full lists (E2E and API have overlapping but distinct checklists).
 

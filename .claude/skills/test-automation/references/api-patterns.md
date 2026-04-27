@@ -1,5 +1,7 @@
 # API Patterns — Components, OpenAPI Types, Status Matrix
 
+> **Subagent context**: when the test-automation Code phase is dispatched (Sequential, see SKILL.md §Subagent Dispatch Strategy), this file is part of the subagent's "Context docs" briefing component.
+
 How to write a KATA `Api` component and integration test. Load when building a new API component, importing OpenAPI types, choosing ATCs for success/error status codes, or handling auth headers. KATA layer mechanics (tuple returns, `ApiBase.apiGET/POST/...`, ATC atomicity, fixture selection) live in `kata-architecture.md` and `automation-standards.md` — this reference only covers API-specific mechanics.
 
 ---

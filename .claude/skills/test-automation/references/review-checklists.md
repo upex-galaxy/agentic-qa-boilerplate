@@ -6,6 +6,78 @@ Severity model for all findings below matches the shared severity scale — CRIT
 
 ---
 
+## Parallel verification dispatch (Phase 3 Review)
+
+`bun run test`, `bun run type-check`, and `bun run lint` are independent — they don't share state — so dispatch all three simultaneously and aggregate.
+
+**Three briefings**, each a Single Parallel subagent. Dispatch them in ONE tool-call block.
+
+### Verifier A — test runner
+
+```
+Goal: Run the test suite and report failures grouped by file.
+Context docs:
+  - playwright.config.ts (project list)
+  - <PBI_FOLDER>/test-specs/<scope>/spec.md (which ATCs should pass)
+Skills to load: (none)
+Exact instructions:
+  1. Run: bun run test (the script declared in package.json invokes `playwright test`).
+  2. Capture: total / passed / failed / skipped counts.
+  3. For each failure: file, test name, error message (first 200 chars), trace path if available.
+Report format:
+  JSON: { "verifier": "test", "passed": <int>, "failed": <int>, "duration_seconds": <int>, "failures": [ { "file": "...", "test": "...", "error": "..." } ] }
+Rules:
+  - Do NOT edit any test code.
+  - Do NOT retry failed tests.
+```
+
+### Verifier B — type-check
+
+```
+Goal: Run TypeScript compiler in noEmit mode and report errors.
+Context docs:
+  - tsconfig.json
+Skills to load: (none)
+Exact instructions:
+  1. Run: bun run type-check (the script declared in package.json invokes `tsc --noEmit`).
+  2. Capture every error: file:line:col, error code, message.
+Report format:
+  JSON: { "verifier": "type-check", "errors": [ { "file": "...", "line": ..., "col": ..., "code": "TS...", "message": "..." } ] }
+Rules:
+  - Do NOT auto-fix.
+  - Strict mode is mandatory; do not relax tsconfig.
+```
+
+### Verifier C — lint
+
+```
+Goal: Run ESLint and report violations.
+Context docs:
+  - eslint.config.* / .eslintrc.*
+Skills to load: (none)
+Exact instructions:
+  1. Run: bun run lint (the script declared in package.json invokes `eslint .`).
+  2. Capture every violation: file:line, rule, message, severity.
+Report format:
+  JSON: { "verifier": "lint", "violations": [ { "file": "...", "line": ..., "rule": "...", "message": "...", "severity": "error|warning" } ] }
+Rules:
+  - Do NOT pass --fix.
+  - Treat warnings as informational, errors as blockers.
+```
+
+### Aggregation in the main thread
+
+After all three Verifiers return, the orchestrator:
+1. Counts total blockers (failed tests + type errors + lint errors).
+2. Decides: 0 blockers → merge candidate; >0 → reject + surface report to user.
+3. If reject: presents the consolidated list to the user; does NOT auto-fix.
+
+### Fallback to serial
+
+If the test suite is large enough that running 3 verifiers in parallel saturates the machine (CPU/IO contention), fall back to serial. The dispatch overhead vs latency tradeoff flips below ~30s total runtime.
+
+---
+
 ## 1. Before you review — apply the shared list first
 
 Run these **three shared checklists first**, in order. They cover the rules that are identical for E2E and API tests: file naming, class extension, decorator placement, ATC identity, tuple returns, locator rule, max-2-positional-param rule, inline assertions, fixture registration, no relative imports, ticket-ID prefix, no `test.only`/`test.skip` left behind, no hardcoded waits.
