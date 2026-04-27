@@ -2,6 +2,8 @@
 
 > Operational context loaded every AI session. Replace `[PLACEHOLDER]` values with your project specifics.
 
+> **Source-of-truth mirror**: this file is mirrored at `.claude/skills/framework-core/templates/AGENTS.md.template`. Structural changes here MUST be applied to both. Project-specific facts (Project Identity, Environment URLs, Discovery Progress, Access Configuration) are refreshed by `/refresh-ai-memory` and do NOT belong in the template.
+
 ---
 
 ## Quick Start
@@ -187,6 +189,20 @@ Conventions (TC naming, labeling, bug summary format, execution naming, etc.) li
 
 **Planning**: Present plan -> wait for approval -> track progress -> report results.
 
+### Skill Compliance
+
+Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`) MUST declare their dispatch points and use the canonical 6-component briefing.
+
+| Resource                                                              | Purpose                                                |
+|------------------------------------------------------------------------|--------------------------------------------------------|
+| `.claude/skills/framework-core/references/briefing-template.md`        | The 6-component briefing format + 1 example per pattern|
+| `.claude/skills/framework-core/references/dispatch-patterns.md`        | Decision guide: when to Single / Parallel / Sequential / Background |
+| `.claude/skills/framework-core/references/orchestration-doctrine.md`   | Cacheable mirror of this section, for subagents to load without pulling full AGENTS.md |
+
+**Mandatory in workflow skills**: every `SKILL.md` must contain a `## Subagent Dispatch Strategy` section with a table mapping each stage to its pattern and subagent role.
+
+**Exempt** (reference / utility / generator skills, do NOT need a dispatch table): `framework-core`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `commit-push-pr`, `refresh-ai-memory`, `fix-git-conflict`.
+
 ---
 
 ## Skills Available
@@ -195,6 +211,7 @@ Conventions (TC naming, labeling, bug summary format, execution naming, etc.) li
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
+| **framework-core** | `/framework-core init` | Foundation skill: hosts shared references cited by workflow skills (briefing template, dispatch patterns, orchestration doctrine) AND bootstraps the boilerplate's foundation files (AGENTS.md, .agents/, scripts/, package.json) for downstream consumers. |
 | **project-discovery** | `/project-discovery` | Onboard a project to this boilerplate. 4-phase discovery (Constitution -> Architecture -> Infrastructure -> Specification) that generates PRD, SRS, domain glossary, and orchestrates the `/business-*-map` and `/master-test-plan` commands. Reverse-engineering only — for KATA adaptation run `/adapt-framework` afterwards. |
 | **sprint-testing** | `/sprint-testing` | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting). Single-ticket or batch-sprint mode. Produces PBI folder, ATP, ATR, QA comment, bug reports. |
 | **test-documentation** | `/test-documentation` | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS (Jira/Xray). Bridge between manual QA and automation. Four scopes: module / ticket / bug / ad-hoc. Produces Candidate / Manual / Deferred verdicts. |

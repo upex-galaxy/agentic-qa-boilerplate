@@ -202,7 +202,9 @@ These are stable rules — leave them alone unless the user asks otherwise:
 
 ### If the memory file does not yet exist
 
-Create it from the structure documented in `CLAUDE.md` at the project root (use it as the canonical template — copy the full structure, then fill or placeholder each section based on what `.context/` provides).
+Create it from the canonical template at `.claude/skills/framework-core/templates/AGENTS.md.template` (which is the source-of-truth mirror of the live `AGENTS.md`). Copy the full structure, then fill or placeholder each section based on what `.context/` provides.
+
+Do **not** copy from a sibling project's `CLAUDE.md`/`AGENTS.md` — those are downstream consumers, not templates.
 
 ---
 
