@@ -2,7 +2,7 @@
 
 > Skills-based AI workflows for the full QA lifecycle, built on Playwright + KATA + TypeScript.
 
-[![Playwright Tests](https://img.shields.io/badge/Playwright-1.50+-green?logo=playwright)](https://playwright.dev/)
+[![Playwright Tests](https://img.shields.io/badge/Playwright-1.58+-green?logo=playwright)](https://playwright.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Bun](https://img.shields.io/badge/Bun-1.0+-black?logo=bun)](https://bun.sh/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -61,43 +61,72 @@ cp .env.example .env
 
 ### Configuration
 
+This boilerplate has **two configuration systems** that serve different consumers and must not be conflated:
+
+| System | File | Consumer | Loaded at |
+|--------|------|----------|-----------|
+| **Runtime test config** | `.env` + `config/variables.ts` | Playwright runner, KATA components, `bun run *` scripts (jiraSync, env validate, etc.) | Test execution time |
+| **AI context engineering** | `.agents/project.yaml` | Claude Code, Codex, Cursor, Copilot, OpenCode — used to resolve `{{VAR}}` references in skills, commands, and templates | AI session bootstrap |
+
+Both are needed. Skip neither.
+
+#### (a) Runtime test config — `.env`
+
 Edit `.env` with your project values:
 
 ```bash
-# Environment selector
-TEST_ENV=staging
+# Environment selector (valid: local, staging)
+TEST_ENV=local
 
-# Test User Credentials
+# Test User Credentials (only the current TEST_ENV is required)
+LOCAL_USER_EMAIL=
+LOCAL_USER_PASSWORD=
 STAGING_USER_EMAIL=your-test-user@example.com
 STAGING_USER_PASSWORD=your-password
 
-# TMS Integration (Jira/Xray)
-XRAY_CLIENT_ID=your-client-id
-XRAY_CLIENT_SECRET=your-client-secret
-
-# Browser Configuration
+# Browser Configuration (optional — defaults shown)
 HEADLESS=true
 DEFAULT_TIMEOUT=30000
+
+# TMS Integration (optional — only if AUTO_SYNC=true)
+TMS_PROVIDER=xray
+AUTO_SYNC=false
+XRAY_CLIENT_ID=
+XRAY_CLIENT_SECRET=
+XRAY_PROJECT_KEY=
 ```
 
-Update `config/variables.ts` with your application URLs:
+#### (b) Runtime URLs — `config/variables.ts`
+
+Update `envDataMap` in `config/variables.ts` with your application URLs. The `Environment` type currently accepts `local` and `staging`; extend the type when you need a third environment.
 
 ```typescript
-const urlMap: Record<Environment, { base: string; api: string }> = {
+const envDataMap: Record<
+  Environment,
+  { base: string; api: string; user: { email: string; password: string } }
+> = {
   local: {
     base: 'http://localhost:3000',
     api: 'http://localhost:3000/api',
+    user: userCredentialsMap.local,
   },
   staging: {
     base: 'https://staging.yourapp.com',
     api: 'https://staging.yourapp.com/api',
-  },
-  production: {
-    base: 'https://app.yourapp.com',
-    api: 'https://api.yourapp.com',
+    user: userCredentialsMap.staging,
   },
 };
 ```
+
+#### (c) AI context engineering — `.agents/project.yaml`
+
+The AI agents (Claude Code, Codex, Cursor, Copilot, OpenCode) resolve `{{VAR}}` references in skills, templates, and commands against `.agents/project.yaml`. Edit it manually, or run the interactive walkthrough:
+
+```bash
+bun run agents:setup
+```
+
+This populates `project.project_name`, `project.project_key`, `issue_tracker.jira_url`, `environments.<env>.web_url`, `environments.<env>.api_url`, `environments.<env>.db_mcp`, `environments.<env>.api_mcp`, and the rest. See `.agents/README.md` for the full convention.
 
 ### Run Tests
 
@@ -148,23 +177,34 @@ bun run test:e2e:critical  # Tests marked @critical
 │       └── KataReporter.ts       # Terminal reporter
 │
 ├── config/
-│   ├── variables.ts              # Environment configuration
+│   ├── variables.ts              # Runtime env vars consumed by Playwright/KATA
 │   └── validateEnv.ts            # Environment validation
 │
-├── .context/                     # AI Context Engineering
-│   ├── PRD/                      # Product requirements (generated)
-│   ├── SRS/                      # Technical specs (generated)
-│   ├── PRD/business/             # Business context (generated)
-│   └── PBI/                      # Backlog items (generated)
+├── .context/                     # AI Context Engineering (generated)
+│   ├── mapping/                  # business-data-map / business-feature-map / business-api-map
+│   ├── master-test-plan.md       # What to test and why
+│   ├── test-management-system.md # TMS architecture + conventions + workflow
+│   ├── PRD/                      # Product requirements
+│   ├── SRS/                      # Technical specs
+│   └── PBI/                      # Per-ticket backlog items
+│
+├── .agents/                      # Agentskills.io spec layout
+│   ├── project.yaml              # AI context vars (resolved as {{VAR}} by skills)
+│   ├── jira.json                 # Jira custom-field catalog (synced by `bun run jira:sync-fields`)
+│   ├── jira-required.yaml        # Required Jira custom-field manifest
+│   ├── README.md                 # Variable conventions reference
+│   └── skills/                   # Symlink → .claude/skills/ (agentskills.io path)
 │
 ├── .claude/skills/               # Claude Code Skills (workflows)
+│   ├── framework-core/           # Foundation: shared references + bootstrap (`/framework-core init`)
 │   ├── project-discovery/        # Onboarding + context generation
 │   ├── sprint-testing/           # Planning + execution + reporting
 │   ├── test-documentation/       # TMS documentation + prioritization
 │   ├── test-automation/          # KATA planning + coding + review
 │   ├── regression-testing/       # Regression execution + GO/NO-GO
 │   ├── playwright-cli/           # Browser automation helper
-│   └── xray-cli/                 # Xray TMS helper
+│   ├── xray-cli/                 # Xray TMS helper
+│   └── acli/                     # Atlassian CLI helper ([ISSUE_TRACKER_TOOL])
 │
 ├── .github/workflows/            # CI/CD pipelines
 │   ├── build.yml                 # PR validation
@@ -172,11 +212,16 @@ bun run test:e2e:critical  # Tests marked @critical
 │   ├── sanity.yml                # Pattern-based tests
 │   └── regression.yml            # Full regression
 │
-├── docs/                         # Documentation
-│   └── testing/                  # Testing documentation
+├── docs/                         # Human-facing docs
+│   ├── architectures/            # Architecture references
+│   ├── methodology/              # QA methodology
+│   ├── setup/                    # Setup guides
+│   ├── testing/                  # Testing documentation
+│   └── workflows/                # Workflow documentation
 │
 ├── playwright.config.ts          # Playwright configuration
-├── CLAUDE.md                     # AI context memory (customize)
+├── AGENTS.md                     # AI memory (canonical) — CLAUDE.md is a symlink/copy
+├── CLAUDE.md                     # Symlink → AGENTS.md (copy on Windows)
 └── package.json                  # Scripts and dependencies
 ```
 
@@ -224,7 +269,7 @@ test.describe('User Dashboard', () => {
 });
 ```
 
-See the `/test-automation` skill (`references/kata-ai-index.md`) for complete documentation.
+See the `/test-automation` skill (`references/kata-architecture.md`) for complete documentation.
 
 ---
 
@@ -279,6 +324,10 @@ See the `/test-automation` skill (`references/kata-ai-index.md`) for complete do
 | `bun run xray` | Xray CLI for test management |
 | `bun run resend` | Email verification CLI (Resend API) |
 | `bun run api:sync` | Sync OpenAPI spec and generate types |
+| `bun run agents:setup` | Interactive walkthrough to populate `.agents/project.yaml` |
+| `bun run lint:agents` | Lint `.agents/` files for missing required values |
+| `bun run jira:sync-fields` | Sync Jira custom-field catalog into `.agents/jira.json` |
+| `bun run jira:check` | Verify Jira workspace has required custom fields configured |
 
 ---
 
@@ -295,17 +344,49 @@ See the `/test-automation` skill (`references/kata-ai-index.md`) for complete do
 
 ### Environment Secrets Required
 
+Required (only the credentials matching your active `TEST_ENV` are validated):
+
 ```yaml
-# Test Credentials
+# Environment selection
+TEST_ENV                    # local | staging
+
+# Test User Credentials (required for the active TEST_ENV)
 LOCAL_USER_EMAIL
 LOCAL_USER_PASSWORD
 STAGING_USER_EMAIL
 STAGING_USER_PASSWORD
+```
 
-# TMS (Optional)
+Optional (only when the corresponding feature is enabled):
+
+```yaml
+# Browser
+HEADLESS                    # default: true
+DEFAULT_TIMEOUT             # default: 30000
+
+# TMS — set TMS_PROVIDER + AUTO_SYNC=true to push results
+TMS_PROVIDER                # xray | jira
+AUTO_SYNC                   # default: false
+
+# Xray Cloud (required if TMS_PROVIDER=xray AND AUTO_SYNC=true)
 XRAY_CLIENT_ID
 XRAY_CLIENT_SECRET
-AUTO_SYNC
+XRAY_PROJECT_KEY
+
+# Jira Direct (required if TMS_PROVIDER=jira AND AUTO_SYNC=true)
+JIRA_URL
+JIRA_USER
+JIRA_API_TOKEN
+JIRA_TEST_STATUS_FIELD      # default: customfield_10100
+
+# Reporting
+ALLURE_RESULTS_DIR          # default: ./allure-results
+SCREENSHOT_ON_FAILURE       # default: true
+VIDEO_ON_FAILURE            # default: true
+
+# CI/CD (set automatically by GitHub Actions)
+CI
+BUILD_ID
 ```
 
 ---
@@ -314,13 +395,26 @@ AUTO_SYNC
 
 This boilerplate's AI-assisted workflows are delivered as **agent skills** following the [agentskills.io](https://agentskills.io) spec. Every skill lives under `.claude/skills/` and bundles its own instructions, `references/`, and progressive-disclosure assets, so the AI loads only what the current task needs.
 
-Structured project context (`.context/` with `PRD/`, `SRS/`, `PBI/`) is generated and maintained by these skills -- you do not hand-author it.
+Skills follow the **Orchestration Mode** (main conversation = command center, subagents = executors) defined in `.claude/skills/framework-core/references/orchestration-doctrine.md`. Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`) declare their dispatch points in a `## Subagent Dispatch Strategy` section per skill, citing `framework-core/references/dispatch-patterns.md` and `framework-core/references/briefing-template.md`.
+
+Structured project context (`.context/` with `mapping/`, `PRD/`, `SRS/`, `PBI/`) is generated and maintained by these skills -- you do not hand-author it.
 
 ### Complete Adaptation Flow
 
 When you clone this template, follow this flow to adapt it to your project:
 
 ```
+┌─────────────────────────────────────────────────────────────┐
+│ 0. (Optional) BOOTSTRAP FOUNDATION                          │
+│    Run `/framework-core init` ONLY if you adopted skills    │
+│    à la carte (e.g. cloned a single skill folder) and the   │
+│    foundation files (AGENTS.md, .agents/, scripts/, the     │
+│    package.json scripts) are missing or partial. Skip when  │
+│    cloning the full repository — the foundation is already  │
+│    in place.                                                │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. CLONE TEMPLATE                                           │
 │    git clone https://github.com/upex-galaxy/               │
@@ -373,20 +467,46 @@ When you clone this template, follow this flow to adapt it to your project:
 
 ```
 .claude/skills/
+├── framework-core/        # Foundation: shared references + bootstrap (`/framework-core init`)
 ├── project-discovery/     # Onboarding and context generation (reverse engineering)
 ├── sprint-testing/        # In-sprint QA: plan + execute + report (per ticket)
 ├── test-documentation/    # TMS documentation and test prioritization
 ├── test-automation/       # KATA planning + coding + review pipeline
 ├── regression-testing/    # Regression execution + GO/NO-GO decisions
 ├── playwright-cli/        # Browser automation helper (screenshots, tracing, ...)
-└── xray-cli/              # Xray TMS helper (tests, executions, imports, ...)
+├── xray-cli/              # Xray TMS helper (tests, executions, imports, ...)
+└── acli/                  # Atlassian CLI for Jira Cloud ([ISSUE_TRACKER_TOOL])
 
 .agents/skills/            # Symlink to .claude/skills/ (agentskills.io path)
 ```
 
+### Skills at a Glance
+
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| **framework-core** | `/framework-core init` | Foundation: hosts shared references cited by workflow skills (briefing template, dispatch patterns, orchestration doctrine) AND bootstraps the boilerplate's foundation files (`AGENTS.md`, `.agents/`, `scripts/`, `package.json`). |
+| **project-discovery** | `/project-discovery` | Onboard a project to this boilerplate. 4-phase discovery (Constitution -> Architecture -> Infrastructure -> Specification) producing PRD, SRS, domain glossary; orchestrates the `/business-*-map` and `/master-test-plan` commands. Reverse-engineering only. |
+| **sprint-testing** | `/sprint-testing` | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting). |
+| **test-documentation** | `/test-documentation` | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS. Produces Candidate / Manual / Deferred verdicts. |
+| **test-automation** | `/test-automation` | **Stage 5**. Plan -> Code -> Review automated tests on KATA + Playwright + TypeScript. |
+| **regression-testing** | `/regression-testing` | **Stage 6**. Execute regression / smoke / sanity suites via CI/CD, classify failures, emit GO / CAUTION / NO-GO. |
+| **playwright-cli** | `/playwright-cli` | Browser automation CLI: screenshots, tracing, video recording, session management, request mocking. |
+| **xray-cli** | `/xray-cli` | Xray Cloud test management CLI: tests, executions, plans, JUnit/Cucumber/Xray JSON imports, project backup/restore. |
+| **acli** | `/acli` | Atlassian CLI for Jira Cloud — resolves `[ISSUE_TRACKER_TOOL]` and (in Modality B) `[TMS_TOOL]`. |
+
 ### How to Use Each Skill
 
 Each skill auto-activates when your prompt matches its description triggers. You can also invoke a skill explicitly in Claude Code by typing its slash trigger (e.g. `/sprint-testing`). The sample prompts below are plain user utterances -- type them into the agent terminal as-is.
+
+#### 0. Bootstrapping the framework foundation
+
+- **Situation**: You adopted this boilerplate à la carte (e.g. cloned a single skill folder) and the foundation files (`AGENTS.md`, `.agents/project.yaml`, `scripts/agents-*.ts`, the `agents:setup` and `jira:*` package scripts) are missing.
+- **Skill**: `/framework-core init`
+- **Sample prompts**:
+  - "Bootstrap the framework foundation."
+  - "Regenerate AGENTS.md and the .agents/ files from templates."
+  - "Install the boilerplate scripts."
+- **What happens next**: The skill writes `.agents/project.yaml`, `.agents/jira-required.yaml`, `.agents/jira.json`, the four `scripts/agents-*.ts` + `scripts/*-jira-*.ts` CLIs, merges the required scripts/dependencies into `package.json`, and finally writes `AGENTS.md` plus the `CLAUDE.md` symlink (or copy on Windows). It is idempotent: existing files are preserved.
 
 #### 1. Onboarding a new project
 
@@ -416,7 +536,7 @@ Each skill auto-activates when your prompt matches its description triggers. You
   - "Document test cases for ticket UPEX-200 in Xray."
   - "Score these tests by ROI to decide automation priority."
   - "Create the ATP for UPEX-300 in Xray and link it to the story."
-- **What happens next**: The skill creates Test / ATP / ATR entities in Xray following the project's naming conventions and prioritizes candidates using an ROI rubric.
+- **What happens next**: The skill creates Test / ATP / ATR entities in the TMS following the project's naming conventions and prioritizes candidates using an ROI rubric. Two modalities are supported: Xray on Jira (Modality A) and Jira-native without Xray (Modality B). See `AGENTS.md` §Tool Resolution for how `[TMS_TOOL]` resolves per modality.
 
 #### 4. Writing automated tests
 
@@ -458,36 +578,42 @@ Each skill auto-activates when your prompt matches its description triggers. You
   - "Back up project UPEX."
 - **What happens next**: The skill maps your request to the `bun xray` CLI commands (tests, executions, plans, imports, backup/restore) and runs them with the project-specific conventions.
 
+#### 8. Atlassian CLI operations (`/acli`)
+
+- **Situation**: You need to talk to Jira Cloud directly (create issues, transition tickets, comment on a story, list project boards, bulk-edit work items). This skill resolves the `[ISSUE_TRACKER_TOOL]` pseudocode tag used by every workflow skill, and in Modality B (Jira-native, no Xray) it also resolves `[TMS_TOOL]`.
+- **Skill**: `/acli`
+- **Sample prompts**:
+  - "Create a bug in Jira for UPEX-456."
+  - "Transition UPEX-200 to Done."
+  - "List all open issues assigned to me."
+- **What happens next**: The skill drives the official `acli` binary (Atlassian CLI, GA 2025) with the right authentication, project key, and field-mapping conventions for the active workspace.
+
 ### How Skills Activate
 
 - **Description-matching**: Skills auto-activate when your prompt matches the triggers declared in each skill's `description` frontmatter. You normally do not need to name the skill.
 - **Explicit slash trigger** (Claude Code only): You can force-load a skill by typing `/skill-name` (e.g. `/sprint-testing`).
 - **Other agents** (Codex, Cursor, Copilot, OpenCode): Slash commands are not available, but the same `description` triggers cause the skills to auto-activate from natural prompts -- the portability path is the `.agents/skills/` symlink.
 
-### CLAUDE.md
+### AI Memory (AGENTS.md / CLAUDE.md)
 
-The `CLAUDE.md` file serves as AI memory. Customize it for your project:
-
-1. Update project identity
-2. Document critical test priorities
-3. Track context files
-4. Log decisions and progress
+Memory lives in `AGENTS.md` (canonical). `CLAUDE.md` is a symlink to it for Claude Code compatibility on Linux/macOS (a byte-equivalent copy on Windows, where symlinks require admin rights). Use `/refresh-ai-memory` to regenerate the project-specific facts inside it (Project Identity, Environment URLs, Discovery Progress, Access Configuration). Structural sections (Critical Rules, Tool Resolution, Skills Available, etc.) are mirrored from `.claude/skills/framework-core/templates/AGENTS.md.template` and should be updated there when they evolve.
 
 ### Multi-Agent Portability
 
 Skills follow the [agentskills.io](https://agentskills.io) spec, so they are portable across Claude Code, Codex, GitHub Copilot, Cursor, and OpenCode. A relative symlink exposes the canonical Claude Code location at the shared agentskills path, avoiding duplicated files.
 
-| Platform | Directory |
-|----------|-----------|
-| Claude Code | `.claude/skills/` (canonical) |
-| Codex / Copilot / Cursor / OpenCode | `.agents/skills/` (symlink -> `.claude/skills/`) |
+| Resource | Layout |
+|----------|--------|
+| Skills directory (Claude Code) | `.claude/skills/` (canonical) |
+| Skills directory (Codex / Copilot / Cursor / OpenCode) | `.agents/skills/` (symlink -> `.claude/skills/`) |
+| Memory file | `AGENTS.md` (canonical) ↔ `CLAUDE.md` (symlink on Linux/macOS, copy on Windows) |
 
 The `.agents/skills/` symlink keeps a single source of truth while exposing the agentskills.io standard path. You do not need to maintain both.
 
 **Portability constraints** (features that degrade gracefully outside Claude Code):
 
 - Slash commands (`/skill-name`) are Claude Code specific. In other agents, skills auto-activate from the `description` triggers -- prompt the agent in plain language and the right skill loads.
-- Sub-agent dispatch used by the batch modes of `/sprint-testing` and `/test-automation` falls back to sequential execution in agents that lack a sub-agent primitive; throughput is lower but the flow still completes.
+- Sub-agent dispatch used by the batch modes of `/sprint-testing`, `/test-documentation`, `/test-automation`, and `/regression-testing` falls back to sequential execution in agents that lack a sub-agent primitive; throughput is lower but the flow still completes. See `.claude/skills/framework-core/references/dispatch-patterns.md` for the full pattern matrix.
 - Everything else -- frontmatter, `references/`, progressive disclosure, pseudocode tags (`[ISSUE_TRACKER_TOOL]`, `[TMS_TOOL]`, `[AUTOMATION_TOOL]`, ...) -- is fully portable. For how these tags resolve to concrete tools (and why `[ISSUE_TRACKER_TOOL]` -> `/acli` and `[TMS_TOOL]` -> `/xray-cli` or `/acli` depending on modality), see `CLAUDE.md` §Tool Resolution.
 
 ---
@@ -539,9 +665,10 @@ test('@atc:UPEX-101 should validate login', async ({ loginPage }) => {
 ### 1. Update Project Identity
 
 Edit these files:
-- `package.json` - name, description, repository
-- `CLAUDE.md` - project-specific context
-- `config/variables.ts` - URLs and environments
+- `package.json` — name, description, repository
+- `AGENTS.md` (canonical AI memory; `CLAUDE.md` is a symlink to it on Linux/macOS, a copy on Windows)
+- `.agents/project.yaml` — AI context vars (or run `bun run agents:setup` for an interactive walkthrough)
+- `config/variables.ts` — runtime URLs for Playwright (`envDataMap`)
 
 ### 2. Add Components
 
@@ -567,13 +694,13 @@ touch tests/e2e/your-module/your-feature.test.ts
 
 ### 4. Generate Context
 
-Load the `/project-discovery` skill in your AI assistant to generate project-specific context (idea, PRD, SRS, business-data-map, api-architecture, master-test-plan).
+Load the `/project-discovery` skill in your AI assistant to generate project-specific context (PRD, SRS, business-data-map, business-feature-map, business-api-map, master-test-plan).
 
 ---
 
 ## Contributing
 
-1. Load the `/test-automation` skill and read its `references/kata-ai-index.md`
+1. Load the `/test-automation` skill and read its `references/kata-architecture.md`
 2. Follow the automation standards referenced by that skill
 3. Use conventional commits
 4. Ensure all tests pass before PR
@@ -582,11 +709,15 @@ Load the `/project-discovery` skill in your AI assistant to generate project-spe
 
 ## Documentation
 
-- `/test-automation` skill -- KATA planning + coding + review (includes KATA guide, automation standards, TypeScript patterns, TMS integration)
+- `/framework-core` skill -- Foundation references + bootstrap (`/framework-core init`)
+- `/project-discovery` skill -- Onboarding and context generation
 - `/sprint-testing` skill -- In-sprint QA (planning, execution, reporting)
 - `/test-documentation` skill -- TMS test documentation and prioritization
+- `/test-automation` skill -- KATA planning + coding + review (includes KATA guide, automation standards, TypeScript patterns, TMS integration)
 - `/regression-testing` skill -- Regression execution and GO/NO-GO decisions
-- `/project-discovery` skill -- Onboarding and context generation
+- `/playwright-cli` skill -- Browser automation helper (screenshots, tracing, mocking)
+- `/xray-cli` skill -- Xray Cloud test management CLI
+- `/acli` skill -- Atlassian CLI for Jira Cloud (`[ISSUE_TRACKER_TOOL]`)
 - `.agents/skills/` is a symlink to `.claude/skills/` for agentskills.io spec compatibility
 - `docs/` -- Human-facing docs (methodology, workflows, architectures)
 
