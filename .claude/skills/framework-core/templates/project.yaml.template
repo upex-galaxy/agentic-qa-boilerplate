@@ -1,0 +1,49 @@
+# Project configuration consumed by AI agents (Claude, Cursor, Gemini, Codex, etc.)
+# when they encounter {{VAR_NAME}} references in skills, commands, templates and docs.
+# Variable names are snake_case; the AI maps {{PROJECT_NAME}} -> project.project_name lexically.
+# Edit values manually, or run `bun run agents:setup` for an interactive walkthrough.
+# Every unfilled field is `null` plus a TODO comment with a concrete example.
+
+project:
+  project_name: null # TODO: Project name (e.g. MyProject)
+  project_key: null # TODO: Project key in issue tracker (e.g. PROJ, OB, UPEX)
+  webapp_domain: null # TODO: Domain of the web application under test (e.g. myproject.com)
+
+backend:
+  backend_repo: null # TODO: Relative path to backend repository (e.g. ../my-backend)
+  backend_stack: null # TODO: Backend technology stack (e.g. Node.js + Express)
+  backend_entry: null # TODO: Backend source entry point (e.g. src/)
+
+frontend:
+  frontend_repo: null # TODO: Relative path to frontend repository (e.g. ../my-frontend)
+  frontend_stack: null # TODO: Frontend technology stack (e.g. React + TypeScript)
+  frontend_entry: null # TODO: Frontend source entry point (e.g. src/)
+
+database:
+  db_type: null # TODO: Database engine (e.g. PostgreSQL)
+
+issue_tracker:
+  issue_tracker: null # TODO: Issue tracking tool (e.g. Jira)
+  issue_tracker_cli: null # TODO: CLI command to query tickets (e.g. acli (Jira) / gh issue (GitHub))
+  jira_url: null # TODO: Jira instance base URL (e.g. https://company.atlassian.net)
+
+testing:
+  default_env: null # TODO: Default testing environment — must match a key under `environments:` (e.g. staging)
+  tms_cli: null # TODO: Test management CLI command (e.g. bun xray)
+
+# Per-environment config. Add/remove environments freely (production, dev, qa, uat, etc.).
+# Each environment must define ALL four keys: web_url, api_url, db_mcp, api_mcp.
+# Skills referencing {{WEB_URL}} / {{API_URL}} / {{DB_MCP}} / {{API_MCP}} resolve to the
+# active environment (`testing.default_env` above, or a session override).
+# For explicit cross-env references use {{environments.<env>.<var>}} (e.g. {{environments.local.web_url}}).
+environments:
+  local:
+    web_url: null # TODO: Frontend URL for local env (e.g. http://localhost:3000)
+    api_url: null # TODO: API base URL for local env (e.g. http://localhost:3000/api)
+    db_mcp: null # TODO: MCP server name for local DB (e.g. myproject-local-db)
+    api_mcp: null # TODO: MCP server name for local API (e.g. myproject-local-api)
+  staging:
+    web_url: null # TODO: Frontend URL for staging env (e.g. https://staging.myproject.com)
+    api_url: null # TODO: API base URL for staging env (e.g. https://api-staging.myproject.com)
+    db_mcp: null # TODO: MCP server name for staging DB (e.g. myproject-staging-db)
+    api_mcp: null # TODO: MCP server name for staging API (e.g. myproject-staging-api)
