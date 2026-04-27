@@ -125,7 +125,7 @@ Do not regenerate that file from this skill. If the user asks to refresh it, red
 ## Cross-cutting gotchas
 
 - **Incomplete OpenAPI.** If the project exposes a spec at `/openapi.json` or `swagger.json` but it is partial, fall back to source-code scanning for missing endpoints. Record the discrepancy in Discovery Gaps ("spec lists 42 paths; source has 57 handlers"). Do not silently trust OpenAPI.
-- **Route prefixes vs base URLs.** Do not concatenate `{{API_URL_LOCAL}}` (which includes host) with a route prefix that also includes the host. Normalize to path-only in the endpoint catalog.
+- **Route prefixes vs base URLs.** Do not concatenate `{{environments.local.api_url}}` (which includes host) with a route prefix that also includes the host. Normalize to path-only in the endpoint catalog.
 - **Undocumented DB relations.** ORM models sometimes lack explicit relations even when the DB has foreign keys. Prefer the migration/schema dump over ORM definitions. If ORM and DB disagree, the DB wins — flag the drift.
 - **RLS, row-level security, policies.** Do NOT dump RLS policies verbatim into `business-data-map.md`. Note that they exist and the high-level rule ("only the owner can read their rows"). Live policy enumeration belongs in `[DB_TOOL]` sessions, not static markdown.
 - **Dynamic routes and catch-alls.** Next.js `[...slug]`, Express wildcards, FastAPI path converters — these expand at runtime. Document them explicitly with a `[...]` annotation and Discovery Gap note.

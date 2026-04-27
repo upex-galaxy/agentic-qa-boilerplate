@@ -191,7 +191,7 @@ The ATP refines each class into concrete test outlines. The feature plan stops a
 Identify variables once at feature level to avoid per-story re-discovery.
 
 - **Shared personas**: list roles used across stories (admin, standard user, trial user). Reference from `user-personas.md` if present.
-- **Shared fixtures**: entities that pre-exist in staging DB (e.g., a seeded tenant, a baseline catalog). Found via `[DB_TOOL]` on `{{DB_MCP_STAGING}}`.
+- **Shared fixtures**: entities that pre-exist in the active env's DB (e.g., a seeded tenant, a baseline catalog). Found via `[DB_TOOL]` on `{{DB_MCP}}`.
 - **Dynamic generators**: Faker utilities reused across stories (`faker.internet.email`, `faker.person.firstName`, `faker.finance.amount`).
 - **Factories**: entity factories from `tests/data/` that stories should extend rather than duplicate.
 

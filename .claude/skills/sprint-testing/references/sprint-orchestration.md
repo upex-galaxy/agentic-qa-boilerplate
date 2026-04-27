@@ -244,10 +244,10 @@ IMPORTANT: credentials always from .env. Never hardcode. Never ask the user for
 
 | Stage | Reference to load | TASK (summary) | REPORT BACK |
 |-------|-------------------|----------------|-------------|
-| **Session Start** | `references/session-entry-points.md` (Session Start section) | Fetch ticket + comments via `[ISSUE_TRACKER_TOOL]`; extract Team Discussion; load project context; load/create module-context; explore backend + frontend; find test data via `[DB_TOOL]` on `{{DB_MCP_STAGING}}`; create PBI folder + context.md + evidence/ + test-session-memory.md; configure `.playwright/cli.config.json` if UI testing; write Story Explanation into memory. | Status, PBI path, memory path, Story Explanation (verbatim), Readiness READY/BLOCKED, Checklist X/Y, 2-3 sentence key findings. |
+| **Session Start** | `references/session-entry-points.md` (Session Start section) | Fetch ticket + comments via `[ISSUE_TRACKER_TOOL]`; extract Team Discussion; load project context; load/create module-context; explore backend + frontend; find test data via `[DB_TOOL]` on `{{DB_MCP}}`; create PBI folder + context.md + evidence/ + test-session-memory.md; configure `.playwright/cli.config.json` if UI testing; write Story Explanation into memory. | Status, PBI path, memory path, Story Explanation (verbatim), Readiness READY/BLOCKED, Checklist X/Y, 2-3 sentence key findings. |
 | **Planning (Feature)** | `references/acceptance-test-planning.md` | Triage (veto or risk score); discover test data; create ATP + ATR linked to Story; link ATP -> ATR; fill Test Analysis in ATP; write AC Gaps (or confirm none); create TCs with full traceability (`--story + --test-plan + --test-result`); `[TMS_TOOL] trace {{PROJECT_KEY}}-{number}`; mark ATP complete; transition TCs to Ready; create test-analysis.md in PBI. | Status, Triage result, ATP ID, ATR ID, TC IDs+names, Test data, AC Gaps, Checklist X/Y. |
 | **Planning (Bug)** | `references/session-entry-points.md` (Bug workflow Phase 1) + `references/acceptance-test-planning.md` (Bug Analysis variant) | Veto check (SKIP -> Code Review workflow, finish; REQUIRE -> continue); Bug Analysis; create ATP + ATR (no TCs); link; fill Bug Analysis in ATP; discover test data; mark ATP complete. | Status, Veto (skip/require + reason), ATP ID, ATR ID, Bug Analysis 2-3 sentences, Checklist X/Y. |
-| **Execution (Feature)** | `references/exploration-patterns.md` | SMOKE TEST FIRST (configure evidence dir; Go / No-Go); then UI exploration on `{{SPA_URL_STAGING}}`, API on `{{API_URL_STAGING}}`, DB via `[DB_TOOL]` — whichever apply; update TC statuses (PASSED/FAILED); explore beyond TCs; create new TCs for significant findings. | Status (COMPLETED/BLOCKED/BUG_FOUND), Smoke PASSED/FAILED, TC results X/Y + FAILED list, new TCs, bugs, observations, evidence paths, Checklist X/Y. |
+| **Execution (Feature)** | `references/exploration-patterns.md` | SMOKE TEST FIRST (configure evidence dir; Go / No-Go); then UI exploration on `{{WEB_URL}}`, API on `{{API_URL}}`, DB via `[DB_TOOL]` — whichever apply; update TC statuses (PASSED/FAILED); explore beyond TCs; create new TCs for significant findings. | Status (COMPLETED/BLOCKED/BUG_FOUND), Smoke PASSED/FAILED, TC results X/Y + FAILED list, new TCs, bugs, observations, evidence paths, Checklist X/Y. |
 | **Execution (Bug)** | `references/session-entry-points.md` (Bug workflow Phase 2) + `references/exploration-patterns.md` (evidence + smoke + DB cross-validation) | Configure evidence dir; reproduce original bug; verify fix resolves it; regression pass on adjacent areas; DB cross-validation if applicable; capture evidence. | Status, Fix verified YES/NO, Regression issues none/describe, evidence paths, Checklist X/Y. |
 | **Reporting** (Feature & Bug) | `references/reporting-templates.md` | Compile TC summary; fill ATR Test Report via `[TMS_TOOL] atr update`; mark ATR complete; create test-report.md in PBI; post QA comment via `[ISSUE_TRACKER_TOOL]`; transition ticket to tested state. | Status, Result PASSED/FAILED, ATR ID, TC summary, ticket status Tested, bugs filed, evidence paths (for user to attach), QA comment pasted/clipboard, Checklist X/Y. |
 
@@ -276,8 +276,8 @@ Created at `.context/PBI/{module-name}/{{PROJECT_KEY}}-{number}-{brief-title}/te
 {Key points from ticket comments — chronological; skip bot / social noise}
 
 ## Environment
-- SPA: {{SPA_URL_STAGING}} | API: {{API_URL_STAGING}}
-- DB MCP: {{DB_MCP_STAGING}} | API MCP: {{API_MCP_STAGING}}
+- Web: {{WEB_URL}} | API: {{API_URL}}
+- DB MCP: {{DB_MCP}} | API MCP: {{API_MCP}}
 
 ## Test Data
 {Entities / IDs / owners from DB exploration}

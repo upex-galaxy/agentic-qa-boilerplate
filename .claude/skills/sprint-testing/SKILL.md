@@ -85,7 +85,7 @@ Every invocation starts by initializing the session, even in batch mode. Session
 3. Loads the project-wide context files: `.context/mapping/business-data-map.md`, `.context/mapping/business-feature-map.md`, `.context/mapping/business-api-map.md`, `.context/master-test-plan.md`.
 4. Loads or creates `module-context.md` (3-level hierarchy: project -> module -> ticket).
 5. Explores backend (`{{BACKEND_REPO}}`) + frontend (`{{FRONTEND_REPO}}`) code.
-6. Finds test data candidates via `[DB_TOOL]` on `{{DB_MCP_STAGING}}`.
+6. Finds test data candidates via `[DB_TOOL]` on `{{DB_MCP}}`.
 7. Creates the PBI folder and files:
    ```
    .context/PBI/{module-name}/{{PROJECT_KEY}}-{number}-{brief-title}/
@@ -165,7 +165,7 @@ If Session Start reports that any of the project-wide context files are missing,
 | `[DB_TOOL]` | DBHub MCP or Supabase MCP | `CLAUDE.md` Tool Resolution |
 | `[API_TOOL]` | OpenAPI MCP, Postman, or curl | `CLAUDE.md` Tool Resolution |
 
-Concrete tools (`bun`, `git`, `gh`) are used literally. Project variables like `{{PROJECT_KEY}}`, `{{DB_MCP_STAGING}}`, `{{SPA_URL_STAGING}}` are resolved from `CLAUDE.md`.
+Concrete tools (`bun`, `git`, `gh`) are used literally. Project variables like `{{PROJECT_KEY}}`, `{{DB_MCP}}`, `{{WEB_URL}}` are resolved from `.agents/project.yaml` (env-scoped vars resolve to the active environment).
 
 ---
 
@@ -179,7 +179,7 @@ All references are self-contained. Load one at a time.
 | `session-entry-points.md` | Initializing a session (any mode), loading project + module context, creating the PBI folder + `context.md` + `test-session-memory.md`, Team Discussion extraction rules, user-story workflow step order, bug Triage -> Verify -> Report workflow. |
 | `acceptance-test-planning.md` | Stage 1 Planning — generating the ATP (Acceptance Test Plan) for a ticket, Test Analysis structure, TC nomenclature `{US_ID}: TC#: Validate <CORE> <CONDITIONAL>`, traceability creation + verification, and the Bug Analysis variant. |
 | `feature-test-planning.md` | Stage 1 Planning at feature / multi-story level — building a feature test plan, risk triage rubric, scenario decomposition, and variable + test-data identification. |
-| `exploration-patterns.md` | Stage 2 Execution — smoke-test Go/No-Go playbook, UI exploration on `{{SPA_URL_STAGING}}`, API exploration on `{{API_URL_STAGING}}`, DB cross-validation via `{{DB_MCP_STAGING}}`, evidence naming + capture rules, edge-case checklist. |
+| `exploration-patterns.md` | Stage 2 Execution — smoke-test Go/No-Go playbook, UI exploration on `{{WEB_URL}}`, API exploration on `{{API_URL}}`, DB cross-validation via `{{DB_MCP}}`, evidence naming + capture rules, edge-case checklist. |
 | `reporting-templates.md` | Stage 3 Reporting — ATR Test Report body, bug report template (summary, reproduction, severity, priority, labels), QA comment templates (story PASSED/FAILED, bug Template C/D), evidence-attachment guidance. |
 
 ---

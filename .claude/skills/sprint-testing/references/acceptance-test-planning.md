@@ -88,7 +88,7 @@ Read every item before planning. Fail fast if any project-wide context file is m
 | Project-wide context | `.context/mapping/business-data-map.md`, `.context/mapping/business-feature-map.md`, `.context/mapping/business-api-map.md`, `.context/master-test-plan.md` |
 | Module context | `.context/PBI/{module}/module-context.md` |
 | Code | `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` + `{{FRONTEND_REPO}}/{{FRONTEND_ENTRY}}` (targeted reads only) |
-| Test data candidates | `[DB_TOOL]` on `{{DB_MCP_STAGING}}` |
+| Test data candidates | `[DB_TOOL]` on `{{DB_MCP}}` |
 | Architecture + API contracts (if present) | `.context/SRS/architecture.md`, `.context/SRS/functional-specs.md`, `.context/SRS/non-functional-specs.md`; API contract from `api/openapi-types.ts` (types) + `.context/mapping/business-api-map.md` (business) |
 
 ---
@@ -358,26 +358,26 @@ Load `/xray-cli` skill for the concrete CLI syntax.
 
 #### Modality B — Jira-native (no Xray)
 
-ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md` (UPEX workspace default: `customfield_12400` = ATP, `customfield_12401` = ATR; per-project ids differ).
+ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md`: `{{jira.acceptance_test_plan_atp}}` for ATP and `{{jira.acceptance_test_results_atr}}` for ATR. Both fields are populated as customfield + comment-mirror pairs; `fix-traceability` checks both.
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {customfield_ATP}: {full test-analysis.md body}
+    {{jira.acceptance_test_plan_atp}}: {full test-analysis.md body}
   labels: +shift-left-reviewed
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
     === Test Plan: {{PROJECT_KEY}}-{n} ===
-    {full test-analysis.md body — byte-for-byte mirror of customfield_ATP}
+    {full test-analysis.md body — byte-for-byte mirror of {{jira.acceptance_test_plan_atp}}}
 
 # ATR container is created empty now and filled at Stage 3:
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {customfield_ATR}: "Test Results: {{PROJECT_KEY}}-{n} — pending execution"
+    {{jira.acceptance_test_results_atr}}: "Test Results: {{PROJECT_KEY}}-{n} — pending execution"
 ```
 
 Load `/acli` skill for the concrete Jira CLI syntax.
@@ -394,7 +394,7 @@ Write `test-analysis.md` at the ticket's PBI folder with **identical** content t
 
 ### Traceability check
 
-After writing, run `[TMS_TOOL] trace {TICKET}` (Modality A) or verify the Story's `customfield_ATP` is populated and the comment mirror exists (Modality B). TCs are not created in this skill — the trace is for the ATP artifact alone. Bugs produce ATP + ATR with no TCs (the bug is the implicit test case); "missing TC" warnings on bugs are expected.
+After writing, run `[TMS_TOOL] trace {TICKET}` (Modality A) or verify the Story's `{{jira.acceptance_test_plan_atp}}` is populated and the comment mirror exists (Modality B). TCs are not created in this skill — the trace is for the ATP artifact alone. Bugs produce ATP + ATR with no TCs (the bug is the implicit test case); "missing TC" warnings on bugs are expected.
 
 ---
 

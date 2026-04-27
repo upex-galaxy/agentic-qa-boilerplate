@@ -579,7 +579,7 @@ T01 ──┬──► T02 ──► T04
 
 | Test | Bug key | Reason | Since |
 |---|---|---|---|
-| `signup > invalid email rejects` | {PROJECT_KEY}-999 | Server-side validation missing | 2026-04-20 |
+| `signup > invalid email rejects` | UPEX-999 | Server-side validation missing | 2026-04-20 |
 ````
 
 The Blocked tests table is populated from §12.3 — every `@blocked:{BUG-KEY}` test must appear here with the reason and the date the block began. Remove a row only when the bug is closed and the test goes green.

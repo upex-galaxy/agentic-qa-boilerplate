@@ -244,7 +244,7 @@ Base stack detection (package.json → Node, pyproject.toml → Python, go.mod �
 - **Do not duplicate the backlog.** Jira/Linear/GitHub Issues is the source of truth for tickets. `.context/PBI/` holds local templates and working notes, never a copy of the full backlog.
 - **Monorepos require scoped discovery.** Run Phase 1 once (project as a whole) but Phases 2-3 per package. Merge findings into a single `.context/infrastructure/` with sub-sections per package.
 - **Database schemas over ORM models.** If both exist, prefer the migration files / schema dump over the ORM definitions -- ORM definitions can drift from the live schema.
-- **API base URL vs route prefix.** `{{API_URL_LOCAL}}` includes the protocol+host; route prefixes (e.g., `/api/v1`) belong in the path. Do not concatenate them twice in any context file that documents endpoints (e.g., `business-api-map.md`).
+- **API base URL vs route prefix.** `{{environments.local.api_url}}` includes the protocol+host; route prefixes (e.g., `/api/v1`) belong in the path. Do not concatenate them twice in any context file that documents endpoints (e.g., `business-api-map.md`).
 - **Auth flow is the single most important input for downstream `/adapt-framework`.** Session tokens, cookies, JWT, OAuth redirects, CSRF -- every project does it differently. Capture the real login request (DevTools / curl) in `backend.md` so the adaptation phase has a concrete contract to code against.
 - **Never generate from stale context.** If `.context/mapping/business-data-map.md` already exists but the user asks to "refresh" it, diff the current code against the existing file and ask whether to overwrite or merge. Auto-overwrite loses prior human edits.
 - **Context generators need ALL prior phases.** If the user jumps to "regenerate business-data-map" on a fresh repo, do Phase 1 (at minimum project-connection) and Phase 3 (backend discovery) first -- the generator relies on them.
@@ -279,9 +279,11 @@ Next: Phase N+1 (<phase name>). Confirm to continue, or say "pause" to stop here
 ### `.env` key list emitted after Phase 1
 
 ```
-# Application URLs
-SPA_URL_LOCAL=
-SPA_URL_STAGING=
+# Application URLs (per-environment — match the env names you declared
+# under `environments:` in `.agents/project.yaml`; consumed by
+# `bun run agents:setup --non-interactive` via the `<KEY>_<ENV>` pattern)
+WEB_URL_LOCAL=
+WEB_URL_STAGING=
 API_URL_LOCAL=
 API_URL_STAGING=
 

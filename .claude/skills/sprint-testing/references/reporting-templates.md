@@ -129,58 +129,94 @@ If unknown, set Root Cause Text to a short note such as "API returns 500 - serve
 
 Always include: `bug`, `exploratory-testing`. Append module or domain labels when relevant (e.g. `checkout`, `billing`, `api`).
 
-### 1.10 Custom fields (UPEX Galaxy workspace)
+### 1.10 Custom fields
 
-| Field | ID | Type | Notes |
-|-------|-----|------|-------|
-| Actual Result | `customfield_10109` | Textarea | What actually happened |
-| Expected Result | `customfield_10110` | Textarea | What should have happened |
-| Error Type | `customfield_10112` | Dropdown | Functional / Visual / Content / Performance / Crash / Data / Integration / Security |
-| SEVERITY | `customfield_10116` | Dropdown | Critical / Major / Moderate / Minor / Trivial |
-| Test Environment | `customfield_12210` | Dropdown | Dev / QA / UAT / Staging / Production |
-| Root Cause | `customfield_10701` | Dropdown | Values above |
-| Root Cause Text | `customfield_10049` | Textarea | Technical analysis |
-| Workaround | `customfield_10111` | Textarea | Optional — omit if none |
-| Evidence | `customfield_10607` | Textarea | Optional — omit if using attachments |
-| Fix | `customfield_12212` | Dropdown | `Bugfix` (default) or `Hotfix` |
+#### 1.10.1 Custom field detection (per project)
+
+Bug custom fields vary by Jira workspace. Before creating a bug, read `.agents/jira.json` once. For each row in the table below:
+
+- **If the slug exists** in `jira.json` → populate the custom field via `[ISSUE_TRACKER_TOOL] Edit Issue ... --field <id>`. The slug column shows the canonical reference; the linter validates it against `.agents/jira-required.yaml`.
+- **If the slug does NOT exist** → omit the custom-field write and include the content as a labeled section in the bug's **Description** field instead, using the headings from the "Description fallback" column.
+
+The Description always carries Steps to Reproduce. Any field that falls back here is appended as an additional section (see template at §1.10.3).
+
+#### 1.10.2 Field table
+
+| Field | Slug | Type | Description fallback heading |
+|-------|------|------|------------------------------|
+| Actual Result | `{{jira.actual_result_comportamiento}}` | string (paragraph) | `## Actual Result` |
+| Expected Result | `{{jira.expected_result_output}}` | string (paragraph) | `## Expected Result` |
+| Error Type | `{{jira.error_type}}` | option | `**Error Type**: <value>` |
+| Severity | `{{jira.severity}}` | option | `**Severity**: <value>` |
+| Test Environment | `{{jira.test_environment}}` | option | `**Test Environment**: <value>` |
+| Root Cause | `{{jira.root_cause}}` | option | `## Root Cause: <value>` |
+| Workaround | `{{jira.workaround}}` | string (paragraph) | `## Workaround` |
+| Evidence | `{{jira.evidence}}` | string (paragraph) | `## Evidence` |
+| Fix | `{{jira.fix}}` | option | `**Fix**: bugfix \| hotfix` |
 
 **Field format rules:** string fields pass a plain string; dropdowns pass `{"value": "Option"}`; omit optional fields (do not pass `null`).
 
-#### 1.10.1 Error handling when a custom-field create fails
+Convention: paragraph-style fields get `## Section` headings (multi-line content); option-style fields get `**Label**: value` inline (single-line content).
 
-**DO NOT** attempt to discover or query for alternative field IDs when a `customfield_*` value fails to apply during bug creation. Jira custom-field IDs are tenant-specific — guessing leads to silent data corruption in other tickets.
+#### 1.10.3 Description fallback template
 
-**Protocol on failure**:
+When custom fields are missing, the bug Description should follow this structure. **Only include sections for fields that fall back here** — if `severity` exists as a custom field but `actual_result` does not, the Description has Steps to Reproduce + `## Actual Result` (no Severity inline; severity goes to its custom field).
+
+```
+## Steps to Reproduce
+
+1. ...
+2. ...
+
+## Actual Result
+
+{what actually happened}
+
+## Expected Result
+
+{what should have happened}
+
+**Error Type**: <option>
+**Severity**: <option>
+**Test Environment**: <option>
+
+## Root Cause
+
+{if known after triage}
+
+## Workaround
+
+{if applicable}
+
+## Evidence
+
+- Screenshot: <link>
+- Trace: <link>
+- Logs: <link>
+
+**Fix**: bugfix
+```
+
+#### 1.10.4 Error handling when a custom-field write fails or a slug is missing
+
+There are two distinct failure modes:
+
+1. **Slug missing from `.agents/jira.json`** — the methodology declares the slug in `jira-required.yaml` but the user's Jira workspace does not have a matching custom field. Use the **Description fallback** (§1.10.3) — this is the documented degradation path, not an error. No user-facing warning needed beyond noting in the QA comment that the field landed in the Description.
+2. **Slug exists but the write fails at runtime** — the field id resolved, but `[ISSUE_TRACKER_TOOL] Edit Issue` rejected the value (permissions, screen scheme, value-validation). **DO NOT** attempt to discover or guess alternative field IDs — Jira custom-field IDs are tenant-specific, guessing leads to silent data corruption.
+
+**Protocol on runtime failure**:
 
 1. Inform the user with the **Custom Field Error** template below.
 2. Create the bug anyway with the fields that succeed.
 3. Add a comment to the created bug noting which field failed and why.
+4. As a last-resort fallback for that specific field, embed its value in the Description using the heading from the §1.10.2 table.
 
 **Custom Field Error template** (user-facing):
 
 > ⚠️ Custom field `{FIELD_NAME}` (id `{CUSTOMFIELD_ID}`) could not be set on `{BUG-KEY}`.
 > The bug was created without it. Please contact your Jira admin to verify the field id
-> for this project, then update `test-documentation/references/jira-setup.md` and re-run
-> `/fix-traceability` if other tickets were affected.
-
-#### 1.10.2 Non-UPEX workspaces (3-step fallback)
-
-When the project is **not** UPEX and the `customfield_*` IDs above do not exist in the target Jira instance, follow this strategy in order:
-
-1. **Search** — run `[ISSUE_TRACKER_TOOL] Search fields` using the UPEX field name as the keyword; match against the Field Mapping Guide below.
-2. **Ask** — if no equivalent is found, ask the user for the project-specific field id and store it in `test-documentation/references/jira-setup.md` §Custom fields.
-3. **Embed in Description** — as a last resort, embed the values in the bug Description under an `_ADDITIONAL FIELDS_` block and note which fields are missing so the user can wire them up later.
-
-**Field Mapping Guide** — UPEX field names and their common alternatives across tenants:
-
-| UPEX field | Common alternatives |
-|---|---|
-| SEVERITY | Bug Severity, Impact, Priority Level |
-| Error Type | Defect Type, Bug Category, Issue Type Detail |
-| Test Environment | Found In, Detected In, Environment |
-| Root Cause | Cause Category, Resolution Category, RCA Type |
-| Actual Result | Actual Behavior, Observed Behavior |
-| Expected Result | Expected Behavior, Desired Outcome |
+> for this project, then re-run `bun run jira:sync-fields --force` and `bun run jira:check`.
+> If the slug needs to be added to the methodology, update `.agents/jira-required.yaml`.
 
 ### 1.11 Attachments
 
@@ -281,13 +317,13 @@ If the run was already imported from CI via `[TMS_TOOL] Import Results`, the Tes
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {customfield_ATR}: {ATR body from §2.2}
+    {{jira.acceptance_test_results_atr}}: {ATR body from §2.2}
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
     === Test Results: {{PROJECT_KEY}}-{number} ===
-    {ATR body — byte-for-byte mirror of customfield_ATR}
+    {ATR body — byte-for-byte mirror of {{jira.acceptance_test_results_atr}}}
 
 # Update each TC's Test Status field (Execution Status in Jira-native)
 for each {TEST_KEY, result} in run:
@@ -305,7 +341,7 @@ for each {TEST_KEY, result} in run:
 | Modality | Completion signal |
 |----------|-------------------|
 | A (Xray) | Test Execution issue transitioned to `Done`; all Test Runs have terminal status (PASS/FAIL/BLOCKED/ABORTED, not TODO/EXECUTING). |
-| B (Jira-native) | `customfield_ATR` populated with full body (not placeholder); mirror comment present on the Story; every linked TC has a terminal Test Status. |
+| B (Jira-native) | `{{jira.acceptance_test_results_atr}}` populated with full body (not placeholder); mirror comment present on the Story; every linked TC has a terminal Test Status. |
 
 ### 2.3 Local mirror (`test-report.md`)
 

@@ -190,6 +190,8 @@ acli jira workitem edit --generate-json > edit.json
 acli jira workitem edit --from-json edit.json --yes
 ```
 
+*(IDs like `customfield_10122` shown here and below are illustrative — they reflect the JSON shape returned by `acli`. Your actual custom field IDs come from `.agents/jira.json` after `bun run jira:sync-fields`.)*
+
 Editable flags: `--summary`, `--description`, `--description-file`, `--assignee`, `--labels`, `--type`.
 Removal flags: `--remove-assignee`, `--remove-labels`.
 

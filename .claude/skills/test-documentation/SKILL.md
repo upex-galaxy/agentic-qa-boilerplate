@@ -38,8 +38,8 @@ Does this project have Xray installed and licensed on Jira?
 
 | Artifact | Modality A (Xray on Jira) | Modality B (Jira-native) |
 |----------|---------------------------|---------------------------|
-| **ATP** (Acceptance Test Plan) | Xray `Test Plan` issue, named `Test Plan: {{PROJECT_KEY}}-{n}`, linked to US | Story `customfield_ATP` (e.g. `customfield_12400`) + comment mirror on the Story. No separate issue. |
-| **ATR** (Acceptance Test Results) | Xray `Test Execution` issue with Test Runs per TC, Environment, Begin/End Date, named `Test Results: {{PROJECT_KEY}}-{n}` | Story `customfield_ATR` + comment mirror on the Story. No separate issue. |
+| **ATP** (Acceptance Test Plan) | Xray `Test Plan` issue, named `Test Plan: {{PROJECT_KEY}}-{n}`, linked to US | Story `{{jira.acceptance_test_plan_atp}}` + comment mirror on the Story. No separate issue. |
+| **ATR** (Acceptance Test Results) | Xray `Test Execution` issue with Test Runs per TC, Environment, Begin/End Date, named `Test Results: {{PROJECT_KEY}}-{n}` | Story `{{jira.acceptance_test_results_atr}}` + comment mirror on the Story. |
 | **TC** (Test Case) | Xray `Test` issue (type Manual / Cucumber / Generic) | Jira-native `Test` issue type (or `Task` with custom type), Description carries the full TC template |
 | **Test Set / Precondition / Test Plan** | First-class Xray issue types | Not available — use labels + Epic grouping |
 | **Result sync** | CI imports JUnit/Cucumber via `[TMS_TOOL] Import Results` -> Test Runs auto-update | Custom script updates Test Status field on each TC + comment with build context |
@@ -426,31 +426,31 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    customfield_ATP: {Test Analysis body}       # e.g. customfield_12400
+    {{jira.acceptance_test_plan_atp}}: {Test Analysis body}
   labels: +shift-left-reviewed
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
     === Acceptance Test Plan ({{PROJECT_KEY}}-{n}) ===
-    {Test Analysis body — byte-for-byte mirror of customfield_ATP}
+    {Test Analysis body — byte-for-byte mirror of {{jira.acceptance_test_plan_atp}}}
 
 # ATR = Story customfield + comment mirror. NO separate issue.
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    customfield_ATR: {Test Report body}          # e.g. customfield_12401
+    {{jira.acceptance_test_results_atr}}: {Test Report body}
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
     === Acceptance Test Results ({{PROJECT_KEY}}-{n}) ===
-    {Test Report body — byte-for-byte mirror of customfield_ATR}
+    {Test Report body — byte-for-byte mirror of {{jira.acceptance_test_results_atr}}}
 
 # TC = Jira-native Test issue (custom issue type configured per jira-setup.md)
 [ISSUE_TRACKER_TOOL] Create Issue:
   project: {{PROJECT_KEY}}
-  issueType: Test                               # or Task with customfield_TestType
+  issueType: Test                               # or Task with a Test Type custom field
   summary: {US_ID}: TC#: Validate <CORE> <CONDITIONAL>
   priority: {Critical|High|Medium|Low}
   labels: [regression, automation-candidate, e2e, critical]

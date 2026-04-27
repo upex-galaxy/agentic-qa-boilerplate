@@ -1,33 +1,33 @@
 # Pull Request — Test Automation
 
-> Template consumed by `/commit-push-pr`. Placeholders in `{{DOUBLE_BRACES}}` are filled at PR creation time; any that remain after substitution are left visible for the author to complete before posting.
+> Template consumed by `/commit-push-pr`. Placeholders in `<<ANGLE_BRACKETS>>` are session variables filled at PR creation time; any that remain after substitution are left visible for the author to complete before posting.
 
 ## Summary
 
-{{SUMMARY}}
+<<SUMMARY>>
 
 ## Changes
 
-{{CHANGES}}
+<<CHANGES>>
 
 ## Test Plan
 
-{{TEST_PLAN}}
+<<TEST_PLAN>>
 
 ## Traceability
 
-- **Issue**: {{ISSUE_KEY}} ({{ISSUE_URL}})
-- **ATP**: {{ATP_LINK}}
-- **ATR**: {{ATR_LINK}}
-- **TCs covered**: {{TC_LIST}}
+- **Issue**: <<ISSUE_KEY>> (<<ISSUE_URL>>)
+- **ATP**: <<ATP_LINK>>
+- **ATR**: <<ATR_LINK>>
+- **TCs covered**: <<TC_LIST>>
 
 ## Screenshots / Evidence
 
-{{EVIDENCE}}
+<<EVIDENCE>>
 
 ## Risk Assessment
 
-{{RISK}}
+<<RISK>>
 
 ## Checklist
 

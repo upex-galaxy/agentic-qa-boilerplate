@@ -22,8 +22,8 @@ The entity model is tool-agnostic, but the **container** each entity lives in ch
 | Entity | Modality A — Xray on Jira | Modality B — Jira-native (no Xray) |
 |--------|---------------------------|-------------------------------------|
 | **US** | Jira `Story` | Jira `Story` |
-| **ATP** | Xray `Test Plan` issue. Named `Test Plan: {{PROJECT_KEY}}-{n}`. Linked to the Story via "tests". | Story's `customfield_ATP` (e.g. `customfield_12400`) + comment mirror on the same Story. **No separate issue created.** |
-| **ATR** | Xray `Test Execution` issue. Named `Test Results: {{PROJECT_KEY}}-{n}`. Holds `Test Runs` per TC, plus Environment, Begin/End Date. Gets populated by CI import. | Story's `customfield_ATR` (e.g. `customfield_12401`) + comment mirror. **No separate issue.** CI updates Test Status field on each TC directly. |
+| **ATP** | Xray `Test Plan` issue. Named `Test Plan: {{PROJECT_KEY}}-{n}`. Linked to the Story via "tests". | Story's `{{jira.acceptance_test_plan_atp}}` + comment mirror on the same Story. **No separate issue created.** |
+| **ATR** | Xray `Test Execution` issue. Named `Test Results: {{PROJECT_KEY}}-{n}`. Holds `Test Runs` per TC, plus Environment, Begin/End Date. Gets populated by CI import. | Story's `{{jira.acceptance_test_results_atr}}` + comment mirror on the same Story. **No separate issue.** CI updates Test Status field on each TC directly. |
 | **TC** | Xray `Test` issue (type Manual / Cucumber / Generic) | Jira-native `Test` custom issue type (set up per `references/jira-setup.md`) or `Task` with a `Test Type` custom field. |
 | **Test Set / Precondition / Test Plan hierarchy** | First-class Xray issue types | Not available — group by labels + Regression Epic. |
 
@@ -389,7 +389,7 @@ Pseudocode splits by TMS modality — pick the block matching the resolution fro
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {customfield_ATP}: {Test Analysis body}   # confirm field id via jira-setup.md
+    {{jira.acceptance_test_plan_atp}}: {Test Analysis body}
   labels: +shift-left-reviewed
 
 [ISSUE_TRACKER_TOOL] Add Comment:
@@ -400,7 +400,7 @@ Pseudocode splits by TMS modality — pick the block matching the resolution fro
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {customfield_ATR}: {Test Report body}
+    {{jira.acceptance_test_results_atr}}: {Test Report body}
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
@@ -409,7 +409,7 @@ Pseudocode splits by TMS modality — pick the block matching the resolution fro
 # TC — Jira-native Test issue
 [ISSUE_TRACKER_TOOL] Create Issue:
   project: {{PROJECT_KEY}}
-  issueType: Test                              # or Task + customfield_TestType
+  issueType: Test                              # or Task + a Test Type custom field
   summary: {per TC naming convention}
   epic: {REGRESSION_EPIC_KEY}
   labels: [regression, ...]

@@ -96,7 +96,7 @@ Create the two custom fields:
 1. Settings → Issues → Custom fields → Add field → Select List (single choice) → Name `Test Status` → Options `NOT RUN`, `PASSED`, `FAILED`, `BLOCKED`. Associate with the Test issue type.
 2. Add field → Checkbox → Name `Automation Candidate`. Associate with the Test issue type.
 
-Note the numeric custom field IDs Jira assigns (visible via Settings → Issues → Custom fields → "Edit" URL; e.g. `customfield_10115`). Store them in `.context/master-test-plan.md` so the skills pick them up.
+Note the numeric custom field IDs Jira assigns (visible via Settings → Issues → Custom fields → "Edit" URL; e.g. `customfield_XXXXX`). Store them in `.context/master-test-plan.md` so the skills pick them up.
 
 ### 3.3 Configure ATP and ATR custom fields on the Story issue type
 
@@ -111,7 +111,7 @@ Steps:
 
 1. Settings → Issues → Custom fields → Add field → **Paragraph (supports rich text)** → Name `Acceptance Test Plan` → Associate with the Story (and Epic if the project uses epic-level ATPs).
 2. Add field → **Paragraph** → Name `Acceptance Test Results` → same associations.
-3. Note the IDs. UPEX workspace defaults: `customfield_12400` = ATP, `customfield_12401` = ATR. Your project's IDs may differ.
+3. After running `bun run jira:sync-fields`, IDs are auto-discovered into `.agents/jira.json` (slugs `acceptance_test_plan_atp` for ATP and `acceptance_test_results_atr` for ATR). Both are referenced via `{{jira.<slug>}}` from the skills.
 4. Add both fields to the Story's **View Screen** (Settings → Issues → Screens). Leave them off the Create screen (the skill populates them later, not the PM).
 5. Optionally add them to the Story's Edit Screen so PO/Dev can see them inline.
 
@@ -122,10 +122,10 @@ Record the IDs in `.context/master-test-plan.md`:
 
 | Artifact | Custom field ID |
 |----------|-----------------|
-| ATP      | customfield_{your-id}  # e.g. customfield_12400
-| ATR      | customfield_{your-id}  # e.g. customfield_12401
-| Test Status (on Test) | customfield_{your-id}
-| Automation Candidate (on Test) | customfield_{your-id}
+| ATP      | {{jira.acceptance_test_plan_atp}}
+| ATR      | {{jira.acceptance_test_results_atr}}
+| Test Status (on Test) | {{jira.test_status}}
+| Automation Candidate (on Test) | {{jira.to_be_automated_qa}}
 ```
 
 ### 3.4 Bug custom fields (UPEX reference, both modalities)
@@ -166,10 +166,10 @@ At the end of setup, `.context/master-test-plan.md` must contain a TMS section t
 - TMS CLI: bun xray | acli (only)
 - Regression Epic: {KEY} — {title}
 - Custom field IDs (Modality B only):
-    ATP: customfield_{id}
-    ATR: customfield_{id}
-    Test Status: customfield_{id}
-    Automation Candidate: customfield_{id}
+    ATP: {{jira.acceptance_test_plan_atp}}
+    ATR: {{jira.acceptance_test_results_atr}}
+    Test Status: {{jira.test_status}}
+    Automation Candidate: {{jira.to_be_automated_qa}}
 - Link types available: is tested by / tests, is blocked by / blocks
 ```
 
@@ -183,7 +183,7 @@ After setup, both modalities should pass:
 
 - [ ] Can create a `Test` issue in the project (Modality B) / all five Xray types appear (Modality A).
 - [ ] `[ISSUE_TRACKER_TOOL] List issue types` shows `Test` + (if A) `Test Plan`, `Test Execution`, `Test Set`, `Pre-Condition`.
-- [ ] Can update a Story's `customfield_ATP` with a test string (Modality B). Field persists and displays.
+- [ ] Can update a Story's `{{jira.acceptance_test_plan_atp}}` and `{{jira.acceptance_test_results_atr}}` with a test string (Modality B). Both fields persist and display.
 - [ ] `is tested by` link can be created from a Test to a Story.
 - [ ] Workflow transition `start design` is available on a Test in `Draft`.
 - [ ] `/xray-cli` (A) or `/acli` (B) authenticates against the project key.

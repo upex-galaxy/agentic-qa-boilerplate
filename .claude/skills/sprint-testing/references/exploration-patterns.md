@@ -26,7 +26,7 @@ Every feature validates through up to three layers. Pick by feature type:
 
 ## §1. UI exploration
 
-Deep-dive the UI on `{{SPA_URL_STAGING}}` (or `{{SPA_URL_LOCAL}}` when applicable) via `[AUTOMATION_TOOL]`. Goal: validate ACs, discover edge cases, capture evidence.
+Deep-dive the UI on `{{WEB_URL}}` via `[AUTOMATION_TOOL]`. Goal: validate ACs, discover edge cases, capture evidence.
 
 ### 1.1 Capabilities
 
@@ -80,7 +80,7 @@ Apply per input / interaction that accepts data or state changes:
 
 ## §2. API exploration
 
-Exercise `{{API_URL_STAGING}}` via `[API_TOOL]` (OpenAPI MCP, Postman, or curl). Goal: confirm contracts, auth, error handling and RLS.
+Exercise `{{API_URL}}` via `[API_TOOL]` (OpenAPI MCP, Postman, or curl). Goal: confirm contracts, auth, error handling and RLS.
 
 ### 2.1 Endpoint discovery (OpenAPI)
 
@@ -156,7 +156,7 @@ After a successful POST / PATCH, go to §3 DB to confirm persistence and trigger
 
 ## §3. DB exploration
 
-Query `{{DB_MCP_STAGING}}` via `[DB_TOOL]`. Goal: confirm data state, constraints, triggers and RLS at SQL level.
+Query `{{DB_MCP}}` via `[DB_TOOL]`. Goal: confirm data state, constraints, triggers and RLS at SQL level.
 
 ### 3.1 Schema discovery
 
@@ -245,7 +245,7 @@ Record: `CLEANUP COMPLETE` / `INCOMPLETE`.
 
 ## §4. Smoke test (first action of Stage 2)
 
-5-10 minute Go / No-Go on `{{SPA_URL_STAGING}}`. NEVER run deep exploration until smoke passes.
+5-10 minute Go / No-Go on `{{WEB_URL}}`. NEVER run deep exploration until smoke passes.
 
 ### 4.1 Input
 

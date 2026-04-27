@@ -94,8 +94,8 @@ gh workflow list -R <owner/repo>
 
 | Environment | URL | Purpose | Access |
 |-------------|-----|---------|--------|
-| Local       | {{SPA_URL_LOCAL}}   | Dev | Direct |
-| Staging     | {{SPA_URL_STAGING}} | Pre-prod testing | <VPN? Auth?> |
+| Local       | {{environments.local.web_url}}   | Dev | Direct |
+| Staging     | {{environments.staging.web_url}} | Pre-prod testing | <VPN? Auth?> |
 | Production  | <URL> | Live | Read-only |
 
 ## Tools and Access

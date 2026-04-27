@@ -59,7 +59,7 @@ ls .context/PRD/business/business-model.md .context/PRD/business/domain-glossary
 | What exists | Mode | Action |
 |---|---|---|
 | KATA + at least one Level 1 context file | **Full Update** | Rewrite README + refresh memory file with real values |
-| KATA only, no `.context/` | **Minimal Update** | Generate README + memory file with `{{PLACEHOLDER}}` values |
+| KATA only, no `.context/` | **Minimal Update** | Generate README + memory file with `<<PLACEHOLDER>>` values |
 | No KATA architecture | **Stop** | Tell the user to run `/project-discovery` first, then `/adapt-framework` to wire KATA to the target stack |
 
 ---
@@ -118,7 +118,7 @@ Scan the drafted README **and** AI-memory body in-memory before touching disk:
 
 On any match:
 
-1. Replace the literal with `{{REDACTED}}` (or `{your-{field-name}}` placeholder when the field is the point of the paragraph).
+1. Replace the literal with `<<REDACTED>>` (or `{your-{field-name}}` placeholder when the field is the point of the paragraph).
 2. Keep a redaction log — `{line reference} · {what was redacted} · {why}`.
 3. Surface the log back to the user in the Step 6 report so they can source the value from `.env` instead and decide whether it was a false positive.
 
@@ -181,7 +181,7 @@ If the file's structure itself needs to change, that is a separate task the user
 ### Sections to refresh with real values
 
 - **Project Identity** — name, type, stack, target repo, test repo
-- **Project Variables** table — fill `{{PLACEHOLDER}}` values where context provides them
+- **Project Variables** table — fill `<<PLACEHOLDER>>` values where context provides them
 - **Environment URLs** — local / staging / production
 - **Critical Test Priorities** — extract from `.context/master-test-plan.md`
 - **Context System** — update the Level 1 file list to match what actually exists under `.context/` (e.g. `business-data-map.md`, `master-test-plan.md`, `mapping/business-feature-map.md`, `mapping/business-api-map.md`)

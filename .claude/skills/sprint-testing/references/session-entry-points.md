@@ -272,7 +272,7 @@ After Session Start, run Stages 1 -> 2 -> 3 for the story. Then hand off to Stag
 
 - [ ] Session Start executed.
 - [ ] Story is "Ready For QA".
-- [ ] Feature deployed to staging (`{{SPA_URL_STAGING}}` / `{{API_URL_STAGING}}`).
+- [ ] Feature deployed to the active env (`{{WEB_URL}}` / `{{API_URL}}`).
 - [ ] Project context files loaded.
 
 ### Stage 1 — Planning (overview)
@@ -288,7 +288,7 @@ Actions:
 
 1. Read the story (ACs, business rules, dependencies).
 2. Triage (veto or risk score) — outputs: Full Plan vs Quick Plan vs Skip.
-3. Discover test data via `[DB_TOOL]` on `{{DB_MCP_STAGING}}` (and/or `[API_TOOL]`).
+3. Discover test data via `[DB_TOOL]` on `{{DB_MCP}}` (and/or `[API_TOOL]`).
 4. Create the ATP linked to the Story via `[TMS_TOOL]`.
 5. Create the ATR linked to the Story. Link ATP -> ATR.
 6. Fill Test Analysis in the ATP (scope, risks, scenarios, variables, test data, AC gaps).
@@ -316,9 +316,9 @@ Actions:
 
 1. **Smoke test (5-10 min, ALWAYS FIRST)**: verify basic functionality works, no blocking errors. Go (proceed) or No-Go (STOP and report).
 2. **Deep exploration** as applicable:
-   - UI on `{{SPA_URL_STAGING}}` via `[AUTOMATION_TOOL]`.
-   - API on `{{API_URL_STAGING}}` via `[API_TOOL]`.
-   - DB cross-validation via `[DB_TOOL]` on `{{DB_MCP_STAGING}}`.
+   - UI on `{{WEB_URL}}` via `[AUTOMATION_TOOL]`.
+   - API on `{{API_URL}}` via `[API_TOOL]`.
+   - DB cross-validation via `[DB_TOOL]` on `{{DB_MCP}}`.
 3. Use TCs as guides but explore beyond them (edge cases, boundaries, data variations, user perspectives). Create new TCs for significant discoveries.
 4. Update TC statuses in the TMS (PASSED / FAILED).
 5. Bug reporting — file any issues per `references/reporting-templates.md` (Bug Report template).
@@ -498,7 +498,7 @@ Why no TCs: the bug ticket is the implicit test case. Reproduction steps = test 
 
 #### Step 1.6 — Discover test data
 
-Use `[DB_TOOL]` on `{{DB_MCP_STAGING}}` or `[API_TOOL]` to find test data needed to reproduce and verify the bug. Document the entities, IDs, owners, and user role needed.
+Use `[DB_TOOL]` on `{{DB_MCP}}` or `[API_TOOL]` to find test data needed to reproduce and verify the bug. Document the entities, IDs, owners, and user role needed.
 
 #### Step 1.7 — Fill Bug Analysis in the ATP
 

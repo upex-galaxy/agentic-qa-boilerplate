@@ -262,7 +262,7 @@ Jira Direct:
 JIRA_URL=https://company.atlassian.net
 JIRA_USER=email@company.com
 JIRA_API_TOKEN=...
-JIRA_TEST_STATUS_FIELD=customfield_10100
+JIRA_TEST_STATUS_FIELD=customfield_10100   # illustrative — find your real ID in .agents/jira.json after `bun run jira:sync-fields`
 ```
 
 ### 8.4 Comment body sent to the TMS
@@ -296,7 +296,7 @@ Pick Jira Direct for small teams or MVPs; upgrade to Xray when reporting needs g
 ### 8.6 Test ID format
 
 ```
-{PROJECT_KEY}-{ISSUE_NUMBER}      e.g. UPEX-123, DEMO-456
+UPEX-123      e.g. DEMO-456
 ```
 
 Rules:

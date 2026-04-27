@@ -156,14 +156,14 @@ Format: `{type}({ISSUE-KEY}): {description}` — keep under 70 characters. Witho
 
 1. Read `templates/pr-test-automation.md`.
 2. Substitute the placeholders the command can fill from session context:
-   - `{{ISSUE_KEY}}` — key extracted in Step 3.
-   - `{{ISSUE_URL}}` — `{{JIRA_URL}}/browse/{{ISSUE_KEY}}` when both are available (variables come from `CLAUDE.md` § Project Variables).
-   - `{{SUMMARY}}` — one-paragraph summary of the change derived from the commits.
-   - `{{CHANGES}}` — bulleted list of the commits created in Step 5.
-   - `{{TEST_PLAN}}` — bulleted steps to verify the change (test commands, manual checks, environments).
-   - `{{TRACEABILITY}}` — leave the template's traceability bullets as-is, filled with the known links.
-   - `{{EVIDENCE}}` — placeholder text pointing to `.context/PBI/.../evidence/` when relevant; leave `{{EVIDENCE}}` literal if nothing applies so the author can complete it.
-   - `{{RISK}}` — short risk assessment (blast radius, affected modules, rollback).
+   - `<<ISSUE_KEY>>` — key extracted in Step 3.
+   - `<<ISSUE_URL>>` — `{{JIRA_URL}}/browse/<<ISSUE_KEY>>` when both are available (`{{JIRA_URL}}` comes from `.agents/project.yaml`; `<<ISSUE_KEY>>` is computed in-session).
+   - `<<SUMMARY>>` — one-paragraph summary of the change derived from the commits.
+   - `<<CHANGES>>` — bulleted list of the commits created in Step 5.
+   - `<<TEST_PLAN>>` — bulleted steps to verify the change (test commands, manual checks, environments).
+   - `<<TRACEABILITY>>` — leave the template's traceability bullets as-is, filled with the known links.
+   - `<<EVIDENCE>>` — placeholder text pointing to `.context/PBI/.../evidence/` when relevant; leave `<<EVIDENCE>>` literal if nothing applies so the author can complete it.
+   - `<<RISK>>` — short risk assessment (blast radius, affected modules, rollback).
 3. Leave any unfilled placeholder **visible** in the final body so the author can edit before posting if desired. Do not silently delete sections.
 4. Write the rendered body to a temp file (e.g. `$(mktemp)`).
 
