@@ -1,5 +1,7 @@
 # Acceptance Test Planning (Ticket-Level ATP)
 
+> **Subagent context**: this file is part of the "Context docs" briefing component for the Stage 1 Planning subagent (see `sprint-testing/SKILL.md` §Subagent Dispatch Strategy and `sprint-orchestration.md` §"Briefing 2 — Stage 1 Planning subagent").
+
 Stage 1 Planning for a single ticket inside a sprint. Produces `test-analysis.md` (ATP mirror) inside the ticket's PBI folder plus a Jira / TMS comment mirror and ticket refinements.
 
 This reference is for **manual / exploratory in-sprint testing per ticket RIGHT NOW**. It does **not** create Xray TC entities (see `test-documentation` for Stage 4), compute ROI scores (see `test-documentation`), or produce automation `spec.md` (see `test-automation/planning-playbook.md`). Bug reports are covered in `reporting-templates.md` (pass 5c).

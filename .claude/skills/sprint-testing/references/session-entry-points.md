@@ -1,5 +1,7 @@
 # Session Entry Points — Session Start, User-Story and Bug Workflows
 
+> **Subagent context**: this file is part of the "Context docs" briefing component for the Session Start subagent (see `sprint-testing/SKILL.md` §Subagent Dispatch Strategy and `sprint-orchestration.md` §"Briefing 1 — Session Start subagent").
+
 Load this reference whenever you enter sprint-testing in any mode. Session Start is universal — every mode runs it first. The User-Story and Bug sections describe what happens after Session Start in single-ticket mode. Batch-sprint mode wraps these same stages in the orchestration loop from `sprint-orchestration.md`.
 
 ---

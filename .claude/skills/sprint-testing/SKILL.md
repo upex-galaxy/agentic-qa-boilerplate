@@ -13,6 +13,25 @@ The same three-stage pipeline runs in every mode. Only the entry point and the b
 
 ---
 
+## Subagent Dispatch Strategy
+
+This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/framework-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.claude/skills/framework-core/references/dispatch-patterns.md`. This skill operates in two modes (single-ticket and batch-sprint) and BOTH modes use the same four dispatch points per ticket — Session Start -> Stage 1 -> Stage 2 -> Stage 3. The only difference is that batch mode loops them once per ticket. The full briefings (Goal / Context docs / Skills to load / Exact instructions / Report format / Rules) live in `references/sprint-orchestration.md` §"Sub-agent prompt templates".
+
+| Stage                                              | Pattern    | Subagent role                                                                                                                                                                  |
+|----------------------------------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Session Start (per-ticket)                         | Single     | dispatch a session-start subagent: fetch ticket from issue tracker, load `.context/`, create the PBI folder + `context.md` + `test-session-memory.md`, return ticket summary + AC list |
+| Stage 1 — Planning (ATP + draft TCs + risk triage) | Sequential | dispatch a Planning subagent: produce the ATP artifact + risk score + draft TC outlines; bug tickets get the veto + triage decision tree applied                                |
+| Stage 2 — Execution (smoke + UI/API/DB exploration)| Sequential | dispatch an Execution subagent: smoke pass first, then triforce (UI/API/DB) exploration; capture evidence under the PBI folder; surface BUG_FOUND if applicable                  |
+| Stage 3 — Reporting (ATR + QA comment + transition)| Sequential | dispatch a Reporting subagent: fill the ATR, post the QA comment, transition the issue, file bug reports if any                                                                 |
+
+> **Modes are equivalent in dispatch shape**. Single-ticket mode runs ONE pass through these four dispatches. Batch mode loops them per ticket. There is no longer a "single-ticket inline" path — both modes pay the same 4-dispatch cost so behavior is uniform and reviews are consistent.
+
+> **Sequential, not Parallel**: each stage feeds the next (Session Start's PBI folder is read by Stage 1; Stage 1's ATP is read by Stage 2; Stage 2's evidences are read by Stage 3). Parallelism inside a single ticket would race on shared PBI state.
+
+> **On any subagent failure**: STOP, report the partial state (which stages completed, what artifacts landed), present retry / skip-stage / abort options. Do NOT auto-fix nor auto-rollback. See `.claude/skills/framework-core/references/orchestration-doctrine.md`.
+
+---
+
 ## Scope — pick the mode first
 
 | Mode | Input | Output | Use when |
@@ -59,7 +78,7 @@ Stage 3 — Reporting
        Stage 6 -> regression-testing
 ```
 
-Session-start is the universal entry. Single-ticket modes run the pipeline once. Batch mode loops through Wave 1 PENDING tickets in the framework file, dispatches one sub-agent per stage, and updates the framework file after each ticket.
+Session-start is the universal entry. **Single-ticket mode runs the same 4 dispatches as batch mode**: Session Start -> Stage 1 -> Stage 2 -> Stage 3. The orchestrator dispatches them sequentially (each subagent's report feeds the next briefing's "Context docs"). The full briefings live in `references/sprint-orchestration.md`. Use them verbatim — do NOT inline any stage just because there is only one ticket. Batch mode loops these same four dispatches through Wave 1 PENDING tickets in the framework file and updates the framework file after each ticket.
 
 ---
 
@@ -101,7 +120,11 @@ Details, templates and error table live in `references/session-entry-points.md`.
 
 ## Mode branches — what changes after Session Start
 
+> Both single-ticket and batch modes run the SAME 4-dispatch cadence (Session Start -> Stage 1 -> Stage 2 -> Stage 3) per ticket. Use the briefings in `references/sprint-orchestration.md` §"Sub-agent prompt templates" verbatim — do NOT inline a stage just because there is only one ticket. The previous "single-ticket inline" path is **REMOVED**. The notes below describe only what is *different* per ticket type or per mode (TMS payload shape, framework-file update timing, etc.). The dispatch sequence itself is invariant.
+
 ### Single-ticket, User Story (Stages 1 -> 2 -> 3)
+
+Run the same 4 dispatches. Per-stage payload differences:
 
 - Stage 1: Triage risk -> Test Analysis -> ATP/ATR -> TCs created with full traceability (`--story + --test-plan + --test-result`) -> verify with `[TMS_TOOL] trace`.
 - Stage 2: Smoke test -> UI / API / DB exploration as applicable -> update TC statuses PASSED / FAILED -> file bugs if any.
@@ -110,7 +133,9 @@ Details, templates and error table live in `references/session-entry-points.md`.
 
 ### Single-ticket, Bug (Triage -> Verify -> Report)
 
-- Triage: veto table (see Gotchas) -> if SKIP, run Code-Review workflow and finish. If REQUIRE, continue.
+Run the same 4 dispatches; the Stage 1 briefing additionally applies the veto + risk-score decision tree before producing the ATP.
+
+- Triage: veto table (see Gotchas) -> if SKIP, run Code-Review workflow and finish (Stage 2 + Stage 3 dispatches collapse to the in-place comment + transition; the orchestrator skips them only if the Stage 1 subagent reports `veto_outcome: skip`).
 - Risk score only if no veto applies. 0-3 LOW, 4-7 MEDIUM (ask user), 8+ HIGH.
 - Create ATP + ATR, no TCs (the bug is the test case). Fill Bug Analysis inside the ATP.
 - Execute: reproduce original bug -> verify fix -> regression pass on adjacent areas -> DB cross-validation if data-integrity bug.
@@ -119,7 +144,7 @@ Details, templates and error table live in `references/session-entry-points.md`.
 ### Batch sprint
 
 - Pre-step: generate `SPRINT-{N}-TESTING.md` from the sprint backlog if it does not exist (see `sprint-orchestration.md`).
-- Loop: read Wave 1 for the first `PENDING` ticket, dispatch a sub-agent per stage sequentially, after each ticket update the framework file + present a per-ticket summary + wait for user OK.
+- Loop: read Wave 1 for the first `PENDING` ticket, dispatch the same 4-stage sequence per ticket, after each ticket update the framework file + present a per-ticket summary + wait for user OK.
 - Interrupted session: if `test-session-memory.md` already exists for the ticket, resume from the first incomplete stage.
 - Stop on TOOL FAILURE. Pause on BUG_FOUND. Update framework file ONLY after Stage 3 completes.
 

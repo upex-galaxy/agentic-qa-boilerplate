@@ -204,52 +204,221 @@ Once chosen: note ID / type / title / priority, check for an existing `test-sess
 
 ## Sub-agent prompt templates
 
-Every template shares the same shell below. The orchestrator fills `{placeholders}` per sub-agent, then adds the sub-agent-specific TASK block from the matrix that follows. Detailed step instructions for each stage live in the stage-specific reference — do NOT duplicate them here.
+Every dispatch uses the **6-component briefing format** defined in `.claude/skills/framework-core/references/briefing-template.md` (Goal / Context docs / Skills to load / Exact instructions / Report format / Rules). The four briefings below cover the per-ticket cadence (Session Start -> Stage 1 -> Stage 2 -> Stage 3) and are used VERBATIM in BOTH single-ticket and batch modes — single-ticket runs them once, batch loops them per Wave 1 PENDING ticket. Detailed step instructions live in the stage-specific reference — do NOT duplicate them here.
 
-### Shared shell
+> **Variable resolution**: `<TICKET_KEY>`, `<MODULE>`, `<BRIEF_TITLE>`, `<PBI_FOLDER>`, `<ENV>` are session variables filled by the orchestrator before dispatch. `<PBI_FOLDER>` resolves to `.context/PBI/<MODULE>/<TICKET_KEY>-<BRIEF_TITLE>/` (absolute path). `{{PROJECT_KEY}}`, `{{WEB_URL}}`, `{{API_URL}}`, `{{API_MCP}}`, `{{DB_MCP}}` resolve from `.agents/project.yaml` per `AGENTS.md` §"Project Variables".
+
+> **Skill-loading invariant**: every briefing that touches `[ISSUE_TRACKER_TOOL]` requires `/acli`; every briefing that touches `[TMS_TOOL]` in Modality A also requires `/xray-cli`. Sub-agents inherit the orchestrator's skill registry, so the orchestrator only needs to load them once at Session Start §0.1 — but each briefing's "Skills to load" line lists them explicitly so the dispatch is self-contained.
+
+> **Bug-vs-Feature divergence**: the Stage 1 briefing applies the veto + risk-score decision tree only when `<TICKET_TYPE>` is `Bug`; for Feature/Story tickets it produces the full ATP per `acceptance-test-planning.md` Phases 1-7. The Stage 2 and Stage 3 briefings keep the same shape; their internal step list adapts (smoke + reproduce + regression vs smoke + triforce; Template C/D vs PASSED/FAILED comment).
+
+### Briefing 1 — Session Start subagent
 
 ```
-ROLE: QA sub-agent executing {STAGE} for {{PROJECT_KEY}}-{number}.
+Goal: Fetch ticket <TICKET_KEY> from the issue tracker, load relevant context, create the PBI folder, and return a session-start report.
 
-REFERENCES TO LOAD: {reference name from matrix}
+Context docs:
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/AGENTS.md (§"Local Context (PBI)" folder convention)
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/master-test-plan.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-data-map.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-feature-map.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-api-map.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/session-entry-points.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.agents/project.yaml (project metadata + active env)
 
-CONTEXT FILES TO READ (in order):
-  1. {test-session-memory.md path}   # READ THIS FIRST (except Session Start — writes it)
-  2. {context.md path}
-  3. {module-context.md path}
-  # Session Start reads instead: .context/mapping/business-data-map.md, .context/mapping/business-feature-map.md, .context/mapping/business-api-map.md, .context/master-test-plan.md
+Skills to load: /acli (for the issue-tracker fetch)
 
-TICKET: {{PROJECT_KEY}}-{number} -- {title}
-TYPE: {type}
-PRIORITY: {priority}
-TEST DATA: {from memory, when relevant}
+Exact instructions:
+  1. [ISSUE_TRACKER_TOOL] Fetch Issue: <TICKET_KEY> (capture: type, summary, AC list, status, components, fix-version, comments).
+  2. Determine <MODULE> from components/labels per session-entry-points.md §"Step 4 — Module context".
+  3. Generate <BRIEF_TITLE> (max 5 words, kebab-case) from the ticket summary.
+  4. Create <PBI_FOLDER> = .context/PBI/<MODULE>/<TICKET_KEY>-<BRIEF_TITLE>/ with:
+       - context.md (ticket summary + AC list + Team Discussion + Related Code + "Open questions" section, populated per session-entry-points.md §"Step 7")
+       - test-session-memory.md (template from this reference §"test-session-memory.md template")
+       - evidence/ (empty directory)
+  5. Extract Team Discussion from comments per session-entry-points.md §"Step 1b" rules.
+  6. For Bug tickets: include the bug-specific fields (steps to reproduce, expected vs actual) in context.md.
+  7. Write the Story Explanation into test-session-memory.md (the orchestrator presents it to the user).
 
-TASK: {stage-specific steps — see matrix}
+Report format:
+  {
+    "ticket_key": "<TICKET_KEY>",
+    "type": "Story | Bug | Task | ...",
+    "module": "<MODULE>",
+    "pbi_folder": "<absolute path>",
+    "memory_path": "<PBI_FOLDER>/test-session-memory.md",
+    "ac_count": <int>,
+    "open_questions": [...],
+    "ticket_summary": "...",
+    "story_explanation": "<verbatim text written to memory>",
+    "readiness": "READY | BLOCKED",
+    "checklist": "X/Y"
+  }
 
+Rules:
+  - Do NOT modify the issue in the issue tracker (read-only operation; no comments, no transitions).
+  - Do NOT load all of .context/ — only the docs listed above.
+  - Critical Rule #1 (Login Credentials): if any tool needs auth, reference .env keys; never hardcode.
+  - Never ask the user for confirmation — the orchestrator handles user interaction.
+```
+
+### Briefing 2 — Stage 1 Planning subagent
+
+```
+Goal: Produce ATP, risk-triage, and draft TCs for <TICKET_KEY> in <PBI_FOLDER>; for Bug tickets, apply the veto + risk-score decision tree before producing the ATP.
+
+Context docs:
+  - <PBI_FOLDER>/context.md (output of Session Start)
+  - <PBI_FOLDER>/test-session-memory.md (READ FIRST — shared memory)
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/acceptance-test-planning.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-feature-map.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-api-map.md (if API-affecting)
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/PBI/<MODULE>/module-context.md (if it exists)
+
+Skills to load: /acli (for ATP/ATR creation + Story link); in Modality A also /xray-cli (for [TMS_TOOL] Test Plan / Test Execution issues).
+
+Exact instructions:
+  1. Bug branch: run the veto decision tree per acceptance-test-planning.md §"Phase 0 — Triage" (SKIP -> emit veto_outcome=skip, write minimal Bug Analysis, exit; REQUIRE -> continue).
+  2. Risk triage per acceptance-test-planning.md §"0.2 Risk score" (impact x likelihood -> P0|P1|P2 distribution).
+  3. Translate ACs into ATP rows (one row per testable behavior); apply Phases 1-4 of acceptance-test-planning.md (Critical Analysis, Story Quality, Refined ACs, Test Outlines).
+  4. Draft TC outlines (summary + steps + expected) — full TC bodies are formalized in Stage 4 (test-documentation), not here.
+  5. Create ATP + ATR per the modality branch in acceptance-test-planning.md §"Phase 6 — Traceability + Ticket updates":
+       - Modality A: [TMS_TOOL] Create TestPlan + Create Execution; link to Story via [ISSUE_TRACKER_TOOL] Link Issues.
+       - Modality B: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_plan_atp}} field + comment mirror.
+  6. Write artifacts to <PBI_FOLDER>/test-analysis.md (byte-for-byte mirror of the Jira/TMS comment).
+  7. Update <PBI_FOLDER>/test-session-memory.md sections: TMS Artifacts, Test Data, Stage Results > Planning, Checklist > Planning.
+
+Report format:
+  {
+    "atp_path": "<PBI_FOLDER>/test-analysis.md",
+    "atp_id": "<TMS issue key | story-field>",
+    "atr_id": "<TMS issue key | story-field>",
+    "atc_drafts": [{ "title": "...", "type": "Positive|Negative|Boundary|Edge", "priority": "P0|P1|P2" }],
+    "risk_distribution": { "P0": <int>, "P1": <int>, "P2": <int> },
+    "veto_outcome": "proceed | skip | require | escalate",
+    "ac_gaps": [...],
+    "open_questions": [...],
+    "checklist": "X/Y"
+  }
+
+Rules:
+  - Do NOT execute any test (Stage 2 owns execution).
+  - Do NOT create formal TMS Test entities (Stage 4 / test-documentation owns that).
+  - Critical Rule #2 (Plan Before Coding): outputs are plans + outlines, no test code.
+  - Surface open_questions to the orchestrator instead of guessing AC behavior.
+  - Mirror order: Jira/TMS comment is canonical; <PBI_FOLDER>/test-analysis.md is the byte-for-byte mirror.
+```
+
+### Briefing 3 — Stage 2 Execution subagent
+
+```
+Goal: Run smoke pass + triforce exploration (UI / API / DB) for <TICKET_KEY> against the <ENV> environment; capture evidence; surface any BUG_FOUND.
+
+Context docs:
+  - <PBI_FOLDER>/test-analysis.md (the ATP from Stage 1)
+  - <PBI_FOLDER>/test-session-memory.md (READ FIRST — shared memory)
+  - <PBI_FOLDER>/context.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/exploration-patterns.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.agents/project.yaml (active env URLs and MCP names)
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-data-map.md (entity flows for DB exploration)
+
+Skills to load: /playwright-cli (UI exploration); the active environment's API and DB MCPs ({{API_MCP}} and {{DB_MCP}} from project.yaml). For Bug tickets: same set, no extras.
+
+Exact instructions:
+  1. Configure evidence: set .playwright/cli.config.json `outputDir` to <PBI_FOLDER>/evidence/. Screenshots also need full path in --filename (outputDir does NOT apply to .png).
+  2. Smoke (5-10 min, ALWAYS FIRST): validate the happy path of every P0 ATC. If smoke fails, emit smoke_result=fail and STOP — do NOT proceed to deep exploration.
+  3. Triforce UI: explore edge cases, empty states, validation errors per exploration-patterns.md §1.
+  4. Triforce API: hit the relevant endpoints with valid + invalid + boundary payloads via the API MCP per exploration-patterns.md §2.
+  5. Triforce DB: verify state changes via the DB MCP for write-side ATCs per exploration-patterns.md §3.
+  6. Bug branch: replace steps 3-5 with reproduce-original -> verify-fix -> regression-pass on adjacent areas -> DB cross-validation if data-integrity bug (per session-entry-points.md §"Bug workflow Phase 2").
+  7. Capture evidence (screenshots, traces, response samples) under <PBI_FOLDER>/evidence/ using the naming rule from exploration-patterns.md.
+  8. For each defect found: build a BUG_FOUND entry with severity, repro steps, evidence paths.
+  9. Update <PBI_FOLDER>/test-session-memory.md sections: Stage Results > Execution, Bugs Found, Observations, Checklist > Execution.
+
+Report format:
+  {
+    "smoke_result": "pass | fail | partial",
+    "triforce": {
+      "ui": [{ "atc": "...", "result": "PASSED|FAILED", "evidence": [...] }],
+      "api": [{ "endpoint": "...", "result": "PASSED|FAILED", "evidence": [...] }],
+      "db": [{ "query": "...", "result": "PASSED|FAILED", "evidence": [...] }]
+    },
+    "tc_results": { "passed": <int>, "failed": <int>, "total": <int> },
+    "bugs_found": [{ "summary": "...", "severity": "Critical|High|Medium|Low", "evidence_paths": [...], "repro_steps": "..." }],
+    "blockers": [...],
+    "checklist": "X/Y"
+  }
+
+Rules:
+  - Do NOT file the bug in the issue tracker yet — Stage 3 handles filing per the bug-report template in reporting-templates.md.
+  - Do NOT modify production data; for write-side checks use staging entities flagged in the ATP.
+  - Critical Rule #1 (Login Credentials): credentials always from .env; never hardcode.
+  - Stop and surface to orchestrator on any blocker (env down, auth failure, infra issue) — do NOT auto-retry.
+```
+
+### Briefing 4 — Stage 3 Reporting subagent
+
+```
+Goal: Fill the ATR, post the QA comment, transition the issue, and file bug reports for <TICKET_KEY>.
+
+Context docs:
+  - <PBI_FOLDER>/test-analysis.md (ATP)
+  - <PBI_FOLDER>/test-session-memory.md (READ FIRST — shared memory; contains Stage 2 results)
+  - <PBI_FOLDER>/evidence/ (Stage 2 evidence)
+  - <PBI_FOLDER>/context.md (ticket summary)
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/reporting-templates.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.agents/jira.json (custom field IDs for ATR/ATP — Modality B only)
+
+Skills to load: /acli (issue updates + comments + transitions + bug creation); in Modality A also /xray-cli (only when ATR is an Xray Test Execution and Test Run statuses must be updated).
+
+Exact instructions:
+  1. Compile TC summary from test-session-memory.md (total, PASSED, FAILED, pass rate).
+  2. Fill <PBI_FOLDER>/test-report.md from the ATR template in reporting-templates.md §"ATR Test Report body".
+  3. Update the ATR in TMS:
+       - Modality A: [TMS_TOOL] Update Test Execution / Run statuses; mark ATR complete.
+       - Modality B: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_results_atr}} field + comment mirror.
+  4. Post QA comment on <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Add Comment using the matching template from reporting-templates.md (Story PASSED/FAILED, or Bug Template C/D).
+  5. Transition <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Transition Issue to the corresponding tested state (project-specific; never close the ticket yourself).
+  6. For each BUG_FOUND from Stage 2: [ISSUE_TRACKER_TOOL] Create Issue --type Bug with the summary format `<EPIC>: <COMPONENT>: <ISSUE_SUMMARY>` from reporting-templates.md §1.2; populate description, severity, repro steps, evidence links; link to the parent ticket.
+  7. Update <PBI_FOLDER>/test-session-memory.md sections: TMS Artifacts (final IDs), Stage Results > Reporting, Checklist > Reporting.
+
+Report format:
+  {
+    "atr_path": "<PBI_FOLDER>/test-report.md",
+    "atr_id": "<TMS issue key | story-field>",
+    "result": "PASSED | FAILED",
+    "tc_summary": { "total": <int>, "passed": <int>, "failed": <int>, "pass_rate": "<percent>" },
+    "qa_comment_id": "<comment id or 'posted'>",
+    "transition": "<from_status> -> <to_status>",
+    "bugs_filed": [{ "key": "<TMS_KEY>", "summary": "..." }],
+    "evidence_paths_for_user": [...],
+    "errors": [...],
+    "checklist": "X/Y"
+  }
+
+Rules:
+  - Do NOT edit ACs on the parent ticket (read-only on AC fields).
+  - Do NOT close the ticket — only transition to the QA-defined state.
+  - Apply the bug summary format from reporting-templates.md §1.2 verbatim (no improvisation).
+  - On 4xx/5xx from any [ISSUE_TRACKER_TOOL] / [TMS_TOOL] call: stop, report partial state, do NOT auto-retry the transition.
+  - Critical Rule #3 (No AI Attribution): the QA comment must look human-authored.
+  - All TMS content in English (Critical Rule from AGENTS.md §"Language").
+```
+
+### Shared sub-agent shell (legacy — kept for memory bookkeeping)
+
+The four briefings above replace the previous narrative shell. The memory-update + checklist-tick contract that every subagent must honor is summarized below — each briefing's "Exact instructions" already references it explicitly.
+
+```
 MEMORY UPDATE: before finishing, update the relevant section of test-session-memory.md
   (Stage Results > {Stage}; TMS Artifacts; Test Data; Bugs Found; Observations).
 
 EXIT CHECKLIST: in memory.md > Checklist > {Stage}, mark [x] every completed item.
   Leave [ ] + explanation in Observations for any uncompleted item.
 
-REPORT BACK: structured summary — see matrix.
-
 IMPORTANT: credentials always from .env. Never hardcode. Never ask the user for
-  confirmation yourself — the orchestrator handles user interaction.
+  confirmation — the orchestrator handles user interaction.
 ```
-
-### Per-stage matrix
-
-> **Prerequisite (every row that mentions `[ISSUE_TRACKER_TOOL]` or `[TMS_TOOL]`)**: the dispatched sub-agent must load `/acli` before executing the task; in Modality A (Xray) also load `/xray-cli`. Sub-agents inherit the orchestrator's skill registry, so the orchestrator only needs to load them once at Session Start §0.1 — but include the reminder in the sub-agent TASK block if it executes standalone.
-
-| Stage | Reference to load | TASK (summary) | REPORT BACK |
-|-------|-------------------|----------------|-------------|
-| **Session Start** | `references/session-entry-points.md` (Session Start section) | Fetch ticket + comments via `[ISSUE_TRACKER_TOOL]`; extract Team Discussion; load project context; load/create module-context; explore backend + frontend; find test data via `[DB_TOOL]` on `{{DB_MCP}}`; create PBI folder + context.md + evidence/ + test-session-memory.md; configure `.playwright/cli.config.json` if UI testing; write Story Explanation into memory. | Status, PBI path, memory path, Story Explanation (verbatim), Readiness READY/BLOCKED, Checklist X/Y, 2-3 sentence key findings. |
-| **Planning (Feature)** | `references/acceptance-test-planning.md` | Triage (veto or risk score); discover test data; create ATP + ATR linked to Story; link ATP -> ATR; fill Test Analysis in ATP; write AC Gaps (or confirm none); create TCs with full traceability (`--story + --test-plan + --test-result`); `[TMS_TOOL] trace {{PROJECT_KEY}}-{number}`; mark ATP complete; transition TCs to Ready; create test-analysis.md in PBI. | Status, Triage result, ATP ID, ATR ID, TC IDs+names, Test data, AC Gaps, Checklist X/Y. |
-| **Planning (Bug)** | `references/session-entry-points.md` (Bug workflow Phase 1) + `references/acceptance-test-planning.md` (Bug Analysis variant) | Veto check (SKIP -> Code Review workflow, finish; REQUIRE -> continue); Bug Analysis; create ATP + ATR (no TCs); link; fill Bug Analysis in ATP; discover test data; mark ATP complete. | Status, Veto (skip/require + reason), ATP ID, ATR ID, Bug Analysis 2-3 sentences, Checklist X/Y. |
-| **Execution (Feature)** | `references/exploration-patterns.md` | SMOKE TEST FIRST (configure evidence dir; Go / No-Go); then UI exploration on `{{WEB_URL}}`, API on `{{API_URL}}`, DB via `[DB_TOOL]` — whichever apply; update TC statuses (PASSED/FAILED); explore beyond TCs; create new TCs for significant findings. | Status (COMPLETED/BLOCKED/BUG_FOUND), Smoke PASSED/FAILED, TC results X/Y + FAILED list, new TCs, bugs, observations, evidence paths, Checklist X/Y. |
-| **Execution (Bug)** | `references/session-entry-points.md` (Bug workflow Phase 2) + `references/exploration-patterns.md` (evidence + smoke + DB cross-validation) | Configure evidence dir; reproduce original bug; verify fix resolves it; regression pass on adjacent areas; DB cross-validation if applicable; capture evidence. | Status, Fix verified YES/NO, Regression issues none/describe, evidence paths, Checklist X/Y. |
-| **Reporting** (Feature & Bug) | `references/reporting-templates.md` | Compile TC summary; fill ATR Test Report via `[TMS_TOOL] atr update`; mark ATR complete; create test-report.md in PBI; post QA comment via `[ISSUE_TRACKER_TOOL]`; transition ticket to tested state. | Status, Result PASSED/FAILED, ATR ID, TC summary, ticket status Tested, bugs filed, evidence paths (for user to attach), QA comment pasted/clipboard, Checklist X/Y. |
 
 ---
 

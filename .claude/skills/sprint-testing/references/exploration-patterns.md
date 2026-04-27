@@ -1,5 +1,7 @@
 # Exploration Patterns (Stage 2)
 
+> **Subagent context**: this file is part of the "Context docs" briefing component for the Stage 2 Execution subagent (see `sprint-testing/SKILL.md` §Subagent Dispatch Strategy and `sprint-orchestration.md` §"Briefing 3 — Stage 2 Execution subagent").
+
 Stage 2 Execution playbook for in-sprint manual / exploratory QA: smoke test, then UI / API / DB exploration as applicable to the ticket. Session notes written into the ticket PBI folder; bugs filed via `reporting-templates.md`.
 
 This reference is for IN-SPRINT manual execution RIGHT NOW. It does NOT cover:

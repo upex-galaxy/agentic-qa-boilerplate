@@ -1,5 +1,7 @@
 # Reporting Templates (Stage 3)
 
+> **Subagent context**: this file is part of the "Context docs" briefing component for the Stage 3 Reporting subagent (see `sprint-testing/SKILL.md` §Subagent Dispatch Strategy and `sprint-orchestration.md` §"Briefing 4 — Stage 3 Reporting subagent").
+
 Stage 3 Reporting artifacts for in-sprint QA: ATR Test Report body, bug report template, and QA comment templates. Output written into the ticket PBI folder and mirrored to the TMS.
 
 This reference is for manual, in-sprint reporting RIGHT NOW. It does NOT cover Stage 4 formal TMS documentation or ROI scoring (see `test-documentation`), Bug Analysis *planning* variant inside an ATP (see `acceptance-test-planning.md`), or automation review artifacts (see `test-automation`).
