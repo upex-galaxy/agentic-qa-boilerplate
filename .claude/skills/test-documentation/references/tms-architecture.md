@@ -341,6 +341,118 @@ All operations use `[TMS_TOOL]` for TMS-specific actions and `[ISSUE_TRACKER_TOO
 
 Pseudocode splits by TMS modality — pick the block matching the resolution from SKILL.md §Phase 0. Full per-modality reference in SKILL.md §Quick reference.
 
+#### Parallel TC creation (default for N > 10)
+
+When the candidate list has more than 10 TCs, creating them serially burns the orchestrator's context with raw API responses. Shard the list into chunks of ~5-10 TCs per subagent, cap total subagents at 10. The orchestrator pre-creates the ATP / ATR (Phase 3 §Linking order steps 1-3) **before** dispatching — only the per-TC writes (step 4) are parallelised. See SKILL.md §Subagent Dispatch Strategy for the per-phase pattern table.
+
+**Sharding rule**: `ceil(N / 10)` subagents, each handling roughly equal-sized chunks. If `N > 100`, chunks must be larger than 10 each (cap is on subagent count, not chunk size). Each dispatch follows the 6-component briefing format in `.claude/skills/framework-core/references/briefing-template.md`.
+
+##### Modality A — Xray on Jira (subagent loads `/xray-cli`)
+
+Briefing (6 components per `framework-core/references/briefing-template.md`):
+
+```
+Goal: Create <K> Xray Test issues in Jira project <PROJECT_KEY> for chunk <I>/<TOTAL>, link them to ATP <ATP_KEY> and ATR <ATR_KEY>, and return their issue keys.
+
+Context docs:
+  - <PBI_FOLDER>/test-specs/<spec>.md (TC definitions for this chunk)
+  - .agents/jira.json (custom field IDs)
+  - .claude/skills/test-documentation/references/tms-architecture.md (TC body shape, naming, linking order)
+  - .claude/skills/test-documentation/references/jira-test-management.md §7 (Description template)
+
+Skills to load: /xray-cli, /acli
+
+Exact instructions:
+  1. For each TC in the chunk:
+     a. [TMS_TOOL] Create Test: project=<PROJECT_KEY>, type={Cucumber|Manual}, title="{per TC naming convention}", steps-or-gherkin={from spec}.
+     b. Capture the returned issue key as <TEST_KEY>.
+     c. [ISSUE_TRACKER_TOOL] Update Issue: issue=<TEST_KEY>, description={full Description template per jira-test-management.md §7}.
+     d. [TMS_TOOL] AddTests: testPlan=<ATP_KEY>, tests=[<TEST_KEY>].
+     e. [TMS_TOOL] AddTests: execution=<ATR_KEY>, tests=[<TEST_KEY>].
+     f. [ISSUE_TRACKER_TOOL] Link Issues: linkType="is tested by", outward=<TEST_KEY>, inward=<STORY_KEY>.
+  2. Apply labels per the methodology naming convention (see `tms-conventions.md` §Labels).
+
+Report format:
+  JSON array per TC:
+  [
+    {
+      "tc_local_id": "<spec id>",
+      "issue_key": "<PROJ>-<N>",
+      "linked_to_atp": true,
+      "linked_to_atr": true,
+      "linked_to_story": true,
+      "errors": []
+    },
+    ...
+  ]
+  Trailing summary: { "chunk": <I>, "created": K, "failed": 0|N, "duration_seconds": <int> }
+
+Rules:
+  - Do NOT modify the ATP or ATR — only link new tests to them.
+  - Do NOT exceed 10 sustained writes/sec inside the subagent (xray-cli already throttles, but be aware).
+  - On 429 or 5xx: retry with exponential backoff up to 3 times, then mark the TC as failed and continue with the rest of the chunk.
+  - On 4xx (excluding 429): stop the chunk and report partial state.
+  - Critical Rule #8 (File Operations): never overwrite an existing TC silently — if the summary already exists, report and skip.
+```
+
+##### Modality B — Jira-native (no Xray plugin; subagent loads `/acli`)
+
+Briefing (6 components per `framework-core/references/briefing-template.md`):
+
+```
+Goal: Create <K> Jira Test issues in project <PROJECT_KEY> for chunk <I>/<TOTAL>, link each to the parent Story <STORY_KEY> via "is tested by", and return their issue keys.
+
+Context docs:
+  - <PBI_FOLDER>/test-specs/<spec>.md (TC definitions for this chunk)
+  - .agents/jira.json (custom field IDs auto-discovered by `bun run jira:sync-fields`)
+  - .agents/jira-required.yaml (custom-field manifest)
+  - .claude/skills/test-documentation/references/jira-setup.md §3 (Modality B field layout)
+  - .claude/skills/test-documentation/references/jira-test-management.md §7 (Description template)
+
+Skills to load: /acli
+
+Exact instructions:
+  1. For each TC in the chunk:
+     a. [ISSUE_TRACKER_TOOL] Create Issue: project=<PROJECT_KEY>, issueType=Test, summary="{per TC naming convention}", priority={Critical|High|Medium|Low}, labels=[regression, ...], epic=<REGRESSION_EPIC_KEY>.
+     b. Capture the returned issue key as <TEST_KEY>.
+     c. [ISSUE_TRACKER_TOOL] Update Issue: issue=<TEST_KEY>, description={full Description template per jira-test-management.md §7}, fields={ {{jira.test_status}}: Draft, {{jira.to_be_automated_qa}}: <bool> }.
+     d. [ISSUE_TRACKER_TOOL] Link Issues: linkType="is tested by", outward=<TEST_KEY>, inward=<STORY_KEY>.
+  2. Do NOT recreate ATP/ATR custom fields on the Story — those were already populated by the orchestrator before dispatch.
+
+Report format:
+  JSON array per TC:
+  [
+    {
+      "tc_local_id": "<spec id>",
+      "issue_key": "<PROJ>-<N>",
+      "linked_to_story": true,
+      "errors": []
+    },
+    ...
+  ]
+  Trailing summary: { "chunk": <I>, "created": K, "failed": 0|N, "duration_seconds": <int> }
+
+Rules:
+  - Custom-field IDs come from .agents/jira.json — do NOT hardcode `customfield_*` numbers.
+  - On 429 or 5xx: retry with exponential backoff up to 3 times.
+  - On 4xx (excluding 429): stop the chunk and report partial state.
+  - Critical Rule #8 (File Operations): never overwrite an existing TC silently — if the summary already exists, report and skip.
+  - Critical Rule #1 (Login Credentials): JIRA_API_TOKEN comes from .env, never hardcode.
+```
+
+##### Aggregation in the main thread
+
+After all parallel subagents return, the orchestrator:
+
+1. Concatenates the JSON arrays into a single creation report.
+2. Sums totals (created / failed) and computes per-chunk duration.
+3. Feeds the issue-key list into the Traceability linking step (this section §4 + §5 step "for each TC").
+4. If any chunk reported `failed > 0`, surface the failed TCs to the user before proceeding to traceability linking. Do NOT auto-retry across chunks; let the user decide retry / skip / abort per the error protocol in `framework-core/references/orchestration-doctrine.md`.
+
+##### Fallback to serial (N <= 10)
+
+For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The serial flows below (Modality A and Modality B) remain canonical. They also describe the procedure each parallel subagent runs internally for its assigned chunk.
+
 #### Modality A — Xray on Jira
 
 > **Prerequisite**: Load `/xray-cli` and `/acli` skills before executing commands below.

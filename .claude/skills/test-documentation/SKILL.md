@@ -15,6 +15,24 @@ One hard prerequisite: the tests being documented must describe behavior that wa
 
 ---
 
+## Subagent Dispatch Strategy
+
+This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/framework-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/framework-core/references/dispatch-patterns.md`. Phase 1 (Analyze) and Phase 2 (Prioritize) stay inline because planning and decisions live in the orchestrator; the only Parallel hotspot is bulk TC creation in Phase 3, which is also the only step that branches per TMS modality.
+
+| Phase                                                  | Pattern    | Subagent role                                                                                                                                              |
+|--------------------------------------------------------|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Phase 1 — Analyze scope                                | Single     | inline — planning lives in the orchestrator (anti-pattern to delegate)                                                                                      |
+| Phase 2 — ROI / Candidate-Manual-Deferred verdict      | Single     | inline — decisions live in the orchestrator                                                                                                                 |
+| Phase 3 — TMS TC creation (N > 10 TCs)                 | Parallel   | M subagents, chunks of ~5-10 TCs per agent; cap = 10 to avoid Jira/Xray rate limits; each subagent loads `/xray-cli` (Modality A) or `/acli` (Modality B)  |
+| Phase 3 — TMS TC creation (N ≤ 10 TCs)                 | Single     | inline — dispatch overhead is not justified for small batches                                                                                               |
+| Phase 3 — Traceability linking (US <-> ATP <-> ATR <-> TCs) | Single     | inline — requires aggregated state of all created entities                                                                                                  |
+| Phase 3 — Final report / coverage matrix               | Single     | inline — synthesis lives in the orchestrator                                                                                                                |
+
+- **Concurrency cap = 10 subagents** for Parallel TC creation. Jira and Xray APIs both rate-limit at ~10 writes/sec sustained; fanning out wider triggers 429 responses. If a module has >100 TCs, batches per subagent must be larger than 10 each (cap is on subagent count, not chunk size).
+- **Error protocol**: On any subagent failure: STOP, report the partial success state (which TCs landed, which failed, with their issue keys / errors), present retry / skip / abort options. Do NOT auto-fix nor auto-rollback. See `.claude/skills/framework-core/references/orchestration-doctrine.md`.
+
+---
+
 ## Phase 0 — Resolve TMS modality (mandatory gate)
 
 Every project runs in one of two modalities. Resolve it **before** Phase 1. The same ATP/ATR/TC concepts have **different containers** in each mode.
@@ -234,6 +252,8 @@ Creating a TC before the ATP and ATR exist leaves orphaned references. Fix any b
 | **Native Jira (no Xray)** | `[ISSUE_TRACKER_TOOL] Create Issue: issueType=Test, description=<steps table>` | `[ISSUE_TRACKER_TOOL] Create Issue: issueType=Test, description=<gherkin in Description>` |
 
 Always populate Description with the full TC template (Related Story, Priority, ROI, Prior bugs, Test Design gherkin/steps, Variables table, Implementation Code table, Architecture, Available Test IDs, Preconditions, Expected Results). Read `references/jira-test-management.md` when choosing between Xray and native Jira, or when the Description must be filled.
+
+> **Dispatch**: Use the dispatch defined in §Subagent Dispatch Strategy: **Parallel** when N > 10 TCs (cap = 10 subagents), inline otherwise. The full briefings for both Modality A (Xray via `/xray-cli`) and Modality B (Jira-native via `/acli`) live in `references/tms-architecture.md` §"Parallel TC creation". The sharding rule, error protocol, and aggregation contract are documented there. The serial flow below is the canonical procedure each subagent runs internally for its assigned chunk.
 
 ### High-quality Gherkin (for Candidates)
 
