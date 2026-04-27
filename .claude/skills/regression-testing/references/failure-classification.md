@@ -53,6 +53,40 @@ Input: one failed test result
      re-verify on next run. STOP.
 ```
 
+### Parallel classification (default for >10 failures)
+
+When the failure list has more than 10 entries, classifying serially burns the orchestrator's context with raw test logs. Instead we shard. This is the canonical reference for the **Parallel** dispatch declared in `regression-testing/SKILL.md` §"Subagent Dispatch Strategy" → "Classify failures (chunks of ~10 tests each)" row.
+
+**Sharding rule**: split the failure list into chunks of ~10 failures (round up). Cap total subagents at 10 — if there are >100 failures, batches must be larger than 10 each.
+
+**Dispatch (Parallel pattern)** — one briefing per chunk, all dispatched in a single message, following the 6-component format from `framework-core/references/briefing-template.md`:
+
+```
+Goal: Classify <N> test failures in chunk <CHUNK_INDEX>/<TOTAL_CHUNKS> against the rubric.
+Context docs:
+  - .claude/skills/regression-testing/references/failure-classification.md (rubric)
+  - <ARTIFACT_PATH>/allure-results/ (raw failure data)
+  - .context/regression-history/known-failures.json (if exists — list of KNOWN failures with their classification)
+Skills to load: (none)
+Exact instructions:
+  1. For each failure in the chunk:
+     a. Read its allure result + screenshot + trace summary.
+     b. Apply the decision tree: REGRESSION / FLAKY / KNOWN / ENVIRONMENT / NEW TEST.
+     c. Capture: { test, classification, evidence_paths, confidence: high|low, justification: <50 words }
+  2. Cross-check against known-failures.json (if present) — KNOWN classifications must match a prior entry.
+Report format:
+  JSON array: [ { "test": "...", "classification": "...", "evidence_paths": ["..."], "confidence": "...", "justification": "..." }, ... ]
+  At the end of the array, a summary: { "chunk": <CHUNK_INDEX>, "counts": { "REGRESSION": N, "FLAKY": N, ... } }
+Rules:
+  - Do NOT decide GO/NO-GO — that lives in the orchestrator.
+  - Do NOT modify known-failures.json — read-only.
+  - If a failure can't be classified with high confidence, mark confidence: low and let the orchestrator escalate.
+```
+
+**Aggregation in the main thread**: after all parallel subagents return, the orchestrator merges the JSON arrays, sums the counts, and feeds the totals into the GO/NO-GO decision. Low-confidence classifications get re-reviewed inline by the orchestrator before the verdict is computed — never auto-promoted.
+
+**Fallback to serial**: if the failure count is ≤10, classify inline — the dispatch overhead is not justified. The same decision tree above is applied per failure, just without the fan-out.
+
 ---
 
 ## 3. Environment error patterns (verbatim matches)

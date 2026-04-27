@@ -441,3 +441,64 @@ Race condition — `gh run list` queries before the run registers. Always `sleep
 - Run without retries in CI (retries stabilize; analysis flags flakiness).
 - Upload sensitive data in artifacts (screenshots can contain PII).
 - Hard-code credentials in workflow YAML.
+
+---
+
+## 13. Monitoring the workflow run (Background dispatch)
+
+The CI run is long (20-60 min). Blocking the main thread on `gh run watch` is wasteful — we delegate to a Monitor subagent and continue with preparation work in the main thread. This section is the canonical reference for the dispatch declared in `regression-testing/SKILL.md` §"Subagent Dispatch Strategy" → "Wait/monitor `gh run watch`" row.
+
+**When to use**: every time we trigger a regression workflow that takes >5 min. (For `smoke` (2-5 min) the dispatch overhead is borderline; classify by actual wall time, not workflow name.)
+
+**Dispatch (Background pattern)**:
+
+Briefing (follows the 6-component format from `framework-core/references/briefing-template.md`):
+
+```
+Goal: Watch GitHub Actions run <RUN_ID> until it terminates and report final status.
+Context docs:
+  - .github/workflows/regression.yml (workflow definition)
+  - <PBI_FOLDER>/test-report-skeleton.md (where main thread is preparing the scaffold)
+Skills to load: (none — uses gh CLI directly)
+Exact instructions:
+  1. Run: gh run watch <RUN_ID> --exit-status
+  2. Capture exit code and final status (success / failure / cancelled).
+  3. Capture run duration (gh run view <RUN_ID> --json conclusion,createdAt,updatedAt).
+  4. Capture count of failed tests if failure (gh run view <RUN_ID> --log-failed | grep -c "FAIL ").
+Report format:
+  JSON: { "runId": "<RUN_ID>", "status": "success|failure|cancelled", "exitCode": <int>, "durationSeconds": <int>, "failedTestCount": <int|null>, "logsAvailable": <bool> }
+Rules:
+  - Do NOT download artifacts — that is a separate Parallel dispatch.
+  - Do NOT classify failures — that is a separate Parallel dispatch after artifacts arrive.
+  - On gh CLI auth failure: stop and report; do not retry.
+```
+
+**While the Monitor runs, the main thread**:
+- Reads prior report skeleton from `.context/regression-history/`.
+- Prepares the report header with run metadata already known (commit SHA, branch, workflow name).
+- Loads classification rubric from `failure-classification.md` so it's ready when the run terminates.
+
+**On Monitor return**:
+- If `status === "success"`: skip to artifact download (still Parallel — see SKILL.md §Subagent Dispatch Strategy) only for Allure/Playwright reports; classification step is skipped.
+- If `status === "failure"`: dispatch the Parallel artifact download, then the Parallel classification.
+- If `status === "cancelled"`: report to user, stop, await instruction.
+
+### Fallback: polling when `gh run watch` is unavailable
+
+If the runner doesn't support `gh run watch` (very old `gh` CLI, restricted network) or the watch errors out repeatedly, the Monitor subagent can fall back to polling — but this still runs inside the subagent, not on the main thread:
+
+```bash
+gh run view <RUN_ID> --json status,conclusion
+# status: queued | in_progress | completed
+# conclusion (only when completed): success | failure | cancelled | timed_out
+```
+
+Poll every 60-90 seconds. The Monitor still owns this loop; the orchestrator stays free.
+
+### Manual cancellation
+
+If the user cancels the run mid-watch (`gh run cancel <RUN_ID>` from another terminal), the Monitor returns `status: "cancelled"`. The orchestrator surfaces this to the user and waits for direction — do not silently re-trigger.
+
+### Race condition reminder
+
+`gh workflow run` returns before the run is queryable. The orchestrator must `sleep 3-5` before listing the run ID (see §11 "gh workflow run succeeds but no run appears"). The Monitor dispatch happens AFTER the run ID is captured — it does not need its own sleep.

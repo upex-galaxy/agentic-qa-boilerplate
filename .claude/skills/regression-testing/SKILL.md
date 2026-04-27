@@ -13,6 +13,24 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 
 ---
 
+## Subagent Dispatch Strategy
+
+This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/framework-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.claude/skills/framework-core/references/dispatch-patterns.md`. The two CI-bound stages (long-running watch, multi-artifact download) and the high-volume failure classification step are the hotspots — everything else stays inline because the dispatch overhead is not justified.
+
+| Stage                                                      | Pattern    | Subagent role                                                                                                  |
+|------------------------------------------------------------|------------|----------------------------------------------------------------------------------------------------------------|
+| Trigger workflow (`gh workflow run`)                       | Single     | inline — no dispatch needed (one shell call)                                                                   |
+| Wait/monitor `gh run watch`                                | Background | one Monitor subagent runs the watch; main thread continues with prep work; subagent notifies on exit           |
+| Download 3 artifacts (allure / evidence / playwright)      | Parallel   | 3 simultaneous subagents, one per artifact; cap = 3 (no rate-limit risk)                                       |
+| Classify failures (chunks of ~10 tests each)               | Parallel   | N subagents based on failure volume; cap = 10 to avoid context dilution                                        |
+| Compute metrics (pass-rate, trends)                        | Single     | inline — needs aggregated state, low cost                                                                      |
+| Generate executive report                                  | Single     | inline — final synthesis, decisions live here                                                                  |
+| GO / CAUTION / NO-GO verdict                               | Single     | inline — main thread owns release decisions                                                                    |
+
+- **Error protocol**: On any subagent failure: STOP, report full context to user, present retry / skip / abort options. Do NOT auto-fix. See `.claude/skills/framework-core/references/orchestration-doctrine.md`.
+
+---
+
 ## When to run each suite
 
 | Suite | Workflow file | Duration | Use when |
@@ -65,15 +83,19 @@ Store as `RUN_ID`. Every subsequent step uses it.
 
 ### Monitor to completion
 
-Prefer `gh run watch <RUN_ID>` (blocking, live). If non-blocking is needed, poll:
+Use the dispatch defined in §Subagent Dispatch Strategy: **Background**. Delegate `gh run watch <RUN_ID>` to a Monitor subagent so the main thread is freed to prepare the report scaffold and load the classification rubric. See `references/ci-cd-integration.md` §"Monitoring the workflow run (Background dispatch)" for the full briefing.
+
+Reference command (executed inside the subagent, not inline on the main thread):
 
 ```bash
+gh run watch <RUN_ID> --exit-status
+# Fallback polling (only if gh run watch is unavailable):
 gh run view <RUN_ID> --json status,conclusion
 # status: queued | in_progress | completed
 # conclusion (only when completed): success | failure | cancelled | timed_out
 ```
 
-Do not start Phase 2 until `status == completed`.
+Do not start Phase 2 until the Monitor returns `status: completed`.
 
 ### Output of Phase 1
 
@@ -87,19 +109,31 @@ Read `references/ci-cd-integration.md` when configuring new workflows, debugging
 
 ### Step 1: Collect data
 
+Use the dispatch defined in §Subagent Dispatch Strategy: **Parallel** for the three artifact downloads (allure / evidence / playwright). Fan out three subagents in a single tool-call block — each owns one artifact, writes to its own directory, and reports back when its download is verified. The metadata reads (`gh run view`) stay inline because they are short.
+
+Reference commands (the metadata reads run inline; the three `gh run download` calls live inside the parallel subagents):
+
 ```bash
-# Full run context
+# Inline (main thread): full run context
 gh run view <RUN_ID> --json status,conclusion,jobs,createdAt,updatedAt,url,headBranch,event,actor
 
-# Failed logs only (much smaller than --log)
+# Inline (main thread): failed logs only (much smaller than --log)
 gh run view <RUN_ID> --log-failed
 
-# List artifacts, then download the ones you need
+# Inline (main thread): list artifacts so the parallel dispatchers know what to fetch
 gh run view <RUN_ID> --json artifacts --jq '.artifacts[].name'
+
+# Parallel subagent A — allure results
 gh run download <RUN_ID> -n merged-allure-results-staging -D ./analysis/
+
+# Parallel subagent B — failure evidence (screenshots, traces, videos)
 gh run download <RUN_ID> -n e2e-failure-evidence       -D ./analysis/evidence/
+
+# Parallel subagent C — playwright HTML report
 gh run download <RUN_ID> -n e2e-playwright-report      -D ./analysis/playwright/
 ```
+
+Each subagent uses the briefing shape in `framework-core/references/briefing-template.md` §"Parallel — Download 3 CI artifacts in regression-testing". Cap the fan-out at 3 — there are only ever three artifact streams and GitHub's per-run rate limits are not a concern at that size.
 
 ### Step 2: Parse results
 
@@ -124,7 +158,9 @@ gh run download $PREV -n merged-allure-results-staging -D ./analysis/previous/
 
 ### Step 4: Classify every failure
 
-Apply this decision tree to each failed test. **Never mark a test REGRESSION without checking history first** — that is the single most common misclassification.
+Use the dispatch defined in §Subagent Dispatch Strategy: **Parallel** when the failure list has more than 10 entries. Shard the failures into chunks of ~10 (cap at 10 subagents) and fan out one classification subagent per chunk; merge their JSON reports in the main thread. For ≤10 failures, classify inline (the dispatch overhead is not justified). See `references/failure-classification.md` §"Parallel classification (default for >10 failures)" for the full briefing and merge protocol.
+
+Apply this decision tree to each failed test (whether classified inline or inside a parallel subagent). **Never mark a test REGRESSION without checking history first** — that is the single most common misclassification.
 
 ```
 Failed test
