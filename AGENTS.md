@@ -61,33 +61,16 @@ bun run test:allure       # Generate Allure report
 
 ## Project Variables
 
-> Centralized configuration referenced by all skills via `{{VARIABLE_NAME}}` syntax. Fill in real values once; all skills auto-adapt.
+Project-specific values (paths, URLs, project key, DB names, MCP servers, issue tracker metadata, etc.) are declared in **`.agents/project.yaml`**. Before resolving any `{{VAR_NAME}}` in any skill, command, template or doc, read `.agents/project.yaml` once per session and cache the values.
 
-| Variable | Description | Example Value |
-|----------|-------------|---------------|
-| `{{PROJECT_NAME}}` | Project name | MyProject |
-| `{{BACKEND_REPO}}` | Relative path to backend repository | ../my-backend |
-| `{{BACKEND_STACK}}` | Backend technology stack | Node.js + Express |
-| `{{BACKEND_ENTRY}}` | Backend source entry point | src/ |
-| `{{FRONTEND_REPO}}` | Relative path to frontend repository | ../my-frontend |
-| `{{FRONTEND_STACK}}` | Frontend technology stack | React + TypeScript |
-| `{{FRONTEND_ENTRY}}` | Frontend source entry point | src/ |
-| `{{DB_TYPE}}` | Database engine | PostgreSQL |
-| `{{DB_MCP_LOCAL}}` | MCP server name for local DB | myproject-local-db |
-| `{{DB_MCP_STAGING}}` | MCP server name for staging DB | myproject-staging-db |
-| `{{API_MCP_LOCAL}}` | MCP server name for local API | myproject-local-api |
-| `{{API_MCP_STAGING}}` | MCP server name for staging API | myproject-staging-api |
-| `{{SPA_URL_LOCAL}}` | Frontend URL (local) | localhost:3000 |
-| `{{SPA_URL_STAGING}}` | Frontend URL (staging) | staging.myproject.com |
-| `{{API_URL_LOCAL}}` | API base URL (local) | localhost:3000/api |
-| `{{API_URL_STAGING}}` | API base URL (staging) | api-staging.myproject.com |
-| `{{ISSUE_TRACKER}}` | Issue tracking tool | Jira |
-| `{{ISSUE_TRACKER_CLI}}` | CLI command to query tickets | acli (Jira) / gh issue (GitHub) |
-| `{{PROJECT_KEY}}` | Project key in issue tracker (e.g., PROJ, OB, UPEX) | PROJ |
-| `{{TMS_CLI}}` | Test management CLI command | bun xray |
-| `{{DEFAULT_ENV}}` | Default testing environment | staging |
-| `{{JIRA_URL}}` | Jira instance base URL | https://company.atlassian.net |
-| `{{WEBAPP_DOMAIN}}` | Domain of the web application under test | myproject.com |
+Three variable syntaxes exist and must not be confused:
+
+- `{{VAR_NAME}}` — **project variable**, static per-repo value; resolves to `.agents/project.yaml` (snake_case key; `{{PROJECT_NAME}}` → `project.project_name`).
+  - **Flat vars** live at top-level sections (e.g. `{{PROJECT_KEY}}` → `project.project_key`, `{{JIRA_URL}}` → `issue_tracker.jira_url`).
+  - **Env-scoped vars** (`{{WEB_URL}}`, `{{API_URL}}`, `{{DB_MCP}}`, `{{API_MCP}}`) resolve to `environments[active_env].<var>` — where `active_env` is the env the user explicitly chose for this session, falling back to `testing.default_env`. If the user says "test against production", switch `active_env` to `production` for that session and ignore `default_env` until the session ends.
+  - For explicit cross-env references (rare; only in multi-env documents), use `{{environments.<env>.<var>}}` (e.g. `{{environments.local.web_url}}`).
+- `<<VAR_NAME>>` — **session variable**, computed at runtime by the command that uses it (e.g. `<<ISSUE_KEY>>` extracted from the git branch name); never persisted.
+- `{{jira.<slug>}}` — **Jira custom field reference**, resolves to `.agents/jira.json` via `.agents/jira-required.yaml`. See `.agents/README.md` for the full convention.
 
 ---
 

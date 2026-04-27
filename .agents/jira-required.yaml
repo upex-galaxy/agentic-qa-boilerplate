@@ -1,0 +1,178 @@
+# .agents/jira-required.yaml
+#
+# Custom fields the methodology requires to be present in your Jira workspace.
+# Compare your Jira against this manifest with `bun run jira:check`.
+#
+# Each entry's KEY is the canonical slug — the value the methodology expects to
+# resolve via {{jira.<slug>}}. Your Jira's field name must slugify to this key
+# (lowercase, underscores, no emojis/accents — see `bun run jira:sync-fields`
+# for the exact transform).
+#
+# When adding a new skill that needs a new custom field, add an entry here AND
+# instruct users (via README) to create the field in their Jira.
+#
+# Sections:
+#   required  — methodology fails without these. `bun run jira:check` exits 1
+#               if any are missing or mismatched.
+#   optional  — enhance the workflow but won't break it if missing. Reported as
+#               INFO by `bun run jira:check`; never affects exit code.
+#   unmapped  — fields the methodology references semantically but that have no
+#               concrete Jira field yet. Skills mention them as literal markers
+#               (e.g. `customfield_ATR`) with TODO comments. Reported as INFO.
+
+required:
+  # ---- Story / User-story fields (consumed by scripts/jira-sync.ts) ----
+  acceptance_criteria_gherkin:
+    name: '✅ Acceptance Criteria (Gherkin)'
+    type: string
+    description: 'Gherkin-formatted acceptance criteria attached to user stories.'
+    used_by: [jira-sync]
+
+  acceptance_test_results_atr:
+    name: '🧪 Acceptance Test Results (ATR)'
+    type: string
+    description: |
+      Stores the QA test report (ATR) on the Story (Modality B comment-mirror flow).
+      Mirrored as a Jira comment for diff history. Modality A teams use a separate
+      Test Execution issue.
+    used_by: [sprint-testing, test-documentation]
+
+  business_rules_specification:
+    name: '🚩Business Rules Specification'
+    type: string
+    description: 'Business rules tied to a user story, separate from acceptance criteria.'
+    used_by: [jira-sync]
+
+  scope:
+    name: 'Scope ⛳'
+    type: string
+    description: 'In-scope / out-of-scope notes captured at story-grooming time.'
+    used_by: [jira-sync]
+
+  mockup:
+    name: 'Mockup 🎴'
+    type: string
+    description: 'Link or embed of the design mockup for the story.'
+    used_by: [jira-sync]
+
+  workflow:
+    name: '🧬WORKFLOW'
+    type: string
+    description: 'User journey / workflow narrative for the story.'
+    used_by: [jira-sync]
+
+  story_points:
+    name: 'Story Points'
+    type: number
+    description: 'Agile estimate for the story (planning poker).'
+    used_by: [jira-sync]
+
+  weblink_url:
+    name: 'Weblink (URL) 🌍️'
+    type: string
+    description: 'External reference URL attached to the story.'
+    used_by: [jira-sync]
+
+  # ---- Bug / Defect fields (consumed by scripts/jira-sync.ts + sprint-testing reporting) ----
+  actual_result_comportamiento:
+    name: '🐞 Actual Result (Comportamiento)'
+    type: string
+    description: 'Observed behavior captured during bug repro.'
+    used_by: [jira-sync, sprint-testing]
+
+  expected_result_output:
+    name: '✅ Expected Result (Output)'
+    type: string
+    description: 'Expected behavior per acceptance criteria, contrasted against the bug.'
+    used_by: [jira-sync, sprint-testing]
+
+  error_type:
+    name: 'Error Type'
+    type: option
+    options: [content, crash, data, functional, integration, performance, security, visual]
+    description: 'Bug taxonomy by error category.'
+    used_by: [jira-sync, sprint-testing]
+
+  severity:
+    name: 'Severity 🚩'
+    type: option
+    options: [critica, mayor, menor, moderada, trivial]
+    description: 'Bug severity classification (impact-based).'
+    used_by: [jira-sync, sprint-testing]
+
+  test_environment:
+    name: 'Test Environment 📦️'
+    type: option
+    options: [dev, production, qa, staging, uat]
+    description: 'Environment where the bug was reproduced or where the test ran.'
+    used_by: [jira-sync, sprint-testing]
+
+  root_cause:
+    name: 'Root Cause🐞'
+    type: option
+    options:
+      - code_error
+      - config_env_error
+      - data_error
+      - environment_error
+      - integration_error
+      - requirement_error
+      - third_party_error
+      - working_as_designed_wad
+    description: 'Post-mortem cause classification, set after the fix.'
+    used_by: [jira-sync, sprint-testing]
+
+  workaround:
+    name: '🚩 Workaround'
+    type: string
+    description: 'Temporary mitigation steps to unblock users until the fix ships.'
+    used_by: [jira-sync, sprint-testing]
+
+  evidence:
+    name: '🧫EVIDENCE'
+    type: string
+    description: 'Bug evidence: screenshots, traces, logs, repro recordings.'
+    used_by: [jira-sync, sprint-testing]
+
+  fix:
+    name: 'Fix'
+    type: option
+    options: [bugfix, hotfix]
+    description: 'Type of fix applied (bugfix vs urgent hotfix).'
+    used_by: [jira-sync, sprint-testing]
+
+  # ---- TMS Modality B fields (Jira-native, no Xray) ----
+  acceptance_test_plan_atp:
+    name: '🧪 Acceptance Test Plan (ATP)'
+    type: string
+    description: |
+      Stores the QA Acceptance Test Plan body on the Story itself (Modality B
+      flow). Mirrored as a Jira comment for diff history. Modality A teams (Xray)
+      use a separate Test Plan issue and may not need this field.
+    used_by: [sprint-testing, test-documentation]
+
+  test_status:
+    name: 'Test Status🧪'
+    type: option
+    options: [blocked, failed, n_r, passed]
+    description: 'Per-Test issue execution status (Jira-native TMS).'
+    used_by: [test-documentation]
+
+optional:
+  # Fields that enhance the workflow but won't break it if missing.
+  to_be_automated_qa:
+    name: 'To Be Automated (QA)🧪'
+    type: option
+    options: [yes, no]
+    description: 'Whether the Test should be automated (ROI verdict from test-documentation).'
+    used_by: [test-documentation]
+
+# Special markers — fields the methodology expects to exist semantically but
+# that haven't been mapped to a real Jira custom field yet. The check command
+# treats these as informational (not errors). When a real field is configured,
+# move the entry to `required:` above and update the corresponding skill files
+# to use {{jira.<slug>}} instead of the literal customfield_X marker.
+unmapped:
+  # (No unmapped slugs at this time. See README §5.3 for the unmapped pattern
+  # — declare a slug here when the methodology expects a field semantically but
+  # no real Jira field exists yet, then promote it to `required:` once configured.)

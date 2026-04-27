@@ -1,0 +1,931 @@
+{
+  "acceptance_criteria_gherkin": {
+    "id": "customfield_10141",
+    "type": "string",
+    "name": "✅ Acceptance Criteria (Gherkin)"
+  },
+  "acceptance_criteria_preview": {
+    "id": "customfield_10217",
+    "type": "string",
+    "name": "✅ Acceptance Criteria (preview)"
+  },
+  "acceptance_test_plan_atp": {
+    "id": "customfield_10120",
+    "type": "string",
+    "name": "🧪 Acceptance Test Plan (ATP)"
+  },
+  "acceptance_test_results_atr": {
+    "id": "customfield_10284",
+    "type": "string",
+    "name": "🧪 Acceptance Test Results (ATR)"
+  },
+  "actual_end_migrated": {
+    "id": "customfield_10117",
+    "type": "datetime",
+    "name": "Actual end (migrated)"
+  },
+  "actual_result_comportamiento": {
+    "id": "customfield_10133",
+    "type": "string",
+    "name": "🐞 Actual Result (Comportamiento)"
+  },
+  "actual_start_migrated": {
+    "id": "customfield_10162",
+    "type": "datetime",
+    "name": "Actual start (migrated)"
+  },
+  "affected_hardware": {
+    "id": "customfield_10209",
+    "type": "string",
+    "name": "Affected hardware"
+  },
+  "approvals": {
+    "id": "customfield_10025",
+    "type": "sd-approvals",
+    "name": "Approvals",
+    "system": true,
+    "provider": "com.atlassian.servicedesk.approvals-plugin"
+  },
+  "approver_groups": {
+    "id": "customfield_10193",
+    "type": "array",
+    "name": "Approver groups"
+  },
+  "approvers_migrated": {
+    "id": "customfield_10122",
+    "type": "array",
+    "name": "Approvers (migrated)"
+  },
+  "backout_plan": {
+    "id": "customfield_10203",
+    "type": "string",
+    "name": "Backout plan"
+  },
+  "begin_date": {
+    "id": "customfield_10101",
+    "type": "datetime",
+    "name": "Begin Date"
+  },
+  "begin_date_migrated": {
+    "id": "customfield_10129",
+    "type": "datetime",
+    "name": "Begin Date (migrated)"
+  },
+  "business_rules_specification": {
+    "id": "customfield_10134",
+    "type": "string",
+    "name": "🚩Business Rules Specification"
+  },
+  "category": {
+    "id": "customfield_10123",
+    "type": "option",
+    "name": "Category",
+    "options": {}
+  },
+  "change_reason_migrated": {
+    "id": "customfield_10213",
+    "type": "option",
+    "name": "Change reason (migrated)",
+    "options": {
+      "maintenance": "10102",
+      "new_functionality": "10103",
+      "other": "10104",
+      "repair": "10100",
+      "upgrade": "10101"
+    }
+  },
+  "change_risk_migrated": {
+    "id": "customfield_10173",
+    "type": "option",
+    "name": "Change risk (migrated)",
+    "options": {
+      "critical": "10222",
+      "high": "10223",
+      "low": "10225",
+      "medium": "10224"
+    }
+  },
+  "change_type_migrated": {
+    "id": "customfield_10195",
+    "type": "option",
+    "name": "Change type (migrated)",
+    "options": {
+      "emergency": "10265",
+      "normal": "10264",
+      "standard": "10263"
+    }
+  },
+  "chart_date_of_first_response_migrated": {
+    "id": "customfield_10131",
+    "type": "datetime",
+    "name": "[CHART] Date of First Response (migrated)",
+    "system": true,
+    "provider": "com.atlassian.jira.ext.charting"
+  },
+  "checklist_completed": {
+    "id": "customfield_10149",
+    "type": "string",
+    "name": "Checklist Completed"
+  },
+  "checklist_completed_migrated": {
+    "id": "customfield_10150",
+    "type": "string",
+    "name": "Checklist Completed (migrated)"
+  },
+  "checklist_completed_migrated_2": {
+    "id": "customfield_10151",
+    "type": "string",
+    "name": "Checklist Completed (migrated 2)"
+  },
+  "checklist_completed_migrated_3": {
+    "id": "customfield_10160",
+    "type": "string",
+    "name": "Checklist Completed (migrated 3)"
+  },
+  "checklist_completed_migrated_4": {
+    "id": "customfield_10167",
+    "type": "string",
+    "name": "Checklist Completed (migrated 4)"
+  },
+  "checklist_completed_migrated_5": {
+    "id": "customfield_10178",
+    "type": "string",
+    "name": "Checklist Completed (migrated 5)"
+  },
+  "checklist_completed_migrated_6": {
+    "id": "customfield_10191",
+    "type": "string",
+    "name": "Checklist Completed (migrated 6)"
+  },
+  "checklist_completed_migrated_7": {
+    "id": "customfield_10197",
+    "type": "string",
+    "name": "Checklist Completed (migrated 7)"
+  },
+  "checklist_completed_migrated_8": {
+    "id": "customfield_10205",
+    "type": "string",
+    "name": "Checklist Completed (migrated 8)"
+  },
+  "checklist_completed_migrated_9": {
+    "id": "customfield_10206",
+    "type": "string",
+    "name": "Checklist Completed (migrated 9)"
+  },
+  "checklist_content_yaml": {
+    "id": "customfield_10153",
+    "type": "string",
+    "name": "Checklist Content YAML"
+  },
+  "checklist_content_yaml_migrated": {
+    "id": "customfield_10174",
+    "type": "string",
+    "name": "Checklist Content YAML (migrated)"
+  },
+  "checklist_content_yaml_migrated_2": {
+    "id": "customfield_10176",
+    "type": "string",
+    "name": "Checklist Content YAML (migrated 2)"
+  },
+  "checklist_content_yaml_migrated_3": {
+    "id": "customfield_10192",
+    "type": "string",
+    "name": "Checklist Content YAML (migrated 3)"
+  },
+  "checklist_content_yaml_migrated_4": {
+    "id": "customfield_10200",
+    "type": "string",
+    "name": "Checklist Content YAML (migrated 4)"
+  },
+  "checklist_content_yaml_migrated_5": {
+    "id": "customfield_10201",
+    "type": "string",
+    "name": "Checklist Content YAML (migrated 5)"
+  },
+  "checklist_content_yaml_migrated_6": {
+    "id": "customfield_10202",
+    "type": "string",
+    "name": "Checklist Content YAML (migrated 6)"
+  },
+  "checklist_content_yaml_migrated_7": {
+    "id": "customfield_10212",
+    "type": "string",
+    "name": "Checklist Content YAML (migrated 7)"
+  },
+  "checklist_text": {
+    "id": "customfield_10112",
+    "type": "string",
+    "name": "Checklist Text"
+  },
+  "checklist_text_migrated": {
+    "id": "customfield_10113",
+    "type": "string",
+    "name": "Checklist Text (migrated)"
+  },
+  "checklist_text_migrated_2": {
+    "id": "customfield_10119",
+    "type": "string",
+    "name": "Checklist Text (migrated 2)"
+  },
+  "checklist_text_migrated_3": {
+    "id": "customfield_10146",
+    "type": "string",
+    "name": "Checklist Text (migrated 3)"
+  },
+  "checklist_text_migrated_4": {
+    "id": "customfield_10154",
+    "type": "string",
+    "name": "Checklist Text (migrated 4)"
+  },
+  "checklist_text_migrated_5": {
+    "id": "customfield_10171",
+    "type": "string",
+    "name": "Checklist Text (migrated 5)"
+  },
+  "checklist_text_migrated_6": {
+    "id": "customfield_10172",
+    "type": "string",
+    "name": "Checklist Text (migrated 6)"
+  },
+  "checklist_text_migrated_7": {
+    "id": "customfield_10189",
+    "type": "string",
+    "name": "Checklist Text (migrated 7)"
+  },
+  "checklist_text_migrated_8": {
+    "id": "customfield_10199",
+    "type": "string",
+    "name": "Checklist Text (migrated 8)"
+  },
+  "checklist_text_migrated_9": {
+    "id": "customfield_10204",
+    "type": "string",
+    "name": "Checklist Text (migrated 9)"
+  },
+  "descripcion_del_bug": {
+    "id": "customfield_10196",
+    "type": "string",
+    "name": "DESCRIPCIÓN DEL BUG"
+  },
+  "design": {
+    "id": "customfield_10038",
+    "type": "array",
+    "name": "Design",
+    "system": true,
+    "provider": "com.atlassian.jira.plugins.jira-development-integration-plugin"
+  },
+  "design_2": {
+    "id": "customfield_10033",
+    "type": "array",
+    "name": "Design",
+    "system": true,
+    "provider": "com.atlassian.jira.plugins.jira-development-integration-plugin"
+  },
+  "development": {
+    "id": "customfield_10000",
+    "type": "any",
+    "name": "Development",
+    "system": true,
+    "provider": "com.atlassian.jira.plugins.jira-development-integration-plugin"
+  },
+  "end_date": {
+    "id": "customfield_10102",
+    "type": "datetime",
+    "name": "End Date"
+  },
+  "end_date_migrated": {
+    "id": "customfield_10175",
+    "type": "datetime",
+    "name": "End Date (migrated)"
+  },
+  "epic_color": {
+    "id": "customfield_10013",
+    "type": "string",
+    "name": "Epic Color",
+    "system": true,
+    "provider": "com.pyxis.greenhopper.jira"
+  },
+  "epic_link": {
+    "id": "customfield_10014",
+    "type": "any",
+    "name": "Epic Link",
+    "system": true,
+    "provider": "com.pyxis.greenhopper.jira"
+  },
+  "epic_name": {
+    "id": "customfield_10011",
+    "type": "string",
+    "name": "Epic Name",
+    "system": true,
+    "provider": "com.pyxis.greenhopper.jira"
+  },
+  "epic_status": {
+    "id": "customfield_10012",
+    "type": "option",
+    "name": "Epic Status",
+    "options": {
+      "done": "10018",
+      "in_progress": "10017",
+      "to_do": "10016"
+    },
+    "system": true,
+    "provider": "com.pyxis.greenhopper.jira"
+  },
+  "error_type": {
+    "id": "customfield_10190",
+    "type": "option",
+    "name": "Error Type",
+    "options": {
+      "content": "10118",
+      "crash": "10120",
+      "data": "10121",
+      "functional": "10116",
+      "integration": "10122",
+      "performance": "10119",
+      "security": "10123",
+      "visual": "10117"
+    }
+  },
+  "evidence": {
+    "id": "customfield_10140",
+    "type": "string",
+    "name": "🧫EVIDENCE"
+  },
+  "expected_result_output": {
+    "id": "customfield_10137",
+    "type": "string",
+    "name": "✅ Expected Result (Output)"
+  },
+  "feature_implementation_plan_dev": {
+    "id": "customfield_10166",
+    "type": "string",
+    "name": "🛠️ Feature Implementation Plan (Dev)"
+  },
+  "feature_test_plan_qa": {
+    "id": "customfield_10211",
+    "type": "string",
+    "name": "🧪 Feature Test Plan (QA)"
+  },
+  "fix": {
+    "id": "customfield_10114",
+    "type": "option",
+    "name": "Fix",
+    "options": {
+      "bugfix": "10267",
+      "hotfix": "10266"
+    }
+  },
+  "flagged": {
+    "id": "customfield_10021",
+    "type": "array",
+    "name": "Flagged",
+    "options": {
+      "impediment": "10019"
+    }
+  },
+  "focus_areas": {
+    "id": "customfield_10036",
+    "type": "array",
+    "name": "Focus Areas"
+  },
+  "frecuency": {
+    "id": "customfield_10155",
+    "type": "option",
+    "name": "FRECUENCY",
+    "options": {
+      "ocasional": "10114",
+      "raro": "10115",
+      "siempre": "10113"
+    }
+  },
+  "goals": {
+    "id": "customfield_10028",
+    "type": "array",
+    "name": "Goals"
+  },
+  "impact_migrated": {
+    "id": "customfield_10128",
+    "type": "option",
+    "name": "Impact (migrated)",
+    "options": {
+      "extensive_widespread": "10178",
+      "minor_localized": "10181",
+      "moderate_limited": "10180",
+      "significant_large": "10179"
+    }
+  },
+  "in_regression_plan_qa": {
+    "id": "customfield_10157",
+    "type": "option",
+    "name": "In Regression Plan (QA)📊",
+    "options": {
+      "no": "10198",
+      "yes": "10199"
+    }
+  },
+  "investigation_reason": {
+    "id": "customfield_10115",
+    "type": "option",
+    "name": "Investigation reason",
+    "options": {
+      "high_impact_incident": "10109",
+      "non_routine_incident": "10111",
+      "other": "10112",
+      "recurring_incident": "10110"
+    }
+  },
+  "issue_color": {
+    "id": "customfield_10017",
+    "type": "string",
+    "name": "Issue color",
+    "system": true,
+    "provider": "com.pyxis.greenhopper.jira"
+  },
+  "locked_forms": {
+    "id": "customfield_10031",
+    "type": "number",
+    "name": "Locked forms",
+    "system": true,
+    "provider": "com.atlassian.jira.plugins.proforma-managed-fields"
+  },
+  "mockup": {
+    "id": "customfield_10186",
+    "type": "string",
+    "name": "Mockup 🎴"
+  },
+  "open_forms": {
+    "id": "customfield_10029",
+    "type": "number",
+    "name": "Open forms",
+    "system": true,
+    "provider": "com.atlassian.jira.plugins.proforma-managed-fields"
+  },
+  "operational_categorization": {
+    "id": "customfield_10194",
+    "type": "option-with-child",
+    "name": "Operational categorization"
+  },
+  "organizations": {
+    "id": "customfield_10002",
+    "type": "array",
+    "name": "Organizations",
+    "system": true,
+    "provider": "com.atlassian.servicedesk"
+  },
+  "out_of_scope": {
+    "id": "customfield_10135",
+    "type": "string",
+    "name": "Out Of Scope 🏴"
+  },
+  "parent_link": {
+    "id": "customfield_10018",
+    "type": "any",
+    "name": "Parent Link",
+    "system": true,
+    "provider": "com.atlassian.jpo"
+  },
+  "pending_reason": {
+    "id": "customfield_10127",
+    "type": "option",
+    "name": "Pending reason",
+    "options": {
+      "awaiting_approval": "10195",
+      "more_info_required": "10194",
+      "pending_on_change_request": "10197",
+      "waiting_on_vendor": "10196"
+    }
+  },
+  "planned_end": {
+    "id": "customfield_10125",
+    "type": "datetime",
+    "name": "Planned end"
+  },
+  "planned_start": {
+    "id": "customfield_10121",
+    "type": "datetime",
+    "name": "Planned start"
+  },
+  "precondition": {
+    "id": "customfield_10214",
+    "type": "string",
+    "name": "Precondition"
+  },
+  "probando_field": {
+    "id": "customfield_10180",
+    "type": "string",
+    "name": "Probando Field"
+  },
+  "product_categorization": {
+    "id": "customfield_10148",
+    "type": "option-with-child",
+    "name": "Product categorization"
+  },
+  "project_overview_key": {
+    "id": "customfield_10039",
+    "type": "string",
+    "name": "Project overview key",
+    "system": true,
+    "provider": "read-only-string-issue-field"
+  },
+  "project_overview_status": {
+    "id": "customfield_10040",
+    "type": "string",
+    "name": "Project overview status",
+    "system": true,
+    "provider": "read-only-string-issue-field"
+  },
+  "qa_framework": {
+    "id": "customfield_10124",
+    "type": "option",
+    "name": "QA Framework🤖",
+    "options": {
+      "cypress": "10253",
+      "cypress_cucumber": "10254",
+      "playwright_javascript": "10259",
+      "playwright_python": "10260",
+      "postman": "10251",
+      "postman_newman": "10252",
+      "selenium_c": "10258",
+      "selenium_java": "10257",
+      "selenium_python": "10255",
+      "selenium_python_behave": "10256",
+      "xray_only_full_manual": "10250"
+    }
+  },
+  "rank": {
+    "id": "customfield_10019",
+    "type": "any",
+    "name": "Rank",
+    "system": true,
+    "provider": "com.pyxis.greenhopper.jira"
+  },
+  "repro_steps_input": {
+    "id": "customfield_10218",
+    "type": "string",
+    "name": "Repro Steps (Input)"
+  },
+  "request_participants": {
+    "id": "customfield_10210",
+    "type": "array",
+    "name": "Request participants",
+    "system": true,
+    "provider": "com.atlassian.servicedesk"
+  },
+  "request_type": {
+    "id": "customfield_10010",
+    "type": "sd-customerrequesttype",
+    "name": "Request Type",
+    "system": true,
+    "provider": "com.atlassian.servicedesk"
+  },
+  "reviewer": {
+    "id": "customfield_10130",
+    "type": "user",
+    "name": "Reviewer🔎"
+  },
+  "revision": {
+    "id": "customfield_10100",
+    "type": "string",
+    "name": "Revision"
+  },
+  "revision_migrated": {
+    "id": "customfield_10207",
+    "type": "string",
+    "name": "Revision (migrated)"
+  },
+  "root_cause": {
+    "id": "customfield_10118",
+    "type": "option",
+    "name": "Root Cause🐞",
+    "options": {
+      "code_error": "10233",
+      "config_env_error": "10234",
+      "data_error": "10240",
+      "environment_error": "10235",
+      "integration_error": "10239",
+      "requirement_error": "10236",
+      "third_party_error": "10238",
+      "working_as_designed_wad": "10237"
+    }
+  },
+  "satisfaction": {
+    "id": "customfield_10182",
+    "type": "sd-feedback",
+    "name": "Satisfaction",
+    "system": true,
+    "provider": "com.atlassian.servicedesk"
+  },
+  "satisfaction_date": {
+    "id": "customfield_10116",
+    "type": "datetime",
+    "name": "Satisfaction date",
+    "system": true,
+    "provider": "com.atlassian.servicedesk"
+  },
+  "scenario": {
+    "id": "customfield_10147",
+    "type": "option",
+    "name": "SCENARIO",
+    "options": {
+      "negativo": "10262",
+      "positivo": "10261"
+    }
+  },
+  "scope": {
+    "id": "customfield_10142",
+    "type": "string",
+    "name": "Scope ⛳"
+  },
+  "sentiment": {
+    "id": "customfield_10024",
+    "type": "array",
+    "name": "Sentiment",
+    "system": true,
+    "provider": "com.atlassian.servicedesk.sentiment"
+  },
+  "severity": {
+    "id": "customfield_10177",
+    "type": "option",
+    "name": "Severity 🚩",
+    "options": {
+      "critica": "10188",
+      "mayor": "10189",
+      "menor": "10191",
+      "moderada": "10190",
+      "trivial": "10192"
+    }
+  },
+  "source": {
+    "id": "customfield_10145",
+    "type": "option",
+    "name": "Source",
+    "options": {
+      "customer": "10186",
+      "email": "10182",
+      "monitoring_systems": "10184",
+      "other": "10187",
+      "phone": "10183",
+      "vendor_technical_advisory": "10185"
+    }
+  },
+  "spec_implementation_plan_dev": {
+    "id": "customfield_10198",
+    "type": "string",
+    "name": "🛠️ Spec Implementation Plan (Dev)"
+  },
+  "sprint": {
+    "id": "customfield_10020",
+    "type": "array",
+    "name": "Sprint",
+    "system": true,
+    "provider": "com.pyxis.greenhopper.jira"
+  },
+  "start_date": {
+    "id": "customfield_10015",
+    "type": "date",
+    "name": "Start date"
+  },
+  "steps": {
+    "id": "customfield_10188",
+    "type": "string",
+    "name": "STEPS"
+  },
+  "story_point_estimate": {
+    "id": "customfield_10016",
+    "type": "number",
+    "name": "Story point estimate",
+    "system": true,
+    "provider": "com.pyxis.greenhopper.jira"
+  },
+  "story_points": {
+    "id": "customfield_10035",
+    "type": "number",
+    "name": "Story Points"
+  },
+  "story_points_estimation": {
+    "id": "customfield_10158",
+    "type": "option",
+    "name": "Story Points Estimation",
+    "options": {
+      "1": "10226",
+      "2": "10227",
+      "3": "10228",
+      "5": "10229",
+      "8": "10230",
+      "13": "10231",
+      "21": "10232"
+    }
+  },
+  "submitted_forms": {
+    "id": "customfield_10030",
+    "type": "number",
+    "name": "Submitted forms",
+    "system": true,
+    "provider": "com.atlassian.jira.plugins.proforma-managed-fields"
+  },
+  "target_end": {
+    "id": "customfield_10023",
+    "type": "date",
+    "name": "Target end",
+    "system": true,
+    "provider": "com.atlassian.jpo"
+  },
+  "target_start": {
+    "id": "customfield_10022",
+    "type": "date",
+    "name": "Target start",
+    "system": true,
+    "provider": "com.atlassian.jpo"
+  },
+  "team": {
+    "id": "customfield_10001",
+    "type": "team",
+    "name": "Team"
+  },
+  "test_analysis": {
+    "id": "customfield_10183",
+    "type": "string",
+    "name": "🔬 Test Analysis"
+  },
+  "test_data": {
+    "id": "customfield_10187",
+    "type": "string",
+    "name": "TEST DATA"
+  },
+  "test_description": {
+    "id": "customfield_10163",
+    "type": "string",
+    "name": "TEST DESCRIPTION"
+  },
+  "test_design": {
+    "id": "customfield_10132",
+    "type": "string",
+    "name": "Test Design 🧪"
+  },
+  "test_environment": {
+    "id": "customfield_10136",
+    "type": "option",
+    "name": "Test Environment 📦️",
+    "options": {
+      "dev": "10241",
+      "production": "10245",
+      "qa": "10242",
+      "staging": "10244",
+      "uat": "10243"
+    }
+  },
+  "test_outline": {
+    "id": "customfield_10165",
+    "type": "string",
+    "name": "Test Outline 🧪 "
+  },
+  "test_status": {
+    "id": "customfield_10138",
+    "type": "option",
+    "name": "Test Status🧪",
+    "options": {
+      "blocked": "10249",
+      "failed": "10248",
+      "n_r": "10246",
+      "passed": "10247"
+    }
+  },
+  "test_strategy": {
+    "id": "customfield_10105",
+    "type": "string",
+    "name": "🧪 Test Strategy"
+  },
+  "time_to_close_after_resolution": {
+    "id": "customfield_10185",
+    "type": "sd-servicelevelagreement",
+    "name": "Time to close after resolution",
+    "system": true,
+    "provider": "com.atlassian.servicedesk"
+  },
+  "time_to_first_response": {
+    "id": "customfield_10184",
+    "type": "sd-servicelevelagreement",
+    "name": "Time to first response",
+    "system": true,
+    "provider": "com.atlassian.servicedesk"
+  },
+  "time_to_resolution": {
+    "id": "customfield_10106",
+    "type": "sd-servicelevelagreement",
+    "name": "Time to resolution",
+    "system": true,
+    "provider": "com.atlassian.servicedesk"
+  },
+  "time_to_review_normal_change": {
+    "id": "customfield_10168",
+    "type": "sd-servicelevelagreement",
+    "name": "Time to review normal change",
+    "system": true,
+    "provider": "com.atlassian.servicedesk"
+  },
+  "to_be_automated_qa": {
+    "id": "customfield_10104",
+    "type": "option",
+    "name": "To Be Automated (QA)🧪",
+    "options": {
+      "no": "10269",
+      "yes": "10268"
+    }
+  },
+  "total_forms": {
+    "id": "customfield_10032",
+    "type": "number",
+    "name": "Total forms",
+    "system": true,
+    "provider": "com.atlassian.jira.plugins.proforma-managed-fields"
+  },
+  "upex_level": {
+    "id": "customfield_10251",
+    "type": "option",
+    "name": "UPEX Level",
+    "options": {
+      "l1": "10311",
+      "l2": "10312",
+      "l3": "10313",
+      "l4": "10314"
+    }
+  },
+  "urgency": {
+    "id": "customfield_10103",
+    "type": "option",
+    "name": "Urgency",
+    "options": {
+      "critical": "10270",
+      "high": "10271",
+      "low": "10273",
+      "medium": "10272"
+    }
+  },
+  "urgency_migrated": {
+    "id": "customfield_10139",
+    "type": "array",
+    "name": "Urgency (migrated)",
+    "options": {
+      "hotfix": "10193"
+    }
+  },
+  "vcr_estimation": {
+    "id": "customfield_10152",
+    "type": "string",
+    "name": "💊 VCR Estimation"
+  },
+  "version_del_sistema": {
+    "id": "customfield_10169",
+    "type": "string",
+    "name": "VERSIÓN DEL SISTEMA"
+  },
+  "vulnerability": {
+    "id": "customfield_10034",
+    "type": "any",
+    "name": "Vulnerability",
+    "system": true,
+    "provider": "com.atlassian.jira.plugins.jira-development-integration-plugin"
+  },
+  "vulnerability_2": {
+    "id": "customfield_10037",
+    "type": "any",
+    "name": "Vulnerability",
+    "system": true,
+    "provider": "com.atlassian.jira.plugins.jira-development-integration-plugin"
+  },
+  "weblink_url": {
+    "id": "customfield_10159",
+    "type": "string",
+    "name": "Weblink (URL) 🌍️"
+  },
+  "weblink_url_preview": {
+    "id": "customfield_10215",
+    "type": "string",
+    "name": "Weblink URL (preview)"
+  },
+  "workaround": {
+    "id": "customfield_10109",
+    "type": "string",
+    "name": "🚩 Workaround"
+  },
+  "workflow": {
+    "id": "customfield_10161",
+    "type": "string",
+    "name": "🧬WORKFLOW"
+  },
+  "xray_begin_date": {
+    "id": "customfield_10143",
+    "type": "datetime",
+    "name": "Xray Begin Date"
+  },
+  "xray_end_date": {
+    "id": "customfield_10107",
+    "type": "datetime",
+    "name": "Xray End Date"
+  },
+  "xray_revision": {
+    "id": "customfield_10110",
+    "type": "string",
+    "name": "Xray Revision"
+  }
+}

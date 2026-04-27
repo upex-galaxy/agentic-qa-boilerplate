@@ -6,6 +6,7 @@
       "name": "kata-playwright-template",
       "dependencies": {
         "@inquirer/prompts": "^8.1.0",
+        "yaml": "^2.8.2",
       },
       "devDependencies": {
         "@antfu/eslint-config": "^4.16.0",
