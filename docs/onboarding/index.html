@@ -1,0 +1,1977 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Onboarding — Agentic QA Boilerplate</title>
+    <meta
+      name="description"
+      content="A 30-minute orientation to the Agentic QA Boilerplate: how Skills, Commands, Scripts, and the variable substrate cooperate to drive AI-assisted quality engineering on Playwright + KATA."
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="shell hero">
+      <span class="hero-eyebrow">Onboarding · v1.0</span>
+      <h1>Agentic <span class="accent">QA</span> Boilerplate</h1>
+      <p class="hero-sub">AI-driven quality engineering on Playwright + KATA + TypeScript.</p>
+      <p class="hero-tagline">
+        A skill-based practice that pairs your codebase with an AI agent. The agent reads a
+        structured knowledge layer, plans tests, executes them, files bugs, automates regressions,
+        and emits release verdicts — with human checkpoints between every stage.
+      </p>
+
+      <!-- 6-stage pipeline diagram -->
+      <div class="hero-diagram" aria-label="Six-stage QA pipeline">
+        <svg
+          viewBox="0 0 920 150"
+          width="100%"
+          role="img"
+          aria-label="Pipeline: Session Start to Stage 6"
+        >
+          <defs>
+            <marker
+              id="arr"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+            </marker>
+          </defs>
+          <g font-family="system-ui, sans-serif" font-size="12" fill="currentColor">
+            <!-- 7 nodes evenly spread -->
+            <g>
+              <rect
+                x="10"
+                y="40"
+                width="110"
+                height="60"
+                rx="8"
+                ry="8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <text x="65" y="65" text-anchor="middle" font-weight="600">Session</text>
+              <text x="65" y="82" text-anchor="middle" fill="#888">Context load</text>
+            </g>
+            <g>
+              <rect
+                x="140"
+                y="40"
+                width="110"
+                height="60"
+                rx="8"
+                ry="8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <text x="195" y="62" text-anchor="middle" font-weight="600">Stage 1</text>
+              <text x="195" y="79" text-anchor="middle" fill="#888">Planning</text>
+              <text x="195" y="93" text-anchor="middle" fill="#888" font-size="10">ATP + TCs</text>
+            </g>
+            <g>
+              <rect
+                x="270"
+                y="40"
+                width="110"
+                height="60"
+                rx="8"
+                ry="8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <text x="325" y="62" text-anchor="middle" font-weight="600">Stage 2</text>
+              <text x="325" y="79" text-anchor="middle" fill="#888">Execution</text>
+              <text x="325" y="93" text-anchor="middle" fill="#888" font-size="10">
+                UI · API · DB
+              </text>
+            </g>
+            <g>
+              <rect
+                x="400"
+                y="40"
+                width="110"
+                height="60"
+                rx="8"
+                ry="8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <text x="455" y="62" text-anchor="middle" font-weight="600">Stage 3</text>
+              <text x="455" y="79" text-anchor="middle" fill="#888">Reporting</text>
+              <text x="455" y="93" text-anchor="middle" fill="#888" font-size="10">ATR + bugs</text>
+            </g>
+            <g>
+              <rect
+                x="530"
+                y="40"
+                width="110"
+                height="60"
+                rx="8"
+                ry="8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <text x="585" y="62" text-anchor="middle" font-weight="600">Stage 4</text>
+              <text x="585" y="79" text-anchor="middle" fill="#888">Documentation</text>
+              <text x="585" y="93" text-anchor="middle" fill="#888" font-size="10">TMS · ROI</text>
+            </g>
+            <g>
+              <rect
+                x="660"
+                y="40"
+                width="110"
+                height="60"
+                rx="8"
+                ry="8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <text x="715" y="62" text-anchor="middle" font-weight="600">Stage 5</text>
+              <text x="715" y="79" text-anchor="middle" fill="#888">Automation</text>
+              <text x="715" y="93" text-anchor="middle" fill="#888" font-size="10">KATA tests</text>
+            </g>
+            <g>
+              <rect
+                x="790"
+                y="40"
+                width="120"
+                height="60"
+                rx="8"
+                ry="8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-dasharray="0"
+              />
+              <text x="850" y="62" text-anchor="middle" font-weight="600">Stage 6</text>
+              <text x="850" y="79" text-anchor="middle" fill="#888">Regression</text>
+              <text x="850" y="93" text-anchor="middle" fill="#888" font-size="10">GO / NO-GO</text>
+            </g>
+            <!-- arrows -->
+            <g stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#arr)">
+              <line x1="120" y1="70" x2="138" y2="70" />
+              <line x1="250" y1="70" x2="268" y2="70" />
+              <line x1="380" y1="70" x2="398" y2="70" />
+              <line x1="510" y1="70" x2="528" y2="70" />
+              <line x1="640" y1="70" x2="658" y2="70" />
+              <line x1="770" y1="70" x2="788" y2="70" />
+            </g>
+            <text
+              x="460"
+              y="20"
+              text-anchor="middle"
+              font-size="11"
+              fill="#888"
+              font-style="italic"
+            >
+              Each arrow is a human checkpoint
+            </text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="cta-grid">
+        <a class="cta" href="#section-3">
+          <span class="cta-title">The lifecycle</span>
+          <span class="cta-desc">Five phases, from clone to daily QA.</span>
+        </a>
+        <a class="cta" href="#section-7">
+          <span class="cta-title">Skill catalog</span>
+          <span class="cta-desc">All 9 skills, what they do, when to call them.</span>
+        </a>
+        <a class="cta" href="#section-6">
+          <span class="cta-title">Cheat sheet</span>
+          <span class="cta-desc">"I want X, I run Y" — copy-pasteable.</span>
+        </a>
+      </div>
+    </header>
+
+    <div class="shell">
+      <details class="toc-mobile">
+        <summary>Table of contents</summary>
+        <nav class="toc">
+          <ol>
+            <li><a href="#section-1">1. The fundamental idea</a></li>
+            <li><a href="#section-2">2. Three categories of moving parts</a></li>
+            <li><a href="#section-3">3. The lifecycle</a></li>
+            <li><a href="#section-4">4. The three confusing pieces</a></li>
+            <li><a href="#section-5">5. How everything connects</a></li>
+            <li><a href="#section-6">6. Cheat sheet</a></li>
+            <li><a href="#section-7">7. Skills catalog</a></li>
+            <li><a href="#section-8">8. Commands &amp; Scripts</a></li>
+            <li><a href="#section-9">9. TL;DR</a></li>
+          </ol>
+        </nav>
+      </details>
+
+      <div class="layout">
+        <aside>
+          <nav class="toc" aria-label="Table of contents">
+            <p class="toc-title">Contents</p>
+            <ol>
+              <li><a href="#section-1">1. The fundamental idea</a></li>
+              <li><a href="#section-2">2. Three moving parts</a></li>
+              <li><a href="#section-3">3. The lifecycle</a></li>
+              <li><a href="#section-4">4. Three confusing pieces</a></li>
+              <li><a href="#section-5">5. How it all connects</a></li>
+              <li><a href="#section-6">6. Cheat sheet</a></li>
+              <li><a href="#section-7">7. Skills catalog</a></li>
+              <li><a href="#section-8">8. Commands &amp; Scripts</a></li>
+              <li><a href="#section-9">9. TL;DR</a></li>
+            </ol>
+          </nav>
+        </aside>
+
+        <main class="content">
+          <!-- =======================================================  SECTION 1  -->
+          <section id="section-1">
+            <h2><span class="num">1.</span>The fundamental idea</h2>
+
+            <p>
+              This repository is an <strong>AI-driven QA machine</strong>. You bring a project under
+              test (the <em>target</em>: a frontend, a backend, or both) and the boilerplate brings
+              the instructions, the knowledge layer and the tooling that an AI agent uses to do
+              quality engineering against it. The repo never runs alone — it is always paired with
+              one specific target codebase.
+            </p>
+
+            <p>
+              For the machine to work, three families of moving parts cooperate:
+              <strong>Skills</strong> orchestrate long, multi-phase AI work;
+              <strong>Commands</strong> perform one-shot utilities; and <strong>Scripts</strong> are
+              what you run yourself in the terminal to keep the configuration substrate healthy. All
+              three feed off the same fuel — a system of variables defined in
+              <code>.agents/project.yaml</code> that resolves to your target's specifics at AI
+              session bootstrap.
+            </p>
+
+            <div class="callout callout-info">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              <div>
+                <p class="callout-title">The whole machine in one sentence</p>
+                <p>
+                  Three kinds of moving parts (Skills · Commands · Scripts) plus one variable
+                  substrate (<code>.agents/project.yaml</code>) — that is the entire mental model.
+                  The rest is detail.
+                </p>
+              </div>
+            </div>
+
+            <p>
+              Read
+              <a
+                href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/docs/agentic-quality-engineering.md"
+                target="_blank"
+                rel="noopener"
+                ><code>agentic-quality-engineering.md</code></a
+              >
+              for the strategy behind the practice and
+              <a
+                href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/docs/context-engineering.md"
+                target="_blank"
+                rel="noopener"
+                ><code>context-engineering.md</code></a
+              >
+              for why the knowledge layer is split the way it is. This page focuses on
+              <em>how the pieces connect</em> — what to invoke, in what order, and what each piece
+              actually does.
+            </p>
+          </section>
+
+          <!-- =======================================================  SECTION 2  -->
+          <section id="section-2">
+            <h2><span class="num">2.</span>Three categories of moving parts</h2>
+
+            <p>
+              Everything you can invoke in this repo belongs to one of these three categories. The
+              mental model holds end-to-end:
+            </p>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>What it is</th>
+                    <th>Where it lives</th>
+                    <th>Who invokes it</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <div class="type-row">
+                        <span class="type-icon" aria-hidden="true">
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <path d="M3 7l9-4 9 4-9 4-9-4z" />
+                            <path d="M3 12l9 4 9-4" />
+                            <path d="M3 17l9 4 9-4" />
+                          </svg>
+                        </span>
+                        <span class="type-name">Skill</span>
+                      </div>
+                    </td>
+                    <td>
+                      Multi-file markdown that orchestrates the AI through long, multi-phase tasks
+                      (subagents, decisions, references).
+                    </td>
+                    <td>
+                      <code>.claude/skills/&lt;name&gt;/SKILL.md</code> + <code>references/</code>
+                    </td>
+                    <td>
+                      The AI auto-activates when your prompt matches the skill's triggers.
+                      Force-load via <code>/skill-name</code>.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="type-row">
+                        <span class="type-icon" aria-hidden="true">
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <polyline points="4 17 10 11 4 5" />
+                            <line x1="12" y1="19" x2="20" y2="19" />
+                          </svg>
+                        </span>
+                        <span class="type-name">Command</span>
+                      </div>
+                    </td>
+                    <td>Single-file markdown for one-shot, focused utilities.</td>
+                    <td><code>.claude/commands/&lt;name&gt;.md</code></td>
+                    <td>You explicitly type <code>/&lt;name&gt;</code>. No auto-trigger.</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="type-row">
+                        <span class="type-icon" aria-hidden="true">
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <polyline points="16 18 22 12 16 6" />
+                            <polyline points="8 6 2 12 8 18" />
+                          </svg>
+                        </span>
+                        <span class="type-name">Script</span>
+                      </div>
+                    </td>
+                    <td>TypeScript CLI that runs in the terminal.</td>
+                    <td><code>scripts/*.ts</code> and <code>cli/*.ts</code></td>
+                    <td>You run <code>bun run &lt;script&gt;</code> directly.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p>
+              The three categories share the same fuel: the variable substrate in
+              <code>.agents/project.yaml</code> (and Jira metadata in
+              <code>.agents/jira.json</code> + <code>.agents/jira-required.yaml</code>). Skills
+              resolve <code>{{VAR}}</code> placeholders against it on every AI session; commands use
+              the same resolver; scripts read the YAML and write back to it. See
+              <a href="#section-5">§5 Circuit 1</a> for the full resolution flow.
+            </p>
+          </section>
+
+          <!-- =======================================================  SECTION 3  -->
+          <section id="section-3">
+            <h2><span class="num">3.</span>The lifecycle: five phases</h2>
+
+            <p>
+              Each phase has a clear trigger, a deterministic output and a frequency. You move
+              forward when the previous phase's output exists; you loop back to
+              <em>Maintenance</em> whenever documentation drifts from reality.
+            </p>
+
+            <div class="diagram-block">
+              <svg viewBox="0 0 880 130" width="100%" role="img" aria-label="Five-phase lifecycle">
+                <defs>
+                  <marker
+                    id="arr2"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+                  </marker>
+                </defs>
+                <g font-family="system-ui, sans-serif" font-size="12" fill="currentColor">
+                  <g>
+                    <rect
+                      x="10"
+                      y="35"
+                      width="150"
+                      height="60"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <text x="85" y="58" text-anchor="middle" font-weight="600">Phase 0</text>
+                    <text x="85" y="74" text-anchor="middle" fill="#888">Bootstrap</text>
+                    <text x="85" y="88" text-anchor="middle" fill="#888" font-size="10">
+                      foundation
+                    </text>
+                  </g>
+                  <g>
+                    <rect
+                      x="180"
+                      y="35"
+                      width="150"
+                      height="60"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <text x="255" y="58" text-anchor="middle" font-weight="600">Phase 1</text>
+                    <text x="255" y="74" text-anchor="middle" fill="#888">Discovery</text>
+                    <text x="255" y="88" text-anchor="middle" fill="#888" font-size="10">
+                      target scan
+                    </text>
+                  </g>
+                  <g>
+                    <rect
+                      x="350"
+                      y="35"
+                      width="150"
+                      height="60"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <text x="425" y="58" text-anchor="middle" font-weight="600">Phase 2</text>
+                    <text x="425" y="74" text-anchor="middle" fill="#888">Adapt</text>
+                    <text x="425" y="88" text-anchor="middle" fill="#888" font-size="10">
+                      KATA wire
+                    </text>
+                  </g>
+                  <g>
+                    <rect
+                      x="520"
+                      y="35"
+                      width="150"
+                      height="60"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    />
+                    <text x="595" y="58" text-anchor="middle" font-weight="600">Phase 3</text>
+                    <text x="595" y="74" text-anchor="middle" fill="#888">Daily QA</text>
+                    <text x="595" y="88" text-anchor="middle" fill="#888" font-size="10">
+                      sprint loop
+                    </text>
+                  </g>
+                  <g>
+                    <rect
+                      x="690"
+                      y="35"
+                      width="180"
+                      height="60"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-dasharray="4 3"
+                    />
+                    <text x="780" y="58" text-anchor="middle" font-weight="600">Phase 4</text>
+                    <text x="780" y="74" text-anchor="middle" fill="#888">Maintenance</text>
+                    <text x="780" y="88" text-anchor="middle" fill="#888" font-size="10">
+                      drift fix
+                    </text>
+                  </g>
+                  <g stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#arr2)">
+                    <line x1="160" y1="65" x2="178" y2="65" />
+                    <line x1="330" y1="65" x2="348" y2="65" />
+                    <line x1="500" y1="65" x2="518" y2="65" />
+                    <line x1="670" y1="65" x2="688" y2="65" />
+                  </g>
+                  <!-- loopback arrow -->
+                  <g
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                    fill="none"
+                    marker-end="url(#arr2)"
+                    stroke-dasharray="3 3"
+                    opacity="0.6"
+                  >
+                    <path d="M780 95 Q780 120 595 120 Q540 120 540 95" />
+                  </g>
+                  <text x="660" y="118" font-size="10" fill="#888" font-style="italic">
+                    drift detected → loop back
+                  </text>
+                </g>
+              </svg>
+              <p class="diagram-caption">
+                One-time setup on the left, recurring work on the right. Maintenance feeds back into
+                Daily QA.
+              </p>
+            </div>
+
+            <p>Click each phase to expand:</p>
+
+            <div class="phase-grid">
+              <details class="phase">
+                <summary>
+                  <span class="phase-num">0</span> Bootstrap — install the foundation
+                </summary>
+                <div class="phase-body">
+                  <dl>
+                    <dt>Trigger</dt>
+                    <dd>
+                      <code>bun install</code> → <code>bun run pw:install</code> →
+                      <code>bun run agents:setup</code>. Or, if you cloned skills à la carte, run
+                      <code>/framework-core init</code> first.
+                    </dd>
+                    <dt>Produces</dt>
+                    <dd>
+                      A populated <code>.agents/project.yaml</code>, the
+                      <code>CLAUDE.md → AGENTS.md</code> symlink, the four foundation scripts
+                      (<code>agents-setup</code>, <code>agents-lint</code>,
+                      <code>sync-jira-fields</code>, <code>check-jira-setup</code>) wired into
+                      <code>package.json</code>.
+                    </dd>
+                    <dt>When to repeat</dt>
+                    <dd>
+                      One time per repo clone. If you cloned the full repo, the foundation is
+                      already in place — only <code>bun install</code> and
+                      <code>bun run agents:setup</code> are needed.
+                    </dd>
+                  </dl>
+                  <pre><code>bun install
+bun run pw:install
+bun run agents:setup        # interactive walkthrough</code></pre>
+                </div>
+              </details>
+
+              <details class="phase">
+                <summary>
+                  <span class="phase-num">1</span> Discovery — reverse-engineer the target
+                </summary>
+                <div class="phase-body">
+                  <dl>
+                    <dt>Trigger</dt>
+                    <dd>
+                      <code>/project-discovery</code> — give it the target repo path or describe the
+                      stack.
+                    </dd>
+                    <dt>Produces</dt>
+                    <dd>
+                      <code>.context/PRD/</code>, <code>.context/SRS/</code>,
+                      <code>.context/mapping/business-data-map.md</code>,
+                      <code>.context/mapping/business-feature-map.md</code>,
+                      <code>.context/mapping/business-api-map.md</code>,
+                      <code>.context/master-test-plan.md</code>. The skill orchestrates the four
+                      <code>/business-*-map</code> commands and <code>/master-test-plan</code> as
+                      part of its 4-phase flow (Constitution → Architecture → Infrastructure →
+                      Specification).
+                    </dd>
+                    <dt>When to repeat</dt>
+                    <dd>
+                      Once per target. Re-run when the target undergoes a major architecture change.
+                    </dd>
+                  </dl>
+                  <pre><code>/project-discovery</code></pre>
+                </div>
+              </details>
+
+              <details class="phase">
+                <summary>
+                  <span class="phase-num">2</span> Adapt — wire KATA to the target stack
+                </summary>
+                <div class="phase-body">
+                  <dl>
+                    <dt>Trigger</dt>
+                    <dd>
+                      <code>/adapt-framework</code>. Runs strictly AFTER Phase 1 — it consumes
+                      <code>.context/</code>.
+                    </dd>
+                    <dt>Produces</dt>
+                    <dd>
+                      <code>tests/components/api/*.ts</code>, <code>tests/components/ui/*.ts</code>,
+                      <code>tests/components/TestFixture.ts</code>,
+                      <code>config/variables.ts</code>, and <code>api/schemas/</code> wired to the
+                      target's auth model and stack. Two strict sub-phases:
+                      <strong>Plan</strong> (no writes, presents the diff) → user approval →
+                      <strong>Implement</strong> (writes).
+                    </dd>
+                    <dt>When to repeat</dt>
+                    <dd>
+                      Once per target. Re-run only when the target's auth or stack changes
+                      meaningfully.
+                    </dd>
+                  </dl>
+                  <pre><code>/adapt-framework</code></pre>
+                </div>
+              </details>
+
+              <details class="phase" open>
+                <summary>
+                  <span class="phase-num">3</span> Daily QA — the four workflow skills
+                </summary>
+                <div class="phase-body">
+                  <dl>
+                    <dt>Trigger</dt>
+                    <dd>
+                      Pick the skill that owns the current stage:
+                      <ul>
+                        <li>
+                          <code>/sprint-testing</code> — Stages 1-3 per ticket: planning, execution,
+                          reporting.
+                        </li>
+                        <li>
+                          <code>/test-documentation</code> — Stage 4: ROI-driven test case
+                          documentation in the TMS.
+                        </li>
+                        <li>
+                          <code>/test-automation</code> — Stage 5: Plan → Code → Review pipeline for
+                          KATA tests.
+                        </li>
+                        <li>
+                          <code>/regression-testing</code> — Stage 6: regression / smoke / sanity,
+                          classification, GO/NO-GO.
+                        </li>
+                      </ul>
+                    </dd>
+                    <dt>Produces</dt>
+                    <dd>
+                      ATPs, ATRs, QA comments, bug reports, TMS Test/TestPlan/TestExecution
+                      artefacts, automated tests, regression dashboards.
+                    </dd>
+                    <dt>When to repeat</dt>
+                    <dd>Every sprint. Every ticket. Designed to be invoked many times per week.</dd>
+                  </dl>
+                </div>
+              </details>
+
+              <details class="phase">
+                <summary>
+                  <span class="phase-num">4</span> Maintenance — fix drift as it appears
+                </summary>
+                <div class="phase-body">
+                  <dl>
+                    <dt>Trigger</dt>
+                    <dd>
+                      When <code>.context/</code>, <code>AGENTS.md</code>, or
+                      <code>.agents/</code> drifts from reality (the target shipped new modules, new
+                      Jira fields, new endpoints).
+                    </dd>
+                    <dt>Produces</dt>
+                    <dd>
+                      Refreshed memory files and re-cataloged Jira fields:
+                      <ul>
+                        <li>
+                          <code>/refresh-ai-memory</code> — re-syncs <code>AGENTS.md</code> +
+                          <code>README.md</code>.
+                        </li>
+                        <li>
+                          <code>/business-data-map</code>, <code>/business-feature-map</code>,
+                          <code>/business-api-map</code> — regenerate the maps.
+                        </li>
+                        <li><code>/master-test-plan</code> — regenerate the master test plan.</li>
+                        <li>
+                          <code>bun run jira:sync-fields</code> — re-catalog Jira custom fields.
+                        </li>
+                        <li>
+                          <code>bun run jira:check</code> — verify the Jira workspace still
+                          satisfies <code>jira-required.yaml</code>.
+                        </li>
+                        <li>
+                          <code>bun run lint:agents</code> — verify every
+                          <code>{{VAR}}</code> placeholder still resolves.
+                        </li>
+                      </ul>
+                    </dd>
+                    <dt>When to repeat</dt>
+                    <dd>
+                      As needed. Treat drift like compiler warnings — fix them when they appear, not
+                      in batches.
+                    </dd>
+                  </dl>
+                </div>
+              </details>
+            </div>
+          </section>
+
+          <!-- =======================================================  SECTION 4  -->
+          <section id="section-4">
+            <h2><span class="num">4.</span>The three confusing pieces</h2>
+
+            <p>
+              Three pieces have similar-sounding names and overlapping verbs ("init", "adapt",
+              "refresh"). They are <strong>not</strong> interchangeable. Use this table to avoid
+              running the wrong one.
+            </p>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Piece</th>
+                    <th>When you invoke it</th>
+                    <th>What it does</th>
+                    <th>Frequency</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <code>/framework-core init</code><br /><span class="muted small"
+                        >(skill, active mode)</span
+                      >
+                    </td>
+                    <td>
+                      Once, ONLY if the foundation files are missing (à la carte install). If you
+                      cloned the full repo, you NEVER invoke it directly.
+                    </td>
+                    <td>
+                      Generates <code>AGENTS.md</code>, <code>.agents/project.yaml</code>,
+                      <code>.agents/jira-required.yaml</code>, <code>.agents/jira.json</code>, the
+                      four <code>scripts/agents-*.ts</code> CLIs, merges entries into
+                      <code>package.json</code>, creates the <code>CLAUDE.md</code> symlink.
+                      Idempotent — existing files are preserved.
+                    </td>
+                    <td>One-time</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>/adapt-framework</code><br /><span class="muted small">(command)</span>
+                    </td>
+                    <td>Once per target, AFTER <code>/project-discovery</code> finishes.</td>
+                    <td>
+                      Adapts <code>tests/components/</code>, <code>config/</code>,
+                      <code>api/schemas/</code> to the target's stack: fixtures, page objects, API
+                      clients. Modifies THIS repo only — never the target. Plan → user approval →
+                      Implement.
+                    </td>
+                    <td>Once per target</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>/refresh-ai-memory</code><br /><span class="muted small"
+                        >(command)</span
+                      >
+                    </td>
+                    <td>
+                      Periodically, when <code>.context/</code> drifts and <code>AGENTS.md</code> no
+                      longer reflects the project state.
+                    </td>
+                    <td>
+                      Re-syncs <code>AGENTS.md</code> and <code>README.md</code> against current
+                      <code>.context/</code> and <code>package.json</code>. Touches project-specific
+                      FACTS only — never structural sections.
+                    </td>
+                    <td>Periodic</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mnemonic">
+              <strong>Mnemonic:</strong> <code>framework-core</code> installs the
+              <strong>BASE</strong>, <code>adapt-framework</code> wires the <strong>TESTS</strong>,
+              <code>refresh-ai-memory</code> updates the <strong>DOCS</strong>.
+            </div>
+
+            <h3>A passive role you never invoke</h3>
+            <p>
+              <code>framework-core</code> has a second life beyond <code>init</code>: it
+              <strong>hosts shared references</strong> that workflow skills cite on demand. When
+              <code>/sprint-testing</code>, <code>/test-documentation</code>,
+              <code>/test-automation</code>, or <code>/regression-testing</code> delegates to a
+              subagent, the AI loads <code>framework-core/references/briefing-template.md</code>,
+              <code>dispatch-patterns.md</code>, and
+              <code>orchestration-doctrine.md</code> automatically. You never type
+              <code>/framework-core</code> to read those files — they are pulled in as part of
+              orchestration. This passive role is invisible from the user's seat, but it is why
+              <code>framework-core</code> exists even after Phase 0 is complete.
+            </p>
+          </section>
+
+          <!-- =======================================================  SECTION 5  -->
+          <section id="section-5">
+            <h2><span class="num">5.</span>How everything connects internally</h2>
+
+            <p>
+              Two circuits explain the wiring. Circuit 1 is about variable resolution (the static
+              substrate). Circuit 2 is about subagent orchestration (the dynamic execution model).
+            </p>
+
+            <h3>Circuit 1 — Variables</h3>
+
+            <div class="diagram-block">
+              <svg
+                viewBox="0 0 880 290"
+                width="100%"
+                role="img"
+                aria-label="Variable resolution circuit"
+              >
+                <defs>
+                  <marker
+                    id="arr3"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+                  </marker>
+                </defs>
+                <g font-family="system-ui, sans-serif" font-size="12" fill="currentColor">
+                  <!-- node 1 -->
+                  <g>
+                    <rect
+                      x="20"
+                      y="20"
+                      width="220"
+                      height="70"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <text x="130" y="44" text-anchor="middle" font-weight="600">
+                      .agents/project.yaml
+                    </text>
+                    <text x="130" y="62" text-anchor="middle" fill="#888" font-size="11">
+                      project_name, web_url,
+                    </text>
+                    <text x="130" y="78" text-anchor="middle" fill="#888" font-size="11">
+                      jira_url, default_env, ...
+                    </text>
+                  </g>
+                  <!-- node 2 -->
+                  <g>
+                    <rect
+                      x="330"
+                      y="20"
+                      width="220"
+                      height="70"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <text x="440" y="44" text-anchor="middle" font-weight="600">
+                      bun run agents:setup
+                    </text>
+                    <text x="440" y="62" text-anchor="middle" fill="#888" font-size="11">
+                      interactive walkthrough
+                    </text>
+                    <text x="440" y="78" text-anchor="middle" fill="#888" font-size="11">
+                      writes/updates the YAML
+                    </text>
+                  </g>
+                  <!-- node 3 -->
+                  <g>
+                    <rect
+                      x="640"
+                      y="20"
+                      width="220"
+                      height="70"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <text x="750" y="44" text-anchor="middle" font-weight="600">
+                      AI session bootstrap
+                    </text>
+                    <text x="750" y="62" text-anchor="middle" fill="#888" font-size="11">
+                      reads the YAML once,
+                    </text>
+                    <text x="750" y="78" text-anchor="middle" fill="#888" font-size="11">
+                      caches per session
+                    </text>
+                  </g>
+                  <!-- node 4 -->
+                  <g>
+                    <rect
+                      x="20"
+                      y="160"
+                      width="280"
+                      height="80"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <text x="160" y="184" text-anchor="middle" font-weight="600">
+                      Skills · Commands · Templates
+                    </text>
+                    <text x="160" y="202" text-anchor="middle" fill="#888" font-size="11">
+                      contain {{VAR}} placeholders
+                    </text>
+                    <text x="160" y="218" text-anchor="middle" fill="#888" font-size="11">
+                      e.g. {{PROJECT_KEY}},
+                    </text>
+                    <text x="160" y="232" text-anchor="middle" fill="#888" font-size="11">
+                      {{WEB_URL}}, {{JIRA_URL}}
+                    </text>
+                  </g>
+                  <!-- node 5 -->
+                  <g>
+                    <rect
+                      x="370"
+                      y="160"
+                      width="220"
+                      height="80"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <text x="480" y="186" text-anchor="middle" font-weight="600">
+                      AI substitutes
+                    </text>
+                    <text x="480" y="204" text-anchor="middle" fill="#888" font-size="11">
+                      {{VAR}} → real value
+                    </text>
+                    <text x="480" y="222" text-anchor="middle" fill="#888" font-size="11">
+                      before acting
+                    </text>
+                  </g>
+                  <!-- node 6 -->
+                  <g>
+                    <rect
+                      x="640"
+                      y="160"
+                      width="220"
+                      height="80"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    />
+                    <text x="750" y="184" text-anchor="middle" font-weight="600">
+                      Concrete URLs,
+                    </text>
+                    <text x="750" y="202" text-anchor="middle" fill="#888" font-size="11">
+                      project keys, MCP names
+                    </text>
+                    <text x="750" y="220" text-anchor="middle" fill="#888" font-size="11">
+                      → real shell commands
+                    </text>
+                  </g>
+                  <!-- arrows -->
+                  <g stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#arr3)">
+                    <line x1="240" y1="55" x2="328" y2="55" />
+                    <line x1="550" y1="55" x2="638" y2="55" />
+                    <line x1="750" y1="90" x2="750" y2="158" />
+                    <line x1="300" y1="200" x2="368" y2="200" />
+                    <line x1="590" y1="200" x2="638" y2="200" />
+                  </g>
+                  <text x="285" y="48" text-anchor="middle" fill="#888" font-size="10">writes</text>
+                  <text x="595" y="48" text-anchor="middle" fill="#888" font-size="10">reads</text>
+                  <text x="335" y="195" text-anchor="middle" fill="#888" font-size="10">
+                    {{VAR}}
+                  </text>
+                  <text x="615" y="195" text-anchor="middle" fill="#888" font-size="10">
+                    resolved
+                  </text>
+                </g>
+              </svg>
+              <p class="diagram-caption">
+                Variables flow: you fill the YAML once → AI reads it on every session → placeholders
+                resolve to real values before any tool call.
+              </p>
+            </div>
+
+            <div class="callout callout-danger">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polygon points="12 2 22 20 2 20 12 2" />
+                <line x1="12" y1="10" x2="12" y2="14" />
+                <line x1="12" y1="18" x2="12.01" y2="18" />
+              </svg>
+              <div>
+                <p class="callout-title">
+                  <code>.env</code> vs <code>.agents/project.yaml</code> — two separate systems
+                </p>
+                <p>
+                  Do not conflate them. They have different consumers, different lifecycles, and
+                  only one of them is committed.
+                </p>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th><code>.env</code></th>
+                    <th><code>.agents/project.yaml</code></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th>Purpose</th>
+                    <td>Playwright + KATA <strong>runtime</strong> secrets and config.</td>
+                    <td>
+                      AI <strong>context-engineering</strong> variables for
+                      <code>{{VAR}}</code> resolution.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Consumers</th>
+                    <td>
+                      Test runner (<code>bun run test</code>, <code>config/variables.ts</code>,
+                      fixtures, login helpers, <code>tests/utils/jiraSync.ts</code>).
+                    </td>
+                    <td>
+                      AI agents (Claude Code, Cursor, Codex, Copilot, OpenCode) when resolving skill
+                      / template / doc references.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Examples</th>
+                    <td>
+                      <code>LOCAL_USER_EMAIL</code>, <code>STAGING_USER_PASSWORD</code>,
+                      <code>XRAY_CLIENT_SECRET</code>, <code>HEADLESS</code>,
+                      <code>DEFAULT_TIMEOUT</code>.
+                    </td>
+                    <td>
+                      <code>PROJECT_KEY</code>, <code>WEB_URL</code>, <code>API_URL</code>,
+                      <code>JIRA_URL</code>, <code>DB_MCP</code>, <code>default_env</code>.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Secrets?</th>
+                    <td>Yes (passwords, tokens, API keys).</td>
+                    <td>No — must remain commit-safe.</td>
+                  </tr>
+                  <tr>
+                    <th>Committed?</th>
+                    <td>Gitignored. <code>.env.example</code> is the committed template.</td>
+                    <td>Committed.</td>
+                  </tr>
+                  <tr>
+                    <th>Lifecycle</th>
+                    <td>Edited per developer / per CI runner.</td>
+                    <td>Edited once when adopting the boilerplate; rarely changes after.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p>
+              The variable substrate has three syntaxes that look similar but resolve from different
+              files. The full contract lives in <code>.agents/README.md</code>; the short version:
+            </p>
+
+            <ul>
+              <li>
+                <code>{{VAR_NAME}}</code> → resolves from
+                <code>.agents/project.yaml</code> (project-level static config).
+              </li>
+              <li>
+                <code>&lt;&lt;VAR_NAME&gt;&gt;</code> → session variable, computed at runtime by the
+                calling skill (e.g. <code>&lt;&lt;ISSUE_KEY&gt;&gt;</code> extracted from the git
+                branch). Never persisted.
+              </li>
+              <li>
+                <code>{{jira.&lt;slug&gt;}}</code> → portable Jira custom-field reference, resolves
+                through <code>.agents/jira-required.yaml</code> (manifest) +
+                <code>.agents/jira.json</code> (workspace catalog).
+              </li>
+            </ul>
+
+            <h3>Circuit 2 — Orchestration</h3>
+
+            <div class="diagram-block">
+              <svg viewBox="0 0 880 320" width="100%" role="img" aria-label="Orchestration circuit">
+                <defs>
+                  <marker
+                    id="arr4"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+                  </marker>
+                </defs>
+                <g font-family="system-ui, sans-serif" font-size="12" fill="currentColor">
+                  <g>
+                    <rect
+                      x="320"
+                      y="15"
+                      width="240"
+                      height="60"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    />
+                    <text x="440" y="40" text-anchor="middle" font-weight="600">
+                      Workflow skill
+                    </text>
+                    <text x="440" y="58" text-anchor="middle" fill="#888" font-size="11">
+                      /sprint-testing, /regression-testing, ...
+                    </text>
+                  </g>
+                  <g>
+                    <rect
+                      x="180"
+                      y="115"
+                      width="240"
+                      height="60"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <text x="300" y="138" text-anchor="middle" font-weight="600">
+                      briefing-template.md
+                    </text>
+                    <text x="300" y="156" text-anchor="middle" fill="#888" font-size="11">
+                      6-component format
+                    </text>
+                  </g>
+                  <g>
+                    <rect
+                      x="460"
+                      y="115"
+                      width="240"
+                      height="60"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <text x="580" y="138" text-anchor="middle" font-weight="600">
+                      dispatch-patterns.md
+                    </text>
+                    <text x="580" y="156" text-anchor="middle" fill="#888" font-size="11">
+                      Single / Sequential / Parallel / Background
+                    </text>
+                  </g>
+                  <g>
+                    <rect
+                      x="320"
+                      y="210"
+                      width="240"
+                      height="60"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    />
+                    <text x="440" y="234" text-anchor="middle" font-weight="600">Subagent</text>
+                    <text x="440" y="252" text-anchor="middle" fill="#888" font-size="11">
+                      fresh Claude context, executes tools
+                    </text>
+                  </g>
+                  <g>
+                    <rect
+                      x="20"
+                      y="270"
+                      width="200"
+                      height="40"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                    />
+                    <text
+                      x="120"
+                      y="295"
+                      text-anchor="middle"
+                      font-size="11"
+                      font-family="ui-monospace, Menlo, monospace"
+                    >
+                      /acli
+                    </text>
+                  </g>
+                  <g>
+                    <rect
+                      x="240"
+                      y="270"
+                      width="200"
+                      height="40"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                    />
+                    <text
+                      x="340"
+                      y="295"
+                      text-anchor="middle"
+                      font-size="11"
+                      font-family="ui-monospace, Menlo, monospace"
+                    >
+                      /xray-cli
+                    </text>
+                  </g>
+                  <g>
+                    <rect
+                      x="460"
+                      y="270"
+                      width="200"
+                      height="40"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                    />
+                    <text
+                      x="560"
+                      y="295"
+                      text-anchor="middle"
+                      font-size="11"
+                      font-family="ui-monospace, Menlo, monospace"
+                    >
+                      /playwright-cli
+                    </text>
+                  </g>
+                  <g>
+                    <rect
+                      x="680"
+                      y="270"
+                      width="180"
+                      height="40"
+                      rx="8"
+                      ry="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-dasharray="3 3"
+                    />
+                    <text
+                      x="770"
+                      y="295"
+                      text-anchor="middle"
+                      font-size="11"
+                      font-family="ui-monospace, Menlo, monospace"
+                    >
+                      DBHub MCP, ...
+                    </text>
+                  </g>
+                  <!-- arrows -->
+                  <g stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#arr4)">
+                    <line x1="400" y1="75" x2="320" y2="113" />
+                    <line x1="480" y1="75" x2="560" y2="113" />
+                    <line x1="300" y1="175" x2="400" y2="208" />
+                    <line x1="580" y1="175" x2="480" y2="208" />
+                    <line x1="380" y1="270" x2="200" y2="270" />
+                    <line x1="420" y1="270" x2="380" y2="270" />
+                    <line x1="460" y1="270" x2="500" y2="270" />
+                    <line x1="500" y1="270" x2="700" y2="270" />
+                  </g>
+                  <text x="200" y="100" font-size="10" fill="#888" font-style="italic">
+                    cites references
+                  </text>
+                  <text
+                    x="440"
+                    y="200"
+                    text-anchor="middle"
+                    font-size="10"
+                    fill="#888"
+                    font-style="italic"
+                  >
+                    orchestrator builds 6-component briefing
+                  </text>
+                  <text
+                    x="440"
+                    y="265"
+                    text-anchor="middle"
+                    font-size="10"
+                    fill="#888"
+                    font-style="italic"
+                  >
+                    subagent loads tool skill, runs shell command
+                  </text>
+                </g>
+              </svg>
+              <p class="diagram-caption">
+                Each workflow skill declares its own dispatch points; the canonical briefing
+                template + dispatch patterns live in <code>framework-core/references/</code> so
+                subagents load them once, fresh.
+              </p>
+            </div>
+
+            <p>
+              This is the canonical pattern the four workflow skills follow. The orchestrator reads
+              its own dispatch strategy, writes a 6-component briefing for each subagent (<em
+                >Goal · Context docs · Skills to load · Exact instructions · Report format ·
+                Rules</em
+              >), and the subagent loads tool skills (<code>/acli</code>, <code>/xray-cli</code>,
+              <code>/playwright-cli</code>) to actually run shell commands. This is what keeps the
+              main conversation lean — the heavy reading happens inside subagents.
+            </p>
+          </section>
+
+          <!-- =======================================================  SECTION 6  -->
+          <section id="section-6">
+            <h2><span class="num">6.</span>Cheat sheet — "I want X, I run Y"</h2>
+
+            <p>
+              Every command below exists in <code>.claude/skills/</code>,
+              <code>.claude/commands/</code>, or <code>package.json</code>. None are placeholders.
+            </p>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>I want to…</th>
+                    <th>I run…</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Start fresh on a new target</td>
+                    <td>
+                      <code>bun install</code> → <code>bun run pw:install</code> →
+                      <code>bun run agents:setup</code> → <code>/project-discovery</code> →
+                      <code>/adapt-framework</code>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Test a specific ticket manually</td>
+                    <td><code>/sprint-testing</code> (pass the ticket key)</td>
+                  </tr>
+                  <tr>
+                    <td>Document tests in Jira/Xray with ROI</td>
+                    <td><code>/test-documentation</code></td>
+                  </tr>
+                  <tr>
+                    <td>Write an E2E or API test</td>
+                    <td><code>/test-automation</code></td>
+                  </tr>
+                  <tr>
+                    <td>Run regression and decide release</td>
+                    <td><code>/regression-testing</code></td>
+                  </tr>
+                  <tr>
+                    <td>Refresh <code>AGENTS.md</code> after drift</td>
+                    <td><code>/refresh-ai-memory</code></td>
+                  </tr>
+                  <tr>
+                    <td>Regenerate the data map</td>
+                    <td><code>/business-data-map</code></td>
+                  </tr>
+                  <tr>
+                    <td>Regenerate the feature map</td>
+                    <td><code>/business-feature-map</code></td>
+                  </tr>
+                  <tr>
+                    <td>Regenerate the API map</td>
+                    <td><code>/business-api-map</code></td>
+                  </tr>
+                  <tr>
+                    <td>Regenerate the master test plan</td>
+                    <td><code>/master-test-plan</code></td>
+                  </tr>
+                  <tr>
+                    <td>Take a screenshot via AI</td>
+                    <td><code>/playwright-cli</code></td>
+                  </tr>
+                  <tr>
+                    <td>Sync new Jira custom fields</td>
+                    <td><code>bun run jira:sync-fields</code></td>
+                  </tr>
+                  <tr>
+                    <td>Validate <code>{{VAR}}</code> placeholders</td>
+                    <td><code>bun run lint:agents</code></td>
+                  </tr>
+                  <tr>
+                    <td>Verify the Jira manifest matches the catalog</td>
+                    <td><code>bun run jira:check</code></td>
+                  </tr>
+                  <tr>
+                    <td>Validate <code>.env</code> for the active <code>TEST_ENV</code></td>
+                    <td><code>bun run env:validate</code></td>
+                  </tr>
+                  <tr>
+                    <td>Sync OpenAPI types from the target API</td>
+                    <td><code>bun run api:sync</code></td>
+                  </tr>
+                  <tr>
+                    <td>Commit + push + open a PR</td>
+                    <td><code>/commit-push-pr</code></td>
+                  </tr>
+                  <tr>
+                    <td>Resolve a git conflict</td>
+                    <td><code>/fix-git-conflict</code></td>
+                  </tr>
+                  <tr>
+                    <td>Repair traceability US ↔ ATP ↔ ATR ↔ TC</td>
+                    <td><code>/fix-traceability</code></td>
+                  </tr>
+                  <tr>
+                    <td>Plain-English breakdown of automated tests</td>
+                    <td><code>/break-down-tests</code></td>
+                  </tr>
+                  <tr>
+                    <td>Bootstrap from scratch (à la carte install)</td>
+                    <td><code>/framework-core init</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- =======================================================  SECTION 7  -->
+          <section id="section-7">
+            <h2><span class="num">7.</span>Skills catalog</h2>
+
+            <p>
+              Every skill that ships in <code>.claude/skills/</code>. Some you invoke directly;
+              others (the tool skills and the foundation) load automatically when a workflow skill
+              needs them.
+            </p>
+
+            <p class="small muted">
+              Categories — <span class="badge badge-foundation">Foundation</span> hosts shared
+              references and bootstraps the repo ·
+              <span class="badge badge-workflow">Workflow</span> drives a stage of the pipeline ·
+              <span class="badge badge-generator">Generator</span> reverse-engineers context from
+              the target · <span class="badge badge-tool">Tool</span> wraps a CLI/MCP for I/O ·
+              <span class="badge badge-reference">Reference</span> is loaded passively by other
+              skills.
+            </p>
+
+            <div class="skill-grid">
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">framework-core</span>
+                  <span class="badge badge-foundation">Foundation</span>
+                </div>
+                <p class="skill-card-trigger">/framework-core init</p>
+                <p class="skill-card-desc">
+                  Bootstraps the foundation files (<code>AGENTS.md</code>, <code>.agents/</code>,
+                  scripts, <code>package.json</code> entries) AND hosts shared references (briefing
+                  template, dispatch patterns, orchestration doctrine) that other skills cite on
+                  demand. Two roles, one skill.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">project-discovery</span>
+                  <span class="badge badge-generator">Generator</span>
+                </div>
+                <p class="skill-card-trigger">/project-discovery</p>
+                <p class="skill-card-desc">
+                  Onboards a target repo via a 4-phase flow (Constitution → Architecture →
+                  Infrastructure → Specification). Produces PRD, SRS, business-data-map,
+                  business-feature-map, business-api-map, master-test-plan.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">sprint-testing</span>
+                  <span class="badge badge-workflow">Workflow</span>
+                </div>
+                <p class="skill-card-trigger">/sprint-testing</p>
+                <p class="skill-card-desc">
+                  Stages 1-3 per ticket: planning, execution, reporting. Produces ATP, ATR, QA
+                  comment, bug reports. Single-ticket or batch-sprint mode.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">test-documentation</span>
+                  <span class="badge badge-workflow">Workflow</span>
+                </div>
+                <p class="skill-card-trigger">/test-documentation</p>
+                <p class="skill-card-desc">
+                  Stage 4. ROI-driven test case documentation in the TMS (Jira/Xray). Four scopes —
+                  module, ticket, bug, ad-hoc. Emits Candidate / Manual / Deferred verdicts.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">test-automation</span>
+                  <span class="badge badge-workflow">Workflow</span>
+                </div>
+                <p class="skill-card-trigger">/test-automation</p>
+                <p class="skill-card-desc">
+                  Stage 5. Plan → Code → Review pipeline for KATA + Playwright + TypeScript
+                  automated tests. Three planning scopes (module, ticket, ATC). Enforces KATA
+                  compliance.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">regression-testing</span>
+                  <span class="badge badge-workflow">Workflow</span>
+                </div>
+                <p class="skill-card-trigger">/regression-testing</p>
+                <p class="skill-card-desc">
+                  Stage 6. Runs regression / smoke / sanity through CI/CD. Classifies failures
+                  (REGRESSION / FLAKY / KNOWN / ENVIRONMENT / NEW TEST), computes pass-rate trends,
+                  emits GO / CAUTION / NO-GO verdict.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">acli</span>
+                  <span class="badge badge-tool">Tool</span>
+                </div>
+                <p class="skill-card-trigger">/acli</p>
+                <p class="skill-card-desc">
+                  Atlassian CLI wrapper for Jira Cloud — work items, projects, boards, sprints,
+                  fields. Resolves <code>[ISSUE_TRACKER_TOOL]</code> pseudocode and the Jira-native
+                  <code>[TMS_TOOL]</code> branch (Modality B).
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">xray-cli</span>
+                  <span class="badge badge-tool">Tool</span>
+                </div>
+                <p class="skill-card-trigger">/xray-cli</p>
+                <p class="skill-card-desc">
+                  Xray Cloud test management via <code>bun xray</code>: tests, executions, plans,
+                  JUnit/Cucumber result imports, project backup/restore. Resolves
+                  <code>[TMS_TOOL]</code> pseudocode in Modality A.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">playwright-cli</span>
+                  <span class="badge badge-tool">Tool</span>
+                </div>
+                <p class="skill-card-trigger">/playwright-cli</p>
+                <p class="skill-card-desc">
+                  Browser automation CLI: screenshots, tracing, video recording, session management,
+                  request mocking, test generation. Resolves
+                  <code>[AUTOMATION_TOOL]</code> pseudocode.
+                </p>
+              </article>
+            </div>
+
+            <div class="callout callout-info">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              <div>
+                <p class="callout-title">Note on <code>adapt-framework</code></p>
+                <p>
+                  It looks like a skill (it has a slash trigger) but it ships as a single-file
+                  <strong>command</strong> at <code>.claude/commands/adapt-framework.md</code>. See
+                  <a href="#section-8">§8 Commands</a>.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- =======================================================  SECTION 8  -->
+          <section id="section-8">
+            <h2><span class="num">8.</span>Commands &amp; Scripts</h2>
+
+            <p>
+              One-shot utilities — neither orchestrate long flows like skills nor maintain config
+              like setup scripts. You type them by name.
+            </p>
+
+            <div class="two-col">
+              <div>
+                <h3>Commands</h3>
+                <p class="muted small">
+                  Single-file markdown at <code>.claude/commands/&lt;name&gt;.md</code>. Invoke with
+                  <code>/&lt;name&gt;</code>.
+                </p>
+                <ul class="list-plain">
+                  <li>
+                    <code>/adapt-framework</code>
+                    <span class="muted"
+                      >Adapt KATA architecture (<code>tests/</code>, <code>api/schemas/</code>,
+                      <code>config/</code>) to a discovered target. Plan → user approval →
+                      Implement.</span
+                    >
+                  </li>
+                  <li>
+                    <code>/refresh-ai-memory</code>
+                    <span class="muted"
+                      >Re-sync <code>AGENTS.md</code>, <code>README.md</code> (and per-tool memory
+                      files like <code>CLAUDE.md</code>, <code>GEMINI.md</code>) against current
+                      <code>.context/</code> + <code>package.json</code>.</span
+                    >
+                  </li>
+                  <li>
+                    <code>/business-data-map</code>
+                    <span class="muted"
+                      >Generate or refresh <code>.context/mapping/business-data-map.md</code> —
+                      entities, flows, state machines.</span
+                    >
+                  </li>
+                  <li>
+                    <code>/business-feature-map</code>
+                    <span class="muted"
+                      >Generate or refresh <code>.context/mapping/business-feature-map.md</code> —
+                      feature catalog, CRUD matrix, integrations.</span
+                    >
+                  </li>
+                  <li>
+                    <code>/business-api-map</code>
+                    <span class="muted"
+                      >Generate or refresh <code>.context/mapping/business-api-map.md</code> — auth
+                      model, critical endpoints, architecture.</span
+                    >
+                  </li>
+                  <li>
+                    <code>/master-test-plan</code>
+                    <span class="muted"
+                      >Generate or refresh <code>.context/master-test-plan.md</code> — what to test
+                      and why.</span
+                    >
+                  </li>
+                  <li>
+                    <code>/break-down-tests</code>
+                    <span class="muted"
+                      >Plain-English breakdown of automated tests for a given module / spec.</span
+                    >
+                  </li>
+                  <li>
+                    <code>/fix-traceability</code>
+                    <span class="muted"
+                      >Repair broken US ↔ ATP ↔ ATR ↔ TC traceability links in the TMS.</span
+                    >
+                  </li>
+                  <li>
+                    <code>/commit-push-pr</code>
+                    <span class="muted"
+                      >End-to-end git flow: commit → push → open a PR using the test-automation
+                      template.</span
+                    >
+                  </li>
+                  <li>
+                    <code>/fix-git-conflict</code>
+                    <span class="muted"
+                      >Walk through the resolution of a merge or rebase conflict.</span
+                    >
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3>Scripts</h3>
+                <p class="muted small">
+                  TypeScript CLIs declared in <code>package.json</code>. Run with
+                  <code>bun run &lt;name&gt;</code>.
+                </p>
+                <ul class="list-plain">
+                  <li>
+                    <code>bun run agents:setup</code>
+                    <span class="muted"
+                      >Interactive walkthrough that fills <code>.agents/project.yaml</code>.</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run lint:agents</code>
+                    <span class="muted"
+                      >Validate every <code>{{VAR}}</code> in skills/commands/templates resolves to
+                      a YAML key.</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run jira:sync-fields</code>
+                    <span class="muted"
+                      >Catalog all custom fields from the live Jira workspace into
+                      <code>.agents/jira.json</code>.</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run jira:check</code>
+                    <span class="muted"
+                      >Verify the Jira workspace satisfies
+                      <code>.agents/jira-required.yaml</code>.</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run env:validate</code>
+                    <span class="muted"
+                      >Validate <code>.env</code> for the active <code>TEST_ENV</code>.</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run api:sync</code>
+                    <span class="muted"
+                      >Sync OpenAPI spec from the target API and regenerate
+                      <code>api/schemas/</code> types.</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run api:types</code>
+                    <span class="muted"
+                      >Regenerate TS types from <code>api/openapi.json</code> via
+                      <code>openapi-typescript</code>.</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run kata:manifest</code>
+                    <span class="muted"
+                      >Extract ATCs from the codebase into a manifest.
+                      <code>kata:manifest:watch</code> for live watch mode.</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run pw:install</code>
+                    <span class="muted">Install Chromium with system deps via Playwright.</span>
+                  </li>
+                  <li>
+                    <code>bun xray</code>
+                    <span class="muted"
+                      >Xray TMS sync: import / export / sync test results, executions, plans.</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run test</code> / <code>test:e2e</code> /
+                    <code>test:integration</code> / <code>test:smoke</code>
+                    <span class="muted"
+                      >Run the Playwright suite — full, E2E project, integration project, or
+                      <code>@critical</code>-tagged smoke.</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run test:allure</code>
+                    <span class="muted"
+                      >Generate and open the Allure report from <code>./allure-results</code>.</span
+                    >
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <p class="small muted">
+              Run <code>bun &lt;script&gt; --help</code> on any script for usage. The Allure binary
+              is installed locally — no global install needed.
+            </p>
+          </section>
+
+          <!-- =======================================================  SECTION 9  -->
+          <section id="section-9">
+            <h2><span class="num">9.</span>TL;DR mental model</h2>
+
+            <ul class="tldr-list">
+              <li>
+                <strong>Skills</strong> = play scripts for the AI (multi-act, with characters that
+                delegate).
+              </li>
+              <li><strong>Commands</strong> = single-act utilities you type by name.</li>
+              <li>
+                <strong>Scripts</strong> (<code>bun run …</code>) = what YOU run in the terminal to
+                keep the fuel (<code>.agents/project.yaml</code> + Jira fields) healthy.
+              </li>
+              <li>
+                <strong><code>.context/</code></strong> = what the AI KNOWS about the target
+                (generated by <code>/project-discovery</code>, kept fresh by
+                <code>/refresh-ai-memory</code> and the <code>/business-*-map</code> commands).
+              </li>
+              <li>
+                <strong><code>tests/</code></strong> = the real code, adapted by
+                <code>/adapt-framework</code> and authored via <code>/test-automation</code>.
+              </li>
+            </ul>
+
+            <blockquote class="tldr">
+              <p>
+                Fill <code>project.yaml</code> first (<code>bun run agents:setup</code>), then let
+                the AI discover the target with <code>/project-discovery</code>, then wire the tests
+                with <code>/adapt-framework</code>. From there, invoke the four workflow skills
+                depending on the QA stage you are in.
+              </p>
+            </blockquote>
+          </section>
+        </main>
+      </div>
+
+      <footer class="site-footer">
+        <h2 style="margin-top: 0; border: none; padding: 0; font-size: 1.25rem">
+          Where to go next
+        </h2>
+        <div class="footer-grid">
+          <a
+            class="footer-card"
+            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/README.md"
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="footer-card-title">README.md</span>
+            <span class="footer-card-desc">Project overview + Quick Start.</span>
+          </a>
+          <a
+            class="footer-card"
+            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/docs/agentic-quality-engineering.md"
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="footer-card-title">agentic-quality-engineering.md</span>
+            <span class="footer-card-desc">Strategy + 6-stage pipeline + KATA architecture.</span>
+          </a>
+          <a
+            class="footer-card"
+            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/docs/context-engineering.md"
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="footer-card-title">context-engineering.md</span>
+            <span class="footer-card-desc">Why the knowledge layer is split the way it is.</span>
+          </a>
+          <a
+            class="footer-card"
+            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/docs/methodology/IQL-methodology.md"
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="footer-card-title">IQL-methodology.md</span>
+            <span class="footer-card-desc">The IQL methodology — early/mid/late game testing.</span>
+          </a>
+          <a
+            class="footer-card"
+            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/AGENTS.md"
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="footer-card-title">AGENTS.md</span>
+            <span class="footer-card-desc">Canonical project memory + Tool Resolution table.</span>
+          </a>
+          <a
+            class="footer-card"
+            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/.claude/skills/framework-core/SKILL.md"
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="footer-card-title">framework-core/SKILL.md</span>
+            <span class="footer-card-desc">Foundation skill internals + bootstrap order.</span>
+          </a>
+          <a
+            class="footer-card"
+            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/docs/getting-started.md"
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="footer-card-title">getting-started.md</span>
+            <span class="footer-card-desc">The Markdown source this page expands on.</span>
+          </a>
+        </div>
+        <p class="footer-meta">
+          <code>agentic-qa-boilerplate</code> · MIT License · Onboarding page v1.0 · Last updated
+          2026-04-26
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        // Scroll-spy: highlight the active TOC entry while scrolling.
+        var sections = document.querySelectorAll('main section[id]');
+        var links = document.querySelectorAll('aside .toc a, .toc-mobile .toc a');
+        if (!sections.length || !('IntersectionObserver' in window)) return;
+
+        var byId = {};
+        links.forEach(function (a) {
+          var id = a.getAttribute('href').slice(1);
+          byId[id] = a;
+        });
+
+        var observer = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (e.isIntersecting) {
+                links.forEach(function (a) {
+                  a.classList.remove('active');
+                });
+                var a = byId[e.target.id];
+                if (a) a.classList.add('active');
+              }
+            });
+          },
+          { rootMargin: '-30% 0px -60% 0px', threshold: 0 }
+        );
+
+        sections.forEach(function (s) {
+          observer.observe(s);
+        });
+      })();
+    </script>
+  </body>
+</html>
