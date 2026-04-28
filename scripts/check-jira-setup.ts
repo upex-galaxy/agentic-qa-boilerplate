@@ -65,6 +65,64 @@ interface Manifest {
   unmapped: Record<string, UnmappedEntry>
 }
 
+// ---- Work types (workflow validation) ---------------------------------------
+
+interface ManifestRequiredStatus {
+  slug: string
+  description?: string
+}
+
+interface ManifestRequiredTransition {
+  slug: string
+  from?: string
+  to?: string
+  description?: string
+}
+
+interface ManifestWorkType {
+  slug: string
+  jiraIssueType: string
+  description?: string
+  requiredStatuses: ManifestRequiredStatus[]
+  requiredTransitions: ManifestRequiredTransition[]
+}
+
+interface CatalogStatus {
+  id: string | null
+  name: string | null
+  category: string | null
+}
+
+interface CatalogTransition {
+  id: string | null
+  name: string | null
+  from_status_id: string | null
+  to_status_id: string | null
+  from_canonical: string | null
+  to_canonical: string | null
+}
+
+interface CatalogWorkType {
+  jira_issue_type: { id: string, name: string } | null
+  workflow_scheme: { id: string, name: string } | null
+  workflow: { id: string | null, name: string } | null
+  statuses: Record<string, CatalogStatus>
+  transitions: Record<string, CatalogTransition>
+}
+
+type WorkflowsCatalog = Record<string, CatalogWorkType>;
+
+type WorkTypeKind = 'work_type' | 'status' | 'transition';
+
+interface WorkTypeCheckResult {
+  workType: string
+  kind: WorkTypeKind
+  /** Entity slug under the work type (status/transition slug, or '<work_type>' for the work_type row itself). */
+  entity: string
+  severity: Severity
+  notes: string[]
+}
+
 interface NestedOptionEntry {
   id: string
   children: Record<string, string>
@@ -105,6 +163,7 @@ interface CheckResult {
 const REPO_ROOT = join(import.meta.dir, '..');
 const MANIFEST_PATH = join(REPO_ROOT, '.agents', 'jira-required.yaml');
 const CATALOG_PATH = join(REPO_ROOT, '.agents', 'jira.json');
+const WORKFLOWS_PATH = join(REPO_ROOT, '.agents', 'jira-workflows.json');
 
 function loadManifest(): Manifest {
   if (!existsSync(MANIFEST_PATH)) {
@@ -150,6 +209,195 @@ function loadCatalog(): Record<string, JiraFieldEntry> {
     process.exit(1);
   }
   return parsed as Record<string, JiraFieldEntry>;
+}
+
+/**
+ * Load `.agents/jira-workflows.json` (the discovered workflow catalog). Returns
+ * `null` if the file is absent — the work-type validation block will then
+ * report MISSING for every required work_type with a hint to run
+ * `bun run jira:sync-workflows`. Returns the parsed object otherwise (which
+ * may be the empty `{}` placeholder, or a partial shell with `null` fields).
+ */
+function loadWorkflowsCatalog(): WorkflowsCatalog | null {
+  if (!existsSync(WORKFLOWS_PATH)) { return null; }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(WORKFLOWS_PATH, 'utf8'));
+  }
+  catch (err) {
+    console.error(`FATAL: cannot parse ${relative(REPO_ROOT, WORKFLOWS_PATH)}: ${(err as Error).message}`);
+    process.exit(1);
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    console.error(`FATAL: ${relative(REPO_ROOT, WORKFLOWS_PATH)} must be a JSON object.`);
+    process.exit(1);
+  }
+  return parsed as WorkflowsCatalog;
+}
+
+/**
+ * Walk `.agents/jira-required.yaml` and pull out the `work_types:` section.
+ * Mirrors `scripts/sync-jira-workflows.ts:loadManifestWorkTypes` so that what
+ * the sync writes is exactly what the check validates. Same line-walking
+ * grammar (no extra YAML dep) — narrow but stable.
+ *
+ * Returns `[]` if the section is absent or empty so the caller can short-circuit.
+ */
+function loadManifestWorkTypes(): ManifestWorkType[] {
+  // Manifest already failed-fast in loadManifest(), so we know it parses; just
+  // re-read raw lines here so we can preserve declaration order deterministically.
+  const text = readFileSync(MANIFEST_PATH, 'utf8');
+  const lines = text.split(/\r?\n/);
+
+  const workTypes: ManifestWorkType[] = [];
+  let inWorkTypes = false;
+  let currentWorkType: ManifestWorkType | null = null;
+  let currentMap: 'required_statuses' | 'required_transitions' | null = null;
+
+  const sectionRe = /^work_types:\s*$/;
+  const topLevelRe = /^[a-z_][\w-]*:\s*(?:#.*)?$/;
+  const workTypeHeaderRe = /^ {2}([a-z_][a-z0-9_]*):\s*$/;
+  const subKeyRe = /^ {4}([a-z_][a-z0-9_]*):[ \t]*(\S.*)?$/;
+  const entryRe = /^ {6}([a-z_][a-z0-9_]*):[ \t]*(\S.*)?$/;
+
+  function finalizeWorkType(): void {
+    if (currentWorkType) {
+      workTypes.push(currentWorkType);
+    }
+    currentWorkType = null;
+    currentMap = null;
+  }
+
+  for (const line of lines) {
+    if (topLevelRe.test(line)) {
+      if (inWorkTypes) { finalizeWorkType(); }
+      inWorkTypes = sectionRe.test(line);
+      continue;
+    }
+    if (!inWorkTypes) { continue; }
+    if (line.trim() === '' || line.trimStart().startsWith('#')) { continue; }
+
+    const wtHeader = workTypeHeaderRe.exec(line);
+    if (wtHeader) {
+      finalizeWorkType();
+      currentWorkType = {
+        slug: wtHeader[1],
+        jiraIssueType: '',
+        requiredStatuses: [],
+        requiredTransitions: [],
+      };
+      currentMap = null;
+      continue;
+    }
+
+    if (!currentWorkType) { continue; }
+
+    const subKey = subKeyRe.exec(line);
+    if (subKey) {
+      const key = subKey[1];
+      const rawValue = subKey[2];
+      currentMap = null;
+      if (key === 'jira_issue_type') {
+        currentWorkType.jiraIssueType = stripYamlScalar(rawValue);
+      }
+      else if (key === 'description') {
+        currentWorkType.description = stripYamlScalar(rawValue);
+      }
+      else if (key === 'required_statuses') {
+        currentMap = 'required_statuses';
+      }
+      else if (key === 'required_transitions') {
+        currentMap = 'required_transitions';
+      }
+      continue;
+    }
+
+    const entry = entryRe.exec(line);
+    if (entry && currentMap) {
+      const slug = entry[1];
+      const inlineBody = entry[2] ?? '';
+      const parsed = parseInlineMapping(inlineBody);
+      if (currentMap === 'required_statuses') {
+        currentWorkType.requiredStatuses.push({
+          slug,
+          description: parsed.description,
+        });
+      }
+      else {
+        currentWorkType.requiredTransitions.push({
+          slug,
+          from: parsed.from,
+          to: parsed.to,
+          description: parsed.description,
+        });
+      }
+    }
+  }
+  if (inWorkTypes) { finalizeWorkType(); }
+
+  return workTypes;
+}
+
+function stripYamlScalar(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed === '' || trimmed === 'null' || trimmed === '~') { return ''; }
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"'))
+    || (trimmed.startsWith('\'') && trimmed.endsWith('\''))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function parseInlineMapping(body: string): { from?: string, to?: string, description?: string } {
+  const result: { from?: string, to?: string, description?: string } = {};
+  const trimmed = body.trim();
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
+    return result;
+  }
+  const inner = trimmed.slice(1, -1);
+  const parts: string[] = [];
+  let depth = 0;
+  let inSingle = false;
+  let inDouble = false;
+  let buf = '';
+  for (let i = 0; i < inner.length; i++) {
+    const ch = inner[i];
+    if (inSingle) {
+      buf += ch;
+      if (ch === '\'') { inSingle = false; }
+      continue;
+    }
+    if (inDouble) {
+      buf += ch;
+      if (ch === '\\') { buf += inner[++i] ?? ''; continue; }
+      if (ch === '"') { inDouble = false; }
+      continue;
+    }
+    if (ch === '\'') { inSingle = true; buf += ch; continue; }
+    if (ch === '"') { inDouble = true; buf += ch; continue; }
+    if (ch === '{' || ch === '[') { depth++; buf += ch; continue; }
+    if (ch === '}' || ch === ']') { depth--; buf += ch; continue; }
+    if (ch === ',' && depth === 0) {
+      parts.push(buf);
+      buf = '';
+      continue;
+    }
+    buf += ch;
+  }
+  if (buf.trim() !== '') { parts.push(buf); }
+
+  for (const part of parts) {
+    const colonIdx = part.indexOf(':');
+    if (colonIdx === -1) { continue; }
+    const key = part.slice(0, colonIdx).trim();
+    const value = stripYamlScalar(part.slice(colonIdx + 1));
+    if (key === 'from') { result.from = value; }
+    else if (key === 'to') { result.to = value; }
+    else if (key === 'description') { result.description = value; }
+  }
+  return result;
 }
 
 // -----------------------------------------------------------------------------
@@ -296,6 +544,166 @@ function checkUnmapped(slug: string, expected: UnmappedEntry): CheckResult {
 }
 
 // -----------------------------------------------------------------------------
+// Work-type validation (workflows + statuses + transitions)
+// -----------------------------------------------------------------------------
+
+/**
+ * Validate one work_type from the manifest against the workflows catalog.
+ *
+ * Severity model mirrors the custom-fields block:
+ *   - MISSING       → required entity not present in the catalog
+ *   - MISMATCHED    → present but a key attribute (issue type name, transition
+ *                     from/to) doesn't match the manifest declaration
+ *   - INFO          → catalog file absent (every required entity reports MISSING
+ *                     with a hint to run `bun run jira:sync-workflows` first)
+ *   - OK            → present and consistent
+ *
+ * The work_type itself contributes one row (covering the issue type match);
+ * each required status and transition contributes one row.
+ *
+ * `catalog === null` is the "no jira-workflows.json yet" path. We treat every
+ * required entity as MISSING but stamp every note with the recovery hint so
+ * the user knows what to do.
+ */
+function checkWorkType(
+  workType: ManifestWorkType,
+  catalog: WorkflowsCatalog | null,
+): WorkTypeCheckResult[] {
+  const results: WorkTypeCheckResult[] = [];
+
+  const catalogMissing = catalog === null;
+  const catalogEntry: CatalogWorkType | undefined = catalog?.[workType.slug];
+  const catalogAbsent = catalogMissing || !catalogEntry;
+  const recoveryHint = catalogMissing
+    ? 'catalog file missing — run `bun run jira:sync-workflows` first'
+    : 'work_type not present in jira-workflows.json — re-run `bun run jira:sync-workflows`';
+
+  // 1. Work-type-level row: validate issue type name match (or report missing).
+  const wtNotes: string[] = [];
+  let wtSeverity: Severity = 'ok';
+  if (catalogAbsent) {
+    wtSeverity = 'missing';
+    wtNotes.push(recoveryHint);
+  }
+  else if (catalogEntry) {
+    const foundType = catalogEntry.jira_issue_type;
+    if (!foundType || !foundType.name) {
+      wtSeverity = 'missing';
+      wtNotes.push('work_type declared but jira_issue_type is null in jira-workflows.json — re-run `bun run jira:sync-workflows`');
+    }
+    else if (foundType.name !== workType.jiraIssueType) {
+      wtSeverity = 'mismatch';
+      wtNotes.push(`expected '${workType.jiraIssueType}', found '${foundType.name}'`);
+    }
+  }
+  results.push({
+    workType: workType.slug,
+    kind: 'work_type',
+    entity: workType.slug,
+    severity: wtSeverity,
+    notes: wtNotes,
+  });
+
+  // 2. Required statuses.
+  for (const reqStatus of workType.requiredStatuses) {
+    const notes: string[] = [];
+    let severity: Severity = 'ok';
+    if (catalogAbsent) {
+      severity = 'missing';
+      notes.push(recoveryHint);
+    }
+    else {
+      const found = catalogEntry?.statuses?.[reqStatus.slug];
+      if (!found || !found.id) {
+        severity = 'missing';
+        notes.push(
+          `required status '${reqStatus.slug}' not mapped — re-run \`bun run jira:sync-workflows\` (or add the status in Jira admin)`,
+        );
+      }
+      else if (found.category) {
+        // Category is informational; surface it in verbose output by leaving
+        // a benign note. Severity stays OK.
+        notes.push(`category: ${found.category}`);
+      }
+    }
+    results.push({
+      workType: workType.slug,
+      kind: 'status',
+      entity: reqStatus.slug,
+      severity,
+      notes,
+    });
+  }
+
+  // 3. Required transitions.
+  // Compute the set of declared status slugs once so we can be lenient when
+  // a transition's from/to references an undeclared status (its canonical
+  // resolution may be a discovered slug that doesn't equal the manifest's
+  // expected slug — only flag mismatches when both ends correspond to
+  // declared statuses).
+  const declaredStatusSlugs = new Set(workType.requiredStatuses.map(s => s.slug));
+
+  for (const reqTrans of workType.requiredTransitions) {
+    const notes: string[] = [];
+    let severity: Severity = 'ok';
+    if (catalogAbsent) {
+      severity = 'missing';
+      notes.push(recoveryHint);
+    }
+    else {
+      const found = catalogEntry?.transitions?.[reqTrans.slug];
+      if (!found || !found.id) {
+        severity = 'missing';
+        notes.push(
+          `required transition '${reqTrans.slug}' not mapped — re-run \`bun run jira:sync-workflows\` (or add the transition in Jira admin)`,
+        );
+      }
+      else {
+        // Validate from/to canonicals when the manifest declares them AND both
+        // ends correspond to declared statuses (lenient otherwise — see B.3 spec).
+        // The manifest may also declare `from: any` (or `to: any`) for global
+        // transitions like `bug.re_open`; those never contribute a from/to
+        // mismatch on the `any` side regardless of the discovered canonical.
+        const expectedFrom = reqTrans.from;
+        const expectedTo = reqTrans.to;
+        const foundFrom = found.from_canonical;
+        const foundTo = found.to_canonical;
+
+        const fromComparable = expectedFrom
+          && expectedFrom !== 'any'
+          && foundFrom
+          && declaredStatusSlugs.has(expectedFrom)
+          && declaredStatusSlugs.has(foundFrom);
+        const toComparable = expectedTo
+          && expectedTo !== 'any'
+          && foundTo
+          && declaredStatusSlugs.has(expectedTo)
+          && declaredStatusSlugs.has(foundTo);
+
+        const fromMismatch = fromComparable && expectedFrom !== foundFrom;
+        const toMismatch = toComparable && expectedTo !== foundTo;
+
+        if (fromMismatch || toMismatch) {
+          severity = 'mismatch';
+          notes.push(
+            `transition '${reqTrans.slug}' connects '${foundFrom ?? '(?)'}'→'${foundTo ?? '(?)'}' but manifest expects '${expectedFrom ?? '(?)'}'→'${expectedTo ?? '(?)'}'`,
+          );
+        }
+      }
+    }
+    results.push({
+      workType: workType.slug,
+      kind: 'transition',
+      entity: reqTrans.slug,
+      severity,
+      notes,
+    });
+  }
+
+  return results;
+}
+
+// -----------------------------------------------------------------------------
 // Reporting
 // -----------------------------------------------------------------------------
 
@@ -318,20 +726,52 @@ function tally(results: CheckResult[]): Counters {
   return c;
 }
 
+interface WorkTypeCounters {
+  ok: number
+  missing: number
+  mismatch: number
+  info: number
+}
+
+function tallyWorkTypes(results: WorkTypeCheckResult[]): WorkTypeCounters {
+  const c: WorkTypeCounters = { ok: 0, missing: 0, mismatch: 0, info: 0 };
+  for (const r of results) {
+    c[r.severity]++;
+  }
+  return c;
+}
+
 function printHumanReport(
   results: CheckResult[],
   counters: Counters,
   catalogSize: number,
   verbose: boolean,
+  workTypeResults: WorkTypeCheckResult[],
+  workTypeCounters: WorkTypeCounters,
+  workTypeManifestCount: number,
+  workflowsCatalogPresent: boolean,
 ): void {
+  const totalOk = counters.ok + workTypeCounters.ok;
+  const totalMissing = counters.missing + workTypeCounters.missing;
+  const totalMismatch = counters.mismatch + workTypeCounters.mismatch;
+  const totalInfo = counters.info + workTypeCounters.info;
+
   console.log('Jira Setup Status');
   console.log('=================');
   console.log('Manifest:  .agents/jira-required.yaml');
   console.log(`Catalog:   .agents/jira.json (${catalogSize} fields)`);
+  if (workTypeManifestCount > 0) {
+    console.log(`Workflows: .agents/jira-workflows.json (${workflowsCatalogPresent ? 'present' : 'absent — run `bun run jira:sync-workflows`'})`);
+  }
   console.log('');
-  console.log(`Required: ${counters.required} · Optional: ${counters.optional} · Unmapped: ${counters.unmapped}`);
+  if (workTypeManifestCount > 0) {
+    console.log(`Required: ${counters.required} · Optional: ${counters.optional} · Unmapped: ${counters.unmapped} · Work types: ${workTypeManifestCount}`);
+  }
+  else {
+    console.log(`Required: ${counters.required} · Optional: ${counters.optional} · Unmapped: ${counters.unmapped}`);
+  }
   console.log(
-    `Summary:  ✅ ${counters.ok} OK   ❌ ${counters.missing} missing   ⚠️ ${counters.mismatch} mismatched   💡 ${counters.info} informational`,
+    `Summary:  ✅ ${totalOk} OK   ❌ ${totalMissing} missing   ⚠️ ${totalMismatch} mismatched   💡 ${totalInfo} informational`,
   );
   console.log('');
 
@@ -413,29 +853,110 @@ function printHumanReport(
     console.log('');
   }
 
-  const exitCode = missing.filter(r => r.scope === 'required').length > 0
-    || mismatch.filter(r => r.scope === 'required').length > 0
-    ? 1
-    : 0;
-  console.log(`Exit: ${exitCode} (${exitCode === 0 ? 'no missing required fields' : 'required fields missing or mismatched'})`);
+  // ----- Work types & workflow statuses block ---------------------------------
+  if (workTypeManifestCount > 0) {
+    console.log('Work types & workflow statuses');
+    console.log('------------------------------');
+    if (!workflowsCatalogPresent) {
+      console.log('💡 .agents/jira-workflows.json is absent — every required entity is reported as MISSING.');
+      console.log('   Run `bun run jira:sync-workflows` to populate the catalog, then re-run `bun run jira:check`.');
+      console.log('');
+    }
+
+    // Group rows by work_type for readability.
+    const byWorkType = new Map<string, WorkTypeCheckResult[]>();
+    for (const r of workTypeResults) {
+      const arr = byWorkType.get(r.workType) ?? [];
+      arr.push(r);
+      byWorkType.set(r.workType, arr);
+    }
+
+    for (const [wtSlug, rows] of byWorkType.entries()) {
+      console.log(`  [${wtSlug}]`);
+      const hasIssue = rows.some(
+        r => r.severity === 'missing' || r.severity === 'mismatch' || r.severity === 'info',
+      );
+      if (!hasIssue && !verbose) {
+        // Everything OK: emit one summary line so a clean run isn't blank.
+        const statusCount = rows.filter(r => r.kind === 'status').length;
+        const transitionCount = rows.filter(r => r.kind === 'transition').length;
+        console.log(`    ✅ OK — ${statusCount} status${statusCount === 1 ? '' : 'es'}, ${transitionCount} transition${transitionCount === 1 ? '' : 's'} all mapped`);
+        console.log('');
+        continue;
+      }
+      for (const r of rows) {
+        const glyph = r.severity === 'ok'
+          ? '✅'
+          : r.severity === 'missing'
+            ? '❌'
+            : r.severity === 'mismatch'
+              ? '⚠️ '
+              : '💡';
+        const label = r.kind === 'work_type'
+          ? `work_type "${r.entity}"`
+          : `${r.kind} "${r.entity}"`;
+        if (r.severity === 'ok' && !verbose && r.notes.length === 0) {
+          // Suppress silent OK rows in non-verbose mode for brevity.
+          continue;
+        }
+        if (r.severity === 'ok' && !verbose) {
+          // Suppress OK rows that only carry an informational category note.
+          continue;
+        }
+        console.log(`    ${glyph} ${label}`);
+        for (const note of r.notes) {
+          console.log(`        Note: ${note}`);
+        }
+      }
+      console.log('');
+    }
+
+    if (verbose) {
+      const wtOk = workTypeResults.filter(r => r.severity === 'ok');
+      if (wtOk.length > 0) {
+        console.log(`  ✅ OK (${wtOk.length} work-type rows hidden by default)`);
+        console.log('');
+      }
+    }
+  }
+
+  // ----- Exit code (sum across both blocks) -----------------------------------
+  const fieldExitTrigger = missing.filter(r => r.scope === 'required').length > 0
+    || mismatch.filter(r => r.scope === 'required').length > 0;
+  const workTypeExitTrigger = workTypeResults.some(
+    r => r.severity === 'missing' || r.severity === 'mismatch',
+  );
+  const exitCode = fieldExitTrigger || workTypeExitTrigger ? 1 : 0;
+  const exitReason = exitCode === 0
+    ? 'no missing required items'
+    : 'required items missing or mismatched';
+  console.log(`Exit: ${exitCode} (${exitReason})`);
 }
 
 function printJsonReport(
   results: CheckResult[],
   counters: Counters,
   catalogSize: number,
+  workTypeResults: WorkTypeCheckResult[],
+  workTypeCounters: WorkTypeCounters,
+  workflowsCatalogPresent: boolean,
 ): void {
-  const exitCode = results.some(
+  const fieldExitTrigger = results.some(
     r => r.scope === 'required' && (r.severity === 'missing' || r.severity === 'mismatch'),
-  )
-    ? 1
-    : 0;
+  );
+  const workTypeExitTrigger = workTypeResults.some(
+    r => r.severity === 'missing' || r.severity === 'mismatch',
+  );
+  const exitCode = fieldExitTrigger || workTypeExitTrigger ? 1 : 0;
 
   const summary = {
     manifest: '.agents/jira-required.yaml',
     catalog: '.agents/jira.json',
     catalog_size: catalogSize,
+    workflows_catalog: '.agents/jira-workflows.json',
+    workflows_catalog_present: workflowsCatalogPresent,
     counters,
+    work_type_counters: workTypeCounters,
     exit_code: exitCode,
     results: results.map(r => ({
       slug: r.slug,
@@ -448,6 +969,13 @@ function printJsonReport(
         ? { id: r.found.id, type: r.found.type ?? null, name: r.found.name ?? null }
         : null,
       missing_options: r.missingOptions,
+      notes: r.notes,
+    })),
+    work_type_results: workTypeResults.map(r => ({
+      work_type: r.workType,
+      kind: r.kind,
+      entity: r.entity,
+      severity: r.severity,
       notes: r.notes,
     })),
   };
@@ -504,18 +1032,56 @@ function main(): void {
   const counters = tally(results);
   const catalogSize = Object.keys(catalog).length;
 
-  if (asJson) {
-    printJsonReport(results, counters, catalogSize);
+  // ----- Work-types validation block ------------------------------------------
+  const workTypes = loadManifestWorkTypes();
+  const workflowsCatalog = loadWorkflowsCatalog();
+  const workflowsCatalogPresent = workflowsCatalog !== null;
+
+  let workTypeResults: WorkTypeCheckResult[] = [];
+  if (workTypes.length === 0) {
+    // Skip the block entirely; informational nudge once (non-JSON only).
+    if (!asJson) {
+      console.log('💡 INFO: no work_types declared in manifest — skipping workflow validation.');
+      console.log('');
+    }
   }
   else {
-    printHumanReport(results, counters, catalogSize, verbose);
+    for (const wt of workTypes) {
+      workTypeResults = workTypeResults.concat(checkWorkType(wt, workflowsCatalog));
+    }
+  }
+  const workTypeCounters = tallyWorkTypes(workTypeResults);
+
+  if (asJson) {
+    printJsonReport(
+      results,
+      counters,
+      catalogSize,
+      workTypeResults,
+      workTypeCounters,
+      workflowsCatalogPresent,
+    );
+  }
+  else {
+    printHumanReport(
+      results,
+      counters,
+      catalogSize,
+      verbose,
+      workTypeResults,
+      workTypeCounters,
+      workTypes.length,
+      workflowsCatalogPresent,
+    );
   }
 
-  const exitCode = results.some(
+  const fieldExitTrigger = results.some(
     r => r.scope === 'required' && (r.severity === 'missing' || r.severity === 'mismatch'),
-  )
-    ? 1
-    : 0;
+  );
+  const workTypeExitTrigger = workTypeResults.some(
+    r => r.severity === 'missing' || r.severity === 'mismatch',
+  );
+  const exitCode = fieldExitTrigger || workTypeExitTrigger ? 1 : 0;
   process.exit(exitCode);
 }
 

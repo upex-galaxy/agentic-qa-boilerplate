@@ -6,7 +6,7 @@
 
 project:
   project_name: null # TODO: Project name (e.g. MyProject)
-  project_key: null # TODO: Project key in issue tracker (e.g. PROJ, OB, UPEX)
+  project_key: OB # TODO: Project key in issue tracker (e.g. PROJ, OB, UPEX)
   webapp_domain: null # TODO: Domain of the web application under test (e.g. myproject.com)
 
 backend:

@@ -567,6 +567,10 @@ function slugify(name: string): string {
   s = s.replace(/\u{FE0F}/gu, ''); // emoji variation selector
   s = s.replace(/[\u{1F1E6}-\u{1F1FF}]/gu, ''); // regional indicators (flags)
 
+  // 3b. translate `&` → ` and ` so e.g. "Fixed & Deployed" word-breaks
+  // naturally into `fixed_and_deployed` instead of `fixed_deployed`.
+  s = s.replace(/&/g, ' and ');
+
   // 4. anything not [a-z0-9_] → `_`
   s = s.replace(/[^a-z0-9_]+/g, '_');
 
