@@ -292,14 +292,16 @@ Rules that always apply:
 
 ### Workflow transitions
 
+> **Substrate reference**: state and transition names below resolve from `.agents/jira-workflows.json` (manifest at `.agents/jira-required.yaml` `work_types.test_case`). Use `{{jira.status.test_case.<slug>}}` and `{{jira.transition.test_case.<slug>}}` in skill code; the substrate maps the slug to the literal Jira name. See `references/tms-conventions.md` §5 for the full state machine.
+
 ```
-Draft --start design--> In Design --ready to run--> Ready --+-- for manual        --> Manual    (terminal manual)
-                                                            +-- automation review --> In Review
-                                                                                       |
-                                                                                       +-- approve to automate --> Candidate (feeds test-automation)
+Draft --start_design--> In Design --ready_to_run--> Ready --+-- for_manual                  --> Manual    (terminal manual)
+                                                            +-- automation_review_from_ready --> In Review
+                                                                                                  |
+                                                                                                  +-- approve_to_automate --> Candidate (feeds test-automation)
 ```
 
-Never jump states. If a TC needs rework, use the "back" transition to In Design.
+Never jump states. If a TC needs rework, use a `back_from_<state>` transition (e.g. `back_from_ready` -> in_design).
 
 ### Naming — the one rule that matters
 
@@ -505,9 +507,9 @@ for each {TEST_KEY} in run:
 ```
 [ISSUE_TRACKER_TOOL] Transition Issue:
   issue: {TEST_KEY}
-  transition: start design   # Draft -> In Design
-  # later: ready to run       # In Design -> Ready
-  # later: automation review  # Ready -> In Review
-  # later: approve to automate # In Review -> Candidate
-  # OR:    for manual          # Ready -> Manual
+  transition: {{jira.transition.test_case.start_design}}   # Draft -> In Design
+  # later: {{jira.transition.test_case.ready_to_run}}              # In Design -> Ready
+  # later: {{jira.transition.test_case.automation_review_from_ready}}  # Ready -> In Review
+  # later: {{jira.transition.test_case.approve_to_automate}}      # In Review -> Candidate
+  # OR:    {{jira.transition.test_case.for_manual}}               # Ready -> Manual
 ```

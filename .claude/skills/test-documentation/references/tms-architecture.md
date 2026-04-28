@@ -284,7 +284,9 @@ Any failing criterion -> the story is not ready to close QA.
 
 ## 8. TC workflow state machine
 
-The TC workflow spans three IQL stages. Key transitions: `start design` (Draft -> In Design), `ready to run` (In Design -> Ready), `for manual` (Ready -> Manual), `automation review` (Ready -> In Review), `approve to automate` (In Review -> Candidate), `start automation` (Candidate -> In Automation), `create PR` (In Automation -> Pull Request), `merged` (Pull Request -> Automated). Never skip states; use `back` to return to In Design if rework is needed.
+> **Substrate reference**: state and transition names below match the canonical UPEX Jira workflow in `.agents/jira-workflows.json` (see `.agents/jira-required.yaml` `work_types.test_case`). Skills resolve them via `{{jira.status.test_case.<slug>}}` / `{{jira.transition.test_case.<slug>}}`. Rename detection runs via `bun run jira:sync-workflows`.
+
+The TC workflow spans three IQL stages. Key transitions: `start_design` (Draft -> In Design), `ready_to_run` (In Design -> Ready), `for_manual` (Ready -> Manual), `automation_review_from_ready` (Ready -> In Review), `approve_to_automate` (In Review -> Candidate), `start_automation` (Candidate -> In Automation), `create_pr` (In Automation -> Pull Request), `merged` (Pull Request -> Automated). Never skip states; use `back_from_ready` / `back_from_in_design` for rework, `deprecated` (any -> Deprecated) to retire a TC.
 
 ```
 Stage 2 (Execution)     Stage 4 (Documentation)     Stage 5 (Automation)

@@ -164,6 +164,8 @@ Related naming:
 
 ## 6. Workflow — states and transitions
 
+> **Substrate reference**: state and transition names below match the canonical UPEX Jira workflow declared in `.agents/jira-workflows.json` (see `.agents/jira-required.yaml` `work_types.test_case`). Skills resolve names via `{{jira.status.test_case.<slug>}}` and `{{jira.transition.test_case.<slug>}}`. Refresh with `bun run jira:sync-workflows` if your project renames any state.
+
 Both modes use the same state machine. Xray does not impose its own workflow; it respects the Jira workflow attached to the Test issue type.
 
 ```

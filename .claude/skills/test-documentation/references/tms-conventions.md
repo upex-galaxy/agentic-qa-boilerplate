@@ -155,6 +155,8 @@ These are **two independent fields** with two independent lifecycles. Mixing the
 
 ## 5. Workflow state machine
 
+> **Substrate reference**: status and transition names below match the canonical UPEX Jira workflow declared in `.agents/jira-workflows.json` (see `.agents/jira-required.yaml` `work_types.test_case` for the methodology's required slugs). Skills resolve these via `{{jira.status.test_case.<slug>}}` and `{{jira.transition.test_case.<slug>}}`. If your project's Jira renames any state or transition, run `bun run jira:sync-workflows` to refresh the substrate so slug -> literal-name mapping stays correct.
+
 ### The full lifecycle
 
 ```
