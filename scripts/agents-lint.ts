@@ -41,6 +41,7 @@ import { parse as parseYaml } from 'yaml';
 const REPO_ROOT = join(import.meta.dir, '..');
 const PROJECT_YAML = join(REPO_ROOT, '.agents', 'project.yaml');
 const JIRA_REQUIRED_YAML = join(REPO_ROOT, '.agents', 'jira-required.yaml');
+const JIRA_CATALOG_JSON = join(REPO_ROOT, '.agents', 'jira.json');
 
 // Directories to scan recursively.
 const SCAN_ROOTS = [
@@ -151,11 +152,11 @@ function loadDeclaredVariables(yamlPath: string): DeclaredVars {
 
 /**
  * Load the set of declared Jira slugs from `.agents/jira-required.yaml`.
- * Both `required:` and `optional:` slugs are accepted — `unmapped:` is NOT
- * (those have no matching `{{jira.<slug>}}` syntax; skills reference them as
- * literal `customfield_*` markers).
+ * `required:`, `optional:` AND `unmapped:` slugs are accepted — `unmapped:`
+ * counts because the methodology recognises the slug semantically even if
+ * no concrete Jira field exists yet, and skills are allowed to reference it.
  */
-function loadManifestSlugs(yamlPath: string): { all: Set<string>, required: number, optional: number } {
+function loadManifestSlugs(yamlPath: string): { all: Set<string>, required: number, optional: number, unmapped: number } {
   if (!existsSync(yamlPath)) {
     console.error(`FATAL: ${yamlPath} does not exist. Required for Jira slug validation.`);
     process.exit(1);
@@ -175,8 +176,54 @@ function loadManifestSlugs(yamlPath: string): { all: Set<string>, required: numb
   const root = parsed as Record<string, unknown>;
   const required = (root.required ?? {}) as Record<string, unknown>;
   const optional = (root.optional ?? {}) as Record<string, unknown>;
-  const all = new Set<string>([...Object.keys(required), ...Object.keys(optional)]);
-  return { all, required: Object.keys(required).length, optional: Object.keys(optional).length };
+  const unmapped = (root.unmapped ?? {}) as Record<string, unknown>;
+  const all = new Set<string>([
+    ...Object.keys(required),
+    ...Object.keys(optional),
+    ...Object.keys(unmapped),
+  ]);
+  return {
+    all,
+    required: Object.keys(required).length,
+    optional: Object.keys(optional).length,
+    unmapped: Object.keys(unmapped).length,
+  };
+}
+
+/**
+ * Load `.agents/jira.json` (the discovered catalog). Returns `null` if the
+ * file is missing — option-value lookups will then be skipped without
+ * blocking the lint (slug-only references still validate against the
+ * manifest). Returns an empty record if the file exists but is the empty
+ * `{}` placeholder.
+ */
+interface CatalogNestedOption {
+  id: string
+  children: Record<string, string>
+}
+
+interface CatalogEntry {
+  id?: string
+  type?: string
+  name?: string
+  options?: Record<string, string> | Record<string, CatalogNestedOption>
+}
+
+function loadCatalog(jsonPath: string): Record<string, CatalogEntry> | null {
+  if (!existsSync(jsonPath)) { return null; }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(jsonPath, 'utf8'));
+  }
+  catch (err) {
+    console.error(`FATAL: cannot parse ${jsonPath}: ${(err as Error).message}`);
+    process.exit(1);
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    console.error(`FATAL: ${jsonPath} must be a JSON object.`);
+    process.exit(1);
+  }
+  return parsed as Record<string, CatalogEntry>;
 }
 
 // -----------------------------------------------------------------------------
@@ -253,6 +300,12 @@ interface ExplicitEnvHit {
 
 interface JiraSlugHit {
   slug: string
+  /** Lowercased option segment for `{{jira.<slug>.<option>}}`; `undefined` for bare slug refs. */
+  option?: string
+  /** Lowercased child segment for `{{jira.<slug>.<parent>.<child>}}` cascading refs. */
+  child?: string
+  /** Verbatim reference (without surrounding `{{` / `}}`). Used only in error messages. */
+  raw: string
   file: string
   line: number
 }
@@ -271,7 +324,13 @@ interface ScanResult {
 // columns, then scan PROJECT_RE while skipping covered ranges.
 const PROJECT_RE = /\{\{([A-Z_][A-Z0-9_]*)\}\}/g;
 const EXPLICIT_ENV_RE = /\{\{environments\.([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)\}\}/g;
-const JIRA_RE = /\{\{jira\.([a-z_][a-z0-9_]*)\}\}/g;
+// `{{jira.<slug>}}` (bare custom-field id reference)
+//   OR `{{jira.<slug>.<option>}}` (plain-option value lookup)
+//   OR `{{jira.<slug>.<parent>.<child>}}` (cascading-select value lookup).
+// Slug must be a real declared custom-field slug (validated below); future
+// substrates (work_types / status / transition) are NOT matched here — they
+// will need their own regex to avoid colliding with this one.
+const JIRA_RE = /\{\{jira\.([a-z_][a-z0-9_]*)(?:\.([a-z_][a-z0-9_]*)(?:\.([a-z_][a-z0-9_]*))?)?\}\}/g;
 const SESSION_RE = /<<([A-Z_][A-Z0-9_]*)>>/g;
 
 function isAllowlisted(varName: string, filePath: string): boolean {
@@ -323,7 +382,15 @@ function scanFiles(files: string[]): ScanResult {
       for (;;) {
         const m = JIRA_RE.exec(line);
         if (m === null) { break; }
-        jiraSlugHits.push({ slug: m[1], file, line: i + 1 });
+        const segments = [m[1], m[2], m[3]].filter((s): s is string => Boolean(s));
+        jiraSlugHits.push({
+          slug: m[1],
+          option: m[2],
+          child: m[3],
+          raw: `jira.${segments.join('.')}`,
+          file,
+          line: i + 1,
+        });
       }
 
       // --- session vars
@@ -354,6 +421,7 @@ function scanFiles(files: string[]): ScanResult {
 function main(): void {
   const declared = loadDeclaredVariables(PROJECT_YAML);
   const manifest = loadManifestSlugs(JIRA_REQUIRED_YAML);
+  const catalog = loadCatalog(JIRA_CATALOG_JSON);
   const files = collectFiles();
   const result = scanFiles(files);
 
@@ -391,8 +459,71 @@ function main(): void {
     .filter(d => !usedNames.has(d) && !explicitlyUsedEnvScoped.has(d))
     .sort();
 
-  // Jira slug validation: every {{jira.<slug>}} must be declared in the manifest.
-  const invalidJiraHits = result.jiraSlugHits.filter(h => !manifest.all.has(h.slug));
+  // Jira reference validation. Three failure modes:
+  //   1. slug not declared in jira-required.yaml          → UNDECLARED slug
+  //   2. {{jira.<slug>.<option>}}: option missing from
+  //      jira.json[<slug>].options                        → UNKNOWN option value
+  //   3. {{jira.<slug>.<parent>.<child>}}: parent or child
+  //      missing from jira.json[<slug>].options[parent].children → UNKNOWN cascading value
+  // If `.agents/jira.json` is absent we only enforce (1) — option-value
+  // checks are skipped with an INFO line so the lint still passes pre-sync.
+  interface JiraIssue { kind: 'undeclared' | 'unknown-option' | 'unknown-cascading-parent' | 'unknown-cascading-child', hit: JiraSlugHit, detail?: string }
+  const jiraIssues: JiraIssue[] = [];
+  for (const hit of result.jiraSlugHits) {
+    if (!manifest.all.has(hit.slug)) {
+      jiraIssues.push({ kind: 'undeclared', hit });
+      continue;
+    }
+    if (!hit.option) { continue; }
+    if (catalog === null) { continue; }
+    const entry = catalog[hit.slug];
+    const opts = (entry?.options ?? {}) as Record<string, unknown>;
+    if (!hit.child) {
+      // Plain option lookup. Accept if the slug exists in opts (works for
+      // both flat `Record<string, string>` and nested cascading shapes —
+      // the parent slug is exactly what the user references).
+      if (!(hit.option in opts)) {
+        jiraIssues.push({
+          kind: 'unknown-option',
+          hit,
+          detail: `option '${hit.option}' not present in jira.json[${hit.slug}].options`,
+        });
+      }
+      continue;
+    }
+    // Cascading child lookup.
+    const parentEntry = opts[hit.option];
+    if (parentEntry === undefined) {
+      jiraIssues.push({
+        kind: 'unknown-cascading-parent',
+        hit,
+        detail: `parent '${hit.option}' not present in jira.json[${hit.slug}].options`,
+      });
+      continue;
+    }
+    if (
+      parentEntry === null
+      || typeof parentEntry !== 'object'
+      || Array.isArray(parentEntry)
+      || !('children' in parentEntry)
+    ) {
+      jiraIssues.push({
+        kind: 'unknown-cascading-child',
+        hit,
+        detail: `jira.json[${hit.slug}].options[${hit.option}] is not a cascading entry (no children map)`,
+      });
+      continue;
+    }
+    const children = (parentEntry as { children?: Record<string, unknown> }).children ?? {};
+    if (!(hit.child in children)) {
+      jiraIssues.push({
+        kind: 'unknown-cascading-child',
+        hit,
+        detail: `child '${hit.child}' not present in jira.json[${hit.slug}].options[${hit.option}].children`,
+      });
+    }
+  }
+  const invalidJiraHits = jiraIssues;
   const validJiraCount = result.jiraSlugHits.length - invalidJiraHits.length;
 
   const filesWithProjectHits = new Set(result.projectVarHits.map(h => h.file)).size;
@@ -410,7 +541,8 @@ function main(): void {
     `Declared in project.yaml:        ${declared.flat.size} flat + ${declared.envScoped.size} env-scoped `
     + `(across ${declared.envNames.size} envs: ${envList}) = ${declaredTotal} variables`,
   );
-  console.log(`Declared in jira-required.yaml:  ${manifest.all.size} slugs (${manifest.required} required + ${manifest.optional} optional)`);
+  console.log(`Declared in jira-required.yaml:  ${manifest.all.size} slugs (${manifest.required} required + ${manifest.optional} optional + ${manifest.unmapped} unmapped)`);
+  console.log(`Catalog jira.json:               ${catalog === null ? 'absent (option-value checks skipped — run `bun run jira:sync-fields`)' : `${Object.keys(catalog).length} fields available for option-value lookup`}`);
   console.log('');
 
   console.log(`ERRORS (${totalErrors}):`);
@@ -429,9 +561,15 @@ function main(): void {
         : `var '${hit.varName}' not present under environments.${hit.env}`;
       console.log(`  - UNDECLARED env reference: {{environments.${hit.env}.${hit.varName}}} at ${rel}:${hit.line}  (${reason})`);
     }
-    for (const hit of invalidJiraHits) {
-      const rel = relative(REPO_ROOT, hit.file);
-      console.log(`  - UNDECLARED: {{jira.${hit.slug}}} at ${rel}:${hit.line}`);
+    for (const issue of invalidJiraHits) {
+      const rel = relative(REPO_ROOT, issue.hit.file);
+      const ref = `{{${issue.hit.raw}}}`;
+      if (issue.kind === 'undeclared') {
+        console.log(`  - UNDECLARED: ${ref} at ${rel}:${issue.hit.line}`);
+      }
+      else {
+        console.log(`  - UNKNOWN ${issue.kind === 'unknown-option' ? 'option' : 'cascading value'}: ${ref} at ${rel}:${issue.hit.line}  (${issue.detail ?? 'unknown reason'})`);
+      }
     }
   }
   console.log('');
@@ -451,7 +589,9 @@ function main(): void {
   console.log(`  - ${result.projectVarHits.length} bare {{VAR}} occurrences across ${filesWithProjectHits} files`);
   console.log(`  - ${result.explicitEnvHits.length} explicit {{environments.<env>.<var>}} occurrences (${invalidExplicitEnv.length} invalid)`);
   console.log(`  - ${result.sessionVarNames.size} distinct <<VAR>> session variables (${result.sessionVarOccurrences} occurrences)`);
-  console.log(`  - ${validJiraCount} valid {{jira.*}} references; ${invalidJiraHits.length} invalid (errors above)`);
+  const optionRefCount = result.jiraSlugHits.filter(h => Boolean(h.option)).length;
+  const cascadingRefCount = result.jiraSlugHits.filter(h => Boolean(h.child)).length;
+  console.log(`  - ${validJiraCount} valid {{jira.*}} references (${optionRefCount} option-value refs, ${cascadingRefCount} cascading); ${invalidJiraHits.length} invalid (errors above)`);
   console.log(`  - ${result.metaSkippedCount} documentation meta-references skipped (allowlisted)`);
 
   process.exit(totalErrors > 0 ? 1 : 0);

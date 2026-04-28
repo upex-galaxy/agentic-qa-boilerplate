@@ -42,7 +42,14 @@ import { parse as parseYaml } from 'yaml';
 interface RequiredEntry {
   name?: string
   type: string
-  options?: string[]
+  /**
+   * For plain `option` / `array`-of-option fields: a flat list of expected
+   * option slugs (e.g. `[critica, mayor, menor]`).
+   * For `option-with-child` (cascading) fields: either a flat list of expected
+   * parent slugs, or an object mapping parent slug → list of expected child
+   * slugs (e.g. `{ infraestructura: [redes, servidores] }`).
+   */
+  options?: string[] | Record<string, string[]>
   description?: string
   used_by?: string[]
 }
@@ -58,11 +65,21 @@ interface Manifest {
   unmapped: Record<string, UnmappedEntry>
 }
 
+interface NestedOptionEntry {
+  id: string
+  children: Record<string, string>
+}
+
 interface JiraFieldEntry {
   id: string
   type?: string
   name?: string
-  options?: Record<string, string>
+  /**
+   * Discriminated by `type`:
+   *   - `option` / `array`        → `Record<string, string>`           (slug → option id)
+   *   - `option-with-child`       → `Record<string, NestedOptionEntry>` (parent slug → { id, children })
+   */
+  options?: Record<string, string> | Record<string, NestedOptionEntry>
   system?: boolean
   provider?: string
 }
@@ -153,6 +170,10 @@ function typesMatch(declared: string, found: string | undefined): boolean {
   // Accept `multi-option` <-> `array` (Jira reports multi-selects as `array`).
   if (declared === 'multi-option' && found === 'array') { return true; }
   if (declared === 'array' && found === 'multi-option') { return true; }
+  // `option-with-child` (cascading select) is its own canonical type — accept
+  // an exact match here so the catch-all below doesn't flag it as a mismatch
+  // when the manifest declares it.
+  if (declared === 'option-with-child' && found === 'option-with-child') { return true; }
   // `any` is a wildcard.
   if (declared === 'any') { return true; }
   return false;
@@ -186,14 +207,77 @@ function checkRequired(
     notes.push(`type mismatch: declared "${expected.type}", found "${found.type ?? '<unknown>'}"`);
   }
 
-  if (expected.type === 'option' && Array.isArray(expected.options) && expected.options.length > 0) {
-    const presentOptionKeys = new Set(Object.keys(found.options ?? {}));
-    for (const opt of expected.options) {
-      if (!presentOptionKeys.has(opt)) { missingOptions.push(opt); }
-    }
-    if (missingOptions.length > 0) {
+  if (expected.type === 'option') {
+    const foundOptions = (found.options ?? {}) as Record<string, unknown>;
+    const presentOptionKeys = new Set(Object.keys(foundOptions));
+
+    // Empty options on a declared `option` field is almost always a config
+    // drift (missing context, scoped permissions, …). Surface it whether or
+    // not the manifest declared specific option slugs.
+    if (presentOptionKeys.size === 0) {
       if (severity === 'ok') { severity = 'mismatch'; }
-      notes.push(`missing option(s): ${missingOptions.join(', ')}`);
+      notes.push('field declared as type:option but jira.json has empty options map — re-run jira:sync-fields or check field context permissions');
+    }
+
+    if (Array.isArray(expected.options) && expected.options.length > 0) {
+      for (const opt of expected.options) {
+        if (!presentOptionKeys.has(opt)) { missingOptions.push(opt); }
+      }
+      if (missingOptions.length > 0) {
+        if (severity === 'ok') { severity = 'mismatch'; }
+        notes.push(`missing option(s): ${missingOptions.join(', ')}`);
+      }
+    }
+  }
+
+  if (expected.type === 'option-with-child') {
+    const foundOptions = (found.options ?? {}) as Record<string, NestedOptionEntry | string>;
+    const presentParentKeys = new Set(Object.keys(foundOptions));
+
+    if (presentParentKeys.size === 0) {
+      if (severity === 'ok') { severity = 'mismatch'; }
+      notes.push('field declared as type:option-with-child but jira.json has empty options map — re-run jira:sync-fields or check field context permissions');
+    }
+
+    if (Array.isArray(expected.options) && expected.options.length > 0) {
+      // Plain array of parent slugs.
+      for (const parent of expected.options) {
+        if (!presentParentKeys.has(parent)) { missingOptions.push(parent); }
+      }
+      if (missingOptions.length > 0) {
+        if (severity === 'ok') { severity = 'mismatch'; }
+        notes.push(`missing parent option(s): ${missingOptions.join(', ')}`);
+      }
+    }
+    else if (
+      expected.options !== null
+      && typeof expected.options === 'object'
+      && !Array.isArray(expected.options)
+    ) {
+      // Object form: { parentSlug: [childSlug, ...] }. Validate parents AND children.
+      const expectedNested = expected.options as Record<string, unknown>;
+      for (const [parentSlug, childList] of Object.entries(expectedNested)) {
+        if (!presentParentKeys.has(parentSlug)) {
+          missingOptions.push(parentSlug);
+          continue;
+        }
+        if (Array.isArray(childList) && childList.length > 0) {
+          const parentEntry = foundOptions[parentSlug];
+          const presentChildKeys = new Set(
+            parentEntry !== null && typeof parentEntry === 'object' && 'children' in parentEntry
+              ? Object.keys(parentEntry.children ?? {})
+              : [],
+          );
+          for (const child of childList) {
+            if (typeof child !== 'string') { continue; }
+            if (!presentChildKeys.has(child)) { missingOptions.push(`${parentSlug}.${child}`); }
+          }
+        }
+      }
+      if (missingOptions.length > 0) {
+        if (severity === 'ok') { severity = 'mismatch'; }
+        notes.push(`missing option(s): ${missingOptions.join(', ')}`);
+      }
     }
   }
 
@@ -264,7 +348,7 @@ function printHumanReport(
       console.log(`  - ${r.slug}`);
       if (exp.name) { console.log(`    Suggested name: "${exp.name}"`); }
       console.log(`    Type: ${exp.type}`);
-      if (exp.type === 'option' && exp.options?.length) {
+      if (exp.type === 'option' && Array.isArray(exp.options) && exp.options.length > 0) {
         console.log(`    Suggested options: ${exp.options.join(', ')}`);
       }
       if (exp.used_by?.length) { console.log(`    Used by: ${exp.used_by.join(', ')}`); }

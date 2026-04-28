@@ -90,6 +90,7 @@ import { dirname, join } from 'node:path';
 
 const REPO_ROOT = join(import.meta.dir, '..');
 const OUTPUT_PATH = join(REPO_ROOT, '.agents', 'jira.json');
+const MANIFEST_PATH = join(REPO_ROOT, '.agents', 'jira-required.yaml');
 
 // ============================================================================
 // TYPES
@@ -166,12 +167,27 @@ interface JiraFieldOptionResponse {
   total?: number
 }
 
+/**
+ * Nested option shape for cascading-select (`option-with-child`) fields.
+ * Each parent slug maps to its option id plus a flat map of child slug → child id.
+ */
+interface NestedOptionEntry {
+  id: string
+  children: Record<string, string>
+}
+
 /** Output shape per field in `.agents/jira.json`. */
 interface JiraFieldEntry {
   id: string
   type: string
   name: string
-  options?: Record<string, string>
+  /**
+   * Discriminated by `type`:
+   *   - `option` / `array`        → `Record<string, string>`           (slug → option id)
+   *   - `option-with-child`       → `Record<string, NestedOptionEntry>` (parent slug → { id, children })
+   * Other types do not carry options.
+   */
+  options?: Record<string, string> | Record<string, NestedOptionEntry>
   /** Marks plugin-managed fields (greenhopper, servicedesk, jpo, charting, …). */
   system?: true
   /** Plugin namespace for system-managed fields, e.g. `com.pyxis.greenhopper.jira`. */
@@ -342,6 +358,50 @@ function loadConfig(): Config {
   };
 }
 
+/**
+ * Read the set of slugs declared in `.agents/jira-required.yaml` (across
+ * `required:`, `optional:` and `unmapped:` sections). Used so the sync can
+ * emit a visible warning when a *declared* option-type field comes back with
+ * no options — silent `options: {}` would otherwise mask a real config issue.
+ *
+ * Returns an empty set if the manifest file does not exist (the sync can
+ * still run before the manifest is bootstrapped).
+ */
+function loadDeclaredSlugs(): Set<string> {
+  const declared = new Set<string>();
+  if (!existsSync(MANIFEST_PATH)) { return declared; }
+  let text: string;
+  try {
+    text = readFileSync(MANIFEST_PATH, 'utf8');
+  }
+  catch {
+    return declared;
+  }
+  // Manifest keys are unindented `slug:` lines under `required:` / `optional:`
+  // / `unmapped:`. Parsing the YAML here would pull in a dep just to extract
+  // top-level keys, so we walk lines and collect any line indented exactly
+  // two spaces ending in `:` — that matches the manifest's documented shape.
+  let inSection = false;
+  const sectionRe = /^(?:required|optional|unmapped):\s*$/;
+  const slugRe = /^ {2}([a-z_][a-z0-9_]*):\s*$/;
+  for (const line of text.split(/\r?\n/)) {
+    if (sectionRe.test(line)) {
+      inSection = true;
+      continue;
+    }
+    // A new top-level key (no leading space, ends in `:`) closes the current section.
+    if (/^[a-z_][\w-]*:/i.test(line)) {
+      inSection = sectionRe.test(line);
+      continue;
+    }
+    if (inSection) {
+      const m = slugRe.exec(line);
+      if (m) { declared.add(m[1]); }
+    }
+  }
+  return declared;
+}
+
 // ============================================================================
 // JIRA API CLIENT
 // ============================================================================
@@ -421,6 +481,37 @@ async function fetchFieldOptions(
     const resp = await jiraFetch<JiraFieldOptionResponse>(
       config,
       `/rest/api/3/field/${fieldId}/context/${contextId}/option?startAt=${startAt}&maxResults=${maxResults}`,
+    );
+    all.push(...(resp.values ?? []));
+    if (resp.isLast || !resp.values || resp.values.length < maxResults) {
+      hasMore = false;
+    }
+    else {
+      startAt += resp.values.length;
+    }
+  }
+  return all;
+}
+
+/**
+ * Fetch child options of a single parent option in a cascading-select
+ * (`option-with-child`) field. Endpoint mirrors `fetchFieldOptions` but
+ * scopes the request to a specific parent option id.
+ */
+async function fetchChildOptions(
+  config: Config,
+  fieldId: string,
+  contextId: string,
+  parentOptionId: string,
+): Promise<JiraFieldOption[]> {
+  const all: JiraFieldOption[] = [];
+  let startAt = 0;
+  const maxResults = 100;
+  let hasMore = true;
+  while (hasMore) {
+    const resp = await jiraFetch<JiraFieldOptionResponse>(
+      config,
+      `/rest/api/3/field/${fieldId}/context/${contextId}/option/${parentOptionId}/option?startAt=${startAt}&maxResults=${maxResults}`,
     );
     all.push(...(resp.values ?? []));
     if (resp.isLast || !resp.values || resp.values.length < maxResults) {
@@ -548,6 +639,16 @@ function detectFieldType(field: JiraField): { type: string, hasOptions: boolean 
     return { type: 'any', hasOptions: false };
   }
 
+  // Cascading select. `schema.type` is reported as `"option-with-child"` by
+  // Jira, but we anchor on `schema.custom` (full URI: `...:cascadingselect`)
+  // because the custom-URI signal is more stable across Jira plugins. Place
+  // this check BEFORE the generic `option` branch so cascading fields don't
+  // get mis-classified as plain single-selects.
+  const custom = schema.custom ?? '';
+  if (custom.includes('cascadingselect')) {
+    return { type: 'option-with-child', hasOptions: true };
+  }
+
   const t = schema.type ?? 'any';
 
   // Single-select option / radio button / dropdown.
@@ -575,6 +676,7 @@ function detectFieldType(field: JiraField): { type: string, hasOptions: boolean 
 async function buildFieldsOutput(
   config: Config,
   flags: CliFlags,
+  declaredSlugs: Set<string>,
 ): Promise<{
   output: JiraFieldsOutput
   stats: Record<string, number>
@@ -682,7 +784,17 @@ async function buildFieldsOutput(
       try {
         const contexts = await fetchFieldContexts(config, field.id);
         if (contexts.length === 0) {
-          if (flags.verbose) { log.dim(`  ${slug}: no contexts, options={}`); }
+          // No contexts → the field has no resolvable options. Stay silent for
+          // undeclared slugs (most plugin-managed fields land here), but
+          // promote to a real warning when the slug appears in
+          // `jira-required.yaml` — that's a configuration drift the user
+          // needs to see.
+          if (declaredSlugs.has(slug)) {
+            log.warn(`${slug} (${field.id}): declared in jira-required.yaml but Jira returned no contexts — options map will be empty. Check field-context permissions or remove the slug from the manifest.`);
+          }
+          else if (flags.verbose) {
+            log.dim(`  ${slug}: no contexts, options={}`);
+          }
           entry.options = {};
         }
         else {
@@ -690,31 +802,85 @@ async function buildFieldsOutput(
           const ctx
             = contexts.find(c => c.isGlobalContext)
               ?? contexts[0];
-          const options = await fetchFieldOptions(config, field.id, ctx.id);
-          const optionMap: Record<string, string> = {};
-          const seen = new Map<string, number>();
-          for (const opt of options) {
-            const baseKey = slugify(opt.value);
-            if (!baseKey) { continue; }
-            const seenCount = (seen.get(baseKey) ?? 0) + 1;
-            seen.set(baseKey, seenCount);
-            const key = seenCount === 1 ? baseKey : `${baseKey}_${seenCount}`;
-            optionMap[key] = opt.id;
+
+          if (type === 'option-with-child') {
+            // Cascading select: fetch parent options, then each parent's
+            // children. Persist as parentSlug → { id, children: { childSlug: id } }.
+            const parents = await fetchFieldOptions(config, field.id, ctx.id);
+            const nestedMap: Record<string, NestedOptionEntry> = {};
+            const seenParents = new Map<string, number>();
+            let childTotal = 0;
+            for (const parent of parents) {
+              const baseParent = slugify(parent.value);
+              if (!baseParent) { continue; }
+              const seenCount = (seenParents.get(baseParent) ?? 0) + 1;
+              seenParents.set(baseParent, seenCount);
+              const parentKey = seenCount === 1 ? baseParent : `${baseParent}_${seenCount}`;
+
+              const children = await fetchChildOptions(config, field.id, ctx.id, parent.id);
+              const childMap: Record<string, string> = {};
+              const seenChildren = new Map<string, number>();
+              for (const child of children) {
+                const baseChild = slugify(child.value);
+                if (!baseChild) { continue; }
+                const seenChildCount = (seenChildren.get(baseChild) ?? 0) + 1;
+                seenChildren.set(baseChild, seenChildCount);
+                const childKey = seenChildCount === 1 ? baseChild : `${baseChild}_${seenChildCount}`;
+                childMap[childKey] = child.id;
+              }
+              const sortedChildren: Record<string, string> = {};
+              for (const k of Object.keys(childMap).sort()) {
+                sortedChildren[k] = childMap[k]!;
+              }
+              nestedMap[parentKey] = { id: parent.id, children: sortedChildren };
+              childTotal += children.length;
+            }
+            const sortedNested: Record<string, NestedOptionEntry> = {};
+            for (const k of Object.keys(nestedMap).sort()) {
+              sortedNested[k] = nestedMap[k]!;
+            }
+            entry.options = sortedNested;
+            totalOptions += parents.length + childTotal;
+            if (flags.verbose) {
+              log.dim(`  ${slug}: ${parents.length} parent option(s), ${childTotal} child option(s)`);
+            }
+            if (parents.length === 0 && declaredSlugs.has(slug)) {
+              log.warn(`${slug} (${field.id}): declared in jira-required.yaml but cascading-select context has zero parent options.`);
+            }
           }
-          // Sort option keys alphabetically for deterministic output.
-          const sortedOptions: Record<string, string> = {};
-          for (const k of Object.keys(optionMap).sort()) {
-            sortedOptions[k] = optionMap[k]!;
+          else {
+            const options = await fetchFieldOptions(config, field.id, ctx.id);
+            const optionMap: Record<string, string> = {};
+            const seen = new Map<string, number>();
+            for (const opt of options) {
+              const baseKey = slugify(opt.value);
+              if (!baseKey) { continue; }
+              const seenCount = (seen.get(baseKey) ?? 0) + 1;
+              seen.set(baseKey, seenCount);
+              const key = seenCount === 1 ? baseKey : `${baseKey}_${seenCount}`;
+              optionMap[key] = opt.id;
+            }
+            // Sort option keys alphabetically for deterministic output.
+            const sortedOptions: Record<string, string> = {};
+            for (const k of Object.keys(optionMap).sort()) {
+              sortedOptions[k] = optionMap[k]!;
+            }
+            entry.options = sortedOptions;
+            totalOptions += options.length;
+            if (flags.verbose) { log.dim(`  ${slug}: ${options.length} option(s)`); }
+            if (options.length === 0 && declaredSlugs.has(slug)) {
+              log.warn(`${slug} (${field.id}): declared in jira-required.yaml but Jira context returned zero options.`);
+            }
           }
-          entry.options = sortedOptions;
-          totalOptions += options.length;
-          if (flags.verbose) { log.dim(`  ${slug}: ${options.length} option(s)`); }
         }
       }
       catch (e) {
         const status = (e as { status?: number }).status;
         if (status === 404 || status === 400) {
           log.warn(`Could not fetch options for "${field.name}" (${field.id}): ${(e as Error).message.split('—')[0]?.trim() ?? 'unknown'}. Continuing.`);
+          if (declaredSlugs.has(slug)) {
+            log.warn(`${slug} (${field.id}): declared in jira-required.yaml but options fetch failed — options map will be empty.`);
+          }
           entry.options = {};
         }
         else {
@@ -952,13 +1118,14 @@ async function main(): Promise<void> {
   }
 
   const config = loadConfig();
+  const declaredSlugs = loadDeclaredSlugs();
 
   let output: JiraFieldsOutput;
   let stats: Record<string, number>;
   let totalOptions: number;
   let collisions: Map<string, CollisionEntry[]>;
   try {
-    ({ output, stats, totalOptions, collisions } = await buildFieldsOutput(config, flags));
+    ({ output, stats, totalOptions, collisions } = await buildFieldsOutput(config, flags, declaredSlugs));
   }
   catch (e) {
     log.error(`Failed to build fields output: ${(e as Error).message}`);

@@ -30,6 +30,7 @@ Three syntaxes coexist across skills, commands and docs. Each resolves from a di
 | `{{environments.<env>.<var>}}` | **Explicit env-scoped reference** — bypasses active-env resolution and always points at a specific environment. Used in multi-env documents (e.g. a comparison table that shows local AND staging URLs side-by-side). | `.agents/project.yaml` → `environments.<env>.<var>` directly. | `bun run lint:agents` (env must be declared under `environments:` and var must exist under it). |
 | `<<VAR_NAME>>` | **Session variable** — computed at runtime by the calling command (e.g. `<<ISSUE_KEY>>` extracted from a git branch name) or used as a sentinel marker (`<<PLACEHOLDER>>`, `<<REDACTED>>`). Never persisted. | The skill / command's runtime context. | Linter only counts them — never declared. |
 | `{{jira.<slug>}}` | **Jira custom field reference** — portable pointer to a Jira custom field. | `.agents/jira-required.yaml` (canonical declaration of expected fields) AND `.agents/jira.json` (workspace-resolved IDs). Skills never hardcode `customfield_XXXXX`. | `bun run lint:agents` (slug must be declared in the manifest) AND `bun run jira:check` (slug must resolve to a real field in `jira.json`). |
+| `{{jira.<slug>.<option>}}` | **Jira option-value reference** — portable pointer to a single option value of a select-type custom field. Use the two-segment form for plain `option` and `array`-of-option fields. For cascading-select (`option-with-child`) fields, use the three-segment form `{{jira.<slug>.<parent>.<child>}}` to reach a child option. | `.agents/jira.json` → `<slug>.options.<option>` for plain options, or `<slug>.options.<parent>.children.<child>` for cascading. The slug must also be declared in `.agents/jira-required.yaml`. | `bun run lint:agents` (slug must be declared in the manifest AND the option must exist in the catalog). |
 
 The `{{…}}` vs `<<…>>` distinction is intentional: it removes the previous ambiguity where both project data and ephemeral session data shared the same `{{VAR}}` syntax.
 
@@ -55,7 +56,7 @@ When you clone this boilerplate into a new project:
 3. Run `bun run jira:sync-fields` to discover your Jira workspace's custom fields. Writes `.agents/jira.json` (~100-150 fields typical). Resolves slug collisions deterministically — see `--allow-collisions` if you hit one.
 4. Run `bun run jira:check` to validate your Jira against the methodology's required-fields manifest. Address any output:
    - **❌ MISSING** — create the field in Jira admin (Settings → Issues → Custom fields) with the suggested name, type, and options. Re-run `bun run jira:sync-fields --force` then `bun run jira:check`.
-   - **⚠️ MISMATCHED** — rename, retype, or extend the field in Jira so it matches the manifest, OR (if the methodology can adapt) update `jira-required.yaml`.
+   - **⚠️ MISMATCHED** — rename, retype, or extend the field in Jira so it matches the manifest, OR (if the methodology can adapt) update `jira-required.yaml`. This severity also fires when a field declared as `type: option` (or `type: option-with-child`) has an empty `options: {}` map in `jira.json` — usually a missing field-context permission; re-run `bun run jira:sync-fields` after fixing it in Jira admin.
    - **💡 INFO** — informational only; safe to ignore unless you want the optional or unmapped feature.
    - Iterate until all required fields are ✅ OK.
 5. Run `bun run lint:agents` — should report 0 errors. Confirms every `{{VAR}}` and `{{jira.*}}` reference in skills resolves against your config.
@@ -82,6 +83,8 @@ When you add or edit a skill that references project values or Jira fields:
    3. Reference `{{jira.<slug>}}` in your skill markdown.
    4. Run `bun run lint:agents` — must pass (proves the slug is declared).
    5. Run `bun run jira:check` against your own Jira. If your Jira is missing the field, create it in Jira admin and re-run `bun run jira:sync-fields --force`. End users of your skill will hit the same `bun run jira:check` flow when they adopt the change.
+
+- **Jira option values** — when your skill needs to set a field VALUE (not just reference the field ID), use `{{jira.<slug>.<option>}}`. The option slug must be declared in the `options:` array of that field's entry in `jira-required.yaml`. If the field is `type: option-with-child`, the manifest can declare `options:` as either a flat `string[]` of parent slugs or a `Record<string, string[]>` mapping parent slugs to their declared children; consumers reach a child via the three-segment form `{{jira.<slug>.<parent>.<child>}}`. Example: a skill that sets `Severity 🚩` to "Critica" via `acli` should write `--field 'Severity 🚩={{jira.severity.critica}}'` (resolves to `--field 'Severity 🚩=10188'`). Both the slug declaration and the option presence in `.agents/jira.json` are checked by `bun run lint:agents`.
 
 When deleting a skill or removing a `{{jira.<slug>}}` reference:
 
