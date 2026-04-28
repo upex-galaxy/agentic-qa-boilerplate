@@ -500,7 +500,7 @@ Once Stage 3 closes, the ticket state moves forward and the PBI folder becomes t
 1. ATR marked complete in TMS via `[TMS_TOOL]`.
 2. QA comment posted (Template A, B, C or D) via `[ISSUE_TRACKER_TOOL]`.
 3. Evidence screenshots surfaced to the user with absolute paths.
-4. Ticket transitioned — Story PASSED -> `{{jira.status.story.qa_approved}}` (via the `{{jira.transition.story.qa_sign_off}}` transition); Bug VERIFIED -> `{{jira.status.bug.closed}}` (via the `{{jira.transition.bug.retest_passed}}` transition); Story FAILED or Bug NOT FIXED -> left in current status pending dev.
+4. Ticket transitioned — Story PASSED -> `{{jira.status.story.qa_approved}}` (via `{{jira.transition.story.qa_sign_off}}`); Bug VERIFIED -> `{{jira.status.bug.closed}}` (via `{{jira.transition.bug.retest_passed}}`); Story FAILED with `{{QA_FORMAL_BLOCKED_GATE}}=true` -> `{{jira.status.story.blocked}}` (via `{{jira.transition.story.defect_reported}}`); Story FAILED non-strict -> left in `{{jira.status.story.in_test}}` with linked bug; Bug NOT FIXED -> left in `{{jira.status.bug.ready_for_qa}}` pending dev. See `sprint-orchestration.md` Briefing 4 Step 5 for the full decision tree.
 5. PBI `context.md` updated with `Final Status` block.
 6. Commit `test-report.md` + `context.md` changes on branch `test/{JIRA_KEY}/{short-desc}`, message `test({JIRA_KEY}): add Stage 3 test report for {brief-title}`. Never push to `main` without user confirmation.
 7. For batch-sprint mode, only now is the `SPRINT-{N}-TESTING.md` framework file updated (Stage-3 gate).

@@ -50,28 +50,30 @@ Output path: `.context/reports/SPRINT-{sprint_number}-TESTING.md`. If it already
 ### Steps
 
 1. **Query tickets** via `[ISSUE_TRACKER_TOOL]` for `Sprint {N}` with fields: Ticket ID, Type, Title, Priority, Status, QA Assignee, Developer, Project/Epic, Platform. Sort by Priority DESC, Status ASC.
-2. **Classify** each ticket's board status:
+2. **Classify** each ticket's board status (resolve canonical slugs via `.agents/jira-workflows.json`):
 
-   | Board Status | QA Category | Wave |
-   |--------------|-------------|------|
-   | DevStage / QA Ready / Testing | Active testing queue | Wave 1 |
-   | TestedDevStage (no artifacts) | Missing formal testing | Wave 1 (priority) |
-   | Dev Complete (Merged) | Next deploy candidates | Wave 2 |
-   | Dev Complete (In Review) | Pipeline | Wave 2 |
-   | In Progress | Still in development | Pipeline |
-   | Blocked | Monitor | Pipeline |
-   | Prioritized / Backlog | Not started | Backlog |
-   | Done | Completed | Done |
-   | Cancelled | No action | Cancelled |
+   | Canonical Status (Story) | QA Category | Wave |
+   |---|---|---|
+   | `{{jira.status.story.in_test}}` | Active testing (resume in progress) | Wave 1 |
+   | `{{jira.status.story.ready_for_qa}}` | Ready to test | Wave 1 |
+   | `{{jira.status.story.qa_approved}}` *with no ATP/ATR linked* | Missing formal testing (retroactive) | Wave 1 (priority) |
+   | `{{jira.status.story.in_review}}` | Dev Complete — PR open | Wave 2 |
+   | `{{jira.status.story.in_progress}}` | Still in development | Pipeline |
+   | `{{jira.status.story.blocked}}` | Defect blocking release (monitor) | Pipeline |
+   | `{{jira.status.story.shift_left_qa}}` / `estimation` / `ready_for_dev` / `backlog` | Not started | Backlog |
+   | `{{jira.status.story.qa_approved}}` *with artifacts* / `ready_for_release` / `deployed_to_production` | Verified / released | Done |
+   | `{{jira.status.story.aborted}}` | Cancelled (terminal) | Cancelled |
 
-   Status names are project-specific — adapt to `{{ISSUE_TRACKER}}`. Principle: tickets closest to "ready for QA" go in Wave 1.
+   Principle: stories already mid-test or queued for QA go to Wave 1; previously-approved stories missing ATP/ATR get retroactive Wave-1-priority treatment. If the project's substrate lacks a slug (e.g. no `blocked` status), drop that row gracefully and continue.
 
 3. **Detect carryovers** if `previous_sprint_file` was provided. Scan it for tickets whose status is NOT `PASSED` / `CANCELLED` / `Done`. For each, check whether it appears in the current sprint; if yes mark as carryover with prior context; if no note as "dropped from sprint" and inform the user.
-4. **Organize waves**:
-   - Wave 1 = DevStage / {{jira.status.story.ready_for_qa}} + tickets in a "tested" state missing formal artifacts. Sort: Priority then QA assignment.
-   - Wave 2 = Dev Complete split into "Merged on Dev" + "Ready for Review", sort by Priority.
-   - Pipeline = In Progress + Blocked, grouped separately.
-   - Backlog / Done / Cancelled listed for completeness.
+4. **Organize waves** (substrate-driven; skip slugs the project does not expose):
+   - Wave 1 = `{{jira.status.story.in_test}}` + `{{jira.status.story.ready_for_qa}}` + retroactive `{{jira.status.story.qa_approved}}` (no ATP/ATR). Sort: Priority then QA assignment.
+   - Wave 2 = `{{jira.status.story.in_review}}` (Dev Complete — PR open). Sort by Priority.
+   - Pipeline = `{{jira.status.story.in_progress}}` + `{{jira.status.story.blocked}}`, grouped separately.
+   - Backlog = `{{jira.status.story.backlog}}` / `shift_left_qa` / `estimation` / `ready_for_dev`.
+   - Done = `{{jira.status.story.qa_approved}}` (with artifacts) / `ready_for_release` / `deployed_to_production`.
+   - Cancelled = `{{jira.status.story.aborted}}`.
 5. **Detect QA automation tasks**: `Type = QA Task` OR title contains "E2E Tests" / "Integration Tests", assigned to `qa_lead`. Collect into their own section.
 6. **Write** the file using the structure below.
 7. **Report** a short board summary: totals, wave counts, carryovers.
@@ -92,7 +94,9 @@ Output path: `.context/reports/SPRINT-{sprint_number}-TESTING.md`. If it already
 
 ## Testing Queue (Priority Order)
 
-### Wave 1 - NOW IN DEVSTAGE ({date})
+### Wave 1 - QA Queue ({date})
+> Includes `{{jira.status.story.in_test}}`, `{{jira.status.story.ready_for_qa}}`, and retroactive `{{jira.status.story.qa_approved}}` (no ATP/ATR).
+
 | # | Ticket | Type | Title | Priority | Dev | Project | Platform | ATP | ATR | TCs | Status |
 |---|--------|------|-------|----------|-----|---------|----------|-----|-----|-----|--------|
 | 1 | {ID} | {type} | {title} | {priority} | {dev} | {project} | {platform} | - | - | - | PENDING |
@@ -103,22 +107,24 @@ Output path: `.context/reports/SPRINT-{sprint_number}-TESTING.md`. If it already
 #### Wave 1 Dependencies
 - {Ticket A} relates to {Ticket B} — {reason}
 
-### Missing Formal Testing (TestedDevStage without Artifacts)
+### Missing Formal Testing (`qa_approved` without ATP/ATR)
 {include ONLY if present}
 | Ticket | Type | Title | Priority | Dev | Project | Platform | ATP | ATR | TCs | Issue |
 
-### Wave 2 - Pipeline (Dev Complete)
-#### Dev Complete (Merged) - {count}
-| Ticket | Type | Title | Priority | Dev | Project | Platform | ATP | ATR | TCs |
-
-#### Dev Complete (In Review) - {count}
+### Wave 2 - Pipeline (PR Open)
+#### `{{jira.status.story.in_review}}` - {count}
 | Ticket | Type | Title | Priority | Dev | Project | Platform | ATP | ATR | TCs | Notes |
 
-### In Progress - Still Being Developed ({count})
-### Blocked ({count})
-### Prioritized ({count})
+### `{{jira.status.story.in_progress}}` ({count})
+### `{{jira.status.story.blocked}}` ({count})
+### Backlog & Estimation ({count})
+> Includes `{{jira.status.story.backlog}}`, `shift_left_qa`, `estimation`, `ready_for_dev`.
+
 ### Done ({count})
+> Includes `{{jira.status.story.qa_approved}}` (with artifacts), `ready_for_release`, `deployed_to_production`.
+
 ### Cancelled ({count})
+> `{{jira.status.story.aborted}}`
 
 ## Sprint Carryovers from Sprint {N-1}
 {include ONLY if previous_sprint_file was provided}
@@ -132,17 +138,17 @@ Output path: `.context/reports/SPRINT-{sprint_number}-TESTING.md`. If it already
 | Metric | Value |
 |--------|-------|
 | Total Sprint Tickets | {total} |
-| DevStage (QA Queue) | {count} |
+| Wave 1 (QA Queue) | {count} |
 | Wave 1 Tested (PASSED) | 0/{wave1_count} |
-| Pipeline (Dev Complete + In Progress) | {count} |
-| Blocked / Prioritized / Done / Cancelled | {counts} |
+| Pipeline (`in_review` + `in_progress`) | {count} |
+| `blocked` / Backlog / Done / Cancelled | {counts} |
 | Carryovers from Sprint {N-1} | {count or 0} |
 | Total Tested So Far | 0 |
 
 ## Session Log
 ### {YYYY-MM-DD} - Sprint {N} Setup & Triage
 - Queried {{ISSUE_TRACKER}}: {total} tickets in Sprint {N}
-- {wave1_count} DevStage tickets identified ({list IDs})
+- {wave1_count} Wave 1 tickets identified ({list IDs})
 - {assigned_count} assigned to {qa_lead}, {unassigned_count} unassigned
 - {carryover_count} carryovers from Sprint {N-1}: {list}
 - Created SPRINT-{N}-TESTING.md tracker
@@ -153,7 +159,7 @@ Output path: `.context/reports/SPRINT-{sprint_number}-TESTING.md`. If it already
 1. **Status column in Wave 1**: the orchestrator scans for `PENDING` to pick the next ticket. Valid values during a sprint: `PENDING`, `PASSED`, `FAILED`, `BLOCKED`, `DEFERRED`, `SKIPPED`.
 2. **ATP / ATR / TCs columns**: initialized as `-`; updated AFTER Stage 3 completes for each ticket (e.g. `51`, `61`, `4`).
 3. **Priority order** inside Wave 1: the `#` column determines testing order — pick the lowest-numbered `PENDING`. Order: Critical bugs -> Critical features -> High -> Medium -> Low.
-4. **Wave promotion**: when tickets move to DevStage mid-sprint, append them to a new wave section (Wave 2 becomes active, renumber). Read the latest wave with `PENDING` tickets.
+4. **Wave promotion**: when tickets move to `{{jira.status.story.ready_for_qa}}` mid-sprint, append them to a new wave section (Wave 2 becomes active, renumber). Read the latest wave with `PENDING` tickets.
 5. **Session Log**: each testing session appends an entry. Provides continuity across AI sessions.
 
 ---
@@ -384,10 +390,13 @@ Exact instructions:
        - Modality A: [TMS_TOOL] Update Test Execution / Run statuses; mark ATR complete.
        - Modality B: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_results_atr}} field + comment mirror.
   4. Post QA comment on <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Add Comment using the matching template from reporting-templates.md (Story PASSED/FAILED, or Bug Template C/D).
-  5. Transition <TICKET_KEY> to the work-type terminal QA state via [ISSUE_TRACKER_TOOL] Transition Issue. Resolve from substrate:
-       - Story PASSED -> `{{jira.transition.story.qa_sign_off}}` (`in_test` -> `qa_approved`).
-       - Bug PASSED -> `{{jira.transition.bug.retest_passed}}` (`ready_for_qa` -> `closed`).
-       - FAILED (any work type) -> do NOT execute `qa_sign_off` / `retest_passed`. Leave the ticket in its current state, ensure the QA comment + bug links surface the outcome to dev, and emit `transition_skipped: "failed_no_canonical_transition"`. The "send back to dev" transition is project-specific and not part of the canonical substrate yet.
+  5. Transition <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Transition Issue. Resolve from substrate:
+       - **Story PASSED** -> `{{jira.transition.story.qa_sign_off}}` (`in_test` -> `qa_approved`).
+       - **Bug PASSED** -> `{{jira.transition.bug.retest_passed}}` (`ready_for_qa` -> `closed`).
+       - **Story FAILED** -> formal-vs-non-strict branch driven by `{{QA_FORMAL_BLOCKED_GATE}}` from `.agents/project.yaml`:
+           - If `qa.formal_blocked_gate == true` AND `{{jira.status.story.blocked}}` resolves AND `{{jira.transition.story.defect_reported}}` is available from current status -> execute `defect_reported` (`in_test` -> `blocked`). The bug filed in step 6 belongs to the dev who picks it up via `{{jira.transition.story.fix_defect}}` (`blocked` -> `in_progress`).
+           - Otherwise (flag is false, or substrate lacks `blocked` / `defect_reported`) -> non-strict fallback: leave the story in `{{jira.status.story.in_test}}` with the linked bug and emit `transition_skipped: "non_strict_failed_left_in_test"`. The dev fixes the underlying bug; QA re-tests once redeployed.
+       - **Bug FAILED** -> non-strict fallback: leave the bug in `{{jira.status.bug.ready_for_qa}}` with the QA comment surfacing the failure. If the bug is already `{{jira.status.bug.closed}}` (regression caught after sign-off), use `{{jira.transition.bug.back}}` (`closed` -> `ready_for_qa`) or `{{jira.transition.bug.re_open}}` (any -> `open`) per project policy.
      Append the executed transition (or skip reason) to `Stage Results > Reporting > Transition Trail` in `test-session-memory.md`. Never close the ticket yourself; never bypass the substrate slug.
   6. For each BUG_FOUND from Stage 2: [ISSUE_TRACKER_TOOL] Create Issue --type Bug with the summary format `<EPIC>: <COMPONENT>: <ISSUE_SUMMARY>` from reporting-templates.md §1.2; populate description, severity, repro steps, evidence links; link to the parent ticket.
   7. Update <PBI_FOLDER>/test-session-memory.md sections: TMS Artifacts (final IDs), Stage Results > Reporting, Checklist > Reporting.
@@ -485,15 +494,24 @@ Created at `.context/PBI/{module-name}/{{PROJECT_KEY}}-{number}-{brief-title}/te
 ### Session Start
 ### Planning
 ### Execution
-{Stage 2 subagent fills this with smoke / triforce / bug findings. MUST include a `#### Transition Trail` sub-block recording every status change driven by the skill (one row per transition):}
+{Stage 2 subagent fills this with smoke / triforce / bug findings. MUST include a `#### Transition Trail` sub-block recording every status change driven by this stage (typically one row: the pre-smoke `start_testing` transition):}
 
 #### Transition Trail
-| When | From | To | Transition ID |
-|------|------|----|---------------|
-| Pre-smoke | {{jira.status.<work_type>.ready_for_qa}} | {{jira.status.<work_type>.in_test}} | <id> |
-| Post-Stage 3 | {{jira.status.<work_type>.in_test}} | {{jira.status.<work_type>.qa_approved}} | <id> |
+| When | From | To | Transition ID | Notes |
+|------|------|----|---------------|-------|
+| Pre-smoke | {{jira.status.<work_type>.ready_for_qa}} | {{jira.status.<work_type>.in_test}} | <id> | start_testing |
 
 ### Reporting
+{Stage 3 subagent fills this with the closing-transition outcome. Pick the row that matches the verdict; only one applies per session:}
+
+#### Transition Trail
+| Scenario | From | To | Transition ID | Notes |
+|----------|------|----|---------------|-------|
+| Story PASSED | {{jira.status.story.in_test}} | {{jira.status.story.qa_approved}} | <id> | qa_sign_off |
+| Story FAILED (formal, `{{QA_FORMAL_BLOCKED_GATE}}=true`) | {{jira.status.story.in_test}} | {{jira.status.story.blocked}} | <id> | defect_reported |
+| Story FAILED (non-strict) | — | — | — | transition_skipped: non_strict_failed_left_in_test |
+| Bug PASSED | {{jira.status.bug.ready_for_qa}} | {{jira.status.bug.closed}} | <id> | retest_passed |
+| Bug FAILED | — | — | — | left in ready_for_qa with FAILED comment (or back / re_open if previously closed) |
 
 ## Bugs Found
 {append when found}

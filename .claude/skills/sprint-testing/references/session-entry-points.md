@@ -349,7 +349,7 @@ Actions:
 2. Fill the ATR Test Report via `[TMS_TOOL] atr update {ATR-ID} --report "..."`. Mark ATR complete.
 3. Create `test-report.md` in the PBI folder (local mirror of ATR).
 4. Post the QA comment to the ticket via `[ISSUE_TRACKER_TOOL]`. Use the user-story templates (PASSED / FAILED) from `reporting-templates.md`.
-5. Transition the ticket to the work-type terminal QA state via substrate: Story PASSED -> `{{jira.transition.story.qa_sign_off}}`, Bug PASSED -> `{{jira.transition.bug.retest_passed}}`. Skip the transition on FAILED outcomes (no canonical "send back to dev" transition in the substrate yet) — see `sprint-orchestration.md` Briefing 4 Step 5 for full decision tree.
+5. Transition the ticket via substrate. Decision tree: Story PASSED -> `{{jira.transition.story.qa_sign_off}}`; Bug PASSED -> `{{jira.transition.bug.retest_passed}}`; Story FAILED with `{{QA_FORMAL_BLOCKED_GATE}}=true` -> `{{jira.transition.story.defect_reported}}` (`in_test` -> `blocked`); Story FAILED non-strict (flag false or no `blocked` slug) -> leave in `{{jira.status.story.in_test}}` with linked bug; Bug FAILED -> leave in `{{jira.status.bug.ready_for_qa}}` (or `back` / `re_open` if previously closed). See `sprint-orchestration.md` Briefing 4 Step 5 for the full decision tree.
 6. Attach evidence screenshot paths for the user.
 
 Output checkpoint:
@@ -559,7 +559,7 @@ Templates (ATR body, QA comment Template C PASSED / Template D FAILED, evidence-
 
 1. **Automation opportunity assessment** — rate 0-2 each: Reproducibility, Stability, Risk, Frequency, Complexity. Totals: 8-10 HIGH / 5-7 MEDIUM / 0-4 LOW. Record suggested test type (E2E / API / DB) and effort (Low / Medium / High). The `test-documentation` skill will use this for the formal ROI decision.
 2. **Update ATR** — if none exists, create "Bug Verification: {{PROJECT_KEY}}-{number}". Fill with: ticket, environment, result (PASSED/FAILED), step-by-step verification, regression check, automation assessment. Mark complete.
-3. **Ticket status + comment** — PASSED: add verification summary via Template C, transition to {{jira.status.bug.closed}} (via the {{jira.transition.bug.retest_passed}} transition). FAILED: add failure details via Template D, move back to {{jira.status.bug.in_progress}}, tag developer. ALWAYS prepare the comment BEFORE transitioning.
+3. **Ticket status + comment** — PASSED: add verification summary via Template C, transition via `{{jira.transition.bug.retest_passed}}` (`ready_for_qa` -> `closed`). FAILED: add failure details via Template D, leave the bug in `{{jira.status.bug.ready_for_qa}}` and tag the developer; if the bug was already `{{jira.status.bug.closed}}` (regression caught after sign-off), use `{{jira.transition.bug.back}}` (`closed` -> `ready_for_qa`) or `{{jira.transition.bug.re_open}}` (any -> `open`) per project policy. ALWAYS prepare the comment BEFORE transitioning.
 4. **Evidence paths for the user** — after posting, tell them the 1-2 most important screenshot paths to attach (pick bug-showing-fix for PASSED; before/after for regressions; skip navigation screenshots).
 5. **Update local PBI `context.md`** — Type: Bug, Status VERIFIED/FAILED, Verified date, Bug Summary (Was/Now), Verification Result + evidence path, Automation Assessment (Candidate/Priority/Reason), Notes.
 6. **Report to user** — `Bug Verification Complete` block with: bug, dev, result, verification summary table, evidence path, automation assessment, TMS artifacts (ATR id), next steps (ready for prod / add to automation backlog / return to dev).
