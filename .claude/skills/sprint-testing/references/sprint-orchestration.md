@@ -325,18 +325,24 @@ Context docs:
 Skills to load: /playwright-cli (UI exploration); the active environment's API and DB MCPs ({{API_MCP}} and {{DB_MCP}} from project.yaml). For Bug tickets: same set, no extras.
 
 Exact instructions:
-  1. Configure evidence: set .playwright/cli.config.json `outputDir` to <PBI_FOLDER>/evidence/. Screenshots also need full path in --filename (outputDir does NOT apply to .png).
-  2. Smoke (5-10 min, ALWAYS FIRST): validate the happy path of every P0 ATC. If smoke fails, emit smoke_result=fail and STOP — do NOT proceed to deep exploration.
-  3. Triforce UI: explore edge cases, empty states, validation errors per exploration-patterns.md §1.
-  4. Triforce API: hit the relevant endpoints with valid + invalid + boundary payloads via the API MCP per exploration-patterns.md §2.
-  5. Triforce DB: verify state changes via the DB MCP for write-side ATCs per exploration-patterns.md §3.
-  6. Bug branch: replace steps 3-5 with reproduce-original -> verify-fix -> regression-pass on adjacent areas -> DB cross-validation if data-integrity bug (per session-entry-points.md §"Bug workflow Phase 2").
-  7. Capture evidence (screenshots, traces, response samples) under <PBI_FOLDER>/evidence/ using the naming rule from exploration-patterns.md.
-  8. For each defect found: build a BUG_FOUND entry with severity, repro steps, evidence paths.
-  9. Update <PBI_FOLDER>/test-session-memory.md sections: Stage Results > Execution, Bugs Found, Observations, Checklist > Execution.
+  1. Mark the ticket as actively testing (substrate-driven, idempotent, non-blocking). Resolve `{{jira.transition.<work_type>.start_testing}}` and `{{jira.status.<work_type>.in_test}}` from `.agents/jira-workflows.json` (per AGENTS.md §"Project Variables"). Call `[ISSUE_TRACKER_TOOL] Get Transitions` for `<TICKET_KEY>`. Skip (and emit `skipped_reason`) if any of these hold:
+       - current status already equals `{{jira.status.<work_type>.in_test}}` -> `"already_in_test"`
+       - the substrate slug is undefined for `<work_type>` (e.g. Bug work types without an intermediate in-testing state) -> `"no_in_test_state_for_<work_type>"`
+       - the resolved transition id is not available from the current status -> `"transition_not_available_from_<current_status>"`
+     Otherwise execute `[ISSUE_TRACKER_TOOL] Transition Issue` with the resolved transition id and append `{ when: "pre-smoke", from, to, transition_id }` to `Stage Results > Execution > Transition Trail` in `test-session-memory.md`. Never abort Stage 2 on this step — surface the skip reason in the report and proceed.
+  2. Configure evidence: set .playwright/cli.config.json `outputDir` to <PBI_FOLDER>/evidence/. Screenshots also need full path in --filename (outputDir does NOT apply to .png).
+  3. Smoke (5-10 min, ALWAYS FIRST): validate the happy path of every P0 ATC. If smoke fails, emit smoke_result=fail and STOP — do NOT proceed to deep exploration.
+  4. Triforce UI: explore edge cases, empty states, validation errors per exploration-patterns.md §1.
+  5. Triforce API: hit the relevant endpoints with valid + invalid + boundary payloads via the API MCP per exploration-patterns.md §2.
+  6. Triforce DB: verify state changes via the DB MCP for write-side ATCs per exploration-patterns.md §3.
+  7. Bug branch: replace steps 4-6 with reproduce-original -> verify-fix -> regression-pass on adjacent areas -> DB cross-validation if data-integrity bug (per session-entry-points.md §"Bug workflow Phase 2").
+  8. Capture evidence (screenshots, traces, response samples) under <PBI_FOLDER>/evidence/ using the naming rule from exploration-patterns.md.
+  9. For each defect found: build a BUG_FOUND entry with severity, repro steps, evidence paths.
+  10. Update <PBI_FOLDER>/test-session-memory.md sections: Stage Results > Execution, Bugs Found, Observations, Checklist > Execution.
 
 Report format:
   {
+    "start_test_transition": { "executed": true|false, "from": "<status>", "to": "<status>", "transition_id": "<id|null>", "skipped_reason": null|"<reason>" },
     "smoke_result": "pass | fail | partial",
     "triforce": {
       "ui": [{ "atc": "...", "result": "PASSED|FAILED", "evidence": [...] }],
@@ -378,7 +384,11 @@ Exact instructions:
        - Modality A: [TMS_TOOL] Update Test Execution / Run statuses; mark ATR complete.
        - Modality B: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_results_atr}} field + comment mirror.
   4. Post QA comment on <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Add Comment using the matching template from reporting-templates.md (Story PASSED/FAILED, or Bug Template C/D).
-  5. Transition <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Transition Issue to the corresponding tested state (project-specific; never close the ticket yourself).
+  5. Transition <TICKET_KEY> to the work-type terminal QA state via [ISSUE_TRACKER_TOOL] Transition Issue. Resolve from substrate:
+       - Story PASSED -> `{{jira.transition.story.qa_sign_off}}` (`in_test` -> `qa_approved`).
+       - Bug PASSED -> `{{jira.transition.bug.retest_passed}}` (`ready_for_qa` -> `closed`).
+       - FAILED (any work type) -> do NOT execute `qa_sign_off` / `retest_passed`. Leave the ticket in its current state, ensure the QA comment + bug links surface the outcome to dev, and emit `transition_skipped: "failed_no_canonical_transition"`. The "send back to dev" transition is project-specific and not part of the canonical substrate yet.
+     Append the executed transition (or skip reason) to `Stage Results > Reporting > Transition Trail` in `test-session-memory.md`. Never close the ticket yourself; never bypass the substrate slug.
   6. For each BUG_FOUND from Stage 2: [ISSUE_TRACKER_TOOL] Create Issue --type Bug with the summary format `<EPIC>: <COMPONENT>: <ISSUE_SUMMARY>` from reporting-templates.md §1.2; populate description, severity, repro steps, evidence links; link to the parent ticket.
   7. Update <PBI_FOLDER>/test-session-memory.md sections: TMS Artifacts (final IDs), Stage Results > Reporting, Checklist > Reporting.
 
@@ -475,6 +485,14 @@ Created at `.context/PBI/{module-name}/{{PROJECT_KEY}}-{number}-{brief-title}/te
 ### Session Start
 ### Planning
 ### Execution
+{Stage 2 subagent fills this with smoke / triforce / bug findings. MUST include a `#### Transition Trail` sub-block recording every status change driven by the skill (one row per transition):}
+
+#### Transition Trail
+| When | From | To | Transition ID |
+|------|------|----|---------------|
+| Pre-smoke | {{jira.status.<work_type>.ready_for_qa}} | {{jira.status.<work_type>.in_test}} | <id> |
+| Post-Stage 3 | {{jira.status.<work_type>.in_test}} | {{jira.status.<work_type>.qa_approved}} | <id> |
+
 ### Reporting
 
 ## Bugs Found
@@ -514,6 +532,7 @@ Created at `.context/PBI/{module-name}/{{PROJECT_KEY}}-{number}-{brief-title}/te
 - [ ] ATP marked complete
 
 ### Execution
+- [ ] Ticket transitioned to in-test (or skipped per substrate)
 - [ ] Smoke test passed (Go/No-Go)
 - [Feature] All TCs executed; none NOT RUN
 - [Feature] TCs marked PASSED or FAILED in [TMS_TOOL]
@@ -528,7 +547,7 @@ Created at `.context/PBI/{module-name}/{{PROJECT_KEY}}-{number}-{brief-title}/te
 - [ ] ATR report filled and marked complete
 - [ ] test-report.md created in PBI
 - [ ] QA comment posted
-- [ ] Ticket transitioned to tested state
+- [ ] Ticket transitioned to the work-type terminal QA state via substrate (or skipped on FAILED)
 ```
 
 ---

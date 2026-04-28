@@ -316,6 +316,7 @@ Reference: `references/exploration-patterns.md`.
 
 Actions:
 
+0. **Mark ticket as actively testing** (substrate-driven, idempotent, non-blocking): resolve `{{jira.transition.<work_type>.start_testing}}` and `{{jira.status.<work_type>.in_test}}` from `.agents/jira-workflows.json`; transition `<TICKET_KEY>` to the in-test state if it is not already there. Skip cleanly when the substrate has no in-test state for the work type (e.g. Bugs in this boilerplate's default substrate). Detail in `sprint-orchestration.md` Briefing 3 Step 1.
 1. **Smoke test (5-10 min, ALWAYS FIRST)**: verify basic functionality works, no blocking errors. Go (proceed) or No-Go (STOP and report).
 2. **Deep exploration** as applicable:
    - UI on `{{WEB_URL}}` via `[AUTOMATION_TOOL]`.
@@ -348,7 +349,7 @@ Actions:
 2. Fill the ATR Test Report via `[TMS_TOOL] atr update {ATR-ID} --report "..."`. Mark ATR complete.
 3. Create `test-report.md` in the PBI folder (local mirror of ATR).
 4. Post the QA comment to the ticket via `[ISSUE_TRACKER_TOOL]`. Use the user-story templates (PASSED / FAILED) from `reporting-templates.md`.
-5. Transition the ticket to the tested state.
+5. Transition the ticket to the work-type terminal QA state via substrate: Story PASSED -> `{{jira.transition.story.qa_sign_off}}`, Bug PASSED -> `{{jira.transition.bug.retest_passed}}`. Skip the transition on FAILED outcomes (no canonical "send back to dev" transition in the substrate yet) — see `sprint-orchestration.md` Briefing 4 Step 5 for full decision tree.
 6. Attach evidence screenshot paths for the user.
 
 Output checkpoint:
