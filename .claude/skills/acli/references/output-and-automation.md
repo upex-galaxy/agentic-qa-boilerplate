@@ -66,7 +66,7 @@ jq -r '.issues[].key'
 jq -r '.issues[] | [.key, .fields.summary] | @tsv'
 
 # Filter by status
-jq '.issues[] | select(.fields.status.name == "Done")'
+jq '.issues[] | select(.fields.status.name == "{{jira.status.story.deployed_to_production}}")'
 
 # Count
 jq '.issues | length'
@@ -103,7 +103,7 @@ acli jira workitem search --jql 'project = TEST' --limit 10 --csv > output.csv
 acli jira workitem search --jql 'project = TEST' --limit 10 && echo "Completed"
 
 # Pipe through grep
-acli jira workitem search --jql 'project = ACLI' --limit 10 | grep "To Do"
+acli jira workitem search --jql 'project = ACLI' --limit 10 | grep "{{jira.status.story.backlog}}"
 
 # Pipe through jq
 acli jira workitem view ACLI-100 --json | jq '.fields.summary'
@@ -156,8 +156,8 @@ There is no `--dry-run` on any `acli` command. For high-blast-radius batches, wr
 #!/usr/bin/env bash
 set -euo pipefail
 
-JQL="project = TEAM AND status = Backlog"
-NEW_STATUS="In Progress"
+JQL="project = TEAM AND status = {{jira.status.story.backlog}}"
+NEW_STATUS="{{jira.status.story.in_progress}}"
 
 echo "Preview — items that would transition to '$NEW_STATUS':"
 acli jira workitem search --jql "$JQL" --paginate \

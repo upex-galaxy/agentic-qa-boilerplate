@@ -87,11 +87,11 @@ acli jira auth status
 acli jira workitem create --project "TEAM" --type "Task" --summary "Draft the Q3 OKRs"
 
 # 4. Search with JQL — ALWAYS pass --paginate or --limit explicitly
-acli jira workitem search --jql "project = TEAM AND status = 'To Do'" --paginate --json
+acli jira workitem search --jql "project = TEAM AND status = '{{jira.status.story.backlog}}'" --paginate --json
 
 # 5. Transition one or many
 acli jira workitem transition --jql "project = TEAM AND assignee = currentUser()" \
-  --status "In Progress" --yes --ignore-errors
+  --status "{{jira.status.story.in_progress}}" --yes --ignore-errors
 ```
 
 ## Top-level command map

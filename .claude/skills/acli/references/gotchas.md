@@ -73,20 +73,43 @@ Holding a separate basic-auth token for REST calls is unavoidable here — `acli
 
 ## <a id="transitions"></a>5. `transition` matches by status name, not transition ID
 
-**The problem.** `--status` specifies the target status *name*, not the transition ID. When multiple transitions lead to the same status (e.g. "Accept" and "Cancel" both land on "Closed") with different validators, `acli` picks one and may fail validation with `InvalidPayloadException`.
+**The underlying problem.** The Jira REST API distinguishes transitions by ID, but `acli`'s `--status` flag accepts only the target status *name*. When two transitions land on the same status (e.g. both "Accept" and "Cancel" end in `{{jira.status.bug.closed}}`) with different validators, `acli` picks one heuristically and may fail validation with `InvalidPayloadException`. There is no `--transition-id` escape hatch in the CLI.
 
-**Fix.** For workflows with ambiguous transitions, call REST directly:
+**How this boilerplate solves it.** The Jira workflow substrate (`bun run jira:sync-workflows` → `.agents/jira-workflows.json`, validated by `bun run jira:check`) maps every workflow transition to its canonical ID at sync time. Skill authors reference transitions by canonical slug — `{{jira.transition.<work_type>.<slug>}}` resolves to the transition ID, which is unambiguous on the REST endpoint. Status names remain available via `{{jira.status.<work_type>.<slug>}}` for the cases where `acli` *can* disambiguate.
+
+**Worked example — bug retest, the canonical "verified" path:**
 
 ```bash
-# Discover available transitions
-curl -s -u "$EMAIL:$TOKEN" \
-  "https://mysite.atlassian.net/rest/api/3/issue/TEAM-1/transitions" | jq
+# OLD problem-prone pattern (avoid when the target status has multiple incoming transitions)
+acli jira workitem transition --key "BUG-123" --status "Closed"
+# → may fail when the workflow exposes more than one transition into "Closed"
 
-# Execute a specific transition by ID
-curl -s -u "$EMAIL:$TOKEN" \
-  -X POST "https://mysite.atlassian.net/rest/api/3/issue/TEAM-1/transitions" \
+# NEW substrate-aware pattern (preferred when ambiguity is possible)
+# Transition a bug from Ready For QA to Closed via the canonical "verified" path
+curl -s -X POST -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"transition": {"id": "41"}}'
+  "$ATLASSIAN_URL/rest/api/3/issue/BUG-123/transitions" \
+  -d '{"transition":{"id":"{{jira.transition.bug.retest_passed}}"}}'
+# {{jira.transition.bug.retest_passed}} resolves to the canonical transition ID,
+# bypassing any name-based ambiguity.
+```
+
+**Acceptable acli pattern when the path is unambiguous.** When only one transition leads to the target status, `acli --status` is still safe — and the substrate makes that safety verifiable. For example, `Story → In Progress` has only one transition (`Start working`), so:
+
+```bash
+acli jira workitem transition --key "STORY-1" --status "{{jira.status.story.in_progress}}"
+```
+
+is fine. The substrate-resolved status name and the substrate-resolved transition ID describe the same workflow facts; pick the form that matches your call site (acli vs REST).
+
+**Discovery + validation.** The mapping is populated by `bun run jira:sync-workflows` and validated by `bun run jira:check`. If a required transition slug is missing, the check exits non-zero so the gap is caught before a skill tries to use it.
+
+If you genuinely need to enumerate transitions on the fly (e.g. a transition not declared in the manifest), the raw REST recipe still works:
+
+```bash
+# Discover available transitions on a specific issue
+curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
+  "$ATLASSIAN_URL/rest/api/3/issue/BUG-123/transitions" | jq
 ```
 
 ## <a id="auth-scope"></a>6. Auth is per-product, not per-account

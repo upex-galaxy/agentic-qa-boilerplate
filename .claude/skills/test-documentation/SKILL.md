@@ -11,7 +11,7 @@ Take already-validated tests and formalize them in the TMS (Jira, Xray, or equiv
 
 Three phases, always in this order: **Analyze -> Prioritize (ROI) -> Document**. Never skip prioritization: most scenarios should end up Deferred, not automated.
 
-One hard prerequisite: the tests being documented must describe behavior that was **already validated** (QA Approved story, closed bug, or finished exploratory session). The TMS is a documentation and regression-protection tool, not an exploration tool.
+One hard prerequisite: the tests being documented must describe behavior that was **already validated** ({{jira.status.story.qa_approved}} story, closed bug, or finished exploratory session). The TMS is a documentation and regression-protection tool, not an exploration tool.
 
 ---
 

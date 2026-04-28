@@ -273,7 +273,7 @@ After Session Start, run Stages 1 -> 2 -> 3 for the story. Then hand off to Stag
 ### Prerequisites
 
 - [ ] Session Start executed.
-- [ ] Story is "Ready For QA".
+- [ ] Story is "{{jira.status.story.ready_for_qa}}".
 - [ ] Feature deployed to the active env (`{{WEB_URL}}` / `{{API_URL}}`).
 - [ ] Project context files loaded.
 
@@ -388,7 +388,7 @@ All artifacts are created in Stage 1 with complete links.
 
 | Situation | Action |
 |-----------|--------|
-| US not ready | Verify status, wait for "Ready For QA" |
+| US not ready | Verify status, wait for "{{jira.status.story.ready_for_qa}}" |
 | Staging down | Check deployment, escalate to DevOps |
 | Critical bug found | Stop exploration, create bug, wait for fix |
 | Flaky behaviour | Retry with fresh data; document and move on |
@@ -409,7 +409,7 @@ After Session Start, run Phase 1 -> Phase 2 -> Phase 3. Bugs use the same PBI fo
 | Ticket Status | Use this workflow? |
 |---------------|-------------------|
 | Deployed to staging | Yes — ready to retest |
-| In Progress / Dev Complete | No — wait for deployment |
+| In Progress / Dev Complete (not yet {{jira.status.story.ready_for_qa}}) | No — wait for deployment |
 | Already tested | No — already verified |
 
 ### Phase 1 — Triage + Planning
@@ -484,7 +484,7 @@ If triage is Code Review, skip Phases 2-3:
    - [x] No residual problematic code found
    RESULT: Verified
    No ATP/ATR created (low risk fix).
-   Ready for Tested status.
+   Ready for {{jira.status.bug.closed}} status.
    ```
 4. Post via `[ISSUE_TRACKER_TOOL]`. END of Code Review workflow.
 
@@ -558,7 +558,7 @@ Templates (ATR body, QA comment Template C PASSED / Template D FAILED, evidence-
 
 1. **Automation opportunity assessment** — rate 0-2 each: Reproducibility, Stability, Risk, Frequency, Complexity. Totals: 8-10 HIGH / 5-7 MEDIUM / 0-4 LOW. Record suggested test type (E2E / API / DB) and effort (Low / Medium / High). The `test-documentation` skill will use this for the formal ROI decision.
 2. **Update ATR** — if none exists, create "Bug Verification: {{PROJECT_KEY}}-{number}". Fill with: ticket, environment, result (PASSED/FAILED), step-by-step verification, regression check, automation assessment. Mark complete.
-3. **Ticket status + comment** — PASSED: add verification summary via Template C, transition to Tested. FAILED: add failure details via Template D, move back to In Progress, tag developer. ALWAYS prepare the comment BEFORE transitioning.
+3. **Ticket status + comment** — PASSED: add verification summary via Template C, transition to {{jira.status.bug.closed}} (via the {{jira.transition.bug.retest_passed}} transition). FAILED: add failure details via Template D, move back to {{jira.status.bug.in_progress}}, tag developer. ALWAYS prepare the comment BEFORE transitioning.
 4. **Evidence paths for the user** — after posting, tell them the 1-2 most important screenshot paths to attach (pick bug-showing-fix for PASSED; before/after for regressions; skip navigation screenshots).
 5. **Update local PBI `context.md`** — Type: Bug, Status VERIFIED/FAILED, Verified date, Bug Summary (Was/Now), Verification Result + evidence path, Automation Assessment (Candidate/Priority/Reason), Notes.
 6. **Report to user** — `Bug Verification Complete` block with: bug, dev, result, verification summary table, evidence path, automation assessment, TMS artifacts (ATR id), next steps (ready for prod / add to automation backlog / return to dev).

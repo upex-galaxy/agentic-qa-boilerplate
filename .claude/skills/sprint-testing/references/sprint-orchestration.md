@@ -68,7 +68,7 @@ Output path: `.context/reports/SPRINT-{sprint_number}-TESTING.md`. If it already
 
 3. **Detect carryovers** if `previous_sprint_file` was provided. Scan it for tickets whose status is NOT `PASSED` / `CANCELLED` / `Done`. For each, check whether it appears in the current sprint; if yes mark as carryover with prior context; if no note as "dropped from sprint" and inform the user.
 4. **Organize waves**:
-   - Wave 1 = DevStage / QA Ready + tickets in a "tested" state missing formal artifacts. Sort: Priority then QA assignment.
+   - Wave 1 = DevStage / {{jira.status.story.ready_for_qa}} + tickets in a "tested" state missing formal artifacts. Sort: Priority then QA assignment.
    - Wave 2 = Dev Complete split into "Merged on Dev" + "Ready for Review", sort by Priority.
    - Pipeline = In Progress + Blocked, grouped separately.
    - Backlog / Done / Cancelled listed for completeness.

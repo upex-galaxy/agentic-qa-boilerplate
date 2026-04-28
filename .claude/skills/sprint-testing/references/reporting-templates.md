@@ -356,7 +356,7 @@ Also append to `context.md`:
 
 **Result:** {PASSED | FAILED | BLOCKED}
 **Workflow Complete:** {date}
-**Next:** {Tested | Wait for fixes}
+**Next:** {{{jira.status.story.qa_approved}} | Wait for fixes}
 ```
 
 ### 2.4 Report-to-user summary
@@ -500,7 +500,7 @@ Once Stage 3 closes, the ticket state moves forward and the PBI folder becomes t
 1. ATR marked complete in TMS via `[TMS_TOOL]`.
 2. QA comment posted (Template A, B, C or D) via `[ISSUE_TRACKER_TOOL]`.
 3. Evidence screenshots surfaced to the user with absolute paths.
-4. Ticket transitioned — Story PASSED or Bug VERIFIED -> `Tested`; Story FAILED or Bug NOT FIXED -> left in current status pending dev.
+4. Ticket transitioned — Story PASSED -> `{{jira.status.story.qa_approved}}` (via the `{{jira.transition.story.qa_sign_off}}` transition); Bug VERIFIED -> `{{jira.status.bug.closed}}` (via the `{{jira.transition.bug.retest_passed}}` transition); Story FAILED or Bug NOT FIXED -> left in current status pending dev.
 5. PBI `context.md` updated with `Final Status` block.
 6. Commit `test-report.md` + `context.md` changes on branch `test/{JIRA_KEY}/{short-desc}`, message `test({JIRA_KEY}): add Stage 3 test report for {brief-title}`. Never push to `main` without user confirmation.
 7. For batch-sprint mode, only now is the `SPRINT-{N}-TESTING.md` framework file updated (Stage-3 gate).
@@ -540,7 +540,7 @@ When some TCs pass and others fail, set ATR result to `PASSED WITH ISSUES`. File
 - [ ] Local `test-report.md` mirrors the ATR exactly
 - [ ] Correct QA comment template chosen (A/B/C/D) and posted via `[ISSUE_TRACKER_TOOL]`
 - [ ] 1-2 evidence screenshot paths surfaced to the user
-- [ ] Ticket transitioned (`Tested` if PASSED / VERIFIED)
+- [ ] Ticket transitioned (story PASSED -> `{{jira.status.story.qa_approved}}`; bug VERIFIED -> `{{jira.status.bug.closed}}`)
 - [ ] `context.md` updated with Final Status block
 - [ ] `test-report.md` + `context.md` committed on `test/{JIRA_KEY}/{short-desc}` with conventional prefix
 - [ ] Batch mode only: `SPRINT-{N}-TESTING.md` framework file updated AFTER the above

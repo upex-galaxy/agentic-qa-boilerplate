@@ -36,7 +36,7 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 
 | Mode | Input | Output | Use when |
 |------|-------|--------|----------|
-| **Single ticket — User Story** | One story ID (e.g. `{{PROJECT_KEY}}-123`) | ATP + ATR + TCs + QA comment + ticket moved to Tested | Full QA on one story end to end |
+| **Single ticket — User Story** | One story ID (e.g. `{{PROJECT_KEY}}-123`) | ATP + ATR + TCs + QA comment + ticket moved to {{jira.status.story.qa_approved}} | Full QA on one story end to end |
 | **Single ticket — Bug** | One bug ID | Triage decision, then either Code-Review-only OR ATP + ATR + verification report | Retesting a bug fix on staging |
 | **Batch sprint** | `SPRINT-{N}-TESTING.md` framework file | Per-ticket artifacts + updated framework file + session summary | Processing a whole sprint backlog, with interruption + resume support |
 

@@ -28,7 +28,7 @@ Every mutating command on `workitem` (except `create`, `view`) accepts **exactly
 | Flag               | Form                         | Example                                   |
 | ------------------ | ---------------------------- | ----------------------------------------- |
 | `-k, --key`        | Comma-separated keys         | `--key "TEAM-1,TEAM-2,TEAM-3"`            |
-| `--jql`            | JQL query string             | `--jql "project = TEAM AND status = 'To Do'"` |
+| `--jql`            | JQL query string             | `--jql "project = TEAM AND status = '{{jira.status.story.backlog}}'"` |
 | `--filter`         | Saved filter ID              | `--filter 10001`                          |
 | `-f, --from-file`  | File listing keys            | `--from-file keys.txt` (some commands)    |
 
@@ -136,7 +136,7 @@ Default view fields: `key,issuetype,summary,status,assignee,description`.
 
 ```bash
 # JQL search
-acli jira workitem search --jql "project = TEAM AND status = 'To Do'"
+acli jira workitem search --jql "project = TEAM AND status = '{{jira.status.story.backlog}}'"
 
 # Saved filter
 acli jira workitem search --filter 10001
@@ -176,7 +176,7 @@ Flags:
 acli jira workitem edit --key "TEAM-1,TEAM-2" --summary "Updated summary" --yes
 
 # JQL-scoped batch edit
-acli jira workitem edit --jql "project = TEAM AND status = Backlog" \
+acli jira workitem edit --jql "project = TEAM AND status = {{jira.status.story.backlog}}" \
   --assignee "triage@example.com" --yes --ignore-errors
 
 # Remove labels / assignee (cannot be done by passing empty values)
@@ -201,21 +201,21 @@ Removal flags: `--remove-assignee`, `--remove-labels`.
 
 ```bash
 # Single or few
-acli jira workitem transition --key "TEAM-1,TEAM-2" --status "In Review"
+acli jira workitem transition --key "TEAM-1,TEAM-2" --status "{{jira.status.story.in_review}}"
 
 # Batch via JQL
-acli jira workitem transition --jql "project = TEAM AND status = 'In Review'" \
-  --status "Done" --yes --ignore-errors
+acli jira workitem transition --jql "project = TEAM AND status = '{{jira.status.story.in_review}}'" \
+  --status "{{jira.status.story.deployed_to_production}}" --yes --ignore-errors
 
 # Via saved filter
-acli jira workitem transition --filter 10001 --status "To Do" --yes
+acli jira workitem transition --filter 10001 --status "{{jira.status.story.backlog}}" --yes
 ```
 
 `--status` is a **status name**, not a transition ID. The target must be reachable from the current status through the project's workflow.
 
 Two known limitations:
 
-- **No `--transition-id`.** If two transitions lead to the same status with different validators (e.g. both "Accept" and "Cancel" end in "Closed"), `acli` may pick the wrong one and fail.
+- **No `--transition-id`.** If two transitions lead to the same status with different validators (e.g. both "Accept" and "Cancel" end in "{{jira.status.bug.closed}}"), `acli` may pick the wrong one and fail.
 - **Loop transitions** (actions that keep the status the same) are supported — just pass the same status name.
 
 Fallback when the CLI cannot disambiguate: call `POST /rest/api/3/issue/{key}/transitions` directly.

@@ -120,9 +120,9 @@ Document the four canonical QA queries. Resolve to the tracker's query language.
 
 | Need | Jira JQL | Azure DevOps WIQL |
 |------|----------|-------------------|
-| Current sprint ready for QA | `project = {{PROJECT_KEY}} AND sprint in openSprints() AND status = "Ready for QA"` | `State = 'Ready for Test' AND [System.IterationPath] = @CurrentIteration` |
+| Current sprint ready for QA | `project = {{PROJECT_KEY}} AND sprint in openSprints() AND status = "{{jira.status.story.ready_for_qa}}"` | `State = 'Ready for Test' AND [System.IterationPath] = @CurrentIteration` |
 | All open bugs | `project = {{PROJECT_KEY}} AND type = Bug AND resolution = Unresolved ORDER BY priority DESC` | `Work Item Type = 'Bug' AND State <> 'Closed'` |
-| My testing tasks | `project = {{PROJECT_KEY}} AND status = Testing AND assignee = currentUser()` | `State = 'Testing' AND [System.AssignedTo] = @Me` |
+| My testing tasks | `project = {{PROJECT_KEY}} AND status = "{{jira.status.story.in_test}}" AND assignee = currentUser()` | `State = 'Testing' AND [System.AssignedTo] = @Me` |
 | Recently updated | `project = {{PROJECT_KEY}} AND updated >= -1d ORDER BY updated DESC` | `[Changed Date] > @Today - 1` |
 
 Also record the `[ISSUE_TRACKER_TOOL]` pseudocode equivalents so other skills can reuse them.
