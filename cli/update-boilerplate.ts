@@ -31,11 +31,12 @@
  * WHAT GETS SYNCED (Universal - same across all projects)
  * ============================================================================
  *
- *   .claude/skills/     Agent skills (project-discovery, sprint-testing, ...)
- *   .claude/commands/   Slash commands (commit-push-pr, refresh-ai-memory, ...)
- *   scripts/            Framework scripts (agents-lint, jira-sync, kata-manifest, ...)
- *   templates/          Universal templates (pr-test-automation, ...)
- *   .agents/README.md   Variable system documentation (only README, not project.yaml/jira.json)
+ *   .claude/skills/        Agent skills (project-discovery, sprint-testing, ...)
+ *   .claude/commands/      Slash commands (commit-push-pr, refresh-ai-memory, ...)
+ *   .claude/settings.json  Versioned default permissions (settings.local.json untouched)
+ *   scripts/               Framework scripts (agents-lint, jira-sync, kata-manifest, ...)
+ *   templates/             Universal templates (pr-test-automation, ...)
+ *   .agents/README.md      Variable system documentation (only README, not project.yaml/jira.json)
  *   docs/               General documentation
  *   cli/                CLI tools (this file auto-updates itself)
  *   .vscode/            IDE configuration (extensions, settings)
@@ -62,6 +63,8 @@
  *   .agents/project.yaml       Your project variables (per-repo config)
  *   .agents/jira.json          Auto-generated Jira field catalog
  *   .agents/jira-required.yaml Manifest customised per project (optional/unmapped)
+ *   .claude/settings.local.json Your personal Claude Code permissions (gitignored)
+ *   .mcp.json                  Your MCP credentials (use .mcp.example.json as a template)
  *   CLAUDE.md|AGENTS.md|GEMINI.md  Your AI memory files
  *   README.md                  Your project documentation
  *   package.json               Your dependencies (script/dep gaps reported instead)
@@ -90,6 +93,7 @@
  *   bun run update scripts                            Update scripts/ (framework scripts)
  *   bun run update templates                          Update templates/ (universal templates)
  *   bun run update agents-docs                        Update .agents/README.md only
+ *   bun run update claude-config                      Update .claude/settings.json (settings.local.json untouched)
  *   bun run update docs                               Update docs/
  *   bun run update cli                                Update cli/
  *   bun run update vscode                             Update .vscode/
@@ -179,6 +183,17 @@ const EXAMPLE_FILES = [
  */
 const AGENTS_DOCS_FILES = [
   '.agents/README.md',
+];
+
+/**
+ * Universal `.claude/` config files that ARE safe to sync.
+ *
+ * NEVER sync from .claude/:
+ *   - settings.local.json   (per-developer permissions; gitignored)
+ *   - skills/, commands/    (handled by their own sync paths)
+ */
+const CLAUDE_CONFIG_FILES = [
+  '.claude/settings.json',
 ];
 
 // ============================================================================
@@ -337,7 +352,7 @@ function parseArgs(args: string[]): ParsedArgs {
     rollback: false,
   };
 
-  const validCommands = ['all', 'skills', 'commands', 'scripts', 'templates', 'agents-docs', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples', 'help', 'rollback'];
+  const validCommands = ['all', 'skills', 'commands', 'scripts', 'templates', 'agents-docs', 'claude-config', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples', 'help', 'rollback'];
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -697,6 +712,10 @@ function executeDryRun(commands: string[], allMode: boolean, skillsFilter: strin
   if (commands.includes('agents-docs') || allMode) {
     const agentsDocsCount = AGENTS_DOCS_FILES.filter(f => existsSync(join(TEMP_DIR, f))).length;
     console.log(`   ${colors.cyan}.agents docs${colors.reset}  →  Would sync ${agentsDocsCount} doc file${agentsDocsCount !== 1 ? 's' : ''} (project.yaml / jira.json / jira-required.yaml NOT touched)`);
+  }
+  if (commands.includes('claude-config') || allMode) {
+    const claudeCount = CLAUDE_CONFIG_FILES.filter(f => existsSync(join(TEMP_DIR, f))).length;
+    console.log(`   ${colors.cyan}.claude config${colors.reset}  →  Would sync ${claudeCount} file${claudeCount !== 1 ? 's' : ''} (settings.local.json NOT touched)`);
   }
 
   let totalFiles = 0;
@@ -1079,6 +1098,35 @@ function updateAgentsDocs(): MergeResult {
   return { success, errors };
 }
 
+function updateClaudeConfig(): MergeResult {
+  log.step('Updating .claude/ config...');
+
+  let success = 0;
+  let errors = 0;
+
+  log.merge('Syncing .claude config (settings.local.json is NOT touched)...');
+  for (const file of CLAUDE_CONFIG_FILES) {
+    const srcPath = join(TEMP_DIR, file);
+    try {
+      if (existsSync(srcPath)) {
+        mkdirSync(join(file, '..'), { recursive: true });
+        cpSync(srcPath, file);
+        log.success(file);
+        success++;
+      }
+      else {
+        log.warning(`${file} not found in template`);
+      }
+    }
+    catch (err) {
+      log.warning(`Skipped ${file}: ${err instanceof Error ? err.message : String(err)}`);
+      errors++;
+    }
+  }
+
+  return { success, errors };
+}
+
 /**
  * Extract CLI_VERSION from a script's source code.
  */
@@ -1144,6 +1192,7 @@ async function showMainMenu(): Promise<string[]> {
       { name: 'Framework scripts (scripts/)', value: 'scripts' },
       { name: 'Universal templates (templates/)', value: 'templates' },
       { name: '.agents docs (.agents/README.md only)', value: 'agents-docs' },
+      { name: '.claude config (.claude/settings.json)', value: 'claude-config' },
       { name: 'Documentation (docs/)', value: 'docs' },
       { name: 'CLI Tools (cli/)', value: 'cli' },
       { name: 'VS Code Config (.vscode/)', value: 'vscode' },
@@ -1197,6 +1246,7 @@ ${colors.bold}COMMANDS:${colors.reset}
   scripts       Sync scripts/ (framework scripts: agents-lint, jira-sync, ...)
   templates     Sync templates/ (universal templates: pr-test-automation, ...)
   agents-docs   Sync .agents/README.md only (project.yaml/jira.json untouched)
+  claude-config Sync .claude/settings.json (settings.local.json untouched)
   docs          Update docs/ (documentation)
   cli           Update cli/ (CLI tools)
   vscode        Update .vscode/ (IDE configuration)
@@ -1218,6 +1268,7 @@ ${colors.bold}FLAGS FOR 'skills':${colors.reset}
 ${colors.bold}WHAT GETS SYNCED:${colors.reset}
   ${colors.green}  .claude/skills/${colors.reset}        Agent skills (canonical location)
   ${colors.green}  .claude/commands/${colors.reset}      Slash commands (commit-push-pr, refresh-ai-memory, ...)
+  ${colors.green}  .claude/settings.json${colors.reset}  Versioned default permissions (your settings.local.json untouched)
   ${colors.green}  .agents/skills${colors.reset}         Relative symlink to .claude/skills (auto-managed)
   ${colors.green}  .agents/README.md${colors.reset}      Variable system documentation
   ${colors.green}  scripts/${colors.reset}               Framework scripts (agents-lint, jira-sync, kata-manifest, ...)
@@ -1236,6 +1287,8 @@ ${colors.bold}WHAT NEVER GETS SYNCED (project-specific):${colors.reset}
   ${colors.red}  .agents/project.yaml${colors.reset}      Your project variables
   ${colors.red}  .agents/jira.json${colors.reset}         Auto-generated Jira catalog
   ${colors.red}  .agents/jira-required.yaml${colors.reset} Manifest with project customisations
+  ${colors.red}  .claude/settings.local.json${colors.reset} Your personal Claude Code permissions
+  ${colors.red}  .mcp.json${colors.reset}                  Your MCP credentials (use .mcp.example.json as a template)
   ${colors.red}  playwright.config${colors.reset}         Your test config
   ${colors.red}  eslint.config.js${colors.reset}          Your linting rules
   ${colors.red}  tsconfig.json${colors.reset}             Your TypeScript config
@@ -1640,7 +1693,7 @@ async function main(): Promise<void> {
     checkMigrationNeeded();
 
     const components = selected.includes('all')
-      ? ['skills', 'commands', 'scripts', 'templates', 'agents-docs', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples']
+      ? ['skills', 'commands', 'scripts', 'templates', 'agents-docs', 'claude-config', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples']
       : selected;
 
     createBackup(components);
@@ -1657,6 +1710,7 @@ async function main(): Promise<void> {
       addResult(updateScripts());
       addResult(updateTemplates());
       addResult(updateAgentsDocs());
+      addResult(updateClaudeConfig());
       addResult(updateDocs());
       addResult(updateCli());
       addResult(updateVscode());
@@ -1685,6 +1739,9 @@ async function main(): Promise<void> {
         }
         else if (cmd === 'agents-docs') {
           addResult(updateAgentsDocs());
+        }
+        else if (cmd === 'claude-config') {
+          addResult(updateClaudeConfig());
         }
         else if (cmd === 'docs') {
           addResult(updateDocs());
@@ -1750,7 +1807,7 @@ async function main(): Promise<void> {
 
   // Expand 'all' command
   if (parsed.commands.includes('all')) {
-    parsed.commands = ['skills', 'commands', 'scripts', 'templates', 'agents-docs', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples'];
+    parsed.commands = ['skills', 'commands', 'scripts', 'templates', 'agents-docs', 'claude-config', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples'];
     parsed.all = true;
   }
 
@@ -1787,6 +1844,9 @@ async function main(): Promise<void> {
         break;
       case 'agents-docs':
         addResult(updateAgentsDocs());
+        break;
+      case 'claude-config':
+        addResult(updateClaudeConfig());
         break;
       case 'docs':
         addResult(updateDocs());
