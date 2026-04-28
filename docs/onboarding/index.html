@@ -400,9 +400,10 @@
             <p>
               The three categories share the same fuel: the variable substrate in
               <code>.agents/project.yaml</code> (and Jira metadata in
-              <code>.agents/jira.json</code> + <code>.agents/jira-required.yaml</code>). Skills
-              resolve <code>{{VAR}}</code> placeholders against it on every AI session; commands use
-              the same resolver; scripts read the YAML and write back to it. See
+              <code>.agents/jira.json</code> + <code>.agents/jira-workflows.json</code> +
+              <code>.agents/jira-required.yaml</code>). Skills resolve <code>{{VAR}}</code> and
+              <code>{{jira.*}}</code> placeholders against it on every AI session; commands use the
+              same resolver; scripts read the YAML and write back to it. See
               <a href="#section-5">§5 Circuit 1</a> for the full resolution flow.
             </p>
           </section>
@@ -564,27 +565,36 @@
                     <dt>Trigger</dt>
                     <dd>
                       <code>bun install</code> → <code>bun run pw:install</code> →
-                      <code>bun run agents:setup</code>. Or, if you cloned skills à la carte, run
+                      <code>bun run agents:setup</code> → <code>bun run jira:sync-fields</code> →
+                      <code>bun run jira:sync-workflows</code> → <code>bun run jira:check</code>.
+                      Or, if you cloned skills à la carte, run
                       <code>/framework-core init</code> first.
                     </dd>
                     <dt>Produces</dt>
                     <dd>
                       A populated <code>.agents/project.yaml</code>, the
-                      <code>CLAUDE.md → AGENTS.md</code> symlink, the four foundation scripts
+                      <code>CLAUDE.md → AGENTS.md</code> symlink, the foundation scripts
                       (<code>agents-setup</code>, <code>agents-lint</code>,
-                      <code>sync-jira-fields</code>, <code>check-jira-setup</code>) wired into
-                      <code>package.json</code>.
+                      <code>sync-jira-fields</code>, <code>sync-jira-workflows</code>,
+                      <code>check-jira-setup</code>) wired into <code>package.json</code>, the
+                      workspace catalog at <code>.agents/jira.json</code> (custom fields), and the
+                      workflow catalog at <code>.agents/jira-workflows.json</code> (statuses +
+                      transitions per <code>work_type</code>).
                     </dd>
                     <dt>When to repeat</dt>
                     <dd>
                       One time per repo clone. If you cloned the full repo, the foundation is
-                      already in place — only <code>bun install</code> and
-                      <code>bun run agents:setup</code> are needed.
+                      already in place — only <code>bun install</code>,
+                      <code>bun run agents:setup</code>, and the two
+                      <code>jira:sync-*</code> commands are needed.
                     </dd>
                   </dl>
                   <pre><code>bun install
 bun run pw:install
-bun run agents:setup        # interactive walkthrough</code></pre>
+bun run agents:setup          # interactive walkthrough
+bun run jira:sync-fields      # catalog custom fields
+bun run jira:sync-workflows   # catalog statuses + transitions per work_type
+bun run jira:check            # verify both catalogs against the manifest</code></pre>
                 </div>
               </details>
 
@@ -717,12 +727,23 @@ bun run agents:setup        # interactive walkthrough</code></pre>
                           <code>bun run jira:sync-fields</code> — re-catalog Jira custom fields.
                         </li>
                         <li>
-                          <code>bun run jira:check</code> — verify the Jira workspace still
-                          satisfies <code>jira-required.yaml</code>.
+                          <code>bun run jira:sync-workflows</code> — re-catalog Jira workflows
+                          (statuses + transitions) when a status is renamed, a transition is added,
+                          or a workflow is swapped on an issue type. Use <code>--force</code> to
+                          re-prompt for already-mapped slugs.
                         </li>
                         <li>
-                          <code>bun run lint:agents</code> — verify every
-                          <code>{{VAR}}</code> placeholder still resolves.
+                          <code>bun run jira:check</code> — verify the Jira workspace still
+                          satisfies <code>jira-required.yaml</code> (covers BOTH custom-field
+                          validation against <code>jira.json</code> and
+                          <code>work_types</code> validation against
+                          <code>jira-workflows.json</code>).
+                        </li>
+                        <li>
+                          <code>bun run lint:agents</code> — verify every <code>{{VAR}}</code>,
+                          <code>{{jira.&lt;slug&gt;}}</code>, <code>{{jira.work_type.*}}</code>,
+                          <code>{{jira.status.*}}</code> and
+                          <code>{{jira.transition.*}}</code> placeholder still resolves.
                         </li>
                       </ul>
                     </dd>
@@ -770,10 +791,11 @@ bun run agents:setup        # interactive walkthrough</code></pre>
                     </td>
                     <td>
                       Generates <code>AGENTS.md</code>, <code>.agents/project.yaml</code>,
-                      <code>.agents/jira-required.yaml</code>, <code>.agents/jira.json</code>, the
-                      four <code>scripts/agents-*.ts</code> CLIs, merges entries into
-                      <code>package.json</code>, creates the <code>CLAUDE.md</code> symlink.
-                      Idempotent — existing files are preserved.
+                      <code>.agents/jira-required.yaml</code>, <code>.agents/jira.json</code>,
+                      <code>.agents/jira-workflows.json</code>, the
+                      <code>scripts/agents-*.ts</code> + <code>sync-jira-*.ts</code> CLIs, merges
+                      entries into <code>package.json</code>, creates the
+                      <code>CLAUDE.md</code> symlink. Idempotent — existing files are preserved.
                     </td>
                     <td>One-time</td>
                   </tr>
@@ -1131,7 +1153,24 @@ bun run agents:setup        # interactive walkthrough</code></pre>
               <li>
                 <code>{{jira.&lt;slug&gt;}}</code> → portable Jira custom-field reference, resolves
                 through <code>.agents/jira-required.yaml</code> (manifest) +
-                <code>.agents/jira.json</code> (workspace catalog).
+                <code>.agents/jira.json</code> (workspace catalog). Sub-forms:
+                <code>{{jira.&lt;slug&gt;.&lt;option&gt;}}</code> (option value for plain
+                <code>option</code> / array-of-option fields),
+                <code>{{jira.&lt;slug&gt;.&lt;parent&gt;.&lt;child&gt;}}</code> (cascading
+                <code>option-with-child</code>).
+              </li>
+              <li>
+                <code>{{jira.work_type.&lt;slug&gt;}}</code> /
+                <code>{{jira.status.&lt;work_type&gt;.&lt;slug&gt;}}</code> /
+                <code>{{jira.transition.&lt;work_type&gt;.&lt;slug&gt;}}</code> → portable Jira
+                workflow references. <code>work_type</code> resolves to the literal issue-type name
+                (e.g. <code>"Story"</code>); <code>status</code> resolves to the literal status name
+                (sub-keys: <code>.id</code>, <code>.category</code>);
+                <code>transition</code> resolves to the transition <code>id</code> (sub-key:
+                <code>.name</code>) — use the id form to invoke transitions unambiguously via REST.
+                All resolve through <code>.agents/jira-required.yaml</code>
+                <code>work_types:</code> (manifest) +
+                <code>.agents/jira-workflows.json</code> (workspace catalog).
               </li>
             </ul>
 
@@ -1441,11 +1480,15 @@ bun run agents:setup        # interactive walkthrough</code></pre>
                     <td><code>bun run jira:sync-fields</code></td>
                   </tr>
                   <tr>
-                    <td>Validate <code>{{VAR}}</code> placeholders</td>
+                    <td>Sync Jira workflows (statuses + transitions per <code>work_type</code>)</td>
+                    <td><code>bun run jira:sync-workflows</code></td>
+                  </tr>
+                  <tr>
+                    <td>Validate <code>{{VAR}}</code> / <code>{{jira.*}}</code> placeholders</td>
                     <td><code>bun run lint:agents</code></td>
                   </tr>
                   <tr>
-                    <td>Verify the Jira manifest matches the catalog</td>
+                    <td>Verify the Jira manifest matches both catalogs (fields + workflows)</td>
                     <td><code>bun run jira:check</code></td>
                   </tr>
                   <tr>
@@ -1748,22 +1791,36 @@ bun run agents:setup        # interactive walkthrough</code></pre>
                   <li>
                     <code>bun run lint:agents</code>
                     <span class="muted"
-                      >Validate every <code>{{VAR}}</code> in skills/commands/templates resolves to
-                      a YAML key.</span
+                      >Validate every <code>{{VAR}}</code>, <code>{{jira.&lt;slug&gt;}}</code>,
+                      <code>{{jira.work_type.*}}</code>, <code>{{jira.status.*}}</code> and
+                      <code>{{jira.transition.*}}</code> reference resolves against the manifest +
+                      catalogs.</span
                     >
                   </li>
                   <li>
                     <code>bun run jira:sync-fields</code>
                     <span class="muted"
                       >Catalog all custom fields from the live Jira workspace into
-                      <code>.agents/jira.json</code>.</span
+                      <code>.agents/jira.json</code> (incl. option values for
+                      <code>option</code> and cascading
+                      <code>option-with-child</code> fields).</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run jira:sync-workflows</code>
+                    <span class="muted"
+                      >Catalog Jira workflow statuses + transitions per
+                      <code>work_type</code> (Story, Bug, Test) into
+                      <code>.agents/jira-workflows.json</code>. Interactive on first run; idempotent
+                      thereafter.</span
                     >
                   </li>
                   <li>
                     <code>bun run jira:check</code>
                     <span class="muted"
-                      >Verify the Jira workspace satisfies
-                      <code>.agents/jira-required.yaml</code>.</span
+                      >Verify the Jira workspace satisfies <code>.agents/jira-required.yaml</code> —
+                      covers both the custom-field catalog and the work-type / workflow
+                      catalog.</span
                     >
                   </li>
                   <li>
@@ -1934,8 +1991,8 @@ bun run agents:setup        # interactive walkthrough</code></pre>
           </a>
         </div>
         <p class="footer-meta">
-          <code>agentic-qa-boilerplate</code> · MIT License · Onboarding page v1.0 · Last updated
-          2026-04-26
+          <code>agentic-qa-boilerplate</code> · MIT License · Onboarding page v1.1 · Last updated
+          2026-04-28
         </p>
       </footer>
     </div>
