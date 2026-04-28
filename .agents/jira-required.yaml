@@ -190,14 +190,35 @@ work_types:
     description: 'User story / feature work item'
     required_statuses:
       backlog: { description: 'Initial state for a freshly created story' }
+      shift_left_qa: { description: 'Story under early QA review (shift-left quality check)' }
+      estimation: { description: 'Story being estimated (planning poker / sizing)' }
       ready_for_dev: { description: 'Estimated and ready to be picked up by a developer' }
       in_progress: { description: 'Developer actively working' }
       in_review: { description: 'Pull request open / code review' }
       ready_for_qa: { description: 'Deployed and ready for QA to test' }
       in_test: { description: 'QA actively testing' }
+      blocked:
+        {
+          description: 'QA blocked release due to open defect; dev resumes via fix_defect transition',
+        }
       qa_approved: { description: 'QA passed; story is verified (terminal QA verdict)' }
+      ready_for_release: { description: 'QA-approved and queued for the next release window' }
       deployed_to_production: { description: 'Released to production (terminal success state)' }
+      aborted: { description: 'Story cancelled / will not be delivered (terminal)' }
     required_transitions:
+      # ---- Forward path ----
+      analyze:
+        {
+          from: backlog,
+          to: shift_left_qa,
+          description: 'QA pulls a backlog item for early shift-left review',
+        }
+      ready_to_estimate:
+        { from: backlog, to: estimation, description: 'Story sized for planning poker' }
+      estimate:
+        { from: shift_left_qa, to: estimation, description: 'After shift-left QA, send to sizing' }
+      estimated_and_ready_to_work:
+        { from: estimation, to: ready_for_dev, description: 'Sized and ready for dev pickup' }
       start_working:
         { from: ready_for_dev, to: in_progress, description: 'Developer picks up the story' }
       pull_request: { from: in_progress, to: in_review, description: 'PR opened' }
@@ -211,6 +232,68 @@ work_types:
           to: qa_approved,
           description: "QA approves the story (the canonical 'Tested' transition)",
         }
+      include_in_release:
+        {
+          from: qa_approved,
+          to: ready_for_release,
+          description: 'Story queued for the next release window',
+        }
+      released:
+        {
+          from: ready_for_release,
+          to: deployed_to_production,
+          description: 'Released to production',
+        }
+      # ---- Defect / Blocked flow (formal FAILED gate) ----
+      defect_reported:
+        {
+          from: in_test,
+          to: blocked,
+          description: 'QA blocks release due to open defect (formal FAILED gate; only available when {{QA_FORMAL_BLOCKED_GATE}}=true and substrate exposes the `blocked` status)',
+        }
+      fix_defect:
+        {
+          from: blocked,
+          to: in_progress,
+          description: 'Dev resumes work to fix the blocking defect',
+        }
+      back_from_blocked:
+        {
+          from: blocked,
+          to: in_test,
+          description: 'QA un-blocks without dev rework (e.g. invalid defect, retest after external fix)',
+        }
+      # ---- Back / rework transitions ----
+      back_from_in_test:
+        {
+          from: in_test,
+          to: ready_for_qa,
+          description: 'QA returns the story to the queue (e.g. wrong build, environment issue)',
+        }
+      back_from_qa_approved:
+        {
+          from: qa_approved,
+          to: in_test,
+          description: 'Re-open QA after sign-off (e.g. regression discovered)',
+        }
+      back_from_in_progress:
+        { from: in_progress, to: ready_for_dev, description: 'Dev returns story to ready_for_dev' }
+      back_from_estimation:
+        { from: estimation, to: backlog, description: 'Cannot estimate — return to backlog' }
+      back_from_shift_left_qa:
+        {
+          from: shift_left_qa,
+          to: backlog,
+          description: 'Shift-left QA cannot proceed — return to backlog',
+        }
+      # ---- Terminal / abort ----
+      aborted: { from: any, to: aborted, description: 'Cancel the story (global transition)' }
+      recover:
+        {
+          from: aborted,
+          to: ready_for_dev,
+          description: 'Restore an aborted story back to ready_for_dev',
+        }
     used_by: [acli, sprint-testing, test-documentation, project-discovery]
 
   bug:
@@ -222,9 +305,24 @@ work_types:
       in_review: { description: 'Pull request open' }
       ready_for_qa: { description: 'Fix deployed; bug ready to retest' }
       closed: { description: "Bug verified fixed (canonical 'verified' terminal)" }
+      deferred: { description: 'Bug accepted but postponed; resumable via resume_fix' }
+      cannot_reproduce: { description: 'Bug closed because the team cannot reproduce (terminal)' }
+      duplicated: { description: 'Bug closed as duplicate of another (terminal)' }
+      rejected: { description: 'Bug rejected as Working As Designed / WAD (terminal)' }
+      enhancement: { description: 'Reclassified as enhancement / feature request (terminal)' }
+      aborted: { description: 'Bug abandoned without fix (terminal)' }
     required_transitions:
+      # ---- Triage from open ----
       start_fixing:
         { from: open, to: in_progress, description: 'Developer starts working on the bug' }
+      is_cnr:
+        { from: open, to: cannot_reproduce, description: 'Cannot reproduce — close (terminal)' }
+      defer: { from: open, to: deferred, description: 'Postpone the fix' }
+      is_duplicated: { from: open, to: duplicated, description: 'Bug is a duplicate of another' }
+      is_wad: { from: open, to: rejected, description: 'Working as designed — reject the bug' }
+      is_not_a_bug:
+        { from: open, to: enhancement, description: 'Reclassify as enhancement / feature request' }
+      # ---- Forward / fix path ----
       pull_request: { from: in_progress, to: in_review, description: 'PR opened' }
       hard_pushed:
         { from: in_progress, to: ready_for_qa, description: 'Skip review, push directly to QA' }
@@ -240,12 +338,22 @@ work_types:
           to: closed,
           description: "QA verifies the fix (the canonical 'Tested / VERIFIED' transition for bugs)",
         }
+      # ---- Re-open / regression ----
       re_open:
         {
           from: any,
           to: open,
           description: 'Re-open a closed bug (global transition — accepts any source state)',
         }
+      back:
+        {
+          from: closed,
+          to: ready_for_qa,
+          description: 'Re-test required after close (regression caught after sign-off)',
+        }
+      resume_fix: { from: deferred, to: in_progress, description: 'Resume work on a deferred bug' }
+      # ---- Abort ----
+      aborted: { from: any, to: aborted, description: 'Abandon the bug (global transition)' }
     used_by: [acli, sprint-testing]
 
   test_case:
@@ -255,18 +363,83 @@ work_types:
       draft: { description: 'Just created, not yet designed' }
       in_design: { description: 'Test scenario being authored' }
       ready: { description: 'Designed and ready to run / consider for automation' }
-      in_review: { description: 'Under automation review' }
+      in_review: { description: 'Under automation review (ROI evaluation)' }
       candidate: { description: 'Approved as automation candidate' }
       in_automation: { description: 'Being automated' }
+      pull_request: { description: 'Automation PR open for review' }
       automated: { description: 'Merged automated test (terminal success)' }
       manual: { description: 'Terminal manual-only verdict' }
+      deprecated: { description: 'TC retired (terminal); recoverable via recover transition' }
     required_transitions:
+      # ---- Forward path ----
       start_design: { from: draft, to: in_design, description: 'Begin designing the TC' }
       ready_to_run: { from: in_design, to: ready, description: 'TC designed and ready' }
+      automation_review_from_ready:
+        { from: ready, to: in_review, description: 'Move a Ready TC into ROI review' }
+      automation_review_from_draft:
+        {
+          from: draft,
+          to: in_review,
+          description: 'Move a Draft TC into ROI review (skip in_design)',
+        }
+      automation_review_from_manual:
+        { from: manual, to: in_review, description: 'Re-evaluate a Manual TC for automation' }
       approve_to_automate:
         { from: in_review, to: candidate, description: 'Reviewer approves automation' }
       start_automation:
         { from: candidate, to: in_automation, description: 'Engineer starts automating' }
+      create_pr: { from: in_automation, to: pull_request, description: 'Open the automation PR' }
+      merged:
+        {
+          from: pull_request,
+          to: automated,
+          description: 'Automation PR merged (terminal success)',
+        }
       automated_from_manual:
-        { from: manual, to: automated, description: 'Manual TC eventually automated' }
+        {
+          from: manual,
+          to: automated,
+          description: 'Manual TC eventually automated (skips PR step)',
+        }
+      # ---- Manual-verdict paths ----
+      for_manual:
+        { from: ready, to: manual, description: 'Mark a Ready TC as manual-only (low ROI)' }
+      manual_execution_from_candidate:
+        {
+          from: candidate,
+          to: manual,
+          description: 'Send a Candidate back to Manual after re-evaluation',
+        }
+      manual_execution_from_automated:
+        {
+          from: automated,
+          to: manual,
+          description: 'Demote an Automated TC to Manual (e.g. flaky)',
+        }
+      for_automation:
+        { from: manual, to: candidate, description: 'Promote a Manual TC to Candidate' }
+      fix:
+        {
+          from: automated,
+          to: pull_request,
+          description: 'Fix a failing automated TC (open a new PR)',
+        }
+      # ---- Back / rework ----
+      back_from_in_design: { from: in_design, to: draft, description: 'Rework the design' }
+      back_from_ready: { from: ready, to: in_design, description: 'Send Ready TC back to design' }
+      back_from_in_review:
+        { from: in_review, to: ready, description: 'ROI rejected — leave as Ready' }
+      back_from_candidate:
+        { from: candidate, to: in_review, description: 'Rescind candidate status' }
+      back_from_in_automation:
+        { from: in_automation, to: candidate, description: 'Pause automation work' }
+      back_from_pull_request:
+        {
+          from: pull_request,
+          to: in_automation,
+          description: 'PR rejected — return to in_automation',
+        }
+      # ---- Deprecate ----
+      deprecated: { from: any, to: deprecated, description: 'Retire the TC (global transition)' }
+      recover: { from: deprecated, to: draft, description: 'Restore a deprecated TC back to draft' }
     used_by: [test-documentation, test-automation]
