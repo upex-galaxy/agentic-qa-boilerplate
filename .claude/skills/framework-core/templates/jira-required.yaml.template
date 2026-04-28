@@ -176,3 +176,76 @@ unmapped:
   # (No unmapped slugs at this time. See README §5.3 for the unmapped pattern
   # — declare a slug here when the methodology expects a field semantically but
   # no real Jira field exists yet, then promote it to `required:` once configured.)
+
+# Issue types (`work_types`) plus the canonical statuses + transitions the
+# methodology requires per work type. Validated by `bun run jira:check` against
+# the catalog at `.agents/jira-workflows.json`. Status / transition slugs are
+# agnostic — the literal Jira name lives in `jira-workflows.json`, resolved
+# per workspace by `bun run jira:sync-workflows` (interactive on first run,
+# idempotent after). Status categories are not declared here — they're
+# discovered by the sync.
+#
+# TODO: review each `jira_issue_type:` and adjust if your Jira uses different
+# literal names (e.g. "User Story" vs "Story", "Defect" vs "Bug", "Test Case"
+# vs "Test"). The canonical SLUGS (story / bug / test_case) stay the same.
+# Likewise review the `required_statuses:` and `required_transitions:` and
+# remove / add slugs to match what your methodology actually requires.
+work_types:
+  story:
+    jira_issue_type: "Story"  # TODO: literal issue type name in your Jira (default: "Story")
+    description: "User story / feature work item"
+    required_statuses:
+      backlog:                { description: "Initial state for a freshly created story" }
+      ready_for_dev:          { description: "Estimated and ready to be picked up by a developer" }
+      in_progress:            { description: "Developer actively working" }
+      in_review:              { description: "Pull request open / code review" }
+      ready_for_qa:           { description: "Deployed and ready for QA to test" }
+      in_test:                { description: "QA actively testing" }
+      qa_approved:            { description: "QA passed; story is verified (terminal QA verdict)" }
+      deployed_to_production: { description: "Released to production (terminal success state)" }
+    required_transitions:
+      start_working:  { from: ready_for_dev, to: in_progress, description: "Developer picks up the story" }
+      pull_request:   { from: in_progress,   to: in_review,   description: "PR opened" }
+      pushed:         { from: in_progress,   to: ready_for_qa, description: "Skip review, push directly to QA" }
+      deployed:       { from: in_review,     to: ready_for_qa, description: "PR merged & deployed to QA env" }
+      start_testing:  { from: ready_for_qa,  to: in_test,     description: "QA begins testing" }
+      qa_sign_off:    { from: in_test,       to: qa_approved, description: "QA approves the story (the canonical 'Tested' transition)" }
+    used_by: [acli, sprint-testing, test-documentation, project-discovery]
+
+  bug:
+    jira_issue_type: "Bug"  # TODO: literal issue type name in your Jira (default: "Bug")
+    description: "Defect / bug work item"
+    required_statuses:
+      open:         { description: "Newly reported bug awaiting triage" }
+      in_progress:  { description: "Developer actively fixing" }
+      in_review:    { description: "Pull request open" }
+      ready_for_qa: { description: "Fix deployed; bug ready to retest" }
+      closed:       { description: "Bug verified fixed (canonical 'verified' terminal)" }
+    required_transitions:
+      start_fixing:       { from: open,         to: in_progress,  description: "Developer starts working on the bug" }
+      pull_request:       { from: in_progress,  to: in_review,    description: "PR opened" }
+      hard_pushed:        { from: in_progress,  to: ready_for_qa, description: "Skip review, push directly to QA" }
+      fixed_and_deployed: { from: in_review,    to: ready_for_qa, description: "PR merged & deployed; bug ready to retest" }
+      retest_passed:      { from: ready_for_qa, to: closed,       description: "QA verifies the fix (the canonical 'Tested / VERIFIED' transition for bugs)" }
+      re_open:            { from: any,          to: open,         description: "Re-open a closed bug (global transition — accepts any source state)" }
+    used_by: [acli, sprint-testing]
+
+  test_case:
+    jira_issue_type: "Test"  # TODO: literal issue type name in your Jira (default: "Test")
+    description: "Test case (TC) work item"
+    required_statuses:
+      draft:         { description: "Just created, not yet designed" }
+      in_design:     { description: "Test scenario being authored" }
+      ready:         { description: "Designed and ready to run / consider for automation" }
+      in_review:     { description: "Under automation review" }
+      candidate:     { description: "Approved as automation candidate" }
+      in_automation: { description: "Being automated" }
+      automated:     { description: "Merged automated test (terminal success)" }
+      manual:        { description: "Terminal manual-only verdict" }
+    required_transitions:
+      start_design:         { from: draft,         to: in_design,     description: "Begin designing the TC" }
+      ready_to_run:         { from: in_design,     to: ready,         description: "TC designed and ready" }
+      approve_to_automate:  { from: in_review,     to: candidate,     description: "Reviewer approves automation" }
+      start_automation:     { from: candidate,     to: in_automation, description: "Engineer starts automating" }
+      automated_from_manual: { from: manual,        to: automated,     description: "Manual TC eventually automated" }
+    used_by: [test-documentation, test-automation]

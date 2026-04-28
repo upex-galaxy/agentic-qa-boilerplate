@@ -1,0 +1,1533 @@
+#!/usr/bin/env bun
+
+/**
+ * ============================================================================
+ * SYNC JIRA WORKFLOWS — Discover Jira workflows and write .agents/jira-workflows.json
+ * ============================================================================
+ *
+ * Walks the Jira Cloud REST API for the configured project, discovers the
+ * issue type → workflow → statuses + transitions chain for every work_type
+ * declared in `.agents/jira-required.yaml`, slugifies the names, and writes
+ * the result to `.agents/jira-workflows.json` so skills/commands can reference
+ * statuses + transitions portably as `{{jira.status.<work_type>.<slug>}}` /
+ * `{{jira.transition.<work_type>.<slug>}}` instead of hardcoding human-readable
+ * status names that drift between Jira sites.
+ *
+ * Companion script to `scripts/sync-jira-fields.ts` — same env vars, same flag
+ * semantics, same output style. Together they form the substrate that lets
+ * skills be Jira-instance-agnostic.
+ *
+ * JIRA API ENDPOINTS USED:
+ *   - GET /rest/api/3/project/{projectKey}
+ *       Resolves the project key to a numeric project id.
+ *   - GET /rest/api/3/project/{projectKey}/statuses
+ *       One entry per issue type with its full status list (id, name, category).
+ *   - GET /rest/api/3/workflowscheme/project?projectId={id}
+ *       Returns the workflow scheme assigned to the project, with the
+ *       `defaultWorkflow` and `issueTypeMappings` (issueTypeId → workflowName).
+ *   - POST /rest/api/3/workflows
+ *       Body `{ projectAndIssueTypes: [{ projectId, issueTypeId }] }`. Returns
+ *       the full workflow definition (id, name, statuses[*].statusReference,
+ *       transitions[*] with `id`, `name`, `type`, `toStatusReference`, and
+ *       `links[*].fromStatusReference`).
+ *
+ * ============================================================================
+ * REQUIREMENTS
+ * ============================================================================
+ *
+ * 1. Bun runtime (https://bun.sh)
+ * 2. Atlassian API credentials (email + API token)
+ * 3. Project key — read from `.agents/project.yaml` → `project.project_key`.
+ *    If null, the script prompts interactively.
+ *
+ * ============================================================================
+ * ENVIRONMENT
+ * ============================================================================
+ *
+ * Required environment variables (same as `scripts/sync-jira-fields.ts`):
+ *   ATLASSIAN_URL=https://your-instance.atlassian.net
+ *   ATLASSIAN_EMAIL=your-email@example.com
+ *   ATLASSIAN_API_TOKEN=ATATT3x...
+ *
+ * Get your API token at: https://id.atlassian.com/manage-profile/security/api-tokens
+ *
+ * ============================================================================
+ * USAGE
+ * ============================================================================
+ *
+ *   bun run jira:sync-workflows                   # interactive — prompts for unmapped slugs
+ *   bun run jira:sync-workflows --force           # re-prompt for already-mapped slugs
+ *   bun run jira:sync-workflows --allow-collisions# pick deterministically on slug collisions
+ *   bun run jira:sync-workflows --dry-run         # do everything but do NOT write
+ *   bun run jira:sync-workflows --verbose         # log each work_type / status / transition as processed
+ *   bun run jira:sync-workflows --help            # show help
+ *
+ * ============================================================================
+ * EXIT CODES
+ * ============================================================================
+ *
+ *   0 → success — every required canonical slug is mapped (or skipped
+ *       voluntarily by the user).
+ *   1 → auth / network / config / file-system error, OR at least one required
+ *       canonical slug remained unmapped (and the user did not deliberately
+ *       skip it). Same strict-mode contract as `sync-jira-fields.ts`.
+ *
+ * ============================================================================
+ */
+
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { input, select } from '@inquirer/prompts';
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const REPO_ROOT = join(import.meta.dir, '..');
+const OUTPUT_PATH = join(REPO_ROOT, '.agents', 'jira-workflows.json');
+const MANIFEST_PATH = join(REPO_ROOT, '.agents', 'jira-required.yaml');
+const PROJECT_YAML_PATH = join(REPO_ROOT, '.agents', 'project.yaml');
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface Config {
+  baseUrl: string
+  email: string
+  apiToken: string
+}
+
+interface CliFlags {
+  force: boolean
+  allowCollisions: boolean
+  dryRun: boolean
+  verbose: boolean
+  help: boolean
+}
+
+/** A single required status declared in the manifest under a work_type. */
+interface ManifestRequiredStatus {
+  slug: string
+  description?: string
+}
+
+/** A single required transition declared in the manifest under a work_type. */
+interface ManifestRequiredTransition {
+  slug: string
+  from?: string
+  to?: string
+  description?: string
+}
+
+/** One work_type entry parsed out of `.agents/jira-required.yaml`. */
+interface ManifestWorkType {
+  slug: string
+  jiraIssueType: string
+  description?: string
+  requiredStatuses: ManifestRequiredStatus[]
+  requiredTransitions: ManifestRequiredTransition[]
+}
+
+// --- Jira REST shapes (only the fields we actually consume) ---
+
+interface JiraProject {
+  id: string
+  key: string
+  name: string
+}
+
+interface JiraStatusCategory {
+  key?: string
+  name?: string
+}
+
+interface JiraStatus {
+  id: string
+  name: string
+  statusCategory?: JiraStatusCategory
+}
+
+interface JiraIssueTypeStatuses {
+  id: string
+  name: string
+  statuses: JiraStatus[]
+}
+
+interface JiraWorkflowSchemeAssignment {
+  workflowScheme: {
+    id: string
+    name: string
+    defaultWorkflow?: string
+    issueTypeMappings?: Record<string, string>
+  }
+}
+
+interface JiraWorkflowSchemeProjectResponse {
+  values: JiraWorkflowSchemeAssignment[]
+}
+
+interface JiraWorkflowStatus {
+  statusReference: string
+  name?: string | null
+}
+
+interface JiraWorkflowTransitionLink {
+  fromStatusReference?: string
+  fromPort?: number
+  toPort?: number
+}
+
+interface JiraWorkflowTransition {
+  id: string
+  name: string
+  type?: string
+  toStatusReference?: string
+  links?: JiraWorkflowTransitionLink[]
+}
+
+interface JiraWorkflow {
+  id: { workflowId?: string } | string | undefined
+  name: string
+  statuses: JiraWorkflowStatus[]
+  transitions: JiraWorkflowTransition[]
+}
+
+interface JiraWorkflowsResponse {
+  workflows: JiraWorkflow[]
+}
+
+// --- Output shape ---
+
+/** Output entry for a single discovered status under a work_type. */
+interface OutputStatus {
+  id: string
+  name: string
+  category: string | null
+}
+
+/** Output entry for a single discovered transition under a work_type. */
+interface OutputTransition {
+  id: string
+  name: string
+  from_status_id: string | null
+  to_status_id: string | null
+  from_canonical: string | null
+  to_canonical: string | null
+}
+
+/** Output entry for a single work_type. */
+interface OutputWorkType {
+  jira_issue_type: { id: string, name: string } | null
+  workflow_scheme: { id: string, name: string } | null
+  workflow: { id: string | null, name: string } | null
+  statuses: Record<string, OutputStatus>
+  transitions: Record<string, OutputTransition>
+}
+
+type OutputCatalog = Record<string, OutputWorkType>;
+
+// ============================================================================
+// COLORS / OUTPUT
+// ============================================================================
+
+const colors = {
+  reset: '\x1B[0m',
+  bold: '\x1B[1m',
+  dim: '\x1B[2m',
+  red: '\x1B[31m',
+  green: '\x1B[32m',
+  yellow: '\x1B[33m',
+  blue: '\x1B[34m',
+  cyan: '\x1B[36m',
+};
+
+function out(msg: string): void {
+  process.stdout.write(`${msg}\n`);
+}
+
+function err(msg: string): void {
+  process.stderr.write(`${msg}\n`);
+}
+
+const log = {
+  info: (msg: string) => err(`${colors.blue}ℹ${colors.reset} ${msg}`),
+  success: (msg: string) => err(`${colors.green}✔${colors.reset} ${msg}`),
+  warn: (msg: string) => err(`${colors.yellow}⚠${colors.reset} ${msg}`),
+  error: (msg: string) => err(`${colors.red}✖${colors.reset} ${msg}`),
+  dim: (msg: string) => err(`${colors.dim}${msg}${colors.reset}`),
+};
+
+// ============================================================================
+// CLI / HELP
+// ============================================================================
+
+function parseArgs(argv: string[]): CliFlags {
+  const flags: CliFlags = {
+    force: false,
+    allowCollisions: false,
+    dryRun: false,
+    verbose: false,
+    help: false,
+  };
+  for (const arg of argv) {
+    switch (arg) {
+      case '--force':
+        flags.force = true;
+        break;
+      case '--allow-collisions':
+        flags.allowCollisions = true;
+        break;
+      case '--dry-run':
+        flags.dryRun = true;
+        break;
+      case '--verbose':
+      case '-v':
+        flags.verbose = true;
+        break;
+      case '--help':
+      case '-h':
+        flags.help = true;
+        break;
+    }
+  }
+  return flags;
+}
+
+function printHelp(): void {
+  out(`sync-jira-workflows — discover Jira workflows → .agents/jira-workflows.json
+
+USAGE:
+  bun run jira:sync-workflows [flags]
+
+FLAGS:
+  --force              Re-prompt for canonical slugs that are already mapped
+                       in .agents/jira-workflows.json. Without it, re-runs are
+                       idempotent: only newly-added or unmapped canonical slugs
+                       trigger interactive prompts.
+  --allow-collisions   When two workflow statuses or transitions slugify to
+                       the same key, pick the first deterministically instead
+                       of prompting. NOT recommended when those slugs feed the
+                       methodology — prefer renaming the duplicate in Jira.
+  --dry-run            Do everything (REST calls + interactive prompts) but
+                       print the resulting JSON to stdout instead of writing
+                       .agents/jira-workflows.json.
+  --verbose, -v        Log each work_type / status / transition as processed.
+  --help, -h           Show this help.
+
+ENVIRONMENT:
+  ATLASSIAN_URL          e.g. https://your-instance.atlassian.net
+  ATLASSIAN_EMAIL        e.g. you@example.com
+  ATLASSIAN_API_TOKEN    Atlassian API token (https://id.atlassian.com/manage-profile/security/api-tokens)
+
+INPUTS:
+  .agents/jira-required.yaml   Manifest: declares each work_type plus the
+                               canonical statuses + transitions the methodology
+                               requires. Walked under the \`work_types:\` section.
+  .agents/project.yaml         Reads \`project.project_key\`. If null, prompts
+                               for it interactively (mirrors agents:setup).
+  .agents/jira-workflows.json  Catalog the sync writes back. Existing real
+                               mappings are preserved unless --force.
+
+OUTPUT:
+  .agents/jira-workflows.json  Per work_type: the resolved Jira issue type, the
+                               assigned workflow scheme + workflow, every
+                               canonical status (id + display name + category),
+                               and every canonical transition (id + display
+                               name + from / to status references). Discovered
+                               statuses + transitions that are NOT required by
+                               the manifest are also captured under their
+                               discovered slug — the catalog is exhaustive.
+
+EXIT CODES:
+  0  success — every required canonical slug is mapped (or skipped deliberately)
+  1  auth / network / config / file-system error, OR at least one required
+     canonical slug remained unmapped without an explicit user skip.
+
+NOTES:
+  Slug rules mirror sync-jira-fields.ts: lowercase, NFD normalize, strip
+  diacritics + emoji, replace anything not [a-z0-9_] with \`_\`, collapse
+  repeats, trim. Status / transition slugs are scoped per work_type — the same
+  Jira name (e.g. "Ready for QA") legitimately appears in both Story and Bug.
+
+  When multiple transitions in the same workflow share the same name (e.g. five
+  \`back\` transitions in a Story workflow), the slug is disambiguated by
+  appending \`_from_<from_status_slug>\` so each one is addressable.
+`);
+}
+
+// ============================================================================
+// CONFIG
+// ============================================================================
+
+function loadConfig(): Config {
+  const baseUrl = process.env.ATLASSIAN_URL;
+  const email = process.env.ATLASSIAN_EMAIL;
+  const apiToken = process.env.ATLASSIAN_API_TOKEN;
+
+  const missing: string[] = [];
+  if (!baseUrl) { missing.push('ATLASSIAN_URL'); }
+  if (!email) { missing.push('ATLASSIAN_EMAIL'); }
+  if (!apiToken) { missing.push('ATLASSIAN_API_TOKEN'); }
+
+  if (missing.length > 0) {
+    log.error(`Missing required environment variables: ${missing.join(', ')}`);
+    log.dim('Add them to .env (see scripts/jira-sync.ts header for setup).');
+    log.dim('Get your API token at: https://id.atlassian.com/manage-profile/security/api-tokens');
+    process.exit(1);
+  }
+
+  return {
+    baseUrl: baseUrl!.replace(/\/$/, ''),
+    email: email!,
+    apiToken: apiToken!,
+  };
+}
+
+/**
+ * Read `project.project_key` from `.agents/project.yaml` without pulling in a
+ * full YAML parser dep — same line-walking philosophy as
+ * `sync-jira-fields.ts:loadDeclaredSlugs`.
+ *
+ * Returns `null` if the file is missing, the section is missing, or the key
+ * is `null` / empty in the YAML. The caller decides whether to prompt.
+ */
+function loadProjectKey(): string | null {
+  if (!existsSync(PROJECT_YAML_PATH)) { return null; }
+  let text: string;
+  try {
+    text = readFileSync(PROJECT_YAML_PATH, 'utf8');
+  }
+  catch {
+    return null;
+  }
+  let inProjectSection = false;
+  for (const line of text.split(/\r?\n/)) {
+    if (/^project:\s*$/.test(line)) {
+      inProjectSection = true;
+      continue;
+    }
+    // A new top-level key closes the previous section.
+    if (/^[a-z_][\w-]*:/i.test(line)) {
+      inProjectSection = /^project:\s*$/.test(line);
+      continue;
+    }
+    if (inProjectSection) {
+      const m = line.match(/^ {2}project_key:\s*(.*?)\s*(?:#.*)?$/);
+      if (m) {
+        const raw = m[1].trim();
+        if (raw === '' || raw === 'null' || raw === '~') { return null; }
+        // Strip surrounding quotes if present.
+        return raw.replace(/^["'](.*)["']$/, '$1');
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Walk `.agents/jira-required.yaml` and pull out the `work_types:` section.
+ *
+ * The YAML grammar this script accepts mirrors what's already in the
+ * boilerplate: 2-space-indented work_type slugs, 4-space-indented sub-keys
+ * (`jira_issue_type`, `description`, `required_statuses`, `required_transitions`,
+ * `used_by`), and 6-space-indented entries inside the two `required_*` maps
+ * using the inline-flow form `{ from: <slug>, to: <slug>, description: "..." }`.
+ *
+ * Defensive about whitespace and quoting; ignores lines outside the
+ * `work_types:` block. Returns `[]` if the section is absent or empty so the
+ * caller can short-circuit.
+ */
+function loadManifestWorkTypes(): ManifestWorkType[] {
+  if (!existsSync(MANIFEST_PATH)) {
+    log.error(`${MANIFEST_PATH} not found.`);
+    process.exit(1);
+  }
+  const text = readFileSync(MANIFEST_PATH, 'utf8');
+  const lines = text.split(/\r?\n/);
+
+  const workTypes: ManifestWorkType[] = [];
+  let inWorkTypes = false;
+  let currentWorkType: ManifestWorkType | null = null;
+  let currentMap: 'required_statuses' | 'required_transitions' | null = null;
+
+  const sectionRe = /^work_types:\s*$/;
+  const topLevelRe = /^[a-z_][\w-]*:\s*(?:#.*)?$/;
+  const workTypeHeaderRe = /^ {2}([a-z_][a-z0-9_]*):\s*$/;
+  const subKeyRe = /^ {4}([a-z_][a-z0-9_]*):\s*(.*?)\s*$/;
+  const entryRe = /^ {6}([a-z_][a-z0-9_]*):\s*(.*?)\s*$/;
+
+  function finalizeWorkType(): void {
+    if (currentWorkType) {
+      workTypes.push(currentWorkType);
+    }
+    currentWorkType = null;
+    currentMap = null;
+  }
+
+  for (const line of lines) {
+    // Closing condition: a new top-level key ends the work_types: block.
+    if (topLevelRe.test(line)) {
+      if (inWorkTypes) {
+        finalizeWorkType();
+      }
+      inWorkTypes = sectionRe.test(line);
+      continue;
+    }
+    if (!inWorkTypes) { continue; }
+    if (line.trim() === '' || line.trimStart().startsWith('#')) { continue; }
+
+    const wtHeader = workTypeHeaderRe.exec(line);
+    if (wtHeader) {
+      finalizeWorkType();
+      currentWorkType = {
+        slug: wtHeader[1],
+        jiraIssueType: '',
+        requiredStatuses: [],
+        requiredTransitions: [],
+      };
+      currentMap = null;
+      continue;
+    }
+
+    if (!currentWorkType) { continue; }
+
+    const subKey = subKeyRe.exec(line);
+    if (subKey) {
+      const key = subKey[1];
+      const rawValue = subKey[2];
+      currentMap = null;
+      if (key === 'jira_issue_type') {
+        currentWorkType.jiraIssueType = stripYamlScalar(rawValue);
+      }
+      else if (key === 'description') {
+        currentWorkType.description = stripYamlScalar(rawValue);
+      }
+      else if (key === 'required_statuses') {
+        currentMap = 'required_statuses';
+      }
+      else if (key === 'required_transitions') {
+        currentMap = 'required_transitions';
+      }
+      // `used_by` and any other sub-keys are ignored — not relevant to sync.
+      continue;
+    }
+
+    const entry = entryRe.exec(line);
+    if (entry && currentMap) {
+      const slug = entry[1];
+      const inlineBody = entry[2];
+      const parsed = parseInlineMapping(inlineBody);
+      if (currentMap === 'required_statuses') {
+        currentWorkType.requiredStatuses.push({
+          slug,
+          description: parsed.description,
+        });
+      }
+      else {
+        currentWorkType.requiredTransitions.push({
+          slug,
+          from: parsed.from,
+          to: parsed.to,
+          description: parsed.description,
+        });
+      }
+    }
+  }
+  // Last work_type if EOF terminates the block.
+  if (inWorkTypes) { finalizeWorkType(); }
+
+  return workTypes;
+}
+
+/** Strip surrounding quotes (single or double) from a YAML scalar string. */
+function stripYamlScalar(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed === '' || trimmed === 'null' || trimmed === '~') { return ''; }
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"'))
+    || (trimmed.startsWith('\'') && trimmed.endsWith('\''))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+/**
+ * Parse a YAML inline-flow mapping like `{ from: ready_for_dev, to: in_progress, description: "Developer picks up the story" }`.
+ * Returns the three keys we care about; ignores everything else.
+ *
+ * We intentionally do NOT use a real YAML parser here — same dependency
+ * decision as `sync-jira-fields.ts:loadDeclaredSlugs`. The grammar in our
+ * manifest is narrow and stable.
+ */
+function parseInlineMapping(body: string): { from?: string, to?: string, description?: string } {
+  const result: { from?: string, to?: string, description?: string } = {};
+  const trimmed = body.trim();
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
+    return result;
+  }
+  const inner = trimmed.slice(1, -1);
+  // Split on commas that are NOT inside quotes.
+  const parts: string[] = [];
+  let depth = 0;
+  let inSingle = false;
+  let inDouble = false;
+  let buf = '';
+  for (let i = 0; i < inner.length; i++) {
+    const ch = inner[i];
+    if (inSingle) {
+      buf += ch;
+      if (ch === '\'') { inSingle = false; }
+      continue;
+    }
+    if (inDouble) {
+      buf += ch;
+      if (ch === '\\') { buf += inner[++i] ?? ''; continue; }
+      if (ch === '"') { inDouble = false; }
+      continue;
+    }
+    if (ch === '\'') { inSingle = true; buf += ch; continue; }
+    if (ch === '"') { inDouble = true; buf += ch; continue; }
+    if (ch === '{' || ch === '[') { depth++; buf += ch; continue; }
+    if (ch === '}' || ch === ']') { depth--; buf += ch; continue; }
+    if (ch === ',' && depth === 0) {
+      parts.push(buf);
+      buf = '';
+      continue;
+    }
+    buf += ch;
+  }
+  if (buf.trim() !== '') { parts.push(buf); }
+
+  for (const part of parts) {
+    const colonIdx = part.indexOf(':');
+    if (colonIdx === -1) { continue; }
+    const key = part.slice(0, colonIdx).trim();
+    const value = stripYamlScalar(part.slice(colonIdx + 1));
+    if (key === 'from') { result.from = value; }
+    else if (key === 'to') { result.to = value; }
+    else if (key === 'description') { result.description = value; }
+  }
+  return result;
+}
+
+// ============================================================================
+// JIRA API CLIENT (mirrors sync-jira-fields.ts:jiraFetch)
+// ============================================================================
+
+async function jiraFetch<T>(
+  config: Config,
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const url = `${config.baseUrl}${endpoint}`;
+  const auth = Buffer.from(`${config.email}:${config.apiToken}`).toString('base64');
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    const error = new Error(
+      `Jira API error: ${response.status} ${response.statusText} — ${text}`,
+    ) as Error & { status: number };
+    error.status = response.status;
+    throw error;
+  }
+
+  return response.json() as Promise<T>;
+}
+
+async function fetchProjectByKey(config: Config, projectKey: string): Promise<JiraProject> {
+  return jiraFetch<JiraProject>(config, `/rest/api/3/project/${encodeURIComponent(projectKey)}`);
+}
+
+async function fetchProjectStatuses(
+  config: Config,
+  projectKey: string,
+): Promise<JiraIssueTypeStatuses[]> {
+  return jiraFetch<JiraIssueTypeStatuses[]>(
+    config,
+    `/rest/api/3/project/${encodeURIComponent(projectKey)}/statuses`,
+  );
+}
+
+async function fetchWorkflowSchemeForProject(
+  config: Config,
+  projectId: string,
+): Promise<JiraWorkflowSchemeAssignment | null> {
+  const resp = await jiraFetch<JiraWorkflowSchemeProjectResponse>(
+    config,
+    `/rest/api/3/workflowscheme/project?projectId=${encodeURIComponent(projectId)}`,
+  );
+  return resp.values?.[0] ?? null;
+}
+
+async function fetchWorkflowDefinition(
+  config: Config,
+  projectId: string,
+  issueTypeId: string,
+): Promise<JiraWorkflow | null> {
+  const resp = await jiraFetch<JiraWorkflowsResponse>(
+    config,
+    '/rest/api/3/workflows',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        projectAndIssueTypes: [{ projectId, issueTypeId }],
+      }),
+    },
+  );
+  return resp.workflows?.[0] ?? null;
+}
+
+// ============================================================================
+// SLUGIFY (vendored from sync-jira-fields.ts — same rules per spec)
+// ============================================================================
+
+/**
+ * Slugify a Jira name (status, transition, issue type) into a stable lowercase
+ * identifier. Identical rules to `sync-jira-fields.ts:slugify` so a name like
+ * "Ready For QA" maps to the same `ready_for_qa` slug everywhere.
+ */
+function slugify(name: string): string {
+  let s = name.toLowerCase();
+  s = s.normalize('NFD').replace(/\p{M}/gu, '');
+  s = s.replace(/\p{Extended_Pictographic}/gu, '');
+  s = s.replace(/\u{200D}/gu, '');
+  s = s.replace(/\u{FE0E}/gu, '');
+  s = s.replace(/\u{FE0F}/gu, '');
+  s = s.replace(/[\u{1F1E6}-\u{1F1FF}]/gu, '');
+  // Translate `&` → ` and ` so e.g. "Fixed & Deployed" word-breaks naturally
+  // into `fixed_and_deployed` instead of collapsing to `fixed_deployed`.
+  s = s.replace(/&/g, ' and ');
+  s = s.replace(/[^a-z0-9_]+/g, '_');
+  s = s.replace(/_+/g, '_');
+  s = s.replace(/^_+|_+$/g, '');
+  return s;
+}
+
+// ============================================================================
+// EXISTING CATALOG LOAD
+// ============================================================================
+
+function loadExistingCatalog(): OutputCatalog {
+  if (!existsSync(OUTPUT_PATH)) { return {}; }
+  try {
+    const raw = readFileSync(OUTPUT_PATH, 'utf8').trim();
+    if (raw === '' || raw === '{}') { return {}; }
+    const parsed = JSON.parse(raw) as OutputCatalog;
+    return parsed;
+  }
+  catch {
+    log.warn(`Could not parse existing ${OUTPUT_PATH} — starting from scratch.`);
+    return {};
+  }
+}
+
+/** Build an empty work_type entry — same shell as `.agents/jira-workflows.json`. */
+function emptyWorkTypeEntry(): OutputWorkType {
+  return {
+    jira_issue_type: null,
+    workflow_scheme: null,
+    workflow: null,
+    statuses: {},
+    transitions: {},
+  };
+}
+
+// ============================================================================
+// INTERACTIVE PROMPTS — prompt-on-collision-or-missing
+// ============================================================================
+
+interface StatusChoice {
+  slug: string
+  status: JiraStatus
+}
+
+/**
+ * Interactive prompt for a required canonical status that did not auto-resolve
+ * (either no slug match, or multiple slug matches and --allow-collisions was
+ * not set). Returns the picked Jira status or `null` if the user skipped.
+ *
+ * Mirrors the shape of `agents-setup.ts:promptFlatField` for consistency.
+ */
+async function promptStatusPick(
+  workTypeSlug: string,
+  required: ManifestRequiredStatus,
+  candidates: StatusChoice[],
+  reason: 'missing' | 'collision',
+): Promise<JiraStatus | null> {
+  const intro = reason === 'missing'
+    ? `[${workTypeSlug}] No discovered status slugifies to required canonical "${required.slug}".`
+    : `[${workTypeSlug}] Multiple discovered statuses slugify to required canonical "${required.slug}".`;
+  log.warn(intro);
+  if (required.description) {
+    log.dim(`  Manifest description: ${required.description}`);
+  }
+  const choices = candidates.map(c => ({
+    value: c.status.id,
+    name: `${c.status.name}  (id ${c.status.id}, slug ${c.slug})`,
+  }));
+  choices.push({ value: '__skip__', name: '[skip] — leave this canonical slug unmapped' });
+  const picked = await select({
+    message: `Pick a Jira status for ${workTypeSlug}.${required.slug}`,
+    choices,
+    default: choices[0].value,
+  });
+  if (picked === '__skip__') {
+    log.warn(`  Skipped: ${workTypeSlug}.${required.slug} remains unmapped.`);
+    return null;
+  }
+  const choice = candidates.find(c => c.status.id === picked);
+  return choice?.status ?? null;
+}
+
+interface TransitionChoice {
+  slug: string
+  transition: JiraWorkflowTransition
+  fromStatusId: string | null
+  toStatusId: string | null
+  fromCanonical: string | null
+  toCanonical: string | null
+}
+
+async function promptTransitionPick(
+  workTypeSlug: string,
+  required: ManifestRequiredTransition,
+  candidates: TransitionChoice[],
+  reason: 'missing' | 'collision' | 'mismatch',
+): Promise<TransitionChoice | null> {
+  let intro: string;
+  if (reason === 'missing') {
+    intro = `[${workTypeSlug}] No discovered transition slugifies to required canonical "${required.slug}".`;
+  }
+  else if (reason === 'collision') {
+    intro = `[${workTypeSlug}] Multiple discovered transitions slugify to required canonical "${required.slug}".`;
+  }
+  else {
+    intro = `[${workTypeSlug}] Discovered transition for "${required.slug}" does NOT match the manifest's from/to.`;
+  }
+  log.warn(intro);
+  if (required.description) {
+    log.dim(`  Manifest description: ${required.description}`);
+  }
+  if (required.from || required.to) {
+    log.dim(`  Manifest expects: from=${required.from ?? '(any)'} → to=${required.to ?? '(any)'}`);
+  }
+  const choices = candidates.map(c => ({
+    value: c.transition.id,
+    name: `${c.transition.name}  (id ${c.transition.id}, ${c.fromCanonical ?? '(global)'} → ${c.toCanonical ?? '(?)'})`,
+  }));
+  choices.push({ value: '__skip__', name: '[skip] — leave this canonical slug unmapped' });
+  const picked = await select({
+    message: `Pick a Jira transition for ${workTypeSlug}.${required.slug}`,
+    choices,
+    default: choices[0].value,
+  });
+  if (picked === '__skip__') {
+    log.warn(`  Skipped: ${workTypeSlug}.${required.slug} remains unmapped.`);
+    return null;
+  }
+  return candidates.find(c => c.transition.id === picked) ?? null;
+}
+
+/**
+ * Prompt for the project key when `.agents/project.yaml` has it as null.
+ * Mirrors the shape of `agents-setup.ts:promptFlatField` (auto-uppercased).
+ */
+async function promptProjectKey(): Promise<string> {
+  log.warn('No project_key in .agents/project.yaml — please enter one for this run.');
+  while (true) {
+    const raw = await input({
+      message: 'Jira project key (e.g. PROJ, OB, UPEX)',
+    });
+    const trimmed = raw.trim().toUpperCase();
+    if (!trimmed) {
+      log.error('  Cannot be empty.');
+      continue;
+    }
+    if (!/^[A-Z0-9]+$/.test(trimmed)) {
+      log.error('  Must be alphanumeric uppercase.');
+      continue;
+    }
+    return trimmed;
+  }
+}
+
+/**
+ * Persist `project.project_key` back to `.agents/project.yaml` after the user
+ * answered the prompt, so subsequent runs (sync, check, …) don't re-ask. Only
+ * rewrites the single line `  project_key: null # TODO: …` → `  project_key: <KEY> # TODO: …`,
+ * preserving the trailing TODO comment and the surrounding file verbatim.
+ *
+ * No-op (returns false) if the file is missing, the line is not found, or the
+ * value is empty. We don't pull in a YAML lib — same dependency philosophy as
+ * `loadProjectKey` / `sync-jira-fields.ts:loadDeclaredSlugs`.
+ */
+function persistProjectKey(projectKey: string): boolean {
+  if (!projectKey.trim()) { return false; }
+  if (!existsSync(PROJECT_YAML_PATH)) { return false; }
+  let text: string;
+  try {
+    text = readFileSync(PROJECT_YAML_PATH, 'utf8');
+  }
+  catch {
+    return false;
+  }
+  const lines = text.split(/\r?\n/);
+  let inProjectSection = false;
+  let mutated = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^project:\s*$/.test(line)) {
+      inProjectSection = true;
+      continue;
+    }
+    if (/^[a-z_][\w-]*:/i.test(line)) {
+      inProjectSection = /^project:\s*$/.test(line);
+      continue;
+    }
+    if (inProjectSection) {
+      // Match `  project_key:` (2-space indent), capture the value + optional
+      // trailing comment so we can rewrite just the value.
+      const m = line.match(/^( {2}project_key:\s*)(.*?)(\s*#.*)?$/);
+      if (m) {
+        const prefix = m[1];
+        const currentValue = m[2].trim();
+        const trailingComment = m[3] ?? '';
+        if (currentValue === '' || currentValue === 'null' || currentValue === '~') {
+          lines[i] = `${prefix}${projectKey}${trailingComment}`;
+          mutated = true;
+        }
+        break;
+      }
+    }
+  }
+  if (!mutated) { return false; }
+  try {
+    writeFileSync(PROJECT_YAML_PATH, lines.join('\n'), 'utf8');
+    return true;
+  }
+  catch {
+    return false;
+  }
+}
+
+// ============================================================================
+// CORE PIPELINE
+// ============================================================================
+
+interface SyncStats {
+  statusesMapped: number
+  transitionsMapped: number
+  missingRequired: number
+}
+
+/**
+ * Walk one work_type:
+ *   - resolve the issue type from the per-project status payload
+ *   - resolve the workflow scheme + workflow assigned to that issue type
+ *   - fetch the full workflow definition via POST /rest/api/3/workflows
+ *   - slugify every status + transition; build per-canonical-slug mappings
+ *   - emit prompts for collisions / missing / from-to mismatches
+ *
+ * Existing real mappings in `previousEntry` are preserved unless `--force`.
+ */
+async function syncWorkType(
+  config: Config,
+  flags: CliFlags,
+  projectId: string,
+  projectKey: string,
+  issueTypeStatuses: JiraIssueTypeStatuses[],
+  schemeAssignment: JiraWorkflowSchemeAssignment | null,
+  workType: ManifestWorkType,
+  previousEntry: OutputWorkType | undefined,
+): Promise<{ entry: OutputWorkType, stats: SyncStats } | null> {
+  const stats: SyncStats = { statusesMapped: 0, transitionsMapped: 0, missingRequired: 0 };
+
+  // 1. Find the issue type entry in the per-project /statuses payload.
+  const issueType = issueTypeStatuses.find(
+    it => it.name.toLowerCase() === workType.jiraIssueType.toLowerCase(),
+  );
+  if (!issueType) {
+    log.warn(
+      `issue type '${workType.jiraIssueType}' not found in project '${projectKey}' — skipping work_type '${workType.slug}'`,
+    );
+    return null;
+  }
+
+  if (flags.verbose) {
+    log.dim(`  ${workType.slug}: matched issue type "${issueType.name}" (id ${issueType.id}) with ${issueType.statuses.length} status(es)`);
+  }
+
+  // 2. Resolve the workflow assigned to this issue type.
+  let workflowName: string | null = null;
+  let schemeOut: { id: string, name: string } | null = null;
+  if (schemeAssignment) {
+    const scheme = schemeAssignment.workflowScheme;
+    schemeOut = { id: scheme.id, name: scheme.name };
+    workflowName
+      = scheme.issueTypeMappings?.[issueType.id]
+        ?? scheme.defaultWorkflow
+        ?? null;
+  }
+  if (!workflowName) {
+    log.warn(`Could not resolve workflow for ${workType.slug} (${issueType.name}) — using default fallback.`);
+  }
+
+  // 3. POST /rest/api/3/workflows to get the full workflow definition.
+  let workflow: JiraWorkflow | null = null;
+  try {
+    workflow = await fetchWorkflowDefinition(config, projectId, issueType.id);
+  }
+  catch (e) {
+    log.error(`Failed to fetch workflow for ${workType.slug}: ${(e as Error).message}`);
+    return null;
+  }
+  if (!workflow) {
+    log.warn(`No workflow returned for ${workType.slug} (${issueType.name}) — skipping.`);
+    return null;
+  }
+
+  // Resolve workflow id from the polymorphic shape Jira returns.
+  let workflowId: string | null = null;
+  if (typeof workflow.id === 'string') {
+    workflowId = workflow.id;
+  }
+  else if (workflow.id && typeof workflow.id === 'object' && 'workflowId' in workflow.id) {
+    workflowId = (workflow.id as { workflowId?: string }).workflowId ?? null;
+  }
+
+  // 4. Build per-status discovered map (slug → JiraStatus). Names + categories
+  // come from /project/{key}/statuses (we already have them for this issue
+  // type). Workflow status `statusReference` is the cross-key.
+  const discoveredStatuses = new Map<string, JiraStatus[]>(); // base slug → matches
+  const idToStatus = new Map<string, JiraStatus>();
+  for (const s of issueType.statuses) {
+    idToStatus.set(s.id, s);
+    const slug = slugify(s.name);
+    if (!slug) { continue; }
+    const arr = discoveredStatuses.get(slug) ?? [];
+    arr.push(s);
+    discoveredStatuses.set(slug, arr);
+  }
+
+  const entry: OutputWorkType = emptyWorkTypeEntry();
+  entry.jira_issue_type = { id: issueType.id, name: issueType.name };
+  entry.workflow_scheme = schemeOut;
+  entry.workflow = { id: workflowId, name: workflow.name };
+
+  // 5. Status mapping pass.
+  // 5a. Always capture every discovered status under its slug — completeness
+  // matters per the spec. Collisions get _2, _3, … suffixes.
+  const statusSlugCounts = new Map<string, number>();
+  const statusIdToOutputSlug = new Map<string, string>();
+  for (const s of issueType.statuses) {
+    const baseSlug = slugify(s.name);
+    if (!baseSlug) { continue; }
+    const occurrence = (statusSlugCounts.get(baseSlug) ?? 0) + 1;
+    statusSlugCounts.set(baseSlug, occurrence);
+    const slug = occurrence === 1 ? baseSlug : `${baseSlug}_${occurrence}`;
+    entry.statuses[slug] = {
+      id: s.id,
+      name: s.name,
+      category: s.statusCategory?.key ?? null,
+    };
+    statusIdToOutputSlug.set(s.id, slug);
+  }
+
+  // 5b. For each canonical required slug, attempt to map.
+  for (const reqStatus of workType.requiredStatuses) {
+    // Idempotency: if the previous catalog has a real mapping AND --force is
+    // not set, keep it.
+    const existing = previousEntry?.statuses?.[reqStatus.slug];
+    if (existing && existing.id && !flags.force) {
+      // Re-emit it (in case the discovered map didn't already cover this slug
+      // — e.g. if Jira renamed the status, the slug under canonical key wins).
+      entry.statuses[reqStatus.slug] = existing;
+      stats.statusesMapped++;
+      if (flags.verbose) {
+        log.dim(`  ${workType.slug}.${reqStatus.slug}: kept existing mapping → "${existing.name}" (id ${existing.id})`);
+      }
+      continue;
+    }
+
+    const candidates = discoveredStatuses.get(reqStatus.slug) ?? [];
+    let picked: JiraStatus | null = null;
+
+    if (candidates.length === 1) {
+      picked = candidates[0];
+    }
+    else if (candidates.length > 1) {
+      if (flags.allowCollisions) {
+        picked = candidates[0];
+        log.warn(`  ${workType.slug}.${reqStatus.slug}: ${candidates.length} candidates, picked first deterministically (--allow-collisions).`);
+      }
+      else {
+        const choices: StatusChoice[] = candidates.map(s => ({ slug: reqStatus.slug, status: s }));
+        picked = await promptStatusPick(workType.slug, reqStatus, choices, 'collision');
+      }
+    }
+    else {
+      // No match — prompt across all discovered statuses for this work_type.
+      const allChoices: StatusChoice[] = issueType.statuses
+        .map((s) => {
+          const slug = statusIdToOutputSlug.get(s.id) ?? slugify(s.name);
+          return { slug, status: s };
+        })
+        .filter(c => !!c.slug);
+      picked = await promptStatusPick(workType.slug, reqStatus, allChoices, 'missing');
+    }
+
+    if (picked) {
+      entry.statuses[reqStatus.slug] = {
+        id: picked.id,
+        name: picked.name,
+        category: picked.statusCategory?.key ?? null,
+      };
+      stats.statusesMapped++;
+      if (flags.verbose) {
+        log.dim(`  ${workType.slug}.${reqStatus.slug} → "${picked.name}" (id ${picked.id})`);
+      }
+    }
+    else {
+      stats.missingRequired++;
+    }
+  }
+
+  // 6. Transition mapping pass.
+  // 6a. Build a discovered map keyed by base slug, disambiguating collisions
+  // by appending `_from_<from_status_slug>` (per B.1 §5 convention).
+  // Resolve status references to canonical slugs first.
+  const statusRefToCanonical = new Map<string, string>(); // statusReference → discovered slug
+  for (const s of workflow.statuses) {
+    if (!s.statusReference) { continue; }
+    // Workflow status objects sometimes lack a name; cross-reference via
+    // idToStatus when the reference happens to be the status id.
+    const matched = idToStatus.get(s.statusReference);
+    if (matched) {
+      const slug = statusIdToOutputSlug.get(matched.id);
+      if (slug) { statusRefToCanonical.set(s.statusReference, slug); }
+    }
+  }
+
+  type DiscoveredTransition = {
+    transition: JiraWorkflowTransition
+    baseSlug: string
+    finalSlug: string
+    fromCanonical: string | null
+    toCanonical: string | null
+    fromStatusId: string | null
+    toStatusId: string | null
+  };
+
+  const discoveredTransitions: DiscoveredTransition[] = [];
+  // First pass: compute base slugs + count occurrences.
+  const transitionBaseSlugCounts = new Map<string, number>();
+  for (const t of workflow.transitions) {
+    const baseSlug = slugify(t.name);
+    if (!baseSlug) { continue; }
+    transitionBaseSlugCounts.set(baseSlug, (transitionBaseSlugCounts.get(baseSlug) ?? 0) + 1);
+  }
+  // Second pass: assign final slugs (disambiguate when count > 1).
+  for (const t of workflow.transitions) {
+    const baseSlug = slugify(t.name);
+    if (!baseSlug) { continue; }
+    const toRef = t.toStatusReference ?? null;
+    const toCanonical = toRef ? statusRefToCanonical.get(toRef) ?? null : null;
+    const toStatus = toCanonical ? entry.statuses[toCanonical] ?? null : null;
+    const toStatusId = toStatus?.id ?? null;
+
+    // A transition can have multiple links (multiple from-statuses) or zero
+    // (global / initial). For the discovered catalog we emit one entry per
+    // (transition, link) pair. Global transitions emit a single entry with
+    // from=null.
+    const links = (t.links && t.links.length > 0) ? t.links : [{ fromStatusReference: undefined }];
+    const isAmbiguous = (transitionBaseSlugCounts.get(baseSlug) ?? 0) > 1 || links.length > 1;
+    for (const link of links) {
+      const fromRef = link.fromStatusReference ?? null;
+      const fromCanonical = fromRef ? statusRefToCanonical.get(fromRef) ?? null : null;
+      const fromStatus = fromCanonical ? entry.statuses[fromCanonical] ?? null : null;
+      const fromStatusId = fromStatus?.id ?? null;
+
+      let finalSlug = baseSlug;
+      if (isAmbiguous) {
+        finalSlug = fromCanonical
+          ? `${baseSlug}_from_${fromCanonical}`
+          : `${baseSlug}_global`;
+      }
+      discoveredTransitions.push({
+        transition: t,
+        baseSlug,
+        finalSlug,
+        fromCanonical,
+        toCanonical,
+        fromStatusId,
+        toStatusId,
+      });
+    }
+  }
+
+  // 6b. Capture every discovered transition under its slug. If two end up with
+  // the same finalSlug (rare but possible with weird naming), suffix _2, _3.
+  const transitionFinalSlugCounts = new Map<string, number>();
+  const transitionsBySlug = new Map<string, DiscoveredTransition>();
+  for (const dt of discoveredTransitions) {
+    const occ = (transitionFinalSlugCounts.get(dt.finalSlug) ?? 0) + 1;
+    transitionFinalSlugCounts.set(dt.finalSlug, occ);
+    const slug = occ === 1 ? dt.finalSlug : `${dt.finalSlug}_${occ}`;
+    entry.transitions[slug] = {
+      id: dt.transition.id,
+      name: dt.transition.name,
+      from_status_id: dt.fromStatusId,
+      to_status_id: dt.toStatusId,
+      from_canonical: dt.fromCanonical,
+      to_canonical: dt.toCanonical,
+    };
+    transitionsBySlug.set(slug, dt);
+  }
+
+  // 6c. For each required canonical transition, try to find a match.
+  for (const reqTrans of workType.requiredTransitions) {
+    const existing = previousEntry?.transitions?.[reqTrans.slug];
+    if (existing && existing.id && !flags.force) {
+      entry.transitions[reqTrans.slug] = existing;
+      stats.transitionsMapped++;
+      if (flags.verbose) {
+        log.dim(`  ${workType.slug}.${reqTrans.slug}: kept existing mapping → "${existing.name}" (id ${existing.id})`);
+      }
+      continue;
+    }
+
+    // Candidates: every discovered transition whose baseSlug equals the
+    // required slug OR whose finalSlug equals the required slug. We also try
+    // to decode a manifest slug of the form `<base>_from_<from_status_slug>`
+    // and match against discovered transitions whose baseSlug equals `<base>`
+    // AND whose fromCanonical equals `<from_status_slug>` — this is what makes
+    // `automated_from_manual` auto-resolve to the (single) discovered
+    // `automated` transition that has from_canonical == `manual`, even when
+    // it didn't get auto-suffixed because there was no ambiguity.
+    const candidates: TransitionChoice[] = [];
+    const seen = new Set<string>(); // discovered transition id+slug
+    function pushCandidate(slug: string, dt: DiscoveredTransition): void {
+      const key = `${dt.transition.id}::${slug}`;
+      if (seen.has(key)) { return; }
+      seen.add(key);
+      candidates.push({
+        slug,
+        transition: dt.transition,
+        fromStatusId: dt.fromStatusId,
+        toStatusId: dt.toStatusId,
+        fromCanonical: dt.fromCanonical,
+        toCanonical: dt.toCanonical,
+      });
+    }
+    // Decode `<base>_from_<from_status_slug>` once if applicable.
+    let decodedBase: string | null = null;
+    let decodedFromStatus: string | null = null;
+    {
+      const m = /^(.+?)_from_(.+)$/.exec(reqTrans.slug);
+      if (m) {
+        decodedBase = m[1];
+        decodedFromStatus = m[2];
+      }
+    }
+    for (const [slug, dt] of transitionsBySlug.entries()) {
+      // (a) direct base / final-slug match.
+      if (dt.baseSlug === reqTrans.slug || slug === reqTrans.slug) {
+        pushCandidate(slug, dt);
+        continue;
+      }
+      // (b) decoded `_from_<status>` match.
+      if (
+        decodedBase
+        && decodedFromStatus
+        && dt.baseSlug === decodedBase
+        && dt.fromCanonical === decodedFromStatus
+      ) {
+        pushCandidate(slug, dt);
+      }
+    }
+
+    let picked: TransitionChoice | null = null;
+
+    if (candidates.length === 0) {
+      // Fall back to a free-pick across all discovered transitions.
+      const allChoices: TransitionChoice[] = [];
+      for (const [slug, dt] of transitionsBySlug.entries()) {
+        allChoices.push({
+          slug,
+          transition: dt.transition,
+          fromStatusId: dt.fromStatusId,
+          toStatusId: dt.toStatusId,
+          fromCanonical: dt.fromCanonical,
+          toCanonical: dt.toCanonical,
+        });
+      }
+      picked = await promptTransitionPick(workType.slug, reqTrans, allChoices, 'missing');
+    }
+    else if (candidates.length === 1) {
+      const c = candidates[0];
+      // Verify from/to match the manifest declaration. The manifest may
+      // declare `from: any` (or omit `from:`) for global transitions like
+      // `bug.re_open` — those accept any source state, including null
+      // (Jira-global, no specific from_status_id).
+      const fromOk = !reqTrans.from || reqTrans.from === 'any' || c.fromCanonical === reqTrans.from;
+      const toOk = !reqTrans.to || reqTrans.to === 'any' || c.toCanonical === reqTrans.to;
+      if (fromOk && toOk) {
+        picked = c;
+      }
+      else {
+        log.warn(
+          `  ${workType.slug}.${reqTrans.slug}: discovered transition "${c.transition.name}" connects ${c.fromCanonical ?? '(global)'} → ${c.toCanonical ?? '(?)'}, manifest expects ${reqTrans.from ?? '(any)'} → ${reqTrans.to ?? '(any)'}`,
+        );
+        // Build a fresh choice list scoped to candidates with the same baseSlug
+        // so the user can pick the right one (or skip).
+        picked = await promptTransitionPick(workType.slug, reqTrans, candidates, 'mismatch');
+      }
+    }
+    else {
+      // Multi-candidate. Prefer the one that matches from/to exactly.
+      // `from: any` (or omitted) accepts any source state.
+      const exact = candidates.find(
+        c => (!reqTrans.from || reqTrans.from === 'any' || c.fromCanonical === reqTrans.from)
+          && (!reqTrans.to || reqTrans.to === 'any' || c.toCanonical === reqTrans.to),
+      );
+      if (exact) {
+        picked = exact;
+        if (flags.verbose) {
+          log.dim(`  ${workType.slug}.${reqTrans.slug}: ${candidates.length} candidates; auto-picked the one matching from/to`);
+        }
+      }
+      else if (flags.allowCollisions) {
+        picked = candidates[0];
+        log.warn(`  ${workType.slug}.${reqTrans.slug}: ${candidates.length} candidates, none match from/to — picked first deterministically (--allow-collisions).`);
+      }
+      else {
+        picked = await promptTransitionPick(workType.slug, reqTrans, candidates, 'collision');
+      }
+    }
+
+    if (picked) {
+      entry.transitions[reqTrans.slug] = {
+        id: picked.transition.id,
+        name: picked.transition.name,
+        from_status_id: picked.fromStatusId,
+        to_status_id: picked.toStatusId,
+        from_canonical: picked.fromCanonical,
+        to_canonical: picked.toCanonical,
+      };
+      stats.transitionsMapped++;
+      if (flags.verbose) {
+        log.dim(`  ${workType.slug}.${reqTrans.slug} → "${picked.transition.name}" (id ${picked.transition.id})`);
+      }
+    }
+    else {
+      stats.missingRequired++;
+    }
+  }
+
+  return { entry, stats };
+}
+
+// ============================================================================
+// FILE I/O
+// ============================================================================
+
+function writeCatalog(filePath: string, catalog: OutputCatalog, manifestOrder: string[]): void {
+  const dir = dirname(filePath);
+  if (!existsSync(dir)) {
+    log.error(`Output directory does not exist: ${dir}`);
+    process.exit(1);
+  }
+  // Preserve manifest order first, then any extra discovered work_types
+  // (none today, but the structure stays open).
+  const orderedKeys: string[] = [];
+  for (const k of manifestOrder) {
+    if (k in catalog) { orderedKeys.push(k); }
+  }
+  for (const k of Object.keys(catalog)) {
+    if (!orderedKeys.includes(k)) { orderedKeys.push(k); }
+  }
+  const ordered: OutputCatalog = {};
+  for (const k of orderedKeys) { ordered[k] = catalog[k]; }
+  writeFileSync(filePath, `${JSON.stringify(ordered, null, 2)}\n`, 'utf8');
+}
+
+// ============================================================================
+// MAIN
+// ============================================================================
+
+async function main(): Promise<void> {
+  const flags = parseArgs(process.argv.slice(2));
+
+  if (flags.help) {
+    printHelp();
+    process.exit(0);
+  }
+
+  process.on('SIGINT', () => {
+    err('');
+    log.warn('Cancelled. No changes saved.');
+    process.exit(1);
+  });
+
+  // 1. Manifest first — short-circuit if there's nothing to sync.
+  const workTypes = loadManifestWorkTypes();
+  if (workTypes.length === 0) {
+    log.info('No work_types declared in .agents/jira-required.yaml — nothing to sync.');
+    process.exit(0);
+  }
+
+  // 2. Env vars + project key.
+  const config = loadConfig();
+  let projectKey = loadProjectKey();
+  let projectKeyWasPrompted = false;
+  if (!projectKey) {
+    try {
+      projectKey = await promptProjectKey();
+      projectKeyWasPrompted = true;
+    }
+    catch (e) {
+      if (isAbortError(e)) {
+        log.warn('Cancelled. No changes saved.');
+        process.exit(1);
+      }
+      throw e;
+    }
+  }
+  // Persist the answer so subsequent runs (sync, check, agents-lint) don't
+  // re-prompt. Only fires when we actually prompted AND the user provided a
+  // non-empty value AND we're not in dry-run.
+  if (projectKeyWasPrompted && projectKey && !flags.dryRun) {
+    if (persistProjectKey(projectKey)) {
+      log.info(`Persisted project_key=${projectKey} to .agents/project.yaml.`);
+    }
+  }
+
+  // 3. Resolve project key → project id.
+  let project: JiraProject;
+  try {
+    project = await fetchProjectByKey(config, projectKey);
+  }
+  catch (e) {
+    log.error(`Failed to resolve project '${projectKey}': ${(e as Error).message}`);
+    process.exit(1);
+  }
+  log.info(`Project: ${project.name} (key ${project.key}, id ${project.id})`);
+
+  // 4. Discover all issue types + statuses for the project.
+  let issueTypeStatuses: JiraIssueTypeStatuses[];
+  try {
+    issueTypeStatuses = await fetchProjectStatuses(config, projectKey);
+  }
+  catch (e) {
+    log.error(`Failed to fetch project statuses: ${(e as Error).message}`);
+    process.exit(1);
+  }
+  log.info(`Discovered ${issueTypeStatuses.length} issue type(s) in ${projectKey}.`);
+
+  // 5. Fetch the workflow scheme assignment once (it's per-project, not per-type).
+  let schemeAssignment: JiraWorkflowSchemeAssignment | null = null;
+  try {
+    schemeAssignment = await fetchWorkflowSchemeForProject(config, project.id);
+  }
+  catch (e) {
+    log.warn(`Could not resolve workflow scheme for project: ${(e as Error).message}`);
+  }
+  if (schemeAssignment && flags.verbose) {
+    log.dim(`  Workflow scheme: ${schemeAssignment.workflowScheme.name} (id ${schemeAssignment.workflowScheme.id})`);
+  }
+
+  // 6. Load existing catalog so idempotency / `--force` semantics work.
+  const previousCatalog = loadExistingCatalog();
+
+  // 7. Per-work_type sync.
+  const newCatalog: OutputCatalog = {};
+  const perWorkTypeStats = new Map<string, SyncStats>();
+
+  for (const wt of workTypes) {
+    log.info(`Syncing work_type "${wt.slug}" (issue type "${wt.jiraIssueType}")…`);
+    let result: { entry: OutputWorkType, stats: SyncStats } | null;
+    try {
+      result = await syncWorkType(
+        config,
+        flags,
+        project.id,
+        projectKey,
+        issueTypeStatuses,
+        schemeAssignment,
+        wt,
+        previousCatalog[wt.slug],
+      );
+    }
+    catch (e) {
+      if (isAbortError(e)) {
+        log.warn('Cancelled. No changes saved.');
+        process.exit(1);
+      }
+      log.error(`Failed to sync work_type '${wt.slug}': ${(e as Error).message}`);
+      // Keep going on other work_types — partial syncs are useful.
+      continue;
+    }
+    if (!result) {
+      // Issue type not found, etc. Preserve any prior mapping if present.
+      if (previousCatalog[wt.slug]) {
+        newCatalog[wt.slug] = previousCatalog[wt.slug];
+      }
+      else {
+        newCatalog[wt.slug] = emptyWorkTypeEntry();
+      }
+      continue;
+    }
+    newCatalog[wt.slug] = result.entry;
+    perWorkTypeStats.set(wt.slug, result.stats);
+  }
+
+  // 8. Persist (or print on dry-run).
+  if (flags.dryRun) {
+    out(JSON.stringify(newCatalog, null, 2));
+    log.info(`Dry run — would have written ${Object.keys(newCatalog).length} work_type(s) to ${OUTPUT_PATH}.`);
+    process.exit(0);
+  }
+
+  writeCatalog(OUTPUT_PATH, newCatalog, workTypes.map(w => w.slug));
+
+  // 9. Summary line + per-work_type breakdown.
+  const totalMissing = Array.from(perWorkTypeStats.values()).reduce((acc, s) => acc + s.missingRequired, 0);
+  log.success(`Synced workflows for ${perWorkTypeStats.size} work_type(s) to ${OUTPUT_PATH}`);
+  for (const wt of workTypes) {
+    const s = perWorkTypeStats.get(wt.slug);
+    if (!s) {
+      log.dim(`   - ${wt.slug}: skipped (issue type not found or workflow not resolvable)`);
+      continue;
+    }
+    log.dim(
+      `   - ${wt.slug}: ${s.statusesMapped} statuses mapped, `
+      + `${s.transitionsMapped} transitions mapped, ${s.missingRequired} missing required`,
+    );
+  }
+
+  process.exit(totalMissing > 0 ? 1 : 0);
+}
+
+function isAbortError(e: unknown): boolean {
+  if (!e || typeof e !== 'object') { return false; }
+  const name = (e as { name?: string }).name;
+  const msg = (e as { message?: string }).message ?? '';
+  return name === 'ExitPromptError' || /User force closed|prompt was canceled/i.test(msg);
+}
+
+main().catch((e) => {
+  log.error((e as Error).message);
+  process.exit(1);
+});

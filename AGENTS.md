@@ -65,14 +65,15 @@ bun run test:allure       # Generate Allure report
 
 Project-specific values (paths, URLs, project key, DB names, MCP servers, issue tracker metadata, etc.) are declared in **`.agents/project.yaml`**. Before resolving any `{{VAR_NAME}}` in any skill, command, template or doc, read `.agents/project.yaml` once per session and cache the values.
 
-Three variable syntaxes exist and must not be confused:
+Variable syntaxes that exist and must not be confused:
 
 - `{{VAR_NAME}}` — **project variable**, static per-repo value; resolves to `.agents/project.yaml` (snake_case key; `{{PROJECT_NAME}}` → `project.project_name`).
   - **Flat vars** live at top-level sections (e.g. `{{PROJECT_KEY}}` → `project.project_key`, `{{JIRA_URL}}` → `issue_tracker.jira_url`).
   - **Env-scoped vars** (`{{WEB_URL}}`, `{{API_URL}}`, `{{DB_MCP}}`, `{{API_MCP}}`) resolve to `environments[active_env].<var>` — where `active_env` is the env the user explicitly chose for this session, falling back to `testing.default_env`. If the user says "test against production", switch `active_env` to `production` for that session and ignore `default_env` until the session ends.
   - For explicit cross-env references (rare; only in multi-env documents), use `{{environments.<env>.<var>}}` (e.g. `{{environments.local.web_url}}`).
 - `<<VAR_NAME>>` — **session variable**, computed at runtime by the command that uses it (e.g. `<<ISSUE_KEY>>` extracted from the git branch name); never persisted.
-- `{{jira.<slug>}}` — **Jira custom field reference**, resolves to `.agents/jira.json` via `.agents/jira-required.yaml`. See `.agents/README.md` for the full convention.
+- `{{jira.<slug>}}` — **Jira custom field reference**, resolves to `.agents/jira.json` via `.agents/jira-required.yaml`. Sub-forms: `{{jira.<slug>.<option>}}` for plain `option` / array-of-option fields, `{{jira.<slug>.<parent>.<child>}}` for cascading `option-with-child`. See `.agents/README.md` for the full convention.
+- `{{jira.work_type.<slug>}}` / `{{jira.status.<work_type>.<slug>}}` / `{{jira.transition.<work_type>.<slug>}}` — **Jira workflow references**. `work_type` resolves to the literal issue-type name (e.g. `"Story"`); `status` resolves to the literal status name (sub-keys: `.id`, `.category`); `transition` resolves to the transition `id` (sub-key: `.name`) — use the id form to invoke transitions unambiguously via REST. All resolve to `.agents/jira-workflows.json` via `.agents/jira-required.yaml` `work_types:`. See `.agents/README.md` for the full convention.
 
 ---
 

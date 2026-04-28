@@ -9,7 +9,7 @@ Tool-agnostic source of truth for the data AI agents need to operate on this rep
 The directory has two roles:
 
 1. **Per-project config** — values you fill in once when you adopt the boilerplate (`project.yaml`).
-2. **Workspace-resolved metadata** — auto-generated catalog of your Jira workspace's custom fields (`jira.json`), validated against the methodology's declarative manifest (`jira-required.yaml`).
+2. **Workspace-resolved metadata** — auto-generated catalogs of your Jira workspace's custom fields (`jira.json`) and workflows (`jira-workflows.json`), both validated against the methodology's declarative manifest (`jira-required.yaml`).
 
 ## Files
 
@@ -17,7 +17,8 @@ The directory has two roles:
 |---|---|---|---|
 | `project.yaml` | Human-edited project config: project name, repo paths, URLs, MCP server names, issue-tracker metadata, default env. | You (project owner) | `bun run agents:setup` (future S6 CLI) or edit by hand. |
 | `jira.json` | Auto-generated catalog of every custom field in your Jira workspace, keyed by canonical slug. Each entry has `id`, `type`, optional `name`, `options`, `system`, `provider`. | Generated only — **do not edit by hand** | `bun run jira:sync-fields` |
-| `jira-required.yaml` | Declarative manifest of the custom fields the methodology requires (with expected types, option lists, and consumers). The contract between skills and the user's Jira. | Methodology maintainers | Updated when a skill adds or drops a `{{jira.<slug>}}` reference. |
+| `jira-workflows.json` | Auto-generated catalog of workflow statuses + transitions per `work_type`, keyed by canonical slug. Each `work_type` entry has `jira_issue_type`, `workflow_scheme`, `workflow`, `statuses`, `transitions`. | Generated only — **do not edit by hand** | `bun run jira:sync-workflows` |
+| `jira-required.yaml` | Declarative manifest of the custom fields AND `work_types:` (issue types + canonical statuses + canonical transitions) the methodology requires. The contract between skills and the user's Jira. | Methodology maintainers | Updated when a skill adds or drops a `{{jira.<slug>}}` / `{{jira.work_type.*}}` / `{{jira.status.*}}` / `{{jira.transition.*}}` reference. |
 | `README.md` | This file. | Methodology maintainers | — |
 
 ## Variable syntax conventions
@@ -31,6 +32,9 @@ Three syntaxes coexist across skills, commands and docs. Each resolves from a di
 | `<<VAR_NAME>>` | **Session variable** — computed at runtime by the calling command (e.g. `<<ISSUE_KEY>>` extracted from a git branch name) or used as a sentinel marker (`<<PLACEHOLDER>>`, `<<REDACTED>>`). Never persisted. | The skill / command's runtime context. | Linter only counts them — never declared. |
 | `{{jira.<slug>}}` | **Jira custom field reference** — portable pointer to a Jira custom field. | `.agents/jira-required.yaml` (canonical declaration of expected fields) AND `.agents/jira.json` (workspace-resolved IDs). Skills never hardcode `customfield_XXXXX`. | `bun run lint:agents` (slug must be declared in the manifest) AND `bun run jira:check` (slug must resolve to a real field in `jira.json`). |
 | `{{jira.<slug>.<option>}}` | **Jira option-value reference** — portable pointer to a single option value of a select-type custom field. Use the two-segment form for plain `option` and `array`-of-option fields. For cascading-select (`option-with-child`) fields, use the three-segment form `{{jira.<slug>.<parent>.<child>}}` to reach a child option. | `.agents/jira.json` → `<slug>.options.<option>` for plain options, or `<slug>.options.<parent>.children.<child>` for cascading. The slug must also be declared in `.agents/jira-required.yaml`. | `bun run lint:agents` (slug must be declared in the manifest AND the option must exist in the catalog). |
+| `{{jira.work_type.<slug>}}` | **Jira issue-type reference** — portable pointer to the literal issue-type name (e.g. `"Story"`, `"Bug"`, `"Test"`). Use case: `acli workitem create --type "{{jira.work_type.story}}"`. Resolves to the `name` string in the catalog. | `.agents/jira-workflows.json` → `<slug>.jira_issue_type.name`. The `<slug>` must be declared in `.agents/jira-required.yaml` under `work_types:`. | `bun run lint:agents` (slug must be declared in the manifest AND the work-type must exist in the catalog). |
+| `{{jira.status.<work_type>.<slug>}}` | **Jira status reference** — portable pointer to a workflow status's literal name (e.g. `"Ready For QA"`). Use case: `acli workitem update --status "{{jira.status.story.ready_for_qa}}"`. Optional sub-keys: `.id` (numeric status id) and `.category` (`new` / `indeterminate` / `done`). | `.agents/jira-workflows.json` → `<work_type>.statuses.<slug>` (default sub-key: `.name`). Both `<work_type>` and `<slug>` must be declared in `.agents/jira-required.yaml` under `work_types.<work_type>.required_statuses`. | `bun run lint:agents` (manifest declaration + catalog presence + valid sub-key). |
+| `{{jira.transition.<work_type>.<slug>}}` | **Jira transition reference** — portable pointer to a workflow transition's `id` (e.g. `"41"`). The default sub-key is `.id` because it removes the ambiguous-transition gotcha documented in `.claude/skills/acli/references/gotchas.md` — invoke transitions unambiguously via REST `POST /rest/api/3/issue/{key}/transitions` with `{"transition":{"id":"…"}}`. Optional sub-key: `.name` (transition literal name) for callers that prefer `acli`'s name-based interface. | `.agents/jira-workflows.json` → `<work_type>.transitions.<slug>` (default sub-key: `.id`). Both `<work_type>` and `<slug>` must be declared in `.agents/jira-required.yaml` under `work_types.<work_type>.required_transitions`. | `bun run lint:agents` (manifest declaration + catalog presence + valid sub-key). |
 
 The `{{…}}` vs `<<…>>` distinction is intentional: it removes the previous ambiguity where both project data and ephemeral session data shared the same `{{VAR}}` syntax.
 
@@ -54,12 +58,13 @@ When you clone this boilerplate into a new project:
    - `ATLASSIAN_URL` / `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` (get a token at <https://id.atlassian.com/manage-profile/security/api-tokens>).
 2. Run `bun run agents:setup` to walk through the project variables interactively. The CLI walks the flat sections (project, backend, frontend, database, issue_tracker, testing) first, then asks which environments your project has (default: `local` + `staging`; you can add `production`, `dev`, `qa`, `uat`, etc.) and prompts for the four env-scoped vars (`web_url`, `api_url`, `db_mcp`, `api_mcp`) in each. It validates `testing.default_env` against the env list, shows the `# TODO:` description and example for every field, and writes back to `.agents/project.yaml` preserving comments. Alternative: edit `.agents/project.yaml` by hand.
 3. Run `bun run jira:sync-fields` to discover your Jira workspace's custom fields. Writes `.agents/jira.json` (~100-150 fields typical). Resolves slug collisions deterministically — see `--allow-collisions` if you hit one.
-4. Run `bun run jira:check` to validate your Jira against the methodology's required-fields manifest. Address any output:
-   - **❌ MISSING** — create the field in Jira admin (Settings → Issues → Custom fields) with the suggested name, type, and options. Re-run `bun run jira:sync-fields --force` then `bun run jira:check`.
+4. Run `bun run jira:sync-workflows` to discover your Jira workspace's workflow statuses + transitions for every `work_type` declared in `jira-required.yaml`. Writes `.agents/jira-workflows.json`. Interactive on first run (prompts when a canonical slug doesn't auto-resolve to a workflow's real status / transition); idempotent on subsequent runs unless you pass `--force`.
+5. Run `bun run jira:check` to validate your Jira against the methodology's required-fields **and** required-`work_types` manifest. Address any output:
+   - **❌ MISSING** — for a custom field: create the field in Jira admin (Settings → Issues → Custom fields) with the suggested name, type, and options. Re-run `bun run jira:sync-fields --force` then `bun run jira:check`. For a `work_type` / status / transition: amend the workflow in Jira admin so it exposes the required status / transition, then re-run `bun run jira:sync-workflows --force` then `bun run jira:check`.
    - **⚠️ MISMATCHED** — rename, retype, or extend the field in Jira so it matches the manifest, OR (if the methodology can adapt) update `jira-required.yaml`. This severity also fires when a field declared as `type: option` (or `type: option-with-child`) has an empty `options: {}` map in `jira.json` — usually a missing field-context permission; re-run `bun run jira:sync-fields` after fixing it in Jira admin.
    - **💡 INFO** — informational only; safe to ignore unless you want the optional or unmapped feature.
-   - Iterate until all required fields are ✅ OK.
-5. Run `bun run lint:agents` — should report 0 errors. Confirms every `{{VAR}}` and `{{jira.*}}` reference in skills resolves against your config.
+   - Iterate until all required fields and `work_types` are ✅ OK.
+6. Run `bun run lint:agents` — should report 0 errors. Confirms every `{{VAR}}`, `{{jira.<slug>}}`, `{{jira.<slug>.<option>}}`, `{{jira.work_type.*}}`, `{{jira.status.*}}` and `{{jira.transition.*}}` reference in skills resolves against your config.
 
 You're now ready to invoke any skill (`/sprint-testing`, `/test-documentation`, etc.) without setup friction.
 
@@ -103,13 +108,26 @@ When the methodology evolves and needs a brand-new custom field that doesn't exi
 
 **The "unmapped" pattern.** When a field is required semantically but no Jira field exists yet, put the slug under `unmapped:` with a `description:` and `used_by:`. Skills then reference it as a literal marker (e.g. `customfield_<slug>`) with HTML-comment TODOs pointing at the manifest. Once a real field is created, move the entry from `unmapped:` to `required:` (with full metadata: `name`, `type`, `options`, …) and replace the literal markers with `{{jira.<slug>}}` syntax. (This is exactly how `acceptance_test_results_atr` was migrated when ATR was first configured: it lived under `unmapped:` while skills referenced `customfield_ATR`, and was promoted once the user created the matching field in Jira admin.)
 
+### 5.4 Adding a new required Jira `work_type` / status / transition
+
+When the methodology evolves and needs a brand-new canonical status or transition (or a new `work_type` altogether) on top of the existing `story` / `bug` / `test_case`:
+
+1. Decide the canonical slug (lowercase, underscores, descriptive — e.g. `ready_for_qa`, `qa_sign_off`, `re_open`). Slugs are **agnostic** — they describe the methodology, not your Jira's literal status names.
+2. Add an entry to `jira-required.yaml` under `work_types.<work_type>.required_statuses.<slug>` (or `…required_transitions.<slug>`) with a 1-line `description:`. For transitions, also declare `from:` and `to:` (use the canonical status slugs, NOT literal Jira names; if it's a global transition, use `from: any`). For a brand-new `work_type`, mirror the shape of the existing `story` / `bug` / `test_case` entries (`jira_issue_type`, `description`, `required_statuses`, `required_transitions`, `used_by`).
+3. Reference `{{jira.status.<work_type>.<slug>}}` (or `{{jira.transition.<work_type>.<slug>}}` / `{{jira.work_type.<slug>}}`) in your skill markdown.
+4. Run `bun run lint:agents` — must pass (proves the slug is declared in the manifest).
+5. Run `bun run jira:sync-workflows --force` to remap the catalog. The script auto-resolves slugs that match the workspace's actual status / transition names; if the new canonical slug doesn't auto-resolve, the script prompts interactively to map it to one of the workflow's real statuses / transitions.
+6. Run `bun run jira:check` — must pass (proves the catalog now contains the resolved value for the new slug).
+7. Communicate to all boilerplate users (release notes / changelog) that they must re-run `bun run jira:sync-workflows --force` after pulling the change, then `bun run jira:check` to verify their Jira workflow exposes the required status / transition (and amend their workflow in Jira admin if it doesn't).
+
 ## Commands reference
 
 | Command | Purpose |
 |---|---|
 | `bun run jira:sync-fields` | Discover Jira custom fields → write `jira.json`. Flags: `--force` (overwrite), `--allow-collisions` (suffix slug duplicates), `--dry-run`, `--verbose`, `--json`. |
-| `bun run jira:check` | Compare `jira-required.yaml` vs `jira.json` → setup report. Flags: `--json` (machine-readable), `--verbose` (include OK rows), `--help`. Exits 1 if any required field is missing or type-mismatched. |
-| `bun run lint:agents` | Validate every `{{VAR}}` and `{{jira.*}}` reference across `.claude/`, `templates/`, `.context/`, `AGENTS.md`. Exits 1 if any are undeclared. |
+| `bun run jira:sync-workflows` | Discover Jira workflows (statuses + transitions per `work_type`) → write `jira-workflows.json`. Interactive on first run for slugs that don't auto-resolve. Flags: `--force` (re-prompt for already-mapped slugs), `--allow-collisions`, `--dry-run`, `--verbose`, `--json`, `--help`. |
+| `bun run jira:check` | Compare `jira-required.yaml` vs `jira.json` (custom fields) AND vs `jira-workflows.json` (work types, statuses, transitions) → setup report. Flags: `--json` (machine-readable), `--verbose` (include OK rows), `--help`. Exits 1 if any required field, `work_type`, status or transition is missing or mismatched. |
+| `bun run lint:agents` | Validate every `{{VAR}}`, `{{jira.<slug>}}`, `{{jira.<slug>.<option>}}`, `{{jira.work_type.*}}`, `{{jira.status.*}}` and `{{jira.transition.*}}` reference across `.claude/`, `templates/`, `.context/`, `AGENTS.md`. Exits 1 if any are undeclared. |
 | `bun run agents:setup` | Interactive CLI to fill / edit `.agents/project.yaml`. Flags: `--non-interactive` (env-driven for CI), `--dry-run`, `--reset`, `--help`. |
 
 ## Troubleshooting
@@ -127,6 +145,7 @@ When invoked in this repository, treat this README as a contract:
 - To resolve `{{VAR_NAME}}`, read `.agents/project.yaml`. For env-scoped vars (`{{WEB_URL}}`, `{{API_URL}}`, `{{DB_MCP}}`, `{{API_MCP}}`), use the active environment for the session — the user's explicit choice if they made one, otherwise `testing.default_env`.
 - To resolve `{{environments.<env>.<var>}}`, read the named environment directly from `.agents/project.yaml`, regardless of active env.
 - To resolve `<<VAR_NAME>>`, the source is the calling skill / command's runtime context.
-- To resolve `{{jira.<slug>}}`, read `.agents/jira-required.yaml` (canonical declaration) AND `.agents/jira.json` (workspace-resolved IDs).
+- To resolve `{{jira.<slug>}}` (or `{{jira.<slug>.<option>}}` / `…<parent>.<child>`), read `.agents/jira-required.yaml` (canonical declaration) AND `.agents/jira.json` (workspace-resolved IDs / option ids).
+- To resolve `{{jira.work_type.<slug>}}`, `{{jira.status.<work_type>.<slug>[.id|.category]}}`, or `{{jira.transition.<work_type>.<slug>[.name]}}`, read `.agents/jira-required.yaml` `work_types:` (canonical declaration) AND `.agents/jira-workflows.json` (workspace-resolved status / transition / issue-type metadata).
 - To validate any change touching skills, commands, or templates, run `bun run lint:agents` and treat ERROR entries as blocking.
 - When asked to add a new skill or modify an existing one, follow the workflow in §5.2 — add manifest entries before referencing slugs.

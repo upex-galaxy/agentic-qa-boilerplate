@@ -32,24 +32,33 @@ Passive role: nobody invokes `framework-core` directly to read a reference — t
 Bootstrap writes files in **this exact order**. Each step is justified by what depends on what:
 
 1. **`.agents/project.yaml`** — template variable source. Skills resolve `{{VAR}}` against this. Nothing depends on it yet at this point in the install, so write it first.
-2. **`.agents/jira-required.yaml`** — manifest of Jira custom fields the methodology requires. Read by `scripts/check-jira-setup.ts` and `scripts/agents-lint.ts`.
+2. **`.agents/jira-required.yaml`** — manifest of Jira custom fields AND `work_types:` (issue types + canonical statuses + canonical transitions) the methodology requires. Read by `scripts/check-jira-setup.ts`, `scripts/sync-jira-workflows.ts`, and `scripts/agents-lint.ts`.
 3. **`.agents/jira.json`** — empty stub (`{}`). Real catalog is written later by `bun run jira:sync-fields`. Documented in `templates/jira.json.template` so the file exists from minute zero.
-4. **`scripts/agents-setup.ts` + `scripts/agents-lint.ts` + `scripts/sync-jira-fields.ts` + `scripts/check-jira-setup.ts`** — the four CLIs that operate on the three files above. Source files live as `templates/scripts/*.ts.template` (the `.template` suffix keeps them out of this repo's `tsconfig`/`eslint` scope, since they aren't live source code here); strip the `.template` suffix when writing to the destination `scripts/` directory. Order within this group does not matter.
-5. **`package.json`** (penultimate) — merged: declared `dependencies` and `scripts` from `templates/package.json.partial.json` are added to the existing `package.json` if one exists; otherwise the partial is the seed for a fresh `package.json`. **Mandatory step:** without this merge, none of the four scripts written in step 4 are invocable via `bun run …`.
-6. **`AGENTS.md`** + symlink **`CLAUDE.md → AGENTS.md`** (last). `AGENTS.md` cites every file written in steps 1-5, so it must be written after all of them. The `CLAUDE.md → AGENTS.md` symlink must be created after the real file exists.
+4. **`.agents/jira-workflows.json`** — empty shell with one entry per declared `work_type` (e.g. `{"story": {...}, "bug": {...}, "test_case": {...}}` with `null`/`{}` placeholders). Real catalog is written later by `bun run jira:sync-workflows`. Documented in `templates/jira-workflows.json.template` so the file exists from minute zero.
+5. **`scripts/agents-setup.ts` + `scripts/agents-lint.ts` + `scripts/sync-jira-fields.ts` + `scripts/sync-jira-workflows.ts` + `scripts/check-jira-setup.ts`** — the five CLIs that operate on the four files above. Source files live as `templates/scripts/*.ts.template` (the `.template` suffix keeps them out of this repo's `tsconfig`/`eslint` scope, since they aren't live source code here); strip the `.template` suffix when writing to the destination `scripts/` directory. Order within this group does not matter.
+6. **`package.json`** (penultimate) — merged: declared `dependencies` and `scripts` from `templates/package.json.partial.json` are added to the existing `package.json` if one exists; otherwise the partial is the seed for a fresh `package.json`. **Mandatory step:** without this merge, none of the five scripts written in step 5 are invocable via `bun run …`.
+7. **`AGENTS.md`** + symlink **`CLAUDE.md → AGENTS.md`** (last). `AGENTS.md` cites every file written in steps 1-6, so it must be written after all of them. The `CLAUDE.md → AGENTS.md` symlink must be created after the real file exists.
 
 Files MUST NOT be reordered. The dependency chain is real: a user who runs the bootstrap halfway and then types `bun run agents:setup` would otherwise hit "missing script" errors.
+
+**Post-bootstrap order for the user.** After `init` completes, the report should instruct the user to run, in this exact order:
+
+1. `bun run agents:setup` — fill `.agents/project.yaml` interactively.
+2. `bun run jira:sync-fields` — populate `.agents/jira.json` from their Jira workspace.
+3. `bun run jira:sync-workflows` — populate `.agents/jira-workflows.json` from their Jira workspace (interactive on first run for canonical slugs that don't auto-resolve to a workflow's real status / transition names).
+4. `bun run jira:check` — validate that BOTH catalogs satisfy the manifest (custom fields + `work_types`).
+5. `bun run lint:agents` — confirm every project-variable and Jira reference (custom fields, work types, statuses, transitions) resolves.
 
 ---
 
 ## Init: idempotency
 
-For each file written in steps 1-6:
+For each file written in steps 1-7:
 
 - **If the destination file does not exist** → copy the corresponding template, report `WROTE <path>`.
 - **If the destination file already exists** → do NOT overwrite, report `SKIPPED <path> (already present)`.
 
-**Exception — step 5 (`package.json`)**: never overwrite. Read the existing `package.json`, merge in the `dependencies` and `scripts` declared in `templates/package.json.partial.json` (only adding keys that are not already present; never modifying existing keys), and write back. If `package.json` does not exist at all, copy the partial verbatim and report `WROTE package.json (from partial)`.
+**Exception — step 6 (`package.json`)**: never overwrite. Read the existing `package.json`, merge in the `dependencies` and `scripts` declared in `templates/package.json.partial.json` (only adding keys that are not already present; never modifying existing keys), and write back. If `package.json` does not exist at all, copy the partial verbatim and report `WROTE package.json (from partial)`.
 
 The `init` action never deletes files, never modifies values in existing files (only adds), and never runs `bun install`. Surface deps that need to be installed in the report so the user can run `bun install` themselves.
 
@@ -117,9 +126,9 @@ The block is documentation — the AI reads it and pulls the cited files. There 
 
 This contract is enforced by convention, not tooling — a future linter could diff the two files but is out of scope here.
 
-The same contract applies to `templates/project.yaml.template`, `templates/jira-required.yaml.template`, and the four script templates: they are byte-equivalent mirrors of their live counterparts at the repo root. When the live file evolves, update the template in the same commit.
+The same contract applies to `templates/project.yaml.template`, `templates/jira-required.yaml.template`, and the five script templates (`agents-setup.ts.template`, `agents-lint.ts.template`, `sync-jira-fields.ts.template`, `sync-jira-workflows.ts.template`, `check-jira-setup.ts.template`): they are byte-equivalent mirrors of their live counterparts at the repo root. When the live file evolves, update the template in the same commit.
 
-> **Note on `jira.json.template`**: this is shipped as an empty stub `{}`. The real catalog is generated by running `bun run jira:sync-fields` against the user's Jira workspace AFTER bootstrap completes. The bootstrap report should mention this follow-up step.
+> **Note on `jira.json.template` and `jira-workflows.json.template`**: both are shipped as empty stubs (`jira.json.template` is `{}`; `jira-workflows.json.template` is a shell with one entry per declared `work_type` and `null`/`{}` placeholders). The real catalogs are generated by running `bun run jira:sync-fields` and `bun run jira:sync-workflows` against the user's Jira workspace AFTER bootstrap completes. The bootstrap report should mention these follow-up steps.
 
 ---
 

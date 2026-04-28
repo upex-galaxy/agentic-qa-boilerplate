@@ -12,6 +12,7 @@
     "agents:setup": "bun run scripts/agents-setup.ts",
     "lint:agents": "bun run scripts/agents-lint.ts",
     "jira:sync-fields": "bun run scripts/sync-jira-fields.ts",
+    "jira:sync-workflows": "bun run scripts/sync-jira-workflows.ts",
     "jira:check": "bun run scripts/check-jira-setup.ts"
   }
 }

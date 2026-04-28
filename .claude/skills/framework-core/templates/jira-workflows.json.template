@@ -1,0 +1,23 @@
+{
+  "story": {
+    "jira_issue_type": null,
+    "workflow_scheme": null,
+    "workflow": null,
+    "statuses": {},
+    "transitions": {}
+  },
+  "bug": {
+    "jira_issue_type": null,
+    "workflow_scheme": null,
+    "workflow": null,
+    "statuses": {},
+    "transitions": {}
+  },
+  "test_case": {
+    "jira_issue_type": null,
+    "workflow_scheme": null,
+    "workflow": null,
+    "statuses": {},
+    "transitions": {}
+  }
+}

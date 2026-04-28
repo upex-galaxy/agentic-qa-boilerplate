@@ -41,6 +41,8 @@ import { parse as parseYaml } from 'yaml';
 const REPO_ROOT = join(import.meta.dir, '..');
 const PROJECT_YAML = join(REPO_ROOT, '.agents', 'project.yaml');
 const JIRA_REQUIRED_YAML = join(REPO_ROOT, '.agents', 'jira-required.yaml');
+const JIRA_CATALOG_JSON = join(REPO_ROOT, '.agents', 'jira.json');
+const JIRA_WORKFLOWS_JSON = join(REPO_ROOT, '.agents', 'jira-workflows.json');
 
 // Directories to scan recursively.
 const SCAN_ROOTS = [
@@ -150,19 +152,44 @@ function loadDeclaredVariables(yamlPath: string): DeclaredVars {
 }
 
 /**
- * Load the set of declared Jira slugs from `.agents/jira-required.yaml`.
- * Both `required:` and `optional:` slugs are accepted — `unmapped:` is NOT
- * (those have no matching `{{jira.<slug>}}` syntax; skills reference them as
- * literal `customfield_*` markers).
+ * Manifest entry for one work_type — only the fields the linter cares about.
+ * Statuses and transitions are stored as Sets of slugs for O(1) lookup.
  */
-function loadManifestSlugs(yamlPath: string): { all: Set<string>, required: number, optional: number } {
+interface WorkTypeManifestEntry {
+  jiraIssueType: string
+  requiredStatuses: Set<string>
+  requiredTransitions: Set<string>
+}
+
+interface ManifestSlugs {
+  all: Set<string>
+  required: number
+  optional: number
+  unmapped: number
+  /** `work_types.<slug>` map. Empty if the manifest has no `work_types:` section. */
+  workTypes: Map<string, WorkTypeManifestEntry>
+}
+
+/**
+ * Load the set of declared Jira slugs from `.agents/jira-required.yaml`.
+ * `required:`, `optional:` AND `unmapped:` slugs are accepted — `unmapped:`
+ * counts because the methodology recognises the slug semantically even if
+ * no concrete Jira field exists yet, and skills are allowed to reference it.
+ *
+ * Also walks `work_types:` (using the same line-walking approach as
+ * `scripts/sync-jira-workflows.ts:loadManifestWorkTypes`) so the linter can
+ * validate the new `{{jira.work_type.*}}` / `{{jira.status.*}}` /
+ * `{{jira.transition.*}}` syntaxes against the manifest declaration.
+ */
+function loadManifestSlugs(yamlPath: string): ManifestSlugs {
   if (!existsSync(yamlPath)) {
     console.error(`FATAL: ${yamlPath} does not exist. Required for Jira slug validation.`);
     process.exit(1);
   }
+  const text = readFileSync(yamlPath, 'utf8');
   let parsed: unknown;
   try {
-    parsed = parseYaml(readFileSync(yamlPath, 'utf8'));
+    parsed = parseYaml(text);
   }
   catch (err) {
     console.error(`FATAL: cannot parse ${yamlPath}: ${(err as Error).message}`);
@@ -175,8 +202,208 @@ function loadManifestSlugs(yamlPath: string): { all: Set<string>, required: numb
   const root = parsed as Record<string, unknown>;
   const required = (root.required ?? {}) as Record<string, unknown>;
   const optional = (root.optional ?? {}) as Record<string, unknown>;
-  const all = new Set<string>([...Object.keys(required), ...Object.keys(optional)]);
-  return { all, required: Object.keys(required).length, optional: Object.keys(optional).length };
+  const unmapped = (root.unmapped ?? {}) as Record<string, unknown>;
+  const all = new Set<string>([
+    ...Object.keys(required),
+    ...Object.keys(optional),
+    ...Object.keys(unmapped),
+  ]);
+
+  const workTypes = parseManifestWorkTypes(text);
+
+  return {
+    all,
+    required: Object.keys(required).length,
+    optional: Object.keys(optional).length,
+    unmapped: Object.keys(unmapped).length,
+    workTypes,
+  };
+}
+
+/**
+ * Walk `.agents/jira-required.yaml` raw text and extract the `work_types:`
+ * section into a map of `slug -> { jiraIssueType, requiredStatuses, requiredTransitions }`.
+ *
+ * Mirrors the line-walking grammar of `scripts/sync-jira-workflows.ts` so the
+ * linter, the sync, and the check all agree on what the manifest declares.
+ * No real YAML parsing — narrow, stable, no extra dep.
+ */
+function parseManifestWorkTypes(text: string): Map<string, WorkTypeManifestEntry> {
+  const lines = text.split(/\r?\n/);
+  const workTypes = new Map<string, WorkTypeManifestEntry>();
+
+  let inWorkTypes = false;
+  let currentSlug: string | null = null;
+  let currentEntry: WorkTypeManifestEntry | null = null;
+  let currentMap: 'required_statuses' | 'required_transitions' | null = null;
+
+  const sectionRe = /^work_types:\s*$/;
+  const topLevelRe = /^[a-z_][\w-]*:\s*(?:#.*)?$/;
+  const workTypeHeaderRe = /^ {2}([a-z_][a-z0-9_]*):\s*$/;
+  const subKeyRe = /^ {4}([a-z_][a-z0-9_]*):\s*(.*?)\s*$/;
+  const entryRe = /^ {6}([a-z_][a-z0-9_]*):\s*(.*?)\s*$/;
+
+  function finalize(): void {
+    if (currentSlug && currentEntry) {
+      workTypes.set(currentSlug, currentEntry);
+    }
+    currentSlug = null;
+    currentEntry = null;
+    currentMap = null;
+  }
+
+  for (const line of lines) {
+    if (topLevelRe.test(line)) {
+      if (inWorkTypes) { finalize(); }
+      inWorkTypes = sectionRe.test(line);
+      continue;
+    }
+    if (!inWorkTypes) { continue; }
+    if (line.trim() === '' || line.trimStart().startsWith('#')) { continue; }
+
+    const wtHeader = workTypeHeaderRe.exec(line);
+    if (wtHeader) {
+      finalize();
+      currentSlug = wtHeader[1];
+      currentEntry = {
+        jiraIssueType: '',
+        requiredStatuses: new Set<string>(),
+        requiredTransitions: new Set<string>(),
+      };
+      currentMap = null;
+      continue;
+    }
+
+    if (!currentEntry) { continue; }
+
+    const subKey = subKeyRe.exec(line);
+    if (subKey) {
+      const key = subKey[1];
+      const rawValue = subKey[2];
+      currentMap = null;
+      if (key === 'jira_issue_type') {
+        currentEntry.jiraIssueType = stripScalar(rawValue);
+      }
+      else if (key === 'required_statuses') {
+        currentMap = 'required_statuses';
+      }
+      else if (key === 'required_transitions') {
+        currentMap = 'required_transitions';
+      }
+      continue;
+    }
+
+    const entry = entryRe.exec(line);
+    if (entry && currentMap) {
+      const slug = entry[1];
+      if (currentMap === 'required_statuses') {
+        currentEntry.requiredStatuses.add(slug);
+      }
+      else {
+        currentEntry.requiredTransitions.add(slug);
+      }
+    }
+  }
+  if (inWorkTypes) { finalize(); }
+
+  return workTypes;
+}
+
+function stripScalar(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed === '' || trimmed === 'null' || trimmed === '~') { return ''; }
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"'))
+    || (trimmed.startsWith('\'') && trimmed.endsWith('\''))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+/**
+ * Load `.agents/jira.json` (the discovered catalog). Returns `null` if the
+ * file is missing — option-value lookups will then be skipped without
+ * blocking the lint (slug-only references still validate against the
+ * manifest). Returns an empty record if the file exists but is the empty
+ * `{}` placeholder.
+ */
+interface CatalogNestedOption {
+  id: string
+  children: Record<string, string>
+}
+
+interface CatalogEntry {
+  id?: string
+  type?: string
+  name?: string
+  options?: Record<string, string> | Record<string, CatalogNestedOption>
+}
+
+function loadCatalog(jsonPath: string): Record<string, CatalogEntry> | null {
+  if (!existsSync(jsonPath)) { return null; }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(jsonPath, 'utf8'));
+  }
+  catch (err) {
+    console.error(`FATAL: cannot parse ${jsonPath}: ${(err as Error).message}`);
+    process.exit(1);
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    console.error(`FATAL: ${jsonPath} must be a JSON object.`);
+    process.exit(1);
+  }
+  return parsed as Record<string, CatalogEntry>;
+}
+
+/**
+ * Workflow catalog loader (`.agents/jira-workflows.json`). Returns `null` when
+ * the file is absent so the linter still succeeds pre-sync; missing entries
+ * are then treated as "not yet synced" warnings rather than hard errors.
+ *
+ * Shape mirrors `scripts/sync-jira-workflows.ts:OutputCatalog`.
+ */
+interface CatalogWorkflowStatus {
+  id?: string | null
+  name?: string | null
+  category?: string | null
+}
+
+interface CatalogWorkflowTransition {
+  id?: string | null
+  name?: string | null
+  from_status_id?: string | null
+  to_status_id?: string | null
+  from_canonical?: string | null
+  to_canonical?: string | null
+}
+
+interface CatalogWorkflowEntry {
+  jira_issue_type?: { id: string, name: string } | null
+  workflow_scheme?: { id: string, name: string } | null
+  workflow?: { id: string | null, name: string } | null
+  statuses?: Record<string, CatalogWorkflowStatus>
+  transitions?: Record<string, CatalogWorkflowTransition>
+}
+
+type WorkflowsCatalog = Record<string, CatalogWorkflowEntry>;
+
+function loadWorkflowsCatalog(jsonPath: string): WorkflowsCatalog | null {
+  if (!existsSync(jsonPath)) { return null; }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(jsonPath, 'utf8'));
+  }
+  catch (err) {
+    console.error(`FATAL: cannot parse ${jsonPath}: ${(err as Error).message}`);
+    process.exit(1);
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    console.error(`FATAL: ${jsonPath} must be a JSON object.`);
+    process.exit(1);
+  }
+  return parsed as WorkflowsCatalog;
 }
 
 // -----------------------------------------------------------------------------
@@ -253,6 +480,39 @@ interface ExplicitEnvHit {
 
 interface JiraSlugHit {
   slug: string
+  /** Lowercased option segment for `{{jira.<slug>.<option>}}`; `undefined` for bare slug refs. */
+  option?: string
+  /** Lowercased child segment for `{{jira.<slug>.<parent>.<child>}}` cascading refs. */
+  child?: string
+  /** Verbatim reference (without surrounding `{{` / `}}`). Used only in error messages. */
+  raw: string
+  file: string
+  line: number
+}
+
+interface WorkTypeHit {
+  slug: string
+  raw: string
+  file: string
+  line: number
+}
+
+interface StatusHit {
+  workType: string
+  statusSlug: string
+  /** Optional sub-key: `id` or `category`. */
+  subKey?: string
+  raw: string
+  file: string
+  line: number
+}
+
+interface TransitionHit {
+  workType: string
+  transitionSlug: string
+  /** Optional sub-key: `name`. */
+  subKey?: string
+  raw: string
   file: string
   line: number
 }
@@ -263,6 +523,9 @@ interface ScanResult {
   sessionVarNames: Set<string>
   sessionVarOccurrences: number
   jiraSlugHits: JiraSlugHit[]
+  workTypeHits: WorkTypeHit[]
+  statusHits: StatusHit[]
+  transitionHits: TransitionHit[]
   metaSkippedCount: number
 }
 
@@ -271,8 +534,25 @@ interface ScanResult {
 // columns, then scan PROJECT_RE while skipping covered ranges.
 const PROJECT_RE = /\{\{([A-Z_][A-Z0-9_]*)\}\}/g;
 const EXPLICIT_ENV_RE = /\{\{environments\.([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)\}\}/g;
-const JIRA_RE = /\{\{jira\.([a-z_][a-z0-9_]*)\}\}/g;
+// `{{jira.<slug>}}` (bare custom-field id reference)
+//   OR `{{jira.<slug>.<option>}}` (plain-option value lookup)
+//   OR `{{jira.<slug>.<parent>.<child>}}` (cascading-select value lookup).
+// Slug must be a real declared custom-field slug (validated below).
+//
+// The newer work-type / status / transition substrates use literal-prefixed
+// shapes (`{{jira.work_type.…}}`, `{{jira.status.…}}`, `{{jira.transition.…}}`).
+// Those are matched by the dedicated regexes below FIRST, and JIRA_RE skips
+// any match whose first segment is one of those reserved literals so each
+// reference is counted exactly once.
+const JIRA_RE = /\{\{jira\.([a-z_][a-z0-9_]*)(?:\.([a-z_][a-z0-9_]*)(?:\.([a-z_][a-z0-9_]*))?)?\}\}/g;
+const JIRA_WORK_TYPE_RE = /\{\{jira\.work_type\.([a-z_][a-z0-9_]*)\}\}/g;
+const JIRA_STATUS_RE = /\{\{jira\.status\.([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)(?:\.([a-z_][a-z0-9_]*))?\}\}/g;
+const JIRA_TRANSITION_RE = /\{\{jira\.transition\.([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)(?:\.([a-z_][a-z0-9_]*))?\}\}/g;
 const SESSION_RE = /<<([A-Z_][A-Z0-9_]*)>>/g;
+
+/** Reserved first-segment slugs that JIRA_RE must NOT count as custom-field
+ * references. They belong to the dedicated regexes above. */
+const JIRA_RESERVED_SLUGS = new Set(['work_type', 'status', 'transition']);
 
 function isAllowlisted(varName: string, filePath: string): boolean {
   return DOC_META_ALLOWLIST.some(
@@ -286,6 +566,9 @@ function scanFiles(files: string[]): ScanResult {
   const sessionVarNames = new Set<string>();
   let sessionVarOccurrences = 0;
   const jiraSlugHits: JiraSlugHit[] = [];
+  const workTypeHits: WorkTypeHit[] = [];
+  const statusHits: StatusHit[] = [];
+  const transitionHits: TransitionHit[] = [];
   let metaSkippedCount = 0;
 
   for (const file of files) {
@@ -318,12 +601,69 @@ function scanFiles(files: string[]): ScanResult {
         projectVarHits.push({ name, file, line: i + 1 });
       }
 
-      // --- jira refs
+      // --- jira work_type refs (most specific first, anchored on literal `work_type.`)
+      JIRA_WORK_TYPE_RE.lastIndex = 0;
+      for (;;) {
+        const m = JIRA_WORK_TYPE_RE.exec(line);
+        if (m === null) { break; }
+        workTypeHits.push({
+          slug: m[1],
+          raw: `jira.work_type.${m[1]}`,
+          file,
+          line: i + 1,
+        });
+      }
+
+      // --- jira status refs (anchored on literal `status.`)
+      JIRA_STATUS_RE.lastIndex = 0;
+      for (;;) {
+        const m = JIRA_STATUS_RE.exec(line);
+        if (m === null) { break; }
+        const segments = [`jira`, `status`, m[1], m[2]];
+        if (m[3]) { segments.push(m[3]); }
+        statusHits.push({
+          workType: m[1],
+          statusSlug: m[2],
+          subKey: m[3],
+          raw: segments.join('.'),
+          file,
+          line: i + 1,
+        });
+      }
+
+      // --- jira transition refs (anchored on literal `transition.`)
+      JIRA_TRANSITION_RE.lastIndex = 0;
+      for (;;) {
+        const m = JIRA_TRANSITION_RE.exec(line);
+        if (m === null) { break; }
+        const segments = [`jira`, `transition`, m[1], m[2]];
+        if (m[3]) { segments.push(m[3]); }
+        transitionHits.push({
+          workType: m[1],
+          transitionSlug: m[2],
+          subKey: m[3],
+          raw: segments.join('.'),
+          file,
+          line: i + 1,
+        });
+      }
+
+      // --- jira refs (custom-field option-value lookup); skip reserved-slug
+      // matches because JIRA_*_RE already counted those above.
       JIRA_RE.lastIndex = 0;
       for (;;) {
         const m = JIRA_RE.exec(line);
         if (m === null) { break; }
-        jiraSlugHits.push({ slug: m[1], file, line: i + 1 });
+        if (JIRA_RESERVED_SLUGS.has(m[1])) { continue; }
+        const segments = [m[1], m[2], m[3]].filter((s): s is string => Boolean(s));
+        jiraSlugHits.push({
+          slug: m[1],
+          option: m[2],
+          child: m[3],
+          raw: `jira.${segments.join('.')}`,
+          file,
+          line: i + 1,
+        });
       }
 
       // --- session vars
@@ -343,6 +683,9 @@ function scanFiles(files: string[]): ScanResult {
     sessionVarNames,
     sessionVarOccurrences,
     jiraSlugHits,
+    workTypeHits,
+    statusHits,
+    transitionHits,
     metaSkippedCount,
   };
 }
@@ -354,6 +697,8 @@ function scanFiles(files: string[]): ScanResult {
 function main(): void {
   const declared = loadDeclaredVariables(PROJECT_YAML);
   const manifest = loadManifestSlugs(JIRA_REQUIRED_YAML);
+  const catalog = loadCatalog(JIRA_CATALOG_JSON);
+  const workflows = loadWorkflowsCatalog(JIRA_WORKFLOWS_JSON);
   const files = collectFiles();
   const result = scanFiles(files);
 
@@ -391,13 +736,253 @@ function main(): void {
     .filter(d => !usedNames.has(d) && !explicitlyUsedEnvScoped.has(d))
     .sort();
 
-  // Jira slug validation: every {{jira.<slug>}} must be declared in the manifest.
-  const invalidJiraHits = result.jiraSlugHits.filter(h => !manifest.all.has(h.slug));
+  // Jira reference validation. Three failure modes:
+  //   1. slug not declared in jira-required.yaml          → UNDECLARED slug
+  //   2. {{jira.<slug>.<option>}}: option missing from
+  //      jira.json[<slug>].options                        → UNKNOWN option value
+  //   3. {{jira.<slug>.<parent>.<child>}}: parent or child
+  //      missing from jira.json[<slug>].options[parent].children → UNKNOWN cascading value
+  // If `.agents/jira.json` is absent we only enforce (1) — option-value
+  // checks are skipped with an INFO line so the lint still passes pre-sync.
+  interface JiraIssue { kind: 'undeclared' | 'unknown-option' | 'unknown-cascading-parent' | 'unknown-cascading-child', hit: JiraSlugHit, detail?: string }
+  const jiraIssues: JiraIssue[] = [];
+  for (const hit of result.jiraSlugHits) {
+    if (!manifest.all.has(hit.slug)) {
+      jiraIssues.push({ kind: 'undeclared', hit });
+      continue;
+    }
+    if (!hit.option) { continue; }
+    if (catalog === null) { continue; }
+    const entry = catalog[hit.slug];
+    const opts = (entry?.options ?? {}) as Record<string, unknown>;
+    if (!hit.child) {
+      // Plain option lookup. Accept if the slug exists in opts (works for
+      // both flat `Record<string, string>` and nested cascading shapes —
+      // the parent slug is exactly what the user references).
+      if (!(hit.option in opts)) {
+        jiraIssues.push({
+          kind: 'unknown-option',
+          hit,
+          detail: `option '${hit.option}' not present in jira.json[${hit.slug}].options`,
+        });
+      }
+      continue;
+    }
+    // Cascading child lookup.
+    const parentEntry = opts[hit.option];
+    if (parentEntry === undefined) {
+      jiraIssues.push({
+        kind: 'unknown-cascading-parent',
+        hit,
+        detail: `parent '${hit.option}' not present in jira.json[${hit.slug}].options`,
+      });
+      continue;
+    }
+    if (
+      parentEntry === null
+      || typeof parentEntry !== 'object'
+      || Array.isArray(parentEntry)
+      || !('children' in parentEntry)
+    ) {
+      jiraIssues.push({
+        kind: 'unknown-cascading-child',
+        hit,
+        detail: `jira.json[${hit.slug}].options[${hit.option}] is not a cascading entry (no children map)`,
+      });
+      continue;
+    }
+    const children = (parentEntry as { children?: Record<string, unknown> }).children ?? {};
+    if (!(hit.child in children)) {
+      jiraIssues.push({
+        kind: 'unknown-cascading-child',
+        hit,
+        detail: `child '${hit.child}' not present in jira.json[${hit.slug}].options[${hit.option}].children`,
+      });
+    }
+  }
+  const invalidJiraHits = jiraIssues;
   const validJiraCount = result.jiraSlugHits.length - invalidJiraHits.length;
+
+  // ---------------------------------------------------------------------------
+  // Work-type / status / transition validation (PR-B substrate).
+  //
+  // Errors:
+  //   - UNDECLARED work_type     — slug not in manifest.workTypes
+  //   - UNKNOWN status           — undeclared in manifest AND absent from catalog
+  //   - UNKNOWN transition       — same, for transitions
+  //   - UNKNOWN sub-key          — sub-key on status (not id|category) or
+  //                                 transition (not name)
+  //
+  // Warnings:
+  //   - WORK_TYPE_NOT_SYNCED     — declared but catalog has placeholder null
+  //   - OPTIONAL status referenced — slug is in catalog but not required by manifest
+  //   - OPTIONAL transition referenced — same, for transitions
+  //
+  // Pre-sync (catalog === null): every declared slug is accepted; the warnings
+  // for "not in catalog → optional" and "not synced" cannot fire because we
+  // cannot know what the catalog will contain. The lint stays passable.
+  // ---------------------------------------------------------------------------
+
+  type WorkTypeIssueKind
+    = | 'undeclared-work-type'
+      | 'undeclared-status'
+      | 'undeclared-transition'
+      | 'unknown-sub-key';
+
+  interface WorkTypeIssue {
+    kind: WorkTypeIssueKind
+    raw: string
+    file: string
+    line: number
+    detail: string
+  }
+
+  type WorkTypeWarningKind
+    = | 'work-type-not-synced'
+      | 'optional-status'
+      | 'optional-transition';
+
+  interface WorkTypeWarning {
+    kind: WorkTypeWarningKind
+    raw: string
+    file: string
+    line: number
+    detail: string
+  }
+
+  const workTypeIssues: WorkTypeIssue[] = [];
+  const workTypeWarnings: WorkTypeWarning[] = [];
+
+  // Allowed sub-keys per substrate.
+  const ALLOWED_STATUS_SUB_KEYS = new Set(['id', 'category']);
+  const ALLOWED_TRANSITION_SUB_KEYS = new Set(['name']);
+
+  // -- {{jira.work_type.<slug>}}
+  for (const hit of result.workTypeHits) {
+    const declaredEntry = manifest.workTypes.get(hit.slug);
+    if (!declaredEntry) {
+      workTypeIssues.push({
+        kind: 'undeclared-work-type',
+        raw: hit.raw,
+        file: hit.file,
+        line: hit.line,
+        detail: `work_type '${hit.slug}' not declared in jira-required.yaml \`work_types:\``,
+      });
+      continue;
+    }
+    if (workflows) {
+      const cat = workflows[hit.slug];
+      if (!cat || !cat.jira_issue_type || !cat.jira_issue_type.name) {
+        workTypeWarnings.push({
+          kind: 'work-type-not-synced',
+          raw: hit.raw,
+          file: hit.file,
+          line: hit.line,
+          detail: `work_type '${hit.slug}' declared but jira-workflows.json has no resolved jira_issue_type — run \`bun run jira:sync-workflows\``,
+        });
+      }
+    }
+  }
+
+  // -- {{jira.status.<work_type>.<slug>[.id|.category]}}
+  for (const hit of result.statusHits) {
+    // Sub-key validation first — purely syntactic.
+    if (hit.subKey && !ALLOWED_STATUS_SUB_KEYS.has(hit.subKey)) {
+      workTypeIssues.push({
+        kind: 'unknown-sub-key',
+        raw: hit.raw,
+        file: hit.file,
+        line: hit.line,
+        detail: `unknown status sub-key '${hit.subKey}' (allowed: ${[...ALLOWED_STATUS_SUB_KEYS].join(', ')})`,
+      });
+      continue;
+    }
+    const declaredEntry = manifest.workTypes.get(hit.workType);
+    if (!declaredEntry) {
+      workTypeIssues.push({
+        kind: 'undeclared-work-type',
+        raw: hit.raw,
+        file: hit.file,
+        line: hit.line,
+        detail: `work_type '${hit.workType}' not declared in jira-required.yaml \`work_types:\``,
+      });
+      continue;
+    }
+    const inManifest = declaredEntry.requiredStatuses.has(hit.statusSlug);
+    const inCatalog = !!workflows?.[hit.workType]?.statuses?.[hit.statusSlug];
+    if (inManifest) {
+      // Always accepted.
+      continue;
+    }
+    if (inCatalog) {
+      // Lenient: in catalog but not declared as required. Warn instead of error.
+      workTypeWarnings.push({
+        kind: 'optional-status',
+        raw: hit.raw,
+        file: hit.file,
+        line: hit.line,
+        detail: `status '${hit.workType}.${hit.statusSlug}' present in jira-workflows.json but NOT declared as required in jira-required.yaml — declare it under work_types.${hit.workType}.required_statuses if skills depend on it`,
+      });
+      continue;
+    }
+    // Neither in manifest nor in catalog → hard error.
+    workTypeIssues.push({
+      kind: 'undeclared-status',
+      raw: hit.raw,
+      file: hit.file,
+      line: hit.line,
+      detail: `status '${hit.statusSlug}' not declared under work_types.${hit.workType}.required_statuses (and not present in jira-workflows.json)`,
+    });
+  }
+
+  // -- {{jira.transition.<work_type>.<slug>[.name]}}
+  for (const hit of result.transitionHits) {
+    if (hit.subKey && !ALLOWED_TRANSITION_SUB_KEYS.has(hit.subKey)) {
+      workTypeIssues.push({
+        kind: 'unknown-sub-key',
+        raw: hit.raw,
+        file: hit.file,
+        line: hit.line,
+        detail: `unknown transition sub-key '${hit.subKey}' (allowed: ${[...ALLOWED_TRANSITION_SUB_KEYS].join(', ')})`,
+      });
+      continue;
+    }
+    const declaredEntry = manifest.workTypes.get(hit.workType);
+    if (!declaredEntry) {
+      workTypeIssues.push({
+        kind: 'undeclared-work-type',
+        raw: hit.raw,
+        file: hit.file,
+        line: hit.line,
+        detail: `work_type '${hit.workType}' not declared in jira-required.yaml \`work_types:\``,
+      });
+      continue;
+    }
+    const inManifest = declaredEntry.requiredTransitions.has(hit.transitionSlug);
+    const inCatalog = !!workflows?.[hit.workType]?.transitions?.[hit.transitionSlug];
+    if (inManifest) { continue; }
+    if (inCatalog) {
+      workTypeWarnings.push({
+        kind: 'optional-transition',
+        raw: hit.raw,
+        file: hit.file,
+        line: hit.line,
+        detail: `transition '${hit.workType}.${hit.transitionSlug}' present in jira-workflows.json but NOT declared as required in jira-required.yaml — declare it under work_types.${hit.workType}.required_transitions if skills depend on it`,
+      });
+      continue;
+    }
+    workTypeIssues.push({
+      kind: 'undeclared-transition',
+      raw: hit.raw,
+      file: hit.file,
+      line: hit.line,
+      detail: `transition '${hit.transitionSlug}' not declared under work_types.${hit.workType}.required_transitions (and not present in jira-workflows.json)`,
+    });
+  }
 
   const filesWithProjectHits = new Set(result.projectVarHits.map(h => h.file)).size;
 
-  const totalErrors = undeclared.length + invalidExplicitEnv.length + invalidJiraHits.length;
+  const totalErrors = undeclared.length + invalidExplicitEnv.length + invalidJiraHits.length + workTypeIssues.length;
 
   // ----- output -----
   const envList = [...declared.envNames].sort().join(', ') || '(none)';
@@ -410,7 +995,9 @@ function main(): void {
     `Declared in project.yaml:        ${declared.flat.size} flat + ${declared.envScoped.size} env-scoped `
     + `(across ${declared.envNames.size} envs: ${envList}) = ${declaredTotal} variables`,
   );
-  console.log(`Declared in jira-required.yaml:  ${manifest.all.size} slugs (${manifest.required} required + ${manifest.optional} optional)`);
+  console.log(`Declared in jira-required.yaml:  ${manifest.all.size} slugs (${manifest.required} required + ${manifest.optional} optional + ${manifest.unmapped} unmapped) + ${manifest.workTypes.size} work_type(s)`);
+  console.log(`Catalog jira.json:               ${catalog === null ? 'absent (option-value checks skipped — run `bun run jira:sync-fields`)' : `${Object.keys(catalog).length} fields available for option-value lookup`}`);
+  console.log(`Catalog jira-workflows.json:     ${workflows === null ? 'absent (workflow checks skipped — run `bun run jira:sync-workflows`)' : `${Object.keys(workflows).length} work_type(s) available for status/transition lookup`}`);
   console.log('');
 
   console.log(`ERRORS (${totalErrors}):`);
@@ -429,20 +1016,64 @@ function main(): void {
         : `var '${hit.varName}' not present under environments.${hit.env}`;
       console.log(`  - UNDECLARED env reference: {{environments.${hit.env}.${hit.varName}}} at ${rel}:${hit.line}  (${reason})`);
     }
-    for (const hit of invalidJiraHits) {
-      const rel = relative(REPO_ROOT, hit.file);
-      console.log(`  - UNDECLARED: {{jira.${hit.slug}}} at ${rel}:${hit.line}`);
+    for (const issue of invalidJiraHits) {
+      const rel = relative(REPO_ROOT, issue.hit.file);
+      const ref = `{{${issue.hit.raw}}}`;
+      if (issue.kind === 'undeclared') {
+        console.log(`  - UNDECLARED: ${ref} at ${rel}:${issue.hit.line}`);
+      }
+      else {
+        console.log(`  - UNKNOWN ${issue.kind === 'unknown-option' ? 'option' : 'cascading value'}: ${ref} at ${rel}:${issue.hit.line}  (${issue.detail ?? 'unknown reason'})`);
+      }
+    }
+    for (const issue of workTypeIssues) {
+      const rel = relative(REPO_ROOT, issue.file);
+      const ref = `{{${issue.raw}}}`;
+      let label: string;
+      switch (issue.kind) {
+        case 'undeclared-work-type':
+          label = 'UNDECLARED work_type';
+          break;
+        case 'undeclared-status':
+          label = 'UNKNOWN status';
+          break;
+        case 'undeclared-transition':
+          label = 'UNKNOWN transition';
+          break;
+        case 'unknown-sub-key':
+          label = 'UNKNOWN sub-key';
+          break;
+      }
+      console.log(`  - ${label}: ${ref} at ${rel}:${issue.line}  (${issue.detail})`);
     }
   }
   console.log('');
 
-  console.log(`WARNINGS (${declaredButUnused.length}):`);
-  if (declaredButUnused.length === 0) {
+  const totalWarnings = declaredButUnused.length + workTypeWarnings.length;
+  console.log(`WARNINGS (${totalWarnings}):`);
+  if (totalWarnings === 0) {
     console.log('  <none>');
   }
   else {
     for (const name of declaredButUnused) {
       console.log(`  - DECLARED_BUT_UNUSED: ${name}  (no occurrences in scanned files)`);
+    }
+    for (const w of workTypeWarnings) {
+      const rel = relative(REPO_ROOT, w.file);
+      const ref = `{{${w.raw}}}`;
+      let label: string;
+      switch (w.kind) {
+        case 'work-type-not-synced':
+          label = 'WORK_TYPE_NOT_SYNCED';
+          break;
+        case 'optional-status':
+          label = 'OPTIONAL status referenced';
+          break;
+        case 'optional-transition':
+          label = 'OPTIONAL transition referenced';
+          break;
+      }
+      console.log(`  - ${label}: ${ref} at ${rel}:${w.line}  (${w.detail})`);
     }
   }
   console.log('');
@@ -451,7 +1082,19 @@ function main(): void {
   console.log(`  - ${result.projectVarHits.length} bare {{VAR}} occurrences across ${filesWithProjectHits} files`);
   console.log(`  - ${result.explicitEnvHits.length} explicit {{environments.<env>.<var>}} occurrences (${invalidExplicitEnv.length} invalid)`);
   console.log(`  - ${result.sessionVarNames.size} distinct <<VAR>> session variables (${result.sessionVarOccurrences} occurrences)`);
-  console.log(`  - ${validJiraCount} valid {{jira.*}} references; ${invalidJiraHits.length} invalid (errors above)`);
+  const optionRefCount = result.jiraSlugHits.filter(h => Boolean(h.option)).length;
+  const cascadingRefCount = result.jiraSlugHits.filter(h => Boolean(h.child)).length;
+  // A hit's `raw` always carries the full `jira.<kind>.…` prefix, so we can
+  // partition workTypeIssues by prefix to compute per-substrate invalid counts.
+  const invalidWorkTypeRefs = workTypeIssues.filter(i => i.raw.startsWith('jira.work_type.')).length;
+  const invalidStatusRefs = workTypeIssues.filter(i => i.raw.startsWith('jira.status.')).length;
+  const invalidTransitionRefs = workTypeIssues.filter(i => i.raw.startsWith('jira.transition.')).length;
+  const validWorkTypeCount = result.workTypeHits.length - invalidWorkTypeRefs;
+  const validStatusCount = result.statusHits.length - invalidStatusRefs;
+  const validTransitionCount = result.transitionHits.length - invalidTransitionRefs;
+  const totalValidJira = validJiraCount + validWorkTypeCount + validStatusCount + validTransitionCount;
+  const totalInvalidJira = invalidJiraHits.length + workTypeIssues.length;
+  console.log(`  - ${totalValidJira} valid {{jira.*}} references (${optionRefCount} option-value refs, ${cascadingRefCount} cascading, ${validWorkTypeCount} work_type refs, ${validStatusCount} status refs, ${validTransitionCount} transition refs); ${totalInvalidJira} invalid (errors above)`);
   console.log(`  - ${result.metaSkippedCount} documentation meta-references skipped (allowlisted)`);
 
   process.exit(totalErrors > 0 ? 1 : 0);

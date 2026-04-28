@@ -55,9 +55,9 @@ Each phase has a clear trigger (one of the three categories above), a determinis
 
 ### Phase 0 — Bootstrap
 
-- **Trigger**: `bun install` → `bun run pw:install` → `bun run agents:setup` (interactive walkthrough). If you cloned skills à la carte and the foundation files are missing, you ALSO run `/framework-core init` first to install `AGENTS.md`, `.agents/`, the `scripts/agents-*.ts` CLIs, and the `package.json` script entries.
-- **Produces**: A populated `.agents/project.yaml`, a `CLAUDE.md` symlink to `AGENTS.md`, and the four foundation scripts (`agents-setup`, `agents-lint`, `sync-jira-fields`, `check-jira-setup`) wired into `package.json`.
-- **Frequency**: One time per repo clone. If you cloned the full repository, the foundation is already in place — only `bun install` and `bun run agents:setup` are needed.
+- **Trigger**: `bun install` → `bun run pw:install` → `bun run agents:setup` (interactive walkthrough) → `bun run jira:sync-fields` → `bun run jira:sync-workflows` → `bun run jira:check`. If you cloned skills à la carte and the foundation files are missing, you ALSO run `/framework-core init` first to install `AGENTS.md`, `.agents/`, the `scripts/agents-*.ts` CLIs, and the `package.json` script entries.
+- **Produces**: A populated `.agents/project.yaml`, a `CLAUDE.md` symlink to `AGENTS.md`, the foundation scripts (`agents-setup`, `agents-lint`, `sync-jira-fields`, `sync-jira-workflows`, `check-jira-setup`) wired into `package.json`, the workspace catalog at `.agents/jira.json` (custom fields), and the workflow catalog at `.agents/jira-workflows.json` (statuses + transitions per `work_type`).
+- **Frequency**: One time per repo clone. If you cloned the full repository, the foundation is already in place — only `bun install`, `bun run agents:setup`, and the two `jira:sync-*` commands are needed.
 
 ### Phase 1 — Discovery
 
@@ -90,8 +90,9 @@ When `.context/`, `AGENTS.md`, or `.agents/` drifts from reality (the target shi
 - `/business-data-map`, `/business-feature-map`, `/business-api-map` — regenerate the individual maps when the target's domain or API evolves.
 - `/master-test-plan` — regenerate the master test plan when priorities shift.
 - `bun run jira:sync-fields` — re-cataloging Jira custom fields after a new field is added.
-- `bun run jira:check` — verify the Jira workspace still satisfies `jira-required.yaml`.
-- `bun run lint:agents` — verify every `{{VAR}}` placeholder still resolves.
+- `bun run jira:sync-workflows` — re-cataloging Jira workflows when statuses or transitions change (a status was renamed, a new transition added, a workflow swapped on an issue type, etc.). Run with `--force` to re-prompt for already-mapped slugs.
+- `bun run jira:check` — verify the Jira workspace still satisfies `jira-required.yaml`. Now covers BOTH custom-field validation (against `jira.json`) and `work_types` validation (statuses + transitions against `jira-workflows.json`).
+- `bun run lint:agents` — verify every `{{VAR}}`, `{{jira.<slug>}}`, `{{jira.work_type.*}}`, `{{jira.status.*}}` and `{{jira.transition.*}}` placeholder still resolves.
 
 Frequency: as needed. Treat drift like compiler warnings — fix them when they appear, not in batches.
 
@@ -149,11 +150,12 @@ Critical distinction: **`.env` and `.agents/project.yaml` are TWO SEPARATE SYSTE
 
 Two systems, two consumers, two lifecycles. Secrets in `.env`; AI context in `.agents/project.yaml`.
 
-The variable substrate has three syntaxes that look similar but resolve from different files. The full contract lives in `.agents/README.md`, but the short version is:
+The variable substrate has several syntaxes that look similar but resolve from different files. The full contract lives in `.agents/README.md`, but the short version is:
 
 - `{{VAR_NAME}}` → resolves from `.agents/project.yaml` (project-level static config).
 - `<<VAR_NAME>>` → session variable, computed at runtime by the calling skill (e.g. `<<ISSUE_KEY>>` extracted from the git branch). Never persisted.
-- `{{jira.<slug>}}` → portable Jira custom-field reference, resolves through `.agents/jira-required.yaml` (manifest) + `.agents/jira.json` (workspace catalog).
+- `{{jira.<slug>}}` → portable Jira custom-field reference, resolves through `.agents/jira-required.yaml` (manifest) + `.agents/jira.json` (workspace catalog). Sub-forms: `{{jira.<slug>.<option>}}` (option value), `{{jira.<slug>.<parent>.<child>}}` (cascading).
+- `{{jira.work_type.<slug>}}` / `{{jira.status.<work_type>.<slug>}}` / `{{jira.transition.<work_type>.<slug>}}` → portable Jira workflow references (issue type name, status name, transition id). Resolve through `.agents/jira-required.yaml` `work_types:` (manifest) + `.agents/jira-workflows.json` (workspace catalog).
 
 For the deeper rationale on the three-tier knowledge split see [`context-engineering.md`](context-engineering.md) §3.
 
@@ -201,8 +203,9 @@ The takeaway: when you invoke `/regression-testing` or `/sprint-testing`, the or
 | Regenerate the master test plan | `/master-test-plan` |
 | Take a screenshot via AI | `/playwright-cli` |
 | Sync new Jira custom fields | `bun run jira:sync-fields` |
-| Validate `{{VAR}}` placeholders | `bun run lint:agents` |
-| Verify the Jira manifest matches the catalog | `bun run jira:check` |
+| Sync Jira workflows (statuses + transitions per `work_type`) | `bun run jira:sync-workflows` |
+| Validate `{{VAR}}` / `{{jira.*}}` placeholders | `bun run lint:agents` |
+| Verify the Jira manifest matches both catalogs (fields + workflows) | `bun run jira:check` |
 | Validate `.env` for the active TEST_ENV | `bun run env:validate` |
 | Sync OpenAPI types from the target API | `bun run api:sync` |
 | Commit + push + open a PR | `/commit-push-pr` |
@@ -221,7 +224,7 @@ These are passive loads — the AI pulls them in as part of orchestration, not b
 
 - **Tool skills** (`/acli`, `/xray-cli`, `/playwright-cli`, `/playwright-best-practices`): the AI loads them automatically when a workflow skill needs to talk to Jira, Xray, a browser, or apply Playwright best practices. You can force-load them when you genuinely need a one-shot operation (e.g. "take a screenshot"), but they are usually invoked by other skills, not by you.
 - **`framework-core/references/*`** (`briefing-template.md`, `dispatch-patterns.md`, `orchestration-doctrine.md`): the AI loads these when a workflow skill delegates to a subagent. They are passive references — the subagent loads them inside its own context to know the canonical briefing format and dispatch decision rules.
-- **Templates inside `.claude/skills/framework-core/templates/`** (`AGENTS.md.template`, `project.yaml.template`, `jira-required.yaml.template`, the four `scripts/*.ts.template` files): only consumed by `/framework-core init`. They are byte-equivalent mirrors of the live files at the repo root.
+- **Templates inside `.claude/skills/framework-core/templates/`** (`AGENTS.md.template`, `project.yaml.template`, `jira-required.yaml.template`, `jira-workflows.json.template`, the `scripts/*.ts.template` files): only consumed by `/framework-core init`. They are byte-equivalent mirrors of the live files at the repo root.
 
 ---
 
