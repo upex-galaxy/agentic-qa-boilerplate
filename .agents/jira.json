@@ -463,7 +463,8 @@
   "operational_categorization": {
     "id": "customfield_10194",
     "type": "option-with-child",
-    "name": "Operational categorization"
+    "name": "Operational categorization",
+    "options": {}
   },
   "organizations": {
     "id": "customfield_10002",
@@ -518,7 +519,8 @@
   "product_categorization": {
     "id": "customfield_10148",
     "type": "option-with-child",
-    "name": "Product categorization"
+    "name": "Product categorization",
+    "options": {}
   },
   "project_overview_key": {
     "id": "customfield_10039",
