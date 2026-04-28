@@ -111,7 +111,7 @@ Steps:
 
 1. Settings → Issues → Custom fields → Add field → **Paragraph (supports rich text)** → Name `Acceptance Test Plan` → Associate with the Story (and Epic if the project uses epic-level ATPs).
 2. Add field → **Paragraph** → Name `Acceptance Test Results` → same associations.
-3. After running `bun run jira:sync-fields`, IDs are auto-discovered into `.agents/jira.json` (slugs `acceptance_test_plan_atp` for ATP and `acceptance_test_results_atr` for ATR). Both are referenced via `{{jira.<slug>}}` from the skills.
+3. After running `bun run jira:sync-fields`, IDs are auto-discovered into `.agents/jira-fields.json` (slugs `acceptance_test_plan_atp` for ATP and `acceptance_test_results_atr` for ATR). Both are referenced via `{{jira.<slug>}}` from the skills.
 4. Add both fields to the Story's **View Screen** (Settings → Issues → Screens). Leave them off the Create screen (the skill populates them later, not the PM).
 5. Optionally add them to the Story's Edit Screen so PO/Dev can see them inline.
 

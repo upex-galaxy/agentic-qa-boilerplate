@@ -400,7 +400,7 @@
             <p>
               The three categories share the same fuel: the variable substrate in
               <code>.agents/project.yaml</code> (and Jira metadata in
-              <code>.agents/jira.json</code> + <code>.agents/jira-workflows.json</code> +
+              <code>.agents/jira-fields.json</code> + <code>.agents/jira-workflows.json</code> +
               <code>.agents/jira-required.yaml</code>). Skills resolve <code>{{VAR}}</code> and
               <code>{{jira.*}}</code> placeholders against it on every AI session; commands use the
               same resolver; scripts read the YAML and write back to it. See
@@ -577,9 +577,9 @@
                       (<code>agents-setup</code>, <code>agents-lint</code>,
                       <code>sync-jira-fields</code>, <code>sync-jira-workflows</code>,
                       <code>check-jira-setup</code>) wired into <code>package.json</code>, the
-                      workspace catalog at <code>.agents/jira.json</code> (custom fields), and the
-                      workflow catalog at <code>.agents/jira-workflows.json</code> (statuses +
-                      transitions per <code>work_type</code>).
+                      workspace catalog at <code>.agents/jira-fields.json</code> (custom fields),
+                      and the workflow catalog at <code>.agents/jira-workflows.json</code> (statuses
+                      + transitions per <code>work_type</code>).
                     </dd>
                     <dt>When to repeat</dt>
                     <dd>
@@ -735,7 +735,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                         <li>
                           <code>bun run jira:check</code> — verify the Jira workspace still
                           satisfies <code>jira-required.yaml</code> (covers BOTH custom-field
-                          validation against <code>jira.json</code> and
+                          validation against <code>jira-fields.json</code> and
                           <code>work_types</code> validation against
                           <code>jira-workflows.json</code>).
                         </li>
@@ -791,7 +791,8 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     </td>
                     <td>
                       Generates <code>AGENTS.md</code>, <code>.agents/project.yaml</code>,
-                      <code>.agents/jira-required.yaml</code>, <code>.agents/jira.json</code>,
+                      <code>.agents/jira-required.yaml</code>,
+                      <code>.agents/jira-fields.json</code>,
                       <code>.agents/jira-workflows.json</code>, the
                       <code>scripts/agents-*.ts</code> + <code>sync-jira-*.ts</code> CLIs, merges
                       entries into <code>package.json</code>, creates the
@@ -1153,7 +1154,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
               <li>
                 <code>{{jira.&lt;slug&gt;}}</code> → portable Jira custom-field reference, resolves
                 through <code>.agents/jira-required.yaml</code> (manifest) +
-                <code>.agents/jira.json</code> (workspace catalog). Sub-forms:
+                <code>.agents/jira-fields.json</code> (workspace catalog). Sub-forms:
                 <code>{{jira.&lt;slug&gt;.&lt;option&gt;}}</code> (option value for plain
                 <code>option</code> / array-of-option fields),
                 <code>{{jira.&lt;slug&gt;.&lt;parent&gt;.&lt;child&gt;}}</code> (cascading
@@ -1801,7 +1802,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     <code>bun run jira:sync-fields</code>
                     <span class="muted"
                       >Catalog all custom fields from the live Jira workspace into
-                      <code>.agents/jira.json</code> (incl. option values for
+                      <code>.agents/jira-fields.json</code> (incl. option values for
                       <code>option</code> and cascading
                       <code>option-with-child</code> fields).</span
                     >

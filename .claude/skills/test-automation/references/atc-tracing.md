@@ -262,7 +262,7 @@ Jira Direct:
 JIRA_URL=https://company.atlassian.net
 JIRA_USER=email@company.com
 JIRA_API_TOKEN=...
-JIRA_TEST_STATUS_FIELD=customfield_10100   # illustrative — find your real ID in .agents/jira.json after `bun run jira:sync-fields`
+JIRA_TEST_STATUS_FIELD=customfield_10100   # illustrative — find your real ID in .agents/jira-fields.json after `bun run jira:sync-fields`
 ```
 
 ### 8.4 Comment body sent to the TMS

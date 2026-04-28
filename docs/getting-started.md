@@ -37,7 +37,7 @@ Read [`agentic-quality-engineering.md`](agentic-quality-engineering.md) for the 
 | **Command** | Single-file markdown for one-shot, focused utilities. | `.claude/commands/<name>.md` | You explicitly type `/<name>`. No auto-trigger. |
 | **Script** | TypeScript CLI that runs in the terminal. | `scripts/*.ts` (and `cli/`) | You run `bun run <script>` directly. |
 
-The three categories share the same fuel: the variable substrate in `.agents/project.yaml` (and Jira metadata in `.agents/jira.json` + `.agents/jira-required.yaml`). Skills resolve `{{VAR}}` placeholders against it on every AI session; commands use the same resolver; scripts read the YAML and write back to it. See §5 Circuit 1 for how that resolution actually flows.
+The three categories share the same fuel: the variable substrate in `.agents/project.yaml` (and Jira metadata in `.agents/jira-fields.json` + `.agents/jira-required.yaml`). Skills resolve `{{VAR}}` placeholders against it on every AI session; commands use the same resolver; scripts read the YAML and write back to it. See §5 Circuit 1 for how that resolution actually flows.
 
 ---
 
@@ -56,7 +56,7 @@ Each phase has a clear trigger (one of the three categories above), a determinis
 ### Phase 0 — Bootstrap
 
 - **Trigger**: `bun install` → `bun run pw:install` → `bun run agents:setup` (interactive walkthrough) → `bun run jira:sync-fields` → `bun run jira:sync-workflows` → `bun run jira:check`. If you cloned skills à la carte and the foundation files are missing, you ALSO run `/framework-core init` first to install `AGENTS.md`, `.agents/`, the `scripts/agents-*.ts` CLIs, and the `package.json` script entries.
-- **Produces**: A populated `.agents/project.yaml`, a `CLAUDE.md` symlink to `AGENTS.md`, the foundation scripts (`agents-setup`, `agents-lint`, `sync-jira-fields`, `sync-jira-workflows`, `check-jira-setup`) wired into `package.json`, the workspace catalog at `.agents/jira.json` (custom fields), and the workflow catalog at `.agents/jira-workflows.json` (statuses + transitions per `work_type`).
+- **Produces**: A populated `.agents/project.yaml`, a `CLAUDE.md` symlink to `AGENTS.md`, the foundation scripts (`agents-setup`, `agents-lint`, `sync-jira-fields`, `sync-jira-workflows`, `check-jira-setup`) wired into `package.json`, the workspace catalog at `.agents/jira-fields.json` (custom fields), and the workflow catalog at `.agents/jira-workflows.json` (statuses + transitions per `work_type`).
 - **Frequency**: One time per repo clone. If you cloned the full repository, the foundation is already in place — only `bun install`, `bun run agents:setup`, and the two `jira:sync-*` commands are needed.
 
 ### Phase 1 — Discovery
@@ -91,7 +91,7 @@ When `.context/`, `AGENTS.md`, or `.agents/` drifts from reality (the target shi
 - `/master-test-plan` — regenerate the master test plan when priorities shift.
 - `bun run jira:sync-fields` — re-cataloging Jira custom fields after a new field is added.
 - `bun run jira:sync-workflows` — re-cataloging Jira workflows when statuses or transitions change (a status was renamed, a new transition added, a workflow swapped on an issue type, etc.). Run with `--force` to re-prompt for already-mapped slugs.
-- `bun run jira:check` — verify the Jira workspace still satisfies `jira-required.yaml`. Now covers BOTH custom-field validation (against `jira.json`) and `work_types` validation (statuses + transitions against `jira-workflows.json`).
+- `bun run jira:check` — verify the Jira workspace still satisfies `jira-required.yaml`. Now covers BOTH custom-field validation (against `jira-fields.json`) and `work_types` validation (statuses + transitions against `jira-workflows.json`).
 - `bun run lint:agents` — verify every `{{VAR}}`, `{{jira.<slug>}}`, `{{jira.work_type.*}}`, `{{jira.status.*}}` and `{{jira.transition.*}}` placeholder still resolves.
 
 Frequency: as needed. Treat drift like compiler warnings — fix them when they appear, not in batches.
@@ -104,7 +104,7 @@ Three pieces have similar-sounding names and overlapping verbs ("init", "adapt",
 
 | Piece | When you invoke it | What it does | Frequency |
 |-------|--------------------|--------------|-----------|
-| **`/framework-core init`** (skill, active mode) | Once, ONLY if the foundation files are missing (à la carte install). If you cloned the full repo, you NEVER invoke it directly. | Generates `AGENTS.md`, `.agents/project.yaml`, `.agents/jira-required.yaml`, `.agents/jira.json`, the four `scripts/agents-*.ts` CLIs, merges entries into `package.json`, creates the `CLAUDE.md` symlink. Idempotent: existing files are preserved. | One-time |
+| **`/framework-core init`** (skill, active mode) | Once, ONLY if the foundation files are missing (à la carte install). If you cloned the full repo, you NEVER invoke it directly. | Generates `AGENTS.md`, `.agents/project.yaml`, `.agents/jira-required.yaml`, `.agents/jira-fields.json`, the four `scripts/agents-*.ts` CLIs, merges entries into `package.json`, creates the `CLAUDE.md` symlink. Idempotent: existing files are preserved. | One-time |
 | **`/adapt-framework`** (skill + command) | Once per target, AFTER `/project-discovery` finishes. | Adapts `tests/components/`, `config/`, `api/schemas/` to the target's stack: fixtures, page objects, API clients. Modifies THIS repo only — never the target. Plan → user approval → Implement. | Once per target |
 | **`/refresh-ai-memory`** (command) | Periodically, when `.context/` drifts and `AGENTS.md` no longer reflects the project state. | Re-syncs `AGENTS.md` and `README.md` against current `.context/` and `package.json`. Touches project-specific FACTS only (Project Identity, Environment URLs, Discovery Progress) — never structural sections. | Periodic |
 
@@ -154,7 +154,7 @@ The variable substrate has several syntaxes that look similar but resolve from d
 
 - `{{VAR_NAME}}` → resolves from `.agents/project.yaml` (project-level static config).
 - `<<VAR_NAME>>` → session variable, computed at runtime by the calling skill (e.g. `<<ISSUE_KEY>>` extracted from the git branch). Never persisted.
-- `{{jira.<slug>}}` → portable Jira custom-field reference, resolves through `.agents/jira-required.yaml` (manifest) + `.agents/jira.json` (workspace catalog). Sub-forms: `{{jira.<slug>.<option>}}` (option value), `{{jira.<slug>.<parent>.<child>}}` (cascading).
+- `{{jira.<slug>}}` → portable Jira custom-field reference, resolves through `.agents/jira-required.yaml` (manifest) + `.agents/jira-fields.json` (workspace catalog). Sub-forms: `{{jira.<slug>.<option>}}` (option value), `{{jira.<slug>.<parent>.<child>}}` (cascading).
 - `{{jira.work_type.<slug>}}` / `{{jira.status.<work_type>.<slug>}}` / `{{jira.transition.<work_type>.<slug>}}` → portable Jira workflow references (issue type name, status name, transition id). Resolve through `.agents/jira-required.yaml` `work_types:` (manifest) + `.agents/jira-workflows.json` (workspace catalog).
 
 For the deeper rationale on the three-tier knowledge split see [`context-engineering.md`](context-engineering.md) §3.

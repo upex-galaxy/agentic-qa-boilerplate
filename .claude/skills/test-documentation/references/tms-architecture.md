@@ -356,7 +356,7 @@ Goal: Create <K> Xray Test issues in Jira project <PROJECT_KEY> for chunk <I>/<T
 
 Context docs:
   - <PBI_FOLDER>/test-specs/<spec>.md (TC definitions for this chunk)
-  - .agents/jira.json (custom field IDs)
+  - .agents/jira-fields.json (custom field IDs)
   - .claude/skills/test-documentation/references/tms-architecture.md (TC body shape, naming, linking order)
   - .claude/skills/test-documentation/references/jira-test-management.md §7 (Description template)
 
@@ -404,7 +404,7 @@ Goal: Create <K> Jira Test issues in project <PROJECT_KEY> for chunk <I>/<TOTAL>
 
 Context docs:
   - <PBI_FOLDER>/test-specs/<spec>.md (TC definitions for this chunk)
-  - .agents/jira.json (custom field IDs auto-discovered by `bun run jira:sync-fields`)
+  - .agents/jira-fields.json (custom field IDs auto-discovered by `bun run jira:sync-fields`)
   - .agents/jira-required.yaml (custom-field manifest)
   - .claude/skills/test-documentation/references/jira-setup.md §3 (Modality B field layout)
   - .claude/skills/test-documentation/references/jira-test-management.md §7 (Description template)
@@ -433,7 +433,7 @@ Report format:
   Trailing summary: { "chunk": <I>, "created": K, "failed": 0|N, "duration_seconds": <int> }
 
 Rules:
-  - Custom-field IDs come from .agents/jira.json — do NOT hardcode `customfield_*` numbers.
+  - Custom-field IDs come from .agents/jira-fields.json — do NOT hardcode `customfield_*` numbers.
   - On 429 or 5xx: retry with exponential backoff up to 3 times.
   - On 4xx (excluding 429): stop the chunk and report partial state.
   - Critical Rule #8 (File Operations): never overwrite an existing TC silently — if the summary already exists, report and skip.

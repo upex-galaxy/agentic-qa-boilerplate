@@ -158,7 +158,7 @@ The JSON shape from `workitem search` has a top-level `issues` array (not `worki
 ## Four gotchas to keep in mind always
 
 1. **`--paginate` is opt-in.** Default limit is server-side (30–50 depending on command). No warning on truncation. If you are counting, iterating, or making decisions based on the result, pass `--paginate`.
-2. **Custom fields go through `--from-json`, not flags.** There is no `--custom-field` flag. The payload shape for `edit` is flat: `{"issues":["KEY-1"],"customfield_10122":"value"}` — **not** the `{"fields": {...}}` shape you would send to REST. *(IDs like `customfield_10122` shown here are illustrative — they reflect the JSON shape returned by `acli`. Your actual custom field IDs come from `.agents/jira.json` after `bun run jira:sync-fields`.)*
+2. **Custom fields go through `--from-json`, not flags.** There is no `--custom-field` flag. The payload shape for `edit` is flat: `{"issues":["KEY-1"],"customfield_10122":"value"}` — **not** the `{"fields": {...}}` shape you would send to REST. *(IDs like `customfield_10122` shown here are illustrative — they reflect the JSON shape returned by `acli`. Your actual custom field IDs come from `.agents/jira-fields.json` after `bun run jira:sync-fields`.)*
 3. **Transitions match by status name, not transition ID.** When two transitions lead to the same status with different validators, the CLI picks one and may fail. No `--transition-id` escape hatch exists — fall back to REST if this hits.
 4. **Trace IDs are the only debug signal.** An `unexpected error, trace id: XXXXXXXX` line is all you get on backend failures. Capture and log the trace ID always; Atlassian Support needs it.
 

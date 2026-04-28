@@ -135,9 +135,9 @@ Always include: `bug`, `exploratory-testing`. Append module or domain labels whe
 
 #### 1.10.1 Custom field detection (per project)
 
-Bug custom fields vary by Jira workspace. Before creating a bug, read `.agents/jira.json` once. For each row in the table below:
+Bug custom fields vary by Jira workspace. Before creating a bug, read `.agents/jira-fields.json` once. For each row in the table below:
 
-- **If the slug exists** in `jira.json` → populate the custom field via `[ISSUE_TRACKER_TOOL] Edit Issue ... --field <id>`. The slug column shows the canonical reference; the linter validates it against `.agents/jira-required.yaml`.
+- **If the slug exists** in `jira-fields.json` → populate the custom field via `[ISSUE_TRACKER_TOOL] Edit Issue ... --field <id>`. The slug column shows the canonical reference; the linter validates it against `.agents/jira-required.yaml`.
 - **If the slug does NOT exist** → omit the custom-field write and include the content as a labeled section in the bug's **Description** field instead, using the headings from the "Description fallback" column.
 
 The Description always carries Steps to Reproduce. Any field that falls back here is appended as an additional section (see template at §1.10.3).
@@ -203,7 +203,7 @@ When custom fields are missing, the bug Description should follow this structure
 
 There are two distinct failure modes:
 
-1. **Slug missing from `.agents/jira.json`** — the methodology declares the slug in `jira-required.yaml` but the user's Jira workspace does not have a matching custom field. Use the **Description fallback** (§1.10.3) — this is the documented degradation path, not an error. No user-facing warning needed beyond noting in the QA comment that the field landed in the Description.
+1. **Slug missing from `.agents/jira-fields.json`** — the methodology declares the slug in `jira-required.yaml` but the user's Jira workspace does not have a matching custom field. Use the **Description fallback** (§1.10.3) — this is the documented degradation path, not an error. No user-facing warning needed beyond noting in the QA comment that the field landed in the Description.
 2. **Slug exists but the write fails at runtime** — the field id resolved, but `[ISSUE_TRACKER_TOOL] Edit Issue` rejected the value (permissions, screen scheme, value-validation). **DO NOT** attempt to discover or guess alternative field IDs — Jira custom-field IDs are tenant-specific, guessing leads to silent data corruption.
 
 **Protocol on runtime failure**:

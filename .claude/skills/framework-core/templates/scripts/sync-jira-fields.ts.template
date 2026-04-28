@@ -2,11 +2,11 @@
 
 /**
  * ============================================================================
- * SYNC JIRA FIELDS — Discover Jira custom fields and write .agents/jira.json
+ * SYNC JIRA FIELDS — Discover Jira custom fields and write .agents/jira-fields.json
  * ============================================================================
  *
  * Walks the Jira Cloud REST API, discovers every custom field in the
- * workspace, slugifies the names, and writes the result to `.agents/jira.json`
+ * workspace, slugifies the names, and writes the result to `.agents/jira-fields.json`
  * so skills/commands can reference fields portably as `{{jira.<slug>}}` instead
  * of hardcoding `customfield_XXXXX` IDs.
  *
@@ -49,7 +49,7 @@
  * USAGE
  * ============================================================================
  *
- *   bun run jira:sync-fields                   # write .agents/jira.json
+ *   bun run jira:sync-fields                   # write .agents/jira-fields.json
  *   bun run jira:sync-fields --force           # overwrite if already populated
  *   bun run jira:sync-fields --allow-collisions# tolerate slug collisions (suffix _2, _3, …)
  *   bun run jira:sync-fields --dry-run         # print result, do not write
@@ -89,7 +89,7 @@ import { dirname, join } from 'node:path';
 // ============================================================================
 
 const REPO_ROOT = join(import.meta.dir, '..');
-const OUTPUT_PATH = join(REPO_ROOT, '.agents', 'jira.json');
+const OUTPUT_PATH = join(REPO_ROOT, '.agents', 'jira-fields.json');
 const MANIFEST_PATH = join(REPO_ROOT, '.agents', 'jira-required.yaml');
 
 // ============================================================================
@@ -176,7 +176,7 @@ interface NestedOptionEntry {
   children: Record<string, string>
 }
 
-/** Output shape per field in `.agents/jira.json`. */
+/** Output shape per field in `.agents/jira-fields.json`. */
 interface JiraFieldEntry {
   id: string
   type: string
@@ -270,13 +270,13 @@ function parseArgs(argv: string[]): CliFlags {
 }
 
 function printHelp(): void {
-  out(`sync-jira-fields — discover Jira custom fields → .agents/jira.json
+  out(`sync-jira-fields — discover Jira custom fields → .agents/jira-fields.json
 
 USAGE:
   bun run jira:sync-fields [flags]
 
 FLAGS:
-  --force              Overwrite .agents/jira.json even if already populated.
+  --force              Overwrite .agents/jira-fields.json even if already populated.
                        The file is treated as "populated" when it is not the
                        empty placeholder \`{}\`. Does NOT bypass the slug
                        collision check — see --allow-collisions for that.
@@ -300,7 +300,7 @@ ENVIRONMENT:
   ATLASSIAN_API_TOKEN    Atlassian API token (https://id.atlassian.com/manage-profile/security/api-tokens)
 
 OUTPUT:
-  .agents/jira.json      Populated with one entry per custom field, keyed by
+  .agents/jira-fields.json      Populated with one entry per custom field, keyed by
                          a slug derived from the field name. See .agents/README.md.
 
 EXIT CODES:
@@ -310,7 +310,7 @@ EXIT CODES:
      pass --allow-collisions). Never returned in --dry-run.
 
 NOTES:
-  Each entry in jira.json is annotated with "system": true and a "provider"
+  Each entry in jira-fields.json is annotated with "system": true and a "provider"
   string when the field is plugin-managed (Jira Software, Service
   Management, Advanced Roadmaps, etc.). User-managed custom fields stay
   clean (no extra keys).
@@ -324,7 +324,7 @@ NOTES:
 RECOMMENDED FLOW:
   1. bun run jira:sync-fields                   # may exit 2 with collision report
   2. <rename duplicates in Jira admin UI>
-  3. bun run jira:sync-fields --force           # writes .agents/jira.json
+  3. bun run jira:sync-fields --force           # writes .agents/jira-fields.json
 
   bun run jira:sync-fields --allow-collisions   # bypass collision check
 `);
@@ -632,7 +632,7 @@ function extractProvider(field: JiraField): string {
 
 /**
  * Map Jira's `schema.type` (and `schema.items` for arrays) to the canonical
- * type string we write into jira.json.
+ * type string we write into jira-fields.json.
  *
  * Also reports whether this type carries dropdown options that we should
  * fetch from the field-context API.
@@ -1159,7 +1159,7 @@ async function main(): Promise<void> {
 
   // Real (write) run. Actionable collisions take priority over --force:
   // even with --force, we will not silently clobber the file when slugs
-  // collide on user-managed fields, because the resulting jira.json would
+  // collide on user-managed fields, because the resulting jira-fields.json would
   // have non-deterministic keys for fields the user can actually rename.
   if (hasActionable && !flags.allowCollisions) {
     reportCollisions(actionable, 'abort');

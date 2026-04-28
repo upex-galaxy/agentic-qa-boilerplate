@@ -48,7 +48,7 @@ Everything the official docs do not make obvious. Every item here is something t
 }
 ```
 
-*(IDs like `customfield_10122` shown here are illustrative — they reflect the JSON shape returned by `acli`. Your actual custom field IDs come from `.agents/jira.json` after `bun run jira:sync-fields`.)*
+*(IDs like `customfield_10122` shown here are illustrative — they reflect the JSON shape returned by `acli`. Your actual custom field IDs come from `.agents/jira-fields.json` after `bun run jira:sync-fields`.)*
 
 Passing `{"issues":["TEAM-1"], "fields": {"customfield_10122": "High"}}` — the REST shape — fails with an uninformative error.
 

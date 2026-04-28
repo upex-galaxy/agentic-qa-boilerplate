@@ -41,7 +41,7 @@ agentic-qa-boilerplate/
 
 | Directory | Contains | When Loaded |
 |-----------|----------|-------------|
-| `.agents/` | Tool-agnostic project + Jira config (`project.yaml`, `jira.json`, `jira-required.yaml`) | When the AI needs to resolve `{{VAR}}` or `{{jira.<slug>}}` |
+| `.agents/` | Tool-agnostic project + Jira config (`project.yaml`, `jira-fields.json`, `jira-required.yaml`) | When the AI needs to resolve `{{VAR}}` or `{{jira.<slug>}}` |
 | `.context/` | Facts about the system (what exists, how it works) | When AI needs to understand the system |
 | `.claude/skills/` | Task instructions + references (what to do, step by step) | When AI loads a skill for a specific task |
 | `docs/` | Learning material for humans | When humans need to learn |
@@ -58,7 +58,7 @@ Skills, commands, templates and docs reference dynamic values through three dist
 | File | Role | Edited by | Regenerated with |
 |------|------|-----------|------------------|
 | `.agents/project.yaml` | Per-project static config: name, repo paths, URLs (per environment), MCP server names, issue-tracker metadata, default env. | Project owner (one-time) | `bun run agents:setup` (interactive) or by hand |
-| `.agents/jira.json` | Auto-generated catalog of every custom field in your Jira workspace, keyed by canonical slug. | Generated only — never edit by hand | `bun run jira:sync-fields` |
+| `.agents/jira-fields.json` | Auto-generated catalog of every custom field in your Jira workspace, keyed by canonical slug. | Generated only — never edit by hand | `bun run jira:sync-fields` |
 | `.agents/jira-required.yaml` | Declarative manifest of the Jira custom fields the methodology requires (with expected types, option lists, consumers). | Methodology maintainers | Updated when a skill adds or drops a `{{jira.<slug>}}` reference |
 | `.agents/README.md` | The contract: explains the three variable syntaxes and how the resolver, linter and `jira:check` cooperate. | Methodology maintainers | — |
 
@@ -68,7 +68,7 @@ Skills, commands, templates and docs reference dynamic values through three dist
 |--------|---------|---------------|
 | `{{VAR_NAME}}` | **Project variable** — static per-repo value. Two flavours: **flat** (top-level section, e.g. `{{PROJECT_KEY}}` -> `project.project_key`) and **env-scoped** (`{{WEB_URL}}`, `{{API_URL}}`, `{{DB_MCP}}`, `{{API_MCP}}`) which resolve to the active environment's value. | `.agents/project.yaml` |
 | `<<VAR_NAME>>` | **Session variable** — computed at runtime by the calling skill or command (e.g. `<<ISSUE_KEY>>` extracted from a git branch name). Never persisted, never declared. | The skill / command's runtime context |
-| `{{jira.<slug>}}` | **Jira custom field reference** — portable pointer to a Jira custom field. Skills never hardcode `customfield_XXXXX`. | `.agents/jira-required.yaml` (canonical declaration) AND `.agents/jira.json` (workspace-resolved IDs) |
+| `{{jira.<slug>}}` | **Jira custom field reference** — portable pointer to a Jira custom field. Skills never hardcode `customfield_XXXXX`. | `.agents/jira-required.yaml` (canonical declaration) AND `.agents/jira-fields.json` (workspace-resolved IDs) |
 
 For explicit cross-env references in multi-env documents (rare), the form `{{environments.<env>.<var>}}` (e.g. `{{environments.local.web_url}}`) bypasses active-env resolution. See `.agents/README.md` for the complete contract.
 
@@ -173,7 +173,7 @@ These files have stable names and locations. Reference them confidently:
 | `AGENTS.md` | Project memory, loaded every session |
 | `.agents/project.yaml` | Tool-agnostic project variables (`{{VAR}}` source of truth) |
 | `.agents/jira-required.yaml` | Manifest of Jira custom fields the methodology requires |
-| `.agents/jira.json` | Auto-generated catalog of the workspace's Jira fields (`{{jira.<slug>}}` resolution) |
+| `.agents/jira-fields.json` | Auto-generated catalog of the workspace's Jira fields (`{{jira.<slug>}}` resolution) |
 | `framework-core/SKILL.md` | Foundation skill: bootstrap + shared references for every workflow skill |
 | `/test-automation` skill | Entry point for writing tests (KATA) |
 | `/sprint-testing` skill | QA workflow orchestrator (plan + execute + report) |

@@ -190,7 +190,7 @@ bun run test:e2e:critical  # Tests marked @critical
 │
 ├── .agents/                      # Agentskills.io spec layout
 │   ├── project.yaml              # AI context vars (resolved as {{VAR}} by skills)
-│   ├── jira.json                 # Jira custom-field catalog (synced by `bun run jira:sync-fields`)
+│   ├── jira-fields.json                 # Jira custom-field catalog (synced by `bun run jira:sync-fields`)
 │   ├── jira-required.yaml        # Required Jira custom-field manifest
 │   ├── README.md                 # Variable conventions reference
 │   └── skills/                   # Symlink → .claude/skills/ (agentskills.io path)
@@ -326,7 +326,7 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run api:sync` | Sync OpenAPI spec and generate types |
 | `bun run agents:setup` | Interactive walkthrough to populate `.agents/project.yaml` |
 | `bun run lint:agents` | Lint `.agents/` files for missing required values |
-| `bun run jira:sync-fields` | Sync Jira custom-field catalog into `.agents/jira.json` |
+| `bun run jira:sync-fields` | Sync Jira custom-field catalog into `.agents/jira-fields.json` |
 | `bun run jira:check` | Verify Jira workspace has required custom fields configured |
 
 ---
@@ -506,7 +506,7 @@ Each skill auto-activates when your prompt matches its description triggers. You
   - "Bootstrap the framework foundation."
   - "Regenerate AGENTS.md and the .agents/ files from templates."
   - "Install the boilerplate scripts."
-- **What happens next**: The skill writes `.agents/project.yaml`, `.agents/jira-required.yaml`, `.agents/jira.json`, the four `scripts/agents-*.ts` + `scripts/*-jira-*.ts` CLIs, merges the required scripts/dependencies into `package.json`, and finally writes `AGENTS.md` plus the `CLAUDE.md` symlink (or copy on Windows). It is idempotent: existing files are preserved.
+- **What happens next**: The skill writes `.agents/project.yaml`, `.agents/jira-required.yaml`, `.agents/jira-fields.json`, the four `scripts/agents-*.ts` + `scripts/*-jira-*.ts` CLIs, merges the required scripts/dependencies into `package.json`, and finally writes `AGENTS.md` plus the `CLAUDE.md` symlink (or copy on Windows). It is idempotent: existing files are preserved.
 
 #### 1. Onboarding a new project
 

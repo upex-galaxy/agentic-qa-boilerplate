@@ -24,7 +24,7 @@
  *                      under either `required:` or `optional:`. The manifest is the
  *                      canonical declaration of slugs the methodology consumes.
  *                      Validating that those declared slugs actually exist in
- *                      the user's Jira (`.agents/jira.json`) is owned by
+ *                      the user's Jira (`.agents/jira-fields.json`) is owned by
  *                      `bun run jira:check`.
  *
  * Exit code: 0 if no ERRORs, 1 otherwise. WARNs do not affect exit code.
@@ -41,7 +41,7 @@ import { parse as parseYaml } from 'yaml';
 const REPO_ROOT = join(import.meta.dir, '..');
 const PROJECT_YAML = join(REPO_ROOT, '.agents', 'project.yaml');
 const JIRA_REQUIRED_YAML = join(REPO_ROOT, '.agents', 'jira-required.yaml');
-const JIRA_CATALOG_JSON = join(REPO_ROOT, '.agents', 'jira.json');
+const JIRA_CATALOG_JSON = join(REPO_ROOT, '.agents', 'jira-fields.json');
 const JIRA_WORKFLOWS_JSON = join(REPO_ROOT, '.agents', 'jira-workflows.json');
 
 // Directories to scan recursively.
@@ -322,7 +322,7 @@ function stripScalar(raw: string): string {
 }
 
 /**
- * Load `.agents/jira.json` (the discovered catalog). Returns `null` if the
+ * Load `.agents/jira-fields.json` (the discovered catalog). Returns `null` if the
  * file is missing — option-value lookups will then be skipped without
  * blocking the lint (slug-only references still validate against the
  * manifest). Returns an empty record if the file exists but is the empty
@@ -741,10 +741,10 @@ function main(): void {
   // Jira reference validation. Three failure modes:
   //   1. slug not declared in jira-required.yaml          → UNDECLARED slug
   //   2. {{jira.<slug>.<option>}}: option missing from
-  //      jira.json[<slug>].options                        → UNKNOWN option value
+  //      jira-fields.json[<slug>].options                        → UNKNOWN option value
   //   3. {{jira.<slug>.<parent>.<child>}}: parent or child
-  //      missing from jira.json[<slug>].options[parent].children → UNKNOWN cascading value
-  // If `.agents/jira.json` is absent we only enforce (1) — option-value
+  //      missing from jira-fields.json[<slug>].options[parent].children → UNKNOWN cascading value
+  // If `.agents/jira-fields.json` is absent we only enforce (1) — option-value
   // checks are skipped with an INFO line so the lint still passes pre-sync.
   interface JiraIssue { kind: 'undeclared' | 'unknown-option' | 'unknown-cascading-parent' | 'unknown-cascading-child', hit: JiraSlugHit, detail?: string }
   const jiraIssues: JiraIssue[] = [];
@@ -765,7 +765,7 @@ function main(): void {
         jiraIssues.push({
           kind: 'unknown-option',
           hit,
-          detail: `option '${hit.option}' not present in jira.json[${hit.slug}].options`,
+          detail: `option '${hit.option}' not present in jira-fields.json[${hit.slug}].options`,
         });
       }
       continue;
@@ -776,7 +776,7 @@ function main(): void {
       jiraIssues.push({
         kind: 'unknown-cascading-parent',
         hit,
-        detail: `parent '${hit.option}' not present in jira.json[${hit.slug}].options`,
+        detail: `parent '${hit.option}' not present in jira-fields.json[${hit.slug}].options`,
       });
       continue;
     }
@@ -789,7 +789,7 @@ function main(): void {
       jiraIssues.push({
         kind: 'unknown-cascading-child',
         hit,
-        detail: `jira.json[${hit.slug}].options[${hit.option}] is not a cascading entry (no children map)`,
+        detail: `jira-fields.json[${hit.slug}].options[${hit.option}] is not a cascading entry (no children map)`,
       });
       continue;
     }
@@ -798,7 +798,7 @@ function main(): void {
       jiraIssues.push({
         kind: 'unknown-cascading-child',
         hit,
-        detail: `child '${hit.child}' not present in jira.json[${hit.slug}].options[${hit.option}].children`,
+        detail: `child '${hit.child}' not present in jira-fields.json[${hit.slug}].options[${hit.option}].children`,
       });
     }
   }
@@ -998,7 +998,7 @@ function main(): void {
     + `(across ${declared.envNames.size} envs: ${envList}) = ${declaredTotal} variables`,
   );
   console.log(`Declared in jira-required.yaml:  ${manifest.all.size} slugs (${manifest.required} required + ${manifest.optional} optional + ${manifest.unmapped} unmapped) + ${manifest.workTypes.size} work_type(s)`);
-  console.log(`Catalog jira.json:               ${catalog === null ? 'absent (option-value checks skipped — run `bun run jira:sync-fields`)' : `${Object.keys(catalog).length} fields available for option-value lookup`}`);
+  console.log(`Catalog jira-fields.json:               ${catalog === null ? 'absent (option-value checks skipped — run `bun run jira:sync-fields`)' : `${Object.keys(catalog).length} fields available for option-value lookup`}`);
   console.log(`Catalog jira-workflows.json:     ${workflows === null ? 'absent (workflow checks skipped — run `bun run jira:sync-workflows`)' : `${Object.keys(workflows).length} work_type(s) available for status/transition lookup`}`);
   console.log('');
 

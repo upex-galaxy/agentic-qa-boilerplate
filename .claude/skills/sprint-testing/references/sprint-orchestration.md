@@ -367,7 +367,7 @@ Context docs:
   - <PBI_FOLDER>/evidence/ (Stage 2 evidence)
   - <PBI_FOLDER>/context.md (ticket summary)
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/reporting-templates.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.agents/jira.json (custom field IDs for ATR/ATP — Modality B only)
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.agents/jira-fields.json (custom field IDs for ATR/ATP — Modality B only)
 
 Skills to load: /acli (issue updates + comments + transitions + bug creation); in Modality A also /xray-cli (only when ATR is an Xray Test Execution and Test Run statuses must be updated).
 

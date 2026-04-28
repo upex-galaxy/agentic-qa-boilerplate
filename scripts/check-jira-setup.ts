@@ -8,13 +8,13 @@
  *     optional / unmapped slugs. Owned by the methodology, committed to the
  *     repo. Entries declare expected `name`, `type`, and (for option-type
  *     fields) the option slugs.
- *   - `.agents/jira.json` — auto-generated catalog of the user's actual Jira
+ *   - `.agents/jira-fields.json` — auto-generated catalog of the user's actual Jira
  *     custom fields. Produced by `bun run jira:sync-fields`.
  *
  * For each `required` slug, the script verifies:
- *   1. The slug exists in `jira.json`.            Missing => ❌ ERROR.
+ *   1. The slug exists in `jira-fields.json`.            Missing => ❌ ERROR.
  *   2. The `type` matches.                        Mismatch => ⚠️ WARNING.
- *   3. (option fields) every declared option key exists in jira.json.
+ *   3. (option fields) every declared option key exists in jira-fields.json.
  *                                                 Missing options => ⚠️ WARNING.
  *
  * `optional` slugs follow the same checks but missing => 💡 INFO (no error).
@@ -162,7 +162,7 @@ interface CheckResult {
 
 const REPO_ROOT = join(import.meta.dir, '..');
 const MANIFEST_PATH = join(REPO_ROOT, '.agents', 'jira-required.yaml');
-const CATALOG_PATH = join(REPO_ROOT, '.agents', 'jira.json');
+const CATALOG_PATH = join(REPO_ROOT, '.agents', 'jira-fields.json');
 const WORKFLOWS_PATH = join(REPO_ROOT, '.agents', 'jira-workflows.json');
 
 function loadManifest(): Manifest {
@@ -405,7 +405,7 @@ function parseInlineMapping(body: string): { from?: string, to?: string, descrip
 // -----------------------------------------------------------------------------
 
 /**
- * Loose type compatibility: jira.json sometimes reports types more specifically
+ * Loose type compatibility: jira-fields.json sometimes reports types more specifically
  * than the manifest cares about (e.g. `datetime` vs declared `date`). Treat
  * common families as equivalent.
  */
@@ -443,7 +443,7 @@ function checkRequired(
       scope,
       severity: scope === 'required' ? 'missing' : 'info',
       expected,
-      notes: ['not present in .agents/jira.json'],
+      notes: ['not present in .agents/jira-fields.json'],
       missingOptions: [],
     };
   }
@@ -464,7 +464,7 @@ function checkRequired(
     // not the manifest declared specific option slugs.
     if (presentOptionKeys.size === 0) {
       if (severity === 'ok') { severity = 'mismatch'; }
-      notes.push('field declared as type:option but jira.json has empty options map — re-run jira:sync-fields or check field context permissions');
+      notes.push('field declared as type:option but jira-fields.json has empty options map — re-run jira:sync-fields or check field context permissions');
     }
 
     if (Array.isArray(expected.options) && expected.options.length > 0) {
@@ -484,7 +484,7 @@ function checkRequired(
 
     if (presentParentKeys.size === 0) {
       if (severity === 'ok') { severity = 'mismatch'; }
-      notes.push('field declared as type:option-with-child but jira.json has empty options map — re-run jira:sync-fields or check field context permissions');
+      notes.push('field declared as type:option-with-child but jira-fields.json has empty options map — re-run jira:sync-fields or check field context permissions');
     }
 
     if (Array.isArray(expected.options) && expected.options.length > 0) {
@@ -759,7 +759,7 @@ function printHumanReport(
   console.log('Jira Setup Status');
   console.log('=================');
   console.log('Manifest:  .agents/jira-required.yaml');
-  console.log(`Catalog:   .agents/jira.json (${catalogSize} fields)`);
+  console.log(`Catalog:   .agents/jira-fields.json (${catalogSize} fields)`);
   if (workTypeManifestCount > 0) {
     console.log(`Workflows: .agents/jira-workflows.json (${workflowsCatalogPresent ? 'present' : 'absent — run `bun run jira:sync-workflows`'})`);
   }
@@ -812,7 +812,7 @@ function printHumanReport(
       const exp = r.expected as RequiredEntry;
       const found = r.found!;
       console.log(`  - ${r.slug}`);
-      console.log(`    Found in jira.json: type=${found.type ?? '<unknown>'}, name=${JSON.stringify(found.name ?? '')}`);
+      console.log(`    Found in jira-fields.json: type=${found.type ?? '<unknown>'}, name=${JSON.stringify(found.name ?? '')}`);
       console.log(`    Expected: type=${exp.type}${exp.name ? `, name="${exp.name}"` : ''}`);
       if (r.missingOptions.length > 0) {
         console.log(`    Missing option(s): ${r.missingOptions.join(', ')}`);
@@ -951,7 +951,7 @@ function printJsonReport(
 
   const summary = {
     manifest: '.agents/jira-required.yaml',
-    catalog: '.agents/jira.json',
+    catalog: '.agents/jira-fields.json',
     catalog_size: catalogSize,
     workflows_catalog: '.agents/jira-workflows.json',
     workflows_catalog_present: workflowsCatalogPresent,
@@ -991,7 +991,7 @@ function printHelp(): void {
   console.log(`Usage: bun run jira:check [--json] [--verbose] [--help]
 
 Compares .agents/jira-required.yaml (the methodology's required-fields manifest)
-against .agents/jira.json (your Jira workspace's custom-field catalog) and
+against .agents/jira-fields.json (your Jira workspace's custom-field catalog) and
 reports MISSING / MISMATCHED / OK status for each required and optional slug.
 
 Flags:
