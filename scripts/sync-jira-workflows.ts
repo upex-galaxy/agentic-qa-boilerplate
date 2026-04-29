@@ -372,7 +372,7 @@ function loadConfig(): Config {
 
   if (missing.length > 0) {
     log.error(`Missing required environment variables: ${missing.join(', ')}`);
-    log.dim('Add them to .env (see scripts/jira-sync.ts header for setup).');
+    log.dim('Add them to .env (see scripts/sync-jira-issues.ts header for setup).');
     log.dim('Get your API token at: https://id.atlassian.com/manage-profile/security/api-tokens');
     process.exit(1);
   }

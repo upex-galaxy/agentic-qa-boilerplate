@@ -41,7 +41,7 @@
  * ============================================================================
  *
  * Run with Bun:
- *   bun jira-sync <command> [options]
+ *   bun run jira:sync-issues <command> [options]
  *
  * COMMANDS:
  *   status              Check configuration and connection
@@ -54,11 +54,11 @@
  *   help                Show this help message
  *
  * EXAMPLES:
- *   bun jira-sync status
- *   bun jira-sync pull
- *   bun jira-sync pull --epic SQ-20
- *   bun jira-sync pull --story SQ-21
- *   bun jira-sync pull --include-comments --dry-run
+ *   bun run jira:sync-issues status
+ *   bun run jira:sync-issues pull
+ *   bun run jira:sync-issues pull --epic SQ-20
+ *   bun run jira:sync-issues pull --story SQ-21
+ *   bun run jira:sync-issues pull --include-comments --dry-run
  *
  * ============================================================================
  */
@@ -132,7 +132,7 @@ function loadJiraFields(): Record<string, JiraFieldEntry> {
   const path = join(import.meta.dir, '..', '.agents', 'jira-fields.json');
   if (!existsSync(path)) {
     throw new Error(
-      `jira-sync: ${path} does not exist. Run \`bun run jira:sync-fields --force\` to generate it.`,
+      `sync-jira-issues: ${path} does not exist. Run \`bun run jira:sync-fields --force\` to generate it.`,
     );
   }
   let parsed: unknown;
@@ -140,10 +140,10 @@ function loadJiraFields(): Record<string, JiraFieldEntry> {
     parsed = JSON.parse(readFileSync(path, 'utf8'));
   }
   catch (err) {
-    throw new Error(`jira-sync: cannot parse ${path}: ${(err as Error).message}`);
+    throw new Error(`sync-jira-issues: cannot parse ${path}: ${(err as Error).message}`);
   }
   if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error(`jira-sync: ${path} must be a JSON object`);
+    throw new Error(`sync-jira-issues: ${path} must be a JSON object`);
   }
   return parsed as Record<string, JiraFieldEntry>;
 }
@@ -160,8 +160,8 @@ function buildCustomFields(): Record<SemanticKey, string> {
     const entry = fields[slug];
     if (!entry || typeof entry.id !== 'string') {
       throw new Error(
-        `jira-sync: slug '${slug}' (for '${semanticKey}') not found in .agents/jira-fields.json. `
-        + 'Run `bun run jira:sync-fields --force` to refresh, or update SLUG_MAPPING in scripts/jira-sync.ts.',
+        `sync-jira-issues: slug '${slug}' (for '${semanticKey}') not found in .agents/jira-fields.json. `
+        + 'Run `bun run jira:sync-fields --force` to refresh, or update SLUG_MAPPING in scripts/sync-jira-issues.ts.',
       );
     }
     out[semanticKey] = entry.id;
@@ -948,7 +948,7 @@ function generateEpicMarkdown(
     lines.push(`- **Labels:** ${fields.labels.join(', ')}`);
   }
 
-  lines.push('', '---', '', '_Synced from Jira by jira-sync_', `_Last sync: ${new Date().toISOString()}_`, '');
+  lines.push('', '---', '', '_Synced from Jira by sync-jira-issues_', `_Last sync: ${new Date().toISOString()}_`, '');
 
   return lines.join('\n');
 }
@@ -1067,7 +1067,7 @@ function generateStoryMarkdown(
     lines.push(`- **Labels:** ${fields.labels.join(', ')}`);
   }
 
-  lines.push('', '---', '', '_Synced from Jira by jira-sync_', `_Last sync: ${new Date().toISOString()}_`, '');
+  lines.push('', '---', '', '_Synced from Jira by sync-jira-issues_', `_Last sync: ${new Date().toISOString()}_`, '');
 
   return lines.join('\n');
 }
@@ -1099,7 +1099,7 @@ function generateCommentsMarkdown(
     }
   }
 
-  lines.push('', '_Synced from Jira by jira-sync_', `_Last sync: ${new Date().toISOString()}_`, '');
+  lines.push('', '_Synced from Jira by sync-jira-issues_', `_Last sync: ${new Date().toISOString()}_`, '');
 
   return lines.join('\n');
 }
@@ -1210,7 +1210,7 @@ function generateBugMarkdown(
     lines.push(`- **Labels:** ${fields.labels.join(', ')}`);
   }
 
-  lines.push('', '---', '', '_Synced from Jira by jira-sync_', `_Last sync: ${new Date().toISOString()}_`, '');
+  lines.push('', '---', '', '_Synced from Jira by sync-jira-issues_', `_Last sync: ${new Date().toISOString()}_`, '');
 
   return lines.join('\n');
 }
@@ -1314,7 +1314,7 @@ function generateDefectMarkdown(
     lines.push(`- **Labels:** ${fields.labels.join(', ')}`);
   }
 
-  lines.push('', '---', '', '_Synced from Jira by jira-sync_', `_Last sync: ${new Date().toISOString()}_`, '');
+  lines.push('', '---', '', '_Synced from Jira by sync-jira-issues_', `_Last sync: ${new Date().toISOString()}_`, '');
 
   return lines.join('\n');
 }
@@ -1373,7 +1373,7 @@ function generateImprovementMarkdown(
     lines.push(`- **Labels:** ${fields.labels.join(', ')}`);
   }
 
-  lines.push('', '---', '', '_Synced from Jira by jira-sync_', `_Last sync: ${new Date().toISOString()}_`, '');
+  lines.push('', '---', '', '_Synced from Jira by sync-jira-issues_', `_Last sync: ${new Date().toISOString()}_`, '');
 
   return lines.join('\n');
 }
@@ -1431,7 +1431,7 @@ function generateTestMarkdown(
     lines.push(`- **Labels:** ${fields.labels.join(', ')}`);
   }
 
-  lines.push('', '---', '', '_Synced from Jira by jira-sync_', `_Last sync: ${new Date().toISOString()}_`, '');
+  lines.push('', '---', '', '_Synced from Jira by sync-jira-issues_', `_Last sync: ${new Date().toISOString()}_`, '');
 
   return lines.join('\n');
 }
@@ -1472,7 +1472,7 @@ function generateEpicTreeMarkdown(
     }
   }
 
-  lines.push('---', '', '_Synced from Jira by jira-sync_', `_Last sync: ${new Date().toISOString()}_`, '');
+  lines.push('---', '', '_Synced from Jira by sync-jira-issues_', `_Last sync: ${new Date().toISOString()}_`, '');
 
   return lines.join('\n');
 }
@@ -2182,7 +2182,7 @@ ${colors.bold}${colors.cyan}Jira Sync CLI${colors.reset}
 Sync Jira Epics & Stories to local Markdown files
 
 ${colors.bold}USAGE${colors.reset}
-  bun jira-sync <command> [subcommand] [options]
+  bun run jira:sync-issues <command> [subcommand] [options]
 
 ${colors.bold}COMMANDS${colors.reset}
   status              Check configuration and connection
@@ -2204,15 +2204,15 @@ ${colors.bold}OPTIONS${colors.reset}
   --json              Output results as JSON
 
 ${colors.bold}EXAMPLES${colors.reset}
-  bun jira-sync status
-  bun jira-sync pull
-  bun jira-sync pull --epic SQ-20
-  bun jira-sync pull --story SQ-21
-  bun jira-sync pull bugs
-  bun jira-sync pull defects
-  bun jira-sync pull improvements --dry-run
-  bun jira-sync pull tests
-  bun jira-sync pull --include-comments --dry-run
+  bun run jira:sync-issues status
+  bun run jira:sync-issues pull
+  bun run jira:sync-issues pull --epic SQ-20
+  bun run jira:sync-issues pull --story SQ-21
+  bun run jira:sync-issues pull bugs
+  bun run jira:sync-issues pull defects
+  bun run jira:sync-issues pull improvements --dry-run
+  bun run jira:sync-issues pull tests
+  bun run jira:sync-issues pull --include-comments --dry-run
 
 ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
   ATLASSIAN_URL         Jira instance URL (required)
@@ -2262,7 +2262,7 @@ async function main(): Promise<void> {
 
     default:
       log.error(`Unknown command: ${args.command}`);
-      log.info('Run "bun jira-sync help" for usage');
+      log.info('Run "bun run jira:sync-issues help" for usage');
       process.exit(1);
   }
 }

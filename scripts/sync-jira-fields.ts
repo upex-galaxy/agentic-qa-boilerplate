@@ -10,7 +10,7 @@
  * so skills/commands can reference fields portably as `{{jira.<slug>}}` instead
  * of hardcoding `customfield_XXXXX` IDs.
  *
- * Companion script to `scripts/jira-sync.ts` (which this script does NOT
+ * Companion script to `scripts/sync-jira-issues.ts` (which this script does NOT
  * touch — that refactor lives in Session 5 of the agentic-variables plan).
  *
  * JIRA API ENDPOINTS USED:
@@ -35,7 +35,7 @@
  * ENVIRONMENT
  * ============================================================================
  *
- * Required environment variables (same as `scripts/jira-sync.ts`):
+ * Required environment variables (same as `scripts/sync-jira-issues.ts`):
  *   ATLASSIAN_URL=https://your-instance.atlassian.net
  *   ATLASSIAN_EMAIL=your-email@example.com
  *   ATLASSIAN_API_TOKEN=ATATT3x...
@@ -346,7 +346,7 @@ function loadConfig(): Config {
 
   if (missing.length > 0) {
     log.error(`Missing required environment variables: ${missing.join(', ')}`);
-    log.dim('Add them to .env (see scripts/jira-sync.ts header for setup).');
+    log.dim('Add them to .env (see scripts/sync-jira-issues.ts header for setup).');
     log.dim('Get your API token at: https://id.atlassian.com/manage-profile/security/api-tokens');
     process.exit(1);
   }

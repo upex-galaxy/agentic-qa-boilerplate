@@ -21,12 +21,12 @@
 #               (e.g. `customfield_ATR`) with TODO comments. Reported as INFO.
 
 required:
-  # ---- Story / User-story fields (consumed by scripts/jira-sync.ts) ----
+  # ---- Story / User-story fields (consumed by scripts/sync-jira-issues.ts) ----
   acceptance_criteria_gherkin:
     name: '✅ Acceptance Criteria (Gherkin)'
     type: string
     description: 'Gherkin-formatted acceptance criteria attached to user stories.'
-    used_by: [jira-sync]
+    used_by: [sync-jira-issues]
 
   acceptance_test_results_atr:
     name: '🧪 Acceptance Test Results (ATR)'
@@ -41,71 +41,71 @@ required:
     name: '🚩Business Rules Specification'
     type: string
     description: 'Business rules tied to a user story, separate from acceptance criteria.'
-    used_by: [jira-sync]
+    used_by: [sync-jira-issues]
 
   scope:
     name: 'Scope ⛳'
     type: string
     description: 'In-scope / out-of-scope notes captured at story-grooming time.'
-    used_by: [jira-sync]
+    used_by: [sync-jira-issues]
 
   mockup:
     name: 'Mockup 🎴'
     type: string
     description: 'Link or embed of the design mockup for the story.'
-    used_by: [jira-sync]
+    used_by: [sync-jira-issues]
 
   workflow:
     name: '🧬WORKFLOW'
     type: string
     description: 'User journey / workflow narrative for the story.'
-    used_by: [jira-sync]
+    used_by: [sync-jira-issues]
 
   story_points:
     name: 'Story Points'
     type: number
     description: 'Agile estimate for the story (planning poker).'
-    used_by: [jira-sync]
+    used_by: [sync-jira-issues]
 
   weblink_url:
     name: 'Weblink (URL) 🌍️'
     type: string
     description: 'External reference URL attached to the story.'
-    used_by: [jira-sync]
+    used_by: [sync-jira-issues]
 
-  # ---- Bug / Defect fields (consumed by scripts/jira-sync.ts + sprint-testing reporting) ----
+  # ---- Bug / Defect fields (consumed by scripts/sync-jira-issues.ts + sprint-testing reporting) ----
   actual_result_comportamiento:
     name: '🐞 Actual Result (Comportamiento)'
     type: string
     description: 'Observed behavior captured during bug repro.'
-    used_by: [jira-sync, sprint-testing]
+    used_by: [sync-jira-issues, sprint-testing]
 
   expected_result_output:
     name: '✅ Expected Result (Output)'
     type: string
     description: 'Expected behavior per acceptance criteria, contrasted against the bug.'
-    used_by: [jira-sync, sprint-testing]
+    used_by: [sync-jira-issues, sprint-testing]
 
   error_type:
     name: 'Error Type'
     type: option
     options: [content, crash, data, functional, integration, performance, security, visual]
     description: 'Bug taxonomy by error category.'
-    used_by: [jira-sync, sprint-testing]
+    used_by: [sync-jira-issues, sprint-testing]
 
   severity:
     name: 'Severity 🚩'
     type: option
     options: [critica, mayor, menor, moderada, trivial]
     description: 'Bug severity classification (impact-based).'
-    used_by: [jira-sync, sprint-testing]
+    used_by: [sync-jira-issues, sprint-testing]
 
   test_environment:
     name: 'Test Environment 📦️'
     type: option
     options: [dev, production, qa, staging, uat]
     description: 'Environment where the bug was reproduced or where the test ran.'
-    used_by: [jira-sync, sprint-testing]
+    used_by: [sync-jira-issues, sprint-testing]
 
   root_cause:
     name: 'Root Cause🐞'
@@ -120,26 +120,26 @@ required:
       - third_party_error
       - working_as_designed_wad
     description: 'Post-mortem cause classification, set after the fix.'
-    used_by: [jira-sync, sprint-testing]
+    used_by: [sync-jira-issues, sprint-testing]
 
   workaround:
     name: '🚩 Workaround'
     type: string
     description: 'Temporary mitigation steps to unblock users until the fix ships.'
-    used_by: [jira-sync, sprint-testing]
+    used_by: [sync-jira-issues, sprint-testing]
 
   evidence:
     name: '🧫EVIDENCE'
     type: string
     description: 'Bug evidence: screenshots, traces, logs, repro recordings.'
-    used_by: [jira-sync, sprint-testing]
+    used_by: [sync-jira-issues, sprint-testing]
 
   fix:
     name: 'Fix'
     type: option
     options: [bugfix, hotfix]
     description: 'Type of fix applied (bugfix vs urgent hotfix).'
-    used_by: [jira-sync, sprint-testing]
+    used_by: [sync-jira-issues, sprint-testing]
 
   # ---- TMS Modality B fields (Jira-native, no Xray) ----
   acceptance_test_plan_atp:

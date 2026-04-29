@@ -55,6 +55,7 @@
     "onboarding": "bun run scripts/onboarding.ts",
     "jira:sync-fields": "bun run scripts/sync-jira-fields.ts",
     "jira:sync-workflows": "bun run scripts/sync-jira-workflows.ts",
+    "jira:sync-issues": "bun run scripts/sync-jira-issues.ts",
     "jira:check": "bun run scripts/check-jira-setup.ts",
     "format": "prettier --write '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
     "format:check": "prettier --check '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
