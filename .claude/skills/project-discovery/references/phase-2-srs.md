@@ -73,7 +73,7 @@ This skill no longer produces `.context/SRS/api-contracts.md`. The API contract 
 
 | Angle | Owner | Output | When to use |
 |-------|-------|--------|-------------|
-| Technical surface (request/response types) | `bun run api:sync` (script: `cli/sync-openapi.ts`) | `api/openapi-types.ts` + `api/openapi.json` | Every time the spec changes. Consumed by `api/schemas/*.types.ts` facades and by automated tests. |
+| Technical surface (request/response types) | `bun run api:sync` (script: `scripts/sync-openapi.ts`) | `api/openapi-types.ts` + `api/openapi.json` | Every time the spec changes. Consumed by `api/schemas/*.types.ts` facades and by automated tests. |
 | Business angle (auth, critical paths, architecture) | `/business-api-map` command | `.context/mapping/business-api-map.md` | After discovery, re-run whenever auth or critical flows change. |
 
 During Phase 2 SRS, your job is **not** to document endpoints — it is to confirm which of those two sources is available and record the result:

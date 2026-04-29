@@ -457,7 +457,7 @@ For every ticket being tested, maintain local documentation under `.context/PBI/
 | Script | Usage | Documentation |
 |--------|-------|---------------|
 | `bun xray` | TMS sync (import/export/sync) | `cli/xray.ts` (self-documented) |
-| `bun run api:sync` | Sync OpenAPI spec + generate types | `cli/sync-openapi.ts` |
+| `bun run api:sync` | Sync OpenAPI spec + generate types | `scripts/sync-openapi.ts` |
 | `bun run kata:manifest` | Extract ATCs from codebase | See `package.json` |
 
 **Run `bun <script> --help`** for usage details.

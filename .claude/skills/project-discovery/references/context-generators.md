@@ -91,7 +91,7 @@ Only overwrite on explicit user confirmation.
 
 `project-discovery` no longer generates `.context/api-architecture.md` end-to-end. The work is split across two tools that each own one angle:
 
-- **Technical endpoint sync** — run `bun run api:sync` (script: `cli/sync-openapi.ts`). It downloads an OpenAPI / Swagger spec from a URL, GitHub repo, or local file and generates TypeScript types under `api/schemas/`. Use this whenever you need exact request/response shapes for tests, components, or AI grounding. *If the project has no OpenAPI spec, surface that as a Discovery Gap and ask the user to expose one or skip technical sync.*
+- **Technical endpoint sync** — run `bun run api:sync` (script: `scripts/sync-openapi.ts`). It downloads an OpenAPI / Swagger spec from a URL, GitHub repo, or local file and generates TypeScript types under `api/schemas/`. Use this whenever you need exact request/response shapes for tests, components, or AI grounding. *If the project has no OpenAPI spec, surface that as a Discovery Gap and ask the user to expose one or skip technical sync.*
 
 - **Business API angle** — auth flows, critical-path user journeys through the API, architecture behind the API, "how the business operates through the API". Owned by the `/business-api-map` command (sibling of `/business-data-map` and `/business-feature-map`). Output lives at `.context/mapping/business-api-map.md`. Use this — do NOT produce an API narrative inside `project-discovery`.
 

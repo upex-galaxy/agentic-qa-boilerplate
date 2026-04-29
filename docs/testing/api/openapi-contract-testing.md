@@ -684,7 +684,7 @@ This document covers **Flow B: Generate OpenAPI from Zod**. Other flows exist fo
 
 | Flow                | When to use it                            | Document                                                       |
 | ------------------- | ----------------------------------------- | -------------------------------------------------------------- |
-| **sync-openapi.ts** | External backend has the spec (other repo)| See `cli/sync-openapi.ts`                                      |
+| **sync-openapi.ts** | External backend has the spec (other repo)| See `scripts/sync-openapi.ts`                                  |
 | **Zod-to-OpenAPI**  | You define schemas with Zod (this doc)    | This document                                                  |
 | **MCP OpenAPI**     | AI testing using any spec                 | [mcp-openapi.md](docs/setup/mcp-openapi.md)                   |
 
