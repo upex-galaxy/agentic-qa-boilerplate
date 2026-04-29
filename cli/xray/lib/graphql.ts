@@ -190,6 +190,22 @@ export const QUERIES = {
     }
   `,
 
+  getTestPlan: `
+    query GetTestPlan($issueId: String!) {
+      getTestPlan(issueId: $issueId) {
+        issueId
+        jira(fields: ["key", "summary", "status"])
+        tests(limit: 100) {
+          total
+          results {
+            issueId
+            jira(fields: ["key", "summary"])
+          }
+        }
+      }
+    }
+  `,
+
   getTestSets: `
     query GetTestSets($jql: String, $limit: Int!) {
       getTestSets(jql: $jql, limit: $limit) {

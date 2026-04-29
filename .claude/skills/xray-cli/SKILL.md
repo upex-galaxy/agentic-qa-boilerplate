@@ -168,6 +168,36 @@ bun xray plan add-tests --plan SQ-110 --tests SQ-100,SQ-101
 bun xray plan remove-tests --plan SQ-110 --tests SQ-100
 ```
 
+### Sync & Repair (Jira-layer ↔ Xray-layer reconciliation)
+
+When a Test Execution or Test Plan is created through a Jira fallback path
+without authenticated Xray, the Jira layer (issuelinks, custom fields)
+accepts the issue but the Xray layer never registers the test attachment —
+runs come back empty and statuses cannot be set. Use these commands to
+detect and repair the drift.
+
+```bash
+# Diff a single Test Execution (dry-run by default)
+bun xray exec sync --execution SQ-194
+bun xray exec sync --execution SQ-194 --apply       # re-attach missing tests at the Xray layer
+
+# Same for a Test Plan
+bun xray plan sync --plan SQ-110
+bun xray plan sync --plan SQ-110 --apply
+
+# Bulk scan every Test Execution + Test Plan in a project
+bun xray repair --project SQ                        # report only
+bun xray repair --project SQ --apply                # re-attach every drift detected
+bun xray repair --project SQ --apply --limit 200    # scan up to 200 of each type
+```
+
+**What sync reports**
+
+- *Missing at Xray layer*: tests linked at the Jira layer but not registered with Xray. `--apply` re-attaches them.
+- *Missing at Jira layer*: tests registered with Xray but without a Jira issuelink. Reported only — sync never auto-deletes.
+
+**Requirements**: both Xray AND Jira credentials must be configured (`auth login --jira-url --jira-email --jira-token`); the Jira-layer view comes from Jira REST, separate from the Xray GraphQL API.
+
 ### Test Sets
 
 ```bash

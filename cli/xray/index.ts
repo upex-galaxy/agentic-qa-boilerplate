@@ -20,6 +20,7 @@ import * as backup from './commands/backup.js';
 import * as exec from './commands/exec.js';
 import * as importCmd from './commands/import.js';
 import * as plan from './commands/plan.js';
+import * as repairCmd from './commands/repair.js';
 import * as run from './commands/run.js';
 import * as set from './commands/set.js';
 import * as test from './commands/test.js';
@@ -85,6 +86,9 @@ ${colors.bold}TEST EXECUTIONS${colors.reset}
                      --execution <id>   Execution issue ID
                      --tests <id1,id2>  Test issue IDs to add
   exec remove-tests  Remove tests from an execution
+  exec sync          Diff Jira-layer issuelinks vs Xray-layer attachment
+                     --execution <id>   Execution key or numeric issue ID
+                     --apply            Re-attach missing tests at the Xray layer
 
 ${colors.bold}TEST RUNS${colors.reset}
   run get <id>       Get test run details with step statuses
@@ -139,6 +143,9 @@ ${colors.bold}TEST PLANS${colors.reset}
                      --plan <id>        Test plan key or numeric issue ID
                      --tests <id1,id2>  Test issue IDs or keys to add
   plan remove-tests  Remove tests from a test plan
+  plan sync          Diff Jira-layer issuelinks vs Xray-layer attachment for a Test Plan
+                     --plan <id>        Test plan key or numeric issue ID
+                     --apply            Re-attach missing tests at the Xray layer
 
 ${colors.bold}TEST SETS${colors.reset}
   set create         Create a test set
@@ -182,6 +189,15 @@ ${colors.bold}BACKUP & RESTORE${colors.reset}
                      --sync             Update existing tests instead of creating duplicates
                      --map-keys <file>  CSV file with old_key,new_key mappings
 
+${colors.bold}REPAIR${colors.reset}
+  repair             Bulk Jira-layer ↔ Xray-layer reconciliation across a project.
+                     Useful after Test Executions or Test Plans were created via Jira
+                     fallback paths without Xray auth (the Jira layer accepts the
+                     issue but the Xray layer never registers the test attachment).
+                     --project <key>    Project key (required, falls back to default)
+                     --apply            Re-attach missing tests at the Xray layer
+                     --limit <n>        Max issues to scan per type (default: 100)
+
 ${colors.bold}EXAMPLES${colors.reset}
   # Login
   xray auth login --client-id ABC123 --client-secret xyz789
@@ -213,6 +229,14 @@ ${colors.bold}EXAMPLES${colors.reset}
 
   # Sync existing tests (after migration)
   xray backup restore --file backup.json --project PROJ --sync
+
+  # Diff Jira-layer vs Xray-layer for a Test Execution and (optionally) repair
+  xray exec sync --execution SQ-194
+  xray exec sync --execution SQ-194 --apply
+
+  # Bulk repair every Test Execution + Test Plan in a project
+  xray repair --project SQ
+  xray repair --project SQ --apply
 
 ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
   XRAY_CLIENT_ID      Xray API Client ID
@@ -300,9 +324,12 @@ async function main(): Promise<void> {
           case 'remove-tests':
             await exec.removeTests(flags);
             break;
+          case 'sync':
+            await exec.sync(flags);
+            break;
           default:
             log.error(`Unknown exec command: ${subcommand}`);
-            log.info('Available: create, get, list, add-tests, remove-tests');
+            log.info('Available: create, get, list, add-tests, remove-tests, sync');
         }
         break;
 
@@ -361,9 +388,12 @@ async function main(): Promise<void> {
           case 'remove-tests':
             await plan.removeTests(flags);
             break;
+          case 'sync':
+            await plan.sync(flags);
+            break;
           default:
             log.error(`Unknown plan command: ${subcommand}`);
-            log.info('Available: create, list, add-tests, remove-tests');
+            log.info('Available: create, list, add-tests, remove-tests, sync');
         }
         break;
 
@@ -420,6 +450,10 @@ async function main(): Promise<void> {
             log.error(`Unknown backup command: ${subcommand}`);
             log.info('Available: export, restore');
         }
+        break;
+
+      case 'repair':
+        await repairCmd.repair(flags);
         break;
 
       default:

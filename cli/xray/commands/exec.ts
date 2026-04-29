@@ -7,9 +7,9 @@
 import type { Flags, TestExecutionResult, TestRunResult } from '../types/index.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
-import { resolveIssueId, resolveIssueIds } from '../lib/jira.js';
+import { getLinkedTests, resolveIssueId, resolveIssueIds } from '../lib/jira.js';
 import { log } from '../lib/logger.js';
-import { getFlag, requireFlag } from '../lib/parser.js';
+import { getBoolFlag, getFlag, requireFlag } from '../lib/parser.js';
 
 // ============================================================================
 // CREATE
@@ -131,4 +131,90 @@ export async function removeTests(flags: Flags): Promise<void> {
   });
 
   log.success(`Removed ${result.removeTestsFromTestExecution.removedTests.length} tests`);
+}
+
+// ============================================================================
+// SYNC (Jira-layer ↔ Xray-layer reconciliation)
+// ============================================================================
+
+interface ExecSyncResult {
+  execKey: string
+  execId: string
+  jiraLinkedIds: string[]
+  xrayAttachedIds: string[]
+  missingInXray: { id: string, key: string }[]
+  missingInJira: string[]
+  applied: string[]
+}
+
+export async function syncExecution(input: string, options: { apply: boolean } = { apply: false }): Promise<ExecSyncResult> {
+  const issueId = await resolveIssueId(input);
+  const xrayResult = await graphql<{ getTestExecution: TestExecutionResult }>(QUERIES.getTestExecution, { issueId });
+  const exec = xrayResult.getTestExecution;
+  const execKey = exec.jira?.key ?? input;
+
+  const linked = await getLinkedTests(execKey);
+  if (linked === null) {
+    throw new Error(
+      'Jira credentials are required for `exec sync` (the Jira-layer view comes from Jira REST, '
+      + 'separate from the Xray GraphQL API). Run \'bun xray auth login --jira-url --jira-email --jira-token\' first.',
+    );
+  }
+
+  const xrayAttachedIds = (exec.tests?.results ?? []).map(t => t.issueId);
+  const xraySet = new Set(xrayAttachedIds);
+  const linkedSet = new Set(linked.map(l => l.id));
+
+  const missingInXray = linked.filter(l => !xraySet.has(l.id));
+  const missingInJira = xrayAttachedIds.filter(id => !linkedSet.has(id));
+
+  const result: ExecSyncResult = {
+    execKey,
+    execId: issueId,
+    jiraLinkedIds: linked.map(l => l.id),
+    xrayAttachedIds,
+    missingInXray,
+    missingInJira,
+    applied: [],
+  };
+
+  if (options.apply && missingInXray.length > 0) {
+    log.dim(`Re-attaching ${missingInXray.length} test(s) at the Xray layer...`);
+    const applyResult = await graphql<{ addTestsToTestExecution: { addedTests: string[] } }>(MUTATIONS.addTestsToTestExecution, {
+      issueId,
+      testIssueIds: missingInXray.map(m => m.id),
+    });
+    result.applied = applyResult.addTestsToTestExecution.addedTests ?? [];
+  }
+
+  return result;
+}
+
+function printSyncReport(label: string, result: ExecSyncResult): void {
+  log.title(`${label}: ${result.execKey} (${result.execId})`);
+  console.log(`  Jira-layer tests:  ${result.jiraLinkedIds.length}`);
+  console.log(`  Xray-layer tests:  ${result.xrayAttachedIds.length}`);
+  if (result.missingInXray.length === 0 && result.missingInJira.length === 0) {
+    log.success('  In sync — both layers match');
+    return;
+  }
+  if (result.missingInXray.length > 0) {
+    log.warn(`  Missing at Xray layer (${result.missingInXray.length}): ${result.missingInXray.map(m => m.key).join(', ')}`);
+  }
+  if (result.missingInJira.length > 0) {
+    log.warn(`  Missing at Jira layer (${result.missingInJira.length}): ${result.missingInJira.join(', ')}`);
+  }
+  if (result.applied.length > 0) {
+    log.success(`  Applied: re-attached ${result.applied.length} test(s) at the Xray layer`);
+  }
+}
+
+export async function sync(flags: Flags): Promise<void> {
+  const input = requireFlag(flags, 'execution');
+  const apply = getBoolFlag(flags, 'apply');
+  const result = await syncExecution(input, { apply });
+  printSyncReport('Test Execution', result);
+  if (!apply && result.missingInXray.length > 0) {
+    log.dim('  Re-run with --apply to re-attach the Xray-layer tests automatically.');
+  }
 }

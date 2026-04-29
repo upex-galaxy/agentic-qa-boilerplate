@@ -141,6 +141,7 @@ export interface TestExecutionResult {
 export interface TestPlanResult {
   issueId: string
   jira: JiraFields
+  tests?: { total: number, results: TestResult[] }
 }
 
 export interface TestSetResult {
