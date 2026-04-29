@@ -6,6 +6,7 @@
 
 import type { Flags, TestRunResult, TestStepResponse } from '../types/index.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
+import { resolveIssueId } from '../lib/jira.js';
 import { log } from '../lib/logger.js';
 import { getFlag, requireFlag } from '../lib/parser.js';
 
@@ -119,10 +120,11 @@ export async function defect(flags: Flags): Promise<void> {
 // ============================================================================
 
 export async function listRuns(flags: Flags): Promise<void> {
-  const execId = getFlag(flags, 'execution');
-  if (!execId) {
+  const execFlag = getFlag(flags, 'execution');
+  if (!execFlag) {
     throw new Error('Missing --execution flag. Usage: xray run list --execution EXEC_ID');
   }
+  const execId = await resolveIssueId(execFlag);
 
   const result = await graphql<{ getTestExecution: { testRuns: { results: TestRunResult[] } } }>(QUERIES.getTestExecution, { issueId: execId });
 

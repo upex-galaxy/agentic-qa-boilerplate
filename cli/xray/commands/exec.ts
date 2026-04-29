@@ -7,6 +7,7 @@
 import type { Flags, TestExecutionResult, TestRunResult } from '../types/index.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
+import { resolveIssueId, resolveIssueIds } from '../lib/jira.js';
 import { log } from '../lib/logger.js';
 import { getFlag, requireFlag } from '../lib/parser.js';
 
@@ -23,7 +24,9 @@ export async function create(flags: Flags): Promise<void> {
   const summary = requireFlag(flags, 'summary');
   const description = getFlag(flags, 'description');
   const testsStr = getFlag(flags, 'tests');
-  const testIssueIds = testsStr ? testsStr.split(',').map(t => t.trim()) : [];
+  const testIssueIds = testsStr
+    ? await resolveIssueIds(testsStr.split(',').map(t => t.trim()))
+    : [];
 
   log.dim(`Creating Test Execution in project ${projectKey}...`);
 
@@ -45,7 +48,7 @@ export async function create(flags: Flags): Promise<void> {
 // ============================================================================
 
 export async function get(flags: Flags, positional: string[]): Promise<void> {
-  const issueId = positional[0] || requireFlag(flags, 'id');
+  const issueId = await resolveIssueId(positional[0] || requireFlag(flags, 'id'));
 
   const result = await graphql<{ getTestExecution: TestExecutionResult }>(QUERIES.getTestExecution, { issueId });
   const exec = result.getTestExecution;
@@ -97,9 +100,9 @@ export async function list(flags: Flags): Promise<void> {
 // ============================================================================
 
 export async function addTests(flags: Flags): Promise<void> {
-  const issueId = requireFlag(flags, 'execution');
+  const issueId = await resolveIssueId(requireFlag(flags, 'execution'));
   const testsStr = requireFlag(flags, 'tests');
-  const testIssueIds = testsStr.split(',').map(t => t.trim());
+  const testIssueIds = await resolveIssueIds(testsStr.split(',').map(t => t.trim()));
 
   log.dim(`Adding ${testIssueIds.length} tests to execution...`);
 
@@ -116,9 +119,9 @@ export async function addTests(flags: Flags): Promise<void> {
 // ============================================================================
 
 export async function removeTests(flags: Flags): Promise<void> {
-  const issueId = requireFlag(flags, 'execution');
+  const issueId = await resolveIssueId(requireFlag(flags, 'execution'));
   const testsStr = requireFlag(flags, 'tests');
-  const testIssueIds = testsStr.split(',').map(t => t.trim());
+  const testIssueIds = await resolveIssueIds(testsStr.split(',').map(t => t.trim()));
 
   log.dim(`Removing ${testIssueIds.length} tests from execution...`);
 
