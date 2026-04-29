@@ -1,14 +1,23 @@
 # Authentication
 
-`acli` has three auth modes, each scoped to a product. Logging in to `jira` does **not** authenticate `admin` or `rovodev` — every product keeps its own session.
+`acli` has **four auth namespaces**, each scoped independently. Logging in to one does **not** authenticate the others — every scope keeps its own session.
 
-## Auth modes at a glance
+## Auth namespaces at a glance
 
-| Mode      | Command path        | Credential                    | When to use                                           |
-| --------- | ------------------- | ----------------------------- | ----------------------------------------------------- |
-| API token | `acli jira auth login`    | Atlassian account API token | Scripts, CI, anywhere non-interactive                 |
-| OAuth     | `acli jira auth login --web` | Browser redirect         | Human at a terminal, multi-site exploration           |
-| API key   | `acli admin auth login`   | Org admin API key           | Org-level commands (`admin user`, directory ops)      |
+| Namespace             | Command path                  | Credential                    | What it authenticates                                |
+| --------------------- | ----------------------------- | ----------------------------- | ---------------------------------------------------- |
+| Jira                  | `acli jira auth login`        | Atlassian account API token   | All `acli jira *` commands                           |
+| Confluence            | `acli confluence auth login`  | Atlassian account API token   | All `acli confluence *` commands                     |
+| Org admin             | `acli admin auth login`       | Org admin API key             | `acli admin user *` (directory ops)                  |
+| Global OAuth          | `acli auth login`             | Browser redirect (interactive)| Cross-product OAuth — newer, top-level surface       |
+
+Three credential mechanics are available depending on the namespace:
+
+| Mechanic  | Use                                              | Where                                            |
+| --------- | ------------------------------------------------ | ------------------------------------------------ |
+| API token | Scripts, CI, anywhere non-interactive            | `jira auth login` · `confluence auth login`      |
+| OAuth     | Human at a terminal, multi-site exploration      | `jira auth login --web` · `acli auth login`      |
+| API key   | Org-level admin commands                         | `admin auth login`                               |
 
 ## API token (the scriptable path)
 
@@ -58,6 +67,41 @@ echo "$ATLASSIAN_ADMIN_API_KEY" | acli admin auth login \
 ```
 
 The API key path is independent of `jira auth`. A session authenticated as a Jira user cannot run `admin user activate`.
+
+## Confluence (`acli confluence auth`)
+
+Same shape as `jira auth` — same flag set, same credentials (Atlassian account API token). Maintains a session independent of `jira auth`.
+
+```bash
+echo "$ATLASSIAN_API_TOKEN" | acli confluence auth login \
+  --site "mysite.atlassian.net" \
+  --email "you@example.com" \
+  --token
+
+acli confluence auth status
+acli confluence auth switch --site mysite.atlassian.net --email you@example.com
+acli confluence auth logout
+```
+
+The token is the same one you'd use for Jira (Atlassian-account-scoped, generated at https://id.atlassian.com/manage-profile/security/api-tokens). You typically log in to both `jira` and `confluence` separately, even with the same credentials, because the sessions are stored independently.
+
+## Global OAuth (`acli auth`)
+
+Newer top-level surface that does an OAuth login covering multiple products at once. Distinct from per-product `jira auth` / `confluence auth` / `admin auth`.
+
+```bash
+acli auth login           # interactive OAuth — opens a browser
+acli auth status
+acli auth switch
+acli auth logout
+```
+
+When to use which:
+
+- **`acli auth login`** (global): interactive multi-product setup at a desk. After this, both `jira` and `confluence` operations work without per-product `auth login` calls — handy for ad-hoc human use.
+- **Per-product `<product> auth login --token`**: scripted / CI use. Token-based auth is per-product on purpose so a leaked Jira token can't also touch Confluence.
+
+If both global and per-product sessions exist, the per-product session takes precedence for that product's commands.
 
 ## Status / switch / logout
 

@@ -15,10 +15,10 @@ This is the largest surface in `acli`. Every Jira ticket operation routes throug
 7. [assign](#assign)
 8. [clone](#clone)
 9. [archive / unarchive / delete](#archive)
-10. [comment (create / update / list / visibility)](#comment)
-11. [link (create / list / type)](#link)
+10. [comment (create / delete / list / update / visibility)](#comment)
+11. [link (create / delete / list / type)](#link)
 12. [attachment](#attachment)
-13. [watcher](#watcher)
+13. [watcher (list / remove)](#watcher)
 14. [Custom fields](#custom-fields)
 
 ## The three-selector pattern
@@ -182,20 +182,12 @@ acli jira workitem edit --jql "project = TEAM AND status = {{jira.status.story.b
 # Remove labels / assignee (cannot be done by passing empty values)
 acli jira workitem edit --key "TEAM-1" --remove-labels "stale,deprecated"
 acli jira workitem edit --key "TEAM-1" --remove-assignee
-
-# Custom fields — must go via JSON
-acli jira workitem edit --generate-json > edit.json
-# Edit the file so it looks like:
-#   {"issues": ["TEAM-1"], "customfield_10122": "some-value"}
-acli jira workitem edit --from-json edit.json --yes
 ```
 
-*(IDs like `customfield_10122` shown here and below are illustrative — they reflect the JSON shape returned by `acli`. Your actual custom field IDs come from `.agents/jira-fields.json` after `bun run jira:sync-fields`.)*
-
-Editable flags: `--summary`, `--description`, `--description-file`, `--assignee`, `--labels`, `--type`.
+Editable flags via `acli jira workitem edit`: `--summary`, `--description`, `--description-file`, `--assignee`, `--labels`, `--type`.
 Removal flags: `--remove-assignee`, `--remove-labels`.
 
-**Custom-field shape**: `--from-json` on `edit` uses a **flat** document — `{"issues": [...], "customfield_X": "value"}` — not the REST-style `{"fields": {...}}`. This is undocumented and a common failure mode.
+**Critical limitation**: `acli jira workitem edit` does **NOT** document any way to set custom-field values. `edit --generate-json` produces a template with only built-in fields — no `additionalAttributes` block. To edit a custom-field value on an existing item, use REST or MCP. See [Custom fields](#custom-fields) below for the full picture.
 
 ## <a id="transition"></a>transition
 
@@ -241,14 +233,23 @@ Assignee values: email, Atlassian account ID, `@me`, or `default`.
 
 ## <a id="clone"></a>clone
 
+`clone` accepts the full selector set (`--key`, `--jql`, `--filter`, `--from-file`) — useful for cloning many items at once into a target project or site.
+
 ```bash
-# Clone within the same project
+# Clone within the same project (single or many)
 acli jira workitem clone --key "TEAM-1,TEAM-2" --to-project "TEAM"
 
 # Clone into another project on the same site
 acli jira workitem clone --key "TEAM-1" --to-project "OTHER"
 
-# Clone to a project on another site
+# Clone every backlog item into another project
+acli jira workitem clone --jql "project = TEAM AND status = 'Backlog'" \
+  --to-project "ARCHIVE" --yes --ignore-errors
+
+# Clone a saved-filter result set
+acli jira workitem clone --filter 10001 --to-project "OTHER" --yes
+
+# Clone to a project on another site (cross-site)
 acli jira workitem clone --key "TEAM-1" --to-project "OTHER" --to-site "othersite.atlassian.net"
 ```
 
@@ -302,6 +303,18 @@ acli jira workitem comment list --key "TEAM-1" --order "+created"
 acli jira workitem comment list --key "TEAM-1" --paginate
 ```
 
+### delete
+
+```bash
+# First find the comment ID via `comment list --json`
+CID=$(acli jira workitem comment list --key "TEAM-1" --json | jq -r '.[] | select(.body | contains("typo")) | .id')
+
+# Then delete by ID
+acli jira workitem comment delete --key "TEAM-1" --id "$CID"
+```
+
+Flags: `--key` (target work item), `--id` (comment ID). No batch selectors — operates on one comment at a time.
+
 ### update
 
 ```bash
@@ -351,6 +364,21 @@ acli jira workitem link list --key "TEAM-1" --json
 acli jira workitem link type --json
 ```
 
+### delete
+
+```bash
+# Single link by ID (find IDs via `link list --json`)
+acli jira workitem link delete --id 10042
+
+# Batch via JSON
+acli jira workitem link delete --from-json links-to-remove.json --yes --ignore-errors
+
+# Batch via CSV (one ID per row)
+acli jira workitem link delete --from-csv link-ids.csv --yes
+```
+
+Flags: `--id`, `--from-csv`, `--from-json`, `--ignore-errors`, `--yes`. No work-item selector — operates on link IDs directly.
+
 ## <a id="attachment"></a>attachment
 
 ```bash
@@ -362,43 +390,150 @@ Upload is not yet covered by the CLI — use REST (`POST /rest/api/3/issue/{key}
 
 ## <a id="watcher"></a>watcher
 
+### list
+
+```bash
+# All watchers on a work item
+acli jira workitem watcher list --key "TEAM-1" --json
+```
+
+Returns the watch count and the list of watcher accounts (each with `accountId`, `displayName`, `emailAddress` — the same shape Jira REST returns).
+
+### remove
+
 ```bash
 acli jira workitem watcher remove --key "TEAM-1" --user 5b10ac8d82e05b22cc7d4ef5
 ```
 
-`--user` takes an Atlassian account ID (not email). Adding watchers is not currently exposed — REST fallback: `POST /rest/api/3/issue/{key}/watchers`.
+`--user` takes an Atlassian account ID (not email). To get an account ID, run `watcher list --json` first (or look it up via `GET /rest/api/3/user/search?query=email`).
+
+**Adding watchers is not exposed by `acli`** — REST fallback: `POST /rest/api/3/issue/{key}/watchers` with the account ID as a quoted JSON string in the body.
 
 ## <a id="custom-fields"></a>Custom fields
 
-The CLI exposes first-class flags only for built-in fields (`summary`, `description`, `assignee`, `labels`, `priority`, `parent`, `type`). Everything else — story points, sprint, components, versions, custom dropdowns — goes through `--from-json`:
+This is one of the rougher edges in `acli`. Read this section carefully — the CLI exposes first-class flags only for built-in fields (`summary`, `description`, `assignee`, `labels`, `priority`, `parent`, `type`). Everything else — story points, sprint, components, versions, custom dropdowns — must go through `--from-json` on `create`. **Editing custom-field values on existing items has no documented `acli` path** and requires REST/MCP.
+
+### What `acli` documents officially
+
+`acli jira workitem create --generate-json` is the only place in the CLI that documents how to express custom fields. The output template uses a top-level wrapper called `additionalAttributes`:
+
+```json
+{
+  "summary": "Summary/Title of work item",
+  "type": "Work item type, case sensitive, e.g. 'Task'",
+  "projectKey": "Project key to associate the work item with, e.g. 'PROJ'",
+  "assignee": "Assignee email or ID (optional)",
+  "labels": ["feature", "optional"],
+  "additionalAttributes": {
+    "customfield_10000": { "value": "Custom field value" },
+    "customfield_10001": 50,
+    "customfield_10002": "string value"
+  }
+}
+```
+
+Three things to internalize:
+
+1. **Wrapper key**: `additionalAttributes` (NOT `fields`, NOT flat at the root).
+2. **Field address**: numeric `customfield_NNNNN` ID only. **Name-addressing (`"Story Points"`) is not supported.**
+3. **Documented value shapes** (only three are illustrated by the template):
+   - **Single-select / option**: `{"value": "..."}`
+   - **Number**: bare numeric literal (e.g. `50`)
+   - **String / text**: bare string
+
+### What `acli` does NOT document — inferred from the Jira REST contract
+
+`acli` forwards `additionalAttributes` straight to the Jira REST `/rest/api/3/issue` endpoint, so the Jira REST shape applies for everything beyond the three documented types. The shapes below are inferred from REST and from `workitem view --json` output — validate by trial:
+
+| Field type            | Likely input shape inside `additionalAttributes`                                  |
+| --------------------- | --------------------------------------------------------------------------------- |
+| Multi-select          | `[{"value": "A"}, {"value": "B"}]`                                                |
+| Date (date-only)      | `"2026-01-18"` (YYYY-MM-DD)                                                       |
+| Datetime              | `"2026-01-18T19:28:09.762-0300"` (ISO-8601 with offset)                           |
+| URL                   | bare string (`"https://example.com"`)                                             |
+| Epic Link             | bare string (issue key, e.g. `"TEAM-18"`)                                         |
+| User picker           | `{"accountId": "5b10ac8d82e05b22cc7d4ef5"}`                                       |
+| Cascading select      | `{"value": "Parent", "child": {"value": "Child"}}`                                |
+| Rich text (ADF)       | full ADF doc tree (same shape as `description`)                                   |
+| Sprint                | array of sprint IDs `[5]` — but **`JRACLOUD-97107` makes this fail in practice**, see [Sprint field cannot be set](./gotchas.md#sprint) |
+
+If a shape isn't listed here, the safest source of truth is `acli jira workitem view <KEY-WITH-FIELD-SET> --fields "*all" --json` — the read shape is usually identical to the write shape for that field type.
+
+### Critical limitation: `workitem edit` does not document custom-field input
+
+Running `acli jira workitem edit --generate-json` produces:
+
+```json
+{
+  "summary": "...",
+  "type": "...",
+  "assignee": "...",
+  "description": { /* ADF */ },
+  "issues": ["KEY-1", "KEY-2"],
+  "labelsToAdd": ["feature"],
+  "labelsToRemove": ["feature"]
+}
+```
+
+**No `additionalAttributes` block.** The flag list on `edit --help` confirms: only built-in fields are supported (`--summary`, `--description`, `--description-file`, `--assignee`, `--labels`, `--type`, `--remove-assignee`, `--remove-labels`).
+
+For editing a custom-field value on an existing work item, fall back to REST:
+
+```bash
+curl -s -u "$EMAIL:$TOKEN" \
+  -X PUT "https://mysite.atlassian.net/rest/api/3/issue/TEAM-1" \
+  -H "Content-Type: application/json" \
+  -d '{"fields": {"customfield_10016": 8}}'
+```
+
+Note the REST shape uses `{"fields": {...}}`, not `additionalAttributes`.
+
+### Critical limitation: bulk operations do not document custom-field input
+
+`acli jira workitem create-bulk --generate-json` and the CSV column list (`summary, projectKey, issueType, description, label, parentIssueId, assignee`) both omit any way to set custom fields. If you need bulk creation with custom fields, the workaround is single-create-in-a-loop or REST batch.
+
+### Finding a custom field ID
+
+`acli` cannot enumerate custom fields (`field` group only does create/update/delete/cancel-delete). To discover IDs:
+
+```bash
+# From an existing item that has the field set
+acli jira workitem view TEAM-123 --json | jq '.fields | keys[] | select(startswith("customfield_"))'
+
+# From the field admin UI — the ID is in the URL when editing the field
+# https://mysite.atlassian.net/secure/admin/EditCustomField!default.jspa?id=10016
+
+# From REST — the only way to enumerate ALL fields on the site
+curl -s -u "$EMAIL:$TOKEN" \
+  "https://mysite.atlassian.net/rest/api/3/field" | jq '.[] | {id, name, custom, schema}'
+```
+
+In this boilerplate, `bun run jira:sync-fields` writes the canonical map to `.agents/jira-fields.json`. Reference fields by slug via `{{jira.<slug>}}` instead of hardcoding numeric IDs.
+
+### Putting it together — full `create` example with custom fields
 
 ```bash
 # 1. Scaffold
-acli jira workitem edit --generate-json > edit.json
+acli jira workitem create --generate-json > new-item.json
 
-# 2. Edit to the flat shape acli expects
-cat > edit.json <<'JSON'
+# 2. Edit to include custom fields
+cat > new-item.json <<'JSON'
 {
-  "issues": ["TEAM-1"],
-  "customfield_10016": 8,
-  "customfield_10040": "High"
+  "summary": "Implement OAuth refresh flow",
+  "type": "Story",
+  "projectKey": "TEAM",
+  "assignee": "you@example.com",
+  "labels": ["auth", "security"],
+  "additionalAttributes": {
+    "customfield_10016": 8,
+    "customfield_10040": { "value": "High" },
+    "customfield_10131": "2026-02-15"
+  }
 }
 JSON
 
 # 3. Submit
-acli jira workitem edit --from-json edit.json --yes
+acli jira workitem create --from-json new-item.json
 ```
 
-Two things to know:
-
-1. **The shape is flat.** Not `{"fields": {...}}` — that is the REST shape and `acli` rejects it.
-2. **Sprint assignment does not work.** `JRACLOUD-97107` is the open ticket. For "put this item in sprint N", use `POST /rest/agile/1.0/sprint/{sprintId}/issue` directly.
-
-Finding a custom field ID:
-
-```bash
-# From an existing item that has the field set
-acli jira workitem view TEAM-123 --json | jq '.fields | keys | .[] | select(startswith("customfield_"))'
-
-# Or from the field admin UI — the ID is in the URL
-```
+*(IDs like `customfield_10016` are illustrative. Your actual IDs come from `.agents/jira-fields.json` after `bun run jira:sync-fields`.)*

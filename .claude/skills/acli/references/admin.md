@@ -63,11 +63,14 @@ acli admin user deactivate --from-file leavers.txt --ignore-errors --json
 `delete` schedules a user for permanent removal (with a grace period). `cancel-delete` reverses the request while it is still pending.
 
 ```bash
-acli admin user delete --email gone@example.com --yes
+acli admin user delete --email gone@example.com
 acli admin user cancel-delete --email gone@example.com
+
+# Bulk via file
+acli admin user delete --from-file leavers.txt --ignore-errors --json
 ```
 
-Use `--yes` in CI or the command hangs on the confirmation prompt.
+**Note**: `admin user delete` and `admin user cancel-delete` do NOT accept `--yes`. The flag list is `--email, --from-file, --id, --ignore-errors, --json`. Use `--ignore-errors` for batch resilience. The commands run non-interactively by default (no confirmation prompt).
 
 ## Common patterns
 
