@@ -125,6 +125,22 @@ export async function defect(flags: Flags): Promise<void> {
 }
 
 // ============================================================================
+// STEP COMMENT
+// ============================================================================
+
+export async function stepComment(flags: Flags): Promise<void> {
+  const testRunId = requireFlag(flags, 'run');
+  const stepId = requireFlag(flags, 'step');
+  const commentText = requireFlag(flags, 'comment');
+
+  log.dim(`Updating step ${stepId} comment on run ${testRunId}...`);
+
+  await graphql(MUTATIONS.updateTestRunStepComment, { testRunId, stepId, comment: commentText });
+
+  log.success('Step comment updated');
+}
+
+// ============================================================================
 // EVIDENCE — UPLOAD
 // ============================================================================
 

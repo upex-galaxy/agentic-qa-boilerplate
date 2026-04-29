@@ -99,6 +99,11 @@ ${colors.bold}TEST RUNS${colors.reset}
                      --step <id>        Step ID
                      --status <status>  Step status
 
+  run step-comment   Set or replace a comment on a specific step
+                     --run <id>         Test run ID
+                     --step <id>        Step ID
+                     --comment <text>   Comment text
+
   run comment        Add comment to test run
                      --id <id>          Test run ID
                      --comment <text>   Comment text
@@ -315,6 +320,9 @@ async function main(): Promise<void> {
           case 'step-status':
             await run.stepStatus(flags);
             break;
+          case 'step-comment':
+            await run.stepComment(flags);
+            break;
           case 'comment':
             await run.comment(flags);
             break;
@@ -335,7 +343,7 @@ async function main(): Promise<void> {
             break;
           default:
             log.error(`Unknown run command: ${subcommand}`);
-            log.info('Available: get, list, status, step-status, comment, defect, evidence, step-evidence, evidence-list, evidence-rm');
+            log.info('Available: get, list, status, step-status, step-comment, comment, defect, evidence, step-evidence, evidence-list, evidence-rm');
         }
         break;
 

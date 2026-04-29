@@ -126,6 +126,9 @@ bun xray run status --id <runId> --status BLOCKED
 # Update step status
 bun xray run step-status --run <runId> --step <stepId> --status PASSED
 
+# Add comment to a specific step (overwrites the previous step comment)
+bun xray run step-comment --run <runId> --step <stepId> --comment "Reproduced on 2026-04-29 build 4172"
+
 # Add comment
 bun xray run comment --id <runId> --comment "Test completed successfully"
 

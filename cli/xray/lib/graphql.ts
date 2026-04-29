@@ -440,6 +440,14 @@ export const MUTATIONS = {
     }
   `,
 
+  updateTestRunStepComment: `
+    mutation UpdateTestRunStepComment($testRunId: String!, $stepId: String!, $comment: String!) {
+      updateTestRunStepComment(testRunId: $testRunId, stepId: $stepId, comment: $comment) {
+        warnings
+      }
+    }
+  `,
+
   addDefectsToTestRun: `
     mutation AddDefectsToTestRun($id: String!, $issues: [String!]!) {
       addDefectsToTestRun(id: $id, issues: $issues) {
