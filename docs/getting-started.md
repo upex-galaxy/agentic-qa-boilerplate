@@ -204,6 +204,7 @@ The takeaway: when you invoke `/regression-testing` or `/sprint-testing`, the or
 | Take a screenshot via AI | `/playwright-cli` |
 | Sync new Jira custom fields | `bun run jira:sync-fields` |
 | Sync Jira workflows (statuses + transitions per `work_type`) | `bun run jira:sync-workflows` |
+| Pull Jira Epics/Stories into `.context/PBI/` markdown | `bun run jira:sync-issues` |
 | Validate `{{VAR}}` / `{{jira.*}}` placeholders | `bun run lint:agents` |
 | Verify the Jira manifest matches both catalogs (fields + workflows) | `bun run jira:check` |
 | Validate `.env` for the active TEST_ENV | `bun run env:validate` |

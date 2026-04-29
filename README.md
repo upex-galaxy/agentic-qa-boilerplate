@@ -326,6 +326,8 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run agents:setup` | Interactive walkthrough to populate `.agents/project.yaml` |
 | `bun run lint:agents` | Lint `.agents/` files for missing required values |
 | `bun run jira:sync-fields` | Sync Jira custom-field catalog into `.agents/jira-fields.json` |
+| `bun run jira:sync-workflows` | Sync Jira workflow statuses + transitions into `.agents/jira-workflows.json` |
+| `bun run jira:sync-issues` | Pull Jira Epics/Stories into `.context/PBI/` markdown files |
 | `bun run jira:check` | Verify Jira workspace has required custom fields configured |
 
 ---

@@ -34,11 +34,11 @@
  *   .claude/skills/        Agent skills (project-discovery, sprint-testing, ...)
  *   .claude/commands/      Slash commands (commit-push-pr, refresh-ai-memory, ...)
  *   .claude/settings.json  Versioned default permissions (settings.local.json untouched)
- *   scripts/               Framework scripts (agents-lint, sync-jira-issues, kata-manifest, ...)
+ *   scripts/               Framework scripts (agents-lint, sync-jira-issues, sync-openapi, api-login, kata-manifest, ...)
  *   templates/             Universal templates (pr-test-automation, ...)
  *   .agents/README.md      Variable system documentation (only README, not project.yaml/jira-fields.json)
  *   docs/               General documentation
- *   cli/                CLI tools (this file auto-updates itself)
+ *   cli/                CLI tools — xray/ (multi-command Xray CLI) and this auto-updater itself
  *   .vscode/            IDE configuration (extensions, settings)
  *   .husky/             Git hooks
  *   tooling/            Config files (editorconfig, prettier)
