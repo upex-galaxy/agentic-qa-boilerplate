@@ -130,6 +130,10 @@ ${colors.bold}TEST PLANS${colors.reset}
                      --tests <id1,id2>  Test issue IDs to include
 
   plan list          List test plans
+  plan add-tests     Add tests to an existing test plan
+                     --plan <id>        Test plan key or numeric issue ID
+                     --tests <id1,id2>  Test issue IDs or keys to add
+  plan remove-tests  Remove tests from a test plan
 
 ${colors.bold}TEST SETS${colors.reset}
   set create         Create a test set
@@ -343,9 +347,15 @@ async function main(): Promise<void> {
           case 'list':
             await plan.list(flags);
             break;
+          case 'add-tests':
+            await plan.addTests(flags);
+            break;
+          case 'remove-tests':
+            await plan.removeTests(flags);
+            break;
           default:
             log.error(`Unknown plan command: ${subcommand}`);
-            log.info('Available: create, list');
+            log.info('Available: create, list, add-tests, remove-tests');
         }
         break;
 

@@ -511,6 +511,21 @@ export const MUTATIONS = {
     }
   `,
 
+  addTestsToTestPlan: `
+    mutation AddTestsToTestPlan($issueId: String!, $testIssueIds: [String!]!) {
+      addTestsToTestPlan(issueId: $issueId, testIssueIds: $testIssueIds) {
+        addedTests
+        warning
+      }
+    }
+  `,
+
+  removeTestsFromTestPlan: `
+    mutation RemoveTestsFromTestPlan($issueId: String!, $testIssueIds: [String!]!) {
+      removeTestsFromTestPlan(issueId: $issueId, testIssueIds: $testIssueIds)
+    }
+  `,
+
   addEvidenceToTestRun: `
     mutation AddEvidenceToTestRun($id: String!, $evidence: [AttachmentDataInput!]!) {
       addEvidenceToTestRun(id: $id, evidence: $evidence) {

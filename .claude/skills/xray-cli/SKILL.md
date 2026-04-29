@@ -159,6 +159,10 @@ bun xray plan create --project DEMO --summary "Release 2.0" --tests <id1>,<id2>
 
 # List plans
 bun xray plan list --project DEMO
+
+# Manage tests in plan
+bun xray plan add-tests --plan SQ-110 --tests SQ-100,SQ-101
+bun xray plan remove-tests --plan SQ-110 --tests SQ-100
 ```
 
 ### Test Sets
