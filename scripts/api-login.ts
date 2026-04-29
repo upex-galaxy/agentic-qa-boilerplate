@@ -276,8 +276,8 @@ function showHelp(): void {
 
 \x1B[1mCONFIGURATION\x1B[0m
   Environment URLs:   config/variables.ts (envDataMap)
-  Auth format:        cli/api-login.ts (PROJECT-SPECIFIC section)
-  MCP server key:     cli/api-login.ts (MCP_SERVER_KEY constant)
+  Auth format:        scripts/api-login.ts (PROJECT-SPECIFIC section)
+  MCP server key:     scripts/api-login.ts (MCP_SERVER_KEY constant)
 
 \x1B[1mOPTIONS\x1B[0m
   -h, --help    Show this help
