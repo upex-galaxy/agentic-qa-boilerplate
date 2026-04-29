@@ -34,13 +34,40 @@ export interface TokenData {
 // COMMAND TYPES
 // ============================================================================
 
-export type Flags = Record<string, string | boolean>;
+export type Flags = Record<string, string | boolean | string[]>;
 
 export interface ParsedArgs {
   command: string
   subcommand: string
   flags: Flags
   positional: string[]
+}
+
+// ============================================================================
+// EVIDENCE / ATTACHMENT TYPES
+// ============================================================================
+
+/**
+ * Input shape for `addEvidenceToTestRun` and `addEvidenceToTestRunStep`
+ * GraphQL mutations.
+ *
+ * `data` MUST be the file contents encoded as base64 (no `data:` prefix,
+ * no padding tweaks — straight `Buffer.toString('base64')`).
+ */
+export interface AttachmentDataInput {
+  filename: string
+  mimeType: string
+  data: string
+}
+
+export interface AddEvidenceResult {
+  addedEvidence: string[]
+  warnings: string[]
+}
+
+export interface RemoveEvidenceResult {
+  removedEvidence: string[]
+  warnings: string[]
 }
 
 // ============================================================================

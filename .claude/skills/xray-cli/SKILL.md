@@ -131,7 +131,24 @@ bun xray run comment --id <runId> --comment "Test completed successfully"
 
 # Link defects
 bun xray run defect --id <runId> --issues DEMO-456,DEMO-789
+
+# Attach evidence files (PNG/JPG/PDF/log/JSON/...) to a run
+bun xray run evidence --id <runId> --file ./screenshots/error.png
+bun xray run evidence --id <runId> --file a.png --file b.png --file c.png
+bun xray run evidence --id <runId> --dir ./.context/PBI/SQ-8/evidence/
+
+# Attach evidence to a specific step within a run
+bun xray run step-evidence --run <runId> --step <stepId> --file step3.png
+
+# Inspect what is already attached
+bun xray run evidence-list --id <runId>
+
+# Remove an attachment (by id or by filename)
+bun xray run evidence-rm --id <runId> --evidence <evidenceId>
+bun xray run evidence-rm --id <runId> --filename error.png
 ```
+
+> **Body size limit**: Xray Cloud rejects requests larger than 20 MB. The CLI auto-chunks large `--dir` uploads into batches under that limit (using ~15 MB per batch to leave headroom for the GraphQL envelope), so a folder of 14 PNGs at 600 KB each ships in a single round trip while a folder with one 30 MB recording would be rejected — split or compress those before uploading.
 
 ### Test Plans
 

@@ -510,4 +510,31 @@ export const MUTATIONS = {
       }
     }
   `,
+
+  addEvidenceToTestRun: `
+    mutation AddEvidenceToTestRun($id: String!, $evidence: [AttachmentDataInput!]!) {
+      addEvidenceToTestRun(id: $id, evidence: $evidence) {
+        addedEvidence
+        warnings
+      }
+    }
+  `,
+
+  addEvidenceToTestRunStep: `
+    mutation AddEvidenceToTestRunStep($testRunId: String!, $stepId: String!, $evidence: [AttachmentDataInput!]!) {
+      addEvidenceToTestRunStep(testRunId: $testRunId, stepId: $stepId, evidence: $evidence) {
+        addedEvidence
+        warnings
+      }
+    }
+  `,
+
+  removeEvidenceFromTestRun: `
+    mutation RemoveEvidenceFromTestRun($id: String!, $evidenceFilenames: [String!], $evidenceIds: [String!]) {
+      removeEvidenceFromTestRun(id: $id, evidenceFilenames: $evidenceFilenames, evidenceIds: $evidenceIds) {
+        removedEvidence
+        warnings
+      }
+    }
+  `,
 };

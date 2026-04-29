@@ -190,6 +190,103 @@ mutation CreateTestExecution(
 }
 ```
 
+### Add Evidence To Test Run
+
+Attaches one or more files (screenshots, PDFs, logs, ...) to a Test Run. Each
+attachment is sent as base64-encoded data inside the GraphQL variables — there
+is no multipart endpoint. Xray Cloud caps the request body at **20 MB**, so
+the CLI auto-chunks large batches at ~15 MB of base64 to keep headroom for
+the GraphQL envelope.
+
+```graphql
+mutation AddEvidenceToTestRun(
+  $id: String!
+  $evidence: [AttachmentDataInput!]!
+) {
+  addEvidenceToTestRun(id: $id, evidence: $evidence) {
+    addedEvidence
+    warnings
+  }
+}
+```
+
+`AttachmentDataInput` shape:
+
+```jsonc
+{
+  "filename":  "login-error.png",
+  "mimeType":  "image/png",
+  "data":      "iVBORw0KGgoAAAANSUhEUgAA...truncated-base64..."
+}
+```
+
+Helper used by the CLI (`cli/xray/lib/evidence.ts`):
+
+```typescript
+import { readFileSync } from 'node:fs';
+import { basename } from 'node:path';
+
+const buf = readFileSync('./screenshots/login-error.png');
+const attachment: AttachmentDataInput = {
+  filename: basename('./screenshots/login-error.png'),
+  mimeType: 'image/png',
+  data: buf.toString('base64'),
+};
+```
+
+### Add Evidence To Test Run Step
+
+Same payload shape, scoped to a single step within a run.
+
+```graphql
+mutation AddEvidenceToTestRunStep(
+  $testRunId: String!
+  $stepId: String!
+  $evidence: [AttachmentDataInput!]!
+) {
+  addEvidenceToTestRunStep(
+    testRunId: $testRunId
+    stepId: $stepId
+    evidence: $evidence
+  ) {
+    addedEvidence
+    warnings
+  }
+}
+```
+
+### Remove Evidence From Test Run
+
+Either pass `evidenceIds` (returned by `getTestRunById { evidence { id } }`)
+or `evidenceFilenames` — the CLI exposes both via `--evidence` and `--filename`.
+
+```graphql
+mutation RemoveEvidenceFromTestRun(
+  $id: String!
+  $evidenceFilenames: [String!]
+  $evidenceIds: [String!]
+) {
+  removeEvidenceFromTestRun(
+    id: $id
+    evidenceFilenames: $evidenceFilenames
+    evidenceIds: $evidenceIds
+  ) {
+    removedEvidence
+    warnings
+  }
+}
+```
+
+### Evidence upload patterns: GraphQL vs REST import
+
+| Pattern | When to use | How |
+|---|---|---|
+| GraphQL `addEvidenceToTestRun` | Adding evidence to an existing run after manual or post-hoc execution | `bun xray run evidence` |
+| GraphQL `addEvidenceToTestRunStep` | Step-level screenshots/logs | `bun xray run step-evidence` |
+| REST `/api/v2/import/execution` with embedded `evidence[]` | Bulk-importing JUnit/Cucumber/Xray-JSON results that already contain attachments | `bun xray import xray --file ...` |
+
+For the REST path, the `evidence` array is part of each test object inside the JSON body and uses the same `{ data, filename, contentType }` triplet (note: `contentType` instead of `mimeType` in the REST schema).
+
 ## Test Types
 
 | Type | ID | Use Case |

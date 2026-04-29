@@ -107,6 +107,22 @@ ${colors.bold}TEST RUNS${colors.reset}
                      --id <id>          Test run ID
                      --issues <k1,k2>   Issue keys to link as defects
 
+  run evidence       Attach evidence files to a test run
+                     --id <id>          Test run ID (required)
+                     --file <path>      File to attach (repeatable)
+                     --dir <dir>        Directory of files to attach
+  run step-evidence  Attach evidence files to a single step within a test run
+                     --run <id>         Test run ID (required)
+                     --step <id>        Step ID (required)
+                     --file <path>      File to attach (repeatable)
+                     --dir <dir>        Directory of files to attach
+  run evidence-list  List evidence currently attached to a test run
+                     --id <id>          Test run ID (required)
+  run evidence-rm    Remove evidence from a test run
+                     --id <id>          Test run ID (required)
+                     --evidence <id>    Evidence id to remove (repeatable)
+                     --filename <name>  Evidence filename to remove (repeatable)
+
 ${colors.bold}TEST PLANS${colors.reset}
   plan create        Create a test plan
                      --project <key>    Project key (required)
@@ -168,6 +184,11 @@ ${colors.bold}EXAMPLES${colors.reset}
 
   # Update test run status
   xray run status --id 5acc7ab0a3fe1b --status PASSED
+
+  # Attach evidence files to a test run (single, multiple, or whole directory)
+  xray run evidence --id 5acc7ab0a3fe1b --file ./screenshots/login-error.png
+  xray run evidence --id 5acc7ab0a3fe1b --file a.png --file b.png --file c.png
+  xray run evidence --id 5acc7ab0a3fe1b --dir ./.context/PBI/SQ-8/evidence/
 
   # Import JUnit results
   xray import junit --file results.xml --project DEMO
@@ -296,9 +317,21 @@ async function main(): Promise<void> {
           case 'defect':
             await run.defect(flags);
             break;
+          case 'evidence':
+            await run.evidence(flags);
+            break;
+          case 'step-evidence':
+            await run.stepEvidence(flags);
+            break;
+          case 'evidence-list':
+            await run.evidenceList(flags);
+            break;
+          case 'evidence-rm':
+            await run.evidenceRm(flags);
+            break;
           default:
             log.error(`Unknown run command: ${subcommand}`);
-            log.info('Available: get, list, status, step-status, comment, defect');
+            log.info('Available: get, list, status, step-status, comment, defect, evidence, step-evidence, evidence-list, evidence-rm');
         }
         break;
 
