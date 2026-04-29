@@ -322,7 +322,6 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 |--------|-------------|
 | `bun run update` | Sync project with template (skills, docs) |
 | `bun run xray` | Xray CLI for test management |
-| `bun run resend` | Email verification CLI (Resend API) |
 | `bun run api:sync` | Sync OpenAPI spec and generate types |
 | `bun run agents:setup` | Interactive walkthrough to populate `.agents/project.yaml` |
 | `bun run lint:agents` | Lint `.agents/` files for missing required values |
