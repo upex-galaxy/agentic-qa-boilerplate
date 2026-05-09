@@ -31,6 +31,68 @@ bun run test:allure       # Generate Allure report
 
 ---
 
+## Behavioral Layer
+
+> How to reason before and during work. These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+### 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them — don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+> **Scope note**: This rule applies to code authored by the agent within a task. Do **not** collapse KATA layers (TestContext / Base / Domain / Fixture) — they are framework architecture, not speculative abstraction.
+
+### 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it — don't delete it.
+- Remove imports/variables/functions that **your** changes made unused.
+
+> **Scope note**: This rule applies to incidental edits during a task. User-invoked regenerative commands (`/refresh-ai-memory`, `/business-data-map`, `/business-feature-map`, `/business-api-map`, `/master-test-plan`, `/fix-traceability`) and skills with explicit generative phases are exempt — regeneration is the task.
+
+### 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan with explicit checks:
+
+```
+1. [Step] → verify: [observable check]
+2. [Step] → verify: [observable check]
+3. [Step] → verify: [observable check]
+```
+
+`verify` = an observable signal that the step actually landed (test passes, file exists, command exits 0, type-check clean). This format **complements** the 6-component subagent briefing in `Orchestration Mode` — it does **not** replace it. Use this format for thinking-out-loud during execution; use the briefing for delegation.
+
+### Working signals
+
+These guidelines are working if: **fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.**
+
+---
+
 ## Critical Rules (Always Apply)
 
 1. **Login Credentials**: ALWAYS read from `.env` file -- NEVER hardcode or guess passwords.
@@ -364,10 +426,12 @@ Name format: `{prefix}/{ISSUE-KEY}-{kebab-slug}` when an issue key exists, `{pre
 .context/mapping/business-data-map.md     -> System flows and entities              (/business-data-map)
 .context/mapping/business-feature-map.md  -> Feature catalog, CRUD matrix, flags    (/business-feature-map)
 .context/mapping/business-api-map.md      -> Auth model, critical endpoints, arch   (/business-api-map)
-.context/master-test-plan.md              -> What to test and why                   (/master-test-plan)
-.context/test-management-system.md        -> TMS architecture + conventions + workflow
+.context/master-test-plan.md              -> What to test and why                   (/master-test-plan) *
+.context/test-management-system.md        -> TMS architecture + conventions + workflow *
 api/schemas/                              -> OpenAPI-derived TypeScript types       (bun run api:sync)
 ```
+
+> `*` Generated on first run of the matching command — may not exist in a fresh repo.
 
 ### Level 2 + 3: PBI (per module / per ticket)
 
@@ -462,7 +526,7 @@ For every ticket being tested, maintain local documentation under `.context/PBI/
 
 | Script | Usage | Documentation |
 |--------|-------|---------------|
-| `bun xray` | TMS sync (import/export/sync) | `cli/xray.ts` (self-documented) |
+| `bun xray` | TMS sync (import/export/sync) | `cli/xray/index.ts` (self-documented) |
 | `bun run api:sync` | Sync OpenAPI spec + generate types | `scripts/sync-openapi.ts` |
 | `bun run kata:manifest` | Extract ATCs from codebase | See `package.json` |
 
