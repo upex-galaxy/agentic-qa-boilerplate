@@ -73,6 +73,7 @@
     ],
     "deny": [
       "Bash(rm -rf *)",
+      "Bash(wget *)",
       "Bash(sudo rm *)",
       "Bash(sudo *)",
       "Bash(git push --force *)",
