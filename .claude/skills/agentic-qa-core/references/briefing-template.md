@@ -162,14 +162,14 @@ Sometimes there is exactly one task with no fan-out and no follow-up. Use Single
 Goal: Add the standard Dependencies block to .claude/skills/test-documentation/SKILL.md and verify the markdown still renders cleanly.
 
 Context docs:
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/framework-core/SKILL.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/agentic-qa-core/SKILL.md
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/test-documentation/SKILL.md
 
 Skills to load: (none)
 
 Exact instructions:
   1. Read test-documentation/SKILL.md.
-  2. Insert the Dependencies block (per framework-core/SKILL.md §"Dependency declaration for downstream skills") immediately after the frontmatter, before the first H1.
+  2. Insert the Dependencies block (per agentic-qa-core/SKILL.md §"Dependency declaration for downstream skills") immediately after the frontmatter, before the first H1.
   3. Run: bun run lint:agents (must exit 0).
   4. Run: bun run type-check (must exit 0).
 

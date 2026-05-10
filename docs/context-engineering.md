@@ -115,9 +115,9 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 
 ```
 .claude/skills/
-├── framework-core/        → Foundation: shared references (briefing template, dispatch patterns, orchestration doctrine) + bootstrap (`/framework-core init`)
+├── agentic-qa-core/        → Foundation: shared references (briefing template, dispatch patterns, orchestration doctrine) + bootstrap (`/agentic-qa-core init`)
 ├── acli/                  → Atlassian CLI skill: Jira issue tracking + Modality B TMS operations
-├── project-discovery/     → 4-phase reverse-engineering, generates `.context/` artifacts. README/AGENTS.md upkeep is `/refresh-ai-memory`; foundation files are `/framework-core init`.
+├── project-discovery/     → 4-phase reverse-engineering, generates `.context/` artifacts. README/AGENTS.md upkeep is `/refresh-ai-memory`; foundation files are `/agentic-qa-core init`.
 ├── sprint-testing/        → In-sprint QA (planning + execution + reporting, per ticket)
 ├── test-documentation/    → TMS documentation + test prioritization
 ├── test-automation/       → KATA test planning + coding + review
@@ -127,7 +127,7 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 ```
 
 **Key Skills**:
-- `/framework-core init` - Foundation bootstrap (AGENTS.md, .agents/, scripts/, package.json)
+- `/agentic-qa-core init` - Foundation bootstrap (AGENTS.md, .agents/, scripts/, package.json)
 - `/test-automation` - KATA test writing pipeline
 - `/sprint-testing` - End-to-end in-sprint QA
 - `/project-discovery` - Generates `.context/` artifacts; pair with `/refresh-ai-memory` for README/AGENTS.md upkeep
@@ -174,7 +174,7 @@ These files have stable names and locations. Reference them confidently:
 | `.agents/project.yaml` | Tool-agnostic project variables (`{{VAR}}` source of truth) |
 | `.agents/jira-required.yaml` | Manifest of Jira custom fields the methodology requires |
 | `.agents/jira-fields.json` | Auto-generated catalog of the workspace's Jira fields (`{{jira.<slug>}}` resolution) |
-| `framework-core/SKILL.md` | Foundation skill: bootstrap + shared references for every workflow skill |
+| `agentic-qa-core/SKILL.md` | Foundation skill: bootstrap + shared references for every workflow skill |
 | `/test-automation` skill | Entry point for writing tests (KATA) |
 | `/sprint-testing` skill | QA workflow orchestrator (plan + execute + report) |
 | `/project-discovery` skill | Generate project documentation + `.context/` |
@@ -186,7 +186,7 @@ These files have stable names and locations. Reference them confidently:
 ### One-Time Setup (Discovery)
 
 ```
-Phase 0: Bootstrap       → /framework-core init  (writes AGENTS.md, .agents/, scripts/, package.json updates)
+Phase 0: Bootstrap       → /agentic-qa-core init  (writes AGENTS.md, .agents/, scripts/, package.json updates)
                           bun run agents:setup   (interactive walkthrough of .agents/project.yaml)
                           bun run jira:sync-fields (catalog Jira workspace fields)
                           bun run jira:check     (validate against jira-required.yaml manifest)
@@ -222,7 +222,7 @@ bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 | **Stage 5** | Automation: plan → code → review (KATA on Playwright + TS) | `/test-automation` |
 | **Stage 6** | Regression execution + failure classification + GO/NO-GO | `/regression-testing` |
 | **Onboarding** | 4-phase reverse-engineering of an existing target repo | `/project-discovery` + `/adapt-framework` |
-| **Bootstrap** | Foundation files for fresh adoption (AGENTS.md, `.agents/`, scripts) | `/framework-core init` |
+| **Bootstrap** | Foundation files for fresh adoption (AGENTS.md, `.agents/`, scripts) | `/agentic-qa-core init` |
 
 ---
 
@@ -230,17 +230,17 @@ bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 
 Token efficiency is not just about which files to load — it is also about which agent loads them. Subagent dispatch is a context-engineering tool: the main conversation stays lean and acts as command center, while focused subagents do heavy reading and work in their own context.
 
-The orchestration doctrine has three shared assets, all hosted by `framework-core`:
+The orchestration doctrine has three shared assets, all hosted by `agentic-qa-core`:
 
 | Asset | Path | Role |
 |-------|------|------|
-| **Orchestration doctrine** | `framework-core/references/orchestration-doctrine.md` | Cacheable mirror of `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Subagents load this instead of pulling the full `AGENTS.md`. |
-| **Briefing template** | `framework-core/references/briefing-template.md` | The canonical 6-component briefing format (Goal / Context docs / Skills to load / Exact instructions / Report format / Rules) with one filled example per dispatch pattern. |
-| **Dispatch patterns** | `framework-core/references/dispatch-patterns.md` | Decision guide and heuristic for picking Single / Sequential / Parallel / Background. |
+| **Orchestration doctrine** | `agentic-qa-core/references/orchestration-doctrine.md` | Cacheable mirror of `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Subagents load this instead of pulling the full `AGENTS.md`. |
+| **Briefing template** | `agentic-qa-core/references/briefing-template.md` | The canonical 6-component briefing format (Goal / Context docs / Skills to load / Exact instructions / Report format / Rules) with one filled example per dispatch pattern. |
+| **Dispatch patterns** | `agentic-qa-core/references/dispatch-patterns.md` | Decision guide and heuristic for picking Single / Sequential / Parallel / Background. |
 
 Each workflow skill (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`) declares **its own dispatch points** in a `## Subagent Dispatch Strategy` section of its `SKILL.md`. That table maps each stage to its dispatch pattern and subagent role, so the AI knows up-front when to delegate and how to brief.
 
-Reference / utility / generator skills (`framework-core`, `acli`, `xray-cli`, `playwright-cli`, `project-discovery`, `adapt-framework`, the `business-*-map` and helper commands) are exempt from the dispatch-table requirement — they execute synchronously in-line.
+Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `playwright-cli`, `project-discovery`, `adapt-framework`, the `business-*-map` and helper commands) are exempt from the dispatch-table requirement — they execute synchronously in-line.
 
 ---
 
@@ -259,7 +259,7 @@ Reference / utility / generator skills (`framework-core`, `acli`, `xray-cli`, `p
 
 | Role | Primary Skill(s) |
 |------|------------------|
-| **Project Onboarding** | `/framework-core init` -> `/project-discovery` -> `/adapt-framework` |
+| **Project Onboarding** | `/agentic-qa-core init` -> `/project-discovery` -> `/adapt-framework` |
 | **TAE (Test Automation)** | `/test-automation` |
 | **QA (Manual Testing)** | `/sprint-testing` + `/test-documentation` |
 | **DevOps** | `/regression-testing` |
@@ -274,7 +274,7 @@ Reference / utility / generator skills (`framework-core`, `acli`, `xray-cli`, `p
 - Load task-specific guidelines
 - Use skills from `.claude/skills/` for structured tasks
 - Reference code in `tests/components/` as living examples
-- From subagents, load `framework-core/references/orchestration-doctrine.md` instead of pulling full `AGENTS.md`
+- From subagents, load `agentic-qa-core/references/orchestration-doctrine.md` instead of pulling full `AGENTS.md`
 
 ### DON'T
 
@@ -299,7 +299,7 @@ Reference / utility / generator skills (`framework-core`, `acli`, `xray-cli`, `p
 - Framework patterns or conventions change (update the relevant skill's `references/`)
 - Workflow steps change (update the SKILL.md orchestration)
 - New outputs required or better instructions discovered
-- Structural changes to `AGENTS.md` must mirror `framework-core/templates/AGENTS.md.template` in the same commit (the live file and the template are byte-equivalent for structural sections)
+- Structural changes to `AGENTS.md` must mirror `agentic-qa-core/templates/AGENTS.md.template` in the same commit (the live file and the template are byte-equivalent for structural sections)
 
 ---
 

@@ -196,7 +196,7 @@ bun run test:e2e:critical  # Tests marked @critical
 │   └── skills/                   # Symlink → .claude/skills/ (agentskills.io path)
 │
 ├── .claude/skills/               # Claude Code Skills (workflows)
-│   ├── framework-core/           # Foundation: shared references + bootstrap (`/framework-core init`)
+│   ├── agentic-qa-core/           # Foundation: shared references + bootstrap (`/agentic-qa-core init`)
 │   ├── project-discovery/        # Onboarding + context generation
 │   ├── sprint-testing/           # Planning + execution + reporting
 │   ├── test-documentation/       # TMS documentation + prioritization
@@ -396,7 +396,7 @@ BUILD_ID
 
 This boilerplate's AI-assisted workflows are delivered as **agent skills** following the [agentskills.io](https://agentskills.io) spec. Every skill lives under `.claude/skills/` and bundles its own instructions, `references/`, and progressive-disclosure assets, so the AI loads only what the current task needs.
 
-Skills follow the **Orchestration Mode** (main conversation = command center, subagents = executors) defined in `.claude/skills/framework-core/references/orchestration-doctrine.md`. Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`) declare their dispatch points in a `## Subagent Dispatch Strategy` section per skill, citing `framework-core/references/dispatch-patterns.md` and `framework-core/references/briefing-template.md`.
+Skills follow the **Orchestration Mode** (main conversation = command center, subagents = executors) defined in `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`. Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`) declare their dispatch points in a `## Subagent Dispatch Strategy` section per skill, citing `agentic-qa-core/references/dispatch-patterns.md` and `agentic-qa-core/references/briefing-template.md`.
 
 Structured project context (`.context/` with `mapping/`, `PRD/`, `SRS/`, `PBI/`) is generated and maintained by these skills -- you do not hand-author it.
 
@@ -407,7 +407,7 @@ When you clone this template, follow this flow to adapt it to your project:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ 0. (Optional) BOOTSTRAP FOUNDATION                          │
-│    Run `/framework-core init` ONLY if you adopted skills    │
+│    Run `/agentic-qa-core init` ONLY if you adopted skills    │
 │    à la carte (e.g. cloned a single skill folder) and the   │
 │    foundation files (AGENTS.md, .agents/, scripts/, the     │
 │    package.json scripts) are missing or partial. Skip when  │
@@ -468,7 +468,7 @@ When you clone this template, follow this flow to adapt it to your project:
 
 ```
 .claude/skills/
-├── framework-core/        # Foundation: shared references + bootstrap (`/framework-core init`)
+├── agentic-qa-core/        # Foundation: shared references + bootstrap (`/agentic-qa-core init`)
 ├── project-discovery/     # Onboarding and context generation (reverse engineering)
 ├── sprint-testing/        # In-sprint QA: plan + execute + report (per ticket)
 ├── test-documentation/    # TMS documentation and test prioritization
@@ -485,7 +485,7 @@ When you clone this template, follow this flow to adapt it to your project:
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
-| **framework-core** | `/framework-core init` | Foundation: hosts shared references cited by workflow skills (briefing template, dispatch patterns, orchestration doctrine) AND bootstraps the boilerplate's foundation files (`AGENTS.md`, `.agents/`, `scripts/`, `package.json`). |
+| **agentic-qa-core** | `/agentic-qa-core init` | Foundation: hosts shared references cited by workflow skills (briefing template, dispatch patterns, orchestration doctrine) AND bootstraps the boilerplate's foundation files (`AGENTS.md`, `.agents/`, `scripts/`, `package.json`). |
 | **project-discovery** | `/project-discovery` | Onboard a project to this boilerplate. 4-phase discovery (Constitution -> Architecture -> Infrastructure -> Specification) producing PRD, SRS, domain glossary; orchestrates the `/business-*-map` and `/master-test-plan` commands. Reverse-engineering only. |
 | **sprint-testing** | `/sprint-testing` | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting). |
 | **test-documentation** | `/test-documentation` | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS. Produces Candidate / Manual / Deferred verdicts. |
@@ -502,7 +502,7 @@ Each skill auto-activates when your prompt matches its description triggers. You
 #### 0. Bootstrapping the framework foundation
 
 - **Situation**: You adopted this boilerplate à la carte (e.g. cloned a single skill folder) and the foundation files (`AGENTS.md`, `.agents/project.yaml`, `scripts/agents-*.ts`, the `agents:setup` and `jira:*` package scripts) are missing.
-- **Skill**: `/framework-core init`
+- **Skill**: `/agentic-qa-core init`
 - **Sample prompts**:
   - "Bootstrap the framework foundation."
   - "Regenerate AGENTS.md and the .agents/ files from templates."
@@ -597,7 +597,7 @@ Each skill auto-activates when your prompt matches its description triggers. You
 
 ### AI Memory (AGENTS.md / CLAUDE.md)
 
-Memory lives in `AGENTS.md` (canonical). `CLAUDE.md` is a symlink to it for Claude Code compatibility on Linux/macOS (a byte-equivalent copy on Windows, where symlinks require admin rights). Use `/refresh-ai-memory` to regenerate the project-specific facts inside it (Project Identity, Environment URLs, Discovery Progress, Access Configuration). Structural sections (Critical Rules, Tool Resolution, Skills Available, etc.) are mirrored from `.claude/skills/framework-core/templates/AGENTS.md.template` and should be updated there when they evolve.
+Memory lives in `AGENTS.md` (canonical). `CLAUDE.md` is a symlink to it for Claude Code compatibility on Linux/macOS (a byte-equivalent copy on Windows, where symlinks require admin rights). Use `/refresh-ai-memory` to regenerate the project-specific facts inside it (Project Identity, Environment URLs, Discovery Progress, Access Configuration). Structural sections (Critical Rules, Tool Resolution, Skills Available, etc.) are mirrored from `.claude/skills/agentic-qa-core/templates/AGENTS.md.template` and should be updated there when they evolve.
 
 ### Multi-Agent Portability
 
@@ -614,7 +614,7 @@ The `.agents/skills/` symlink keeps a single source of truth while exposing the 
 **Portability constraints** (features that degrade gracefully outside Claude Code):
 
 - Slash commands (`/skill-name`) are Claude Code specific. In other agents, skills auto-activate from the `description` triggers -- prompt the agent in plain language and the right skill loads.
-- Sub-agent dispatch used by the batch modes of `/sprint-testing`, `/test-documentation`, `/test-automation`, and `/regression-testing` falls back to sequential execution in agents that lack a sub-agent primitive; throughput is lower but the flow still completes. See `.claude/skills/framework-core/references/dispatch-patterns.md` for the full pattern matrix.
+- Sub-agent dispatch used by the batch modes of `/sprint-testing`, `/test-documentation`, `/test-automation`, and `/regression-testing` falls back to sequential execution in agents that lack a sub-agent primitive; throughput is lower but the flow still completes. See `.claude/skills/agentic-qa-core/references/dispatch-patterns.md` for the full pattern matrix.
 - Everything else -- frontmatter, `references/`, progressive disclosure, pseudocode tags (`[ISSUE_TRACKER_TOOL]`, `[TMS_TOOL]`, `[AUTOMATION_TOOL]`, ...) -- is fully portable. For how these tags resolve to concrete tools (and why `[ISSUE_TRACKER_TOOL]` -> `/acli` and `[TMS_TOOL]` -> `/xray-cli` or `/acli` depending on modality), see `CLAUDE.md` §Tool Resolution.
 
 ---
@@ -710,7 +710,7 @@ Load the `/project-discovery` skill in your AI assistant to generate project-spe
 
 ## Documentation
 
-- `/framework-core` skill -- Foundation references + bootstrap (`/framework-core init`)
+- `/agentic-qa-core` skill -- Foundation references + bootstrap (`/agentic-qa-core init`)
 - `/project-discovery` skill -- Onboarding and context generation
 - `/sprint-testing` skill -- In-sprint QA (planning, execution, reporting)
 - `/test-documentation` skill -- TMS test documentation and prioritization

@@ -452,7 +452,7 @@ The CI run is long (20-60 min). Blocking the main thread on `gh run watch` is wa
 
 **Dispatch (Background pattern)**:
 
-Briefing (follows the 6-component format from `framework-core/references/briefing-template.md`):
+Briefing (follows the 6-component format from `agentic-qa-core/references/briefing-template.md`):
 
 ```
 Goal: Watch GitHub Actions run <RUN_ID> until it terminates and report final status.

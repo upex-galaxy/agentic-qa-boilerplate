@@ -15,7 +15,7 @@ KATA (Component Action Test Architecture) rewires the usual Page Object pattern.
 
 ## Subagent Dispatch Strategy
 
-This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/framework-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/framework-core/references/dispatch-patterns.md`. The Plan, Code, and Review phases each carry distinct context-isolation needs — Plan keeps KATA architectural reads out of the orchestrator, Code isolates multi-file edits, Review fans out three independent verifiers in parallel.
+This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The Plan, Code, and Review phases each carry distinct context-isolation needs — Plan keeps KATA architectural reads out of the orchestrator, Code isolates multi-file edits, Review fans out three independent verifiers in parallel.
 
 | Stage                                          | Pattern              | Subagent role                                                                                                                  |
 |------------------------------------------------|----------------------|--------------------------------------------------------------------------------------------------------------------------------|
@@ -27,7 +27,7 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 | Review aggregation + merge/reject decision    | Single               | inline — orchestrator reads the 3 Verifier reports and decides                                                                  |
 
 - **Code phase scope rule**: each Code subagent edits multiple files in isolation, returns a list of changed files + a one-line summary per file. The orchestrator never reads the diffs — only the summary. If the user wants to see actual diffs, the orchestrator runs `git diff` inline after the subagent returns.
-- **On any Verifier failure**: STOP, return the failing report verbatim to the user, do NOT auto-fix the test code, do NOT re-dispatch the Code phase without user approval. See `.claude/skills/framework-core/references/orchestration-doctrine.md`.
+- **On any Verifier failure**: STOP, return the failing report verbatim to the user, do NOT auto-fix the test code, do NOT re-dispatch the Code phase without user approval. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
 
 ---
 

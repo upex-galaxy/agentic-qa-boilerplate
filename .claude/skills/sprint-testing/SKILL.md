@@ -15,7 +15,7 @@ The same three-stage pipeline runs in every mode. Only the entry point and the b
 
 ## Subagent Dispatch Strategy
 
-This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/framework-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.claude/skills/framework-core/references/dispatch-patterns.md`. This skill operates in two modes (single-ticket and batch-sprint) and BOTH modes use the same four dispatch points per ticket — Session Start -> Stage 1 -> Stage 2 -> Stage 3. The only difference is that batch mode loops them once per ticket. The full briefings (Goal / Context docs / Skills to load / Exact instructions / Report format / Rules) live in `references/sprint-orchestration.md` §"Sub-agent prompt templates".
+This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. This skill operates in two modes (single-ticket and batch-sprint) and BOTH modes use the same four dispatch points per ticket — Session Start -> Stage 1 -> Stage 2 -> Stage 3. The only difference is that batch mode loops them once per ticket. The full briefings (Goal / Context docs / Skills to load / Exact instructions / Report format / Rules) live in `references/sprint-orchestration.md` §"Sub-agent prompt templates".
 
 | Stage                                              | Pattern    | Subagent role                                                                                                                                                                  |
 |----------------------------------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -28,7 +28,7 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 
 > **Sequential, not Parallel**: each stage feeds the next (Session Start's PBI folder is read by Stage 1; Stage 1's ATP is read by Stage 2; Stage 2's evidences are read by Stage 3). Parallelism inside a single ticket would race on shared PBI state.
 
-> **On any subagent failure**: STOP, report the partial state (which stages completed, what artifacts landed), present retry / skip-stage / abort options. Do NOT auto-fix nor auto-rollback. See `.claude/skills/framework-core/references/orchestration-doctrine.md`.
+> **On any subagent failure**: STOP, report the partial state (which stages completed, what artifacts landed), present retry / skip-stage / abort options. Do NOT auto-fix nor auto-rollback. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
 
 ---
 

@@ -568,7 +568,7 @@
                       <code>bun run agents:setup</code> → <code>bun run jira:sync-fields</code> →
                       <code>bun run jira:sync-workflows</code> → <code>bun run jira:check</code>.
                       Or, if you cloned skills à la carte, run
-                      <code>/framework-core init</code> first.
+                      <code>/agentic-qa-core init</code> first.
                     </dd>
                     <dt>Produces</dt>
                     <dd>
@@ -781,7 +781,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <tbody>
                   <tr>
                     <td>
-                      <code>/framework-core init</code><br /><span class="muted small"
+                      <code>/agentic-qa-core init</code><br /><span class="muted small"
                         >(skill, active mode)</span
                       >
                     </td>
@@ -835,23 +835,23 @@ bun run jira:check            # verify both catalogs against the manifest</code>
             </div>
 
             <div class="mnemonic">
-              <strong>Mnemonic:</strong> <code>framework-core</code> installs the
+              <strong>Mnemonic:</strong> <code>agentic-qa-core</code> installs the
               <strong>BASE</strong>, <code>adapt-framework</code> wires the <strong>TESTS</strong>,
               <code>refresh-ai-memory</code> updates the <strong>DOCS</strong>.
             </div>
 
             <h3>A passive role you never invoke</h3>
             <p>
-              <code>framework-core</code> has a second life beyond <code>init</code>: it
+              <code>agentic-qa-core</code> has a second life beyond <code>init</code>: it
               <strong>hosts shared references</strong> that workflow skills cite on demand. When
               <code>/sprint-testing</code>, <code>/test-documentation</code>,
               <code>/test-automation</code>, or <code>/regression-testing</code> delegates to a
-              subagent, the AI loads <code>framework-core/references/briefing-template.md</code>,
+              subagent, the AI loads <code>agentic-qa-core/references/briefing-template.md</code>,
               <code>dispatch-patterns.md</code>, and
               <code>orchestration-doctrine.md</code> automatically. You never type
-              <code>/framework-core</code> to read those files — they are pulled in as part of
+              <code>/agentic-qa-core</code> to read those files — they are pulled in as part of
               orchestration. This passive role is invisible from the user's seat, but it is why
-              <code>framework-core</code> exists even after Phase 0 is complete.
+              <code>agentic-qa-core</code> exists even after Phase 0 is complete.
             </p>
           </section>
 
@@ -1394,7 +1394,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
               </svg>
               <p class="diagram-caption">
                 Each workflow skill declares its own dispatch points; the canonical briefing
-                template + dispatch patterns live in <code>framework-core/references/</code> so
+                template + dispatch patterns live in <code>agentic-qa-core/references/</code> so
                 subagents load them once, fresh.
               </p>
             </div>
@@ -1518,7 +1518,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   </tr>
                   <tr>
                     <td>Bootstrap from scratch (à la carte install)</td>
-                    <td><code>/framework-core init</code></td>
+                    <td><code>/agentic-qa-core init</code></td>
                   </tr>
                 </tbody>
               </table>
@@ -1548,10 +1548,10 @@ bun run jira:check            # verify both catalogs against the manifest</code>
             <div class="skill-grid">
               <article class="skill-card">
                 <div class="skill-card-head">
-                  <span class="skill-card-name">framework-core</span>
+                  <span class="skill-card-name">agentic-qa-core</span>
                   <span class="badge badge-foundation">Foundation</span>
                 </div>
-                <p class="skill-card-trigger">/framework-core init</p>
+                <p class="skill-card-trigger">/agentic-qa-core init</p>
                 <p class="skill-card-desc">
                   Bootstraps the foundation files (<code>AGENTS.md</code>, <code>.agents/</code>,
                   scripts, <code>package.json</code> entries) AND hosts shared references (briefing
@@ -1974,11 +1974,11 @@ bun run jira:check            # verify both catalogs against the manifest</code>
           </a>
           <a
             class="footer-card"
-            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/.claude/skills/framework-core/SKILL.md"
+            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/.claude/skills/agentic-qa-core/SKILL.md"
             target="_blank"
             rel="noopener"
           >
-            <span class="footer-card-title">framework-core/SKILL.md</span>
+            <span class="footer-card-title">agentic-qa-core/SKILL.md</span>
             <span class="footer-card-desc">Foundation skill internals + bootstrap order.</span>
           </a>
           <a

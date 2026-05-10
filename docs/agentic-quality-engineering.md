@@ -158,7 +158,7 @@ The practice is organised in three conceptual tiers:
 │                                                                     │
 │  Foundation skill                                                   │
 │  ┌────────────────┐                                                 │
-│  │ framework-core │  Briefing template · Dispatch patterns ·        │
+│  │ agentic-qa-core │  Briefing template · Dispatch patterns ·        │
 │  └────────────────┘  Orchestration doctrine · Bootstrap CLI         │
 │                                                                     │
 │  Workflow skills                                                    │
@@ -188,7 +188,7 @@ The human sits on top. The AI never ships anything on its own. Every stage has a
 
 Six core skills handle the end-to-end pipeline (one foundation + five workflow):
 
-- **`framework-core`** — foundation skill. Hosts the canonical briefing template, dispatch patterns, and orchestration doctrine cited by every workflow skill, and provides the `init` bootstrap that writes `AGENTS.md`, `.agents/project.yaml`, and the `agents-*` scripts when adopting the boilerplate.
+- **`agentic-qa-core`** — foundation skill. Hosts the canonical briefing template, dispatch patterns, and orchestration doctrine cited by every workflow skill, and provides the `init` bootstrap that writes `AGENTS.md`, `.agents/project.yaml`, and the `agents-*` scripts when adopting the boilerplate.
 - **`project-discovery`** — one-time onboarding. Generates the context files every other skill depends on.
 - **`sprint-testing`** — Stages 1–3. Planning, Execution, and Reporting per ticket. The everyday driver.
 - **`test-documentation`** — Stage 4. ROI analysis that decides which manual TCs are worth automating.
@@ -269,7 +269,7 @@ The canonical shape is documented in `.context/README.md`. The strategic reasoni
 
 ### Cross-skill references
 
-A second knowledge surface exists outside `.context/`: the `framework-core/references/*.md` files. They host the briefing template, the dispatch patterns decision guide, and the orchestration doctrine that workflow skills cite instead of duplicating. They are loaded on demand by other skills and form part of the practice's knowledge layer even though they live under `.claude/skills/` rather than `.context/`.
+A second knowledge surface exists outside `.context/`: the `agentic-qa-core/references/*.md` files. They host the briefing template, the dispatch patterns decision guide, and the orchestration doctrine that workflow skills cite instead of duplicating. They are loaded on demand by other skills and form part of the practice's knowledge layer even though they live under `.claude/skills/` rather than `.context/`.
 
 ### Project variables vs runtime credentials
 
@@ -412,9 +412,9 @@ This is what gives the practice AI **speed** without losing human **judgment**. 
 The orchestration model is not improvised per session — it is captured in canonical references that workflow skills load on demand. Engineers and skill authors should know where to look:
 
 - **`AGENTS.md` §Orchestration Mode** — canonical project-level statement of the strategy (subagent-or-not decision rule, briefing format, error protocol).
-- **`framework-core/references/orchestration-doctrine.md`** — cacheable mirror loaded by subagents that need the full doctrine without re-reading `AGENTS.md`.
-- **`framework-core/references/briefing-template.md`** — the six-component briefing format every dispatch uses (Goal · Context docs · Skills to load · Exact instructions · Report format · Rules).
-- **`framework-core/references/dispatch-patterns.md`** — decision guide for the four patterns (Single, Sequential, Parallel, Background) and when each applies.
+- **`agentic-qa-core/references/orchestration-doctrine.md`** — cacheable mirror loaded by subagents that need the full doctrine without re-reading `AGENTS.md`.
+- **`agentic-qa-core/references/briefing-template.md`** — the six-component briefing format every dispatch uses (Goal · Context docs · Skills to load · Exact instructions · Report format · Rules).
+- **`agentic-qa-core/references/dispatch-patterns.md`** — decision guide for the four patterns (Single, Sequential, Parallel, Background) and when each applies.
 - **`## Subagent Dispatch Strategy`** sections inside each workflow `SKILL.md` (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`) — per-stage tables declaring which steps delegate to subagents and with what pattern.
 
 When a skill writes `Use the dispatch defined in §Subagent Dispatch Strategy: Parallel`, that line is shorthand for the full briefing assembled from the references above. The doctrine is a single source, cited from many places.
@@ -568,7 +568,7 @@ The practice uses three complementary kinds of AI capability:
 
 | Skill                 | Stage        | When it fires                                                                  |
 | --------------------- | ------------ | ------------------------------------------------------------------------------ |
-| `framework-core`      | Foundation   | "regenerate AGENTS.md", "framework bootstrap", "setup framework foundation", "install boilerplate scripts" |
+| `agentic-qa-core`      | Foundation   | "regenerate AGENTS.md", "agentic-qa bootstrap", "setup agentic-qa foundation", "install boilerplate scripts" |
 | `project-discovery`   | Onboarding   | "set up this project", "onboard this repo", "generate business-data-map", "discover the architecture" |
 | `sprint-testing`      | 1 · 2 · 3    | "test {{PROJECT_KEY}}-XXX", "process sprint N", "retest bug", "QA this story", "mode yolo" |
 | `test-documentation`  | 4            | "document tests", "ROI analysis", "Candidate vs Manual", "fix traceability"    |
@@ -620,7 +620,7 @@ Each `[TAG_TOOL]` resolves via the Tool Resolution table in `CLAUDE.md`. Swap th
 - `context7` — "how to use X" (official docs).
 - `tavily` — "how to solve X" (community solutions).
 
-Authentication tokens for long-lived MCPs expire on their own cadence. Refresh scripts live under `cli/` and `scripts/` (the latter hosts foundation utilities written by `framework-core` such as `agents-setup.ts`, `agents-lint.ts`, `sync-jira-fields.ts`, and `check-jira-setup.ts`) and are documented in each MCP's setup guide (`docs/setup/`).
+Authentication tokens for long-lived MCPs expire on their own cadence. Refresh scripts live under `cli/` and `scripts/` (the latter hosts foundation utilities written by `agentic-qa-core` such as `agents-setup.ts`, `agents-lint.ts`, `sync-jira-fields.ts`, and `check-jira-setup.ts`) and are documented in each MCP's setup guide (`docs/setup/`).
 
 ---
 
@@ -707,7 +707,7 @@ Treat these as a starting point, not a canon. Add fields that map to your team's
 
 ### What ships in this repository
 
-- **A foundation skill (`framework-core`)** — bootstraps `AGENTS.md`, `.agents/project.yaml`, and the `agents-*` scripts; hosts the canonical orchestration doctrine, briefing template, and dispatch patterns cited by every workflow skill.
+- **A foundation skill (`agentic-qa-core`)** — bootstraps `AGENTS.md`, `.agents/project.yaml`, and the `agents-*` scripts; hosts the canonical orchestration doctrine, briefing template, and dispatch patterns cited by every workflow skill.
 - **A roster of stage-aware AI skills** — auto-triggered by user intent, orchestrated with human-in-the-loop checkpoints. Each stage of the pipeline has its own skill. The current roster is enumerated in Section 12.
 - **A library of utility commands** — deterministic, single-purpose, invoked with `/<name>`. The current library is enumerated in Section 12.
 - **Live system integrations** — MCPs for the database, API, TMS, and library documentation, plus first-party CLIs for TMS operations and browser automation. The current set is enumerated in Section 12.
@@ -731,8 +731,8 @@ The rest is execution.
 - `AGENTS.md` — canonical project memory, Tool Resolution, and skill routing (mirrored at `CLAUDE.md`)
 - `docs/context-engineering.md` — strategy behind the three-tier context split
 - `docs/methodology/IQL-methodology.md` — phased methodology deep-dive
-- `.claude/skills/framework-core/SKILL.md` — foundation skill internals (bootstrap + shared references)
-- `.claude/skills/framework-core/references/orchestration-doctrine.md` — canonical orchestration doctrine cited by every workflow skill
+- `.claude/skills/agentic-qa-core/SKILL.md` — foundation skill internals (bootstrap + shared references)
+- `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md` — canonical orchestration doctrine cited by every workflow skill
 - `.claude/skills/acli/SKILL.md` — Atlassian CLI integration for Jira work-item operations
 - `.claude/skills/test-automation/references/` — KATA architecture, `@atc` decorator, and traceability chain
 - `.context/README.md` — canonical context layout

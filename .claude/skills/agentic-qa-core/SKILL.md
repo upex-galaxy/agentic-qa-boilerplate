@@ -1,18 +1,18 @@
 ---
-name: framework-core
-description: "Foundation skill that (a) hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine) and (b) bootstraps a target repo with the boilerplate's foundation files (AGENTS.md, .agents/, scripts/, package.json updates). Triggers on: `/framework-core init`, `framework bootstrap`, `setup framework foundation`, `regenerate AGENTS.md`, `install boilerplate scripts`. Do NOT use for: refreshing memory facts (use `/refresh-ai-memory`), adapting KATA tests (use `/adapt-framework`), or onboarding the target project (use `/project-discovery`)."
+name: agentic-qa-core
+description: "Foundation skill that (a) hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine) and (b) bootstraps a target repo with the boilerplate's foundation files (AGENTS.md, .agents/, scripts/, package.json updates). Triggers on: `/agentic-qa-core init`, `agentic-qa bootstrap`, `setup agentic-qa foundation`, `regenerate AGENTS.md`, `install boilerplate scripts`. Do NOT use for: refreshing memory facts (use `/refresh-ai-memory`), adapting KATA tests (use `/adapt-framework`), or onboarding the target project (use `/project-discovery`)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 ---
 
-# Framework Core — Foundation references + bootstrap
+# Agentic QA Core — Foundation references + bootstrap
 
-`framework-core` is the skill that other skills assume already exists. It plays two distinct roles in the same package:
+`agentic-qa-core` is the skill that other skills assume already exists. It plays two distinct roles in the same package:
 
-1. **Passive — shared reference library.** Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery`) cite files under `references/` instead of duplicating the same briefing template, dispatch patterns and orchestration doctrine inside every skill. Loading a workflow skill therefore implies loading the relevant `framework-core/references/*.md` on demand.
-2. **Active — bootstrap trigger.** When users adopt this boilerplate by downloading skills à la carte (e.g. cloning `.claude/skills/sprint-testing/` only), they end up missing the foundation files those skills depend on (`AGENTS.md`, `.agents/project.yaml`, `scripts/agents-*.ts`, etc.). Invoking `/framework-core init` regenerates that foundation from the templates shipped under `templates/`.
+1. **Passive — shared reference library.** Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery`) cite files under `references/` instead of duplicating the same briefing template, dispatch patterns and orchestration doctrine inside every skill. Loading a workflow skill therefore implies loading the relevant `agentic-qa-core/references/*.md` on demand.
+2. **Active — bootstrap trigger.** When users adopt this boilerplate by downloading skills à la carte (e.g. cloning `.claude/skills/sprint-testing/` only), they end up missing the foundation files those skills depend on (`AGENTS.md`, `.agents/project.yaml`, `scripts/agents-*.ts`, etc.). Invoking `/agentic-qa-core init` regenerates that foundation from the templates shipped under `templates/`.
 
-Without `framework-core`, every other workflow skill would either silently rely on files that don't exist or copy-paste the same boilerplate-foundation paragraphs into its own `references/`. This skill is the single source of truth for both.
+Without `agentic-qa-core`, every other workflow skill would either silently rely on files that don't exist or copy-paste the same boilerplate-foundation paragraphs into its own `references/`. This skill is the single source of truth for both.
 
 ---
 
@@ -21,9 +21,9 @@ Without `framework-core`, every other workflow skill would either silently rely 
 | Role | Trigger | Consumers |
 |------|---------|-----------|
 | **Reference library (passive)** | Other skills loading on-demand | `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery`, `adapt-framework` |
-| **Bootstrap (active)** | `/framework-core init`, `framework bootstrap`, `setup framework foundation` | End users adopting the boilerplate, or repairing a partial install |
+| **Bootstrap (active)** | `/agentic-qa-core init`, `agentic-qa bootstrap`, `setup agentic-qa foundation` | End users adopting the boilerplate, or repairing a partial install |
 
-Passive role: nobody invokes `framework-core` directly to read a reference — they just cite `framework-core/references/<file>.md` and the AI loads it. Active role: only the user invokes it, and only when foundation files are missing.
+Passive role: nobody invokes `agentic-qa-core` directly to read a reference — they just cite `agentic-qa-core/references/<file>.md` and the AI loads it. Active role: only the user invokes it, and only when foundation files are missing.
 
 ---
 
@@ -83,19 +83,19 @@ Detect platform from `process.platform`. Symlinks on Windows require either admi
 | `references/dispatch-patterns.md` | All workflow skills with a "Subagent Dispatch Strategy" section | Decision table + heuristic for picking Single / Sequential / Parallel / Background. |
 | `references/orchestration-doctrine.md` | Subagents that need orchestration rules without pulling the whole `AGENTS.md` | Cacheable mirror of `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". |
 
-When a skill cites one of these, it includes a Dependencies block at the top (see next section) so the AI knows to load `framework-core` before continuing.
+When a skill cites one of these, it includes a Dependencies block at the top (see next section) so the AI knows to load `agentic-qa-core` before continuing.
 
 ---
 
 ## Dependency declaration for downstream skills
 
-Every workflow skill that cites `framework-core/references/*.md` should declare it explicitly so the AI knows what to load on demand. Example block to add near the top of the skill's `SKILL.md`:
+Every workflow skill that cites `agentic-qa-core/references/*.md` should declare it explicitly so the AI knows what to load on demand. Example block to add near the top of the skill's `SKILL.md`:
 
 ```markdown
 ## Dependencies
-Requires `framework-core`. Loads on demand:
-- framework-core/references/briefing-template.md
-- framework-core/references/dispatch-patterns.md
+Requires `agentic-qa-core`. Loads on demand:
+- agentic-qa-core/references/briefing-template.md
+- agentic-qa-core/references/dispatch-patterns.md
 ```
 
 The block is documentation — the AI reads it and pulls the cited files. There is no automated wiring: skills are markdown, not code.
@@ -134,7 +134,7 @@ The same contract applies to `templates/project.yaml.template`, `templates/jira-
 
 ## Out of scope
 
-`framework-core` does not:
+`agentic-qa-core` does not:
 
 - Create or modify `.context/` files (that belongs to `/project-discovery`).
 - Generate or scaffold tests, fixtures, or KATA components (that belongs to `/adapt-framework` and `/test-automation`).
@@ -143,4 +143,4 @@ The same contract applies to `templates/project.yaml.template`, `templates/jira-
 - Sync OpenAPI / API schemas (that's `bun run api:sync`).
 - Run any external command beyond file writes — no `bun install`, no `git`, no `gh`.
 
-If a user invokes `/framework-core init` and then asks "now configure the project", route them to `/project-discovery`. If they ask "now wire the test fixtures", route them to `/adapt-framework`.
+If a user invokes `/agentic-qa-core init` and then asks "now configure the project", route them to `/project-discovery`. If they ask "now wire the test fixtures", route them to `/adapt-framework`.

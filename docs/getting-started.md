@@ -55,7 +55,7 @@ Each phase has a clear trigger (one of the three categories above), a determinis
 
 ### Phase 0 — Bootstrap
 
-- **Trigger**: `bun install` → `bun run pw:install` → `bun run agents:setup` (interactive walkthrough) → `bun run jira:sync-fields` → `bun run jira:sync-workflows` → `bun run jira:check`. If you cloned skills à la carte and the foundation files are missing, you ALSO run `/framework-core init` first to install `AGENTS.md`, `.agents/`, the `scripts/agents-*.ts` CLIs, and the `package.json` script entries.
+- **Trigger**: `bun install` → `bun run pw:install` → `bun run agents:setup` (interactive walkthrough) → `bun run jira:sync-fields` → `bun run jira:sync-workflows` → `bun run jira:check`. If you cloned skills à la carte and the foundation files are missing, you ALSO run `/agentic-qa-core init` first to install `AGENTS.md`, `.agents/`, the `scripts/agents-*.ts` CLIs, and the `package.json` script entries.
 - **Produces**: A populated `.agents/project.yaml`, a `CLAUDE.md` symlink to `AGENTS.md`, the foundation scripts (`agents-setup`, `agents-lint`, `sync-jira-fields`, `sync-jira-workflows`, `check-jira-setup`) wired into `package.json`, the workspace catalog at `.agents/jira-fields.json` (custom fields), and the workflow catalog at `.agents/jira-workflows.json` (statuses + transitions per `work_type`).
 - **Frequency**: One time per repo clone. If you cloned the full repository, the foundation is already in place — only `bun install`, `bun run agents:setup`, and the two `jira:sync-*` commands are needed.
 
@@ -104,17 +104,17 @@ Three pieces have similar-sounding names and overlapping verbs ("init", "adapt",
 
 | Piece | When you invoke it | What it does | Frequency |
 |-------|--------------------|--------------|-----------|
-| **`/framework-core init`** (skill, active mode) | Once, ONLY if the foundation files are missing (à la carte install). If you cloned the full repo, you NEVER invoke it directly. | Generates `AGENTS.md`, `.agents/project.yaml`, `.agents/jira-required.yaml`, `.agents/jira-fields.json`, the four `scripts/agents-*.ts` CLIs, merges entries into `package.json`, creates the `CLAUDE.md` symlink. Idempotent: existing files are preserved. | One-time |
+| **`/agentic-qa-core init`** (skill, active mode) | Once, ONLY if the foundation files are missing (à la carte install). If you cloned the full repo, you NEVER invoke it directly. | Generates `AGENTS.md`, `.agents/project.yaml`, `.agents/jira-required.yaml`, `.agents/jira-fields.json`, the four `scripts/agents-*.ts` CLIs, merges entries into `package.json`, creates the `CLAUDE.md` symlink. Idempotent: existing files are preserved. | One-time |
 | **`/adapt-framework`** (skill + command) | Once per target, AFTER `/project-discovery` finishes. | Adapts `tests/components/`, `config/`, `api/schemas/` to the target's stack: fixtures, page objects, API clients. Modifies THIS repo only — never the target. Plan → user approval → Implement. | Once per target |
 | **`/refresh-ai-memory`** (command) | Periodically, when `.context/` drifts and `AGENTS.md` no longer reflects the project state. | Re-syncs `AGENTS.md` and `README.md` against current `.context/` and `package.json`. Touches project-specific FACTS only (Project Identity, Environment URLs, Discovery Progress) — never structural sections. | Periodic |
 
 Mnemonic:
 
-> `framework-core` installs the **base**, `adapt-framework` wires the **tests**, `refresh-ai-memory` updates the **documentation**.
+> `agentic-qa-core` installs the **base**, `adapt-framework` wires the **tests**, `refresh-ai-memory` updates the **documentation**.
 
 ### A passive role you never invoke
 
-`framework-core` has a second life beyond `init`: it **hosts shared references** that workflow skills cite on demand. When `/sprint-testing`, `/test-documentation`, `/test-automation`, or `/regression-testing` delegates to a subagent, the AI loads `framework-core/references/briefing-template.md`, `dispatch-patterns.md`, and `orchestration-doctrine.md` automatically. You never type `/framework-core` to read those files — they are pulled in as part of orchestration. This passive role is invisible from the user's seat, but it is why `framework-core` exists even after Phase 0 is complete.
+`agentic-qa-core` has a second life beyond `init`: it **hosts shared references** that workflow skills cite on demand. When `/sprint-testing`, `/test-documentation`, `/test-automation`, or `/regression-testing` delegates to a subagent, the AI loads `agentic-qa-core/references/briefing-template.md`, `dispatch-patterns.md`, and `orchestration-doctrine.md` automatically. You never type `/agentic-qa-core` to read those files — they are pulled in as part of orchestration. This passive role is invisible from the user's seat, but it is why `agentic-qa-core` exists even after Phase 0 is complete.
 
 ---
 
@@ -166,8 +166,8 @@ Workflow skill (e.g. /regression-testing)
     |
     | cites §Subagent Dispatch Strategy
     v
-framework-core/references/briefing-template.md    <- 6-component format
-framework-core/references/dispatch-patterns.md    <- Single/Sequential/Parallel/Background
+agentic-qa-core/references/briefing-template.md    <- 6-component format
+agentic-qa-core/references/dispatch-patterns.md    <- Single/Sequential/Parallel/Background
     |
     | orchestrator builds the briefing
     v
@@ -181,7 +181,7 @@ Subagent (fresh Claude context)
 acli jira workitem create, bun xray, playwright test, ...
 ```
 
-This is the canonical pattern the four workflow skills follow. The doctrine itself lives in `AGENTS.md` §Orchestration Mode and is mirrored at `.claude/skills/framework-core/references/orchestration-doctrine.md` so subagents can load it without pulling the full `AGENTS.md` into their fresh context. Each workflow skill declares its specific dispatch points in a `## Subagent Dispatch Strategy` section per-skill (which stages delegate, which pattern, which subagent role).
+This is the canonical pattern the four workflow skills follow. The doctrine itself lives in `AGENTS.md` §Orchestration Mode and is mirrored at `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md` so subagents can load it without pulling the full `AGENTS.md` into their fresh context. Each workflow skill declares its specific dispatch points in a `## Subagent Dispatch Strategy` section per-skill (which stages delegate, which pattern, which subagent role).
 
 The takeaway: when you invoke `/regression-testing` or `/sprint-testing`, the orchestrator reads its own dispatch strategy, writes a 6-component briefing for each subagent (Goal · Context docs · Skills to load · Exact instructions · Report format · Rules), and the subagent loads tool skills (`/acli`, `/xray-cli`, `/playwright-cli`) to actually run shell commands. This is what makes the main conversation "lean" — the heavy reading happens inside subagents, not in the main thread.
 
@@ -213,7 +213,7 @@ The takeaway: when you invoke `/regression-testing` or `/sprint-testing`, the or
 | Resolve a git conflict | `/fix-git-conflict` |
 | Repair traceability US ↔ ATP ↔ ATR ↔ TC | `/fix-traceability` |
 | Plain-English breakdown of automated tests | `/break-down-tests` |
-| Bootstrap from scratch (à la carte install) | `/framework-core init` |
+| Bootstrap from scratch (à la carte install) | `/agentic-qa-core init` |
 
 Every command above exists in `.claude/skills/`, `.claude/commands/`, or `package.json`. None are placeholders.
 
@@ -224,8 +224,8 @@ Every command above exists in `.claude/skills/`, `.claude/commands/`, or `packag
 These are passive loads — the AI pulls them in as part of orchestration, not because you typed a command.
 
 - **Tool skills** (`/acli`, `/xray-cli`, `/playwright-cli`, `/playwright-best-practices`): the AI loads them automatically when a workflow skill needs to talk to Jira, Xray, a browser, or apply Playwright best practices. You can force-load them when you genuinely need a one-shot operation (e.g. "take a screenshot"), but they are usually invoked by other skills, not by you.
-- **`framework-core/references/*`** (`briefing-template.md`, `dispatch-patterns.md`, `orchestration-doctrine.md`): the AI loads these when a workflow skill delegates to a subagent. They are passive references — the subagent loads them inside its own context to know the canonical briefing format and dispatch decision rules.
-- **Templates inside `.claude/skills/framework-core/templates/`** (`AGENTS.md.template`, `project.yaml.template`, `jira-required.yaml.template`, `jira-workflows.json.template`, the `scripts/*.ts.template` files): only consumed by `/framework-core init`. They are byte-equivalent mirrors of the live files at the repo root.
+- **`agentic-qa-core/references/*`** (`briefing-template.md`, `dispatch-patterns.md`, `orchestration-doctrine.md`): the AI loads these when a workflow skill delegates to a subagent. They are passive references — the subagent loads them inside its own context to know the canonical briefing format and dispatch decision rules.
+- **Templates inside `.claude/skills/agentic-qa-core/templates/`** (`AGENTS.md.template`, `project.yaml.template`, `jira-required.yaml.template`, `jira-workflows.json.template`, the `scripts/*.ts.template` files): only consumed by `/agentic-qa-core init`. They are byte-equivalent mirrors of the live files at the repo root.
 
 ---
 
@@ -250,7 +250,7 @@ If you only remember one thing:
 - [`context-engineering.md`](context-engineering.md) — the **why** behind the knowledge layer: token efficiency, progressive loading, the `.env` vs `.agents/project.yaml` split, the three variable syntaxes.
 - [`methodology/IQL-methodology.md`](methodology/IQL-methodology.md) — the IQL methodology deep-dive (phased approach, early/mid/late game testing).
 - [`../AGENTS.md`](../AGENTS.md) — the canonical project memory + Tool Resolution table that maps `[TAG_TOOL]` pseudocode to concrete CLIs / MCPs.
-- [`../.claude/skills/framework-core/SKILL.md`](../.claude/skills/framework-core/SKILL.md) — foundation skill internals (bootstrap order, idempotency rules, source-of-truth contract).
+- [`../.claude/skills/agentic-qa-core/SKILL.md`](../.claude/skills/agentic-qa-core/SKILL.md) — foundation skill internals (bootstrap order, idempotency rules, source-of-truth contract).
 
 ---
 

@@ -10,7 +10,7 @@ Scope-selection rules (which scope to pick, the one-line summary of each) live i
 
 The Plan phase is delegated to a single subagent. The orchestrator does NOT read the KATA references, the existing component code, or the OpenAPI schemas during planning — that exploration lives entirely in the subagent's context.
 
-**Briefing** (6 components per `framework-core/references/briefing-template.md`):
+**Briefing** (6 components per `agentic-qa-core/references/briefing-template.md`):
 
 ```
 Goal: Produce spec.md + implementation-plan.md for scope <SCOPE> (module|ticket|ATC) <SCOPE_KEY>.

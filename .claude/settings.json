@@ -50,7 +50,7 @@
       "mcp__dbhub__*",
       "mcp__openapi__*",
       "mcp__postman__*",
-      "Skill(framework-core)",
+      "Skill(agentic-qa-core)",
       "Skill(project-discovery)",
       "Skill(adapt-framework)",
       "Skill(sprint-testing)",

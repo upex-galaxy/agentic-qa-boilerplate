@@ -2,7 +2,7 @@
 
 <!--
 TEMPLATE — DO NOT EDIT IN PLACE WHEN BOOTSTRAPPING.
-This file lives at .claude/skills/framework-core/templates/AGENTS.md.template.
+This file lives at .claude/skills/agentic-qa-core/templates/AGENTS.md.template.
 It is mirrored manually with the live AGENTS.md at the repo root.
 When updating structural sections (Critical Rules, Skills, Tool Resolution, Orchestration Mode, etc.),
 edit BOTH this template AND the live AGENTS.md.

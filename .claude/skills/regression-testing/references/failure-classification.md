@@ -59,7 +59,7 @@ When the failure list has more than 10 entries, classifying serially burns the o
 
 **Sharding rule**: split the failure list into chunks of ~10 failures (round up). Cap total subagents at 10 — if there are >100 failures, batches must be larger than 10 each.
 
-**Dispatch (Parallel pattern)** — one briefing per chunk, all dispatched in a single message, following the 6-component format from `framework-core/references/briefing-template.md`:
+**Dispatch (Parallel pattern)** — one briefing per chunk, all dispatched in a single message, following the 6-component format from `agentic-qa-core/references/briefing-template.md`:
 
 ```
 Goal: Classify <N> test failures in chunk <CHUNK_INDEX>/<TOTAL_CHUNKS> against the rubric.

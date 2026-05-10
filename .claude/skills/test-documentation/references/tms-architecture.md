@@ -347,11 +347,11 @@ Pseudocode splits by TMS modality — pick the block matching the resolution fro
 
 When the candidate list has more than 10 TCs, creating them serially burns the orchestrator's context with raw API responses. Shard the list into chunks of ~5-10 TCs per subagent, cap total subagents at 10. The orchestrator pre-creates the ATP / ATR (Phase 3 §Linking order steps 1-3) **before** dispatching — only the per-TC writes (step 4) are parallelised. See SKILL.md §Subagent Dispatch Strategy for the per-phase pattern table.
 
-**Sharding rule**: `ceil(N / 10)` subagents, each handling roughly equal-sized chunks. If `N > 100`, chunks must be larger than 10 each (cap is on subagent count, not chunk size). Each dispatch follows the 6-component briefing format in `.claude/skills/framework-core/references/briefing-template.md`.
+**Sharding rule**: `ceil(N / 10)` subagents, each handling roughly equal-sized chunks. If `N > 100`, chunks must be larger than 10 each (cap is on subagent count, not chunk size). Each dispatch follows the 6-component briefing format in `.claude/skills/agentic-qa-core/references/briefing-template.md`.
 
 ##### Modality A — Xray on Jira (subagent loads `/xray-cli`)
 
-Briefing (6 components per `framework-core/references/briefing-template.md`):
+Briefing (6 components per `agentic-qa-core/references/briefing-template.md`):
 
 ```
 Goal: Create <K> Xray Test issues in Jira project <PROJECT_KEY> for chunk <I>/<TOTAL>, link them to ATP <ATP_KEY> and ATR <ATR_KEY>, and return their issue keys.
@@ -399,7 +399,7 @@ Rules:
 
 ##### Modality B — Jira-native (no Xray plugin; subagent loads `/acli`)
 
-Briefing (6 components per `framework-core/references/briefing-template.md`):
+Briefing (6 components per `agentic-qa-core/references/briefing-template.md`):
 
 ```
 Goal: Create <K> Jira Test issues in project <PROJECT_KEY> for chunk <I>/<TOTAL>, link each to the parent Story <STORY_KEY> via "is tested by", and return their issue keys.
@@ -449,7 +449,7 @@ After all parallel subagents return, the orchestrator:
 1. Concatenates the JSON arrays into a single creation report.
 2. Sums totals (created / failed) and computes per-chunk duration.
 3. Feeds the issue-key list into the Traceability linking step (this section §4 + §5 step "for each TC").
-4. If any chunk reported `failed > 0`, surface the failed TCs to the user before proceeding to traceability linking. Do NOT auto-retry across chunks; let the user decide retry / skip / abort per the error protocol in `framework-core/references/orchestration-doctrine.md`.
+4. If any chunk reported `failed > 0`, surface the failed TCs to the user before proceeding to traceability linking. Do NOT auto-retry across chunks; let the user decide retry / skip / abort per the error protocol in `agentic-qa-core/references/orchestration-doctrine.md`.
 
 ##### Fallback to serial (N <= 10)
 

@@ -210,7 +210,7 @@ Once chosen: note ID / type / title / priority, check for an existing `test-sess
 
 ## Sub-agent prompt templates
 
-Every dispatch uses the **6-component briefing format** defined in `.claude/skills/framework-core/references/briefing-template.md` (Goal / Context docs / Skills to load / Exact instructions / Report format / Rules). The four briefings below cover the per-ticket cadence (Session Start -> Stage 1 -> Stage 2 -> Stage 3) and are used VERBATIM in BOTH single-ticket and batch modes — single-ticket runs them once, batch loops them per Wave 1 PENDING ticket. Detailed step instructions live in the stage-specific reference — do NOT duplicate them here.
+Every dispatch uses the **6-component briefing format** defined in `.claude/skills/agentic-qa-core/references/briefing-template.md` (Goal / Context docs / Skills to load / Exact instructions / Report format / Rules). The four briefings below cover the per-ticket cadence (Session Start -> Stage 1 -> Stage 2 -> Stage 3) and are used VERBATIM in BOTH single-ticket and batch modes — single-ticket runs them once, batch loops them per Wave 1 PENDING ticket. Detailed step instructions live in the stage-specific reference — do NOT duplicate them here.
 
 > **Variable resolution**: `<TICKET_KEY>`, `<MODULE>`, `<BRIEF_TITLE>`, `<PBI_FOLDER>`, `<ENV>` are session variables filled by the orchestrator before dispatch. `<PBI_FOLDER>` resolves to `.context/PBI/<MODULE>/<TICKET_KEY>-<BRIEF_TITLE>/` (absolute path). `{{PROJECT_KEY}}`, `{{WEB_URL}}`, `{{API_URL}}`, `{{API_MCP}}`, `{{DB_MCP}}` resolve from `.agents/project.yaml` per `AGENTS.md` §"Project Variables".
 
