@@ -209,8 +209,8 @@ The takeaway: when you invoke `/regression-testing` or `/sprint-testing`, the or
 | Verify the Jira manifest matches both catalogs (fields + workflows) | `bun run jira:check` |
 | Validate `.env` for the active TEST_ENV | `bun run env:validate` |
 | Sync OpenAPI types from the target API | `bun run api:sync` |
-| Commit + push + open a PR | `/commit-push-pr` |
-| Resolve a git conflict | `/fix-git-conflict` |
+| Commit + push + open a PR (or any git/PR work) | `/git-flow-master` (auto-triggers on git intents) |
+| Resolve a git conflict | `/git-flow-master` (auto-triggers on conflict intents) |
 | Repair traceability US ↔ ATP ↔ ATR ↔ TC | `/fix-traceability` |
 | Plain-English breakdown of automated tests | `/break-down-tests` |
 | Bootstrap from scratch (à la carte install) | `/agentic-qa-core init` |

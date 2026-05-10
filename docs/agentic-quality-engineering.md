@@ -592,8 +592,6 @@ Commands are deterministic, single-purpose prompts invoked explicitly. Unlike sk
 | `/business-data-map`          | Generate or refresh `.context/mapping/business-data-map.md` (entities, flows, state machines) |
 | `/business-feature-map`       | Generate or refresh `.context/mapping/business-feature-map.md` (feature catalog, CRUD matrix, integrations) |
 | `/business-api-map`           | Generate or refresh `.context/mapping/business-api-map.md` (auth model, critical endpoints, architecture) |
-| `/commit-push-pr`             | Commit, push, and open a PR (full integrated flow)       |
-| `/fix-git-conflict`           | Resolve git conflicts safely                             |
 | `/fix-traceability`           | Repair broken TMS traceability links (US → ATP → ATR → TC) |
 | `/break-down-tests`           | Plain-English breakdown of automated tests for a given module / spec |
 

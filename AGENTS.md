@@ -272,7 +272,7 @@ Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `reg
 
 **Mandatory in workflow skills**: every `SKILL.md` must contain a `## Subagent Dispatch Strategy` section with a table mapping each stage to its pattern and subagent role.
 
-**Exempt** (reference / utility / generator skills, do NOT need a dispatch table): `agentic-qa-core`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `commit-push-pr`, `refresh-ai-memory`, `fix-git-conflict`.
+**Exempt** (reference / utility / generator skills, do NOT need a dispatch table): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `refresh-ai-memory`.
 
 ---
 
@@ -291,6 +291,7 @@ Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `reg
 | **regression-testing** | `/regression-testing` | **Stage 6**. Execute regression / smoke / sanity suites via CI/CD, classify failures (REGRESSION / FLAKY / KNOWN / ENVIRONMENT / NEW TEST), compute pass-rate and trend metrics, emit GO / CAUTION / NO-GO verdict + stakeholder report. |
 | **playwright-cli** | `/playwright-cli` | Browser automation CLI: screenshots, tracing, video recording, session management, request mocking, test generation. |
 | **xray-cli** | `/xray-cli` | Xray Cloud test management CLI: create tests, manage executions and plans, import JUnit/Cucumber/Xray JSON results, back up and restore project data. |
+| **git-flow-master** | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy (solo-main, main+integration, enterprise, trunk-based, GitFlow, GitHub Flow, GitLab Flow). Owns branch creation, atomic commits, push, PR (`gh pr create`), merge-conflict resolution, and chained-PR planning. Replaces the legacy `/commit-push-pr` and `/fix-git-conflict` commands. |
 
 **Decision Tree:**
 
@@ -326,7 +327,6 @@ Skills are committed to the repo. User-specific settings (`.claude/settings.loca
 | `/business-feature-map` | Generate or refresh `.context/mapping/business-feature-map.md` (feature catalog, CRUD matrix, integrations). |
 | `/break-down-tests` | Plain-English breakdown of automated tests for a given module / spec. |
 | `/fix-traceability` | Repair broken US-ATP-ATR-TC traceability links in the TMS. |
-| `/commit-push-pr`, `/fix-git-conflict` | Git workflow helpers. |
 
 ---
 
@@ -419,7 +419,7 @@ Name format: `{prefix}/{ISSUE-KEY}-{kebab-slug}` when an issue key exists, `{pre
 
 ### Pull Requests
 
-- Test-automation PRs use `templates/pr-test-automation.md`. `/commit-push-pr` loads and fills this template automatically.
+- Test-automation PRs use `templates/pr-test-automation.md`. `/git-flow-master` loads and fills this template automatically when the branch matches `test/*`; for other prefixes it falls back to the generic structure in `.claude/skills/git-flow-master/references/pr-templating.md`.
 - Title format: `{type}({ISSUE-KEY}): {description}` — include the issue key whenever one exists. Fallback: `{type}: {description}`.
 - Branch names follow the semantic prefix vocabulary documented in the Branch Strategy table above.
 - The template body is intentionally NOT inlined here; it lives in `templates/` so it can evolve without bloating `AGENTS.md` / `CLAUDE.md`.

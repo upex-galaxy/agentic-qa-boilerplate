@@ -1,0 +1,61 @@
+{
+  "skill_name": "git-flow-master",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I just finished work on UPEX-277 (empty states for the reservations module). Need to commit the 4 changed files and push the branch — there's no PR yet. Repo uses main + staging.",
+      "expected_output": "Skill detects main-integration strategy from layout (main+staging), persists marker to AGENTS.md if missing, groups the 4 files into atomic conventional commits with scope UPEX-277, asks before pushing to current feature branch, and offers to open PR against staging next. No AI attribution. No git add -A.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "abrime un PR para esta branch contra staging, label feature, ya está todo pusheado",
+      "expected_output": "Skill detects branch already pushed, renders inline PR body. For test/* branches it uses templates/pr-test-automation.md as the structure; otherwise references/pr-templating.md. Picks staging as base (matches main-integration strategy), proposes feature + ready-for-review labels, runs gh pr create --body-file with tempfile, returns PR URL. Does not auto-merge.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "git status shows 'both modified' on tests/components/api/UsersApi.ts and 'deleted by them' on tests/components/api/LegacyUsersApi.ts after I tried to merge staging into my feature branch. Help me fix this.",
+      "expected_output": "Skill identifies a content conflict + a rename/delete conflict, follows the merge-conflict playbook from references/conflict-resolution.md (diagnose first, present options ranked by safety, never silently force/abort), guides resolution per file, verifies clean state with git status before exiting.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "We're starting a brand new repo for a side project. Just me, no team. What's the simplest git setup? I'll mostly push directly to main.",
+      "expected_output": "Skill recognises the strategy-selection intent, presents the 7 supported strategies with one-line descriptions, recommends solo-main given the context (single contributor, simplicity), and writes the marker <!-- git-flow-master:strategy:solo-main --> to AGENTS.md so future invocations skip the question.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Test ticket UPEX-310 — verify the bulk-assign action works for the users table. Need ATP, exploration, ATR, and a bug report if anything breaks.",
+      "expected_output": "Skill should NOT trigger as the primary handler — this is an in-sprint manual QA request, owned by /sprint-testing. git-flow-master only enters the picture later when /sprint-testing needs branch/commit/PR operations (e.g. to commit the PBI folder). If git-flow-master responds at all, it should redirect to /sprint-testing.",
+      "should_trigger": false,
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Write a Playwright KATA test for the calculateDiscount API endpoint covering the edge case when the input is zero.",
+      "expected_output": "Skill should NOT trigger — this is a KATA test-authoring request, owned by /test-automation. git-flow-master is purely a version-control-layer skill.",
+      "should_trigger": false,
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "the push got rejected with '! [rejected] test/UPEX-200 -> test/UPEX-200 (fetch first)'. what now?",
+      "expected_output": "Skill recognises push-rejected diagnostic, follows the push-rejected playbook (fetch + diff to show what's missing both ways, present pull-merge vs pull-rebase vs force-push-with-lease ranked by safety), warns that force-push is destructive and only acceptable on unshared branches with explicit opt-in, never executes force silently.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "Este cambio va a tocar 800 líneas entre nuevos Page components, ATCs, fixtures y data. Cómo lo trozeo en PRs más chicos?",
+      "expected_output": "Skill recognises chained-PR planning intent. Walks the inline decision tree from references/branching-strategies.md (Q1 mechanical? Q2 linearly decomposable? Q3 shared scaffolding?). Returns a strategy (stacked-to-main, feature-branch-chain, or size-exception) plus a concrete branch plan grounded in KATA layers (fixtures + components first, then ATCs, then test data).",
+      "should_trigger": true,
+      "files": []
+    }
+  ]
+}

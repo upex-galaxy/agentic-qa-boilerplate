@@ -285,6 +285,7 @@ Conventions (TC naming, labeling, bug summary format, execution naming, etc.) li
 | **regression-testing** | `/regression-testing` | **Stage 6**. Execute regression / smoke / sanity suites via CI/CD, classify failures (REGRESSION / FLAKY / KNOWN / ENVIRONMENT / NEW TEST), compute pass-rate and trend metrics, emit GO / CAUTION / NO-GO verdict + stakeholder report. |
 | **playwright-cli** | `/playwright-cli` | Browser automation CLI: screenshots, tracing, video recording, session management, request mocking, test generation. |
 | **xray-cli** | `/xray-cli` | Xray Cloud test management CLI: create tests, manage executions and plans, import JUnit/Cucumber/Xray JSON results, back up and restore project data. |
+| **git-flow-master** | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy (solo-main, main+integration, enterprise, trunk-based, GitFlow, GitHub Flow, GitLab Flow). Owns branch creation, atomic commits, push, PR (`gh pr create`), merge-conflict resolution, and chained-PR planning. |
 
 **Decision Tree:**
 
@@ -320,7 +321,6 @@ Skills are committed to the repo. User-specific settings (`.claude/settings.loca
 | `/business-feature-map` | Generate or refresh `.context/mapping/business-feature-map.md` (feature catalog, CRUD matrix, integrations). |
 | `/break-down-tests` | Plain-English breakdown of automated tests for a given module / spec. |
 | `/fix-traceability` | Repair broken US-ATP-ATR-TC traceability links in the TMS. |
-| `/commit-push-pr`, `/fix-git-conflict` | Git workflow helpers. |
 
 ---
 

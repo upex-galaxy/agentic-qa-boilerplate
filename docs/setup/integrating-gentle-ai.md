@@ -73,6 +73,7 @@ Skills that are workflow-specific to this boilerplate live in `.claude/skills/` 
 | `playwright-cli`     | `/playwright-cli`      | Browser automation CLI helpers (screenshots, traces, mocking)                 |
 | `acli`               | `/acli`                | Atlassian CLI wrapper for Jira/Confluence terminal work                       |
 | `xray-cli`           | `/xray-cli`            | Xray Cloud TMS CLI (test creation, executions, JUnit/Cucumber import)         |
+| `git-flow-master`    | (auto on git intents)  | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)      |
 
 These skills evolve with the repo and are versioned in git. The split is intentional: gentle-ai owns the **horizontal** ecosystem (apply across all your QA repos), this repo owns the **vertical** workflow (specific to the QA stages 1-6 pipeline).
 
@@ -130,7 +131,7 @@ What you lose:
 - **Adversarial review (judgment-day)** — no parallel-judges review for high-stakes test framework changes. Code review reverts to single-perspective.
 - **Issue creation (issue-creation)** — no issue-first enforcement helper. You file QA bugs however your team usually does.
 
-What you keep: every workflow skill committed in this repo (`/sprint-testing`, `/test-documentation`, `/test-automation`, `/regression-testing`, `/agentic-qa-core`, `/agentic-qa-onboard`, `/playwright-cli`, `/acli`, `/xray-cli`, `/project-discovery`) and the 7 canonical MCPs (Context7, Tavily, Atlassian, Playwright, DBHub, OpenAPI, Postman). The repo is fully usable without gentle-ai — the integration is additive.
+What you keep: every workflow skill committed in this repo (`/sprint-testing`, `/test-documentation`, `/test-automation`, `/regression-testing`, `/agentic-qa-core`, `/agentic-qa-onboard`, `/playwright-cli`, `/acli`, `/xray-cli`, `/project-discovery`, `/git-flow-master`) and the 7 canonical MCPs (Context7, Tavily, Atlassian, Playwright, DBHub, OpenAPI, Postman). The repo is fully usable without gentle-ai — the integration is additive.
 
 ---
 

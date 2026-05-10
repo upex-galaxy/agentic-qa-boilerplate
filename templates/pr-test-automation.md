@@ -1,6 +1,6 @@
 # Pull Request — Test Automation
 
-> Template consumed by `/commit-push-pr`. Placeholders in `<<ANGLE_BRACKETS>>` are session variables filled at PR creation time; any that remain after substitution are left visible for the author to complete before posting.
+> Template consumed by `/git-flow-master` when the active branch matches `test/*`. Placeholders in `<<ANGLE_BRACKETS>>` are session variables filled at PR creation time; any that remain after substitution are left visible for the author to complete before posting.
 
 ## Summary
 

@@ -175,6 +175,7 @@ Verify your config with `bun run lint:agents` (should report 0 errors when fully
 | `playwright-cli`     | `/playwright-cli`      | Browser automation CLI helpers                                                 |
 | `acli`               | `/acli`                | Atlassian CLI wrapper for Jira/Confluence terminal work                        |
 | `xray-cli`           | `/xray-cli`            | Xray Cloud TMS CLI                                                             |
+| `git-flow-master`    | (auto on git intents)  | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)       |
 
 ---
 
