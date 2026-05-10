@@ -51,6 +51,7 @@
       "mcp__openapi__*",
       "mcp__postman__*",
       "Skill(agentic-qa-core)",
+      "Skill(agentic-qa-onboard)",
       "Skill(project-discovery)",
       "Skill(adapt-framework)",
       "Skill(sprint-testing)",

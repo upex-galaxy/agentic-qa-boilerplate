@@ -1,0 +1,53 @@
+{
+  "evals": [
+    {
+      "name": "should-trigger-first-time-orientation",
+      "prompt": "I just cloned this QA repo. First time using it — where do I start?",
+      "expected_skill": "agentic-qa-onboard",
+      "expected_behavior": "Activates agentic-qa-onboard. Explains the stack (Playwright + KATA + Allure + Xray), points at `bun run setup` for installation, walks through the 6-stage QA pipeline (Stages 1-3 in /sprint-testing, Stage 4 /test-documentation, Stage 5 /test-automation, Stage 6 /regression-testing) and the /sdd-* hand-off matrix, lists the 7 canonical MCPs, lists critical env vars, and ends with a checklist of next steps. Does NOT start testing or implementing anything.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-onboard-me",
+      "prompt": "Onboard me to QA. I've never used an AI-driven QA workflow before.",
+      "expected_skill": "agentic-qa-onboard",
+      "expected_behavior": "Activates agentic-qa-onboard as a guided tour. Explains the boilerplate, the locked stack, the workflow split between /sprint-testing (in-sprint ticket QA) and /sdd-* (spec-driven framework refactors), the MCP decision rule (Context7 vs Tavily), and the env vars required. Hands off to /sprint-testing for the user's first QA ticket.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-explain-this-repo",
+      "prompt": "Explain what this repo does and how the QA flow works.",
+      "expected_skill": "agentic-qa-onboard",
+      "expected_behavior": "Activates agentic-qa-onboard. Describes the boilerplate purpose (QA-only Playwright + KATA scaffold), the 6-stage pipeline (Stages 1-3 manual QA → Stage 4 TMS docs → Stage 5 automation → Stage 6 regression), the QA Jira state machine (Ready For QA → In Testing → Tested → Closed), the local skills vs gentle-ai skills, and the MCPs. No testing or automation work.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-spanish-first-time",
+      "prompt": "Es la primer vez que uso este repo de QA, qué tengo que correr primero?",
+      "expected_skill": "agentic-qa-onboard",
+      "expected_behavior": "Activates agentic-qa-onboard. Points at `bun run setup` first, then walks through the workflow split, MCPs, env vars, and the next-steps checklist. Hands off to /sprint-testing once foundation is green. May respond in Spanish to mirror the user.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-test-ticket",
+      "prompt": "Test ticket UPEX-277 — empty states on the user list filter.",
+      "expected_skill": "sprint-testing",
+      "expected_behavior": "Does NOT activate agentic-qa-onboard. Routes to /sprint-testing UPEX-277 because the request is concrete in-sprint QA on a ticket, not orientation. agentic-qa-onboard never executes QA work.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-write-automation",
+      "prompt": "Write a Playwright KATA test for the login flow on UPEX-310.",
+      "expected_skill": "test-automation",
+      "expected_behavior": "Does NOT activate agentic-qa-onboard. Routes to /test-automation because the request is for KATA-compliant test authoring on a specific feature. agentic-qa-onboard does not write test code.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-run-regression",
+      "prompt": "Run the regression suite on staging and give me a GO/NO-GO verdict.",
+      "expected_skill": "regression-testing",
+      "expected_behavior": "Does NOT activate agentic-qa-onboard. Routes to /regression-testing because the request is for CI suite execution + release readiness verdict. agentic-qa-onboard does not run test suites or evaluate releases.",
+      "category": "negative"
+    }
+  ]
+}

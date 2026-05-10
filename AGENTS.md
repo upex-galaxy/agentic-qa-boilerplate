@@ -275,6 +275,7 @@ Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `reg
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
 | **agentic-qa-core** | `/agentic-qa-core init` | Foundation skill: hosts shared references cited by workflow skills (briefing template, dispatch patterns, orchestration doctrine) AND bootstraps the boilerplate's foundation files (AGENTS.md, .agents/, scripts/, package.json) for downstream consumers. |
+| **agentic-qa-onboard** | `/agentic-qa-onboard` | First-time orientation tour. Explains the stack (Playwright + KATA + Allure + Xray), the 6-stage pipeline (`/sprint-testing` → `/test-documentation` → `/test-automation` → `/regression-testing`), the `/sdd-*` hand-off matrix, the 7 canonical MCPs, and the env vars required. Does NOT execute QA work — hands off to the right downstream skill. |
 | **project-discovery** | `/project-discovery` | Onboard a project to this boilerplate. 4-phase discovery (Constitution -> Architecture -> Infrastructure -> Specification) that generates PRD, SRS, domain glossary, and orchestrates the `/business-*-map` and `/master-test-plan` commands. Reverse-engineering only — for KATA adaptation run `/adapt-framework` afterwards. |
 | **sprint-testing** | `/sprint-testing` | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting). Single-ticket or batch-sprint mode. Produces PBI folder, ATP, ATR, QA comment, bug reports. |
 | **test-documentation** | `/test-documentation` | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS (Jira/Xray). Bridge between manual QA and automation. Four scopes: module / ticket / bug / ad-hoc. Produces Candidate / Manual / Deferred verdicts. |
@@ -287,7 +288,8 @@ Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `reg
 
 | Need | Tool |
 |------|------|
-| Onboard a new repo / regenerate context | `/project-discovery` |
+| First time using this QA repo / orientation tour | `/agentic-qa-onboard` |
+| Onboard a new target project / regenerate context | `/project-discovery` |
 | Adapt this boilerplate's `tests/` to the target stack after discovery | `/adapt-framework` |
 | Test a user story or retest a bug | `/sprint-testing` |
 | Create TMS artifacts, ROI, traceability | `/test-documentation` |
