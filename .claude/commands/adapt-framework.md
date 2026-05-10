@@ -317,7 +317,7 @@ If run #6 re-runs the auth setup, session reuse is broken. Check `playwright.con
 
 Once all six gates pass:
 
-- Update `AGENTS.md` (CLAUDE.md is a symlink) with project-specific info discovered during adaptation: the resolved auth strategy, the first entity wired, the OpenAPI source, any Discovery Gaps still open.
+- Update `CLAUDE.md` (CLAUDE.md is a symlink) with project-specific info discovered during adaptation: the resolved auth strategy, the first entity wired, the OpenAPI source, any Discovery Gaps still open.
 - Mark `.context/PBI/adapt-framework-plan.md` as `Status: COMPLETED` and append a short results block (files created/modified, tests passing, gaps remaining).
 - Report to the user: entities wired, facades created, setups passing, smoke passing, session reuse verified.
 
@@ -335,7 +335,7 @@ Adaptation is "done" only when **every** checkbox is true:
 - [ ] No component imports from `@openapi` (only facades do)
 - [ ] Every ATC carries `@atc('TICKET-ID')`
 - [ ] All imports use aliases (no `../../`)
-- [ ] `AGENTS.md` updated with project-specific info
+- [ ] `CLAUDE.md` updated with project-specific info
 - [ ] `.context/PBI/adapt-framework-plan.md` marked `COMPLETED`
 
 ---

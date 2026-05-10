@@ -1,6 +1,6 @@
 ---
 name: git-flow-master
-description: "End-to-end Git operator for any branching strategy. Auto-detects the project's strategy (solo-main, main+integration, enterprise multi-branch, trunk-based, GitFlow, GitHub Flow, GitLab Flow) from .git config, branches, and an AGENTS.md marker, then adapts every commit, branch, push, PR, conflict-fix, and chained-PR action to that strategy. Use this skill whenever the user wants to: create a branch (`crear branch`, `new feature branch`, `start work on UPEX-123`), commit changes (`commit this`, `commitear esto`, `make a commit`, `commit and push`), push code (`push`, `push to main`, `push to staging`, `subir cambios`), open a pull request (`create PR`, `open PR`, `abrir PR`, `crear pull request`, `gh pr create`), fix merge conflicts (`fix conflict`, `resolver conflicto`, `merge conflict`, `rebase conflict`, `push rejected`), plan stacked or chained PRs (`stack of PRs`, `chained PRs`, `split this PR`, `PR demasiado grande`), or pick / change a branching strategy (`git flow`, `git strategy`, `branching strategy`, `which git flow do we use`). Trigger even when the user does not say `git-flow-master` literally — if the work is git-or-PR-shaped, this is the right tool. Do NOT use for: testing tickets (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing), or general code editing — git-flow-master operates strictly on the version-control layer."
+description: "End-to-end Git operator for any branching strategy. Auto-detects the project's strategy (solo-main, main+integration, enterprise multi-branch, trunk-based, GitFlow, GitHub Flow, GitLab Flow) from .git config, branches, and an CLAUDE.md marker, then adapts every commit, branch, push, PR, conflict-fix, and chained-PR action to that strategy. Use this skill whenever the user wants to: create a branch (`crear branch`, `new feature branch`, `start work on UPEX-123`), commit changes (`commit this`, `commitear esto`, `make a commit`, `commit and push`), push code (`push`, `push to main`, `push to staging`, `subir cambios`), open a pull request (`create PR`, `open PR`, `abrir PR`, `crear pull request`, `gh pr create`), fix merge conflicts (`fix conflict`, `resolver conflicto`, `merge conflict`, `rebase conflict`, `push rejected`), plan stacked or chained PRs (`stack of PRs`, `chained PRs`, `split this PR`, `PR demasiado grande`), or pick / change a branching strategy (`git flow`, `git strategy`, `branching strategy`, `which git flow do we use`). Trigger even when the user does not say `git-flow-master` literally — if the work is git-or-PR-shaped, this is the right tool. Do NOT use for: testing tickets (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing), or general code editing — git-flow-master operates strictly on the version-control layer."
 license: MIT
 compatibility: [claude-code, opencode]
 phase: implementation
@@ -20,7 +20,7 @@ model_preferences:
 
 This skill is the project's single entry point for everything that happens on the version-control layer: creating branches, writing commits, pushing safely, opening pull requests, resolving conflicts, and planning chained / stacked PRs when a change outgrows the review budget.
 
-It does not assume one branching model. The project may run on `main` only, on `main + staging`, on a multi-branch enterprise layout, or on any of the well-known flows (trunk-based, GitFlow, GitHub Flow, GitLab Flow). The skill **detects** which one is active and adapts every command accordingly. The detection is sticky: once resolved, the strategy is recorded in `AGENTS.md` so future invocations skip the prompt.
+It does not assume one branching model. The project may run on `main` only, on `main + staging`, on a multi-branch enterprise layout, or on any of the well-known flows (trunk-based, GitFlow, GitHub Flow, GitLab Flow). The skill **detects** which one is active and adapts every command accordingly. The detection is sticky: once resolved, the strategy is recorded in `CLAUDE.md` so future invocations skip the prompt.
 
 ---
 
@@ -101,7 +101,7 @@ The skill supports seven strategies (see `references/branching-strategies.md` fo
 
 Apply in order; stop at the first definitive answer:
 
-1. **Marker in `AGENTS.md`** — search for `<!-- git-flow-master:strategy:VALUE -->` where `VALUE` is one of the seven slugs. If found, use it. This is the persisted decision.
+1. **Marker in `CLAUDE.md`** — search for `<!-- git-flow-master:strategy:VALUE -->` where `VALUE` is one of the seven slugs. If found, use it. This is the persisted decision.
 2. **Single-branch heuristic** — `git branch -a` shows only `main` (or `master`) and no integration branch in the remote → `solo-main`.
 3. **Two-branch heuristic** — exactly `main` (or `master`) + one of `{staging, dev, develop, integration}` exists upstream → `main-integration` (record the integration branch name).
 4. **Multi-branch heuristic** — `main` + integration + active `feature/*` or `release/*` branches in `git branch -a` → `enterprise`.
@@ -110,7 +110,7 @@ Apply in order; stop at the first definitive answer:
 
 ### Persist the decision
 
-Once resolved (whether by detection or by asking), write the marker to `AGENTS.md`:
+Once resolved (whether by detection or by asking), write the marker to `CLAUDE.md`:
 
 - If a `## Git Strategy` section exists, update the marker line in place.
 - If not, append a new section near the existing `## Git Workflow` section:
@@ -179,7 +179,7 @@ Group changes by responsibility, not by file type:
 | Test code   | `tests/`, `tests/components/`, `tests/e2e/`, `tests/integration/`             |
 | API schemas | `api/schemas/`, codegen output, OpenAPI types                                 |
 | Test data   | `tests/data/fixtures/`, `tests/data/factories/`                               |
-| Skills/Docs | `.claude/skills/`, `.agents/`, `AGENTS.md`, `docs/`, `README.md`              |
+| Skills/Docs | `.claude/skills/`, `.agents/`, `CLAUDE.md`, `docs/`, `README.md`              |
 | Config      | `package.json`, `tsconfig.json`, `playwright.config.ts`, lint/format configs  |
 
 **Test data and fixtures stay with the tests they support.** If a test commit ships its own fixture, they belong in the same commit, not in a separate `chore:` commit.
@@ -196,7 +196,7 @@ Group changes by responsibility, not by file type:
 
 - One commit = one responsibility. Never bundle unrelated changes.
 - Never `git add -A` or `git add .` — list explicit paths to avoid leaking secrets (`.env`, credentials) or unrelated work.
-- **No AI attribution.** No `Generated with Claude Code`, no `Co-Authored-By: Claude`, no equivalent line. Commits look human-authored. (Critical Reminder #3 in `AGENTS.md`.)
+- **No AI attribution.** No `Generated with Claude Code`, no `Co-Authored-By: Claude`, no equivalent line. Commits look human-authored. (Critical Reminder #3 in `CLAUDE.md`.)
 - If a pre-commit hook fails, **stop, fix the underlying issue, create a NEW commit**. Never `--amend` a commit the hook rejected — `--amend` operates on the previous commit, which destroys context.
 
 Present all proposed commits as one block. Wait for OK / modify / reject before executing.
@@ -219,7 +219,7 @@ Push command depends on Step 1 output:
 
 Ask: _"You are about to push directly to the protected branch `{branch}` in a `{strategy}` flow. Confirm?"_ Wait for explicit yes.
 
-**Never** pass `--force`, `--force-with-lease`, `--no-verify`, or any history-rewriting flag unless the user explicitly requests it AND the branch is unshared. Document the request in the conversation. (Critical Reminder #6 in `AGENTS.md`: never rewrite pushed history.)
+**Never** pass `--force`, `--force-with-lease`, `--no-verify`, or any history-rewriting flag unless the user explicitly requests it AND the branch is unshared. Document the request in the conversation. (Critical Reminder #6 in `CLAUDE.md`: never rewrite pushed history.)
 
 ### 3.4 Pull request
 
@@ -327,22 +327,22 @@ The branch plan that comes out of the decision is the **contract** for execution
 
 1. **Diagnose before acting.** Step 1 always runs. Never assume repo state.
 2. **One commit = one responsibility.** Never bundle unrelated changes.
-3. **No AI attribution** in commits or PR bodies. Commits look human-authored. (Critical Reminder #3 in `AGENTS.md`.)
-4. **Confirm before pushing to any protected branch.** Strategy-driven; see Step 3.3. (Critical Reminder #5 in `AGENTS.md`.)
-5. **Never force-push, never rewrite pushed history, never `--no-verify`** unless the user explicitly authorises it AND the branch is unshared. (Critical Reminder #6 in `AGENTS.md`.)
+3. **No AI attribution** in commits or PR bodies. Commits look human-authored. (Critical Reminder #3 in `CLAUDE.md`.)
+4. **Confirm before pushing to any protected branch.** Strategy-driven; see Step 3.3. (Critical Reminder #5 in `CLAUDE.md`.)
+5. **Never force-push, never rewrite pushed history, never `--no-verify`** unless the user explicitly authorises it AND the branch is unshared. (Critical Reminder #6 in `CLAUDE.md`.)
 6. **No `git add -A` / `git add .`** — always list explicit paths.
 7. **Show proposed commits / branches / PR body and wait for OK** before executing. The user can accept, modify, or reject any item.
 8. **`gh` CLI is the PR transport.** If `gh` is missing or unauthenticated (`gh auth status` fails), stop and surface the blocker. Do not pretend a PR was opened.
 9. **PRs stop at creation.** Merging is the user's explicit next step.
-10. **Strategy is sticky.** Once resolved, persist in `AGENTS.md`. The next invocation re-reads the marker rather than asking again.
-11. **Language**: artifacts (commits, branches, PR bodies, AGENTS.md sections) in English. Mirror the user's language only in conversation.
+10. **Strategy is sticky.** Once resolved, persist in `CLAUDE.md`. The next invocation re-reads the marker rather than asking again.
+11. **Language**: artifacts (commits, branches, PR bodies, CLAUDE.md sections) in English. Mirror the user's language only in conversation.
 
 ---
 
 ## Pre-flight checklist (run before exiting any operation)
 
 - [ ] Step 1 ran and the repo state was reported.
-- [ ] Strategy resolved (detected from marker, inferred from layout, or asked) and persisted to `AGENTS.md` if newly chosen.
+- [ ] Strategy resolved (detected from marker, inferred from layout, or asked) and persisted to `CLAUDE.md` if newly chosen.
 - [ ] Branch / commit / push / PR / conflict operation followed the runbook for that strategy.
 - [ ] Each commit is atomic, conventional, and free of AI attribution.
 - [ ] No `git add -A` / `--force` / `--no-verify` used unless explicitly authorised.

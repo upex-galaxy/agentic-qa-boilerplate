@@ -111,6 +111,6 @@ Write `.context/mapping/business-data-map.md` with this structure:
 
 ## After generation
 
-- Update the AI memory file (`CLAUDE.md` / `AGENTS.md`) with a reference to the generated file if not already present.
+- Update the AI memory file (`CLAUDE.md` / `CLAUDE.md`) with a reference to the generated file if not already present.
 - In UPDATE mode: show the diff summary and wait for explicit confirmation.
 - Report: entities documented, flows traced, state machines found, integrations mapped, discovery gaps.

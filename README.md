@@ -220,8 +220,7 @@ bun run test:e2e:critical  # Tests marked @critical
 │   └── workflows/                # Workflow documentation
 │
 ├── playwright.config.ts          # Playwright configuration
-├── AGENTS.md                     # AI memory (canonical) — CLAUDE.md is a symlink/copy
-├── CLAUDE.md                     # Symlink → AGENTS.md (copy on Windows)
+├── CLAUDE.md                     # AI memory (canonical, read by Claude Code + OpenCode)
 └── package.json                  # Scripts and dependencies
 ```
 
@@ -409,7 +408,7 @@ When you clone this template, follow this flow to adapt it to your project:
 │ 0. (Optional) BOOTSTRAP FOUNDATION                          │
 │    Run `/agentic-qa-core init` ONLY if you adopted skills    │
 │    à la carte (e.g. cloned a single skill folder) and the   │
-│    foundation files (AGENTS.md, .agents/, scripts/, the     │
+│    foundation files (CLAUDE.md, .agents/, scripts/, the     │
 │    package.json scripts) are missing or partial. Skip when  │
 │    cloning the full repository — the foundation is already  │
 │    in place.                                                │
@@ -476,16 +475,16 @@ When you clone this template, follow this flow to adapt it to your project:
 ├── regression-testing/    # Regression execution + GO/NO-GO decisions
 ├── playwright-cli/        # Browser automation helper (screenshots, tracing, ...)
 ├── xray-cli/              # Xray TMS helper (tests, executions, imports, ...)
-└── acli/                  # Atlassian CLI for Jira Cloud ([ISSUE_TRACKER_TOOL])
-
-.agents/skills/            # Symlink to .claude/skills/ (agentskills.io path)
+├── acli/                  # Atlassian CLI for Jira Cloud ([ISSUE_TRACKER_TOOL])
+├── git-flow-master/       # End-to-end Git operator (auto-detects branching strategy)
+└── agentic-qa-onboard/    # First-time orientation tour
 ```
 
 ### Skills at a Glance
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
-| **agentic-qa-core** | `/agentic-qa-core init` | Foundation: hosts shared references cited by workflow skills (briefing template, dispatch patterns, orchestration doctrine) AND bootstraps the boilerplate's foundation files (`AGENTS.md`, `.agents/`, `scripts/`, `package.json`). |
+| **agentic-qa-core** | `/agentic-qa-core init` | Foundation: hosts shared references cited by workflow skills (briefing template, dispatch patterns, orchestration doctrine) AND bootstraps the boilerplate's foundation files (`CLAUDE.md`, `.agents/`, `scripts/`, `package.json`). |
 | **project-discovery** | `/project-discovery` | Onboard a project to this boilerplate. 4-phase discovery (Constitution -> Architecture -> Infrastructure -> Specification) producing PRD, SRS, domain glossary; orchestrates the `/business-*-map` and `/master-test-plan` commands. Reverse-engineering only. |
 | **sprint-testing** | `/sprint-testing` | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting). |
 | **test-documentation** | `/test-documentation` | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS. Produces Candidate / Manual / Deferred verdicts. |
@@ -501,13 +500,13 @@ Each skill auto-activates when your prompt matches its description triggers. You
 
 #### 0. Bootstrapping the framework foundation
 
-- **Situation**: You adopted this boilerplate à la carte (e.g. cloned a single skill folder) and the foundation files (`AGENTS.md`, `.agents/project.yaml`, `scripts/agents-*.ts`, the `agents:setup` and `jira:*` package scripts) are missing.
+- **Situation**: You adopted this boilerplate à la carte (e.g. cloned a single skill folder) and the foundation files (`CLAUDE.md`, `.agents/project.yaml`, `scripts/agents-*.ts`, the `agents:setup` and `jira:*` package scripts) are missing.
 - **Skill**: `/agentic-qa-core init`
 - **Sample prompts**:
   - "Bootstrap the framework foundation."
-  - "Regenerate AGENTS.md and the .agents/ files from templates."
+  - "Regenerate CLAUDE.md and the .agents/ files from templates."
   - "Install the boilerplate scripts."
-- **What happens next**: The skill writes `.agents/project.yaml`, `.agents/jira-required.yaml`, `.agents/jira-fields.json`, the four `scripts/agents-*.ts` + `scripts/*-jira-*.ts` CLIs, merges the required scripts/dependencies into `package.json`, and finally writes `AGENTS.md` plus the `CLAUDE.md` symlink (or copy on Windows). It is idempotent: existing files are preserved.
+- **What happens next**: The skill writes `.agents/project.yaml`, `.agents/jira-required.yaml`, `.agents/jira-fields.json`, the four `scripts/agents-*.ts` + `scripts/*-jira-*.ts` CLIs, merges the required scripts/dependencies into `package.json`, and finally writes `CLAUDE.md`. It is idempotent: existing files are preserved.
 
 #### 1. Onboarding a new project
 
@@ -537,7 +536,7 @@ Each skill auto-activates when your prompt matches its description triggers. You
   - "Document test cases for ticket UPEX-200 in Xray."
   - "Score these tests by ROI to decide automation priority."
   - "Create the ATP for UPEX-300 in Xray and link it to the story."
-- **What happens next**: The skill creates Test / ATP / ATR entities in the TMS following the project's naming conventions and prioritizes candidates using an ROI rubric. Two modalities are supported: Xray on Jira (Modality A) and Jira-native without Xray (Modality B). See `AGENTS.md` §Tool Resolution for how `[TMS_TOOL]` resolves per modality.
+- **What happens next**: The skill creates Test / ATP / ATR entities in the TMS following the project's naming conventions and prioritizes candidates using an ROI rubric. Two modalities are supported: Xray on Jira (Modality A) and Jira-native without Xray (Modality B). See `CLAUDE.md` §Tool Resolution for how `[TMS_TOOL]` resolves per modality.
 
 #### 4. Writing automated tests
 
@@ -593,23 +592,20 @@ Each skill auto-activates when your prompt matches its description triggers. You
 
 - **Description-matching**: Skills auto-activate when your prompt matches the triggers declared in each skill's `description` frontmatter. You normally do not need to name the skill.
 - **Explicit slash trigger** (Claude Code only): You can force-load a skill by typing `/skill-name` (e.g. `/sprint-testing`).
-- **Other agents** (Codex, Cursor, Copilot, OpenCode): Slash commands are not available, but the same `description` triggers cause the skills to auto-activate from natural prompts -- the portability path is the `.agents/skills/` symlink.
+- **Other agents** (Codex, Cursor, Copilot, OpenCode): Slash commands are not available, but the same `description` triggers cause the skills to auto-activate from natural prompts. OpenCode reads `.claude/skills/` and `CLAUDE.md` natively when its own paths are absent — no symlinks needed.
 
-### AI Memory (AGENTS.md / CLAUDE.md)
+### AI Memory (CLAUDE.md)
 
-Memory lives in `AGENTS.md` (canonical). `CLAUDE.md` is a symlink to it for Claude Code compatibility on Linux/macOS (a byte-equivalent copy on Windows, where symlinks require admin rights). Use `/refresh-ai-memory` to regenerate the project-specific facts inside it (Project Identity, Environment URLs, Discovery Progress, Access Configuration). Structural sections (Critical Rules, Tool Resolution, Skills Available, etc.) are mirrored from `.claude/skills/agentic-qa-core/templates/AGENTS.md.template` and should be updated there when they evolve.
+Memory lives in `CLAUDE.md` — the single canonical file read by both Claude Code and OpenCode (the latter falls back to Claude Code conventions). Use `/refresh-ai-memory` to regenerate the project-specific facts inside it (Project Identity, Environment URLs, Discovery Progress, Access Configuration). Structural sections (Critical Rules, Tool Resolution, Skills Available, etc.) are mirrored from `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template` and should be updated there when they evolve.
 
 ### Multi-Agent Portability
 
-Skills follow the [agentskills.io](https://agentskills.io) spec, so they are portable across Claude Code, Codex, GitHub Copilot, Cursor, and OpenCode. A relative symlink exposes the canonical Claude Code location at the shared agentskills path, avoiding duplicated files.
+Skills follow the [agentskills.io](https://agentskills.io) spec. The repo ships a single `.claude/skills/` directory and a single `CLAUDE.md` at the root — Claude Code reads them natively, and OpenCode reads them as fallbacks when its own conventions (`AGENTS.md`, `.config/opencode/skills/`) are absent. No symlinks, no duplicated files.
 
 | Resource | Layout |
 |----------|--------|
-| Skills directory (Claude Code) | `.claude/skills/` (canonical) |
-| Skills directory (Codex / Copilot / Cursor / OpenCode) | `.agents/skills/` (symlink -> `.claude/skills/`) |
-| Memory file | `AGENTS.md` (canonical) ↔ `CLAUDE.md` (symlink on Linux/macOS, copy on Windows) |
-
-The `.agents/skills/` symlink keeps a single source of truth while exposing the agentskills.io standard path. You do not need to maintain both.
+| Skills directory | `.claude/skills/` (single canonical location) |
+| Memory file | `CLAUDE.md` (single canonical location) |
 
 **Portability constraints** (features that degrade gracefully outside Claude Code):
 
@@ -667,7 +663,7 @@ test('@atc:UPEX-101 should validate login', async ({ loginPage }) => {
 
 Edit these files:
 - `package.json` — name, description, repository
-- `AGENTS.md` (canonical AI memory; `CLAUDE.md` is a symlink to it on Linux/macOS, a copy on Windows)
+- `CLAUDE.md` (canonical AI memory, read by both Claude Code and OpenCode)
 - `.agents/project.yaml` — AI context vars (or run `bun run agents:setup` for an interactive walkthrough)
 - `config/variables.ts` — runtime URLs for Playwright (`envDataMap`)
 
@@ -719,7 +715,8 @@ Load the `/project-discovery` skill in your AI assistant to generate project-spe
 - `/playwright-cli` skill -- Browser automation helper (screenshots, tracing, mocking)
 - `/xray-cli` skill -- Xray Cloud test management CLI
 - `/acli` skill -- Atlassian CLI for Jira Cloud (`[ISSUE_TRACKER_TOOL]`)
-- `.agents/skills/` is a symlink to `.claude/skills/` for agentskills.io spec compatibility
+- `/git-flow-master` skill -- End-to-end Git operator (auto-detects branching strategy)
+- `/agentic-qa-onboard` skill -- First-time orientation tour
 - `docs/` -- Human-facing docs (methodology, workflows, architectures)
 
 

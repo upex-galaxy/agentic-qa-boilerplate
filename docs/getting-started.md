@@ -55,8 +55,8 @@ Each phase has a clear trigger (one of the three categories above), a determinis
 
 ### Phase 0 — Bootstrap
 
-- **Trigger**: `bun install` → `bun run pw:install` → `bun run agents:setup` (interactive walkthrough) → `bun run jira:sync-fields` → `bun run jira:sync-workflows` → `bun run jira:check`. If you cloned skills à la carte and the foundation files are missing, you ALSO run `/agentic-qa-core init` first to install `AGENTS.md`, `.agents/`, the `scripts/agents-*.ts` CLIs, and the `package.json` script entries.
-- **Produces**: A populated `.agents/project.yaml`, a `CLAUDE.md` symlink to `AGENTS.md`, the foundation scripts (`agents-setup`, `agents-lint`, `sync-jira-fields`, `sync-jira-workflows`, `check-jira-setup`) wired into `package.json`, the workspace catalog at `.agents/jira-fields.json` (custom fields), and the workflow catalog at `.agents/jira-workflows.json` (statuses + transitions per `work_type`).
+- **Trigger**: `bun install` → `bun run pw:install` → `bun run agents:setup` (interactive walkthrough) → `bun run jira:sync-fields` → `bun run jira:sync-workflows` → `bun run jira:check`. If you cloned skills à la carte and the foundation files are missing, you ALSO run `/agentic-qa-core init` first to install `CLAUDE.md`, `.agents/`, the `scripts/agents-*.ts` CLIs, and the `package.json` script entries.
+- **Produces**: A populated `.agents/project.yaml`, the canonical `CLAUDE.md` at the repo root, the foundation scripts (`agents-setup`, `agents-lint`, `sync-jira-fields`, `sync-jira-workflows`, `check-jira-setup`) wired into `package.json`, the workspace catalog at `.agents/jira-fields.json` (custom fields), and the workflow catalog at `.agents/jira-workflows.json` (statuses + transitions per `work_type`).
 - **Frequency**: One time per repo clone. If you cloned the full repository, the foundation is already in place — only `bun install`, `bun run agents:setup`, and the two `jira:sync-*` commands are needed.
 
 ### Phase 1 — Discovery
@@ -84,9 +84,9 @@ Frequency: every sprint, every ticket. The skills are designed to be invoked man
 
 ### Phase 4 — Maintenance
 
-When `.context/`, `AGENTS.md`, or `.agents/` drifts from reality (the target shipped new modules, new Jira fields, new endpoints):
+When `.context/`, `CLAUDE.md`, or `.agents/` drifts from reality (the target shipped new modules, new Jira fields, new endpoints):
 
-- `/refresh-ai-memory` — re-syncs `AGENTS.md` and `README.md` against current `.context/` and `package.json`. Touches FACTS only — never structural sections.
+- `/refresh-ai-memory` — re-syncs `CLAUDE.md` and `README.md` against current `.context/` and `package.json`. Touches FACTS only — never structural sections.
 - `/business-data-map`, `/business-feature-map`, `/business-api-map` — regenerate the individual maps when the target's domain or API evolves.
 - `/master-test-plan` — regenerate the master test plan when priorities shift.
 - `bun run jira:sync-fields` — re-cataloging Jira custom fields after a new field is added.
@@ -104,9 +104,9 @@ Three pieces have similar-sounding names and overlapping verbs ("init", "adapt",
 
 | Piece | When you invoke it | What it does | Frequency |
 |-------|--------------------|--------------|-----------|
-| **`/agentic-qa-core init`** (skill, active mode) | Once, ONLY if the foundation files are missing (à la carte install). If you cloned the full repo, you NEVER invoke it directly. | Generates `AGENTS.md`, `.agents/project.yaml`, `.agents/jira-required.yaml`, `.agents/jira-fields.json`, the four `scripts/agents-*.ts` CLIs, merges entries into `package.json`, creates the `CLAUDE.md` symlink. Idempotent: existing files are preserved. | One-time |
+| **`/agentic-qa-core init`** (skill, active mode) | Once, ONLY if the foundation files are missing (à la carte install). If you cloned the full repo, you NEVER invoke it directly. | Generates `CLAUDE.md`, `.agents/project.yaml`, `.agents/jira-required.yaml`, `.agents/jira-fields.json`, the four `scripts/agents-*.ts` CLIs, merges entries into `package.json`. Idempotent: existing files are preserved. | One-time |
 | **`/adapt-framework`** (skill + command) | Once per target, AFTER `/project-discovery` finishes. | Adapts `tests/components/`, `config/`, `api/schemas/` to the target's stack: fixtures, page objects, API clients. Modifies THIS repo only — never the target. Plan → user approval → Implement. | Once per target |
-| **`/refresh-ai-memory`** (command) | Periodically, when `.context/` drifts and `AGENTS.md` no longer reflects the project state. | Re-syncs `AGENTS.md` and `README.md` against current `.context/` and `package.json`. Touches project-specific FACTS only (Project Identity, Environment URLs, Discovery Progress) — never structural sections. | Periodic |
+| **`/refresh-ai-memory`** (command) | Periodically, when `.context/` drifts and `CLAUDE.md` no longer reflects the project state. | Re-syncs `CLAUDE.md` and `README.md` against current `.context/` and `package.json`. Touches project-specific FACTS only (Project Identity, Environment URLs, Discovery Progress) — never structural sections. | Periodic |
 
 Mnemonic:
 
@@ -131,7 +131,7 @@ Two circuits explain the wiring. Circuit 1 is about variable resolution (the sta
     |         jira_url, db_mcp, api_mcp, default_env, ...
     |
     v  resolves {{VAR}} placeholders at AI session bootstrap
-AGENTS.md, .claude/skills/**/SKILL.md, .claude/commands/*.md, templates/
+CLAUDE.md, .claude/skills/**/SKILL.md, .claude/commands/*.md, templates/
     |
     v  AI substitutes {{VAR}} with the real value before acting
 AI runs with concrete URLs, project keys, MCP server names
@@ -181,7 +181,7 @@ Subagent (fresh Claude context)
 acli jira workitem create, bun xray, playwright test, ...
 ```
 
-This is the canonical pattern the four workflow skills follow. The doctrine itself lives in `AGENTS.md` §Orchestration Mode and is mirrored at `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md` so subagents can load it without pulling the full `AGENTS.md` into their fresh context. Each workflow skill declares its specific dispatch points in a `## Subagent Dispatch Strategy` section per-skill (which stages delegate, which pattern, which subagent role).
+This is the canonical pattern the four workflow skills follow. The doctrine itself lives in `CLAUDE.md` §Orchestration Mode and is mirrored at `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md` so subagents can load it without pulling the full `CLAUDE.md` into their fresh context. Each workflow skill declares its specific dispatch points in a `## Subagent Dispatch Strategy` section per-skill (which stages delegate, which pattern, which subagent role).
 
 The takeaway: when you invoke `/regression-testing` or `/sprint-testing`, the orchestrator reads its own dispatch strategy, writes a 6-component briefing for each subagent (Goal · Context docs · Skills to load · Exact instructions · Report format · Rules), and the subagent loads tool skills (`/acli`, `/xray-cli`, `/playwright-cli`) to actually run shell commands. This is what makes the main conversation "lean" — the heavy reading happens inside subagents, not in the main thread.
 
@@ -196,7 +196,7 @@ The takeaway: when you invoke `/regression-testing` or `/sprint-testing`, the or
 | Document tests in Jira/Xray with ROI | `/test-documentation` |
 | Write an E2E or API test | `/test-automation` |
 | Run regression and decide release | `/regression-testing` |
-| Refresh `AGENTS.md` after drift | `/refresh-ai-memory` |
+| Refresh `CLAUDE.md` after drift | `/refresh-ai-memory` |
 | Regenerate the data map | `/business-data-map` |
 | Regenerate the feature map | `/business-feature-map` |
 | Regenerate the API map | `/business-api-map` |
@@ -225,7 +225,7 @@ These are passive loads — the AI pulls them in as part of orchestration, not b
 
 - **Tool skills** (`/acli`, `/xray-cli`, `/playwright-cli`, `/playwright-best-practices`): the AI loads them automatically when a workflow skill needs to talk to Jira, Xray, a browser, or apply Playwright best practices. You can force-load them when you genuinely need a one-shot operation (e.g. "take a screenshot"), but they are usually invoked by other skills, not by you.
 - **`agentic-qa-core/references/*`** (`briefing-template.md`, `dispatch-patterns.md`, `orchestration-doctrine.md`): the AI loads these when a workflow skill delegates to a subagent. They are passive references — the subagent loads them inside its own context to know the canonical briefing format and dispatch decision rules.
-- **Templates inside `.claude/skills/agentic-qa-core/templates/`** (`AGENTS.md.template`, `project.yaml.template`, `jira-required.yaml.template`, `jira-workflows.json.template`, the `scripts/*.ts.template` files): only consumed by `/agentic-qa-core init`. They are byte-equivalent mirrors of the live files at the repo root.
+- **Templates inside `.claude/skills/agentic-qa-core/templates/`** (`CLAUDE.md.template`, `project.yaml.template`, `jira-required.yaml.template`, `jira-workflows.json.template`, the `scripts/*.ts.template` files): only consumed by `/agentic-qa-core init`. They are byte-equivalent mirrors of the live files at the repo root.
 
 ---
 
@@ -249,7 +249,7 @@ If you only remember one thing:
 - [`agentic-quality-engineering.md`](agentic-quality-engineering.md) — the strategic deep-dive: 6-stage pipeline, KATA architecture, GO/CAUTION/NO-GO gate, instrumentation patterns.
 - [`context-engineering.md`](context-engineering.md) — the **why** behind the knowledge layer: token efficiency, progressive loading, the `.env` vs `.agents/project.yaml` split, the three variable syntaxes.
 - [`methodology/IQL-methodology.md`](methodology/IQL-methodology.md) — the IQL methodology deep-dive (phased approach, early/mid/late game testing).
-- [`../AGENTS.md`](../AGENTS.md) — the canonical project memory + Tool Resolution table that maps `[TAG_TOOL]` pseudocode to concrete CLIs / MCPs.
+- [`../CLAUDE.md`](../CLAUDE.md) — the canonical project memory + Tool Resolution table that maps `[TAG_TOOL]` pseudocode to concrete CLIs / MCPs.
 - [`../.claude/skills/agentic-qa-core/SKILL.md`](../.claude/skills/agentic-qa-core/SKILL.md) — foundation skill internals (bootstrap order, idempotency rules, source-of-truth contract).
 
 ---

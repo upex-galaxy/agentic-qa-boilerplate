@@ -188,7 +188,7 @@ The human sits on top. The AI never ships anything on its own. Every stage has a
 
 Six core skills handle the end-to-end pipeline (one foundation + five workflow):
 
-- **`agentic-qa-core`** — foundation skill. Hosts the canonical briefing template, dispatch patterns, and orchestration doctrine cited by every workflow skill, and provides the `init` bootstrap that writes `AGENTS.md`, `.agents/project.yaml`, and the `agents-*` scripts when adopting the boilerplate.
+- **`agentic-qa-core`** — foundation skill. Hosts the canonical briefing template, dispatch patterns, and orchestration doctrine cited by every workflow skill, and provides the `init` bootstrap that writes `CLAUDE.md`, `.agents/project.yaml`, and the `agents-*` scripts when adopting the boilerplate.
 - **`project-discovery`** — one-time onboarding. Generates the context files every other skill depends on.
 - **`sprint-testing`** — Stages 1–3. Planning, Execution, and Reporting per ticket. The everyday driver.
 - **`test-documentation`** — Stage 4. ROI analysis that decides which manual TCs are worth automating.
@@ -411,8 +411,8 @@ This is what gives the practice AI **speed** without losing human **judgment**. 
 
 The orchestration model is not improvised per session — it is captured in canonical references that workflow skills load on demand. Engineers and skill authors should know where to look:
 
-- **`AGENTS.md` §Orchestration Mode** — canonical project-level statement of the strategy (subagent-or-not decision rule, briefing format, error protocol).
-- **`agentic-qa-core/references/orchestration-doctrine.md`** — cacheable mirror loaded by subagents that need the full doctrine without re-reading `AGENTS.md`.
+- **`CLAUDE.md` §Orchestration Mode** — canonical project-level statement of the strategy (subagent-or-not decision rule, briefing format, error protocol).
+- **`agentic-qa-core/references/orchestration-doctrine.md`** — cacheable mirror loaded by subagents that need the full doctrine without re-reading `CLAUDE.md`.
 - **`agentic-qa-core/references/briefing-template.md`** — the six-component briefing format every dispatch uses (Goal · Context docs · Skills to load · Exact instructions · Report format · Rules).
 - **`agentic-qa-core/references/dispatch-patterns.md`** — decision guide for the four patterns (Single, Sequential, Parallel, Background) and when each applies.
 - **`## Subagent Dispatch Strategy`** sections inside each workflow `SKILL.md` (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`) — per-stage tables declaring which steps delegate to subagents and with what pattern.
@@ -568,7 +568,7 @@ The practice uses three complementary kinds of AI capability:
 
 | Skill                 | Stage        | When it fires                                                                  |
 | --------------------- | ------------ | ------------------------------------------------------------------------------ |
-| `agentic-qa-core`      | Foundation   | "regenerate AGENTS.md", "agentic-qa bootstrap", "setup agentic-qa foundation", "install boilerplate scripts" |
+| `agentic-qa-core`      | Foundation   | "regenerate CLAUDE.md", "agentic-qa bootstrap", "setup agentic-qa foundation", "install boilerplate scripts" |
 | `project-discovery`   | Onboarding   | "set up this project", "onboard this repo", "generate business-data-map", "discover the architecture" |
 | `sprint-testing`      | 1 · 2 · 3    | "test {{PROJECT_KEY}}-XXX", "process sprint N", "retest bug", "QA this story", "mode yolo" |
 | `test-documentation`  | 4            | "document tests", "ROI analysis", "Candidate vs Manual", "fix traceability"    |
@@ -587,7 +587,7 @@ Commands are deterministic, single-purpose prompts invoked explicitly. Unlike sk
 | Command                       | Purpose                                                  |
 | ----------------------------- | -------------------------------------------------------- |
 | `/adapt-framework`            | Adapt this boilerplate's KATA test architecture to a project already reverse-engineered by `/project-discovery` (Plan -> Approval -> Implement) |
-| `/refresh-ai-memory`          | Regenerate `README.md` and the AI memory file (`AGENTS.md` / `CLAUDE.md` / `GEMINI.md` / `.cursor/rules`, auto-detected) so they reflect the current `.context/` and `package.json` state |
+| `/refresh-ai-memory`          | Regenerate `README.md` and the AI memory file (`CLAUDE.md` / `CLAUDE.md` / `GEMINI.md` / `.cursor/rules`, auto-detected) so they reflect the current `.context/` and `package.json` state |
 | `/master-test-plan`           | Generate or refresh `.context/master-test-plan.md` — what to test and why, derived from the discovery artefacts |
 | `/business-data-map`          | Generate or refresh `.context/mapping/business-data-map.md` (entities, flows, state machines) |
 | `/business-feature-map`       | Generate or refresh `.context/mapping/business-feature-map.md` (feature catalog, CRUD matrix, integrations) |
@@ -705,7 +705,7 @@ Treat these as a starting point, not a canon. Add fields that map to your team's
 
 ### What ships in this repository
 
-- **A foundation skill (`agentic-qa-core`)** — bootstraps `AGENTS.md`, `.agents/project.yaml`, and the `agents-*` scripts; hosts the canonical orchestration doctrine, briefing template, and dispatch patterns cited by every workflow skill.
+- **A foundation skill (`agentic-qa-core`)** — bootstraps `CLAUDE.md`, `.agents/project.yaml`, and the `agents-*` scripts; hosts the canonical orchestration doctrine, briefing template, and dispatch patterns cited by every workflow skill.
 - **A roster of stage-aware AI skills** — auto-triggered by user intent, orchestrated with human-in-the-loop checkpoints. Each stage of the pipeline has its own skill. The current roster is enumerated in Section 12.
 - **A library of utility commands** — deterministic, single-purpose, invoked with `/<name>`. The current library is enumerated in Section 12.
 - **Live system integrations** — MCPs for the database, API, TMS, and library documentation, plus first-party CLIs for TMS operations and browser automation. The current set is enumerated in Section 12.
@@ -726,7 +726,7 @@ The rest is execution.
 **Last Updated**: 2026-04-26
 
 **See also**:
-- `AGENTS.md` — canonical project memory, Tool Resolution, and skill routing (mirrored at `CLAUDE.md`)
+- `CLAUDE.md` — canonical project memory, Tool Resolution, and skill routing (mirrored at `CLAUDE.md`)
 - `docs/context-engineering.md` — strategy behind the three-tier context split
 - `docs/methodology/IQL-methodology.md` — phased methodology deep-dive
 - `.claude/skills/agentic-qa-core/SKILL.md` — foundation skill internals (bootstrap + shared references)

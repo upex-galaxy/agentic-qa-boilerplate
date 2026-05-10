@@ -56,7 +56,7 @@ Seven strategies are supported. Each one tells the skill where new branches star
 
 - `git branch -a` shows `main` (or `master`) AND exactly one of `{staging, dev, develop, integration}` upstream.
 - Branch protection rules on both branches (if visible via `gh api`).
-- `AGENTS.md` mentions both branches in a "Git Workflow" section.
+- `CLAUDE.md` mentions both branches in a "Git Workflow" section.
 
 **Source branch for new work**: integration branch (e.g. `staging`).
 
@@ -237,7 +237,7 @@ Seven strategies are supported. Each one tells the skill where new branches star
 The combined detection runs in this order. Stop at the first definitive answer.
 
 ```
-1. Read AGENTS.md for `<!-- git-flow-master:strategy:VALUE -->`.
+1. Read CLAUDE.md for `<!-- git-flow-master:strategy:VALUE -->`.
    If found, use VALUE. (Sticky decision wins.)
 
 2. Inspect `git branch -a`:

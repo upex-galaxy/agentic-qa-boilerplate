@@ -15,7 +15,7 @@ KATA (Component Action Test Architecture) rewires the usual Page Object pattern.
 
 ## Subagent Dispatch Strategy
 
-This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The Plan, Code, and Review phases each carry distinct context-isolation needs — Plan keeps KATA architectural reads out of the orchestrator, Code isolates multi-file edits, Review fans out three independent verifiers in parallel.
+This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The Plan, Code, and Review phases each carry distinct context-isolation needs — Plan keeps KATA architectural reads out of the orchestrator, Code isolates multi-file edits, Review fans out three independent verifiers in parallel.
 
 | Stage                                          | Pattern              | Subagent role                                                                                                                  |
 |------------------------------------------------|----------------------|--------------------------------------------------------------------------------------------------------------------------------|

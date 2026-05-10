@@ -63,7 +63,7 @@ Skills that are workflow-specific to this boilerplate live in `.claude/skills/` 
 
 | Skill                | Trigger                | Why it stays local                                                            |
 | -------------------- | ---------------------- | ----------------------------------------------------------------------------- |
-| `agentic-qa-core`    | `/agentic-qa-core init`| Foundation: shared references + bootstrap of `.agents/` and AGENTS.md         |
+| `agentic-qa-core`    | `/agentic-qa-core init`| Foundation: shared references + bootstrap of `.agents/` and CLAUDE.md         |
 | `agentic-qa-onboard` | `/agentic-qa-onboard`  | First-time orientation tour (this is the entry point for new contributors)    |
 | `project-discovery`  | `/project-discovery`   | 4-phase reverse-engineering of a target project (Constitution → Specification)|
 | `sprint-testing`     | `/sprint-testing`      | Stages 1-3: per-ticket manual QA loop (planning, execution, reporting)        |
@@ -137,7 +137,7 @@ What you keep: every workflow skill committed in this repo (`/sprint-testing`, `
 
 ## See also
 
-- [AGENTS.md § Quick Start](../../AGENTS.md) — entry point for `bun run setup` and `/agentic-qa-onboard`
+- [CLAUDE.md § Quick Start](../../CLAUDE.md) — entry point for `bun run setup` and `/agentic-qa-onboard`
 - [.claude/skills/agentic-qa-onboard/SKILL.md](../../.claude/skills/agentic-qa-onboard/SKILL.md) — the orientation skill itself
 - [docs/setup/README.md](./README.md) — index of setup guides in this repo
 - [docs/setup/jira-setup-guide.md](./jira-setup-guide.md) — Jira/Atlassian credentials + acli login flow

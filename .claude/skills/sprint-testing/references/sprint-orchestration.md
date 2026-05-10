@@ -212,7 +212,7 @@ Once chosen: note ID / type / title / priority, check for an existing `test-sess
 
 Every dispatch uses the **6-component briefing format** defined in `.claude/skills/agentic-qa-core/references/briefing-template.md` (Goal / Context docs / Skills to load / Exact instructions / Report format / Rules). The four briefings below cover the per-ticket cadence (Session Start -> Stage 1 -> Stage 2 -> Stage 3) and are used VERBATIM in BOTH single-ticket and batch modes — single-ticket runs them once, batch loops them per Wave 1 PENDING ticket. Detailed step instructions live in the stage-specific reference — do NOT duplicate them here.
 
-> **Variable resolution**: `<TICKET_KEY>`, `<MODULE>`, `<BRIEF_TITLE>`, `<PBI_FOLDER>`, `<ENV>` are session variables filled by the orchestrator before dispatch. `<PBI_FOLDER>` resolves to `.context/PBI/<MODULE>/<TICKET_KEY>-<BRIEF_TITLE>/` (absolute path). `{{PROJECT_KEY}}`, `{{WEB_URL}}`, `{{API_URL}}`, `{{API_MCP}}`, `{{DB_MCP}}` resolve from `.agents/project.yaml` per `AGENTS.md` §"Project Variables".
+> **Variable resolution**: `<TICKET_KEY>`, `<MODULE>`, `<BRIEF_TITLE>`, `<PBI_FOLDER>`, `<ENV>` are session variables filled by the orchestrator before dispatch. `<PBI_FOLDER>` resolves to `.context/PBI/<MODULE>/<TICKET_KEY>-<BRIEF_TITLE>/` (absolute path). `{{PROJECT_KEY}}`, `{{WEB_URL}}`, `{{API_URL}}`, `{{API_MCP}}`, `{{DB_MCP}}` resolve from `.agents/project.yaml` per `CLAUDE.md` §"Project Variables".
 
 > **Skill-loading invariant**: every briefing that touches `[ISSUE_TRACKER_TOOL]` requires `/acli`; every briefing that touches `[TMS_TOOL]` in Modality A also requires `/xray-cli`. Sub-agents inherit the orchestrator's skill registry, so the orchestrator only needs to load them once at Session Start §0.1 — but each briefing's "Skills to load" line lists them explicitly so the dispatch is self-contained.
 
@@ -224,7 +224,7 @@ Every dispatch uses the **6-component briefing format** defined in `.claude/skil
 Goal: Fetch ticket <TICKET_KEY> from the issue tracker, load relevant context, create the PBI folder, and return a session-start report.
 
 Context docs:
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/AGENTS.md (§"Local Context (PBI)" folder convention)
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/CLAUDE.md (§"Local Context (PBI)" folder convention)
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/master-test-plan.md
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-data-map.md
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-feature-map.md
@@ -331,7 +331,7 @@ Context docs:
 Skills to load: /playwright-cli (UI exploration); the active environment's API and DB MCPs ({{API_MCP}} and {{DB_MCP}} from project.yaml). For Bug tickets: same set, no extras.
 
 Exact instructions:
-  1. Mark the ticket as actively testing (substrate-driven, idempotent, non-blocking). Resolve `{{jira.transition.<work_type>.start_testing}}` and `{{jira.status.<work_type>.in_test}}` from `.agents/jira-workflows.json` (per AGENTS.md §"Project Variables"). Call `[ISSUE_TRACKER_TOOL] Get Transitions` for `<TICKET_KEY>`. Skip (and emit `skipped_reason`) if any of these hold:
+  1. Mark the ticket as actively testing (substrate-driven, idempotent, non-blocking). Resolve `{{jira.transition.<work_type>.start_testing}}` and `{{jira.status.<work_type>.in_test}}` from `.agents/jira-workflows.json` (per CLAUDE.md §"Project Variables"). Call `[ISSUE_TRACKER_TOOL] Get Transitions` for `<TICKET_KEY>`. Skip (and emit `skipped_reason`) if any of these hold:
        - current status already equals `{{jira.status.<work_type>.in_test}}` -> `"already_in_test"`
        - the substrate slug is undefined for `<work_type>` (e.g. Bug work types without an intermediate in-testing state) -> `"no_in_test_state_for_<work_type>"`
        - the resolved transition id is not available from the current status -> `"transition_not_available_from_<current_status>"`
@@ -421,7 +421,7 @@ Rules:
   - Apply the bug summary format from reporting-templates.md §1.2 verbatim (no improvisation).
   - On 4xx/5xx from any [ISSUE_TRACKER_TOOL] / [TMS_TOOL] call: stop, report partial state, do NOT auto-retry the transition.
   - Critical Rule #3 (No AI Attribution): the QA comment must look human-authored.
-  - All TMS content in English (Critical Rule from AGENTS.md §"Language").
+  - All TMS content in English (Critical Rule from CLAUDE.md §"Language").
 ```
 
 ### Shared sub-agent shell (legacy — kept for memory bookkeeping)

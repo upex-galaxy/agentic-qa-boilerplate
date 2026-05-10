@@ -206,7 +206,7 @@ MANDATORY. List anything you could not ground in evidence:
 
 ## After generation
 
-- Update `CLAUDE.md` / `AGENTS.md` Context System section to reference `.context/master-test-plan.md` if not present.
+- Update `CLAUDE.md` / `CLAUDE.md` Context System section to reference `.context/master-test-plan.md` if not present.
 - In UPDATE mode: show diff summary, wait for explicit confirmation before overwriting.
 - Report:
   - CRITICAL flows identified: N

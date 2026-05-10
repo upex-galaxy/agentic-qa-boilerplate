@@ -82,7 +82,7 @@ Four sub-steps, in order:
 3. **Business Model Discovery** -- problem statement, target users, value proposition, revenue model (if any). Business Model Canvas recommended.
 4. **Domain Glossary** -- core entities, relationships, state machines, enumerations, UI-label vs code-identifier mapping.
 
-**Completion gate**: `.context/PRD/business/business-model.md`, `.context/PRD/business/domain-glossary.md`, `.context/project-config.md` all exist and are non-empty. Plus a `## Project Assessment (Phase 1)` block in `AGENTS.md` (CLAUDE.md is a symlink to it). Sanity-check content — these are soft gates, surfaced to the human as warnings, not hard aborts:
+**Completion gate**: `.context/PRD/business/business-model.md`, `.context/PRD/business/domain-glossary.md`, `.context/project-config.md` all exist and are non-empty. Plus a `## Project Assessment (Phase 1)` block in `CLAUDE.md` (CLAUDE.md is a symlink to it). Sanity-check content — these are soft gates, surfaced to the human as warnings, not hard aborts:
 - `domain-glossary.md` contains at least 5 core-entity subsections (grep `^### ` yields 5+ matches, ignoring top-level H3s from "Enumerations" etc. — aim for real entities).
 - `business-model.md` cites at least one concrete source (`Source:` or `Found in:` literal appears 3+ times).
 - `project-config.md` has a `## Tech Stack` section AND a `## Environments` section.

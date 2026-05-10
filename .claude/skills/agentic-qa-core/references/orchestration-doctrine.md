@@ -1,8 +1,8 @@
 # Orchestration Doctrine
 
-> **Mirror**: this file mirrors `AGENTS.md` §"Orchestration Mode (Subagent Strategy)".
-> If you change the doctrine, update both files. The root AGENTS.md is the canonical source.
-> Rationale: subagents need to load this without pulling the full AGENTS.md into their context.
+> **Mirror**: this file mirrors `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)".
+> If you change the doctrine, update both files. The root CLAUDE.md is the canonical source.
+> Rationale: subagents need to load this without pulling the full CLAUDE.md into their context.
 
 ## Orchestration Mode (Subagent Strategy)
 

@@ -2,7 +2,7 @@
 
 > **Purpose**: Explain the context engineering strategy for AI-driven test automation.
 > **Audience**: Humans learning the system + AI when needing to understand "why".
-> **Related**: `AGENTS.md` contains the operational context loaded each session. (`CLAUDE.md` at the repo root is a symlink on Linux/macOS — and a byte-identical copy on Windows — pointing at `AGENTS.md`. They are the same file; structural changes belong in `AGENTS.md` and propagate through the symlink.)
+> **Related**: `CLAUDE.md` contains the operational context loaded each session. (`CLAUDE.md` at the repo root is a symlink on Linux/macOS — and a byte-identical copy on Windows — pointing at `CLAUDE.md`. They are the same file; structural changes belong in `CLAUDE.md` and propagate through the symlink.)
 
 ---
 
@@ -34,7 +34,7 @@ agentic-qa-boilerplate/
 ├── .claude/skills/   → Workflow skills (task instructions + references)
 ├── docs/             → Documentation for humans
 ├── tests/            → KATA Architecture implementation
-└── AGENTS.md         → Project memory (loaded every session)
+└── CLAUDE.md         → Project memory (loaded every session)
 ```
 
 ### Why This Separation?
@@ -45,7 +45,7 @@ agentic-qa-boilerplate/
 | `.context/` | Facts about the system (what exists, how it works) | When AI needs to understand the system |
 | `.claude/skills/` | Task instructions + references (what to do, step by step) | When AI loads a skill for a specific task |
 | `docs/` | Learning material for humans | When humans need to learn |
-| `AGENTS.md` | Operational rules + project state | Every session automatically |
+| `CLAUDE.md` | Operational rules + project state | Every session automatically |
 
 ---
 
@@ -117,7 +117,7 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 .claude/skills/
 ├── agentic-qa-core/        → Foundation: shared references (briefing template, dispatch patterns, orchestration doctrine) + bootstrap (`/agentic-qa-core init`)
 ├── acli/                  → Atlassian CLI skill: Jira issue tracking + Modality B TMS operations
-├── project-discovery/     → 4-phase reverse-engineering, generates `.context/` artifacts. README/AGENTS.md upkeep is `/refresh-ai-memory`; foundation files are `/agentic-qa-core init`.
+├── project-discovery/     → 4-phase reverse-engineering, generates `.context/` artifacts. README/CLAUDE.md upkeep is `/refresh-ai-memory`; foundation files are `/agentic-qa-core init`.
 ├── sprint-testing/        → In-sprint QA (planning + execution + reporting, per ticket)
 ├── test-documentation/    → TMS documentation + test prioritization
 ├── test-automation/       → KATA test planning + coding + review
@@ -127,10 +127,10 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 ```
 
 **Key Skills**:
-- `/agentic-qa-core init` - Foundation bootstrap (AGENTS.md, .agents/, scripts/, package.json)
+- `/agentic-qa-core init` - Foundation bootstrap (CLAUDE.md, .agents/, scripts/, package.json)
 - `/test-automation` - KATA test writing pipeline
 - `/sprint-testing` - End-to-end in-sprint QA
-- `/project-discovery` - Generates `.context/` artifacts; pair with `/refresh-ai-memory` for README/AGENTS.md upkeep
+- `/project-discovery` - Generates `.context/` artifacts; pair with `/refresh-ai-memory` for README/CLAUDE.md upkeep
 
 ### docs/ - Human Documentation
 
@@ -170,7 +170,7 @@ These files have stable names and locations. Reference them confidently:
 
 | File / Skill | Purpose |
 |--------------|---------|
-| `AGENTS.md` | Project memory, loaded every session |
+| `CLAUDE.md` | Project memory, loaded every session |
 | `.agents/project.yaml` | Tool-agnostic project variables (`{{VAR}}` source of truth) |
 | `.agents/jira-required.yaml` | Manifest of Jira custom fields the methodology requires |
 | `.agents/jira-fields.json` | Auto-generated catalog of the workspace's Jira fields (`{{jira.<slug>}}` resolution) |
@@ -186,7 +186,7 @@ These files have stable names and locations. Reference them confidently:
 ### One-Time Setup (Discovery)
 
 ```
-Phase 0: Bootstrap       → /agentic-qa-core init  (writes AGENTS.md, .agents/, scripts/, package.json updates)
+Phase 0: Bootstrap       → /agentic-qa-core init  (writes CLAUDE.md, .agents/, scripts/, package.json updates)
                           bun run agents:setup   (interactive walkthrough of .agents/project.yaml)
                           bun run jira:sync-fields (catalog Jira workspace fields)
                           bun run jira:check     (validate against jira-required.yaml manifest)
@@ -222,7 +222,7 @@ bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 | **Stage 5** | Automation: plan → code → review (KATA on Playwright + TS) | `/test-automation` |
 | **Stage 6** | Regression execution + failure classification + GO/NO-GO | `/regression-testing` |
 | **Onboarding** | 4-phase reverse-engineering of an existing target repo | `/project-discovery` + `/adapt-framework` |
-| **Bootstrap** | Foundation files for fresh adoption (AGENTS.md, `.agents/`, scripts) | `/agentic-qa-core init` |
+| **Bootstrap** | Foundation files for fresh adoption (CLAUDE.md, `.agents/`, scripts) | `/agentic-qa-core init` |
 
 ---
 
@@ -234,7 +234,7 @@ The orchestration doctrine has three shared assets, all hosted by `agentic-qa-co
 
 | Asset | Path | Role |
 |-------|------|------|
-| **Orchestration doctrine** | `agentic-qa-core/references/orchestration-doctrine.md` | Cacheable mirror of `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Subagents load this instead of pulling the full `AGENTS.md`. |
+| **Orchestration doctrine** | `agentic-qa-core/references/orchestration-doctrine.md` | Cacheable mirror of `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)". Subagents load this instead of pulling the full `CLAUDE.md`. |
 | **Briefing template** | `agentic-qa-core/references/briefing-template.md` | The canonical 6-component briefing format (Goal / Context docs / Skills to load / Exact instructions / Report format / Rules) with one filled example per dispatch pattern. |
 | **Dispatch patterns** | `agentic-qa-core/references/dispatch-patterns.md` | Decision guide and heuristic for picking Single / Sequential / Parallel / Background. |
 
@@ -253,7 +253,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 | **Write E2E or API Test** | `/test-automation` (SKILL.md) | The skill's own `references/` (planning playbook, KATA patterns, etc.) |
 | **Exploratory Testing** | `/sprint-testing` (SKILL.md) + `.context/master-test-plan.md` | Skill `references/` (exploration patterns, session entry points) |
 | **Understand System** | `.context/mapping/business-data-map.md` | `.context/PRD/*`, `.context/SRS/*` |
-| **Use MCP** | `AGENTS.md` §"MCPs Available" + §"Tool Resolution" | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
+| **Use MCP** | `CLAUDE.md` §"MCPs Available" + §"Tool Resolution" | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
 
 ### By Role
 
@@ -270,11 +270,11 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 
 ### DO
 
-- Load `AGENTS.md` first (automatic)
+- Load `CLAUDE.md` first (automatic)
 - Load task-specific guidelines
 - Use skills from `.claude/skills/` for structured tasks
 - Reference code in `tests/components/` as living examples
-- From subagents, load `agentic-qa-core/references/orchestration-doctrine.md` instead of pulling full `AGENTS.md`
+- From subagents, load `agentic-qa-core/references/orchestration-doctrine.md` instead of pulling full `CLAUDE.md`
 
 ### DON'T
 
@@ -287,7 +287,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 
 ## 10. Maintenance Guidelines
 
-### When to Update AGENTS.md
+### When to Update CLAUDE.md
 
 - Project identity changes
 - New MCPs configured
@@ -299,13 +299,13 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 - Framework patterns or conventions change (update the relevant skill's `references/`)
 - Workflow steps change (update the SKILL.md orchestration)
 - New outputs required or better instructions discovered
-- Structural changes to `AGENTS.md` must mirror `agentic-qa-core/templates/AGENTS.md.template` in the same commit (the live file and the template are byte-equivalent for structural sections)
+- Structural changes to `CLAUDE.md` must mirror `agentic-qa-core/templates/CLAUDE.md.template` in the same commit (the live file and the template are byte-equivalent for structural sections)
 
 ---
 
 ## Related Documentation
 
-- **AGENTS.md** - Operational context (project root)
+- **CLAUDE.md** - Operational context (project root)
 - **README.md** - Project overview for humans
 - `.agents/README.md` - Variable resolution contract (`{{VAR}}`, `<<VAR>>`, `{{jira.<slug>}}`)
 - `/test-automation` skill - KATA Architecture entry point

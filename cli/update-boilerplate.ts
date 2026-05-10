@@ -16,16 +16,10 @@
  * AGENT SKILLS MODEL
  * ============================================================================
  *
- * Operational workflows live as agent skills under `.claude/skills/`. The
- * canonical location is the Claude Code directory:
- *
- *   .claude/skills/                Canonical skills directory (one folder per skill)
- *   .agents/skills  -> ../.claude/skills  Relative symlink for portability
- *                                          (Codex / Copilot / Cursor / OpenCode)
- *
- * The CLI syncs the canonical directory only. The `.agents/skills` symlink is
- * ensured after every successful skills sync so other agent platforms see the
- * same content without duplication.
+ * Operational workflows live as agent skills under `.claude/skills/`. Both
+ * Claude Code and OpenCode read this directory natively (OpenCode falls back
+ * to Claude Code conventions when its own paths are absent), so a single
+ * canonical location covers all supported agents — no symlinks needed.
  *
  * ============================================================================
  * WHAT GETS SYNCED (Universal - same across all projects)
@@ -65,7 +59,7 @@
  *   .agents/jira-required.yaml Manifest customised per project (optional/unmapped)
  *   .claude/settings.local.json Your personal Claude Code permissions (gitignored)
  *   .mcp.json                  Your MCP credentials (use .mcp.example.json as a template)
- *   CLAUDE.md|AGENTS.md|GEMINI.md  Your AI memory files
+ *   CLAUDE.md|GEMINI.md            Your AI memory files
  *   README.md                  Your project documentation
  *   package.json               Your dependencies (script/dep gaps reported instead)
  *   eslint.config.js           Your linting rules
@@ -123,13 +117,10 @@ import { execSync } from 'node:child_process';
 import {
   cpSync,
   existsSync,
-  lstatSync,
   mkdirSync,
   readdirSync,
   readFileSync,
-  readlinkSync,
   rmSync,
-  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -150,8 +141,6 @@ const TEMP_DIR = join(tmpdir(), 'kata-boilerplate-update');
  * Codex / Copilot / Cursor / OpenCode resolve skills from the same source.
  */
 const SKILLS_CANONICAL_DIR = join('.claude', 'skills');
-const SKILLS_SYMLINK_PATH = join('.agents', 'skills');
-const SKILLS_SYMLINK_TARGET = join('..', '.claude', 'skills');
 
 /**
  * Config files that are universal across all KATA projects
@@ -528,10 +517,6 @@ function rollbackFromBackup(): void {
   try {
     restoreDir(backupPath, process.cwd());
     log.success(`Restored ${restored} files from ${latest}`);
-    // Recreate the .agents/skills symlink if the skills directory was restored
-    if (existsSync(SKILLS_CANONICAL_DIR)) {
-      ensureAgentsSkillsSymlink();
-    }
   }
   catch (err) {
     log.error(`Rollback failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -770,100 +755,6 @@ function printSkillsList(): void {
   log.info('Use `bun run update skills --skill <name[,name,...]>` to sync specific skills.');
 }
 
-/**
- * Ensure `.agents/skills` is a relative symlink pointing at `../.claude/skills`.
- *
- * Behavior:
- *   - Absent        -> create the symlink.
- *   - Correct link  -> leave untouched, log confirmation.
- *   - Wrong target  -> warn the user, do not overwrite.
- *   - Real dir/file -> warn the user, do not overwrite.
- *   - Windows EPERM -> print elevation instructions.
- */
-function ensureAgentsSkillsSymlink(): void {
-  const parentDir = '.agents';
-
-  try {
-    mkdirSync(parentDir, { recursive: true });
-  }
-  catch (err) {
-    log.warning(`Could not create ${parentDir}/: ${err instanceof Error ? err.message : String(err)}`);
-    return;
-  }
-
-  if (existsSync(SKILLS_SYMLINK_PATH)) {
-    let stats;
-    try {
-      stats = lstatSync(SKILLS_SYMLINK_PATH);
-    }
-    catch (err) {
-      log.warning(`Could not inspect ${SKILLS_SYMLINK_PATH}: ${err instanceof Error ? err.message : String(err)}`);
-      return;
-    }
-
-    if (stats.isSymbolicLink()) {
-      let currentTarget = '';
-      try {
-        currentTarget = readlinkSync(SKILLS_SYMLINK_PATH);
-      }
-      catch {
-        // Ignore read failure, treat as wrong target
-      }
-
-      if (currentTarget === SKILLS_SYMLINK_TARGET) {
-        log.dim(`${SKILLS_SYMLINK_PATH} symlink already configured`);
-        return;
-      }
-
-      log.warning(
-        `${SKILLS_SYMLINK_PATH} is a symlink pointing to "${currentTarget}" (expected "${SKILLS_SYMLINK_TARGET}").`,
-      );
-      log.info(`Remove it manually and re-run: rm "${SKILLS_SYMLINK_PATH}" && bun run update skills`);
-      return;
-    }
-
-    // Real directory or file — never overwrite user data
-    log.warning(
-      `${SKILLS_SYMLINK_PATH} exists as a regular ${stats.isDirectory() ? 'directory' : 'file'}; not overwriting.`,
-    );
-    log.info(
-      'To enable multi-agent portability, back up and remove it, then re-run the skills sync so the symlink can be created.',
-    );
-    return;
-  }
-
-  // Absent — create the symlink
-  try {
-    symlinkSync(SKILLS_SYMLINK_TARGET, SKILLS_SYMLINK_PATH, 'dir');
-    log.success(`Created symlink ${SKILLS_SYMLINK_PATH} -> ${SKILLS_SYMLINK_TARGET}`);
-  }
-  catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const code = (err as NodeJS.ErrnoException | undefined)?.code;
-
-    if (process.platform === 'win32' && code === 'EPERM') {
-      log.warning(
-        'Symlink creation requires elevated permissions on Windows. '
-        + `Run this command as Administrator, or manually create "${SKILLS_SYMLINK_PATH}" `
-        + `as a directory junction / symlink to "${SKILLS_CANONICAL_DIR}".`,
-      );
-      return;
-    }
-
-    if (process.platform === 'win32') {
-      log.warning(`Could not create ${SKILLS_SYMLINK_PATH}: ${message}`);
-      log.info(
-        'On Windows, creating symlinks may require elevated permissions. '
-        + `Run this command as Administrator, or manually create "${SKILLS_SYMLINK_PATH}" `
-        + `as a directory junction / symlink to "${SKILLS_CANONICAL_DIR}".`,
-      );
-      return;
-    }
-
-    log.warning(`Could not create ${SKILLS_SYMLINK_PATH}: ${message}`);
-  }
-}
-
 // ============================================================================
 // UPDATE FUNCTIONS
 // ============================================================================
@@ -915,9 +806,6 @@ function updateSkills(skillsFilter: string[] | null): MergeResult {
     totals.success += result.success;
     totals.errors += result.errors;
   }
-
-  // Ensure the portability symlink exists after a successful sync
-  ensureAgentsSkillsSymlink();
 
   return totals;
 }
@@ -1269,7 +1157,6 @@ ${colors.bold}WHAT GETS SYNCED:${colors.reset}
   ${colors.green}  .claude/skills/${colors.reset}        Agent skills (canonical location)
   ${colors.green}  .claude/commands/${colors.reset}      Slash commands (refresh-ai-memory, fix-traceability, business-*-map, ...)
   ${colors.green}  .claude/settings.json${colors.reset}  Versioned default permissions (your settings.local.json untouched)
-  ${colors.green}  .agents/skills${colors.reset}         Relative symlink to .claude/skills (auto-managed)
   ${colors.green}  .agents/README.md${colors.reset}      Variable system documentation
   ${colors.green}  scripts/${colors.reset}               Framework scripts (agents-lint, sync-jira-issues, kata-manifest, ...)
   ${colors.green}  templates/${colors.reset}             Universal templates (pr-test-automation, ...)

@@ -388,7 +388,7 @@ If the user provided context, use it. If not, ask:
    git commit -m "{type}({key}): {description}"
    ```
 
-4. **Never** `git commit --amend` here. The hook rejected the commit — it does not exist. `--amend` would mutate the _previous_ commit, which destroys context. Forward commits only. (Critical Reminder #7 in `AGENTS.md`.)
+4. **Never** `git commit --amend` here. The hook rejected the commit — it does not exist. `--amend` would mutate the _previous_ commit, which destroys context. Forward commits only. (Critical Reminder #7 in `CLAUDE.md`.)
 
 5. **Never** `git commit --no-verify` to bypass the hook unless the user explicitly authorises it. Hooks exist for a reason.
 

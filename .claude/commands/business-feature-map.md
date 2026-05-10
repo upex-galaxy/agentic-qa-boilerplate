@@ -192,6 +192,6 @@ MANDATORY. List features that:
 ## After generation
 
 - Cross-reference with `business-data-map.md` if it exists — note any mismatches.
-- Update the AI memory file (`CLAUDE.md` / `AGENTS.md`) with a reference if not already present.
+- Update the AI memory file (`CLAUDE.md` / `CLAUDE.md`) with a reference if not already present.
 - In UPDATE mode: show diff summary, wait for confirmation.
 - Report: total features, features by status, CRUD coverage, integrations found, discovery gaps.

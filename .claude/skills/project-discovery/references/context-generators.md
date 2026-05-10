@@ -36,7 +36,7 @@ Every output MUST include a `## Discovery Gaps` section for anything not verifia
 
 ### Phase 0: detect configuration
 
-- AI memory file: `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `CURSOR.md`, `COPILOT.md`, `.ai-instructions.md`.
+- AI memory file: `CLAUDE.md`, `GEMINI.md`, `CLAUDE.md`, `CURSOR.md`, `COPILOT.md`, `.ai-instructions.md`.
 - Project name + purpose: `package.json`, `README.md`, `pyproject.toml`.
 - DB access: resolve `[DB_TOOL]` (DBHub / Supabase / raw SQL). Read-only queries only.
 - Existing docs: `.context/PRD/`, `.context/SRS/`, `docs/`.

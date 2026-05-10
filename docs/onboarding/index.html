@@ -572,8 +572,8 @@
                     </dd>
                     <dt>Produces</dt>
                     <dd>
-                      A populated <code>.agents/project.yaml</code>, the
-                      <code>CLAUDE.md → AGENTS.md</code> symlink, the foundation scripts
+                      A populated <code>.agents/project.yaml</code>, the canonical
+                      <code>CLAUDE.md</code> at the repo root, the foundation scripts
                       (<code>agents-setup</code>, <code>agents-lint</code>,
                       <code>sync-jira-fields</code>, <code>sync-jira-workflows</code>,
                       <code>check-jira-setup</code>) wired into <code>package.json</code>, the
@@ -706,7 +706,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   <dl>
                     <dt>Trigger</dt>
                     <dd>
-                      When <code>.context/</code>, <code>AGENTS.md</code>, or
+                      When <code>.context/</code>, <code>CLAUDE.md</code>, or
                       <code>.agents/</code> drifts from reality (the target shipped new modules, new
                       Jira fields, new endpoints).
                     </dd>
@@ -715,7 +715,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                       Refreshed memory files and re-cataloged Jira fields:
                       <ul>
                         <li>
-                          <code>/refresh-ai-memory</code> — re-syncs <code>AGENTS.md</code> +
+                          <code>/refresh-ai-memory</code> — re-syncs <code>CLAUDE.md</code> +
                           <code>README.md</code>.
                         </li>
                         <li>
@@ -790,7 +790,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                       cloned the full repo, you NEVER invoke it directly.
                     </td>
                     <td>
-                      Generates <code>AGENTS.md</code>, <code>.agents/project.yaml</code>,
+                      Generates <code>CLAUDE.md</code>, <code>.agents/project.yaml</code>,
                       <code>.agents/jira-required.yaml</code>,
                       <code>.agents/jira-fields.json</code>,
                       <code>.agents/jira-workflows.json</code>, the
@@ -820,11 +820,11 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                       >
                     </td>
                     <td>
-                      Periodically, when <code>.context/</code> drifts and <code>AGENTS.md</code> no
+                      Periodically, when <code>.context/</code> drifts and <code>CLAUDE.md</code> no
                       longer reflects the project state.
                     </td>
                     <td>
-                      Re-syncs <code>AGENTS.md</code> and <code>README.md</code> against current
+                      Re-syncs <code>CLAUDE.md</code> and <code>README.md</code> against current
                       <code>.context/</code> and <code>package.json</code>. Touches project-specific
                       FACTS only — never structural sections.
                     </td>
@@ -1453,7 +1453,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     <td><code>/regression-testing</code></td>
                   </tr>
                   <tr>
-                    <td>Refresh <code>AGENTS.md</code> after drift</td>
+                    <td>Refresh <code>CLAUDE.md</code> after drift</td>
                     <td><code>/refresh-ai-memory</code></td>
                   </tr>
                   <tr>
@@ -1553,7 +1553,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 </div>
                 <p class="skill-card-trigger">/agentic-qa-core init</p>
                 <p class="skill-card-desc">
-                  Bootstraps the foundation files (<code>AGENTS.md</code>, <code>.agents/</code>,
+                  Bootstraps the foundation files (<code>CLAUDE.md</code>, <code>.agents/</code>,
                   scripts, <code>package.json</code> entries) AND hosts shared references (briefing
                   template, dispatch patterns, orchestration doctrine) that other skills cite on
                   demand. Two roles, one skill.
@@ -1715,7 +1715,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   <li>
                     <code>/refresh-ai-memory</code>
                     <span class="muted"
-                      >Re-sync <code>AGENTS.md</code>, <code>README.md</code> (and per-tool memory
+                      >Re-sync <code>CLAUDE.md</code>, <code>README.md</code> (and per-tool memory
                       files like <code>CLAUDE.md</code>, <code>GEMINI.md</code>) against current
                       <code>.context/</code> + <code>package.json</code>.</span
                     >
@@ -1965,11 +1965,11 @@ bun run jira:check            # verify both catalogs against the manifest</code>
           </a>
           <a
             class="footer-card"
-            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/AGENTS.md"
+            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/CLAUDE.md"
             target="_blank"
             rel="noopener"
           >
-            <span class="footer-card-title">AGENTS.md</span>
+            <span class="footer-card-title">CLAUDE.md</span>
             <span class="footer-card-desc">Canonical project memory + Tool Resolution table.</span>
           </a>
           <a

@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "I just finished work on UPEX-277 (empty states for the reservations module). Need to commit the 4 changed files and push the branch — there's no PR yet. Repo uses main + staging.",
-      "expected_output": "Skill detects main-integration strategy from layout (main+staging), persists marker to AGENTS.md if missing, groups the 4 files into atomic conventional commits with scope UPEX-277, asks before pushing to current feature branch, and offers to open PR against staging next. No AI attribution. No git add -A.",
+      "expected_output": "Skill detects main-integration strategy from layout (main+staging), persists marker to CLAUDE.md if missing, groups the 4 files into atomic conventional commits with scope UPEX-277, asks before pushing to current feature branch, and offers to open PR against staging next. No AI attribution. No git add -A.",
       "should_trigger": true,
       "files": []
     },
@@ -25,7 +25,7 @@
     {
       "id": 4,
       "prompt": "We're starting a brand new repo for a side project. Just me, no team. What's the simplest git setup? I'll mostly push directly to main.",
-      "expected_output": "Skill recognises the strategy-selection intent, presents the 7 supported strategies with one-line descriptions, recommends solo-main given the context (single contributor, simplicity), and writes the marker <!-- git-flow-master:strategy:solo-main --> to AGENTS.md so future invocations skip the question.",
+      "expected_output": "Skill recognises the strategy-selection intent, presents the 7 supported strategies with one-line descriptions, recommends solo-main given the context (single contributor, simplicity), and writes the marker <!-- git-flow-master:strategy:solo-main --> to CLAUDE.md so future invocations skip the question.",
       "should_trigger": true,
       "files": []
     },

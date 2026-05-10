@@ -53,7 +53,7 @@ const SCAN_ROOTS = [
 
 // Single root-level file to also scan.
 const SCAN_FILES = [
-  'AGENTS.md',
+  'CLAUDE.md',
 ];
 
 // Directories to skip outright while walking.
@@ -76,9 +76,9 @@ const SKIP_DIRS = new Set([
 // the linter ignores matches where both conditions hold.
 const DOC_META_ALLOWLIST: Array<[string, string]> = [
   // §Critical Rules rule 9: "Use [TAG_TOOL] pseudocode and {{VARIABLES}} for dynamic content"
-  ['VARIABLES', 'AGENTS.md'],
+  ['VARIABLES', 'CLAUDE.md'],
   // §Project Variables bootstrap instruction explaining the {{VAR_NAME}} syntax
-  ['VAR_NAME', 'AGENTS.md'],
+  ['VAR_NAME', 'CLAUDE.md'],
   // templates/mcp/README.md uses the literal token {{VAR}} to illustrate placeholder
   // syntax for the installer; not an actual variable reference.
   ['VAR', 'templates/mcp/README.md'],
@@ -427,8 +427,8 @@ function walkMarkdown(root: string, files: string[]): void {
   for (const name of entries) {
     const full = join(root, name);
 
-    // lstat — do not follow symlinks. CLAUDE.md is a symlink to AGENTS.md, and
-    // we already include AGENTS.md explicitly via SCAN_FILES; skipping symlinks
+    // lstat — do not follow symlinks. CLAUDE.md is a symlink to CLAUDE.md, and
+    // we already include CLAUDE.md explicitly via SCAN_FILES; skipping symlinks
     // avoids double-counting.
     let stat;
     try {

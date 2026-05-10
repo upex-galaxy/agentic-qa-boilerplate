@@ -179,7 +179,7 @@ MANDATORY. List anything you could not verify:
 
 ## After generation
 
-- Update the AI memory file (`CLAUDE.md` / `AGENTS.md`) §Context System with a pointer to `.context/mapping/business-api-map.md` if not already present.
+- Update the AI memory file (`CLAUDE.md` / `CLAUDE.md`) §Context System with a pointer to `.context/mapping/business-api-map.md` if not already present.
 - If `business-data-map.md` or `business-feature-map.md` were missing during generation, note the limitation in the summary you report back to the user.
 - Add a `> Last verified against OpenAPI on YYYY-MM-DD` line at the top of the output so future runs detect staleness at a glance.
 - In UPDATE mode: show the diff summary and wait for explicit confirmation.

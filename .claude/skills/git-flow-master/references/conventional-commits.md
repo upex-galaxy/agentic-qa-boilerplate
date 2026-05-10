@@ -36,7 +36,7 @@ Description rules:
 | ---------- | -------------------------------------------------------------- | --------------------- |
 | `feat`     | New feature or user-visible capability                         | `feature`             |
 | `fix`      | Bug fix                                                        | `bugfix`              |
-| `docs`     | Documentation only (README, AGENTS.md, code comments)          | `docs`                |
+| `docs`     | Documentation only (README, CLAUDE.md, code comments)          | `docs`                |
 | `style`    | Formatting / whitespace / lint fixes — no behaviour change     | `chore`               |
 | `refactor` | Code change without behaviour change                           | `chore`               |
 | `perf`     | Performance improvement (with measurable rationale in body)    | `feature` or `perf`   |
@@ -139,7 +139,7 @@ PR label hint: `breaking-change`.
 
 ## Hard rules
 
-1. **No AI attribution.** Never include `Generated with Claude Code`, `Co-Authored-By: Claude <…>`, or any equivalent line. Commits look human-authored. (Critical Reminder #4 in `AGENTS.md`.)
+1. **No AI attribution.** Never include `Generated with Claude Code`, `Co-Authored-By: Claude <…>`, or any equivalent line. Commits look human-authored. (Critical Reminder #4 in `CLAUDE.md`.)
 2. **No `git add -A` / `git add .`.** Always list the exact paths to avoid leaking secrets (`.env`, credentials) or unrelated work.
 3. **Never `--amend` a commit a hook rejected.** The hook rejected the commit, so it does not exist; `--amend` would mutate the previous commit instead. Fix the underlying issue and create a new commit.
 4. **Never `--amend` a published commit.** Once pushed, a commit is part of shared history. Add a forward commit (`fix:`, `revert:`) instead.

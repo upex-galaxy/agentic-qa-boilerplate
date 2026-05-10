@@ -15,7 +15,7 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 
 ## Subagent Dispatch Strategy
 
-This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The two CI-bound stages (long-running watch, multi-artifact download) and the high-volume failure classification step are the hotspots — everything else stays inline because the dispatch overhead is not justified.
+This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The two CI-bound stages (long-running watch, multi-artifact download) and the high-volume failure classification step are the hotspots — everything else stays inline because the dispatch overhead is not justified.
 
 | Stage                                                      | Pattern    | Subagent role                                                                                                  |
 |------------------------------------------------------------|------------|----------------------------------------------------------------------------------------------------------------|
