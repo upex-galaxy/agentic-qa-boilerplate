@@ -23,7 +23,7 @@ is handled by the `/refresh-ai-memory` command — do NOT update those here.
 bun run setup
 ```
 
-It detects gentle-ai (or skips it), installs Engram + 11 SDD skills + 2 universal helpers, configures the 7 canonical MCPs, downloads Playwright browsers, populates `.agents/project.yaml`, and writes a state file so re-runs are idempotent. Then in your agent invoke `/agentic-qa-onboard` for the orientation tour.
+It runs 13 idempotent steps: detects gentle-ai (or skips it), installs Engram + 11 SDD skills + 2 universal helpers via gentle-ai, runs `npx skills add` for 9 user-level community skills (skill-creator, find-skills, gh-cli, github-actions-docs, playwright-cli, n8n-skills, emil-design-eng, ui-ux-pro-max, brainstorming), configures the 7 canonical MCPs, downloads Playwright browsers, populates `.agents/project.yaml`, and writes a state file. Then in your agent invoke `/agentic-qa-onboard` for the orientation tour.
 
 This project is driven by **agent skills**. Each skill owns an end-to-end slice of the QA lifecycle and self-loads its own operational detail. Invoke a skill by its trigger phrase (e.g. "run regression", "write E2E test", "document these tests", "onboard this repo") and the matching skill will take over.
 

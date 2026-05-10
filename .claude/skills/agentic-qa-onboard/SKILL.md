@@ -201,6 +201,8 @@ Run `bun run setup` once to install these at user level. They are not committed 
 
 Plus `engram` (persistent memory across sessions). Full details in [`docs/setup/integrating-gentle-ai.md`](../../../docs/setup/integrating-gentle-ai.md).
 
+> Plus 9 community skills installed via `npx skills add ... --global` during `bun run setup` (`skill-creator`, `find-skills`, `gh-cli`, `github-actions-docs`, `playwright-cli`, `n8n-skills`, `emil-design-eng`, `ui-ux-pro-max`, `brainstorming`). See `cli/install.ts` `USER_LEVEL_SKILLS` array.
+
 ---
 
 ## Next steps after the onboard

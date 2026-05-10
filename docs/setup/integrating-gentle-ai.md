@@ -57,6 +57,38 @@ Both ship via gentle-ai but are dev-writing-leaning. QA reporting tone is owned 
 
 ---
 
+## What gets installed via `npx skills` CLI
+
+Independent of gentle-ai, the installer also runs the official Anthropic `npx skills add` CLI to fetch community skills from upstream repos. Two lists, both defined as `const` arrays in `cli/install.ts`:
+
+### Project-level (currently empty for QA)
+
+The `PROJECT_LEVEL_SKILLS` array is intentionally empty. Every project-specific skill in this repo (`/sprint-testing`, `/test-automation`, `/agentic-qa-core`, etc.) is authored by us and lives in `.claude/skills/`. Add stack-specific community skills here in the future if the boilerplate forks for a different stack (e.g., a Cypress flavor).
+
+### User-level (global, 9 skills)
+
+Installed with `npx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack.
+
+| Slug                   | Source                                          | Why user-level                                  |
+| ---------------------- | ----------------------------------------------- | ----------------------------------------------- |
+| `skill-creator`        | `anthropics/skills`                             | Author/edit skills — useful in any repo         |
+| `find-skills`          | `vercel-labs/skills`                            | Discover installable skills — universal         |
+| `gh-cli`               | `github/awesome-copilot`                        | GitHub CLI helper — universal                   |
+| `github-actions-docs`  | `xixu-me/skills`                                | GHA syntax + docs lookup — universal            |
+| `playwright-cli`       | `microsoft/playwright-cli`                      | Browser automation — coexists with the local copy in `.claude/skills/` (project-level wins) |
+| `n8n-skills`           | `czlonkowski/n8n-skills` (whole repo)           | n8n MCP integration — cross-project workflows   |
+| `emil-design-eng`      | `emilkowalski/skill`                            | UI design eng — when QA touches frontend        |
+| `ui-ux-pro-max`        | `nextlevelbuilder/ui-ux-pro-max-skill`          | UI/UX intelligence — universal                  |
+| `brainstorming`        | `obra/superpowers`                              | Pre-implementation ideation — universal         |
+
+### Skipping or re-running
+
+Run `INSTALL_SKIP_COMMUNITY=1 bun run setup` to skip the community step entirely (the previous behaviour is preserved). Re-runs are idempotent: already-installed skills are detected via `state.skills["community:<level>:<slug>"] === "installed"` in `.agents/install-state.json` and skipped silently.
+
+If a skill fails to install (e.g., upstream repo restructured), the failure is recorded as `failed` in the state file and surfaced in the closing summary, but the installer continues — community skills are best-effort, not blocking.
+
+---
+
 ## What stays local (committed in this repo)
 
 Skills that are workflow-specific to this boilerplate live in `.claude/skills/` and are committed to the repo. They install with the clone — no external installer required.

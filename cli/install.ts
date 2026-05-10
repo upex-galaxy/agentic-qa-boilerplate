@@ -11,10 +11,11 @@
  *   6.  Install Playwright browsers (`bun run pw:install`)
  *   7.  Run agents:setup (interactive `.agents/project.yaml` populator)
  *   8.  Install 14 skills + engram via gentle-ai (or skip)
- *   9.  Configure MCPs from templates (write `.mcp.json` / `opencode.json`)
- *  10.  Verify external CLIs (bun, gh, acli, playwright, allure, jq)
- *  11.  Optional bootstraps: Jira credentials check, API auth login
- *  12.  Persist `.agents/install-state.json` + closing summary
+ *   9.  Install community skills via `npx skills add` (project-level + user-level)
+ *  10.  Configure MCPs from templates (write `.mcp.json` / `opencode.json`)
+ *  11.  Verify external CLIs (bun, gh, acli, playwright, allure, jq)
+ *  12.  Optional bootstraps: Jira credentials check, API auth login
+ *  13.  Persist `.agents/install-state.json` + closing summary
  *
  * Usage:
  *   bun run setup
@@ -26,6 +27,7 @@
  *   INSTALL_SKIP_DEPS=1                   Skip `bun install`
  *   INSTALL_SKIP_PLAYWRIGHT=1             Skip `bun run pw:install`
  *   INSTALL_SKIP_AGENTS_SETUP=1           Skip `bun run agents:setup`
+ *   INSTALL_SKIP_COMMUNITY=1              Skip `npx skills add` step
  *   INSTALL_SKIP_JIRA=1                   Skip optional Jira bootstrap
  *   INSTALL_SKIP_API=1                    Skip optional API auth bootstrap
  *
@@ -107,7 +109,7 @@ const CLAUDE_MCP_OUTPUT = join(REPO_ROOT, '.mcp.json');
 const OPENCODE_MCP_OUTPUT = join(REPO_ROOT, 'opencode.json');
 
 const REPO_NAME = 'agentic-qa-boilerplate';
-const TOTAL_STEPS = 12;
+const TOTAL_STEPS = 13;
 
 const MIN_GENTLE_AI_VERSION = [1, 26, 5] as const;
 
@@ -153,6 +155,39 @@ const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install: string }> = [
   { name: 'jq', install: 'brew install jq  (or: apt-get install jq)' },
 ];
 
+interface CommunitySkill {
+  package: string // git URL or shorthand 'owner/repo'
+  skill?: string // omit or '*' to install all skills from the package
+}
+
+/**
+ * Community skills installed at PROJECT level (`npx skills add`).
+ * Empty for QA: every project-specific skill in this repo (sprint-testing,
+ * test-automation, agentic-qa-core, etc.) is authored by us and committed under
+ * .claude/skills/. Add stack-specific community skills here when needed (e.g., a
+ * Cypress skill for a Cypress fork, or stack-detection skills via npx autoskills).
+ */
+const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [];
+
+/**
+ * Community skills installed at USER (global) level (`npx skills add --global`).
+ * Useful across most projects regardless of stack. Mirrors the dev-side list —
+ * we intentionally keep the QA repo aligned with dev to share the universal layer.
+ * playwright-cli also lives locally in .claude/skills/playwright-cli (project-level
+ * gain over user-level) — both are kept on purpose for redundancy.
+ */
+const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
+  { package: 'https://github.com/anthropics/skills', skill: 'skill-creator' },
+  { package: 'https://github.com/vercel-labs/skills', skill: 'find-skills' },
+  { package: 'https://github.com/github/awesome-copilot', skill: 'gh-cli' },
+  { package: 'https://github.com/xixu-me/skills', skill: 'github-actions-docs' },
+  { package: 'https://github.com/microsoft/playwright-cli', skill: 'playwright-cli' },
+  { package: 'czlonkowski/n8n-skills' }, // whole repo (n8n MCP toolkit)
+  { package: 'https://github.com/emilkowalski/skill', skill: 'emil-design-eng' },
+  { package: 'https://github.com/nextlevelbuilder/ui-ux-pro-max-skill', skill: 'ui-ux-pro-max' },
+  { package: 'https://github.com/obra/superpowers', skill: 'brainstorming' },
+];
+
 const PLACEHOLDER_PATTERN = /\{\{([A-Z][A-Z0-9_]*)\}\}/g;
 const SECRET_NAME_HINTS = ['TOKEN', 'KEY', 'SECRET', 'PASSWORD'];
 
@@ -167,6 +202,7 @@ const SKIP_PLAYWRIGHT = process.env.INSTALL_SKIP_PLAYWRIGHT === '1';
 const SKIP_AGENTS_SETUP = process.env.INSTALL_SKIP_AGENTS_SETUP === '1';
 const SKIP_JIRA = process.env.INSTALL_SKIP_JIRA === '1';
 const SKIP_API = process.env.INSTALL_SKIP_API === '1';
+const SKIP_COMMUNITY = process.env.INSTALL_SKIP_COMMUNITY === '1';
 
 // ============================================================================
 // Logger
@@ -585,7 +621,73 @@ async function installSkillsViaGentleAi(
 }
 
 // ============================================================================
-// Step 9 — MCP configuration
+// Step 9 — community skills via npx skills CLI (independent of gentle-ai)
+// ============================================================================
+
+function describeSkill(item: CommunitySkill): string {
+  if (!item.skill || item.skill === '*') {
+    return item.package.split('/').slice(-2).join('/');
+  }
+  return item.skill;
+}
+
+async function installCommunitySkills(
+  state: InstallState,
+  level: 'project' | 'global',
+): Promise<void> {
+  const list = level === 'project' ? PROJECT_LEVEL_SKILLS : USER_LEVEL_SKILLS;
+  const label = level === 'project' ? 'project-level' : 'user-level (global)';
+
+  if (list.length === 0) {
+    log.dim(`  No ${label} community skills configured for this repo (${level === 'project' ? 'PROJECT_LEVEL_SKILLS' : 'USER_LEVEL_SKILLS'} is empty).`);
+    return;
+  }
+
+  log.banner(`Community skills — ${label}`);
+  log.info(`This will run ${list.length} \`npx skills add\` commands (${label}).`);
+
+  const proceed = await maybeConfirm(`Install ${label} community skills?`, true);
+  if (!proceed) {
+    log.warn(`Skipping ${label} community skills.`);
+    for (const item of list) {
+      const slug = describeSkill(item);
+      const key = `community:${level}:${slug}`;
+      if (!state.skills[key]) {
+        state.skills[key] = 'skipped';
+      }
+    }
+    return;
+  }
+
+  for (const item of list) {
+    const slug = describeSkill(item);
+    const key = `community:${level}:${slug}`;
+    if (state.skills[key] === 'installed') {
+      log.dim(`  skipping ${slug} (already installed)`);
+      continue;
+    }
+    const args = ['skills', 'add', item.package];
+    if (item.skill && item.skill !== '*') {
+      args.push('--skill', item.skill);
+    }
+    if (level === 'global') {
+      args.push('--global');
+    }
+    args.push('--yes');
+    const result = tryRun('npx', args);
+    if (result.ok) {
+      log.success(`  installed: ${slug}`);
+      state.skills[key] = 'installed';
+    }
+    else {
+      log.error(`  failed: ${slug} — ${(result.stderr || result.stdout).trim().slice(0, 120) || 'unknown error'}`);
+      state.skills[key] = 'failed';
+    }
+  }
+}
+
+// ============================================================================
+// Step 10 — MCP configuration
 // ============================================================================
 
 function isSecretName(name: string): boolean {
@@ -854,12 +956,18 @@ function buildInitialState(prior: InstallState | null): InstallState {
 }
 
 // ============================================================================
-// Step 12 — closing summary
+// Step 13 — closing summary
 // ============================================================================
 
 function printClosingSummary(state: InstallState): void {
-  const skillCount = Object.values(state.skills).filter(s => s === 'installed').length;
-  const skillTotal = Object.keys(state.skills).length;
+  const allSkillEntries = Object.entries(state.skills);
+  const gentleAiSkills = allSkillEntries.filter(([k]) => k.includes('::'));
+  const projectCommunity = allSkillEntries.filter(([k]) => k.startsWith('community:project:'));
+  const userCommunity = allSkillEntries.filter(([k]) => k.startsWith('community:global:'));
+
+  const gentleAiInstalled = gentleAiSkills.filter(([, s]) => s === 'installed').length;
+  const projectInstalled = projectCommunity.filter(([, s]) => s === 'installed').length;
+  const userInstalled = userCommunity.filter(([, s]) => s === 'installed').length;
 
   const mcpConfigured = Object.values(state.mcps).filter(
     s => s === 'configured-with-key' || s === 'configured-no-key',
@@ -874,7 +982,9 @@ function printClosingSummary(state: InstallState): void {
     .map(([name]) => name);
 
   log.banner('Installer complete.');
-  process.stdout.write(`Skills installed   : ${skillCount}/${skillTotal}\n`);
+  process.stdout.write(`gentle-ai skills   : ${gentleAiInstalled}/${gentleAiSkills.length}\n`);
+  process.stdout.write(`Community (project): ${projectInstalled}/${projectCommunity.length}\n`);
+  process.stdout.write(`Community (user)   : ${userInstalled}/${userCommunity.length}\n`);
   process.stdout.write(`MCPs configured    : ${mcpConfigured}/${mcpTotal} fully wired`);
   if (mcpPlaceholder > 0) { process.stdout.write(` (${mcpPlaceholder} with placeholders)`); }
   process.stdout.write('\n');
@@ -1014,21 +1124,37 @@ async function main(): Promise<void> {
     }
   }
 
-  // Step 9
-  log.step(9, TOTAL_STEPS, 'Configuring MCPs');
-  await configureMcps(agents, state);
+  // Step 9 — community skills via npx skills CLI (independent of gentle-ai)
+  log.step(9, TOTAL_STEPS, 'Installing community skills via npx skills CLI');
+  if (SKIP_COMMUNITY) {
+    log.dim('  INSTALL_SKIP_COMMUNITY=1, skipping community skills.');
+    for (const item of [...PROJECT_LEVEL_SKILLS, ...USER_LEVEL_SKILLS]) {
+      const slug = describeSkill(item);
+      const level = PROJECT_LEVEL_SKILLS.includes(item) ? 'project' : 'global';
+      const key = `community:${level}:${slug}`;
+      if (!state.skills[key]) { state.skills[key] = 'skipped'; }
+    }
+  }
+  else {
+    await installCommunitySkills(state, 'project');
+    await installCommunitySkills(state, 'global');
+  }
 
   // Step 10
-  log.step(10, TOTAL_STEPS, 'Verifying external CLIs');
-  verifyExternalClis(state);
+  log.step(10, TOTAL_STEPS, 'Configuring MCPs');
+  await configureMcps(agents, state);
 
   // Step 11
-  log.step(11, TOTAL_STEPS, 'Optional bootstraps (Jira / API)');
+  log.step(11, TOTAL_STEPS, 'Verifying external CLIs');
+  verifyExternalClis(state);
+
+  // Step 12
+  log.step(12, TOTAL_STEPS, 'Optional bootstraps (Jira / API)');
   await optionalJiraBootstrap(state);
   await optionalApiBootstrap(state);
 
-  // Step 12
-  log.step(12, TOTAL_STEPS, 'Persisting state and summary');
+  // Step 13
+  log.step(13, TOTAL_STEPS, 'Persisting state and summary');
   await writeInstallState(state);
   printClosingSummary(state);
 }
