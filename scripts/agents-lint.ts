@@ -79,6 +79,9 @@ const DOC_META_ALLOWLIST: Array<[string, string]> = [
   ['VARIABLES', 'AGENTS.md'],
   // §Project Variables bootstrap instruction explaining the {{VAR_NAME}} syntax
   ['VAR_NAME', 'AGENTS.md'],
+  // templates/mcp/README.md uses the literal token {{VAR}} to illustrate placeholder
+  // syntax for the installer; not an actual variable reference.
+  ['VAR', 'templates/mcp/README.md'],
 ];
 
 // -----------------------------------------------------------------------------

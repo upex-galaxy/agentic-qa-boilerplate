@@ -55,10 +55,15 @@ build/
 # ===== AI/Tools Configuration =====
 .mcp.json
 .mcp.catalog.json
+opencode.json
 dbhub.toml
 .backups/
 .gemini/settings.json
 .gemini/settings.catalog.json
+
+# Installer state (cli/install.ts) — gitignored; tracks what bun run setup
+# already did so re-runs are idempotent.
+.agents/install-state.json
 
 # ===== Local Useful Files =====
 
