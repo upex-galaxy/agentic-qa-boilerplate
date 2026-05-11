@@ -13,7 +13,7 @@
  *   8.  Install 14 skills + engram via gentle-ai (or skip)
  *   9.  Install community skills via `npx skills add` (project-level + user-level)
  *  10.  Configure MCPs from templates (write `.mcp.json` / `opencode.json`)
- *  11.  Verify external CLIs (bun, gh, acli, playwright, allure, jq)
+ *  11.  Verify external CLIs (bun, gh, acli, playwright-cli, allure, jq)
  *  12.  Optional bootstraps: Jira credentials check, API auth login
  *  13.  Persist `.agents/install-state.json` + closing summary
  *
@@ -146,13 +146,39 @@ const CANONICAL_MCPS = [
   'postman',
 ] as const;
 
-const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install: string }> = [
-  { name: 'bun', install: 'curl -fsSL https://bun.sh/install | bash' },
-  { name: 'gh', install: 'brew install gh  (or: https://cli.github.com/)' },
-  { name: 'acli', install: 'brew install --cask atlassian-cli' },
-  { name: 'playwright', install: 'bun add -D @playwright/test  (already a devDependency here)' },
-  { name: 'allure', install: 'brew install allure  (or: scoop install allure)' },
-  { name: 'jq', install: 'brew install jq  (or: apt-get install jq)' },
+const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install: string, docs: string }> = [
+  {
+    name: 'bun',
+    install: 'curl -fsSL https://bun.com/install | bash  (or: brew install oven-sh/bun/bun)',
+    docs: 'https://bun.sh/docs/installation',
+  },
+  {
+    name: 'gh',
+    install: 'brew install gh  (or: winget install --id GitHub.cli)',
+    docs: 'https://cli.github.com/',
+  },
+  {
+    name: 'acli',
+    install: 'brew tap atlassian/homebrew-acli && brew install acli',
+    docs: 'https://developer.atlassian.com/cloud/acli/guides/install-macos/',
+  },
+  {
+    // Binary produced by @playwright/cli is `playwright-cli`, not `playwright`.
+    // This is the agent-driven CLI, NOT the @playwright/test runner library.
+    name: 'playwright-cli',
+    install: 'bun add -g @playwright/cli@latest  (or: npm install -g @playwright/cli@latest)',
+    docs: 'https://playwright.dev/agent-cli/introduction',
+  },
+  {
+    name: 'allure',
+    install: 'brew install allure  (or: scoop install allure)',
+    docs: 'https://allurereport.org/docs/',
+  },
+  {
+    name: 'jq',
+    install: 'brew install jq  (or: apt-get install jq, winget install jqlang.jq)',
+    docs: 'https://jqlang.github.io/jq/download',
+  },
 ];
 
 interface CommunitySkill {
@@ -340,7 +366,7 @@ function detectGentleAi(): GentleAiInfo {
 async function handleMissingGentleAi(): Promise<'show-and-exit' | 'skip'> {
   log.warn('gentle-ai not detected on PATH.');
   log.info(`gentle-ai installs ${SKILL_SLUGS.length} universal skills + engram into your agent.`);
-  log.info('See docs/setup/integrating-gentle-ai.md for what gets installed and what stays local.');
+  log.info('See INSTALLER.md for what gets installed and what stays local.');
   process.stdout.write('\n');
 
   const choice = await maybeConfirm(
@@ -830,6 +856,7 @@ interface CliResult {
   name: string
   status: CliStatus
   install: string
+  docs: string
 }
 
 function verifyExternalClis(state: InstallState): CliResult[] {
@@ -837,18 +864,21 @@ function verifyExternalClis(state: InstallState): CliResult[] {
     const found = which(cli.name) !== null;
     const status: CliStatus = found ? 'found' : 'missing';
     state.externalClis[cli.name] = status;
-    return { name: cli.name, status, install: cli.install };
+    return { name: cli.name, status, install: cli.install, docs: cli.docs };
   });
 
   process.stdout.write('\n');
-  process.stdout.write(`${COLORS.bold}CLI            Status      Install (if missing)${COLORS.reset}\n`);
-  process.stdout.write(`${'─'.repeat(72)}\n`);
+  process.stdout.write(`${COLORS.bold}CLI              Status      Install (if missing) / Docs${COLORS.reset}\n`);
+  process.stdout.write(`${'─'.repeat(80)}\n`);
   for (const r of results) {
-    const padName = r.name.padEnd(14);
+    const padName = r.name.padEnd(16);
     const padStatus = r.status === 'found' ? 'found     ' : 'missing   ';
     const statusColor = r.status === 'found' ? COLORS.green : COLORS.yellow;
     const installCol = r.status === 'found' ? '(skip)' : r.install;
     process.stdout.write(`${padName} ${statusColor}${padStatus}${COLORS.reset} ${installCol}\n`);
+    if (r.status === 'missing') {
+      process.stdout.write(`${' '.repeat(28)}${COLORS.dim}docs: ${r.docs}${COLORS.reset}\n`);
+    }
   }
   return results;
 }
@@ -1009,7 +1039,7 @@ function printClosingSummary(state: InstallState): void {
   process.stdout.write('  5. In your agent: /agentic-qa-onboard (first-time orientation tour)\n');
   process.stdout.write('  6. Read your first ticket: /sprint-testing <UPEX-XXX>\n');
   process.stdout.write('\n');
-  log.dim('Full docs: docs/setup/integrating-gentle-ai.md');
+  log.dim('Full docs: INSTALLER.md');
 }
 
 // ============================================================================
@@ -1018,7 +1048,7 @@ function printClosingSummary(state: InstallState): void {
 
 async function main(): Promise<void> {
   log.banner(`${REPO_NAME} — installer`);
-  log.dim('See docs/setup/integrating-gentle-ai.md for the contract this implements.');
+  log.dim('See INSTALLER.md for the contract this implements.');
 
   // Step 1
   log.step(1, TOTAL_STEPS, 'Verifying repo root');

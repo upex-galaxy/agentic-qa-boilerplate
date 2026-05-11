@@ -57,7 +57,7 @@ Run the interactive installer once after cloning:
 bun run setup
 ```
 
-This bootstraps `.agents/`, installs gentle-ai skills (14 of them), configures the 7 canonical MCPs, downloads Playwright browsers, and writes `.mcp.json`. Full details in [`docs/setup/integrating-gentle-ai.md`](../../../docs/setup/integrating-gentle-ai.md).
+This bootstraps `.agents/`, installs gentle-ai skills (14 of them), configures the 7 canonical MCPs, downloads Playwright browsers, and writes `.mcp.json`. Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 After setup, fill `.env` with the credentials the rest of the workflow expects (see "Critical env vars" below).
 
@@ -103,7 +103,7 @@ You confirm at the gates.
 
 ## When to use `/sdd-*` instead
 
-Hand-off matrix copied from [`docs/setup/integrating-gentle-ai.md`](../../../docs/setup/integrating-gentle-ai.md):
+Hand-off matrix copied from [`INSTALLER.md`](../../../INSTALLER.md):
 
 | When                                                                       | Skill                                                                |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------- |
@@ -199,7 +199,7 @@ Run `bun run setup` once to install these at user level. They are not committed 
 | `judgment-day`       | `/judgment-day`      | Adversarial parallel review (2 blind judges)  |
 | `issue-creation`     | `/issue-creation`    | Issue filing workflow (bug + feature)         |
 
-Plus `engram` (persistent memory across sessions). Full details in [`docs/setup/integrating-gentle-ai.md`](../../../docs/setup/integrating-gentle-ai.md).
+Plus `engram` (persistent memory across sessions). Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 > Plus 9 community skills installed via `npx skills add ... --global` during `bun run setup` (`skill-creator`, `find-skills`, `gh-cli`, `github-actions-docs`, `playwright-cli`, `n8n-skills`, `emil-design-eng`, `ui-ux-pro-max`, `brainstorming`). See `cli/install.ts` `USER_LEVEL_SKILLS` array.
 

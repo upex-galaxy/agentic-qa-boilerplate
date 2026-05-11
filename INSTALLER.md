@@ -1,8 +1,10 @@
-# Integrating gentle-ai with this repo
+# The installer — what `bun run setup` configures
 
-> **Audience**: QA engineers cloning `agentic-qa-boilerplate` for the first time, or anyone deciding whether to opt into the gentle-ai ecosystem.
+> **Audience**: QA engineers cloning `agentic-qa-boilerplate` for the first time, or anyone wanting to understand what `bun run setup` configures (gentle-ai, community skills, MCPs, local skills) and what is optional.
 > **Read time**: 8 minutes.
 > **Status**: stable as of 2026-05-10.
+>
+> This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram + SDD), community skills via `npx skills`, locally committed workflow skills, and the 7 canonical MCPs — are documented below in that order.
 
 ---
 
@@ -111,6 +113,25 @@ These skills evolve with the repo and are versioned in git. The split is intenti
 
 ---
 
+## External CLIs (verified, not auto-installed)
+
+The installer's step 11 runs `which <binary>` for six command-line tools that other parts of the QA workflow depend on. If any are missing, the installer **prints the suggested install command and the official docs URL — but does not run anything**. System-level CLIs touch user permissions (Homebrew taps, apt, curl piped into bash, winget) and are not portable cross-platform, so auto-installing them without consent would be invasive. The user installs them manually following the docs URL.
+
+| CLI              | Powers in this repo                                                              | Install (cross-platform)                                                                                                                  | Official docs                                                                       |
+| ---------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `bun`            | Runtime for every script (`bun run setup`, `bun xray`, `bun run test`)           | macOS/Linux: `curl -fsSL https://bun.com/install \| bash`<br>Brew: `brew install oven-sh/bun/bun`<br>Windows: `irm bun.sh/install.ps1 \| iex` | [bun.sh/docs/installation](https://bun.sh/docs/installation)                        |
+| `gh`             | GitHub PR / Actions workflows from `/git-flow-master`, `/regression-testing`     | macOS: `brew install gh`<br>Windows: `winget install --id GitHub.cli` or `scoop install gh`<br>Linux: apt/dnf with keyring setup (see docs) | [cli.github.com](https://cli.github.com/)                                           |
+| `acli`           | Jira/Confluence from terminal (`/acli`, `/sprint-testing`, `/test-documentation`) | macOS: `brew tap atlassian/homebrew-acli && brew install acli`<br>Linux: binary download from GitHub releases                              | [developer.atlassian.com/cloud/acli](https://developer.atlassian.com/cloud/acli/guides/install-macos/) |
+| `playwright-cli` | Agent-driven browser automation (`/playwright-cli` skill)                        | Global install: `bun add -g @playwright/cli@latest`<br>(or: `npm install -g @playwright/cli@latest`)<br>Binary produced: `playwright-cli`  | [playwright.dev/agent-cli](https://playwright.dev/agent-cli/introduction)           |
+| `allure`         | Test reports (`bun run test:allure`)                                              | macOS: `brew install allure`<br>Windows: `scoop install allure`<br>Linux: `.deb`/`.rpm` from GitHub releases                                | [allurereport.org/docs](https://allurereport.org/docs/)                             |
+| `jq`             | JSON parsing inside scripts (`scripts/sync-*`, `cli/xray/*`)                     | macOS: `brew install jq`<br>Linux: `sudo apt-get install jq` (or `dnf install jq`)<br>Windows: `winget install jqlang.jq`                  | [jqlang.github.io/jq](https://jqlang.github.io/jq/download)                         |
+
+> **Important — `playwright-cli` is NOT `@playwright/test`**: this is the agent-driven browser CLI from the `@playwright/cli` npm package, installed **globally**. It produces a binary literally named `playwright-cli` (not `playwright`). The `@playwright/test` library that ships as a devDependency in this repo is a separate thing — it powers the test runner (`bun run test`), not the `/playwright-cli` skill. Don't confuse them.
+
+> **Why verify and not install?** Auto-installing system-level binaries from a project script would require asking for sudo/admin, picking a package manager per OS, and trusting that the user wants those tools in `$PATH` permanently. Verify-and-direct-to-docs is the polite alternative: you see what's missing, you read the official docs, you decide.
+
+---
+
 ## Hand-off matrix — `/sprint-testing` vs `/sdd-*`
 
 This is the most common point of confusion. Both workflows can drive QA work to completion. They serve different shapes of work.
@@ -169,8 +190,8 @@ What you keep: every workflow skill committed in this repo (`/sprint-testing`, `
 
 ## See also
 
-- [CLAUDE.md § Quick Start](../../CLAUDE.md) — entry point for `bun run setup` and `/agentic-qa-onboard`
-- [.claude/skills/agentic-qa-onboard/SKILL.md](../../.claude/skills/agentic-qa-onboard/SKILL.md) — the orientation skill itself
-- [docs/setup/README.md](./README.md) — index of setup guides in this repo
-- [docs/setup/jira-setup-guide.md](./jira-setup-guide.md) — Jira/Atlassian credentials + acli login flow
-- [docs/setup/mcp-dbhub.md](./mcp-dbhub.md) / [mcp-openapi.md](./mcp-openapi.md) — MCP-specific setup notes
+- [CLAUDE.md § Quick Start](./CLAUDE.md) — entry point for `bun run setup` and `/agentic-qa-onboard`
+- [.claude/skills/agentic-qa-onboard/SKILL.md](./.claude/skills/agentic-qa-onboard/SKILL.md) — the orientation skill itself
+- [docs/setup/README.md](./docs/setup/README.md) — index of setup guides in this repo
+- [docs/setup/jira-setup-guide.md](./docs/setup/jira-setup-guide.md) — Jira/Atlassian credentials + acli login flow
+- [docs/setup/mcp-dbhub.md](./docs/setup/mcp-dbhub.md) / [mcp-openapi.md](./docs/setup/mcp-openapi.md) — MCP-specific setup notes
