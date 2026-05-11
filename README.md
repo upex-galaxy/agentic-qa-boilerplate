@@ -49,15 +49,33 @@ This boilerplate solves common challenges in test automation:
 git clone https://github.com/upex-galaxy/agentic-qa-boilerplate.git
 cd agentic-qa-boilerplate
 
-# Install dependencies
+# One-shot interactive setup (recommended):
+#   installs deps, Playwright browsers, gentle-ai + 14 skills,
+#   9 community skills, configures the 7 MCPs, prompts for any
+#   missing MCP env vars, and offers direnv autoload.
+bun run setup
+
+# Or, do it manually:
 bun install
-
-# Install Playwright browsers
 bun run pw:install
-
-# Copy environment variables
-cp .env.example .env
+cp .env.example .env   # then fill in the values
 ```
+
+### Launching the agent
+
+`.mcp.json` (Claude Code) and `opencode.jsonc` are committed with `${VAR}` / `{env:VAR}` expansion — real values live in `.env`. Launch the agent via one of these paths so the env vars get loaded:
+
+```bash
+# Cross-platform default (uses dotenv-cli, no extra tooling required):
+bun run claude        # Claude Code
+bun run opencode      # OpenCode
+
+# Optional: macOS / Linux with direnv installed → autoload on cd
+direnv allow          # one-time per repo
+claude                # direct binary picks up .env from your shell
+```
+
+Windows users: stick with the `bun run` wrappers. See [INSTALLER.md § Launching the agent](./INSTALLER.md#launching-the-agent-after-setup) for the full matrix.
 
 ### Configuration
 

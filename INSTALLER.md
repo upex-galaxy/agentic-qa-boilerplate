@@ -2,9 +2,20 @@
 
 > **Audience**: QA engineers cloning `agentic-qa-boilerplate` for the first time, or anyone wanting to understand what `bun run setup` configures (gentle-ai, community skills, MCPs, local skills) and what is optional.
 > **Read time**: 8 minutes.
-> **Status**: stable as of 2026-05-10.
+> **Status**: stable as of 2026-05-11.
 >
 > This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram + SDD), community skills via `npx skills`, locally committed workflow skills, and the 7 canonical MCPs — are documented below in that order.
+
+## Launching the agent after setup
+
+`bun run setup` finishes with two recommended ways to start an agent so MCP env vars (e.g. `TAVILY_API_KEY`, `ATLASSIAN_API_TOKEN`) get loaded from `.env`:
+
+| Method | Platform | One-time setup | Usage |
+|---|---|---|---|
+| **`bun run claude` / `bun run opencode`** (default) | Windows, macOS, Linux | None — `dotenv-cli` is a project devDep | `bun run claude` from the repo root |
+| **direnv autoload** (optional) | macOS, Linux | `brew install direnv` / `apt install direnv` + hook in `~/.zshrc` or `~/.bashrc`, then installer runs `direnv allow` | Just `claude` or `opencode` from anywhere in the repo |
+
+`.mcp.json` (Claude Code) and `opencode.jsonc` are committed with `${VAR}` / `{env:VAR}` placeholders. Real values live in `.env` (gitignored). If a server returns 401/403 at first call, the matching env var is missing — see `CLAUDE.md` Critical Rule #11 (stop, fix `.env`, restart the agent session).
 
 ---
 
@@ -163,7 +174,9 @@ You have a QA ticket but the AC is dense and you want it traced formally as a te
 ## Troubleshooting
 
 - **gentle-ai not detected after install** — re-run `bun run setup`. The detector probes `which gentle-ai` plus `gentle-ai version`; if either fails the installer falls back to the "skip gentle-ai" branch. Confirm the binary is on PATH (`which gentle-ai` should return a path under `/usr/local/bin/`, `~/bin/`, `~/go/bin/`, or a Homebrew prefix).
-- **MCPs not loading** — open `.mcp.json` in the repo root and check that no `{{VAR_NAME}}` placeholders remain. The installer fills them with values you provided or with placeholders for later. Replace placeholders with real values, or export the env vars in your shell. `.mcp.json` is gitignored.
+- **MCPs returning 401/403** — the matching env var in `.env` is unset or wrong. `.mcp.json` (Claude) and `opencode.jsonc` are committed with `${VAR}` / `{env:VAR}` expansion; real values live in `.env`. Open `.env`, fill the var, and **restart the agent session** — env vars are read once at MCP-server spawn time. See `CLAUDE.md` Critical Rule #11.
+- **MCPs not loading at all** — confirm you launched the agent via `bun run claude` / `bun run opencode` (wraps with `dotenv-cli`), or that direnv autoload is active (`direnv status` shows your `.envrc` allowed). Launching `claude` directly without either path means MCP placeholders never get expanded.
+- **`direnv allow` produced `dotenv_if_exists: command not found`** — this would mean the `.envrc` is using a newer direnv feature than your version supports. The committed `.envrc` uses portable POSIX loading (works on direnv 2.21+), so if you see this, your `.envrc` has been edited locally — restore it from `git checkout .envrc`.
 - **Skills not appearing in autocomplete** — restart Claude Code (or your agent of choice). MCP and skill configs are cached at agent startup.
 - **`/agentic-qa-onboard` does not trigger on natural language** — use the explicit slash command: `/agentic-qa-onboard`. The natural-language triggers (`onboard me to QA`, `primer vez en QA`) are advisory, not guaranteed.
 - **How do I uninstall gentle-ai skills?** — `gentle-ai uninstall --skill <slug> --agent <agent>` removes a single skill. `gentle-ai uninstall --all --agent <agent>` removes everything gentle-ai-managed for that agent. Backups are created automatically before uninstall.
