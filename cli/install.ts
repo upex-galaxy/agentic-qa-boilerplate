@@ -894,24 +894,53 @@ interface DirenvInfo {
   installed: boolean
   version?: string
   supportsDotenvIfExists: boolean
+  supportsPwshHook: boolean
   platform: NodeJS.Platform
 }
 
 function detectDirenv(): DirenvInfo {
   const platform = process.platform;
-  if (platform === 'win32') {
-    return { installed: false, supportsDotenvIfExists: false, platform };
-  }
   const result = tryRun('direnv', ['version']);
   if (!result.ok) {
-    return { installed: false, supportsDotenvIfExists: false, platform };
+    return { installed: false, supportsDotenvIfExists: false, supportsPwshHook: false, platform };
   }
   const version = result.stdout.trim();
   const parts = version.split('.').map(n => Number.parseInt(n, 10));
   const maj = parts[0] ?? 0;
   const min = parts[1] ?? 0;
   const supportsDotenvIfExists = maj > 2 || (maj === 2 && min >= 30);
-  return { installed: true, version, supportsDotenvIfExists, platform };
+  const supportsPwshHook = maj > 2 || (maj === 2 && min >= 37);
+  return { installed: true, version, supportsDotenvIfExists, supportsPwshHook, platform };
+}
+
+function installHintForPlatform(): string {
+  if (process.platform === 'win32') {
+    return 'winget install direnv  (then restart Git Bash or PowerShell)';
+  }
+  if (process.platform === 'darwin') {
+    return 'brew install direnv';
+  }
+  return 'sudo apt install direnv  (or: dnf install direnv  /  pacman -S direnv)';
+}
+
+function shellHookHint(info: DirenvInfo): string {
+  const shell = (process.env.SHELL ?? '').toLowerCase();
+  if (process.platform === 'win32' && shell.length === 0) {
+    if (info.supportsPwshHook) {
+      return 'Invoke-Expression "$(direnv hook pwsh)"  →  add to $PROFILE  (PowerShell)';
+    }
+    return 'eval "$(direnv hook bash)"  →  add to ~/.bashrc  (Git Bash; PowerShell needs direnv 2.37+)';
+  }
+  if (shell.endsWith('zsh')) {
+    return 'eval "$(direnv hook zsh)"  →  add to ~/.zshrc';
+  }
+  if (shell.endsWith('fish')) {
+    return 'direnv hook fish | source  →  add to ~/.config/fish/config.fish';
+  }
+  if (shell.endsWith('bash')) {
+    return 'eval "$(direnv hook bash)"  →  add to ~/.bashrc';
+  }
+  return 'eval "$(direnv hook <your-shell>)"  →  see https://direnv.net/docs/hook.html';
 }
 
 async function offerDirenvAutoload(): Promise<void> {
@@ -921,18 +950,16 @@ async function offerDirenvAutoload(): Promise<void> {
   }
   const info = detectDirenv();
 
-  if (info.platform === 'win32') {
-    log.info('Windows detected — direnv setup skipped.');
-    log.dim('  Launch agents with: bun run claude  /  bun run opencode  (dotenv-cli wrapper loads .env).');
-    return;
-  }
   if (!info.installed) {
     log.info('direnv not installed (optional).');
     log.dim('  Launch agents with: bun run claude  /  bun run opencode  (dotenv-cli loads .env automatically).');
-    log.dim('  Or install direnv for shell autoload: brew install direnv  (macOS)  /  apt install direnv  (Linux).');
+    log.dim(`  Or install direnv for shell autoload: ${installHintForPlatform()}`);
     return;
   }
   log.info(`direnv ${info.version} detected.`);
+  if (info.platform === 'win32') {
+    log.dim('  Tip: direnv on Windows works best in Git Bash. PowerShell support is experimental and requires direnv 2.37+.');
+  }
 
   const proceed = await maybeConfirm(
     'Run `direnv allow` so the repo\'s .envrc auto-loads .env into your shell?',
@@ -945,7 +972,7 @@ async function offerDirenvAutoload(): Promise<void> {
   const result = tryRun('direnv', ['allow', REPO_ROOT]);
   if (result.ok) {
     log.success('direnv allow succeeded — .envrc will auto-load .env on cd.');
-    log.dim('  Reminder: add `eval "$(direnv hook zsh)"` (or bash) to your shell rc if not already done.');
+    log.dim(`  Reminder: add this to your shell rc if not already done: ${shellHookHint(info)}`);
   }
   else {
     log.warn('direnv allow failed. Launch agents with: bun run claude  /  bun run opencode.');

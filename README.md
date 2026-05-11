@@ -70,12 +70,12 @@ cp .env.example .env   # then fill in the values
 bun run claude        # Claude Code
 bun run opencode      # OpenCode
 
-# Optional: macOS / Linux with direnv installed → autoload on cd
-direnv allow          # one-time per repo
+# Optional: direnv autoload (any OS with direnv installed)
+direnv allow          # one-time per repo (the installer offers to run this)
 claude                # direct binary picks up .env from your shell
 ```
 
-Windows users: stick with the `bun run` wrappers. See [INSTALLER.md § Launching the agent](./INSTALLER.md#launching-the-agent-after-setup) for the full matrix.
+direnv works on macOS / Linux / Windows. On Windows install via `winget install direnv` — Git Bash is recommended; PowerShell support is experimental and requires direnv 2.37+. See [INSTALLER.md § Launching the agent](./INSTALLER.md#launching-the-agent-after-setup) for the per-shell hook lines.
 
 ### Configuration
 

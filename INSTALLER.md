@@ -13,7 +13,16 @@
 | Method | Platform | One-time setup | Usage |
 |---|---|---|---|
 | **`bun run claude` / `bun run opencode`** (default) | Windows, macOS, Linux | None — `dotenv-cli` is a project devDep | `bun run claude` from the repo root |
-| **direnv autoload** (optional) | macOS, Linux | `brew install direnv` / `apt install direnv` + hook in `~/.zshrc` or `~/.bashrc`, then installer runs `direnv allow` | Just `claude` or `opencode` from anywhere in the repo |
+| **direnv autoload** (optional) | macOS, Linux, **Windows** (Git Bash recommended; PowerShell experimental, needs direnv 2.37+) | Install direnv (`brew install direnv` / `apt install direnv` / `winget install direnv`) + add hook to your shell rc, then installer runs `direnv allow` | Just `claude` or `opencode` from anywhere in the repo |
+
+### direnv hook per shell
+
+| Shell | Line to add | File |
+|---|---|---|
+| bash | `eval "$(direnv hook bash)"` | `~/.bashrc` (also works for Git Bash on Windows) |
+| zsh | `eval "$(direnv hook zsh)"` | `~/.zshrc` |
+| fish | `direnv hook fish \| source` | `~/.config/fish/config.fish` |
+| PowerShell | `Invoke-Expression "$(direnv hook pwsh)"` | `$PROFILE` (requires direnv 2.37+, experimental) |
 
 `.mcp.json` (Claude Code) and `opencode.jsonc` are committed with `${VAR}` / `{env:VAR}` placeholders. Real values live in `.env` (gitignored). If a server returns 401/403 at first call, the matching env var is missing — see `CLAUDE.md` Critical Rule #11 (stop, fix `.env`, restart the agent session).
 
