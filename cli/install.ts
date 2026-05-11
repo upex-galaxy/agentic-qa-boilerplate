@@ -12,7 +12,9 @@
  *   7.  Run agents:setup (interactive `.agents/project.yaml` populator)
  *   8.  Install 14 skills + engram via gentle-ai (or skip)
  *   9.  Install community skills via `npx skills add` (project-level + user-level)
- *  10.  Configure MCPs from templates (write `.mcp.json` / `opencode.json`)
+ *  10.  Wire `.env` for MCP servers + offer direnv autoload
+ *       (`.mcp.json` and `opencode.jsonc` are committed with ${VAR}/{env:VAR}
+ *       expansion — installer only ensures `.env` has the required values)
  *  11.  Verify external CLIs (bun, gh, acli, playwright-cli, allure, jq)
  *  12.  Optional bootstraps: Jira credentials check, API auth login
  *  13.  Persist `.agents/install-state.json` + closing summary
@@ -30,9 +32,11 @@
  *   INSTALL_SKIP_COMMUNITY=1              Skip `npx skills add` step
  *   INSTALL_SKIP_JIRA=1                   Skip optional Jira bootstrap
  *   INSTALL_SKIP_API=1                    Skip optional API auth bootstrap
+ *   INSTALL_SKIP_DIRENV=1                 Skip direnv autoload setup
  *
- * Plus any MCP secret env vars (e.g. TAVILY_API_KEY, JIRA_API_TOKEN, POSTMAN_API_KEY).
- * Missing secrets in non-interactive mode become {{VAR}} placeholders in .mcp.json.
+ * Plus any MCP secret env vars (e.g. TAVILY_API_KEY, ATLASSIAN_API_TOKEN, POSTMAN_API_KEY).
+ * In non-interactive mode, missing vars are listed under pendingEnvVars in the
+ * summary — the user fills them in `.env` later and re-runs setup if desired.
  *
  * State file: .agents/install-state.json (gitignored). Re-runs are idempotent —
  * already-installed skills are skipped, existing MCP files prompt before overwrite.
@@ -103,10 +107,10 @@ interface InstallState {
 
 const REPO_ROOT = resolve(import.meta.dir, '..');
 const STATE_PATH = join(REPO_ROOT, '.agents', 'install-state.json');
-const CLAUDE_TEMPLATE_PATH = join(REPO_ROOT, 'templates', 'mcp', 'claude.template.json');
-const OPENCODE_TEMPLATE_PATH = join(REPO_ROOT, 'templates', 'mcp', 'opencode.template.json');
-const CLAUDE_MCP_OUTPUT = join(REPO_ROOT, '.mcp.json');
-const OPENCODE_MCP_OUTPUT = join(REPO_ROOT, 'opencode.json');
+const CLAUDE_MCP_PATH = join(REPO_ROOT, '.mcp.json');
+const OPENCODE_CONFIG_PATH = join(REPO_ROOT, 'opencode.jsonc');
+const ENV_PATH = join(REPO_ROOT, '.env');
+const ENV_EXAMPLE_PATH = join(REPO_ROOT, '.env.example');
 
 const REPO_NAME = 'agentic-qa-boilerplate';
 const TOTAL_STEPS = 13;
@@ -214,8 +218,23 @@ const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/obra/superpowers', skill: 'brainstorming' },
 ];
 
-const PLACEHOLDER_PATTERN = /\{\{([A-Z][A-Z0-9_]*)\}\}/g;
+// Matches Claude Code ${VAR} and ${VAR:-default} placeholders in .mcp.json.
+const MCP_VAR_PATTERN = /\$\{([A-Z][A-Z0-9_]*)(?::-[^}]*)?\}/g;
+// Matches OpenCode {env:VAR} placeholders in opencode.jsonc.
+const OPENCODE_VAR_PATTERN = /\{env:([A-Z][A-Z0-9_]*)\}/g;
 const SECRET_NAME_HINTS = ['TOKEN', 'KEY', 'SECRET', 'PASSWORD'];
+
+// Map MCP server → env vars its secrets depend on. Servers with empty arrays
+// have no secrets (so they're always "configured-no-key").
+const MCP_SERVER_SECRETS: Record<string, readonly string[]> = {
+  context7: [],
+  tavily: ['TAVILY_API_KEY'],
+  playwright: [],
+  atlassian: ['ATLASSIAN_URL', 'ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'],
+  dbhub: [],
+  openapi: ['API_BASE_URL', 'OPENAPI_SPEC_PATH', 'API_TOKEN'],
+  postman: ['POSTMAN_API_KEY'],
+};
 
 // ============================================================================
 // CLI flags
@@ -229,6 +248,7 @@ const SKIP_AGENTS_SETUP = process.env.INSTALL_SKIP_AGENTS_SETUP === '1';
 const SKIP_JIRA = process.env.INSTALL_SKIP_JIRA === '1';
 const SKIP_API = process.env.INSTALL_SKIP_API === '1';
 const SKIP_COMMUNITY = process.env.INSTALL_SKIP_COMMUNITY === '1';
+const SKIP_DIRENV = process.env.INSTALL_SKIP_DIRENV === '1';
 
 // ============================================================================
 // Logger
@@ -713,127 +733,88 @@ async function installCommunitySkills(
 }
 
 // ============================================================================
-// Step 10 — MCP configuration
+// Step 10 — Wire .env for MCP servers (+ direnv autoload offer)
 // ============================================================================
+//
+// `.mcp.json` and `opencode.jsonc` are committed with `${VAR}` / `{env:VAR}`
+// expansion. The installer no longer rewrites those files — it only ensures
+// `.env` contains the required values, then optionally enables direnv.
 
 function isSecretName(name: string): boolean {
   return SECRET_NAME_HINTS.some(hint => name.endsWith(hint) || name.endsWith(`_${hint}`));
 }
 
-function discoverPlaceholders(content: string): string[] {
+function stripJsoncComments(input: string): string {
+  // Strip /* … */ block comments + // line comments. Conservative: only strips
+  // line comments that start the (trimmed) line, so URLs containing `//`
+  // inside JSON string values survive.
+  return input
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+}
+
+async function discoverRequiredEnvVars(agents: AgentId[]): Promise<string[]> {
   const seen = new Set<string>();
-  for (const m of content.matchAll(PLACEHOLDER_PATTERN)) {
-    seen.add(m[1]);
+  if (agents.includes('claude-code') && existsSync(CLAUDE_MCP_PATH)) {
+    const content = await readFile(CLAUDE_MCP_PATH, 'utf8');
+    for (const m of content.matchAll(MCP_VAR_PATTERN)) { seen.add(m[1]); }
   }
-  return [...seen];
+  if (agents.includes('opencode') && existsSync(OPENCODE_CONFIG_PATH)) {
+    const raw = await readFile(OPENCODE_CONFIG_PATH, 'utf8');
+    const content = stripJsoncComments(raw);
+    for (const m of content.matchAll(OPENCODE_VAR_PATTERN)) { seen.add(m[1]); }
+  }
+  return [...seen].sort();
 }
 
-interface ResolvedSecret {
-  value: string
-  source: 'env' | 'prompt' | 'placeholder'
+function parseEnvFile(content: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const rawLine of content.split('\n')) {
+    const line = rawLine.trim();
+    if (line.length === 0 || line.startsWith('#')) { continue; }
+    const eq = line.indexOf('=');
+    if (eq <= 0) { continue; }
+    const key = line.slice(0, eq).trim();
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"'))
+      || (value.startsWith('\'') && value.endsWith('\''))
+    ) {
+      value = value.slice(1, -1);
+    }
+    out[key] = value;
+  }
+  return out;
 }
 
-async function resolveSecret(varName: string): Promise<ResolvedSecret> {
-  const fromEnv = process.env[varName];
-  if (fromEnv && fromEnv.trim().length > 0) {
-    log.dim(`  using ${varName} from environment`);
-    return { value: fromEnv.trim(), source: 'env' };
+async function ensureEnvFileExists(): Promise<void> {
+  if (existsSync(ENV_PATH)) { return; }
+  if (existsSync(ENV_EXAMPLE_PATH)) {
+    const tmpl = await readFile(ENV_EXAMPLE_PATH, 'utf8');
+    await writeFile(ENV_PATH, tmpl, 'utf8');
+    log.success('Created .env from .env.example (values are empty — fill them below).');
+    return;
   }
-  if (NON_INTERACTIVE) {
-    return { value: `{{${varName}}}`, source: 'placeholder' };
-  }
-  const prompt = isSecretName(varName) ? password : input;
-  const entered = await prompt({
-    message: `${varName} (Enter to keep placeholder):`,
-    ...(isSecretName(varName) ? { mask: '*' } : {}),
+  await writeFile(ENV_PATH, '', 'utf8');
+  log.warn('.env.example missing; created empty .env.');
+}
+
+async function appendVarsToEnv(vars: Record<string, string>): Promise<void> {
+  if (Object.keys(vars).length === 0) { return; }
+  const existing = await readFile(ENV_PATH, 'utf8');
+  const needsNewline = existing.length > 0 && !existing.endsWith('\n');
+  const header = '\n# ===== Added by `bun run setup` =====\n';
+  const body = `${Object.entries(vars).map(([k, v]) => `${k}=${v}`).join('\n')}\n`;
+  await writeFile(ENV_PATH, `${existing}${needsNewline ? '\n' : ''}${header}${body}`, 'utf8');
+}
+
+async function promptForVar(name: string): Promise<string> {
+  const ask = isSecretName(name) ? password : input;
+  const entered = await ask({
+    message: `${name} (Enter to skip — fill later in .env):`,
+    ...(isSecretName(name) ? { mask: '*' } : {}),
   } as Parameters<typeof password>[0]);
-  const trimmed = (entered ?? '').trim();
-  if (trimmed.length === 0) {
-    return { value: `{{${varName}}}`, source: 'placeholder' };
-  }
-  return { value: trimmed, source: 'prompt' };
-}
-
-function replacePlaceholders(input: unknown, replacements: Record<string, string>): unknown {
-  if (typeof input === 'string') {
-    let out = input;
-    for (const [key, value] of Object.entries(replacements)) {
-      out = out.split(`{{${key}}}`).join(value);
-    }
-    return out;
-  }
-  if (Array.isArray(input)) { return input.map(item => replacePlaceholders(item, replacements)); }
-  if (input && typeof input === 'object') {
-    const obj = input as Record<string, unknown>;
-    const result: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(obj)) { result[k] = replacePlaceholders(v, replacements); }
-    return result;
-  }
-  return input;
-}
-
-async function writeMcpFile(target: string, content: unknown): Promise<boolean> {
-  if (existsSync(target)) {
-    const overwrite = await maybeConfirm(`${target} already exists. Overwrite?`, false);
-    if (!overwrite) {
-      log.warn(`Keeping existing ${target}.`);
-      return false;
-    }
-  }
-  await mkdir(dirname(target), { recursive: true });
-  await writeFile(target, `${JSON.stringify(content, null, 2)}\n`, 'utf8');
-  return true;
-}
-
-async function configureMcpForAgent(
-  agent: AgentId,
-  state: InstallState,
-  pendingEnvVars: Set<string>,
-): Promise<void> {
-  const templatePath = agent === 'claude-code' ? CLAUDE_TEMPLATE_PATH : OPENCODE_TEMPLATE_PATH;
-  const outputPath = agent === 'claude-code' ? CLAUDE_MCP_OUTPUT : OPENCODE_MCP_OUTPUT;
-  const label = agent === 'claude-code' ? 'Claude Code (.mcp.json)' : 'OpenCode (opencode.json)';
-
-  log.banner(`Configuring MCPs for ${label}`);
-
-  const templateRaw = await readFile(templatePath, 'utf8');
-  const placeholders = discoverPlaceholders(templateRaw);
-
-  const replacements: Record<string, string> = {};
-  for (const name of placeholders) {
-    const r = await resolveSecret(name);
-    replacements[name] = r.value;
-    if (r.source === 'placeholder') { pendingEnvVars.add(name); }
-  }
-
-  const template = JSON.parse(templateRaw) as unknown;
-  const replaced = replacePlaceholders(template, replacements);
-  const wrote = await writeMcpFile(outputPath, replaced);
-  if (wrote) {
-    log.success(`Wrote ${outputPath}`);
-  }
-
-  // Per-server status — placeholder if any of its secrets are placeholders, else
-  // configured-with-key (for servers that have secrets) or configured-no-key.
-  const serverSecrets: Record<string, string[]> = {
-    context7: [],
-    tavily: ['TAVILY_API_KEY'],
-    playwright: [],
-    atlassian: ['JIRA_URL', 'JIRA_EMAIL', 'JIRA_API_TOKEN', 'CONFLUENCE_URL', 'CONFLUENCE_EMAIL', 'CONFLUENCE_API_TOKEN'],
-    dbhub: [],
-    openapi: ['API_BASE_URL', 'OPENAPI_SPEC_PATH', 'API_TOKEN'],
-    postman: ['POSTMAN_API_KEY'],
-  };
-
-  for (const [server, secrets] of Object.entries(serverSecrets)) {
-    if (secrets.length === 0) {
-      state.mcps[server] = 'configured-no-key';
-    }
-    else {
-      const anyPlaceholder = secrets.some(s => replacements[s]?.startsWith('{{'));
-      state.mcps[server] = anyPlaceholder ? 'placeholder' : 'configured-with-key';
-    }
-  }
+  return (entered ?? '').trim();
 }
 
 async function configureMcps(agents: AgentId[], state: InstallState): Promise<void> {
@@ -841,11 +822,135 @@ async function configureMcps(agents: AgentId[], state: InstallState): Promise<vo
     log.info('No agents selected, skipping MCP config.');
     return;
   }
-  const pending = new Set<string>();
-  for (const agent of agents) {
-    await configureMcpForAgent(agent, state, pending);
+
+  await ensureEnvFileExists();
+
+  const required = await discoverRequiredEnvVars(agents);
+  if (required.length === 0) {
+    log.warn('No env-var placeholders found in .mcp.json or opencode.jsonc.');
+    state.pendingEnvVars = [];
+    return;
   }
-  state.pendingEnvVars = [...pending].sort();
+
+  log.info(`Required MCP env vars (from committed configs): ${required.join(', ')}`);
+
+  const envValues = parseEnvFile(await readFile(ENV_PATH, 'utf8'));
+  const newValues: Record<string, string> = {};
+  const stillPending: string[] = [];
+
+  for (const name of required) {
+    const fromEnvFile = envValues[name];
+    if (fromEnvFile && fromEnvFile.trim().length > 0) {
+      log.dim(`  ${name}: already set in .env`);
+      continue;
+    }
+    const fromProcessEnv = process.env[name];
+    if (fromProcessEnv && fromProcessEnv.trim().length > 0) {
+      newValues[name] = fromProcessEnv.trim();
+      log.dim(`  ${name}: captured from shell environment`);
+      continue;
+    }
+    if (NON_INTERACTIVE) {
+      stillPending.push(name);
+      continue;
+    }
+    const value = await promptForVar(name);
+    if (value.length === 0) {
+      stillPending.push(name);
+    }
+    else {
+      newValues[name] = value;
+    }
+  }
+
+  if (Object.keys(newValues).length > 0) {
+    await appendVarsToEnv(newValues);
+    log.success(`Wrote ${Object.keys(newValues).length} var(s) to .env: ${Object.keys(newValues).join(', ')}`);
+  }
+  if (stillPending.length > 0) {
+    log.warn(`Pending (fill in .env manually): ${stillPending.join(', ')}`);
+  }
+
+  state.pendingEnvVars = stillPending;
+
+  // Per-server status — placeholder if any of its required vars are still pending.
+  const merged = { ...envValues, ...newValues };
+  for (const [server, secrets] of Object.entries(MCP_SERVER_SECRETS)) {
+    if (secrets.length === 0) {
+      state.mcps[server] = 'configured-no-key';
+    }
+    else {
+      const anyMissing = secrets.some(s => !merged[s] || merged[s].trim().length === 0);
+      state.mcps[server] = anyMissing ? 'placeholder' : 'configured-with-key';
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// direnv autoload sub-step (still part of Step 10)
+// ----------------------------------------------------------------------------
+
+interface DirenvInfo {
+  installed: boolean
+  version?: string
+  supportsDotenvIfExists: boolean
+  platform: NodeJS.Platform
+}
+
+function detectDirenv(): DirenvInfo {
+  const platform = process.platform;
+  if (platform === 'win32') {
+    return { installed: false, supportsDotenvIfExists: false, platform };
+  }
+  const result = tryRun('direnv', ['version']);
+  if (!result.ok) {
+    return { installed: false, supportsDotenvIfExists: false, platform };
+  }
+  const version = result.stdout.trim();
+  const parts = version.split('.').map(n => Number.parseInt(n, 10));
+  const maj = parts[0] ?? 0;
+  const min = parts[1] ?? 0;
+  const supportsDotenvIfExists = maj > 2 || (maj === 2 && min >= 30);
+  return { installed: true, version, supportsDotenvIfExists, platform };
+}
+
+async function offerDirenvAutoload(): Promise<void> {
+  if (SKIP_DIRENV) {
+    log.dim('  INSTALL_SKIP_DIRENV=1, skipping direnv setup.');
+    return;
+  }
+  const info = detectDirenv();
+
+  if (info.platform === 'win32') {
+    log.info('Windows detected — direnv setup skipped.');
+    log.dim('  Launch agents with: bun run claude  /  bun run opencode  (dotenv-cli wrapper loads .env).');
+    return;
+  }
+  if (!info.installed) {
+    log.info('direnv not installed (optional).');
+    log.dim('  Launch agents with: bun run claude  /  bun run opencode  (dotenv-cli loads .env automatically).');
+    log.dim('  Or install direnv for shell autoload: brew install direnv  (macOS)  /  apt install direnv  (Linux).');
+    return;
+  }
+  log.info(`direnv ${info.version} detected.`);
+
+  const proceed = await maybeConfirm(
+    'Run `direnv allow` so the repo\'s .envrc auto-loads .env into your shell?',
+    true,
+  );
+  if (!proceed) {
+    log.dim('  Skipped. Launch agents with: bun run claude  /  bun run opencode.');
+    return;
+  }
+  const result = tryRun('direnv', ['allow', REPO_ROOT]);
+  if (result.ok) {
+    log.success('direnv allow succeeded — .envrc will auto-load .env on cd.');
+    log.dim('  Reminder: add `eval "$(direnv hook zsh)"` (or bash) to your shell rc if not already done.');
+  }
+  else {
+    log.warn('direnv allow failed. Launch agents with: bun run claude  /  bun run opencode.');
+    log.dim(`  ${(result.stderr || result.stdout).trim().slice(0, 200)}`);
+  }
 }
 
 // ============================================================================
@@ -1030,14 +1135,27 @@ function printClosingSummary(state: InstallState): void {
 
   process.stdout.write('\n');
   process.stdout.write(`${COLORS.bold}Next steps:${COLORS.reset}\n`);
-  process.stdout.write('  1. Resolve pending env vars (replace {{VAR}} in .mcp.json with real values, or re-run setup)\n');
-  process.stdout.write('  2. Install missing CLIs (see table above)\n');
-  process.stdout.write('  3. Run: bun run lint:agents (validate config)\n');
-  if (!state.steps.jiraBootstrap?.ok) {
-    process.stdout.write('  4. Configure Jira when credentials are ready: bun run jira:sync-fields && bun run jira:check\n');
+  let n = 1;
+  if (state.pendingEnvVars.length > 0) {
+    process.stdout.write(`  ${n}. Fill remaining vars in .env: ${state.pendingEnvVars.join(', ')}\n`);
+    n++;
   }
-  process.stdout.write('  5. In your agent: /agentic-qa-onboard (first-time orientation tour)\n');
-  process.stdout.write('  6. Read your first ticket: /sprint-testing <UPEX-XXX>\n');
+  process.stdout.write(`  ${n}. Launch your agent:\n`);
+  process.stdout.write('       bun run claude       # Claude Code  (dotenv-cli wraps and loads .env)\n');
+  process.stdout.write('       bun run opencode     # OpenCode     (dotenv-cli wraps and loads .env)\n');
+  log.dim('       (or run `claude` / `opencode` directly if direnv autoload is set up)');
+  n++;
+  process.stdout.write(`  ${n}. Install missing CLIs (see table above)\n`);
+  n++;
+  process.stdout.write(`  ${n}. Run: bun run lint:agents (validate config)\n`);
+  n++;
+  if (!state.steps.jiraBootstrap?.ok) {
+    process.stdout.write(`  ${n}. Configure Jira when credentials are ready: bun run jira:sync-fields && bun run jira:check\n`);
+    n++;
+  }
+  process.stdout.write(`  ${n}. In your agent: /agentic-qa-onboard (first-time orientation tour)\n`);
+  n++;
+  process.stdout.write(`  ${n}. Read your first ticket: /sprint-testing <UPEX-XXX>\n`);
   process.stdout.write('\n');
   log.dim('Full docs: INSTALLER.md');
 }
@@ -1171,8 +1289,9 @@ async function main(): Promise<void> {
   }
 
   // Step 10
-  log.step(10, TOTAL_STEPS, 'Configuring MCPs');
+  log.step(10, TOTAL_STEPS, 'Wiring .env for MCP servers');
   await configureMcps(agents, state);
+  await offerDirenvAutoload();
 
   // Step 11
   log.step(11, TOTAL_STEPS, 'Verifying external CLIs');
