@@ -54,6 +54,7 @@
     "lint:fix": "eslint . --fix",
     "lint:agents": "bun run scripts/agents-lint.ts",
     "setup": "bun run cli/install.ts",
+    "setup:doctor": "bun run cli/doctor.ts",
     "agents:setup": "bun run scripts/agents-setup.ts",
     "onboarding": "bun run scripts/onboarding.ts",
     "jira:sync-fields": "bun run scripts/sync-jira-fields.ts",

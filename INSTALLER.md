@@ -6,6 +6,81 @@
 >
 > This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram + SDD), community skills via `npx skills`, locally committed workflow skills, and the 7 canonical MCPs — are documented below in that order.
 
+## Running setup from an AI agent
+
+Most users today ask an AI (Claude Code, OpenCode, Cursor, …) to drive the setup instead of running it by hand. The installer is built for both flows; the AI path uses a few specific entry points:
+
+### `bun run setup:doctor` — read-only health check
+
+The fastest way for an AI to figure out **what's wired and what's missing** without changing anything:
+
+```bash
+bun run setup:doctor          # human-readable summary
+bun run setup:doctor --json   # machine-readable, parse with jq / agent
+```
+
+Exit code: `0` when everything is green, `1` when any pending action remains. JSON shape:
+
+```json
+{
+  "status": "needs-action",
+  "platform": "linux",
+  "shell": "/usr/bin/bash",
+  "is_tty": true,
+  "env_vars": { "TAVILY_API_KEY": "set", "POSTMAN_API_KEY": "missing", ... },
+  "direnv": { "installed": true, "version": "2.25.2", "envrc_allowed": true, "hook_in_rc": true, "rc_file": "/home/user/.bashrc" },
+  "pending_actions": [
+    { "type": "credential", "target": "POSTMAN_API_KEY", "hint": "Postman API key for Postman MCP", "where": "https://postman.com → settings → API keys" },
+    { "type": "shell_hook", "target": "~/.bashrc", "hint": "Add direnv hook ...", "where": "eval \"$(direnv hook bash)\"" }
+  ]
+}
+```
+
+`pending_actions[].type` is one of: `credential` · `shell_hook` · `system_install` · `shell_command`. The AI iterates the list and picks the right tool per type:
+
+| type | Who handles it | How |
+|---|---|---|
+| `credential` | **User** | AI asks the user for the value in chat (e.g. "paste your Tavily key from https://app.tavily.com"). Then AI writes it to `.env`. |
+| `shell_hook` | **AI** | AI appends the `where` line to the `target` rc file with its Edit/Bash tool. Trivial. |
+| `system_install` | **User** | AI shows the `where` command; the user runs it (brew/winget/apt may prompt for admin password). |
+| `shell_command` | **AI** | AI runs the `target` command via Bash. |
+
+### What an AI **cannot** do (hard limits)
+
+- **Generate API tokens** — Tavily / Atlassian / Postman / OpenAPI keys all require an interactive web login + 2FA. The user creates and pastes them; the AI never sees the generation flow.
+- **Decide business config** — e.g. `TEST_ENV=local` vs `staging`, which modules to automate first, etc. The AI suggests; the user decides.
+- **Execute privileged installs cleanly** — `brew install`, `winget install`, `apt install` may show a sudo/admin prompt that lives outside the agent's terminal. The AI runs the command but the user clicks "allow".
+
+### `bun run setup --non-interactive` (or just `bun run setup` without a TTY)
+
+The installer auto-detects no-TTY (an agent invoking it without a terminal) and silently switches to `--non-interactive`. Prompts skip with their default answer. The closing summary lists pending env vars and next steps — same data the doctor exposes. Use this path when the AI wants to run the full setup batch:
+
+```bash
+INSTALL_AGENTS=claude-code,opencode \
+  TAVILY_API_KEY=tvly-... \
+  ATLASSIAN_URL=... \
+  ATLASSIAN_EMAIL=... \
+  ATLASSIAN_API_TOKEN=... \
+  bun run setup --non-interactive
+```
+
+Then `bun run setup:doctor --json` to confirm.
+
+### Skip flags (per-step opt-out)
+
+| Env var | Effect |
+|---|---|
+| `INSTALL_SKIP_GENTLE_AI=1` | Treat gentle-ai as skipped |
+| `INSTALL_SKIP_DEPS=1` | Skip `bun install` |
+| `INSTALL_SKIP_PLAYWRIGHT=1` | Skip `bun run pw:install` |
+| `INSTALL_SKIP_AGENTS_SETUP=1` | Skip `bun run agents:setup` |
+| `INSTALL_SKIP_COMMUNITY=1` | Skip `npx skills add` step |
+| `INSTALL_SKIP_JIRA=1` | Skip optional Jira bootstrap |
+| `INSTALL_SKIP_API=1` | Skip optional API auth bootstrap |
+| `INSTALL_SKIP_DIRENV=1` | Skip direnv detection / autoload |
+
+---
+
 ## Launching the agent after setup
 
 `bun run setup` finishes with two recommended ways to start an agent so MCP env vars (e.g. `TAVILY_API_KEY`, `ATLASSIAN_API_TOKEN`) get loaded from `.env`:

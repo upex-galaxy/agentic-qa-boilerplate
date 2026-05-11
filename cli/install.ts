@@ -240,7 +240,13 @@ const MCP_SERVER_SECRETS: Record<string, readonly string[]> = {
 // CLI flags
 // ============================================================================
 
-const NON_INTERACTIVE = process.argv.includes('--non-interactive');
+// Auto-detect non-TTY (e.g. when an AI agent or CI pipeline invokes the
+// installer) so prompts don't hang waiting for stdin. The flag still wins
+// explicitly when passed; without it, lack of a TTY forces the same mode.
+const NON_INTERACTIVE
+  = process.argv.includes('--non-interactive') || !process.stdin.isTTY;
+const AUTO_NON_INTERACTIVE
+  = !process.argv.includes('--non-interactive') && !process.stdin.isTTY;
 const SKIP_GENTLE_AI = process.env.INSTALL_SKIP_GENTLE_AI === '1';
 const SKIP_DEPS = process.env.INSTALL_SKIP_DEPS === '1';
 const SKIP_PLAYWRIGHT = process.env.INSTALL_SKIP_PLAYWRIGHT === '1';
@@ -1194,6 +1200,10 @@ function printClosingSummary(state: InstallState): void {
 async function main(): Promise<void> {
   log.banner(`${REPO_NAME} — installer`);
   log.dim('See INSTALLER.md for the contract this implements.');
+  if (AUTO_NON_INTERACTIVE) {
+    log.warn('No TTY detected — running in --non-interactive mode (prompts will use defaults).');
+    log.dim('  AI agents: parse pending vars from the closing summary, or run `bun run setup:doctor --json`.');
+  }
 
   // Step 1
   log.step(1, TOTAL_STEPS, 'Verifying repo root');
