@@ -1,8 +1,9 @@
-# Context Engineering Strategy
+# Context Engineering — how this repo loads context for the AI
 
-> **Purpose**: Explain the context engineering strategy for AI-driven test automation.
+> **Purpose**: Explain the context engineering strategy for AI-driven test automation. Top-level reference alongside `README.md`, `CLAUDE.md`, and `INSTALLER.md`.
 > **Audience**: Humans learning the system + AI when needing to understand "why".
 > **Related**: `CLAUDE.md` contains the operational context loaded each session. (`CLAUDE.md` at the repo root is a symlink on Linux/macOS — and a byte-identical copy on Windows — pointing at `CLAUDE.md`. They are the same file; structural changes belong in `CLAUDE.md` and propagate through the symlink.)
+> **Sync**: This file is in scope of `/sync-ai-memory` — re-run it whenever the context architecture changes.
 
 ---
 
@@ -141,9 +142,10 @@ docs/
 ├── methodology/                   → Testing methodology (IQL, KATA phases)
 ├── setup/                         → Setup guides (MCP, tools)
 ├── testing/                       → Testing guides (API, DB, automation)
-├── workflows/                     → Workflow guides (git, environments)
-└── context-engineering.md         → This file
+└── workflows/                     → Workflow guides (git, environments)
 ```
+
+> Context engineering strategy has moved to `CONTEXT.md` at the repo root (alongside `README.md`, `CLAUDE.md`, `INSTALLER.md`).
 
 ### tests/ - KATA Implementation
 

@@ -2,7 +2,7 @@
 
 > **Purpose**: Make sense of how this repo's pieces fit together — Skills, Commands, Scripts, and the configuration substrate. The 30-minute orientation a new contributor needs before opening any skill.
 > **Audience**: New QA engineers, automation engineers, or technical leaders adopting this boilerplate. Read AFTER skimming `README.md` and BEFORE diving into individual skills.
-> **Related**: [`../README.md`](../README.md) (project overview + Quick Start) · [`agentic-quality-engineering.md`](agentic-quality-engineering.md) (strategy + architecture deep-dive) · [`context-engineering.md`](context-engineering.md) (the why behind the knowledge layer).
+> **Related**: [`../README.md`](../README.md) (project overview + Quick Start) · [`agentic-quality-engineering.md`](agentic-quality-engineering.md) (strategy + architecture deep-dive) · [`../CONTEXT.md`](../CONTEXT.md) (the why behind the knowledge layer).
 
 ---
 
@@ -25,7 +25,7 @@ This repository is an **AI-driven QA machine**. You have a project under test (t
 
 For the machine to work, three kinds of moving parts cooperate: **Skills** that orchestrate long, multi-phase AI work; **Commands** that perform one-shot utilities; and **Scripts** you run yourself in the terminal to keep the configuration substrate healthy. All three feed off the same fuel — a system of variables defined in `.agents/project.yaml` that resolves to your target's specifics at AI session bootstrap.
 
-Read [`agentic-quality-engineering.md`](agentic-quality-engineering.md) for the strategy behind the practice and [`context-engineering.md`](context-engineering.md) for why the knowledge layer is split the way it is. This document focuses on *how the pieces connect* so you know what to invoke, in what order, and what each piece actually does.
+Read [`agentic-quality-engineering.md`](agentic-quality-engineering.md) for the strategy behind the practice and [`../CONTEXT.md`](../CONTEXT.md) for why the knowledge layer is split the way it is. This document focuses on *how the pieces connect* so you know what to invoke, in what order, and what each piece actually does.
 
 ---
 
@@ -157,7 +157,7 @@ The variable substrate has several syntaxes that look similar but resolve from d
 - `{{jira.<slug>}}` → portable Jira custom-field reference, resolves through `.agents/jira-required.yaml` (manifest) + `.agents/jira-fields.json` (workspace catalog). Sub-forms: `{{jira.<slug>.<option>}}` (option value), `{{jira.<slug>.<parent>.<child>}}` (cascading).
 - `{{jira.work_type.<slug>}}` / `{{jira.status.<work_type>.<slug>}}` / `{{jira.transition.<work_type>.<slug>}}` → portable Jira workflow references (issue type name, status name, transition id). Resolve through `.agents/jira-required.yaml` `work_types:` (manifest) + `.agents/jira-workflows.json` (workspace catalog).
 
-For the deeper rationale on the three-tier knowledge split see [`context-engineering.md`](context-engineering.md) §3.
+For the deeper rationale on the three-tier knowledge split see [`../CONTEXT.md`](../CONTEXT.md) §3.
 
 ### Circuit 2 — Orchestration
 
@@ -247,7 +247,7 @@ If you only remember one thing:
 
 - [`../README.md`](../README.md) — the GitHub-landing summary, install steps, CI workflow details, and Available Scripts catalog.
 - [`agentic-quality-engineering.md`](agentic-quality-engineering.md) — the strategic deep-dive: 6-stage pipeline, KATA architecture, GO/CAUTION/NO-GO gate, instrumentation patterns.
-- [`context-engineering.md`](context-engineering.md) — the **why** behind the knowledge layer: token efficiency, progressive loading, the `.env` vs `.agents/project.yaml` split, the three variable syntaxes.
+- [`../CONTEXT.md`](../CONTEXT.md) — the **why** behind the knowledge layer: token efficiency, progressive loading, the `.env` vs `.agents/project.yaml` split, the three variable syntaxes.
 - [`methodology/IQL-methodology.md`](methodology/IQL-methodology.md) — the IQL methodology deep-dive (phased approach, early/mid/late game testing).
 - [`../CLAUDE.md`](../CLAUDE.md) — the canonical project memory + Tool Resolution table that maps `[TAG_TOOL]` pseudocode to concrete CLIs / MCPs.
 - [`../.claude/skills/agentic-qa-core/SKILL.md`](../.claude/skills/agentic-qa-core/SKILL.md) — foundation skill internals (bootstrap order, idempotency rules, source-of-truth contract).

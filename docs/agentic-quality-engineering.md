@@ -265,7 +265,7 @@ The knowledge layer is organised in three tiers, mirroring the scope at which th
                 └── atc/*.md               # Individual ATC designs
 ```
 
-The canonical shape is documented in `.context/README.md`. The strategic reasoning behind the three-tier split lives in `docs/context-engineering.md` — read that for the full rationale.
+The canonical shape is documented in `.context/README.md`. The strategic reasoning behind the three-tier split lives in `CONTEXT.md` (repo root) — read that for the full rationale.
 
 ### Cross-skill references
 
@@ -727,7 +727,7 @@ The rest is execution.
 
 **See also**:
 - `CLAUDE.md` — canonical project memory, Tool Resolution, and skill routing (mirrored at `CLAUDE.md`)
-- `docs/context-engineering.md` — strategy behind the three-tier context split
+- `CONTEXT.md` — strategy behind the three-tier context split (repo root)
 - `docs/methodology/IQL-methodology.md` — phased methodology deep-dive
 - `.claude/skills/agentic-qa-core/SKILL.md` — foundation skill internals (bootstrap + shared references)
 - `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md` — canonical orchestration doctrine cited by every workflow skill
