@@ -129,6 +129,10 @@ These guidelines are working if: **fewer unnecessary changes in diffs, fewer rew
 
 10. **Playwright CLI Usage**: For browser automation, load the `/playwright-cli` skill. It provides screenshots, tracing, video recording, session management, and request mocking. See `.claude/skills/playwright-cli/` for details.
 
+11. **MCP credential failure = STOP immediately**: If any MCP server fails to start, returns an auth/credentials error, or appears blocked because of missing env vars (`.mcp.json` uses `${VAR}` — Claude Code fails to parse if unset; `opencode.jsonc` uses `{env:VAR}` — OpenCode silently substitutes empty string, so a 401/403 from the MCP is the signal), DO NOT keep working around it. Stop, tell the user exactly which env var is missing or invalid, point them to `.env` / `.env.example`, and ask them to:
+   1. Fix the value in `.env`
+   2. **Restart the agent session** (exit and re-enter) — env vars are read once at MCP-server spawn time and won't refresh mid-session.
+
 ---
 
 ## Project Variables

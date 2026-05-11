@@ -40,6 +40,11 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.envrc.local
+.direnv/
+# Force-track .envrc (overrides global ~/.gitignore_global, which often
+# blanket-ignores it). Our .envrc has no secrets — it only sources .env.
+!.envrc
 
 # ===== IDE & Editor =====
 .idea/
@@ -53,9 +58,13 @@ build/
 *.tsbuildinfo
 
 # ===== AI/Tools Configuration =====
-.mcp.json
-.mcp.catalog.json
+# .mcp.json and opencode.jsonc are COMMITTED — they reference secrets via
+# ${VAR} / {env:VAR} expansion. Real values live in .env (ignored above).
+# Local per-developer overrides go in *.local.* files (ignored below).
+.mcp.local.json
+opencode.local.jsonc
 opencode.json
+.mcp.catalog.json
 dbhub.toml
 .backups/
 .gemini/settings.json

@@ -33,6 +33,8 @@
     "agentic"
   ],
   "scripts": {
+    "claude": "dotenv -e .env -- claude",
+    "opencode": "dotenv -e .env -- opencode",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
@@ -85,6 +87,7 @@
     "@types/bun": "^1.3.7",
     "@types/node": "^24.10.1",
     "allure-playwright": "^3.2.1",
+    "dotenv-cli": "^8.0.0",
     "eslint": "^9.28.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",

@@ -1,0 +1,55 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "tavily": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.tavily.com/mcp/?tavilyApiKey=${TAVILY_API_KEY}"]
+    },
+    "playwright": {
+      "command": "bunx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--caps",
+        "vision,pdf,testing,tracing,tabs",
+        "--timeout-action",
+        "10000",
+        "--timeout-navigation",
+        "30000",
+        "--viewport-size",
+        "1920x1080"
+      ]
+    },
+    "atlassian": {
+      "command": "uvx",
+      "args": ["mcp-atlassian"],
+      "env": {
+        "JIRA_URL": "${ATLASSIAN_URL}",
+        "JIRA_USERNAME": "${ATLASSIAN_EMAIL}",
+        "JIRA_API_TOKEN": "${ATLASSIAN_API_TOKEN}"
+      }
+    },
+    "dbhub": {
+      "command": "bunx",
+      "args": ["-y", "@bytebase/dbhub@latest", "--config", "dbhub.toml"]
+    },
+    "openapi": {
+      "command": "bunx",
+      "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
+      "env": {
+        "API_BASE_URL": "${API_BASE_URL}",
+        "OPENAPI_SPEC_PATH": "${OPENAPI_SPEC_PATH}",
+        "API_HEADERS": "Authorization:Bearer ${API_TOKEN}"
+      }
+    },
+    "postman": {
+      "type": "http",
+      "url": "https://mcp.postman.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${POSTMAN_API_KEY}"
+      }
+    }
+  }
+}
