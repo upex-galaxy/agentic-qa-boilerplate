@@ -62,7 +62,7 @@ Each phase has a clear trigger (one of the three categories above), a determinis
 ### Phase 1 — Discovery
 
 - **Trigger**: `/project-discovery` (skill) — give it the target repo path or describe the target's stack.
-- **Produces**: `.context/PRD/` (product requirements), `.context/SRS/` (software requirements), `.context/mapping/business-data-map.md`, `.context/mapping/business-feature-map.md`, `.context/mapping/business-api-map.md`, `.context/master-test-plan.md`. The skill orchestrates the four `/business-*-map` and `/master-test-plan` commands as part of its 4-phase flow (Constitution → Architecture → Infrastructure → Specification).
+- **Produces**: `.context/PRD/` (product requirements), `.context/SRS/` (software requirements), `.context/business/business-data-map.md`, `.context/business/business-feature-map.md`, `.context/business/business-api-map.md`, `.context/master-test-plan.md`. The skill orchestrates the four `/business-*-map` and `/master-test-plan` commands as part of its 4-phase flow (Constitution → Architecture → Infrastructure → Specification).
 - **Frequency**: Once per target. Re-run when the target undergoes a major architecture change.
 
 ### Phase 2 — Adapt

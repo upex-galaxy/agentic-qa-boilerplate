@@ -29,8 +29,8 @@ This is **NOT** a flow description (→ `business-data-map.md`), a feature inven
 
 | Source | Status | What to extract | Tool |
 |--------|--------|----------------|------|
-| `.context/mapping/business-data-map.md` | **HARD REQUIREMENT** | Critical flows, state machines, automatic processes, integrations, business rules | Read file |
-| `.context/mapping/business-feature-map.md` | Optional — warn if missing | Feature catalog, CRUD matrix, feature flags, high-risk tags, QA relevance matrix | Read file |
+| `.context/business/business-data-map.md` | **HARD REQUIREMENT** | Critical flows, state machines, automatic processes, integrations, business rules | Read file |
+| `.context/business/business-feature-map.md` | Optional — warn if missing | Feature catalog, CRUD matrix, feature flags, high-risk tags, QA relevance matrix | Read file |
 | Existing context | If available | PRD, SRS, domain glossary | `.context/PRD/`, `.context/SRS/` |
 | Git history | If signals needed | Recently changed modules (breakage-likelihood indicator) | `git log --oneline -90 --stat` |
 | Incident / bug tracker | If helpful | Historical pain points that feed "why it matters" per flow | `[ISSUE_TRACKER_TOOL]` |
@@ -56,15 +56,15 @@ Does .context/master-test-plan.md exist?
 
 #### 1.1 `business-data-map.md` check (HARD)
 
-If `.context/mapping/business-data-map.md` does NOT exist → **STOP** with:
+If `.context/business/business-data-map.md` does NOT exist → **STOP** with:
 
-> This command needs `.context/mapping/business-data-map.md` to reason about risk. Run `/business-data-map` first, then re-invoke `/master-test-plan`.
+> This command needs `.context/business/business-data-map.md` to reason about risk. Run `/business-data-map` first, then re-invoke `/master-test-plan`.
 
 Do not proceed with assumptions.
 
 #### 1.2 `business-feature-map.md` check (SOFT)
 
-If `.context/mapping/business-feature-map.md` does NOT exist → **WARN and proceed**. Log in §10 Discovery Gaps:
+If `.context/business/business-feature-map.md` does NOT exist → **WARN and proceed**. Log in §10 Discovery Gaps:
 
 > The feature-map was not available at generation time. This plan reflects `business-data-map.md` only. Angles missed: CRUD-coverage gaps, feature-flag risk, per-feature QA-relevance tagging. Run `/business-feature-map` and re-run `/master-test-plan` for the complete picture.
 
@@ -185,8 +185,8 @@ Short, action-oriented. No more than 15 items. Ordered CRITICAL first, then HIGH
 Explicit delegation to stop scope creep:
 
 ```markdown
-- Flow-level diagrams and state-machine transition tables → `.context/mapping/business-data-map.md`
-- Feature catalog, CRUD matrix, feature flags → `.context/mapping/business-feature-map.md`
+- Flow-level diagrams and state-machine transition tables → `.context/business/business-data-map.md`
+- Feature catalog, CRUD matrix, feature flags → `.context/business/business-feature-map.md`
 - API endpoint inventory / contracts → `bun run api:sync` + `/business-api-map` (when available)
 - Detailed test case definitions and traceability → TMS (see `/test-documentation`)
 - Sprint-level execution order → `.context/reports/SPRINT-{N}-TESTING.md` (see `/sprint-testing`)

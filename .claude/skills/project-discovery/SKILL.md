@@ -1,6 +1,6 @@
 ---
 name: project-discovery
-description: "Onboard a project to this testing boilerplate and generate the context files that every QA and automation session depends on. Runs a 4-phase discovery (Constitution, Architecture, Infrastructure, Specification) that produces PRD, SRS, domain glossary, business-data-map, and test-ready fixtures. Use when the user says: set up this project, onboard this repo, connect to project, discover the architecture, generate business-data-map, or create PRD/SRS. Also use when .context/mapping/business-data-map.md is missing or stale. Do NOT use for writing tests (test-automation), documenting TCs (test-documentation), running suites (regression-testing), testing a ticket (sprint-testing), adapting the KATA architecture to the target stack (that is `/adapt-framework`), or syncing API endpoints (use `bun run api:sync` for technical sync; the `/business-api-map` command for the business angle)."
+description: "Onboard a project to this testing boilerplate and generate the context files that every QA and automation session depends on. Runs a 4-phase discovery (Constitution, Architecture, Infrastructure, Specification) that produces PRD, SRS, domain glossary, business-data-map, and test-ready fixtures. Use when the user says: set up this project, onboard this repo, connect to project, discover the architecture, generate business-data-map, or create PRD/SRS. Also use when .context/business/business-data-map.md is missing or stale. Do NOT use for writing tests (test-automation), documenting TCs (test-documentation), running suites (regression-testing), testing a ticket (sprint-testing), adapting the KATA architecture to the target stack (that is `/adapt-framework`), or syncing API endpoints (use `bun run api:sync` for technical sync; the `/business-api-map` command for the business angle)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 ---
@@ -38,7 +38,7 @@ All projects go through the same 4 phases, but depth varies. Pick once, then fol
 | Scenario | Input | Phases to run | Typical depth | Context weight & subagent hint |
 |----------|-------|---------------|---------------|--------------------------------|
 | **Fresh onboarding** (greenfield or unseen project) | Repo URL or local path(s), no existing context files | 1 -> 2 -> 3 -> 4 -> Context generators | Full. All docs generated. After discovery complete, run `/adapt-framework` to modify the boilerplate. | **Heavy.** Delegate each phase's code survey to a dedicated subagent (Phase 1 project-connection + assessment, Phase 2 PRD/SRS drafting, Phase 3 infra mapping). Main session orchestrates, reviews outputs, and gates user confirmation between phases. |
-| **Boilerplate adoption** (this repo adopted for a new project) | Target app repo(s), this repo as the test framework | 1 (project-connection) -> 3 -> Context generators | Skipping Phase 2 or Phase 4 is allowed **only** if every required input for `/adapt-framework` is already on disk: `.context/SRS/architecture.md`, `.context/mapping/business-data-map.md`, one of (`api/openapi-types.ts` non-stub / reachable OpenAPI spec URL / `.context/mapping/business-api-map.md`), plus `.context/infrastructure/{backend,frontend}.md`. If any is missing, fall back to the corresponding phase before invoking `/adapt-framework`. Do not skip phases on a hand-wave like "the docs exist elsewhere" — verify each file is on disk first. | **Medium.** Delegate Phase 1 project-connection + Phase 3 infra mapping to a subagent if the target is a monorepo (one subagent per package). Main session stays lean for `/adapt-framework` handoff. |
+| **Boilerplate adoption** (this repo adopted for a new project) | Target app repo(s), this repo as the test framework | 1 (project-connection) -> 3 -> Context generators | Skipping Phase 2 or Phase 4 is allowed **only** if every required input for `/adapt-framework` is already on disk: `.context/SRS/architecture.md`, `.context/business/business-data-map.md`, one of (`api/openapi-types.ts` non-stub / reachable OpenAPI spec URL / `.context/business/business-api-map.md`), plus `.context/infrastructure/{backend,frontend}.md`. If any is missing, fall back to the corresponding phase before invoking `/adapt-framework`. Do not skip phases on a hand-wave like "the docs exist elsewhere" — verify each file is on disk first. | **Medium.** Delegate Phase 1 project-connection + Phase 3 infra mapping to a subagent if the target is a monorepo (one subagent per package). Main session stays lean for `/adapt-framework` handoff. |
 | **Brownfield** (project already documented, tests missing) | Existing `.context/` partially filled | 2 (gaps) -> 3 (gaps) -> Context generators | Targeted. Only regenerate what's missing/stale. | **Light.** Run in main session unless gaps span many files — then delegate the gap-filling pass per phase to a subagent. |
 | **Context refresh** (data-map only) | User says "regenerate business-data-map" / "refresh the entity map" | Context generators only (just `business-data-map.md`) | One-file refresh. Confirm diffs before overwriting. **For PBI template refresh** (tracker moved, new custom fields), re-run Phase 4 in full instead — this scope handles data-map updates only, not templates. For the test plan, redirect to `/master-test-plan`. For API endpoints, redirect to `bun run api:sync` (technical) or `/business-api-map` (business angle). | **Minimal.** Main session only. No delegation needed. |
 
@@ -60,7 +60,7 @@ Phase 1: Constitution        -> Phase 2: Architecture       -> Phase 3: Infrastr
                                                  |
                                                  v
                                     Context Generators
-                                    (.context/mapping/business-data-map.md)
+                                    (.context/business/business-data-map.md)
                                     Test strategy (.context/master-test-plan.md) is
                                     produced by the /master-test-plan command.
                                     API context by `bun run api:sync` (technical) +
@@ -100,14 +100,14 @@ PRD sub-steps (run first, in parallel or sequentially — user choice):
 2. **User Personas** -- roles, permissions, primary/secondary users, role hierarchy.
 3. **User Journeys** -- critical paths through the UI, route map, journey diagrams.
 
-> **Feature catalog is post-discovery.** The full feature inventory (`.context/mapping/business-feature-map.md`) is produced by the `/business-feature-map` command after all four discovery phases complete. Do not attempt to invoke it from here — it is token-heavy and the user is advised to run it in a clean session (see "Next recommended steps" at the end of this skill).
+> **Feature catalog is post-discovery.** The full feature inventory (`.context/business/business-feature-map.md`) is produced by the `/business-feature-map` command after all four discovery phases complete. Do not attempt to invoke it from here — it is token-heavy and the user is advised to run it in a clean session (see "Next recommended steps" at the end of this skill).
 
 SRS sub-steps (run after PRD, serially):
 1. **Architecture Specs** -- C4 context and container diagrams, component structure, database schema, external services, security model.
 2. **Functional Specs** -- FR-N entries with preconditions, business rules, validations, state machines.
 3. **Non-Functional Specs** -- performance budgets, security posture, reliability (RTO/RPO), scalability, observability, compliance.
 
-> **API contracts are NOT an SRS output.** The technical surface is owned by `bun run api:sync` (generates `api/openapi-types.ts` from the project's OpenAPI spec). The business angle is owned by the `/business-api-map` command (`.context/mapping/business-api-map.md`). Phase 2 SRS only records where the spec lives (or flags its absence as a Discovery Gap). See `references/phase-2-srs.md` §2.
+> **API contracts are NOT an SRS output.** The technical surface is owned by `bun run api:sync` (generates `api/openapi-types.ts` from the project's OpenAPI spec). The business angle is owned by the `/business-api-map` command (`.context/business/business-api-map.md`). Phase 2 SRS only records where the spec lives (or flags its absence as a Discovery Gap). See `references/phase-2-srs.md` §2.
 
 **Completion gate**: `.context/PRD/executive-summary.md`, `user-personas.md`, `user-journeys.md`, `.context/SRS/architecture.md`, `functional-specs.md`, `non-functional-specs.md` all exist. API contract source (OpenAPI URL, `api/openapi-types.ts`, or "Discovery Gap — no spec") is recorded in `.context/project-config.md`. `business-feature-map.md` is produced post-discovery by `/business-feature-map` (see "Next recommended steps" after Phase 4). Soft content checks:
 - `architecture.md` contains at least one ` ```mermaid` block AND one of (`## Data Flow`, `## Database Schema`, `## Component Structure`).
@@ -158,7 +158,7 @@ Two files, always generated last (they pull from every prior phase):
 
 | File | Generator reference | What it contains |
 |------|---------------------|------------------|
-| `.context/mapping/business-data-map.md` | `context-generators.md` §Generator | System flows, entities, triggers, cron jobs, webhooks, integration points. The canonical "what this system does" map. |
+| `.context/business/business-data-map.md` | `context-generators.md` §Generator | System flows, entities, triggers, cron jobs, webhooks, integration points. The canonical "what this system does" map. |
 
 `.context/master-test-plan.md` is **not** produced by this skill — the `/master-test-plan` command owns it (reads `business-data-map.md` + optional `business-feature-map.md`). Run it after `business-data-map.md` exists.
 
@@ -184,12 +184,12 @@ Discovery complete. `/project-discovery` has populated:
 - .context/SRS/architecture.md, functional-specs.md, non-functional-specs.md
 - .context/infrastructure/backend.md, frontend.md, infrastructure.md
 - .context/PBI/README.md + templates/*.md
-- .context/mapping/business-data-map.md
+- .context/business/business-data-map.md
 
 **Recommended next commands** (run each in order — ideally in a clean session; they are token-heavy):
 
-1. `/business-feature-map` — catalog features, CRUD matrix, flags. Output: .context/mapping/business-feature-map.md
-2. `/business-api-map`     — auth model, critical endpoints, architecture behind the API. Output: .context/mapping/business-api-map.md
+1. `/business-feature-map` — catalog features, CRUD matrix, flags. Output: .context/business/business-feature-map.md
+2. `/business-api-map`     — auth model, critical endpoints, architecture behind the API. Output: .context/business/business-api-map.md
 3. `/master-test-plan`     — what to test and why, ranked by risk. Output: .context/master-test-plan.md
 
 These are STANDALONE and can be re-run any time you want to refresh them.
@@ -209,8 +209,8 @@ Before the user invokes `/adapt-framework`, verify every file below is on disk. 
 - [ ] `.context/PRD/` populated (at least `README.md` + one business document in `.context/PRD/business/`)
 - [ ] `.context/SRS/architecture.md`
 - [ ] `.context/infrastructure/backend.md` and `.context/infrastructure/frontend.md`
-- [ ] `.context/mapping/business-data-map.md`
-- [ ] API contract source: one of `api/openapi-types.ts` (non-stub) OR reachable OpenAPI spec URL OR `.context/mapping/business-api-map.md` (business-angle fallback)
+- [ ] `.context/business/business-data-map.md`
+- [ ] API contract source: one of `api/openapi-types.ts` (non-stub) OR reachable OpenAPI spec URL OR `.context/business/business-api-map.md` (business-angle fallback)
 - [ ] `.env.example` (and `.env` either present or created from it during `/adapt-framework` Phase 2)
 
 Handoff line to print to the user:
@@ -246,7 +246,7 @@ Base stack detection (package.json → Node, pyproject.toml → Python, go.mod �
 - **Database schemas over ORM models.** If both exist, prefer the migration files / schema dump over the ORM definitions -- ORM definitions can drift from the live schema.
 - **API base URL vs route prefix.** `{{environments.local.api_url}}` includes the protocol+host; route prefixes (e.g., `/api/v1`) belong in the path. Do not concatenate them twice in any context file that documents endpoints (e.g., `business-api-map.md`).
 - **Auth flow is the single most important input for downstream `/adapt-framework`.** Session tokens, cookies, JWT, OAuth redirects, CSRF -- every project does it differently. Capture the real login request (DevTools / curl) in `backend.md` so the adaptation phase has a concrete contract to code against.
-- **Never generate from stale context.** If `.context/mapping/business-data-map.md` already exists but the user asks to "refresh" it, diff the current code against the existing file and ask whether to overwrite or merge. Auto-overwrite loses prior human edits.
+- **Never generate from stale context.** If `.context/business/business-data-map.md` already exists but the user asks to "refresh" it, diff the current code against the existing file and ask whether to overwrite or merge. Auto-overwrite loses prior human edits.
 - **Context generators need ALL prior phases.** If the user jumps to "regenerate business-data-map" on a fresh repo, do Phase 1 (at minimum project-connection) and Phase 3 (backend discovery) first -- the generator relies on them.
 - **IQL framing is optional.** Mention it only if the user asks "why this structure?" -- do not lecture them on methodology when they just want a working `business-data-map.md`.
 - **API requests get redirected.** "Regenerate api-architecture" / "I need an API map" / "document the endpoints" -> stop and explain the split: `bun run api:sync` for technical types, `/business-api-map` for the business angle. This skill does not generate API documentation directly anymore.
@@ -342,7 +342,7 @@ cat <target-repo>/.github/workflows/*.yml  # CI/CD pipeline
 
 # Context generators (final step)
 # Output path:
-#   .context/mapping/business-data-map.md
+#   .context/business/business-data-map.md
 # Test strategy and API context are produced separately (NOT by this skill):
 #   /master-test-plan               # test strategy (reads data-map + feature-map)
 #   bun run api:sync                # API technical types from OpenAPI

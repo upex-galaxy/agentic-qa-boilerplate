@@ -1,6 +1,6 @@
 # Context Generators — business-data-map
 
-> Read this when (re)generating `.context/mapping/business-data-map.md` — the canonical context file this skill owns. This is where most "regenerate business-data-map" user requests land.
+> Read this when (re)generating `.context/business/business-data-map.md` — the canonical context file this skill owns. This is where most "regenerate business-data-map" user requests land.
 >
 > **Note**: API context (endpoint catalogs, auth flows, technical types) and the test-strategy layer (what to test, why) are **not** generated here anymore. See §API context — deferred to dedicated tools and §Master test plan — deferred to dedicated command below.
 
@@ -10,7 +10,7 @@
 
 | File | Role | Depends on |
 |------|------|------------|
-| `.context/mapping/business-data-map.md` | The "what the system does" map — entities, flows, state machines, triggers, webhooks, integrations. | Phase 1 (project connection) + DB/ORM access + source code. |
+| `.context/business/business-data-map.md` | The "what the system does" map — entities, flows, state machines, triggers, webhooks, integrations. | Phase 1 (project connection) + DB/ORM access + source code. |
 
 **Test-strategy layer deferred**: `.context/master-test-plan.md` (what to test, why, in what order) used to live here as "Generator 3". It is now produced by the `/master-test-plan` command, which reads `business-data-map.md` and — when available — `business-feature-map.md`. Do not regenerate it from this skill.
 
@@ -40,7 +40,7 @@ Every output MUST include a `## Discovery Gaps` section for anything not verifia
 - Project name + purpose: `package.json`, `README.md`, `pyproject.toml`.
 - DB access: resolve `[DB_TOOL]` (DBHub / Supabase / raw SQL). Read-only queries only.
 - Existing docs: `.context/PRD/`, `.context/SRS/`, `docs/`.
-- Detect CREATE vs UPDATE mode based on `.context/mapping/business-data-map.md` presence.
+- Detect CREATE vs UPDATE mode based on `.context/business/business-data-map.md` presence.
 
 ### Phase 1: deep exploration
 
@@ -93,7 +93,7 @@ Only overwrite on explicit user confirmation.
 
 - **Technical endpoint sync** — run `bun run api:sync` (script: `scripts/sync-openapi.ts`). It downloads an OpenAPI / Swagger spec from a URL, GitHub repo, or local file and generates TypeScript types under `api/schemas/`. Use this whenever you need exact request/response shapes for tests, components, or AI grounding. *If the project has no OpenAPI spec, surface that as a Discovery Gap and ask the user to expose one or skip technical sync.*
 
-- **Business API angle** — auth flows, critical-path user journeys through the API, architecture behind the API, "how the business operates through the API". Owned by the `/business-api-map` command (sibling of `/business-data-map` and `/business-feature-map`). Output lives at `.context/mapping/business-api-map.md`. Use this — do NOT produce an API narrative inside `project-discovery`.
+- **Business API angle** — auth flows, critical-path user journeys through the API, architecture behind the API, "how the business operates through the API". Owned by the `/business-api-map` command (sibling of `/business-data-map` and `/business-feature-map`). Output lives at `.context/business/business-api-map.md`. Use this — do NOT produce an API narrative inside `project-discovery`.
 
 Do not attempt to regenerate `api-architecture.md` from scratch inside this skill. If the user explicitly asks for an "api-architecture" file, redirect them to one of the two tools above based on their intent (technical types vs. business map).
 

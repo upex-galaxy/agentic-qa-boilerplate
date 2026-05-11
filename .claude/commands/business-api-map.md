@@ -1,6 +1,6 @@
 # Business API Map Generator
 
-Generate or update `.context/mapping/business-api-map.md` — a business-first map of how the system's API powers user journeys.
+Generate or update `.context/business/business-api-map.md` — a business-first map of how the system's API powers user journeys.
 
 **Target**: $ARGUMENTS (project path, module filter, or leave blank for full system)
 
@@ -31,8 +31,8 @@ Exhaust every source. Prefer existing context files over re-deriving from code.
 | Source | What to extract | Tool |
 |--------|-----------------|------|
 | OpenAPI spec | Endpoint inventory, auth tags, request/response shapes | `api/openapi.json`, output of `bun run api:sync`, or `[API_TOOL]` |
-| `.context/mapping/business-data-map.md` | Entities, flows, state machines — journeys must align to these | Read directly |
-| `.context/mapping/business-feature-map.md` | Features, CRUD, integrations — endpoints belong to features | Read directly |
+| `.context/business/business-data-map.md` | Entities, flows, state machines — journeys must align to these | Read directly |
+| `.context/business/business-feature-map.md` | Features, CRUD, integrations — endpoints belong to features | Read directly |
 | Auth middleware | Where tokens are validated, how roles map, public-vs-protected boundaries | Read `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` — auth/, middleware/, guards/, decorators |
 | Controllers / routes | Handler shapes and side effects behind each endpoint | Same backend entry — controllers, services |
 | Package dependencies | External SDKs at the API boundary (Stripe, Auth0, Resend, S3, etc.) | Read `package.json`, `requirements.txt`, `Gemfile` |
@@ -46,7 +46,7 @@ Exhaust every source. Prefer existing context files over re-deriving from code.
 ## Mode detection
 
 ```
-Does .context/mapping/business-api-map.md exist?
+Does .context/business/business-api-map.md exist?
   → NO:  CREATE mode — generate from scratch
   → YES: UPDATE mode — generate new version, show diff summary, ask
          for confirmation before overwriting. NEVER auto-overwrite.
@@ -115,7 +115,7 @@ Validate coherence, do not duplicate content:
 
 ## Output structure
 
-Write `.context/mapping/business-api-map.md` with these 7 sections:
+Write `.context/business/business-api-map.md` with these 7 sections:
 
 ### 1. Executive summary
 
@@ -159,8 +159,8 @@ One diagram total for the whole system, not one per journey.
 
 ### 6. Cross-references
 
-- Data-map entities this API exposes → pointers to `.context/mapping/business-data-map.md` anchors.
-- Feature-map features this API backs → pointers to `.context/mapping/business-feature-map.md` anchors.
+- Data-map entities this API exposes → pointers to `.context/business/business-data-map.md` anchors.
+- Feature-map features this API backs → pointers to `.context/business/business-feature-map.md` anchors.
 - OpenAPI spec location (file path or URL) for full endpoint specs.
 - `bun run api:sync` output path (`api/schemas/`) for TypeScript types.
 
@@ -179,7 +179,7 @@ MANDATORY. List anything you could not verify:
 
 ## After generation
 
-- Update the AI memory file (`CLAUDE.md` / `CLAUDE.md`) §Context System with a pointer to `.context/mapping/business-api-map.md` if not already present.
+- Update the AI memory file (`CLAUDE.md` / `CLAUDE.md`) §Context System with a pointer to `.context/business/business-api-map.md` if not already present.
 - If `business-data-map.md` or `business-feature-map.md` were missing during generation, note the limitation in the summary you report back to the user.
 - Add a `> Last verified against OpenAPI on YYYY-MM-DD` line at the top of the output so future runs detect staleness at a glance.
 - In UPDATE mode: show the diff summary and wait for explicit confirmation.

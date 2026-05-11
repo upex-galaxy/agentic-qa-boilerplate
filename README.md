@@ -181,7 +181,7 @@ bun run test:e2e:critical  # Tests marked @critical
 │   └── validateEnv.ts            # Environment validation
 │
 ├── .context/                     # AI Context Engineering (generated)
-│   ├── mapping/                  # business-data-map / business-feature-map / business-api-map
+│   ├── business/                  # business-data-map / business-feature-map / business-api-map
 │   ├── master-test-plan.md       # What to test and why
 │   ├── test-management-system.md # TMS architecture + conventions + workflow
 │   ├── PRD/                      # Product requirements
@@ -397,7 +397,7 @@ This boilerplate's AI-assisted workflows are delivered as **agent skills** follo
 
 Skills follow the **Orchestration Mode** (main conversation = command center, subagents = executors) defined in `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`. Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`) declare their dispatch points in a `## Subagent Dispatch Strategy` section per skill, citing `agentic-qa-core/references/dispatch-patterns.md` and `agentic-qa-core/references/briefing-template.md`.
 
-Structured project context (`.context/` with `mapping/`, `PRD/`, `SRS/`, `PBI/`) is generated and maintained by these skills -- you do not hand-author it.
+Structured project context (`.context/` with `business/`, `PRD/`, `SRS/`, `PBI/`) is generated and maintained by these skills -- you do not hand-author it.
 
 ### Complete Adaptation Flow
 
@@ -516,7 +516,7 @@ Each skill auto-activates when your prompt matches its description triggers. You
   - "Onboard this boilerplate to the app in `../my-frontend`."
   - "Generate the `.context/` files for this project."
   - After discovery completes: "Adapt the KATA framework to this project."
-- **What happens next**: `/project-discovery` discovers business/architecture/infrastructure context, generates `.context/` (`PRD/`, `SRS/`, `mapping/business-data-map.md`, `mapping/business-feature-map.md`, `mapping/business-api-map.md`, `master-test-plan.md`), and refreshes CLAUDE.md. After discovery outputs exist, `/adapt-framework` wires `config/`, `api/schemas/`, and `tests/components/**` to your stack through a Plan -> Approval -> Implement flow.
+- **What happens next**: `/project-discovery` discovers business/architecture/infrastructure context, generates `.context/` (`PRD/`, `SRS/`, `business/business-data-map.md`, `business/business-feature-map.md`, `business/business-api-map.md`, `master-test-plan.md`), and refreshes CLAUDE.md. After discovery outputs exist, `/adapt-framework` wires `config/`, `api/schemas/`, and `tests/components/**` to your stack through a Plan -> Approval -> Implement flow.
 
 #### 2. Running an in-sprint QA loop
 

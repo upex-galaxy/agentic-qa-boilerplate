@@ -101,7 +101,7 @@ Every invocation starts by initializing the session, even in batch mode. Session
    - Single-ticket and bug-only invocations skip this step entirely — they do not need a roadmap file.
 1. Fetches the ticket from `[ISSUE_TRACKER_TOOL]` (title, ACs, priority, comments).
 2. Extracts Team Discussion from comments (decisions, tech notes, edge cases, blockers). Non-blocking.
-3. Loads the project-wide context files: `.context/mapping/business-data-map.md`, `.context/mapping/business-feature-map.md`, `.context/mapping/business-api-map.md`, `.context/master-test-plan.md`.
+3. Loads the project-wide context files: `.context/business/business-data-map.md`, `.context/business/business-feature-map.md`, `.context/business/business-api-map.md`, `.context/master-test-plan.md`.
 4. Loads or creates `module-context.md` (3-level hierarchy: project -> module -> ticket).
 5. Explores backend (`{{BACKEND_REPO}}`) + frontend (`{{FRONTEND_REPO}}`) code.
 6. Finds test data candidates via `[DB_TOOL]` on `{{DB_MCP}}`.

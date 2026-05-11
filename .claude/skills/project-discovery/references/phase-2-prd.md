@@ -9,7 +9,7 @@ Produce the Product Requirements Documents by reading the code, not by interview
 2. User Personas         -> .context/PRD/user-personas.md
 3. User Journeys         -> .context/PRD/user-journeys.md
 4. Feature Inventory     -> delegated to /business-feature-map command
-                            (output: .context/mapping/business-feature-map.md)
+                            (output: .context/business/business-feature-map.md)
 ```
 
 Prereqs (from Phase 1): `.context/PRD/business/business-model.md` and `.context/PRD/business/domain-glossary.md` must exist. Personas link to roles already identified in the glossary; journeys link to features already identified in the business model.
@@ -197,7 +197,7 @@ grep -rE "redirect\(|router\.(push|replace)" --include="*.ts" --include="*.tsx" 
 
 ## 4. Feature Inventory — delegated to `/business-feature-map`
 
-Feature inventory work lives in the `/business-feature-map` command, **not** in this phase. After the PRD sections above are complete (Executive Summary, User Personas, User Journeys), invoke `/business-feature-map` to produce `.context/mapping/business-feature-map.md`.
+Feature inventory work lives in the `/business-feature-map` command, **not** in this phase. After the PRD sections above are complete (Executive Summary, User Personas, User Journeys), invoke `/business-feature-map` to produce `.context/business/business-feature-map.md`.
 
 The command covers everything that used to be section 4: feature catalog by domain (with stable `FEAT-NNN` IDs), CRUD matrix per entity, API endpoint inventory, UI component inventory (forms + dashboards), third-party integrations, feature flags, planned/WIP features, and the QA relevance matrix. Do not duplicate that logic inside this reference.
 
@@ -214,7 +214,7 @@ Before moving to the SRS half of Phase 2:
 - [ ] `.context/PRD/executive-summary.md` exists, 5-or-fewer core capabilities, every row has evidence.
 - [ ] `.context/PRD/user-personas.md` exists, 2-4 personas, Permission Matrix filled in, test-account mapping to `.env` complete.
 - [ ] `.context/PRD/user-journeys.md` exists, Route Map has all three tables filled in, 3-5 journeys each with Evidence column populated, error paths included.
-- [ ] `.context/mapping/business-feature-map.md` exists (produced by the `/business-feature-map` command, NOT by this phase). CRUD matrix complete for every core entity in the glossary, FEAT-NNN IDs assigned.
+- [ ] `.context/business/business-feature-map.md` exists (produced by the `/business-feature-map` command, NOT by this phase). CRUD matrix complete for every core entity in the glossary, FEAT-NNN IDs assigned.
 - [ ] All three PRD docs (executive-summary, user-personas, user-journeys) include a Discovery Gaps section. The feature map has its own gaps section.
 - [ ] `## Phase 2 Progress - PRD` block present in `CLAUDE.md`, checkmarks on the three in-phase docs + a pointer to `business-feature-map.md`.
 

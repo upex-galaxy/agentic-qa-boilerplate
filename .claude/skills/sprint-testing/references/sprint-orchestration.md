@@ -226,9 +226,9 @@ Goal: Fetch ticket <TICKET_KEY> from the issue tracker, load relevant context, c
 Context docs:
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/CLAUDE.md (§"Local Context (PBI)" folder convention)
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/master-test-plan.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-data-map.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-feature-map.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-api-map.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-data-map.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-feature-map.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-api-map.md
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/session-entry-points.md
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.agents/project.yaml (project metadata + active env)
 
@@ -277,8 +277,8 @@ Context docs:
   - <PBI_FOLDER>/context.md (output of Session Start)
   - <PBI_FOLDER>/test-session-memory.md (READ FIRST — shared memory)
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/acceptance-test-planning.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-feature-map.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-api-map.md (if API-affecting)
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-feature-map.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-api-map.md (if API-affecting)
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/PBI/<MODULE>/module-context.md (if it exists)
 
 Skills to load: /acli (for ATP/ATR creation + Story link); in Modality A also /xray-cli (for [TMS_TOOL] Test Plan / Test Execution issues).
@@ -326,7 +326,7 @@ Context docs:
   - <PBI_FOLDER>/context.md
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/exploration-patterns.md
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.agents/project.yaml (active env URLs and MCP names)
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/mapping/business-data-map.md (entity flows for DB exploration)
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-data-map.md (entity flows for DB exploration)
 
 Skills to load: /playwright-cli (UI exploration); the active environment's API and DB MCPs ({{API_MCP}} and {{DB_MCP}} from project.yaml). For Bug tickets: same set, no extras.
 

@@ -99,7 +99,7 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 ├── SRS/                       → Software Requirements (generated)
 ├── PBI/                       → Per-module + per-ticket context (generated)
 │
-├── mapping/                   → Business maps (command-generated)
+├── business/                   → Business maps (command-generated)
 │   ├── business-data-map.md       → System flows + entities        (/business-data-map)
 │   ├── business-feature-map.md    → Feature catalog + CRUD matrix  (/business-feature-map)
 │   └── business-api-map.md        → Auth model + critical API      (/business-api-map)
@@ -204,9 +204,9 @@ Phase 4: Specification   → Connect to backlog
 After discovery, run these commands (orchestrated by `/project-discovery` or invoked individually — they are independent commands, not sub-skills):
 
 ```
-/business-data-map          → .context/mapping/business-data-map.md
-/business-feature-map       → .context/mapping/business-feature-map.md
-/business-api-map           → .context/mapping/business-api-map.md
+/business-data-map          → .context/business/business-data-map.md
+/business-feature-map       → .context/business/business-feature-map.md
+/business-api-map           → .context/business/business-api-map.md
 /master-test-plan           → .context/master-test-plan.md
 bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 ```
@@ -252,7 +252,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 |------|------------|----------------|
 | **Write E2E or API Test** | `/test-automation` (SKILL.md) | The skill's own `references/` (planning playbook, KATA patterns, etc.) |
 | **Exploratory Testing** | `/sprint-testing` (SKILL.md) + `.context/master-test-plan.md` | Skill `references/` (exploration patterns, session entry points) |
-| **Understand System** | `.context/mapping/business-data-map.md` | `.context/PRD/*`, `.context/SRS/*` |
+| **Understand System** | `.context/business/business-data-map.md` | `.context/PRD/*`, `.context/SRS/*` |
 | **Use MCP** | `CLAUDE.md` §"MCPs Available" + §"Tool Resolution" | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
 
 ### By Role

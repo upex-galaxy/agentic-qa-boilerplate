@@ -17,8 +17,8 @@ Goal: Produce spec.md + implementation-plan.md for scope <SCOPE> (module|ticket|
 Context docs:
   - .context/PBI/<module>/<TICKET-ID>/context.md (if exists — ticket scope)
   - .context/master-test-plan.md
-  - .context/mapping/business-data-map.md
-  - .context/mapping/business-feature-map.md
+  - .context/business/business-data-map.md
+  - .context/business/business-feature-map.md
   - .claude/skills/test-automation/references/kata-architecture.md
   - .claude/skills/test-automation/references/atc-tracing.md
   - tests/components/<api|ui>/ (existing components for the scope)

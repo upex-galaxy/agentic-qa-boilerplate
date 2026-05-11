@@ -9,7 +9,7 @@
     {
       "name": "should-trigger-business-data-map-regeneration",
       "prompt": "Generate the business-data-map.md for this project. Look at the source code and the database.",
-      "expected_behavior": "Activates project-discovery. Loads references/context-generators.md. Reads source code + schema, extracts entities, flows, triggers, cron jobs, webhooks, and writes .context/mapping/business-data-map.md. If prior phases missing, runs minimum prerequisites (project-connection + backend-discovery) first.",
+      "expected_behavior": "Activates project-discovery. Loads references/context-generators.md. Reads source code + schema, extracts entities, flows, triggers, cron jobs, webhooks, and writes .context/business/business-data-map.md. If prior phases missing, runs minimum prerequisites (project-connection + backend-discovery) first.",
       "category": "positive"
     },
     {

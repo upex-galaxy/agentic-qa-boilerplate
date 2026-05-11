@@ -612,9 +612,9 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     <dt>Produces</dt>
                     <dd>
                       <code>.context/PRD/</code>, <code>.context/SRS/</code>,
-                      <code>.context/mapping/business-data-map.md</code>,
-                      <code>.context/mapping/business-feature-map.md</code>,
-                      <code>.context/mapping/business-api-map.md</code>,
+                      <code>.context/business/business-data-map.md</code>,
+                      <code>.context/business/business-feature-map.md</code>,
+                      <code>.context/business/business-api-map.md</code>,
                       <code>.context/master-test-plan.md</code>. The skill orchestrates the four
                       <code>/business-*-map</code> commands and <code>/master-test-plan</code> as
                       part of its 4-phase flow (Constitution → Architecture → Infrastructure →
@@ -1723,21 +1723,21 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   <li>
                     <code>/business-data-map</code>
                     <span class="muted"
-                      >Generate or refresh <code>.context/mapping/business-data-map.md</code> —
+                      >Generate or refresh <code>.context/business/business-data-map.md</code> —
                       entities, flows, state machines.</span
                     >
                   </li>
                   <li>
                     <code>/business-feature-map</code>
                     <span class="muted"
-                      >Generate or refresh <code>.context/mapping/business-feature-map.md</code> —
+                      >Generate or refresh <code>.context/business/business-feature-map.md</code> —
                       feature catalog, CRUD matrix, integrations.</span
                     >
                   </li>
                   <li>
                     <code>/business-api-map</code>
                     <span class="muted"
-                      >Generate or refresh <code>.context/mapping/business-api-map.md</code> — auth
+                      >Generate or refresh <code>.context/business/business-api-map.md</code> — auth
                       model, critical endpoints, architecture.</span
                     >
                   </li>

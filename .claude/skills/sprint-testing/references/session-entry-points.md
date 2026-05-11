@@ -123,9 +123,9 @@ If team discussions reveal decisions that modify or extend the ACs, highlight th
 Read these files to understand the system:
 
 ```
-.context/mapping/business-data-map.md       # business flows and state machines
-.context/mapping/business-feature-map.md    # feature catalog, CRUD matrix, integrations
-.context/mapping/business-api-map.md        # auth model, critical journey endpoints, external integrations
+.context/business/business-data-map.md       # business flows and state machines
+.context/business/business-feature-map.md    # feature catalog, CRUD matrix, integrations
+.context/business/business-api-map.md        # auth model, critical journey endpoints, external integrations
 .context/master-test-plan.md                # testing guide (what to test and why)
 ```
 

@@ -29,9 +29,9 @@ Read before starting. All paths relative to repo root.
 |-------|--------|
 | Epic / feature ticket | `[ISSUE_TRACKER_TOOL]` using Jira Key from epic.md |
 | Child story list | `[ISSUE_TRACKER_TOOL]` (children of the epic) |
-| Business context | `.context/mapping/business-data-map.md` + `.context/master-test-plan.md` |
-| API context | `.context/mapping/business-api-map.md` (business angle) + `api/schemas/` (generated types from `bun run api:sync`) |
-| Architecture + SRS (if present) | `.context/SRS/architecture.md`, `.context/SRS/functional-specs.md`, `.context/SRS/non-functional-specs.md` (API contract comes from `api/openapi-types.ts` and `.context/mapping/business-api-map.md`, not from SRS) |
+| Business context | `.context/business/business-data-map.md` + `.context/master-test-plan.md` |
+| API context | `.context/business/business-api-map.md` (business angle) + `api/schemas/` (generated types from `bun run api:sync`) |
+| Architecture + SRS (if present) | `.context/SRS/architecture.md`, `.context/SRS/functional-specs.md`, `.context/SRS/non-functional-specs.md` (API contract comes from `api/openapi-types.ts` and `.context/business/business-api-map.md`, not from SRS) |
 | Prior epic discussions | Epic comments (Team Discussion extraction — see `session-entry-points.md`) |
 
 If project-wide context files are missing, stop and hand off to `project-discovery`. Do not proceed on partial context.

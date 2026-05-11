@@ -245,7 +245,7 @@ The knowledge layer is organised in three tiers, mirroring the scope at which th
 
 ```
 .context/
-├── mapping/                      # Project level — business maps (command-generated)
+├── business/                      # Project level — business maps (command-generated)
 │   ├── business-data-map.md      #   System flows and entities         (/business-data-map)
 │   ├── business-feature-map.md   #   Feature catalog, CRUD, flags      (/business-feature-map)
 │   └── business-api-map.md       #   Auth model, critical endpoints    (/business-api-map)
@@ -441,7 +441,7 @@ The `sprint-testing` skill handles the per-ticket work across Stages 1, 2 and 3.
 
 - Fetch the ticket via `[ISSUE_TRACKER_TOOL]` (title, ACs, comments, linked artefacts).
 - Explain the story back to the user in plain English and wait for confirmation.
-- Load project context (`.context/master-test-plan.md`, `.context/mapping/business-data-map.md`, `.context/mapping/business-feature-map.md`, `.context/mapping/business-api-map.md`).
+- Load project context (`.context/master-test-plan.md`, `.context/business/business-data-map.md`, `.context/business/business-feature-map.md`, `.context/business/business-api-map.md`).
 - Explore the frontend and backend code related to the ticket.
 - Query the database via `[DB_TOOL]` for test data candidates (**generate > discover > modify** hierarchy — never hardcode).
 - Create or update the PBI folder (`.context/PBI/{module}/{PROJECT_KEY}-XXX-{title}/`).
@@ -589,9 +589,9 @@ Commands are deterministic, single-purpose prompts invoked explicitly. Unlike sk
 | `/adapt-framework`            | Adapt this boilerplate's KATA test architecture to a project already reverse-engineered by `/project-discovery` (Plan -> Approval -> Implement) |
 | `/refresh-ai-memory`          | Regenerate `README.md` and the AI memory file (`CLAUDE.md` / `CLAUDE.md` / `GEMINI.md` / `.cursor/rules`, auto-detected) so they reflect the current `.context/` and `package.json` state |
 | `/master-test-plan`           | Generate or refresh `.context/master-test-plan.md` — what to test and why, derived from the discovery artefacts |
-| `/business-data-map`          | Generate or refresh `.context/mapping/business-data-map.md` (entities, flows, state machines) |
-| `/business-feature-map`       | Generate or refresh `.context/mapping/business-feature-map.md` (feature catalog, CRUD matrix, integrations) |
-| `/business-api-map`           | Generate or refresh `.context/mapping/business-api-map.md` (auth model, critical endpoints, architecture) |
+| `/business-data-map`          | Generate or refresh `.context/business/business-data-map.md` (entities, flows, state machines) |
+| `/business-feature-map`       | Generate or refresh `.context/business/business-feature-map.md` (feature catalog, CRUD matrix, integrations) |
+| `/business-api-map`           | Generate or refresh `.context/business/business-api-map.md` (auth model, critical endpoints, architecture) |
 | `/fix-traceability`           | Repair broken TMS traceability links (US → ATP → ATR → TC) |
 | `/break-down-tests`           | Plain-English breakdown of automated tests for a given module / spec |
 
