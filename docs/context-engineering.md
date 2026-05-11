@@ -117,7 +117,7 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 .claude/skills/
 ├── agentic-qa-core/        → Foundation: shared references (briefing template, dispatch patterns, orchestration doctrine) + bootstrap (`/agentic-qa-core init`)
 ├── acli/                  → Atlassian CLI skill: Jira issue tracking + Modality B TMS operations
-├── project-discovery/     → 4-phase reverse-engineering, generates `.context/` artifacts. README/CLAUDE.md upkeep is `/refresh-ai-memory`; foundation files are `/agentic-qa-core init`.
+├── project-discovery/     → 4-phase reverse-engineering, generates `.context/` artifacts. README/CLAUDE.md upkeep is `/sync-ai-memory`; foundation files are `/agentic-qa-core init`.
 ├── sprint-testing/        → In-sprint QA (planning + execution + reporting, per ticket)
 ├── test-documentation/    → TMS documentation + test prioritization
 ├── test-automation/       → KATA test planning + coding + review
@@ -130,7 +130,7 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 - `/agentic-qa-core init` - Foundation bootstrap (CLAUDE.md, .agents/, scripts/, package.json)
 - `/test-automation` - KATA test writing pipeline
 - `/sprint-testing` - End-to-end in-sprint QA
-- `/project-discovery` - Generates `.context/` artifacts; pair with `/refresh-ai-memory` for README/CLAUDE.md upkeep
+- `/project-discovery` - Generates `.context/` artifacts; pair with `/sync-ai-memory` for README/CLAUDE.md upkeep
 
 ### docs/ - Human Documentation
 

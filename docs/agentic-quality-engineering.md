@@ -587,7 +587,7 @@ Commands are deterministic, single-purpose prompts invoked explicitly. Unlike sk
 | Command                       | Purpose                                                  |
 | ----------------------------- | -------------------------------------------------------- |
 | `/adapt-framework`            | Adapt this boilerplate's KATA test architecture to a project already reverse-engineered by `/project-discovery` (Plan -> Approval -> Implement) |
-| `/refresh-ai-memory`          | Regenerate `README.md` and the AI memory file (`CLAUDE.md` / `CLAUDE.md` / `GEMINI.md` / `.cursor/rules`, auto-detected) so they reflect the current `.context/` and `package.json` state |
+| `/sync-ai-memory`             | Sync all AI-critical documents across the repo (README.md, CLAUDE.md, INSTALLER.md, CONTEXT.md, docs/*.md, docs/onboarding/index.html) so they consistently reflect the current `.context/` and `package.json` state |
 | `/master-test-plan`           | Generate or refresh `.context/master-test-plan.md` — what to test and why, derived from the discovery artefacts |
 | `/business-data-map`          | Generate or refresh `.context/business/business-data-map.md` (entities, flows, state machines) |
 | `/business-feature-map`       | Generate or refresh `.context/business/business-feature-map.md` (feature catalog, CRUD matrix, integrations) |

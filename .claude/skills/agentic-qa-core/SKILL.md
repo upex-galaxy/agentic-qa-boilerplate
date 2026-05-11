@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-core
-description: "Foundation skill that (a) hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine) and (b) bootstraps a target repo with the boilerplate's foundation files (CLAUDE.md, .agents/, scripts/, package.json updates). Triggers on: `/agentic-qa-core init`, `agentic-qa bootstrap`, `setup agentic-qa foundation`, `regenerate CLAUDE.md`, `install boilerplate scripts`. Do NOT use for: refreshing memory facts (use `/refresh-ai-memory`), adapting KATA tests (use `/adapt-framework`), or onboarding the target project (use `/project-discovery`)."
+description: "Foundation skill that (a) hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine) and (b) bootstraps a target repo with the boilerplate's foundation files (CLAUDE.md, .agents/, scripts/, package.json updates). Triggers on: `/agentic-qa-core init`, `agentic-qa bootstrap`, `setup agentic-qa foundation`, `regenerate CLAUDE.md`, `install boilerplate scripts`. Do NOT use for: syncing AI-critical docs (use `/sync-ai-memory`), adapting KATA tests (use `/adapt-framework`), or onboarding the target project (use `/project-discovery`)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 ---
@@ -122,7 +122,7 @@ The block is documentation — the AI reads it and pulls the cited files. There 
 - Test Project Structure
 - Quick Reference
 
-**Project-specific FACTS** (Project Identity table, Environment URLs, Discovery Progress, etc.) are NOT mirrored. Those are populated per-project by `/refresh-ai-memory` and live only in the live `CLAUDE.md`. The template keeps them as `[PLACEHOLDER]` rows so a fresh bootstrap surfaces them as TODOs.
+**Project-specific FACTS** (Project Identity table, Environment URLs, Discovery Progress, etc.) are NOT mirrored. Those are populated per-project by `/sync-ai-memory` and live only in the live `CLAUDE.md`. The template keeps them as `[PLACEHOLDER]` rows so a fresh bootstrap surfaces them as TODOs.
 
 This contract is enforced by convention, not tooling — a future linter could diff the two files but is out of scope here.
 
@@ -139,7 +139,7 @@ The same contract applies to `templates/project.yaml.template`, `templates/jira-
 - Create or modify `.context/` files (that belongs to `/project-discovery`).
 - Generate or scaffold tests, fixtures, or KATA components (that belongs to `/adapt-framework` and `/test-automation`).
 - Adapt the framework to a specific stack (that belongs to `/adapt-framework`).
-- Refresh project-specific facts in `CLAUDE.md` (that belongs to `/refresh-ai-memory`).
+- Sync AI-critical documents or project-specific facts in `CLAUDE.md` (that belongs to `/sync-ai-memory`).
 - Sync OpenAPI / API schemas (that's `bun run api:sync`).
 - Run any external command beyond file writes — no `bun install`, no `git`, no `gh`.
 

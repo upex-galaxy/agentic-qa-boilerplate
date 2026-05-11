@@ -26,7 +26,7 @@
  * ============================================================================
  *
  *   .claude/skills/        Agent skills (project-discovery, sprint-testing, ...)
- *   .claude/commands/      Slash commands (refresh-ai-memory, fix-traceability, business-*-map, ...)
+ *   .claude/commands/      Slash commands (sync-ai-memory, fix-traceability, business-*-map, ...)
  *   .claude/settings.json  Versioned default permissions (settings.local.json untouched)
  *   scripts/               Framework scripts (agents-lint, sync-jira-issues, sync-openapi, api-login, kata-manifest, ...)
  *   templates/             Universal templates (pr-test-automation, ...)
@@ -1155,7 +1155,7 @@ ${colors.bold}FLAGS FOR 'skills':${colors.reset}
 
 ${colors.bold}WHAT GETS SYNCED:${colors.reset}
   ${colors.green}  .claude/skills/${colors.reset}        Agent skills (canonical location)
-  ${colors.green}  .claude/commands/${colors.reset}      Slash commands (refresh-ai-memory, fix-traceability, business-*-map, ...)
+  ${colors.green}  .claude/commands/${colors.reset}      Slash commands (sync-ai-memory, fix-traceability, business-*-map, ...)
   ${colors.green}  .claude/settings.json${colors.reset}  Versioned default permissions (your settings.local.json untouched)
   ${colors.green}  .agents/README.md${colors.reset}      Variable system documentation
   ${colors.green}  scripts/${colors.reset}               Framework scripts (agents-lint, sync-jira-issues, kata-manifest, ...)

@@ -2,7 +2,7 @@
 
 > Operational context loaded every AI session. Replace `[PLACEHOLDER]` values with your project specifics.
 
-> **Source-of-truth mirror**: this file is mirrored at `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template`. Structural changes here MUST be applied to both. Project-specific facts (Project Identity, Environment URLs, Discovery Progress, Access Configuration) are refreshed by `/refresh-ai-memory` and do NOT belong in the template.
+> **Source-of-truth mirror**: this file is mirrored at `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template`. Structural changes here MUST be applied to both. Project-specific facts (Project Identity, Environment URLs, Discovery Progress, Access Configuration) are refreshed by `/sync-ai-memory` and do NOT belong in the template.
 
 ---
 
@@ -74,7 +74,7 @@ bun run test:allure       # Generate Allure report
 - If you notice unrelated dead code, mention it — don't delete it.
 - Remove imports/variables/functions that **your** changes made unused.
 
-> **Scope note**: This rule applies to incidental edits during a task. User-invoked regenerative commands (`/refresh-ai-memory`, `/business-data-map`, `/business-feature-map`, `/business-api-map`, `/master-test-plan`, `/fix-traceability`) and skills with explicit generative phases are exempt — regeneration is the task.
+> **Scope note**: This rule applies to incidental edits during a task. User-invoked regenerative commands (`/sync-ai-memory`, `/business-data-map`, `/business-feature-map`, `/business-api-map`, `/master-test-plan`, `/fix-traceability`) and skills with explicit generative phases are exempt — regeneration is the task.
 
 ### 4. Goal-Driven Execution
 
@@ -272,7 +272,7 @@ Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `reg
 
 **Mandatory in workflow skills**: every `SKILL.md` must contain a `## Subagent Dispatch Strategy` section with a table mapping each stage to its pattern and subagent role.
 
-**Exempt** (reference / utility / generator skills, do NOT need a dispatch table): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `refresh-ai-memory`.
+**Exempt** (reference / utility / generator skills, do NOT need a dispatch table): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `sync-ai-memory`.
 
 ---
 
@@ -322,7 +322,7 @@ Skills are committed to the repo. User-specific settings (`.claude/settings.loca
 | Command | Purpose |
 |---------|---------|
 | `/adapt-framework` | Adapt this boilerplate's KATA test architecture (`tests/`, `api/schemas/`, `config/`) to a project already reverse-engineered by `/project-discovery`. Two sub-phases: Plan (no writes) -> user approval -> Implement (writes). Modifies THIS repo only. |
-| `/refresh-ai-memory` | Regenerate `README.md` and the AI memory file (`CLAUDE.md` / `GEMINI.md` / `CLAUDE.md` / `.cursor/rules` / etc., auto-detected) so they reflect the current `.context/` and `package.json` state. Run when documentation drifts. |
+| `/sync-ai-memory` | Sync all AI-critical documents across the repo (README.md, CLAUDE.md, INSTALLER.md, CONTEXT.md, docs/*.md, docs/onboarding/index.html) so they consistently reflect the current `.context/` and `package.json` state. Run when documentation drifts. |
 | `/business-data-map` | Generate or refresh `.context/business/business-data-map.md` (entities, flows, state machines). |
 | `/business-feature-map` | Generate or refresh `.context/business/business-feature-map.md` (feature catalog, CRUD matrix, integrations). |
 | `/break-down-tests` | Plain-English breakdown of automated tests for a given module / spec. |

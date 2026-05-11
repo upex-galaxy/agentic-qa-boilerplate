@@ -596,7 +596,7 @@ Each skill auto-activates when your prompt matches its description triggers. You
 
 ### AI Memory (CLAUDE.md)
 
-Memory lives in `CLAUDE.md` — the single canonical file read by both Claude Code and OpenCode (the latter falls back to Claude Code conventions). Use `/refresh-ai-memory` to regenerate the project-specific facts inside it (Project Identity, Environment URLs, Discovery Progress, Access Configuration). Structural sections (Critical Rules, Tool Resolution, Skills Available, etc.) are mirrored from `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template` and should be updated there when they evolve.
+Memory lives in `CLAUDE.md` — the single canonical file read by both Claude Code and OpenCode (the latter falls back to Claude Code conventions). Use `/sync-ai-memory` to sync all AI-critical documents and the project-specific facts inside them (Project Identity, Environment URLs, Discovery Progress, Access Configuration) across the repo in one pass. Structural sections (Critical Rules, Tool Resolution, Skills Available, etc.) are mirrored from `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template` and should be updated there when they evolve.
 
 ### Multi-Agent Portability
 
