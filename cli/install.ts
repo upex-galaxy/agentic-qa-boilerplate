@@ -201,8 +201,11 @@ const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [];
 
 /**
  * Community skills installed at USER (global) level (`npx skills add --global`).
- * Useful across most projects regardless of stack. Mirrors the dev-side list —
- * we intentionally keep the QA repo aligned with dev to share the universal layer.
+ * Useful across most projects regardless of stack. QA-tuned subset of the dev
+ * universal layer — design/automation skills (n8n-skills, emil-design-eng,
+ * ui-ux-pro-max) live only in the dev repo since QA does not author UI or
+ * automation flows. cli-printing-press + html-ppt are cross-project utilities
+ * useful for testing tooling and report generation.
  * playwright-cli also lives locally in .claude/skills/playwright-cli (project-level
  * gain over user-level) — both are kept on purpose for redundancy.
  */
@@ -212,10 +215,10 @@ const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/github/awesome-copilot', skill: 'gh-cli' },
   { package: 'https://github.com/xixu-me/skills', skill: 'github-actions-docs' },
   { package: 'https://github.com/microsoft/playwright-cli', skill: 'playwright-cli' },
-  { package: 'czlonkowski/n8n-skills' }, // whole repo (n8n MCP toolkit)
-  { package: 'https://github.com/emilkowalski/skill', skill: 'emil-design-eng' },
-  { package: 'https://github.com/nextlevelbuilder/ui-ux-pro-max-skill', skill: 'ui-ux-pro-max' },
   { package: 'https://github.com/obra/superpowers', skill: 'brainstorming' },
+  // cli-printing-press: full functionality requires Go 1.26.3+ (go install github.com/mvanhorn/cli-printing-press/v4/cmd/printing-press@latest); skill works standalone with degraded features
+  { package: 'https://github.com/mvanhorn/cli-printing-press', skill: 'cli-printing-press' },
+  { package: 'https://github.com/lewislulu/html-ppt-skill', skill: 'html-ppt' },
 ];
 
 // Matches Claude Code ${VAR} and ${VAR:-default} placeholders in .mcp.json.
