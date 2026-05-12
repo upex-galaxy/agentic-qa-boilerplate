@@ -1,588 +1,303 @@
-# Project Memory
+# CLAUDE.md — AI Persistent Memory
 
-> Operational context loaded every AI session. Replace `[PLACEHOLDER]` values with your project specifics.
-
-> **Source-of-truth mirror**: this file is mirrored at `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template`. Structural changes here MUST be applied to both. Project-specific facts (Project Identity, Environment URLs, Discovery Progress, Access Configuration) are refreshed by `/sync-ai-memory` and do NOT belong in the template.
-
----
-
-## Quick Start
-
-**First time on this repo?** Run the interactive installer once:
-
-```bash
-bun run setup
-```
-
-It runs 13 idempotent steps: detects gentle-ai (or skips it), installs Engram + 11 SDD skills + 2 universal helpers via gentle-ai, runs `npx skills add` for 9 user-level community skills (skill-creator, find-skills, gh-cli, github-actions-docs, playwright-cli, n8n-skills, emil-design-eng, ui-ux-pro-max, brainstorming), configures the 7 canonical MCPs, downloads Playwright browsers, populates `.agents/project.yaml`, and writes a state file. Then in your agent invoke `/agentic-qa-onboard` for the orientation tour.
-
-This project is driven by **agent skills**. Each skill owns an end-to-end slice of the QA lifecycle and self-loads its own operational detail. Invoke a skill by its trigger phrase (e.g. "run regression", "write E2E test", "document these tests", "onboard this repo") and the matching skill will take over.
-
-The Stages 1-6 pipeline is distributed across skills:
-
-- **Stages 1-3** (plan, execute, report per ticket) -> `/sprint-testing`
-- **Stage 4** (TMS documentation + ROI) -> `/test-documentation`
-- **Stage 5** (automation: plan, code, review) -> `/test-automation`
-- **Stage 6** (regression, GO/NO-GO) -> `/regression-testing`
-- **Project setup / onboarding** -> `/project-discovery` (discovery) + `/adapt-framework` (KATA adaptation)
-
-**Common test commands:**
-
-```bash
-bun run test              # Run all tests
-bun run test:e2e          # E2E tests only
-bun run test:integration  # API tests only
-bun run test:smoke        # Smoke tests (@critical tagged)
-bun run test:ui           # Visual UI mode
-bun run test:allure       # Generate Allure report
-```
+> **THIS IS NOT A README.** This file loads into AI context EVERY session. Every token persists. Keep lean, priority-ordered, AI-first.
+>
+> - User-facing setup, scripts, structure diagrams → `README.md` / `docs/`.
+> - Heavy detail → skill `references/` (lazy-loaded).
+> - Project values (URLs, project name, Jira URL) → `.agents/project.yaml`.
+> - Current scripts → READ `package.json` DIRECTLY. Do not trust hardcoded lists.
+>
+> Structural mirror: `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template`. Sync manually on structural changes.
 
 ---
 
-## Behavioral Layer
+## 1. CRITICAL RULES — ALWAYS APPLY
 
-> How to reason before and during work. These guidelines bias toward caution over speed. For trivial tasks, use judgment.
-
-### 1. Think Before Coding
-
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
-
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them — don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
-
-### 2. Simplicity First
-
-**Minimum code that solves the problem. Nothing speculative.**
-
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
-
-> **Scope note**: This rule applies to code authored by the agent within a task. Do **not** collapse KATA layers (TestContext / Base / Domain / Fixture) — they are framework architecture, not speculative abstraction.
-
-### 3. Surgical Changes
-
-**Touch only what you must. Clean up only your own mess.**
-
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it — don't delete it.
-- Remove imports/variables/functions that **your** changes made unused.
-
-> **Scope note**: This rule applies to incidental edits during a task. User-invoked regenerative commands (`/sync-ai-memory`, `/business-data-map`, `/business-feature-map`, `/business-api-map`, `/master-test-plan`, `/fix-traceability`) and skills with explicit generative phases are exempt — regeneration is the task.
-
-### 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan with explicit checks:
-
-```
-1. [Step] → verify: [observable check]
-2. [Step] → verify: [observable check]
-3. [Step] → verify: [observable check]
-```
-
-`verify` = an observable signal that the step actually landed (test passes, file exists, command exits 0, type-check clean). This format **complements** the 6-component subagent briefing in `Orchestration Mode` — it does **not** replace it. Use this format for thinking-out-loud during execution; use the briefing for delegation.
-
-### Working signals
-
-These guidelines are working if: **fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.**
+1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. Example keys: `LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD`.
+2. **PLAN BEFORE CODING**: Produce test plan (`spec.md` / implementation plan) BEFORE writing test code. Flow: Plan → Code → Review.
+3. **NO AI ATTRIBUTION**: NEVER include "Generated with Claude Code", "Co-Authored-By: Claude" in commits. Commits look human-authored.
+4. **SHIFT-LEFT**: Evaluate ACs for clarity, testability, completeness. Raise questions ONLY when genuine gaps exist — never force questions to fill a checklist.
+5. **CONFIRM BEFORE PUSH TO MAIN**: NEVER push to `main` without explicit user confirmation.
+6. **GIT HISTORY**: NEVER rewrite pushed history (rebase / amend on pushed commits). NEVER force-push to shared branches. NEVER delete remote branches without confirmation. ALWAYS add forward (new commits, not rewrite). ALWAYS preserve merge history.
+7. **QUALITY VERIFICATION**: After code changes, verify in order: tests → types → lint. Do not skip steps.
+8. **FILE OPERATIONS**: ALWAYS read file before edit. Preserve formatting + indent. NEVER overwrite without reading.
+9. **SKILLS-FIRST**: All workflows live in `.claude/skills/`. NEVER paste instructions inline. Invoke the matching skill, let it self-load detail. Use `[TAG_TOOL]` pseudocode and `{{VARIABLES}}` for dynamic content.
+10. **MCP CREDENTIAL FAILURE = STOP IMMEDIATELY**: If MCP fails auth or env var missing (`.mcp.json` uses `${VAR}` — Claude Code fails parse if unset; `opencode.jsonc` uses `{env:VAR}` — OpenCode silently substitutes empty → 401/403 is the signal). DO NOT work around. STOP, tell user the exact env var, point to `.env` / `.env.example`, ask them to fix `.env` and **RESTART AGENT SESSION** (env cached at MCP-spawn time, won't refresh mid-session).
+11. **SCRIPTS = READ `package.json` DIRECTLY**. NEVER quote test/build commands from this file or any doc — drift kills. Open `package.json` first, then answer.
 
 ---
 
-## Critical Rules (Always Apply)
+## 2. BEHAVIORAL LAYER — HOW AI REASONS
 
-1. **Login Credentials**: ALWAYS read from `.env` file -- NEVER hardcode or guess passwords.
-   - Example keys: `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD`, `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD`
+> Bias toward caution over speed. Trivial tasks use judgment.
 
-2. **Plan Before Coding**: Always produce a test plan (`spec.md` / implementation plan) before writing test code. Testing follows Plan -> Code -> Review.
+**THINK BEFORE CODING.** State assumptions explicit. Multiple interpretations → present them, NEVER pick silently. Simpler approach exists → say so. Unclear → STOP, name confusion, ASK.
 
-3. **No AI Attribution**: Never include "Generated with Claude Code", "Co-Authored-By: Claude", or similar lines in commit messages. Commits must look human-authored.
+**SIMPLICITY FIRST.** Minimum code that solves problem. No features beyond ask. No abstractions for single-use. No "flexibility" not requested. No error handling for impossible scenarios. 200 lines that could be 50 → rewrite. *Scope note*: do NOT collapse KATA layers (TestContext / Base / Domain / Fixture) — framework architecture, not speculative abstraction.
 
-4. **Shift-Left**: Evaluate Acceptance Criteria for clarity, testability, and completeness. Raise questions only when genuine gaps exist -- never force questions to fill a checklist.
+**SURGICAL CHANGES.** Touch only what required. Match existing style even if you'd do it differently. Don't refactor unbroken code. Don't improve adjacent comments/formatting. Notice unrelated dead code → mention, don't delete. Remove imports/vars YOUR changes made unused. *Scope note*: regenerative commands (`/sync-ai-memory`, `/business-*-map`, `/master-test-plan`, `/fix-traceability`) and skill phases with explicit generative intent are EXEMPT — regen IS the task.
 
-5. **Confirm Before Push to Main**: Never push to `main` without explicit user confirmation.
+**GOAL-DRIVEN EXECUTION.** Define success criteria. Loop until verified. Transform vague tasks into testable goals ("add validation" → "write tests for invalid input, then make them pass"). Multi-step → state plan with explicit `verify:` per step (observable signal: test passes, file exists, exit 0, type-check clean). Complements the 6-component subagent briefing (§3) — doesn't replace it.
 
-6. **Git History Management**:
-   - NEVER rewrite pushed history (`rebase`, `amend` on pushed commits)
-   - NEVER force push to any shared branch
-   - NEVER delete remote branches without confirmation
-   - ALWAYS add forward (new commits to fix, not rewrite)
-   - ALWAYS preserve merge history
-
-7. **Quality Verification**: After code changes, verify in order: run tests -> check types -> lint. Do not skip steps.
-
-8. **File Operations**: Always read a file before editing it. Preserve existing formatting and indentation. Never overwrite files without reading first.
-
-9. **Skills-First**: All operational workflows live in `.claude/skills/`. Never ask users to copy-paste instructions. Invoke the relevant skill and let it self-load its detail. Use `[TAG_TOOL]` pseudocode and `{{VARIABLES}}` for dynamic content.
-
-10. **Playwright CLI Usage**: For browser automation, load the `/playwright-cli` skill. It provides screenshots, tracing, video recording, session management, and request mocking. See `.claude/skills/playwright-cli/` for details.
-
-11. **MCP credential failure = STOP immediately**: If any MCP server fails to start, returns an auth/credentials error, or appears blocked because of missing env vars (`.mcp.json` uses `${VAR}` — Claude Code fails to parse if unset; `opencode.jsonc` uses `{env:VAR}` — OpenCode silently substitutes empty string, so a 401/403 from the MCP is the signal), DO NOT keep working around it. Stop, tell the user exactly which env var is missing or invalid, point them to `.env` / `.env.example`, and ask them to:
-   1. Fix the value in `.env`
-   2. **Restart the agent session** (exit and re-enter) — env vars are read once at MCP-server spawn time and won't refresh mid-session.
+**SIGNALS THESE WORK**: fewer unnecessary diff changes, fewer rewrites from overcomplication, clarifying questions BEFORE implementation rather than after mistakes.
 
 ---
 
-## Project Variables
+## 3. ORCHESTRATION MODE — PERMANENTLY ACTIVE
 
-Project-specific values (paths, URLs, project key, DB names, MCP servers, issue tracker metadata, etc.) are declared in **`.agents/project.yaml`**. Before resolving any `{{VAR_NAME}}` in any skill, command, template or doc, read `.agents/project.yaml` once per session and cache the values.
+> **Main conversation = command center. Subagents = executors.** Active EVERY session. Not optional.
 
-Variable syntaxes that exist and must not be confused:
+**USE SUBAGENTS FOR**: reading/writing multiple files, MCP operations, research across repos, git operations, verification (tests/types/lint), multi-file edits, long-running tasks.
 
-- `{{VAR_NAME}}` — **project variable**, static per-repo value; resolves to `.agents/project.yaml` (snake_case key; `{{PROJECT_NAME}}` → `project.project_name`).
-  - **Flat vars** live at top-level sections (e.g. `{{PROJECT_KEY}}` → `project.project_key`, `{{JIRA_URL}}` → `issue_tracker.jira_url`).
-  - **Env-scoped vars** (`{{WEB_URL}}`, `{{API_URL}}`, `{{DB_MCP}}`, `{{API_MCP}}`) resolve to `environments[active_env].<var>` — where `active_env` is the env the user explicitly chose for this session, falling back to `testing.default_env`. If the user says "test against production", switch `active_env` to `production` for that session and ignore `default_env` until the session ends.
-  - For explicit cross-env references (rare; only in multi-env documents), use `{{environments.<env>.<var>}}` (e.g. `{{environments.local.web_url}}`).
-- `<<VAR_NAME>>` — **session variable**, computed at runtime by the command that uses it (e.g. `<<ISSUE_KEY>>` extracted from the git branch name); never persisted.
-- `{{jira.<slug>}}` — **Jira custom field reference**, resolves to `.agents/jira-fields.json` via `.agents/jira-required.yaml`. Sub-forms: `{{jira.<slug>.<option>}}` for plain `option` / array-of-option fields, `{{jira.<slug>.<parent>.<child>}}` for cascading `option-with-child`. See `.agents/README.md` for the full convention.
-- `{{jira.work_type.<slug>}}` / `{{jira.status.<work_type>.<slug>}}` / `{{jira.transition.<work_type>.<slug>}}` — **Jira workflow references**. `work_type` resolves to the literal issue-type name (e.g. `"Story"`); `status` resolves to the literal status name (sub-keys: `.id`, `.category`); `transition` resolves to the transition `id` (sub-key: `.name`) — use the id form to invoke transitions unambiguously via REST. All resolve to `.agents/jira-workflows.json` via `.agents/jira-required.yaml` `work_types:`. See `.agents/README.md` for the full convention.
+**DO NOT USE SUBAGENTS FOR**: quick lookups, memory reads/writes, task tracking, asking user, planning.
 
----
+**6-COMPONENT BRIEFING (MANDATORY every dispatch)**:
 
-## Tool Resolution
+1. **Goal** — one sentence
+2. **Context docs** — files to read first
+3. **Skills to load** — explicit (e.g. `/playwright-cli`)
+4. **Exact instructions** — step-by-step, not vague goals
+5. **Report format** — what to return (files changed, tests passed, blockers)
+6. **Rules** — relevant Critical Rules to follow
 
-> When skills use `[TAG_TOOL]` pseudocode, resolve to the actual tool using this table.
-> **Priority**: CLI tools first (fewer tokens), MCP as fallback. Skills are self-documenting.
-
-### Resolution Table
-
-| Tag | Domain | Primary Tool | Fallback | Skill/Reference |
-|-----|--------|-------------|----------|-----------------|
-| `[ISSUE_TRACKER_TOOL]` | Issue Tracking (Project Management: Jira Cloud, story/bug/epic) | `/acli` skill (Atlassian CLI) | MCP Atlassian | `.claude/skills/acli/` |
-| `[TMS_TOOL]` | Test Management (Xray or Jira-native: Test/Test Plan/Test Execution) | Modality A: `/xray-cli` skill. Modality B: `/acli` skill (Jira-native, no Xray plugin) | MCP Atlassian | `.claude/skills/xray-cli/` + `.claude/skills/acli/` + `test-documentation/SKILL.md` §Phase 0 |
-| `[AUTOMATION_TOOL]` | Browser Automation | `/playwright-cli` skill | MCP Playwright | `.claude/skills/playwright-cli/` |
-| `[DB_TOOL]` | Database | DBHub MCP | Supabase MCP / raw SQL | MCP tool list |
-| `[API_TOOL]` | API Exploration | OpenAPI MCP | Postman / curl | MCP tool list |
-
-### Regla crítica: cargar la skill antes de invocar la herramienta
-
-Las skills de testing (`sprint-testing`, `test-documentation`, `regression-testing`, etc.) solo contienen el **CUÁNDO** y el **QUÉ** (acción de alto nivel usando el tag pseudocode: `[ISSUE_TRACKER_TOOL] Create Issue: ...`). El **CÓMO** (sintaxis concreta, flags, auth, paginación, manejo de errores) vive exclusivamente dentro de las skills propietarias de cada herramienta.
-
-**Obligatorio**:
-
-- Antes de ejecutar cualquier `[ISSUE_TRACKER_TOOL] ...` -> cargar la skill `/acli` (o MCP Atlassian si acli no está disponible).
-- Antes de ejecutar cualquier `[TMS_TOOL] ...` en Modalidad A -> cargar la skill `/xray-cli`.
-- Antes de ejecutar cualquier `[TMS_TOOL] ...` en Modalidad B -> cargar la skill `/acli` (las operaciones TMS se mapean a operaciones Jira nativas).
-
-Nunca invoques `acli`, `xray` ni ningún comando concreto sin haber cargado primero su skill propietaria. Las skills invocadoras no duplican el CÓMO -- es responsabilidad del agente consultar la skill propietaria al resolver el tag.
-
-**Resolution flow**: Skill uses `[TAG_TOOL]` -> AI reads this table for WHICH tool -> reads skill/MCP docs for HOW -> if unavailable, try fallback -> if all unavailable, inform user.
-
-**TMS modality fallback**: `[TMS_TOOL]` behavior depends on the TMS modality resolved by `test-documentation/SKILL.md` §Phase 0.
-- **Modality A (Xray on Jira)**: `[TMS_TOOL]` -> `/xray-cli` skill for Xray-specific entities (Test Plan, Test Execution, Test Runs, Pre-Condition) + `[ISSUE_TRACKER_TOOL]` for generic Jira operations.
-- **Modality B (Jira-native, no Xray)**: `[TMS_TOOL]` is **not resolvable** — all TMS operations fall through to `[ISSUE_TRACKER_TOOL]` (`/acli` skill). ATP/ATR live as Story custom fields + comment mirrors; TCs live as Jira `Test` issues. See `test-documentation/references/jira-setup.md` for setup.
-
-**Branch por modalidad**: Skills que usan `[TMS_TOOL]` en su pseudocode (como `test-documentation`, `sprint-testing`) **deben** incluir ramas alternativas para ambas modalidades. La rama Modalidad A usa pseudocode `[TMS_TOOL]` contra `/xray-cli`; la rama Modalidad B reescribe las mismas acciones como `[ISSUE_TRACKER_TOOL]` contra `/acli`, mapeando entidades Xray a sus equivalentes Jira-native (ver `test-documentation/references/jira-setup.md`).
-
-When a skill writes `[TMS_TOOL] Create Execution`, that call is only valid in Modality A. In Modality B, follow the parallel pseudocode branch in the same skill's references (always labeled "Modality B — Jira-native").
-
-### Pseudocode Syntax
-
-Format: `[TAG_TOOL] Action:` with parameters using these value types:
-- **Literal value** (`type: Manual`) -- fixed domain concepts
-- **Convention ref** (`{per TC naming convention}`) -- forces AI to consult skill references
-- **Project variable** (`{{PROJECT_KEY}}`) -- configured once per project
-- **Context-derived** (`{from test analysis}`) -- derived during session
-
-Conventions (TC naming, labeling, bug summary format, execution naming, etc.) live inside the owning skill's `references/` directory. The skill loads them on demand.
-
----
-
-## Project Identity
-
-> Replace placeholders with your project details.
-
-| Aspect | Value |
-|--------|-------|
-| **Name** | [Your Project Name] |
-| **Type** | [e.g., B2B Web Platform, E-commerce, SaaS] |
-| **Stack** | [e.g., React + TypeScript (FE), Node.js (BE), PostgreSQL] |
-| **Target Repo** | [Path to application repository] |
-| **Test Repo** | [Path to this test repository] |
-| **Test Framework** | Playwright + KATA + Allure |
-
-**TL;DR Flow:**
-
-```
-[User Action] -> [System Process] -> [Outcome]
-```
-
----
-
-## Environment URLs
-
-> Replace with your project URLs. Keep the same structure so tooling and context files can reference it.
-
-| Environment | Frontend | Backend (API) |
-|---|---|---|
-| **Local** | `http://localhost:3000` | `http://localhost:3000/api` |
-| **Staging** | `https://staging.example.com` | `https://staging.example.com/api` |
-| **Production** | `https://example.com` | `https://example.com/api` |
-
-> If the Frontend and Backend are on **different hosts**, document it here and make sure API tests target the API host directly.
-
----
-
-## Orchestration Mode (Subagent Strategy)
-
-**Core Principle**: Main conversation = command center. Subagents = executors.
-
-**Use subagents for**: Reading/writing multiple files, MCP operations, research across repos, git operations, verification (tests/types/lint), multi-file edits.
-
-**Do NOT use subagents for**: Quick lookups, memory reads/writes, task tracking, asking the user, planning.
-
-**Briefing format** -- every dispatch must include:
-1. **Goal**: One-sentence description
-2. **Context docs**: Which files to read first
-3. **Skills to load**: Which skills the subagent needs (e.g., `/playwright-cli`)
-4. **Exact instructions**: Step-by-step, not vague goals
-5. **Report format**: What to return (files changed, tests passed/failed, blockers)
-6. **Rules**: Relevant Critical Rules to follow
-
-### Execution Patterns
+**EXECUTION PATTERNS**:
 
 | Pattern | When | Example |
-|---------|------|---------|
-| **Parallel** | Independent tasks | Read 3 context files simultaneously |
-| **Sequential** | Dependent tasks | Plan -> Code -> Test |
-| **Background** | Long-running | Test suite execution while planning next ticket |
-| **Single** | Simple task | One file edit with verification |
+|---|---|---|
+| Parallel | Independent tasks | Read 3 context files at once |
+| Sequential | Dependent tasks | Plan → Code → Test |
+| Background | Long-running | Test suite + plan next ticket |
+| Single | Simple task | One file edit + verification |
 
-**Error protocol**: On subagent error -- STOP, report to user with full context, do NOT fix without approval, present options (retry/skip/abort).
+**ERROR PROTOCOL**: On subagent error → STOP, report full context, DO NOT fix without approval, offer retry/skip/abort.
 
-**Planning**: Present plan -> wait for approval -> track progress -> report results.
+**WORKFLOW SKILL COMPLIANCE**: `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing` MUST have a `## Subagent Dispatch Strategy` section using the 6-component briefing. Reference / utility / generator skills are EXEMPT (no dispatch table needed): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `sync-ai-memory`.
 
-### Skill Compliance
+**DEEP DETAIL** (subagent-cacheable, do not inline here):
 
-Workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`) MUST declare their dispatch points and use the canonical 6-component briefing.
-
-| Resource                                                              | Purpose                                                |
-|------------------------------------------------------------------------|--------------------------------------------------------|
-| `.claude/skills/agentic-qa-core/references/briefing-template.md`        | The 6-component briefing format + 1 example per pattern|
-| `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`        | Decision guide: when to Single / Parallel / Sequential / Background |
-| `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`   | Cacheable mirror of this section, for subagents to load without pulling full CLAUDE.md |
-
-**Mandatory in workflow skills**: every `SKILL.md` must contain a `## Subagent Dispatch Strategy` section with a table mapping each stage to its pattern and subagent role.
-
-**Exempt** (reference / utility / generator skills, do NOT need a dispatch table): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `sync-ai-memory`.
+- `.claude/skills/agentic-qa-core/references/briefing-template.md` — 6-component briefing examples per pattern
+- `.claude/skills/agentic-qa-core/references/dispatch-patterns.md` — when to Single / Parallel / Sequential / Background
+- `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md` — cacheable mirror, subagent-loadable without full CLAUDE.md
 
 ---
 
-## Skills Available
+## 4. CONTEXT LOADING MAP — TASK → WHAT TO LOAD
 
-> All workflows live in `.claude/skills/`. Skills auto-load their own operational detail (phases, references, checklists). Invoke by trigger phrase.
+> BEFORE responding to any task: identify task type → load matching skill → read listed context. NEVER guess scripts/commands — READ `package.json` DIRECTLY.
+
+| Task | Trigger phrase | Load skill | Read context | Primary tool |
+|---|---|---|---|---|
+| First-time orientation | "onboard me", "first time using this" | `/agentic-qa-onboard` | (skill self-loads) | — |
+| Onboard target project | "onboard this repo", "set up project" | `/project-discovery` | target repo code, `.context/` if exists | Read + Grep |
+| Adapt KATA to stack | "adapt framework", "wire fixtures" | `/adapt-framework` | `.context/business/*` | Code edit |
+| Sprint testing ticket | "test this", "QA this story", "verify bug" | `/sprint-testing` | `.context/PBI/{module}/{TICKET}-*/` | `[AUTOMATION_TOOL]` + `[ISSUE_TRACKER_TOOL]` |
+| TMS documentation / ROI | "document tests", "ROI", "automate priority" | `/test-documentation` | `.context/test-management-system.md` | `[TMS_TOOL]` |
+| Write automated test | "automate", "E2E test", "API test" | `/test-automation` | `tests/components/`, `.context/PBI/.../implementation-plan.md`, skill `references/` | Code edit |
+| Regression / release | "run regression", "GO/NO-GO" | `/regression-testing` | `.context/master-test-plan.md`, CI logs | `gh` + Allure |
+| Sync AI memory | "sync memory", `/sync-ai-memory` | `/sync-ai-memory` | `README.md`, this file, `.context/`, `package.json` | Edit |
+| Git / PR work | any git intent | `/git-flow-master` (auto) | `git status`, `git log` | `git` + `gh` |
+| Browser action | "screenshot", "trace", "record" | `/playwright-cli` | — | Playwright CLI |
+| Jira / Xray operation | "Jira issue", "Xray import" | `/acli` or `/xray-cli` | `.agents/jira-required.yaml`, `.agents/jira-fields.json` | CLI |
+| Any script / build / test command question | "what command runs X", "how do I run tests" | — | **READ `package.json` FIRST** | — |
+
+**Key paths referenced above**:
+
+- `.context/` — project-wide context (generated by `/project-discovery`, `/business-*-map`, `/master-test-plan`)
+- `.agents/project.yaml` — `{{VAR}}` source-of-truth (load ONCE per session, cache)
+- `.agents/jira-fields.json` / `.agents/jira-workflows.json` / `.agents/jira-required.yaml` — Jira custom-field + workflow catalogs
+- `api/schemas/` — OpenAPI-derived TypeScript types (refresh via `bun run api:sync`)
+- `tests/components/` — KATA Layer 2 + 3 (Api / Page / Steps)
+- `tests/e2e/`, `tests/integration/` — actual test specs
+
+---
+
+## 5. SKILLS + COMMANDS + MCPs REGISTRY
+
+### Skills (lazy-loaded by trigger phrase)
 
 | Skill | Trigger | Purpose |
-|-------|---------|---------|
-| **agentic-qa-core** | `/agentic-qa-core init` | Foundation skill: hosts shared references cited by workflow skills (briefing template, dispatch patterns, orchestration doctrine) AND bootstraps the boilerplate's foundation files (CLAUDE.md, .agents/, scripts/, package.json) for downstream consumers. |
-| **agentic-qa-onboard** | `/agentic-qa-onboard` | First-time orientation tour. Explains the stack (Playwright + KATA + Allure + Xray), the 6-stage pipeline (`/sprint-testing` → `/test-documentation` → `/test-automation` → `/regression-testing`), the `/sdd-*` hand-off matrix, the 7 canonical MCPs, and the env vars required. Does NOT execute QA work — hands off to the right downstream skill. |
-| **project-discovery** | `/project-discovery` | Onboard a project to this boilerplate. 4-phase discovery (Constitution -> Architecture -> Infrastructure -> Specification) that generates PRD, SRS, domain glossary, and orchestrates the `/business-*-map` and `/master-test-plan` commands. Reverse-engineering only — for KATA adaptation run `/adapt-framework` afterwards. |
-| **sprint-testing** | `/sprint-testing` | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting). Single-ticket or batch-sprint mode. Produces PBI folder, ATP, ATR, QA comment, bug reports. |
-| **test-documentation** | `/test-documentation` | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS (Jira/Xray). Bridge between manual QA and automation. Four scopes: module / ticket / bug / ad-hoc. Produces Candidate / Manual / Deferred verdicts. |
-| **test-automation** | `/test-automation` | **Stage 5**. Plan -> Code -> Review automated tests on KATA + Playwright + TypeScript. Three planning scopes (module, ticket, ATC). Writes E2E and API/integration tests, registers fixtures, enforces KATA compliance. |
-| **regression-testing** | `/regression-testing` | **Stage 6**. Execute regression / smoke / sanity suites via CI/CD, classify failures (REGRESSION / FLAKY / KNOWN / ENVIRONMENT / NEW TEST), compute pass-rate and trend metrics, emit GO / CAUTION / NO-GO verdict + stakeholder report. |
-| **playwright-cli** | `/playwright-cli` | Browser automation CLI: screenshots, tracing, video recording, session management, request mocking, test generation. |
-| **xray-cli** | `/xray-cli` | Xray Cloud test management CLI: create tests, manage executions and plans, import JUnit/Cucumber/Xray JSON results, back up and restore project data. |
-| **git-flow-master** | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy (solo-main, main+integration, enterprise, trunk-based, GitFlow, GitHub Flow, GitLab Flow). Owns branch creation, atomic commits, push, PR (`gh pr create`), merge-conflict resolution, and chained-PR planning. Replaces the legacy `/commit-push-pr` and `/fix-git-conflict` commands. |
+|---|---|---|
+| `agentic-qa-core` | `/agentic-qa-core init` | Foundation: hosts shared references (briefing / dispatch / doctrine) + bootstraps CLAUDE.md, `.agents/`, `scripts/`, `package.json`. |
+| `agentic-qa-onboard` | `/agentic-qa-onboard` | First-time orientation tour. Explains stack + 6-stage pipeline + MCPs. Hands off to the right downstream skill. |
+| `project-discovery` | `/project-discovery` | 4-phase discovery (Constitution → Architecture → Infrastructure → Specification) → generates PRD, SRS, domain glossary, `.context/`. Reverse-engineering only. |
+| `sprint-testing` | `/sprint-testing` | Stages 1-3: manual QA per ticket (Planning, Execution, Reporting). Produces PBI folder, ATP, ATR, bug reports. |
+| `test-documentation` | `/test-documentation` | Stage 4: TMS docs + ROI scoring. Produces Candidate / Manual / Deferred verdicts. |
+| `test-automation` | `/test-automation` | Stage 5: Plan → Code → Review on KATA + Playwright + TypeScript. |
+| `regression-testing` | `/regression-testing` | Stage 6: regression / smoke / sanity via CI/CD. Classifies failures. Emits GO / CAUTION / NO-GO. |
+| `playwright-cli` | `/playwright-cli` | Browser CLI: screenshots, tracing, video, session mgmt, request mocking. |
+| `playwright-best-practices` | `/playwright-best-practices` | Reference skill: flaky-test fixes, POM, accessibility (axe-core), auth/OAuth, fixtures, tags (`@smoke`/`@critical`), perf budgets, i18n, component testing. Auto-loads alongside `/test-automation`. |
+| `xray-cli` | `/xray-cli` | Xray Cloud test management. |
+| `acli` | `/acli` | Atlassian CLI. Resolves `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` (Modality B). |
+| `git-flow-master` | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR. |
 
-**Decision Tree:**
-
-| Need | Tool |
-|------|------|
-| First time using this QA repo / orientation tour | `/agentic-qa-onboard` |
-| Onboard a new target project / regenerate context | `/project-discovery` |
-| Adapt this boilerplate's `tests/` to the target stack after discovery | `/adapt-framework` |
-| Test a user story or retest a bug | `/sprint-testing` |
-| Create TMS artifacts, ROI, traceability | `/test-documentation` |
-| Write or review automated tests | `/test-automation` |
-| Run regression, decide release | `/regression-testing` |
-| Browser interaction | `/playwright-cli` |
-| Xray/TMS CLI operation | `/xray-cli` |
-| API exploration | OpenAPI MCP |
-| Database query | DBHub MCP |
-| Library docs | Context7 MCP |
-| Community solutions | Tavily MCP |
-
-Skills are committed to the repo. User-specific settings (`.claude/settings.local.json`) are gitignored.
-
----
-
-## Commands Available
-
-> Single-file utilities under `.claude/commands/`. Invoke with `/<command-name>`.
+### Commands (single-file utilities in `.claude/commands/`)
 
 | Command | Purpose |
-|---------|---------|
-| `/adapt-framework` | Adapt this boilerplate's KATA test architecture (`tests/`, `api/schemas/`, `config/`) to a project already reverse-engineered by `/project-discovery`. Two sub-phases: Plan (no writes) -> user approval -> Implement (writes). Modifies THIS repo only. |
-| `/sync-ai-memory` | Sync all AI-critical documents across the repo (README.md, CLAUDE.md, INSTALLER.md, CONTEXT.md, docs/*.md, docs/onboarding/index.html) so they consistently reflect the current `.context/` and `package.json` state. Run when documentation drifts. |
-| `/business-data-map` | Generate or refresh `.context/business/business-data-map.md` (entities, flows, state machines). |
-| `/business-feature-map` | Generate or refresh `.context/business/business-feature-map.md` (feature catalog, CRUD matrix, integrations). |
-| `/break-down-tests` | Plain-English breakdown of automated tests for a given module / spec. |
+|---|---|
+| `/adapt-framework` | Adapt KATA architecture (`tests/`, `api/schemas/`, `config/`) to target stack. Plan → Approval → Implement. Modifies THIS repo only. |
+| `/sync-ai-memory` | Sync all AI-critical docs (`README.md`, this file, `INSTALLER.md`, `CONTEXT.md`, `docs/**`) against current `.context/` and `package.json`. |
+| `/business-data-map` | Refresh `.context/business/business-data-map.md` (entities, flows, state machines). |
+| `/business-feature-map` | Refresh `.context/business/business-feature-map.md` (feature catalog, CRUD matrix, integrations). |
+| `/business-api-map` | Refresh `.context/business/business-api-map.md` (auth model, critical endpoints, architecture). |
+| `/master-test-plan` | Refresh `.context/master-test-plan.md` (what to test and why). |
+| `/break-down-tests` | Plain-English breakdown of automated tests for a module / spec. |
 | `/fix-traceability` | Repair broken US-ATP-ATR-TC traceability links in the TMS. |
 
----
+### MCPs (decision rules)
 
-## Fundamental Rules (Always in Memory)
-
-> Quick-reference summary. Detailed patterns live inside the `test-automation` skill's `references/` directory, loaded on demand.
-
-### TypeScript Patterns
-
-| Pattern | Rule |
-|---------|------|
-| **Parameters** | Max 2 positional. 3+ -> use object parameter |
-| **Utilities** | Only agnostic utilities go to `tests/utils/` |
-| **Locators** | Inline in ATCs. Extract only if used 2+ times |
-| **Imports** | Always use aliases (`@api/`, `@schemas/`, `@utils/`). No relative imports |
-| **Types** | Define interfaces at top of file, after imports |
-| **Errors** | Public methods: fail fast. Utilities: silent fail (return null) |
-
-**DRY - Context Matters:**
-
-- `api/schemas/` = OpenAPI type facades (`@schemas/{domain}.types`)
-- `tests/utils/` = Agnostic utilities only (works for API + UI)
-- `UiBase` = All Playwright/Page helpers
-- `ApiBase` = All HTTP helpers
-- `TestContext` = Shared across both (config, faker)
-
-### KATA Architecture
-
-```
-TestContext (Layer 1) - Config, Faker, utilities
-    | extends
-ApiBase / UiBase (Layer 2) - HTTP / Playwright helpers
-    | extends
-YourApi / YourPage (Layer 3) - ATCs live here
-    | used by
-TestFixture (Layer 4) - Dependency injection
-    | used by
-Test Files - Orchestrate ATCs
-```
-
-**ATC Rules:**
-
-- ATC = Complete test case (mini-flow), NOT single interaction
-- ATCs are atomic: don't call other ATCs
-- Use Steps module for reusable ATC chains
-- Fixed assertions inside ATC, test-level assertions in test file
-- Equivalence Partitioning: same output = one parameterized ATC
-
-**Fixture Selection:**
-
-| Test Type | Fixture | Browser? |
-|-----------|---------|----------|
-| API only | `{ api }` | No (lazy) |
-| UI only | `{ ui }` | Yes |
-| Hybrid | `{ test }` | Yes |
+| MCP | Use for | Rule |
+|---|---|---|
+| Playwright | E2E, UI automation, screenshots | Fallback for `[AUTOMATION_TOOL]` (primary = `/playwright-cli`) |
+| OpenAPI | API endpoint exploration, contract testing | `[API_TOOL]` primary |
+| DBHub | DB queries, data validation | `[DB_TOOL]` primary |
+| Atlassian | Jira/Xray fallback | Use only when `/acli` + `/xray-cli` unavailable |
+| Context7 | Library official docs ("how to use X") | Prefer over web search for library APIs |
+| Tavily | Community solutions ("how to solve X") | Use for troubleshooting / non-doc lookups |
 
 ---
 
-## Git Workflow
+## 6. TOOL RESOLUTION ([TAG_TOOL] pseudocode)
 
-### Branch Strategy
+> Skills use `[TAG_TOOL]` pseudocode. Resolve via this table. **PRIORITY**: CLI tools first (fewer tokens). MCP = fallback only.
 
-Protected branches:
+| Tag | Domain | Primary | Fallback |
+|---|---|---|---|
+| `[ISSUE_TRACKER_TOOL]` | Jira Cloud (story / bug / epic) | `/acli` | MCP Atlassian |
+| `[TMS_TOOL]` | Test management | Modality A: `/xray-cli`. Modality B: `/acli` (Jira-native) | MCP Atlassian |
+| `[AUTOMATION_TOOL]` | Browser automation | `/playwright-cli` | MCP Playwright |
+| `[DB_TOOL]` | Database | DBHub MCP | Supabase MCP / raw SQL |
+| `[API_TOOL]` | API exploration | OpenAPI MCP | Postman / curl |
+
+**MANDATORY**: LOAD owning skill BEFORE invoking its tool. Skills hold WHEN/WHAT only. HOW (syntax, flags, auth, pagination, errors) lives inside the owning skill's `references/`.
+
+- Before any `[ISSUE_TRACKER_TOOL] ...` → load `/acli`
+- Before any `[TMS_TOOL] ...` Modality A → load `/xray-cli`
+- Before any `[TMS_TOOL] ...` Modality B → load `/acli`
+- Before any `[AUTOMATION_TOOL] ...` → load `/playwright-cli`
+
+**TMS modality fallback** (resolved by `test-documentation/SKILL.md` §Phase 0):
+
+| Modality | `[TMS_TOOL]` resolves to | TMS entities |
+|---|---|---|
+| A — Xray on Jira | `/xray-cli` for Xray entities; `[ISSUE_TRACKER_TOOL]` for generic Jira | Test, Test Plan, Test Execution, Pre-Condition |
+| B — Jira-native (no Xray) | NOT resolvable → falls through to `[ISSUE_TRACKER_TOOL]` (`/acli`) | ATP/ATR = Story custom fields + comments; TCs = Jira `Test` issues. See `test-documentation/references/jira-setup.md` |
+
+Skills using `[TMS_TOOL]` MUST include parallel pseudocode branches for both modalities (labeled "Modality B — Jira-native").
+
+**Pseudocode value types**: `Literal` (fixed domain) · `{per convention}` (consult skill ref) · `{{PROJECT_VAR}}` (from `.agents/project.yaml`) · `{from analysis}` (runtime-derived).
+
+---
+
+## 7. PROJECT VARIABLES — POINTER
+
+> ALL variable syntax + Jira field references documented in **`.agents/README.md`**. READ ONCE per session, cache values.
+
+Project values live in **`.agents/project.yaml`** — load once per session. NEVER hardcode Project Identity, environment URLs, Jira URL, project key, MCP names. ALWAYS read them from `.agents/project.yaml`.
+
+**Variable syntaxes (cheat-sheet; full convention in `.agents/README.md`)**:
+
+- `{{VAR_NAME}}` → static project var. Flat: `{{PROJECT_KEY}}` → `project.project_key`. Env-scoped: `{{WEB_URL}}` → `environments[active_env].web_url`. Cross-env: `{{environments.<env>.web_url}}`.
+- `<<VAR_NAME>>` → session var computed at runtime (e.g. `<<ISSUE_KEY>>` from git branch). Never persisted.
+- `{{jira.<slug>}}` → Jira custom field via `.agents/jira-fields.json` ↔ `.agents/jira-required.yaml`. Sub-forms: `{{jira.<slug>.<option>}}`, `{{jira.<slug>.<parent>.<child>}}`.
+- `{{jira.work_type.<slug>}}` / `{{jira.status.<work_type>.<slug>}}` / `{{jira.transition.<work_type>.<slug>}}` → Jira workflow references via `.agents/jira-workflows.json`.
+
+**Active env**: `active_env` defaults to `testing.default_env` in `.agents/project.yaml`. If user says "test against production" → switch `active_env` to `production` for that session, ignore `default_env` until session ends.
+
+---
+
+## 8. AI BEHAVIOR DURING TESTING
+
+1. **EXPLAIN THE STORY**: once ticket understood, briefly state — what the feature is, how it works (simple terms), what will be tested.
+2. **WAIT FOR CONFIRMATION**: after important explanations, WAIT for user response before continuing. User reads, asks questions, confirms direction.
+3. **EXPLAIN DEFECTS**: on bug / unexpected behavior — describe observed, explain why it's a problem, suggest impact (severity, affected users, business risk).
+4. **LANGUAGE**: default English. If user writes other language → mirror it in user-facing communication. Docs + code ALWAYS English.
+
+**ENVIRONMENT SELECTION**: default to **staging** unless user specifies otherwise. Ask when ambiguous. URLs from `.agents/project.yaml`. Credentials from `.env`.
+
+**CONTEXT EFFICIENCY**: main conversation stays lean (no large file reads). Subagents do heavy reading. Skills load only the references the current phase needs.
+
+---
+
+## 9. LOCAL CONTEXT (PBI)
+
+For every ticket being tested, maintain local docs under `.context/PBI/`:
+
+```
+.context/PBI/{module-name}/{TICKET-ID}-{brief-title}/
+  context.md          # ACs, test data, session notes, open questions
+  test-analysis.md    # ATP mirror
+  test-report.md      # ATR mirror
+  evidence/           # Screenshots, traces, logs (gitignored)
+```
+
+Variables: `{module-name}` = kebab-case module (`user-management`). `{TICKET-ID}` = TMS id (`UPEX-277`). `{brief-title}` = max ~5 words kebab-case.
+
+**ENTRY POINT**: invoke `/sprint-testing` — fetches ticket, explains story, loads context, explores code, creates PBI folder.
+
+**RESUME SESSION**: invoke `/test-automation` (or describe task in natural language). Skill reads `PROGRESS.md` + `ROADMAP.md` automatically, picks up where last session left off.
+
+**Project-wide context** (Level 1, generated):
+
+```
+.context/business/business-data-map.md       (/business-data-map)
+.context/business/business-feature-map.md    (/business-feature-map)
+.context/business/business-api-map.md        (/business-api-map)
+.context/master-test-plan.md                 (/master-test-plan)
+.context/test-management-system.md           (test-documentation skill)
+api/schemas/                                 (bun run api:sync)
+```
+
+---
+
+## 10. KATA QUICK-REFERENCE
+
+> **FULL KATA + TypeScript rules**: `.claude/skills/test-automation/references/kata-architecture.md` + `.../typescript-patterns.md`. LOAD `/test-automation` BEFORE writing or reviewing any test code.
+
+KATA layer flow:
+
+```
+TestContext (L1: config, faker, agnostic utils)
+  ↓ extends
+ApiBase / UiBase (L2: HTTP / Playwright helpers)
+  ↓ extends
+YourApi / YourPage (L3: ATCs live here)
+  ↓ used by
+TestFixture (L4: dependency injection)
+  ↓ used by
+Test files (orchestrate ATCs)
+```
+
+**Hard rules** (full detail in skill refs — load `/test-automation`):
+
+- ATC = complete mini-flow, atomic, NEVER calls another ATC. Reusable chains → Steps module.
+- Max 2 positional params. 3+ → object param.
+- Locators inline in ATC. Extract only if used 2+ times.
+- Imports use aliases (`@api/`, `@schemas/`, `@utils/`). No relative imports.
+- Public methods: fail fast. Utilities: silent fail (return null).
+- Fixture selection: API only → `{ api }` (no browser). UI only → `{ ui }`. Hybrid → `{ test }`.
+- DRY scope: `api/schemas/` = OpenAPI facades. `tests/utils/` = agnostic utilities only. `UiBase` = all Playwright/Page helpers. `ApiBase` = all HTTP helpers. `TestContext` = shared across both.
+
+---
+
+## 11. GIT WORKFLOW — POINTERS
+
+Git / PR work → `/git-flow-master` auto-loads. Full details in `.claude/skills/git-flow-master/` and `docs/workflows/git-flow.md`.
+
+**Protected branches**:
 
 | Branch | Role |
 |---|---|
 | `main` | Production. PRs merged from `staging` or a semantic branch after review. |
-| `staging` | Integration branch for AI commits and pre-release validation. |
+| `staging` | Integration branch for AI commits + pre-release validation. |
 
-Task branches follow the **same semantic vocabulary as commits** — the prefix announces the contract of the work. Pick the prefix that matches the *dominant* change (weight: `feat` > `fix` > `refactor` > `test` > `docs` > `chore`).
+**Critical commit rules** (also enforced in §1):
 
-| Prefix | Use when the dominant change is… | Example |
-|---|---|---|
-| `feat/` | A new feature or capability | `feat/UPEX-123-bulk-assign-users` |
-| `fix/` | A bug fix | `fix/UPEX-45-empty-reservation-list` |
-| `test/` | Writing or updating automated tests (no product-code changes) | `test/UPEX-277-login-smoke-tests` |
-| `docs/` | Documentation only | `docs/UPEX-310-clarify-kata-fixtures` |
-| `refactor/` | Code change without behaviour change | `refactor/split-kata-fixtures` |
-| `chore/` | Tooling, config, deps, housekeeping | `chore/bump-playwright-1.50` |
-
-Name format: `{prefix}/{ISSUE-KEY}-{kebab-slug}` when an issue key exists, `{prefix}/{kebab-slug}` otherwise.
-
-### Commit Rules
-
-- **Semantic prefixes**: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`
-- **One commit = one responsibility**
-- **Clear messages**: Someone should understand the change without reading the diff
-- **NO AI attribution**: Never include "Generated with Claude Code", "Co-Authored-By: Claude", or similar lines. Commits must look human-authored.
-- **Confirm before push to main**: Always ask user confirmation before pushing to `main`.
-
-### Pull Requests
-
-- Test-automation PRs use `templates/pr-test-automation.md`. `/git-flow-master` loads and fills this template automatically when the branch matches `test/*`; for other prefixes it falls back to the generic structure in `.claude/skills/git-flow-master/references/pr-templating.md`.
-- Title format: `{type}({ISSUE-KEY}): {description}` — include the issue key whenever one exists. Fallback: `{type}: {description}`.
-- Branch names follow the semantic prefix vocabulary documented in the Branch Strategy table above.
-- The template body is intentionally NOT inlined here; it lives in `templates/` so it can evolve without bloating `CLAUDE.md` / `CLAUDE.md`.
-
-**Example**: `git checkout -b test/UPEX-123-add-login-tests` -> commit -> push with `-u` -> `gh pr create --base staging`. For general work on `main`, always ask "Confirm push to main?" before pushing.
+- Semantic prefixes: `feat:` / `fix:` / `docs:` / `test:` / `refactor:` / `chore:`
+- One commit = one responsibility. Clear messages.
+- **NO AI attribution** in commits.
+- **Confirm before push to `main`**.
+- Test-automation PRs use `templates/pr-test-automation.md` (auto-loaded by `/git-flow-master` on `test/*` branches). Title format: `{type}({ISSUE-KEY}): {description}`.
 
 ---
 
-## Context System
-
-### Level 1: Project-Wide (generated by `/project-discovery` + `/business-*-map` + `/master-test-plan`)
-
-```
-.context/business/business-data-map.md     -> System flows and entities              (/business-data-map)
-.context/business/business-feature-map.md  -> Feature catalog, CRUD matrix, flags    (/business-feature-map)
-.context/business/business-api-map.md      -> Auth model, critical endpoints, arch   (/business-api-map)
-.context/master-test-plan.md              -> What to test and why                   (/master-test-plan) *
-.context/test-management-system.md        -> TMS architecture + conventions + workflow *
-api/schemas/                              -> OpenAPI-derived TypeScript types       (bun run api:sync)
-```
-
-> `*` Generated on first run of the matching command — may not exist in a fresh repo.
-
-### Level 2 + 3: PBI (per module / per ticket)
-
-```
-.context/PBI/{module}/
-  module-context.md                            -> Module overview
-  test-specs/
-    ROADMAP.md                                 -> All tickets + automation status
-    PROGRESS.md                                -> Current progress
-    {PREFIX}-T{id}-{name}/
-      spec.md                                  -> Test specification
-      implementation-plan.md                   -> Automation plan
-      atc/*.md                                 -> Individual ATC designs
-```
-
-**Living examples**: API components in `tests/components/api/*Api.ts`, UI components in `tests/components/ui/*Page.ts`, tests in `tests/e2e/` or `tests/integration/`.
-
----
-
-## MCPs Available
-
-| MCP | When to Use |
-|-----|-------------|
-| **Playwright** | E2E testing, UI automation, screenshots |
-| **OpenAPI** | API endpoint exploration, contract testing |
-| **DBHub** | Database queries, data validation |
-| **Atlassian** | Jira/Xray test management |
-| **Context7** | Official library documentation |
-| **Tavily** | Web search, troubleshooting |
-
-**Decision Rule:**
-
-- Context7 for "how to use X" (official docs)
-- Tavily for "how to solve X" (community solutions)
-
----
-
-## AI Behavior
-
-**Workflow**: Plan first (wait for approval) -> delegate to subagents -> use skills -> track progress -> report results -> verify quality.
-
-### During Testing
-
-1. **Explain the story**: Once you understand the ticket, explain briefly:
-   - What the feature is about
-   - How it works (in simple terms)
-   - What we will be testing
-
-2. **Wait for confirmation**: After important explanations, WAIT for the user to respond before continuing. This allows the user to:
-   - Read and understand
-   - Ask questions if needed
-   - Confirm whether to proceed
-
-3. **Explain defects**: When you find a bug or unexpected behavior:
-   - Describe what you observed
-   - Explain why it is a problem
-   - Suggest the impact (severity, affected users, business risk)
-
-4. **Language**: Default to **English**. If the user writes in another language, mirror that language for user-facing communication. Documentation and code are always written in English.
-
-### Environment Selection
-
-Default to **staging** unless the user specifies otherwise. Ask when ambiguous. Use URLs from "Environment URLs" table and credentials from `.env`.
-
-### Context Efficiency
-
-Main conversation stays lean (no large file reads). Subagents do heavy reading. Skills load only the references the current phase needs.
-
----
-
-## Local Context (PBI)
-
-For every ticket being tested, maintain local documentation under `.context/PBI/`:
-
-```
-.context/PBI/{module-name}/{TICKET-ID}-{brief-title}/
-  context.md          # Main file: ACs, test data, session notes, open questions
-  test-analysis.md    # Test plan / Acceptance Test Plan (ATP) mirror
-  test-report.md      # Test report / Acceptance Test Report (ATR) mirror
-  evidence/           # Screenshots, traces, logs (gitignored)
-```
-
-**Variables**: `{module-name}` = kebab-case module (e.g., `user-management`), `{TICKET-ID}` = TMS identifier (e.g., `UPEX-277`), `{brief-title}` = max ~5 words kebab-case (e.g., `empty-states`).
-
-**Entry point**: invoke `/sprint-testing` -- it fetches the ticket, explains the story, loads context, explores code, creates the PBI folder.
-
-**Resume a session**: invoke `/test-automation` (or describe the task in natural language). The skill reads `PROGRESS.md` + `ROADMAP.md` automatically and picks up where the last session left off -- no static prompt file needed.
-
----
-
-## CLI Tools
-
-| Script | Usage | Documentation |
-|--------|-------|---------------|
-| `bun xray` | TMS sync (import/export/sync) | `cli/xray/index.ts` (self-documented) |
-| `bun run api:sync` | Sync OpenAPI spec + generate types | `scripts/sync-openapi.ts` |
-| `bun run kata:manifest` | Extract ATCs from codebase | See `package.json` |
-
-**Run `bun <script> --help`** for usage details.
-
----
-
-## Test Project Structure
-
-```
-tests/
-  components/
-    TestContext.ts        # Layer 1: Config + Faker
-    TestFixture.ts        # Layer 4: Unified fixture
-    api/
-      ApiBase.ts          # Layer 2: HTTP client
-      [YourApi.ts]        # Layer 3: Domain components
-    ui/
-      UiBase.ts           # Layer 2: Page base
-      [YourPage.ts]       # Layer 3: Domain components
-    steps/                # Reusable step chains (preconditions)
-  e2e/                    # E2E tests
-  integration/            # API tests
-  data/fixtures/          # Test data JSON
-```
-
----
-
-## Quick Reference
-
-**Pre-flight checklist:**
-
-- [ ] Plan presented and approved before coding
-- [ ] KATA architecture followed (layers, ATCs, fixtures)
-- [ ] Aliases used for imports (`@api/`, `@schemas/`, `@utils/`)
-- [ ] Credentials from `.env`, never hardcoded
-- [ ] Tests run and pass
-- [ ] No AI attribution in commits
-- [ ] Context loaded progressively (not all at once)
-
-See "Quick Start" above for common test commands.
-
----
-
-*Update this file when skills, core rules, or workflow patterns change.*
+*AI persistent memory. Update when behaviors / skills / rules change. Mirror to `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template`.*

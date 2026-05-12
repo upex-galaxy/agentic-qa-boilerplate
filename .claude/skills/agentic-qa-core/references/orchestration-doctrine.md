@@ -1,34 +1,40 @@
 # Orchestration Doctrine
 
-> **Mirror**: this file mirrors `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)".
+> **Mirror**: this file mirrors `CLAUDE.md` §3 "Orchestration Mode — Permanently Active".
 > If you change the doctrine, update both files. The root CLAUDE.md is the canonical source.
 > Rationale: subagents need to load this without pulling the full CLAUDE.md into their context.
 
-## Orchestration Mode (Subagent Strategy)
+## Orchestration Mode — Permanently Active
 
-**Core Principle**: Main conversation = command center. Subagents = executors.
+> **Main conversation = command center. Subagents = executors.** Active EVERY session. Not optional.
 
-**Use subagents for**: Reading/writing multiple files, MCP operations, research across repos, git operations, verification (tests/types/lint), multi-file edits.
+**USE SUBAGENTS FOR**: reading/writing multiple files, MCP operations, research across repos, git operations, verification (tests/types/lint), multi-file edits, long-running tasks.
 
-**Do NOT use subagents for**: Quick lookups, memory reads/writes, task tracking, asking the user, planning.
+**DO NOT USE SUBAGENTS FOR**: quick lookups, memory reads/writes, task tracking, asking user, planning.
 
-**Briefing format** -- every dispatch must include:
-1. **Goal**: One-sentence description
-2. **Context docs**: Which files to read first
-3. **Skills to load**: Which skills the subagent needs (e.g., `/playwright-cli`)
-4. **Exact instructions**: Step-by-step, not vague goals
-5. **Report format**: What to return (files changed, tests passed/failed, blockers)
-6. **Rules**: Relevant Critical Rules to follow
+**6-COMPONENT BRIEFING (MANDATORY every dispatch)**:
 
-### Execution Patterns
+1. **Goal** — one sentence
+2. **Context docs** — files to read first
+3. **Skills to load** — explicit (e.g. `/playwright-cli`)
+4. **Exact instructions** — step-by-step, not vague goals
+5. **Report format** — what to return (files changed, tests passed, blockers)
+6. **Rules** — relevant Critical Rules to follow
+
+**EXECUTION PATTERNS**:
 
 | Pattern | When | Example |
-|---------|------|---------|
-| **Parallel** | Independent tasks | Read 3 context files simultaneously |
-| **Sequential** | Dependent tasks | Plan -> Code -> Test |
-| **Background** | Long-running | Test suite execution while planning next ticket |
-| **Single** | Simple task | One file edit with verification |
+|---|---|---|
+| Parallel | Independent tasks | Read 3 context files at once |
+| Sequential | Dependent tasks | Plan → Code → Test |
+| Background | Long-running | Test suite + plan next ticket |
+| Single | Simple task | One file edit + verification |
 
-**Error protocol**: On subagent error -- STOP, report to user with full context, do NOT fix without approval, present options (retry/skip/abort).
+**ERROR PROTOCOL**: On subagent error → STOP, report full context, DO NOT fix without approval, offer retry/skip/abort.
 
-**Planning**: Present plan -> wait for approval -> track progress -> report results.
+**WORKFLOW SKILL COMPLIANCE**: `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing` MUST have a `## Subagent Dispatch Strategy` section using the 6-component briefing. Reference / utility / generator skills are EXEMPT (no dispatch table needed): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `sync-ai-memory`.
+
+**DEEP DETAIL** (further references):
+
+- `.claude/skills/agentic-qa-core/references/briefing-template.md` — 6-component briefing examples per pattern
+- `.claude/skills/agentic-qa-core/references/dispatch-patterns.md` — when to Single / Parallel / Sequential / Background
