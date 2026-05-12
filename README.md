@@ -340,6 +340,7 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run update` | Sync project with template (skills, docs) |
 | `bun run xray` | Xray CLI for test management |
 | `bun run api:sync` | Sync OpenAPI spec and generate types |
+| `bun run kata:manifest` | Extract ATCs from codebase into a manifest (`--watch` flag available) |
 | `bun run agents:setup` | Interactive walkthrough to populate `.agents/project.yaml` |
 | `bun run lint:agents` | Lint `.agents/` files for missing required values |
 | `bun run jira:sync-fields` | Sync Jira custom-field catalog into `.agents/jira-fields.json` |
