@@ -189,7 +189,7 @@
         </a>
         <a class="cta" href="#section-7">
           <span class="cta-title">Skill catalog</span>
-          <span class="cta-desc">All 9 skills, what they do, when to call them.</span>
+          <span class="cta-desc">All 11 skills, what they do, when to call them.</span>
         </a>
         <a class="cta" href="#section-6">
           <span class="cta-title">Cheat sheet</span>
@@ -1528,9 +1528,14 @@ bun run jira:check            # verify both catalogs against the manifest</code>
             <h2><span class="num">7.</span>Skills catalog</h2>
 
             <p>
-              Every skill that ships in <code>.claude/skills/</code>. Some you invoke directly;
-              others (the tool skills and the foundation) load automatically when a workflow skill
-              needs them.
+              Every <strong>T1</strong> skill that ships committed in <code>.claude/skills/</code> —
+              the skills <em>we</em> maintain in this repo. Some you invoke directly; others (the
+              tool skills and the foundation) load automatically when a workflow skill needs them.
+              Community skills (T3/T4 — <code>playwright-cli</code>,
+              <code>playwright-best-practices</code>, <code>skill-creator</code>, etc.) are
+              <em>not</em> listed here; the installer fetches them from upstream at setup time. The
+              authoritative lists live in <code>cli/install.ts</code> as
+              <code>PROJECT_LEVEL_SKILLS</code> and <code>USER_LEVEL_SKILLS</code>.
             </p>
 
             <p class="small muted">
@@ -1649,14 +1654,40 @@ bun run jira:check            # verify both catalogs against the manifest</code>
 
               <article class="skill-card">
                 <div class="skill-card-head">
-                  <span class="skill-card-name">playwright-cli</span>
+                  <span class="skill-card-name">agentic-qa-onboard</span>
+                  <span class="badge badge-foundation">Foundation</span>
+                </div>
+                <p class="skill-card-trigger">/agentic-qa-onboard</p>
+                <p class="skill-card-desc">
+                  First-time orientation tour. Explains the stack, the 6-stage pipeline, the MCPs,
+                  and hands off to the right downstream workflow skill. Entry point for new
+                  contributors.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">framework-development</span>
+                  <span class="badge badge-workflow">Workflow</span>
+                </div>
+                <p class="skill-card-trigger">/framework-development</p>
+                <p class="skill-card-desc">
+                  Gateway skill for chaining <code>/sdd-*</code> on framework evolution — KATA
+                  bases, fixtures, <code>cli/</code>, <code>scripts/</code>,
+                  <code>api/schemas/</code>
+                  pipeline. Sole legitimate entry point for SDD in this repo. Not for per-ticket QA.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">git-flow-master</span>
                   <span class="badge badge-tool">Tool</span>
                 </div>
-                <p class="skill-card-trigger">/playwright-cli</p>
+                <p class="skill-card-trigger">(auto on git intents)</p>
                 <p class="skill-card-desc">
-                  Browser automation CLI: screenshots, tracing, video recording, session management,
-                  request mocking, test generation. Resolves
-                  <code>[AUTOMATION_TOOL]</code> pseudocode.
+                  End-to-end Git operator. Auto-detects the branching strategy and adapts every
+                  branch / commit / push / PR / conflict-fix / chained-PR action to it.
                 </p>
               </article>
             </div>
