@@ -12,6 +12,11 @@
   //     Critical Reminder about stopping immediately when MCP credentials fail.
   "$schema": "https://opencode.ai/config.json",
 
+  // Warp terminal integration — surfaces OpenCode agent activity as native
+  // Warp notifications. Auto-installed when OpenCode runs inside Warp. Docs:
+  // https://docs.warp.dev/agent-platform/cli-agents/opencode/
+  "plugin": ["@warp-dot-dev/opencode-warp"],
+
   "mcp": {
     "context7": {
       "type": "local",

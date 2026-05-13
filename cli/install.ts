@@ -1200,6 +1200,19 @@ function printClosingSummary(state: InstallState): void {
   n++;
   process.stdout.write(`  ${n}. Read your first ticket: /sprint-testing <UPEX-XXX>\n`);
   process.stdout.write('\n');
+  process.stdout.write(`${COLORS.bold}Warp terminal users — recommended notification plugins:${COLORS.reset}\n`);
+  process.stdout.write(`  ${COLORS.dim}Warp + CLI agents is the community's current favorite combo. Surface agent activity${COLORS.reset}\n`);
+  process.stdout.write(`  ${COLORS.dim}as native Warp notifications by installing the matching plugin:${COLORS.reset}\n`);
+  process.stdout.write('\n');
+  process.stdout.write('  • Claude Code (manual install — see docs):\n');
+  process.stdout.write('      /plugin marketplace add warpdotdev/claude-code-warp\n');
+  process.stdout.write('      /plugin install warp@claude-code-warp\n');
+  process.stdout.write(`      ${COLORS.dim}Docs: https://docs.warp.dev/agent-platform/cli-agents/claude-code/${COLORS.reset}\n`);
+  process.stdout.write(`      ${COLORS.dim}(Or click the auto-install chip that appears when Claude Code runs in Warp.)${COLORS.reset}\n`);
+  process.stdout.write('\n');
+  process.stdout.write('  • OpenCode: already wired in opencode.jsonc via the "plugin" field.\n');
+  process.stdout.write(`      ${COLORS.dim}Docs: https://docs.warp.dev/agent-platform/cli-agents/opencode/${COLORS.reset}\n`);
+  process.stdout.write('\n');
   log.dim('Full docs: INSTALLER.md');
 }
 
