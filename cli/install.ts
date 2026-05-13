@@ -38,8 +38,10 @@
  * In non-interactive mode, missing vars are listed under pendingEnvVars in the
  * summary — the user fills them in `.env` later and re-runs setup if desired.
  *
- * State file: .agents/install-state.json (gitignored). Re-runs are idempotent —
- * already-installed skills are skipped, existing MCP files prompt before overwrite.
+ * State file: .agents/install-state.json (gitignored). Re-runs are safe:
+ * gentle-ai snapshots existing config files before overwriting (compressed
+ * tar.gz, deduped, last 5 retained) and existing MCP files prompt before
+ * overwrite — but skill installs DO re-apply on every run, they don't skip.
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';

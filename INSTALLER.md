@@ -115,7 +115,7 @@ The integration is **not strict**. If you choose to skip gentle-ai, the repo sti
 
 ## What gets installed via gentle-ai
 
-When `bun run setup` runs the gentle-ai branch (1 engram component + 14 skills, repeated per agent):
+When `bun run setup` runs the gentle-ai branch (one batched call per agent — `gentle-ai install --agent <agent> --components engram,sdd,skills --skills <csv>` covers the engram component plus all 13 skills below):
 
 ### Engram (MCP component, not a skill)
 
@@ -146,7 +146,7 @@ When `bun run setup` runs the gentle-ai branch (1 engram component + 14 skills, 
 | `judgment-day`   | Adversarial parallel review — 2 independent judges review the same target  |
 | `issue-creation` | Issue filing workflow (bug + feature templates, issue-first enforcement)   |
 
-> The installer dispatches one `gentle-ai install --skill <slug> --agent <agent>` per skill, plus `gentle-ai install --component engram --agent <agent>` for Engram. Re-runs are idempotent: already-installed skills are skipped.
+> The installer dispatches ONE batched call per agent — `gentle-ai install --agent <agent> --components engram,sdd,skills --skills <comma-separated-slug-list>`. There is no per-skill loop and no `--yes` flag (gentle-ai's `install` subcommand uses Go's stdlib `flag` package and exposes only `--agent(s)`, `--component(s)`, `--skill(s)`, `--persona`, `--preset`, `--sdd-mode`, `--dry-run`). Re-runs are safe: gentle-ai snapshots existing config files before overwriting (compressed tar.gz, deduped, last 5 retained). They DO re-apply, they don't skip.
 
 ### Why not `cognitive-doc-design` or `comment-writer`?
 
@@ -266,7 +266,7 @@ You have a QA ticket but the AC is dense and you want it traced formally as a te
 - **`direnv allow` produced `dotenv_if_exists: command not found`** — this would mean the `.envrc` is using a newer direnv feature than your version supports. The committed `.envrc` uses portable POSIX loading (works on direnv 2.21+), so if you see this, your `.envrc` has been edited locally — restore it from `git checkout .envrc`.
 - **Skills not appearing in autocomplete** — restart Claude Code (or your agent of choice). MCP and skill configs are cached at agent startup.
 - **`/agentic-qa-onboard` does not trigger on natural language** — use the explicit slash command: `/agentic-qa-onboard`. The natural-language triggers (`onboard me to QA`, `primer vez en QA`) are advisory, not guaranteed.
-- **How do I uninstall gentle-ai skills?** — `gentle-ai uninstall --skill <slug> --agent <agent>` removes a single skill. `gentle-ai uninstall --all --agent <agent>` removes everything gentle-ai-managed for that agent. Backups are created automatically before uninstall.
+- **How do I uninstall gentle-ai skills?** — `gentle-ai uninstall` uninstalls at COMPONENT granularity, not per-skill. Use `gentle-ai uninstall --agent <agent> --components skills --yes` to remove the skills component (also accepts `engram`, `sdd`, `gga`, `persona`). `gentle-ai uninstall --all --yes` removes everything gentle-ai-managed for every supported agent. Note the asymmetry vs `install`: `uninstall` accepts `--yes`/`-y` (skip confirmation) but does NOT accept `--skill(s)`. Backups are created automatically before uninstall.
 
 ---
 
