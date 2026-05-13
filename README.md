@@ -9,6 +9,18 @@
 
 ---
 
+## Start here — pick your path
+
+| I want to... | Read | Then run |
+|---|---|---|
+| **Just install the boilerplate** | This README's [Quick Start](#quick-start) (below) | `bun run setup` |
+| **Get oriented before installing** | Open [`docs/onboarding.html`](docs/onboarding.html) in browser, or `bun run onboarding` | — |
+| **Understand the methodology** | [`docs/agentic-quality-engineering.md`](docs/agentic-quality-engineering.md) | — |
+| **See what `bun run setup` configures** | [`INSTALLER.md`](INSTALLER.md) | `bun cli/doctor.ts` after setup |
+| **I'm an AI agent loading this repo** | `CLAUDE.md` (auto-loaded each session) | — |
+
+---
+
 ## Why This Boilerplate?
 
 This boilerplate solves common challenges in test automation:
@@ -60,6 +72,8 @@ bun install
 bun run pw:install
 cp .env.example .env   # then fill in the values
 ```
+
+> Optional: run `bun run onboarding` first for a visual walkthrough of the repo. **Do not chain** `bun run onboarding && bun run setup` — the onboarding server is blocking, so chaining deadlocks. Close the browser tab + `Ctrl-C` the server when done, then run setup.
 
 ### Launching the agent
 
@@ -347,6 +361,48 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run jira:sync-workflows` | Sync Jira workflow statuses + transitions into `.agents/jira-workflows.json` |
 | `bun run jira:sync-issues` | Pull Jira Epics/Stories into `.context/PBI/` markdown files |
 | `bun run jira:check` | Verify Jira workspace has required custom fields configured |
+
+---
+
+## Keeping your project in sync with the boilerplate
+
+The `bun run update` CLI keeps your project aligned with the official template by tracking which upstream commit each piece of the framework (`skills/`, `scripts/`, `cli/`, …) was last synced from. Instead of overwriting framework files blindly, it:
+
+1. Reads `.boilerplate-version.json` (committed in your repo) to find the last-synced SHA per component
+2. Clones the template lazily (sparse checkout, only the dirs that get synced)
+3. Computes the exact list of changed files between your synced SHA and template HEAD
+4. Classifies each file: clean fast-forward, locally diverged, new upstream, deleted upstream, binary, or whitespace-only
+5. In interactive mode: shows you a space-bar checkbox menu with `[M/A/D]` badges and `+N/-M` line counts. For files where you edited locally, shows you both diffs and lets you pick `theirs`, `mine`, or `skip`
+6. In `--auto` / CI mode: applies safe changes, skips your edits, never deletes, prints a summary table
+7. Writes the new SHA only for components where every changed file was processed (skip = no SHA advance, so a skipped file resurfaces next run)
+
+**Requirements**: git ≥ 2.25 (for partial-clone with `--filter=blob:none`), Bun, GitHub CLI authenticated.
+
+Run interactively:
+
+```bash
+bun run update
+```
+
+Run non-interactively (for CI):
+
+```bash
+bun run update --auto
+```
+
+Preview without writing:
+
+```bash
+bun run update --dry-run
+```
+
+Rollback the latest sync:
+
+```bash
+bun run update --rollback
+```
+
+The `.boilerplate-version.json` file is committable — commit it so your team and CI know exactly which template version each component is on.
 
 ---
 
@@ -751,3 +807,7 @@ MIT License
 ---
 
 **Made with KATA by [UPEX Galaxy](https://github.com/upex-galaxy)**
+
+---
+
+> **You are here**: QA boilerplate repo overview for visitors. **Read time**: 5 min. **Next**: `bun run onboarding` for visual orientation, or [`INSTALLER.md`](INSTALLER.md) for installer details.

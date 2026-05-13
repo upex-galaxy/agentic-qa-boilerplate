@@ -211,6 +211,14 @@ These skills evolve with the repo and are versioned in git. The split is intenti
 
 ---
 
+## Keeping the framework up to date — `.boilerplate-version.json`
+
+After the first time you run `bun run update`, the CLI creates `.boilerplate-version.json` at the project root. This file tracks the last upstream-template git SHA for each synced component (`.claude/skills/`, `scripts/`, `cli/`, etc.). It is safe — and recommended — to **commit this file**: your team and CI workflows need it to know which template version each component is on. Subsequent `bun run update` runs read the stored SHAs to compute precise per-file deltas, so only genuinely changed files are surfaced.
+
+**Requirement**: `git ≥ 2.25` must be on your `$PATH` (required for sparse-checkout with `--filter=blob:none`). Run `git --version` to check; upgrade instructions are printed by the CLI if the version is too old.
+
+---
+
 ## External CLIs (verified, not auto-installed)
 
 The installer's step 11 runs `which <binary>` for six command-line tools that other parts of the QA workflow depend on. If any are missing, the installer **prints the suggested install command and the official docs URL — but does not run anything**. System-level CLIs touch user permissions (Homebrew taps, apt, curl piped into bash, winget) and are not portable cross-platform, so auto-installing them without consent would be invasive. The user installs them manually following the docs URL.
@@ -295,3 +303,7 @@ What you keep: every workflow skill committed in this repo (`/sprint-testing`, `
 - [docs/setup/README.md](./docs/setup/README.md) — index of setup guides in this repo
 - [docs/setup/jira-setup-guide.md](./docs/setup/jira-setup-guide.md) — Jira/Atlassian credentials + acli login flow
 - [docs/setup/mcp-dbhub.md](./docs/setup/mcp-dbhub.md) / [mcp-openapi.md](./docs/setup/mcp-openapi.md) — MCP-specific setup notes
+
+---
+
+> **You are here**: What `bun run setup` configures. **Read time**: 10 min. **Next**: `bun cli/doctor.ts` to verify, or [`README.md`](README.md) to navigate.

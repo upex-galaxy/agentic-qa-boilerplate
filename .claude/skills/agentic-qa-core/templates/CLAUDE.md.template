@@ -326,4 +326,32 @@ Git / PR work → `/git-flow-master` auto-loads. Full details in `.claude/skills
 
 ---
 
+## 12. BOILERPLATE VERSION FILE
+
+### `.boilerplate-version.json`
+
+Auto-managed file at the repo root that tracks the last upstream-template SHA each framework component was synced from. Format:
+
+```json
+{
+  "schema": 6,
+  "templateRepo": "upex-galaxy/agentic-qa-boilerplate",
+  "templateCommit": "<sha>",
+  "perComponentCommit": {
+    ".claude/skills": "<sha>",
+    "scripts": "<sha>",
+    "cli": "<sha>"
+  },
+  "lastSyncedAt": "<iso>",
+  "cliVersion": "<version>"
+}
+```
+
+- COMMIT this file. Your team and CI need it.
+- DO NOT edit by hand — `bun run update` writes it atomically after each successful sync.
+- A missing file means a one-time bootstrap will be done on next `bun run update`.
+- If you see `schema: 5`, the CLI will prompt before migrating to v6.
+
+---
+
 *AI persistent memory. Update when behaviors / skills / rules change. Mirror to `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template`.*
