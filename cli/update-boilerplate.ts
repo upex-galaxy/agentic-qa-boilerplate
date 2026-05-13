@@ -11,6 +11,8 @@
  *
  * PRINCIPLE:
  *   Only sync UNIVERSAL framework files, never project-specific configs.
+ *   Per-component SHA tracking ensures only changed files are surfaced —
+ *   no false positives, no unnecessary prompts after a clean sync.
  *
  * ============================================================================
  * AGENT SKILLS MODEL
@@ -31,12 +33,12 @@
  *   scripts/               Framework scripts (agents-lint, sync-jira-issues, sync-openapi, api-login, kata-manifest, ...)
  *   templates/             Universal templates (pr-test-automation, ...)
  *   .agents/README.md      Variable system documentation (only README, not project.yaml/jira-fields.json)
- *   docs/               General documentation
- *   cli/                CLI tools — xray/ (multi-command Xray CLI) and this auto-updater itself
- *   .vscode/            IDE configuration (extensions, settings)
- *   .husky/             Git hooks
- *   tooling/            Config files (editorconfig, prettier)
- *   examples/           Example templates (.mcp.example.json, dbhub.example.toml)
+ *   docs/                  General documentation
+ *   cli/                   CLI tools — xray/ (multi-command Xray CLI) and this auto-updater itself
+ *   .vscode/               IDE configuration (extensions, settings)
+ *   .husky/                Git hooks
+ *   tooling/               Config files (editorconfig, prettier)
+ *   examples/              Example templates (.mcp.example.json, dbhub.example.toml)
  *
  * After every successful sync the CLI also reports any framework scripts or
  * dependencies present in the template `package.json` but missing from yours,
@@ -46,38 +48,39 @@
  * WHAT NEVER GETS SYNCED (Project-specific)
  * ============================================================================
  *
- *   .github/workflows/         Your CI/CD pipelines
- *   config/                    Your URLs, credentials, timeouts
- *   tests/components/          Your domain components (pages, APIs)
- *   tests/utils/               Your custom utilities
- *   tests/data/                Your fixtures and factories
- *   tests/setup/               Your auth setup
- *   playwright.config          Your test configuration
- *   .context/PRD|SRS|idea|PBI  Your generated discovery content
- *   .agents/project.yaml       Your project variables (per-repo config)
- *   .agents/jira-fields.json          Auto-generated Jira field catalog
- *   .agents/jira-required.yaml Manifest customised per project (optional/unmapped)
+ *   .github/workflows/          Your CI/CD pipelines
+ *   config/                     Your URLs, credentials, timeouts
+ *   tests/components/           Your domain components (pages, APIs)
+ *   tests/utils/                Your custom utilities
+ *   tests/data/                 Your fixtures and factories
+ *   tests/setup/                Your auth setup
+ *   playwright.config           Your test configuration
+ *   .context/PRD|SRS|idea|PBI   Your generated discovery content
+ *   .agents/project.yaml        Your project variables (per-repo config)
+ *   .agents/jira-fields.json    Auto-generated Jira field catalog
+ *   .agents/jira-required.yaml  Manifest customised per project (optional/unmapped)
  *   .claude/settings.local.json Your personal Claude Code permissions (gitignored)
- *   .mcp.json                  Your MCP credentials (use .mcp.example.json as a template)
- *   CLAUDE.md|GEMINI.md            Your AI memory files
- *   README.md                  Your project documentation
- *   package.json               Your dependencies (script/dep gaps reported instead)
- *   eslint.config.js           Your linting rules
- *   tsconfig.json              Your TypeScript config
- *   .env.example               Your environment variables
+ *   .mcp.json                   Your MCP credentials (use .mcp.example.json as a template)
+ *   CLAUDE.md|GEMINI.md         Your AI memory files
+ *   README.md                   Your project documentation
+ *   package.json                Your dependencies (script/dep gaps reported instead)
+ *   eslint.config.js            Your linting rules
+ *   tsconfig.json               Your TypeScript config
+ *   .env.example                Your environment variables
  *
  * ============================================================================
  * REQUIREMENTS
  * ============================================================================
  *
- * 1. Bun runtime (https://bun.sh)
- * 2. GitHub CLI (gh) - authenticated with access to the template repo
+ * 1. Bun runtime       (https://bun.sh)
+ * 2. git >= 2.25       (for sparse-checkout and partial clone support)
+ * 3. GitHub CLI (gh)   — authenticated with access to the template repo
  *
  * ============================================================================
  * USAGE
  * ============================================================================
  *
- *   bun run update                                    Interactive menu
+ *   bun run update                                    Interactive per-file menu
  *   bun run update all                                Update everything (allowed dirs only)
  *   bun run update skills                             Sync all agent skills
  *   bun run update skills --skill sprint-testing      Sync a specific skill
@@ -95,22 +98,65 @@
  *   bun run update tooling                            Update config files (prettier, etc.)
  *   bun run update examples                           Update example templates
  *   bun run update all --dry-run                      Preview changes without modifying
+ *   bun run update all --auto                         Non-interactive: apply safe changes, skip diverged
+ *   bun run update all --auto --dry-run               Preview what --auto would apply
  *   bun run update --rollback                         Restore from most recent backup
  *
  * ============================================================================
- * INTELLIGENT MERGE
+ * DELTA-DRIVEN INTERACTIVE MERGE
  * ============================================================================
  *
- * The script uses "intelligent merge" strategy:
- *   - Updates/adds files from template
- *   - Preserves user files not in template
- *   - Never deletes user-created content
- *   - Creates automatic backup before changes
+ * The CLI uses a delta-driven merge strategy powered by per-component SHA
+ * tracking. On each run it computes exactly which upstream files changed since
+ * your last sync and presents only those files for review:
+ *
+ *   clean-fastforward   — template changed, your copy is identical (applied automatically)
+ *   locally-diverged    — both sides changed; prompts [t]heirs / [m]ine / [s]kip
+ *   new-upstream        — new file in template not yet in your repo (applied automatically)
+ *   deleted-upstream    — upstream removed a file; requires explicit confirmation to delete locally
+ *   binary-skip         — binary files are always skipped with a warning
+ *
+ * In auto / CI mode (--auto or CI=true): clean-ff + new-upstream applied automatically;
+ * diverged files skipped; deletions deferred (never deleted without human confirmation).
+ *
+ * ============================================================================
+ * PER-COMPONENT SHA TRACKING
+ * ============================================================================
+ *
+ * Sync state is stored in `.boilerplate-version.json` (v6 schema):
+ *
+ *   {
+ *     "schema": 6,
+ *     "templateRepo": "upex-galaxy/agentic-qa-boilerplate",
+ *     "templateCommit": "<last-synced-HEAD-sha>",
+ *     "perComponentCommit": {
+ *       "skills": "<sha>",
+ *       "scripts": "<sha>",
+ *       ...
+ *     },
+ *     "lastSyncedAt": "<ISO-8601>",
+ *     "cliVersion": "6.0"
+ *   }
+ *
+ * A component's SHA advances only when ALL changed files in that component
+ * were applied (no skips, no failures). Skipped files reappear on the next run.
+ * This file is safe to commit — it records your sync history, not secrets.
+ *
+ * First run (no version file): the CLI bootstraps with a one-time bulk sync
+ * and writes the initial `perComponentCommit` map.
+ *
+ * Upgrade from v5.3: the CLI prompts before migrating; abort exits 0 and
+ * leaves the file untouched. Migration only commits to disk after a
+ * successful sync, never before.
+ *
+ * Repository acquisition uses git sparse-checkout (partial clone with
+ * --filter=blob:none) so only the synced paths are downloaded — one network
+ * round trip, minimal bandwidth.
  *
  * ============================================================================
  *
  * @author UPEX Galaxy
- * @version 5.3
+ * @version 6.0
  */
 
 import { execSync } from 'node:child_process';
@@ -122,6 +168,7 @@ import {
   readFileSync,
   renameSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -1531,9 +1578,7 @@ function readSyncState(repoRoot: string): SyncState | null {
  * Pure function — no I/O.
  * Converts a v5.3 SyncStateV5 to a SyncStateV6 with empty perComponentCommit.
  * templateCommit and variableSystemVersion are preserved from the old state.
- * Wired into main() in M4.
  */
-// eslint-disable-next-line unused-imports/no-unused-vars
 function migrateSyncState(old: SyncStateV5): SyncStateV6 {
   return {
     schema: 6,
@@ -1551,9 +1596,7 @@ function migrateSyncState(old: SyncStateV5): SyncStateV6 {
  * Uses native readline to match the existing prompt style.
  * Returns true on Y/y/Enter; false on N/n.
  * No file writes — I/O is deferred to writeSyncState post-sync.
- * Wired into main() in M4.
  */
-// eslint-disable-next-line unused-imports/no-unused-vars
 async function promptForMigration(_old: SyncStateV5): Promise<boolean> {
   const answer = await nativePrompt(
     `${colors.yellow}Detected v5.3 .boilerplate-version.json. Upgrade to v6 (adds perComponentCommit field)? [Y/n]:${colors.reset} `,
@@ -2040,6 +2083,164 @@ async function applyResolution(
     const msg = err instanceof Error ? err.message : String(err);
     throw new Error(`applyResolution failed for ${entry.path} (${resolution}): ${msg}`);
   }
+}
+
+// ============================================================================
+// BOOTSTRAP PATH (Capability 9)
+// ============================================================================
+
+/**
+ * Performs a one-time bulk sync for components that have no prior SHA history.
+ *
+ * Called when:
+ *   a) `.boilerplate-version.json` is absent (first-ever run — Scenario 9.1), or
+ *   b) `perComponentCommit[component]` is missing/empty for a given component
+ *      while v6 state exists for others (Scenario 9.2 — partial bootstrap).
+ *
+ * SUBSET INVARIANT: when `components` is a strict subset of ALL_COMPONENTS
+ * (e.g. `bun run update skills`), only the provided components are bootstrapped.
+ * Components not in `components` are left entirely untouched — their
+ * `perComponentCommit` entries are not written by this function.
+ *
+ * Backup contract: every file written is backed up via applyResolution BEFORE
+ * the write occurs (Capability 12.1). The same applyResolution pipeline as the
+ * incremental sync path is used, so --rollback works identically for bootstrap runs.
+ *
+ * @param repoDir     Absolute path to the partial-clone temp directory.
+ * @param components  Components to bootstrap (may be a subset of COMPONENTS).
+ * @param localRepoRoot  Absolute path to the consumer repo root (process.cwd()).
+ * @param backupDir   Timestamped backup directory created by the caller.
+ * @param dryRun      When true, log what would be copied without writing anything.
+ * @returns           RunSummary with applied/skipped/failed + bootstrapped component names.
+ */
+async function runBootstrapForComponents(
+  repoDir: string,
+  components: Component[],
+  localRepoRoot: string,
+  backupDir: string,
+  dryRun: boolean,
+): Promise<{ summary: RunSummary, bootstrapped: string[] }> {
+  const applied: AppliedFile[] = [];
+  const skipped: AppliedFile[] = [];
+  const failed: FailedFile[] = [];
+  const bootstrapped: string[] = [];
+
+  for (const component of components) {
+    log.warning(
+      `⚠  BOOTSTRAP for component "${component.name}": no SHA history.\n`
+      + '   Bulk-syncing all files. Local edits may be overwritten this once.\n'
+      + '   Run `git diff HEAD` after to review changes.',
+    );
+
+    const componentPaths = component.kind === 'file-list'
+      ? (component.files ?? [])
+      : component.paths;
+
+    // Collect all files from the template for this component
+    const filesToSync: string[] = [];
+
+    for (const componentPath of componentPaths) {
+      const srcPath = join(repoDir, componentPath);
+      if (!existsSync(srcPath)) {
+        log.warning(`Bootstrap: path "${componentPath}" not found in template — skipping.`);
+        continue;
+      }
+
+      const stat = statSync(srcPath);
+      if (stat.isDirectory()) {
+        // Walk directory recursively
+        const walkDir = (dir: string): void => {
+          const entries = readdirSync(dir, { withFileTypes: true });
+          for (const entry of entries) {
+            const fullPath = join(dir, entry.name);
+            if (entry.isDirectory()) {
+              walkDir(fullPath);
+            }
+            else {
+              // Convert absolute path to repo-relative POSIX path
+              const relPath = fullPath.slice(repoDir.length + 1).replace(/\\/g, '/');
+              filesToSync.push(relPath);
+            }
+          }
+        };
+        walkDir(srcPath);
+      }
+      else {
+        filesToSync.push(componentPath);
+      }
+    }
+
+    if (filesToSync.length === 0) {
+      log.info(`Bootstrap: no files found for component "${component.name}" — skipping.`);
+      continue;
+    }
+
+    let componentFailed = false;
+
+    for (const relPath of filesToSync) {
+      // Resolve the blob SHA from the template HEAD for this file
+      let templateNewSha: string | null = null;
+      try {
+        const lsOutput = execSync(
+          `git -C "${repoDir}" ls-tree HEAD -- "${relPath}"`,
+          { stdio: ['pipe', 'pipe', 'pipe'] },
+        ).toString().trim();
+        if (lsOutput) {
+          // Format: <mode> blob <sha>\t<path>
+          const parts = lsOutput.split(/\s+/);
+          templateNewSha = parts[2] ?? null;
+        }
+      }
+      catch {
+        // If ls-tree fails, we still attempt the copy below
+      }
+
+      // Build a synthetic DeltaEntry for this bootstrap file
+      const syntheticEntry: DeltaEntry = {
+        component: component.name,
+        path: relPath,
+        status: 'A',
+        classification: 'new-upstream',
+        addLines: 0,
+        delLines: 0,
+        isBinary: false,
+        templateOldSha: null,
+        templateNewSha,
+      };
+
+      if (dryRun) {
+        log.dim(`[dry-run bootstrap] would sync: ${relPath}`);
+        skipped.push({ entry: syntheticEntry, resolution: 'theirs' });
+        continue;
+      }
+
+      try {
+        await applyResolution(syntheticEntry, 'theirs', repoDir, localRepoRoot, backupDir);
+        applied.push({ entry: syntheticEntry, resolution: 'theirs' });
+      }
+      catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log.error(`Bootstrap failed to sync ${relPath}: ${msg}`);
+        failed.push({ entry: syntheticEntry, resolution: 'theirs', error: msg });
+        componentFailed = true;
+      }
+    }
+
+    if (!componentFailed && !dryRun) {
+      bootstrapped.push(component.name);
+    }
+  }
+
+  const summary: RunSummary = {
+    applied,
+    skipped,
+    failed,
+    binarySkipped: [],
+    bootstrapComponents: bootstrapped,
+    newHeadSha: '',
+  };
+
+  return { summary, bootstrapped };
 }
 
 // ============================================================================
@@ -2891,34 +3092,61 @@ async function main(): Promise<void> {
       throw err;
     }
 
-    // Bootstrap path deferred to M4
-    if (priorStateInteractive === null) {
-      log.warning(
-        'First-time sync requires bootstrap path (M4). '
-        + 'Run `bun run update --auto --dry-run` to preview the new auto pipeline, '
-        + 'or wait for M4 milestone.',
-      );
-      process.exit(0);
-    }
-
-    // Acquire template
+    // Acquire template (needed for both bootstrap and incremental paths)
     await partialCloneTemplate(TEMPLATE_REPO, TEMP_DIR);
     const newHeadShaInteractive = resolveTemplateHeadSha(TEMP_DIR);
 
-    // Synthesise v6 state (v5 treated as all-bootstrap for now — full migration UX in M4)
+    // ── BOOTSTRAP PATH (first-ever run — no version file) ───────────────────
+    if (priorStateInteractive === null) {
+      log.warning(
+        '⚠  First-time sync detected. Bulk-syncing all framework files.\n'
+        + '   Use --dry-run first to preview if you have local edits.',
+      );
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const bootstrapBackupDir = join('.backups', `update-${timestamp}`);
+      mkdirSync(bootstrapBackupDir, { recursive: true });
+
+      const { summary: bootstrapSummary, bootstrapped: bootstrappedNames }
+        = await runBootstrapForComponents(TEMP_DIR, COMPONENTS, process.cwd(), bootstrapBackupDir, false);
+
+      const initialState: SyncStateV6 = {
+        schema: 6,
+        templateRepo: TEMPLATE_REPO,
+        templateCommit: newHeadShaInteractive,
+        perComponentCommit: Object.fromEntries(bootstrappedNames.map(n => [n, newHeadShaInteractive])),
+        lastSyncedAt: new Date().toISOString(),
+        cliVersion: CLI_VERSION,
+        variableSystemVersion: 1,
+      };
+      writeSyncState(process.cwd(), initialState);
+
+      detectUnfilledVariables();
+      detectMissingFrameworkScripts();
+      cleanup();
+
+      log.header('  Bootstrap completed!');
+      log.info(`Applied: ${bootstrapSummary.applied.length}, Failed: ${bootstrapSummary.failed.length}`);
+      log.info(suggestCommitMessage({ ...bootstrapSummary, newHeadSha: newHeadShaInteractive }));
+      log.info(`Suggested commit: git add .boilerplate-version.json && git commit -m "chore(boilerplate): bootstrap to ${newHeadShaInteractive.slice(0, 7)}"`);
+
+      if (bootstrapSummary.failed.length > 0) {
+        process.exit(5);
+      }
+      return;
+    }
+
+    // ── SCHEMA MIGRATION (v5.3 → v6) ────────────────────────────────────────
     let v6StateInteractive: SyncStateV6;
     if (!('perComponentCommit' in priorStateInteractive)) {
-      log.warning(
-        'Detected v5.3 .boilerplate-version.json (schema migration deferred to M4). '
-        + 'Treating all components as bootstrap for this run.',
-      );
-      log.warning(
-        'First-time sync requires bootstrap path (M4). '
-        + 'Run `bun run update --auto --dry-run` to preview the new auto pipeline, '
-        + 'or wait for M4 milestone.',
-      );
-      cleanup();
-      process.exit(0);
+      // Prompt user before migrating
+      const accepted = await promptForMigration(priorStateInteractive);
+      if (!accepted) {
+        log.info('Migration declined. Exiting without changes.');
+        cleanup();
+        process.exit(0);
+      }
+      // In-memory migration only; disk write happens at end of successful sync
+      v6StateInteractive = migrateSyncState(priorStateInteractive);
     }
     else {
       v6StateInteractive = priorStateInteractive;
@@ -2926,11 +3154,26 @@ async function main(): Promise<void> {
 
     const { delta, bootstrap } = computeDelta(TEMP_DIR, COMPONENTS, v6StateInteractive);
 
+    // Handle any components needing bootstrap (missing perComponentCommit entry)
     if (bootstrap.length > 0) {
-      log.warning(
-        `Bootstrap needed for components: ${bootstrap.map(c => c.name).join(', ')}. `
-        + 'Bootstrap path deferred to M4 — skipping bootstrap components this run.',
-      );
+      log.info(`Bootstrap needed for components: ${bootstrap.map(c => c.name).join(', ')}`);
+      const bsTimestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const bsBackupDir = join('.backups', `update-${bsTimestamp}`);
+      mkdirSync(bsBackupDir, { recursive: true });
+
+      const { bootstrapped: bsNames }
+        = await runBootstrapForComponents(TEMP_DIR, bootstrap, process.cwd(), bsBackupDir, false);
+
+      // Advance perComponentCommit for bootstrapped components immediately
+      for (const name of bsNames) {
+        v6StateInteractive = {
+          ...v6StateInteractive,
+          perComponentCommit: {
+            ...v6StateInteractive.perComponentCommit,
+            [name]: newHeadShaInteractive,
+          },
+        };
+      }
     }
 
     // Filter: only visible entries (exclude unchanged + binary-skip from main list)
@@ -3080,30 +3323,95 @@ async function main(): Promise<void> {
 
     const newHeadSha = resolveTemplateHeadSha(TEMP_DIR);
 
-    // When no v6 state exists (null or v5), treat as all-bootstrap for now.
-    // Full bootstrap path wired in M4; here we synthesise a v6 with empty perComponentCommit
-    // so computeDelta sends every component to the bootstrap list.
+    // ── BOOTSTRAP PATH in auto mode (null state = first-ever run) ───────────
     let v6State: SyncStateV6;
-    if (priorState === null || !('perComponentCommit' in priorState)) {
-      v6State = {
+    if (priorState === null) {
+      log.warning(
+        '⚠  First-time sync detected. Bulk-syncing all framework files.\n'
+        + '   Use --dry-run first to preview if you have local edits.',
+      );
+
+      if (parsed.dryRun) {
+        log.header('  DRY RUN (auto bootstrap) — No files will be modified');
+        log.info('Would perform first-time bootstrap sync for all components.');
+        // Log what would be synced (lightweight preview)
+        for (const component of COMPONENTS) {
+          log.dim(`[dry-run bootstrap] would sync component: ${component.name}`);
+        }
+        cleanup();
+        return;
+      }
+
+      const bsTimestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const bsBackupDir = join('.backups', `update-${bsTimestamp}`);
+      mkdirSync(bsBackupDir, { recursive: true });
+
+      const { summary: bsSummary, bootstrapped: bsNames }
+        = await runBootstrapForComponents(TEMP_DIR, COMPONENTS, process.cwd(), bsBackupDir, false);
+
+      const initialStateAuto: SyncStateV6 = {
         schema: 6,
         templateRepo: TEMPLATE_REPO,
-        templateCommit: '',
-        perComponentCommit: {},
+        templateCommit: newHeadSha,
+        perComponentCommit: Object.fromEntries(bsNames.map(n => [n, newHeadSha])),
         lastSyncedAt: new Date().toISOString(),
         cliVersion: CLI_VERSION,
         variableSystemVersion: 1,
       };
+      writeSyncState(process.cwd(), initialStateAuto);
+
+      detectUnfilledVariables();
+      detectMissingFrameworkScripts();
+      cleanup();
+
+      log.header('  Bootstrap completed!');
+      log.info(`Applied: ${bsSummary.applied.length}, Failed: ${bsSummary.failed.length}`);
+      log.info(suggestCommitMessage({ ...bsSummary, newHeadSha }));
+
+      if (bsSummary.failed.length > 0) {
+        process.exit(5);
+      }
+      return;
     }
-    else {
-      v6State = priorState;
+
+    // ── SCHEMA MIGRATION in auto mode (v5.3 detected) ───────────────────────
+    if (!('perComponentCommit' in priorState)) {
+      // Auto mode cannot prompt — require interactive for migration
+      log.warning(
+        'Detected v5.3 .boilerplate-version.json. Schema migration requires interactive mode.\n'
+        + 'Run `bun run update` (without --auto) to be prompted for the v5→v6 upgrade.',
+      );
+      cleanup();
+      process.exit(0);
     }
+
+    v6State = priorState;
 
     const { delta, bootstrap } = computeDelta(TEMP_DIR, COMPONENTS, v6State);
 
+    // Run bootstrap for components with missing perComponentCommit
     if (bootstrap.length > 0) {
       log.info(`Bootstrap needed for components: ${bootstrap.map(c => c.name).join(', ')}`);
-      log.info('Run without --auto for first-time bootstrap, or wait for M4.');
+      if (!parsed.dryRun) {
+        const bsAutoTimestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const bsAutoBackupDir = join('.backups', `update-${bsAutoTimestamp}`);
+        mkdirSync(bsAutoBackupDir, { recursive: true });
+
+        const { bootstrapped: bsAutoNames }
+          = await runBootstrapForComponents(TEMP_DIR, bootstrap, process.cwd(), bsAutoBackupDir, false);
+
+        for (const name of bsAutoNames) {
+          v6State = {
+            ...v6State,
+            perComponentCommit: { ...v6State.perComponentCommit, [name]: newHeadSha },
+          };
+        }
+      }
+      else {
+        for (const component of bootstrap) {
+          log.dim(`[dry-run bootstrap] would sync component: ${component.name}`);
+        }
+      }
     }
 
     // Filter: only visible entries (exclude unchanged)
@@ -3170,43 +3478,80 @@ async function main(): Promise<void> {
 
   // ── INTERACTIVE PATH (TTY, non-auto, args provided) ──────────────────────
 
-  // Bootstrap path deferred to M4 — same guard as no-args path
-  if (priorState === null) {
-    log.warning(
-      'First-time sync requires bootstrap path (M4). '
-      + 'Run `bun run update --auto --dry-run` to preview the new auto pipeline, '
-      + 'or wait for M4 milestone.',
-    );
-    process.exit(0);
-  }
-
-  // v5 schema: migration UX deferred to M4
-  if (!('perComponentCommit' in priorState)) {
-    log.warning(
-      'Detected v5.3 .boilerplate-version.json (schema migration deferred to M4). '
-      + 'Bootstrap path required.',
-    );
-    log.warning(
-      'First-time sync requires bootstrap path (M4). '
-      + 'Run `bun run update --auto --dry-run` to preview the new auto pipeline, '
-      + 'or wait for M4 milestone.',
-    );
-    process.exit(0);
-  }
-
-  const v6StateTTY = priorState;
-
   // Acquire template via partial clone
   await partialCloneTemplate(TEMPLATE_REPO, TEMP_DIR);
   const newHeadShaTTY = resolveTemplateHeadSha(TEMP_DIR);
 
+  // ── BOOTSTRAP PATH (first-ever run with args) ────────────────────────────
+  if (priorState === null) {
+    log.warning(
+      '⚠  First-time sync detected. Bulk-syncing all framework files.\n'
+      + '   Use --dry-run first to preview if you have local edits.',
+    );
+    const bsTTYTimestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const bsTTYBackupDir = join('.backups', `update-${bsTTYTimestamp}`);
+    mkdirSync(bsTTYBackupDir, { recursive: true });
+
+    const { summary: bsTTYSummary, bootstrapped: bsTTYNames }
+      = await runBootstrapForComponents(TEMP_DIR, COMPONENTS, process.cwd(), bsTTYBackupDir, false);
+
+    const initialStateTTY: SyncStateV6 = {
+      schema: 6,
+      templateRepo: TEMPLATE_REPO,
+      templateCommit: newHeadShaTTY,
+      perComponentCommit: Object.fromEntries(bsTTYNames.map(n => [n, newHeadShaTTY])),
+      lastSyncedAt: new Date().toISOString(),
+      cliVersion: CLI_VERSION,
+      variableSystemVersion: 1,
+    };
+    writeSyncState(process.cwd(), initialStateTTY);
+
+    detectUnfilledVariables();
+    detectMissingFrameworkScripts();
+    cleanup();
+
+    log.header('  Bootstrap completed!');
+    log.info(`Applied: ${bsTTYSummary.applied.length}, Failed: ${bsTTYSummary.failed.length}`);
+    log.info(suggestCommitMessage({ ...bsTTYSummary, newHeadSha: newHeadShaTTY }));
+
+    if (bsTTYSummary.failed.length > 0) {
+      process.exit(5);
+    }
+    return;
+  }
+
+  // ── SCHEMA MIGRATION (v5.3 → v6) in TTY args path ───────────────────────
+  let v6StateTTY: SyncStateV6;
+  if (!('perComponentCommit' in priorState)) {
+    const acceptedTTY = await promptForMigration(priorState);
+    if (!acceptedTTY) {
+      log.info('Migration declined. Exiting without changes.');
+      cleanup();
+      process.exit(0);
+    }
+    v6StateTTY = migrateSyncState(priorState);
+  }
+  else {
+    v6StateTTY = priorState;
+  }
+
   const { delta: deltaTTY, bootstrap: bootstrapTTY } = computeDelta(TEMP_DIR, COMPONENTS, v6StateTTY);
 
   if (bootstrapTTY.length > 0) {
-    log.warning(
-      `Bootstrap needed for components: ${bootstrapTTY.map(c => c.name).join(', ')}. `
-      + 'Bootstrap path deferred to M4 — skipping bootstrap components this run.',
-    );
+    log.info(`Bootstrap needed for components: ${bootstrapTTY.map(c => c.name).join(', ')}`);
+    const bsTTY2Timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const bsTTY2BackupDir = join('.backups', `update-${bsTTY2Timestamp}`);
+    mkdirSync(bsTTY2BackupDir, { recursive: true });
+
+    const { bootstrapped: bsTTY2Names }
+      = await runBootstrapForComponents(TEMP_DIR, bootstrapTTY, process.cwd(), bsTTY2BackupDir, false);
+
+    for (const name of bsTTY2Names) {
+      v6StateTTY = {
+        ...v6StateTTY,
+        perComponentCommit: { ...v6StateTTY.perComponentCommit, [name]: newHeadShaTTY },
+      };
+    }
   }
 
   const visibleTTY = deltaTTY.filter(e => e.classification !== 'unchanged');
