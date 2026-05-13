@@ -601,23 +601,16 @@ async function runAgentsSetup(state: InstallState): Promise<void> {
 // ============================================================================
 
 function runGentleAiInstall(args: string[]): { ok: boolean, reason?: string } {
-  // Try with --yes first; fall back without it if gentle-ai rejects the flag.
-  const withYes = tryRun('gentle-ai', [...args, '--yes']);
-  if (withYes.ok) { return { ok: true }; }
-
-  const stderrLower = withYes.stderr.toLowerCase();
-  const flagUnknown
-    = stderrLower.includes('unknown flag')
-      || stderrLower.includes('unknown option')
-      || stderrLower.includes('invalid flag');
-
-  if (flagUnknown) {
-    const retry = tryRun('gentle-ai', args);
-    if (retry.ok) { return { ok: true }; }
-    return { ok: false, reason: retry.stderr.trim() || retry.stdout.trim() || 'unknown error' };
-  }
-
-  return { ok: false, reason: withYes.stderr.trim() || withYes.stdout.trim() || 'unknown error' };
+  // gentle-ai uses Go's `flag` package with a fixed schema
+  // (--agent(s), --component(s), --skill(s), --persona, --preset,
+  // --sdd-mode, --dry-run). There is NO --yes flag — passing one
+  // yields `flag provided but not defined: -yes`. Internal prompts
+  // (e.g. "Add to allowlist? (y/N)") auto-pick their default answer
+  // when stdin is not a TTY, so subprocess calls are effectively
+  // non-interactive without any extra flag.
+  const result = tryRun('gentle-ai', args);
+  if (result.ok) { return { ok: true }; }
+  return { ok: false, reason: result.stderr.trim() || result.stdout.trim() || 'unknown error' };
 }
 
 async function installSkillsViaGentleAi(
@@ -629,8 +622,14 @@ async function installSkillsViaGentleAi(
     return;
   }
 
-  const totalCalls = agents.length * (1 + SKILL_SLUGS.length);
-  log.info(`This will run ${totalCalls} gentle-ai install commands (${1 + SKILL_SLUGS.length} per agent × ${agents.length}).`);
+  // One batched gentle-ai call per agent: installs the engram component
+  // plus the SDD + skills components, with the full skill slug list in
+  // a single --skills CSV. gentle-ai snapshots existing config files
+  // before overwriting (compressed tar.gz, deduped, last 5 retained),
+  // so re-runs are safe and idempotent — they DO re-apply, they don't
+  // skip. The `<slug>::<agent>` state keys stay for the closing summary
+  // and doctor script, but are no longer used as per-slug skip logic.
+  log.info(`This will run ${agents.length} gentle-ai install command(s) — one batched call per agent.`);
 
   const proceed = await maybeConfirm('Continue with skill installation?', true);
   if (!proceed) {
@@ -644,40 +643,31 @@ async function installSkillsViaGentleAi(
     return;
   }
 
+  const skillsCsv = SKILL_SLUGS.join(',');
+
   for (const agent of agents) {
     log.banner(`Installing skills for: ${agent}`);
 
-    const engramKey = `${ENGRAM_COMPONENT}::${agent}`;
-    if (state.skills[engramKey] === 'installed') {
-      log.dim(`  skipping ${ENGRAM_COMPONENT} (already installed for ${agent})`);
+    const result = runGentleAiInstall([
+      'install',
+      '--agent',
+      agent,
+      '--components',
+      `${ENGRAM_COMPONENT},sdd,skills`,
+      '--skills',
+      skillsCsv,
+    ]);
+
+    const status: InstallStatus = result.ok ? 'installed' : 'failed';
+    if (result.ok) {
+      log.success(`  installed: engram + ${SKILL_SLUGS.length} skills (${agent})`);
     }
     else {
-      const result = runGentleAiInstall(['install', '--component', ENGRAM_COMPONENT, '--agent', agent]);
-      if (result.ok) {
-        log.success(`  installed: engram (${agent})`);
-        state.skills[engramKey] = 'installed';
-      }
-      else {
-        log.error(`  failed: engram (${agent}) — ${result.reason}`);
-        state.skills[engramKey] = 'failed';
-      }
+      log.error(`  failed: engram + skills (${agent}) — ${result.reason}`);
     }
 
-    for (const slug of SKILL_SLUGS) {
-      const key = `${slug}::${agent}`;
-      if (state.skills[key] === 'installed') {
-        log.dim(`  skipping ${slug} (already installed for ${agent})`);
-        continue;
-      }
-      const result = runGentleAiInstall(['install', '--skill', slug, '--agent', agent]);
-      if (result.ok) {
-        log.success(`  installed: ${slug} (${agent})`);
-        state.skills[key] = 'installed';
-      }
-      else {
-        log.error(`  failed: ${slug} (${agent}) — ${result.reason}`);
-        state.skills[key] = 'failed';
-      }
+    for (const slug of [ENGRAM_COMPONENT, ...SKILL_SLUGS]) {
+      state.skills[`${slug}::${agent}`] = status;
     }
   }
 }
