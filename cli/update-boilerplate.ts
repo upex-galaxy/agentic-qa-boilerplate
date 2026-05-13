@@ -301,7 +301,6 @@ interface FailedFile {
   error: string
 }
 
-// eslint-disable-next-line unused-imports/no-unused-vars -- used by M2+ applier and writeback
 interface RunSummary {
   applied: AppliedFile[]
   skipped: AppliedFile[]
@@ -1548,9 +1547,7 @@ async function promptForMigration(_old: SyncStateV5): Promise<boolean> {
  * Atomic write of SyncStateV6 to .boilerplate-version.json.
  * Writes to a .tmp.<pid> sibling first, then renames to final path.
  * Assumes the tmp file and the final path are on the same filesystem (POSIX rename guarantee).
- * Wired into main() in M2.
  */
-// eslint-disable-next-line unused-imports/no-unused-vars
 function writeSyncState(repoRoot: string, state: SyncStateV6): void {
   const finalPath = join(repoRoot, VERSION_FILE);
   const tmpPath = `${finalPath}.tmp.${process.pid}`;
@@ -1567,9 +1564,7 @@ function writeSyncState(repoRoot: string, state: SyncStateV6): void {
 /**
  * Resolve the HEAD commit SHA of the already-cloned template repo.
  * Replaces getTemplateCommit() with explicit repoDir arg.
- * Wired into main() in M2.
  */
-// eslint-disable-next-line unused-imports/no-unused-vars
 function resolveTemplateHeadSha(repoDir: string): string {
   try {
     return execSync(`git -C "${repoDir}" rev-parse HEAD`, { stdio: ['pipe', 'pipe', 'pipe'] })
@@ -1595,9 +1590,8 @@ function resolveTemplateHeadSha(repoDir: string): string {
  *   6. git checkout
  *
  * Exits process with code 3 on clone failure (Scenario 3.2).
- * Wired into main() in M2 (replaces cloneTemplate).
+ * Used by the auto/CI path in main().
  */
-// eslint-disable-next-line unused-imports/no-unused-vars
 async function partialCloneTemplate(
   repoUrl: string,
   dest: string,
@@ -1657,6 +1651,598 @@ async function partialCloneTemplate(
     log.error(`Sparse-checkout setup failed: ${msg}`);
     process.exit(3);
   }
+}
+
+// ============================================================================
+// FILE CLASSIFICATION
+// ============================================================================
+
+/**
+ * PURE helper — used ONLY inside classifyFile for whitespace-only divergence
+ * detection (Capability 5.2). NEVER applied to file content being written.
+ *
+ * Normalises:
+ *   1. CRLF → LF
+ *   2. Trailing horizontal whitespace stripped per line
+ *   3. Trailing whitespace on last line without newline
+ *   4. Multiple trailing blank lines collapsed to single trailing newline
+ */
+function normalizeWhitespace(s: string): string {
+  return s
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+(?=\n)/g, '')
+    .replace(/[ \t]+$/, '')
+    .replace(/\n+$/, '\n');
+}
+
+/**
+ * Classify a single delta entry into a FileClass.
+ * Side-effects: reads local filesystem + executes git show (idempotent reads, no mutations).
+ *
+ * Classification rules (in order):
+ *   1. isBinary → 'binary-skip'
+ *   2. status D + no local file → 'unchanged'
+ *   3. status D + local file exists → 'deleted-upstream'
+ *   4. status A + no local file → 'new-upstream'
+ *   5. status A + local exists → 'locally-diverged' (template-old treated as empty blob)
+ *   6. status M + no local file → 'clean-fastforward' (user deleted locally; ff applies)
+ *   7. status M + byte-identical to template-old → 'clean-fastforward'
+ *   8. status M + whitespace-only diff → 'clean-fastforward'
+ *   9. else → 'locally-diverged'
+ */
+function classifyFile(
+  entry: Omit<DeltaEntry, 'classification'>,
+  repoDir: string,
+  localRepoRoot: string,
+): FileClass {
+  if (entry.isBinary) {
+    return 'binary-skip';
+  }
+
+  const localPath = join(localRepoRoot, entry.path);
+  const localExists = existsSync(localPath);
+
+  if (entry.status === 'D') {
+    return localExists ? 'deleted-upstream' : 'unchanged';
+  }
+
+  if (entry.status === 'A') {
+    if (!localExists) {
+      return 'new-upstream';
+    }
+    // Added upstream but also exists locally (added independently) → diverged
+    return 'locally-diverged';
+  }
+
+  // status === 'M'
+  if (!localExists) {
+    // User deleted the file locally; fast-forward applies cleanly
+    return 'clean-fastforward';
+  }
+
+  // Byte-compare local content vs template-old blob
+  const localBytes = readFileSync(localPath);
+
+  if (entry.templateOldSha) {
+    let templateOldBytes: Buffer;
+    try {
+      templateOldBytes = execSync(
+        `git -C "${repoDir}" show ${entry.templateOldSha}`,
+        { stdio: ['pipe', 'pipe', 'pipe'] },
+      ) as unknown as Buffer;
+    }
+    catch {
+      // If we cannot retrieve the blob treat it as diverged (safe fallback)
+      return 'locally-diverged';
+    }
+
+    if (Buffer.compare(localBytes, templateOldBytes) === 0) {
+      return 'clean-fastforward';
+    }
+
+    // Whitespace-only divergence check
+    const localStr = localBytes.toString('utf8');
+    const oldStr = templateOldBytes.toString('utf8');
+    if (normalizeWhitespace(localStr) === normalizeWhitespace(oldStr)) {
+      return 'clean-fastforward';
+    }
+  }
+
+  return 'locally-diverged';
+}
+
+// ============================================================================
+// DELTA COMPUTATION
+// ============================================================================
+
+/**
+ * Compute per-component deltas using stored SHA cursors.
+ *
+ * For each component with a known perComponentCommit SHA:
+ *   - Runs `git log <sha>..HEAD --name-status --no-renames -- <paths>`
+ *   - Runs `git diff --numstat <sha>..HEAD -- <paths>` for line counts + binary detection
+ *   - Resolves templateOldSha / templateNewSha per entry
+ *   - Calls classifyFile() for each entry
+ *
+ * Components whose SHA equals HEAD → skipped (zero delta).
+ * Components with no SHA entry → pushed to `bootstrap` list.
+ *
+ * Returns: flat DeltaEntry[] (classified) + bootstrap Component[] list.
+ */
+function computeDelta(
+  repoDir: string,
+  components: readonly Component[],
+  state: SyncStateV6,
+): { delta: DeltaEntry[], bootstrap: Component[] } {
+  const delta: DeltaEntry[] = [];
+  const bootstrap: Component[] = [];
+
+  // Get current HEAD SHA of the template clone
+  let headSha: string;
+  try {
+    headSha = execSync(`git -C "${repoDir}" rev-parse HEAD`, { stdio: ['pipe', 'pipe', 'pipe'] })
+      .toString()
+      .trim();
+  }
+  catch {
+    log.error('Could not resolve HEAD SHA of template clone');
+    return { delta, bootstrap };
+  }
+
+  for (const component of components) {
+    const componentSha = state.perComponentCommit[component.name];
+
+    if (!componentSha) {
+      // No SHA recorded → needs bootstrap
+      bootstrap.push(component);
+      continue;
+    }
+
+    if (componentSha === headSha) {
+      // Already at HEAD for this component
+      continue;
+    }
+
+    // Build path args for git commands
+    const pathArgs = component.paths.map(p => `"${p}"`).join(' ');
+
+    // --- name-status (with --no-renames to demote R → D+A) ---
+    let nameStatusOutput: string;
+    try {
+      nameStatusOutput = execSync(
+        `git -C "${repoDir}" log ${componentSha}..HEAD --name-status --no-renames --diff-filter=ADM -- ${pathArgs}`,
+        { stdio: ['pipe', 'pipe', 'pipe'] },
+      ).toString();
+    }
+    catch {
+      log.warning(`Could not compute delta for component '${component.name}'. Skipping.`);
+      continue;
+    }
+
+    // --- numstat (for line counts + binary detection) ---
+    let numstatOutput: string;
+    try {
+      numstatOutput = execSync(
+        `git -C "${repoDir}" diff --numstat ${componentSha}..HEAD -- ${pathArgs}`,
+        { stdio: ['pipe', 'pipe', 'pipe'] },
+      ).toString();
+    }
+    catch {
+      numstatOutput = '';
+    }
+
+    // Build numstat lookup: path → { addLines, delLines, isBinary }
+    const numstatMap = new Map<string, { addLines: number, delLines: number, isBinary: boolean }>();
+    for (const line of numstatOutput.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed) { continue; }
+      // Binary: "-\t-\t<path>"
+      const binaryMatch = /^-\t-\t(.+)$/.exec(trimmed);
+      if (binaryMatch) {
+        numstatMap.set(binaryMatch[1], { addLines: 0, delLines: 0, isBinary: true });
+        continue;
+      }
+      const numMatch = /^(\d+)\t(\d+)\t(.+)$/.exec(trimmed);
+      if (numMatch) {
+        numstatMap.set(numMatch[3], {
+          addLines: Number.parseInt(numMatch[1], 10),
+          delLines: Number.parseInt(numMatch[2], 10),
+          isBinary: false,
+        });
+      }
+    }
+
+    // Parse name-status output — each file appears as e.g. "M\tpath/to/file"
+    // We collect unique paths (git log --name-status may repeat files across commits)
+    const seenPaths = new Set<string>();
+    const fileStatuses = new Map<string, ChangeStatus>();
+
+    for (const line of nameStatusOutput.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed) { continue; }
+      const match = /^([MAD])\t(.+)$/.exec(trimmed);
+      if (!match) { continue; }
+      const status = match[1] as ChangeStatus;
+      const filePath = match[2];
+      // For the same path appearing multiple times across commits, the latest
+      // status in git log order (most recent first) wins. We stop at first occurrence.
+      if (!seenPaths.has(filePath)) {
+        seenPaths.add(filePath);
+        fileStatuses.set(filePath, status);
+      }
+    }
+
+    for (const [filePath, status] of fileStatuses) {
+      const numstat = numstatMap.get(filePath) ?? { addLines: 0, delLines: 0, isBinary: false };
+
+      // Resolve templateOldSha (blob at componentSha)
+      let templateOldSha: string | null = null;
+      if (status !== 'A') {
+        try {
+          const lsOld = execSync(
+            `git -C "${repoDir}" ls-tree ${componentSha} -- "${filePath}"`,
+            { stdio: ['pipe', 'pipe', 'pipe'] },
+          ).toString().trim();
+          // ls-tree output: "<mode> blob <sha>\t<path>"
+          const blobMatch = /\bblob\s+([0-9a-f]{40})\b/.exec(lsOld);
+          templateOldSha = blobMatch ? blobMatch[1] : null;
+        }
+        catch {
+          templateOldSha = null;
+        }
+      }
+
+      // Resolve templateNewSha (blob at HEAD)
+      let templateNewSha: string | null = null;
+      if (status !== 'D') {
+        try {
+          const lsNew = execSync(
+            `git -C "${repoDir}" ls-tree HEAD -- "${filePath}"`,
+            { stdio: ['pipe', 'pipe', 'pipe'] },
+          ).toString().trim();
+          const blobMatch = /\bblob\s+([0-9a-f]{40})\b/.exec(lsNew);
+          templateNewSha = blobMatch ? blobMatch[1] : null;
+        }
+        catch {
+          templateNewSha = null;
+        }
+      }
+
+      const partial: Omit<DeltaEntry, 'classification'> = {
+        component: component.name,
+        path: filePath,
+        status,
+        addLines: numstat.addLines,
+        delLines: numstat.delLines,
+        isBinary: numstat.isBinary,
+        templateOldSha,
+        templateNewSha,
+      };
+
+      const classification = classifyFile(partial, repoDir, process.cwd());
+
+      delta.push({ ...partial, classification });
+    }
+  }
+
+  return { delta, bootstrap };
+}
+
+// ============================================================================
+// APPLIER (per-file writes with pre-write backup)
+// ============================================================================
+
+/**
+ * Append a RESTORE.txt manifest to the backup directory.
+ * Records timestamp, SHAs, and one line per entry with status/classification/resolution/path.
+ * Includes the prior .boilerplate-version.json as base64 for full rollback.
+ */
+function appendBackupManifest(backupDir: string, entries: DeltaEntry[], state: SyncStateV6): void {
+  const lines: string[] = [
+    '# update-boilerplate rollback manifest',
+    `timestamp: ${new Date().toISOString()}`,
+    `priorTemplateCommit: ${state.templateCommit || 'none'}`,
+    `newTemplateCommit: ${state.templateCommit}`,
+    `cliVersion: ${CLI_VERSION}`,
+    '',
+    '# entries: <status> <classification> <resolution> <path>',
+  ];
+
+  for (const entry of entries) {
+    lines.push(`${entry.status} ${entry.classification} applied ${entry.path}`);
+  }
+
+  // Encode prior state JSON as base64 for rollback
+  const priorJson = JSON.stringify(state, null, 2);
+  const priorBase64 = Buffer.from(priorJson).toString('base64');
+  lines.push('');
+  lines.push(`PRIOR_STATE_JSON_BASE64:${priorBase64}`);
+
+  writeFileSync(join(backupDir, 'RESTORE.txt'), `${lines.join('\n')}\n`);
+}
+
+/**
+ * Apply a single resolution to a delta entry.
+ * ALWAYS backs up the existing local file before any write/delete.
+ *
+ * Resolutions:
+ *   - 'theirs': write template-new blob bytes to local path
+ *   - 'mine':   no-op (local file already preserved)
+ *   - 'skip':   no-op
+ *   - 'delete': rmSync local file (after backup)
+ *   - 'keep':   no-op (deleted-upstream file kept)
+ */
+async function applyResolution(
+  entry: DeltaEntry,
+  resolution: Resolution,
+  repoDir: string,
+  localRepoRoot: string,
+  backupDir: string,
+): Promise<void> {
+  const localPath = join(localRepoRoot, entry.path);
+
+  // 1. Pre-write backup for destructive resolutions
+  if ((resolution === 'theirs' || resolution === 'delete') && existsSync(localPath)) {
+    const backupPath = join(backupDir, entry.path);
+    mkdirSync(join(backupPath, '..'), { recursive: true });
+    cpSync(localPath, backupPath);
+  }
+
+  try {
+    switch (resolution) {
+      case 'theirs': {
+        if (!entry.templateNewSha) {
+          throw new Error(`No templateNewSha for ${entry.path} — cannot apply 'theirs'`);
+        }
+        const templateBytes = execSync(
+          `git -C "${repoDir}" show ${entry.templateNewSha}`,
+          { stdio: ['pipe', 'pipe', 'pipe'] },
+        );
+        mkdirSync(join(localPath, '..'), { recursive: true });
+        writeFileSync(localPath, templateBytes);
+        log.success(`Applied: ${entry.path}`);
+        break;
+      }
+      case 'mine':
+        log.dim(`Kept (mine): ${entry.path}`);
+        break;
+      case 'skip':
+        log.dim(`Skipped: ${entry.path}`);
+        break;
+      case 'delete':
+        rmSync(localPath, { force: true });
+        log.success(`Deleted: ${entry.path}`);
+        break;
+      case 'keep':
+        log.dim(`Kept (deleted-upstream, kept locally): ${entry.path}`);
+        break;
+    }
+  }
+  catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`applyResolution failed for ${entry.path} (${resolution}): ${msg}`);
+  }
+}
+
+// ============================================================================
+// AUTO / CI MODE
+// ============================================================================
+
+/**
+ * Returns true if the CLI should run in non-interactive (auto/CI) mode.
+ * Checks: --auto flag, CI env var, or stdin is not a TTY.
+ */
+function isNonInteractive(args: ParsedArgs): boolean {
+  if (args.auto) { return true; }
+  const ci = process.env.CI;
+  if (ci === 'true' || ci === 'TRUE' || ci === '1') { return true; }
+  if (!process.stdin.isTTY) { return true; }
+  return false;
+}
+
+/**
+ * Build the auto-mode apply plan from a set of delta entries.
+ *
+ * Rules (Capability 8.1, 14.1):
+ *   - clean-fastforward → { resolution: 'theirs' }
+ *   - new-upstream      → { resolution: 'theirs' }
+ *   - locally-diverged  → { resolution: 'skip' }  (not a CI error — OQ #4)
+ *   - deleted-upstream  → deferred (NEVER delete in auto)
+ *   - binary-skip       → { resolution: 'skip' }
+ *   - unchanged         → excluded (should not be in visible entries)
+ */
+function planAuto(entries: DeltaEntry[]): { plan: AppliedFile[], deferred: DeltaEntry[] } {
+  const plan: AppliedFile[] = [];
+  const deferred: DeltaEntry[] = [];
+
+  for (const entry of entries) {
+    switch (entry.classification) {
+      case 'clean-fastforward':
+      case 'new-upstream':
+        plan.push({ entry, resolution: 'theirs' });
+        break;
+      case 'locally-diverged':
+        plan.push({ entry, resolution: 'skip' });
+        break;
+      case 'deleted-upstream':
+        deferred.push(entry);
+        break;
+      case 'binary-skip':
+        plan.push({ entry, resolution: 'skip' });
+        break;
+      case 'unchanged':
+        // Should not appear here — filtered upstream
+        break;
+    }
+  }
+
+  return { plan, deferred };
+}
+
+/**
+ * Execute the auto-mode pipeline: apply plan, print summary table.
+ * Exits 0 always (diverged skips are not CI errors per OQ #4).
+ */
+async function runAuto(
+  entries: DeltaEntry[],
+  templateDir: string,
+  localRepoRoot: string,
+  backupDir: string,
+  dryRun: boolean,
+): Promise<RunSummary> {
+  const { plan, deferred } = planAuto(entries);
+
+  const applied: AppliedFile[] = [];
+  const skipped: AppliedFile[] = [];
+  const failed: FailedFile[] = [];
+
+  for (const item of plan) {
+    if (item.resolution === 'skip') {
+      log.info(`[skipped] locally diverged: ${item.entry.path}`);
+      skipped.push(item);
+      continue;
+    }
+
+    if (dryRun) {
+      log.dim(`[dry-run] would apply: ${item.entry.path}`);
+      applied.push(item);
+      continue;
+    }
+
+    try {
+      await applyResolution(item.entry, item.resolution, templateDir, localRepoRoot, backupDir);
+      applied.push(item);
+    }
+    catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log.error(`Failed to apply ${item.entry.path}: ${msg}`);
+      failed.push({ entry: item.entry, resolution: item.resolution, error: msg });
+    }
+  }
+
+  for (const entry of deferred) {
+    log.info(`[kept] upstream deleted (additive auto): ${entry.path}`);
+  }
+
+  // Print summary table
+  const appliedCount = applied.length;
+  const skippedCount = skipped.length;
+  const keptDeletedCount = deferred.length;
+  const failedCount = failed.length;
+
+  console.log('');
+  console.log(`${colors.bold}${colors.cyan}  Sync Summary${colors.reset}`);
+  console.log(`${colors.dim}  ┌───────────────┬───────┐${colors.reset}`);
+  console.log(`${colors.dim}  │${colors.reset} ${colors.bold}Status        ${colors.reset}${colors.dim}│${colors.reset} ${colors.bold}Count${colors.reset}${colors.dim} │${colors.reset}`);
+  console.log(`${colors.dim}  ├───────────────┼───────┤${colors.reset}`);
+  console.log(`${colors.dim}  │${colors.reset} ${colors.green}Applied       ${colors.reset}${colors.dim}│${colors.reset}   ${String(appliedCount).padStart(2)}  ${colors.dim}│${colors.reset}`);
+  console.log(`${colors.dim}  │${colors.reset} ${colors.yellow}Skipped       ${colors.reset}${colors.dim}│${colors.reset}   ${String(skippedCount).padStart(2)}  ${colors.dim}│${colors.reset}`);
+  console.log(`${colors.dim}  │${colors.reset} ${colors.dim}Kept-deleted  ${colors.reset}${colors.dim}│${colors.reset}   ${String(keptDeletedCount).padStart(2)}  ${colors.dim}│${colors.reset}`);
+  console.log(`${colors.dim}  │${colors.reset} ${failedCount > 0 ? colors.red : colors.dim}Failed        ${colors.reset}${colors.dim}│${colors.reset}   ${String(failedCount).padStart(2)}  ${colors.dim}│${colors.reset}`);
+  console.log(`${colors.dim}  └───────────────┴───────┘${colors.reset}`);
+  console.log('');
+
+  if (deferred.length > 0) {
+    log.info('Deletion-pending (requires interactive confirmation):');
+    for (const entry of deferred) {
+      log.dim(`  ${entry.path}`);
+    }
+    console.log('');
+  }
+
+  return {
+    applied,
+    skipped,
+    failed,
+    binarySkipped: entries.filter(e => e.classification === 'binary-skip'),
+    bootstrapComponents: [],
+    newHeadSha: '', // filled in by caller
+  };
+}
+
+// ============================================================================
+// SYNC-STATE WRITEBACK
+// ============================================================================
+
+/**
+ * Suggest a semantic commit message post-sync (Capability 13.1).
+ * Printed as advisory — never auto-committed.
+ */
+function suggestCommitMessage(summary: RunSummary): string {
+  return `chore(boilerplate): sync to ${summary.newHeadSha.slice(0, 7)}`;
+}
+
+/**
+ * PURE function — advances perComponentCommit SHAs based on the run summary.
+ *
+ * Rules (Capability 11.1/11.2, ADR-5):
+ *   - For each component that appeared in the delta:
+ *     - If ANY entry in summary.skipped or summary.failed belongs to that component
+ *       → keep prior perComponentCommit[component] (SHA holds)
+ *     - Else → advance to newHeadSha
+ *   - For each component in summary.bootstrapComponents → advance to newHeadSha
+ *   - Components untouched this run → prior value preserved
+ *   - Top-level templateCommit advances to newHeadSha ONLY if ALL components advanced
+ */
+function advanceSyncState(
+  prior: SyncStateV6,
+  summary: RunSummary,
+  components: readonly Component[],
+  newHeadSha: string,
+): SyncStateV6 {
+  const next: SyncStateV6 = {
+    ...prior,
+    lastSyncedAt: new Date().toISOString(),
+    cliVersion: CLI_VERSION,
+    perComponentCommit: { ...prior.perComponentCommit },
+  };
+
+  // Build set of component names that appeared in this run's delta
+  const allDeltaEntries = [
+    ...summary.applied.map(a => a.entry),
+    ...summary.skipped.map(s => s.entry),
+    ...summary.failed.map(f => f.entry),
+  ];
+
+  const deltaCoveredComponents = new Set(allDeltaEntries.map(e => e.component));
+
+  // Build set of components that had failures or skips (per-component SHA stays)
+  const blockedComponents = new Set<string>();
+  for (const item of summary.skipped) {
+    blockedComponents.add(item.entry.component);
+  }
+  for (const item of summary.failed) {
+    blockedComponents.add(item.entry.component);
+  }
+
+  // Advance or hold per component
+  for (const component of components) {
+    if (!deltaCoveredComponents.has(component.name)) {
+      // Not in delta this run — preserve prior SHA unchanged
+      continue;
+    }
+
+    if (blockedComponents.has(component.name)) {
+      // Has skips or failures — hold SHA
+      next.perComponentCommit[component.name] = prior.perComponentCommit[component.name] ?? '';
+    }
+    else {
+      next.perComponentCommit[component.name] = newHeadSha;
+    }
+  }
+
+  // Bootstrap components always advance
+  for (const name of summary.bootstrapComponents) {
+    next.perComponentCommit[name] = newHeadSha;
+  }
+
+  // Top-level templateCommit advances only if every component advanced
+  const allAdvanced = components.every(
+    c => next.perComponentCommit[c.name] === newHeadSha,
+  );
+  next.templateCommit = allAdvanced ? newHeadSha : prior.templateCommit;
+
+  return next;
 }
 
 // ============================================================================
@@ -2091,11 +2677,10 @@ async function main(): Promise<void> {
   ensureGitVersion();
   await validatePrerequisites();
 
-  // Read sync state early so CorruptStateError surfaces before any writes (M1 wire-in).
-  // priorState drives delta logic in M2+; in M1 it is read but not yet consumed.
-  let _priorState: SyncState | null = null;
+  // Read sync state (CorruptStateError → exit 4)
+  let priorState: SyncState | null = null;
   try {
-    _priorState = readSyncState(process.cwd());
+    priorState = readSyncState(process.cwd());
   }
   catch (err) {
     if (err instanceof CorruptStateError) {
@@ -2112,6 +2697,106 @@ async function main(): Promise<void> {
     parsed.commands = ['skills', 'commands', 'scripts', 'templates', 'agents-docs', 'claude-config', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples'];
     parsed.all = true;
   }
+
+  // ── AUTO / CI MODE PATH (M2) ─────────────────────────────────────────────
+  if (isNonInteractive(parsed)) {
+    const reason = parsed.auto ? 'flag' : (process.env.CI ? 'env' : 'tty');
+    log.info(`Auto/CI mode active. Reason: ${reason}.`);
+
+    // Acquire template via partial clone
+    await partialCloneTemplate(TEMPLATE_REPO, TEMP_DIR);
+
+    const newHeadSha = resolveTemplateHeadSha(TEMP_DIR);
+
+    // When no v6 state exists (null or v5), treat as all-bootstrap for now.
+    // Full bootstrap path wired in M4; here we synthesise a v6 with empty perComponentCommit
+    // so computeDelta sends every component to the bootstrap list.
+    let v6State: SyncStateV6;
+    if (priorState === null || !('perComponentCommit' in priorState)) {
+      v6State = {
+        schema: 6,
+        templateRepo: TEMPLATE_REPO,
+        templateCommit: '',
+        perComponentCommit: {},
+        lastSyncedAt: new Date().toISOString(),
+        cliVersion: CLI_VERSION,
+        variableSystemVersion: 1,
+      };
+    }
+    else {
+      v6State = priorState;
+    }
+
+    const { delta, bootstrap } = computeDelta(TEMP_DIR, COMPONENTS, v6State);
+
+    if (bootstrap.length > 0) {
+      log.info(`Bootstrap needed for components: ${bootstrap.map(c => c.name).join(', ')}`);
+      log.info('Run without --auto for first-time bootstrap, or wait for M4.');
+    }
+
+    // Filter: only visible entries (exclude unchanged)
+    const visibleEntries = delta.filter(
+      e => e.classification !== 'unchanged',
+    );
+
+    // Log binary skips
+    for (const entry of visibleEntries.filter(e => e.classification === 'binary-skip')) {
+      log.warning(`Binary file skipped: ${entry.path}`);
+    }
+
+    if (visibleEntries.length === 0 && bootstrap.length === 0) {
+      log.info('Already at HEAD for all components.');
+      cleanup();
+      return;
+    }
+
+    // Dry-run: print plan without applying
+    if (parsed.dryRun) {
+      log.header('  DRY RUN (auto mode) — No files will be modified');
+      const { plan, deferred } = planAuto(visibleEntries);
+      for (const item of plan) {
+        const action = item.resolution === 'theirs' ? 'would apply' : 'would skip';
+        log.dim(`[dry-run] ${action}: ${item.entry.path}`);
+      }
+      for (const entry of deferred) {
+        log.dim(`[dry-run] deletion-pending (requires interactive): ${entry.path}`);
+      }
+      log.info(`Total: ${plan.filter(p => p.resolution === 'theirs').length} would apply, ${plan.filter(p => p.resolution === 'skip').length} would skip, ${deferred.length} deletion-pending`);
+      cleanup();
+      return;
+    }
+
+    // Create backup dir for this run
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const backupDir = join('.backups', `update-${timestamp}`);
+    mkdirSync(backupDir, { recursive: true });
+
+    // Execute auto pipeline
+    const summary = await runAuto(visibleEntries, TEMP_DIR, process.cwd(), backupDir, false);
+    summary.newHeadSha = newHeadSha;
+
+    // Write backup manifest
+    appendBackupManifest(backupDir, visibleEntries, v6State);
+
+    // Advance sync state and write
+    const nextState = advanceSyncState(v6State, summary, COMPONENTS, newHeadSha);
+    writeSyncState(process.cwd(), nextState);
+
+    // Post-sync checks
+    detectUnfilledVariables();
+    detectMissingFrameworkScripts();
+    cleanup();
+
+    log.header('  Update completed!');
+    log.info(suggestCommitMessage(summary));
+
+    if (summary.failed.length > 0) {
+      process.exit(5);
+    }
+    return;
+  }
+
+  // ── LEGACY PATH (non-auto, non-interactive-menu args) ────────────────────
 
   await cloneTemplate();
 
