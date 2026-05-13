@@ -3,7 +3,18 @@ name: test-automation
 description: "Plan, write, and review automated tests following KATA (Component Action Test Architecture) on Playwright + TypeScript. Use when writing E2E or API/integration tests, creating Page or Api components, designing ATCs, parameterizing test data, registering fixtures, or reviewing test code for KATA compliance. Triggers on: write test, automate test, create E2E test, create API test, integration test, KATA, page object, API component, implementation plan, ATC, automated test case, review test code, automate module, automate ticket, add regression test. Always load before writing any test code -- KATA fixture selection, inline-locator rule, ATC-identity rule, and import-alias requirements differ from standard Playwright conventions. Do NOT use for running suites (regression-testing), documenting TCs in Jira/Xray (test-documentation), onboarding a repo (project-discovery), or orchestrating sprint-wide testing (sprint-testing)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
+complementary_categories: [testing-e2e, testing-api, testing-component, automation-cli, accessibility]
 ---
+
+## Forbidden invocations
+
+**NEVER invoke `/sdd-*` skills from this workflow.** SDD applies only to
+framework evolution via `/framework-development`. If you need to refactor
+KATA, fixtures, cli/, scripts/, or api/schemas/ pipeline, exit this skill
+first and invoke `/framework-development`.
+
+This boundary is mechanical, not advisory. See:
+`.claude/skills/agentic-qa-core/references/skill-composition-strategy.md` §4.
 
 # Test Automation — Plan, Code, Review
 
@@ -77,6 +88,8 @@ Present the plan to the user. Wait for approval before coding.
 ### Phase 2 — Code
 
 Use the dispatch defined in §Subagent Dispatch Strategy: **Sequential** (one subagent per scope unit). The subagent loads `references/e2e-patterns.md` and `references/api-patterns.md` per scope.
+
+**Skills to load in every Code subagent (mandatory)**: `/playwright-best-practices` (community, project-installed) for upstream Playwright/TypeScript patterns — flaky-test fixes, POM vs fixtures, axe-core, auth/OAuth, fixtures lifecycle, perf budgets, i18n, component testing. Load **alongside** `/test-automation` (this skill, project-authored) — the two are complementary: KATA-specific rules (ATC identity, inline locators, fixture selection) come from here; generic Playwright craft comes from `/playwright-best-practices`. Add `/playwright-cli` only when the subagent also needs to drive a real browser session (snapshot/trace/record) during code-time exploration.
 
 Implement in this order:
 

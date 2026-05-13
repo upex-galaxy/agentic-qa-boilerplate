@@ -3,7 +3,18 @@ name: test-documentation
 description: "Analyze, prioritize, and document test cases in TMS (Jira/Xray) -- the bridge between manual QA and test automation. Use when creating Test/ATP/ATR artifacts, calculating ROI to choose which tests to automate, maintaining US-ATP-ATR-TC traceability, or repairing broken TMS links. Supports four scopes: module-driven (exhaustive module exploration), ticket-driven (QA-approved user story), bug-driven (regression TC for a closed bug), and ad-hoc/exploratory. Produces three outcomes per TC: Candidate (feeds test-automation), Manual (terminal), Deferred (terminal). Triggers on: document tests, create test cases in Jira/Xray, prioritize for automation, ROI analysis, which tests to automate, Candidate vs Manual, link ATP to ATR, fix TMS traceability, stage 4, turn this bug into a regression test. Do NOT use for writing test code (test-automation) or running suites (regression-testing)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
+complementary_categories: [tms, issue-tracker]
 ---
+
+## Forbidden invocations
+
+**NEVER invoke `/sdd-*` skills from this workflow.** SDD applies only to
+framework evolution via `/framework-development`. If you need to refactor
+KATA, fixtures, cli/, scripts/, or api/schemas/ pipeline, exit this skill
+first and invoke `/framework-development`.
+
+This boundary is mechanical, not advisory. See:
+`.claude/skills/agentic-qa-core/references/skill-composition-strategy.md` §4.
 
 # Test Documentation — QA Bridge
 

@@ -4,6 +4,7 @@ description: "Xray Cloud test management via `bun xray` CLI: create/list tests, 
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 allowed-tools: Bash(bun xray:*)
+complementary_categories: [tms]
 ---
 
 # Xray CLI - Test Management

@@ -4,6 +4,7 @@ description: "Walks new users through this repo's QA flow — Playwright + KATA 
 license: MIT
 compatibility: [claude-code, opencode]
 phase: bootstrap
+complementary_categories: [meta-skill]
 ---
 
 <!-- Model preferences (advisory; dispatchers may use to route) -->
@@ -173,6 +174,7 @@ Verify your config with `bun run lint:agents` (should report 0 errors when fully
 | `test-automation`    | `/test-automation`     | Stage 5 — KATA + Playwright + TS automation                                    |
 | `regression-testing` | `/regression-testing`  | Stage 6 — CI suite execution + GO/NO-GO verdict                                |
 | `playwright-cli`     | `/playwright-cli`      | Browser automation CLI helpers                                                 |
+| `playwright-best-practices` | `/playwright-best-practices` | Reference skill: flaky-test fixes, POM, accessibility (axe-core), auth/OAuth, fixtures, tags, perf budgets, i18n. Auto-loads alongside `/test-automation` |
 | `acli`               | `/acli`                | Atlassian CLI wrapper for Jira/Confluence terminal work                        |
 | `xray-cli`           | `/xray-cli`            | Xray Cloud TMS CLI                                                             |
 | `git-flow-master`    | (auto on git intents)  | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)       |

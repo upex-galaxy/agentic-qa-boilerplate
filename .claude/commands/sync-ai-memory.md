@@ -207,7 +207,7 @@ Iterate over every file in the Sync Target List (from Step 1.5). For each non-`i
 - Prose the user wrote beyond the immediate fact
 - Section headings and their order
 - Human-authored commentary, rationale, or examples
-- Stable rule sections (Critical Rules, KATA Architecture, Fundamental Rules)
+- Stable rule sections in `CLAUDE.md` (§1 Critical Rules, §2 Behavioral Layer, §3 Orchestration Mode, §10 KATA Quick-Reference)
 
 ### Per-document preserve-lists
 
@@ -217,15 +217,21 @@ Different files have different sections that must never be rewritten. Apply the 
 - Any prose block the user added that is not a facts table
 - Section order and top-level headings
 
-**`CLAUDE.md` (AI memory file):**
-- Critical Rules
-- Fundamental Rules (TypeScript Patterns, KATA Architecture)
-- Skills Available table (updated separately by `/agentic-qa-core init` or manually)
-- Commands Available table (may be patched for command name changes — see Step 4.5)
-- Tool Resolution table
-- Git Workflow
-- MCPs Available
-- Behavioral Layer / Orchestration Mode / AI Behavior
+**`CLAUDE.md` (AI memory file — priority §0–§11 structure as of the structural refactor):**
+- §0 Preamble ("THIS IS NOT A README")
+- §1 CRITICAL RULES — ALWAYS APPLY (11 rules, caveman-compressed)
+- §2 BEHAVIORAL LAYER — HOW AI REASONS (4 UPPERCASE principles)
+- §3 ORCHESTRATION MODE — PERMANENTLY ACTIVE (6-component briefing, execution patterns)
+- §4 CONTEXT LOADING MAP — TASK → WHAT TO LOAD (preserve table SHAPE; rows may be patched)
+- §5 SKILLS + COMMANDS + MCPs REGISTRY (3 tables — patched for command name changes via Step 4.5; updated separately by `/agentic-qa-core init` or manually)
+- §6 TOOL RESOLUTION ([TAG_TOOL] pseudocode table + MANDATORY load-skill-first rule)
+- §7 PROJECT VARIABLES — POINTER (pointer-only to `.agents/README.md` + `.agents/project.yaml`; never inline project values here)
+- §8 AI BEHAVIOR DURING TESTING (4 numbered behaviors)
+- §9 LOCAL CONTEXT (PBI folder layout)
+- §10 KATA QUICK-REFERENCE (layer diagram + pointer to `test-automation/references/`)
+- §11 GIT WORKFLOW — POINTERS (auto-loads `/git-flow-master`)
+
+If a section listed here is missing from the file you're syncing, that is structural drift — STOP and surface to the user. Do NOT recreate from this list; structural refactors belong to `/claude-md-tuner`, not `/sync-ai-memory`.
 
 **`INSTALLER.md`:**
 - Installation flow narrative and step numbers
@@ -334,40 +340,42 @@ Sync the **Available scripts** section against `package.json` — do not invent 
 
 ## Step 4 — Deep sync of the AI memory file
 
-This step focuses on the AI memory file (`CLAUDE.md` or equivalent) which receives a deeper sync than other supplementary files due to its structured sections.
+This step focuses on the AI memory file (`CLAUDE.md` or equivalent). It receives a deeper sync than other supplementary files because §5 Registry and §4 Context Loading Map are derived from disk state — they MUST stay in lockstep with `.claude/skills/`, `.claude/commands/`, and `package.json`.
 
-**The file already has structure — match it 1:1.** Refresh facts inside known sections and tables only. Do **not**:
+**Important boundary**: the priority §0–§11 structure of CLAUDE.md is the contract enforced by `/claude-md-tuner`. `/sync-ai-memory` PATCHES facts inside that structure; it does NOT restructure. If §-numbering, section names, or section order have drifted from the §0–§11 contract → STOP and tell the user to run `/claude-md-tuner` (sync-mirrors or refactor mode). Do not attempt structural repairs here.
 
-- Reorder, rename, add, or remove top-level sections.
-- Rewrite prose the user already wrote (especially Critical Rules, Fundamental Rules, and narrative passages).
+**Do not**:
+
+- Reorder, rename, add, or remove top-level sections (§0–§11).
+- Rewrite prose the user wrote (especially §1 Critical Rules, §2 Behavioral Layer, §10 KATA Quick-Reference narrative).
 - "Improve" formatting, collapse tables you think are redundant, or merge sections.
-- Restructure on the grounds that a different layout would be cleaner.
+- Re-inline project values that are now externalized to `.agents/project.yaml` (project name, env URLs, project key, MCP server names, Jira URL).
+- Re-inline scripts (Critical Rule #11 says READ `package.json` DIRECTLY — never paste script tables back in).
 
-If the file's structure itself needs to change, that is a separate task the user has to request explicitly — never a side-effect of this sync.
+**Sections to refresh (facts inside fixed structure):**
 
-**Sections to refresh with real values:**
+- **§4 CONTEXT LOADING MAP** — verify each row's "Load skill" cell points to a skill that exists on disk under `.claude/skills/`. Add a row if a new workflow skill was added; remove a row if a workflow skill was deleted. Trigger-phrase prose stays untouched.
+- **§5 SKILLS + COMMANDS + MCPs REGISTRY** — three tables synced from disk:
+  - Skills table: one row per directory under `.claude/skills/` (one-line trigger + purpose from each `SKILL.md` description).
+  - Commands table: one row per file under `.claude/commands/` (`/<basename>` + first-line purpose).
+  - MCPs table: rows match the configured MCPs in `.mcp.json` (or `opencode.jsonc`).
+- **§7 PROJECT VARIABLES — POINTER** — verify the pointer text still references the correct files (`.agents/README.md`, `.agents/project.yaml`). If `.agents/` was renamed or removed, patch the pointer. NEVER inline project values here.
 
-- **Project Identity** — name, type, stack, target repo, test repo
-- **Project Variables** table — fill `<<PLACEHOLDER>>` values where context provides them
-- **Environment URLs** — local / staging / production
-- **Critical Test Priorities** — extract from `.context/master-test-plan.md`
-- **Context System** — update the Level 1 file list to match what actually exists under `.context/` (e.g. `business-data-map.md`, `master-test-plan.md`, `business/business-feature-map.md`, `business/business-api-map.md`)
-- **Discovery Progress** — mark phases that are complete (look for the corresponding outputs under `.context/`)
-- **Access Configuration** — verify which MCPs are configured, which env vars exist in `.env.example`
+**Sections to preserve verbatim** (per the §0–§11 preserve-list in Step 3):
 
-**Sections to preserve verbatim** (per the AI memory preserve-list in Step 3):
-
-- Critical Rules
-- Fundamental Rules (TypeScript Patterns, KATA Architecture)
-- Skills Available table
-- Commands Available table
-- Tool Resolution table
-- Git Workflow
-- MCPs Available
+- §0 Preamble
+- §1 CRITICAL RULES — ALWAYS APPLY (all 11 rules, including #11 "SCRIPTS = READ `package.json` DIRECTLY")
+- §2 BEHAVIORAL LAYER (4 principles, scope notes)
+- §3 ORCHESTRATION MODE — PERMANENTLY ACTIVE (6-component briefing, execution patterns, exempt-skill list)
+- §6 TOOL RESOLUTION (resolution table + MANDATORY load-skill-first rule)
+- §8 AI BEHAVIOR DURING TESTING
+- §9 LOCAL CONTEXT (PBI folder layout)
+- §10 KATA QUICK-REFERENCE (layer diagram + hard rules + pointer)
+- §11 GIT WORKFLOW (protected branches + critical commit rules)
 
 **If the memory file does not yet exist:**
 
-Create it from the canonical template at `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template`. Copy the full structure, then fill or placeholder each section based on what `.context/` provides.
+Do NOT bootstrap from inside `/sync-ai-memory`. Tell the user to run `/claude-md-tuner` in `bootstrap` mode — it owns CLAUDE.md creation against the §0–§11 priority template at `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template`. Once CLAUDE.md exists, re-run `/sync-ai-memory` to align cross-doc facts.
 
 Do **not** copy from a sibling project's `CLAUDE.md` — those are downstream consumers, not templates.
 
@@ -384,8 +392,8 @@ After all individual patches are computed (but before any file is written), veri
 | Command names | All targets | `CLAUDE.md` says `/sync-ai-memory`, `docs/getting-started.md` still says `/refresh-ai-memory` |
 | `.context/` directory paths | `CLAUDE.md`, `README.md`, `docs/context-engineering.md` / `CONTEXT.md` | One file says `.context/business/`, another says `.context/mapping/` |
 | Skill names | All targets | Skill renamed but not all docs updated |
-| Environment URLs | `CLAUDE.md`, `README.md` | Staging URL changed, only `CLAUDE.md` updated |
-| Script names | `CLAUDE.md`, `README.md`, `docs/getting-started.md` | Script renamed in `package.json` but not in docs |
+| Environment URLs | `.agents/project.yaml` (source of truth), `README.md`, `docs/workflows/environments.md` | Staging URL changed in `.agents/project.yaml`, README + environments.md still show old. NOTE: `CLAUDE.md` no longer holds env URLs — never patch them there. |
+| Script names | `package.json` (source of truth), `README.md`, `docs/getting-started.md` | Script renamed in `package.json` but README + docs still show old. NOTE: `CLAUDE.md` §1 Critical Rule #11 forbids inlining scripts — never patch script names into CLAUDE.md. |
 | AI memory file name | `README.md`, `INSTALLER.md`, `docs/*` | `GEMINI.md` detected but docs still say `CLAUDE.md` |
 
 **Drift detection algorithm:**
@@ -439,7 +447,7 @@ After writing all files, report per-target outcome and any redactions.
 | File | Outcome | What changed |
 |---|---|---|
 | README.md | updated | Available scripts table synced; project identity updated |
-| CLAUDE.md | updated | Project Identity, Discovery Progress, Access Configuration |
+| CLAUDE.md | updated | §4 Context Loading Map row added for new `/foo-bar` skill; §5 Skills + Commands tables synced with disk |
 | INSTALLER.md | unchanged | No drift detected |
 | CONTEXT.md | skipped | File does not yet exist on disk |
 | docs/agentic-quality-engineering.md | updated | Command name /refresh-ai-memory → /sync-ai-memory |
@@ -450,7 +458,7 @@ After writing all files, report per-target outcome and any redactions.
 - {fact}: {old value} → {new value} in {N} files
 
 **Sections preserved verbatim:**
-- CLAUDE.md: Critical Rules, Fundamental Rules, Skills Available, Tool Resolution, Git Workflow, MCPs Available
+- CLAUDE.md: §0 Preamble, §1 Critical Rules, §2 Behavioral Layer, §3 Orchestration Mode, §6 Tool Resolution, §8 AI Behavior, §9 Local Context, §10 KATA Quick-Ref, §11 Git Workflow
 
 **Security / redaction log:**
 - {empty if none}

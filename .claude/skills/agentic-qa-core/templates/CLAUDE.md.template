@@ -83,7 +83,7 @@ README.md, CLAUDE.md and docs/* aligned with `.context/` + `package.json` state.
 
 **ERROR PROTOCOL**: On subagent error → STOP, report full context, DO NOT fix without approval, offer retry/skip/abort.
 
-**WORKFLOW SKILL COMPLIANCE**: `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing` MUST have a `## Subagent Dispatch Strategy` section using the 6-component briefing. Reference / utility / generator skills are EXEMPT (no dispatch table needed): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `sync-ai-memory`.
+**WORKFLOW SKILL COMPLIANCE**: `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development` MUST have a `## Subagent Dispatch Strategy` section using the 6-component briefing. Reference / utility / generator skills are EXEMPT (no dispatch table needed): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `sync-ai-memory`.
 
 **DEEP DETAIL** (subagent-cacheable, do not inline here):
 
@@ -125,19 +125,33 @@ README.md, CLAUDE.md and docs/* aligned with `.context/` + `package.json` state.
 
 ## 5. SKILLS + COMMANDS + MCPs REGISTRY
 
+### Skill tiers (T1-T4)
+
+This repo organizes skills in 4 tiers with different discovery + load rules:
+
+- **T1** — Project-owned, committed in `.claude/skills/`. Listed below in "Workflow Skills". Load silent on trigger.
+- **T2** — Project dependency via gentle-ai. Installed at user level by `install.ts`. Load silent when invoked by a T1 orchestrator; ASK if standalone.
+- **T3** — Community project-level. Installed by `install.ts` into `.claude/skills/` (not committed). Load silent if category matches task domain.
+- **T4** — Community user-level. Installed globally. ALWAYS ASK before loading.
+
+Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-strategy.md`
+
+**SDD usage gate**: SDD-* skills (T2) are reserved for **framework evolution** via `/framework-development` (T1). NEVER invoke SDD-* from `/sprint-testing`, `/test-automation` per-ticket Code phase, `/test-documentation`, or `/regression-testing`. The boundary is enforced inline in each workflow skill.
+
 ### Skills (lazy-loaded by trigger phrase)
 
 | Skill | Trigger | Purpose |
 |---|---|---|
 | `agentic-qa-core` | `/agentic-qa-core init` | Foundation: hosts shared references (briefing / dispatch / doctrine) + bootstraps CLAUDE.md, `.agents/`, `scripts/`, `package.json`. |
 | `agentic-qa-onboard` | `/agentic-qa-onboard` | First-time orientation tour. Explains stack + 6-stage pipeline + MCPs. Hands off to the right downstream skill. |
+| `framework-development` | `/framework-development` | Gateway skill — sole legitimate entry point for chaining SDD-* skills. Use for evolving the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. |
 | `project-discovery` | `/project-discovery` | 4-phase discovery (Constitution → Architecture → Infrastructure → Specification) → generates PRD, SRS, domain glossary, `.context/`. Reverse-engineering only. |
 | `sprint-testing` | `/sprint-testing` | Stages 1-3: manual QA per ticket (Planning, Execution, Reporting). Produces PBI folder, ATP, ATR, bug reports. |
 | `test-documentation` | `/test-documentation` | Stage 4: TMS docs + ROI scoring. Produces Candidate / Manual / Deferred verdicts. |
 | `test-automation` | `/test-automation` | Stage 5: Plan → Code → Review on KATA + Playwright + TypeScript. |
 | `regression-testing` | `/regression-testing` | Stage 6: regression / smoke / sanity via CI/CD. Classifies failures. Emits GO / CAUTION / NO-GO. |
-| `playwright-cli` | `/playwright-cli` | Browser CLI: screenshots, tracing, video, session mgmt, request mocking. |
-| `playwright-best-practices` | `/playwright-best-practices` | Reference skill: flaky-test fixes, POM, accessibility (axe-core), auth/OAuth, fixtures, tags (`@smoke`/`@critical`), perf budgets, i18n, component testing. Auto-loads alongside `/test-automation`. |
+| `playwright-cli` | `/playwright-cli` | Browser CLI: screenshots, tracing, video, session mgmt, request mocking. *(community — installed at PROJECT level by `cli/install.ts`; not committed in repo)* |
+| `playwright-best-practices` | `/playwright-best-practices` | Reference skill: flaky-test fixes, POM, accessibility (axe-core), auth/OAuth, fixtures, tags (`@smoke`/`@critical`), perf budgets, i18n, component testing. Auto-loads alongside `/test-automation`. *(community — installed at PROJECT level by `cli/install.ts`; not committed in repo)* |
 | `xray-cli` | `/xray-cli` | Xray Cloud test management. |
 | `acli` | `/acli` | Atlassian CLI. Resolves `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` (Modality B). |
 | `git-flow-master` | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR. |

@@ -107,7 +107,7 @@ Then `bun run setup:doctor --json` to confirm.
 
 [gentle-ai](https://github.com/Gentleman-Programming/gentle-ai) is a user-level installer that configures AI agents (Claude Code, OpenCode, Cursor, etc.) with a curated set of skills, an MCP-based persistent memory layer (Engram), and an SDD (Spec-Driven Development) orchestrator. It does not install agents themselves — it tunes the agents you already have.
 
-This repo treats gentle-ai as a **base global "quasi-must-have"**. The recommended onboarding (`bun run setup`) installs it if missing, then layers Engram + 11 SDD skills + 2 universal helpers (judgment-day, issue-creation) + skill-registry on top of your agent. The result is one consistent skillset across every QA repo on your machine that follows this model.
+This repo treats gentle-ai as a **base global "quasi-must-have"**. The recommended onboarding (`bun run setup`) installs it if missing, then layers Engram + 10 SDD skills + 2 universal helpers (judgment-day, issue-creation) + skill-registry on top of your agent. The result is one consistent skillset across every QA repo on your machine that follows this model.
 
 The integration is **not strict**. If you choose to skip gentle-ai, the repo still works: workflow skills committed locally (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/agentic-qa-core`, etc.) keep functioning, and the 7 canonical MCPs are still configured. What you lose is the SDD spec-driven loop, persistent cross-session memory, adversarial review, and the issue-filing helper. Section "How to opt out" below details the trade-off.
 
@@ -158,25 +158,28 @@ Both ship via gentle-ai but are dev-writing-leaning. QA reporting tone is owned 
 
 Independent of gentle-ai, the installer also runs the official Anthropic `npx skills add` CLI to fetch community skills from upstream repos. Two lists, both defined as `const` arrays in `cli/install.ts`:
 
-### Project-level (currently empty for QA)
+### Project-level (2 skills)
 
-The `PROJECT_LEVEL_SKILLS` array is intentionally empty. Every project-specific skill in this repo (`/sprint-testing`, `/test-automation`, `/agentic-qa-core`, etc.) is authored by us and lives in `.claude/skills/`. Add stack-specific community skills here in the future if the boilerplate forks for a different stack (e.g., a Cypress flavor).
+Installed into `.claude/skills/` via `npx skills add` (project mode). Not committed — `cli/install.ts` re-fetches them on every install so we always pick up upstream fixes. They are critical to the QA stack and must travel with every clone of the repo.
 
-### User-level (global, 9 skills)
+| Slug                        | Source                                          | Why project-level                                                                                                                       |
+| --------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `playwright-cli`            | `microsoft/playwright-cli`                      | Browser automation CLI used by `/sprint-testing` and `/test-automation` as the primary `[AUTOMATION_TOOL]`.                              |
+| `playwright-best-practices` | `currents-dev/playwright-best-practices-skill`  | Patterns / anti-flaky / axe-core / fixtures reference. Auto-loaded by `/test-automation` during the Code phase.                          |
 
-Installed with `npx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack.
+### User-level (global, 7 skills)
 
-| Slug                   | Source                                          | Why user-level                                  |
-| ---------------------- | ----------------------------------------------- | ----------------------------------------------- |
-| `skill-creator`        | `anthropics/skills`                             | Author/edit skills — useful in any repo         |
-| `find-skills`          | `vercel-labs/skills`                            | Discover installable skills — universal         |
-| `gh-cli`               | `github/awesome-copilot`                        | GitHub CLI helper — universal                   |
-| `github-actions-docs`  | `xixu-me/skills`                                | GHA syntax + docs lookup — universal            |
-| `playwright-cli`       | `microsoft/playwright-cli`                      | Browser automation — coexists with the local copy in `.claude/skills/` (project-level wins) |
-| `n8n-skills`           | `czlonkowski/n8n-skills` (whole repo)           | n8n MCP integration — cross-project workflows   |
-| `emil-design-eng`      | `emilkowalski/skill`                            | UI design eng — when QA touches frontend        |
-| `ui-ux-pro-max`        | `nextlevelbuilder/ui-ux-pro-max-skill`          | UI/UX intelligence — universal                  |
-| `brainstorming`        | `obra/superpowers`                              | Pre-implementation ideation — universal         |
+Installed with `npx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack. QA-tuned subset of the dev universal layer — design/UI skills (n8n-skills, emil-design-eng, ui-ux-pro-max) live only in the dev repo since QA does not author UI or automation flows.
+
+| Slug                   | Source                                          | Why user-level                                                                              |
+| ---------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `skill-creator`        | `anthropics/skills`                             | Author/edit skills — useful in any repo                                                     |
+| `find-skills`          | `vercel-labs/skills`                            | Discover installable skills — universal                                                     |
+| `gh-cli`               | `github/awesome-copilot`                        | GitHub CLI helper for CI / PRs / releases — universal                                       |
+| `github-actions-docs`  | `xixu-me/skills`                                | GitHub Actions workflow reference — universal                                               |
+| `brainstorming`        | `obra/superpowers`                              | Pre-implementation ideation (framework features, test design edge cases) — universal        |
+| `cli-printing-press`   | `mvanhorn/cli-printing-press`                   | CLI tooling for API-as-CLI testing + framework utility scripts. Full functionality requires Go 1.26.3+; works standalone with degraded features. |
+| `html-ppt`             | `lewislulu/html-ppt-skill`                      | HTML presentations for sprint planning / retro / demo decks — universal                     |
 
 ### Skipping or re-running
 
@@ -199,7 +202,7 @@ Skills that are workflow-specific to this boilerplate live in `.claude/skills/` 
 | `test-documentation` | `/test-documentation`  | Stage 4: TMS test-case authoring + ROI prioritization (Jira/Xray bridge)      |
 | `test-automation`    | `/test-automation`     | Stage 5: KATA + Playwright + TS test authoring (plan → code → review)         |
 | `regression-testing` | `/regression-testing`  | Stage 6: CI suite execution, failure classification, GO/NO-GO verdict         |
-| `playwright-cli`     | `/playwright-cli`      | Browser automation CLI helpers (screenshots, traces, mocking)                 |
+| `framework-development` | `/framework-development` | Gateway for chaining `/sdd-*` skills. Use for evolving the boilerplate itself (KATA bases, fixtures, `cli/`, `scripts/`, `api/schemas/` pipeline). NOT for per-ticket QA. |
 | `acli`               | `/acli`                | Atlassian CLI wrapper for Jira/Confluence terminal work                       |
 | `xray-cli`           | `/xray-cli`            | Xray Cloud TMS CLI (test creation, executions, JUnit/Cucumber import)         |
 | `git-flow-master`    | (auto on git intents)  | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)      |

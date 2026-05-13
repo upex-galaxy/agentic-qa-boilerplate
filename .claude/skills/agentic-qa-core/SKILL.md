@@ -3,6 +3,7 @@ name: agentic-qa-core
 description: "Foundation skill that (a) hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine) and (b) bootstraps a target repo with the boilerplate's foundation files (CLAUDE.md, .agents/, scripts/, package.json updates). Triggers on: `/agentic-qa-core init`, `agentic-qa bootstrap`, `setup agentic-qa foundation`, `regenerate CLAUDE.md`, `install boilerplate scripts`. Do NOT use for: syncing AI-critical docs (use `/sync-ai-memory`), adapting KATA tests (use `/adapt-framework`), or onboarding the target project (use `/project-discovery`)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
+complementary_categories: [meta-skill]
 ---
 
 # Agentic QA Core — Foundation references + bootstrap
@@ -13,6 +14,24 @@ compatibility: [claude-code, copilot, cursor, codex, opencode]
 2. **Active — bootstrap trigger.** When users adopt this boilerplate by downloading skills à la carte (e.g. cloning `.claude/skills/sprint-testing/` only), they end up missing the foundation files those skills depend on (`CLAUDE.md`, `.agents/project.yaml`, `scripts/agents-*.ts`, etc.). Invoking `/agentic-qa-core init` regenerates that foundation from the templates shipped under `templates/`.
 
 Without `agentic-qa-core`, every other workflow skill would either silently rely on files that don't exist or copy-paste the same boilerplate-foundation paragraphs into its own `references/`. This skill is the single source of truth for both.
+
+---
+
+## Role: foundation + reference host
+
+This skill plays two roles:
+
+1. **Bootstrap** (`/agentic-qa-core init`) — generates foundation files for a
+   target repo (CLAUDE.md, .agents/, scripts/, package.json updates).
+2. **Reference host** — owns the shared doctrine documents cited by every
+   workflow skill:
+   - `references/briefing-template.md` — 6-component subagent briefing
+   - `references/dispatch-patterns.md` — when to Single/Parallel/Sequential/Background
+   - `references/orchestration-doctrine.md` — subagent-cacheable orchestration rules
+   - `references/skill-composition-strategy.md` — T1-T4 tier model + SDD boundary
+
+Workflow skills cite these references; this skill does NOT orchestrate or
+implement workflows. For framework evolution, see `/framework-development`.
 
 ---
 

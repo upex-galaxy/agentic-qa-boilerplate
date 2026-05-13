@@ -4,6 +4,7 @@ description: "Atlassian CLI (official `acli` binary, v1.3+ as of 2026) for Jira 
 license: MIT
 compatibility: [claude-code, cursor, codex, opencode]
 allowed-tools: Bash(acli:*)
+complementary_categories: [issue-tracker, vcs]
 ---
 
 # Atlassian CLI (`acli`)

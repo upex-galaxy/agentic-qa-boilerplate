@@ -4,6 +4,7 @@ description: "End-to-end Git operator for any branching strategy. Auto-detects t
 license: MIT
 compatibility: [claude-code, opencode]
 phase: implementation
+complementary_categories: [vcs]
 ---
 
 <!-- Model preferences (advisory; dispatchers may use to route) -->

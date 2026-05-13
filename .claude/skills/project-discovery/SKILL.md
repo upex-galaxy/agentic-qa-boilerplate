@@ -3,6 +3,7 @@ name: project-discovery
 description: "Onboard a project to this testing boilerplate and generate the context files that every QA and automation session depends on. Runs a 4-phase discovery (Constitution, Architecture, Infrastructure, Specification) that produces PRD, SRS, domain glossary, business-data-map, and test-ready fixtures. Use when the user says: set up this project, onboard this repo, connect to project, discover the architecture, generate business-data-map, or create PRD/SRS. Also use when .context/business/business-data-map.md is missing or stale. Do NOT use for writing tests (test-automation), documenting TCs (test-documentation), running suites (regression-testing), testing a ticket (sprint-testing), adapting the KATA architecture to the target stack (that is `/adapt-framework`), or syncing API endpoints (use `bun run api:sync` for technical sync; the `/business-api-map` command for the business angle)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
+complementary_categories: [meta-skill]
 ---
 
 # Project Discovery — Onboarding Orchestrator

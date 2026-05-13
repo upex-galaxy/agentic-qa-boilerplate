@@ -192,12 +192,22 @@ interface CommunitySkill {
 
 /**
  * Community skills installed at PROJECT level (`npx skills add`).
- * Empty for QA: every project-specific skill in this repo (sprint-testing,
- * test-automation, agentic-qa-core, etc.) is authored by us and committed under
- * .claude/skills/. Add stack-specific community skills here when needed (e.g., a
- * Cypress skill for a Cypress fork, or stack-detection skills via npx autoskills).
+ * Hosts third-party skills that are critical to this QA stack and must travel
+ * with every clone of the repo. They are NOT committed to .claude/skills/
+ * (see .gitignore) — install.ts re-fetches them on every install so we always
+ * get upstream fixes. Skills authored by us (sprint-testing, test-automation,
+ * agentic-qa-core, project-discovery, regression-testing, test-documentation,
+ * agentic-qa-onboard, acli, xray-cli, git-flow-master) live committed under
+ * .claude/skills/ and are NOT listed here.
  */
-const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [];
+const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
+  // playwright-cli (Microsoft): browser automation CLI used by /sprint-testing
+  // and /test-automation as the primary [AUTOMATION_TOOL].
+  { package: 'https://github.com/microsoft/playwright-cli', skill: 'playwright-cli' },
+  // playwright-best-practices (currents.dev): patterns / anti-flaky / axe-core /
+  // fixtures reference loaded by /test-automation during the Code phase.
+  { package: 'https://github.com/currents-dev/playwright-best-practices-skill', skill: 'playwright-best-practices' },
+];
 
 /**
  * Community skills installed at USER (global) level (`npx skills add --global`).
@@ -206,15 +216,12 @@ const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [];
  * ui-ux-pro-max) live only in the dev repo since QA does not author UI or
  * automation flows. cli-printing-press + html-ppt are cross-project utilities
  * useful for testing tooling and report generation.
- * playwright-cli also lives locally in .claude/skills/playwright-cli (project-level
- * gain over user-level) — both are kept on purpose for redundancy.
  */
 const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/anthropics/skills', skill: 'skill-creator' },
   { package: 'https://github.com/vercel-labs/skills', skill: 'find-skills' },
   { package: 'https://github.com/github/awesome-copilot', skill: 'gh-cli' },
   { package: 'https://github.com/xixu-me/skills', skill: 'github-actions-docs' },
-  { package: 'https://github.com/microsoft/playwright-cli', skill: 'playwright-cli' },
   { package: 'https://github.com/obra/superpowers', skill: 'brainstorming' },
   // cli-printing-press: full functionality requires Go 1.26.3+ (go install github.com/mvanhorn/cli-printing-press/v4/cmd/printing-press@latest); skill works standalone with degraded features
   { package: 'https://github.com/mvanhorn/cli-printing-press', skill: 'cli-printing-press' },

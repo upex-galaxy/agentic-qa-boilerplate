@@ -26,6 +26,8 @@ export default antfu({
     '.github/**',
     // Generated files (auto-generated, not manually edited)
     'api/openapi-types.ts',
+    // Skill templates — copied to target repos at install time, not linted here
+    '.claude/skills/*/templates/**',
   ],
 
   // Custom rules

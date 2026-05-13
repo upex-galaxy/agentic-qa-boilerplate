@@ -220,7 +220,6 @@ bun run test:e2e:critical  # Tests marked @critical
 │   ├── test-documentation/       # TMS documentation + prioritization
 │   ├── test-automation/          # KATA planning + coding + review
 │   ├── regression-testing/       # Regression execution + GO/NO-GO
-│   ├── playwright-cli/           # Browser automation helper
 │   ├── xray-cli/                 # Xray TMS helper
 │   └── acli/                     # Atlassian CLI helper ([ISSUE_TRACKER_TOOL])
 │
@@ -343,6 +342,7 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run kata:manifest` | Extract ATCs from codebase into a manifest (`--watch` flag available) |
 | `bun run agents:setup` | Interactive walkthrough to populate `.agents/project.yaml` |
 | `bun run lint:agents` | Lint `.agents/` files for missing required values |
+| `bun run lint:skills` | Validate T1-T4 skill tier coherence (frontmatter, categories, anti-leak) |
 | `bun run jira:sync-fields` | Sync Jira custom-field catalog into `.agents/jira-fields.json` |
 | `bun run jira:sync-workflows` | Sync Jira workflow statuses + transitions into `.agents/jira-workflows.json` |
 | `bun run jira:sync-issues` | Pull Jira Epics/Stories into `.context/PBI/` markdown files |
@@ -492,10 +492,10 @@ When you clone this template, follow this flow to adapt it to your project:
 ├── test-documentation/    # TMS documentation and test prioritization
 ├── test-automation/       # KATA planning + coding + review pipeline
 ├── regression-testing/    # Regression execution + GO/NO-GO decisions
-├── playwright-cli/        # Browser automation helper (screenshots, tracing, ...)
 ├── xray-cli/              # Xray TMS helper (tests, executions, imports, ...)
 ├── acli/                  # Atlassian CLI for Jira Cloud ([ISSUE_TRACKER_TOOL])
 ├── git-flow-master/       # End-to-end Git operator (auto-detects branching strategy)
+├── framework-development/ # Gateway for SDD-* chains evolving the boilerplate itself
 └── agentic-qa-onboard/    # First-time orientation tour
 ```
 
@@ -509,9 +509,11 @@ When you clone this template, follow this flow to adapt it to your project:
 | **test-documentation** | `/test-documentation` | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS. Produces Candidate / Manual / Deferred verdicts. |
 | **test-automation** | `/test-automation` | **Stage 5**. Plan -> Code -> Review automated tests on KATA + Playwright + TypeScript. |
 | **regression-testing** | `/regression-testing` | **Stage 6**. Execute regression / smoke / sanity suites via CI/CD, classify failures, emit GO / CAUTION / NO-GO. |
-| **playwright-cli** | `/playwright-cli` | Browser automation CLI: screenshots, tracing, video recording, session management, request mocking. |
+| **playwright-cli** | `/playwright-cli` | Browser automation CLI: screenshots, tracing, video recording, session management, request mocking. *(community skill — installed at PROJECT level by `bun run install`; not committed in repo.)* |
+| **playwright-best-practices** | `/playwright-best-practices` | Playwright + TypeScript reference: flaky-test fixes, POM vs fixtures, axe-core, auth/OAuth, perf budgets, i18n, component testing. Auto-loads in the Code phase of `/test-automation`. *(community skill by currents.dev — installed at PROJECT level by `bun run install`; not committed in repo.)* |
 | **xray-cli** | `/xray-cli` | Xray Cloud test management CLI: tests, executions, plans, JUnit/Cucumber/Xray JSON imports, project backup/restore. |
 | **acli** | `/acli` | Atlassian CLI for Jira Cloud — resolves `[ISSUE_TRACKER_TOOL]` and (in Modality B) `[TMS_TOOL]`. |
+| **framework-development** | `/framework-development` | Gateway for chaining SDD-* skills. Use for evolving the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. |
 
 ### How to Use Each Skill
 
@@ -735,6 +737,7 @@ Load the `/project-discovery` skill in your AI assistant to generate project-spe
 - `/xray-cli` skill -- Xray Cloud test management CLI
 - `/acli` skill -- Atlassian CLI for Jira Cloud (`[ISSUE_TRACKER_TOOL]`)
 - `/git-flow-master` skill -- End-to-end Git operator (auto-detects branching strategy)
+- `/framework-development` skill -- Gateway for SDD-* chains evolving the boilerplate itself (KATA, fixtures, installer)
 - `/agentic-qa-onboard` skill -- First-time orientation tour
 - `docs/` -- Human-facing docs (methodology, workflows, architectures)
 
