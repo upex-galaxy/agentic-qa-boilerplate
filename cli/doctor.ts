@@ -213,6 +213,80 @@ function shellHookLine(): { line: string, rc: string } {
 }
 
 // ----------------------------------------------------------------------------
+// Output color codes (shared by preflight + full doctor output)
+// ----------------------------------------------------------------------------
+
+const COLORS = {
+  reset: '\x1B[0m',
+  dim: '\x1B[2m',
+  green: '\x1B[32m',
+  yellow: '\x1B[33m',
+  red: '\x1B[31m',
+  bold: '\x1B[1m',
+};
+
+// ----------------------------------------------------------------------------
+// Preflight (fast short-circuit before full doctor run)
+// ----------------------------------------------------------------------------
+
+function parseBunVersion(raw: string): [number, number, number] | null {
+  const m = raw.trim().match(/^(\d+)\.(\d+)\.(\d+)/);
+  if (!m) {
+    return null;
+  }
+  return [Number(m[1]), Number(m[2]), Number(m[3])];
+}
+
+function compareVersion(a: [number, number, number], b: [number, number, number]): number {
+  for (let i = 0; i < 3; i++) {
+    if (a[i] !== b[i]) {
+      return a[i] - b[i];
+    }
+  }
+  return 0;
+}
+
+function runPreflight(): never {
+  const failures: { check: string, fix: string }[] = [];
+
+  const bunVersionRaw = typeof Bun !== 'undefined' ? Bun.version : '';
+  const parsed = parseBunVersion(bunVersionRaw);
+  if (!parsed) {
+    failures.push({
+      check: 'Bun runtime missing or unreadable',
+      fix: 'Install Bun: curl -fsSL https://bun.sh/install | bash',
+    });
+  }
+  else if (compareVersion(parsed, [1, 0, 0]) < 0) {
+    failures.push({
+      check: `Bun ${bunVersionRaw} is too old (need >= 1.0.0)`,
+      fix: 'Upgrade Bun: bun upgrade',
+    });
+  }
+
+  const inquirerPath = join(REPO_ROOT, 'node_modules', '@inquirer', 'prompts');
+  if (!existsSync(inquirerPath)) {
+    failures.push({
+      check: 'Missing node_modules/@inquirer/prompts (installer dependency)',
+      fix: 'Run: bun install',
+    });
+  }
+
+  if (failures.length === 0) {
+    const bunLabel = parsed ? `${parsed[0]}.${parsed[1]}.${parsed[2]}` : 'unknown';
+    console.log(`${COLORS.green}${COLORS.bold}✓ Preflight OK${COLORS.reset} (Bun ${bunLabel}, deps installed)`);
+    process.exit(0);
+  }
+
+  console.log(`${COLORS.red}${COLORS.bold}✗ Preflight failed${COLORS.reset}`);
+  for (const f of failures) {
+    console.log(`  ${COLORS.red}•${COLORS.reset} ${f.check}`);
+    console.log(`    ${COLORS.dim}Fix:${COLORS.reset} ${f.fix}`);
+  }
+  process.exit(1);
+}
+
+// ----------------------------------------------------------------------------
 // Main check
 // ----------------------------------------------------------------------------
 
@@ -333,15 +407,6 @@ async function runDoctor(): Promise<DoctorReport> {
 // Output formatters
 // ----------------------------------------------------------------------------
 
-const COLORS = {
-  reset: '\x1B[0m',
-  dim: '\x1B[2m',
-  green: '\x1B[32m',
-  yellow: '\x1B[33m',
-  red: '\x1B[31m',
-  bold: '\x1B[1m',
-};
-
 function printHuman(report: DoctorReport): void {
   const tick = (ok: boolean) => (ok ? `${COLORS.green}✓${COLORS.reset}` : `${COLORS.red}✗${COLORS.reset}`);
   const headerColor = report.status === 'ok' ? COLORS.green : COLORS.yellow;
@@ -390,6 +455,11 @@ function printHuman(report: DoctorReport): void {
 // ----------------------------------------------------------------------------
 
 const asJson = process.argv.includes('--json');
+const asPreflight = process.argv.includes('--preflight');
+
+if (asPreflight) {
+  runPreflight();
+}
 
 runDoctor().then((report) => {
   if (asJson) {
