@@ -626,6 +626,7 @@ async function validatePrerequisites(): Promise<void> {
 // BACKUP
 // ============================================================================
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function createBackup(components: string[]): string {
   log.step('Creating backup...');
 
@@ -842,6 +843,7 @@ function countFilesInDir(dir: string): number {
 /**
  * Execute a dry-run: preview what would change without modifying files.
  */
+// eslint-disable-next-line unused-imports/no-unused-vars
 function executeDryRun(commands: string[], allMode: boolean, skillsFilter: string[] | null): void {
   log.header('  DRY RUN — No files will be modified');
   console.log('');
@@ -965,6 +967,7 @@ function printSkillsList(): void {
  * Each folder inside the template's `.claude/skills/` is treated as the atomic
  * unit of sync. User skills that don't exist in the template are preserved.
  */
+// eslint-disable-next-line unused-imports/no-unused-vars
 function updateSkills(skillsFilter: string[] | null): MergeResult {
   log.step(`Updating ${SKILLS_CANONICAL_DIR}/ (merge)...`);
 
@@ -1010,6 +1013,7 @@ function updateSkills(skillsFilter: string[] | null): MergeResult {
   return totals;
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function updateDocs(): MergeResult {
   log.step('Updating docs/ (merge)...');
 
@@ -1023,6 +1027,7 @@ function updateDocs(): MergeResult {
   return mergeDirectory(docsPath, 'docs');
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function updateCli(): MergeResult {
   log.step('Updating cli/ (merge)...');
 
@@ -1036,6 +1041,7 @@ function updateCli(): MergeResult {
   return mergeDirectory(cliPath, 'cli');
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function updateVscode(): MergeResult {
   log.step('Updating .vscode/ (merge)...');
 
@@ -1049,6 +1055,7 @@ function updateVscode(): MergeResult {
   return mergeDirectory(vscodePath, '.vscode');
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function updateHusky(): MergeResult {
   log.step('Updating .husky/ (merge)...');
 
@@ -1062,6 +1069,7 @@ function updateHusky(): MergeResult {
   return mergeDirectory(huskyPath, '.husky');
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function updateTooling(): MergeResult {
   log.step('Updating tooling config files...');
 
@@ -1090,6 +1098,7 @@ function updateTooling(): MergeResult {
   return { success, errors };
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function updateExamples(): MergeResult {
   log.step('Updating example templates...');
 
@@ -1118,6 +1127,7 @@ function updateExamples(): MergeResult {
   return { success, errors };
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function updateCommands(): MergeResult {
   log.step('Updating .claude/commands/ (merge)...');
 
@@ -1131,6 +1141,7 @@ function updateCommands(): MergeResult {
   return mergeDirectory(commandsPath, join('.claude', 'commands'));
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function updateScripts(): MergeResult {
   log.step('Updating scripts/ (merge)...');
 
@@ -1144,6 +1155,7 @@ function updateScripts(): MergeResult {
   return mergeDirectory(scriptsPath, 'scripts');
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function updateTemplates(): MergeResult {
   log.step('Updating templates/ (merge)...');
 
@@ -1157,6 +1169,7 @@ function updateTemplates(): MergeResult {
   return mergeDirectory(templatesPath, 'templates');
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function updateAgentsDocs(): MergeResult {
   log.step('Updating .agents/ documentation...');
 
@@ -1186,6 +1199,7 @@ function updateAgentsDocs(): MergeResult {
   return { success, errors };
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function updateClaudeConfig(): MergeResult {
   log.step('Updating .claude/ config...');
 
@@ -1223,6 +1237,7 @@ function extractVersion(content: string): string | null {
   return match ? match[1] : null;
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function selfUpdate(): boolean {
   const currentScriptPath = join(process.cwd(), 'cli', 'update-boilerplate.ts');
   const templateScriptPath = join(TEMP_DIR, 'cli', 'update-boilerplate.ts');
@@ -1268,6 +1283,7 @@ function cleanup(): void {
 // INTERACTIVE MENUS
 // ============================================================================
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 async function showMainMenu(): Promise<string[]> {
   const { checkbox } = await import('@inquirer/prompts');
 
@@ -1295,6 +1311,7 @@ async function showMainMenu(): Promise<string[]> {
  * Show a checkbox listing the skills discovered in the template.
  * Returns the subset selected by the user (defaults to all).
  */
+// eslint-disable-next-line unused-imports/no-unused-vars
 async function showSkillsMenu(): Promise<string[]> {
   const { checkbox } = await import('@inquirer/prompts');
 
@@ -1435,6 +1452,7 @@ function getTemplateCommit(): string {
 /**
  * Record sync metadata to .boilerplate-version.json after successful sync.
  */
+// eslint-disable-next-line unused-imports/no-unused-vars
 function recordSyncVersion(syncedComponents: string[]): void {
   const version: BoilerplateVersion = {
     lastSync: new Date().toISOString(),
@@ -2161,6 +2179,309 @@ async function runAuto(
 }
 
 // ============================================================================
+// DIFF RENDERING (Capability 7)
+// ============================================================================
+
+/**
+ * Render a colorized unified diff of upstream changes: template-old → template-new.
+ * Uses `git diff <oldSha> <newSha>` inside the template clone.
+ * For status=A (no old blob), uses the empty-tree SHA as the old side.
+ */
+function renderTemplateDiff(entry: DeltaEntry, repoDir: string): string {
+  const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+  const oldRef = entry.templateOldSha || EMPTY_TREE;
+  const newRef = entry.templateNewSha || EMPTY_TREE;
+
+  try {
+    return execSync(
+      `git -C "${repoDir}" diff --color=always ${oldRef} ${newRef}`,
+      { stdio: ['pipe', 'pipe', 'pipe'] },
+    ).toString();
+  }
+  catch {
+    return `(could not render template diff for ${entry.path})\n`;
+  }
+}
+
+/**
+ * Render a colorized unified diff of local changes: template-old → local-current.
+ * Writes the template-old blob to a tmp file, then uses `git diff --no-index`.
+ * ALWAYS cleans up the tmp file in a finally block (Design Risk #1).
+ */
+function renderLocalDiff(entry: DeltaEntry, repoDir: string, localRepoRoot: string): string {
+  const localPath = join(localRepoRoot, entry.path);
+
+  if (!existsSync(localPath)) {
+    return `(local file does not exist: ${entry.path})\n`;
+  }
+
+  if (!entry.templateOldSha) {
+    // No old blob (e.g. A status with local collision) — diff empty → local
+    return `(no template-old blob available for ${entry.path})\n`;
+  }
+
+  const tmpPath = join(tmpdir(), `kata-diff-old-${process.pid}-${Date.now()}`);
+
+  try {
+    // Write template-old blob to tmp file
+    const blobBytes = execSync(
+      `git -C "${repoDir}" show ${entry.templateOldSha}`,
+      { stdio: ['pipe', 'pipe', 'pipe'] },
+    );
+    writeFileSync(tmpPath, blobBytes);
+
+    try {
+      return execSync(
+        `git diff --no-index --color=always "${tmpPath}" "${localPath}"`,
+        { stdio: ['pipe', 'pipe', 'pipe'] },
+      ).toString();
+    }
+    catch (diffErr) {
+      // git diff --no-index exits non-zero when files differ — that's expected
+      // Extract stdout from the error object
+      const err = diffErr as { stdout?: Buffer | string };
+      if (err.stdout) {
+        return err.stdout.toString();
+      }
+      return `(could not render local diff for ${entry.path})\n`;
+    }
+  }
+  catch {
+    return `(could not retrieve template-old blob for ${entry.path})\n`;
+  }
+  finally {
+    // Always clean up tmp file regardless of success or failure
+    try {
+      rmSync(tmpPath, { force: true });
+    }
+    catch {
+      // Ignore cleanup errors
+    }
+  }
+}
+
+/**
+ * Print both diffs side-by-side with clear section headers.
+ * Used before the per-file resolution prompt.
+ */
+function printPairedDiffs(entry: DeltaEntry, repoDir: string, localRepoRoot: string): void {
+  console.log('');
+  console.log(`${colors.bold}${colors.cyan}=== Upstream changes (template-old → template-new) ===${colors.reset}`);
+  const templateDiff = renderTemplateDiff(entry, repoDir);
+  if (templateDiff.trim()) {
+    console.log(templateDiff);
+  }
+  else {
+    console.log(`${colors.dim}  (no diff output)${colors.reset}`);
+  }
+
+  console.log(`${colors.bold}${colors.cyan}=== Your local changes (template-old → local-current) ===${colors.reset}`);
+  const localDiff = renderLocalDiff(entry, repoDir, localRepoRoot);
+  if (localDiff.trim()) {
+    console.log(localDiff);
+  }
+  else {
+    console.log(`${colors.dim}  (no diff output — files may be identical)${colors.reset}`);
+  }
+  console.log('');
+}
+
+// ============================================================================
+// INTERACTIVE SELECTION UI (Capability 6)
+// ============================================================================
+
+/**
+ * Present a flat checkbox menu for user selection of changed files.
+ *
+ * Row format: `[M] path/to/file.ts  +12/-3` or `[M!] path/to/file.ts  +12/-3` for diverged.
+ * [D] rows default to unchecked per Capability 6.1.
+ * All rows default to unchecked per Capability 6.1.
+ * Group separators (single line) are inserted between components for visual segmentation.
+ *
+ * Returns the array of checked DeltaEntry objects (Capability 6.2).
+ */
+async function selectFilesInteractive(entries: DeltaEntry[]): Promise<DeltaEntry[]> {
+  const { checkbox, Separator } = await import('@inquirer/prompts');
+
+  // Filter: exclude unchanged and binary-skip (binary-skip warned separately upstream)
+  const visible = entries.filter(
+    e => e.classification !== 'unchanged' && e.classification !== 'binary-skip',
+  );
+
+  if (visible.length === 0) {
+    log.info('Nothing to update.');
+    return [];
+  }
+
+  // Build choices with component group separators
+  interface CheckboxChoice { name: string, value: DeltaEntry, checked: boolean }
+  const choices: (CheckboxChoice | InstanceType<typeof Separator>)[] = [];
+
+  let lastComponent = '';
+  for (const entry of visible) {
+    if (entry.component !== lastComponent) {
+      if (lastComponent !== '') {
+        choices.push(new Separator());
+      }
+      choices.push(new Separator(`── ${entry.component} ──`));
+      lastComponent = entry.component;
+    }
+
+    const badge = entry.classification === 'locally-diverged' ? `${entry.status}!` : entry.status;
+    const stats = `  +${entry.addLines}/-${entry.delLines}`;
+    const label = `[${badge}] ${entry.path}${stats}`;
+
+    choices.push({
+      name: label,
+      value: entry,
+      // D rows default unchecked; all others also default unchecked per spec
+      checked: false,
+    });
+  }
+
+  const selected = await checkbox<DeltaEntry>({
+    message: 'Select files to sync: (SPACE to toggle, ENTER to confirm)',
+    choices,
+  });
+
+  return selected;
+}
+
+// ============================================================================
+// PER-FILE RESOLUTION (Capability 7, 14)
+// ============================================================================
+
+/**
+ * Show paired diffs and prompt the user for a resolution on a locally-diverged file.
+ * Prompt: `[t]heirs / [m]ine / [s]kip (default: skip): `
+ * Default is skip (per Capability 7.3).
+ * Re-prompts on invalid input.
+ */
+async function resolveDivergedFile(
+  entry: DeltaEntry,
+  repoDir: string,
+  localRepoRoot: string,
+): Promise<Resolution> {
+  printPairedDiffs(entry, repoDir, localRepoRoot);
+
+  while (true) {
+    const answer = await nativePrompt(
+      `${colors.bold}${colors.cyan}[t]heirs / [m]ine / [s]kip${colors.reset} (default: skip): `,
+    );
+
+    if (answer === '' || answer === 's' || answer === 'skip') {
+      return 'skip';
+    }
+    if (answer === 't' || answer === 'theirs') {
+      return 'theirs';
+    }
+    if (answer === 'm' || answer === 'mine') {
+      return 'mine';
+    }
+
+    log.warning(`Invalid input '${answer}'. Enter t (theirs), m (mine), or s (skip).`);
+  }
+}
+
+/**
+ * Prompt for explicit deletion confirmation on a deleted-upstream file.
+ * Prompt: `Delete <path> locally? [y/N]: ` with default N.
+ * Returns 'delete' on y/Y; 'keep' on N/n/Enter.
+ */
+async function confirmDeletion(entry: DeltaEntry): Promise<Resolution> {
+  const answer = await nativePrompt(
+    `${colors.yellow}Delete ${entry.path} locally?${colors.reset} [y/N]: `,
+  );
+
+  if (answer === 'y' || answer === 'yes') {
+    return 'delete';
+  }
+  return 'keep';
+}
+
+// ============================================================================
+// INTERACTIVE PLAN (Capability 6, 7, 14)
+// ============================================================================
+
+/**
+ * Orchestrate the full interactive per-file pipeline.
+ *
+ * Steps:
+ *   1. selectFilesInteractive → user picks files
+ *   2. For each selected entry:
+ *      - clean-fastforward / new-upstream → resolution: 'theirs'
+ *      - locally-diverged → resolveDivergedFile()
+ *      - deleted-upstream → confirmDeletion()
+ *   3. Unchecked entries → push to summary.skipped
+ *
+ * Returns RunSummary (partial — newHeadSha filled in by caller).
+ */
+async function planInteractive(
+  entries: DeltaEntry[],
+  repoDir: string,
+  localRepoRoot: string,
+  dryRun: boolean,
+): Promise<{ plan: AppliedFile[], skipped: AppliedFile[] }> {
+  const selected = await selectFilesInteractive(entries);
+
+  const selectedPaths = new Set(selected.map(e => e.path));
+
+  const plan: AppliedFile[] = [];
+  const skipped: AppliedFile[] = [];
+
+  // Unchecked entries are skipped
+  for (const entry of entries.filter(
+    e => e.classification !== 'unchanged' && e.classification !== 'binary-skip',
+  )) {
+    if (!selectedPaths.has(entry.path)) {
+      skipped.push({ entry, resolution: 'skip' });
+    }
+  }
+
+  // For each selected entry, determine resolution
+  for (const entry of selected) {
+    if (entry.classification === 'clean-fastforward' || entry.classification === 'new-upstream') {
+      plan.push({ entry, resolution: 'theirs' });
+    }
+    else if (entry.classification === 'locally-diverged') {
+      if (dryRun) {
+        // In dry-run, still prompt so user sees the menu — but resolution is advisory only
+        log.dim(`[dry-run] diverged file selected: ${entry.path} — prompting for preview...`);
+        const resolution = await resolveDivergedFile(entry, repoDir, localRepoRoot);
+        log.dim(`[dry-run] would resolve as: ${resolution}`);
+        plan.push({ entry, resolution });
+      }
+      else {
+        const resolution = await resolveDivergedFile(entry, repoDir, localRepoRoot);
+        if (resolution === 'skip') {
+          skipped.push({ entry, resolution });
+        }
+        else {
+          plan.push({ entry, resolution });
+        }
+      }
+    }
+    else if (entry.classification === 'deleted-upstream') {
+      if (dryRun) {
+        log.dim(`[dry-run] deleted-upstream selected: ${entry.path} — would prompt for deletion confirm`);
+        plan.push({ entry, resolution: 'delete' });
+      }
+      else {
+        const resolution = await confirmDeletion(entry);
+        if (resolution === 'keep') {
+          skipped.push({ entry, resolution: 'keep' });
+        }
+        else {
+          plan.push({ entry, resolution: 'delete' });
+        }
+      }
+    }
+  }
+
+  return { plan, skipped };
+}
+
+// ============================================================================
 // SYNC-STATE WRITEBACK
 // ============================================================================
 
@@ -2530,6 +2851,7 @@ ${colors.yellow}╚════════════════════�
 // SYNC SUMMARY
 // ============================================================================
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function printSyncSummary(totals: MergeResult): void {
   if (totals.errors > 0) {
     log.warning(`Sync finished with warnings: ${totals.success} files synced, ${totals.errors} skipped`);
@@ -2550,99 +2872,149 @@ async function main(): Promise<void> {
   log.header('  Update Boilerplate CLI');
   log.info('Using intelligent merge (preserves user files)');
 
-  // No arguments -> Interactive menu
+  // No arguments → Interactive per-file pipeline (M3)
   if (args.length === 0) {
     await ensureDependencies();
+    ensureGitVersion();
+    await validatePrerequisites();
 
-    const selected = await showMainMenu();
+    // Read sync state
+    let priorStateInteractive: SyncState | null = null;
+    try {
+      priorStateInteractive = readSyncState(process.cwd());
+    }
+    catch (err) {
+      if (err instanceof CorruptStateError) {
+        log.error(err.message);
+        process.exit(4);
+      }
+      throw err;
+    }
 
-    if (selected.length === 0) {
-      log.warning('Nothing selected. Exiting...');
+    // Bootstrap path deferred to M4
+    if (priorStateInteractive === null) {
+      log.warning(
+        'First-time sync requires bootstrap path (M4). '
+        + 'Run `bun run update --auto --dry-run` to preview the new auto pipeline, '
+        + 'or wait for M4 milestone.',
+      );
       process.exit(0);
     }
 
-    await validatePrerequisites();
-    checkMigrationNeeded();
+    // Acquire template
+    await partialCloneTemplate(TEMPLATE_REPO, TEMP_DIR);
+    const newHeadShaInteractive = resolveTemplateHeadSha(TEMP_DIR);
 
-    const components = selected.includes('all')
-      ? ['skills', 'commands', 'scripts', 'templates', 'agents-docs', 'claude-config', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples']
-      : selected;
-
-    createBackup(components);
-    await cloneTemplate();
-
-    selfUpdate();
-
-    const totals: MergeResult = { success: 0, errors: 0 };
-    const addResult = (r: MergeResult) => { totals.success += r.success; totals.errors += r.errors; };
-
-    if (selected.includes('all')) {
-      addResult(updateSkills(null));
-      addResult(updateCommands());
-      addResult(updateScripts());
-      addResult(updateTemplates());
-      addResult(updateAgentsDocs());
-      addResult(updateClaudeConfig());
-      addResult(updateDocs());
-      addResult(updateCli());
-      addResult(updateVscode());
-      addResult(updateHusky());
-      addResult(updateTooling());
-      addResult(updateExamples());
+    // Synthesise v6 state (v5 treated as all-bootstrap for now — full migration UX in M4)
+    let v6StateInteractive: SyncStateV6;
+    if (!('perComponentCommit' in priorStateInteractive)) {
+      log.warning(
+        'Detected v5.3 .boilerplate-version.json (schema migration deferred to M4). '
+        + 'Treating all components as bootstrap for this run.',
+      );
+      log.warning(
+        'First-time sync requires bootstrap path (M4). '
+        + 'Run `bun run update --auto --dry-run` to preview the new auto pipeline, '
+        + 'or wait for M4 milestone.',
+      );
+      cleanup();
+      process.exit(0);
     }
     else {
-      for (const cmd of selected) {
-        if (cmd === 'skills') {
-          const skillSelection = await showSkillsMenu();
-          if (skillSelection.length === 0) {
-            log.warning('No skills selected. Skipping skills sync.');
-            continue;
-          }
-          addResult(updateSkills(skillSelection));
-        }
-        else if (cmd === 'commands') {
-          addResult(updateCommands());
-        }
-        else if (cmd === 'scripts') {
-          addResult(updateScripts());
-        }
-        else if (cmd === 'templates') {
-          addResult(updateTemplates());
-        }
-        else if (cmd === 'agents-docs') {
-          addResult(updateAgentsDocs());
-        }
-        else if (cmd === 'claude-config') {
-          addResult(updateClaudeConfig());
-        }
-        else if (cmd === 'docs') {
-          addResult(updateDocs());
-        }
-        else if (cmd === 'cli') {
-          addResult(updateCli());
-        }
-        else if (cmd === 'vscode') {
-          addResult(updateVscode());
-        }
-        else if (cmd === 'husky') {
-          addResult(updateHusky());
-        }
-        else if (cmd === 'tooling') {
-          addResult(updateTooling());
-        }
-        else if (cmd === 'examples') {
-          addResult(updateExamples());
-        }
+      v6StateInteractive = priorStateInteractive;
+    }
+
+    const { delta, bootstrap } = computeDelta(TEMP_DIR, COMPONENTS, v6StateInteractive);
+
+    if (bootstrap.length > 0) {
+      log.warning(
+        `Bootstrap needed for components: ${bootstrap.map(c => c.name).join(', ')}. `
+        + 'Bootstrap path deferred to M4 — skipping bootstrap components this run.',
+      );
+    }
+
+    // Filter: only visible entries (exclude unchanged + binary-skip from main list)
+    const visibleInteractive = delta.filter(e => e.classification !== 'unchanged');
+
+    // Warn about binary skips
+    for (const entry of visibleInteractive.filter(e => e.classification === 'binary-skip')) {
+      log.warning(`Binary file skipped: ${entry.path}`);
+    }
+
+    if (visibleInteractive.filter(e => e.classification !== 'binary-skip').length === 0) {
+      log.info('Already at HEAD for all components.');
+      cleanup();
+      return;
+    }
+
+    // Run interactive per-file plan
+    const { plan, skipped } = await planInteractive(
+      visibleInteractive,
+      TEMP_DIR,
+      process.cwd(),
+      false, // dryRun=false here; dry-run is handled below when args present
+    );
+
+    if (plan.length === 0 && skipped.length > 0) {
+      log.info('No files selected. Nothing to apply.');
+      cleanup();
+      return;
+    }
+
+    // Apply resolutions
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const backupDirInteractive = join('.backups', `update-${timestamp}`);
+    mkdirSync(backupDirInteractive, { recursive: true });
+
+    const appliedInteractive: AppliedFile[] = [];
+    const failedInteractive: FailedFile[] = [];
+
+    for (const item of plan) {
+      try {
+        await applyResolution(item.entry, item.resolution, TEMP_DIR, process.cwd(), backupDirInteractive);
+        appliedInteractive.push(item);
+      }
+      catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log.error(`Failed to apply ${item.entry.path}: ${msg}`);
+        failedInteractive.push({ entry: item.entry, resolution: item.resolution, error: msg });
       }
     }
 
-    recordSyncVersion(components);
+    const summaryInteractive: RunSummary = {
+      applied: appliedInteractive,
+      skipped,
+      failed: failedInteractive,
+      binarySkipped: visibleInteractive.filter(e => e.classification === 'binary-skip'),
+      bootstrapComponents: [],
+      newHeadSha: newHeadShaInteractive,
+    };
+
+    // Write backup manifest
+    appendBackupManifest(backupDirInteractive, visibleInteractive, v6StateInteractive);
+
+    // Advance and write sync state
+    const nextStateInteractive = advanceSyncState(
+      v6StateInteractive,
+      summaryInteractive,
+      COMPONENTS,
+      newHeadShaInteractive,
+    );
+    writeSyncState(process.cwd(), nextStateInteractive);
+
+    // Post-sync checks
     detectUnfilledVariables();
     detectMissingFrameworkScripts();
     cleanup();
+
     log.header('  Update completed!');
-    printSyncSummary(totals);
+    log.info(`Applied: ${appliedInteractive.length}, Skipped: ${skipped.length}, Failed: ${failedInteractive.length}`);
+    log.info(suggestCommitMessage(summaryInteractive));
     log.info('Your custom files have been preserved.');
+
+    if (failedInteractive.length > 0) {
+      process.exit(5);
+    }
     return;
   }
 
@@ -2796,73 +3168,134 @@ async function main(): Promise<void> {
     return;
   }
 
-  // ── LEGACY PATH (non-auto, non-interactive-menu args) ────────────────────
+  // ── INTERACTIVE PATH (TTY, non-auto, args provided) ──────────────────────
 
-  await cloneTemplate();
+  // Bootstrap path deferred to M4 — same guard as no-args path
+  if (priorState === null) {
+    log.warning(
+      'First-time sync requires bootstrap path (M4). '
+      + 'Run `bun run update --auto --dry-run` to preview the new auto pipeline, '
+      + 'or wait for M4 milestone.',
+    );
+    process.exit(0);
+  }
 
-  // Dry-run mode: preview changes without modifying files
-  if (parsed.dryRun) {
-    executeDryRun(parsed.commands, parsed.all, parsed.skills);
+  // v5 schema: migration UX deferred to M4
+  if (!('perComponentCommit' in priorState)) {
+    log.warning(
+      'Detected v5.3 .boilerplate-version.json (schema migration deferred to M4). '
+      + 'Bootstrap path required.',
+    );
+    log.warning(
+      'First-time sync requires bootstrap path (M4). '
+      + 'Run `bun run update --auto --dry-run` to preview the new auto pipeline, '
+      + 'or wait for M4 milestone.',
+    );
+    process.exit(0);
+  }
+
+  const v6StateTTY = priorState;
+
+  // Acquire template via partial clone
+  await partialCloneTemplate(TEMPLATE_REPO, TEMP_DIR);
+  const newHeadShaTTY = resolveTemplateHeadSha(TEMP_DIR);
+
+  const { delta: deltaTTY, bootstrap: bootstrapTTY } = computeDelta(TEMP_DIR, COMPONENTS, v6StateTTY);
+
+  if (bootstrapTTY.length > 0) {
+    log.warning(
+      `Bootstrap needed for components: ${bootstrapTTY.map(c => c.name).join(', ')}. `
+      + 'Bootstrap path deferred to M4 — skipping bootstrap components this run.',
+    );
+  }
+
+  const visibleTTY = deltaTTY.filter(e => e.classification !== 'unchanged');
+
+  for (const entry of visibleTTY.filter(e => e.classification === 'binary-skip')) {
+    log.warning(`Binary file skipped: ${entry.path}`);
+  }
+
+  if (visibleTTY.filter(e => e.classification !== 'binary-skip').length === 0) {
+    log.info('Already at HEAD for all components.');
     cleanup();
     return;
   }
 
-  createBackup(parsed.commands);
+  // Dry-run: interactive prompts still shown, no writes
+  if (parsed.dryRun) {
+    log.header('  DRY RUN (interactive mode) — No files will be modified');
+    const { plan: dryPlan, skipped: drySkipped } = await planInteractive(
+      visibleTTY,
+      TEMP_DIR,
+      process.cwd(),
+      true, // dryRun=true
+    );
 
-  selfUpdate();
+    log.info(`Would apply: ${dryPlan.length}, Would skip: ${drySkipped.length}`);
+    for (const item of dryPlan) {
+      log.dim(`[dry-run] would ${item.resolution}: ${item.entry.path}`);
+    }
+    for (const item of drySkipped) {
+      log.dim(`[dry-run] would skip: ${item.entry.path}`);
+    }
+    cleanup();
+    return;
+  }
 
-  const totals: MergeResult = { success: 0, errors: 0 };
-  const addResult = (r: MergeResult) => { totals.success += r.success; totals.errors += r.errors; };
+  // Run interactive per-file plan
+  const { plan: ttyPlan, skipped: ttySkipped } = await planInteractive(
+    visibleTTY,
+    TEMP_DIR,
+    process.cwd(),
+    false,
+  );
 
-  // Execute commands
-  for (const cmd of parsed.commands) {
-    switch (cmd) {
-      case 'skills':
-        addResult(updateSkills(parsed.skills));
-        break;
-      case 'commands':
-        addResult(updateCommands());
-        break;
-      case 'scripts':
-        addResult(updateScripts());
-        break;
-      case 'templates':
-        addResult(updateTemplates());
-        break;
-      case 'agents-docs':
-        addResult(updateAgentsDocs());
-        break;
-      case 'claude-config':
-        addResult(updateClaudeConfig());
-        break;
-      case 'docs':
-        addResult(updateDocs());
-        break;
-      case 'cli':
-        addResult(updateCli());
-        break;
-      case 'vscode':
-        addResult(updateVscode());
-        break;
-      case 'husky':
-        addResult(updateHusky());
-        break;
-      case 'tooling':
-        addResult(updateTooling());
-        break;
-      case 'examples':
-        addResult(updateExamples());
-        break;
+  // Create backup dir
+  const timestampTTY = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const backupDirTTY = join('.backups', `update-${timestampTTY}`);
+  mkdirSync(backupDirTTY, { recursive: true });
+
+  const appliedTTY: AppliedFile[] = [];
+  const failedTTY: FailedFile[] = [];
+
+  for (const item of ttyPlan) {
+    try {
+      await applyResolution(item.entry, item.resolution, TEMP_DIR, process.cwd(), backupDirTTY);
+      appliedTTY.push(item);
+    }
+    catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log.error(`Failed to apply ${item.entry.path}: ${msg}`);
+      failedTTY.push({ entry: item.entry, resolution: item.resolution, error: msg });
     }
   }
 
-  recordSyncVersion(parsed.commands);
+  const summaryTTY: RunSummary = {
+    applied: appliedTTY,
+    skipped: ttySkipped,
+    failed: failedTTY,
+    binarySkipped: visibleTTY.filter(e => e.classification === 'binary-skip'),
+    bootstrapComponents: [],
+    newHeadSha: newHeadShaTTY,
+  };
+
+  appendBackupManifest(backupDirTTY, visibleTTY, v6StateTTY);
+
+  const nextStateTTY = advanceSyncState(v6StateTTY, summaryTTY, COMPONENTS, newHeadShaTTY);
+  writeSyncState(process.cwd(), nextStateTTY);
+
   detectUnfilledVariables();
   detectMissingFrameworkScripts();
   cleanup();
+
   log.header('  Update completed!');
-  printSyncSummary(totals);
+  log.info(`Applied: ${appliedTTY.length}, Skipped: ${ttySkipped.length}, Failed: ${failedTTY.length}`);
+  log.info(suggestCommitMessage(summaryTTY));
   log.info('Your custom files have been preserved.');
+
+  if (failedTTY.length > 0) {
+    process.exit(5);
+  }
 }
 
 main().catch((error) => {
