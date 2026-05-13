@@ -120,6 +120,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -131,7 +132,7 @@ import { createInterface } from 'node:readline';
 // CONFIGURATION
 // ============================================================================
 
-const CLI_VERSION = '5.3';
+const CLI_VERSION = '6.0';
 const TEMPLATE_REPO = 'upex-galaxy/agentic-qa-boilerplate';
 const TEMP_DIR = join(tmpdir(), 'kata-boilerplate-update');
 
@@ -185,6 +186,30 @@ const CLAUDE_CONFIG_FILES = [
   '.claude/settings.json',
 ];
 
+/**
+ * Canonical component registry. Each entry drives:
+ *  - sparse-checkout path patterns (via `paths`)
+ *  - perComponentCommit key (via `name`)
+ *  - bootstrap/delta scoping
+ *
+ * TOOLING_FILES and EXAMPLE_FILES are resolved at declaration time so this
+ * const can reference them. AGENTS_DOCS_FILES and CLAUDE_CONFIG_FILES likewise.
+ */
+const COMPONENTS = [
+  { name: 'skills', paths: ['.claude/skills'], kind: 'directory' as const },
+  { name: 'commands', paths: ['.claude/commands'], kind: 'directory' as const },
+  { name: 'scripts', paths: ['scripts'], kind: 'directory' as const },
+  { name: 'templates', paths: ['templates'], kind: 'directory' as const },
+  { name: 'docs', paths: ['docs'], kind: 'directory' as const },
+  { name: 'cli', paths: ['cli'], kind: 'directory' as const },
+  { name: 'vscode', paths: ['.vscode'], kind: 'directory' as const },
+  { name: 'husky', paths: ['.husky'], kind: 'directory' as const },
+  { name: 'agents-docs', paths: AGENTS_DOCS_FILES, kind: 'file-list' as const, files: AGENTS_DOCS_FILES },
+  { name: 'claude-config', paths: CLAUDE_CONFIG_FILES, kind: 'file-list' as const, files: CLAUDE_CONFIG_FILES },
+  { name: 'tooling', paths: TOOLING_FILES, kind: 'file-list' as const, files: TOOLING_FILES },
+  { name: 'examples', paths: EXAMPLE_FILES, kind: 'file-list' as const, files: EXAMPLE_FILES },
+] satisfies readonly Component[];
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -197,12 +222,96 @@ interface ParsedArgs {
   help: boolean
   dryRun: boolean
   rollback: boolean
+  auto: boolean
 }
 
 interface MergeResult {
   success: number
   errors: number
 }
+
+// writeSyncState uses tmp+rename atomic write. Assumes .boilerplate-version.json and its .tmp.PID
+// sibling are on the same filesystem (POSIX rename guarantee). Cross-FS writes (e.g. tmpdir on a
+// separate partition) are out of scope.
+
+// v6 — target schema
+interface SyncStateV6 {
+  schema: 6
+  templateRepo: string
+  templateCommit: string
+  perComponentCommit: Record<string, string>
+  lastSyncedAt: string
+  cliVersion: string
+  variableSystemVersion: 1
+}
+
+// v5.3 — legacy, detection only (still exists in the wild)
+interface SyncStateV5 {
+  lastSync: string
+  templateCommit: string
+  cliVersion: string
+  syncedComponents: string[]
+  variableSystemVersion: number
+}
+
+type SyncState = SyncStateV6 | SyncStateV5;
+
+type ComponentKind = 'directory' | 'file-list';
+
+interface Component {
+  name: string
+  paths: string[]
+  kind: ComponentKind
+  files?: string[]
+  backupRoots?: string[]
+}
+
+type ChangeStatus = 'M' | 'A' | 'D';
+
+type FileClass
+  = 'clean-fastforward'
+    | 'locally-diverged'
+    | 'new-upstream'
+    | 'deleted-upstream'
+    | 'unchanged'
+    | 'binary-skip';
+
+interface DeltaEntry {
+  component: string
+  path: string
+  status: ChangeStatus
+  classification: FileClass
+  addLines: number
+  delLines: number
+  isBinary: boolean
+  templateOldSha: string | null
+  templateNewSha: string | null
+}
+
+type Resolution = 'theirs' | 'mine' | 'skip' | 'delete' | 'keep';
+
+interface AppliedFile {
+  entry: DeltaEntry
+  resolution: Resolution
+}
+
+interface FailedFile {
+  entry: DeltaEntry
+  resolution: Resolution
+  error: string
+}
+
+// eslint-disable-next-line unused-imports/no-unused-vars -- used by M2+ applier and writeback
+interface RunSummary {
+  applied: AppliedFile[]
+  skipped: AppliedFile[]
+  failed: FailedFile[]
+  binarySkipped: DeltaEntry[]
+  bootstrapComponents: string[]
+  newHeadSha: string
+}
+
+class CorruptStateError extends Error {}
 
 // ============================================================================
 // TERMINAL COLORS & LOGGING
@@ -327,6 +436,94 @@ Run the script again:
 }
 
 // ============================================================================
+// GIT ENVIRONMENT GUARD
+// ============================================================================
+
+interface GitVersion {
+  major: number
+  minor: number
+  patch: number
+  raw: string
+}
+
+/**
+ * Execute `git --version` and parse the result.
+ * Throws Error('GIT_NOT_FOUND') if git binary is not on PATH.
+ * Throws Error('GIT_VERSION_UNPARSEABLE: <raw>') if the version string does not match expected format.
+ */
+function detectGitVersion(): GitVersion {
+  let raw: string;
+  try {
+    raw = execSync('git --version', { stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
+  }
+  catch {
+    throw new Error('GIT_NOT_FOUND');
+  }
+
+  const match = /\bgit version (\d+)\.(\d+)\.(\d+)/.exec(raw);
+  if (!match) {
+    throw new Error(`GIT_VERSION_UNPARSEABLE: ${raw}`);
+  }
+
+  return {
+    major: Number.parseInt(match[1], 10),
+    minor: Number.parseInt(match[2], 10),
+    patch: Number.parseInt(match[3], 10),
+    raw,
+  };
+}
+
+/**
+ * Ensure git >= 2.25.0 is available. Exits process with code 2 on any failure.
+ * NOT called from main() in M1 — wired in M4.
+ */
+function ensureGitVersion(): void {
+  let version: GitVersion;
+  try {
+    version = detectGitVersion();
+  }
+  catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg === 'GIT_NOT_FOUND') {
+      log.error('git not found on PATH. git >= 2.25 is required for sparse-checkout support.');
+      log.info('Install git:');
+      if (process.platform === 'darwin') {
+        log.info('  brew install git');
+      }
+      else if (process.platform === 'win32') {
+        log.info('  winget install Git.Git  (or use WSL2 with apt install git)');
+      }
+      else {
+        log.info('  sudo apt install git        # Ubuntu/Debian/WSL');
+        log.info('  apk add git                 # Alpine');
+      }
+    }
+    else {
+      log.error(`Could not determine git version: ${msg}`);
+    }
+    process.exit(2);
+  }
+
+  const { major, minor, raw } = version;
+  const meetsReq = major > 2 || (major === 2 && minor >= 25);
+  if (!meetsReq) {
+    log.error(`git ${raw} detected. git >= 2.25.0 is required for sparse-checkout support.`);
+    log.info('Upgrade git:');
+    if (process.platform === 'darwin') {
+      log.info('  brew upgrade git');
+    }
+    else if (process.platform === 'win32') {
+      log.info('  winget upgrade Git.Git  (or update via WSL2: sudo apt-get install --only-upgrade git)');
+    }
+    else {
+      log.info('  sudo apt-get install --only-upgrade git    # Ubuntu/Debian/WSL');
+      log.info('  apk upgrade git                             # Alpine');
+    }
+    process.exit(2);
+  }
+}
+
+// ============================================================================
 // ARGUMENT PARSING
 // ============================================================================
 
@@ -339,6 +536,7 @@ function parseArgs(args: string[]): ParsedArgs {
     help: false,
     dryRun: false,
     rollback: false,
+    auto: false,
   };
 
   const validCommands = ['all', 'skills', 'commands', 'scripts', 'templates', 'agents-docs', 'claude-config', 'docs', 'cli', 'vscode', 'husky', 'tooling', 'examples', 'help', 'rollback'];
@@ -354,6 +552,9 @@ function parseArgs(args: string[]): ParsedArgs {
     }
     else if (arg === '--dry-run') {
       result.dryRun = true;
+    }
+    else if (arg === '--auto') {
+      result.auto = true;
     }
     else if (arg === '--rollback' || arg === 'rollback') {
       result.rollback = true;
@@ -1147,6 +1348,7 @@ ${colors.bold}COMMANDS:${colors.reset}
 ${colors.bold}GLOBAL FLAGS:${colors.reset}
   --dry-run     Preview what would change without modifying files
   --rollback    Restore from the most recent backup
+  --auto        Non-interactive mode: apply clean-ff + new-upstream, skip diverged, never delete
 
 ${colors.bold}FLAGS FOR 'skills':${colors.reset}
   --skill NAME  Sync a specific skill folder (e.g., --skill sprint-testing)
@@ -1257,6 +1459,203 @@ function readSyncVersion(): BoilerplateVersion | null {
   }
   catch {
     return null;
+  }
+}
+
+// ============================================================================
+// SYNC STATE I/O
+// ============================================================================
+
+/**
+ * Read .boilerplate-version.json and return a typed SyncState.
+ * Returns null when the file is absent (bootstrap path).
+ * Throws CorruptStateError when JSON is invalid.
+ * Discriminates v6 vs v5 by presence of `perComponentCommit` and `schema === 6`.
+ */
+function readSyncState(repoRoot: string): SyncState | null {
+  const filePath = join(repoRoot, VERSION_FILE);
+  if (!existsSync(filePath)) {
+    return null;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(filePath, 'utf-8'));
+  }
+  catch {
+    throw new CorruptStateError(
+      `Corrupt sync state: ${filePath}. Refusing to silently overwrite. Fix or delete the file.`,
+    );
+  }
+
+  if (
+    typeof parsed === 'object'
+    && parsed !== null
+    && 'perComponentCommit' in parsed
+    && (parsed as Record<string, unknown>).schema === 6
+  ) {
+    return parsed as SyncStateV6;
+  }
+
+  if (
+    typeof parsed === 'object'
+    && parsed !== null
+    && 'templateCommit' in parsed
+  ) {
+    return parsed as SyncStateV5;
+  }
+
+  throw new CorruptStateError(
+    `Corrupt sync state: ${filePath}. Refusing to silently overwrite. Fix or delete the file.`,
+  );
+}
+
+/**
+ * Pure function — no I/O.
+ * Converts a v5.3 SyncStateV5 to a SyncStateV6 with empty perComponentCommit.
+ * templateCommit and variableSystemVersion are preserved from the old state.
+ * Wired into main() in M4.
+ */
+// eslint-disable-next-line unused-imports/no-unused-vars
+function migrateSyncState(old: SyncStateV5): SyncStateV6 {
+  return {
+    schema: 6,
+    templateRepo: TEMPLATE_REPO,
+    templateCommit: old.templateCommit,
+    perComponentCommit: {},
+    lastSyncedAt: new Date().toISOString(),
+    cliVersion: CLI_VERSION,
+    variableSystemVersion: 1,
+  };
+}
+
+/**
+ * Ask the user for consent before migrating v5.3 → v6.
+ * Uses native readline to match the existing prompt style.
+ * Returns true on Y/y/Enter; false on N/n.
+ * No file writes — I/O is deferred to writeSyncState post-sync.
+ * Wired into main() in M4.
+ */
+// eslint-disable-next-line unused-imports/no-unused-vars
+async function promptForMigration(_old: SyncStateV5): Promise<boolean> {
+  const answer = await nativePrompt(
+    `${colors.yellow}Detected v5.3 .boilerplate-version.json. Upgrade to v6 (adds perComponentCommit field)? [Y/n]:${colors.reset} `,
+  );
+  return answer === '' || answer === 'y' || answer === 'yes';
+}
+
+/**
+ * Atomic write of SyncStateV6 to .boilerplate-version.json.
+ * Writes to a .tmp.<pid> sibling first, then renames to final path.
+ * Assumes the tmp file and the final path are on the same filesystem (POSIX rename guarantee).
+ * Wired into main() in M2.
+ */
+// eslint-disable-next-line unused-imports/no-unused-vars
+function writeSyncState(repoRoot: string, state: SyncStateV6): void {
+  const finalPath = join(repoRoot, VERSION_FILE);
+  const tmpPath = `${finalPath}.tmp.${process.pid}`;
+  writeFileSync(tmpPath, `${JSON.stringify(state, null, 2)}\n`);
+  // Node's renameSync is POSIX-atomic on same-FS — no half-written JSON risk
+  renameSync(tmpPath, finalPath);
+  log.success(`Version recorded in ${VERSION_FILE}`);
+}
+
+// ============================================================================
+// REPOSITORY ACQUISITION (NEW — partial clone scaffold; legacy cloneTemplate still active)
+// ============================================================================
+
+/**
+ * Resolve the HEAD commit SHA of the already-cloned template repo.
+ * Replaces getTemplateCommit() with explicit repoDir arg.
+ * Wired into main() in M2.
+ */
+// eslint-disable-next-line unused-imports/no-unused-vars
+function resolveTemplateHeadSha(repoDir: string): string {
+  try {
+    return execSync(`git -C "${repoDir}" rev-parse HEAD`, { stdio: ['pipe', 'pipe', 'pipe'] })
+      .toString()
+      .trim();
+  }
+  catch {
+    return 'unknown';
+  }
+}
+
+/**
+ * Partial clone of the template repository using sparse-checkout.
+ * Replaces legacy cloneTemplate() — NOT yet called from main() in M1.
+ * When `allowedPaths` is omitted, defaults to the union of all COMPONENTS paths.
+ *
+ * Steps:
+ *   1. Remove existing dest if present
+ *   2. gh auth status (preserved from cloneTemplate)
+ *   3. git clone --filter=blob:none --no-checkout
+ *   4. git sparse-checkout init --no-cone
+ *   5. git sparse-checkout set <patterns>
+ *   6. git checkout
+ *
+ * Exits process with code 3 on clone failure (Scenario 3.2).
+ * Wired into main() in M2 (replaces cloneTemplate).
+ */
+// eslint-disable-next-line unused-imports/no-unused-vars
+async function partialCloneTemplate(
+  repoUrl: string,
+  dest: string,
+  allowedPaths: string[] = COMPONENTS.flatMap(c => c.paths),
+): Promise<void> {
+  log.step('Downloading latest version of the template (partial clone)...');
+  log.dim(`Repo: ${repoUrl}`);
+  log.dim(`Temp destination: ${dest}`);
+
+  if (existsSync(dest)) {
+    log.dim('Cleaning previous temp directory...');
+    rmSync(dest, { recursive: true, force: true });
+  }
+
+  log.dim('Verifying GitHub CLI authentication...');
+  try {
+    execSync('gh auth status', { stdio: 'pipe' });
+    log.success('GitHub CLI authenticated');
+  }
+  catch {
+    log.error('GitHub CLI is not authenticated');
+    console.log(`\n${colors.yellow}Run first:${colors.reset}`);
+    console.log(`  ${colors.cyan}gh auth login${colors.reset}\n`);
+    process.exit(1);
+  }
+
+  log.dim('Cloning repository with sparse-checkout (filter=blob:none)...');
+
+  try {
+    execSync(
+      `gh repo clone ${repoUrl} "${dest}" -- --filter=blob:none --no-checkout --quiet`,
+      { stdio: ['pipe', 'pipe', 'pipe'], timeout: 60000 },
+    );
+  }
+  catch (error) {
+    const err = error as { killed?: boolean, message?: string };
+    if (err.killed) {
+      log.error('Timeout: Clone took too long (>60s)');
+    }
+    else {
+      log.error('Error cloning the template repository');
+      log.info('Possible causes: no repo access, network issues, gh CLI misconfigured');
+      log.info(`Verify: gh repo view ${repoUrl}`);
+    }
+    process.exit(3);
+  }
+
+  try {
+    execSync(`git -C "${dest}" sparse-checkout init --no-cone`, { stdio: ['pipe', 'pipe', 'pipe'] });
+    const patterns = allowedPaths.map(p => `"${p}"`).join(' ');
+    execSync(`git -C "${dest}" sparse-checkout set ${patterns}`, { stdio: ['pipe', 'pipe', 'pipe'] });
+    execSync(`git -C "${dest}" checkout`, { stdio: ['pipe', 'pipe', 'pipe'] });
+    log.success('Template downloaded successfully (sparse checkout)');
+  }
+  catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    log.error(`Sparse-checkout setup failed: ${msg}`);
+    process.exit(3);
   }
 }
 
@@ -1689,7 +2088,23 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  ensureGitVersion();
   await validatePrerequisites();
+
+  // Read sync state early so CorruptStateError surfaces before any writes (M1 wire-in).
+  // priorState drives delta logic in M2+; in M1 it is read but not yet consumed.
+  let _priorState: SyncState | null = null;
+  try {
+    _priorState = readSyncState(process.cwd());
+  }
+  catch (err) {
+    if (err instanceof CorruptStateError) {
+      log.error(err.message);
+      process.exit(4);
+    }
+    throw err;
+  }
+
   checkMigrationNeeded();
 
   // Expand 'all' command
