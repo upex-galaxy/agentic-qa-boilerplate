@@ -9,11 +9,787 @@
       name="description"
       content="A 30-minute orientation to the Agentic QA Boilerplate: how Skills, Commands, Scripts, and the variable substrate cooperate to drive AI-assisted quality engineering on Playwright + KATA."
     />
-    <link rel="stylesheet" href="style.css" />
+    <style>
+      /* Agentic QA Boilerplate — Onboarding stylesheet
+         No external imports, no remote fonts. Dark mode via prefers-color-scheme. */
+
+      :root {
+        --bg: #ffffff;
+        --surface: #f8f9fa;
+        --surface-2: #f3f4f6;
+        --border: #e5e7eb;
+        --border-strong: #d1d5db;
+        --text: #1f2937;
+        --text-muted: #6b7280;
+        --text-soft: #4b5563;
+        --accent: #5b21b6;
+        --accent-soft: #ede9fe;
+        --accent-2: #7c3aed;
+        --code-bg: #f3f4f6;
+        --code-text: #1f2937;
+        --callout-info-bg: #eff6ff;
+        --callout-info-bd: #3b82f6;
+        --callout-warn-bg: #fef3c7;
+        --callout-warn-bd: #d97706;
+        --callout-danger-bg: #fee2e2;
+        --callout-danger-bd: #dc2626;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+        --radius-sm: 0.375rem;
+        --radius: 0.5rem;
+        --radius-lg: 0.75rem;
+        --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        --badge-foundation: #0e7490;
+        --badge-foundation-soft: #cffafe;
+        --badge-workflow: #6d28d9;
+        --badge-workflow-soft: #ede9fe;
+        --badge-generator: #b45309;
+        --badge-generator-soft: #fef3c7;
+        --badge-tool: #1d4ed8;
+        --badge-tool-soft: #dbeafe;
+        --badge-reference: #4b5563;
+        --badge-reference-soft: #f3f4f6;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f172a;
+          --surface: #1e293b;
+          --surface-2: #1e293b;
+          --border: #334155;
+          --border-strong: #475569;
+          --text: #e2e8f0;
+          --text-muted: #94a3b8;
+          --text-soft: #cbd5e1;
+          --accent: #a78bfa;
+          --accent-soft: #312e81;
+          --accent-2: #c4b5fd;
+          --code-bg: #0b1220;
+          --code-text: #e2e8f0;
+          --callout-info-bg: #1e3a8a;
+          --callout-info-bd: #60a5fa;
+          --callout-warn-bg: #78350f;
+          --callout-warn-bd: #fbbf24;
+          --callout-danger-bg: #7f1d1d;
+          --callout-danger-bd: #f87171;
+          --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+          --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+          --badge-foundation: #67e8f9;
+          --badge-foundation-soft: #164e63;
+          --badge-workflow: #c4b5fd;
+          --badge-workflow-soft: #4c1d95;
+          --badge-generator: #fcd34d;
+          --badge-generator-soft: #78350f;
+          --badge-tool: #93c5fd;
+          --badge-tool-soft: #1e3a8a;
+          --badge-reference: #cbd5e1;
+          --badge-reference-soft: #334155;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 2rem;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-sans);
+        font-size: 16px;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Layout */
+      .shell {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 clamp(1rem, 5vw, 2rem);
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 3rem;
+        margin-top: 3rem;
+      }
+      .content {
+        max-width: 880px;
+        min-width: 0;
+      }
+      @media (max-width: 1024px) {
+        .layout {
+          grid-template-columns: 1fr;
+          gap: 1.5rem;
+        }
+      }
+
+      /* Hero */
+      .hero {
+        padding: 4rem 0 2.5rem;
+        border-bottom: 1px solid var(--border);
+      }
+      .hero-eyebrow {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-soft);
+        padding: 0.375rem 0.75rem;
+        border-radius: 999px;
+        margin-bottom: 1.25rem;
+      }
+      .hero h1 {
+        font-size: clamp(2rem, 5vw, 3rem);
+        line-height: 1.15;
+        letter-spacing: -0.025em;
+        font-weight: 700;
+        margin: 0 0 1rem;
+        color: var(--text);
+      }
+      .hero h1 .accent {
+        color: var(--accent);
+      }
+      .hero-sub {
+        font-size: 1.25rem;
+        color: var(--text-soft);
+        margin: 0 0 0.5rem;
+        font-weight: 400;
+      }
+      .hero-tagline {
+        font-size: 1rem;
+        color: var(--text-muted);
+        max-width: 720px;
+        margin: 0 0 2.5rem;
+      }
+      .hero-diagram {
+        margin: 2.5rem 0 3rem;
+        padding: 1.5rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow-x: auto;
+      }
+      .cta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+      .cta {
+        display: block;
+        padding: 1.25rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text);
+        text-decoration: none;
+        transition:
+          border-color 0.15s,
+          transform 0.15s,
+          box-shadow 0.15s;
+      }
+      .cta:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+      }
+      .cta-title {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: var(--accent);
+      }
+      .cta-desc {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+      }
+
+      /* TOC */
+      .toc {
+        font-size: 0.875rem;
+      }
+      @media (min-width: 1025px) {
+        .toc {
+          position: sticky;
+          top: 2rem;
+          align-self: start;
+          max-height: calc(100vh - 4rem);
+          overflow-y: auto;
+        }
+      }
+      .toc-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin: 0 0 0.75rem;
+        padding: 0;
+      }
+      .toc ol {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .toc li {
+        margin: 0.125rem 0;
+      }
+      .toc a {
+        display: block;
+        padding: 0.4rem 0.75rem;
+        color: var(--text-soft);
+        text-decoration: none;
+        border-radius: var(--radius-sm);
+        border-left: 2px solid transparent;
+        transition:
+          background 0.15s,
+          color 0.15s,
+          border-color 0.15s;
+      }
+      .toc a:hover,
+      .toc a.active {
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-left-color: var(--accent);
+      }
+      .toc-mobile {
+        display: none;
+        margin: 1rem 0 0;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.75rem 1rem;
+      }
+      .toc-mobile summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--accent);
+      }
+      @media (max-width: 1024px) {
+        .toc {
+          display: none;
+        }
+        .toc-mobile {
+          display: block;
+        }
+        .toc-mobile .toc {
+          display: block;
+          padding-top: 0.75rem;
+        }
+      }
+
+      /* Headings */
+      h2 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        margin: 4rem 0 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+      }
+      h2:first-child {
+        margin-top: 0;
+      }
+      h2 .num {
+        display: inline-block;
+        width: 2rem;
+        color: var(--text-muted);
+        font-weight: 400;
+      }
+      h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 2rem 0 0.75rem;
+        color: var(--text);
+      }
+      p {
+        margin: 0 0 1rem;
+      }
+      h2,
+      h3 {
+        scroll-margin-top: 2rem;
+      }
+
+      /* Code */
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.875em;
+        padding: 0.125em 0.375em;
+        border-radius: var(--radius-sm);
+        background: var(--code-bg);
+        color: var(--code-text);
+      }
+      pre {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        line-height: 1.5;
+        background: var(--code-bg);
+        color: var(--code-text);
+        padding: 1rem 1.25rem;
+        border-radius: var(--radius);
+        overflow-x: auto;
+        margin: 1rem 0;
+        border: 1px solid var(--border);
+      }
+      pre code {
+        padding: 0;
+        background: transparent;
+        font-size: inherit;
+      }
+
+      /* Tables */
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin: 1.25rem 0 1.5rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+      }
+      table th,
+      table td {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border);
+      }
+      table th {
+        background: var(--surface);
+        font-weight: 600;
+        color: var(--text);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      table tr:last-child td {
+        border-bottom: none;
+      }
+      table tr:nth-child(even) td {
+        background: var(--surface);
+      }
+      table code {
+        font-size: 0.8rem;
+      }
+
+      /* Callouts */
+      .callout {
+        display: flex;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        border-left: 4px solid;
+        border-radius: var(--radius);
+        margin: 1.25rem 0;
+      }
+      .callout svg {
+        flex-shrink: 0;
+        margin-top: 0.15rem;
+      }
+      .callout-info {
+        background: var(--callout-info-bg);
+        border-left-color: var(--callout-info-bd);
+      }
+      .callout-warn {
+        background: var(--callout-warn-bg);
+        border-left-color: var(--callout-warn-bd);
+      }
+      .callout-danger {
+        background: var(--callout-danger-bg);
+        border-left-color: var(--callout-danger-bd);
+      }
+      .callout-title {
+        font-weight: 600;
+        margin: 0 0 0.25rem;
+      }
+      .callout p:last-child {
+        margin-bottom: 0;
+      }
+
+      /* Phase cards (lifecycle) */
+      .phase-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        margin: 1.5rem 0 2rem;
+      }
+      .phase {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      .phase summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 600;
+        color: var(--text);
+        user-select: none;
+      }
+      .phase summary::-webkit-details-marker {
+        display: none;
+      }
+      .phase summary::after {
+        content: '+';
+        margin-left: auto;
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+        font-size: 1.25rem;
+        font-weight: 400;
+      }
+      .phase[open] summary::after {
+        content: '−';
+      }
+      .phase summary:hover {
+        color: var(--accent);
+      }
+      .phase-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        background: var(--accent-soft);
+        color: var(--accent);
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+      .phase-body {
+        padding: 0 1.25rem 1.25rem;
+        border-top: 1px solid var(--border);
+        margin-top: 0.5rem;
+      }
+      .phase-body dl {
+        display: grid;
+        grid-template-columns: 9rem 1fr;
+        gap: 0.5rem 1rem;
+        margin: 0.75rem 0 1rem;
+        font-size: 0.92rem;
+      }
+      .phase-body dt {
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        padding-top: 0.15rem;
+      }
+      .phase-body dd {
+        margin: 0;
+        color: var(--text);
+      }
+      @media (max-width: 600px) {
+        .phase-body dl {
+          grid-template-columns: 1fr;
+          gap: 0.25rem 0;
+        }
+        .phase-body dt {
+          padding-top: 0.5rem;
+        }
+      }
+
+      /* Skill catalog */
+      .skill-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0 2rem;
+      }
+      .skill-card {
+        display: flex;
+        flex-direction: column;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        transition:
+          border-color 0.15s,
+          transform 0.15s;
+      }
+      .skill-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+      }
+      .skill-card-head {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .skill-card-name {
+        font-family: var(--font-mono);
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .skill-card-trigger {
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+      }
+      .skill-card-desc {
+        font-size: 0.88rem;
+        color: var(--text-soft);
+        line-height: 1.5;
+        flex: 1;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+      }
+      .badge-foundation {
+        color: var(--badge-foundation);
+        background: var(--badge-foundation-soft);
+      }
+      .badge-workflow {
+        color: var(--badge-workflow);
+        background: var(--badge-workflow-soft);
+      }
+      .badge-generator {
+        color: var(--badge-generator);
+        background: var(--badge-generator-soft);
+      }
+      .badge-tool {
+        color: var(--badge-tool);
+        background: var(--badge-tool-soft);
+      }
+      .badge-reference {
+        color: var(--badge-reference);
+        background: var(--badge-reference-soft);
+      }
+
+      /* Two-column commands/scripts */
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin: 1.5rem 0;
+      }
+      @media (max-width: 768px) {
+        .two-col {
+          grid-template-columns: 1fr;
+        }
+      }
+      .two-col h3 {
+        margin-top: 0;
+      }
+
+      .list-plain {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .list-plain li {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 0.6rem 0.85rem;
+        font-size: 0.9rem;
+      }
+      .list-plain li code {
+        font-size: 0.8rem;
+      }
+      .list-plain .muted {
+        display: block;
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        margin-top: 0.15rem;
+      }
+
+      /* Type-icon row in §2 */
+      .type-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .type-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: var(--radius-sm);
+        background: var(--accent-soft);
+        color: var(--accent);
+        flex-shrink: 0;
+      }
+      .type-icon svg {
+        width: 1rem;
+        height: 1rem;
+      }
+      .type-name {
+        font-weight: 600;
+        font-family: var(--font-mono);
+      }
+
+      /* Mnemonic block */
+      .mnemonic {
+        background: linear-gradient(135deg, var(--accent-soft), var(--surface));
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--accent);
+        border-radius: var(--radius);
+        padding: 1.25rem 1.5rem;
+        margin: 1.5rem 0;
+        font-size: 1.05rem;
+      }
+      .mnemonic strong {
+        color: var(--accent);
+      }
+
+      /* TL;DR */
+      blockquote.tldr {
+        margin: 2rem 0;
+        padding: 1.5rem 2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--accent);
+        border-radius: var(--radius);
+        font-size: 1.15rem;
+        font-style: italic;
+        color: var(--text-soft);
+      }
+      blockquote.tldr p {
+        margin: 0;
+      }
+      ul.tldr-list {
+        padding-left: 1.25rem;
+        margin: 1rem 0;
+      }
+      ul.tldr-list li {
+        margin-bottom: 0.5rem;
+        color: var(--text-soft);
+      }
+      ul.tldr-list strong {
+        color: var(--text);
+      }
+
+      /* Diagram boxes */
+      .diagram-block {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem 1.25rem;
+        margin: 1.5rem 0;
+        overflow-x: auto;
+      }
+      .diagram-caption {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        text-align: center;
+        margin-top: 0.75rem;
+        font-style: italic;
+      }
+
+      /* Footer */
+      footer.site-footer {
+        margin-top: 6rem;
+        padding: 3rem 0 2rem;
+        border-top: 1px solid var(--border);
+      }
+      .footer-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+      .footer-card {
+        display: block;
+        padding: 1rem 1.25rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text);
+        text-decoration: none;
+        transition: border-color 0.15s;
+      }
+      .footer-card:hover {
+        border-color: var(--accent);
+      }
+      .footer-card-title {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--accent);
+        margin-bottom: 0.25rem;
+      }
+      .footer-card-desc {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+      }
+      .footer-meta {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-align: center;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+      }
+      .footer-meta code {
+        font-size: 0.78rem;
+      }
+
+      /* Misc */
+      a {
+        color: var(--accent);
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      hr {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 2rem 0;
+      }
+      .muted {
+        color: var(--text-muted);
+      }
+      .small {
+        font-size: 0.85rem;
+      }
+      ul,
+      ol {
+        padding-left: 1.5rem;
+      }
+      li {
+        margin-bottom: 0.35rem;
+      }
+      ::selection {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+    </style>
   </head>
   <body>
     <header class="shell hero">
-      <span class="hero-eyebrow">Onboarding · v1.0</span>
+      <span class="hero-eyebrow">Onboarding · v1.2</span>
       <h1>Agentic <span class="accent">QA</span> Boilerplate</h1>
       <p class="hero-sub">AI-driven quality engineering on Playwright + KATA + TypeScript.</p>
       <p class="hero-tagline">
@@ -188,7 +964,7 @@
           <span class="cta-desc">Five phases, from clone to daily QA.</span>
         </a>
         <a class="cta" href="#section-7">
-          <span class="cta-title">Skill catalog</span>
+          <span class="cta-title">Skills catalog</span>
           <span class="cta-desc">All 11 skills, what they do, when to call them.</span>
         </a>
         <a class="cta" href="#section-6">
@@ -282,19 +1058,11 @@
 
             <p>
               Read
-              <a
-                href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/docs/agentic-quality-engineering.md"
-                target="_blank"
-                rel="noopener"
+              <a href="agentic-quality-engineering.md"
                 ><code>agentic-quality-engineering.md</code></a
               >
               for the strategy behind the practice and
-              <a
-                href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/CONTEXT.md"
-                target="_blank"
-                rel="noopener"
-                ><code>CONTEXT.md</code></a
-              >
+              <a href="../CONTEXT.md"><code>CONTEXT.md</code></a>
               for why the knowledge layer is split the way it is. This page focuses on
               <em>how the pieces connect</em> — what to invoke, in what order, and what each piece
               actually does.
@@ -715,8 +1483,11 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                       Refreshed memory files and re-cataloged Jira fields:
                       <ul>
                         <li>
-                          <code>/sync-ai-memory</code> — re-syncs <code>CLAUDE.md</code> +
-                          <code>README.md</code>.
+                          <code>/sync-ai-memory</code> — syncs all AI-critical docs
+                          (<code>CLAUDE.md</code>, <code>README.md</code>,
+                          <code>INSTALLER.md</code>, <code>CONTEXT.md</code>, <code>docs/**</code>,
+                          and this onboarding page) against current <code>.context/</code> and
+                          <code>package.json</code>.
                         </li>
                         <li>
                           <code>/business-data-map</code>, <code>/business-feature-map</code>,
@@ -795,14 +1566,16 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                       <code>.agents/jira-fields.json</code>,
                       <code>.agents/jira-workflows.json</code>, the
                       <code>scripts/agents-*.ts</code> + <code>sync-jira-*.ts</code> CLIs, merges
-                      entries into <code>package.json</code>, creates the
-                      <code>CLAUDE.md</code> symlink. Idempotent — existing files are preserved.
+                      entries into <code>package.json</code>. Idempotent — existing files are
+                      preserved.
                     </td>
                     <td>One-time</td>
                   </tr>
                   <tr>
                     <td>
-                      <code>/adapt-framework</code><br /><span class="muted small">(command)</span>
+                      <code>/adapt-framework</code><br /><span class="muted small"
+                        >(skill + command)</span
+                      >
                     </td>
                     <td>Once per target, AFTER <code>/project-discovery</code> finishes.</td>
                     <td>
@@ -818,11 +1591,13 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                       <code>/sync-ai-memory</code><br /><span class="muted small">(command)</span>
                     </td>
                     <td>
-                      Periodically, when <code>.context/</code> drifts and <code>CLAUDE.md</code> no
-                      longer reflects the project state.
+                      Periodically, when <code>.context/</code> drifts and AI-critical docs no
+                      longer reflect the project state.
                     </td>
                     <td>
-                      Re-syncs <code>CLAUDE.md</code> and <code>README.md</code> against current
+                      Syncs all AI-critical documents (<code>CLAUDE.md</code>,
+                      <code>README.md</code>, <code>INSTALLER.md</code>, <code>CONTEXT.md</code>,
+                      <code>docs/*.md</code>, this onboarding page) against current
                       <code>.context/</code> and <code>package.json</code>. Touches project-specific
                       FACTS only — never structural sections.
                     </td>
@@ -835,7 +1610,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
             <div class="mnemonic">
               <strong>Mnemonic:</strong> <code>agentic-qa-core</code> installs the
               <strong>BASE</strong>, <code>adapt-framework</code> wires the <strong>TESTS</strong>,
-              <code>sync-ai-memory</code> updates the <strong>DOCS</strong>.
+              <code>sync-ai-memory</code> syncs the <strong>DOCS</strong>.
             </div>
 
             <h3>A passive role you never invoke</h3>
@@ -1135,8 +1910,9 @@ bun run jira:check            # verify both catalogs against the manifest</code>
             </div>
 
             <p>
-              The variable substrate has three syntaxes that look similar but resolve from different
-              files. The full contract lives in <code>.agents/README.md</code>; the short version:
+              The variable substrate has several syntaxes that look similar but resolve from
+              different files. The full contract lives in <code>.agents/README.md</code>; the short
+              version:
             </p>
 
             <ul>
@@ -1451,7 +2227,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     <td><code>/regression-testing</code></td>
                   </tr>
                   <tr>
-                    <td>Refresh <code>CLAUDE.md</code> after drift</td>
+                    <td>Sync AI-critical docs after drift</td>
                     <td><code>/sync-ai-memory</code></td>
                   </tr>
                   <tr>
@@ -1483,6 +2259,10 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     <td><code>bun run jira:sync-workflows</code></td>
                   </tr>
                   <tr>
+                    <td>Pull Jira Epics/Stories into <code>.context/PBI/</code> markdown</td>
+                    <td><code>bun run jira:sync-issues</code></td>
+                  </tr>
+                  <tr>
                     <td>Validate <code>{{VAR}}</code> / <code>{{jira.*}}</code> placeholders</td>
                     <td><code>bun run lint:agents</code></td>
                   </tr>
@@ -1499,12 +2279,12 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     <td><code>bun run api:sync</code></td>
                   </tr>
                   <tr>
-                    <td>Commit + push + open a PR</td>
-                    <td><code>/commit-push-pr</code></td>
+                    <td>Commit + push + open a PR (or any git/PR work)</td>
+                    <td><code>/git-flow-master</code> (auto-triggers on git intents)</td>
                   </tr>
                   <tr>
                     <td>Resolve a git conflict</td>
-                    <td><code>/fix-git-conflict</code></td>
+                    <td><code>/git-flow-master</code> (auto-triggers on conflict intents)</td>
                   </tr>
                   <tr>
                     <td>Repair traceability US ↔ ATP ↔ ATR ↔ TC</td>
@@ -1560,6 +2340,19 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   scripts, <code>package.json</code> entries) AND hosts shared references (briefing
                   template, dispatch patterns, orchestration doctrine) that other skills cite on
                   demand. Two roles, one skill.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">agentic-qa-onboard</span>
+                  <span class="badge badge-foundation">Foundation</span>
+                </div>
+                <p class="skill-card-trigger">/agentic-qa-onboard</p>
+                <p class="skill-card-desc">
+                  First-time orientation tour. Explains the stack, the 6-stage pipeline, the MCPs,
+                  and hands off to the right downstream workflow skill. Entry point for new
+                  contributors.
                 </p>
               </article>
 
@@ -1628,6 +2421,20 @@ bun run jira:check            # verify both catalogs against the manifest</code>
 
               <article class="skill-card">
                 <div class="skill-card-head">
+                  <span class="skill-card-name">framework-development</span>
+                  <span class="badge badge-workflow">Workflow</span>
+                </div>
+                <p class="skill-card-trigger">/framework-development</p>
+                <p class="skill-card-desc">
+                  Gateway skill for chaining <code>/sdd-*</code> on framework evolution — KATA
+                  bases, fixtures, <code>cli/</code>, <code>scripts/</code>,
+                  <code>api/schemas/</code>
+                  pipeline. Sole legitimate entry point for SDD in this repo. Not for per-ticket QA.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
                   <span class="skill-card-name">acli</span>
                   <span class="badge badge-tool">Tool</span>
                 </div>
@@ -1649,33 +2456,6 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   Xray Cloud test management via <code>bun xray</code>: tests, executions, plans,
                   JUnit/Cucumber result imports, project backup/restore. Resolves
                   <code>[TMS_TOOL]</code> pseudocode in Modality A.
-                </p>
-              </article>
-
-              <article class="skill-card">
-                <div class="skill-card-head">
-                  <span class="skill-card-name">agentic-qa-onboard</span>
-                  <span class="badge badge-foundation">Foundation</span>
-                </div>
-                <p class="skill-card-trigger">/agentic-qa-onboard</p>
-                <p class="skill-card-desc">
-                  First-time orientation tour. Explains the stack, the 6-stage pipeline, the MCPs,
-                  and hands off to the right downstream workflow skill. Entry point for new
-                  contributors.
-                </p>
-              </article>
-
-              <article class="skill-card">
-                <div class="skill-card-head">
-                  <span class="skill-card-name">framework-development</span>
-                  <span class="badge badge-workflow">Workflow</span>
-                </div>
-                <p class="skill-card-trigger">/framework-development</p>
-                <p class="skill-card-desc">
-                  Gateway skill for chaining <code>/sdd-*</code> on framework evolution — KATA
-                  bases, fixtures, <code>cli/</code>, <code>scripts/</code>,
-                  <code>api/schemas/</code>
-                  pipeline. Sole legitimate entry point for SDD in this repo. Not for per-ticket QA.
                 </p>
               </article>
 
@@ -1744,9 +2524,10 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   <li>
                     <code>/sync-ai-memory</code>
                     <span class="muted"
-                      >Re-sync <code>CLAUDE.md</code>, <code>README.md</code> (and per-tool memory
-                      files like <code>CLAUDE.md</code>, <code>GEMINI.md</code>) against current
-                      <code>.context/</code> + <code>package.json</code>.</span
+                      >Sync all AI-critical docs (<code>CLAUDE.md</code>, <code>README.md</code>,
+                      <code>INSTALLER.md</code>, <code>CONTEXT.md</code>, <code>docs/*.md</code>,
+                      and this onboarding page) against current <code>.context/</code> +
+                      <code>package.json</code>.</span
                     >
                   </li>
                   <li>
@@ -1787,19 +2568,6 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     <code>/fix-traceability</code>
                     <span class="muted"
                       >Repair broken US ↔ ATP ↔ ATR ↔ TC traceability links in the TMS.</span
-                    >
-                  </li>
-                  <li>
-                    <code>/commit-push-pr</code>
-                    <span class="muted"
-                      >End-to-end git flow: commit → push → open a PR using the test-automation
-                      template.</span
-                    >
-                  </li>
-                  <li>
-                    <code>/fix-git-conflict</code>
-                    <span class="muted"
-                      >Walk through the resolution of a merge or rebase conflict.</span
                     >
                   </li>
                 </ul>
@@ -1846,6 +2614,13 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     >
                   </li>
                   <li>
+                    <code>bun run jira:sync-issues</code>
+                    <span class="muted"
+                      >Pull Jira Epics / Stories into <code>.context/PBI/</code> markdown for local
+                      reference during planning + automation.</span
+                    >
+                  </li>
+                  <li>
                     <code>bun run jira:check</code>
                     <span class="muted"
                       >Verify the Jira workspace satisfies <code>.agents/jira-required.yaml</code> —
@@ -1883,6 +2658,12 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   <li>
                     <code>bun run pw:install</code>
                     <span class="muted">Install Chromium with system deps via Playwright.</span>
+                  </li>
+                  <li>
+                    <code>bun run onboarding</code>
+                    <span class="muted"
+                      >Serve this onboarding page locally and auto-open it in the browser.</span
+                    >
                   </li>
                   <li>
                     <code>bun xray</code>
@@ -1956,73 +2737,34 @@ bun run jira:check            # verify both catalogs against the manifest</code>
           Where to go next
         </h2>
         <div class="footer-grid">
-          <a
-            class="footer-card"
-            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/README.md"
-            target="_blank"
-            rel="noopener"
-          >
+          <a class="footer-card" href="../README.md">
             <span class="footer-card-title">README.md</span>
             <span class="footer-card-desc">Project overview + Quick Start.</span>
           </a>
-          <a
-            class="footer-card"
-            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/docs/agentic-quality-engineering.md"
-            target="_blank"
-            rel="noopener"
-          >
+          <a class="footer-card" href="agentic-quality-engineering.md">
             <span class="footer-card-title">agentic-quality-engineering.md</span>
             <span class="footer-card-desc">Strategy + 6-stage pipeline + KATA architecture.</span>
           </a>
-          <a
-            class="footer-card"
-            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/CONTEXT.md"
-            target="_blank"
-            rel="noopener"
-          >
+          <a class="footer-card" href="../CONTEXT.md">
             <span class="footer-card-title">CONTEXT.md</span>
             <span class="footer-card-desc">Why the knowledge layer is split the way it is.</span>
           </a>
-          <a
-            class="footer-card"
-            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/docs/methodology/IQL-methodology.md"
-            target="_blank"
-            rel="noopener"
-          >
-            <span class="footer-card-title">IQL-methodology.md</span>
-            <span class="footer-card-desc">The IQL methodology — early/mid/late game testing.</span>
+          <a class="footer-card" href="../INSTALLER.md">
+            <span class="footer-card-title">INSTALLER.md</span>
+            <span class="footer-card-desc">Installation guide for the boilerplate.</span>
           </a>
-          <a
-            class="footer-card"
-            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/CLAUDE.md"
-            target="_blank"
-            rel="noopener"
-          >
+          <a class="footer-card" href="../CLAUDE.md">
             <span class="footer-card-title">CLAUDE.md</span>
             <span class="footer-card-desc">Canonical project memory + Tool Resolution table.</span>
           </a>
-          <a
-            class="footer-card"
-            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/.claude/skills/agentic-qa-core/SKILL.md"
-            target="_blank"
-            rel="noopener"
-          >
+          <a class="footer-card" href="../.claude/skills/agentic-qa-core/SKILL.md">
             <span class="footer-card-title">agentic-qa-core/SKILL.md</span>
             <span class="footer-card-desc">Foundation skill internals + bootstrap order.</span>
           </a>
-          <a
-            class="footer-card"
-            href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/docs/getting-started.md"
-            target="_blank"
-            rel="noopener"
-          >
-            <span class="footer-card-title">getting-started.md</span>
-            <span class="footer-card-desc">The Markdown source this page expands on.</span>
-          </a>
         </div>
         <p class="footer-meta">
-          <code>agentic-qa-boilerplate</code> · MIT License · Onboarding page v1.1 · Last updated
-          2026-04-28
+          <code>agentic-qa-boilerplate</code> · MIT License · Onboarding page v1.2 · Last updated
+          2026-05-13
         </p>
       </footer>
     </div>

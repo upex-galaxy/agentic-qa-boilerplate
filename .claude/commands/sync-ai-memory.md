@@ -19,8 +19,7 @@ A synchronized set of AI-critical documents. Every file in the sync scope is eit
 | `INSTALLER.md` | `supplementary` | Installation guide; patched when step count, commands, or prerequisites drift |
 | `CONTEXT.md` | `anchor` | Context engineering reference (forward-looking target — include in scope as soon as it exists on disk) |
 | `docs/agentic-quality-engineering.md` | `supplementary` | Vision + lifecycle overview; patched for command name, skill name, or path changes |
-| `docs/getting-started.md` | `supplementary` | Operator guide; patched for command names, quick-reference tables, and TL;DR mnemonic |
-| `docs/onboarding/index.html` | `rendered-from` | HTML rendering of `getting-started.md`; kept aligned via patch-in-place (see Step 3.5) |
+| `docs/onboarding.html` | `standalone-html` | Self-contained onboarding page (CSS + JS inlined, hand-maintained); patched for command names, quick-reference tables, and TL;DR mnemonic (see Step 3.5) |
 
 The audit step (Step 1.5) may extend this list if it discovers additional qualifying files.
 
@@ -118,14 +117,12 @@ grep -rho "[./][a-z][a-z0-9/_-]*\.\(md\|html\)" \
   | sed 's|.*:||' | sort | uniq -c | sort -rn | awk '$1 >= 3 {print $2}'
 ```
 
-**Rule 5 — Rendered HTML counterparts**: any `.html` file in `docs/` whose base name matches an `.md` file in the same or parent directory. These get the `rendered-from` role tag.
+**Rule 5 — Standalone HTML docs**: any `.html` file in `docs/` that is hand-maintained (CSS + JS inlined, no MD source pairing). These get the `standalone-html` role tag and are patched in place — never regenerated from any MD source.
 
 ```bash
-find docs/ -name "*.html" | while read html; do
-  md="${html%.html}.md"
-  [[ -f "$md" ]] && echo "RENDERED: $html <- $md"
-done
-# Also check parent-directory match: index.html alongside getting-started.md
+find docs/ -name "*.html" -print
+# Each match is a standalone-html target. They are NOT paired with any .md file —
+# the HTML is the single source of truth.
 ```
 
 ### Role tags
@@ -137,7 +134,7 @@ Assign each discovered file one role:
 | `anchor` | Primary, always-referenced file (ROOT-CAPS or AI memory) | Always patched; patch failures are blocking |
 | `supplementary` | Referenced by skills/commands but not always loaded | Patched for command/path/name drift; other prose preserved |
 | `index` | `.context/` command outputs | NOT rewritten — existence only checked; AI memory "Context System" section updated to reflect reality |
-| `rendered-from` | HTML rendered from an MD source | Patch-in-place, HTML structure preserved (see Step 3.5) |
+| `standalone-html` | Self-contained HTML, hand-maintained (no MD source) | Edit HTML directly; preserve structural integrity (no CSS/JS regen) — see Step 3.5 |
 
 ### Output format (internal — used by Steps 3–5)
 
@@ -148,8 +145,7 @@ SYNC TARGET LIST:
 - INSTALLER.md                                [supplementary]
 - CONTEXT.md                                  [anchor — not yet on disk, skip this run]
 - docs/agentic-quality-engineering.md         [supplementary]
-- docs/getting-started.md                     [supplementary]
-- docs/onboarding/index.html                  [rendered-from: docs/getting-started.md]
+- docs/onboarding.html                        [standalone-html]
 ```
 
 **Extendability note for future maintainers**: to add a new document to the sync scope, either (a) ensure it matches one of the 5 rules above, or (b) add it explicitly to the "Sync scope" table in this command's header. Both approaches are equivalent — the audit picks up rule-matches automatically.
@@ -246,9 +242,10 @@ If a section listed here is missing from the file you're syncing, that is struct
 - Lifecycle diagrams and architecture ASCII art
 - Only patch: command/skill tables and path references
 
-**`docs/getting-started.md`:**
-- Step-by-step prose and tutorial flow
-- Only patch: command names in tables, the "three confusing pieces" table, the TL;DR mnemonic line, and the quick-reference table
+**`docs/onboarding.html`:**
+- The entire `<style>` block, the entire `<script>` block, the structural hierarchy (`<section>`, `<div>`, `<nav>`, `<aside>`, `<header>`, `<footer>`), CSS classes, `id` attributes, `data-*` attributes, SVG diagrams, and any `viewBox` / coordinate math
+- Step-by-step prose and tutorial flow inside `<p>` blocks beyond the immediate fact
+- Only patch: command names inside `<code>` elements, table cell descriptions, the "three confusing pieces" table, the TL;DR mnemonic line, the cheat-sheet quick-reference table, the footer's "Last updated" date, and the footer version label when bumping
 
 ### Security protocol (applies to ALL targets)
 
@@ -311,30 +308,33 @@ Sync the **Available scripts** section against `package.json` — do not invent 
 
 ---
 
-## Step 3.5 — Sync `docs/onboarding/index.html`
+## Step 3.5 — Sync `docs/onboarding.html`
 
-**Approach chosen: patch-in-place (not regenerate from MD source).**
+**Approach: text-only edits on a self-contained, hand-maintained HTML page. Never regenerate from any MD source — there is no MD source.**
 
-**Rationale**: `docs/onboarding/index.html` is NOT a plain Markdown-to-HTML rendering of `getting-started.md`. It contains significant additional structure that has no equivalent in the MD source: a sidebar navigation, tab panels, visual step indicators, custom CSS classes, JavaScript-driven interactive navigation, and a card-based layout. A full regeneration from MD would destroy this custom structure on every sync run, requiring manual reconstruction each time. Patch-in-place preserves the HTML shell and updates only the text nodes that correspond to drifted facts — the same class of changes applied to the MD source in Step 3.
+**Rationale**: `docs/onboarding.html` is a `standalone-html` target. The CSS lives in an inlined `<style>` block, the navigation script lives in an inlined `<script>` block, and the document is the single source of truth for the onboarding tour (no paired Markdown). The sync touches only user-facing copy when it diverges from the canonical sources — `README.md`, `CONTEXT.md`, the `.context/` business maps, and `package.json` scripts — and never re-renders the page.
 
-**What to patch in the HTML** (search-and-replace on text content of identified elements only):
-- `<code>` elements containing command names (e.g. `/refresh-ai-memory` → `/sync-ai-memory`)
-- `<td>` cells in reference tables that contain command descriptions
-- Inline text in `<span>` or `<p>` elements that contain the TL;DR mnemonic
-- Any text node containing a stale file path or skill name that has changed
+**Algorithm:**
+1. Read `docs/onboarding.html` directly.
+2. Identify drifted user-facing copy by cross-referencing the canonical sources gathered in Step 2 (`package.json` scripts, command/skill names from `.claude/`, paths from `CLAUDE.md`'s Context Loading Map, environment URLs from `.agents/project.yaml`).
+3. Apply text-only edits to user-facing copy: text nodes inside `<p>`, `<span>`, `<td>`, `<th>`, `<li>`, `<dt>`, `<dd>`, `<summary>`, `<code>` elements, plus the page `<title>` and the footer's "Last updated" line. When bumping the page after a substantive content change, also bump the footer version label (e.g. `v1.2` → `v1.3`).
+4. Apply the security protocol (pre-write redaction) before writing.
 
 **What to never touch:**
-- CSS classes, `id` attributes, `data-*` attributes
-- `<script>` blocks and their content
-- `<style>` blocks
-- The structural hierarchy (`<section>`, `<div>`, `<nav>`, `<aside>`)
-- Any content NOT corresponding to a fact changed in the MD source
+- The entire `<style>` block (inlined CSS).
+- The entire `<script>` block (scroll-spy JS).
+- Structural tags (`<section>`, `<div>`, `<nav>`, `<aside>`, `<header>`, `<footer>`, `<main>`, `<article>`).
+- CSS classes, `id` attributes, `data-*` attributes, `role` attributes.
+- SVG diagrams, including coordinate math, `viewBox` values, and `<path>` data.
+- Anchor link `href` values (the section IDs are part of the structure).
+- Any content that is NOT a drifted fact against the canonical sources.
 
 **Process:**
-1. Read `docs/getting-started.md` to know which facts changed (established in Step 3).
-2. For each changed fact in the MD, find the corresponding text node(s) in the HTML.
-3. Apply the minimum text replacement. Do NOT reflow surrounding elements.
-4. Apply the security protocol (pre-write redaction) before writing.
+1. Read `docs/onboarding.html` to know its current state.
+2. For each canonical-source fact that the page exposes (command names, script names, path references, TL;DR mnemonic phrasing, cheat-sheet rows), check whether the HTML copy matches. If drifted → patch the minimum text node. If matched → leave it.
+3. Do NOT reflow surrounding elements, do NOT collapse blocks, do NOT renumber sections.
+4. Update the footer's "Last updated" line to today's date when ANY text node is patched in this run.
+5. Apply the security protocol (pre-write redaction) before writing.
 
 ---
 
@@ -389,11 +389,11 @@ After all individual patches are computed (but before any file is written), veri
 
 | Fact category | Documents to check | Example drift |
 |---|---|---|
-| Command names | All targets | `CLAUDE.md` says `/sync-ai-memory`, `docs/getting-started.md` still says `/refresh-ai-memory` |
+| Command names | All targets | `CLAUDE.md` says `/sync-ai-memory`, `docs/onboarding.html` still says `/refresh-ai-memory` |
 | `.context/` directory paths | `CLAUDE.md`, `README.md`, `docs/context-engineering.md` / `CONTEXT.md` | One file says `.context/business/`, another says `.context/mapping/` |
 | Skill names | All targets | Skill renamed but not all docs updated |
 | Environment URLs | `.agents/project.yaml` (source of truth), `README.md`, `docs/workflows/environments.md` | Staging URL changed in `.agents/project.yaml`, README + environments.md still show old. NOTE: `CLAUDE.md` no longer holds env URLs — never patch them there. |
-| Script names | `package.json` (source of truth), `README.md`, `docs/getting-started.md` | Script renamed in `package.json` but README + docs still show old. NOTE: `CLAUDE.md` §1 Critical Rule #11 forbids inlining scripts — never patch script names into CLAUDE.md. |
+| Script names | `package.json` (source of truth), `README.md`, `docs/onboarding.html` | Script renamed in `package.json` but README + docs still show old. NOTE: `CLAUDE.md` §1 Critical Rule #11 forbids inlining scripts — never patch script names into CLAUDE.md. |
 | AI memory file name | `README.md`, `INSTALLER.md`, `docs/*` | `GEMINI.md` detected but docs still say `CLAUDE.md` |
 
 **Drift detection algorithm:**
@@ -451,8 +451,7 @@ After writing all files, report per-target outcome and any redactions.
 | INSTALLER.md | unchanged | No drift detected |
 | CONTEXT.md | skipped | File does not yet exist on disk |
 | docs/agentic-quality-engineering.md | updated | Command name /refresh-ai-memory → /sync-ai-memory |
-| docs/getting-started.md | updated | Command name table + TL;DR mnemonic |
-| docs/onboarding/index.html | updated | <code> text nodes: /refresh-ai-memory → /sync-ai-memory |
+| docs/onboarding.html | updated | <code> text nodes: /refresh-ai-memory → /sync-ai-memory; footer "Last updated" bumped |
 
 **Cross-doc drift resolved:**
 - {fact}: {old value} → {new value} in {N} files
@@ -479,7 +478,7 @@ After writing all files, report per-target outcome and any redactions.
 - [ ] AI-critical doc audit complete — Sync Target List produced (Step 1.5)
 - [ ] Context read in priority order (Step 2)
 - [ ] Each target patched in-place with real or placeholder values (Step 3)
-- [ ] `docs/onboarding/index.html` text nodes updated, HTML structure intact (Step 3.5)
+- [ ] `docs/onboarding.html` text nodes updated, HTML structure (style/script/SVG) intact (Step 3.5)
 - [ ] AI memory file deep-synced — facts refreshed, stable rules preserved (Step 4)
 - [ ] Cross-doc consistency verified — all drift resolved before writing (Step 4.5)
 - [ ] Security + reference + consistency checks passed across all targets (Step 5)
