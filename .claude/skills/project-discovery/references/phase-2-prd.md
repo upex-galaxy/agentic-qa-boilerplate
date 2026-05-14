@@ -199,7 +199,7 @@ grep -rE "redirect\(|router\.(push|replace)" --include="*.ts" --include="*.tsx" 
 
 Feature inventory work lives in the `/business-feature-map` command, **not** in this phase. After the PRD sections above are complete (Executive Summary, User Personas, User Journeys), invoke `/business-feature-map` to produce `.context/business/business-feature-map.md`.
 
-The command covers everything that used to be section 4: feature catalog by domain (with stable `FEAT-NNN` IDs), CRUD matrix per entity, API endpoint inventory, UI component inventory (forms + dashboards), third-party integrations, feature flags, planned/WIP features, and the QA relevance matrix. Do not duplicate that logic inside this reference.
+The command covers the full feature taxonomy: feature catalog by domain (with stable `FEAT-NNN` IDs), CRUD matrix per entity, API endpoint inventory, UI component inventory (forms + dashboards), third-party integrations, feature flags, planned/WIP features, and the QA relevance matrix. Do not duplicate that logic inside this reference.
 
 **Why split?** The feature map is now also useful outside the discovery pipeline (e.g. when only the backlog changes), so it lives as a standalone command that can be re-run on demand without going through the four-phase discovery again. It also keeps phase-2-prd.md focused on the human-readable PRD docs (summary, personas, journeys), with feature taxonomy as a sibling artifact rather than a section.
 
