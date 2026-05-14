@@ -1330,7 +1330,6 @@ function cleanup(): void {
 // INTERACTIVE MENUS
 // ============================================================================
 
-// eslint-disable-next-line unused-imports/no-unused-vars
 async function showMainMenu(): Promise<string[]> {
   const { checkbox } = await import('@inquirer/prompts');
 
@@ -1388,8 +1387,10 @@ ${colors.bold}${colors.cyan}  Update Boilerplate CLI${colors.reset}
 ${colors.dim}  Keep your project synced with the KATA template${colors.reset}
 
 ${colors.bold}USAGE:${colors.reset}
-  bun run update                     ${colors.dim}# Interactive menu${colors.reset}
-  bun run update <command> [options] ${colors.dim}# Direct execution${colors.reset}
+  bun run update                     ${colors.dim}# Interactive scope menu, then per-file selection${colors.reset}
+  bun run up                         ${colors.dim}# Short alias for the same${colors.reset}
+  bun run update <command> [options] ${colors.dim}# Skip scope menu, sync a specific component${colors.reset}
+  bun run update --auto              ${colors.dim}# Non-interactive (CI): sync all, skip diverged, never delete${colors.reset}
 
 ${colors.bold}COMMANDS:${colors.reset}
   all           Update all allowed directories
@@ -3283,10 +3284,19 @@ async function main(): Promise<void> {
     return;
   }
 
+  // No command specified — pick scope interactively, or default to 'all' in non-interactive mode
   if (parsed.commands.length === 0) {
-    log.error('No valid command specified');
-    showHelp();
-    process.exit(1);
+    if (isNonInteractive(parsed)) {
+      parsed.commands = ['all'];
+    }
+    else {
+      const selected = await showMainMenu();
+      if (selected.length === 0) {
+        log.info('Nothing selected. Exiting.');
+        return;
+      }
+      parsed.commands = selected;
+    }
   }
 
   ensureGitVersion();
