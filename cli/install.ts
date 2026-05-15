@@ -17,7 +17,8 @@
  *       expansion — installer only ensures `.env` has the required values)
  *  11.  Verify external CLIs (bun, gh, acli, playwright-cli, allure, jq)
  *  12.  Optional bootstraps: Jira credentials check, API auth login
- *  13.  Persist `.agents/install-state.json` + closing summary
+ *  13.  GitHub repository (optional)
+ *  14.  Persist `.agents/install-state.json` + closing summary
  *
  * Usage:
  *   bun run setup
@@ -50,7 +51,7 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
-import { checkbox, confirm, input, password } from '@inquirer/prompts';
+import { checkbox, confirm, input, password, select } from '@inquirer/prompts';
 
 // ============================================================================
 // Types
@@ -81,6 +82,14 @@ interface OptionalBootstrapStatus {
   ok?: boolean
 }
 
+interface GithubRemoteInfo {
+  account: string
+  repo: string
+  visibility: 'private' | 'public' | 'internal'
+  url: string
+  createdAt: string
+}
+
 interface InstallState {
   version: 1
   installedAt: string
@@ -101,6 +110,7 @@ interface InstallState {
   mcps: Record<string, McpStatus>
   externalClis: Record<string, CliStatus>
   pendingEnvVars: string[]
+  github?: GithubRemoteInfo
 }
 
 // ============================================================================
@@ -115,7 +125,7 @@ const ENV_PATH = join(REPO_ROOT, '.env');
 const ENV_EXAMPLE_PATH = join(REPO_ROOT, '.env.example');
 
 const REPO_NAME = 'agentic-qa-boilerplate';
-const TOTAL_STEPS = 13;
+const TOTAL_STEPS = 14;
 
 const MIN_GENTLE_AI_VERSION = [1, 26, 5] as const;
 
@@ -1143,7 +1153,153 @@ function buildInitialState(prior: InstallState | null): InstallState {
 }
 
 // ============================================================================
-// Step 13 — closing summary
+// Step 13 — GitHub remote (optional)
+// ============================================================================
+
+interface GhStatus {
+  found: boolean
+  version?: string
+  authenticated: boolean
+}
+
+function detectGh(): GhStatus {
+  const path = which('gh');
+  if (!path) { return { found: false, authenticated: false }; }
+
+  const versionRes = tryRun('gh', ['--version']);
+  const versionMatch = versionRes.stdout.match(/gh version (\d+\.\d+\.\d+)/);
+  const version = versionMatch ? versionMatch[1] : undefined;
+
+  const authRes = tryRun('gh', ['auth', 'status']);
+  const authenticated = authRes.ok;
+
+  return { found: true, version, authenticated };
+}
+
+function ghApi(args: string[]): { ok: boolean, stdout: string } {
+  const res = tryRun('gh', ['api', ...args]);
+  return { ok: res.ok, stdout: res.stdout.trim() };
+}
+
+function sanitizeRepoName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 100);
+}
+
+async function setupGithubRemote(state: InstallState): Promise<void> {
+  if (NON_INTERACTIVE) {
+    log.dim('Non-interactive mode — skipping GitHub remote creation.');
+    return;
+  }
+
+  const gh = detectGh();
+  if (!gh.found) {
+    log.warn('gh CLI not found. Skipping GitHub repository creation.');
+    log.dim('  Install: https://cli.github.com  (then run `gh auth login`).');
+    log.dim('  To wire a remote later:  gh repo create --source=. --remote=origin --push');
+    return;
+  }
+  if (!gh.authenticated) {
+    log.warn(`gh ${gh.version ?? ''} detected but not authenticated.`);
+    log.dim('  Run `gh auth login`, then re-run this installer to create the remote.');
+    return;
+  }
+  log.success(`gh ${gh.version ?? ''} detected (authenticated).`);
+
+  const wantRepo = await confirm({
+    message: 'Create a GitHub repository for this project now?',
+    default: true,
+  });
+  if (!wantRepo) {
+    log.dim('Skipped. To wire later:  gh repo create --source=. --remote=origin --push');
+    return;
+  }
+
+  // Resolve current package name as default repo name.
+  const pkgPath = join(REPO_ROOT, 'package.json');
+  let defaultRepoName = 'my-app';
+  try {
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as { name?: string };
+    if (pkg.name) { defaultRepoName = sanitizeRepoName(pkg.name); }
+  }
+  catch { /* fall through with default */ }
+
+  // Resolve account choices: personal login + memberships.
+  const userRes = ghApi(['user', '--jq', '.login']);
+  if (!userRes.ok || !userRes.stdout) {
+    log.error('Could not resolve GitHub user via `gh api user`. Skipping.');
+    return;
+  }
+  const userLogin = userRes.stdout;
+
+  const orgsRes = ghApi(['user/orgs', '--jq', '.[].login']);
+  const orgs = orgsRes.ok && orgsRes.stdout.length > 0 ? orgsRes.stdout.split('\n').filter(Boolean) : [];
+
+  const accountChoices: { name: string, value: string }[] = [
+    { name: `${userLogin} (personal)`, value: userLogin },
+    ...orgs.map(o => ({ name: `${o} (organization)`, value: o })),
+  ];
+
+  const account = await select({
+    message: 'Where should the repository live?',
+    choices: accountChoices,
+    default: userLogin,
+  });
+
+  const visibility = await select<'private' | 'public' | 'internal'>({
+    message: 'Repository visibility?',
+    choices: [
+      { name: 'private (default)', value: 'private' },
+      { name: 'public', value: 'public' },
+      { name: 'internal (org only)', value: 'internal' },
+    ],
+    default: 'private',
+  });
+
+  const rawName = await input({
+    message: 'Repository name:',
+    default: defaultRepoName,
+  });
+  const repoName = sanitizeRepoName(rawName);
+  if (!repoName) {
+    log.error('Invalid repository name. Skipping.');
+    return;
+  }
+
+  log.info(`Creating ${account}/${repoName} (${visibility})…`);
+  const createRes = spawnSync('gh', [
+    'repo',
+    'create',
+    `${account}/${repoName}`,
+    `--${visibility}`,
+    '--source=.',
+    '--remote=origin',
+    '--push',
+  ], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
+
+  if (createRes.status !== 0) {
+    log.error(`gh repo create failed (exit ${createRes.status}).`);
+    if (createRes.stderr) { log.dim(`  ${createRes.stderr.trim()}`); }
+    log.dim('  Repo not created. Local files left intact. You can retry later.');
+    return;
+  }
+
+  const url = `https://github.com/${account}/${repoName}`;
+  state.github = {
+    account,
+    repo: repoName,
+    visibility,
+    url,
+    createdAt: new Date().toISOString(),
+  };
+  log.success(`Repository created and pushed: ${url}`);
+}
+
+// ============================================================================
+// Step 14 — closing summary
 // ============================================================================
 
 function printClosingSummary(state: InstallState): void {
@@ -1197,18 +1353,60 @@ function printClosingSummary(state: InstallState): void {
   process.stdout.write('       bun run opencode     # OpenCode     (dotenv-cli wraps and loads .env)\n');
   log.dim('       (or run `claude` / `opencode` directly if direnv autoload is set up)');
   n++;
-  process.stdout.write(`  ${n}. Install missing CLIs (see table above)\n`);
-  n++;
+  if (cliMissing.length > 0) {
+    process.stdout.write(`  ${n}. Install missing CLIs (see table above)\n`);
+    n++;
+  }
   process.stdout.write(`  ${n}. Run: bun run lint:agents (validate config)\n`);
   n++;
   if (!state.steps.jiraBootstrap?.ok) {
     process.stdout.write(`  ${n}. Configure Jira when credentials are ready: bun run jira:sync-fields && bun run jira:check\n`);
     n++;
   }
-  process.stdout.write(`  ${n}. In your agent: /agentic-qa-onboard (first-time orientation tour)\n`);
+  process.stdout.write(`  ${n}. Tour the stack:        /agentic-qa-onboard\n`);
   n++;
-  process.stdout.write(`  ${n}. Read your first ticket: /sprint-testing <UPEX-XXX>\n`);
+  process.stdout.write(`  ${n}. Map your project:      /project-discovery\n`);
+  n++;
+  process.stdout.write(`  ${n}. Adapt KATA to stack:   /adapt-framework         (removes example tests + business maps; wires fixtures to your stack)\n`);
+  n++;
+  process.stdout.write(`  ${n}. First ticket:          /sprint-testing <KEY>\n`);
   process.stdout.write('\n');
+
+  // GitHub repository block — only if step 13 created a remote
+  if (state.github) {
+    process.stdout.write(`${COLORS.bold}GitHub repository:${COLORS.reset}\n`);
+    process.stdout.write(`  URL        : ${state.github.url}\n`);
+    process.stdout.write(`  Visibility : ${state.github.visibility}\n`);
+    process.stdout.write('  Remote     : origin (pushed)\n\n');
+    process.stdout.write(`${COLORS.bold}GitHub follow-ups (manual):${COLORS.reset}\n`);
+    process.stdout.write('  • Add Actions secrets at:\n');
+    process.stdout.write(`      ${state.github.url}/settings/secrets/actions\n`);
+    process.stdout.write('    Recommended (only those you actually use):\n');
+    process.stdout.write('      - TAVILY_API_KEY                  (Tavily MCP — web search)\n');
+    process.stdout.write('      - ATLASSIAN_URL, ATLASSIAN_EMAIL,\n');
+    process.stdout.write('        ATLASSIAN_API_TOKEN             (Atlassian MCP / acli)\n');
+    process.stdout.write('      - JIRA_URL, JIRA_USER,\n');
+    process.stdout.write('        JIRA_API_TOKEN                  (jira:sync-* scripts)\n');
+    process.stdout.write('      - XRAY_CLIENT_ID, XRAY_CLIENT_SECRET,\n');
+    process.stdout.write('        XRAY_PROJECT_KEY                (Xray Cloud — only if used)\n');
+    process.stdout.write('      - POSTMAN_API_KEY                 (Postman MCP — optional)\n');
+    process.stdout.write('      - API_BASE_URL, OPENAPI_SPEC_PATH,\n');
+    process.stdout.write('        API_TOKEN                       (OpenAPI MCP — if CI hits backend)\n');
+    process.stdout.write('      - LOCAL_USER_*, STAGING_USER_*    (Playwright test users — needed for CI runs)\n');
+    process.stdout.write(`  • Move repo to org later:  gh repo transfer ${state.github.account}/${state.github.repo} <org>\n\n`);
+  }
+  else {
+    process.stdout.write(`${COLORS.bold}GitHub repository:${COLORS.reset}\n`);
+    process.stdout.write('  Not created during install. To wire later:\n');
+    process.stdout.write('      gh auth login   # if not authenticated\n');
+    process.stdout.write('      gh repo create --source=. --remote=origin --push\n\n');
+  }
+
+  process.stdout.write(`${COLORS.bold}Project metadata follow-ups:${COLORS.reset}\n`);
+  process.stdout.write('  • Jira project key — edit `.agents/project.yaml` → `project.project_key`\n');
+  process.stdout.write('    Then run:  bun run jira:sync-fields && bun run jira:check\n');
+  process.stdout.write('  • Bootstrap KATA registry once:  bun run kata:manifest\n\n');
+
   process.stdout.write(`${COLORS.bold}Warp terminal users — recommended notification plugins:${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Warp + CLI agents is the community's current favorite combo. Surface agent activity${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}as native Warp notifications by installing the matching plugin:${COLORS.reset}\n`);
@@ -1372,7 +1570,11 @@ async function main(): Promise<void> {
   await optionalApiBootstrap(state);
 
   // Step 13
-  log.step(13, TOTAL_STEPS, 'Persisting state and summary');
+  log.step(13, TOTAL_STEPS, 'GitHub repository (optional)');
+  await setupGithubRemote(state);
+
+  // Step 14
+  log.step(14, TOTAL_STEPS, 'Persisting state and summary');
   await writeInstallState(state);
   printClosingSummary(state);
 }
