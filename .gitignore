@@ -82,3 +82,13 @@ dbhub.toml
 # Planning / audit scaffolding (working notes, plan drafts, audit
 # reports, session handoffs). Kept on local disk only — never pushed.
 .scratch/
+
+# ===== SDD / Framework Internals =====
+# Auto-generated skill registry + per-session SDD artifacts. Local only.
+.atl/
+
+# Underscore-prefixed framework internals at any depth (e.g., .context/_framework/,
+# .husky/_/, future _*/ scaffolding). These are auto-managed by tooling; consumers
+# should never commit them.
+*_*/
+**/*_*/
