@@ -304,7 +304,7 @@ The four-tier model is not bureaucracy. Each tier solves a real failure:
 
 ## 9. Validation (`bun run lint:skills`)
 
-The validation script `scripts/lint-skills.ts` (status: NOT YET CREATED — defined here as the contract the script must implement; introduced in a later batch) MUST:
+The validation script `scripts/lint-skills.ts` (implemented at `scripts/lint-skills.ts`, wired in `package.json` as `bun run lint:skills`). Severity model: ERROR fails CI; WARN and INFO are reported but do not fail. The script MUST:
 
 1. **Scan T1 SKILL.md frontmatter** for `complementary_categories` field. Warn on T1 skills without one (fragile — won't get auto-matched community skills).
 2. **Scan `cli/install.ts`** for the three tier arrays (`SKILL_SLUGS`, `PROJECT_LEVEL_SKILLS`, `USER_LEVEL_SKILLS`). Cross-check every skill mentioned in CLAUDE.md against its declared tier.
@@ -314,8 +314,12 @@ The validation script `scripts/lint-skills.ts` (status: NOT YET CREATED — defi
 4. **Anti-leak audit**: scan every T1 SKILL.md NOT named `framework-development`. If any of them name `sdd-explore`, `sdd-propose`, `sdd-spec`, `sdd-design`, `sdd-tasks`, `sdd-apply`, `sdd-verify`, `sdd-archive`, `sdd-onboard`, or `sdd-init` in their dispatch table or instructions → ERROR. The anti-leak rule from §4 is violated.
 5. **Tier mismatch audit**: any skill mentioned in CLAUDE.md by name but missing from the matching `cli/install.ts` array → WARN. Suggests the user removed an install but forgot to update CLAUDE.md.
 6. **Single-skill fragility**: any §5.1 category whose only T3/T4 example is one skill → INFO-level note (not blocking). Suggests adding fallback options when feasible.
+7. **TIER-MISMATCH audit** (WARN): skill named in CLAUDE.md §5 but absent from `cli/install.ts` matching tier array, or present in `cli/install.ts` but absent from CLAUDE.md §5. T1 skills exempt. If CLAUDE.md §5 table parsing yields 0 rows (format drift), emits a script-self WARN and skips this check (no false positives).
+8. **STALE-PATH audit** (ERROR): path-like literals in inline backtick spans of T1 SKILL.md bodies (outside fenced code blocks) must resolve to existing files relative to repo root. Prefix-anchored: only paths starting with `.claude/skills/`, `scripts/`, `cli/`, `.agents/`, `tests/`, or `api/` are checked.
+9. **EMPTY-CATS discrimination** (INFO sub-case of rule 1): `complementary_categories: []` (key present but empty list) emits INFO instead of ERROR; field entirely absent still emits ERROR. Suggests declaring at least one category from the §5.1 vocabulary.
+10. **DUPLICATE-TIER audit** (ERROR): a skill slug appearing in more than one of `SKILL_SLUGS`, `PROJECT_LEVEL_SKILLS`, `USER_LEVEL_SKILLS` in `cli/install.ts` is an install conflict. Violation message names the slug and all conflicting tier arrays.
 
-Output format: human-readable summary (counts of ERROR / WARN / INFO) plus optional `--json` flag for CI consumption. Exit code: non-zero on ERROR, zero on WARN/INFO only.
+Output format: human-readable summary (counts of ERROR / WARN / INFO). Exit code: non-zero on ERROR, zero on WARN/INFO only.
 
 The script is wired in `package.json` as `"lint:skills": "bun run scripts/lint-skills.ts"`. CI invocation: `bun run lint:skills` as part of the standard validation gate alongside `bun run lint:agents`.
 
@@ -368,16 +372,16 @@ The script is wired in `package.json` as `"lint:skills": "bun run scripts/lint-s
 - [x] Create `framework-development` skill (`.claude/skills/framework-development/SKILL.md`) with Phase 0 path self-check + ALLOWED/FORBIDDEN tables + SDD chain orchestration + Subagent Dispatch Strategy section.
 - [x] Create `references/kata-invariants.md` under framework-development with INVARIANT vs EXTENSIBLE rules.
 - [x] Create this doc (`agentic-qa-core/references/skill-composition-strategy.md`).
-- [ ] Patch `CLAUDE.md`:
-  - [ ] Add §5 entry for `framework-development` skill.
-  - [ ] Add brief "Skill Composition Protocol" pointer to this doc.
-  - [ ] Add "SDD-* are framework-only" note to the Skills registry table.
-- [ ] Patch each T1 SKILL.md (sprint-testing, test-automation, test-documentation, regression-testing, agentic-qa-onboard, agentic-qa-core, project-discovery, git-flow-master, acli, xray-cli):
-  - [ ] Add frontmatter `complementary_categories`.
-  - [ ] Add anti-leak note: "SDD-* skills MUST NOT be invoked from this skill. Framework changes go through `/framework-development`."
+- [x] Patch `CLAUDE.md`:
+  - [x] Add §5 entry for `framework-development` skill.
+  - [x] Add brief "Skill Composition Protocol" pointer to this doc.
+  - [x] Add "SDD-* are framework-only" note to the Skills registry table.
+- [x] Patch each T1 SKILL.md (sprint-testing, test-automation, test-documentation, regression-testing, agentic-qa-onboard, agentic-qa-core, project-discovery, git-flow-master, acli, xray-cli):
+  - [x] Add frontmatter `complementary_categories`.
+  - [x] Add anti-leak note: "SDD-* skills MUST NOT be invoked from this skill. Framework changes go through `/framework-development`."
 - [ ] Update `cli/install.ts` if any skill-tier movement is needed.
-- [ ] Create `scripts/lint-skills.ts` per §9 contract.
-- [ ] Wire `bun run lint:skills` in `package.json`.
+- [x] Create `scripts/lint-skills.ts` per §9 contract.
+- [x] Wire `bun run lint:skills` in `package.json`.
 - [ ] (Optional, deferred) Wire `/sync-ai-memory` to auto-maintain §5.1 (per §11 resolution 5).
 
 ---
