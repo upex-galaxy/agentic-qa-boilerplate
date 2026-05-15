@@ -31,7 +31,7 @@
     "bun"
   ],
   "bin": {
-    "create-agentic-qa": "./dist/cli.js"
+    "create-agentic-qa": "dist/cli.js"
   },
   "files": [
     "README.md",
