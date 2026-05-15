@@ -6,8 +6,6 @@
 > - Heavy detail → skill `references/` (lazy-loaded).
 > - Project values (URLs, project name, Jira URL) → `.agents/project.yaml`.
 > - Current scripts → READ `package.json` DIRECTLY. Do not trust hardcoded lists.
->
-> Structural mirror: `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template`. Sync manually on structural changes.
 
 ---
 
@@ -24,6 +22,7 @@
 9. **SKILLS-FIRST**: All workflows live in `.claude/skills/`. NEVER paste instructions inline. Invoke the matching skill, let it self-load detail. Use `[TAG_TOOL]` pseudocode and `{{VARIABLES}}` for dynamic content.
 10. **MCP CREDENTIAL FAILURE = STOP IMMEDIATELY**: If MCP fails auth or env var missing (`.mcp.json` uses `${VAR}` — Claude Code fails parse if unset; `opencode.jsonc` uses `{env:VAR}` — OpenCode silently substitutes empty → 401/403 is the signal). DO NOT work around. STOP, tell user the exact env var, point to `.env` / `.env.example`, ask them to fix `.env` and **RESTART AGENT SESSION** (env cached at MCP-spawn time, won't refresh mid-session).
 11. **SCRIPTS = READ `package.json` DIRECTLY**. NEVER quote test/build commands from this file or any doc — drift kills. Open `package.json` first, then answer.
+12. **KATA MANIFEST = SOURCE OF TRUTH**. `kata-manifest.json` (root) is the authoritative registry of every existing Component and ATC. Before proposing a new `Page`, `Api`, `Steps` module, or `@atc('TC-XXX')` ID — MUST load `kata-manifest.json` and check it. Anti-duplication gate. Stale manifest blocks commits via `.husky/pre-commit`. Regenerate with `bun run kata:manifest`. CI-validate with `bun run kata:manifest:check`.
 
 ---
 
@@ -92,7 +91,8 @@
 | Adapt KATA to stack | "adapt framework", "wire fixtures" | `/adapt-framework` | `.context/business/*` | Code edit |
 | Sprint testing ticket | "test this", "QA this story", "verify bug" | `/sprint-testing` | `.context/PBI/{module}/{TICKET}-*/` | `[AUTOMATION_TOOL]` + `[ISSUE_TRACKER_TOOL]` |
 | TMS documentation / ROI | "document tests", "ROI", "automate priority" | `/test-documentation` | `.context/test-management-system.md` | `[TMS_TOOL]` |
-| Write automated test | "automate", "E2E test", "API test" | `/test-automation` | `tests/components/`, `.context/PBI/.../implementation-plan.md`, skill `references/` | Code edit |
+| Write automated test | "automate", "E2E test", "API test" | `/test-automation` | `kata-manifest.json`, `tests/components/`, `.context/PBI/.../implementation-plan.md`, skill `references/` | Code edit |
+| Discovery / inventory | "what components exist", "list ATCs", "is TC-X automated" | — | `kata-manifest.json` | Read |
 | Regression / release | "run regression", "GO/NO-GO" | `/regression-testing` | `.context/master-test-plan.md`, CI logs | `gh` + Allure |
 | Sync AI memory | "sync memory", `/sync-ai-memory` | `/sync-ai-memory` | `README.md`, this file, `.context/`, `package.json` | Edit |
 | Git / PR work | any git intent | `/git-flow-master` (auto) | `git status`, `git log` | `git` + `gh` |
@@ -108,6 +108,7 @@
 - `api/schemas/` — OpenAPI-derived TypeScript types (refresh via `bun run api:sync`)
 - `tests/components/` — KATA Layer 2 + 3 (Api / Page / Steps)
 - `tests/e2e/`, `tests/integration/` — actual test specs
+- `kata-manifest.json` — auto-generated registry of every Component + ATC ID. Source of truth (Critical Rule #12). Regenerate: `bun run kata:manifest`. Validate: `bun run kata:manifest:check`.
 
 ---
 
@@ -130,7 +131,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 
 | Skill | Trigger | Purpose |
 |---|---|---|
-| `agentic-qa-core` | `/agentic-qa-core init` | Foundation: hosts shared references (briefing / dispatch / doctrine) + bootstraps CLAUDE.md, `.agents/`, `scripts/`, `package.json`. |
+| `agentic-qa-core` | (auto, cited by other skills) | Foundation: passive reference host for shared doctrine (briefing template, dispatch patterns, orchestration, skill-composition strategy). Loaded on demand by workflow skills. |
 | `agentic-qa-onboard` | `/agentic-qa-onboard` | First-time orientation tour. Explains stack + 6-stage pipeline + MCPs. Hands off to the right downstream skill. |
 | `framework-development` | `/framework-development` | Gateway skill — sole legitimate entry point for chaining SDD-* skills. Use for evolving the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. |
 | `project-discovery` | `/project-discovery` | 4-phase discovery (Constitution → Architecture → Infrastructure → Specification) → generates PRD, SRS, domain glossary, `.context/`. Reverse-engineering only. |
@@ -314,4 +315,4 @@ Git / PR work → `/git-flow-master` auto-loads. Full details in `.claude/skills
 
 ---
 
-*AI persistent memory. Update when behaviors / skills / rules change. Mirror to `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template`.*
+*AI persistent memory. Update when behaviors / skills / rules change.*
