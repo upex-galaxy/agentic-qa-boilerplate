@@ -73,6 +73,7 @@
     "api:types": "bunx openapi-typescript api/openapi.json -o api/openapi-types.ts",
     "kata:manifest": "bun run scripts/kata-manifest.ts",
     "kata:manifest:watch": "bun run scripts/kata-manifest.ts --watch",
+    "kata:manifest:check": "bun run scripts/kata-manifest.ts --check",
     "up": "bun run cli/update-boilerplate.ts",
     "update": "bun run cli/update-boilerplate.ts",
     "xray": "bun run cli/xray/index.ts",

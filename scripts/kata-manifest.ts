@@ -9,6 +9,7 @@
  *   bun run kata:manifest           # Generate kata-manifest.json
  *   bun run kata:manifest --watch   # Watch mode (regenerate on changes)
  *   bun run kata:manifest --stdout  # Output to stdout instead of file
+ *   bun run kata:manifest --check   # Validate kata-manifest.json is in sync (exit 1 if stale)
  *
  * Output: kata-manifest.json in project root
  */
@@ -283,7 +284,65 @@ async function generateManifest(): Promise<KataManifest> {
     = manifest.summary.apiComponents + manifest.summary.uiComponents;
   manifest.summary.preconditionModules = manifest.preconditions.length;
 
+  // Deterministic ordering — Bun.Glob.scan order is filesystem-dependent.
+  // Sorting here keeps `kata-manifest.json` byte-stable across machines so
+  // `--check` stays meaningful and PR diffs stay reviewable.
+  manifest.components.api.sort((a, b) => a.name.localeCompare(b.name));
+  manifest.components.ui.sort((a, b) => a.name.localeCompare(b.name));
+  manifest.preconditions.sort((a, b) => a.name.localeCompare(b.name));
+  for (const component of [...manifest.components.api, ...manifest.components.ui]) {
+    component.atcs.sort((a, b) => a.id.localeCompare(b.id));
+  }
+  for (const precondition of manifest.preconditions) {
+    precondition.methods.sort();
+  }
+
   return manifest;
+}
+
+// ============================================================================
+// Check Mode (CI-grade freshness validator)
+// ============================================================================
+
+/**
+ * Strip volatile fields before equality comparison.
+ * `generatedAt` changes on every run, so it cannot participate in the diff.
+ */
+function stripVolatile(manifest: KataManifest): Omit<KataManifest, 'generatedAt'> & { generatedAt: string } {
+  return { ...manifest, generatedAt: '<stripped>' };
+}
+
+async function checkManifest(): Promise<number> {
+  const fresh = await generateManifest();
+
+  if (!existsSync(OUTPUT_FILE)) {
+    console.error('❌ kata-manifest.json missing.');
+    console.error('   Run: bun run kata:manifest && git add kata-manifest.json');
+    return 1;
+  }
+
+  const existingRaw = await Bun.file(OUTPUT_FILE).text();
+  let existing: KataManifest;
+  try {
+    existing = JSON.parse(existingRaw);
+  }
+  catch {
+    console.error('❌ kata-manifest.json is not valid JSON.');
+    console.error('   Regenerate: bun run kata:manifest && git add kata-manifest.json');
+    return 1;
+  }
+
+  const freshNorm = JSON.stringify(stripVolatile(fresh), null, 2);
+  const existingNorm = JSON.stringify(stripVolatile(existing), null, 2);
+
+  if (freshNorm === existingNorm) {
+    console.log('✅ kata-manifest.json is up to date.');
+    return 0;
+  }
+
+  console.error('❌ kata-manifest.json is stale.');
+  console.error('   Run: bun run kata:manifest && git add kata-manifest.json');
+  return 1;
 }
 
 // ============================================================================
@@ -292,8 +351,15 @@ async function generateManifest(): Promise<KataManifest> {
 
 async function main() {
   const args = process.argv.slice(2);
+  const checkMode = args.includes('--check') || args.includes('-c');
   const watchMode = args.includes('--watch') || args.includes('-w');
   const stdoutMode = args.includes('--stdout') || args.includes('-s');
+
+  // --check is mutually exclusive with --watch and --stdout: it validates
+  // the committed file and exits, never writes or watches.
+  if (checkMode) {
+    process.exit(await checkManifest());
+  }
 
   const generate = async () => {
     const manifest = await generateManifest();
@@ -303,7 +369,10 @@ async function main() {
       console.log(json);
     }
     else {
-      await Bun.write(OUTPUT_FILE, json);
+      // Trailing newline keeps the file POSIX-clean and lint-clean (eol-last).
+      // checkManifest() parses both sides as JSON, so the newline does not
+      // affect equality.
+      await Bun.write(OUTPUT_FILE, `${json}\n`);
       console.log(`✅ Generated ${OUTPUT_FILE}`);
       console.log(`   📦 Components: ${manifest.summary.totalComponents} (${manifest.summary.apiComponents} API, ${manifest.summary.uiComponents} UI)`);
       console.log(`   🎯 ATCs: ${manifest.summary.totalATCs}`);
