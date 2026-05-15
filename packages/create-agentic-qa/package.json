@@ -1,0 +1,55 @@
+{
+  "name": "create-agentic-qa",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Official scaffolder for the Agentic QA ecosystem — bootstraps a project from agentic-qa-boilerplate and runs its interactive installer.",
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/upex-galaxy/agentic-qa-boilerplate#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/upex-galaxy/agentic-qa-boilerplate.git",
+    "directory": "packages/create-agentic-qa"
+  },
+  "bugs": {
+    "url": "https://github.com/upex-galaxy/agentic-qa-boilerplate/issues"
+  },
+  "keywords": [
+    "agentic-qa",
+    "agentic",
+    "boilerplate",
+    "scaffold",
+    "create",
+    "playwright",
+    "kata",
+    "claude-code",
+    "opencode",
+    "ai-agents",
+    "sdd",
+    "bun"
+  ],
+  "bin": {
+    "create-agentic-qa": "./dist/cli.js"
+  },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "bun build src/cli.ts --target=node --outfile dist/cli.js --minify && chmod +x dist/cli.js",
+    "dev": "bun run src/cli.ts",
+    "test": "bun test",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.7",
+    "@types/node": "^24.10.1",
+    "typescript": "^5.8.3"
+  }
+}
