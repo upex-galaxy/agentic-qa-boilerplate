@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json.schemastore.org/base.json",
+  "_comment": "Scaffolding manifest read by `create-agentic-qa` when extracting this repo as a template. Lives at .template/manifest.json so it stays separate from project-identity config (.agents/) and runtime templates (.context/PBI/templates/).",
+  "version": 1,
+  "exclude": ["packages"]
+}
