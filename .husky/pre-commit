@@ -1,1 +1,12 @@
 bunx lint-staged
+
+# kata-manifest freshness gate — only runs when staged files affect it.
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
+if echo "$STAGED" | grep -qE '^(tests/components/|scripts/kata-manifest\.ts$|kata-manifest\.json$)'; then
+  bun run kata:manifest:check || {
+    echo ""
+    echo "❌ kata-manifest.json is stale. Fix:"
+    echo "   bun run kata:manifest && git add kata-manifest.json"
+    exit 1
+  }
+fi
