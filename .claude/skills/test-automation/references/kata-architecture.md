@@ -576,4 +576,4 @@ async getCurrentUser() { ... }
 
 Never apply decorators to Layer 2 base methods or private helpers. Detailed tracing mechanics live in a separate tracing reference.
 
-`bun run kata:manifest` extracts every component and ATC into `kata-manifest.json` — use it to discover what exists without scanning the codebase.
+`bun run kata:manifest` extracts every component and ATC into `kata-manifest.json`. **MUST be loaded before proposing any new Component or ATC** — Critical Rule #12 in `CLAUDE.md`. The manifest is authoritative; the file system is not. Husky enforces freshness on commit (`bun run kata:manifest:check`), so the committed manifest is always trustworthy as the registry of record.

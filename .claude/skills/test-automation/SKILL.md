@@ -39,6 +39,7 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 
 - **Code phase scope rule**: each Code subagent edits multiple files in isolation, returns a list of changed files + a one-line summary per file. The orchestrator never reads the diffs — only the summary. If the user wants to see actual diffs, the orchestrator runs `git diff` inline after the subagent returns.
 - **On any Verifier failure**: STOP, return the failing report verbatim to the user, do NOT auto-fix the test code, do NOT re-dispatch the Code phase without user approval. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
+- **MANDATORY context doc for Plan + Code briefings**: include `kata-manifest.json` (root) in the "Context docs" component (item 2 of the 6-component briefing). Without it the subagent will scan `tests/components/**` directly, burn tokens, and risk proposing duplicates. See Critical Rule #12 in `CLAUDE.md`.
 
 ---
 
@@ -72,6 +73,14 @@ Phase 1: Plan         -> Phase 2: Code             -> Phase 3: Review
 Each phase has a gate. Do not start Code before the Plan is written and approved. Do not close out a ticket until Review passes.
 
 ### Phase 1 — Plan
+
+**MUST-load before any planning**: `kata-manifest.json` (root). It lists every Component and every ATC currently in the codebase. Use it to identify reuse, avoid duplicate `Page`/`Api` classes, and avoid minting an `@atc('TC-XXX')` ID that is already taken. This is enforced by Critical Rule #12 in `CLAUDE.md` and by the husky pre-commit gate.
+
+**Pre-flight checklist** (anti-duplication — run before writing the plan):
+
+- Load `kata-manifest.json`. Cross-check every proposed TC ID against `components.api[].atcs[].id` and `components.ui[].atcs[].id`. If a match exists, the TC is already automated — re-scope or reuse.
+- Cross-check every proposed Component name against `components.api[].name` and `components.ui[].name`. If a match exists, extend the existing class — do not create a new one.
+- If reuse opportunity exists (same flow already covered by a Steps method or ATC), adapt the plan to extend rather than rebuild.
 
 Write the plan file(s) for the chosen scope under `.context/PBI/{module}/test-specs/{TICKET-ID}/`. The plan answers:
 
@@ -151,6 +160,7 @@ Rules:
 13. **Each test generates its own data.** No shared state between tests. Use `TestContext.generateUserData()` or faker helpers for unique values.
 14. **Ticket ID prefix in every `test()`.** Format: `test('TICKET-ID: should {behavior} when {condition}', ...)`. The `describe` block may also include the ticket ID when the file is tied to a single ticket.
 15. **One component per file, one file per feature.** Components follow `{Resource}Api.ts` or `{Page}Page.ts`. Test files follow `{verb}{Feature}.test.ts` (e.g., `applyDiscount.test.ts`, never `discount.test.ts`).
+16. **Don't propose components or ATCs without consulting the manifest.** `kata-manifest.json` is the registry. Skipping it produces (a) duplicate Pages — proposing `LoginPage` when `LoginPage.ts` already exists; (b) duplicate ATC IDs — minting `@atc('TC-90')` twice; (c) missed reuse — creating `getBookingById` when `BookingsApi.getById` already does it. Always start the Plan phase by loading the manifest. The husky pre-commit gate enforces freshness; Critical Rule #12 in `CLAUDE.md` enforces consultation.
 
 ---
 
@@ -280,9 +290,11 @@ Tool resolution: use `[AUTOMATION_TOOL]` for browser work (Playwright CLI or MCP
 bun run test <path>
 bun run type-check
 bun run lint
+bun run kata:manifest               # regenerate registry if components/ATCs changed
+git add kata-manifest.json          # stage so the freshness gate passes
+bun run kata:manifest:check         # confirm gate would pass (husky runs this on commit)
 
 # Env + TMS sync
 cp .env.example .env                # populate test credentials
 bun run api:sync                    # regenerate OpenAPI schema types
-bun run kata:manifest               # extract ATC registry from code
 ```

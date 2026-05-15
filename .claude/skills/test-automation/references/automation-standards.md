@@ -768,15 +768,28 @@ These live alongside functional tests but are out of KATA's core scope. Add them
 
 ## 14. Quick Reference
 
+**Validation loop** — run for every task, in this order:
+
 ```bash
-# Local validation loop
+# 0. PRE-CODE — load kata-manifest.json (Critical Rule #12).
+#    Confirm proposed Components and ATC IDs are not duplicates.
+cat kata-manifest.json | jq '.components, .summary'   # or open in editor
+
+# 1-3. Code → tests → types → lint
 bun run test <path>
 bun run type-check
 bun run lint
 
-# Discovery + manifest
-bun run kata:manifest            # extract components + ATCs into kata-manifest.json
+# 4. If components or ATCs were added/changed, regenerate the manifest.
+bun run kata:manifest
 
+# 5. POST-CODE — stage the manifest if step 4 changed it, then validate
+#    that the husky pre-commit gate would pass.
+git add kata-manifest.json
+bun run kata:manifest:check       # exits 1 if the committed manifest is stale
+```
+
+```bash
 # OpenAPI schema sync (if API component types come from spec)
 bun run api:sync
 

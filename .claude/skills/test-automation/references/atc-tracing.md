@@ -317,6 +317,9 @@ Rules:
 bun run kata:manifest              # write kata-manifest.json at project root
 bun run kata:manifest:watch        # regenerate on file change
 bun run kata:manifest --stdout     # write to stdout instead of a file
+bun run kata:manifest:check        # CI-grade freshness check; exits 1 if kata-manifest.json is stale.
+                                   # Used by .husky/pre-commit when staged files touch
+                                   # tests/components/, scripts/kata-manifest.ts, or kata-manifest.json.
 ```
 
 Scan roots (hard-coded):

@@ -15,20 +15,22 @@ The Plan phase is delegated to a single subagent. The orchestrator does NOT read
 ```
 Goal: Produce spec.md + implementation-plan.md for scope <SCOPE> (module|ticket|ATC) <SCOPE_KEY>.
 Context docs:
+  - kata-manifest.json (root) — REQUIRED FIRST READ. Authoritative registry of every existing Component + ATC. Use it for reuse detection and ID-collision avoidance before drafting anything.
   - .context/PBI/<module>/<TICKET-ID>/context.md (if exists — ticket scope)
   - .context/master-test-plan.md
   - .context/business/business-data-map.md
   - .context/business/business-feature-map.md
   - .claude/skills/test-automation/references/kata-architecture.md
   - .claude/skills/test-automation/references/atc-tracing.md
-  - tests/components/<api|ui>/ (existing components for the scope)
+  - tests/components/<api|ui>/ (existing components — open ONLY when the manifest entry is ambiguous)
   - api/schemas/ (TypeScript types for API tests)
 Skills to load: (none — planning skill is loaded by orchestrator already)
 Exact instructions:
-  1. Read context docs to understand scope, business risks, and existing component coverage.
-  2. Draft spec.md with: scope summary, ATCs (with ATC-identity rule applied), parameter sets (Equivalence Partitioning), data fixtures needed.
-  3. Draft implementation-plan.md with: target file paths, fixture selection (api / ui / test), reused-vs-new components, dependency order, estimated complexity per ATC.
-  4. Write both files to <PBI_FOLDER>/test-specs/<scope-slug>/.
+  1. Load kata-manifest.json FIRST. Cross-check every candidate Component name against components.api[].name + components.ui[].name; cross-check every candidate ATC ID against components.{api,ui}[].atcs[].id. Treat any match as a reuse signal — never plan a duplicate.
+  2. Read remaining context docs to understand scope, business risks, and any coverage the manifest does not surface.
+  3. Draft spec.md with: scope summary, ATCs (with ATC-identity rule applied), parameter sets (Equivalence Partitioning), data fixtures needed.
+  4. Draft implementation-plan.md with: target file paths, fixture selection (api / ui / test), reused-vs-new components (cite manifest entries), dependency order, estimated complexity per ATC.
+  5. Write both files to <PBI_FOLDER>/test-specs/<scope-slug>/.
 Report format:
   JSON: { "spec_path": "...", "plan_path": "...", "atc_count": <int>, "new_components": [...], "reused_components": [...], "open_questions": [...] }
 Rules:
@@ -419,9 +421,11 @@ Disguised helpers — if the method only does a GET with a status-200 assertion,
 
 ---
 
-## 9. Using `bun run kata:manifest` during planning
+## 9. Using `kata-manifest.json` during planning
 
-`bun run kata:manifest` writes `kata-manifest.json` — a static registry of every component and every `@atc('ID')` call in `tests/components/**`. Run it **before** writing the plan so the plan references real existing components instead of fabricating duplicates.
+`kata-manifest.json` (root) is the authoritative registry of every component and every `@atc('ID')` call in `tests/components/**`. **MUST be loaded before drafting any plan** — Critical Rule #12 in `CLAUDE.md`. The husky pre-commit gate keeps the file fresh, so the manifest is always trustworthy; the file system is not (a freshly added component may exist on disk but the manifest is what reviewers and downstream agents consult).
+
+Regenerate when stale: `bun run kata:manifest`. Validate: `bun run kata:manifest:check` (CI-grade; exits 1 if stale).
 
 Planning tasks the manifest answers:
 
@@ -437,7 +441,7 @@ Include two tables in the implementation plan based on manifest output:
 - **Existing ATCs (Reuse)** — populated from manifest entries whose `id` matches ACs already covered.
 - **New ATCs (Create)** — ATC IDs that must be created for this ticket.
 
-Running the manifest costs nothing; always do it before proposing new components. A planned "new component" that the manifest already lists is a duplicate and will be rejected in review.
+A planned "new component" that the manifest already lists is a duplicate and will be rejected in review. A planned `@atc('TC-XXX')` ID that already appears in `atcs[].id` is an ID collision and will be rejected. Both errors are avoidable by reading `kata-manifest.json` first.
 
 ---
 

@@ -287,9 +287,34 @@ bun run test <path>         # 1. does the new test pass?
 bun run type-check          # 2. no TS errors
 bun run lint                # 3. no lint errors
 bun run kata:manifest       # 4. registry updated, ATCs visible
+git add kata-manifest.json  # 5. stage the manifest
+bun run kata:manifest:check # 6. confirm the husky pre-commit gate would pass
 ```
 
 Run in order. Do not chase lint errors before tests pass — the failing test may delete the offending code.
+
+### 7.4 Local quality loop — kata-manifest
+
+Two-command discipline for the test author:
+
+| Command | When | Effect |
+|---|---|---|
+| `bun run kata:manifest` | After adding/renaming a Component, ATC, or Steps method | Regenerates `kata-manifest.json` in place |
+| `bun run kata:manifest:check` | Before committing | Fails fast (exit 1) if the committed manifest is out of date |
+
+`.husky/pre-commit` runs `:check` automatically when staged files touch `tests/components/`, `scripts/kata-manifest.ts`, or `kata-manifest.json` itself. Commits that don't touch those paths skip the gate (no perf penalty).
+
+### 7.5 Manifest troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `--check` exits 1 with "stale" | Component or ATC change not regenerated | `bun run kata:manifest && git add kata-manifest.json` |
+| `--check` exits 1 with "missing" | `kata-manifest.json` not committed yet | `bun run kata:manifest && git add kata-manifest.json` (first-time only) |
+| ATC missing from manifest after regen | Used template literal `` @atc(`TC-${id}`) `` instead of string literal | Change to `@atc('TC-XXX')` — the scanner only matches string literals |
+| Phantom ATC in manifest | `@atc(...)` example inside a JSDoc/comment was captured | Confirm the scanner is comment-aware (commit `c339533` fixed this); ensure the comment line begins with `//` or `*` |
+| Component missing from manifest | File listed in `EXCLUDED_FILES` (`scripts/kata-manifest.ts`) | Rename the file, or remove it from the exclusion list |
+| Class name in manifest looks wrong | First `export class PascalCase` in the file is not the intended one | Make the intended class the first export; or refactor the file |
+| Husky gate fires on unrelated commit | Staged files include `tests/components/**` (e.g. README inside the dir) | Move the unrelated file out of `tests/components/`, or accept the gate run |
 
 ---
 
