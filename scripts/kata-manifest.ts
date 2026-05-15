@@ -13,7 +13,7 @@
  * Output: kata-manifest.json in project root
  */
 
-import { watch } from 'node:fs';
+import { existsSync, watch } from 'node:fs';
 import { basename, join, relative } from 'node:path';
 
 // ============================================================================
@@ -98,17 +98,40 @@ async function extractATCs(filePath: string): Promise<ATCInfo[]> {
   const atcPattern = /@atc\s*\(\s*['"]([^'"]+)['"]/g;
 
   lines.forEach((line, index) => {
+    // Skip @atc occurrences inside comments (//, JSDoc *, or //-prefixed lines).
+    // The regex is naive about JS syntax, so without this filter, examples
+    // inside doc comments like `e.g. @atc('UPEX-101')` produce phantom ATCs.
+    const trimmed = line.trim();
+    if (trimmed.startsWith('//') || trimmed.startsWith('*')) {
+      return;
+    }
+    const inlineCommentIdx = line.indexOf('//');
+    const atcIdx = line.indexOf('@atc');
+    if (inlineCommentIdx !== -1 && atcIdx !== -1 && inlineCommentIdx < atcIdx) {
+      return;
+    }
+
     const matches = [...line.matchAll(atcPattern)];
     for (const match of matches) {
       const atcId = match[1];
 
-      // Find the method name on the next non-empty line(s)
+      // Find the method name on the next non-empty line(s).
+      // Skip stacked decorators (`@other(...)`) and comment lines so the
+      // lookahead does not capture `atc` from an adjacent @atc decorator
+      // as a phantom method name.
       let methodName = 'unknown';
-      for (let i = index + 1; i < Math.min(index + 5, lines.length); i++) {
+      for (let i = index + 1; i < Math.min(index + 8, lines.length); i++) {
         const nextLine = lines[i].trim();
-        // Match: async methodName( or methodName(
+        if (
+          !nextLine
+          || nextLine.startsWith('//')
+          || nextLine.startsWith('*')
+          || nextLine.startsWith('@')
+        ) {
+          continue;
+        }
         const methodMatch = nextLine.match(/(?:async\s+)?(\w+)\s*\(/);
-        if (methodMatch && !nextLine.startsWith('//') && !nextLine.startsWith('*')) {
+        if (methodMatch) {
           methodName = methodMatch[1];
           break;
         }
@@ -167,8 +190,9 @@ async function extractPreconditionMethods(filePath: string): Promise<string[]> {
  * Scan a directory for TypeScript component files using Bun.Glob
  */
 async function scanDirectory(dirPath: string): Promise<string[]> {
-  const dir = Bun.file(dirPath);
-  if (!await dir.exists()) {
+  // Bun.file() is the file API — .exists() is always false for directory paths.
+  // Use existsSync from node:fs for directory checks.
+  if (!existsSync(dirPath)) {
     return [];
   }
 
@@ -297,8 +321,7 @@ async function main() {
     const dirsToWatch = [COMPONENT_PATHS.api, COMPONENT_PATHS.ui, COMPONENT_PATHS.preconditions];
 
     for (const dir of dirsToWatch) {
-      const dirFile = Bun.file(dir);
-      if (await dirFile.exists()) {
+      if (existsSync(dir)) {
         watch(dir, { recursive: true }, (eventType, filename) => {
           if (filename?.endsWith('.ts')) {
             console.log(`\n🔄 Change detected: ${filename}`);
