@@ -75,6 +75,18 @@ cp .env.example .env   # then fill in the values
 
 > Optional: run `bun run onboarding` first for a visual walkthrough of the repo. **Do not chain** `bun run onboarding && bun run setup` — the onboarding server is blocking, so chaining deadlocks. Close the browser tab + `Ctrl-C` the server when done, then run setup.
 
+### Polish your Claude Code status line (optional, recommended)
+
+After `bun run setup` succeeds, run the [`ccstatusline`](https://github.com/sirmalloc/ccstatusline) configurator to customize the Claude Code terminal status line (model, token usage, context %, git branch, etc.):
+
+```bash
+bunx -y ccstatusline@latest
+```
+
+> ⚠️ Run this in a **plain terminal window with no agent session running**. `ccstatusline` opens an interactive TUI configurator that needs full control of the terminal — launching it from inside an active Claude Code (or OpenCode) session will collide with the agent's own TUI.
+
+OpenCode users get the equivalent polish automatically: this repo's `opencode.jsonc` ships with the `opencode-subagent-statusline` plugin enabled, which surfaces the active subagent in the OpenCode status line out of the box.
+
 ### Launching the agent
 
 `.mcp.json` (Claude Code) and `opencode.jsonc` are committed with `${VAR}` / `{env:VAR}` expansion — real values live in `.env`. Launch the agent via one of these paths so the env vars get loaded:
@@ -228,7 +240,7 @@ bun run test:e2e:critical  # Tests marked @critical
 │   └── skills/                   # Symlink → .claude/skills/ (agentskills.io path)
 │
 ├── .claude/skills/               # Claude Code Skills (workflows)
-│   ├── agentic-qa-core/           # Foundation: shared references + bootstrap (`/agentic-qa-core init`)
+│   ├── agentic-qa-core/           # Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine)
 │   ├── project-discovery/        # Onboarding + context generation
 │   ├── sprint-testing/           # Planning + execution + reporting
 │   ├── test-documentation/       # TMS documentation + prioritization
@@ -480,17 +492,6 @@ When you clone this template, follow this flow to adapt it to your project:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ 0. (Optional) BOOTSTRAP FOUNDATION                          │
-│    Run `/agentic-qa-core init` ONLY if you adopted skills    │
-│    à la carte (e.g. cloned a single skill folder) and the   │
-│    foundation files (CLAUDE.md, .agents/, scripts/, the     │
-│    package.json scripts) are missing or partial. Skip when  │
-│    cloning the full repository — the foundation is already  │
-│    in place.                                                │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
 │ 1. CLONE TEMPLATE                                           │
 │    git clone https://github.com/upex-galaxy/               │
 │      agentic-qa-boilerplate.git my-tests                   │
@@ -542,7 +543,7 @@ When you clone this template, follow this flow to adapt it to your project:
 
 ```
 .claude/skills/
-├── agentic-qa-core/        # Foundation: shared references + bootstrap (`/agentic-qa-core init`)
+├── agentic-qa-core/        # Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine)
 ├── project-discovery/     # Onboarding and context generation (reverse engineering)
 ├── sprint-testing/        # In-sprint QA: plan + execute + report (per ticket)
 ├── test-documentation/    # TMS documentation and test prioritization
@@ -559,7 +560,7 @@ When you clone this template, follow this flow to adapt it to your project:
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
-| **agentic-qa-core** | `/agentic-qa-core init` | Foundation: hosts shared references cited by workflow skills (briefing template, dispatch patterns, orchestration doctrine) AND bootstraps the boilerplate's foundation files (`CLAUDE.md`, `.agents/`, `scripts/`, `package.json`). |
+| **agentic-qa-core** | (auto, cited by other skills) | Foundation: passive reference host for shared doctrine (briefing template, dispatch patterns, orchestration, skill-composition strategy). Loaded on demand by workflow skills — not invoked directly. |
 | **project-discovery** | `/project-discovery` | Onboard a project to this boilerplate. 4-phase discovery (Constitution -> Architecture -> Infrastructure -> Specification) producing PRD, SRS, domain glossary; orchestrates the `/business-*-map` and `/master-test-plan` commands. Reverse-engineering only. |
 | **sprint-testing** | `/sprint-testing` | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting). |
 | **test-documentation** | `/test-documentation` | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS. Produces Candidate / Manual / Deferred verdicts. |
@@ -574,16 +575,6 @@ When you clone this template, follow this flow to adapt it to your project:
 ### How to Use Each Skill
 
 Each skill auto-activates when your prompt matches its description triggers. You can also invoke a skill explicitly in Claude Code by typing its slash trigger (e.g. `/sprint-testing`). The sample prompts below are plain user utterances -- type them into the agent terminal as-is.
-
-#### 0. Bootstrapping the framework foundation
-
-- **Situation**: You adopted this boilerplate à la carte (e.g. cloned a single skill folder) and the foundation files (`CLAUDE.md`, `.agents/project.yaml`, `scripts/agents-*.ts`, the `agents:setup` and `jira:*` package scripts) are missing.
-- **Skill**: `/agentic-qa-core init`
-- **Sample prompts**:
-  - "Bootstrap the framework foundation."
-  - "Regenerate CLAUDE.md and the .agents/ files from templates."
-  - "Install the boilerplate scripts."
-- **What happens next**: The skill writes `.agents/project.yaml`, `.agents/jira-required.yaml`, `.agents/jira-fields.json`, the four `scripts/agents-*.ts` + `scripts/*-jira-*.ts` CLIs, merges the required scripts/dependencies into `package.json`, and finally writes `CLAUDE.md`. It is idempotent: existing files are preserved.
 
 #### 1. Onboarding a new project
 
@@ -673,7 +664,7 @@ Each skill auto-activates when your prompt matches its description triggers. You
 
 ### AI Memory (CLAUDE.md)
 
-Memory lives in `CLAUDE.md` — the single canonical file read by both Claude Code and OpenCode (the latter falls back to Claude Code conventions). Use `/sync-ai-memory` to sync all AI-critical documents and the project-specific facts inside them (Project Identity, Environment URLs, Discovery Progress, Access Configuration) across the repo in one pass. Structural sections (Critical Rules, Tool Resolution, Skills Available, etc.) are mirrored from `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template` and should be updated there when they evolve.
+Memory lives in `CLAUDE.md` — the single canonical file read by both Claude Code and OpenCode (the latter falls back to Claude Code conventions). Use `/sync-ai-memory` to sync all AI-critical documents and the project-specific facts inside them (Project Identity, Environment URLs, Discovery Progress, Access Configuration) across the repo in one pass.
 
 ### Multi-Agent Portability
 
@@ -783,7 +774,7 @@ Load the `/project-discovery` skill in your AI assistant to generate project-spe
 
 ## Documentation
 
-- `/agentic-qa-core` skill -- Foundation references + bootstrap (`/agentic-qa-core init`)
+- `agentic-qa-core` skill -- Foundation: passive reference host cited by workflow skills
 - `/project-discovery` skill -- Onboarding and context generation
 - `/sprint-testing` skill -- In-sprint QA (planning, execution, reporting)
 - `/test-documentation` skill -- TMS test documentation and prioritization

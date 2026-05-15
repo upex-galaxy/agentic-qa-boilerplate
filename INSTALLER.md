@@ -101,6 +101,15 @@ Then `bun run setup:doctor --json` to confirm.
 
 `.mcp.json` (Claude Code) and `opencode.jsonc` are committed with `${VAR}` / `{env:VAR}` placeholders. Real values live in `.env` (gitignored). If a server returns 401/403 at first call, the matching env var is missing — see `CLAUDE.md` Critical Rule #11 (stop, fix `.env`, restart the agent session).
 
+### Optional cosmetic polish
+
+Pure UX, zero behavioral change. Skip without consequence.
+
+| Agent | Tool | How |
+|---|---|---|
+| **Claude Code** | [`ccstatusline`](https://github.com/sirmalloc/ccstatusline) | `bunx -y ccstatusline@latest` — interactive TUI to customize the Claude Code status line (model, tokens, context %, git branch, etc.). **Run in a plain terminal with no active agent session**; the configurator owns the terminal while it runs and will collide with a live Claude Code TUI. |
+| **OpenCode** | `opencode-subagent-statusline` plugin | Already enabled in `opencode.jsonc` (`"plugin": [..., "opencode-subagent-statusline"]`). Shows the active subagent in the OpenCode status line. Nothing to install — `bun run opencode` picks it up. |
+
 ---
 
 ## What is gentle-ai and why this repo uses it
@@ -195,7 +204,7 @@ Skills that are workflow-specific to this boilerplate live in `.claude/skills/` 
 
 | Skill                | Trigger                | Why it stays local                                                            |
 | -------------------- | ---------------------- | ----------------------------------------------------------------------------- |
-| `agentic-qa-core`    | `/agentic-qa-core init`| Foundation: shared references + bootstrap of `.agents/` and CLAUDE.md         |
+| `agentic-qa-core`    | (auto, cited by other skills) | Foundation: passive reference host for briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy |
 | `agentic-qa-onboard` | `/agentic-qa-onboard`  | First-time orientation tour (this is the entry point for new contributors)    |
 | `project-discovery`  | `/project-discovery`   | 4-phase reverse-engineering of a target project (Constitution → Specification)|
 | `sprint-testing`     | `/sprint-testing`      | Stages 1-3: per-ticket manual QA loop (planning, execution, reporting)        |

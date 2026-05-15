@@ -116,9 +116,9 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 
 ```
 .claude/skills/
-├── agentic-qa-core/        → Foundation: shared references (briefing template, dispatch patterns, orchestration doctrine) + bootstrap (`/agentic-qa-core init`)
+├── agentic-qa-core/        → Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy). Cited on demand by workflow skills.
 ├── acli/                  → Atlassian CLI skill: Jira issue tracking + Modality B TMS operations
-├── project-discovery/     → 4-phase reverse-engineering, generates `.context/` artifacts. README/CLAUDE.md upkeep is `/sync-ai-memory`; foundation files are `/agentic-qa-core init`.
+├── project-discovery/     → 4-phase reverse-engineering, generates `.context/` artifacts. README/CLAUDE.md upkeep is `/sync-ai-memory`. Foundation files (`CLAUDE.md`, `.agents/`, `scripts/`) ship with the boilerplate and are not generated per project.
 ├── sprint-testing/        → In-sprint QA (planning + execution + reporting, per ticket)
 ├── test-documentation/    → TMS documentation + test prioritization
 ├── test-automation/       → KATA test planning + coding + review
@@ -128,7 +128,7 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 ```
 
 **Key Skills**:
-- `/agentic-qa-core init` - Foundation bootstrap (CLAUDE.md, .agents/, scripts/, package.json)
+- `agentic-qa-core` - Passive reference host cited by other skills (no direct invocation)
 - `/test-automation` - KATA test writing pipeline
 - `/sprint-testing` - End-to-end in-sprint QA
 - `/project-discovery` - Generates `.context/` artifacts; pair with `/sync-ai-memory` for README/CLAUDE.md upkeep
@@ -188,8 +188,7 @@ These files have stable names and locations. Reference them confidently:
 ### One-Time Setup (Discovery)
 
 ```
-Phase 0: Bootstrap       → /agentic-qa-core init  (writes CLAUDE.md, .agents/, scripts/, package.json updates)
-                          bun run agents:setup   (interactive walkthrough of .agents/project.yaml)
+Phase 0: Foundation      → bun run agents:setup   (interactive walkthrough of .agents/project.yaml)
                           bun run jira:sync-fields (catalog Jira workspace fields)
                           bun run jira:check     (validate against jira-required.yaml manifest)
                           bun run lint:agents    (verify every {{VAR}} and {{jira.<slug>}} resolves)
@@ -198,6 +197,8 @@ Phase 2: Architecture    → Document PRD + SRS
 Phase 3: Infrastructure  → Map technical stack
 Phase 4: Specification   → Connect to backlog
 ```
+
+> Foundation files (`CLAUDE.md`, `.agents/`, `scripts/`, `package.json`) ship with the boilerplate — clone the full repo rather than bootstrapping per project.
 
 **Output**: Populated `.agents/` config + `.context/` directories.
 
@@ -224,7 +225,6 @@ bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 | **Stage 5** | Automation: plan → code → review (KATA on Playwright + TS) | `/test-automation` |
 | **Stage 6** | Regression execution + failure classification + GO/NO-GO | `/regression-testing` |
 | **Onboarding** | 4-phase reverse-engineering of an existing target repo | `/project-discovery` + `/adapt-framework` |
-| **Bootstrap** | Foundation files for fresh adoption (CLAUDE.md, `.agents/`, scripts) | `/agentic-qa-core init` |
 
 ---
 
@@ -261,7 +261,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 
 | Role | Primary Skill(s) |
 |------|------------------|
-| **Project Onboarding** | `/agentic-qa-core init` -> `/project-discovery` -> `/adapt-framework` |
+| **Project Onboarding** | `/project-discovery` -> `/adapt-framework` |
 | **TAE (Test Automation)** | `/test-automation` |
 | **QA (Manual Testing)** | `/sprint-testing` + `/test-documentation` |
 | **DevOps** | `/regression-testing` |
@@ -301,7 +301,6 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 - Framework patterns or conventions change (update the relevant skill's `references/`)
 - Workflow steps change (update the SKILL.md orchestration)
 - New outputs required or better instructions discovered
-- Structural changes to `CLAUDE.md` must mirror `agentic-qa-core/templates/CLAUDE.md.template` in the same commit (the live file and the template are byte-equivalent for structural sections)
 
 ---
 

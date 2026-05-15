@@ -1335,8 +1335,9 @@
                       <code>bun install</code> → <code>bun run pw:install</code> →
                       <code>bun run agents:setup</code> → <code>bun run jira:sync-fields</code> →
                       <code>bun run jira:sync-workflows</code> → <code>bun run jira:check</code>.
-                      Or, if you cloned skills à la carte, run
-                      <code>/agentic-qa-core init</code> first.
+                      The foundation files (<code>CLAUDE.md</code>, <code>.agents/</code>,
+                      <code>scripts/</code>) ship with the boilerplate — clone the full repository,
+                      do not adopt skills à la carte.
                     </dd>
                     <dt>Produces</dt>
                     <dd>
@@ -1363,6 +1364,27 @@ bun run agents:setup          # interactive walkthrough
 bun run jira:sync-fields      # catalog custom fields
 bun run jira:sync-workflows   # catalog statuses + transitions per work_type
 bun run jira:check            # verify both catalogs against the manifest</code></pre>
+                  <dl>
+                    <dt>Optional cosmetic polish</dt>
+                    <dd>
+                      Pure UX, zero behavioral change. Skip without consequence.
+                      <ul>
+                        <li>
+                          <strong>Claude Code</strong> — run
+                          <code>bunx -y ccstatusline@latest</code> to configure the Claude Code
+                          status line (model, tokens, context %, git branch, ...). ⚠️ Run in a
+                          <em>plain terminal with no active agent session</em>; the configurator
+                          opens an interactive TUI and will collide with a live Claude Code session.
+                        </li>
+                        <li>
+                          <strong>OpenCode</strong> — the
+                          <code>opencode-subagent-statusline</code> plugin is already wired in
+                          <code>opencode.jsonc</code>. Shows the active subagent in the OpenCode
+                          status line. Nothing to install.
+                        </li>
+                      </ul>
+                    </dd>
+                  </dl>
                 </div>
               </details>
 
@@ -1550,27 +1572,6 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>
-                      <code>/agentic-qa-core init</code><br /><span class="muted small"
-                        >(skill, active mode)</span
-                      >
-                    </td>
-                    <td>
-                      Once, ONLY if the foundation files are missing (à la carte install). If you
-                      cloned the full repo, you NEVER invoke it directly.
-                    </td>
-                    <td>
-                      Generates <code>CLAUDE.md</code>, <code>.agents/project.yaml</code>,
-                      <code>.agents/jira-required.yaml</code>,
-                      <code>.agents/jira-fields.json</code>,
-                      <code>.agents/jira-workflows.json</code>, the
-                      <code>scripts/agents-*.ts</code> + <code>sync-jira-*.ts</code> CLIs, merges
-                      entries into <code>package.json</code>. Idempotent — existing files are
-                      preserved.
-                    </td>
-                    <td>One-time</td>
-                  </tr>
                   <tr>
                     <td>
                       <code>/adapt-framework</code><br /><span class="muted small"
@@ -2294,10 +2295,6 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     <td>Plain-English breakdown of automated tests</td>
                     <td><code>/break-down-tests</code></td>
                   </tr>
-                  <tr>
-                    <td>Bootstrap from scratch (à la carte install)</td>
-                    <td><code>/agentic-qa-core init</code></td>
-                  </tr>
                 </tbody>
               </table>
             </div>
@@ -2334,12 +2331,11 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   <span class="skill-card-name">agentic-qa-core</span>
                   <span class="badge badge-foundation">Foundation</span>
                 </div>
-                <p class="skill-card-trigger">/agentic-qa-core init</p>
+                <p class="skill-card-trigger">(auto, cited by other skills)</p>
                 <p class="skill-card-desc">
-                  Bootstraps the foundation files (<code>CLAUDE.md</code>, <code>.agents/</code>,
-                  scripts, <code>package.json</code> entries) AND hosts shared references (briefing
-                  template, dispatch patterns, orchestration doctrine) that other skills cite on
-                  demand. Two roles, one skill.
+                  Passive reference host. Hosts the shared doctrine (briefing template, dispatch
+                  patterns, orchestration, skill-composition strategy) that workflow skills cite on
+                  demand. Not invoked directly.
                 </p>
               </article>
 

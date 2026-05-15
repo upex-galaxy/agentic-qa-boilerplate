@@ -219,7 +219,7 @@ Different files have different sections that must never be rewritten. Apply the 
 - §2 BEHAVIORAL LAYER — HOW AI REASONS (4 UPPERCASE principles)
 - §3 ORCHESTRATION MODE — PERMANENTLY ACTIVE (6-component briefing, execution patterns)
 - §4 CONTEXT LOADING MAP — TASK → WHAT TO LOAD (preserve table SHAPE; rows may be patched)
-- §5 SKILLS + COMMANDS + MCPs REGISTRY (3 tables — patched for command name changes via Step 4.5; updated separately by `/agentic-qa-core init` or manually)
+- §5 SKILLS + COMMANDS + MCPs REGISTRY (3 tables — patched for command name changes via Step 4.5; updated manually when the skill/command set evolves)
 - §6 TOOL RESOLUTION ([TAG_TOOL] pseudocode table + MANDATORY load-skill-first rule)
 - §7 PROJECT VARIABLES — POINTER (pointer-only to `.agents/README.md` + `.agents/project.yaml`; never inline project values here)
 - §8 AI BEHAVIOR DURING TESTING (4 numbered behaviors)
@@ -375,9 +375,9 @@ This step focuses on the AI memory file (`CLAUDE.md` or equivalent). It receives
 
 **If the memory file does not yet exist:**
 
-Do NOT bootstrap from inside `/sync-ai-memory`. Tell the user to run `/claude-md-tuner` in `bootstrap` mode — it owns CLAUDE.md creation against the §0–§11 priority template at `.claude/skills/agentic-qa-core/templates/CLAUDE.md.template`. Once CLAUDE.md exists, re-run `/sync-ai-memory` to align cross-doc facts.
+Do NOT bootstrap from inside `/sync-ai-memory`. Clone the full boilerplate repository — `CLAUDE.md` ships at the repo root and is inseparable from the rest of the foundation (`.agents/`, `scripts/`, `.claude/skills/`). Once `CLAUDE.md` exists, re-run `/sync-ai-memory` to align cross-doc facts.
 
-Do **not** copy from a sibling project's `CLAUDE.md` — those are downstream consumers, not templates.
+Do **not** copy from a sibling project's `CLAUDE.md` — those are downstream consumers, not sources of truth.
 
 ---
 

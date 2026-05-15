@@ -568,7 +568,7 @@ The practice uses three complementary kinds of AI capability:
 
 | Skill                 | Stage        | When it fires                                                                  |
 | --------------------- | ------------ | ------------------------------------------------------------------------------ |
-| `agentic-qa-core`      | Foundation   | "regenerate CLAUDE.md", "agentic-qa bootstrap", "setup agentic-qa foundation", "install boilerplate scripts" |
+| `agentic-qa-core`      | Foundation   | (auto, cited by other skills) — passive reference host for briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy |
 | `project-discovery`   | Onboarding   | "set up this project", "onboard this repo", "generate business-data-map", "discover the architecture" |
 | `sprint-testing`      | 1 · 2 · 3    | "test {{PROJECT_KEY}}-XXX", "process sprint N", "retest bug", "QA this story", "mode yolo" |
 | `test-documentation`  | 4            | "document tests", "ROI analysis", "Candidate vs Manual", "fix traceability"    |

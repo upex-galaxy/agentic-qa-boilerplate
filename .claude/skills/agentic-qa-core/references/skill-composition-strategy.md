@@ -139,7 +139,7 @@ Without the gate, an AI orchestrator handed "QA this user story `UPEX-277`" will
 - `tests/fixtures/` (fixture registry evolution)
 - `api/schemas/sync-openapi.ts` and the sync pipeline (NOT generated `types.ts`)
 - `package.json` deps + scripts
-- `.claude/skills/agentic-qa-core/templates/` and `references/`
+- `.claude/skills/agentic-qa-core/references/`
 - `.claude/skills/framework-development/`
 - `.claude/commands/` (slash-command source)
 

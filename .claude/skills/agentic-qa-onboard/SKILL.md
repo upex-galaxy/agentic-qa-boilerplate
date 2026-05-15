@@ -166,7 +166,7 @@ Verify your config with `bun run lint:agents` (should report 0 errors when fully
 
 | Skill                | Trigger                | Purpose                                                                        |
 | -------------------- | ---------------------- | ------------------------------------------------------------------------------ |
-| `agentic-qa-core`    | `/agentic-qa-core init`| One-time bootstrap of `.agents/`, scripts, CLAUDE.md (foundation skill)        |
+| `agentic-qa-core`    | (auto, cited by other skills) | Passive reference host: briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy |
 | `agentic-qa-onboard` | `/agentic-qa-onboard`  | This skill — first-time orientation                                            |
 | `project-discovery`  | `/project-discovery`   | 4-phase reverse-engineering of a target project                                |
 | `sprint-testing`     | `/sprint-testing`      | Stages 1-3 — per-ticket manual QA loop                                         |
