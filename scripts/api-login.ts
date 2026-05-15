@@ -4,7 +4,11 @@
  *
  * Authenticates against the project API and stores the token for:
  *   1. Playwright tests  → .auth/api-state.json
- *   2. OpenAPI MCP tools → .mcp.json (API_HEADERS env var)
+ *   2. OpenAPI MCP tools → .env (API_TOKEN var, consumed at MCP-server spawn
+ *      via .mcp.json `${API_TOKEN}` and opencode.jsonc `{env:API_TOKEN}`)
+ *
+ * After running this command, RESTART the terminal session before re-launching
+ * Claude Code or OpenCode — MCP servers cache env vars at spawn time.
  *
  * Usage:
  *   bun run api:login                 # Uses TEST_ENV from .env (default: local)
@@ -19,7 +23,7 @@
 
 import type { ApiState } from '@data/types';
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 // ============================================
@@ -67,7 +71,8 @@ const { config, env } = await import('@variables');
 // ============================================
 
 const PROJECT_ROOT = resolve(import.meta.dir, '..');
-const MCP_CONFIG_FILE = resolve(PROJECT_ROOT, '.mcp.json');
+const ENV_FILE = resolve(PROJECT_ROOT, '.env');
+const ENV_TOKEN_KEY = 'API_TOKEN';
 
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║  PROJECT-SPECIFIC AUTHENTICATION CONFIGURATION                  ║
@@ -105,9 +110,6 @@ function extractTokenFromResponse(body: Record<string, unknown>): {
     refreshToken: body.refresh_token ? String(body.refresh_token) : null,
   };
 }
-
-/** Key used to find the OpenAPI MCP server in .mcp.json */
-const MCP_SERVER_KEY = 'openapi';
 
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║  END OF PROJECT-SPECIFIC CONFIGURATION                          ║
@@ -187,63 +189,55 @@ function saveApiState(apiState: ApiState): void {
 }
 
 // ============================================
-// Token Storage: .mcp.json (OpenAPI MCP)
+// Token Storage: .env (consumed by MCP servers at spawn)
 // ============================================
+//
+// Both .mcp.json (Claude Code) and opencode.jsonc (OpenCode) reference the
+// API_TOKEN env var via expansion (`${API_TOKEN}` and `{env:API_TOKEN}`).
+// We only need to keep .env in sync — never write secrets into the committed
+// config files. After this runs, the user must restart their terminal
+// session so MCP servers pick up the new value at spawn time.
 
-interface McpConfig {
-  mcpServers?: Record<string, {
-    command?: string
-    args?: string[]
-    env?: Record<string, string>
-    [key: string]: unknown
-  }>
-  [key: string]: unknown
-}
-
-function updateMcpConfig(token: string): void {
-  if (!existsSync(MCP_CONFIG_FILE)) {
-    log(`.mcp.json not found at ${MCP_CONFIG_FILE} — skipping MCP update.`, 'warn');
+function updateEnvFile(token: string): void {
+  if (!existsSync(ENV_FILE)) {
+    log(`.env not found at ${ENV_FILE} — copy .env.example to .env first.`, 'error');
+    log('Token saved to .auth/api-state.json only. MCP servers will not see it.', 'warn');
     return;
   }
 
-  try {
-    const raw = readFileSync(MCP_CONFIG_FILE, 'utf-8');
-    const mcpConfig: McpConfig = JSON.parse(raw);
+  const raw = readFileSync(ENV_FILE, 'utf-8');
+  const trailingNewline = raw.endsWith('\n');
+  const lines = raw.split('\n');
+  const linePattern = new RegExp(`^${ENV_TOKEN_KEY}\\s*=`);
+  const replacement = `${ENV_TOKEN_KEY}=${token}`;
 
-    if (!mcpConfig.mcpServers?.[MCP_SERVER_KEY]) {
-      log(`No "${MCP_SERVER_KEY}" server found in .mcp.json — skipping MCP update.`, 'warn');
-      log('Token is still saved for Playwright tests.', 'info');
-      return;
+  let replaced = false;
+  const updated = lines.map((line) => {
+    if (linePattern.test(line)) {
+      replaced = true;
+      return replacement;
     }
+    return line;
+  });
 
-    const server = mcpConfig.mcpServers[MCP_SERVER_KEY];
-
-    if (!server.env) {
-      server.env = {};
-    }
-
-    // Update or set the API_HEADERS env var with the new Bearer token
-    const currentHeaders = server.env.API_HEADERS ?? '';
-    const bearerPattern = /Authorization:\s*Bearer\s+\S+/;
-
-    if (bearerPattern.test(currentHeaders)) {
-      server.env.API_HEADERS = currentHeaders.replace(
-        bearerPattern,
-        `Authorization:Bearer ${token}`,
-      );
+  if (!replaced) {
+    if (trailingNewline) {
+      // Drop the empty trailing element split() produced, append new line, restore newline.
+      if (updated[updated.length - 1] === '') {
+        updated.pop();
+      }
+      updated.push(replacement);
+      updated.push('');
     }
     else {
-      const separator = currentHeaders ? ' | ' : '';
-      server.env.API_HEADERS = `${currentHeaders}${separator}Authorization:Bearer ${token}`;
+      updated.push(replacement);
     }
+  }
 
-    writeFileSync(MCP_CONFIG_FILE, `${JSON.stringify(mcpConfig, null, 2)}\n`);
-    log(`MCP config updated: ${MCP_SERVER_KEY} server API_HEADERS`, 'success');
-  }
-  catch (error) {
-    log('Failed to update .mcp.json — token is still saved for tests.', 'warn');
-    log(`  ${String(error)}`, 'warn');
-  }
+  const tmpFile = `${ENV_FILE}.tmp`;
+  writeFileSync(tmpFile, updated.join('\n'));
+  renameSync(tmpFile, ENV_FILE);
+  log(`Token saved to .env (${ENV_TOKEN_KEY})`, 'success');
 }
 
 // ============================================
@@ -268,7 +262,9 @@ function showHelp(): void {
 
 \x1B[1mTOKEN STORAGE\x1B[0m
   .auth/api-state.json    Used by Playwright test fixtures
-  .mcp.json               Injected into OpenAPI MCP server (if configured)
+  .env (API_TOKEN)        Read by .mcp.json (\${API_TOKEN}) and
+                          opencode.jsonc ({env:API_TOKEN}) at MCP-server spawn.
+                          RESTART your terminal after login so MCPs pick it up.
 
 \x1B[1mREQUIRED .env VARIABLES\x1B[0m
   For local:    LOCAL_USER_EMAIL, LOCAL_USER_PASSWORD
@@ -277,7 +273,6 @@ function showHelp(): void {
 \x1B[1mCONFIGURATION\x1B[0m
   Environment URLs:   config/variables.ts (envDataMap)
   Auth format:        scripts/api-login.ts (PROJECT-SPECIFIC section)
-  MCP server key:     scripts/api-login.ts (MCP_SERVER_KEY constant)
 
 \x1B[1mOPTIONS\x1B[0m
   -h, --help    Show this help
@@ -305,7 +300,10 @@ log(`Expires in: ${apiState.expiresIn} seconds`);
 // 2. Save token to api-state.json
 saveApiState(apiState);
 
-// 3. Update .mcp.json (best-effort)
-updateMcpConfig(apiState.token);
+// 3. Sync API_TOKEN into .env so MCP servers pick it up at next spawn.
+updateEnvFile(apiState.token);
 
-console.log('\n\x1B[32m\u2713 Login completed!\x1B[0m\n');
+console.log('\n\x1B[32m\u2713 Login completed!\x1B[0m');
+console.log('\n\x1B[33m\u26A0\x1B[0m  RESTART your terminal session before re-launching Claude Code or OpenCode.');
+console.log('   MCP servers cache env vars at spawn time \u2014 they will not pick up the');
+console.log('   new API_TOKEN until the parent shell is restarted.\n');
