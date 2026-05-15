@@ -346,13 +346,30 @@ async function verifyRepoRoot(): Promise<void> {
   }
   const raw = await readFile(pkgPath, 'utf8');
   const pkg = JSON.parse(raw) as { name?: string };
-  if (pkg.name !== REPO_NAME) {
-    const proceed = await maybeConfirm(
-      `package.json name is "${pkg.name ?? '(unknown)'}" (expected "${REPO_NAME}"). Continue anyway?`,
-      false,
-    );
-    if (!proceed) { process.exit(0); }
+
+  if (pkg.name === REPO_NAME) { return; }
+
+  // Accept projects bootstrapped from this template — they keep a marker
+  // file even though their package.json name is the user-chosen name.
+  const markerPath = join(REPO_ROOT, '.agents', 'template-marker.json');
+  if (existsSync(markerPath)) {
+    try {
+      const marker = JSON.parse(await readFile(markerPath, 'utf8')) as { template?: string };
+      if (marker.template === 'upex-galaxy/agentic-qa-boilerplate') {
+        log.info(`Bootstrapped project detected: ${pkg.name ?? '(unknown)'}`);
+        return;
+      }
+    }
+    catch {
+      // fall through to confirm
+    }
   }
+
+  const proceed = await maybeConfirm(
+    `package.json name is "${pkg.name ?? '(unknown)'}" (expected "${REPO_NAME}"). Continue anyway?`,
+    false,
+  );
+  if (!proceed) { process.exit(0); }
 }
 
 // ============================================================================

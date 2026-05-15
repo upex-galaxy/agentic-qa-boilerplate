@@ -1,0 +1,6 @@
+{
+  "template": "upex-galaxy/agentic-qa-boilerplate",
+  "templateBranch": "main",
+  "minCliVersion": "0.1.0",
+  "description": "Sentinel file. Presence + matching `template` field means this repo was bootstrapped from the agentic-qa-boilerplate template via `create-agentic-qa`. Used by the installer (cli/install.ts) to relax the repo-identity check, and by the CLI to detect in-repo invocations (--here mode)."
+}
