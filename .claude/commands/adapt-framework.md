@@ -30,7 +30,7 @@ Verify every bullet before drafting the plan. Split into **hard** (block) and **
 
 ### Hard prerequisites — block Phase 1 if missing
 
-- [ ] `.context/PRD/` populated (at least `README.md` + one business document)
+- [ ] `.context/PRD/` populated (at least `README.md`) AND `.context/business/business-model.md` or `domain-glossary.md` present
 - [ ] `.context/SRS/architecture.md` present
 - [ ] `.context/infrastructure/backend.md` and `.context/infrastructure/frontend.md` present
 - [ ] `.context/business/business-data-map.md` present
@@ -82,7 +82,7 @@ Never skip Phase 1. Never start Phase 2 without explicit user approval on the pl
 
 ### 1.1 Read existing project context
 
-Read in this order: `.context/SRS/architecture.md`, `api/openapi-types.ts` (if generated — technical API surface) or the OpenAPI spec URL recorded in `.context/project-config.md` (to be synced later), `.context/business/business-data-map.md`, `.context/business/business-feature-map.md` (if present), `.context/business/business-api-map.md` (if present), `.context/master-test-plan.md` (if present), `.context/infrastructure/backend.md`, `.context/infrastructure/frontend.md`, `.context/PRD/business/domain-glossary.md` (if present), `.env.example`.
+Read in this order: `.context/SRS/architecture.md`, `api/openapi-types.ts` (if generated — technical API surface) or the OpenAPI spec URL recorded in `.context/project-config.md` (to be synced later), `.context/business/business-data-map.md`, `.context/business/business-feature-map.md` (if present), `.context/business/business-api-map.md` (if present), `.context/master-test-plan.md` (if present), `.context/infrastructure/backend.md`, `.context/infrastructure/frontend.md`, `.context/business/domain-glossary.md` (if present), `.env.example`.
 
 ### 1.2 Read KATA references
 

@@ -55,7 +55,7 @@
  *   tests/data/                 Your fixtures and factories
  *   tests/setup/                Your auth setup
  *   playwright.config           Your test configuration
- *   .context/PRD|SRS|idea|PBI   Your generated discovery content
+ *   .context/PRD|SRS|business|idea|PBI   Your generated discovery content
  *   .agents/project.yaml        Your project variables (per-repo config)
  *   .agents/jira-fields.json    Auto-generated Jira field catalog
  *   .agents/jira-required.yaml  Manifest customised per project (optional/unmapped)

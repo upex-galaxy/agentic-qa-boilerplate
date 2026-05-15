@@ -29,7 +29,7 @@ Exhaust every source before writing. Do not rely on a single one.
 | API endpoints | Routes, methods, payloads, auth levels | `[API_TOOL]` or read `api/openapi.json` if it exists; otherwise read route files directly |
 | Backend codebase | Services, business logic, validation rules, triggers | Read `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` — focus on services, controllers, models |
 | Frontend codebase | Pages, forms, user flows, state management | Read `{{FRONTEND_REPO}}/{{FRONTEND_ENTRY}}` — focus on routes, pages, forms |
-| Existing context | PRD, SRS, domain glossary | `.context/PRD/`, `.context/SRS/`, `.context/PRD/business/` |
+| Existing context | PRD, SRS, business model + domain glossary | `.context/PRD/`, `.context/SRS/`, `.context/business/` |
 | Package dependencies | External integrations (Stripe, SendGrid, Auth0, etc.) | Read `package.json`, `requirements.txt`, `Gemfile`, etc. |
 
 **Golden rule**: Synthesize, don't extract. The DB MCP is live — use it to UNDERSTAND the system, not to dump `information_schema` into markdown.

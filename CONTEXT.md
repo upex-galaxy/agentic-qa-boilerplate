@@ -254,7 +254,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 |------|------------|----------------|
 | **Write E2E or API Test** | `/test-automation` (SKILL.md) | The skill's own `references/` (planning playbook, KATA patterns, etc.) |
 | **Exploratory Testing** | `/sprint-testing` (SKILL.md) + `.context/master-test-plan.md` | Skill `references/` (exploration patterns, session entry points) |
-| **Understand System** | `.context/business/business-data-map.md` | `.context/PRD/*`, `.context/SRS/*` |
+| **Understand System** | `.context/business/business-data-map.md` | `.context/business/*`, `.context/PRD/*`, `.context/SRS/*` |
 | **Use MCP** | `CLAUDE.md` §"MCPs Available" + §"Tool Resolution" | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
 
 ### By Role

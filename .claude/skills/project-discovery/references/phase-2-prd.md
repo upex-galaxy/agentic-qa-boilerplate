@@ -12,7 +12,7 @@ Produce the Product Requirements Documents by reading the code, not by interview
                             (output: .context/business/business-feature-map.md)
 ```
 
-Prereqs (from Phase 1): `.context/PRD/business/business-model.md` and `.context/PRD/business/domain-glossary.md` must exist. Personas link to roles already identified in the glossary; journeys link to features already identified in the business model.
+Prereqs (from Phase 1): `.context/business/business-model.md` and `.context/business/domain-glossary.md` must exist. Personas link to roles already identified in the glossary; journeys link to features already identified in the business model.
 
 **Mindset**: product discovery, not product creation. Every claim cites a code or doc source. Aspirational language ("will eventually support") belongs in Discovery Gaps, not in the doc body.
 

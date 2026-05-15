@@ -7,8 +7,8 @@ The first phase of project discovery. Goal: make the project legible. Produces f
 ```
 1. Project Connection    -> .context/project-config.md
 2. Project Assessment    -> CLAUDE.md §Project Assessment + .context/risk-assessment.md (if HIGH risks)
-3. Business Model        -> .context/PRD/business/business-model.md
-4. Domain Glossary       -> .context/PRD/business/domain-glossary.md
+3. Business Model        -> .context/business/business-model.md
+4. Domain Glossary       -> .context/business/domain-glossary.md
 ```
 
 Rule: no sub-step starts until the previous one's file exists on disk.
@@ -269,7 +269,7 @@ grep -rE "\b(price|subscription|plan|tier|stripe|paypal)\b" --include="*.ts" --i
 grep -E "stripe|paypal|paddle|lemonsqueezy" <repo-root>/package.json
 ```
 
-### Output: `.context/PRD/business/business-model.md`
+### Output: `.context/business/business-model.md`
 
 Sections (in this order):
 
@@ -296,7 +296,7 @@ Sections (in this order):
 
 ### Completion criteria
 
-- `.context/PRD/business/business-model.md` exists.
+- `.context/business/business-model.md` exists.
 - At least Customer Segments + Value Propositions + Key Activities + Sources are populated with real evidence.
 - Discovery Gaps section lists everything marked Unknown.
 
@@ -335,7 +335,7 @@ cat <repo-root>/src/locales/en.json 2>/dev/null
 cat <repo-root>/public/locales/en/*.json 2>/dev/null
 ```
 
-### Output: `.context/PRD/business/domain-glossary.md`
+### Output: `.context/business/domain-glossary.md`
 
 Required sections:
 
@@ -364,7 +364,7 @@ Required sections:
 
 ### Completion criteria
 
-- `.context/PRD/business/domain-glossary.md` exists.
+- `.context/business/domain-glossary.md` exists.
 - At least all `Core Entities` found in the schema are documented (no skipping).
 - One `erDiagram` is present and parses as valid Mermaid.
 
@@ -376,8 +376,8 @@ Before proceeding to Phase 2:
 
 - [ ] `.context/project-config.md` exists and is non-empty.
 - [ ] `## Project Assessment (Phase 1)` block present in `CLAUDE.md` (CLAUDE.md is a symlink to it).
-- [ ] `.context/PRD/business/business-model.md` exists with real sources cited.
-- [ ] `.context/PRD/business/domain-glossary.md` exists with at least Core Entities + Relationships Diagram.
+- [ ] `.context/business/business-model.md` exists with real sources cited.
+- [ ] `.context/business/domain-glossary.md` exists with at least Core Entities + Relationships Diagram.
 - [ ] All Discovery Gaps are listed explicitly (no silent skipping).
 - [ ] The user has confirmed "Phase 1 complete, proceed to Phase 2".
 

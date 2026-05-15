@@ -33,7 +33,7 @@ Exhaust every source. Do not rely on code alone — cross-reference with DB, API
 | Backend services | Business logic, validation, processing | Read `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` — focus on services, controllers, handlers |
 | Package dependencies | Third-party integrations (payments, email, auth, analytics) | Read `package.json`, `requirements.txt`, `Gemfile`, etc. |
 | Feature flags / env vars | Disabled or experimental features | Grep for `FEATURE_`, `isEnabled`, `feature.*flag` in codebase and `.env.example` |
-| Existing context | PRD, SRS, business-data-map, domain glossary | `.context/PRD/`, `.context/SRS/`, `.context/business/business-data-map.md`, `.context/PRD/business/` |
+| Existing context | PRD, SRS, business-data-map, domain glossary | `.context/PRD/`, `.context/SRS/`, `.context/business/` |
 | Git history (recent) | Recently added or changed features | `git log --oneline -30` for activity patterns |
 
 **Golden rule**: a feature is any **capability the system offers** — API endpoints, UI actions, background processes, integrations. If a user or system can DO it, it's a feature.

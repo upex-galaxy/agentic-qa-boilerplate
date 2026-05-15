@@ -57,7 +57,7 @@ The output document has seven sections. AI fills each one by reading the specifi
 
 ### 1. Business Context
 
-From `business-data-map.md` + `.context/PRD/*` (if present) extract:
+From `business-data-map.md` + `.context/business/business-model.md` + `.context/PRD/*` (if present) extract:
 
 - Primary user personas affected
 - Business value proposition and success metrics (KPIs the feature influences)

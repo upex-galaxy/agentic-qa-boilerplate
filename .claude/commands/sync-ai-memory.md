@@ -59,7 +59,7 @@ ls .context/business/business-data-map.md .context/master-test-plan.md .context/
 ls api/schemas/ 2>/dev/null
 
 # Project identity
-ls .context/PRD/business/business-model.md .context/PRD/business/domain-glossary.md .context/project-config.md 2>/dev/null
+ls .context/business/business-model.md .context/business/domain-glossary.md .context/project-config.md 2>/dev/null
 ```
 
 **Mode selection:**
@@ -157,8 +157,8 @@ SYNC TARGET LIST:
 Read in priority order. Stop at the first source that answers each question — do not load everything.
 
 **Priority 1 (project identity):**
-- `.context/PRD/business/business-model.md`
-- `.context/PRD/business/domain-glossary.md`
+- `.context/business/business-model.md`
+- `.context/business/domain-glossary.md`
 - `.context/project-config.md`
 
 **Priority 2 (technical context):**

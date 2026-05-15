@@ -31,7 +31,7 @@ Load the `/project-discovery` skill:
 
 ### Prerequisites
 
-- `.context/PRD/business/` must be populated (Phase 1)
+- `.context/business/business-model.md` and `domain-glossary.md` must be populated (Phase 1)
 - `.context/PRD/` must be populated (Phase 2 PRD prompts)
 - Access to source code (backend, frontend)
 - Access to database schema

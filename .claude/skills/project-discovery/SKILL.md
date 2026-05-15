@@ -53,7 +53,7 @@ Default to "Fresh onboarding" when in doubt. Confirm the scope with the user bef
 Phase 1: Constitution        -> Phase 2: Architecture       -> Phase 3: Infrastructure    -> Phase 4: Specification
 (who/what/why)                 (PRD + SRS)                    (backend/frontend/infra)       (PBI mapping)
                 |                      |                              |                              |
-   .context/PRD/business/        .context/PRD/*.md           .context/infrastructure/*.md     .context/PBI/README.md
+   .context/business/            .context/PRD/*.md           .context/infrastructure/*.md     .context/PBI/README.md
    business-model.md            .context/SRS/*.md                                             templates/*.md
    domain-glossary.md
    project-config.md
@@ -83,7 +83,7 @@ Four sub-steps, in order:
 3. **Business Model Discovery** -- problem statement, target users, value proposition, revenue model (if any). Business Model Canvas recommended.
 4. **Domain Glossary** -- core entities, relationships, state machines, enumerations, UI-label vs code-identifier mapping.
 
-**Completion gate**: `.context/PRD/business/business-model.md`, `.context/PRD/business/domain-glossary.md`, `.context/project-config.md` all exist and are non-empty. Plus a `## Project Assessment (Phase 1)` block in `CLAUDE.md` (CLAUDE.md is a symlink to it). Sanity-check content — these are soft gates, surfaced to the human as warnings, not hard aborts:
+**Completion gate**: `.context/business/business-model.md`, `.context/business/domain-glossary.md`, `.context/project-config.md` all exist and are non-empty. Plus a `## Project Assessment (Phase 1)` block in `CLAUDE.md` (CLAUDE.md is a symlink to it). Sanity-check content — these are soft gates, surfaced to the human as warnings, not hard aborts:
 - `domain-glossary.md` contains at least 5 core-entity subsections (grep `^### ` yields 5+ matches, ignoring top-level H3s from "Enumerations" etc. — aim for real entities).
 - `business-model.md` cites at least one concrete source (`Source:` or `Found in:` literal appears 3+ times).
 - `project-config.md` has a `## Tech Stack` section AND a `## Environments` section.
@@ -179,7 +179,7 @@ When Phase 4 is confirmed complete, print this block to the user verbatim:
 
 ```
 Discovery complete. `/project-discovery` has populated:
-- .context/PRD/business/business-model.md, domain-glossary.md
+- .context/business/business-model.md, domain-glossary.md
 - .context/project-config.md
 - .context/PRD/executive-summary.md, user-personas.md, user-journeys.md
 - .context/SRS/architecture.md, functional-specs.md, non-functional-specs.md
@@ -207,7 +207,7 @@ If the user asks to chain them automatically: decline politely. Each command con
 
 Before the user invokes `/adapt-framework`, verify every file below is on disk. If any is missing, re-run the phase that produces it (or the corresponding post-discovery command) before invoking `/adapt-framework`:
 
-- [ ] `.context/PRD/` populated (at least `README.md` + one business document in `.context/PRD/business/`)
+- [ ] `.context/PRD/` populated (at least `README.md`) AND `.context/business/business-model.md` or `domain-glossary.md` present
 - [ ] `.context/SRS/architecture.md`
 - [ ] `.context/infrastructure/backend.md` and `.context/infrastructure/frontend.md`
 - [ ] `.context/business/business-data-map.md`
