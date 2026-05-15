@@ -393,23 +393,49 @@ interface ClaudeMdSkillEntry {
   sourceLine: number
 }
 
-const CLAUDE_MD_SKILL_ROW = /^\|\s*`([\w-]+)`\s*\|/gm;
+const CLAUDE_MD_SKILL_ROW = /^\|\s*`([\w-]+)`\s*\|/;
+const CLAUDE_MD_H2 = /^## (.+)$/;
+
+/**
+ * Detects whether an H2 heading line belongs to §5 (Skills registry).
+ * Matches headings that start with "5." or are exactly "5" followed by
+ * optional punctuation/whitespace, e.g.:
+ *   "5. SKILLS + COMMANDS + MCPs REGISTRY"
+ *   "5 Skills"
+ */
+function isSection5Heading(heading: string): boolean {
+  return /^5[.\s]/.test(heading.trim());
+}
 
 function parseClaudeMdSkillsRegistry(claudeMdPath: string): {
   entries: ClaudeMdSkillEntry[]
   parseError?: string
 } {
   const text = readFileSync(claudeMdPath, 'utf8');
+  const lines = text.split('\n');
   const entries: ClaudeMdSkillEntry[] = [];
 
-  // Reset lastIndex since the regex is reused (global flag).
-  CLAUDE_MD_SKILL_ROW.lastIndex = 0;
-  for (const match of text.matchAll(CLAUDE_MD_SKILL_ROW)) {
-    const name = match[1];
-    // Compute 1-based line number from match offset.
-    const offset = match.index ?? 0;
-    const sourceLine = text.slice(0, offset).split('\n').length;
-    entries.push({ name, sourceLine });
+  // Walk lines tracking the current H2 section. Only collect skill-row matches
+  // when the nearest preceding H2 heading is §5 (Skills registry). This prevents
+  // the regex from matching table rows in other sections (e.g., §11 git-branches
+  // table which has | `main` | and | `staging` | rows).
+  let inSection5 = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    const h2Match = line.match(CLAUDE_MD_H2);
+    if (h2Match) {
+      inSection5 = isSection5Heading(h2Match[1]);
+      continue;
+    }
+
+    if (!inSection5) { continue; }
+
+    const rowMatch = line.match(CLAUDE_MD_SKILL_ROW);
+    if (rowMatch) {
+      entries.push({ name: rowMatch[1], sourceLine: i + 1 });
+    }
   }
 
   if (entries.length === 0) {

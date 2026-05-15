@@ -179,7 +179,7 @@ Group changes by responsibility, not by file type:
 | ----------- | ----------------------------------------------------------------------------- |
 | Test code   | `tests/`, `tests/components/`, `tests/e2e/`, `tests/integration/`             |
 | API schemas | `api/schemas/`, codegen output, OpenAPI types                                 |
-| Test data   | `tests/data/fixtures/`, `tests/data/factories/`                               |
+| Test data   | `tests/data/`                                                                 |
 | Skills/Docs | `.claude/skills/`, `.agents/`, `CLAUDE.md`, `docs/`, `README.md`              |
 | Config      | `package.json`, `tsconfig.json`, `playwright.config.ts`, lint/format configs  |
 
