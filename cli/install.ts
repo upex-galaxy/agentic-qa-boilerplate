@@ -339,10 +339,17 @@ const log = {
 // ============================================================================
 
 function which(binary: string): string | null {
-  const result = spawnSync('which', [binary], { encoding: 'utf8' });
+  // POSIX `which` is not present on raw Windows PowerShell / cmd.exe. Git Bash
+  // and WSL ship a MSYS port, so most users hit this branch only when running
+  // setup from a vanilla Windows shell. Mirror the scaffolder pattern
+  // (packages/create-agentic-qa/src/runners.ts) and fall back to `where`.
+  const probe = process.platform === 'win32' ? 'where' : 'which';
+  const result = spawnSync(probe, [binary], { encoding: 'utf8' });
   if (result.status !== 0) { return null; }
   const out = result.stdout.trim();
-  return out.length > 0 ? out : null;
+  // `where` prints one match per line; take the first.
+  const first = out.split(/\r?\n/)[0]?.trim() ?? '';
+  return first.length > 0 ? first : null;
 }
 
 function tryRun(binary: string, args: string[]): { ok: boolean, stdout: string, stderr: string } {
