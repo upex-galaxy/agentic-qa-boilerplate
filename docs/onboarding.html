@@ -858,6 +858,82 @@
         padding-top: 0.5rem;
         border-top: 1px solid var(--border);
       }
+
+      /* Decision-gate cards (#paths) */
+      .gate-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0 2rem;
+      }
+      .gate-card {
+        display: flex;
+        flex-direction: column;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        position: relative;
+      }
+      .gate-card-label {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        margin-bottom: 0.6rem;
+        align-self: flex-start;
+      }
+      .gate-card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem;
+      }
+      .gate-card-when {
+        font-size: 0.92rem;
+        color: var(--text-soft);
+        margin: 0 0 0.75rem;
+      }
+      .gate-card-checks {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 0.75rem;
+        font-size: 0.88rem;
+        color: var(--text-soft);
+      }
+      .gate-card-checks li {
+        position: relative;
+        padding-left: 1.25rem;
+        margin-bottom: 0.35rem;
+      }
+      .gate-card-checks li::before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .gate-card-foot {
+        margin-top: auto;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border);
+      }
+      .gate-a .gate-card-label {
+        background: var(--badge-workflow-soft);
+        color: var(--badge-workflow);
+      }
+      .gate-b .gate-card-label {
+        background: var(--badge-foundation-soft);
+        color: var(--badge-foundation);
+      }
+      .gate-c .gate-card-label {
+        background: var(--badge-reference-soft);
+        color: var(--badge-reference);
+      }
     </style>
   </head>
   <body>
@@ -1060,6 +1136,7 @@
             <li><a href="#section-3">3. The lifecycle</a></li>
             <li><a href="#section-4">4. The three confusing pieces</a></li>
             <li><a href="#section-5">5. How everything connects</a></li>
+            <li><a href="#paths">Choose your path</a></li>
             <li><a href="#section-6">6. Cheat sheet</a></li>
             <li><a href="#section-7">7. Skills catalog</a></li>
             <li><a href="#section-8">8. Commands &amp; Scripts</a></li>
@@ -1081,6 +1158,7 @@
               <li><a href="#section-3">3. The lifecycle</a></li>
               <li><a href="#section-4">4. Three confusing pieces</a></li>
               <li><a href="#section-5">5. How it all connects</a></li>
+              <li><a href="#paths">Choose your path</a></li>
               <li><a href="#section-6">6. Cheat sheet</a></li>
               <li><a href="#section-7">7. Skills catalog</a></li>
               <li><a href="#section-8">8. Commands &amp; Scripts</a></li>
@@ -2590,6 +2668,110 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <p class="small muted">
                   Full protocol: global <code>CLAUDE.md</code> § Engram. Installed by gentle-ai at
                   user level (T2) via <code>cli/install.ts</code> — not committed in this repo.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- =======================================================  PATHS  -->
+          <section id="paths">
+            <h2><span class="num">→</span>Choose your path</h2>
+
+            <p>
+              Three gates determine which workflow skill you invoke on a given ticket or release.
+              They are NOT mutually exclusive in a project's lifetime — most projects flow A → B → C
+              as a feature matures from manual exploration to automated regression. They ARE
+              mutually exclusive within a single session: you pick one entry point and let the skill
+              drive.
+            </p>
+
+            <div class="gate-grid">
+              <article class="gate-card gate-a">
+                <span class="gate-card-label">Path A · Manual</span>
+                <h4 class="gate-card-title"><code>/sprint-testing</code> (Stages 1–3)</h4>
+                <p class="gate-card-when">
+                  Per-ticket exploratory + verification work. Produces ATP, ATR, and bug reports in
+                  the TMS.
+                </p>
+                <ul class="gate-card-checks">
+                  <li>Jira ticket is "Ready For QA" or a bug retest</li>
+                  <li>ATP + ATR artifacts must land in the TMS</li>
+                  <li>Risk-triage decision tree applies on every bug</li>
+                  <li>UI / API / DB triforce exploration is relevant</li>
+                </ul>
+                <p class="gate-card-foot">
+                  Tool skills loaded: <code>/acli</code>, <code>/xray-cli</code>,
+                  <code>/playwright-cli</code>.
+                </p>
+              </article>
+
+              <article class="gate-card gate-b">
+                <span class="gate-card-label">Path B · Codify</span>
+                <h4 class="gate-card-title">
+                  <code>/test-documentation</code> → <code>/test-automation</code> (Stages 4–5)
+                </h4>
+                <p class="gate-card-when">
+                  Tests worth keeping. ROI &gt; threshold. The test case is promoted from manual to
+                  automated and added to the regression suite.
+                </p>
+                <ul class="gate-card-checks">
+                  <li>Test case passed ROI gate (Candidate verdict)</li>
+                  <li>AC is stable — no churn expected near-term</li>
+                  <li>Automation can reach the surface (UI / API / DB)</li>
+                  <li>Adds value to the regression suite, not noise</li>
+                </ul>
+                <p class="gate-card-foot">
+                  Tool skills loaded: <code>/xray-cli</code>, <code>/playwright-cli</code>,
+                  <code>/playwright-best-practices</code>.
+                </p>
+              </article>
+
+              <article class="gate-card gate-c">
+                <span class="gate-card-label">Path C · Regression</span>
+                <h4 class="gate-card-title"><code>/regression-testing</code> (Stage 6)</h4>
+                <p class="gate-card-when">
+                  CI suite execution. Pre-release or nightly run. Produces a stakeholder report with
+                  GO / CAUTION / NO-GO verdict.
+                </p>
+                <ul class="gate-card-checks">
+                  <li>Pre-release or nightly trigger</li>
+                  <li>Existing automated regression suite is in place</li>
+                  <li>
+                    Need failure classification (REGRESSION / FLAKY / KNOWN / ENVIRONMENT / NEW)
+                  </li>
+                  <li>Stakeholder release-readiness report needed</li>
+                </ul>
+                <p class="gate-card-foot">
+                  Tool skills loaded: <code>bunx allure</code>, <code>gh</code>.
+                </p>
+              </article>
+            </div>
+
+            <div class="callout callout-warn">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
+                />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <div>
+                <p class="callout-title">Framework evolution is NOT a QA path</p>
+                <p>
+                  Modifying KATA bases, fixtures, <code>cli/</code>, <code>scripts/</code>, or
+                  <code>api/schemas/</code> goes through <code>/framework-development</code> — the
+                  sole legitimate entry point for chaining the SDD-* skills in this repo. NEVER
+                  invoke SDD-* directly from <code>/sprint-testing</code>,
+                  <code>/test-documentation</code>, <code>/test-automation</code>, or
+                  <code>/regression-testing</code>. The boundary is enforced inline in each workflow
+                  skill.
                 </p>
               </div>
             </div>
