@@ -1572,6 +1572,30 @@ function printClosingSummary(state: InstallState): void {
   process.stdout.write('  • OpenCode: already wired in opencode.jsonc via the "plugin" field.\n');
   process.stdout.write(`      ${COLORS.dim}Docs: https://docs.warp.dev/agent-platform/cli-agents/opencode/${COLORS.reset}\n`);
   process.stdout.write('\n');
+  // Optional UX upgrades — recommended community tools that change how the
+  // agent talks (caveman) or how the terminal looks (ccstatusline). Both are
+  // user-level installs, so we recommend them but never auto-install.
+  process.stdout.write(`${COLORS.bold}Optional UX upgrades — productivity boosters:${COLORS.reset}\n`);
+  process.stdout.write('\n');
+  process.stdout.write('  • caveman — token compression skill (recommended)\n');
+  process.stdout.write(`      ${COLORS.dim}Cuts ~65-75% of output tokens by talking like caveman. Brain still big.${COLORS.reset}\n`);
+  process.stdout.write(`      ${COLORS.dim}Levels: lite | full (this repo's default) | ultra | wenyan.${COLORS.reset}\n`);
+  process.stdout.write(`      ${COLORS.dim}Stop with: "normal mode" / "habla normal".${COLORS.reset}\n`);
+  process.stdout.write('      Install (~30s, requires Node >= 18):\n');
+  if (process.platform === 'win32') {
+    process.stdout.write('        irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.ps1 | iex\n');
+  }
+  else {
+    process.stdout.write('        curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash\n');
+  }
+  process.stdout.write(`      ${COLORS.dim}Docs: https://github.com/JuliusBrussee/caveman${COLORS.reset}\n`);
+  process.stdout.write('\n');
+  process.stdout.write('  • ccstatusline — Claude Code statusline TUI configurator (cosmetic)\n');
+  process.stdout.write(`      ${COLORS.dim}Customize the bottom statusline (model, tokens, git branch, usage, etc.).${COLORS.reset}\n`);
+  process.stdout.write(`      ${COLORS.yellow}Run in a SEPARATE terminal with NO agent active${COLORS.reset} ${COLORS.dim}— concurrent TUIs fight over stdin.${COLORS.reset}\n`);
+  process.stdout.write('        bunx -y ccstatusline@latest\n');
+  process.stdout.write(`      ${COLORS.dim}Docs: https://github.com/sirmalloc/ccstatusline${COLORS.reset}\n`);
+  process.stdout.write('\n');
   log.dim('Full docs: INSTALLER.md');
 }
 
