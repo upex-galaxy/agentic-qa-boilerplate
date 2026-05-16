@@ -262,6 +262,9 @@ const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   // cli-printing-press: full functionality requires Go 1.26.3+ (go install github.com/mvanhorn/cli-printing-press/v4/cmd/printing-press@latest); skill works standalone with degraded features
   { package: 'https://github.com/mvanhorn/cli-printing-press', skill: 'cli-printing-press' },
   { package: 'https://github.com/lewislulu/html-ppt-skill', skill: 'html-ppt' },
+  // resend-cli (resend.com): email testing flows. Pairs with the `resend`
+  // external CLI verified in step 11 — see CLAUDE.md §6.5 CLI→Skill auto-load.
+  { package: 'https://github.com/resend/resend-skills', skill: 'resend-cli' },
 ];
 
 // Matches Claude Code ${VAR} and ${VAR:-default} placeholders in .mcp.json.
