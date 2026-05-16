@@ -164,34 +164,43 @@ const CANONICAL_MCPS = [
 ] as const;
 
 // External CLIs are NEVER installed by this script — install commands depend on
-// the user's OS and we refuse to guess. We only verify presence and point users
-// to the official docs, so they install via the canonical path for their setup.
-const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install: string, docs: string }> = [
+// the user's OS and we refuse to guess. We only verify presence, surface the
+// purpose, and point users to the official docs. `install` is OPTIONAL and only
+// set for genuinely cross-platform commands.
+interface ExternalCli {
+  name: string
+  purpose: string
+  install?: string
+  docs: string
+}
+
+const EXTERNAL_CLIS: ReadonlyArray<ExternalCli> = [
   {
     name: 'bun',
-    install: 'See official docs',
+    purpose: 'Runtime for every script (`bun run setup`, `bun xray`, `bun run test`)',
     docs: 'https://bun.com/',
   },
   {
     name: 'gh',
-    install: 'See official docs',
+    purpose: 'GitHub PR / Actions workflows (`/git-flow-master`, `/regression-testing`)',
     docs: 'https://github.com/cli/cli#installation',
   },
   {
     name: 'acli',
-    install: 'See official docs',
+    purpose: 'Jira/Confluence from terminal (`/acli`, `/sprint-testing`, `/test-documentation`)',
     docs: 'https://developer.atlassian.com/cloud/acli/guides/install-acli/',
   },
   {
     // Binary produced by @playwright/cli is `playwright-cli`, not `playwright`.
     // This is the agent-driven CLI, NOT the @playwright/test runner library.
     name: 'playwright-cli',
+    purpose: 'Agent-driven browser automation (`/playwright-cli` skill)',
     install: 'bun add -g @playwright/cli@latest',
     docs: 'https://playwright.dev/agent-cli/introduction',
   },
   {
     name: 'resend',
-    install: 'See official docs',
+    purpose: 'Email testing flows (`/resend-cli` skill)',
     docs: 'https://resend.com/docs/cli',
   },
   {
@@ -199,7 +208,7 @@ const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install: string, docs: string
     // The `gh --jq` flag is a Go reimplementation embedded in gh and does NOT
     // need this binary.
     name: 'jq',
-    install: 'See official docs',
+    purpose: 'JSON parsing in `acli` Jira pipelines (`acli ... --json | jq ...`)',
     docs: 'https://jqlang.github.io/jq/download',
   },
 ];
@@ -1057,29 +1066,32 @@ async function offerDirenvAutoload(): Promise<void> {
 interface CliResult {
   name: string
   status: CliStatus
-  install: string
+  purpose: string
+  install?: string
   docs: string
 }
 
 function verifyExternalClis(state: InstallState): CliResult[] {
-  const results = EXTERNAL_CLIS.map((cli) => {
+  const results: CliResult[] = EXTERNAL_CLIS.map((cli) => {
     const found = which(cli.name) !== null;
     const status: CliStatus = found ? 'found' : 'missing';
     state.externalClis[cli.name] = status;
-    return { name: cli.name, status, install: cli.install, docs: cli.docs };
+    return { name: cli.name, status, purpose: cli.purpose, install: cli.install, docs: cli.docs };
   });
 
   process.stdout.write('\n');
-  process.stdout.write(`${COLORS.bold}CLI              Status      Install (if missing) / Docs${COLORS.reset}\n`);
+  process.stdout.write(`${COLORS.bold}CLI              Status      Purpose${COLORS.reset}\n`);
   process.stdout.write(`${'─'.repeat(80)}\n`);
   for (const r of results) {
     const padName = r.name.padEnd(16);
     const padStatus = r.status === 'found' ? 'found     ' : 'missing   ';
     const statusColor = r.status === 'found' ? COLORS.green : COLORS.yellow;
-    const installCol = r.status === 'found' ? '(skip)' : r.install;
-    process.stdout.write(`${padName} ${statusColor}${padStatus}${COLORS.reset} ${installCol}\n`);
+    process.stdout.write(`${padName} ${statusColor}${padStatus}${COLORS.reset} ${r.purpose}\n`);
     if (r.status === 'missing') {
-      process.stdout.write(`${' '.repeat(28)}${COLORS.dim}docs: ${r.docs}${COLORS.reset}\n`);
+      if (r.install) {
+        process.stdout.write(`${' '.repeat(28)}${COLORS.dim}quick:${COLORS.reset} ${r.install}\n`);
+      }
+      process.stdout.write(`${' '.repeat(28)}${COLORS.dim}docs:  ${r.docs}${COLORS.reset}\n`);
     }
   }
   return results;
@@ -1358,6 +1370,35 @@ async function setupGithubRemote(state: InstallState): Promise<void> {
 }
 
 // ============================================================================
+// Helpers — closing summary
+// ============================================================================
+
+interface PackageManagerHint {
+  label: string
+  install: string
+  url: string
+}
+
+// OS-aware recommendation for the system package manager users will need to
+// install missing external CLIs (bun, gh, acli, etc.). We never run these
+// commands; they're informational only.
+function recommendedPackageManager(): PackageManagerHint {
+  if (process.platform === 'win32') {
+    return {
+      label: 'Scoop',
+      install: 'irm get.scoop.sh | iex',
+      url: 'https://scoop.sh/',
+    };
+  }
+  // macOS + Linux both use Homebrew.
+  return {
+    label: 'Homebrew',
+    install: '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"',
+    url: 'https://brew.sh/',
+  };
+}
+
+// ============================================================================
 // Step 14 — closing summary
 // ============================================================================
 
@@ -1465,6 +1506,16 @@ function printClosingSummary(state: InstallState): void {
   process.stdout.write('  • Jira project key — edit `.agents/project.yaml` → `project.project_key`\n');
   process.stdout.write('    Then run:  bun run jira:sync-fields && bun run jira:check\n');
   process.stdout.write('  • Bootstrap KATA registry once:  bun run kata:manifest\n\n');
+
+  // Recommended OS package manager — only surfaces when external CLIs are
+  // missing, since users with everything in place don't need this advice.
+  if (cliMissing.length > 0) {
+    const pm = recommendedPackageManager();
+    process.stdout.write(`${COLORS.bold}Recommended system package manager (for the missing CLIs above):${COLORS.reset}\n`);
+    process.stdout.write(`  ${pm.label} — ${pm.url}\n`);
+    process.stdout.write(`  ${COLORS.dim}Install with:${COLORS.reset} ${pm.install}\n`);
+    process.stdout.write(`  ${COLORS.dim}Then follow the per-CLI \`docs:\` link printed in step 11 above.${COLORS.reset}\n\n`);
+  }
 
   process.stdout.write(`${COLORS.bold}Warp terminal users — recommended notification plugins:${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Warp + CLI agents is the community's current favorite combo. Surface agent activity${COLORS.reset}\n`);
