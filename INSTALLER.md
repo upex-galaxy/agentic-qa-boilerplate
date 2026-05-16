@@ -4,7 +4,7 @@
 > **Read time**: 8 minutes.
 > **Status**: stable as of 2026-05-11.
 >
-> This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram + SDD), community skills via `npx skills`, locally committed workflow skills, and the 7 canonical MCPs — are documented below in that order.
+> This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram + SDD), community skills via `bunx skills`, locally committed workflow skills, and the 7 canonical MCPs — are documented below in that order.
 
 ## Running setup from an AI agent
 
@@ -74,7 +74,7 @@ Then `bun run setup:doctor --json` to confirm.
 | `INSTALL_SKIP_DEPS=1` | Skip `bun install` |
 | `INSTALL_SKIP_PLAYWRIGHT=1` | Skip `bun run pw:install` |
 | `INSTALL_SKIP_AGENTS_SETUP=1` | Skip `bun run agents:setup` |
-| `INSTALL_SKIP_COMMUNITY=1` | Skip `npx skills add` step |
+| `INSTALL_SKIP_COMMUNITY=1` | Skip `bunx skills add` step |
 | `INSTALL_SKIP_JIRA=1` | Skip optional Jira bootstrap |
 | `INSTALL_SKIP_API=1` | Skip optional API auth bootstrap |
 | `INSTALL_SKIP_DIRENV=1` | Skip direnv detection / autoload |
@@ -163,13 +163,13 @@ Both ship via gentle-ai but are dev-writing-leaning. QA reporting tone is owned 
 
 ---
 
-## What gets installed via `npx skills` CLI
+## What gets installed via `bunx skills` CLI
 
-Independent of gentle-ai, the installer also runs the official Anthropic `npx skills add` CLI to fetch community skills from upstream repos. Two lists, both defined as `const` arrays in `cli/install.ts`:
+Independent of gentle-ai, the installer also runs the official Anthropic `bunx skills add` CLI to fetch community skills from upstream repos. Two lists, both defined as `const` arrays in `cli/install.ts`:
 
 ### Project-level (2 skills)
 
-Installed into `.claude/skills/` via `npx skills add` (project mode). Not committed — `cli/install.ts` re-fetches them on every install so we always pick up upstream fixes. They are critical to the QA stack and must travel with every clone of the repo.
+Installed into `.claude/skills/` via `bunx skills add` (project mode). Not committed — `cli/install.ts` re-fetches them on every install so we always pick up upstream fixes. They are critical to the QA stack and must travel with every clone of the repo.
 
 | Slug                        | Source                                          | Why project-level                                                                                                                       |
 | --------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
@@ -178,7 +178,7 @@ Installed into `.claude/skills/` via `npx skills add` (project mode). Not commit
 
 ### User-level (global, 7 skills)
 
-Installed with `npx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack. QA-tuned subset of the dev universal layer — design/UI skills (n8n-skills, emil-design-eng, ui-ux-pro-max) live only in the dev repo since QA does not author UI or automation flows.
+Installed with `bunx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack. QA-tuned subset of the dev universal layer — design/UI skills (n8n-skills, emil-design-eng, ui-ux-pro-max) live only in the dev repo since QA does not author UI or automation flows.
 
 | Slug                   | Source                                          | Why user-level                                                                              |
 | ---------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -232,14 +232,14 @@ After the first time you run `bun run update`, the CLI creates `.boilerplate-ver
 
 The installer's step 11 runs `which <binary>` for six command-line tools that other parts of the QA workflow depend on. If any are missing, the installer **prints the suggested install command and the official docs URL — but does not run anything**. System-level CLIs touch user permissions (Homebrew taps, apt, curl piped into bash, winget) and are not portable cross-platform, so auto-installing them without consent would be invasive. The user installs them manually following the docs URL.
 
-| CLI              | Powers in this repo                                                              | Install (cross-platform)                                                                                                                  | Official docs                                                                       |
-| ---------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `bun`            | Runtime for every script (`bun run setup`, `bun xray`, `bun run test`)           | macOS/Linux: `curl -fsSL https://bun.com/install \| bash`<br>Brew: `brew install oven-sh/bun/bun`<br>Windows: `irm bun.sh/install.ps1 \| iex` | [bun.sh/docs/installation](https://bun.sh/docs/installation)                        |
-| `gh`             | GitHub PR / Actions workflows from `/git-flow-master`, `/regression-testing`     | macOS: `brew install gh`<br>Windows: `winget install --id GitHub.cli` or `scoop install gh`<br>Linux: apt/dnf with keyring setup (see docs) | [cli.github.com](https://cli.github.com/)                                           |
-| `acli`           | Jira/Confluence from terminal (`/acli`, `/sprint-testing`, `/test-documentation`) | macOS: `brew tap atlassian/homebrew-acli && brew install acli`<br>Linux: binary download from GitHub releases                              | [developer.atlassian.com/cloud/acli](https://developer.atlassian.com/cloud/acli/guides/install-macos/) |
-| `playwright-cli` | Agent-driven browser automation (`/playwright-cli` skill)                        | Global install: `bun add -g @playwright/cli@latest`<br>(or: `npm install -g @playwright/cli@latest`)<br>Binary produced: `playwright-cli`  | [playwright.dev/agent-cli](https://playwright.dev/agent-cli/introduction)           |
-| `allure`         | Test reports (`bun run test:allure`)                                              | macOS: `brew install allure`<br>Windows: `scoop install allure`<br>Linux: `.deb`/`.rpm` from GitHub releases                                | [allurereport.org/docs](https://allurereport.org/docs/)                             |
-| `jq`             | JSON parsing inside scripts (`scripts/sync-*`, `cli/xray/*`)                     | macOS: `brew install jq`<br>Linux: `sudo apt-get install jq` (or `dnf install jq`)<br>Windows: `winget install jqlang.jq`                  | [jqlang.github.io/jq](https://jqlang.github.io/jq/download)                         |
+| CLI              | Powers in this repo                                                                                          | Install (cross-platform)              | Official docs                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `bun`            | Runtime for every script (`bun run setup`, `bun xray`, `bun run test`)                                      | See official docs                     | [bun.com](https://bun.com/)                                                                               |
+| `gh`             | GitHub PR / Actions workflows from `/git-flow-master`, `/regression-testing`                                 | See official docs                     | [github.com/cli/cli#installation](https://github.com/cli/cli#installation)                               |
+| `acli`           | Jira/Confluence from terminal (`/acli`, `/sprint-testing`, `/test-documentation`)                            | See official docs                     | [developer.atlassian.com/cloud/acli](https://developer.atlassian.com/cloud/acli/guides/install-acli/)    |
+| `playwright-cli` | Agent-driven browser automation (`/playwright-cli` skill)                                                    | `bun add -g @playwright/cli@latest`   | [playwright.dev/agent-cli](https://playwright.dev/agent-cli/introduction)                                 |
+| `resend`         | Email testing flows                                                                                          | See official docs                     | [resend.com/docs/cli](https://resend.com/docs/cli)                                                        |
+| `jq`             | JSON parsing in acli Jira pipelines (advanced `acli --json \| jq …`)                                        | See official docs                     | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)                                     |
 
 > **Important — `playwright-cli` is NOT `@playwright/test`**: this is the agent-driven browser CLI from the `@playwright/cli` npm package, installed **globally**. It produces a binary literally named `playwright-cli` (not `playwright`). The `@playwright/test` library that ships as a devDependency in this repo is a separate thing — it powers the test runner (`bun run test`), not the `/playwright-cli` skill. Don't confuse them.
 
