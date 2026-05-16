@@ -1905,8 +1905,10 @@ bun run jira:check            # verify both catalogs against the manifest</code>
             <h2><span class="num">5.</span>How everything connects internally</h2>
 
             <p>
-              Two circuits explain the wiring. Circuit 1 is about variable resolution (the static
+              Three circuits explain the wiring. Circuit 1 is about variable resolution (the static
               substrate). Circuit 2 is about subagent orchestration (the dynamic execution model).
+              Circuit 3 is about CLI auto-load — which skill must be in context before a shell
+              binary runs.
             </p>
 
             <h3>Circuit 1 — Variables</h3>
@@ -2454,6 +2456,95 @@ bun run jira:check            # verify both catalogs against the manifest</code>
               <code>/playwright-cli</code>) to actually run shell commands. This is what keeps the
               main conversation lean — the heavy reading happens inside subagents.
             </p>
+
+            <h3 id="circuit-cli">Circuit 3 — CLI auto-load</h3>
+            <p>
+              Every shell binary the AI may run has an owning skill that must be in context first —
+              the skill carries the binary's flag catalog, auth flow, pagination quirks, and error
+              semantics. The orchestrator checks the mapping before each
+              <code>Bash</code> call and loads the missing skill if needed. Source-of-truth:
+              <code>CLAUDE.md</code> §6.5 + <code>cli/install.ts</code>.
+            </p>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>CLI binary</th>
+                    <th>Skill(s) loaded BEFORE the call</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>gh</code></td>
+                    <td>
+                      <code>/gh-cli</code> (community USER) +
+                      <code>/git-flow-master</code> (in-repo, when the command is git / PR-shaped)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><code>acli</code></td>
+                    <td><code>/acli</code> (in-repo)</td>
+                  </tr>
+                  <tr>
+                    <td><code>playwright-cli</code></td>
+                    <td>
+                      <code>/playwright-cli</code> +
+                      <code>/playwright-best-practices</code> (community PROJECT)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><code>bunx allure</code> (run / agent / generate / open / watch)</td>
+                    <td>
+                      <code>/regression-testing</code> + <code>/test-automation</code>
+                      (in-repo)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><code>bun xray</code></td>
+                    <td><code>/xray-cli</code> (in-repo)</td>
+                  </tr>
+                  <tr>
+                    <td><code>jq</code></td>
+                    <td><code>/acli</code> (primary consumer of jq pipelines)</td>
+                  </tr>
+                  <tr>
+                    <td><code>resend</code></td>
+                    <td><code>/resend-cli</code> (community USER, when added)</td>
+                  </tr>
+                  <tr>
+                    <td><code>bun</code></td>
+                    <td>runtime — no skill mapping</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout callout-warn">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
+                />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <div>
+                <p class="callout-title">Why this circuit matters</p>
+                <p>
+                  A raw CLI invocation that skips the owning skill loses the project-specific
+                  patterns the skill encodes (auth flow, error handling, pagination, gotchas). The
+                  mapping is enforced even when the user types the binary verbatim — the
+                  orchestrator loads the matching skill first, then runs the command.
+                </p>
+              </div>
+            </div>
           </section>
 
           <!-- =======================================================  SECTION 6  -->
