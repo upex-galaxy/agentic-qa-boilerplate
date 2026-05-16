@@ -23,6 +23,8 @@
 10. **MCP CREDENTIAL FAILURE = STOP IMMEDIATELY**: If MCP fails auth or env var missing (`.mcp.json` uses `${VAR}` — Claude Code fails parse if unset; `opencode.jsonc` uses `{env:VAR}` — OpenCode silently substitutes empty → 401/403 is the signal). DO NOT work around. STOP, tell user the exact env var, point to `.env` / `.env.example`, ask them to fix `.env` and **RESTART AGENT SESSION** (env cached at MCP-spawn time, won't refresh mid-session).
 11. **SCRIPTS = READ `package.json` DIRECTLY**. NEVER quote test/build commands from this file or any doc — drift kills. Open `package.json` first, then answer.
 12. **KATA MANIFEST = SOURCE OF TRUTH**. `kata-manifest.json` (root) is the authoritative registry of every existing Component and ATC. Before proposing a new `Page`, `Api`, `Steps` module, or `@atc('TC-XXX')` ID — MUST load `kata-manifest.json` and check it. Anti-duplication gate. Stale manifest blocks commits via `.husky/pre-commit`. Regenerate with `bun run kata:manifest`. CI-validate with `bun run kata:manifest:check`.
+13. **DEFAULT COMMUNICATION MODE — CAVEMAN**: If the `caveman` skill is installed user-level (`~/.claude/skills/caveman/`), respond in caveman level `full` by default (drop articles, fillers, pleasantries; fragments OK; technical terms exact; code/commits/PRs/security warnings always write normal English — caveman built-in boundary). Revert to verbose ONLY when the user explicitly says "normal mode", "habla normal", "stop caveman", "speak normally", "be verbose", "más detallado" or any clear semantic equivalent. Caveman docs: <https://github.com/JuliusBrussee/caveman>. If caveman skill not installed, this rule is a no-op.
+14. **LANGUAGE DETECTION + MIRRORING**: At the start of every conversation, READ THE FULL USER MESSAGE (not just the opening words) to detect the user's working language. Mirror that language in ALL conversational replies (questions, summaries, explanations, status updates). Repo artifacts ALWAYS English regardless of conversation language: code, code comments, commits, PR titles + bodies, branch names, file names, test names, configuration values, and any external action artifact (Jira issues/comments, GitHub issues/PRs/comments, Slack messages, emails, deploy notes, MCP tool inputs). Override: if the user explicitly requests another language for a specific artifact ("crea el ticket en español", "write this PR description in Spanish"), honor that request only for that artifact and continue defaulting to English for the next ones unless re-requested.
 
 ---
 
@@ -37,6 +39,16 @@
 **SURGICAL CHANGES.** Touch only what required. Match existing style even if you'd do it differently. Don't refactor unbroken code. Don't improve adjacent comments/formatting. Notice unrelated dead code → mention, don't delete. Remove imports/vars YOUR changes made unused. *Scope note*: regenerative commands (`/sync-ai-memory`, `/business-*-map`, `/master-test-plan`, `/fix-traceability`) and skill phases with explicit generative intent are EXEMPT — regen IS the task.
 
 **GOAL-DRIVEN EXECUTION.** Define success criteria. Loop until verified. Transform vague tasks into testable goals ("add validation" → "write tests for invalid input, then make them pass"). Multi-step → state plan with explicit `verify:` per step (observable signal: test passes, file exists, exit 0, type-check clean). Complements the 6-component subagent briefing (§3) — doesn't replace it.
+
+**EXPANDABLE RESPONSES (BUTLER PATTERN).** Default to a terse headline answer that resolves the user's literal question. Then surface ALL other topics you would otherwise have covered as an atomic bullet menu — one specific topic per bullet, NEVER aggregated into broad categories. Let the user pull the topics they care about; do not push every detail in one shot.
+
+- **Atomicity over aggregation**: 12 specific bullets beats 3 broad buckets. The user must be able to spot the one item that matters to them; bundling hides it.
+- **No artificial cap**: bullet count is determined by actual information richness. 2 topics → 2 bullets. 15 topics → 15 bullets.
+- **Bullet style mirrors caveman**: each bullet is a 1-line hook (`topic-name — short fragment`), not a paragraph.
+- **Headline first**: the headline must stand alone — the user got their answer even if they ignore the menu.
+- **Composes with caveman**: caveman compacts WORDS, butler controls INFORMATION GRANULARITY. Both apply together.
+
+Example (sprint-testing closing): headline "Sprint tested, 8 ATCs added, 2 bugs filed" + atomic bullets per ATC/bug/Jira link/regression-impact — not 3 buckets like "Tests", "Bugs", "Reports".
 
 **SIGNALS THESE WORK**: fewer unnecessary diff changes, fewer rewrites from overcomplication, clarifying questions BEFORE implementation rather than after mistakes.
 
@@ -244,7 +256,7 @@ Project values live in **`.agents/project.yaml`** — load once per session. NEV
 1. **EXPLAIN THE STORY**: once ticket understood, briefly state — what the feature is, how it works (simple terms), what will be tested.
 2. **WAIT FOR CONFIRMATION**: after important explanations, WAIT for user response before continuing. User reads, asks questions, confirms direction.
 3. **EXPLAIN DEFECTS**: on bug / unexpected behavior — describe observed, explain why it's a problem, suggest impact (severity, affected users, business risk).
-4. **LANGUAGE**: default English. If user writes other language → mirror it in user-facing communication. Docs + code ALWAYS English.
+4. **LANGUAGE**: see §1 #14 LANGUAGE DETECTION + MIRRORING (canonical rule).
 
 **ENVIRONMENT SELECTION**: default to **staging** unless user specifies otherwise. Ask when ambiguous. URLs from `.agents/project.yaml`. Credentials from `.env`.
 
