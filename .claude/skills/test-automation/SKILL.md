@@ -116,6 +116,29 @@ bun run lint                         # ESLint, no errors
 
 If any step fails, fix before moving to Review.
 
+#### AI-readable verification (optional, recommended)
+
+For the test you just wrote, run Allure 3 in **agent mode** to get a markdown report you can read directly without parsing HTML:
+
+```bash
+bun allure:agent           # runs `bunx allure agent -- bun test`
+```
+
+Allure 3 lives as a devDep — `bunx allure` resolves to the local `node_modules/.bin/allure`, no global install required. Use this when:
+
+- The Code subagent needs to confirm the test actually exercised the expected ATC (the markdown summary lists each `@atc('TICKET-ID')` block + its status).
+- You want a quick scope check before opening Phase 3 — Review.
+- You are debugging a fixture/locator mismatch and want a structured failure read instead of a raw stack.
+
+For human review of the same run, switch to:
+
+```bash
+bun allure:run             # bunx allure run -- bun test  (full HTML report)
+bun allure:open            # serve the last generated report locally
+```
+
+See `regression-testing` for CI / suite-level reporting (`bun allure:generate`, `bun allure:watch`).
+
 ### Phase 3 — Review
 
 Use the dispatch defined in §Subagent Dispatch Strategy: **Parallel** (3 simultaneous Verifiers). Full briefings in `references/review-checklists.md` §Parallel verification dispatch.

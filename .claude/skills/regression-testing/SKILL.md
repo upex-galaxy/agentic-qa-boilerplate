@@ -54,6 +54,24 @@ If the user says "run regression" with no qualifier, default to `regression` on 
 
 ---
 
+## Local reporting (Allure 3, no global install)
+
+Allure 3 is a devDep — `bunx allure` resolves to the local `node_modules/.bin/allure`, no `brew install allure` / `scoop install allure` required. Configuration lives at `allurerc.mjs` (Awesome plugin enabled).
+
+| Use case | Script | Underlying command |
+|---|---|---|
+| Run tests + auto-generate report (human review) | `bun allure:run` | `bunx allure run -- bun test` |
+| Run tests + emit markdown for AI review | `bun allure:agent` | `bunx allure agent -- bun test` |
+| Generate report from existing `./allure-results` | `bun allure:generate` | `bunx allure generate ./allure-results` |
+| Serve last generated report locally | `bun allure:open` | `bunx allure open` |
+| Live-refresh report during iterative dev | `bun allure:watch` | `bunx allure watch ./allure-results` |
+
+`bun allure:agent` is the AI-friendly entry point: it produces a markdown summary the orchestrator (or a Verifier subagent) can read directly without parsing HTML. Use it whenever you need a structured pass/fail breakdown after a local re-run while triaging a CI failure (Phase 2 step 1, before downloading the merged-allure-results artifact from CI).
+
+CI artifacts (`merged-allure-results-{env}`) are still produced by the workflow and downloaded via `gh run download` as documented in Phase 2 — those use the same allurerc config inside the runner.
+
+---
+
 ## Phase 1 — Execute
 
 ### Preflight (always)

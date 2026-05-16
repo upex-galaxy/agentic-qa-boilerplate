@@ -203,6 +203,25 @@ Skills using `[TMS_TOOL]` MUST include parallel pseudocode branches for both mod
 
 ---
 
+## 6.5. CLI → SKILL AUTO-LOAD MAPPING
+
+> Complement to §6. Applies to ANY direct CLI invocation via Bash, not only `[TAG_TOOL]` pseudocode. Whenever you are about to spawn one of these binaries, the matching skill MUST be loaded first so its `references/` material is in context (auth flow, flag catalog, error handling, gotchas).
+
+| CLI invoked | Skill(s) to load BEFORE invoking |
+|---|---|
+| `gh` | `/gh-cli` (community USER) + `/git-flow-master` (in-repo, when the command is git/PR-shaped) |
+| `acli` | `/acli` (in-repo) |
+| `playwright-cli` | `/playwright-cli` (community PROJECT) + `/playwright-best-practices` (community PROJECT) |
+| `bunx allure` (run/agent/generate/open/watch) | `/regression-testing` (in-repo) + `/test-automation` (in-repo) |
+| `resend` | `/resend-cli` (community USER, when added) |
+| `jq` | `/acli` (primary consumer of jq pipelines) |
+| `bun` | (runtime — no skill mapping) |
+| `bun xray` | `/xray-cli` (in-repo) |
+
+**RULE**: Before any Bash call that names one of these binaries, check the matching skill is loaded. If it is not, load it via `Skill` tool first. This applies even when the user types the command verbatim — the skill carries the project-specific patterns that a raw CLI invocation would miss.
+
+---
+
 ## 7. PROJECT VARIABLES — POINTER
 
 > ALL variable syntax + Jira field references documented in **`.agents/README.md`**. READ ONCE per session, cache values.
