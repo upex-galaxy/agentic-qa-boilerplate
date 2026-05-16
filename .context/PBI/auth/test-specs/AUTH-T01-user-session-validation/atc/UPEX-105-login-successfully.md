@@ -1,6 +1,6 @@
 # ATC Spec: UPEX-105 — Login Successfully via UI
 
-> **Ticket**: [UPEX-105](https://upex.atlassian.net/browse/UPEX-105)
+> **Ticket**: [UPEX-105](https://your-org.atlassian.net/browse/UPEX-105)
 > **Component**: `LoginPage` (`tests/components/ui/LoginPage.ts`)
 > **Type**: UI — Happy path
 > **Parent Story**: UPEX-100 (Validate User Session Management)

@@ -1,6 +1,6 @@
 # ATC Spec: UPEX-101 — Authenticate Successfully
 
-> **Ticket**: [UPEX-101](https://upex.atlassian.net/browse/UPEX-101)
+> **Ticket**: [UPEX-101](https://your-org.atlassian.net/browse/UPEX-101)
 > **Component**: `AuthApi` (`tests/components/api/AuthApi.ts`)
 > **Type**: API — Mutation
 > **Parent Story**: UPEX-100 (Validate User Session Management)

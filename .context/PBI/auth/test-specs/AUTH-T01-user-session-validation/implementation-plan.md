@@ -1,6 +1,6 @@
 # Test Implementation Plan: UPEX-100
 
-> **Ticket**: [UPEX-100: Validate User Session Management](https://upex.atlassian.net/browse/UPEX-100)
+> **Ticket**: [UPEX-100: Validate User Session Management](https://your-org.atlassian.net/browse/UPEX-100)
 > **Type**: `integration`
 > **Sprint**: Sprint 1
 > **Created**: 2026-03-19
