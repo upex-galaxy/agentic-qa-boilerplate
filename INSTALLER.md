@@ -110,6 +110,35 @@ Pure UX, zero behavioral change. Skip without consequence.
 | **Claude Code** | [`ccstatusline`](https://github.com/sirmalloc/ccstatusline) | `bunx -y ccstatusline@latest` — interactive TUI to customize the Claude Code status line (model, tokens, context %, git branch, etc.). **Run in a plain terminal with no active agent session**; the configurator owns the terminal while it runs and will collide with a live Claude Code TUI. |
 | **OpenCode** | `opencode-subagent-statusline` plugin | Already enabled in `opencode.jsonc` (`"plugin": [..., "opencode-subagent-statusline"]`). Shows the active subagent in the OpenCode status line. Nothing to install — `bun run opencode` picks it up. |
 
+### Optional UX upgrades
+
+Two community tools change how the agent talks and how the terminal looks. Both are recommended but **never auto-installed** — they are user-level scope and modify environments outside this repo.
+
+#### caveman — token compression skill
+
+A user-level Claude Code skill that compresses agent output by ~65-75% by talking like caveman: drop articles, fillers, and pleasantries; keep technical substance exact. Code, commits, PRs, and security warnings always render in normal English (built-in boundary).
+
+- Levels: `lite` | `full` (this repo's default) | `ultra` | `wenyan`
+- Reverse triggers (any of these returns the agent to verbose mode): `normal mode`, `habla normal`, `stop caveman`, `speak normally`, `be verbose`, `más detallado`
+- Requires Node >= 18
+
+Install:
+
+- macOS / Linux: `curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash`
+- Windows: `irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.ps1 | iex`
+
+Docs: https://github.com/JuliusBrussee/caveman
+
+#### ccstatusline — Claude Code statusline TUI
+
+Configure the bottom statusline of Claude Code (model name, token usage, git branch, usage stats, etc.). Cosmetic only — no impact on agent behavior.
+
+> **WARNING**: run `ccstatusline` in a SEPARATE terminal with NO agent session active. Concurrent TUIs fight over stdin and break the agent prompt.
+
+Install + configure: `bunx -y ccstatusline@latest`
+
+Docs: https://github.com/sirmalloc/ccstatusline
+
 ---
 
 ## What is gentle-ai and why this repo uses it
