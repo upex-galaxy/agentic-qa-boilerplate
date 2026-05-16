@@ -11,11 +11,11 @@
  *   6.  Install Playwright browsers (`bun run pw:install`)
  *   7.  Run agents:setup (interactive `.agents/project.yaml` populator)
  *   8.  Install 14 skills + engram via gentle-ai (or skip)
- *   9.  Install community skills via `npx skills add` (project-level + user-level)
+ *   9.  Install community skills via `bunx skills add` (project-level + user-level)
  *  10.  Wire `.env` for MCP servers + offer direnv autoload
  *       (`.mcp.json` and `opencode.jsonc` are committed with ${VAR}/{env:VAR}
  *       expansion — installer only ensures `.env` has the required values)
- *  11.  Verify external CLIs (bun, gh, acli, playwright-cli, allure, jq)
+ *  11.  Verify external CLIs (bun, gh, acli, playwright-cli, resend, jq)
  *  12.  Optional bootstraps: Jira credentials check, API auth login
  *  13.  GitHub repository (optional)
  *  14.  Persist `.agents/install-state.json` + closing summary
@@ -30,7 +30,7 @@
  *   INSTALL_SKIP_DEPS=1                   Skip `bun install`
  *   INSTALL_SKIP_PLAYWRIGHT=1             Skip `bun run pw:install`
  *   INSTALL_SKIP_AGENTS_SETUP=1           Skip `bun run agents:setup`
- *   INSTALL_SKIP_COMMUNITY=1              Skip `npx skills add` step
+ *   INSTALL_SKIP_COMMUNITY=1              Skip `bunx skills add` step
  *   INSTALL_SKIP_JIRA=1                   Skip optional Jira bootstrap
  *   INSTALL_SKIP_API=1                    Skip optional API auth bootstrap
  *   INSTALL_SKIP_DIRENV=1                 Skip direnv autoload setup
@@ -162,37 +162,43 @@ const CANONICAL_MCPS = [
   'postman',
 ] as const;
 
+// External CLIs are NEVER installed by this script — install commands depend on
+// the user's OS and we refuse to guess. We only verify presence and point users
+// to the official docs, so they install via the canonical path for their setup.
 const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install: string, docs: string }> = [
   {
     name: 'bun',
-    install: 'curl -fsSL https://bun.com/install | bash  (or: brew install oven-sh/bun/bun)',
-    docs: 'https://bun.sh/docs/installation',
+    install: 'See official docs',
+    docs: 'https://bun.com/',
   },
   {
     name: 'gh',
-    install: 'brew install gh  (or: winget install --id GitHub.cli)',
-    docs: 'https://cli.github.com/',
+    install: 'See official docs',
+    docs: 'https://github.com/cli/cli#installation',
   },
   {
     name: 'acli',
-    install: 'brew tap atlassian/homebrew-acli && brew install acli',
-    docs: 'https://developer.atlassian.com/cloud/acli/guides/install-macos/',
+    install: 'See official docs',
+    docs: 'https://developer.atlassian.com/cloud/acli/guides/install-acli/',
   },
   {
     // Binary produced by @playwright/cli is `playwright-cli`, not `playwright`.
     // This is the agent-driven CLI, NOT the @playwright/test runner library.
     name: 'playwright-cli',
-    install: 'bun add -g @playwright/cli@latest  (or: npm install -g @playwright/cli@latest)',
+    install: 'bun add -g @playwright/cli@latest',
     docs: 'https://playwright.dev/agent-cli/introduction',
   },
   {
-    name: 'allure',
-    install: 'brew install allure  (or: scoop install allure)',
-    docs: 'https://allurereport.org/docs/',
+    name: 'resend',
+    install: 'See official docs',
+    docs: 'https://resend.com/docs/cli',
   },
   {
+    // Required only for advanced acli/Jira JSON pipelines (acli ... --json | jq ...).
+    // The `gh --jq` flag is a Go reimplementation embedded in gh and does NOT
+    // need this binary.
     name: 'jq',
-    install: 'brew install jq  (or: apt-get install jq, winget install jqlang.jq)',
+    install: 'See official docs',
     docs: 'https://jqlang.github.io/jq/download',
   },
 ];
@@ -203,11 +209,11 @@ interface CommunitySkill {
 }
 
 /**
- * Community skills installed at PROJECT level (`npx skills add`).
- * Hosts third-party skills that are critical to this QA stack and must travel
- * with every clone of the repo. They are NOT committed to .claude/skills/
- * (see .gitignore) — install.ts re-fetches them on every install so we always
- * get upstream fixes. Skills authored by us (sprint-testing, test-automation,
+ * Community skills installed at PROJECT level (`bunx skills add`).
+ * Hosts third-party skills that are critical to this QA stack. They land in
+ * .claude/skills/ alongside our committed skills — the boilerplate scaffolds
+ * the full skill set into the consumer repo, so a fresh clone has everything
+ * needed. Skills authored by us (sprint-testing, test-automation,
  * agentic-qa-core, project-discovery, regression-testing, test-documentation,
  * agentic-qa-onboard, acli, xray-cli, git-flow-master) live committed under
  * .claude/skills/ and are NOT listed here.
@@ -222,7 +228,7 @@ const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
 ];
 
 /**
- * Community skills installed at USER (global) level (`npx skills add --global`).
+ * Community skills installed at USER (global) level (`bunx skills add --global`).
  * Useful across most projects regardless of stack. QA-tuned subset of the dev
  * universal layer — design/automation skills (n8n-skills, emil-design-eng,
  * ui-ux-pro-max) live only in the dev repo since QA does not author UI or
@@ -702,7 +708,7 @@ async function installSkillsViaGentleAi(
 }
 
 // ============================================================================
-// Step 9 — community skills via npx skills CLI (independent of gentle-ai)
+// Step 9 — community skills via bunx skills CLI (independent of gentle-ai)
 // ============================================================================
 
 function describeSkill(item: CommunitySkill): string {
@@ -725,7 +731,7 @@ async function installCommunitySkills(
   }
 
   log.banner(`Community skills — ${label}`);
-  log.info(`This will run ${list.length} \`npx skills add\` commands (${label}).`);
+  log.info(`This will run ${list.length} \`bunx skills add\` commands (${label}).`);
 
   const proceed = await maybeConfirm(`Install ${label} community skills?`, true);
   if (!proceed) {
@@ -755,7 +761,7 @@ async function installCommunitySkills(
       args.push('--global');
     }
     args.push('--yes');
-    const result = tryRun('npx', args);
+    const result = tryRun('bunx', args);
     if (result.ok) {
       log.success(`  installed: ${slug}`);
       state.skills[key] = 'installed';
@@ -1539,8 +1545,8 @@ async function main(): Promise<void> {
     }
   }
 
-  // Step 9 — community skills via npx skills CLI (independent of gentle-ai)
-  log.step(9, TOTAL_STEPS, 'Installing community skills via npx skills CLI');
+  // Step 9 — community skills via bunx skills CLI (independent of gentle-ai)
+  log.step(9, TOTAL_STEPS, 'Installing community skills via bunx skills CLI');
   if (SKIP_COMMUNITY) {
     log.dim('  INSTALL_SKIP_COMMUNITY=1, skipping community skills.');
     for (const item of [...PROJECT_LEVEL_SKILLS, ...USER_LEVEL_SKILLS]) {
