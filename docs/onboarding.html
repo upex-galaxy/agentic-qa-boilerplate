@@ -785,11 +785,84 @@
         background: var(--accent-soft);
         color: var(--accent);
       }
+
+      /* Getting Started path-cards */
+      .path-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0 2rem;
+      }
+      .path-card {
+        display: flex;
+        flex-direction: column;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        transition:
+          border-color 0.15s,
+          transform 0.15s;
+      }
+      .path-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+      }
+      .path-card.recommended {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent-soft);
+      }
+      .path-card-eyebrow {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+      }
+      .path-card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem;
+      }
+      .path-card-cmd {
+        background: var(--code-bg);
+        color: var(--code-text);
+        padding: 0.6rem 0.75rem;
+        border-radius: var(--radius-sm);
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        margin: 0 0 0.75rem;
+        overflow-x: auto;
+        white-space: pre;
+      }
+      .path-card-desc {
+        font-size: 0.92rem;
+        margin: 0 0 0.75rem;
+        color: var(--text-soft);
+      }
+      .path-card-steps {
+        margin: 0 0 0.75rem;
+        padding-left: 1.25rem;
+        font-size: 0.88rem;
+        color: var(--text-soft);
+      }
+      .path-card-steps li {
+        margin-bottom: 0.25rem;
+      }
+      .path-card-foot {
+        margin-top: auto;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border);
+      }
     </style>
   </head>
   <body>
     <header class="shell hero">
-      <span class="hero-eyebrow">Onboarding · v1.2</span>
+      <span class="hero-eyebrow">Onboarding · v1.3</span>
       <h1>Agentic <span class="accent">QA</span> Boilerplate</h1>
       <p class="hero-sub">AI-driven quality engineering on Playwright + KATA + TypeScript.</p>
       <p class="hero-tagline">
@@ -979,6 +1052,9 @@
         <summary>Table of contents</summary>
         <nav class="toc">
           <ol>
+            <li>
+              <a href="#getting-started"><strong>Start here →</strong></a>
+            </li>
             <li><a href="#section-1">1. The fundamental idea</a></li>
             <li><a href="#section-2">2. Three categories of moving parts</a></li>
             <li><a href="#section-3">3. The lifecycle</a></li>
@@ -997,6 +1073,9 @@
           <nav class="toc" aria-label="Table of contents">
             <p class="toc-title">Contents</p>
             <ol>
+              <li>
+                <a href="#getting-started"><strong>Start here →</strong></a>
+              </li>
               <li><a href="#section-1">1. The fundamental idea</a></li>
               <li><a href="#section-2">2. Three moving parts</a></li>
               <li><a href="#section-3">3. The lifecycle</a></li>
@@ -1011,6 +1090,133 @@
         </aside>
 
         <main class="content">
+          <!-- =======================================================  GETTING STARTED  -->
+          <section id="getting-started">
+            <h2><span class="num">→</span>Start here</h2>
+
+            <p>
+              Three onboarding paths, ordered by how much hand-holding the boilerplate gives you.
+              The magic command is the recommended path — it downloads the latest template, scrubs
+              upstream git history, renames the project, runs
+              <code>bun install</code>, and hands off to the interactive installer in one shot.
+            </p>
+
+            <div class="path-grid">
+              <article class="path-card recommended">
+                <span class="path-card-eyebrow">Recommended · npm scaffolder</span>
+                <h3 class="path-card-title">Magic command</h3>
+                <pre class="path-card-cmd">bunx create-agentic-qa &lt;your-repo-name&gt;</pre>
+                <p class="path-card-desc">
+                  One command downloads the latest
+                  <code>agentic-qa-boilerplate</code> tarball (no git history), renames your
+                  project, runs <code>bun install</code>, and hands off to the interactive
+                  installer.
+                </p>
+                <ol class="path-card-steps">
+                  <li>Tarball download (latest <code>main</code>)</li>
+                  <li>
+                    Rewrite <code>package.json</code> +
+                    <code>.agents/project.yaml</code>
+                  </li>
+                  <li>Fresh <code>git init -b main</code> + initial commit</li>
+                  <li><code>bun install</code></li>
+                  <li>
+                    <code>bun run setup</code> — gentle-ai, 11 T1 skills, MCPs, <code>.env</code>,
+                    optional <code>gh repo create</code>
+                  </li>
+                </ol>
+                <p class="path-card-foot">
+                  Details:
+                  <a href="https://www.npmjs.com/package/create-agentic-qa">npm package</a>
+                  ·
+                  <a
+                    href="https://github.com/upex-galaxy/agentic-qa-boilerplate/tree/main/packages/create-agentic-qa"
+                    >source + flags</a
+                  >
+                </p>
+              </article>
+
+              <article class="path-card">
+                <span class="path-card-eyebrow">GitHub-first</span>
+                <h3 class="path-card-title">"Use this template"</h3>
+                <pre class="path-card-cmd">
+Click → clone → bun install &amp;&amp; bun run setup</pre
+                >
+                <p class="path-card-desc">
+                  Create your repo on GitHub from day one. Good when you want the remote first and
+                  the local checkout second.
+                </p>
+                <ol class="path-card-steps">
+                  <li>
+                    Click
+                    <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate/generate"
+                      >Use this template → Create a new repository</a
+                    >
+                  </li>
+                  <li>Pick owner, name, visibility</li>
+                  <li>Clone YOUR new repo locally</li>
+                  <li><code>bun install &amp;&amp; bun run setup</code></li>
+                  <li>
+                    Manually edit <code>package.json</code> <code>name</code> +
+                    <code>.agents/project.yaml</code>
+                    <code>project.project_name</code>
+                  </li>
+                </ol>
+                <p class="path-card-foot">
+                  Trade-off: keeps upstream git history; you rename manually. The magic command does
+                  both automatically.
+                </p>
+              </article>
+
+              <article class="path-card">
+                <span class="path-card-eyebrow">Contributors only</span>
+                <h3 class="path-card-title">Manual clone</h3>
+                <pre class="path-card-cmd">
+git clone … &amp;&amp; bun install &amp;&amp; bun run setup</pre
+                >
+                <p class="path-card-desc">
+                  For hacking on the boilerplate itself — skills, installer, scripts, docs.
+                  End-users should NOT use this path.
+                </p>
+                <ol class="path-card-steps">
+                  <li>
+                    <code>git clone https://github.com/upex-galaxy/agentic-qa-boilerplate.git</code>
+                  </li>
+                  <li><code>cd agentic-qa-boilerplate</code></li>
+                  <li><code>bun install</code></li>
+                  <li><code>bun run setup</code></li>
+                </ol>
+                <p class="path-card-foot">
+                  Use this only if you intend to send PRs against the boilerplate itself.
+                </p>
+              </article>
+            </div>
+
+            <div class="callout callout-info">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              <div>
+                <p class="callout-title">Why the magic command is the default</p>
+                <p>
+                  It is the only path that ends with a fully-renamed, gentle-ai-installed,
+                  MCP-wired, gh-repo-ready workspace in one command. The other two paths require
+                  manual rename + installer steps before the boilerplate is ready for the first
+                  <code>/sprint-testing</code> session.
+                </p>
+              </div>
+            </div>
+          </section>
+
           <!-- =======================================================  SECTION 1  -->
           <section id="section-1">
             <h2><span class="num">1.</span>The fundamental idea</h2>
