@@ -30,6 +30,7 @@
  *   INSTALL_SKIP_DEPS=1                   Skip `bun install`
  *   INSTALL_SKIP_PLAYWRIGHT=1             Skip `bun run pw:install`
  *   INSTALL_SKIP_AGENTS_SETUP=1           Skip `bun run agents:setup`
+ *   INSTALL_FORCE_AGENTS_SETUP=1          Re-run agents:setup even if state shows it ran
  *   INSTALL_SKIP_COMMUNITY=1              Skip `bunx skills add` step
  *   INSTALL_SKIP_JIRA=1                   Skip optional Jira bootstrap
  *   INSTALL_SKIP_API=1                    Skip optional API auth bootstrap
@@ -85,7 +86,7 @@ interface OptionalBootstrapStatus {
 interface GithubRemoteInfo {
   account: string
   repo: string
-  visibility: 'private' | 'public' | 'internal'
+  visibility: 'private' | 'public' | 'internal' | 'unknown'
   url: string
   createdAt: string
 }
@@ -279,6 +280,7 @@ const SKIP_GENTLE_AI = process.env.INSTALL_SKIP_GENTLE_AI === '1';
 const SKIP_DEPS = process.env.INSTALL_SKIP_DEPS === '1';
 const SKIP_PLAYWRIGHT = process.env.INSTALL_SKIP_PLAYWRIGHT === '1';
 const SKIP_AGENTS_SETUP = process.env.INSTALL_SKIP_AGENTS_SETUP === '1';
+const FORCE_AGENTS_SETUP = process.env.INSTALL_FORCE_AGENTS_SETUP === '1';
 const SKIP_JIRA = process.env.INSTALL_SKIP_JIRA === '1';
 const SKIP_API = process.env.INSTALL_SKIP_API === '1';
 const SKIP_COMMUNITY = process.env.INSTALL_SKIP_COMMUNITY === '1';
@@ -536,6 +538,24 @@ function nodeModulesLooksReady(): boolean {
   return existsSync(join(REPO_ROOT, 'node_modules', '@playwright', 'test'));
 }
 
+// Playwright caches downloaded browsers in a per-OS directory. Detect any of
+// the documented locations as a proxy for "browsers installed". This avoids
+// spawning `bunx playwright --version` (which only verifies the package, not
+// the browsers themselves).
+function playwrightBrowsersInstalled(): boolean {
+  const overrides = [
+    process.env.PLAYWRIGHT_BROWSERS_PATH,
+  ].filter((p): p is string => Boolean(p) && p !== '0');
+  const home = homedir();
+  const candidates = [
+    ...overrides,
+    join(home, '.cache', 'ms-playwright'),
+    join(home, 'Library', 'Caches', 'ms-playwright'),
+    join(home, 'AppData', 'Local', 'ms-playwright'),
+  ];
+  return candidates.some(p => existsSync(p));
+}
+
 async function runDepsInstall(state: InstallState): Promise<void> {
   if (SKIP_DEPS) {
     log.dim('  INSTALL_SKIP_DEPS=1, skipping bun install.');
@@ -576,8 +596,11 @@ async function runPlaywrightInstall(state: InstallState): Promise<void> {
     log.dim('  INSTALL_SKIP_PLAYWRIGHT=1, skipping playwright install.');
     return;
   }
-  if (state.steps.playwrightInstalled && which('playwright')) {
-    log.dim('  Playwright already installed (state + playwright on PATH).');
+  // `playwright` is NOT on PATH — Playwright lives in node_modules/.bin and the
+  // browser binaries land in a per-OS cache dir. Probe the actual binary via
+  // `bunx playwright --version` (resolves the local devDep + verifies install).
+  if (state.steps.playwrightInstalled && playwrightBrowsersInstalled()) {
+    log.dim('  Playwright already installed (state + browsers cached).');
     return;
   }
 
@@ -607,6 +630,11 @@ async function runPlaywrightInstall(state: InstallState): Promise<void> {
 async function runAgentsSetup(state: InstallState): Promise<void> {
   if (SKIP_AGENTS_SETUP) {
     log.dim('  INSTALL_SKIP_AGENTS_SETUP=1, skipping agents:setup.');
+    return;
+  }
+  if (state.steps.agentsSetupRanAt && !FORCE_AGENTS_SETUP) {
+    log.dim(`  agents:setup already ran at ${state.steps.agentsSetupRanAt}.`);
+    log.dim('  Set INSTALL_FORCE_AGENTS_SETUP=1 to re-run, or run `bun run agents:setup` manually.');
     return;
   }
 
@@ -1199,6 +1227,30 @@ function sanitizeRepoName(name: string): string {
 async function setupGithubRemote(state: InstallState): Promise<void> {
   if (NON_INTERACTIVE) {
     log.dim('Non-interactive mode — skipping GitHub remote creation.');
+    return;
+  }
+
+  // Idempotency: if `origin` is already wired, re-running the installer must
+  // not call `gh repo create` (it would fail with "repo already exists").
+  // Hydrate state.github from the existing remote URL so the closing summary
+  // still surfaces the GitHub block on subsequent runs.
+  const existingRemote = tryRun('git', ['remote', 'get-url', 'origin']);
+  if (existingRemote.ok && existingRemote.stdout.trim().length > 0) {
+    const url = existingRemote.stdout.trim();
+    log.success(`origin already wired: ${url}`);
+    log.dim('  Skipping repo creation. Edit on GitHub or via `gh repo edit`.');
+    if (!state.github) {
+      const match = url.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
+      if (match) {
+        state.github = {
+          account: match[1],
+          repo: match[2],
+          visibility: 'unknown',
+          url: `https://github.com/${match[1]}/${match[2]}`,
+          createdAt: new Date().toISOString(),
+        };
+      }
+    }
     return;
   }
 
