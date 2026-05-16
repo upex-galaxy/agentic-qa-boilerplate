@@ -31,6 +31,9 @@
  *   INSTALL_SKIP_PLAYWRIGHT=1             Skip `bun run pw:install`
  *   INSTALL_SKIP_AGENTS_SETUP=1           Skip `bun run agents:setup`
  *   INSTALL_FORCE_AGENTS_SETUP=1          Re-run agents:setup even if state shows it ran
+ *   INSTALL_FORCE_GENTLE_AI=1             Re-run gentle-ai skill install even if state shows it ran
+ *   INSTALL_FORCE_COMMUNITY=1             Re-run community skill install even if state shows it ran
+ *   INSTALL_FORCE_GITHUB=1                Re-run GitHub remote setup even if a remote is already wired
  *   INSTALL_SKIP_COMMUNITY=1              Skip `bunx skills add` step
  *   INSTALL_SKIP_JIRA=1                   Skip optional Jira bootstrap
  *   INSTALL_SKIP_API=1                    Skip optional API auth bootstrap
@@ -104,6 +107,11 @@ interface InstallState {
     depsInstalled?: boolean
     playwrightInstalled?: boolean
     agentsSetupRanAt?: string
+    // Timestamps for the expensive idempotent steps. When set, the matching
+    // step is skipped on re-run unless the user opts in via INSTALL_FORCE_*.
+    gentleAiInstalledAt?: string
+    communitySkillsInstalledAt?: string
+    githubRemoteWiredAt?: string
     jiraBootstrap?: OptionalBootstrapStatus
     apiBootstrap?: OptionalBootstrapStatus
   }
@@ -290,6 +298,9 @@ const SKIP_DEPS = process.env.INSTALL_SKIP_DEPS === '1';
 const SKIP_PLAYWRIGHT = process.env.INSTALL_SKIP_PLAYWRIGHT === '1';
 const SKIP_AGENTS_SETUP = process.env.INSTALL_SKIP_AGENTS_SETUP === '1';
 const FORCE_AGENTS_SETUP = process.env.INSTALL_FORCE_AGENTS_SETUP === '1';
+const FORCE_GENTLE_AI = process.env.INSTALL_FORCE_GENTLE_AI === '1';
+const FORCE_COMMUNITY = process.env.INSTALL_FORCE_COMMUNITY === '1';
+const FORCE_GITHUB = process.env.INSTALL_FORCE_GITHUB === '1';
 const SKIP_JIRA = process.env.INSTALL_SKIP_JIRA === '1';
 const SKIP_API = process.env.INSTALL_SKIP_API === '1';
 const SKIP_COMMUNITY = process.env.INSTALL_SKIP_COMMUNITY === '1';
@@ -694,6 +705,11 @@ async function installSkillsViaGentleAi(
     log.info('No agents selected, skipping skill install.');
     return;
   }
+  if (state.steps.gentleAiInstalledAt && !FORCE_GENTLE_AI) {
+    log.dim(`  gentle-ai skills already installed at ${state.steps.gentleAiInstalledAt}.`);
+    log.dim('  Set INSTALL_FORCE_GENTLE_AI=1 to re-run.');
+    return;
+  }
 
   // One batched gentle-ai call per agent: installs the engram component
   // plus the SDD + skills components, with the full skill slug list in
@@ -743,6 +759,7 @@ async function installSkillsViaGentleAi(
       state.skills[`${slug}::${agent}`] = status;
     }
   }
+  state.steps.gentleAiInstalledAt = new Date().toISOString();
 }
 
 // ============================================================================
@@ -765,6 +782,14 @@ async function installCommunitySkills(
 
   if (list.length === 0) {
     log.dim(`  No ${label} community skills configured for this repo (${level === 'project' ? 'PROJECT_LEVEL_SKILLS' : 'USER_LEVEL_SKILLS'} is empty).`);
+    return;
+  }
+  // Idempotency: once a previous run completed this level, skip wholesale on
+  // re-runs. Individual skills also have a per-key `installed` guard inside
+  // the loop, but this short-circuit avoids re-prompting the user entirely.
+  if (state.steps.communitySkillsInstalledAt && !FORCE_COMMUNITY) {
+    log.dim(`  ${label} community skills already installed at ${state.steps.communitySkillsInstalledAt}.`);
+    log.dim('  Set INSTALL_FORCE_COMMUNITY=1 to re-run.');
     return;
   }
 
@@ -809,6 +834,7 @@ async function installCommunitySkills(
       state.skills[key] = 'failed';
     }
   }
+  state.steps.communitySkillsInstalledAt = new Date().toISOString();
 }
 
 // ============================================================================
@@ -1245,12 +1271,14 @@ async function setupGithubRemote(state: InstallState): Promise<void> {
   // Idempotency: if `origin` is already wired, re-running the installer must
   // not call `gh repo create` (it would fail with "repo already exists").
   // Hydrate state.github from the existing remote URL so the closing summary
-  // still surfaces the GitHub block on subsequent runs.
+  // still surfaces the GitHub block on subsequent runs. INSTALL_FORCE_GITHUB=1
+  // bypasses this short-circuit (rare — the user explicitly wants to wire a
+  // different remote).
   const existingRemote = tryRun('git', ['remote', 'get-url', 'origin']);
-  if (existingRemote.ok && existingRemote.stdout.trim().length > 0) {
+  if (existingRemote.ok && existingRemote.stdout.trim().length > 0 && !FORCE_GITHUB) {
     const url = existingRemote.stdout.trim();
     log.success(`origin already wired: ${url}`);
-    log.dim('  Skipping repo creation. Edit on GitHub or via `gh repo edit`.');
+    log.dim('  Skipping repo creation. Set INSTALL_FORCE_GITHUB=1 to wire a different remote.');
     if (!state.github) {
       const match = url.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
       if (match) {
@@ -1263,6 +1291,7 @@ async function setupGithubRemote(state: InstallState): Promise<void> {
         };
       }
     }
+    state.steps.githubRemoteWiredAt = state.steps.githubRemoteWiredAt ?? new Date().toISOString();
     return;
   }
 
@@ -1366,6 +1395,7 @@ async function setupGithubRemote(state: InstallState): Promise<void> {
     url,
     createdAt: new Date().toISOString(),
   };
+  state.steps.githubRemoteWiredAt = new Date().toISOString();
   log.success(`Repository created and pushed: ${url}`);
 }
 
