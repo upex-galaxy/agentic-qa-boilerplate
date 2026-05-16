@@ -19,6 +19,7 @@ kata-manifest.json
 bun.lock
 package-lock.json
 yarn.lock
+.agents/install-state.json
 
 # IDE
 .idea/

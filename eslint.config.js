@@ -68,5 +68,9 @@ export default antfu({
         varsIgnorePattern: '^_',
       },
     ],
+
+    // YAML: defer to Prettier for flow-mapping brace spacing
+    // (ESLint plugin wants {x}, Prettier wants { x }; Prettier wins via pre-commit)
+    'yaml/flow-mapping-curly-spacing': 'off',
   },
 });
