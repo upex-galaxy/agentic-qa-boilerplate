@@ -51,17 +51,85 @@ bunx create-agentic-qa <your-repo-name>
 <br />
 <br />
 
+## Prerequisites
+
+Before running `bunx create-agentic-qa` or `bun install && bun run setup`, install the **hard blockers**. The installer detects everything else and prints exact install URLs when something is missing — but front-loading these saves a fail-and-retry loop.
+
+### Hard blockers (installer exits 1 if missing)
+
+| Tool                                                                                                                   | Min version | Why                                                                                                         | Install                                                                                |
+| ---------------------------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Bun**                                                                                                                | `>= 1.0.0`  | Runtime for every script (`bun install`, `bun run setup`, `bun run test`, `bun xray`, `bun cli/doctor.ts`)  | `curl -fsSL https://bun.sh/install \| bash` · [docs](https://bun.sh/docs/installation) |
+| **Agent CLI** — [Claude Code](https://docs.claude.com/en/docs/claude-code) **or** [OpenCode](https://opencode.ai/docs) | latest      | `bun run setup` Step 4 looks for `~/.claude/` or `~/.config/opencode/`; exits 1 if neither directory exists | Claude Code: see official docs · OpenCode: see official docs                           |
+| `git`                                                                                                                  | any         | Scaffolder runs `git init`; pre-commit hooks (Husky) require git                                            | [git-scm.com/downloads](https://git-scm.com/downloads)                                 |
+| `tar`                                                                                                                  | any         | Scaffolder extracts the template tarball                                                                    | Ships with macOS/Linux. Windows: use Git Bash or WSL                                   |
+
+### Quasi-required (installer warns + offers install)
+
+| Tool          | Min version | Why                                                                                                                                                                                                       | Install                                                                                                                                                                            |
+| ------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **gentle-ai** | `>= 1.26.5` | Installs 13 universal skills (Engram persistent memory + 10 SDD-\* + skill-registry + judgment-day + issue-creation). Framework still runs without it, but SDD planning and cross-session memory are off. | macOS: `brew install gentle-ai` · Linux: `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` · [repo](https://github.com/Gentleman-Programming/gentle-ai) |
+
+### Per-skill CLIs (lazy-required — needed when the skill runs, not at setup)
+
+These are **not optional** for the workflow — each one is required by a specific skill. They are non-blocking at setup time because the installer cannot guess which skills you will actually use. Install them up front if you plan to use the whole stack, or lazily when the skill that uses them surfaces a missing-binary error.
+
+| Tool             | Required by                                                                         | Install                                                                           |
+| ---------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `gh`             | `/git-flow-master`, `/regression-testing` (PRs, Actions, releases)                  | [cli.github.com](https://cli.github.com/)                                         |
+| `acli`           | `/acli`, `/sprint-testing`, `/test-documentation` (Jira / Confluence from terminal) | [Atlassian docs](https://developer.atlassian.com/cloud/acli/guides/install-acli/) |
+| `playwright-cli` | `/playwright-cli` skill (agent-driven browser automation)                           | `bun add -g @playwright/cli@latest`                                               |
+| `resend`         | `/resend-cli` (email testing flows, when added)                                     | [resend.com/docs/cli](https://resend.com/docs/cli)                                |
+| `jq`             | `acli` JSON pipelines (`acli ... --json \| jq ...`)                                 | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)              |
+
+### Convenience opt-ins (pure UX, never required)
+
+| Tool     | What it buys you                                                                                                                                                                                                                                                                          | Install                                                                                       |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `direnv` | Loads `.env` automatically when you `cd` into the repo, so the bare `claude` / `opencode` binaries see MCP credentials. Without it the project ships `bun run claude` / `bun run opencode` wrappers (via `dotenv-cli`) that do the same thing — direnv just removes the `bun run` prefix. | macOS/Linux: `brew install direnv` / `apt install direnv` · [direnv.net](https://direnv.net/) |
+
+> **Windows users**: skip direnv. The `bun run claude` / `bun run opencode` wrappers already load `.env` cross-platform with zero setup. direnv on PowerShell needs version 2.37+ and is officially experimental; Git Bash works but at that point the wrapper is simpler. The installer will offer the direnv hook; just decline it.
+
+### MCP credentials (`.env` keys)
+
+`.mcp.json` (Claude Code) and `opencode.jsonc` ship with `${VAR}` / `{env:VAR}` placeholders that read from `.env`. Eight keys are required for the 7 canonical MCPs:
+
+```
+TAVILY_API_KEY
+ATLASSIAN_URL · ATLASSIAN_EMAIL · ATLASSIAN_API_TOKEN
+API_BASE_URL · OPENAPI_SPEC_PATH · API_TOKEN
+POSTMAN_API_KEY
+```
+
+`.env.example` has the full template with per-var comments. Run `bun run setup:doctor` at any time to see which are still missing — it prints `pending_actions[].where` URLs for every credential.
+
+### When the installer tells you something is wrong
+
+| Stage                    | Check depth                                                                                                                     | Behavior                                                                                                                                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Preflight (Step 0)       | Version compare — reads `Bun.version`, parses semver, requires `>= 1.0.0`. Also checks `node_modules/@inquirer/prompts` exists. | Hard exit 1 with explicit `Fix:` command before any other step.                                                                                                                                           |
+| Step 2 — gentle-ai       | Version compare — runs `gentle-ai version`, parses semver, requires `>= 1.26.5`.                                                | Missing: prints brew + go install commands + docs URL, asks exit-or-continue. Too old: warns and continues with `gentle-ai update` hint.                                                                  |
+| Step 4 — agents          | Path probe — checks if `~/.claude/` or `~/.config/opencode/` directory exists.                                                  | Neither found: prints both docs URLs, hard exit 1.                                                                                                                                                        |
+| Step 10 — per-skill CLIs | PATH probe — runs `which <name>` (POSIX) or `where <name>` (Windows). Presence only, no version check.                          | Prints `found`/`missing` table; for missing entries adds `quick:` install command (when cross-platform) + `docs:` URL. Non-blocking.                                                                      |
+| direnv (optional)        | Presence + `.envrc` allow status + shell-rc hook line.                                                                          | Pure convenience nudge — `bun run claude` / `bun run opencode` wrappers already work without it. If absent, lists `system_install` action with install command; safe to decline (recommended on Windows). |
+| `bun run setup:doctor`   | Re-runs everything above + 8 MCP `.env` vars + Playwright browser cache.                                                        | Human-readable or `--json` report. Every `pending_action` carries a `where` hint or URL — re-run any time after partial setup.                                                                            |
+
+> **TL;DR**: install **Bun** + **Claude Code (or OpenCode)** before you run setup. Everything else, the installer points you at when you hit it.
+
+<br />
+<br />
+
 ## Start here — pick your path
 
-| Goal | What to read / run |
-|------|-------------------|
-| **Start a new project — magic command (recommended)** | `bunx create-agentic-qa <your-repo-name>` — official scaffolder ([npm](https://www.npmjs.com/package/create-agentic-qa)) |
-| **Start a new project — GitHub "Use this template"** | Click [**Use this template**](https://github.com/upex-galaxy/agentic-qa-boilerplate/generate) → clone your new repo → `bun install && bun run setup` (see [Other ways to start](#other-ways-to-start)) |
-| **Contribute to the boilerplate itself** | `git clone …` then `bun install && bun run setup` (see [Other ways to start](#other-ways-to-start)) |
-| **Get oriented before installing** | `bun run onboarding` — opens `docs/onboarding.html` with sidebar nav |
-| **Understand the methodology** | [`docs/agentic-quality-engineering.md`](docs/agentic-quality-engineering.md) |
-| **See what `bun run setup` configures** | [`INSTALLER.md`](INSTALLER.md) — run `bun cli/doctor.ts` after setup |
-| **You're an AI agent** | [`CLAUDE.md`](CLAUDE.md) (auto-loaded each session) |
+| Goal                                                  | What to read / run                                                                                                                                                                                     |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Start a new project — magic command (recommended)** | `bunx create-agentic-qa <your-repo-name>` — official scaffolder ([npm](https://www.npmjs.com/package/create-agentic-qa))                                                                               |
+| **Start a new project — GitHub "Use this template"**  | Click [**Use this template**](https://github.com/upex-galaxy/agentic-qa-boilerplate/generate) → clone your new repo → `bun install && bun run setup` (see [Other ways to start](#other-ways-to-start)) |
+| **Contribute to the boilerplate itself**              | `git clone …` then `bun install && bun run setup` (see [Other ways to start](#other-ways-to-start))                                                                                                    |
+| **Get oriented before installing**                    | `bun run onboarding` — opens `docs/onboarding.html` with sidebar nav                                                                                                                                   |
+| **Understand the methodology**                        | [`docs/agentic-quality-engineering.md`](docs/agentic-quality-engineering.md)                                                                                                                           |
+| **See what `bun run setup` configures**               | [`INSTALLER.md`](INSTALLER.md) — run `bun cli/doctor.ts` after setup                                                                                                                                   |
+| **You're an AI agent**                                | [`CLAUDE.md`](CLAUDE.md) (auto-loaded each session)                                                                                                                                                    |
 
 > First-timers, use the scaffolder. It handles tarball download, git scrub, rename, `bun install`, and the interactive installer in one shot. The manual clone is for people hacking on the boilerplate itself.
 
@@ -92,14 +160,14 @@ What it does:
 
 Useful flags (full list in [`packages/create-agentic-qa/README.md`](packages/create-agentic-qa/README.md)):
 
-| Flag | Effect |
-|------|--------|
-| `--here` | Bootstrap into the current directory instead of a new one. |
-| `--template <ref>` | Pin to a branch / tag / SHA instead of `main`. |
-| `--template-repo <owner/repo>` | Use a fork instead of `upex-galaxy/agentic-qa-boilerplate`. |
-| `--project-key UPEX` | Pre-fill the Jira project key (otherwise prompted). |
-| `--no-install` / `--no-setup` | Skip `bun install` or the interactive installer. |
-| `--non-interactive` | Auto-pick defaults (also auto-detected when no TTY is present). |
+| Flag                           | Effect                                                          |
+| ------------------------------ | --------------------------------------------------------------- |
+| `--here`                       | Bootstrap into the current directory instead of a new one.      |
+| `--template <ref>`             | Pin to a branch / tag / SHA instead of `main`.                  |
+| `--template-repo <owner/repo>` | Use a fork instead of `upex-galaxy/agentic-qa-boilerplate`.     |
+| `--project-key UPEX`           | Pre-fill the Jira project key (otherwise prompted).             |
+| `--no-install` / `--no-setup`  | Skip `bun install` or the interactive installer.                |
+| `--non-interactive`            | Auto-pick defaults (also auto-detected when no TTY is present). |
 
 Then continue with the per-project workflow:
 
@@ -214,26 +282,17 @@ Project values (URLs, project key, Jira fields) live in `.agents/project.yaml` a
 
 <br />
 
-## Prerequisites
-
-- [Bun](https://bun.sh) (v1.0+)
-- Node.js 18+ (for some Playwright features)
-- `git`, `tar` (consumed by the scaffolder)
-- (optional) [`gh`](https://cli.github.com/) — for one-shot GitHub repo creation at the end of `bun run setup`
-
-<br />
-
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| **KATA Architecture** | Component Action Test Architecture for clean test organization |
-| **Playwright** | Modern browser automation with auto-waiting and tracing |
-| **Allure Reports** | Rich test reports with history and trends |
-| **TMS Sync** | Automatic sync of test results to Jira/Xray |
-| **Context Engineering** | `.context/` directory with AI-friendly documentation |
+| Feature                    | Description                                                                        |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| **KATA Architecture**      | Component Action Test Architecture for clean test organization                     |
+| **Playwright**             | Modern browser automation with auto-waiting and tracing                            |
+| **Allure Reports**         | Rich test reports with history and trends                                          |
+| **TMS Sync**               | Automatic sync of test results to Jira/Xray                                        |
+| **Context Engineering**    | `.context/` directory with AI-friendly documentation                               |
 | **Skills-based Workflows** | Agent skills under `.claude/skills/` drive the AI-assisted QA and automation flows |
-| **MCP Integration** | Ready for Playwright, Database, and API MCPs |
+| **MCP Integration**        | Ready for Playwright, Database, and API MCPs                                       |
 
 <br />
 
@@ -241,10 +300,10 @@ Project values (URLs, project key, Jira fields) live in `.agents/project.yaml` a
 
 This boilerplate has **two configuration systems** that serve different consumers and must not be conflated:
 
-| System | File | Consumer | Loaded at |
-|--------|------|----------|-----------|
-| **Runtime test config** | `.env` + `config/variables.ts` | Playwright runner, KATA components, `bun run *` scripts (jiraSync, env validate, etc.) | Test execution time |
-| **AI context engineering** | `.agents/project.yaml` | Claude Code, Codex, Cursor, Copilot, OpenCode — used to resolve `{{VAR}}` references in skills, commands, and templates | AI session bootstrap |
+| System                     | File                           | Consumer                                                                                                                | Loaded at            |
+| -------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| **Runtime test config**    | `.env` + `config/variables.ts` | Playwright runner, KATA components, `bun run *` scripts (jiraSync, env validate, etc.)                                  | Test execution time  |
+| **AI context engineering** | `.agents/project.yaml`         | Claude Code, Codex, Cursor, Copilot, OpenCode — used to resolve `{{VAR}}` references in skills, commands, and templates | AI session bootstrap |
 
 Both are needed. Skip neither.
 
@@ -432,11 +491,11 @@ Test Files ← Orchestrate ATCs
 
 ### Component Types
 
-| Component | Purpose | Location |
-|-----------|---------|----------|
-| **Api** | HTTP interactions | `tests/components/api/` |
-| **Page** | UI interactions | `tests/components/ui/` |
-| **Step** | Reusable ATC chains | `tests/components/steps/` |
+| Component | Purpose             | Location                  |
+| --------- | ------------------- | ------------------------- |
+| **Api**   | HTTP interactions   | `tests/components/api/`   |
+| **Page**  | UI interactions     | `tests/components/ui/`    |
+| **Step**  | Reusable ATC chains | `tests/components/steps/` |
 
 ### Example Test
 
@@ -462,60 +521,60 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 
 ### Test Execution
 
-| Script | Description |
-|--------|-------------|
-| `bun run test` | Run all tests |
-| `bun run test:ui` | Open Playwright UI mode |
-| `bun run test:debug` | Run with debugger |
-| `bun run test:headed` | Run with browser visible |
-| `bun run test:e2e` | Run E2E tests only |
-| `bun run test:integration` | Run API tests only |
-| `bun run test:e2e:critical` | Run @critical tests |
-| `bun run test:retries` | Run with 2 retries |
-| `bun run test:last-failed` | Re-run failed tests |
+| Script                      | Description              |
+| --------------------------- | ------------------------ |
+| `bun run test`              | Run all tests            |
+| `bun run test:ui`           | Open Playwright UI mode  |
+| `bun run test:debug`        | Run with debugger        |
+| `bun run test:headed`       | Run with browser visible |
+| `bun run test:e2e`          | Run E2E tests only       |
+| `bun run test:integration`  | Run API tests only       |
+| `bun run test:e2e:critical` | Run @critical tests      |
+| `bun run test:retries`      | Run with 2 retries       |
+| `bun run test:last-failed`  | Re-run failed tests      |
 
 ### Reports
 
-| Script | Description |
-|--------|-------------|
-| `bun run test:report` | Open Playwright report |
-| `bun run test:allure` | Generate and open Allure |
-| `bun run test:allure:generate` | Generate Allure only |
-| `bun run test:allure:open` | Open existing Allure |
-| `bun run test:sync` | Sync results to TMS |
+| Script                         | Description              |
+| ------------------------------ | ------------------------ |
+| `bun run test:report`          | Open Playwright report   |
+| `bun run test:allure`          | Generate and open Allure |
+| `bun run test:allure:generate` | Generate Allure only     |
+| `bun run test:allure:open`     | Open existing Allure     |
+| `bun run test:sync`            | Sync results to TMS      |
 
 ### Code Quality
 
-| Script | Description |
-|--------|-------------|
-| `bun run lint` | Run ESLint |
-| `bun run lint:fix` | Fix linting issues |
-| `bun run format` | Format with Prettier |
-| `bun run type-check` | TypeScript check |
+| Script               | Description          |
+| -------------------- | -------------------- |
+| `bun run lint`       | Run ESLint           |
+| `bun run lint:fix`   | Fix linting issues   |
+| `bun run format`     | Format with Prettier |
+| `bun run type-check` | TypeScript check     |
 
 ### Utilities
 
-| Script | Description |
-|--------|-------------|
-| `bun run pw:install` | Install browsers |
-| `bun run env:validate` | Validate environment |
-| `bun run clean` | Remove test artifacts |
+| Script                 | Description           |
+| ---------------------- | --------------------- |
+| `bun run pw:install`   | Install browsers      |
+| `bun run env:validate` | Validate environment  |
+| `bun run clean`        | Remove test artifacts |
 
 ### CLI Tools
 
-| Script | Description |
-|--------|-------------|
-| `bun run update` | Sync project with template (skills, docs) |
-| `bun run xray` | Xray CLI for test management |
-| `bun run api:sync` | Sync OpenAPI spec and generate types |
-| `bun run kata:manifest` | Extract ATCs from codebase into a manifest (`--watch` flag available) |
-| `bun run agents:setup` | Interactive walkthrough to populate `.agents/project.yaml` |
-| `bun run lint:agents` | Lint `.agents/` files for missing required values |
-| `bun run lint:skills` | Validate T1-T4 skill tier coherence (frontmatter, categories, anti-leak) |
-| `bun run jira:sync-fields` | Sync Jira custom-field catalog into `.agents/jira-fields.json` |
+| Script                        | Description                                                                  |
+| ----------------------------- | ---------------------------------------------------------------------------- |
+| `bun run update`              | Sync project with template (skills, docs)                                    |
+| `bun run xray`                | Xray CLI for test management                                                 |
+| `bun run api:sync`            | Sync OpenAPI spec and generate types                                         |
+| `bun run kata:manifest`       | Extract ATCs from codebase into a manifest (`--watch` flag available)        |
+| `bun run agents:setup`        | Interactive walkthrough to populate `.agents/project.yaml`                   |
+| `bun run lint:agents`         | Lint `.agents/` files for missing required values                            |
+| `bun run lint:skills`         | Validate T1-T4 skill tier coherence (frontmatter, categories, anti-leak)     |
+| `bun run jira:sync-fields`    | Sync Jira custom-field catalog into `.agents/jira-fields.json`               |
 | `bun run jira:sync-workflows` | Sync Jira workflow statuses + transitions into `.agents/jira-workflows.json` |
-| `bun run jira:sync-issues` | Pull Jira Epics/Stories into `.context/PBI/` markdown files |
-| `bun run jira:check` | Verify Jira workspace has required custom fields configured |
+| `bun run jira:sync-issues`    | Pull Jira Epics/Stories into `.context/PBI/` markdown files                  |
+| `bun run jira:check`          | Verify Jira workspace has required custom fields configured                  |
 
 <br />
 
@@ -565,12 +624,12 @@ The `.boilerplate-version.json` file is committable — commit it so your team a
 
 ### GitHub Actions Workflows
 
-| Workflow | Trigger | Description |
-|----------|---------|-------------|
-| `build.yml` | PR to main | Validate framework compiles |
-| `smoke.yml` | Daily 2AM UTC | Run @critical tests |
-| `sanity.yml` | Manual | Run tests by grep pattern |
-| `regression.yml` | Daily midnight | Full test suite |
+| Workflow         | Trigger        | Description                 |
+| ---------------- | -------------- | --------------------------- |
+| `build.yml`      | PR to main     | Validate framework compiles |
+| `smoke.yml`      | Daily 2AM UTC  | Run @critical tests         |
+| `sanity.yml`     | Manual         | Run tests by grep pattern   |
+| `regression.yml` | Daily midnight | Full test suite             |
 
 ### Environment Secrets Required
 
@@ -625,21 +684,21 @@ BUILD_ID
 
 ### Workflow skills (auto-trigger)
 
-| Skill | Trigger | Purpose |
-|-------|---------|---------|
-| `agentic-qa-core` | (auto, cited by other skills) | Foundation: passive reference host for shared doctrine (briefing template, dispatch patterns, orchestration, skill-composition strategy). Loaded on demand by workflow skills — not invoked directly. |
-| `/project-discovery` | `/project-discovery` | Onboard a project to this boilerplate. 4-phase discovery (Constitution → Architecture → Infrastructure → Specification) producing PRD, SRS, domain glossary; orchestrates the `/business-*-map` and `/master-test-plan` commands. Reverse-engineering only. |
-| `/sprint-testing` | `/sprint-testing` | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting). |
-| `/test-documentation` | `/test-documentation` | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS. Produces Candidate / Manual / Deferred verdicts. |
-| `/test-automation` | `/test-automation` | **Stage 5**. Plan → Code → Review automated tests on KATA + Playwright + TypeScript. |
-| `/regression-testing` | `/regression-testing` | **Stage 6**. Execute regression / smoke / sanity suites via CI/CD, classify failures, emit GO / CAUTION / NO-GO. |
-| `/playwright-cli` | `/playwright-cli` | Browser automation CLI: screenshots, tracing, video recording, session management, request mocking. *(community skill — installed at PROJECT level by `bun run install`; not committed in repo.)* |
-| `/playwright-best-practices` | `/playwright-best-practices` | Playwright + TypeScript reference: flaky-test fixes, POM vs fixtures, axe-core, auth/OAuth, perf budgets, i18n, component testing. Auto-loads in the Code phase of `/test-automation`. *(community skill by currents.dev — installed at PROJECT level by `bun run install`; not committed in repo.)* |
-| `/xray-cli` | `/xray-cli` | Xray Cloud test management CLI: tests, executions, plans, JUnit/Cucumber/Xray JSON imports, project backup/restore. |
-| `/acli` | `/acli` | Atlassian CLI for Jira Cloud — resolves `[ISSUE_TRACKER_TOOL]` and (in Modality B) `[TMS_TOOL]`. |
-| `/git-flow-master` | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR. |
-| `/framework-development` | `/framework-development` | Gateway for chaining SDD-* skills. Use for evolving the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. |
-| `/agentic-qa-onboard` | `/agentic-qa-onboard` | Walks new users through the repo's QA flow, MCPs, env vars, workflow skills. |
+| Skill                        | Trigger                       | Purpose                                                                                                                                                                                                                                                                                              |
+| ---------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agentic-qa-core`            | (auto, cited by other skills) | Foundation: passive reference host for shared doctrine (briefing template, dispatch patterns, orchestration, skill-composition strategy). Loaded on demand by workflow skills — not invoked directly.                                                                                                |
+| `/project-discovery`         | `/project-discovery`          | Onboard a project to this boilerplate. 4-phase discovery (Constitution → Architecture → Infrastructure → Specification) producing PRD, SRS, domain glossary; orchestrates the `/business-*-map` and `/master-test-plan` commands. Reverse-engineering only.                                          |
+| `/sprint-testing`            | `/sprint-testing`             | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting).                                                                                                                                                                                                   |
+| `/test-documentation`        | `/test-documentation`         | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS. Produces Candidate / Manual / Deferred verdicts.                                                                                                                                                                          |
+| `/test-automation`           | `/test-automation`            | **Stage 5**. Plan → Code → Review automated tests on KATA + Playwright + TypeScript.                                                                                                                                                                                                                 |
+| `/regression-testing`        | `/regression-testing`         | **Stage 6**. Execute regression / smoke / sanity suites via CI/CD, classify failures, emit GO / CAUTION / NO-GO.                                                                                                                                                                                     |
+| `/playwright-cli`            | `/playwright-cli`             | Browser automation CLI: screenshots, tracing, video recording, session management, request mocking. _(community skill — installed at PROJECT level by `bun run install`; not committed in repo.)_                                                                                                    |
+| `/playwright-best-practices` | `/playwright-best-practices`  | Playwright + TypeScript reference: flaky-test fixes, POM vs fixtures, axe-core, auth/OAuth, perf budgets, i18n, component testing. Auto-loads in the Code phase of `/test-automation`. _(community skill by currents.dev — installed at PROJECT level by `bun run install`; not committed in repo.)_ |
+| `/xray-cli`                  | `/xray-cli`                   | Xray Cloud test management CLI: tests, executions, plans, JUnit/Cucumber/Xray JSON imports, project backup/restore.                                                                                                                                                                                  |
+| `/acli`                      | `/acli`                       | Atlassian CLI for Jira Cloud — resolves `[ISSUE_TRACKER_TOOL]` and (in Modality B) `[TMS_TOOL]`.                                                                                                                                                                                                     |
+| `/git-flow-master`           | (auto on git/PR intents)      | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR.                                                                                                                                                                                  |
+| `/framework-development`     | `/framework-development`      | Gateway for chaining SDD-\* skills. Use for evolving the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA.                                                                                                                                    |
+| `/agentic-qa-onboard`        | `/agentic-qa-onboard`         | Walks new users through the repo's QA flow, MCPs, env vars, workflow skills.                                                                                                                                                                                                                         |
 
 ### Reusable community skills (installed by `bun run setup`)
 
@@ -649,27 +708,27 @@ These aren't committed in this repo. The installer fetches them via `bunx skills
 
 Every skill belongs to one of four tiers. Each tier has different discovery and load rules. Full contract: [`.claude/skills/agentic-qa-core/references/skill-composition-strategy.md`](.claude/skills/agentic-qa-core/references/skill-composition-strategy.md).
 
-| Tier | What | Location | Load behavior |
-| ---- | ---- | -------- | ------------- |
-| T1 | Project-owned (this repo) | `.claude/skills/` | Silent — load on trigger |
-| T2 | Project dependency (gentle-ai) | Installed by gentle-ai (SDD bundle, judgment-day…) | Silent inside T1 orchestrators |
-| T3 | Community project-level | Installed by `install.ts` `PROJECT_LEVEL_SKILLS` | Silent if matched by category |
-| T4 | Community user-level (global) | Installed by `install.ts` `USER_LEVEL_SKILLS` | **ASK** user before load (cross-project, not always wanted) |
+| Tier | What                           | Location                                           | Load behavior                                               |
+| ---- | ------------------------------ | -------------------------------------------------- | ----------------------------------------------------------- |
+| T1   | Project-owned (this repo)      | `.claude/skills/`                                  | Silent — load on trigger                                    |
+| T2   | Project dependency (gentle-ai) | Installed by gentle-ai (SDD bundle, judgment-day…) | Silent inside T1 orchestrators                              |
+| T3   | Community project-level        | Installed by `install.ts` `PROJECT_LEVEL_SKILLS`   | Silent if matched by category                               |
+| T4   | Community user-level (global)  | Installed by `install.ts` `USER_LEVEL_SKILLS`      | **ASK** user before load (cross-project, not always wanted) |
 
 Validation: `bun run lint:skills` checks tier coherence (orphan categories, tier mismatches, missing sections, stale doc paths).
 
 ### Slash commands (utilities)
 
-| Command | Purpose |
-|---|---|
-| `/adapt-framework` | Adapt KATA architecture (`tests/`, `api/schemas/`, `config/`) to target stack. Plan → Approval → Implement. |
-| `/sync-ai-memory` | Sync all AI-critical docs (`README.md`, `CLAUDE.md`, `INSTALLER.md`, `CONTEXT.md`, `docs/**`) against current `.context/` and `package.json`. |
-| `/business-data-map` | Refresh `.context/business/business-data-map.md` (entities, flows, state machines). |
-| `/business-feature-map` | Refresh `.context/business/business-feature-map.md` (feature catalog, CRUD matrix, integrations). |
-| `/business-api-map` | Refresh `.context/business/business-api-map.md` (auth model, critical endpoints, architecture). |
-| `/master-test-plan` | Refresh `.context/master-test-plan.md` (what to test and why). |
-| `/break-down-tests` | Plain-English breakdown of automated tests for a module / spec. |
-| `/fix-traceability` | Repair broken US-ATP-ATR-TC traceability links in the TMS. |
+| Command                 | Purpose                                                                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/adapt-framework`      | Adapt KATA architecture (`tests/`, `api/schemas/`, `config/`) to target stack. Plan → Approval → Implement.                                   |
+| `/sync-ai-memory`       | Sync all AI-critical docs (`README.md`, `CLAUDE.md`, `INSTALLER.md`, `CONTEXT.md`, `docs/**`) against current `.context/` and `package.json`. |
+| `/business-data-map`    | Refresh `.context/business/business-data-map.md` (entities, flows, state machines).                                                           |
+| `/business-feature-map` | Refresh `.context/business/business-feature-map.md` (feature catalog, CRUD matrix, integrations).                                             |
+| `/business-api-map`     | Refresh `.context/business/business-api-map.md` (auth model, critical endpoints, architecture).                                               |
+| `/master-test-plan`     | Refresh `.context/master-test-plan.md` (what to test and why).                                                                                |
+| `/break-down-tests`     | Plain-English breakdown of automated tests for a module / spec.                                                                               |
+| `/fix-traceability`     | Repair broken US-ATP-ATR-TC traceability links in the TMS.                                                                                    |
 
 <br />
 
@@ -677,12 +736,12 @@ Validation: `bun run lint:skills` checks tier coherence (orphan categories, tier
 
 The `.agents/` directory hosts a 4-syntax variable system used by every skill and command.
 
-| Syntax | Purpose | Resolves from |
-| ------ | ------- | ------------- |
-| `{{VAR_NAME}}` | Static project value (flat or env-scoped) | `.agents/project.yaml` |
-| `{{environments.<env>.<var>}}` | Explicit cross-env reference | `.agents/project.yaml` -> `environments.<env>.<var>` |
-| `<<VAR_NAME>>` | Session/runtime value (e.g. `<<ISSUE_KEY>>`) | Computed by the calling prompt at runtime |
-| `{{jira.<slug>}}` | Jira custom field reference | `.agents/jira-required.yaml` + `.agents/jira-fields.json` |
+| Syntax                         | Purpose                                      | Resolves from                                             |
+| ------------------------------ | -------------------------------------------- | --------------------------------------------------------- |
+| `{{VAR_NAME}}`                 | Static project value (flat or env-scoped)    | `.agents/project.yaml`                                    |
+| `{{environments.<env>.<var>}}` | Explicit cross-env reference                 | `.agents/project.yaml` -> `environments.<env>.<var>`      |
+| `<<VAR_NAME>>`                 | Session/runtime value (e.g. `<<ISSUE_KEY>>`) | Computed by the calling prompt at runtime                 |
+| `{{jira.<slug>}}`              | Jira custom field reference                  | `.agents/jira-required.yaml` + `.agents/jira-fields.json` |
 
 See `.agents/README.md` for the full contract.
 
@@ -743,6 +802,7 @@ test('@atc:UPEX-101 should validate login', async ({ loginPage }) => {
 ### 1. Update Project Identity
 
 Edit these files:
+
 - `package.json` — name, description, repository
 - `CLAUDE.md` (canonical AI memory, read by both Claude Code and OpenCode)
 - `.agents/project.yaml` — AI context vars (or run `bun run agents:setup` for an interactive walkthrough)

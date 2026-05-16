@@ -6,6 +6,85 @@
 >
 > This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram + SDD), community skills via `bunx skills`, locally committed workflow skills, and the 7 canonical MCPs — are documented below in that order.
 
+## Before you run setup — prerequisites
+
+The installer is self-diagnosing: every stage prints the exact install URL or command when it detects something missing. But you will iterate faster if you front-load the hard blockers below. For the same checklist with brief tables, see the top of [`README.md`](./README.md#prerequisites).
+
+### Hard blockers — installer exits 1 if missing
+
+| Tool                                                                               | Min version | Enforced at                                 | Message you see on failure                                                                      |
+| ---------------------------------------------------------------------------------- | ----------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Bun**                                                                            | `>= 1.0.0`  | `bun run setup:doctor --preflight` (Step 0) | `✗ Preflight failed · Bun X.Y.Z is too old (need >= 1.0.0) · Fix: bun upgrade`                  |
+| **`node_modules/@inquirer/prompts`** (proxy for `bun install`)                     | —           | Preflight (Step 0)                          | `✗ Preflight failed · Missing node_modules/@inquirer/prompts · Fix: bun install`                |
+| **Agent CLI** — Claude Code (`~/.claude/`) **or** OpenCode (`~/.config/opencode/`) | latest      | `install.ts:536` (Step 4)                   | `✗ No agents detected. Install Claude Code or OpenCode and re-run.` followed by both docs URLs  |
+| `git`                                                                              | any         | Scaffolder (`runners.ts:23`) + Husky hooks  | `ENVIRONMENT · git is required but not found on PATH. · Install: https://git-scm.com/downloads` |
+| `tar`                                                                              | any         | Scaffolder (`download.ts`)                  | `ENVIRONMENT · tar is required to extract the template tarball.`                                |
+
+The agent-CLI check is the gotcha that bites first-timers most often: a missing `gh` or `acli` just yields a warning later, but a missing agent CLI hard-stops Step 4. Install Claude Code or OpenCode first, then run `bun run setup`.
+
+### Quasi-required — installer warns and offers install commands
+
+| Tool          | Min version | Enforced at                   | What happens on miss                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------- | ----------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **gentle-ai** | `>= 1.26.5` | `install.ts:440-459` (Step 2) | Prints `gentle-ai not detected on PATH.` then offers two paths: (a) show install commands (`brew install gentle-ai` on macOS, `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` on Linux) and exit, or (b) continue without gentle-ai. Older-than-min version triggers `gentle-ai X.Y.Z is older than required 1.26.5. Upgrade with: gentle-ai update` and the setup continues with the warning. |
+
+If you skip gentle-ai, Engram persistent memory + the SDD spec-driven loop + judgment-day + issue-creation skills are NOT installed. The locally committed QA workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/agentic-qa-core`) keep working, and the 7 canonical MCPs are still configured.
+
+### Per-skill CLIs — lazy-required, non-blocking at setup
+
+These CLIs are **not optional** for the workflow — each one is consumed by a specific skill (`gh` for `/git-flow-master` + `/regression-testing`, `acli` for `/acli` + `/sprint-testing` + `/test-documentation`, `playwright-cli` for `/playwright-cli`, `resend` for `/resend-cli`, `jq` for `acli ... --json | jq ...` pipelines). The installer cannot guess which skills you will run, so it ships them as **lazy-required**: a missing binary surfaces as a warning during Step 10 but never blocks setup. Install them up front if you plan to use the whole stack, or on-demand when the owning skill surfaces a missing-binary error.
+
+The check itself is a **PATH probe** (`which <name>` on POSIX, `where <name>` on Windows — see `install.ts:341`). Presence only — no version compare, no auto-install.
+
+`install.ts` Step 10 (`verifyExternalClis`) iterates the `EXTERNAL_CLIS` array (`install.ts:185`) and prints a per-CLI status table:
+
+```text
+CLI              Status      Purpose
+────────────────────────────────────────────────────────────────────────────────
+bun              found       Runtime for every script
+gh               missing     GitHub PR / Actions workflows (`/git-flow-master`, `/regression-testing`)
+                            docs:  https://github.com/cli/cli#installation
+acli             missing     Jira/Confluence from terminal (`/acli`, ...)
+                            docs:  https://developer.atlassian.com/cloud/acli/guides/install-acli/
+playwright-cli   missing     Agent-driven browser automation (`/playwright-cli` skill)
+                            quick: bun add -g @playwright/cli@latest
+                            docs:  https://playwright.dev/agent-cli/introduction
+resend           missing     Email testing flows (`/resend-cli` skill)
+                            docs:  https://resend.com/docs/cli
+jq               missing     JSON parsing in `acli` Jira pipelines (`acli ... --json | jq ...`)
+                            docs:  https://jqlang.github.io/jq/download
+```
+
+Missing per-skill CLIs do not exit the installer. Install them lazily when the owning skill surfaces a missing-binary error, or eagerly if you already know which workflow you want.
+
+### Convenience opt-ins — never required
+
+| Tool     | What it buys you                                                                                                                                                                                                                               | Where the installer surfaces it                                                                                                                                                                                                                                                                                                                  |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `direnv` | Auto-loads `.env` on `cd` so the bare `claude` / `opencode` binaries see MCP credentials. Without it, the `bun run claude` / `bun run opencode` wrappers (powered by `dotenv-cli`, already a project devDep) do the same thing cross-platform. | `cli/doctor.ts` (`detectDirenv`) reports `direnv.installed`, `version`, `envrc_allowed`, `hook_in_rc`. The installer offers `direnv allow` + a shell-hook nudge. **Windows users**: skip — PowerShell support is experimental (direnv 2.37+); Git Bash works but the wrapper is simpler. The installer offers the prompt anyway; decline freely. |
+
+### MCP credentials — 8 env vars filled into `.env`
+
+`cli/doctor.ts:39` declares `REQUIRED_VARS` consumed by the 7 canonical MCPs. Missing keys do not block setup, but every `bun run setup:doctor` will list them under `pending_actions` with the canonical `where` URL (token-generation page) until they are filled.
+
+```
+TAVILY_API_KEY                                  → https://app.tavily.com/ → API keys
+ATLASSIAN_URL, ATLASSIAN_EMAIL, ATLASSIAN_API_TOKEN → https://id.atlassian.com/manage-profile/security/api-tokens
+API_BASE_URL, OPENAPI_SPEC_PATH, API_TOKEN      → your backend admin / API portal
+POSTMAN_API_KEY                                 → https://postman.com → settings → API keys
+```
+
+### Where to verify your status
+
+| Command                            | What it does                                                                                                         |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `bun run setup:doctor --preflight` | Fast Bun / deps check only — exit 0 if green, 1 with explicit fix command otherwise                                  |
+| `bun run setup:doctor`             | Full report: env vars, deps, Playwright browsers, direnv hook, MCP config files, pending actions with `where` URLs   |
+| `bun run setup:doctor --json`      | Same as above as machine-readable JSON for an agent to consume                                                       |
+| `bun run setup`                    | Re-run the interactive installer end-to-end (idempotent — gentle-ai snapshots configs, MCP overwrites are confirmed) |
+
+---
+
 ## Running setup from an AI agent
 
 Most users today ask an AI (Claude Code, OpenCode, Cursor, …) to drive the setup instead of running it by hand. The installer is built for both flows; the AI path uses a few specific entry points:
@@ -38,12 +117,12 @@ Exit code: `0` when everything is green, `1` when any pending action remains. JS
 
 `pending_actions[].type` is one of: `credential` · `shell_hook` · `system_install` · `shell_command`. The AI iterates the list and picks the right tool per type:
 
-| type | Who handles it | How |
-|---|---|---|
-| `credential` | **User** | AI asks the user for the value in chat (e.g. "paste your Tavily key from https://app.tavily.com"). Then AI writes it to `.env`. |
-| `shell_hook` | **AI** | AI appends the `where` line to the `target` rc file with its Edit/Bash tool. Trivial. |
-| `system_install` | **User** | AI shows the `where` command; the user runs it (brew/winget/apt may prompt for admin password). |
-| `shell_command` | **AI** | AI runs the `target` command via Bash. |
+| type             | Who handles it | How                                                                                                                             |
+| ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `credential`     | **User**       | AI asks the user for the value in chat (e.g. "paste your Tavily key from https://app.tavily.com"). Then AI writes it to `.env`. |
+| `shell_hook`     | **AI**         | AI appends the `where` line to the `target` rc file with its Edit/Bash tool. Trivial.                                           |
+| `system_install` | **User**       | AI shows the `where` command; the user runs it (brew/winget/apt may prompt for admin password).                                 |
+| `shell_command`  | **AI**         | AI runs the `target` command via Bash.                                                                                          |
 
 ### What an AI **cannot** do (hard limits)
 
@@ -68,16 +147,16 @@ Then `bun run setup:doctor --json` to confirm.
 
 ### Skip flags (per-step opt-out)
 
-| Env var | Effect |
-|---|---|
-| `INSTALL_SKIP_GENTLE_AI=1` | Treat gentle-ai as skipped |
-| `INSTALL_SKIP_DEPS=1` | Skip `bun install` |
-| `INSTALL_SKIP_PLAYWRIGHT=1` | Skip `bun run pw:install` |
-| `INSTALL_SKIP_AGENTS_SETUP=1` | Skip `bun run agents:setup` |
-| `INSTALL_SKIP_COMMUNITY=1` | Skip `bunx skills add` step |
-| `INSTALL_SKIP_JIRA=1` | Skip optional Jira bootstrap |
-| `INSTALL_SKIP_API=1` | Skip optional API auth bootstrap |
-| `INSTALL_SKIP_DIRENV=1` | Skip direnv detection / autoload |
+| Env var                       | Effect                           |
+| ----------------------------- | -------------------------------- |
+| `INSTALL_SKIP_GENTLE_AI=1`    | Treat gentle-ai as skipped       |
+| `INSTALL_SKIP_DEPS=1`         | Skip `bun install`               |
+| `INSTALL_SKIP_PLAYWRIGHT=1`   | Skip `bun run pw:install`        |
+| `INSTALL_SKIP_AGENTS_SETUP=1` | Skip `bun run agents:setup`      |
+| `INSTALL_SKIP_COMMUNITY=1`    | Skip `bunx skills add` step      |
+| `INSTALL_SKIP_JIRA=1`         | Skip optional Jira bootstrap     |
+| `INSTALL_SKIP_API=1`          | Skip optional API auth bootstrap |
+| `INSTALL_SKIP_DIRENV=1`       | Skip direnv detection / autoload |
 
 ---
 
@@ -85,18 +164,18 @@ Then `bun run setup:doctor --json` to confirm.
 
 `bun run setup` finishes with two recommended ways to start an agent so MCP env vars (e.g. `TAVILY_API_KEY`, `ATLASSIAN_API_TOKEN`) get loaded from `.env`:
 
-| Method | Platform | One-time setup | Usage |
-|---|---|---|---|
-| **`bun run claude` / `bun run opencode`** (default) | Windows, macOS, Linux | None — `dotenv-cli` is a project devDep | `bun run claude` from the repo root |
-| **direnv autoload** (optional) | macOS, Linux, **Windows** (Git Bash recommended; PowerShell experimental, needs direnv 2.37+) | Install direnv (`brew install direnv` / `apt install direnv` / `winget install direnv`) + add hook to your shell rc, then installer runs `direnv allow` | Just `claude` or `opencode` from anywhere in the repo |
+| Method                                              | Platform                                                                                      | One-time setup                                                                                                                                          | Usage                                                 |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| **`bun run claude` / `bun run opencode`** (default) | Windows, macOS, Linux                                                                         | None — `dotenv-cli` is a project devDep                                                                                                                 | `bun run claude` from the repo root                   |
+| **direnv autoload** (optional)                      | macOS, Linux, **Windows** (Git Bash recommended; PowerShell experimental, needs direnv 2.37+) | Install direnv (`brew install direnv` / `apt install direnv` / `winget install direnv`) + add hook to your shell rc, then installer runs `direnv allow` | Just `claude` or `opencode` from anywhere in the repo |
 
 ### direnv hook per shell
 
-| Shell | Line to add | File |
-|---|---|---|
-| bash | `eval "$(direnv hook bash)"` | `~/.bashrc` (also works for Git Bash on Windows) |
-| zsh | `eval "$(direnv hook zsh)"` | `~/.zshrc` |
-| fish | `direnv hook fish \| source` | `~/.config/fish/config.fish` |
+| Shell      | Line to add                               | File                                             |
+| ---------- | ----------------------------------------- | ------------------------------------------------ |
+| bash       | `eval "$(direnv hook bash)"`              | `~/.bashrc` (also works for Git Bash on Windows) |
+| zsh        | `eval "$(direnv hook zsh)"`               | `~/.zshrc`                                       |
+| fish       | `direnv hook fish \| source`              | `~/.config/fish/config.fish`                     |
 | PowerShell | `Invoke-Expression "$(direnv hook pwsh)"` | `$PROFILE` (requires direnv 2.37+, experimental) |
 
 `.mcp.json` (Claude Code) and `opencode.jsonc` are committed with `${VAR}` / `{env:VAR}` placeholders. Real values live in `.env` (gitignored). If a server returns 401/403 at first call, the matching env var is missing — see `CLAUDE.md` Critical Rule #11 (stop, fix `.env`, restart the agent session).
@@ -105,10 +184,10 @@ Then `bun run setup:doctor --json` to confirm.
 
 Pure UX, zero behavioral change. Skip without consequence.
 
-| Agent | Tool | How |
-|---|---|---|
+| Agent           | Tool                                                        | How                                                                                                                                                                                                                                                                                             |
+| --------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Claude Code** | [`ccstatusline`](https://github.com/sirmalloc/ccstatusline) | `bunx -y ccstatusline@latest` — interactive TUI to customize the Claude Code status line (model, tokens, context %, git branch, etc.). **Run in a plain terminal with no active agent session**; the configurator owns the terminal while it runs and will collide with a live Claude Code TUI. |
-| **OpenCode** | `opencode-subagent-statusline` plugin | Already enabled in `opencode.jsonc` (`"plugin": [..., "opencode-subagent-statusline"]`). Shows the active subagent in the OpenCode status line. Nothing to install — `bun run opencode` picks it up. |
+| **OpenCode**    | `opencode-subagent-statusline` plugin                       | Already enabled in `opencode.jsonc` (`"plugin": [..., "opencode-subagent-statusline"]`). Shows the active subagent in the OpenCode status line. Nothing to install — `bun run opencode` picks it up.                                                                                            |
 
 ### Optional UX upgrades
 
@@ -179,10 +258,10 @@ When `bun run setup` runs the gentle-ai branch (one batched call per agent — `
 
 ### Universal helpers (2)
 
-| Slug             | Brief description                                                          |
-| ---------------- | -------------------------------------------------------------------------- |
-| `judgment-day`   | Adversarial parallel review — 2 independent judges review the same target  |
-| `issue-creation` | Issue filing workflow (bug + feature templates, issue-first enforcement)   |
+| Slug             | Brief description                                                         |
+| ---------------- | ------------------------------------------------------------------------- |
+| `judgment-day`   | Adversarial parallel review — 2 independent judges review the same target |
+| `issue-creation` | Issue filing workflow (bug + feature templates, issue-first enforcement)  |
 
 > The installer dispatches ONE batched call per agent — `gentle-ai install --agent <agent> --components engram,sdd,skills --skills <comma-separated-slug-list>`. There is no per-skill loop and no `--yes` flag (gentle-ai's `install` subcommand uses Go's stdlib `flag` package and exposes only `--agent(s)`, `--component(s)`, `--skill(s)`, `--persona`, `--preset`, `--sdd-mode`, `--dry-run`). Re-runs are safe: gentle-ai snapshots existing config files before overwriting (compressed tar.gz, deduped, last 5 retained). They DO re-apply, they don't skip.
 
@@ -200,24 +279,24 @@ Independent of gentle-ai, the installer also runs the official Anthropic `bunx s
 
 Installed into `.claude/skills/` via `bunx skills add` (project mode). Not committed — `cli/install.ts` re-fetches them on every install so we always pick up upstream fixes. They are critical to the QA stack and must travel with every clone of the repo.
 
-| Slug                        | Source                                          | Why project-level                                                                                                                       |
-| --------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `playwright-cli`            | `microsoft/playwright-cli`                      | Browser automation CLI used by `/sprint-testing` and `/test-automation` as the primary `[AUTOMATION_TOOL]`.                              |
-| `playwright-best-practices` | `currents-dev/playwright-best-practices-skill`  | Patterns / anti-flaky / axe-core / fixtures reference. Auto-loaded by `/test-automation` during the Code phase.                          |
+| Slug                        | Source                                         | Why project-level                                                                                               |
+| --------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `playwright-cli`            | `microsoft/playwright-cli`                     | Browser automation CLI used by `/sprint-testing` and `/test-automation` as the primary `[AUTOMATION_TOOL]`.     |
+| `playwright-best-practices` | `currents-dev/playwright-best-practices-skill` | Patterns / anti-flaky / axe-core / fixtures reference. Auto-loaded by `/test-automation` during the Code phase. |
 
 ### User-level (global, 7 skills)
 
 Installed with `bunx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack. QA-tuned subset of the dev universal layer — design/UI skills (n8n-skills, emil-design-eng, ui-ux-pro-max) live only in the dev repo since QA does not author UI or automation flows.
 
-| Slug                   | Source                                          | Why user-level                                                                              |
-| ---------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `skill-creator`        | `anthropics/skills`                             | Author/edit skills — useful in any repo                                                     |
-| `find-skills`          | `vercel-labs/skills`                            | Discover installable skills — universal                                                     |
-| `gh-cli`               | `github/awesome-copilot`                        | GitHub CLI helper for CI / PRs / releases — universal                                       |
-| `github-actions-docs`  | `xixu-me/skills`                                | GitHub Actions workflow reference — universal                                               |
-| `brainstorming`        | `obra/superpowers`                              | Pre-implementation ideation (framework features, test design edge cases) — universal        |
-| `cli-printing-press`   | `mvanhorn/cli-printing-press`                   | CLI tooling for API-as-CLI testing + framework utility scripts. Full functionality requires Go 1.26.3+; works standalone with degraded features. |
-| `html-ppt`             | `lewislulu/html-ppt-skill`                      | HTML presentations for sprint planning / retro / demo decks — universal                     |
+| Slug                  | Source                        | Why user-level                                                                                                                                   |
+| --------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `skill-creator`       | `anthropics/skills`           | Author/edit skills — useful in any repo                                                                                                          |
+| `find-skills`         | `vercel-labs/skills`          | Discover installable skills — universal                                                                                                          |
+| `gh-cli`              | `github/awesome-copilot`      | GitHub CLI helper for CI / PRs / releases — universal                                                                                            |
+| `github-actions-docs` | `xixu-me/skills`              | GitHub Actions workflow reference — universal                                                                                                    |
+| `brainstorming`       | `obra/superpowers`            | Pre-implementation ideation (framework features, test design edge cases) — universal                                                             |
+| `cli-printing-press`  | `mvanhorn/cli-printing-press` | CLI tooling for API-as-CLI testing + framework utility scripts. Full functionality requires Go 1.26.3+; works standalone with degraded features. |
+| `html-ppt`            | `lewislulu/html-ppt-skill`    | HTML presentations for sprint planning / retro / demo decks — universal                                                                          |
 
 ### Skipping or re-running
 
@@ -231,19 +310,19 @@ If a skill fails to install (e.g., upstream repo restructured), the failure is r
 
 Skills that are workflow-specific to this boilerplate live in `.claude/skills/` and are committed to the repo. They install with the clone — no external installer required.
 
-| Skill                | Trigger                | Why it stays local                                                            |
-| -------------------- | ---------------------- | ----------------------------------------------------------------------------- |
-| `agentic-qa-core`    | (auto, cited by other skills) | Foundation: passive reference host for briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy |
-| `agentic-qa-onboard` | `/agentic-qa-onboard`  | First-time orientation tour (this is the entry point for new contributors)    |
-| `project-discovery`  | `/project-discovery`   | 4-phase reverse-engineering of a target project (Constitution → Specification)|
-| `sprint-testing`     | `/sprint-testing`      | Stages 1-3: per-ticket manual QA loop (planning, execution, reporting)        |
-| `test-documentation` | `/test-documentation`  | Stage 4: TMS test-case authoring + ROI prioritization (Jira/Xray bridge)      |
-| `test-automation`    | `/test-automation`     | Stage 5: KATA + Playwright + TS test authoring (plan → code → review)         |
-| `regression-testing` | `/regression-testing`  | Stage 6: CI suite execution, failure classification, GO/NO-GO verdict         |
-| `framework-development` | `/framework-development` | Gateway for chaining `/sdd-*` skills. Use for evolving the boilerplate itself (KATA bases, fixtures, `cli/`, `scripts/`, `api/schemas/` pipeline). NOT for per-ticket QA. |
-| `acli`               | `/acli`                | Atlassian CLI wrapper for Jira/Confluence terminal work                       |
-| `xray-cli`           | `/xray-cli`            | Xray Cloud TMS CLI (test creation, executions, JUnit/Cucumber import)         |
-| `git-flow-master`    | (auto on git intents)  | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)      |
+| Skill                   | Trigger                       | Why it stays local                                                                                                                                                        |
+| ----------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agentic-qa-core`       | (auto, cited by other skills) | Foundation: passive reference host for briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy                                           |
+| `agentic-qa-onboard`    | `/agentic-qa-onboard`         | First-time orientation tour (this is the entry point for new contributors)                                                                                                |
+| `project-discovery`     | `/project-discovery`          | 4-phase reverse-engineering of a target project (Constitution → Specification)                                                                                            |
+| `sprint-testing`        | `/sprint-testing`             | Stages 1-3: per-ticket manual QA loop (planning, execution, reporting)                                                                                                    |
+| `test-documentation`    | `/test-documentation`         | Stage 4: TMS test-case authoring + ROI prioritization (Jira/Xray bridge)                                                                                                  |
+| `test-automation`       | `/test-automation`            | Stage 5: KATA + Playwright + TS test authoring (plan → code → review)                                                                                                     |
+| `regression-testing`    | `/regression-testing`         | Stage 6: CI suite execution, failure classification, GO/NO-GO verdict                                                                                                     |
+| `framework-development` | `/framework-development`      | Gateway for chaining `/sdd-*` skills. Use for evolving the boilerplate itself (KATA bases, fixtures, `cli/`, `scripts/`, `api/schemas/` pipeline). NOT for per-ticket QA. |
+| `acli`                  | `/acli`                       | Atlassian CLI wrapper for Jira/Confluence terminal work                                                                                                                   |
+| `xray-cli`              | `/xray-cli`                   | Xray Cloud TMS CLI (test creation, executions, JUnit/Cucumber import)                                                                                                     |
+| `git-flow-master`       | (auto on git intents)         | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)                                                                                                  |
 
 These skills evolve with the repo and are versioned in git. The split is intentional: gentle-ai owns the **horizontal** ecosystem (apply across all your QA repos), this repo owns the **vertical** workflow (specific to the QA stages 1-6 pipeline).
 
@@ -259,16 +338,16 @@ After the first time you run `bun run update`, the CLI creates `.boilerplate-ver
 
 ## External CLIs (verified, not auto-installed)
 
-The installer's step 11 runs `which <binary>` for six command-line tools that other parts of the QA workflow depend on. If any are missing, the installer **prints the suggested install command and the official docs URL — but does not run anything**. System-level CLIs touch user permissions (Homebrew taps, apt, curl piped into bash, winget) and are not portable cross-platform, so auto-installing them without consent would be invasive. The user installs them manually following the docs URL.
+The installer's step 10 (`verifyExternalClis`) runs a PATH probe — `which <binary>` on POSIX, `where <binary>` on Windows — for six command-line tools that other parts of the QA workflow depend on. This is a **presence-only** check: no version compare, no auto-install. If any are missing, the installer **prints the suggested install command and the official docs URL — but does not run anything**. System-level CLIs touch user permissions (Homebrew taps, apt, curl piped into bash, winget) and are not portable cross-platform, so auto-installing them without consent would be invasive. The user installs them manually following the docs URL.
 
-| CLI              | Powers in this repo                                                                                          | Install (cross-platform)              | Official docs                                                                                             |
-| ---------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `bun`            | Runtime for every script (`bun run setup`, `bun xray`, `bun run test`)                                      | See official docs                     | [bun.com](https://bun.com/)                                                                               |
-| `gh`             | GitHub PR / Actions workflows from `/git-flow-master`, `/regression-testing`                                 | See official docs                     | [github.com/cli/cli#installation](https://github.com/cli/cli#installation)                               |
-| `acli`           | Jira/Confluence from terminal (`/acli`, `/sprint-testing`, `/test-documentation`)                            | See official docs                     | [developer.atlassian.com/cloud/acli](https://developer.atlassian.com/cloud/acli/guides/install-acli/)    |
-| `playwright-cli` | Agent-driven browser automation (`/playwright-cli` skill)                                                    | `bun add -g @playwright/cli@latest`   | [playwright.dev/agent-cli](https://playwright.dev/agent-cli/introduction)                                 |
-| `resend`         | Email testing flows                                                                                          | See official docs                     | [resend.com/docs/cli](https://resend.com/docs/cli)                                                        |
-| `jq`             | JSON parsing in acli Jira pipelines (advanced `acli --json \| jq …`)                                        | See official docs                     | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)                                     |
+| CLI              | Powers in this repo                                                               | Install (cross-platform)            | Official docs                                                                                         |
+| ---------------- | --------------------------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `bun`            | Runtime for every script (`bun run setup`, `bun xray`, `bun run test`)            | See official docs                   | [bun.com](https://bun.com/)                                                                           |
+| `gh`             | GitHub PR / Actions workflows from `/git-flow-master`, `/regression-testing`      | See official docs                   | [github.com/cli/cli#installation](https://github.com/cli/cli#installation)                            |
+| `acli`           | Jira/Confluence from terminal (`/acli`, `/sprint-testing`, `/test-documentation`) | See official docs                   | [developer.atlassian.com/cloud/acli](https://developer.atlassian.com/cloud/acli/guides/install-acli/) |
+| `playwright-cli` | Agent-driven browser automation (`/playwright-cli` skill)                         | `bun add -g @playwright/cli@latest` | [playwright.dev/agent-cli](https://playwright.dev/agent-cli/introduction)                             |
+| `resend`         | Email testing flows                                                               | See official docs                   | [resend.com/docs/cli](https://resend.com/docs/cli)                                                    |
+| `jq`             | JSON parsing in acli Jira pipelines (advanced `acli --json \| jq …`)              | See official docs                   | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)                                  |
 
 > **Important — `playwright-cli` is NOT `@playwright/test`**: this is the agent-driven browser CLI from the `@playwright/cli` npm package, installed **globally**. It produces a binary literally named `playwright-cli` (not `playwright`). The `@playwright/test` library that ships as a devDependency in this repo is a separate thing — it powers the test runner (`bun run test`), not the `/playwright-cli` skill. Don't confuse them.
 
@@ -280,11 +359,11 @@ The installer's step 11 runs `which <binary>` for six command-line tools that ot
 
 This is the most common point of confusion. Both workflows can drive QA work to completion. They serve different shapes of work.
 
-| When                                                                       | Skill                                                                |
-| -------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Routine in-sprint QA on a Jira ticket (most cases)                         | `/sprint-testing` (ticket-driven)                                    |
-| Large refactor of the test framework / KATA architecture / fixture model   | `/sdd-*` (spec-driven)                                               |
-| Story with detailed AC you want traced formally as a test specification    | Both: `/sdd-spec` first, then `/sprint-testing` for the cycle        |
+| When                                                                     | Skill                                                         |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Routine in-sprint QA on a Jira ticket (most cases)                       | `/sprint-testing` (ticket-driven)                             |
+| Large refactor of the test framework / KATA architecture / fixture model | `/sdd-*` (spec-driven)                                        |
+| Story with detailed AC you want traced formally as a test specification  | Both: `/sdd-spec` first, then `/sprint-testing` for the cycle |
 
 ### When to reach for `/sprint-testing`
 
