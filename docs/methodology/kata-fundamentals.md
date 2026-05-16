@@ -1850,8 +1850,8 @@ def test_multi_section_form(fixture):
 
 ### Example Repositories
 
-- [KATA Python Template](https://github.com/example/kata-python) _(placeholder)_
-- [KATA JavaScript Template](https://github.com/example/kata-js) _(placeholder)_
+- KATA Python Template _(placeholder)_
+- KATA JavaScript Template _(placeholder)_
 
 ### Articles and Presentations
 
