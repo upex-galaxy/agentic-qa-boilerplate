@@ -2545,6 +2545,54 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 </p>
               </div>
             </div>
+
+            <h3 id="engram">Engram — cross-session memory the AI manages for you</h3>
+            <div class="callout callout-info">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 3v18M3 9h18" />
+              </svg>
+              <div>
+                <p class="callout-title">What Engram is</p>
+                <p>
+                  Engram is an MCP server that persists structured memory across sessions and
+                  compactions. The AI calls <code>mem_save</code> proactively (no user prompt
+                  needed) whenever it makes an architecture decision, fixes a bug, learns a project
+                  convention, or hits a non-obvious gotcha. Subsequent sessions recall those
+                  memories via <code>mem_search</code> + <code>mem_get_observation</code>, so "we
+                  decided to vet the API for pagination drift before automating it" survives without
+                  you having to re-explain it.
+                </p>
+                <p>
+                  <strong>What the AI saves automatically:</strong> architecture / design decisions,
+                  conventions, bug root causes, non-obvious discoveries (e.g. flaky-test patterns,
+                  KATA-fixture choices), workflow changes, user preferences, project-specific
+                  gotchas.
+                </p>
+                <p>
+                  <strong>What the AI searches automatically:</strong> any message containing
+                  "remember", "recall", "what did we do", or any reference to past work — in any
+                  language you write in.
+                </p>
+                <p>
+                  <strong>Session close:</strong> before saying "done", the AI calls
+                  <code>mem_session_summary</code> with Goal · Discoveries · Accomplished · Next
+                  Steps · Relevant Files. That summary is the seed for the next session. Skip it and
+                  the next session starts blind.
+                </p>
+                <p class="small muted">
+                  Full protocol: global <code>CLAUDE.md</code> § Engram. Installed by gentle-ai at
+                  user level (T2) via <code>cli/install.ts</code> — not committed in this repo.
+                </p>
+              </div>
+            </div>
           </section>
 
           <!-- =======================================================  SECTION 6  -->
