@@ -380,6 +380,7 @@ async function verifyRepoRoot(): Promise<void> {
   const pkgPath = join(REPO_ROOT, 'package.json');
   if (!existsSync(pkgPath)) {
     log.error(`No package.json found at ${pkgPath}. Run this from the repo root.`);
+    log.dim('  Once you are in the repo root, re-run: bun run setup');
     process.exit(1);
   }
   const raw = await readFile(pkgPath, 'utf8');
@@ -407,7 +408,10 @@ async function verifyRepoRoot(): Promise<void> {
     `package.json name is "${pkg.name ?? '(unknown)'}" (expected "${REPO_NAME}"). Continue anyway?`,
     false,
   );
-  if (!proceed) { process.exit(0); }
+  if (!proceed) {
+    log.dim('  Aborted. Re-run anytime: bun run setup');
+    process.exit(0);
+  }
 }
 
 // ============================================================================
@@ -477,6 +481,8 @@ async function handleMissingGentleAi(): Promise<'show-and-exit' | 'skip'> {
   }
 
   log.warn('Continuing without gentle-ai. Skills + engram will NOT be installed.');
+  log.dim('  To install them later, install gentle-ai (https://github.com/Gentleman-Programming/gentle-ai)');
+  log.dim('  and re-run: bun run setup');
   return 'skip';
 }
 
@@ -525,7 +531,10 @@ async function promptAgentSelection(detected: AgentDetection): Promise<AgentId[]
   }
 
   if (!detected.claudeCode && !detected.opencode) {
-    log.error('No agents detected. Install Claude Code (~/.claude/) or OpenCode (~/.config/opencode/) and rerun.');
+    log.error('No agents detected. Install Claude Code or OpenCode and re-run.');
+    log.dim('  Claude Code: https://docs.claude.com/en/docs/claude-code');
+    log.dim('  OpenCode:    https://opencode.ai/docs');
+    log.dim('  Then re-run: bun run setup');
     process.exit(1);
   }
 
@@ -1648,6 +1657,7 @@ async function main(): Promise<void> {
   state.agents = agents;
   if (agents.length === 0) {
     log.warn('No agents selected, exiting.');
+    log.dim('  When you are ready to configure an agent, re-run: bun run setup');
     await writeInstallState(state);
     process.exit(0);
   }
