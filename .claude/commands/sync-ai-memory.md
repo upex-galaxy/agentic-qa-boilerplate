@@ -471,6 +471,19 @@ After writing all files, report per-target outcome and any redactions.
 
 ---
 
+## Compression tooling — caveman-compress
+
+When this command regenerates or rewrites memory documents (CLAUDE.md, CONTEXT.md, README.md sections it owns, onboarding HTML, docs/ pages it owns), prefer running `caveman-compress <file>` BEFORE writing the new content if caveman is installed user-level. caveman-compress preserves code blocks, URLs, and paths byte-for-byte while compressing prose ~46% on average. This is a one-shot rewrite — re-runs are idempotent.
+
+- Trigger: when the output is destined to be written to disk as a memory file.
+- Skip when: the file is human-facing primary documentation that must stay verbose (e.g. CONTRIBUTING.md tutorial sections, INSTALLER.md, README.md user-facing intro).
+- Verification: after compression, re-validate that all variable placeholders, code fences, and reference links survived (caveman-compress is byte-preservation-aware but a final grep is cheap insurance).
+- Docs: <https://github.com/JuliusBrussee/caveman> (search "caveman-compress").
+
+If caveman is not installed, write normal terse content. caveman-compress is enhancement, not requirement.
+
+---
+
 ## Final checklist
 
 - [ ] AI tool identified (Step 0)
