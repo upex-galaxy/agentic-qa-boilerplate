@@ -87,8 +87,9 @@ dbhub.toml
 # Auto-generated skill registry + per-session SDD artifacts. Local only.
 .atl/
 
-# Underscore-prefixed framework internals at any depth (e.g., .context/_framework/,
-# .husky/_/, future _*/ scaffolding). These are auto-managed by tooling; consumers
-# should never commit them.
-*_*/
-**/*_*/
+# Framework internals — auto-managed by tooling, never committed by hand.
+# NOTE: do NOT use a broad pattern like `*_*/` here — it accidentally
+# ignores any directory containing an underscore (e.g. future skills, refs,
+# business data maps named with underscores). List paths explicitly.
+.context/_framework/
+.husky/_/
