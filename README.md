@@ -11,13 +11,17 @@
 
 ## Start here — pick your path
 
-| I want to... | Read | Then run |
-|---|---|---|
-| **Just install the boilerplate** | This README's [Quick Start](#quick-start) (below) | `bun run setup` |
-| **Get oriented before installing** | Open [`docs/onboarding.html`](docs/onboarding.html) in browser, or `bun run onboarding` | — |
-| **Understand the methodology** | [`docs/agentic-quality-engineering.md`](docs/agentic-quality-engineering.md) | — |
-| **See what `bun run setup` configures** | [`INSTALLER.md`](INSTALLER.md) | `bun cli/doctor.ts` after setup |
-| **I'm an AI agent loading this repo** | `CLAUDE.md` (auto-loaded each session) | — |
+| Goal | What to read / run |
+|------|-------------------|
+| **Start a new project — magic command (recommended)** | `bunx create-agentic-qa <your-repo-name>` — official scaffolder ([npm](https://www.npmjs.com/package/create-agentic-qa)) |
+| **Start a new project — GitHub "Use this template"** | Click [**Use this template**](https://github.com/upex-galaxy/agentic-qa-boilerplate/generate) → clone your new repo → `bun install && bun run setup` (see [Use this template](#use-this-template-github)) |
+| **Contribute to the boilerplate itself** | `git clone …` then `bun install && bun run setup` (see [Manual clone](#manual-clone-contributors)) |
+| **Get oriented before installing** | Open [`docs/onboarding.html`](docs/onboarding.html) in browser, or `bun run onboarding` |
+| **Understand the methodology** | [`docs/agentic-quality-engineering.md`](docs/agentic-quality-engineering.md) |
+| **See what `bun run setup` configures** | [`INSTALLER.md`](INSTALLER.md) — run `bun cli/doctor.ts` after setup |
+| **I'm an AI agent loading this repo** | `CLAUDE.md` (auto-loaded each session) |
+
+> **Recommended path: the magic command.** `bunx create-agentic-qa <your-repo-name>` is the official scaffolder — it downloads the latest template, scrubs upstream git history, auto-renames `package.json` + `.agents/project.yaml`, runs `bun install`, hands off to `bun run setup`, and can optionally create a GitHub repo for you via `gh`. The GitHub "Use this template" flow is a fine fallback when you prefer GitHub-native repo creation. The **Manual clone** path is for contributors hacking on the boilerplate itself — end-users should NOT clone manually.
 
 ---
 
@@ -47,33 +51,126 @@ This boilerplate solves common challenges in test automation:
 
 ---
 
-## Quick Start
-
-### Prerequisites
+## Prerequisites
 
 - [Bun](https://bun.sh) (v1.0+)
 - Node.js 18+ (for some Playwright features)
+- `git`, `tar` (consumed by the scaffolder)
+- (optional) [`gh`](https://cli.github.com/) — for one-shot GitHub repo creation at the end of `bun run setup`
 
-### Installation
+---
+
+## Scaffold a new project
+
+The fastest and recommended path. One command bootstraps a fresh QA project from the latest `main`:
 
 ```bash
-# Clone the repository
+bunx create-agentic-qa <your-repo-name>
+cd <your-repo-name>
+```
+
+What `bunx create-agentic-qa` does end-to-end:
+
+1. Downloads the latest `upex-galaxy/agentic-qa-boilerplate` `main` as a tarball — no upstream git history.
+2. Extracts into `./<your-repo-name>/`, then rewrites `package.json#name` and `.agents/project.yaml#project.name`.
+3. Initializes a fresh `git init -b main` and creates the initial commit.
+4. Runs `bun install`.
+5. Hands off to `bun run setup` — the interactive installer (gentle-ai, 14 skills, 9 community skills, 7 MCPs, `.env`, direnv, optional `gh repo create`).
+
+### Useful flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `<project-name>` | required | Target directory name (skip when using `--here`). |
+| `--here` | off | Bootstrap into the current directory, or skip download if already inside a bootstrapped project. |
+| `--template <ref>` | `main` | Branch / tag / SHA of the template repo to download. |
+| `--template-repo <owner/repo>` | `upex-galaxy/agentic-qa-boilerplate` | Override the upstream repository (useful for forks). |
+| `--project-key <KEY>` | prompted | Jira project key (e.g. `UPEX`). |
+| `--no-install` | off | Skip `bun install`. |
+| `--no-setup` | off | Skip `bun run setup` — download + git init only. |
+| `--non-interactive` | auto on no-TTY | Forwarded to the installer. Prompts use safe defaults. |
+
+Full flag reference: [`packages/create-agentic-qa/README.md`](packages/create-agentic-qa/README.md).
+
+### Optional follow-ups
+
+```bash
+# Visual orientation (single-file HTML, sidebar nav). Do NOT chain with setup — server is blocking.
+bun run onboarding
+
+# Polish the Claude Code status line — open in a SEPARATE terminal window with NO agent session running.
+bunx -y ccstatusline@latest
+```
+
+OpenCode users get the equivalent polish automatically — `opencode.jsonc` ships with the `opencode-subagent-statusline` plugin enabled.
+
+### QA workflow slash commands (per-project)
+
+After setup, drive the QA lifecycle inside the agent:
+
+- `/agentic-qa-onboard` — first-time orientation tour.
+- `/project-discovery` — reverse-engineer the target app into `.context/`.
+- `/sprint-testing` — in-sprint manual QA per ticket (planning + execution + reporting).
+- `/test-documentation` — TMS docs + ROI prioritization (Candidate / Manual / Deferred).
+- `/test-automation` — KATA Plan → Code → Review.
+- `/regression-testing` — CI execution + GO / CAUTION / NO-GO decision.
+
+---
+
+## Use this template (GitHub)
+
+GitHub-native template flow. No tarball, no auto-rename, no automatic `bun install`:
+
+1. Click [**Use this template**](https://github.com/upex-galaxy/agentic-qa-boilerplate/generate) on the repo page and create your new GitHub repo.
+2. Clone YOUR new repo locally:
+
+   ```bash
+   git clone https://github.com/<you>/<your-repo-name>.git
+   cd <your-repo-name>
+   ```
+
+3. Install dependencies + run the interactive setup:
+
+   ```bash
+   bun install
+   bun run setup
+   ```
+
+4. Manually rename `package.json#name` and `.agents/project.yaml#project.name` to your project name (the scaffolder does this for you; this template flow does not).
+
+> **Strongly recommended: use the magic command instead.** `bunx create-agentic-qa <your-repo-name>` does everything this flow does PLUS scrubbing upstream git history, auto-renaming `package.json` + `.agents/project.yaml`, running `bun install`, driving the installer, and optionally creating a GitHub repo for you via `gh repo create` — none of which happens with the GitHub template flow.
+
+---
+
+## Manual clone (contributors)
+
+This path is for contributors hacking on the boilerplate itself. End-users should use the scaffolder above.
+
+```bash
+# 1. Clone the repository
 git clone https://github.com/upex-galaxy/agentic-qa-boilerplate.git
 cd agentic-qa-boilerplate
 
-# One-shot interactive setup (recommended):
-#   installs deps, Playwright browsers, gentle-ai + 14 skills,
-#   9 community skills, configures the 7 MCPs, prompts for any
-#   missing MCP env vars, and offers direnv autoload.
+# 2. Install dependencies
+bun install
+
+# 3. Install Playwright browsers
+bun run pw:install
+
+# 4. Copy env template
+cp .env.example .env   # then fill in the values
+
+# 5. (Optional) Visual orientation — close tab + Ctrl-C when done.
+bun run onboarding
+
+# 6. Run the interactive setup (gentle-ai, skills, MCPs, .env, direnv)
 bun run setup
 
-# Or, do it manually:
-bun install
-bun run pw:install
-cp .env.example .env   # then fill in the values
+# 7. Validate the install
+bun cli/doctor.ts
 ```
 
-> Optional: run `bun run onboarding` first for a visual walkthrough of the repo. **Do not chain** `bun run onboarding && bun run setup` — the onboarding server is blocking, so chaining deadlocks. Close the browser tab + `Ctrl-C` the server when done, then run setup.
+> If you are NOT contributing to the boilerplate itself, do NOT clone manually — use `bunx create-agentic-qa <your-repo-name>` instead. The scaffolder is the supported end-user entry point.
 
 ### Polish your Claude Code status line (optional, recommended)
 
@@ -87,7 +184,9 @@ bunx -y ccstatusline@latest
 
 OpenCode users get the equivalent polish automatically: this repo's `opencode.jsonc` ships with the `opencode-subagent-statusline` plugin enabled, which surfaces the active subagent in the OpenCode status line out of the box.
 
-### Launching the agent
+---
+
+## Launching the agent
 
 `.mcp.json` (Claude Code) and `opencode.jsonc` are committed with `${VAR}` / `{env:VAR}` expansion — real values live in `.env`. Launch the agent via one of these paths so the env vars get loaded:
 
@@ -103,7 +202,9 @@ claude                # direct binary picks up .env from your shell
 
 direnv works on macOS / Linux / Windows. On Windows install via `winget install direnv` — Git Bash is recommended; PowerShell support is experimental and requires direnv 2.37+. See [INSTALLER.md § Launching the agent](./INSTALLER.md#launching-the-agent-after-setup) for the per-shell hook lines.
 
-### Configuration
+---
+
+## Configuration
 
 This boilerplate has **two configuration systems** that serve different consumers and must not be conflated:
 
@@ -114,7 +215,7 @@ This boilerplate has **two configuration systems** that serve different consumer
 
 Both are needed. Skip neither.
 
-#### (a) Runtime test config — `.env`
+### (a) Runtime test config — `.env`
 
 Edit `.env` with your project values:
 
@@ -140,7 +241,7 @@ XRAY_CLIENT_SECRET=
 XRAY_PROJECT_KEY=
 ```
 
-#### (b) Runtime URLs — `config/variables.ts`
+### (b) Runtime URLs — `config/variables.ts`
 
 Update `envDataMap` in `config/variables.ts` with your application URLs. The `Environment` type currently accepts `local` and `staging`; extend the type when you need a third environment.
 
@@ -162,7 +263,7 @@ const envDataMap: Record<
 };
 ```
 
-#### (c) AI context engineering — `.agents/project.yaml`
+### (c) AI context engineering — `.agents/project.yaml`
 
 The AI agents (Claude Code, Codex, Cursor, Copilot, OpenCode) resolve `{{VAR}}` references in skills, templates, and commands against `.agents/project.yaml`. Edit it manually, or run the interactive walkthrough:
 
@@ -172,7 +273,9 @@ bun run agents:setup
 
 This populates `project.project_name`, `project.project_key`, `issue_tracker.jira_url`, `environments.<env>.web_url`, `environments.<env>.api_url`, `environments.<env>.db_mcp`, `environments.<env>.api_mcp`, and the rest. See `.agents/README.md` for the full convention.
 
-### Run Tests
+---
+
+## Run Tests
 
 ```bash
 # Run all tests
@@ -262,7 +365,14 @@ bun run test:e2e:critical  # Tests marked @critical
 │   ├── testing/                  # Testing documentation
 │   └── workflows/                # Workflow documentation
 │
+├── packages/
+│   └── create-agentic-qa/        # Official npm scaffolder (bunx create-agentic-qa <your-repo-name>) — own README + tests
+│
+├── cli/                          # install.ts, doctor.ts, update-boilerplate.ts consumed by bun scripts
+├── templates/                    # Files copied into bootstrapped projects by QA workflow skills
+│
 ├── playwright.config.ts          # Playwright configuration
+├── INSTALLER.md                  # Contract for bun run setup — what each installer layer does
 ├── CLAUDE.md                     # AI memory (canonical, read by Claude Code + OpenCode)
 └── package.json                  # Scripts and dependencies
 ```
@@ -494,7 +604,7 @@ When you clone this template, follow this flow to adapt it to your project:
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. CLONE TEMPLATE                                           │
 │    git clone https://github.com/upex-galaxy/               │
-│      agentic-qa-boilerplate.git my-tests                   │
+│      agentic-qa-boilerplate.git <your-repo-name>           │
 │    bun install && bun run pw:install                       │
 └────────────────────────┬────────────────────────────────────┘
                          │
@@ -801,4 +911,4 @@ MIT License
 
 ---
 
-> **You are here**: QA boilerplate repo overview for visitors. **Read time**: 5 min. **Next**: `bun run onboarding` for visual orientation, or [`INSTALLER.md`](INSTALLER.md) for installer details.
+> **You are here**: QA boilerplate repo overview for visitors. **Read time**: 5 min. **Next**: `bunx create-agentic-qa <your-repo-name>` to scaffold a new project, `bun run onboarding` for visual orientation, or [`INSTALLER.md`](INSTALLER.md) for installer details.
