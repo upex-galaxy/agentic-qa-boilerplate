@@ -1392,6 +1392,71 @@ git clone … &amp;&amp; bun install &amp;&amp; bun run setup</pre
               <em>Maintenance</em> whenever documentation drifts from reality.
             </p>
 
+            <h3 id="cadence">Cadence at a glance</h3>
+            <p>
+              Read the table left-to-right: it tells you which phases are one-time (Bootstrap,
+              Discovery, Adapt), which are continuous (Daily QA), and which kick in on drift
+              (Maintenance) — so you know up-front what to expect on a fresh clone vs. an ongoing
+              project.
+            </p>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Phase</th>
+                    <th>Cadence</th>
+                    <th>Typical duration</th>
+                    <th>Re-run trigger</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>0 · Bootstrap</strong></td>
+                    <td>One-time per clone</td>
+                    <td>15–30 min</td>
+                    <td>Fresh clone, env reset, or <code>bun run setup</code> re-run</td>
+                  </tr>
+                  <tr>
+                    <td><strong>1 · Discovery</strong></td>
+                    <td>One-time per project</td>
+                    <td>2–4 hours</td>
+                    <td>
+                      New target project, major product pivot, or
+                      <code>/project-discovery</code> re-run
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>2 · Adapt</strong></td>
+                    <td>One-time post-Discovery</td>
+                    <td>1–2 hours</td>
+                    <td>
+                      Stack change, KATA layer refactor, or
+                      <code>/adapt-framework</code> re-run
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>3 · Daily QA</strong></td>
+                    <td>Continuous (per ticket)</td>
+                    <td>1–8 hours per ticket</td>
+                    <td>
+                      Every Jira ticket — <code>/sprint-testing</code> through
+                      <code>/regression-testing</code> (Stages 1–6)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>4 · Maintenance</strong></td>
+                    <td>On drift</td>
+                    <td>15–60 min</td>
+                    <td>
+                      Doc / business-map drift, skill changes,
+                      <code>/sync-ai-memory</code> + <code>/business-*-map</code>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
             <div class="diagram-block">
               <svg viewBox="0 0 880 130" width="100%" role="img" aria-label="Five-phase lifecycle">
                 <defs>
