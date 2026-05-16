@@ -3613,35 +3613,164 @@ bun run jira:check            # verify both catalogs against the manifest</code>
         <h2 style="margin-top: 0; border: none; padding: 0; font-size: 1.25rem">
           Where to go next
         </h2>
+        <p class="small muted" style="margin-top: -0.25rem">
+          Grouped by purpose — pick the column that matches what you're trying to learn.
+        </p>
+
+        <h3 style="margin-top: 1.5rem">Core memory — what every session loads</h3>
         <div class="footer-grid">
           <a class="footer-card" href="../README.md">
             <span class="footer-card-title">README.md</span>
-            <span class="footer-card-desc">Project overview + Quick Start.</span>
-          </a>
-          <a class="footer-card" href="agentic-quality-engineering.md">
-            <span class="footer-card-title">agentic-quality-engineering.md</span>
-            <span class="footer-card-desc">Strategy + 6-stage pipeline + KATA architecture.</span>
-          </a>
-          <a class="footer-card" href="../CONTEXT.md">
-            <span class="footer-card-title">CONTEXT.md</span>
-            <span class="footer-card-desc">Why the knowledge layer is split the way it is.</span>
-          </a>
-          <a class="footer-card" href="../INSTALLER.md">
-            <span class="footer-card-title">INSTALLER.md</span>
-            <span class="footer-card-desc">Installation guide for the boilerplate.</span>
+            <span class="footer-card-desc"
+              >Project overview, install paths, repository structure.</span
+            >
           </a>
           <a class="footer-card" href="../CLAUDE.md">
             <span class="footer-card-title">CLAUDE.md</span>
-            <span class="footer-card-desc">Canonical project memory + Tool Resolution table.</span>
+            <span class="footer-card-desc"
+              >Canonical project memory + Tool Resolution table + CLI auto-load.</span
+            >
+          </a>
+          <a class="footer-card" href="../CONTEXT.md">
+            <span class="footer-card-title">CONTEXT.md</span>
+            <span class="footer-card-desc"
+              >Context-engineering strategy — why the knowledge layer is split the way it is.</span
+            >
+          </a>
+          <a class="footer-card" href="../INSTALLER.md">
+            <span class="footer-card-title">INSTALLER.md</span>
+            <span class="footer-card-desc"
+              >The <code>bun run setup</code> contract — what the installer configures.</span
+            >
           </a>
           <a class="footer-card" href="../.claude/skills/agentic-qa-core/SKILL.md">
             <span class="footer-card-title">agentic-qa-core/SKILL.md</span>
-            <span class="footer-card-desc">Foundation skill internals + bootstrap order.</span>
+            <span class="footer-card-desc"
+              >Foundation skill internals + shared doctrine references.</span
+            >
           </a>
         </div>
+
+        <h3 style="margin-top: 1.5rem">Methodology — why we do this</h3>
+        <div class="footer-grid">
+          <a class="footer-card" href="agentic-quality-engineering.md">
+            <span class="footer-card-title">agentic-quality-engineering.md</span>
+            <span class="footer-card-desc"
+              >Vision + 6-stage pipeline + KATA architecture overview.</span
+            >
+          </a>
+          <a class="footer-card" href="methodology/IQL-methodology.md">
+            <span class="footer-card-title">methodology/IQL-methodology.md</span>
+            <span class="footer-card-desc"
+              >Integrated Quality Lifecycle — the unifying framework.</span
+            >
+          </a>
+          <a class="footer-card" href="methodology/kata-fundamentals.md">
+            <span class="footer-card-title">methodology/kata-fundamentals.md</span>
+            <span class="footer-card-desc"
+              >KATA architecture philosophy — layers, fixtures, ATC identity.</span
+            >
+          </a>
+          <a class="footer-card" href="methodology/jira-platform.md">
+            <span class="footer-card-title">methodology/jira-platform.md</span>
+            <span class="footer-card-desc">
+              Jira QA workflow — Ready For QA → In Testing → Tested → Closed.</span
+            >
+          </a>
+          <a class="footer-card" href="methodology/test-management-system.md">
+            <span class="footer-card-title">methodology/test-management-system.md</span>
+            <span class="footer-card-desc"
+              >TMS concepts — Test, Test Plan, Test Execution, Pre-Condition.</span
+            >
+          </a>
+          <a class="footer-card" href="methodology/early-game-testing.md">
+            <span class="footer-card-title">methodology/early-game-testing.md</span>
+            <span class="footer-card-desc">Shift-left phase — testing before the code lands.</span>
+          </a>
+          <a class="footer-card" href="methodology/mid-game-testing.md">
+            <span class="footer-card-title">methodology/mid-game-testing.md</span>
+            <span class="footer-card-desc">Active development — in-sprint QA loop.</span>
+          </a>
+          <a class="footer-card" href="methodology/late-game-testing.md">
+            <span class="footer-card-title">methodology/late-game-testing.md</span>
+            <span class="footer-card-desc">Regression phase — release-readiness verdicts.</span>
+          </a>
+        </div>
+
+        <h3 style="margin-top: 1.5rem">Setup — one-time recipes</h3>
+        <div class="footer-grid">
+          <a class="footer-card" href="setup/jira-setup-guide.md">
+            <span class="footer-card-title">setup/jira-setup-guide.md</span>
+            <span class="footer-card-desc"
+              >Jira credentials, custom fields, workflow IDs — wiring guide.</span
+            >
+          </a>
+          <a class="footer-card" href="setup/mcp-openapi.md">
+            <span class="footer-card-title">setup/mcp-openapi.md</span>
+            <span class="footer-card-desc"
+              >OpenAPI MCP — endpoint exploration + contract testing.</span
+            >
+          </a>
+          <a class="footer-card" href="setup/mcp-dbhub.md">
+            <span class="footer-card-title">setup/mcp-dbhub.md</span>
+            <span class="footer-card-desc"
+              >DBHub MCP — DB queries + data validation during exploration.</span
+            >
+          </a>
+        </div>
+
+        <h3 style="margin-top: 1.5rem">Workflows — recurring ops</h3>
+        <div class="footer-grid">
+          <a class="footer-card" href="workflows/test-manual-lifecycle.md">
+            <span class="footer-card-title">workflows/test-manual-lifecycle.md</span>
+            <span class="footer-card-desc"
+              >Manual QA flow — Stages 1–3 of the pipeline in detail.</span
+            >
+          </a>
+          <a class="footer-card" href="workflows/test-automation-lifecycle.md">
+            <span class="footer-card-title">workflows/test-automation-lifecycle.md</span>
+            <span class="footer-card-desc"
+              >Automation flow — Plan → Code → Review on KATA + Playwright.</span
+            >
+          </a>
+          <a class="footer-card" href="workflows/git-flow.md">
+            <span class="footer-card-title">workflows/git-flow.md</span>
+            <span class="footer-card-desc"
+              >Git for AI-driven development — strategy detection + chained PRs.</span
+            >
+          </a>
+          <a class="footer-card" href="workflows/environments.md">
+            <span class="footer-card-title">workflows/environments.md</span>
+            <span class="footer-card-desc"
+              >Dev / staging / prod environment selection + credentials.</span
+            >
+          </a>
+        </div>
+
+        <h3 style="margin-top: 1.5rem">Architectures — stack scaffolding</h3>
+        <div class="footer-grid">
+          <a class="footer-card" href="architectures/README.md">
+            <span class="footer-card-title">architectures/README.md</span>
+            <span class="footer-card-desc"
+              >Stack-specific scaffolding guides (Supabase + Next.js, etc.).</span
+            >
+          </a>
+        </div>
+
+        <h3 style="margin-top: 1.5rem">Companion repo</h3>
+        <div class="footer-grid">
+          <a class="footer-card" href="https://github.com/upex-galaxy/agentic-dev-boilerplate">
+            <span class="footer-card-title">agentic-dev-boilerplate</span>
+            <span class="footer-card-desc"
+              >Sister project — same boilerplate philosophy on the AI-driven app development
+              side.</span
+            >
+          </a>
+        </div>
+
         <p class="footer-meta">
-          <code>agentic-qa-boilerplate</code> · MIT License · Onboarding page v1.2 · Last updated
-          2026-05-13
+          <code>agentic-qa-boilerplate</code> · MIT License · Onboarding page v1.3 · Last updated
+          2026-05-16
         </p>
       </footer>
     </div>
