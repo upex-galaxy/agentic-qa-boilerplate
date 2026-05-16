@@ -79,6 +79,9 @@ dbhub.toml
 # AI Tool Specific (user-local settings only)
 .claude/settings.local.json
 
+# Refcheck config — local-only validation tool, not part of repo contract
+.refcheckrc.toml
+
 # Planning / audit scaffolding (working notes, plan drafts, audit
 # reports, session handoffs). Kept on local disk only — never pushed.
 .scratch/
