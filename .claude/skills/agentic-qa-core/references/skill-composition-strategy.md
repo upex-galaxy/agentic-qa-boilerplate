@@ -106,7 +106,7 @@ When a referenced skill is not in the available list (deprecated, uninstalled, v
 1. Continue with project-owned alternative if exists.
 2. If no alternative, do the work inline with degraded capability.
 3. Flag in result envelope: `skill_resolution: "fallback-inline" + missing: [list]`.
-4. Suggest reinstall via `bun run setup` or `npx skills add <name>` in the user-facing summary.
+4. Suggest reinstall via `bun run setup` or `bunx skills add <name>` in the user-facing summary.
 
 ---
 
@@ -296,7 +296,7 @@ Demotion path (T3 → T4): when a project-level skill turns out to be useful els
 The four-tier model is not bureaucracy. Each tier solves a real failure:
 
 - **T1 vs T2**: T1 is our doctrine. T2 is a third-party planning bundle. Mixing them means our QA workflows could be silently rewritten by an upstream SDD release. The gate (§4) means SDD only fires where we explicitly authorized it.
-- **T2 vs T3**: T2 is project-dependency-managed by gentle-ai (install via `gentle-ai install --skill ...`). T3 is community-managed via `npx skills add`. Different install paths, different upgrade cadences, different breakage modes. CLAUDE.md must NOT pretend they are equivalent.
+- **T2 vs T3**: T2 is project-dependency-managed by gentle-ai (install via `gentle-ai install --skill ...`). T3 is community-managed via `bunx skills add`. Different install paths, different upgrade cadences, different breakage modes. CLAUDE.md must NOT pretend they are equivalent.
 - **T3 vs T4**: T3 ships with every clone of this repo. T4 may or may not be installed. Asking before T4 use is what prevents "I cleared my `~/.claude/skills/` and now QA is broken" support tickets.
 - **Categories vs names**: Community skill authors rename and abandon things. A QA repo that hardcodes `playwright-best-practices` by exact name breaks the day the author republishes as `playwright-patterns`. Categories survive renames.
 
