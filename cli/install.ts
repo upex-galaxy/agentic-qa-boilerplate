@@ -449,6 +449,7 @@ async function handleMissingGentleAi(): Promise<'show-and-exit' | 'skip'> {
     log.banner('Install gentle-ai with one of these commands:');
     process.stdout.write('  macOS  : brew install gentle-ai\n');
     process.stdout.write('  Linux  : go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest\n\n');
+    log.dim('  Docs: https://github.com/Gentleman-Programming/gentle-ai');
     log.dim('After installing, re-run: bun run setup');
     return 'show-and-exit';
   }
@@ -993,7 +994,7 @@ async function offerDirenvAutoload(): Promise<void> {
 
   if (!info.installed) {
     log.info('direnv not installed (optional).');
-    log.dim('  Launch agents with: bun run claude  /  bun run opencode  (dotenv-cli loads .env automatically).');
+    log.dim('  Launch agents with: bun claude  /  bun opencode  (dotenv-cli loads .env automatically).');
     log.dim(`  Or install direnv for shell autoload: ${installHintForPlatform()}`);
     return;
   }
@@ -1007,7 +1008,7 @@ async function offerDirenvAutoload(): Promise<void> {
     true,
   );
   if (!proceed) {
-    log.dim('  Skipped. Launch agents with: bun run claude  /  bun run opencode.');
+    log.dim('  Skipped. Launch agents with: bun claude  /  bun opencode.');
     return;
   }
   const result = tryRun('direnv', ['allow', REPO_ROOT]);
@@ -1016,7 +1017,7 @@ async function offerDirenvAutoload(): Promise<void> {
     log.dim(`  Reminder: add this to your shell rc if not already done: ${shellHookHint(info)}`);
   }
   else {
-    log.warn('direnv allow failed. Launch agents with: bun run claude  /  bun run opencode.');
+    log.warn('direnv allow failed. Launch agents with: bun claude  /  bun opencode.');
     log.dim(`  ${(result.stderr || result.stdout).trim().slice(0, 200)}`);
   }
 }
@@ -1355,8 +1356,8 @@ function printClosingSummary(state: InstallState): void {
     n++;
   }
   process.stdout.write(`  ${n}. Launch your agent:\n`);
-  process.stdout.write('       bun run claude       # Claude Code  (dotenv-cli wraps and loads .env)\n');
-  process.stdout.write('       bun run opencode     # OpenCode     (dotenv-cli wraps and loads .env)\n');
+  process.stdout.write('       bun claude       # Claude Code  (dotenv-cli loads .env)\n');
+  process.stdout.write('       bun opencode     # OpenCode     (dotenv-cli loads .env)\n');
   log.dim('       (or run `claude` / `opencode` directly if direnv autoload is set up)');
   n++;
   if (cliMissing.length > 0) {
@@ -1588,9 +1589,13 @@ async function main(): Promise<void> {
 main().catch((err) => {
   if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'ExitPromptError') {
     log.warn('Aborted by user.');
+    log.dim('  To resume, re-run: bun run setup');
+    log.dim('  (Installer is idempotent — completed steps will skip on re-run.)');
     process.exit(130);
   }
   log.error(`Fatal: ${(err as Error).message ?? String(err)}`);
   if (err instanceof Error && err.stack) { log.dim(err.stack); }
+  log.warn('Installation interrupted. To resume, re-run: bun run setup');
+  log.dim('  (Installer is idempotent — completed steps will skip on re-run.)');
   process.exit(1);
 });
