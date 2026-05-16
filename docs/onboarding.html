@@ -934,6 +934,99 @@
         background: var(--badge-reference-soft);
         color: var(--badge-reference);
       }
+
+      /* Tier badges (T1-T4) */
+      .badge-tier-t1 {
+        color: #0c7c5a;
+        background: rgba(12, 124, 90, 0.12);
+      }
+      .badge-tier-t2 {
+        color: #8a5a00;
+        background: rgba(138, 90, 0, 0.12);
+      }
+      .badge-tier-t3 {
+        color: #2962a8;
+        background: rgba(41, 98, 168, 0.12);
+      }
+      .badge-tier-t4 {
+        color: #8e44ad;
+        background: rgba(142, 68, 173, 0.12);
+      }
+      @media (prefers-color-scheme: dark) {
+        .badge-tier-t1 {
+          color: #4dd6a3;
+          background: rgba(77, 214, 163, 0.16);
+        }
+        .badge-tier-t2 {
+          color: #ffb84d;
+          background: rgba(255, 184, 77, 0.16);
+        }
+        .badge-tier-t3 {
+          color: #76aef0;
+          background: rgba(118, 174, 240, 0.16);
+        }
+        .badge-tier-t4 {
+          color: #c692e7;
+          background: rgba(198, 146, 231, 0.18);
+        }
+      }
+
+      /* Tier legend (Category vs Tier split) */
+      .tier-legend {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0 1.5rem;
+        padding: 1rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+      .tier-legend-col h4 {
+        margin: 0 0 0.5rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+      }
+      .tier-legend-col p {
+        margin: 0.25rem 0;
+        font-size: 0.88rem;
+      }
+
+      /* Skill composition diagram */
+      .composition {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        margin: 1.5rem 0;
+      }
+      .composition-layer {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.6rem 0.85rem;
+        margin: 0.4rem 0;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 0.88rem;
+      }
+      .composition-layer-num {
+        flex-shrink: 0;
+        width: 1.5rem;
+        height: 1.5rem;
+        background: var(--accent-soft);
+        color: var(--accent);
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.8rem;
+      }
     </style>
   </head>
   <body>
@@ -2907,21 +3000,60 @@ bun run jira:check            # verify both catalogs against the manifest</code>
               <code>PROJECT_LEVEL_SKILLS</code> and <code>USER_LEVEL_SKILLS</code>.
             </p>
 
-            <p class="small muted">
-              Categories — <span class="badge badge-foundation">Foundation</span> hosts shared
-              references and bootstraps the repo ·
-              <span class="badge badge-workflow">Workflow</span> drives a stage of the pipeline ·
-              <span class="badge badge-generator">Generator</span> reverse-engineers context from
-              the target · <span class="badge badge-tool">Tool</span> wraps a CLI/MCP for I/O ·
-              <span class="badge badge-reference">Reference</span> is loaded passively by other
-              skills.
+            <h3 id="tiers">Legend — Category vs Tier</h3>
+            <p>
+              Every skill carries two badges. <strong>Category</strong> says <em>what</em> it does
+              (the role it plays in the pipeline). <strong>Tier</strong> says <em>where</em> it
+              lives and <em>how</em> it was installed.
             </p>
+            <div class="tier-legend">
+              <div class="tier-legend-col">
+                <h4>Category — what it does</h4>
+                <p>
+                  <span class="badge badge-foundation">Foundation</span> hosts shared references and
+                  bootstraps the repo.
+                </p>
+                <p>
+                  <span class="badge badge-workflow">Workflow</span> drives a stage of the pipeline.
+                </p>
+                <p>
+                  <span class="badge badge-generator">Generator</span> reverse-engineers context
+                  from the target.
+                </p>
+                <p><span class="badge badge-tool">Tool</span> wraps a CLI / MCP for I/O.</p>
+                <p>
+                  <span class="badge badge-reference">Reference</span> is loaded passively by other
+                  skills.
+                </p>
+              </div>
+              <div class="tier-legend-col">
+                <h4>Tier — where it lives</h4>
+                <p>
+                  <span class="badge badge-tier-t1">T1</span> Project-owned, committed in
+                  <code>.claude/skills/</code> (the 11 listed below).
+                </p>
+                <p>
+                  <span class="badge badge-tier-t2">T2</span> gentle-ai dependency at user level via
+                  <code>cli/install.ts</code> (Engram, SDD-*).
+                </p>
+                <p>
+                  <span class="badge badge-tier-t3">T3</span> Community project-level installed by
+                  <code>cli/install.ts</code> (<code>playwright-cli</code>,
+                  <code>playwright-best-practices</code>).
+                </p>
+                <p>
+                  <span class="badge badge-tier-t4">T4</span> Community user-level — ALWAYS ASK
+                  before loading.
+                </p>
+              </div>
+            </div>
 
             <div class="skill-grid">
               <article class="skill-card">
                 <div class="skill-card-head">
                   <span class="skill-card-name">agentic-qa-core</span>
                   <span class="badge badge-foundation">Foundation</span>
+                  <span class="badge badge-tier-t1">T1</span>
                 </div>
                 <p class="skill-card-trigger">(auto, cited by other skills)</p>
                 <p class="skill-card-desc">
@@ -2935,6 +3067,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <div class="skill-card-head">
                   <span class="skill-card-name">agentic-qa-onboard</span>
                   <span class="badge badge-foundation">Foundation</span>
+                  <span class="badge badge-tier-t1">T1</span>
                 </div>
                 <p class="skill-card-trigger">/agentic-qa-onboard</p>
                 <p class="skill-card-desc">
@@ -2948,6 +3081,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <div class="skill-card-head">
                   <span class="skill-card-name">project-discovery</span>
                   <span class="badge badge-generator">Generator</span>
+                  <span class="badge badge-tier-t1">T1</span>
                 </div>
                 <p class="skill-card-trigger">/project-discovery</p>
                 <p class="skill-card-desc">
@@ -2961,6 +3095,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <div class="skill-card-head">
                   <span class="skill-card-name">sprint-testing</span>
                   <span class="badge badge-workflow">Workflow</span>
+                  <span class="badge badge-tier-t1">T1</span>
                 </div>
                 <p class="skill-card-trigger">/sprint-testing</p>
                 <p class="skill-card-desc">
@@ -2973,6 +3108,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <div class="skill-card-head">
                   <span class="skill-card-name">test-documentation</span>
                   <span class="badge badge-workflow">Workflow</span>
+                  <span class="badge badge-tier-t1">T1</span>
                 </div>
                 <p class="skill-card-trigger">/test-documentation</p>
                 <p class="skill-card-desc">
@@ -2985,6 +3121,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <div class="skill-card-head">
                   <span class="skill-card-name">test-automation</span>
                   <span class="badge badge-workflow">Workflow</span>
+                  <span class="badge badge-tier-t1">T1</span>
                 </div>
                 <p class="skill-card-trigger">/test-automation</p>
                 <p class="skill-card-desc">
@@ -2998,6 +3135,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <div class="skill-card-head">
                   <span class="skill-card-name">regression-testing</span>
                   <span class="badge badge-workflow">Workflow</span>
+                  <span class="badge badge-tier-t1">T1</span>
                 </div>
                 <p class="skill-card-trigger">/regression-testing</p>
                 <p class="skill-card-desc">
@@ -3011,6 +3149,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <div class="skill-card-head">
                   <span class="skill-card-name">framework-development</span>
                   <span class="badge badge-workflow">Workflow</span>
+                  <span class="badge badge-tier-t1">T1</span>
                 </div>
                 <p class="skill-card-trigger">/framework-development</p>
                 <p class="skill-card-desc">
@@ -3025,6 +3164,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <div class="skill-card-head">
                   <span class="skill-card-name">acli</span>
                   <span class="badge badge-tool">Tool</span>
+                  <span class="badge badge-tier-t1">T1</span>
                 </div>
                 <p class="skill-card-trigger">/acli</p>
                 <p class="skill-card-desc">
@@ -3038,6 +3178,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <div class="skill-card-head">
                   <span class="skill-card-name">xray-cli</span>
                   <span class="badge badge-tool">Tool</span>
+                  <span class="badge badge-tier-t1">T1</span>
                 </div>
                 <p class="skill-card-trigger">/xray-cli</p>
                 <p class="skill-card-desc">
@@ -3051,6 +3192,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <div class="skill-card-head">
                   <span class="skill-card-name">git-flow-master</span>
                   <span class="badge badge-tool">Tool</span>
+                  <span class="badge badge-tier-t1">T1</span>
                 </div>
                 <p class="skill-card-trigger">(auto on git intents)</p>
                 <p class="skill-card-desc">
@@ -3081,6 +3223,59 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   <a href="#section-8">§8 Commands</a>.
                 </p>
               </div>
+            </div>
+
+            <h3 id="composition">Skill composition — how skills load each other</h3>
+            <p>
+              Read top to bottom. Workflow skills compose other workflow skills only via
+              <code>/framework-development</code> (the SDD gateway). Per-ticket workflow skills do
+              not compose each other — they hand off sequentially via the 6-stage pipeline. Tool
+              skills sit at the bottom of the food chain.
+            </p>
+
+            <div class="composition">
+              <div class="composition-layer">
+                <span class="composition-layer-num">1</span>
+                <div>
+                  <strong>Workflow skill</strong> — owns the stage. Examples:
+                  <code>/sprint-testing</code>, <code>/test-documentation</code>,
+                  <code>/test-automation</code>, <code>/regression-testing</code>,
+                  <code>/framework-development</code>.
+                </div>
+              </div>
+              <div class="composition-layer">
+                <span class="composition-layer-num">2</span>
+                <div>
+                  <strong>Composed workflow skill</strong> — <code>/framework-development</code> is
+                  the SOLE QA-side composer; it silently chains
+                  <code
+                    >/sdd-init → /sdd-design → /sdd-tasks → /sdd-apply → /sdd-verify →
+                    /sdd-archive</code
+                  >
+                  for framework evolution. Per-ticket workflow skills do NOT compose each other.
+                </div>
+              </div>
+              <div class="composition-layer">
+                <span class="composition-layer-num">3</span>
+                <div>
+                  <strong>Tool skill</strong> — loaded just-in-time when Bash needs a CLI.
+                  <code>/acli</code>, <code>/xray-cli</code>, <code>/playwright-cli</code>,
+                  <code>/playwright-best-practices</code>, <code>/git-flow-master</code>. Holds the
+                  CLI's syntax + flags + error semantics.
+                </div>
+              </div>
+              <div class="composition-layer">
+                <span class="composition-layer-num">4</span>
+                <div>
+                  <strong>Foundation reference host</strong> — <code>agentic-qa-core</code>,
+                  passively cited (briefing template, dispatch patterns, orchestration doctrine,
+                  skill-composition strategy). Never invoked directly.
+                </div>
+              </div>
+              <p class="diagram-caption" style="margin-top: 0.75rem">
+                See <a href="#section-5">§5 Circuit 2 — Orchestration</a> for the dispatch pattern
+                each workflow skill follows.
+              </p>
             </div>
           </section>
 
