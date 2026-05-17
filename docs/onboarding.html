@@ -1224,6 +1224,9 @@
             <li>
               <a href="#getting-started"><strong>Start here →</strong></a>
             </li>
+            <li>
+              <a href="#personality"><strong>Who you're talking to →</strong> AI personality</a>
+            </li>
             <li><a href="#section-1">1. The fundamental idea</a></li>
             <li><a href="#section-2">2. Three categories of moving parts</a></li>
             <li><a href="#section-3">3. The lifecycle</a></li>
@@ -1245,6 +1248,9 @@
             <ol>
               <li>
                 <a href="#getting-started"><strong>Start here →</strong></a>
+              </li>
+              <li>
+                <a href="#personality"><strong>Who you're talking to</strong></a>
               </li>
               <li><a href="#section-1">1. The fundamental idea</a></li>
               <li><a href="#section-2">2. Three moving parts</a></li>
@@ -1385,6 +1391,143 @@ git clone … &amp;&amp; bun install &amp;&amp; bun run setup</pre
                   <code>/sprint-testing</code> session.
                 </p>
               </div>
+            </div>
+          </section>
+
+          <!-- =======================================================  WHO YOU'RE TALKING TO  -->
+          <section id="personality" class="getting-started">
+            <h2 style="margin-top: 0">Who you're talking to — AI personality</h2>
+
+            <p>
+              Before you fire your first command, know who is on the other side of the conversation.
+              The AI in this repo has an opinionated, intentional personality — a deliberate mix of
+              speech style, register, and behavioural defaults — so that what you read feels
+              consistent across sessions, agents, and skills.
+            </p>
+
+            <div class="callout callout-info">
+              <strong>Short answer:</strong> a senior QA engineer who reports to a Project Manager.
+              Competent, parsimonious with words, allergic to theatre, biased toward planning over
+              improvisation, and disciplined about translating test work into business and quality
+              value when speaking to you.
+            </div>
+
+            <h3 style="margin-top: 1.5rem">The six strategies you'll notice</h3>
+
+            <div class="skill-grid">
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">Caveman mode</span>
+                </div>
+                <p class="skill-card-trigger">Word compression</p>
+                <p class="skill-card-desc">
+                  Drops articles, fillers, and pleasantries. Fragments OK. Cuts roughly 75% of
+                  tokens without losing accuracy. Code blocks, commit messages, and security
+                  warnings stay fully written. Toggle with
+                  <code>/caveman lite|full|ultra</code> or disable with <code>stop caveman</code>.
+                </p>
+              </article>
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">Butler Pattern</span>
+                </div>
+                <p class="skill-card-trigger">Information granularity</p>
+                <p class="skill-card-desc">
+                  Headline first (one line that resolves your literal question), then an atomic
+                  bullet menu of related topics. You pull the thread that matters. No paragraphs
+                  buried in walls of text — 12 specific bullets beats 3 broad buckets.
+                </p>
+              </article>
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">PM Voice</span>
+                  <span class="badge badge-foundation">Default</span>
+                </div>
+                <p class="skill-card-trigger">Vocabulary register</p>
+                <p class="skill-card-desc">
+                  Headlines report user, business, or quality value — not technical action. Bullets
+                  are a SINGLE menu: each bullet's register (value-framed or technical) is chosen
+                  per topic, so a spec file path and an AC-impact statement can sit side by side. In
+                  foreground replies, a short attention-priming punch precedes the headline; when a
+                  menu has 3+ bullets, a short orientation question invites you to pull a thread.
+                  Auto-suspends when you mention a file, command, selector, or library by name, or
+                  when active skill is
+                  <code>/sprint-testing</code> · <code>/test-documentation</code> ·
+                  <code>/test-automation</code> · <code>/regression-testing</code> ·
+                  <code>/framework-development</code>.
+                </p>
+              </article>
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">Background-narrator</span>
+                </div>
+                <p class="skill-card-trigger">Lifecycle signaling</p>
+                <p class="skill-card-desc">
+                  When running as a background job (scheduled regression runs, CI sweeps, queued
+                  sprint-testing), emits lifecycle signals (<code>result:</code>,
+                  <code>needs input:</code>, <code>failed:</code>) so a classifier can track
+                  progress without watching live. Never translated, never rephrased — they are a
+                  contract with the harness, not human comms.
+                </p>
+              </article>
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">Language mirror</span>
+                </div>
+                <p class="skill-card-trigger">Locale</p>
+                <p class="skill-card-desc">
+                  Detects your language and replies in it. Repo artifacts (code, commits, PRs,
+                  branch names, Jira issues, ATC IDs, Xray entities) stay in English regardless of
+                  conversational language.
+                </p>
+              </article>
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">Visual Mapping Bias</span>
+                </div>
+                <p class="skill-card-trigger">Form</p>
+                <p class="skill-card-desc">
+                  When the content is mappable — comparisons, hierarchies, flows, impact maps,
+                  test-execution states — the AI prefers a table, ASCII diagram, tree, box layout,
+                  or state machine over a paragraph of prose. The visual replaces prose, it does not
+                  decorate alongside it. Can sit below the headline or inside a single bullet. Plain
+                  ASCII preferred over Unicode box-drawing when terminal rendering is uncertain.
+                </p>
+              </article>
+            </div>
+
+            <h3 style="margin-top: 2rem">How to talk to it</h3>
+
+            <ul>
+              <li>
+                <strong>Speak naturally in your own language.</strong> The AI mirrors you — no need
+                to switch to English.
+              </li>
+              <li>
+                <strong>Drop a file path, command, selector, or library name</strong> in your
+                message if you want a technical reply that turn (PM Voice auto-suspends).
+              </li>
+              <li>
+                <strong>State your goal (or the AC), not your implementation idea</strong>
+                if you want the AI to push back when there's a simpler test path.
+              </li>
+              <li>
+                <strong>Ask for "technical mode" / "speak technically"</strong> (in any language) to
+                force a technical reply for the rest of the session, or
+                <strong>ask for "PM mode" / "PM voice"</strong> to restore the default.
+              </li>
+              <li>
+                <strong>Say "stop caveman" / "normal mode"</strong> (in any language) to disable
+                token compression and read full-form prose.
+              </li>
+            </ul>
+
+            <div class="callout callout-warn">
+              <strong>Read the full guide before you start.</strong> The personality is layered:
+              traits, strategies, override phrases, suspension triggers, and how to evolve it over
+              time. Full reference (with all toggles, examples, and edge cases) lives in
+              <a href="ai-personality.md"><code>docs/ai-personality.md</code></a
+              >. It mirrors the runtime contract defined in <code>CLAUDE.md</code> sections 1–3.
             </div>
           </section>
 
@@ -3649,6 +3792,12 @@ bun run jira:check            # verify both catalogs against the manifest</code>
               >Foundation skill internals + shared doctrine references.</span
             >
           </a>
+          <a class="footer-card" href="ai-personality.md">
+            <span class="footer-card-title">ai-personality.md</span>
+            <span class="footer-card-desc"
+              >Who you're talking to — personality, speech style, override phrases.</span
+            >
+          </a>
         </div>
 
         <h3 style="margin-top: 1.5rem">Methodology — why we do this</h3>
@@ -3769,7 +3918,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
         </div>
 
         <p class="footer-meta">
-          <code>agentic-qa-boilerplate</code> · MIT License · Onboarding page v1.3 · Last updated
+          <code>agentic-qa-boilerplate</code> · MIT License · Onboarding page v1.4 · Last updated
           2026-05-16
         </p>
       </footer>
