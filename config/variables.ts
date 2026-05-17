@@ -51,9 +51,12 @@ const {
   XRAY_PROJECT_KEY = '', // Used: config.tms.xray.projectKey (jiraSync)
 
   // === Jira Direct (required only if TMS_PROVIDER=jira AND AUTO_SYNC=true) ===
-  JIRA_URL = '', // Required if TMS_PROVIDER=jira (jiraSync)
-  JIRA_USER = '', // Required if TMS_PROVIDER=jira (jiraSync)
-  JIRA_API_TOKEN = '', // Required if TMS_PROVIDER=jira (jiraSync)
+  ATLASSIAN_URL = '', // Single source of truth (also used by MCP / acli / xray-cli)
+  ATLASSIAN_EMAIL = '', // Single source of truth
+  ATLASSIAN_API_TOKEN = '', // Single source of truth
+  JIRA_URL = '', // Override: if set, takes precedence over ATLASSIAN_URL for Jira Direct
+  JIRA_USER = '', // Override: if set, takes precedence over ATLASSIAN_EMAIL for Jira Direct
+  JIRA_API_TOKEN = '', // Override: if set, takes precedence over ATLASSIAN_API_TOKEN for Jira Direct
   JIRA_TEST_STATUS_FIELD = 'customfield_10100', // Used: config.tms.jira.testStatusField
 
   // === Browser Configuration ===
@@ -148,9 +151,9 @@ export const config = {
       projectKey: XRAY_PROJECT_KEY,
     },
     jira: {
-      url: JIRA_URL,
-      user: JIRA_USER,
-      apiToken: JIRA_API_TOKEN,
+      url: JIRA_URL || ATLASSIAN_URL,
+      user: JIRA_USER || ATLASSIAN_EMAIL,
+      apiToken: JIRA_API_TOKEN || ATLASSIAN_API_TOKEN,
       testStatusField: JIRA_TEST_STATUS_FIELD,
     },
   },

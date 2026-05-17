@@ -18,9 +18,9 @@ import { loadConfig } from './config.js';
 export async function getJiraIssueId(key: string): Promise<string | null> {
   const config = loadConfig();
 
-  const baseUrl = config?.jira_base_url || process.env.JIRA_BASE_URL;
-  const email = config?.jira_email || process.env.JIRA_EMAIL;
-  const token = config?.jira_api_token || process.env.JIRA_API_TOKEN;
+  const baseUrl = config?.jira_base_url || process.env.ATLASSIAN_URL || process.env.JIRA_BASE_URL;
+  const email = config?.jira_email || process.env.ATLASSIAN_EMAIL || process.env.JIRA_EMAIL;
+  const token = config?.jira_api_token || process.env.ATLASSIAN_API_TOKEN || process.env.JIRA_API_TOKEN;
 
   if (!baseUrl || !email || !token) {
     return null;
@@ -157,9 +157,9 @@ export interface LinkedTest {
  */
 export async function getLinkedTests(issueKey: string): Promise<LinkedTest[] | null> {
   const config = loadConfig();
-  const baseUrl = config?.jira_base_url || process.env.JIRA_BASE_URL;
-  const email = config?.jira_email || process.env.JIRA_EMAIL;
-  const token = config?.jira_api_token || process.env.JIRA_API_TOKEN;
+  const baseUrl = config?.jira_base_url || process.env.ATLASSIAN_URL || process.env.JIRA_BASE_URL;
+  const email = config?.jira_email || process.env.ATLASSIAN_EMAIL || process.env.JIRA_EMAIL;
+  const token = config?.jira_api_token || process.env.ATLASSIAN_API_TOKEN || process.env.JIRA_API_TOKEN;
 
   if (!baseUrl || !email || !token) {
     return null;

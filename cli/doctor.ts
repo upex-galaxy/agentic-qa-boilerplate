@@ -334,6 +334,24 @@ async function runDoctor(): Promise<DoctorReport> {
     }
   }
 
+  // warn if JIRA_API_TOKEN override is active and differs from ATLASSIAN_API_TOKEN
+  const atlassianToken = envValues.ATLASSIAN_API_TOKEN;
+  const jiraTokenOverride = envValues.JIRA_API_TOKEN;
+  if (
+    atlassianToken
+    && atlassianToken.trim().length > 0
+    && jiraTokenOverride
+    && jiraTokenOverride.trim().length > 0
+    && atlassianToken.trim() !== jiraTokenOverride.trim()
+  ) {
+    process.stderr.write(
+      `${COLORS.yellow}[warn]${COLORS.reset} JIRA_API_TOKEN is set and differs from ATLASSIAN_API_TOKEN.\n`
+      + '       xray-cli and TMS Jira-Direct will use JIRA_API_TOKEN (override active);\n'
+      + '       ATLASSIAN_API_TOKEN is ignored for those consumers.\n'
+      + '       Remove JIRA_API_TOKEN from .env if you want ATLASSIAN_API_TOKEN to apply everywhere.\n',
+    );
+  }
+
   // node_modules / dotenv-cli
   if (!report.deps_installed) {
     report.pending_actions.push({

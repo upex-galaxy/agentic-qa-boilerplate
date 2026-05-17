@@ -102,9 +102,9 @@ if (import.meta.main) {
     STAGING_USER_PASSWORD: process.env.STAGING_USER_PASSWORD,
     XRAY_CLIENT_ID: process.env.XRAY_CLIENT_ID,
     XRAY_CLIENT_SECRET: process.env.XRAY_CLIENT_SECRET,
-    JIRA_URL: process.env.JIRA_URL,
-    JIRA_USER: process.env.JIRA_USER,
-    JIRA_API_TOKEN: process.env.JIRA_API_TOKEN,
+    JIRA_URL: process.env.ATLASSIAN_URL || process.env.JIRA_URL,
+    JIRA_USER: process.env.ATLASSIAN_EMAIL || process.env.JIRA_USER,
+    JIRA_API_TOKEN: process.env.ATLASSIAN_API_TOKEN || process.env.JIRA_API_TOKEN,
   };
 
   console.log('\nValidating environment variables...');
