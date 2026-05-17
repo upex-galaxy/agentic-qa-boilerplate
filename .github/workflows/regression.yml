@@ -72,7 +72,7 @@ jobs:
         run: bun install
 
       - name: Validate Environment Variables
-        run: bun run config/validateEnv.ts
+        run: bun run env:check
 
       - name: Install Playwright (API context)
         run: bun run pw:install
@@ -130,7 +130,7 @@ jobs:
         run: bun install
 
       - name: Validate Environment Variables
-        run: bun run config/validateEnv.ts
+        run: bun run env:check
 
       - name: Install Playwright Browsers
         run: bun run pw:install

@@ -599,7 +599,7 @@ Never swallow errors inside an ATC without re-throwing — the test must fail vi
 ESLint with `@antfu/eslint-config` (flat config):
 
 ```bash
-bun run lint        # Check for issues
+bun run lint:check        # Check for issues
 bun run lint:fix    # Auto-fix issues
 ```
 
@@ -608,7 +608,7 @@ bun run lint:fix    # Auto-fix issues
 TypeScript with relaxed mode (no `experimentalDecorators`):
 
 ```bash
-bun run type-check  # tsc --noEmit
+bun run types:check  # tsc --noEmit
 ```
 
 ### Import aliases (mandatory)
@@ -722,8 +722,8 @@ These gates block PR merge. Run them locally before opening the PR.
 | Gate | Command | Must be |
 |------|---------|---------|
 | Tests pass | `bun run test <path>` | All green, zero retries used |
-| Type check | `bun run type-check` | No errors |
-| Lint | `bun run lint` | No errors |
+| Type check | `bun run types:check` | No errors |
+| Lint | `bun run lint:check` | No errors |
 | Component registered | visual | In relevant fixture |
 | ATC IDs linked | visual | Every `@atc('X')` maps to a real TMS test case |
 | Tags correct | visual | `@critical` / `@smoke` / `@regression` applied as planned |
@@ -737,10 +737,10 @@ These gates block PR merge. Run them locally before opening the PR.
 bun run test tests/integration/orders/createOrder.test.ts
 
 # 3. If green, check types
-bun run type-check
+bun run types:check
 
 # 4. If clean, lint
-bun run lint
+bun run lint:check
 
 # 5. If clean, extract manifest and verify ATC IDs
 bun run kata:manifest
@@ -777,8 +777,8 @@ cat kata-manifest.json | jq '.components, .summary'   # or open in editor
 
 # 1-3. Code → tests → types → lint
 bun run test <path>
-bun run type-check
-bun run lint
+bun run types:check
+bun run lint:check
 
 # 4. If components or ATCs were added/changed, regenerate the manifest.
 bun run kata:manifest

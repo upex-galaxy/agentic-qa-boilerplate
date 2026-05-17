@@ -33,8 +33,8 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 | Plan (`spec.md` + `implementation-plan.md`)    | Single               | one Plan subagent returns the two artifacts; protects orchestrator from KATA architectural reads                                |
 | Code (writing E2E or API tests)                | Sequential           | one Code subagent per scope (module = 1 subagent per TC; ticket = 1 subagent total); edits-many-files inside isolates context  |
 | Review — `bun run test`                        | Parallel (sub-stage) | one Verifier subagent runs the test suite                                                                                       |
-| Review — `bun run type-check`                  | Parallel (sub-stage) | one Verifier subagent runs typecheck                                                                                            |
-| Review — `bun run lint`                        | Parallel (sub-stage) | one Verifier subagent runs lint                                                                                                 |
+| Review — `bun run types:check`                  | Parallel (sub-stage) | one Verifier subagent runs typecheck                                                                                            |
+| Review — `bun run lint:check`                        | Parallel (sub-stage) | one Verifier subagent runs lint                                                                                                 |
 | Review aggregation + merge/reject decision    | Single               | inline — orchestrator reads the 3 Verifier reports and decides                                                                  |
 
 - **Code phase scope rule**: each Code subagent edits multiple files in isolation, returns a list of changed files + a one-line summary per file. The orchestrator never reads the diffs — only the summary. If the user wants to see actual diffs, the orchestrator runs `git diff` inline after the subagent returns.
@@ -110,8 +110,8 @@ Implement in this order:
 
 ```bash
 bun run test <path/to/new.test.ts>   # does it pass?
-bun run type-check                   # tsc --noEmit, no errors
-bun run lint                         # ESLint, no errors
+bun run types:check                   # tsc --noEmit, no errors
+bun run lint:check                         # ESLint, no errors
 ```
 
 If any step fails, fix before moving to Review.
@@ -267,8 +267,8 @@ export class UiFixture extends TestContext {
 | Gate | Command | Must be |
 |------|---------|---------|
 | Tests pass | `bun run test {path}` | All green, zero retries used |
-| Types | `bun run type-check` | No errors |
-| Lint | `bun run lint` | No errors |
+| Types | `bun run types:check` | No errors |
+| Lint | `bun run lint:check` | No errors |
 | Fixture registered | visual | Component is in `ApiFixture` / `UiFixture` / `StepsFixture` |
 | ATC IDs linked | visual | Every `@atc('X')` matches a real TMS test case ID |
 | Naming | visual | Files PascalCase for components, camelCase verb for test files |
@@ -311,8 +311,8 @@ Tool resolution: use `[AUTOMATION_TOOL]` for browser work (Playwright CLI or MCP
 
 # Local validation loop
 bun run test <path>
-bun run type-check
-bun run lint
+bun run types:check
+bun run lint:check
 bun run kata:manifest               # regenerate registry if components/ATCs changed
 git add kata-manifest.json          # stage so the freshness gate passes
 bun run kata:manifest:check         # confirm gate would pass (husky runs this on commit)

@@ -1975,7 +1975,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                           <code>jira-workflows.json</code>).
                         </li>
                         <li>
-                          <code>bun run lint:agents</code> — verify every <code>{{VAR}}</code>,
+                          <code>bun run vars:check</code> — verify every <code>{{VAR}}</code>,
                           <code>{{jira.&lt;slug&gt;}}</code>, <code>{{jira.work_type.*}}</code>,
                           <code>{{jira.status.*}}</code> and
                           <code>{{jira.transition.*}}</code> placeholder still resolves.
@@ -2950,7 +2950,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   </tr>
                   <tr>
                     <td>Validate <code>{{VAR}}</code> / <code>{{jira.*}}</code> placeholders</td>
-                    <td><code>bun run lint:agents</code></td>
+                    <td><code>bun run vars:check</code></td>
                   </tr>
                   <tr>
                     <td>Verify the Jira manifest matches both catalogs (fields + workflows)</td>
@@ -2958,7 +2958,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   </tr>
                   <tr>
                     <td>Validate <code>.env</code> for the active <code>TEST_ENV</code></td>
-                    <td><code>bun run env:validate</code></td>
+                    <td><code>bun run env:check</code></td>
                   </tr>
                   <tr>
                     <td>Sync OpenAPI types from the target API</td>
@@ -3370,7 +3370,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     >
                   </li>
                   <li>
-                    <code>bun run lint:agents</code>
+                    <code>bun run vars:check</code>
                     <span class="muted"
                       >Validate every <code>{{VAR}}</code>, <code>{{jira.&lt;slug&gt;}}</code>,
                       <code>{{jira.work_type.*}}</code>, <code>{{jira.status.*}}</code> and
@@ -3412,7 +3412,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     >
                   </li>
                   <li>
-                    <code>bun run env:validate</code>
+                    <code>bun run env:check</code>
                     <span class="muted"
                       >Validate <code>.env</code> for the active <code>TEST_ENV</code>.</span
                     >

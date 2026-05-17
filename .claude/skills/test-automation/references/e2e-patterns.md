@@ -541,5 +541,5 @@ Before leaving the coding phase and running the review:
 - [ ] `beforeAll` has no assertions; each test uses `test.skip()` guard.
 - [ ] Tags (`@critical`, `@smoke`, `@regression`) applied.
 - [ ] `bun run test <file>` passes.
-- [ ] `bun run type-check` clean.
-- [ ] `bun run lint` clean.
+- [ ] `bun run types:check` clean.
+- [ ] `bun run lint:check` clean.

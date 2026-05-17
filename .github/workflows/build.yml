@@ -40,13 +40,13 @@ jobs:
         run: bun install
 
       - name: Validate Environment Variables
-        run: bun run config/validateEnv.ts
+        run: bun run env:check
 
       - name: TypeScript Check
-        run: bun run type-check
+        run: bun run types:check
 
       - name: ESLint Check
-        run: bun run lint
+        run: bun run lint:check
 
       - name: Playwright Compile Check
         run: bunx playwright test --list

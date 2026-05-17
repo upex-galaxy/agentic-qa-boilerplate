@@ -59,7 +59,7 @@
  *      PROJECT_LEVEL_SKILLS, USER_LEVEL_SKILLS is an install conflict.
  *      ERROR severity.
  *
- * Usage: bun run scripts/lint-skills.ts   (or: bun run lint:skills)
+ * Usage: bun run scripts/lint-skills.ts   (or: bun run skills:check)
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';

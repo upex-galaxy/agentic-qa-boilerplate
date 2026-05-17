@@ -302,9 +302,9 @@ The four-tier model is not bureaucracy. Each tier solves a real failure:
 
 ---
 
-## 9. Validation (`bun run lint:skills`)
+## 9. Validation (`bun run skills:check`)
 
-The validation script `scripts/lint-skills.ts` (implemented at `scripts/lint-skills.ts`, wired in `package.json` as `bun run lint:skills`). Severity model: ERROR fails CI; WARN and INFO are reported but do not fail. The script MUST:
+The validation script `scripts/lint-skills.ts` (implemented at `scripts/lint-skills.ts`, wired in `package.json` as `bun run skills:check`). Severity model: ERROR fails CI; WARN and INFO are reported but do not fail. The script MUST:
 
 1. **Scan T1 SKILL.md frontmatter** for `complementary_categories` field. Warn on T1 skills without one (fragile — won't get auto-matched community skills).
 2. **Scan `cli/install.ts`** for the three tier arrays (`SKILL_SLUGS`, `PROJECT_LEVEL_SKILLS`, `USER_LEVEL_SKILLS`). Cross-check every skill mentioned in CLAUDE.md against its declared tier.
@@ -321,7 +321,7 @@ The validation script `scripts/lint-skills.ts` (implemented at `scripts/lint-ski
 
 Output format: human-readable summary (counts of ERROR / WARN / INFO). Exit code: non-zero on ERROR, zero on WARN/INFO only.
 
-The script is wired in `package.json` as `"lint:skills": "bun run scripts/lint-skills.ts"`. CI invocation: `bun run lint:skills` as part of the standard validation gate alongside `bun run lint:agents`.
+The script is wired in `package.json` as `"skills:check": "bun run scripts/lint-skills.ts"`. CI invocation: `bun run skills:check` as part of the standard validation gate alongside `bun run vars:check`.
 
 ---
 
@@ -363,7 +363,7 @@ The script is wired in `package.json` as `"lint:skills": "bun run scripts/lint-s
 
 7. **Per-skill frontmatter migration**: ✅ **Required for every T1 SKILL.md.** Backward-compat default: skills without `complementary_categories` get an empty list (no community matching). Migration is part of §12 checklist.
 
-8. **SDD anti-leak enforcement**: ✅ **Mechanical via `bun run lint:skills`.** Manual reviews catch most cases, but a programmatic check (§9 rule 4) ensures no future SKILL.md edit silently re-introduces an SDD invocation in a non-framework-development skill.
+8. **SDD anti-leak enforcement**: ✅ **Mechanical via `bun run skills:check`.** Manual reviews catch most cases, but a programmatic check (§9 rule 4) ensures no future SKILL.md edit silently re-introduces an SDD invocation in a non-framework-development skill.
 
 ---
 
@@ -381,7 +381,7 @@ The script is wired in `package.json` as `"lint:skills": "bun run scripts/lint-s
   - [x] Add anti-leak note: "SDD-* skills MUST NOT be invoked from this skill. Framework changes go through `/framework-development`."
 - [ ] Update `cli/install.ts` if any skill-tier movement is needed.
 - [x] Create `scripts/lint-skills.ts` per §9 contract.
-- [x] Wire `bun run lint:skills` in `package.json`.
+- [x] Wire `bun run skills:check` in `package.json`.
 - [ ] (Optional, deferred) Wire `/sync-ai-memory` to auto-maintain §5.1 (per §11 resolution 5).
 
 ---

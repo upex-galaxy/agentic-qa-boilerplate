@@ -545,20 +545,20 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 
 ### Code Quality
 
-| Script               | Description          |
-| -------------------- | -------------------- |
-| `bun run lint`       | Run ESLint           |
-| `bun run lint:fix`   | Fix linting issues   |
-| `bun run format`     | Format with Prettier |
-| `bun run type-check` | TypeScript check     |
+| Script                  | Description          |
+| ----------------------- | -------------------- |
+| `bun run lint:check`    | Run ESLint           |
+| `bun run lint:fix`      | Fix linting issues   |
+| `bun run format:fix`    | Format with Prettier |
+| `bun run types:check`   | TypeScript check     |
 
 ### Utilities
 
-| Script                 | Description           |
-| ---------------------- | --------------------- |
-| `bun run pw:install`   | Install browsers      |
-| `bun run env:validate` | Validate environment  |
-| `bun run clean`        | Remove test artifacts |
+| Script               | Description           |
+| -------------------- | --------------------- |
+| `bun run pw:install` | Install browsers      |
+| `bun run env:check`  | Validate environment  |
+| `bun run clean`      | Remove test artifacts |
 
 ### CLI Tools
 
@@ -569,8 +569,8 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run api:sync`            | Sync OpenAPI spec and generate types                                         |
 | `bun run kata:manifest`       | Extract ATCs from codebase into a manifest (`--watch` flag available)        |
 | `bun run agents:setup`        | Interactive walkthrough to populate `.agents/project.yaml`                   |
-| `bun run lint:agents`         | Lint `.agents/` files for missing required values                            |
-| `bun run lint:skills`         | Validate T1-T4 skill tier coherence (frontmatter, categories, anti-leak)     |
+| `bun run vars:check`          | Lint `.agents/` files for missing required values                            |
+| `bun run skills:check`        | Validate T1-T4 skill tier coherence (frontmatter, categories, anti-leak)     |
 | `bun run jira:sync-fields`    | Sync Jira custom-field catalog into `.agents/jira-fields.json`               |
 | `bun run jira:sync-workflows` | Sync Jira workflow statuses + transitions into `.agents/jira-workflows.json` |
 | `bun run jira:sync-issues`    | Pull Jira Epics/Stories into `.context/PBI/` markdown files                  |
@@ -715,7 +715,7 @@ Every skill belongs to one of four tiers. Each tier has different discovery and 
 | T3   | Community project-level        | Installed by `install.ts` `PROJECT_LEVEL_SKILLS`   | Silent if matched by category                               |
 | T4   | Community user-level (global)  | Installed by `install.ts` `USER_LEVEL_SKILLS`      | **ASK** user before load (cross-project, not always wanted) |
 
-Validation: `bun run lint:skills` checks tier coherence (orphan categories, tier mismatches, missing sections, stale doc paths).
+Validation: `bun run skills:check` checks tier coherence (orphan categories, tier mismatches, missing sections, stale doc paths).
 
 ### Slash commands (utilities)
 
@@ -748,7 +748,7 @@ See `.agents/README.md` for the full contract.
 **Validation scripts:**
 
 ```bash
-bun run lint:agents        # Every {{VAR}} and {{jira.*}} reference resolves
+bun run vars:check         # Every {{VAR}} and {{jira.*}} reference resolves
 bun run jira:sync-fields   # Discover Jira custom fields -> .agents/jira-fields.json
 bun run jira:check         # Validate jira-required.yaml against jira-fields.json
 ```

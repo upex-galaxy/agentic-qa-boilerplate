@@ -393,7 +393,7 @@ Exact instructions:
   5. Transition <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Transition Issue. Resolve from substrate:
        - **Story PASSED** -> `{{jira.transition.story.qa_sign_off}}` (`in_test` -> `qa_approved`).
        - **Bug PASSED** -> `{{jira.transition.bug.retest_passed}}` (`ready_for_qa` -> `closed`).
-       - **Story FAILED** -> formal-vs-non-strict branch driven by `{{QA_FORMAL_BLOCKED_GATE}}` from `.agents/project.yaml`:
+       - **Story FAILED** -> formal-vs-non-strict branch driven by `{{FORMAL_BLOCKED_GATE}}` from `.agents/project.yaml`:
            - If `qa.formal_blocked_gate == true` AND `{{jira.status.story.blocked}}` resolves AND `{{jira.transition.story.defect_reported}}` is available from current status -> execute `defect_reported` (`in_test` -> `blocked`). The bug filed in step 6 belongs to the dev who picks it up via `{{jira.transition.story.fix_defect}}` (`blocked` -> `in_progress`).
            - Otherwise (flag is false, or substrate lacks `blocked` / `defect_reported`) -> non-strict fallback: leave the story in `{{jira.status.story.in_test}}` with the linked bug and emit `transition_skipped: "non_strict_failed_left_in_test"`. The dev fixes the underlying bug; QA re-tests once redeployed.
        - **Bug FAILED** -> non-strict fallback: leave the bug in `{{jira.status.bug.ready_for_qa}}` with the QA comment surfacing the failure. If the bug is already `{{jira.status.bug.closed}}` (regression caught after sign-off), use `{{jira.transition.bug.back}}` (`closed` -> `ready_for_qa`) or `{{jira.transition.bug.re_open}}` (any -> `open`) per project policy.
@@ -508,7 +508,7 @@ Created at `.context/PBI/{module-name}/{{PROJECT_KEY}}-{number}-{brief-title}/te
 | Scenario | From | To | Transition ID | Notes |
 |----------|------|----|---------------|-------|
 | Story PASSED | {{jira.status.story.in_test}} | {{jira.status.story.qa_approved}} | <id> | qa_sign_off |
-| Story FAILED (formal, `{{QA_FORMAL_BLOCKED_GATE}}=true`) | {{jira.status.story.in_test}} | {{jira.status.story.blocked}} | <id> | defect_reported |
+| Story FAILED (formal, `{{FORMAL_BLOCKED_GATE}}=true`) | {{jira.status.story.in_test}} | {{jira.status.story.blocked}} | <id> | defect_reported |
 | Story FAILED (non-strict) | — | — | — | transition_skipped: non_strict_failed_left_in_test |
 | Bug PASSED | {{jira.status.bug.ready_for_qa}} | {{jira.status.bug.closed}} | <id> | retest_passed |
 | Bug FAILED | — | — | — | left in ready_for_qa with FAILED comment (or back / re_open if previously closed) |

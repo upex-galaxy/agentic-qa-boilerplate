@@ -152,12 +152,12 @@ Mandatory verification matrix when modifying load-bearing surface area. Each row
 | `UiBase.interceptResponse` / `waitForApiResponse` signature | Re-run ALL UI ATCs that use interception; confirm Allure attachments still produce. |
 | `TestContext` constructor or option shape (`TestContextOptions`) | Audit every Layer 2/3/3.5 constructor that calls `super(options)`. Re-run full suite. |
 | Fixture signature in `TestFixture`/`ApiFixture`/`UiFixture`/`StepsFixture` | Grep all consumers (`tests/**/*.test.ts`); update destructures; re-run full suite. |
-| Import alias in `tsconfig.json` paths | Update tsconfig + every import in repo + ESLint config. Run `bun run type-check` + `bun run lint`. |
+| Import alias in `tsconfig.json` paths | Update tsconfig + every import in repo + ESLint config. Run `bun run types:check` + `bun run lint:check`. |
 | `@atc` / `@step` decorator API or `SENSITIVE_KEYS` set | Re-run full suite; manually inspect Allure step titles for unmasked sensitive values; verify NDJSON line schema unchanged. |
 | `KataReporter` NDJSON line schema or `atc_results.json` aggregation logic | Verify teardown summary still parses; verify TMS sync (`syncToXray`, `syncToJiraDirect`) still consumes correct fields. |
 | `tests/utils/decorators.ts` `storeResult` writer | Confirm NDJSON file is still atomic-append safe; confirm reporter `onEnd` deletes the partial file. |
 | `kata:manifest` extraction regex (`@atc\s*\(\s*['"]([^'"]+)['"]`) | Verify it still matches every existing `@atc('...')` call. Computed/template-literal IDs remain unsupported by design. |
-| OpenAPI facade pattern (replace `paths`/`components` indexing) | Regenerate types via `bun run api:sync`; re-run `bun run type-check`. |
+| OpenAPI facade pattern (replace `paths`/`components` indexing) | Regenerate types via `bun run api:sync`; re-run `bun run types:check`. |
 | Adding a new layer between existing layers | FORBIDDEN — breaks the 4-layer model invariant. Reject. |
 | Replacing the Playwright dependency | Major-version bump; UiBase entire surface invalidated. Reject without version-bump approval. |
 

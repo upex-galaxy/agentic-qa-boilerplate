@@ -8,7 +8,7 @@ Severity model for all findings below matches the shared severity scale — CRIT
 
 ## Parallel verification dispatch (Phase 3 Review)
 
-`bun run test`, `bun run type-check`, and `bun run lint` are independent — they don't share state — so dispatch all three simultaneously and aggregate.
+`bun run test`, `bun run types:check`, and `bun run lint:check` are independent — they don't share state — so dispatch all three simultaneously and aggregate.
 
 **Three briefings**, each a Single Parallel subagent. Dispatch them in ONE tool-call block.
 
@@ -39,7 +39,7 @@ Context docs:
   - tsconfig.json
 Skills to load: (none)
 Exact instructions:
-  1. Run: bun run type-check (the script declared in package.json invokes `tsc --noEmit`).
+  1. Run: bun run types:check (the script declared in package.json invokes `tsc --noEmit`).
   2. Capture every error: file:line:col, error code, message.
 Report format:
   JSON: { "verifier": "type-check", "errors": [ { "file": "...", "line": ..., "col": ..., "code": "TS...", "message": "..." } ] }
@@ -56,7 +56,7 @@ Context docs:
   - eslint.config.* / .eslintrc.*
 Skills to load: (none)
 Exact instructions:
-  1. Run: bun run lint (the script declared in package.json invokes `eslint .`).
+  1. Run: bun run lint:check (the script declared in package.json invokes `eslint .`).
   2. Capture every violation: file:line, rule, message, severity.
 Report format:
   JSON: { "verifier": "lint", "violations": [ { "file": "...", "line": ..., "rule": "...", "message": "...", "severity": "error|warning" } ] }
@@ -290,8 +290,8 @@ Before marking the ticket complete and opening the PR, **every** box below must 
 - [ ] Shared checklist (`automation-standards.md` §10) — zero CRITICAL, zero HIGH.
 - [ ] Applicable delta (§2 E2E or §3 API) — zero CRITICAL, zero HIGH.
 - [ ] `bun run test <path>` — green, zero retries used.
-- [ ] `bun run type-check` — no errors.
-- [ ] `bun run lint` — no errors.
+- [ ] `bun run types:check` — no errors.
+- [ ] `bun run lint:check` — no errors.
 - [ ] Component registered in `ApiFixture` / `UiFixture` / `StepsFixture` as appropriate.
 - [ ] Every `@atc('X')` resolves to a real TMS ticket (spot-check 2 random IDs).
 

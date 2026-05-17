@@ -191,7 +191,7 @@ These files have stable names and locations. Reference them confidently:
 Phase 0: Foundation      → bun run agents:setup   (interactive walkthrough of .agents/project.yaml)
                           bun run jira:sync-fields (catalog Jira workspace fields)
                           bun run jira:check     (validate against jira-required.yaml manifest)
-                          bun run lint:agents    (verify every {{VAR}} and {{jira.<slug>}} resolves)
+                          bun run vars:check     (verify every {{VAR}} and {{jira.<slug>}} resolves)
 Phase 1: Constitution    → Understand the business
 Phase 2: Architecture    → Document PRD + SRS
 Phase 3: Infrastructure  → Map technical stack

@@ -158,7 +158,7 @@ Place these in `.env` before running anything that talks to a real environment:
 
 `.mcp.json` is also **gitignored** — it holds the wired-up MCP configuration with secrets resolved.
 
-Verify your config with `bun run lint:agents` (should report 0 errors when fully configured).
+Verify your config with `bun run vars:check` (should report 0 errors when fully configured).
 
 ---
 
@@ -214,7 +214,7 @@ Run through this checklist before you reach for your first ticket:
 - [ ] Did you run `bun run setup`?
 - [ ] Did you fill `.env` with your own credentials (`LOCAL_*`, `STAGING_*`, `ATLASSIAN_*`, `XRAY_*`, `TAVILY_API_KEY`, `POSTMAN_API_KEY`)?
 - [ ] Did you populate `.agents/project.yaml` (run `bun run agents:setup` if not yet)?
-- [ ] Does `bun run lint:agents` exit clean (0 errors)?
+- [ ] Does `bun run vars:check` exit clean (0 errors)?
 - [ ] Did you run `bun run jira:check` to verify Jira credentials?
 - [ ] Did you run `bun run pw:install` to get Playwright browsers?
 - [ ] Do the gentle-ai skills appear in autocomplete (restart your agent if not)?

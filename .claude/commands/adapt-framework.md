@@ -303,8 +303,8 @@ Create `tests/e2e/{feature}/smoke.test.ts` (or `tests/integration/{feature}/smok
 Run in this exact order. Stop on the first failure and report with diagnostics — do not auto-fix without approval.
 
 ```bash
-1. bun run type-check
-2. bun run lint
+1. bun run types:check
+2. bun run lint:check
 3. bun run test --project=api-setup
 4. bun run test --project=ui-setup
 5. bun run test:smoke            # first run against staging
@@ -327,8 +327,8 @@ Once all six gates pass:
 
 Adaptation is "done" only when **every** checkbox is true:
 
-- [ ] `bun run type-check` exits 0
-- [ ] `bun run lint` exits 0
+- [ ] `bun run types:check` exits 0
+- [ ] `bun run lint:check` exits 0
 - [ ] `bun run test:smoke` passes on staging with at least one `@smoke` test
 - [ ] Second smoke run reuses `.auth/*` (no re-login)
 - [ ] Files listed in the plan's §5 match what is on disk

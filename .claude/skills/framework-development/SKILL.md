@@ -27,7 +27,7 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 | `sdd-design`                       | Single     | one subagent writes the technical design; cites which KATA invariants are touched and which extension points are used                          |
 | `sdd-tasks`                        | Single     | one subagent breaks down the implementation; emits Review Workload Forecast                                                                    |
 | `sdd-apply`                        | Sequential | one subagent per task batch; receives strict TDD flag from `sdd-init`; merges apply-progress across batches                                    |
-| `sdd-verify`                       | Single     | one subagent validates against spec + kata-invariants; runs `bun run test`, `bun run type-check`, `bun run lint`                               |
+| `sdd-verify`                       | Single     | one subagent validates against spec + kata-invariants; runs `bun run test`, `bun run types:check`, `bun run lint:check`                               |
 | `sdd-archive`                      | Single     | one subagent merges delta specs into main, closes the change, writes archive report                                                            |
 
 - **Path guardrails injected per dispatch**: every SDD subagent prompt MUST include the ALLOWED + FORBIDDEN tables verbatim under a `## Project Standards (auto-resolved)` block, plus the line: `KATA invariants reference: .claude/skills/framework-development/references/kata-invariants.md (read first if your task touches tests/components/, api/schemas/, or fixtures).`

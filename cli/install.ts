@@ -1506,7 +1506,7 @@ function printClosingSummary(state: InstallState): void {
     process.stdout.write(`  ${n}. Install missing CLIs (see table above)\n`);
     n++;
   }
-  process.stdout.write(`  ${n}. Run: bun run lint:agents (validate config)\n`);
+  process.stdout.write(`  ${n}. Run: bun run vars:check (validate config)\n`);
   n++;
   if (!state.steps.jiraBootstrap?.ok) {
     process.stdout.write(`  ${n}. Configure Jira when credentials are ready: bun run jira:sync-fields && bun run jira:check\n`);

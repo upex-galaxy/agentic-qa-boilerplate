@@ -57,8 +57,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install
       - run: bunx playwright install --with-deps chromium
-      - run: bun run lint
-      - run: bun run type-check
+      - run: bun run lint:check
+      - run: bun run types:check
       - run: bun run test:integration
         env:
           TEST_ENV: ${{ vars.TEST_ENV }}

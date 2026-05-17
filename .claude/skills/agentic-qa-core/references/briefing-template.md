@@ -170,8 +170,8 @@ Skills to load: (none)
 Exact instructions:
   1. Read test-documentation/SKILL.md.
   2. Insert the Dependencies block (per agentic-qa-core/SKILL.md §"Dependency declaration for downstream skills") immediately after the frontmatter, before the first H1.
-  3. Run: bun run lint:agents (must exit 0).
-  4. Run: bun run type-check (must exit 0).
+  3. Run: bun run vars:check (must exit 0).
+  4. Run: bun run types:check (must exit 0).
 
 Report format:
   - filesChanged: [.claude/skills/test-documentation/SKILL.md]

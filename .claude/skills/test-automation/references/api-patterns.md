@@ -589,4 +589,4 @@ Before leaving the coding phase:
 - [ ] Data via `api.data.*`, never hardcoded.
 - [ ] 401 tests call `api.clearAuthToken()` first.
 - [ ] `bun run api:sync` executed if new endpoints were added.
-- [ ] `bun run test <file>` / `bun run type-check` / `bun run lint` all clean.
+- [ ] `bun run test <file>` / `bun run types:check` / `bun run lint:check` all clean.

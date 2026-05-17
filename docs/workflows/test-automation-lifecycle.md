@@ -109,8 +109,8 @@ El skill implementa en este orden:
 
 ```bash
 bun run test <path/to/new.test.ts>   # ¿pasa?
-bun run type-check                   # tsc --noEmit, sin errores
-bun run lint                         # ESLint, sin errores
+bun run types:check                  # tsc --noEmit, sin errores
+bun run lint:check                   # ESLint, sin errores
 ```
 
 Si cualquiera falla, el skill corrige antes de pasar a Review.
@@ -192,8 +192,8 @@ El skill corre el checklist de review sobre los archivos nuevos / modificados. C
 
 ### Calidad
 - [ ] Tests pasan local, sin retries
-- [ ] `bun run type-check` sin errores
-- [ ] `bun run lint` sin errores
+- [ ] `bun run types:check` sin errores
+- [ ] `bun run lint:check` sin errores
 - [ ] Componente registrado en su Fixture
 - [ ] `@atc('X')` linkea a un TC real del TMS
 - [ ] Ticket ID prefix en cada `test('TICKET-ID: ...')`

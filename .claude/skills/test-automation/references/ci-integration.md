@@ -284,8 +284,8 @@ bun run api:sync
 
 ```bash
 bun run test <path>         # 1. does the new test pass?
-bun run type-check          # 2. no TS errors
-bun run lint                # 3. no lint errors
+bun run types:check          # 2. no TS errors
+bun run lint:check                # 3. no lint errors
 bun run kata:manifest       # 4. registry updated, ATCs visible
 git add kata-manifest.json  # 5. stage the manifest
 bun run kata:manifest:check # 6. confirm the husky pre-commit gate would pass

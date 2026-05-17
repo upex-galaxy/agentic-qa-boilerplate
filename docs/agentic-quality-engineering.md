@@ -491,7 +491,7 @@ Stage 5 (`test-automation`) is structured as a three-phase pipeline — Plan, Co
   written.
 ```
 
-These three phases map cleanly to the dispatch patterns: **Single** (Plan — one planner subagent), **Sequential** (Code — one subagent per scope unit), **Parallel** (Review — three verifier subagents running `bun run test`, `bun run type-check`, and `bun run lint` simultaneously). The full table lives in `test-automation/SKILL.md` §Subagent Dispatch Strategy.
+These three phases map cleanly to the dispatch patterns: **Single** (Plan — one planner subagent), **Sequential** (Code — one subagent per scope unit), **Parallel** (Review — three verifier subagents running `bun run test`, `bun run types:check`, and `bun run lint:check` simultaneously). The full table lives in `test-automation/SKILL.md` §Subagent Dispatch Strategy.
 
 ### The KATA Architecture
 

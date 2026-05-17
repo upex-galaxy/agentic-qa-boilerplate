@@ -79,6 +79,10 @@ const DOC_META_ALLOWLIST: Array<[string, string]> = [
   ['VARIABLES', 'CLAUDE.md'],
   // §Project Variables bootstrap instruction explaining the {{VAR_NAME}} syntax
   ['VAR_NAME', 'CLAUDE.md'],
+  // §Context Loading Map: ".agents/project.yaml — `{{VAR}}` source-of-truth"
+  ['VAR', 'CLAUDE.md'],
+  // §Tool Resolution pseudocode type list: "`{{PROJECT_VAR}}` (from `.agents/project.yaml`)"
+  ['PROJECT_VAR', 'CLAUDE.md'],
 ];
 
 // -----------------------------------------------------------------------------

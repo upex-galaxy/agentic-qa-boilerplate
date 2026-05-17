@@ -32,7 +32,7 @@
 ## Checklist
 
 - [ ] Tests pass locally (`bun run test`)
-- [ ] Type-check clean (`bun run typecheck`)
-- [ ] Lint clean (`bun run lint`)
+- [ ] Type-check clean (`bun run types:check`)
+- [ ] Lint clean (`bun run lint:check`)
 - [ ] No AI attribution in commits
 - [ ] Traceability links verified

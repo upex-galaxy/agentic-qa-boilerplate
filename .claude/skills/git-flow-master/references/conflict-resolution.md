@@ -377,7 +377,7 @@ If the user provided context, use it. If not, ask:
 
 2. Fix the underlying issue:
    - Lint failures: run the auto-fixer (`bun run lint:fix` / `pnpm lint --fix` / `eslint --fix`).
-   - Format failures: run the formatter (`bun run format` / `prettier --write`).
+   - Format failures: run the formatter (`bun run format:fix` / `prettier --write`).
    - Test failures: actually fix the test or the code under test.
    - Type failures: fix the types.
 
@@ -392,7 +392,7 @@ If the user provided context, use it. If not, ask:
 
 5. **Never** `git commit --no-verify` to bypass the hook unless the user explicitly authorises it. Hooks exist for a reason.
 
-**Prevention**: run the hooks' commands locally before committing (`bun run lint`, `tsc --noEmit`, etc.). Faster than discovering the failure at commit time.
+**Prevention**: run the hooks' commands locally before committing (`bun run lint:check`, `tsc --noEmit`, etc.). Faster than discovering the failure at commit time.
 
 ---
 
