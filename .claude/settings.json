@@ -88,14 +88,16 @@
     ],
     "ask": []
   },
+  "env": {
+    "BASH_DEFAULT_TIMEOUT_MS": "300000",
+    "BASH_MAX_TIMEOUT_MS": "600000",
+    "BASH_MAX_OUTPUT_LENGTH": "20000",
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1"
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "context7",
-    "tavily",
-    "atlassian",
-    "playwright",
-    "dbhub",
-    "openapi",
-    "postman"
-  ]
+  "cleanupPeriodDays": 60
 }
