@@ -1518,6 +1518,8 @@ function printClosingSummary(state: InstallState): void {
   n++;
   process.stdout.write(`  ${n}. Adapt KATA to stack:   /adapt-framework         (removes example tests + business maps; wires fixtures to your stack)\n`);
   n++;
+  process.stdout.write(`  ${n}. Curious who you're talking to? Read docs/ai-personality.md to learn the AI's personality, speech style, and how to interact with it\n`);
+  n++;
   process.stdout.write(`  ${n}. First ticket:          /sprint-testing <KEY>\n`);
   process.stdout.write('\n');
 
