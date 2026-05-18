@@ -582,7 +582,7 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 
 The `bun run update` CLI keeps your project aligned with the official template by tracking which upstream commit each piece of the framework (`skills/`, `scripts/`, `cli/`, …) was last synced from. Instead of overwriting framework files blindly, it:
 
-1. Reads `.boilerplate-version.json` (committed in your repo) to find the last-synced SHA per component
+1. Reads `.template/boilerplate.lock.json` (committed in your repo) to find the last-synced SHA per component
 2. Clones the template lazily (sparse checkout, only the dirs that get synced)
 3. Computes the exact list of changed files between your synced SHA and template HEAD
 4. Classifies each file: clean fast-forward, locally diverged, new upstream, deleted upstream, binary, or whitespace-only
@@ -616,7 +616,7 @@ Rollback the latest sync:
 bun run update --rollback
 ```
 
-The `.boilerplate-version.json` file is committable — commit it so your team and CI know exactly which template version each component is on.
+The `.template/boilerplate.lock.json` file is committable — commit it so your team and CI know exactly which template version each component is on.
 
 <br />
 

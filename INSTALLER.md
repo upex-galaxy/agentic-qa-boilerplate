@@ -10,11 +10,11 @@
 
 ## 5-phase install flow
 
-`bun run setup` runs in 5 named phases. Each phase is labelled in the terminal output. The installer is **idempotent**: every step writes a timestamp to `.agents/install-state.json` on success, and re-runs skip completed steps automatically.
+`bun run setup` runs in 5 named phases. Each phase is labelled in the terminal output. The installer is **idempotent**: every step writes a timestamp to `.template/installer.state.json` on success, and re-runs skip completed steps automatically.
 
 ### Phase 1 — DETECTION
 
-Probes the environment before touching anything. Detects gentle-ai (version + compatibility), loads or creates `.agents/install-state.json`, and prompts for agent selection (Claude Code / OpenCode). Exits early if no agents are installed or if the user asks for the gentle-ai install guide.
+Probes the environment before touching anything. Detects gentle-ai (version + compatibility), loads or creates `.template/installer.state.json`, and prompts for agent selection (Claude Code / OpenCode). Exits early if no agents are installed or if the user asks for the gentle-ai install guide.
 
 ### Phase 2 — INSTALLATION
 
@@ -38,7 +38,7 @@ Wires runtime configuration:
 Validates the environment is usable:
 
 - External CLI table — `which`-checks all 6 CLIs (`bun`, `gh`, `acli`, `playwright-cli`, `jq`, `resend`) and prints a status table with purpose and install hint for missing entries
-- State persistence — writes updated `.agents/install-state.json`
+- State persistence — writes updated `.template/installer.state.json`
 
 ### Phase 5 — INITIAL CONFIGURATION
 
@@ -56,7 +56,7 @@ Each step in Phase 5 records its completion in `state.postInstall` so re-runs sk
 
 ## Idempotency — re-running setup safely
 
-Every step writes an ISO timestamp to `state.steps[<key>]` in `.agents/install-state.json`. A re-run skips a step when its timestamp is present.
+Every step writes an ISO timestamp to `state.steps[<key>]` in `.template/installer.state.json`. A re-run skips a step when its timestamp is present.
 
 ### Force flags
 
@@ -377,7 +377,7 @@ Installed with `bunx skills add <package> [--skill <name>] --global --yes` and u
 
 ### Skipping or re-running
 
-Run `INSTALL_SKIP_COMMUNITY=1 bun run setup` to skip the community step entirely (the previous behaviour is preserved). Re-runs are idempotent: already-installed skills are detected via `state.skills["community:<level>:<slug>"] === "installed"` in `.agents/install-state.json` and skipped silently.
+Run `INSTALL_SKIP_COMMUNITY=1 bun run setup` to skip the community step entirely (the previous behaviour is preserved). Re-runs are idempotent: already-installed skills are detected via `state.skills["community:<level>:<slug>"] === "installed"` in `.template/installer.state.json` and skipped silently.
 
 If a skill fails to install (e.g., upstream repo restructured), the failure is recorded as `failed` in the state file and surfaced in the closing summary, but the installer continues — community skills are best-effort, not blocking.
 
@@ -405,9 +405,9 @@ These skills evolve with the repo and are versioned in git. The split is intenti
 
 ---
 
-## Keeping the framework up to date — `.boilerplate-version.json`
+## Keeping the framework up to date — `.template/boilerplate.lock.json`
 
-After the first time you run `bun run update`, the CLI creates `.boilerplate-version.json` at the project root. This file tracks the last upstream-template git SHA for each synced component (`.claude/skills/`, `scripts/`, `cli/`, etc.). It is safe — and recommended — to **commit this file**: your team and CI workflows need it to know which template version each component is on. Subsequent `bun run update` runs read the stored SHAs to compute precise per-file deltas, so only genuinely changed files are surfaced.
+After the first time you run `bun run update`, the CLI creates `.template/boilerplate.lock.json` at the project root. This file tracks the last upstream-template git SHA for each synced component (`.claude/skills/`, `scripts/`, `cli/`, etc.). It is safe — and recommended — to **commit this file**: your team and CI workflows need it to know which template version each component is on. Subsequent `bun run update` runs read the stored SHAs to compute precise per-file deltas, so only genuinely changed files are surfaced.
 
 **Requirement**: `git ≥ 2.25` must be on your `$PATH` (required for sparse-checkout with `--filter=blob:none`). Run `git --version` to check; upgrade instructions are printed by the CLI if the version is too old.
 
@@ -476,7 +476,7 @@ You have a QA ticket but the AC is dense and you want it traced formally as a te
 
 If you prefer not to use gentle-ai, the installer accepts a "skip" choice. To make it permanent:
 
-1. Edit `.agents/install-state.json` and set `"gentleAi": { "status": "skipped" }`.
+1. Edit `.template/installer.state.json` and set `"gentleAi": { "status": "skipped" }`.
 2. Re-run `bun run setup`. The installer detects the skipped state and only configures the 7 canonical MCPs.
 
 What you lose:

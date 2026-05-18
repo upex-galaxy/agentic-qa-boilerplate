@@ -125,59 +125,19 @@ export function initGitRepo(projectDir: string): void {
   log.dim('  git init + initial commit done.');
 }
 
-interface ScaffoldManifest {
-  version?: number
-  exclude?: string[]
-}
+// Paths committed in the template repo but never wanted in a freshly
+// bootstrapped project (e.g. the CLI source itself). Hardcoded here — adding
+// or removing an entry requires republishing @upex/create-agentic-qa.
+const TEMPLATE_EXCLUDES = ['packages'] as const;
 
-/**
- * Read `.template/manifest.json` from the freshly extracted project and delete
- * every path listed under `exclude`. This is how the template repo declares
- * "files committed to main that should NOT end up in a freshly bootstrapped
- * project" — e.g. the CLI's own source under `packages/`, or business maps
- * that are specific to the template's own product.
- *
- * Living in the template repo (not bundled into the CLI) means new exclusions
- * can be added by editing `.template/manifest.json` and pushing to `main` —
- * no CLI republish required.
- *
- * Security: paths are restricted to project-relative (no absolute paths, no
- * `..` traversal). Unsafe entries are skipped with a warning.
- */
 export async function applyTemplateExclude(projectDir: string): Promise<void> {
-  const manifestPath = join(projectDir, '.template', 'manifest.json');
-  if (!existsSync(manifestPath)) {
-    log.dim('  No .template/manifest.json — keeping all extracted files.');
-    return;
-  }
-
-  let manifest: ScaffoldManifest;
-  try {
-    manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as ScaffoldManifest;
-  }
-  catch (err) {
-    log.warn(`  .template/manifest.json unreadable, skipping: ${(err as Error).message}`);
-    return;
-  }
-
-  const paths = Array.isArray(manifest.exclude) ? manifest.exclude : [];
-  if (paths.length === 0) {
-    log.dim('  .template/manifest.json has no `exclude` entries.');
-    return;
-  }
-
   let pruned = 0;
-  for (const rel of paths) {
-    if (typeof rel !== 'string' || rel.length === 0) { continue; }
-    if (rel.startsWith('/') || rel.split(/[\\/]/).includes('..')) {
-      log.warn(`  Skipped unsafe path in manifest: ${rel}`);
-      continue;
-    }
+  for (const rel of TEMPLATE_EXCLUDES) {
     const abs = join(projectDir, rel);
     if (existsSync(abs)) {
       await rm(abs, { recursive: true, force: true });
       pruned++;
     }
   }
-  log.dim(`  Pruned ${pruned} template artifact path(s) per manifest.`);
+  log.dim(`  Pruned ${pruned} template artifact path(s).`);
 }

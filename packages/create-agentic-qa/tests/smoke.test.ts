@@ -78,15 +78,10 @@ describe('applyTemplateExclude', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  test('removes paths listed in manifest', async () => {
-    mkdirSync(join(dir, '.template'), { recursive: true });
+  test('removes hardcoded excludes from project dir', async () => {
     mkdirSync(join(dir, 'packages', 'foo'), { recursive: true });
     writeFileSync(join(dir, 'packages', 'foo', 'a.ts'), '// a');
     writeFileSync(join(dir, 'keep.txt'), 'keep me');
-    writeFileSync(
-      join(dir, '.template', 'manifest.json'),
-      JSON.stringify({ exclude: ['packages'] }),
-    );
 
     await applyTemplateExclude(dir);
 
@@ -94,27 +89,7 @@ describe('applyTemplateExclude', () => {
     expect(existsSync(join(dir, 'keep.txt'))).toBe(true);
   });
 
-  test('is a no-op when manifest is missing', async () => {
-    writeFileSync(join(dir, 'keep.txt'), 'keep me');
-    await applyTemplateExclude(dir);
-    expect(existsSync(join(dir, 'keep.txt'))).toBe(true);
-  });
-
-  test('rejects absolute paths and `..` traversal', async () => {
-    mkdirSync(join(dir, '.template'), { recursive: true });
-    writeFileSync(join(dir, 'keep.txt'), 'keep me');
-    writeFileSync(
-      join(dir, '.template', 'manifest.json'),
-      JSON.stringify({ exclude: ['/etc/passwd', '../escape', 'normal-but-missing'] }),
-    );
-    await applyTemplateExclude(dir);
-    // Unsafe entries do not blow up; safe entries simply find nothing to delete.
-    expect(existsSync(join(dir, 'keep.txt'))).toBe(true);
-  });
-
-  test('ignores malformed manifest', async () => {
-    mkdirSync(join(dir, '.template'), { recursive: true });
-    writeFileSync(join(dir, '.template', 'manifest.json'), '{not json');
+  test('is a no-op when hardcoded excludes are absent', async () => {
     writeFileSync(join(dir, 'keep.txt'), 'keep me');
     await applyTemplateExclude(dir);
     expect(existsSync(join(dir, 'keep.txt'))).toBe(true);

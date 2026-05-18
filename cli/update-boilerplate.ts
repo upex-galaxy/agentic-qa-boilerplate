@@ -123,7 +123,7 @@
  * PER-COMPONENT SHA TRACKING
  * ============================================================================
  *
- * Sync state is stored in `.boilerplate-version.json` (v6 schema):
+ * Sync state is stored in `.template/boilerplate.lock.json` (v6 schema):
  *
  *   {
  *     "schema": 6,
@@ -277,7 +277,7 @@ interface MergeResult {
   errors: number
 }
 
-// writeSyncState uses tmp+rename atomic write. Assumes .boilerplate-version.json and its .tmp.PID
+// writeSyncState uses tmp+rename atomic write. Assumes .template/boilerplate.lock.json and its .tmp.PID
 // sibling are on the same filesystem (POSIX rename guarantee). Cross-FS writes (e.g. tmpdir on a
 // separate partition) are out of scope.
 
@@ -1473,7 +1473,7 @@ ${colors.bold}EXAMPLES:${colors.reset}
 // VERSION TRACKING
 // ============================================================================
 
-const VERSION_FILE = '.boilerplate-version.json';
+const VERSION_FILE = '.template/boilerplate.lock.json';
 
 interface BoilerplateVersion {
   lastSync: string
@@ -1498,7 +1498,7 @@ function getTemplateCommit(): string {
 }
 
 /**
- * Record sync metadata to .boilerplate-version.json after successful sync.
+ * Record sync metadata to .template/boilerplate.lock.json after successful sync.
  */
 // eslint-disable-next-line unused-imports/no-unused-vars
 function recordSyncVersion(syncedComponents: string[]): void {
@@ -1515,7 +1515,7 @@ function recordSyncVersion(syncedComponents: string[]): void {
 }
 
 /**
- * Read the current .boilerplate-version.json if it exists.
+ * Read the current .template/boilerplate.lock.json if it exists.
  */
 function readSyncVersion(): BoilerplateVersion | null {
   if (!existsSync(VERSION_FILE)) { return null; }
@@ -1532,7 +1532,7 @@ function readSyncVersion(): BoilerplateVersion | null {
 // ============================================================================
 
 /**
- * Read .boilerplate-version.json and return a typed SyncState.
+ * Read .template/boilerplate.lock.json and return a typed SyncState.
  * Returns null when the file is absent (bootstrap path).
  * Throws CorruptStateError when JSON is invalid.
  * Discriminates v6 vs v5 by presence of `perComponentCommit` and `schema === 6`.
@@ -1600,13 +1600,13 @@ function migrateSyncState(old: SyncStateV5): SyncStateV6 {
  */
 async function promptForMigration(_old: SyncStateV5): Promise<boolean> {
   const answer = await nativePrompt(
-    `${colors.yellow}Detected v5.3 .boilerplate-version.json. Upgrade to v6 (adds perComponentCommit field)? [Y/n]:${colors.reset} `,
+    `${colors.yellow}Detected v5.3 .template/boilerplate.lock.json. Upgrade to v6 (adds perComponentCommit field)? [Y/n]:${colors.reset} `,
   );
   return answer === '' || answer === 'y' || answer === 'yes';
 }
 
 /**
- * Atomic write of SyncStateV6 to .boilerplate-version.json.
+ * Atomic write of SyncStateV6 to .template/boilerplate.lock.json.
  * Writes to a .tmp.<pid> sibling first, then renames to final path.
  * Assumes the tmp file and the final path are on the same filesystem (POSIX rename guarantee).
  */
@@ -1997,7 +1997,7 @@ function computeDelta(
 /**
  * Append a RESTORE.txt manifest to the backup directory.
  * Records timestamp, SHAs, and one line per entry with status/classification/resolution/path.
- * Includes the prior .boilerplate-version.json as base64 for full rollback.
+ * Includes the prior .template/boilerplate.lock.json as base64 for full rollback.
  */
 function appendBackupManifest(backupDir: string, entries: DeltaEntry[], state: SyncStateV6): void {
   const lines: string[] = [
@@ -2094,7 +2094,7 @@ async function applyResolution(
  * Performs a one-time bulk sync for components that have no prior SHA history.
  *
  * Called when:
- *   a) `.boilerplate-version.json` is absent (first-ever run — Scenario 9.1), or
+ *   a) `.template/boilerplate.lock.json` is absent (first-ever run — Scenario 9.1), or
  *   b) `perComponentCommit[component]` is missing/empty for a given component
  *      while v6 state exists for others (Scenario 9.2 — partial bootstrap).
  *
@@ -3128,7 +3128,7 @@ async function main(): Promise<void> {
       log.header('  Bootstrap completed!');
       log.info(`Applied: ${bootstrapSummary.applied.length}, Failed: ${bootstrapSummary.failed.length}`);
       log.info(suggestCommitMessage({ ...bootstrapSummary, newHeadSha: newHeadShaInteractive }));
-      log.info(`Suggested commit: git add .boilerplate-version.json && git commit -m "chore(boilerplate): bootstrap to ${newHeadShaInteractive.slice(0, 7)}"`);
+      log.info(`Suggested commit: git add .template/boilerplate.lock.json && git commit -m "chore(boilerplate): bootstrap to ${newHeadShaInteractive.slice(0, 7)}"`);
 
       if (bootstrapSummary.failed.length > 0) {
         process.exit(5);
@@ -3388,7 +3388,7 @@ async function main(): Promise<void> {
     if (!('perComponentCommit' in priorState)) {
       // Auto mode cannot prompt — require interactive for migration
       log.warning(
-        'Detected v5.3 .boilerplate-version.json. Schema migration requires interactive mode.\n'
+        'Detected v5.3 .template/boilerplate.lock.json. Schema migration requires interactive mode.\n'
         + 'Run `bun run update` (without --auto) to be prompted for the v5→v6 upgrade.',
       );
       cleanup();

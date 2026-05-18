@@ -6,7 +6,7 @@
  * 5 named phases:
  *
  *   PHASE 1 — DETECTION
- *     1-repo-verify     Verify repo root (package.json name / template-marker.json)
+ *     1-repo-verify     Verify repo root (package.json name / installer.lock.json)
  *     2-gentle-ai-detect  Detect gentle-ai (presence + version)
  *     3-gentle-ai-install gentle-ai install / skip decision
  *     4-agent-detect    Detect agents (Claude Code / OpenCode) and prompt selection
@@ -23,7 +23,7 @@
  *
  *   PHASE 4 — VERIFICATION
  *     11-verify-clis    Verify external CLIs (bun, gh, acli, playwright-cli, resend, jq)
- *     14-state-write    Persist `.agents/install-state.json`
+ *     14-state-write    Persist `.template/installer.state.json`
  *
  *   PHASE 5 — INITIAL CONFIGURATION
  *     7-agents-setup    Run agents:setup (.agents/project.yaml populator)
@@ -157,7 +157,7 @@ interface InstallState {
 // ============================================================================
 
 const REPO_ROOT = resolve(import.meta.dir, '..');
-const STATE_PATH = join(REPO_ROOT, '.agents', 'install-state.json');
+const STATE_PATH = join(REPO_ROOT, '.template', 'installer.state.json');
 const CLAUDE_MCP_PATH = join(REPO_ROOT, '.mcp.json');
 const OPENCODE_CONFIG_PATH = join(REPO_ROOT, 'opencode.jsonc');
 const ENV_PATH = join(REPO_ROOT, '.env');
@@ -453,7 +453,7 @@ async function verifyRepoRoot(): Promise<void> {
 
   // Accept projects bootstrapped from this template — they keep a marker
   // file even though their package.json name is the user-chosen name.
-  const markerPath = join(REPO_ROOT, '.agents', 'template-marker.json');
+  const markerPath = join(REPO_ROOT, '.template', 'installer.lock.json');
   if (existsSync(markerPath)) {
     try {
       const marker = JSON.parse(await readFile(markerPath, 'utf8')) as { template?: string };
@@ -1370,7 +1370,7 @@ async function setupGithubRemote(state: InstallState, forceKeys: Set<string>): P
   markStepDone(state, key);
 
   // Write template marker so re-runs of verifyRepoRoot() accept the renamed package.json.
-  const markerPath = join(REPO_ROOT, '.agents', 'template-marker.json');
+  const markerPath = join(REPO_ROOT, '.template', 'installer.lock.json');
   if (!existsSync(markerPath)) {
     try {
       await mkdir(dirname(markerPath), { recursive: true });

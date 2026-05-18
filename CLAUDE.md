@@ -352,7 +352,7 @@ Git / PR work → `/git-flow-master` auto-loads. Details in `.claude/skills/git-
 - One commit = one responsibility. Clear messages.
 - **NO AI attribution** in commits.
 - **Confirm before push to `main`**.
-- Test-automation PRs use `templates/pr-test-automation.md` (auto-loaded by `/git-flow-master` on `test/*` branches). Title format: `{type}({ISSUE-KEY}): {description}`.
+- Test-automation PRs use `.claude/skills/git-flow-master/references/pr-test-automation.md` (auto-loaded by `/git-flow-master` on `test/*` branches). Title format: `{type}({ISSUE-KEY}): {description}`.
 
 ---
 

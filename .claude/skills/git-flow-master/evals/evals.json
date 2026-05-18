@@ -11,7 +11,7 @@
     {
       "id": 2,
       "prompt": "abrime un PR para esta branch contra staging, label feature, ya está todo pusheado",
-      "expected_output": "Skill detects branch already pushed, renders inline PR body. For test/* branches it uses templates/pr-test-automation.md as the structure; otherwise references/pr-templating.md. Picks staging as base (matches main-integration strategy), proposes feature + ready-for-review labels, runs gh pr create --body-file with tempfile, returns PR URL. Does not auto-merge.",
+      "expected_output": "Skill detects branch already pushed, renders inline PR body. For test/* branches it uses references/pr-test-automation.md as the structure; otherwise references/pr-templating.md. Picks staging as base (matches main-integration strategy), proposes feature + ready-for-review labels, runs gh pr create --body-file with tempfile, returns PR URL. Does not auto-merge.",
       "should_trigger": true,
       "files": []
     },

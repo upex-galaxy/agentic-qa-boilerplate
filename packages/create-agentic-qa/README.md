@@ -48,7 +48,7 @@ cd existing-clone
 bunx create-agentic-qa --here
 ```
 
-The CLI detects the `.agents/template-marker.json` sentinel, skips the download
+The CLI detects the `.template/installer.lock.json` sentinel, skips the download
 stage entirely, and jumps straight to the installer.
 
 ## What you get

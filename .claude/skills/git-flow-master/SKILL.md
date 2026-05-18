@@ -239,7 +239,7 @@ The user can override with `--base X` in arguments. If overridden, surface it in
 
 **Body** — render inline (no template file to read) using the structure in `references/pr-templating.md`. Substitute placeholders the skill can fill (`<<ISSUE_KEY>>`, `<<SUMMARY>>`, `<<CHANGES>>`, `<<TEST_PLAN>>`, `<<RISK>>`). Leave any unfilled placeholder visible so the author can edit it before posting — do not silently drop sections.
 
-For `test/*` branches in this repo, the PR body should use the structure in `templates/pr-test-automation.md` (project-local template tuned for KATA test-automation PRs). For non-`test/*` branches use the generic structure in `references/pr-templating.md`.
+For `test/*` branches in this repo, the PR body should use the structure in `references/pr-test-automation.md` (project-local template tuned for KATA test-automation PRs). For non-`test/*` branches use the generic structure in `references/pr-templating.md`.
 
 Write the rendered body to a tempfile (e.g. `$(mktemp)`) and pass it via `gh pr create --body-file` to avoid escaping issues.
 

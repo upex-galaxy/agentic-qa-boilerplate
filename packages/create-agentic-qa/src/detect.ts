@@ -10,12 +10,12 @@ interface TemplateMarker {
 /**
  * Returns true iff the given directory is already a bootstrapped agentic-qa
  * project. Detection is based on:
- *   1. .agents/template-marker.json present + matching the expected template.
+ *   1. .template/installer.lock.json present + matching the expected template.
  *   2. package.json present + has `scripts.setup`.
  *   3. cli/install.ts present.
  */
 export function isAgenticDevRepo(dir: string, expectedTemplate: string): boolean {
-  const markerPath = join(dir, '.agents', 'template-marker.json');
+  const markerPath = join(dir, '.template', 'installer.lock.json');
   if (!existsSync(markerPath)) { return false; }
 
   try {
