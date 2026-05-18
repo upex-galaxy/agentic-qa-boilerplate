@@ -12,8 +12,7 @@
   // =====================
   "files.associations": {
     "*.yml": "yaml",
-    "*.json": "jsonc",
-    "*.env*": "dotenv"
+    "*.json": "jsonc"
   },
   // =====================
   // ? Files Configuration
@@ -121,7 +120,7 @@
   // =====================
   // Python
   "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.formatOnSave": true,
     "editor.insertSpaces": true,
     "editor.tabSize": 4,
@@ -330,7 +329,8 @@
     "conftest.py": "test-jsx",
     "pytest.ini": "test-py",
     "requirements.txt": "requirements",
-    ".env*": "dotenv"
+    ".env*": "dotenv",
+    ".envrc": "dotenv"
   },
   "material-icon-theme.folders.associations": {
     "utils": "tools",
