@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { parseArgs } from '../src/args.ts';
 import { CliError } from '../src/errors.ts';
-import { applyTemplateExclude, sanitizeProjectName } from '../src/prepare.ts';
+import { pruneBootstrapExcludes, sanitizeProjectName } from '../src/prepare.ts';
 
 describe('parseArgs', () => {
   test('accepts a project name as positional', () => {
@@ -67,7 +67,7 @@ describe('sanitizeProjectName', () => {
   });
 });
 
-describe('applyTemplateExclude', () => {
+describe('pruneBootstrapExcludes', () => {
   let dir: string;
 
   beforeEach(() => {
@@ -83,7 +83,7 @@ describe('applyTemplateExclude', () => {
     writeFileSync(join(dir, 'packages', 'foo', 'a.ts'), '// a');
     writeFileSync(join(dir, 'keep.txt'), 'keep me');
 
-    await applyTemplateExclude(dir);
+    await pruneBootstrapExcludes(dir);
 
     expect(existsSync(join(dir, 'packages'))).toBe(false);
     expect(existsSync(join(dir, 'keep.txt'))).toBe(true);
@@ -91,7 +91,7 @@ describe('applyTemplateExclude', () => {
 
   test('is a no-op when hardcoded excludes are absent', async () => {
     writeFileSync(join(dir, 'keep.txt'), 'keep me');
-    await applyTemplateExclude(dir);
+    await pruneBootstrapExcludes(dir);
     expect(existsSync(join(dir, 'keep.txt'))).toBe(true);
   });
 });

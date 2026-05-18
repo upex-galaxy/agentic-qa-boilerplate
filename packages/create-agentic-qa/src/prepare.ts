@@ -130,7 +130,12 @@ export function initGitRepo(projectDir: string): void {
 // or removing an entry requires republishing @upex/create-agentic-qa.
 const TEMPLATE_EXCLUDES = ['packages'] as const;
 
-export async function applyTemplateExclude(projectDir: string): Promise<void> {
+/**
+ * Delete every path in TEMPLATE_EXCLUDES from the freshly extracted project.
+ * These are bootstrap-only artifacts (CLI source, internal tooling) that must
+ * never reach a consumer project.
+ */
+export async function pruneBootstrapExcludes(projectDir: string): Promise<void> {
   let pruned = 0;
   for (const rel of TEMPLATE_EXCLUDES) {
     const abs = join(projectDir, rel);
