@@ -22,21 +22,73 @@ That single command:
    agent skills, MCPs, `.env`, and — at the end — optionally creates a GitHub
    repository for you via `gh`.
 
-## Flags
+## Interactive menu
 
-| Flag                           | Default                              | Description                                                                                                           |
-| ------------------------------ | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `<project-name>`               | (required)                           | Target directory name. Required unless `--here` is passed.                                                            |
-| `--here`                       | off                                  | Bootstrap into the current directory; or, if already inside a bootstrapped project, skip download and run setup only. |
-| `--template <ref>`             | `main`                               | Branch / tag / SHA of the template repo to download.                                                                  |
-| `--template-repo <owner/repo>` | `upex-galaxy/agentic-qa-boilerplate` | Override the upstream repository (useful for forks).                                                                  |
-| `--project-key <KEY>`          | (prompted)                           | Jira project key (e.g. `UPEX`). Optional — leave blank to fill in later.                                              |
-| `--no-install`                 | off                                  | Skip `bun install`.                                                                                                   |
-| `--no-setup`                   | off                                  | Skip `bun run setup` — only download + git init.                                                                      |
-| `--no-git`                     | off                                  | Skip `git init` + initial commit.                                                                                     |
-| `--non-interactive`            | auto on no-TTY                       | Forwarded to the installer. Prompts use safe defaults.                                                                |
-| `--help`, `-h`                 |                                      | Print help and exit.                                                                                                  |
-| `--version`, `-v`              |                                      | Print CLI version and exit.                                                                                           |
+Run the CLI with no positional argument in a TTY (or pass `--menu` explicitly)
+and you get an interactive launcher instead of going straight to scaffold:
+
+```bash
+bunx create-agentic-qa            # no args + TTY → menu
+bunx create-agentic-qa --menu     # force menu even when args are present
+```
+
+The menu offers four options:
+
+| Option                    | What it does                                                                                                                       |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Create a new project**  | Prompts for a project name, sanitizes it, then runs the normal scaffold flow.                                                      |
+| **Check prerequisites**   | Runs the scaffolder's `doctor` (see below) and returns to the menu.                                                                |
+| **What will this install?** | Runs `inspect` (see below) — a manifest-driven tour of every skill, MCP, file and auth step the downstream installer will touch. |
+| **Quit**                  | Exit without doing anything.                                                                                                       |
+
+Suppress the ASCII banner with `--no-banner` (useful for CI or piped output).
+
+## Doctor — pre-clone system checks
+
+The scaffolder's doctor verifies six **universal prerequisites** before you
+clone anything. This is intentionally a thin layer — the boilerplate's own
+installer (`bun run setup`, invoked at the end of this CLI) has a much bigger
+`cli/doctor.ts` that handles agent CLIs, gentle-ai, MCP credentials and the
+per-skill binary matrix. See
+[INSTALLER.md](https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/INSTALLER.md)
+for the downstream version.
+
+| #   | Check         | Required | Why                                                       |
+| --- | ------------- | -------- | --------------------------------------------------------- |
+| 1   | `bun`         | yes      | Runs this CLI, `bun install`, and `bun run setup`.        |
+| 2   | `git`         | yes      | `git init -b main` + initial commit (skipped on `--no-git`). |
+| 3   | `node >= 18`  | yes      | Some downstream tools shell out to a Node 18+ runtime.    |
+| 4   | `gh`          | optional | Needed only for `--github-create` at the end of setup.    |
+| 5   | `internet`    | yes      | Reaches `api.github.com` to fetch the template tarball.   |
+| 6   | `disk space`  | optional | Warns if less than 200 MB free in the current directory.  |
+
+The doctor is reachable from the interactive menu. There is no standalone CLI
+flag — if you need machine-readable output, parse the menu run or use the
+downstream `bun run setup:doctor`.
+
+## Inspect — what will the installer actually touch?
+
+The inspect view is a read-only walkthrough driven by
+`src/install-manifest.json`. It answers "what is this thing going to do to my
+machine?" before you commit to running it.
+
+Five sections are rendered:
+
+1. **Prerequisites** — every binary the downstream installer expects, with a
+   live `present` / `MISSING` / `n/a` status next to it.
+2. **Will install** — gentle-ai skills, community project-level skills, and
+   community user-level skills (counts + first 5 of each, with a drill-down
+   prompt to expand any category).
+3. **Will configure** — MCP servers (with the `.env` keys each one reads),
+   `.env` files written or updated, authentication services, and the
+   non-interactive vs interactive post-install steps.
+4. **Will NOT install** — services and CLIs you handle yourself, each with a
+   one-line docs pointer.
+5. **Drill-down** — pick any of the three skill categories to print its full
+   list; loop back into the inspect view until you choose "Back to menu".
+
+Inspect is purely informational — it does not write to disk, hit the network
+beyond a binary probe, or modify any project state.
 
 ## In-repo mode
 
@@ -62,6 +114,54 @@ A ready-to-use QA project wired for:
   manual QA.
 - **MCPs preconfigured** for Playwright, OpenAPI, Atlassian (Jira/Xray),
   DBHub, Context7, and Tavily.
+- **Allure + Xray reporting** — pre-wired Allure reporter and `bun xray` CLI
+  for syncing automated runs back to your test management system.
+
+## Flags
+
+| Flag                           | Default                              | Description                                                                                                           |
+| ------------------------------ | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `<project-name>`               | (required)                           | Target directory name. Required unless `--here` is passed or you are in a TTY (menu will prompt).                     |
+| `--here`                       | off                                  | Bootstrap into the current directory; or, if already inside a bootstrapped project, skip download and run setup only. |
+| `--template <ref>`             | `main`                               | Branch / tag / SHA of the template repo to download.                                                                  |
+| `--template-repo <owner/repo>` | `upex-galaxy/agentic-qa-boilerplate` | Override the upstream repository (useful for forks).                                                                  |
+| `--project-key <KEY>`          | (prompted)                           | Jira project key (e.g. `UPEX`). Optional — leave blank to fill in later.                                              |
+| `--no-install`                 | off                                  | Skip `bun install`.                                                                                                   |
+| `--no-setup`                   | off                                  | Skip `bun run setup` — only download + git init.                                                                      |
+| `--no-git`                     | off                                  | Skip `git init` + initial commit.                                                                                     |
+| `--non-interactive`            | auto on no-TTY                       | Forwarded to the installer. Prompts use safe defaults.                                                                |
+| `--menu`                       | off                                  | Force the interactive menu even when a project name is provided.                                                      |
+| `--no-banner`                  | off                                  | Suppress the ASCII banner (useful for CI / piped output).                                                             |
+| `--help`, `-h`                 |                                      | Print help and exit.                                                                                                  |
+| `--version`, `-v`              |                                      | Print CLI version and exit.                                                                                           |
+
+## Examples
+
+```bash
+# Standard scaffold
+bunx create-agentic-qa my-app
+
+# Scaffold with the Jira project key pre-filled
+bunx create-agentic-qa my-app --project-key ACME
+
+# Bootstrap into the current directory (or resume setup inside an existing clone)
+bunx create-agentic-qa --here
+
+# Use a fork of the template
+bunx create-agentic-qa my-app --template-repo my-fork/agentic-qa-boilerplate
+
+# Pin to a specific tag or SHA
+bunx create-agentic-qa my-app --template v0.5.0
+
+# Open the interactive menu even though arguments are provided
+bunx create-agentic-qa my-app --menu
+
+# CI-friendly: no banner, no prompts
+bunx create-agentic-qa my-app --no-banner --non-interactive
+
+# Download only — skip install and setup
+bunx create-agentic-qa my-app --no-install --no-setup
+```
 
 ## Requirements
 
@@ -111,6 +211,31 @@ contract.
 | 30   | `bun install` failed                                             |
 | 31   | `bun run setup` failed                                           |
 | 130  | User cancelled (Ctrl+C)                                          |
+
+## Troubleshooting
+
+**The menu opens when I just want to scaffold.**
+Pass a project name as the first positional argument:
+`bunx create-agentic-qa my-app`. The menu only opens when there is no project
+name *and* you are in a TTY (or when you pass `--menu` explicitly).
+
+**Doctor says `gh` is missing but I do not need it.**
+`gh` is optional — it is only required if you opt into `--github-create` at
+the end of `bun run setup`. A `warn` row on `gh` will not block the scaffold.
+
+**Inspect says a prerequisite is MISSING but doctor was happy.**
+Inspect uses the **manifest's** prerequisite list (everything the downstream
+installer touches), while doctor only checks the six universal binaries the
+scaffolder itself needs. The wider list is expected to surface more gaps.
+
+**ASCII banner mangles my CI logs.**
+Pass `--no-banner` to suppress it. Combine with `--non-interactive` to also
+disable prompts and the menu.
+
+**Network error (exit 11) on a corporate network.**
+The scaffolder reaches `https://codeload.github.com/...` for the tarball and
+`https://api.github.com` for the doctor's internet check. If either is blocked,
+set the standard `HTTPS_PROXY` env var before running.
 
 ## Local development / testing without npm publish
 

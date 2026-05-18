@@ -43,11 +43,14 @@
     "api/**/*.ts",
     "scripts/**/*.ts",
     "cli/**/*.ts",
+    "packages/**/*.ts",
     "playwright.config.ts",
     "eslint.config.js"
   ],
   "exclude": [
     "node_modules",
+    "packages/*/node_modules",
+    "packages/*/dist",
     "playwright-report",
     "test-results",
     "allure-results",

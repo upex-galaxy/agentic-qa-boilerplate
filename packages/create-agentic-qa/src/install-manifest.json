@@ -1,0 +1,336 @@
+{
+  "version": 1,
+  "sourceRef": "main",
+  "prerequisites": [
+    {
+      "name": "bun",
+      "required": true,
+      "purpose": "JavaScript runtime and package manager used by every script and the installer itself.",
+      "installHint": "https://bun.sh/docs/installation",
+      "binaryName": "bun"
+    },
+    {
+      "name": "git",
+      "required": true,
+      "purpose": "Required to clone the template and track your project's history.",
+      "installHint": "https://git-scm.com/downloads",
+      "binaryName": "git"
+    },
+    {
+      "name": "node >= 18",
+      "required": true,
+      "purpose": "Used by the npx wrapper that runs create-agentic-qa. Must be v18 or newer.",
+      "installHint": "https://nodejs.org/en/download",
+      "binaryName": "node"
+    },
+    {
+      "name": "gh (GitHub CLI)",
+      "required": false,
+      "purpose": "Optional. Needed only if you want the installer to auto-create a GitHub repo (Phase 4 Step 9).",
+      "installHint": "https://cli.github.com",
+      "binaryName": "gh"
+    },
+    {
+      "name": "internet access",
+      "required": true,
+      "purpose": "The scaffolder downloads the boilerplate template from GitHub and gentle-ai skills from their registries.",
+      "installHint": "https://api.github.com"
+    },
+    {
+      "name": "disk space (200 MB+)",
+      "required": false,
+      "purpose": "The template, node_modules, and installed skills require at least 200 MB of free disk space.",
+      "installHint": "https://bun.sh/docs"
+    },
+    {
+      "name": "API keys (.env)",
+      "required": false,
+      "purpose": "MCP servers (Tavily, Atlassian, DBHub, OpenAPI, Playwright, Postman) require API keys set in .env before they can connect.",
+      "installHint": "See .env.example in the project root after scaffolding."
+    }
+  ],
+  "willInstall": {
+    "gentleAiSkills": {
+      "count": 14,
+      "items": [
+        {
+          "name": "engram",
+          "purpose": "Persistent memory across sessions.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "sdd-init",
+          "purpose": "Initialize Spec-Driven Development context for a project.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "sdd-explore",
+          "purpose": "Explore a codebase to gather context before planning.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "sdd-propose",
+          "purpose": "Generate a structured change proposal from exploration.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "sdd-spec",
+          "purpose": "Write a detailed specification from a proposal.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "sdd-design",
+          "purpose": "Produce an architecture design from a proposal.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "sdd-tasks",
+          "purpose": "Break a spec and design into implementable tasks.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "sdd-apply",
+          "purpose": "Implement tasks from a spec in batches.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "sdd-verify",
+          "purpose": "Validate an implementation against its spec.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "sdd-archive",
+          "purpose": "Archive a completed change and close the SDD cycle.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "sdd-onboard",
+          "purpose": "Guided end-to-end SDD walkthrough for new users.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "skill-registry",
+          "purpose": "Registry of all installed skills and their trigger rules.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "judgment-day",
+          "purpose": "Resolve conflicting or ambiguous AI decisions with structured judgment.",
+          "source": "gentle-ai"
+        },
+        {
+          "name": "issue-creation",
+          "purpose": "Create well-structured GitHub or Jira issues from context.",
+          "source": "gentle-ai"
+        }
+      ]
+    },
+    "communityProjectSkills": {
+      "count": 2,
+      "items": [
+        {
+          "name": "playwright-cli",
+          "purpose": "Browser automation CLI — screenshots, traces, video, session management, request mocking.",
+          "source": "https://github.com/microsoft/playwright-cli"
+        },
+        {
+          "name": "playwright-best-practices",
+          "purpose": "Playwright reference patterns — flaky-test fixes, POM, accessibility (axe-core), auth/OAuth fixtures, perf budgets, i18n, component testing.",
+          "source": "https://github.com/currents-dev/playwright-best-practices-skill"
+        }
+      ]
+    },
+    "communityUserSkills": {
+      "count": 8,
+      "items": [
+        {
+          "name": "skill-creator",
+          "purpose": "Create, modify, and evaluate Claude Code skills.",
+          "source": "https://github.com/anthropics/skills"
+        },
+        {
+          "name": "find-skills",
+          "purpose": "Discover and search available skills.",
+          "source": "https://github.com/vercel-labs/skills"
+        },
+        {
+          "name": "gh-cli",
+          "purpose": "GitHub CLI documentation and patterns.",
+          "source": "https://github.com/github/awesome-copilot"
+        },
+        {
+          "name": "github-actions-docs",
+          "purpose": "GitHub Actions documentation and workflow patterns.",
+          "source": "https://github.com/xixu-me/skills"
+        },
+        {
+          "name": "brainstorming",
+          "purpose": "Structured brainstorming and ideation techniques.",
+          "source": "https://github.com/obra/superpowers"
+        },
+        {
+          "name": "cli-printing-press",
+          "purpose": "Terminal output styling and printing utilities for CLI tools.",
+          "source": "https://github.com/mvanhorn/cli-printing-press"
+        },
+        {
+          "name": "html-ppt",
+          "purpose": "Create HTML-based presentations.",
+          "source": "https://github.com/lewislulu/html-ppt-skill"
+        },
+        {
+          "name": "resend-cli",
+          "purpose": "Transactional email development with Resend.",
+          "source": "https://github.com/resend/resend-skills"
+        }
+      ]
+    }
+  },
+  "willConfigure": {
+    "mcps": [
+      {
+        "name": "context7",
+        "envVars": [],
+        "purpose": "Library documentation MCP — fetches official current docs for any library."
+      },
+      {
+        "name": "tavily",
+        "envVars": ["TAVILY_API_KEY"],
+        "purpose": "Web search MCP — used by skills that need fresh community / docs lookups."
+      },
+      {
+        "name": "playwright",
+        "envVars": [],
+        "purpose": "Playwright MCP — browser automation and DOM inspection for E2E test exploration."
+      },
+      {
+        "name": "atlassian",
+        "envVars": ["ATLASSIAN_URL", "ATLASSIAN_EMAIL", "ATLASSIAN_API_TOKEN"],
+        "purpose": "Jira / Confluence MCP — story, test case, and page operations from the agent."
+      },
+      {
+        "name": "dbhub",
+        "envVars": [],
+        "purpose": "DBHub MCP — direct DB queries and schema introspection for test data validation."
+      },
+      {
+        "name": "openapi",
+        "envVars": ["API_BASE_URL", "OPENAPI_SPEC_PATH", "API_TOKEN"],
+        "purpose": "OpenAPI MCP — explore API endpoints and contract testing from the agent."
+      },
+      {
+        "name": "postman",
+        "envVars": ["POSTMAN_API_KEY"],
+        "purpose": "Postman MCP — API collection management and request testing."
+      }
+    ],
+    "envFiles": [
+      {
+        "path": ".env",
+        "what": "Created from .env.example. Stores all API keys and secrets (gitignored)."
+      },
+      {
+        "path": ".envrc",
+        "what": "direnv autoload file — loads .env into the shell on cd (optional, offered interactively)."
+      },
+      {
+        "path": ".mcp.json",
+        "what": "Already committed. Uses ${VAR} placeholders — installer ensures .env has the values."
+      },
+      {
+        "path": "opencode.jsonc",
+        "what": "Already committed. Uses {env:VAR} placeholders — installer ensures .env has the values."
+      },
+      {
+        "path": ".template/installer.state.json",
+        "what": "Installer idempotency state (gitignored). Tracks which steps completed."
+      }
+    ],
+    "auth": [
+      {
+        "service": "acli (Atlassian CLI)",
+        "method": "One-time interactive login — credentials stored in ~/.config/acli/",
+        "credsFrom": ["ATLASSIAN_EMAIL", "ATLASSIAN_API_TOKEN", "ATLASSIAN_URL"]
+      },
+      {
+        "service": "Jira (HTTP basic auth via MCP)",
+        "method": "Env vars read at MCP startup — no interactive login needed",
+        "credsFrom": ["ATLASSIAN_URL", "ATLASSIAN_EMAIL", "ATLASSIAN_API_TOKEN"]
+      },
+      {
+        "service": "Xray Cloud (xray-cli)",
+        "method": "Env-var driven — credentials read at command invocation. Only required when TMS_PROVIDER=xray.",
+        "credsFrom": ["XRAY_CLIENT_ID", "XRAY_CLIENT_SECRET"]
+      }
+    ],
+    "postInstallSteps": [
+      {
+        "step": "agents:setup",
+        "what": "Runs bun run scripts/agents-setup.ts — wires .agents/project.yaml with project name, key, and URLs.",
+        "interactive": true
+      },
+      {
+        "step": "acli auth",
+        "what": "Runs acli login — authenticates the Atlassian CLI for Jira/Confluence operations.",
+        "interactive": true
+      },
+      {
+        "step": "jira:sync-fields",
+        "what": "Fetches custom field metadata from Jira and writes .agents/jira-fields.json.",
+        "interactive": false
+      },
+      {
+        "step": "jira:sync-workflows",
+        "what": "Fetches workflow transitions from Jira and writes .agents/jira-workflows.json.",
+        "interactive": false
+      },
+      {
+        "step": "jira:check",
+        "what": "Validates the Jira setup manifest against the fetched field catalog.",
+        "interactive": false
+      },
+      {
+        "step": "api:sync",
+        "what": "Runs bun run api:sync — fetches OpenAPI spec from the configured backend and regenerates api/schemas/ TypeScript types.",
+        "interactive": false
+      },
+      {
+        "step": "xray auth login",
+        "what": "Runs bun xray auth login — authenticates against Xray Cloud. Only when TMS_PROVIDER=xray; skipped for Jira-native (Modality B).",
+        "interactive": true
+      }
+    ]
+  },
+  "willNotInstall": [
+    {
+      "name": "bun",
+      "reason": "Must be installed manually using your OS package manager.",
+      "installHint": "https://bun.com/"
+    },
+    {
+      "name": "gh",
+      "reason": "Must be installed manually using your OS package manager.",
+      "installHint": "https://github.com/cli/cli#installation"
+    },
+    {
+      "name": "acli",
+      "reason": "Must be installed manually using your OS package manager.",
+      "installHint": "https://developer.atlassian.com/cloud/acli/guides/install-acli/"
+    },
+    {
+      "name": "playwright-cli",
+      "reason": "Must be installed manually. Run: bun add -g @playwright/cli@latest",
+      "installHint": "https://playwright.dev/agent-cli/introduction"
+    },
+    {
+      "name": "jq",
+      "reason": "Must be installed manually using your OS package manager.",
+      "installHint": "https://jqlang.org/"
+    },
+    {
+      "name": "resend",
+      "reason": "Must be installed manually using your OS package manager.",
+      "installHint": "https://resend.com/docs/cli"
+    }
+  ]
+}

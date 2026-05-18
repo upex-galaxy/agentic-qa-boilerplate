@@ -46,6 +46,17 @@ describe('parseArgs', () => {
   test('rejects flag missing value', () => {
     expect(() => parseArgs(['my-app', '--template'])).toThrow(CliError);
   });
+
+  test('parses --menu flag', () => {
+    const a = parseArgs(['--menu', 'foo']);
+    expect(a.menu).toBe(true);
+    expect(a.projectName).toBe('foo');
+  });
+
+  test('parses --no-banner flag', () => {
+    const a = parseArgs(['--no-banner', 'foo']);
+    expect(a.noBanner).toBe(true);
+  });
 });
 
 describe('sanitizeProjectName', () => {

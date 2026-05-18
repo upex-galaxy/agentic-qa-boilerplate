@@ -2,13 +2,19 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import figuresModule from 'figures';
+import pc from 'picocolors';
+
 import pkg from '../package.json' with { type: 'json' };
 
 import { parseArgs, printHelp } from './args.ts';
 import { isAgenticDevRepo, isDirectoryEmpty } from './detect.ts';
+import { runDoctor } from './doctor.ts';
 import { downloadTemplate } from './download.ts';
 import { CliError } from './errors.ts';
+import { runInspect } from './inspect.ts';
 import { log } from './log.ts';
+import { runMenu } from './menu.ts';
 import {
   initGitRepo,
   pruneBootstrapExcludes,
@@ -19,6 +25,9 @@ import {
 } from './prepare.ts';
 import { rollback } from './rollback.ts';
 import { ensureBunAvailable, ensureGitAvailable, runBunInstall, runBunSetup } from './runners.ts';
+import * as tui from './tui.ts';
+
+const figures = figuresModule as unknown as Record<string, string>;
 
 const VERSION = (pkg as { version: string }).version;
 
@@ -34,7 +43,43 @@ async function main(): Promise<number> {
     return 0;
   }
 
-  log.banner('create-agentic-qa — bootstrap');
+  // Print logo unless suppressed
+  if (!args.noBanner) {
+    process.stdout.write(`${tui.logo()}\n`);
+  }
+
+  // -----------------------------------------------------------------------
+  // Interactive menu — show when no project name + not --here, or --menu forced.
+  // -----------------------------------------------------------------------
+  if ((!args.projectName && !args.here) || args.menu) {
+    let menuDone = false;
+    while (!menuDone) {
+      const result = await runMenu();
+
+      if (result.kind === 'quit') {
+        tui.outro('See you next time.');
+        return 0;
+      }
+
+      if (result.kind === 'doctor') {
+        await runDoctor();
+        tui.breathe();
+        // Loop back to menu
+        continue;
+      }
+
+      if (result.kind === 'inspect') {
+        await runInspect();
+        tui.breathe();
+        // Loop back to menu
+        continue;
+      }
+
+      // scaffold
+      args.projectName = result.projectName;
+      menuDone = true;
+    }
+  }
 
   ensureBunAvailable();
   if (!args.noGit) { ensureGitAvailable(); }
@@ -91,28 +136,55 @@ async function main(): Promise<number> {
       ? sanitizeProjectName(args.projectName ?? deriveNameFromPath(projectDir))
       : sanitizeProjectName(args.projectName!);
 
-    log.step(1, 4, `Downloading template (${args.templateRepo}@${args.template})`);
+    // Step 1 — Download template
+    const s1 = tui.spinner();
+    s1.start(`Downloading template (${args.templateRepo}@${args.template})…`);
     const dirExistedBefore = existsSync(projectDir);
-    await downloadTemplate({
-      repo: args.templateRepo,
-      ref: args.template,
-      targetDir: projectDir,
-    });
+    try {
+      await downloadTemplate({
+        repo: args.templateRepo,
+        ref: args.template,
+        targetDir: projectDir,
+      });
+      s1.stop('Template downloaded');
+    }
+    catch (err) {
+      s1.error(`Failed to download template: ${(err as Error).message}`);
+      throw err;
+    }
     if (!dirExistedBefore) { rollback.trackCreatedDir(projectDir); }
 
-    log.step(2, 4, 'Preparing project (scrub history + rewrite metadata)');
-    await scrubGitHistory(projectDir);
-    await pruneBootstrapExcludes(projectDir);
-    await rewritePackageJson(projectDir, projectName);
-    await rewriteProjectYaml(projectDir, {
-      projectName,
-      projectKey: args.projectKey,
-    });
+    // Step 2 — Prepare project
+    const s2 = tui.spinner();
+    s2.start('Preparing project (scrub history + rewrite metadata)…');
+    try {
+      await scrubGitHistory(projectDir);
+      await pruneBootstrapExcludes(projectDir);
+      await rewritePackageJson(projectDir, projectName);
+      await rewriteProjectYaml(projectDir, {
+        projectName,
+        projectKey: args.projectKey,
+      });
+      s2.stop('Project prepared');
+    }
+    catch (err) {
+      s2.error(`Failed to prepare project: ${(err as Error).message}`);
+      throw err;
+    }
 
     if (!args.noGit) {
-      log.step(3, 4, 'Initializing fresh git repository');
-      initGitRepo(projectDir);
-      rollback.trackGitInit();
+      // Step 3 — git init
+      const s3 = tui.spinner();
+      s3.start('Initializing fresh git repository…');
+      try {
+        initGitRepo(projectDir);
+        rollback.trackGitInit();
+        s3.stop('Git repository initialized');
+      }
+      catch (err) {
+        s3.error(`Failed to initialize git: ${(err as Error).message}`);
+        throw err;
+      }
     }
     else {
       log.dim('  --no-git: skipping git init.');
@@ -127,22 +199,43 @@ async function main(): Promise<number> {
   // Stage B — delegate to the boilerplate's own installer.
   // ------------------------------------------------------------------
   if (!args.noInstall) {
-    log.step(4, 4, 'Installing dependencies');
-    runBunInstall(projectDir);
+    const s4 = tui.spinner();
+    s4.start('Installing dependencies (bun install)…');
+    try {
+      runBunInstall(projectDir);
+      s4.stop('Dependencies installed');
+    }
+    catch (err) {
+      s4.error(`Failed to install dependencies: ${(err as Error).message}`);
+      throw err;
+    }
   }
 
   if (!args.noSetup) {
-    log.banner('Running boilerplate installer');
+    tui.section('Running boilerplate installer');
     runBunSetup(projectDir, { nonInteractive: args.nonInteractive });
   }
   else {
     log.dim('--no-setup: skipping `bun run setup`. Run it manually when ready.');
   }
 
-  log.success(`Done. Project ready at: ${projectDir}`);
-  if (!args.here && !args.noSetup) {
-    log.dim(`Next:  cd ${args.projectName} && bun run claude  (then invoke /agentic-qa-onboard)`);
-  }
+  // ------------------------------------------------------------------
+  // Final success box
+  // ------------------------------------------------------------------
+  const cdCmd = args.here ? '' : `cd ${args.projectName}`;
+  const nextStepNum = cdCmd ? 2 : 1;
+  const nextLines = [
+    pc.green(`${figures.tick ?? '✔'}  Project ready at ${projectDir}`),
+    '',
+    pc.bold('Next steps (in order):'),
+    ...(cdCmd ? [`  1.  ${pc.cyan(cdCmd)}`] : []),
+    `  ${nextStepNum}.  ${pc.cyan('bun run claude')}     ${pc.dim('# or: bun run opencode')}`,
+    `      ${pc.dim('then invoke /agentic-qa-onboard')}`,
+    '',
+    pc.dim('Full guide: README.md → "Getting started"'),
+  ];
+  process.stdout.write(`${tui.successBox(nextLines)}\n`);
+
   return 0;
 }
 
@@ -155,17 +248,17 @@ main()
   .then(code => process.exit(code))
   .catch(async (err) => {
     if (err && typeof err === 'object' && (err as { name?: string }).name === 'ExitPromptError') {
-      log.warn('Cancelled.');
+      tui.cancel('Cancelled.');
       await rollback.run('user cancelled');
       process.exit(130);
     }
     if (err instanceof CliError) {
-      log.error(err.message);
+      process.stderr.write(pc.red(`${figures.cross ?? '✘'}  ${err.message}\n`));
       if (err.hint) { log.dim(err.hint); }
       await rollback.run(err.message);
       process.exit(err.exitCode);
     }
-    log.error(`Unexpected error: ${(err as Error).message}`);
+    process.stderr.write(pc.red(`${figures.cross ?? '✘'}  Unexpected error: ${(err as Error).message}\n`));
     if (process.env.DEBUG === '1' && err instanceof Error && err.stack) {
       log.dim(err.stack);
     }
