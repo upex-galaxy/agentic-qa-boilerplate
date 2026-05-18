@@ -2,9 +2,74 @@
 
 > **Audience**: QA engineers cloning `agentic-qa-boilerplate` for the first time, or anyone wanting to understand what `bun run setup` configures (gentle-ai, community skills, MCPs, local skills) and what is optional.
 > **Read time**: 8 minutes.
-> **Status**: stable as of 2026-05-11.
+> **Status**: updated 2026-05-17 — 5-phase TUI flow, step idempotency, GitHub repo step.
 >
 > This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram + SDD), community skills via `bunx skills`, locally committed workflow skills, and the 7 canonical MCPs — are documented below in that order.
+
+---
+
+## 5-phase install flow
+
+`bun run setup` runs in 5 named phases. Each phase is labelled in the terminal output. The installer is **idempotent**: every step writes a timestamp to `.agents/install-state.json` on success, and re-runs skip completed steps automatically.
+
+### Phase 1 — DETECTION
+
+Probes the environment before touching anything. Detects gentle-ai (version + compatibility), loads or creates `.agents/install-state.json`, and prompts for agent selection (Claude Code / OpenCode). Exits early if no agents are installed or if the user asks for the gentle-ai install guide.
+
+### Phase 2 — INSTALLATION
+
+Downloads and installs all software dependencies:
+
+- `bun install` — project Node/Bun packages including `@playwright/test`
+- `bun run pw:install` — Playwright browser binaries (~300 MB Chromium)
+- `gentle-ai install` — Engram persistent memory + 13 SDD/helper skills (one batched call per agent)
+- `bunx skills add` — project-level skills (`playwright-cli`, `playwright-best-practices`) and user-level skills (8 cross-project utilities)
+
+### Phase 3 — CONFIGURATION
+
+Wires runtime configuration:
+
+- `.env` population — discovers `${VAR}` / `{env:VAR}` placeholders in `.mcp.json` and `opencode.jsonc`, then prompts for values not already set
+- `direnv allow` — optional; auto-loads `.env` on `cd`
+- GitHub repository — interactive `gh repo create` (optional); hydrates `state.github` from an existing remote if already wired
+
+### Phase 4 — VERIFICATION
+
+Validates the environment is usable:
+
+- External CLI table — `which`-checks all 6 CLIs (`bun`, `gh`, `acli`, `playwright-cli`, `jq`, `resend`) and prints a status table with purpose and install hint for missing entries
+- State persistence — writes updated `.agents/install-state.json`
+
+### Phase 5 — INITIAL CONFIGURATION
+
+Interactive post-install configuration steps. Skipped automatically when no TTY is detected (CI / non-interactive mode):
+
+- `agents:setup` — populates `.agents/project.yaml` with project identity, Jira URL, environments
+- `acli` auth probe — establishes an `acli` session if credentials are available
+- `jira:sync-fields` — Jira auth loop (up to 5 attempts) then syncs custom field IDs
+- `jira:sync-workflows` — syncs workflow statuses and transitions
+- `jira:check` — validates `.agents/jira-required.yaml` against the workspace
+
+Each step in Phase 5 records its completion in `state.postInstall` so re-runs skip it on the next `bun run setup`.
+
+---
+
+## Idempotency — re-running setup safely
+
+Every step writes an ISO timestamp to `state.steps[<key>]` in `.agents/install-state.json`. A re-run skips a step when its timestamp is present.
+
+### Force flags
+
+| Method | Effect |
+|---|---|
+| `--force` CLI flag | Clear all step timestamps — re-run everything |
+| `--force-step <key>` | Clear one step (e.g. `--force-step 5-deps-install`) |
+| `INSTALL_FORCE_ALL=1` | Same as `--force` |
+| `INSTALL_FORCE_<UPPER_KEY>=1` | Same as `--force-step` (dashes become underscores) |
+
+Step keys that participate in idempotency (each writes an ISO timestamp on success): `5-deps-install`, `6-playwright`, `8-skills-gentle-ai`, `9-skills-community-project`, `9-skills-community-global`, `12-api-bootstrap`, `13-github-repo`. Phase 1 detection steps (`1-repo-verify`, `2-gentle-ai-detect`, `3-gentle-ai-install`, `4-agent-detect`) and Phase 4 verification/persistence (`10-mcp-env`, `11-verify-clis`, `14-state-write`) always re-run since they probe live state. Phase 5 post-install steps (`agents:setup`, `acli:auth`, `jira:sync-fields`, `jira:sync-workflows`, `jira:check`) track status under `state.postInstall.*` rather than `state.steps`.
+
+---
 
 ## Before you run setup — prerequisites
 
@@ -16,7 +81,7 @@ The installer is self-diagnosing: every stage prints the exact install URL or co
 | ---------------------------------------------------------------------------------- | ----------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | **Bun**                                                                            | `>= 1.0.0`  | `bun run setup:doctor --preflight` (Step 0) | `✗ Preflight failed · Bun X.Y.Z is too old (need >= 1.0.0) · Fix: bun upgrade`                  |
 | **`node_modules/@inquirer/prompts`** (proxy for `bun install`)                     | —           | Preflight (Step 0)                          | `✗ Preflight failed · Missing node_modules/@inquirer/prompts · Fix: bun install`                |
-| **Agent CLI** — Claude Code (`~/.claude/`) **or** OpenCode (`~/.config/opencode/`) | latest      | `install.ts:536` (Step 4)                   | `✗ No agents detected. Install Claude Code or OpenCode and re-run.` followed by both docs URLs  |
+| **Agent CLI** — Claude Code (`~/.claude/`) **or** OpenCode (`~/.config/opencode/`) | latest      | `install.ts:556` (Step 4)                   | `✗ No agents detected. Install Claude Code or OpenCode and re-run.` followed by both docs URLs  |
 | `git`                                                                              | any         | Scaffolder (`runners.ts:23`) + Husky hooks  | `ENVIRONMENT · git is required but not found on PATH. · Install: https://git-scm.com/downloads` |
 | `tar`                                                                              | any         | Scaffolder (`download.ts`)                  | `ENVIRONMENT · tar is required to extract the template tarball.`                                |
 
@@ -26,7 +91,7 @@ The agent-CLI check is the gotcha that bites first-timers most often: a missing 
 
 | Tool          | Min version | Enforced at                   | What happens on miss                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ------------- | ----------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **gentle-ai** | `>= 1.26.5` | `install.ts:440-459` (Step 2) | Prints `gentle-ai not detected on PATH.` then offers two paths: (a) show install commands (`brew install gentle-ai` on macOS, `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` on Linux) and exit, or (b) continue without gentle-ai. Older-than-min version triggers `gentle-ai X.Y.Z is older than required 1.26.5. Upgrade with: gentle-ai update` and the setup continues with the warning. |
+| **gentle-ai** | `>= 1.26.5` | `install.ts:500-545` (Step 2) | Prints `gentle-ai not detected on PATH.` then offers two paths: (a) show install commands (`brew install gentle-ai` on macOS, `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` on Linux) and exit, or (b) continue without gentle-ai. Older-than-min version triggers `gentle-ai X.Y.Z is older than required 1.26.5. Upgrade with: gentle-ai update` and the setup continues with the warning. |
 
 If you skip gentle-ai, Engram persistent memory + the SDD spec-driven loop + judgment-day + issue-creation skills are NOT installed. The locally committed QA workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/agentic-qa-core`) keep working, and the 7 canonical MCPs are still configured.
 
@@ -34,7 +99,7 @@ If you skip gentle-ai, Engram persistent memory + the SDD spec-driven loop + jud
 
 These CLIs are **not optional** for the workflow — each one is consumed by a specific skill (`gh` for `/git-flow-master` + `/regression-testing`, `acli` for `/acli` + `/sprint-testing` + `/test-documentation`, `playwright-cli` for `/playwright-cli`, `resend` for `/resend-cli`, `jq` for `acli ... --json | jq ...` pipelines). The installer cannot guess which skills you will run, so it ships them as **lazy-required**: a missing binary surfaces as a warning during Step 10 but never blocks setup. Install them up front if you plan to use the whole stack, or on-demand when the owning skill surfaces a missing-binary error.
 
-The check itself is a **PATH probe** (`which <name>` on POSIX, `where <name>` on Windows — see `install.ts:341`). Presence only — no version compare, no auto-install.
+The check itself is a **PATH probe** (`which <name>` on POSIX, `where <name>` on Windows — see `install.ts:403`). Presence only — no version compare, no auto-install.
 
 `install.ts` Step 10 (`verifyExternalClis`) iterates the `EXTERNAL_CLIS` array (`install.ts:185`) and prints a per-CLI status table:
 
@@ -157,6 +222,18 @@ Then `bun run setup:doctor --json` to confirm.
 | `INSTALL_SKIP_JIRA=1`         | Skip optional Jira bootstrap     |
 | `INSTALL_SKIP_API=1`          | Skip optional API auth bootstrap |
 | `INSTALL_SKIP_DIRENV=1`       | Skip direnv detection / autoload |
+
+### Force flags (re-run completed steps)
+
+| Flag / Env var                           | Effect                                         |
+| ---------------------------------------- | ---------------------------------------------- |
+| `--force`                                | Clear all step timestamps — re-run everything  |
+| `--force-step <key>`                     | Re-run one step by key                         |
+| `INSTALL_FORCE_ALL=1`                    | Same as `--force`                              |
+| `INSTALL_FORCE_GENTLE_AI=1`              | Re-run gentle-ai skill install                 |
+| `INSTALL_FORCE_COMMUNITY=1`              | Re-run community skill install                 |
+| `INSTALL_FORCE_GITHUB=1`                 | Re-run GitHub remote setup                     |
+| `INSTALL_FORCE_AGENTS_SETUP=1`           | Re-run agents:setup                            |
 
 ---
 
