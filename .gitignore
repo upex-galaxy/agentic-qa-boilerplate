@@ -77,11 +77,11 @@ dbhub.toml
 # Community skills installed by `bunx skills add` (PROJECT_LEVEL_SKILLS in
 # cli/install.ts) and gentle-ai skill loaders (writes to .agents/skills/).
 # These are per-developer install artifacts pulled from upstream repos —
-# never committed by hand. Includes the lockfile bunx skills add maintains.
+# never committed by hand. skills-lock.json IS tracked (pinned SHAs for
+# reproducible installs).
 .claude/skills/playwright-best-practices/
 .claude/skills/playwright-cli/
 .agents/skills/
-skills-lock.json
 
 # ===== Local Useful Files =====
 

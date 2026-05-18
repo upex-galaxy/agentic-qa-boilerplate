@@ -48,3 +48,4 @@ Thumbs.db
 # ===========================================
 .context/
 .claude/skills/
+.agents/skills/

@@ -28,10 +28,12 @@ export default antfu({
     'api/openapi-types.ts',
     // Skill templates — copied to target repos at install time, not linted here
     '.claude/skills/*/templates/**',
-    // Community skills installed by `bunx skills add` and gentle-ai loaders —
-    // upstream-managed code, not linted by this repo's rules.
-    '.claude/skills/playwright-best-practices/**',
-    '.claude/skills/playwright-cli/**',
+    // Skills (committed QA-specific + community installed via `bunx skills add`
+    // + gentle-ai loader output) are out of scope for repo-level lint rules.
+    // Mixing upstream skill code with our ESLint config causes false positives;
+    // QA-specific skills under .claude/skills/ are markdown + JSON only, no
+    // TypeScript that needs linting.
+    '.claude/skills/**',
     '.agents/skills/**',
   ],
 
