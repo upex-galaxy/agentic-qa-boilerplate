@@ -85,7 +85,12 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@clack/prompts": "^1.4.0",
     "@inquirer/prompts": "^8.1.0",
+    "boxen": "^8.0.1",
+    "cli-table3": "^0.6.5",
+    "figures": "^6.1.0",
+    "picocolors": "^1.1.1",
     "yaml": "^2.8.2"
   },
   "devDependencies": {
