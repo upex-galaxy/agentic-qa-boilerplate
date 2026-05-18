@@ -2,27 +2,50 @@
 /**
  * Project installer for agentic-qa-boilerplate.
  *
- * Drives the end-to-end onboarding for a freshly-cloned QA boilerplate:
- *   1.  Verify repo root (package.json name)
- *   2.  Detect gentle-ai (presence + version)
- *   3.  Decide gentle-ai install / skip
- *   4.  Detect agents (Claude Code / OpenCode) and prompt selection
- *   5.  Install dependencies (`bun install`)
- *   6.  Install Playwright browsers (`bun run pw:install`)
- *   7.  Run agents:setup (interactive `.agents/project.yaml` populator)
- *   8.  Install 14 skills + engram via gentle-ai (or skip)
- *   9.  Install community skills via `bunx skills add` (project-level + user-level)
- *  10.  Wire `.env` for MCP servers + offer direnv autoload
- *       (`.mcp.json` and `opencode.jsonc` are committed with ${VAR}/{env:VAR}
- *       expansion — installer only ensures `.env` has the required values)
- *  11.  Verify external CLIs (bun, gh, acli, playwright-cli, resend, jq)
- *  12.  Optional bootstraps: Jira credentials check, API auth login
- *  13.  GitHub repository (optional)
- *  14.  Persist `.agents/install-state.json` + closing summary
+ * Drives the end-to-end onboarding for a freshly-cloned QA boilerplate across
+ * 5 named phases:
+ *
+ *   PHASE 1 — DETECTION
+ *     1-repo-verify     Verify repo root (package.json name / template-marker.json)
+ *     2-gentle-ai-detect  Detect gentle-ai (presence + version)
+ *     3-gentle-ai-install gentle-ai install / skip decision
+ *     4-agent-detect    Detect agents (Claude Code / OpenCode) and prompt selection
+ *
+ *   PHASE 2 — INSTALLATION
+ *     5-deps-install    Install dependencies (`bun install`)
+ *     6-playwright      Install Playwright browsers (`bun run pw:install`)
+ *     8-skills-gentle-ai Install 13 skills + engram via gentle-ai (or skip)
+ *     9-skills-community Install community skills via `bunx skills add`
+ *
+ *   PHASE 3 — CONFIGURATION
+ *     10-mcp-env        Wire `.env` for MCP servers + offer direnv autoload
+ *     13-github-repo    GitHub repository (optional)
+ *
+ *   PHASE 4 — VERIFICATION
+ *     11-verify-clis    Verify external CLIs (bun, gh, acli, playwright-cli, resend, jq)
+ *     14-state-write    Persist `.agents/install-state.json`
+ *
+ *   PHASE 5 — INITIAL CONFIGURATION
+ *     7-agents-setup    Run agents:setup (.agents/project.yaml populator)
+ *     12.5-acli-auth    Probe + establish acli session
+ *     13-jira-sync-fields  Jira auth loop + `bun run jira:sync-fields`
+ *     13b-jira-sync-workflows  `bun run jira:sync-workflows`
+ *     14-jira-check     `bun run jira:check`
+ *
+ * Idempotency: each step writes an ISO timestamp to state.steps[<key>] on success.
+ * Re-runs skip completed steps unless overridden via:
+ *   INSTALL_FORCE_ALL=1                  Clear all step timestamps before running
+ *   INSTALL_FORCE_<STEP_KEY>=1           Clear one step (e.g. INSTALL_FORCE_5_DEPS_INSTALL=1)
+ *   --force (CLI flag)                   Same as INSTALL_FORCE_ALL=1
+ *   --force-step <key> (CLI flag)        Same as INSTALL_FORCE_<key>=1
+ *   --validate-skills (CLI flag)         Smoke-test mode: probe skills.sh, no install
  *
  * Usage:
  *   bun run setup
  *   bun run setup --non-interactive
+ *   bun run setup --force
+ *   bun run setup --force-step 5-deps-install
+ *   bun run setup --validate-skills
  *
  * Non-interactive env vars:
  *   INSTALL_AGENTS=claude-code,opencode   Comma-list of agents to configure
@@ -38,24 +61,16 @@
  *   INSTALL_SKIP_JIRA=1                   Skip optional Jira bootstrap
  *   INSTALL_SKIP_API=1                    Skip optional API auth bootstrap
  *   INSTALL_SKIP_DIRENV=1                 Skip direnv autoload setup
- *
- * Plus any MCP secret env vars (e.g. TAVILY_API_KEY, ATLASSIAN_API_TOKEN, POSTMAN_API_KEY).
- * In non-interactive mode, missing vars are listed under pendingEnvVars in the
- * summary — the user fills them in `.env` later and re-runs setup if desired.
- *
- * State file: .agents/install-state.json (gitignored). Re-runs are safe:
- * gentle-ai snapshots existing config files before overwriting (compressed
- * tar.gz, deduped, last 5 retained) and existing MCP files prompt before
- * overwrite — but skill installs DO re-apply on every run, they don't skip.
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
-import { checkbox, confirm, input, password, select } from '@inquirer/prompts';
+import { checkbox, password } from '@inquirer/prompts';
+import * as tui from './lib/tui.ts';
 
 // ============================================================================
 // Types
@@ -103,23 +118,38 @@ interface InstallState {
     version?: string
     checkedAt: string
   }
-  steps: {
+  /**
+   * Legacy step fields kept for forward-compat when reading older state files.
+   * New idempotency logic uses steps: Record<string, string> below.
+   */
+  legacySteps?: {
     depsInstalled?: boolean
     playwrightInstalled?: boolean
     agentsSetupRanAt?: string
-    // Timestamps for the expensive idempotent steps. When set, the matching
-    // step is skipped on re-run unless the user opts in via INSTALL_FORCE_*.
     gentleAiInstalledAt?: string
     communitySkillsInstalledAt?: string
     githubRemoteWiredAt?: string
     jiraBootstrap?: OptionalBootstrapStatus
     apiBootstrap?: OptionalBootstrapStatus
   }
+  /**
+   * Step-level idempotency: each key is a step name (e.g. "5-deps-install"),
+   * each value is the ISO timestamp of the last successful completion.
+   * Re-runs skip a step when its key is present unless INSTALL_FORCE_* overrides.
+   */
+  steps: Record<string, string>
   skills: Record<string, InstallStatus>
   mcps: Record<string, McpStatus>
   externalClis: Record<string, CliStatus>
   pendingEnvVars: string[]
   github?: GithubRemoteInfo
+  postInstall: {
+    agentsSetup: 'pending' | 'completed' | 'skipped-non-interactive' | 'failed'
+    acliAuth: 'pending' | 'completed' | 'skipped-non-interactive' | 'skipped-no-binary' | 'skipped-no-auth' | 'failed'
+    jiraSyncFields: 'pending' | 'completed' | 'skipped-non-interactive' | 'skipped-no-auth' | 'failed'
+    jiraSyncWorkflows: 'pending' | 'completed' | 'skipped-non-interactive' | 'skipped-no-auth' | 'failed'
+    jiraCheck: 'pending' | 'completed' | 'skipped-non-interactive' | 'skipped-prereq' | 'failed'
+  }
 }
 
 // ============================================================================
@@ -134,7 +164,6 @@ const ENV_PATH = join(REPO_ROOT, '.env');
 const ENV_EXAMPLE_PATH = join(REPO_ROOT, '.env.example');
 
 const REPO_NAME = 'agentic-qa-boilerplate';
-const TOTAL_STEPS = 14;
 
 const MIN_GENTLE_AI_VERSION = [1, 26, 5] as const;
 
@@ -175,49 +204,39 @@ const CANONICAL_MCPS = [
 // the user's OS and we refuse to guess. We only verify presence, surface the
 // purpose, and point users to the official docs. `install` is OPTIONAL and only
 // set for genuinely cross-platform commands.
-interface ExternalCli {
-  name: string
-  purpose: string
-  install?: string
-  docs: string
-}
-
-const EXTERNAL_CLIS: ReadonlyArray<ExternalCli> = [
+const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: string, purpose: string }> = [
   {
     name: 'bun',
-    purpose: 'Runtime for every script (`bun run setup`, `bun xray`, `bun run test`)',
     docs: 'https://bun.com/',
+    purpose: 'general-purpose runtime + package manager (this repo runs on bun)',
   },
   {
     name: 'gh',
-    purpose: 'GitHub PR / Actions workflows (`/git-flow-master`, `/regression-testing`)',
     docs: 'https://github.com/cli/cli#installation',
+    purpose: 'GitHub CLI — repos, PRs, releases, gh api',
   },
   {
     name: 'acli',
-    purpose: 'Jira/Confluence from terminal (`/acli`, `/sprint-testing`, `/test-documentation`)',
     docs: 'https://developer.atlassian.com/cloud/acli/guides/install-acli/',
+    purpose: 'Atlassian (Jira/Confluence) CLI — used by /acli skill',
   },
   {
     // Binary produced by @playwright/cli is `playwright-cli`, not `playwright`.
     // This is the agent-driven CLI, NOT the @playwright/test runner library.
     name: 'playwright-cli',
-    purpose: 'Agent-driven browser automation (`/playwright-cli` skill)',
     install: 'bun add -g @playwright/cli@latest',
     docs: 'https://playwright.dev/agent-cli/introduction',
+    purpose: 'browser automation — screenshots, traces, recordings',
+  },
+  {
+    name: 'jq',
+    docs: 'https://jqlang.org/',
+    purpose: 'JSON processor — required by /acli skill for parsing acli --json output',
   },
   {
     name: 'resend',
-    purpose: 'Email testing flows (`/resend-cli` skill)',
     docs: 'https://resend.com/docs/cli',
-  },
-  {
-    // Required only for advanced acli/Jira JSON pipelines (acli ... --json | jq ...).
-    // The `gh --jq` flag is a Go reimplementation embedded in gh and does NOT
-    // need this binary.
-    name: 'jq',
-    purpose: 'JSON parsing in `acli` Jira pipelines (`acli ... --json | jq ...`)',
-    docs: 'https://jqlang.github.io/jq/download',
+    purpose: 'email development + transactional sending',
   },
 ];
 
@@ -296,6 +315,14 @@ const NON_INTERACTIVE
   = process.argv.includes('--non-interactive') || !process.stdin.isTTY;
 const AUTO_NON_INTERACTIVE
   = !process.argv.includes('--non-interactive') && !process.stdin.isTTY;
+
+// --force: clear all step timestamps → re-run everything
+const FORCE_ALL = process.argv.includes('--force') || process.env.INSTALL_FORCE_ALL === '1';
+
+// --force-step <key>: clear one step
+const FORCE_STEP_IDX = process.argv.indexOf('--force-step');
+const FORCE_STEP_KEY = FORCE_STEP_IDX !== -1 ? (process.argv[FORCE_STEP_IDX + 1] ?? '') : '';
+
 const SKIP_GENTLE_AI = process.env.INSTALL_SKIP_GENTLE_AI === '1';
 const SKIP_DEPS = process.env.INSTALL_SKIP_DEPS === '1';
 const SKIP_PLAYWRIGHT = process.env.INSTALL_SKIP_PLAYWRIGHT === '1';
@@ -310,7 +337,7 @@ const SKIP_COMMUNITY = process.env.INSTALL_SKIP_COMMUNITY === '1';
 const SKIP_DIRENV = process.env.INSTALL_SKIP_DIRENV === '1';
 
 // ============================================================================
-// Logger
+// Logger (wraps tui + keeps inline COLORS for printClosingSummary)
 // ============================================================================
 
 const COLORS = {
@@ -324,15 +351,46 @@ const COLORS = {
 };
 
 const log = {
-  info: (msg: string) => process.stdout.write(`${COLORS.cyan}ℹ${COLORS.reset} ${msg}\n`),
-  success: (msg: string) => process.stdout.write(`${COLORS.green}✓${COLORS.reset} ${msg}\n`),
-  warn: (msg: string) => process.stdout.write(`${COLORS.yellow}⚠${COLORS.reset} ${msg}\n`),
-  error: (msg: string) => process.stderr.write(`${COLORS.red}✗${COLORS.reset} ${msg}\n`),
-  banner: (msg: string) => process.stdout.write(`\n${COLORS.bold}${COLORS.cyan}${msg}${COLORS.reset}\n\n`),
-  step: (n: number, total: number, title: string) =>
-    process.stdout.write(`\n${COLORS.bold}[${n}/${total}] ${title}${COLORS.reset}\n`),
+  info: (msg: string) => tui.log.info(msg),
+  success: (msg: string) => tui.log.success(msg),
+  warn: (msg: string) => tui.log.warn(msg),
+  error: (msg: string) => tui.log.error(msg),
+  banner: (msg: string) => tui.section(msg),
+  step: (_n: number, _total: number, title: string) => tui.section(title),
   dim: (msg: string) => process.stdout.write(`${COLORS.dim}${msg}${COLORS.reset}\n`),
 };
+
+// ============================================================================
+// Idempotency helpers
+// ============================================================================
+
+/**
+ * Returns true when a step should run (not yet completed, or forced).
+ * Env-var override: INSTALL_FORCE_<UPPER_STEP_KEY>=1 (dashes become underscores).
+ */
+function shouldRunStep(state: InstallState, key: string, forceKeys: Set<string>): boolean {
+  if (FORCE_ALL) { return true; }
+  if (forceKeys.has(key)) { return true; }
+  // Env-var override: e.g. INSTALL_FORCE_5_DEPS_INSTALL=1
+  const envKey = `INSTALL_FORCE_${key.toUpperCase().replace(/-/g, '_')}`;
+  if (process.env[envKey] === '1') { return true; }
+  return !state.steps[key];
+}
+
+function markStepDone(state: InstallState, key: string): void {
+  state.steps[key] = new Date().toISOString();
+}
+
+// ============================================================================
+// Prompt helpers
+// ============================================================================
+
+async function maybeConfirm(message: string, defaultYes: boolean): Promise<boolean> {
+  if (NON_INTERACTIVE) { return defaultYes; }
+  const result = await tui.confirm({ message, initialValue: defaultYes });
+  if (tui.isCancel(result)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
+  return result;
+}
 
 // ============================================================================
 // Subprocess helpers
@@ -341,8 +399,7 @@ const log = {
 function which(binary: string): string | null {
   // POSIX `which` is not present on raw Windows PowerShell / cmd.exe. Git Bash
   // and WSL ship a MSYS port, so most users hit this branch only when running
-  // setup from a vanilla Windows shell. Mirror the scaffolder pattern
-  // (packages/create-agentic-qa/src/runners.ts) and fall back to `where`.
+  // setup from a vanilla Windows shell.
   const probe = process.platform === 'win32' ? 'where' : 'which';
   const result = spawnSync(probe, [binary], { encoding: 'utf8' });
   if (result.status !== 0) { return null; }
@@ -377,13 +434,9 @@ function runInherited(binary: string, args: string[], env: NodeJS.ProcessEnv = p
   return { ok: result.status === 0 };
 }
 
-async function maybeConfirm(message: string, defaultYes: boolean): Promise<boolean> {
-  if (NON_INTERACTIVE) { return defaultYes; }
-  return confirm({ message, default: defaultYes });
-}
-
 // ============================================================================
-// Step 1 — repo identity check
+// Phase 1 — DETECTION
+// Step 1 (1-repo-verify): repo identity check
 // ============================================================================
 
 async function verifyRepoRoot(): Promise<void> {
@@ -414,18 +467,18 @@ async function verifyRepoRoot(): Promise<void> {
     }
   }
 
-  const proceed = await maybeConfirm(
-    `package.json name is "${pkg.name ?? '(unknown)'}" (expected "${REPO_NAME}"). Continue anyway?`,
-    false,
-  );
-  if (!proceed) {
+  const proceed = await tui.confirm({
+    message: `package.json name is "${pkg.name ?? '(unknown)'}" (expected "${REPO_NAME}"). Continue anyway?`,
+    initialValue: false,
+  });
+  if (tui.isCancel(proceed) || !proceed) {
     log.dim('  Aborted. Re-run anytime: bun run setup');
     process.exit(0);
   }
 }
 
 // ============================================================================
-// Step 2 — detect gentle-ai
+// Phase 1 — Step 2 (2-gentle-ai-detect): detect gentle-ai
 // ============================================================================
 
 function parseGentleAiVersion(output: string): string | undefined {
@@ -467,7 +520,7 @@ function detectGentleAi(): GentleAiInfo {
 }
 
 // ============================================================================
-// Step 3 — gentle-ai install instructions / skip
+// Phase 1 — Step 3 (3-gentle-ai-install): gentle-ai install instructions / skip
 // ============================================================================
 
 async function handleMissingGentleAi(): Promise<'show-and-exit' | 'skip'> {
@@ -497,7 +550,7 @@ async function handleMissingGentleAi(): Promise<'show-and-exit' | 'skip'> {
 }
 
 // ============================================================================
-// Step 4 — detect agents
+// Phase 1 — Step 4 (4-agent-detect): detect agents
 // ============================================================================
 
 async function detectAgents(): Promise<AgentDetection> {
@@ -549,12 +602,14 @@ async function promptAgentSelection(detected: AgentDetection): Promise<AgentId[]
   }
 
   if (detected.claudeCode && !detected.opencode) {
-    const ok = await confirm({ message: 'Detected Claude Code. Configure for it?', default: true });
+    const ok = await tui.confirm({ message: 'Detected Claude Code. Configure for it?', initialValue: true });
+    if (tui.isCancel(ok)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
     return ok ? ['claude-code'] : [];
   }
 
   if (detected.opencode && !detected.claudeCode) {
-    const ok = await confirm({ message: 'Detected OpenCode. Configure for it?', default: true });
+    const ok = await tui.confirm({ message: 'Detected OpenCode. Configure for it?', initialValue: true });
+    if (tui.isCancel(ok)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
     return ok ? ['opencode'] : [];
   }
 
@@ -570,7 +625,8 @@ async function promptAgentSelection(detected: AgentDetection): Promise<AgentId[]
 }
 
 // ============================================================================
-// Step 5 — bun install
+// Phase 2 — INSTALLATION
+// Step 5 (5-deps-install): bun install
 // ============================================================================
 
 function nodeModulesLooksReady(): boolean {
@@ -595,18 +651,19 @@ function playwrightBrowsersInstalled(): boolean {
   return candidates.some(p => existsSync(p));
 }
 
-async function runDepsInstall(state: InstallState): Promise<void> {
+async function runDepsInstall(state: InstallState, forceKeys: Set<string>): Promise<void> {
+  const key = '5-deps-install';
   if (SKIP_DEPS) {
     log.dim('  INSTALL_SKIP_DEPS=1, skipping bun install.');
     return;
   }
-  if (state.steps.depsInstalled && nodeModulesLooksReady()) {
-    log.dim('  Dependencies already installed (state + node_modules present).');
+  if (!shouldRunStep(state, key, forceKeys) && nodeModulesLooksReady()) {
+    log.dim('  Dependencies already installed (state + node_modules present). Use --force-step 5-deps-install to re-run.');
     return;
   }
-  if (nodeModulesLooksReady()) {
+  if (nodeModulesLooksReady() && !shouldRunStep(state, key, forceKeys)) {
     log.dim('  node_modules looks populated; skipping bun install.');
-    state.steps.depsInstalled = true;
+    markStepDone(state, key);
     return;
   }
 
@@ -615,31 +672,31 @@ async function runDepsInstall(state: InstallState): Promise<void> {
     log.warn('Skipping bun install. Run it manually before using the test scripts.');
     return;
   }
-  log.info('Running: bun install');
+
+  const s = tui.spinner();
+  s.start('Installing dependencies (bun install)…');
   const { ok } = runInherited('bun', ['install']);
   if (ok) {
-    state.steps.depsInstalled = true;
-    log.success('Dependencies installed.');
+    markStepDone(state, key);
+    s.stop('Dependencies installed.');
   }
   else {
-    log.error('bun install failed. Review the output above and retry.');
+    s.stop('bun install failed. Review the output above and retry.');
   }
 }
 
 // ============================================================================
-// Step 6 — Playwright browsers
+// Phase 2 — Step 6 (6-playwright): Playwright browsers
 // ============================================================================
 
-async function runPlaywrightInstall(state: InstallState): Promise<void> {
+async function runPlaywrightInstall(state: InstallState, forceKeys: Set<string>): Promise<void> {
+  const key = '6-playwright';
   if (SKIP_PLAYWRIGHT) {
     log.dim('  INSTALL_SKIP_PLAYWRIGHT=1, skipping playwright install.');
     return;
   }
-  // `playwright` is NOT on PATH — Playwright lives in node_modules/.bin and the
-  // browser binaries land in a per-OS cache dir. Probe the actual binary via
-  // `bunx playwright --version` (resolves the local devDep + verifies install).
-  if (state.steps.playwrightInstalled && playwrightBrowsersInstalled()) {
-    log.dim('  Playwright already installed (state + browsers cached).');
+  if (!shouldRunStep(state, key, forceKeys) && playwrightBrowsersInstalled()) {
+    log.dim('  Playwright already installed (state + browsers cached). Use --force-step 6-playwright to re-run.');
     return;
   }
 
@@ -651,56 +708,21 @@ async function runPlaywrightInstall(state: InstallState): Promise<void> {
     log.warn('Skipping playwright install. Run `bun run pw:install` later when ready.');
     return;
   }
-  log.info('Running: bun run pw:install');
+
+  const s = tui.spinner();
+  s.start('Installing Playwright browsers (bun run pw:install)…');
   const { ok } = runInherited('bun', ['run', 'pw:install']);
   if (ok) {
-    state.steps.playwrightInstalled = true;
-    log.success('Playwright browsers installed.');
+    markStepDone(state, key);
+    s.stop('Playwright browsers installed.');
   }
   else {
-    log.error('pw:install failed. Review the output above and retry.');
+    s.stop('pw:install failed. Review the output above and retry.');
   }
 }
 
 // ============================================================================
-// Step 7 — agents:setup (project.yaml populator)
-// ============================================================================
-
-async function runAgentsSetup(state: InstallState): Promise<void> {
-  if (SKIP_AGENTS_SETUP) {
-    log.dim('  INSTALL_SKIP_AGENTS_SETUP=1, skipping agents:setup.');
-    return;
-  }
-  if (state.steps.agentsSetupRanAt && !FORCE_AGENTS_SETUP) {
-    log.dim(`  agents:setup already ran at ${state.steps.agentsSetupRanAt}.`);
-    log.dim('  Set INSTALL_FORCE_AGENTS_SETUP=1 to re-run, or run `bun run agents:setup` manually.');
-    return;
-  }
-
-  const proceed = await maybeConfirm(
-    'Run `bun run agents:setup` to populate `.agents/project.yaml` (interactive)?',
-    true,
-  );
-  if (!proceed) {
-    log.warn('Skipping agents:setup. Run it later: bun run agents:setup');
-    return;
-  }
-
-  const args = ['run', 'agents:setup'];
-  if (NON_INTERACTIVE) { args.push('--', '--non-interactive'); }
-  log.info(`Running: bun ${args.join(' ')}`);
-  const { ok } = runInherited('bun', args);
-  if (ok) {
-    state.steps.agentsSetupRanAt = new Date().toISOString();
-    log.success('agents:setup complete.');
-  }
-  else {
-    log.warn('agents:setup did not exit cleanly. You can re-run it later: bun run agents:setup');
-  }
-}
-
-// ============================================================================
-// Step 8 — install skills via gentle-ai
+// Phase 2 — Step 8 (8-skills-gentle-ai): install skills via gentle-ai
 // ============================================================================
 
 function runGentleAiInstall(args: string[]): { ok: boolean, reason?: string } {
@@ -719,14 +741,16 @@ function runGentleAiInstall(args: string[]): { ok: boolean, reason?: string } {
 async function installSkillsViaGentleAi(
   agents: AgentId[],
   state: InstallState,
+  forceKeys: Set<string>,
 ): Promise<void> {
+  const key = '8-skills-gentle-ai';
   if (agents.length === 0) {
     log.info('No agents selected, skipping skill install.');
     return;
   }
-  if (state.steps.gentleAiInstalledAt && !FORCE_GENTLE_AI) {
-    log.dim(`  gentle-ai skills already installed at ${state.steps.gentleAiInstalledAt}.`);
-    log.dim('  Set INSTALL_FORCE_GENTLE_AI=1 to re-run.');
+  if (!shouldRunStep(state, key, forceKeys) && !FORCE_GENTLE_AI) {
+    log.dim(`  gentle-ai skills already installed at ${state.steps[key]}.`);
+    log.dim('  Set INSTALL_FORCE_GENTLE_AI=1 or --force-step 8-skills-gentle-ai to re-run.');
     return;
   }
 
@@ -736,7 +760,7 @@ async function installSkillsViaGentleAi(
   // before overwriting (compressed tar.gz, deduped, last 5 retained),
   // so re-runs are safe and idempotent — they DO re-apply, they don't
   // skip. The `<slug>::<agent>` state keys stay for the closing summary
-  // and doctor script, but are no longer used as per-slug skip logic.
+  // and doctor script.
   log.info(`This will run ${agents.length} gentle-ai install command(s) — one batched call per agent.`);
 
   const proceed = await maybeConfirm('Continue with skill installation?', true);
@@ -744,8 +768,8 @@ async function installSkillsViaGentleAi(
     log.warn('Skipping skill installation.');
     for (const slug of [ENGRAM_COMPONENT, ...SKILL_SLUGS]) {
       for (const agent of agents) {
-        const key = `${slug}::${agent}`;
-        if (!state.skills[key]) { state.skills[key] = 'skipped'; }
+        const k = `${slug}::${agent}`;
+        if (!state.skills[k]) { state.skills[k] = 'skipped'; }
       }
     }
     return;
@@ -755,6 +779,9 @@ async function installSkillsViaGentleAi(
 
   for (const agent of agents) {
     log.banner(`Installing skills for: ${agent}`);
+
+    const s = tui.spinner();
+    s.start(`Installing engram + ${SKILL_SLUGS.length} skills for ${agent}…`);
 
     const result = runGentleAiInstall([
       'install',
@@ -768,21 +795,21 @@ async function installSkillsViaGentleAi(
 
     const status: InstallStatus = result.ok ? 'installed' : 'failed';
     if (result.ok) {
-      log.success(`  installed: engram + ${SKILL_SLUGS.length} skills (${agent})`);
+      s.stop(`Installed: engram + ${SKILL_SLUGS.length} skills (${agent})`);
     }
     else {
-      log.error(`  failed: engram + skills (${agent}) — ${result.reason}`);
+      s.stop(`Failed: engram + skills (${agent}) — ${result.reason}`);
     }
 
     for (const slug of [ENGRAM_COMPONENT, ...SKILL_SLUGS]) {
       state.skills[`${slug}::${agent}`] = status;
     }
   }
-  state.steps.gentleAiInstalledAt = new Date().toISOString();
+  markStepDone(state, key);
 }
 
 // ============================================================================
-// Step 9 — community skills via bunx skills CLI (independent of gentle-ai)
+// Phase 2 — Step 9 (9-skills-community): community skills via bunx skills CLI
 // ============================================================================
 
 function describeSkill(item: CommunitySkill): string {
@@ -795,19 +822,18 @@ function describeSkill(item: CommunitySkill): string {
 async function installCommunitySkills(
   state: InstallState,
   level: 'project' | 'global',
+  forceKeys: Set<string>,
 ): Promise<void> {
   const list = level === 'project' ? PROJECT_LEVEL_SKILLS : USER_LEVEL_SKILLS;
   const label = level === 'project' ? 'project-level' : 'user-level (global)';
+  const key = `9-skills-community-${level}`;
 
   if (list.length === 0) {
-    log.dim(`  No ${label} community skills configured for this repo (${level === 'project' ? 'PROJECT_LEVEL_SKILLS' : 'USER_LEVEL_SKILLS'} is empty).`);
+    log.dim(`  No ${label} community skills configured for this repo.`);
     return;
   }
-  // Idempotency: once a previous run completed this level, skip wholesale on
-  // re-runs. Individual skills also have a per-key `installed` guard inside
-  // the loop, but this short-circuit avoids re-prompting the user entirely.
-  if (state.steps.communitySkillsInstalledAt && !FORCE_COMMUNITY) {
-    log.dim(`  ${label} community skills already installed at ${state.steps.communitySkillsInstalledAt}.`);
+  if (!shouldRunStep(state, key, forceKeys) && !FORCE_COMMUNITY) {
+    log.dim(`  ${label} community skills already installed at ${state.steps[key]}.`);
     log.dim('  Set INSTALL_FORCE_COMMUNITY=1 to re-run.');
     return;
   }
@@ -820,9 +846,9 @@ async function installCommunitySkills(
     log.warn(`Skipping ${label} community skills.`);
     for (const item of list) {
       const slug = describeSkill(item);
-      const key = `community:${level}:${slug}`;
-      if (!state.skills[key]) {
-        state.skills[key] = 'skipped';
+      const stateKey = `community:${level}:${slug}`;
+      if (!state.skills[stateKey]) {
+        state.skills[stateKey] = 'skipped';
       }
     }
     return;
@@ -830,8 +856,8 @@ async function installCommunitySkills(
 
   for (const item of list) {
     const slug = describeSkill(item);
-    const key = `community:${level}:${slug}`;
-    if (state.skills[key] === 'installed') {
+    const stateKey = `community:${level}:${slug}`;
+    if (state.skills[stateKey] === 'installed' && !shouldRunStep(state, key, forceKeys) && !FORCE_COMMUNITY) {
       log.dim(`  skipping ${slug} (already installed)`);
       continue;
     }
@@ -843,21 +869,25 @@ async function installCommunitySkills(
       args.push('--global');
     }
     args.push('--yes');
+
+    const s = tui.spinner();
+    s.start(`Installing ${slug}…`);
     const result = tryRun('bunx', args);
     if (result.ok) {
-      log.success(`  installed: ${slug}`);
-      state.skills[key] = 'installed';
+      s.stop(`Installed: ${slug}`);
+      state.skills[stateKey] = 'installed';
     }
     else {
-      log.error(`  failed: ${slug} — ${(result.stderr || result.stdout).trim().slice(0, 120) || 'unknown error'}`);
-      state.skills[key] = 'failed';
+      s.stop(`Failed: ${slug} — ${(result.stderr || result.stdout).trim().slice(0, 120) || 'unknown error'}`);
+      state.skills[stateKey] = 'failed';
     }
   }
-  state.steps.communitySkillsInstalledAt = new Date().toISOString();
+  markStepDone(state, key);
 }
 
 // ============================================================================
-// Step 10 — Wire .env for MCP servers (+ direnv autoload offer)
+// Phase 3 — CONFIGURATION
+// Step 10 (10-mcp-env): Wire .env for MCP servers (+ direnv autoload offer)
 // ============================================================================
 //
 // `.mcp.json` and `opencode.jsonc` are committed with `${VAR}` / `{env:VAR}`
@@ -933,11 +963,17 @@ async function appendVarsToEnv(vars: Record<string, string>): Promise<void> {
 }
 
 async function promptForVar(name: string): Promise<string> {
-  const ask = isSecretName(name) ? password : input;
-  const entered = await ask({
+  if (isSecretName(name)) {
+    const entered = await password({
+      message: `${name} (Enter to skip — fill later in .env):`,
+      mask: '*',
+    });
+    return (entered ?? '').trim();
+  }
+  const entered = await tui.text({
     message: `${name} (Enter to skip — fill later in .env):`,
-    ...(isSecretName(name) ? { mask: '*' } : {}),
-  } as Parameters<typeof password>[0]);
+  });
+  if (tui.isCancel(entered)) { return ''; }
   return (entered ?? '').trim();
 }
 
@@ -1011,7 +1047,7 @@ async function configureMcps(agents: AgentId[], state: InstallState): Promise<vo
 }
 
 // ----------------------------------------------------------------------------
-// direnv autoload sub-step (still part of Step 10)
+// direnv autoload sub-step (still part of Step 10 / 10-mcp-env)
 // ----------------------------------------------------------------------------
 
 interface DirenvInfo {
@@ -1105,147 +1141,8 @@ async function offerDirenvAutoload(): Promise<void> {
 }
 
 // ============================================================================
-// Step 10 — verify external CLIs
-// ============================================================================
-
-interface CliResult {
-  name: string
-  status: CliStatus
-  purpose: string
-  install?: string
-  docs: string
-}
-
-function verifyExternalClis(state: InstallState): CliResult[] {
-  const results: CliResult[] = EXTERNAL_CLIS.map((cli) => {
-    const found = which(cli.name) !== null;
-    const status: CliStatus = found ? 'found' : 'missing';
-    state.externalClis[cli.name] = status;
-    return { name: cli.name, status, purpose: cli.purpose, install: cli.install, docs: cli.docs };
-  });
-
-  process.stdout.write('\n');
-  process.stdout.write(`${COLORS.bold}CLI              Status      Purpose${COLORS.reset}\n`);
-  process.stdout.write(`${'─'.repeat(80)}\n`);
-  for (const r of results) {
-    const padName = r.name.padEnd(16);
-    const padStatus = r.status === 'found' ? 'found     ' : 'missing   ';
-    const statusColor = r.status === 'found' ? COLORS.green : COLORS.yellow;
-    process.stdout.write(`${padName} ${statusColor}${padStatus}${COLORS.reset} ${r.purpose}\n`);
-    if (r.status === 'missing') {
-      if (r.install) {
-        process.stdout.write(`${' '.repeat(28)}${COLORS.dim}quick:${COLORS.reset} ${r.install}\n`);
-      }
-      process.stdout.write(`${' '.repeat(28)}${COLORS.dim}docs:  ${r.docs}${COLORS.reset}\n`);
-    }
-  }
-  return results;
-}
-
-// ============================================================================
-// Step 11 — optional bootstraps (Jira, API)
-// ============================================================================
-
-async function optionalJiraBootstrap(state: InstallState): Promise<void> {
-  if (SKIP_JIRA) {
-    log.dim('  INSTALL_SKIP_JIRA=1, skipping Jira bootstrap.');
-    return;
-  }
-  const proceed = await maybeConfirm(
-    'Configure Jira credentials now? (Runs `bun run jira:check`; if it fails, you will be pointed at `bun run jira:sync-fields`.)',
-    true,
-  );
-  if (!proceed) {
-    state.steps.jiraBootstrap = { ran: false };
-    return;
-  }
-  log.info('Running: bun run jira:check');
-  const { ok } = runInherited('bun', ['run', 'jira:check']);
-  state.steps.jiraBootstrap = { ran: true, ok };
-  if (ok) {
-    log.success('Jira bootstrap green.');
-  }
-  else {
-    log.warn('jira:check did not pass. Once you have Jira credentials in `.env`, run:');
-    log.dim('  bun run jira:sync-fields');
-    log.dim('  bun run jira:sync-workflows');
-    log.dim('  bun run jira:check');
-  }
-}
-
-async function optionalApiBootstrap(state: InstallState): Promise<void> {
-  if (SKIP_API) {
-    log.dim('  INSTALL_SKIP_API=1, skipping API bootstrap.');
-    return;
-  }
-  const proceed = await maybeConfirm(
-    'Configure API auth now? (Runs `bun run api:login`.)',
-    false,
-  );
-  if (!proceed) {
-    state.steps.apiBootstrap = { ran: false };
-    return;
-  }
-  log.info('Running: bun run api:login');
-  const { ok } = runInherited('bun', ['run', 'api:login']);
-  state.steps.apiBootstrap = { ran: true, ok };
-  if (ok) {
-    log.success('API auth green.');
-  }
-  else {
-    log.warn('api:login did not pass. Re-run later: bun run api:login');
-  }
-}
-
-// ============================================================================
-// State persistence
-// ============================================================================
-
-async function loadPriorState(): Promise<InstallState | null> {
-  if (!existsSync(STATE_PATH)) { return null; }
-  try {
-    const raw = await readFile(STATE_PATH, 'utf8');
-    return JSON.parse(raw) as InstallState;
-  }
-  catch {
-    log.warn(`Could not parse ${STATE_PATH}, starting fresh.`);
-    return null;
-  }
-}
-
-async function writeInstallState(state: InstallState): Promise<void> {
-  await mkdir(dirname(STATE_PATH), { recursive: true });
-  await writeFile(STATE_PATH, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
-  log.success(`Wrote ${STATE_PATH}`);
-}
-
-function buildInitialState(prior: InstallState | null): InstallState {
-  if (prior && prior.version === 1) {
-    // Ensure all sections exist on older state files (forward-compat).
-    return {
-      ...prior,
-      steps: prior.steps ?? {},
-      skills: prior.skills ?? {},
-      mcps: prior.mcps ?? {},
-      externalClis: prior.externalClis ?? {},
-      pendingEnvVars: prior.pendingEnvVars ?? [],
-    };
-  }
-  return {
-    version: 1,
-    installedAt: new Date().toISOString(),
-    agents: [],
-    gentleAi: { status: 'missing', checkedAt: new Date().toISOString() },
-    steps: {},
-    skills: {},
-    mcps: {},
-    externalClis: {},
-    pendingEnvVars: [],
-  };
-}
-
-// ============================================================================
-// Step 13 — GitHub remote (optional)
+// Phase 3 — Step 13 (13-github-repo): GitHub remote (optional)
+// Ported from sibling commit 316dc1c + 8f82561 verbatim, adapted for QA repo
 // ============================================================================
 
 interface GhStatus {
@@ -1281,37 +1178,85 @@ function sanitizeRepoName(name: string): string {
     .slice(0, 100);
 }
 
-async function setupGithubRemote(state: InstallState): Promise<void> {
+// ============================================================================
+// Phase 3 — Step 12 (12-api-bootstrap): Optional API auth bootstrap
+// ============================================================================
+
+/**
+ * Offer to run `bun run api:login` to populate API_TOKEN in .env so the
+ * OpenAPI MCP server can authenticate against the target backend. This
+ * accelerates MCP-driven API testing and exploration after install.
+ */
+async function optionalApiBootstrap(state: InstallState, forceKeys: Set<string>): Promise<void> {
+  const key = '12-api-bootstrap';
+  if (SKIP_API) {
+    log.dim('  INSTALL_SKIP_API=1, skipping API bootstrap.');
+    return;
+  }
+  if (!shouldRunStep(state, key, forceKeys)) {
+    log.dim(`  ${key} already done; skipping (set INSTALL_FORCE_12_API_BOOTSTRAP=1 to re-run).`);
+    return;
+  }
+  const proceed = await maybeConfirm(
+    'Configure API auth now? (Runs `bun run api:login`.)',
+    false,
+  );
+  if (!proceed) {
+    return;
+  }
+  log.info('Running: bun run api:login');
+  const { ok } = runInherited('bun', ['run', 'api:login']);
+  if (ok) {
+    log.success('API auth green.');
+    markStepDone(state, key);
+  }
+  else {
+    log.warn('api:login did not pass. Re-run later: bun run api:login');
+  }
+}
+
+async function setupGithubRemote(state: InstallState, forceKeys: Set<string>): Promise<void> {
+  const key = '13-github-repo';
   if (NON_INTERACTIVE) {
     log.dim('Non-interactive mode — skipping GitHub remote creation.');
     return;
   }
 
-  // Idempotency: if `origin` is already wired, re-running the installer must
-  // not call `gh repo create` (it would fail with "repo already exists").
-  // Hydrate state.github from the existing remote URL so the closing summary
-  // still surfaces the GitHub block on subsequent runs. INSTALL_FORCE_GITHUB=1
-  // bypasses this short-circuit (rare — the user explicitly wants to wire a
-  // different remote).
-  const existingRemote = tryRun('git', ['remote', 'get-url', 'origin']);
-  if (existingRemote.ok && existingRemote.stdout.trim().length > 0 && !FORCE_GITHUB) {
-    const url = existingRemote.stdout.trim();
-    log.success(`origin already wired: ${url}`);
-    log.dim('  Skipping repo creation. Set INSTALL_FORCE_GITHUB=1 to wire a different remote.');
-    if (!state.github) {
-      const match = url.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
+  // Idempotency: if a prior run already created a repo and the local `origin`
+  // points at the same URL, skip silently. INSTALL_FORCE_GITHUB=1 or
+  // --force-step 13-github-repo bypasses this.
+  if (state.github && !FORCE_GITHUB && !shouldRunStep(state, key, forceKeys)) {
+    const originUrl = tryRun('git', ['remote', 'get-url', 'origin']);
+    if (originUrl.ok && originUrl.stdout.trim().includes(`${state.github.account}/${state.github.repo}`)) {
+      log.dim(`GitHub remote already configured: ${state.github.url} — skipping. (Force: INSTALL_FORCE_GITHUB=1)`);
+      return;
+    }
+  }
+
+  // Hydrate state.github from an existing `origin` remote when state has no
+  // record of it (e.g. user manually ran `gh repo create` between installer
+  // runs, or cloned a repo that already had origin set). Parsing the URL
+  // populates the closing-summary GitHub block without re-creating the repo.
+  if (!state.github) {
+    const originUrl = tryRun('git', ['remote', 'get-url', 'origin']);
+    if (originUrl.ok) {
+      const url = originUrl.stdout.trim();
+      // Match SSH (git@github.com:owner/repo.git) and HTTPS (https://github.com/owner/repo[.git]).
+      const match = url.match(/github\.com[:/]([^/]+)\/([^/.]+)(?:\.git)?$/);
       if (match) {
+        const [, account, repo] = match;
         state.github = {
-          account: match[1],
-          repo: match[2],
+          account,
+          repo,
           visibility: 'unknown',
-          url: `https://github.com/${match[1]}/${match[2]}`,
-          createdAt: new Date().toISOString(),
+          url: `https://github.com/${account}/${repo}`,
+          createdAt: 'pre-existing',
         };
+        log.dim(`Detected existing GitHub remote: ${state.github.url} — hydrating state, skipping create.`);
+        markStepDone(state, key);
+        return;
       }
     }
-    state.steps.githubRemoteWiredAt = state.steps.githubRemoteWiredAt ?? new Date().toISOString();
-    return;
   }
 
   const gh = detectGh();
@@ -1328,10 +1273,12 @@ async function setupGithubRemote(state: InstallState): Promise<void> {
   }
   log.success(`gh ${gh.version ?? ''} detected (authenticated).`);
 
-  const wantRepo = await confirm({
+  const wantRepoRaw = await tui.confirm({
     message: 'Create a GitHub repository for this project now?',
-    default: true,
+    initialValue: true,
   });
+  if (tui.isCancel(wantRepoRaw)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
+  const wantRepo = wantRepoRaw;
   if (!wantRepo) {
     log.dim('Skipped. To wire later:  gh repo create --source=. --remote=origin --push');
     return;
@@ -1339,14 +1286,14 @@ async function setupGithubRemote(state: InstallState): Promise<void> {
 
   // Resolve current package name as default repo name.
   const pkgPath = join(REPO_ROOT, 'package.json');
-  let defaultRepoName = 'my-app';
+  let defaultRepoName = 'my-project';
   try {
     const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as { name?: string };
     if (pkg.name) { defaultRepoName = sanitizeRepoName(pkg.name); }
   }
   catch { /* fall through with default */ }
 
-  // Resolve account choices: personal login + memberships.
+  // Resolve account choices: personal login + org memberships.
   const userRes = ghApi(['user', '--jq', '.login']);
   if (!userRes.ok || !userRes.stdout) {
     log.error('Could not resolve GitHub user via `gh api user`. Skipping.');
@@ -1357,31 +1304,37 @@ async function setupGithubRemote(state: InstallState): Promise<void> {
   const orgsRes = ghApi(['user/orgs', '--jq', '.[].login']);
   const orgs = orgsRes.ok && orgsRes.stdout.length > 0 ? orgsRes.stdout.split('\n').filter(Boolean) : [];
 
-  const accountChoices: { name: string, value: string }[] = [
-    { name: `${userLogin} (personal)`, value: userLogin },
-    ...orgs.map(o => ({ name: `${o} (organization)`, value: o })),
+  const accountChoices = [
+    { label: `${userLogin} (personal)`, value: userLogin },
+    ...orgs.map(o => ({ label: `${o} (organization)`, value: o })),
   ];
 
-  const account = await select({
+  const accountRaw = await tui.select({
     message: 'Where should the repository live?',
-    choices: accountChoices,
-    default: userLogin,
+    options: accountChoices,
+    initialValue: userLogin,
   });
+  if (tui.isCancel(accountRaw)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
+  const account = accountRaw;
 
-  const visibility = await select<'private' | 'public' | 'internal'>({
+  const visibilityRaw = await tui.select<'private' | 'public' | 'internal'>({
     message: 'Repository visibility?',
-    choices: [
-      { name: 'private (default)', value: 'private' },
-      { name: 'public', value: 'public' },
-      { name: 'internal (org only)', value: 'internal' },
+    options: [
+      { label: 'private (default)', value: 'private' as const },
+      { label: 'public', value: 'public' as const },
+      { label: 'internal (org only)', value: 'internal' as const },
     ],
-    default: 'private',
+    initialValue: 'private' as const,
   });
+  if (tui.isCancel(visibilityRaw)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
+  const visibility = visibilityRaw;
 
-  const rawName = await input({
+  const rawNameRaw = await tui.text({
     message: 'Repository name:',
-    default: defaultRepoName,
+    initialValue: defaultRepoName,
   });
+  if (tui.isCancel(rawNameRaw)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
+  const rawName = rawNameRaw;
   const repoName = sanitizeRepoName(rawName);
   if (!repoName) {
     log.error('Invalid repository name. Skipping.');
@@ -1414,24 +1367,473 @@ async function setupGithubRemote(state: InstallState): Promise<void> {
     url,
     createdAt: new Date().toISOString(),
   };
-  state.steps.githubRemoteWiredAt = new Date().toISOString();
+  markStepDone(state, key);
+
+  // Write template marker so re-runs of verifyRepoRoot() accept the renamed package.json.
+  const markerPath = join(REPO_ROOT, '.agents', 'template-marker.json');
+  if (!existsSync(markerPath)) {
+    try {
+      await mkdir(dirname(markerPath), { recursive: true });
+      await writeFile(markerPath, `${JSON.stringify({ template: 'upex-galaxy/agentic-qa-boilerplate' }, null, 2)}\n`, 'utf8');
+    }
+    catch { /* best-effort */ }
+  }
+
   log.success(`Repository created and pushed: ${url}`);
+}
+
+// ============================================================================
+// Phase 4 — VERIFICATION
+// Step 11 (11-verify-clis): verify external CLIs
+// ============================================================================
+
+interface CliResult {
+  name: string
+  status: CliStatus
+  purpose: string
+  install?: string
+  docs: string
+}
+
+function installHintForOS(cli: { name: string, install?: string }): string {
+  if (cli.install) { return cli.install; }
+  if (process.platform === 'win32') { return `winget install ${cli.name}`; }
+  if (process.platform === 'darwin') { return `brew install ${cli.name}`; }
+  return `apt install ${cli.name}`;
+}
+
+function verifyExternalClis(state: InstallState): CliResult[] {
+  const results: CliResult[] = EXTERNAL_CLIS.map((cli) => {
+    const found = which(cli.name) !== null;
+    const status: CliStatus = found ? 'found' : 'missing';
+    state.externalClis[cli.name] = status;
+    return { name: cli.name, status, purpose: cli.purpose, install: cli.install, docs: cli.docs };
+  });
+
+  const rows = results.map(r => [
+    r.name,
+    r.status === 'found' ? tui.statusIcon('ok') : tui.statusIcon('fail'),
+    r.status === 'found' ? '' : installHintForOS(r),
+    r.purpose,
+  ]);
+  process.stdout.write(`${tui.table(['CLI', 'Found', 'Install hint', 'Purpose'], rows)}\n`);
+  return results;
+}
+
+// ============================================================================
+// State persistence
+// ============================================================================
+
+async function loadPriorState(): Promise<InstallState | null> {
+  if (!existsSync(STATE_PATH)) { return null; }
+  try {
+    const raw = await readFile(STATE_PATH, 'utf8');
+    const parsed = JSON.parse(raw) as InstallState;
+    // Back-fill postInstall for state files written before this field existed.
+    parsed.postInstall ??= {
+      agentsSetup: 'pending',
+      acliAuth: 'pending',
+      jiraSyncFields: 'pending',
+      jiraSyncWorkflows: 'pending',
+      jiraCheck: 'pending',
+    };
+    parsed.postInstall.acliAuth ??= 'pending';
+    parsed.postInstall.jiraSyncWorkflows ??= 'pending';
+    return parsed;
+  }
+  catch {
+    log.warn(`Could not parse ${STATE_PATH}, starting fresh.`);
+    return null;
+  }
+}
+
+async function writeInstallState(state: InstallState): Promise<void> {
+  await mkdir(dirname(STATE_PATH), { recursive: true });
+  await writeFile(STATE_PATH, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
+  log.success(`Wrote ${STATE_PATH}`);
+}
+
+function buildInitialState(prior: InstallState | null): InstallState {
+  if (prior && prior.version === 1) {
+    // Ensure all sections exist on older state files (forward-compat).
+    prior.steps ??= {};
+    prior.postInstall ??= {
+      agentsSetup: 'pending',
+      acliAuth: 'pending',
+      jiraSyncFields: 'pending',
+      jiraSyncWorkflows: 'pending',
+      jiraCheck: 'pending',
+    };
+    prior.postInstall.acliAuth ??= 'pending';
+    prior.postInstall.jiraSyncWorkflows ??= 'pending';
+
+    // Migrate legacy step booleans into the new steps: Record<string, string> format.
+    if (prior.legacySteps) {
+      const l = prior.legacySteps;
+      if (l.depsInstalled && !prior.steps['5-deps-install']) {
+        prior.steps['5-deps-install'] = prior.installedAt;
+      }
+      if (l.playwrightInstalled && !prior.steps['6-playwright']) {
+        prior.steps['6-playwright'] = prior.installedAt;
+      }
+      if (l.agentsSetupRanAt && !prior.steps['7-agents-setup']) {
+        prior.steps['7-agents-setup'] = l.agentsSetupRanAt;
+      }
+      if (l.gentleAiInstalledAt && !prior.steps['8-skills-gentle-ai']) {
+        prior.steps['8-skills-gentle-ai'] = l.gentleAiInstalledAt;
+      }
+      if (l.communitySkillsInstalledAt) {
+        if (!prior.steps['9-skills-community-project']) {
+          prior.steps['9-skills-community-project'] = l.communitySkillsInstalledAt;
+        }
+        if (!prior.steps['9-skills-community-global']) {
+          prior.steps['9-skills-community-global'] = l.communitySkillsInstalledAt;
+        }
+      }
+      if (l.githubRemoteWiredAt && !prior.steps['13-github-repo']) {
+        prior.steps['13-github-repo'] = l.githubRemoteWiredAt;
+      }
+    }
+
+    return {
+      ...prior,
+      steps: prior.steps,
+      skills: prior.skills ?? {},
+      mcps: prior.mcps ?? {},
+      externalClis: prior.externalClis ?? {},
+      pendingEnvVars: prior.pendingEnvVars ?? [],
+    };
+  }
+  return {
+    version: 1,
+    installedAt: new Date().toISOString(),
+    agents: [],
+    gentleAi: { status: 'missing', checkedAt: new Date().toISOString() },
+    steps: {},
+    skills: {},
+    mcps: {},
+    externalClis: {},
+    pendingEnvVars: [],
+    postInstall: {
+      agentsSetup: 'pending',
+      acliAuth: 'pending',
+      jiraSyncFields: 'pending',
+      jiraSyncWorkflows: 'pending',
+      jiraCheck: 'pending',
+    },
+  };
+}
+
+// ============================================================================
+// Phase 5 — INITIAL CONFIGURATION
+// Ported from sibling runPostInstallSteps() — Steps 7, 12.5, 13, 13b, 14
+// ============================================================================
+
+/**
+ * Reload .env in-process so that values edited by the user during the Jira
+ * auth-retry loop are visible without a shell restart.
+ */
+function reloadDotEnv(): void {
+  try {
+    const envPath = resolve(process.cwd(), '.env');
+    if (!existsSync(envPath)) { return; }
+    const content = readFileSync(envPath, 'utf8');
+    for (const raw of content.split('\n')) {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) { continue; }
+      const eq = line.indexOf('=');
+      if (eq < 0) { continue; }
+      const k = line.slice(0, eq).trim();
+      const v = line.slice(eq + 1).trim().replace(/^['"]|['"]$/g, '');
+      if (k) { process.env[k] = v; }
+    }
+  }
+  catch {
+    // best-effort — silently continue
+  }
+}
+
+/**
+ * Interactive loop that checks Atlassian credentials (ATLASSIAN_URL /
+ * ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN) and probes /rest/api/3/myself.
+ * Up to 5 attempts; lets the user skip at any time.
+ */
+async function jiraAuthLoop(): Promise<'authenticated' | 'skipped'> {
+  const probe = async (): Promise<{ ok: boolean, reason: string }> => {
+    const url = process.env.ATLASSIAN_URL;
+    const email = process.env.ATLASSIAN_EMAIL;
+    const token = process.env.ATLASSIAN_API_TOKEN;
+    const missing: string[] = [];
+    if (!url) { missing.push('ATLASSIAN_URL'); }
+    if (!email) { missing.push('ATLASSIAN_EMAIL'); }
+    if (!token) { missing.push('ATLASSIAN_API_TOKEN'); }
+    if (missing.length > 0) {
+      return { ok: false, reason: `Missing env vars: ${missing.join(', ')}` };
+    }
+    try {
+      const auth = Buffer.from(`${email}:${token}`).toString('base64');
+      const res = await fetch(`${url!.replace(/\/$/, '')}/rest/api/3/myself`, {
+        method: 'GET',
+        headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (res.ok) { return { ok: true, reason: 'authenticated' }; }
+      return {
+        ok: false,
+        reason: `HTTP ${res.status} from ${url}/rest/api/3/myself — check ATLASSIAN_EMAIL + ATLASSIAN_API_TOKEN`,
+      };
+    }
+    catch (err) {
+      return { ok: false, reason: `Network error: ${(err as Error).message}` };
+    }
+  };
+
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    const { ok, reason } = await probe();
+    if (ok) {
+      process.stdout.write(`${tui.statusIcon('ok')} Jira auth verified.\n`);
+      return 'authenticated';
+    }
+    process.stdout.write(`${tui.statusIcon('fail')} Jira auth failed: ${reason}\n`);
+
+    // Show actionable guidance once on first failure
+    if (attempt === 1) {
+      tui.note(
+        [
+          '1. Open .env in your editor.',
+          '2. Set the three Atlassian variables:',
+          '     ATLASSIAN_URL=https://your-org.atlassian.net',
+          '     ATLASSIAN_EMAIL=your-email@example.com',
+          '     ATLASSIAN_API_TOKEN=...',
+          '     (Get a token at https://id.atlassian.com/manage-profile/security/api-tokens)',
+          '3. Save the file. dotenv auto-loads on the next probe — no shell reload needed.',
+        ].join('\n'),
+        'Fix Atlassian credentials',
+      );
+    }
+
+    const choice = await tui.select<'retry' | 'skip'>({
+      message: `Attempt ${attempt} / 5 — what now?`,
+      options: [
+        { value: 'retry', label: 'I fixed .env — retry' },
+        { value: 'skip', label: 'Skip Jira steps for now (re-run later with bun run jira:sync-fields)' },
+      ],
+    });
+    if (tui.isCancel(choice) || choice === 'skip') { return 'skipped'; }
+
+    // Re-load .env before next probe so edits the user just made are visible
+    reloadDotEnv();
+  }
+
+  process.stdout.write(`${tui.statusIcon('warn')} Max attempts reached — skipping Jira steps.\n`);
+  return 'skipped';
+}
+
+/**
+ * PHASE 5 — INITIAL CONFIGURATION
+ *
+ * Steps:
+ *   7-agents-setup        bun run agents:setup (.agents/project.yaml)
+ *   12.5-acli-auth        probe + establish acli session
+ *   13-jira-sync-fields   jira auth loop + bun run jira:sync-fields
+ *   13b-jira-sync-workflows bun run jira:sync-workflows
+ *   14-jira-check         bun run jira:check
+ *
+ * NON_INTERACTIVE skips this entire phase cleanly — each step is marked
+ * 'skipped-non-interactive' in state.postInstall.
+ */
+async function runInitialConfigurationPhase(state: InstallState): Promise<void> {
+  // ── Step 7: agents:setup (project.yaml populator) ────────────────────────
+  tui.section('Step 7: Project metadata (.agents/project.yaml)');
+
+  if (state.postInstall.agentsSetup === 'completed' && !FORCE_AGENTS_SETUP) {
+    process.stdout.write(`${tui.statusIcon('ok')} Already completed in a prior run. Re-run via: bun run agents:setup\n`);
+  }
+  else if (SKIP_AGENTS_SETUP) {
+    log.dim('  INSTALL_SKIP_AGENTS_SETUP=1, skipping agents:setup.');
+    state.postInstall.agentsSetup = 'skipped-non-interactive';
+  }
+  else if (AUTO_NON_INTERACTIVE) {
+    state.postInstall.agentsSetup = 'skipped-non-interactive';
+    process.stdout.write(`${tui.statusIcon('warn')} Skipped (no TTY). Re-run via: bun run agents:setup\n`);
+  }
+  else {
+    const proceed = await maybeConfirm(
+      'Run `bun run agents:setup` to populate `.agents/project.yaml` (interactive)?',
+      true,
+    );
+    if (!proceed) {
+      log.warn('Skipping agents:setup. Run it later: bun run agents:setup');
+      state.postInstall.agentsSetup = 'skipped-non-interactive';
+    }
+    else {
+      const args = ['run', 'agents:setup'];
+      if (NON_INTERACTIVE) { args.push('--', '--non-interactive'); }
+      log.info(`Running: bun ${args.join(' ')}`);
+      const res = spawnSync('bun', args, { stdio: 'inherit' });
+      state.postInstall.agentsSetup = res.status === 0 ? 'completed' : 'failed';
+      if (res.status === 0) {
+        process.stdout.write(`${tui.statusIcon('ok')} agents:setup completed\n`);
+      }
+      else {
+        process.stdout.write(`${tui.statusIcon('fail')} agents:setup exited with ${res.status}. Continuing.\n`);
+      }
+    }
+  }
+
+  // ── Step 12.5: acli (Atlassian CLI) authentication ───────────────────────
+  tui.section('Step 12.5: acli (Atlassian CLI) authentication');
+
+  if (state.postInstall.acliAuth === 'completed') {
+    process.stdout.write(`${tui.statusIcon('ok')} acli already authenticated in a prior run.\n`);
+  }
+  else if (AUTO_NON_INTERACTIVE) {
+    state.postInstall.acliAuth = 'skipped-non-interactive';
+    process.stdout.write(`${tui.statusIcon('warn')} Skipped (no TTY). Re-run via: acli jira auth login --site $ATLASSIAN_URL --email $ATLASSIAN_EMAIL --token\n`);
+  }
+  else if (state.externalClis.acli !== 'found') {
+    state.postInstall.acliAuth = 'skipped-no-binary';
+    process.stdout.write(`${tui.statusIcon('warn')} acli binary not found on PATH. Install acli first (https://developer.atlassian.com/cloud/acli/guides/install/) then re-run setup.\n`);
+  }
+  else {
+    // Probe existing session: a read-only Jira search returns exit 0 if a session exists.
+    const probe = spawnSync('acli', ['jira', 'workitem', 'search', '--jql', 'created >= -1d', '--limit', '1', '--json'], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 8000,
+    });
+    if (probe.status === 0) {
+      state.postInstall.acliAuth = 'completed';
+      process.stdout.write(`${tui.statusIcon('ok')} acli already authenticated (existing session detected).\n`);
+    }
+    else {
+      // No session — run the login. Pipe the token via spawnSync `input` to
+      // avoid shell injection risks (no `echo $TOKEN | ...` expansion).
+      const url = process.env.ATLASSIAN_URL;
+      const email = process.env.ATLASSIAN_EMAIL;
+      const token = process.env.ATLASSIAN_API_TOKEN;
+
+      if (!url || !email || !token) {
+        state.postInstall.acliAuth = 'skipped-no-auth';
+        process.stdout.write(`${tui.statusIcon('warn')} Skipped — ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN missing from .env. Re-run setup after filling them.\n`);
+      }
+      else {
+        const loginRes = spawnSync(
+          'acli',
+          ['jira', 'auth', 'login', '--site', url, '--email', email, '--token'],
+          {
+            input: token,
+            stdio: ['pipe', 'inherit', 'inherit'],
+            timeout: 15000,
+          },
+        );
+        if (loginRes.status === 0) {
+          state.postInstall.acliAuth = 'completed';
+          process.stdout.write(`${tui.statusIcon('ok')} acli session created. Subsequent acli commands won't need re-auth.\n`);
+        }
+        else {
+          state.postInstall.acliAuth = 'failed';
+          process.stdout.write(`${tui.statusIcon('fail')} acli auth login failed (exit ${loginRes.status}). Re-run manually: acli jira auth login --site "$ATLASSIAN_URL" --email "$ATLASSIAN_EMAIL" --token\n`);
+        }
+      }
+    }
+  }
+
+  // ── Step 13: Jira fields sync (with auth pre-flight loop) ─────────────────
+  tui.section('Step 13: Jira fields sync');
+
+  if (SKIP_JIRA) {
+    log.dim('  INSTALL_SKIP_JIRA=1, skipping Jira bootstrap.');
+    state.postInstall.jiraSyncFields = 'skipped-non-interactive';
+  }
+  else if (state.postInstall.jiraSyncFields === 'completed') {
+    process.stdout.write(`${tui.statusIcon('ok')} Already completed in a prior run.\n`);
+  }
+  else if (AUTO_NON_INTERACTIVE) {
+    state.postInstall.jiraSyncFields = 'skipped-non-interactive';
+    process.stdout.write(`${tui.statusIcon('warn')} Skipped (no TTY). Re-run via: bun run jira:sync-fields\n`);
+  }
+  else {
+    const authResult = await jiraAuthLoop();
+    if (authResult === 'skipped') {
+      state.postInstall.jiraSyncFields = 'skipped-no-auth';
+      process.stdout.write(`${tui.statusIcon('warn')} Skipped by user. Re-run via: bun run jira:sync-fields\n`);
+    }
+    else {
+      const res = spawnSync('bun', ['run', 'jira:sync-fields'], { stdio: 'inherit' });
+      state.postInstall.jiraSyncFields = res.status === 0 ? 'completed' : 'failed';
+      if (res.status === 0) {
+        process.stdout.write(`${tui.statusIcon('ok')} jira:sync-fields completed\n`);
+      }
+      else {
+        process.stdout.write(`${tui.statusIcon('fail')} jira:sync-fields exited with ${res.status}. Continuing.\n`);
+      }
+    }
+  }
+
+  // ── Step 13b: Jira workflows + statuses sync ─────────────────────────────
+  tui.section('Step 13b: Jira workflows + statuses sync');
+
+  if (SKIP_JIRA) {
+    state.postInstall.jiraSyncWorkflows = 'skipped-non-interactive';
+    log.dim('  INSTALL_SKIP_JIRA=1, skipping jira:sync-workflows.');
+  }
+  else if (state.postInstall.jiraSyncWorkflows === 'completed') {
+    process.stdout.write(`${tui.statusIcon('ok')} Already completed in a prior run.\n`);
+  }
+  else if (AUTO_NON_INTERACTIVE) {
+    state.postInstall.jiraSyncWorkflows = 'skipped-non-interactive';
+    process.stdout.write(`${tui.statusIcon('warn')} Skipped (no TTY). Re-run via: bun run jira:sync-workflows\n`);
+  }
+  else if (state.postInstall.jiraSyncFields !== 'completed') {
+    state.postInstall.jiraSyncWorkflows = 'skipped-no-auth';
+    process.stdout.write(`${tui.statusIcon('warn')} Skipped — jira:sync-fields did not complete (uses same Atlassian credentials).\n`);
+  }
+  else {
+    const res = spawnSync('bun', ['run', 'jira:sync-workflows'], { stdio: 'inherit' });
+    state.postInstall.jiraSyncWorkflows = res.status === 0 ? 'completed' : 'failed';
+    if (res.status === 0) {
+      process.stdout.write(`${tui.statusIcon('ok')} jira:sync-workflows completed\n`);
+    }
+    else {
+      process.stdout.write(`${tui.statusIcon('fail')} jira:sync-workflows exited with ${res.status}. Continuing.\n`);
+    }
+  }
+
+  // ── Step 14: Jira manifest check ─────────────────────────────────────────
+  tui.section('Step 14: Jira manifest check');
+
+  if (SKIP_JIRA) {
+    state.postInstall.jiraCheck = 'skipped-non-interactive';
+    log.dim('  INSTALL_SKIP_JIRA=1, skipping jira:check.');
+  }
+  else if (state.postInstall.jiraCheck === 'completed') {
+    process.stdout.write(`${tui.statusIcon('ok')} Already completed in a prior run.\n`);
+  }
+  else if (AUTO_NON_INTERACTIVE) {
+    state.postInstall.jiraCheck = 'skipped-non-interactive';
+    process.stdout.write(`${tui.statusIcon('warn')} Skipped (no TTY). Re-run via: bun run jira:check\n`);
+  }
+  else if (state.postInstall.jiraSyncFields !== 'completed' || state.postInstall.jiraSyncWorkflows !== 'completed') {
+    state.postInstall.jiraCheck = 'skipped-prereq';
+    process.stdout.write(`${tui.statusIcon('warn')} Skipped — Jira sync prerequisites incomplete (need both fields + workflows). Re-run via: bun run jira:check\n`);
+  }
+  else {
+    const res = spawnSync('bun', ['run', 'jira:check'], { stdio: 'inherit' });
+    state.postInstall.jiraCheck = res.status === 0 ? 'completed' : 'failed';
+    if (res.status === 0) {
+      process.stdout.write(`${tui.statusIcon('ok')} jira:check completed\n`);
+    }
+    else {
+      process.stdout.write(`${tui.statusIcon('fail')} jira:check exited with ${res.status}. Continuing.\n`);
+    }
+  }
 }
 
 // ============================================================================
 // Helpers — closing summary
 // ============================================================================
 
-interface PackageManagerHint {
-  label: string
-  install: string
-  url: string
-}
-
-// OS-aware recommendation for the system package manager users will need to
-// install missing external CLIs (bun, gh, acli, etc.). We never run these
-// commands; they're informational only.
-function recommendedPackageManager(): PackageManagerHint {
+function recommendedPackageManager(): { label: string, install: string, url: string } {
   if (process.platform === 'win32') {
     return {
       label: 'Scoop',
@@ -1439,7 +1841,6 @@ function recommendedPackageManager(): PackageManagerHint {
       url: 'https://scoop.sh/',
     };
   }
-  // macOS + Linux both use Homebrew.
   return {
     label: 'Homebrew',
     install: '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"',
@@ -1447,8 +1848,14 @@ function recommendedPackageManager(): PackageManagerHint {
   };
 }
 
+function statusFor(found: number, total: number): string {
+  if (total === 0) { return `${tui.statusIcon('info')} n/a`; }
+  if (found === total) { return `${tui.statusIcon('ok')} complete`; }
+  return `${tui.statusIcon('warn')} ${total - found} pending`;
+}
+
 // ============================================================================
-// Step 14 — closing summary
+// Closing summary
 // ============================================================================
 
 function printClosingSummary(state: InstallState): void {
@@ -1473,59 +1880,105 @@ function printClosingSummary(state: InstallState): void {
     .filter(([, s]) => s === 'missing')
     .map(([name]) => name);
 
-  log.banner('Installer complete.');
-  process.stdout.write(`gentle-ai skills   : ${gentleAiInstalled}/${gentleAiSkills.length}\n`);
-  process.stdout.write(`Community (project): ${projectInstalled}/${projectCommunity.length}\n`);
-  process.stdout.write(`Community (user)   : ${userInstalled}/${userCommunity.length}\n`);
-  process.stdout.write(`MCPs configured    : ${mcpConfigured}/${mcpTotal} fully wired`);
-  if (mcpPlaceholder > 0) { process.stdout.write(` (${mcpPlaceholder} with placeholders)`); }
-  process.stdout.write('\n');
-  process.stdout.write(`External CLIs      : ${cliFound}/${cliTotal} found`);
-  if (cliMissing.length > 0) { process.stdout.write(` (missing: ${cliMissing.join(', ')})`); }
-  process.stdout.write('\n');
-  if (state.pendingEnvVars.length > 0) {
-    process.stdout.write(`Pending env vars   : ${state.pendingEnvVars.join(', ')}\n`);
+  // Read project name from package.json for headline box
+  let projectName = REPO_NAME;
+  try {
+    const pkgRaw = readFileSync(join(REPO_ROOT, 'package.json'), 'utf8');
+    const pkg = JSON.parse(pkgRaw) as { name?: string };
+    if (pkg.name) { projectName = pkg.name; }
   }
-  else {
-    process.stdout.write('Pending env vars   : (none)\n');
-  }
+  catch { /* fallback to default */ }
 
+  // Headline success box
   process.stdout.write('\n');
-  process.stdout.write(`${COLORS.bold}Next steps:${COLORS.reset}\n`);
-  let n = 1;
-  if (state.pendingEnvVars.length > 0) {
-    process.stdout.write(`  ${n}. Fill remaining vars in .env: ${state.pendingEnvVars.join(', ')}\n`);
-    n++;
-  }
-  process.stdout.write(`  ${n}. Launch your agent:\n`);
-  process.stdout.write('       bun claude       # Claude Code  (dotenv-cli loads .env)\n');
-  process.stdout.write('       bun opencode     # OpenCode     (dotenv-cli loads .env)\n');
-  log.dim('       (or run `claude` / `opencode` directly if direnv autoload is set up)');
-  n++;
-  if (cliMissing.length > 0) {
-    process.stdout.write(`  ${n}. Install missing CLIs (see table above)\n`);
-    n++;
-  }
-  process.stdout.write(`  ${n}. Run: bun run vars:check (validate config)\n`);
-  n++;
-  if (!state.steps.jiraBootstrap?.ok) {
-    process.stdout.write(`  ${n}. Configure Jira when credentials are ready: bun run jira:sync-fields && bun run jira:check\n`);
-    n++;
-  }
-  process.stdout.write(`  ${n}. Tour the stack:        /agentic-qa-onboard\n`);
-  n++;
-  process.stdout.write(`  ${n}. Map your project:      /project-discovery\n`);
-  n++;
-  process.stdout.write(`  ${n}. Adapt KATA to stack:   /adapt-framework         (removes example tests + business maps; wires fixtures to your stack)\n`);
-  n++;
-  process.stdout.write(`  ${n}. Curious who you're talking to? Read docs/ai-personality.md to learn the AI's personality, speech style, and how to interact with it\n`);
-  n++;
-  process.stdout.write(`  ${n}. First ticket:          /sprint-testing <KEY>\n`);
+  process.stdout.write(`${tui.successBox([
+    `${tui.statusIcon('ok')}  Installer complete.  Project: ${projectName}`,
+  ])}\n`);
+
+  // Stats table
+  process.stdout.write(tui.table(
+    ['Category', 'Installed', 'Total', 'Status'],
+    [
+      ['gentle-ai skills', `${gentleAiInstalled}`, `${gentleAiSkills.length}`, statusFor(gentleAiInstalled, gentleAiSkills.length)],
+      ['Project skills', `${projectInstalled}`, `${projectCommunity.length}`, statusFor(projectInstalled, projectCommunity.length)],
+      ['User skills', `${userInstalled}`, `${userCommunity.length}`, statusFor(userInstalled, userCommunity.length)],
+      ['MCPs configured', `${mcpConfigured}`, `${mcpTotal}`, `${statusFor(mcpConfigured, mcpTotal)}${mcpPlaceholder > 0 ? ` (${mcpPlaceholder} placeholder)` : ''}`],
+      ['External CLIs', `${cliFound}`, `${cliTotal}`, statusFor(cliFound, cliTotal)],
+    ],
+  ));
   process.stdout.write('\n');
 
-  // GitHub repository block — only if step 13 created a remote
+  if (state.pendingEnvVars.length > 0) {
+    process.stdout.write(`${COLORS.dim}  Pending env vars: ${state.pendingEnvVars.join(', ')}${COLORS.reset}\n\n`);
+  }
+
+  // REQUIRED section
+  tui.section('REQUIRED — do these now, in this order');
+  const circled = ['⓪', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨'];
+  let stepNum = 0;
+
+  if (state.pendingEnvVars.length > 0) {
+    process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Fill missing env vars${COLORS.reset}  ${COLORS.yellow}(BLOCKS the agent from working with MCPs)${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.cyan}Edit .env → set: ${state.pendingEnvVars.join(', ')}${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.dim}Without these, MCP servers will 401/403 silently.${COLORS.reset}\n\n`);
+    stepNum++;
+  }
+
+  if (state.postInstall.agentsSetup !== 'completed') {
+    process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Configure project metadata${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.cyan}bun run agents:setup${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.dim}Writes .agents/project.yaml. Agents read this for every command.${COLORS.reset}\n\n`);
+    stepNum++;
+  }
+
+  if (state.postInstall.acliAuth !== 'completed') {
+    process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Authenticate acli (Atlassian CLI)${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.cyan}echo "$ATLASSIAN_API_TOKEN" | acli jira auth login --site "$ATLASSIAN_URL" --email "$ATLASSIAN_EMAIL" --token${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.dim}Writes a persistent session to ~/.config/acli/. The /acli skill needs this.${COLORS.reset}\n\n`);
+    stepNum++;
+  }
+
+  if (state.postInstall.jiraSyncFields !== 'completed') {
+    process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Sync Jira custom fields${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.cyan}bun run jira:sync-fields${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.dim}Caches your Jira workspace's custom field IDs. Required for /acli skill.${COLORS.reset}\n\n`);
+    stepNum++;
+  }
+
+  if (state.postInstall.jiraSyncWorkflows !== 'completed') {
+    process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Sync Jira workflows + statuses${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.cyan}bun run jira:sync-workflows${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.dim}Caches your Jira workspace's statuses + transitions. Required for /acli + skill prompts.${COLORS.reset}\n\n`);
+    stepNum++;
+  }
+
+  if (state.postInstall.jiraCheck !== 'completed') {
+    process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Validate Jira manifest${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.cyan}bun run jira:check${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.dim}Confirms .agents/jira-required.yaml matches your workspace.${COLORS.reset}\n\n`);
+    stepNum++;
+  }
+
+  process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Open the agent${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.cyan}bun claude${COLORS.reset}       ${COLORS.dim}(dotenv-cli loads .env)${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.cyan}bun opencode${COLORS.reset}     ${COLORS.dim}(dotenv-cli loads .env)${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.dim}Or just \`claude\` / \`opencode\` if direnv autoload is set up.${COLORS.reset}\n\n`);
+  stepNum++;
+
+  process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Tour the stack${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.cyan}/agentic-qa-onboard${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.dim}Explains the QA workflow pipeline (sprint-testing → automation → regression).${COLORS.reset}\n\n`);
+  stepNum++;
+
+  process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Map your project${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.cyan}/project-discovery${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.dim}Reverse-engineers your target app → generates PRD, SRS, domain glossary.${COLORS.reset}\n\n`);
+  stepNum++;
+
+  // GitHub repository block
+  process.stdout.write('\n');
+  tui.section('GitHub repository');
   if (state.github) {
-    process.stdout.write(`${COLORS.bold}GitHub repository:${COLORS.reset}\n`);
     process.stdout.write(`  URL        : ${state.github.url}\n`);
     process.stdout.write(`  Visibility : ${state.github.visibility}\n`);
     process.stdout.write('  Remote     : origin (pushed)\n\n');
@@ -1547,65 +2000,166 @@ function printClosingSummary(state: InstallState): void {
     process.stdout.write(`  • Move repo to org later:  gh repo transfer ${state.github.account}/${state.github.repo} <org>\n\n`);
   }
   else {
-    process.stdout.write(`${COLORS.bold}GitHub repository:${COLORS.reset}\n`);
     process.stdout.write('  Not created during install. To wire later:\n');
     process.stdout.write('      gh auth login   # if not authenticated\n');
     process.stdout.write('      gh repo create --source=. --remote=origin --push\n\n');
   }
 
-  process.stdout.write(`${COLORS.bold}Project metadata follow-ups:${COLORS.reset}\n`);
+  // Project metadata follow-ups (QA-specific)
+  tui.section('Project metadata follow-ups');
   process.stdout.write('  • Jira project key — edit `.agents/project.yaml` → `project.project_key`\n');
-  process.stdout.write('    Then run:  bun run jira:sync-fields && bun run jira:check\n');
-  process.stdout.write('  • Bootstrap KATA registry once:  bun run kata:manifest\n\n');
+  process.stdout.write('    Then run:  bun run jira:sync-fields && bun run jira:check\n\n');
+  process.stdout.write('  • Bootstrap KATA manifest once:  bun run kata:manifest\n');
+  process.stdout.write('    Validate:                       bun run kata:manifest:check\n\n');
+  process.stdout.write('  • Adapt KATA to your stack:      /adapt-framework\n');
+  process.stdout.write('    (removes example tests + business maps; wires fixtures to your stack)\n\n');
 
-  // Recommended OS package manager — only surfaces when external CLIs are
-  // missing, since users with everything in place don't need this advice.
+  // QA workflow quick reference
+  tui.section('QA workflow quick reference');
+  process.stdout.write(`  ${COLORS.bold}/sprint-testing${COLORS.reset}          Manual QA per ticket — Stage 1-3 (Planning → Execution → Reporting)\n`);
+  process.stdout.write(`  ${COLORS.bold}/test-documentation${COLORS.reset}      TMS docs + ROI scoring — Stage 4\n`);
+  process.stdout.write(`  ${COLORS.bold}/test-automation${COLORS.reset}         Write KATA+Playwright automated tests — Stage 5\n`);
+  process.stdout.write(`  ${COLORS.bold}/regression-testing${COLORS.reset}      Regression / GO-NO-GO — Stage 6\n`);
+  process.stdout.write(`  ${COLORS.bold}bun xray${COLORS.reset}                 Xray Cloud CLI (bun run xray --help for all commands)\n\n`);
+
+  // Missing CLIs
   if (cliMissing.length > 0) {
+    tui.section('Missing CLIs — install when ready');
+    for (const name of cliMissing) {
+      const cliDef = EXTERNAL_CLIS.find(c => c.name === name);
+      const docsUrl = cliDef?.docs ?? '(see upstream docs)';
+      process.stdout.write(`  • ${name.padEnd(16)} ${COLORS.cyan}${docsUrl}${COLORS.reset}\n`);
+    }
+    process.stdout.write('\n');
+
     const pm = recommendedPackageManager();
-    process.stdout.write(`${COLORS.bold}Recommended system package manager (for the missing CLIs above):${COLORS.reset}\n`);
-    process.stdout.write(`  ${pm.label} — ${pm.url}\n`);
-    process.stdout.write(`  ${COLORS.dim}Install with:${COLORS.reset} ${pm.install}\n`);
-    process.stdout.write(`  ${COLORS.dim}Then follow the per-CLI \`docs:\` link printed in step 11 above.${COLORS.reset}\n\n`);
+    process.stdout.write(`${COLORS.bold}Recommended system package manager:${COLORS.reset} ${pm.label} — ${pm.url}\n`);
+    process.stdout.write(`  ${COLORS.dim}Install with:${COLORS.reset} ${pm.install}\n\n`);
   }
 
-  process.stdout.write(`${COLORS.bold}Warp terminal users — recommended notification plugins:${COLORS.reset}\n`);
-  process.stdout.write(`  ${COLORS.dim}Warp + CLI agents is the community's current favorite combo. Surface agent activity${COLORS.reset}\n`);
-  process.stdout.write(`  ${COLORS.dim}as native Warp notifications by installing the matching plugin:${COLORS.reset}\n`);
-  process.stdout.write('\n');
-  process.stdout.write('  • Claude Code (manual install — see docs):\n');
-  process.stdout.write('      /plugin marketplace add warpdotdev/claude-code-warp\n');
-  process.stdout.write('      /plugin install warp@claude-code-warp\n');
-  process.stdout.write(`      ${COLORS.dim}Docs: https://docs.warp.dev/agent-platform/cli-agents/claude-code/${COLORS.reset}\n`);
-  process.stdout.write(`      ${COLORS.dim}(Or click the auto-install chip that appears when Claude Code runs in Warp.)${COLORS.reset}\n`);
-  process.stdout.write('\n');
-  process.stdout.write('  • OpenCode: already wired in opencode.jsonc via the "plugin" field.\n');
-  process.stdout.write(`      ${COLORS.dim}Docs: https://docs.warp.dev/agent-platform/cli-agents/opencode/${COLORS.reset}\n`);
-  process.stdout.write('\n');
-  // Optional UX upgrades — recommended community tools that change how the
-  // agent talks (caveman) or how the terminal looks (ccstatusline). Both are
-  // user-level installs, so we recommend them but never auto-install.
-  process.stdout.write(`${COLORS.bold}Optional UX upgrades — productivity boosters:${COLORS.reset}\n`);
-  process.stdout.write('\n');
-  process.stdout.write('  • caveman — token compression skill (recommended)\n');
-  process.stdout.write(`      ${COLORS.dim}Cuts ~65-75% of output tokens by talking like caveman. Brain still big.${COLORS.reset}\n`);
-  process.stdout.write(`      ${COLORS.dim}Levels: lite | full (this repo's default) | ultra | wenyan.${COLORS.reset}\n`);
-  process.stdout.write(`      ${COLORS.dim}Stop with: "normal mode" / "habla normal".${COLORS.reset}\n`);
-  process.stdout.write('      Install (~30s, requires Node >= 18):\n');
+  // Optional UX upgrades
+  tui.section('OPTIONAL — install when you have time');
+
+  process.stdout.write('→  caveman — token compression skill (recommended)\n');
+  process.stdout.write(`   ${COLORS.dim}Cuts ~65-75% output tokens. Levels: lite | full (default) | ultra | wenyan.${COLORS.reset}\n`);
+  process.stdout.write(`   ${COLORS.dim}Stop with: "normal mode" / "habla normal".${COLORS.reset}\n`);
   if (process.platform === 'win32') {
-    process.stdout.write('        irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.ps1 | iex\n');
+    process.stdout.write('   irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.ps1 | iex\n');
   }
   else {
-    process.stdout.write('        curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash\n');
+    process.stdout.write('   curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash\n');
   }
-  process.stdout.write(`      ${COLORS.dim}Docs: https://github.com/JuliusBrussee/caveman${COLORS.reset}\n`);
+  process.stdout.write(`   ${COLORS.dim}Docs: https://github.com/JuliusBrussee/caveman${COLORS.reset}\n\n`);
+
+  process.stdout.write('→  ccstatusline — Claude Code statusline TUI configurator (cosmetic)\n');
+  process.stdout.write(`   ${COLORS.dim}Customize the bottom statusline (model, tokens, git branch, usage, etc.).${COLORS.reset}\n`);
+  process.stdout.write(`   ${COLORS.yellow}Run in a SEPARATE terminal with NO agent active${COLORS.reset} ${COLORS.dim}— concurrent TUIs fight over stdin.${COLORS.reset}\n`);
+  process.stdout.write('   bunx -y ccstatusline@latest\n');
+  process.stdout.write(`   ${COLORS.dim}Docs: https://github.com/sirmalloc/ccstatusline${COLORS.reset}\n\n`);
+
+  process.stdout.write('→  Warp terminal users — install Claude Code plugin:\n');
+  process.stdout.write(`   ${COLORS.cyan}/plugin install warp@claude-code-warp${COLORS.reset}\n`);
+  process.stdout.write(`   ${COLORS.dim}Docs: https://docs.warp.dev/agent-platform/cli-agents/claude-code/${COLORS.reset}\n\n`);
+
+  process.stdout.write('→  OpenCode Warp plugin: already wired in opencode.jsonc via the "plugin" field.\n');
+  process.stdout.write(`   ${COLORS.dim}Docs: https://docs.warp.dev/agent-platform/cli-agents/opencode/${COLORS.reset}\n\n`);
+
+  // AI personality
+  process.stdout.write(`→  Curious who you're talking to? Read ${COLORS.cyan}docs/ai-personality.md${COLORS.reset}\n\n`);
+
+  // Reference
+  tui.section('REFERENCE');
+  process.stdout.write(`docs   ${COLORS.cyan}README.md${COLORS.reset}   ·   ${COLORS.cyan}INSTALLER.md${COLORS.reset}   ·   ${COLORS.cyan}.agents/README.md${COLORS.reset}\n`);
+  if (state.github) {
+    process.stdout.write(`GitHub repo: ${COLORS.cyan}${state.github.url}${COLORS.reset} (${state.github.visibility})\n`);
+  }
   process.stdout.write('\n');
-  process.stdout.write('  • ccstatusline — Claude Code statusline TUI configurator (cosmetic)\n');
-  process.stdout.write(`      ${COLORS.dim}Customize the bottom statusline (model, tokens, git branch, usage, etc.).${COLORS.reset}\n`);
-  process.stdout.write(`      ${COLORS.yellow}Run in a SEPARATE terminal with NO agent active${COLORS.reset} ${COLORS.dim}— concurrent TUIs fight over stdin.${COLORS.reset}\n`);
-  process.stdout.write('        bunx -y ccstatusline@latest\n');
-  process.stdout.write(`      ${COLORS.dim}Docs: https://github.com/sirmalloc/ccstatusline${COLORS.reset}\n`);
+
+  // Final tip box
+  process.stdout.write(`${tui.successBox([
+    'Re-run anytime: bun run setup  (idempotent — completed steps are skipped)',
+  ])}\n`);
+}
+
+// ============================================================================
+// Skill URL validation (--validate-skills)
+// ============================================================================
+//
+// Smoke-test mode: probes every entry in PROJECT_LEVEL_SKILLS + USER_LEVEL_SKILLS
+// against the skills.sh registry via a HEAD request. Does NOT install anything.
+// Exits 0 if every entry is reachable, 1 otherwise.
+
+function normalizeOwnerRepo(pkg: string): { owner: string, repo: string } | null {
+  const ghMatch = pkg.match(/github\.com\/([^/]+)\/([^/.]+)/);
+  if (ghMatch) { return { owner: ghMatch[1], repo: ghMatch[2] }; }
+  const shortMatch = pkg.match(/^([\w.-]+)\/([\w.-]+)$/);
+  if (shortMatch) { return { owner: shortMatch[1], repo: shortMatch[2] }; }
+  return null;
+}
+
+async function probeSkillsRegistry(pkg: string, skill?: string): Promise<{ status: 'ok' | 'fail' | 'skip', detail: string }> {
+  const norm = normalizeOwnerRepo(pkg);
+  if (!norm) { return { status: 'skip', detail: 'non-github source — not on skills.sh' }; }
+  const path = skill && skill !== '*'
+    ? `${norm.owner}/${norm.repo}/${skill}`
+    : `${norm.owner}/${norm.repo}`;
+  const url = `https://skills.sh/${path}`;
+  try {
+    const res = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+    if (res.ok) { return { status: 'ok', detail: `HTTP ${res.status}` }; }
+    return { status: 'fail', detail: `HTTP ${res.status} at ${url}` };
+  }
+  catch (err: unknown) {
+    return { status: 'fail', detail: `network error: ${(err as Error).message}` };
+  }
+}
+
+async function validateSkills(): Promise<number> {
+  log.banner('Skill URL validation (smoke test)');
+  log.dim('  Probes skills.sh registry for every entry. No install, no side effects.');
   process.stdout.write('\n');
-  log.dim('Full docs: INSTALLER.md');
+
+  const all: Array<{ level: 'project' | 'user', item: CommunitySkill }> = [
+    ...PROJECT_LEVEL_SKILLS.map(item => ({ level: 'project' as const, item })),
+    ...USER_LEVEL_SKILLS.map(item => ({ level: 'user' as const, item })),
+  ];
+
+  let okCount = 0;
+  let failCount = 0;
+  let skipCount = 0;
+  const failures: string[] = [];
+
+  for (const { level, item } of all) {
+    const slug = describeSkill(item);
+    const result = await probeSkillsRegistry(item.package, item.skill);
+    const tag = `[${level}]`.padEnd(10);
+    if (result.status === 'ok') {
+      log.success(`  ${tag} ${slug}`);
+      okCount++;
+    }
+    else if (result.status === 'skip') {
+      log.dim(`  ${tag} ${slug} — skipped (${result.detail})`);
+      skipCount++;
+    }
+    else {
+      log.error(`  ${tag} ${slug} — ${result.detail}`);
+      failures.push(`${level}:${slug}`);
+      failCount++;
+    }
+  }
+
+  process.stdout.write('\n');
+  log.banner('Validation summary');
+  process.stdout.write(`  ${COLORS.green}OK${COLORS.reset}      : ${okCount}\n`);
+  process.stdout.write(`  ${COLORS.yellow}SKIPPED${COLORS.reset} : ${skipCount}  ${COLORS.dim}(non-github sources)${COLORS.reset}\n`);
+  process.stdout.write(`  ${COLORS.red}FAILED${COLORS.reset}  : ${failCount}\n`);
+  if (failures.length > 0) {
+    process.stdout.write('\n');
+    process.stdout.write(`${COLORS.bold}Broken entries (fix cli/install.ts before next publish):${COLORS.reset}\n`);
+    for (const f of failures) { process.stdout.write(`  - ${f}\n`); }
+  }
+  process.stdout.write('\n');
+  return failCount > 0 ? 1 : 0;
 }
 
 // ============================================================================
@@ -1613,19 +2167,38 @@ function printClosingSummary(state: InstallState): void {
 // ============================================================================
 
 async function main(): Promise<void> {
-  log.banner(`${REPO_NAME} — installer`);
+  // --validate-skills: smoke-test mode. Probes skills.sh for every entry and exits.
+  if (process.argv.includes('--validate-skills')) {
+    const code = await validateSkills();
+    process.exit(code);
+  }
+
+  // Build forced-step set for this run
+  const forceKeys = new Set<string>();
+  if (FORCE_STEP_KEY) { forceKeys.add(FORCE_STEP_KEY); }
+
+  // Logo + headline
+  process.stdout.write(`${tui.logo()}\n\n`);
+  process.stdout.write(`${tui.headline('agentic-qa-boilerplate — installer')}\n\n`);
   log.dim('See INSTALLER.md for the contract this implements.');
   if (AUTO_NON_INTERACTIVE) {
     log.warn('No TTY detected — running in --non-interactive mode (prompts will use defaults).');
     log.dim('  AI agents: parse pending vars from the closing summary, or run `bun run setup:doctor --json`.');
   }
+  if (FORCE_ALL) {
+    log.warn('--force flag active: all step timestamps cleared — re-running every step.');
+  }
+  if (FORCE_STEP_KEY) {
+    log.warn(`--force-step "${FORCE_STEP_KEY}" active: that step will re-run even if it already completed.`);
+  }
 
-  // Step 1
-  log.step(1, TOTAL_STEPS, 'Verifying repo root');
+  // ── PHASE 1 — DETECTION ──────────────────────────────────────────────────
+  tui.phaseHeader(1, 'DETECTION');
+
+  tui.section('Step 1: Verifying repo root');
   await verifyRepoRoot();
 
-  // Step 2
-  log.step(2, TOTAL_STEPS, 'Detecting gentle-ai');
+  tui.section('Step 2: Detecting gentle-ai');
   const gentleAi = detectGentleAi();
   if (gentleAi.found && gentleAi.version) {
     if (gentleAi.compatible) {
@@ -1644,6 +2217,8 @@ async function main(): Promise<void> {
 
   const prior = await loadPriorState();
   const state = buildInitialState(prior);
+  // Apply --force: clear all step timestamps
+  if (FORCE_ALL) { state.steps = {}; }
   state.installedAt = new Date().toISOString();
   state.gentleAi = {
     status: gentleAi.status,
@@ -1651,18 +2226,18 @@ async function main(): Promise<void> {
     checkedAt: new Date().toISOString(),
   };
 
-  // Step 3
-  log.step(3, TOTAL_STEPS, 'gentle-ai install / skip decision');
+  tui.section('Step 3: gentle-ai install / skip decision');
   let runSkillInstall = false;
   if (gentleAi.status === 'installed') {
     runSkillInstall = true;
   }
   else if (gentleAi.status === 'incompatible') {
-    const cont = await maybeConfirm(
-      'gentle-ai is installed but version is older than required. Try anyway?',
-      false,
-    );
-    runSkillInstall = cont;
+    const contRaw = await tui.confirm({
+      message: 'gentle-ai is installed but version is older than required. Try anyway?',
+      initialValue: false,
+    });
+    if (tui.isCancel(contRaw)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
+    runSkillInstall = contRaw;
   }
   else if (gentleAi.status === 'skipped') {
     log.dim('  Skipped.');
@@ -1683,8 +2258,7 @@ async function main(): Promise<void> {
     runSkillInstall = false;
   }
 
-  // Step 4
-  log.step(4, TOTAL_STEPS, 'Detecting agents');
+  tui.section('Step 4: Detecting agents');
   const detected = await detectAgents();
   log.info(
     `Claude Code: ${detected.claudeCode ? 'found' : 'not found'} | OpenCode: ${detected.opencode ? 'found' : 'not found'}`,
@@ -1698,83 +2272,90 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  // Step 5
-  log.step(5, TOTAL_STEPS, 'Installing dependencies (bun install)');
-  await runDepsInstall(state);
+  // ── PHASE 2 — INSTALLATION ───────────────────────────────────────────────
+  tui.phaseHeader(2, 'INSTALLATION');
 
-  // Step 6
-  log.step(6, TOTAL_STEPS, 'Installing Playwright browsers');
-  await runPlaywrightInstall(state);
+  tui.section('Step 5: Installing dependencies (bun install)');
+  await runDepsInstall(state, forceKeys);
 
-  // Step 7
-  log.step(7, TOTAL_STEPS, 'Populating .agents/project.yaml (agents:setup)');
-  await runAgentsSetup(state);
+  tui.section('Step 6: Installing Playwright browsers');
+  await runPlaywrightInstall(state, forceKeys);
 
-  // Step 8
+  tui.section('Step 8: Installing skills via gentle-ai');
   if (runSkillInstall) {
-    log.step(8, TOTAL_STEPS, 'Installing skills via gentle-ai');
-    await installSkillsViaGentleAi(agents, state);
+    await installSkillsViaGentleAi(agents, state, forceKeys);
   }
   else {
-    log.step(8, TOTAL_STEPS, 'Skipping skill install (no compatible gentle-ai)');
+    log.dim('  No compatible gentle-ai — skipping skill install.');
     for (const slug of [ENGRAM_COMPONENT, ...SKILL_SLUGS]) {
       for (const agent of agents) {
-        const key = `${slug}::${agent}`;
-        if (!state.skills[key]) { state.skills[key] = 'skipped'; }
+        const k = `${slug}::${agent}`;
+        if (!state.skills[k]) { state.skills[k] = 'skipped'; }
       }
     }
   }
 
-  // Step 9 — community skills via bunx skills CLI (independent of gentle-ai)
-  log.step(9, TOTAL_STEPS, 'Installing community skills via bunx skills CLI');
+  tui.section('Step 9: Installing community skills via bunx skills CLI');
   if (SKIP_COMMUNITY) {
     log.dim('  INSTALL_SKIP_COMMUNITY=1, skipping community skills.');
     for (const item of [...PROJECT_LEVEL_SKILLS, ...USER_LEVEL_SKILLS]) {
       const slug = describeSkill(item);
       const level = PROJECT_LEVEL_SKILLS.includes(item) ? 'project' : 'global';
-      const key = `community:${level}:${slug}`;
-      if (!state.skills[key]) { state.skills[key] = 'skipped'; }
+      const k = `community:${level}:${slug}`;
+      if (!state.skills[k]) { state.skills[k] = 'skipped'; }
     }
   }
   else {
-    await installCommunitySkills(state, 'project');
-    await installCommunitySkills(state, 'global');
+    await installCommunitySkills(state, 'project', forceKeys);
+    await installCommunitySkills(state, 'global', forceKeys);
   }
 
-  // Step 10
-  log.step(10, TOTAL_STEPS, 'Wiring .env for MCP servers');
+  // ── PHASE 3 — CONFIGURATION ──────────────────────────────────────────────
+  tui.phaseHeader(3, 'CONFIGURATION');
+
+  tui.section('Step 10: Wiring .env for MCP servers');
   await configureMcps(agents, state);
   await offerDirenvAutoload();
 
-  // Step 11
-  log.step(11, TOTAL_STEPS, 'Verifying external CLIs');
+  tui.section('Step 12: Optional API auth bootstrap');
+  await optionalApiBootstrap(state, forceKeys);
+
+  tui.section('Step 13: GitHub repository (optional)');
+  await setupGithubRemote(state, forceKeys);
+
+  // ── PHASE 4 — VERIFICATION ───────────────────────────────────────────────
+  tui.phaseHeader(4, 'VERIFICATION');
+
+  tui.section('Step 11: Verifying external CLIs');
   verifyExternalClis(state);
 
-  // Step 12
-  log.step(12, TOTAL_STEPS, 'Optional bootstraps (Jira / API)');
-  await optionalJiraBootstrap(state);
-  await optionalApiBootstrap(state);
-
-  // Step 13
-  log.step(13, TOTAL_STEPS, 'GitHub repository (optional)');
-  await setupGithubRemote(state);
-
-  // Step 14
-  log.step(14, TOTAL_STEPS, 'Persisting state and summary');
+  tui.section('Step 14: Persisting state');
   await writeInstallState(state);
+
+  // ── PHASE 5 — INITIAL CONFIGURATION ─────────────────────────────────────
+  tui.phaseHeader(5, 'INITIAL CONFIGURATION');
+  await runInitialConfigurationPhase(state);
+  await writeInstallState(state);
+
+  // Closing summary
+  tui.section('Installation summary');
   printClosingSummary(state);
 }
 
 main().catch((err) => {
-  if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'ExitPromptError') {
-    log.warn('Aborted by user.');
-    log.dim('  To resume, re-run: bun run setup');
-    log.dim('  (Installer is idempotent — completed steps will skip on re-run.)');
+  // Handle both @inquirer ExitPromptError and our own clack cancel wrappers
+  const name = err && typeof err === 'object' && 'name' in err ? (err as { name: string }).name : '';
+  if (name === 'ExitPromptError' || (err instanceof Error && err.message === 'Aborted by user.')) {
+    tui.log.warn('Aborted by user.');
+    process.stdout.write('  To resume, re-run: bun run setup\n');
+    process.stdout.write('  (Installer is idempotent — completed steps will skip on re-run.)\n');
     process.exit(130);
   }
-  log.error(`Fatal: ${(err as Error).message ?? String(err)}`);
-  if (err instanceof Error && err.stack) { log.dim(err.stack); }
-  log.warn('Installation interrupted. To resume, re-run: bun run setup');
-  log.dim('  (Installer is idempotent — completed steps will skip on re-run.)');
+  tui.log.error(`Fatal: ${(err as Error).message ?? String(err)}`);
+  if (err instanceof Error && err.stack) {
+    process.stdout.write(`  ${err.stack}\n`);
+  }
+  tui.log.warn('Installation interrupted. To resume, re-run: bun run setup');
+  process.stdout.write('  (Installer is idempotent — completed steps will skip on re-run.)\n');
   process.exit(1);
 });
