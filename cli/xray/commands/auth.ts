@@ -23,9 +23,9 @@ export async function login(flags: Flags): Promise<void> {
   const defaultProject = getFlag(flags, 'project');
 
   // Optional Jira credentials for sync features
-  const jiraBaseUrl = getFlag(flags, 'jira-url') || process.env.ATLASSIAN_URL || process.env.JIRA_BASE_URL;
-  const jiraEmail = getFlag(flags, 'jira-email') || process.env.ATLASSIAN_EMAIL || process.env.JIRA_EMAIL;
-  const jiraApiToken = getFlag(flags, 'jira-token') || process.env.ATLASSIAN_API_TOKEN || process.env.JIRA_API_TOKEN;
+  const jiraBaseUrl = getFlag(flags, 'jira-url') || process.env.ATLASSIAN_URL;
+  const jiraEmail = getFlag(flags, 'jira-email') || process.env.ATLASSIAN_EMAIL;
+  const jiraApiToken = getFlag(flags, 'jira-token') || process.env.ATLASSIAN_API_TOKEN;
 
   if (!clientId || !clientSecret) {
     log.error('Missing credentials. Provide them via flags or environment variables:');

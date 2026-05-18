@@ -266,18 +266,13 @@ bun xray backup restore --file demo-backup.json --project PROJ --map-keys mappin
 XRAY_CLIENT_ID      # Xray API Client ID
 XRAY_CLIENT_SECRET  # Xray API Client Secret
 
-# Atlassian / Jira credentials — primary, single source of truth
-ATLASSIAN_URL       # Jira instance URL (e.g. https://your-org.atlassian.net)
+# Atlassian credentials — single source of truth, no overrides
+ATLASSIAN_URL       # Atlassian site URL (e.g. https://your-org.atlassian.net)
 ATLASSIAN_EMAIL     # Atlassian account email
 ATLASSIAN_API_TOKEN # Atlassian API token
-
-# Optional overrides — only set when xray-cli must use different Jira creds
-# than the rest of the stack. Each, when set, takes precedence over its
-# ATLASSIAN_* counterpart in cli/xray/lib/jira.ts and cli/xray/commands/auth.ts.
-# JIRA_BASE_URL=
-# JIRA_EMAIL=
-# JIRA_API_TOKEN=
 ```
+
+Pass these to `bun xray auth login` via `--jira-url` / `--jira-email` / `--jira-token` when you want explicit flags, or just let the binary pick them up from the environment.
 
 ## Config Files
 

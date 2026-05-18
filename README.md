@@ -363,7 +363,7 @@ The AI agents (Claude Code, Codex, Cursor, Copilot, OpenCode) resolve `{{VAR}}` 
 bun run agents:setup
 ```
 
-This populates `project.project_name`, `project.project_key`, `issue_tracker.jira_url`, `environments.<env>.web_url`, `environments.<env>.api_url`, `environments.<env>.db_mcp`, `environments.<env>.api_mcp`, and the rest. See `.agents/README.md` for the full convention.
+This populates `project.project_name`, `project.project_key`, `issue_tracker.atlassian_url`, `environments.<env>.web_url`, `environments.<env>.api_url`, `environments.<env>.db_mcp`, `environments.<env>.api_mcp`, and the rest. See `.agents/README.md` for the full convention.
 
 <br />
 
@@ -662,11 +662,13 @@ XRAY_CLIENT_ID
 XRAY_CLIENT_SECRET
 XRAY_PROJECT_KEY
 
-# Jira Direct (required if TMS_PROVIDER=jira AND AUTO_SYNC=true)
-JIRA_URL
-JIRA_USER
-JIRA_API_TOKEN
-JIRA_TEST_STATUS_FIELD      # default: customfield_10100
+# Atlassian credentials (required if TMS_PROVIDER=jira AND AUTO_SYNC=true; also
+# used by MCP atlassian, acli, xray-cli, and scripts/sync-jira-*.ts — single
+# source of truth across the repo).
+ATLASSIAN_URL
+ATLASSIAN_EMAIL
+ATLASSIAN_API_TOKEN
+JIRA_TEST_STATUS_FIELD      # default: customfield_10100 — Jira-specific operational param, not a credential
 
 # Reporting
 ALLURE_RESULTS_DIR          # default: ./allure-results

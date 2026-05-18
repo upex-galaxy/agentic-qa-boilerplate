@@ -326,21 +326,18 @@ async function runDoctor(): Promise<DoctorReport> {
     }
   }
 
-  // warn if JIRA_API_TOKEN override is active and differs from ATLASSIAN_API_TOKEN
-  const atlassianToken = envValues.ATLASSIAN_API_TOKEN;
-  const jiraTokenOverride = envValues.JIRA_API_TOKEN;
-  if (
-    atlassianToken
-    && atlassianToken.trim().length > 0
-    && jiraTokenOverride
-    && jiraTokenOverride.trim().length > 0
-    && atlassianToken.trim() !== jiraTokenOverride.trim()
-  ) {
+  // Warn about legacy JIRA_* credential keys that no longer have any effect.
+  // The repo collapsed all Atlassian credentials onto the ATLASSIAN_* family;
+  // these names are no longer read by any consumer.
+  const LEGACY_JIRA_CRED_KEYS = ['JIRA_URL', 'JIRA_USER', 'JIRA_API_TOKEN', 'JIRA_BASE_URL', 'JIRA_EMAIL'] as const;
+  const legacyPresent = LEGACY_JIRA_CRED_KEYS.filter(
+    k => envValues[k] !== undefined && envValues[k].trim().length > 0,
+  );
+  if (legacyPresent.length > 0) {
     tui.log.warn(
-      'JIRA_API_TOKEN is set and differs from ATLASSIAN_API_TOKEN.\n'
-      + '       xray-cli and TMS Jira-Direct will use JIRA_API_TOKEN (override active);\n'
-      + '       ATLASSIAN_API_TOKEN is ignored for those consumers.\n'
-      + '       Remove JIRA_API_TOKEN from .env if you want ATLASSIAN_API_TOKEN to apply everywhere.',
+      `Found legacy credential keys in .env that are no longer used: ${legacyPresent.join(', ')}.\n`
+      + '       All Atlassian credentials now come from ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN.\n'
+      + '       Move any unique value into the ATLASSIAN_* counterpart and delete the legacy line.',
     );
   }
 

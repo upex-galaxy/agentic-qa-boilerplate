@@ -24,7 +24,7 @@
  *   - FLAT vars        — top-level sections (project, backend, frontend,
  *                        database, issue_tracker, testing). Each leaf is a
  *                        single value. Skills reference them as bare
- *                        {{PROJECT_KEY}}, {{JIRA_URL}}, etc.
+ *                        {{PROJECT_KEY}}, {{ATLASSIAN_URL}}, etc.
  *
  *   - ENV-SCOPED vars  — under `environments:`. Each environment (local,
  *                        staging, production, …) owns the same four leaves:
@@ -55,7 +55,7 @@
  *     BACKEND_REPO, BACKEND_STACK, BACKEND_ENTRY
  *     FRONTEND_REPO, FRONTEND_STACK, FRONTEND_ENTRY
  *     DB_TYPE
- *     ISSUE_TRACKER, ISSUE_TRACKER_CLI, JIRA_URL
+ *     ISSUE_TRACKER, ISSUE_TRACKER_CLI, ATLASSIAN_URL
  *     DEFAULT_ENV, TMS_CLI
  *
  *   ENV-SCOPED — pattern <KEY>_<ENV>, where KEY is the env-scoped leaf and
@@ -174,7 +174,7 @@ const FLAT_FIELDS: FlatFieldSpec[] = [
 
   { section: 'issue_tracker', key: 'issue_tracker', envVar: 'ISSUE_TRACKER', validator: 'non_empty' },
   { section: 'issue_tracker', key: 'issue_tracker_cli', envVar: 'ISSUE_TRACKER_CLI', validator: 'non_empty' },
-  { section: 'issue_tracker', key: 'jira_url', envVar: 'JIRA_URL', validator: 'url' },
+  { section: 'issue_tracker', key: 'atlassian_url', envVar: 'ATLASSIAN_URL', validator: 'url' },
 
   // default_env is special: validated against the live env list at write time.
   { section: 'testing', key: 'default_env', envVar: 'DEFAULT_ENV', validator: 'env_select' },
@@ -254,7 +254,7 @@ VARIABLE MODEL:
 
     FLAT       — top-level sections (project, backend, frontend, database,
                  issue_tracker, testing). Skills reference them as bare
-                 {{PROJECT_KEY}}, {{JIRA_URL}}, etc.
+                 {{PROJECT_KEY}}, {{ATLASSIAN_URL}}, etc.
 
     ENV-SCOPED — under \`environments:\`. Each environment owns the same four
                  leaves: web_url, api_url, db_mcp, api_mcp. Skills reference
@@ -286,7 +286,7 @@ ENV-VAR MAPPING (--non-interactive):
     BACKEND_REPO, BACKEND_STACK, BACKEND_ENTRY
     FRONTEND_REPO, FRONTEND_STACK, FRONTEND_ENTRY
     DB_TYPE
-    ISSUE_TRACKER, ISSUE_TRACKER_CLI, JIRA_URL
+    ISSUE_TRACKER, ISSUE_TRACKER_CLI, ATLASSIAN_URL
     DEFAULT_ENV, TMS_CLI
 
   ENV-SCOPED — pattern <KEY>_<ENV>:

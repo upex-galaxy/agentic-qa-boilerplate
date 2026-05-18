@@ -81,7 +81,7 @@ The boilerplate intentionally separates two configuration substrates. They have 
 |--|--------|------------------------|
 | **Purpose** | Playwright / KATA **runtime** secrets and config | AI **context-engineering** variables for `{{VAR}}` resolution |
 | **Consumers** | The test runner (`bun run test`, fixtures, login helpers) | AI agents (Claude Code, Cursor, Codex, Copilot, OpenCode) — when resolving skill / template / doc references |
-| **Examples** | `LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD`, `XRAY_CLIENT_SECRET`, `HEADLESS`, `DEFAULT_TIMEOUT` | `PROJECT_KEY`, `WEB_URL`, `API_URL`, `JIRA_URL`, `DB_MCP`, `default_env` |
+| **Examples** | `LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD`, `XRAY_CLIENT_SECRET`, `ATLASSIAN_API_TOKEN`, `HEADLESS`, `DEFAULT_TIMEOUT` | `PROJECT_KEY`, `WEB_URL`, `API_URL`, `ATLASSIAN_URL`, `DB_MCP`, `default_env` |
 | **Secrets?** | Yes (passwords, tokens, API keys) | No — must remain commit-safe |
 | **Committed?** | Gitignored (`.env.example` is committed as a template) | Committed |
 | **Lifecycle** | Edited per developer / per CI runner | Edited once when adopting the boilerplate; rarely changes after |

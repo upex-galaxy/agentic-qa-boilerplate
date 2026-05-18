@@ -241,9 +241,9 @@ ${colors.bold}EXAMPLES${colors.reset}
 ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
   XRAY_CLIENT_ID      Xray API Client ID
   XRAY_CLIENT_SECRET  Xray API Client Secret
-  JIRA_BASE_URL       Jira instance URL (for sync features)
-  JIRA_EMAIL          Jira account email
-  JIRA_API_TOKEN      Jira API token
+  ATLASSIAN_URL       Atlassian site URL (for sync features)
+  ATLASSIAN_EMAIL     Atlassian account email
+  ATLASSIAN_API_TOKEN Atlassian API token
 
 ${colors.bold}CONFIG FILES${colors.reset}
   ~/.xray-cli/config.json   Stored credentials

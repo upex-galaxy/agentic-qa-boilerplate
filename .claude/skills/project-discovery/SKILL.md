@@ -295,17 +295,10 @@ STAGING_USER_EMAIL=
 STAGING_USER_PASSWORD=
 
 # Atlassian / TMS credentials (single source of truth, used by MCP, acli,
-# xray-cli, sync scripts, and the Jira-Direct TMS provider)
+# xray-cli, sync scripts, and the Jira-Direct TMS provider — no overrides)
 ATLASSIAN_URL=
 ATLASSIAN_EMAIL=
 ATLASSIAN_API_TOKEN=
-
-# Optional overrides — only set when the TMS layer must use different
-# credentials than ATLASSIAN_* (e.g. service-account split). Each, when set,
-# takes precedence over its ATLASSIAN_* counterpart.
-# JIRA_URL=
-# JIRA_USER=
-# JIRA_API_TOKEN=
 ```
 
 Larger templates (full PRD sections, KATA component skeletons, `.context/infrastructure/backend.md` layout, `business-data-map.md` structure) live in the references.

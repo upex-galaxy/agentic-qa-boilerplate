@@ -22,7 +22,7 @@ Every output MUST include a `## Discovery Gaps` section if a field could not be 
 
 1. **Do NOT copy the backlog.** The issue tracker is the source of truth for tickets. `.context/PBI/` holds only templates and per-sprint working notes.
 2. **Cleanup rule:** per-sprint folders (`.context/PBI/<sprint-name>/<TICKET-ID>/`) are temporary. Delete after the sprint ends — story details can always be re-fetched.
-3. **Tracker credentials in `.env` only.** Primary keys are `ATLASSIAN_URL`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN` (single source of truth for MCP, acli, xray-cli, and the Jira-Direct TMS provider). Optional overrides: `JIRA_URL`, `JIRA_USER`, `JIRA_API_TOKEN`. Never paste tokens in markdown; if the user pastes one in chat, scrub it and redirect them to `.env`. See SKILL.md §Gotchas for the general credential policy.
+3. **Tracker credentials in `.env` only.** Single keys: `ATLASSIAN_URL`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN` — consumed by MCP, acli, xray-cli, sync scripts, and the Jira-Direct TMS provider. No `JIRA_*` credential aliases exist; if you see them in old docs or `.env` files, migrate them. Never paste tokens in markdown; if the user pastes one in chat, scrub it and redirect them to `.env`. See SKILL.md §Gotchas for the general credential policy.
 4. **Tool resolution.** When you see `[ISSUE_TRACKER_TOOL]` in this document, resolve via the project's CLAUDE.md Tool Resolution table. Priority order: CLI (fewer tokens) -> MCP (fallback) -> REST API -> manual. For Jira, that means load `/acli` skill first; only fall back to Atlassian MCP if acli is unavailable.
 
 ---
@@ -107,15 +107,10 @@ Record the chosen method and fallback in `.context/PBI/README.md`.
 ### Required env keys (emit to user)
 
 ```
-# Primary — single source of truth
+# Atlassian credentials — single source of truth (no JIRA_* aliases)
 ATLASSIAN_URL=
 ATLASSIAN_EMAIL=
 ATLASSIAN_API_TOKEN=
-
-# Optional overrides (only if TMS needs different creds than ATLASSIAN_*)
-# JIRA_URL=
-# JIRA_USER=
-# JIRA_API_TOKEN=
 ```
 
 ---
@@ -243,7 +238,7 @@ Produce with these sections, in order:
 - **Two states named "Done".** Jira commonly has both `Done` and `Closed`; some workflows have `Resolved` in between. Capture all terminal states.
 - **Do not hardcode issue types.** A project may not use `Sub-task`; another may have `Spike`, `Chore`, or `Incident`. Enumerate what the project actually uses.
 - **Template placeholders must be explicit.** Use `[persona]`, `[action]`, `[benefit]` in templates — never leave them as blank inputs. The tokens help future sprint-testing runs fill them deterministically.
-- **Do not embed secrets in examples.** CLI invocations must use env-var interpolation (`$ATLASSIAN_API_TOKEN`, or `$JIRA_API_TOKEN` when an override is in use), not literal tokens.
+- **Do not embed secrets in examples.** CLI invocations must use env-var interpolation (`$ATLASSIAN_API_TOKEN`), not literal tokens.
 
 ---
 

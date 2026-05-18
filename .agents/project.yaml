@@ -25,7 +25,7 @@ database:
 issue_tracker:
   issue_tracker: null # TODO: Issue tracking tool (e.g. Jira)
   issue_tracker_cli: null # TODO: CLI command to query tickets (e.g. acli (Jira) / gh issue (GitHub))
-  jira_url: null # TODO: Jira instance base URL (e.g. https://company.atlassian.net)
+  atlassian_url: null # TODO: Atlassian site base URL (e.g. https://company.atlassian.net) — same value as .env's ATLASSIAN_URL
 
 testing:
   default_env: null # TODO: Default testing environment — must match a key under `environments:` (e.g. staging)

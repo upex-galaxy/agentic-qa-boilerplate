@@ -1988,9 +1988,7 @@ function printClosingSummary(state: InstallState): void {
     process.stdout.write('    Recommended (only those you actually use):\n');
     process.stdout.write('      - TAVILY_API_KEY                  (Tavily MCP — web search)\n');
     process.stdout.write('      - ATLASSIAN_URL, ATLASSIAN_EMAIL,\n');
-    process.stdout.write('        ATLASSIAN_API_TOKEN             (Atlassian MCP / acli)\n');
-    process.stdout.write('      - JIRA_URL, JIRA_USER,\n');
-    process.stdout.write('        JIRA_API_TOKEN                  (jira:sync-* scripts)\n');
+    process.stdout.write('        ATLASSIAN_API_TOKEN             (Atlassian MCP, acli, xray-cli, jira:sync-* scripts)\n');
     process.stdout.write('      - XRAY_CLIENT_ID, XRAY_CLIENT_SECRET,\n');
     process.stdout.write('        XRAY_PROJECT_KEY                (Xray Cloud — only if used)\n');
     process.stdout.write('      - POSTMAN_API_KEY                 (Postman MCP — optional)\n');

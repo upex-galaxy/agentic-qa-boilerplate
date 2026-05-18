@@ -179,7 +179,7 @@ async function syncToJiraDirect(results: Record<string, AtcResult[]>): Promise<S
   const { url, user, apiToken, testStatusField } = config.tms.jira;
 
   if (!url || !user || !apiToken) {
-    console.error('[ERROR] Missing Jira credentials. Check JIRA_URL, JIRA_USER, JIRA_API_TOKEN.');
+    console.error('[ERROR] Missing Atlassian credentials. Check ATLASSIAN_URL, ATLASSIAN_EMAIL, ATLASSIAN_API_TOKEN.');
     return { provider: 'jira', success: false, message: 'Missing credentials' };
   }
 

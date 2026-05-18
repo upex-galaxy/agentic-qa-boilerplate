@@ -156,7 +156,9 @@ The KATA convention `@atc('PROJ-101')` + `test('PROJ-101: should ...', ...)` ens
 | `XRAY_CLIENT_ID` | API client ID (Cloud) | Cloud only |
 | `XRAY_CLIENT_SECRET` | API client secret (Cloud) | Cloud only |
 | `XRAY_TOKEN` | Personal Access Token (Server/DC) | Server only |
-| `JIRA_BASE_URL` | Jira instance URL | Always |
+| `ATLASSIAN_URL` | Atlassian site URL | Always |
+| `ATLASSIAN_EMAIL` | Atlassian account email | Always |
+| `ATLASSIAN_API_TOKEN` | Atlassian API token | Always |
 | `JIRA_PROJECT_KEY` | Default project key | Optional (fallback to `{{PROJECT_KEY}}`) |
 | `XRAY_TEST_PLAN_KEY` | Default Test Plan for imports | Optional |
 | `XRAY_ENVIRONMENT` | Default test environment label | Optional |

@@ -17,7 +17,7 @@ Skills that depend on this setup: `sprint-testing`, `test-documentation`, `regre
 - [ ] Jira Administrator permissions (required for Issue Type Scheme, Screens, Workflows, Custom fields)
 - [ ] Modules list known (e.g. Auth, Checkout, Billing)
 - [ ] Regression Epic created (or let `test-documentation` create it on first run)
-- [ ] `.env` populated with `JIRA_BASE_URL` and `JIRA_PROJECT_KEY`
+- [ ] `.env` populated with `ATLASSIAN_URL`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN`, and `JIRA_PROJECT_KEY`
 - [ ] `/acli` skill loaded (primary) or Atlassian MCP available (fallback)
 
 ---
@@ -52,7 +52,9 @@ Settings → Apps → Xray → API Keys → Create API Key. Save `Client ID` + `
 ```
 XRAY_CLIENT_ID=...
 XRAY_CLIENT_SECRET=...
-JIRA_BASE_URL=https://your-site.atlassian.net
+ATLASSIAN_URL=https://your-site.atlassian.net
+ATLASSIAN_EMAIL=you@example.com
+ATLASSIAN_API_TOKEN=...
 JIRA_PROJECT_KEY=PROJ
 XRAY_TEST_PLAN_KEY=PROJ-300      # optional
 XRAY_ENVIRONMENT=staging         # optional
@@ -141,10 +143,10 @@ Add link types if missing: Settings → Issue linking → ensure `tests / is tes
 `/acli` skill uses an API token. Obtain one from `id.atlassian.com/manage-profile/security/api-tokens`. Populate `.env`:
 
 ```
-JIRA_BASE_URL=https://your-site.atlassian.net
+ATLASSIAN_URL=https://your-site.atlassian.net
+ATLASSIAN_EMAIL=you@example.com
+ATLASSIAN_API_TOKEN=...
 JIRA_PROJECT_KEY=PROJ
-JIRA_EMAIL=you@example.com
-JIRA_API_TOKEN=...
 ```
 
 Verify with `acli jira auth status`.

@@ -1077,16 +1077,16 @@ def _sync_to_xray_cloud(results: dict):
 #         4. Get custom field ID (e.g.: customfield_10100)
 #
 #     Environment variables:
-#         JIRA_URL: Your instance URL (e.g.: https://company.atlassian.net)
-#         JIRA_USER: User email
-#         JIRA_API_TOKEN: Jira API Token
+#         ATLASSIAN_URL: Your Atlassian site URL (e.g.: https://company.atlassian.net)
+#         ATLASSIAN_EMAIL: Atlassian account email
+#         ATLASSIAN_API_TOKEN: Atlassian API token
 #         JIRA_TEST_STATUS_FIELD: Custom field ID (e.g.: customfield_10100)
 #
 #     Documentation: https://developer.atlassian.com/cloud/jira/platform/rest/v3/
 #     """
-#     jira_url = os.getenv("JIRA_URL")
-#     jira_user = os.getenv("JIRA_USER")
-#     jira_token = os.getenv("JIRA_API_TOKEN")
+#     jira_url = os.getenv("ATLASSIAN_URL")
+#     jira_user = os.getenv("ATLASSIAN_EMAIL")
+#     jira_token = os.getenv("ATLASSIAN_API_TOKEN")
 #     custom_field_id = os.getenv("JIRA_TEST_STATUS_FIELD", "customfield_10100")
 #
 #     auth = (jira_user, jira_token)
@@ -1181,9 +1181,9 @@ def _sync_to_xray_cloud(results: dict):
 #         4. Final states: PASS, FAIL, BLOCKED
 #
 #     Environment variables:
-#         JIRA_URL: Your instance URL
-#         JIRA_USER: User email
-#         JIRA_API_TOKEN: API Token
+#         ATLASSIAN_URL: Your Atlassian site URL
+#         ATLASSIAN_EMAIL: Atlassian account email
+#         ATLASSIAN_API_TOKEN: Atlassian API token
 #         JIRA_TRANSITION_PASS: Transition ID to PASS (default: 31)
 #         JIRA_TRANSITION_FAIL: Transition ID to FAIL (default: 41)
 #
@@ -1192,9 +1192,9 @@ def _sync_to_xray_cloud(results: dict):
 #
 #     Documentation: https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/#api-rest-api-3-issue-issueidorkey-transitions-post
 #     """
-#     jira_url = os.getenv("JIRA_URL")
-#     jira_user = os.getenv("JIRA_USER")
-#     jira_token = os.getenv("JIRA_API_TOKEN")
+#     jira_url = os.getenv("ATLASSIAN_URL")
+#     jira_user = os.getenv("ATLASSIAN_EMAIL")
+#     jira_token = os.getenv("ATLASSIAN_API_TOKEN")
 #
 #     transition_ids = {
 #         "PASS": os.getenv("JIRA_TRANSITION_PASS", "31"),
@@ -1332,9 +1332,9 @@ XRAY_PROJECT_KEY=DEMO
 # TESTRAIL_RUN_ID=  # Optional, creates new if empty
 
 # ===== JIRA DIRECT (DISABLED) =====
-# JIRA_URL=https://company.atlassian.net
-# JIRA_USER=user@company.com
-# JIRA_API_TOKEN=your_api_token_here
+# ATLASSIAN_URL=https://company.atlassian.net
+# ATLASSIAN_EMAIL=user@company.com
+# ATLASSIAN_API_TOKEN=your_api_token_here
 #
 # For Custom Field:
 # JIRA_TEST_STATUS_FIELD=customfield_10100

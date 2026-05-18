@@ -560,7 +560,9 @@ The TMS works alongside the Automation Framework's reporting:
 | `XRAY_CLIENT_ID` | API client ID (Cloud) | Yes (Cloud) |
 | `XRAY_CLIENT_SECRET` | API client secret (Cloud) | Yes (Cloud) |
 | `XRAY_TOKEN` | Personal Access Token (Server/DC) | Yes (Server) |
-| `JIRA_BASE_URL` | Jira instance URL | Yes |
+| `ATLASSIAN_URL` | Atlassian site URL | Yes |
+| `ATLASSIAN_EMAIL` | Atlassian account email | Yes |
+| `ATLASSIAN_API_TOKEN` | Atlassian API token | Yes |
 | `JIRA_PROJECT_KEY` | Default project key | Optional |
 | `XRAY_TEST_PLAN_KEY` | Default test plan | Optional |
 | `XRAY_ENVIRONMENT` | Default test environment | Optional |

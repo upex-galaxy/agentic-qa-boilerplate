@@ -21,9 +21,9 @@ export interface EnvVarsToValidate {
   STAGING_USER_PASSWORD?: string
   XRAY_CLIENT_ID?: string
   XRAY_CLIENT_SECRET?: string
-  JIRA_URL?: string
-  JIRA_USER?: string
-  JIRA_API_TOKEN?: string
+  ATLASSIAN_URL?: string
+  ATLASSIAN_EMAIL?: string
+  ATLASSIAN_API_TOKEN?: string
 }
 
 /**
@@ -69,14 +69,14 @@ export function validateEnvironment(vars: EnvVarsToValidate): void {
       }
     }
     else if (provider === 'jira') {
-      if (!vars.JIRA_URL) {
-        errors.push('JIRA_URL is required when AUTO_SYNC=true and TMS_PROVIDER=jira');
+      if (!vars.ATLASSIAN_URL) {
+        errors.push('ATLASSIAN_URL is required when AUTO_SYNC=true and TMS_PROVIDER=jira');
       }
-      if (!vars.JIRA_USER) {
-        errors.push('JIRA_USER is required when AUTO_SYNC=true and TMS_PROVIDER=jira');
+      if (!vars.ATLASSIAN_EMAIL) {
+        errors.push('ATLASSIAN_EMAIL is required when AUTO_SYNC=true and TMS_PROVIDER=jira');
       }
-      if (!vars.JIRA_API_TOKEN) {
-        errors.push('JIRA_API_TOKEN is required when AUTO_SYNC=true and TMS_PROVIDER=jira');
+      if (!vars.ATLASSIAN_API_TOKEN) {
+        errors.push('ATLASSIAN_API_TOKEN is required when AUTO_SYNC=true and TMS_PROVIDER=jira');
       }
     }
     else {
@@ -102,9 +102,9 @@ if (import.meta.main) {
     STAGING_USER_PASSWORD: process.env.STAGING_USER_PASSWORD,
     XRAY_CLIENT_ID: process.env.XRAY_CLIENT_ID,
     XRAY_CLIENT_SECRET: process.env.XRAY_CLIENT_SECRET,
-    JIRA_URL: process.env.ATLASSIAN_URL || process.env.JIRA_URL,
-    JIRA_USER: process.env.ATLASSIAN_EMAIL || process.env.JIRA_USER,
-    JIRA_API_TOKEN: process.env.ATLASSIAN_API_TOKEN || process.env.JIRA_API_TOKEN,
+    ATLASSIAN_URL: process.env.ATLASSIAN_URL,
+    ATLASSIAN_EMAIL: process.env.ATLASSIAN_EMAIL,
+    ATLASSIAN_API_TOKEN: process.env.ATLASSIAN_API_TOKEN,
   };
 
   console.log('\nValidating environment variables...');
