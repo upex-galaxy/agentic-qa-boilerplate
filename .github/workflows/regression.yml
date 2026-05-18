@@ -45,6 +45,12 @@ env:
   AUTO_SYNC: ${{ secrets.AUTO_SYNC || 'false' }}
   XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}
   XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
+  # Atlassian credentials — uncomment when AUTO_SYNC=true (Jira issue lookups
+  # during sync). Single source of truth: also consumed by MCP, acli, xray-cli
+  # and the Jira-Direct TMS provider when run locally. Add as repo Secrets first.
+  # ATLASSIAN_URL: ${{ secrets.ATLASSIAN_URL }}
+  # ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
+  # ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
 
 jobs:
   # ============================================

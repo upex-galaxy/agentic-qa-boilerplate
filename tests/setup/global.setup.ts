@@ -53,9 +53,9 @@ setup('Global Setup: prepare environment', async () => {
 /**
  * Validates resolved TMS credentials when AUTO_SYNC is enabled.
  *
- * Checks values from `config.tms`, which already applies the override chain
- * (JIRA_* takes precedence over ATLASSIAN_* for Jira-Direct). Validating raw
- * env keys here would miss the supported case where only ATLASSIAN_* are set.
+ * Reads values from `config.tms`, the single resolution point for Atlassian /
+ * Xray credentials. Local runs emit a warning and continue; CI runs escalate
+ * to a non-zero exit code so missing secrets fail the workflow loudly.
  */
 function validateTmsConfig(): void {
   if (!config.tms.autoSync) {
@@ -74,21 +74,34 @@ function validateTmsConfig(): void {
   }
   else if (config.tms.provider === 'jira') {
     if (!config.tms.jira.url) {
-      missing.push('JIRA_URL or ATLASSIAN_URL');
+      missing.push('ATLASSIAN_URL');
     }
     if (!config.tms.jira.user) {
-      missing.push('JIRA_USER or ATLASSIAN_EMAIL');
+      missing.push('ATLASSIAN_EMAIL');
     }
     if (!config.tms.jira.apiToken) {
-      missing.push('JIRA_API_TOKEN or ATLASSIAN_API_TOKEN');
+      missing.push('ATLASSIAN_API_TOKEN');
     }
   }
   else {
     return;
   }
 
-  if (missing.length > 0) {
-    console.warn(`[WARN] Missing TMS credentials for ${config.tms.provider}: ${missing.join(', ')}`);
-    console.warn('   TMS sync will be skipped during test execution.');
+  if (missing.length === 0) {
+    return;
   }
+
+  if (env.isCI) {
+    console.error(
+      '[ERROR] AUTO_SYNC=true in CI but TMS credentials missing for '
+      + `${config.tms.provider}: ${missing.join(', ')}. `
+      + 'Add the missing values as repository Secrets and reference them '
+      + 'in the workflow env block.',
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  console.warn(`[WARN] Missing TMS credentials for ${config.tms.provider}: ${missing.join(', ')}`);
+  console.warn('   TMS sync will be skipped during test execution.');
 }

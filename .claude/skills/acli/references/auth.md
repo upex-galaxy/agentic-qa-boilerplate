@@ -58,7 +58,10 @@ Opens a browser. The user picks the target site in the browser, then picks it ag
 
 ## API key (org admin)
 
-Generate at `admin.atlassian.com → Settings → API Keys`.
+Generate at `admin.atlassian.com → Settings → API Keys`. This key is
+**distinct** from `ATLASSIAN_API_TOKEN` (which is a per-user token) — it is
+org-scoped and only required if your workflow runs `acli admin` commands.
+Not part of the boilerplate's `.env`; set it ad hoc when needed.
 
 ```bash
 echo "$ATLASSIAN_ADMIN_API_KEY" | acli admin auth login \
@@ -153,15 +156,21 @@ Three rules for CI:
 
 - name: Authenticate to Jira
   env:
-    ATLASSIAN_BOT_EMAIL: ${{ vars.ATLASSIAN_BOT_EMAIL }}
-    ATLASSIAN_BOT_TOKEN: ${{ secrets.ATLASSIAN_BOT_TOKEN }}
-    ATLASSIAN_SITE: ${{ vars.ATLASSIAN_SITE }}
+    ATLASSIAN_URL: ${{ secrets.ATLASSIAN_URL }}
+    ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
+    ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
   run: |
-    echo "$ATLASSIAN_BOT_TOKEN" | acli jira auth login \
-      --site "$ATLASSIAN_SITE" \
-      --email "$ATLASSIAN_BOT_EMAIL" \
+    # acli expects --site as the bare host (no scheme). Strip https:// from
+    # ATLASSIAN_URL so the same value used by MCP, scripts, and xray-cli works
+    # here unchanged.
+    SITE="${ATLASSIAN_URL#https://}"
+    echo "$ATLASSIAN_API_TOKEN" | acli jira auth login \
+      --site "$SITE" \
+      --email "$ATLASSIAN_EMAIL" \
       --token
 ```
+
+The env keys above are the same ones the repo already uses in `.env` for local development (MCP, scripts, xray-cli, doctor), so no separate `*_BOT_*` family needs to exist. Use a bot account by setting `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` to that account's credentials at the GitHub Secrets level.
 
 Pin the version in the URL (`1.3.13/` instead of `latest/`) — unpinned installs have caused same-day mass failures in the past.
 

@@ -196,10 +196,15 @@ jobs:
           acli --version
 
       - name: Authenticate
+        env:
+          ATLASSIAN_URL: ${{ secrets.ATLASSIAN_URL }}
+          ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
+          ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
         run: |
-          echo "${{ secrets.ATLASSIAN_BOT_TOKEN }}" | acli jira auth login \
-            --site "${{ vars.ATLASSIAN_SITE }}" \
-            --email "${{ vars.ATLASSIAN_BOT_EMAIL }}" \
+          SITE="${ATLASSIAN_URL#https://}"
+          echo "$ATLASSIAN_API_TOKEN" | acli jira auth login \
+            --site "$SITE" \
+            --email "$ATLASSIAN_EMAIL" \
             --token
 
       - name: Run batch transition
@@ -233,7 +238,8 @@ sync-jira:
   script:
     - curl -LO "https://acli.atlassian.com/linux/1.3.13/acli_linux_amd64/acli"
     - chmod +x acli
-    - echo "$ATLASSIAN_BOT_TOKEN" | ./acli jira auth login --site "$ATLASSIAN_SITE" --email "$ATLASSIAN_BOT_EMAIL" --token
+    - SITE="${ATLASSIAN_URL#https://}"
+    - echo "$ATLASSIAN_API_TOKEN" | ./acli jira auth login --site "$SITE" --email "$ATLASSIAN_EMAIL" --token
     - ./acli jira workitem search --jql "project = TEAM AND updated > -1d" --paginate --json > changes.json
   artifacts:
     paths: [changes.json]
