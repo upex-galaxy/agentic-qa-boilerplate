@@ -417,15 +417,23 @@ function parseClaudeMdSkillsRegistry(claudeMdPath: string): {
 function checkTierMismatch(
   claudeEntries: ClaudeMdSkillEntry[],
   t1DirSlugs: Set<string>,
-  installKnownSlugs: Set<string>,
+  t2Slugs: Set<string>,
+  t3Slugs: Set<string>,
+  t4Slugs: Set<string>,
 ): Violation[] {
   const result: Violation[] = [];
   const claudeNames = new Set(claudeEntries.map(e => e.name));
 
-  // Skills in CLAUDE.md that are not T1 and not in install.ts.
+  // T4 USER_LEVEL_SKILLS are auto-discovered at runtime and MUST NOT appear in
+  // CLAUDE.md §5 by doctrine (see skill-composition-strategy.md §10). Exclude
+  // them from this check; include only T2 + T3 in the install-side set.
+  const checkedSlugs = new Set<string>([...t2Slugs, ...t3Slugs]);
+
+  // Skills in CLAUDE.md that are not T1 and not in install.ts (T2/T3).
   for (const entry of claudeEntries) {
     if (t1DirSlugs.has(entry.name)) { continue; } // T1 exempt
-    if (!installKnownSlugs.has(entry.name)) {
+    if (t4Slugs.has(entry.name)) { continue; } // T4 exempt (auto-discovered)
+    if (!checkedSlugs.has(entry.name)) {
       result.push({
         severity: 'WARN',
         scope: entry.name,
@@ -435,7 +443,7 @@ function checkTierMismatch(
   }
 
   // Skills in install.ts that are not T1 and not in CLAUDE.md.
-  for (const slug of installKnownSlugs) {
+  for (const slug of checkedSlugs) {
     if (t1DirSlugs.has(slug)) { continue; } // T1 exempt
     if (!claudeNames.has(slug)) {
       result.push({
@@ -549,7 +557,6 @@ function main(): void {
   for (const e of install.userLevel) {
     if (e.skill) { t4Slugs.add(e.skill); }
   }
-  const installKnownSlugs = new Set<string>([...t2Slugs, ...t3Slugs, ...t4Slugs]);
 
   // ---- Walk .claude/skills/ to catalog T1 skills + collect categories ----
   if (!existsSync(SKILLS_DIR)) {
@@ -679,7 +686,7 @@ function main(): void {
       violation('WARN', '[lint-skills]', `TIER-MISMATCH parse failure: ${parseError}`);
     }
     else {
-      violations.push(...checkTierMismatch(entries, t1DirSlugs, installKnownSlugs));
+      violations.push(...checkTierMismatch(entries, t1DirSlugs, t2Slugs, t3Slugs, t4Slugs));
     }
   }
 
