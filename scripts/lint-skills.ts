@@ -5,12 +5,13 @@
  *
  * Tier model (full doctrine: .claude/skills/agentic-qa-core/references/skill-composition-strategy.md)
  *   T1  — project-owned skills committed under .claude/skills/<slug>/SKILL.md
- *   T2  — gentle-ai SDD-* + helpers, declared in cli/install.ts:SKILL_SLUGS (user level)
+ *   T2  — vendored upstream skills committed under .claude/skills/<slug>/SKILL.md
+ *         (frontmatter `vendored_from` points at the upstream source)
  *   T3  — community project-level, declared in cli/install.ts:PROJECT_LEVEL_SKILLS
  *         (gitignored, fetched at install time, NOT committed)
  *   T4  — community user-level, declared in cli/install.ts:USER_LEVEL_SKILLS
  *
- * Eleven checks are run; each violation is printed prefixed with the relevant
+ * Ten checks are run; each violation is printed prefixed with the relevant
  * skill or array name. Exit code 0 = pass (no ERROR violations), 1 = at least
  * one ERROR violation. WARN and INFO are reported but do not cause non-zero exit.
  *
@@ -22,40 +23,38 @@
  *      Check 1 now discriminates absent vs empty-list:
  *        - field absent → ERROR (unchanged)
  *        - field present but empty [] → INFO EMPTY-CATS (new)
- *        - field present with values → proceed to Check 5
+ *        - field present with values → proceed to Check 4
  *
- *   2. T2 SKILL_SLUGS validity — every entry in cli/install.ts:SKILL_SLUGS
- *      is a known SDD-* / meta slug (allowlist below).
- *
- *   3. T3 PROJECT_LEVEL_SKILLS shape — every entry has both `package` (URL)
+ *   2. T3 PROJECT_LEVEL_SKILLS shape — every entry has both `package` (URL)
  *      and `skill` (string) fields.
  *
- *   4. T4 USER_LEVEL_SKILLS shape — every entry has both `package` and `skill`.
+ *   3. T4 USER_LEVEL_SKILLS shape — every entry has both `package` and `skill`.
  *
- *   5. Category vocabulary — every category cited by any SKILL.md
+ *   4. Category vocabulary — every category cited by any SKILL.md
  *      `complementary_categories` field is in the known-category allowlist
  *      (mirrors §5.1 of the strategy doc).
  *
- *   6. `framework-development` exclusivity — that skill MUST exist at
+ *   5. `framework-development` exclusivity — that skill MUST exist at
  *      .claude/skills/framework-development/SKILL.md AND be the only T1 with
  *      category `framework-evolution`.
  *
- *   7. Anti-leak — the substring `/sdd-` MUST NOT appear in the body of the
+ *   6. Anti-leak — the substring `/sdd-` MUST NOT appear in the body of the
  *      four QA-workflow skills (sprint-testing, test-automation,
  *      regression-testing, test-documentation), EXCEPT inside the
  *      "Forbidden invocations" section which legitimately mentions it.
  *
- *   8. TIER-MISMATCH — skill named in CLAUDE.md §5 but absent from
- *      cli/install.ts matching tier array, or vice versa. T1 skills exempt.
+ *   7. TIER-MISMATCH — skill named in CLAUDE.md §5 but absent from
+ *      cli/install.ts matching tier array, or vice versa. T1 + T4 skills
+ *      exempt (T1 lives in .claude/skills/; T4 is auto-discovered at runtime).
  *      WARN severity (does not fail CI).
  *
- *   9. STALE-PATH — path-like literals in inline backtick spans of T1 SKILL.md
+ *   8. STALE-PATH — path-like literals in inline backtick spans of T1 SKILL.md
  *      bodies (outside fenced code blocks) must resolve to existing files
  *      relative to repo root. ERROR severity.
  *
- *  10. EMPTY-CATS — handled inline in Check 1 state switch (see above).
+ *   9. EMPTY-CATS — handled inline in Check 1 state switch (see above).
  *
- *  11. DUPLICATE-TIER — a skill slug appearing in more than one of SKILL_SLUGS,
+ *  10. DUPLICATE-TIER — a skill slug appearing in more than one of
  *      PROJECT_LEVEL_SKILLS, USER_LEVEL_SKILLS is an install conflict.
  *      ERROR severity.
  *
@@ -95,27 +94,7 @@ const KNOWN_CATEGORIES = new Set([
 ]);
 
 /**
- * Allowed slugs for cli/install.ts:SKILL_SLUGS (T2 — gentle-ai installed).
- * SDD-* core + judgment-day + issue-creation + skill-registry.
- */
-const KNOWN_T2_SLUGS = new Set([
-  'sdd-init',
-  'sdd-explore',
-  'sdd-propose',
-  'sdd-spec',
-  'sdd-design',
-  'sdd-tasks',
-  'sdd-apply',
-  'sdd-verify',
-  'sdd-archive',
-  'sdd-onboard',
-  'skill-registry',
-  'judgment-day',
-  'issue-creation',
-]);
-
-/**
- * QA workflow skills subject to the anti-leak rule (check 7). The "Forbidden
+ * QA workflow skills subject to the anti-leak rule (check 6). The "Forbidden
  * invocations" section is the ONLY place where `/sdd-*` may legitimately
  * appear in their bodies.
  */
@@ -250,7 +229,6 @@ interface CommunitySkillEntry {
 }
 
 interface InstallTsParsed {
-  skillSlugs: string[]
   projectLevel: CommunitySkillEntry[]
   userLevel: CommunitySkillEntry[]
 }
@@ -265,7 +243,6 @@ interface InstallTsParsed {
  */
 function parseInstallTs(text: string): InstallTsParsed {
   return {
-    skillSlugs: extractStringArray(text, 'SKILL_SLUGS'),
     projectLevel: extractCommunityArray(text, 'PROJECT_LEVEL_SKILLS'),
     userLevel: extractCommunityArray(text, 'USER_LEVEL_SKILLS'),
   };
@@ -289,16 +266,6 @@ function extractArrayBody(text: string, name: string): string | null {
     }
   }
   return null;
-}
-
-function extractStringArray(text: string, name: string): string[] {
-  const body = extractArrayBody(text, name);
-  if (body === null) { return []; }
-  const out: string[] = [];
-  // Match string literals 'foo' or "foo" anywhere in the body (line-comments + trailing commas are fine).
-  const re = /['"]([^'"]+)['"]/g;
-  for (const match of body.matchAll(re)) { out.push(match[1]); }
-  return out;
 }
 
 function extractCommunityArray(text: string, name: string): CommunitySkillEntry[] {
@@ -383,10 +350,10 @@ function hasAntiLeakViolation(content: string): boolean {
 }
 
 // -----------------------------------------------------------------------------
-// Checks 8–11 (new)
+// Checks 7–10 (new)
 // -----------------------------------------------------------------------------
 
-// --- Check 8: TIER-MISMATCH ---
+// --- Check 7: TIER-MISMATCH ---
 
 interface ClaudeMdSkillEntry {
   name: string
@@ -482,7 +449,7 @@ function checkTierMismatch(
   return result;
 }
 
-// --- Check 9: STALE-PATH ---
+// --- Check 8: STALE-PATH ---
 
 function stripFencedCodeBlocks(md: string): string {
   return md.replace(/```[\s\S]*?```/g, '');
@@ -517,7 +484,7 @@ function checkStalePaths(
   return result;
 }
 
-// --- Check 11: DUPLICATE-TIER ---
+// --- Check 10: DUPLICATE-TIER ---
 
 function checkDuplicateTier(
   t2Slugs: Set<string>,
@@ -535,7 +502,10 @@ function checkDuplicateTier(
     }
   };
 
-  addToMap(t2Slugs, 'SKILL_SLUGS');
+  // T2 today is vendored (committed under .claude/skills/, surfaced via the T1
+  // dir walk). The param is preserved for symmetry; populate if a future
+  // install.ts-declared T2 model returns.
+  addToMap(t2Slugs, 'T2_VENDORED');
   addToMap(t3Slugs, 'PROJECT_LEVEL_SKILLS');
   addToMap(t4Slugs, 'USER_LEVEL_SKILLS');
 
@@ -566,7 +536,11 @@ function main(): void {
   const install = parseInstallTs(installText);
 
   // ---- Build tier slug sets ----
-  const t2Slugs = new Set<string>(install.skillSlugs);
+  // T2 today is vendored (committed under .claude/skills/<slug>/ with `vendored_from`
+  // frontmatter) — captured via the T1 dir walk, not via a separate install.ts array.
+  // The empty Set is kept for symmetry with the DUPLICATE-TIER signature; if a
+  // future T2 declared-via-install model returns, populate it here.
+  const t2Slugs = new Set<string>();
   const t3Slugs = new Set<string>();
   for (const e of install.projectLevel) {
     if (e.skill) { t3Slugs.add(e.skill); }
@@ -654,26 +628,19 @@ function main(): void {
   // Build T1 dir slug set (available after the T1 walk).
   const t1DirSlugs = new Set<string>(t1Skills.map(s => s.slug));
 
-  // ---- Check 2: SKILL_SLUGS validity ----
-  for (const slug of install.skillSlugs) {
-    if (!KNOWN_T2_SLUGS.has(slug)) {
-      violation('ERROR', 'SKILL_SLUGS', `unknown T2 slug \`${slug}\` (allowlist: SDD-*, skill-registry, judgment-day, issue-creation)`);
-    }
-  }
-
-  // ---- Check 3: PROJECT_LEVEL_SKILLS shape ----
+  // ---- Check 2: PROJECT_LEVEL_SKILLS shape ----
   for (const [i, e] of install.projectLevel.entries()) {
     if (!e.package) { violation('ERROR', 'PROJECT_LEVEL_SKILLS', `entry #${i} missing \`package\` field`); }
     if (!e.skill) { violation('ERROR', 'PROJECT_LEVEL_SKILLS', `entry #${i} missing \`skill\` field`); }
   }
 
-  // ---- Check 4: USER_LEVEL_SKILLS shape ----
+  // ---- Check 3: USER_LEVEL_SKILLS shape ----
   for (const [i, e] of install.userLevel.entries()) {
     if (!e.package) { violation('ERROR', 'USER_LEVEL_SKILLS', `entry #${i} missing \`package\` field`); }
     if (!e.skill) { violation('ERROR', 'USER_LEVEL_SKILLS', `entry #${i} missing \`skill\` field`); }
   }
 
-  // ---- Check 6: framework-development exclusivity ----
+  // ---- Check 5: framework-development exclusivity ----
   const fwDev = t1Skills.find(s => s.slug === 'framework-development');
   if (!fwDev) {
     violation('ERROR', 'framework-development', 'expected T1 skill at .claude/skills/framework-development/SKILL.md not found');
@@ -687,7 +654,7 @@ function main(): void {
     violation('ERROR', 'framework-evolution', `category MUST be exclusive to \`framework-development\`; also claimed by: ${others}`);
   }
 
-  // ---- Check 7: anti-leak ----
+  // ---- Check 6: anti-leak ----
   for (const slug of ANTI_LEAK_SKILLS) {
     const skillMd = join(SKILLS_DIR, slug, 'SKILL.md');
     if (!existsSync(skillMd)) {
@@ -700,9 +667,9 @@ function main(): void {
     }
   }
 
-  // ---- Checks 8–11 (new) ----
+  // ---- Checks 7–10 (new) ----
 
-  // Check 8: TIER-MISMATCH
+  // Check 7: TIER-MISMATCH
   if (!existsSync(CLAUDE_MD)) {
     violation('ERROR', '[lint-skills]', 'CLAUDE.md missing at repo root — TIER-MISMATCH check skipped');
   }
@@ -716,20 +683,19 @@ function main(): void {
     }
   }
 
-  // Check 9: STALE-PATH
+  // Check 8: STALE-PATH
   for (const skill of t1Skills) {
     violations.push(...checkStalePaths(skill.slug, skill.body, REPO_ROOT));
   }
 
-  // Check 10: EMPTY-CATS is handled inline in Check 1 state switch above.
+  // Check 9: EMPTY-CATS is handled inline in Check 1 state switch above.
 
-  // Check 11: DUPLICATE-TIER
+  // Check 10: DUPLICATE-TIER
   violations.push(...checkDuplicateTier(t2Slugs, t3Slugs, t4Slugs));
 
   // ---- Report ----
   const checkNames = [
     'T1 frontmatter completeness (+ EMPTY-CATS discrimination)',
-    'T2 SKILL_SLUGS validity',
     'T3 PROJECT_LEVEL_SKILLS shape',
     'T4 USER_LEVEL_SKILLS shape',
     'category vocabulary',
