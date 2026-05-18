@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-onboard
-description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Ready For QA → In Testing → Tested → Closed), /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /sdd-* for spec-driven framework refactors, MCPs available (Context7, Tavily, Atlassian, Playwright, DBHub, OpenAPI, Postman), critical env vars. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`. Do NOT use for: feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing)."
+description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Ready For QA → In Testing → Tested → Closed), /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /framework-development for boilerplate evolution, MCPs available (Context7, Tavily, Atlassian, Playwright, DBHub, OpenAPI, Postman), critical env vars. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`. Do NOT use for: feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing)."
 license: MIT
 compatibility: [claude-code, opencode]
 phase: bootstrap
@@ -21,7 +21,7 @@ model_preferences:
 
 Activate when a user lands on this repo for the first time and asks "where do I start?", "how does QA work here?", or invokes `/agentic-qa-onboard`. The skill is a guided tour, not an executor: it explains the stack, the QA pipeline (Stages 1-6), the MCPs, and the env vars that everything depends on, then hands off to the right downstream skill.
 
-This skill complements `/sdd-onboard` (installed via gentle-ai). `/sdd-onboard` walks users through the SDD spec-driven loop in the abstract; `/agentic-qa-onboard` is specific to **this** Playwright + KATA QA boilerplate and points at the concrete entry points (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`).
+This skill is specific to **this** Playwright + KATA QA boilerplate and points at the concrete entry points (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/framework-development`).
 
 ---
 
@@ -58,7 +58,7 @@ Run the interactive installer once after cloning:
 bun run setup
 ```
 
-This bootstraps `.agents/`, installs gentle-ai skills (14 of them), configures the 7 canonical MCPs, downloads Playwright browsers, and writes `.mcp.json`. Full details in [`INSTALLER.md`](../../../INSTALLER.md).
+This bootstraps `.agents/`, installs the gentle-ai `engram` component (minimal preset), configures the 7 canonical MCPs, downloads Playwright browsers, installs 8 user-level community skills + 2 project-level Playwright skills, and writes `.mcp.json`. Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 After setup, fill `.env` with the credentials the rest of the workflow expects (see "Critical env vars" below).
 
@@ -102,17 +102,15 @@ You confirm at the gates.
 
 ---
 
-## When to use `/sdd-*` instead
-
-Hand-off matrix copied from [`INSTALLER.md`](../../../INSTALLER.md):
+## When to use `/framework-development` instead
 
 | When                                                                       | Skill                                                                |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | Routine in-sprint QA on a Jira ticket (most cases)                         | `/sprint-testing` (ticket-driven)                                    |
-| Large refactor of the test framework / KATA architecture / fixture model   | `/sdd-*` (spec-driven, explore → propose → spec → design → …)        |
-| Story with detailed AC you want traced formally as a test specification    | Both: `/sdd-spec` first, then `/sprint-testing` for the cycle        |
+| Authoring new automated test for a Candidate TC                            | `/test-automation`                                                   |
+| Refactor of the boilerplate itself — KATA bases, fixtures, cli/, scripts/  | `/framework-development`                                             |
 
-If the change feels like a research project (alternatives to compare, multiple modules of the test suite touched, no ticket because it's internal infrastructure), reach for `/sdd-explore` first. Otherwise, stick with `/sprint-testing`.
+`/framework-development` covers framework evolution (changes to the boilerplate's own infrastructure, not per-ticket test writing). ⚠️ Currently still references SDD-* skills internally; pending self-contained refactor — install SDD manually if invoking: `gentle-ai install --components engram,sdd --agent <a>`.
 
 ---
 
@@ -178,32 +176,40 @@ Verify your config with `bun run vars:check` (should report 0 errors when fully 
 | `acli`               | `/acli`                | Atlassian CLI wrapper for Jira/Confluence terminal work                        |
 | `xray-cli`           | `/xray-cli`            | Xray Cloud TMS CLI                                                             |
 | `git-flow-master`    | (auto on git intents)  | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)       |
+| `judgment-day`       | `/judgment-day`, `juzgar` | Vendored from gentle-ai (Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, fix loop, re-judge). Optional gate cited by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. |
 
 ---
 
-## Skills installed via gentle-ai (user-level)
+## What `bun run setup` installs via gentle-ai
 
-Run `bun run setup` once to install these at user level. They are not committed in this repo.
+`bun run setup` runs `gentle-ai install --preset minimal` — installs ONLY the **`engram`** component (persistent memory binary + MCP adapter + agent config). No SDD-* skills, no foundation skills.
 
-| Skill                | Trigger              | Purpose                                       |
-| -------------------- | -------------------- | --------------------------------------------- |
-| `sdd-init`           | `/sdd-init`          | Initialize SDD context for a project          |
-| `sdd-explore`        | `/sdd-explore`       | Investigate an idea / compare approaches      |
-| `sdd-propose`        | `/sdd-propose`       | Write a change proposal                       |
-| `sdd-spec`           | `/sdd-spec`          | Write requirements + scenarios as delta specs |
-| `sdd-design`         | `/sdd-design`        | Architecture + technical design doc           |
-| `sdd-tasks`          | `/sdd-tasks`         | Break design into a task checklist            |
-| `sdd-apply`          | `/sdd-apply`         | Implement tasks per spec/design               |
-| `sdd-verify`         | `/sdd-verify`        | Validate implementation against specs         |
-| `sdd-archive`        | `/sdd-archive`       | Sync delta specs into main, close the change  |
-| `sdd-onboard`        | `/sdd-onboard`       | Guided SDD walkthrough on real codebase       |
-| `skill-registry`     | (auto)               | Build the project-standards compact registry  |
-| `judgment-day`       | `/judgment-day`      | Adversarial parallel review (2 blind judges)  |
-| `issue-creation`     | `/issue-creation`    | Issue filing workflow (bug + feature)         |
+Rationale: this repo already covers Plan → Code → Verify natively in its workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`). SDD ceremony does not apply to test authoring.
 
-Plus `engram` (persistent memory across sessions). Full details in [`INSTALLER.md`](../../../INSTALLER.md).
+Need the SDD suite for `/framework-development` work? Run manually:
 
-> Plus 9 community skills installed via `bunx skills add ... --global` during `bun run setup` (`skill-creator`, `find-skills`, `gh-cli`, `github-actions-docs`, `playwright-cli`, `n8n-skills`, `emil-design-eng`, `ui-ux-pro-max`, `brainstorming`). See `cli/install.ts` `USER_LEVEL_SKILLS` array.
+```bash
+gentle-ai install --components engram,sdd --agent <claude-code|opencode|cursor>
+```
+
+Full details in [`INSTALLER.md`](../../../INSTALLER.md).
+
+## Community skills installed at user level
+
+`bun run setup` also runs `bunx skills add --global` for 8 cross-project skills:
+
+| Skill | Source | Use |
+| --- | --- | --- |
+| `skill-creator` | anthropics/skills | Create / edit / measure skills |
+| `find-skills` | vercel-labs/skills | Discover installable skills |
+| `gh-cli` | github/awesome-copilot | GitHub CLI patterns |
+| `github-actions-docs` | xixu-me/skills | GitHub Actions reference |
+| `brainstorming` | obra/superpowers | Pre-implementation discovery |
+| `cli-printing-press` | mvanhorn/cli-printing-press | CLI report rendering |
+| `html-ppt` | lewislulu/html-ppt-skill | HTML presentation authoring |
+| `resend-cli` | resend/resend-skills | Email automation CLI |
+
+Plus 2 project-level community skills installed into `.claude/skills/` (not committed): `playwright-cli`, `playwright-best-practices`. See `cli/install.ts` `PROJECT_LEVEL_SKILLS` and `USER_LEVEL_SKILLS` arrays.
 
 ---
 
@@ -217,7 +223,7 @@ Run through this checklist before you reach for your first ticket:
 - [ ] Does `bun run vars:check` exit clean (0 errors)?
 - [ ] Did you run `bun run jira:check` to verify Jira credentials?
 - [ ] Did you run `bun run pw:install` to get Playwright browsers?
-- [ ] Do the gentle-ai skills appear in autocomplete (restart your agent if not)?
+- [ ] Does engram persistent memory respond (try `mem_context` after restart)?
 - [ ] Ready for your first QA ticket: `/sprint-testing <UPEX-XXX>`
 
 If any box is unchecked, fix that first. The downstream skills assume a green foundation.

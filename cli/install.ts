@@ -14,7 +14,7 @@
  *   PHASE 2 — INSTALLATION
  *     5-deps-install    Install dependencies (`bun install`)
  *     6-playwright      Install Playwright browsers (`bun run pw:install`)
- *     8-skills-gentle-ai Install 13 skills + engram via gentle-ai (or skip)
+ *     8-skills-gentle-ai Install engram via gentle-ai minimal preset (or skip)
  *     9-skills-community Install community skills via `bunx skills add`
  *
  *   PHASE 3 — CONFIGURATION
@@ -54,7 +54,7 @@
  *   INSTALL_SKIP_PLAYWRIGHT=1             Skip `bun run pw:install`
  *   INSTALL_SKIP_AGENTS_SETUP=1           Skip `bun run agents:setup`
  *   INSTALL_FORCE_AGENTS_SETUP=1          Re-run agents:setup even if state shows it ran
- *   INSTALL_FORCE_GENTLE_AI=1             Re-run gentle-ai skill install even if state shows it ran
+ *   INSTALL_FORCE_GENTLE_AI=1             Re-run gentle-ai engram install even if state shows it ran
  *   INSTALL_FORCE_COMMUNITY=1             Re-run community skill install even if state shows it ran
  *   INSTALL_FORCE_GITHUB=1                Re-run GitHub remote setup even if a remote is already wired
  *   INSTALL_SKIP_COMMUNITY=1              Skip `bunx skills add` step
@@ -170,25 +170,20 @@ const MIN_GENTLE_AI_VERSION = [1, 26, 5] as const;
 const ENGRAM_COMPONENT = 'engram';
 
 /**
- * Universal skills installed via gentle-ai (engram + 11 SDD-* + 2 helpers + skill-registry).
- * Dev-side ships cognitive-doc-design and comment-writer too; we skip those — QA reporting
- * tone lives in /sprint-testing and /regression-testing, no need for the dev-writing pair.
+ * gentle-ai install uses the `minimal` preset → installs ONLY the engram
+ * component (persistent memory binary + MCP adapter + agent config wiring).
+ *
+ * Rationale: this is a QA repo. Our workflow skills (sprint-testing,
+ * test-automation, test-documentation, regression-testing) already provide
+ * Plan → Code → Verify natively. SDD-* skills target software-design workflows
+ * (specs, archives, strict TDD) that don't apply to E2E/API test authoring.
+ * The vendored `judgment-day` skill (committed under .claude/skills/) provides
+ * adversarial dual-review without needing the SDD bundle.
+ *
+ * If you want the full SDD suite for `/framework-development` framework
+ * evolution work, run manually:
+ *   gentle-ai install --agent <a> --components engram,sdd
  */
-const SKILL_SLUGS = [
-  'sdd-init',
-  'sdd-explore',
-  'sdd-propose',
-  'sdd-spec',
-  'sdd-design',
-  'sdd-tasks',
-  'sdd-apply',
-  'sdd-verify',
-  'sdd-archive',
-  'sdd-onboard',
-  'skill-registry',
-  'judgment-day',
-  'issue-creation',
-] as const;
 
 const CANONICAL_MCPS = [
   'context7',
@@ -525,7 +520,7 @@ function detectGentleAi(): GentleAiInfo {
 
 async function handleMissingGentleAi(): Promise<'show-and-exit' | 'skip'> {
   log.warn('gentle-ai not detected on PATH.');
-  log.info(`gentle-ai installs ${SKILL_SLUGS.length} universal skills + engram into your agent.`);
+  log.info('gentle-ai installs engram (persistent memory) into your agent via the minimal preset.');
   log.info('See INSTALLER.md for what gets installed and what stays local.');
   process.stdout.write('\n');
 
@@ -543,7 +538,7 @@ async function handleMissingGentleAi(): Promise<'show-and-exit' | 'skip'> {
     return 'show-and-exit';
   }
 
-  log.warn('Continuing without gentle-ai. Skills + engram will NOT be installed.');
+  log.warn('Continuing without gentle-ai. Engram will NOT be installed.');
   log.dim('  To install them later, install gentle-ai (https://github.com/Gentleman-Programming/gentle-ai)');
   log.dim('  and re-run: bun run setup');
   return 'skip';
@@ -745,65 +740,56 @@ async function installSkillsViaGentleAi(
 ): Promise<void> {
   const key = '8-skills-gentle-ai';
   if (agents.length === 0) {
-    log.info('No agents selected, skipping skill install.');
+    log.info('No agents selected, skipping engram install.');
     return;
   }
   if (!shouldRunStep(state, key, forceKeys) && !FORCE_GENTLE_AI) {
-    log.dim(`  gentle-ai skills already installed at ${state.steps[key]}.`);
+    log.dim(`  gentle-ai engram already installed at ${state.steps[key]}.`);
     log.dim('  Set INSTALL_FORCE_GENTLE_AI=1 or --force-step 8-skills-gentle-ai to re-run.');
     return;
   }
 
   // One batched gentle-ai call per agent: installs the engram component
-  // plus the SDD + skills components, with the full skill slug list in
-  // a single --skills CSV. gentle-ai snapshots existing config files
-  // before overwriting (compressed tar.gz, deduped, last 5 retained),
-  // so re-runs are safe and idempotent — they DO re-apply, they don't
-  // skip. The `<slug>::<agent>` state keys stay for the closing summary
-  // and doctor script.
+  // only (minimal preset). gentle-ai snapshots existing config files before
+  // overwriting (compressed tar.gz, deduped, last 5 retained), so re-runs
+  // are safe and idempotent — they DO re-apply, they don't skip. The
+  // `engram::<agent>` state keys stay for the closing summary and doctor
+  // script.
   log.info(`This will run ${agents.length} gentle-ai install command(s) — one batched call per agent.`);
 
-  const proceed = await maybeConfirm('Continue with skill installation?', true);
+  const proceed = await maybeConfirm('Continue with engram installation?', true);
   if (!proceed) {
-    log.warn('Skipping skill installation.');
-    for (const slug of [ENGRAM_COMPONENT, ...SKILL_SLUGS]) {
-      for (const agent of agents) {
-        const k = `${slug}::${agent}`;
-        if (!state.skills[k]) { state.skills[k] = 'skipped'; }
-      }
+    log.warn('Skipping engram installation.');
+    for (const agent of agents) {
+      const k = `${ENGRAM_COMPONENT}::${agent}`;
+      if (!state.skills[k]) { state.skills[k] = 'skipped'; }
     }
     return;
   }
 
-  const skillsCsv = SKILL_SLUGS.join(',');
-
   for (const agent of agents) {
-    log.banner(`Installing skills for: ${agent}`);
+    log.banner(`Installing engram for: ${agent}`);
 
     const s = tui.spinner();
-    s.start(`Installing engram + ${SKILL_SLUGS.length} skills for ${agent}…`);
+    s.start(`Installing engram (minimal preset) for ${agent}…`);
 
     const result = runGentleAiInstall([
       'install',
       '--agent',
       agent,
-      '--components',
-      `${ENGRAM_COMPONENT},sdd,skills`,
-      '--skills',
-      skillsCsv,
+      '--preset',
+      'minimal',
     ]);
 
     const status: InstallStatus = result.ok ? 'installed' : 'failed';
     if (result.ok) {
-      s.stop(`Installed: engram + ${SKILL_SLUGS.length} skills (${agent})`);
+      s.stop(`Installed: engram (${agent})`);
     }
     else {
-      s.stop(`Failed: engram + skills (${agent}) — ${result.reason}`);
+      s.stop(`Failed: engram (${agent}) — ${result.reason}`);
     }
 
-    for (const slug of [ENGRAM_COMPONENT, ...SKILL_SLUGS]) {
-      state.skills[`${slug}::${agent}`] = status;
-    }
+    state.skills[`${ENGRAM_COMPONENT}::${agent}`] = status;
   }
   markStepDone(state, key);
 }
@@ -2279,17 +2265,15 @@ async function main(): Promise<void> {
   tui.section('Step 6: Installing Playwright browsers');
   await runPlaywrightInstall(state, forceKeys);
 
-  tui.section('Step 8: Installing skills via gentle-ai');
+  tui.section('Step 8: Installing engram via gentle-ai (minimal preset)');
   if (runSkillInstall) {
     await installSkillsViaGentleAi(agents, state, forceKeys);
   }
   else {
-    log.dim('  No compatible gentle-ai — skipping skill install.');
-    for (const slug of [ENGRAM_COMPONENT, ...SKILL_SLUGS]) {
-      for (const agent of agents) {
-        const k = `${slug}::${agent}`;
-        if (!state.skills[k]) { state.skills[k] = 'skipped'; }
-      }
+    log.dim('  No compatible gentle-ai — skipping engram install.');
+    for (const agent of agents) {
+      const k = `${ENGRAM_COMPONENT}::${agent}`;
+      if (!state.skills[k]) { state.skills[k] = 'skipped'; }
     }
   }
 

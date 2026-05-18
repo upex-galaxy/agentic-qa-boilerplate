@@ -68,7 +68,7 @@ Before running `bunx create-agentic-qa@latest` or `bun install && bun run setup`
 
 | Tool          | Min version | Why                                                                                                                                                                                                       | Install                                                                                                                                                                            |
 | ------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **gentle-ai** | `>= 1.26.5` | Installs 13 universal skills (Engram persistent memory + 10 SDD-\* + skill-registry + judgment-day + issue-creation). Framework still runs without it, but SDD planning and cross-session memory are off. | macOS: `brew install gentle-ai` · Linux: `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` · [repo](https://github.com/Gentleman-Programming/gentle-ai) |
+| **gentle-ai** | `>= 1.26.5` | Installs the Engram persistent memory component via `--preset minimal`. Framework still runs without it, but cross-session memory is off. SDD-\* skills are NOT installed by default (install manually if you need `/framework-development`: `gentle-ai install --components engram,sdd --agent <a>`). | macOS: `brew install gentle-ai` · Linux: `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` · [repo](https://github.com/Gentleman-Programming/gentle-ai) |
 
 ### Per-skill CLIs (lazy-required — needed when the skill runs, not at setup)
 
@@ -699,7 +699,8 @@ BUILD_ID
 | `/xray-cli`                  | `/xray-cli`                   | Xray Cloud test management CLI: tests, executions, plans, JUnit/Cucumber/Xray JSON imports, project backup/restore.                                                                                                                                                                                  |
 | `/acli`                      | `/acli`                       | Atlassian CLI for Jira Cloud — resolves `[ISSUE_TRACKER_TOOL]` and (in Modality B) `[TMS_TOOL]`.                                                                                                                                                                                                     |
 | `/git-flow-master`           | (auto on git/PR intents)      | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR.                                                                                                                                                                                  |
-| `/framework-development`     | `/framework-development`      | Gateway for chaining SDD-\* skills. Use for evolving the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA.                                                                                                                                    |
+| `/framework-development`     | `/framework-development`      | Gateway for evolving the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. ⚠️ Currently chains SDD-\* skills; pending self-contained refactor (next session). Install SDD manually if you invoke it: `gentle-ai install --components engram,sdd --agent <a>`. |
+| `/judgment-day`              | `/judgment-day`, `juzgar`     | Vendored T2 (gentle-ai, Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, fix loop, re-judge). Optional gate cited by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. Never auto-invoked.                                                                                |
 | `/agentic-qa-onboard`        | `/agentic-qa-onboard`         | Walks new users through the repo's QA flow, MCPs, env vars, workflow skills.                                                                                                                                                                                                                         |
 
 ### Reusable community skills (installed by `bun run setup`)
@@ -710,12 +711,13 @@ These aren't committed in this repo. The installer fetches them via `bunx skills
 
 Every skill belongs to one of four tiers. Each tier has different discovery and load rules. Full contract: [`.claude/skills/agentic-qa-core/references/skill-composition-strategy.md`](.claude/skills/agentic-qa-core/references/skill-composition-strategy.md).
 
-| Tier | What                           | Location                                           | Load behavior                                               |
-| ---- | ------------------------------ | -------------------------------------------------- | ----------------------------------------------------------- |
-| T1   | Project-owned (this repo)      | `.claude/skills/`                                  | Silent — load on trigger                                    |
-| T2   | Project dependency (gentle-ai) | Installed by gentle-ai (SDD bundle, judgment-day…) | Silent inside T1 orchestrators                              |
-| T3   | Community project-level        | Installed by `install.ts` `PROJECT_LEVEL_SKILLS`   | Silent if matched by category                               |
-| T4   | Community user-level (global)  | Installed by `install.ts` `USER_LEVEL_SKILLS`      | **ASK** user before load (cross-project, not always wanted) |
+| Tier   | What                                   | Location                                              | Load behavior                                               |
+| ------ | -------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------- |
+| T1     | Project-owned (this repo)              | `.claude/skills/`                                     | Silent — load on trigger                                    |
+| T2     | Vendored (upstream, attribution kept)  | `.claude/skills/judgment-day/`                        | Silent on explicit trigger or host orchestrator citation    |
+| T2-opt | Optional gentle-ai SDD (user-installed)| `~/.claude/skills/sdd-*` only if manually installed   | Silent inside `/framework-development` only — see anti-leak |
+| T3     | Community project-level                | Installed by `install.ts` `PROJECT_LEVEL_SKILLS`      | Silent if matched by category                               |
+| T4     | Community user-level (global)          | Installed by `install.ts` `USER_LEVEL_SKILLS`         | **ASK** user before load (cross-project, not always wanted) |
 
 Validation: `bun run skills:check` checks tier coherence (orphan categories, tier mismatches, missing sections, stale doc paths).
 

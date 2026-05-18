@@ -1,10 +1,10 @@
 # Skill Composition Strategy
 
-> **Purpose**: Contract for how this QA boilerplate's AI orchestrator composes project-owned skills with external skills (gentle-ai SDD bundle, community skills) without duplication, conflicts, or false negatives. Also encodes the **anti-leak contract** that gates SDD-* skill chaining behind `framework-development` so per-ticket QA work never spawns SDD planning.
+> **Purpose**: Contract for how this QA boilerplate's AI orchestrator composes project-owned skills with vendored skills and community skills without duplication, conflicts, or false negatives. Also encodes the **anti-leak contract** that gates SDD-* skill chaining behind `framework-development` for users who manually install the SDD bundle.
 >
 > **Home**: `.claude/skills/agentic-qa-core/references/skill-composition-strategy.md` — meta-doctrine consumed by all T1 skills, sibling to `briefing-template.md`, `dispatch-patterns.md`, `orchestration-doctrine.md`.
 >
-> **Status**: v1.0 — initial QA-side strategy. Mirrors the dev-side doctrine but replaces the sprint-development ↔ SDD contract with the QA-specific framework-development ↔ SDD contract. Categories pruned to QA-relevant scope (no `frontend-ui`, no `deploy`, no `forms-validation`).
+> **Status**: v1.1 — `bun run setup` now uses `gentle-ai install --preset minimal` (engram only). SDD-* skills are no longer auto-installed; the anti-leak contract still applies when users manually opt in. `judgment-day` is now vendored into the repo as a T2 skill.
 >
 > **Companion files**:
 > - `CLAUDE.md` (project memory — top-level rules and skill mentions)
@@ -19,11 +19,12 @@
 
 ## 1. Problem Statement
 
-The repo ships with **11 project-owned workflow skills** (`.claude/skills/`). The installer (`cli/install.ts`) also installs:
+The repo ships with **11 project-owned workflow skills** + **1 vendored skill** (`.claude/skills/`). The installer (`cli/install.ts`) also installs:
 
-- **13 gentle-ai skills** (user-level): SDD bundle (`sdd-init`, `sdd-explore`, `sdd-propose`, `sdd-spec`, `sdd-design`, `sdd-tasks`, `sdd-apply`, `sdd-verify`, `sdd-archive`, `sdd-onboard`) + 3 helpers (`skill-registry`, `judgment-day`, `issue-creation`).
+- **Engram only** (user-level via gentle-ai minimal preset): persistent memory binary + MCP adapter. No SDD-* skills, no foundation skills. Users who want the full SDD suite for `/framework-development` work install it manually: `gentle-ai install --components engram,sdd --agent <a>`.
+- **Vendored T2 skill**: `judgment-day` (Apache-2.0, attribution preserved in frontmatter) lives committed under `.claude/skills/judgment-day/`. No upstream dependency.
 - **2 community skills (project-level)**: `playwright-cli` (Microsoft), `playwright-best-practices` (currents-dev).
-- **7 community skills (user-level / global)**: `skill-creator`, `find-skills`, `gh-cli`, `github-actions-docs`, `brainstorming`, `cli-printing-press`, `html-ppt`.
+- **8 community skills (user-level / global)**: `skill-creator`, `find-skills`, `gh-cli`, `github-actions-docs`, `brainstorming`, `cli-printing-press`, `html-ppt`, `resend-cli`.
 
 Current state (CLAUDE.md): T1 skills named explicitly in §5; T2/T3/T4 mentioned by category. Auto-discovery: zero mechanism. Cross-skill composition: only project-owned sister calls (`sprint-testing` → `test-documentation`, `git-flow-master`).
 
@@ -43,28 +44,31 @@ Four tiers. Different discovery and load rules per tier.
 | Tier | Location | Examples | Discovery | Load behavior |
 |--|--|--|--|--|
 | **T1 — Project-owned** | `.claude/skills/` (committed) | `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `git-flow-master`, `project-discovery`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development` | Named in CLAUDE.md "Skills" registry | Silent (load on trigger, no ask) |
-| **T2 — Project dependency (gentle-ai)** | `~/.claude/skills/sdd-*`, `judgment-day`, `skill-registry`, `issue-creation` | All 13 gentle-ai skills | Named in CLAUDE.md (one section, with phase mapping). SDD-* members are GATED by `framework-development` — see §4 | Silent **inside** `framework-development` only. NEVER silent inside `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing` |
-| **T3 — Community project-level** | `~/.claude/skills/` (installed by `install.ts:203-210`) | `playwright-cli`, `playwright-best-practices` | Named **by category** in CLAUDE.md (not by skill name). Discovered at runtime from system-reminder skill list | Silent if matched by category (e.g. user writes a Playwright test → load `playwright-best-practices`) |
-| **T4 — Community user-level** | `~/.claude/skills/` (installed by `install.ts` USER_LEVEL_SKILLS) | `skill-creator`, `find-skills`, `gh-cli`, `github-actions-docs`, `brainstorming`, `cli-printing-press`, `html-ppt` | **NOT named in CLAUDE.md**. Discovered at runtime from system-reminder skill list. Auto-match by task domain | **ASK user before load** (may not be installed, or user may not want it for this task) |
+| **T2 — Vendored** | `.claude/skills/` (committed, upstream attribution in frontmatter) | `judgment-day` (gentle-ai, Apache-2.0) | Named in CLAUDE.md | Silent on explicit user trigger (`/judgment-day`, `juzgar`) or when cited by host orchestrator (`test-automation` Phase 3, `git-flow-master` pre-PR) |
+| **T2-opt — Optional gentle-ai SDD bundle (user-installed)** | `~/.claude/skills/sdd-*` (only if user runs `gentle-ai install --components engram,sdd`) | `sdd-init`, `sdd-explore`, `sdd-propose`, `sdd-spec`, `sdd-design`, `sdd-tasks`, `sdd-apply`, `sdd-verify`, `sdd-archive`, `sdd-onboard` | NOT installed by `bun run setup` (minimal preset = engram only). Discovered at runtime from system-reminder skill list when present | Silent **inside** `framework-development` only — see §4 anti-leak contract. NEVER silent inside `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing` |
+| **T3 — Community project-level** | `.claude/skills/` (installed by `install.ts` PROJECT_LEVEL_SKILLS, not committed) | `playwright-cli`, `playwright-best-practices` | Named **by category** in CLAUDE.md (not by skill name). Discovered at runtime from system-reminder skill list | Silent if matched by category (e.g. user writes a Playwright test → load `playwright-best-practices`) |
+| **T4 — Community user-level** | `~/.claude/skills/` (installed by `install.ts` USER_LEVEL_SKILLS) | `skill-creator`, `find-skills`, `gh-cli`, `github-actions-docs`, `brainstorming`, `cli-printing-press`, `html-ppt`, `resend-cli` | **NOT named in CLAUDE.md**. Discovered at runtime from system-reminder skill list. Auto-match by task domain | **ASK user before load** (may not be installed, or user may not want it for this task) |
 
 ### Tier decision rule
 
 ```
-IF skill is committed in .claude/skills/   → T1
-ELIF skill is in install.ts SKILL_SLUGS    → T2
-ELIF skill is in install.ts PROJECT_LEVEL_SKILLS → T3
-ELIF skill is in install.ts USER_LEVEL_SKILLS    → T4
+IF skill is committed in .claude/skills/ AND authored by us            → T1
+ELIF skill is committed in .claude/skills/ AND has vendored_from meta  → T2
+ELIF skill matches sdd-* in user-global .claude/skills/                → T2-opt
+ELIF skill is in install.ts PROJECT_LEVEL_SKILLS                       → T3
+ELIF skill is in install.ts USER_LEVEL_SKILLS                          → T4
 ELSE → T4 (unknown community)
 ```
 
-T2 list (SKILL_SLUGS in `cli/install.ts:127-141`):
-`sdd-init`, `sdd-explore`, `sdd-propose`, `sdd-spec`, `sdd-design`, `sdd-tasks`, `sdd-apply`, `sdd-verify`, `sdd-archive`, `sdd-onboard`, `skill-registry`, `judgment-day`, `issue-creation`.
+T2 vendored list: `judgment-day` (frontmatter `metadata.vendored_from` points at upstream).
 
-T3 list (PROJECT_LEVEL_SKILLS in `cli/install.ts:203-210`):
+T2-opt SDD bundle (only when user manually installed): `sdd-init`, `sdd-explore`, `sdd-propose`, `sdd-spec`, `sdd-design`, `sdd-tasks`, `sdd-apply`, `sdd-verify`, `sdd-archive`, `sdd-onboard`.
+
+T3 list (`PROJECT_LEVEL_SKILLS` in `cli/install.ts`):
 `playwright-cli` (microsoft), `playwright-best-practices` (currents-dev).
 
-T4 list (USER_LEVEL_SKILLS in `cli/install.ts:220-229`):
-`skill-creator`, `find-skills`, `gh-cli`, `github-actions-docs`, `brainstorming`, `cli-printing-press`, `html-ppt`.
+T4 list (`USER_LEVEL_SKILLS` in `cli/install.ts`):
+`skill-creator`, `find-skills`, `gh-cli`, `github-actions-docs`, `brainstorming`, `cli-printing-press`, `html-ppt`, `resend-cli`.
 
 ---
 
@@ -86,8 +90,8 @@ Before starting any non-trivial task, the orchestrator (and each invoked skill) 
 | Tier | Silent load condition | Ask condition |
 |--|--|--|
 | T1 | always | never |
-| T2 (SDD-*) | inside `framework-development` only (see §4) | inside any other workflow skill — REJECT, redirect to `framework-development` |
-| T2 (judgment-day, skill-registry, issue-creation) | inside any project-owned orchestrator | when invoked standalone by user outside a host orchestrator |
+| T2 (`judgment-day`) | on explicit user trigger OR when cited by host orchestrator (`test-automation` Phase 3, `git-flow-master` pre-PR) | never auto-invoked without trigger |
+| T2-opt (SDD-*, only if user manually installed) | inside `framework-development` only (see §4) | inside any other workflow skill — REJECT, redirect to `framework-development` |
 | T3 | task domain matches category | task domain only weakly matches |
 | T4 | never silent | always ask before load |
 
@@ -246,10 +250,11 @@ At runtime, the skill (or orchestrator) scans the available skill list, matches 
 When a new skill is added (or an existing one moved between tiers), apply:
 
 ```
-IF the skill is authored by us AND lives in this repo's .claude/skills/ → T1
-ELIF the skill is a project dependency (installed by cli/install.ts SKILL_SLUGS via gentle-ai) → T2
-ELIF the skill is a community skill that EVERY clone of this repo needs (e.g. playwright-cli) → T3 (PROJECT_LEVEL_SKILLS in install.ts)
-ELIF the skill is a community skill useful across many of the user's projects (not specific to this repo) → T4 (USER_LEVEL_SKILLS in install.ts)
+IF the skill is authored by us AND lives in this repo's .claude/skills/         → T1
+ELIF the skill is vendored upstream into .claude/skills/ (license + attrib)     → T2
+ELIF the skill is an opt-in user install (sdd-*, foundation skills)             → T2-opt
+ELIF the skill is a community skill that EVERY clone of this repo needs         → T3 (PROJECT_LEVEL_SKILLS in install.ts)
+ELIF the skill is a community skill useful across many of the user's projects   → T4 (USER_LEVEL_SKILLS in install.ts)
 ```
 
 Promotion path (T4 → T3): when a user-level skill turns out to be load-bearing for THIS repo's QA work and no clone should run without it. Move from `USER_LEVEL_SKILLS` to `PROJECT_LEVEL_SKILLS` in `install.ts` and add a brief note in CLAUDE.md §5.
@@ -307,7 +312,7 @@ The four-tier model is not bureaucracy. Each tier solves a real failure:
 The validation script `scripts/lint-skills.ts` (implemented at `scripts/lint-skills.ts`, wired in `package.json` as `bun run skills:check`). Severity model: ERROR fails CI; WARN and INFO are reported but do not fail. The script MUST:
 
 1. **Scan T1 SKILL.md frontmatter** for `complementary_categories` field. Warn on T1 skills without one (fragile — won't get auto-matched community skills).
-2. **Scan `cli/install.ts`** for the three tier arrays (`SKILL_SLUGS`, `PROJECT_LEVEL_SKILLS`, `USER_LEVEL_SKILLS`). Cross-check every skill mentioned in CLAUDE.md against its declared tier.
+2. **Scan `cli/install.ts`** for the tier arrays (`PROJECT_LEVEL_SKILLS`, `USER_LEVEL_SKILLS`). Cross-check every skill mentioned in CLAUDE.md against its declared tier. The minimal-preset gentle-ai install ships only `engram` — no `SKILL_SLUGS` array to validate.
 3. **Cross-check §5.1 categories** against T1 frontmatter declarations. Warn on:
    - Orphan categories: declared in §5.1 but no T1 skill cites them.
    - Stale citations: T1 skill cites a category not in §5.1.
@@ -317,7 +322,7 @@ The validation script `scripts/lint-skills.ts` (implemented at `scripts/lint-ski
 7. **TIER-MISMATCH audit** (WARN): skill named in CLAUDE.md §5 but absent from `cli/install.ts` matching tier array, or present in `cli/install.ts` but absent from CLAUDE.md §5. T1 skills exempt. If CLAUDE.md §5 table parsing yields 0 rows (format drift), emits a script-self WARN and skips this check (no false positives).
 8. **STALE-PATH audit** (ERROR): path-like literals in inline backtick spans of T1 SKILL.md bodies (outside fenced code blocks) must resolve to existing files relative to repo root. Prefix-anchored: only paths starting with `.claude/skills/`, `scripts/`, `cli/`, `.agents/`, `tests/`, or `api/` are checked.
 9. **EMPTY-CATS discrimination** (INFO sub-case of rule 1): `complementary_categories: []` (key present but empty list) emits INFO instead of ERROR; field entirely absent still emits ERROR. Suggests declaring at least one category from the §5.1 vocabulary.
-10. **DUPLICATE-TIER audit** (ERROR): a skill slug appearing in more than one of `SKILL_SLUGS`, `PROJECT_LEVEL_SKILLS`, `USER_LEVEL_SKILLS` in `cli/install.ts` is an install conflict. Violation message names the slug and all conflicting tier arrays.
+10. **DUPLICATE-TIER audit** (ERROR): a skill slug appearing in more than one of `PROJECT_LEVEL_SKILLS`, `USER_LEVEL_SKILLS` in `cli/install.ts` is an install conflict. Violation message names the slug and all conflicting tier arrays.
 
 Output format: human-readable summary (counts of ERROR / WARN / INFO). Exit code: non-zero on ERROR, zero on WARN/INFO only.
 
@@ -335,7 +340,8 @@ The script is wired in `package.json` as `"skills:check": "bun run scripts/lint-
 | framework-development ↔ SDD anti-leak contract | Brief mention + link | Each affected skill (sprint-testing, test-automation, test-documentation, regression-testing) gets a "SDD chain MUST NOT be invoked from this skill" note | Authoritative |
 | Glue layer responsibilities | Brief mention + link | — | Authoritative |
 | T1 skill names | §5 Skills registry table | — | Reference only |
-| T2 skill names (gentle-ai/SDD) | §5 (named, with anti-leak note) | framework-development SKILL.md references SDD skills by name in delegation points | Reference only |
+| T2 vendored skill names (`judgment-day`) | §5 (named, with citation context) | host skill SKILL.md references it in optional review steps | Reference only |
+| T2-opt SDD bundle names | §5 (named, with anti-leak note + manual-install pointer) | framework-development SKILL.md references SDD skills by name in delegation points | Reference only |
 | T3 skill names (community project-level) | §5 (mention `playwright-cli`, `playwright-best-practices` by name; small list, low fragility) | — | Reference only |
 | T4 skill names (community user-level) | NOT named in CLAUDE.md. Auto-discovered at runtime per this doc | — | Reference only — name list only in installer |
 
@@ -343,19 +349,16 @@ The script is wired in `package.json` as `"skills:check": "bun run scripts/lint-
 
 ## 11. Resolved Decisions
 
-1. **Skill registry tooling**: ✅ **Adopted as canonical discovery mechanism.** Gentle-ai's `skill-registry` (installed via `cli/install.ts`) is the authoritative scanner. Project-owned skills and orchestrator call it instead of ad-hoc scanning of the system-reminder list. Fallback to system-reminder scan only if `skill-registry` is unavailable.
+1. **Skill discovery mechanism**: ✅ **System-reminder scan is canonical.** With `gentle-ai install --preset minimal` we no longer ship `skill-registry`. Project-owned skills and orchestrator read the system-reminder skill list directly. Users who want richer registry tooling can install it manually.
 
 2. **find-skills meta-skill**: ✅ **Automatic, but only as last resort.** Invocation order:
    1. Scan T1 + T2 (always available).
-   2. Scan T3 + T4 already installed (via `skill-registry`).
+   2. Scan T3 + T4 already installed (via system-reminder list).
    3. If a task domain has no match in steps 1-2 AND the task would benefit significantly from a specialized skill → invoke `find-skills` automatically to suggest installable skills. Ask user before installing.
 
-3. **judgment-day adoption**: ✅ **Available on demand for any T1 workflow.** Not auto-invoked (QA flows are short enough that adversarial review usually adds more cost than value). User can invoke `/judgment-day` explicitly to dual-judge an ATP, ATR, automated test, or framework change.
+3. **judgment-day adoption**: ✅ **Vendored T2; available on demand.** Lives committed under `.claude/skills/judgment-day/` (Apache-2.0, attribution preserved). Not auto-invoked. User invokes `/judgment-day` explicitly OR host orchestrators (`test-automation` Phase 3, `git-flow-master` pre-PR) cite it as an optional gate.
 
-4. **Gentle-ai non-SDD skills**: ✅ **Selective hookup.**
-   - `judgment-day`: hooked as T2 callee available to any project-owned skill on user request.
-   - `skill-registry`: hooked as the canonical discovery mechanism (see decision #1).
-   - `issue-creation`: ❌ **Discarded.** Conflict with the repo's Jira-first flow. Bugs and stories are created via `sprint-testing` + `acli` (Jira), not GitHub Issues.
+4. **Gentle-ai bundle scope**: ✅ **Minimal preset (engram only).** No SDD-* skills auto-installed. No foundation skills (`skill-registry`, `branch-pr`, `issue-creation`, `cognitive-doc-design`, `comment-writer`). Rationale: our workflow skills already cover Plan → Code → Verify natively; SDD ceremony does not apply to test authoring. Users who want SDD for framework evolution work install it manually: `gentle-ai install --components engram,sdd --agent <a>`.
 
 5. **Category vocabulary maintainer**: ✅ **`/sync-ai-memory` auto-maintains §5.1.** On invocation, sync-ai-memory scans T1 SKILL.md frontmatter + installed T3/T4 skills (via `skill-registry`), detects category gaps, writes additions to §5.1 of this doc. No human approval required (categories are additive, not destructive). Removal of unused categories: deferred to manual review.
 

@@ -259,6 +259,8 @@ gh pr create \
 
 **Stop at PR creation.** Merging is the user's explicit next step. Never auto-merge. Surface: _"Review the PR. Once approved, merge via the GitHub UI or run `gh pr merge {number} --squash --delete-branch`."_
 
+**Optional pre-PR adversarial gate** — when the diff exceeds the 400-line cognitive review budget OR touches shared scaffolding (KATA base classes, fixtures, OpenAPI schemas), surface `/judgment-day` as an optional pre-PR review: _"Diff is large / touches shared scaffolding. Want to run `/judgment-day` before opening the PR?"_. Two blind judges review the diff in parallel; only approves when both agree. See `.claude/skills/judgment-day/SKILL.md`. Never invoked automatically — user opts in.
+
 ### 3.5 Conflict resolution
 
 Conflicts are diagnosed before they are resolved. The user is rarely in a hurry; a wrong fix here costs hours.

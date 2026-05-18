@@ -8,6 +8,14 @@ complementary_categories: [framework-evolution, meta-skill]
 
 # Framework Development — Evolve the QA Boilerplate
 
+> ⚠️ **TRANSITIONAL STATE (2026-05-18)**: This skill still chains SDD-* skills that are NO LONGER installed by `bun run setup`. The installer now uses `gentle-ai install --preset minimal` (engram only). A self-contained refactor of this skill (Plan → Code → Verify with no SDD-* dependencies) is scheduled for the next session.
+>
+> **If you need to use this skill before the refactor lands**, install the SDD bundle manually:
+> ```bash
+> gentle-ai install --components engram,sdd --agent <claude-code|opencode|cursor>
+> ```
+> Restart your agent after install so the SDD-* skills appear in the system-reminder list. Then the chain below works as-is.
+
 Gateway skill for changes to the framework itself (KATA layers, fixtures, installer, OpenAPI pipeline, scripts, doctrine docs). It is the **only** legitimate entry point for chaining the SDD-* skills inside this repo. Per-ticket QA work, test specs, and TMS documentation are owned by other workflow skills and MUST NOT trigger SDD chains.
 
 The skill exists because SDD planning, applied to per-ticket test writing, doubles cost without adding value (test-automation already has Plan → Code → Review). SDD's value lands when the change is architectural — new fixture, new layer helper, installer rewrite, manifest extractor — and that is the surface this skill gates.

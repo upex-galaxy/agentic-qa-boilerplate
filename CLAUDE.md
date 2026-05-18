@@ -142,13 +142,13 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 Repo organizes skills in 4 tiers with different discovery + load rules:
 
 - **T1** — Project-owned, committed in `.claude/skills/`. Listed below in "Workflow Skills". Load silent on trigger.
-- **T2** — Project dependency via gentle-ai. Installed at user level by `install.ts`. Load silent when invoked by T1 orchestrator; ASK if standalone.
+- **T2** — Project-vendored. Committed in `.claude/skills/` from upstream (e.g. `judgment-day` from gentle-ai). License + attribution preserved in frontmatter. Load silent on explicit trigger.
 - **T3** — Community project-level. Installed by `install.ts` into `.claude/skills/` (not committed). Load silent if category matches task domain.
 - **T4** — Community user-level. Installed globally. ALWAYS ASK before loading.
 
 Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-strategy.md`
 
-**SDD usage gate**: SDD-* skills (T2) are reserved for **framework evolution** via `/framework-development` (T1). NEVER invoke SDD-* from `/sprint-testing`, `/test-automation` per-ticket Code phase, `/test-documentation`, or `/regression-testing`. The boundary is enforced inline in each workflow skill.
+**gentle-ai install scope**: `cli/install.ts` runs `gentle-ai install --preset minimal` → installs ONLY the `engram` component (persistent memory). SDD-* skills are NOT installed by default — our workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`) cover Plan → Code → Verify natively without SDD ceremony. Users who explicitly want the SDD suite for framework evolution work can add it manually: `gentle-ai install --components engram,sdd --agent <a>`.
 
 ### Skills (lazy-loaded by trigger phrase)
 
@@ -156,7 +156,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 |---|---|---|
 | `agentic-qa-core` | (auto, cited by other skills) | Foundation: passive reference host for shared doctrine (briefing template, dispatch patterns, orchestration, skill-composition strategy). Loaded on demand by workflow skills. |
 | `agentic-qa-onboard` | `/agentic-qa-onboard` | First-time orientation tour. Explains stack + 6-stage pipeline + MCPs. Hands off to right downstream skill. |
-| `framework-development` | `/framework-development` | Gateway skill — sole legitimate entry point for chaining SDD-* skills. Use for evolving boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. |
+| `framework-development` | `/framework-development` | Framework-evolution orchestrator for the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. ⚠️ Currently still references SDD-* skills; pending self-contained refactor — install SDD manually if invoking this skill: `gentle-ai install --components engram,sdd --agent <a>`. |
 | `project-discovery` | `/project-discovery` | 4-phase discovery (Constitution → Architecture → Infrastructure → Specification) → generates PRD, SRS, domain glossary, `.context/`. Reverse-engineering only. |
 | `sprint-testing` | `/sprint-testing` | Stages 1-3: manual QA per ticket (Planning, Execution, Reporting). Produces PBI folder, ATP, ATR, bug reports. |
 | `test-documentation` | `/test-documentation` | Stage 4: TMS docs + ROI scoring. Produces Candidate / Manual / Deferred verdicts. |
@@ -167,6 +167,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | `xray-cli` | `/xray-cli` | Xray Cloud test management. |
 | `acli` | `/acli` | Atlassian CLI. Resolves `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` (Modality B). |
 | `git-flow-master` | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR. |
+| `judgment-day` | `/judgment-day`, `juzgar`, `dual review` | T2 vendored from gentle-ai (Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, synthesis, fix loop, re-judge). Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. Never auto-invoked. |
 
 ### Commands (single-file utilities in `.claude/commands/`)
 

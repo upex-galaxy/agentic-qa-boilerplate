@@ -4,7 +4,7 @@
 > **Read time**: 8 minutes.
 > **Status**: updated 2026-05-17 — 5-phase TUI flow, step idempotency, GitHub repo step.
 >
-> This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram + SDD), community skills via `bunx skills`, locally committed workflow skills, and the 7 canonical MCPs — are documented below in that order.
+> This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram only, minimal preset), community skills via `bunx skills`, locally committed workflow skills (including the vendored `judgment-day`), and the 7 canonical MCPs — are documented below in that order.
 
 ---
 
@@ -22,7 +22,7 @@ Downloads and installs all software dependencies:
 
 - `bun install` — project Node/Bun packages including `@playwright/test`
 - `bun run pw:install` — Playwright browser binaries (~300 MB Chromium)
-- `gentle-ai install` — Engram persistent memory + 13 SDD/helper skills (one batched call per agent)
+- `gentle-ai install --preset minimal` — Engram persistent memory only (one batched call per agent). SDD-* and foundation skills are NOT installed — see [What `gentle-ai install` adds](#what-gentle-ai-install-adds) below.
 - `bunx skills add` — project-level skills (`playwright-cli`, `playwright-best-practices`) and user-level skills (8 cross-project utilities)
 
 ### Phase 3 — CONFIGURATION
@@ -93,7 +93,7 @@ The agent-CLI check is the gotcha that bites first-timers most often: a missing 
 | ------------- | ----------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **gentle-ai** | `>= 1.26.5` | `install.ts:500-545` (Step 2) | Prints `gentle-ai not detected on PATH.` then offers two paths: (a) show install commands (`brew install gentle-ai` on macOS, `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` on Linux) and exit, or (b) continue without gentle-ai. Older-than-min version triggers `gentle-ai X.Y.Z is older than required 1.26.5. Upgrade with: gentle-ai update` and the setup continues with the warning. |
 
-If you skip gentle-ai, Engram persistent memory + the SDD spec-driven loop + judgment-day + issue-creation skills are NOT installed. The locally committed QA workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/agentic-qa-core`) keep working, and the 7 canonical MCPs are still configured.
+If you skip gentle-ai, Engram persistent memory is NOT installed (no cross-session memory). The locally committed QA workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/agentic-qa-core`, vendored `/judgment-day`) keep working, and the 7 canonical MCPs are still configured.
 
 ### Per-skill CLIs — lazy-required, non-blocking at setup
 
@@ -299,52 +299,45 @@ Docs: https://github.com/sirmalloc/ccstatusline
 
 ## What is gentle-ai and why this repo uses it
 
-[gentle-ai](https://github.com/Gentleman-Programming/gentle-ai) is a user-level installer that configures AI agents (Claude Code, OpenCode, Cursor, etc.) with a curated set of skills, an MCP-based persistent memory layer (Engram), and an SDD (Spec-Driven Development) orchestrator. It does not install agents themselves — it tunes the agents you already have.
+[gentle-ai](https://github.com/Gentleman-Programming/gentle-ai) is a user-level installer that configures AI agents (Claude Code, OpenCode, Cursor, etc.) with curated skills, an MCP-based persistent memory layer (Engram), and an optional SDD (Spec-Driven Development) orchestrator. It does not install agents themselves — it tunes the agents you already have.
 
-This repo treats gentle-ai as a **base global "quasi-must-have"**. The recommended onboarding (`bun run setup`) installs it if missing, then layers Engram + 10 SDD skills + 2 universal helpers (judgment-day, issue-creation) + skill-registry on top of your agent. The result is one consistent skillset across every QA repo on your machine that follows this model.
+This repo uses gentle-ai exclusively for **Engram persistent memory**. We invoke `gentle-ai install --preset minimal`, which installs ONLY the `engram` component (binary + MCP adapter + agent frontmatter wiring). No SDD-* skills, no foundation skills.
 
-The integration is **not strict**. If you choose to skip gentle-ai, the repo still works: workflow skills committed locally (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/agentic-qa-core`, etc.) keep functioning, and the 7 canonical MCPs are still configured. What you lose is the SDD spec-driven loop, persistent cross-session memory, adversarial review, and the issue-filing helper. Section "How to opt out" below details the trade-off.
+**Rationale**: this is a QA repo. Our workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`) already cover Plan → Code → Verify natively. SDD ceremony was designed for software-design workflows (specs, archives, strict TDD) that don't apply to authoring E2E/API tests. Adding them at install time would create overlap and confusion. Adversarial review is covered by the vendored `judgment-day` skill committed under `.claude/skills/judgment-day/` — no upstream dependency.
+
+The integration is **not strict**. If you choose to skip gentle-ai, the repo still works: workflow skills committed locally keep functioning, and the 7 canonical MCPs are still configured. What you lose is persistent cross-session memory (engram).
 
 ---
 
-## What gets installed via gentle-ai
+## What `gentle-ai install` adds
 
-When `bun run setup` runs the gentle-ai branch (one batched call per agent — `gentle-ai install --agent <agent> --components engram,sdd,skills --skills <csv>` covers the engram component plus all 13 skills below):
+`bun run setup` dispatches one batched call per agent:
 
-### Engram (MCP component, not a skill)
+```bash
+gentle-ai install --agent <agent> --preset minimal
+```
+
+This installs:
 
 | Slug     | Type      | What it does                                                                                                |
 | -------- | --------- | ----------------------------------------------------------------------------------------------------------- |
 | `engram` | Component | Persistent memory across sessions. Auto-saves decisions, bugs, conventions; auto-recalls on session resume. |
 
-### SDD skills (11)
+That's it for the minimal preset. No SDD-* skills, no `skill-registry`, no `judgment-day` (we use the vendored copy), no `issue-creation`, no `cognitive-doc-design`, no `comment-writer`.
 
-| Slug             | Brief description                                                                |
-| ---------------- | -------------------------------------------------------------------------------- |
-| `sdd-init`       | Bootstrap SDD context, detect stack, activate Strict TDD if testing is available |
-| `sdd-explore`    | Investigate codebase before committing to a change                               |
-| `sdd-propose`    | Create a change proposal (intent, scope, approach)                               |
-| `sdd-spec`       | Write requirements + scenarios as delta specs                                    |
-| `sdd-design`     | Technical design (architecture decisions, component boundaries)                  |
-| `sdd-tasks`      | Break a change into reviewable implementation tasks                              |
-| `sdd-apply`      | Implement tasks following specs and design                                       |
-| `sdd-verify`     | Validate implementation against specs (tests, edge cases, perf)                  |
-| `sdd-archive`    | Sync delta specs into main specs and close the change                            |
-| `sdd-onboard`    | Guided end-to-end SDD walkthrough on a real codebase                             |
-| `skill-registry` | Build the compact project-standards registry from installed skills               |
+### Re-run safety
 
-### Universal helpers (2)
+Re-runs are safe: gentle-ai snapshots existing config files before overwriting (compressed tar.gz, deduped, last 5 retained). They DO re-apply, they don't skip. There is no `--yes` flag (gentle-ai's `install` subcommand uses Go's stdlib `flag` package and exposes only `--agent(s)`, `--component(s)`, `--skill(s)`, `--persona`, `--preset`, `--sdd-mode`, `--dry-run`). Internal prompts auto-default when stdin is not a TTY.
 
-| Slug             | Brief description                                                         |
-| ---------------- | ------------------------------------------------------------------------- |
-| `judgment-day`   | Adversarial parallel review — 2 independent judges review the same target |
-| `issue-creation` | Issue filing workflow (bug + feature templates, issue-first enforcement)  |
+### Want the SDD suite? Install manually
 
-> The installer dispatches ONE batched call per agent — `gentle-ai install --agent <agent> --components engram,sdd,skills --skills <comma-separated-slug-list>`. There is no per-skill loop and no `--yes` flag (gentle-ai's `install` subcommand uses Go's stdlib `flag` package and exposes only `--agent(s)`, `--component(s)`, `--skill(s)`, `--persona`, `--preset`, `--sdd-mode`, `--dry-run`). Re-runs are safe: gentle-ai snapshots existing config files before overwriting (compressed tar.gz, deduped, last 5 retained). They DO re-apply, they don't skip.
+`/framework-development` (boilerplate evolution) currently still references the SDD chain. Until its refactor lands (next session), install SDD manually:
 
-### Why not `cognitive-doc-design` or `comment-writer`?
+```bash
+gentle-ai install --agent <agent> --components engram,sdd
+```
 
-Both ship via gentle-ai but are dev-writing-leaning. QA reporting tone is owned vertically by `/sprint-testing` (QA comment formats, bug report structure) and `/regression-testing` (stakeholder reports). Adding the dev-writing helpers would create overlap, not value.
+This adds 10 SDD skills (`sdd-init/explore/propose/spec/design/tasks/apply/verify/archive/onboard`) + the `_shared/` runtime + 9 slash commands + the SDD orchestrator injection. Restart your agent after install so the new skills appear in the system-reminder list.
 
 ---
 
@@ -361,9 +354,9 @@ Installed into `.claude/skills/` via `bunx skills add` (project mode). Not commi
 | `playwright-cli`            | `microsoft/playwright-cli`                     | Browser automation CLI used by `/sprint-testing` and `/test-automation` as the primary `[AUTOMATION_TOOL]`.     |
 | `playwright-best-practices` | `currents-dev/playwright-best-practices-skill` | Patterns / anti-flaky / axe-core / fixtures reference. Auto-loaded by `/test-automation` during the Code phase. |
 
-### User-level (global, 7 skills)
+### User-level (global, 8 skills)
 
-Installed with `bunx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack. QA-tuned subset of the dev universal layer — design/UI skills (n8n-skills, emil-design-eng, ui-ux-pro-max) live only in the dev repo since QA does not author UI or automation flows.
+Installed with `bunx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack.
 
 | Slug                  | Source                        | Why user-level                                                                                                                                   |
 | --------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -374,6 +367,7 @@ Installed with `bunx skills add <package> [--skill <name>] --global --yes` and u
 | `brainstorming`       | `obra/superpowers`            | Pre-implementation ideation (framework features, test design edge cases) — universal                                                             |
 | `cli-printing-press`  | `mvanhorn/cli-printing-press` | CLI tooling for API-as-CLI testing + framework utility scripts. Full functionality requires Go 1.26.3+; works standalone with degraded features. |
 | `html-ppt`            | `lewislulu/html-ppt-skill`    | HTML presentations for sprint planning / retro / demo decks — universal                                                                          |
+| `resend-cli`          | `resend/resend-skills`        | Resend email testing CLI. Pairs with the `resend` external binary verified in step 11.                                                           |
 
 ### Skipping or re-running
 
@@ -387,21 +381,22 @@ If a skill fails to install (e.g., upstream repo restructured), the failure is r
 
 Skills that are workflow-specific to this boilerplate live in `.claude/skills/` and are committed to the repo. They install with the clone — no external installer required.
 
-| Skill                   | Trigger                       | Why it stays local                                                                                                                                                        |
-| ----------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `agentic-qa-core`       | (auto, cited by other skills) | Foundation: passive reference host for briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy                                           |
-| `agentic-qa-onboard`    | `/agentic-qa-onboard`         | First-time orientation tour (this is the entry point for new contributors)                                                                                                |
-| `project-discovery`     | `/project-discovery`          | 4-phase reverse-engineering of a target project (Constitution → Specification)                                                                                            |
-| `sprint-testing`        | `/sprint-testing`             | Stages 1-3: per-ticket manual QA loop (planning, execution, reporting)                                                                                                    |
-| `test-documentation`    | `/test-documentation`         | Stage 4: TMS test-case authoring + ROI prioritization (Jira/Xray bridge)                                                                                                  |
-| `test-automation`       | `/test-automation`            | Stage 5: KATA + Playwright + TS test authoring (plan → code → review)                                                                                                     |
-| `regression-testing`    | `/regression-testing`         | Stage 6: CI suite execution, failure classification, GO/NO-GO verdict                                                                                                     |
-| `framework-development` | `/framework-development`      | Gateway for chaining `/sdd-*` skills. Use for evolving the boilerplate itself (KATA bases, fixtures, `cli/`, `scripts/`, `api/schemas/` pipeline). NOT for per-ticket QA. |
-| `acli`                  | `/acli`                       | Atlassian CLI wrapper for Jira/Confluence terminal work                                                                                                                   |
-| `xray-cli`              | `/xray-cli`                   | Xray Cloud TMS CLI (test creation, executions, JUnit/Cucumber import)                                                                                                     |
-| `git-flow-master`       | (auto on git intents)         | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)                                                                                                  |
+| Skill                   | Trigger                                  | Why it stays local                                                                                                                                                        |
+| ----------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agentic-qa-core`       | (auto, cited by other skills)            | Foundation: passive reference host for briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy                                           |
+| `agentic-qa-onboard`    | `/agentic-qa-onboard`                    | First-time orientation tour (this is the entry point for new contributors)                                                                                                |
+| `project-discovery`     | `/project-discovery`                     | 4-phase reverse-engineering of a target project (Constitution → Specification)                                                                                            |
+| `sprint-testing`        | `/sprint-testing`                        | Stages 1-3: per-ticket manual QA loop (planning, execution, reporting)                                                                                                    |
+| `test-documentation`    | `/test-documentation`                    | Stage 4: TMS test-case authoring + ROI prioritization (Jira/Xray bridge)                                                                                                  |
+| `test-automation`       | `/test-automation`                       | Stage 5: KATA + Playwright + TS test authoring (plan → code → review)                                                                                                     |
+| `regression-testing`    | `/regression-testing`                    | Stage 6: CI suite execution, failure classification, GO/NO-GO verdict                                                                                                     |
+| `framework-development` | `/framework-development`                 | Gateway for evolving the boilerplate itself (KATA bases, fixtures, `cli/`, `scripts/`, `api/schemas/` pipeline). NOT for per-ticket QA. ⚠️ Still references SDD-* skills; pending self-contained refactor (next session). Install SDD manually if you invoke this skill. |
+| `acli`                  | `/acli`                                  | Atlassian CLI wrapper for Jira/Confluence terminal work                                                                                                                   |
+| `xray-cli`              | `/xray-cli`                              | Xray Cloud TMS CLI (test creation, executions, JUnit/Cucumber import)                                                                                                     |
+| `git-flow-master`       | (auto on git intents)                    | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)                                                                                                  |
+| `judgment-day`          | `/judgment-day`, `juzgar`, `dual review` | T2 vendored (gentle-ai, Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, fix loop, re-judge). Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. Never auto-invoked. |
 
-These skills evolve with the repo and are versioned in git. The split is intentional: gentle-ai owns the **horizontal** ecosystem (apply across all your QA repos), this repo owns the **vertical** workflow (specific to the QA stages 1-6 pipeline).
+These skills evolve with the repo and are versioned in git. The split is intentional: gentle-ai owns persistent memory (Engram); this repo owns the **vertical** workflow (specific to the QA stages 1-6 pipeline) plus a small set of vendored helpers (`judgment-day`).
 
 ---
 
@@ -432,15 +427,15 @@ The installer's step 10 (`verifyExternalClis`) runs a PATH probe — `which <bin
 
 ---
 
-## Hand-off matrix — `/sprint-testing` vs `/sdd-*`
+## Hand-off matrix — `/sprint-testing` vs `/test-automation` vs `/framework-development`
 
-This is the most common point of confusion. Both workflows can drive QA work to completion. They serve different shapes of work.
+This is the most common point of confusion.
 
-| When                                                                     | Skill                                                         |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| Routine in-sprint QA on a Jira ticket (most cases)                       | `/sprint-testing` (ticket-driven)                             |
-| Large refactor of the test framework / KATA architecture / fixture model | `/sdd-*` (spec-driven)                                        |
-| Story with detailed AC you want traced formally as a test specification  | Both: `/sdd-spec` first, then `/sprint-testing` for the cycle |
+| When                                                                     | Skill                                  |
+| ------------------------------------------------------------------------ | -------------------------------------- |
+| Routine in-sprint QA on a Jira ticket (most cases)                       | `/sprint-testing` (ticket-driven)      |
+| Authoring an automated test for a Candidate TC                           | `/test-automation` (Plan → Code → Review) |
+| Refactor of the boilerplate itself — KATA bases, fixtures, cli, scripts  | `/framework-development`               |
 
 ### When to reach for `/sprint-testing`
 
@@ -448,15 +443,15 @@ The default choice for normal sprint QA. You have a ready-for-QA Jira ticket, AC
 
 Example: "Test UPEX-277 — empty states on the user-list filter." Ticket is `Ready For QA`, AC is 3 bullets, scope is one component plus one API. `/sprint-testing` drives the whole thing.
 
-### When to reach for `/sdd-*`
+### When to reach for `/framework-development`
 
-The right choice when the change is shaped more like a research project than a ticket. You're touching the test framework architecture (KATA layers, fixtures, Page Object structure), the design space has alternatives worth comparing, the change crosses several modules of the test suite, or there is no ticket because the work is internal QA infrastructure. SDD gives you explicit phases (explore → propose → spec → design → tasks → apply → verify → archive) and an artifact trail that survives across sessions via Engram.
+The right choice when the change is to the boilerplate's own infrastructure (KATA layers, fixtures, installer, OpenAPI sync pipeline, skill doctrine), not to a per-ticket test. Examples: "add a new `{ admin }` fixture", "refactor the OpenAPI sync to support v3.1 schemas", "modify `KataPageBase` to support shared selectors". This is internal QA infrastructure, not test authoring.
 
-Example: "Replace the auth fixture model — move from per-test login to a shared auth state file with role-based personas." This benefits from `/sdd-explore` (read the current fixture wiring), `/sdd-propose` (compare approaches), and `/sdd-design` (commit to an architecture) before any test code is rewritten.
-
-### When to combine both
-
-You have a QA ticket but the AC is dense and you want it traced formally as a test specification. Run `/sdd-spec` first to lock down the requirements and scenarios as a delta spec, then hand off to `/sprint-testing` for the cycle. The spec gets archived after the ticket closes, leaving a permanent trace for future regression rounds.
+> ⚠️ `/framework-development` currently still chains the SDD-* skills internally; a self-contained refactor is scheduled for the next session. Until then, if you invoke this skill, install the SDD bundle manually:
+> ```bash
+> gentle-ai install --agent <agent> --components engram,sdd
+> ```
+> Restart your agent after install.
 
 ---
 
@@ -468,7 +463,7 @@ You have a QA ticket but the AC is dense and you want it traced formally as a te
 - **`direnv allow` produced `dotenv_if_exists: command not found`** — this would mean the `.envrc` is using a newer direnv feature than your version supports. The committed `.envrc` uses portable POSIX loading (works on direnv 2.21+), so if you see this, your `.envrc` has been edited locally — restore it from `git checkout .envrc`.
 - **Skills not appearing in autocomplete** — restart Claude Code (or your agent of choice). MCP and skill configs are cached at agent startup.
 - **`/agentic-qa-onboard` does not trigger on natural language** — use the explicit slash command: `/agentic-qa-onboard`. The natural-language triggers (`onboard me to QA`, `primer vez en QA`) are advisory, not guaranteed.
-- **How do I uninstall gentle-ai skills?** — `gentle-ai uninstall` uninstalls at COMPONENT granularity, not per-skill. Use `gentle-ai uninstall --agent <agent> --components skills --yes` to remove the skills component (also accepts `engram`, `sdd`, `gga`, `persona`). `gentle-ai uninstall --all --yes` removes everything gentle-ai-managed for every supported agent. Note the asymmetry vs `install`: `uninstall` accepts `--yes`/`-y` (skip confirmation) but does NOT accept `--skill(s)`. Backups are created automatically before uninstall.
+- **How do I uninstall gentle-ai engram?** — `gentle-ai uninstall --agent <agent> --components engram --yes` removes the engram component for one agent. `gentle-ai uninstall --all --yes` removes everything gentle-ai-managed for every supported agent. Note the asymmetry vs `install`: `uninstall` accepts `--yes`/`-y` (skip confirmation) but does NOT accept `--skill(s)`. Backups are created automatically before uninstall.
 
 ---
 
@@ -481,12 +476,9 @@ If you prefer not to use gentle-ai, the installer accepts a "skip" choice. To ma
 
 What you lose:
 
-- **SDD spec-driven loop** — `/sdd-*` skills are not installed. Large test-framework refactors fall back to ad-hoc planning.
 - **Persistent memory (Engram)** — no cross-session recall, no `mem_save` / `mem_search`. Each session starts blind.
-- **Adversarial review (judgment-day)** — no parallel-judges review for high-stakes test framework changes. Code review reverts to single-perspective.
-- **Issue creation (issue-creation)** — no issue-first enforcement helper. You file QA bugs however your team usually does.
 
-What you keep: every workflow skill committed in this repo (`/sprint-testing`, `/test-documentation`, `/test-automation`, `/regression-testing`, `/agentic-qa-core`, `/agentic-qa-onboard`, `/playwright-cli`, `/acli`, `/xray-cli`, `/project-discovery`, `/git-flow-master`) and the 7 canonical MCPs (Context7, Tavily, Atlassian, Playwright, DBHub, OpenAPI, Postman). The repo is fully usable without gentle-ai — the integration is additive.
+What you keep: every workflow skill committed in this repo (`/sprint-testing`, `/test-documentation`, `/test-automation`, `/regression-testing`, `/agentic-qa-core`, `/agentic-qa-onboard`, `/playwright-cli`, `/acli`, `/xray-cli`, `/project-discovery`, `/git-flow-master`, vendored `/judgment-day`) and the 7 canonical MCPs (Context7, Tavily, Atlassian, Playwright, DBHub, OpenAPI, Postman). The repo is fully usable without gentle-ai — the integration is additive.
 
 ---
 

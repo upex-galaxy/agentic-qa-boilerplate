@@ -145,6 +145,8 @@ Use the dispatch defined in §Subagent Dispatch Strategy: **Parallel** (3 simult
 
 Run the review checklist on the new/modified files. Treat every failed item as a blocker. A clean review is the merge gate. See `references/review-checklists.md` for the full lists (E2E and API have overlapping but distinct checklists).
 
+**Optional adversarial gate** — for high-risk changes (new fixtures, shared Page/Api base modifications, refactors touching multiple ATCs), invoke `/judgment-day` before commit. Runs two blind judges in parallel against the diff and only approves when both agree. See `.claude/skills/judgment-day/SKILL.md`. Not invoked automatically — user opts in per ticket.
+
 ---
 
 ## Fixture selection (inline — load-bearing every invocation)
