@@ -110,7 +110,7 @@ You confirm at the gates.
 | Authoring new automated test for a Candidate TC                            | `/test-automation`                                                   |
 | Refactor of the boilerplate itself — KATA bases, fixtures, cli/, scripts/  | `/framework-development`                                             |
 
-`/framework-development` covers framework evolution (changes to the boilerplate's own infrastructure, not per-ticket test writing). ⚠️ Currently still references SDD-* skills internally; pending self-contained refactor — install SDD manually if invoking: `gentle-ai install --components engram,sdd --agent <a>`.
+`/framework-development` covers framework evolution (changes to the boilerplate's own infrastructure, not per-ticket test writing). Self-contained Plan → Code → Verify → Archive pipeline; works under the minimal install preset (no SDD-* skills required).
 
 ---
 
@@ -186,7 +186,7 @@ Verify your config with `bun run vars:check` (should report 0 errors when fully 
 
 Rationale: this repo already covers Plan → Code → Verify natively in its workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`). SDD ceremony does not apply to test authoring.
 
-Need the SDD suite for `/framework-development` work? Run manually:
+Want the explicit SDD ceremony for an architectural change of your own? Run manually:
 
 ```bash
 gentle-ai install --components engram,sdd --agent <claude-code|opencode|cursor>

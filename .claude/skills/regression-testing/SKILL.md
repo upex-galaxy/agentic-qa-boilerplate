@@ -8,13 +8,17 @@ complementary_categories: [testing-e2e, ci-cd]
 
 ## Forbidden invocations
 
-**NEVER invoke `/sdd-*` skills from this workflow.** SDD applies only to
-framework evolution via `/framework-development`. If you need to refactor
-KATA, fixtures, cli/, scripts/, or api/schemas/ pipeline, exit this skill
-first and invoke `/framework-development`.
+**NEVER invoke `/sdd-*` skills from this workflow.** SDD is an optional
+user-installed ceremony; this skill ships self-contained and does not chain
+SDD under any condition. If you need to refactor KATA, fixtures, cli/,
+scripts/, or api/schemas/ pipeline, exit this skill first and invoke
+`/framework-development` — which itself runs Plan → Code → Verify → Archive
+natively (no SDD required).
 
-This boundary is mechanical, not advisory. See:
-`.claude/skills/agentic-qa-core/references/skill-composition-strategy.md` §4.
+This boundary is mechanical, not advisory: `scripts/lint-skills.ts` rejects
+any `/sdd-` mention outside this section. See:
+`.claude/skills/agentic-qa-core/references/skill-composition-strategy.md` §4
+(governs users who manually install SDD).
 
 # Regression Testing — Execute, Analyze, Decide
 

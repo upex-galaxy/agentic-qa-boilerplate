@@ -331,7 +331,7 @@ Re-runs are safe: gentle-ai snapshots existing config files before overwriting (
 
 ### Want the SDD suite? Install manually
 
-`/framework-development` (boilerplate evolution) currently still references the SDD chain. Until its refactor lands (next session), install SDD manually:
+The minimal preset is sufficient for every shipped workflow skill — `/framework-development` included. Install SDD manually only if you want the explicit SDD ceremony (explore → propose → spec → design → tasks → apply → verify → archive) for an architectural change of your own:
 
 ```bash
 gentle-ai install --agent <agent> --components engram,sdd
@@ -390,7 +390,7 @@ Skills that are workflow-specific to this boilerplate live in `.claude/skills/` 
 | `test-documentation`    | `/test-documentation`                    | Stage 4: TMS test-case authoring + ROI prioritization (Jira/Xray bridge)                                                                                                  |
 | `test-automation`       | `/test-automation`                       | Stage 5: KATA + Playwright + TS test authoring (plan → code → review)                                                                                                     |
 | `regression-testing`    | `/regression-testing`                    | Stage 6: CI suite execution, failure classification, GO/NO-GO verdict                                                                                                     |
-| `framework-development` | `/framework-development`                 | Gateway for evolving the boilerplate itself (KATA bases, fixtures, `cli/`, `scripts/`, `api/schemas/` pipeline). NOT for per-ticket QA. ⚠️ Still references SDD-* skills; pending self-contained refactor (next session). Install SDD manually if you invoke this skill. |
+| `framework-development` | `/framework-development`                 | Gateway for evolving the boilerplate itself (KATA bases, fixtures, `cli/`, `scripts/`, `api/schemas/` pipeline). NOT for per-ticket QA. Self-contained Plan → Code → Verify → Archive pipeline; runs under the minimal preset. |
 | `acli`                  | `/acli`                                  | Atlassian CLI wrapper for Jira/Confluence terminal work                                                                                                                   |
 | `xray-cli`              | `/xray-cli`                              | Xray Cloud TMS CLI (test creation, executions, JUnit/Cucumber import)                                                                                                     |
 | `git-flow-master`       | (auto on git intents)                    | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)                                                                                                  |
@@ -447,11 +447,7 @@ Example: "Test UPEX-277 — empty states on the user-list filter." Ticket is `Re
 
 The right choice when the change is to the boilerplate's own infrastructure (KATA layers, fixtures, installer, OpenAPI sync pipeline, skill doctrine), not to a per-ticket test. Examples: "add a new `{ admin }` fixture", "refactor the OpenAPI sync to support v3.1 schemas", "modify `KataPageBase` to support shared selectors". This is internal QA infrastructure, not test authoring.
 
-> ⚠️ `/framework-development` currently still chains the SDD-* skills internally; a self-contained refactor is scheduled for the next session. Until then, if you invoke this skill, install the SDD bundle manually:
-> ```bash
-> gentle-ai install --agent <agent> --components engram,sdd
-> ```
-> Restart your agent after install.
+`/framework-development` ships self-contained: Phase 0 (path self-check) → Phase 1 Plan (single subagent writes `.scratch/framework-changes/<change>/plan.md`) → Phase 2 Code (sequential per task batch) → Phase 3 Verify (4 parallel verifiers: `bun run test`, `types:check`, `lint:check`, `skills:check`) → Phase 4 Archive (inline). No SDD-\* skills required; runs under the minimal preset out of the box.
 
 ---
 

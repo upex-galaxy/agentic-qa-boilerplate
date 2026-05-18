@@ -116,6 +116,8 @@ When a referenced skill is not in the available list (deprecated, uninstalled, v
 
 ## 4. framework-development ↔ SDD Anti-Leak Contract
 
+> **Note (2026-05-18 refactor)**: `framework-development` no longer chains SDD by default — its native Plan → Code → Verify → Archive pipeline ships self-contained and runs under `gentle-ai install --preset minimal`. §4 below still applies to users who manually install the SDD bundle (`gentle-ai install --components engram,sdd`) and explicitly request the SDD ceremony for an architectural change.
+
 This is the most-overlapping pair on the QA side. SDD-* skills are powerful and tempting; applied to per-ticket QA they actively harm the workflow because `test-automation` already has Plan → Code → Review and `sprint-testing` already has Stage 1 → 2 → 3. The contract below resolves the conflict by gating SDD-* behind a single legitimate caller.
 
 ### 4.1 Hard rules
