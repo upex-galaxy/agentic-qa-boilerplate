@@ -28,6 +28,11 @@ export default antfu({
     'api/openapi-types.ts',
     // Skill templates — copied to target repos at install time, not linted here
     '.claude/skills/*/templates/**',
+    // Community skills installed by `bunx skills add` and gentle-ai loaders —
+    // upstream-managed code, not linted by this repo's rules.
+    '.claude/skills/playwright-best-practices/**',
+    '.claude/skills/playwright-cli/**',
+    '.agents/skills/**',
   ],
 
   // Custom rules
