@@ -11,7 +11,7 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { test as setup } from '@playwright/test';
-import { env } from '@variables';
+import { config, env } from '@variables';
 
 /**
  * Prepare test environment
@@ -51,30 +51,44 @@ setup('Global Setup: prepare environment', async () => {
 });
 
 /**
- * Validates TMS credentials when AUTO_SYNC is enabled
+ * Validates resolved TMS credentials when AUTO_SYNC is enabled.
+ *
+ * Checks values from `config.tms`, which already applies the override chain
+ * (JIRA_* takes precedence over ATLASSIAN_* for Jira-Direct). Validating raw
+ * env keys here would miss the supported case where only ATLASSIAN_* are set.
  */
 function validateTmsConfig(): void {
-  const { TMS_PROVIDER = 'xray', AUTO_SYNC } = process.env;
-
-  const requiredForTms: Record<string, string[]> = {
-    xray: ['XRAY_CLIENT_ID', 'XRAY_CLIENT_SECRET'],
-    jira: ['JIRA_API_TOKEN', 'JIRA_BASE_URL'],
-  };
-
-  if (AUTO_SYNC !== 'true') {
+  if (!config.tms.autoSync) {
     return;
   }
 
-  const requiredKeys = requiredForTms[TMS_PROVIDER];
-  if (requiredKeys === undefined) {
+  const missing: string[] = [];
+
+  if (config.tms.provider === 'xray') {
+    if (!config.tms.xray.clientId) {
+      missing.push('XRAY_CLIENT_ID');
+    }
+    if (!config.tms.xray.clientSecret) {
+      missing.push('XRAY_CLIENT_SECRET');
+    }
+  }
+  else if (config.tms.provider === 'jira') {
+    if (!config.tms.jira.url) {
+      missing.push('JIRA_URL or ATLASSIAN_URL');
+    }
+    if (!config.tms.jira.user) {
+      missing.push('JIRA_USER or ATLASSIAN_EMAIL');
+    }
+    if (!config.tms.jira.apiToken) {
+      missing.push('JIRA_API_TOKEN or ATLASSIAN_API_TOKEN');
+    }
+  }
+  else {
     return;
   }
 
-  const missing = requiredKeys.filter(
-    key => process.env[key] === undefined || process.env[key] === '',
-  );
   if (missing.length > 0) {
-    console.warn(`[WARN] Missing TMS credentials for ${TMS_PROVIDER}: ${missing.join(', ')}`);
+    console.warn(`[WARN] Missing TMS credentials for ${config.tms.provider}: ${missing.join(', ')}`);
     console.warn('   TMS sync will be skipped during test execution.');
   }
 }
