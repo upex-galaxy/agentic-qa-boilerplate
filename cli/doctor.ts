@@ -10,10 +10,18 @@
  * Usage:
  *   bun run setup:doctor              # human-readable summary
  *   bun run setup:doctor --json       # machine-readable JSON
+ *   bun run setup:doctor --preflight  # blocker-only gate for `bun run setup`
+ *
+ * --preflight mode: minimal pre-install gate. Checks only the things that
+ * would crash `cli/install.ts` at module-load time (Bun runtime present and
+ * recent enough, `node_modules/@inquirer/prompts` resolvable). Skips env
+ * vars, MCPs, direnv, external CLIs — those are install.ts's job. Uses only
+ * node built-ins so it runs safely before `bun install`. Wired into the
+ * `setup` npm script as `bun cli/doctor.ts --preflight && bun cli/install.ts`.
  *
  * Exit code:
- *   0 if status === "ok"
- *   1 if status === "needs-action"
+ *   0 if status === "ok"     (full mode) or preflight passes
+ *   1 if status === "needs-action"  or preflight blocker hit
  *
  * Side effects: none. This script never edits files or installs anything.
  */
@@ -23,6 +31,8 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
+
+import * as tui from './lib/tui.ts';
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -34,6 +44,11 @@ const MCP_PATH = join(REPO_ROOT, '.mcp.json');
 const OPENCODE_PATH = join(REPO_ROOT, 'opencode.jsonc');
 const NODE_MODULES_DOTENV = join(REPO_ROOT, 'node_modules', 'dotenv-cli');
 const PW_CACHE = join(homedir(), '.cache', 'ms-playwright');
+// --preflight mode resolves install.ts's only third-party import.
+const INQUIRER_MARKER = join(REPO_ROOT, 'node_modules', '@inquirer', 'prompts', 'package.json');
+
+// Minimum Bun version that install.ts is known to work with.
+const MIN_BUN: readonly [number, number, number] = [1, 0, 0];
 
 // Required MCP env vars (mirrors MCP_SERVER_SECRETS in cli/install.ts).
 const REQUIRED_VARS = [
@@ -212,78 +227,55 @@ function shellHookLine(): { line: string, rc: string } {
   return { line: 'eval "$(direnv hook bash)"', rc: '~/.bashrc' };
 }
 
-// ----------------------------------------------------------------------------
-// Output color codes (shared by preflight + full doctor output)
-// ----------------------------------------------------------------------------
-
-const COLORS = {
-  reset: '\x1B[0m',
-  dim: '\x1B[2m',
-  green: '\x1B[32m',
-  yellow: '\x1B[33m',
-  red: '\x1B[31m',
-  bold: '\x1B[1m',
-};
-
-// ----------------------------------------------------------------------------
-// Preflight (fast short-circuit before full doctor run)
-// ----------------------------------------------------------------------------
-
-function parseBunVersion(raw: string): [number, number, number] | null {
-  const m = raw.trim().match(/^(\d+)\.(\d+)\.(\d+)/);
-  if (!m) {
-    return null;
-  }
+function parseBunVersion(v: string): [number, number, number] | null {
+  const m = v.match(/^(\d+)\.(\d+)\.(\d+)/);
+  if (!m) { return null; }
   return [Number(m[1]), Number(m[2]), Number(m[3])];
 }
 
-function compareVersion(a: [number, number, number], b: [number, number, number]): number {
+function compareVersion(a: readonly number[], b: readonly number[]): number {
   for (let i = 0; i < 3; i++) {
-    if (a[i] !== b[i]) {
-      return a[i] - b[i];
-    }
+    if (a[i] !== b[i]) { return a[i] - b[i]; }
   }
   return 0;
 }
 
-function runPreflight(): never {
-  const failures: { check: string, fix: string }[] = [];
+// ----------------------------------------------------------------------------
+// Preflight (blocker-only gate for `bun run setup`)
+// ----------------------------------------------------------------------------
 
-  const bunVersionRaw = typeof Bun !== 'undefined' ? Bun.version : '';
-  const parsed = parseBunVersion(bunVersionRaw);
-  if (!parsed) {
-    failures.push({
-      check: 'Bun runtime missing or unreadable',
-      fix: 'Install Bun: curl -fsSL https://bun.sh/install | bash',
-    });
-  }
-  else if (compareVersion(parsed, [1, 0, 0]) < 0) {
-    failures.push({
-      check: `Bun ${bunVersionRaw} is too old (need >= 1.0.0)`,
-      fix: 'Upgrade Bun: bun upgrade',
-    });
-  }
-
-  const inquirerPath = join(REPO_ROOT, 'node_modules', '@inquirer', 'prompts');
-  if (!existsSync(inquirerPath)) {
-    failures.push({
-      check: 'Missing node_modules/@inquirer/prompts (installer dependency)',
-      fix: 'Run: bun install',
-    });
-  }
-
-  if (failures.length === 0) {
-    const bunLabel = parsed ? `${parsed[0]}.${parsed[1]}.${parsed[2]}` : 'unknown';
-    console.log(`${COLORS.green}${COLORS.bold}✓ Preflight OK${COLORS.reset} (Bun ${bunLabel}, deps installed)`);
-    process.exit(0);
-  }
-
-  console.log(`${COLORS.red}${COLORS.bold}✗ Preflight failed${COLORS.reset}`);
-  for (const f of failures) {
-    console.log(`  ${COLORS.red}•${COLORS.reset} ${f.check}`);
-    console.log(`    ${COLORS.dim}Fix:${COLORS.reset} ${f.fix}`);
-  }
+function preflightFail(msg: string, fix: string): never {
+  tui.log.error(`Preflight failed: ${msg}`);
+  tui.log.warn(`Fix: ${fix}`);
   process.exit(1);
+}
+
+function runPreflight(): never {
+  // Print a minimal header for preflight — no full logo, just the section banner
+  tui.section('Preflight check');
+
+  const bunVersion = process.versions.bun;
+  if (!bunVersion) {
+    preflightFail(
+      'Bun runtime not detected (process.versions.bun is undefined).',
+      'Install Bun from https://bun.sh, then re-run `bun run setup`.',
+    );
+  }
+  const parsed = parseBunVersion(bunVersion);
+  if (!parsed || compareVersion(parsed, MIN_BUN) < 0) {
+    preflightFail(
+      `Bun ${bunVersion} is older than required ${MIN_BUN.join('.')}.`,
+      'Upgrade Bun: `bun upgrade` (or reinstall from https://bun.sh).',
+    );
+  }
+  if (!existsSync(INQUIRER_MARKER)) {
+    preflightFail(
+      'Project dependencies not installed (node_modules/@inquirer/prompts missing).',
+      'Run `bun install` first, then re-run `bun run setup`.',
+    );
+  }
+  tui.log.success(`Preflight OK (Bun ${bunVersion}, deps installed)`);
+  process.exit(0);
 }
 
 // ----------------------------------------------------------------------------
@@ -344,11 +336,11 @@ async function runDoctor(): Promise<DoctorReport> {
     && jiraTokenOverride.trim().length > 0
     && atlassianToken.trim() !== jiraTokenOverride.trim()
   ) {
-    process.stderr.write(
-      `${COLORS.yellow}[warn]${COLORS.reset} JIRA_API_TOKEN is set and differs from ATLASSIAN_API_TOKEN.\n`
+    tui.log.warn(
+      'JIRA_API_TOKEN is set and differs from ATLASSIAN_API_TOKEN.\n'
       + '       xray-cli and TMS Jira-Direct will use JIRA_API_TOKEN (override active);\n'
       + '       ATLASSIAN_API_TOKEN is ignored for those consumers.\n'
-      + '       Remove JIRA_API_TOKEN from .env if you want ATLASSIAN_API_TOKEN to apply everywhere.\n',
+      + '       Remove JIRA_API_TOKEN from .env if you want ATLASSIAN_API_TOKEN to apply everywhere.',
     );
   }
 
@@ -426,45 +418,56 @@ async function runDoctor(): Promise<DoctorReport> {
 // ----------------------------------------------------------------------------
 
 function printHuman(report: DoctorReport): void {
-  const tick = (ok: boolean) => (ok ? `${COLORS.green}✓${COLORS.reset}` : `${COLORS.red}✗${COLORS.reset}`);
-  const headerColor = report.status === 'ok' ? COLORS.green : COLORS.yellow;
-  const headerLabel = report.status === 'ok' ? '✓ OK' : '⚠ needs action';
+  const statusLabel = report.status === 'ok' ? 'OK' : 'needs action';
 
-  process.stdout.write(`\n${COLORS.bold}Setup doctor — ${headerColor}${headerLabel}${COLORS.reset}\n\n`);
-  process.stdout.write(`Platform         ${report.platform}\n`);
-  process.stdout.write(`Shell            ${report.shell || '(unset)'}\n`);
-  process.stdout.write(`TTY              ${report.is_tty ? 'yes' : 'no (running non-interactive)'}\n`);
+  tui.section(`Setup doctor — ${statusLabel}`);
+
+  tui.kv([
+    { k: 'Platform', v: report.platform },
+    { k: 'Shell', v: report.shell || '(unset)' },
+    { k: 'TTY', v: report.is_tty ? 'yes' : 'no (running non-interactive)' },
+  ]);
+
   process.stdout.write('\n');
-  process.stdout.write(`.env file        ${tick(report.env_file_exists)}\n`);
-  process.stdout.write(`.mcp.json        ${tick(report.mcp_json_exists)}\n`);
-  process.stdout.write(`opencode.jsonc   ${tick(report.opencode_jsonc_exists)}\n`);
-  process.stdout.write(`node_modules     ${tick(report.deps_installed)}\n`);
-  process.stdout.write(`Playwright       ${tick(report.playwright_browsers)}\n`);
-  process.stdout.write(`direnv binary    ${tick(report.direnv.installed)}${report.direnv.version ? ` (${report.direnv.version})` : ''}\n`);
-  if (report.direnv.installed) {
-    process.stdout.write(`  .envrc allowed ${tick(Boolean(report.direnv.envrc_allowed))}\n`);
-    process.stdout.write(`  shell hook     ${tick(Boolean(report.direnv.hook_in_rc))}${report.direnv.rc_file ? ` (in ${report.direnv.rc_file})` : ''}\n`);
-  }
 
-  process.stdout.write('\nEnv vars:\n');
-  for (const [k, v] of Object.entries(report.env_vars)) {
-    const mark = v === 'set' ? `${COLORS.green}✓ set${COLORS.reset}` : `${COLORS.red}✗ missing${COLORS.reset}`;
-    process.stdout.write(`  ${k.padEnd(22)} ${mark}\n`);
+  // File + dep checks as a table
+  const checks: string[][] = [
+    ['.env file', report.env_file_exists ? tui.statusIcon('ok') : tui.statusIcon('fail')],
+    ['.mcp.json', report.mcp_json_exists ? tui.statusIcon('ok') : tui.statusIcon('fail')],
+    ['opencode.jsonc', report.opencode_jsonc_exists ? tui.statusIcon('ok') : tui.statusIcon('fail')],
+    ['node_modules', report.deps_installed ? tui.statusIcon('ok') : tui.statusIcon('fail')],
+    ['Playwright browsers', report.playwright_browsers ? tui.statusIcon('ok') : tui.statusIcon('warn')],
+    [`direnv binary${report.direnv.version ? ` (${report.direnv.version})` : ''}`, report.direnv.installed ? tui.statusIcon('ok') : tui.statusIcon('warn')],
+  ];
+  if (report.direnv.installed) {
+    checks.push(['  .envrc allowed', report.direnv.envrc_allowed ? tui.statusIcon('ok') : tui.statusIcon('fail')]);
+    checks.push([`  shell hook${report.direnv.rc_file ? ` (in ${report.direnv.rc_file})` : ''}`, report.direnv.hook_in_rc ? tui.statusIcon('ok') : tui.statusIcon('warn')]);
   }
+  process.stdout.write(`${tui.table(['Check', 'Status'], checks)}\n`);
+
+  // Env vars as a table
+  tui.section('Env vars');
+  const envRows = Object.entries(report.env_vars).map(([k, v]) => [
+    k,
+    v === 'set' ? tui.statusIcon('ok') : tui.statusIcon('fail'),
+    v === 'set' ? 'set' : 'missing',
+  ]);
+  process.stdout.write(`${tui.table(['Variable', 'Status', 'Value'], envRows)}\n`);
 
   if (report.pending_actions.length > 0) {
-    process.stdout.write(`\n${COLORS.bold}Pending actions:${COLORS.reset}\n`);
+    tui.section('Pending actions');
     for (const action of report.pending_actions) {
-      process.stdout.write(`  ${COLORS.yellow}[${action.type}]${COLORS.reset} ${action.target}\n`);
+      process.stdout.write(`  ${tui.statusIcon('warn')} [${action.type}] ${action.target}\n`);
       process.stdout.write(`    ${action.hint}\n`);
       if (action.where) {
-        process.stdout.write(`    ${COLORS.dim}→ ${action.where}${COLORS.reset}\n`);
+        process.stdout.write(`    -> ${action.where}\n`);
       }
     }
-    process.stdout.write(`\n${COLORS.dim}For AI agents: bun run setup:doctor --json  (machine-readable)${COLORS.reset}\n`);
+    process.stdout.write('\nFor AI agents: bun run setup:doctor --json  (machine-readable)\n');
   }
   else {
-    process.stdout.write(`\n${COLORS.green}All green.${COLORS.reset} Launch agent: bun run claude  /  bun run opencode\n`);
+    process.stdout.write('\n');
+    process.stdout.write(`${tui.successBox(['All green. Launch agent: bun run claude  /  bun run opencode'])}\n`);
   }
 }
 
@@ -472,12 +475,11 @@ function printHuman(report: DoctorReport): void {
 // Entry
 // ----------------------------------------------------------------------------
 
-const asJson = process.argv.includes('--json');
-const asPreflight = process.argv.includes('--preflight');
-
-if (asPreflight) {
+if (process.argv.includes('--preflight')) {
   runPreflight();
 }
+
+const asJson = process.argv.includes('--json');
 
 runDoctor().then((report) => {
   if (asJson) {
