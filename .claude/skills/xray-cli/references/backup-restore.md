@@ -211,13 +211,15 @@ Sync mode is designed for scenarios where:
 ### Requirements for Sync
 
 ```bash
-# Must have Jira credentials configured for issue lookups
+# Must have Jira credentials configured for issue lookups.
+# By default xray-cli reads ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN
+# from .env; pass --jira-* flags only when you need to override them.
 bun xray auth login \
   --client-id $XRAY_CLIENT_ID \
   --client-secret $XRAY_CLIENT_SECRET \
-  --jira-url https://your-instance.atlassian.net \
-  --jira-email your@email.com \
-  --jira-token $JIRA_API_TOKEN
+  --jira-url $ATLASSIAN_URL \
+  --jira-email $ATLASSIAN_EMAIL \
+  --jira-token $ATLASSIAN_API_TOKEN
 ```
 
 ## Troubleshooting

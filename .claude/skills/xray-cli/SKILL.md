@@ -262,11 +262,21 @@ bun xray backup restore --file demo-backup.json --project PROJ --map-keys mappin
 ## Environment Variables
 
 ```bash
+# Xray Cloud API (required for xray-cli auth)
 XRAY_CLIENT_ID      # Xray API Client ID
 XRAY_CLIENT_SECRET  # Xray API Client Secret
-JIRA_BASE_URL       # Jira instance URL (for sync features)
-JIRA_EMAIL          # Jira account email
-JIRA_API_TOKEN      # Jira API token
+
+# Atlassian / Jira credentials — primary, single source of truth
+ATLASSIAN_URL       # Jira instance URL (e.g. https://your-org.atlassian.net)
+ATLASSIAN_EMAIL     # Atlassian account email
+ATLASSIAN_API_TOKEN # Atlassian API token
+
+# Optional overrides — only set when xray-cli must use different Jira creds
+# than the rest of the stack. Each, when set, takes precedence over its
+# ATLASSIAN_* counterpart in cli/xray/lib/jira.ts and cli/xray/commands/auth.ts.
+# JIRA_BASE_URL=
+# JIRA_EMAIL=
+# JIRA_API_TOKEN=
 ```
 
 ## Config Files
