@@ -199,36 +199,52 @@ const CANONICAL_MCPS = [
 // the user's OS and we refuse to guess. We only verify presence, surface the
 // purpose, and point users to the official docs. `install` is OPTIONAL and only
 // set for genuinely cross-platform commands.
+//
+// ── Cross-repo sentinel ───────────────────────────────────────────────────
+// This repo (agentic-qa-boilerplate) declares CLIs for a Playwright + KATA QA
+// stack. Sister repo agentic-dev-boilerplate declares a broader set for a
+// Next.js + Supabase dev workflow. Per-CLI scope is tagged inline below as:
+//   `[shared]`     — declared in BOTH dev + qa, same purpose
+//   `[qa-only]`    — declared only in qa (stack-specific to QA workflow)
+//   `[dev-only]`   — declared only in dev (would NOT appear here)
+// When changing this list, update the sister repo's EXTERNAL_CLIS too if the
+// CLI is intended to be `[shared]`, or extend the scope tag if scope shifts.
 const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: string, purpose: string }> = [
   {
+    // [shared] — runtime + package manager in both repos.
     name: 'bun',
     docs: 'https://bun.com/',
     purpose: 'general-purpose runtime + package manager (this repo runs on bun)',
   },
   {
+    // [shared] — GitHub flow in both repos.
     name: 'gh',
     docs: 'https://github.com/cli/cli#installation',
     purpose: 'GitHub CLI — repos, PRs, releases, gh api',
   },
   {
+    // [shared] — Jira/Confluence CLI in both repos.
     name: 'acli',
     docs: 'https://developer.atlassian.com/cloud/acli/guides/install-acli/',
     purpose: 'Atlassian (Jira/Confluence) CLI — used by /acli skill',
   },
   {
-    // Binary produced by @playwright/cli is `playwright-cli`, not `playwright`.
-    // This is the agent-driven CLI, NOT the @playwright/test runner library.
+    // [shared] — agent-driven browser automation. Binary produced by
+    // @playwright/cli is `playwright-cli`, NOT @playwright/test (devDep test
+    // runner library producing no global binary).
     name: 'playwright-cli',
     install: 'bun add -g @playwright/cli@latest',
     docs: 'https://playwright.dev/agent-cli/introduction',
     purpose: 'browser automation — screenshots, traces, recordings',
   },
   {
+    // [shared] — JSON processor required by /acli skill.
     name: 'jq',
     docs: 'https://jqlang.org/',
     purpose: 'JSON processor — required by /acli skill for parsing acli --json output',
   },
   {
+    // [shared] — transactional email used in both (dev: app email; qa: test fixtures).
     name: 'resend',
     docs: 'https://resend.com/docs/cli',
     purpose: 'email development + transactional sending',
