@@ -20,10 +20,11 @@ This skill does NOT orchestrate workflows, does NOT generate files, and does NOT
 
 | File | Cited by | Purpose |
 |------|----------|---------|
-| `references/briefing-template.md` | `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery` | The 6-component subagent briefing template, with concrete filled examples per dispatch pattern. |
+| `references/briefing-template.md` | `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery` | The 7-component subagent briefing template, with concrete filled examples per dispatch pattern. |
 | `references/dispatch-patterns.md` | All workflow skills with a "Subagent Dispatch Strategy" section | Decision table + heuristic for picking Single / Sequential / Parallel / Background. |
 | `references/orchestration-doctrine.md` | Subagents that need orchestration rules without pulling the whole `CLAUDE.md` | Cacheable mirror of `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)". |
 | `references/skill-composition-strategy.md` | `framework-development`, every workflow skill | T1-T4 tier model + SDD boundary + composition contract. |
+| `references/skill-resolver.md` | Skills that resolve composable skills at runtime via the registry | Skill Resolver Protocol used by sub-agent launches. Companion: `scripts/build-skill-registry.ts` → `.claude/skills/REGISTRY.md`. |
 
 When a skill cites one of these, it includes a Dependencies block at the top so the AI knows to load `agentic-qa-core` before continuing.
 

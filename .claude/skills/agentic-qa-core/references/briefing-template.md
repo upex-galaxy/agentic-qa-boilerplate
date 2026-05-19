@@ -1,16 +1,17 @@
 # Subagent Briefing Template
 
 > Cited by: workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery`) when they delegate to a subagent.
-> Format: every dispatch MUST fill the 6 components below.
+> Format: every dispatch MUST fill the 7 components below.
 
-## The 6 components
+## The 7 components
 
 1. **Goal** — one sentence. What outcome the subagent must achieve.
 2. **Context docs** — files the subagent reads before acting. Absolute paths.
-3. **Skills to load** — skill triggers (e.g. `/acli`, `/xray-cli`, `/playwright-cli`) the subagent must invoke before issuing tool calls. The orchestrator never inlines tool syntax — that lives in the owning skill.
-4. **Exact instructions** — numbered steps. No ambiguity. Each step names the tool / skill action.
-5. **Report format** — what the subagent returns to the orchestrator. Either a JSON object with named fields, or a bullet list with explicit headings. Avoid free-form prose.
-6. **Rules** — constraints (relevant Critical Rules from `CLAUDE.md`, project-specific guardrails, Git rules, env-selection rules).
+3. **Project Standards (auto-resolved)** — REQUIRED. Compact rules of skills relevant to this dispatch. Pulled from `.claude/skills/REGISTRY.md` (built once per session by `bun run skills:registry`). The subagent treats this section as authoritative for the listed conventions and does NOT re-read the full SKILL.md unless explicitly told to. Protocol: `agentic-qa-core/references/skill-resolver.md`.
+4. **Skills to load** — skill triggers (e.g. `/acli`, `/xray-cli`, `/playwright-cli`) the subagent must invoke before issuing tool calls. The orchestrator never inlines tool syntax — that lives in the owning skill.
+5. **Exact instructions** — numbered steps. No ambiguity. Each step names the tool / skill action.
+6. **Report format** — what the subagent returns to the orchestrator. Either a JSON object with named fields, or a bullet list with explicit headings. Avoid free-form prose.
+7. **Rules** — constraints (relevant Critical Rules from `CLAUDE.md`, project-specific guardrails, Git rules, env-selection rules).
 
 ## Filled template (skeleton)
 
@@ -20,6 +21,18 @@ Goal: <one sentence>
 Context docs:
   - /abs/path/file1.md
   - /abs/path/file2.ts
+
+Project Standards (auto-resolved):
+  ## Skill: <slug>
+  **Purpose**: <1-line>
+  **Compact Rules**:
+  - DO: <imperative>
+  - DO NOT: <prohibition>
+  - WHEN <condition>: <action>
+  **Read full SKILL.md when**: <novel scenario>
+
+  ## Skill: <other-slug>
+  ... (orchestrator pastes one block per relevant skill, max 5)
 
 Skills to load: /acli, /playwright-cli
 
@@ -36,6 +49,8 @@ Rules:
   - <Critical Rule reference>
   - <project guardrail>
 ```
+
+> The `Project Standards (auto-resolved)` section is built by the orchestrator from `.claude/skills/REGISTRY.md` (see `agentic-qa-core/references/skill-resolver.md` for the protocol). The subagent treats those bullets as authoritative for the listed conventions and skips re-reading full SKILL.md files unless the briefing explicitly says otherwise.
 
 ---
 
