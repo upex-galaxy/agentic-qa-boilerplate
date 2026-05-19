@@ -11,28 +11,26 @@
  *         (gitignored, fetched at install time, NOT committed)
  *   T4  — community user-level, declared in cli/install.ts:USER_LEVEL_SKILLS
  *
- * Ten checks are run; each violation is printed prefixed with the relevant
+ * Eight checks are run; each violation is printed prefixed with the relevant
  * skill or array name. Exit code 0 = pass (no ERROR violations), 1 = at least
  * one ERROR violation. WARN and INFO are reported but do not cause non-zero exit.
  *
- *   1. T1 frontmatter completeness — every directory under .claude/skills/
- *      either has SKILL.md with `complementary_categories` declaring at least
- *      one known category, OR is the slug of a T3 community skill listed in
- *      PROJECT_LEVEL_SKILLS (in which case it might be present locally as a
- *      gitignored install artifact and is exempt).
- *      Check 1 now discriminates absent vs empty-list:
- *        - field absent → ERROR (unchanged)
- *        - field present but empty [] → INFO EMPTY-CATS (new)
- *        - field present with values → proceed to Check 4
+ *   1. T1 frontmatter parseability — every directory under .claude/skills/
+ *      either has SKILL.md with parseable YAML frontmatter, OR is the slug of
+ *      a T3 community skill listed in PROJECT_LEVEL_SKILLS (in which case it
+ *      might be present locally as a gitignored install artifact and is exempt).
+ *      The `complementary_categories` field is strictly OPTIONAL — skills do
+ *      not need to declare it. When declared, its values are audited by Check 4.
  *
  *   2. T3 PROJECT_LEVEL_SKILLS shape — every entry has both `package` (URL)
  *      and `skill` (string) fields.
  *
  *   3. T4 USER_LEVEL_SKILLS shape — every entry has both `package` and `skill`.
  *
- *   4. Category vocabulary — every category cited by any SKILL.md
- *      `complementary_categories` field is in the known-category allowlist
- *      (mirrors §5.1 of the strategy doc).
+ *   4. Category vocabulary — when a SKILL.md declares
+ *      `complementary_categories` with at least one value, every cited
+ *      category MUST be in the known-category allowlist (mirrors §5.1 of the
+ *      strategy doc).
  *
  *   5. `framework-development` exclusivity — that skill MUST exist at
  *      .claude/skills/framework-development/SKILL.md AND be the only T1 with
@@ -52,9 +50,7 @@
  *      bodies (outside fenced code blocks) must resolve to existing files
  *      relative to repo root. ERROR severity.
  *
- *   9. EMPTY-CATS — handled inline in Check 1 state switch (see above).
- *
- *  10. DUPLICATE-TIER — a skill slug appearing in more than one of
+ *   9. DUPLICATE-TIER — a skill slug appearing in more than one of
  *      PROJECT_LEVEL_SKILLS, USER_LEVEL_SKILLS is an install conflict.
  *      ERROR severity.
  *
@@ -604,30 +600,17 @@ function main(): void {
       continue;
     }
 
-    // 3-way switch on categoriesField state.
-    switch (fm.categoriesField.state) {
-      case 'missing':
-        if (!t3Slugs.has(entry)) {
-          violation('ERROR', entry, 'SKILL.md frontmatter has no `complementary_categories` field');
+    // `complementary_categories` is strictly OPTIONAL. We only audit values
+    // when present-nonempty (vocabulary + framework-evolution tracking).
+    // Absent and empty states are tolerated silently.
+    if (fm.categoriesField.state === 'present-nonempty') {
+      for (const cat of fm.categoriesField.values) {
+        if (!KNOWN_CATEGORIES.has(cat)) {
+          violation('ERROR', entry, `cites unknown category \`${cat}\` (not in §5.1 vocabulary)`);
         }
-        break;
-      case 'present-empty':
-        if (!t3Slugs.has(entry)) {
-          violation('INFO', entry, 'EMPTY-CATS: `complementary_categories` is present but empty — declare at least one §5.1 category');
-        }
-        break;
-      case 'present-nonempty': {
-        // Check 5: all cited categories must be in the known vocabulary.
-        for (const cat of fm.categoriesField.values) {
-          if (!KNOWN_CATEGORIES.has(cat)) {
-            violation('ERROR', entry, `cites unknown category \`${cat}\` (not in §5.1 vocabulary)`);
-          }
-        }
-        // Track who claims framework-evolution (Check 6).
-        if (fm.categoriesField.values.includes('framework-evolution')) {
-          t1WithFrameworkEvolution.push(entry);
-        }
-        break;
+      }
+      if (fm.categoriesField.values.includes('framework-evolution')) {
+        t1WithFrameworkEvolution.push(entry);
       }
     }
   }
@@ -695,22 +678,19 @@ function main(): void {
     violations.push(...checkStalePaths(skill.slug, skill.body, REPO_ROOT));
   }
 
-  // Check 9: EMPTY-CATS is handled inline in Check 1 state switch above.
-
-  // Check 10: DUPLICATE-TIER
+  // Check 9: DUPLICATE-TIER
   violations.push(...checkDuplicateTier(t2Slugs, t3Slugs, t4Slugs));
 
   // ---- Report ----
   const checkNames = [
-    'T1 frontmatter completeness (+ EMPTY-CATS discrimination)',
+    'T1 frontmatter parseability',
     'T3 PROJECT_LEVEL_SKILLS shape',
     'T4 USER_LEVEL_SKILLS shape',
-    'category vocabulary',
+    'category vocabulary (only when declared)',
     '`framework-development` exclusivity',
     'anti-leak (`/sdd-` outside Forbidden invocations)',
     'TIER-MISMATCH (CLAUDE.md §5 vs install.ts)',
     'STALE-PATH (inline-code path references in SKILL.md bodies)',
-    'EMPTY-CATS (present but empty `complementary_categories`)',
     'DUPLICATE-TIER (skill slug in multiple tier arrays)',
   ];
 
