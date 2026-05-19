@@ -257,6 +257,10 @@ const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   // playwright-best-practices (currents.dev): patterns / anti-flaky / axe-core /
   // fixtures reference loaded by /test-automation during the Code phase.
   { package: 'https://github.com/currents-dev/playwright-best-practices-skill', skill: 'playwright-best-practices' },
+  // resend-cli (resend.com): email testing flows. Pairs with the `resend`
+  // external CLI verified in step 11 — see CLAUDE.md §6.5 CLI→Skill auto-load.
+  // Project-level because email provider choice varies per project.
+  { package: 'https://github.com/resend/resend-skills', skill: 'resend-cli' },
 ];
 
 /**
@@ -264,21 +268,16 @@ const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
  * Useful across most projects regardless of stack. QA-tuned subset of the dev
  * universal layer — design/automation skills (n8n-skills, emil-design-eng,
  * ui-ux-pro-max) live only in the dev repo since QA does not author UI or
- * automation flows. cli-printing-press + html-ppt are cross-project utilities
- * useful for testing tooling and report generation.
+ * automation flows. html-ppt is a cross-project utility useful for report
+ * generation. bun is the runtime used across all projects.
  */
 const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/anthropics/skills', skill: 'skill-creator' },
   { package: 'https://github.com/vercel-labs/skills', skill: 'find-skills' },
-  { package: 'https://github.com/github/awesome-copilot', skill: 'gh-cli' },
   { package: 'https://github.com/xixu-me/skills', skill: 'github-actions-docs' },
   { package: 'https://github.com/obra/superpowers', skill: 'brainstorming' },
-  // cli-printing-press: full functionality requires Go 1.26.3+ (go install github.com/mvanhorn/cli-printing-press/v4/cmd/printing-press@latest); skill works standalone with degraded features
-  { package: 'https://github.com/mvanhorn/cli-printing-press', skill: 'cli-printing-press' },
   { package: 'https://github.com/lewislulu/html-ppt-skill', skill: 'html-ppt' },
-  // resend-cli (resend.com): email testing flows. Pairs with the `resend`
-  // external CLI verified in step 11 — see CLAUDE.md §6.5 CLI→Skill auto-load.
-  { package: 'https://github.com/resend/resend-skills', skill: 'resend-cli' },
+  { package: 'https://bun.sh/docs', skill: 'bun' },
 ];
 
 // Matches Claude Code ${VAR} and ${VAR:-default} placeholders in .mcp.json.

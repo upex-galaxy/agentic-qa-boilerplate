@@ -58,7 +58,7 @@ Run the interactive installer once after cloning:
 bun run setup
 ```
 
-This bootstraps `.agents/`, installs the gentle-ai `engram` component (minimal preset), configures the 7 canonical MCPs, downloads Playwright browsers, installs 8 user-level community skills + 2 project-level Playwright skills, and writes `.mcp.json`. Full details in [`INSTALLER.md`](../../../INSTALLER.md).
+This bootstraps `.agents/`, installs the gentle-ai `engram` component (minimal preset), configures the 7 canonical MCPs, downloads Playwright browsers, installs 6 user-level community skills + 3 project-level community skills, and writes `.mcp.json`. Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 After setup, fill `.env` with the credentials the rest of the workflow expects (see "Critical env vars" below).
 
@@ -196,20 +196,18 @@ Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 ## Community skills installed at user level
 
-`bun run setup` also runs `bunx skills add --global` for 8 cross-project skills:
+`bun run setup` also runs `bunx skills add --global` for 6 cross-project skills:
 
 | Skill | Source | Use |
 | --- | --- | --- |
 | `skill-creator` | anthropics/skills | Create / edit / measure skills |
 | `find-skills` | vercel-labs/skills | Discover installable skills |
-| `gh-cli` | github/awesome-copilot | GitHub CLI patterns |
 | `github-actions-docs` | xixu-me/skills | GitHub Actions reference |
 | `brainstorming` | obra/superpowers | Pre-implementation discovery |
-| `cli-printing-press` | mvanhorn/cli-printing-press | CLI report rendering |
 | `html-ppt` | lewislulu/html-ppt-skill | HTML presentation authoring |
-| `resend-cli` | resend/resend-skills | Email automation CLI |
+| `bun` | bun.sh/docs | Bun runtime reference |
 
-Plus 2 project-level community skills installed into `.claude/skills/` (not committed): `playwright-cli`, `playwright-best-practices`. See `cli/install.ts` `PROJECT_LEVEL_SKILLS` and `USER_LEVEL_SKILLS` arrays.
+Plus 3 project-level community skills installed into `.claude/skills/` (not committed): `playwright-cli`, `playwright-best-practices`, `resend-cli`. See `cli/install.ts` `PROJECT_LEVEL_SKILLS` and `USER_LEVEL_SKILLS` arrays.
 
 ---
 

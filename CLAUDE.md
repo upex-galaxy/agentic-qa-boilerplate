@@ -164,6 +164,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | `regression-testing` | `/regression-testing` | Stage 6: regression / smoke / sanity via CI/CD. Classifies failures. Emits GO / CAUTION / NO-GO. |
 | `playwright-cli` | `/playwright-cli` | Browser CLI: screenshots, tracing, video, session mgmt, request mocking. *(community — installed at PROJECT level by `cli/install.ts`; not committed in repo)* |
 | `playwright-best-practices` | `/playwright-best-practices` | Reference skill: flaky-test fixes, POM, accessibility (axe-core), auth/OAuth, fixtures, tags (`@smoke`/`@critical`), perf budgets, i18n, component testing. Auto-loads alongside `/test-automation`. *(community — installed at PROJECT level by `cli/install.ts`; not committed in repo)* |
+| `resend-cli` | `/resend-cli` | Resend email testing CLI. Pairs with the `resend` external binary. *(community — installed at PROJECT level by `cli/install.ts`; not committed in repo)* |
 | `xray-cli` | `/xray-cli` | Xray Cloud test management. |
 | `acli` | `/acli` | Atlassian CLI. Resolves `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` (Modality B). |
 | `git-flow-master` | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR. |
@@ -233,13 +234,13 @@ Skills using `[TMS_TOOL]` MUST include parallel pseudocode branches for both mod
 
 | CLI invoked | Skill(s) to load BEFORE invoking |
 |---|---|
-| `gh` | `/gh-cli` (community USER) + `/git-flow-master` (in-repo, when command is git/PR-shaped) |
+| `gh` | `/git-flow-master` (in-repo, when command is git/PR-shaped) |
 | `acli` | `/acli` (in-repo) |
 | `playwright-cli` | `/playwright-cli` (community PROJECT) + `/playwright-best-practices` (community PROJECT) |
 | `bunx allure` (run/agent/generate/open/watch) | `/regression-testing` (in-repo) + `/test-automation` (in-repo) |
-| `resend` | `/resend-cli` (community USER, when added) |
+| `resend` | `/resend-cli` (community PROJECT) |
 | `jq` | `/acli` (primary consumer of jq pipelines) |
-| `bun` | (runtime — no skill mapping) |
+| `bun` | `/bun` (community USER) |
 | `bun xray` | `/xray-cli` (in-repo) |
 
 **RULE**: Before any Bash call naming these binaries, check matching skill loaded. If not → load via Skill tool first. Hard gate, not suggestion.

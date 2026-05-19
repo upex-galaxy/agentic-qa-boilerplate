@@ -23,7 +23,7 @@ Downloads and installs all software dependencies:
 - `bun install` — project Node/Bun packages including `@playwright/test`
 - `bun run pw:install` — Playwright browser binaries (~300 MB Chromium)
 - `gentle-ai install --preset minimal` — Engram persistent memory only (one batched call per agent). SDD-* and foundation skills are NOT installed — see [What `gentle-ai install` adds](#what-gentle-ai-install-adds) below.
-- `bunx skills add` — project-level skills (`playwright-cli`, `playwright-best-practices`) and user-level skills (8 cross-project utilities)
+- `bunx skills add` — project-level skills (`playwright-cli`, `playwright-best-practices`, `resend-cli`) and user-level skills (6 cross-project utilities)
 
 ### Phase 3 — CONFIGURATION
 
@@ -345,7 +345,7 @@ This adds 10 SDD skills (`sdd-init/explore/propose/spec/design/tasks/apply/verif
 
 Independent of gentle-ai, the installer also runs the official Anthropic `bunx skills add` CLI to fetch community skills from upstream repos. Two lists, both defined as `const` arrays in `cli/install.ts`:
 
-### Project-level (2 skills)
+### Project-level (3 skills)
 
 Installed into `.claude/skills/` via `bunx skills add` (project mode). Not committed — `cli/install.ts` re-fetches them on every install so we always pick up upstream fixes. They are critical to the QA stack and must travel with every clone of the repo.
 
@@ -353,8 +353,9 @@ Installed into `.claude/skills/` via `bunx skills add` (project mode). Not commi
 | --------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `playwright-cli`            | `microsoft/playwright-cli`                     | Browser automation CLI used by `/sprint-testing` and `/test-automation` as the primary `[AUTOMATION_TOOL]`.     |
 | `playwright-best-practices` | `currents-dev/playwright-best-practices-skill` | Patterns / anti-flaky / axe-core / fixtures reference. Auto-loaded by `/test-automation` during the Code phase. |
+| `resend-cli`                | `resend/resend-skills`                         | Resend email testing CLI. Pairs with the `resend` external binary verified in step 11. Project-level because email provider choice varies per project. |
 
-### User-level (global, 8 skills)
+### User-level (global, 6 skills)
 
 Installed with `bunx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack.
 
@@ -362,12 +363,10 @@ Installed with `bunx skills add <package> [--skill <name>] --global --yes` and u
 | --------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `skill-creator`       | `anthropics/skills`           | Author/edit skills — useful in any repo                                                                                                          |
 | `find-skills`         | `vercel-labs/skills`          | Discover installable skills — universal                                                                                                          |
-| `gh-cli`              | `github/awesome-copilot`      | GitHub CLI helper for CI / PRs / releases — universal                                                                                            |
 | `github-actions-docs` | `xixu-me/skills`              | GitHub Actions workflow reference — universal                                                                                                    |
 | `brainstorming`       | `obra/superpowers`            | Pre-implementation ideation (framework features, test design edge cases) — universal                                                             |
-| `cli-printing-press`  | `mvanhorn/cli-printing-press` | CLI tooling for API-as-CLI testing + framework utility scripts. Full functionality requires Go 1.26.3+; works standalone with degraded features. |
 | `html-ppt`            | `lewislulu/html-ppt-skill`    | HTML presentations for sprint planning / retro / demo decks — universal                                                                          |
-| `resend-cli`          | `resend/resend-skills`        | Resend email testing CLI. Pairs with the `resend` external binary verified in step 11.                                                           |
+| `bun`                 | `bun.sh/docs`                 | Bun runtime reference — universal across every project that uses bun                                                                             |
 
 ### Skipping or re-running
 

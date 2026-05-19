@@ -79,7 +79,7 @@ These are **not optional** for the workflow — each one is required by a specif
 | `gh`             | `/git-flow-master`, `/regression-testing` (PRs, Actions, releases)                  | [cli.github.com](https://cli.github.com/)                                         |
 | `acli`           | `/acli`, `/sprint-testing`, `/test-documentation` (Jira / Confluence from terminal) | [Atlassian docs](https://developer.atlassian.com/cloud/acli/guides/install-acli/) |
 | `playwright-cli` | `/playwright-cli` skill (agent-driven browser automation)                           | `bun add -g @playwright/cli@latest`                                               |
-| `resend`         | `/resend-cli` (email testing flows, when added)                                     | [resend.com/docs/cli](https://resend.com/docs/cli)                                |
+| `resend`         | `/resend-cli` (email testing flows)                                                 | [resend.com/docs/cli](https://resend.com/docs/cli)                                |
 | `jq`             | `acli` JSON pipelines (`acli ... --json \| jq ...`)                                 | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)              |
 
 ### Convenience opt-ins (pure UX, never required)

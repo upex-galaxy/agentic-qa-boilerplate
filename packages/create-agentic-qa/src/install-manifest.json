@@ -126,7 +126,7 @@
       ]
     },
     "communityProjectSkills": {
-      "count": 2,
+      "count": 3,
       "items": [
         {
           "name": "playwright-cli",
@@ -137,11 +137,16 @@
           "name": "playwright-best-practices",
           "purpose": "Playwright reference patterns — flaky-test fixes, POM, accessibility (axe-core), auth/OAuth fixtures, perf budgets, i18n, component testing.",
           "source": "https://github.com/currents-dev/playwright-best-practices-skill"
+        },
+        {
+          "name": "resend-cli",
+          "purpose": "Transactional email development with Resend.",
+          "source": "https://github.com/resend/resend-skills"
         }
       ]
     },
     "communityUserSkills": {
-      "count": 8,
+      "count": 6,
       "items": [
         {
           "name": "skill-creator",
@@ -154,11 +159,6 @@
           "source": "https://github.com/vercel-labs/skills"
         },
         {
-          "name": "gh-cli",
-          "purpose": "GitHub CLI documentation and patterns.",
-          "source": "https://github.com/github/awesome-copilot"
-        },
-        {
           "name": "github-actions-docs",
           "purpose": "GitHub Actions documentation and workflow patterns.",
           "source": "https://github.com/xixu-me/skills"
@@ -169,19 +169,14 @@
           "source": "https://github.com/obra/superpowers"
         },
         {
-          "name": "cli-printing-press",
-          "purpose": "Terminal output styling and printing utilities for CLI tools.",
-          "source": "https://github.com/mvanhorn/cli-printing-press"
-        },
-        {
           "name": "html-ppt",
           "purpose": "Create HTML-based presentations.",
           "source": "https://github.com/lewislulu/html-ppt-skill"
         },
         {
-          "name": "resend-cli",
-          "purpose": "Transactional email development with Resend.",
-          "source": "https://github.com/resend/resend-skills"
+          "name": "bun",
+          "purpose": "Bun runtime reference — installation, scripts, package management, testing.",
+          "source": "https://bun.sh/docs"
         }
       ]
     }

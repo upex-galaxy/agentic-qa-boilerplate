@@ -23,8 +23,8 @@ The repo ships with **11 project-owned workflow skills** + **1 vendored skill** 
 
 - **Engram only** (user-level via gentle-ai minimal preset): persistent memory binary + MCP adapter. No SDD-* skills, no foundation skills. Users who want the full SDD suite for `/framework-development` work install it manually: `gentle-ai install --components engram,sdd --agent <a>`.
 - **Vendored T2 skill**: `judgment-day` (Apache-2.0, attribution preserved in frontmatter) lives committed under `.claude/skills/judgment-day/`. No upstream dependency.
-- **2 community skills (project-level)**: `playwright-cli` (Microsoft), `playwright-best-practices` (currents-dev).
-- **8 community skills (user-level / global)**: `skill-creator`, `find-skills`, `gh-cli`, `github-actions-docs`, `brainstorming`, `cli-printing-press`, `html-ppt`, `resend-cli`.
+- **3 community skills (project-level)**: `playwright-cli` (Microsoft), `playwright-best-practices` (currents-dev), `resend-cli` (resend).
+- **6 community skills (user-level / global)**: `skill-creator`, `find-skills`, `github-actions-docs`, `brainstorming`, `html-ppt`, `bun`.
 
 Current state (CLAUDE.md): T1 skills named explicitly in §5; T2/T3/T4 mentioned by category. Auto-discovery: zero mechanism. Cross-skill composition: only project-owned sister calls (`sprint-testing` → `test-documentation`, `git-flow-master`).
 
@@ -46,8 +46,8 @@ Four tiers. Different discovery and load rules per tier.
 | **T1 — Project-owned** | `.claude/skills/` (committed) | `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `git-flow-master`, `project-discovery`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development` | Named in CLAUDE.md "Skills" registry | Silent (load on trigger, no ask) |
 | **T2 — Vendored** | `.claude/skills/` (committed, upstream attribution in frontmatter) | `judgment-day` (gentle-ai, Apache-2.0) | Named in CLAUDE.md | Silent on explicit user trigger (`/judgment-day`, `juzgar`) or when cited by host orchestrator (`test-automation` Phase 3, `git-flow-master` pre-PR) |
 | **T2-opt — Optional gentle-ai SDD bundle (user-installed)** | `~/.claude/skills/sdd-*` (only if user runs `gentle-ai install --components engram,sdd`) | `sdd-init`, `sdd-explore`, `sdd-propose`, `sdd-spec`, `sdd-design`, `sdd-tasks`, `sdd-apply`, `sdd-verify`, `sdd-archive`, `sdd-onboard` | NOT installed by `bun run setup` (minimal preset = engram only). Discovered at runtime from system-reminder skill list when present | Silent **inside** `framework-development` only — see §4 anti-leak contract. NEVER silent inside `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing` |
-| **T3 — Community project-level** | `.claude/skills/` (installed by `install.ts` PROJECT_LEVEL_SKILLS, not committed) | `playwright-cli`, `playwright-best-practices` | Named **by category** in CLAUDE.md (not by skill name). Discovered at runtime from system-reminder skill list | Silent if matched by category (e.g. user writes a Playwright test → load `playwright-best-practices`) |
-| **T4 — Community user-level** | `~/.claude/skills/` (installed by `install.ts` USER_LEVEL_SKILLS) | `skill-creator`, `find-skills`, `gh-cli`, `github-actions-docs`, `brainstorming`, `cli-printing-press`, `html-ppt`, `resend-cli` | **NOT named in CLAUDE.md**. Discovered at runtime from system-reminder skill list. Auto-match by task domain | **ASK user before load** (may not be installed, or user may not want it for this task) |
+| **T3 — Community project-level** | `.claude/skills/` (installed by `install.ts` PROJECT_LEVEL_SKILLS, not committed) | `playwright-cli`, `playwright-best-practices`, `resend-cli` | Named **by category** in CLAUDE.md (not by skill name). Discovered at runtime from system-reminder skill list | Silent if matched by category (e.g. user writes a Playwright test → load `playwright-best-practices`) |
+| **T4 — Community user-level** | `~/.claude/skills/` (installed by `install.ts` USER_LEVEL_SKILLS) | `skill-creator`, `find-skills`, `github-actions-docs`, `brainstorming`, `html-ppt`, `bun` | **NOT named in CLAUDE.md**. Discovered at runtime from system-reminder skill list. Auto-match by task domain | **ASK user before load** (may not be installed, or user may not want it for this task) |
 
 ### Tier decision rule
 
@@ -65,10 +65,10 @@ T2 vendored list: `judgment-day` (frontmatter `metadata.vendored_from` points at
 T2-opt SDD bundle (only when user manually installed): `sdd-init`, `sdd-explore`, `sdd-propose`, `sdd-spec`, `sdd-design`, `sdd-tasks`, `sdd-apply`, `sdd-verify`, `sdd-archive`, `sdd-onboard`.
 
 T3 list (`PROJECT_LEVEL_SKILLS` in `cli/install.ts`):
-`playwright-cli` (microsoft), `playwright-best-practices` (currents-dev).
+`playwright-cli` (microsoft), `playwright-best-practices` (currents-dev), `resend-cli` (resend).
 
 T4 list (`USER_LEVEL_SKILLS` in `cli/install.ts`):
-`skill-creator`, `find-skills`, `gh-cli`, `github-actions-docs`, `brainstorming`, `cli-printing-press`, `html-ppt`, `resend-cli`.
+`skill-creator`, `find-skills`, `github-actions-docs`, `brainstorming`, `html-ppt`, `bun`.
 
 ---
 
@@ -212,15 +212,15 @@ Project-owned and project-dependency skills are named explicitly. Community skil
 | `testing-api` | `playwright-best-practices` (request fixture patterns) | `test-automation` (API/integration suites) |
 | `testing-component` | `playwright-best-practices` (component testing section) | `test-automation` (rare — when the project has component tests) |
 | `accessibility` | `playwright-best-practices` (axe-core section) | `test-automation` (a11y suites), `sprint-testing` (manual a11y checks) |
-| `vcs` | `gh-cli` | `git-flow-master`, `regression-testing` (CI run inspection) |
+| `vcs` | (no T3/T4 — `git-flow-master` is T1 and covers `gh` CLI usage natively) | `git-flow-master`, `regression-testing` (CI run inspection) |
+| `runtime` | `bun` | `framework-development`, `test-automation` (script / bundler tweaks) |
 | `issue-tracker` | (acli is T1) | `sprint-testing`, `test-documentation` |
 | `tms` | (xray-cli is T1; acli covers Modality B) | `test-documentation`, `sprint-testing` |
 | `meta-skill` | `skill-creator`, `find-skills` | only on user request (find-skills auto-invoked per §8.2 as last-resort); also `framework-development` (skill evolution) |
-| `automation-cli` | `cli-printing-press` (Go CLI generation) | only on user request (rare in QA scope) |
 | `ci-cd` | `github-actions-docs` | `regression-testing`, `framework-development` (CI workflow evolution) |
 | `framework-evolution` | (no T3/T4 — concept-only category) | `framework-development` (self-tag) |
 
-Categories deliberately omitted from the QA scope (present in the dev sister doc, not relevant here): `frontend-ui`, `frontend-framework`, `forms-validation`, `backend-db`, `runtime`, `language`, `seo`, `deploy`, `creativity`, `doc-generation`, `prose-polishing`, `presentation`. QA does not author UI, deploy, or write production code; if a category appears legitimately needed in the future, add it via §5.1 (additive change).
+Categories deliberately omitted from the QA scope (present in the dev sister doc, not relevant here): `frontend-ui`, `frontend-framework`, `forms-validation`, `backend-db`, `language`, `seo`, `deploy`, `creativity`, `doc-generation`, `prose-polishing`, `presentation`. QA does not author UI, deploy, or write production code; if a category appears legitimately needed in the future, add it via §5.1 (additive change).
 
 ### 5.2 Matching rule
 
@@ -292,7 +292,7 @@ Demotion path (T3 → T4): when a project-level skill turns out to be useful els
 ### 7.4 User: "Run the nightly smoke suite and tell me if we ship"
 
 - Trigger: `/regression-testing`. T1 silent load.
-- Composable categories: `vcs` (`gh-cli` for CI inspection), `ci-cd` (`github-actions-docs` if workflow YAML needs reading).
+- Composable categories: `vcs` (`gh` CLI invoked via `/git-flow-master`), `ci-cd` (`github-actions-docs` if workflow YAML needs reading).
 - SDD-*: NOT loaded. Anti-leak rule §4.1 row 3 fires.
 - Outputs: classified failure list, GO/CAUTION/NO-GO verdict.
 
