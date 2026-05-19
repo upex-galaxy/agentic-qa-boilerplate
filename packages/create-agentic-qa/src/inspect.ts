@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 
 import pc from 'picocolors';
 
-import manifest from './install-manifest.json' with { type: 'json' };
+import manifest from './installer-manifest.json' with { type: 'json' };
 import * as tui from './tui.ts';
 
 // ---------------------------------------------------------------------------

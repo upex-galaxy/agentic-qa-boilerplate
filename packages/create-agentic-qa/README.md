@@ -69,7 +69,7 @@ downstream `bun run setup:doctor`.
 ## Inspect — what will the installer actually touch?
 
 The inspect view is a read-only walkthrough driven by
-`src/install-manifest.json`. It answers "what is this thing going to do to my
+`src/installer-manifest.json`. It answers "what is this thing going to do to my
 machine?" before you commit to running it.
 
 Five sections are rendered:

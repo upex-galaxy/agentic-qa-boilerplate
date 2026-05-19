@@ -3,7 +3,7 @@
  * gen-install-manifest.ts
  *
  * Lives inside the `create-agentic-qa` package because it generates the
- * package's own `src/install-manifest.json` — the catalogue rendered by
+ * package's own `src/installer-manifest.json` — the catalogue rendered by
  * `bunx create-agentic-qa --inspect`. Reads the authoritative skill / MCP /
  * CLI declarations from the boilerplate's `cli/install.ts` (two levels up)
  * so the published CLI stays in sync with what `bun run setup` actually
@@ -50,7 +50,7 @@ import { resolve } from 'node:path';
 // ../../..        = boilerplate root
 const REPO_ROOT = resolve(import.meta.dir, '../../..');
 const INSTALL_TS = resolve(REPO_ROOT, 'cli/install.ts');
-const MANIFEST_PATH = resolve(import.meta.dir, '../src/install-manifest.json');
+const MANIFEST_PATH = resolve(import.meta.dir, '../src/installer-manifest.json');
 
 // ============================================================================
 // Static purpose strings
@@ -541,13 +541,13 @@ function main(): void {
         process.exit(0);
       }
       else {
-        process.stderr.write('DRIFT: install-manifest.json is out of sync with cli/install.ts.\n');
+        process.stderr.write('DRIFT: installer-manifest.json is out of sync with cli/install.ts.\n');
         process.stderr.write('Run: bun run gen:manifest  to regenerate.\n');
         process.exit(1);
       }
     }
     catch {
-      process.stderr.write('DRIFT: Could not parse install-manifest.json — run: bun run gen:manifest\n');
+      process.stderr.write('DRIFT: Could not parse installer-manifest.json — run: bun run gen:manifest\n');
       process.exit(1);
     }
   }
