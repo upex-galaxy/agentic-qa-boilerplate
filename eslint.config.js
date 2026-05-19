@@ -35,6 +35,9 @@ export default antfu({
     // TypeScript that needs linting.
     '.claude/skills/**',
     '.agents/skills/**',
+    // MCP reference templates — syntax-sensitive opt-in configs. Linting them
+    // (e.g. toml/array-bracket-newline) corrupts the layout users copy from.
+    'docs/mcp/**',
   ],
 
   // Custom rules

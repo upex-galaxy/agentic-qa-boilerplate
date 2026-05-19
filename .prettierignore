@@ -49,3 +49,11 @@ Thumbs.db
 .context/
 .claude/skills/
 .agents/skills/
+
+# ===========================================
+# MCP reference templates - never format
+# ===========================================
+# docs/mcp/*.template.* are syntax-sensitive opt-in configs (claude / opencode /
+# gemini / codex) that users copy verbatim into their active MCP config. Prettier
+# normalizes whitespace and trailing commas that would break the copy-paste path.
+docs/mcp/
