@@ -9,8 +9,12 @@ const figures = figuresModule as unknown as Record<string, string>;
 // ---------------------------------------------------------------------------
 // ASCII logo
 // ---------------------------------------------------------------------------
-// Stored as String.raw template to be 100% safe with special chars.
-const LOGO_RAW = String.raw`                  ░█████  ░██████ ░███████░███   ░██░████████░██ ░██████
+// Plain template literal — Bun (as of 1.3.x) has a quirk where String.raw
+// converts inline UTF-8 block characters into their literal `\uXXXX` escape
+// text at module load time. The banner has no backslash sequences that need
+// escape-preserving, so a regular template literal renders correctly under
+// both bun runtime and pre-compiled JS distribution.
+const LOGO_RAW = `                  ░█████  ░██████ ░███████░███   ░██░████████░██ ░██████
                  ░██  ░██░██      ░██     ░████  ░██   ░██   ░██░██
                  ░███████░██  ░███░█████  ░██░██ ░██   ░██   ░██░██
   ██████████     ░██  ░██░██   ░██░██     ░██ ░██░██   ░██   ░██░██

@@ -147,6 +147,8 @@ Repo organizes skills in 4 tiers with different discovery + load rules:
 - **T3** — Community project-level. Installed by `install.ts` into `.claude/skills/` (not committed). Load silent if category matches task domain.
 - **T4** — Community user-level. Installed globally. ALWAYS ASK before loading.
 
+> Layout convention: T1 repo skills → `.claude/skills/<slug>/` (committed source). T3/T4 community skills installed via `bunx skills add` → `.agents/skills/<slug>/` (gitignored, default CLI behavior).
+
 Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-strategy.md`
 
 **gentle-ai install scope**: `cli/install.ts` runs `gentle-ai install --preset minimal` → installs ONLY the `engram` component (persistent memory). SDD-* skills are NOT installed by default — our workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`) cover Plan → Code → Verify natively without SDD ceremony. Users who explicitly want the SDD suite for framework evolution work can add it manually: `gentle-ai install --components engram,sdd --agent <a>`.

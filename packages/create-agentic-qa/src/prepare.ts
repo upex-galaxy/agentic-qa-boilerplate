@@ -128,7 +128,17 @@ export function initGitRepo(projectDir: string): void {
 // Paths committed in the template repo but never wanted in a freshly
 // bootstrapped project (e.g. the CLI source itself). Hardcoded here — adding
 // or removing an entry requires republishing @upex/create-agentic-qa.
-const TEMPLATE_EXCLUDES = ['packages'] as const;
+const TEMPLATE_EXCLUDES = [
+  'packages',
+  '.context/business/business-data-map.md',
+  '.context/business/business-feature-map.md',
+  '.context/business/business-api-map.md',
+  // Jira catalogs are cached from the boilerplate's source workspace and must
+  // not travel to a new project (otherwise `jira:sync-fields` errors with
+  // "already populated" on first install).
+  '.agents/jira-fields.json',
+  '.agents/jira-workflows.json',
+] as const;
 
 /**
  * Delete every path in TEMPLATE_EXCLUDES from the freshly extracted project.
