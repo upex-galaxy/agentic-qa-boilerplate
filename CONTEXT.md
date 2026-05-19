@@ -116,15 +116,23 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 
 ```
 .claude/skills/
-├── agentic-qa-core/        → Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy). Cited on demand by workflow skills.
-├── acli/                  → Atlassian CLI skill: Jira issue tracking + Modality B TMS operations
-├── project-discovery/     → 4-phase reverse-engineering, generates `.context/` artifacts. README/CLAUDE.md upkeep is `/sync-ai-memory`. Foundation files (`CLAUDE.md`, `.agents/`, `scripts/`) ship with the boilerplate and are not generated per project.
-├── sprint-testing/        → In-sprint QA (planning + execution + reporting, per ticket)
-├── test-documentation/    → TMS documentation + test prioritization
-├── test-automation/       → KATA test planning + coding + review
-├── regression-testing/    → Regression execution + GO/NO-GO
-├── playwright-cli/        → Browser automation helper
-└── xray-cli/              → Xray TMS helper
+├── agentic-qa-core/         → Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy, Skill Resolver protocol). Cited on demand by workflow skills.
+├── agentic-qa-onboard/      → First-time orientation tour: stack + 6-stage pipeline + MCPs. Hands off to the right downstream skill.
+├── framework-development/   → Framework-evolution orchestrator for the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). Self-contained Plan → Code → Verify → Archive pipeline. NOT for per-ticket QA.
+├── project-discovery/       → 4-phase reverse-engineering, generates `.context/` artifacts. README/CLAUDE.md upkeep is `/sync-ai-memory`. Foundation files (`CLAUDE.md`, `.agents/`, `scripts/`) ship with the boilerplate and are not generated per project.
+├── sprint-testing/          → In-sprint QA (planning + execution + reporting, per ticket)
+├── test-documentation/      → TMS documentation + test prioritization
+├── test-automation/         → KATA test planning + coding + review
+├── regression-testing/      → Regression execution + GO/NO-GO
+├── git-flow-master/         → End-to-end Git operator: branch / commit / push / PR / conflict / chained-PR. Auto-detects branching strategy.
+├── judgment-day/            → T2 vendored from gentle-ai (Apache-2.0): adversarial dual-judge review. Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR.
+├── acli/                    → Atlassian CLI skill: Jira issue tracking + Modality B TMS operations
+└── xray-cli/                → Xray TMS helper
+
+(community, installed by `cli/install.ts` — not committed in repo)
+  • playwright-cli/             → Browser automation CLI (screenshots, tracing, video, session mgmt)
+  • playwright-best-practices/  → Playwright + TS reference (flaky-test fixes, axe-core, auth/OAuth, perf budgets, i18n, component testing)
+  • resend-cli/                 → Resend email testing CLI (pairs with the `resend` binary)
 ```
 
 **Key Skills**:
@@ -132,6 +140,7 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 - `/test-automation` - KATA test writing pipeline
 - `/sprint-testing` - End-to-end in-sprint QA
 - `/project-discovery` - Generates `.context/` artifacts; pair with `/sync-ai-memory` for README/CLAUDE.md upkeep
+- `/framework-development` - Evolves the boilerplate itself (KATA bases, fixtures, cli/, scripts/)
 
 ### docs/ - Human Documentation
 
@@ -237,8 +246,9 @@ The orchestration doctrine has three shared assets, all hosted by `agentic-qa-co
 | Asset | Path | Role |
 |-------|------|------|
 | **Orchestration doctrine** | `agentic-qa-core/references/orchestration-doctrine.md` | Cacheable mirror of `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)". Subagents load this instead of pulling the full `CLAUDE.md`. |
-| **Briefing template** | `agentic-qa-core/references/briefing-template.md` | The canonical 6-component briefing format (Goal / Context docs / Skills to load / Exact instructions / Report format / Rules) with one filled example per dispatch pattern. |
+| **Briefing template** | `agentic-qa-core/references/briefing-template.md` | The canonical 7-component briefing format (Goal / Context docs / Project Standards (auto-resolved) / Skills to load / Exact instructions / Report format / Rules) with one filled example per dispatch pattern. |
 | **Dispatch patterns** | `agentic-qa-core/references/dispatch-patterns.md` | Decision guide and heuristic for picking Single / Sequential / Parallel / Background. |
+| **Skill Resolver Protocol** | `agentic-qa-core/references/skill-resolver.md` + `.claude/skills/REGISTRY.md` | Build-once-per-session compact-rules cache. Orchestrator runs `bun run skills:registry`, then pastes per-skill "Compact Rules" blocks into every briefing under `Project Standards (auto-resolved)`. Subagents trust these and skip re-reading full `SKILL.md`. Validated by `bun run skills:registry:check`. |
 
 Each workflow skill (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`) declares **its own dispatch points** in a `## Subagent Dispatch Strategy` section of its `SKILL.md`. That table maps each stage to its dispatch pattern and subagent role, so the AI knows up-front when to delegate and how to brief.
 

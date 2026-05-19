@@ -2592,7 +2592,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                       briefing-template.md
                     </text>
                     <text x="300" y="156" text-anchor="middle" fill="#888" font-size="11">
-                      6-component format
+                      7-component format
                     </text>
                   </g>
                   <g>
@@ -2742,7 +2742,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     fill="#888"
                     font-style="italic"
                   >
-                    orchestrator builds 6-component briefing
+                    orchestrator builds 7-component briefing
                   </text>
                   <text
                     x="440"
@@ -2765,12 +2765,16 @@ bun run jira:check            # verify both catalogs against the manifest</code>
 
             <p>
               This is the canonical pattern the four workflow skills follow. The orchestrator reads
-              its own dispatch strategy, writes a 6-component briefing for each subagent (<em
-                >Goal · Context docs · Skills to load · Exact instructions · Report format ·
-                Rules</em
+              its own dispatch strategy, writes a 7-component briefing for each subagent (<em
+                >Goal · Context docs · Project Standards (auto-resolved) · Skills to load · Exact
+                instructions · Report format · Rules</em
               >), and the subagent loads tool skills (<code>/acli</code>, <code>/xray-cli</code>,
-              <code>/playwright-cli</code>) to actually run shell commands. This is what keeps the
-              main conversation lean — the heavy reading happens inside subagents.
+              <code>/playwright-cli</code>) to actually run shell commands. The
+              <em>Project Standards</em> block is pre-extracted by the orchestrator from
+              <code>.claude/skills/REGISTRY.md</code> (built by
+              <code>bun run skills:registry</code>) so subagents trust the compact rules and skip
+              re-reading every full <code>SKILL.md</code>. This is what keeps the main conversation
+              lean — the heavy reading happens inside subagents.
             </p>
 
             <h3 id="circuit-cli">Circuit 3 — CLI auto-load</h3>

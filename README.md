@@ -564,7 +564,7 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 
 | Script                        | Description                                                                  |
 | ----------------------------- | ---------------------------------------------------------------------------- |
-| `bun run update`              | Sync project with template (skills, docs)                                    |
+| `bun run up`              | Sync project with template (skills, docs)                                    |
 | `bun run xray`                | Xray CLI for test management                                                 |
 | `bun run api:sync`            | Sync OpenAPI spec and generate types                                         |
 | `bun run kata:manifest`       | Extract ATCs from codebase into a manifest (`--watch` flag available)        |
@@ -580,7 +580,7 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 
 ## Keeping your project in sync with the boilerplate
 
-The `bun run update` CLI keeps your project aligned with the official template by tracking which upstream commit each piece of the framework (`skills/`, `scripts/`, `cli/`, …) was last synced from. Instead of overwriting framework files blindly, it:
+The `bun run up` CLI keeps your project aligned with the official template by tracking which upstream commit each piece of the framework (`skills/`, `scripts/`, `cli/`, …) was last synced from. Instead of overwriting framework files blindly, it:
 
 1. Reads `.template/boilerplate.lock.json` (committed in your repo) to find the last-synced SHA per component
 2. Clones the template lazily (sparse checkout, only the dirs that get synced)
@@ -595,25 +595,25 @@ The `bun run update` CLI keeps your project aligned with the official template b
 Run interactively:
 
 ```bash
-bun run update
+bun run up
 ```
 
 Run non-interactively (for CI):
 
 ```bash
-bun run update --auto
+bun run up --auto
 ```
 
 Preview without writing:
 
 ```bash
-bun run update --dry-run
+bun run up --dry-run
 ```
 
 Rollback the latest sync:
 
 ```bash
-bun run update --rollback
+bun run up --rollback
 ```
 
 The `.template/boilerplate.lock.json` file is committable — commit it so your team and CI know exactly which template version each component is on.

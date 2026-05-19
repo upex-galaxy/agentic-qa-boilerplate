@@ -33,7 +33,7 @@
 
 **SURGICAL CHANGES.** Touch only what required. Match existing style even if you'd do it differently. Don't refactor unbroken code. Don't improve adjacent comments/formatting. Notice unrelated dead code → mention, don't delete. Remove imports/vars YOUR changes made unused. *Scope note*: regenerative commands (`/sync-ai-memory`, `/business-*-map`, `/master-test-plan`, `/fix-traceability`) and skill phases with explicit generative intent are EXEMPT — regen IS task.
 
-**GOAL-DRIVEN EXECUTION.** Define success criteria. Loop until verified. Transform vague tasks into testable goals ("add validation" → "write tests for invalid input, then make them pass"). Multi-step → state plan with explicit `verify:` per step (observable: test passes, file exists, exit 0, type-check clean). Complements 6-component briefing (§3) — doesn't replace it.
+**GOAL-DRIVEN EXECUTION.** Define success criteria. Loop until verified. Transform vague tasks into testable goals ("add validation" → "write tests for invalid input, then make them pass"). Multi-step → state plan with explicit `verify:` per step (observable: test passes, file exists, exit 0, type-check clean). Complements 7-component briefing (§3) — doesn't replace it.
 
 **EXPANDABLE RESPONSES (BUTLER PATTERN).** Default to terse headline resolving user's literal question. Surface ALL other topics as atomic bullet menu — one specific topic per bullet, NEVER broad buckets. User pulls; don't push every detail at once.
 
@@ -78,14 +78,15 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 
 **NO SUBAGENTS FOR**: quick lookups, memory reads/writes, task tracking, asking user, planning.
 
-**6-COMPONENT BRIEFING (MANDATORY every dispatch)**:
+**7-COMPONENT BRIEFING (MANDATORY every dispatch)** — canonical template + filled examples: `agentic-qa-core/references/briefing-template.md`.
 
 1. **Goal** — one sentence
 2. **Context docs** — files to read first
-3. **Skills to load** — explicit (e.g. `/playwright-cli`)
-4. **Exact instructions** — step-by-step, not vague goals
-5. **Report format** — what to return (files changed, tests passed, blockers)
-6. **Rules** — relevant Critical Rules to follow
+3. **Project Standards (auto-resolved)** — compact rules pulled from `.claude/skills/REGISTRY.md` (built by `bun run skills:registry`, validated by `bun run skills:registry:check`). Subagents trust these as authoritative for listed conventions and DO NOT re-read full SKILL.md unless explicitly told to. Protocol: `agentic-qa-core/references/skill-resolver.md`.
+4. **Skills to load** — explicit (e.g. `/playwright-cli`)
+5. **Exact instructions** — step-by-step, not vague goals
+6. **Report format** — what to return (files changed, tests passed, blockers)
+7. **Rules** — relevant Critical Rules to follow
 
 **EXECUTION PATTERNS**:
 
@@ -98,7 +99,7 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 
 **ERROR PROTOCOL**: Subagent error → STOP, report full context, NO fix without approval, offer retry/skip/abort.
 
-**WORKFLOW SKILL COMPLIANCE**: `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development` MUST have `## Subagent Dispatch Strategy` using 6-component briefing. EXEMPT (reference/utility/generator): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `sync-ai-memory`.
+**WORKFLOW SKILL COMPLIANCE**: `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development` MUST have `## Subagent Dispatch Strategy` using 7-component briefing. EXEMPT (reference/utility/generator): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `sync-ai-memory`.
 
 **DEEP DETAIL** (subagent-cacheable) → `.claude/skills/agentic-qa-core/references/` (briefing-template, dispatch-patterns, orchestration-doctrine).
 
