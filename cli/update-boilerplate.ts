@@ -30,7 +30,7 @@
  *   .claude/skills/        Agent skills (project-discovery, sprint-testing, ...)
  *   .claude/commands/      Slash commands (sync-ai-memory, fix-traceability, business-*-map, ...)
  *   .claude/settings.json  Versioned default permissions (settings.local.json untouched)
- *   scripts/               Framework scripts (agents-lint, sync-jira-issues, sync-openapi, api-login, kata-manifest, ...)
+ *   scripts/               Framework scripts (lint-vars, sync-jira-issues, sync-openapi, api-login, kata-manifest, ...)
  *   templates/             Universal templates (pr-test-automation, ...)
  *   .agents/README.md      Variable system documentation (only README, not project.yaml/jira-fields.json)
  *   docs/                  General documentation
@@ -1396,7 +1396,7 @@ ${colors.bold}COMMANDS:${colors.reset}
   all           Update all allowed directories
   skills        Sync .claude/skills/ (agent skills)
   commands      Sync .claude/commands/ (slash commands)
-  scripts       Sync scripts/ (framework scripts: agents-lint, sync-jira-issues, ...)
+  scripts       Sync scripts/ (framework scripts: lint-vars, sync-jira-issues, ...)
   templates     Sync templates/ (universal templates: pr-test-automation, ...)
   agents-docs   Sync .agents/README.md only (project.yaml/jira-fields.json untouched)
   claude-config Sync .claude/settings.json (settings.local.json untouched)
@@ -1424,7 +1424,7 @@ ${colors.bold}WHAT GETS SYNCED:${colors.reset}
   ${colors.green}  .claude/commands/${colors.reset}      Slash commands (sync-ai-memory, fix-traceability, business-*-map, ...)
   ${colors.green}  .claude/settings.json${colors.reset}  Versioned default permissions (your settings.local.json untouched)
   ${colors.green}  .agents/README.md${colors.reset}      Variable system documentation
-  ${colors.green}  scripts/${colors.reset}               Framework scripts (agents-lint, sync-jira-issues, kata-manifest, ...)
+  ${colors.green}  scripts/${colors.reset}               Framework scripts (lint-vars, sync-jira-issues, kata-manifest, ...)
   ${colors.green}  templates/${colors.reset}             Universal templates (pr-test-automation, ...)
   ${colors.green}  docs/${colors.reset}                  General documentation
   ${colors.green}  cli/${colors.reset}                   CLI tools (auto-updates)

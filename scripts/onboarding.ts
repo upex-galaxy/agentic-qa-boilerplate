@@ -16,7 +16,7 @@
  *
  * Companion to:
  *   - `scripts/agents-setup.ts`   (interactive .agents/project.yaml setup)
- *   - `scripts/agents-lint.ts`    (linter for {{VAR}} / <<VAR>> usage)
+ *   - `scripts/lint-vars.ts`      (linter for {{VAR}} / <<VAR>> usage)
  *
  * ============================================================================
  * USAGE

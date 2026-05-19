@@ -188,7 +188,7 @@ These are POLICY tables, not INVARIANT rules. They can be amended additively wit
 
 | Path                                                  | Why it lives here                                                                                                |
 |-------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| `cli/`                                                | Installer + agents:setup + lint:agents — project-level tooling, ships with every clone                           |
+| `cli/`                                                | Installer + agents:setup + vars:check — project-level tooling, ships with every clone                            |
 | `scripts/`                                            | `bun run` script implementations (`api:sync`, `kata:manifest`, `jira:sync-fields`, `lint:skills`, etc.)          |
 | `.agents/` (structure changes only)                   | Schema for `project.yaml`, `jira-fields.json`, `jira-workflows.json`, `jira-required.yaml`. Values stay manual.  |
 | `tests/utils/`                                        | Agnostic utilities — Allure attach helpers, decorators, formatters. Evolution of the utility layer.              |

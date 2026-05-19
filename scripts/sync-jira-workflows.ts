@@ -1407,7 +1407,7 @@ async function main(): Promise<void> {
       throw e;
     }
   }
-  // Persist the answer so subsequent runs (sync, check, agents-lint) don't
+  // Persist the answer so subsequent runs (sync, check, lint-vars) don't
   // re-prompt. Only fires when we actually prompted AND the user provided a
   // non-empty value AND we're not in dry-run.
   if (projectKeyWasPrompted && projectKey && !flags.dryRun) {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * agents-lint.ts — validates the agentic variable system in this repo.
+ * lint-vars.ts — validates the agentic variable system in this repo.
  *
  * Four variable syntaxes coexist:
  *   1. {{VAR_NAME}}   (UPPER_SNAKE_CASE) — project variable; MUST be declared in

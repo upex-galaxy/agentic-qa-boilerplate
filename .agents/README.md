@@ -133,7 +133,7 @@ When the methodology evolves and needs a brand-new canonical status or transitio
 
 ## Troubleshooting
 
-- **`lint:agents` reports `UNDECLARED: {{jira.foo}}`** — the slug is referenced in a skill but not declared in `jira-required.yaml`. Add the entry under `required:` or `optional:` (see workflow §5.2).
+- **`vars:check` reports `UNDECLARED: {{jira.foo}}`** — the slug is referenced in a skill but not declared in `jira-required.yaml`. Add the entry under `required:` or `optional:` (see workflow §5.2).
 - **`jira:check` reports `❌ MISSING: bar`** — the manifest declares `bar` as required, but your Jira has no field that slugifies to `bar`. Create the field in Jira admin with the suggested name/type/options, then re-run `bun run jira:sync-fields --force` and `bun run jira:check`.
 - **`jira:check` reports `⚠️ MISMATCHED`** — a field exists but its type or option list disagrees with the manifest. Either fix it in Jira (rename, change type, add options) or update `jira-required.yaml` if the methodology can accept the variant.
 - **`jira:sync-fields` aborts with exit 2 (slug collisions)** — two Jira custom fields slugify to the same key. Rename the duplicate in Jira admin, or pass `--allow-collisions` to suffix them with `_2`, `_3`, …. Plugin-managed (system) collisions are auto-suffixed silently — see the script's `--verbose` flag.

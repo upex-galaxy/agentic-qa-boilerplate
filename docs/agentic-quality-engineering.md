@@ -618,7 +618,7 @@ Each `[TAG_TOOL]` resolves via the Tool Resolution table in `CLAUDE.md`. Swap th
 - `context7` — "how to use X" (official docs).
 - `tavily` — "how to solve X" (community solutions).
 
-Authentication tokens for long-lived MCPs expire on their own cadence. Refresh scripts live under `cli/` and `scripts/` (the latter hosts foundation utilities written by `agentic-qa-core` such as `agents-setup.ts`, `agents-lint.ts`, `sync-jira-fields.ts`, and `check-jira-setup.ts`) and are documented in each MCP's setup guide (`docs/setup/`).
+Authentication tokens for long-lived MCPs expire on their own cadence. Refresh scripts live under `cli/` and `scripts/` (the latter hosts foundation utilities written by `agentic-qa-core` such as `agents-setup.ts`, `lint-vars.ts`, `sync-jira-fields.ts`, and `check-jira-setup.ts`) and are documented in each MCP's setup guide (`docs/setup/`).
 
 ---
 

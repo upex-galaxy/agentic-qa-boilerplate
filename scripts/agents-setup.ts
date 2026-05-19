@@ -11,7 +11,7 @@
  * comments, blank lines, section headers and indentation.
  *
  * Companion to:
- *   - `scripts/agents-lint.ts`        (linter for {{VAR}} / <<VAR>> usage)
+ *   - `scripts/lint-vars.ts`          (linter for {{VAR}} / <<VAR>> usage)
  *   - `scripts/sync-jira-fields.ts`   (Jira custom-fields catalog)
  *   - `scripts/check-jira-setup.ts`   (manifest vs catalog validator)
  *
