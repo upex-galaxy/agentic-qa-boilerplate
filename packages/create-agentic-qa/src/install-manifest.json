@@ -51,76 +51,11 @@
   ],
   "willInstall": {
     "gentleAiSkills": {
-      "count": 14,
+      "count": 1,
       "items": [
         {
           "name": "engram",
           "purpose": "Persistent memory across sessions.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "sdd-init",
-          "purpose": "Initialize Spec-Driven Development context for a project.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "sdd-explore",
-          "purpose": "Explore a codebase to gather context before planning.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "sdd-propose",
-          "purpose": "Generate a structured change proposal from exploration.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "sdd-spec",
-          "purpose": "Write a detailed specification from a proposal.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "sdd-design",
-          "purpose": "Produce an architecture design from a proposal.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "sdd-tasks",
-          "purpose": "Break a spec and design into implementable tasks.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "sdd-apply",
-          "purpose": "Implement tasks from a spec in batches.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "sdd-verify",
-          "purpose": "Validate an implementation against its spec.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "sdd-archive",
-          "purpose": "Archive a completed change and close the SDD cycle.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "sdd-onboard",
-          "purpose": "Guided end-to-end SDD walkthrough for new users.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "skill-registry",
-          "purpose": "Registry of all installed skills and their trigger rules.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "judgment-day",
-          "purpose": "Resolve conflicting or ambiguous AI decisions with structured judgment.",
-          "source": "gentle-ai"
-        },
-        {
-          "name": "issue-creation",
-          "purpose": "Create well-structured GitHub or Jira issues from context.",
           "source": "gentle-ai"
         }
       ]

@@ -22,8 +22,8 @@
  *
  * How it works:
  *   1. Reads cli/install.ts as plain text.
- *   2. Extracts flat string arrays (SKILL_SLUGS, CANONICAL_MCPS, etc.) via
- *      regex — acceptable because these arrays contain only string literals.
+ *   2. Extracts flat string arrays (CANONICAL_MCPS) via regex — acceptable
+ *      because these arrays contain only string literals.
  *   3. Extracts MCP_SERVER_SECRETS (Record<string, string[]>) by matching the
  *      object block then iterating key/value pairs.
  *   4. Extracts EXTERNAL_CLIS objects from the EXTERNAL_CLIS array literal.
@@ -58,25 +58,9 @@ const MANIFEST_PATH = resolve(import.meta.dir, '../src/install-manifest.json');
 // ============================================================================
 
 const PURPOSES: Record<string, string> = {
-  // gentle-ai component
+  // gentle-ai component (minimal preset installs engram only — SDD-* skills
+  // are NOT installed by default; opt-in via `gentle-ai install --components engram,sdd`)
   'engram': 'Persistent memory across sessions.',
-
-  // gentle-ai skills (SKILL_SLUGS)
-  'sdd-init': 'Initialize Spec-Driven Development context for a project.',
-  'sdd-explore': 'Explore a codebase to gather context before planning.',
-  'sdd-propose': 'Generate a structured change proposal from exploration.',
-  'sdd-spec': 'Write a detailed specification from a proposal.',
-  'sdd-design': 'Produce an architecture design from a proposal.',
-  'sdd-tasks': 'Break a spec and design into implementable tasks.',
-  'sdd-apply': 'Implement tasks from a spec in batches.',
-  'sdd-verify': 'Validate an implementation against its spec.',
-  'sdd-archive': 'Archive a completed change and close the SDD cycle.',
-  'sdd-onboard': 'Guided end-to-end SDD walkthrough for new users.',
-  'skill-registry': 'Registry of all installed skills and their trigger rules.',
-  'judgment-day': 'Resolve conflicting or ambiguous AI decisions with structured judgment.',
-  'cognitive-doc-design': 'Design documentation that reduces cognitive load.',
-  'comment-writer': 'Write high-quality, context-aware code comments.',
-  'issue-creation': 'Create well-structured GitHub or Jira issues from context.',
 
   // MCPs (CANONICAL_MCPS) — QA stack
   'context7': 'Library documentation MCP — fetches official current docs for any library.',
@@ -341,21 +325,16 @@ interface ManifestEntry {
 }
 
 function buildManifest(src: string): object {
-  const skillSlugs = extractStringArray(src, 'SKILL_SLUGS');
   const canonicalMcps = extractStringArray(src, 'CANONICAL_MCPS');
   const mcpSecrets = extractMcpSecrets(src);
   const projectSkills = extractCommunitySkills(src, 'PROJECT_LEVEL_SKILLS');
   const userSkills = extractCommunitySkills(src, 'USER_LEVEL_SKILLS');
   const externalClis = extractExternalClis(src);
 
-  // gentle-ai skills = engram component + SKILL_SLUGS
+  // gentle-ai is invoked with `--preset minimal`, which installs only the
+  // engram component. SDD-* skills are opt-in via `gentle-ai install --components engram,sdd`.
   const gentleAiItems: ManifestEntry[] = [
     { name: 'engram', purpose: purposeOr('engram'), source: 'gentle-ai' },
-    ...skillSlugs.map(slug => ({
-      name: slug,
-      purpose: purposeOr(slug),
-      source: 'gentle-ai',
-    })),
   ];
 
   // community project skills
