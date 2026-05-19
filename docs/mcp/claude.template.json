@@ -1,5 +1,6 @@
 {
   "mcpServers": {
+    "__comment": "Reference template for Claude Code's .mcp.json — includes the opt-in atlassian block. Copy whatever blocks you need into your active .mcp.json.",
     "context7": {
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"]
@@ -21,6 +22,15 @@
         "--viewport-size",
         "1920x1080"
       ]
+    },
+    "atlassian": {
+      "command": "uvx",
+      "args": ["mcp-atlassian"],
+      "env": {
+        "JIRA_URL": "${ATLASSIAN_URL}",
+        "JIRA_USERNAME": "${ATLASSIAN_EMAIL}",
+        "JIRA_API_TOKEN": "${ATLASSIAN_API_TOKEN}"
+      }
     },
     "dbhub": {
       "command": "bunx",

@@ -1,0 +1,73 @@
+// Reference template for OpenCode's opencode.jsonc — includes the opt-in
+// atlassian block. Copy whatever blocks you need into your active
+// opencode.jsonc. Uses OpenCode-specific syntax: {env:VAR} expansion,
+// "mcp" root key (NOT "mcpServers"), and "environment" field (NOT "env").
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "context7": {
+      "type": "local",
+      "command": ["npx", "-y", "@upstash/context7-mcp"],
+      "enabled": true
+    },
+    "tavily": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "mcp-remote",
+        "https://mcp.tavily.com/mcp/?tavilyApiKey={env:TAVILY_API_KEY}"
+      ],
+      "enabled": true
+    },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "bunx",
+        "@playwright/mcp@latest",
+        "--caps",
+        "vision,pdf,testing,tracing,tabs",
+        "--timeout-action",
+        "10000",
+        "--timeout-navigation",
+        "30000",
+        "--viewport-size",
+        "1920x1080"
+      ],
+      "enabled": true
+    },
+    "atlassian": {
+      "type": "local",
+      "command": ["uvx", "mcp-atlassian"],
+      "enabled": true,
+      "environment": {
+        "JIRA_URL": "{env:ATLASSIAN_URL}",
+        "JIRA_USERNAME": "{env:ATLASSIAN_EMAIL}",
+        "JIRA_API_TOKEN": "{env:ATLASSIAN_API_TOKEN}"
+      }
+    },
+    "dbhub": {
+      "type": "local",
+      "command": ["bunx", "-y", "@bytebase/dbhub@latest", "--config", "dbhub.toml"],
+      "enabled": true
+    },
+    "openapi": {
+      "type": "local",
+      "command": ["bunx", "-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
+      "enabled": true,
+      "environment": {
+        "API_BASE_URL": "{env:API_BASE_URL}",
+        "OPENAPI_SPEC_PATH": "{env:OPENAPI_SPEC_PATH}",
+        "API_HEADERS": "Authorization:Bearer {env:API_TOKEN}"
+      }
+    },
+    "postman": {
+      "type": "remote",
+      "url": "https://mcp.postman.com/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:POSTMAN_API_KEY}"
+      }
+    }
+  }
+}

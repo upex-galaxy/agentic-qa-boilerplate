@@ -1,5 +1,6 @@
 {
   "mcpServers": {
+    "__comment": "Reference template for Gemini CLI's settings.json — includes the opt-in atlassian block. Copy whatever blocks you need into ~/.gemini/settings.json.",
     "context7": {
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"]
@@ -22,6 +23,15 @@
         "1920x1080"
       ]
     },
+    "atlassian": {
+      "command": "uvx",
+      "args": ["mcp-atlassian"],
+      "env": {
+        "JIRA_URL": "${ATLASSIAN_URL}",
+        "JIRA_USERNAME": "${ATLASSIAN_EMAIL}",
+        "JIRA_API_TOKEN": "${ATLASSIAN_API_TOKEN}"
+      }
+    },
     "dbhub": {
       "command": "bunx",
       "args": ["-y", "@bytebase/dbhub@latest", "--config", "dbhub.toml"]
@@ -36,8 +46,7 @@
       }
     },
     "postman": {
-      "type": "http",
-      "url": "https://mcp.postman.com/mcp",
+      "httpUrl": "https://mcp.postman.com/mcp",
       "headers": {
         "Authorization": "Bearer ${POSTMAN_API_KEY}"
       }

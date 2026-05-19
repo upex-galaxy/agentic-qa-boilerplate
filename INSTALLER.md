@@ -45,10 +45,12 @@ Validates the environment is usable:
 Interactive post-install configuration steps. Skipped automatically when no TTY is detected (CI / non-interactive mode):
 
 - `agents:setup` — populates `.agents/project.yaml` with project identity, Jira URL, environments
-- `acli` auth probe — establishes an `acli` session if credentials are available
+- `acli` auth probe — collects `ATLASSIAN_URL` / `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` interactively if missing, then runs `acli jira auth login` (stdin-piped token)
 - `jira:sync-fields` — Jira auth loop (up to 5 attempts) then syncs custom field IDs
 - `jira:sync-workflows` — syncs workflow statuses and transitions
 - `jira:check` — validates `.agents/jira-required.yaml` against the workspace
+
+The installer aborts hard if the `acli` binary is missing — install it from <https://developer.atlassian.com/cloud/acli/guides/install-acli/> and re-run. Set `INSTALL_SKIP_JIRA=1` to bypass the acli requirement and Jira sync steps (use only for non-Jira projects).
 
 Each step in Phase 5 records its completion in `state.postInstall` so re-runs skip it on the next `bun run setup`.
 
@@ -130,7 +132,7 @@ Missing per-skill CLIs do not exit the installer. Install them lazily when the o
 
 ### MCP credentials — 8 env vars filled into `.env`
 
-`cli/doctor.ts:39` declares `REQUIRED_VARS` consumed by the 7 canonical MCPs. Missing keys do not block setup, but every `bun run setup:doctor` will list them under `pending_actions` with the canonical `where` URL (token-generation page) until they are filled.
+`cli/doctor.ts:39` declares `REQUIRED_VARS` consumed by the 6 canonical MCPs plus the ATLASSIAN_* family used by acli + scripts/sync-jira-*.ts. Missing keys do not block setup, but every `bun run setup:doctor` will list them under `pending_actions` with the canonical `where` URL (token-generation page) until they are filled.
 
 ```
 TAVILY_API_KEY                                  → https://app.tavily.com/ → API keys
@@ -473,7 +475,7 @@ What you lose:
 
 - **Persistent memory (Engram)** — no cross-session recall, no `mem_save` / `mem_search`. Each session starts blind.
 
-What you keep: every workflow skill committed in this repo (`/sprint-testing`, `/test-documentation`, `/test-automation`, `/regression-testing`, `/agentic-qa-core`, `/agentic-qa-onboard`, `/playwright-cli`, `/acli`, `/xray-cli`, `/project-discovery`, `/git-flow-master`, vendored `/judgment-day`) and the 7 canonical MCPs (Context7, Tavily, Atlassian, Playwright, DBHub, OpenAPI, Postman). The repo is fully usable without gentle-ai — the integration is additive.
+What you keep: every workflow skill committed in this repo (`/sprint-testing`, `/test-documentation`, `/test-automation`, `/regression-testing`, `/agentic-qa-core`, `/agentic-qa-onboard`, `/playwright-cli`, `/acli`, `/xray-cli`, `/project-discovery`, `/git-flow-master`, vendored `/judgment-day`) and the 6 canonical MCPs (Context7, Tavily, Playwright, DBHub, OpenAPI, Postman). The Atlassian MCP is opt-in — see docs/mcp/ to enable it manually after install. The repo is fully usable without gentle-ai — the integration is additive.
 
 ---
 

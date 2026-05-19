@@ -1,0 +1,96 @@
+# ============================================
+# MCP CONFIGURATION TEMPLATE FOR CODEX CLI
+# ============================================
+# Location: ~/.codex/config.toml
+# Or per-project: .codex/config.toml (trusted projects)
+#
+# Reference template for Codex CLI — includes the opt-in atlassian block.
+# Copy whatever blocks you need into your active Codex config.
+#
+# Replace ${VARIABLE} placeholders with real values, or set them in the
+# environment and rely on Codex's expansion (varies per field).
+#
+# For OAuth on HTTP servers, enable:
+#   experimental_use_rmcp_client = true
+
+# ============================================
+# STDIO (LOCAL) SERVERS
+# ============================================
+
+[mcp_servers.context7]
+command = "npx"
+args = [
+  "-y",
+  "@upstash/context7-mcp"
+]
+
+[mcp_servers.tavily]
+command = "npx"
+args = [
+  "-y",
+  "mcp-remote",
+  "https://mcp.tavily.com/mcp/?tavilyApiKey=${TAVILY_API_KEY}"
+]
+
+[mcp_servers.playwright]
+command = "npx"
+args = [
+  "@playwright/mcp@latest",
+  "--caps",
+  "vision,pdf,testing,tracing,tabs",
+  "--timeout-action",
+  "10000",
+  "--timeout-navigation",
+  "30000",
+  "--viewport-size",
+  "1920x1080"
+]
+
+[mcp_servers.dbhub]
+command = "npx"
+args = [
+  "-y",
+  "@bytebase/dbhub@latest",
+  "--config",
+  "dbhub.toml"
+]
+
+[mcp_servers.openapi]
+command = "npx"
+args = [
+  "-y",
+  "@ivotoby/openapi-mcp-server",
+  "--tools",
+  "dynamic"
+]
+
+[mcp_servers.openapi.env]
+API_BASE_URL = "${API_BASE_URL}"
+OPENAPI_SPEC_PATH = "${OPENAPI_SPEC_PATH}"
+API_HEADERS = "Authorization:Bearer ${API_TOKEN}"
+
+# ============================================
+# ATLASSIAN — OPT-IN
+# ============================================
+# This block is not enabled by default in the boilerplate. Copy it into your
+# active Codex config to enable MCP-level Atlassian access. The default tool
+# for Jira / Confluence / TMS work is `acli` (Atlassian CLI).
+
+[mcp_servers.atlassian]
+command = "uvx"
+args = [
+  "mcp-atlassian"
+]
+
+[mcp_servers.atlassian.env]
+JIRA_URL = "${ATLASSIAN_URL}"
+JIRA_USERNAME = "${ATLASSIAN_EMAIL}"
+JIRA_API_TOKEN = "${ATLASSIAN_API_TOKEN}"
+
+# ============================================
+# HTTP STREAMABLE (REMOTE) SERVERS
+# ============================================
+
+[mcp_servers.postman]
+url = "https://mcp.postman.com/mcp"
+bearer_token_env_var = "POSTMAN_API_KEY"

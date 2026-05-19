@@ -27,7 +27,7 @@
  *
  *   PHASE 5 — INITIAL CONFIGURATION
  *     7-agents-setup    Run agents:setup (.agents/project.yaml populator)
- *     12.5-acli-auth    Probe + establish acli session
+ *     12.4-acli-auth    Atlassian credentials + acli session login
  *     13-jira-sync-fields  Jira auth loop + `bun run jira:sync-fields`
  *     13b-jira-sync-workflows  `bun run jira:sync-workflows`
  *     14-jira-check     `bun run jira:check`
@@ -189,7 +189,6 @@ const CANONICAL_MCPS = [
   'context7',
   'tavily',
   'playwright',
-  'atlassian',
   'dbhub',
   'openapi',
   'postman',
@@ -209,7 +208,7 @@ const CANONICAL_MCPS = [
 //   `[dev-only]`   — declared only in dev (would NOT appear here)
 // When changing this list, update the sister repo's EXTERNAL_CLIS too if the
 // CLI is intended to be `[shared]`, or extend the scope tag if scope shifts.
-const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: string, purpose: string }> = [
+const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: string, purpose: string, required?: boolean }> = [
   {
     // [shared] — runtime + package manager in both repos.
     name: 'bun',
@@ -223,10 +222,12 @@ const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: strin
     purpose: 'GitHub CLI — repos, PRs, releases, gh api',
   },
   {
-    // [shared] — Jira/Confluence CLI in both repos.
+    // [shared] — Jira/Confluence CLI in both repos. Promoted to the sole default
+    // tool for Jira/Confluence/TMS work (Atlassian MCP is opt-in via docs/mcp/).
     name: 'acli',
     docs: 'https://developer.atlassian.com/cloud/acli/guides/install-acli/',
     purpose: 'Atlassian (Jira/Confluence) CLI — used by /acli skill',
+    required: true,
   },
   {
     // [shared] — agent-driven browser automation. Binary produced by
@@ -308,7 +309,6 @@ const MCP_SERVER_SECRETS: Record<string, readonly string[]> = {
   context7: [],
   tavily: ['TAVILY_API_KEY'],
   playwright: [],
-  atlassian: ['ATLASSIAN_URL', 'ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'],
   dbhub: [],
   openapi: ['API_BASE_URL', 'OPENAPI_SPEC_PATH', 'API_TOKEN'],
   postman: ['POSTMAN_API_KEY'],
@@ -1418,6 +1418,23 @@ function verifyExternalClis(state: InstallState): CliResult[] {
     r.purpose,
   ]);
   process.stdout.write(`${tui.table(['CLI', 'Found', 'Install hint', 'Purpose'], rows)}\n`);
+
+  // Hard-abort when any `required: true` CLI is missing. Escape hatch:
+  // `INSTALL_SKIP_JIRA=1` downgrades the requirement (for non-Jira projects).
+  if (!SKIP_JIRA) {
+    const missingRequired = EXTERNAL_CLIS.filter(
+      cli => cli.required === true && state.externalClis[cli.name] !== 'found',
+    );
+    for (const cli of missingRequired) {
+      process.stdout.write(`\n${tui.statusIcon('fail')} ${cli.name} is required for Jira/Confluence integration but was not found on PATH.\n`);
+      process.stdout.write(`    Install via: ${cli.docs}\n`);
+      process.stdout.write('    Then re-run: bun run setup\n');
+    }
+    if (missingRequired.length > 0) {
+      process.exit(1);
+    }
+  }
+
   return results;
 }
 
@@ -1527,7 +1544,7 @@ function buildInitialState(prior: InstallState | null): InstallState {
 
 // ============================================================================
 // Phase 5 — INITIAL CONFIGURATION
-// Ported from sibling runPostInstallSteps() — Steps 7, 12.5, 13, 13b, 14
+// Ported from sibling runPostInstallSteps() — Steps 7, 12.4, 13, 13b, 14
 // ============================================================================
 
 /**
@@ -1635,7 +1652,7 @@ async function jiraAuthLoop(): Promise<'authenticated' | 'skipped'> {
  *
  * Steps:
  *   7-agents-setup        bun run agents:setup (.agents/project.yaml)
- *   12.5-acli-auth        probe + establish acli session
+ *   12.4-acli-auth        Atlassian credentials + acli session login
  *   13-jira-sync-fields   jira auth loop + bun run jira:sync-fields
  *   13b-jira-sync-workflows bun run jira:sync-workflows
  *   14-jira-check         bun run jira:check
@@ -1682,26 +1699,68 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
     }
   }
 
-  // ── Step 12.5: acli (Atlassian CLI) authentication ───────────────────────
-  tui.section('Step 12.5: acli (Atlassian CLI) authentication');
+  // ── Step 12.4: Atlassian credentials & acli authentication ──────────────
+  tui.section('Step 12.4: Atlassian credentials & acli authentication');
+
+  const MANUAL_ACLI_LOGIN = 'echo "$ATLASSIAN_API_TOKEN" | acli jira auth login --site "$ATLASSIAN_URL" --email "$ATLASSIAN_EMAIL" --token';
 
   if (state.postInstall.acliAuth === 'completed') {
     process.stdout.write(`${tui.statusIcon('ok')} acli already authenticated in a prior run.\n`);
   }
-  else if (AUTO_NON_INTERACTIVE) {
+  else if (SKIP_JIRA) {
     state.postInstall.acliAuth = 'skipped-non-interactive';
-    process.stdout.write(`${tui.statusIcon('warn')} Skipped (no TTY). Re-run via: acli jira auth login --site $ATLASSIAN_URL --email $ATLASSIAN_EMAIL --token\n`);
-  }
-  else if (state.externalClis.acli !== 'found') {
-    state.postInstall.acliAuth = 'skipped-no-binary';
-    process.stdout.write(`${tui.statusIcon('warn')} acli binary not found on PATH. Install acli first (https://developer.atlassian.com/cloud/acli/guides/install/) then re-run setup.\n`);
+    log.dim('  INSTALL_SKIP_JIRA=1, skipping acli authentication.');
   }
   else {
+    // Prompt for any missing ATLASSIAN_* env vars and persist them to .env.
+    // These are consumed by acli AND by scripts/sync-jira-*.ts — they are not
+    // MCP-specific. The Atlassian MCP server is opt-in via docs/mcp/.
+    await ensureEnvFileExists();
+    const envValues = parseEnvFile(await readFile(ENV_PATH, 'utf8'));
+    const newValues: Record<string, string> = {};
+    const ATLASSIAN_VARS = ['ATLASSIAN_URL', 'ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'] as const;
+
+    const missingVars = ATLASSIAN_VARS.filter((name) => {
+      const fromFile = envValues[name];
+      if (fromFile && fromFile.trim().length > 0) { return false; }
+      const fromProcess = process.env[name];
+      return !(fromProcess && fromProcess.trim().length > 0);
+    });
+
+    if (missingVars.length > 0) {
+      if (AUTO_NON_INTERACTIVE) {
+        state.postInstall.acliAuth = 'skipped-non-interactive';
+        process.stdout.write(`${tui.statusIcon('fail')} Missing ATLASSIAN_* env vars (${missingVars.join(', ')}) in non-interactive mode.\n`);
+        process.stdout.write('    Set them in .env or process.env, then re-run setup.\n');
+        process.stdout.write(`    Manual auth: ${MANUAL_ACLI_LOGIN}\n`);
+        process.exit(1);
+      }
+
+      tui.note(
+        'Used by acli + scripts/sync-jira-*.ts. Get a token at: https://id.atlassian.com/manage-profile/security/api-tokens',
+        'Atlassian credentials',
+      );
+
+      for (const name of missingVars) {
+        const value = await promptForVar(name);
+        if (value.length > 0) {
+          newValues[name] = value;
+          process.env[name] = value;
+        }
+      }
+
+      if (Object.keys(newValues).length > 0) {
+        await appendVarsToEnv(newValues);
+        reloadDotEnv();
+      }
+    }
+
     // Probe existing session: a read-only Jira search returns exit 0 if a session exists.
     const probe = spawnSync('acli', ['jira', 'workitem', 'search', '--jql', 'created >= -1d', '--limit', '1', '--json'], {
       stdio: ['ignore', 'pipe', 'pipe'],
       timeout: 8000,
     });
+
     if (probe.status === 0) {
       state.postInstall.acliAuth = 'completed';
       process.stdout.write(`${tui.statusIcon('ok')} acli already authenticated (existing session detected).\n`);
@@ -1711,13 +1770,19 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
       // avoid shell injection risks (no `echo $TOKEN | ...` expansion).
       const url = process.env.ATLASSIAN_URL;
       const email = process.env.ATLASSIAN_EMAIL;
-      const token = process.env.ATLASSIAN_API_TOKEN;
+      let token = process.env.ATLASSIAN_API_TOKEN;
 
       if (!url || !email || !token) {
-        state.postInstall.acliAuth = 'skipped-no-auth';
-        process.stdout.write(`${tui.statusIcon('warn')} Skipped — ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN missing from .env. Re-run setup after filling them.\n`);
+        // Non-interactive without all three vars preloaded → hard fail.
+        state.postInstall.acliAuth = 'skipped-non-interactive';
+        process.stdout.write(`${tui.statusIcon('fail')} Cannot run acli auth login — ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN missing.\n`);
+        process.stdout.write(`    Manual auth: ${MANUAL_ACLI_LOGIN}\n`);
+        process.exit(1);
       }
-      else {
+
+      const MAX_ATTEMPTS = 3;
+      let success = false;
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         const loginRes = spawnSync(
           'acli',
           ['jira', 'auth', 'login', '--site', url, '--email', email, '--token'],
@@ -1730,11 +1795,30 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
         if (loginRes.status === 0) {
           state.postInstall.acliAuth = 'completed';
           process.stdout.write(`${tui.statusIcon('ok')} acli session created. Subsequent acli commands won't need re-auth.\n`);
+          success = true;
+          break;
         }
-        else {
-          state.postInstall.acliAuth = 'failed';
-          process.stdout.write(`${tui.statusIcon('fail')} acli auth login failed (exit ${loginRes.status}). Re-run manually: acli jira auth login --site "$ATLASSIAN_URL" --email "$ATLASSIAN_EMAIL" --token\n`);
+
+        process.stdout.write(`${tui.statusIcon('fail')} acli auth login failed (attempt ${attempt}/${MAX_ATTEMPTS}, exit ${loginRes.status}).\n`);
+        if (attempt < MAX_ATTEMPTS) {
+          if (AUTO_NON_INTERACTIVE) {
+            // Can't re-prompt without a TTY — break out of the retry loop.
+            break;
+          }
+          const retryToken = await promptForVar('ATLASSIAN_API_TOKEN');
+          if (retryToken.length === 0) { break; }
+          token = retryToken;
+          process.env.ATLASSIAN_API_TOKEN = retryToken;
+          await appendVarsToEnv({ ATLASSIAN_API_TOKEN: retryToken });
+          reloadDotEnv();
         }
+      }
+
+      if (!success) {
+        state.postInstall.acliAuth = 'failed';
+        process.stdout.write(`${tui.statusIcon('fail')} acli auth login failed after ${MAX_ATTEMPTS} attempts.\n`);
+        process.stdout.write(`    Manual auth: ${MANUAL_ACLI_LOGIN}\n`);
+        process.exit(1);
       }
     }
   }
@@ -1989,7 +2073,7 @@ function printClosingSummary(state: InstallState): void {
     process.stdout.write('    Recommended (only those you actually use):\n');
     process.stdout.write('      - TAVILY_API_KEY                  (Tavily MCP — web search)\n');
     process.stdout.write('      - ATLASSIAN_URL, ATLASSIAN_EMAIL,\n');
-    process.stdout.write('        ATLASSIAN_API_TOKEN             (Atlassian MCP, acli, xray-cli, jira:sync-* scripts)\n');
+    process.stdout.write('        ATLASSIAN_API_TOKEN             (acli, xray-cli, jira:sync-* scripts; Atlassian MCP opt-in via docs/mcp/)\n');
     process.stdout.write('      - XRAY_CLIENT_ID, XRAY_CLIENT_SECRET,\n');
     process.stdout.write('        XRAY_PROJECT_KEY                (Xray Cloud — only if used)\n');
     process.stdout.write('      - POSTMAN_API_KEY                 (Postman MCP — optional)\n');

@@ -191,7 +191,6 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | Playwright | E2E, UI automation, screenshots | Fallback for `[AUTOMATION_TOOL]` (primary = `/playwright-cli`) |
 | OpenAPI | API endpoint exploration, contract testing | `[API_TOOL]` primary |
 | DBHub | DB queries, data validation | `[DB_TOOL]` primary |
-| Atlassian | Jira/Xray fallback | Use only when `/acli` + `/xray-cli` unavailable |
 | Context7 | Library official docs ("how to use X") | Prefer over web search for library APIs |
 | Tavily | Community solutions ("how to solve X") | Use for troubleshooting / non-doc lookups |
 
@@ -203,8 +202,8 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 
 | Tag | Domain | Primary | Fallback |
 |---|---|---|---|
-| `[ISSUE_TRACKER_TOOL]` | Jira Cloud (story / bug / epic) | `/acli` | MCP Atlassian |
-| `[TMS_TOOL]` | Test management | Modality A: `/xray-cli`. Modality B: `/acli` (Jira-native) | MCP Atlassian |
+| `[ISSUE_TRACKER_TOOL]` | Jira Cloud (story / bug / epic) | `/acli` | MCP Atlassian (opt-in — see docs/mcp/) |
+| `[TMS_TOOL]` | Test management | Modality A: `/xray-cli`. Modality B: `/acli` (Jira-native) | MCP Atlassian (opt-in — see docs/mcp/) |
 | `[AUTOMATION_TOOL]` | Browser automation | `/playwright-cli` | MCP Playwright |
 | `[DB_TOOL]` | Database | DBHub MCP | Supabase MCP / raw SQL |
 | `[API_TOOL]` | API exploration | OpenAPI MCP | Postman / curl |
