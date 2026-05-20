@@ -17,7 +17,7 @@ Everything the official docs do not make obvious. Every item here is something t
 11. [OAuth cannot be automated](#oauth)
 12. [Name collision with the Appfire `acli`](#appfire)
 13. [Issue-type resolution is global](#issue-types)
-14. [Comment create has no ADF flag](#comment-adf)
+14. [Comment create accepts ADF via -F](#comment-adf)
 15. [Trace IDs and no verbose mode](#trace)
 16. [The 2026 point-based rate limits](#rate-limits)
 17. [CI install `latest/` risk](#ci-install)
@@ -246,21 +246,29 @@ The global `acli auth login` (interactive OAuth) is the exception — it covers 
 
 **Fix.** In sites with heavy team-managed project use, fall back to REST with an explicit issue-type ID for the project. Or consolidate issue-type names across projects.
 
-## <a id="comment-adf"></a>14. `comment create` has no `--body-adf`
+## <a id="comment-adf"></a>14. `comment create` accepts ADF via `-F` (previous claim was outdated)
 
-**The problem.** `acli jira workitem comment update` accepts `--body-adf <file>` for rich ADF-formatted comments. `acli jira workitem comment create` does **not**. If you need a formatted initial comment, you have to create with a placeholder body and then update.
+**Previous claim (incorrect for v1.3.18+).** Older skill documentation stated `comment create` had no ADF input and required a two-step workaround: create placeholder body → `comment update --body-adf`. This was based on `comment update` having a dedicated `--body-adf` flag while `comment create` had only `--body` and `--body-file`.
 
-**Fix.** Two-step pattern:
+**Current behavior.** `comment create -F <file>` (alias `--body-file <file>`) accepts both plain text and ADF JSON. The flag's `--help` text states: "Plain text file with text or Atlassian Document Format (ADF)". When the file content begins with a JSON object (`{`), `acli` forwards it as ADF to the underlying REST call. Validated against Jira Cloud on `acli` v1.3.18.
+
+The plain `-b, --body` flag remains plain text only — Markdown syntax is stored literally as a single ADF paragraph.
+
+**Recommended pattern.** Author the comment body in Markdown, convert via `scripts/md-to-adf.ts`, post with `-F`:
 
 ```bash
-# 1. Create a placeholder comment, capture the ID
-CID=$(acli jira workitem comment create --key TEAM-1 --body "init" --json | jq -r '.id')
-
-# 2. Replace with ADF
-acli jira workitem comment update --key TEAM-1 --id "$CID" --body-adf formatted.json
+bun .claude/skills/acli/scripts/md-to-adf.ts impl-notes.md impl-notes.adf.json
+acli jira workitem comment create --key EXAMPLE-123 -F impl-notes.adf.json
 ```
 
-Plain `--body` is interpreted as a single ADF paragraph. Markdown syntax (headings, code fences, lists, tables) is **not** rendered.
+The legacy two-step pattern still works and may be useful if you want a placeholder visible before composing the final body:
+
+```bash
+CID=$(acli jira workitem comment create --key EXAMPLE-123 --body "init" --json | jq -r '.id')
+acli jira workitem comment update --key EXAMPLE-123 --id "$CID" --body-adf formatted.json
+```
+
+It is no longer required for rich-text creation.
 
 ## <a id="trace"></a>15. Trace IDs are the only debug signal
 
@@ -314,7 +322,6 @@ The flag *value* may still use camelCase (e.g. CSV column header `projectKey` or
 - Managing issue types, priorities, resolutions, project versions, project components, permission schemes
 - Uploading attachments (`POST /rest/api/3/issue/{key}/attachments`)
 - Adding watchers (`POST /rest/api/3/issue/{key}/watchers`)
-- Rich ADF comment on create (see item 14 for a two-step workaround that avoids REST)
 - Transition by ID when the status-name match is ambiguous (see item 9)
 - Retrieving the cached auth token for reuse
 - Bitbucket command-line operations (out of scope entirely)

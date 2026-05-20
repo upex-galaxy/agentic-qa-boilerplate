@@ -76,6 +76,8 @@ Useful flags:
 | `-e, --editor`     | Open `$EDITOR` to write summary + description                           |
 | `--json`           | Emit result as JSON                                                     |
 
+**Publishing rich text in `description` or custom-field values**: pass an ADF JSON document, not Markdown. `acli` does not interpret Markdown. Use `scripts/md-to-adf.ts` (bundled with this skill) to produce the ADF document, then inject it into the `--from-json` payload. See the "Publishing rich text" section in `SKILL.md` for the full recipe and a worked example.
+
 ### create-bulk
 
 For many items at once, use JSON or CSV input:
@@ -293,7 +295,14 @@ acli jira workitem comment create --key "TEAM-1" --body "Updated message" --edit
 acli jira workitem comment create --key "TEAM-1" --editor
 ```
 
-`comment create` has **no** `--body-adf` flag. If you need rich ADF formatting on creation, the workaround is: create with a placeholder body, then `comment update --body-adf adf.json`.
+`comment create` accepts ADF via `-F, --body-file`. The flag's `--help` text reads "Plain text file with text or Atlassian Document Format (ADF)"; when the file begins with `{`, `acli` forwards the content as ADF. The legacy two-step workaround (create placeholder body → `comment update --body-adf`) is no longer required as of `acli` v1.3.18+. To author rich comments:
+
+```bash
+bun .claude/skills/acli/scripts/md-to-adf.ts impl-notes.md impl-notes.adf.json
+acli jira workitem comment create --key EXAMPLE-123 -F impl-notes.adf.json
+```
+
+The plain `-b, --body` flag is plain text only — Markdown syntax in `--body` is stored literally as a single ADF paragraph. For any rich content, use `-F` with an ADF file produced by the bundled converter. See "Publishing rich text" in `SKILL.md` for the full workflow.
 
 ### list
 
@@ -454,7 +463,7 @@ Three things to internalize:
 | Epic Link             | bare string (issue key, e.g. `"TEAM-18"`)                                         |
 | User picker           | `{"accountId": "5b10ac8d82e05b22cc7d4ef5"}`                                       |
 | Cascading select      | `{"value": "Parent", "child": {"value": "Child"}}`                                |
-| Rich text (ADF)       | full ADF doc tree (same shape as `description`)                                   |
+| Rich text (ADF)       | full ADF doc tree (same shape as `description`). Produce the tree from Markdown via `scripts/md-to-adf.ts`, then nest the result inside `additionalAttributes` for `create`, or inside `{"fields": {...}}` for a REST `PUT` on an existing item. See "Publishing rich text" in `SKILL.md`. |
 | Sprint                | array of sprint IDs `[5]` — but **`JRACLOUD-97107` makes this fail in practice**, see [Sprint field cannot be set](./gotchas.md#sprint) |
 
 If a shape isn't listed here, the safest source of truth is `acli jira workitem view <KEY-WITH-FIELD-SET> --fields "*all" --json` — the read shape is usually identical to the write shape for that field type.

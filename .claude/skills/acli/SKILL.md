@@ -173,6 +173,139 @@ acli jira workitem view TEAM-123 --json | jq '.fields.summary'
 
 The JSON shape from `workitem search` has a top-level `issues` array (not `workitems`) — the Jira REST v3 wire format shows through.
 
+## Publishing rich text (the default workflow)
+
+Jira stores rich-text content (descriptions, comments, and any rich-text field) as **ADF — Atlassian Document Format**, a JSON tree of typed nodes (`heading`, `paragraph`, `bulletList`, `orderedList`, `codeBlock`, `blockquote`, `rule`) with inline marks (`strong`, `em`, `code`, `link`, `strike`).
+
+`acli` accepts ADF JSON in every rich-text input. `acli` **never** converts markdown — passing `# Heading` to `--description` or `--body` stores the literal string `# Heading` wrapped in a single ADF paragraph.
+
+To publish anything richer than plain prose, use this three-step workflow by default:
+
+```
+1. Author the content in Markdown.
+2. Convert MD → ADF JSON using scripts/md-to-adf.ts.
+3. Pass the ADF JSON to the matching acli flag — or, for cases acli cannot cover, into a REST body.
+```
+
+### The bundled converter
+
+Location: `.claude/skills/acli/scripts/md-to-adf.ts`. Runtime: Bun.
+
+CLI usage:
+
+```bash
+bun .claude/skills/acli/scripts/md-to-adf.ts input.md output.adf.json
+# stdin form
+cat input.md | bun .claude/skills/acli/scripts/md-to-adf.ts - output.adf.json
+# stdout form (omit output arg)
+bun .claude/skills/acli/scripts/md-to-adf.ts input.md > output.adf.json
+```
+
+Programmatic usage (when batching across many fields or many work items in one script):
+
+```typescript
+import { mdToAdf } from "./.claude/skills/acli/scripts/md-to-adf.ts";
+const adf = mdToAdf(markdownString);  // returns { type: "doc", version: 1, content: [...] }
+```
+
+**Covered markdown subset**: headings 1–6, bullet lists, ordered lists, fenced code blocks (with optional language tag), inline code, bold, italic (snake_case-safe), strikethrough, links, blockquotes, horizontal rule, paragraphs.
+
+**Out of scope** (extend the converter if your project needs them): nested lists, tables, mentions, panels, status macros, expand blocks, media / images.
+
+### Recipe by Jira surface
+
+| Surface | How to publish ADF | Notes |
+|---|---|---|
+| `description` on `workitem create` | `--from-json` payload, `description` key holds an ADF doc | Custom-field values live in `additionalAttributes` of the same payload, same ADF shape |
+| `description` on `workitem edit` | `--description-file <file>` accepts a JSON file containing an ADF doc | `acli` auto-detects ADF vs plain text by file content |
+| Rich-text custom field on `workitem create` | `additionalAttributes.customfield_NNNNN` = ADF doc inside `--from-json` | Same shape as `description` |
+| Rich-text custom field on an existing item | REST `PUT /rest/api/3/issue/{KEY}` with `{"fields": {customfield_NNNNN: <ADF>}}` | `acli workitem edit` does not cover custom fields — see gotcha #4 |
+| Comment create | `comment create --body-file <file>` (alias `-F`) accepts ADF | The `--body` (plain) flag remains plain text only |
+| Comment update | `comment update --body-adf <file>` | Dedicated ADF flag |
+
+### Worked end-to-end example
+
+```bash
+# 1. Author each rich-text field as Markdown
+cat > /tmp/desc.md <<'MD'
+## User Story
+
+- As a user
+- I want X
+- So that Y
+
+## Context
+
+Some context paragraph with **bold** and `inline_code`.
+MD
+
+cat > /tmp/ac.md <<'MD'
+## Scenario: happy path
+
+Given a valid input
+When the user submits
+Then the response is 200 OK
+MD
+
+# 2. Convert each MD file to ADF JSON
+bun .claude/skills/acli/scripts/md-to-adf.ts /tmp/desc.md /tmp/desc.adf.json
+bun .claude/skills/acli/scripts/md-to-adf.ts /tmp/ac.md   /tmp/ac.adf.json
+
+# 3. Splice the ADF docs into the create-from-json payload
+jq -n \
+  --arg pk "EXAMPLE" \
+  --slurpfile desc /tmp/desc.adf.json \
+  --slurpfile ac   /tmp/ac.adf.json \
+  '{
+    projectKey: $pk,
+    type: "Story",
+    summary: "Example summary",
+    description: $desc[0],
+    labels: ["example"],
+    additionalAttributes: {
+      customfield_NNNNN: $ac[0]
+    }
+  }' > /tmp/story.json
+
+# 4. Submit
+acli jira workitem create --from-json /tmp/story.json --json
+```
+
+### Batch pattern (many work items, many rich fields)
+
+When the task is to populate N work items with M rich-text fields each, the converter scales linearly with negligible overhead. Recommended pattern:
+
+1. Write one generator script (`generate.ts`) that holds the per-field Markdown content for every item as inline string literals.
+2. The script imports `mdToAdf` and converts every field in-process — no shell hop per conversion.
+3. The script writes one `create --from-json` payload per item (`/tmp/item-N.json`).
+4. A shell loop runs `acli jira workitem create --from-json /tmp/item-N.json --json` per file, capturing the new key from stdout.
+5. For comments, follow the same approach: write the comment Markdown inline, convert in-process, post with `acli jira workitem comment create -k <KEY> -F /tmp/comment-N.adf.json`.
+
+This pattern scales cleanly to dozens of items in one run. The bottleneck is authoring quality, not the conversion mechanic.
+
+### Editing a custom-field value after create — REST fallback
+
+`acli workitem edit` does not expose custom-field input (gotcha #4). To update a rich-text custom field on an existing item:
+
+```bash
+bun .claude/skills/acli/scripts/md-to-adf.ts /tmp/new.md /tmp/new.adf.json
+jq -n --slurpfile adf /tmp/new.adf.json \
+  '{fields: {customfield_NNNNN: $adf[0]}}' > /tmp/put.json
+curl -s -w "\nHTTP %{http_code}\n" \
+  -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
+  -X PUT "$ATLASSIAN_URL/rest/api/3/issue/EXAMPLE-123" \
+  -H "Content-Type: application/json" \
+  --data-binary @/tmp/put.json
+# 204 = success; Jira returns no body on PUT
+```
+
+### Why this is the default
+
+- Authoring in Markdown is fast, reviewable in pull requests, diffable.
+- The conversion is deterministic — the same Markdown always produces the same ADF tree.
+- One workflow covers every rich-text surface uniformly: descriptions, comments, custom fields, all the same three steps.
+- Identifier-heavy prose (snake_case, kebab-case) survives the conversion because the italic detection has word-boundary guards.
+
 ## Five gotchas to keep in mind always
 
 1. **`--paginate` is opt-in.** Default limit is server-side (30–50 depending on command). No warning on truncation. If you are counting, iterating, or making decisions based on the result, pass `--paginate`.
@@ -244,9 +377,11 @@ Load the reference that matches the user's current need. Do not preload all of t
 | Run org-level admin tasks (API key, user lifecycle)                  | `references/admin.md`                       |
 | Pipe output, produce JSON/CSV, dry-run, run on CI/CD                 | `references/output-and-automation.md`       |
 | Diagnose surprising behavior, known bugs, REST fallback points       | `references/gotchas.md`                     |
+| Publish rich text to descriptions, comments, or custom fields        | Inline section "Publishing rich text" + `.claude/skills/acli/scripts/md-to-adf.ts` |
 
 ## Working style
 
+- **Default to Markdown authoring for any rich-text field.** Never pass raw markdown to `--description`, `--body`, or any custom-field value — `acli` does not convert markdown. Use `.claude/skills/acli/scripts/md-to-adf.ts` to produce ADF, then pass the JSON. See "Publishing rich text" above.
 - **Prefer API-token auth in scripted contexts.** `--web` / OAuth is for humans at a terminal.
 - **Always pass `--yes` in CI** for any mutating command (where the flag exists).
 - **Always pass `--paginate`** when a downstream script consumes the result.
@@ -261,7 +396,6 @@ Load the reference that matches the user's current need. Do not preload all of t
   - Manage issue types, priorities, resolutions, project versions, project components.
   - Add a work item to a sprint (`JRACLOUD-97107`).
   - Upload attachments, add watchers.
-  - Rich ADF comments on `comment create` (only on `comment update`).
   - Retrieve the cached auth token for reuse in another tool.
   - Bitbucket operations (out of scope entirely).
   - Confluence page CRUD beyond `page view` (as of v1.3.18 — space and blog have full CRUD).
