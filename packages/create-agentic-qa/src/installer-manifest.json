@@ -134,11 +134,6 @@
         "purpose": "Playwright MCP — browser automation and DOM inspection for E2E test exploration."
       },
       {
-        "name": "atlassian",
-        "envVars": ["ATLASSIAN_URL", "ATLASSIAN_EMAIL", "ATLASSIAN_API_TOKEN"],
-        "purpose": "Jira / Confluence MCP — story, test case, and page operations from the agent."
-      },
-      {
         "name": "dbhub",
         "envVars": [],
         "purpose": "DBHub MCP — direct DB queries and schema introspection for test data validation."
