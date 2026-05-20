@@ -477,6 +477,7 @@ function checkStalePaths(
     const path = match[1];
     // Skip absolute paths.
     if (path.startsWith('/')) { continue; }
+    if (path.endsWith('/')) { continue; } // directory-shape illustration, not a file ref
     // Skill-dir-first resolution: shorthand like `scripts/foo.ts` inside a skill
     // body should resolve against the skill's own directory; fall back to repo
     // root for paths that are genuinely repo-rooted (e.g. `.claude/skills/...`).

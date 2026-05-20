@@ -377,11 +377,11 @@ Load the reference that matches the user's current need. Do not preload all of t
 | Run org-level admin tasks (API key, user lifecycle)                  | `references/admin.md`                       |
 | Pipe output, produce JSON/CSV, dry-run, run on CI/CD                 | `references/output-and-automation.md`       |
 | Diagnose surprising behavior, known bugs, REST fallback points       | `references/gotchas.md`                     |
-| Publish rich text to descriptions, comments, or custom fields        | Inline section "Publishing rich text" + `.claude/skills/acli/scripts/md-to-adf.ts` |
+| Publish rich text to descriptions, comments, or custom fields        | Inline section "Publishing rich text" + `scripts/md-to-adf.ts` |
 
 ## Working style
 
-- **Default to Markdown authoring for any rich-text field.** Never pass raw markdown to `--description`, `--body`, or any custom-field value — `acli` does not convert markdown. Use `.claude/skills/acli/scripts/md-to-adf.ts` to produce ADF, then pass the JSON. See "Publishing rich text" above.
+- **Default to Markdown authoring for any rich-text field.** Never pass raw markdown to `--description`, `--body`, or any custom-field value — `acli` does not convert markdown. Use `scripts/md-to-adf.ts` to produce ADF, then pass the JSON. See "Publishing rich text" above.
 - **Prefer API-token auth in scripted contexts.** `--web` / OAuth is for humans at a terminal.
 - **Always pass `--yes` in CI** for any mutating command (where the flag exists).
 - **Always pass `--paginate`** when a downstream script consumes the result.
