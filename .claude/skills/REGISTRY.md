@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-05-20T18:06:09.183Z`
+> Generated: `2026-05-20T22:37:48.258Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.claude/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -92,7 +92,8 @@ Skills indexed: 13
 **Purpose**: Framework evolution mode — evolves the QA boilerplate itself (KATA, fixtures, cli/, scripts/, api/schemas/ pipeline, package.json deps).
 
 **Compact Rules**:
-- **Plan artifact location**: `.scratch/framework-changes/<change-name>/plan.md`. The `.scratch/` tree is gitignored — the plan is local, not committed. Recovery on mid-run crash: the file persists; the orchestrator reads it back on the next session.
+- **Plan artifact location**: `.session/framework-development/<change-name>/plan.md`. The `.session/` tree is gitignored — the plan is local, not committed. Recovery on mid-run crash: the file persists; the orchestrator reads it back on the next session via Phase 0 resume check (see `./session-management.md` §4).
+- **Grace period for legacy path**: prior versions wrote to `.scratch/framework-changes/<change-name>/{plan.md, apply-progress.md}`. Phase 0 also checks the legacy path during the grace period — if found, the orchestrator offers to copy state to the new `.session/...` location before resuming.
 - **Path guardrails injected per dispatch**: every Plan and Code subagent briefing MUST include the line `KATA invariants and ALLOWED/FORBIDDEN paths: .claude/skills/framework-development/references/kata-invariants.md (read §10 before touching any file).` Do NOT inline the path tables — the reference is authoritative.
 - **On any subagent failure**: STOP, return the failing report, do NOT auto-rerun. The orchestrator decides retry / skip / abort. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
 - **Strict TDD flag** is set in Phase 1's `plan.md` under §"Strict TDD flag". Default OFF. Flipped ON only when the user explicitly opted in. Code phase reads it from the plan; no separate cache needed.
@@ -101,12 +102,11 @@ Skills indexed: 13
 - For each path, look it up in §10 ALLOWED → proceed. Or §10 FORBIDDEN → abort and redirect to the skill named in the row.
 - If a path matches neither table, ASK the user explicitly — never assume.
 - If a single change spans both ALLOWED and FORBIDDEN paths (e.g. "refactor `tests/components/ui/UiBase.ts` AND update the e2e tests that consume it"), split the work: framework-development handles the base-class change; `/test-automation` handles the test-spec migration in a follow-up.
-- Check `.scratch/framework-changes/` for an existing `<change-name>/` working dir — if found, offer the user a "Resume from existing plan" option before re-running Phase 1.
+- **Session resume check** (per `./session-management.md` §4): check `.session/framework-development/<change-name>/progress.md`. If it exists, read `plan.md` + the tail of `progress.md`, surface the last completed phase + next planned phase + any blocking notes, and offer **resume / restart / abort**. On `restart`, archive the current directory to `.session/.archive/<YYYY-MM-DD>-framework-development-<change-name>-aborted/` before proceeding.
+- **Legacy path check** (grace period): also check `.scratch/framework-changes/<change-name>/` for prior plan/progress under the old layout. If found, offer to migrate the state to the new `.session/...` location.
 - .claude/skills/framework-development/references/kata-invariants.md
-- .scratch/framework-changes/<change-name>/plan.md   (Code phase only)
-- .scratch/framework-changes/<change-name>/apply-progress.md   (Code phase, batches > 1)
-- <relevant ALLOWED-path files the phase will read or touch>
-- Read kata-invariants.md fully. Verify §10 ALLOWED for every touched path. FORBIDDEN → STOP.
+- .session/framework-development/<change-name>/plan.md   (Code phase only)
+- .session/framework-development/<change-name>/progress.md   (Code phase, batches > 1; orchestrator-written, read-only for subagents)
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).

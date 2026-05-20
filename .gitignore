@@ -94,6 +94,12 @@ dbhub.toml
 # reports, session handoffs). Kept on local disk only — never pushed.
 .scratch/
 
+# Session-management state for long workflow skills (per
+# .claude/skills/agentic-qa-core/references/session-management.md).
+# Contains per-skill plan.md / progress.md and archived sessions.
+# Local-only — canonical artifacts are committed under .context/.
+.session/
+
 # ===== SDD / Framework Internals =====
 # Auto-generated skill registry + per-session SDD artifacts. Local only.
 .atl/
