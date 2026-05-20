@@ -99,7 +99,7 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 
 **ERROR PROTOCOL**: Subagent error → STOP, report full context, NO fix without approval, offer retry/skip/abort.
 
-**WORKFLOW SKILL COMPLIANCE**: `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development` MUST have `## Subagent Dispatch Strategy` using 7-component briefing. EXEMPT (reference/utility/generator): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `sync-ai-memory`.
+**WORKFLOW SKILL COMPLIANCE**: `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development` MUST have `## Subagent Dispatch Strategy` using 7-component briefing. EXEMPT (reference/utility/generator): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `sync-ai-memory`.
 
 **DEEP DETAIL** (subagent-cacheable) → `.claude/skills/agentic-qa-core/references/` (briefing-template, dispatch-patterns, orchestration-doctrine).
 
@@ -114,6 +114,7 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 | First-time orientation | "onboard me", "first time using this" | `/agentic-qa-onboard` | (skill self-loads) | — |
 | Onboard target project | "onboard this repo", "set up project" | `/project-discovery` | target repo code, `.context/` if exists | Read + Grep |
 | Adapt KATA to stack | "adapt framework", "wire fixtures" | `/adapt-framework` | `.context/business/*` | Code edit |
+| Shift-Left batch grooming | "shift-left these stories", "groom the backlog", "pre-sprint QA", "refine these N stories" | `/shift-left-testing` | `.context/business/*`, `.context/master-test-plan.md`, `.context/PBI/{module}/{TICKET}-*/` | `[ISSUE_TRACKER_TOOL]` |
 | Sprint testing ticket | "test this", "QA this story", "verify bug" | `/sprint-testing` | `.context/PBI/{module}/{TICKET}-*/` | `[AUTOMATION_TOOL]` + `[ISSUE_TRACKER_TOOL]` |
 | TMS documentation / ROI | "document tests", "ROI", "automate priority" | `/test-documentation` | `.context/test-management-system.md` | `[TMS_TOOL]` |
 | Write automated test | "automate", "E2E test", "API test" | `/test-automation` | `kata-manifest.json`, `tests/components/`, `.context/PBI/.../implementation-plan.md`, skill `references/` | Code edit |
@@ -161,6 +162,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | `agentic-qa-onboard` | `/agentic-qa-onboard` | First-time orientation tour. Explains stack + 6-stage pipeline + MCPs. Hands off to right downstream skill. |
 | `framework-development` | `/framework-development` | Framework-evolution orchestrator for the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. Self-contained Plan → Code → Verify → Archive pipeline; runs under `gentle-ai install --preset minimal` (no SDD-* skills required). |
 | `project-discovery` | `/project-discovery` | 4-phase discovery (Constitution → Architecture → Infrastructure → Specification) → generates PRD, SRS, domain glossary, `.context/`. Reverse-engineering only. |
+| `shift-left-testing` | `/shift-left-testing` | Stage 0 — pre-sprint Shift-Left QA on a batch of backlog Stories. Refines ACs, surfaces gaps/ambiguities, produces ATP DRAFT + per-story `shift-left-refinement.md`, transitions `backlog → shift_left_qa → estimation`. Adds label `shift-left-reviewed` so `/sprint-testing` Stage 1 can short-circuit Phases 1-3 later. |
 | `sprint-testing` | `/sprint-testing` | Stages 1-3: manual QA per ticket (Planning, Execution, Reporting). Produces PBI folder, ATP, ATR, bug reports. |
 | `test-documentation` | `/test-documentation` | Stage 4: TMS docs + ROI scoring. Produces Candidate / Manual / Deferred verdicts. |
 | `test-automation` | `/test-automation` | Stage 5: Plan → Code → Review on KATA + Playwright + TypeScript. |

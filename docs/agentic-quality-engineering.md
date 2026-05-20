@@ -34,17 +34,19 @@ This repository is not a traditional test suite. It is an **agentic quality engi
 
 The skills are written in the open SKILL format and are compatible with Claude Code, Copilot, Cursor, Codex, and OpenCode runtimes — Claude Code is the reference implementation used throughout this document.
 
-The practice is organised around a **6-stage pipeline** that takes a ticket from acceptance criteria review all the way to a data-driven release decision:
+The practice is organised around a **pipeline of stages** that takes a Story from pre-sprint AC refinement all the way to a data-driven release decision. Stage 0 runs PRE-SPRINT on a batch of backlog Stories; Stages 1-6 run IN-SPRINT per ticket:
 
 ```
-SESSION START  →  STAGE 1   →  STAGE 2   →  STAGE 3   →  STAGE 4    →  STAGE 5   →  STAGE 6
-  (Context)      (Planning)   (Execution)  (Reporting)  (Documentation) (Automation) (Regression)
+                          ┌──── PRE-SPRINT ────┐  ┌──────────────────────── IN-SPRINT ──────────────────────────┐
+ONBOARDING (one-time)  →  STAGE 0           →  SESSION START  →  STAGE 1   →  STAGE 2   →  STAGE 3   →  STAGE 4    →  STAGE 5   →  STAGE 6
+  (project-discovery)     (Shift-Left QA)      (Context)         (Planning)   (Execution)  (Reporting)  (Documentation) (Automation) (Regression)
 ```
 
 | Stage | Owning skill | Output |
 | ----- | ------------ | ------ |
 | **Onboarding** (one-time) | `project-discovery` (discovery) + `/adapt-framework` (KATA adaptation) | `CLAUDE.md`, `.context/` artifacts, and KATA wired to the target stack |
-| **1 — Planning** | `sprint-testing` | ATP + TCs linked to ACs |
+| **0 — Shift-Left QA** (pre-sprint, batch) | `shift-left-testing` | Refined ACs + gap-spotting + ATP DRAFT outlines per Story, label `shift-left-reviewed`, Story transitioned `backlog → shift_left_qa → estimation` for PO/Dev to estimate |
+| **1 — Planning** (in-sprint) | `sprint-testing` | ATP + TCs linked to ACs (short-circuits Phases 1-3 when the Story carries a fresh `shift-left-reviewed` label) |
 | **2 — Execution** | `sprint-testing` | Smoke + trifuerza (UI/API/DB) exploration, evidence captured |
 | **3 — Reporting** | `sprint-testing` | ATR, bug tickets, QA comment on the source ticket |
 | **4 — Documentation** | `test-documentation` | TMS artefacts with ROI verdict (Candidate / Manual / Deferred) |
@@ -415,7 +417,7 @@ The orchestration model is not improvised per session — it is captured in cano
 - **`agentic-qa-core/references/orchestration-doctrine.md`** — cacheable mirror loaded by subagents that need the full doctrine without re-reading `CLAUDE.md`.
 - **`agentic-qa-core/references/briefing-template.md`** — the six-component briefing format every dispatch uses (Goal · Context docs · Skills to load · Exact instructions · Report format · Rules).
 - **`agentic-qa-core/references/dispatch-patterns.md`** — decision guide for the four patterns (Single, Sequential, Parallel, Background) and when each applies.
-- **`## Subagent Dispatch Strategy`** sections inside each workflow `SKILL.md` (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`) — per-stage tables declaring which steps delegate to subagents and with what pattern.
+- **`## Subagent Dispatch Strategy`** sections inside each workflow `SKILL.md` (`shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development`) — per-stage tables declaring which steps delegate to subagents and with what pattern.
 
 When a skill writes `Use the dispatch defined in §Subagent Dispatch Strategy: Parallel`, that line is shorthand for the full briefing assembled from the references above. The doctrine is a single source, cited from many places.
 
@@ -570,6 +572,7 @@ The practice uses three complementary kinds of AI capability:
 | --------------------- | ------------ | ------------------------------------------------------------------------------ |
 | `agentic-qa-core`      | Foundation   | (auto, cited by other skills) — passive reference host for briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy |
 | `project-discovery`   | Onboarding   | "set up this project", "onboard this repo", "generate business-data-map", "discover the architecture" |
+| `shift-left-testing`  | 0 (pre-sprint) | "shift-left these stories", "groom the backlog", "pre-sprint QA", "refine these N stories", batch of Story IDs in Backlog/Shift-Left QA/Estimation/Ready For Dev |
 | `sprint-testing`      | 1 · 2 · 3    | "test {{PROJECT_KEY}}-XXX", "process sprint N", "retest bug", "QA this story", "mode yolo" |
 | `test-documentation`  | 4            | "document tests", "ROI analysis", "Candidate vs Manual", "fix traceability"    |
 | `test-automation`     | 5            | "automate TC", "write E2E test", "KATA component", "review test code"          |

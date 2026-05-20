@@ -2126,6 +2126,7 @@ function printClosingSummary(state: InstallState): void {
 
   // QA workflow quick reference
   tui.section('QA workflow quick reference');
+  process.stdout.write(`  ${COLORS.bold}/shift-left-testing${COLORS.reset}      Pre-sprint AC refinement on a backlog batch — Stage 0\n`);
   process.stdout.write(`  ${COLORS.bold}/sprint-testing${COLORS.reset}          Manual QA per ticket — Stage 1-3 (Planning → Execution → Reporting)\n`);
   process.stdout.write(`  ${COLORS.bold}/test-documentation${COLORS.reset}      TMS docs + ROI scoring — Stage 4\n`);
   process.stdout.write(`  ${COLORS.bold}/test-automation${COLORS.reset}         Write KATA+Playwright automated tests — Stage 5\n`);

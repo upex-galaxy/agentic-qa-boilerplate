@@ -116,6 +116,26 @@ Also:
 
 Triage decides whether the ticket deserves a full ATP. **Vetoes beat risk score.**
 
+### 0.0 Shift-Left short-circuit (check FIRST)
+
+Before running the veto + risk score, check whether the Story already passed through `/shift-left-testing`:
+
+1. Read the Story labels via `[ISSUE_TRACKER_TOOL]`.
+2. Look for label `shift-left-reviewed` AND a dated label `shift-left-{YYYY-MM-DD}`.
+3. Parse the date. If `today - date < 30 days` AND the Story's description has not changed since that date → **short-circuit mode**.
+
+Short-circuit mode action:
+
+- READ `.context/PBI/{module}/{TICKET}-{slug}/shift-left-refinement.md` (the pre-sprint artifact).
+- VALIDATE: do the refined ACs still match the current Story description? If yes, **SKIP Phases 1, 2, 3** of this reference — they were done pre-sprint.
+- Continue from Phase 4 (Test Design — outlines), this time WITH parametrization tables + per-outline test-data JSON + numbered test steps. The pre-sprint draft outlined the NAMES only; this Phase 4 fills in the executable detail.
+- ALSO continue with Phase 5 (test-data generation strategy + Faker recipes) — also skipped pre-sprint.
+- The local file written here is `test-analysis.md` (a SUPERSET of `shift-left-refinement.md`). Both coexist in the PBI folder.
+
+If validation fails (refined ACs no longer match the current Story OR the dated label is >30 days old OR `shift-left-refinement.md` is missing on disk), fall through to the standard Phase 0 below — run veto + risk + Phases 1-3 again. Re-running is cheaper than acting on stale refinement.
+
+If the Story has NO `shift-left-reviewed` label, this is normal in-sprint flow — proceed to §0.1.
+
 ### 0.1 Veto table
 
 **SKIP TESTING (Code Review only):** backend-only code with no UI, infra / DevOps, static copy edits, pure CSS, documentation, tech-debt refactor with no behavior change, DB setup with no business logic.

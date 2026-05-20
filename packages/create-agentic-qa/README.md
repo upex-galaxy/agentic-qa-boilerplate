@@ -110,8 +110,9 @@ A ready-to-use QA project wired for:
 - **Playwright + KATA + TypeScript** test architecture (Layer 1-4 fixtures).
 - **Skills-based AI workflows** — invoke `/agentic-qa-onboard` for a tour,
   `/project-discovery` to reverse-engineer your target app, `/adapt-framework`
-  to wire KATA fixtures to your stack, and `/sprint-testing` for per-ticket
-  manual QA.
+  to wire KATA fixtures to your stack, `/shift-left-testing` for pre-sprint
+  AC refinement on backlog Stories, and `/sprint-testing` for per-ticket
+  in-sprint manual QA.
 - **MCPs preconfigured** for Playwright, OpenAPI, Atlassian (Jira/Xray),
   DBHub, Context7, and Tavily.
 - **Allure + Xray reporting** — pre-wired Allure reporter and `bun xray` CLI

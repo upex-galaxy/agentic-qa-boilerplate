@@ -317,6 +317,7 @@ The branch plan that comes out of the decision is the **contract** for execution
 | Situation                                              | Hand off to                                          |
 | ------------------------------------------------------ | ---------------------------------------------------- |
 | Strategic split of a large change                      | Step 4 (inline decision tree in this skill)          |
+| Pre-sprint AC refinement on backlog Stories            | `/shift-left-testing`                                |
 | In-sprint manual QA per ticket                         | `/sprint-testing`                                    |
 | Test case authoring + ROI in TMS                       | `/test-documentation`                                |
 | KATA-compliant automated test authoring                | `/test-automation`                                   |

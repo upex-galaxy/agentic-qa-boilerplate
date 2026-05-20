@@ -95,11 +95,11 @@ The agent-CLI check is the gotcha that bites first-timers most often: a missing 
 | ------------- | ----------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **gentle-ai** | `>= 1.26.5` | `install.ts:500-545` (Step 2) | Prints `gentle-ai not detected on PATH.` then offers two paths: (a) show install commands (`brew install gentle-ai` on macOS, `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` on Linux) and exit, or (b) continue without gentle-ai. Older-than-min version triggers `gentle-ai X.Y.Z is older than required 1.26.5. Upgrade with: gentle-ai update` and the setup continues with the warning. |
 
-If you skip gentle-ai, Engram persistent memory is NOT installed (no cross-session memory). The locally committed QA workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/agentic-qa-core`, vendored `/judgment-day`) keep working, and the 7 canonical MCPs are still configured.
+If you skip gentle-ai, Engram persistent memory is NOT installed (no cross-session memory). The locally committed QA workflow skills (`/shift-left-testing`, `/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/agentic-qa-core`, vendored `/judgment-day`) keep working, and the 7 canonical MCPs are still configured.
 
 ### Per-skill CLIs — lazy-required, non-blocking at setup
 
-These CLIs are **not optional** for the workflow — each one is consumed by a specific skill (`gh` for `/git-flow-master` + `/regression-testing`, `acli` for `/acli` + `/sprint-testing` + `/test-documentation`, `playwright-cli` for `/playwright-cli`, `resend` for `/resend-cli`, `jq` for `acli ... --json | jq ...` pipelines). The installer cannot guess which skills you will run, so it ships them as **lazy-required**: a missing binary surfaces as a warning during Step 10 but never blocks setup. Install them up front if you plan to use the whole stack, or on-demand when the owning skill surfaces a missing-binary error.
+These CLIs are **not optional** for the workflow — each one is consumed by a specific skill (`gh` for `/git-flow-master` + `/regression-testing`, `acli` for `/acli` + `/shift-left-testing` + `/sprint-testing` + `/test-documentation`, `playwright-cli` for `/playwright-cli`, `resend` for `/resend-cli`, `jq` for `acli ... --json | jq ...` pipelines). The installer cannot guess which skills you will run, so it ships them as **lazy-required**: a missing binary surfaces as a warning during Step 10 but never blocks setup. Install them up front if you plan to use the whole stack, or on-demand when the owning skill surfaces a missing-binary error.
 
 The check itself is a **PATH probe** (`which <name>` on POSIX, `where <name>` on Windows — see `install.ts:403`). Presence only — no version compare, no auto-install.
 
@@ -387,7 +387,8 @@ Skills that are workflow-specific to this boilerplate live in `.claude/skills/` 
 | `agentic-qa-core`       | (auto, cited by other skills)            | Foundation: passive reference host for briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy                                           |
 | `agentic-qa-onboard`    | `/agentic-qa-onboard`                    | First-time orientation tour (this is the entry point for new contributors)                                                                                                |
 | `project-discovery`     | `/project-discovery`                     | 4-phase reverse-engineering of a target project (Constitution → Specification)                                                                                            |
-| `sprint-testing`        | `/sprint-testing`                        | Stages 1-3: per-ticket manual QA loop (planning, execution, reporting)                                                                                                    |
+| `shift-left-testing`    | `/shift-left-testing`                    | Stage 0: pre-sprint AC refinement on a batch of backlog Stories. Drafts ATP outlines, surfaces gaps, transitions `backlog → shift_left_qa → estimation`.                  |
+| `sprint-testing`        | `/sprint-testing`                        | Stages 1-3: per-ticket manual QA loop (planning, execution, reporting). Short-circuits Phases 1-3 when the Story carries label `shift-left-reviewed` <30 days old.        |
 | `test-documentation`    | `/test-documentation`                    | Stage 4: TMS test-case authoring + ROI prioritization (Jira/Xray bridge)                                                                                                  |
 | `test-automation`       | `/test-automation`                       | Stage 5: KATA + Playwright + TS test authoring (plan → code → review)                                                                                                     |
 | `regression-testing`    | `/regression-testing`                    | Stage 6: CI suite execution, failure classification, GO/NO-GO verdict                                                                                                     |
@@ -417,7 +418,7 @@ The installer's step 10 (`verifyExternalClis`) runs a PATH probe — `which <bin
 | ---------------- | --------------------------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `bun`            | Runtime for every script (`bun run setup`, `bun xray`, `bun run test`)            | See official docs                   | [bun.com](https://bun.com/)                                                                           |
 | `gh`             | GitHub PR / Actions workflows from `/git-flow-master`, `/regression-testing`      | See official docs                   | [github.com/cli/cli#installation](https://github.com/cli/cli#installation)                            |
-| `acli`           | Jira/Confluence from terminal (`/acli`, `/sprint-testing`, `/test-documentation`) | See official docs                   | [developer.atlassian.com/cloud/acli](https://developer.atlassian.com/cloud/acli/guides/install-acli/) |
+| `acli`           | Jira/Confluence from terminal (`/acli`, `/shift-left-testing`, `/sprint-testing`, `/test-documentation`) | See official docs                   | [developer.atlassian.com/cloud/acli](https://developer.atlassian.com/cloud/acli/guides/install-acli/) |
 | `playwright-cli` | Agent-driven browser automation (`/playwright-cli` skill)                         | `bun add -g @playwright/cli@latest` | [playwright.dev/agent-cli](https://playwright.dev/agent-cli/introduction)                             |
 | `resend`         | Email testing flows                                                               | See official docs                   | [resend.com/docs/cli](https://resend.com/docs/cli)                                                    |
 | `jq`             | JSON parsing in acli Jira pipelines (advanced `acli --json \| jq …`)              | See official docs                   | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)                                  |
@@ -428,15 +429,22 @@ The installer's step 10 (`verifyExternalClis`) runs a PATH probe — `which <bin
 
 ---
 
-## Hand-off matrix — `/sprint-testing` vs `/test-automation` vs `/framework-development`
+## Hand-off matrix — `/shift-left-testing` vs `/sprint-testing` vs `/test-automation` vs `/framework-development`
 
 This is the most common point of confusion.
 
 | When                                                                     | Skill                                  |
 | ------------------------------------------------------------------------ | -------------------------------------- |
+| Pre-sprint AC refinement on a batch of backlog Stories (Stage 0)         | `/shift-left-testing` (batch-grooming) |
 | Routine in-sprint QA on a Jira ticket (most cases)                       | `/sprint-testing` (ticket-driven)      |
 | Authoring an automated test for a Candidate TC                           | `/test-automation` (Plan → Code → Review) |
 | Refactor of the boilerplate itself — KATA bases, fixtures, cli, scripts  | `/framework-development`               |
+
+### When to reach for `/shift-left-testing`
+
+Pre-sprint, BEFORE the Story enters a sprint. The team grooms a batch of N backlog Stories (`Backlog` / `Shift-Left QA` / `Estimation` / `Ready For Dev` status) and wants QA to refine ACs, surface gaps + ambiguities + edge cases, and draft an ATP outline so PO + Dev lead can estimate cleanly. No execution — feature does not exist yet. Output: refined ACs in Jira, ATP DRAFT, batch report to PO/Dev lead, transition `backlog → shift_left_qa → estimation`. Once each Story later reaches `Ready For QA`, `/sprint-testing` Stage 1 short-circuits Phases 1-3 (label `shift-left-reviewed` detected, <30 days old).
+
+Example: "groom UPEX-100, 101, 102, 103 before next sprint planning." Stories are in `Backlog`, ACs are sparse, you want a single batch session that produces refined ACs + PO/Dev question set + ATP outlines per Story.
 
 ### When to reach for `/sprint-testing`
 

@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-05-19T10:37:19.048Z`
+> Generated: `2026-05-20T18:06:09.183Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.claude/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -8,7 +8,7 @@ This file is the per-session compact-rules cache for the Skill Resolver protocol
 The orchestrator copies one or more `## Skill: <slug>` blocks below into every subagent briefing under `## Project Standards (auto-resolved)`.
 Subagents trust those compact rules and only read the full SKILL.md when explicitly instructed.
 
-Skills indexed: 12
+Skills indexed: 13
 
 ---
 ## Skill: acli
@@ -61,7 +61,7 @@ Skills indexed: 12
 
 ## Skill: agentic-qa-onboard
 
-**Purpose**: Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Ready For QA → In Testing → Test...
+**Purpose**: Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Backlog → Shift-Left QA → Estima...
 
 **Compact Rules**:
 - Reads the ticket from Jira via `/acli`.
@@ -224,6 +224,34 @@ Skills indexed: 12
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
 > Source: `.claude/skills/regression-testing/SKILL.md` · phase: `unknown` · extraction strategy: B
+
+---
+
+## Skill: shift-left-testing
+
+**Purpose**: Orchestrates pre-sprint Shift-Left QA on a batch of backlog Stories.
+
+**Compact Rules**:
+- Update Jira description with "QA Refinements (Shift-Left Analysis)"
+- Populate ATP DRAFT (Modality B: custom field + comment mirror;
+- Labels: shift-left-reviewed + shift-left-{YYYY-MM-DD}
+- Transition: backlog -> shift_left_qa (analyze) -> estimation (estimate)
+- Verify trace
+- Always load `/acli` (Story fetch, custom-field update, comment, transition, label, link).
+- **Modality A (Xray)** AND user opts into Test Plan link draft for each Story -> also load `/xray-cli`. The default in shift-left is NO Test Plan creation (PO has not estimated yet, scope may shrink) — the ATP DRAFT lives on the Story description + comment + custom field. Ask the user before creating Test Plan issues.
+- **Modality B (Jira-native)** -> `/acli` alone covers `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]`.
+- `.context/business/business-data-map.md`
+- `.context/business/business-feature-map.md`
+- `.context/business/business-api-map.md`
+- `.context/master-test-plan.md`
+- **Explicit IDs** — user passes `UPEX-100,101,102,103` (or any natural-language list of Story keys). Use these verbatim; no JQL.
+- **Backlog JQL** — user says "groom the backlog" with no IDs. Build a JQL via `[ISSUE_TRACKER_TOOL]` filtering on:
+- `project = {{PROJECT_KEY}}`
+- (truncated — read full SKILL.md for the rest)
+
+**Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
+
+> Source: `.claude/skills/shift-left-testing/SKILL.md` · phase: `unknown` · extraction strategy: B
 
 ---
 

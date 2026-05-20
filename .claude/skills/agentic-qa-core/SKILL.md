@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-core
-description: "Foundation skill that hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine, skill composition strategy). Loaded on demand by `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery`, `adapt-framework`, `framework-development`. Do NOT use for: syncing AI-critical docs (use `/sync-ai-memory`), adapting KATA tests (use `/adapt-framework`), or onboarding the target project (use `/project-discovery`)."
+description: "Foundation skill that hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine, skill composition strategy). Loaded on demand by `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery`, `adapt-framework`, `framework-development`. Do NOT use for: syncing AI-critical docs (use `/sync-ai-memory`), adapting KATA tests (use `/adapt-framework`), or onboarding the target project (use `/project-discovery`)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill]
@@ -10,7 +10,7 @@ complementary_categories: [meta-skill]
 
 `agentic-qa-core` is the shared reference library that every workflow skill in this repo cites. It exists so doctrine (briefing template, dispatch patterns, orchestration rules, skill composition tiers) lives in one place instead of being duplicated across every `SKILL.md`.
 
-Loading a workflow skill (e.g. `sprint-testing`, `test-automation`) implies loading the relevant `agentic-qa-core/references/*.md` on demand — workflow skills declare a `## Dependencies` block at the top so the AI knows what to pull in.
+Loading a workflow skill (e.g. `shift-left-testing`, `sprint-testing`, `test-automation`) implies loading the relevant `agentic-qa-core/references/*.md` on demand — workflow skills declare a `## Dependencies` block at the top so the AI knows what to pull in.
 
 This skill does NOT orchestrate workflows, does NOT generate files, and does NOT bootstrap a target repo. The entire framework (skills, foundation files, scripts) ships together as one repo; à la carte adoption is not supported — see "Install model" below.
 
@@ -20,7 +20,7 @@ This skill does NOT orchestrate workflows, does NOT generate files, and does NOT
 
 | File | Cited by | Purpose |
 |------|----------|---------|
-| `references/briefing-template.md` | `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery` | The 7-component subagent briefing template, with concrete filled examples per dispatch pattern. |
+| `references/briefing-template.md` | `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery` | The 7-component subagent briefing template, with concrete filled examples per dispatch pattern. |
 | `references/dispatch-patterns.md` | All workflow skills with a "Subagent Dispatch Strategy" section | Decision table + heuristic for picking Single / Sequential / Parallel / Background. |
 | `references/orchestration-doctrine.md` | Subagents that need orchestration rules without pulling the whole `CLAUDE.md` | Cacheable mirror of `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)". |
 | `references/skill-composition-strategy.md` | `framework-development`, every workflow skill | T1-T4 tier model + SDD boundary + composition contract. |

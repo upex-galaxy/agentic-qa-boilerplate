@@ -184,6 +184,10 @@ Run the same 4 dispatches; the Stage 1 briefing additionally applies the veto + 
 
 ## Cross-skill handoff — what this skill does NOT do
 
+| Predecessor | Load this skill | Reason |
+|-------------|-----------------|--------|
+| Pre-sprint AC refinement on a batch of backlog Stories | `shift-left-testing` | Stage 0. If the Story passed through `/shift-left-testing` and carries label `shift-left-reviewed` with a dated label <30 days old, Stage 1 here short-circuits Phases 1-3 of `acceptance-test-planning.md` and continues from Phase 4. If the Story did NOT pass through Shift-Left, Stage 1 runs all phases in full — but this is more expensive in-sprint than pre-sprint. |
+
 | After Stage 3 you need... | Load this skill | Reason |
 |---------------------------|-----------------|--------|
 | Formalize TCs in Jira/Xray, calculate ROI, decide Candidate / Manual / Deferred | `test-documentation` | Stage 4. This skill produces the inputs; `test-documentation` produces the formal regression backlog. |

@@ -77,7 +77,7 @@ These are **not optional** for the workflow — each one is required by a specif
 | Tool             | Required by                                                                         | Install                                                                           |
 | ---------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | `gh`             | `/git-flow-master`, `/regression-testing` (PRs, Actions, releases)                  | [cli.github.com](https://cli.github.com/)                                         |
-| `acli`           | `/acli`, `/sprint-testing`, `/test-documentation` (Jira / Confluence from terminal) | [Atlassian docs](https://developer.atlassian.com/cloud/acli/guides/install-acli/) |
+| `acli`           | `/acli`, `/shift-left-testing`, `/sprint-testing`, `/test-documentation` (Jira / Confluence from terminal) | [Atlassian docs](https://developer.atlassian.com/cloud/acli/guides/install-acli/) |
 | `playwright-cli` | `/playwright-cli` skill (agent-driven browser automation)                           | `bun add -g @playwright/cli@latest`                                               |
 | `resend`         | `/resend-cli` (email testing flows)                                                 | [resend.com/docs/cli](https://resend.com/docs/cli)                                |
 | `jq`             | `acli` JSON pipelines (`acli ... --json \| jq ...`)                                 | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)              |
@@ -181,6 +181,7 @@ bunx -y ccstatusline@latest
 # Drive the QA lifecycle inside the agent:
 /agentic-qa-onboard     # first-time orientation tour
 /project-discovery      # reverse-engineer the target app into .context/
+/shift-left-testing     # Stage 0: pre-sprint AC refinement on backlog batch
 /sprint-testing         # in-sprint manual QA per ticket (plan + execute + report)
 /test-documentation     # TMS docs + ROI scoring (Candidate / Manual / Deferred)
 /test-automation        # KATA Plan -> Code -> Review
@@ -690,6 +691,7 @@ BUILD_ID
 | ---------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `agentic-qa-core`            | (auto, cited by other skills) | Foundation: passive reference host for shared doctrine (briefing template, dispatch patterns, orchestration, skill-composition strategy). Loaded on demand by workflow skills — not invoked directly.                                                                                                |
 | `/project-discovery`         | `/project-discovery`          | Onboard a project to this boilerplate. 4-phase discovery (Constitution → Architecture → Infrastructure → Specification) producing PRD, SRS, domain glossary; orchestrates the `/business-*-map` and `/master-test-plan` commands. Reverse-engineering only.                                          |
+| `/shift-left-testing`        | `/shift-left-testing`         | **Stage 0**. Pre-sprint Shift-Left QA on a batch of backlog Stories. Refines ACs, surfaces gaps + ambiguities, drafts ATP outlines, transitions `backlog → shift_left_qa → estimation`. Adds label `shift-left-reviewed` so `/sprint-testing` Stage 1 short-circuits Phases 1-3 later.            |
 | `/sprint-testing`            | `/sprint-testing`             | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting).                                                                                                                                                                                                   |
 | `/test-documentation`        | `/test-documentation`         | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS. Produces Candidate / Manual / Deferred verdicts.                                                                                                                                                                          |
 | `/test-automation`           | `/test-automation`            | **Stage 5**. Plan → Code → Review automated tests on KATA + Playwright + TypeScript.                                                                                                                                                                                                                 |

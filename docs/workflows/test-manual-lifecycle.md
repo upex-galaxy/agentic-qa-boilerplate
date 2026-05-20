@@ -51,6 +51,12 @@ El skill crea el PBI folder (`.context/PBI/{module}/{TICKET}/`) con `context.md`
 
 ---
 
+### Pre-sprint Shift-Left (Stage 0)
+
+> **Pre-requisito ideal**: si la story pasó por `/shift-left-testing` ANTES del sprint planning, gran parte del trabajo de Planning ya está hecho. El skill habrá refinado los ACs, surfaceado gaps + ambigüedades, y dejado un ATP DRAFT en Jira con label `shift-left-reviewed`. Stage 1 de `/sprint-testing` detecta esa label (<30 días) y short-circuitea las Phases 1-3 — solo valida que los ACs siguen vigentes y continúa con parametrización + test-data.
+>
+> Cuando NO hubo Shift-Left, el flujo Planning de abajo corre completo in-sprint (más caro, pero perfectamente válido).
+
 ### Planning — del AC al ATP
 
 Cuando llega una User Story al sprint, la primera tarea es **entender completamente qué se va a construir** antes de que Development empiece (shift-left).

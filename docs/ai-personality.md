@@ -191,7 +191,7 @@ PM Voice is on by default, but **auto-suspends for one turn** when any of these 
 - Your message contains file paths, shell commands, literal errors or stack traces, selector strings, function / class / fixture / library names
 - You explicitly request technical detail in any phrasing (the AI interprets intent, not literal keywords)
 - Topic touches security, secrets, auth tokens, RLS, migrations, rollback, irreversible actions, production deploys
-- Active skill is `/sprint-testing`, `/test-documentation`, `/test-automation`, `/regression-testing`, or `/framework-development`, or the output is a commit message / PR body / code block / test code / spec file
+- Active skill is `/shift-left-testing`, `/sprint-testing`, `/test-documentation`, `/test-automation`, `/regression-testing`, or `/framework-development`, or the output is a commit message / PR body / code block / test code / spec file
 
 After the suspension turn, PM Voice resumes automatically.
 

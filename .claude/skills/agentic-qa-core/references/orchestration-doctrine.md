@@ -32,7 +32,7 @@
 
 **ERROR PROTOCOL**: On subagent error → STOP, report full context, DO NOT fix without approval, offer retry/skip/abort.
 
-**WORKFLOW SKILL COMPLIANCE**: `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing` MUST have a `## Subagent Dispatch Strategy` section using the 6-component briefing. Reference / utility / generator skills are EXEMPT (no dispatch table needed): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `sync-ai-memory`.
+**WORKFLOW SKILL COMPLIANCE**: `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development` MUST have a `## Subagent Dispatch Strategy` section using the 7-component briefing. Reference / utility / generator skills are EXEMPT (no dispatch table needed): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `adapt-framework`, `git-flow-master`, `business-data-map`, `business-feature-map`, `business-api-map`, `master-test-plan`, `break-down-tests`, `fix-traceability`, `sync-ai-memory`.
 
 **DEEP DETAIL** (further references):
 

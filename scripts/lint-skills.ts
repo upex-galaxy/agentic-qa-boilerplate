@@ -95,6 +95,7 @@ const KNOWN_CATEGORIES = new Set([
  * appear in their bodies.
  */
 const ANTI_LEAK_SKILLS = [
+  'shift-left-testing',
   'sprint-testing',
   'test-automation',
   'regression-testing',
@@ -464,6 +465,7 @@ const INLINE_CODE_PATH
 
 function checkStalePaths(
   skillSlug: string,
+  skillDir: string,
   body: string,
   repoRoot: string,
 ): Violation[] {
@@ -475,14 +477,16 @@ function checkStalePaths(
     const path = match[1];
     // Skip absolute paths.
     if (path.startsWith('/')) { continue; }
-    const full = join(repoRoot, path);
-    if (!existsSync(full)) {
-      result.push({
-        severity: 'ERROR',
-        scope: skillSlug,
-        msg: `STALE-PATH: \`${path}\` referenced in SKILL.md body does not exist on disk`,
-      });
-    }
+    // Skill-dir-first resolution: shorthand like `scripts/foo.ts` inside a skill
+    // body should resolve against the skill's own directory; fall back to repo
+    // root for paths that are genuinely repo-rooted (e.g. `.claude/skills/...`).
+    if (existsSync(join(skillDir, path))) { continue; }
+    if (existsSync(join(repoRoot, path))) { continue; }
+    result.push({
+      severity: 'ERROR',
+      scope: skillSlug,
+      msg: `STALE-PATH: \`${path}\` referenced in SKILL.md body does not exist on disk`,
+    });
   }
 
   return result;
@@ -562,6 +566,7 @@ function main(): void {
 
   interface T1Skill {
     slug: string
+    skillDir: string
     skillMdPath: string
     frontmatter: SkillFrontmatter | null
     body: string
@@ -590,7 +595,7 @@ function main(): void {
       if (end !== -1) { body = body.slice(end + 4); }
     }
     const fm = parseFrontmatter(content);
-    t1Skills.push({ slug: entry, skillMdPath: skillMd, frontmatter: fm, body });
+    t1Skills.push({ slug: entry, skillDir: slugPath, skillMdPath: skillMd, frontmatter: fm, body });
 
     // Check 1: frontmatter must declare at least one known category.
     if (!fm) {
@@ -675,7 +680,7 @@ function main(): void {
 
   // Check 8: STALE-PATH
   for (const skill of t1Skills) {
-    violations.push(...checkStalePaths(skill.slug, skill.body, REPO_ROOT));
+    violations.push(...checkStalePaths(skill.slug, skill.skillDir, skill.body, REPO_ROOT));
   }
 
   // Check 9: DUPLICATE-TIER

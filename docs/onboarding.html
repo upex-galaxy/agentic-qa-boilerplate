@@ -1040,8 +1040,18 @@
         and emits release verdicts — with human checkpoints between every stage.
       </p>
 
-      <!-- 6-stage pipeline diagram -->
-      <div class="hero-diagram" aria-label="Six-stage QA pipeline">
+      <p class="hero-tagline" style="font-size: 0.95rem; opacity: 0.85">
+        <strong>Stage 0 — pre-sprint:</strong> <code>/shift-left-testing</code> grooms a batch of
+        backlog Stories (AC refinement, gap-spotting, ATP DRAFT, transition
+        <code>backlog → shift_left_qa → estimation</code>) so the in-sprint pipeline below starts
+        with clean requirements. The 6-stage pipeline runs in-sprint per ticket.
+      </p>
+
+      <!-- 6-stage in-sprint pipeline diagram (Stage 0 happens pre-sprint, upstream of Session Start) -->
+      <div
+        class="hero-diagram"
+        aria-label="Six-stage in-sprint QA pipeline (Stage 0 runs pre-sprint upstream)"
+      >
         <svg
           viewBox="0 0 920 150"
           width="100%"
@@ -2920,14 +2930,37 @@ bun run jira:check            # verify both catalogs against the manifest</code>
             <h2><span class="num">→</span>Choose your path</h2>
 
             <p>
-              Three gates determine which workflow skill you invoke on a given ticket or release.
-              They are NOT mutually exclusive in a project's lifetime — most projects flow A → B → C
-              as a feature matures from manual exploration to automated regression. They ARE
+              Four gates determine which workflow skill you invoke on a given ticket or release.
+              They are NOT mutually exclusive in a project's lifetime — most projects flow 0 → A → B
+              → C as a feature matures from a raw backlog idea to automated regression. They ARE
               mutually exclusive within a single session: you pick one entry point and let the skill
               drive.
             </p>
 
             <div class="gate-grid">
+              <article class="gate-card gate-a">
+                <span class="gate-card-label">Path 0 · Pre-sprint</span>
+                <h4 class="gate-card-title"><code>/shift-left-testing</code> (Stage 0)</h4>
+                <p class="gate-card-when">
+                  Batch grooming of backlog Stories BEFORE sprint planning. Produces refined ACs +
+                  ATP DRAFT + PO/Dev question set per Story, transitions
+                  <code>backlog → shift_left_qa → estimation</code>.
+                </p>
+                <ul class="gate-card-checks">
+                  <li>Stories sit in Backlog / Shift-Left QA / Estimation / Ready For Dev</li>
+                  <li>ACs are sparse or ambiguous — PO needs help refining</li>
+                  <li>Feature does not exist yet — NO execution, NO smoke, NO DB queries</li>
+                  <li>
+                    Output: label <code>shift-left-reviewed</code> + batch report to PO + Dev lead
+                  </li>
+                </ul>
+                <p class="gate-card-foot">
+                  Tool skills loaded: <code>/acli</code> (+ <code>/xray-cli</code> if Modality A).
+                  Downstream: <code>/sprint-testing</code> short-circuits Phases 1-3 when the label
+                  is fresh (&lt;30 days).
+                </p>
+              </article>
+
               <article class="gate-card gate-a">
                 <span class="gate-card-label">Path A · Manual</span>
                 <h4 class="gate-card-title"><code>/sprint-testing</code> (Stages 1–3)</h4>
@@ -3237,6 +3270,22 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   Onboards a target repo via a 4-phase flow (Constitution → Architecture →
                   Infrastructure → Specification). Produces PRD, SRS, business-data-map,
                   business-feature-map, business-api-map, master-test-plan.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">shift-left-testing</span>
+                  <span class="badge badge-workflow">Workflow</span>
+                  <span class="badge badge-tier-t1">T1</span>
+                </div>
+                <p class="skill-card-trigger">/shift-left-testing</p>
+                <p class="skill-card-desc">
+                  Stage 0 — pre-sprint Shift-Left QA on a batch of backlog Stories. Refines ACs,
+                  surfaces gaps + ambiguities + edge cases, drafts ATP outlines, transitions
+                  <code>backlog → shift_left_qa → estimation</code>. Adds label
+                  <code>shift-left-reviewed</code> so <code>/sprint-testing</code> Stage 1
+                  short-circuits Phases 1-3 later.
                 </p>
               </article>
 

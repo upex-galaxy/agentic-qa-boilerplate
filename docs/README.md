@@ -58,7 +58,7 @@ La metodología de testing está basada en **IQL (Integrated Quality Lifecycle)*
 | Documento | Descripción |
 |-----------|-------------|
 | [IQL-methodology.md](./methodology/IQL-methodology.md) | Vista completa de IQL |
-| [early-game-testing.md](./methodology/early-game-testing.md) | Testing shift-left (Steps 1-4) |
+| [early-game-testing.md](./methodology/early-game-testing.md) | Testing shift-left (Steps 1-4) — ejecutado por `/shift-left-testing` (Stage 0) |
 | [mid-game-testing.md](./methodology/mid-game-testing.md) | Automatización (Steps 5-9) |
 | [late-game-testing.md](./methodology/late-game-testing.md) | Producción (Steps 10-15) |
 | [kata-fundamentals.md](./methodology/kata-fundamentals.md) | Filosofía del framework KATA |

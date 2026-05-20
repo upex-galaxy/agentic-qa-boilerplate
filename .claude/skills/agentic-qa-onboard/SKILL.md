@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-onboard
-description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Ready For QA → In Testing → Tested → Closed), /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /framework-development for boilerplate evolution, MCPs available (Context7, Tavily, Atlassian, Playwright, DBHub, OpenAPI, Postman), critical env vars. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`. Do NOT use for: feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing)."
+description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Backlog → Shift-Left QA → Estimation → Ready For Dev → Ready For QA → In Testing → Tested → Closed), /shift-left-testing for pre-sprint AC refinement on backlog Stories, /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /framework-development for boilerplate evolution, MCPs available (Context7, Tavily, Atlassian, Playwright, DBHub, OpenAPI, Postman), critical env vars. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`. Do NOT use for: pre-sprint refinement (use /shift-left-testing), feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing)."
 license: MIT
 compatibility: [claude-code, opencode]
 phase: bootstrap
@@ -19,9 +19,9 @@ model_preferences:
 
 # Agentic QA Onboard — First-time tour of this repo
 
-Activate when a user lands on this repo for the first time and asks "where do I start?", "how does QA work here?", or invokes `/agentic-qa-onboard`. The skill is a guided tour, not an executor: it explains the stack, the QA pipeline (Stages 1-6), the MCPs, and the env vars that everything depends on, then hands off to the right downstream skill.
+Activate when a user lands on this repo for the first time and asks "where do I start?", "how does QA work here?", or invokes `/agentic-qa-onboard`. The skill is a guided tour, not an executor: it explains the stack, the QA pipeline (pre-sprint Stage 0 + in-sprint Stages 1-6), the MCPs, and the env vars that everything depends on, then hands off to the right downstream skill.
 
-This skill is specific to **this** Playwright + KATA QA boilerplate and points at the concrete entry points (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/framework-development`).
+This skill is specific to **this** Playwright + KATA QA boilerplate and points at the concrete entry points (`/shift-left-testing`, `/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/framework-development`).
 
 ---
 
@@ -64,22 +64,25 @@ After setup, fill `.env` with the credentials the rest of the workflow expects (
 
 ---
 
-## Primary pipeline: Stages 1-6
+## Primary pipeline: Stage 0 (pre-sprint) + Stages 1-6 (in-sprint)
 
-The QA work in this boilerplate is organized as a 6-stage pipeline. Each stage maps to a skill.
+The QA work in this boilerplate runs in two halves: a pre-sprint Shift-Left grooming phase, then a 6-stage in-sprint pipeline per ticket. Each stage maps to a skill.
 
-| Stage | Skill                  | What happens                                                                              |
-| ----- | ---------------------- | ----------------------------------------------------------------------------------------- |
-| 1-3   | `/sprint-testing`      | Per-ticket: Planning → Execution → Reporting. Smoke + trifuerza (UI/API/DB) exploration. |
-| 4     | `/test-documentation`  | Document test cases in TMS (Test/ATP/ATR). ROI prioritization (Candidate/Manual/Deferred).|
-| 5     | `/test-automation`     | KATA-compliant E2E + API tests on Playwright. Plan → Code → Review.                       |
-| 6     | `/regression-testing`  | CI suite execution. Failure classification. GO/CAUTION/NO-GO release verdict.             |
+| Stage | Skill                  | When                | What happens                                                                              |
+| ----- | ---------------------- | ------------------- | ----------------------------------------------------------------------------------------- |
+| 0     | `/shift-left-testing`  | PRE-SPRINT (batch)  | AC refinement on N backlog Stories, gap-spotting, ATP DRAFT outlines, transition `backlog → shift_left_qa → estimation`. Adds label `shift-left-reviewed`. |
+| 1-3   | `/sprint-testing`      | IN-SPRINT (ticket)  | Per-ticket: Planning → Execution → Reporting. Smoke + trifuerza (UI/API/DB) exploration. Short-circuits Phases 1-3 if Stage 0 ran <30 days ago. |
+| 4     | `/test-documentation`  | IN-SPRINT (post-QA) | Document test cases in TMS (Test/ATP/ATR). ROI prioritization (Candidate/Manual/Deferred).|
+| 5     | `/test-automation`     | POST-SPRINT         | KATA-compliant E2E + API tests on Playwright. Plan → Code → Review.                       |
+| 6     | `/regression-testing`  | PRE-RELEASE         | CI suite execution. Failure classification. GO/CAUTION/NO-GO release verdict.             |
 
 **Jira QA state machine:**
 
 ```
-Ready For QA → In Testing → Tested → Closed
+Backlog → Shift-Left QA → Estimation → Ready For Dev → In Progress → In Review → Ready For QA → In Testing → Tested → Closed
 ```
+
+`/shift-left-testing` drives the upstream transitions (Backlog → Shift-Left QA → Estimation). `/sprint-testing` drives the downstream ones (Ready For QA → In Testing → Tested). PO/Dev lead drive the middle leg (Estimation → Ready For Dev → In Progress → In Review).
 
 (For bugs found during QA: `Open → In Progress → Resolved → Closed` after fix verification.)
 
@@ -106,6 +109,7 @@ You confirm at the gates.
 
 | When                                                                       | Skill                                                                |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Pre-sprint AC refinement / batch grooming of backlog Stories               | `/shift-left-testing` (Stage 0)                                      |
 | Routine in-sprint QA on a Jira ticket (most cases)                         | `/sprint-testing` (ticket-driven)                                    |
 | Authoring new automated test for a Candidate TC                            | `/test-automation`                                                   |
 | Refactor of the boilerplate itself — KATA bases, fixtures, cli/, scripts/  | `/framework-development`                                             |
@@ -167,7 +171,8 @@ Verify your config with `bun run vars:check` (should report 0 errors when fully 
 | `agentic-qa-core`    | (auto, cited by other skills) | Passive reference host: briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy |
 | `agentic-qa-onboard` | `/agentic-qa-onboard`  | This skill — first-time orientation                                            |
 | `project-discovery`  | `/project-discovery`   | 4-phase reverse-engineering of a target project                                |
-| `sprint-testing`     | `/sprint-testing`      | Stages 1-3 — per-ticket manual QA loop                                         |
+| `shift-left-testing` | `/shift-left-testing`  | Stage 0 — pre-sprint AC refinement on a batch of backlog Stories. Drafts ATP, transitions `backlog → shift_left_qa → estimation`. |
+| `sprint-testing`     | `/sprint-testing`      | Stages 1-3 — per-ticket manual QA loop. Short-circuits Phases 1-3 when label `shift-left-reviewed` is fresh. |
 | `test-documentation` | `/test-documentation`  | Stage 4 — TMS test case authoring + ROI                                        |
 | `test-automation`    | `/test-automation`     | Stage 5 — KATA + Playwright + TS automation                                    |
 | `regression-testing` | `/regression-testing`  | Stage 6 — CI suite execution + GO/NO-GO verdict                                |
@@ -184,7 +189,7 @@ Verify your config with `bun run vars:check` (should report 0 errors when fully 
 
 `bun run setup` runs `gentle-ai install --preset minimal` — installs ONLY the **`engram`** component (persistent memory binary + MCP adapter + agent config). No SDD-* skills, no foundation skills.
 
-Rationale: this repo already covers Plan → Code → Verify natively in its workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`). SDD ceremony does not apply to test authoring.
+Rationale: this repo already covers Plan → Code → Verify natively in its workflow skills (`/shift-left-testing`, `/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`). SDD ceremony does not apply to test authoring.
 
 Want the explicit SDD ceremony for an architectural change of your own? Run manually:
 
@@ -230,6 +235,7 @@ If any box is unchecked, fix that first. The downstream skills assume a green fo
 
 ## What this skill does NOT do
 
+- Refine backlog Stories pre-sprint → use `/shift-left-testing`
 - Test a ticket → use `/sprint-testing`
 - Document test cases in TMS → use `/test-documentation`
 - Write automated tests → use `/test-automation`

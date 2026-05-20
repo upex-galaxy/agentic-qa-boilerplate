@@ -8,7 +8,7 @@ complementary_categories: [meta-skill]
 
 # Project Discovery — Onboarding Orchestrator
 
-Turn an unknown codebase into a testable project. Four phases, always in order, gated on completion of the previous one. The output is a set of context files the rest of the skills (`sprint-testing`, `test-automation`, `test-documentation`, `regression-testing`) rely on.
+Turn an unknown codebase into a testable project. Four phases, always in order, gated on completion of the previous one. The output is a set of context files the rest of the skills (`shift-left-testing`, `sprint-testing`, `test-automation`, `test-documentation`, `regression-testing`) rely on.
 
 The discovery is **conversational**: you read the code, ask when ambiguous, confirm before writing files. Never fabricate -- if you cannot verify a claim from the source, mark it as a "Discovery Gap" and move on.
 

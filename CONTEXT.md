@@ -120,6 +120,7 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 ├── agentic-qa-onboard/      → First-time orientation tour: stack + 6-stage pipeline + MCPs. Hands off to the right downstream skill.
 ├── framework-development/   → Framework-evolution orchestrator for the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). Self-contained Plan → Code → Verify → Archive pipeline. NOT for per-ticket QA.
 ├── project-discovery/       → 4-phase reverse-engineering, generates `.context/` artifacts. README/CLAUDE.md upkeep is `/sync-ai-memory`. Foundation files (`CLAUDE.md`, `.agents/`, `scripts/`) ship with the boilerplate and are not generated per project.
+├── shift-left-testing/      → Stage 0: pre-sprint AC refinement on a batch of backlog Stories. Refines ACs, surfaces gaps, drafts ATP, transitions backlog → shift_left_qa → estimation. Adds label shift-left-reviewed so /sprint-testing Stage 1 can short-circuit later.
 ├── sprint-testing/          → In-sprint QA (planning + execution + reporting, per ticket)
 ├── test-documentation/      → TMS documentation + test prioritization
 ├── test-automation/         → KATA test planning + coding + review
@@ -227,7 +228,8 @@ bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 
 | Stage | Activity | Skill |
 |-------|----------|-------|
-| **Stage 1** | Planning (shift-left, AC review, ATP draft) | `/sprint-testing` |
+| **Stage 0** | Pre-sprint Shift-Left: AC refinement on backlog Stories, gap-spotting, ATP DRAFT, batch grooming | `/shift-left-testing` |
+| **Stage 1** | Planning (in-sprint, AC validation, full ATP; short-circuits Phases 1-3 if Stage 0 ran <30 days ago) | `/sprint-testing` |
 | **Stage 2** | Execution (exploratory + smoke + trifuerza) | `/sprint-testing` |
 | **Stage 3** | Reporting (ATR, QA comment, bug reports) | `/sprint-testing` |
 | **Stage 4** | TMS documentation + ROI prioritization (Candidate / Manual / Deferred) | `/test-documentation` |
@@ -250,7 +252,7 @@ The orchestration doctrine has three shared assets, all hosted by `agentic-qa-co
 | **Dispatch patterns** | `agentic-qa-core/references/dispatch-patterns.md` | Decision guide and heuristic for picking Single / Sequential / Parallel / Background. |
 | **Skill Resolver Protocol** | `agentic-qa-core/references/skill-resolver.md` + `.claude/skills/REGISTRY.md` | Build-once-per-session compact-rules cache. Orchestrator runs `bun run skills:registry`, then pastes per-skill "Compact Rules" blocks into every briefing under `Project Standards (auto-resolved)`. Subagents trust these and skip re-reading full `SKILL.md`. Validated by `bun run skills:registry:check`. |
 
-Each workflow skill (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`) declares **its own dispatch points** in a `## Subagent Dispatch Strategy` section of its `SKILL.md`. That table maps each stage to its dispatch pattern and subagent role, so the AI knows up-front when to delegate and how to brief.
+Each workflow skill (`shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development`) declares **its own dispatch points** in a `## Subagent Dispatch Strategy` section of its `SKILL.md`. That table maps each stage to its dispatch pattern and subagent role, so the AI knows up-front when to delegate and how to brief.
 
 Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `playwright-cli`, `project-discovery`, `adapt-framework`, the `business-*-map` and helper commands) are exempt from the dispatch-table requirement — they execute synchronously in-line.
 
@@ -263,6 +265,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 | Task | Load First | Load If Needed |
 |------|------------|----------------|
 | **Write E2E or API Test** | `/test-automation` (SKILL.md) | The skill's own `references/` (planning playbook, KATA patterns, etc.) |
+| **Pre-sprint AC refinement / backlog grooming** | `/shift-left-testing` (SKILL.md) + `.context/business/*` | Skill `references/` (backlog-selection, refinement-playbook, atp-draft-template) |
 | **Exploratory Testing** | `/sprint-testing` (SKILL.md) + `.context/master-test-plan.md` | Skill `references/` (exploration patterns, session entry points) |
 | **Understand System** | `.context/business/business-data-map.md` | `.context/business/*`, `.context/PRD/*`, `.context/SRS/*` |
 | **Use MCP** | `CLAUDE.md` §"MCPs Available" + §"Tool Resolution" | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |

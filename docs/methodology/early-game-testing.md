@@ -2,6 +2,7 @@
 
 > **Idioma:** Español
 > **Fase IQL 1** · Shift-Left · BDD · Risk-Based
+> **Skill ejecutor**: `/shift-left-testing` (Stage 0 pre-sprint, batch sobre stories del Backlog / Shift-Left QA / Estimation / Ready For Dev) → produce ACs refinados + ATP DRAFT + label `shift-left-reviewed`. `/sprint-testing` Stage 1 luego valida la refinación in-sprint.
 
 ## Overview
 

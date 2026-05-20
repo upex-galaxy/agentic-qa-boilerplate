@@ -10,7 +10,7 @@
 | Documento | Descripción |
 |-----------|-------------|
 | [IQL-methodology.md](./IQL-methodology.md) | Integrated Quality Lifecycle - Metodología completa |
-| [early-game-testing.md](./early-game-testing.md) | IQL Fase 1: Prevención y planificación |
+| [early-game-testing.md](./early-game-testing.md) | IQL Fase 1: Prevención y planificación — ejecutada por `/shift-left-testing` (Stage 0, pre-sprint, batch grooming) y `/sprint-testing` Stage 1 (validación in-sprint) |
 | [mid-game-testing.md](./mid-game-testing.md) | IQL Fase 2: Detección y automatización |
 | [late-game-testing.md](./late-game-testing.md) | IQL Fase 3: Observación y monitoreo |
 | [kata-fundamentals.md](./kata-fundamentals.md) | Filosofía y conceptos del Framework KATA |
@@ -26,5 +26,9 @@
 ---
 
 **Ver También:**
-- `/test-automation` skill - Guías de implementación para AI (KATA)
+- `/shift-left-testing` skill — ejecuta el Early-Game (Steps 1-4) como Stage 0 pre-sprint en una sesión batch sobre stories del backlog.
+- `/sprint-testing` skill — orquesta Stages 1-3 in-sprint (Planning / Execution / Reporting).
+- `/test-documentation` skill — Stage 4: documentación de TCs + ROI.
+- `/test-automation` skill — Stage 5: guías de implementación para AI (KATA).
+- `/regression-testing` skill — Stage 6: ejecución de suites + GO/NO-GO.
 - `docs/testing/automation/` - Guías prácticas de automatización
