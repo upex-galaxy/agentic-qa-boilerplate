@@ -132,7 +132,7 @@ Files in this directory are used as context by the AI to:
 
 ## Conventions
 
-- **Prefix**: Use your Jira project key as prefix (e.g., `UPEX-`, `PROJ-`, `QA-`)
+- **Prefix**: Use your Jira project key as prefix — `{{PROJECT_KEY}}-` (declared in `.agents/project.yaml`).
 - **Names**: Use kebab-case for file names
 - **Status**: Mark ACs as `[x]` when covered by tests
 - **Evidence**: Add `evidence/` to `.gitignore` (screenshots, logs are ephemeral)

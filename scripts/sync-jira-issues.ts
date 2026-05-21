@@ -60,8 +60,8 @@
  * EXAMPLES:
  *   bun run jira:sync-issues status
  *   bun run jira:sync-issues pull
- *   bun run jira:sync-issues pull --epic PROJ-20
- *   bun run jira:sync-issues pull --story PROJ-21
+ *   bun run jira:sync-issues pull --epic {{PROJECT_KEY}}-20
+ *   bun run jira:sync-issues pull --story {{PROJECT_KEY}}-21
  *   bun run jira:sync-issues pull --include-comments --dry-run
  *
  * ============================================================================
@@ -2278,8 +2278,8 @@ ${colors.bold}OPTIONS${colors.reset}
 ${colors.bold}EXAMPLES${colors.reset}
   bun run jira:sync-issues status
   bun run jira:sync-issues pull
-  bun run jira:sync-issues pull --epic PROJ-20
-  bun run jira:sync-issues pull --story PROJ-21
+  bun run jira:sync-issues pull --epic {{PROJECT_KEY}}-20
+  bun run jira:sync-issues pull --story {{PROJECT_KEY}}-21
   bun run jira:sync-issues pull bugs
   bun run jira:sync-issues pull defects
   bun run jira:sync-issues pull improvements --dry-run

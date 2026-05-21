@@ -346,7 +346,7 @@ Skills indexed: 13
 **Compact Rules**:
 - Confirm the project is in Modality A. Resolution logic lives in `test-documentation/SKILL.md` §Phase 0.
 - If the project is in Modality B (Jira-native, no Xray plugin) -> **do not use this skill**. Instead, load `/acli` — TMS operations map to native Jira issues (see `test-documentation/references/jira-setup.md`).
-- **Jira key**: `PROJ-194` — resolved via Jira REST in-process. Requires Jira credentials configured (`auth login --jira-url --jira-email --jira-token` or the `JIRA_*` env vars).
+- **Jira key**: `{{PROJECT_KEY}}-194` — resolved via Jira REST in-process. Requires Jira credentials configured (`auth login --jira-url --jira-email --jira-token` or the `JIRA_*` env vars).
 - **Numeric Xray issueId**: `1042389` — used as-is, no resolution call.
 - *Missing at Xray layer*: tests linked at the Jira layer but not registered with Xray. `--apply` re-attaches them.
 - *Missing at Jira layer*: tests registered with Xray but without a Jira issuelink. Reported only — sync never auto-deletes.
