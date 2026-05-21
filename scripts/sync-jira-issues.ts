@@ -31,7 +31,7 @@
  *   ATLASSIAN_API_TOKEN=ATATT3x...
  *
  * Project key resolution (in precedence order):
- *   1. JIRA_PROJECT env var (override, e.g. JIRA_PROJECT=ACME bun run jira:sync-issues ...)
+ *   1. JIRA_PROJECT_KEY env var (override, e.g. JIRA_PROJECT_KEY=ACME bun run jira:sync-issues ...)
  *   2. .agents/project.yaml -> project.project_key (default source-of-truth)
  *   3. None set or `null` -> the script fails with an actionable message.
  *
@@ -516,19 +516,19 @@ function readProjectKeyFromYaml(): string | null {
 
 /**
  * Resolves the active Jira project key. Precedence:
- *   1. `JIRA_PROJECT` env var (explicit override).
+ *   1. `JIRA_PROJECT_KEY` env var (explicit override).
  *   2. `.agents/project.yaml` → `project.project_key`.
  *   3. Neither set → throws an actionable error so the script never silently
  *      points at a stale or wrong project.
  */
 function resolveProjectKey(): ResolvedProjectKey {
-  const envKey = process.env.JIRA_PROJECT?.trim();
+  const envKey = process.env.JIRA_PROJECT_KEY?.trim();
   if (envKey) { return { key: envKey, source: 'env' }; }
   const yamlKey = readProjectKeyFromYaml();
   if (yamlKey) { return { key: yamlKey, source: 'project.yaml' }; }
   throw new Error(
     'sync-jira-issues: project key is not set. '
-    + 'Either pass `JIRA_PROJECT=<KEY>` or set `project.project_key` in `.agents/project.yaml` '
+    + 'Either pass `JIRA_PROJECT_KEY=<KEY>` or set `project.project_key` in `.agents/project.yaml` '
     + '(run `bun run agents:setup` for an interactive walkthrough).',
   );
 }
@@ -567,7 +567,7 @@ function getConfig(): Config {
 function logProjectBanner(config: Config, options: { json?: boolean } = {}): void {
   if (options.json) { return; }
   const sourceLabel = config.projectKeySource === 'env'
-    ? 'JIRA_PROJECT env override'
+    ? 'JIRA_PROJECT_KEY env override'
     : '.agents/project.yaml';
   log.info(`Using project=${config.project} (source: ${sourceLabel})`);
 }
@@ -2130,7 +2130,7 @@ async function cmdStatus(): Promise<void> {
       log.error('Authentication failed. Check ATLASSIAN_EMAIL and ATLASSIAN_API_TOKEN');
     }
     else if (errorMessage.includes('404')) {
-      log.error('Project not found. Check JIRA_PROJECT env var or `project.project_key` in `.agents/project.yaml`.');
+      log.error('Project not found. Check JIRA_PROJECT_KEY env var or `project.project_key` in `.agents/project.yaml`.');
     }
     else {
       log.error(`Connection failed: ${errorMessage}`);
@@ -2290,7 +2290,7 @@ ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
   ATLASSIAN_URL         Jira instance URL (required)
   ATLASSIAN_EMAIL       Your email (required)
   ATLASSIAN_API_TOKEN   API token (required)
-  JIRA_PROJECT          Project key override (default: read from .agents/project.yaml)
+  JIRA_PROJECT_KEY          Project key override (default: read from .agents/project.yaml)
   JIRA_SYNC_OUTPUT      Output directory (default: .context/PBI)
 
 ${colors.bold}PROTECTED FILES${colors.reset}
