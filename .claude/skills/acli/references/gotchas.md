@@ -67,22 +67,40 @@ Two things to remember about the shape:
 
 ## <a id="custom-field-edit"></a>4. Custom fields cannot be edited via `acli`
 
-**The problem.** `acli jira workitem edit` does NOT document any way to set custom-field values. `edit --generate-json` produces a template with only built-in fields (summary, description, assignee, labels, type, labelsToAdd, labelsToRemove). The `edit --help` flag list confirms — only built-in field flags are exposed.
+**The problem.** `acli workitem edit` exposes no channel for custom-field values. Beyond what `edit --help` reveals (no `--customfield-*` flag of any kind), the JSON schema for `edit --from-json` is **strict-mode**: every unrecognized key triggers a hard error and exit 1.
 
-This is asymmetric with `create` (which does support custom fields via `additionalAttributes`). Many users assume edit works the same way; it does not.
+**Empirical proof.** Three payload shapes tested against a real Jira workitem with `acli workitem edit --from-json`:
 
-**Fix.** Use REST `PUT /rest/api/3/issue/{key}` with the `{"fields": {...}}` shape:
-
-```bash
-curl -s -u "$EMAIL:$TOKEN" \
-  -X PUT "https://mysite.atlassian.net/rest/api/3/issue/TEAM-1" \
-  -H "Content-Type: application/json" \
-  -d '{"fields": {"customfield_10016": 8}}'
+```text
+{issues:[...], additionalAttributes:{customfield_X:<ADF>}}  → ✗ Error: json: unknown field "additionalAttributes"  (exit 1)
+{issues:[...], fields:{customfield_X:<ADF>}}                → ✗ Error: json: unknown field "fields"               (exit 1)
+{issues:[...], customfield_X:<ADF>}                         → ✗ Error: json: unknown field "customfield_X"        (exit 1)
 ```
 
-Note the REST shape uses `{"fields": {...}}` — different from the `additionalAttributes` wrapper that `create` uses.
+This is asymmetric with `acli workitem create`, which **does** accept custom fields via `additionalAttributes`. Many users assume `edit` works the same way; it does not — and the failure is loud, not silent.
 
-Bulk create (`create-bulk`) has the same limitation: no `additionalAttributes` in its template, no documented custom-field path. For custom-field-bearing bulk creates, loop single-create or batch via REST.
+**Fix — WORKAROUND via REST PUT** (the only working path as of v1.3.18).
+
+Prerequisites: `ATLASSIAN_URL`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN` are exported in the current shell. Project tooling (`bun claude`, `bun opencode`, `direnv`) loads them from `.env` automatically.
+
+```bash
+# Simple value (number, string, single-select)
+curl -sS -w "\nHTTP %{http_code}\n" \
+  -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
+  -X PUT "$ATLASSIAN_URL/rest/api/3/issue/TEAM-1" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"fields": {"customfield_10016": 8}}'
+# Expected: HTTP 204 (no body on success)
+```
+
+For rich-text custom fields (ADF), see the dedicated **"WORKAROUND: Editing rich-text custom fields on existing work items (REST PUT)"** section in `SKILL.md` — same `curl` shape, payload built by piping the `md-to-adf.ts` output through `jq` to wrap it as `{"fields": {customfield_NNNNN: <ADF>}}`.
+
+Reference (official Jira REST v3 PUT endpoint): <https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/#api-rest-api-3-issue-issueidorkey-put>.
+
+Note the REST envelope key is `fields`, **not** `additionalAttributes` (which is the `acli create` wrapper). They are not interchangeable.
+
+Bulk create (`create-bulk`) has the same blind spot: no `additionalAttributes` in its template, no documented custom-field path. For bulk creates that carry custom fields, loop single-create or batch via REST.
 
 ## <a id="custom-field-list"></a>5. Custom fields cannot be enumerated via `acli`
 
