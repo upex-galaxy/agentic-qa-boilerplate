@@ -153,6 +153,7 @@ export {
   intro,
   isCancel,
   log,
+  multiselect,
   note,
   outro,
   select,
