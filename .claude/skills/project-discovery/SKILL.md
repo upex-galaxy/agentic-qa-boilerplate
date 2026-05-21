@@ -16,6 +16,32 @@ Grounding methodology: **IQL (Integrated Quality Lifecycle)** — QA is continuo
 
 ---
 
+## Subagent Dispatch Strategy
+
+> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
+
+This skill is **project-scope**: no `<scope>` segment. Session state lives directly at `.session/project-discovery/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. This is the longest skill in the QA repo (1.5–4 hours, 4 hard-gate phases) and benefits most from per-phase checkpoints: if interrupted between Phase 2 (PRD/SRS) and Phase 3 (Infrastructure), resume reads `progress.md` and skips back to the first incomplete phase without re-prompting the user for already-confirmed scope.
+
+This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Per-phase dispatch decisions live in `Pick the scope first` below: Fresh = heavy subagent delegation per phase; Boilerplate adoption = medium; Brownfield + Context refresh = main session only.
+
+---
+
+## Phase 0 — Session resume check (MANDATORY, inline)
+
+Before scope selection or any target-repo discovery, run the resume contract from `agentic-qa-core/references/session-management.md` §4:
+
+1. Check `.session/project-discovery/progress.md`.
+2. If it does NOT exist → proceed to "Before starting: target repo location" below, then "Pick the scope first" (which writes `plan.md`).
+3. If it DOES exist:
+   - Read `plan.md` (chosen scope, target repo path, phase plan).
+   - Read tail of `progress.md` (last completed phase + next planned phase).
+   - Surface to the user: scope chosen, target repo, last completed phase, next phase, any open Discovery Gaps from the last entry.
+   - Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-project-discovery-aborted/` before proceeding.
+
+Resume is high-value here: Fresh onboarding (1.5–4h) crossing a session boundary without resume re-runs Phase 1 from scratch, re-prompting target paths the user already confirmed.
+
+---
+
 ## Before starting: target repo location
 
 `/project-discovery` runs **read-only** against a project under test — the **target repo** — that is NOT this boilerplate. Before Phase 1 starts, lock down where the target lives. Block Phase 1 if the target path is ambiguous.
@@ -44,6 +70,8 @@ All projects go through the same 4 phases, but depth varies. Pick once, then fol
 | **Context refresh** (data-map only) | User says "regenerate business-data-map" / "refresh the entity map" | Context generators only (just `business-data-map.md`) | One-file refresh. Confirm diffs before overwriting. **For PBI template refresh** (tracker moved, new custom fields), re-run Phase 4 in full instead — this scope handles data-map updates only, not templates. For the test plan, redirect to `/master-test-plan`. For API endpoints, redirect to `bun run api:sync` (technical) or `/business-api-map` (business angle). | **Minimal.** Main session only. No delegation needed. |
 
 Default to "Fresh onboarding" when in doubt. Confirm the scope with the user before starting Phase 1.
+
+After scope confirmation, **write `.session/project-discovery/plan.md`** per `agentic-qa-core/references/session-management.md` §6 schema — Goal (the scope picked + target repo + expected outputs), Inputs (target repo path(s), existing `.context/` files), Approach (per-phase dispatch pattern per the table above), Phase breakdown (1 → 2 → 3 → 4 → Context generators with skip rules per scope), Risks & open questions, Verification checklist (the pre-adapt-framework bullets below), Cross-references (cites `.context/business/`, `.context/PRD/`, `.context/SRS/`, `.context/infrastructure/`, `.context/PBI/`). Append `## Phase 0 — Session Init — <ts>` with `status: completed`, `next: Phase 1 — Constitution` to `progress.md`.
 
 ---
 
@@ -168,6 +196,16 @@ Read `references/context-generators.md` when (re)generating `business-data-map.m
 **API context is NOT a project-discovery output.** Endpoint sync is delegated to `bun run api:sync` (technical, OpenAPI -> TypeScript types) and the `/business-api-map` command (business angle: auth flows, critical paths, architecture behind the API). See `references/context-generators.md` §API context — deferred for the deferral note.
 
 **See also:** After discovery outputs exist, run `/adapt-framework` to adapt this boilerplate's `tests/`, `api/schemas/`, and `config/` to the target stack.
+
+---
+
+## Per-phase progress + Archive
+
+After each phase passes its completion gate AND the user confirms "Phase N complete", the orchestrator appends a phase entry to `.session/project-discovery/progress.md` per `agentic-qa-core/references/session-management.md` §7. One entry per phase: Phase 1 Constitution, Phase 2 Architecture (PRD then SRS), Phase 3 Infrastructure, Phase 4 Specification, then one per Context Generator. Each entry records `artifacts_touched` (the `.context/` files created or updated), `dispatched_as` (Single for Fresh-scope phases, inline for Brownfield / Refresh), `next` (next phase or `stop`).
+
+After Context Generators land AND the Pre-adapt-framework checklist passes, the orchestrator runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/project-discovery/` to `.session/.archive/<YYYY-MM-DD>-project-discovery/` (two-file dir preserved) and calls `mem_session_summary` including the archive path so future search resolves back. The canonical `.context/` deliverables stay in place — those are the discovery output, not the session state.
+
+On Phase-gate REJECT (user marks a phase incomplete or finds a Discovery Gap that blocks), archive does NOT run. The working directory stays so resume picks up at the failing gate.
 
 ---
 
@@ -318,6 +356,7 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 - **Code exploration (grep, read files)** -> use built-in tools. If the user wants a browser-driven exploration instead (UI-first discovery), load `/playwright-cli` skill.
 - **Issue-tracker operations (Phase 4)** -> resolve `[ISSUE_TRACKER_TOOL]` via CLAUDE.md Tool Resolution. For Jira, load `/acli` skill (primary) or fall back to the Atlassian MCP. If the project also uses Xray for TMS, load `/xray-cli` additionally.
 - **Database inspection** -> resolve `[DB_TOOL]`; read-only queries only during discovery.
+- **Session contract (Phase 0 resume, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint)** -> read `../agentic-qa-core/references/session-management.md`. This skill is a producer of `session/project-discovery/...` topic keys.
 
 ---
 

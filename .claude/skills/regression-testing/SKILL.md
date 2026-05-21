@@ -30,7 +30,11 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 
 ## Subagent Dispatch Strategy
 
-This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The two CI-bound stages (long-running watch, multi-artifact download) and the high-volume failure classification step are the hotspots — everything else stays inline because the dispatch overhead is not justified.
+> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
+
+This skill is **per-run scope**: `<scope>` = `<env>-<YYYY-MM-DD>` (e.g. `staging-2026-05-20`). Session state lives at `.session/regression-testing/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The single highest-value resume case: if the Monitor subagent dies while watching a long CI run but `RUN_ID` was captured in `plan.md`, Phase 0 re-attaches via `gh run view <RUN_ID>` instead of re-triggering CI (saves 20–60 min of wall-clock).
+
+This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The two CI-bound stages (long-running watch, multi-artifact download) and the high-volume failure classification step are the hotspots — everything else stays inline because the dispatch overhead is not justified.
 
 | Stage                                                      | Pattern    | Subagent role                                                                                                  |
 |------------------------------------------------------------|------------|----------------------------------------------------------------------------------------------------------------|
@@ -43,6 +47,21 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 | GO / CAUTION / NO-GO verdict                               | Single     | inline — main thread owns release decisions                                                                    |
 
 - **Error protocol**: On any subagent failure: STOP, report full context to user, present retry / skip / abort options. Do NOT auto-fix. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
+
+---
+
+## Phase 0 — Session resume check (MANDATORY, inline)
+
+Before suite selection or any `gh workflow run`, run the resume contract from `agentic-qa-core/references/session-management.md` §4:
+
+1. Compute prospective `<scope>` = `<env>-<YYYY-MM-DD>` from invocation context (env defaults to `{{DEFAULT_ENV}}`).
+2. Check `.session/regression-testing/<scope>/progress.md`.
+3. If it does NOT exist → proceed to suite selection + Phase 1 preflight + plan.md write.
+4. If it DOES exist:
+   - Read `plan.md` (captured `suite`, `env`, `workflow_file`, `RUN_ID` if Phase 1 already triggered).
+   - Read tail of `progress.md`.
+   - If `RUN_ID` is present AND `progress.md` last entry is `Phase 1 — Trigger — status: completed` but Monitor entry is missing/failed: surface the option to **re-attach** to the existing `RUN_ID` via `gh run view <RUN_ID> --json status,conclusion` instead of re-triggering. This is the high-value resume case.
+   - Otherwise surface the standard offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-regression-testing-<scope>-aborted/` first.
 
 ---
 
@@ -88,6 +107,8 @@ gh workflow list
 
 If `gh` is not authenticated, stop and ask the user to run `gh auth login`. Do not proceed.
 
+**Write `.session/regression-testing/<scope>/plan.md`** per `agentic-qa-core/references/session-management.md` §6 BEFORE the Trigger step below. Capture: Goal (suite + env + reason for run), Inputs (workflow file path, env vars, optional grep/test_file for sanity), Approach (subagent pattern per stage from the dispatch table above), Phase breakdown (Trigger → Monitor → Download → Classify → Compute → Report → Verdict), Risks, Verification checklist (all 3 artifacts download + verdict emitted), Cross-references (`.context/reports/regression-<env>-<date>.md` will hold the final verdict). `RUN_ID` lands in `plan.md` §Inputs AFTER the Trigger step captures it — append, do not rewrite the body.
+
 ### Trigger
 
 ```bash
@@ -113,6 +134,8 @@ gh run list --workflow=regression.yml --limit=1 --json databaseId,status,created
 ```
 
 Store as `RUN_ID`. Every subsequent step uses it.
+
+**Progress checkpoint after Trigger**: append `RUN_ID` to `.session/regression-testing/<scope>/plan.md` §Inputs (so resume can re-attach) AND append a phase entry `## Phase 1.Trigger — <ts>` with `status: completed`, `next: Phase 1.Monitor`, `notes: RUN_ID=<value>` to `progress.md`. This is the critical persistence point — Trigger landing without `RUN_ID` persisted means resume cannot re-attach.
 
 ### Monitor to completion
 
@@ -357,6 +380,14 @@ Score: {score}/9. {one-line rationale}
 | CAUTION | Review with team lead; document accepted risks; proceed deliberately |
 | NO-GO | Block release; assign regression issues; schedule fix verification; plan re-run |
 
+### Per-phase progress + Archive
+
+After Phase 1 Monitor returns, after each Phase 2 step (Collect / Parse / Compute / Classify / Severity), and after Phase 3 Verdict, the orchestrator appends a phase entry to `.session/regression-testing/<scope>/progress.md` per `agentic-qa-core/references/session-management.md` §7. `artifacts_touched` records the downloaded CI artifacts (allure / evidence / playwright dirs) + the final `.context/reports/regression-<env>-<date>.md`.
+
+After the Verdict emits, the orchestrator runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/regression-testing/<scope>/` to `.session/.archive/<YYYY-MM-DD>-regression-testing-<scope>/` (two-file dir preserved) and calls `mem_session_summary` with the archive path. The canonical `.context/reports/regression-<env>-<date>.md` stays in the reports dir as the committed deliverable.
+
+On Verdict = NO-GO with regressions still being filed as issues, archive WAITS until the issue-creation step completes (so the session state still references the open issue list at archive time).
+
 ---
 
 ## Gotchas
@@ -380,6 +411,7 @@ Score: {score}/9. {one-line rationale}
 * **Classifying a borderline failure (REGRESSION vs FLAKY vs ENVIRONMENT)** — read `references/failure-classification.md`
 * **TMS / Xray result import** — load `/xray-cli` skill
 * **Downloading traces or screenshots for a failure** — use `[AUTOMATION_TOOL]` per CLAUDE.md Tool Resolution; for Playwright trace inspection load `/playwright-cli`
+* **Session contract (Phase 0 resume, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint, RUN_ID re-attach mechanism)** — read `../agentic-qa-core/references/session-management.md`. This skill is a producer of `session/regression-testing/<scope>/...` topic keys.
 
 ---
 

@@ -47,14 +47,18 @@ The reuse story is **deliberate**: ~70% of the refinement logic already lives in
 
 ## Subagent Dispatch Strategy
 
-This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 7-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`.
+> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
+
+This skill is **per-batch scope**: `<scope>` = `<YYYY-MM-DD>-<descriptor>` (e.g. `2026-05-20-payments-area`). Session state lives at `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The per-Story `shift-left-refinement.md` files stay under each Story's PBI folder (domain artifact, not session state).
+
+This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 7-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`.
 
 | Phase | Pattern | Subagent role |
 |-------|---------|---------------|
 | Phase 1 — Selection | Single | Backlog Selection subagent: pull candidate Stories via `[ISSUE_TRACKER_TOOL]`, apply veto + risk-score triage, return ranked candidate table |
 | Phase 2 — Refinement (per Story) | Sequential — looped per Story | Refinement subagent: load `acceptance-test-planning.md` Phases 1-3 + outline-only Phase 4, write `shift-left-refinement.md`, append PO/Dev questions, return summary block. ONE subagent per Story. NEVER parallel across Stories (each subagent writes a different PBI file but the orchestrator must present each summary to the user sequentially before the next dispatch) |
 | Phase 3 — Handoff (per Story) | Sequential — looped per Story | Handoff subagent: update Jira description + custom field (or Test Plan in Modality A) + comment mirror + labels + transition `backlog -> shift_left_qa -> estimation`. Returns transition log + trace verification |
-| Phase 3 — Batch report | Single | Batch Report subagent: aggregate per-Story summaries into `.context/PBI/shift-left-sessions/{date}/batch-report.md` + post to parent epic if Stories share one |
+| Phase 3 — Batch report | Single | Batch Report subagent: aggregate per-Story summaries into `.session/shift-left-testing/<batch-id>/batch-report.md` + post to parent epic if Stories share one |
 
 > **Sequential by design**. Phase 2 refinement looks parallelizable (each Story is independent in Jira), but the orchestrator must present each Story's refinement summary to the user before moving on. This keeps the user in the loop, lets them veto a Story mid-batch, and matches the team-grooming cadence the skill is designed for. Parallelism would burn the user's attention budget.
 
@@ -65,12 +69,14 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 ## Workflow — one pipeline, three phases
 
 ```
-Phase 0 — Session Init (always first)
+Phase 0 — Session resume check + Session Init (always first)
+    -> Check .session/shift-left-testing/<batch-id>/progress.md → offer resume / restart / abort
     -> Resolve TMS modality (A: Xray / B: Jira-native)
     -> Load /acli (+ /xray-cli if Modality A and user opts into Test Plan link)
     -> Verify project-wide context files
     -> Resolve candidate list (explicit IDs OR backlog JQL)
-    -> Create session folder .context/PBI/shift-left-sessions/{YYYY-MM-DD}/
+    -> Create session folder .session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/
+       (writes plan.md after candidate list confirmed; progress.md appended per phase)
 
 Phase 1 — Selection
     -> Fetch each candidate via [ISSUE_TRACKER_TOOL]
@@ -93,8 +99,11 @@ Phase 3 — Handoff
          - Labels: shift-left-reviewed + shift-left-{YYYY-MM-DD}
          - Transition: backlog -> shift_left_qa (analyze) -> estimation (estimate)
          - Verify trace
-    -> Batch report posted to .context/PBI/shift-left-sessions/{YYYY-MM-DD}/batch-report.md
+    -> Batch report posted to .session/shift-left-testing/<batch-id>/batch-report.md
        + posted as comment on parent epic if Stories share one
+    -> Archive: orchestrator moves .session/shift-left-testing/<batch-id>/ to
+       .session/.archive/<YYYY-MM-DD>-shift-left-testing-<batch-id>/
+       per agentic-qa-core/references/session-management.md §8
 
 ---> Cross-skill handoff (NOT this skill):
        When each Story later reaches Ready For QA:
@@ -104,9 +113,11 @@ Phase 3 — Handoff
 
 ---
 
-## Phase 0 — Session Init
+## Phase 0 — Session resume check + Session Init
 
-0.1 **Resolve TMS modality**. Same 4-step probe as `sprint-testing` Session Start (`test-documentation/SKILL.md` §Phase 0). Persist the result in `.context/PBI/shift-left-sessions/{YYYY-MM-DD}/session-memory.md`.
+0.0 **Session resume check** (per `agentic-qa-core/references/session-management.md` §4). Compute `<batch-id>` = `<YYYY-MM-DD>-<descriptor>` from the invocation context. Check `.session/shift-left-testing/<batch-id>/progress.md`. If it exists, read `plan.md` + the tail of `progress.md`, surface the last completed phase + next planned phase + any blocking notes, and offer **resume / restart / abort**. On `restart`, archive the current directory to `.session/.archive/<YYYY-MM-DD>-shift-left-testing-<batch-id>-aborted/` before proceeding. On `abort`, stop here.
+
+0.1 **Resolve TMS modality**. Same 4-step probe as `sprint-testing` Session Start (`test-documentation/SKILL.md` §Phase 0). Persist the result in `.session/shift-left-testing/<batch-id>/plan.md` (under the `## Inputs` H2 — the plan.md is the canonical record per session-management §6).
 
 0.2 **Load required tool skills** — based on modality:
    - Always load `/acli` (Story fetch, custom-field update, comment, transition, label, link).
@@ -134,19 +145,24 @@ Phase 3 — Handoff
      - Sort by Priority DESC, then Created DESC
    - Confirm the resolved list size with the user before Phase 1 starts. A batch of 1-12 Stories is the practical sweet spot; >12 should be split into multiple sessions.
 
-0.5 **Create the session folder**:
+0.5 **Create the session folder + write `plan.md`**:
 
    ```
-   .context/PBI/shift-left-sessions/{YYYY-MM-DD}-{short-suffix}/
-     session-memory.md      # modality, candidate list, decisions log
-     candidates.md          # Phase 1 output
-     batch-report.md         # Phase 3 final output
+   .session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/
+     plan.md                # session-management.md §6 schema — Goal, Inputs, Approach,
+                            #   Phase breakdown, Risks, Verification checklist, Cross-references.
+                            #   Inputs includes TMS modality + candidate list.
+     progress.md            # append-only, one entry per phase (§7 schema)
+     candidates.md          # Phase 1 output (domain artifact)
+     batch-report.md        # Phase 3 final output (domain artifact)
      # Per-Story refinement files live under each Story's own PBI folder,
      # NOT inside the session folder:
      #   .context/PBI/{module-name}/{{PROJECT_KEY}}-{n}-{brief-title}/shift-left-refinement.md
    ```
 
-   The `{short-suffix}` is optional — used when more than one session runs the same day (e.g. `-morning`, `-payments-area`).
+   The `<descriptor>` is kebab-case (e.g. `morning`, `payments-area`) and lets two sessions on the same day stay independent.
+
+   After this step, append the first entry to `progress.md`: `## Phase 0 — Session Init — <ISO-8601 UTC>` with `status: completed`, `next: Phase 1 — Selection`. Subsequent phases follow the same shape per `agentic-qa-core/references/session-management.md` §7.
 
 ---
 
@@ -165,7 +181,7 @@ Decides which Stories actually enter the refinement loop and at what depth.
    - **Score 8+ HIGH** -> Full refinement + extended ambiguity / edge-case scan.
 5. **Present the ranked candidate table** (see `references/backlog-selection.md` §Output format) and **WAIT for user OK** before Phase 2. Same pattern as sprint-testing's Story Explanation gate.
 
-Persist the accepted list into `session-memory.md` so a resumed session knows which Stories to continue.
+Persist the accepted list into `plan.md` §Inputs so a resumed session reads the same canonical decision. After user OK, append a progress entry: `## Phase 1 — Selection — <ts>` with `status: completed`, `artifacts_touched: [candidates.md, plan.md]`, `next: Phase 2 — Refinement`.
 
 ---
 
@@ -197,6 +213,8 @@ This is a **separate file** from sprint-testing's `test-analysis.md`. Both can c
 **Folder bootstrap**: if `.context/PBI/{module-name}/{{PROJECT_KEY}}-{n}-{brief-title}/` does not exist yet (Story has not been through sprint-testing), the refinement subagent creates it along with a minimal `context.md` (title + ACs + status + parent epic + Team Discussion if comments exist). This mirrors `sprint-testing/references/session-entry-points.md` §Step 7. The `evidence/` subfolder is NOT created — there is nothing to capture yet.
 
 **Story Explanation step**: replaced by the per-Story summary the orchestrator presents AFTER the subagent returns. The user OKs (or vetoes) each Story before the next refinement dispatch. This matches the "explain story -> WAIT for OK" rhythm in sprint-testing.
+
+**Progress checkpoint per Story**: after each Refinement subagent returns AND the user OKs the summary, the orchestrator appends a phase entry to `.session/shift-left-testing/<batch-id>/progress.md` per `agentic-qa-core/references/session-management.md` §7: `## Phase 2.<n> — Refine <STORY_KEY> — <ts>` with `status: completed`, `artifacts_touched: [.context/PBI/.../shift-left-refinement.md]`, `next: Phase 2.<n+1> | Phase 3`. This lets a mid-batch resume skip already-refined Stories.
 
 After Phase 2 finishes the full accepted list, the per-Story summaries feed Phase 3.
 
@@ -266,12 +284,12 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
 
 The Handoff subagent returns a per-Story log: `{story: KEY, atp_container: <field|test_plan>, labels_added: [...], transitions: [...], trace_status: ok|warning|fail}`.
 
-### Batch report
+### Batch report + Archive
 
 After all Stories handed off, dispatch ONE Batch Report subagent (`Single` pattern) to aggregate:
 
 ```
-.context/PBI/shift-left-sessions/{YYYY-MM-DD}/batch-report.md
+.session/shift-left-testing/<batch-id>/batch-report.md
 ```
 
 Contents (see `references/handoff-protocol.md` §Batch report template):
@@ -285,6 +303,8 @@ Contents (see `references/handoff-protocol.md` §Batch report template):
 - Cross-skill pointer: "When each Story reaches Ready For QA, run `/sprint-testing` — it will short-circuit Phases 1-3 thanks to the `shift-left-reviewed` label."
 
 If all Stories in the batch share a single parent epic, ALSO post the batch report as a comment on that epic. Otherwise, deliver inline to the user as the session-closing message.
+
+After the batch report lands, append the final progress entry `## Phase 3 — Handoff + Batch report — <ts>` with `status: completed`, `next: stop`, then run **Archive** per `agentic-qa-core/references/session-management.md` §8: move `.session/shift-left-testing/<batch-id>/` to `.session/.archive/<YYYY-MM-DD>-shift-left-testing-<batch-id>/` (two-file dir preserved) and call `mem_session_summary` with the session template + archive path.
 
 ---
 
@@ -345,21 +365,24 @@ All references are self-contained. Load one at a time.
 | `references/atp-draft-template.md` | Phase 2 — body skeleton for `shift-left-refinement.md` (the ATP DRAFT). Different from sprint-testing's full ATP body. |
 | `references/refinement-questions.md` | Phase 2 — catalog of typical PO / Dev / Design gap-spotting questions, grouped by AC archetype (auth, money, search, state machine, etc.). Use as a checklist when the Story is sparse. |
 | `references/handoff-protocol.md` | Phase 3 — exact Jira mutation sequence per Story, label + transition rules, batch report template + epic-comment posting rules. |
+| `../agentic-qa-core/references/session-management.md` | Phase 0 + Phase 4 — resume contract, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint. This skill is a producer of `session/shift-left-testing/<batch-id>/...` topic keys. |
 
 ---
 
 ## Pre-flight checklist
 
-- [ ] TMS modality resolved + persisted to `session-memory.md`
+- [ ] Session resume check ran (Phase 0.0); user chose resume / restart / abort if prior state existed
+- [ ] TMS modality resolved + persisted to `plan.md` §Inputs
 - [ ] `/acli` (+ `/xray-cli` if Modality A with Test Plan opt-in) loaded
 - [ ] Project-wide context files present (else handed off to `/project-discovery`)
 - [ ] Candidate Story list resolved (explicit IDs or backlog JQL) + confirmed with user
-- [ ] Session folder `.context/PBI/shift-left-sessions/{YYYY-MM-DD}/` created
+- [ ] Session folder `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/` created with `plan.md` written
 - [ ] Phase 1 produced the ranked candidate table, user OK'd the refinement set
 - [ ] Phase 2 ran ONE refinement subagent per accepted Story, user OK'd each summary
 - [ ] Per-Story `shift-left-refinement.md` written under each Story's PBI folder
 - [ ] Phase 3 handoff applied per Story: Jira description + ATP DRAFT field + comment mirror + labels + transition (stops at `estimation`)
 - [ ] Trace verified per Story (Modality A: Test Plan link; Modality B: field+comment mirror)
 - [ ] Batch report written + posted to parent epic (if applicable)
+- [ ] Archive: `.session/shift-left-testing/<batch-id>/` moved to `.session/.archive/<YYYY-MM-DD>-shift-left-testing-<batch-id>/` and `mem_session_summary` called
 - [ ] No git commit (Jira is canonical for this skill)
 - [ ] User informed: when each Story reaches `Ready For QA`, run `/sprint-testing` (will short-circuit thanks to `shift-left-reviewed`)

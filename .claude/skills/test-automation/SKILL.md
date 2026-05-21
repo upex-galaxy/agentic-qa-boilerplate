@@ -30,7 +30,11 @@ KATA (Component Action Test Architecture) rewires the usual Page Object pattern.
 
 ## Subagent Dispatch Strategy
 
-This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)". Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The Plan, Code, and Review phases each carry distinct context-isolation needs — Plan keeps KATA architectural reads out of the orchestrator, Code isolates multi-file edits, Review fans out three independent verifiers in parallel.
+> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
+
+This skill is **per-scope**: `<scope>` = `<JIRA-KEY>` (ticket-driven / regression-driven) or `<module-slug>` (module-driven). Session state lives at `.session/test-automation/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The session `plan.md` is a thin INDEX that cites the canonical domain artifacts (`spec.md`, `implementation-plan.md`, `atc/*.md`) under `.context/PBI/{module}/test-specs/{scope}/` — domain content stays in the existing PBI tree, not duplicated.
+
+This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The Plan, Code, and Review phases each carry distinct context-isolation needs — Plan keeps KATA architectural reads out of the orchestrator, Code isolates multi-file edits, Review fans out three independent verifiers in parallel.
 
 | Stage                                          | Pattern              | Subagent role                                                                                                                  |
 |------------------------------------------------|----------------------|--------------------------------------------------------------------------------------------------------------------------------|
@@ -44,6 +48,23 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 - **Code phase scope rule**: each Code subagent edits multiple files in isolation, returns a list of changed files + a one-line summary per file. The orchestrator never reads the diffs — only the summary. If the user wants to see actual diffs, the orchestrator runs `git diff` inline after the subagent returns.
 - **On any Verifier failure**: STOP, return the failing report verbatim to the user, do NOT auto-fix the test code, do NOT re-dispatch the Code phase without user approval. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
 - **MANDATORY context doc for Plan + Code briefings**: include `kata-manifest.json` (root) in the "Context docs" component (item 2 of the 6-component briefing). Without it the subagent will scan `tests/components/**` directly, burn tokens, and risk proposing duplicates. See Critical Rule #12 in `CLAUDE.md`.
+
+---
+
+## Phase 0 — Resume check (MANDATORY, inline)
+
+Before picking the planning scope, run the session resume contract from `agentic-qa-core/references/session-management.md` §4:
+
+1. Determine the prospective `<scope>` from the invocation context (ticket key, regression-driven TC, or module slug — see "Pick the planning scope first" below).
+2. Check `.session/test-automation/<scope>/progress.md`.
+3. If it does NOT exist → proceed to scope picker + Phase 1.
+4. If it DOES exist:
+   - Read `plan.md` (thin index) + the tail of `progress.md`.
+   - Read the cited canonical `spec.md` / `implementation-plan.md` / `atc/*.md` under `.context/PBI/{module}/test-specs/{scope}/` for the domain content.
+   - Surface to the user: last completed phase (Plan / Code / Review) + next phase + open Review findings if any.
+   - Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-test-automation-<scope>-aborted/` before proceeding.
+
+Phase 0 is inline (no subagent). It runs in <1 minute on a cold cache.
 
 ---
 
@@ -86,7 +107,7 @@ Each phase has a gate. Do not start Code before the Plan is written and approved
 - Cross-check every proposed Component name against `components.api[].name` and `components.ui[].name`. If a match exists, extend the existing class — do not create a new one.
 - If reuse opportunity exists (same flow already covered by a Steps method or ATC), adapt the plan to extend rather than rebuild.
 
-Write the plan file(s) for the chosen scope under `.context/PBI/{module}/test-specs/{TICKET-ID}/`. The plan answers:
+Write the canonical domain plan file(s) for the chosen scope under `.context/PBI/{module}/test-specs/{TICKET-ID}/` (`spec.md`, `implementation-plan.md`, `atc/*.md`). The plan answers:
 
 - Which scenarios from the ticket become tests, which become ATCs, which are shared preconditions (Steps)?
 - Which components already exist (`tests/components/api/*Api.ts`, `tests/components/ui/*Page.ts`) and which need to be created?
@@ -94,9 +115,11 @@ Write the plan file(s) for the chosen scope under `.context/PBI/{module}/test-sp
 - Which fixture will the test use -- `{api}`, `{ui}`, `{test}`, or `{steps}`?
 - Which ATC IDs (from the TMS) map to which component methods?
 
+**Also write the session index `plan.md`** at `.session/test-automation/<scope>/plan.md` per `agentic-qa-core/references/session-management.md` §6. This is a THIN INDEX — Goal, Inputs (cites the canonical artifacts above), Approach, Phase breakdown table, Risks, Verification checklist, Cross-references. It does NOT duplicate the domain content; it points to it.
+
 Use the dispatch defined in §Subagent Dispatch Strategy: **Single**. Full briefing in `references/planning-playbook.md` §Plan dispatch.
 
-Present the plan to the user. Wait for approval before coding.
+Present the plan to the user. Wait for approval before coding. After approval, the orchestrator appends `## Phase 1 — Plan — <ts>` with `status: completed`, `artifacts_touched: [list of domain + session files]`, `next: Phase 2 — Code` to `.session/test-automation/<scope>/progress.md`.
 
 ### Phase 2 — Code
 
@@ -119,6 +142,8 @@ bun run lint:check                         # ESLint, no errors
 ```
 
 If any step fails, fix before moving to Review.
+
+**Progress checkpoint**: after each Code subagent returns (per scope unit — one per TC for module-driven, one total for ticket-driven), the orchestrator appends a phase entry to `.session/test-automation/<scope>/progress.md` per `agentic-qa-core/references/session-management.md` §7. For module-driven scope, mid-batch resume reads the entries and skips already-coded ATCs.
 
 #### AI-readable verification (optional, recommended)
 
@@ -150,6 +175,8 @@ Use the dispatch defined in §Subagent Dispatch Strategy: **Parallel** (3 simult
 Run the review checklist on the new/modified files. Treat every failed item as a blocker. A clean review is the merge gate. See `references/review-checklists.md` for the full lists (E2E and API have overlapping but distinct checklists).
 
 **Optional adversarial gate** — for high-risk changes (new fixtures, shared Page/Api base modifications, refactors touching multiple ATCs), invoke `/judgment-day` before commit. Runs two blind judges in parallel against the diff and only approves when both agree. See `.claude/skills/judgment-day/SKILL.md`. Not invoked automatically — user opts in per ticket.
+
+**Progress checkpoint + Archive**: after Phase 3 returns ACCEPT (all 3 Verifiers exit 0), the orchestrator appends `## Phase 3 — Review — <ts>` with `status: completed`, `next: stop` to `.session/test-automation/<scope>/progress.md`, then runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/test-automation/<scope>/` to `.session/.archive/<YYYY-MM-DD>-test-automation-<scope>/` (two-file dir preserved) and calls `mem_session_summary` including the archive path. On REJECT, archive does NOT run — the working directory stays for debug.
 
 ---
 
@@ -295,6 +322,7 @@ Not every invocation needs every reference. Load the specific file when the task
 - **Writing the Plan (module / ticket / ATC scopes and templates)** → `references/planning-playbook.md`
 - **Running the review checklist (E2E or API)** → `references/review-checklists.md`
 - **Configuring Playwright, CI integration, projects, sharding** → `references/ci-integration.md`
+- **Session resume contract, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint** → `../agentic-qa-core/references/session-management.md` (Phase 0 + Phase 1 + Archive of this skill)
 
 Tool resolution: use `[AUTOMATION_TOOL]` for browser work (Playwright CLI or MCP — load `/playwright-cli` when available), `[API_TOOL]` for OpenAPI exploration, `[DB_TOOL]` for verifying test data in the database, `[TMS_TOOL]` for TMS sync (load `/xray-cli` when available), `[ISSUE_TRACKER_TOOL]` for ticket lookups. Resolve tags via the project's CLAUDE.md Tool Resolution table.
 

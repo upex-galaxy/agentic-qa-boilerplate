@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-05-20T22:37:48.258Z`
+> Generated: `2026-05-21T00:51:29.287Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.claude/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -176,6 +176,13 @@ Skills indexed: 13
 **Purpose**: Onboard a project to this testing boilerplate and generate the context files that every QA and automation session depends on.
 
 **Compact Rules**:
+- Check `.session/project-discovery/progress.md`.
+- If it does NOT exist → proceed to "Before starting: target repo location" below, then "Pick the scope first" (which writes `plan.md`).
+- If it DOES exist:
+- Read `plan.md` (chosen scope, target repo path, phase plan).
+- Read tail of `progress.md` (last completed phase + next planned phase).
+- Surface to the user: scope chosen, target repo, last completed phase, next phase, any open Discovery Gaps from the last entry.
+- Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-project-discovery-aborted/` before proceeding.
 - **Project Connection** -- repo paths, tech stack detection, environment URLs, credentials from `.env`, team contacts.
 - **Project Assessment** -- current testing maturity (frameworks in place, CI presence, lint/typecheck, coverage). Produces a risk profile.
 - **Business Model Discovery** -- problem statement, target users, value proposition, revenue model (if any). Business Model Canvas recommended.
@@ -184,13 +191,6 @@ Skills indexed: 13
 - `business-model.md` cites at least one concrete source (`Source:` or `Found in:` literal appears 3+ times).
 - `project-config.md` has a `## Tech Stack` section AND a `## Environments` section.
 - **Executive Summary** -- problem, solution, success metrics, scope.
-- **User Personas** -- roles, permissions, primary/secondary users, role hierarchy.
-- **User Journeys** -- critical paths through the UI, route map, journey diagrams.
-- **Architecture Specs** -- C4 context and container diagrams, component structure, database schema, external services, security model.
-- **Functional Specs** -- FR-N entries with preconditions, business rules, validations, state machines.
-- **Non-Functional Specs** -- performance budgets, security posture, reliability (RTO/RPO), scalability, observability, compliance.
-- `architecture.md` contains at least one ` ```mermaid` block AND one of (`## Data Flow`, `## Database Schema`, `## Component Structure`).
-- `functional-specs.md` contains at least one `FR-` identifier and one `BR-` identifier.
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
@@ -205,20 +205,20 @@ Skills indexed: 13
 
 **Compact Rules**:
 - **Error protocol**: On any subagent failure: STOP, report full context to user, present retry / skip / abort options. Do NOT auto-fix. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
+- Compute prospective `<scope>` = `<env>-<YYYY-MM-DD>` from invocation context (env defaults to `{{DEFAULT_ENV}}`).
+- Check `.session/regression-testing/<scope>/progress.md`.
+- If it does NOT exist → proceed to suite selection + Phase 1 preflight + plan.md write.
+- If it DOES exist:
+- Read `plan.md` (captured `suite`, `env`, `workflow_file`, `RUN_ID` if Phase 1 already triggered).
+- Read tail of `progress.md`.
+- If `RUN_ID` is present AND `progress.md` last entry is `Phase 1 — Trigger — status: completed` but Monitor entry is missing/failed: surface the option to **re-attach** to the existing `RUN_ID` via `gh run view <RUN_ID> --json status,conclusion` instead of re-triggering. This is the high-value resume case.
+- Otherwise surface the standard offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-regression-testing-<scope>-aborted/` first.
 - Score **≥ 7** → **GO** — release approved
 - Score **4-6** → **CAUTION** — manual review required, document accepted risks
 - Score **< 4** → **NO-GO** — block release, fix regressions, re-run
 - Test ID: {atc_id}
 - Suite: {suite}
 - Run ID: {run_id}
-- Environment: {environment}
-- [Workflow run]({run_url})
-- [Allure report]({allure_url})
-- {test} | {atc_id} | last passed {date} | [issue]({url}) | probable cause: {...}
-- Workflow run: {url}
-- Allure: {url}
-- Created issues: {list}
-- TMS execution: {key / url}
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
@@ -264,17 +264,17 @@ Skills indexed: 13
 - Bug ID deployed to staging -> Single ticket / Bug.
 - Sprint number, "process sprint X", or an existing `SPRINT-{N}-TESTING.md` -> Batch sprint.
 - If the framework file does not exist yet, generate it first (see `sprint-orchestration.md`).
+- Compute prospective `<scope>` from invocation: `<JIRA-KEY>` (single-ticket) or `sprint-<N>/<JIRA-KEY>` (batch — once per ticket in the wave loop).
+- Check `.session/sprint-testing/<scope>/progress.md`.
+- If it does NOT exist → proceed to Session Start (writes `plan.md`).
+- If it DOES exist:
+- Read `plan.md` + tail of `progress.md`.
+- Optionally read `.context/PBI/{module}/{TICKET}/test-session-memory.md` for the per-ticket domain state (load-bearing across the 4 sub-agent dispatches).
+- Surface to the user: last completed stage (Session Start / Stage 1 / Stage 2 / Stage 3) + next stage + any unresolved BUG_FOUND or TOOL FAILURE from the last entry.
+- Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>-aborted/` first.
 - **Resolve TMS modality** (Xray on Jira vs Jira-native). This determines whether ATP/ATR will be created as Xray `Test Plan` / `Test Execution` issues (Modality A) or as Story custom-field + comment mirrors (Modality B). Full resolution algorithm lives in `test-documentation/SKILL.md` §Phase 0 — apply the same four-step probe here (CLAUDE.md -> master-test-plan.md -> list issue types -> ask the user). Persist the result into `test-session-memory.md`.
 - Always load `/acli` (all Jira ticket operations: story fetch, comment, transition, link, bug creation).
 - In **Modality A (Xray)**: also load `/xray-cli` for Test / Test Execution / Test Plan / Test Run operations.
-- In **Modality B (Jira-native)**: `/acli` alone covers both `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` pseudocode — no additional skill needed.
-- Detect batch mode from the user invocation ("process sprint N", "continue sprint", a `sprint-file` parameter, or any phrase that implies a sprint loop).
-- Check whether `.context/reports/SPRINT-{N}-TESTING.md` exists for the target sprint.
-- **Missing** -> generate it before entering the ticket loop. Delegate to `sprint-orchestration.md` §Part 1 — Sprint Roadmap Generator.
-- **Present but older than 24h, OR the user explicitly asks for a refresh** -> regenerate (warn + confirm overwrite).
-- **Present and fresh** -> proceed.
-- Single-ticket and bug-only invocations skip this step entirely — they do not need a roadmap file.
-- Fetches the ticket from `[ISSUE_TRACKER_TOOL]` (title, ACs, priority, comments).
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
@@ -291,18 +291,18 @@ Skills indexed: 13
 - **Code phase scope rule**: each Code subagent edits multiple files in isolation, returns a list of changed files + a one-line summary per file. The orchestrator never reads the diffs — only the summary. If the user wants to see actual diffs, the orchestrator runs `git diff` inline after the subagent returns.
 - **On any Verifier failure**: STOP, return the failing report verbatim to the user, do NOT auto-fix the test code, do NOT re-dispatch the Code phase without user approval. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
 - **MANDATORY context doc for Plan + Code briefings**: include `kata-manifest.json` (root) in the "Context docs" component (item 2 of the 6-component briefing). Without it the subagent will scan `tests/components/**` directly, burn tokens, and risk proposing duplicates. See Critical Rule #12 in `CLAUDE.md`.
+- Determine the prospective `<scope>` from the invocation context (ticket key, regression-driven TC, or module slug — see "Pick the planning scope first" below).
+- Check `.session/test-automation/<scope>/progress.md`.
+- If it does NOT exist → proceed to scope picker + Phase 1.
+- If it DOES exist:
+- Read `plan.md` (thin index) + the tail of `progress.md`.
+- Read the cited canonical `spec.md` / `implementation-plan.md` / `atc/*.md` under `.context/PBI/{module}/test-specs/{scope}/` for the domain content.
+- Surface to the user: last completed phase (Plan / Code / Review) + next phase + open Review findings if any.
+- Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-test-automation-<scope>-aborted/` before proceeding.
 - Load `kata-manifest.json`. Cross-check every proposed TC ID against `components.api[].atcs[].id` and `components.ui[].atcs[].id`. If a match exists, the TC is already automated — re-scope or reuse.
 - Cross-check every proposed Component name against `components.api[].name` and `components.ui[].name`. If a match exists, extend the existing class — do not create a new one.
 - If reuse opportunity exists (same flow already covered by a Steps method or ATC), adapt the plan to extend rather than rebuild.
 - Which scenarios from the ticket become tests, which become ATCs, which are shared preconditions (Steps)?
-- Which components already exist (`tests/components/api/*Api.ts`, `tests/components/ui/*Page.ts`) and which need to be created?
-- What test data is required? Classify by Discover / Modify / Generate (never assume data exists in staging).
-- Which fixture will the test use -- `{api}`, `{ui}`, `{test}`, or `{steps}`?
-- Which ATC IDs (from the TMS) map to which component methods?
-- **Types** at top of component file (payloads, responses, domain DTOs).
-- **Component class** extending `ApiBase` or `UiBase`. Helpers first (no decorator), ATCs second (`@atc('TICKET-ID')`).
-- **Register** the component in `tests/components/ApiFixture.ts`, `UiFixture.ts`, or `StepsFixture.ts` as appropriate.
-- **Test file** under `tests/e2e/{module}/` or `tests/integration/{module}/`, using the correct fixture.
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
@@ -318,19 +318,19 @@ Skills indexed: 13
 **Compact Rules**:
 - **Concurrency cap = 10 subagents** for Parallel TC creation. Jira and Xray APIs both rate-limit at ~10 writes/sec sustained; fanning out wider triggers 429 responses. If a module has >100 TCs, batches per subagent must be larger than 10 each (cap is on subagent count, not chunk size).
 - **Error protocol**: On any subagent failure: STOP, report the partial success state (which TCs landed, which failed, with their issue keys / errors), present retry / skip / abort options. Do NOT auto-fix nor auto-rollback. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
+- Check `.session/test-documentation/<scope>/progress.md`.
+- If it does NOT exist → proceed to Phase 0 (TMS modality).
+- If it DOES exist:
+- Read `plan.md` (chosen scope, TMS modality, TC list, ROI verdicts).
+- Read tail of `progress.md` (last completed phase + next planned phase).
+- Surface to the user: scope, TMS modality, last completed phase, next phase, any pending TC creation chunks that did not finish (the most common interruption point — Phase 3 parallel bulk create capped at 10 subagents).
+- Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-test-documentation-<scope>-aborted/` first.
 - Check `CLAUDE.md` for `{{TMS_CLI}}`. Value `bun xray` (or any Xray CLI) -> **Modality A**. Value is unset, `acli`-only, or `{{TMS_CLI}}` matches `{{ISSUE_TRACKER_CLI}}` -> **Modality B**.
 - If `CLAUDE.md` is ambiguous, look for a `.context/master-test-plan.md` line such as `TMS: Xray on Jira` or `TMS: Jira native`.
 - If still ambiguous, list existing issue types in the project via `[ISSUE_TRACKER_TOOL] List issue types`. If the project exposes `Test Plan` / `Test Execution` / `Test Set` / `Pre-Condition`, it is **Modality A**. Otherwise **Modality B**.
 - **Only if all three checks fail**, ask the user the question above. Do NOT ask by default — autoresolve first.
 - Modality A concepts + Xray REST/GraphQL/CLI -> `references/xray-platform.md`
 - Modality B project setup (Test issue type, Screen Scheme, custom fields) -> `references/jira-setup.md`
-- Both modes side-by-side (field mapping, workflow, Description template) -> `references/jira-test-management.md`
-- Open the implementation plan (if any) and list the files it touches.
-- Grep the actual code for `data-testid=`, route handlers, API paths, and text formats.
-- Compare the ATP's assumptions against what the code does. If they diverge, correct the TC design and add a Refinement Notes section.
-- An API the ATP assumed exists turns out to be SSR/direct DB.
-- UI text format in the ATP ("based on N reviews") vs reality ("(N reviews)").
-- Hardcoded IDs in the ATP vs variable pattern required in TMS.
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
