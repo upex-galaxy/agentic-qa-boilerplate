@@ -54,6 +54,20 @@
  *      PROJECT_LEVEL_SKILLS, USER_LEVEL_SKILLS is an install conflict.
  *      ERROR severity.
  *
+ *  10. SESSION-BANNER-MISSING — retrofitted SKILL.md must contain the verbatim
+ *      session-management banner prefix. ERROR severity.
+ *
+ *  11. SESSION-PHASE-0-MISSING — retrofitted SKILL.md must have a Phase 0 (or
+ *      Phase -1) section that mentions `.session/`. ERROR severity.
+ *
+ *  12. SESSION-SCOPE-INVALID — a runtime directory under `.session/<skill>/`
+ *      must match the per-skill scope regex. WARN severity (gitignored state
+ *      should not break CI). No-op if `.session/` does not exist.
+ *
+ *  13. SESSION-DOCTRINE-DRIFT — the body of session-management.md must be
+ *      byte-identical between this repo and its sister repo. ERROR severity.
+ *      Emits INFO + skips when the sister repo cannot be located.
+ *
  * Usage: bun run scripts/lint-skills.ts   (or: bun run skills:check)
  */
 
@@ -103,6 +117,52 @@ const ANTI_LEAK_SKILLS = [
 ];
 
 const ANTI_LEAK_ALLOWED_SECTION = 'Forbidden invocations';
+
+// -----------------------------------------------------------------------------
+// Session-management contract (per agentic-qa-core/references/session-management.md §14)
+// -----------------------------------------------------------------------------
+
+/**
+ * Skills that adopted the session-management contract. Maps each skill slug to
+ * the regex its immediate `.session/<skill>/<scope>/` child directory must
+ * match, or `null` if the skill stores state directly under `.session/<skill>/`
+ * with no `<scope>` segment. Skills NOT in this map are exempt from the
+ * BANNER, PHASE-0, and SCOPE-INVALID checks.
+ */
+const SESSION_RETROFITTED_SKILLS: Record<string, RegExp | null> = {
+  'project-discovery': null,
+  'framework-development': /^[a-z0-9][a-z0-9-]*$/,
+  'test-automation': /^([A-Z]+-\d+|[a-z0-9][a-z0-9-]*)$/,
+  'sprint-testing': /^([A-Z]+-\d+|sprint-\d+)$/,
+  'regression-testing': /^[a-z]+-\d{4}-\d{2}-\d{2}$/,
+  // ad-hoc dated form `YYYY-MM-DD-adhoc` is a strict subset of the kebab-case
+  // module-slug alternative, so no separate branch is needed.
+  'test-documentation': /^([A-Z]+-\d+|[a-z0-9][a-z0-9-]*)$/,
+  'shift-left-testing': /^\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*$/,
+};
+
+/**
+ * Invariant prefix of the orchestration + session banner that every retrofitted
+ * SKILL.md must contain verbatim. The line continues differently between the
+ * standard form and any future progress-only variant — but the prefix up to
+ * "archive on completion)." is invariant in both. Contains an em-dash (U+2014)
+ * between "dispatch" and "main thread" — copy-paste from a retrofitted
+ * SKILL.md (e.g. framework-development); do NOT retype.
+ */
+const SESSION_BANNER_PREFIX = '> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion).';
+
+/**
+ * Matches `## Phase 0`, `## Phase 0.0`, `## Phase -1` (ASCII hyphen-minus), or
+ * `## Phase −1` (U+2212 minus). test-documentation/SKILL.md uses Phase `-1`
+ * (ASCII hyphen) to avoid colliding with its existing Phase 0.
+ */
+const PHASE_0_HEADING = /^## Phase (?:0(?:\.0)?|-1|−1)(?:\s|$)/m;
+
+const SESSION_DOCTRINE_PATH = join(SKILLS_DIR, 'agentic-qa-core/references/session-management.md');
+const SISTER_DOCTRINE_REL = '.claude/skills/agentic-dev-core/references/session-management.md';
+const SISTER_REPO_SIBLING_REL = '../agentic-dev-boilerplate';
+const DOCTRINE_BODY_START = '## 1. Purpose & scope';
+const DOCTRINE_BODY_END = '## Cross-references';
 
 // -----------------------------------------------------------------------------
 // Violations accumulator
@@ -532,6 +592,148 @@ function checkDuplicateTier(
 }
 
 // -----------------------------------------------------------------------------
+// Checks 11–14 — session-management contract
+// -----------------------------------------------------------------------------
+
+function extractDoctrineBody(raw: string): string | null {
+  const start = raw.indexOf(DOCTRINE_BODY_START);
+  if (start === -1) { return null; }
+  const end = raw.indexOf(DOCTRINE_BODY_END, start);
+  if (end === -1) { return null; }
+  const slice = raw.slice(start, end);
+  // Normalize trailing whitespace per line for comparison tolerance.
+  return slice.split('\n').map(l => l.replace(/[ \t]+$/, '')).join('\n');
+}
+
+function locateSisterRepo(): string | null {
+  const envPath = process.env.SESSION_DOCTRINE_SISTER_REPO;
+  if (envPath && existsSync(join(envPath, SISTER_DOCTRINE_REL))) {
+    return envPath;
+  }
+  const sibling = join(REPO_ROOT, SISTER_REPO_SIBLING_REL);
+  if (existsSync(join(sibling, SISTER_DOCTRINE_REL))) {
+    return sibling;
+  }
+  return null;
+}
+
+function checkSessionBanner(slug: string, body: string): Violation[] {
+  if (!(slug in SESSION_RETROFITTED_SKILLS)) { return []; }
+  if (body.includes(SESSION_BANNER_PREFIX)) { return []; }
+  return [{
+    severity: 'ERROR',
+    scope: slug,
+    msg: 'SESSION-BANNER-MISSING: SKILL.md body missing the verbatim session-management banner prefix (see session-management.md §3)',
+  }];
+}
+
+function checkSessionPhase0(slug: string, body: string): Violation[] {
+  if (!(slug in SESSION_RETROFITTED_SKILLS)) { return []; }
+  const match = PHASE_0_HEADING.exec(body);
+  if (!match) {
+    return [{
+      severity: 'ERROR',
+      scope: slug,
+      msg: 'SESSION-PHASE-0-MISSING: SKILL.md has no `## Phase 0` (or `## Phase -1`) heading',
+    }];
+  }
+  const headingIdx = match.index;
+  const restAfter = body.slice(headingIdx + match[0].length);
+  const nextH2 = restAfter.search(/\n## /);
+  const sectionBody = nextH2 === -1 ? restAfter : restAfter.slice(0, nextH2);
+  if (!sectionBody.includes('.session/')) {
+    return [{
+      severity: 'ERROR',
+      scope: slug,
+      msg: 'SESSION-PHASE-0-MISSING: Phase 0 section does not mention `.session/` — must reference session-management resume path',
+    }];
+  }
+  return [];
+}
+
+function checkSessionScopes(repoRoot: string): Violation[] {
+  const result: Violation[] = [];
+  const sessionRoot = join(repoRoot, '.session');
+  if (!existsSync(sessionRoot)) { return result; }
+  for (const [skillSlug, scopeRegex] of Object.entries(SESSION_RETROFITTED_SKILLS)) {
+    const skillSessionDir = join(sessionRoot, skillSlug);
+    if (!existsSync(skillSessionDir)) { continue; }
+    let entries: string[];
+    try { entries = readdirSync(skillSessionDir); }
+    catch { continue; }
+    for (const e of entries) {
+      const full = join(skillSessionDir, e);
+      let s;
+      try { s = statSync(full); }
+      catch { continue; }
+      if (scopeRegex === null) {
+        if (s.isDirectory()) {
+          result.push({
+            severity: 'WARN',
+            scope: skillSlug,
+            msg: `SESSION-SCOPE-INVALID: .session/${skillSlug}/${e}/ exists but ${skillSlug} stores state directly under .session/${skillSlug}/ (no <scope> segment expected)`,
+          });
+        }
+      }
+      else {
+        if (!s.isDirectory()) { continue; }
+        if (!scopeRegex.test(e)) {
+          result.push({
+            severity: 'WARN',
+            scope: skillSlug,
+            msg: `SESSION-SCOPE-INVALID: .session/${skillSlug}/${e}/ does not match expected scope shape ${scopeRegex}`,
+          });
+        }
+      }
+    }
+  }
+  return result;
+}
+
+function checkDoctrineDrift(): Violation[] {
+  if (!existsSync(SESSION_DOCTRINE_PATH)) {
+    return [{
+      severity: 'INFO',
+      scope: 'doctrine',
+      msg: 'SESSION-DOCTRINE-DRIFT: local session-management.md not found; skipping byte-equality check',
+    }];
+  }
+  const sister = locateSisterRepo();
+  if (!sister) {
+    return [{
+      severity: 'INFO',
+      scope: 'doctrine',
+      msg: 'SESSION-DOCTRINE-DRIFT: sibling repo not detectable; skipping cross-repo doctrine byte-equality check',
+    }];
+  }
+  const sisterDoctrinePath = join(sister, SISTER_DOCTRINE_REL);
+  const localBody = extractDoctrineBody(readFileSync(SESSION_DOCTRINE_PATH, 'utf8'));
+  const sisterBody = extractDoctrineBody(readFileSync(sisterDoctrinePath, 'utf8'));
+  if (localBody === null || sisterBody === null) {
+    return [{
+      severity: 'ERROR',
+      scope: 'doctrine',
+      msg: `SESSION-DOCTRINE-DRIFT: could not extract body between '${DOCTRINE_BODY_START}' and '${DOCTRINE_BODY_END}' anchors`,
+    }];
+  }
+  if (localBody === sisterBody) { return []; }
+  const localLines = localBody.split('\n');
+  const sisterLines = sisterBody.split('\n');
+  let firstDiff = -1;
+  const max = Math.max(localLines.length, sisterLines.length);
+  for (let i = 0; i < max; i++) {
+    if (localLines[i] !== sisterLines[i]) { firstDiff = i; break; }
+  }
+  const localLine = JSON.stringify(localLines[firstDiff] ?? '<EOF>').slice(0, 80);
+  const sisterLine = JSON.stringify(sisterLines[firstDiff] ?? '<EOF>').slice(0, 80);
+  return [{
+    severity: 'ERROR',
+    scope: 'doctrine',
+    msg: `SESSION-DOCTRINE-DRIFT: body differs from sister repo. First diff at line ${firstDiff + 1}: local=${localLine} sister=${sisterLine}`,
+  }];
+}
+
+// -----------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------
 
@@ -687,6 +889,14 @@ function main(): void {
   // Check 9: DUPLICATE-TIER
   violations.push(...checkDuplicateTier(t2Slugs, t3Slugs, t4Slugs));
 
+  // Checks 11–14: session-management contract
+  for (const skill of t1Skills) {
+    violations.push(...checkSessionBanner(skill.slug, skill.body));
+    violations.push(...checkSessionPhase0(skill.slug, skill.body));
+  }
+  violations.push(...checkSessionScopes(REPO_ROOT));
+  violations.push(...checkDoctrineDrift());
+
   // ---- Report ----
   const checkNames = [
     'T1 frontmatter parseability',
@@ -698,6 +908,10 @@ function main(): void {
     'TIER-MISMATCH (CLAUDE.md §5 vs install.ts)',
     'STALE-PATH (inline-code path references in SKILL.md bodies)',
     'DUPLICATE-TIER (skill slug in multiple tier arrays)',
+    'SESSION-BANNER-MISSING (retrofitted SKILL.md missing session-management banner)',
+    'SESSION-PHASE-0-MISSING (retrofitted SKILL.md missing Phase 0 with .session/ ref)',
+    'SESSION-SCOPE-INVALID (.session/<skill>/<scope>/ shape mismatch)',
+    'SESSION-DOCTRINE-DRIFT (session-management.md body byte-equality across repos)',
   ];
 
   if (violations.length === 0) {
