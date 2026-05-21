@@ -398,6 +398,6 @@ This doc does NOT:
 
 - Replace any skill's internal workflow. Each skill stays in charge of its own steps.
 - Rewrite SDD. The gentle-ai bundle is treated as a stable upstream dependency.
-- Define the dev-side composition. Dev workflows live in the sister repo `agentic-dev-boilerplate` and follow their own composition strategy (which permits SDD-* inside `sprint-development` because the dev-side workflow has different cost/value tradeoffs).
+- Define the dev-side composition. Dev workflows are out of scope here and follow their own composition strategy.
 - Specify exact prompt text for the `## Composable Skills` injection block. That belongs in the orchestrator template, drafted later.
 - Cover Modality B (Jira-native TMS) tier nuances. That belongs in `test-documentation/references/jira-setup.md`.

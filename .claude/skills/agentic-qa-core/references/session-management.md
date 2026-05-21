@@ -81,10 +81,9 @@ A small set of short skills bypass Phase 0 because they have no meaningful inter
 
 - Command-driven CLI cookbooks: `acli`, `xray-cli`
 - Atomic operators: `git-flow-master`
-- Informational walkthroughs: `agentic-dev-onboard`, `agentic-qa-onboard`
-- Inline TDD slices: `unit-testing`
+- Informational walkthroughs: `agentic-qa-onboard`
 - Within-session-only operators: `judgment-day`
-- Meta / reference-only: `agentic-dev-core`, `agentic-qa-core`
+- Meta / reference-only: `agentic-qa-core`
 
 A skill in this list MUST state its opt-out explicitly in its SKILL.md so future readers don't expect a `.session/` directory.
 
@@ -304,17 +303,11 @@ The subagent treats `plan.md` and `progress.md` as read-only context. Only the o
 
 ### Skills retrofitted with the full pattern (plan.md + progress.md)
 
-DEV repo: `project-foundation`, `project-bootstrap`, `product-management` (workflows A/B/C only), `design-system`, `testability-guide`.
-
-QA repo: `test-automation`, `sprint-testing`, `project-discovery`, `regression-testing`, `test-documentation`, `shift-left-testing`.
-
-### Skills adopting the progress-only variant (no plan.md)
-
-DEV repo: `sprint-development`. The canonical plan stays at `.context/PBI/<ticket>/impl-plan.md` (committed, PR-reviewed). Only `progress.md` lives under `.session/`.
+`test-automation`, `sprint-testing`, `project-discovery`, `regression-testing`, `test-documentation`, `shift-left-testing`.
 
 ### Skill that pioneered the pattern
 
-QA repo: `framework-development`. The original implementation used `.scratch/framework-changes/<change>/{plan.md, apply-progress.md}`. Migrated to this doctrine at `.session/framework-development/<change>/{plan.md, progress.md}`. The `.scratch/` path is grandfathered for one release so in-flight local state does not vanish on upgrade.
+`framework-development`. The original implementation used `.scratch/framework-changes/<change>/{plan.md, apply-progress.md}`. Migrated to this doctrine at `.session/framework-development/<change>/{plan.md, progress.md}`. The `.scratch/` path is grandfathered for one release so in-flight local state does not vanish on upgrade.
 
 ### Skills explicitly excluded
 
@@ -326,18 +319,15 @@ See §4 "Skills that opt out".
 
 ## 14. Lint checks
 
-`scripts/lint-skills.ts` enforces four checks on top of the existing skill-registry lints:
+`scripts/lint-skills.ts` enforces three checks on top of the existing skill-registry lints:
 
 1. **Banner present.** Every retrofitted SKILL.md (per §13) contains the §10 banner verbatim. Missing banner → ERROR.
 2. **Phase 0 present.** Every retrofitted SKILL.md has a section titled `## Phase 0` (or `## Phase -1` for skills with a pre-existing `## Phase 0` like `test-documentation`) that mentions `.session/` path read. Missing Phase 0 → ERROR.
 3. **Scope shape valid.** When a session directory exists under `.session/<skill-slug>/`, its name matches the regex registered for that skill in §9. Mismatch → WARN.
-4. **Doctrine byte-equality.** The body of this file (between the frontmatter section and the `## Cross-references` section, exclusive) is byte-identical across DEV and QA repos. Drift → ERROR.
-
-The byte-equality check uses a stable anchor pair: the first occurrence of the literal `## 1. Purpose & scope` line as start, and the first occurrence of the literal `## Cross-references` line (or EOF when absent) as end. The frontmatter and any `## Cross-references` block (which legitimately differs per repo) are excluded from the byte-compare.
 
 ## Cross-references
 
-This `## Cross-references` section is the canonical place for repo-specific pointers. Content here is allowed to differ between DEV and QA — the lint byte-compare excludes everything from this heading onward.
+Pointers to sibling doctrine and supporting surfaces.
 
 - **Producers** (skills that emit session state): see §13 for the per-repo list. Each cited skill's `SKILL.md` "Subagent Dispatch Strategy" section names this doc.
 - **Sibling doctrine**: `./orchestration-doctrine.md`, `./briefing-template.md`, `./dispatch-patterns.md`, `./topic-key-conventions.md`. All four loaded on demand alongside this one.

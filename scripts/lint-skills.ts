@@ -64,10 +64,6 @@
  *      must match the per-skill scope regex. WARN severity (gitignored state
  *      should not break CI). No-op if `.session/` does not exist.
  *
- *  13. SESSION-DOCTRINE-DRIFT — the body of session-management.md must be
- *      byte-identical between this repo and its sister repo. ERROR severity.
- *      Emits INFO + skips when the sister repo cannot be located.
- *
  * Usage: bun run scripts/lint-skills.ts   (or: bun run skills:check)
  */
 
@@ -157,12 +153,6 @@ const SESSION_BANNER_PREFIX = '> **Orchestration & Session contracts**: this ski
  * (ASCII hyphen) to avoid colliding with its existing Phase 0.
  */
 const PHASE_0_HEADING = /^## Phase (?:0(?:\.0)?|-1|−1)(?:\s|$)/m;
-
-const SESSION_DOCTRINE_PATH = join(SKILLS_DIR, 'agentic-qa-core/references/session-management.md');
-const SISTER_DOCTRINE_REL = '.claude/skills/agentic-dev-core/references/session-management.md';
-const SISTER_REPO_SIBLING_REL = '../agentic-dev-boilerplate';
-const DOCTRINE_BODY_START = '## 1. Purpose & scope';
-const DOCTRINE_BODY_END = '## Cross-references';
 
 // -----------------------------------------------------------------------------
 // Violations accumulator
@@ -592,30 +582,8 @@ function checkDuplicateTier(
 }
 
 // -----------------------------------------------------------------------------
-// Checks 11–14 — session-management contract
+// Checks 11–12 — session-management contract
 // -----------------------------------------------------------------------------
-
-function extractDoctrineBody(raw: string): string | null {
-  const start = raw.indexOf(DOCTRINE_BODY_START);
-  if (start === -1) { return null; }
-  const end = raw.indexOf(DOCTRINE_BODY_END, start);
-  if (end === -1) { return null; }
-  const slice = raw.slice(start, end);
-  // Normalize trailing whitespace per line for comparison tolerance.
-  return slice.split('\n').map(l => l.replace(/[ \t]+$/, '')).join('\n');
-}
-
-function locateSisterRepo(): string | null {
-  const envPath = process.env.SESSION_DOCTRINE_SISTER_REPO;
-  if (envPath && existsSync(join(envPath, SISTER_DOCTRINE_REL))) {
-    return envPath;
-  }
-  const sibling = join(REPO_ROOT, SISTER_REPO_SIBLING_REL);
-  if (existsSync(join(sibling, SISTER_DOCTRINE_REL))) {
-    return sibling;
-  }
-  return null;
-}
 
 function checkSessionBanner(slug: string, body: string): Violation[] {
   if (!(slug in SESSION_RETROFITTED_SKILLS)) { return []; }
@@ -688,49 +656,6 @@ function checkSessionScopes(repoRoot: string): Violation[] {
     }
   }
   return result;
-}
-
-function checkDoctrineDrift(): Violation[] {
-  if (!existsSync(SESSION_DOCTRINE_PATH)) {
-    return [{
-      severity: 'INFO',
-      scope: 'doctrine',
-      msg: 'SESSION-DOCTRINE-DRIFT: local session-management.md not found; skipping byte-equality check',
-    }];
-  }
-  const sister = locateSisterRepo();
-  if (!sister) {
-    return [{
-      severity: 'INFO',
-      scope: 'doctrine',
-      msg: 'SESSION-DOCTRINE-DRIFT: sibling repo not detectable; skipping cross-repo doctrine byte-equality check',
-    }];
-  }
-  const sisterDoctrinePath = join(sister, SISTER_DOCTRINE_REL);
-  const localBody = extractDoctrineBody(readFileSync(SESSION_DOCTRINE_PATH, 'utf8'));
-  const sisterBody = extractDoctrineBody(readFileSync(sisterDoctrinePath, 'utf8'));
-  if (localBody === null || sisterBody === null) {
-    return [{
-      severity: 'ERROR',
-      scope: 'doctrine',
-      msg: `SESSION-DOCTRINE-DRIFT: could not extract body between '${DOCTRINE_BODY_START}' and '${DOCTRINE_BODY_END}' anchors`,
-    }];
-  }
-  if (localBody === sisterBody) { return []; }
-  const localLines = localBody.split('\n');
-  const sisterLines = sisterBody.split('\n');
-  let firstDiff = -1;
-  const max = Math.max(localLines.length, sisterLines.length);
-  for (let i = 0; i < max; i++) {
-    if (localLines[i] !== sisterLines[i]) { firstDiff = i; break; }
-  }
-  const localLine = JSON.stringify(localLines[firstDiff] ?? '<EOF>').slice(0, 80);
-  const sisterLine = JSON.stringify(sisterLines[firstDiff] ?? '<EOF>').slice(0, 80);
-  return [{
-    severity: 'ERROR',
-    scope: 'doctrine',
-    msg: `SESSION-DOCTRINE-DRIFT: body differs from sister repo. First diff at line ${firstDiff + 1}: local=${localLine} sister=${sisterLine}`,
-  }];
 }
 
 // -----------------------------------------------------------------------------
@@ -895,7 +820,6 @@ function main(): void {
     violations.push(...checkSessionPhase0(skill.slug, skill.body));
   }
   violations.push(...checkSessionScopes(REPO_ROOT));
-  violations.push(...checkDoctrineDrift());
 
   // ---- Report ----
   const checkNames = [
@@ -911,7 +835,6 @@ function main(): void {
     'SESSION-BANNER-MISSING (retrofitted SKILL.md missing session-management banner)',
     'SESSION-PHASE-0-MISSING (retrofitted SKILL.md missing Phase 0 with .session/ ref)',
     'SESSION-SCOPE-INVALID (.session/<skill>/<scope>/ shape mismatch)',
-    'SESSION-DOCTRINE-DRIFT (session-management.md body byte-equality across repos)',
   ];
 
   if (violations.length === 0) {

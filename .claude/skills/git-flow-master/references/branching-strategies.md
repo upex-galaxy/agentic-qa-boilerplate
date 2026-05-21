@@ -48,7 +48,7 @@ Seven strategies are supported. Each one tells the skill where new branches star
 
 ## `main-integration`
 
-**Shape**: `main` (production) + one integration branch (`staging` / `dev` / `develop`). Features merge to integration; integration promotes to `main` only on release. This is the "UPEX Galaxy" / "agentic-dev-boilerplate" layout.
+**Shape**: `main` (production) + one integration branch (`staging` / `dev` / `develop`). Features merge to integration; integration promotes to `main` only on release.
 
 **Best for**: small teams (2-10 people), one-product repos, CD pipelines that promote `staging → main` on a cadence.
 
