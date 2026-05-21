@@ -37,16 +37,16 @@ bun xray import junit --file results.xml --project DEMO
 
 Every flag that takes an issue reference (`--execution`, `--plan`, `--set`, `--tests`, plus the positional argument of `exec get` / `set get`) accepts **both forms** interchangeably:
 
-- **Jira key**: `SQ-194` — resolved via Jira REST in-process. Requires Jira credentials configured (`auth login --jira-url --jira-email --jira-token` or the `JIRA_*` env vars).
+- **Jira key**: `PROJ-194` — resolved via Jira REST in-process. Requires Jira credentials configured (`auth login --jira-url --jira-email --jira-token` or the `JIRA_*` env vars).
 - **Numeric Xray issueId**: `1042389` — used as-is, no resolution call.
 
 If only Xray credentials are configured (no Jira creds) and you pass a Jira key, the CLI fails with a guiding error pointing at the missing flags. Test Run identifiers (`run get`, `run status --id`, etc.) are GraphQL run ids — these are NOT Jira keys and resolution does not apply to them.
 
 ```bash
 # Both forms work identically
-bun xray exec get SQ-194
+bun xray exec get PROJ-194
 bun xray exec get 1042389
-bun xray exec add-tests --execution SQ-194 --tests SQ-100,SQ-101,SQ-102
+bun xray exec add-tests --execution PROJ-194 --tests PROJ-100,PROJ-101,PROJ-102
 bun xray exec add-tests --execution 1042389 --tests 1041000,1041001,1041002
 ```
 
@@ -139,7 +139,7 @@ bun xray run defect --id <runId> --issues DEMO-456,DEMO-789
 # Attach evidence files (PNG/JPG/PDF/log/JSON/...) to a run
 bun xray run evidence --id <runId> --file ./screenshots/error.png
 bun xray run evidence --id <runId> --file a.png --file b.png --file c.png
-bun xray run evidence --id <runId> --dir ./.context/PBI/SQ-8/evidence/
+bun xray run evidence --id <runId> --dir ./.context/PBI/PROJ-8/evidence/
 
 # Attach evidence to a specific step within a run
 bun xray run step-evidence --run <runId> --step <stepId> --file step3.png
@@ -165,8 +165,8 @@ bun xray plan create --project DEMO --summary "Release 2.0" --tests <id1>,<id2>
 bun xray plan list --project DEMO
 
 # Manage tests in plan
-bun xray plan add-tests --plan SQ-110 --tests SQ-100,SQ-101
-bun xray plan remove-tests --plan SQ-110 --tests SQ-100
+bun xray plan add-tests --plan PROJ-110 --tests PROJ-100,PROJ-101
+bun xray plan remove-tests --plan PROJ-110 --tests PROJ-100
 ```
 
 ### Sync & Repair (Jira-layer ↔ Xray-layer reconciliation)
@@ -179,17 +179,17 @@ detect and repair the drift.
 
 ```bash
 # Diff a single Test Execution (dry-run by default)
-bun xray exec sync --execution SQ-194
-bun xray exec sync --execution SQ-194 --apply       # re-attach missing tests at the Xray layer
+bun xray exec sync --execution PROJ-194
+bun xray exec sync --execution PROJ-194 --apply       # re-attach missing tests at the Xray layer
 
 # Same for a Test Plan
-bun xray plan sync --plan SQ-110
-bun xray plan sync --plan SQ-110 --apply
+bun xray plan sync --plan PROJ-110
+bun xray plan sync --plan PROJ-110 --apply
 
 # Bulk scan every Test Execution + Test Plan in a project
-bun xray repair --project SQ                        # report only
-bun xray repair --project SQ --apply                # re-attach every drift detected
-bun xray repair --project SQ --apply --limit 200    # scan up to 200 of each type
+bun xray repair --project PROJ                        # report only
+bun xray repair --project PROJ --apply                # re-attach every drift detected
+bun xray repair --project PROJ --apply --limit 200    # scan up to 200 of each type
 ```
 
 **What sync reports**

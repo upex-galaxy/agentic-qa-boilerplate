@@ -61,7 +61,7 @@ const issueIdCache = new Map<string, string>();
  *
  * Accepts:
  *   - Numeric id (`12345`) → returned as-is.
- *   - Jira key (`SQ-194`) → resolved via Jira REST `GET /rest/api/3/issue/{key}`.
+ *   - Jira key (`PROJ-194`) → resolved via Jira REST `GET /rest/api/3/issue/{key}`.
  *
  * Throws a guiding error when the input is malformed or when key resolution
  * fails because Jira credentials are not configured.
@@ -78,7 +78,7 @@ export async function resolveIssueId(input: string): Promise<string> {
 
   if (!KEY_PATTERN.test(trimmed)) {
     throw new Error(
-      `Invalid issue reference: '${input}' (expected Jira key like SQ-123 or numeric issue id)`,
+      `Invalid issue reference: '${input}' (expected Jira key like PROJ-123 or numeric issue id)`,
     );
   }
 

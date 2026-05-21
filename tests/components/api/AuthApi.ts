@@ -7,7 +7,7 @@
  * ATCs follow flow-based design: each ATC is an ACTION + VERIFICATION,
  * not a simple GET. Read-only operations are helpers (no @atc).
  *
- * TODO: Replace 'PROJ' in @atc IDs with your Jira project key (e.g., 'UPEX-101', 'MYM-101')
+ * TODO: Replace 'PROJ' in @atc IDs with your Jira project key (e.g., 'UPEX-101', 'ACME-101')
  *
  * Endpoints:
  * - POST /api/auth/login - Authenticate and get JWT token

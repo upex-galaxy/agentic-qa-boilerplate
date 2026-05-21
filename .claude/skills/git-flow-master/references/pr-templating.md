@@ -13,7 +13,7 @@ Without an issue key: `{type}: {description}`.
 Examples:
 
 - `feat(UPEX-123): add bulk-assign action`
-- `fix(OB-45): handle empty response in reservation list`
+- `fix(PROJ-45): handle empty response in reservation list`
 - `docs: clarify branch prefix vocabulary`
 - `chore(deps): bump zod to v4`
 

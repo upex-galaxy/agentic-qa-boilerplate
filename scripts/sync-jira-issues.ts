@@ -30,8 +30,12 @@
  *   ATLASSIAN_EMAIL=your-email@example.com
  *   ATLASSIAN_API_TOKEN=ATATT3x...
  *
+ * Project key resolution (in precedence order):
+ *   1. JIRA_PROJECT env var (override, e.g. JIRA_PROJECT=ACME bun run jira:sync-issues ...)
+ *   2. .agents/project.yaml -> project.project_key (default source-of-truth)
+ *   3. None set or `null` -> the script fails with an actionable message.
+ *
  * Optional:
- *   JIRA_PROJECT=SQ                    # Default project key
  *   JIRA_SYNC_OUTPUT=.context/PBI      # Output directory
  *
  * Get your API token at: https://id.atlassian.com/manage-profile/security/api-tokens
@@ -56,8 +60,8 @@
  * EXAMPLES:
  *   bun run jira:sync-issues status
  *   bun run jira:sync-issues pull
- *   bun run jira:sync-issues pull --epic SQ-20
- *   bun run jira:sync-issues pull --story SQ-21
+ *   bun run jira:sync-issues pull --epic PROJ-20
+ *   bun run jira:sync-issues pull --story PROJ-21
  *   bun run jira:sync-issues pull --include-comments --dry-run
  *
  * ============================================================================
@@ -65,13 +69,14 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parse as parseYaml } from 'yaml';
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
 const DEFAULT_OUTPUT_DIR = '.context/PBI';
-const DEFAULT_PROJECT = 'SQ';
+const PROJECT_YAML_PATH = join(import.meta.dir, '..', '.agents', 'project.yaml');
 
 /** Files that should never be overwritten by sync */
 const PROTECTED_FILES = new Set([
@@ -240,6 +245,7 @@ interface Config {
   email: string
   apiToken: string
   project: string
+  projectKeySource: ProjectKeySource
   outputDir: string
 }
 
@@ -478,6 +484,55 @@ function parseArgs(args: string[]): ParsedArgs {
 // CONFIGURATION
 // ============================================================================
 
+type ProjectKeySource = 'env' | 'project.yaml';
+
+interface ResolvedProjectKey {
+  key: string
+  source: ProjectKeySource
+}
+
+/**
+ * Reads `project.project_key` from `.agents/project.yaml`. Returns `null` when
+ * the file is missing, the field is absent, or its value is `null` / a blank
+ * string (the boilerplate ships with `project_key: null` on purpose).
+ */
+function readProjectKeyFromYaml(): string | null {
+  if (!existsSync(PROJECT_YAML_PATH)) { return null; }
+  let parsed: unknown;
+  try {
+    parsed = parseYaml(readFileSync(PROJECT_YAML_PATH, 'utf8'));
+  }
+  catch {
+    return null;
+  }
+  if (parsed === null || typeof parsed !== 'object') { return null; }
+  const project = (parsed as Record<string, unknown>).project;
+  if (project === null || typeof project !== 'object') { return null; }
+  const raw = (project as Record<string, unknown>).project_key;
+  if (typeof raw !== 'string') { return null; }
+  const trimmed = raw.trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+/**
+ * Resolves the active Jira project key. Precedence:
+ *   1. `JIRA_PROJECT` env var (explicit override).
+ *   2. `.agents/project.yaml` → `project.project_key`.
+ *   3. Neither set → throws an actionable error so the script never silently
+ *      points at a stale or wrong project.
+ */
+function resolveProjectKey(): ResolvedProjectKey {
+  const envKey = process.env.JIRA_PROJECT?.trim();
+  if (envKey) { return { key: envKey, source: 'env' }; }
+  const yamlKey = readProjectKeyFromYaml();
+  if (yamlKey) { return { key: yamlKey, source: 'project.yaml' }; }
+  throw new Error(
+    'sync-jira-issues: project key is not set. '
+    + 'Either pass `JIRA_PROJECT=<KEY>` or set `project.project_key` in `.agents/project.yaml` '
+    + '(run `bun run agents:setup` for an interactive walkthrough).',
+  );
+}
+
 function getConfig(): Config {
   const baseUrl = process.env.ATLASSIAN_URL;
   const email = process.env.ATLASSIAN_EMAIL;
@@ -492,13 +547,29 @@ function getConfig(): Config {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 
+  const projectKey = resolveProjectKey();
+
   return {
     baseUrl: baseUrl!.replace(/\/$/, ''), // Remove trailing slash
     email: email!,
     apiToken: apiToken!,
-    project: process.env.JIRA_PROJECT || DEFAULT_PROJECT,
+    project: projectKey.key,
+    projectKeySource: projectKey.source,
     outputDir: process.env.JIRA_SYNC_OUTPUT || DEFAULT_OUTPUT_DIR,
   };
+}
+
+/**
+ * Prints "Using project=<KEY> (source: ...)" once per command run so the user
+ * never has to guess which project the script is hitting. Skipped under
+ * `--json` so machine-readable output stays clean.
+ */
+function logProjectBanner(config: Config, options: { json?: boolean } = {}): void {
+  if (options.json) { return; }
+  const sourceLabel = config.projectKeySource === 'env'
+    ? 'JIRA_PROJECT env override'
+    : '.agents/project.yaml';
+  log.info(`Using project=${config.project} (source: ${sourceLabel})`);
 }
 
 // ============================================================================
@@ -2038,7 +2109,7 @@ async function cmdStatus(): Promise<void> {
     log.success(`ATLASSIAN_URL: ${config.baseUrl}`);
     log.success(`ATLASSIAN_EMAIL: ${config.email}`);
     log.success(`ATLASSIAN_API_TOKEN: ${'*'.repeat(20)}`);
-    log.info(`Project: ${config.project}`);
+    logProjectBanner(config);
     log.info(`Output: ${config.outputDir}`);
 
     log.line('');
@@ -2059,7 +2130,7 @@ async function cmdStatus(): Promise<void> {
       log.error('Authentication failed. Check ATLASSIAN_EMAIL and ATLASSIAN_API_TOKEN');
     }
     else if (errorMessage.includes('404')) {
-      log.error('Project not found. Check JIRA_PROJECT environment variable');
+      log.error('Project not found. Check JIRA_PROJECT env var or `project.project_key` in `.agents/project.yaml`.');
     }
     else {
       log.error(`Connection failed: ${errorMessage}`);
@@ -2089,6 +2160,7 @@ async function cmdPull(options: SyncOptions): Promise<void> {
 
   try {
     const config = getConfig();
+    logProjectBanner(config, { json: options.json });
     let result: SyncResult;
 
     // Route to the appropriate sync function based on issue type
@@ -2206,8 +2278,8 @@ ${colors.bold}OPTIONS${colors.reset}
 ${colors.bold}EXAMPLES${colors.reset}
   bun run jira:sync-issues status
   bun run jira:sync-issues pull
-  bun run jira:sync-issues pull --epic SQ-20
-  bun run jira:sync-issues pull --story SQ-21
+  bun run jira:sync-issues pull --epic PROJ-20
+  bun run jira:sync-issues pull --story PROJ-21
   bun run jira:sync-issues pull bugs
   bun run jira:sync-issues pull defects
   bun run jira:sync-issues pull improvements --dry-run
@@ -2218,7 +2290,7 @@ ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
   ATLASSIAN_URL         Jira instance URL (required)
   ATLASSIAN_EMAIL       Your email (required)
   ATLASSIAN_API_TOKEN   API token (required)
-  JIRA_PROJECT          Default project key (default: SQ)
+  JIRA_PROJECT          Project key override (default: read from .agents/project.yaml)
   JIRA_SYNC_OUTPUT      Output directory (default: .context/PBI)
 
 ${colors.bold}PROTECTED FILES${colors.reset}

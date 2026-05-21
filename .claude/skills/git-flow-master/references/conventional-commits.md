@@ -54,7 +54,7 @@ When the work is tied to a tracker (Jira, Linear, GitHub Issues), include the ke
 
 ```
 feat(UPEX-123): add bulk-assign action
-fix(OB-45): handle empty response in reservation list
+fix(PROJ-45): handle empty response in reservation list
 docs(UPEX-200): clarify branch prefix vocabulary
 ```
 

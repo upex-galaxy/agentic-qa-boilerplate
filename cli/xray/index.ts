@@ -213,7 +213,7 @@ ${colors.bold}EXAMPLES${colors.reset}
   # Attach evidence files to a test run (single, multiple, or whole directory)
   xray run evidence --id 5acc7ab0a3fe1b --file ./screenshots/login-error.png
   xray run evidence --id 5acc7ab0a3fe1b --file a.png --file b.png --file c.png
-  xray run evidence --id 5acc7ab0a3fe1b --dir ./.context/PBI/SQ-8/evidence/
+  xray run evidence --id 5acc7ab0a3fe1b --dir ./.context/PBI/PROJ-8/evidence/
 
   # Import JUnit results
   xray import junit --file results.xml --project DEMO
@@ -231,12 +231,12 @@ ${colors.bold}EXAMPLES${colors.reset}
   xray backup restore --file backup.json --project PROJ --sync
 
   # Diff Jira-layer vs Xray-layer for a Test Execution and (optionally) repair
-  xray exec sync --execution SQ-194
-  xray exec sync --execution SQ-194 --apply
+  xray exec sync --execution PROJ-194
+  xray exec sync --execution PROJ-194 --apply
 
   # Bulk repair every Test Execution + Test Plan in a project
-  xray repair --project SQ
-  xray repair --project SQ --apply
+  xray repair --project PROJ
+  xray repair --project PROJ --apply
 
 ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
   XRAY_CLIENT_ID      Xray API Client ID

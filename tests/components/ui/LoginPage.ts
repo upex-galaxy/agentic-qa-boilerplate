@@ -4,7 +4,7 @@
  * UI component for authentication via the login page.
  * Handles login flows for E2E tests.
  *
- * TODO: Replace 'PROJ' in @atc IDs with your Jira project key (e.g., 'UPEX-101', 'MYM-101')
+ * TODO: Replace 'PROJ' in @atc IDs with your Jira project key (e.g., 'UPEX-101', 'ACME-101')
  *
  * Page: /login (UPEX Dojo)
  * Locators (data-testid):
