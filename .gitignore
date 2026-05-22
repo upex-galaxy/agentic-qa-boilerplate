@@ -68,6 +68,7 @@ build/
 .serena
 .gemini/
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 .playwright-mcp
 .backups/
 
