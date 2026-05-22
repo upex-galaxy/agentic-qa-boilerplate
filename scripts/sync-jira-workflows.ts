@@ -696,10 +696,14 @@ async function fetchWorkflowDefinition(
 /**
  * Slugify a Jira name (status, transition, issue type) into a stable lowercase
  * identifier. Identical rules to `sync-jira-fields.ts:slugify` so a name like
- * "Ready For QA" maps to the same `ready_for_qa` slug everywhere.
+ * "Ready For QA" maps to the same `ready_for_qa` slug everywhere. Parenthetical
+ * decorators are stripped first (step 0) — see `sync-jira-fields.ts` header for
+ * rationale.
  */
 function slugify(name: string): string {
-  let s = name.toLowerCase();
+  // 0. strip parenthetical decorators — see sync-jira-fields.ts header doc.
+  let s = name.replace(/\s*\([^)]*\)\s*/g, ' ');
+  s = s.toLowerCase();
   s = s.normalize('NFD').replace(/\p{M}/gu, '');
   s = s.replace(/\p{Extended_Pictographic}/gu, '');
   s = s.replace(/\u{200D}/gu, '');

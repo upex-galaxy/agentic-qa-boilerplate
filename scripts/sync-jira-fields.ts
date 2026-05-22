@@ -540,14 +540,23 @@ async function fetchChildOptions(
  *   6. trim leading/trailing `_`
  *
  * Examples:
- *   "🔥 Severity (Bug)"        → "severity_bug"
+ *   "🔥 Severity (Bug)"        → "severity"
  *   "Plan de Aceptación"       → "plan_de_aceptacion"
  *   "Acceptance Test Plan"     → "acceptance_test_plan"
- *   "Story Points (Numeric)"   → "story_points_numeric"
+ *   "Story Points (Numeric)"   → "story_points"
+ *
+ * Parenthetical decorators ("(Dev)", "(QA)", "(Bug)", etc.) are STRIPPED
+ * before slugify. Workspaces use parens to disambiguate field names visually;
+ * the methodology slug stays semantic and the decoration is workspace cosmetic.
+ * If two real fields differ only by paren content, the `--allow-collisions`
+ * flag suffixes the second with `_2`, `_3`, ...
  */
 function slugify(name: string): string {
+  // 0. strip parenthetical decorators — see header doc.
+  let s = name.replace(/\s*\([^)]*\)\s*/g, ' ');
+
   // 1. lowercase
-  let s = name.toLowerCase();
+  s = s.toLowerCase();
 
   // 2. strip diacritics — NFD splits "á" into "a" + U+0301; the property
   // class `\p{M}` matches every combining mark, so we drop them all.
@@ -589,6 +598,28 @@ function slugify(name: string): string {
 
 /** Prefix used by Jira's first-party "Custom fields" plugin. */
 const USER_MANAGED_PREFIX = 'com.atlassian.jira.plugin.system.customfieldtypes:';
+
+/**
+ * Plugin-managed (system) fields from these providers are always kept in the
+ * sync output even when not declared in `jira-required.yaml`. These are
+ * Jira-built-in essentials methodology consumes implicitly through issue APIs.
+ *
+ *   - `com.pyxis.greenhopper.jira` — Jira Software: Epic Link, Epic Name,
+ *     Epic Status, Epic Color, Sprint, Rank, Issue color, Story point estimate.
+ *   - `com.atlassian.jpo` — Advanced Roadmaps: Parent Link, Target start/end.
+ *   - `com.xpandit.plugins.xray` — Xray TMS (Modality A): Test Plan, Test
+ *     Execution, Test Run. QA-side methodology uses these via `xray-cli`
+ *     and corresponding workflow refs. Inert if workspace has no Xray plugin.
+ *
+ * Everything else plugin-managed (servicedesk, jira-development-integration-
+ * plugin, proforma, charting, sentiment, approvals, ...) gets skipped unless
+ * explicitly named in the manifest. See skip rule in buildFieldsOutput loop.
+ */
+const ALWAYS_KEEP_PLUGIN_PROVIDERS = new Set<string>([
+  'com.pyxis.greenhopper.jira',
+  'com.atlassian.jpo',
+  'com.xpandit.plugins.xray',
+]);
 
 /**
  * Classify a Jira custom field as user-managed (created in the Jira admin UI,
@@ -712,18 +743,41 @@ async function buildFieldsOutput(
     provider: string
   }> = [];
 
+  let skippedPluginDebris = 0;
   for (const field of fields) {
+    // Skip `(migrated …)` plugin-debris fields. These are snapshots left behind
+    // by a Jira plugin migration (e.g. the Jira Cloud Service Desk migrator)
+    // and are not real methodology surface. Including them causes spurious
+    // slug collisions with the live field of the same name once parenthetical
+    // decorators are stripped from slugify (see `slugify()` header).
+    if (/\(\s*migrated\b[^)]*\)/i.test(field.name)) {
+      continue;
+    }
     const baseSlug = slugify(field.name);
     if (!baseSlug) {
       log.warn(`Field "${field.name}" (${field.id}) slugified to empty string — skipping.`);
       continue;
     }
-    const occurrences = (slugCounts.get(baseSlug) ?? 0) + 1;
-    slugCounts.set(baseSlug, occurrences);
-    const slug = occurrences === 1 ? baseSlug : `${baseSlug}_${occurrences}`;
+    // Compute ownership + type EARLY so the plugin-managed skip can short-circuit
+    // before the slug-counter, avoiding holes in occurrence numbering.
     const { type, hasOptions } = detectFieldType(field);
     const userManaged = isUserManaged(field);
     const provider = extractProvider(field);
+
+    // Skip plugin-managed (LOCKED in Jira UI) fields not in always-keep + not declared.
+    // Three AND conditions: not user-managed AND not from an always-keep provider
+    // AND not declared in jira-required.yaml. The declared check is the safety net:
+    // a methodology slug pointing at a plugin field outside the allowlist still survives.
+    if (!userManaged
+      && !ALWAYS_KEEP_PLUGIN_PROVIDERS.has(provider)
+      && !declaredSlugs.has(baseSlug)) {
+      skippedPluginDebris++;
+      continue;
+    }
+
+    const occurrences = (slugCounts.get(baseSlug) ?? 0) + 1;
+    slugCounts.set(baseSlug, occurrences);
+    const slug = occurrences === 1 ? baseSlug : `${baseSlug}_${occurrences}`;
 
     if (occurrences > 1) {
       // First-time we see a collision for this base slug, retroactively grab
@@ -917,6 +971,9 @@ async function buildFieldsOutput(
     sortedOutput[k] = output[k]!;
   }
 
+  if (skippedPluginDebris > 0) {
+    log.info(`Skipped ${skippedPluginDebris} plugin-managed field(s) not declared in jira-required.yaml (see ALWAYS_KEEP_PLUGIN_PROVIDERS for which plugin providers stay sync'd).`);
+  }
   return { output: sortedOutput, stats, totalOptions, collisions: collisionGroups };
 }
 
