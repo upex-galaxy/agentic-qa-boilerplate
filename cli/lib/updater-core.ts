@@ -1429,55 +1429,76 @@ export async function runUpdate(
   let bootstrapMode = false;
   let bootstrapComponents: Component[] = [];
 
-  // Bootstrap branch — no prior state, OR v7 state has no perComponentCommit entries
-  const isBootstrap = v7State === null
+  // Three sync modes:
+  //   1. Fresh install     — no prior state at all → ALL components bootstrap.
+  //   2. Partial bootstrap — state exists but some requested components have no
+  //                          SHA cursor (e.g. previous run targeted a subset).
+  //                          Those components bootstrap; the rest delta vs SHA.
+  //   3. Pure delta        — state covers every requested component.
+  const isFreshInstall = v7State === null
     || Object.keys(v7State.perComponentCommit).length === 0;
 
-  if (isBootstrap) {
-    bootstrapMode = true;
-    bootstrapComponents = cfg.components.slice();
-    sink.warn('Primera ejecución detectada — modo bootstrap (sincronización inicial completa).');
-
-    // Build synthetic delta entries (one per bootstrap file)
-    for (const component of bootstrapComponents) {
+  const collectBootstrapEntries = (comps: readonly Component[]): DeltaEntry[] => {
+    const out: DeltaEntry[] = [];
+    for (const component of comps) {
       const relPaths = collectComponentRelPaths(component, templateDir);
       for (const relPath of relPaths) {
-        // Honor bootstrap-only allowlist: files that exist locally are unchanged
         const basename = path.basename(relPath);
         const isBootstrapFile = component.bootstrapOnly === true
           || (component.name === 'agents' && (cfg.agentsFrameworkFiles ?? []).includes(basename) === false
             && cfg.bootstrapOnlyPaths.some(p => relPath === p || relPath.endsWith(`/${basename}`)));
         const localPath = path.join(repoRoot, relPath);
         if (isBootstrapFile && fs.existsSync(localPath)) {
-          // Skip — preserved
           continue;
         }
-        entries.push(bootstrapEntry(component.name, relPath, templateDir));
+        out.push(bootstrapEntry(component.name, relPath, templateDir));
       }
     }
+    return out;
+  };
+
+  if (isFreshInstall) {
+    bootstrapMode = true;
+    bootstrapComponents = cfg.components.slice();
+    sink.warn('Primera ejecución detectada — modo bootstrap (sincronización inicial completa).');
+    entries = collectBootstrapEntries(bootstrapComponents);
   }
   else {
-    // Delta branch — v7 state present with SHA cursors
-    const v6Shape: SyncStateV6 = {
-      schemaVersion: 6,
-      lastSync: v7State!.lastSyncedAt,
-      templateCommit: v7State!.templateCommit,
-      cliVersion: v7State!.cliVersion,
-      syncedComponents: v7State!.syncedComponents,
-      variableSystemVersion: v7State!.variableSystemVersion,
-      perComponentCommit: v7State!.perComponentCommit,
-    };
-    const agentsBootstrapBasenames = cfg.bootstrapOnlyPaths
-      .filter(p => p.startsWith('.agents/'))
-      .map(p => path.basename(p));
-    entries = computeDelta(
-      templateDir,
-      cfg.components,
-      v6Shape,
-      repoRoot,
-      agentsBootstrapBasenames,
-      makeCoreLoggerFromSink(sink),
-    );
+    const knownSha = new Set(Object.keys(v7State!.perComponentCommit));
+    const newComponents = cfg.components.filter(c => !knownSha.has(c.name));
+    const deltaComponents = cfg.components.filter(c => knownSha.has(c.name));
+
+    if (newComponents.length > 0) {
+      bootstrapMode = true;
+      bootstrapComponents = newComponents;
+      const names = newComponents.map(c => c.name).join(', ');
+      sink.warn(`Componentes sin sincronizar previamente: ${names} — bootstrap parcial.`);
+      entries.push(...collectBootstrapEntries(newComponents));
+    }
+
+    if (deltaComponents.length > 0) {
+      const v6Shape: SyncStateV6 = {
+        schemaVersion: 6,
+        lastSync: v7State!.lastSyncedAt,
+        templateCommit: v7State!.templateCommit,
+        cliVersion: v7State!.cliVersion,
+        syncedComponents: v7State!.syncedComponents,
+        variableSystemVersion: v7State!.variableSystemVersion,
+        perComponentCommit: v7State!.perComponentCommit,
+      };
+      const agentsBootstrapBasenames = cfg.bootstrapOnlyPaths
+        .filter(p => p.startsWith('.agents/'))
+        .map(p => path.basename(p));
+      const deltaEntries = computeDelta(
+        templateDir,
+        deltaComponents,
+        v6Shape,
+        repoRoot,
+        agentsBootstrapBasenames,
+        makeCoreLoggerFromSink(sink),
+      );
+      entries.push(...deltaEntries);
+    }
   }
 
   // Filter out unchanged / binary-skip from the user-facing pool
@@ -1509,7 +1530,10 @@ export async function runUpdate(
     return emptySummary;
   }
   if (visible.length > 0) {
-    const suffix = bootstrapMode ? ' (modo bootstrap — primera sync)' : '';
+    let suffix = '';
+    if (bootstrapMode) {
+      suffix = isFreshInstall ? ' (modo bootstrap — primera sync)' : ' (bootstrap parcial + delta)';
+    }
     const label = bootstrapMode ? 'archivo(s) nuevos/cambiados' : 'archivo(s) con cambios';
     sink.step(`Detectados ${visible.length} ${label} en ${perComp.size} componente(s)${suffix}.`);
   }
