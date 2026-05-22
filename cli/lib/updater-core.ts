@@ -44,7 +44,7 @@ import type {
   SyncStateV7,
   UpdaterConfig,
 } from './updater-types';
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 
@@ -754,6 +754,22 @@ export async function applyResolution(
  * For status=A (no old blob), uses the empty-tree SHA as the old side.
  */
 export function renderTemplateDiff(entry: DeltaEntry, repoDir: string): string {
+  // New-upstream entries (bootstrap / first-time files) carry a BLOB sha in
+  // templateNewSha and have no templateOldSha. `git diff <empty-tree> <blob>`
+  // is invalid (needs tree↔tree or blob↔blob), so we show the blob content
+  // directly — which is what the user actually wants for new files.
+  if (!entry.templateOldSha && entry.templateNewSha) {
+    try {
+      return execSync(
+        `git -C "${repoDir}" show ${entry.templateNewSha}`,
+        { stdio: ['pipe', 'pipe', 'pipe'] },
+      ).toString();
+    }
+    catch {
+      return `(could not read upstream content for ${entry.path})\n`;
+    }
+  }
+
   const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
   const oldRef = entry.templateOldSha || EMPTY_TREE;
   const newRef = entry.templateNewSha || EMPTY_TREE;
@@ -1422,6 +1438,64 @@ export async function runUpdate(
   const newHeadSha = resolveTemplateHeadSha(templateDir);
   sink.step(`HEAD upstream: ${newHeadSha.slice(0, 7)}`);
 
+  // --- SELF-UPDATE (before Phase 2) ---
+  // If cfg.selfUpdateComponent points at the component that owns the updater
+  // itself (e.g. `cli/`), refresh those files in-place and re-exec the script
+  // so the rest of the flow runs against the fresh code. Skipped when the
+  // child process is already a re-exec (UPEX_UPDATER_REEXEC=1).
+  if (cfg.selfUpdateComponent && process.env.UPEX_UPDATER_REEXEC !== '1' && !opts.dryRun) {
+    const selfComp = cfg.components.find(c => c.name === cfg.selfUpdateComponent);
+    if (selfComp) {
+      const selfFiles = collectComponentRelPaths(selfComp, templateDir);
+      const stale: string[] = [];
+      for (const relPath of selfFiles) {
+        const localPath = path.join(repoRoot, relPath);
+        let upstreamSha: string;
+        try {
+          upstreamSha = execSync(
+            `git -C "${templateDir}" hash-object "${relPath}"`,
+            { stdio: ['pipe', 'pipe', 'pipe'] },
+          ).toString().trim();
+        }
+        catch {
+          continue;
+        }
+        let localSha = '';
+        if (fs.existsSync(localPath)) {
+          try {
+            localSha = execSync(
+              `git hash-object "${localPath}"`,
+              { stdio: ['pipe', 'pipe', 'pipe'] },
+            ).toString().trim();
+          }
+          catch {
+            localSha = '';
+          }
+        }
+        if (localSha !== upstreamSha) {
+          stale.push(relPath);
+        }
+      }
+      if (stale.length > 0) {
+        sink.warn(`Self-update: actualizando ${stale.length} archivo(s) del CLI antes de continuar…`);
+        for (const relPath of stale) {
+          const src = path.join(templateDir, relPath);
+          const dst = path.join(repoRoot, relPath);
+          fs.mkdirSync(path.dirname(dst), { recursive: true });
+          fs.cpSync(src, dst);
+          sink.step(`  · ${relPath}`);
+        }
+        sink.step('Re-ejecutando con código actualizado…');
+        const child = spawnSync('bun', [process.argv[1], ...process.argv.slice(2)], {
+          stdio: 'inherit',
+          env: { ...process.env, UPEX_UPDATER_REEXEC: '1' },
+        });
+        cleanupTempDir(cfg.tempDir);
+        process.exit(child.status ?? 0);
+      }
+    }
+  }
+
   // --- PHASE 2 — DETECT ---
   sink.phase(2, 'DETECT');
 
@@ -1731,8 +1805,10 @@ export async function runUpdate(
         continue;
       }
 
-      // clean-fastforward / new-upstream → optional diff preview, then apply 'theirs'
-      if (sink.showDiff) {
+      // clean-fastforward / new-upstream → optional diff preview, then apply 'theirs'.
+      // Only ask when user explicitly chose 'pick' (audit mode); 'all' means
+      // blanket accept — no preview prompts.
+      if (sink.showDiff && strategy === 'pick') {
         await sink.showDiff(entry, paired);
       }
       if (opts.dryRun) {

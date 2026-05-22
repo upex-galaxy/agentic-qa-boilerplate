@@ -435,6 +435,7 @@ async function main(): Promise<void> {
       '.agents/jira-workflows.json',
       '.agents/jira-required.yaml',
     ],
+    selfUpdateComponent: 'cli',
     hooks: {
       skillsResolver: resolveTemplateSkills,
     },

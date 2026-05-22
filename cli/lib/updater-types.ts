@@ -317,6 +317,14 @@ export interface UpdaterConfig {
   deprecatedFiles: DeprecatedFile[]
   bootstrapOnlyPaths: string[]
   agentsFrameworkFiles?: string[]
+  /**
+   * Optional component name (e.g. `'cli'`) whose files contain the updater itself.
+   * When set, runUpdate performs a Phase 0 self-update: if any file under this
+   * component differs from upstream, files are overwritten locally and the
+   * process re-execs itself so the new code runs the rest of the flow. The
+   * child sets `UPEX_UPDATER_REEXEC=1` to prevent infinite re-exec loops.
+   */
+  selfUpdateComponent?: string
   hooks?: {
     afterApply?: (summary: RunSummary) => Promise<void>
     skillsResolver?: (templateDir: string) => string[]
