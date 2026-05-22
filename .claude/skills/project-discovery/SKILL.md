@@ -16,6 +16,20 @@ Grounding methodology: **IQL (Integrated Quality Lifecycle)** — QA is continuo
 
 ---
 
+## Inputs
+
+Canonical reading order when starting cold on a discovery run. Read in order; stop earlier when the scope is small enough that later inputs add no signal.
+
+1. **Target project repo** — path resolved at session start (see "Before starting: target repo location" below). Read code and any in-repo PRD. This is the primary source of truth — discovery is reverse-engineering, never aspirational design.
+2. **Target repo's `README.md` and existing onboarding docs** — fastest path to project intent, stack signals, and run commands before deep code reads.
+3. **`.context/` directory** (if partial state exists from a prior discovery run) — informs Phase 0 resume decisions and prevents redundant work. Diff against current code before overwriting.
+4. **`.agents/project.yaml` and `.env.example`** — variable resolution patterns (`{{PROJECT_KEY}}`, env URLs, MCP names) that every downstream context file references.
+5. **`kata-manifest.json`** — registry of existing KATA Components + ATCs. Anchors what test surface the boilerplate already expects so discovery records gaps coherently.
+6. **`.claude/skills/agentic-qa-core/references/skill-composition-strategy.md`** — workflow context for downstream skill hand-offs (`/adapt-framework`, `/sprint-testing`, `/test-documentation`).
+7. **Business / domain docs supplied by the user** (Confluence, Notion exports, internal wikis) — secondary source for business model and glossary when in-repo signal is thin.
+
+---
+
 ## Subagent Dispatch Strategy
 
 > **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
@@ -357,6 +371,18 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 - **Issue-tracker operations (Phase 4)** -> resolve `[ISSUE_TRACKER_TOOL]` via CLAUDE.md Tool Resolution. For Jira, load `/acli` skill (primary) or fall back to the Atlassian MCP. If the project also uses Xray for TMS, load `/xray-cli` additionally.
 - **Database inspection** -> resolve `[DB_TOOL]`; read-only queries only during discovery.
 - **Session contract (Phase 0 resume, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint)** -> read `../agentic-qa-core/references/session-management.md`. This skill is a producer of `session/project-discovery/...` topic keys.
+
+---
+
+## Anti-patterns — NEVER do these
+
+- **P1.** NEVER invent business entities, flows, or requirements not present in the target repo code or PRD. Discovery is reverse-engineering, not aspirational design — unverified items go in a `## Discovery Gaps` block, never inline.
+- **P2.** NEVER skip Phase 1 (Constitution) when starting fresh. Downstream phases (PRD/SRS, infrastructure, PBI mapping) assume the project values and stack are fixed first; skipping leaves later artifacts ungrounded.
+- **P3.** NEVER fill `.context/business/business-data-map.md` from memory or from a prior session's draft. Re-read target code and PRD per session, regenerate via the `/business-data-map` command so the map stays anchored to current source.
+- **P4.** NEVER mix `/project-discovery` with `/adapt-framework` in the same session. Discovery reads the target repo only; adapt edits THIS boilerplate. The blast radii are different and interleaving them confuses the read-only contract.
+- **P5.** NEVER use `/project-discovery` for incremental updates. Use the `/business-*-map` regenerative commands instead — discovery is one-shot per project (or rare full refresh), not a per-feature loop.
+- **P6.** NEVER skip the domain glossary in Phase 1. Downstream skills (`sprint-testing`, `test-documentation`) treat it as the authoritative vocabulary for UI labels, code identifiers, and entity names.
+- **P7.** NEVER fabricate Jira / Xray field IDs or status names in `.context/master-test-plan.md` or any PBI template. Run `bun run jira:sync-fields --force` and reference `{{jira.<slug>}}` via the slug catalog in `.agents/jira-required.yaml`.
 
 ---
 

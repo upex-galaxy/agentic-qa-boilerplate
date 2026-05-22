@@ -358,6 +358,18 @@ done
 - One workflow covers every rich-text surface uniformly: descriptions, comments, custom fields, all the same three steps.
 - Identifier-heavy prose (snake_case, kebab-case) survives the conversion because the italic detection has word-boundary guards.
 
+## Anti-patterns — NEVER do these
+
+These are formal companions to the gotchas section below. Gotchas describe *surprising behavior to remember*; anti-patterns describe *actions to refuse outright*. Both apply.
+
+- **A1.** NEVER hand-author raw ADF JSON for descriptions, comments, or rich-text custom fields. Use `scripts/md-to-adf.ts` — deterministic, diffable, snake_case-safe, and avoids the combined-marks bug (inline `code` co-occurring with `strong`/`em` causes HTTP 400).
+- **A2.** NEVER hardcode Jira `customfield_NNNNN` IDs in skills, scripts, prompts, or AI output that consumes `acli`. Resolve via the slug catalog (`{{jira.<slug>}}` against `.agents/jira-required.yaml` + `.agents/jira-fields.json`). IDs differ per workspace; slugs travel.
+- **A3.** NEVER invoke `acli` directly from workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `shift-left-testing`, `project-discovery`). Workflow skills cite `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]` pseudo-code and load THIS skill instead — methodology survives tool rotation only if the HOW lives here.
+- **A4.** NEVER hardcode project keys (`UPEX`, `MYM`, `SQ`, etc.) in commands or docs. Resolve via `{{PROJECT_KEY}}` from `.agents/project.yaml`. Hardcoding breaks portability across downstream consumers.
+- **A5.** NEVER run a bulk `acli` mutation (transition, edit, comment, link, archive) without first verifying `acli jira auth status`. Silent auth expiry cascades into HTTP 401s mid-loop, leaving the batch half-applied with no clean rollback.
+- **A6.** NEVER mix Modality A and Modality B operations on the same TMS entity. `acli` owns generic Jira (`[ISSUE_TRACKER_TOOL]`) plus Modality B TMS (Jira-native Test issues, ATP/ATR as custom fields). Modality A (Xray plugin present) routes Test / Test Plan / Test Execution through `/xray-cli` — never via `acli` work items.
+- **A7.** NEVER assume `acli` accepts custom-field input on `workitem edit`. It hard-rejects every shape (`additionalAttributes`, `fields`, flat `customfield_X`) with exit 1. Use the REST `PUT /rest/api/3/issue/{KEY}` workaround documented above — there is no acli-native path.
+
 ## Five gotchas to keep in mind always
 
 1. **`--paginate` is opt-in.** Default limit is server-side (30–50 depending on command). No warning on truncation. If you are counting, iterating, or making decisions based on the result, pass `--paginate`.

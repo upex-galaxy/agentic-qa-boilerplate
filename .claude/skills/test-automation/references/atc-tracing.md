@@ -262,7 +262,7 @@ Jira Direct:
 ATLASSIAN_URL=https://company.atlassian.net
 ATLASSIAN_EMAIL=email@company.com
 ATLASSIAN_API_TOKEN=...
-JIRA_TEST_STATUS_FIELD=customfield_10100   # illustrative — find your real ID in .agents/jira-fields.json after `bun run jira:sync-fields`
+JIRA_TEST_STATUS_FIELD={{jira.test_status}}   # resolved at runtime against .agents/jira-fields.json (regenerate via `bun run jira:sync-fields --force`)
 ```
 
 ### 8.4 Comment body sent to the TMS
@@ -397,7 +397,7 @@ The manifest is a static registry — it says what **exists in code**. `atc_resu
 | Sync reports "No ATC results to sync" | `atc_results.json` empty | Run tests first; check KataReporter ran `generateAtcReport()`; confirm reporter config |
 | Sync fails with 401 | Bad TMS credentials | Verify `XRAY_CLIENT_*` or `ATLASSIAN_API_TOKEN`; check expiry and permissions |
 | Sync fails with "Test key not found" | TMS issue missing or mistyped | Create the issue in the TMS first; check case-sensitive exact match |
-| Custom-field error (Jira Direct) | Wrong `JIRA_TEST_STATUS_FIELD` ID | `curl -u user:token {{ATLASSIAN_URL}}/rest/api/3/field` and grep for the field |
+| Custom-field error (Jira Direct) | Wrong `JIRA_TEST_STATUS_FIELD` ID | `[ISSUE_TRACKER_TOOL] list_fields()` (load `/acli`) and grep for the field; or re-run `bun run jira:sync-fields --force` |
 | Sync is slow | Jira Direct = one request per ATC | Batch via Xray if budget allows; move sync off the local loop — run only in CI on `main` |
 
 ---

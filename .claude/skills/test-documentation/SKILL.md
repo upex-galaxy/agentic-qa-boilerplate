@@ -95,8 +95,8 @@ Does this project have Xray installed and licensed on Jira?
 
 | Artifact | Modality A (Xray on Jira) | Modality B (Jira-native) |
 |----------|---------------------------|---------------------------|
-| **ATP** (Acceptance Test Plan) | Xray `Test Plan` issue, named `Test Plan: {{PROJECT_KEY}}-{n}`, linked to US | Story `{{jira.acceptance_test_plan_atp}}` + comment mirror on the Story. No separate issue. |
-| **ATR** (Acceptance Test Results) | Xray `Test Execution` issue with Test Runs per TC, Environment, Begin/End Date, named `Test Results: {{PROJECT_KEY}}-{n}` | Story `{{jira.acceptance_test_results_atr}}` + comment mirror on the Story. |
+| **ATP** (Acceptance Test Plan) | Xray `Test Plan` issue, named `Test Plan: {{PROJECT_KEY}}-{n}`, linked to US | Story `{{jira.acceptance_test_plan}}` + comment mirror on the Story. No separate issue. |
+| **ATR** (Acceptance Test Results) | Xray `Test Execution` issue with Test Runs per TC, Environment, Begin/End Date, named `Test Results: {{PROJECT_KEY}}-{n}` | Story `{{jira.acceptance_test_results}}` + comment mirror on the Story. |
 | **TC** (Test Case) | Xray `Test` issue (type Manual / Cucumber / Generic) | Jira-native `Test` issue type (or `Task` with custom type), Description carries the full TC template |
 | **Test Set / Precondition / Test Plan** | First-class Xray issue types | Not available — use labels + Epic grouping |
 | **Result sync** | CI imports JUnit/Cucumber via `[TMS_TOOL] Import Results` -> Test Runs auto-update | Custom script updates Test Status field on each TC + comment with build context |
@@ -408,6 +408,33 @@ On Phase 3 partial failure (some chunks 429-rate-limited, some succeeded), archi
 
 ---
 
+## Inputs
+
+Canonical reading order for any AI starting cold on a test-documentation workflow. Read in order; stop earlier when the scope is narrow enough that later inputs add no signal.
+
+1. `.context/test-management-system.md` — TMS modality configuration (A vs B), Regression Epic, label taxonomy.
+2. `.context/PBI/{module}/{TICKET-ID}-*/` — ticket-local context: existing ATP, ATR, session notes, validated scenarios.
+3. `.agents/jira-required.yaml` — canonical slug catalog for fields, statuses, link types.
+4. `.agents/jira-fields.json` — slug → numeric custom-field-ID mapping for ADF / API calls.
+5. `.agents/jira-workflows.json` — `test_case` workflow + transition catalog (Draft → In Design → Ready → …).
+6. `.context/master-test-plan.md` — regression Epic, prioritization rubric, what to test and why.
+7. The Story's AC + spec via `[ISSUE_TRACKER_TOOL]` — current Description, AC, comments, linked bugs.
+
+---
+
+## Anti-patterns — NEVER do these
+
+- **D1.** NEVER hand-write ADF JSON for Test Case / ATP / ATR bodies. Use the md-to-adf path via `[ISSUE_TRACKER_TOOL]`; ADF authored by hand drifts and breaks renderers.
+- **D2.** NEVER ship a Test Plan without traceability to a Story / Epic. Orphan ATPs are unauditable — link before the first TC lands.
+- **D3.** NEVER over-detail Test Case steps. The spec / KATA ATC is the source of truth; the TC step list is a pointer, not a duplicate.
+- **D4.** NEVER skip ROI scoring. Every TC ends with a Candidate / Manual / Deferred verdict before handoff to `/test-automation`.
+- **D5.** NEVER mix Modality A (Xray) and Modality B (Jira-native) inside the same Story's ATP. Modality is one-shot per project and Phase 0 resolves it.
+- **D6.** NEVER fabricate Jira field IDs. Run `bun run jira:sync-fields --force` and resolve via `{{jira.<slug>}}` — hardcoded `customfield_NNNNN` drifts silently.
+- **D7.** NEVER link an ATR to multiple ATPs. The relationship is 1:1 (one plan, one results record); multiple ATRs per ATP is fine, the inverse is not.
+- **D8.** NEVER reopen a Closed bug to attach a regression TC. File a new TC and link to the bug via `tests / is tested by` — bug history stays immutable.
+
+---
+
 ## Quick reference — pseudocode per modality
 
 Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution. The shape of the calls differs by modality — the two blocks below are parallel, pick one based on Phase 0.
@@ -498,26 +525,26 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {{jira.acceptance_test_plan_atp}}: {Test Analysis body}
+    {{jira.acceptance_test_plan}}: {Test Analysis body}
   labels: +shift-left-reviewed
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
     === Acceptance Test Plan ({{PROJECT_KEY}}-{n}) ===
-    {Test Analysis body — byte-for-byte mirror of {{jira.acceptance_test_plan_atp}}}
+    {Test Analysis body — byte-for-byte mirror of {{jira.acceptance_test_plan}}}
 
 # ATR = Story customfield + comment mirror. NO separate issue.
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {{jira.acceptance_test_results_atr}}: {Test Report body}
+    {{jira.acceptance_test_results}}: {Test Report body}
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
     === Acceptance Test Results ({{PROJECT_KEY}}-{n}) ===
-    {Test Report body — byte-for-byte mirror of {{jira.acceptance_test_results_atr}}}
+    {Test Report body — byte-for-byte mirror of {{jira.acceptance_test_results}}}
 
 # TC = Jira-native Test issue (custom issue type configured per jira-setup.md)
 [ISSUE_TRACKER_TOOL] Create Issue:

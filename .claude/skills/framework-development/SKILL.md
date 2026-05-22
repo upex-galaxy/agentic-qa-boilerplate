@@ -14,6 +14,19 @@ The skill exists because framework-surface changes — new fixture, new layer he
 
 ---
 
+## Inputs
+
+Canonical reading order for any AI starting cold on a framework-development workflow. Read in order; stop earlier when the change is small enough that later inputs add no signal.
+
+1. `kata-manifest.json` — Component + ATC registry (source of truth per Critical Rule #12). Establishes what already exists before any new fixture API, Page, Api, Steps module, or ATC ID is proposed.
+2. `.claude/skills/test-automation/references/kata-architecture.md` + `.claude/skills/test-automation/references/typescript-patterns.md` — KATA layer flow (TestContext → ApiBase / UiBase → YourApi / YourPage → TestFixture), ATC identity rules, fixture-selection contract, import-alias conventions.
+3. `tests/components/` — current Api / Page / Steps shape; required reading when touching any L2 / L3 surface or adding a fixture consumed by these components.
+4. `cli/install.ts` — installer flow; required reading when evolving the installer, adding install steps, or modifying boilerplate scaffold behavior.
+5. `scripts/sync-openapi.ts` + `api/schemas/` — OpenAPI-derived TypeScript types pipeline; required reading when touching the API contract pipeline, schema generation, or any consumer of generated facades.
+6. `package.json` + `bun.lockb` — dep landscape; required reading before bumping Playwright / Bun / TypeScript / fixture-runtime versions or adding/removing scripts.
+
+---
+
 ## Subagent Dispatch Strategy
 
 > **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
@@ -145,6 +158,18 @@ Dispatch: **inline** — no subagent. The orchestrator performs the archive flow
 4. Surfaces the archive path so `/git-flow-master` can include it in the commit message body.
 
 Archive is a "close-the-loop" step, not "ship-the-code". Code is shipped by `/git-flow-master` based on the diff that Phase 2 produced and Phase 3 verified. On Phase 3 REJECT, archive does NOT run — the working directory stays in place so the user can debug, resume, or abort.
+
+---
+
+## Anti-patterns — NEVER do these
+
+- **F1.** NEVER use `/framework-development` for per-ticket test writing — that surface is owned by `/test-automation` (Plan → Code → Review on KATA + Playwright + TypeScript). Framework-development governs the architectural surface only.
+- **F2.** NEVER collapse KATA layers (TestContext / Base / Domain / Fixture) under the pretext of simplification. The layers are framework architecture, not speculative abstraction. Critical Rule #12-adjacent: simplicity-first does NOT apply to KATA.
+- **F3.** NEVER edit `tests/components/` from a framework-development session — those are L2 / L3 KATA components owned by per-ticket work via `/test-automation`. If a base-class refactor forces a consumer migration, split the work: framework-development changes the base; `/test-automation` migrates the specs in a follow-up.
+- **F4.** NEVER skip the Plan → Code → Verify → Archive pipeline for non-trivial framework changes. The pipeline IS the gate — bypassing it for "quick" refactors of `ApiBase.ts`, `UiBase.ts`, `TestContext.ts`, fixtures, installer, or OpenAPI pipeline reliably produces undetected regressions.
+- **F5.** NEVER bump major versions of Playwright / Bun / TypeScript without a regression run on a representative E2E suite. Lockstep upgrades hide breaking changes in fixture lifecycle, locator engines, or type-emit behavior.
+- **F6.** NEVER add a new fixture API without updating `tests/components/TestFixture.ts` (or the matching `ApiFixture.ts` / `UiFixture.ts`) AND `kata-manifest.json` AND citing at least one existing test that consumes it. Orphan fixtures rot — and `kata-manifest.json` is the anti-duplication gate (Critical Rule #12).
+- **F7.** NEVER refactor `cli/install.ts` without testing the full install flow on a clean clone. The installer is the only surface where a bug ships silently to every new user — verification on the developer's already-installed repo proves nothing.
 
 ---
 

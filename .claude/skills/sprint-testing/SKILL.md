@@ -28,6 +28,25 @@ The same three-stage pipeline runs in every mode. Only the entry point and the b
 
 ---
 
+## Inputs — read these first, in this order
+
+Canonical reading order for any AI starting cold on a sprint-testing workflow. Read in order; stop earlier when the ticket is small enough that later inputs add no signal.
+
+1. `.agents/project.yaml` — project identity, env URLs, `{{PROJECT_KEY}}`, MCP names, active environment.
+2. `.agents/jira-required.yaml` — canonical slug catalog (custom fields, statuses, transitions) for the active workspace.
+3. `.agents/jira-fields.json` — slug → numeric custom-field-ID mapping for `{{jira.<slug>}}` resolution at runtime.
+4. `.agents/jira-workflows.json` — workflow + transition catalog (resolves Ready For QA → In Testing → Tested for Story / Bug / Test Case work types).
+5. `.context/PBI/{module}/{TICKET-ID}-*/context.md` — ticket-local context: ACs, Team Discussion summary, session notes, open questions (read if it already exists from a prior Session Start).
+6. `.context/master-test-plan.md` — regression Epic pointer, modality decision (Xray vs Jira-native), what to test and why.
+7. `.context/business/business-feature-map.md` — feature catalog vocabulary; resolves "what module owns this story" for `{module-name}` PBI folder naming.
+8. The Story or Bug ticket itself — AC, ATP, comments — fetched via `[ISSUE_TRACKER_TOOL]`. The ticket body is source-of-truth, not the local PBI mirror.
+9. `.env` — `LOCAL_USER_*` / `STAGING_USER_*` credentials. NEVER hardcode; always read at runtime.
+10. `kata-manifest.json` — registry of existing KATA Components + ATCs. Check before proposing new ATCs in Stage 3 hand-off so the test-automation phase doesn't duplicate work.
+
+**Optional inputs.** `master-test-plan.md` and the business maps frequently arrive after `/project-discovery` runs and may be absent — proceed without them and surface a `missing_input` note in the Stage 1 ATP so a later pass can fill the gap. `kata-manifest.json` is only load-bearing at the Stage 3 → `test-automation` hand-off; skip in pure manual-QA invocations.
+
+---
+
 ## Subagent Dispatch Strategy
 
 > **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
@@ -252,6 +271,24 @@ All references are self-contained. Load one at a time.
 | `exploration-patterns.md` | Stage 2 Execution — smoke-test Go/No-Go playbook, UI exploration on `{{WEB_URL}}`, API exploration on `{{API_URL}}`, DB cross-validation via `{{DB_MCP}}`, evidence naming + capture rules, edge-case checklist. |
 | `reporting-templates.md` | Stage 3 Reporting — ATR Test Report body, bug report template (summary, reproduction, severity, priority, labels), QA comment templates (story PASSED/FAILED, bug Template C/D), evidence-attachment guidance. |
 | `../agentic-qa-core/references/session-management.md` | Phase 0 + Session Start + per-stage checkpoints + Archive — resume contract, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint. This skill is a producer of `session/sprint-testing/<scope>/...` topic keys. |
+
+---
+
+## Anti-patterns — NEVER do these
+
+- **S1.** NEVER mark a Story Ready For Release (or transition to {{jira.status.story.qa_approved}}) without QA sign-off AND a signed-off ATR snapshot for audit trail.
+- **S2.** NEVER skip the Stage 1 Test Plan (ATP) step in Modality A workflows — the Xray `Test Plan` / `Test Execution` issues depend on the ATP being committed first; downstream TCs cannot link without it.
+- **S3.** NEVER push test results to Jira without an ATR snapshot. The QA comment is a summary; the ATR is the audit record.
+- **S4.** NEVER duplicate the ATR across Jira + Confluence (or any second store). Single source of truth — pick one per the modality decision in `.context/master-test-plan.md` and link from anywhere else.
+- **S5.** NEVER bypass the bug-triage decision tree (veto → risk-score → Severity + Root Cause) when a test fails. Every failure gets a triage before it becomes a Bug ticket.
+- **S6.** NEVER write ATP / ATR bodies in raw ADF JSON by hand. Use md-to-adf via `[ISSUE_TRACKER_TOOL]` so formatting survives Jira's renderer.
+- **S7.** NEVER skip the smoke pass before triforce (UI / API / DB) exploration. Smoke validates the environment; triforce validates the feature. Order matters — a broken env produces false-positive bug reports.
+- **S8.** NEVER mix UI + API + DB findings into a single bug ticket. File per layer (or per root-cause cluster) so triage and routing stay clean.
+- **S9.** NEVER reuse a PBI folder across tickets. Every Story or Bug gets its own `.context/PBI/{module}/{TICKET-ID}-{brief-title}/` directory; cross-ticket contamination breaks evidence + traceability.
+- **S10.** NEVER transition the ticket Ready For QA → In Testing without explaining the story to the user AND waiting for confirmation (CLAUDE.md §8 — Session Start is not a one-shot, it's a hand-off gate).
+- **S11.** NEVER skip the auto-stage promote (Session Start → Stage 1 → Stage 2 → Stage 3) after a phase completes — each promote is a checkpoint that writes a `progress.md` entry and feeds the next subagent's Context docs.
+- **S12.** NEVER file a bug without a reproducible repro path AND evidence (screenshot, trace, log, network HAR, or DB row reference). "It failed for me once" is not a bug ticket.
+- **S13.** NEVER hardcode `customfield_NNNNN` IDs in ATP / ATR / QA comments or in any reference under this skill. Resolve every Jira field via `{{jira.<slug>}}` against `.agents/jira-required.yaml`.
 
 ---
 

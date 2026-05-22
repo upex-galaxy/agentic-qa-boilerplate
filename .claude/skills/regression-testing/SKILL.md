@@ -28,6 +28,17 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 
 ---
 
+## Inputs
+
+- `.github/workflows/*.yml` — workflow files for regression / smoke / sanity suites; defines triggers, inputs, and artifact uploads.
+- `.context/master-test-plan.md` — regression Epic key + expected pass-rate SLOs per suite.
+- `playwright.config.ts` — reporter config, retry policy, project matrix; needed to interpret retry counts and shard splits.
+- Previous run's Allure report (artifact URL or local download under `./analysis/previous/`) — baseline for trend computation.
+- `kata-manifest.json` — registry of tests and ATCs available; used to cross-reference failed test IDs.
+- `.agents/jira-required.yaml` — Jira refs (project key, work types, transitions) for filing regression issues.
+
+---
+
 ## Subagent Dispatch Strategy
 
 > **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
@@ -412,6 +423,18 @@ On Verdict = NO-GO with regressions still being filed as issues, archive WAITS u
 * **TMS / Xray result import** — load `/xray-cli` skill
 * **Downloading traces or screenshots for a failure** — use `[AUTOMATION_TOOL]` per CLAUDE.md Tool Resolution; for Playwright trace inspection load `/playwright-cli`
 * **Session contract (Phase 0 resume, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint, RUN_ID re-attach mechanism)** — read `../agentic-qa-core/references/session-management.md`. This skill is a producer of `session/regression-testing/<scope>/...` topic keys.
+
+---
+
+## Anti-patterns — NEVER do these
+
+- **R1.** NEVER classify a failure as FLAKY without re-running the test in isolation — masks real regressions.
+- **R2.** NEVER emit GO when known REGRESSION class > 0 — quality gate is binary: regressions block.
+- **R3.** NEVER auto-retry failing tests in CI without surfacing the retry count in the report.
+- **R4.** NEVER skip Allure artifact download on red builds — evidence vanishes after the retention window.
+- **R5.** NEVER trigger a regression workflow without `--ref <commit-sha>` pinned — different commit = different baseline.
+- **R6.** NEVER mix smoke + regression suite results into one pass-rate number — different SLOs.
+- **R7.** NEVER mark a test KNOWN-failure without a Jira ticket linking the suppression to a tracking issue.
 
 ---
 

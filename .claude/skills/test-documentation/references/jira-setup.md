@@ -9,6 +9,8 @@ Which modality is active is resolved by `test-documentation/SKILL.md` §Phase 0.
 
 Skills that depend on this setup: `sprint-testing`, `test-documentation`, `regression-testing`, `fix-traceability`.
 
+> **Before publishing rich-text bodies to Jira fields configured below** (ATP, ATR, Test Case body, Test Plan body), read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
+
 ---
 
 ## 1. Pre-setup checklist (both modalities)
@@ -60,7 +62,7 @@ XRAY_TEST_PLAN_KEY=PROJ-300      # optional
 XRAY_ENVIRONMENT=staging         # optional
 ```
 
-Verify with `/xray-cli` skill: `bun xray auth status`.
+Verify with `[TMS_TOOL] auth_status()` (load `/xray-cli` skill — it owns the literal command shape).
 
 Full reference: `xray-platform.md`.
 
@@ -98,7 +100,7 @@ Create the two custom fields:
 1. Settings → Issues → Custom fields → Add field → Select List (single choice) → Name `Test Status` → Options `NOT RUN`, `PASSED`, `FAILED`, `BLOCKED`. Associate with the Test issue type.
 2. Add field → Checkbox → Name `Automation Candidate`. Associate with the Test issue type.
 
-Note the numeric custom field IDs Jira assigns (visible via Settings → Issues → Custom fields → "Edit" URL; e.g. `customfield_XXXXX`). Store them in `.context/master-test-plan.md` so the skills pick them up.
+After creating the fields, run `bun run jira:sync-fields --force` so the numeric IDs Jira assigned are auto-discovered into `.agents/jira-fields.json` under their slug. Reference them from skills via `{{jira.<slug>}}` — never paste the raw `customfield_NNNNN` ID into a skill or doc (workspace-portability rule, CLAUDE.md §1.12).
 
 ### 3.3 Configure ATP and ATR custom fields on the Story issue type
 
@@ -113,7 +115,7 @@ Steps:
 
 1. Settings → Issues → Custom fields → Add field → **Paragraph (supports rich text)** → Name `Acceptance Test Plan` → Associate with the Story (and Epic if the project uses epic-level ATPs).
 2. Add field → **Paragraph** → Name `Acceptance Test Results` → same associations.
-3. After running `bun run jira:sync-fields`, IDs are auto-discovered into `.agents/jira-fields.json` (slugs `acceptance_test_plan_atp` for ATP and `acceptance_test_results_atr` for ATR). Both are referenced via `{{jira.<slug>}}` from the skills.
+3. After running `bun run jira:sync-fields`, IDs are auto-discovered into `.agents/jira-fields.json` (slugs `acceptance_test_plan` for ATP and `acceptance_test_results` for ATR). Both are referenced via `{{jira.<slug>}}` from the skills.
 4. Add both fields to the Story's **View Screen** (Settings → Issues → Screens). Leave them off the Create screen (the skill populates them later, not the PM).
 5. Optionally add them to the Story's Edit Screen so PO/Dev can see them inline.
 
@@ -124,10 +126,10 @@ Record the IDs in `.context/master-test-plan.md`:
 
 | Artifact | Custom field ID |
 |----------|-----------------|
-| ATP      | {{jira.acceptance_test_plan_atp}}
-| ATR      | {{jira.acceptance_test_results_atr}}
+| ATP      | {{jira.acceptance_test_plan}}
+| ATR      | {{jira.acceptance_test_results}}
 | Test Status (on Test) | {{jira.test_status}}
-| Automation Candidate (on Test) | {{jira.to_be_automated_qa}}
+| Automation Candidate (on Test) | {{jira.to_be_automated}}
 ```
 
 ### 3.4 Bug custom fields (UPEX reference, both modalities)
@@ -149,7 +151,7 @@ ATLASSIAN_API_TOKEN=...
 JIRA_PROJECT_KEY=PROJ
 ```
 
-Verify with `acli jira auth status`.
+Verify with `[ISSUE_TRACKER_TOOL] auth_status()` (load `/acli` skill — it owns the literal command shape).
 
 ### 3.7 Workflow
 
@@ -168,10 +170,10 @@ At the end of setup, `.context/master-test-plan.md` must contain a TMS section t
 - TMS CLI: bun xray | acli (only)
 - Regression Epic: {KEY} — {title}
 - Custom field IDs (Modality B only):
-    ATP: {{jira.acceptance_test_plan_atp}}
-    ATR: {{jira.acceptance_test_results_atr}}
+    ATP: {{jira.acceptance_test_plan}}
+    ATR: {{jira.acceptance_test_results}}
     Test Status: {{jira.test_status}}
-    Automation Candidate: {{jira.to_be_automated_qa}}
+    Automation Candidate: {{jira.to_be_automated}}
 - Link types available: is tested by / tests, is blocked by / blocks
 ```
 
@@ -185,7 +187,7 @@ After setup, both modalities should pass:
 
 - [ ] Can create a `Test` issue in the project (Modality B) / all five Xray types appear (Modality A).
 - [ ] `[ISSUE_TRACKER_TOOL] List issue types` shows `Test` + (if A) `Test Plan`, `Test Execution`, `Test Set`, `Pre-Condition`.
-- [ ] Can update a Story's `{{jira.acceptance_test_plan_atp}}` and `{{jira.acceptance_test_results_atr}}` with a test string (Modality B). Both fields persist and display.
+- [ ] Can update a Story's `{{jira.acceptance_test_plan}}` and `{{jira.acceptance_test_results}}` with a test string (Modality B). Both fields persist and display.
 - [ ] `is tested by` link can be created from a Test to a Story.
 - [ ] Workflow transition `start design` is available on a Test in `Draft`.
 - [ ] `/xray-cli` (A) or `/acli` (B) authenticates against the project key.

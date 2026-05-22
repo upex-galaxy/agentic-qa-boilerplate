@@ -331,6 +331,16 @@ bun xray backup restore --file backup.json --project NEW_PROJ
 bun xray backup restore --file backup.json --project NEW_PROJ --sync
 ```
 
+## Anti-patterns — NEVER do these
+
+- **X1.** NEVER call `bun xray ...` directly from workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`). Workflow skills use `[TMS_TOOL]` pseudo-code and load `/xray-cli` — only this skill owns the literal CLI syntax.
+- **X2.** NEVER cache Xray bearer tokens beyond their 24h TTL. Stale tokens produce silent 401s mid-import that look like network blips; re-auth via `bun xray auth login` instead of catching the error.
+- **X3.** NEVER batch-import test results without first verifying the Test Plan / Test Execution keys exist in the target project. Orphan results get rejected and the whole import aborts — pre-check with `exec get` / `plan get`.
+- **X4.** NEVER hand-craft Xray JSON payloads (`testInfo`, `iterations`, `evidences`) outside `bun xray`. The CLI owns the canonical shape; drift from it breaks future schema migrations and silently mis-attributes evidence to the wrong run.
+- **X5.** NEVER run `bun xray import` or `bun xray backup restore` against production without `--dry-run` first. These commands write irreversibly across hundreds of TCs and runs — preview the diff before applying.
+- **X6.** NEVER mix Modality A (Xray) and Modality B (Jira-native) workflows in the same skill phase. Modality is resolved once in `/test-documentation` Phase 0; downstream phases inherit and never re-decide mid-flow.
+- **X7.** NEVER push Xray run results for TCs flagged `to_be_automated=no` in the ROI verdict. Those are terminal Manual cases — pushing automated runs against them creates audit noise and breaks the Candidate / Manual / Deferred reporting.
+
 ## Specific tasks
 
 * **Backup & Restore operations** [references/backup-restore.md](references/backup-restore.md)

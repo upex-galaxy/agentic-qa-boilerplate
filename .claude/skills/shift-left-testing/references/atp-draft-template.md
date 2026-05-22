@@ -4,7 +4,9 @@
 
 This is the **DRAFT** ATP body used during pre-sprint Shift-Left. Different from sprint-testing's full ATP (`acceptance-test-planning.md`) — see §Differences from sprint-testing's ATP below.
 
-The skeleton below is the canonical body for `shift-left-refinement.md`. The same body is mirrored byte-for-byte in Jira during Phase 3 (custom field `{{jira.acceptance_test_plan_atp}}` + Story description QA Refinements section + comment mirror).
+The skeleton below is the canonical body for `shift-left-refinement.md`. The same body is mirrored byte-for-byte in Jira during Phase 3 (custom field `{{jira.acceptance_test_plan}}` + Story description QA Refinements section + comment mirror).
+
+> **Before Phase 3 publishes ATP DRAFT body to Jira rich-text fields**, read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
 
 ---
 

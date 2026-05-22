@@ -51,6 +51,20 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 
 ---
 
+## Inputs — read these first, in this order
+
+Canonical reading order for any AI starting cold on a test-automation workflow. Read in order; stop earlier when later inputs add no signal for the scope at hand.
+
+1. `kata-manifest.json` (root) — authoritative registry of every Component (`api[]`, `ui[]`) and every `@atc('TICKET-ID')` ID. Anti-duplication gate per Critical Rule #12 in `CLAUDE.md`. MUST load before proposing any new `Page`, `Api`, `Steps` module, or `@atc` ID.
+2. `.claude/skills/test-automation/references/kata-architecture.md` + `.claude/skills/test-automation/references/typescript-patterns.md` — full doctrine for KATA layers (TestContext / Base / Domain / Fixture), ATC identity, fixture selection, import-alias rules, params contracts.
+3. `tests/components/` — existing Api / Page / Steps shape on disk. Establishes naming, helper-vs-ATC split, fixture registration patterns to follow.
+4. `.context/PBI/{module}/{TICKET-ID}-*/implementation-plan.md` — if pre-existing (typically produced by `/test-documentation`), it carries the per-TC plan, candidate verdict, and component mapping. Cite it from the session `plan.md` rather than duplicating.
+5. The Story's AC + ATP (via `[ISSUE_TRACKER_TOOL]`) — source of truth for scenarios that become ATCs. Resolve the issue key from the scope picker.
+6. `api/schemas/` — OpenAPI-derived TypeScript types. Refresh via `bun run api:sync` if stale. Required for any Api component touching a new endpoint.
+7. `.env` — credentials (`LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD`, etc.) read via `config.testUser` from `@variables`. Never hardcode; never guess.
+
+---
+
 ## Phase 0 — Resume check (MANDATORY, inline)
 
 Before picking the planning scope, run the session resume contract from `agentic-qa-core/references/session-management.md` §4:
@@ -305,6 +319,26 @@ export class UiFixture extends TestContext {
 | Fixture registered | visual | Component is in `ApiFixture` / `UiFixture` / `StepsFixture` |
 | ATC IDs linked | visual | Every `@atc('X')` matches a real TMS test case ID |
 | Naming | visual | Files PascalCase for components, camelCase verb for test files |
+
+---
+
+## Anti-patterns — NEVER do these
+
+**T1.** NEVER auto-generate tests for TCs that `/test-documentation` flagged as Deferred or Manual — only `Candidate` (`to_be_automated`) verdicts proceed to automation. Skipping the ROI verdict produces flaky, low-value suites.
+
+**T2.** NEVER skip the Plan phase. Even for a "simple" regression test, write `spec.md` / `implementation-plan.md` (or the per-ATC plan under `.context/PBI/{module}/test-specs/{scope}/`) BEFORE writing any test code. Plan → Code → Review is non-negotiable.
+
+**T3.** NEVER collapse the KATA layers (TestContext / ApiBase + UiBase / Domain Api+Page+Steps / Fixture). Full doctrine in `references/kata-architecture.md`. Tests that flatten layers are rejected at Review.
+
+**T4.** NEVER call one ATC from inside another ATC. ATCs are atomic mini-flows. Reusable chains live in the Steps module (`tests/components/steps/*Steps.ts`), which is NOT decorated with `@atc`.
+
+**T5.** NEVER use relative imports (`../../../`). This repo uses path aliases (`@api/`, `@ui/`, `@schemas/`, `@utils/`, `@TestContext`, `@variables`, `@TestFixture`). Lint rejects relative paths.
+
+**T6.** NEVER hardcode credentials. Read from `.env` via `config.testUser` from `@variables` (`LOCAL_USER_*` / `STAGING_USER_*`). Never inline a password, token, or API key in a spec, fixture, or test data file.
+
+**T7.** NEVER hardcode `customfield_NNNNN` in spec files, test data, or test config. Resolve Jira fields via `{{jira.<slug>}}` against `.agents/jira-fields.json` + `.agents/jira-required.yaml` so test code survives workspace rotations.
+
+**T8.** NEVER mix test code and product code in the same PR. Test PRs follow the `test/*` branch convention with title format `{type}({ISSUE-KEY}): {description}` — see `.claude/skills/git-flow-master/references/pr-test-automation.md`.
 
 ---
 

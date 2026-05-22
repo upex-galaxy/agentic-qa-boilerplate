@@ -8,6 +8,7 @@ How to create and maintain Test / ATP / ATR artifacts in Jira — both with and 
 - `jira-setup.md` — one-time Jira / Xray project configuration checklist (issue types, custom fields, workflows, API access). Load before the first skill run on a new project.
 - `tms-architecture.md` §Container per modality — which issue type ATP/ATR/TC map to in each modality.
 - `tms-conventions.md` §IQL — Test Status (Workflow) vs Execution Status (Run) distinction.
+- `../../agentic-qa-core/references/jira-publishing-gotchas.md` — ADF rich-text publishing gotchas. **Read before publishing any Test / ATP / ATR body to Jira rich-text fields** — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
 
 ### Tool tags used here
 

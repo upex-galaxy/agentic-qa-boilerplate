@@ -2,6 +2,8 @@
 
 Definitive reference for the four TMS entities, their fields, their links, and the order in which to create them. Read this when creating any artifact, validating traceability, or fixing broken links.
 
+> **Before publishing any TMS entity body (Test / TestPlan / TestExecution / TestRun) to Jira rich-text fields**, read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
+
 ---
 
 ## 1. The four entities
@@ -22,8 +24,8 @@ The entity model is tool-agnostic, but the **container** each entity lives in ch
 | Entity | Modality A — Xray on Jira | Modality B — Jira-native (no Xray) |
 |--------|---------------------------|-------------------------------------|
 | **US** | Jira `Story` | Jira `Story` |
-| **ATP** | Xray `Test Plan` issue. Named `Test Plan: {{PROJECT_KEY}}-{n}`. Linked to the Story via "tests". | Story's `{{jira.acceptance_test_plan_atp}}` + comment mirror on the same Story. **No separate issue created.** |
-| **ATR** | Xray `Test Execution` issue. Named `Test Results: {{PROJECT_KEY}}-{n}`. Holds `Test Runs` per TC, plus Environment, Begin/End Date. Gets populated by CI import. | Story's `{{jira.acceptance_test_results_atr}}` + comment mirror on the same Story. **No separate issue.** CI updates Test Status field on each TC directly. |
+| **ATP** | Xray `Test Plan` issue. Named `Test Plan: {{PROJECT_KEY}}-{n}`. Linked to the Story via "tests". | Story's `{{jira.acceptance_test_plan}}` + comment mirror on the same Story. **No separate issue created.** |
+| **ATR** | Xray `Test Execution` issue. Named `Test Results: {{PROJECT_KEY}}-{n}`. Holds `Test Runs` per TC, plus Environment, Begin/End Date. Gets populated by CI import. | Story's `{{jira.acceptance_test_results}}` + comment mirror on the same Story. **No separate issue.** CI updates Test Status field on each TC directly. |
 | **TC** | Xray `Test` issue (type Manual / Cucumber / Generic) | Jira-native `Test` custom issue type (set up per `references/jira-setup.md`) or `Task` with a `Test Type` custom field. |
 | **Test Set / Precondition / Test Plan hierarchy** | First-class Xray issue types | Not available — group by labels + Regression Epic. |
 
@@ -417,7 +419,7 @@ Exact instructions:
   1. For each TC in the chunk:
      a. [ISSUE_TRACKER_TOOL] Create Issue: project=<PROJECT_KEY>, issueType=Test, summary="{per TC naming convention}", priority={Critical|High|Medium|Low}, labels=[regression, ...], epic=<REGRESSION_EPIC_KEY>.
      b. Capture the returned issue key as <TEST_KEY>.
-     c. [ISSUE_TRACKER_TOOL] Update Issue: issue=<TEST_KEY>, description={full Description template per jira-test-management.md §7}, fields={ {{jira.test_status}}: Draft, {{jira.to_be_automated_qa}}: <bool> }.
+     c. [ISSUE_TRACKER_TOOL] Update Issue: issue=<TEST_KEY>, description={full Description template per jira-test-management.md §7}, fields={ {{jira.test_status}}: Draft, {{jira.to_be_automated}}: <bool> }.
      d. [ISSUE_TRACKER_TOOL] Link Issues: linkType="is tested by", outward=<TEST_KEY>, inward=<STORY_KEY>.
   2. Do NOT recreate ATP/ATR custom fields on the Story — those were already populated by the orchestrator before dispatch.
 
@@ -503,7 +505,7 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {{jira.acceptance_test_plan_atp}}: {Test Analysis body}
+    {{jira.acceptance_test_plan}}: {Test Analysis body}
   labels: +shift-left-reviewed
 
 [ISSUE_TRACKER_TOOL] Add Comment:
@@ -514,7 +516,7 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {{jira.acceptance_test_results_atr}}: {Test Report body}
+    {{jira.acceptance_test_results}}: {Test Report body}
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}

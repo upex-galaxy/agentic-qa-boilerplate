@@ -343,6 +343,19 @@ The branch plan that comes out of the decision is the **contract** for execution
 
 ---
 
+## Anti-patterns — NEVER do these
+
+- **G1.** NEVER force-push to `main` or any shared branch — destroys teammates' history and is unrecoverable once others have pulled.
+- **G2.** NEVER amend or rebase a pushed commit — creates orphan commits in others' clones and rewrites history that was already replicated.
+- **G3.** NEVER commit secrets, credentials, `.env` contents, or auth tokens — git history is forever; a single commit leaks the secret permanently.
+- **G4.** NEVER include "Generated with Claude Code", "Co-Authored-By: Claude", or any AI-attribution line in commit messages or PR bodies (Critical Rule #3). Commits look human-authored.
+- **G5.** NEVER push to `main` without explicit user confirmation (Critical Rule #4). Strategy-driven protection applies to every protected branch, not just `main`.
+- **G6.** NEVER bypass pre-commit / pre-push hooks with `--no-verify` to "ship faster" — hooks exist to catch the bug you didn't notice. Fix the hook failure and create a new commit.
+- **G7.** NEVER mix concerns in a single commit (feat + refactor + lint fix bundled together) — atomic commits enable surgical revert and clean blame.
+- **G8.** NEVER stack PRs without naming the dependency chain in the PR body — reviewers can't tell which PR to read first or what each one depends on.
+
+---
+
 ## Pre-flight checklist (run before exiting any operation)
 
 - [ ] Step 1 ran and the repo state was reported.

@@ -290,7 +290,7 @@ Exact instructions:
   4. Draft TC outlines (summary + steps + expected) — full TC bodies are formalized in Stage 4 (test-documentation), not here.
   5. Create ATP + ATR per the modality branch in acceptance-test-planning.md §"Phase 6 — Traceability + Ticket updates":
        - Modality A: [TMS_TOOL] Create TestPlan + Create Execution; link to Story via [ISSUE_TRACKER_TOOL] Link Issues.
-       - Modality B: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_plan_atp}} field + comment mirror.
+       - Modality B: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_plan}} field + comment mirror.
   6. Write artifacts to <PBI_FOLDER>/test-analysis.md (byte-for-byte mirror of the Jira/TMS comment).
   7. Update <PBI_FOLDER>/test-session-memory.md sections: TMS Artifacts, Test Data, Stage Results > Planning, Checklist > Planning.
 
@@ -388,7 +388,7 @@ Exact instructions:
   2. Fill <PBI_FOLDER>/test-report.md from the ATR template in reporting-templates.md §"ATR Test Report body".
   3. Update the ATR in TMS:
        - Modality A: [TMS_TOOL] Update Test Execution / Run statuses; mark ATR complete.
-       - Modality B: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_results_atr}} field + comment mirror.
+       - Modality B: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_results}} field + comment mirror.
   4. Post QA comment on <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Add Comment using the matching template from reporting-templates.md (Story PASSED/FAILED, or Bug Template C/D).
   5. Transition <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Transition Issue. Resolve from substrate:
        - **Story PASSED** -> `{{jira.transition.story.qa_sign_off}}` (`in_test` -> `qa_approved`).

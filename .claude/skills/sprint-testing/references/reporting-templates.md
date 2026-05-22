@@ -6,6 +6,8 @@ Stage 3 Reporting artifacts for in-sprint QA: ATR Test Report body, bug report t
 
 This reference is for manual, in-sprint reporting RIGHT NOW. It does NOT cover Stage 4 formal TMS documentation or ROI scoring (see `test-documentation`), Bug Analysis *planning* variant inside an ATP (see `acceptance-test-planning.md`), or automation review artifacts (see `test-automation`).
 
+> **Before publishing ATR / bug-report / QA comment bodies to Jira rich-text fields**, read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
+
 ---
 
 ## 1. Bug Report Template
@@ -146,8 +148,8 @@ The Description always carries Steps to Reproduce. Any field that falls back her
 
 | Field | Slug | Type | Description fallback heading |
 |-------|------|------|------------------------------|
-| Actual Result | `{{jira.actual_result_comportamiento}}` | string (paragraph) | `## Actual Result` |
-| Expected Result | `{{jira.expected_result_output}}` | string (paragraph) | `## Expected Result` |
+| Actual Result | `{{jira.actual_result}}` | string (paragraph) | `## Actual Result` |
+| Expected Result | `{{jira.expected_result}}` | string (paragraph) | `## Expected Result` |
 | Error Type | `{{jira.error_type}}` | option | `**Error Type**: <value>` |
 | Severity | `{{jira.severity}}` | option | `**Severity**: <value>` |
 | Test Environment | `{{jira.test_environment}}` | option | `**Test Environment**: <value>` |
@@ -319,13 +321,13 @@ If the run was already imported from CI via `[TMS_TOOL] Import Results`, the Tes
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {{jira.acceptance_test_results_atr}}: {ATR body from §2.2}
+    {{jira.acceptance_test_results}}: {ATR body from §2.2}
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
     === Test Results: {{PROJECT_KEY}}-{number} ===
-    {ATR body — byte-for-byte mirror of {{jira.acceptance_test_results_atr}}}
+    {ATR body — byte-for-byte mirror of {{jira.acceptance_test_results}}}
 
 # Update each TC's Test Status field (Execution Status in Jira-native)
 for each {TEST_KEY, result} in run:
@@ -343,7 +345,7 @@ for each {TEST_KEY, result} in run:
 | Modality | Completion signal |
 |----------|-------------------|
 | A (Xray) | Test Execution issue transitioned to `Done`; all Test Runs have terminal status (PASS/FAIL/BLOCKED/ABORTED, not TODO/EXECUTING). |
-| B (Jira-native) | `{{jira.acceptance_test_results_atr}}` populated with full body (not placeholder); mirror comment present on the Story; every linked TC has a terminal Test Status. |
+| B (Jira-native) | `{{jira.acceptance_test_results}}` populated with full body (not placeholder); mirror comment present on the Story; every linked TC has a terminal Test Status. |
 
 ### 2.3 Local mirror (`test-report.md`)
 

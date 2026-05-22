@@ -6,6 +6,19 @@ compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, issue-tracker, tms]
 ---
 
+## Inputs
+
+Read in order; stop earlier when the batch is small enough that later inputs add no signal.
+
+1. `.context/business/business-feature-map.md` + `.context/business/business-data-map.md` — domain vocabulary, entity model, CRUD matrix. Anchors refined ACs in real entities and flows.
+2. `.context/master-test-plan.md` — regression Epic + in-scope modules. Tells the refinement whether the Story falls inside an already-prioritized area.
+3. The Story's Acceptance Criteria + `**Source spec:**` reference on Jira (fetched via `[ISSUE_TRACKER_TOOL]`). Canonical input — every refined AC must trace back here.
+4. `.context/PBI/{module-name}/{TICKET-ID}-*/` if a PBI folder already exists for this Story (created by a prior `/sprint-testing` cycle). Carries earlier session notes worth honoring.
+5. `.agents/jira-workflows.json` — Story workflow + valid transitions (`backlog -> shift_left_qa -> estimation`). Source of `{{jira.transition.story.*}}` slugs used in Phase 3.
+6. `.agents/jira-required.yaml` — canonical slug catalog. Source of `{{jira.acceptance_test_plan}}` and other Jira field slugs touched in handoff.
+
+---
+
 ## Forbidden invocations
 
 **NEVER invoke `/sdd-*` skills from this workflow.** SDD is an optional
@@ -255,7 +268,7 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
      [ISSUE_TRACKER_TOOL] Update Issue:
        issue: {STORY_KEY}
        fields:
-         {{jira.acceptance_test_plan_atp}}: <full shift-left-refinement.md body>
+         {{jira.acceptance_test_plan}}: <full shift-left-refinement.md body>
 
 3. Post the canonical comment mirror on the Story:
      [ISSUE_TRACKER_TOOL] Add Comment:
@@ -278,7 +291,7 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
 
 6. Verify trace:
      Modality A: [TMS_TOOL] trace {STORY_KEY}    (Test Plan link present + populated)
-     Modality B: read back {{jira.acceptance_test_plan_atp}} + last comment;
+     Modality B: read back {{jira.acceptance_test_plan}} + last comment;
                   confirm byte-for-byte mirror.
 ```
 
@@ -325,6 +338,24 @@ After the batch report lands, append the final progress entry `## Phase 3 — Ha
 
 ---
 
+## Anti-patterns — NEVER do these
+
+**L1.** NEVER force ambiguity questions onto a Story to fill a checklist — raise PO/Dev questions ONLY when a genuine gap, ambiguity, or untestable AC exists. Per CLAUDE.md §1 Rule #4: shift-left adds value by surfacing real risk, not by inflating question counts. A clean Story exits with an empty question list and that is a valid outcome.
+
+**L2.** NEVER skip the `shift-left-reviewed` label when transitioning a Story out of Phase 3. `/sprint-testing` Phase 0 inspects that label to short-circuit Phases 1-3 of in-sprint planning; missing the label forces redundant work later and breaks the cadence this skill exists to enable.
+
+**L3.** NEVER mix Story refinement with bug retest in the same batch. `/shift-left-testing` accepts Stories only (Phase 1 type filter is a hard reject). Bugs are reactive — they have no upstream ACs to refine and belong to `/sprint-testing` instead.
+
+**L4.** NEVER hand-write the ATP DRAFT body as raw ADF JSON. Author the body in Markdown locally (`shift-left-refinement.md`) and let `[ISSUE_TRACKER_TOOL]` convert via its md-to-ADF path on update. Hand-rolled ADF drifts from the byte-for-byte mirror that `fix-traceability` later validates.
+
+**L5.** NEVER transition a Story to `estimation` without a populated ATP DRAFT (custom field in Modality B; Test Plan link in Modality A when opted in). The DRAFT is what makes the Story estimable — without it, Dev and PO guess scope and the shift-left effort delivers no signal.
+
+**L6.** NEVER refine more than ~10-12 Stories in a single batch. Refinement quality degrades past that — user attention budget collapses, summaries blur, the batch report loses signal. Split larger groomings into multiple sessions with distinct `<descriptor>` values.
+
+**L7.** NEVER add a PO/Dev question that the AC body already answers in plain text. The reader's bandwidth is the scarcest resource in a grooming session; redundant questions train the team to skim future shift-left output.
+
+---
+
 ## Cross-skill handoff — what this skill does NOT do
 
 | After Phase 3 you need... | Load this skill / command | Reason |
@@ -350,7 +381,7 @@ If Phase 0.3 reports any project-wide context file missing, STOP and hand off �
 | `[DB_TOOL]` | DBHub MCP or Supabase MCP | `CLAUDE.md` Tool Resolution |
 | `[API_TOOL]` | OpenAPI MCP, Postman, or curl | `CLAUDE.md` Tool Resolution |
 
-Concrete tools (`bun`, `git`, `gh`) used literally. Project variables resolve from `.agents/project.yaml` (env-scoped vars resolve to the active environment). Jira variables (`{{jira.status.story.*}}`, `{{jira.transition.story.*}}`, `{{jira.acceptance_test_plan_atp}}`) resolve from `.agents/jira-workflows.json` + `.agents/jira-fields.json`.
+Concrete tools (`bun`, `git`, `gh`) used literally. Project variables resolve from `.agents/project.yaml` (env-scoped vars resolve to the active environment). Jira variables (`{{jira.status.story.*}}`, `{{jira.transition.story.*}}`, `{{jira.acceptance_test_plan}}`) resolve from `.agents/jira-workflows.json` + `.agents/jira-fields.json`.
 
 ---
 

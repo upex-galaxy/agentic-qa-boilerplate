@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-05-21T00:51:29.287Z`
+> Generated: `2026-05-22T22:48:58.473Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.claude/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -92,6 +92,12 @@ Skills indexed: 13
 **Purpose**: Framework evolution mode — evolves the QA boilerplate itself (KATA, fixtures, cli/, scripts/, api/schemas/ pipeline, package.json deps).
 
 **Compact Rules**:
+- `kata-manifest.json` — Component + ATC registry (source of truth per Critical Rule #12). Establishes what already exists before any new fixture API, Page, Api, Steps module, or ATC ID is proposed.
+- `.claude/skills/test-automation/references/kata-architecture.md` + `.claude/skills/test-automation/references/typescript-patterns.md` — KATA layer flow (TestContext → ApiBase / UiBase → YourApi / YourPage → TestFixture), ATC identity rules, fixture-selection contract, import-alias conventions.
+- `tests/components/` — current Api / Page / Steps shape; required reading when touching any L2 / L3 surface or adding a fixture consumed by these components.
+- `cli/install.ts` — installer flow; required reading when evolving the installer, adding install steps, or modifying boilerplate scaffold behavior.
+- `scripts/sync-openapi.ts` + `api/schemas/` — OpenAPI-derived TypeScript types pipeline; required reading when touching the API contract pipeline, schema generation, or any consumer of generated facades.
+- `package.json` + `bun.lockb` — dep landscape; required reading before bumping Playwright / Bun / TypeScript / fixture-runtime versions or adding/removing scripts.
 - **Plan artifact location**: `.session/framework-development/<change-name>/plan.md`. The `.session/` tree is gitignored — the plan is local, not committed. Recovery on mid-run crash: the file persists; the orchestrator reads it back on the next session via Phase 0 resume check (see `./session-management.md` §4).
 - **Grace period for legacy path**: prior versions wrote to `.scratch/framework-changes/<change-name>/{plan.md, apply-progress.md}`. Phase 0 also checks the legacy path during the grace period — if found, the orchestrator offers to copy state to the new `.session/...` location before resuming.
 - **Path guardrails injected per dispatch**: every Plan and Code subagent briefing MUST include the line `KATA invariants and ALLOWED/FORBIDDEN paths: .claude/skills/framework-development/references/kata-invariants.md (read §10 before touching any file).` Do NOT inline the path tables — the reference is authoritative.
@@ -101,12 +107,6 @@ Skills indexed: 13
 - Ask the user (or infer from the request): "Which paths will this change touch?"
 - For each path, look it up in §10 ALLOWED → proceed. Or §10 FORBIDDEN → abort and redirect to the skill named in the row.
 - If a path matches neither table, ASK the user explicitly — never assume.
-- If a single change spans both ALLOWED and FORBIDDEN paths (e.g. "refactor `tests/components/ui/UiBase.ts` AND update the e2e tests that consume it"), split the work: framework-development handles the base-class change; `/test-automation` handles the test-spec migration in a follow-up.
-- **Session resume check** (per `./session-management.md` §4): check `.session/framework-development/<change-name>/progress.md`. If it exists, read `plan.md` + the tail of `progress.md`, surface the last completed phase + next planned phase + any blocking notes, and offer **resume / restart / abort**. On `restart`, archive the current directory to `.session/.archive/<YYYY-MM-DD>-framework-development-<change-name>-aborted/` before proceeding.
-- **Legacy path check** (grace period): also check `.scratch/framework-changes/<change-name>/` for prior plan/progress under the old layout. If found, offer to migrate the state to the new `.session/...` location.
-- .claude/skills/framework-development/references/kata-invariants.md
-- .session/framework-development/<change-name>/plan.md   (Code phase only)
-- .session/framework-development/<change-name>/progress.md   (Code phase, batches > 1; orchestrator-written, read-only for subagents)
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
@@ -151,18 +151,18 @@ Skills indexed: 13
 - `/test-automation` — Review phase for high-risk test changes
 - `/git-flow-master` — pre-PR gate when the diff is large or touches shared fixtures / base classes
 - `/framework-development` — pre-archive review of framework evolution diffs
+- The diff / files / PR / architecture slice under review — the literal target the user named.
+- `CLAUDE.md` — repo conventions, Critical Rules, behavioral layer (the judges must score against these, not generic best-practice).
+- `.claude/skills/REGISTRY.md` — skill registry; resolve which project skills apply to the target's file paths + task type, and inject the same `Skills to load before work` block into both judge prompts.
+- The change's spec / PR description / Jira ticket — the stated intent. Judges score against intent, not their imagined intent.
+- `references/prompts-and-formats.md` — judge prompts, fix prompts, warning rubric, verdict table format.
+- Prior judge outputs from earlier rounds (Round 2+ only) — to detect regressions or stale findings vs. new ones.
 - Resolve project skills before launching agents: read skill registry, match skill paths by target files/task, and inject the same `Skills to load before work` block into both judge prompts and fix prompts.
 - Launch **two blind judges in parallel** with identical target and criteria; never review the code yourself.
 - Wait for both judges before synthesis; never accept a partial verdict.
 - Classify warnings as `WARNING (real)` only if normal intended use can trigger them; otherwise downgrade to INFO as `WARNING (theoretical)`.
 - Ask before fixing Round 1 confirmed issues.
 - After any fix agent runs, immediately re-launch both judges in parallel before commit/push/done/session summary.
-- Terminal states are only `JUDGMENT: APPROVED` or `JUDGMENT: ESCALATED`.
-- After 2 fix iterations with remaining issues, ask the user whether to continue.
-- Confirm target and optional custom criteria.
-- Resolve exact skill paths from registry or warn if missing.
-- Start Judge A and Judge B concurrently via delegation.
-- Synthesize findings into confirmed, suspect, contradiction, and INFO buckets.
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
@@ -176,6 +176,13 @@ Skills indexed: 13
 **Purpose**: Onboard a project to this testing boilerplate and generate the context files that every QA and automation session depends on.
 
 **Compact Rules**:
+- **Target project repo** — path resolved at session start (see "Before starting: target repo location" below). Read code and any in-repo PRD. This is the primary source of truth — discovery is reverse-engineering, never aspirational design.
+- **Target repo's `README.md` and existing onboarding docs** — fastest path to project intent, stack signals, and run commands before deep code reads.
+- **`.context/` directory** (if partial state exists from a prior discovery run) — informs Phase 0 resume decisions and prevents redundant work. Diff against current code before overwriting.
+- **`.agents/project.yaml` and `.env.example`** — variable resolution patterns (`{{PROJECT_KEY}}`, env URLs, MCP names) that every downstream context file references.
+- **`kata-manifest.json`** — registry of existing KATA Components + ATCs. Anchors what test surface the boilerplate already expects so discovery records gaps coherently.
+- **`.claude/skills/agentic-qa-core/references/skill-composition-strategy.md`** — workflow context for downstream skill hand-offs (`/adapt-framework`, `/sprint-testing`, `/test-documentation`).
+- **Business / domain docs supplied by the user** (Confluence, Notion exports, internal wikis) — secondary source for business model and glossary when in-repo signal is thin.
 - Check `.session/project-discovery/progress.md`.
 - If it does NOT exist → proceed to "Before starting: target repo location" below, then "Pick the scope first" (which writes `plan.md`).
 - If it DOES exist:
@@ -184,13 +191,6 @@ Skills indexed: 13
 - Surface to the user: scope chosen, target repo, last completed phase, next phase, any open Discovery Gaps from the last entry.
 - Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-project-discovery-aborted/` before proceeding.
 - **Project Connection** -- repo paths, tech stack detection, environment URLs, credentials from `.env`, team contacts.
-- **Project Assessment** -- current testing maturity (frameworks in place, CI presence, lint/typecheck, coverage). Produces a risk profile.
-- **Business Model Discovery** -- problem statement, target users, value proposition, revenue model (if any). Business Model Canvas recommended.
-- **Domain Glossary** -- core entities, relationships, state machines, enumerations, UI-label vs code-identifier mapping.
-- `domain-glossary.md` contains at least 5 core-entity subsections (grep `^### ` yields 5+ matches, ignoring top-level H3s from "Enumerations" etc. — aim for real entities).
-- `business-model.md` cites at least one concrete source (`Source:` or `Found in:` literal appears 3+ times).
-- `project-config.md` has a `## Tech Stack` section AND a `## Environments` section.
-- **Executive Summary** -- problem, solution, success metrics, scope.
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
@@ -204,6 +204,12 @@ Skills indexed: 13
 **Purpose**: Execute regression test suites via CI/CD, analyze results, classify failures, and produce GO/NO-GO release decisions.
 
 **Compact Rules**:
+- `.github/workflows/*.yml` — workflow files for regression / smoke / sanity suites; defines triggers, inputs, and artifact uploads.
+- `.context/master-test-plan.md` — regression Epic key + expected pass-rate SLOs per suite.
+- `playwright.config.ts` — reporter config, retry policy, project matrix; needed to interpret retry counts and shard splits.
+- Previous run's Allure report (artifact URL or local download under `./analysis/previous/`) — baseline for trend computation.
+- `kata-manifest.json` — registry of tests and ATCs available; used to cross-reference failed test IDs.
+- `.agents/jira-required.yaml` — Jira refs (project key, work types, transitions) for filing regression issues.
 - **Error protocol**: On any subagent failure: STOP, report full context to user, present retry / skip / abort options. Do NOT auto-fix. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
 - Compute prospective `<scope>` = `<env>-<YYYY-MM-DD>` from invocation context (env defaults to `{{DEFAULT_ENV}}`).
 - Check `.session/regression-testing/<scope>/progress.md`.
@@ -213,12 +219,6 @@ Skills indexed: 13
 - Read tail of `progress.md`.
 - If `RUN_ID` is present AND `progress.md` last entry is `Phase 1 — Trigger — status: completed` but Monitor entry is missing/failed: surface the option to **re-attach** to the existing `RUN_ID` via `gh run view <RUN_ID> --json status,conclusion` instead of re-triggering. This is the high-value resume case.
 - Otherwise surface the standard offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-regression-testing-<scope>-aborted/` first.
-- Score **≥ 7** → **GO** — release approved
-- Score **4-6** → **CAUTION** — manual review required, document accepted risks
-- Score **< 4** → **NO-GO** — block release, fix regressions, re-run
-- Test ID: {atc_id}
-- Suite: {suite}
-- Run ID: {run_id}
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
@@ -232,6 +232,12 @@ Skills indexed: 13
 **Purpose**: Orchestrates pre-sprint Shift-Left QA on a batch of backlog Stories.
 
 **Compact Rules**:
+- `.context/business/business-feature-map.md` + `.context/business/business-data-map.md` — domain vocabulary, entity model, CRUD matrix. Anchors refined ACs in real entities and flows.
+- `.context/master-test-plan.md` — regression Epic + in-scope modules. Tells the refinement whether the Story falls inside an already-prioritized area.
+- The Story's Acceptance Criteria + `**Source spec:**` reference on Jira (fetched via `[ISSUE_TRACKER_TOOL]`). Canonical input — every refined AC must trace back here.
+- `.context/PBI/{module-name}/{TICKET-ID}-*/` if a PBI folder already exists for this Story (created by a prior `/sprint-testing` cycle). Carries earlier session notes worth honoring.
+- `.agents/jira-workflows.json` — Story workflow + valid transitions (`backlog -> shift_left_qa -> estimation`). Source of `{{jira.transition.story.*}}` slugs used in Phase 3.
+- `.agents/jira-required.yaml` — canonical slug catalog. Source of `{{jira.acceptance_test_plan}}` and other Jira field slugs touched in handoff.
 - Update Jira description with "QA Refinements (Shift-Left Analysis)"
 - Populate ATP DRAFT (Modality B: custom field + comment mirror;
 - Labels: shift-left-reviewed + shift-left-{YYYY-MM-DD}
@@ -241,12 +247,6 @@ Skills indexed: 13
 - **Modality A (Xray)** AND user opts into Test Plan link draft for each Story -> also load `/xray-cli`. The default in shift-left is NO Test Plan creation (PO has not estimated yet, scope may shrink) — the ATP DRAFT lives on the Story description + comment + custom field. Ask the user before creating Test Plan issues.
 - **Modality B (Jira-native)** -> `/acli` alone covers `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]`.
 - `.context/business/business-data-map.md`
-- `.context/business/business-feature-map.md`
-- `.context/business/business-api-map.md`
-- `.context/master-test-plan.md`
-- **Explicit IDs** — user passes `UPEX-100,101,102,103` (or any natural-language list of Story keys). Use these verbatim; no JQL.
-- **Backlog JQL** — user says "groom the backlog" with no IDs. Build a JQL via `[ISSUE_TRACKER_TOOL]` filtering on:
-- `project = {{PROJECT_KEY}}`
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
@@ -260,21 +260,21 @@ Skills indexed: 13
 **Purpose**: Orchestrates in-sprint manual QA per ticket across Stages 1 (Planning), 2 (Execution) and 3 (Reporting).
 
 **Compact Rules**:
+- `.agents/project.yaml` — project identity, env URLs, `{{PROJECT_KEY}}`, MCP names, active environment.
+- `.agents/jira-required.yaml` — canonical slug catalog (custom fields, statuses, transitions) for the active workspace.
+- `.agents/jira-fields.json` — slug → numeric custom-field-ID mapping for `{{jira.<slug>}}` resolution at runtime.
+- `.agents/jira-workflows.json` — workflow + transition catalog (resolves Ready For QA → In Testing → Tested for Story / Bug / Test Case work types).
+- `.context/PBI/{module}/{TICKET-ID}-*/context.md` — ticket-local context: ACs, Team Discussion summary, session notes, open questions (read if it already exists from a prior Session Start).
+- `.context/master-test-plan.md` — regression Epic pointer, modality decision (Xray vs Jira-native), what to test and why.
+- `.context/business/business-feature-map.md` — feature catalog vocabulary; resolves "what module owns this story" for `{module-name}` PBI folder naming.
+- The Story or Bug ticket itself — AC, ATP, comments — fetched via `[ISSUE_TRACKER_TOOL]`. The ticket body is source-of-truth, not the local PBI mirror.
+- `.env` — `LOCAL_USER_*` / `STAGING_USER_*` credentials. NEVER hardcode; always read at runtime.
+- `kata-manifest.json` — registry of existing KATA Components + ATCs. Check before proposing new ATCs in Stage 3 hand-off so the test-automation phase doesn't duplicate work.
 - Story ID with status Ready-for-QA -> Single ticket / User Story.
 - Bug ID deployed to staging -> Single ticket / Bug.
 - Sprint number, "process sprint X", or an existing `SPRINT-{N}-TESTING.md` -> Batch sprint.
 - If the framework file does not exist yet, generate it first (see `sprint-orchestration.md`).
 - Compute prospective `<scope>` from invocation: `<JIRA-KEY>` (single-ticket) or `sprint-<N>/<JIRA-KEY>` (batch — once per ticket in the wave loop).
-- Check `.session/sprint-testing/<scope>/progress.md`.
-- If it does NOT exist → proceed to Session Start (writes `plan.md`).
-- If it DOES exist:
-- Read `plan.md` + tail of `progress.md`.
-- Optionally read `.context/PBI/{module}/{TICKET}/test-session-memory.md` for the per-ticket domain state (load-bearing across the 4 sub-agent dispatches).
-- Surface to the user: last completed stage (Session Start / Stage 1 / Stage 2 / Stage 3) + next stage + any unresolved BUG_FOUND or TOOL FAILURE from the last entry.
-- Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>-aborted/` first.
-- **Resolve TMS modality** (Xray on Jira vs Jira-native). This determines whether ATP/ATR will be created as Xray `Test Plan` / `Test Execution` issues (Modality A) or as Story custom-field + comment mirrors (Modality B). Full resolution algorithm lives in `test-documentation/SKILL.md` §Phase 0 — apply the same four-step probe here (CLAUDE.md -> master-test-plan.md -> list issue types -> ask the user). Persist the result into `test-session-memory.md`.
-- Always load `/acli` (all Jira ticket operations: story fetch, comment, transition, link, bug creation).
-- In **Modality A (Xray)**: also load `/xray-cli` for Test / Test Execution / Test Plan / Test Run operations.
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
@@ -291,18 +291,18 @@ Skills indexed: 13
 - **Code phase scope rule**: each Code subagent edits multiple files in isolation, returns a list of changed files + a one-line summary per file. The orchestrator never reads the diffs — only the summary. If the user wants to see actual diffs, the orchestrator runs `git diff` inline after the subagent returns.
 - **On any Verifier failure**: STOP, return the failing report verbatim to the user, do NOT auto-fix the test code, do NOT re-dispatch the Code phase without user approval. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
 - **MANDATORY context doc for Plan + Code briefings**: include `kata-manifest.json` (root) in the "Context docs" component (item 2 of the 6-component briefing). Without it the subagent will scan `tests/components/**` directly, burn tokens, and risk proposing duplicates. See Critical Rule #12 in `CLAUDE.md`.
+- `kata-manifest.json` (root) — authoritative registry of every Component (`api[]`, `ui[]`) and every `@atc('TICKET-ID')` ID. Anti-duplication gate per Critical Rule #12 in `CLAUDE.md`. MUST load before proposing any new `Page`, `Api`, `Steps` module, or `@atc` ID.
+- `.claude/skills/test-automation/references/kata-architecture.md` + `.claude/skills/test-automation/references/typescript-patterns.md` — full doctrine for KATA layers (TestContext / Base / Domain / Fixture), ATC identity, fixture selection, import-alias rules, params contracts.
+- `tests/components/` — existing Api / Page / Steps shape on disk. Establishes naming, helper-vs-ATC split, fixture registration patterns to follow.
+- `.context/PBI/{module}/{TICKET-ID}-*/implementation-plan.md` — if pre-existing (typically produced by `/test-documentation`), it carries the per-TC plan, candidate verdict, and component mapping. Cite it from the session `plan.md` rather than duplicating.
+- The Story's AC + ATP (via `[ISSUE_TRACKER_TOOL]`) — source of truth for scenarios that become ATCs. Resolve the issue key from the scope picker.
+- `api/schemas/` — OpenAPI-derived TypeScript types. Refresh via `bun run api:sync` if stale. Required for any Api component touching a new endpoint.
+- `.env` — credentials (`LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD`, etc.) read via `config.testUser` from `@variables`. Never hardcode; never guess.
 - Determine the prospective `<scope>` from the invocation context (ticket key, regression-driven TC, or module slug — see "Pick the planning scope first" below).
 - Check `.session/test-automation/<scope>/progress.md`.
 - If it does NOT exist → proceed to scope picker + Phase 1.
 - If it DOES exist:
 - Read `plan.md` (thin index) + the tail of `progress.md`.
-- Read the cited canonical `spec.md` / `implementation-plan.md` / `atc/*.md` under `.context/PBI/{module}/test-specs/{scope}/` for the domain content.
-- Surface to the user: last completed phase (Plan / Code / Review) + next phase + open Review findings if any.
-- Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-test-automation-<scope>-aborted/` before proceeding.
-- Load `kata-manifest.json`. Cross-check every proposed TC ID against `components.api[].atcs[].id` and `components.ui[].atcs[].id`. If a match exists, the TC is already automated — re-scope or reuse.
-- Cross-check every proposed Component name against `components.api[].name` and `components.ui[].name`. If a match exists, extend the existing class — do not create a new one.
-- If reuse opportunity exists (same flow already covered by a Steps method or ATC), adapt the plan to extend rather than rebuild.
-- Which scenarios from the ticket become tests, which become ATCs, which are shared preconditions (Steps)?
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
@@ -358,7 +358,7 @@ Skills indexed: 13
 - Bulk test import (JUnit/Cucumber/Xray JSON).
 - Backup / restore / large sync operations.
 - Anything involving Test Plans or Test Executions at scale (xray-cli is far more complete).
-- **Backup & Restore operations** [references/backup-restore.md](references/backup-restore.md)
+- **X1.** NEVER call `bun xray ...` directly from workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`). Workflow skills use `[TMS_TOOL]` pseudo-code and load `/xray-cli` — only this skill owns the literal CLI syntax.
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).

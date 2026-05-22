@@ -8,6 +8,8 @@ This reference is for **manual / exploratory in-sprint testing per ticket RIGHT 
 
 For feature / multi-story scope see `feature-test-planning.md`.
 
+> **Before publishing ATP body to Story rich-text fields** (`{{jira.acceptance_test_plan}}` or description), read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
+
 ---
 
 ## The 4 Pillars of Spec-Driven Testing
@@ -380,26 +382,26 @@ Load `/xray-cli` skill for the concrete CLI syntax.
 
 #### Modality B — Jira-native (no Xray)
 
-ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md`: `{{jira.acceptance_test_plan_atp}}` for ATP and `{{jira.acceptance_test_results_atr}}` for ATR. Both fields are populated as customfield + comment-mirror pairs; `fix-traceability` checks both.
+ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md`: `{{jira.acceptance_test_plan}}` for ATP and `{{jira.acceptance_test_results}}` for ATR. Both fields are populated as customfield + comment-mirror pairs; `fix-traceability` checks both.
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {{jira.acceptance_test_plan_atp}}: {full test-analysis.md body}
+    {{jira.acceptance_test_plan}}: {full test-analysis.md body}
   labels: +shift-left-reviewed
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
     === Test Plan: {{PROJECT_KEY}}-{n} ===
-    {full test-analysis.md body — byte-for-byte mirror of {{jira.acceptance_test_plan_atp}}}
+    {full test-analysis.md body — byte-for-byte mirror of {{jira.acceptance_test_plan}}}
 
 # ATR container is created empty now and filled at Stage 3:
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {{jira.acceptance_test_results_atr}}: "Test Results: {{PROJECT_KEY}}-{n} — pending execution"
+    {{jira.acceptance_test_results}}: "Test Results: {{PROJECT_KEY}}-{n} — pending execution"
 ```
 
 Load `/acli` skill for the concrete Jira CLI syntax.
@@ -416,7 +418,7 @@ Write `test-analysis.md` at the ticket's PBI folder with **identical** content t
 
 ### Traceability check
 
-After writing, run `[TMS_TOOL] trace {TICKET}` (Modality A) or verify the Story's `{{jira.acceptance_test_plan_atp}}` is populated and the comment mirror exists (Modality B). TCs are not created in this skill — the trace is for the ATP artifact alone. Bugs produce ATP + ATR with no TCs (the bug is the implicit test case); "missing TC" warnings on bugs are expected.
+After writing, run `[TMS_TOOL] trace {TICKET}` (Modality A) or verify the Story's `{{jira.acceptance_test_plan}}` is populated and the comment mirror exists (Modality B). TCs are not created in this skill — the trace is for the ATP artifact alone. Bugs produce ATP + ATR with no TCs (the bug is the implicit test case); "missing TC" warnings on bugs are expected.
 
 ---
 

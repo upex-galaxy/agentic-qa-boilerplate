@@ -20,7 +20,7 @@ This reference defines:
 | Current Story status | `[ISSUE_TRACKER_TOOL]` Get Issue: `{STORY_KEY}` → status |
 | Current Story labels | Same fetch — labels list |
 | Modality | From `session-memory.md` (resolved in shift-left-testing Phase 0.1) |
-| TMS field map | `.agents/jira-fields.json` → `{{jira.acceptance_test_plan_atp}}` |
+| TMS field map | `.agents/jira-fields.json` → `{{jira.acceptance_test_plan}}` |
 | Workflow transitions | `.agents/jira-workflows.json` → `{{jira.transition.story.analyze}}`, `{{jira.transition.story.estimate}}` |
 
 ---
@@ -90,7 +90,7 @@ Then ALSO populate the custom field on the Story so the field+comment mirror wor
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {{jira.acceptance_test_plan_atp}}: <full shift-left-refinement.md body>
+    {{jira.acceptance_test_plan}}: <full shift-left-refinement.md body>
 ```
 
 #### Modality A — Xray (Test Plan opt-in NOT chosen — default)
@@ -101,10 +101,10 @@ OR Modality B — Jira-native:
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {{jira.acceptance_test_plan_atp}}: <full shift-left-refinement.md body>
+    {{jira.acceptance_test_plan}}: <full shift-left-refinement.md body>
 ```
 
-Custom-field write may fail in Modality A if the Jira instance has not provisioned `{{jira.acceptance_test_plan_atp}}`. Fall back to comment-only mode and warn the user in the per-Story summary.
+Custom-field write may fail in Modality A if the Jira instance has not provisioned `{{jira.acceptance_test_plan}}`. Fall back to comment-only mode and warn the user in the per-Story summary.
 
 ### Step 3 — Canonical comment mirror
 
@@ -119,7 +119,7 @@ Post the ENTIRE `shift-left-refinement.md` body as a comment on the Story. Byte-
     ---
     Refined on: {{YYYY-MM-DD}}
     Refined by: QA Shift-Left batch session
-    Source of truth: this comment + custom field {{jira.acceptance_test_plan_atp}} (byte-for-byte mirror).
+    Source of truth: this comment + custom field {{jira.acceptance_test_plan}} (byte-for-byte mirror).
     Local working copy: .context/PBI/{module}/{{PROJECT_KEY}}-{n}-{slug}/shift-left-refinement.md
 ```
 
@@ -185,7 +185,7 @@ Modality B:
 ```
 [ISSUE_TRACKER_TOOL] Get Issue: {STORY_KEY} -> read fields + comments
 # Verify:
-#   - field {{jira.acceptance_test_plan_atp}} != empty
+#   - field {{jira.acceptance_test_plan}} != empty
 #   - last comment body starts with "=== Shift-Left Refinement:"
 #   - field body == comment body (after stripping the "=== Shift-Left Refinement: ===" header and footer)
 ```
