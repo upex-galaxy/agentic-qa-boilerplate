@@ -97,16 +97,16 @@ const PROTECTED_PATTERNS = [
  */
 const SLUG_MAPPING = {
   // Story fields
-  acceptanceCriteria: 'acceptance_criteria_gherkin',
+  acceptanceCriteria: 'acceptance_criteria',
   businessRules: 'business_rules_specification',
   scope: 'scope',
   mockup: 'mockup',
   workflow: 'workflow',
   storyPoints: 'story_points',
-  webLink: 'weblink_url',
+  webLink: 'weblink',
   // Bug/Defect fields
-  actualResult: 'actual_result_comportamiento',
-  expectedResult: 'expected_result_output',
+  actualResult: 'actual_result',
+  expectedResult: 'expected_result',
   errorType: 'error_type',
   severity: 'severity',
   testEnvironment: 'test_environment',

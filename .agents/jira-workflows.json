@@ -152,6 +152,14 @@
         "from_canonical": "estimation",
         "to_canonical": "backlog"
       },
+      "needs_quality": {
+        "id": "26",
+        "name": "needs quality",
+        "from_status_id": "10115",
+        "to_status_id": "10133",
+        "from_canonical": "estimation",
+        "to_canonical": "shift_left_qa"
+      },
       "back_from_blocked": {
         "id": "21",
         "name": "back",
