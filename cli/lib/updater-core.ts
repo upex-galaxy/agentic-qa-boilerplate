@@ -1195,6 +1195,7 @@ function collectComponentRelPaths(component: Component, templateDir: string): st
  */
 function bootstrapEntry(component: string, relPath: string, templateDir: string): DeltaEntry {
   let templateNewSha: string | null = null;
+  let added = 0;
   try {
     const lsOutput = execSync(
       `git -C "${templateDir}" ls-tree HEAD -- "${relPath}"`,
@@ -1208,13 +1209,25 @@ function bootstrapEntry(component: string, relPath: string, templateDir: string)
   catch {
     templateNewSha = null;
   }
+  if (templateNewSha) {
+    try {
+      const blob = execSync(
+        `git -C "${templateDir}" show ${templateNewSha}`,
+        { stdio: ['pipe', 'pipe', 'pipe'] },
+      ).toString();
+      added = blob.length === 0 ? 0 : blob.split('\n').length - (blob.endsWith('\n') ? 1 : 0);
+    }
+    catch {
+      added = 0;
+    }
+  }
   return {
     component,
     path: relPath,
     status: 'A',
     fromSha: '',
     toSha: templateNewSha ?? '',
-    added: 0,
+    added,
     removed: 0,
     isBinary: false,
     templateOldSha: null,
@@ -1344,31 +1357,23 @@ export async function runUpdate(
     throw err;
   }
 
-  // v5 → v6 migration prompt (auto-accepted in --auto mode)
-  if (isV5State(rawState)) {
-    sink.warn('Detectado: esquema v5 en .template/boilerplate.lock.json.');
-    const ok = opts.auto
-      ? true
-      : await sink.confirm('Migrar al esquema v6 (rastreo per-component SHA, --auto, --rollback)?', true);
-    if (!ok) {
-      sink.warn('Migración cancelada. El CLI permanece en el flujo v5 hasta nueva ejecución.');
-      return emptySummary;
-    }
-    rawState = migrateSyncState(rawState, cfg.cliVersion);
-  }
-
-  // v6 → v7 migration prompt (auto-accepted in --auto mode)
+  // Schema migration — single collapsed prompt regardless of source version.
+  // v5 → v7 chains migrations silently; users see one Yes/No instead of two.
   let v7State: SyncStateV7 | null = null;
-  if (isV6State(rawState)) {
-    sink.warn('Detectado esquema v6 en .template/boilerplate.lock.json.');
+  const fromV5 = isV5State(rawState);
+  const fromV6 = isV6State(rawState);
+  if (fromV5 || fromV6) {
+    const sourceLabel = fromV5 ? 'v5 (legacy)' : 'v6';
+    sink.warn(`Detectado esquema ${sourceLabel} en .template/boilerplate.lock.json.`);
     const ok = opts.auto
       ? true
-      : await sink.confirm('Migrar a v7 (rastreo de ignore-files + flags ampliados)?', true);
+      : await sink.confirm(`Migrar esquema ${sourceLabel} → v7 (rastreo per-component SHA + ignore-files + flags ampliados)?`, true);
     if (!ok) {
       sink.warn('Migración cancelada. Ejecuta de nuevo cuando quieras migrar.');
       return emptySummary;
     }
-    v7State = migrateV6ToV7(rawState, cfg.templateRepo, cfg.cliVersion);
+    const v6 = fromV5 ? migrateSyncState(rawState as SyncStateV5, cfg.cliVersion) : (rawState as SyncStateV6);
+    v7State = migrateV6ToV7(v6, cfg.templateRepo, cfg.cliVersion);
   }
   else if (isV7State(rawState)) {
     v7State = rawState;
@@ -1504,7 +1509,9 @@ export async function runUpdate(
     return emptySummary;
   }
   if (visible.length > 0) {
-    sink.step(`Detectados ${visible.length} archivo(s) con cambios en ${perComp.size} componente(s).`);
+    const suffix = bootstrapMode ? ' (modo bootstrap — primera sync)' : '';
+    const label = bootstrapMode ? 'archivo(s) nuevos/cambiados' : 'archivo(s) con cambios';
+    sink.step(`Detectados ${visible.length} ${label} en ${perComp.size} componente(s)${suffix}.`);
   }
   else {
     sink.step(`Sin cambios de archivos — solo líneas nuevas en ${ignoreDeltasPre.length} ignore-file(s).`);
@@ -1596,12 +1603,38 @@ export async function runUpdate(
       continue;
     }
 
-    // Interactive: multiselect within scope
-    const fileOpts = scopeFiles.map(entry => ({
-      entry,
-      label: formatFileLabel(entry),
-    }));
-    selected = await sink.pickFiles(scope, fileOpts);
+    // Interactive: per-scope strategy prompt (all/pick/skip) when the sink
+    // implements pickScopeStrategy; otherwise fall back to direct multiselect.
+    const scopeStats = scopeFiles.reduce(
+      (acc, e) => {
+        acc.addedTotal += e.added;
+        acc.removedTotal += e.removed;
+        if (e.classification === 'locally-diverged') { acc.divergedCount++; }
+        return acc;
+      },
+      { changedCount: scopeFiles.length, divergedCount: 0, addedTotal: 0, removedTotal: 0 },
+    );
+
+    let strategy: 'all' | 'pick' | 'skip' = 'pick';
+    if (sink.pickScopeStrategy) {
+      strategy = await sink.pickScopeStrategy(scope, scopeStats);
+    }
+
+    if (strategy === 'skip') {
+      for (const e of scopeFiles) { skipped.push(e); }
+      continue;
+    }
+
+    if (strategy === 'all') {
+      selected = scopeFiles.slice();
+    }
+    else {
+      const fileOpts = scopeFiles.map(entry => ({
+        entry,
+        label: formatFileLabel(entry),
+      }));
+      selected = await sink.pickFiles(scope, fileOpts);
+    }
 
     // Files not selected → skipped
     const selectedPaths = new Set(selected.map(e => e.path));

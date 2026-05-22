@@ -226,6 +226,19 @@ export interface ScopeOption {
   divergedCount: number
 }
 
+/**
+ * Stats passed to `pickScopeStrategy` so the sink can show line-delta totals
+ * alongside the file count for the scope.
+ */
+export interface ScopeStats {
+  changedCount: number
+  divergedCount: number
+  addedTotal: number
+  removedTotal: number
+}
+
+export type ScopeStrategy = 'all' | 'pick' | 'skip';
+
 export interface FileOption {
   entry: DeltaEntry
   label: string
@@ -269,6 +282,14 @@ export interface ReportSink {
    */
   confirm: (message: string, defaultValue?: boolean) => Promise<boolean>
   pickScopes: (scopes: ScopeOption[]) => Promise<string[]>
+  /**
+   * Optional Phase-4 hook: per-scope strategy prompt. If implemented the core
+   * asks per scope whether to accept all files, pick individually, or skip the
+   * scope entirely — avoiding the long multiselect when users want a blanket
+   * accept. Sinks that don't implement this fall back to the legacy pickFiles
+   * flow (multiselect over every file in the scope).
+   */
+  pickScopeStrategy?: (scope: string, stats: ScopeStats) => Promise<ScopeStrategy>
   pickFiles: (scope: string, files: FileOption[]) => Promise<DeltaEntry[]>
   pickIgnoreLines: (file: string, lines: IgnoreLineOption[]) => Promise<string[]>
   resolveDiverged: (entry: DeltaEntry, diff: PairedDiff) => Promise<Resolution>

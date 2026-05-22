@@ -8,7 +8,7 @@
  */
 
 import type { Component, ReportSink, UpdaterConfig } from './lib/updater-types';
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -271,6 +271,25 @@ function buildSink(): ReportSink {
       return abortOnCancel<string[]>(r);
     },
 
+    pickScopeStrategy: async (scope, stats) => {
+      const divergedSuffix = stats.divergedCount > 0
+        ? `, ${stats.divergedCount} divergente${stats.divergedCount > 1 ? 's' : ''}`
+        : '';
+      const locSuffix = (stats.addedTotal || stats.removedTotal)
+        ? `, +${stats.addedTotal}/-${stats.removedTotal} líneas`
+        : '';
+      const r = await tui.select({
+        message: `${scope} (${stats.changedCount} archivo(s)${divergedSuffix}${locSuffix}) — ¿como proceder?`,
+        options: [
+          { value: 'all', label: `aceptar todos (${stats.changedCount})` },
+          { value: 'pick', label: 'elegir individualmente' },
+          { value: 'skip', label: 'saltar scope completo' },
+        ],
+        initialValue: 'all',
+      });
+      return abortOnCancel<string>(r) as 'all' | 'pick' | 'skip';
+    },
+
     pickFiles: async (scope, files) => {
       if (files.length === 0) { return []; }
       const options = files.map(f => ({ value: f.entry.path, label: f.label, hint: f.entry.classification }));
@@ -313,11 +332,63 @@ function buildSink(): ReportSink {
     },
 
     showDiff: async (entry, diff) => {
-      const ask = await tui.confirm({ message: `Mostrar diff de ${entry.path} antes de aplicar?`, initialValue: false });
+      const isNew = entry.classification === 'new-upstream';
+      const ask = await tui.confirm({
+        message: isNew
+          ? `Ver preview de contenido upstream para ${entry.path}?`
+          : `Ver diff de ${entry.path} antes de aplicar?`,
+        initialValue: false,
+      });
       if (!abortOnCancel<boolean>(ask)) { return; }
-      const combined = `=== Upstream (template) ===\n${diff.templateDiff.trim() || '(sin diff)'}\n\n=== Local ===\n${diff.localDiff.trim() || '(sin diff)'}`;
-      try { execSync(`printf %s ${JSON.stringify(combined)} | less -R`, { stdio: 'inherit', shell: '/bin/bash' }); }
-      catch { tui.note(combined, `Diff: ${entry.path}`); }
+
+      const PREVIEW_LIMIT = 40;
+      const DIFF_LIMIT = 80;
+
+      let body: string;
+      let title: string;
+      let limit: number;
+
+      if (isNew) {
+        title = `Nuevo archivo: ${entry.path}`;
+        body = diff.templateDiff.trim() || '(contenido vacío)';
+        limit = PREVIEW_LIMIT;
+      }
+      else {
+        title = `Diff: ${entry.path}`;
+        const t = diff.templateDiff.trim() || '(sin diff)';
+        const l = diff.localDiff.trim() || '(sin diff)';
+        body = `=== Upstream (template) ===\n${t}\n\n=== Local ===\n${l}`;
+        limit = DIFF_LIMIT;
+      }
+
+      // Strip ANSI to render cleanly inside clack note box.
+      // eslint-disable-next-line no-control-regex
+      const plain = body.replace(/\x1B\[[0-9;]*m/g, '');
+      const lines = plain.split('\n');
+      const truncated = lines.length > limit;
+      const shown = truncated
+        ? `${lines.slice(0, limit).join('\n')}\n... ${lines.length - limit} línea(s) más`
+        : plain;
+
+      tui.note(shown, title);
+
+      if (truncated) {
+        const openExternal = await tui.confirm({
+          message: 'Abrir contenido completo en editor externo?',
+          initialValue: false,
+        });
+        if (abortOnCancel<boolean>(openExternal)) {
+          const tmp = path.join(os.tmpdir(), `upex-diff-${process.pid}-${Date.now()}.txt`);
+          fs.writeFileSync(tmp, plain);
+          const editor = process.env.EDITOR || process.env.VISUAL || 'less';
+          try { spawnSync(editor, [tmp], { stdio: 'inherit' }); }
+          catch { tui.log.warn(`No se pudo abrir ${editor}. Contenido en: ${tmp}`); return; }
+          finally {
+            try { fs.rmSync(tmp, { force: true }); }
+            catch { /* ignore */ }
+          }
+        }
+      }
     },
   };
 }
