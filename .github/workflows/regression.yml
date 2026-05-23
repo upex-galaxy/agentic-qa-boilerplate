@@ -77,8 +77,8 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
-      - name: Validate Environment Variables
-        run: bun run env:check
+      - name: Validate Test Environment Variables
+        run: bun run test:env:check
 
       - name: Install Playwright (API context)
         run: bun run pw:install
@@ -135,8 +135,8 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
-      - name: Validate Environment Variables
-        run: bun run env:check
+      - name: Validate Test Environment Variables
+        run: bun run test:env:check
 
       - name: Install Playwright Browsers
         run: bun run pw:install

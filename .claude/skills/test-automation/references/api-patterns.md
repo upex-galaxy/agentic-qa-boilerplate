@@ -158,7 +158,6 @@ The single most important rule when OpenAPI is available: **only facade files im
 | `bun run api:sync --url <url>` | Pull from a specific URL |
 | `bun run api:sync --no-types` | Download only, skip type generation |
 | `bun run api:sync --help` | Help |
-| `bun run api:types` | Regenerate types from the existing `openapi.json` |
 
 Run `bun run api:sync` before every automation session that touches new endpoints. Commit the regenerated `openapi-types.ts`. `openapi.json` and `.openapi-config.json` stay gitignored.
 

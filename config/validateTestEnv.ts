@@ -1,13 +1,13 @@
 /**
- * KATA Architecture - Environment Variables Validator
+ * KATA Architecture - Test Environment Variables Validator
  *
- * Validates required variables based on context:
+ * Validates required runtime variables for the active test environment:
  * - Credentials: Only for current TEST_ENV (local or staging)
  * - TMS: Only if AUTO_SYNC=true (validates Xray or Jira based on TMS_PROVIDER)
  *
  * Usage:
- *   - Called by variables.ts with pre-extracted env vars (single process.env read)
- *   - Standalone: bun run config/validateEnv.ts
+ *   - Importable: call validateTestEnvironment(vars) with pre-extracted env vars
+ *   - Standalone: bun run config/validateTestEnv.ts
  */
 
 /** Variables needed for validation (subset of all env vars) */
@@ -27,12 +27,12 @@ export interface EnvVarsToValidate {
 }
 
 /**
- * Validates environment variables.
+ * Validates test environment variables.
  * Throws Error if validation fails (fail-fast).
  *
  * @param vars - Pre-extracted environment variables (avoids multiple process.env reads)
  */
-export function validateEnvironment(vars: EnvVarsToValidate): void {
+export function validateTestEnvironment(vars: EnvVarsToValidate): void {
   const errors: string[] = [];
 
   // Validate credentials for CURRENT environment only
@@ -85,11 +85,11 @@ export function validateEnvironment(vars: EnvVarsToValidate): void {
   }
 
   if (errors.length > 0) {
-    throw new Error(`Environment validation failed:\n${errors.map(e => `  - ${e}`).join('\n')}`);
+    throw new Error(`Test environment validation failed:\n${errors.map(e => `  - ${e}`).join('\n')}`);
   }
 }
 
-// Standalone execution: bun run config/validateEnv.ts
+// Standalone execution: bun run config/validateTestEnv.ts
 if (import.meta.main) {
   // Only standalone mode reads process.env directly
   const vars: EnvVarsToValidate = {
@@ -107,14 +107,14 @@ if (import.meta.main) {
     ATLASSIAN_API_TOKEN: process.env.ATLASSIAN_API_TOKEN,
   };
 
-  console.log('\nValidating environment variables...');
+  console.log('\nValidating test environment variables...');
   console.log(`  TEST_ENV: ${vars.TEST_ENV}`);
   console.log(`  AUTO_SYNC: ${vars.AUTO_SYNC}`);
   console.log(`  TMS_PROVIDER: ${vars.TMS_PROVIDER}`);
 
   try {
-    validateEnvironment(vars);
-    console.log('\n✅ Environment validated successfully');
+    validateTestEnvironment(vars);
+    console.log('\n✅ Test environment validated successfully');
   }
   catch (error) {
     console.error('\n❌ Validation failed:');

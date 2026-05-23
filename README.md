@@ -418,7 +418,7 @@ bun run test:e2e:critical  # Tests marked @critical
 │
 ├── config/
 │   ├── variables.ts              # Runtime env vars consumed by Playwright/KATA
-│   └── validateEnv.ts            # Environment validation
+│   └── validateTestEnv.ts        # Test environment validation
 │
 ├── .context/                     # AI Context Engineering (generated)
 │   ├── business/                  # business-data-map / business-feature-map / business-api-map
@@ -555,11 +555,11 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 
 ### Utilities
 
-| Script               | Description           |
-| -------------------- | --------------------- |
-| `bun run pw:install` | Install browsers      |
-| `bun run env:check`  | Validate environment  |
-| `bun run clean`      | Remove test artifacts |
+| Script                   | Description                |
+| ------------------------ | -------------------------- |
+| `bun run pw:install`     | Install browsers           |
+| `bun run test:env:check` | Validate test environment  |
+| `bun run test:clean`     | Remove test artifacts      |
 
 ### CLI Tools
 

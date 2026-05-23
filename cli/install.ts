@@ -1160,7 +1160,7 @@ async function configureDayZeroCredentials(state: InstallState): Promise<void> {
     }
     else {
       tui.note(
-        'Required by config/validateEnv.ts — tests fail on first run without these. Enter blank to skip a pair.',
+        'Required by config/validateTestEnv.ts — tests fail on first run without these. Enter blank to skip a pair.',
         'Test user credentials',
       );
       for (const name of missingUsers) {
