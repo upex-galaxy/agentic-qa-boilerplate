@@ -34,6 +34,8 @@ import type {
   GitVersion,
   IgnoreDelta,
   IgnoreLineOption,
+  PackageJsonDelta,
+  PackageJsonKeyOption,
   PairedDiff,
   ReportSink,
   RunSummary,
@@ -51,6 +53,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { applyIgnoreAppend, computeBlobSha, detectIgnoreDelta } from './updater-ignore';
+import { applyPackageJsonAppend, detectPackageJsonDelta } from './updater-package';
 import { CorruptStateError } from './updater-types';
 
 // ============================================================================
@@ -1072,6 +1075,7 @@ export function advanceSyncStateV7(
     cliVersion,
     perComponentCommit: { ...prior.perComponentCommit },
     ignoreFileSync: { ...prior.ignoreFileSync },
+    packageJsonSync: { ...(prior.packageJsonSync ?? {}) },
   };
 
   const advancedSet = new Set(summary.componentsAdvanced);
@@ -1404,6 +1408,11 @@ export async function runUpdate(
   if (v7State !== null && !v7State.ignoreFileSync) {
     v7State.ignoreFileSync = {};
   }
+  // Same defensive init for packageJsonSync (added in-place on v7 schema —
+  // older v7 lockfiles predate this field).
+  if (v7State !== null && !v7State.packageJsonSync) {
+    v7State.packageJsonSync = {};
+  }
 
   // --- PHASE 1 — FETCH ---
   sink.phase(1, 'FETCH');
@@ -1411,11 +1420,12 @@ export async function runUpdate(
   fetchSpin.start(`Cloning upstream (${cfg.templateRepo})…`);
   const templateDir = cfg.tempDir;
   try {
-    // Sparse-checkout must include both component paths AND ignore-file paths
-    // so Phase 4.5 can read them out of the partial clone.
+    // Sparse-checkout must include component paths, ignore-file paths AND
+    // package.json paths so Phase 4.5 / 4.5b can read them out of the partial clone.
     const sparsePatterns = [
       ...buildSparseCheckoutPatterns(cfg.components),
       ...cfg.ignoreFiles.map(spec => spec.path),
+      ...(cfg.packageJsonSpecs ?? []).map(spec => spec.path),
     ];
     await partialCloneTemplate(cfg.templateRepo, cfg.tempDir, sparsePatterns);
     fetchSpin.stop(`Template descargado (sparse-checkout): ${cfg.templateRepo}`);
@@ -1603,7 +1613,27 @@ export async function runUpdate(
     }
   }
 
-  if (visible.length === 0 && ignoreDeltasPre.length === 0) {
+  // Pre-detect package.json deltas (Phase 4.5b). Same early-exit semantics: a
+  // non-empty pkg-json delta keeps us alive even when file delta + ignore delta
+  // are empty. A delta is "non-empty" when ANY section has either upstream-only
+  // keys (append candidates) or local-override keys (FYI warns).
+  const pkgJsonDeltasPre: PackageJsonDelta[] = [];
+  for (const spec of cfg.packageJsonSpecs ?? []) {
+    const delta = detectPackageJsonDelta(spec, repoRoot, templateDir, v7State);
+    let hasSomething = false;
+    for (const secDelta of Object.values(delta.sections)) {
+      if (Object.keys(secDelta.upstreamOnlyKeys).length > 0
+        || Object.keys(secDelta.localOverrideKeys).length > 0) {
+        hasSomething = true;
+        break;
+      }
+    }
+    if (hasSomething) {
+      pkgJsonDeltasPre.push(delta);
+    }
+  }
+
+  if (visible.length === 0 && ignoreDeltasPre.length === 0 && pkgJsonDeltasPre.length === 0) {
     sink.step('Sin cambios detectados respecto al upstream. Nada que sincronizar.');
     return emptySummary;
   }
@@ -1615,8 +1645,11 @@ export async function runUpdate(
     const label = bootstrapMode ? 'archivo(s) nuevos/cambiados' : 'archivo(s) con cambios';
     sink.step(`Detectados ${visible.length} ${label} en ${perComp.size} componente(s)${suffix}.`);
   }
-  else {
+  else if (ignoreDeltasPre.length > 0) {
     sink.step(`Sin cambios de archivos — solo líneas nuevas en ${ignoreDeltasPre.length} ignore-file(s).`);
+  }
+  else {
+    sink.step(`Sin cambios de archivos — solo keys nuevas en ${pkgJsonDeltasPre.length} package.json.`);
   }
 
   // --- PHASE 3 — SCOPE ---
@@ -1638,7 +1671,7 @@ export async function runUpdate(
         divergedCount: s.diverged,
       }));
       chosenScopes = await sink.pickScopes(scopeOpts);
-      if (chosenScopes.length === 0 && ignoreDeltasPre.length === 0) {
+      if (chosenScopes.length === 0 && ignoreDeltasPre.length === 0 && pkgJsonDeltasPre.length === 0) {
         sink.warn('No seleccionaste ningún componente. Saliendo sin cambios.');
         return emptySummary;
       }
@@ -1868,6 +1901,61 @@ export async function runUpdate(
     }
   }
 
+  // --- PHASE 4.5b — PACKAGE.JSON KEYS ---
+  // Append-only sync for configured sections (default: scripts + devDependencies).
+  // Same shape as Phase 4.5: pre-detected deltas → per-section selection →
+  // applied later in Phase 5 before state write. localOverrideKeys (drift) is
+  // surfaced as FYI warn — NEVER overwritten.
+  const pkgJsonSelections = new Map<string, { selectedKeys: Record<string, string[]>, values: Record<string, Record<string, string>> }>();
+  if (pkgJsonDeltasPre.length > 0) {
+    sink.subphase('PACKAGE.JSON KEYS');
+    for (const delta of pkgJsonDeltasPre) {
+      // Surface drift first (FYI only — never written)
+      for (const [section, secDelta] of Object.entries(delta.sections)) {
+        for (const [key, drift] of Object.entries(secDelta.localOverrideKeys)) {
+          const truncL = drift.localValue.length > 60 ? `${drift.localValue.slice(0, 60)}…` : drift.localValue;
+          const truncU = drift.upstreamValue.length > 60 ? `${drift.upstreamValue.slice(0, 60)}…` : drift.upstreamValue;
+          sink.warn(`${delta.file} ${section}.${key}: divergencia local (local: ${truncL}, upstream: ${truncU}) — se mantiene local`);
+        }
+      }
+
+      const selectedKeys: Record<string, string[]> = {};
+      const values: Record<string, Record<string, string>> = {};
+      for (const [section, secDelta] of Object.entries(delta.sections)) {
+        const upstreamOnly = Object.entries(secDelta.upstreamOnlyKeys);
+        if (upstreamOnly.length === 0) { continue; }
+
+        let selected: string[];
+        if (opts.auto) {
+          selected = upstreamOnly.map(([k]) => k);
+          sink.step(`[auto] ${delta.file} ${section}: aceptando ${selected.length} key(s)`);
+        }
+        else if (sink.pickPackageJsonKeys) {
+          const options: PackageJsonKeyOption[] = upstreamOnly.map(([k, v]) => ({
+            value: k,
+            label: `${k}: ${v.length > 50 ? `${v.slice(0, 50)}…` : v}`,
+            checked: true,
+          }));
+          selected = await sink.pickPackageJsonKeys(delta.file, section, options);
+        }
+        else {
+          // Sink hasn't implemented interactive pick — fall back to auto-accept.
+          selected = upstreamOnly.map(([k]) => k);
+          sink.step(`${delta.file} ${section}: ${selected.length} key(s) (sink sin picker, aceptando todas)`);
+        }
+
+        if (selected.length > 0) {
+          selectedKeys[section] = selected;
+          values[section] = Object.fromEntries(upstreamOnly);
+        }
+      }
+
+      if (Object.keys(selectedKeys).length > 0) {
+        pkgJsonSelections.set(delta.file, { selectedKeys, values });
+      }
+    }
+  }
+
   // --- PHASE 5 — APPLY (state write + deprecated cleanup) ---
   sink.phase(5, 'APPLY');
 
@@ -1894,6 +1982,7 @@ export async function runUpdate(
         perComponentCommit: {},
         syncedComponents: [],
         ignoreFileSync: {},
+        packageJsonSync: {},
         cliVersion: cfg.cliVersion,
         lastSyncedAt: new Date().toISOString(),
         variableSystemVersion: 1,
@@ -1907,6 +1996,67 @@ export async function runUpdate(
         lastSyncedSha: blobSha,
         appendedLines: Array.from(new Set([...prev, ...appended])),
       },
+    };
+  }
+
+  // Apply package.json appends BEFORE state write (mirror of ignore-append above).
+  for (const spec of cfg.packageJsonSpecs ?? []) {
+    const selection = pkgJsonSelections.get(spec.path);
+    if (!selection || Object.keys(selection.selectedKeys).length === 0) { continue; }
+
+    // Back up the local file BEFORE write (pre-write backup contract).
+    const localPath = path.join(repoRoot, spec.path);
+    if (!opts.dryRun && fs.existsSync(localPath)) {
+      const dir = ensureBackup();
+      const backupPath = path.join(dir, spec.path);
+      fs.mkdirSync(path.dirname(backupPath), { recursive: true });
+      fs.copyFileSync(localPath, backupPath);
+    }
+
+    let writtenBySection: Record<string, string[]>;
+    if (!opts.dryRun) {
+      writtenBySection = applyPackageJsonAppend(spec, selection.values, repoRoot, selection.selectedKeys);
+      for (const [section, keys] of Object.entries(writtenBySection)) {
+        sink.step(`Append a ${spec.path} ${section}: ${keys.length} key(s)`);
+      }
+    }
+    else {
+      writtenBySection = selection.selectedKeys;
+      for (const [section, keys] of Object.entries(writtenBySection)) {
+        sink.step(`[dry-run] aplicaría a ${spec.path} ${section}: ${keys.length} key(s)`);
+      }
+    }
+
+    // Materialise v7State lazily (bootstrap mode) so the state update sticks.
+    if (v7State === null) {
+      v7State = {
+        schemaVersion: 7,
+        templateRepo: cfg.templateRepo,
+        templateCommit: '',
+        perComponentCommit: {},
+        syncedComponents: [],
+        ignoreFileSync: {},
+        packageJsonSync: {},
+        cliVersion: cfg.cliVersion,
+        lastSyncedAt: new Date().toISOString(),
+        variableSystemVersion: 1,
+      };
+    }
+
+    const upstreamBlobSha = computeBlobSha(path.join(templateDir, spec.path));
+    const fileState = v7State.packageJsonSync?.[spec.path] ?? {};
+    const newFileState: Record<string, { lastSyncedSha: string, appliedKeys: string[] }> = {};
+    for (const section of spec.sections) {
+      const prevKeys = fileState[section]?.appliedKeys ?? [];
+      const writtenForSection = writtenBySection[section] ?? [];
+      newFileState[section] = {
+        lastSyncedSha: upstreamBlobSha,
+        appliedKeys: Array.from(new Set([...prevKeys, ...writtenForSection])),
+      };
+    }
+    v7State.packageJsonSync = {
+      ...(v7State.packageJsonSync ?? {}),
+      [spec.path]: newFileState,
     };
   }
 
@@ -1953,6 +2103,7 @@ export async function runUpdate(
       perComponentCommit: {},
       syncedComponents: [],
       ignoreFileSync: {},
+      packageJsonSync: {},
       cliVersion: cfg.cliVersion,
       lastSyncedAt: new Date().toISOString(),
       variableSystemVersion: 1,
