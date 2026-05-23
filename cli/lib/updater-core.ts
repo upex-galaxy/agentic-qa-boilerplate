@@ -1741,13 +1741,24 @@ export async function runUpdate(
       }
       if (stale.length > 0) {
         sink.warn(`Self-update: actualizando ${stale.length} archivo(s) del CLI antes de continuar…`);
+        // Pre-write backup contract: mirror each existing local file into a
+        // fresh `.backups/update-<ts>/` before overwriting. Symmetric with
+        // applyResolution's backup behavior. `bun run up --rollback` can then
+        // restore the prior CLI if a self-update breaks it.
+        const selfBackupDir = createBackupDir(repoRoot);
         for (const relPath of stale) {
           const src = path.join(templateDir, relPath);
           const dst = path.join(repoRoot, relPath);
+          if (fs.existsSync(dst)) {
+            const backupPath = path.join(selfBackupDir, relPath);
+            fs.mkdirSync(path.dirname(backupPath), { recursive: true });
+            fs.copyFileSync(dst, backupPath);
+          }
           fs.mkdirSync(path.dirname(dst), { recursive: true });
           fs.cpSync(src, dst);
           sink.step(`  · ${relPath}`);
         }
+        sink.step(`Backup en ${path.relative(repoRoot, selfBackupDir)}`);
         sink.step('Re-ejecutando con código actualizado…');
         const child = spawnSync('bun', [process.argv[1], ...process.argv.slice(2)], {
           stdio: 'inherit',
