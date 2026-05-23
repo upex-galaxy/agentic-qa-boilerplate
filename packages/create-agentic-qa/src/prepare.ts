@@ -142,9 +142,6 @@ const TEMPLATE_EXCLUDES = [
   // "already populated" on first install).
   '.agents/jira-fields.json',
   '.agents/jira-workflows.json',
-  // Stale installer state from the boilerplate's own setup runs. Always
-  // runtime-generated; never an artifact a consumer should inherit.
-  '.template/installer.state.json',
 ] as const;
 
 /**
