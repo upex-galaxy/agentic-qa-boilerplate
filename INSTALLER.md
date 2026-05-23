@@ -62,12 +62,12 @@ Every step writes an ISO timestamp to `state.steps[<key>]` in `.template/install
 
 ### Force flags
 
-| Method | Effect |
-|---|---|
-| `--force` CLI flag | Clear all step timestamps — re-run everything |
-| `--force-step <key>` | Clear one step (e.g. `--force-step 5-deps-install`) |
-| `INSTALL_FORCE_ALL=1` | Same as `--force` |
-| `INSTALL_FORCE_<UPPER_KEY>=1` | Same as `--force-step` (dashes become underscores) |
+| Method                        | Effect                                              |
+| ----------------------------- | --------------------------------------------------- |
+| `--force` CLI flag            | Clear all step timestamps — re-run everything       |
+| `--force-step <key>`          | Clear one step (e.g. `--force-step 5-deps-install`) |
+| `INSTALL_FORCE_ALL=1`         | Same as `--force`                                   |
+| `INSTALL_FORCE_<UPPER_KEY>=1` | Same as `--force-step` (dashes become underscores)  |
 
 Step keys that participate in idempotency (each writes an ISO timestamp on success): `5-deps-install`, `6-playwright`, `8-skills-gentle-ai`, `9-skills-community-project`, `9-skills-community-global`, `12-api-bootstrap`, `13-github-repo`. Phase 1 detection steps (`1-repo-verify`, `2-gentle-ai-detect`, `3-gentle-ai-install`, `4-agent-detect`) and Phase 4 verification/persistence (`10-mcp-env`, `11-verify-clis`, `14-state-write`) always re-run since they probe live state. Phase 5 post-install steps (`agents:setup`, `acli:auth`, `jira:sync-fields`, `jira:sync-workflows`, `jira:check`) track status under `state.postInstall.*` rather than `state.steps`.
 
@@ -227,15 +227,15 @@ Then `bun run setup:doctor --json` to confirm.
 
 ### Force flags (re-run completed steps)
 
-| Flag / Env var                           | Effect                                         |
-| ---------------------------------------- | ---------------------------------------------- |
-| `--force`                                | Clear all step timestamps — re-run everything  |
-| `--force-step <key>`                     | Re-run one step by key                         |
-| `INSTALL_FORCE_ALL=1`                    | Same as `--force`                              |
-| `INSTALL_FORCE_GENTLE_AI=1`              | Re-run gentle-ai skill install                 |
-| `INSTALL_FORCE_COMMUNITY=1`              | Re-run community skill install                 |
-| `INSTALL_FORCE_GITHUB=1`                 | Re-run GitHub remote setup                     |
-| `INSTALL_FORCE_AGENTS_SETUP=1`           | Re-run agents:setup                            |
+| Flag / Env var                 | Effect                                        |
+| ------------------------------ | --------------------------------------------- |
+| `--force`                      | Clear all step timestamps — re-run everything |
+| `--force-step <key>`           | Re-run one step by key                        |
+| `INSTALL_FORCE_ALL=1`          | Same as `--force`                             |
+| `INSTALL_FORCE_GENTLE_AI=1`    | Re-run gentle-ai skill install                |
+| `INSTALL_FORCE_COMMUNITY=1`    | Re-run community skill install                |
+| `INSTALL_FORCE_GITHUB=1`       | Re-run GitHub remote setup                    |
+| `INSTALL_FORCE_AGENTS_SETUP=1` | Re-run agents:setup                           |
 
 ---
 
@@ -351,24 +351,24 @@ Independent of gentle-ai, the installer also runs the official Anthropic `bunx s
 
 Installed into `.claude/skills/` via `bunx skills add` (project mode). Not committed — `cli/install.ts` re-fetches them on every install so we always pick up upstream fixes. They are critical to the QA stack and must travel with every clone of the repo.
 
-| Slug                        | Source                                         | Why project-level                                                                                               |
-| --------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `playwright-cli`            | `microsoft/playwright-cli`                     | Browser automation CLI used by `/sprint-testing` and `/test-automation` as the primary `[AUTOMATION_TOOL]`.     |
-| `playwright-best-practices` | `currents-dev/playwright-best-practices-skill` | Patterns / anti-flaky / axe-core / fixtures reference. Auto-loaded by `/test-automation` during the Code phase. |
+| Slug                        | Source                                         | Why project-level                                                                                                                                      |
+| --------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `playwright-cli`            | `microsoft/playwright-cli`                     | Browser automation CLI used by `/sprint-testing` and `/test-automation` as the primary `[AUTOMATION_TOOL]`.                                            |
+| `playwright-best-practices` | `currents-dev/playwright-best-practices-skill` | Patterns / anti-flaky / axe-core / fixtures reference. Auto-loaded by `/test-automation` during the Code phase.                                        |
 | `resend-cli`                | `resend/resend-skills`                         | Resend email testing CLI. Pairs with the `resend` external binary verified in step 11. Project-level because email provider choice varies per project. |
 
 ### User-level (global, 6 skills)
 
 Installed with `bunx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack.
 
-| Slug                  | Source                        | Why user-level                                                                                                                                   |
-| --------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `skill-creator`       | `anthropics/skills`           | Author/edit skills — useful in any repo                                                                                                          |
-| `find-skills`         | `vercel-labs/skills`          | Discover installable skills — universal                                                                                                          |
-| `github-actions-docs` | `xixu-me/skills`              | GitHub Actions workflow reference — universal                                                                                                    |
-| `brainstorming`       | `obra/superpowers`            | Pre-implementation ideation (framework features, test design edge cases) — universal                                                             |
-| `html-ppt`            | `lewislulu/html-ppt-skill`    | HTML presentations for sprint planning / retro / demo decks — universal                                                                          |
-| `bun`                 | `bun.sh/docs`                 | Bun runtime reference — universal across every project that uses bun                                                                             |
+| Slug                  | Source                     | Why user-level                                                                       |
+| --------------------- | -------------------------- | ------------------------------------------------------------------------------------ |
+| `skill-creator`       | `anthropics/skills`        | Author/edit skills — useful in any repo                                              |
+| `find-skills`         | `vercel-labs/skills`       | Discover installable skills — universal                                              |
+| `github-actions-docs` | `xixu-me/skills`           | GitHub Actions workflow reference — universal                                        |
+| `brainstorming`       | `obra/superpowers`         | Pre-implementation ideation (framework features, test design edge cases) — universal |
+| `html-ppt`            | `lewislulu/html-ppt-skill` | HTML presentations for sprint planning / retro / demo decks — universal              |
+| `bun`                 | `bun.sh/docs`              | Bun runtime reference — universal across every project that uses bun                 |
 
 ### Skipping or re-running
 
@@ -382,21 +382,21 @@ If a skill fails to install (e.g., upstream repo restructured), the failure is r
 
 Skills that are workflow-specific to this boilerplate live in `.claude/skills/` and are committed to the repo. They install with the clone — no external installer required.
 
-| Skill                   | Trigger                                  | Why it stays local                                                                                                                                                        |
-| ----------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `agentic-qa-core`       | (auto, cited by other skills)            | Foundation: passive reference host for briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy                                           |
-| `agentic-qa-onboard`    | `/agentic-qa-onboard`                    | First-time orientation tour (this is the entry point for new contributors)                                                                                                |
-| `project-discovery`     | `/project-discovery`                     | 4-phase reverse-engineering of a target project (Constitution → Specification)                                                                                            |
-| `shift-left-testing`    | `/shift-left-testing`                    | Stage 0: pre-sprint AC refinement on a batch of backlog Stories. Drafts ATP outlines, surfaces gaps, transitions `backlog → shift_left_qa → estimation`.                  |
-| `sprint-testing`        | `/sprint-testing`                        | Stages 1-3: per-ticket manual QA loop (planning, execution, reporting). Short-circuits Phases 1-3 when the Story carries label `shift-left-reviewed` <30 days old.        |
-| `test-documentation`    | `/test-documentation`                    | Stage 4: TMS test-case authoring + ROI prioritization (Jira/Xray bridge)                                                                                                  |
-| `test-automation`       | `/test-automation`                       | Stage 5: KATA + Playwright + TS test authoring (plan → code → review)                                                                                                     |
-| `regression-testing`    | `/regression-testing`                    | Stage 6: CI suite execution, failure classification, GO/NO-GO verdict                                                                                                     |
+| Skill                   | Trigger                                  | Why it stays local                                                                                                                                                                                                             |
+| ----------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `agentic-qa-core`       | (auto, cited by other skills)            | Foundation: passive reference host for briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy                                                                                                |
+| `agentic-qa-onboard`    | `/agentic-qa-onboard`                    | First-time orientation tour (this is the entry point for new contributors)                                                                                                                                                     |
+| `project-discovery`     | `/project-discovery`                     | 4-phase reverse-engineering of a target project (Constitution → Specification)                                                                                                                                                 |
+| `shift-left-testing`    | `/shift-left-testing`                    | Stage 0: pre-sprint AC refinement on a batch of backlog Stories. Drafts ATP outlines, surfaces gaps, transitions `backlog → shift_left_qa → estimation`.                                                                       |
+| `sprint-testing`        | `/sprint-testing`                        | Stages 1-3: per-ticket manual QA loop (planning, execution, reporting). Short-circuits Phases 1-3 when the Story carries label `shift-left-reviewed` <30 days old.                                                             |
+| `test-documentation`    | `/test-documentation`                    | Stage 4: TMS test-case authoring + ROI prioritization (Jira/Xray bridge)                                                                                                                                                       |
+| `test-automation`       | `/test-automation`                       | Stage 5: KATA + Playwright + TS test authoring (plan → code → review)                                                                                                                                                          |
+| `regression-testing`    | `/regression-testing`                    | Stage 6: CI suite execution, failure classification, GO/NO-GO verdict                                                                                                                                                          |
 | `framework-development` | `/framework-development`                 | Gateway for evolving the boilerplate itself (KATA bases, fixtures, `cli/`, `scripts/`, `api/schemas/` pipeline). NOT for per-ticket QA. Self-contained Plan → Code → Verify → Archive pipeline; runs under the minimal preset. |
-| `acli`                  | `/acli`                                  | Atlassian CLI wrapper for Jira/Confluence terminal work                                                                                                                   |
-| `xray-cli`              | `/xray-cli`                              | Xray Cloud TMS CLI (test creation, executions, JUnit/Cucumber import)                                                                                                     |
-| `git-flow-master`       | (auto on git intents)                    | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)                                                                                                  |
-| `judgment-day`          | `/judgment-day`, `juzgar`, `dual review` | T2 vendored (gentle-ai, Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, fix loop, re-judge). Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. Never auto-invoked. |
+| `acli`                  | `/acli`                                  | Atlassian CLI wrapper for Jira/Confluence terminal work                                                                                                                                                                        |
+| `xray-cli`              | `/xray-cli`                              | Xray Cloud TMS CLI (test creation, executions, JUnit/Cucumber import)                                                                                                                                                          |
+| `git-flow-master`       | (auto on git intents)                    | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)                                                                                                                                                       |
+| `judgment-day`          | `/judgment-day`, `juzgar`, `dual review` | T2 vendored (gentle-ai, Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, fix loop, re-judge). Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. Never auto-invoked.     |
 
 These skills evolve with the repo and are versioned in git. The split is intentional: gentle-ai owns persistent memory (Engram); this repo owns the **vertical** workflow (specific to the QA stages 1-6 pipeline) plus a small set of vendored helpers (`judgment-day`).
 
@@ -404,7 +404,7 @@ These skills evolve with the repo and are versioned in git. The split is intenti
 
 ## Keeping the framework up to date — `.template/boilerplate.lock.json`
 
-After the first time you run `bun run update`, the CLI creates `.template/boilerplate.lock.json` at the project root. This file tracks the last upstream-template git SHA for each synced component (`.claude/skills/`, `scripts/`, `cli/`, etc.). It is safe — and recommended — to **commit this file**: your team and CI workflows need it to know which template version each component is on. Subsequent `bun run update` runs read the stored SHAs to compute precise per-file deltas, so only genuinely changed files are surfaced.
+After the first time you run `bun run up`, the CLI creates `.template/boilerplate.lock.json` at the project root. This file tracks the last upstream-template git SHA for each synced component (`.claude/skills/`, `scripts/`, `cli/`, etc.). It is safe — and recommended — to **commit this file**: your team and CI workflows need it to know which template version each component is on. Subsequent `bun run up` runs read the stored SHAs to compute precise per-file deltas, so only genuinely changed files are surfaced.
 
 **Requirement**: `git ≥ 2.25` must be on your `$PATH` (required for sparse-checkout with `--filter=blob:none`). Run `git --version` to check; upgrade instructions are printed by the CLI if the version is too old.
 
@@ -414,14 +414,14 @@ After the first time you run `bun run update`, the CLI creates `.template/boiler
 
 The installer's step 10 (`verifyExternalClis`) runs a PATH probe — `which <binary>` on POSIX, `where <binary>` on Windows — for six command-line tools that other parts of the QA workflow depend on. This is a **presence-only** check: no version compare, no auto-install. If any are missing, the installer **prints the suggested install command and the official docs URL — but does not run anything**. System-level CLIs touch user permissions (Homebrew taps, apt, curl piped into bash, winget) and are not portable cross-platform, so auto-installing them without consent would be invasive. The user installs them manually following the docs URL.
 
-| CLI              | Powers in this repo                                                               | Install (cross-platform)            | Official docs                                                                                         |
-| ---------------- | --------------------------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `bun`            | Runtime for every script (`bun run setup`, `bun xray`, `bun run test`)            | See official docs                   | [bun.com](https://bun.com/)                                                                           |
-| `gh`             | GitHub PR / Actions workflows from `/git-flow-master`, `/regression-testing`      | See official docs                   | [github.com/cli/cli#installation](https://github.com/cli/cli#installation)                            |
+| CLI              | Powers in this repo                                                                                      | Install (cross-platform)            | Official docs                                                                                         |
+| ---------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `bun`            | Runtime for every script (`bun run setup`, `bun xray`, `bun run test`)                                   | See official docs                   | [bun.com](https://bun.com/)                                                                           |
+| `gh`             | GitHub PR / Actions workflows from `/git-flow-master`, `/regression-testing`                             | See official docs                   | [github.com/cli/cli#installation](https://github.com/cli/cli#installation)                            |
 | `acli`           | Jira/Confluence from terminal (`/acli`, `/shift-left-testing`, `/sprint-testing`, `/test-documentation`) | See official docs                   | [developer.atlassian.com/cloud/acli](https://developer.atlassian.com/cloud/acli/guides/install-acli/) |
-| `playwright-cli` | Agent-driven browser automation (`/playwright-cli` skill)                         | `bun add -g @playwright/cli@latest` | [playwright.dev/agent-cli](https://playwright.dev/agent-cli/introduction)                             |
-| `resend`         | Email testing flows                                                               | See official docs                   | [resend.com/docs/cli](https://resend.com/docs/cli)                                                    |
-| `jq`             | JSON parsing in acli Jira pipelines (advanced `acli --json \| jq …`)              | See official docs                   | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)                                  |
+| `playwright-cli` | Agent-driven browser automation (`/playwright-cli` skill)                                                | `bun add -g @playwright/cli@latest` | [playwright.dev/agent-cli](https://playwright.dev/agent-cli/introduction)                             |
+| `resend`         | Email testing flows                                                                                      | See official docs                   | [resend.com/docs/cli](https://resend.com/docs/cli)                                                    |
+| `jq`             | JSON parsing in acli Jira pipelines (advanced `acli --json \| jq …`)                                     | See official docs                   | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)                                  |
 
 > **Important — `playwright-cli` is NOT `@playwright/test`**: this is the agent-driven browser CLI from the `@playwright/cli` npm package, installed **globally**. It produces a binary literally named `playwright-cli` (not `playwright`). The `@playwright/test` library that ships as a devDependency in this repo is a separate thing — it powers the test runner (`bun run test`), not the `/playwright-cli` skill. Don't confuse them.
 
@@ -433,12 +433,12 @@ The installer's step 10 (`verifyExternalClis`) runs a PATH probe — `which <bin
 
 This is the most common point of confusion.
 
-| When                                                                     | Skill                                  |
-| ------------------------------------------------------------------------ | -------------------------------------- |
-| Pre-sprint AC refinement on a batch of backlog Stories (Stage 0)         | `/shift-left-testing` (batch-grooming) |
-| Routine in-sprint QA on a Jira ticket (most cases)                       | `/sprint-testing` (ticket-driven)      |
-| Authoring an automated test for a Candidate TC                           | `/test-automation` (Plan → Code → Review) |
-| Refactor of the boilerplate itself — KATA bases, fixtures, cli, scripts  | `/framework-development`               |
+| When                                                                    | Skill                                     |
+| ----------------------------------------------------------------------- | ----------------------------------------- |
+| Pre-sprint AC refinement on a batch of backlog Stories (Stage 0)        | `/shift-left-testing` (batch-grooming)    |
+| Routine in-sprint QA on a Jira ticket (most cases)                      | `/sprint-testing` (ticket-driven)         |
+| Authoring an automated test for a Candidate TC                          | `/test-automation` (Plan → Code → Review) |
+| Refactor of the boilerplate itself — KATA bases, fixtures, cli, scripts | `/framework-development`                  |
 
 ### When to reach for `/shift-left-testing`
 
