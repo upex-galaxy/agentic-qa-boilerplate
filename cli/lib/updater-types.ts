@@ -104,6 +104,18 @@ export class CorruptStateError extends Error {
   }
 }
 
+/**
+ * Thrown by `validateComponentRegistry` when two components claim ownership
+ * over the same path or file. Wrapper catches this to print a friendly error
+ * before exiting (misconfigured registry — maintainer must split paths).
+ */
+export class ComponentOverlapError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ComponentOverlapError';
+  }
+}
+
 // ============================================================================
 // COMPONENTS / DELTA
 // ============================================================================

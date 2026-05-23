@@ -54,7 +54,7 @@ import * as path from 'node:path';
 
 import { applyIgnoreAppend, computeBlobSha, detectIgnoreDelta } from './updater-ignore';
 import { applyPackageJsonAppend, detectPackageJsonDelta } from './updater-package';
-import { CorruptStateError } from './updater-types';
+import { ComponentOverlapError, CorruptStateError } from './updater-types';
 
 // ============================================================================
 // SILENT LOGGER — default no-op used when the caller does not supply one.
@@ -372,6 +372,32 @@ export function normalizeWhitespace(s: string): string {
  * Repo-specific config flows through `components` (for `bootstrapOnly`) and
  * `agentsBootstrapFiles` (for the `agents` component's basename allowlist).
  */
+/**
+ * Match a delta path against a component's file-list whitelist.
+ *
+ * Behavior by component type:
+ *  - `'directory'` / `'mixed'`  → always true (no whitelist filtering; the
+ *    component owns its declared directory tree wholesale).
+ *  - `'file-list'`              → true iff `filePath` exactly equals
+ *    `<root>/<file>` for one of `component.files`, where `<root>` is the
+ *    component's first declared path. `paths: ['.']` matches root-level files
+ *    by their literal name (no leading `./`).
+ *
+ * Match is exact-string only — no glob expansion, no nested-path expansion.
+ * `files: ['README.md']` with `paths: ['.agents']` matches `.agents/README.md`
+ * but NOT `.agents/subdir/README.md` (predictable + collision-free).
+ */
+export function entryMatchesFileList(filePath: string, component: Component): boolean {
+  if (component.type !== 'file-list') { return true; }
+  const root = component.paths[0];
+  const files = component.files ?? [];
+  for (const f of files) {
+    const expected = (root === '.' || root === undefined) ? f : `${root}/${f}`;
+    if (filePath === expected) { return true; }
+  }
+  return false;
+}
+
 export function classifyFile(
   entry: Omit<DeltaEntry, 'classification'>,
   templateDir: string,
@@ -572,6 +598,11 @@ export function computeDelta(
     }
 
     for (const [filePath, status] of fileStatuses) {
+      // File-list whitelist filter (Level 1 — closes the gap where computeDelta
+      // ignored `component.files` and captured every change under
+      // `component.paths`). `directory` / `mixed` components are unaffected.
+      if (!entryMatchesFileList(filePath, component)) { continue; }
+
       const numstat = numstatMap.get(filePath) ?? { added: 0, removed: 0, isBinary: false };
 
       // Resolve templateOldSha (blob at componentSha)
@@ -631,7 +662,211 @@ export function computeDelta(
     }
   }
 
-  return delta;
+  // --- Level 2: GLOBAL DEDUPE BY PATH ---
+  // Two components can match the same path (e.g. a directory component and a
+  // file-list component whose root contains files inside the directory). Without
+  // dedupe, Phase 4 prompts the user twice for the same file and applyResolution
+  // runs twice on the same path (corrupts pre-write backup).
+  //
+  // Ownership rule:
+  //   1. Pick the component whose *matching* path is the longest prefix of the
+  //      file path (most specific).
+  //   2. On tie, the component that appears earlier in the `components[]`
+  //      declaration wins (maintainer-controlled, stable across runs).
+  //
+  // Eviction is logged via the optional `logger.step` so users can audit
+  // conflicts during `--auto` runs.
+  const componentIndex = new Map<string, number>();
+  components.forEach((c, idx) => { componentIndex.set(c.name, idx); });
+  return dedupeDeltaByPath(delta, components, componentIndex, logger);
+}
+
+/**
+ * Internal helper for the Level 2 dedupe pass at the end of `computeDelta`.
+ *
+ * Walks `delta`, keeping at most one entry per `path`. Owner is chosen by
+ * `pathSpecificity` (longest matching prefix from the component's `paths`),
+ * with declaration order as the deterministic tie-breaker.
+ *
+ * Emits one `logger.step` line per evicted (path, loser) pair.
+ */
+function dedupeDeltaByPath(
+  delta: DeltaEntry[],
+  components: readonly Component[],
+  componentIndex: Map<string, number>,
+  logger: CoreLogger,
+): DeltaEntry[] {
+  const owned = new Map<string, DeltaEntry>();
+  const evictions: { path: string, winner: string, loser: string }[] = [];
+
+  for (const entry of delta) {
+    const existing = owned.get(entry.path);
+    if (!existing) { owned.set(entry.path, entry); continue; }
+
+    const compA = components.find(c => c.name === existing.component);
+    const compB = components.find(c => c.name === entry.component);
+    if (!compA || !compB) {
+      // Component lookup failed (stale registry / state) — keep the entry that
+      // resolves to a known component; record the eviction so it isn't silent.
+      if (!compA && compB) {
+        evictions.push({ path: entry.path, winner: entry.component, loser: existing.component });
+        owned.set(entry.path, entry);
+      }
+      else {
+        evictions.push({ path: entry.path, winner: existing.component, loser: entry.component });
+      }
+      continue;
+    }
+
+    const specA = pathSpecificity(existing.path, compA);
+    const specB = pathSpecificity(entry.path, compB);
+    const idxA = componentIndex.get(existing.component) ?? Number.MAX_SAFE_INTEGER;
+    const idxB = componentIndex.get(entry.component) ?? Number.MAX_SAFE_INTEGER;
+
+    const newWins = specB > specA || (specB === specA && idxB < idxA);
+    if (newWins) {
+      evictions.push({ path: entry.path, winner: entry.component, loser: existing.component });
+      owned.set(entry.path, entry);
+    }
+    else {
+      evictions.push({ path: entry.path, winner: existing.component, loser: entry.component });
+    }
+  }
+
+  for (const { path: p, winner, loser } of evictions) {
+    logger.step(`Path '${p}' owned by '${winner}' (also matched by '${loser}' — evicted)`);
+  }
+
+  return [...owned.values()];
+}
+
+/**
+ * Score a file path against a component's `paths` array. Returns the length
+ * of the longest matching prefix; -1 if no path matches.
+ *
+ *   - `paths: ['.']` matches any path; specificity 0.
+ *   - `paths: ['.claude']` matches `.claude/foo`; specificity 7.
+ *   - `paths: ['.claude/skills']` matches `.claude/skills/foo`; specificity 14.
+ *
+ * Used by `dedupeDeltaByPath` to pick the most-specific owner when two
+ * components both match a file.
+ */
+// ============================================================================
+// COMPONENT REGISTRY VALIDATION (Level 3 — fatal at startup)
+// ============================================================================
+
+interface ComponentClaim {
+  name: string
+  literals: string[] // exact path strings this component owns (file-list)
+  trees: string[] // directory trees this component owns wholesale
+}
+
+/**
+ * Compute the effective path claims of a component.
+ *
+ *  - `'file-list'`            → `literals` only; each entry resolved against the
+ *    component's first declared `paths` element (or treated as root-level when
+ *    that path is `'.'`).
+ *  - `'directory'` / `'mixed'` → `trees` only; the component owns each declared
+ *    path and everything below it.
+ */
+function componentClaims(c: Component): ComponentClaim {
+  if (c.type === 'file-list') {
+    const root = c.paths[0];
+    const files = c.files ?? [];
+    const literals = files.map((f) => {
+      if (root === '.' || root === undefined) { return f; }
+      return `${root}/${f}`;
+    });
+    return { name: c.name, literals, trees: [] };
+  }
+  return { name: c.name, literals: [], trees: [...c.paths] };
+}
+
+/**
+ * Return true if `literal` falls inside `tree` (or is `tree` itself, or `tree`
+ * is the repo root `'.'`).
+ */
+function literalInsideTree(literal: string, tree: string): boolean {
+  if (tree === '.') { return true; }
+  return literal === tree || literal.startsWith(`${tree}/`);
+}
+
+/**
+ * Return true if directory trees `a` and `b` overlap — i.e. one is the other,
+ * one is a prefix of the other, or either is the repo root.
+ */
+function treesOverlap(a: string, b: string): boolean {
+  if (a === '.' || b === '.') { return true; }
+  if (a === b) { return true; }
+  return a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
+}
+
+/**
+ * Find an overlapping path between two component claims, or null when they are
+ * disjoint. Inspects all four cross-products: literal ∩ literal,
+ * literal ⊂ tree (both directions), and tree ∩ tree.
+ */
+function findOverlap(a: ComponentClaim, b: ComponentClaim): string | null {
+  for (const la of a.literals) {
+    if (b.literals.includes(la)) { return la; }
+  }
+  for (const la of a.literals) {
+    for (const tb of b.trees) {
+      if (literalInsideTree(la, tb)) { return la; }
+    }
+  }
+  for (const lb of b.literals) {
+    for (const ta of a.trees) {
+      if (literalInsideTree(lb, ta)) { return lb; }
+    }
+  }
+  for (const ta of a.trees) {
+    for (const tb of b.trees) {
+      if (treesOverlap(ta, tb)) {
+        // Report the more-specific tree as the overlap point.
+        return ta.length > tb.length ? ta : tb;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Validate a component registry at config-time. Throws `ComponentOverlapError`
+ * on the first pair of components that claim ownership over the same path.
+ *
+ * Pure / no I/O — operates on `paths` + `files` + `type` only. Safe to call
+ * before any clone or filesystem operation, so misconfigured registries fail
+ * fast before consuming network or disk resources.
+ */
+export function validateComponentRegistry(components: readonly Component[]): void {
+  const claims = components.map(componentClaims);
+  for (let i = 0; i < claims.length; i++) {
+    for (let j = i + 1; j < claims.length; j++) {
+      const overlap = findOverlap(claims[i], claims[j]);
+      if (overlap !== null) {
+        throw new ComponentOverlapError(
+          `Componentes '${claims[i].name}' y '${claims[j].name}' se solapan en '${overlap}'. `
+          + 'Ajusta \'paths\' / \'files\' para que cada ruta tenga un único dueño.',
+        );
+      }
+    }
+  }
+}
+
+export function pathSpecificity(filePath: string, component: Component): number {
+  let best = -1;
+  for (const p of component.paths) {
+    if (p === '.') {
+      best = Math.max(best, 0);
+      continue;
+    }
+    if (filePath === p || filePath.startsWith(`${p}/`)) {
+      best = Math.max(best, p.length);
+    }
+  }
+  return best;
 }
 
 // ============================================================================
@@ -1356,6 +1591,20 @@ export async function runUpdate(
   if (opts.rollback) {
     // Wrapper handles rollback; reaching runUpdate with rollback=true is a contract error.
     throw new Error('runUpdate received rollback=true; wrapper must short-circuit first');
+  }
+
+  // Component registry validation (Level 3 — fatal). Runs BEFORE fetch so a
+  // misconfigured registry never wastes a clone. ComponentOverlapError bubbles
+  // up to the wrapper which prints it as a structured error.
+  try {
+    validateComponentRegistry(cfg.components);
+  }
+  catch (err) {
+    if (err instanceof ComponentOverlapError) {
+      sink.error(err.message);
+      throw err;
+    }
+    throw err;
   }
 
   const repoRoot = process.cwd();
