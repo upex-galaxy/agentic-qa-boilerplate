@@ -135,7 +135,7 @@
       },
       {
         "name": "dbhub",
-        "envVars": [],
+        "envVars": ["DBHUB_HOST", "DBHUB_DATABASE", "DBHUB_USER", "DBHUB_PASSWORD"],
         "purpose": "DBHub MCP — direct DB queries and schema introspection for test data validation."
       },
       {
