@@ -386,23 +386,44 @@ gemini mcp remove server-name
 
 ## Configuración de DBHub (SQL)
 
-### Paso 1: Crear archivo `dbhub.toml`
+### Paso 1: Configurar variables de entorno para `dbhub.toml`
 
-Crea un archivo llamado `dbhub.toml` en el root de tu proyecto:
+El repositorio **ya incluye `dbhub.toml` en el root** como archivo trackeado y preconfigurado, usando interpolación `${VAR}` para resolver credenciales desde el entorno (cargado desde `.env`). No hay que crearlo desde cero.
+
+Contenido shipped:
 
 ```toml
 [[sources]]
-id = "soloq"
-type = "postgres"
-host = "aws-1-us-east-2.pooler.supabase.com"
-port = 5432
-database = "postgres"
-user = "{{DB_USER}}"
-password = "{{DB_PASSWORD}}"
+id = "primary"
+type = "${DBHUB_TYPE}"
+host = "${DBHUB_HOST}"
+port = "${DBHUB_PORT}"
+database = "${DBHUB_DATABASE}"
+user = "${DBHUB_USER}"
+password = "${DBHUB_PASSWORD}"
 sslmode = "require"
 ```
 
-> **Importante:** Agrega `dbhub.toml` a `.gitignore` si contiene credenciales reales.
+Declará en tu `.env`:
+
+```bash
+DBHUB_TYPE=postgres            # sqlserver | postgres | mysql | sqlite
+DBHUB_HOST=aws-1-us-east-2.pooler.supabase.com
+DBHUB_PORT=5432
+DBHUB_DATABASE=postgres
+DBHUB_USER=tu_usuario
+DBHUB_PASSWORD=tu_password
+```
+
+> **⚠️ Importante — silent substitution:** DBHub sustituye literalmente la cadena `${VAR}` si la variable no está exportada en el entorno, produciendo un error críptico de autenticación en lugar de un error claro al arrancar. Antes de lanzar el MCP, verificá:
+>
+> ```bash
+> env | grep DBHUB
+> ```
+>
+> Si falta alguna, corregí `.env` y reiniciá el agente (las env vars se leen una sola vez al spawnear el MCP).
+
+> **⚠️ Seguridad:** NUNCA commitees `.env` con credenciales reales. `dbhub.toml` **SÍ se commitea** porque solo contiene referencias `${VAR}`, no secretos. El archivo **no debe ser eliminado ni movido a `.gitignore`**. El updater **NUNCA sobrescribe `dbhub.toml`** (no está incluido en ningún componente del updater).
 
 ### Paso 2: Configurar el MCP
 

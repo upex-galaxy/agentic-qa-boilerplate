@@ -37,11 +37,48 @@ DBHub soporta múltiples tipos de base de datos:
 
 El método más confiable es usar un **archivo de configuración TOML**. El método DSN tiene problemas conocidos con los requisitos de encriptación de algunas bases de datos.
 
-### 1. Crear Archivo de Configuración
+### 1. Configurar Variables de Entorno
 
-Crea `dbhub.toml` en la raíz de tu proyecto:
+El repositorio **ya incluye `dbhub.toml` en la raíz** como archivo trackeado y preconfigurado. Usa interpolación `${VAR}` para resolver credenciales desde el entorno del proceso (cargado desde `.env` por el launcher del MCP). **No lo crees desde cero, no lo elimines, no lo agregues a `.gitignore`** — solo contiene referencias `${VAR}`, no secretos.
 
-#### SQL Server (Azure)
+Contenido shipped del archivo:
+
+```toml
+[[sources]]
+id = "primary"
+type = "${DBHUB_TYPE}"
+host = "${DBHUB_HOST}"
+port = "${DBHUB_PORT}"
+database = "${DBHUB_DATABASE}"
+user = "${DBHUB_USER}"
+password = "${DBHUB_PASSWORD}"
+sslmode = "require"
+```
+
+Declará las siguientes variables en tu `.env` (que SÍ está gitignored — nunca lo commitees con valores reales):
+
+```bash
+DBHUB_TYPE=sqlserver           # sqlserver | postgres | mysql | sqlite
+DBHUB_HOST=tu-servidor.database.windows.net
+DBHUB_PORT=1433                # 1433 sqlserver, 5432 postgres, 3306 mysql
+DBHUB_DATABASE=nombre-de-tu-base
+DBHUB_USER=tu_usuario_sql
+DBHUB_PASSWORD=tu_password
+```
+
+> **⚠️ Importante — silent substitution:** DBHub sustituye literalmente la cadena `${VAR}` cuando la variable no existe en el entorno. Esto produce un **error críptico de autenticación** en lugar de un error claro al arrancar (el server recibe el string `${DBHUB_PASSWORD}` como password). Antes de lanzar el MCP, verificá que todas las vars estén exportadas:
+>
+> ```bash
+> env | grep DBHUB
+> ```
+>
+> Si falta alguna, corregí `.env`, reiniciá el agente (las env vars se leen una sola vez al spawnear el MCP) y volvé a probar.
+
+#### Agregar Otra Base de Datos o Cambiar el Tipo
+
+Si necesitás registrar otro `[[sources]]` o cambiar el `type` del existente, editá `dbhub.toml` directamente. Plantillas de referencia por motor:
+
+##### SQL Server (Azure)
 
 ```toml
 [[sources]]
@@ -55,7 +92,7 @@ password = "tu_password"
 sslmode = "require"
 ```
 
-#### PostgreSQL
+##### PostgreSQL
 
 ```toml
 [[sources]]
@@ -69,7 +106,7 @@ password = "tu_password"
 sslmode = "disable"  # o "require" para producción
 ```
 
-#### MySQL
+##### MySQL
 
 ```toml
 [[sources]]
@@ -82,7 +119,7 @@ user = "root"
 password = "tu_password"
 ```
 
-#### SQLite
+##### SQLite
 
 ```toml
 [[sources]]
@@ -90,6 +127,8 @@ id = "mi-base-de-datos"
 type = "sqlite"
 path = "./data/local.db"
 ```
+
+> Para mantener la práctica recomendada, en estos bloques adicionales también podés usar `${VAR}` y declarar las variables en `.env` en lugar de hardcodear credenciales.
 
 ### 2. Configurar MCP en Claude Code
 
@@ -319,7 +358,7 @@ Una vez conectado, DBHub proporciona las siguientes herramientas a Claude:
 ## Recomendaciones de Seguridad
 
 - [ ] Nunca commitees strings de conexión con credenciales al control de versiones
-- [ ] Agrega `dbhub.toml` a tu `.gitignore`
+- [ ] **No agregues `dbhub.toml` a `.gitignore`** — el archivo shipped solo contiene referencias `${VAR}` y debe permanecer trackeado; los secretos viven en `.env` (que sí está gitignored)
 - [ ] Usa variables de entorno para datos sensibles cuando sea posible
 - [ ] Crea un usuario de base de datos dedicado con permisos mínimos requeridos
 - [ ] Rota las contraseñas de base de datos regularmente
