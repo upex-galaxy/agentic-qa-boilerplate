@@ -72,6 +72,12 @@ build/
 .playwright-mcp
 .backups/
 
+# `.template/installer.lock.json` is TRACKED (small, immutable sentinel that
+# marks a repo as bootstrapped from this boilerplate).
+# `.template/installer.state.json` is GITIGNORED (per-dev runtime idempotency
+# state written by cli/install.ts — must never enter the repo).
+.template/installer.state.json
+
 # ===== MCP Configuration =====
 # .mcp.json and opencode.jsonc are COMMITTED — they reference secrets via
 # ${VAR} / {env:VAR} expansion. Real values live in .env (ignored above).
