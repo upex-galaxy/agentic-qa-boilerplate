@@ -50,22 +50,66 @@ const INQUIRER_MARKER = join(REPO_ROOT, 'node_modules', '@inquirer', 'prompts', 
 // Minimum Bun version that install.ts is known to work with.
 const MIN_BUN: readonly [number, number, number] = [1, 0, 0];
 
-// Required MCP env vars (mirrors MCP_SERVER_SECRETS in cli/install.ts).
-const REQUIRED_VARS = [
+// Env vars surfaced by doctor.
+//
+// Split into two tiers:
+//   - DAY_ZERO_VARS — collectable on a fresh clone (user has these or can sign
+//     up for them without an existing backend project). Installer also prompts.
+//   - PROJECT_BOUND_VARS — require an existing backend / Postman workspace /
+//     DB connection. Deferred by the installer; doctor reports them as pending.
+//
+// DBHub vars are NOT listed here — DBHub setup is fully manual (edit
+// `dbhub.toml` based on the target project's DB). See .env.example.
+const DAY_ZERO_VARS = [
+  'TEST_ENV',
+  'LOCAL_USER_EMAIL',
+  'LOCAL_USER_PASSWORD',
+  'STAGING_USER_EMAIL',
+  'STAGING_USER_PASSWORD',
   'TAVILY_API_KEY',
+  'RESEND_API_KEY',
   'ATLASSIAN_URL',
   'ATLASSIAN_EMAIL',
   'ATLASSIAN_API_TOKEN',
+] as const;
+
+const PROJECT_BOUND_VARS = [
   'API_BASE_URL',
   'OPENAPI_SPEC_PATH',
   'API_TOKEN',
   'POSTMAN_API_KEY',
 ] as const;
 
+const REQUIRED_VARS = [...DAY_ZERO_VARS, ...PROJECT_BOUND_VARS] as const;
+
 const VAR_HINTS: Record<string, { hint: string, where: string }> = {
+  TEST_ENV: {
+    hint: 'Default test environment for the runner',
+    where: 'Valid: local | staging',
+  },
+  LOCAL_USER_EMAIL: {
+    hint: 'Email for the local test user',
+    where: 'A test account in your local dev environment',
+  },
+  LOCAL_USER_PASSWORD: {
+    hint: 'Password for the local test user',
+    where: 'A test account in your local dev environment',
+  },
+  STAGING_USER_EMAIL: {
+    hint: 'Email for the staging test user',
+    where: 'A test account in your staging environment',
+  },
+  STAGING_USER_PASSWORD: {
+    hint: 'Password for the staging test user',
+    where: 'A test account in your staging environment',
+  },
   TAVILY_API_KEY: {
     hint: 'Tavily web-search MCP API key',
     where: 'https://app.tavily.com/  →  account  →  API keys',
+  },
+  RESEND_API_KEY: {
+    hint: 'Resend API key (email-flow tests + resend CLI auth)',
+    where: 'https://resend.com/api-keys  (docs: https://resend.com/docs/api-reference/introduction)',
   },
   ATLASSIAN_URL: {
     hint: 'Atlassian / Jira workspace URL',
@@ -80,19 +124,19 @@ const VAR_HINTS: Record<string, { hint: string, where: string }> = {
     where: 'https://id.atlassian.com/manage-profile/security/api-tokens',
   },
   API_BASE_URL: {
-    hint: 'Backend API base URL for OpenAPI MCP',
+    hint: 'Backend API base URL for OpenAPI MCP (project-bound — fill once the target backend is reachable)',
     where: 'e.g. https://api.yourapp.com/v1',
   },
   OPENAPI_SPEC_PATH: {
-    hint: 'Path or URL to the OpenAPI/Swagger spec',
+    hint: 'Path or URL to the OpenAPI/Swagger spec (project-bound)',
     where: 'e.g. https://api.yourapp.com/openapi.json (or a local file path)',
   },
   API_TOKEN: {
-    hint: 'Bearer token for OpenAPI MCP requests',
-    where: 'From your backend admin / API portal',
+    hint: 'Bearer token for OpenAPI MCP requests (auto-populated by `bun run api:login`)',
+    where: 'Run `bun run api:login` after API_BASE_URL is set',
   },
   POSTMAN_API_KEY: {
-    hint: 'Postman API key for Postman MCP',
+    hint: 'Postman API key for Postman MCP (project-bound — only needed if you use Postman collections)',
     where: 'https://postman.com  →  account settings  →  API keys',
   },
 };
