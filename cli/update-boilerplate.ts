@@ -24,7 +24,6 @@ const TEMP_DIR = path.join(os.tmpdir(), 'kata-boilerplate-update');
 const VERSION_FILE = '.template/boilerplate.lock.json';
 
 const TOOLING_FILES = ['.editorconfig', '.prettierrc', '.prettierignore'];
-const EXAMPLE_FILES = ['.mcp.example.json', 'dbhub.example.toml'];
 const AGENTS_DOCS_FILES = ['README.md'];
 const CLAUDE_CONFIG_FILES = ['settings.json'];
 
@@ -46,7 +45,6 @@ const COMPONENTS: Component[] = [
   { name: 'agents-docs', type: 'file-list', paths: ['.agents'], files: AGENTS_DOCS_FILES },
   { name: 'claude-config', type: 'file-list', paths: ['.claude'], files: CLAUDE_CONFIG_FILES },
   { name: 'tooling', type: 'file-list', paths: ['.'], files: TOOLING_FILES },
-  { name: 'examples', type: 'file-list', paths: ['.'], files: EXAMPLE_FILES },
 ];
 
 // --- ARG PARSE ---

@@ -78,7 +78,7 @@ build/
 # Local per-developer overrides go in *.local.* files (ignored below).
 .mcp.local.json
 opencode.local.jsonc
-dbhub.toml
+dbhub.local.toml
 # Installer state (cli/install.ts) — gitignored; tracks what bun run setup
 # already did so re-runs are idempotent.
 .template/installer.state.json

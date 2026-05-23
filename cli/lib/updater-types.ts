@@ -107,6 +107,20 @@ export interface Component {
    *   - if local file MISSING → classifier forces `new-upstream` (bootstrap copy)
    */
   bootstrapOnly?: boolean
+  /**
+   * Basename allowlist that EXEMPTS files from the component-level `bootstrapOnly`
+   * behavior. Files whose basename appears here are treated as framework templates
+   * (normal sync semantics) even when `bootstrapOnly: true` on the component.
+   *
+   * Use case: `.context/` is bootstrap-only at the component level (data files like
+   * `master-implementation-plan.md` / `business-*.md` are project-generated and must
+   * never be overwritten), but README scaffolding files (`README.md` under each
+   * sub-directory) ARE framework templates that should keep flowing to targets.
+   *
+   * Matching is on `path.basename(entry.path)` — no path globs.
+   * Ignored when `bootstrapOnly` is false/undefined.
+   */
+  frameworkFiles?: string[]
 }
 
 export type ChangeStatus = 'M' | 'A' | 'D';

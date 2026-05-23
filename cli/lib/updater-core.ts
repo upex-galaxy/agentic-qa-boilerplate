@@ -393,7 +393,11 @@ export function classifyFile(
   // 4. Bootstrap-aware override
   const component = components.find(c => c.name === entry.component);
   const basename = path.basename(entry.path);
-  const isBootstrapFile = (
+  const isFrameworkExempt = (
+    component?.bootstrapOnly === true
+    && component.frameworkFiles?.includes(basename) === true
+  );
+  const isBootstrapFile = !isFrameworkExempt && (
     (component?.bootstrapOnly === true)
     || (entry.component === 'agents' && agentsBootstrapFiles.includes(basename))
   );

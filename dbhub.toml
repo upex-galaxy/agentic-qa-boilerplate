@@ -1,0 +1,33 @@
+# ============================================
+# DBHub Configuration
+# ============================================
+# Credentials resolved via ${VAR} interpolation from the process environment
+# (loaded from .env by the MCP launcher). Safe to commit — no secrets in this
+# file.
+#
+# Required environment variables (declare in .env):
+#   DBHUB_TYPE       — sqlserver | postgres | mysql | sqlite
+#   DBHUB_HOST       — database host
+#   DBHUB_PORT       — database port (e.g. 1433 for sqlserver, 5432 for postgres)
+#   DBHUB_DATABASE   — database name
+#   DBHUB_USER       — database user
+#   DBHUB_PASSWORD   — database password
+#
+# Caveat: DBHub silently substitutes the literal string `${VAR}` when a variable
+# is missing from the environment — this produces a cryptic auth failure instead
+# of a startup error. Verify all DBHUB_* vars are exported BEFORE launching the
+# MCP server.
+#
+# Add additional [[sources]] blocks below to register more databases. This file
+# is NEVER overwritten by `bun up` (no updater component owns it).
+# ============================================
+
+[[sources]]
+id = "primary"
+type = "${DBHUB_TYPE}"
+host = "${DBHUB_HOST}"
+port = "${DBHUB_PORT}"
+database = "${DBHUB_DATABASE}"
+user = "${DBHUB_USER}"
+password = "${DBHUB_PASSWORD}"
+sslmode = "require"
