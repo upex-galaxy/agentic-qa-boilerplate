@@ -11,10 +11,10 @@ complementary_categories: [tms]
 
 ## Modality check (critical)
 
-This skill owns `[TMS_TOOL]` **only in Modality A** (Jira Cloud + Xray plugin installed). Before invoking any command from this skill:
+This skill owns `[TMS_TOOL]` **only in Modality jira-xray** (Jira Cloud + Xray plugin installed). Before invoking any command from this skill:
 
-1. Confirm the project is in Modality A. Resolution logic lives in `test-documentation/SKILL.md` §Phase 0.
-2. If the project is in Modality B (Jira-native, no Xray plugin) -> **do not use this skill**. Instead, load `/acli` — TMS operations map to native Jira issues (see `test-documentation/references/jira-setup.md`).
+1. Confirm the project is in Modality jira-xray. Resolution logic lives in `test-documentation/SKILL.md` §Phase 0.
+2. If the project is in Modality jira-native (no Xray plugin) -> **do not use this skill**. Instead, load `/acli` — TMS operations map to native Jira issues (see `test-documentation/references/jira-setup.md`).
 
 Agents arriving here from a `[TMS_TOOL] ...` pseudocode block without having resolved modality first should pause and consult the modality resolver before proceeding.
 
@@ -338,7 +338,7 @@ bun xray backup restore --file backup.json --project NEW_PROJ --sync
 - **X3.** NEVER batch-import test results without first verifying the Test Plan / Test Execution keys exist in the target project. Orphan results get rejected and the whole import aborts — pre-check with `exec get` / `plan get`.
 - **X4.** NEVER hand-craft Xray JSON payloads (`testInfo`, `iterations`, `evidences`) outside `bun xray`. The CLI owns the canonical shape; drift from it breaks future schema migrations and silently mis-attributes evidence to the wrong run.
 - **X5.** NEVER run `bun xray import` or `bun xray backup restore` against production without `--dry-run` first. These commands write irreversibly across hundreds of TCs and runs — preview the diff before applying.
-- **X6.** NEVER mix Modality A (Xray) and Modality B (Jira-native) workflows in the same skill phase. Modality is resolved once in `/test-documentation` Phase 0; downstream phases inherit and never re-decide mid-flow.
+- **X6.** NEVER mix Modality jira-xray and Modality jira-native workflows in the same skill phase. Modality is resolved once in `/test-documentation` Phase 0; downstream phases inherit and never re-decide mid-flow.
 - **X7.** NEVER push Xray run results for TCs flagged `to_be_automated=no` in the ROI verdict. Those are terminal Manual cases — pushing automated runs against them creates audit noise and breaks the Candidate / Manual / Deferred reporting.
 
 ## Specific tasks

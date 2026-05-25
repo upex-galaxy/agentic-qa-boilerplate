@@ -13,7 +13,7 @@ This directory contains **pre-configured MCP server templates** for different AI
 
 ## Atlassian MCP (opt-in)
 
-The Atlassian MCP server is **not enabled by default**. By default this boilerplate uses `acli` (Atlassian CLI) for all Jira / Confluence / TMS work — including both Modality A (Xray) and Modality B (native Jira) test-management flows. If you need MCP-level access to Atlassian (e.g. for tools acli does not expose), enable it manually:
+The Atlassian MCP server is **not enabled by default**. By default this boilerplate uses `acli` (Atlassian CLI) for all Jira / Confluence / TMS work — including both Modality jira-xray and Modality jira-native test-management flows. If you need MCP-level access to Atlassian (e.g. for tools acli does not expose), enable it manually:
 
 1. Open the matching template under this directory:
    - Claude Code: `claude.template.json`

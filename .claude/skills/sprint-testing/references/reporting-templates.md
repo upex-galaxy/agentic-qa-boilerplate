@@ -285,9 +285,9 @@ RECOMMENDATIONS
 
 Apply the branch that matches the resolved modality (do not mix).
 
-> **Prerequisite (both modalities)**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call below. In Modality A additionally load `/xray-cli` for `[TMS_TOOL] Update Run` and `[TMS_TOOL] Import Results`. Skip if Session Start §0.1 in `SKILL.md` already loaded them.
+> **Prerequisite (both modalities)**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call below. In Modality jira-xray additionally load `/xray-cli` for `[TMS_TOOL] Update Run` and `[TMS_TOOL] Import Results`. Skip if Session Start §0.1 in `SKILL.md` already loaded them.
 
-#### Modality A — Xray on Jira (ATR = Test Execution)
+#### Modality jira-xray (ATR = Test Execution)
 
 ```
 # Update the Test Execution description with the ATR body
@@ -315,7 +315,7 @@ for each {TEST_KEY, result} in run:
 
 If the run was already imported from CI via `[TMS_TOOL] Import Results`, the Test Runs are already populated — only the description + Environment + Begin/End need the manual update.
 
-#### Modality B — Jira-native (ATR = Story customfield + comment)
+#### Modality jira-native (ATR = Story customfield + comment)
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:

@@ -135,7 +135,7 @@ A regression-driven plan is the smallest unit of work. Often it is just `spec.md
 
 TCs in `spec.md` must reference TMS-generated IDs, never local-only IDs. Before writing TCs:
 
-> **Prerequisite**: Load `/xray-cli` skill (Modality A) or `/acli` (Modality B) before executing the TMS commands below.
+> **Prerequisite**: Load `/xray-cli` skill (Modality jira-xray) or `/acli` (Modality jira-native) before executing the TMS commands below.
 
 1. Query the TMS for tests already linked to the ticket (via `[TMS_TOOL] List Tests` — resolve per CLAUDE.md Tool Resolution).
 2. **If TCs exist** — consume them as the base for `spec.md`; do not duplicate.

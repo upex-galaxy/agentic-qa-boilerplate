@@ -141,11 +141,11 @@ Batch-sprint mode: Phase 0 fires once per ticket as the loop enters it (NOT once
 
 Every invocation starts by initializing the session, even in batch mode. Session Start:
 
-0. **Resolve TMS modality** (Xray on Jira vs Jira-native). This determines whether ATP/ATR will be created as Xray `Test Plan` / `Test Execution` issues (Modality A) or as Story custom-field + comment mirrors (Modality B). Full resolution algorithm lives in `test-documentation/SKILL.md` §Phase 0 — apply the same four-step probe here (CLAUDE.md -> master-test-plan.md -> list issue types -> ask the user). Persist the result into `test-session-memory.md`.
+0. **Resolve TMS modality** (Xray on Jira vs Jira-native). This determines whether ATP/ATR will be created as Xray `Test Plan` / `Test Execution` issues (Modality jira-xray) or as Story custom-field + comment mirrors (Modality jira-native). Full resolution algorithm lives in `test-documentation/SKILL.md` §Phase 0 — apply the same four-step probe here (CLAUDE.md -> master-test-plan.md -> list issue types -> ask the user). Persist the result into `test-session-memory.md`.
 0.1. **Load required tool skills** — based on the TMS modality resolved in Step 0:
    - Always load `/acli` (all Jira ticket operations: story fetch, comment, transition, link, bug creation).
-   - In **Modality A (Xray)**: also load `/xray-cli` for Test / Test Execution / Test Plan / Test Run operations.
-   - In **Modality B (Jira-native)**: `/acli` alone covers both `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` pseudocode — no additional skill needed.
+   - In **Modality jira-xray**: also load `/xray-cli` for Test / Test Execution / Test Plan / Test Run operations.
+   - In **Modality jira-native**: `/acli` alone covers both `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` pseudocode — no additional skill needed.
    This step is **mandatory before any pseudocode block below executes**. The skills carry the concrete syntax, flags, and JSON payloads this skill intentionally omits.
 0.5. **Sprint roadmap checkpoint** (batch-sprint mode only — skip in single-ticket mode):
    - Detect batch mode from the user invocation ("process sprint N", "continue sprint", a `sprint-file` parameter, or any phrase that implies a sprint loop).
@@ -277,7 +277,7 @@ All references are self-contained. Load one at a time.
 ## Anti-patterns — NEVER do these
 
 - **S1.** NEVER mark a Story Ready For Release (or transition to {{jira.status.story.qa_approved}}) without QA sign-off AND a signed-off ATR snapshot for audit trail.
-- **S2.** NEVER skip the Stage 1 Test Plan (ATP) step in Modality A workflows — the Xray `Test Plan` / `Test Execution` issues depend on the ATP being committed first; downstream TCs cannot link without it.
+- **S2.** NEVER skip the Stage 1 Test Plan (ATP) step in Modality jira-xray workflows — the Xray `Test Plan` / `Test Execution` issues depend on the ATP being committed first; downstream TCs cannot link without it.
 - **S3.** NEVER push test results to Jira without an ATR snapshot. The QA comment is a summary; the ATR is the audit record.
 - **S4.** NEVER duplicate the ATR across Jira + Confluence (or any second store). Single source of truth — pick one per the modality decision in `.context/master-test-plan.md` and link from anywhere else.
 - **S5.** NEVER bypass the bug-triage decision tree (veto → risk-score → Severity + Root Cause) when a test fails. Every failure gets a triage before it becomes a Bug ticket.

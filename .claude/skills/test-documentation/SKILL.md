@@ -46,7 +46,7 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 | Phase 0 — Resolve TMS modality                         | inline     | orchestrator only; existing 4-step probe — unchanged                                                                                                        |
 | Phase 1 — Analyze scope                                | Single     | inline — planning lives in the orchestrator (anti-pattern to delegate)                                                                                      |
 | Phase 2 — ROI / Candidate-Manual-Deferred verdict      | Single     | inline — decisions live in the orchestrator                                                                                                                 |
-| Phase 3 — TMS TC creation (N > 10 TCs)                 | Parallel   | M subagents, chunks of ~5-10 TCs per agent; cap = 10 to avoid Jira/Xray rate limits; each subagent loads `/xray-cli` (Modality A) or `/acli` (Modality B)  |
+| Phase 3 — TMS TC creation (N > 10 TCs)                 | Parallel   | M subagents, chunks of ~5-10 TCs per agent; cap = 10 to avoid Jira/Xray rate limits; each subagent loads `/xray-cli` (Modality jira-xray) or `/acli` (Modality jira-native)  |
 | Phase 3 — TMS TC creation (N ≤ 10 TCs)                 | Single     | inline — dispatch overhead is not justified for small batches                                                                                               |
 | Phase 3 — Traceability linking (US <-> ATP <-> ATR <-> TCs) | Single     | inline — requires aggregated state of all created entities                                                                                                  |
 | Phase 3 — Final report / coverage matrix               | Single     | inline — synthesis lives in the orchestrator                                                                                                                |
@@ -80,20 +80,20 @@ Every project runs in one of two modalities. Resolve it **before** Phase 1. The 
 
 ```
 Does this project have Xray installed and licensed on Jira?
-  A. Yes -> Modality A: Xray on Jira
-  B. No  -> Modality B: Jira-native (no Xray)
+  A. Yes -> Modality jira-xray
+  B. No  -> Modality jira-native (no Xray)
 ```
 
 ### How to resolve it without asking (in order)
 
-1. Check `CLAUDE.md` for `{{TMS_CLI}}`. Value `bun xray` (or any Xray CLI) -> **Modality A**. Value is unset, `acli`-only, or `{{TMS_CLI}}` matches `{{ISSUE_TRACKER_CLI}}` -> **Modality B**.
+1. Check `CLAUDE.md` for `{{TMS_CLI}}`. Value `bun xray` (or any Xray CLI) -> **Modality jira-xray**. Value is unset, `acli`-only, or `{{TMS_CLI}}` matches `{{ISSUE_TRACKER_CLI}}` -> **Modality jira-native**.
 2. If `CLAUDE.md` is ambiguous, look for a `.context/master-test-plan.md` line such as `TMS: Xray on Jira` or `TMS: Jira native`.
-3. If still ambiguous, list existing issue types in the project via `[ISSUE_TRACKER_TOOL] List issue types`. If the project exposes `Test Plan` / `Test Execution` / `Test Set` / `Pre-Condition`, it is **Modality A**. Otherwise **Modality B**.
+3. If still ambiguous, list existing issue types in the project via `[ISSUE_TRACKER_TOOL] List issue types`. If the project exposes `Test Plan` / `Test Execution` / `Test Set` / `Pre-Condition`, it is **Modality jira-xray**. Otherwise **Modality jira-native**.
 4. **Only if all three checks fail**, ask the user the question above. Do NOT ask by default — autoresolve first.
 
 ### What changes per modality
 
-| Artifact | Modality A (Xray on Jira) | Modality B (Jira-native) |
+| Artifact | Modality jira-xray | Modality jira-native |
 |----------|---------------------------|---------------------------|
 | **ATP** (Acceptance Test Plan) | Xray `Test Plan` issue, named `Test Plan: {{PROJECT_KEY}}-{n}`, linked to US | Story `{{jira.acceptance_test_plan}}` + comment mirror on the Story. No separate issue. |
 | **ATR** (Acceptance Test Results) | Xray `Test Execution` issue with Test Runs per TC, Environment, Begin/End Date, named `Test Results: {{PROJECT_KEY}}-{n}` | Story `{{jira.acceptance_test_results}}` + comment mirror on the Story. |
@@ -107,8 +107,8 @@ Does this project have Xray installed and licensed on Jira?
 Once resolved, save the modality into `.session/test-documentation/<scope>/plan.md` §Inputs (canonical session record) and ALSO mirror to `test-session-memory.md` for the ticket (if one exists, for per-ticket sub-agent context). Treat as sticky: do not re-resolve mid-session. If you detect drift (e.g. `[TMS_TOOL]` suddenly fails), stop and ask the user before re-resolving.
 
 Reference implementations:
-- Modality A concepts + Xray REST/GraphQL/CLI -> `references/xray-platform.md`
-- Modality B project setup (Test issue type, Screen Scheme, custom fields) -> `references/jira-setup.md`
+- Modality jira-xray concepts + Xray REST/GraphQL/CLI -> `references/xray-platform.md`
+- Modality jira-native project setup (Test issue type, Screen Scheme, custom fields) -> `references/jira-setup.md`
 - Both modes side-by-side (field mapping, workflow, Description template) -> `references/jira-test-management.md`
 
 ---
@@ -294,7 +294,7 @@ Creating a TC before the ATP and ATR exist leaves orphaned references. Fix any b
 
 Always populate Description with the full TC template (Related Story, Priority, ROI, Prior bugs, Test Design gherkin/steps, Variables table, Implementation Code table, Architecture, Available Test IDs, Preconditions, Expected Results). Read `references/jira-test-management.md` when choosing between Xray and native Jira, or when the Description must be filled.
 
-> **Dispatch**: Use the dispatch defined in §Subagent Dispatch Strategy: **Parallel** when N > 10 TCs (cap = 10 subagents), inline otherwise. The full briefings for both Modality A (Xray via `/xray-cli`) and Modality B (Jira-native via `/acli`) live in `references/tms-architecture.md` §"Parallel TC creation". The sharding rule, error protocol, and aggregation contract are documented there. The serial flow below is the canonical procedure each subagent runs internally for its assigned chunk.
+> **Dispatch**: Use the dispatch defined in §Subagent Dispatch Strategy: **Parallel** when N > 10 TCs (cap = 10 subagents), inline otherwise. The full briefings for both Modality jira-xray (via `/xray-cli`) and Modality jira-native (via `/acli`) live in `references/tms-architecture.md` §"Parallel TC creation". The sharding rule, error protocol, and aggregation contract are documented there. The serial flow below is the canonical procedure each subagent runs internally for its assigned chunk.
 
 ### High-quality Gherkin (for Candidates)
 
@@ -429,7 +429,7 @@ Canonical reading order for any AI starting cold on a test-documentation workflo
 - **D2.** NEVER ship a Test Plan without traceability to a Story / Epic. Orphan ATPs are unauditable — link before the first TC lands.
 - **D3.** NEVER over-detail Test Case steps. The spec / KATA ATC is the source of truth; the TC step list is a pointer, not a duplicate.
 - **D4.** NEVER skip ROI scoring. Every TC ends with a Candidate / Manual / Deferred verdict before handoff to `/test-automation`.
-- **D5.** NEVER mix Modality A (Xray) and Modality B (Jira-native) inside the same Story's ATP. Modality is one-shot per project and Phase 0 resolves it.
+- **D5.** NEVER mix Modality jira-xray and Modality jira-native inside the same Story's ATP. Modality is one-shot per project and Phase 0 resolves it.
 - **D6.** NEVER fabricate Jira field IDs. Run `bun run jira:sync-fields --force` and resolve via `{{jira.<slug>}}` — hardcoded `customfield_NNNNN` drifts silently.
 - **D7.** NEVER link an ATR to multiple ATPs. The relationship is 1:1 (one plan, one results record); multiple ATRs per ATP is fine, the inverse is not.
 - **D8.** NEVER reopen a Closed bug to attach a regression TC. File a new TC and link to the bug via `tests / is tested by` — bug history stays immutable.
@@ -457,7 +457,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
   labels: test-repository, regression, qa
 ```
 
-### Modality A — Xray on Jira
+### Modality jira-xray
 
 > **Prerequisite**: Load `/xray-cli` and `/acli` skills before executing commands below.
 
@@ -517,7 +517,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
   execution: {ATR_KEY}
 ```
 
-### Modality B — Jira-native (no Xray)
+### Modality jira-native (no Xray)
 
 > **Prerequisite**: Load `/acli` skill before executing commands below.
 

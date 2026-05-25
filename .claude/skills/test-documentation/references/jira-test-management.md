@@ -4,7 +4,7 @@ How to create and maintain Test / ATP / ATR artifacts in Jira — both with and 
 
 ### Related references
 
-- `xray-platform.md` — dense Xray concepts (issue types, RTM, data flow, API). Load when in **Modality A** and you need the *what* of Xray.
+- `xray-platform.md` — dense Xray concepts (issue types, RTM, data flow, API). Load when in **Modality jira-xray** and you need the *what* of Xray.
 - `jira-setup.md` — one-time Jira / Xray project configuration checklist (issue types, custom fields, workflows, API access). Load before the first skill run on a new project.
 - `tms-architecture.md` §Container per modality — which issue type ATP/ATR/TC map to in each modality.
 - `tms-conventions.md` §IQL — Test Status (Workflow) vs Execution Status (Run) distinction.
@@ -13,7 +13,7 @@ How to create and maintain Test / ATP / ATR artifacts in Jira — both with and 
 ### Tool tags used here
 
 - `[ISSUE_TRACKER_TOOL]` — generic Jira operations (create issue, update fields, link issues, transition, search). Primary = `/acli` skill. Resolves per CLAUDE.md Tool Resolution.
-- `[TMS_TOOL]` — Xray-specific operations (create Test, create Test Execution, import results). Only resolvable in **Modality A** via `/xray-cli`. In Modality B falls through to `[ISSUE_TRACKER_TOOL]`.
+- `[TMS_TOOL]` — Xray-specific operations (create Test, create Test Execution, import results). Only resolvable in **Modality jira-xray** via `/xray-cli`. In Modality jira-native falls through to `[ISSUE_TRACKER_TOOL]`.
 
 ---
 

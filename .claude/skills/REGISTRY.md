@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-05-22T22:48:58.473Z`
+> Generated: `2026-05-25T03:20:06.197Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.claude/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -239,13 +239,13 @@ Skills indexed: 13
 - `.agents/jira-workflows.json` — Story workflow + valid transitions (`backlog -> shift_left_qa -> estimation`). Source of `{{jira.transition.story.*}}` slugs used in Phase 3.
 - `.agents/jira-required.yaml` — canonical slug catalog. Source of `{{jira.acceptance_test_plan}}` and other Jira field slugs touched in handoff.
 - Update Jira description with "QA Refinements (Shift-Left Analysis)"
-- Populate ATP DRAFT (Modality B: custom field + comment mirror;
+- Populate ATP DRAFT (Modality jira-native: custom field + comment mirror;
 - Labels: shift-left-reviewed + shift-left-{YYYY-MM-DD}
 - Transition: backlog -> shift_left_qa (analyze) -> estimation (estimate)
 - Verify trace
 - Always load `/acli` (Story fetch, custom-field update, comment, transition, label, link).
-- **Modality A (Xray)** AND user opts into Test Plan link draft for each Story -> also load `/xray-cli`. The default in shift-left is NO Test Plan creation (PO has not estimated yet, scope may shrink) — the ATP DRAFT lives on the Story description + comment + custom field. Ask the user before creating Test Plan issues.
-- **Modality B (Jira-native)** -> `/acli` alone covers `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]`.
+- **Modality jira-xray** AND user opts into Test Plan link draft for each Story -> also load `/xray-cli`. The default in shift-left is NO Test Plan creation (PO has not estimated yet, scope may shrink) — the ATP DRAFT lives on the Story description + comment + custom field. Ask the user before creating Test Plan issues.
+- **Modality jira-native** -> `/acli` alone covers `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]`.
 - `.context/business/business-data-map.md`
 - (truncated — read full SKILL.md for the rest)
 
@@ -325,12 +325,12 @@ Skills indexed: 13
 - Read tail of `progress.md` (last completed phase + next planned phase).
 - Surface to the user: scope, TMS modality, last completed phase, next phase, any pending TC creation chunks that did not finish (the most common interruption point — Phase 3 parallel bulk create capped at 10 subagents).
 - Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-test-documentation-<scope>-aborted/` first.
-- Check `CLAUDE.md` for `{{TMS_CLI}}`. Value `bun xray` (or any Xray CLI) -> **Modality A**. Value is unset, `acli`-only, or `{{TMS_CLI}}` matches `{{ISSUE_TRACKER_CLI}}` -> **Modality B**.
+- Check `CLAUDE.md` for `{{TMS_CLI}}`. Value `bun xray` (or any Xray CLI) -> **Modality jira-xray**. Value is unset, `acli`-only, or `{{TMS_CLI}}` matches `{{ISSUE_TRACKER_CLI}}` -> **Modality jira-native**.
 - If `CLAUDE.md` is ambiguous, look for a `.context/master-test-plan.md` line such as `TMS: Xray on Jira` or `TMS: Jira native`.
-- If still ambiguous, list existing issue types in the project via `[ISSUE_TRACKER_TOOL] List issue types`. If the project exposes `Test Plan` / `Test Execution` / `Test Set` / `Pre-Condition`, it is **Modality A**. Otherwise **Modality B**.
+- If still ambiguous, list existing issue types in the project via `[ISSUE_TRACKER_TOOL] List issue types`. If the project exposes `Test Plan` / `Test Execution` / `Test Set` / `Pre-Condition`, it is **Modality jira-xray**. Otherwise **Modality jira-native**.
 - **Only if all three checks fail**, ask the user the question above. Do NOT ask by default — autoresolve first.
-- Modality A concepts + Xray REST/GraphQL/CLI -> `references/xray-platform.md`
-- Modality B project setup (Test issue type, Screen Scheme, custom fields) -> `references/jira-setup.md`
+- Modality jira-xray concepts + Xray REST/GraphQL/CLI -> `references/xray-platform.md`
+- Modality jira-native project setup (Test issue type, Screen Scheme, custom fields) -> `references/jira-setup.md`
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
@@ -344,8 +344,8 @@ Skills indexed: 13
 **Purpose**: Xray Cloud test management via `bun xray` CLI: create/list tests, manage test executions and plans, import JUnit/Cucumber/Xray JSON resul...
 
 **Compact Rules**:
-- Confirm the project is in Modality A. Resolution logic lives in `test-documentation/SKILL.md` §Phase 0.
-- If the project is in Modality B (Jira-native, no Xray plugin) -> **do not use this skill**. Instead, load `/acli` — TMS operations map to native Jira issues (see `test-documentation/references/jira-setup.md`).
+- Confirm the project is in Modality jira-xray. Resolution logic lives in `test-documentation/SKILL.md` §Phase 0.
+- If the project is in Modality jira-native (no Xray plugin) -> **do not use this skill**. Instead, load `/acli` — TMS operations map to native Jira issues (see `test-documentation/references/jira-setup.md`).
 - **Jira key**: `{{PROJECT_KEY}}-194` — resolved via Jira REST in-process. Requires Jira credentials configured (`auth login --jira-url --jira-email --jira-token` or the `JIRA_*` env vars).
 - **Numeric Xray issueId**: `1042389` — used as-is, no resolution call.
 - *Missing at Xray layer*: tests linked at the Jira layer but not registered with Xray. `--apply` re-attaches them.

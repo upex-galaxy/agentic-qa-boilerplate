@@ -2,8 +2,8 @@
 
 Configuration checklist for Jira projects used by this boilerplate. Covers both modalities:
 
-- **Modality A (Xray on Jira)** — Xray install + project config. Primary content lives in this doc's §2.
-- **Modality B (Jira-native, no Xray)** — custom fields + Test issue type configuration so that ATP/ATR as Story customfields and Test issues work with the skills. Primary content in §3.
+- **Modality jira-xray** — Xray install + project config. Primary content lives in this doc's §2.
+- **Modality jira-native (no Xray)** — custom fields + Test issue type configuration so that ATP/ATR as Story customfields and Test issues work with the skills. Primary content in §3.
 
 Which modality is active is resolved by `test-documentation/SKILL.md` §Phase 0. Run the applicable section(s) once per project as part of `/project-discovery` onboarding.
 
@@ -24,7 +24,7 @@ Skills that depend on this setup: `sprint-testing`, `test-documentation`, `regre
 
 ---
 
-## 2. Modality A — Xray setup (only if Xray is licensed)
+## 2. Modality jira-xray — Xray setup (only if Xray is licensed)
 
 ### 2.1 Install Xray
 
@@ -68,7 +68,7 @@ Full reference: `xray-platform.md`.
 
 ---
 
-## 3. Modality B — Jira-native setup (no Xray)
+## 3. Modality jira-native — setup (no Xray)
 
 Jira-native mode puts ATP/ATR on the Story itself via custom fields, and represents TCs as a custom `Test` issue type. The skills need three things configured before they can run: the `Test` issue type, an ATP customfield, and an ATR customfield.
 
@@ -155,7 +155,7 @@ Verify with `[ISSUE_TRACKER_TOOL] auth_status()` (load `/acli` skill — it owns
 
 ### 3.7 Workflow
 
-Same state machine as Modality A (`tms-conventions.md` §5). Build a Jira workflow with these states and attach it to the Test issue type via a Workflow Scheme.
+Same state machine as Modality jira-xray (`tms-conventions.md` §5). Build a Jira workflow with these states and attach it to the Test issue type via a Workflow Scheme.
 
 ---
 
@@ -169,7 +169,7 @@ At the end of setup, `.context/master-test-plan.md` must contain a TMS section t
 - Modality: Xray on Jira | Jira-native
 - TMS CLI: bun xray | acli (only)
 - Regression Epic: {KEY} — {title}
-- Custom field IDs (Modality B only):
+- Custom field IDs (Modality jira-native only):
     ATP: {{jira.acceptance_test_plan}}
     ATR: {{jira.acceptance_test_results}}
     Test Status: {{jira.test_status}}
@@ -185,9 +185,9 @@ If any answer is missing, the skills fall back to the Phase 0 resolution probes 
 
 After setup, both modalities should pass:
 
-- [ ] Can create a `Test` issue in the project (Modality B) / all five Xray types appear (Modality A).
+- [ ] Can create a `Test` issue in the project (Modality jira-native) / all five Xray types appear (Modality jira-xray).
 - [ ] `[ISSUE_TRACKER_TOOL] List issue types` shows `Test` + (if A) `Test Plan`, `Test Execution`, `Test Set`, `Pre-Condition`.
-- [ ] Can update a Story's `{{jira.acceptance_test_plan}}` and `{{jira.acceptance_test_results}}` with a test string (Modality B). Both fields persist and display.
+- [ ] Can update a Story's `{{jira.acceptance_test_plan}}` and `{{jira.acceptance_test_results}}` with a test string (Modality jira-native). Both fields persist and display.
 - [ ] `is tested by` link can be created from a Test to a Story.
 - [ ] Workflow transition `start design` is available on a Test in `Draft`.
 - [ ] `/xray-cli` (A) or `/acli` (B) authenticates against the project key.

@@ -345,9 +345,9 @@ Add label `shift-left-reviewed`.
 
 The modality was resolved in Session Start (§0) and persisted into `test-session-memory.md`. Apply the matching branch. Full reference: `test-documentation/references/tms-architecture.md` §Container per modality.
 
-> **Prerequisite (both modalities)**: Load `/acli` skill before executing any `[ISSUE_TRACKER_TOOL]` block below. In Modality A, additionally load `/xray-cli` for `[TMS_TOOL]` calls. Skip if Session Start §0.1 in `SKILL.md` already loaded them.
+> **Prerequisite (both modalities)**: Load `/acli` skill before executing any `[ISSUE_TRACKER_TOOL]` block below. In Modality jira-xray, additionally load `/xray-cli` for `[TMS_TOOL]` calls. Skip if Session Start §0.1 in `SKILL.md` already loaded them.
 
-#### Modality A — Xray on Jira
+#### Modality jira-xray
 
 ATP = `Test Plan` issue. ATR = `Test Execution` issue. Both linked bidirectionally to the Story.
 
@@ -380,7 +380,7 @@ ATP = `Test Plan` issue. ATR = `Test Execution` issue. Both linked bidirectional
 
 Load `/xray-cli` skill for the concrete CLI syntax.
 
-#### Modality B — Jira-native (no Xray)
+#### Modality jira-native (no Xray)
 
 ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md`: `{{jira.acceptance_test_plan}}` for ATP and `{{jira.acceptance_test_results}}` for ATR. Both fields are populated as customfield + comment-mirror pairs; `fix-traceability` checks both.
 
@@ -410,7 +410,7 @@ Load `/acli` skill for the concrete Jira CLI syntax.
 
 Post the full `test-analysis.md` body as a comment with mentions for @PO, @Dev, @QA per project convention. Include an Action Required checklist (review ambiguities, answer critical questions, confirm edge-case behavior, validate parametrization strategy).
 
-In Modality B this comment doubles as the ATP mirror — the custom-field + comment pair is what `fix-traceability` checks later.
+In Modality jira-native this comment doubles as the ATP mirror — the custom-field + comment pair is what `fix-traceability` checks later.
 
 ### Mirror local file
 
@@ -418,7 +418,7 @@ Write `test-analysis.md` at the ticket's PBI folder with **identical** content t
 
 ### Traceability check
 
-After writing, run `[TMS_TOOL] trace {TICKET}` (Modality A) or verify the Story's `{{jira.acceptance_test_plan}}` is populated and the comment mirror exists (Modality B). TCs are not created in this skill — the trace is for the ATP artifact alone. Bugs produce ATP + ATR with no TCs (the bug is the implicit test case); "missing TC" warnings on bugs are expected.
+After writing, run `[TMS_TOOL] trace {TICKET}` (Modality jira-xray) or verify the Story's `{{jira.acceptance_test_plan}}` is populated and the comment mirror exists (Modality jira-native). TCs are not created in this skill — the trace is for the ATP artifact alone. Bugs produce ATP + ATR with no TCs (the bug is the implicit test case); "missing TC" warnings on bugs are expected.
 
 ---
 

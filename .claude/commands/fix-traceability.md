@@ -41,7 +41,7 @@ Each TC requires 3 links: Story, Test Plan (ATP), Test Result (ATR).
 
 ## Workflow
 
-> **Prerequisite**: Load `/acli` skill (for `[ISSUE_TRACKER_TOOL]` commands). If the project is in TMS Modality A (Xray), additionally load `/xray-cli` (for `[TMS_TOOL]` commands). In Modality B, `/acli` alone covers both.
+> **Prerequisite**: Load `/acli` skill (for `[ISSUE_TRACKER_TOOL]` commands). If the project is in TMS Modality jira-xray, additionally load `/xray-cli` (for `[TMS_TOOL]` commands). In Modality jira-native, `/acli` alone covers both.
 
 ### Step 1: Fetch Ticket and Current Artifacts
 

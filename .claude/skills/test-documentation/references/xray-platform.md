@@ -1,6 +1,6 @@
-# Xray Platform Reference (Modality A)
+# Xray Platform Reference (Modality jira-xray)
 
-Dense reference for Xray on Jira — issue types, traceability matrix, data flow, environment vars, and CI integration. Use when the project is in **Modality A** (per `SKILL.md` §Phase 0). For CLI syntax, load `/xray-cli` skill. For Jira-native fallback, see `jira-setup.md`.
+Dense reference for Xray on Jira — issue types, traceability matrix, data flow, environment vars, and CI integration. Use when the project is in **Modality jira-xray** (per `SKILL.md` §Phase 0). For CLI syntax, load `/xray-cli` skill. For Jira-native fallback, see `jira-setup.md`.
 
 This document describes *what Xray is*; it does not describe *how to write tests* — that is `test-automation`'s job.
 

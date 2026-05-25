@@ -128,7 +128,7 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 ├── regression-testing/      → Regression execution + GO/NO-GO
 ├── git-flow-master/         → End-to-end Git operator: branch / commit / push / PR / conflict / chained-PR. Auto-detects branching strategy.
 ├── judgment-day/            → T2 vendored from gentle-ai (Apache-2.0): adversarial dual-judge review. Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR.
-├── acli/                    → Atlassian CLI skill: Jira issue tracking + Modality B TMS operations
+├── acli/                    → Atlassian CLI skill: Jira issue tracking + Modality jira-native TMS operations
 └── xray-cli/                → Xray TMS helper
 
 (community, installed by `cli/install.ts` — not committed in repo)

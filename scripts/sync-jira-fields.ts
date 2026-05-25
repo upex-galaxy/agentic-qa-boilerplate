@@ -607,7 +607,7 @@ const USER_MANAGED_PREFIX = 'com.atlassian.jira.plugin.system.customfieldtypes:'
  *   - `com.pyxis.greenhopper.jira` — Jira Software: Epic Link, Epic Name,
  *     Epic Status, Epic Color, Sprint, Rank, Issue color, Story point estimate.
  *   - `com.atlassian.jpo` — Advanced Roadmaps: Parent Link, Target start/end.
- *   - `com.xpandit.plugins.xray` — Xray TMS (Modality A): Test Plan, Test
+ *   - `com.xpandit.plugins.xray` — Xray TMS (Modality jira-xray): Test Plan, Test
  *     Execution, Test Run. QA-side methodology uses these via `xray-cli`
  *     and corresponding workflow refs. Inert if workspace has no Xray plugin.
  *

@@ -483,7 +483,7 @@ function buildManifest(src: string): object {
         },
         {
           step: 'xray auth login',
-          what: 'Runs bun xray auth login — authenticates against Xray Cloud. Only when TMS_PROVIDER=xray; skipped for Jira-native (Modality B).',
+          what: 'Runs bun xray auth login — authenticates against Xray Cloud. Only when TMS_PROVIDER=xray; skipped for Jira-native (Modality jira-native).',
           interactive: true,
         },
       ],

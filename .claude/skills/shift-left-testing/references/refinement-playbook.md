@@ -228,7 +228,7 @@ The orchestrator presents the per-Story summary to the user, waits for OK, then 
 - **No parametrization tables, no test-data JSON, no Faker recipes.** Deferred to in-sprint planning.
 - **No TC creation.** TCs are formalized in Stage 4 (`/test-documentation`).
 - **No git operations.** No branch, no commit.
-- **No new ATP / ATR Jira issues.** Phase 3 may create a Test Plan in Modality A IF the user opted in — the Refinement subagent never does.
+- **No new ATP / ATR Jira issues.** Phase 3 may create a Test Plan in Modality jira-xray IF the user opted in — the Refinement subagent never does.
 - **No `evidence/` folder.** Feature does not exist yet.
 - **No "approval from user" mid-refinement.** Subagents do not prompt the user — they finish and return. The orchestrator presents and waits.
 

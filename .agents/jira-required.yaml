@@ -32,8 +32,8 @@ required:
     name: 🧪 Acceptance Test Results (ATR)
     type: string
     description: |
-      Stores the QA test report (ATR) on the Story (Modality B comment-mirror flow).
-      Mirrored as a Jira comment for diff history. Modality A teams use a separate
+      Stores the QA test report (ATR) on the Story (Modality jira-native comment-mirror flow).
+      Mirrored as a Jira comment for diff history. Modality jira-xray teams use a separate
       Test Execution issue.
     used_by: [sprint-testing, test-documentation]
 
@@ -141,13 +141,13 @@ required:
     description: Type of fix applied (bugfix vs urgent hotfix).
     used_by: [sync-jira-issues, sprint-testing]
 
-  # ---- TMS Modality B fields (Jira-native, no Xray) ----
+  # ---- TMS Modality jira-native fields (no Xray) ----
   acceptance_test_plan:
     name: 🧪 Acceptance Test Plan (ATP)
     type: string
     description: |
-      Stores the QA Acceptance Test Plan body on the Story itself (Modality B
-      flow). Mirrored as a Jira comment for diff history. Modality A teams (Xray)
+      Stores the QA Acceptance Test Plan body on the Story itself (Modality jira-native
+      flow). Mirrored as a Jira comment for diff history. Modality jira-xray teams
       use a separate Test Plan issue and may not need this field.
     used_by: [sprint-testing, test-documentation]
 

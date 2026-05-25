@@ -171,7 +171,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | `playwright-best-practices` | `/playwright-best-practices` | Reference skill: flaky-test fixes, POM, accessibility (axe-core), auth/OAuth, fixtures, tags (`@smoke`/`@critical`), perf budgets, i18n, component testing. Auto-loads alongside `/test-automation`. *(community — installed at PROJECT level by `cli/install.ts`; not committed in repo)* |
 | `resend-cli` | `/resend-cli` | Resend email testing CLI. Pairs with the `resend` external binary. *(community — installed at PROJECT level by `cli/install.ts`; not committed in repo)* |
 | `xray-cli` | `/xray-cli` | Xray Cloud test management. |
-| `acli` | `/acli` | Atlassian CLI. Resolves `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` (Modality B). |
+| `acli` | `/acli` | Atlassian CLI. Resolves `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` (Modality jira-native). |
 | `git-flow-master` | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR. |
 | `judgment-day` | `/judgment-day`, `juzgar`, `dual review` | T2 vendored from gentle-ai (Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, synthesis, fix loop, re-judge). Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. Never auto-invoked. |
 
@@ -207,7 +207,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | Tag | Domain | Primary | Fallback |
 |---|---|---|---|
 | `[ISSUE_TRACKER_TOOL]` | Jira Cloud (story / bug / epic) | `/acli` | MCP Atlassian (opt-in — see docs/mcp/) |
-| `[TMS_TOOL]` | Test management | Modality A: `/xray-cli`. Modality B: `/acli` (Jira-native) | MCP Atlassian (opt-in — see docs/mcp/) |
+| `[TMS_TOOL]` | Test management | Modality jira-xray: `/xray-cli`. Modality jira-native: `/acli` | MCP Atlassian (opt-in — see docs/mcp/) |
 | `[AUTOMATION_TOOL]` | Browser automation | `/playwright-cli` | MCP Playwright |
 | `[DB_TOOL]` | Database | DBHub MCP | Supabase MCP / raw SQL |
 | `[API_TOOL]` | API exploration | OpenAPI MCP | Postman / curl |
@@ -217,8 +217,8 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 **MANDATORY**: LOAD owning skill BEFORE invoking its tool. Skills = WHEN/WHAT. HOW (syntax, flags, auth, errors) lives in skill's `references/`.
 
 - Before any `[ISSUE_TRACKER_TOOL] ...` → load `/acli`
-- Before any `[TMS_TOOL] ...` Modality A → load `/xray-cli`
-- Before any `[TMS_TOOL] ...` Modality B → load `/acli`
+- Before any `[TMS_TOOL] ...` Modality jira-xray → load `/xray-cli`
+- Before any `[TMS_TOOL] ...` Modality jira-native → load `/acli`
 - Before any `[AUTOMATION_TOOL] ...` → load `/playwright-cli`
 - Before any `[DOCS_TOOL] ...` → use Context7 MCP tools directly (no skill load — MCP self-documents). NEVER substitute with `WebSearch` / `WebFetch` for library docs.
 - Before any `[WEB_SEARCH_TOOL] ...` → use Tavily MCP tools directly. NEVER substitute with built-in `WebSearch` / `WebFetch` unless Tavily unavailable.
@@ -230,7 +230,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | A — Xray on Jira | `/xray-cli` for Xray entities; `[ISSUE_TRACKER_TOOL]` for generic Jira | Test, Test Plan, Test Execution, Pre-Condition |
 | B — Jira-native (no Xray) | NOT resolvable → falls through to `[ISSUE_TRACKER_TOOL]` (`/acli`) | ATP/ATR = Story custom fields + comments; TCs = Jira `Test` issues. See `test-documentation/references/jira-setup.md` |
 
-Skills using `[TMS_TOOL]` MUST include parallel pseudocode branches for both modalities (labeled "Modality B — Jira-native").
+Skills using `[TMS_TOOL]` MUST include parallel pseudocode branches for both modalities (labeled "Modality jira-native").
 
 **Pseudocode value types**: `Literal` (fixed domain) · `{per convention}` (consult skill ref) · `{{PROJECT_VAR}}` (from `.agents/project.yaml`) · `{from analysis}` (runtime-derived).
 

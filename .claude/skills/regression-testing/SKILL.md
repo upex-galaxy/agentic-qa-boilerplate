@@ -326,7 +326,7 @@ Save the returned issue number to reference in the report.
 
 ### TMS sync (optional, when `[TMS_TOOL]` is configured via `.agents/project.yaml` `testing.tms_cli`)
 
-> **Prerequisite**: Load `/xray-cli` skill (Modality A) before executing the `[TMS_TOOL]` commands below. In Modality B (Jira-native), load `/acli` instead and map test-execution operations to native Jira issues (see `test-documentation/references/jira-setup.md`).
+> **Prerequisite**: Load `/xray-cli` skill (Modality jira-xray) before executing the `[TMS_TOOL]` commands below. In Modality jira-native, load `/acli` instead and map test-execution operations to native Jira issues (see `test-documentation/references/jira-setup.md`).
 
 ```
 [TMS_TOOL] Update Test Execution:

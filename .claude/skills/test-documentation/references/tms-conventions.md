@@ -470,7 +470,7 @@ Phase 0 fails -> Deferred. Phase 0 passes -> apply ROI.
 
 ### Marking a Candidate in the TMS
 
-> **Prerequisite**: Load `/xray-cli` skill (Modality A). In Modality B, load `/acli` — the `[TMS_TOOL] Update test` call becomes `[ISSUE_TRACKER_TOOL] Update Issue` on the Test issue.
+> **Prerequisite**: Load `/xray-cli` skill (Modality jira-xray). In Modality jira-native, load `/acli` — the `[TMS_TOOL] Update test` call becomes `[ISSUE_TRACKER_TOOL] Update Issue` on the Test issue.
 
 ```
 [TMS_TOOL] Update test:
@@ -589,7 +589,7 @@ Automated results flow from CI to the TMS:
 
 ### Pseudocode
 
-> **Prerequisite**: Load `/xray-cli` skill (Modality A). In Modality B, load `/acli` — result sync loops over `[ISSUE_TRACKER_TOOL] Update Issue` per TC instead.
+> **Prerequisite**: Load `/xray-cli` skill (Modality jira-xray). In Modality jira-native, load `/acli` — result sync loops over `[ISSUE_TRACKER_TOOL] Update Issue` per TC instead.
 
 ```
 [TMS_TOOL] Import results:

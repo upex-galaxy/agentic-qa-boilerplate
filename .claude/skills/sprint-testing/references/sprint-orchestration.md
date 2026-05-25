@@ -214,7 +214,7 @@ Every dispatch uses the **6-component briefing format** defined in `.claude/skil
 
 > **Variable resolution**: `<TICKET_KEY>`, `<MODULE>`, `<BRIEF_TITLE>`, `<PBI_FOLDER>`, `<ENV>` are session variables filled by the orchestrator before dispatch. `<PBI_FOLDER>` resolves to `.context/PBI/<MODULE>/<TICKET_KEY>-<BRIEF_TITLE>/` (absolute path). `{{PROJECT_KEY}}`, `{{WEB_URL}}`, `{{API_URL}}`, `{{API_MCP}}`, `{{DB_MCP}}` resolve from `.agents/project.yaml` per `CLAUDE.md` §"Project Variables".
 
-> **Skill-loading invariant**: every briefing that touches `[ISSUE_TRACKER_TOOL]` requires `/acli`; every briefing that touches `[TMS_TOOL]` in Modality A also requires `/xray-cli`. Sub-agents inherit the orchestrator's skill registry, so the orchestrator only needs to load them once at Session Start §0.1 — but each briefing's "Skills to load" line lists them explicitly so the dispatch is self-contained.
+> **Skill-loading invariant**: every briefing that touches `[ISSUE_TRACKER_TOOL]` requires `/acli`; every briefing that touches `[TMS_TOOL]` in Modality jira-xray also requires `/xray-cli`. Sub-agents inherit the orchestrator's skill registry, so the orchestrator only needs to load them once at Session Start §0.1 — but each briefing's "Skills to load" line lists them explicitly so the dispatch is self-contained.
 
 > **Bug-vs-Feature divergence**: the Stage 1 briefing applies the veto + risk-score decision tree only when `<TICKET_TYPE>` is `Bug`; for Feature/Story tickets it produces the full ATP per `acceptance-test-planning.md` Phases 1-7. The Stage 2 and Stage 3 briefings keep the same shape; their internal step list adapts (smoke + reproduce + regression vs smoke + triforce; Template C/D vs PASSED/FAILED comment).
 
@@ -281,7 +281,7 @@ Context docs:
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-api-map.md (if API-affecting)
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/PBI/<MODULE>/module-context.md (if it exists)
 
-Skills to load: /acli (for ATP/ATR creation + Story link); in Modality A also /xray-cli (for [TMS_TOOL] Test Plan / Test Execution issues).
+Skills to load: /acli (for ATP/ATR creation + Story link); in Modality jira-xray also /xray-cli (for [TMS_TOOL] Test Plan / Test Execution issues).
 
 Exact instructions:
   1. Bug branch: run the veto decision tree per acceptance-test-planning.md §"Phase 0 — Triage" (SKIP -> emit veto_outcome=skip, write minimal Bug Analysis, exit; REQUIRE -> continue).
@@ -289,8 +289,8 @@ Exact instructions:
   3. Translate ACs into ATP rows (one row per testable behavior); apply Phases 1-4 of acceptance-test-planning.md (Critical Analysis, Story Quality, Refined ACs, Test Outlines).
   4. Draft TC outlines (summary + steps + expected) — full TC bodies are formalized in Stage 4 (test-documentation), not here.
   5. Create ATP + ATR per the modality branch in acceptance-test-planning.md §"Phase 6 — Traceability + Ticket updates":
-       - Modality A: [TMS_TOOL] Create TestPlan + Create Execution; link to Story via [ISSUE_TRACKER_TOOL] Link Issues.
-       - Modality B: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_plan}} field + comment mirror.
+       - Modality jira-xray: [TMS_TOOL] Create TestPlan + Create Execution; link to Story via [ISSUE_TRACKER_TOOL] Link Issues.
+       - Modality jira-native: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_plan}} field + comment mirror.
   6. Write artifacts to <PBI_FOLDER>/test-analysis.md (byte-for-byte mirror of the Jira/TMS comment).
   7. Update <PBI_FOLDER>/test-session-memory.md sections: TMS Artifacts, Test Data, Stage Results > Planning, Checklist > Planning.
 
@@ -379,16 +379,16 @@ Context docs:
   - <PBI_FOLDER>/evidence/ (Stage 2 evidence)
   - <PBI_FOLDER>/context.md (ticket summary)
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/reporting-templates.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.agents/jira-fields.json (custom field IDs for ATR/ATP — Modality B only)
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.agents/jira-fields.json (custom field IDs for ATR/ATP — Modality jira-native only)
 
-Skills to load: /acli (issue updates + comments + transitions + bug creation); in Modality A also /xray-cli (only when ATR is an Xray Test Execution and Test Run statuses must be updated).
+Skills to load: /acli (issue updates + comments + transitions + bug creation); in Modality jira-xray also /xray-cli (only when ATR is an Xray Test Execution and Test Run statuses must be updated).
 
 Exact instructions:
   1. Compile TC summary from test-session-memory.md (total, PASSED, FAILED, pass rate).
   2. Fill <PBI_FOLDER>/test-report.md from the ATR template in reporting-templates.md §"ATR Test Report body".
   3. Update the ATR in TMS:
-       - Modality A: [TMS_TOOL] Update Test Execution / Run statuses; mark ATR complete.
-       - Modality B: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_results}} field + comment mirror.
+       - Modality jira-xray: [TMS_TOOL] Update Test Execution / Run statuses; mark ATR complete.
+       - Modality jira-native: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_results}} field + comment mirror.
   4. Post QA comment on <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Add Comment using the matching template from reporting-templates.md (Story PASSED/FAILED, or Bug Template C/D).
   5. Transition <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Transition Issue. Resolve from substrate:
        - **Story PASSED** -> `{{jira.transition.story.qa_sign_off}}` (`in_test` -> `qa_approved`).

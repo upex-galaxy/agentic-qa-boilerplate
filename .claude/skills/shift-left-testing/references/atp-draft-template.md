@@ -252,7 +252,7 @@ If Partial / No, list issues:
 | Phase 4 numbered test steps | YES | NO (titles + 1-line precondition + 1-line expected only) |
 | Phase 5 test-data generation strategy | YES | NO |
 | Phase 5 Faker recipes | YES | NO |
-| TC creation in Xray (Modality A) | YES (Phase 6) | NO — TCs created in Stage 4 `/test-documentation` |
+| TC creation in Xray (Modality jira-xray) | YES (Phase 6) | NO — TCs created in Stage 4 `/test-documentation` |
 | Commit on `test/{KEY}/...` branch | YES | NO — Jira is canonical |
 | Bug variant section | YES | NO — bugs out of scope |
 | Status flag at top | "Test Analysis — Ready for Execution" | "Refined — Awaiting PO Estimation" |

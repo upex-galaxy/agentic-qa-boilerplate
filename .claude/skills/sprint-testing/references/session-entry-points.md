@@ -40,7 +40,7 @@ Act as a Senior QA Engineer preparing a testing session for a ticket (User Story
 
 ### Step 1 — Fetch the ticket from the issue tracker
 
-> **Prerequisite**: Load `/acli` skill before executing the commands below. In Modality A (Xray) also load `/xray-cli` for `[TMS_TOOL]` calls. If Session Start §0.1 in `SKILL.md` already loaded them, skip.
+> **Prerequisite**: Load `/acli` skill before executing the commands below. In Modality jira-xray also load `/xray-cli` for `[TMS_TOOL]` calls. If Session Start §0.1 in `SKILL.md` already loaded them, skip.
 
 ```
 [ISSUE_TRACKER_TOOL] Fetch Issue:
@@ -284,7 +284,7 @@ Prompts / references:
 - `references/acceptance-test-planning.md` — ATP body, Test Analysis, TC nomenclature, traceability.
 - `references/feature-test-planning.md` — higher-granularity feature plan (optional).
 
-> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call. In Modality A (Xray) also load `/xray-cli` for `[TMS_TOOL]` calls. If Session Start §0.1 already loaded them, skip. Modality B: `/acli` covers both tags.
+> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call. In Modality jira-xray also load `/xray-cli` for `[TMS_TOOL]` calls. If Session Start §0.1 already loaded them, skip. Modality jira-native: `/acli` covers both tags.
 
 Actions:
 
@@ -341,7 +341,7 @@ Output checkpoint:
 
 Reference: `references/reporting-templates.md`.
 
-> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call (QA comment, transition, bug filing). In Modality A (Xray) also load `/xray-cli` for `[TMS_TOOL]` ATR update / Run update. Modality B: `/acli` covers both tags. Skip if Session Start §0.1 already loaded them.
+> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call (QA comment, transition, bug filing). In Modality jira-xray also load `/xray-cli` for `[TMS_TOOL]` ATR update / Run update. Modality jira-native: `/acli` covers both tags. Skip if Session Start §0.1 already loaded them.
 
 Actions:
 

@@ -27,7 +27,7 @@ This reference defines:
 
 ## Per-Story handoff sequence
 
-> **Prerequisite**: `/acli` skill loaded (Phase 0.2). In Modality A with Test Plan opt-in, also `/xray-cli`.
+> **Prerequisite**: `/acli` skill loaded (Phase 0.2). In Modality jira-xray with Test Plan opt-in, also `/xray-cli`.
 
 ### Step 1 — Update Story description
 
@@ -70,7 +70,7 @@ The Handoff subagent must read the current description FIRST, then append. Never
 
 Branch on modality (resolved in Phase 0.1).
 
-#### Modality A — Xray (Test Plan opt-in CHOSEN by user)
+#### Modality jira-xray — Xray (Test Plan opt-in CHOSEN by user)
 
 ```
 [TMS_TOOL] Create TestPlan:
@@ -84,7 +84,7 @@ Branch on modality (resolved in Phase 0.1).
   inward:  {STORY_KEY}
 ```
 
-Then ALSO populate the custom field on the Story so the field+comment mirror works the same as Modality B:
+Then ALSO populate the custom field on the Story so the field+comment mirror works the same as Modality jira-native:
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -93,9 +93,9 @@ Then ALSO populate the custom field on the Story so the field+comment mirror wor
     {{jira.acceptance_test_plan}}: <full shift-left-refinement.md body>
 ```
 
-#### Modality A — Xray (Test Plan opt-in NOT chosen — default)
+#### Modality jira-xray — Xray (Test Plan opt-in NOT chosen — default)
 
-OR Modality B — Jira-native:
+OR Modality jira-native:
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -104,7 +104,7 @@ OR Modality B — Jira-native:
     {{jira.acceptance_test_plan}}: <full shift-left-refinement.md body>
 ```
 
-Custom-field write may fail in Modality A if the Jira instance has not provisioned `{{jira.acceptance_test_plan}}`. Fall back to comment-only mode and warn the user in the per-Story summary.
+Custom-field write may fail in Modality jira-xray if the Jira instance has not provisioned `{{jira.acceptance_test_plan}}`. Fall back to comment-only mode and warn the user in the per-Story summary.
 
 ### Step 3 — Canonical comment mirror
 
@@ -173,14 +173,14 @@ The skill NEVER applies the `back_from_shift_left_qa` transition automatically. 
 
 ### Step 6 — Verify trace
 
-Modality A:
+Modality jira-xray:
 
 ```
 [TMS_TOOL] trace {STORY_KEY}
 # Verify: Test Plan link present, Test Plan description matches shift-left-refinement.md body
 ```
 
-Modality B:
+Modality jira-native:
 
 ```
 [ISSUE_TRACKER_TOOL] Get Issue: {STORY_KEY} -> read fields + comments
@@ -196,7 +196,7 @@ Modality B:
 {
   "story": "UPEX-100",
   "atp_container": "test_plan|custom_field",
-  "atp_key": "UPEX-201 (only Modality A with Test Plan opt-in)",
+  "atp_key": "UPEX-201 (only Modality jira-xray with Test Plan opt-in)",
   "description_appended": true,
   "comment_posted": true,
   "labels_added": ["shift-left-reviewed", "shift-left-2026-05-20"],
@@ -320,7 +320,7 @@ Each step is idempotent:
 |------|------------------|
 | Step 1 description | If "QA Refinements (Shift-Left Analysis)" section already present → skip |
 | Step 2 ATP field | Overwrite OK — field is single-value |
-| Step 2 Test Plan create (Modality A) | Search by title before creating — link existing if found |
+| Step 2 Test Plan create (Modality jira-xray) | Search by title before creating — link existing if found |
 | Step 3 comment | If a comment matching `=== Shift-Left Refinement: {STORY_KEY} ===` exists → skip |
 | Step 4 labels | acli labels operation is set-based; re-running adds nothing |
 | Step 5 transition | Read current status before transitioning; skip if already at target |

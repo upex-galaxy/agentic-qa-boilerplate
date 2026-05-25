@@ -216,7 +216,7 @@ Project-owned and project-dependency skills are named explicitly. Community skil
 | `vcs` | (no T3/T4 — `git-flow-master` is T1 and covers `gh` CLI usage natively) | `git-flow-master`, `regression-testing` (CI run inspection) |
 | `runtime` | `bun` | `framework-development`, `test-automation` (script / bundler tweaks) |
 | `issue-tracker` | (acli is T1) | `sprint-testing`, `test-documentation` |
-| `tms` | (xray-cli is T1; acli covers Modality B) | `test-documentation`, `sprint-testing` |
+| `tms` | (xray-cli is T1; acli covers Modality jira-native) | `test-documentation`, `sprint-testing` |
 | `meta-skill` | `skill-creator`, `find-skills` | only on user request (find-skills auto-invoked per §8.2 as last-resort); also `framework-development` (skill evolution) |
 | `ci-cd` | `github-actions-docs` | `regression-testing`, `framework-development` (CI workflow evolution) |
 | `framework-evolution` | (no T3/T4 — concept-only category) | `framework-development` (self-tag) |
@@ -400,4 +400,4 @@ This doc does NOT:
 - Rewrite SDD. The gentle-ai bundle is treated as a stable upstream dependency.
 - Define the dev-side composition. Dev workflows are out of scope here and follow their own composition strategy.
 - Specify exact prompt text for the `## Composable Skills` injection block. That belongs in the orchestrator template, drafted later.
-- Cover Modality B (Jira-native TMS) tier nuances. That belongs in `test-documentation/references/jira-setup.md`.
+- Cover Modality jira-native TMS tier nuances. That belongs in `test-documentation/references/jira-setup.md`.

@@ -45,14 +45,14 @@ If `acli` is not installed or authenticated, fall back to the Atlassian MCP serv
 
 **Coverage parity**: MCP and `acli` overlap for issues, projects, boards, sprints, comments, and basic Confluence ops. For org-admin user lifecycle and Confluence space CRUD, `acli` is more direct. For schema/admin reads (field catalog, workflow definitions), MCP/REST is the only viable path.
 
-## Role in TMS Modality B (Jira-native, no Xray)
+## Role in TMS Modality jira-native (no Xray)
 
-When the project operates without the Xray plugin (Modality B resolved by `test-documentation/SKILL.md` §Phase 0), this skill also serves as the owner of the `[TMS_TOOL]` tag. All TMS operations (Test issue creation, Test Plan, Test Execution equivalents) map to native Jira operations handled by `acli`:
+When the project operates without the Xray plugin (Modality jira-native resolved by `test-documentation/SKILL.md` §Phase 0), this skill also serves as the owner of the `[TMS_TOOL]` tag. All TMS operations (Test issue creation, Test Plan, Test Execution equivalents) map to native Jira operations handled by `acli`:
 
 - Test → Jira work item with `--type "Test"` (or the configured custom issue type).
 - Test Plan / Test Execution → Jira work items linked via custom fields (see `test-documentation/references/jira-setup.md`).
 
-In Modality A (Xray present), TMS operations route to `/xray-cli` instead; this skill handles only `[ISSUE_TRACKER_TOOL]` operations (story, bug, epic).
+In Modality jira-xray, TMS operations route to `/xray-cli` instead; this skill handles only `[ISSUE_TRACKER_TOOL]` operations (story, bug, epic).
 
 ## Command structure
 
@@ -367,7 +367,7 @@ These are formal companions to the gotchas section below. Gotchas describe *surp
 - **A3.** NEVER invoke `acli` directly from workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `shift-left-testing`, `project-discovery`). Workflow skills cite `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]` pseudo-code and load THIS skill instead — methodology survives tool rotation only if the HOW lives here.
 - **A4.** NEVER hardcode project keys (`UPEX`, `MYM`, `SQ`, etc.) in commands or docs. Resolve via `{{PROJECT_KEY}}` from `.agents/project.yaml`. Hardcoding breaks portability across downstream consumers.
 - **A5.** NEVER run a bulk `acli` mutation (transition, edit, comment, link, archive) without first verifying `acli jira auth status`. Silent auth expiry cascades into HTTP 401s mid-loop, leaving the batch half-applied with no clean rollback.
-- **A6.** NEVER mix Modality A and Modality B operations on the same TMS entity. `acli` owns generic Jira (`[ISSUE_TRACKER_TOOL]`) plus Modality B TMS (Jira-native Test issues, ATP/ATR as custom fields). Modality A (Xray plugin present) routes Test / Test Plan / Test Execution through `/xray-cli` — never via `acli` work items.
+- **A6.** NEVER mix Modality jira-xray and Modality jira-native operations on the same TMS entity. `acli` owns generic Jira (`[ISSUE_TRACKER_TOOL]`) plus Modality jira-native TMS (Jira-native Test issues, ATP/ATR as custom fields). Modality jira-xray routes Test / Test Plan / Test Execution through `/xray-cli` — never via `acli` work items.
 - **A7.** NEVER assume `acli` accepts custom-field input on `workitem edit`. It hard-rejects every shape (`additionalAttributes`, `fields`, flat `customfield_X`) with exit 1. Use the REST `PUT /rest/api/3/issue/{KEY}` workaround documented above — there is no acli-native path.
 
 ## Five gotchas to keep in mind always

@@ -204,7 +204,7 @@ All skills share the **Knowledge Layer** (the `.context/` directory): business r
 ### Bottom tier — the systems the AI operates on
 
 - **`[ISSUE_TRACKER_TOOL]`** — Jira issue management (Stories, Bugs, Epics) accessed via the `acli` skill (Atlassian CLI) by default; swappable via the Tool Resolution table in `CLAUDE.md`.
-- **`[TMS_TOOL]`** — the test management system holding ATPs, ATRs, and TCs. Resolves to the `xray-cli` skill in **Modality A** (Xray on Jira) or to the `acli` skill in **Modality B** (Jira-native, no Xray plugin). The modality is decided once per project in `test-documentation/SKILL.md` §Phase 0.
+- **`[TMS_TOOL]`** — the test management system holding ATPs, ATRs, and TCs. Resolves to the `xray-cli` skill in **Modality jira-xray** or to the `acli` skill in **Modality jira-native**. The modality is decided once per project in `test-documentation/SKILL.md` §Phase 0.
 - **`[DB_TOOL]`** — the live database, accessed through an MCP (DBHub by default). Used to find, generate, or verify test data.
 - **CI / CD** — the regression suite, typically GitHub Actions, reporting to Allure.
 
@@ -316,7 +316,7 @@ Each source feeds the AI a specific kind of truth:
 
 The `[TAG_TOOL]` brackets map to concrete implementations via the **Tool Resolution** table in `CLAUDE.md`. Skills never hard-code a tool name — they call `[TMS_TOOL]` and let the table decide whether that means the Xray CLI, the Atlassian MCP, or something else the team plugged in.
 
-**TMS modality**: `[TMS_TOOL]` resolves to the `xray-cli` skill in **Modality A** (Xray on Jira) or to the `acli` skill in **Modality B** (Jira-native, no Xray plugin), per `test-documentation/SKILL.md` §Phase 0. In Modality B, ATPs and ATRs live as Story custom fields with comment mirrors and TCs live as Jira `Test` issues; the workflow skills carry parallel pseudocode branches for both modalities.
+**TMS modality**: `[TMS_TOOL]` resolves to the `xray-cli` skill in **Modality jira-xray** or to the `acli` skill in **Modality jira-native**, per `test-documentation/SKILL.md` §Phase 0. In Modality jira-native, ATPs and ATRs live as Story custom fields with comment mirrors and TCs live as Jira `Test` issues; the workflow skills carry parallel pseudocode branches for both modalities.
 
 Each AI operates on these sources through two complementary interfaces:
 
