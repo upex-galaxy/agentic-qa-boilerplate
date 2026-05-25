@@ -97,8 +97,16 @@ function parseInline(input: string): ADFNode[] {
         for (const n of innerNodes) {
           if (n.type === "text") {
             const existing = n.marks ?? [];
-            const hasStrong = existing.some((m) => m.type === "strong");
-            n.marks = hasStrong ? existing : [...existing, { type: "strong" }];
+            // Jira ADF rejects (HTTP 400) any text node carrying both `code` and
+            // `strong` marks. When they would co-occur, keep `code` and drop
+            // `strong`: inline code is semantically dominant, and bolding an
+            // inline-code span is rare and usually accidental authoring.
+            if (existing.some((m) => m.type === "code")) {
+              n.marks = existing;
+            } else {
+              const hasStrong = existing.some((m) => m.type === "strong");
+              n.marks = hasStrong ? existing : [...existing, { type: "strong" }];
+            }
           }
           nodes.push(n);
         }
@@ -136,8 +144,14 @@ function parseInline(input: string): ADFNode[] {
           for (const n of innerNodes) {
             if (n.type === "text") {
               const existing = n.marks ?? [];
-              const hasEm = existing.some((m) => m.type === "em");
-              n.marks = hasEm ? existing : [...existing, { type: "em" }];
+              // See bold branch above: Jira rejects `code` + `em` on the same
+              // text node. Keep `code` and drop `em` — inline code is dominant.
+              if (existing.some((m) => m.type === "code")) {
+                n.marks = existing;
+              } else {
+                const hasEm = existing.some((m) => m.type === "em");
+                n.marks = hasEm ? existing : [...existing, { type: "em" }];
+              }
             }
             nodes.push(n);
           }

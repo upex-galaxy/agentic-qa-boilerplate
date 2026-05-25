@@ -2,12 +2,12 @@
 
 Confluence surface added in `acli` v1.x. Coverage as of v1.3.18:
 
-| Group   | Subcommands                                                              | Completeness |
-| ------- | ------------------------------------------------------------------------ | ------------ |
-| `auth`  | login · logout · status · switch                                         | Full         |
-| `space` | archive · create · list · restore · update · view                        | Near-full (no `delete` — only archive/restore) |
-| `blog`  | create · list · view                                                     | Read + create only (no update / delete) |
-| `page`  | view                                                                     | **Read only** — no create / update / delete / list |
+| Group   | Subcommands                                       | Completeness                                       |
+| ------- | ------------------------------------------------- | -------------------------------------------------- |
+| `auth`  | login · logout · status · switch                  | Full                                               |
+| `space` | archive · create · list · restore · update · view | Near-full (no `delete` — only archive/restore)     |
+| `blog`  | create · list · view                              | Read + create only (no update / delete)            |
+| `page`  | view                                              | **Read only** — no create / update / delete / list |
 
 **Critical limitation**: `page` is read-only. To create or modify Confluence pages from the CLI you must fall back to REST (`POST/PUT/DELETE /wiki/api/v2/pages`). Despite this, blog posts and spaces have a usable CRUD-ish surface — fine for the common workflows of "publish release notes", "set up a new team space", "archive a deprecated workspace".
 
@@ -67,14 +67,14 @@ acli confluence space list --status archived
 
 Flags:
 
-| Flag       | Meaning                                                                |
-| ---------- | ---------------------------------------------------------------------- |
-| `--type`   | `global` · `personal`                                                  |
-| `--status` | `current` (default) · `archived`                                       |
-| `--keys`   | Comma-separated space keys to filter by                                |
-| `--expand` | Comma-separated: `description, homepage, permissions`                  |
-| `-l, --limit` | Max rows (default **50**)                                           |
-| `--json`   | JSON output                                                            |
+| Flag          | Meaning                                               |
+| ------------- | ----------------------------------------------------- |
+| `--type`      | `global` · `personal`                                 |
+| `--status`    | `current` (default) · `archived`                      |
+| `--keys`      | Comma-separated space keys to filter by               |
+| `--expand`    | Comma-separated: `description, homepage, permissions` |
+| `-l, --limit` | Max rows (default **50**)                             |
+| `--json`      | JSON output                                           |
 
 ### view
 
@@ -190,18 +190,18 @@ acli confluence blog create --from-json blog.json --json
 
 Flags:
 
-| Flag             | Meaning                                                                |
-| ---------------- | ---------------------------------------------------------------------- |
-| `--space-id`     | Numeric space ID (find via `space list --json`)                        |
-| `--title`        | Post title                                                             |
-| `--body`         | Inline body in Confluence storage format (XHTML)                       |
-| `--from-file`    | Read body from file                                                    |
-| `--from-json`    | Full JSON payload                                                      |
-| `--generate-json`| Print example JSON template                                            |
-| `--status`       | `current` (published, default) · `draft`                               |
-| `--private`      | Restrict visibility                                                    |
-| `--created-at`   | ISO-8601 timestamp (e.g. `"2026-04-28T15:00:00.000Z"`)                  |
-| `-j, --json`     | Output JSON                                                            |
+| Flag              | Meaning                                                |
+| ----------------- | ------------------------------------------------------ |
+| `--space-id`      | Numeric space ID (find via `space list --json`)        |
+| `--title`         | Post title                                             |
+| `--body`          | Inline body in Confluence storage format (XHTML)       |
+| `--from-file`     | Read body from file                                    |
+| `--from-json`     | Full JSON payload                                      |
+| `--generate-json` | Print example JSON template                            |
+| `--status`        | `current` (published, default) · `draft`               |
+| `--private`       | Restrict visibility                                    |
+| `--created-at`    | ISO-8601 timestamp (e.g. `"2026-04-28T15:00:00.000Z"`) |
+| `-j, --json`      | Output JSON                                            |
 
 ### list
 
@@ -288,12 +288,12 @@ Include flags (each is a separate boolean): `--include-collaborators`, `--includ
 
 Several commands accept `--body-format` (read) or expect a body in a particular format on input (write). The values you'll encounter:
 
-| Value              | What it is                                                            | When to use                                          |
-| ------------------ | --------------------------------------------------------------------- | ---------------------------------------------------- |
-| `storage`          | Confluence "storage format" — XHTML with Confluence-specific macros   | Writing body content for `blog create`               |
-| `atlas_doc_format` | ADF (the same JSON structure used in Jira rich text)                  | Programmatic content generation, especially for AI-assisted authoring |
-| `view`             | Pre-rendered HTML as displayed to readers                             | Reading rendered content for downstream rendering   |
-| `plain`            | Plain text (only valid for `space view --desc-format`)                | Simple display                                       |
+| Value              | What it is                                                          | When to use                                                           |
+| ------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `storage`          | Confluence "storage format" — XHTML with Confluence-specific macros | Writing body content for `blog create`                                |
+| `atlas_doc_format` | ADF (the same JSON structure used in Jira rich text)                | Programmatic content generation, especially for AI-assisted authoring |
+| `view`             | Pre-rendered HTML as displayed to readers                           | Reading rendered content for downstream rendering                     |
+| `plain`            | Plain text (only valid for `space view --desc-format`)              | Simple display                                                        |
 
 For input via `--body` or `--body-file`, the documented expectation is **storage format** (XHTML). Markdown is not converted automatically — convert it yourself before submission, or use a JSON payload via `--from-json` with `atlas_doc_format`.
 
@@ -302,7 +302,9 @@ Quick reference for storage format:
 ```html
 <p>A paragraph.</p>
 <h2>A heading</h2>
-<ul><li>List item</li></ul>
+<ul>
+  <li>List item</li>
+</ul>
 <ac:structured-macro ac:name="info">
   <ac:rich-text-body><p>Info macro content</p></ac:rich-text-body>
 </ac:structured-macro>

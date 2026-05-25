@@ -1,0 +1,52 @@
+{
+  "evals": [
+    {
+      "name": "should-trigger-transition-via-cli",
+      "prompt": "Use acli to transition {{PROJECT_KEY}}-123 to In Review now that the PR is open.",
+      "expected_behavior": "Activates acli skill. Reads SKILL.md for the transition section, then references/workitem.md §transition. Runs `acli jira workitem transition --key {{PROJECT_KEY}}-123 --status \"In Review\"`. If the user has not authenticated, suggests `acli jira auth status` first and points at references/auth.md.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-create-bug-from-cli",
+      "prompt": "Create a Bug from acli — title 'Login button does nothing on Safari 17', parent {{PROJECT_KEY}}-123, project {{PROJECT_KEY}}, assign to me.",
+      "expected_behavior": "Activates acli skill. Loads references/workitem.md §create. Runs `acli jira workitem create --project {{PROJECT_KEY}} --type Bug --summary \"Login button does nothing on Safari 17\" --parent {{PROJECT_KEY}}-123 --assignee \"@me\"`. Reports the new bug key. Does NOT use Test / Test-Execution issue types (those are TMS-side and out of scope for this skill).",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-fetch-story-details",
+      "prompt": "Pull {{PROJECT_KEY}}-123 from Jira via acli — I need the ACs, scope and mockup link.",
+      "expected_behavior": "Activates acli skill. Loads references/workitem.md §view. Runs `acli jira workitem view {{PROJECT_KEY}}-123 --json` and pipes through jq to extract the relevant custom fields (`customfield_NNNN` placeholders). Notes that real custom-field IDs are workspace-specific and that the host repo's `<repo-core>/references/acli-integration.md` typically holds a slug → ID catalog.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-bulk-transition-jql",
+      "prompt": "Use acli to bulk-transition every {{PROJECT_KEY}} story that has fixVersion 2026.05 and is in Ready For QA over to Done.",
+      "expected_behavior": "Activates acli skill. Reads SKILL.md selector pattern + references/workitem.md §transition. Runs `acli jira workitem transition --jql \"project = {{PROJECT_KEY}} AND fixVersion = '2026.05' AND status = 'Ready For QA'\" --status \"Done\" --yes --ignore-errors`. Warns about silent pagination and rate limits per references/gotchas.md (#1, #16). Suggests the dry-run preview pattern from references/output-and-automation.md before mutating.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-spanish-acli-trigger",
+      "prompt": "Necesito loguearme en acli para mi sitio de Atlassian — paso el token por env, ¿cómo es?",
+      "expected_behavior": "Activates acli skill. Mirrors Spanish in conversation. Loads references/auth.md. Explains the API-token path: `echo \"$ATLASSIAN_API_TOKEN\" | acli jira auth login --site \"${ATLASSIAN_URL#https://}\" --email \"$ATLASSIAN_EMAIL\" --token`. Names the env vars (ATLASSIAN_URL, ATLASSIAN_EMAIL, ATLASSIAN_API_TOKEN). Notes that the site slug is derived from ATLASSIAN_URL by stripping the https:// prefix, and that --token reads only from stdin (pipe/redirect/here-string).",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-playwright-tests",
+      "prompt": "Write Playwright E2E tests for the login flow.",
+      "expected_behavior": "Does NOT activate acli skill. Should route to a browser-automation / E2E-testing skill instead. acli is the issue-tracker CLI — it does not write or run tests.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-end-to-end-orchestrator",
+      "prompt": "Implement {{PROJECT_KEY}}-123 — full sprint loop, plan to code to review to deploy.",
+      "expected_behavior": "Does NOT activate acli skill as the entry point. Should route to the host repo's end-to-end story-orchestrator workflow skill (e.g. a sprint-development / sprint-testing mega-orchestrator). That orchestrator will internally call acli for the Jira transitions (Ready For Dev → In Progress → In Review → Ready For QA), but the user-facing entry point is the orchestrator, not the CLI primitive.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-backlog-grooming",
+      "prompt": "Seed the backlog with 30 stories from the PRD — refine ACs, INVEST check, ready-for-dev checklist.",
+      "expected_behavior": "Does NOT activate acli skill as the entry point. Should route to a product-management / backlog-grooming workflow skill because this is backlog seeding + AC refinement, not raw CLI work. That workflow may delegate the bulk-create step to acli (`workitem create-bulk --from-csv`), but the orchestration, INVEST check, and Gherkin authoring belong to the workflow skill.",
+      "category": "negative"
+    }
+  ]
+}

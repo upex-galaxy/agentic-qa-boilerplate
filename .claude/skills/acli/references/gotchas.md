@@ -50,10 +50,10 @@ Everything the official docs do not make obvious. Every item here is something t
 {
   "summary": "...",
   "type": "Story",
-  "projectKey": "TEAM",
+  "projectKey": "{{PROJECT_KEY}}",
   "additionalAttributes": {
-    "customfield_10122": { "value": "High" },
-    "customfield_10016": 8
+    "customfield_NNNN": { "value": "High" },
+    "customfield_NNNN": 8
   }
 }
 ```
@@ -81,16 +81,16 @@ This is asymmetric with `acli workitem create`, which **does** accept custom fie
 
 **Fix — WORKAROUND via REST PUT** (the only working path as of v1.3.18).
 
-Prerequisites: `ATLASSIAN_URL`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN` are exported in the current shell. Project tooling (`bun claude`, `bun opencode`, `direnv`) loads them from `.env` automatically.
+Prerequisites: `ATLASSIAN_URL`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN` are exported in the current shell.
 
 ```bash
 # Simple value (number, string, single-select)
 curl -sS -w "\nHTTP %{http_code}\n" \
   -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-  -X PUT "$ATLASSIAN_URL/rest/api/3/issue/TEAM-1" \
+  -X PUT "$ATLASSIAN_URL/rest/api/3/issue/{{PROJECT_KEY}}-123" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
-  -d '{"fields": {"customfield_10016": 8}}'
+  -d '{"fields": {"customfield_NNNN": 8}}'
 # Expected: HTTP 204 (no body on success)
 ```
 
@@ -106,41 +106,38 @@ Bulk create (`create-bulk`) has the same blind spot: no `additionalAttributes` i
 
 **The problem.** `acli jira field` only exposes `create`, `update`, `delete`, `cancel-delete`. There is no `list`, `get`, `view`, or `search` subcommand. Running `acli jira field list --help` does NOT error — it silently falls back to the parent `field` help (see gotcha #7).
 
-**Fix.** Three workarounds:
+**Fix.** Two workarounds:
 
 ```bash
 # 1. From an item that has the field set — extract IDs
-acli jira workitem view TEAM-123 --json \
+acli jira workitem view {{PROJECT_KEY}}-123 --json \
   | jq '.fields | keys[] | select(startswith("customfield_"))'
 
 # 2. From REST — enumerate ALL fields on the site
-curl -s -u "$EMAIL:$TOKEN" \
-  "https://mysite.atlassian.net/rest/api/3/field" \
+curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
+  "$ATLASSIAN_URL/rest/api/3/field" \
   | jq '.[] | {id, name, custom, schema}'
-
-# 3. From the boilerplate's substrate
-cat .agents/jira-fields.json
 ```
 
-In this boilerplate, prefer reference-by-slug (`{{jira.<slug>}}`) over hardcoding numeric IDs.
+> Repo integration: host repos commonly cache the field catalog under `.agents/` and reference fields by stable slug rather than numeric ID. See the host repo's `<repo-core>/references/acli-integration.md` for the slug catalog and refresh recipe.
 
 ## <a id="no-admin"></a>6. No admin for workflows, issue types, priorities, resolutions, versions, components
 
 **The problem.** As of v1.3.18, `acli` has zero coverage for these admin/schema surfaces:
 
-| Surface              | `acli` coverage                                                |
-| -------------------- | -------------------------------------------------------------- |
-| Workflows            | None. No `jira workflow` group at all.                         |
-| Workflow schemes     | None.                                                          |
-| Statuses             | None (read-only — appears as nested object inside `workitem view`). |
-| Transition definitions | None (only `workitem transition` to *execute* an existing transition). |
-| Issue types          | None — neither read nor write.                                 |
-| Priorities           | None.                                                          |
-| Resolutions          | None.                                                          |
-| Project versions     | None.                                                          |
-| Project components   | None.                                                          |
-| Custom-field options | None — `field create/update/delete` doesn't manage dropdown options. |
-| Permission schemes   | None.                                                          |
+| Surface                | `acli` coverage                                                        |
+| ---------------------- | ---------------------------------------------------------------------- |
+| Workflows              | None. No `jira workflow` group at all.                                 |
+| Workflow schemes       | None.                                                                  |
+| Statuses               | None (read-only — appears as nested object inside `workitem view`).    |
+| Transition definitions | None (only `workitem transition` to _execute_ an existing transition). |
+| Issue types            | None — neither read nor write.                                         |
+| Priorities             | None.                                                                  |
+| Resolutions            | None.                                                                  |
+| Project versions       | None.                                                                  |
+| Project components     | None.                                                                  |
+| Custom-field options   | None — `field create/update/delete` doesn't manage dropdown options.   |
+| Permission schemes     | None.                                                                  |
 
 Running e.g. `acli jira workflow --help` does NOT error — it silently falls back to `acli jira` help. So "no error" ≠ "command exists" (see gotcha #7).
 
@@ -180,65 +177,51 @@ POST /rest/api/3/field/{fieldId}/option
 **Fix.** Call the Jira Software REST endpoint directly:
 
 ```bash
-curl -s -u "$EMAIL:$TOKEN" \
-  -X POST "https://mysite.atlassian.net/rest/agile/1.0/sprint/$SPRINT_ID/issue" \
+curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
+  -X POST "$ATLASSIAN_URL/rest/agile/1.0/sprint/$SPRINT_ID/issue" \
   -H "Content-Type: application/json" \
-  -d "{\"issues\": [\"TEAM-1\", \"TEAM-2\"]}"
+  -d "{\"issues\": [\"{{PROJECT_KEY}}-123\", \"{{PROJECT_KEY}}-124\"]}"
 ```
 
 Holding a separate basic-auth token for REST calls is unavoidable here — `acli` does not expose its cached token.
 
 ## <a id="transitions"></a>9. `transition` matches by status name, not transition ID
 
-**The underlying problem.** The Jira REST API distinguishes transitions by ID, but `acli`'s `--status` flag accepts only the target status *name*. When two transitions land on the same status (e.g. both "Accept" and "Cancel" end in `{{jira.status.bug.closed}}`) with different validators, `acli` picks one heuristically and may fail validation with `InvalidPayloadException`. There is no `--transition-id` escape hatch in the CLI.
+**The problem.** The Jira REST API distinguishes transitions by ID, but `acli`'s `--status` flag accepts only the target status _name_. When two transitions land on the same status (e.g. both "Approve" and "Cancel" end in "In Review") with different validators, `acli` picks one heuristically and may fail validation with `InvalidPayloadException`. There is no `--transition-id` escape hatch in the CLI.
 
-**How this boilerplate solves it.** The Jira workflow substrate (`bun run jira:sync-workflows` → `.agents/jira-workflows.json`, validated by `bun run jira:check`) maps every workflow transition to its canonical ID at sync time. Skill authors reference transitions by canonical slug — `{{jira.transition.<work_type>.<slug>}}` resolves to the transition ID, which is unambiguous on the REST endpoint. Status names remain available via `{{jira.status.<work_type>.<slug>}}` for the cases where `acli` *can* disambiguate.
-
-**Worked example — bug retest, the canonical "verified" path:**
+**Acceptable acli usage** — when the project's workflow exposes exactly one transition into the target status:
 
 ```bash
-# OLD problem-prone pattern (avoid when the target status has multiple incoming transitions)
-acli jira workitem transition --key "BUG-123" --status "Closed"
-# → may fail when the workflow exposes more than one transition into "Closed"
+# Single, unambiguous path
+acli jira workitem transition --key "{{PROJECT_KEY}}-123" --status "In Progress"
+```
 
-# NEW substrate-aware pattern (preferred when ambiguity is possible)
-# Transition a bug from Ready For QA to Closed via the canonical "verified" path
+**REST fallback** — when the target status has multiple incoming transitions (e.g. "Start working" from `Ready For Dev` AND "Reopen" from `In Review`), `acli --status` may pick the wrong one. Fall back to the REST `transitions` endpoint with an explicit transition ID:
+
+```bash
+# 1. Discover the available transitions on the issue
+curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
+  "$ATLASSIAN_URL/rest/api/3/issue/{{PROJECT_KEY}}-123/transitions" | jq
+
+# 2. POST with the chosen transition ID (here illustrated as <TRANSITION_ID>)
 curl -s -X POST -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
   -H "Content-Type: application/json" \
-  "$ATLASSIAN_URL/rest/api/3/issue/BUG-123/transitions" \
-  -d '{"transition":{"id":"{{jira.transition.bug.retest_passed}}"}}'
-# {{jira.transition.bug.retest_passed}} resolves to the canonical transition ID,
-# bypassing any name-based ambiguity.
+  "$ATLASSIAN_URL/rest/api/3/issue/{{PROJECT_KEY}}-123/transitions" \
+  -d '{"transition":{"id":"<TRANSITION_ID>"}}'
 ```
 
-**Acceptable acli pattern when the path is unambiguous.** When only one transition leads to the target status, `acli --status` is still safe — and the substrate makes that safety verifiable. For example, `Story → In Progress` has only one transition (`Start working`), so:
-
-```bash
-acli jira workitem transition --key "STORY-1" --status "{{jira.status.story.in_progress}}"
-```
-
-is fine. The substrate-resolved status name and the substrate-resolved transition ID describe the same workflow facts; pick the form that matches your call site (acli vs REST).
-
-**Discovery + validation.** The mapping is populated by `bun run jira:sync-workflows` and validated by `bun run jira:check`. If a required transition slug is missing, the check exits non-zero so the gap is caught before a skill tries to use it.
-
-If you genuinely need to enumerate transitions on the fly (e.g. a transition not declared in the manifest), the raw REST recipe still works:
-
-```bash
-# Discover available transitions on a specific issue
-curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-  "$ATLASSIAN_URL/rest/api/3/issue/BUG-123/transitions" | jq
-```
+> Repo integration: host repos often maintain a slug → transition-ID catalog so skill authors can reference unambiguous transitions by name (e.g. `<slug>` resolves to a workspace-specific numeric ID). See the host repo's `<repo-core>/references/acli-integration.md` for the catalog and the refresh recipe.
 
 ## <a id="auth-scope"></a>10. Auth has four namespaces, not three
 
 **The problem.** `acli` exposes four independent auth namespaces:
 
-| Namespace      | Login command              | Credential                |
-| -------------- | -------------------------- | ------------------------- |
-| Jira           | `acli jira auth login`     | API token                 |
-| Confluence     | `acli confluence auth login` | API token               |
-| Org admin      | `acli admin auth login`    | Org admin API key         |
-| Global OAuth   | `acli auth login`          | Browser OAuth (interactive) |
+| Namespace    | Login command                | Credential                  |
+| ------------ | ---------------------------- | --------------------------- |
+| Jira         | `acli jira auth login`       | API token                   |
+| Confluence   | `acli confluence auth login` | API token                   |
+| Org admin    | `acli admin auth login`      | Org admin API key           |
+| Global OAuth | `acli auth login`            | Browser OAuth (interactive) |
 
 Logging in to one does not authenticate the others. Each scope keeps its own session. A `forbidden` on `admin user activate` after a successful `jira auth login` is the most common symptom.
 
@@ -275,15 +258,15 @@ The plain `-b, --body` flag remains plain text only — Markdown syntax is store
 **Recommended pattern.** Author the comment body in Markdown, convert via `scripts/md-to-adf.ts`, post with `-F`:
 
 ```bash
-bun .claude/skills/acli/scripts/md-to-adf.ts impl-notes.md impl-notes.adf.json
-acli jira workitem comment create --key EXAMPLE-123 -F impl-notes.adf.json
+bun .claude/skills/acli/scripts/md-to-adf.ts notes.md notes.adf.json
+acli jira workitem comment create --key {{PROJECT_KEY}}-123 -F notes.adf.json
 ```
 
 The legacy two-step pattern still works and may be useful if you want a placeholder visible before composing the final body:
 
 ```bash
-CID=$(acli jira workitem comment create --key EXAMPLE-123 --body "init" --json | jq -r '.id')
-acli jira workitem comment update --key EXAMPLE-123 --id "$CID" --body-adf formatted.json
+CID=$(acli jira workitem comment create --key {{PROJECT_KEY}}-123 --body "init" --json | jq -r '.id')
+acli jira workitem comment update --key {{PROJECT_KEY}}-123 --id "$CID" --body-adf formatted.json
 ```
 
 It is no longer required for rich-text creation.
@@ -324,7 +307,7 @@ It is no longer required for rich-text creation.
 | `--fromJson`      | `--from-json`      |
 | `--fromFile`      | `--from-file`      |
 
-The flag *value* may still use camelCase (e.g. CSV column header `projectKey` or JSON key `parentIssueId`) — the convention only applies to flag *names*.
+The flag _value_ may still use camelCase (e.g. CSV column header `projectKey` or JSON key `parentIssueId`) — the convention only applies to flag _names_.
 
 **Fix.** When in doubt, run `acli <path> --help` and copy the flag name verbatim. Never guess casing.
 
@@ -340,6 +323,7 @@ The flag *value* may still use camelCase (e.g. CSV column header `projectKey` or
 - Managing issue types, priorities, resolutions, project versions, project components, permission schemes
 - Uploading attachments (`POST /rest/api/3/issue/{key}/attachments`)
 - Adding watchers (`POST /rest/api/3/issue/{key}/watchers`)
+- Creating remote links / web links — e.g. attaching a URL to a story (`POST /rest/api/3/issue/{key}/remotelink`)
 - Transition by ID when the status-name match is ambiguous (see item 9)
 - Retrieving the cached auth token for reuse
 - Bitbucket command-line operations (out of scope entirely)
@@ -349,9 +333,9 @@ The flag *value* may still use camelCase (e.g. CSV column header `projectKey` or
 For any of these, hold a separate basic-auth credential (email + API token base64-encoded) and use `curl`:
 
 ```bash
-AUTH=$(printf '%s:%s' "$EMAIL" "$TOKEN" | base64)
+AUTH=$(printf '%s:%s' "$ATLASSIAN_EMAIL" "$ATLASSIAN_API_TOKEN" | base64)
 curl -s -H "Authorization: Basic $AUTH" -H "Content-Type: application/json" \
-  "https://mysite.atlassian.net/rest/api/3/issue/TEAM-1"
+  "$ATLASSIAN_URL/rest/api/3/issue/{{PROJECT_KEY}}-123"
 ```
 
 ## Meta-gotcha: documentation dates

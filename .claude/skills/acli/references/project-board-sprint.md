@@ -33,8 +33,8 @@ acli jira project list --paginate --json
 ### view
 
 ```bash
-acli jira project view --key TEAM
-acli jira project view --key TEAM --json | jq '.lead.displayName'
+acli jira project view --key UPEX
+acli jira project view --key UPEX --json | jq '.lead.displayName'
 ```
 
 ### create
@@ -42,12 +42,12 @@ acli jira project view --key TEAM --json | jq '.lead.displayName'
 Two input modes: clone an existing project, or supply a JSON payload.
 
 ```bash
-# Clone from TEAM into NEWTEAM (only company-managed projects can be cloned)
+# Clone from UPEX into NEWUPEX (only company-managed projects can be cloned)
 acli jira project create \
-  --from-project "TEAM" \
-  --key "NEWTEAM" \
-  --name "New Team Project" \
-  --description "Cloned from TEAM" \
+  --from-project "UPEX" \
+  --key "NEWUPEX" \
+  --name "New UPEX Project" \
+  --description "Cloned from UPEX" \
   --lead-email "lead@example.com" \
   --url "https://example.com"
 
@@ -67,10 +67,10 @@ Notes:
 
 ```bash
 # Change the key (takes effect across all linked work items)
-acli jira project update --project-key "TEAM1" --key "TEAM"
+acli jira project update --project-key "UPEX1" --key "UPEX"
 
 # Multi-field update via JSON
-acli jira project update --project-key "TEAM1" --from-json project-changes.json
+acli jira project update --project-key "UPEX1" --from-json project-changes.json
 
 # Scaffold
 acli jira project update --generate-json
@@ -81,9 +81,9 @@ acli jira project update --generate-json
 ### archive / restore / delete
 
 ```bash
-acli jira project archive --key "TEAM"
-acli jira project restore --key "TEAM"
-acli jira project delete --key "TEAM" --yes
+acli jira project archive --key "UPEX"
+acli jira project restore --key "UPEX"
+acli jira project delete --key "UPEX" --yes
 ```
 
 ## <a id="boards"></a>Boards (`acli jira board`)
@@ -95,21 +95,21 @@ Subcommands: `create`, `delete`, `get`, `list-projects`, `list-sprints`, `search
 ```bash
 acli jira board search
 acli jira board search --name "team" --type scrum
-acli jira board search --project TEAM --paginate --csv
+acli jira board search --project UPEX --paginate --csv
 ```
 
 Flags:
 
-| Flag         | Meaning                                                                 |
-| ------------ | ----------------------------------------------------------------------- |
-| `--name`     | Case-insensitive partial match                                          |
-| `--type`     | `scrum` · `kanban` · `simple`                                           |
-| `--project`  | Project key filter                                                      |
-| `--filter`   | Saved filter ID (**not supported for next-gen / team-managed boards**)  |
-| `--order-by` | `name` · `-name` · `+name` (kebab-case — NOT `--orderBy`)               |
-| `--private`  | Include private boards (name/type filters ignored when set)             |
-| `--limit`    | Default **50**                                                          |
-| `--paginate` | Pull all pages                                                          |
+| Flag         | Meaning                                                                |
+| ------------ | ---------------------------------------------------------------------- |
+| `--name`     | Case-insensitive partial match                                         |
+| `--type`     | `scrum` · `kanban` · `simple`                                          |
+| `--project`  | Project key filter                                                     |
+| `--filter`   | Saved filter ID (**not supported for next-gen / team-managed boards**) |
+| `--order-by` | `name` · `-name` · `+name` (kebab-case — NOT `--orderBy`)              |
+| `--private`  | Include private boards (name/type filters ignored when set)            |
+| `--limit`    | Default **50**                                                         |
+| `--paginate` | Pull all pages                                                         |
 
 ### get
 
@@ -123,11 +123,11 @@ acli jira board get --id 123 --json
 ```bash
 # Scrum board scoped to one project, sourced from a saved filter
 acli jira board create \
-  --name "Team Scrum" \
+  --name "UPEX Scrum" \
   --type scrum \
   --filter-id 10001 \
   --location-type project \
-  --project TEAM \
+  --project UPEX \
   --json
 
 # Kanban board scoped to a user's location
@@ -140,14 +140,14 @@ acli jira board create \
 
 Flags:
 
-| Flag              | Meaning                                                          |
-| ----------------- | ---------------------------------------------------------------- |
-| `--name`          | Board name (required)                                            |
-| `--type`          | `scrum` · `kanban`                                               |
-| `--filter-id`     | Saved filter that defines what the board shows (required)        |
-| `--location-type` | `project` · `user`                                               |
-| `--project`       | Project key when `--location-type project`                       |
-| `--json`          | Emit the created board as JSON                                   |
+| Flag              | Meaning                                                   |
+| ----------------- | --------------------------------------------------------- |
+| `--name`          | Board name (required)                                     |
+| `--type`          | `scrum` · `kanban`                                        |
+| `--filter-id`     | Saved filter that defines what the board shows (required) |
+| `--location-type` | `project` · `user`                                        |
+| `--project`       | Project key when `--location-type project`                |
+| `--json`          | Emit the created board as JSON                            |
 
 ### delete
 
@@ -308,7 +308,7 @@ acli jira filter change-owner --from-file filter-ids.txt --owner "newowner@examp
 acli jira filter update --id 10001 --name "Active sprint" --description "Open issues in active sprint"
 
 # Update the JQL backing the filter
-acli jira filter update --id 10001 --jql "project = TEAM AND sprint in openSprints()"
+acli jira filter update --id 10001 --jql "project = UPEX AND sprint in openSprints()"
 
 # Update share / edit permissions (JSON arrays per the Jira REST contract)
 acli jira filter update --id 10001 --share-permissions '[{"type":"project","projectId":"10000"}]'
@@ -346,7 +346,7 @@ Subcommands: `cancel-delete`, `create`, `delete`, `update`.
 >
 > - **What it manages**: custom-field DEFINITIONS at the site/admin level (the schema — name, type, description, searcher).
 > - **What it does NOT manage**: custom-field VALUES on individual work items (use `workitem create --from-json` with `additionalAttributes` instead — and even that has limitations; see `references/workitem.md` §Custom fields).
-> - **What is missing entirely**: there is **no `list`, `get`, `view`, or `search` subcommand**. To enumerate all custom fields on a site, fall back to REST `GET /rest/api/3/field`.
+> - **What is missing entirely**: there is **no `list`, `get`, `view`, or `search` subcommand**. To enumerate all custom fields on a site, fall back to REST `GET /rest/api/3/field` (or `cat .agents/jira-fields.json` if `bun run jira:sync-fields` has been run).
 > - **What is also missing**: there is no command to manage select/dropdown OPTIONS for an existing field. To add or remove dropdown options, fall back to REST `/rest/api/3/field/{fieldId}/option`.
 
 ### create
@@ -373,21 +373,21 @@ Flags: `--name`, `--type`, `--searcher-key` (kebab-case — NOT `--searcherKey`)
 
 `--type` takes the Atlassian field-type key, **not** a friendly name. Common values:
 
-| Friendly name        | Type key                                                                      |
-| -------------------- | ----------------------------------------------------------------------------- |
-| Short text           | `com.atlassian.jira.plugin.system.customfieldtypes:textfield`                 |
-| Paragraph            | `com.atlassian.jira.plugin.system.customfieldtypes:textarea`                  |
-| Number               | `com.atlassian.jira.plugin.system.customfieldtypes:float`                     |
-| Date picker          | `com.atlassian.jira.plugin.system.customfieldtypes:datepicker`                |
-| Datetime picker      | `com.atlassian.jira.plugin.system.customfieldtypes:datetime`                  |
-| Select list (single) | `com.atlassian.jira.plugin.system.customfieldtypes:select`                   |
-| Select list (multi)  | `com.atlassian.jira.plugin.system.customfieldtypes:multiselect`              |
-| Checkbox             | `com.atlassian.jira.plugin.system.customfieldtypes:multicheckboxes`           |
-| User picker (single) | `com.atlassian.jira.plugin.system.customfieldtypes:userpicker`               |
-| User picker (multi)  | `com.atlassian.jira.plugin.system.customfieldtypes:multiuserpicker`           |
-| Cascading select     | `com.atlassian.jira.plugin.system.customfieldtypes:cascadingselect`           |
-| URL                  | `com.atlassian.jira.plugin.system.customfieldtypes:url`                       |
-| Labels               | `com.atlassian.jira.plugin.system.customfieldtypes:labels`                    |
+| Friendly name        | Type key                                                            |
+| -------------------- | ------------------------------------------------------------------- |
+| Short text           | `com.atlassian.jira.plugin.system.customfieldtypes:textfield`       |
+| Paragraph            | `com.atlassian.jira.plugin.system.customfieldtypes:textarea`        |
+| Number               | `com.atlassian.jira.plugin.system.customfieldtypes:float`           |
+| Date picker          | `com.atlassian.jira.plugin.system.customfieldtypes:datepicker`      |
+| Datetime picker      | `com.atlassian.jira.plugin.system.customfieldtypes:datetime`        |
+| Select list (single) | `com.atlassian.jira.plugin.system.customfieldtypes:select`          |
+| Select list (multi)  | `com.atlassian.jira.plugin.system.customfieldtypes:multiselect`     |
+| Checkbox             | `com.atlassian.jira.plugin.system.customfieldtypes:multicheckboxes` |
+| User picker (single) | `com.atlassian.jira.plugin.system.customfieldtypes:userpicker`      |
+| User picker (multi)  | `com.atlassian.jira.plugin.system.customfieldtypes:multiuserpicker` |
+| Cascading select     | `com.atlassian.jira.plugin.system.customfieldtypes:cascadingselect` |
+| URL                  | `com.atlassian.jira.plugin.system.customfieldtypes:url`             |
+| Labels               | `com.atlassian.jira.plugin.system.customfieldtypes:labels`          |
 
 The full catalog is available in Jira's field-type admin UI.
 

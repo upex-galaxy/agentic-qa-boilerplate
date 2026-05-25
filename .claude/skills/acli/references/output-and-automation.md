@@ -6,20 +6,20 @@ Everything related to getting data **out** of `acli` and feeding it into other t
 
 Every list/search/view command supports:
 
-| Flag       | Use                                                                 |
-| ---------- | ------------------------------------------------------------------- |
-| (default)  | Human-readable table — do not parse in scripts                      |
-| `--json`   | JSON blob. Structured, stable, script-friendly                      |
-| `--csv`    | Spreadsheet-friendly flat columns                                   |
+| Flag      | Use                                            |
+| --------- | ---------------------------------------------- |
+| (default) | Human-readable table — do not parse in scripts |
+| `--json`  | JSON blob. Structured, stable, script-friendly |
+| `--csv`   | Spreadsheet-friendly flat columns              |
 
 Most search/list commands also take:
 
-| Flag          | Use                                                              |
-| ------------- | ---------------------------------------------------------------- |
-| `--paginate`  | Fetch all pages. Silently overrides `--limit`.                    |
-| `-l, --limit` | Cap at N rows. Default ~30–50 depending on endpoint.              |
-| `--count`     | Return only the row count (no rows). Fast and cheap.              |
-| `-f, --fields`| Restrict returned columns.                                        |
+| Flag           | Use                                                  |
+| -------------- | ---------------------------------------------------- |
+| `--paginate`   | Fetch all pages. Silently overrides `--limit`.       |
+| `-l, --limit`  | Cap at N rows. Default ~30–50 depending on endpoint. |
+| `--count`      | Return only the row count (no rows). Fast and cheap. |
+| `-f, --fields` | Restrict returned columns.                           |
 
 ### Critical pagination rule
 
@@ -32,27 +32,27 @@ Most search/list commands also take:
 The JSON emitted by `workitem search`, `workitem view`, and similar commands mirrors the Jira REST v3 shape. Two key facts:
 
 - The top-level array from `search` is `issues`, **not** `workitems` (the rename is UI/CLI-surface only).
-- Each issue has the standard REST shape: `{ id, key, self, fields: { summary, status, assignee, customfield_X, ... } }`.
-
-*(IDs like `customfield_10016` shown below are illustrative — they reflect the JSON shape returned by `acli`. Your actual custom field IDs come from `.agents/jira-fields.json` after `bun run jira:sync-fields`.)*
+- Each issue has the standard REST shape: `{ id, key, self, fields: { summary, status, assignee, customfield_NNNN, ... } }`.
 
 ```bash
 # Extract the summary from a view
-acli jira workitem view TEAM-1 --json | jq '.fields.summary'
+acli jira workitem view {{PROJECT_KEY}}-N --json | jq '.fields.summary'
 
 # Extract all keys from a search
-acli jira workitem search --jql "project = TEAM" --paginate --json \
+acli jira workitem search --jql "project = {{PROJECT_KEY}}" --paginate --json \
   | jq -r '.issues[].key'
 
-# Count by assignee
-acli jira workitem search --jql "project = TEAM" --paginate --json \
+# Count by assignee (sprint workload distribution)
+acli jira workitem search --jql "project = {{PROJECT_KEY}} AND sprint in openSprints()" --paginate --json \
   | jq -r '.issues[].fields.assignee.displayName' \
   | sort | uniq -c | sort -rn
 
-# Pluck a custom field
-acli jira workitem view TEAM-1 --json \
-  | jq '.fields.customfield_10016'
+# Pluck a custom field by ID (real IDs are workspace-specific — see references/workitem.md §Custom fields)
+acli jira workitem view {{PROJECT_KEY}}-N --json \
+  | jq '.fields.customfield_NNNN'
 ```
+
+> Repo integration: host repos typically reference custom fields by stable slug rather than the numeric ID shown above. See `<repo-core>/references/acli-integration.md` for the slug catalog.
 
 ## Piping with `jq`
 
@@ -66,7 +66,7 @@ jq -r '.issues[].key'
 jq -r '.issues[] | [.key, .fields.summary] | @tsv'
 
 # Filter by status
-jq '.issues[] | select(.fields.status.name == "{{jira.status.story.deployed_to_production}}")'
+jq '.issues[] | select(.fields.status.name == "Done")'
 
 # Count
 jq '.issues | length'
@@ -81,12 +81,12 @@ jq '.fields | keys[] | select(startswith("customfield_"))'
 
 ```bash
 # Default fields (issuetype,key,assignee,priority,status,summary)
-acli jira workitem search --jql "project = TEAM" --paginate --csv > team.csv
+acli jira workitem search --jql "project = {{PROJECT_KEY}}" --paginate --csv > project.csv
 
-# Custom columns
-acli jira workitem search --jql "project = TEAM" --paginate \
+# Custom columns — sprint snapshot
+acli jira workitem search --jql "project = {{PROJECT_KEY}} AND sprint in openSprints()" --paginate \
   --fields "key,summary,assignee,status,priority,created,updated" \
-  --csv > team-detailed.csv
+  --csv > sprint-detailed.csv
 ```
 
 CSV is simpler than JSON for spreadsheet handoff and works cleanly with `csvkit`, `xsv`, or `Miller (mlr)`.
@@ -97,30 +97,30 @@ From the official docs:
 
 ```bash
 # Redirect to file
-acli jira workitem search --jql 'project = TEST' --limit 10 --csv > output.csv
+acli jira workitem search --jql 'project = {{PROJECT_KEY}}' --limit 10 --csv > output.csv
 
 # Chain with &&
-acli jira workitem search --jql 'project = TEST' --limit 10 && echo "Completed"
+acli jira workitem search --jql 'project = {{PROJECT_KEY}}' --limit 10 && echo "Completed"
 
 # Pipe through grep
-acli jira workitem search --jql 'project = ACLI' --limit 10 | grep "{{jira.status.story.backlog}}"
+acli jira workitem search --jql 'project = {{PROJECT_KEY}}' --limit 10 | grep "In Review"
 
 # Pipe through jq
-acli jira workitem view ACLI-100 --json | jq '.fields.summary'
+acli jira workitem view {{PROJECT_KEY}}-N --json | jq '.fields.summary'
 ```
 
 The default human-readable table is stable enough for `grep`/`awk` inspection, but not for production parsing — use `--json` or `--csv`.
 
 ## Confirmation, errors, batches
 
-| Flag             | Purpose                                                                   |
-| ---------------- | ------------------------------------------------------------------------- |
-| `-y, --yes`      | Skip the interactive confirmation prompt. **Required in CI.**              |
-| `--ignore-errors`| Continue after a per-item failure in a batch.                              |
-| `--generate-json`| Emit an input-template JSON document to stdout.                            |
-| `--from-json`    | Read payload from a JSON file.                                             |
-| `--from-csv`     | Read payload from a CSV file (create-bulk, link create).                   |
-| `--from-file`    | Read a plain-text list (summary/description file, or list of keys).        |
+| Flag              | Purpose                                                             |
+| ----------------- | ------------------------------------------------------------------- |
+| `-y, --yes`       | Skip the interactive confirmation prompt. **Required in CI.**       |
+| `--ignore-errors` | Continue after a per-item failure in a batch.                       |
+| `--generate-json` | Emit an input-template JSON document to stdout.                     |
+| `--from-json`     | Read payload from a JSON file.                                      |
+| `--from-csv`      | Read payload from a CSV file (create-bulk, link create).            |
+| `--from-file`     | Read a plain-text list (summary/description file, or list of keys). |
 
 `--yes` and `--ignore-errors` are independent:
 
@@ -138,7 +138,7 @@ unexpected error, trace id: XXXXXXXX
 The trace ID is the only thing Atlassian Support can correlate. Capture it in logs:
 
 ```bash
-acli jira workitem create --project TEAM --type Task --summary "Ship it" 2>&1 \
+acli jira workitem create --project {{PROJECT_KEY}} --type Task --summary "Ship it" 2>&1 \
   | tee -a acli.log
 ```
 
@@ -156,8 +156,8 @@ There is no `--dry-run` on any `acli` command. For high-blast-radius batches, wr
 #!/usr/bin/env bash
 set -euo pipefail
 
-JQL="project = TEAM AND status = {{jira.status.story.backlog}}"
-NEW_STATUS="{{jira.status.story.in_progress}}"
+JQL="project = {{PROJECT_KEY}} AND status = 'Ready For Dev'"
+NEW_STATUS="In Progress"
 
 echo "Preview — items that would transition to '$NEW_STATUS':"
 acli jira workitem search --jql "$JQL" --paginate \
@@ -191,14 +191,14 @@ jobs:
       - name: Install acli
         run: |
           curl -sSL -o /usr/local/bin/acli \
-            "https://acli.atlassian.com/linux/1.3.13/acli_linux_amd64/acli"
+            "https://acli.atlassian.com/linux/1.3.18/acli_linux_amd64/acli"
           chmod +x /usr/local/bin/acli
           acli --version
 
       - name: Authenticate
         env:
-          ATLASSIAN_URL: ${{ secrets.ATLASSIAN_URL }}
-          ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
+          ATLASSIAN_URL: ${{ vars.ATLASSIAN_URL }}
+          ATLASSIAN_EMAIL: ${{ vars.ATLASSIAN_EMAIL }}
           ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
         run: |
           SITE="${ATLASSIAN_URL#https://}"
@@ -207,11 +207,14 @@ jobs:
             --email "$ATLASSIAN_EMAIL" \
             --token
 
-      - name: Run batch transition
+      - name: Mark stories shipped after a release
+        env:
+          PROJECT_KEY: ${{ vars.PROJECT_KEY }}
+          RELEASE: ${{ inputs.release }}
         run: |
           acli jira workitem transition \
-            --jql "project = REL AND fixVersion = '${{ inputs.release }}' AND status = 'Ready'" \
-            --status "Released" --yes --ignore-errors --json
+            --jql "project = $PROJECT_KEY AND fixVersion = '$RELEASE' AND status = 'Ready For QA'" \
+            --status "Done" --yes --ignore-errors --json
 ```
 
 ### Bitbucket Pipelines (Atlassian's sample pattern)
@@ -223,11 +226,12 @@ pipelines:
     - step:
         name: Jira sync
         script:
-          - curl -LO "https://acli.atlassian.com/linux/1.3.13/acli_linux_amd64/acli"
+          - curl -LO "https://acli.atlassian.com/linux/1.3.18/acli_linux_amd64/acli"
           - chmod +x ./acli
-          - echo "$BOT_API_TOKEN" | ./acli jira auth login \
-              --email "$BOT_EMAIL" --site "$SITE" --token
-          - ./acli jira workitem search --jql "updated > -1d" --paginate --csv > changes.csv
+          - SITE="${ATLASSIAN_URL#https://}"
+          - echo "$ATLASSIAN_API_TOKEN" | ./acli jira auth login \
+            --email "$ATLASSIAN_EMAIL" --site "$SITE" --token
+          - ./acli jira workitem search --jql "project = $PROJECT_KEY AND updated > -1d" --paginate --csv > changes.csv
 ```
 
 ### GitLab CI
@@ -236,11 +240,11 @@ pipelines:
 sync-jira:
   image: curlimages/curl:latest
   script:
-    - curl -LO "https://acli.atlassian.com/linux/1.3.13/acli_linux_amd64/acli"
+    - curl -LO "https://acli.atlassian.com/linux/1.3.18/acli_linux_amd64/acli"
     - chmod +x acli
     - SITE="${ATLASSIAN_URL#https://}"
     - echo "$ATLASSIAN_API_TOKEN" | ./acli jira auth login --site "$SITE" --email "$ATLASSIAN_EMAIL" --token
-    - ./acli jira workitem search --jql "project = TEAM AND updated > -1d" --paginate --json > changes.json
+    - ./acli jira workitem search --jql "project = $PROJECT_KEY AND updated > -1d" --paginate --json > changes.json
   artifacts:
     paths: [changes.json]
 ```

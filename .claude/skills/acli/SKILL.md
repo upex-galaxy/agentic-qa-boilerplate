@@ -4,14 +4,14 @@ description: "Atlassian CLI (official `acli` binary, v1.3+ as of 2026) for Jira 
 license: MIT
 compatibility: [claude-code, cursor, codex, opencode]
 allowed-tools: Bash(acli:*)
-complementary_categories: [issue-tracker, vcs]
+complementary_categories: [issue-tracker]
 ---
 
 # Atlassian CLI (`acli`)
 
 `acli` is Atlassian's official command-line tool for Jira Cloud, Confluence Cloud, and org admin operations. It replaces terminal-based Jira automation that previously required raw REST calls, and unifies Jira + Confluence + admin actions behind one binary with one credential store per product.
 
-This skill teaches how to drive `acli` for any intent: one-off commands, batch mutations, scripted pipelines, and CI jobs.
+This skill teaches how to drive `acli` for any intent: one-off commands, batch mutations, scripted pipelines, and CI jobs. **Repo-specific integration** (how this skill plugs into the host repo's workflow, TMS modality, project conventions, anti-patterns) lives in the companion file `<repo-core>/references/acli-integration.md` — load it on demand. See "Navigation" below.
 
 ## Why this skill exists
 
@@ -24,6 +24,21 @@ This skill teaches how to drive `acli` for any intent: one-off commands, batch m
 5. **Hard limits the docs do not advertise.** `acli` cannot list custom fields, edit custom-field values on existing items, manage workflows, manage issue types, or touch project versions/components. See `references/gotchas.md`.
 
 The body below covers the core that applies to almost every session. The `references/` directory holds the deep material — load only the one you need.
+
+## Composable Skills (auto-resolved at skill entry)
+
+`acli` is itself the canonical `issue-tracker` skill. The category typically has no T3 skills that overlap — `acli` is the tool surface, not a borrower of community skills.
+
+Steps for protocol consistency:
+
+1. Read `complementary_categories` from this skill's frontmatter (`issue-tracker`).
+2. Resolve via the host repo's skill-registry cache (`.claude/skills/REGISTRY.md`, built by `scripts/build-skill-registry.ts`). Fallback: scan the session-start `system-reminder` skill list.
+3. Apply the threshold rule per the host repo's skill-composition strategy doc (T1 / T3 silent; T4 ASK).
+4. The Atlassian MCP fallback documented below is OPT-IN, not a skill — enable manually via `docs/mcp/`.
+
+Expected matches: typically none. Repo-specific composability (which workflow skills load this) lives in `<repo-core>/references/acli-integration.md` §Composability.
+
+Skip step if the catalog is unavailable; log `skill_resolution: "fallback-inline"` plus `missing: [<categories>]` per the strategy doc's composability fallback contract.
 
 ## Fallback: Atlassian MCP
 
@@ -44,15 +59,6 @@ If `acli` is not installed or authenticated, fall back to the Atlassian MCP serv
 - Operations that return large result sets (MCP payloads inflate token usage).
 
 **Coverage parity**: MCP and `acli` overlap for issues, projects, boards, sprints, comments, and basic Confluence ops. For org-admin user lifecycle and Confluence space CRUD, `acli` is more direct. For schema/admin reads (field catalog, workflow definitions), MCP/REST is the only viable path.
-
-## Role in TMS Modality jira-native (no Xray)
-
-When the project operates without the Xray plugin (Modality jira-native resolved by `test-documentation/SKILL.md` §Phase 0), this skill also serves as the owner of the `[TMS_TOOL]` tag. All TMS operations (Test issue creation, Test Plan, Test Execution equivalents) map to native Jira operations handled by `acli`:
-
-- Test → Jira work item with `--type "Test"` (or the configured custom issue type).
-- Test Plan / Test Execution → Jira work items linked via custom fields (see `test-documentation/references/jira-setup.md`).
-
-In Modality jira-xray, TMS operations route to `/xray-cli` instead; this skill handles only `[ISSUE_TRACKER_TOOL]` operations (story, bug, epic).
 
 ## Command structure
 
@@ -85,7 +91,7 @@ acli jira workitem create --help
 ```bash
 # 1. Authenticate against a site using an API token (scriptable path)
 echo "$ATLASSIAN_API_TOKEN" | acli jira auth login \
-  --site "mysite.atlassian.net" \
+  --site "<your-site>.atlassian.net" \
   --email "you@example.com" \
   --token
 
@@ -93,15 +99,17 @@ echo "$ATLASSIAN_API_TOKEN" | acli jira auth login \
 acli jira auth status
 
 # 3. Create a work item
-acli jira workitem create --project "TEAM" --type "Task" --summary "Draft the Q3 OKRs"
+acli jira workitem create --project "{{PROJECT_KEY}}" --type "Task" --summary "Draft the Q3 OKRs"
 
 # 4. Search with JQL — ALWAYS pass --paginate or --limit explicitly
-acli jira workitem search --jql "project = TEAM AND status = '{{jira.status.story.backlog}}'" --paginate --json
+acli jira workitem search --jql "project = {{PROJECT_KEY}} AND status = 'To Do'" --paginate --json
 
 # 5. Transition one or many
-acli jira workitem transition --jql "project = TEAM AND assignee = currentUser()" \
-  --status "{{jira.status.story.in_progress}}" --yes --ignore-errors
+acli jira workitem transition --jql "project = {{PROJECT_KEY}} AND assignee = currentUser()" \
+  --status "In Progress" --yes --ignore-errors
 ```
+
+> **Repo-specific quick start**: when the host repo defines its own workflow (status names, project keys, slug-resolved custom fields), see `<repo-core>/references/acli-integration.md` — it documents the project-flavored variant of the steps above.
 
 ## Top-level command map
 
@@ -162,13 +170,13 @@ Example pipe patterns:
 
 ```bash
 # Count only
-acli jira workitem search --jql "project = TEAM" --count
+acli jira workitem search --jql "project = {{PROJECT_KEY}}" --count
 
 # Save full result set to CSV
-acli jira workitem search --jql "project = TEAM" --paginate --csv > team.csv
+acli jira workitem search --jql "project = {{PROJECT_KEY}}" --paginate --csv > team.csv
 
 # Extract a single field with jq
-acli jira workitem view TEAM-123 --json | jq '.fields.summary'
+acli jira workitem view {{PROJECT_KEY}}-123 --json | jq '.fields.summary'
 ```
 
 The JSON shape from `workitem search` has a top-level `issues` array (not `workitems`) — the Jira REST v3 wire format shows through.
@@ -256,7 +264,7 @@ bun .claude/skills/acli/scripts/md-to-adf.ts /tmp/ac.md   /tmp/ac.adf.json
 
 # 3. Splice the ADF docs into the create-from-json payload
 jq -n \
-  --arg pk "EXAMPLE" \
+  --arg pk "{{PROJECT_KEY}}" \
   --slurpfile desc /tmp/desc.adf.json \
   --slurpfile ac   /tmp/ac.adf.json \
   '{
@@ -316,7 +324,7 @@ jq -n --slurpfile adf /tmp/new.adf.json \
 # 4. PUT against the issue
 curl -sS -w "\nHTTP %{http_code}\n" \
   -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-  -X PUT "$ATLASSIAN_URL/rest/api/3/issue/EXAMPLE-123" \
+  -X PUT "$ATLASSIAN_URL/rest/api/3/issue/{{PROJECT_KEY}}-123" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
   --data-binary @/tmp/put.json
@@ -339,7 +347,7 @@ Same ADF doc through REST PUT: HTTP 204 OK.
 **Batch variant.** Loop the recipe per `--data-binary @/tmp/put-N.json` and capture HTTP codes:
 
 ```bash
-for KEY in TEAM-1 TEAM-2 TEAM-3; do
+for KEY in {{PROJECT_KEY}}-1 {{PROJECT_KEY}}-2 {{PROJECT_KEY}}-3; do
   status=$(curl -sS -o /dev/null -w "%{http_code}" \
     -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
     -X PUT "$ATLASSIAN_URL/rest/api/3/issue/$KEY" \
@@ -358,23 +366,22 @@ done
 - One workflow covers every rich-text surface uniformly: descriptions, comments, custom fields, all the same three steps.
 - Identifier-heavy prose (snake_case, kebab-case) survives the conversion because the italic detection has word-boundary guards.
 
-## Anti-patterns — NEVER do these
+## Anti-patterns — NEVER do these (tool-level)
 
-These are formal companions to the gotchas section below. Gotchas describe *surprising behavior to remember*; anti-patterns describe *actions to refuse outright*. Both apply.
+These are tool-level anti-patterns intrinsic to the `acli` binary and its REST companion. They apply regardless of host repo. Gotchas describe *surprising behavior to remember*; anti-patterns describe *actions to refuse outright*. Both apply.
 
-- **A1.** NEVER hand-author raw ADF JSON for descriptions, comments, or rich-text custom fields. Use `scripts/md-to-adf.ts` — deterministic, diffable, snake_case-safe, and avoids the combined-marks bug (inline `code` co-occurring with `strong`/`em` causes HTTP 400).
-- **A2.** NEVER hardcode Jira `customfield_NNNNN` IDs in skills, scripts, prompts, or AI output that consumes `acli`. Resolve via the slug catalog (`{{jira.<slug>}}` against `.agents/jira-required.yaml` + `.agents/jira-fields.json`). IDs differ per workspace; slugs travel.
-- **A3.** NEVER invoke `acli` directly from workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `shift-left-testing`, `project-discovery`). Workflow skills cite `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]` pseudo-code and load THIS skill instead — methodology survives tool rotation only if the HOW lives here.
-- **A4.** NEVER hardcode project keys (`UPEX`, `MYM`, `SQ`, etc.) in commands or docs. Resolve via `{{PROJECT_KEY}}` from `.agents/project.yaml`. Hardcoding breaks portability across downstream consumers.
-- **A5.** NEVER run a bulk `acli` mutation (transition, edit, comment, link, archive) without first verifying `acli jira auth status`. Silent auth expiry cascades into HTTP 401s mid-loop, leaving the batch half-applied with no clean rollback.
-- **A6.** NEVER mix Modality jira-xray and Modality jira-native operations on the same TMS entity. `acli` owns generic Jira (`[ISSUE_TRACKER_TOOL]`) plus Modality jira-native TMS (Jira-native Test issues, ATP/ATR as custom fields). Modality jira-xray routes Test / Test Plan / Test Execution through `/xray-cli` — never via `acli` work items.
-- **A7.** NEVER assume `acli` accepts custom-field input on `workitem edit`. It hard-rejects every shape (`additionalAttributes`, `fields`, flat `customfield_X`) with exit 1. Use the REST `PUT /rest/api/3/issue/{KEY}` workaround documented above — there is no acli-native path.
+- **T1.** NEVER hand-author raw ADF JSON for descriptions, comments, or rich-text custom fields. Use `scripts/md-to-adf.ts` — deterministic, diffable, snake_case-safe, and avoids the combined-marks bug (inline `code` co-occurring with `strong`/`em` causes HTTP 400).
+- **T2.** NEVER hardcode Jira `customfield_NNNNN` IDs in scripts or AI output that consumes `acli`. Resolve via the host project's slug catalog (see the host repo's `acli-integration.md`). IDs differ per workspace; slugs travel.
+- **T3.** NEVER assume `acli` accepts custom-field input on `workitem edit`. It hard-rejects every shape (`additionalAttributes`, `fields`, flat `customfield_X`) with exit 1. Use the REST `PUT /rest/api/3/issue/{KEY}` workaround documented above — there is no acli-native path.
+- **T4.** NEVER run a bulk `acli` mutation (transition, edit, comment, link, archive) without first verifying `acli jira auth status`. Silent auth expiry cascades into HTTP 401s mid-loop, leaving the batch half-applied with no clean rollback.
+
+> **Repo-specific anti-patterns** (workflow abstraction, project-key portability, TMS modality boundaries, prod-workspace safety, CI batching, version pinning, sync-script auth) live in `<repo-core>/references/acli-integration.md`. Load it whenever a session touches the host repo's Jira workflow.
 
 ## Five gotchas to keep in mind always
 
 1. **`--paginate` is opt-in.** Default limit is server-side (30–50 depending on command). No warning on truncation. If you are counting, iterating, or making decisions based on the result, pass `--paginate`.
-2. **Custom fields on `workitem create` go through `additionalAttributes` in `--from-json`.** Numeric IDs only (`customfield_10122`), no name-addressing. Documented value shapes in the `create` template are: `{"value": "..."}` (single-select), bare number, bare string. **`workitem edit` actively REJECTS custom-field input — hard error, exit 1, not a silent drop** (empirically confirmed across `additionalAttributes`, `fields`, and flat `customfield_X` shapes). For editing custom-field values on existing items, the **only** working path is REST `PUT /rest/api/3/issue/{KEY}` via `curl` using the session env vars — see the "WORKAROUND" subsection in "Publishing rich text" above, plus `references/gotchas.md` §4 and `references/workitem.md`.
-3. **`acli` cannot enumerate custom fields.** `acli jira field` only does create/update/delete/cancel-delete. To discover field IDs, use `workitem view --json | jq` against an item that has the field set, or call `GET /rest/api/3/field` directly. There is no in-CLI listing.
+2. **Custom fields on `workitem create` go through `additionalAttributes` in `--from-json`.** Numeric IDs only (`customfield_NNNN`), no name-addressing. Documented value shapes in the `create` template are: `{"value": "..."}` (single-select), bare number, bare string. **`workitem edit` actively REJECTS custom-field input — hard error, exit 1, not a silent drop** (empirically confirmed across `additionalAttributes`, `fields`, and flat `customfield_X` shapes). For editing custom-field values on existing items, the **only** working path is REST `PUT /rest/api/3/issue/{KEY}` via `curl` using the session env vars — see the "WORKAROUND" subsection in "Publishing rich text" above, plus `references/gotchas.md` §4 and `references/workitem.md`.
+3. **`acli` cannot enumerate custom fields.** `acli jira field` only does create/update/delete/cancel-delete. To discover field IDs, use `workitem view --json | jq` against an item that has the field set, or call `GET /rest/api/3/field` directly. There is no in-CLI listing. Host repos typically cache the catalog under `.agents/` and resolve fields by slug — see `<repo-core>/references/acli-integration.md`.
 4. **Transitions match by status name, not transition ID.** When two transitions lead to the same status with different validators, the CLI picks one and may fail. No `--transition-id` escape hatch exists — fall back to REST if this hits.
 5. **Trace IDs are the only debug signal.** An `unexpected error, trace id: XXXXXXXX` line is all you get on backend failures. Capture and log the trace ID always; Atlassian Support needs it.
 
@@ -442,6 +449,7 @@ Load the reference that matches the user's current need. Do not preload all of t
 | Pipe output, produce JSON/CSV, dry-run, run on CI/CD                 | `references/output-and-automation.md`       |
 | Diagnose surprising behavior, known bugs, REST fallback points       | `references/gotchas.md`                     |
 | Publish rich text to descriptions, comments, or custom fields        | Inline section "Publishing rich text" + `scripts/md-to-adf.ts` |
+| Plug `acli` into the host repo's workflow (TMS modality, slug catalog, project conventions, anti-patterns specific to this repo) | `<repo-core>/references/acli-integration.md` |
 
 ## Working style
 

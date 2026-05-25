@@ -4,20 +4,22 @@
 
 ## Auth namespaces at a glance
 
-| Namespace             | Command path                  | Credential                    | What it authenticates                                |
-| --------------------- | ----------------------------- | ----------------------------- | ---------------------------------------------------- |
-| Jira                  | `acli jira auth login`        | Atlassian account API token   | All `acli jira *` commands                           |
-| Confluence            | `acli confluence auth login`  | Atlassian account API token   | All `acli confluence *` commands                     |
-| Org admin             | `acli admin auth login`       | Org admin API key             | `acli admin user *` (directory ops)                  |
-| Global OAuth          | `acli auth login`             | Browser redirect (interactive)| Cross-product OAuth — newer, top-level surface       |
+| Namespace    | Command path                 | Credential                     | What it authenticates                          |
+| ------------ | ---------------------------- | ------------------------------ | ---------------------------------------------- |
+| Jira         | `acli jira auth login`       | Atlassian account API token    | All `acli jira *` commands                     |
+| Confluence   | `acli confluence auth login` | Atlassian account API token    | All `acli confluence *` commands               |
+| Org admin    | `acli admin auth login`      | Org admin API key              | `acli admin user *` (directory ops)            |
+| Global OAuth | `acli auth login`            | Browser redirect (interactive) | Cross-product OAuth — newer, top-level surface |
 
 Three credential mechanics are available depending on the namespace:
 
-| Mechanic  | Use                                              | Where                                            |
-| --------- | ------------------------------------------------ | ------------------------------------------------ |
-| API token | Scripts, CI, anywhere non-interactive            | `jira auth login` · `confluence auth login`      |
-| OAuth     | Human at a terminal, multi-site exploration      | `jira auth login --web` · `acli auth login`      |
-| API key   | Org-level admin commands                         | `admin auth login`                               |
+| Mechanic  | Use                                         | Where                                       |
+| --------- | ------------------------------------------- | ------------------------------------------- |
+| API token | Scripts, CI, anywhere non-interactive       | `jira auth login` · `confluence auth login` |
+| OAuth     | Human at a terminal, multi-site exploration | `jira auth login --web` · `acli auth login` |
+| API key   | Org-level admin commands                    | `admin auth login`                          |
+
+For most workflows, the Jira namespace covers 99% of the surface. Confluence is occasional (e.g. publishing release notes). Admin is rare (org-wide user lifecycle).
 
 ## API token (the scriptable path)
 
@@ -26,19 +28,19 @@ Generate the token at https://id.atlassian.com/manage-profile/security/api-token
 ```bash
 # Read token from stdin (most portable)
 echo "$ATLASSIAN_API_TOKEN" | acli jira auth login \
-  --site "mysite.atlassian.net" \
+  --site "<your-site>.atlassian.net" \
   --email "you@example.com" \
   --token
 
 # Read from a file
 acli jira auth login \
-  --site "mysite.atlassian.net" \
+  --site "<your-site>.atlassian.net" \
   --email "you@example.com" \
   --token < token.txt
 
 # Windows PowerShell
 Get-Content token.txt | .\acli.exe jira auth login `
-  --site "mysite.atlassian.net" `
+  --site "<your-site>.atlassian.net" `
   --email "you@example.com" `
   --token
 ```
@@ -58,16 +60,15 @@ Opens a browser. The user picks the target site in the browser, then picks it ag
 
 ## API key (org admin)
 
-Generate at `admin.atlassian.com → Settings → API Keys`. This key is
-**distinct** from `ATLASSIAN_API_TOKEN` (which is a per-user token) — it is
-org-scoped and only required if your workflow runs `acli admin` commands.
-Not part of the boilerplate's `.env`; set it ad hoc when needed.
+Generate at `admin.atlassian.com → Settings → API Keys`.
 
 ```bash
 echo "$ATLASSIAN_ADMIN_API_KEY" | acli admin auth login \
   --email "admin@example.com" \
   --token
 ```
+
+> **Naming note**: `ATLASSIAN_ADMIN_API_KEY` is an organisation-scoped admin key, distinct from the regular per-user `ATLASSIAN_API_TOKEN`, and is only needed for ad-hoc org-admin sessions. Generate and export it for the one shell that runs `acli admin` commands; do not commit it.
 
 The API key path is independent of `jira auth`. A session authenticated as a Jira user cannot run `admin user activate`.
 
@@ -77,7 +78,7 @@ Same shape as `jira auth` — same flag set, same credentials (Atlassian account
 
 ```bash
 echo "$ATLASSIAN_API_TOKEN" | acli confluence auth login \
-  --site "mysite.atlassian.net" \
+  --site "<your-site>.atlassian.net" \
   --email "you@example.com" \
   --token
 
@@ -150,19 +151,16 @@ Three rules for CI:
 ```yaml
 - name: Install acli
   run: |
-    curl -LO "https://acli.atlassian.com/linux/1.3.13/acli_linux_amd64/acli"
+    curl -LO "https://acli.atlassian.com/linux/1.3.18/acli_linux_amd64/acli"
     chmod +x ./acli
     sudo mv ./acli /usr/local/bin/acli
 
 - name: Authenticate to Jira
   env:
-    ATLASSIAN_URL: ${{ secrets.ATLASSIAN_URL }}
-    ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
+    ATLASSIAN_URL: ${{ vars.ATLASSIAN_URL }}
+    ATLASSIAN_EMAIL: ${{ vars.ATLASSIAN_EMAIL }}
     ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
   run: |
-    # acli expects --site as the bare host (no scheme). Strip https:// from
-    # ATLASSIAN_URL so the same value used by MCP, scripts, and xray-cli works
-    # here unchanged.
     SITE="${ATLASSIAN_URL#https://}"
     echo "$ATLASSIAN_API_TOKEN" | acli jira auth login \
       --site "$SITE" \
@@ -170,9 +168,9 @@ Three rules for CI:
       --token
 ```
 
-The env keys above are the same ones the repo already uses in `.env` for local development (MCP, scripts, xray-cli, doctor), so no separate `*_BOT_*` family needs to exist. Use a bot account by setting `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` to that account's credentials at the GitHub Secrets level.
+Convention: a single `ATLASSIAN_URL` / `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` family — no bot-prefixed names, no separate `ATLASSIAN_SITE` variable. The site slug `acli` wants on `--site` is derived from `ATLASSIAN_URL` (strip the `https://` prefix).
 
-Pin the version in the URL (`1.3.13/` instead of `latest/`) — unpinned installs have caused same-day mass failures in the past.
+Pin the version in the URL (`1.3.18/` instead of `latest/`) — unpinned installs have caused same-day mass failures in the past.
 
 ### Bitbucket Pipelines (Atlassian's own sample)
 
@@ -194,9 +192,9 @@ Same pattern — inject token via `CI_VARIABLES`, call the install script first,
 
 ## Common auth failures
 
-| Error                                                   | Most likely cause                                         | Fix                                                            |
-| ------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------- |
-| `unauthorized: use acli jira auth login to authenticate` | Session expired, wrong product, or missing login.       | Re-run `acli jira auth login`. Check you authenticated the correct product. |
-| `--web` never completes after "Accept"                   | Callback blocked (WSL / remote shell / firewall).        | Switch to `--token` path.                                      |
-| `forbidden` on an admin command                          | You authenticated `jira`, not `admin`.                   | Run `acli admin auth login` with an API key.                   |
-| Token rejected after rotation                            | Cached credential points at the old token.                | `acli jira auth logout` then log in again.                     |
+| Error                                                    | Most likely cause                                 | Fix                                                                         |
+| -------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------- |
+| `unauthorized: use acli jira auth login to authenticate` | Session expired, wrong product, or missing login. | Re-run `acli jira auth login`. Check you authenticated the correct product. |
+| `--web` never completes after "Accept"                   | Callback blocked (WSL / remote shell / firewall). | Switch to `--token` path.                                                   |
+| `forbidden` on an admin command                          | You authenticated `jira`, not `admin`.            | Run `acli admin auth login` with an API key.                                |
+| Token rejected after rotation                            | Cached credential points at the old token.        | `acli jira auth logout` then log in again.                                  |

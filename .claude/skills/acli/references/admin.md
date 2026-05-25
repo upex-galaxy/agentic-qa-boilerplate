@@ -2,6 +2,8 @@
 
 Org-level operations. Authenticated by an API key, not a user API token.
 
+This is rarely used from a DEV workflow — most stories never need org-level user lifecycle. Documented here for completeness; the common DEV moment to reach for `admin` is a one-off "deactivate departed teammate" or "onboard a new dev" task.
+
 Subcommands: `auth`, `user`.
 
 ## auth
@@ -41,13 +43,13 @@ acli admin user activate --from-file users.txt --ignore-errors --json
 
 Flags:
 
-| Flag              | Meaning                                                                  |
-| ----------------- | ------------------------------------------------------------------------ |
-| `-e, --email`     | Comma-separated emails                                                   |
-| `--id`            | Comma-separated Atlassian account IDs                                    |
-| `-f, --from-file` | File containing emails or IDs                                            |
-| `--ignore-errors` | Continue past per-user failures                                          |
-| `--json`          | JSON output                                                              |
+| Flag              | Meaning                               |
+| ----------------- | ------------------------------------- |
+| `-e, --email`     | Comma-separated emails                |
+| `--id`            | Comma-separated Atlassian account IDs |
+| `-f, --from-file` | File containing emails or IDs         |
+| `--ignore-errors` | Continue past per-user failures       |
+| `--json`          | JSON output                           |
 
 ### deactivate
 
