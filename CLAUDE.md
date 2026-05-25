@@ -116,7 +116,7 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 | Adapt KATA to stack | "adapt framework", "wire fixtures" | `/adapt-framework` | `.context/business/*` | Code edit |
 | Shift-Left batch grooming | "shift-left these stories", "groom the backlog", "pre-sprint QA", "refine these N stories" | `/shift-left-testing` | `.context/business/*`, `.context/master-test-plan.md`, `.context/PBI/{module}/{TICKET}-*/` | `[ISSUE_TRACKER_TOOL]` |
 | Sprint testing ticket | "test this", "QA this story", "verify bug" | `/sprint-testing` | `.context/PBI/{module}/{TICKET}-*/` | `[AUTOMATION_TOOL]` + `[ISSUE_TRACKER_TOOL]` |
-| TMS documentation / ROI | "document tests", "ROI", "automate priority" | `/test-documentation` | `.context/test-management-system.md` | `[TMS_TOOL]` |
+| TMS documentation / ROI | "document tests", "ROI", "automate priority" | `/test-documentation` | `.context/master-test-plan.md`, `.agents/jira-required.yaml`, `.agents/jira-fields.json` | `[TMS_TOOL]` |
 | Write automated test | "automate", "E2E test", "API test" | `/test-automation` | `kata-manifest.json`, `tests/components/`, `.context/PBI/.../implementation-plan.md`, skill `references/` | Code edit |
 | Discovery / inventory | "what components exist", "list ATCs", "is TC-X automated" | — | `kata-manifest.json` | Read |
 | Regression / release | "run regression", "GO/NO-GO" | `/regression-testing` | `.context/master-test-plan.md`, CI logs | `gh` + Allure |
@@ -309,7 +309,6 @@ Variables: `{module-name}` = kebab-case module (`user-management`). `{TICKET-ID}
 .context/business/business-feature-map.md    (/business-feature-map)
 .context/business/business-api-map.md        (/business-api-map)
 .context/master-test-plan.md                 (/master-test-plan)
-.context/test-management-system.md           (test-documentation skill)
 api/schemas/                                 (bun run api:sync)
 ```
 

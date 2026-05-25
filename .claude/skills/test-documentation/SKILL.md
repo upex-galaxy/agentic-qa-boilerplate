@@ -412,13 +412,14 @@ On Phase 3 partial failure (some chunks 429-rate-limited, some succeeded), archi
 
 Canonical reading order for any AI starting cold on a test-documentation workflow. Read in order; stop earlier when the scope is narrow enough that later inputs add no signal.
 
-1. `.context/test-management-system.md` — TMS modality configuration (A vs B), Regression Epic, label taxonomy.
-2. `.context/PBI/{module}/{TICKET-ID}-*/` — ticket-local context: existing ATP, ATR, session notes, validated scenarios.
-3. `.agents/jira-required.yaml` — canonical slug catalog for fields, statuses, link types.
-4. `.agents/jira-fields.json` — slug → numeric custom-field-ID mapping for ADF / API calls.
-5. `.agents/jira-workflows.json` — `test_case` workflow + transition catalog (Draft → In Design → Ready → …).
-6. `.context/master-test-plan.md` — regression Epic, prioritization rubric, what to test and why.
-7. The Story's AC + spec via `[ISSUE_TRACKER_TOOL]` — current Description, AC, comments, linked bugs.
+> **TMS modality** (A: Xray vs B: Jira-native) is resolved live by Phase 0 from `.agents/project.yaml` `testing.tms_cli` and sticky in `plan.md`. **Regression Epic** is resolved live by Phase 3 §Preflight via JQL (`type = Epic AND labels = "test-repository"`). **Label taxonomy** defaults are hardcoded in `references/tms-conventions.md`. No external TMS config file is read.
+
+1. `.context/PBI/{module}/{TICKET-ID}-*/` — ticket-local context: existing ATP, ATR, session notes, validated scenarios.
+2. `.agents/jira-required.yaml` — canonical slug catalog for fields, statuses, link types.
+3. `.agents/jira-fields.json` — slug → numeric custom-field-ID mapping for ADF / API calls.
+4. `.agents/jira-workflows.json` — `test_case` workflow + transition catalog (Draft → In Design → Ready → …).
+5. `.context/master-test-plan.md` — regression Epic, prioritization rubric, what to test and why.
+6. The Story's AC + spec via `[ISSUE_TRACKER_TOOL]` — current Description, AC, comments, linked bugs.
 
 ---
 

@@ -423,7 +423,6 @@ bun run test:e2e:critical  # Tests marked @critical
 ├── .context/                     # AI Context Engineering (generated)
 │   ├── business/                  # business-data-map / business-feature-map / business-api-map
 │   ├── master-test-plan.md       # What to test and why
-│   ├── test-management-system.md # TMS architecture + conventions + workflow
 │   ├── PRD/                      # Product requirements
 │   ├── SRS/                      # Technical specs
 │   └── PBI/                      # Per-ticket backlog items
