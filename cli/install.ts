@@ -146,8 +146,8 @@ interface InstallState {
   postInstall: {
     agentsSetup: 'pending' | 'completed' | 'skipped-non-interactive' | 'failed'
     acliAuth: 'pending' | 'completed' | 'skipped-non-interactive' | 'skipped-no-binary' | 'skipped-no-auth' | 'failed'
-    jiraSyncFields: 'pending' | 'completed' | 'skipped-non-interactive' | 'skipped-no-auth' | 'failed'
-    jiraSyncWorkflows: 'pending' | 'completed' | 'skipped-non-interactive' | 'skipped-no-auth' | 'failed'
+    jiraSyncFields: 'pending' | 'completed' | 'skipped-non-interactive' | 'skipped-no-auth' | 'skipped-no-admin' | 'failed'
+    jiraSyncWorkflows: 'pending' | 'completed' | 'skipped-non-interactive' | 'skipped-no-auth' | 'skipped-no-admin' | 'failed'
     jiraCheck: 'pending' | 'completed' | 'skipped-non-interactive' | 'skipped-prereq' | 'failed'
   }
 }
@@ -1842,6 +1842,42 @@ async function jiraAuthLoop(): Promise<'authenticated' | 'skipped'> {
 }
 
 /**
+ * Stderr marker emitted by `scripts/sync-jira-fields.ts` and
+ * `scripts/sync-jira-workflows.ts` when the authenticated Jira user does not
+ * have Administer permission. The script exits 0 in that case (lack of admin
+ * is not a failure — the user can still use the repo with the boilerplate's
+ * bundled JSON), so we rely on this marker to distinguish a true success from
+ * a graceful skip.
+ */
+const JIRA_SKIP_NO_ADMIN_MARKER = '[JIRA_SYNC_SKIPPED_NO_ADMIN]';
+
+/**
+ * Run a Jira sync script while teeing its stderr through this process. Looks
+ * for the `[JIRA_SYNC_SKIPPED_NO_ADMIN]` marker to detect the no-admin skip
+ * path. Returns `'skipped-no-admin'` when the marker appears (exit code is
+ * 0 in that case), `'completed'` on plain success, or `'failed'` on non-zero
+ * exit without the marker.
+ */
+function runJiraSyncCapturingMarker(
+  args: string[],
+): 'completed' | 'failed' | 'skipped-no-admin' {
+  const child = spawnSync('bun', args, {
+    stdio: ['inherit', 'inherit', 'pipe'],
+  });
+  const stderrText = child.stderr ? child.stderr.toString('utf8') : '';
+  if (stderrText) {
+    process.stderr.write(stderrText);
+  }
+  if (stderrText.includes(JIRA_SKIP_NO_ADMIN_MARKER)) {
+    return 'skipped-no-admin';
+  }
+  if (child.status === 0) {
+    return 'completed';
+  }
+  return 'failed';
+}
+
+/**
  * PHASE 5 — INITIAL CONFIGURATION
  *
  * Steps:
@@ -2013,13 +2049,19 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
       // script's safety check still protects user edits in later sessions
       // because the early-exit guard above short-circuits subsequent runs.
       const syncArgs = ['run', 'jira:sync-fields', '--', '--force'];
-      const res = spawnSync('bun', syncArgs, { stdio: 'inherit' });
-      state.postInstall.jiraSyncFields = res.status === 0 ? 'completed' : 'failed';
-      if (res.status === 0) {
+      const outcome = runJiraSyncCapturingMarker(syncArgs);
+      state.postInstall.jiraSyncFields = outcome;
+      if (outcome === 'completed') {
         process.stdout.write(`${tui.statusIcon('ok')} jira:sync-fields completed\n`);
       }
+      else if (outcome === 'skipped-no-admin') {
+        process.stdout.write(`${tui.statusIcon('warn')} jira:sync-fields skipped — your Jira user is not an Administrator.\n`);
+        process.stdout.write('  The boilerplate-bundled .agents/jira-fields.json stays as-is (repo still works).\n');
+        process.stdout.write('  Options: ask a Jira admin to run `bun run jira:sync-fields` and commit the result,\n');
+        process.stdout.write('           or download the UPEX standard catalog via `bun run jira:sync-fields --upex`.\n');
+      }
       else {
-        process.stdout.write(`${tui.statusIcon('fail')} jira:sync-fields exited with ${res.status}. Continuing.\n`);
+        process.stdout.write(`${tui.statusIcon('fail')} jira:sync-fields failed. Continuing.\n`);
       }
     }
   }
@@ -2038,18 +2080,29 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
     state.postInstall.jiraSyncWorkflows = 'skipped-non-interactive';
     process.stdout.write(`${tui.statusIcon('warn')} Skipped (no TTY). Re-run via: bun run jira:sync-workflows\n`);
   }
+  else if (state.postInstall.jiraSyncFields === 'skipped-no-admin') {
+    // Same root cause — admin permission missing. Skip to keep messages consistent.
+    state.postInstall.jiraSyncWorkflows = 'skipped-no-admin';
+    process.stdout.write(`${tui.statusIcon('warn')} Skipped — jira:sync-fields detected no Administer permission. Same applies here.\n`);
+    process.stdout.write('  UPEX-standard alternative: `bun run jira:sync-workflows --upex`.\n');
+  }
   else if (state.postInstall.jiraSyncFields !== 'completed') {
     state.postInstall.jiraSyncWorkflows = 'skipped-no-auth';
     process.stdout.write(`${tui.statusIcon('warn')} Skipped — jira:sync-fields did not complete (uses same Atlassian credentials).\n`);
   }
   else {
-    const res = spawnSync('bun', ['run', 'jira:sync-workflows'], { stdio: 'inherit' });
-    state.postInstall.jiraSyncWorkflows = res.status === 0 ? 'completed' : 'failed';
-    if (res.status === 0) {
+    const outcome = runJiraSyncCapturingMarker(['run', 'jira:sync-workflows']);
+    state.postInstall.jiraSyncWorkflows = outcome;
+    if (outcome === 'completed') {
       process.stdout.write(`${tui.statusIcon('ok')} jira:sync-workflows completed\n`);
     }
+    else if (outcome === 'skipped-no-admin') {
+      process.stdout.write(`${tui.statusIcon('warn')} jira:sync-workflows skipped — your Jira user is not an Administrator.\n`);
+      process.stdout.write('  The boilerplate-bundled .agents/jira-workflows.json stays as-is (repo still works).\n');
+      process.stdout.write('  UPEX-standard alternative: `bun run jira:sync-workflows --upex`.\n');
+    }
     else {
-      process.stdout.write(`${tui.statusIcon('fail')} jira:sync-workflows exited with ${res.status}. Continuing.\n`);
+      process.stdout.write(`${tui.statusIcon('fail')} jira:sync-workflows failed. Continuing.\n`);
     }
   }
 
@@ -2066,6 +2119,14 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
   else if (AUTO_NON_INTERACTIVE) {
     state.postInstall.jiraCheck = 'skipped-non-interactive';
     process.stdout.write(`${tui.statusIcon('warn')} Skipped (no TTY). Re-run via: bun run jira:check\n`);
+  }
+  else if (
+    state.postInstall.jiraSyncFields === 'skipped-no-admin'
+    || state.postInstall.jiraSyncWorkflows === 'skipped-no-admin'
+  ) {
+    state.postInstall.jiraCheck = 'skipped-prereq';
+    process.stdout.write(`${tui.statusIcon('warn')} Skipped — Jira sync was no-admin (boilerplate JSON in use). jira:check would compare against the upstream catalog, not yours.\n`);
+    process.stdout.write('  After downloading UPEX standard with `--upex`, you can run: bun run jira:check\n');
   }
   else if (state.postInstall.jiraSyncFields !== 'completed' || state.postInstall.jiraSyncWorkflows !== 'completed') {
     state.postInstall.jiraCheck = 'skipped-prereq';

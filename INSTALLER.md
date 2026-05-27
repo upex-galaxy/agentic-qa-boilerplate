@@ -46,11 +46,13 @@ Interactive post-install configuration steps. Skipped automatically when no TTY 
 
 - `agents:setup` — populates `.agents/project.yaml` with project identity, Jira URL, environments
 - `acli` auth probe — collects `ATLASSIAN_URL` / `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` interactively if missing, then runs `acli jira auth login` (stdin-piped token)
-- `jira:sync-fields` — Jira auth loop (up to 5 attempts) then syncs custom field IDs
-- `jira:sync-workflows` — syncs workflow statuses and transitions
-- `jira:check` — validates `.agents/jira-required.yaml` against the workspace
+- `jira:sync-fields` — Jira auth loop (up to 5 attempts) then syncs custom field IDs. **Requires Jira `Administer` permission** (global or project-scoped); if the user lacks admin, the script exits 0 and the installer records `state.postInstall.jiraSyncFields = "skipped-no-admin"` — the boilerplate-bundled `.agents/jira-fields.json` stays in place and the repo remains usable. The installer surfaces two recovery paths: (a) ask a Jira admin to run `bun run jira:sync-fields` and commit the result; (b) `bun run jira:sync-fields --upex` to download the UPEX-standard reference catalog (no admin needed — fetches the JSON committed in `upex-galaxy/agentic-qa-boilerplate@main`).
+- `jira:sync-workflows` — syncs workflow statuses and transitions. **Same admin requirement and `--upex` fallback as `jira:sync-fields`** — if fields skipped-no-admin, this step inherits the skip automatically.
+- `jira:check` — validates `.agents/jira-required.yaml` against the workspace. Skipped when either sync above was `skipped-no-admin` (the comparison would be against the UPEX catalog, not the user's workspace).
 
 The installer aborts hard if the `acli` binary is missing — install it from <https://developer.atlassian.com/cloud/acli/guides/install-acli/> and re-run. Set `INSTALL_SKIP_JIRA=1` to bypass the acli requirement and Jira sync steps (use only for non-Jira projects).
+
+> **Manual-only**: `jira:sync-link-types` is NOT auto-invoked by the installer. Run `bun run jira:sync-link-types` by hand if you need to refresh `.agents/jira-link-types.json` from your workspace, or `bun run jira:sync-link-types --upex` to grab the UPEX standard. USER-OK (no admin needed for either path).
 
 Each step in Phase 5 records its completion in `state.postInstall` so re-runs skip it on the next `bun run setup`.
 
@@ -462,6 +464,8 @@ The right choice when the change is to the boilerplate's own infrastructure (KAT
 
 ## Troubleshooting
 
+- **`jira:sync-fields` / `jira:sync-workflows` skipped with "not an Administrator"** — your authenticated Jira user does not have `ADMINISTER` (global) or `ADMINISTER_PROJECTS` (project-scoped) permission. The scripts pre-flight `/rest/api/3/mypermissions` to avoid mid-run 403s. The installer records `state.postInstall.jiraSync* = "skipped-no-admin"` and exits Step 13/13b cleanly — repo is usable with the boilerplate's bundled `.agents/jira-*.json`. Two recovery paths: (a) ask a Jira admin to run the scripts and commit the resulting `.agents/jira-*.json` to the team repo; (b) `bun run jira:sync-fields --upex && bun run jira:sync-workflows --upex` to pull the UPEX-standard catalog from `upex-galaxy/agentic-qa-boilerplate@main` (no admin, no Jira API calls — just a GitHub raw fetch).
+- **`--upex` flag** — every `jira:sync-*` script (`fields`, `workflows`, `link-types`) accepts `--upex` to download the UPEX-standard reference JSON from the upstream boilerplate repo. URL is hardcoded per script and pinned to `main`. Bypasses ATLASSIAN_* env vars, `project_key`, `jira-required.yaml` and all Jira REST calls; only network requirement is GitHub raw access. Useful when (a) you have no Jira admin, (b) you want a working catalog without setting up auth, or (c) you want to compare against the canonical UPEX standard before custom-syncing.
 - **gentle-ai not detected after install** — re-run `bun run setup`. The detector probes `which gentle-ai` plus `gentle-ai version`; if either fails the installer falls back to the "skip gentle-ai" branch. Confirm the binary is on PATH (`which gentle-ai` should return a path under `/usr/local/bin/`, `~/bin/`, `~/go/bin/`, or a Homebrew prefix).
 - **MCPs returning 401/403** — the matching env var in `.env` is unset or wrong. `.mcp.json` (Claude) and `opencode.jsonc` are committed with `${VAR}` / `{env:VAR}` expansion; real values live in `.env`. Open `.env`, fill the var, and **restart the agent session** — env vars are read once at MCP-server spawn time. See `CLAUDE.md` Critical Rule #11.
 - **MCPs not loading at all** — confirm you launched the agent via `bun run claude` / `bun run opencode` (wraps with `dotenv-cli`), or that direnv autoload is active (`direnv status` shows your `.envrc` allowed). Launching `claude` directly without either path means MCP placeholders never get expanded.

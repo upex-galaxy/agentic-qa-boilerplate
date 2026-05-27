@@ -571,10 +571,13 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run agents:setup`        | Interactive walkthrough to populate `.agents/project.yaml`                   |
 | `bun run vars:check`          | Lint `.agents/` files for missing required values                            |
 | `bun run skills:check`        | Validate T1-T4 skill tier coherence (frontmatter, categories, anti-leak)     |
-| `bun run jira:sync-fields`    | Sync Jira custom-field catalog into `.agents/jira-fields.json`               |
-| `bun run jira:sync-workflows` | Sync Jira workflow statuses + transitions into `.agents/jira-workflows.json` |
+| `bun run jira:sync-fields`    | Sync Jira custom-field catalog into `.agents/jira-fields.json`. **Requires Jira `Administer` permission** — non-admin users get a friendly skip + the UPEX-standard fallback below. |
+| `bun run jira:sync-workflows` | Sync Jira workflow statuses + transitions into `.agents/jira-workflows.json`. Same admin requirement as `jira:sync-fields`. |
+| `bun run jira:sync-link-types`| Sync workspace issue-link types into `.agents/jira-link-types.json`. USER-OK (no admin needed). Manual-only — not auto-invoked by setup. |
 | `bun run jira:sync-issues`    | Pull Jira Epics/Stories into `.context/PBI/` markdown files                  |
 | `bun run jira:check`          | Verify Jira workspace has required custom fields configured                  |
+
+> **`--upex` flag** — every `jira:sync-*` script accepts `--upex` to download the UPEX-standard reference JSON from `upex-galaxy/agentic-qa-boilerplate@main` instead of hitting Jira. Use when you don't have admin access, when you want a working catalog without setting up auth, or when you want the canonical UPEX standard as a reference. Examples: `bun run jira:sync-fields --upex`, `bun run jira:sync-workflows --upex`, `bun run jira:sync-link-types --upex`.
 
 <br />
 
