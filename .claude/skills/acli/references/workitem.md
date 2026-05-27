@@ -370,22 +370,78 @@ acli jira workitem comment visibility --group
 
 ## <a id="link"></a>link
 
-### create
+### Directionality — EMPIRICAL FLAG INVERSION (read this before any `link create`)
+
+The flag names `--out` and `--in` suggest "outward" and "inward" as defined by Jira's link-type catalog (outward description = "depends on" / "blocks" / "causes"; inward description = "is dependency for" / "is blocked by" / "is caused by"). **Empirically, acli swaps them.** Running:
 
 ```bash
-# Single link, inline — "this story BLOCKS that one"
-acli jira workitem link create --out {{PROJECT_KEY}}-123 --in {{PROJECT_KEY}}-124 --type "Blocks"
+acli jira workitem link create --out X --in Y --type Dependencies
+```
 
-# "this bug RELATES TO that story"
-acli jira workitem link create --out {{PROJECT_KEY}}-456 --in {{PROJECT_KEY}}-123 --type "Relates"
+produces "**Y** depends on **X**" — i.e. **Y becomes the outward party**, **X becomes the inward party**, the opposite of what the flag names suggest. The same inversion applies to every outward-asymmetric link type.
 
-# Batch via JSON
+**Reverse-mapping rule of thumb**:
+
+- `--out` takes the **prerequisite** (the issue that satisfies someone else's dependency / is blocked / causes / is duplicated)
+- `--in` takes the **dependent** (the issue that depends on / blocks / is caused by / duplicates)
+
+#### Per-link-type quick reference
+
+| Type            | Outward desc.        | Inward desc.            | `--out` takes                | `--in` takes                |
+| --------------- | -------------------- | ----------------------- | ---------------------------- | --------------------------- |
+| `Dependencies`  | depends on           | is dependency for       | prerequisite                 | dependent                   |
+| `Blocks` / `Blocking` | blocks         | is blocked by           | the work being blocked       | the blocker                 |
+| `Causes` (Problem/Incident) | causes  | is caused by            | the caused issue             | the root cause              |
+| `Cloners`       | clones               | is cloned by            | the original                 | the clone                   |
+| `Duplicate`     | duplicates           | is duplicated by        | the canonical issue          | the duplicate               |
+| `Defect`        | created              | created by              | the originating work         | the defect                  |
+| `Test`          | tests                | is tested by            | the story / requirement      | the test                    |
+| `Test Automation` | automation test for | is automated by         | the manual test              | the automation              |
+| `Test Design`   | designs              | is designed by          | the test                     | the design                  |
+| `Test Execute`  | executes             | is executed by          | the test                     | the execution               |
+| `Relates`       | relates to           | relates to              | either                       | either (symmetric)          |
+
+> Symmetric types (`Relates`) are immune to the inversion — direction is lost regardless of argument order. All outward-asymmetric types are affected.
+
+#### Mandatory post-create verification
+
+Every `link create` call MUST be followed by a direction check:
+
+```bash
+# Confirm direction for "DEPENDENT depends on PREREQUISITE"
+acli jira workitem link list --key DEPENDENT --json | jq '.[] | select(.id == "<linkId>")'
+# Expected: outwardIssueKey == PREREQUISITE
+# Wrong direction? -> acli link delete --id <linkId> --yes && retry with swapped --out/--in
+```
+
+The `outwardIssueKey` field in the JSON response names the outward partner from the DEPENDENT's perspective. If it matches the intended prerequisite, the link is correct; otherwise the link is inverted and must be deleted + recreated.
+
+### create
+
+Apply the reverse-mapping rule from the section above: `--out` takes the inward partner (the prerequisite, blocker, canonical, etc.), `--in` takes the outward partner (the dependent, blocked work, duplicate, etc.). Then verify direction immediately after.
+
+```bash
+# Intent: "{{PROJECT_KEY}}-123 BLOCKS {{PROJECT_KEY}}-124"
+#   123 = blocker (outward partner in Jira UI)
+#   124 = blocked work (inward partner in Jira UI)
+#   Per inversion: --out takes the inward = 124, --in takes the outward = 123
+acli jira workitem link create --out {{PROJECT_KEY}}-124 --in {{PROJECT_KEY}}-123 --type "Blocks" --yes
+
+# Verify direction (mandatory)
+acli jira workitem link list --key {{PROJECT_KEY}}-123 --json
+# Expected: outwardIssueKey == {{PROJECT_KEY}}-124 (123 is the outward party, looking outward "blocks" → 124)
+
+# Intent: "{{PROJECT_KEY}}-456 RELATES TO {{PROJECT_KEY}}-123" — symmetric, immune to inversion
+acli jira workitem link create --out {{PROJECT_KEY}}-456 --in {{PROJECT_KEY}}-123 --type "Relates" --yes
+
+# Batch via JSON — the same inversion applies to outwardIssue / inwardIssue keys in the payload
 acli jira workitem link create --generate-json > links.json
 $EDITOR links.json
 acli jira workitem link create --from-json links.json --yes
 
 # Batch via CSV — 3 columns, header row ignored
 #   outwardId,inwardId,linkType
+# CSV column names carry the inversion too: outwardId column = inward partner; inwardId column = outward partner.
 acli jira workitem link create --from-csv links.csv --yes
 ```
 
