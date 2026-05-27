@@ -434,6 +434,7 @@ async function main(): Promise<void> {
       '.agents/project.yaml',
       '.agents/jira-fields.json',
       '.agents/jira-workflows.json',
+      '.agents/jira-link-types.json',
       '.agents/jira-required.yaml',
     ],
     selfUpdateComponent: 'cli',
