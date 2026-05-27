@@ -48,6 +48,7 @@ Thumbs.db
 # ===========================================
 .context/
 .claude/skills/
+.claude/settings.local.json
 .agents/skills/
 
 # ===========================================
