@@ -215,13 +215,30 @@ bun .claude/skills/acli/scripts/md-to-adf.ts input.md > output.adf.json
 Programmatic usage (when batching across many fields or many work items in one script):
 
 ```typescript
-import { mdToAdf } from "./.claude/skills/acli/scripts/md-to-adf.ts";
+import { mdToAdf, validateAdf } from "./.claude/skills/acli/scripts/md-to-adf.ts";
 const adf = mdToAdf(markdownString);  // returns { type: "doc", version: 1, content: [...] }
+const { valid, errors } = validateAdf(adf);  // gate ANY ADF before publishing
 ```
 
 **Covered markdown subset**: headings 1–6, bullet lists, ordered lists, fenced code blocks (with optional language tag), inline code, bold, italic (snake_case-safe), strikethrough, links, blockquotes, horizontal rule, paragraphs.
 
 **Out of scope** (extend the converter if your project needs them): nested lists, tables, mentions, panels, status macros, expand blocks, media / images.
+
+### Validation gate (fail fast before Jira)
+
+The converter **validates its output by default** against an embedded ADF allowlist, then refuses to write and exits non-zero if the document is invalid. This turns an opaque Jira `HTTP 400 INVALID_INPUT` at publish time into a node-level diagnostic at author time. The gate is **zero-dependency** — it does NOT use `@atlaskit/adf-utils` (that package transitively pulls ProseMirror + Statsig and breaks the converter's zero-dep contract). The rules are inlined in `md-to-adf.ts`.
+
+What it catches: unknown node types, unknown / invalid marks, `code` co-occurring with `strong`/`em`/`strike`/`underline`/`subsup`/`textColor` (the HTTP 400 combined-marks bug), `heading` level outside 1–6, missing `link` `href`, empty `text` nodes, illegal containment (e.g. a `paragraph` directly under a `bulletList`), and a malformed root (`type` ≠ `doc` or `version` ≠ 1).
+
+```bash
+# validate is on by default during conversion; bypass with --no-validate
+bun .claude/skills/acli/scripts/md-to-adf.ts input.md out.adf.json --no-validate
+
+# gate an ALREADY-assembled ADF doc (jq create payload field, or a REST PUT body)
+bun .claude/skills/acli/scripts/md-to-adf.ts --check field.adf.json   # exit 0 valid, 1 invalid
+```
+
+**Recommended habit**: after splicing ADF into a `--from-json` create payload or a REST `PUT` body (where the wrapper is assembled outside the converter), run `--check` on each ADF field before sending. The gate is necessary but not sufficient — a round-trip `GET` of the field after write is still the only way to catch server-side coercion (Jira silently drops some invalid nodes).
 
 ### Recipe by Jira surface
 
