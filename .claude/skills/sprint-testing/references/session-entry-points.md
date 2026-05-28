@@ -36,7 +36,17 @@ Act as a Senior QA Engineer preparing a testing session for a ticket (User Story
 ### Input
 
 - `TICKET-ID` (required) — e.g. `{{PROJECT_KEY}}-123`.
-- Environment — defaults to `{{DEFAULT_ENV}}` (staging); ask if ambiguous.
+- Environment — defaults to `{{DEFAULT_ENV}}` (staging); ask if ambiguous. For an ad-hoc URL not in `project.yaml` (broken staging, ephemeral preview deploy, hotfix branch URL), record it as a session override instead of editing config — see Step 6b + the `WEB_URL_OVERRIDE` / `API_URL_OVERRIDE` slot.
+
+### Step 0 — Environment + inbox preflight (reachability gate)
+
+Run this BEFORE fetching the ticket and BEFORE any ATP/Jira write — once the active environment (or its session override) is resolved. It is a cheap probe that prevents the highest-cost waste in a run: authoring an ATP against an env that turns out to be unreachable.
+
+1. **Reachability probe.** Issue a generic HTTP request to the active `{{WEB_URL}}` and `{{API_URL}}` root (HEAD or GET — e.g. `curl -sI {{WEB_URL}}`). A 2xx/3xx (including a login redirect) is reachable. A 404 / 410 / 5xx on root, a connection refusal, or a dead-deployment page (`DEPLOYMENT_NOT_FOUND` and similar) means the env is not testable.
+2. **Inbox receive-check (conditional).** Only when the ticket is email / magic-link / auth-token dependent: confirm the configured mailbox/provider can *receive* mail, not just send. A send-only provider cannot complete a magic-link flow.
+3. **Verdict.** Reachable (and, if relevant, inbox can receive) → continue to Step 1. Unreachable, or inbox send-only → **STOP, surface to the user, do NOT author an ATP.** Offer a session env override (Step 6b) if the user has a working alternate URL.
+
+This gate answers "is the environment up / can we get the email?" — it does NOT replace the Stage 2 smoke test, which answers "does the feature work?". Both run.
 
 ### Step 1 — Fetch the ticket from the issue tracker
 
@@ -184,6 +194,17 @@ Folder naming:
 
 Create the folders now. `test-analysis.md` and `test-report.md` are created later (Stages 1 / 3); `context.md` and `evidence/` are created now.
 
+### Step 6b — Session env override (record once, session-only)
+
+When testing against an ad-hoc URL that is NOT in `.agents/project.yaml` — a broken staging env (often surfaced by the Step 0 preflight), an ephemeral preview deploy, or a hotfix branch URL the user authorizes for this session only — do NOT edit `project.yaml`. Record the override once in `test-session-memory.md` §Environment:
+
+```
+- WEB_URL_OVERRIDE: https://preview-xyz.vercel.app   # session-only; beats {{WEB_URL}}; NEVER persisted
+- API_URL_OVERRIDE: https://preview-xyz.vercel.app/api
+```
+
+Every stage resolves `{{WEB_URL}}` / `{{API_URL}}` through this slot first (override wins when set to a value other than `none`), so the URL is threaded automatically into all four dispatches without re-typing. This is distinct from `active_env` switching, which selects a *named* environment already defined in `project.yaml`. The override is session-only and is never written back to config.
+
 ### Step 7 — Write the initial context.md
 
 ```markdown
@@ -236,6 +257,8 @@ Context loaded / Code explored / Environment
 | Situation | Action |
 |-----------|--------|
 | Ticket not found | Verify ID, check the issue tracker |
+| Env unreachable (404/410/5xx on root, dead deployment) | STOP at Step 0, surface to user, do NOT author an ATP; offer a session env override (Step 6b) |
+| Inbox send-only (email/auth story) | STOP at Step 0, surface to user; cannot complete magic-link flow without a receiving inbox |
 | Ticket not ready for testing | Wait for deployment |
 | No ACs defined | Request ACs before testing |
 | No test data found | Expand query, ask user for alternatives |
@@ -325,7 +348,7 @@ Actions:
 3. Use TCs as guides but explore beyond them (edge cases, boundaries, data variations, user perspectives). Create new TCs for significant discoveries.
 4. Update TC statuses in the TMS (PASSED / FAILED).
 5. Bug reporting — file any issues per `references/reporting-templates.md` (Bug Report template).
-6. Decision: PASSED -> Stage 3. BLOCKED -> wait, retry. FAILED -> report + escalate.
+6. Decision: PASSED -> Stage 3. BLOCKED -> wait, retry. FAILED -> triage first (a FAIL is not auto-Critical). A **blocking** failure (smoke/env down, data integrity, security-exploitable) stops the pass and is surfaced now; a **non-blocking** finding is logged, the TC marked FAILED, and the pass continues — surface it at Stage 2 close. See `exploration-patterns.md` "Finding triage".
 
 Output checkpoint:
 
@@ -391,7 +414,8 @@ All artifacts are created in Stage 1 with complete links.
 |-----------|--------|
 | US not ready | Verify status, wait for "{{jira.status.story.ready_for_qa}}" |
 | Staging down | Check deployment, escalate to DevOps |
-| Critical bug found | Stop exploration, create bug, wait for fix |
+| Blocking bug found (smoke/env down, data integrity, security-exploitable) | Stop exploration, surface, wait for fix |
+| Non-blocking finding (cosmetic, minor validation, edge-case on non-critical TC) | Log it, mark TC FAILED, continue the pass; surface at Stage 2 close |
 | Flaky behaviour | Retry with fresh data; document and move on |
 
 ---

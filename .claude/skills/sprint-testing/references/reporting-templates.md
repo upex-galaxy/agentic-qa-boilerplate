@@ -484,6 +484,7 @@ Rules: pick the most informative 1-2 shots; for bugs show the fix working (Templ
 |-----------|-----------|-------------------|------------------|
 | Story all TCs PASSED | — | Yes | A |
 | Story any TC FAILED | Yes (per failure) | Yes | B |
+| Story TC FAILED but recalibrated to non-defect (framework-default/mitigated, §5.0) | Low-priority follow-up only (not a blocker) | Yes (result `PASSED WITH ISSUES`, record gate outcome) | A + recalibration note |
 | Bug retest confirms fix | — | Yes (abridged) | C |
 | Bug retest reproduces | — | Yes (abridged) | D |
 | Triage SKIP (code review only) | — | — | Short code-review note on ticket |
@@ -497,12 +498,33 @@ Rules: pick the most informative 1-2 shots; for bugs show the fix working (Templ
 
 Once Stage 3 closes, the ticket state moves forward and the PBI folder becomes the source of truth for Stages 4, 5 and 6.
 
+### 5.0 Severity recalibration gate (before any blocking transition)
+
+A failing Story TC does NOT mechanically equal a blocking defect. Security, auth, integration and "secure-cookie / header" findings frequently have a framework-default explanation that changes their severity — firing `defect_reported` → `blocked` on one of those over-blocks the Story and burns a fix cycle on a non-defect. Run this gate for any **Story TC FAIL** before choosing the transition in §5.1; it is the Stage-3 Story-TC counterpart of the bug veto/risk tree (`acceptance-test-planning.md` §0.1/§0.2) that runs for bugs at Stage 1.
+
+Apply the gate when the failing TC is **security / auth / framework-default class** (cookie flags, CSP/CORS/HSTS headers, SDK-by-design behavior, token rotation defaults, rate-limit defaults). For an ordinary functional FAIL with no such explanation, skip the gate and take the mechanical path in §5.1.
+
+The verdict step must, before any blocking transition:
+
+1. **State the mitigation hypothesis** if one plausibly applies — e.g. "`Secure`/`HttpOnly` are framework defaults under HSTS preload", "missing CSP is the deploy platform's default and is set at the edge", "session SDK rotates tokens by design". If none applies, say so explicitly.
+2. **Cite one verification fact** that supports or refutes the hypothesis — a config line, a response header observed, a framework doc reference, a DB/cookie attribute actually read. One fact, not a paragraph.
+3. **Surface to the user** whenever the finding is security/auth/framework-default class. The user (or dev review) confirms the recalibration; QA does not silently downgrade a security finding.
+
+Outcomes:
+
+| Gate result | Verdict | Transition |
+|-------------|---------|------------|
+| Confirmed real defect (hypothesis refuted or none) | FAILED | mechanical §5.1 path (`defect_reported`/blocked or non-strict, file the bug) |
+| Recalibrated to non-defect / low pre-prod debt (hypothesis confirmed + fact cited + user OK) | **GO-with-debt** = `PASSED WITH ISSUES` | NO blocking transition — Story signs off; record the recalibration + cited fact + a follow-up note in the ATR (and, if it is genuine pre-prod debt, file a low-priority follow-up, not a blocker) |
+
+Record the gate outcome (hypothesis, cited fact, decision) in the ATR Observations so the audit trail shows *why* a P1 FAIL did not block.
+
 ### 5.1 Actions at close
 
 1. ATR marked complete in TMS via `[TMS_TOOL]`.
 2. QA comment posted (Template A, B, C or D) via `[ISSUE_TRACKER_TOOL]`.
 3. Evidence screenshots surfaced to the user with absolute paths.
-4. Ticket transitioned — Story PASSED -> `{{jira.status.story.qa_approved}}` (via `{{jira.transition.story.qa_sign_off}}`); Bug VERIFIED -> `{{jira.status.bug.closed}}` (via `{{jira.transition.bug.retest_passed}}`); Story FAILED with `{{FORMAL_BLOCKED_GATE}}=true` -> `{{jira.status.story.blocked}}` (via `{{jira.transition.story.defect_reported}}`); Story FAILED non-strict -> left in `{{jira.status.story.in_test}}` with linked bug; Bug NOT FIXED -> left in `{{jira.status.bug.ready_for_qa}}` pending dev. See `sprint-orchestration.md` Briefing 4 Step 5 for the full decision tree.
+4. Ticket transitioned — Story PASSED -> `{{jira.status.story.qa_approved}}` (via `{{jira.transition.story.qa_sign_off}}`); Bug VERIFIED -> `{{jira.status.bug.closed}}` (via `{{jira.transition.bug.retest_passed}}`); Story FAILED **(run the §5.0 recalibration gate first for any security/auth/framework-default FAIL — a recalibrated finding becomes GO-with-debt and takes the PASSED path, not a blocking transition)** with `{{FORMAL_BLOCKED_GATE}}=true` -> `{{jira.status.story.blocked}}` (via `{{jira.transition.story.defect_reported}}`); Story FAILED non-strict -> left in `{{jira.status.story.in_test}}` with linked bug; Bug NOT FIXED -> left in `{{jira.status.bug.ready_for_qa}}` pending dev. See `sprint-orchestration.md` Briefing 4 Step 5 for the full decision tree.
 5. PBI `context.md` updated with `Final Status` block.
 6. Commit `test-report.md` + `context.md` changes on branch `test/{JIRA_KEY}/{short-desc}`, message `test({JIRA_KEY}): add Stage 3 test report for {brief-title}`. Never push to `main` without user confirmation.
 7. For batch-sprint mode, only now is the `SPRINT-{N}-TESTING.md` framework file updated (Stage-3 gate).

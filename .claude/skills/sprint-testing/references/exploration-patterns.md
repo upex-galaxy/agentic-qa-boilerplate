@@ -26,6 +26,19 @@ Every feature validates through up to three layers. Pick by feature type:
 
 ---
 
+## Finding triage — blocking vs non-blocking (graduated pause)
+
+A FAIL found during deep exploration is NOT automatically a Critical bug and does NOT automatically halt the pass. Triage first, then decide whether to stop or keep going. Pausing the whole 17-TC pass on a cosmetic finding wastes the dispatch and loses coverage; a genuine blocker must still stop immediately.
+
+| Finding class | Examples | Action |
+|---------------|----------|--------|
+| **Blocking** | smoke down, env down, data corruption / integrity loss, security-exploitable (auth bypass, cross-tenant read/write, RLS `VULNERABLE`) | **STOP the pass immediately.** Surface to the orchestrator/user, do not continue deep exploration. |
+| **Non-blocking** | cosmetic, minor validation gap, edge-case on a non-critical TC, a security/auth/framework-default finding pending recalibration | **Log it and CONTINUE the pass.** Record in `test-session-memory.md` Findings, mark the TC FAILED, finish the remaining TCs, and surface all non-blocking findings together at Stage 2 close. |
+
+Severity is assigned per `reporting-templates.md` §1.4 (a FAIL is not auto-Critical), and security/auth/framework-default findings are recalibrated at Stage 3 per `reporting-templates.md` §5.0 — so do not pre-file a Critical bug from inside the pass. The point of finishing the pass is full coverage: one non-blocking finding should not abort the other TCs.
+
+---
+
 ## §1. UI exploration
 
 Deep-dive the UI on `{{WEB_URL}}` via `[AUTOMATION_TOOL]`. Goal: validate ACs, discover edge cases, capture evidence.
@@ -120,7 +133,7 @@ Always pull credentials from `.env` — never hardcode. Acquire the access token
 | Empty string in required | 400 | Not silently coerced |
 | Over-length input | 400 or 413 | Size guard |
 | Missing auth header | 401 | Auth required |
-| Expired token | 401 | Token rotation works |
+| Expired token | 401 | Token rotation works (see "Time-dependent / TTL test cases" for how to exercise the expiry boundary) |
 | Valid user, other tenant's resource | 403 or empty | RLS / tenant isolation |
 | Non-existent resource | 200 + empty (PostgREST) or 404 | Not-found semantics |
 | Duplicate unique | 409 | Conflict handling |
@@ -266,7 +279,7 @@ Record: `CLEANUP COMPLETE` / `INCOMPLETE`.
 | Result | Action |
 |--------|--------|
 | PASS | Record `Smoke: PASSED` in `test-session-memory.md`, continue §1 / §2 / §3 |
-| FAIL | STOP. File a Critical bug via `reporting-templates.md`. Do NOT continue deep exploration. |
+| FAIL | STOP — a smoke failure is an env-level blocker. Triage first (do NOT auto-file a Critical bug; assign severity per `reporting-templates.md` §1.4). Surface to the user. Do NOT continue deep exploration. |
 
 ### 4.4 Restrictions
 
@@ -274,6 +287,20 @@ Record: `CLEANUP COMPLETE` / `INCOMPLETE`.
 - Do NOT open minor-severity bugs during smoke — only blockers.
 - Do NOT exceed 10 minutes.
 - ALWAYS check the Network tab even if UI looks fine (UI can render cached / mock data).
+
+---
+
+## Time-dependent / TTL test cases (playbook)
+
+TTL / expiry / rotation cases recur across auth (magic links, OTPs), tokens (access/refresh), sessions, and caches — e.g. "link clicked at 14:59 (within a 15-min TTL) succeeds, at 15:01 fails, an already-expired link fails". They cannot be exercised by clicking faster; you need a way to control or compress time. Pick the highest option the stack allows — never leave such a TC as a bare `BLOCKED`.
+
+Options, in priority order:
+
+1. **Testability fixture / short-TTL env config.** Best option. If the env exposes a configurable TTL (env var, feature flag, test-only config), set it to a few seconds so the boundary is reachable in real time, then test 14:59/15:01 equivalents directly. Prefer this — it exercises the real expiry code path.
+2. **Clock-mock.** If the stack supports injecting/freezing time (test hooks, a mockable clock, `sinon`-style fake timers on the backend, or a DB-side `now()` override in a transaction), advance the clock past the TTL and assert the expiry. Use only when option 1 is unavailable and the mock genuinely drives the production expiry logic (not a parallel test-only branch).
+3. **Explicit manual-defer with a written follow-up.** Last resort. Document the boundary you could not exercise, why (no fixture, no clock-mock), and the concrete follow-up (e.g. "add a `MAGIC_LINK_TTL` test override" or "automate with fake timers in Stage 5"). File it so coverage is not lost silently.
+
+**Rule.** When a time-dependent TC cannot run live, mark it `BLOCKED — needs time fixture` in `test-session-memory.md` with the option chosen (1/2/3) and a one-line rationale. Never record a bare `BLOCKED` with no decision path — that loses coverage silently. The §5.4 "no NOT RUN" rule still applies: a deferred time-boundary TC carries its `BLOCKED — needs time fixture` reason into the Findings list for Stage 3.
 
 ---
 
