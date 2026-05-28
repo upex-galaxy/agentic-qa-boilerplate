@@ -13,6 +13,7 @@ node_modules/
 /playwright/.auth/
 .playwright/user-data
 .playwright/output
+**/evidence/
 
 # ===== Auth Storage (Session State) =====
 /.auth/
