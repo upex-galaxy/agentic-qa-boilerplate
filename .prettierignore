@@ -65,3 +65,14 @@ docs/mcp/
 # .template/installer.state.json is regenerated between every installer step,
 # so prettier --check races against the writes. Skip the whole dir.
 .template/
+
+# ===========================================
+# Runtime session artifacts - generated, gitignored
+# ===========================================
+# Saved auth state and Playwright session output are regenerated every QA run
+# and are already gitignored. Prettier honors only .prettierignore (not
+# .gitignore), so without these globs format:check fails on transient output.
+# .playwright/cli.config.json is tracked config — keep it formatted (negated).
+.auth/
+.playwright/
+!.playwright/cli.config.json
