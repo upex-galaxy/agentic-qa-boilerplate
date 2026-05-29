@@ -128,11 +128,6 @@
       "source.organizeImports": "explicit"
     }
   },
-  // Black Formatter Configuration
-  "black-formatter.args": [
-    "--line-length=88", // Estándar Black (cambiado de 200 para seguir convenciones)
-    "--skip-string-normalization"
-  ],
   // JavaScript / TypeScript
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -253,6 +248,15 @@
   // =====================
   // ? Workbench Settings
   // =====================
+  // Abre .md directamente en Markdown Preview al seleccionarlo (no en texto raw).
+  // Usar "Reopen With" para volver a la vista de texto.
+  "workbench.editorAssociations": {
+    "*.md": "vscode.markdown.preview.editor"
+  },
+  // Mantiene los diffs de .md en el editor de texto (no en preview).
+  "workbench.diffEditorAssociations": {
+    "*.md": "default"
+  },
   "workbench.editor.enablePreview": false, // Siempre abre archivos en nueva tab
   "workbench.editor.closeEmptyGroups": true,
   "workbench.editor.highlightModifiedTabs": true,

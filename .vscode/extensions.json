@@ -14,11 +14,12 @@
     "dbaeumer.vscode-eslint", // ESLint - Linter para JavaScript/TypeScript
     "ms-python.python", // Python - Soporte completo para Python
     "ms-python.vscode-pylance", // Pylance - IntelliSense avanzado para Python
+    "charliermarsh.ruff", // Ruff - Linter + formatter de Python (defaultFormatter de [python])
     // =====================
     // Formatters Específicos
     // =====================
     "redhat.vscode-xml", // XML - Formateador y validador XML
-    "kennylong.kubernetes-yaml-formatter", // YAML - Formateador Kubernetes/YAML
+    "kennylong.kubernetes-yaml-formatter", // YAML - Formateador Kubernetes/YAML (GitHub Actions .yml)
     "redhat.vscode-yaml", // YAML - Language Server para YAML
     // =====================
     // Git & Control de Versiones
@@ -35,6 +36,7 @@
     // Testing
     // =====================
     "ms-playwright.playwright", // Playwright - Testing E2E
+    "postman.postman-for-vscode", // Postman - API testing (usado por postman.settings.*)
     // =====================
     // Markdown & Documentation
     // =====================
@@ -45,11 +47,7 @@
     // Estos son opcionales pero mejoran mucho la experiencia visual.
     // Puedes removerlos si prefieres tus propios temas.
     "pkief.material-icon-theme", // Material Icon Theme - Iconos excelentes para estructura
-    "johnpapa.winteriscoming", // Winter is Coming - Tema oscuro recomendado
-    // =====================
-    // Utilidades
-    // =====================
-    "bierner.github-markdown-preview" // GitHub Markdown Preview - Preview como en GitHub
+    "johnpapa.winteriscoming" // Winter is Coming - Tema oscuro recomendado
   ],
   // =====================
   // Extensiones No Deseadas
