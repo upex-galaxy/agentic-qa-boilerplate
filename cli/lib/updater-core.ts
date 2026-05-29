@@ -2393,7 +2393,9 @@ export async function runUpdate(
   // Compute advancement
   const advancement = computeComponentAdvancement(
     { applied, skipped, failed },
-    bootstrapMode ? [] : [],
+    // Deferred-deletes are already represented in `skipped`, so no separate
+    // deferred list is passed (the old `bootstrapMode ? [] : []` was a no-op).
+    [],
   );
 
   const summary: RunSummary = {

@@ -93,7 +93,7 @@ function parseArgs(args: string[]): ParsedArgs {
       i++;
     }
     else if (valid.has(a)) { out.commands.push(a); }
-    else if (!a.startsWith('-')) { tui.log.warn(`Comando desconocido: ${a}`); }
+    else if (!a.startsWith('-')) { tui.log.error(`Comando/componente desconocido: ${a}. Usa --help para ver los validos.`); process.exit(1); }
   }
   return out;
 }
