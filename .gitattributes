@@ -1,0 +1,22 @@
+# Force LF line endings in the working tree on every platform.
+#
+# The boilerplate updater (cli/lib/updater-core.ts) byte-compares local files
+# against LF-normalized git blobs, and several CLI/lint scripts split on '\n'.
+# On a Windows checkout with core.autocrlf=true those files would otherwise be
+# CRLF and misbehave: the updater flags every managed file as locally modified
+# and skills:registry --check flakes. Pinning eol=lf keeps Windows behaviour
+# identical to macOS/Linux.
+* text=auto eol=lf
+
+# Binaries: never normalize.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary

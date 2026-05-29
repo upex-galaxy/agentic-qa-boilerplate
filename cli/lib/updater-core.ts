@@ -1443,7 +1443,11 @@ function collectComponentRelPaths(component: Component, templateDir: string): st
       walk(srcPath);
     }
     else {
-      out.push(componentPath);
+      // Normalize separators so file-list / single-file components produce the same
+      // forward-slash relPaths as the directory-walk branch above. Otherwise path.join's
+      // backslashes on Windows break the git pathspecs used to bootstrap these files,
+      // and they are silently skipped.
+      out.push(componentPath.replace(/\\/g, '/'));
     }
   }
   return out;

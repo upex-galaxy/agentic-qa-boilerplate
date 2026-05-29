@@ -378,7 +378,7 @@ function buildSink(): ReportSink {
         if (abortOnCancel<boolean>(openExternal)) {
           const tmp = path.join(os.tmpdir(), `upex-diff-${process.pid}-${Date.now()}.txt`);
           fs.writeFileSync(tmp, plain);
-          const editor = process.env.EDITOR || process.env.VISUAL || 'less';
+          const editor = process.env.EDITOR || process.env.VISUAL || (process.platform === 'win32' ? 'notepad' : 'less');
           try { spawnSync(editor, [tmp], { stdio: 'inherit' }); }
           catch { tui.log.warn(`No se pudo abrir ${editor}. Contenido en: ${tmp}`); return; }
           finally {
