@@ -68,9 +68,21 @@ export async function downloadTemplate(opts: {
 
   // 4) Extract, stripping top-level GitHub-wrapper dir
   log.info(`Extracting into ${targetDir}`);
+  const isWin = process.platform === 'win32';
+  // Windows: GNU tar reads `C:\path` as host:path (rsync-style remote); --force-local disables that.
+  // Forward slashes avoid backslashes being interpreted as escape sequences after --force-local.
+  const tarSrc = isWin ? tarballPath.replace(/\\/g, '/') : tarballPath;
+  const tarDst = isWin ? targetDir.replace(/\\/g, '/') : targetDir;
   const extract = spawnSync(
     'tar',
-    ['-xzf', tarballPath, '-C', targetDir, '--strip-components=1'],
+    [
+      ...(isWin ? ['--force-local'] : []),
+      '-xzf',
+      tarSrc,
+      '-C',
+      tarDst,
+      '--strip-components=1',
+    ],
     { stdio: ['ignore', 'inherit', 'inherit'] },
   );
   // Cleanup tarball regardless of extract outcome
