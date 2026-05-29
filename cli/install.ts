@@ -1780,8 +1780,14 @@ function reloadDotEnv(): void {
       const eq = line.indexOf('=');
       if (eq < 0) { continue; }
       const k = line.slice(0, eq).trim();
-      const v = line.slice(eq + 1).trim().replace(/^['"]|['"]$/g, '');
-      if (k) { process.env[k] = v; }
+      let v = line.slice(eq + 1).trim();
+      // Strip only a *matched* surrounding quote pair — a lone quote is part of
+      // the value (e.g. a password) and must not be mangled.
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith('\'') && v.endsWith('\''))) {
+        v = v.slice(1, -1);
+      }
+      // Don't overwrite an already-populated value with an empty one from .env.
+      if (k && (v !== '' || !process.env[k])) { process.env[k] = v; }
     }
   }
   catch {
@@ -1975,6 +1981,7 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
       process.stdout.write(`${tui.statusIcon('fail')} Cannot run acli auth — ATLASSIAN_* still missing: ${stillMissing.join(', ')}\n`);
       process.stdout.write('    Set them in .env (re-run setup) or run manually:\n');
       process.stdout.write(`    ${MANUAL_ACLI_LOGIN}\n`);
+      await writeInstallState(state);
       process.exit(1);
     }
 
@@ -2000,6 +2007,7 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
         state.postInstall.acliAuth = 'skipped-non-interactive';
         process.stdout.write(`${tui.statusIcon('fail')} Cannot run acli auth login — ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN missing.\n`);
         process.stdout.write(`    Manual auth: ${MANUAL_ACLI_LOGIN}\n`);
+        await writeInstallState(state);
         process.exit(1);
       }
 
@@ -2041,6 +2049,7 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
         state.postInstall.acliAuth = 'failed';
         process.stdout.write(`${tui.statusIcon('fail')} acli auth login failed after ${MAX_ATTEMPTS} attempts.\n`);
         process.stdout.write(`    Manual auth: ${MANUAL_ACLI_LOGIN}\n`);
+        await writeInstallState(state);
         process.exit(1);
       }
     }
