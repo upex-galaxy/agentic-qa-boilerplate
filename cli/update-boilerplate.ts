@@ -23,7 +23,7 @@ const TEMPLATE_REPO = 'upex-galaxy/agentic-qa-boilerplate';
 const TEMP_DIR = path.join(os.tmpdir(), 'kata-boilerplate-update');
 const VERSION_FILE = '.template/boilerplate.lock.json';
 
-const TOOLING_FILES = ['.editorconfig', '.prettierrc', '.prettierignore'];
+const TOOLING_FILES = ['.editorconfig', '.prettierrc', '.gitattributes'];
 const AGENTS_DOCS_FILES = ['README.md'];
 const CLAUDE_CONFIG_FILES = ['settings.json'];
 
