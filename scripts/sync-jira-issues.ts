@@ -70,7 +70,7 @@
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
 // ============================================================================
@@ -967,7 +967,9 @@ function writeIfNotProtected(
   content: string,
   dryRun: boolean,
 ): { written: boolean, status: 'created' | 'updated' | 'skipped' } {
-  const filename = filePath.split('/').pop() || '';
+  // basename (not split('/')) so protected-file detection works on Windows,
+  // where filePath is built with path.join and uses backslash separators.
+  const filename = basename(filePath);
 
   if (isProtectedFile(filename)) {
     return { written: false, status: 'skipped' };
@@ -1727,7 +1729,7 @@ async function syncEpic(
 
   if (!options.json) {
     log.line('');
-    log.info(`Syncing ${epicFolder.split('/').pop()}`);
+    log.info(`Syncing ${basename(epicFolder)}`);
   }
 
   // Materialize epic-level planning field files (feature impl plan, feature test plan)
