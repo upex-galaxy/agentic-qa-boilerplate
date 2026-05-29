@@ -37,7 +37,7 @@ The command shapes live in `acli/SKILL.md` §Quick Start. The QA flow uses the s
 
 | QA step | Action (see `acli/SKILL.md`) | QA-specific substitutions |
 |---|---|---|
-| Auth | `jira auth login` | `--site "$ATLASSIAN_SITE"`, `--email "$ATLASSIAN_EMAIL"`, token piped from `$ATLASSIAN_API_TOKEN` (all from `.env`) |
+| Auth | `jira auth login` | `--site "${ATLASSIAN_URL#https://}"` (slug derived from `ATLASSIAN_URL`), `--email "$ATLASSIAN_EMAIL"`, token piped from `$ATLASSIAN_API_TOKEN` (all from `.env`) |
 | Verify auth | `jira auth status` | None (same as generic). MUST run before any bulk mutation — see Q6 below. |
 | Fetch a story (input for `/sprint-testing` Phase 1) | `jira workitem view <KEY> --json` | `<KEY>` = `{{PROJECT_KEY}}-NNN`; jq filter picks `.fields.{{jira.acceptance_criteria}}` + `.fields.{{jira.scope}}` |
 | Transition Ready For QA → In Testing | `jira workitem transition --key <KEY> --status <STATUS>` | `<STATUS>` = `{{jira.status.story.in_test}}` |
