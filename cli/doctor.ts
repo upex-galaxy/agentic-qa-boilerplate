@@ -268,6 +268,14 @@ function shellHookLine(): { line: string, rc: string } {
   if (shell.endsWith('fish')) {
     return { line: 'direnv hook fish | source', rc: '~/.config/fish/config.fish' };
   }
+  if (shell.endsWith('bash')) {
+    return { line: 'eval "$(direnv hook bash)"', rc: '~/.bashrc' };
+  }
+  // No POSIX $SHELL (typical on native Windows PowerShell) — advise the pwsh hook
+  // instead of mis-instructing the user to edit ~/.bashrc.
+  if (process.platform === 'win32') {
+    return { line: 'Invoke-Expression "$(direnv hook pwsh)"', rc: '$PROFILE' };
+  }
   return { line: 'eval "$(direnv hook bash)"', rc: '~/.bashrc' };
 }
 
