@@ -32,7 +32,10 @@ import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-import * as tui from './lib/tui.ts';
+// `tui` pulls third-party deps (boxen/cli-table3/figures/picocolors). It is
+// imported lazily inside main() so `--preflight` loads only node built-ins and
+// runs safely on a fresh clone before `bun install`.
+let tui!: typeof import('./lib/tui.ts');
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -300,14 +303,15 @@ function compareVersion(a: readonly number[], b: readonly number[]): number {
 // ----------------------------------------------------------------------------
 
 function preflightFail(msg: string, fix: string): never {
-  tui.log.error(`Preflight failed: ${msg}`);
-  tui.log.warn(`Fix: ${fix}`);
+  // Dependency-free output — preflight may run before `bun install`, so no TUI.
+  process.stderr.write(`Preflight failed: ${msg}\n`);
+  process.stderr.write(`  Fix: ${fix}\n`);
   process.exit(1);
 }
 
 function runPreflight(): never {
-  // Print a minimal header for preflight — no full logo, just the section banner
-  tui.section('Preflight check');
+  // Dependency-free header — preflight loads no TUI (third-party) modules.
+  process.stdout.write('\nPreflight check\n');
 
   const bunVersion = process.versions.bun;
   if (!bunVersion) {
@@ -329,7 +333,7 @@ function runPreflight(): never {
       'Run `bun install` first, then re-run `bun run setup`.',
     );
   }
-  tui.log.success(`Preflight OK (Bun ${bunVersion}, deps installed)`);
+  process.stdout.write(`Preflight OK (Bun ${bunVersion}, deps installed)\n`);
   process.exit(0);
 }
 
@@ -529,29 +533,40 @@ function printHuman(report: DoctorReport): void {
 // Entry
 // ----------------------------------------------------------------------------
 
-if (process.argv.includes('--preflight')) {
-  runPreflight();
+async function main(): Promise<void> {
+  if (process.argv.includes('--preflight')) {
+    runPreflight(); // never returns
+    return;
+  }
+
+  // Full mode needs the TUI (boxen/cli-table3/figures/picocolors). Load it lazily
+  // here — NOT at module top — so `--preflight` stays dependency-free and runs on
+  // a fresh clone before `bun install`.
+  tui = await import('./lib/tui.ts');
+
+  const asJson = process.argv.includes('--json');
+  try {
+    const report = await runDoctor();
+    if (asJson) {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    }
+    else {
+      printHuman(report);
+    }
+    process.exit(report.status === 'ok' ? 0 : 1);
+  }
+  catch (err) {
+    const msg = (err as Error).message ?? String(err);
+    // Exit 2 = doctor internal error (distinct from 1 = needs-action). In --json
+    // mode emit a JSON envelope so agent consumers don't choke on a bare string.
+    if (asJson) {
+      process.stdout.write(`${JSON.stringify({ status: 'error', error: msg }, null, 2)}\n`);
+    }
+    else {
+      process.stderr.write(`Doctor failed: ${msg}\n`);
+    }
+    process.exit(2);
+  }
 }
 
-const asJson = process.argv.includes('--json');
-
-runDoctor().then((report) => {
-  if (asJson) {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-  }
-  else {
-    printHuman(report);
-  }
-  process.exit(report.status === 'ok' ? 0 : 1);
-}).catch((err) => {
-  const msg = (err as Error).message ?? String(err);
-  // Exit 2 = doctor internal error (distinct from 1 = needs-action). In --json
-  // mode emit a JSON envelope so agent consumers don't choke on a bare string.
-  if (asJson) {
-    process.stdout.write(`${JSON.stringify({ status: 'error', error: msg }, null, 2)}\n`);
-  }
-  else {
-    process.stderr.write(`Doctor failed: ${msg}\n`);
-  }
-  process.exit(2);
-});
+void main();
