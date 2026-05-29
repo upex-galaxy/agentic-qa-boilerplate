@@ -1594,7 +1594,7 @@ export function cleanupDeprecated(
 export async function runUpdate(
   cfg: UpdaterConfig,
   sink: ReportSink,
-  opts: { auto: boolean, dryRun: boolean, rollback: boolean },
+  opts: { auto: boolean, dryRun: boolean, rollback: boolean, force?: boolean },
 ): Promise<RunSummary> {
   if (opts.rollback) {
     // Wrapper handles rollback; reaching runUpdate with rollback=true is a contract error.
@@ -1624,6 +1624,32 @@ export async function runUpdate(
     componentsAdvanced: [],
     componentsHeldBack: [],
   };
+
+  // --- DIRTY WORKING TREE GUARD (data-loss safety, pre-fetch) ---
+  // Pre-write backups live in .backups/, which is gitignored — so an
+  // uncommitted user who proceeds and later runs `git clean` / `git stash` can
+  // lose both the working copy and the backup. Refuse on a dirty tree unless
+  // --force; interactive mode offers an explicit override.
+  if (!opts.dryRun && !opts.force) {
+    let dirty = '';
+    try {
+      dirty = execSync(`git -C "${repoRoot}" status --porcelain`, { encoding: 'utf8' }).trim();
+    }
+    catch {
+      dirty = ''; // not a git repo / git unavailable — nothing to guard against
+    }
+    if (dirty) {
+      sink.warn('El árbol de trabajo tiene cambios sin commitear. Los backups del updater van a .backups/ (gitignored); un `git clean` posterior podría perderlos. Commitea o haz stash antes de actualizar.');
+      if (opts.auto) {
+        sink.error('Abortado: árbol sucio en modo --auto. Re-ejecuta con --force para forzar.');
+        return emptySummary;
+      }
+      const proceed = await sink.confirm('¿Continuar de todas formas pese a los cambios sin commitear?', false);
+      if (!proceed) {
+        return emptySummary;
+      }
+    }
+  }
 
   // --- STATE LOAD + MIGRATION (pre-Phase 1) ---
   let rawState: SyncState | null;
@@ -1749,6 +1775,17 @@ export async function runUpdate(
       }
       if (stale.length > 0) {
         sink.warn(`Self-update: actualizando ${stale.length} archivo(s) del CLI antes de continuar…`);
+        // A2: confirm before clobbering cli/. A user who customized the updater
+        // gets a chance to bail; files are backed up + restorable via --rollback,
+        // but .backups/ is gitignored, so the explicit OK matters. Auto skips.
+        if (!opts.auto) {
+          const okSelf = await sink.confirm(`Se reemplazarán ${stale.length} archivo(s) de cli/ (backup en .backups/, restaurable con --rollback). ¿Continuar?`, true);
+          if (!okSelf) {
+            sink.warn('Self-update cancelado. Re-ejecuta cuando quieras actualizar el CLI.');
+            cleanupTempDir(cfg.tempDir);
+            return emptySummary;
+          }
+        }
         // Pre-write backup contract: mirror each existing local file into a
         // fresh `.backups/update-<ts>/` before overwriting. Symmetric with
         // applyResolution's backup behavior. `bun run up --rollback` can then
