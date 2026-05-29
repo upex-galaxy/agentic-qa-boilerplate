@@ -202,7 +202,7 @@ function parseEnvFile(content: string): Record<string, string> {
     if (line.length === 0 || line.startsWith('#')) { continue; }
     const eq = line.indexOf('=');
     if (eq <= 0) { continue; }
-    const key = line.slice(0, eq).trim();
+    const key = line.slice(0, eq).trim().replace(/^export\s+/, '');
     let value = line.slice(eq + 1).trim();
     if (
       (value.startsWith('"') && value.endsWith('"'))
@@ -220,7 +220,10 @@ async function detectDirenv(): Promise<DirenvState> {
   if (!version.ok) { return { installed: false }; }
 
   const status = tryRun('direnv', ['status']);
-  const envrcAllowed = /Found RC allowed true/.test(status.stdout);
+  // Modern direnv prints `Found RC allowed 0` (0 = Allow); older variants used
+  // `true`. Match the numeric enum and treat 0 (or legacy true) as allowed.
+  const allowMatch = status.stdout.match(/Found RC allowed (\d+|true)/);
+  const envrcAllowed = allowMatch !== null && (allowMatch[1] === '0' || allowMatch[1] === 'true');
 
   const candidates = ['.bashrc', '.zshrc', '.bash_profile', '.profile'];
   let hookInRc = false;
@@ -541,6 +544,14 @@ runDoctor().then((report) => {
   }
   process.exit(report.status === 'ok' ? 0 : 1);
 }).catch((err) => {
-  process.stderr.write(`Doctor failed: ${(err as Error).message ?? String(err)}\n`);
+  const msg = (err as Error).message ?? String(err);
+  // Exit 2 = doctor internal error (distinct from 1 = needs-action). In --json
+  // mode emit a JSON envelope so agent consumers don't choke on a bare string.
+  if (asJson) {
+    process.stdout.write(`${JSON.stringify({ status: 'error', error: msg }, null, 2)}\n`);
+  }
+  else {
+    process.stderr.write(`Doctor failed: ${msg}\n`);
+  }
   process.exit(2);
 });
