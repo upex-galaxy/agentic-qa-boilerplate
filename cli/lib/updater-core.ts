@@ -440,9 +440,11 @@ export function classifyFile(
   }
 
   // status === 'M' from here
-  // 7. User deleted the file locally — fast-forward applies cleanly
+  // 7. User deleted the file locally. Do NOT silently resurrect it via a
+  // fast-forward write — classify as diverged so it is skipped by default
+  // (auto) or prompted (interactive); the user can opt in to restore it.
   if (!localExists) {
-    return 'clean-fastforward';
+    return 'locally-diverged';
   }
 
   // 8. Byte-compare local vs template-old blob
@@ -1510,9 +1512,11 @@ function bootstrapEntry(component: string, relPath: string, templateDir: string)
  * applyResolution writes (pre-write backup contract).
  */
 export function createBackupDir(repoRoot: string): string {
-  const dateSegment = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
-  const timeSegment = new Date().toTimeString().split(' ')[0].replace(/:/g, '');
-  const backupDir = path.join(repoRoot, '.backups', `update-${dateSegment}-${timeSegment}`);
+  // Full ISO timestamp (incl. milliseconds) + pid so two runs — or the
+  // self-update backup and the apply backup within the same run — never collide
+  // on one directory and overwrite each other's pre-write backups.
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupDir = path.join(repoRoot, '.backups', `update-${stamp}-${process.pid}`);
   fs.mkdirSync(backupDir, { recursive: true });
   return backupDir;
 }
@@ -1764,12 +1768,18 @@ export async function runUpdate(
         }
         sink.step(`Backup en ${path.relative(repoRoot, selfBackupDir)}`);
         sink.step('Re-ejecutando con código actualizado…');
-        const child = spawnSync('bun', [process.argv[1], ...process.argv.slice(2)], {
+        const child = spawnSync(process.execPath, [process.argv[1], ...process.argv.slice(2)], {
           stdio: 'inherit',
           env: { ...process.env, UPEX_UPDATER_REEXEC: '1' },
         });
         cleanupTempDir(cfg.tempDir);
-        process.exit(child.status ?? 0);
+        if (child.error) {
+          sink.error(`Re-exec tras self-update falló: ${child.error.message}`);
+          process.exit(1);
+        }
+        // child.status is null when the child died from a signal — treat as
+        // failure (exit 1) instead of reporting false success with `?? 0`.
+        process.exit(child.status ?? 1);
       }
     }
   }
