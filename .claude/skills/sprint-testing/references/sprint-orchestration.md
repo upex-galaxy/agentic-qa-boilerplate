@@ -298,12 +298,14 @@ Exact instructions:
   5. Create ATP + ATR per the modality branch in acceptance-test-planning.md §"Phase 6 — Traceability + Ticket updates":
        - Modality jira-xray: [TMS_TOOL] Create TestPlan + Create Execution; link to Story via [ISSUE_TRACKER_TOOL] Link Issues.
        - Modality jira-native: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_plan}} field (or `## Acceptance Test Plan (ATP)` fallback comment when the field is absent).
-  6. Materialize the local cache: `bun run jira:sync-issues get <TICKET_KEY> --include-comments` writes <PBI_FOLDER>/acceptance-test-plan.md (read-only cache; never hand-write it). Read it back to confirm.
+  6. Materialize the local cache per modality (read-only cache; never hand-write it), then read it back to confirm:
+       - Modality jira-native: `bun run jira:sync-issues get <TICKET_KEY> --include-comments` -> <PBI_FOLDER>/acceptance-test-plan.md
+       - Modality jira-xray: `bun run jira:sync-issues get <ATP_KEY>` -> .context/PBI/test-plans/TESTPLAN-<ATP_KEY>-<slug>.md (the Test Plan issue; its description holds the ATP body)
   7. Update <PBI_FOLDER>/test-session-memory.md sections: TMS Artifacts, Test Data, Stage Results > Planning, Checklist > Planning.
 
 Report format:
   {
-    "atp_path": "<PBI_FOLDER>/acceptance-test-plan.md",
+    "atp_path": "<PBI_FOLDER>/acceptance-test-plan.md (jira-native) | .context/PBI/test-plans/TESTPLAN-<ATP_KEY>-<slug>.md (jira-xray)",
     "atp_id": "<TMS issue key | story-field>",
     "atr_id": "<TMS issue key | story-field>",
     "atc_drafts": [{ "title": "...", "type": "Positive|Negative|Boundary|Edge", "priority": "P0|P1|P2" }],
@@ -328,7 +330,7 @@ Rules:
 Goal: Run smoke pass + triforce exploration (UI / API / DB) for <TICKET_KEY> against the <ENV> environment; capture evidence; surface any BUG_FOUND.
 
 Context docs:
-  - <PBI_FOLDER>/acceptance-test-plan.md (the ATP from Stage 1 — Jira-synced cache)
+  - <PBI_FOLDER>/acceptance-test-plan.md (the ATP from Stage 1 — Jira-synced cache; Modality jira-xray: .context/PBI/test-plans/TESTPLAN-<ATP_KEY>-<slug>.md)
   - <PBI_FOLDER>/test-session-memory.md (READ FIRST — shared memory)
   - <PBI_FOLDER>/context.md
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/exploration-patterns.md
@@ -382,7 +384,7 @@ Rules:
 Goal: Fill the ATR, post the QA comment, transition the issue, and file bug reports for <TICKET_KEY>.
 
 Context docs:
-  - <PBI_FOLDER>/acceptance-test-plan.md (ATP — Jira-synced cache)
+  - <PBI_FOLDER>/acceptance-test-plan.md (ATP — Jira-synced cache; Modality jira-xray: .context/PBI/test-plans/TESTPLAN-<ATP_KEY>-<slug>.md)
   - <PBI_FOLDER>/test-session-memory.md (READ FIRST — shared memory; contains Stage 2 results)
   - <PBI_FOLDER>/evidence/ (Stage 2 evidence)
   - <PBI_FOLDER>/context.md (ticket summary)
@@ -397,7 +399,9 @@ Exact instructions:
   3. Update the ATR in TMS:
        - Modality jira-xray: [TMS_TOOL] Update Test Execution / Run statuses; mark ATR complete.
        - Modality jira-native: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_results}} field (or `## Acceptance Test Results (ATR)` fallback comment when the field is absent).
-  3a. Materialize the local cache: `bun run jira:sync-issues get <TICKET_KEY> --include-comments` writes <PBI_FOLDER>/acceptance-test-results.md (read-only cache; never hand-write it). Read it back to confirm.
+  3a. Materialize the local cache per modality (read-only cache; never hand-write it), then read it back to confirm:
+        - Modality jira-native: `bun run jira:sync-issues get <TICKET_KEY> --include-comments` -> <PBI_FOLDER>/acceptance-test-results.md
+        - Modality jira-xray: `bun run jira:sync-issues get <ATR_KEY>` -> .context/PBI/test-executions/TESTEXEC-<ATR_KEY>-<slug>.md (the Test Execution issue; its description holds the ATR body)
   4. Post QA comment on <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Add Comment using the matching template from reporting-templates.md (Story PASSED/FAILED, or Bug Template C/D).
   5. Transition <TICKET_KEY> via [ISSUE_TRACKER_TOOL] Transition Issue. Resolve from substrate:
        - **Story PASSED** -> `{{jira.transition.story.qa_sign_off}}` (`in_test` -> `qa_approved`).
@@ -413,7 +417,7 @@ Exact instructions:
 
 Report format:
   {
-    "atr_path": "<PBI_FOLDER>/acceptance-test-results.md",
+    "atr_path": "<PBI_FOLDER>/acceptance-test-results.md (jira-native) | .context/PBI/test-executions/TESTEXEC-<ATR_KEY>-<slug>.md (jira-xray)",
     "atr_id": "<TMS issue key | story-field>",
     "result": "PASSED | FAILED | PASSED WITH ISSUES",
     "tc_summary": { "total": <int>, "passed": <int>, "failed": <int>, "pass_rate": "<percent>" },

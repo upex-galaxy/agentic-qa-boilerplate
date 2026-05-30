@@ -315,7 +315,7 @@ for each {TEST_KEY, result} in run:
 
 If the run was already imported from CI via `[TMS_TOOL] Import Results`, the Test Runs are already populated — only the description + Environment + Begin/End need the manual update.
 
-#### Modality jira-native (ATR = Story customfield + comment)
+#### Modality jira-native (ATR = Story customfield; comment is fallback only)
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:

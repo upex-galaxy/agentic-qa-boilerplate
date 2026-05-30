@@ -386,7 +386,7 @@ Load `/xray-cli` skill for the concrete CLI syntax.
 
 #### Modality jira-native (no Xray)
 
-ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md`: `{{jira.acceptance_test_plan}}` for ATP and `{{jira.acceptance_test_results}}` for ATR. Both fields are populated as customfield + comment-mirror pairs; `fix-traceability` checks both.
+ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md`: `{{jira.acceptance_test_plan}}` for ATP and `{{jira.acceptance_test_results}}` for ATR. Each field is the source of truth; a `## <label>` comment is posted ONLY as a fallback when the field is absent on the instance. `fix-traceability` checks the field, or the fallback comment when the field is absent.
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:

@@ -324,7 +324,7 @@ Actions:
 7. Create TCs with FULL traceability (`--story + --test-plan + --test-result`).
 8. Verify: `[TMS_TOOL] trace {{PROJECT_KEY}}-{number}` (traceability stays on `[TMS_TOOL]`, not the sync).
 9. Mark ATP complete. Transition TCs to Ready.
-10. Materialize `acceptance-test-plan.md` in the STORY folder via `bun run jira:sync-issues get <KEY> --include-comments` (read-only cache; never hand-written).
+10. Materialize the read-only cache (never hand-written) per modality: jira-native -> `bun run jira:sync-issues get <KEY> --include-comments` -> `acceptance-test-plan.md` in the STORY folder; jira-xray -> `bun run jira:sync-issues get <ATP_KEY>` -> `.context/PBI/test-plans/TESTPLAN-<ATP_KEY>-<slug>.md`.
 
 Output checkpoint:
 
@@ -374,7 +374,7 @@ Actions:
 
 1. Compile TC summary (total, PASSED, FAILED, pass rate).
 2. Fill the ATR Test Report via `[TMS_TOOL] atr update {ATR-ID} --report "..."` (or write `{{jira.acceptance_test_results}}` / fallback comment in Modality jira-native). Mark ATR complete.
-3. Materialize `acceptance-test-results.md` in the STORY folder via `bun run jira:sync-issues get <KEY> --include-comments` (read-only cache; never hand-written).
+3. Materialize the read-only cache (never hand-written) per modality: jira-native -> `bun run jira:sync-issues get <KEY> --include-comments` -> `acceptance-test-results.md` in the STORY folder; jira-xray -> `bun run jira:sync-issues get <ATR_KEY>` -> `.context/PBI/test-executions/TESTEXEC-<ATR_KEY>-<slug>.md`.
 4. Post the QA comment to the ticket via `[ISSUE_TRACKER_TOOL]`. Use the user-story templates (PASSED / FAILED) from `reporting-templates.md`.
 5. Transition the ticket via substrate. Decision tree: Story PASSED -> `{{jira.transition.story.qa_sign_off}}`; Bug PASSED -> `{{jira.transition.bug.retest_passed}}`; Story FAILED with `{{FORMAL_BLOCKED_GATE}}=true` -> `{{jira.transition.story.defect_reported}}` (`in_test` -> `blocked`); Story FAILED non-strict (flag false or no `blocked` slug) -> leave in `{{jira.status.story.in_test}}` with linked bug; Bug FAILED -> leave in `{{jira.status.bug.ready_for_qa}}` (or `back` / `re_open` if previously closed). See `sprint-orchestration.md` Briefing 4 Step 5 for the full decision tree.
 6. Attach evidence screenshot paths for the user.

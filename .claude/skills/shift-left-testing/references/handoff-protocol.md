@@ -120,22 +120,28 @@ OR Modality jira-native:
 
 Custom-field write may fail in Modality jira-xray if the Jira instance has not provisioned `{{jira.acceptance_test_plan}}`. Fall back to comment-only mode and warn the user in the per-Story summary.
 
-### Step 3 — Canonical comment mirror
+### Step 3 — Handoff notification + fallback comment
 
-Post the ENTIRE `shift-left-refinement.md` body as a comment on the Story. Byte-for-byte mirror of the custom field. This is the canonical source `fix-traceability` checks later.
+Jira is the source of truth: the ATP DRAFT lives in the `{{jira.acceptance_test_plan}}` field (Step 2) — do NOT mirror it into a comment when the field exists. Post ONE handoff comment on the Story:
+
+- **Field present (default)**: a SHORT notification — the ATP DRAFT is ready for review in the `{{jira.acceptance_test_plan}}` field. Do NOT paste the full body.
+- **FALLBACK — only if `{{jira.acceptance_test_plan}}` is absent on this instance** (per `.agents/jira-required.yaml` → `acceptance_test_plan.fallback`, `{ target: comment, label: "Acceptance Test Plan (ATP)" }`): inline the full body under a `## Acceptance Test Plan (ATP)` heading so the content still lands somewhere readable.
 
 ```
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
-    === Shift-Left Refinement: {{PROJECT_KEY}}-{n} ===
-    <full shift-left-refinement.md body — byte-for-byte mirror>
-    ---
-    Refined on: {{YYYY-MM-DD}}
-    Refined by: QA Shift-Left batch session
-    Source of truth: this comment + custom field {{jira.acceptance_test_plan}} (byte-for-byte mirror).
+    ## Acceptance Test Plan (ATP) — Shift-Left DRAFT ready for review
+    {@PO_HANDLE} {@DEV_LEAD_HANDLE}
+    The ATP DRAFT lives in the {{jira.acceptance_test_plan}} field.
+    # FALLBACK ONLY (field absent): replace the pointer line above with the full shift-left-refinement.md body.
+
+    Action Required: review ambiguities, answer critical questions, confirm edge-case behavior, validate parametrization.
+    Refined on: {{YYYY-MM-DD}} — QA Shift-Left batch session
     Local working copy: .context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-{STORY_KEY}-<slug>/shift-left-refinement.md
 ```
+
+`fix-traceability` checks the `{{jira.acceptance_test_plan}}` field, or this `## Acceptance Test Plan (ATP)` fallback comment when the field is absent.
 
 Mention rule: include `@PO_HANDLE` and `@DEV_LEAD_HANDLE` in the comment IF those handles are available in `.agents/project.yaml`. Otherwise omit — mention-spam is worse than no mention.
 

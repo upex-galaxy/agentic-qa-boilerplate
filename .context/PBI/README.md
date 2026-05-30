@@ -1,138 +1,64 @@
 # Product Backlog Items (PBI)
 
-This directory contains User Stories, module-level test planning, and automation tracking for the testing project.
+Per-epic and per-story QA workspace shared by `/shift-left-testing`, `/sprint-testing`, `/test-documentation`, and `/test-automation`.
 
-## Structure
+> **This tree is OWNED by `scripts/sync-jira-issues.ts`.** Module = Epic (1:1). **Jira is the source of truth; every `[SYNC]` `.md` here is a read-only cache.** NEVER hand-write a Jira-mirrored file — generate the content, push it to the Jira field (or fallback comment), run the sync, then read the materialized file back. Authoritative tree + ownership rules live in `CLAUDE.md` §9.
 
-```
-PBI/
-├── README.md                           # This file
-├── templates/                          # Templates for per-module structure
-│   ├── module-context-template.md      # Module technical context
-│   ├── ROADMAP-template.md             # Module roadmap with phases
-│   └── PROGRESS-template.md            # Cross-session progress tracker
-│
-├── ── PER-STORY (simple) ────────────
-├── {TICKET-ID}-feature-name.md         # User Story with ticket ID
-│
-├── ── PER-MODULE (complex) ──────────
-├── {module-name}/                      # Module-level testing folder
-│   ├── {module}-test-plan.md           # Master module test plan
-│   ├── TK-{id}-{feature}/             # Per-ticket context
-│   │   ├── context.md                  # AC summary, code locations, test data
-│   │   └── evidence/                   # Screenshots, logs (gitignored)
-│   └── test-specs/                     # Unified test specifications + implementation
-│       ├── ROADMAP.md                  # Roadmap with phases + dependencies
-│       ├── PROGRESS.md                 # Session-by-session progress tracker
-│       └── {PREFIX}-T01-{name}/        # Ticket directory (one per functional area)
-│           ├── spec.md                 # Business-level: TCs in Gherkin
-│           ├── implementation-plan.md  # Technical-level: KATA components, fixtures
-│           └── atc/                    # Individual ATC specs (for complex ATCs)
-│               └── {TICKET-ID}-{name}.md
-│
-├── ── REAL EXAMPLE ──────────────────
-└── auth/                               # Complete example: Auth module
-    ├── auth-test-plan.md
-    └── test-specs/
-        ├── ROADMAP.md
-        ├── PROGRESS.md
-        └── AUTH-T01-user-session-validation/
-            ├── spec.md
-            ├── implementation-plan.md
-            └── atc/
-                ├── UPEX-101-authenticate-successfully.md
-                └── UPEX-105-login-successfully.md
-```
-
-## When to Use Each Structure
-
-| Structure | When | Example |
-|-----------|------|---------|
-| **Per-Story** | Single story, few TCs, no cross-session tracking needed | Bug fix, small feature |
-| **Per-Module** | Module with multiple tickets, many TCs, multi-session automation | Dashboard, checkout flow, admin panel |
-
-## Templates
-
-Templates are provided for the per-module structure. Use them as reference when generating your module folder contents.
-
-| Template | Purpose | Copy To |
-|----------|---------|---------|
-| `module-context-template.md` | Technical context: routes, APIs, DB, business rules | `{module}/` |
-| `ROADMAP-template.md` | Roadmap with phases, dependencies, TC counts | `{module}/test-specs/ROADMAP.md` |
-| `PROGRESS-template.md` | Track progress across AI sessions | `{module}/test-specs/PROGRESS.md` |
-
-### Workflow
+## Layout (canonical, Epic-centric)
 
 ```
-1. Create module folder: .context/PBI/{module-name}/
-2. Copy templates into the folder structure above
-3. Fill in module-context and roadmap
-4. At the start of each AI session, invoke `/test-automation` (or describe what you want --
-   the skill auto-triggers from natural language). It reads PROGRESS.md + ROADMAP.md and
-   resumes work from the right ticket.
-5. AI updates PROGRESS.md at end of each session
+.context/PBI/
+  epic-tree.md                                   [SYNC] master index
+  epics/EPIC-<KEY>-<slug>/
+    epic.md                                       [SYNC]
+    feature-implementation-plan.md                [SYNC ← Jira field / stub]
+    feature-test-plan.md                          [SYNC ← Jira field / stub]
+    module-context.md                             [skill — non-Jira, OK]
+    test-specs/                                   [skill — non-Jira, EPIC level]
+      ROADMAP.md  PROGRESS.md
+      <ID>/ spec.md  automation-plan.md  atc/*.md
+    stories/STORY-<KEY>-<slug>/
+      story.md                                    [SYNC]
+      acceptance-criteria.md  business-rules.md  scope.md  out-of-scope.md
+      workflow.md  mockup.md  implementation-plan.md        [SYNC ← Jira fields / stub]
+      acceptance-test-plan.md  acceptance-test-results.md   [SYNC ← Jira fields / stub]
+      comments.md                                 [SYNC, --include-comments]
+      context.md  test-session-memory.md          [skill — non-Jira, OK]
+      shift-left-refinement.md                    [skill — non-Jira, OK]
+      test-cases/  evidence/                       [skill — non-Jira, OK]
+      defects/DEFECT-<KEY>-<slug>.md              [SYNC]
+  bugs/ defects/ improvements/ tests/             [SYNC — standalone issue types]
+  test-plans/ test-executions/ test-sets/ preconditions/   [SYNC — Xray container issues (jira-xray); description holds the ATP/ATR body]
+  shift-left-sessions/<date>/batch-report.md      [skill — non-Jira, OK]
 ```
 
-## Real Example: Auth Module
+Folder naming follows Jira IDs verbatim — `<KEY>` is the Jira issue key, `<slug>` is `kebab-case` from the summary. Epic and Story folders are prefixed `EPIC-` / `STORY-`. Every Story lives under its Epic's `stories/` (Module = Epic, 1:1).
 
-The `auth/` directory contains a complete, real example of the per-module structure applied to the authentication module. Use it as a reference for:
+## `[SYNC]` vs skill-authored
 
-| Document | Path | Purpose |
-|----------|------|---------|
-| Master test plan | `auth/auth-test-plan.md` | How the module was analyzed |
-| Business spec | `auth/test-specs/AUTH-T01-.../spec.md` | TC definitions in Gherkin |
-| Implementation plan | `auth/test-specs/AUTH-T01-.../implementation-plan.md` | KATA components and architecture |
-| ATC spec (API) | `auth/test-specs/AUTH-T01-.../atc/UPEX-101-*.md` | Individual ATC contract |
-| ATC spec (UI) | `auth/test-specs/AUTH-T01-.../atc/UPEX-105-*.md` | Individual ATC contract |
+- **`[SYNC]` files = forbidden to hand-write.** They are overwritten on every sync — **NO file is hard-protected.** A file that mirrors a Jira/Xray field → read the synced copy, never author it locally.
+- **Skill-authored, non-Jira files** (`module-context.md`, `test-specs/`, `context.md`, `test-session-memory.md`, `shift-left-refinement.md`, `test-cases/`, `evidence/`, `shift-left-sessions/`) hold info that is NOT in Jira → author them locally as usual.
 
-## Test Specs: Unified Documentation
+## Jira-first generation contract
 
-Each ticket directory in `test-specs/` contains **both** levels of documentation:
+Every `[SYNC]` file's content originates in Jira. The flow is always **generate → push to Jira field (or fallback comment) → `jira:sync-issues` → read**:
 
-| File | Level | Created By | When |
-|------|-------|------------|------|
-| `spec.md` | Business (QUE testear) | Test-Manager Agent | During test planning |
-| `implementation-plan.md` | Technical (COMO implementar) | Test-Automation Agent | Before coding |
-| `atc/*.md` | ATC contract (method spec) | Test-Automation Agent | For complex ATCs only |
+1. `/shift-left-testing` refines ACs and the ATP DRAFT, writes them to the Story's custom fields (`{{jira.acceptance_criteria}}`, `{{jira.acceptance_test_plan}}`), then syncs.
+2. `/sprint-testing` authors the ATP/ATR and pushes them to the Story fields (jira-native) or the Xray `Test Plan` / `Test Execution` description (jira-xray), then materializes the read-only cache per modality (story-folder `acceptance-test-*.md`, or `.context/PBI/test-plans/` / `test-executions/`).
+3. If a custom field is absent on the instance, the skill writes the content as a structured Jira comment (`## <label>`, per `.agents/jira-required.yaml` → `fallback:`); the sync then emits a pointer stub for that field's `.md`. Never block on a missing field.
 
-## Per-Story File Format
+The **test-specs/** subtree (EPIC level) is `/test-automation`'s own non-Jira working area: `spec.md` (business-level TCs in Gherkin), `automation-plan.md` (KATA components, fixtures, architecture), and `atc/*.md` (per-ATC contracts for complex ATCs). These are authored locally — they are NOT Jira-mirrored.
 
-Each PBI should follow this format:
+## Detailed reads go through the sync
 
-```markdown
-# {TICKET-ID} User Story Title
+Custom-field content (ACs, ATP/ATR, scope, business rules, comments) is **only** read via the sync — `acli view` returns null for `customfield_*`:
 
-## User Story
-As a [role]
-I want [action]
-So that [benefit]
-
-## Acceptance Criteria
-- [ ] AC1: Criteria description
-- [ ] AC2: Criteria description
-
-## Test Scenarios
-| ID | Scenario | Expected Result | Priority |
-|----|----------|-----------------|----------|
-| TS-001 | ... | ... | High |
-
-## Notes
-Additional information relevant for testing.
-```
-
-## Usage with AI
-
-Files in this directory are used as context by the AI to:
-- Generate test cases based on ACs
-- Create page object components
-- Design precondition flows
-- Document test scenarios
-- Track automation progress across sessions
-- Resume work without losing context
+- `bun run jira:sync-issues get <KEY> --include-comments` → one issue, ALL custom fields + comments → read the generated `.md`.
+- `bun run jira:sync-issues jql "<query>"` → batch. `pull --epic <KEY>` / `--story <KEY>` → scoped.
+- Traceability link-graph (Story↔ATP↔ATR↔TC) + Xray run status stay on `acli` / `xray-cli` — the script only mirrors field content.
 
 ## Conventions
 
-- **Prefix**: Use your Jira project key as prefix — `{{PROJECT_KEY}}-` (declared in `.agents/project.yaml`).
-- **Names**: Use kebab-case for file names
-- **Status**: Mark ACs as `[x]` when covered by tests
-- **Evidence**: Add `evidence/` to `.gitignore` (screenshots, logs are ephemeral)
+- **Prefix**: Jira project key — `{{PROJECT_KEY}}-` (declared in `.agents/project.yaml`).
+- **Names**: kebab-case for file names; `EPIC-` / `STORY-` / `DEFECT-` prefixes on folders per the canonical tree.
+- **Evidence**: `evidence/` holds ephemeral screenshots/logs (gitignored).

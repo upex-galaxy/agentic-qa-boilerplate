@@ -312,10 +312,11 @@ Project values live in **`.agents/project.yaml`** — load once per session, cac
       test-cases/  evidence/                     [skill — non-Jira, OK]
       defects/DEFECT-<KEY>-<slug>.md             [SYNC]
   bugs/ defects/ improvements/ tests/            [SYNC — standalone issue types]
+  test-plans/ test-executions/ test-sets/ preconditions/   [SYNC — Xray container issues (jira-xray); description holds the ATP/ATR body]
   shift-left-sessions/<date>/batch-report.md     [skill — non-Jira, OK]
 ```
 
-**`[SYNC]` files = forbidden to hand-write** (overwritten on next sync; only `test-cases.md` is hard-protected). **Rule of thumb**: file mirrors a Jira/Xray field → read the synced copy, never author it locally. File holds info NOT in Jira (session notes, specs, ATC, roadmaps, evidence) → author it locally as usual.
+**`[SYNC]` files = forbidden to hand-write** (overwritten on every sync — NO file is hard-protected; Jira is the source of truth). **Rule of thumb**: file mirrors a Jira/Xray field → read the synced copy, never author it locally. File holds info NOT in Jira (session notes, specs, ATC, roadmaps, evidence) → author it locally as usual.
 
 **DETAILED READS via the script** (replaces `acli view` for custom fields):
 - `bun run jira:sync-issues get <KEY> --include-comments` → one issue, ALL custom fields + comments → read the generated `.md`.

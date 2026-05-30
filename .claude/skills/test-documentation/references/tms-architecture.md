@@ -24,8 +24,8 @@ The entity model is tool-agnostic, but the **container** each entity lives in ch
 | Entity | Modality jira-xray | Modality jira-native (no Xray) |
 |--------|---------------------------|-------------------------------------|
 | **US** | Jira `Story` | Jira `Story` |
-| **ATP** | Xray `Test Plan` issue. Named `Test Plan: {{PROJECT_KEY}}-{n}`. Linked to the Story via "tests". | Story's `{{jira.acceptance_test_plan}}` + comment mirror on the same Story. **No separate issue created.** |
-| **ATR** | Xray `Test Execution` issue. Named `Test Results: {{PROJECT_KEY}}-{n}`. Holds `Test Runs` per TC, plus Environment, Begin/End Date. Gets populated by CI import. | Story's `{{jira.acceptance_test_results}}` + comment mirror on the same Story. **No separate issue.** CI updates Test Status field on each TC directly. |
+| **ATP** | Xray `Test Plan` issue. Named `Test Plan: {{PROJECT_KEY}}-{n}`. Linked to the Story via "tests". | Story's `{{jira.acceptance_test_plan}}` field (source of truth); falls back to a `## Acceptance Test Plan (ATP)` comment only when the field is absent. **No separate issue created.** |
+| **ATR** | Xray `Test Execution` issue. Named `Test Results: {{PROJECT_KEY}}-{n}`. Holds `Test Runs` per TC, plus Environment, Begin/End Date. Gets populated by CI import. | Story's `{{jira.acceptance_test_results}}` field (source of truth); falls back to a `## Acceptance Test Results (ATR)` comment only when the field is absent. **No separate issue.** CI updates Test Status field on each TC directly. |
 | **TC** | Xray `Test` issue (type Manual / Cucumber / Generic) | Jira-native `Test` custom issue type (set up per `references/jira-setup.md`) or `Task` with a `Test Type` custom field. |
 | **Test Set / Precondition / Test Plan hierarchy** | First-class Xray issue types | Not available — group by labels + Regression Epic. |
 

@@ -281,12 +281,13 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
        fields:
          {{jira.acceptance_test_plan}}: <full shift-left-refinement.md body>
 
-3. Post the canonical comment mirror on the Story:
+3. Handoff notification on the Story (the ATP DRAFT lives in {{jira.acceptance_test_plan}} — do NOT mirror it; inline the full body as a `## Acceptance Test Plan (ATP)` comment ONLY if that field is absent — fallback per jira-required.yaml):
      [ISSUE_TRACKER_TOOL] Add Comment:
        issue: {STORY_KEY}
        body: |
-         === Shift-Left Refinement: {{PROJECT_KEY}}-{n} ===
-         <full shift-left-refinement.md body — byte-for-byte mirror>
+         ## Acceptance Test Plan (ATP) — Shift-Left DRAFT ready for review
+         ATP DRAFT lives in the {{jira.acceptance_test_plan}} field.
+         # FALLBACK ONLY (field absent): replace the pointer line above with the full shift-left-refinement.md body.
 
 4. Labels:
      [ISSUE_TRACKER_TOOL] Update Issue:

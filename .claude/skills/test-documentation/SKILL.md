@@ -95,8 +95,8 @@ Does this project have Xray installed and licensed on Jira?
 
 | Artifact | Modality jira-xray | Modality jira-native |
 |----------|---------------------------|---------------------------|
-| **ATP** (Acceptance Test Plan) | Xray `Test Plan` issue, named `Test Plan: {{PROJECT_KEY}}-{n}`, linked to US | Story `{{jira.acceptance_test_plan}}` + comment mirror on the Story. No separate issue. |
-| **ATR** (Acceptance Test Results) | Xray `Test Execution` issue with Test Runs per TC, Environment, Begin/End Date, named `Test Results: {{PROJECT_KEY}}-{n}` | Story `{{jira.acceptance_test_results}}` + comment mirror on the Story. |
+| **ATP** (Acceptance Test Plan) | Xray `Test Plan` issue, named `Test Plan: {{PROJECT_KEY}}-{n}`, linked to US | Story `{{jira.acceptance_test_plan}}` field (source of truth); falls back to a `## Acceptance Test Plan (ATP)` comment only when the field is absent. No separate issue. |
+| **ATR** (Acceptance Test Results) | Xray `Test Execution` issue with Test Runs per TC, Environment, Begin/End Date, named `Test Results: {{PROJECT_KEY}}-{n}` | Story `{{jira.acceptance_test_results}}` field (source of truth); falls back to a `## Acceptance Test Results (ATR)` comment only when the field is absent. |
 | **TC** (Test Case) | Xray `Test` issue (type Manual / Cucumber / Generic) | Jira-native `Test` issue type (or `Task` with custom type), Description carries the full TC template |
 | **Test Set / Precondition / Test Plan** | First-class Xray issue types | Not available — use labels + Epic grouping |
 | **Result sync** | CI imports JUnit/Cucumber via `[TMS_TOOL] Import Results` -> Test Runs auto-update | Custom script updates Test Status field on each TC + comment with build context |
@@ -524,30 +524,32 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
 > **Prerequisite**: Load `/acli` skill before executing commands below.
 
 ```
-# ATP = Story customfield + comment mirror. NO separate issue.
+# ATP = Story customfield (source of truth). NO separate issue.
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
     {{jira.acceptance_test_plan}}: {Test Analysis body}
   labels: +shift-left-reviewed
 
+# FALLBACK only if {{jira.acceptance_test_plan}} is absent in .agents/jira-fields.json:
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
-    === Acceptance Test Plan ({{PROJECT_KEY}}-{n}) ===
-    {Test Analysis body — byte-for-byte mirror of {{jira.acceptance_test_plan}}}
+    ## Acceptance Test Plan (ATP)
+    {Test Analysis body}
 
-# ATR = Story customfield + comment mirror. NO separate issue.
+# ATR = Story customfield (source of truth). NO separate issue.
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
     {{jira.acceptance_test_results}}: {Test Report body}
 
+# FALLBACK only if {{jira.acceptance_test_results}} is absent in .agents/jira-fields.json:
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
-    === Acceptance Test Results ({{PROJECT_KEY}}-{n}) ===
-    {Test Report body — byte-for-byte mirror of {{jira.acceptance_test_results}}}
+    ## Acceptance Test Results (ATR)
+    {Test Report body}
 
 # TC = Jira-native Test issue (custom issue type configured per jira-setup.md)
 [ISSUE_TRACKER_TOOL] Create Issue:
