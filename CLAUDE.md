@@ -66,6 +66,8 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 - **Skip**: single-concept answers, yes/no, linear narratives, decorative structure.
 - **Rendering safety**: plain ASCII (`+--+`, `->`, `|`) over Unicode box-drawing when uncertain about target terminal.
 
+**FEEDBACK GRANULARITY.** >3 decision points OR long multi-section explanation user may want to answer point-by-point → prefer WokiToki (binary `toki`) over inline questionnaire or `AskUserQuestion`. Write spec JSON, run `bun run toki <path>`, read anchored JSON result. Each answer maps to a block id, optional highlight quotes. Unanchored prose feedback = the enemy. 1-2 decisions or quick yes/no → inline ask, skip the ceremony.
+
 **SIGNALS THESE WORK**: fewer diff changes, fewer rewrites, clarifying questions BEFORE implementation. PM Voice → fewer "what does that mean?" follow-ups. Visual Mapping → readers grasp impact at-a-glance, paste tables into Confluence / ATR.
 
 ---
@@ -174,6 +176,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | `acli` | `/acli` | Atlassian CLI. Resolves `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` (Modality jira-native). |
 | `git-flow-master` | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR. |
 | `judgment-day` | `/judgment-day`, `juzgar`, `dual review` | T2 vendored from gentle-ai (Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, synthesis, fix loop, re-judge). Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. Never auto-invoked. |
+| `wokitoki` | `/wokitoki` | Interactive human-in-the-loop feedback: serves a local dark web UI to answer decision-sets or long reports point-by-point (anchored quotes), returns JSON the AI reads same-turn. Prefer over inline questionnaires / `AskUserQuestion` when >3 decisions or a long explanation. |
 
 ### Commands (single-file utilities in `.claude/commands/`)
 
@@ -213,6 +216,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | `[API_TOOL]` | API exploration | OpenAPI MCP | Postman / curl |
 | `[DOCS_TOOL]` | Library / framework / SDK / API / CLI official docs | Context7 MCP (`mcp__context7__resolve-library-id` → `mcp__context7__query-docs`) | built-in `WebSearch` / `WebFetch` (last resort only) |
 | `[WEB_SEARCH_TOOL]` | General web search, community fixes, troubleshooting, non-doc research | Tavily MCP (`mcp__tavily__tavily_search` / `tavily_extract` / `tavily_research`) | built-in `WebSearch` / `WebFetch` (last resort only) |
+| `[FEEDBACK_TOOL]` | Structured human feedback mid-conversation | `/wokitoki` (CLI `toki`) | `AskUserQuestion` / inline questionnaire |
 
 **MANDATORY**: LOAD owning skill BEFORE invoking its tool. Skills = WHEN/WHAT. HOW (syntax, flags, auth, errors) lives in skill's `references/`.
 
@@ -250,6 +254,7 @@ Skills using `[TMS_TOOL]` MUST include parallel pseudocode branches for both mod
 | `jq` | `/acli` (primary consumer of jq pipelines) |
 | `bun` | `/bun` (community USER) |
 | `bun xray` | `/xray-cli` (in-repo) |
+| `toki` | `/wokitoki` (in-repo) |
 
 **RULE**: Before any Bash call naming these binaries, check matching skill loaded. If not → load via Skill tool first. Hard gate, not suggestion.
 

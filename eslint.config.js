@@ -15,6 +15,7 @@ export default antfu({
     'dist',
     'test-results',
     'playwright-report',
+    '.playwright',
     'allure-results',
     'allure-report',
     'reports',

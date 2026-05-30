@@ -108,6 +108,10 @@ dbhub.local.toml
 # Local-only — canonical artifacts are committed under .context/.
 .session/
 
+# Ephemeral WokiToki cache (spec/result/screenshot) written by cli/toki/.
+# stdout carries the canonical result JSON — this dir is a local backup only.
+.toki/
+
 # ===== SDD / Framework Internals =====
 # Auto-generated skill registry + per-session SDD artifacts. Local only.
 .atl/

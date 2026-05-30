@@ -80,6 +80,7 @@
     "test:sync": "bun tests/utils/jiraSync.ts",
     "test:ui": "playwright test --ui",
     "test": "playwright test",
+    "toki": "bun cli/toki/index.ts",
     "types:check": "tsc --noEmit",
     "up": "bun cli/update-boilerplate.ts",
     "vars:check": "bun scripts/lint-vars.ts",

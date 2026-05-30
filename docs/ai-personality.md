@@ -141,6 +141,12 @@ When the content is naturally mappable, the AI prefers a visual representation o
 
 **Why it exists**: a well-placed table or diagram can compress a paragraph into a glance, and the reader can often paste the artifact directly into Confluence, Notion, Slack, or an ATR test report without redrawing it.
 
+### 3.7 Feedback Granularity (anchored point-by-point feedback)
+
+When there are more than 3 decision points, or a long multi-section explanation you may want to react to point-by-point, the AI prefers **WokiToki** (the `toki` CLI) over an inline questionnaire or a one-shot `AskUserQuestion`. It writes a spec JSON, runs `bun run toki <path>`, and reads back an anchored JSON result where each answer maps to a specific block id, with optional highlight quotes pulled from the content. One or two decisions, or a quick yes / no, stay inline — the tool is reserved for the cases where its ceremony pays off.
+
+**Why it exists**: unanchored prose feedback is the enemy of precise planning. When you answer many points at once, the AI must guess which reply belongs to which point. Anchoring each answer to a block (and letting you quote the exact phrase you mean) removes that ambiguity, so the resulting plan or decision is far more precise.
+
 ---
 
 ## 4. How the strategies compose

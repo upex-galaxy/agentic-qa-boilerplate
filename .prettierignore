@@ -76,3 +76,5 @@ docs/mcp/
 .auth/
 .playwright/
 !.playwright/cli.config.json
+# .toki/ holds WokiToki's ephemeral spec/result/screenshot cache (gitignored).
+.toki/

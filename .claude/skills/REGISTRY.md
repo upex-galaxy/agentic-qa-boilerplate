@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-05-25T08:48:09.804Z`
+> Generated: `2026-05-30T23:15:21.679Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.claude/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -8,7 +8,7 @@ This file is the per-session compact-rules cache for the Skill Resolver protocol
 The orchestrator copies one or more `## Skill: <slug>` blocks below into every subagent briefing under `## Project Standards (auto-resolved)`.
 Subagents trust those compact rules and only read the full SKILL.md when explicitly instructed.
 
-Skills indexed: 13
+Skills indexed: 14
 
 ---
 ## Skill: acli
@@ -336,6 +336,34 @@ Skills indexed: 13
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
 > Source: `.claude/skills/test-documentation/SKILL.md` · phase: `unknown` · extraction strategy: B
+
+---
+
+## Skill: wokitoki
+
+**Purpose**: WokiToki (`toki`) — a local, browser-based human-in-the-loop feedback CLI the AI drives mid-conversation to collect structured, anchored,...
+
+**Compact Rules**:
+- **`AskUserQuestion`** is capped (~4 questions × ~4 options), terminal-bound, has no rich free-text, and cannot display the reference content while the user answers.
+- **Inline prose questionnaire** produces unanchored replies: the AI has to guess which paragraph/point each sentence of the reply maps to. WokiToki returns per-block answers keyed by a stable `id`, so the mapping is exact.
+- `controls` absent → report paragraph. Present → question. Mixed list → hybrid.
+- `controls.type`: `single` (radio), `multi` (checkbox), `toggle` (boolean switch, no `options`).
+- `controls.required` and `text.required` are independent — either, both, or neither can be required per block.
+- `id` is the stable AI-assigned key the answer is mapped back to.
+- **Write the spec** to a JSON file. Convention: `.toki/spec-<name>.json` (a `spec-<name>.json` filename makes the backup land at `.toki/result-<name>.json`). The `.toki/` dir is git-ignored.
+- **Run it (blocking):** `bun run toki <specPath>`. This serves the UI, opens the browser, and waits.
+- Flags: `--port <n>` (default 4747, auto-increments if busy), `--timeout <min>` (default 30, fractional ok), `--no-open` (print the URL but do not open the browser), `--help`.
+- **Parse stdout.** stdout carries **ONLY** the Result JSON — one object, no banner. All progress lines, the waiting URL, and errors go to **stderr**. Read stdout, `JSON.parse` it, continue the same turn.
+- `single` → `string` (the chosen option `value`) or `null` if unanswered.
+- `multi` → `string[]` (chosen option `value`s; `[]` if none).
+- `toggle` → `boolean`.
+- report block / no controls → `null`.
+- `text` — the user's free-text for that block (empty string `""` if untouched).
+- (truncated — read full SKILL.md for the rest)
+
+**Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
+
+> Source: `.claude/skills/wokitoki/SKILL.md` · phase: `unknown` · extraction strategy: B
 
 ---
 

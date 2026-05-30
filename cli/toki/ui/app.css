@@ -1,0 +1,784 @@
+/*
+ * WokiToki (`toki`) - dark-theme stylesheet.
+ *
+ * Vanilla CSS, zero dependencies (no preprocessor, no framework, no @import,
+ * no CDN fonts - system font stack only). This file is inlined verbatim into
+ * the rendered HTML document by render.ts. It styles the exact class/id
+ * contract shared with render.ts (static shell) and app.js (interactive parts).
+ *
+ * State classes added beyond the DOM contract (app.js toggles these):
+ *   .is-open    on #toki-drawer  -> drives the visible drawer/bottom-sheet transform
+ *   .is-invalid on .toki-text / .toki-controls -> highlights an unsatisfied required field
+ *   .is-visible on #toki-quote-btn -> fades/scales the floating quote button in
+ */
+
+/* ==========================================================================
+   Design tokens
+   ========================================================================== */
+
+:root {
+  --toki-bg: #0e1116;
+  --toki-surface: #161b22;
+  --toki-surface-raised: #1c232d;
+  --toki-border: #2a323d;
+  --toki-text: #e6edf3;
+  --toki-text-muted: #9aa7b4;
+  --toki-accent: #4cc9e6;
+  --toki-accent-strong: #34b6d6;
+  --toki-accent-contrast: #06222a;
+  --toki-accent-tint: rgba(76, 201, 230, 0.14);
+  --toki-accent-ring: rgba(76, 201, 230, 0.4);
+  --toki-danger: #ff7b72;
+
+  --toki-radius: 12px;
+  --toki-radius-sm: 8px;
+  --toki-radius-pill: 999px;
+
+  --toki-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --toki-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --toki-shadow-lift: 0 12px 32px rgba(0, 0, 0, 0.5);
+
+  --toki-font:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji';
+  --toki-font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --toki-column: 760px;
+  --toki-pad: 20px;
+  --toki-transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================================================
+   Reset + base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--toki-bg);
+  color: var(--toki-text);
+  font-family: var(--toki-font);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--toki-accent-tint);
+  color: var(--toki-text);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   App shell + layout
+   ========================================================================== */
+
+#toki-app {
+  max-width: var(--toki-column);
+  margin: 0 auto;
+  padding: 0 var(--toki-pad) 120px;
+}
+
+/* ---- Header ---- */
+
+.toki-header {
+  padding: 40px 0 8px;
+}
+
+.toki-title {
+  margin: 0 0 12px;
+  font-size: 1.9rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.toki-intro {
+  color: var(--toki-text-muted);
+  font-size: 1.02rem;
+}
+
+.toki-intro > :first-child {
+  margin-top: 0;
+}
+
+.toki-intro > :last-child {
+  margin-bottom: 0;
+}
+
+/* ==========================================================================
+   Sticky progress (top)
+   ========================================================================== */
+
+.toki-progress {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  margin-bottom: 20px;
+  background: linear-gradient(to bottom, var(--toki-bg) 70%, rgba(14, 17, 22, 0));
+}
+
+.toki-progress__track {
+  flex: 1;
+  height: 6px;
+  border-radius: var(--toki-radius-pill);
+  background: var(--toki-surface-raised);
+  overflow: hidden;
+}
+
+.toki-progress__fill {
+  height: 100%;
+  width: 0%;
+  border-radius: var(--toki-radius-pill);
+  background: linear-gradient(90deg, var(--toki-accent-strong), var(--toki-accent));
+  transition: width var(--toki-transition);
+}
+
+.toki-progress__label {
+  flex: none;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--toki-text-muted);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Blocks (cards)
+   ========================================================================== */
+
+.toki-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.toki-block {
+  background: var(--toki-surface);
+  border: 1px solid var(--toki-border);
+  border-radius: var(--toki-radius);
+  box-shadow: var(--toki-shadow-soft);
+  padding: 24px;
+  transition:
+    border-color var(--toki-transition),
+    box-shadow var(--toki-transition),
+    transform var(--toki-transition);
+}
+
+.toki-block:hover,
+.toki-block:focus-within {
+  border-color: var(--toki-accent-strong);
+  box-shadow: var(--toki-shadow-lift);
+  transform: translateY(-1px);
+}
+
+/* ---- Server-rendered markdown content ---- */
+
+.toki-block__content {
+  font-size: 1rem;
+}
+
+.toki-block__content > :first-child {
+  margin-top: 0;
+}
+
+.toki-block__content > :last-child {
+  margin-bottom: 0;
+}
+
+.toki-block__content h1,
+.toki-block__content h2,
+.toki-block__content h3,
+.toki-block__content h4,
+.toki-block__content h5,
+.toki-block__content h6 {
+  margin: 1.4em 0 0.6em;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.toki-block__content h1 {
+  font-size: 1.5rem;
+}
+
+.toki-block__content h2 {
+  font-size: 1.3rem;
+}
+
+.toki-block__content h3 {
+  font-size: 1.12rem;
+}
+
+.toki-block__content h4,
+.toki-block__content h5,
+.toki-block__content h6 {
+  font-size: 1rem;
+}
+
+.toki-block__content p {
+  margin: 0.7em 0;
+}
+
+.toki-block__content ul,
+.toki-block__content ol {
+  margin: 0.7em 0;
+  padding-left: 1.5em;
+}
+
+.toki-block__content li {
+  margin: 0.3em 0;
+}
+
+.toki-block__content strong {
+  font-weight: 700;
+  color: #f0f6fc;
+}
+
+.toki-block__content em {
+  font-style: italic;
+}
+
+.toki-block__content a {
+  color: var(--toki-accent);
+  text-decoration: none;
+}
+
+.toki-block__content a:hover {
+  text-decoration: underline;
+}
+
+/* inline code -> pill */
+.toki-block__content code {
+  font-family: var(--toki-font-mono);
+  font-size: 0.88em;
+  padding: 0.15em 0.4em;
+  border-radius: 6px;
+  background: var(--toki-surface-raised);
+  border: 1px solid var(--toki-border);
+}
+
+/* fenced code block -> its own darker surface, horizontal scroll */
+.toki-block__content pre {
+  margin: 0.9em 0;
+  padding: 14px 16px;
+  border-radius: var(--toki-radius-sm);
+  background: #0b0e13;
+  border: 1px solid var(--toki-border);
+  overflow-x: auto;
+}
+
+.toki-block__content pre code {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  white-space: pre;
+}
+
+/* ==========================================================================
+   Interactive area (built by app.js)
+   ========================================================================== */
+
+.toki-block__interactive {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.toki-block__interactive:empty {
+  display: none;
+}
+
+/* ---- Controls (radio / checkbox / toggle) ---- */
+
+.toki-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toki-controls.is-invalid {
+  outline: 1px solid var(--toki-danger);
+  outline-offset: 6px;
+  border-radius: var(--toki-radius-sm);
+}
+
+.toki-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--toki-radius-sm);
+  border: 1px solid var(--toki-border);
+  background: var(--toki-surface-raised);
+  cursor: pointer;
+  transition:
+    border-color var(--toki-transition),
+    background var(--toki-transition);
+}
+
+.toki-option:hover {
+  border-color: var(--toki-accent-strong);
+}
+
+.toki-option input[type='radio'],
+.toki-option input[type='checkbox'] {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--toki-accent);
+  cursor: pointer;
+}
+
+.toki-option span {
+  user-select: none;
+}
+
+/* ---- Toggle switch ---- */
+
+.toki-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toki-switch__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.toki-switch__track {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 24px;
+  border-radius: var(--toki-radius-pill);
+  background: var(--toki-surface-raised);
+  border: 1px solid var(--toki-border);
+  transition:
+    background var(--toki-transition),
+    border-color var(--toki-transition);
+}
+
+.toki-switch__track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--toki-text-muted);
+  transition:
+    transform var(--toki-transition),
+    background var(--toki-transition);
+}
+
+.toki-switch__input:checked + .toki-switch__track {
+  background: var(--toki-accent);
+  border-color: var(--toki-accent);
+}
+
+.toki-switch__input:checked + .toki-switch__track::after {
+  transform: translateX(20px);
+  background: var(--toki-accent-contrast);
+}
+
+.toki-switch__input:focus-visible + .toki-switch__track {
+  box-shadow: 0 0 0 3px var(--toki-accent-ring);
+}
+
+.toki-switch__label {
+  font-size: 0.95rem;
+}
+
+/* ---- Required marker ---- */
+
+.toki-required {
+  color: var(--toki-danger);
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* ==========================================================================
+   Quote chips
+   ========================================================================== */
+
+.toki-quotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toki-quotes:empty {
+  display: none;
+}
+
+.toki-quote-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 6px 4px 12px;
+  border-radius: var(--toki-radius-pill);
+  background: var(--toki-accent-tint);
+  border: 1px solid var(--toki-accent-ring);
+  color: var(--toki-text);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.toki-quote-chip__x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--toki-text-muted);
+  font-size: 0.8rem;
+  line-height: 1;
+  transition:
+    background var(--toki-transition),
+    color var(--toki-transition);
+}
+
+.toki-quote-chip__x:hover {
+  background: var(--toki-danger);
+  color: #fff;
+}
+
+/* ==========================================================================
+   Textarea
+   ========================================================================== */
+
+.toki-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.toki-text__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--toki-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.toki-text__input {
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 14px;
+  resize: vertical;
+  border-radius: var(--toki-radius-sm);
+  border: 1px solid var(--toki-border);
+  background: var(--toki-surface-raised);
+  color: var(--toki-text);
+  font-family: inherit;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  transition:
+    border-color var(--toki-transition),
+    box-shadow var(--toki-transition);
+}
+
+.toki-text__input::placeholder {
+  color: var(--toki-text-muted);
+  opacity: 0.7;
+}
+
+.toki-text__input:focus {
+  outline: none;
+  border-color: var(--toki-accent);
+  box-shadow: 0 0 0 3px var(--toki-accent-ring);
+}
+
+.toki-text.is-invalid .toki-text__input {
+  border-color: var(--toki-danger);
+}
+
+/* ==========================================================================
+   Sticky bottom bar
+   ========================================================================== */
+
+.toki-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 14px 18px;
+  border-radius: var(--toki-radius);
+  background: var(--toki-surface);
+  border: 1px solid var(--toki-border);
+  box-shadow: var(--toki-shadow);
+}
+
+.toki-bar__remaining {
+  font-size: 0.9rem;
+  color: var(--toki-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.toki-bar__submit {
+  flex: none;
+  padding: 11px 24px;
+  border: 0;
+  border-radius: var(--toki-radius-sm);
+  background: var(--toki-accent);
+  color: var(--toki-accent-contrast);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition:
+    background var(--toki-transition),
+    transform var(--toki-transition),
+    opacity var(--toki-transition);
+}
+
+.toki-bar__submit:hover:not([disabled]) {
+  background: var(--toki-accent-strong);
+  transform: translateY(-1px);
+}
+
+.toki-bar__submit:active:not([disabled]) {
+  transform: translateY(0);
+}
+
+.toki-bar__submit[disabled] {
+  background: var(--toki-surface-raised);
+  color: var(--toki-text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   Reference drawer (side drawer desktop / bottom sheet mobile)
+   ========================================================================== */
+
+.toki-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.toki-drawer[hidden] {
+  display: none;
+}
+
+.toki-drawer__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity var(--toki-transition);
+}
+
+.toki-drawer.is-open {
+  pointer-events: auto;
+}
+
+.toki-drawer.is-open .toki-drawer__scrim {
+  opacity: 1;
+}
+
+.toki-drawer__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(440px, 90vw);
+  height: 100%;
+  padding: 24px;
+  background: var(--toki-surface);
+  border-left: 1px solid var(--toki-border);
+  box-shadow: var(--toki-shadow-lift);
+  transform: translateX(100%);
+  transition: transform var(--toki-transition);
+  overflow-y: auto;
+}
+
+.toki-drawer.is-open .toki-drawer__panel {
+  transform: translateX(0);
+}
+
+.toki-drawer__close {
+  align-self: flex-end;
+  padding: 6px 14px;
+  border: 1px solid var(--toki-border);
+  border-radius: var(--toki-radius-pill);
+  background: var(--toki-surface-raised);
+  color: var(--toki-text-muted);
+  font-size: 0.82rem;
+  transition:
+    border-color var(--toki-transition),
+    color var(--toki-transition);
+}
+
+.toki-drawer__close:hover {
+  border-color: var(--toki-accent-strong);
+  color: var(--toki-text);
+}
+
+.toki-drawer__content {
+  margin-top: 16px;
+  font-size: 0.98rem;
+}
+
+.toki-drawer__content > :first-child {
+  margin-top: 0;
+}
+
+/* ==========================================================================
+   Floating "quote" button (positioned near a selection by app.js)
+   ========================================================================== */
+
+.toki-quote-btn {
+  position: absolute;
+  z-index: 60;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: var(--toki-radius-pill);
+  background: var(--toki-accent);
+  color: var(--toki-accent-contrast);
+  font-size: 0.82rem;
+  font-weight: 700;
+  box-shadow: var(--toki-shadow);
+  opacity: 0;
+  transform: scale(0.85);
+  transition:
+    opacity var(--toki-transition),
+    transform var(--toki-transition);
+}
+
+.toki-quote-btn[hidden] {
+  display: none;
+}
+
+.toki-quote-btn.is-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ==========================================================================
+   Done state
+   ========================================================================== */
+
+.toki-done {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--toki-pad);
+  background: var(--toki-bg);
+  color: var(--toki-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.toki-done[hidden] {
+  display: none;
+}
+
+/* ==========================================================================
+   Responsive: bottom sheet at <= 720px
+   ========================================================================== */
+
+@media (max-width: 720px) {
+  .toki-header {
+    padding-top: 28px;
+  }
+
+  .toki-title {
+    font-size: 1.6rem;
+  }
+
+  .toki-block {
+    padding: 18px;
+  }
+
+  /* Drawer becomes a bottom sheet sliding up from the bottom. */
+  .toki-drawer__panel {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    max-height: 80vh;
+    border-left: 0;
+    border-top: 1px solid var(--toki-border);
+    border-radius: var(--toki-radius) var(--toki-radius) 0 0;
+    transform: translateY(100%);
+  }
+
+  .toki-drawer.is-open .toki-drawer__panel {
+    transform: translateY(0);
+  }
+
+  .toki-bar {
+    padding: 12px 14px;
+  }
+
+  .toki-bar__submit {
+    padding: 11px 18px;
+  }
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
