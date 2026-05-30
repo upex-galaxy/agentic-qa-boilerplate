@@ -82,19 +82,22 @@ const PROJECT_YAML_PATH = join(import.meta.dir, '..', '.agents', 'project.yaml')
 
 /**
  * Files that should never be overwritten by sync.
- * NOTE: `implementation-plan.md` is intentionally NOT here — it is now a
- * Jira-managed per-field file (mirrors `spec_implementation_plan`). It is written
- * ONLY when the Jira field is non-empty (Jira = source of truth); when the field
- * is empty the writer is never called, so a local hand-authored plan survives.
+ *
+ * Doctrine: Jira is the source of truth for every field this script materializes.
+ * `implementation-plan.md`, `feature-implementation-plan.md`, and `feature-test-plan.md`
+ * are Jira-managed per-field files (mirror `spec_implementation_plan`,
+ * `feature_implementation_plan`, `feature_test_plan`) — written via `writeFieldFile`
+ * whenever the corresponding Jira field is non-empty, and intentionally NOT protected.
+ * When a field is empty the writer is never called, so a local hand-authored file
+ * survives untouched. Only `test-cases.md` (the manual TC catalog, which has no Jira
+ * mirror) is hard-protected.
  */
 const PROTECTED_FILES = new Set([
   'test-cases.md',
 ]);
 
-/** File patterns that should never be overwritten */
-const PROTECTED_PATTERNS = [
-  /^feature-.+\.md$/,
-];
+/** File patterns that should never be overwritten (none today — Jira owns the rest). */
+const PROTECTED_PATTERNS: RegExp[] = [];
 
 /**
  * Maps each semantic key consumed by this script to its canonical Jira slug
@@ -168,9 +171,26 @@ function loadJiraFields(): Record<string, JiraFieldEntry> {
 }
 
 /**
+ * Semantic keys whose Jira custom field could NOT be resolved from
+ * `.agents/jira-fields.json` (field not configured in this Jira instance).
+ * Populated by `buildCustomFields()`. The per-field writer (`syncFieldFiles`)
+ * consults this to emit a fallback-pointer stub instead of silently skipping —
+ * so downstream skills know the field's content lives in the issue's
+ * comments/description (see `.agents/jira-required.yaml` → `fallback:`).
+ */
+const UNRESOLVED_FIELDS = new Set<SemanticKey>();
+
+/**
  * Resolves every entry in `SLUG_MAPPING` against `.agents/jira-fields.json` and returns
  * a `{ <semanticKey>: customfield_XXXXX }` record matching the legacy shape that
  * the rest of this file consumes (so call sites need no change).
+ *
+ * Graceful degradation: a slug missing from the catalog is NO LONGER fatal. Its ID
+ * resolves to `''` — a harmless empty field id that is filtered out of API requests
+ * and yields `undefined` on lookup — and the semantic key is recorded in
+ * `UNRESOLVED_FIELDS`. A workspace that hasn't configured every methodology custom
+ * field can still sync the issues it can; missing fields fall back to comments/
+ * description rather than blocking the whole run.
  */
 function buildCustomFields(): Record<SemanticKey, string> {
   const fields = loadJiraFields();
@@ -178,10 +198,9 @@ function buildCustomFields(): Record<SemanticKey, string> {
   for (const [semanticKey, slug] of Object.entries(SLUG_MAPPING) as [SemanticKey, string][]) {
     const entry = fields[slug];
     if (!entry || typeof entry.id !== 'string') {
-      throw new Error(
-        `sync-jira-issues: slug '${slug}' (for '${semanticKey}') not found in .agents/jira-fields.json. `
-        + 'Run `bun run jira:sync-fields --force` to refresh, or update SLUG_MAPPING in scripts/sync-jira-issues.ts.',
-      );
+      out[semanticKey] = '';
+      UNRESOLVED_FIELDS.add(semanticKey);
+      continue;
     }
     out[semanticKey] = entry.id;
   }
@@ -207,7 +226,7 @@ const EPIC_FIELDS = [
   // Epic-level planning fields (rich text → materialized as separate files)
   CUSTOM_FIELDS.featureImplementationPlan,
   CUSTOM_FIELDS.featureTestPlan,
-];
+].filter(Boolean); // drop unresolved fields ('') so they never hit the Jira API
 
 /** Fields to request for Stories */
 const STORY_FIELDS = [
@@ -224,7 +243,7 @@ const STORY_FIELDS = [
   CUSTOM_FIELDS.storyPoints,
   CUSTOM_FIELDS.webLink,
   'issuelinks', // For traceability (tests, defects, bugs, etc.)
-];
+].filter(Boolean); // drop unresolved fields ('') so they never hit the Jira API
 
 /** Fields to request for Bugs/Defects */
 const BUG_FIELDS = [
@@ -241,7 +260,7 @@ const BUG_FIELDS = [
   CUSTOM_FIELDS.workaround,
   CUSTOM_FIELDS.evidence,
   CUSTOM_FIELDS.fixType,
-];
+].filter(Boolean); // drop unresolved fields ('') so they never hit the Jira API
 
 /** Fields to request for Tests */
 const TEST_FIELDS = [
@@ -1052,6 +1071,31 @@ function renderFieldFile(
 }
 
 /**
+ * Renders a fallback-pointer stub for a per-field file whose Jira custom field is
+ * NOT configured in this workspace (the semantic key is in `UNRESOLVED_FIELDS`).
+ * The dedicated file still exists so skills find a predictable path, but it points
+ * to the fallback source (the issue's comments / description) per the
+ * `.agents/jira-required.yaml` → `fallback:` contract.
+ */
+function renderFieldStub(
+  issueKey: string,
+  spec: FieldFileSpec,
+  config: Config,
+): string {
+  return [
+    `# ${issueKey} — ${spec.title}`,
+    '',
+    `> ⚠️ The Jira custom field for \`${spec.key}\` is **not configured** in this Jira instance.`,
+    '> Per the methodology fallback, this field\'s content lives in the issue\'s comments or description.',
+    `> Re-sync with \`--include-comments\` and read \`comments.md\`, or [View in Jira](${config.baseUrl}/browse/${issueKey}).`,
+    '',
+    '---',
+    `_Synced from Jira by sync-jira-issues · ${new Date().toISOString()}_`,
+    '',
+  ].join('\n');
+}
+
+/**
  * Materializes the per-field files for an issue into `folder`. Returns the specs
  * actually written (field non-empty) so the index can link them.
  */
@@ -1066,6 +1110,17 @@ function syncFieldFiles(
 ): FieldFileSpec[] {
   const present: FieldFileSpec[] = [];
   for (const spec of specs) {
+    // Field not configured in this Jira instance → emit a fallback-pointer stub
+    // so the dedicated file path is predictable and skills know to read the
+    // fallback (comments/description) instead.
+    if (UNRESOLVED_FIELDS.has(spec.key)) {
+      const filePath = join(folder, spec.file);
+      const status = writeFieldFile(filePath, renderFieldStub(issueKey, spec, config), dryRun);
+      if (status === 'created') { result.files.created++; }
+      else { result.files.updated++; }
+      present.push(spec);
+      continue;
+    }
     const raw = fields[CUSTOM_FIELDS[spec.key]] as AdfDocument | string | null;
     const md = adfToMarkdown(raw);
     if (!md.trim()) { continue; }
@@ -2546,7 +2601,7 @@ ${colors.bold}PULL SUBCOMMANDS${colors.reset}
   pull bugs           Sync Bugs → .context/PBI/bugs/
   pull defects        Sync Defects → inside Story folders
   pull improvements   Sync Improvements → .context/PBI/improvements/
-  pull tests          Sync Tests → .context/PBI/{module}/test-specs/
+  pull tests          Sync Tests → .context/PBI/tests/
 
 ${colors.bold}OPTIONS${colors.reset}
   --epic <key>        Sync specific epic with all its stories
@@ -2576,10 +2631,10 @@ ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
   JIRA_SYNC_OUTPUT      Output directory (default: .context/PBI)
 
 ${colors.bold}PROTECTED FILES${colors.reset}
-  The following files are never overwritten:
+  Only this file is never overwritten (no Jira mirror):
   - test-cases.md
-  - implementation-plan.md
-  - feature-*.md
+  Jira-managed per-field files (implementation-plan.md, feature-*.md,
+  acceptance-*.md, etc.) ARE overwritten when the Jira field is non-empty.
 
 ${colors.dim}Get API token: https://id.atlassian.com/manage-profile/security/api-tokens${colors.reset}
 `);

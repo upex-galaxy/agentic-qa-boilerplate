@@ -18,7 +18,7 @@ Severity model for all findings below matches the shared severity scale — CRIT
 Goal: Run the test suite and report failures grouped by file.
 Context docs:
   - playwright.config.ts (project list)
-  - <PBI_FOLDER>/test-specs/<scope>/spec.md (which ATCs should pass)
+  - .context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/spec.md (which ATCs should pass)
 Skills to load: (none)
 Exact instructions:
   1. Run: bun run test (the script declared in package.json invokes `playwright test`).

@@ -32,13 +32,13 @@ KATA (Component Action Test Architecture) rewires the usual Page Object pattern.
 
 > **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
 
-This skill is **per-scope**: `<scope>` = `<JIRA-KEY>` (ticket-driven / regression-driven) or `<module-slug>` (module-driven). Session state lives at `.session/test-automation/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The session `plan.md` is a thin INDEX that cites the canonical domain artifacts (`spec.md`, `implementation-plan.md`, `atc/*.md`) under `.context/PBI/{module}/test-specs/{scope}/` — domain content stays in the existing PBI tree, not duplicated.
+This skill is **per-scope**: `<scope>` = `<JIRA-KEY>` (ticket-driven / regression-driven) or `<module-slug>` (module-driven). Session state lives at `.session/test-automation/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The session `plan.md` is a thin INDEX that cites the canonical domain artifacts (`spec.md`, `automation-plan.md`, `atc/*.md`) under the Epic's `test-specs/` tree (`.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/`) — domain content stays in the existing PBI tree, not duplicated.
 
 This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The Plan, Code, and Review phases each carry distinct context-isolation needs — Plan keeps KATA architectural reads out of the orchestrator, Code isolates multi-file edits, Review fans out three independent verifiers in parallel.
 
 | Stage                                          | Pattern              | Subagent role                                                                                                                  |
 |------------------------------------------------|----------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| Plan (`spec.md` + `implementation-plan.md`)    | Single               | one Plan subagent returns the two artifacts; protects orchestrator from KATA architectural reads                                |
+| Plan (`spec.md` + `automation-plan.md`)        | Single               | one Plan subagent returns the two artifacts; protects orchestrator from KATA architectural reads                                |
 | Code (writing E2E or API tests)                | Sequential           | one Code subagent per scope (module = 1 subagent per TC; ticket = 1 subagent total); edits-many-files inside isolates context  |
 | Review — `bun run test`                        | Parallel (sub-stage) | one Verifier subagent runs the test suite                                                                                       |
 | Review — `bun run types:check`                  | Parallel (sub-stage) | one Verifier subagent runs typecheck                                                                                            |
@@ -58,8 +58,8 @@ Canonical reading order for any AI starting cold on a test-automation workflow. 
 1. `kata-manifest.json` (root) — authoritative registry of every Component (`api[]`, `ui[]`) and every `@atc('TICKET-ID')` ID. Anti-duplication gate per Critical Rule #12 in `CLAUDE.md`. MUST load before proposing any new `Page`, `Api`, `Steps` module, or `@atc` ID.
 2. `.claude/skills/test-automation/references/kata-architecture.md` + `.claude/skills/test-automation/references/typescript-patterns.md` — full doctrine for KATA layers (TestContext / Base / Domain / Fixture), ATC identity, fixture selection, import-alias rules, params contracts.
 3. `tests/components/` — existing Api / Page / Steps shape on disk. Establishes naming, helper-vs-ATC split, fixture registration patterns to follow.
-4. `.context/PBI/{module}/{TICKET-ID}-*/implementation-plan.md` — if pre-existing (typically produced by `/test-documentation`), it carries the per-TC plan, candidate verdict, and component mapping. Cite it from the session `plan.md` rather than duplicating.
-5. The Story's AC + ATP (via `[ISSUE_TRACKER_TOOL]`) — source of truth for scenarios that become ATCs. Resolve the issue key from the scope picker.
+4. The Story's `implementation-plan.md` (dev plan) + `acceptance-test-plan.md` (ATP) under `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` — Jira-synced, READ-ONLY caches. Jira is source of truth; NEVER hand-write these. Materialize via `bun run jira:sync-issues get <STORY-KEY> --include-comments`, then read the synced `.md`. The dev `implementation-plan.md` carries the implementation approach + (when produced by `/test-documentation`) the per-TC candidate verdict and component mapping. Cite from the session `plan.md` rather than duplicating. NOTE: this is the Story-folder *dev* `implementation-plan.md` — do NOT confuse it with the hand-authored *automation* plan (`test-specs/<scope>/automation-plan.md`) you write in Phase 1.
+5. The Story's AC (acceptance criteria) — source of truth for scenarios that become ATCs. Read from the same synced `.md` files (`acceptance-criteria.md` / `story.md`) produced by `bun run jira:sync-issues get <STORY-KEY> --include-comments`. NEVER `acli workitem view` for these custom fields — `view` returns `null` for `customfield_*`. If a field is absent from the instance, the sync emits a pointer stub and the content lives in comments/description per `.agents/jira-required.yaml` `fallback:`. Resolve the issue key from the scope picker.
 6. `api/schemas/` — OpenAPI-derived TypeScript types. Refresh via `bun run api:sync` if stale. Required for any Api component touching a new endpoint.
 7. `.env` — credentials (`LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD`, etc.) read via `config.testUser` from `@variables`. Never hardcode; never guess.
 
@@ -74,7 +74,7 @@ Before picking the planning scope, run the session resume contract from `agentic
 3. If it does NOT exist → proceed to scope picker + Phase 1.
 4. If it DOES exist:
    - Read `plan.md` (thin index) + the tail of `progress.md`.
-   - Read the cited canonical `spec.md` / `implementation-plan.md` / `atc/*.md` under `.context/PBI/{module}/test-specs/{scope}/` for the domain content.
+   - Read the cited canonical `spec.md` / `automation-plan.md` / `atc/*.md` under `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/` for the domain content.
    - Surface to the user: last completed phase (Plan / Code / Review) + next phase + open Review findings if any.
    - Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-test-automation-<scope>-aborted/` before proceeding.
 
@@ -102,10 +102,11 @@ When in doubt, ask the user which scope. Never assume "module" just because mult
 Phase 1: Plan         -> Phase 2: Code             -> Phase 3: Review
 (spec / plan)            (component + test file)      (KATA compliance)
         |                         |                             |
-  .context/PBI/{module}/     tests/components/**         Review checklist
-    test-specs/              tests/e2e/** or                (pass/fail)
-    spec.md                  tests/integration/**
-    implementation-plan.md
+  .context/PBI/epics/        tests/components/**         Review checklist
+    EPIC-<KEY>-<slug>/       tests/e2e/** or                (pass/fail)
+    test-specs/<scope>/      tests/integration/**
+    spec.md
+    automation-plan.md
     atc/*.md                 Register in fixture
 ```
 
@@ -121,7 +122,7 @@ Each phase has a gate. Do not start Code before the Plan is written and approved
 - Cross-check every proposed Component name against `components.api[].name` and `components.ui[].name`. If a match exists, extend the existing class — do not create a new one.
 - If reuse opportunity exists (same flow already covered by a Steps method or ATC), adapt the plan to extend rather than rebuild.
 
-Write the canonical domain plan file(s) for the chosen scope under `.context/PBI/{module}/test-specs/{TICKET-ID}/` (`spec.md`, `implementation-plan.md`, `atc/*.md`). The plan answers:
+Write the canonical domain plan file(s) for the chosen scope under the Epic's `test-specs/` tree, `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/` (`spec.md`, `automation-plan.md`, `atc/*.md`). These are NON-Jira hand-authored files (committed to git). The automation `automation-plan.md` is distinct from the Story-folder dev `implementation-plan.md` (Jira-synced, read-only). The plan answers:
 
 - Which scenarios from the ticket become tests, which become ATCs, which are shared preconditions (Steps)?
 - Which components already exist (`tests/components/api/*Api.ts`, `tests/components/ui/*Page.ts`) and which need to be created?
@@ -326,7 +327,7 @@ export class UiFixture extends TestContext {
 
 **T1.** NEVER auto-generate tests for TCs that `/test-documentation` flagged as Deferred or Manual — only `Candidate` (`to_be_automated`) verdicts proceed to automation. Skipping the ROI verdict produces flaky, low-value suites.
 
-**T2.** NEVER skip the Plan phase. Even for a "simple" regression test, write `spec.md` / `implementation-plan.md` (or the per-ATC plan under `.context/PBI/{module}/test-specs/{scope}/`) BEFORE writing any test code. Plan → Code → Review is non-negotiable.
+**T2.** NEVER skip the Plan phase. Even for a "simple" regression test, write `spec.md` / `automation-plan.md` (or the per-ATC plan under `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/`) BEFORE writing any test code. Plan → Code → Review is non-negotiable.
 
 **T3.** NEVER collapse the KATA layers (TestContext / ApiBase + UiBase / Domain Api+Page+Steps / Fixture). Full doctrine in `references/kata-architecture.md`. Tests that flatten layers are rejected at Review.
 
@@ -358,17 +359,18 @@ Not every invocation needs every reference. Load the specific file when the task
 - **Configuring Playwright, CI integration, projects, sharding** → `references/ci-integration.md`
 - **Session resume contract, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint** → `../agentic-qa-core/references/session-management.md` (Phase 0 + Phase 1 + Archive of this skill)
 
-Tool resolution: use `[AUTOMATION_TOOL]` for browser work (Playwright CLI or MCP — load `/playwright-cli` when available), `[API_TOOL]` for OpenAPI exploration, `[DB_TOOL]` for verifying test data in the database, `[TMS_TOOL]` for TMS sync (load `/xray-cli` when available), `[ISSUE_TRACKER_TOOL]` for ticket lookups. Resolve tags via the project's CLAUDE.md Tool Resolution table.
+Tool resolution: use `[AUTOMATION_TOOL]` for browser work (Playwright CLI or MCP — load `/playwright-cli` when available), `[API_TOOL]` for OpenAPI exploration, `[DB_TOOL]` for verifying test data in the database, `[TMS_TOOL]` for TMS sync (load `/xray-cli` when available), `[ISSUE_TRACKER_TOOL]` for ticket work. Split the issue-tracker access by operation: **detailed reads** of a Story (ACs, ATP, dev implementation-plan, custom fields) → `bun run jira:sync-issues get <KEY> --include-comments` (or `jql "<query>"`) then read the synced `.md` — NEVER `acli workitem view` for custom fields; **writes** (comment automated-test status back to the Story, transitions) → `/acli`; **trivial summary/status/key-list lookups** → `/acli` `workitem view`/`search` is fine. See `agentic-qa-core/references/acli-integration.md` §"Reads vs writes". Resolve tags via the project's CLAUDE.md Tool Resolution table.
 
 ---
 
 ## Quick reference
 
 ```bash
-# Planning outputs
-# .context/PBI/{module}/test-specs/{TICKET-ID}/spec.md
-# .context/PBI/{module}/test-specs/{TICKET-ID}/implementation-plan.md
-# .context/PBI/{module}/test-specs/{TICKET-ID}/atc/*.md
+# Planning outputs (hand-authored, NON-Jira; Epic-level test-specs/)
+# .context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/spec.md
+# .context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/automation-plan.md
+# .context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/atc/*.md
+# (the Story-folder implementation-plan.md is the Jira-synced DEV plan — read-only input, not written here)
 
 # Code locations
 # tests/components/api/{Resource}Api.ts

@@ -53,7 +53,7 @@ Deep-dive the UI on `{{WEB_URL}}` via `[AUTOMATION_TOOL]`. Goal: validate ACs, d
 | Screenshot | `[AUTOMATION_TOOL]` | Evidence |
 | Console + Network | `[AUTOMATION_TOOL]` | Observe errors / requests |
 
-Before any `[AUTOMATION_TOOL]` call, set `.playwright/cli.config.json` `outputDir` to `.context/PBI/{module}/{ticket}/evidence/`. Screenshots still need the full path in `--filename` because `outputDir` does not apply to `.png`.
+Before any `[AUTOMATION_TOOL]` call, set `.playwright/cli.config.json` `outputDir` to `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/evidence/`. Screenshots still need the full path in `--filename` because `outputDir` does not apply to `.png`.
 
 ### 1.2 Scenario loop (per AC)
 
@@ -311,12 +311,12 @@ All execution output is written into the ticket's PBI folder. Two files are upda
 ### 5.1 PBI folder layout
 
 ```
-.context/PBI/{module}/{{PROJECT_KEY}}-{number}-{brief-title}/
-  context.md
-  test-analysis.md        # Stage 1
-  test-session-memory.md  # Stage 2 live log
-  test-report.md          # Stage 3 (later)
-  evidence/               # gitignored
+.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-{{PROJECT_KEY}}-{number}-{brief-title}/
+  context.md                  # hand-authored (NON-Jira)
+  acceptance-test-plan.md     # Stage 1 — Jira-synced read-only cache
+  test-session-memory.md      # Stage 2 live log (hand-authored, NON-Jira)
+  acceptance-test-results.md  # Stage 3 — Jira-synced read-only cache (later)
+  evidence/                   # gitignored
     {{PROJECT_KEY}}-{number}-smoke-{desc}.png
     {{PROJECT_KEY}}-{number}-ac{N}-{desc}.png
 ```

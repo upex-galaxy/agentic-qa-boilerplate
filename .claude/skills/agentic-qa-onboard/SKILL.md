@@ -92,10 +92,10 @@ Backlog → Shift-Left QA → Estimation → Ready For Dev → In Progress → I
 
 `/sprint-testing UPEX-277`:
 
-1. Reads the ticket from Jira via `/acli`.
-2. Loads module context from `.context/PBI/{module}/`.
+1. Syncs the ticket from Jira via `bun run jira:sync-issues get <KEY> --include-comments` (canonical detailed read — `acli view` returns null for custom fields), then reads the materialized `.md` files.
+2. Loads the synced context from `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` (Module = Epic; Jira-synced files are a read-only cache).
 3. Explores the relevant code in the target repo.
-4. Creates the PBI folder and ATP (Acceptance Test Plan).
+4. Authors the ATP (Acceptance Test Plan) → writes it to the Jira field (or fallback comment) → re-syncs; hand-writes only NON-Jira files (context.md, evidence/).
 5. Executes smoke + trifuerza exploration (UI / API / DB).
 6. Files ATR (Acceptance Test Report) + bug reports if defects found.
 7. Transitions the ticket through QA states.
@@ -136,7 +136,7 @@ Seven canonical MCPs ship with the boilerplate:
 
 - Use **Context7** for "how to use X" — official docs, current API
 - Use **Tavily** for "how to solve X" — community fixes, troubleshooting
-- Use **Atlassian** for ticket operations; for bulk Jira work prefer `/acli`
+- Use **Atlassian**/`/acli` for ticket WRITES (create, transition, comment, link); for detailed READS (custom fields, ACs, ATP/ATR, comments) use `bun run jira:sync-issues get`/`jql`
 - Use **Playwright MCP** for ad-hoc live browser interactions; for scripted runs use `/playwright-cli`
 
 `.mcp.json` lives at the repo root and is **gitignored** (it contains secrets).
