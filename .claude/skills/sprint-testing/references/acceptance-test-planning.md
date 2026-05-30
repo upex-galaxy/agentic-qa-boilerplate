@@ -2,7 +2,12 @@
 
 > **Subagent context**: this file is part of the "Context docs" briefing component for the Stage 1 Planning subagent (see `sprint-testing/SKILL.md` §Subagent Dispatch Strategy and `sprint-orchestration.md` §"Briefing 2 — Stage 1 Planning subagent").
 
-Stage 1 Planning for a single ticket inside a sprint. The ATP is authored in-session, written to the Story's `{{jira.acceptance_test_plan}}` field (or `fallback:` comment) via `[ISSUE_TRACKER_TOOL]`, then materialized to the read-only cache `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/acceptance-test-plan.md` by `bun run jira:sync-issues get <KEY> --include-comments`. The old local `test-analysis.md` mirror is **retired** — read the synced `acceptance-test-plan.md` instead. Jira is source of truth; never hand-write the synced file.
+Stage 1 Planning for a single ticket inside a sprint. The ATP is authored in-session; **where it lives depends on TMS modality** (resolved in Session Start §0):
+
+- **Modality jira-native**: ATP = the Story's `{{jira.acceptance_test_plan}}` field (or `fallback:` comment), written via `[ISSUE_TRACKER_TOOL]`, then materialized to the read-only cache `.../stories/STORY-<KEY>-<slug>/acceptance-test-plan.md` by `bun run jira:sync-issues get <STORY_KEY> --include-comments`.
+- **Modality jira-xray**: ATP = the **Test Plan** issue's `description`, written via `[ISSUE_TRACKER_TOOL]`, then materialized to `.../test-plans/TESTPLAN-<ATP_KEY>-<slug>.md` by `bun run jira:sync-issues get <ATP_KEY>`.
+
+The old local `test-analysis.md` mirror is **retired** — read the synced ATP file for the active modality instead. Jira is source of truth; never hand-write the synced file.
 
 This reference is for **manual / exploratory in-sprint testing per ticket RIGHT NOW**. It does **not** create Xray TC entities (see `test-documentation` for Stage 4), compute ROI scores (see `test-documentation`), or produce automation `spec.md` (see `test-automation/planning-playbook.md`). Bug reports are covered in `reporting-templates.md` (pass 5c).
 
@@ -414,7 +419,12 @@ In Modality jira-native, when `{{jira.acceptance_test_plan}}` is absent the stru
 
 ### Materialize the local cache (from sync, never hand-written)
 
-After the ATP content is in Jira, run `bun run jira:sync-issues get <KEY> --include-comments` to materialize `acceptance-test-plan.md` in the STORY folder. Read it back to confirm. Jira is source of truth; the synced file is a read-only cache — NEVER hand-write it.
+After the ATP content is in Jira, materialize the read-only cache per modality, then read it back to confirm:
+
+- **Modality jira-native**: `bun run jira:sync-issues get <STORY_KEY> --include-comments` → `acceptance-test-plan.md` in the STORY folder.
+- **Modality jira-xray**: `bun run jira:sync-issues get <ATP_KEY>` → `test-plans/TESTPLAN-<ATP_KEY>-<slug>.md` (the sync supports the Test Plan issue type).
+
+Jira is source of truth; the synced file is a read-only cache — NEVER hand-write it.
 
 ### Traceability check
 
@@ -475,11 +485,11 @@ See SKILL.md veto rules — veto beats risk score for bugs too.
 2. **Specific data in scenarios** — "valid email" is not enough; write `"john+test@example.com"`.
 3. **Edge cases flagged for PO** — if you invented the expected behavior, mark it **NEEDS PO/DEV CONFIRMATION** and call it out in the final report.
 4. **Do not force minimum counts** — a legitimately simple ticket may have 2 outlines. Forcing 10 dilutes value.
-5. **Traceability now, TCs later** — this skill produces the ATP only. Stage 4 `test-documentation` turns these outlines into Xray TCs with ROI scoring.
+5. **Traceability now, TCs later** — this skill produces the ATP only. Stage 4 `test-documentation` turns these outlines into Xray TCs with ROI scoring. When TCs do exist, the TC body = the `Test` issue's `description` (synced in both modalities); the Xray Gherkin / Test-Steps plugin field is NOT synced — it only mirrors the description.
 6. **Epic inheritance beats duplication** — if the feature plan already answered a risk or integration point, cite it, do not re-derive.
 7. **Language** — artifacts + commit messages in English; conversation mirrors the user's language.
 8. **Data feasibility is a blocker** — if a critical AC has no reachable data, stop and surface the blocker before writing outlines.
-9. **Source order** — Jira field (or `## Acceptance Test Plan (ATP)` fallback comment) is canonical; the local `acceptance-test-plan.md` is a read-only cache materialized by `bun run jira:sync-issues`. Never hand-write or hand-edit the synced file.
+9. **Source order** — the canonical ATP is in Jira (jira-native: Story `{{jira.acceptance_test_plan}}` field or `## Acceptance Test Plan (ATP)` fallback comment; jira-xray: the Test Plan issue's `description`). The local synced file is a read-only cache materialized by `bun run jira:sync-issues` (jira-native → `acceptance-test-plan.md`; jira-xray → `test-plans/TESTPLAN-<ATP_KEY>-<slug>.md`). Never hand-write or hand-edit the synced file.
 10. **No ROI here** — prioritization for regression backlog is `test-documentation`'s job; this skill only tags Priority per outline.
 
 ---
@@ -494,7 +504,7 @@ See SKILL.md veto rules — veto beats risk score for bugs too.
 - [ ] Refined ACs + Edge Cases appended to ticket description
 - [ ] Label `shift-left-reviewed` added
 - [ ] ATP content written to `{{jira.acceptance_test_plan}}` (or `## Acceptance Test Plan (ATP)` fallback comment)
-- [ ] `acceptance-test-plan.md` materialized via `bun run jira:sync-issues get <KEY> --include-comments` at the STORY folder (not hand-written)
+- [ ] Synced ATP cache materialized (not hand-written) — jira-native: `acceptance-test-plan.md` via `bun run jira:sync-issues get <STORY_KEY> --include-comments`; jira-xray: `test-plans/TESTPLAN-<ATP_KEY>-<slug>.md` via `bun run jira:sync-issues get <ATP_KEY>`
 - [ ] Trace verified via `[TMS_TOOL] trace {TICKET}`
 - [ ] Final report delivered to user with open questions + blocker note if needed
 - [ ] Commit landed on the test branch, no AI attribution
