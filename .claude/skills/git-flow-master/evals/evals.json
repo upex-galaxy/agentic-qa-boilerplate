@@ -56,6 +56,48 @@
       "expected_output": "Skill recognises chained-PR planning intent. Walks the inline decision tree from references/branching-strategies.md (Q1 mechanical? Q2 linearly decomposable? Q3 shared scaffolding?). Returns a strategy (stacked-to-main, feature-branch-chain, or size-exception) plus a concrete branch plan grounded in KATA layers (fixtures + components first, then ATCs, then test data).",
       "should_trigger": true,
       "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "Brand new automation repo, just me writing Playwright specs. Run our git strategy setup — I'll only ever push to main, keep it dead simple.",
+      "expected_output": "Strategy Setup (3.6) runs. Resolves solo-main (single contributor, only main, simplicity). Creates NO integration branch (materialization table: solo-main = main only). Asks NONE of Q1/Q2/Q3 (single-branch strategy gates them all out). Writes a MINIMAL runbook: marker <!-- git-flow-master:strategy:solo-main -->, branch table (main only), 'work lands on main via PR', commit rules. No invariant, no promotion, no hotfix block. No --force, no AI attribution.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "Set up our git strategy. Repo has main + staging already; staging is behind main. Use fast-forward promotion, merge commits for features, hotfix off prod with same-day back-merge.",
+      "expected_output": "Strategy Setup runs. Resolves main-integration (main + staging). Materializes: staging already exists so it is NOT recreated; ancestry check (git log main..staging empty) shows main is ahead and staging is a pure ancestor, so ff-syncs staging up to main via 'git push origin origin/main:refs/heads/staging' — NEVER --force; confirms before the protected-branch push. Records all 5 markers (strategy:main-integration, integration-branch:staging, promote-method:ff-only, feature-merge:merge-commit, hotfix-policy:branch-off-prod-backmerge). Renders the GOLD main-integration runbook verbatim (invariant: main is ancestor of staging; ff-only release block; hotfix off main + back-merge). No AI attribution.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 11,
+      "prompt": "We use gitflow here — develop plus release branches. Configure the git strategy and write the runbook.",
+      "expected_output": "Strategy Setup runs. Resolves gitflow (develop present). Ensures develop exists (off main if missing); does NOT create release/* or hotfix/* at setup. Sets work-branch base to develop. Renders the gitflow runbook: feature/* off develop, release/* off develop -> main with back-merge to develop, hotfix/* off main with back-merge to develop. Invariant rendered as the develop/main back-merge discipline (NOT 'production is ancestor of integration'). Markers include strategy:gitflow + integration-branch:develop + decision markers. No --force, no AI attribution.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 12,
+      "prompt": "Bootstrap branching for this repo. It has main and staging but they've each got commits the other doesn't.",
+      "expected_output": "Strategy Setup runs and resolves main-integration. During materialization the ancestry check (git log main..staging AND git log staging..main) is non-empty in BOTH directions => branches diverged both ways => Strategy Setup STOPS the sync, does NOT --force, and hands off to conflict resolution (SKILL.md 3.5). The report states the divergence and points to conflict resolution rather than claiming a successful ff-sync. No history rewritten.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 13,
+      "prompt": "Re-run git strategy setup. CLAUDE.md already has the strategy:main-integration, integration-branch:staging, promote-method:ff-only and feature-merge:merge-commit markers, but no hotfix-policy marker.",
+      "expected_output": "Detection (Step 2 extension) reads the existing decision markers and treats Q1 (promote-method) and Q2 (feature-merge) as already answered => SKIPS them. Only Q3 (hotfix-policy, marker missing) is asked. Existing branches are not recreated. Idempotent: the only new write is the hotfix-policy marker plus the corresponding hotfix block in the runbook. No re-asking of answered questions, no --force.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 14,
+      "prompt": "configura el flujo de git para este repo de automatización nuevo",
+      "expected_output": "Strategy Setup runs (Spanish trigger 'configura el flujo de git'). Conversation mirrors Spanish; artifacts (markers, runbook, CLAUDE.md section) stay English. Step 1 repo state -> Step 2 detection -> if undetermined, present the 7 strategies and ask for one slug (detect-then-questionnaire), then run the applicable Q1/Q2/Q3 gated on the resolved strategy. Proposes branch creation (never auto-executes), never --force, no AI attribution.",
+      "should_trigger": true,
+      "files": []
     }
   ]
 }
