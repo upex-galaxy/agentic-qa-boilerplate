@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-05-30T23:15:21.679Z`
+> Generated: `2026-05-31T00:59:05.172Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.claude/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -352,7 +352,7 @@ Skills indexed: 14
 - `id` is the stable AI-assigned key the answer is mapped back to.
 - **Write the spec** to a JSON file. Convention: `.toki/spec-<name>.json` (a `spec-<name>.json` filename makes the backup land at `.toki/result-<name>.json`). The `.toki/` dir is git-ignored.
 - **Run it (blocking):** `bun run toki <specPath>`. This serves the UI, opens the browser, and waits.
-- Flags: `--port <n>` (default 4747, auto-increments if busy), `--timeout <min>` (default 30, fractional ok), `--no-open` (print the URL but do not open the browser), `--help`.
+- Flags: `--port <n>` (default 4747, auto-increments if busy), `--timeout <min>` (default 1440 = 24h, fractional ok), `--no-open` (print the URL but do not open the browser), `--help`.
 - **Parse stdout.** stdout carries **ONLY** the Result JSON — one object, no banner. All progress lines, the waiting URL, and errors go to **stderr**. Read stdout, `JSON.parse` it, continue the same turn.
 - `single` → `string` (the chosen option `value`) or `null` if unanswered.
 - `multi` → `string[]` (chosen option `value`s; `[]` if none).

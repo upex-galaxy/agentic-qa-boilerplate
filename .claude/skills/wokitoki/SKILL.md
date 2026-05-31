@@ -64,7 +64,7 @@ Full contract (every field, defaults, validation rules) → `.claude/skills/woki
 
 1. **Write the spec** to a JSON file. Convention: `.toki/spec-<name>.json` (a `spec-<name>.json` filename makes the backup land at `.toki/result-<name>.json`). The `.toki/` dir is git-ignored.
 2. **Run it (blocking):** `bun run toki <specPath>`. This serves the UI, opens the browser, and waits.
-   - Flags: `--port <n>` (default 4747, auto-increments if busy), `--timeout <min>` (default 30, fractional ok), `--no-open` (print the URL but do not open the browser), `--help`.
+   - Flags: `--port <n>` (default 4747, auto-increments if busy), `--timeout <min>` (default 1440 = 24h, fractional ok), `--no-open` (print the URL but do not open the browser), `--help`.
 3. **Parse stdout.** stdout carries **ONLY** the Result JSON — one object, no banner. All progress lines, the waiting URL, and errors go to **stderr**. Read stdout, `JSON.parse` it, continue the same turn.
 
 Exit codes:
@@ -76,6 +76,19 @@ Exit codes:
 | 2 | bad spec (file unreadable or failed validation) — `[toki] invalid spec at <path>: …` on stderr |
 
 A backup of the Result is also written to `.toki/result-<name>.json`, but the stdout copy is authoritative for the AI.
+
+## User-absence protocol
+
+A long session is expected — the default `--timeout` is **24h (1440 min)**, adjustable via `--timeout <min>`. A person may step away and leave the session open, so a non-zero exit is not necessarily an error:
+
+| Exit | Meaning | What the AI does |
+| --- | --- | --- |
+| 0 | submitted — Result JSON on stdout | parse it, continue the same turn |
+| 1 | timeout elapsed with NO submission (or runtime error) | treat as the user being **AWAY**, not a failure — see below |
+| 2 | bad spec (unreadable / failed validation) | fix the spec, then re-run |
+| 130 | Ctrl-C (SIGINT) | the user cancelled — ask what they want next |
+
+On exit code 1, do **not** error out or move on silently. Treat it as the user being away from the keyboard: post a brief standby message and offer to relaunch — e.g. "Dejé toki esperando, no llegó respuesta; sigo disponible — decime y lo relanzo." Keep `toki` ready to re-run with the same spec the moment the user is back.
 
 ## Reading the Result
 

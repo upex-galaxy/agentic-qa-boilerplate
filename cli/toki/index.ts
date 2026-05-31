@@ -84,7 +84,7 @@ ARGUMENTS
 
 OPTIONS
   --port <n>         Preferred port (default: 4747; auto-increments if busy)
-  --timeout <min>    Minutes to wait for a submission (fractional ok, default: 30)
+  --timeout <min>    Minutes to wait for a submission (fractional ok, default: 1440 = 24h)
   --no-open          Do not auto-open the browser (still prints the URL)
   --help             Show this help
 
@@ -97,7 +97,7 @@ EXIT CODES
 `;
 
 const DEFAULT_PORT = 4747;
-const DEFAULT_TIMEOUT_MINUTES = 30;
+const DEFAULT_TIMEOUT_MINUTES = 1440;
 
 // ============================================================================
 // MAIN
