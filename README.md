@@ -380,7 +380,7 @@ bun run test:ui
 # Run specific test types
 bun run test:e2e           # E2E tests only
 bun run test:integration   # API tests only
-bun run test:e2e:critical  # Tests marked @critical
+bun run test:smoke         # smoke / @critical tests
 ```
 
 <br />
@@ -431,8 +431,7 @@ bun run test:e2e:critical  # Tests marked @critical
 │   ├── project.yaml              # AI context vars (resolved as {{VAR}} by skills)
 │   ├── jira-fields.json                 # Jira custom-field catalog (synced by `bun run jira:sync-fields`)
 │   ├── jira-required.yaml        # Required Jira custom-field manifest
-│   ├── README.md                 # Variable conventions reference
-│   └── skills/                   # Symlink → .claude/skills/ (agentskills.io path)
+│   └── README.md                 # Variable conventions reference
 │
 ├── .claude/skills/               # Claude Code Skills (workflows)
 │   ├── agentic-qa-core/           # Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine)
@@ -461,7 +460,6 @@ bun run test:e2e:critical  # Tests marked @critical
 │   └── create-agentic-qa/        # Official npm scaffolder (bunx create-agentic-qa@latest <your-repo-name>) — own README + tests
 │
 ├── cli/                          # install.ts, doctor.ts, update-boilerplate.ts consumed by bun scripts
-├── templates/                    # Files copied into bootstrapped projects by QA workflow skills
 │
 ├── playwright.config.ts          # Playwright configuration
 ├── INSTALLER.md                  # Contract for bun run setup — what each installer layer does
@@ -529,7 +527,7 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run test:headed`       | Run with browser visible |
 | `bun run test:e2e`          | Run E2E tests only       |
 | `bun run test:integration`  | Run API tests only       |
-| `bun run test:e2e:critical` | Run @critical tests      |
+| `bun run test:smoke`        | Run smoke / @critical tests |
 | `bun run test:retries`      | Run with 2 retries       |
 | `bun run test:last-failed`  | Re-run failed tests      |
 
@@ -538,9 +536,9 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | Script                         | Description              |
 | ------------------------------ | ------------------------ |
 | `bun run test:report`          | Open Playwright report   |
-| `bun run test:allure`          | Generate and open Allure |
-| `bun run test:allure:generate` | Generate Allure only     |
-| `bun run test:allure:open`     | Open existing Allure     |
+| `bun run allure:run`           | Generate and open Allure |
+| `bun run allure:generate`      | Generate Allure only     |
+| `bun run allure:open`          | Open existing Allure     |
 | `bun run test:sync`            | Sync results to TMS      |
 
 ### Code Quality

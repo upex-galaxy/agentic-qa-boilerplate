@@ -230,16 +230,18 @@ The knowledge layer is organised in three tiers, mirroring the scope at which th
 │  MODULE LEVEL                                                │
 │  Routes · DB tables · Shared test data · Module-specific     │
 │  conventions.                                                │
-│  Example: `PBI/{module}/module-context.md` lists the routes, │
-│  tables, and test-data candidates for that module.           │
+│  Example: `PBI/epics/EPIC-<KEY>-<slug>/module-context.md`    │
+│  lists the routes, tables, and test-data candidates for the  │
+│  module (Module = Epic, 1:1).                                │
 └──────────────────────────────────────────────────────────────┘
                               ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  TICKET LEVEL                                                │
 │  Acceptance criteria · Team decisions · Evidence ·           │
 │  Session memory.                                             │
-│  Example: `PBI/{module}/{PROJECT_KEY}-XXX-{title}/spec.md`,  │
-│  `implementation-plan.md`, `evidence/*.png`.                 │
+│  Example: `PBI/epics/EPIC-<KEY>-<slug>/test-specs/<ID>/      │
+│  spec.md`, `automation-plan.md`; story evidence at           │
+│  `stories/STORY-<KEY>-<slug>/evidence/*.png`.                │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -255,17 +257,33 @@ The knowledge layer is organised in three tiers, mirroring the scope at which th
 ├── PRD/                          # Project level — product requirements (phase 2 of discovery)
 │   └── business/                 #   Business constitution, domain glossary
 ├── SRS/                          # Project level — software requirements (phase 2 of discovery)
-└── PBI/                          # Module + ticket level
-    └── {module}/
-        ├── module-context.md     # Module overview
-        └── test-specs/
-            ├── ROADMAP.md        # All tickets + automation status
-            ├── PROGRESS.md       # Current progress
-            └── {PROJECT_KEY}-XXX-{title}/
-                ├── spec.md                # Test specification
-                ├── implementation-plan.md # Automation plan
-                └── atc/*.md               # Individual ATC designs
+└── PBI/                          # Epic + Story level (Module = Epic, 1:1)
+    ├── epic-tree.md              # Master index of every Epic            [SYNC]
+    └── epics/
+        └── EPIC-<KEY>-<slug>/
+            ├── epic.md                          # Epic overview          [SYNC]
+            ├── feature-implementation-plan.md   # Feature-level dev plan [SYNC]
+            ├── feature-test-plan.md             # Feature-level test plan[SYNC]
+            ├── module-context.md                # Module overview (non-Jira)
+            ├── test-specs/                      # EPIC-level (non-Jira)
+            │   ├── ROADMAP.md   # All test IDs + automation status
+            │   ├── PROGRESS.md  # Current progress
+            │   └── <ID>/
+            │       ├── spec.md            # Test specification
+            │       ├── automation-plan.md # Code-level automation plan
+            │       └── atc/*.md           # Individual ATC designs
+            └── stories/
+                └── STORY-<KEY>-<slug>/
+                    ├── story.md                       # Story overview   [SYNC]
+                    ├── acceptance-criteria.md         # Per-field cache  [SYNC]
+                    ├── acceptance-test-plan.md        # ATP cache        [SYNC]
+                    ├── acceptance-test-results.md     # ATR cache        [SYNC]
+                    ├── comments.md                    # Jira comments    [SYNC]
+                    ├── context.md                     # Session notes (non-Jira)
+                    └── evidence/*.png                 # Captured evidence (non-Jira)
 ```
+
+`[SYNC]` files mirror a Jira field and are a read-only cache materialized by `scripts/sync-jira-issues.ts` — never hand-written. Jira is the source of truth.
 
 The canonical shape is documented in `.context/README.md`. The strategic reasoning behind the three-tier split lives in `CONTEXT.md` (repo root) — read that for the full rationale.
 
@@ -446,7 +464,7 @@ The `sprint-testing` skill handles the per-ticket work across Stages 1, 2 and 3.
 - Load project context (`.context/master-test-plan.md`, `.context/business/business-data-map.md`, `.context/business/business-feature-map.md`, `.context/business/business-api-map.md`).
 - Explore the frontend and backend code related to the ticket.
 - Query the database via `[DB_TOOL]` for test data candidates (**generate > discover > modify** hierarchy — never hardcode).
-- Create or update the PBI folder (`.context/PBI/{module}/{PROJECT_KEY}-XXX-{title}/`).
+- Create or update the PBI folder (`.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/`).
 - Configure the browser automation environment via the `playwright-cli` skill.
 
 ### Stage 1 — Planning
@@ -685,7 +703,7 @@ Three custom fields on every bug ticket:
 
 | Field                  | Purpose                                             | Examples                                                  |
 | ---------------------- | --------------------------------------------------- | --------------------------------------------------------- |
-| **Component Affected** | Which module the bug hit                            | Any module name from `PBI/{module}/`                      |
+| **Component Affected** | Which module the bug hit                            | Any module name from `PBI/epics/EPIC-<KEY>-<slug>/` (Module = Epic) |
 | **Root Cause**         | Why the bug exists                                  | AC Gap · Code · Integration · Data · Edge Case · Regression |
 | **Upstream Ticket**    | Which feature introduced the bug                    | The user story in whose release the defect appeared       |
 
