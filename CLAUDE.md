@@ -398,7 +398,9 @@ Git / PR work → `/git-flow-master` auto-loads. Details in `.claude/skills/git-
 
 <!-- No strategy resolved yet. This boilerplate ships WITHOUT a git-flow-master:strategy marker by design (template-trap guard). -->
 
-This project has not run Strategy Setup yet. The branching strategy (solo-main / main-integration / enterprise / trunk-based / gitflow / github-flow / gitlab-flow) is undecided.
+This project has not run Strategy Setup yet. The branching strategy (solo-main / main-integration / enterprise / trunk-based / gitflow / github-flow / gitlab-flow / sdet) is undecided.
+
+For a test-automation repo running chained suites, the recommended strategy is **`sdet`** (SDET Gitflow — an ephemeral per-suite integration trunk; tickets chain through it with `--no-ff` merges and one final reviewed PR to `main`). See `.claude/skills/git-flow-master/references/sdet-integration-trunk.md`.
 
 To configure: ask git-flow-master to "set up our git strategy" (or "bootstrap branching"). Strategy Setup will pick the flow, create only the branches that flow needs (never forcing anything), capture the merge + hotfix decisions, and replace this placeholder with the full runbook + markers. Until then, git-flow-master detects the strategy per-invocation and operates without a persisted runbook.
 
