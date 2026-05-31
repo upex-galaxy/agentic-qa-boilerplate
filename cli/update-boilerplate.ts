@@ -37,7 +37,6 @@ const COMPONENTS: Component[] = [
   { name: 'skills', type: 'directory', paths: ['.claude/skills'] },
   { name: 'commands', type: 'directory', paths: ['.claude/commands'] },
   { name: 'scripts', type: 'directory', paths: ['scripts'] },
-  { name: 'templates', type: 'directory', paths: ['templates'] },
   { name: 'docs', type: 'directory', paths: ['docs'] },
   { name: 'cli', type: 'directory', paths: ['cli'] },
   { name: 'vscode', type: 'directory', paths: ['.vscode'] },
