@@ -197,6 +197,14 @@ Run the review checklist on the new/modified files. Treat every failed item as a
 
 **Progress checkpoint + Archive**: after Phase 3 returns ACCEPT (all 3 Verifiers exit 0), the orchestrator appends `## Phase 3 — Review — <ts>` with `status: completed`, `next: stop` to `.session/test-automation/<scope>/progress.md`, then runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/test-automation/<scope>/` to `.session/.archive/<YYYY-MM-DD>-test-automation-<scope>/` (two-file dir preserved) and calls `mem_session_summary` including the archive path. On REJECT, archive does NOT run — the working directory stays for debug.
 
+#### Git & TMS handoff (sdet integration-trunk suites)
+
+This skill stops at a clean local review. It does **not** create branches, push, or open PRs — that is `/git-flow-master`'s job. When the repo's git strategy is `sdet` (the standing mode for chained test-automation suites), each ticket flows through the per-ticket loop in `.claude/skills/git-flow-master/references/sdet-integration-trunk.md`:
+
+- The Phase 3 ACCEPT gate (3 Verifiers green: `test` / `types:check` / `lint:check`) is the skill's **local validation gate**. Under `sdet` it must pass on **both** the `local` and `staging` environments before push — re-run the suite against each (`active_env` per `.agents/project.yaml`). The Verifiers are local-only; Sanity CI on the branch is owned by `/git-flow-master` + `/regression-testing`, never by this skill.
+- After ACCEPT, surface the explicit handoff — _"Local gate green. Ready for `/git-flow-master`: cut `test/{KEY}-{slug}` from the integration trunk, push, Sanity-CI, PR into the trunk, merge `--no-ff`."_ Do not auto-invoke git operations.
+- **TC lifecycle anchors to the ticket-branch PR, not the final `trunk → main` PR**: TCs → In Review when the ticket PR opens into the trunk; they flip to Automated only after the final suite PR merges to `main` and CI is green there. Execute transitions via `/test-documentation` + `[ISSUE_TRACKER_TOOL]`; cross-check status names against `.agents/jira-workflows.json`. Merging into the trunk is NOT "Automated".
+
 ---
 
 ## Fixture selection (inline — load-bearing every invocation)
@@ -343,7 +351,7 @@ export class UiFixture extends TestContext {
 
 **T7.** NEVER hardcode `customfield_NNNNN` in spec files, test data, or test config. Resolve Jira fields via `{{jira.<slug>}}` against `.agents/jira-fields.json` + `.agents/jira-required.yaml` so test code survives workspace rotations.
 
-**T8.** NEVER mix test code and product code in the same PR. Test PRs follow the `test/*` branch convention with title format `{type}({ISSUE-KEY}): {description}` — see `.claude/skills/git-flow-master/references/pr-test-automation.md`.
+**T8.** NEVER mix test code and product code in the same PR. Test PRs follow the `test/*` branch convention with title format `{type}({ISSUE-KEY}): {description}` — see `.claude/skills/git-flow-master/references/pr-test-automation.md`. Under the `sdet` strategy, adjacent non-test work never rides a `test/*` ticket branch either — it goes on a Plus Branch (`docs/*`/`chore/*`/`fix/*` → integration trunk). See `.claude/skills/git-flow-master/references/sdet-integration-trunk.md`.
 
 ---
 

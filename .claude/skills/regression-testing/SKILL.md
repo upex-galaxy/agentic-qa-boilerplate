@@ -253,6 +253,8 @@ Failed test
 | ENVIRONMENT | MEDIUM | Re-run after infra check |
 | NEW TEST | LOW | Manual verification, then accept or fix |
 
+> **`sdet` CI-fallback clause** (integration-trunk suites only): an ENVIRONMENT-class red on a Sanity-CI run for a ticket branch may authorize merging **into the integration trunk** — never the final `trunk → main` PR — when proven by BOTH (a) the change passing locally on `local` AND `staging`, and (b) the same red being present independent of the change (nightly already red, or the failing line is shared pre-existing code). File a separate infra/flake ticket and reference it in the PR. This is NOT a relaxation of the GO bar: a REGRESSION-class failure is never eligible, and the final PR to `main` still requires a genuinely green test step. See `.claude/skills/git-flow-master/references/sdet-integration-trunk.md` §CI-fallback clause.
+
 Read `references/failure-classification.md` when: the decision tree is ambiguous, you need the full error-pattern catalogue, you are classifying a borderline case, or you are computing flakiness over historical runs.
 
 ### Step 5: Assess severity per failure
