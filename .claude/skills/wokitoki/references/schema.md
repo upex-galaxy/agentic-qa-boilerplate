@@ -22,9 +22,12 @@ There are two shapes: the **Spec** the AI writes (input), and the **Result** the
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
 | `id` | `string` | yes | Non-empty AND **unique** across the spec. Used to map answers back. |
-| `content` | `string` | yes | Markdown. May be the empty string `""`, but the key must be a string. |
-| `controls` | `Controls` | no | **Omit** → the block is a report paragraph. Present → the block is a question. |
-| `text` | `TextField` | no | Defaults to `{ required: false }` when omitted. The textarea is ALWAYS rendered; this only governs whether it is required. |
+| `content` | `string` | yes | Markdown. May be the empty string `""`, but the key must be a string. On a **table block** this is an optional intro shown ABOVE the table. |
+| `controls` | `Controls` | no | **Omit** → the block is a report paragraph. Present → the block is a question. Forbidden on a table block. |
+| `text` | `TextField` | no | Defaults to `{ required: false }` when omitted. The textarea is ALWAYS rendered; this only governs whether it is required. Forbidden on a table block. |
+| `table` | `BlockTable` | no | Present → the block is an **answerable table** (one row = one answer). **Mutually exclusive** with `controls`/`text` — having `table` AND either of them fails validation. `content` is still allowed. |
+
+A block is EITHER a normal block (`controls`/`text`) OR a table block (`table`) — never both.
 
 ### `Controls`
 
@@ -56,6 +59,26 @@ Control type semantics:
 
 **Per-block `text.required` semantics:** `required` is decided per block by the AI, independently of `controls.required`. A block can require text but not a control, require a control but not text, require both, or require neither. The textarea is always rendered regardless; `required` only gates the submit button.
 
+### `BlockTable` (the answerable-table shape)
+
+A table block renders a real `<table>` where **each row is independently answerable**. The user can highlight-to-quote any **cell** (the quote attaches to THAT row), and each row carries its own controls + textarea defined once by `rowControls`/`rowText`.
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `columns` | `string[]` | yes | Column header labels. **Non-empty** array of **non-empty** strings. Rendered as `<th>` (escaped). |
+| `rows` | `TableRow[]` | yes | **Non-empty** array. One answerable row each. |
+| `rowControls` | `Controls` | no | Same shape + rules as a block `controls` (`single`/`multi` need `options[]`; `toggle` rejects `options`). Applied to EVERY row. Omit → rows have no control, only a textarea. |
+| `rowText` | `TextField` | no | Same shape as block `text`. Defaults to `{ required: false }` when omitted. Applied to EVERY row. The per-row textarea is always rendered. |
+
+`TableRow`:
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `id` | `string` | yes | Non-empty AND **unique within the block**. Echoed back in each `RowResult.id`. |
+| `cells` | `string[]` | yes | One string per column, **length must equal `columns.length`**. Each cell is a string; the empty string `""` is allowed. Rendered escaped (stable quote-source text). |
+
+**Row-answer model:** the AI authors the table once (`columns` + `rows` + one `rowControls`/`rowText`). The UI gives every row that same control + textarea in a trailing "Answer" column, and lets the user quote any cell into that row. The block-level answer is inert for a table block (always `null`/`""` in the result); the data lives in `rows[]`.
+
 ---
 
 ## NormalizedSpec (internal — output of `validateSpec`)
@@ -66,6 +89,7 @@ Control type semantics:
 - Every block's `text` is always present (default `{ required: false }`).
 - Every present `controls.required` is a concrete `boolean`.
 - For `single`/`multi`, `options` is guaranteed present + non-empty; for `toggle`, `options` is omitted.
+- A table block carries a normalized `table` with `rowText` always present (default `{ required: false }`); `rowControls` only when authored. Its block-level `text` default is unused.
 
 The AI does not author this shape — it is what the UI consumes after validation.
 
@@ -86,9 +110,19 @@ The AI does not author this shape — it is what the UI consumes after validatio
 | Field | Type | Notes |
 | --- | --- | --- |
 | `id` | `string` | Echoes the spec block `id` — anchor every answer with this. |
-| `controlAnswer` | `string \| string[] \| boolean \| null` | Encoded by control type (see below). |
-| `text` | `string` | The user's free-text. Empty string `""` if untouched. |
-| `quotes` | `string[]` | Exact phrases the user highlighted from this block's `content`. Empty array if none. |
+| `controlAnswer` | `string \| string[] \| boolean \| null` | Encoded by control type (see below). **Always `null` for a table block.** |
+| `text` | `string` | The user's free-text. Empty string `""` if untouched. **Always `""` for a table block.** |
+| `quotes` | `string[]` | Exact phrases the user highlighted from this block's `content`. Empty array if none. For a table block this holds quotes from the **intro content** only — per-cell quotes live in `rows[].quotes`. |
+| `rows` | `RowResult[]` | **Present ONLY for a table block** (absent on every normal block). One entry per spec row, in order. |
+
+### `RowResult` (table blocks only)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | `string` | Echoes the spec `TableRow.id`. |
+| `controlAnswer` | `string \| string[] \| boolean \| null` | This row's `rowControls` answer, encoded by type (same table as below). `null` when `rowControls` is absent or a `single`/`multi` is unanswered. |
+| `text` | `string` | This row's free-text from its `rowText` textarea. `""` if untouched. |
+| `quotes` | `string[]` | Exact phrases the user highlighted from THIS row's cells. Empty array if none. |
 
 ### `controlAnswer` encoding (by control type)
 
@@ -101,8 +135,8 @@ The AI does not author this shape — it is what the UI consumes after validatio
 
 ### `meta`
 
-- `meta.answered` — number of blocks that have **any** answer: a control selection (a chosen `single`/`multi`/`toggle`) and/or non-empty trimmed `text`.
-- `meta.total` — total block count in the spec.
+- `meta.answered` — number of blocks that have **any** answer: a control selection (a chosen `single`/`multi`/`toggle`) and/or non-empty trimmed `text`. A **table block counts as one block** and is "answered" if **any** of its rows has any answer (a row control selection and/or non-empty row text).
+- `meta.total` — total block count in the spec. A table block is **one** block here regardless of row count.
 
 ---
 
@@ -127,6 +161,17 @@ Each violation throws a `SpecError` with a `path` (e.g. `blocks[2].id`) and exit
 - `text` present but not a plain object.
 - `text.required` present but not a boolean.
 - `text.placeholder` present but not a string.
+
+Table-block specific:
+
+- `table` co-present with `controls` or `text` on the same block.
+- `table` present but not a plain object.
+- `table.columns` not a non-empty array, or any column not a non-empty string.
+- `table.rows` not a non-empty array, or a row not an object.
+- A row `id` missing / not a non-empty string / **duplicated within the block**.
+- A row `cells` not an array, or its length **not equal to** `columns.length`, or any cell not a string.
+- `table.rowControls` present but failing the `Controls` rules (bad type, missing `options` on `single`/`multi`, `options` on `toggle`, etc.).
+- `table.rowText` present but failing the `TextField` rules.
 
 ---
 

@@ -9,7 +9,7 @@
  * Bun built-ins only, zero external deps (stays extractable).
  */
 
-import type { NormalizedSpec, Result, ResultBlock } from './schema.ts';
+import type { NormalizedSpec, Result, ResultBlock, RowResult } from './schema.ts';
 
 // ============================================================================
 // ERROR
@@ -76,11 +76,12 @@ function shapeResult(body: unknown): Result {
   return { submittedAt, blocks, meta };
 }
 
-function shapeResultBlock(raw: unknown): ResultBlock {
-  const obj = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
-
-  const id = typeof obj.id === 'string' ? obj.id : '';
-
+/** Shape the answer triple (controlAnswer/text/quotes) shared by blocks + rows. */
+function shapeAnswer(obj: Record<string, unknown>): {
+  controlAnswer: ResultBlock['controlAnswer']
+  text: string
+  quotes: string[]
+} {
   let controlAnswer: ResultBlock['controlAnswer'] = null;
   const ca = obj.controlAnswer;
   if (typeof ca === 'string' || typeof ca === 'boolean') {
@@ -95,7 +96,27 @@ function shapeResultBlock(raw: unknown): ResultBlock {
     ? obj.quotes.filter((q): q is string => typeof q === 'string')
     : [];
 
-  return { id, controlAnswer, text, quotes };
+  return { controlAnswer, text, quotes };
+}
+
+function shapeResultRow(raw: unknown): RowResult {
+  const obj = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+  const id = typeof obj.id === 'string' ? obj.id : '';
+  return { id, ...shapeAnswer(obj) };
+}
+
+function shapeResultBlock(raw: unknown): ResultBlock {
+  const obj = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+  const id = typeof obj.id === 'string' ? obj.id : '';
+
+  const block: ResultBlock = { id, ...shapeAnswer(obj) };
+
+  // Table block: pass through per-row answers (else they would be silently lost).
+  if (Array.isArray(obj.rows)) {
+    block.rows = obj.rows.map(shapeResultRow);
+  }
+
+  return block;
 }
 
 function shapeMeta(blocks: ResultBlock[]): Result['meta'] {
@@ -107,11 +128,12 @@ function shapeMeta(blocks: ResultBlock[]): Result['meta'] {
   };
 }
 
-function isAnswered(block: ResultBlock): boolean {
-  if (block.text.trim().length > 0) {
+/** Does an answer triple carry any concrete answer? (text or a control value). */
+function hasAnswer(a: { controlAnswer: ResultBlock['controlAnswer'], text: string }): boolean {
+  if (a.text.trim().length > 0) {
     return true;
   }
-  const ca = block.controlAnswer;
+  const ca = a.controlAnswer;
   if (ca === null) {
     return false;
   }
@@ -124,6 +146,14 @@ function isAnswered(block: ResultBlock): boolean {
   }
   // string: any concrete answer counts.
   return true;
+}
+
+function isAnswered(block: ResultBlock): boolean {
+  // Table block: answered if ANY row carries an answer.
+  if (Array.isArray(block.rows)) {
+    return block.rows.some(hasAnswer);
+  }
+  return hasAnswer(block);
 }
 
 // ============================================================================

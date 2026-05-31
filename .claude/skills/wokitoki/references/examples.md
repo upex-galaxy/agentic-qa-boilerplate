@@ -1,6 +1,6 @@
 # WokiToki — Worked examples
 
-Three copy-pasteable specs, one per shape: a pure decision-set, a pure long report, and a hybrid. Each is followed by an example Result (one plausible set of user answers). Field contract → `./schema.md`.
+Four copy-pasteable specs: a pure decision-set, a pure long report, a hybrid, and an answerable table. Each is followed by an example Result (one plausible set of user answers). Field contract → `./schema.md`.
 
 Run any of them with: write the spec to `.toki/spec-<name>.json`, then `bun run toki .toki/spec-<name>.json`, then parse stdout.
 
@@ -184,3 +184,68 @@ Questions and report paragraphs mixed in one spec. The report blocks carry `cont
 ```
 
 Decode by block: `context-coverage` is a report block → `null`; `go-no-go` is `single` → `string`; `flags` is `multi` → `string[]`. The `quotes` on `context-coverage` anchor the user's blocker to the exact sentence it is about.
+
+---
+
+## 4. Answerable table
+
+One block whose `table` makes **each row independently answerable**. Every row gets the same `rowControls` (here a `single` verdict) plus a `rowText` note, in a trailing "Answer" column. The user can highlight any **cell** to quote it — that quote attaches to the row, not the block. `content` is an optional markdown intro shown above the table.
+
+The result for a table block carries `controlAnswer: null` and `text: ""` at the block level (inert), and the real data in `rows[]` — one `RowResult` per row, in order. Block-level `quotes` would only ever hold quotes from the intro `content`.
+
+### Spec
+
+```json
+{
+  "title": "Endpoint risk review",
+  "intro": "Give each endpoint a verdict and a note. Highlight any cell to quote it.",
+  "submitLabel": "Submit review",
+  "blocks": [
+    {
+      "id": "endpoints",
+      "content": "## Critical endpoints\nReview each row independently.",
+      "table": {
+        "columns": ["Endpoint", "Method", "Current coverage"],
+        "rows": [
+          { "id": "login", "cells": ["/auth/login", "POST", "Happy path + lockout"] },
+          { "id": "refresh", "cells": ["/auth/refresh", "POST", "None"] },
+          { "id": "logout", "cells": ["/auth/logout", "POST", "Happy path"] }
+        ],
+        "rowControls": {
+          "type": "single",
+          "options": [
+            { "value": "ok", "label": "OK to ship" },
+            { "value": "risk", "label": "Needs coverage" }
+          ],
+          "required": true
+        },
+        "rowText": { "required": false, "placeholder": "Note (optional)" }
+      }
+    }
+  ]
+}
+```
+
+### Example Result
+
+```json
+{
+  "submittedAt": "2026-05-30T10:15:00.000Z",
+  "blocks": [
+    {
+      "id": "endpoints",
+      "controlAnswer": null,
+      "text": "",
+      "quotes": [],
+      "rows": [
+        { "id": "login", "controlAnswer": "ok", "text": "", "quotes": [] },
+        { "id": "refresh", "controlAnswer": "risk", "text": "Add refresh-token rotation tests before ship", "quotes": ["None"] },
+        { "id": "logout", "controlAnswer": "ok", "text": "", "quotes": [] }
+      ]
+    }
+  ],
+  "meta": { "answered": 1, "total": 1 }
+}
+```
+
+Decode: the table block is `controlAnswer: null` / `text: ""` (inert) and holds the answers in `rows[]`. Each row's `controlAnswer` is the `single` verdict (`"ok"` / `"risk"`); `rows[].quotes` holds phrases highlighted from THAT row's cells (here `"None"` from the `refresh` coverage cell). `meta` counts the whole table as ONE block — `answered: 1` because at least one row was answered.

@@ -31,11 +31,12 @@ Standalone (after a future extraction), it runs the same way against `index.ts` 
 
 ## Spec + Result contract (brief)
 
-A spec is `{ title, intro?, submitLabel?, blocks[] }`. Each block is `{ id, content, controls?, text? }`:
+A spec is `{ title, intro?, submitLabel?, blocks[] }`. Each block is `{ id, content, controls?, text?, table? }`:
 
 - `controls` **absent** → report paragraph. **Present** → question.
 - `controls.type` is `single` (radio), `multi` (checkbox), or `toggle` (boolean, no `options`). `single`/`multi` need a non-empty `options[]` of `{ value, label }`.
 - `text` (a `{ required, placeholder? }`) is always rendered; `text.required` is decided per block.
+- `table` (a `{ columns, rows, rowControls?, rowText? }`) makes the block an **answerable table** — each row is independently answerable (its own controls + textarea), and the user can highlight any **cell** to quote it back against that row. Mutually exclusive with `controls`/`text`; `content` stays allowed as an intro above the table. A table block's result carries `rows[]` (one `RowResult` per row) and an inert block-level answer.
 
 The Result is `{ submittedAt, blocks[], meta }`. Each result block is `{ id, controlAnswer, text, quotes }`:
 

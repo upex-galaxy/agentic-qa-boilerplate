@@ -64,13 +64,60 @@ function embedSpecJson(spec: NormalizedSpec): string {
 /**
  * Render one block as a `<section>`: server-rendered markdown content (stable
  * text nodes for quoting) plus an EMPTY interactive host that `app.js` fills.
+ * Table blocks branch to `renderTableSection`.
  */
 function renderBlockSection(block: NormalizedSpec['blocks'][number], index: number): string {
+  if (block.table) {
+    return renderTableSection(block, block.table, index);
+  }
   const id = escapeHtml(block.id);
   const content = md(block.content);
   return `      <section class="toki-block" data-block-id="${id}" data-block-index="${index}">
         <div class="toki-block__content" data-quote-source>${content}</div>
         <div class="toki-block__interactive" data-block-id="${id}"></div>
+      </section>`;
+}
+
+/**
+ * Render a table block. Cells are server-rendered (escaped) so they are stable
+ * quote-source text nodes; `app.js` fills each row's `.toki-table__answer` cell
+ * with the row controls, the row textarea and that row's quote chips.
+ */
+function renderTableSection(
+  block: NormalizedSpec['blocks'][number],
+  table: NonNullable<NormalizedSpec['blocks'][number]['table']>,
+  index: number,
+): string {
+  const id = escapeHtml(block.id);
+
+  const intro
+    = block.content.length > 0
+      ? `\n        <div class="toki-block__content" data-quote-source>${md(block.content)}</div>`
+      : '';
+
+  const headCells = table.columns
+    .map(column => `<th>${escapeHtml(column)}</th>`)
+    .join('');
+
+  const bodyRows = table.rows
+    .map((row) => {
+      const rowId = escapeHtml(row.id);
+      const cells = row.cells
+        .map(cell => `<td class="toki-table__cell" data-quote-source>${escapeHtml(cell)}</td>`)
+        .join('');
+      return `            <tr class="toki-table__row" data-row-id="${rowId}">${cells}<td class="toki-table__answer" data-row-id="${rowId}"></td></tr>`;
+    })
+    .join('\n');
+
+  return `      <section class="toki-block toki-block--table" data-block-id="${id}" data-block-index="${index}">${intro}
+        <div class="toki-table__scroll">
+          <table class="toki-table">
+            <thead><tr>${headCells}<th class="toki-table__answer-head">Answer</th></tr></thead>
+            <tbody>
+${bodyRows}
+            </tbody>
+          </table>
+        </div>
       </section>`;
 }
 

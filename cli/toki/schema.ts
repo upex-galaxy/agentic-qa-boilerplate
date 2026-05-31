@@ -28,11 +28,36 @@ export interface TextField {
   placeholder?: string
 }
 
+/** One table row: a stable `id` plus a `cells` value per column (in order). */
+export interface TableRow {
+  id: string
+  cells: string[]
+}
+
+/**
+ * A table block: each ROW is independently answerable. `rowControls`/`rowText`
+ * are applied per row (every row gets the same control + textarea). Mutually
+ * exclusive with block-level `controls`/`text` (see `Block`).
+ */
+export interface BlockTable {
+  columns: string[]
+  rows: TableRow[]
+  rowControls?: Controls
+  rowText?: TextField
+}
+
+/**
+ * A block is EITHER a normal block (`controls`/`text`) OR a table block
+ * (`table`). `table` co-present with `controls` or `text` is a `SpecError`.
+ * `content` is allowed on a table block as an optional markdown intro shown
+ * above the table.
+ */
 export interface Block {
   id: string
   content: string
   controls?: Controls
   text?: TextField
+  table?: BlockTable
 }
 
 export interface Spec {
@@ -64,14 +89,28 @@ export interface NormalizedTextField {
 }
 
 /**
+ * Normalized table block: `rowText` is ALWAYS present (defaulted to
+ * `{ required: false }`); `rowControls` is present only when authored.
+ */
+export interface NormalizedBlockTable {
+  columns: string[]
+  rows: TableRow[]
+  rowControls?: NormalizedControls
+  rowText: NormalizedTextField
+}
+
+/**
  * Normalized block: `text` is ALWAYS present (defaulted to
- * `{ required: false }`), `submitLabel` defaulted at the spec level.
+ * `{ required: false }`), `submitLabel` defaulted at the spec level. `table`
+ * is present only for table blocks; when present, `controls`/`text` are absent
+ * (the normalized `text` default is unused for a table block).
  */
 export interface NormalizedBlock {
   id: string
   content: string
   controls?: NormalizedControls
   text: NormalizedTextField
+  table?: NormalizedBlockTable
 }
 
 /**
@@ -89,11 +128,21 @@ export interface NormalizedSpec {
 // RESULT TYPES (output - JSON to stdout + .toki/result-<id>.json)
 // ============================================================================
 
+/** One answered table row in the result (present only inside a table block). */
+export interface RowResult {
+  id: string
+  controlAnswer: string | string[] | boolean | null
+  text: string
+  quotes: string[]
+}
+
 export interface ResultBlock {
   id: string
   controlAnswer: string | string[] | boolean | null
   text: string
   quotes: string[]
+  /** Present ONLY for a table block: one entry per row, in row order. */
+  rows?: RowResult[]
 }
 
 export interface Result {
@@ -236,26 +285,170 @@ function normalizeBlock(
     );
   }
 
+  // Table block: mutually exclusive with block-level controls/text. `content`
+  // stays allowed (optional markdown intro above the table).
+  if (rawBlock.table !== undefined) {
+    if (rawBlock.controls !== undefined || rawBlock.text !== undefined) {
+      throw new SpecError(
+        `${where} (id "${id}") cannot combine "table" with block-level "controls"/"text".`,
+        `${where}.table`,
+      );
+    }
+    const block: NormalizedBlock = {
+      id,
+      content: rawBlock.content,
+      text: { required: false },
+      table: normalizeTable(rawBlock.table, index, id),
+    };
+    return block;
+  }
+
   const block: NormalizedBlock = {
     id,
     content: rawBlock.content,
-    text: normalizeText(rawBlock.text, index, id),
+    text: normalizeText(rawBlock.text, `${where}.text`, id),
   };
 
   if (rawBlock.controls !== undefined) {
-    block.controls = normalizeControls(rawBlock.controls, index, id);
+    block.controls = normalizeControls(rawBlock.controls, `${where}.controls`, id);
   }
 
   return block;
 }
 
-function normalizeControls(
-  rawControls: unknown,
+function normalizeTable(
+  rawTable: unknown,
   index: number,
   id: string,
-): NormalizedControls {
-  const where = `blocks[${index}].controls`;
+): NormalizedBlockTable {
+  const where = `blocks[${index}].table`;
 
+  if (!isPlainObject(rawTable)) {
+    throw new SpecError(
+      `${where} (block "${id}") must be a plain object when present.`,
+      where,
+    );
+  }
+
+  const columns = normalizeColumns(rawTable.columns, where, id);
+  const rows = normalizeRows(rawTable.rows, columns.length, where, id);
+
+  const table: NormalizedBlockTable = {
+    columns,
+    rows,
+    rowText: normalizeText(rawTable.rowText, `${where}.rowText`, id),
+  };
+
+  if (rawTable.rowControls !== undefined) {
+    table.rowControls = normalizeControls(
+      rawTable.rowControls,
+      `${where}.rowControls`,
+      id,
+    );
+  }
+
+  return table;
+}
+
+function normalizeColumns(
+  rawColumns: unknown,
+  tableWhere: string,
+  id: string,
+): string[] {
+  const where = `${tableWhere}.columns`;
+
+  if (!Array.isArray(rawColumns) || rawColumns.length === 0) {
+    throw new SpecError(
+      `${where} (block "${id}") must be a non-empty array.`,
+      where,
+    );
+  }
+
+  return rawColumns.map((column, columnIndex) => {
+    if (!isNonEmptyString(column)) {
+      throw new SpecError(
+        `${where}[${columnIndex}] (block "${id}") must be a non-empty string.`,
+        `${where}[${columnIndex}]`,
+      );
+    }
+    return column;
+  });
+}
+
+function normalizeRows(
+  rawRows: unknown,
+  columnCount: number,
+  tableWhere: string,
+  id: string,
+): TableRow[] {
+  const where = `${tableWhere}.rows`;
+
+  if (!Array.isArray(rawRows) || rawRows.length === 0) {
+    throw new SpecError(
+      `${where} (block "${id}") must be a non-empty array.`,
+      where,
+    );
+  }
+
+  const seenRowIds = new Set<string>();
+  return rawRows.map((rawRow, rowIndex) => {
+    const rowWhere = `${where}[${rowIndex}]`;
+
+    if (!isPlainObject(rawRow)) {
+      throw new SpecError(
+        `${rowWhere} (block "${id}") must be an object.`,
+        rowWhere,
+      );
+    }
+
+    if (!isNonEmptyString(rawRow.id)) {
+      throw new SpecError(
+        `${rowWhere}.id (block "${id}") must be a non-empty string.`,
+        `${rowWhere}.id`,
+      );
+    }
+
+    if (seenRowIds.has(rawRow.id)) {
+      throw new SpecError(
+        `${rowWhere}.id "${rawRow.id}" (block "${id}") is duplicated; row ids must be unique within the block.`,
+        `${rowWhere}.id`,
+      );
+    }
+    seenRowIds.add(rawRow.id);
+
+    if (!Array.isArray(rawRow.cells)) {
+      throw new SpecError(
+        `${rowWhere}.cells (block "${id}") must be an array.`,
+        `${rowWhere}.cells`,
+      );
+    }
+
+    if (rawRow.cells.length !== columnCount) {
+      throw new SpecError(
+        `${rowWhere}.cells (block "${id}") must have ${columnCount} cells to match columns.length.`,
+        `${rowWhere}.cells`,
+      );
+    }
+
+    const cells = rawRow.cells.map((cell, cellIndex) => {
+      if (typeof cell !== 'string') {
+        throw new SpecError(
+          `${rowWhere}.cells[${cellIndex}] (block "${id}") must be a string.`,
+          `${rowWhere}.cells[${cellIndex}]`,
+        );
+      }
+      return cell;
+    });
+
+    return { id: rawRow.id, cells };
+  });
+}
+
+function normalizeControls(
+  rawControls: unknown,
+  where: string,
+  id: string,
+): NormalizedControls {
   if (!isPlainObject(rawControls)) {
     throw new SpecError(
       `${where} (block "${id}") must be a plain object when present.`,
@@ -292,17 +485,15 @@ function normalizeControls(
   }
 
   // single | multi -> require a non-empty options[] with unique non-empty values.
-  const options = normalizeOptions(rawControls.options, index, id);
+  const options = normalizeOptions(rawControls.options, `${where}.options`, id);
   return { type: controlType, options, required };
 }
 
 function normalizeOptions(
   rawOptions: unknown,
-  index: number,
+  where: string,
   id: string,
 ): ControlOption[] {
-  const where = `blocks[${index}].controls.options`;
-
   if (!Array.isArray(rawOptions) || rawOptions.length === 0) {
     throw new SpecError(
       `${where} (block "${id}") must be a non-empty array for single/multi controls.`,
@@ -351,11 +542,9 @@ function normalizeOptions(
 
 function normalizeText(
   rawText: unknown,
-  index: number,
+  where: string,
   id: string,
 ): NormalizedTextField {
-  const where = `blocks[${index}].text`;
-
   if (rawText === undefined) {
     return { required: false };
   }

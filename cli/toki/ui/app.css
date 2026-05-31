@@ -475,6 +475,121 @@ button {
 }
 
 /* ==========================================================================
+   Answerable table block (.toki-block--table)
+
+   Each row is independently answerable: cells are selectable quote sources, the
+   trailing "Answer" column hosts that row's controls / textarea / quote chips
+   (built by app.js). Reuses the design tokens + the shared .toki-quote-chip.
+   ========================================================================== */
+
+.toki-block--table {
+  /* The table manages its own internal padding; keep the card edge tight. */
+  padding: 0;
+  overflow: hidden;
+}
+
+.toki-block--table .toki-block__content {
+  padding: 24px 24px 0;
+}
+
+/* Horizontal scroll wrapper so a wide table never blows out the card. */
+.toki-table__scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.toki-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.toki-table th,
+.toki-table td {
+  padding: 10px 14px;
+  border: 1px solid var(--toki-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.toki-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--toki-surface-raised);
+  color: #f0f6fc;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.toki-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Selectable cell — the shared ::selection accent applies as-is. */
+.toki-table__cell {
+  cursor: text;
+}
+
+/* Compact answer column: row inputs sized down to fit the cell. */
+.toki-table__answer-head {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.toki-table__answer {
+  min-width: 200px;
+  background: var(--toki-surface);
+}
+
+.toki-table__answer .toki-block__interactive,
+.toki-table__answer .toki-controls {
+  margin-top: 0;
+}
+
+.toki-table__answer .toki-controls {
+  gap: 6px;
+}
+
+.toki-table__answer .toki-option {
+  padding: 5px 9px;
+  font-size: 0.86rem;
+}
+
+.toki-table__answer .toki-option input[type='radio'],
+.toki-table__answer .toki-option input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+}
+
+.toki-table__answer .toki-switch {
+  gap: 8px;
+}
+
+.toki-table__answer .toki-text {
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.toki-table__answer .toki-text__label {
+  font-size: 0.72rem;
+}
+
+.toki-table__answer .toki-text__input {
+  min-height: 60px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+}
+
+.toki-table__answer .toki-quotes {
+  margin-top: 8px;
+}
+
+.toki-table__answer .toki-quote-chip {
+  font-size: 0.78rem;
+  padding: 3px 5px 3px 10px;
+}
+
+/* ==========================================================================
    Quote chips
    ========================================================================== */
 
@@ -907,6 +1022,24 @@ button {
 
   .toki-block {
     padding: 18px;
+  }
+
+  /* Table block keeps its tight card edge; cells/intro shrink their padding. */
+  .toki-block--table {
+    padding: 0;
+  }
+
+  .toki-block--table .toki-block__content {
+    padding: 18px 18px 0;
+  }
+
+  .toki-table th,
+  .toki-table td {
+    padding: 8px 10px;
+  }
+
+  .toki-table__answer {
+    min-width: 160px;
   }
 
   /* Expand panel goes near-full-width and tall on small screens. */

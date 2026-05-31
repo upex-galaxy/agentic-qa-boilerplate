@@ -37,7 +37,12 @@
    * Per-block UI state, keyed by block id. `controlAnswer` is encoded exactly
    * as schema.ts requires: single -> string|null, multi -> string[],
    * toggle -> boolean, no controls -> null.
-   * @type {Record<string, { controlAnswer: string | string[] | boolean | null, text: string, quotes: string[] }>}
+   *
+   * A table block instead holds `rows`, a map keyed by row id where each entry
+   * is the same `{ controlAnswer, text, quotes }` shape (the block-level
+   * `controlAnswer`/`text` stay at their inert defaults). `quotes` on a table
+   * block captures selections from its `content` intro.
+   * @type {Record<string, { controlAnswer: string | string[] | boolean | null, text: string, quotes: string[], rows?: Record<string, { controlAnswer: string | string[] | boolean | null, text: string, quotes: string[] }> }>}
    */
   const state = Object.create(null);
 
@@ -55,18 +60,41 @@
     if (!block || typeof block.id !== 'string') {
       continue;
     }
-    state[block.id] = {
-      controlAnswer: initialControlAnswer(block),
+    const entry = {
+      controlAnswer: initialControlAnswer(block.controls),
       text: '',
       quotes: [],
     };
+    if (isTableBlock(block)) {
+      const rows = Object.create(null);
+      for (const row of block.table.rows) {
+        if (!row || typeof row.id !== 'string') {
+          continue;
+        }
+        rows[row.id] = {
+          controlAnswer: initialControlAnswer(block.table.rowControls),
+          text: '',
+          quotes: [],
+        };
+      }
+      entry.rows = rows;
+    }
+    state[block.id] = entry;
   }
 
-  function initialControlAnswer(block) {
-    if (!block.controls) {
+  /** True for a well-formed table block (has a `table` with a `rows` array). */
+  function isTableBlock(block) {
+    return Boolean(
+      block && block.table && Array.isArray(block.table.rows),
+    );
+  }
+
+  /** Initial `controlAnswer` for a `controls`-shaped config (or `null`). */
+  function initialControlAnswer(controls) {
+    if (!controls) {
       return null;
     }
-    switch (block.controls.type) {
+    switch (controls.type) {
       case 'single':
         return null;
       case 'multi':
@@ -143,20 +171,77 @@
       // Spec block whose server-rendered section is missing — skip gracefully.
       return;
     }
+
+    if (isTableBlock(block)) {
+      buildTableBlock(block, section);
+      return;
+    }
+
     const host = section.querySelector('.toki-block__interactive');
     if (!host) {
       return;
     }
 
+    const target = blockTarget(block);
     if (block.controls) {
-      host.appendChild(buildControls(block));
+      host.appendChild(buildControls(block.controls, target));
     }
-    host.appendChild(buildQuotesArea(block));
-    host.appendChild(buildTextarea(block));
+    host.appendChild(buildQuotesArea(target));
+    host.appendChild(buildTextarea(block.text, target, () => openExpand(block.id)));
   }
 
-  function buildControls(block) {
-    const controls = block.controls;
+  /**
+   * Fill each row's server-rendered `.toki-table__answer` cell with the row
+   * controls, the row quote-chips area and the row textarea — same builders as
+   * a normal block, parameterized by a per-row state target.
+   */
+  function buildTableBlock(block, section) {
+    const table = block.table;
+    for (const row of table.rows) {
+      if (!row || typeof row.id !== 'string') {
+        continue;
+      }
+      const cell = section.querySelector(
+        `td.toki-table__answer[data-row-id="${cssAttrEscape(row.id)}"]`,
+      );
+      if (!cell || !state[block.id] || !state[block.id].rows[row.id]) {
+        // Missing row <tr>/<td> or state — skip gracefully.
+        continue;
+      }
+      const target = rowTarget(block, row.id);
+      if (table.rowControls) {
+        cell.appendChild(buildControls(table.rowControls, target));
+      }
+      cell.appendChild(buildQuotesArea(target));
+      cell.appendChild(buildTextarea(table.rowText, target, null));
+    }
+  }
+
+  /**
+   * A "target" abstracts where an interactive part reads/writes its answer:
+   * a normal block writes `state[id]`; a table row writes `state[id].rows[rowId]`.
+   * `key` is a DOM-unique handle used for the input `name`, the quote area
+   * `data-block-id`, and the inline-textarea registry. `entry()` returns the
+   * live state object.
+   */
+  function blockTarget(block) {
+    return {
+      key: block.id,
+      blockId: block.id,
+      entry: () => state[block.id],
+    };
+  }
+
+  function rowTarget(block, rowId) {
+    return {
+      key: `${block.id}::${rowId}`,
+      blockId: block.id,
+      rowId,
+      entry: () => state[block.id].rows[rowId],
+    };
+  }
+
+  function buildControls(controls, target) {
     const group = el('div', 'toki-controls', { 'data-control-type': controls.type });
 
     if (controls.required) {
@@ -166,26 +251,26 @@
     }
 
     if (controls.type === 'toggle') {
-      group.appendChild(buildToggle(block));
+      group.appendChild(buildToggle(target));
     }
     else if (controls.type === 'multi') {
-      buildOptionInputs(block, group, 'checkbox');
+      buildOptionInputs(controls, group, 'checkbox', target);
     }
     else {
       // single
-      buildOptionInputs(block, group, 'radio');
+      buildOptionInputs(controls, group, 'radio', target);
     }
 
     return group;
   }
 
-  function buildOptionInputs(block, group, inputType) {
-    const options = Array.isArray(block.controls.options) ? block.controls.options : [];
+  function buildOptionInputs(controls, group, inputType, target) {
+    const options = Array.isArray(controls.options) ? controls.options : [];
     for (const opt of options) {
       const label = el('label', 'toki-option');
       const input = el('input', null, {
         type: inputType,
-        name: `ctrl-${block.id}`,
+        name: `ctrl-${target.key}`,
         value: opt.value,
       });
       const span = el('span');
@@ -195,10 +280,10 @@
 
       input.addEventListener('change', () => {
         if (inputType === 'radio') {
-          state[block.id].controlAnswer = input.value;
+          target.entry().controlAnswer = input.value;
         }
         else {
-          state[block.id].controlAnswer = collectChecked(group);
+          target.entry().controlAnswer = collectChecked(group);
         }
         refresh();
       });
@@ -216,7 +301,7 @@
     return values;
   }
 
-  function buildToggle(block) {
+  function buildToggle(target) {
     const label = el('label', 'toki-switch');
     const input = el('input', 'toki-switch__input', { type: 'checkbox' });
     const track = el('span', 'toki-switch__track');
@@ -224,7 +309,7 @@
     text.textContent = toggleLabel();
 
     input.addEventListener('change', () => {
-      state[block.id].controlAnswer = input.checked;
+      target.entry().controlAnswer = input.checked;
       refresh();
     });
 
@@ -239,48 +324,56 @@
     return 'on / off';
   }
 
-  function buildQuotesArea(block) {
-    return el('div', 'toki-quotes', { 'data-block-id': block.id });
+  function buildQuotesArea(target) {
+    return el('div', 'toki-quotes', { 'data-block-id': target.key });
   }
 
-  function buildTextarea(block) {
-    const text = block.text || {};
+  /**
+   * Build a `.toki-text` label + textarea bound to `target`. `text` is the
+   * `{ required, placeholder }` config (block.text or table.rowText). `onExpand`
+   * is an optional click handler for the expand affordance (table rows pass
+   * `null` — the expand panel is block-level only).
+   */
+  function buildTextarea(text, target, onExpand) {
+    const config = text || {};
     const label = el('label', 'toki-text');
     const labelText = el('span', 'toki-text__label');
     labelText.textContent = 'Your response';
-    if (text.required) {
+    if (config.required) {
       labelText.appendChild(requiredMarker());
     }
 
     const field = el('div', 'toki-text__field');
 
     const textarea = el('textarea', 'toki-text__input', {
-      'data-block-id': block.id,
+      'data-block-id': target.key,
       'rows': '4',
-      'placeholder': typeof text.placeholder === 'string' ? text.placeholder : '',
+      'placeholder': typeof config.placeholder === 'string' ? config.placeholder : '',
     });
-    inlineTextareas[block.id] = textarea;
+    inlineTextareas[target.key] = textarea;
 
     textarea.addEventListener('input', () => {
-      state[block.id].text = textarea.value;
+      target.entry().text = textarea.value;
       // Mirror into the big panel textarea when it is open for this block.
-      if (currentExpandBlockId === block.id && expandInput) {
+      if (currentExpandBlockId === target.key && expandInput) {
         expandInput.value = textarea.value;
         autoGrowExpandInput();
       }
       refresh();
     });
 
-    const expandBtn = el('button', 'toki-text__expand', {
-      'type': 'button',
-      'aria-label': 'Expand to write',
-      'title': 'Expand to write',
-    });
-    expandBtn.textContent = 'Expand';
-    expandBtn.addEventListener('click', () => openExpand(block.id));
-
     field.appendChild(textarea);
-    field.appendChild(expandBtn);
+
+    if (onExpand) {
+      const expandBtn = el('button', 'toki-text__expand', {
+        'type': 'button',
+        'aria-label': 'Expand to write',
+        'title': 'Expand to write',
+      });
+      expandBtn.textContent = 'Expand';
+      expandBtn.addEventListener('click', onExpand);
+      field.appendChild(expandBtn);
+    }
 
     label.appendChild(labelText);
     label.appendChild(field);
@@ -297,13 +390,13 @@
   // C. HIGHLIGHT-TO-QUOTE
   // --------------------------------------------------------------------------
 
-  /** The block id the current floating quote button would capture into. */
-  let pendingQuoteBlockId = null;
+  /** The state key (block id, or `block::row`) the quote button captures into. */
+  let pendingQuoteKey = null;
   /** The text the current floating quote button would capture. */
   let pendingQuoteText = '';
 
   function hideQuoteButton() {
-    pendingQuoteBlockId = null;
+    pendingQuoteKey = null;
     pendingQuoteText = '';
     if (quoteBtn) {
       quoteBtn.classList.remove('is-visible');
@@ -327,27 +420,28 @@
       return;
     }
 
-    // Resolve which quote-source the selection anchors into.
+    // Resolve which quote-source the selection anchors into, then which state
+    // target (block, or a specific table row) owns it.
     const source = quoteSourceForSelection(selection);
     if (!source) {
       hideQuoteButton();
       return;
     }
-    const section = source.closest('section.toki-block');
-    const blockId = section ? section.getAttribute('data-block-id') : null;
-    if (!blockId || !state[blockId]) {
+    const key = quoteKeyForSource(source);
+    if (!key || !quoteEntryForKey(key)) {
       hideQuoteButton();
       return;
     }
 
-    pendingQuoteBlockId = blockId;
+    pendingQuoteKey = key;
     pendingQuoteText = text;
     positionQuoteButton(selection);
   }
 
   /**
-   * Find the `.toki-block__content[data-quote-source]` that contains the
-   * selection. Both ends must live inside the same source for a clean quote.
+   * Find the `[data-quote-source]` element that contains the selection — either
+   * a block's `.toki-block__content` (intro/report text) or a table cell
+   * `td.toki-table__cell`. Both ends must live inside the same source.
    */
   function quoteSourceForSelection(selection) {
     const node = selection.anchorNode;
@@ -358,7 +452,9 @@
     if (!start) {
       return null;
     }
-    const source = start.closest('.toki-block__content[data-quote-source]');
+    const source = start.closest(
+      '.toki-block__content[data-quote-source], td.toki-table__cell[data-quote-source]',
+    );
     if (!source) {
       return null;
     }
@@ -368,6 +464,40 @@
       return null;
     }
     return source;
+  }
+
+  /**
+   * Map a quote-source element to the state key that owns it. A table cell maps
+   * to its row (`block::row`); any other source maps to its block id.
+   */
+  function quoteKeyForSource(source) {
+    if (source.classList.contains('toki-table__cell')) {
+      const tr = source.closest('tr.toki-table__row');
+      const section = source.closest('section.toki-block');
+      const rowId = tr ? tr.getAttribute('data-row-id') : null;
+      const blockId = section ? section.getAttribute('data-block-id') : null;
+      if (!rowId || !blockId) {
+        return null;
+      }
+      return `${blockId}::${rowId}`;
+    }
+    const section = source.closest('section.toki-block');
+    return section ? section.getAttribute('data-block-id') : null;
+  }
+
+  /** Resolve the live state entry for a quote key (block or `block::row`). */
+  function quoteEntryForKey(key) {
+    const separator = key.indexOf('::');
+    if (separator === -1) {
+      return state[key] || null;
+    }
+    const blockId = key.slice(0, separator);
+    const rowId = key.slice(separator + 2);
+    const block = state[blockId];
+    if (!block || !block.rows) {
+      return null;
+    }
+    return block.rows[rowId] || null;
   }
 
   function positionQuoteButton(selection) {
@@ -414,19 +544,19 @@
   }
 
   function captureQuote() {
-    if (!pendingQuoteBlockId || pendingQuoteText.length === 0) {
+    if (!pendingQuoteKey || pendingQuoteText.length === 0) {
       return;
     }
-    const blockId = pendingQuoteBlockId;
+    const key = pendingQuoteKey;
     const text = pendingQuoteText;
-    const entry = state[blockId];
+    const entry = quoteEntryForKey(key);
     if (!entry) {
       hideQuoteButton();
       return;
     }
 
     entry.quotes.push(text);
-    addQuoteChip(blockId, text);
+    addQuoteChip(key, text);
 
     const selection = window.getSelection();
     if (selection) {
@@ -436,9 +566,9 @@
     refresh();
   }
 
-  function addQuoteChip(blockId, text) {
+  function addQuoteChip(key, text) {
     const area = document.querySelector(
-      `.toki-quotes[data-block-id="${cssAttrEscape(blockId)}"]`,
+      `.toki-quotes[data-block-id="${cssAttrEscape(key)}"]`,
     );
     if (!area) {
       return;
@@ -450,13 +580,13 @@
       'aria-label': 'Remove quote',
     });
     remove.textContent = 'x';
-    remove.addEventListener('click', () => removeQuote(blockId, text, chip));
+    remove.addEventListener('click', () => removeQuote(key, text, chip));
     chip.appendChild(remove);
     area.appendChild(chip);
   }
 
-  function removeQuote(blockId, text, chip) {
-    const entry = state[blockId];
+  function removeQuote(key, text, chip) {
+    const entry = quoteEntryForKey(key);
     if (entry) {
       const index = entry.quotes.indexOf(text);
       if (index !== -1) {
@@ -561,12 +691,13 @@
   // E. VALIDATION + PROGRESS
   // --------------------------------------------------------------------------
 
-  function hasControlSelection(block) {
-    const answer = state[block.id].controlAnswer;
-    if (!block.controls) {
+  /** True if `entry.controlAnswer` is a real selection for the `controls` type. */
+  function entryHasControlSelection(entry, controls) {
+    if (!controls) {
       return false;
     }
-    switch (block.controls.type) {
+    const answer = entry.controlAnswer;
+    switch (controls.type) {
       case 'single':
         return typeof answer === 'string' && answer.length > 0;
       case 'multi':
@@ -578,22 +709,59 @@
     }
   }
 
-  function hasText(block) {
-    return state[block.id].text.trim().length > 0;
+  /** True if `entry.text` has non-whitespace content. */
+  function entryHasText(entry) {
+    return entry.text.trim().length > 0;
   }
 
-  function isAnswered(block) {
-    return hasText(block) || hasControlSelection(block);
-  }
-
-  function isSatisfied(block) {
-    if (block.controls && block.controls.required && !hasControlSelection(block)) {
+  /** True if `entry` is satisfied given its `controls`/`text` requirements. */
+  function entrySatisfied(entry, controls, text) {
+    if (controls && controls.required && !entryHasControlSelection(entry, controls)) {
       return false;
     }
-    if (block.text && block.text.required && !hasText(block)) {
+    if (text && text.required && !entryHasText(entry)) {
       return false;
     }
     return true;
+  }
+
+  /** A block counts as answered if it has any control selection and/or text. */
+  function isAnswered(block) {
+    if (isTableBlock(block)) {
+      // A table block is "answered" if ANY row has any answer (control or text).
+      const rows = state[block.id].rows;
+      for (const row of block.table.rows) {
+        const entry = rows[row.id];
+        if (!entry) {
+          continue;
+        }
+        if (entryHasText(entry) || entryHasControlSelection(entry, block.table.rowControls)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    const entry = state[block.id];
+    return entryHasText(entry) || entryHasControlSelection(entry, block.controls);
+  }
+
+  /** A block is satisfied when every required field (per row, for tables) is met. */
+  function isSatisfied(block) {
+    if (isTableBlock(block)) {
+      // EVERY row must be satisfied for the table block to be satisfied.
+      const rows = state[block.id].rows;
+      for (const row of block.table.rows) {
+        const entry = rows[row.id];
+        if (!entry) {
+          continue;
+        }
+        if (!entrySatisfied(entry, block.table.rowControls, block.table.rowText)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return entrySatisfied(state[block.id], block.controls, block.text);
   }
 
   function refresh() {
@@ -648,6 +816,29 @@
   function buildResult() {
     const resultBlocks = blocks.map((block) => {
       const entry = state[block.id] || { controlAnswer: null, text: '', quotes: [] };
+
+      if (isTableBlock(block)) {
+        // Table block: block-level answer is inert; rows carry the data, in
+        // spec order. `quotes` holds any quotes captured from the intro content.
+        const rows = entry.rows || {};
+        const rowResults = block.table.rows.map((row) => {
+          const rowEntry = rows[row.id] || { controlAnswer: null, text: '', quotes: [] };
+          return {
+            id: row.id,
+            controlAnswer: rowEntry.controlAnswer,
+            text: rowEntry.text,
+            quotes: rowEntry.quotes.slice(),
+          };
+        });
+        return {
+          id: block.id,
+          controlAnswer: null,
+          text: '',
+          quotes: entry.quotes.slice(),
+          rows: rowResults,
+        };
+      }
+
       return {
         id: block.id,
         controlAnswer: entry.controlAnswer,
