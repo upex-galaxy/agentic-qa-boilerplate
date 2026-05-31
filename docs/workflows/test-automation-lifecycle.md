@@ -53,7 +53,7 @@ Antes de invocar `/test-automation`, `/test-documentation` ya debe haber produci
 
 - Test Cases con pasos claros y datos de prueba definidos.
 - Veredicto `Candidate` (del skill de documentación).
-- Contexto del feature en `.context/PBI/{module}/{TICKET}/`.
+- Contexto del feature en `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/`.
 
 ---
 
@@ -85,7 +85,7 @@ En duda, el skill pregunta. Nunca asume "module" solo por ver varios TC IDs en e
 
 ### Fase 1 — Plan
 
-El skill genera el plan bajo `.context/PBI/{module}/test-specs/{TICKET-ID}/`. El plan responde:
+El skill genera el plan bajo `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<ID>/` (`spec.md`, `automation-plan.md`, `atc/`). El plan responde:
 
 - ¿Qué escenarios se vuelven tests, cuáles ATCs, cuáles preconditions compartidas (Steps)?
 - ¿Qué componentes ya existen en `tests/components/api/*Api.ts` / `tests/components/ui/*Page.ts` y cuáles faltan?
@@ -209,10 +209,11 @@ El detalle completo vive en el skill (`references/review-checklists.md`) y se ca
 Phase 1: Plan         →  Phase 2: Code             →  Phase 3: Review
 (spec / plan)            (component + test file)       (KATA compliance)
         │                         │                             │
-  .context/PBI/{module}/     tests/components/**         Review checklist
-    test-specs/              tests/e2e/** or                (pass/fail)
-    spec.md                  tests/integration/**
-    implementation-plan.md
+  .context/PBI/epics/        tests/components/**         Review checklist
+    EPIC-<KEY>-<slug>/       tests/e2e/** or                (pass/fail)
+    test-specs/<ID>/         tests/integration/**
+    spec.md
+    automation-plan.md
     atc/*.md                 Register in fixture
 ```
 

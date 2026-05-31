@@ -12,8 +12,8 @@ Read in order; stop earlier when the batch is small enough that later inputs add
 
 1. `.context/business/business-feature-map.md` + `.context/business/business-data-map.md` — domain vocabulary, entity model, CRUD matrix. Anchors refined ACs in real entities and flows.
 2. `.context/master-test-plan.md` — regression Epic + in-scope modules. Tells the refinement whether the Story falls inside an already-prioritized area.
-3. The Story's Acceptance Criteria + `**Source spec:**` reference on Jira (fetched via `[ISSUE_TRACKER_TOOL]`). Canonical input — every refined AC must trace back here.
-4. `.context/PBI/{module-name}/{TICKET-ID}-*/` if a PBI folder already exists for this Story (created by a prior `/sprint-testing` cycle). Carries earlier session notes worth honoring.
+3. The Story's Acceptance Criteria + `**Source spec:**` reference on Jira. Detailed read via `bun run jira:sync-issues get <STORY_KEY> --include-comments`, then read the synced `acceptance-criteria.md` (+ description). NEVER `acli view` for custom fields. Canonical input — every refined AC must trace back here.
+4. `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` if a PBI folder already exists for this Story (created by a prior `/sprint-testing` cycle). Carries earlier session notes worth honoring.
 5. `.agents/jira-workflows.json` — Story workflow + valid transitions (`backlog -> shift_left_qa -> estimation`). Source of `{{jira.transition.story.*}}` slugs used in Phase 3.
 6. `.agents/jira-required.yaml` — canonical slug catalog. Source of `{{jira.acceptance_test_plan}}` and other Jira field slugs touched in handoff.
 
@@ -92,7 +92,8 @@ Phase 0 — Session resume check + Session Init (always first)
        (writes plan.md after candidate list confirmed; progress.md appended per phase)
 
 Phase 1 — Selection
-    -> Fetch each candidate via [ISSUE_TRACKER_TOOL]
+    -> Detailed-read each candidate via `bun run jira:sync-issues get <STORY> --include-comments`
+       (batch: `jql "<backlog JQL>"`), then read the synced .md
     -> Reject non-Story types (Bug / Spike / Sub-task / Tech-debt)
     -> Apply veto + risk-score triage per candidate
     -> Present ranked candidate table -> WAIT for user OK
@@ -133,7 +134,7 @@ Phase 3 — Handoff
 0.1 **Resolve TMS modality**. Same 4-step probe as `sprint-testing` Session Start (`test-documentation/SKILL.md` §Phase 0). Persist the result in `.session/shift-left-testing/<batch-id>/plan.md` (under the `## Inputs` H2 — the plan.md is the canonical record per session-management §6).
 
 0.2 **Load required tool skills** — based on modality:
-   - Always load `/acli` (Story fetch, custom-field update, comment, transition, label, link).
+   - Always load `/acli` (custom-field update, comment, transition, label, link — all writes; plus the trivial key+summary+status candidate search). Story DETAIL reads (description, ACs, scope, comments, parent epic) go through `bun run jira:sync-issues get/jql` — NOT `acli view`.
    - **Modality jira-xray** AND user opts into Test Plan link draft for each Story -> also load `/xray-cli`. The default in shift-left is NO Test Plan creation (PO has not estimated yet, scope may shrink) — the ATP DRAFT lives on the Story description + comment + custom field. Ask the user before creating Test Plan issues.
    - **Modality jira-native** -> `/acli` alone covers `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]`.
 
@@ -170,7 +171,7 @@ Phase 3 — Handoff
      batch-report.md        # Phase 3 final output (domain artifact)
      # Per-Story refinement files live under each Story's own PBI folder,
      # NOT inside the session folder:
-     #   .context/PBI/{module-name}/{{PROJECT_KEY}}-{n}-{brief-title}/shift-left-refinement.md
+     #   .context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/shift-left-refinement.md
    ```
 
    The `<descriptor>` is kebab-case (e.g. `morning`, `payments-area`) and lets two sessions on the same day stay independent.
@@ -183,7 +184,7 @@ Phase 3 — Handoff
 
 Decides which Stories actually enter the refinement loop and at what depth.
 
-1. For each candidate ID, fetch via `[ISSUE_TRACKER_TOOL]` (title, description, ACs, priority, type, labels, sprint, parent epic, comments).
+1. For each candidate ID, detailed-read via `bun run jira:sync-issues get <STORY_KEY> --include-comments` (or batch `bun run jira:sync-issues jql "<backlog JQL>"`) and read the synced `.md` (title, description, ACs, priority, type, labels, sprint, parent epic, comments). NEVER `acli view` — it returns `null` for custom fields. `acli search` is fine for the trivial key+summary+status candidate list only.
 2. **Type filter (hard)**: reject anything where `issueType != Story`. Surface the rejected list to the user with a one-line reason. Do NOT silently drop them.
 3. **Label filter**: any Story already carrying `shift-left-reviewed` AND last-updated < 30 days ago is treated as **already refined** — surface it separately under "Already Shift-Left Reviewed (skip or refresh?)". The user decides per-Story whether to skip or re-refine.
 4. **Triage per accepted candidate** (veto + risk score). Read `references/backlog-selection.md` for the full rubric. Outcomes:
@@ -216,14 +217,14 @@ For each accepted Story, dispatch ONE Refinement subagent. The subagent loads th
 | Phase 7 — Final QA Feedback Report | Per-Story summary returned to orchestrator. Aggregated into the batch report in Phase 3. |
 | Phase 8 — Commit | **SKIPPED**. Jira is canonical. No git branch, no commit. |
 
-**Output file**: `.context/PBI/{module-name}/{{PROJECT_KEY}}-{n}-{brief-title}/shift-left-refinement.md`
+**Output file**: `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/shift-left-refinement.md` (module = Epic, 1:1). This is a NON-Jira working file — author it locally; it is NOT a Jira mirror, so the hand-write ban does not apply to it.
 
-This is a **separate file** from sprint-testing's `test-analysis.md`. Both can co-exist for the same Story:
+This is a **separate file** from sprint-testing's synced `acceptance-test-plan.md`. Both can co-exist for the same Story:
 
-- `shift-left-refinement.md` — written here, pre-sprint, by this skill.
-- `test-analysis.md` — written later, in-sprint, by `/sprint-testing` Stage 1. When that file is created, sprint-testing reads `shift-left-refinement.md` as input and short-circuits the redundant phases.
+- `shift-left-refinement.md` — written here, pre-sprint, by this skill (NON-Jira working file).
+- `acceptance-test-plan.md` — the in-sprint ATP, authored later by `/sprint-testing` Stage 1, written to the Jira `acceptance_test_plan` field (or fallback comment) and synced down. When it exists, sprint-testing reads `shift-left-refinement.md` as input and short-circuits the redundant phases.
 
-**Folder bootstrap**: if `.context/PBI/{module-name}/{{PROJECT_KEY}}-{n}-{brief-title}/` does not exist yet (Story has not been through sprint-testing), the refinement subagent creates it along with a minimal `context.md` (title + ACs + status + parent epic + Team Discussion if comments exist). This mirrors `sprint-testing/references/session-entry-points.md` §Step 7. The `evidence/` subfolder is NOT created — there is nothing to capture yet.
+**Folder bootstrap**: if `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/` does not exist yet (Story has not been through sprint-testing), the refinement subagent creates it. Jira-mirrored content (story.md, acceptance-criteria.md, parent epic, comments) comes from `bun run jira:sync-issues get <STORY_KEY> --include-comments` — NEVER hand-write those files. The only hand-authored files here are the NON-Jira working artifacts (`shift-left-refinement.md`, `context.md` with local session notes). This mirrors `sprint-testing/references/session-entry-points.md` §Step 7. The `evidence/` subfolder is NOT created — there is nothing to capture yet.
 
 **Story Explanation step**: replaced by the per-Story summary the orchestrator presents AFTER the subagent returns. The user OKs (or vetoes) each Story before the next refinement dispatch. This matches the "explain story -> WAIT for OK" rhythm in sprint-testing.
 
@@ -242,12 +243,22 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
 > **Prerequisite**: Phase 0.2 already loaded `/acli` (and `/xray-cli` in Modality jira-xray if Test Plan creation is opted in). Pseudocode below uses `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]`.
 
 ```
-1. Append "QA Refinements (Shift-Left Analysis)" section to Story description.
-   Body:
-     - Refined Acceptance Criteria (from Phase 2)
+1. Write the refined ACs to the Jira acceptance_criteria field, then mirror the
+   supporting analysis. Jira is source of truth — local Jira-mirrored .md files are
+   read-only caches generated by the sync, never hand-written.
+     [ISSUE_TRACKER_TOOL] Update Issue:
+       issue: {STORY_KEY}
+       fields:
+         {{jira.acceptance_criteria}}: <refined ACs from Phase 2>
+     # FALLBACK (field absent): post as a structured comment headed
+     #   "## Acceptance Criteria" per .agents/jira-required.yaml fallback: key. Never block.
+   Then append the "QA Refinements (Shift-Left Analysis)" supporting section to the
+   Story description:
      - Edge Cases Identified (from Phase 2)
      - Clarified Business Rules (from Phase 2)
      - Open Questions for PO / Dev (from Phase 2)
+   After writing, run `bun run jira:sync-issues get {STORY_KEY} --include-comments`
+   and read back the synced `acceptance-criteria.md` to confirm the field landed.
 
 2. Populate ATP DRAFT — branch on modality:
 
@@ -270,12 +281,13 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
        fields:
          {{jira.acceptance_test_plan}}: <full shift-left-refinement.md body>
 
-3. Post the canonical comment mirror on the Story:
+3. Handoff notification on the Story (the ATP DRAFT lives in {{jira.acceptance_test_plan}} — do NOT mirror it; inline the full body as a `## Acceptance Test Plan (ATP)` comment ONLY if that field is absent — fallback per jira-required.yaml):
      [ISSUE_TRACKER_TOOL] Add Comment:
        issue: {STORY_KEY}
        body: |
-         === Shift-Left Refinement: {{PROJECT_KEY}}-{n} ===
-         <full shift-left-refinement.md body — byte-for-byte mirror>
+         ## Acceptance Test Plan (ATP) — Shift-Left DRAFT ready for review
+         ATP DRAFT lives in the {{jira.acceptance_test_plan}} field.
+         # FALLBACK ONLY (field absent): replace the pointer line above with the full shift-left-refinement.md body.
 
 4. Labels:
      [ISSUE_TRACKER_TOOL] Update Issue:
@@ -291,7 +303,8 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
 
 6. Verify trace:
      Modality jira-xray: [TMS_TOOL] trace {STORY_KEY}    (Test Plan link present + populated)
-     Modality jira-native: read back {{jira.acceptance_test_plan}} + last comment;
+     Modality jira-native: `bun run jira:sync-issues get {STORY_KEY} --include-comments`,
+                  then read back the synced acceptance-test-plan field file + last comment;
                   confirm byte-for-byte mirror.
 ```
 
@@ -378,6 +391,8 @@ If Phase 0.3 reports any project-wide context file missing, STOP and hand off �
 |-----|-------------|------------|
 | `[ISSUE_TRACKER_TOOL]` | `acli`, Atlassian MCP, or `{{ISSUE_TRACKER_CLI}}` | `CLAUDE.md` Tool Resolution |
 | `[TMS_TOOL]` | xray-cli skill (Modality jira-xray) OR `acli` (Modality jira-native) | `CLAUDE.md` Tool Resolution |
+
+> **Reads vs writes split** (per `agentic-qa-core/references/acli-integration.md` §"Reads vs writes"): detailed reads (description, ACs, scope, comments, parent epic) → `bun run jira:sync-issues get/jql`, then read the synced `.md`. Writes (custom-field update, comment, transition, label, link) + the trivial key+summary+status candidate list → `acli`. NEVER `acli view` for a custom field.
 | `[DB_TOOL]` | DBHub MCP or Supabase MCP | `CLAUDE.md` Tool Resolution |
 | `[API_TOOL]` | OpenAPI MCP, Postman, or curl | `CLAUDE.md` Tool Resolution |
 

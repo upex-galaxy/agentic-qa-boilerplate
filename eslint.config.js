@@ -26,6 +26,9 @@ export default antfu({
     '.github/**',
     // Generated files (auto-generated, not manually edited)
     'api/openapi-types.ts',
+    // Git worktrees placed under .claude/worktrees/ are another branch's full
+    // checkout — never lint another tree from this one.
+    '.claude/worktrees/**',
     // Skill templates — copied to target repos at install time, not linted here
     '.claude/skills/*/templates/**',
     // Skills (committed QA-specific + community installed via `bunx skills add`

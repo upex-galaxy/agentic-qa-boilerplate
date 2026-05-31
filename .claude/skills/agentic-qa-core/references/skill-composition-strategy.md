@@ -126,7 +126,7 @@ This is the most-overlapping pair on the QA side. SDD-* skills are powerful and 
 |--|--|
 | SDD-* invocation FORBIDDEN from `/shift-left-testing` | shift-left-testing SKILL.md MUST NOT name any sdd-* skill in its dispatch table or composable list |
 | SDD-* invocation FORBIDDEN from `/sprint-testing` | sprint-testing SKILL.md MUST NOT name any sdd-* skill in its dispatch table or composable list |
-| SDD-* invocation FORBIDDEN from `/test-automation` | test-automation Plan → Code → Review pipeline owns its own planning artifact (`spec.md` / `implementation-plan.md`); SDD spec/design/tasks would duplicate it |
+| SDD-* invocation FORBIDDEN from `/test-automation` | test-automation Plan → Code → Review pipeline owns its own planning artifact (`spec.md` / `automation-plan.md`); SDD spec/design/tasks would duplicate it |
 | SDD-* invocation FORBIDDEN from `/regression-testing` | regression suites are pre-existing tests; SDD planning has no surface to act on |
 | SDD-* invocation FORBIDDEN from `/test-documentation` | TC documentation is owned by the TMS (Jira/Xray); SDD specs would compete with the ATP/ATR contract |
 | SDD-* invocation ALLOWED only from `/framework-development` | The Phase 0 path self-check inside framework-development is the gate |
@@ -279,7 +279,7 @@ Demotion path (T3 → T4): when a project-level skill turns out to be useful els
 
 - Trigger: `/test-automation`. T1 silent load.
 - Composable categories: `testing-e2e`, `testing-api`. T3 `playwright-best-practices` silent load (category match).
-- SDD-*: NOT loaded. Anti-leak rule §4.1 row 2 fires. test-automation owns its `spec.md` + `implementation-plan.md`.
+- SDD-*: NOT loaded. Anti-leak rule §4.1 row 2 fires. test-automation owns its `spec.md` + `automation-plan.md`.
 - Outputs: KATA-compliant test under `tests/e2e/orders/` or `tests/integration/orders/`, fixture registration, ATC results.
 
 ### 7.3 User: "Add a new `{ admin }` fixture to TestFixture so admin tests get pre-authenticated"

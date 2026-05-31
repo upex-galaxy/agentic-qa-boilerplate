@@ -3140,7 +3140,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   </tr>
                   <tr>
                     <td>Validate <code>.env</code> for the active <code>TEST_ENV</code></td>
-                    <td><code>bun run env:check</code></td>
+                    <td><code>bun run test:env:check</code></td>
                   </tr>
                   <tr>
                     <td>Sync OpenAPI types from the target API</td>
@@ -3610,7 +3610,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     >
                   </li>
                   <li>
-                    <code>bun run env:check</code>
+                    <code>bun run test:env:check</code>
                     <span class="muted"
                       >Validate <code>.env</code> for the active <code>TEST_ENV</code>.</span
                     >
@@ -3620,13 +3620,6 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     <span class="muted"
                       >Sync OpenAPI spec from the target API and regenerate
                       <code>api/schemas/</code> types.</span
-                    >
-                  </li>
-                  <li>
-                    <code>bun run api:types</code>
-                    <span class="muted"
-                      >Regenerate TS types from <code>api/openapi.json</code> via
-                      <code>openapi-typescript</code>.</span
                     >
                   </li>
                   <li>
@@ -3661,7 +3654,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     >
                   </li>
                   <li>
-                    <code>bun run test:allure</code>
+                    <code>bun run allure:run</code>
                     <span class="muted"
                       >Generate and open the Allure report from <code>./allure-results</code>.</span
                     >

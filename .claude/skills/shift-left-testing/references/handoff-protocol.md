@@ -16,11 +16,11 @@ This reference defines:
 
 | Input | Source |
 |-------|--------|
-| Refined refinement file | `.context/PBI/{module-name}/{{PROJECT_KEY}}-{n}-{brief-title}/shift-left-refinement.md` |
-| Current Story status | `[ISSUE_TRACKER_TOOL]` Get Issue: `{STORY_KEY}` → status |
-| Current Story labels | Same fetch — labels list |
+| Refined refinement file (NON-Jira working file) | `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/shift-left-refinement.md` |
+| Current Story status | `bun run jira:sync-issues get {STORY_KEY}`, then read synced status (or `acli search` for the trivial status-only lookup) |
+| Current Story labels | Same synced read — labels list |
 | Modality | From `session-memory.md` (resolved in shift-left-testing Phase 0.1) |
-| TMS field map | `.agents/jira-fields.json` → `{{jira.acceptance_test_plan}}` |
+| TMS field map | `.agents/jira-fields.json` → `{{jira.acceptance_criteria}}`, `{{jira.acceptance_test_plan}}` |
 | Workflow transitions | `.agents/jira-workflows.json` → `{{jira.transition.story.analyze}}`, `{{jira.transition.story.estimate}}` |
 
 ---
@@ -29,9 +29,24 @@ This reference defines:
 
 > **Prerequisite**: `/acli` skill loaded (Phase 0.2). In Modality jira-xray with Test Plan opt-in, also `/xray-cli`.
 
-### Step 1 — Update Story description
+### Step 1a — Write refined ACs to the Jira `acceptance_criteria` field
 
-Append a "QA Refinements (Shift-Left Analysis)" section to the Story description. The section body is a CONDENSED extract from `shift-left-refinement.md` — full body goes into the ATP custom field (Step 2) and comment mirror (Step 3). Description should be readable in the Jira UI without scrolling forever.
+The refined Acceptance Criteria are CANONICAL and belong in the dedicated Jira field — Jira is source of truth; the local `acceptance-criteria.md` is a read-only cache produced by the sync. NEVER hand-write that file.
+
+```
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {STORY_KEY}
+  fields:
+    {{jira.acceptance_criteria}}: <Refined ACs — Phase 3 of shift-left-refinement.md verbatim>
+```
+
+FALLBACK (field absent on this instance): post the refined ACs as a structured comment headed `## Acceptance Criteria`, per `.agents/jira-required.yaml` → `acceptance_criteria.fallback` (`{ target: comment, label: "Acceptance Criteria" }`). Never block.
+
+After writing, run `bun run jira:sync-issues get {STORY_KEY} --include-comments` and read back the synced `acceptance-criteria.md` to confirm the field (or fallback comment) landed.
+
+### Step 1b — Append supporting analysis to Story description
+
+Append a "QA Refinements (Shift-Left Analysis)" section to the Story description. The section body is a CONDENSED extract of the SUPPORTING analysis from `shift-left-refinement.md` (refined ACs themselves live in the `acceptance_criteria` field from Step 1a) — full body goes into the ATP custom field (Step 2) and comment mirror (Step 3). Description should be readable in the Jira UI without scrolling forever.
 
 Description section template:
 
@@ -40,8 +55,7 @@ Description section template:
 
 ## QA Refinements (Shift-Left Analysis) — Added {{YYYY-MM-DD}}
 
-### Refined Acceptance Criteria
-{Copy Phase 3 of shift-left-refinement.md verbatim.}
+> Refined Acceptance Criteria live in the `acceptance_criteria` field (Step 1a).
 
 ### Edge Cases Identified
 {Copy Phase 5 edge-case table verbatim.}
@@ -64,7 +78,7 @@ Description section template:
   description: <existing description + "\n\n" + QA Refinements section>
 ```
 
-The Handoff subagent must read the current description FIRST, then append. Never overwrite.
+The Handoff subagent must read the current description FIRST (from the synced `.md`), then append. Never overwrite.
 
 ### Step 2 — Populate ATP DRAFT
 
@@ -106,22 +120,28 @@ OR Modality jira-native:
 
 Custom-field write may fail in Modality jira-xray if the Jira instance has not provisioned `{{jira.acceptance_test_plan}}`. Fall back to comment-only mode and warn the user in the per-Story summary.
 
-### Step 3 — Canonical comment mirror
+### Step 3 — Handoff notification + fallback comment
 
-Post the ENTIRE `shift-left-refinement.md` body as a comment on the Story. Byte-for-byte mirror of the custom field. This is the canonical source `fix-traceability` checks later.
+Jira is the source of truth: the ATP DRAFT lives in the `{{jira.acceptance_test_plan}}` field (Step 2) — do NOT mirror it into a comment when the field exists. Post ONE handoff comment on the Story:
+
+- **Field present (default)**: a SHORT notification — the ATP DRAFT is ready for review in the `{{jira.acceptance_test_plan}}` field. Do NOT paste the full body.
+- **FALLBACK — only if `{{jira.acceptance_test_plan}}` is absent on this instance** (per `.agents/jira-required.yaml` → `acceptance_test_plan.fallback`, `{ target: comment, label: "Acceptance Test Plan (ATP)" }`): inline the full body under a `## Acceptance Test Plan (ATP)` heading so the content still lands somewhere readable.
 
 ```
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
-    === Shift-Left Refinement: {{PROJECT_KEY}}-{n} ===
-    <full shift-left-refinement.md body — byte-for-byte mirror>
-    ---
-    Refined on: {{YYYY-MM-DD}}
-    Refined by: QA Shift-Left batch session
-    Source of truth: this comment + custom field {{jira.acceptance_test_plan}} (byte-for-byte mirror).
-    Local working copy: .context/PBI/{module}/{{PROJECT_KEY}}-{n}-{slug}/shift-left-refinement.md
+    ## Acceptance Test Plan (ATP) — Shift-Left DRAFT ready for review
+    {@PO_HANDLE} {@DEV_LEAD_HANDLE}
+    The ATP DRAFT lives in the {{jira.acceptance_test_plan}} field.
+    # FALLBACK ONLY (field absent): replace the pointer line above with the full shift-left-refinement.md body.
+
+    Action Required: review ambiguities, answer critical questions, confirm edge-case behavior, validate parametrization.
+    Refined on: {{YYYY-MM-DD}} — QA Shift-Left batch session
+    Local working copy: .context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-{STORY_KEY}-<slug>/shift-left-refinement.md
 ```
+
+`fix-traceability` checks the `{{jira.acceptance_test_plan}}` field, or this `## Acceptance Test Plan (ATP)` fallback comment when the field is absent.
 
 Mention rule: include `@PO_HANDLE` and `@DEV_LEAD_HANDLE` in the comment IF those handles are available in `.agents/project.yaml`. Otherwise omit — mention-spam is worse than no mention.
 
@@ -155,7 +175,7 @@ Read current status, then transition along the shortest valid path to `estimatio
 Pseudocode:
 
 ```
-[ISSUE_TRACKER_TOOL] Get Issue: {STORY_KEY} -> read status
+[ISSUE_TRACKER_TOOL] read status: {STORY_KEY}    # trivial status-only lookup — acli search OK
 if status == backlog:
     [ISSUE_TRACKER_TOOL] Transition: {{jira.transition.story.analyze}}    # -> shift_left_qa
     [ISSUE_TRACKER_TOOL] Transition: {{jira.transition.story.estimate}}   # -> estimation
@@ -183,8 +203,9 @@ Modality jira-xray:
 Modality jira-native:
 
 ```
-[ISSUE_TRACKER_TOOL] Get Issue: {STORY_KEY} -> read fields + comments
-# Verify:
+bun run jira:sync-issues get {STORY_KEY} --include-comments
+# then read the synced field files + comments.md. Verify:
+#   - acceptance_criteria field (or "## Acceptance Criteria" fallback comment) != empty
 #   - field {{jira.acceptance_test_plan}} != empty
 #   - last comment body starts with "=== Shift-Left Refinement:"
 #   - field body == comment body (after stripping the "=== Shift-Left Refinement: ===" header and footer)

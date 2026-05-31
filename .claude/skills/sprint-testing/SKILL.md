@@ -36,10 +36,10 @@ Canonical reading order for any AI starting cold on a sprint-testing workflow. R
 2. `.agents/jira-required.yaml` — canonical slug catalog (custom fields, statuses, transitions) for the active workspace.
 3. `.agents/jira-fields.json` — slug → numeric custom-field-ID mapping for `{{jira.<slug>}}` resolution at runtime.
 4. `.agents/jira-workflows.json` — workflow + transition catalog (resolves Ready For QA → In Testing → Tested for Story / Bug / Test Case work types).
-5. `.context/PBI/{module}/{TICKET-ID}-*/context.md` — ticket-local context: ACs, Team Discussion summary, session notes, open questions (read if it already exists from a prior Session Start).
+5. `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/context.md` — ticket-local context: session notes, open questions (hand-authored; read if it already exists from a prior Session Start). NON-Jira file — never a Jira mirror.
 6. `.context/master-test-plan.md` — regression Epic pointer, modality decision (Xray vs Jira-native), what to test and why.
-7. `.context/business/business-feature-map.md` — feature catalog vocabulary; resolves "what module owns this story" for `{module-name}` PBI folder naming.
-8. The Story or Bug ticket itself — AC, ATP, comments — fetched via `[ISSUE_TRACKER_TOOL]`. The ticket body is source-of-truth, not the local PBI mirror.
+7. `.context/business/business-feature-map.md` — feature catalog vocabulary; resolves "what epic owns this story" for the `epics/EPIC-<KEY>-<slug>/` PBI folder naming (module = Epic, 1:1).
+8. The Story or Bug ticket itself — AC, ATP, comments — read via `bun run jira:sync-issues get <KEY> --include-comments`, then read the synced `.md` files (`story.md`, `acceptance-criteria.md`, `acceptance-test-plan.md`, `comments.md`) under the STORY folder. Jira is source-of-truth; the synced `.md` is a read-only cache. NEVER `acli workitem view` for custom fields — it returns `null`.
 9. `.env` — `LOCAL_USER_*` / `STAGING_USER_*` credentials. NEVER hardcode; always read at runtime.
 10. `kata-manifest.json` — registry of existing KATA Components + ATCs. Check before proposing new ATCs in Stage 3 hand-off so the test-automation phase doesn't duplicate work.
 
@@ -102,7 +102,7 @@ Stage 1 — Planning
 Stage 2 — Execution
     -> Smoke test is always first (Go / No-Go)
     -> Then UI / API / DB exploration per what changed
-    -> Evidence into .context/PBI/{module}/{TICKET}/evidence/
+    -> Evidence into .context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/evidence/
     -> See references/exploration-patterns.md
 
 Stage 3 — Reporting
@@ -129,7 +129,7 @@ Before Session Start dispatch, run the resume contract from `agentic-qa-core/ref
 3. If it does NOT exist → proceed to Session Start (writes `plan.md`).
 4. If it DOES exist:
    - Read `plan.md` + tail of `progress.md`.
-   - Optionally read `.context/PBI/{module}/{TICKET}/test-session-memory.md` for the per-ticket domain state (load-bearing across the 4 sub-agent dispatches).
+   - Optionally read `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-session-memory.md` for the per-ticket domain state (load-bearing across the 4 sub-agent dispatches).
    - Surface to the user: last completed stage (Session Start / Stage 1 / Stage 2 / Stage 3) + next stage + any unresolved BUG_FOUND or TOOL FAILURE from the last entry.
    - Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>-aborted/` first.
 
@@ -143,9 +143,9 @@ Every invocation starts by initializing the session, even in batch mode. Session
 
 0. **Resolve TMS modality** (Xray on Jira vs Jira-native). This determines whether ATP/ATR will be created as Xray `Test Plan` / `Test Execution` issues (Modality jira-xray) or as Story custom-field + comment mirrors (Modality jira-native). Full resolution algorithm lives in `test-documentation/SKILL.md` §Phase 0 — apply the same four-step probe here (CLAUDE.md -> master-test-plan.md -> list issue types -> ask the user). Persist the result into `test-session-memory.md`.
 0.1. **Load required tool skills** — based on the TMS modality resolved in Step 0:
-   - Always load `/acli` (all Jira ticket operations: story fetch, comment, transition, link, bug creation).
-   - In **Modality jira-xray**: also load `/xray-cli` for Test / Test Execution / Test Plan / Test Run operations.
-   - In **Modality jira-native**: `/acli` alone covers both `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` pseudocode — no additional skill needed.
+   - Always load `/acli` (Jira WRITE operations: comment, transition, link, custom-field update, bug creation). Detailed READS (ACs, ATP/ATR, description, comments) do NOT use `/acli` — they use `bun run jira:sync-issues get <KEY> --include-comments` then read the synced `.md`. See `agentic-qa-core/references/acli-integration.md` §"Reads vs writes".
+   - In **Modality jira-xray**: also load `/xray-cli` for Test / Test Execution / Test Plan / Test Run operations and traceability reads.
+   - In **Modality jira-native**: `/acli` covers `[ISSUE_TRACKER_TOOL]` writes and `[TMS_TOOL]` operations — no additional skill needed. Detailed reads still route through the sync script.
    This step is **mandatory before any pseudocode block below executes**. The skills carry the concrete syntax, flags, and JSON payloads this skill intentionally omits.
 0.5. **Sprint roadmap checkpoint** (batch-sprint mode only — skip in single-ticket mode):
    - Detect batch mode from the user invocation ("process sprint N", "continue sprint", a `sprint-file` parameter, or any phrase that implies a sprint loop).
@@ -159,19 +159,20 @@ Every invocation starts by initializing the session, even in batch mode. Session
    - On hard failure: **STOP and surface to the user before Stage 1.** Do NOT dispatch the Session Start subagent and do NOT author an ATP against a dead env — that is the single highest-cost waste in a run. Offer the user a session env override (see Gotcha 15) if they have a working alternate URL.
    - **Inbox receive-check** (only when the ticket is email / magic-link / auth-token dependent — inferred from the invocation, ticket type, labels, or title): confirm the configured mailbox/provider can actually *receive*, not just send. A send-only provider (e.g. a domain configured for outbound only) cannot complete a magic-link flow. If it cannot receive, STOP and surface before Stage 1.
    - This is a *reachability* gate (is the env even up? can we get the email?), distinct from the Stage 2 smoke test (does the *feature* work?). Both run; they answer different questions — keep anti-pattern S7 and the smoke pass as-is.
-1. Fetches the ticket from `[ISSUE_TRACKER_TOOL]` (title, ACs, priority, comments).
-2. Extracts Team Discussion from comments (decisions, tech notes, edge cases, blockers). Non-blocking.
+1. Fetches the ticket via `bun run jira:sync-issues get <KEY> --include-comments` (title, ACs, priority, comments), then reads the synced `.md` files under the STORY folder. NEVER `acli workitem view` for custom fields.
+2. Extracts Team Discussion from the synced `comments.md` (decisions, tech notes, edge cases, blockers). Non-blocking.
 3. Loads the project-wide context files: `.context/business/business-data-map.md`, `.context/business/business-feature-map.md`, `.context/business/business-api-map.md`, `.context/master-test-plan.md`.
 4. Loads or creates `module-context.md` (3-level hierarchy: project -> module -> ticket).
 5. Explores backend (`{{BACKEND_REPO}}`) + frontend (`{{FRONTEND_REPO}}`) code.
 6. Finds test data candidates via `[DB_TOOL]` on `{{DB_MCP}}`.
 7. Creates the PBI folder and files:
    ```
-   .context/PBI/{module-name}/{{PROJECT_KEY}}-{number}-{brief-title}/
-     context.md                # ticket context + Team Discussion + Related Code
-     test-session-memory.md    # shared memory across the 4 sub-agent dispatches
+   .context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-{{PROJECT_KEY}}-{number}-{brief-title}/
+     context.md                # hand-authored: session notes + open questions (NON-Jira)
+     test-session-memory.md    # hand-authored: shared memory across the 4 sub-agent dispatches (NON-Jira)
      evidence/                 # screenshots, gitignored
    ```
+   Jira-mirrored files (`story.md`, `acceptance-criteria.md`, `acceptance-test-plan.md`, `acceptance-test-results.md`, `comments.md`, etc.) are NOT hand-written here — they are materialized by `bun run jira:sync-issues get <KEY> --include-comments`.
 8. **Writes the session `plan.md`** at `.session/sprint-testing/<scope>/plan.md` per `agentic-qa-core/references/session-management.md` §6 — Goal (one sentence per ticket), Inputs (PBI paths + TMS modality + Team Discussion summary), Approach (mode + per-stage dispatch pattern), Phase breakdown (Session Start / Stage 1 / Stage 2 / Stage 3 with dispatch pointer + exit condition), Risks (from triage), Verification checklist, Cross-references (cites `context.md`, `test-session-memory.md`, `acceptance-test-plan.md`, `acceptance-test-results.md`).
 9. Writes a Story Explanation and **STOPS** for user confirmation. Do not proceed until the user OK's.
 10. After OK, appends the first progress entry `## Session Start — <ts>` with `status: completed`, `next: Stage 1 — Planning` to `.session/sprint-testing/<scope>/progress.md`.
@@ -190,7 +191,7 @@ Run the same 4 dispatches. Per-stage payload differences:
 
 - Stage 1: Triage risk -> Test Analysis -> ATP/ATR -> TCs created with full traceability (`--story + --test-plan + --test-result`) -> verify with `[TMS_TOOL] trace`.
 - Stage 2: Smoke test -> UI / API / DB exploration as applicable -> update TC statuses PASSED / FAILED -> file bugs if any.
-- Stage 3: Fill ATR Test Report -> QA comment via `[ISSUE_TRACKER_TOOL]` -> transition ticket -> mirror into `test-report.md` in the PBI.
+- Stage 3: Author ATR Test Report -> apply the modality branch (reporting-templates.md §2.3-2.4): Modality jira-native -> write the `{{jira.acceptance_test_results}}` field (or `## Acceptance Test Results (ATR)` fallback comment) then `jira:sync-issues get <KEY> --include-comments` -> `acceptance-test-results.md` in the STORY folder; Modality jira-xray -> update the Test Execution then `jira:sync-issues get <ATR_KEY>` -> `.context/PBI/test-executions/TESTEXEC-<ATR_KEY>-<slug>.md` -> QA comment via `[ISSUE_TRACKER_TOOL]` -> transition ticket.
 - **Per-stage progress checkpoint**: after each Stage subagent returns, the orchestrator appends a phase entry to `.session/sprint-testing/<scope>/progress.md` per `agentic-qa-core/references/session-management.md` §7 (`status: completed`, `dispatched_as: Sequential`, `next: Stage <N+1> | hand-off`).
 - **Archive after Stage 3**: when Stage 3 completes (or veto-skip Code-Review variant finishes), the orchestrator moves `.session/sprint-testing/<scope>/` to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>/` and calls `mem_session_summary` per `agentic-qa-core/references/session-management.md` §8. PBI artifacts under `.context/PBI/` stay.
 - Afterwards: hand off to `test-documentation` for ROI + Stage 4.
@@ -209,7 +210,7 @@ Run the same 4 dispatches; the Stage 1 briefing additionally applies the veto + 
 
 - Pre-step: generate `SPRINT-{N}-TESTING.md` from the sprint backlog if it does not exist (see `sprint-orchestration.md`).
 - Loop: read Wave 1 for the first `PENDING` ticket, dispatch the same 4-stage sequence per ticket, after each ticket update the framework file + present a per-ticket summary + wait for user OK.
-- **Interrupted session resume**: on loop entry per ticket, Phase 0 reads `.session/sprint-testing/sprint-<N>/<TICKET>/progress.md` (canonical resume signal per `agentic-qa-core/references/session-management.md` §4). Domain state for an in-flight ticket is in `.context/PBI/{module}/{TICKET}/test-session-memory.md` (load-bearing for the 4 sub-agent dispatches). The two files serve different concerns: `progress.md` decides "which stage is next?"; `test-session-memory.md` carries the per-ticket payload that each sub-agent reads. Both are checked.
+- **Interrupted session resume**: on loop entry per ticket, Phase 0 reads `.session/sprint-testing/sprint-<N>/<TICKET>/progress.md` (canonical resume signal per `agentic-qa-core/references/session-management.md` §4). Domain state for an in-flight ticket is in `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-session-memory.md` (load-bearing for the 4 sub-agent dispatches). The two files serve different concerns: `progress.md` decides "which stage is next?"; `test-session-memory.md` carries the per-ticket payload that each sub-agent reads. Both are checked.
 - After each stage subagent returns, the orchestrator appends a phase entry to `progress.md` per `agentic-qa-core/references/session-management.md` §7. After Stage 3 completes, the orchestrator runs Archive: moves `.session/sprint-testing/<scope>/` to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>/` and calls `mem_session_summary`. The PBI artifacts under `.context/PBI/` and the framework file `SPRINT-{N}-TESTING.md` stay in place — those are the canonical deliverables.
 - Stop on TOOL FAILURE. Pause on BUG_FOUND. Update framework file ONLY after Stage 3 completes.
 
@@ -218,13 +219,13 @@ Run the same 4 dispatches; the Stage 1 briefing additionally applies the veto + 
 ## Gotchas — inline rules you must apply every invocation
 
 1. **Credentials**: always from `.env`. Never hardcode. Never guess passwords.
-2. **PBI folder naming**: `{module-name}` is kebab-case from the ticket's project/module field. `{brief-title}` is max 5 words, kebab-case, AI-generated from the ticket title.
+2. **PBI folder naming**: canonical layout is `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` (module = Epic, 1:1). `<slug>` is max 5 words, kebab-case, AI-generated from the ticket title. Epic-level files live in the EPIC folder; story-level files in the STORY folder.
 3. **Bugs get ATP + ATR, no TCs**. The bug ticket is the implicit test case. Reproduction steps = test steps.
 4. **Smoke test is mandatory** as the first action in Stage 2. If smoke fails (No-Go), stop and report — do not proceed to deep exploration. Smoke failure is an env-level blocker and always stops; deep-exploration findings follow the graduated rule in #10 (a FAIL mid-pass is not auto-Critical).
 5. **Bug veto table — SKIP retesting** when the bug is pure text / CSS / docs / config / tech-debt cleanup with no functional change. **REQUIRE retesting** regardless of score when it touches money, data integrity, auth, external integrations, state machines, or calculations. Veto beats risk score.
 6. **TCs are created in Stage 1, NEVER in Stage 2**. Stage 2 executes what Planning produced; new TCs found during exploration are added via `[TMS_TOOL] tc create` but the rule is "planning first".
 7. **Explain the story -> WAIT for OK**. Never auto-proceed past Session Start without user confirmation. Same for bug triage — present the decision and wait.
-8. **Evidence directory**: always configure `.playwright/cli.config.json` `outputDir` to `.context/PBI/{module-name}/{ticket}/evidence/` BEFORE using `[AUTOMATION_TOOL]`. Screenshots need the full path in `--filename` because `outputDir` does not apply to `.png`.
+8. **Evidence directory**: always configure `.playwright/cli.config.json` `outputDir` to `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/evidence/` BEFORE using `[AUTOMATION_TOOL]`. Screenshots need the full path in `--filename` because `outputDir` does not apply to `.png`.
 9. **Traceability check after Stage 1**: run `[TMS_TOOL] trace {TICKET}` and verify Story -> ATP -> ATR and each TC -> Story + ATP + ATR. Bugs: traceability "gaps" for missing TCs are expected and OK.
 10. **Graduated stop/pause protocol**: TOOL FAILURE -> stop, report, await user. **Blocking** BUG_FOUND (smoke/env down, data integrity, security-exploitable) -> pause, present bug, await decision; NEVER dispatch the next sub-agent while unresolved. **Non-blocking** finding (cosmetic, minor validation, edge-case on a non-critical TC, framework-default pending recalibration) -> the Execution subagent logs it and CONTINUES the pass; the orchestrator surfaces it at Stage 2 close. A FAIL is not auto-Critical — triage first (severity per `references/reporting-templates.md` §1.4; security/auth/framework-default recalibrated at §5.0). See `references/exploration-patterns.md` "Finding triage".
 11. **Framework file update timing**: only update `SPRINT-{N}-TESTING.md` AFTER Stage 3 completes and the orchestrator-side checklist verifies. Not earlier.
@@ -258,6 +259,8 @@ If Session Start reports that any of the project-wide context files are missing,
 |-----|-------------|------------|
 | `[TMS_TOOL]` | xray-cli skill, Atlassian MCP, or `{{TMS_CLI}}` | `CLAUDE.md` Tool Resolution |
 | `[ISSUE_TRACKER_TOOL]` | `acli`, Atlassian MCP, or `{{ISSUE_TRACKER_CLI}}` | `CLAUDE.md` Tool Resolution |
+
+> **Reads vs writes split** (per `agentic-qa-core/references/acli-integration.md` §"Reads vs writes"): **detailed reads** of an issue (custom fields, ACs, ATP/ATR, description, comments) use `bun run jira:sync-issues get <KEY> --include-comments` (or `jql "<query>"`) then read the synced `.md` — NEVER `acli workitem view` (returns `null` for custom fields). **Writes / transitions / links / bug creation / trivial summary-or-status lookups** stay on `[ISSUE_TRACKER_TOOL]` (`/acli`). **Traceability** (link graph Story↔ATP↔ATR↔TC, Xray run status) stays on `[TMS_TOOL]` / `/acli` / `/xray-cli` — do NOT migrate trace reads to the sync.
 | `[AUTOMATION_TOOL]` | playwright-cli skill or Playwright MCP | `CLAUDE.md` Tool Resolution |
 | `[DB_TOOL]` | DBHub MCP or Supabase MCP | `CLAUDE.md` Tool Resolution |
 | `[API_TOOL]` | OpenAPI MCP, Postman, or curl | `CLAUDE.md` Tool Resolution |
@@ -292,11 +295,12 @@ All references are self-contained. Load one at a time.
 - **S6.** NEVER write ATP / ATR bodies in raw ADF JSON by hand. Use md-to-adf via `[ISSUE_TRACKER_TOOL]` so formatting survives Jira's renderer.
 - **S7.** NEVER skip the smoke pass before triforce (UI / API / DB) exploration. Smoke validates the environment; triforce validates the feature. Order matters — a broken env produces false-positive bug reports.
 - **S8.** NEVER mix UI + API + DB findings into a single bug ticket. File per layer (or per root-cause cluster) so triage and routing stay clean.
-- **S9.** NEVER reuse a PBI folder across tickets. Every Story or Bug gets its own `.context/PBI/{module}/{TICKET-ID}-{brief-title}/` directory; cross-ticket contamination breaks evidence + traceability.
+- **S9.** NEVER reuse a PBI folder across tickets. Every Story or Bug gets its own `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` directory; cross-ticket contamination breaks evidence + traceability.
 - **S10.** NEVER transition the ticket Ready For QA → In Testing without explaining the story to the user AND waiting for confirmation (CLAUDE.md §8 — Session Start is not a one-shot, it's a hand-off gate).
 - **S11.** NEVER skip the auto-stage promote (Session Start → Stage 1 → Stage 2 → Stage 3) after a phase completes — each promote is a checkpoint that writes a `progress.md` entry and feeds the next subagent's Context docs.
 - **S12.** NEVER file a bug without a reproducible repro path AND evidence (screenshot, trace, log, network HAR, or DB row reference). "It failed for me once" is not a bug ticket.
 - **S13.** NEVER hardcode `customfield_NNNNN` IDs in ATP / ATR / QA comments or in any reference under this skill. Resolve every Jira field via `{{jira.<slug>}}` against `.agents/jira-required.yaml`.
+- **S14.** NEVER hand-write a Jira-mirrored `.md` in the PBI folder (`story.md`, `acceptance-criteria.md`, `acceptance-test-plan.md`, `acceptance-test-results.md`, `comments.md`, `feature-test-plan.md`, etc.). To SET their content: author it → write to the Jira custom field via `[ISSUE_TRACKER_TOOL]` (or, when the field is absent, a structured comment per `.agents/jira-required.yaml` `fallback:`) → run `bun run jira:sync-issues get <KEY> --include-comments` → READ the materialized file. Only `context.md`, `test-session-memory.md`, `module-context.md`, and `evidence/` are hand-authored locally.
 
 ---
 

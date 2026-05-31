@@ -466,7 +466,7 @@ Jira Native lacks run history per Test. If historical trend matters, store runs 
 
 ## 11. Local cache — markdown per TC
 
-After TMS creation, write one markdown per TC into `.context/PBI/{module}/{story}/tests/{TC-ID}-{slug}.md`. This lets `test-automation` hand off without re-reading the TMS.
+After TMS creation, write one markdown per TC into `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/{TC-ID}-{slug}.md` (NON-Jira hand-authored cache — directory is `test-cases/`, NOT `tests/`, since the sync script owns the top-level `.context/PBI/tests/` tree for Jira Test issues). This lets `test-automation` hand off without re-reading the TMS.
 
 ```markdown
 ---
@@ -549,7 +549,7 @@ The frontmatter is machine-readable. A later `test-automation` run greps for `ou
 - [ ] Xray mode: Test Type set (Manual / Cucumber / Generic)
 - [ ] Xray mode: Linked to Test Set (if project uses Test Sets)
 - [ ] Workflow state = Ready (or Manual / Candidate once decision is made)
-- [ ] Local cache markdown created under `.context/PBI/{module}/{story}/tests/`
+- [ ] Local cache markdown created under `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/`
 
 ---
 

@@ -47,7 +47,7 @@ Verify the fix for bug UPEX-456.
 Run QA on this sprint's tickets.
 ```
 
-El skill crea el PBI folder (`.context/PBI/{module}/{TICKET}/`) con `context.md`, `test-session-memory.md` y `evidence/`, explica la historia y **espera tu confirmación** antes de continuar.
+El skill crea el PBI folder (`.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/`) con `context.md`, `test-session-memory.md` y `evidence/`, explica la historia y **espera tu confirmación** antes de continuar.
 
 ---
 
@@ -99,7 +99,7 @@ Una vez que Development despliega la US en staging, el skill ejecuta **testing e
 1. **Verifica ambiente**: deploy presente, acceso a staging, datos de prueba disponibles.
 2. **Smoke test primero** (Go / No-Go). Si falla, detiene el flujo.
 3. **Ejecuta el ATP** usando `trifuerza` (UI / API / DB) según qué haya cambiado.
-4. **Registra evidencia** en `.context/PBI/{module}/{TICKET}/evidence/`.
+4. **Registra evidencia** en `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/evidence/`.
 5. **Documenta hallazgos**: bugs se crean inmediatamente vía `[ISSUE_TRACKER_TOOL]`.
 
 **Técnicas aplicadas:**
@@ -158,7 +158,7 @@ Cerrar el ciclo con un reporte formal y traceabilidad completa.
 1. **Completa el Acceptance Test Report (ATR)** en el TMS con resultados por TC.
 2. **Emite el QA comment** en la ticket (Template PASSED / FAILED) vía `[ISSUE_TRACKER_TOOL]`.
 3. **Transiciona el ticket** (`Tested`, `Ready for Release`, etc.).
-4. **Mirror local** del reporte en `test-report.md` dentro del PBI folder.
+4. El ATR se **materializa desde Jira** vía el sync como `acceptance-test-results.md` (cache read-only; nunca se escribe a mano un mirror local).
 
 Tras Reporting, el skill identifica el handoff: para documentación formal + ROI, carga `/test-documentation`.
 
