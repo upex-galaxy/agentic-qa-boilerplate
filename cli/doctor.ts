@@ -32,6 +32,11 @@ import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
+// Canonical variable manifest (source of truth — D1). Imports only `node:fs`,
+// so it is safe to load statically here without breaking the dependency-free
+// `--preflight` contract (no third-party deps pulled in).
+import { requiredNow, varsFor } from './lib/variables-manifest.ts';
+
 // `tui` pulls third-party deps (boxen/cli-table3/figures/picocolors). It is
 // imported lazily inside main() so `--preflight` loads only node built-ins and
 // runs safely on a fresh clone before `bun install`.
@@ -55,35 +60,15 @@ const MIN_BUN: readonly [number, number, number] = [1, 0, 0];
 
 // Env vars surfaced by doctor.
 //
-// Split into two tiers:
-//   - DAY_ZERO_VARS — collectable on a fresh clone (user has these or can sign
-//     up for them without an existing backend project). Installer also prompts.
-//   - PROJECT_BOUND_VARS — require an existing backend / Postman workspace /
-//     DB connection. Deferred by the installer; doctor reports them as pending.
+// Source of truth = `VAR_MANIFEST` (D1) via `varsFor('local')` — resolved at the
+// point of use in `runDoctor` rather than a separate hand-maintained list (which
+// used to drift from the installer). DBHub vars live in the manifest but are
+// surfaced separately/manually (edit `dbhub.toml`), so they are filtered out at
+// the call site; `VAR_HINTS` provides the per-var help text for reported vars.
 //
-// DBHub vars are NOT listed here — DBHub setup is fully manual (edit
-// `dbhub.toml` based on the target project's DB). See .env.example.
-const DAY_ZERO_VARS = [
-  'TEST_ENV',
-  'LOCAL_USER_EMAIL',
-  'LOCAL_USER_PASSWORD',
-  'STAGING_USER_EMAIL',
-  'STAGING_USER_PASSWORD',
-  'TAVILY_API_KEY',
-  'RESEND_API_KEY',
-  'ATLASSIAN_URL',
-  'ATLASSIAN_EMAIL',
-  'ATLASSIAN_API_TOKEN',
-] as const;
-
-const PROJECT_BOUND_VARS = [
-  'API_BASE_URL',
-  'OPENAPI_SPEC_PATH',
-  'API_TOKEN',
-  'POSTMAN_API_KEY',
-] as const;
-
-const REQUIRED_VARS = [...DAY_ZERO_VARS, ...PROJECT_BOUND_VARS] as const;
+// `requiredNow(spec, env)` decides required-vs-optional given the current
+// TEST_ENV (e.g. STAGING_USER_* is required only when TEST_ENV=staging). Vars
+// that are not required-now are still reported (set/missing) but do NOT block.
 
 const VAR_HINTS: Record<string, { hint: string, where: string }> = {
   TEST_ENV: {
@@ -367,15 +352,19 @@ async function runDoctor(): Promise<DoctorReport> {
     });
   }
 
-  // env vars
+  // env vars — manifest-driven (D1). Every reported var is set/missing; only
+  // vars that are required GIVEN the current env (`requiredNow` resolves the
+  // `{ ifEnv: 'TEST_ENV=staging' }` clauses) push a blocking credential action.
   const envValues = report.env_file_exists
     ? parseEnvFile(await readFile(ENV_PATH, 'utf8'))
     : {};
-  for (const v of REQUIRED_VARS) {
+  const localSpecs = varsFor('local').filter(spec => !spec.name.startsWith('DBHUB_'));
+  for (const spec of localSpecs) {
+    const v = spec.name;
     const value = envValues[v];
     const isSet = value !== undefined && value.trim().length > 0;
     report.env_vars[v] = isSet ? 'set' : 'missing';
-    if (!isSet) {
+    if (!isSet && requiredNow(spec, envValues)) {
       report.pending_actions.push({
         type: 'credential',
         target: v,

@@ -71,6 +71,8 @@ import { dirname, join, resolve } from 'node:path';
 
 import { checkbox, password } from '@inquirer/prompts';
 import * as tui from './lib/tui.ts';
+import { runVariablesFlow } from './lib/variables-flow.ts';
+import { criticalVars, nonCriticalVars, varsFor } from './lib/variables-manifest.ts';
 
 // ============================================================================
 // Types
@@ -319,6 +321,11 @@ const INSTALLER_DEFERRED_VARS = new Set<string>([
   'DBHUB_PASSWORD',
 ]);
 
+// The CRITICAL set (project-independent tool credentials) is owned by the day-0
+// credentials step. configureMcps skips any of these it encounters (e.g.
+// TAVILY_API_KEY surfaced from .mcp.json) so the user is asked exactly once.
+const CRITICAL_VAR_NAMES = new Set<string>(criticalVars().map(s => s.name));
+
 // ============================================================================
 // CLI flags
 // ============================================================================
@@ -337,6 +344,18 @@ const FORCE_ALL = process.argv.includes('--force') || process.env.INSTALL_FORCE_
 // --force-step <key>: clear one step
 const FORCE_STEP_IDX = process.argv.indexOf('--force-step');
 const FORCE_STEP_KEY = FORCE_STEP_IDX !== -1 ? (process.argv[FORCE_STEP_IDX + 1] ?? '') : '';
+
+// --variables: run ONLY the env-var setup flow (local + remote), then exit —
+// skipping the normal install pipeline. Companion flags below are scoped to it.
+const VARIABLES_MODE = process.argv.includes('--variables');
+// --variables-mode <local|remote|both> (default: both). Accepts the bare
+// `--variables-local` / `--variables-remote` shorthands too.
+const VARIABLES_MODE_IDX = process.argv.indexOf('--variables-mode');
+const VARIABLES_MODE_ARG = VARIABLES_MODE_IDX !== -1 ? (process.argv[VARIABLES_MODE_IDX + 1] ?? '') : '';
+// --dry-run: print what WOULD be set (names + scopes, never values) without writing.
+const DRY_RUN = process.argv.includes('--dry-run');
+// --yes: pre-approve remote secret writes (required for non-interactive remote push).
+const YES = process.argv.includes('--yes');
 
 const SKIP_GENTLE_AI = process.env.INSTALL_SKIP_GENTLE_AI === '1';
 const SKIP_DEPS = process.env.INSTALL_SKIP_DEPS === '1';
@@ -905,7 +924,7 @@ async function installCommunitySkills(
 // expansion. The installer no longer rewrites those files — it only ensures
 // `.env` contains the required values, then optionally enables direnv.
 
-function isSecretName(name: string): boolean {
+export function isSecretName(name: string): boolean {
   return SECRET_NAME_HINTS.some(hint => name.endsWith(hint) || name.endsWith(`_${hint}`));
 }
 
@@ -932,7 +951,7 @@ async function discoverRequiredEnvVars(agents: AgentId[]): Promise<string[]> {
   return [...seen].sort();
 }
 
-function parseEnvFile(content: string): Record<string, string> {
+export function parseEnvFile(content: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const rawLine of content.split('\n')) {
     const line = rawLine.trim();
@@ -952,7 +971,7 @@ function parseEnvFile(content: string): Record<string, string> {
   return out;
 }
 
-async function ensureEnvFileExists(): Promise<void> {
+export async function ensureEnvFileExists(): Promise<void> {
   if (existsSync(ENV_PATH)) { return; }
   if (existsSync(ENV_EXAMPLE_PATH)) {
     const tmpl = await readFile(ENV_EXAMPLE_PATH, 'utf8');
@@ -964,7 +983,7 @@ async function ensureEnvFileExists(): Promise<void> {
   log.warn('.env.example missing; created empty .env.');
 }
 
-async function appendVarsToEnv(vars: Record<string, string>): Promise<void> {
+export async function appendVarsToEnv(vars: Record<string, string>): Promise<void> {
   if (Object.keys(vars).length === 0) { return; }
   const existing = await readFile(ENV_PATH, 'utf8');
   // Upsert: replace an existing `KEY=` line in place so re-runs and the acli
@@ -995,7 +1014,7 @@ async function appendVarsToEnv(vars: Record<string, string>): Promise<void> {
   catch { /* best effort */ }
 }
 
-async function promptForVar(name: string): Promise<string> {
+export async function promptForVar(name: string): Promise<string> {
   if (isSecretName(name)) {
     const entered = await password({
       message: `${name} (Enter to skip — fill later in .env):`,
@@ -1043,6 +1062,13 @@ async function configureMcps(agents: AgentId[], state: InstallState): Promise<vo
       log.dim(`  ${name}: captured from shell environment`);
       continue;
     }
+    if (CRITICAL_VAR_NAMES.has(name)) {
+      // CRITICAL tool credentials (e.g. TAVILY_API_KEY) are owned by the day-0
+      // step, which prompts the whole critical set with the right context. Skip
+      // here to avoid double-asking; do NOT mark pending (day-0 collects it).
+      log.dim(`  ${name}: collected in the day-0 credentials step.`);
+      continue;
+    }
     if (INSTALLER_DEFERRED_VARS.has(name)) {
       stillPending.push(name);
       log.dim(`  ${name}: deferred to \`bun run doctor\` (project-bound — needs backend / DB / workspace).`);
@@ -1085,142 +1111,100 @@ async function configureMcps(agents: AgentId[], state: InstallState): Promise<vo
 }
 
 // ----------------------------------------------------------------------------
-// Day-0 credentials (ATLASSIAN_*, RESEND_API_KEY, TEST_ENV, *_USER_*)
+// Day-0 credentials (the CRITICAL set — project-INDEPENDENT tool credentials)
 // ----------------------------------------------------------------------------
 //
-// These are credentials a user CAN provide on a fresh clone:
-//   - ATLASSIAN_* — workspace + account API token
-//   - RESEND_API_KEY — exists independent of any project
-//   - TEST_ENV + LOCAL_USER_* + STAGING_USER_* — test runner needs these or
-//     `bun test` fails on first invocation
+// The installer prompts ONLY for the CRITICAL set (manifest `critical: true`),
+// identical across both boilerplates:
+//   - ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN — Jira/acli tool
+//   - RESEND_API_KEY — email-testing tool (also authenticates the resend CLI)
+//   - TAVILY_API_KEY — the pre-configured Tavily web-search MCP
+// These exist independent of any project-under-test, so a fresh clone can
+// provide them on day-0.
 //
-// Vars that REQUIRE an existing project (API_BASE_URL, OPENAPI_SPEC_PATH,
-// POSTMAN_API_KEY, DBHUB_*) are deferred to `bun run doctor`.
+// Everything else is NON-critical and is NEVER asked here (nor warned about):
+//   - TEST_ENV — written to its manifest default ("local") WITHOUT prompting.
+//   - LOCAL_USER_* / STAGING_USER_*, XRAY_*, DBHUB_*, API_*, POSTMAN_*, … —
+//     project-dependent; surfaced in the closing "Next steps" list, settable
+//     later via `bun run setup --variables`.
 
-const DAY_ZERO_ATLASSIAN_VARS = ['ATLASSIAN_URL', 'ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'] as const;
+// Per-critical-var prompt context (grouped note shown before the prompt block).
+// Vars without an entry are prompted with just their name.
+const CRITICAL_VAR_NOTES: Record<string, { title: string, body: string }> = {
+  ATLASSIAN_URL: {
+    title: 'Atlassian credentials (Jira / acli)',
+    body: 'Used by acli + scripts/sync-jira-*.ts. Get a token at: https://id.atlassian.com/manage-profile/security/api-tokens',
+  },
+  RESEND_API_KEY: {
+    title: 'Resend API key (email testing)',
+    body: 'Used for email-flow tests (signup, password reset, magic links). Get a key: https://resend.com/api-keys — Docs: https://resend.com/docs/api-reference/introduction',
+  },
+  TAVILY_API_KEY: {
+    title: 'Tavily API key (web-search MCP)',
+    body: 'Powers the pre-configured Tavily MCP for community-fix / troubleshooting research. Get a key: https://app.tavily.com',
+  },
+};
 
 async function configureDayZeroCredentials(state: InstallState): Promise<void> {
   await ensureEnvFileExists();
   const envValues = parseEnvFile(await readFile(ENV_PATH, 'utf8'));
   const newValues: Record<string, string> = {};
 
-  // ── Atlassian credentials (workspace + token) ─────────────────────────────
-  // Promoted out of the acli auth loop (formerly Step 12.4) so the user is
-  // asked even if they later skip Jira bootstrap.
-  const missingAtlassian = DAY_ZERO_ATLASSIAN_VARS.filter((name) => {
-    const fromFile = envValues[name];
-    if (fromFile && fromFile.trim().length > 0) { return false; }
-    const fromProcess = process.env[name];
-    return !(fromProcess && fromProcess.trim().length > 0);
-  });
-
-  if (missingAtlassian.length > 0) {
-    if (NON_INTERACTIVE) {
-      log.warn(`Atlassian vars missing in non-interactive mode: ${missingAtlassian.join(', ')}`);
-    }
-    else {
-      tui.note(
-        'Used by acli + scripts/sync-jira-*.ts. Get a token at: https://id.atlassian.com/manage-profile/security/api-tokens',
-        'Atlassian credentials',
-      );
-      for (const name of missingAtlassian) {
-        const value = await promptForVar(name);
-        if (value.length > 0) {
-          newValues[name] = value;
-          process.env[name] = value;
-        }
-      }
-    }
-  }
-  else {
-    log.dim('  ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN: already set.');
-  }
-
-  // ── TEST_ENV + per-environment user credentials ──────────────────────────
+  // ── TEST_ENV default (NO prompt) ─────────────────────────────────────────
+  // Project-dependent; the user reconfigures it manually or via /adapt-framework
+  // when wiring the framework to their project-under-test. Write the manifest
+  // default only when absent — never clobber an existing value.
   const currentTestEnv = (envValues.TEST_ENV ?? process.env.TEST_ENV ?? '').trim();
   if (currentTestEnv.length === 0) {
-    if (NON_INTERACTIVE) {
-      newValues.TEST_ENV = 'local';
-      log.dim('  TEST_ENV: defaulting to "local" in non-interactive mode.');
-    }
-    else {
-      const selected = await tui.select<'local' | 'staging'>({
-        message: 'Default test environment (TEST_ENV)?',
-        options: [
-          { label: 'local — local dev server', value: 'local' as const },
-          { label: 'staging — deployed staging URL', value: 'staging' as const },
-        ],
-        initialValue: 'local' as const,
-      });
-      if (tui.isCancel(selected)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
-      newValues.TEST_ENV = selected;
-    }
+    const defaultEnv = nonCriticalVars().find(s => s.name === 'TEST_ENV')?.defaultValue ?? 'local';
+    newValues.TEST_ENV = defaultEnv;
+    log.dim(`  TEST_ENV: defaulting to "${defaultEnv}" (reconfigure later via /adapt-framework).`);
   }
   else {
     log.dim(`  TEST_ENV: already set to "${currentTestEnv}".`);
   }
 
-  // Always prompt for BOTH environment credential pairs. Tests for the
-  // non-active env can run later without re-running the installer.
-  const USER_VARS = [
-    'LOCAL_USER_EMAIL',
-    'LOCAL_USER_PASSWORD',
-    'STAGING_USER_EMAIL',
-    'STAGING_USER_PASSWORD',
-  ] as const;
+  // ── CRITICAL tool credentials (idempotent, project-independent) ──────────
+  for (const spec of criticalVars()) {
+    const name = spec.name;
+    const fromFile = (envValues[name] ?? '').trim();
+    const fromProcess = (process.env[name] ?? '').trim();
+    if (fromFile.length > 0 || fromProcess.length > 0) {
+      log.dim(`  ${name}: already set.`);
+      continue;
+    }
 
-  const missingUsers = USER_VARS.filter((name) => {
-    const fromFile = envValues[name];
-    if (fromFile && fromFile.trim().length > 0) { return false; }
-    const fromProcess = process.env[name];
-    return !(fromProcess && fromProcess.trim().length > 0);
-  });
-
-  if (missingUsers.length > 0) {
     if (NON_INTERACTIVE) {
-      log.warn(`Test user credentials missing in non-interactive mode: ${missingUsers.join(', ')}`);
+      log.warn(`${name}: missing (non-interactive mode — set later in .env or via \`bun run setup --variables\`).`);
+      continue;
     }
-    else {
-      tui.note(
-        'Required by config/validateTestEnv.ts — tests fail on first run without these. Enter blank to skip a pair.',
-        'Test user credentials',
-      );
-      for (const name of missingUsers) {
-        const value = await promptForVar(name);
-        if (value.length > 0) { newValues[name] = value; }
-      }
-    }
-  }
-  else {
-    log.dim('  LOCAL_USER_* / STAGING_USER_*: already set.');
-  }
 
-  // ── Resend API key + CLI auth attempt ────────────────────────────────────
-  const currentResend = (envValues.RESEND_API_KEY ?? process.env.RESEND_API_KEY ?? '').trim();
-  if (currentResend.length === 0) {
-    if (NON_INTERACTIVE) {
-      log.dim('  RESEND_API_KEY: skipped in non-interactive mode.');
+    const noteInfo = CRITICAL_VAR_NOTES[name];
+    if (noteInfo) {
+      tui.note(noteInfo.body, noteInfo.title);
     }
-    else {
-      tui.note(
-        'Optional. Used for email-flow tests (signup, password reset, magic links). Get a key: https://resend.com/api-keys — Docs: https://resend.com/docs/api-reference/introduction',
-        'Resend API key',
-      );
-      const value = await promptForVar('RESEND_API_KEY');
-      if (value.length > 0) {
-        newValues.RESEND_API_KEY = value;
-        process.env.RESEND_API_KEY = value;
-      }
+    const value = await promptForVar(name);
+    if (value.length > 0) {
+      newValues[name] = value;
+      process.env[name] = value;
     }
-  }
-  else {
-    log.dim('  RESEND_API_KEY: already set.');
   }
 
   if (Object.keys(newValues).length > 0) {
     await appendVarsToEnv(newValues);
     reloadDotEnv();
     log.success(`Wrote ${Object.keys(newValues).length} day-0 var(s) to .env: ${Object.keys(newValues).join(', ')}`);
+  }
+
+  // Refresh MCP per-server status for any server whose secrets include a
+  // critical var we just collected (e.g. tavily ← TAVILY_API_KEY), since
+  // configureMcps deferred those to this step.
+  const merged = { ...envValues, ...newValues };
+  for (const [server, secrets] of Object.entries(MCP_SERVER_SECRETS)) {
+    if (secrets.length === 0) { continue; }
+    if (!secrets.some(s => CRITICAL_VAR_NAMES.has(s))) { continue; }
+    const anyMissing = secrets.some(s => !merged[s] || merged[s].trim().length === 0);
+    state.mcps[server] = anyMissing ? 'placeholder' : 'configured-with-key';
   }
 
   // ── Resend CLI authentication attempt ────────────────────────────────────
@@ -1243,8 +1227,6 @@ async function configureDayZeroCredentials(state: InstallState): Promise<void> {
       }
     }
   }
-
-  void state;
 }
 
 // ----------------------------------------------------------------------------
@@ -1352,7 +1334,7 @@ interface GhStatus {
   authenticated: boolean
 }
 
-function detectGh(): GhStatus {
+export function detectGh(): GhStatus {
   const path = which('gh');
   if (!path) { return { found: false, authenticated: false }; }
 
@@ -1769,7 +1751,7 @@ function buildInitialState(prior: InstallState | null): InstallState {
  * Reload .env in-process so that values edited by the user during the Jira
  * auth-retry loop are visible without a shell restart.
  */
-function reloadDotEnv(): void {
+export function reloadDotEnv(): void {
   try {
     const envPath = resolve(process.cwd(), '.env');
     if (!existsSync(envPath)) { return; }
@@ -2206,6 +2188,41 @@ function statusFor(found: number, total: number): string {
 // Closing summary
 // ============================================================================
 
+/**
+ * Print the "Next steps — finish later" block: every NON-critical manifest var
+ * that is still empty in `.env`, each with its `obtainHint`. These are NEVER
+ * asked at install and NEVER warned about — they live here so the user knows
+ * where to get them and that `bun run setup --variables` sets them.
+ *
+ * Excluded: TEST_ENV (carries a default the installer already wrote). DEV-only
+ * infra-autogenerated vars (Supabase/Vercel) do not exist in the QA manifest,
+ * so nothing further to exclude here.
+ */
+function printNonCriticalNextSteps(): void {
+  let envValues: Record<string, string> = {};
+  if (existsSync(ENV_PATH)) {
+    try { envValues = parseEnvFile(readFileSync(ENV_PATH, 'utf8')); }
+    catch { /* unreadable .env → treat all as empty */ }
+  }
+
+  const pending = nonCriticalVars().filter((spec) => {
+    if (spec.defaultValue !== undefined) { return false; } // e.g. TEST_ENV
+    const value = (envValues[spec.name] ?? '').trim();
+    return value.length === 0;
+  });
+
+  if (pending.length === 0) { return; }
+
+  tui.section('Next steps — finish later (non-critical vars)');
+  process.stdout.write(`  ${COLORS.dim}These are project-dependent — not needed to start. Set them with:${COLORS.reset}\n`);
+  process.stdout.write(`      ${COLORS.cyan}bun run setup --variables${COLORS.reset}\n\n`);
+  for (const spec of pending) {
+    process.stdout.write(`  • ${COLORS.bold}${spec.name}${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.dim}${spec.obtainHint ?? ''}${COLORS.reset}\n`);
+  }
+  process.stdout.write('\n');
+}
+
 function printClosingSummary(state: InstallState): void {
   const allSkillEntries = Object.entries(state.skills);
   const gentleAiSkills = allSkillEntries.filter(([k]) => k.includes('::'));
@@ -2331,18 +2348,15 @@ function printClosingSummary(state: InstallState): void {
     process.stdout.write(`  Visibility : ${state.github.visibility}\n`);
     process.stdout.write('  Remote     : origin (pushed)\n\n');
     process.stdout.write(`${COLORS.bold}GitHub follow-ups (manual):${COLORS.reset}\n`);
-    process.stdout.write('  • Add Actions secrets at:\n');
+    process.stdout.write('  • Push Actions secrets automatically:\n');
+    process.stdout.write(`      ${COLORS.cyan}bun run setup --variables --variables-remote${COLORS.reset}  (gated; values via stdin, never printed)\n`);
+    process.stdout.write('    Or add manually at:\n');
     process.stdout.write(`      ${state.github.url}/settings/secrets/actions\n`);
-    process.stdout.write('    Recommended (only those you actually use):\n');
-    process.stdout.write('      - TAVILY_API_KEY                  (Tavily MCP — web search)\n');
-    process.stdout.write('      - ATLASSIAN_URL, ATLASSIAN_EMAIL,\n');
-    process.stdout.write('        ATLASSIAN_API_TOKEN             (acli, xray-cli, jira:sync-* scripts; Atlassian MCP opt-in via docs/mcp/)\n');
-    process.stdout.write('      - XRAY_CLIENT_ID, XRAY_CLIENT_SECRET,\n');
-    process.stdout.write('        XRAY_PROJECT_KEY                (Xray Cloud — only if used)\n');
-    process.stdout.write('      - POSTMAN_API_KEY                 (Postman MCP — optional)\n');
-    process.stdout.write('      - API_BASE_URL, OPENAPI_SPEC_PATH,\n');
-    process.stdout.write('        API_TOKEN                       (OpenAPI MCP — if CI hits backend)\n');
-    process.stdout.write('      - LOCAL_USER_*, STAGING_USER_*    (Playwright test users — needed for CI runs)\n');
+    process.stdout.write('    GitHub-bound secrets (derived from the variable manifest):\n');
+    // Names sourced from varsFor('github') so this can't drift from the manifest.
+    for (const spec of varsFor('github')) {
+      process.stdout.write(`      - ${spec.name}\n`);
+    }
     process.stdout.write(`  • Move repo to org later:  gh repo transfer ${state.github.account}/${state.github.repo} <org>\n\n`);
   }
   else {
@@ -2359,6 +2373,9 @@ function printClosingSummary(state: InstallState): void {
   process.stdout.write('    Validate:                       bun run kata:manifest:check\n\n');
   process.stdout.write('  • Adapt KATA to your stack:      /adapt-framework\n');
   process.stdout.write('    (removes example tests + business maps; wires fixtures to your stack)\n\n');
+
+  // Next steps — non-critical vars still empty in .env (manifest-driven).
+  printNonCriticalNextSteps();
 
   // QA workflow quick reference
   tui.section('QA workflow quick reference');
@@ -2518,6 +2535,37 @@ async function main(): Promise<void> {
   if (process.argv.includes('--validate-skills')) {
     const code = await validateSkills();
     process.exit(code);
+  }
+
+  // --variables: run ONLY the env-var setup flow (idempotent local upsert +
+  // gated GitHub-secret push), then exit — bypassing the normal install
+  // pipeline. All logic lives in cli/lib/variables-flow.ts (manifest-driven).
+  if (VARIABLES_MODE) {
+    let mode: 'local' | 'remote' | 'both' = 'both';
+    let explicitMode = true;
+    if (process.argv.includes('--variables-local')) { mode = 'local'; }
+    else if (process.argv.includes('--variables-remote')) { mode = 'remote'; }
+    else if (VARIABLES_MODE_ARG === 'local' || VARIABLES_MODE_ARG === 'remote' || VARIABLES_MODE_ARG === 'both') {
+      mode = VARIABLES_MODE_ARG;
+    }
+    else {
+      // No mode flag given → default `both`, but flag this so the flow can show
+      // the interactive menu instead (unless --yes/--force forces a scripted run).
+      explicitMode = false;
+    }
+    // Show the menu only for a bare, unflagged, interactive invocation. Any of
+    // --variables-local/-remote, an explicit --variables-mode, --yes, or --force
+    // means the caller wants the non-interactive scripted path.
+    const interactiveMenu = !explicitMode && !YES && !FORCE_ALL && !NON_INTERACTIVE;
+    await runVariablesFlow({
+      mode,
+      force: FORCE_ALL,
+      dryRun: DRY_RUN,
+      yes: YES,
+      nonInteractive: NON_INTERACTIVE,
+      interactiveMenu,
+    });
+    process.exit(0);
   }
 
   // Build forced-step set for this run

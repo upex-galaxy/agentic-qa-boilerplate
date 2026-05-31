@@ -7,7 +7,7 @@
  * rollback flag) live here; everything else lives in core.
  */
 
-import type { Component, ReportSink, UpdaterConfig } from './lib/updater-types';
+import type { Component, ReportSink, RunSummary, UpdaterConfig } from './lib/updater-types';
 import { execSync, spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -16,6 +16,7 @@ import * as path from 'node:path';
 import pc from 'picocolors';
 import * as tui from './lib/tui';
 import { cleanupTempDir, detectGitVersion, gitVersionMeetsMin, runUpdate } from './lib/updater-core';
+import { parseDotEnvExampleKeys, requiredNow, VAR_MANIFEST } from './lib/variables-manifest.ts';
 
 // --- CONFIGURATION ---
 const CLI_VERSION = '7.0';
@@ -26,6 +27,7 @@ const VERSION_FILE = '.template/boilerplate.lock.json';
 const TOOLING_FILES = ['.editorconfig', '.prettierrc', '.gitattributes'];
 const AGENTS_DOCS_FILES = ['README.md'];
 const CLAUDE_CONFIG_FILES = ['settings.json'];
+const ENV_TEMPLATE_FILES = ['.env.example'];
 
 /**
  * Canonical skills location (Claude Code) and portability symlink target.
@@ -44,6 +46,10 @@ const COMPONENTS: Component[] = [
   { name: 'agents-docs', type: 'file-list', paths: ['.agents'], files: AGENTS_DOCS_FILES },
   { name: 'claude-config', type: 'file-list', paths: ['.claude'], files: CLAUDE_CONFIG_FILES },
   { name: 'tooling', type: 'file-list', paths: ['.'], files: TOOLING_FILES },
+  // `.env.example` carries NO secrets (placeholder values only) and fast-forwards
+  // safely. Shipping it is the prerequisite for env-var drift detection — the
+  // afterApply hook can only diff against an `.env.example` we have shipped.
+  { name: 'env-template', type: 'file-list', paths: ['.'], files: ENV_TEMPLATE_FILES },
 ];
 
 // --- ARG PARSE ---
@@ -178,6 +184,101 @@ function rollbackFromBackup(): void {
     tui.log.error(`Rollback fallido: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
+}
+
+// --- ENV-VAR DRIFT DETECTION (afterApply hook) ---
+//
+// After a sync, the upstream clone still sits in `tempDir` (the updater cleans
+// it up AFTER afterApply runs). We diff the keys the upstream `.env.example`
+// declares against what the target already has locally (`.env` + local
+// `.env.example`) and surface any upstream-added keys the target is missing.
+//
+// Per handoff §3.5 + D3: this only PRINTS and OFFERS to run
+// `bun run setup --variables` — it NEVER auto-runs the remote push, and in
+// non-interactive / CI mode it just prints the warning (no prompt, no action).
+
+/** Read the `KEY=` keys a local env file declares (missing file → []). */
+function localEnvKeys(filePath: string): string[] {
+  if (!fs.existsSync(filePath)) { return []; }
+  try {
+    return parseDotEnvExampleKeys(filePath);
+  }
+  catch {
+    return [];
+  }
+}
+
+/**
+ * Build the `afterApply` hook that detects env-var drift.
+ *
+ * Captures `tempDir` (where the upstream clone lives during the run), the
+ * `sink` (for `confirm`), and `auto` (CI gate) from the outer scope — the
+ * core's hook signature only passes the `RunSummary`.
+ */
+function makeEnvDriftHook(
+  tempDir: string,
+  sink: ReportSink,
+  auto: boolean,
+): (summary: RunSummary) => Promise<void> {
+  return async (_summary: RunSummary): Promise<void> => {
+    const upstreamExample = path.join(tempDir, '.env.example');
+    if (!fs.existsSync(upstreamExample)) { return; }
+
+    let upstreamKeys: string[];
+    try {
+      upstreamKeys = parseDotEnvExampleKeys(upstreamExample);
+    }
+    catch {
+      return; // unreadable upstream template — nothing to diff against.
+    }
+    if (upstreamKeys.length === 0) { return; }
+
+    // What the target already knows: live `.env` keys + local `.env.example`.
+    const localKeys = new Set<string>([
+      ...localEnvKeys(path.join(process.cwd(), '.env')),
+      ...localEnvKeys(path.join(process.cwd(), '.env.example')),
+    ]);
+
+    const newKeys = upstreamKeys.filter(k => !localKeys.has(k));
+    if (newKeys.length === 0) { return; }
+
+    // Flag which of the new keys the manifest marks required RIGHT NOW (given
+    // the target's current env), so the warning can lead with those.
+    const envSnapshot = process.env as Record<string, string>;
+    const requiredNew = newKeys.filter((k) => {
+      const spec = VAR_MANIFEST.find(s => s.name === k);
+      return spec ? requiredNow(spec, envSnapshot) : false;
+    });
+
+    sink.warn(`El upstream agregó ${newKeys.length} variable(s) de entorno que tu .env no tiene:`);
+    for (const k of newKeys) {
+      const isReq = requiredNew.includes(k);
+      sink.warn(`  - ${k}${isReq ? pc.yellow(' (requerida)') : ''}`);
+    }
+
+    // CI / non-interactive: print only — never prompt, never touch remote (D3).
+    if (auto) {
+      sink.step('Modo --auto: ejecuta `bun run setup --variables` manualmente para poblarlas.');
+      return;
+    }
+
+    // Interactive: OFFER (does not auto-run remote — the --variables flow stays
+    // self-gated; this only launches its local+offered-remote pipeline).
+    const proceed = await sink.confirm(
+      'Ejecutar `bun run setup --variables` ahora para poblar las variables faltantes?',
+      false,
+    );
+    if (!proceed) {
+      sink.step('Omitido. Puedes ejecutar `bun run setup --variables` cuando quieras.');
+      return;
+    }
+
+    sink.step('Lanzando `bun run setup --variables`…');
+    const res = spawnSync('bun', ['run', 'setup', '--variables'], { stdio: 'inherit' });
+    if (res.status !== 0) {
+      sink.warn('`bun run setup --variables` terminó con error o fue cancelado.');
+    }
+  };
 }
 
 // --- SKILLS RESOLVER (used by --list short-circuit and runtime hook) ---
@@ -421,6 +522,10 @@ async function main(): Promise<void> {
     components = skillsSelected;
   }
 
+  // Single sink instance — shared by runUpdate AND the env-drift afterApply hook
+  // (the hook uses `sink.confirm` to offer `setup --variables`).
+  const sink = buildSink();
+
   const cfg: UpdaterConfig = {
     templateRepo: TEMPLATE_REPO,
     cliVersion: CLI_VERSION,
@@ -442,12 +547,16 @@ async function main(): Promise<void> {
     selfUpdateComponent: 'cli',
     hooks: {
       skillsResolver: resolveTemplateSkills,
+      // Env-var drift detection: runs while the upstream clone still sits in
+      // TEMP_DIR (cleanup happens after afterApply). Dry-run skips the offer —
+      // nothing was applied, so there is no drift to act on yet.
+      afterApply: parsed.dryRun ? undefined : makeEnvDriftHook(TEMP_DIR, sink, parsed.auto),
     },
   };
 
   tui.intro(tui.headline(`UPEX QA Boilerplate Updater v${CLI_VERSION}`));
 
-  const summary = await runUpdate(cfg, buildSink(), {
+  const summary = await runUpdate(cfg, sink, {
     auto: parsed.auto,
     dryRun: parsed.dryRun,
     rollback: false,

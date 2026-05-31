@@ -60,8 +60,8 @@
     "opencode": "dotenv -e .env -- opencode",
     "prepare": "husky",
     "pw:install": "playwright install --with-deps chromium",
-    "repo:check": "bun run format:check && bun run lint:check && bun run types:check && bun run vars:check && bun run skills:check && bun run skills:registry:check",
-    "repo:fix": "bun run format:fix && bun run lint:fix && bun run types:check && bun run vars:check && bun run skills:check && bun run skills:registry:check",
+    "repo:check": "bun run format:check && bun run lint:check && bun run types:check && bun run vars:check && bun run skills:check && bun run skills:registry:check && bun run vars:env:check",
+    "repo:fix": "bun run format:fix && bun run lint:fix && bun run types:check && bun run vars:check && bun run skills:check && bun run skills:registry:check && bun run vars:env:check",
     "setup:doctor": "bun cli/doctor.ts",
     "setup": "bun cli/doctor.ts --preflight && bun cli/install.ts",
     "skills:check": "bun scripts/lint-skills.ts",
@@ -83,6 +83,7 @@
     "types:check": "tsc --noEmit",
     "up": "bun cli/update-boilerplate.ts",
     "vars:check": "bun scripts/lint-vars.ts",
+    "vars:env:check": "bun scripts/check-vars.ts",
     "xray": "bun cli/xray/index.ts"
   },
   "dependencies": {
