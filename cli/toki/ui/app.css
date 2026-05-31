@@ -22,6 +22,7 @@
   --toki-surface-raised: #1c232d;
   --toki-border: #2a323d;
   --toki-text: #e6edf3;
+  --toki-text-strong: #f0f6fc;
   --toki-text-muted: #9aa7b4;
   --toki-accent: #4cc9e6;
   --toki-accent-strong: #34b6d6;
@@ -29,6 +30,13 @@
   --toki-accent-tint: rgba(76, 201, 230, 0.14);
   --toki-accent-ring: rgba(76, 201, 230, 0.4);
   --toki-danger: #ff7b72;
+  --toki-danger-contrast: #fff;
+
+  /* Darker-than-surface inset for fenced code, and a faint zebra wash. */
+  --toki-code-bg: #0b0e13;
+  --toki-zebra: rgba(255, 255, 255, 0.02);
+  --toki-chip-x-bg: rgba(255, 255, 255, 0.08);
+  --toki-img-x-bg: rgba(0, 0, 0, 0.6);
 
   --toki-radius: 12px;
   --toki-radius-sm: 8px;
@@ -47,6 +55,55 @@
   --toki-column: 760px;
   --toki-pad: 20px;
   --toki-transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --------------------------------------------------------------------------
+   Light palette — activated by `data-theme="light"` on the document element
+   (app.js sets document.documentElement.dataset.theme). Dark is the default:
+   with no attribute the :root tokens above stay in force. Only the COLOR
+   tokens are redefined here; radii / fonts / layout / motion are inherited.
+   The accent is darkened so body/CTA text clears WCAG AA on a light surface.
+   -------------------------------------------------------------------------- */
+
+:root[data-theme='light'] {
+  --toki-bg: #f4f6f9;
+  --toki-surface: #ffffff;
+  --toki-surface-raised: #eef1f5;
+  --toki-border: #d4dae2;
+  --toki-text: #1b232c;
+  --toki-text-strong: #0b1117;
+  --toki-text-muted: #5a6675;
+  --toki-accent: #0e7c93;
+  --toki-accent-strong: #0b6378;
+  --toki-accent-contrast: #ffffff;
+  --toki-accent-tint: rgba(14, 124, 147, 0.12);
+  --toki-accent-ring: rgba(14, 124, 147, 0.35);
+  --toki-danger: #c0392b;
+  --toki-danger-contrast: #fff;
+
+  --toki-code-bg: #eef1f5;
+  --toki-zebra: rgba(15, 23, 32, 0.035);
+  --toki-chip-x-bg: rgba(15, 23, 32, 0.08);
+  --toki-img-x-bg: rgba(15, 23, 32, 0.55);
+
+  --toki-shadow: 0 8px 24px rgba(15, 23, 32, 0.12);
+  --toki-shadow-soft: 0 1px 4px rgba(15, 23, 32, 0.08);
+  --toki-shadow-lift: 0 12px 32px rgba(15, 23, 32, 0.16);
+}
+
+/* Smooth the dark<->light flip on the large color-bearing surfaces. Cheap
+   (color/background/border only) and disabled under prefers-reduced-motion. */
+body,
+.toki-block,
+.toki-option,
+.toki-table__answer,
+.toki-text__input,
+.toki-expand__panel,
+.toki-bar {
+  transition:
+    background-color var(--toki-transition),
+    border-color var(--toki-transition),
+    color var(--toki-transition);
 }
 
 /* ==========================================================================
@@ -97,15 +154,56 @@ button {
 /* ---- Header ---- */
 
 .toki-header {
+  position: relative;
   padding: 40px 0 8px;
 }
 
 .toki-title {
   margin: 0 0 12px;
+  /* Leave room for the absolutely-positioned theme toggle (top-right). */
+  padding-right: 52px;
   font-size: 1.9rem;
   line-height: 1.2;
   font-weight: 700;
   letter-spacing: -0.01em;
+}
+
+/* ---- Theme toggle (top-right of the header) ---- */
+
+.toki-theme-toggle {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--toki-border);
+  border-radius: var(--toki-radius-pill);
+  background: var(--toki-surface);
+  color: var(--toki-text-muted);
+  font-size: 1.05rem;
+  line-height: 1;
+  box-shadow: var(--toki-shadow-soft);
+  transition:
+    border-color var(--toki-transition),
+    color var(--toki-transition),
+    background var(--toki-transition),
+    transform var(--toki-transition);
+}
+
+.toki-theme-toggle:hover {
+  border-color: var(--toki-accent-strong);
+  color: var(--toki-accent);
+  transform: translateY(-1px);
+}
+
+.toki-theme-toggle:focus-visible {
+  outline: none;
+  border-color: var(--toki-accent);
+  box-shadow: 0 0 0 3px var(--toki-accent-ring);
 }
 
 .toki-intro {
@@ -134,7 +232,7 @@ button {
   gap: 12px;
   padding: 12px 0;
   margin-bottom: 20px;
-  background: linear-gradient(to bottom, var(--toki-bg) 70%, rgba(14, 17, 22, 0));
+  background: linear-gradient(to bottom, var(--toki-bg) 70%, transparent);
 }
 
 .toki-progress__track {
@@ -249,7 +347,7 @@ button {
 
 .toki-block__content strong {
   font-weight: 700;
-  color: #f0f6fc;
+  color: var(--toki-text-strong);
 }
 
 .toki-block__content em {
@@ -280,7 +378,7 @@ button {
   margin: 0.9em 0;
   padding: 14px 16px;
   border-radius: var(--toki-radius-sm);
-  background: #0b0e13;
+  background: var(--toki-code-bg);
   border: 1px solid var(--toki-border);
   overflow-x: auto;
 }
@@ -314,12 +412,12 @@ button {
 
 .toki-block__content thead th {
   background: var(--toki-surface-raised);
-  color: #f0f6fc;
+  color: var(--toki-text-strong);
   font-weight: 700;
 }
 
 .toki-block__content tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--toki-zebra);
 }
 
 /* blockquote -> left accent border, muted text */
@@ -516,13 +614,13 @@ button {
   position: sticky;
   top: 0;
   background: var(--toki-surface-raised);
-  color: #f0f6fc;
+  color: var(--toki-text-strong);
   font-weight: 700;
   white-space: nowrap;
 }
 
 .toki-table tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--toki-zebra);
 }
 
 /* Selectable cell — the shared ::selection accent applies as-is. */
@@ -627,7 +725,7 @@ button {
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--toki-chip-x-bg);
   color: var(--toki-text-muted);
   font-size: 0.8rem;
   line-height: 1;
@@ -638,7 +736,7 @@ button {
 
 .toki-quote-chip__x:hover {
   background: var(--toki-danger);
-  color: #fff;
+  color: var(--toki-danger-contrast);
 }
 
 /* ==========================================================================
@@ -688,8 +786,8 @@ button {
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  color: var(--toki-text);
+  background: var(--toki-img-x-bg);
+  color: #fff;
   font-size: 0.78rem;
   line-height: 1;
   transition:
@@ -699,7 +797,7 @@ button {
 
 .toki-img-chip__x:hover {
   background: var(--toki-danger);
-  color: #fff;
+  color: var(--toki-danger-contrast);
 }
 
 /* Compact thumbnails inside a table answer cell. */
@@ -1086,6 +1184,10 @@ button {
 @media (max-width: 720px) {
   .toki-header {
     padding-top: 28px;
+  }
+
+  .toki-theme-toggle {
+    top: 24px;
   }
 
   .toki-title {

@@ -164,6 +164,81 @@
   const expandInput = byId('toki-expand-input');
   const doneEl = byId('toki-done');
   const bar = document.querySelector('.toki-bar');
+  const themeToggle = byId('toki-theme-toggle');
+
+  // --------------------------------------------------------------------------
+  // THEME (light / dark) — persisted, no-flash, localStorage-guarded
+  // --------------------------------------------------------------------------
+
+  /** localStorage key holding 'light' | 'dark'. */
+  const THEME_STORAGE_KEY = 'toki-theme';
+  /** In-memory fallback when localStorage is unavailable (private mode, etc.). */
+  let themeMemory = null;
+  /** Current applied theme ('light' | 'dark'); dark is the default. */
+  let currentTheme = 'dark';
+
+  /** Read the stored theme, tolerating a throwing/absent localStorage. */
+  function readStoredTheme() {
+    try {
+      const value = window.localStorage.getItem(THEME_STORAGE_KEY);
+      if (value === 'light' || value === 'dark') {
+        return value;
+      }
+    }
+    catch {
+      // localStorage blocked — fall back to the in-memory value.
+    }
+    return themeMemory;
+  }
+
+  /** Persist the theme, tolerating a throwing/absent localStorage. */
+  function writeStoredTheme(theme) {
+    themeMemory = theme;
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    }
+    catch {
+      // localStorage blocked — the in-memory value still carries the session.
+    }
+  }
+
+  /**
+   * Resolve the initial theme: an explicit stored choice, else the dark default.
+   * WokiToki is dark-branded, so dark is the hard default regardless of the OS
+   * preference — the user opts into light via the header toggle (and it sticks).
+   */
+  function resolveInitialTheme() {
+    const stored = readStoredTheme();
+    return stored === 'light' ? 'light' : 'dark';
+  }
+
+  /**
+   * Apply `theme` to the document: light sets `data-theme="light"` on <html>,
+   * dark removes the attribute (so the default :root tokens apply). Also keeps
+   * the toggle's glyph / aria-pressed in sync.
+   */
+  function applyTheme(theme) {
+    currentTheme = theme === 'light' ? 'light' : 'dark';
+    const root = document.documentElement;
+    if (currentTheme === 'light') {
+      root.dataset.theme = 'light';
+    }
+    else {
+      delete root.dataset.theme;
+    }
+    if (themeToggle) {
+      const isLight = currentTheme === 'light';
+      // Show the glyph for the theme you'd switch TO.
+      themeToggle.textContent = isLight ? '☀' : '☾'; // ☀ when light, ☾ when dark
+      themeToggle.setAttribute('aria-pressed', isLight ? 'true' : 'false');
+    }
+  }
+
+  function toggleTheme() {
+    const next = currentTheme === 'light' ? 'dark' : 'light';
+    applyTheme(next);
+    writeStoredTheme(next);
+  }
 
   // --------------------------------------------------------------------------
   // A. BUILD INTERACTIVE PARTS
@@ -1105,6 +1180,10 @@
       });
     }
 
+    if (themeToggle) {
+      themeToggle.addEventListener('click', toggleTheme);
+    }
+
     if (expandInput) {
       expandInput.addEventListener('input', () => {
         const blockId = currentExpandBlockId;
@@ -1158,6 +1237,8 @@
   // --------------------------------------------------------------------------
 
   function init() {
+    // Apply the theme FIRST so there is no dark->light flash on a light choice.
+    applyTheme(resolveInitialTheme());
     for (const block of blocks) {
       if (state[block.id]) {
         buildBlock(block);

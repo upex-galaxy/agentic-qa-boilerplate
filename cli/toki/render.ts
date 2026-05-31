@@ -155,6 +155,7 @@ export function render(spec: NormalizedSpec, submitToken: string): string {
 <body>
   <main id="toki-app">
     <header class="toki-header">
+      <button type="button" class="toki-theme-toggle" id="toki-theme-toggle" aria-label="Toggle light/dark theme" aria-pressed="false" title="Toggle light/dark theme"></button>
       <h1 class="toki-title">${title}</h1>${intro ? `\n      ${intro}` : ''}
     </header>
     <div class="toki-progress" id="toki-progress" role="status" aria-live="polite">
