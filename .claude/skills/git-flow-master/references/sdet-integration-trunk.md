@@ -213,6 +213,31 @@ The TMS lifecycle runs **per ticket**, anchored to the ticket-branch PR — not 
 
 ---
 
+## Resume — the Git Ledger in `progress.md`
+
+A suite spans many ticket branches and multiple `/test-automation` invocations. A resuming session (different agent, new context, or after a compaction) must know **how the trunk was left** without re-deriving it from `git log`. That state is persisted append-only in the suite's `progress.md` `git:` field — the **Git Ledger** (schema in `agentic-qa-core/references/session-management.md` §7).
+
+**Who writes it**: the orchestrator, at every branch action in the per-ticket loop — never a subagent, never by rewriting. Append a new phase entry with a fresh `git:` line; the latest one in the tail is the current truth.
+
+**When to append a `git:` line** (each is one snapshot):
+
+- Trunk created off `main` (suite start) → `trunk test/<module>-e2e@<sha> | pending: <KEY..KEY> | sync-gate: no | final-PR: none`
+- Ticket merged `--no-ff` into the trunk → `trunk …@<new-sha> | merged test/{KEY} --no-ff | pending: <remaining KEYs> | …`
+- Plus Branch merged → `… | merged chore/<desc> --no-ff | …`
+- Sync gate run (`git merge origin/main`) → `… | sync-gate: done | …`
+- Final PR opened → `… | final-PR: #NN (open)`
+- Final PR merged + trunk deleted → `… | final-PR: #NN merged | trunk deleted`
+
+**Recommended line shape** (append-only — never edit a prior one):
+
+```
+- git: trunk test/monthly-statement-e2e@a1b2c3d | merged test/BK-757 --no-ff | pending: BK-758..BK-761 | sync-gate: no | final-PR: none
+```
+
+**On resume (Phase 0)**: read the tail of `progress.md`, take the **last** `git:` line. It tells the resuming session: the trunk name + tip SHA, which tickets are already merged, which remain, whether the sync gate has run, and whether the final PR is open. From there, continue the per-ticket loop — cut the next pending ticket from the (updated) trunk. This is the reinforcement that keeps the SDET flow on track even if a later session has lost the strategy context.
+
+---
+
 ## Setup checklist (one-time, per suite)
 
 1. Pick the trunk name: `test/<module>-e2e` (e.g. `test/monthly-statement-e2e`).
