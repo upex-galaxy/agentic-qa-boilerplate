@@ -237,20 +237,20 @@ Eight strategies are supported. Each one tells the skill where new branches star
 
 **SDET Gitflow — integration-trunk for chained test-automation suites.** Full runbook: `references/sdet-integration-trunk.md`.
 
-**Shape**: `main` (permanent — holds confirmed, regression-ready tests) + an **ephemeral per-suite integration trunk** named `test/<module>-e2e`. The trunk is the local surrogate-`main` for one test suite: it is created off `main` when the suite starts and deleted after the suite's final PR merges. Each ticket is a `test/{KEY}-{slug}` branch cut from the trunk, PR'd **into the trunk** (not `main`), and merged `--no-ff`. Adjacent non-test work rides **Plus Branches** (`docs/*`, `chore/*`, `fix/*`) that also PR into the trunk. One final reviewed PR promotes `trunk → main`.
+**Shape**: `main` (permanent — holds confirmed, regression-ready tests) + an **ephemeral per-suite integration trunk** named `test/<module>-suite`. The trunk is the local surrogate-`main` for one test suite: it is created off `main` when the suite starts and deleted after the suite's final PR merges. Each ticket is a `test/{KEY}-{slug}` branch cut from the trunk, PR'd **into the trunk** (not `main`), and merged `--no-ff`. Adjacent non-test work rides **Plus Branches** (`docs/*`, `chore/*`, `fix/*`) that also PR into the trunk. One final reviewed PR promotes `trunk → main`.
 
 **Best for**: test-automation repos where a single maintainer (or AI agent) automates multi-ticket suites (a whole module, or a chained ticket-driven scope from `/test-automation`). The defining problem it solves: avoid one giant unreviewable PR, avoid one tiny PR per ticket paying `main`'s ruleset tax, and keep the final diff clean.
 
 **Detection signals**:
 
 - `<!-- git-flow-master:strategy:sdet -->` marker in `CLAUDE.md` (primary — this strategy is opt-in, never silently auto-detected).
-- A long-lived-for-the-suite `test/<module>-e2e` trunk + multiple `test/{KEY}-*` ticket PRs targeting it (not `main`).
+- A long-lived-for-the-suite `test/<module>-suite` trunk + multiple `test/{KEY}-*` ticket PRs targeting it (not `main`).
 - A QA/test-automation boilerplate repo (KATA, Playwright, `/test-automation` skill present).
 
 **Source branch for new work**:
 
 - `test/{KEY}-{slug}` ticket branches → cut from the **integration trunk** (never from the previous ticket branch).
-- The trunk `test/<module>-e2e` itself → cut from `main` on demand when a suite begins (NOT at Strategy Setup time).
+- The trunk `test/<module>-suite` itself → cut from `main` on demand when a suite begins (NOT at Strategy Setup time).
 - Plus Branches (`docs/*`, `chore/*`, `fix/*`) → cut from the trunk, carry adjacent non-test work.
 
 **PR base**:
@@ -273,7 +273,7 @@ Eight strategies are supported. Each one tells the skill where new branches star
 <!-- git-flow-master:feature-merge:merge-commit -->
 ```
 
-`feature-merge` is fixed at `merge-commit` (`--no-ff`) — it is a defining property, not a questionnaire answer. `integration-branch` is NOT persisted (the trunk is ephemeral per-suite, named `test/<module>-e2e` at suite start). `promote-method` / `hotfix-policy` do not apply (no production deploy; `main` is the confirmed-tests branch).
+`feature-merge` is fixed at `merge-commit` (`--no-ff`) — it is a defining property, not a questionnaire answer. `integration-branch` is NOT persisted (the trunk is ephemeral per-suite, named `test/<module>-suite` at suite start). `promote-method` / `hotfix-policy` do not apply (no production deploy; `main` is the confirmed-tests branch).
 
 **Trade-offs**:
 
@@ -315,7 +315,7 @@ The combined detection runs in this order. Stop at the first definitive answer.
 Note on `sdet`: it is **opt-in only** — never inferred silently from layout. It is
 resolved from the marker (step 1) or chosen explicitly in the fallback (step 5). On a
 test-automation repo (KATA / Playwright / `/test-automation`), surface it as the
-recommended option in the fallback list. A live `test/<module>-e2e` trunk with
+recommended option in the fallback list. A live `test/<module>-suite` trunk with
 `test/{KEY}-*` PRs targeting it confirms an already-active `sdet` suite.
 ```
 
@@ -690,7 +690,7 @@ Hotfix flow:
 
 - **(a) Markers**: `strategy:sdet` + `feature-merge:merge-commit` (fixed). NO `integration-branch` marker (trunk is ephemeral per-suite). NO `promote-method` / `hotfix-policy` (no production deploy).
 - **(b) Invariant**: none. `main` holds confirmed tests, not a deployed app; there is no ancestor invariant.
-- **(c) Branch table**: `main` + the trunk pattern `test/<module>-e2e` + `test/{KEY}-*` ticket branches + Plus Branches (`docs/*`/`chore/*`/`fix/*`).
+- **(c) Branch table**: `main` + the trunk pattern `test/<module>-suite` + `test/{KEY}-*` ticket branches + Plus Branches (`docs/*`/`chore/*`/`fix/*`).
 - **(d)**: ticket/Plus → trunk is `--no-ff` (fixed); the sync gate + single final `trunk → main` PR replace any promotion/hotfix block. Point to `references/sdet-integration-trunk.md` for the per-ticket loop, CI-fallback clause, and sync gate.
 
 Example shape:
@@ -702,14 +702,14 @@ Example shape:
 <!-- git-flow-master:feature-merge:merge-commit -->
 
 This project uses the `sdet` (SDET Gitflow) flow. `main` holds confirmed, regression-ready
-tests. Each test suite runs on an ephemeral integration trunk `test/<module>-e2e` (created
+tests. Each test suite runs on an ephemeral integration trunk `test/<module>-suite` (created
 off `main`, deleted after the suite merges). Tickets chain through the trunk; one final
 reviewed PR promotes the suite to `main`. Full runbook: `.claude/skills/git-flow-master/references/sdet-integration-trunk.md`.
 
 | Branch              | Role                                                                  |
 | ------------------- | --------------------------------------------------------------------- |
 | main                | Confirmed tests. Only the final suite PR (reviewed, green CI) lands.   |
-| test/<module>-e2e   | Ephemeral per-suite integration trunk. Surrogate-main for the suite.  |
+| test/<module>-suite   | Ephemeral per-suite integration trunk. Surrogate-main for the suite.  |
 | test/{KEY}-{slug}   | Ticket branch. Cut from the trunk; PR → trunk; merged --no-ff.        |
 | docs/* chore/* fix/*| Plus Branches. Adjacent non-test work; PR → trunk like tickets.       |
 
@@ -719,12 +719,12 @@ Merge methods (decided, do not improvise):
 | trunk → main (final PR)     | Repo merge setting (prefer merge-commit)        |
 
 Per-suite flow:
-  git checkout -b test/<module>-e2e main && git push -u origin test/<module>-e2e   # start suite
+  git checkout -b test/<module>-suite main && git push -u origin test/<module>-suite   # start suite
   # per ticket: cut from trunk → local PASS on local AND staging → push → Sanity CI
   #             → PR into trunk → review → merge --no-ff → next ticket from updated trunk
-  git checkout test/<module>-e2e && git merge origin/main          # sync gate before final PR
+  git checkout test/<module>-suite && git merge origin/main          # sync gate before final PR
   # final PR trunk → main (only PR facing rulesets; genuinely green, no CI-fallback)
-  git push origin --delete test/<module>-e2e                       # after merge
+  git push origin --delete test/<module>-suite                       # after merge
 
 CI-fallback clause (trunk merges only, never the final PR): a Sanity-CI red that is purely
 infra/known-flake — proven by a local pass on BOTH local and staging AND the red existing

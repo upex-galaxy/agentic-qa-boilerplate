@@ -84,7 +84,7 @@ Do not pad sections. Empty sections invite skim-reads.
 | `gitflow`          | `develop` for `feature/*`; `main` for `release/*` and `hotfix/*` | Release PRs back-merge to `develop` after merging to `main`.    |
 | `github-flow`      | `main`                                                           | Always.                                                         |
 | `gitlab-flow`      | `main`                                                           | Promotion MRs target `pre-production`, then `production`.       |
-| `sdet`             | integration trunk `test/<module>-e2e` for `test/{KEY}-*` + Plus Branches | The single final suite PR targets `main` (after the sync gate). Use the `pr-test-automation.md` body for the final PR. See `sdet-integration-trunk.md`. |
+| `sdet`             | integration trunk `test/<module>-suite` for `test/{KEY}-*` + Plus Branches | The single final suite PR targets `main` (after the sync gate). Use the `pr-test-automation.md` body for the final PR. See `sdet-integration-trunk.md`. |
 
 The user can override with `--base X` in arguments. When overridden, surface it in the confirmation:
 
