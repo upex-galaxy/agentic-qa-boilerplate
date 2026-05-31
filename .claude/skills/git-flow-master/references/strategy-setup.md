@@ -46,6 +46,16 @@ Run after the strategy slug is resolved (Step 2). Ask the questions in order. Fo
 
 > The defaults (ff-only / merge-commit / branch-off-prod-backmerge) are the `main-integration` worked-example choices. They are DEFAULTS. Always present them as overridable, never auto-select without showing the alternatives.
 
+### `sdet` — questionnaire is mostly pre-answered
+
+`sdet` does not run the open questionnaire. Its answers are fixed by the strategy's definition:
+
+- **Q1 (promotion)** — n/a. There is no production deploy; `main` holds confirmed tests. The final `trunk → main` PR follows the **repo's allowed merge method** (prefer merge-commit to preserve the multi-branch look; squash collapses the suite). Do NOT write a `promote-method` marker.
+- **Q2 (work-branch merge)** — **fixed at `merge-commit` (`--no-ff`)**, write `feature-merge:merge-commit`. Never offer squash/rebase: preserving per-ticket history is a defining property of `sdet`.
+- **Q3 (hotfix)** — n/a. Write no `hotfix-policy` marker.
+
+So Strategy Setup for `sdet` writes exactly two markers (`strategy:sdet` + `feature-merge:merge-commit`), materializes nothing extra at setup (the trunk is per-suite, created on demand by the Branch operation), and renders the `sdet` runbook block. The full per-suite operational detail lives in `references/sdet-integration-trunk.md`, not in the rendered `CLAUDE.md` block.
+
 ---
 
 ## 2. Materialization table — what to ensure per strategy
@@ -61,6 +71,7 @@ For the resolved strategy, ensure the long-lived branches in this table exist. *
 | `gitflow`          | `main` + `develop`                                                              | `develop` (hotfix off `main`, release off `develop`) | `release/*` → `main` (+ back-merge to `develop`) | `main`            |
 | `github-flow`      | `main` only                                                                     | `main`                                        | n/a (PR → `main`)                               | `main`            |
 | `gitlab-flow`      | `main` + env branches (`pre-production`, `production`)                           | `main`                                        | `main` → `pre-production` → `production`        | `production`      |
+| `sdet`             | `main` only (the integration trunk `test/<module>-e2e` is ephemeral per-suite — created on demand by the Branch operation, NOT at setup) | integration trunk (per suite)                 | trunk → `main` (single final PR, per suite)     | `main`            |
 
 **Branch-creation rules**:
 
@@ -69,6 +80,7 @@ For the resolved strategy, ensure the long-lived branches in this table exist. *
 - `gitflow`: ensure `develop` (create off `main` if missing); do not create `release/*` / `hotfix/*` at setup.
 - `gitlab-flow`: ensure `pre-production` and `production` (create off `main` in pipeline order if missing).
 - `enterprise`: ensure integration off `main`; `release/*` / `feature/*` are on-demand only.
+- `sdet`: ensure `main` only at setup — create NO integration branch. The per-suite trunk `test/<module>-e2e` is created off `main` by the Branch operation when a suite starts and deleted after the final PR; it is never materialized at Strategy Setup time and is never ff-synced (it carries `--no-ff` merge commits by design).
 
 Always **propose** each branch creation (which branch, off what, why) and wait for OK. Never `git checkout -b` / `git branch` silently.
 
