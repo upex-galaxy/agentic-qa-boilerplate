@@ -76,3 +76,11 @@ docs/mcp/
 .auth/
 .playwright/
 !.playwright/cli.config.json
+
+# ===========================================
+# Git worktrees - another branch's checkout, not this tree
+# ===========================================
+# A git worktree placed under .claude/worktrees/ is a separate branch's full
+# checkout. Prettier (which honors only .prettierignore, not .git metadata)
+# would otherwise recurse into it and flag formatting on files we don't own here.
+.claude/worktrees/
