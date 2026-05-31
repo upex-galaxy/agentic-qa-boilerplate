@@ -63,7 +63,14 @@ required:
     name: Scope ⛳
     type: string
     fallback: { target: comment, label: Scope }
-    description: In-scope / out-of-scope notes captured at story-grooming time.
+    description: In-scope items only — what the story IS expected to deliver. Exclusions live in the separate `out_of_scope` field.
+    used_by: [sync-jira-issues]
+
+  out_of_scope:
+    name: 🏴 Out Of Scope
+    type: string
+    fallback: { target: comment, label: Out Of Scope }
+    description: Explicit exclusions from the story scope — what this story is NOT going to deliver. Complementary to `scope`.
     used_by: [sync-jira-issues]
 
   mockup:
