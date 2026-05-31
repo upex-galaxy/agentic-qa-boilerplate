@@ -1014,9 +1014,9 @@ const EPIC_FIELD_FILES: FieldFileSpec[] = [
 ];
 
 /**
- * Writes a per-field Markdown file. Unlike `writeIfNotProtected`, this ALWAYS
- * writes (bypasses the protected-file guard) because it is only ever called when
- * the Jira field has content — Jira is the source of truth for these fields.
+ * Writes a per-field Markdown file. Always overwrites — Jira is the source of
+ * truth for these fields and no file is protected; this is only ever called when
+ * the Jira field has content.
  */
 function writeFieldFile(
   filePath: string,
@@ -1063,7 +1063,7 @@ function renderFieldStub(
   return [
     `# ${issueKey} — ${spec.title}`,
     '',
-    `> ⚠️ The Jira custom field for \`${spec.key}\` is **not configured** in this Jira instance.`,
+    `> ⚠️ The Jira custom field for \`${spec.title}\` is **not configured** in this Jira instance.`,
     '> Per the methodology fallback, this field\'s content lives in the issue\'s comments or description.',
     `> Re-sync with \`--include-comments\` and read \`comments.md\`, or [View in Jira](${config.baseUrl}/browse/${issueKey}).`,
     '',
