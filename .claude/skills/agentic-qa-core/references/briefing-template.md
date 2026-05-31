@@ -135,12 +135,12 @@ In `test-automation`, the three stages have a strict data dependency: Code reads
 Stage 1 — Plan agent
 ============================
 
-Goal: Produce a feature-level test plan and an implementation plan for ticket <<ISSUE_KEY>> under .context/PBI/<<MODULE>>/<<ISSUE_KEY>>-<<SLUG>>/.
+Goal: Produce a feature-level test plan and an implementation plan for ticket <<ISSUE_KEY>> under .context/PBI/epics/EPIC-<<EPIC_KEY>>-<<EPIC_SLUG>>/stories/STORY-<<ISSUE_KEY>>-<<SLUG>>/.
 
 Context docs:
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/master-test-plan.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/PBI/<<MODULE>>/module-context.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/PBI/<<MODULE>>/test-specs/ROADMAP.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/PBI/epics/EPIC-<<EPIC_KEY>>-<<EPIC_SLUG>>/module-context.md
+  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/PBI/epics/EPIC-<<EPIC_KEY>>-<<EPIC_SLUG>>/test-specs/ROADMAP.md
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/tests/components/TestFixture.ts
   - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/test-automation/references/planning-playbook.md
 
@@ -151,12 +151,12 @@ Exact instructions:
   2. Read every doc in Context docs above.
   3. Determine fixture type per the rules in planning-playbook.md (api / ui / hybrid).
   4. List ATCs needed (one per equivalence partition).
-  5. Write spec.md (test-level plan) and implementation-plan.md (code-level plan) into the PBI folder.
+  5. Write spec.md (test-level plan) and automation-plan.md (code-level plan) into the EPIC-level test-specs/<ID>/ folder.
   6. List the existing API/UI components that already cover any of these ATCs (no duplicates).
 
 Report format:
   - specPath: absolute path to spec.md
-  - implementationPlanPath: absolute path to implementation-plan.md
+  - automationPlanPath: absolute path to automation-plan.md
   - atcsListed: [{ id, name, fixture, equivalencePartition }]
   - reusedComponents: [{ path, atcsCovered }]
   - openQuestions: [...]

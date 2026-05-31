@@ -205,7 +205,7 @@ model with unit tests; UI uses the existing table-action slot.
 
 ## Evidence
 
-See `.context/PBI/users/UPEX-123-bulk-assign/evidence/` for the design
+See `.context/PBI/epics/EPIC-UPEX-100-<epic-slug>/stories/STORY-UPEX-123-bulk-assign/evidence/` for the design
 walkthrough screenshots.
 
 ## Risk

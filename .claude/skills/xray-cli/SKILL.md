@@ -139,7 +139,7 @@ bun xray run defect --id <runId> --issues DEMO-456,DEMO-789
 # Attach evidence files (PNG/JPG/PDF/log/JSON/...) to a run
 bun xray run evidence --id <runId> --file ./screenshots/error.png
 bun xray run evidence --id <runId> --file a.png --file b.png --file c.png
-bun xray run evidence --id <runId> --dir ./.context/PBI/{{PROJECT_KEY}}-8/evidence/
+bun xray run evidence --id <runId> --dir ./.context/PBI/epics/EPIC-{{PROJECT_KEY}}-100-<epic-slug>/stories/STORY-{{PROJECT_KEY}}-8-<slug>/evidence/
 
 # Attach evidence to a specific step within a run
 bun xray run step-evidence --run <runId> --step <stepId> --file step3.png
