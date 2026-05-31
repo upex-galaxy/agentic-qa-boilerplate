@@ -71,7 +71,7 @@ For the resolved strategy, ensure the long-lived branches in this table exist. *
 | `gitflow`          | `main` + `develop`                                                              | `develop` (hotfix off `main`, release off `develop`) | `release/*` → `main` (+ back-merge to `develop`) | `main`            |
 | `github-flow`      | `main` only                                                                     | `main`                                        | n/a (PR → `main`)                               | `main`            |
 | `gitlab-flow`      | `main` + env branches (`pre-production`, `production`)                           | `main`                                        | `main` → `pre-production` → `production`        | `production`      |
-| `sdet`             | `main` only (the integration trunk `test/<module>-e2e` is ephemeral per-suite — created on demand by the Branch operation, NOT at setup) | integration trunk (per suite)                 | trunk → `main` (single final PR, per suite)     | `main`            |
+| `sdet`             | `main` only (the integration trunk `test/<module>-suite` is ephemeral per-suite — created on demand by the Branch operation, NOT at setup) | integration trunk (per suite)                 | trunk → `main` (single final PR, per suite)     | `main`            |
 
 **Branch-creation rules**:
 
@@ -80,7 +80,7 @@ For the resolved strategy, ensure the long-lived branches in this table exist. *
 - `gitflow`: ensure `develop` (create off `main` if missing); do not create `release/*` / `hotfix/*` at setup.
 - `gitlab-flow`: ensure `pre-production` and `production` (create off `main` in pipeline order if missing).
 - `enterprise`: ensure integration off `main`; `release/*` / `feature/*` are on-demand only.
-- `sdet`: ensure `main` only at setup — create NO integration branch. The per-suite trunk `test/<module>-e2e` is created off `main` by the Branch operation when a suite starts and deleted after the final PR; it is never materialized at Strategy Setup time and is never ff-synced (it carries `--no-ff` merge commits by design).
+- `sdet`: ensure `main` only at setup — create NO integration branch. The per-suite trunk `test/<module>-suite` is created off `main` by the Branch operation when a suite starts and deleted after the final PR; it is never materialized at Strategy Setup time and is never ff-synced (it carries `--no-ff` merge commits by design).
 
 Always **propose** each branch creation (which branch, off what, why) and wait for OK. Never `git checkout -b` / `git branch` silently.
 

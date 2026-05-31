@@ -98,7 +98,7 @@ The skill supports eight strategies (see `references/branching-strategies.md` fo
 | `gitflow`          | Vincent Driessen's classic. `main` (releases) + `develop` (integration) + `feature/*` + `release/*` + `hotfix/*`. Heavyweight; mostly legacy.    |
 | `github-flow`      | `main` always deployable. `feature/*` branches → PR → merge → deploy. No staging/develop branch.                                                 |
 | `gitlab-flow`      | GitHub Flow + environment branches (`pre-production`, `production`) to model deployment promotion.                                               |
-| `sdet`             | SDET Gitflow. `main` (confirmed tests) + ephemeral per-suite integration trunk `test/<module>-e2e`. Test tickets chain through the trunk (`--no-ff`); one final PR → `main`. For chained test-automation suites. Opt-in; see `references/sdet-integration-trunk.md`. |
+| `sdet`             | SDET Gitflow. `main` (confirmed tests) + ephemeral per-suite integration trunk `test/<module>-suite`. Test tickets chain through the trunk (`--no-ff`); one final PR → `main`. For chained test-automation suites. Opt-in; see `references/sdet-integration-trunk.md`. |
 
 ### Detection algorithm
 
@@ -109,7 +109,7 @@ Apply in order; stop at the first definitive answer:
 3. **Two-branch heuristic** — exactly `main` (or `master`) + one of `{staging, dev, develop, integration}` exists upstream → `main-integration` (record the integration branch name).
 4. **Multi-branch heuristic** — `main` + integration + active `feature/*` or `release/*` branches in `git branch -a` → `enterprise`.
 5. **Project hints** — look for `.gitlab-ci.yml` (suggests `gitlab-flow`), `release/*` and `hotfix/*` long-lived branches (suggests `gitflow`).
-6. **Fallback** — ask the user. Show the options with one-line descriptions; mirror their language. Do NOT pick silently. On a test-automation repo (KATA / Playwright / `/test-automation`), surface `sdet` as the recommended option. `sdet` is opt-in only — never inferred silently from layout; a live `test/<module>-e2e` trunk with `test/{KEY}-*` PRs targeting it confirms an already-active `sdet` suite.
+6. **Fallback** — ask the user. Show the options with one-line descriptions; mirror their language. Do NOT pick silently. On a test-automation repo (KATA / Playwright / `/test-automation`), surface `sdet` as the recommended option. `sdet` is opt-in only — never inferred silently from layout; a live `test/<module>-suite` trunk with `test/{KEY}-*` PRs targeting it confirms an already-active `sdet` suite.
 
 ### Persist the decision
 
@@ -189,7 +189,7 @@ In a QA repo most work lands as `test/`, `fix/`, or `chore/` branches. Feature b
 - `main-integration`, `gitlab-flow` → branch off the integration branch (`staging` / `dev` / equivalent).
 - `enterprise` → branch off the integration branch unless it is a `hotfix/*`, which branches off `main`.
 - `gitflow` → `feature/*` branches off `develop`; `hotfix/*` off `main`; `release/*` off `develop`.
-- `sdet` → `test/{KEY}-*` ticket branches + Plus Branches (`docs/*`/`chore/*`/`fix/*`) branch off the **ephemeral integration trunk** `test/<module>-e2e`; the trunk itself is cut from `main` on demand when a suite begins. Never stack a ticket on the previous ticket branch. See `references/sdet-integration-trunk.md`.
+- `sdet` → `test/{KEY}-*` ticket branches + Plus Branches (`docs/*`/`chore/*`/`fix/*`) branch off the **ephemeral integration trunk** `test/<module>-suite`; the trunk itself is cut from `main` on demand when a suite begins. Never stack a ticket on the previous ticket branch. See `references/sdet-integration-trunk.md`.
 
 Always **propose** the name and ask for OK before `git checkout -b`. Never create silently.
 
@@ -255,7 +255,7 @@ Ask: _"You are about to push directly to the protected branch `{branch}` in a `{
 | `main-integration`, `gitlab-flow`         | integration branch (e.g. `staging`)                                                              |
 | `enterprise`                              | integration branch; `hotfix/*` → `main`                                                          |
 | `gitflow`                                 | `feature/*` → `develop`; `hotfix/*` → `main`; `release/*` → `main` (and back-merge to `develop`) |
-| `sdet`                                    | `test/{KEY}-*` ticket branches + Plus Branches → the integration trunk `test/<module>-e2e`; the single final suite PR → `main` (after the sync gate). See `references/sdet-integration-trunk.md`. |
+| `sdet`                                    | `test/{KEY}-*` ticket branches + Plus Branches → the integration trunk `test/<module>-suite`; the single final suite PR → `main` (after the sync gate). See `references/sdet-integration-trunk.md`. |
 
 The user can override with `--base X` in arguments. If overridden, surface it in the confirmation: _"PR will target `{base}` instead of the strategy default `{default}`."_
 

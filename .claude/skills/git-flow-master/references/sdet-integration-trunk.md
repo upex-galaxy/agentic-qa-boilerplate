@@ -8,7 +8,7 @@ This file is the heavy runbook behind the `sdet` strategy (catalogue entry in `b
 
 ## TL;DR
 
-- One **integration trunk** acts as the local surrogate-`main` for the whole suite (e.g. `test/monthly-statement-e2e`). It is **ephemeral per suite**: created when the suite starts, deleted after the final PR merges.
+- One **integration trunk** acts as the local surrogate-`main` for the whole suite (e.g. `test/monthly-statement-suite`). It is **ephemeral per suite**: created when the suite starts, deleted after the final PR merges.
 - Each ticket is cut **from the trunk** (never stacked on the previous ticket branch), worked, validated locally on **both `local` and `staging`**, pushed, Sanity-CI'd, PR'd **into the trunk** (not `main`), reviewed, fixed, and merged with **`--no-ff`** (never squash).
 - The next ticket is cut from the **updated trunk** after each merge.
 - Adjacent non-test work (docs / tooling / fixes) is parked in **Plus Branches** inserted between tickets; they PR into the trunk like ticket branches.
@@ -16,6 +16,22 @@ This file is the heavy runbook behind the `sdet` strategy (catalogue entry in `b
 - A single, pre-reviewed PR goes **trunk → main** — the only PR that faces `main`'s rulesets.
 
 The core insight: the integration trunk is a "`main` surrogate" for the suite. "Never go back to `main`" really means "return to the trunk instead, until the very end."
+
+---
+
+## Trunk naming convention
+
+`<module>`, `<KEY>`, `<slug>` in this document are **placeholders** — substitute the real values. Do NOT copy the literal examples (`monthly-statement`, `BK-742`); they only illustrate the shape.
+
+The trunk name derives from the **suite's scope** (the `/test-automation` planning scope that opened it):
+
+| Scope (from `/test-automation`) | Trunk name pattern | Example |
+| --- | --- | --- |
+| **Module-driven** (Macro) — a whole module | `test/<module-slug>-suite` | `test/monthly-statement-suite` |
+| **Ticket-driven** (Medium) — one user story split across several PRs | `test/<STORY-KEY>-<slug>-suite` | `test/BK-742-checkout-suite` |
+| **Regression-driven** (Micro) — a single TC | usually **no trunk** — one `test/{KEY}-{slug}` branch straight to a normal PR; only spin up a trunk if the single TC genuinely fans into multiple chained PRs |
+
+Rule of thumb: the trunk is named after **whatever the suite is about** — a module slug when automating a module, the story key+slug when chaining PRs under one story. The `-suite` suffix is deliberate and scope-neutral: a single trunk collects whatever the chained PRs are — E2E specs, integration specs, or a mix of UI and API ATCs — so `-suite` covers all of them without implying the work is only end-to-end. Keep it lowercase, hyphen-separated, ≤50 chars, and unique per live suite.
 
 ---
 
@@ -27,7 +43,7 @@ The core insight: the integration trunk is a "`main` surrogate" for the suite. "
               │  ① integration trunk = local surrogate-main for the suite
               ▼
    ┌────────────────────────────────────────────────────────────────────────┐
-   │   test/monthly-statement-e2e        ←  INTEGRATION TRUNK (ephemeral)      │
+   │   test/monthly-statement-suite        ←  INTEGRATION TRUNK (ephemeral)      │
    │   created off main + pushed immediately so ticket PRs have a target       │
    └────────────────────────────────────────────────────────────────────────┘
         │
@@ -46,7 +62,7 @@ The core insight: the integration trunk is a "`main` surrogate" for the suite. "
         │
         ▼
    ┌────────────────────────────────────────────────────────────────────────┐
-   │   test/monthly-statement-e2e   (now carries every ticket + plus history)  │
+   │   test/monthly-statement-suite   (now carries every ticket + plus history)  │
    └────────────────────────────────────────────────────────────────────────┘
               │
               │  ④ SYNC GATE: git merge origin/main   (after every upstream PR is on main)
@@ -65,7 +81,7 @@ For each ticket `{KEY}` (the issue key from the TMS, e.g. `{{PROJECT_KEY}}-757`)
 
 ```bash
 # 0. Start from a clean, up-to-date trunk
-git checkout test/<module>-e2e
+git checkout test/<module>-suite
 git pull --ff-only                       # the trunk moves forward only
 
 # 1. Cut the ticket branch FROM the trunk (never from the previous ticket branch)
@@ -85,7 +101,7 @@ git push -u origin test/{KEY}-{slug}
 #    trigger the Sanity/smoke suite via GitHub Actions (/regression-testing, workflow_dispatch)
 
 # 5. PR INTO the trunk (NOT main)
-gh pr create --base test/<module>-e2e --head test/{KEY}-{slug}
+gh pr create --base test/<module>-suite --head test/{KEY}-{slug}
 
 # 6. Review loop
 #    - address Critical + High; triage Low; re-run Sanity after fixes
@@ -140,13 +156,13 @@ A **Plus Branch** is inserted between the end of one ticket and the start of the
 
 ```bash
 # After finishing a ticket, before cutting the next:
-git checkout test/<module>-e2e
+git checkout test/<module>-suite
 git pull --ff-only
 git checkout -b chore/<batch-descriptor>     # or docs/<...>, fix/<...>
 git add <only the adjacent files>            # be surgical — never `git add .`
 git commit -m "chore: <what>"
 git push -u origin chore/<batch-descriptor>
-gh pr create --base test/<module>-e2e ...    # PR into the trunk like the rest
+gh pr create --base test/<module>-suite ...    # PR into the trunk like the rest
 gh pr merge --merge
 ```
 
@@ -172,7 +188,7 @@ Consequences:
 **Mitigation (always applies, regardless of how upstream merged)** — right before opening the final PR, once every upstream PR is on `main`, run inside the trunk:
 
 ```bash
-git checkout test/<module>-e2e
+git checkout test/<module>-suite
 git fetch origin
 git merge origin/main          # merge, NOT rebase (forward-only; no force-push on a pushed branch)
 ```
@@ -194,7 +210,7 @@ This is the **only** PR that must satisfy `main`'s branch protection (required c
 
 Title the final PR after the **suite**, not a single ticket (e.g. `test(monthly-statement): automate E2E suite {KEY1}…{KEYn}`), and list the contained tickets + their TC IDs in the body for TMS traceability. Use the `references/pr-test-automation.md` body structure.
 
-After the final PR merges and CI is green on `main`, delete the trunk (`git push origin --delete test/<module>-e2e`); the next suite starts a fresh trunk.
+After the final PR merges and CI is green on `main`, delete the trunk (`git push origin --delete test/<module>-suite`); the next suite starts a fresh trunk.
 
 ---
 
@@ -221,7 +237,7 @@ A suite spans many ticket branches and multiple `/test-automation` invocations. 
 
 **When to append a `git:` line** (each is one snapshot):
 
-- Trunk created off `main` (suite start) → `trunk test/<module>-e2e@<sha> | pending: <KEY..KEY> | sync-gate: no | final-PR: none`
+- Trunk created off `main` (suite start) → `trunk test/<module>-suite@<sha> | pending: <KEY..KEY> | sync-gate: no | final-PR: none`
 - Ticket merged `--no-ff` into the trunk → `trunk …@<new-sha> | merged test/{KEY} --no-ff | pending: <remaining KEYs> | …`
 - Plus Branch merged → `… | merged chore/<desc> --no-ff | …`
 - Sync gate run (`git merge origin/main`) → `… | sync-gate: done | …`
@@ -231,7 +247,7 @@ A suite spans many ticket branches and multiple `/test-automation` invocations. 
 **Recommended line shape** (append-only — never edit a prior one):
 
 ```
-- git: trunk test/monthly-statement-e2e@a1b2c3d | merged test/BK-757 --no-ff | pending: BK-758..BK-761 | sync-gate: no | final-PR: none
+- git: trunk test/monthly-statement-suite@a1b2c3d | merged test/BK-757 --no-ff | pending: BK-758..BK-761 | sync-gate: no | final-PR: none
 ```
 
 **On resume (Phase 0)**: read the tail of `progress.md`, take the **last** `git:` line. It tells the resuming session: the trunk name + tip SHA, which tickets are already merged, which remain, whether the sync gate has run, and whether the final PR is open. From there, continue the per-ticket loop — cut the next pending ticket from the (updated) trunk. This is the reinforcement that keeps the SDET flow on track even if a later session has lost the strategy context.
@@ -240,7 +256,7 @@ A suite spans many ticket branches and multiple `/test-automation` invocations. 
 
 ## Setup checklist (one-time, per suite)
 
-1. Pick the trunk name: `test/<module>-e2e` (e.g. `test/monthly-statement-e2e`).
+1. Pick the trunk name: `test/<module>-suite` (e.g. `test/monthly-statement-suite`).
 2. Cut it off `main` and push it so ticket PRs have a target. (The Branch operation does this on demand — the trunk is NOT created by Strategy Setup.)
 3. Confirm any prerequisite upstream PRs the trunk base already contains are queued to merge to `main` so the sync gate can later cancel them.
 4. Park current adjacent uncommitted work for a later Plus Branch (or `git stash` it) — keep it out of ticket branches.

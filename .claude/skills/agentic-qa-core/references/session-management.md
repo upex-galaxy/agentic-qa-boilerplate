@@ -197,7 +197,7 @@ For a chained test-automation suite running the `sdet` strategy (`.claude/skills
 Each ledger line is one append-only snapshot at a phase boundary or branch action. Recommended shape:
 
 ```
-- git: trunk <test/<module>-e2e>@<short-sha> | merged <test/{KEY}> --no-ff | pending: <KEY..KEY> | sync-gate: <no|done> | final-PR: <none|#NN>
+- git: trunk <test/<module>-suite>@<short-sha> | merged <test/{KEY}> --no-ff | pending: <KEY..KEY> | sync-gate: <no|done> | final-PR: <none|#NN>
 ```
 
 Because the field is append-only like every other line, the **latest** `git:` entry in the tail is the current truth; earlier ones are history. Never rewrite a prior `git:` line — append a new phase entry. This is the resume signal for "how did the SDET branches end up?" that the strategy depends on (reinforces it even if a later session forgets the flow).
