@@ -4,8 +4,8 @@
  * Server-renders the static shell (the exact class/id contract shared with
  * `ui/app.css` and `ui/app.js`) plus each block's markdown content, so text
  * nodes are stable for highlight-to-quote anchoring. `ui/app.js` then builds
- * the interactive parts (controls, textarea, quote chips, drawer, validation,
- * submit) at runtime from `window.__TOKI__`.
+ * the interactive parts (controls, textarea, quote chips, expand panel,
+ * validation, submit) at runtime from `window.__TOKI__`.
  *
  * Synchronous by contract: `server.ts` calls `opts.render(spec)` synchronously
  * to produce the page served on `GET /`. The two vanilla UI assets are read
@@ -121,13 +121,21 @@ ${sections}
       <span class="toki-bar__remaining" id="toki-remaining"></span>
       <button type="button" class="toki-bar__submit" id="toki-submit" disabled>${submitLabel}</button>
     </footer>
-    <aside class="toki-drawer" id="toki-drawer" hidden aria-hidden="true">
-      <div class="toki-drawer__scrim" id="toki-drawer-scrim"></div>
-      <div class="toki-drawer__panel" role="dialog" aria-label="Reference">
-        <button type="button" class="toki-drawer__close" id="toki-drawer-close" aria-label="Close reference">close</button>
-        <div class="toki-drawer__content" id="toki-drawer-content"></div>
+    <div class="toki-expand" id="toki-expand" hidden aria-hidden="true">
+      <div class="toki-expand__backdrop" id="toki-expand-backdrop"></div>
+      <div class="toki-expand__panel" role="dialog" aria-modal="true" aria-label="Write your response">
+        <header class="toki-expand__head">
+          <span class="toki-expand__title" id="toki-expand-title">Your response</span>
+          <button type="button" class="toki-expand__close" id="toki-expand-close" aria-label="Close">close</button>
+        </header>
+        <details class="toki-expand__ref" id="toki-expand-ref">
+          <summary class="toki-expand__ref-summary">Reference</summary>
+          <div class="toki-expand__ref-content" id="toki-expand-ref-content"></div>
+        </details>
+        <div class="toki-expand__quotes" id="toki-expand-quotes"></div>
+        <textarea class="toki-expand__input" id="toki-expand-input" rows="10"></textarea>
       </div>
-    </aside>
+    </div>
     <button type="button" class="toki-quote-btn" id="toki-quote-btn" hidden>quote</button>
     <div class="toki-done" id="toki-done" hidden>Submitted. You can close this tab.</div>
   </main>

@@ -7,7 +7,7 @@
  * contract shared with render.ts (static shell) and app.js (interactive parts).
  *
  * State classes added beyond the DOM contract (app.js toggles these):
- *   .is-open    on #toki-drawer  -> drives the visible drawer/bottom-sheet transform
+ *   .is-open    on #toki-expand  -> fades/scales the expand-to-write panel in
  *   .is-invalid on .toki-text / .toki-controls -> highlights an unsatisfied required field
  *   .is-visible on #toki-quote-btn -> fades/scales the floating quote button in
  */
@@ -544,9 +544,15 @@ button {
   letter-spacing: 0.04em;
 }
 
+/* Textarea + its overlaid expand affordance. */
+.toki-text__field {
+  position: relative;
+  display: flex;
+}
+
 .toki-text__input {
   width: 100%;
-  min-height: 72px;
+  min-height: 96px;
   padding: 12px 14px;
   resize: vertical;
   border-radius: var(--toki-radius-sm);
@@ -555,7 +561,7 @@ button {
   color: var(--toki-text);
   font-family: inherit;
   font-size: 0.98rem;
-  line-height: 1.55;
+  line-height: 1.6;
   transition:
     border-color var(--toki-transition),
     box-shadow var(--toki-transition);
@@ -574,6 +580,34 @@ button {
 
 .toki-text.is-invalid .toki-text__input {
   border-color: var(--toki-danger);
+}
+
+/* Small, subtle "Expand to write" affordance, top-right of the textarea. */
+.toki-text__expand {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 10px;
+  border: 1px solid var(--toki-border);
+  border-radius: var(--toki-radius-pill);
+  background: var(--toki-surface);
+  color: var(--toki-text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.4;
+  opacity: 0.75;
+  transition:
+    border-color var(--toki-transition),
+    color var(--toki-transition),
+    opacity var(--toki-transition);
+}
+
+.toki-text__expand:hover,
+.toki-text__expand:focus-visible {
+  border-color: var(--toki-accent-strong);
+  color: var(--toki-accent);
+  opacity: 1;
+  outline: none;
 }
 
 /* ==========================================================================
@@ -635,59 +669,82 @@ button {
 }
 
 /* ==========================================================================
-   Reference drawer (side drawer desktop / bottom sheet mobile)
+   Expand-to-write panel (centered floating writing surface)
+
+   Deliberately NON-darkening: the backdrop carries no black scrim (the dimmed
+   full-screen overlay was the #1 complaint about the old drawer), only a faint
+   blur so the page reads as "behind" without losing brightness.
    ========================================================================== */
 
-.toki-drawer {
+.toki-expand {
   position: fixed;
   inset: 0;
   z-index: 50;
-  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--toki-pad);
 }
 
-.toki-drawer[hidden] {
+.toki-expand[hidden] {
   display: none;
 }
 
-.toki-drawer__scrim {
+.toki-expand__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: transparent;
   opacity: 0;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   transition: opacity var(--toki-transition);
 }
 
-.toki-drawer.is-open {
-  pointer-events: auto;
-}
-
-.toki-drawer.is-open .toki-drawer__scrim {
+.toki-expand.is-open .toki-expand__backdrop {
   opacity: 1;
 }
 
-.toki-drawer__panel {
-  position: absolute;
-  top: 0;
-  right: 0;
+.toki-expand__panel {
+  position: relative;
   display: flex;
   flex-direction: column;
-  width: min(440px, 90vw);
-  height: 100%;
-  padding: 24px;
+  gap: 14px;
+  width: min(760px, 94vw);
+  max-height: 86vh;
+  padding: 20px 22px 22px;
   background: var(--toki-surface);
-  border-left: 1px solid var(--toki-border);
+  border: 1px solid var(--toki-border);
+  border-radius: var(--toki-radius);
   box-shadow: var(--toki-shadow-lift);
-  transform: translateX(100%);
-  transition: transform var(--toki-transition);
-  overflow-y: auto;
+  opacity: 0;
+  transform: scale(0.98);
+  transition:
+    opacity var(--toki-transition),
+    transform var(--toki-transition);
 }
 
-.toki-drawer.is-open .toki-drawer__panel {
-  transform: translateX(0);
+.toki-expand.is-open .toki-expand__panel {
+  opacity: 1;
+  transform: scale(1);
 }
 
-.toki-drawer__close {
-  align-self: flex-end;
+.toki-expand__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.toki-expand__title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--toki-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.toki-expand__close {
+  flex: none;
   padding: 6px 14px;
   border: 1px solid var(--toki-border);
   border-radius: var(--toki-radius-pill);
@@ -699,18 +756,86 @@ button {
     color var(--toki-transition);
 }
 
-.toki-drawer__close:hover {
+.toki-expand__close:hover {
   border-color: var(--toki-accent-strong);
   color: var(--toki-text);
 }
 
-.toki-drawer__content {
-  margin-top: 16px;
-  font-size: 0.98rem;
+/* Collapsible reference of the block's content. */
+.toki-expand__ref {
+  flex: none;
+  border: 1px solid var(--toki-border);
+  border-radius: var(--toki-radius-sm);
+  background: var(--toki-surface-raised);
 }
 
-.toki-drawer__content > :first-child {
+.toki-expand__ref-summary {
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--toki-text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.toki-expand__ref-summary:hover {
+  color: var(--toki-text);
+}
+
+.toki-expand__ref[open] .toki-expand__ref-summary {
+  border-bottom: 1px solid var(--toki-border);
+}
+
+.toki-expand__ref-content {
+  max-height: 24vh;
+  padding: 12px;
+  overflow-y: auto;
+  font-size: 0.92rem;
+  color: var(--toki-text-muted);
+}
+
+.toki-expand__ref-content > :first-child {
   margin-top: 0;
+}
+
+.toki-expand__ref-content > :last-child {
+  margin-bottom: 0;
+}
+
+/* Read-only quote chip row for the block. */
+.toki-expand__quotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toki-expand__quotes:empty {
+  display: none;
+}
+
+/* The big, comfortable writing surface. */
+.toki-expand__input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 40vh;
+  padding: 14px 16px;
+  resize: vertical;
+  border-radius: var(--toki-radius-sm);
+  border: 1px solid var(--toki-border);
+  background: var(--toki-surface-raised);
+  color: var(--toki-text);
+  font-family: inherit;
+  font-size: 1.02rem;
+  line-height: 1.65;
+  transition:
+    border-color var(--toki-transition),
+    box-shadow var(--toki-transition);
+}
+
+.toki-expand__input:focus {
+  outline: none;
+  border-color: var(--toki-accent);
+  box-shadow: 0 0 0 3px var(--toki-accent-ring);
 }
 
 /* ==========================================================================
@@ -784,23 +909,19 @@ button {
     padding: 18px;
   }
 
-  /* Drawer becomes a bottom sheet sliding up from the bottom. */
-  .toki-drawer__panel {
-    top: auto;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: auto;
-    max-height: 80vh;
-    border-left: 0;
-    border-top: 1px solid var(--toki-border);
-    border-radius: var(--toki-radius) var(--toki-radius) 0 0;
-    transform: translateY(100%);
+  /* Expand panel goes near-full-width and tall on small screens. */
+  .toki-expand {
+    padding: 12px;
   }
 
-  .toki-drawer.is-open .toki-drawer__panel {
-    transform: translateY(0);
+  .toki-expand__panel {
+    width: 100%;
+    max-height: 92vh;
+    padding: 16px;
+  }
+
+  .toki-expand__input {
+    min-height: 48vh;
   }
 
   .toki-bar {

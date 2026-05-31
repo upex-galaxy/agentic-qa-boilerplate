@@ -4,7 +4,7 @@
  * Vanilla browser JavaScript, no build step, no framework, no imports. Inlined
  * by render.ts after the `window.__TOKI__` spec script. render.ts server-renders
  * the static shell + each block's markdown content; this file builds the
- * interactive parts (controls, quote chips, textarea, drawer, validation,
+ * interactive parts (controls, quote chips, textarea, expand panel, validation,
  * submit) at runtime and produces a `Result` that matches cli/toki/schema.ts.
  *
  * Kept dependency-free so cli/toki stays extractable to a standalone package.
@@ -28,10 +28,10 @@
   // served (CSRF / forgery gate — see server.ts).
   const submitToken = typeof window.__TOKI_TOKEN__ === 'string' ? window.__TOKI_TOKEN__ : '';
 
-  // open-state class app.css transitions on (`.toki-drawer.is-open`); the drawer
-  // also carries the [hidden] attribute (see openDrawer/closeDrawer for the
+  // open-state class app.css transitions on (`.toki-expand.is-open`); the panel
+  // also carries the [hidden] attribute (see openExpand/closeExpand for the
   // two-frame dance).
-  const DRAWER_OPEN_CLASS = 'is-open';
+  const EXPAND_OPEN_CLASS = 'is-open';
 
   /**
    * Per-block UI state, keyed by block id. `controlAnswer` is encoded exactly
@@ -40,6 +40,16 @@
    * @type {Record<string, { controlAnswer: string | string[] | boolean | null, text: string, quotes: string[] }>}
    */
   const state = Object.create(null);
+
+  /**
+   * Inline `.toki-text__input` textarea per block id, registered by
+   * buildTextarea so the expand panel can mirror its value two-way.
+   * @type {Record<string, HTMLTextAreaElement>}
+   */
+  const inlineTextareas = Object.create(null);
+
+  /** The block id the floating panel is currently editing, or null when closed. */
+  let currentExpandBlockId = null;
 
   for (const block of blocks) {
     if (!block || typeof block.id !== 'string') {
@@ -113,10 +123,13 @@
   const progressFill = byId('toki-progress-fill');
   const progressLabel = byId('toki-progress-label');
   const quoteBtn = byId('toki-quote-btn');
-  const drawer = byId('toki-drawer');
-  const drawerContent = byId('toki-drawer-content');
-  const drawerClose = byId('toki-drawer-close');
-  const drawerScrim = byId('toki-drawer-scrim');
+  const expand = byId('toki-expand');
+  const expandBackdrop = byId('toki-expand-backdrop');
+  const expandClose = byId('toki-expand-close');
+  const expandTitle = byId('toki-expand-title');
+  const expandRefContent = byId('toki-expand-ref-content');
+  const expandQuotes = byId('toki-expand-quotes');
+  const expandInput = byId('toki-expand-input');
   const doneEl = byId('toki-done');
   const bar = document.querySelector('.toki-bar');
 
@@ -239,21 +252,38 @@
       labelText.appendChild(requiredMarker());
     }
 
+    const field = el('div', 'toki-text__field');
+
     const textarea = el('textarea', 'toki-text__input', {
       'data-block-id': block.id,
-      'rows': '3',
+      'rows': '4',
       'placeholder': typeof text.placeholder === 'string' ? text.placeholder : '',
     });
+    inlineTextareas[block.id] = textarea;
 
     textarea.addEventListener('input', () => {
       state[block.id].text = textarea.value;
+      // Mirror into the big panel textarea when it is open for this block.
+      if (currentExpandBlockId === block.id && expandInput) {
+        expandInput.value = textarea.value;
+        autoGrowExpandInput();
+      }
       refresh();
     });
-    textarea.addEventListener('focus', () => openDrawer(block));
-    textarea.addEventListener('blur', () => closeDrawer());
+
+    const expandBtn = el('button', 'toki-text__expand', {
+      'type': 'button',
+      'aria-label': 'Expand to write',
+      'title': 'Expand to write',
+    });
+    expandBtn.textContent = 'Expand';
+    expandBtn.addEventListener('click', () => openExpand(block.id));
+
+    field.appendChild(textarea);
+    field.appendChild(expandBtn);
 
     label.appendChild(labelText);
-    label.appendChild(textarea);
+    label.appendChild(field);
     return label;
   }
 
@@ -440,101 +470,91 @@
   }
 
   // --------------------------------------------------------------------------
-  // D. REFERENCE DRAWER
+  // D. EXPAND-TO-WRITE PANEL
   // --------------------------------------------------------------------------
 
-  let drawerCloseTimer = null;
-
-  function openDrawer(block) {
-    if (!drawer || !drawerContent) {
+  /** Grow the big panel textarea to fit its content (CSS caps max-height). */
+  function autoGrowExpandInput() {
+    if (!expandInput) {
       return;
     }
-    if (drawerCloseTimer) {
-      clearTimeout(drawerCloseTimer);
-      drawerCloseTimer = null;
+    expandInput.style.height = 'auto';
+    expandInput.style.height = `${expandInput.scrollHeight}px`;
+  }
+
+  function openExpand(blockId) {
+    if (!expand || !state[blockId]) {
+      return;
+    }
+    currentExpandBlockId = blockId;
+
+    // Title: 1-based block index when known, else a generic label.
+    if (expandTitle) {
+      const index = blocks.findIndex(b => b && b.id === blockId);
+      expandTitle.textContent = index >= 0 ? `Block ${index + 1}` : 'Your response';
     }
 
-    // Fill content: clone of the server-rendered block content + current quotes.
-    drawerContent.textContent = '';
-    const section = blockSection(block.id);
-    const source = section ? section.querySelector('.toki-block__content') : null;
-    if (source) {
-      const clone = source.cloneNode(true);
-      clone.removeAttribute('data-quote-source');
-      drawerContent.appendChild(clone);
+    // Reference: a clone of the server-rendered block content (collapsible).
+    if (expandRefContent) {
+      expandRefContent.textContent = '';
+      const section = blockSection(blockId);
+      const source = section ? section.querySelector('.toki-block__content') : null;
+      if (source) {
+        const clone = source.cloneNode(true);
+        clone.removeAttribute('data-quote-source');
+        expandRefContent.appendChild(clone);
+      }
     }
-    drawerContent.appendChild(buildDrawerQuoteList(block.id));
+
+    // Quotes: read-only chip row of this block's captured quotes.
+    fillExpandQuotes(blockId);
+
+    // Seed the big textarea from current state and grow it.
+    if (expandInput) {
+      expandInput.value = state[blockId].text;
+    }
 
     // Two-frame dance: drop [hidden] now, add the open class next frame so the
-    // CSS transition actually runs (an element going hidden->visible in the
-    // same frame as the class change will not transition).
-    drawer.hidden = false;
-    drawer.setAttribute('aria-hidden', 'false');
+    // CSS transition actually runs (hidden->visible in the same frame as the
+    // class change will not transition).
+    expand.hidden = false;
+    expand.setAttribute('aria-hidden', 'false');
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        drawer.classList.add(DRAWER_OPEN_CLASS);
+        expand.classList.add(EXPAND_OPEN_CLASS);
       });
     });
+
+    if (expandInput) {
+      expandInput.focus();
+      autoGrowExpandInput();
+    }
   }
 
-  function buildDrawerQuoteList(blockId) {
-    const wrap = el('div', 'toki-drawer__quotes');
-    const entry = state[blockId];
-    if (!entry || entry.quotes.length === 0) {
-      return wrap;
-    }
-    const heading = el('div', 'toki-drawer__quotes-title');
-    heading.textContent = 'Quotes';
-    wrap.appendChild(heading);
-    const list = el('ul', 'toki-drawer__quotes-list');
-    for (const quote of entry.quotes) {
-      const item = el('li');
-      item.textContent = quote;
-      list.appendChild(item);
-    }
-    wrap.appendChild(list);
-    return wrap;
-  }
-
-  function closeDrawer() {
-    if (!drawer) {
+  function fillExpandQuotes(blockId) {
+    if (!expandQuotes) {
       return;
     }
-    drawer.classList.remove(DRAWER_OPEN_CLASS);
-    drawer.setAttribute('aria-hidden', 'true');
+    expandQuotes.textContent = '';
+    const entry = state[blockId];
+    if (!entry || entry.quotes.length === 0) {
+      return;
+    }
+    for (const quote of entry.quotes) {
+      const chip = el('span', 'toki-quote-chip');
+      chip.appendChild(document.createTextNode(quote));
+      expandQuotes.appendChild(chip);
+    }
+  }
 
-    // Add [hidden] only after the transition so it can animate out. Fallback
-    // timeout in case `transitionend` never fires.
-    if (drawerCloseTimer) {
-      clearTimeout(drawerCloseTimer);
+  function closeExpand() {
+    if (!expand) {
+      return;
     }
-    const finalize = () => {
-      if (!drawer.classList.contains(DRAWER_OPEN_CLASS)) {
-        drawer.hidden = true;
-      }
-    };
-    let settled = false;
-    const onEnd = () => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      drawer.removeEventListener('transitionend', onEnd);
-      finalize();
-    };
-    const panel = drawer.querySelector('.toki-drawer__panel');
-    if (panel) {
-      panel.addEventListener('transitionend', onEnd);
-    }
-    drawerCloseTimer = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        if (panel) {
-          panel.removeEventListener('transitionend', onEnd);
-        }
-        finalize();
-      }
-    }, 400);
+    expand.classList.remove(EXPAND_OPEN_CLASS);
+    expand.setAttribute('aria-hidden', 'true');
+    expand.hidden = true;
+    currentExpandBlockId = null;
   }
 
   // --------------------------------------------------------------------------
@@ -691,7 +711,7 @@
     if (doneEl) {
       doneEl.hidden = false;
     }
-    closeDrawer();
+    closeExpand();
   }
 
   function showSubmitError() {
@@ -763,16 +783,33 @@
       });
     }
 
-    if (drawerClose) {
-      drawerClose.addEventListener('click', () => closeDrawer());
+    if (expandInput) {
+      expandInput.addEventListener('input', () => {
+        const blockId = currentExpandBlockId;
+        if (!blockId || !state[blockId]) {
+          return;
+        }
+        state[blockId].text = expandInput.value;
+        // Mirror back into that block's inline textarea (two-way sync).
+        const inline = inlineTextareas[blockId];
+        if (inline) {
+          inline.value = expandInput.value;
+        }
+        refresh();
+        autoGrowExpandInput();
+      });
     }
-    if (drawerScrim) {
-      drawerScrim.addEventListener('click', () => closeDrawer());
+
+    if (expandClose) {
+      expandClose.addEventListener('click', () => closeExpand());
+    }
+    if (expandBackdrop) {
+      expandBackdrop.addEventListener('click', () => closeExpand());
     }
 
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
-        closeDrawer();
+        closeExpand();
         return;
       }
       // Cmd/Ctrl+Enter submits when valid.
