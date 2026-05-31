@@ -102,7 +102,7 @@ The choice is recorded in the skill's SKILL.md "Subagent Dispatch Strategy" tabl
 
 ### Special cases
 
-Some skills have a canonical plan artifact that already lives outside `.session/` and is committed to git (e.g. `sprint-development`'s `.context/PBI/<ticket>/impl-plan.md`). For those skills:
+Some skills have a canonical plan artifact that already lives outside `.session/` and is committed to git (e.g. `sprint-development`'s `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/implementation-plan.md`). For those skills:
 
 - The committed artifact stays canonical.
 - `.session/<skill-slug>/<scope>/plan.md` MAY be omitted; the skill writes only `progress.md`.
@@ -143,7 +143,7 @@ Subagents read the plan by H2 header, so the order and exact spelling are requir
 4. `## Phase breakdown` — table with columns: `Phase | Pattern | Dispatch payload pointer | Exit condition`.
 5. `## Risks & open questions` — bulleted list. Each item names the risk and the mitigation.
 6. `## Verification checklist` — bulleted list of observable signals that mean "done" before Archive.
-7. `## Cross-references` — sibling artifacts this session reads or writes (e.g. `.context/PBI/UPEX-123/impl-plan.md`, `DESIGN.md`).
+7. `## Cross-references` — sibling artifacts this session reads or writes (e.g. `.context/PBI/epics/EPIC-UPEX-100-<slug>/stories/STORY-UPEX-123-<slug>/implementation-plan.md`, `DESIGN.md`).
 
 A plan with all seven headers (even if a section is empty) is valid. Missing a header fails the lint check.
 

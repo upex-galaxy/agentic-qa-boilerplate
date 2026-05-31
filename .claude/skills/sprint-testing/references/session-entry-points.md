@@ -50,18 +50,20 @@ This gate answers "is the environment up / can we get the email?" — it does NO
 
 ### Step 1 — Fetch the ticket from the issue tracker
 
-> **Prerequisite**: Load `/acli` skill before executing the commands below. In Modality jira-xray also load `/xray-cli` for `[TMS_TOOL]` calls. If Session Start §0.1 in `SKILL.md` already loaded them, skip.
+> **Prerequisite**: Detailed fetch uses `bun run jira:sync-issues` — NOT `/acli`. Load `/xray-cli` only in Modality jira-xray for the traceability `[TMS_TOOL]` calls. If Session Start §0.1 in `SKILL.md` already loaded it, skip.
 
 ```
-[ISSUE_TRACKER_TOOL] Fetch Issue:
-  - issueId: {TICKET-ID}
+# Detailed read — materializes per-field .md under the STORY folder (ACs, description, comments):
+bun run jira:sync-issues get {TICKET-ID} --include-comments
+# then READ the synced story.md / acceptance-criteria.md / comments.md
+# NEVER `acli workitem view` for custom fields — it returns null.
 
-# For TMS-native tests list (optional, used in Stage 1 later):
+# For TMS-native tests list (optional, used in Stage 1 later) — traceability stays on [TMS_TOOL]:
 [TMS_TOOL] List Tests:
   - project: {{PROJECT_KEY}}
 ```
 
-Extract and note: Title, Project / Module, Status (must be ready for testing), Sprint, Acceptance Criteria, Dependencies, Comments.
+Extract and note from the synced files: Title, Project / Module, Status (must be ready for testing), Sprint, Acceptance Criteria, Dependencies, Comments.
 
 ### Step 1b — Team Discussion from ticket comments
 
@@ -143,9 +145,9 @@ These provide business flows, feature inventory, API contracts + authentication 
 
 ### Step 4 — Module context (3-level hierarchy)
 
-The context hierarchy is: Project (system-wide) -> Module (feature area like Orders, Dashboard) -> Story (individual ticket).
+The context hierarchy is: Project (system-wide) -> Epic/Module (feature area like Orders, Dashboard — module = Epic, 1:1) -> Story (individual ticket).
 
-Derive `{module-name}` from the ticket's project or module field — kebab-case (e.g. "Monthly Statement Improvements" -> `monthly-statement`).
+Derive `<EPIC_KEY>` from the ticket's parent epic and `<EPIC_SLUG>` from the epic/module field — kebab-case (e.g. "Monthly Statement Improvements" -> `monthly-statement`). The module folder is `epics/EPIC-<EPIC_KEY>-<EPIC_SLUG>/`.
 
 Check whether `module-context.md` exists:
 
@@ -154,7 +156,7 @@ Check whether `module-context.md` exists:
 | Exists | Read it; skip full code exploration; use the existing knowledge |
 | Missing | Create the module folder; do a full exploration; generate `module-context.md` |
 
-If it exists at `.context/PBI/{module-name}/module-context.md`, read it. Otherwise, explore code related to the ticket:
+If it exists at `.context/PBI/epics/EPIC-<EPIC_KEY>-<EPIC_SLUG>/module-context.md`, read it. Otherwise, explore code related to the ticket:
 
 - Backend (`{{BACKEND_REPO}}` with entry `{{BACKEND_ENTRY}}`, stack `{{BACKEND_STACK}}`): controllers, services, models related to the feature.
 - Frontend (`{{FRONTEND_REPO}}` with entry `{{FRONTEND_ENTRY}}`, stack `{{FRONTEND_STACK}}`): routes, state, components.
@@ -178,21 +180,24 @@ Skip skills that are not configured for the project.
 .context/PBI/
   templates/                           # do not edit
     module-context.md
-  {module-name}/                       # MODULE LEVEL (reusable)
-    module-context.md                  # persists across tickets
-    {{PROJECT_KEY}}-{number}-{brief-title}/   # STORY LEVEL (new)
-      context.md                       # story-specific context (Step 7)
-      test-analysis.md                 # ATP mirror, created in Stage 1
-      test-report.md                   # ATR mirror, created in Stage 3
-      evidence/                        # screenshots, gitignored
+  epics/
+    EPIC-<EPIC_KEY>-<EPIC_SLUG>/       # EPIC / MODULE LEVEL (reusable; module = Epic, 1:1)
+      module-context.md                # hand-authored; persists across tickets (NON-Jira)
+      feature-test-plan.md             # Jira-synced read-only cache (epic level; if generated)
+      stories/
+        STORY-<TICKET_KEY>-<STORY_SLUG>/   # STORY LEVEL (new)
+          context.md                   # hand-authored story-specific context (Step 7, NON-Jira)
+          acceptance-test-plan.md      # ATP, Jira-synced read-only cache (Stage 1)
+          acceptance-test-results.md   # ATR, Jira-synced read-only cache (Stage 3)
+          evidence/                    # screenshots, gitignored
 ```
 
 Folder naming:
 
-- `{module-name}`: kebab-case from the ticket project/module field.
-- `{brief-title}`: AI-generated summary, max ~5 words, kebab-case.
+- `<EPIC_SLUG>`: kebab-case from the ticket's epic/module field.
+- `<STORY_SLUG>`: AI-generated summary, max ~5 words, kebab-case.
 
-Create the folders now. `test-analysis.md` and `test-report.md` are created later (Stages 1 / 3); `context.md` and `evidence/` are created now.
+Create the folders + the HAND-AUTHORED files (`context.md`, `evidence/`) now. The Jira-mirrored files (`acceptance-test-plan.md` Stage 1, `acceptance-test-results.md` Stage 3, `feature-test-plan.md` if epic-level) are materialized by `bun run jira:sync-issues` — NEVER hand-write them.
 
 ### Step 6b — Session env override (record once, session-only)
 
@@ -207,15 +212,15 @@ Every stage resolves `{{WEB_URL}}` / `{{API_URL}}` through this slot first (over
 
 ### Step 7 — Write the initial context.md
 
+> `context.md` is a hand-authored NON-Jira file: session notes, related code, open questions. Do NOT duplicate Jira-mirrored content here — ACs live in the synced `acceptance-criteria.md`, the full ticket in `story.md`, and Team Discussion in `comments.md` (all materialized by `bun run jira:sync-issues`). Reference them; never copy them.
+
 ```markdown
 # {{PROJECT_KEY}}-{number}: {Title}
-**Ticket:** {{PROJECT_KEY}}-{number} | **Module:** {module-name} | **Status:** {status} | **Sprint:** {sprint}
+**Ticket:** {{PROJECT_KEY}}-{number} | **Epic/Module:** EPIC-<EPIC_KEY>-<EPIC_SLUG> | **Status:** {status} | **Sprint:** {sprint}
 
-## Acceptance Criteria
-- AC1: ... / AC2: ... / ...
+> Jira-sourced detail (read-only caches, not copied here): `story.md`, `acceptance-criteria.md`, `comments.md` — materialized by `bun run jira:sync-issues get <KEY> --include-comments`.
 
-## Team Discussion
-> Extracted from ticket comments.
+## Team Discussion (analysis only — source is comments.md)
 ### Key Decisions
 - [{Author}] ({date}): {decision}
 ### Technical Notes
@@ -223,7 +228,6 @@ Every stage resolves `{{WEB_URL}}` / `{{API_URL}}` through this slot first (over
 ### Edge Cases Raised
 - [{Author}] ({date}): {edge case}
 {If no comments: "No team discussions found."}
-{If issue-tracker failed: "Comments not loaded."}
 
 ## Related Code
 ### Backend / Frontend / Database
@@ -233,8 +237,8 @@ Every stage resolves `{{WEB_URL}}` / `{{API_URL}}` through this slot first (over
 ## TMS Artifacts
 | Artifact | ID | Status |
 |----------|----|--------|
-| ATP | Pending | Created in Stage 1 |
-| ATR | Pending | Created in Stage 3 |
+| ATP | Pending | Created in Stage 1 (synced acceptance-test-plan.md) |
+| ATR | Pending | Created in Stage 3 (synced acceptance-test-results.md) |
 
 ## Session Notes
 ### Session 1 — {date}
@@ -307,20 +311,20 @@ Prompts / references:
 - `references/acceptance-test-planning.md` — ATP body, Test Analysis, TC nomenclature, traceability.
 - `references/feature-test-planning.md` — higher-granularity feature plan (optional).
 
-> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call. In Modality jira-xray also load `/xray-cli` for `[TMS_TOOL]` calls. If Session Start §0.1 already loaded them, skip. Modality jira-native: `/acli` covers both tags.
+> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` WRITE. Detailed reads use `bun run jira:sync-issues`, not `/acli`. In Modality jira-xray also load `/xray-cli` for `[TMS_TOOL]` calls. If Session Start §0.1 already loaded them, skip.
 
 Actions:
 
-1. Read the story (ACs, business rules, dependencies).
+1. Read the story (ACs, business rules, dependencies) from the synced `.md` (materialized by `bun run jira:sync-issues get <KEY> --include-comments`).
 2. Triage (veto or risk score) — outputs: Full Plan vs Quick Plan vs Skip.
 3. Discover test data via `[DB_TOOL]` on `{{DB_MCP}}` (and/or `[API_TOOL]`).
-4. Create the ATP linked to the Story via `[TMS_TOOL]`.
+4. Create the ATP linked to the Story via `[TMS_TOOL]` (or write `{{jira.acceptance_test_plan}}` / fallback comment in Modality jira-native).
 5. Create the ATR linked to the Story. Link ATP -> ATR.
 6. Fill Test Analysis in the ATP (scope, risks, scenarios, variables, test data, AC gaps).
 7. Create TCs with FULL traceability (`--story + --test-plan + --test-result`).
-8. Verify: `[TMS_TOOL] trace {{PROJECT_KEY}}-{number}`.
+8. Verify: `[TMS_TOOL] trace {{PROJECT_KEY}}-{number}` (traceability stays on `[TMS_TOOL]`, not the sync).
 9. Mark ATP complete. Transition TCs to Ready.
-10. Create `test-analysis.md` in the PBI folder (local mirror of ATP).
+10. Materialize the read-only cache (never hand-written) per modality: jira-native -> `bun run jira:sync-issues get <KEY> --include-comments` -> `acceptance-test-plan.md` in the STORY folder; jira-xray -> `bun run jira:sync-issues get <ATP_KEY>` -> `.context/PBI/test-plans/TESTPLAN-<ATP_KEY>-<slug>.md`.
 
 Output checkpoint:
 
@@ -369,8 +373,8 @@ Reference: `references/reporting-templates.md`.
 Actions:
 
 1. Compile TC summary (total, PASSED, FAILED, pass rate).
-2. Fill the ATR Test Report via `[TMS_TOOL] atr update {ATR-ID} --report "..."`. Mark ATR complete.
-3. Create `test-report.md` in the PBI folder (local mirror of ATR).
+2. Fill the ATR Test Report via `[TMS_TOOL] atr update {ATR-ID} --report "..."` (or write `{{jira.acceptance_test_results}}` / fallback comment in Modality jira-native). Mark ATR complete.
+3. Materialize the read-only cache (never hand-written) per modality: jira-native -> `bun run jira:sync-issues get <KEY> --include-comments` -> `acceptance-test-results.md` in the STORY folder; jira-xray -> `bun run jira:sync-issues get <ATR_KEY>` -> `.context/PBI/test-executions/TESTEXEC-<ATR_KEY>-<slug>.md`.
 4. Post the QA comment to the ticket via `[ISSUE_TRACKER_TOOL]`. Use the user-story templates (PASSED / FAILED) from `reporting-templates.md`.
 5. Transition the ticket via substrate. Decision tree: Story PASSED -> `{{jira.transition.story.qa_sign_off}}`; Bug PASSED -> `{{jira.transition.bug.retest_passed}}`; Story FAILED with `{{FORMAL_BLOCKED_GATE}}=true` -> `{{jira.transition.story.defect_reported}}` (`in_test` -> `blocked`); Story FAILED non-strict (flag false or no `blocked` slug) -> leave in `{{jira.status.story.in_test}}` with linked bug; Bug FAILED -> leave in `{{jira.status.bug.ready_for_qa}}` (or `back` / `re_open` if previously closed). See `sprint-orchestration.md` Briefing 4 Step 5 for the full decision tree.
 6. Attach evidence screenshot paths for the user.
@@ -573,8 +577,8 @@ Confirm ATP -> ticket, ATR -> ticket, ATP -> ATR are all linked. Missing-TCs "ga
 
 Detailed smoke / evidence-config / regression-check playbook lives in `references/exploration-patterns.md`. Bug-specific flow:
 
-1. **Configure evidence**: `.playwright/cli.config.json` `outputDir` -> `.context/PBI/{module-name}/{{PROJECT_KEY}}-{number}-{brief-title}/evidence`. Remember `outputDir` does NOT apply to `.png` screenshots — always pass the full path in `--filename`.
-2. **Verify the fix**: navigate to the affected area -> reproduce original scenario -> observe the bug is GONE -> verify expected behaviour -> screenshot the correct behaviour. Evidence naming: `.context/PBI/{module}/{{PROJECT_KEY}}-{number}-{brief-title}/evidence/{{PROJECT_KEY}}-{number}-{brief-description}.png`.
+1. **Configure evidence**: `.playwright/cli.config.json` `outputDir` -> `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-{{PROJECT_KEY}}-{number}-{brief-title}/evidence`. Remember `outputDir` does NOT apply to `.png` screenshots — always pass the full path in `--filename`.
+2. **Verify the fix**: navigate to the affected area -> reproduce original scenario -> observe the bug is GONE -> verify expected behaviour -> screenshot the correct behaviour. Evidence naming: `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-{{PROJECT_KEY}}-{number}-{brief-title}/evidence/{{PROJECT_KEY}}-{number}-{brief-description}.png`.
 3. **Quick regression check**: adjacent features still work; similar scenarios still work; edge cases (empty / null / max) still handled. If a regression is found, document it and file a new bug.
 
 ### Phase 3 — Reporting

@@ -80,21 +80,10 @@ import { parse as parseYaml } from 'yaml';
 const DEFAULT_OUTPUT_DIR = '.context/PBI';
 const PROJECT_YAML_PATH = join(import.meta.dir, '..', '.agents', 'project.yaml');
 
-/**
- * Files that should never be overwritten by sync.
- * NOTE: `implementation-plan.md` is intentionally NOT here — it is now a
- * Jira-managed per-field file (mirrors `spec_implementation_plan`). It is written
- * ONLY when the Jira field is non-empty (Jira = source of truth); when the field
- * is empty the writer is never called, so a local hand-authored plan survives.
- */
-const PROTECTED_FILES = new Set([
-  'test-cases.md',
-]);
-
-/** File patterns that should never be overwritten */
-const PROTECTED_PATTERNS = [
-  /^feature-.+\.md$/,
-];
+// No files are protected from overwrite. Jira is the single source of truth and the
+// sync re-materializes every file it owns on each run (per-field files only when the
+// Jira field is non-empty). Hand-authored NON-Jira files (context.md, evidence/,
+// test-specs/, …) use names the sync never writes, so they are never touched.
 
 /**
  * Maps each semantic key consumed by this script to its canonical Jira slug
@@ -168,9 +157,26 @@ function loadJiraFields(): Record<string, JiraFieldEntry> {
 }
 
 /**
+ * Semantic keys whose Jira custom field could NOT be resolved from
+ * `.agents/jira-fields.json` (field not configured in this Jira instance).
+ * Populated by `buildCustomFields()`. The per-field writer (`syncFieldFiles`)
+ * consults this to emit a fallback-pointer stub instead of silently skipping —
+ * so downstream skills know the field's content lives in the issue's
+ * comments/description (see `.agents/jira-required.yaml` → `fallback:`).
+ */
+const UNRESOLVED_FIELDS = new Set<SemanticKey>();
+
+/**
  * Resolves every entry in `SLUG_MAPPING` against `.agents/jira-fields.json` and returns
  * a `{ <semanticKey>: customfield_XXXXX }` record matching the legacy shape that
  * the rest of this file consumes (so call sites need no change).
+ *
+ * Graceful degradation: a slug missing from the catalog is NO LONGER fatal. Its ID
+ * resolves to `''` — a harmless empty field id that is filtered out of API requests
+ * and yields `undefined` on lookup — and the semantic key is recorded in
+ * `UNRESOLVED_FIELDS`. A workspace that hasn't configured every methodology custom
+ * field can still sync the issues it can; missing fields fall back to comments/
+ * description rather than blocking the whole run.
  */
 function buildCustomFields(): Record<SemanticKey, string> {
   const fields = loadJiraFields();
@@ -178,10 +184,9 @@ function buildCustomFields(): Record<SemanticKey, string> {
   for (const [semanticKey, slug] of Object.entries(SLUG_MAPPING) as [SemanticKey, string][]) {
     const entry = fields[slug];
     if (!entry || typeof entry.id !== 'string') {
-      throw new Error(
-        `sync-jira-issues: slug '${slug}' (for '${semanticKey}') not found in .agents/jira-fields.json. `
-        + 'Run `bun run jira:sync-fields --force` to refresh, or update SLUG_MAPPING in scripts/sync-jira-issues.ts.',
-      );
+      out[semanticKey] = '';
+      UNRESOLVED_FIELDS.add(semanticKey);
+      continue;
     }
     out[semanticKey] = entry.id;
   }
@@ -207,7 +212,7 @@ const EPIC_FIELDS = [
   // Epic-level planning fields (rich text → materialized as separate files)
   CUSTOM_FIELDS.featureImplementationPlan,
   CUSTOM_FIELDS.featureTestPlan,
-];
+].filter(Boolean); // drop unresolved fields ('') so they never hit the Jira API
 
 /** Fields to request for Stories */
 const STORY_FIELDS = [
@@ -224,7 +229,7 @@ const STORY_FIELDS = [
   CUSTOM_FIELDS.storyPoints,
   CUSTOM_FIELDS.webLink,
   'issuelinks', // For traceability (tests, defects, bugs, etc.)
-];
+].filter(Boolean); // drop unresolved fields ('') so they never hit the Jira API
 
 /** Fields to request for Bugs/Defects */
 const BUG_FIELDS = [
@@ -241,7 +246,7 @@ const BUG_FIELDS = [
   CUSTOM_FIELDS.workaround,
   CUSTOM_FIELDS.evidence,
   CUSTOM_FIELDS.fixType,
-];
+].filter(Boolean); // drop unresolved fields ('') so they never hit the Jira API
 
 /** Fields to request for Tests */
 const TEST_FIELDS = [
@@ -924,11 +929,6 @@ function generateSlug(summary: string): string {
 // FILE SYSTEM OPERATIONS
 // ============================================================================
 
-function isProtectedFile(filename: string): boolean {
-  if (PROTECTED_FILES.has(filename)) { return true; }
-  return PROTECTED_PATTERNS.some(pattern => pattern.test(filename));
-}
-
 function findExistingFolder(baseDir: string, key: string, type: 'epic' | 'story'): string | null {
   const prefix = type === 'epic' ? `EPIC-${key}` : `STORY-${key}`;
   const searchDir = type === 'epic' ? join(baseDir, 'epics') : baseDir;
@@ -962,19 +962,16 @@ function ensureDir(path: string): void {
   }
 }
 
-function writeIfNotProtected(
+/**
+ * Writes an index / standalone-issue file. Jira is the source of truth, so this
+ * always overwrites (no protection). `'skipped'` is retained in the return union
+ * only for call-site compatibility — it is never produced.
+ */
+function writeIndexFile(
   filePath: string,
   content: string,
   dryRun: boolean,
 ): { written: boolean, status: 'created' | 'updated' | 'skipped' } {
-  // basename (not split('/')) so protected-file detection works on Windows,
-  // where filePath is built with path.join and uses backslash separators.
-  const filename = basename(filePath);
-
-  if (isProtectedFile(filename)) {
-    return { written: false, status: 'skipped' };
-  }
-
   const exists = existsSync(filePath);
 
   if (!dryRun) {
@@ -1017,9 +1014,9 @@ const EPIC_FIELD_FILES: FieldFileSpec[] = [
 ];
 
 /**
- * Writes a per-field Markdown file. Unlike `writeIfNotProtected`, this ALWAYS
- * writes (bypasses the protected-file guard) because it is only ever called when
- * the Jira field has content — Jira is the source of truth for these fields.
+ * Writes a per-field Markdown file. Always overwrites — Jira is the source of
+ * truth for these fields and no file is protected; this is only ever called when
+ * the Jira field has content.
  */
 function writeFieldFile(
   filePath: string,
@@ -1052,6 +1049,31 @@ function renderFieldFile(
 }
 
 /**
+ * Renders a fallback-pointer stub for a per-field file whose Jira custom field is
+ * NOT configured in this workspace (the semantic key is in `UNRESOLVED_FIELDS`).
+ * The dedicated file still exists so skills find a predictable path, but it points
+ * to the fallback source (the issue's comments / description) per the
+ * `.agents/jira-required.yaml` → `fallback:` contract.
+ */
+function renderFieldStub(
+  issueKey: string,
+  spec: FieldFileSpec,
+  config: Config,
+): string {
+  return [
+    `# ${issueKey} — ${spec.title}`,
+    '',
+    `> ⚠️ The Jira custom field for \`${spec.title}\` is **not configured** in this Jira instance.`,
+    '> Per the methodology fallback, this field\'s content lives in the issue\'s comments or description.',
+    `> Re-sync with \`--include-comments\` and read \`comments.md\`, or [View in Jira](${config.baseUrl}/browse/${issueKey}).`,
+    '',
+    '---',
+    `_Synced from Jira by sync-jira-issues · ${new Date().toISOString()}_`,
+    '',
+  ].join('\n');
+}
+
+/**
  * Materializes the per-field files for an issue into `folder`. Returns the specs
  * actually written (field non-empty) so the index can link them.
  */
@@ -1066,6 +1088,17 @@ function syncFieldFiles(
 ): FieldFileSpec[] {
   const present: FieldFileSpec[] = [];
   for (const spec of specs) {
+    // Field not configured in this Jira instance → emit a fallback-pointer stub
+    // so the dedicated file path is predictable and skills know to read the
+    // fallback (comments/description) instead.
+    if (UNRESOLVED_FIELDS.has(spec.key)) {
+      const filePath = join(folder, spec.file);
+      const status = writeFieldFile(filePath, renderFieldStub(issueKey, spec, config), dryRun);
+      if (status === 'created') { result.files.created++; }
+      else { result.files.updated++; }
+      present.push(spec);
+      continue;
+    }
     const raw = fields[CUSTOM_FIELDS[spec.key]] as AdfDocument | string | null;
     const md = adfToMarkdown(raw);
     if (!md.trim()) { continue; }
@@ -1601,6 +1634,70 @@ function generateTestMarkdown(
   return lines.join('\n');
 }
 
+/**
+ * Generic materializer for Xray container issue types (Test Plan, Test Execution,
+ * Test Set, Pre-Condition). Captures the `description` — which is where the ATP body
+ * (Test Plan) and ATR body (Test Execution) live in Modality jira-xray — plus links
+ * and metadata. Run results / per-TC pass-fail / coverage are NOT captured here; read
+ * those via xray-cli.
+ */
+function generateXrayArtifactMarkdown(
+  issue: JiraIssue,
+  label: string,
+  config: Config,
+): string {
+  const fields = issue.fields;
+  const description = adfToMarkdown(fields.description);
+  const components = fields.components?.map(c => c.name).join(', ') || 'None';
+
+  const lines: string[] = [
+    `# ${label}: ${fields.summary}`,
+    '',
+    `**Jira Key:** [${issue.key}](${config.baseUrl}/browse/${issue.key})`,
+    `**Status:** ${fields.status?.name || 'Unknown'}`,
+    `**Components:** ${components}`,
+    '',
+    '> Run results / coverage are NOT synced — read those via xray-cli. This file mirrors the issue description.',
+    '',
+    '---',
+    '',
+    '## Description',
+    '',
+    description || '_No description provided_',
+    '',
+  ];
+
+  if (fields.issuelinks && fields.issuelinks.length > 0) {
+    lines.push('---', '', '## Related Issues', '');
+    for (const link of fields.issuelinks) {
+      if (link.inwardIssue) {
+        lines.push(`- ${link.type.inward}: [${link.inwardIssue.key}](${config.baseUrl}/browse/${link.inwardIssue.key}) - ${link.inwardIssue.fields.summary}`);
+      }
+      if (link.outwardIssue) {
+        lines.push(`- ${link.type.outward}: [${link.outwardIssue.key}](${config.baseUrl}/browse/${link.outwardIssue.key}) - ${link.outwardIssue.fields.summary}`);
+      }
+    }
+    lines.push('');
+  }
+
+  lines.push(
+    '---',
+    '',
+    '## Metadata',
+    '',
+    `- **Created:** ${fields.created ? new Date(fields.created).toLocaleDateString() : 'Unknown'}`,
+    `- **Updated:** ${fields.updated ? new Date(fields.updated).toLocaleDateString() : 'Unknown'}`,
+    `- **Reporter:** ${fields.reporter?.displayName || 'Unknown'}`,
+    `- **Assignee:** ${fields.assignee?.displayName || 'Unassigned'}`,
+  );
+  if (fields.labels && fields.labels.length > 0) {
+    lines.push(`- **Labels:** ${fields.labels.join(', ')}`);
+  }
+  lines.push('', '---', '', '_Synced from Jira by sync-jira-issues_', `_Last sync: ${new Date().toISOString()}_`, '');
+
+  return lines.join('\n');
+}
+
 function generateEpicTreeMarkdown(
   epics: Array<{ epic: JiraIssue, stories: JiraIssue[] }>,
   config: Config,
@@ -1673,7 +1770,7 @@ async function syncStory(
   // Write story.md (index)
   const storyContent = generateStoryMarkdown(story, epic, config, present);
   const storyPath = join(storyFolder, 'story.md');
-  const storyResult = writeIfNotProtected(storyPath, storyContent, options.dryRun);
+  const storyResult = writeIndexFile(storyPath, storyContent, options.dryRun);
 
   if (storyResult.status === 'created') { result.files.created++; }
   else if (storyResult.status === 'updated') { result.files.updated++; }
@@ -1684,7 +1781,7 @@ async function syncStory(
     const comments = await fetchComments(config, story.key);
     const commentsContent = generateCommentsMarkdown(comments, story.key, config);
     const commentsPath = join(storyFolder, 'comments.md');
-    const commentsResult = writeIfNotProtected(commentsPath, commentsContent, options.dryRun);
+    const commentsResult = writeIndexFile(commentsPath, commentsContent, options.dryRun);
 
     if (commentsResult.status === 'created') { result.files.created++; }
     else if (commentsResult.status === 'updated') { result.files.updated++; }
@@ -1738,7 +1835,7 @@ async function syncEpic(
   // Write epic.md (index)
   const epicContent = generateEpicMarkdown(epic, stories, config, presentEpicFields);
   const epicPath = join(epicFolder, 'epic.md');
-  const epicResult = writeIfNotProtected(epicPath, epicContent, options.dryRun);
+  const epicResult = writeIndexFile(epicPath, epicContent, options.dryRun);
 
   if (epicResult.status === 'created') { result.files.created++; }
   else if (epicResult.status === 'updated') { result.files.updated++; }
@@ -1888,7 +1985,7 @@ async function syncAll(config: Config, options: SyncOptions): Promise<SyncResult
     if (allEpicData.length > 0 && !options.storyKey) {
       const treeContent = generateEpicTreeMarkdown(allEpicData, config);
       const treePath = join(config.outputDir, 'epic-tree.md');
-      const treeResult = writeIfNotProtected(treePath, treeContent, options.dryRun);
+      const treeResult = writeIndexFile(treePath, treeContent, options.dryRun);
 
       if (treeResult.status === 'created') { result.files.created++; }
       else if (treeResult.status === 'updated') { result.files.updated++; }
@@ -1945,7 +2042,7 @@ async function syncBugs(config: Config, options: SyncOptions): Promise<SyncResul
       }
 
       const content = generateBugMarkdown(bug, config);
-      const writeResult = writeIfNotProtected(filePath, content, options.dryRun);
+      const writeResult = writeIndexFile(filePath, content, options.dryRun);
 
       if (writeResult.status === 'created') { result.files.created++; }
       else if (writeResult.status === 'updated') { result.files.updated++; }
@@ -2071,7 +2168,7 @@ async function syncDefects(config: Config, options: SyncOptions): Promise<SyncRe
       }
 
       const content = generateDefectMarkdown(defect, linkedStory, config);
-      const writeResult = writeIfNotProtected(filePath, content, options.dryRun);
+      const writeResult = writeIndexFile(filePath, content, options.dryRun);
 
       if (writeResult.status === 'created') { result.files.created++; }
       else if (writeResult.status === 'updated') { result.files.updated++; }
@@ -2131,7 +2228,7 @@ async function syncImprovements(config: Config, options: SyncOptions): Promise<S
       }
 
       const content = generateImprovementMarkdown(improvement, config);
-      const writeResult = writeIfNotProtected(filePath, content, options.dryRun);
+      const writeResult = writeIndexFile(filePath, content, options.dryRun);
 
       if (writeResult.status === 'created') { result.files.created++; }
       else if (writeResult.status === 'updated') { result.files.updated++; }
@@ -2191,7 +2288,7 @@ async function syncTests(config: Config, options: SyncOptions): Promise<SyncResu
       }
 
       const content = generateTestMarkdown(test, config);
-      const writeResult = writeIfNotProtected(filePath, content, options.dryRun);
+      const writeResult = writeIndexFile(filePath, content, options.dryRun);
 
       if (writeResult.status === 'created') { result.files.created++; }
       else if (writeResult.status === 'updated') { result.files.updated++; }
@@ -2224,7 +2321,12 @@ function emptyResult(): SyncResult {
   };
 }
 
-/** Writes a single non-Story/Epic issue (Bug/Defect/Improvement/Test) to its type folder. */
+/**
+ * Writes a single non-Story/Epic issue to its type folder. Handles Bug, Defect,
+ * Improvement, Test (full custom-field materializers) plus the Xray container types
+ * Test Plan / Test Execution / Test Set / Pre-Condition (generic description capture —
+ * this is where the ATP/ATR body lives in Modality jira-xray).
+ */
 async function syncStandaloneIssue(
   config: Config,
   key: string,
@@ -2240,6 +2342,10 @@ async function syncStandaloneIssue(
     case 'Defect': fields = BUG_FIELDS; subdir = 'defects'; prefix = 'DEFECT'; break;
     case 'Improvement': fields = IMPROVEMENT_FIELDS; subdir = 'improvements'; prefix = 'IMPROVEMENT'; break;
     case 'Test': fields = TEST_FIELDS; subdir = 'tests'; prefix = 'TEST'; break;
+    case 'Test Plan': fields = TEST_FIELDS; subdir = 'test-plans'; prefix = 'TESTPLAN'; break;
+    case 'Test Execution': fields = TEST_FIELDS; subdir = 'test-executions'; prefix = 'TESTEXEC'; break;
+    case 'Test Set': fields = TEST_FIELDS; subdir = 'test-sets'; prefix = 'TESTSET'; break;
+    case 'Pre-Condition': fields = TEST_FIELDS; subdir = 'preconditions'; prefix = 'PRECONDITION'; break;
     default:
       result.warnings.push(`${key}: unsupported issue type '${type}' — skipped`);
       return;
@@ -2254,9 +2360,10 @@ async function syncStandaloneIssue(
   if (type === 'Defect') { content = generateDefectMarkdown(issue, findLinkedStory(issue), config); }
   else if (type === 'Bug') { content = generateBugMarkdown(issue, config); }
   else if (type === 'Improvement') { content = generateImprovementMarkdown(issue, config); }
-  else { content = generateTestMarkdown(issue, config); }
+  else if (type === 'Test') { content = generateTestMarkdown(issue, config); }
+  else { content = generateXrayArtifactMarkdown(issue, type.toUpperCase(), config); }
 
-  const r = writeIfNotProtected(filePath, content, options.dryRun);
+  const r = writeIndexFile(filePath, content, options.dryRun);
   if (r.status === 'created') { result.files.created++; }
   else if (r.status === 'updated') { result.files.updated++; }
   else { result.files.skipped++; }
@@ -2546,7 +2653,7 @@ ${colors.bold}PULL SUBCOMMANDS${colors.reset}
   pull bugs           Sync Bugs → .context/PBI/bugs/
   pull defects        Sync Defects → inside Story folders
   pull improvements   Sync Improvements → .context/PBI/improvements/
-  pull tests          Sync Tests → .context/PBI/{module}/test-specs/
+  pull tests          Sync Tests → .context/PBI/tests/
 
 ${colors.bold}OPTIONS${colors.reset}
   --epic <key>        Sync specific epic with all its stories
@@ -2575,11 +2682,12 @@ ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
   JIRA_PROJECT_KEY          Project key override (default: read from .agents/project.yaml)
   JIRA_SYNC_OUTPUT      Output directory (default: .context/PBI)
 
-${colors.bold}PROTECTED FILES${colors.reset}
-  The following files are never overwritten:
-  - test-cases.md
-  - implementation-plan.md
-  - feature-*.md
+${colors.bold}OVERWRITE POLICY${colors.reset}
+  Jira is the source of truth — NO files are protected. Every file the sync owns
+  (story.md, epic.md, per-field .md, comments.md, bug/test/test-plan/... .md) is
+  re-materialized on each run (per-field files only when the Jira field is non-empty).
+  Hand-authored NON-Jira files (context.md, evidence/, test-specs/) use names the
+  sync never writes.
 
 ${colors.dim}Get API token: https://id.atlassian.com/manage-profile/security/api-tokens${colors.reset}
 `);

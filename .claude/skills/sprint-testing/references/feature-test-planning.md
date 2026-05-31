@@ -1,6 +1,6 @@
 # Feature Test Planning (Feature / Multi-Story Scope)
 
-Use when the Stage 1 work scope is a whole feature (epic, module, multi-story batch) rather than a single story. Output is a feature-level test plan that informs per-ticket ATPs. Produces `feature-test-plan.md` inside the feature's PBI folder.
+Use when the Stage 1 work scope is a whole feature (epic, module, multi-story batch) rather than a single story. Output is a feature-level test plan that informs per-ticket ATPs. The `feature-test-plan.md` is now **Jira-synced** (epic level): author it → write to the epic's feature-test-plan custom field if one exists in `.agents/jira-fields.json`, otherwise to a structured comment `## Feature Test Plan` per the `fallback:` convention in `.agents/jira-required.yaml` — both via `[ISSUE_TRACKER_TOOL]` → run `bun run jira:sync-issues get <EPIC-KEY> --include-comments` → read the materialized copy at `.context/PBI/epics/EPIC-<KEY>-<slug>/feature-test-plan.md`. NEVER hand-write that file.
 
 For single-story Stage 1 work read `acceptance-test-planning.md` instead. Sprint-testing planning is manual / exploratory — do not confuse it with `test-automation`'s `planning-playbook.md` (which produces `spec.md` for automation code) or `test-documentation`'s ROI scoring (which decides which tests enter the regression backlog).
 
@@ -12,7 +12,7 @@ For single-story Stage 1 work read `acceptance-test-planning.md` instead. Sprint
 |--------|--------|
 | Ticket is an epic or module with 3+ child stories and shared risks | Generate feature test plan first, then per-story ATPs |
 | Single story, no siblings | Skip — go straight to `acceptance-test-planning.md` |
-| Story belongs to an epic that already has `feature-test-plan.md` | Reuse. New ATP inherits risks + integration points from it |
+| Story belongs to an epic that already has a synced `feature-test-plan.md` | Reuse. New ATP inherits risks + integration points from it |
 | Feature groups cross cutting concerns (auth, data integrity, money flows) | Generate even for 2 stories — shared risk surface justifies it |
 
 A feature plan exists to capture shared risks, integration points, and critical questions **once**, so the downstream per-story ATPs do not duplicate them.
@@ -23,16 +23,16 @@ A feature plan exists to capture shared risks, integration points, and critical 
 
 Read before starting. All paths relative to repo root.
 
-> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call (epic fetch, child story list, epic-description update, epic comment). Skip if Session Start §0.1 in `SKILL.md` already loaded it.
+> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` WRITE (epic field/comment update). Detailed READS of the epic + children use `bun run jira:sync-issues` — not `/acli`. Skip the load if Session Start §0.1 in `SKILL.md` already loaded it.
 
 | Input | Source |
 |-------|--------|
-| Epic / feature ticket | `[ISSUE_TRACKER_TOOL]` using Jira Key from epic.md |
-| Child story list | `[ISSUE_TRACKER_TOOL]` (children of the epic) |
+| Epic / feature ticket (detail) | `bun run jira:sync-issues get <EPIC-KEY> --include-comments` then read the synced `epic.md` / custom-field files |
+| Child story list | `bun run jira:sync-issues jql "parent = <EPIC-KEY>"` (or `[ISSUE_TRACKER_TOOL]` search for a trivial key/summary list only) |
 | Business context | `.context/business/business-data-map.md` + `.context/master-test-plan.md` |
 | API context | `.context/business/business-api-map.md` (business angle) + `api/schemas/` (generated types from `bun run api:sync`) |
 | Architecture + SRS (if present) | `.context/SRS/architecture.md`, `.context/SRS/functional-specs.md`, `.context/SRS/non-functional-specs.md` (API contract comes from `api/openapi-types.ts` and `.context/business/business-api-map.md`, not from SRS) |
-| Prior epic discussions | Epic comments (Team Discussion extraction — see `session-entry-points.md`) |
+| Prior epic discussions | Synced `comments.md` from the epic (Team Discussion extraction — see `session-entry-points.md`) |
 
 If project-wide context files are missing, stop and hand off to `project-discovery`. Do not proceed on partial context.
 
@@ -41,10 +41,10 @@ If project-wide context files are missing, stop and hand off to `project-discove
 ## Output location
 
 ```
-.context/PBI/{module-name}/{EPIC-KEY}-{brief-title}/
-  feature-test-plan.md     # this document
-  context.md               # from session-start
-  stories/                 # child tickets get their own ATP later
+.context/PBI/epics/EPIC-<KEY>-<slug>/
+  feature-test-plan.md     # this document — Jira-synced (read-only cache); never hand-written
+  context.md               # hand-authored from session-start (NON-Jira)
+  stories/                 # child STORY-<KEY>-<slug>/ folders get their own ATP later
 ```
 
 Keep the feature plan **feature-level**: no per-story test cases, no test data values. Those belong in the per-story ATP.
@@ -201,28 +201,29 @@ Feed this section into each child ATP so per-story planning only has to say "use
 
 ## Output rules for the AI
 
-1. **Write the plan locally first.** File path `.context/PBI/{module}/{EPIC}/feature-test-plan.md`.
+1. **Author the plan, then write it to Jira first — never hand-write the local file.** Write the feature-test-plan content to the epic's feature-test-plan custom field (if present in `.agents/jira-fields.json`), otherwise to a structured `## Feature Test Plan` comment per the `fallback:` convention, via `[ISSUE_TRACKER_TOOL]`.
 2. **Update the epic in Jira / TMS** via `[ISSUE_TRACKER_TOOL]`: append a "QA Test Strategy — Shift-Left Analysis" section to the epic description with a summary (top 3 risks, total TC estimate, critical questions pointer, test strategy headline). Add label `test-plan-ready`.
-3. **Comment on the epic** with the full plan body (mirror of the local file). Mention @PO, @Dev, @QA per project convention.
+3. **Materialize the local cache**: run `bun run jira:sync-issues get <EPIC-KEY> --include-comments`, which writes `.context/PBI/epics/EPIC-<KEY>-<slug>/feature-test-plan.md`. Read it back to confirm.
 4. **Report to the user**: executive summary covering complexity, top 3 risks, open PO/Dev questions, and the estimated total test count.
 
-Mirror-order is Jira → local. Local file is an exact copy of the comment body for version control.
+Mirror-order is Jira → local. The local `feature-test-plan.md` is a read-only cache emitted by the sync; Jira is source of truth.
 
 ---
 
 ## Pseudocode for the full pass
 
 ```
-Resolve epic key from `{EPIC_PATH}/epic.md` `**Jira Key:**` field
-Read business + technical + feature context per "Inputs required"
+Resolve epic key from the synced `epic.md` `**Jira Key:**` field (or the invocation)
+Read business + technical + feature context per "Inputs required" (via jira:sync-issues for Jira detail)
 Apply triage rubric — decide Full / Code-Review-only / Skip
 If Skip or Code-Review-only:
   Comment on epic with triage result, stop
 Else:
   Section 1..7 = produce content from inputs
-  Write `.context/PBI/{module}/{EPIC}/feature-test-plan.md`
+  [ISSUE_TRACKER_TOOL] write feature-test-plan content to the epic field (or `## Feature Test Plan` fallback comment)
   [ISSUE_TRACKER_TOOL] update epic description + label `test-plan-ready`
-  [ISSUE_TRACKER_TOOL] add epic comment (mirror of local file)
+  bun run jira:sync-issues get <EPIC-KEY> --include-comments   # materializes feature-test-plan.md
+  Read .context/PBI/epics/EPIC-<KEY>-<slug>/feature-test-plan.md to confirm
   Report executive summary to user
   Block sprint start until PO/Dev answer critical questions
 ```
@@ -250,6 +251,6 @@ Else:
 - [ ] Integration points table present and drives Section 5 strategy
 - [ ] Test matrix has a row per child story with realistic counts
 - [ ] Shared personas, fixtures, generators listed for reuse
-- [ ] `feature-test-plan.md` written locally AND mirrored as epic comment
+- [ ] feature-test-plan content written to the epic field (or `## Feature Test Plan` fallback comment) AND materialized to the local `feature-test-plan.md` via `bun run jira:sync-issues`
 - [ ] Epic labeled `test-plan-ready`
 - [ ] Executive summary delivered to user, blocker called out if critical questions open

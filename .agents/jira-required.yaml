@@ -19,34 +19,58 @@
 #   unmapped  — fields the methodology references semantically but that have no
 #               concrete Jira field yet. Skills mention them as literal markers
 #               (e.g. `customfield_ATR`) with TODO comments. Reported as INFO.
+#
+# Fallback (`fallback:` key, per field):
+#   Some custom fields may not exist in every Jira instance. For any field a
+#   skill WRITES, declare a `fallback:` so the skill never blocks when the field
+#   is absent — it writes the content to the fallback target instead.
+#     fallback: { target: comment, label: "Acceptance Test Plan (ATP)" }
+#   target — `comment` (default; posts a structured Jira comment headed `## <label>`)
+#            or `description` (appends to the issue description).
+#   label  — the human heading used in the comment/description block.
+#   Contract: scripts/sync-jira-issues.ts emits a pointer stub for an unresolved
+#   field's dedicated .md; skills then read the fallback (comments.md/description).
+#   Fields with NO `fallback:` are PO/planning-owned (mockup, story_points,
+#   weblink) — skills read them, never author them, so no fallback is needed.
 
 required:
   # ---- Story / User-story fields (consumed by scripts/sync-jira-issues.ts) ----
   acceptance_criteria:
     name: ✅ Acceptance Criteria (Gherkin)
     type: string
+    fallback: { target: comment, label: Acceptance Criteria }
     description: Gherkin-formatted acceptance criteria attached to user stories.
     used_by: [sync-jira-issues]
 
   acceptance_test_results:
     name: 🧪 Acceptance Test Results (ATR)
     type: string
+    fallback: { target: comment, label: Acceptance Test Results (ATR) }
     description: |
-      Stores the QA test report (ATR) on the Story (Modality jira-native comment-mirror flow).
-      Mirrored as a Jira comment for diff history. Modality jira-xray teams use a separate
-      Test Execution issue.
+      Stores the QA test report (ATR) on the Story (Modality jira-native). Authored in-session
+      and written to this field; when the field is absent it falls back to a `## Acceptance Test
+      Results (ATR)` Jira comment. Modality jira-xray teams use a separate Test Execution issue.
     used_by: [sprint-testing, test-documentation]
 
   business_rules_specification:
     name: 🚩Business Rules Specification
     type: string
+    fallback: { target: comment, label: Business Rules Specification }
     description: 'Business rules tied to a user story, separate from acceptance criteria.'
     used_by: [sync-jira-issues]
 
   scope:
     name: Scope ⛳
     type: string
-    description: In-scope / out-of-scope notes captured at story-grooming time.
+    fallback: { target: comment, label: Scope }
+    description: In-scope items only — what the story IS expected to deliver. Exclusions live in the separate `out_of_scope` field.
+    used_by: [sync-jira-issues]
+
+  out_of_scope:
+    name: 🏴 Out Of Scope
+    type: string
+    fallback: { target: comment, label: Out Of Scope }
+    description: Explicit exclusions from the story scope — what this story is NOT going to deliver. Complementary to `scope`.
     used_by: [sync-jira-issues]
 
   mockup:
@@ -58,6 +82,7 @@ required:
   workflow:
     name: 🧬WORKFLOW
     type: string
+    fallback: { target: comment, label: Workflow }
     description: User journey / workflow narrative for the story.
     used_by: [sync-jira-issues]
 
@@ -73,22 +98,56 @@ required:
     description: External reference URL attached to the story.
     used_by: [sync-jira-issues]
 
+  # ---- Epic + Story planning fields (Dev/QA) — referenced by scripts/sync-jira-issues.ts
+  # SLUG_MAPPING and materialized as per-field .md files. Shared with the dev boilerplate
+  # so a single Jira workspace serves both repos; absent fields degrade to a sync stub. ----
+  feature_test_plan:
+    name: 🧪 Feature Test Plan (QA)
+    type: string
+    fallback: { target: comment, label: Feature Test Plan (QA) }
+    description: |
+      Epic-level QA test plan (strategy + coverage approach for the whole feature/epic).
+      Authored by sprint-testing/feature-test-planning, written to this field, then synced
+      to `.context/PBI/epics/EPIC-<KEY>-<slug>/feature-test-plan.md`.
+    used_by: [sprint-testing, sync-jira-issues]
+
+  feature_implementation_plan:
+    name: Feature Implementation Plan (Dev)🛠️
+    type: string
+    fallback: { target: comment, label: Feature Implementation Plan (Dev) }
+    description: |
+      Epic-level technical implementation plan (Dev side). Cross-repo field shared with the
+      dev boilerplate; the QA sync materializes it as `feature-implementation-plan.md` when present.
+    used_by: [sync-jira-issues]
+
+  spec_implementation_plan:
+    name: Spec Implementation Plan (Dev)🛠️
+    type: string
+    fallback: { target: comment, label: Spec Implementation Plan (Dev) }
+    description: |
+      Story-level technical implementation plan (Dev side). Cross-repo field shared with the
+      dev boilerplate; the QA sync materializes it as `implementation-plan.md` when present.
+    used_by: [sync-jira-issues]
+
   # ---- Bug / Defect fields (consumed by scripts/sync-jira-issues.ts + sprint-testing reporting) ----
   actual_result:
     name: 🐞 Actual Result (Comportamiento)
     type: string
+    fallback: { target: comment, label: Actual Result }
     description: Observed behavior captured during bug repro.
     used_by: [sync-jira-issues, sprint-testing]
 
   expected_result:
     name: ✅ Expected Result (Output)
     type: string
+    fallback: { target: comment, label: Expected Result }
     description: 'Expected behavior per acceptance criteria, contrasted against the bug.'
     used_by: [sync-jira-issues, sprint-testing]
 
   error_type:
     name: Error Type
     type: option
+    fallback: { target: comment, label: Error Type }
     options: [content, crash, data, functional, integration, performance, security, visual]
     description: Bug taxonomy by error category.
     used_by: [sync-jira-issues, sprint-testing]
@@ -96,6 +155,7 @@ required:
   severity:
     name: Severity 🚩
     type: option
+    fallback: { target: comment, label: Severity }
     options: [critica, mayor, menor, moderada, trivial]
     description: Bug severity classification (impact-based).
     used_by: [sync-jira-issues, sprint-testing]
@@ -103,6 +163,7 @@ required:
   test_environment:
     name: Test Environment 📦️
     type: option
+    fallback: { target: comment, label: Test Environment }
     options: [dev, production, qa, staging, uat]
     description: Environment where the bug was reproduced or where the test ran.
     used_by: [sync-jira-issues, sprint-testing]
@@ -110,6 +171,7 @@ required:
   root_cause:
     name: Root Cause🐞
     type: option
+    fallback: { target: comment, label: Root Cause }
     options:
       - code_error
       - config_env_error
@@ -125,18 +187,21 @@ required:
   workaround:
     name: 🚩 Workaround
     type: string
+    fallback: { target: comment, label: Workaround }
     description: Temporary mitigation steps to unblock users until the fix ships.
     used_by: [sync-jira-issues, sprint-testing]
 
   evidence:
     name: 🧫EVIDENCE
     type: string
+    fallback: { target: comment, label: Evidence }
     description: 'Bug evidence: screenshots, traces, logs, repro recordings.'
     used_by: [sync-jira-issues, sprint-testing]
 
   fix:
     name: Fix
     type: option
+    fallback: { target: comment, label: Fix }
     options: [bugfix, hotfix]
     description: Type of fix applied (bugfix vs urgent hotfix).
     used_by: [sync-jira-issues, sprint-testing]
@@ -145,15 +210,18 @@ required:
   acceptance_test_plan:
     name: 🧪 Acceptance Test Plan (ATP)
     type: string
+    fallback: { target: comment, label: Acceptance Test Plan (ATP) }
     description: |
-      Stores the QA Acceptance Test Plan body on the Story itself (Modality jira-native
-      flow). Mirrored as a Jira comment for diff history. Modality jira-xray teams
-      use a separate Test Plan issue and may not need this field.
+      Stores the QA Acceptance Test Plan body on the Story itself (Modality jira-native).
+      Authored in-session and written to this field; when the field is absent it falls back to
+      a `## Acceptance Test Plan (ATP)` Jira comment. Modality jira-xray teams use a separate
+      Test Plan issue and may not need this field.
     used_by: [sprint-testing, test-documentation]
 
   test_status:
     name: Test Status🧪
     type: option
+    fallback: { target: comment, label: Test Status }
     options: [blocked, failed, n_r, passed]
     description: Per-Test issue execution status (Jira-native TMS).
     used_by: [test-documentation]
@@ -163,6 +231,7 @@ optional:
   to_be_automated:
     name: To Be Automated (QA)🧪
     type: option
+    fallback: { target: comment, label: To Be Automated }
     options: [yes, no]
     description: Whether the Test should be automated (ROI verdict from test-documentation).
     used_by: [test-documentation]

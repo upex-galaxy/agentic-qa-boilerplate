@@ -116,8 +116,8 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 | First-time orientation | "onboard me", "first time using this" | `/agentic-qa-onboard` | (skill self-loads) | — |
 | Onboard target project | "onboard this repo", "set up project" | `/project-discovery` | target repo code, `.context/` if exists | Read + Grep |
 | Adapt KATA to stack | "adapt framework", "wire fixtures" | `/adapt-framework` | `.context/business/*` | Code edit |
-| Shift-Left batch grooming | "shift-left these stories", "groom the backlog", "pre-sprint QA", "refine these N stories" | `/shift-left-testing` | `.context/business/*`, `.context/master-test-plan.md`, `.context/PBI/{module}/{TICKET}-*/` | `[ISSUE_TRACKER_TOOL]` |
-| Sprint testing ticket | "test this", "QA this story", "verify bug" | `/sprint-testing` | `.context/PBI/{module}/{TICKET}-*/` | `[AUTOMATION_TOOL]` + `[ISSUE_TRACKER_TOOL]` |
+| Shift-Left batch grooming | "shift-left these stories", "groom the backlog", "pre-sprint QA", "refine these N stories" | `/shift-left-testing` | `.context/business/*`, `.context/master-test-plan.md`, `.context/PBI/epics/EPIC-*/stories/STORY-*/` | `[ISSUE_TRACKER_TOOL]` |
+| Sprint testing ticket | "test this", "QA this story", "verify bug" | `/sprint-testing` | `.context/PBI/epics/EPIC-*/stories/STORY-*/` | `[AUTOMATION_TOOL]` + `[ISSUE_TRACKER_TOOL]` |
 | TMS documentation / ROI | "document tests", "ROI", "automate priority" | `/test-documentation` | `.context/master-test-plan.md`, `.agents/jira-required.yaml`, `.agents/jira-fields.json` | `[TMS_TOOL]` |
 | Write automated test | "automate", "E2E test", "API test" | `/test-automation` | `kata-manifest.json`, `tests/components/`, `.context/PBI/.../implementation-plan.md`, skill `references/` | Code edit |
 | Discovery / inventory | "what components exist", "list ATCs", "is TC-X automated" | — | `kata-manifest.json` | Read |
@@ -218,6 +218,8 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | `[WEB_SEARCH_TOOL]` | General web search, community fixes, troubleshooting, non-doc research | Tavily MCP (`mcp__tavily__tavily_search` / `tavily_extract` / `tavily_research`) | built-in `WebSearch` / `WebFetch` (last resort only) |
 | `[FEEDBACK_TOOL]` | Structured human feedback mid-conversation | `/wokitoki` (CLI `toki`) | `AskUserQuestion` / inline questionnaire |
 
+> **Reads-vs-writes carve-out**: the `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]` rows resolve to the WRITE / transition / link / trivial-lookup tool. DETAILED CONTENT reads (custom fields, ACs, ATP/ATR, comments) instead route through `bun run jira:sync-issues get <KEY> --include-comments` / `jql "<query>"` — read the synced `.md` (`acli view` returns null for `customfield_*`). Traceability link-graph + Xray run status stay on `/acli` / `/xray-cli`. See §9 and `agentic-qa-core/references/acli-integration.md`.
+
 **MANDATORY**: LOAD owning skill BEFORE invoking its tool. Skills = WHEN/WHAT. HOW (syntax, flags, auth, errors) lives in skill's `references/`.
 
 - Before any `[ISSUE_TRACKER_TOOL] ...` → load `/acli`
@@ -291,19 +293,46 @@ Project values live in **`.agents/project.yaml`** — load once per session, cac
 
 ## 9. LOCAL CONTEXT (PBI)
 
-Every ticket → maintain local docs under `.context/PBI/`:
+> **`.context/PBI/` layout is OWNED by `scripts/sync-jira-issues.ts`.** Module = Epic (1:1). Jira is the source of truth; local `.md` files are a **read-only cache**. NEVER hand-write a Jira-mirrored file — generate content, push it to the Jira field (or fallback), then run the sync. Skill-authored NON-Jira files live INSIDE the same folders.
+
+**Canonical tree** (Epic-centric; `<KEY>` = Jira key, `<slug>` from summary):
 
 ```
-.context/PBI/{module-name}/{TICKET-ID}-{brief-title}/
-  context.md          # ACs, test data, session notes, open questions
-  test-analysis.md    # ATP mirror
-  test-report.md      # ATR mirror
-  evidence/           # Screenshots, traces, logs (gitignored)
+.context/PBI/
+  epic-tree.md                                   [SYNC] master index
+  epics/EPIC-<KEY>-<slug>/
+    epic.md                                      [SYNC]
+    feature-implementation-plan.md               [SYNC ← Jira field / stub]
+    feature-test-plan.md                         [SYNC ← Jira field / stub]
+    module-context.md                            [skill — non-Jira, OK]
+    test-specs/                                  [skill — non-Jira, EPIC level]
+      ROADMAP.md  PROGRESS.md
+      <ID>/ spec.md  automation-plan.md  atc/*.md
+    stories/STORY-<KEY>-<slug>/
+      story.md                                   [SYNC]
+      acceptance-criteria.md  business-rules.md  scope.md  out-of-scope.md
+      workflow.md  mockup.md  implementation-plan.md
+      acceptance-test-plan.md  acceptance-test-results.md   [SYNC ← Jira fields / stub]
+      comments.md                                [SYNC, --include-comments]
+      context.md  test-session-memory.md         [skill — non-Jira, OK]
+      shift-left-refinement.md                   [skill — non-Jira, OK]
+      test-cases/  evidence/                     [skill — non-Jira, OK]
+      defects/DEFECT-<KEY>-<slug>.md             [SYNC]
+  bugs/ defects/ improvements/ tests/            [SYNC — standalone issue types]
+  test-plans/ test-executions/ test-sets/ preconditions/   [SYNC — Xray container issues (jira-xray); description holds the ATP/ATR body]
+  shift-left-sessions/<date>/batch-report.md     [skill — non-Jira, OK]
 ```
 
-Variables: `{module-name}` = kebab-case module (`user-management`). `{TICKET-ID}` = TMS id (`UPEX-277`). `{brief-title}` = max ~5 words kebab-case.
+**`[SYNC]` files = forbidden to hand-write** (overwritten on every sync — NO file is hard-protected; Jira is the source of truth). **Rule of thumb**: file mirrors a Jira/Xray field → read the synced copy, never author it locally. File holds info NOT in Jira (session notes, specs, ATC, roadmaps, evidence) → author it locally as usual.
 
-**ENTRY POINT**: invoke `/sprint-testing` — fetches ticket, explains story, loads context, explores code, creates PBI folder.
+**DETAILED READS via the script** (replaces `acli view` for custom fields):
+- `bun run jira:sync-issues get <KEY> --include-comments` → one issue, ALL custom fields + comments → read the generated `.md`.
+- `bun run jira:sync-issues jql "<query>"` → batch. `pull --epic <KEY>` / `--story <KEY>` → scoped.
+- Traceability (link graph Story↔ATP↔ATR↔TC) + Xray run status STAY on `acli`/`xray-cli` — the script only mirrors field content.
+
+**FALLBACK**: if a custom field a skill must fill is absent from the instance, the skill writes the content as a structured Jira comment (`## <label>`) per `.agents/jira-required.yaml` → `fallback:`. The sync then emits a pointer stub for that field's `.md`. Never block on a missing field.
+
+**ENTRY POINT**: invoke `/sprint-testing` — syncs the ticket (`jira:sync-issues get`), explains story, loads the synced PBI, explores code.
 
 **RESUME SESSION**: invoke `/test-automation`. Skill reads `PROGRESS.md` + `ROADMAP.md` automatically, picks up where left off.
 

@@ -13,8 +13,8 @@ This reference is for **pre-sprint batch grooming**. It does NOT cover in-sprint
 | Input | Source |
 |-------|--------|
 | Candidate Story IDs (explicit mode) | User argument: `UPEX-100,101,102` or natural-language list |
-| Candidate Story IDs (JQL mode) | `[ISSUE_TRACKER_TOOL]` search using the query in §JQL Query below |
-| Story metadata | `[ISSUE_TRACKER_TOOL]` per-Story fetch: title, description, ACs, priority, type, labels, sprint, parent epic, last-updated, comments count |
+| Candidate Story IDs (JQL mode) | `[ISSUE_TRACKER_TOOL]` search using the query in §JQL Query below (trivial key+summary+status+type+labels list — `acli search` is fine here) |
+| Story metadata (detailed: description, ACs, comments) | `bun run jira:sync-issues get <STORY_KEY> --include-comments` (batch: `jql "<query>"`), then read the synced `.md`. NEVER `acli view` — returns `null` for custom fields. For the candidate triage itself (type/labels/priority) the trivial `acli search` list above suffices; sync only when a refined-AC-grade read is needed. |
 | Project-wide context | `.context/business/business-data-map.md`, `.context/business/business-feature-map.md`, `.context/business/business-api-map.md`, `.context/master-test-plan.md` |
 | Jira workflow values | `.agents/jira-workflows.json` -> `{{jira.status.story.*}}` |
 

@@ -39,11 +39,11 @@ The Refinement subagent's job is to produce a high-signal artifact for PO + Dev 
 
 | Input | Source |
 |-------|--------|
-| Story (title, description, ACs, priority, labels, sprint, parent epic, comments) | `[ISSUE_TRACKER_TOOL]` Get Issue: `{STORY_KEY}` |
-| Team Discussion | Story comments — same extraction rules as `session-entry-points.md` §Step 1b |
-| Parent epic (if any) | `[ISSUE_TRACKER_TOOL]` Get Issue: `{EPIC_KEY}` — read description + risk callouts only |
+| Story (title, description, ACs, priority, labels, sprint, parent epic, comments) | `bun run jira:sync-issues get {STORY_KEY} --include-comments`, then read the synced `.md` (NEVER `acli view` — returns `null` for custom fields) |
+| Team Discussion | Synced `comments.md` — same extraction rules as `session-entry-points.md` §Step 1b |
+| Parent epic (if any) | `bun run jira:sync-issues get {EPIC_KEY}`, then read the synced epic `.md` — description + risk callouts only |
 | Project-wide context | `.context/business/business-data-map.md`, `.context/business/business-feature-map.md`, `.context/business/business-api-map.md`, `.context/master-test-plan.md` |
-| Module context (if it exists) | `.context/PBI/{module}/module-context.md` |
+| Module context (if it exists) | `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/module-context.md` (module = Epic, 1:1) |
 | Code (light read) | `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` + `{{FRONTEND_REPO}}/{{FRONTEND_ENTRY}}` — read enough to confirm feasibility, NOT to reproduce |
 | Common gap catalog | `refinement-questions.md` (this skill) |
 | ATP draft skeleton | `atp-draft-template.md` (this skill) |
@@ -53,12 +53,12 @@ The Refinement subagent's job is to produce a high-signal artifact for PO + Dev 
 ## Output (per Story)
 
 ```
-.context/PBI/{module-name}/{{PROJECT_KEY}}-{n}-{brief-title}/
-  context.md                   # created if missing (minimal)
-  shift-left-refinement.md     # this subagent's deliverable
+.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/
+  context.md                   # NON-Jira working file — created if missing (minimal)
+  shift-left-refinement.md     # NON-Jira working file — this subagent's deliverable
 ```
 
-`shift-left-refinement.md` follows the skeleton in `atp-draft-template.md`.
+`shift-left-refinement.md` follows the skeleton in `atp-draft-template.md`. Both files are NON-Jira working artifacts authored locally. Jira-mirrored files (story.md, acceptance-criteria.md, etc.) are produced ONLY by the sync — NEVER hand-write them.
 
 The subagent must NOT touch Jira. Phase 3 of the orchestrator skill owns all Jira mutations.
 
@@ -66,11 +66,11 @@ The subagent must NOT touch Jira. Phase 3 of the orchestrator skill owns all Jir
 
 ## Step 1 — Bootstrap the Story's PBI folder
 
-If `.context/PBI/{module-name}/{{PROJECT_KEY}}-{n}-{brief-title}/` does not exist:
+If `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/` does not exist:
 
-1. Derive `{module-name}` from the Story's project / module / component field (kebab-case). Fall back to the parent epic's module if the Story has none.
-2. Derive `{brief-title}` from the Story title — max 5 words, kebab-case.
-3. Create the folder.
+1. Resolve the parent Epic — module = Epic (1:1). The epic folder is `EPIC-<EPIC_KEY>-<slug>` where `<slug>` is derived from the epic title (kebab-case). If the Story has no parent epic, use its module/component to name the epic folder.
+2. Derive the story `<slug>` from the Story title — max 5 words, kebab-case.
+3. Create the folder under `stories/STORY-<STORY_KEY>-<slug>/`.
 4. Write a minimal `context.md` (template below). Do NOT include execution / smoke / evidence sections — those belong to `/sprint-testing` later.
 5. Do NOT create `evidence/`. The Story has not shipped — there is nothing to capture.
 
@@ -78,7 +78,7 @@ If `.context/PBI/{module-name}/{{PROJECT_KEY}}-{n}-{brief-title}/` does not exis
 
 ```markdown
 # {{PROJECT_KEY}}-{n}: {Title}
-**Ticket:** {{PROJECT_KEY}}-{n} | **Module:** {module-name} | **Status:** {Backlog | Shift-Left QA | Estimation | Ready For Dev} | **Sprint:** {n/a — pre-sprint}
+**Ticket:** {{PROJECT_KEY}}-{n} | **Module (= Epic):** {EPIC_KEY} {epic title} | **Status:** {Backlog | Shift-Left QA | Estimation | Ready For Dev} | **Sprint:** {n/a — pre-sprint}
 
 ## Acceptance Criteria (original)
 - AC1: ...
@@ -103,7 +103,7 @@ If the folder already exists (because `/sprint-testing` ran on a sibling Story i
 Read sprint-testing/references/acceptance-test-planning.md §"Phase 1 — Critical Analysis". Apply as-is with these scoping notes:
 
 - **Code exploration is LIGHT.** Read entry files + 1-2 related files to confirm that the feature is implementable on the current codebase. Do NOT trace call graphs, do NOT open test files, do NOT measure performance. The cost ceiling is "would a senior dev say this is feasible in the current code".
-- **Epic-level inheritance** — if `.context/PBI/{module}/{EPIC}/feature-test-plan.md` exists, read it and reuse risks / integration points / PO answers verbatim. Cite, do not re-derive.
+- **Epic-level inheritance** — if `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/feature-test-plan.md` exists, read it and reuse risks / integration points / PO answers verbatim. Cite, do not re-derive.
 - **Story complexity rating** drives the depth of Phase 2 below.
 
 Capture the output in the `## Phase 1 — Critical Analysis` section of `shift-left-refinement.md`.
@@ -212,7 +212,7 @@ The subagent's RETURN TO ORCHESTRATOR is a compact summary derived from this blo
   "tech_questions": 3,
   "outline_count_by_type": { "positive": 4, "negative": 5, "boundary": 2, "integration": 1 },
   "data_feasibility_risk": false,
-  "refinement_file": ".context/PBI/<module>/UPEX-100-<slug>/shift-left-refinement.md",
+  "refinement_file": ".context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-UPEX-100-<slug>/shift-left-refinement.md",
   "open_blockers": []
 }
 ```
@@ -241,7 +241,7 @@ The orchestrator presents the per-Story summary to the user, waits for OK, then 
 3. **Refinement quality > volume.** A Story with 4 ACs may legitimately yield 4 questions and 6 outlines. Forcing 15 outlines to look thorough dilutes value.
 4. **Cite, do not duplicate.** `acceptance-test-planning.md` is the source of truth for Phases 1-5 mechanics. If a future change to that file affects shift-left, the change propagates automatically.
 5. **Coverage estimate matters.** PO uses the per-Type counts to estimate Story points. Always include the table even if some Types are 0.
-6. **Module-context reuse.** If `.context/PBI/{module}/module-context.md` exists, read it and skip module-level code exploration. Story-level reads only.
+6. **Module-context reuse.** If `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/module-context.md` exists (module = Epic, 1:1), read it and skip module-level code exploration. Story-level reads only.
 7. **Output language**: artifact + Jira-bound content in English. Mirror user's language only in conversation. CLAUDE.md §1 Rule #14.
 
 ---

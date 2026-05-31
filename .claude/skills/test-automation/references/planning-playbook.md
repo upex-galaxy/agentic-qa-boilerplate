@@ -1,8 +1,12 @@
-# Planning Playbook — spec.md, implementation-plan.md, atc/*.md
+# Planning Playbook — spec.md, automation-plan.md, atc/*.md
 
 Load during Phase 1 (Plan) of the Plan → Code → Review pipeline. Covers the three plan documents KATA automation uses, how to populate each by scope (Module / Ticket / Regression), the Discover → Modify → Generate data-classification workflow used while planning, and the approval gate between Plan and Code.
 
 Scope-selection rules (which scope to pick, the one-line summary of each) live in SKILL.md §"Pick the planning scope first". This file assumes the scope has been chosen and documents what to produce.
+
+> **Two plans, do not confuse them.** This playbook authors the **automation plan** (`automation-plan.md`) — a NON-Jira, hand-authored file living in the Epic's `test-specs/<scope>/` tree (committed to git). It is NOT the Story's dev `implementation-plan.md`, which is a Jira-synced, read-only per-field cache in the Story folder (`.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/implementation-plan.md`) — read that as input via `bun run jira:sync-issues get <STORY-KEY>`, never hand-write it. The automation plan was historically named `implementation-plan.md`; it is renamed to `automation-plan.md` to avoid colliding with the Jira-synced dev plan.
+
+> **Path model.** All `test-specs/` artifacts live at the **Epic** level: `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/` (sibling of `stories/`). Module = Epic (1:1). `<scope>` = the ticket/regression slug or module slug.
 
 ---
 
@@ -13,10 +17,10 @@ The Plan phase is delegated to a single subagent. The orchestrator does NOT read
 **Briefing** (6 components per `agentic-qa-core/references/briefing-template.md`):
 
 ```
-Goal: Produce spec.md + implementation-plan.md for scope <SCOPE> (module|ticket|ATC) <SCOPE_KEY>.
+Goal: Produce spec.md + automation-plan.md for scope <SCOPE> (module|ticket|ATC) <SCOPE_KEY>.
 Context docs:
   - kata-manifest.json (root) — REQUIRED FIRST READ. Authoritative registry of every existing Component + ATC. Use it for reuse detection and ID-collision avoidance before drafting anything.
-  - .context/PBI/<module>/<TICKET-ID>/context.md (if exists — ticket scope)
+  - .context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/ (Jira-synced caches: story.md, acceptance-criteria.md, implementation-plan.md (dev plan), acceptance-test-plan.md — READ-ONLY input; materialize via `bun run jira:sync-issues get <STORY-KEY> --include-comments`)
   - .context/master-test-plan.md
   - .context/business/business-data-map.md
   - .context/business/business-feature-map.md
@@ -29,8 +33,8 @@ Exact instructions:
   1. Load kata-manifest.json FIRST. Cross-check every candidate Component name against components.api[].name + components.ui[].name; cross-check every candidate ATC ID against components.{api,ui}[].atcs[].id. Treat any match as a reuse signal — never plan a duplicate.
   2. Read remaining context docs to understand scope, business risks, and any coverage the manifest does not surface.
   3. Draft spec.md with: scope summary, ATCs (with ATC-identity rule applied), parameter sets (Equivalence Partitioning), data fixtures needed.
-  4. Draft implementation-plan.md with: target file paths, fixture selection (api / ui / test), reused-vs-new components (cite manifest entries), dependency order, estimated complexity per ATC.
-  5. Write both files to <PBI_FOLDER>/test-specs/<scope-slug>/.
+  4. Draft automation-plan.md with: target file paths, fixture selection (api / ui / test), reused-vs-new components (cite manifest entries), dependency order, estimated complexity per ATC.
+  5. Write both files to .context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope-slug>/.
 Report format:
   JSON: { "spec_path": "...", "plan_path": "...", "atc_count": <int>, "new_components": [...], "reused_components": [...], "open_questions": [...] }
 Rules:
@@ -46,14 +50,14 @@ The orchestrator reads the JSON report, surfaces open_questions to the user if a
 
 ## 1. Plan document map
 
-Three document types, each tied to a scope. Every scope produces at least `spec.md`; ticket and regression scopes add `implementation-plan.md`; complex ATCs add per-ATC specs under `atc/`.
+Three document types, each tied to a scope. Every scope produces at least `spec.md`; ticket and regression scopes add `automation-plan.md`; complex ATCs add per-ATC specs under `atc/`. All live at the Epic level under `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/`. These are NON-Jira hand-authored files (committed to git).
 
 | Document | Scope that produces it | Location |
 |----------|-----------------------|----------|
-| `spec.md` | Module (N specs), Ticket (1), Regression (1) | `.context/PBI/{module}/test-specs/{PREFIX}-T{NN}-{name}/spec.md` |
-| `implementation-plan.md` | Ticket, Regression | Same folder as spec.md — `implementation-plan.md` |
+| `spec.md` | Module (N specs), Ticket (1), Regression (1) | `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/{PREFIX}-T{NN}-{name}/spec.md` |
+| `automation-plan.md` | Ticket, Regression | Same folder as spec.md — `automation-plan.md` |
 | `atc/{TICKET-ID}-{brief-title}.md` | Complex ATCs from any scope | Same folder — `atc/{TICKET-ID}-{brief-title}.md` |
-| `ROADMAP.md`, `PROGRESS.md` | Module only | `.context/PBI/{module}/test-specs/` |
+| `ROADMAP.md`, `PROGRESS.md` | Module only | `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/` |
 
 Canonical folder naming:
 
@@ -79,7 +83,7 @@ Inputs:
 Outputs:
 
 ```
-.context/PBI/{module}/
+.context/PBI/epics/EPIC-<KEY>-<slug>/
   {module}-test-plan.md          # Master document (Section 4)
   test-specs/
     ROADMAP.md                    # Ticket index, phases, dependency graph
@@ -102,9 +106,9 @@ Inputs:
 Outputs:
 
 ```
-.context/PBI/{module}/test-specs/{PREFIX}-T{NN}-{name}/
+.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/{PREFIX}-T{NN}-{name}/
   spec.md                # 1–7 TCs derived from the ticket's ACs
-  implementation-plan.md # Architecture decisions, ATC registry, scenarios, implementation order
+  automation-plan.md     # Architecture decisions, ATC registry, scenarios, implementation order
   atc/*.md               # Only for ATCs complex enough to warrant a per-ATC spec
 ```
 
@@ -121,13 +125,13 @@ Inputs:
 Outputs:
 
 ```
-.context/PBI/{module}/test-specs/{PREFIX}-T{NN}-{name}/
+.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/{PREFIX}-T{NN}-{name}/
   spec.md                # 1–3 TCs (bug-driven) or 1–2 (gap-driven)
-  implementation-plan.md # Optional — skip when the spec is trivially one method
+  automation-plan.md     # Optional — skip when the spec is trivially one method
   atc/{TICKET-ID}-{brief-title}.md  # Usually present — regression = one ATC in detail
 ```
 
-A regression-driven plan is the smallest unit of work. Often it is just `spec.md` + `atc/*.md`, no implementation plan, because one ATC is the whole body of work.
+A regression-driven plan is the smallest unit of work. Often it is just `spec.md` + `atc/*.md`, no automation plan, because one ATC is the whole body of work.
 
 ---
 
@@ -229,12 +233,12 @@ Write it as if the reader has zero context. Include calculation formulas explici
 
 ---
 
-## 6. `implementation-plan.md` structure
+## 6. `automation-plan.md` structure
 
-The implementation plan is the technical contract — what code to write, which components already exist, which ATCs to reuse vs create, the implementation order.
+The automation plan is the technical contract — what code to write, which components already exist, which ATCs to reuse vs create, the implementation order. (Hand-authored in `test-specs/`; distinct from the Story's Jira-synced dev `implementation-plan.md`.)
 
 ```markdown
-# Test Implementation Plan: {TICKET-ID}
+# Test Automation Plan: {TICKET-ID}
 
 > Ticket: {TICKET-ID} — {Title}
 > Type: integration | e2e
@@ -342,7 +346,7 @@ Rules:
 - If two tests need different states of the same entity, each test creates its own record. No shared mutable state.
 - Auth tokens and credentials always come from `.env` via the project's variables module — never generated and never hardcoded.
 
-Record a feasibility row per ticket inside the plan (module master doc §7 and implementation-plan §4):
+Record a feasibility row per ticket inside the plan (module master doc §7 and automation-plan §4):
 
 ```
 | Ticket | Precondition | Pattern | Feasibility | Notes |
@@ -452,7 +456,7 @@ Never start Phase 2 (Code) without a written plan the user has approved. The gat
 Gate checklist:
 
 - [ ] `spec.md` exists and every TC has a TMS-generated ID.
-- [ ] For ticket/regression scope: `implementation-plan.md` exists with §3 ATC Registry populated.
+- [ ] For ticket/regression scope: `automation-plan.md` exists with §3 ATC Registry populated.
 - [ ] For complex ATCs: `atc/*.md` exists with the contract (signature + fixed assertions) defined.
 - [ ] Data strategy is documented per precondition (pattern + source + placement + cleanup).
 - [ ] Fixture decision is recorded (`{ api }` / `{ ui }` / `{ test }` / `{ steps }`).
@@ -464,7 +468,7 @@ Presentation to the user:
 
 1. Summarise the scope (module / ticket / regression).
 2. List the TCs from `spec.md` (IDs + titles).
-3. List the ATCs to be created and reused from `implementation-plan.md` §3.
+3. List the ATCs to be created and reused from `automation-plan.md` §3.
 4. Flag any preconditions classified as Risky or Blocker in §7 — the user decides whether to proceed, adjust scope, or defer.
 5. Wait for explicit approval before moving to Phase 2.
 
@@ -487,10 +491,10 @@ On approval, Phase 2 begins. If approval is not forthcoming, revise the plan —
 
 ### Ticket-driven
 
-- [ ] Ticket fetched from the issue tracker; ACs extracted.
+- [ ] Story materialized via `bun run jira:sync-issues get <STORY-KEY> --include-comments`; ACs + dev implementation-plan + ATP read from the synced `.md` (NEVER `acli workitem view` for custom fields).
 - [ ] TMS queried for existing tests; missing ones created there first.
 - [ ] `spec.md` written with 1–7 TCs.
-- [ ] `implementation-plan.md` §3 ATC Registry populated against `kata:manifest` output.
+- [ ] `automation-plan.md` §3 ATC Registry populated against `kata:manifest` output.
 - [ ] Fixture decision made and justified.
 - [ ] Every precondition classified (§7).
 - [ ] Implementation order written with one commit per step.
@@ -500,7 +504,7 @@ On approval, Phase 2 begins. If approval is not forthcoming, revise the plan —
 - [ ] Bug or gap is well-understood; the TC that would have caught it is written.
 - [ ] TMS TC exists (1–3 bug, 1–2 gap).
 - [ ] ATC spec written (`atc/*.md`) because the regression is one method's worth of work.
-- [ ] Data strategy documented on the ATC spec (§8 in the ATC template) since there is often no parent implementation-plan.
+- [ ] Data strategy documented on the ATC spec (§8 in the ATC template) since there is often no parent automation-plan.
 - [ ] Component placement decided — existing component vs new + fixture update.
 
 When every box is checked, the plan is ready to hand off to Phase 2 (Code). Until then, the plan is not complete and the approval gate (§10) has not been reached.
@@ -511,7 +515,7 @@ When every box is checked, the plan is ready to hand off to Phase 2 (Code). Unti
 
 When `/test-automation` is invoked mid-flow (or resumed after context loss), determine the resume step from the PBI state. The skill reads `PROGRESS.md` + `ROADMAP.md` directly — no `@`-loadable session file needed.
 
-| Has plan? (`implementation-plan.md`) | Has test code? (`tests/e2e/**` or `tests/integration/**`) | Resume from |
+| Has plan? (`automation-plan.md`) | Has test code? (`tests/e2e/**` or `tests/integration/**`) | Resume from |
 |---|---|---|
 | No  | No  | **STEP 2 (Planning)** |
 | Yes | No  | **STEP 3 (Coding)** |
@@ -529,7 +533,7 @@ Named phase-transition checkpoints. Each gate blocks progression until its crite
 
 | Gate | Between | Criteria |
 |---|---|---|
-| **G1 · Plan exists** | STEP 2 → STEP 3 | `implementation-plan.md` created with ATCs defined (see §10 Approval gate) |
+| **G1 · Plan exists** | STEP 2 → STEP 3 | `automation-plan.md` created with ATCs defined (see §10 Approval gate) |
 | **G2 · Tests pass** | STEP 3 → STEP 4 | All ATCs green locally — soft override allowed only after §12.3 bug-detection sub-protocol |
 | **G3 · Review OK** | STEP 4 → STEP 5 | Reviewer verdict = APPROVED, or §12.1 ceiling (2 rounds) reached and the user decided next steps |
 | **G4 · Progress updated** | STEP 5 → STEP 6 | `PROGRESS.md` reflects the completed ticket (status, test file path, done count, Session Log entry) |
@@ -557,7 +561,7 @@ Only after steps 1–4 can G2 be overridden and STEP 4 (Review) start. A failing
 
 ## 13. Shared state files — templates
 
-Both files live under `.context/PBI/{module}/test-specs/` and are the single source of truth for module-wide automation progress. Populate the template blocks verbatim (copy, then fill); keep section headings stable so future sessions can grep reliably.
+Both files live under the Epic's `test-specs/` (`.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/`) and are the single source of truth for module-wide automation progress. Populate the template blocks verbatim (copy, then fill); keep section headings stable so future sessions can grep reliably.
 
 ### 13.1 `ROADMAP.md` (ticket index + dependencies)
 
@@ -607,7 +611,7 @@ T01 ──┬──► T02 ──► T04
 
 | Date | Action | Actor | Artifacts |
 |---|---|---|---|
-| 2026-04-19 | Planned T02 | AI | implementation-plan.md |
+| 2026-04-19 | Planned T02 | AI | automation-plan.md |
 | 2026-04-20 | Coded T02 ATC1 | AI | tests/e2e/signup.spec.ts |
 
 ## Shared components created

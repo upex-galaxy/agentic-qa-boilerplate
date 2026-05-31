@@ -1,6 +1,8 @@
-# Phase 4 — Specification (Backlog Mapping + PBI Templates)
+# Phase 4 — Specification (Backlog Mapping + PBI Format-Reference Guides)
 
-> Read this when running Phase 4 sub-steps: PBI Backlog Mapping or PBI Story Template. Phase 4 runs after Phase 3 is complete. Do NOT duplicate backlog content into the repo — document HOW to access it.
+> Read this when running Phase 4 sub-steps: PBI Backlog Mapping or PBI Format-Reference Guides. Phase 4 runs after Phase 3 is complete. Do NOT duplicate backlog content into the repo — document HOW to access it.
+
+> **Per-ticket PBI is NOT a Phase-4 output.** It is materialized later by `/sprint-testing` via `bun run jira:sync-issues get <KEY> --include-comments`, which syncs Jira issues into the canonical tree `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` (Module = Epic, 1:1). Those local `.md` files are a READ-ONLY cache of Jira (Jira = source of truth). Phase 4 only produces the backlog access recipe (`README.md`) and the format-reference guides below — it never authors `story.md` or any per-ticket file locally.
 
 ---
 
@@ -9,10 +11,9 @@
 | File | Purpose |
 |------|---------|
 | `.context/PBI/README.md` | Backlog location, access methods, project structure, common queries. |
-| `.context/PBI/templates/user-story.md` | Canonical story format (role / action / benefit + AC). |
-| `.context/PBI/templates/bug-report.md` | Canonical defect report with severity guide and evidence block. |
-| `.context/PBI/templates/test-plan.md` | Story-scoped test plan (ACs -> TCs, scope, data, risks). |
-| `.context/PBI/templates/test-case.md` | Single TC layout with steps/expected/execution log. |
+| `.context/PBI/templates/user-story.md` | Format-reference: canonical story shape (role / action / benefit + AC). Reference-only, NOT a per-ticket authoring target — per-ticket content is synced from Jira. |
+| `.context/PBI/templates/bug-report.md` | Format-reference: canonical defect-report shape with severity guide and evidence block. Reference-only, NOT a per-ticket authoring target. |
+| `.context/PBI/templates/test-plan.md` | Format-reference: story-scoped test-plan shape (ACs -> TCs, scope, data, risks). Reference-only, NOT a per-ticket authoring target. |
 
 Every output MUST include a `## Discovery Gaps` section if a field could not be verified (e.g., workflow states are assumed, no access to create-meta).
 
@@ -20,8 +21,8 @@ Every output MUST include a `## Discovery Gaps` section if a field could not be 
 
 ## Golden rules
 
-1. **Do NOT copy the backlog.** The issue tracker is the source of truth for tickets. `.context/PBI/` holds only templates and per-sprint working notes.
-2. **Cleanup rule:** per-sprint folders (`.context/PBI/<sprint-name>/<TICKET-ID>/`) are temporary. Delete after the sprint ends — story details can always be re-fetched.
+1. **Do NOT copy the backlog.** The issue tracker is the source of truth for tickets. `.context/PBI/` holds the backlog access recipe (`README.md`) and format-reference guides (`templates/`), never a copy of the full backlog. Per-ticket PBI is synced on demand from Jira by `/sprint-testing` (`bun run jira:sync-issues`) as a read-only cache.
+2. **Per-ticket PBI is synced, not authored.** The canonical synced tree is `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/`, materialized by `/sprint-testing` from Jira. It is a read-only cache and can always be re-synced — this skill does not create it.
 3. **Tracker credentials in `.env` only.** Single keys: `ATLASSIAN_URL`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN` — consumed by MCP, acli, xray-cli, sync scripts, and the Jira-Direct TMS provider. No `JIRA_*` credential aliases exist; if you see them in old docs or `.env` files, migrate them. Never paste tokens in markdown; if the user pastes one in chat, scrub it and redirect them to `.env`. See SKILL.md §Gotchas for the general credential policy.
 4. **Tool resolution.** When you see `[ISSUE_TRACKER_TOOL]` in this document, resolve via the project's CLAUDE.md Tool Resolution table. Priority order: CLI (fewer tokens) -> MCP (fallback) -> REST API -> manual. For Jira, that means load `/acli` skill first; only fall back to Atlassian MCP if acli is unavailable.
 
@@ -147,22 +148,25 @@ Produce with these sections, in order:
 
 ```
 .context/PBI/
-|-- README.md                 # permanent
-|-- templates/                # permanent
+|-- README.md                 # permanent — backlog access recipe + common queries
+|-- templates/                # permanent — format-reference guides only (NOT per-ticket targets)
 |   |-- user-story.md
 |   |-- bug-report.md
-|   |-- test-plan.md
-|   `-- test-case.md
-`-- <sprint-name>/            # temporary — delete after sprint ends
-    `-- {{PROJECT_KEY}}-123/
-        |-- story.md
-        |-- test-plan.md
-        `-- test-cases.md
+|   `-- test-plan.md
+`-- epics/                    # synced from Jira by /sprint-testing — read-only cache, NOT created here
+    `-- EPIC-{{PROJECT_KEY}}-100-<slug>/
+        `-- stories/
+            `-- STORY-{{PROJECT_KEY}}-123-<slug>/
+                `-- ...        # materialized by `bun run jira:sync-issues get <KEY> --include-comments`
 ```
+
+> Phase 4 produces ONLY `README.md` + `templates/`. The `epics/.../stories/...` tree is synced from Jira on demand by `/sprint-testing` (Module = Epic, 1:1) and is a read-only cache of Jira — this skill never writes it.
 
 ---
 
-## Template outputs
+## Format-reference guide outputs
+
+> These three files document the canonical SHAPE of each artifact for human reference. They are NOT per-ticket authoring targets — per-ticket content is synced from Jira (source of truth) by `/sprint-testing`. Produce them once during onboarding so the team has a shared format reference.
 
 ### user-story.md (essentials)
 
@@ -211,24 +215,12 @@ Produce with these sections, in order:
 - Dependencies / blockers / risks.
 - Execution checklist + sign-off.
 
-### test-case.md (essentials)
-
-- Metadata: ID, title, story, AC ref, priority (P0-P3), type (Functional/UI/API/E2E), automation status, author, date.
-- Description.
-- Preconditions.
-- Test data table.
-- Steps table (#, action, expected).
-- Expected results.
-- Execution log (date, tester, pass/fail, notes).
-- Evidence section.
-- Bug reference (if failed).
-
 ---
 
 ## Gotchas
 
 - **Undocumented tickets.** Teams frequently open stories with "TBD" ACs or empty descriptions. When mapping, record the prevalence ("~30% of recent stories lack ACs") as a Discovery Gap — this becomes the shift-left opportunity for the QA role.
-- **Missing ACs.** Do NOT invent ACs to fill a template. If the source ticket has none, the generated `story.md` in the sprint folder should copy the emptiness and add `## Discovery Gaps: Acceptance Criteria missing — request from PO`.
+- **Missing ACs.** Do NOT invent ACs to fill the format-reference guide. ACs live in Jira (source of truth); if recent tickets frequently lack them, record the prevalence as a Discovery Gap (the shift-left opportunity) rather than back-filling. Per-ticket emptiness is surfaced later by `/sprint-testing` from the synced Jira cache, not authored here.
 - **Orphaned stories.** Stories with no Epic, or Epics with no parent theme, are common. Document the orphan count but do not attempt to re-parent from the skill.
 - **Custom workflow states.** Every team renames states (`Ready for QA` vs `In QA` vs `Testing`). Capture the real state names in the workflow diagram; do not force a generic template.
 - **Workflow drift.** The create-meta endpoint may list states that the current board does not actually use. When in doubt, read recent tickets to see which states appear in practice.
@@ -237,7 +229,7 @@ Produce with these sections, in order:
 - **Required custom fields.** `Story Points`, `Epic Link`, `Acceptance Criteria` (as a field, not description), `Components`. Fetch these from create-meta and include in the template; missing required fields will block ticket creation from CLI.
 - **Two states named "Done".** Jira commonly has both `Done` and `Closed`; some workflows have `Resolved` in between. Capture all terminal states.
 - **Do not hardcode issue types.** A project may not use `Sub-task`; another may have `Spike`, `Chore`, or `Incident`. Enumerate what the project actually uses.
-- **Template placeholders must be explicit.** Use `[persona]`, `[action]`, `[benefit]` in templates — never leave them as blank inputs. The tokens help future sprint-testing runs fill them deterministically.
+- **Format-reference placeholders must be explicit.** Use `[persona]`, `[action]`, `[benefit]` in the guides — never leave them as blank inputs. The tokens make the canonical shape unambiguous for human reference (per-ticket content is synced from Jira, not filled into these).
 - **Do not embed secrets in examples.** CLI invocations must use env-var interpolation (`$ATLASSIAN_API_TOKEN`), not literal tokens.
 
 ---
@@ -259,13 +251,12 @@ Produce with these sections, in order:
 Before reporting Phase 4 complete:
 
 - [ ] `.context/PBI/README.md` exists with project key + access recipe + four common queries.
-- [ ] `.context/PBI/templates/user-story.md` exists with role/action/benefit + AC skeleton + AC checklist.
-- [ ] `.context/PBI/templates/bug-report.md` exists with severity guide + evidence block.
-- [ ] `.context/PBI/templates/test-plan.md` exists with AC->TC mapping table.
-- [ ] `.context/PBI/templates/test-case.md` exists with execution log layout.
+- [ ] `.context/PBI/templates/user-story.md` exists (format-reference) with role/action/benefit + AC skeleton + AC checklist.
+- [ ] `.context/PBI/templates/bug-report.md` exists (format-reference) with severity guide + evidence block.
+- [ ] `.context/PBI/templates/test-plan.md` exists (format-reference) with AC->TC mapping table.
 - [ ] All outputs include a `## Discovery Gaps` section (can be empty, but must be present).
 - [ ] No credentials pasted in markdown; env-var references only.
-- [ ] Sprint folder convention documented; cleanup rule stated.
+- [ ] Per-ticket PBI sync is documented as out of scope (synced from Jira by `/sprint-testing`, not created here).
 - [ ] User has confirmed the workflow diagram matches reality (manual transition test or recent ticket review).
 
 Emit the phase completion ping and wait for user confirmation before moving to the context generators. KATA adaptation is out of scope for this skill — it is owned by the `/adapt-framework` command and runs after discovery outputs exist.
