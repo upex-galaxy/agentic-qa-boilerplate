@@ -350,7 +350,7 @@ for each {TEST_KEY, result} in run:
 
 > **TC body**: the test-case body = the `Test` issue's `description` (synced in both modalities). The Xray Gherkin / Test-Steps plugin field is NOT synced — it only mirrors the description.
 
-### 2.3 Local cache (`acceptance-test-results.md`, from sync)
+### 2.5 Local cache (`acceptance-test-results.md`, from sync)
 
 After the ATR is in Jira, materialize the read-only cache per modality. This is a sync-emitted cache — NEVER hand-write or hand-edit it. Jira is source of truth. (The old hand-written `test-report.md` mirror is retired.)
 
@@ -367,7 +367,7 @@ Also append to `context.md`:
 **Next:** {{{jira.status.story.qa_approved}} | Wait for fixes}
 ```
 
-### 2.4 Report-to-user summary
+### 2.6 Report-to-user summary
 
 Present Total / PASSED / FAILED / Pass Rate % as a 4-row summary when closing the ticket.
 
