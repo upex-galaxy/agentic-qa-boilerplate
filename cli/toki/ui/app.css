@@ -295,6 +295,49 @@ button {
   white-space: pre;
 }
 
+/* GitHub table -> bordered grid, raised header, zebra rows, scrolls if wide */
+.toki-block__content table {
+  display: block;
+  width: 100%;
+  margin: 0.9em 0;
+  border-collapse: collapse;
+  overflow-x: auto;
+  font-size: 0.92rem;
+}
+
+.toki-block__content th,
+.toki-block__content td {
+  padding: 8px 12px;
+  border: 1px solid var(--toki-border);
+  text-align: left;
+}
+
+.toki-block__content thead th {
+  background: var(--toki-surface-raised);
+  color: #f0f6fc;
+  font-weight: 700;
+}
+
+.toki-block__content tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* blockquote -> left accent border, muted text */
+.toki-block__content blockquote {
+  margin: 0.9em 0;
+  padding: 4px 16px;
+  border-left: 3px solid var(--toki-accent-strong);
+  color: var(--toki-text-muted);
+}
+
+.toki-block__content blockquote > :first-child {
+  margin-top: 0;
+}
+
+.toki-block__content blockquote > :last-child {
+  margin-bottom: 0;
+}
+
 /* ==========================================================================
    Interactive area (built by app.js)
    ========================================================================== */

@@ -18,10 +18,12 @@
  *   - links `[text](url)`                            -> <a> (http/https/mailto only)
  *   - unordered lists (`- ` / `* `)                  -> <ul><li>
  *   - ordered lists (`1. `)                          -> <ol><li>
+ *   - GitHub tables (`| a | b |` + `| --- |` row)    -> <table> (aligned cells)
+ *   - blockquotes (`> ...`)                          -> <blockquote>
  *   - blank-line-separated paragraphs                -> <p> (single newline -> <br>)
  *
- * OUT OF SCOPE (renders as escaped plain text): tables, nested blockquotes,
- * images, and nested lists deeper than one level.
+ * OUT OF SCOPE (renders as escaped plain text): images, nested blockquotes,
+ * and nested lists deeper than one level.
  *
  * Bun built-ins only, zero external deps (stays extractable).
  */
@@ -97,6 +99,115 @@ function isOrderedItem(line: string): boolean {
 /** True for an ATX-heading line (`#`..`######` + space). */
 function isHeading(line: string): boolean {
   return /^#{1,6}\s+/.test(line);
+}
+
+/**
+ * True for a blockquote line (`> ...` or a bare `>`). The source `>` has
+ * already been escaped to `&gt;` by the time the block loop inspects the line,
+ * so the marker is matched in its escaped form.
+ */
+function isBlockquote(line: string): boolean {
+  return /^&gt;(?:\s|$)/.test(line);
+}
+
+/** True for a table-shaped line (contains a `|`, escaped or not). */
+function isTableRow(line: string): boolean {
+  return line.includes('|');
+}
+
+/**
+ * True for a GitHub table delimiter row (`| --- | :--: |`). The cells must
+ * contain only dashes with optional leading/trailing alignment colons.
+ */
+function isTableDelimiter(line: string): boolean {
+  const cells = splitTableCells(line);
+  return cells.length > 0 && cells.every(cell => /^:?-+:?$/.test(cell.trim()));
+}
+
+/**
+ * Split one table row into its cell strings. Surrounding pipes are optional;
+ * `&#124;`-style escaping is out of scope, so a literal `|` always splits.
+ */
+function splitTableCells(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map(cell => cell.trim());
+}
+
+type CellAlignment = 'left' | 'center' | 'right' | 'none';
+
+/** Map a delimiter cell (`:--`, `:--:`, `--:`, `---`) to its alignment. */
+function alignmentFor(delimiterCell: string): CellAlignment {
+  const cell = delimiterCell.trim();
+  const left = cell.startsWith(':');
+  const right = cell.endsWith(':');
+  if (left && right) {
+    return 'center';
+  }
+  if (right) {
+    return 'right';
+  }
+  if (left) {
+    return 'left';
+  }
+  return 'none';
+}
+
+/** `style` attribute fragment for a cell alignment (empty for `none`). */
+function alignAttr(alignment: CellAlignment): string {
+  return alignment === 'none' ? '' : ` style="text-align: ${alignment}"`;
+}
+
+/**
+ * Render a GitHub table from its (already escaped) header, delimiter and body
+ * rows. Inline formatting is applied per cell; alignment maps to inline style.
+ */
+function renderTable(
+  headerLine: string,
+  delimiterLine: string,
+  bodyLines: string[],
+): string {
+  const alignments = splitTableCells(delimiterLine).map(alignmentFor);
+  const alignAt = (column: number): CellAlignment =>
+    alignments[column] ?? 'none';
+
+  const headCells = splitTableCells(headerLine)
+    .map(
+      (cell, column) =>
+        `<th${alignAttr(alignAt(column))}>${renderInline(cell)}</th>`,
+    )
+    .join('');
+  const head = `<thead><tr>${headCells}</tr></thead>`;
+
+  const bodyRows = bodyLines
+    .map((line) => {
+      const cells = splitTableCells(line)
+        .map(
+          (cell, column) =>
+            `<td${alignAttr(alignAt(column))}>${renderInline(cell)}</td>`,
+        )
+        .join('');
+      return `<tr>${cells}</tr>`;
+    })
+    .join('');
+  const body = `<tbody>${bodyRows}</tbody>`;
+
+  return `<table>${head}${body}</table>`;
+}
+
+/**
+ * Render a run of `> ` lines (already escaped) as one `<blockquote>`. The
+ * leading marker is stripped per line; inline formatting applies, and a single
+ * newline inside the quote becomes a `<br>`.
+ */
+function renderBlockquote(lines: string[]): string {
+  const inner = lines
+    .map(line => renderInline(line.replace(/^&gt;\s?/, '')))
+    .join('<br>');
+  return `<blockquote>${inner}</blockquote>`;
 }
 
 /** Render a run of `- ` / `* ` lines (already escaped) as a `<ul>`. */
@@ -192,16 +303,57 @@ export function md(src: string): string {
       continue;
     }
 
+    // Blockquote: consume the contiguous run of `> ` lines.
+    if (isBlockquote(line)) {
+      const quoteLines: string[] = [];
+      while (index < lines.length && isBlockquote(lines[index])) {
+        quoteLines.push(lines[index]);
+        index += 1;
+      }
+      out.push(renderBlockquote(quoteLines));
+      continue;
+    }
+
+    // GitHub table: a header row immediately followed by a delimiter row. A
+    // header with no valid delimiter is NOT a table -> falls through to the
+    // paragraph branch below, so a stray `|` never crashes the renderer.
+    if (
+      isTableRow(line)
+      && index + 1 < lines.length
+      && isTableDelimiter(lines[index + 1])
+    ) {
+      const headerLine = line;
+      const delimiterLine = lines[index + 1];
+      index += 2;
+      const bodyLines: string[] = [];
+      while (
+        index < lines.length
+        && lines[index].trim() !== ''
+        && isTableRow(lines[index])
+      ) {
+        bodyLines.push(lines[index]);
+        index += 1;
+      }
+      out.push(renderTable(headerLine, delimiterLine, bodyLines));
+      continue;
+    }
+
     // Paragraph: consume until a blank line or a structural line begins.
     const paragraph: string[] = [];
     while (index < lines.length) {
       const current = lines[index];
+      const startsTable
+        = isTableRow(current)
+          && index + 1 < lines.length
+          && isTableDelimiter(lines[index + 1]);
       if (
         current.trim() === ''
         || current.startsWith('```')
         || isHeading(current)
         || isUnorderedItem(current)
         || isOrderedItem(current)
+        || isBlockquote(current)
+        || startsTable
       ) {
         break;
       }
