@@ -113,6 +113,7 @@ The AI does not author this shape — it is what the UI consumes after validatio
 | `controlAnswer` | `string \| string[] \| boolean \| null` | Encoded by control type (see below). **Always `null` for a table block.** |
 | `text` | `string` | The user's free-text. Empty string `""` if untouched. **Always `""` for a table block.** |
 | `quotes` | `string[]` | Exact phrases the user highlighted from this block's `content`. Empty array if none. For a table block this holds quotes from the **intro content** only — per-cell quotes live in `rows[].quotes`. |
+| `images` | `string[]` | **Present ONLY when the user pasted at least one image** onto this block (the key is omitted otherwise — never an empty array). In the final result each entry is a **relative file path under `.toki/`** the AI can `Read`. See [Pasted images](#pasted-images-paste-to-attach) below. |
 | `rows` | `RowResult[]` | **Present ONLY for a table block** (absent on every normal block). One entry per spec row, in order. |
 
 ### `RowResult` (table blocks only)
@@ -123,6 +124,27 @@ The AI does not author this shape — it is what the UI consumes after validatio
 | `controlAnswer` | `string \| string[] \| boolean \| null` | This row's `rowControls` answer, encoded by type (same table as below). `null` when `rowControls` is absent or a `single`/`multi` is unanswered. |
 | `text` | `string` | This row's free-text from its `rowText` textarea. `""` if untouched. |
 | `quotes` | `string[]` | Exact phrases the user highlighted from THIS row's cells. Empty array if none. |
+| `images` | `string[]` | **Present ONLY when the user pasted at least one image** onto this row (key omitted otherwise). Each entry is a **relative file path under `.toki/`** in the final result. See [Pasted images](#pasted-images-paste-to-attach) below. |
+
+### Pasted images (paste-to-attach)
+
+The user can paste an image from the clipboard into any response textarea (a block textarea, a table-row textarea, or the expand-to-write panel). Each pasted image becomes an entry in that answer's `images` array.
+
+`images` has a **dual nature by stage** — the field carries a different kind of string depending on where the result is observed:
+
+| Stage | What each `images[]` entry is |
+| --- | --- |
+| In transit (browser → server `POST /submit`) | A `data:` URL: `data:image/png;base64,...`. The server preserves these strings verbatim (no disk IO). |
+| Final result (stdout + `.toki/result-<name>.json` backup) | A **relative file path under `.toki/`**, e.g. `.toki/demo-img-summary-1.png`. The CLI decodes the base64, writes the bytes to that file, and rewrites the entry to the path **before** both writes — so the AI reading stdout gets a path it can `Read`, never inline base64. |
+
+**File naming:** `.toki/<resultName>-img-<blockId>[-<rowId>]-<n>.<ext>` where:
+
+- `<resultName>` is the same name used for `result-<name>.json` (derived from `spec-<name>.json`, else a short epoch id);
+- `<blockId>` / `<rowId>` are the block / table-row ids, **sanitized** (any character outside `[A-Za-z0-9._-]` becomes `_`); the `-<rowId>` segment is present only for table-row images;
+- `<n>` is the 1-based index of the data-URL image within that answer (pre-existing path entries do not consume a number);
+- `<ext>` is chosen from the image mime: `image/png`→`png`, `image/jpeg`/`image/jpg`→`jpg`, `image/gif`→`gif`, `image/webp`→`webp`, `image/svg+xml`→`svg`, any other image mime→`bin`.
+
+Robustness: an entry that is already a plain path (not a `data:` URL) passes through unchanged; an image that fails to decode or write is logged to **stderr** and dropped from the array (it never breaks the handshake or pollutes stdout).
 
 ### `controlAnswer` encoding (by control type)
 

@@ -76,11 +76,18 @@ function shapeResult(body: unknown): Result {
   return { submittedAt, blocks, meta };
 }
 
-/** Shape the answer triple (controlAnswer/text/quotes) shared by blocks + rows. */
+/**
+ * Shape the answer triple (controlAnswer/text/quotes) shared by blocks + rows,
+ * plus a pass-through `images` array when present + non-empty (else the key is
+ * omitted). Images arrive as `data:` URLs here; index.ts later persists them to
+ * `.toki/` files and rewrites the entries to paths — this helper only preserves
+ * the raw strings (no disk IO in the server).
+ */
 function shapeAnswer(obj: Record<string, unknown>): {
   controlAnswer: ResultBlock['controlAnswer']
   text: string
   quotes: string[]
+  images?: string[]
 } {
   let controlAnswer: ResultBlock['controlAnswer'] = null;
   const ca = obj.controlAnswer;
@@ -96,7 +103,24 @@ function shapeAnswer(obj: Record<string, unknown>): {
     ? obj.quotes.filter((q): q is string => typeof q === 'string')
     : [];
 
-  return { controlAnswer, text, quotes };
+  const shaped: {
+    controlAnswer: ResultBlock['controlAnswer']
+    text: string
+    quotes: string[]
+    images?: string[]
+  } = { controlAnswer, text, quotes };
+
+  // Pass images through (data URLs) only when present + non-empty, mirroring how
+  // rows[] is omitted on normal blocks. Dropping unknown fields silently is the
+  // exact class of bug that bit rows[] — so attach explicitly here.
+  const images = Array.isArray(obj.images)
+    ? obj.images.filter((img): img is string => typeof img === 'string')
+    : [];
+  if (images.length > 0) {
+    shaped.images = images;
+  }
+
+  return shaped;
 }
 
 function shapeResultRow(raw: unknown): RowResult {

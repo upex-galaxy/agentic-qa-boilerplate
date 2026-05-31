@@ -39,10 +39,12 @@
    * toggle -> boolean, no controls -> null.
    *
    * A table block instead holds `rows`, a map keyed by row id where each entry
-   * is the same `{ controlAnswer, text, quotes }` shape (the block-level
+   * is the same `{ controlAnswer, text, quotes, images }` shape (the block-level
    * `controlAnswer`/`text` stay at their inert defaults). `quotes` on a table
-   * block captures selections from its `content` intro.
-   * @type {Record<string, { controlAnswer: string | string[] | boolean | null, text: string, quotes: string[], rows?: Record<string, { controlAnswer: string | string[] | boolean | null, text: string, quotes: string[] }> }>}
+   * block captures selections from its `content` intro. `images` holds the
+   * data URLs of any pasted images for that answer (block or row), submitted as
+   * data URLs and persisted to `.toki/` file paths server-side.
+   * @type {Record<string, { controlAnswer: string | string[] | boolean | null, text: string, quotes: string[], images: string[], rows?: Record<string, { controlAnswer: string | string[] | boolean | null, text: string, quotes: string[], images: string[] }> }>}
    */
   const state = Object.create(null);
 
@@ -64,6 +66,7 @@
       controlAnswer: initialControlAnswer(block.controls),
       text: '',
       quotes: [],
+      images: [],
     };
     if (isTableBlock(block)) {
       const rows = Object.create(null);
@@ -75,6 +78,7 @@
           controlAnswer: initialControlAnswer(block.table.rowControls),
           text: '',
           quotes: [],
+          images: [],
         };
       }
       entry.rows = rows;
@@ -188,6 +192,7 @@
     }
     host.appendChild(buildQuotesArea(target));
     host.appendChild(buildTextarea(block.text, target, () => openExpand(block.id)));
+    host.appendChild(buildImagesArea(target));
   }
 
   /**
@@ -214,6 +219,7 @@
       }
       cell.appendChild(buildQuotesArea(target));
       cell.appendChild(buildTextarea(table.rowText, target, null));
+      cell.appendChild(buildImagesArea(target));
     }
   }
 
@@ -361,6 +367,10 @@
       }
       refresh();
     });
+
+    // Paste an image from the clipboard → capture it as an attachment on this
+    // answer (block or row). Non-image pastes fall through to normal text paste.
+    textarea.addEventListener('paste', event => handleImagePaste(event, target.key));
 
     field.appendChild(textarea);
 
@@ -600,6 +610,113 @@
   }
 
   // --------------------------------------------------------------------------
+  // C2. PASTE-TO-ATTACH IMAGES
+  // --------------------------------------------------------------------------
+
+  /** Per-answer images host. Keyed (data-block-id) by `target.key`, like quotes. */
+  function buildImagesArea(target) {
+    return el('div', 'toki-images', { 'data-block-id': target.key });
+  }
+
+  /** Resolve the live state entry for an answer key (block or `block::row`). */
+  function imageEntryForKey(key) {
+    return quoteEntryForKey(key);
+  }
+
+  /**
+   * Clipboard-paste handler bound to every response textarea (block, row, and
+   * the expand panel input). If the clipboard carries an image, capture each one
+   * as a data URL on `key`'s state and render a removable thumbnail. Non-image
+   * pastes are left alone (no preventDefault) so normal text paste still works.
+   */
+  function handleImagePaste(event, key) {
+    const data = event.clipboardData;
+    if (!data) {
+      return;
+    }
+    const files = [];
+    // Prefer items (richer); fall back to files. De-dupe by reference.
+    if (data.items && data.items.length > 0) {
+      for (const item of data.items) {
+        if (item.kind === 'file' && typeof item.type === 'string' && item.type.indexOf('image/') === 0) {
+          const file = item.getAsFile();
+          if (file) {
+            files.push(file);
+          }
+        }
+      }
+    }
+    if (files.length === 0 && data.files && data.files.length > 0) {
+      for (const file of data.files) {
+        if (file && typeof file.type === 'string' && file.type.indexOf('image/') === 0) {
+          files.push(file);
+        }
+      }
+    }
+    if (files.length === 0) {
+      // No image in the clipboard — let the normal text paste proceed.
+      return;
+    }
+    // We are handling image(s); stop the browser pasting them as text/markup.
+    event.preventDefault();
+    for (const file of files) {
+      readImageFile(file, key);
+    }
+  }
+
+  function readImageFile(file, key) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string' || result.indexOf('data:') !== 0) {
+        return;
+      }
+      const entry = imageEntryForKey(key);
+      if (!entry) {
+        return;
+      }
+      entry.images.push(result);
+      addImageChip(key, result);
+      refresh();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function addImageChip(key, dataUrl) {
+    const area = document.querySelector(
+      `.toki-images[data-block-id="${cssAttrEscape(key)}"]`,
+    );
+    if (!area) {
+      return;
+    }
+    const chip = el('span', 'toki-img-chip');
+    const img = el('img', 'toki-img-chip__img', { alt: 'Pasted image', src: dataUrl });
+    chip.appendChild(img);
+    const remove = el('button', 'toki-img-chip__x', {
+      'type': 'button',
+      'aria-label': 'Remove image',
+    });
+    remove.textContent = 'x';
+    remove.addEventListener('click', () => removeImage(key, dataUrl, chip));
+    chip.appendChild(remove);
+    area.appendChild(chip);
+  }
+
+  function removeImage(key, dataUrl, chip) {
+    const entry = imageEntryForKey(key);
+    if (entry) {
+      const index = entry.images.indexOf(dataUrl);
+      if (index !== -1) {
+        entry.images.splice(index, 1);
+      }
+    }
+    if (chip && chip.parentNode) {
+      chip.parentNode.removeChild(chip);
+    }
+    refresh();
+  }
+
+  // --------------------------------------------------------------------------
   // D. EXPAND-TO-WRITE PANEL
   // --------------------------------------------------------------------------
 
@@ -815,36 +932,50 @@
 
   function buildResult() {
     const resultBlocks = blocks.map((block) => {
-      const entry = state[block.id] || { controlAnswer: null, text: '', quotes: [] };
+      const entry = state[block.id] || { controlAnswer: null, text: '', quotes: [], images: [] };
 
       if (isTableBlock(block)) {
         // Table block: block-level answer is inert; rows carry the data, in
         // spec order. `quotes` holds any quotes captured from the intro content.
         const rows = entry.rows || {};
         const rowResults = block.table.rows.map((row) => {
-          const rowEntry = rows[row.id] || { controlAnswer: null, text: '', quotes: [] };
-          return {
+          const rowEntry = rows[row.id] || { controlAnswer: null, text: '', quotes: [], images: [] };
+          const rowResult = {
             id: row.id,
             controlAnswer: rowEntry.controlAnswer,
             text: rowEntry.text,
             quotes: rowEntry.quotes.slice(),
           };
+          // Attach images only when non-empty, mirroring how rows[] is omitted
+          // on normal blocks — keeps untouched answers byte-identical to before.
+          if (rowEntry.images && rowEntry.images.length > 0) {
+            rowResult.images = rowEntry.images.slice();
+          }
+          return rowResult;
         });
-        return {
+        const tableResult = {
           id: block.id,
           controlAnswer: null,
           text: '',
           quotes: entry.quotes.slice(),
           rows: rowResults,
         };
+        if (entry.images && entry.images.length > 0) {
+          tableResult.images = entry.images.slice();
+        }
+        return tableResult;
       }
 
-      return {
+      const blockResult = {
         id: block.id,
         controlAnswer: entry.controlAnswer,
         text: entry.text,
         quotes: entry.quotes.slice(),
       };
+      if (entry.images && entry.images.length > 0) {
+        blockResult.images = entry.images.slice();
+      }
+      return blockResult;
     });
 
     let answered = 0;
@@ -988,6 +1119,17 @@
         }
         refresh();
         autoGrowExpandInput();
+      });
+
+      // Pasting an image in the big panel attaches it to the SAME block answer
+      // (the panel is block-level only). The chip renders in the block's inline
+      // images area, keeping it consistent with how text mirrors two-way.
+      expandInput.addEventListener('paste', (event) => {
+        const blockId = currentExpandBlockId;
+        if (!blockId) {
+          return;
+        }
+        handleImagePaste(event, blockId);
       });
     }
 

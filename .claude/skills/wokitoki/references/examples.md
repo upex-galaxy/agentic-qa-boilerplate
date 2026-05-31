@@ -4,6 +4,8 @@ Four copy-pasteable specs: a pure decision-set, a pure long report, a hybrid, an
 
 Run any of them with: write the spec to `.toki/spec-<name>.json`, then `bun run toki .toki/spec-<name>.json`, then parse stdout.
 
+The user can also **paste images** from the clipboard into any response textarea (block, table row, or the expand panel). Pasted images come back in that answer's `images[]` as **relative `.toki/` file paths** (e.g. `.toki/<name>-img-<blockId>-1.png`) you can `Read` — never inline base64. The `images` key is present only when at least one image was attached. See `./schema.md` § Pasted images.
+
 ---
 
 ## 1. Pure decision-set

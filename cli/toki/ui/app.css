@@ -642,6 +642,78 @@ button {
 }
 
 /* ==========================================================================
+   Pasted-image thumbnails (built by app.js)
+
+   A compact flex row of removable thumbnail chips sitting under the textarea.
+   Works inside a table answer cell too (the chips just wrap).
+   ========================================================================== */
+
+.toki-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toki-images:empty {
+  display: none;
+}
+
+.toki-img-chip {
+  position: relative;
+  display: inline-flex;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--toki-radius-sm);
+  border: 1px solid var(--toki-border);
+  background: var(--toki-surface-raised);
+  overflow: hidden;
+}
+
+.toki-img-chip__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.toki-img-chip__x {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--toki-text);
+  font-size: 0.78rem;
+  line-height: 1;
+  transition:
+    background var(--toki-transition),
+    color var(--toki-transition);
+}
+
+.toki-img-chip__x:hover {
+  background: var(--toki-danger);
+  color: #fff;
+}
+
+/* Compact thumbnails inside a table answer cell. */
+.toki-table__answer .toki-images {
+  margin-top: 8px;
+  gap: 6px;
+}
+
+.toki-table__answer .toki-img-chip {
+  width: 44px;
+  height: 44px;
+}
+
+/* ==========================================================================
    Textarea
    ========================================================================== */
 

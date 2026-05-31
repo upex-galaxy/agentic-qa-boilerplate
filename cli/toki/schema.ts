@@ -134,6 +134,16 @@ export interface RowResult {
   controlAnswer: string | string[] | boolean | null
   text: string
   quotes: string[]
+  /**
+   * User-pasted images attached to this row. DUAL NATURE by stage:
+   * - in transit (browser -> server): each entry is a `data:` URL
+   *   (`data:image/png;base64,...`);
+   * - in the FINAL result (stdout + backup): each entry is a relative file path
+   *   under `.toki/` (index.ts decodes + writes the bytes, then rewrites the
+   *   entry to the path so the AI reads files, not base64).
+   * Present (and non-empty) ONLY when the user attached at least one image.
+   */
+  images?: string[]
 }
 
 export interface ResultBlock {
@@ -143,6 +153,16 @@ export interface ResultBlock {
   quotes: string[]
   /** Present ONLY for a table block: one entry per row, in row order. */
   rows?: RowResult[]
+  /**
+   * User-pasted images attached to this block. DUAL NATURE by stage:
+   * - in transit (browser -> server): each entry is a `data:` URL
+   *   (`data:image/png;base64,...`);
+   * - in the FINAL result (stdout + backup): each entry is a relative file path
+   *   under `.toki/` (index.ts decodes + writes the bytes, then rewrites the
+   *   entry to the path so the AI reads files, not base64).
+   * Present (and non-empty) ONLY when the user attached at least one image.
+   */
+  images?: string[]
 }
 
 export interface Result {

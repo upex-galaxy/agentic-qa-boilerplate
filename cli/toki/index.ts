@@ -15,6 +15,7 @@
  * Bun built-ins only, zero external deps (stays extractable).
  */
 
+import type { Result } from './schema.ts';
 import type { ServeHandle } from './server.ts';
 import { render } from './render.ts';
 import { SpecError, validateSpec } from './schema.ts';
@@ -191,6 +192,13 @@ async function main(): Promise<void> {
 
   // Persist a backup. Derive the name from spec-NAME.json when it matches.
   const resultName = deriveResultName(specPath, id);
+
+  // Decode any user-pasted images (data URLs in transit) to `.toki/` files and
+  // rewrite each entry in-place to the file path BEFORE either write, so both
+  // the backup and the authoritative stdout copy reference paths the AI can
+  // Read — never inline base64. Mutates `result`.
+  await persistImages(result, resultName);
+
   const outPath = `.toki/result-${resultName}.json`;
   try {
     await Bun.write(outPath, `${JSON.stringify(result, null, 2)}\n`);
@@ -204,6 +212,104 @@ async function main(): Promise<void> {
   // THE single stdout write. Nothing else ever touches stdout.
   process.stdout.write(JSON.stringify(result));
   process.exit(0);
+}
+
+// ============================================================================
+// IMAGE PERSISTENCE
+// ============================================================================
+
+/** `data:image/png;base64,...` → capture the mime in group 1. */
+const DATA_URL_RE = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/s;
+
+/** Map an image mime to a file extension. Unknown image mimes → `bin`. */
+function extForMime(mime: string): string {
+  switch (mime.toLowerCase()) {
+    case 'image/png':
+      return 'png';
+    case 'image/jpeg':
+    case 'image/jpg':
+      return 'jpg';
+    case 'image/gif':
+      return 'gif';
+    case 'image/webp':
+      return 'webp';
+    case 'image/svg+xml':
+      return 'svg';
+    default:
+      return 'bin';
+  }
+}
+
+/** Replace anything outside [A-Za-z0-9._-] (i.e. not word/dot/hyphen) with `_`. */
+function sanitizeForFilename(value: string): string {
+  return value.replace(/[^\w.-]/g, '_');
+}
+
+/**
+ * Walk every block + every block.rows[] entry; for each `images` array, decode
+ * any `data:` URL entry to bytes, write it to
+ * `.toki/<resultName>-img-<blockId>[-<rowId>]-<n>.<ext>`, and replace the entry
+ * with that relative path. Entries that are already plain paths pass through
+ * untouched. A failed decode/write logs a stderr warning and drops the entry
+ * (never throws — must not break the handshake). Mutates `result` in place.
+ */
+export async function persistImages(result: Result, resultName: string): Promise<void> {
+  const safeName = sanitizeForFilename(resultName);
+
+  for (const block of result.blocks) {
+    if (Array.isArray(block.images)) {
+      block.images = await persistImageList(block.images, safeName, block.id, null);
+    }
+    if (Array.isArray(block.rows)) {
+      for (const row of block.rows) {
+        if (Array.isArray(row.images)) {
+          row.images = await persistImageList(row.images, safeName, block.id, row.id);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Persist one `images` array, returning a new array where every decoded data
+ * URL is replaced by its written `.toki/` path. Non-data-URL entries (already
+ * paths) pass through; entries that fail to decode/write are dropped with a
+ * stderr warning.
+ */
+async function persistImageList(
+  images: string[],
+  safeName: string,
+  blockId: string,
+  rowId: string | null,
+): Promise<string[]> {
+  const out: string[] = [];
+  let n = 0;
+  for (const entry of images) {
+    const match = DATA_URL_RE.exec(entry);
+    if (!match) {
+      // Already a plain path (or non-data string) — pass through unchanged.
+      out.push(entry);
+      continue;
+    }
+    n += 1;
+    const mime = match[1];
+    const b64 = match[2];
+    const ext = extForMime(mime);
+    const safeBlock = sanitizeForFilename(blockId);
+    const rowPart = rowId !== null ? `-${sanitizeForFilename(rowId)}` : '';
+    const path = `.toki/${safeName}-img-${safeBlock}${rowPart}-${n}.${ext}`;
+    try {
+      const bytes = Buffer.from(b64, 'base64');
+      await Bun.write(path, bytes);
+      out.push(path);
+      console.error(`[toki] image written to ${path}`);
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[toki] warning: could not write image ${path}: ${message} (dropped)`);
+    }
+  }
+  return out;
 }
 
 // ============================================================================
@@ -271,15 +377,19 @@ function openBrowser(url: string): void {
 // RUN
 // ============================================================================
 
-main().catch((error: unknown) => {
-  if (error instanceof Error) {
-    console.error(`[toki] ${error.message}`);
-    if (process.env.DEBUG) {
-      console.error(error.stack);
+// Only auto-run when invoked directly as the CLI entry point. Importing this
+// module (e.g. to unit-test persistImages) must NOT kick off the server.
+if (import.meta.main) {
+  main().catch((error: unknown) => {
+    if (error instanceof Error) {
+      console.error(`[toki] ${error.message}`);
+      if (process.env.DEBUG) {
+        console.error(error.stack);
+      }
     }
-  }
-  else {
-    console.error(`[toki] ${String(error)}`);
-  }
-  process.exit(1);
-});
+    else {
+      console.error(`[toki] ${String(error)}`);
+    }
+    process.exit(1);
+  });
+}

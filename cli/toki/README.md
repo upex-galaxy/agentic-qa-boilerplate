@@ -43,7 +43,12 @@ The Result is `{ submittedAt, blocks[], meta }`. Each result block is `{ id, con
 - `controlAnswer`: `string` (single) | `string[]` (multi) | `boolean` (toggle) | `null` (report block).
 - `text`: the user's free-text (`""` if untouched).
 - `quotes`: phrases the user highlighted from the block `content`, anchoring the reply.
+- `images`: present only when the user **pasted images** onto that block (or table row) — each entry is a relative `.toki/` file path the AI can read. See below.
 - `meta`: `{ answered, total }` — `answered` counts blocks with any control selection and/or non-empty text.
+
+### Pasted images
+
+The user can paste a clipboard image into any response textarea (a block, a table row, or the expand-to-write panel). Each pasted image is sent to the server as a `data:` URL, then the CLI decodes it and writes the bytes to `.toki/<name>-img-<blockId>[-<rowId>]-<n>.<ext>` (ids sanitized to `[A-Za-z0-9._-]`; extension from the mime). The corresponding `images[]` entry in the **final** result (stdout + backup) is rewritten from the data URL to that **file path**, so the AI reads a file instead of inline base64. A failed image write is logged to stderr and dropped (never breaks the handshake). Full contract: `schema.ts` + `.claude/skills/wokitoki/references/schema.md`.
 
 The full field-by-field contract and validation rules live in `schema.ts` (the source of truth) and are mirrored for the AI in `.claude/skills/wokitoki/references/schema.md`. Worked example specs + results: `.claude/skills/wokitoki/references/examples.md`.
 
@@ -86,6 +91,6 @@ cli/toki/
   schema.ts    # Spec / Block / Controls / TextField / Result types + hand-rolled validateSpec (source of truth)
   markdown.ts  # minimal markdown -> HTML (dependency-free)
   ui/app.css   # dark theme (string asset inlined by render.ts)
-  ui/app.js    # client logic: controls, highlight-quote, focus drawer, validation, submit
+  ui/app.js    # client logic: controls, highlight-quote, paste-to-attach images, focus drawer, validation, submit
   README.md    # this file
 ```
