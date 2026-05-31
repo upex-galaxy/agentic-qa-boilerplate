@@ -98,6 +98,8 @@ Every automation session starts by choosing one of three planning scopes. Pick o
 
 When in doubt, ask the user which scope. Never assume "module" just because multiple TC IDs appear in the briefing.
 
+**These scopes consume the `Candidate` verdicts from `/test-documentation`** (Stage 4) — only `Candidate` TCs reach automation; `Manual` / `Deferred` are terminal. The mapping from that skill's 4 documentation scopes: `Module (Macro) ← module-driven`, `Ticket (Medium) ← ticket-driven`, `Regression-driven (Micro) ← bug-driven`. Candidates from an `ad-hoc / exploratory` documentation session enter under whichever fits — a module batch, or regression-driven for a single TC.
+
 ---
 
 ## Workflow — Plan → Code → Review
@@ -196,6 +198,15 @@ Run the review checklist on the new/modified files. Treat every failed item as a
 **Optional adversarial gate** — for high-risk changes (new fixtures, shared Page/Api base modifications, refactors touching multiple ATCs), invoke `/judgment-day` before commit. Runs two blind judges in parallel against the diff and only approves when both agree. See `.claude/skills/judgment-day/SKILL.md`. Not invoked automatically — user opts in per ticket.
 
 **Progress checkpoint + Archive**: after Phase 3 returns ACCEPT (all 3 Verifiers exit 0), the orchestrator appends `## Phase 3 — Review — <ts>` with `status: completed`, `next: stop` to `.session/test-automation/<scope>/progress.md`, then runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/test-automation/<scope>/` to `.session/.archive/<YYYY-MM-DD>-test-automation-<scope>/` (two-file dir preserved) and calls `mem_session_summary` including the archive path. On REJECT, archive does NOT run — the working directory stays for debug.
+
+#### Git & TMS handoff (sdet integration-trunk suites)
+
+This skill stops at a clean local review. It does **not** create branches, push, or open PRs — that is `/git-flow-master`'s job. When the repo's git strategy is `sdet` (the standing mode for chained test-automation suites), each ticket flows through the per-ticket loop in `.claude/skills/git-flow-master/references/sdet-integration-trunk.md`:
+
+- The Phase 3 ACCEPT gate (3 Verifiers green: `test` / `types:check` / `lint:check`) is the skill's **local validation gate**. Under `sdet` it must pass on **both** the `local` and `staging` environments before push — re-run the suite against each (`active_env` per `.agents/project.yaml`). The Verifiers are local-only; Sanity CI on the branch is owned by `/git-flow-master` + `/regression-testing`, never by this skill.
+- After ACCEPT, surface the explicit handoff — _"Local gate green. Ready for `/git-flow-master`: cut `test/{KEY}-{slug}` from the integration trunk, push, Sanity-CI, PR into the trunk, merge `--no-ff`."_ Do not auto-invoke git operations.
+- **Append the Git Ledger line** to the suite's `progress.md` after each branch action (orchestrator-written, append-only) so a resuming session knows how the trunk was left: trunk name + SHA, last ticket merged, pending tickets, sync-gate / final-PR state. Schema in `../agentic-qa-core/references/session-management.md` §7 "The Git Ledger"; what-to-write detail in `.claude/skills/git-flow-master/references/sdet-integration-trunk.md` §Resume.
+- **TC lifecycle anchors to the ticket-branch PR, not the final `trunk → main` PR**: TCs → In Review when the ticket PR opens into the trunk; they flip to Automated only after the final suite PR merges to `main` and CI is green there. Execute transitions via `/test-documentation` + `[ISSUE_TRACKER_TOOL]`; cross-check status names against `.agents/jira-workflows.json`. Merging into the trunk is NOT "Automated".
 
 ---
 
@@ -343,7 +354,7 @@ export class UiFixture extends TestContext {
 
 **T7.** NEVER hardcode `customfield_NNNNN` in spec files, test data, or test config. Resolve Jira fields via `{{jira.<slug>}}` against `.agents/jira-fields.json` + `.agents/jira-required.yaml` so test code survives workspace rotations.
 
-**T8.** NEVER mix test code and product code in the same PR. Test PRs follow the `test/*` branch convention with title format `{type}({ISSUE-KEY}): {description}` — see `.claude/skills/git-flow-master/references/pr-test-automation.md`.
+**T8.** NEVER mix test code and product code in the same PR. Test PRs follow the `test/*` branch convention with title format `{type}({ISSUE-KEY}): {description}` — see `.claude/skills/git-flow-master/references/pr-test-automation.md`. Under the `sdet` strategy, adjacent non-test work never rides a `test/*` ticket branch either — it goes on a Plus Branch (`docs/*`/`chore/*`/`fix/*` → integration trunk). See `.claude/skills/git-flow-master/references/sdet-integration-trunk.md`.
 
 ---
 

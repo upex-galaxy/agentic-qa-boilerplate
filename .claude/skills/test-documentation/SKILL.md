@@ -126,6 +126,8 @@ Pick the scope based on the input, not the output. All four scopes share the sam
 
 If the user gives you a story ID, use ticket-driven. If they give you a bug ID, use bug-driven. If they give you a module name or a session output, use module- or ad-hoc accordingly.
 
+**Scope handoff to `/test-automation`.** The `Candidate` TCs produced here flow downstream to `/test-automation`, which **re-scopes** them into its own 3 planning scopes: `module-driven → Module (Macro)`, `ticket-driven → Ticket (Medium)`, `bug-driven → Regression-driven (Micro)`. `ad-hoc / exploratory` Candidates have no 1:1 automation scope — they enter under whichever fits (a module batch, or regression-driven for a single TC). `Manual` and `Deferred` verdicts are terminal and never reach automation.
+
 After scope confirmation, **write `.session/test-documentation/<scope>/plan.md`** per `agentic-qa-core/references/session-management.md` §6 — Goal (scope + TMS modality + expected TC count), Inputs (PBI references, ATP source, prior bugs), Approach (per-phase dispatch table above), Phase breakdown (Phase 1 Analyze → Phase 2 Prioritize → Phase 3 TC creation with chunk count → Traceability → Final report), Risks, Verification checklist (all TCs created with traceability + coverage matrix written), Cross-references (`.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/*.md` per-TC files + `.context/reports/` coverage matrix). Append `## Phase -1 — Session resume check — <ts>` with `status: completed`, `next: Phase 0 — Resolve TMS modality` to `progress.md`.
 
 ---

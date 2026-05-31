@@ -1,6 +1,6 @@
 ---
 name: git-flow-master
-description: "End-to-end Git operator for any branching strategy. Auto-detects the project's strategy (solo-main, main+integration, enterprise multi-branch, trunk-based, GitFlow, GitHub Flow, GitLab Flow) from .git config, branches, and an CLAUDE.md marker, then adapts every commit, branch, push, PR, conflict-fix, and chained-PR action to that strategy. Use this skill whenever the user wants to: create a branch (`crear branch`, `new feature branch`, `start work on UPEX-123`), commit changes (`commit this`, `commitear esto`, `make a commit`, `commit and push`), push code (`push`, `push to main`, `push to staging`, `subir cambios`), open a pull request (`create PR`, `open PR`, `abrir PR`, `crear pull request`, `gh pr create`), fix merge conflicts (`fix conflict`, `resolver conflicto`, `merge conflict`, `rebase conflict`, `push rejected`), plan stacked or chained PRs (`stack of PRs`, `chained PRs`, `split this PR`, `PR demasiado grande`), set up or bootstrap a branching strategy on a fresh repo (`set up our git strategy`, `bootstrap branching`, `configura el flujo de git`, `git strategy setup`, `materialize the git flow`, `create the staging branch and write the runbook`), or pick / change / set up a branching strategy (`git flow`, `git strategy`, `branching strategy`, `which git flow do we use`, `set up our git strategy`, `bootstrap branching`, `configura el flujo de git`). Trigger even when the user does not say `git-flow-master` literally — if the work is git-or-PR-shaped, this is the right tool. Do NOT use for: testing tickets (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing), or general code editing — git-flow-master operates strictly on the version-control layer."
+description: "End-to-end Git operator for any branching strategy. Auto-detects the project's strategy (solo-main, main+integration, enterprise multi-branch, trunk-based, GitFlow, GitHub Flow, GitLab Flow, SDET integration-trunk for chained test-automation suites) from .git config, branches, and an CLAUDE.md marker, then adapts every commit, branch, push, PR, conflict-fix, and chained-PR action to that strategy. Use this skill whenever the user wants to: create a branch (`crear branch`, `new feature branch`, `start work on UPEX-123`), commit changes (`commit this`, `commitear esto`, `make a commit`, `commit and push`), push code (`push`, `push to main`, `push to staging`, `subir cambios`), open a pull request (`create PR`, `open PR`, `abrir PR`, `crear pull request`, `gh pr create`), fix merge conflicts (`fix conflict`, `resolver conflicto`, `merge conflict`, `rebase conflict`, `push rejected`), plan stacked or chained PRs (`stack of PRs`, `chained PRs`, `split this PR`, `PR demasiado grande`), set up or bootstrap a branching strategy on a fresh repo (`set up our git strategy`, `bootstrap branching`, `configura el flujo de git`, `git strategy setup`, `materialize the git flow`, `create the staging branch and write the runbook`), or pick / change / set up a branching strategy (`git flow`, `git strategy`, `branching strategy`, `which git flow do we use`, `set up our git strategy`, `bootstrap branching`, `configura el flujo de git`). Trigger even when the user does not say `git-flow-master` literally — if the work is git-or-PR-shaped, this is the right tool. Do NOT use for: testing tickets (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing), or general code editing — git-flow-master operates strictly on the version-control layer."
 license: MIT
 compatibility: [claude-code, opencode]
 phase: implementation
@@ -87,7 +87,7 @@ This summary is cheap, prevents 90% of mistakes, and is the input to every subse
 
 ## Step 2 — Resolve the branching strategy
 
-The skill supports seven strategies (see `references/branching-strategies.md` for the full catalogue, detection signals, and trade-offs):
+The skill supports eight strategies (see `references/branching-strategies.md` for the full catalogue, detection signals, and trade-offs):
 
 | Strategy           | One-line description                                                                                                                             |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -98,17 +98,18 @@ The skill supports seven strategies (see `references/branching-strategies.md` fo
 | `gitflow`          | Vincent Driessen's classic. `main` (releases) + `develop` (integration) + `feature/*` + `release/*` + `hotfix/*`. Heavyweight; mostly legacy.    |
 | `github-flow`      | `main` always deployable. `feature/*` branches → PR → merge → deploy. No staging/develop branch.                                                 |
 | `gitlab-flow`      | GitHub Flow + environment branches (`pre-production`, `production`) to model deployment promotion.                                               |
+| `sdet`             | SDET Gitflow. `main` (confirmed tests) + ephemeral per-suite integration trunk `test/<module>-e2e`. Test tickets chain through the trunk (`--no-ff`); one final PR → `main`. For chained test-automation suites. Opt-in; see `references/sdet-integration-trunk.md`. |
 
 ### Detection algorithm
 
 Apply in order; stop at the first definitive answer:
 
-1. **Marker in `CLAUDE.md`** — search for `<!-- git-flow-master:strategy:VALUE -->` where `VALUE` is one of the seven slugs. If found, use it. This is the persisted decision. Also read the decision markers if present — `<!-- git-flow-master:integration-branch:NAME -->`, `<!-- git-flow-master:promote-method:... -->`, `<!-- git-flow-master:feature-merge:... -->`, `<!-- git-flow-master:hotfix-policy:... -->`. Each marker that resolves a questionnaire answer means Strategy Setup SKIPS that question on re-run (idempotent).
+1. **Marker in `CLAUDE.md`** — search for `<!-- git-flow-master:strategy:VALUE -->` where `VALUE` is one of the eight slugs. If found, use it. This is the persisted decision. Also read the decision markers if present — `<!-- git-flow-master:integration-branch:NAME -->`, `<!-- git-flow-master:promote-method:... -->`, `<!-- git-flow-master:feature-merge:... -->`, `<!-- git-flow-master:hotfix-policy:... -->`. Each marker that resolves a questionnaire answer means Strategy Setup SKIPS that question on re-run (idempotent).
 2. **Single-branch heuristic** — `git branch -a` shows only `main` (or `master`) and no integration branch in the remote → `solo-main`.
 3. **Two-branch heuristic** — exactly `main` (or `master`) + one of `{staging, dev, develop, integration}` exists upstream → `main-integration` (record the integration branch name).
 4. **Multi-branch heuristic** — `main` + integration + active `feature/*` or `release/*` branches in `git branch -a` → `enterprise`.
 5. **Project hints** — look for `.gitlab-ci.yml` (suggests `gitlab-flow`), `release/*` and `hotfix/*` long-lived branches (suggests `gitflow`).
-6. **Fallback** — ask the user. Show the seven options with one-line descriptions; mirror their language. Do NOT pick silently.
+6. **Fallback** — ask the user. Show the options with one-line descriptions; mirror their language. Do NOT pick silently. On a test-automation repo (KATA / Playwright / `/test-automation`), surface `sdet` as the recommended option. `sdet` is opt-in only — never inferred silently from layout; a live `test/<module>-e2e` trunk with `test/{KEY}-*` PRs targeting it confirms an already-active `sdet` suite.
 
 ### Persist the decision
 
@@ -188,6 +189,7 @@ In a QA repo most work lands as `test/`, `fix/`, or `chore/` branches. Feature b
 - `main-integration`, `gitlab-flow` → branch off the integration branch (`staging` / `dev` / equivalent).
 - `enterprise` → branch off the integration branch unless it is a `hotfix/*`, which branches off `main`.
 - `gitflow` → `feature/*` branches off `develop`; `hotfix/*` off `main`; `release/*` off `develop`.
+- `sdet` → `test/{KEY}-*` ticket branches + Plus Branches (`docs/*`/`chore/*`/`fix/*`) branch off the **ephemeral integration trunk** `test/<module>-e2e`; the trunk itself is cut from `main` on demand when a suite begins. Never stack a ticket on the previous ticket branch. See `references/sdet-integration-trunk.md`.
 
 Always **propose** the name and ask for OK before `git checkout -b`. Never create silently.
 
@@ -237,6 +239,7 @@ Push command depends on Step 1 output:
 - `gitflow` → `main` and `develop` are protected.
 - `github-flow` / `trunk-based` → `main` is protected.
 - `enterprise` → `main`, integration, and any `release/*` are protected.
+- `sdet` → `main` is protected (only the final suite PR lands, reviewed + green CI). The integration trunk is protected-by-convention but its ticket/Plus PRs are self-merged by the maintainer with no ruleset friction.
 
 Ask: _"You are about to push directly to the protected branch `{branch}` in a `{strategy}` flow. Confirm?"_ Wait for explicit yes.
 
@@ -252,6 +255,7 @@ Ask: _"You are about to push directly to the protected branch `{branch}` in a `{
 | `main-integration`, `gitlab-flow`         | integration branch (e.g. `staging`)                                                              |
 | `enterprise`                              | integration branch; `hotfix/*` → `main`                                                          |
 | `gitflow`                                 | `feature/*` → `develop`; `hotfix/*` → `main`; `release/*` → `main` (and back-merge to `develop`) |
+| `sdet`                                    | `test/{KEY}-*` ticket branches + Plus Branches → the integration trunk `test/<module>-e2e`; the single final suite PR → `main` (after the sync gate). See `references/sdet-integration-trunk.md`. |
 
 The user can override with `--base X` in arguments. If overridden, surface it in the confirmation: _"PR will target `{base}` instead of the strategy default `{default}`."_
 
@@ -445,8 +449,9 @@ The branch plan that comes out of the decision is the **contract** for execution
 
 | File                                 | When to read                                                                                                                                           |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `references/branching-strategies.md` | Full catalogue of the 7 strategies + detection signals + trade-offs + chained-PR decision tree. Read when resolving strategy or planning a chain.      |
+| `references/branching-strategies.md` | Full catalogue of the 8 strategies + detection signals + trade-offs + chained-PR decision tree + per-strategy runbook render rules. Read when resolving strategy or planning a chain.      |
 | `references/strategy-setup.md`       | Strategy Setup (3.6) mechanics: decision questionnaire detail, per-strategy materialization table, ff-sync mechanics (never force), persist sequence, report format. Read when running or re-running Strategy Setup. |
+| `references/sdet-integration-trunk.md` | `sdet` strategy runbook: per-ticket loop, ephemeral integration trunk, local double-env gate, Sanity CI + CI-fallback clause, Plus Branches, sync gate, final PR, TC lifecycle. Read when running an `sdet` test-automation suite. |
 | `references/conventional-commits.md` | Full type vocabulary, scope rules, breaking-change syntax, mixed-changes precedence. Read when proposing commits.                                      |
 | `references/pr-templating.md`        | PR body template, placeholder rules, label / reviewer / draft conventions, multi-strategy base-branch table. Read when opening a PR.                   |
 | `references/conflict-resolution.md`  | Per-conflict-type playbooks (merge / rebase / push-rejected / detached-HEAD / stash / unrelated histories / hook rejection). Read when Step 3.5 fires. |
