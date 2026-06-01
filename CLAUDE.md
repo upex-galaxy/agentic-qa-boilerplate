@@ -377,12 +377,12 @@ Test files (orchestrate ATCs)
 
 Git / PR work → `/git-flow-master` auto-loads. Details in `.claude/skills/git-flow-master/` + `docs/workflows/git-flow.md`.
 
-**Protected branches**:
+**Protected branches** (`/git-flow-master` detects + adapts to whatever branches actually exist on the remote):
 
-| Branch | Role |
-|---|---|
-| `main` | Production. PRs merged from `staging` or semantic branch after review. |
-| `staging` | Integration branch for AI commits + pre-release validation. |
+| Branch | Status | Role |
+|---|---|---|
+| `main` | Always | Production + default branch. Only long-lived branch on `origin` today. PRs merged from a semantic branch (or `staging` if adopted) after review. |
+| `staging` | Optional | Only if team adopts a main-integration flow. Integration branch for AI commits + pre-release validation. Does NOT exist on `origin` by default — do not assume it. |
 
 **Critical commit rules**:
 
