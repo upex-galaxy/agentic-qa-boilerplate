@@ -283,6 +283,9 @@ const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/obra/superpowers', skill: 'brainstorming' },
   { package: 'https://github.com/lewislulu/html-ppt-skill', skill: 'html-ppt' },
   { package: 'https://bun.sh/docs', skill: 'bun' },
+  // Cross-project human-in-the-loop feedback CLI (`toki`): a blocking browser UI
+  // the AI drives mid-conversation to collect structured, anchored answers.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'wokitoki' },
 ];
 
 // Matches Claude Code ${VAR} and ${VAR:-default} placeholders in .mcp.json.
