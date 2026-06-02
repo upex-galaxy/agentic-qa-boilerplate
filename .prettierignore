@@ -14,7 +14,13 @@ allure-report/
 reports/
 
 # Generated files
-api/types.ts
+# OpenAPI artifacts written by `bun run api:sync` (scripts/sync-openapi.ts):
+# `api/openapi*` covers the spec (openapi.json / openapi.yaml) and the generated
+# types (openapi-types.ts, also caught by the `*.ts` rule below). `.openapi-config.json`
+# is a dotfile the `api/openapi*` glob does not match, so it needs its own line.
+# Do NOT broaden to `api/` — hand-authored JSON/YAML may live there.
+api/openapi*
+api/.openapi-config.json
 kata-manifest.json
 bun.lock
 package-lock.json
