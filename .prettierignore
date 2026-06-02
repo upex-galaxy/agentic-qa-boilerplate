@@ -73,9 +73,12 @@ docs/mcp/
 # and are already gitignored. Prettier honors only .prettierignore (not
 # .gitignore), so without these globs format:check fails on transient output.
 # .playwright/cli.config.json is tracked config — keep it formatted (negated).
+# .playwright-mcp/page-*.yml are transient page snapshots emitted by the
+# Playwright MCP server on every browser navigation — same gitignore/Prettier gap.
 .auth/
 .playwright/
 !.playwright/cli.config.json
+.playwright-mcp/
 
 # ===========================================
 # Git worktrees - another branch's checkout, not this tree
