@@ -602,9 +602,15 @@ async function main(): Promise<void> {
       '.agents/jira-link-types.json',
       '.agents/jira-required.yaml',
     ],
-    // Generated, per-repo file inside the `skills` component — never synced; each
-    // repo rebuilds it from its own installed skill set (see makeSkillsRegistryHook).
-    excludePaths: [path.join(SKILLS_CANONICAL_DIR, 'REGISTRY.md').replace(/\\/g, '/')],
+    // Files inside a synced component that must NEVER be overwritten by the sync:
+    //  - REGISTRY.md: generated, per-repo (rebuilt by makeSkillsRegistryHook).
+    //  - scripts/api-login.ts: project-adapted auth CLI (override points for the
+    //    project's auth flow). Shipped once via the create-* scaffold tarball,
+    //    then owned by the project — re-syncing would clobber the adaptation.
+    excludePaths: [
+      path.join(SKILLS_CANONICAL_DIR, 'REGISTRY.md').replace(/\\/g, '/'),
+      'scripts/api-login.ts',
+    ],
     selfUpdateComponent: 'cli',
     hooks: {
       skillsResolver: resolveTemplateSkills,
