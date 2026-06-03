@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Regression Testing &amp; GO/NO-GO — The Craft &amp; The AI</title>
+<style>
+/* html-ppt :: shared webfonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+/* html-ppt :: base.css — reset + shared tokens + layout primitives */
+/* Default tokens. Themes in assets/themes/*.css override the :root block. */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f2f2f4;
+  --border: rgba(0,0,0,.08);
+  --border-strong: rgba(0,0,0,.16);
+  --text-1: #111216;
+  --text-2: #55596a;
+  --text-3: #8a8f9e;
+  --accent: #3b6cff;
+  --accent-2: #7a5cff;
+  --accent-3: #ff5c8a;
+  --good: #1aaf6c;
+  --warn: #f5a524;
+  --bad:  #e0445a;
+  --grad: linear-gradient(135deg,#3b6cff,#7a5cff 55%,#ff5c8a);
+  --grad-soft: linear-gradient(135deg,#eef2ff,#f5ecff 55%,#ffeef5);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 26px;
+  --shadow: 0 10px 30px rgba(18,24,40,.08), 0 2px 6px rgba(18,24,40,.04);
+  --shadow-lg: 0 24px 60px rgba(18,24,40,.14), 0 6px 16px rgba(18,24,40,.06);
+  --font-sans: 'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  --font-serif: 'Playfair Display','Noto Serif SC',Georgia,serif;
+  --font-mono: 'JetBrains Mono','IBM Plex Mono',SFMono-Regular,Menlo,monospace;
+  --font-display: var(--font-sans);
+  --letter-tight: -.03em;
+  --letter-normal: -.01em;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);font-weight:400;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:var(--letter-normal)}
+img,svg,video{max-width:100%;display:block}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+
+/* ================= SLIDE SYSTEM ================= */
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;background:var(--bg)}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:72px 96px;
+  box-sizing:border-box;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+  transform:translateX(30px);
+  overflow:hidden;
+}
+.slide.is-active{opacity:1;pointer-events:auto;transform:translateX(0);z-index:2}
+.slide.is-prev{transform:translateX(-30px)}
+
+/* single-page standalone (used when a layout file is opened directly) */
+body.single .slide{position:relative;width:100vw;height:100vh;opacity:1;transform:none;pointer-events:auto}
+
+/* ================= TYPOGRAPHY ================= */
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+.kicker{font-size:14px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+h1.title,.h1{font-family:var(--font-display);font-size:72px;line-height:1.05;font-weight:800;letter-spacing:var(--letter-tight);margin:0 0 18px;color:var(--text-1)}
+h2.title,.h2{font-family:var(--font-display);font-size:54px;line-height:1.1;font-weight:700;letter-spacing:var(--letter-tight);margin:0 0 14px}
+h3,.h3{font-size:32px;line-height:1.2;font-weight:600;letter-spacing:var(--letter-normal);margin:0 0 10px}
+h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
+.lede{font-size:22px;line-height:1.55;color:var(--text-2);font-weight:300;max-width:62ch}
+.dim{color:var(--text-2)}
+.dim2{color:var(--text-3)}
+.mono{font-family:var(--font-mono)}
+.serif{font-family:var(--font-serif)}
+.gradient-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* ================= LAYOUT PRIMITIVES ================= */
+.stack>*+*{margin-top:14px}
+.row{display:flex;gap:24px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid{display:grid;gap:24px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.center{display:flex;align-items:center;justify-content:center;text-align:center}
+.fill{flex:1}
+.sp-t{padding-top:24px}.sp-b{padding-bottom:24px}
+.mt-s{margin-top:8px}.mt-m{margin-top:18px}.mt-l{margin-top:32px}
+.mb-s{margin-bottom:8px}.mb-m{margin-bottom:18px}.mb-l{margin-bottom:32px}
+
+/* ================= CARDS ================= */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.card-outline{background:transparent;border:1.5px solid var(--border-strong);box-shadow:none}
+.card-accent{background:var(--surface);border-top:3px solid var(--accent)}
+.card-hover{transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.card-hover:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:500;
+  background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.pill-accent{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+
+/* ================= BARS / DIVIDERS ================= */
+.divider{height:1px;background:var(--border);width:100%}
+.divider-accent{height:3px;width:72px;background:var(--accent);border-radius:2px}
+
+/* ================= CHROME (header/footer/progress) ================= */
+.deck-header{position:absolute;top:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);letter-spacing:.12em;text-transform:uppercase;z-index:10;pointer-events:none}
+.deck-footer{position:absolute;bottom:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);z-index:10;pointer-events:none}
+.slide-number::before{content:attr(data-current)}
+.slide-number::after{content:" / " attr(data-total)}
+.progress-bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:transparent;z-index:20}
+.progress-bar > span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+
+/* ================= PRESENTER / OVERVIEW ================= */
+.notes{display:none!important}
+.notes-overlay{position:fixed;inset:auto 0 0 0;max-height:42vh;background:rgba(20,22,30,.95);color:#e8ebf4;
+  padding:20px 32px;font-size:16px;line-height:1.6;border-top:1px solid rgba(255,255,255,.1);transform:translateY(100%);
+  transition:transform .3s var(--ease);z-index:40;overflow:auto;font-family:var(--font-sans)}
+.notes-overlay.open{transform:translateY(0)}
+.overview{position:fixed;inset:0;background:rgba(10,12,18,.92);backdrop-filter:blur(12px);z-index:50;
+  display:none;padding:40px;overflow:auto}
+.overview.open{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-content:start}
+.overview .thumb{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  aspect-ratio:16/9;overflow:hidden;cursor:pointer;position:relative;color:var(--text-1);padding:16px;
+  font-size:11px;transition:transform .2s var(--ease)}
+.overview .thumb:hover{transform:scale(1.04)}
+.overview .thumb .n{position:absolute;top:8px;left:10px;font-weight:700;font-size:14px;color:var(--text-3)}
+.overview .thumb .t{position:absolute;bottom:10px;left:14px;right:14px;font-weight:600;color:var(--text-1)}
+
+/* ================= PRESENTER VIEW ================= */
+/* Presenter view opens in a separate popup window (S key).
+ * All presenter styles are self-contained in the popup HTML generated by runtime.js.
+ * The audience window (this file) is NOT affected — it stays as normal deck view.
+ * Only the .notes class below is needed to hide speaker notes from audience. */
+
+/* ================= UTILITY ================= */
+.hidden{display:none!important}
+.nowrap{white-space:nowrap}
+.tr{text-align:right}.tc{text-align:center}.tl{text-align:left}
+.uppercase{text-transform:uppercase;letter-spacing:.12em}
+
+/* ================= PRINT ================= */
+@media print{
+  .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
+  .deck-header,.deck-footer,.progress-bar,.notes-overlay,.overview{display:none!important}
+}
+/* html-ppt :: animations.css
+ * Apply by adding class="anim-<name>" or data-anim="<name>".
+ * Durations are deliberately snappy; tweak --anim-dur per element.
+ */
+:root{--anim-dur:.7s;--anim-ease:cubic-bezier(.4,0,.2,1)}
+
+/* ---------- FADE DIRECTIONALS ---------- */
+@keyframes kf-fade-up{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-down{from{opacity:0;transform:translateY(-32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-left{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-right{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.anim-fade-up{animation:kf-fade-up var(--anim-dur) var(--anim-ease) both}
+.anim-fade-down{animation:kf-fade-down var(--anim-dur) var(--anim-ease) both}
+.anim-fade-left{animation:kf-fade-left var(--anim-dur) var(--anim-ease) both}
+.anim-fade-right{animation:kf-fade-right var(--anim-dur) var(--anim-ease) both}
+
+/* ---------- RISE / DROP / ZOOM / BLUR / GLITCH ---------- */
+@keyframes kf-rise{from{opacity:0;transform:translateY(60px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes kf-drop{from{opacity:0;transform:translateY(-60px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes kf-zoom{0%{opacity:0;transform:scale(.6)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes kf-blur{from{opacity:0;filter:blur(18px)}to{opacity:1;filter:none}}
+@keyframes kf-glitch{0%{opacity:0;transform:translateX(0);clip-path:inset(0 0 0 0)}
+  20%{opacity:1;transform:translateX(-6px);clip-path:inset(20% 0 30% 0)}
+  40%{transform:translateX(4px);clip-path:inset(50% 0 10% 0)}
+  60%{transform:translateX(-3px);clip-path:inset(10% 0 60% 0)}
+  80%{transform:translateX(2px);clip-path:inset(0 0 0 0)}
+  100%{opacity:1;transform:none}}
+.anim-rise-in{animation:kf-rise .9s var(--anim-ease) both}
+.anim-drop-in{animation:kf-drop .8s var(--anim-ease) both}
+.anim-zoom-pop{animation:kf-zoom .7s cubic-bezier(.22,1.3,.36,1) both}
+.anim-blur-in{animation:kf-blur .8s var(--anim-ease) both}
+.anim-glitch-in{animation:kf-glitch .8s steps(5,end) both}
+
+/* ---------- TYPEWRITER ---------- */
+.anim-typewriter{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid currentColor;
+  width:0;animation:kf-type 2.4s steps(40,end) forwards, kf-caret 1s step-end infinite}
+@keyframes kf-type{to{width:100%}}
+@keyframes kf-caret{50%{border-color:transparent}}
+
+/* ---------- GLOW / SHIMMER / GRADIENT-FLOW ---------- */
+@keyframes kf-neon{0%,100%{text-shadow:0 0 8px var(--accent),0 0 20px var(--accent)}
+  50%{text-shadow:0 0 16px var(--accent),0 0 40px var(--accent),0 0 80px var(--accent)}}
+.anim-neon-glow{animation:kf-neon 2s ease-in-out infinite}
+
+.anim-shimmer-sweep{position:relative;overflow:hidden}
+.anim-shimmer-sweep::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);
+  transform:translateX(-100%);animation:kf-shimmer 2.4s var(--anim-ease) infinite}
+@keyframes kf-shimmer{to{transform:translateX(100%)}}
+
+.anim-gradient-flow{background:linear-gradient(90deg,var(--accent),var(--accent-2,var(--accent)),var(--accent-3,var(--accent)),var(--accent));
+  background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:kf-gradflow 4s linear infinite}
+@keyframes kf-gradflow{to{background-position:300% 0}}
+
+/* ---------- STAGGER LIST ---------- */
+.anim-stagger-list > *{opacity:0;animation:kf-rise .65s var(--anim-ease) both}
+.anim-stagger-list > *:nth-child(1){animation-delay:.05s}
+.anim-stagger-list > *:nth-child(2){animation-delay:.15s}
+.anim-stagger-list > *:nth-child(3){animation-delay:.25s}
+.anim-stagger-list > *:nth-child(4){animation-delay:.35s}
+.anim-stagger-list > *:nth-child(5){animation-delay:.45s}
+.anim-stagger-list > *:nth-child(6){animation-delay:.55s}
+.anim-stagger-list > *:nth-child(7){animation-delay:.65s}
+.anim-stagger-list > *:nth-child(8){animation-delay:.75s}
+.anim-stagger-list > *:nth-child(n+9){animation-delay:.85s}
+
+/* ---------- COUNTER-UP (JS-driven, marker class only) ---------- */
+.counter{font-variant-numeric:tabular-nums}
+
+/* ---------- SVG PATH DRAW ---------- */
+.anim-path-draw path,.anim-path-draw line,.anim-path-draw polyline,.anim-path-draw circle,.anim-path-draw rect{
+  stroke-dasharray:1000;stroke-dashoffset:1000;animation:kf-draw 2s var(--anim-ease) forwards}
+@keyframes kf-draw{to{stroke-dashoffset:0}}
+
+/* ---------- PARALLAX TILT (hover) ---------- */
+.anim-parallax-tilt{transform-style:preserve-3d;transition:transform .4s var(--anim-ease)}
+.anim-parallax-tilt:hover{transform:perspective(900px) rotateX(6deg) rotateY(-8deg) translateZ(10px)}
+
+/* ---------- CARD FLIP 3D ---------- */
+@keyframes kf-flip{from{transform:perspective(1200px) rotateY(-90deg);opacity:0}
+  to{transform:perspective(1200px) rotateY(0);opacity:1}}
+.anim-card-flip-3d{animation:kf-flip .9s var(--anim-ease) both;transform-style:preserve-3d;backface-visibility:hidden}
+
+/* ---------- CUBE ROTATE 3D ---------- */
+@keyframes kf-cube{from{transform:perspective(1200px) rotateX(20deg) rotateY(-90deg) translateZ(-200px);opacity:0}
+  to{transform:perspective(1200px) rotateX(0) rotateY(0) translateZ(0);opacity:1}}
+.anim-cube-rotate-3d{animation:kf-cube 1s var(--anim-ease) both}
+
+/* ---------- PAGE TURN 3D ---------- */
+@keyframes kf-pageturn{from{transform:perspective(1600px) rotateY(-85deg);transform-origin:left center;opacity:0}
+  to{transform:perspective(1600px) rotateY(0);opacity:1}}
+.anim-page-turn-3d{animation:kf-pageturn 1s var(--anim-ease) both;transform-origin:left center}
+
+/* ---------- PERSPECTIVE ZOOM ---------- */
+@keyframes kf-pzoom{from{opacity:0;transform:perspective(1400px) translateZ(-400px) rotateX(12deg)}
+  to{opacity:1;transform:none}}
+.anim-perspective-zoom{animation:kf-pzoom 1s var(--anim-ease) both}
+
+/* ---------- MARQUEE SCROLL ---------- */
+.anim-marquee-scroll{display:flex;gap:48px;white-space:nowrap;animation:kf-marquee 20s linear infinite}
+@keyframes kf-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- KEN BURNS ---------- */
+@keyframes kf-kenburns{0%{transform:scale(1) translate(0,0)}100%{transform:scale(1.15) translate(-2%,-1%)}}
+.anim-kenburns{animation:kf-kenburns 14s ease-in-out infinite alternate}
+
+/* ---------- CONFETTI BURST (pseudo — pure CSS sparkles) ---------- */
+.anim-confetti-burst{position:relative}
+.anim-confetti-burst::before,.anim-confetti-burst::after{
+  content:"";position:absolute;top:50%;left:50%;width:8px;height:8px;border-radius:50%;
+  background:var(--accent);box-shadow:
+    20px -30px 0 var(--accent-2,var(--accent)),-25px -20px 0 var(--accent-3,var(--accent)),
+    30px 20px 0 var(--good,#1aaf6c),-30px 25px 0 var(--warn,#f5a524),
+    40px -10px 0 var(--bad,#e0445a),-45px 0 0 var(--accent),
+    10px 40px 0 var(--accent-2,var(--accent)),-15px -40px 0 var(--accent-3,var(--accent));
+  opacity:0;animation:kf-confetti 1.2s var(--anim-ease) forwards}
+.anim-confetti-burst::after{animation-delay:.15s;transform:rotate(45deg)}
+@keyframes kf-confetti{0%{opacity:0;transform:scale(.2)}30%{opacity:1}100%{opacity:0;transform:scale(2.2)}}
+
+/* ---------- SPOTLIGHT ---------- */
+@keyframes kf-spot{0%{clip-path:circle(0% at 50% 50%)}100%{clip-path:circle(140% at 50% 50%)}}
+.anim-spotlight{animation:kf-spot 1.1s var(--anim-ease) both}
+
+/* ---------- MORPH SHAPE (SVG) ---------- */
+.anim-morph-shape path{animation:kf-morph 6s ease-in-out infinite alternate}
+@keyframes kf-morph{0%{d:path("M60,120 Q120,20 180,120 T300,120")}
+  100%{d:path("M60,120 Q120,220 180,120 T300,120")}}
+
+/* ---------- RIPPLE REVEAL ---------- */
+@keyframes kf-ripple{0%{clip-path:circle(0% at 20% 80%);opacity:.4}
+  100%{clip-path:circle(160% at 20% 80%);opacity:1}}
+.anim-ripple-reveal{animation:kf-ripple 1.2s var(--anim-ease) both}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  [class*="anim-"]{animation:none!important;transition:none!important}
+}
+/* ===========================================================================
+   how-it-works deck theme — dark engineering, accent-parametrized
+   Set per deck on <body class="tpl-howto" style="--a1:..;--a2:..;--a3:..">
+   =========================================================================== */
+.tpl-howto{
+  --a1:#7ee787; --a2:#79c0ff; --a3:#d2a8ff;            /* fallbacks */
+  --bg:#0d1117; --bg-soft:#161b22; --surface:#161b22; --surface-2:#1c2230;
+  --border:rgba(139,148,158,.22); --border-strong:rgba(139,148,158,.42);
+  --text-1:#e6edf3; --text-2:#9aa6b2; --text-3:#6e7681;
+  --accent:var(--a1); --accent-2:var(--a2); --accent-3:var(--a3);
+  --good:#3fb950; --warn:#d29922; --bad:#f85149;
+  --grad:linear-gradient(120deg,var(--a1) 0%,var(--a2) 55%,var(--a3) 100%);
+  --radius:14px; --radius-lg:20px;
+  --shadow:0 20px 60px rgba(0,0,0,.5);
+  font-family:'Inter','Noto Sans SC',sans-serif;
+  background:#0d1117; color:var(--text-1);
+}
+.tpl-howto .deck{background:#0d1117}
+.tpl-howto .slide{padding:64px 88px;background:#0d1117;color:var(--text-1)}
+.tpl-howto .slide::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+   radial-gradient(58% 48% at 88% 8%,color-mix(in srgb,var(--a2) 14%,transparent),transparent 60%),
+   radial-gradient(52% 50% at 8% 92%,color-mix(in srgb,var(--a1) 10%,transparent),transparent 62%);}
+.tpl-howto .slide>*{position:relative;z-index:1}
+
+/* ---------- typography ---------- */
+.tpl-howto .h1{font-size:74px;line-height:1.04;font-weight:800;letter-spacing:-.03em;color:#fff}
+.tpl-howto .h2{font-size:50px;line-height:1.08;font-weight:700;letter-spacing:-.025em;color:#fff}
+.tpl-howto h3,.tpl-howto .h3{color:#fff;font-weight:600}
+.tpl-howto h4,.tpl-howto .h4{color:#fff;font-weight:600}
+.tpl-howto .lede{color:var(--text-2);font-weight:300}
+.tpl-howto .dim{color:var(--text-2)} .tpl-howto .dim2{color:var(--text-3)}
+.tpl-howto .mono{font-family:'JetBrains Mono','IBM Plex Mono',monospace}
+.tpl-howto .gradient-text,.tpl-howto .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.tpl-howto .kicker{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;text-transform:none;letter-spacing:.02em}
+.tpl-howto .kicker::before{content:"// "}
+.tpl-howto .kicker.run::before{content:"> "}
+.tpl-howto .divider-accent{height:3px;width:64px;background:var(--grad);border-radius:2px}
+
+/* ---------- cards ---------- */
+.tpl-howto .card{background:var(--surface);border:1px solid var(--border);box-shadow:none;border-radius:var(--radius)}
+.tpl-howto .card-accent{border-top:3px solid var(--accent)}
+.tpl-howto .card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.tpl-howto .card h4{margin-bottom:8px}
+.tpl-howto .card p{font-size:15px;line-height:1.6}
+.tpl-howto .num-badge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;
+  background:color-mix(in srgb,var(--a1) 16%,transparent);color:var(--accent);font-weight:800;font-family:'JetBrains Mono',monospace;font-size:16px;border:1px solid color-mix(in srgb,var(--a1) 30%,transparent)}
+
+/* ---------- tags / pills / kbd ---------- */
+.tpl-howto .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:7px;font-family:'JetBrains Mono',monospace;
+  font-size:12px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)}
+.tpl-howto .tag.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent);background:color-mix(in srgb,var(--good) 12%,transparent)}
+.tpl-howto .tag.no{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.tpl-howto .tag.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent)}
+.tpl-howto .pill{background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.tpl-howto .pill-accent{background:color-mix(in srgb,var(--a1) 14%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--a1) 32%,transparent)}
+.tpl-howto kbd,.tpl-howto .kbd{font-family:'JetBrains Mono',monospace;font-size:13px;padding:3px 10px;border-radius:7px;
+  background:color-mix(in srgb,var(--a1) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--a1) 30%,transparent);white-space:nowrap}
+
+/* ---------- terminal / code ---------- */
+.tpl-howto .terminal{background:#010409;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:14.5px;line-height:1.7}
+.tpl-howto .terminal .bar{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#161b22;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-3)}
+.tpl-howto .terminal .dot{width:11px;height:11px;border-radius:50%;background:#ff5f56}
+.tpl-howto .terminal .dot:nth-child(2){background:#ffbd2e}
+.tpl-howto .terminal .dot:nth-child(3){background:#27c93f}
+.tpl-howto .terminal pre{margin:0;padding:22px 26px;color:#e6edf3;overflow:auto;max-height:520px;white-space:pre-wrap}
+.tpl-howto .terminal .p{color:var(--accent);font-weight:600}   /* prompt $ */
+.tpl-howto .terminal .c{color:#e6edf3}                          /* command */
+.tpl-howto .terminal .o{color:var(--text-2)}                    /* output */
+.tpl-howto .kw{color:#ff7b72} .tpl-howto .fn{color:#d2a8ff} .tpl-howto .str{color:#a5d6ff}
+.tpl-howto .cmt{color:#6e7681;font-style:italic} .tpl-howto .num{color:#79c0ff}
+.tpl-howto .caret{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;animation:hb-blink 1s step-end infinite}
+@keyframes hb-blink{50%{opacity:0}}
+
+/* ---------- agenda rows ---------- */
+.tpl-howto .agenda-row{display:flex;align-items:baseline;gap:22px;padding:15px 0;border-bottom:1px dashed var(--border);font-family:'JetBrains Mono',monospace}
+.tpl-howto .agenda-row .anum{color:var(--accent);flex:none;width:42px}
+.tpl-howto .agenda-row .at{color:#fff;font-size:22px;flex:1;font-family:'Inter',sans-serif;font-weight:600}
+.tpl-howto .agenda-row .ad{color:var(--text-3);font-size:12px}
+
+/* ---------- numbered steps (process) ---------- */
+.tpl-howto .steps{display:grid;gap:20px;margin-top:34px}
+.tpl-howto .steps.s2{grid-template-columns:repeat(2,1fr)}
+.tpl-howto .steps.s3{grid-template-columns:repeat(3,1fr)}
+.tpl-howto .steps.s4{grid-template-columns:repeat(4,1fr)}
+.tpl-howto .step{position:relative;padding:24px 22px 20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+.tpl-howto .step .num{position:absolute;top:-18px;left:20px;width:40px;height:40px;border-radius:11px;background:var(--grad);color:#03121a;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;font-family:'JetBrains Mono',monospace}
+.tpl-howto .step h4{margin:14px 0 7px;font-size:17px}
+.tpl-howto .step p{font-size:13.5px;color:var(--text-2);line-height:1.55}
+
+/* ---------- vertical stage flow ---------- */
+.tpl-howto .flow{display:flex;flex-direction:column;gap:0;margin-top:24px}
+.tpl-howto .flow .stage{display:grid;grid-template-columns:46px 1fr;gap:18px;padding:14px 0;align-items:start}
+.tpl-howto .flow .stage .sx{width:46px;height:46px;border-radius:12px;background:color-mix(in srgb,var(--a1) 14%,transparent);
+  border:1px solid color-mix(in srgb,var(--a1) 34%,transparent);color:var(--accent);display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-family:'JetBrains Mono',monospace;font-size:17px}
+.tpl-howto .flow .stage h4{font-size:19px;margin-bottom:3px}
+.tpl-howto .flow .stage p{font-size:14px;color:var(--text-2);line-height:1.55;margin:0}
+.tpl-howto .flow .stage+.stage{border-top:1px dashed var(--border)}
+
+/* ---------- comparison (manual pain vs craft / do vs dont) ---------- */
+.tpl-howto .vs{display:grid;grid-template-columns:1fr 64px 1fr;gap:22px;align-items:stretch;margin-top:26px}
+.tpl-howto .vs .side{padding:26px 28px}
+.tpl-howto .vs .mid{font-size:42px;font-weight:800;color:var(--text-3);display:flex;align-items:center;justify-content:center}
+.tpl-howto .vs .bad-side{border-top:3px solid var(--bad)}
+.tpl-howto .vs .good-side{border-top:3px solid var(--good)}
+.tpl-howto .vs h3{font-size:21px;margin-bottom:12px}
+.tpl-howto .vs ul{padding-left:18px;margin:0;font-size:14.5px;line-height:1.75;color:var(--text-2)}
+.tpl-howto .vs .bad-side li::marker{color:var(--bad)}
+.tpl-howto .vs .good-side li::marker{color:var(--good)}
+
+/* ---------- callout / note box ---------- */
+.tpl-howto .callout{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--a1) 7%,transparent);
+  padding:18px 22px;border-radius:0 10px 10px 0;margin-top:20px}
+.tpl-howto .callout h4{font-size:16px;margin-bottom:5px;color:var(--accent)}
+.tpl-howto .callout p{font-size:15px;color:var(--text-2);line-height:1.6;margin:0}
+.tpl-howto .callout.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent)}
+.tpl-howto .callout.warn h4{color:var(--warn)}
+
+/* ---------- decision / data table ---------- */
+.tpl-howto .dtable{width:100%;border-collapse:collapse;margin-top:24px;font-size:15px}
+.tpl-howto .dtable th{text-align:left;padding:12px 16px;color:var(--text-3);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-strong)}
+.tpl-howto .dtable td{padding:13px 16px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top}
+.tpl-howto .dtable tr:last-child td{border-bottom:none}
+.tpl-howto .dtable td b,.tpl-howto .dtable td strong{color:#fff;font-weight:600}
+
+/* ---------- bullet list (clean) ---------- */
+.tpl-howto .blist{list-style:none;padding:0;margin:22px 0 0}
+.tpl-howto .blist li{position:relative;padding:9px 0 9px 30px;font-size:17px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
+.tpl-howto .blist li:last-child{border-bottom:none}
+.tpl-howto .blist li::before{content:"▸";position:absolute;left:4px;top:9px;color:var(--accent);font-weight:700}
+.tpl-howto .blist li b{color:#fff;font-weight:600}
+
+/* ---------- speaker / cover meta ---------- */
+.tpl-howto .speaker{display:flex;align-items:center;gap:14px;margin-top:26px}
+.tpl-howto .speaker .av{width:50px;height:50px;border-radius:13px;background:var(--grad)}
+.tpl-howto .speaker b{display:block;color:#fff;font-size:17px}
+.tpl-howto .speaker span{color:var(--text-3);font-size:12.5px;font-family:'JetBrains Mono',monospace}
+
+/* ---------- section divider ---------- */
+.tpl-howto .slide.divider{justify-content:center;height:auto}
+.tpl-howto .part-no{font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent);letter-spacing:.1em}
+.tpl-howto .slide.divider .h1{font-size:64px;margin-top:10px;max-width:20ch}
+.tpl-howto .slide.divider .lede{margin-top:26px;font-size:20px}
+
+/* ---------- big stat ---------- */
+.tpl-howto .bigstat{font-size:180px;font-weight:900;line-height:1;letter-spacing:-.04em}
+
+/* ---------- footer ---------- */
+.tpl-howto .deck-footer .mono{color:var(--text-3)}
+.tpl-howto .slide-number{color:var(--text-3)}
+
+/* fix: cover .speaker must not collide with the absolute .deck-footer */
+.tpl-howto .slide:has(> .speaker){padding-bottom:160px}
+.tpl-howto .slide .speaker{position:absolute;left:88px;right:88px;bottom:70px;margin-top:0;z-index:3}</style>
+</head>
+<body class="tpl-howto" style="--a1:#f5a524;--a2:#ffd27a;--a3:#ff7b72">
+<div class="deck">
+<section class="slide" data-title="Cover">
+  <p class="kicker run">how-it-works · agentic-qa</p>
+  <h1 class="h1 anim-fade-up" data-anim="fade-up">Regression Testing &amp; the <span class="grad">GO/NO-GO Decision</span></h1>
+  <p class="lede mt-m">From a red CI run to a defensible release verdict — the craft, then the AI that runs it from your terminal.</p>
+  <div class="speaker"><div class="av"></div><div><b>Execute → Analyze → Report</b><span>part 1: do it by hand · part 2: the AI skill</span></div></div>
+  <div class="deck-footer"><span class="mono">#regression #release-gate</span><span class="slide-number" data-current="1" data-total="36"></span></div>
+  <div class="notes">Set the frame: this is the last gate before a release. We learn the manual method first, then how the skill automates it end to end.</div>
+</section>
+
+<section class="slide center tc" data-title="Why it matters">
+  <div>
+    <p class="kicker">why this matters</p>
+    <div class="bigstat"><span class="grad">20%</span></div>
+    <h3>One misclassification flips the whole verdict</h3>
+    <p class="lede mt-m">A test is only FLAKY above a 20% failure rate over the last 10 runs — below that line, a failure is a REGRESSION that BLOCKS the release. Call it "flaky" by reflex and you ship the bug.</p>
+  </div>
+  <div class="notes">The whole discipline hinges on not lazily tagging failures 'flaky'. The 20% threshold is the bright line between 'block the release' and 'don't'.</div>
+</section>
+
+<section class="slide" data-title="Agenda">
+  <p class="kicker">what we'll cover</p>
+  <h2 class="h2" data-anim="fade-up">Two halves: the craft, then the acceleration</h2>
+  <div class="stack mt-l anim-stagger-list">
+    <div class="agenda-row"><span class="anum">01</span><span class="at">The Craft — run a release gate by hand: suites, execution, the 5-way triage, severity, the 9-point score, the report</span><span class="ad">part 1</span></div>
+    <div class="agenda-row"><span class="anum">02</span><span class="at">The Acceleration — the skill drives the whole pipeline from one prompt, with subagents, gh CLI, and Allure</span><span class="ad">part 2</span></div>
+    <div class="agenda-row"><span class="anum">03</span><span class="at">Takeaways — classify honestly, respect the vetoes, own the verdict</span><span class="ad">wrap-up</span></div>
+  </div>
+  <div class="notes">Tell them Part 1 is the bulk — learn the method by hand so you can trust (and override) the AI in Part 2.</div>
+</section>
+
+<section class="slide divider" data-title="Part 1">
+  <div>
+    <p class="part-no">PART 01</p>
+    <h1 class="h1">The Craft<br><span class="grad">running a release gate by hand</span></h1>
+    <p class="lede">If the AI did not exist, what would a careful QA engineer do, step by step, to turn a CI run into a release decision nobody can argue with?</p>
+  </div>
+  <div class="notes">Everything in this half is the real method the skill encodes — same thresholds, same trees, same templates.</div>
+</section>
+
+<section class="slide" data-title="The pipeline">
+  <p class="kicker">the pipeline</p>
+  <h2 class="h2" data-anim="fade-up">Three phases, always in this order</h2>
+  <div class="flow mt-m anim-stagger-list">
+    <div class="stage"><div class="sx">1</div><div><h4>Execute</h4><p>Pick the right suite, trigger CI, monitor to completion, capture the run ID.</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>Analyze</h4><p>Download artifacts, parse results, compute metrics, classify every failure, assess severity.</p></div></div>
+    <div class="stage"><div class="sx">3</div><div><h4>Report &amp; Decide</h4><p>Score the run, apply hard vetoes, emit GO/CAUTION/NO-GO, write the stakeholder report.</p></div></div>
+  </div>
+  <div class="notes">Stress the ordering rule: never skip analysis and jump to a report; never guess a classification without reading the failure logs. The order is non-negotiable.</div>
+</section>
+
+<section class="slide" data-title="Suite selection">
+  <p class="kicker">phase 1 · choose</p>
+  <h2 class="h2" data-anim="fade-up">Pick the right suite before you trigger anything</h2>
+  <table class="dtable mt-m">
+    <thead><tr><th>Suite</th><th>Workflow</th><th>Duration</th><th>Use when</th></tr></thead>
+    <tbody>
+      <tr><td><b>regression</b></td><td>regression.yml</td><td>20–60 min</td><td>Pre-release validation, nightly full run</td></tr>
+      <tr><td><b>smoke</b></td><td>smoke.yml</td><td>2–5 min</td><td>Post-deploy health check, @critical only</td></tr>
+      <tr><td><b>sanity</b></td><td>sanity.yml</td><td>1–10 min</td><td>One feature / one file / one grep pattern</td></tr>
+    </tbody>
+  </table>
+  <div class="callout mt-m"><h4>Default rule</h4><p>Bare "run regression" → regression on the default env · "critical only" → smoke · a file or grep → sanity.</p></div>
+  <div class="notes">The wrong suite gives the wrong signal — a 3-minute smoke pass is NOT a release gate. Match suite to the question being asked.</div>
+</section>
+
+<section class="slide" data-title="Execute">
+  <p class="kicker">phase 1 · execute</p>
+  <h2 class="h2" data-anim="fade-up">Trigger, then capture the run ID — in that order</h2>
+  <div class="steps s4 mt-m anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>Preflight</h4><p>Confirm CI auth and the workflow exists (gh auth status, gh workflow list). Not authed → STOP, ask the user to log in.</p></div>
+    <div class="step"><div class="num">2</div><h4>Trigger</h4><p>Dispatch the workflow with explicit inputs (environment, generate_allure=true).</p></div>
+    <div class="step"><div class="num">3</div><h4>Capture run ID</h4><p>Wait 3–5s (the run isn't queryable instantly), then read the newest run's databaseId.</p></div>
+    <div class="step"><div class="num">4</div><h4>Persist</h4><p>Write the RUN_ID down first; everything downstream keys off it.</p></div>
+  </div>
+  <div class="notes">The race condition is real — gh workflow run returns before the run registers, so you must sleep 3-5s. Losing the RUN_ID means you can't re-attach to a 60-minute run.</div>
+</section>
+
+<section class="slide" data-title="Monitor">
+  <p class="kicker">phase 1 · monitor</p>
+  <h2 class="h2" data-anim="fade-up">Watch to completion — don't analyze a half-finished run</h2>
+  <div class="callout mt-l"><h4>Watch with an exit-status flag</h4><p>Status moves queued → in_progress → completed. Only when completed do you get a conclusion: success / failure / cancelled / timed_out. On a long suite that times out, fall back to polling every 60–90s.</p></div>
+  <div class="callout warn mt-m"><h4>Rule</h4><p>Do not start Phase 2 until status = completed. A cancelled run is not a failure — surface it and wait for direction, never silently re-trigger.</p></div>
+  <div class="notes">Half-read runs produce garbage verdicts. The conclusion field only exists once the run completes — that's your green light to analyze.</div>
+</section>
+
+<section class="slide" data-title="Collect evidence">
+  <p class="kicker">phase 2 · collect</p>
+  <h2 class="h2" data-anim="fade-up">Pull the evidence before it expires</h2>
+  <div class="steps s3 mt-m anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>Failed logs only</h4><p>Pull only failed-step logs — the full log can exceed 50MB; --log-failed is the small, signal-rich slice.</p></div>
+    <div class="step"><div class="num">2</div><h4>Three artifacts</h4><p>Merged Allure results, failure evidence (screenshots/traces/videos), and the Playwright HTML report into ./analysis/.</p></div>
+    <div class="step"><div class="num">3</div><h4>Previous run</h4><p>Download the prior run's Allure into ./analysis/previous/ for trend.</p></div>
+  </div>
+  <div class="callout warn mt-m"><h4>Rule R4</h4><p>Never skip the artifact download on red builds — evidence vanishes after the retention window.</p></div>
+  <div class="notes">On a red build the screenshots and traces are your only proof; once retention expires they're gone forever. Grab them first, analyze second.</div>
+</section>
+
+<section class="slide" data-title="Parse &amp; measure">
+  <p class="kicker">phase 2 · parse &amp; measure</p>
+  <h2 class="h2" data-anim="fade-up">Trust Allure first, then compute six numbers</h2>
+  <ul class="blist anim-stagger-list">
+    <li><b>Source-of-truth priority.</b> Allure results JSON &gt; Playwright report.json &gt; raw logs; each result carries status, statusDetails, and labels (testId = ATC ID, suite, severity).</li>
+    <li><b>Pass Rate &amp; Counts.</b> Passed / Total × 100; plus Passed / Failed / Skipped / Broken by status.</li>
+    <li><b>Duration &amp; Trend.</b> max(stop) − min(start); trend = current pass rate − previous run's pass rate.</li>
+    <li><b>Retry caveat.</b> A passed result with retriesCount &gt; 0 is a hidden flake — count it even though Allure shows green.</li>
+  </ul>
+  <div class="notes">Six numbers, one source-of-truth order. The retry-pass rule is the subtle one: green-on-retry still means unstable.</div>
+</section>
+
+<section class="slide divider" data-title="Part 1 · The Heart">
+  <div>
+    <p class="part-no">PART 01 · THE HEART</p>
+    <h1 class="h1">Classify Every Failure<br><span class="grad">the 5-way triage</span></h1>
+    <p class="lede">This is where releases are won or lost. Every red test gets exactly ONE label, and the label decides whether it blocks the release.</p>
+  </div>
+  <div class="notes">This is the single most important slide group. Slow down here.</div>
+</section>
+
+<section class="slide" data-title="Five categories">
+  <p class="kicker">phase 2 · classify</p>
+  <h2 class="h2" data-anim="fade-up">Five categories, one label per failure</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>REGRESSION</h4><p class="dim">Passed recently, now fails consistently after a code/data change.</p><span class="tag mt-s">HIGH · blocks release</span></div>
+    <div class="card card-accent"><h4>FLAKY</h4><p class="dim">Intermittent (&gt;20% over last 10 runs) on an unchanged build.</p><span class="tag mt-s">MEDIUM · doesn't block</span></div>
+    <div class="card card-accent"><h4>KNOWN ISSUE</h4><p class="dim">Tracked by an existing ticket.</p><span class="tag mt-s">LOW · documented</span></div>
+    <div class="card card-accent"><h4>ENVIRONMENT</h4><p class="dim">Infra/network/external, not the app.</p><span class="tag mt-s">MEDIUM · re-run</span></div>
+    <div class="card card-accent"><h4>NEW TEST</h4><p class="dim">First-ever run, no history.</p><span class="tag mt-s">LOW · verify manually</span></div>
+    <div class="card card-accent"><h4>The rule</h4><p class="dim">A failure belongs to exactly one category — never improvise.</p><span class="tag mt-s">one label</span></div>
+  </div>
+  <div class="notes">Memorize these five. The whole release gate is built on getting each red test into the right bucket.</div>
+</section>
+
+<section class="slide" data-title="Triage tree">
+  <p class="kicker">phase 2 · triage tree</p>
+  <h2 class="h2" data-anim="fade-up">Walk the tree top-down — stop at the first match</h2>
+  <div class="flow mt-m anim-stagger-list">
+    <div class="stage"><div class="sx">1</div><div><h4>Known ticket?</h4><p>→ KNOWN ISSUE.</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>Env error pattern?</h4><p>ECONNREFUSED, ETIMEDOUT, net::ERR_, Navigation timeout, browserType.launch, 502/503 → ENVIRONMENT.</p></div></div>
+    <div class="stage"><div class="sx">3</div><div><h4>First-ever run?</h4><p>→ NEW TEST.</p></div></div>
+    <div class="stage"><div class="sx">4</div><div><h4>Rate &gt; 20% over last 10?</h4><p>→ FLAKY.</p></div></div>
+    <div class="stage"><div class="sx">5</div><div><h4>Passed in last ≤5, now fails?</h4><p>→ REGRESSION (release blocker).</p></div></div>
+  </div>
+  <div class="notes">Order matters — it's a precedence ladder, not a menu. The golden rule: NEVER mark a test REGRESSION without checking history first — that's the #1 misclassification.</div>
+</section>
+
+<section class="slide" data-title="Precedence">
+  <p class="kicker">phase 2 · precedence</p>
+  <h2 class="h2" data-anim="fade-up">When two rules match, precedence breaks the tie</h2>
+  <div class="callout mt-l"><h4>Order: KNOWN ISSUE &gt; ENVIRONMENT &gt; NEW TEST &gt; REGRESSION &gt; FLAKY</h4><p>If a ticket already tracks it, stop looking. If the error is clearly infrastructure, don't blame the code. A test with no history cannot be a regression yet. Only after ruling all of those out do you weigh REGRESSION vs FLAKY on the 20% line.</p></div>
+  <div class="notes">This ordering is deliberate. It pushes you to exhaust the cheap, non-blocking explanations before you reach for the expensive 'block the release' label.</div>
+</section>
+
+<section class="slide" data-title="ENV is not a scapegoat">
+  <p class="kicker">phase 2 · don't scapegoat infra</p>
+  <h2 class="h2" data-anim="fade-up">ENVIRONMENT is not a scapegoat</h2>
+  <div class="vs mt-m">
+    <div class="card bad-side side"><h3>❌ Lazy ENV tag</h3><ul>
+      <li>ECONNREFUSED → "infra glitch", move on.</li>
+      <li>Navigation timeout on one page → blame the network.</li>
+      <li>Tag everything network-shaped as environment so nothing blocks.</li>
+    </ul></div>
+    <div class="mid">→</div>
+    <div class="card good-side side"><h3>✅ Disciplined</h3><ul>
+      <li>ECONNREFUSED + many unrelated tests red on the same host → ENVIRONMENT.</li>
+      <li>ECONNREFUSED on ONE endpoint others hit fine → REGRESSION in disguise.</li>
+      <li>Nav timeout: one page after deploy → REGRESSION; across many → ENVIRONMENT.</li>
+    </ul></div>
+  </div>
+  <div class="notes">The scope test is everything: is it one test or the whole host? One test failing where others succeed on the same endpoint is a bug wearing an infra costume.</div>
+</section>
+
+<section class="slide" data-title="Pattern lookup">
+  <p class="kicker">phase 2 · pattern lookup</p>
+  <h2 class="h2" data-anim="fade-up">The error message usually tells you the answer</h2>
+  <table class="dtable mt-m">
+    <thead><tr><th>Error pattern</th><th>Likely class</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td><b>Element not found / Target closed</b></td><td>REGRESSION</td><td>selector broken, UI changed</td></tr>
+      <tr><td><b>expect(...).toBe mismatch</b></td><td>REGRESSION</td><td>logic/data change</td></tr>
+      <tr><td><b>ECONNREFUSED</b></td><td>ENVIRONMENT</td><td>app down or wrong port</td></tr>
+      <tr><td><b>status 500/502</b></td><td>ENV or REGRESSION</td><td>isolated → REGRESSION, many → ENV</td></tr>
+      <tr><td><b>Nav timeout (1 page post-deploy)</b></td><td>REGRESSION</td><td>slow page</td></tr>
+      <tr><td><b>Intermittent on unchanged build</b></td><td>FLAKY</td><td>same build, different outcome</td></tr>
+      <tr><td><b>No snapshot found</b></td><td>NEW TEST</td><td>first visual-snapshot run</td></tr>
+      <tr><td><b>SyntaxError/TypeError in test</b></td><td>REGRESSION</td><td>test code itself broke</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">Anti-pattern: never classify on the test NAME alone. Read the actual error text — it is usually definitive.</div>
+</section>
+
+<section class="slide" data-title="Flakiness math">
+  <p class="kicker">phase 2 · flakiness math</p>
+  <h2 class="h2" data-anim="fade-up">Computing the &gt;20% flaky rate honestly</h2>
+  <div class="steps s4 mt-m anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>Gather</h4><p>Results over the last 10 runs of the same workflow + env (need at least 5).</p></div>
+    <div class="step"><div class="num">2</div><h4>Exclude</h4><p>Drop runs against a different build (different commit SHA) — want "same build, different outcomes".</p></div>
+    <div class="step"><div class="num">3</div><h4>Compute</h4><p>failure_rate = failed / total; retry-aware = (failed + retried_passes) / total.</p></div>
+    <div class="step"><div class="num">4</div><h4>Threshold</h4><p>&gt;0.20 → FLAKY; ≤0.20 with a pass in last 5 → REGRESSION; N&lt;5 → "INSUFFICIENT HISTORY".</p></div>
+  </div>
+  <div class="notes">Flakiness needs at least 5 (ideally 10) runs of history. Below that you write 'insufficient history' and revisit next sprint — you never guess a flaky tag into existence.</div>
+</section>
+
+<section class="slide" data-title="Hard cases">
+  <p class="kicker">phase 2 · hard cases</p>
+  <h2 class="h2" data-anim="fade-up">REGRESSION vs FLAKY — the judgment calls</h2>
+  <div class="grid g2 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>Green streak, one fail</h4><p class="dim">Code deployed between last pass and now → REGRESSION. No deploy, same commit → FLAKY candidate, monitor next run.</p></div>
+    <div class="card card-accent"><h4>Passes on retry every time</h4><p class="dim">FLAKY — user sees green but the test is unstable. Stabilize it.</p></div>
+    <div class="card card-accent"><h4>One assertion flakes</h4><p class="dim">In a multi-assertion test, the test is FLAKY — fix the one timing-sensitive assertion, don't mark the whole thing REGRESSION.</p></div>
+    <div class="card card-accent"><h4>Fails on webkit only</h4><p class="dim">Browser-specific API → REGRESSION (compat broken). Layout-sensitive → check per-browser history, may be FLAKY.</p></div>
+  </div>
+  <div class="notes">These four are where experience shows. The deciding question is almost always 'did a code change land between the last green and this red?'</div>
+</section>
+
+<section class="slide" data-title="Severity">
+  <p class="kicker">phase 2 · severity</p>
+  <h2 class="h2" data-anim="fade-up">Severity is orthogonal — a flaky checkout test is still CRITICAL</h2>
+  <table class="dtable mt-m">
+    <thead><tr><th>Severity</th><th>Criteria</th></tr></thead>
+    <tbody>
+      <tr><td><b>CRITICAL</b></td><td>Core journey (login, signup, checkout, payment, core search) or any @critical-tagged test</td></tr>
+      <tr><td><b>HIGH</b></td><td>Major feature (profile, dashboard, primary filters, account mgmt)</td></tr>
+      <tr><td><b>MEDIUM</b></td><td>Secondary feature (sorting, preferences, non-primary filters, notifications)</td></tr>
+      <tr><td><b>LOW</b></td><td>Admin-only, edge case, internal tools</td></tr>
+    </tbody>
+  </table>
+  <div class="callout mt-m"><h4>Inputs</h4><p>Test tags (@critical/@smoke/@regression), suite name (Auth/Payment = CRITICAL), linked TMS ticket priority.</p></div>
+  <div class="notes">Classification answers 'why did it fail'; severity answers 'how much do we care'. They are independent axes — never collapse them.</div>
+</section>
+
+<section class="slide" data-title="The matrix">
+  <p class="kicker">phase 2 · the matrix</p>
+  <h2 class="h2" data-anim="fade-up">Classification × Severity → the release impact</h2>
+  <table class="dtable mt-m">
+    <thead><tr><th>Class \ Sev</th><th>CRITICAL</th><th>HIGH</th><th>MEDIUM</th><th>LOW</th></tr></thead>
+    <tbody>
+      <tr><td><b>REGRESSION</b></td><td>NO-GO</td><td>NO-GO</td><td>CAUTION</td><td>CAUTION</td></tr>
+      <tr><td><b>FLAKY</b></td><td>CAUTION + stabilize</td><td>CAUTION</td><td>monitor</td><td>monitor</td></tr>
+      <tr><td><b>KNOWN</b></td><td>CAUTION (reassess)</td><td>document</td><td>document</td><td>document</td></tr>
+      <tr><td><b>ENV</b></td><td>re-run, escalate</td><td>re-run</td><td>re-run</td><td>re-run</td></tr>
+      <tr><td><b>NEW TEST</b></td><td>verify before GO</td><td>verify</td><td>verify</td><td>verify</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">This grid is the bridge from analysis to decision. A REGRESSION on a CRITICAL flow is an automatic NO-GO before you even score the run.</div>
+</section>
+
+<section class="slide divider" data-title="Part 1 · The Verdict">
+  <div>
+    <p class="part-no">PART 01 · THE VERDICT</p>
+    <h1 class="h1">Score the Run<br><span class="grad">apply the vetoes, decide</span></h1>
+    <p class="lede">All the analysis funnels into one number on a 9-point scale — but vetoes can overrule a high score in an instant.</p>
+  </div>
+  <div class="notes">Now we turn evidence into a defensible decision.</div>
+</section>
+
+<section class="slide" data-title="Scoring">
+  <p class="kicker">phase 3 · scoring</p>
+  <h2 class="h2" data-anim="fade-up">The 9-point weighted score</h2>
+  <table class="dtable mt-m">
+    <thead><tr><th>Factor</th><th>+3</th><th>+1</th><th>0</th><th>−1</th><th>−2</th><th>−3</th></tr></thead>
+    <tbody>
+      <tr><td><b>Pass Rate</b></td><td>≥95%</td><td>90–95%</td><td>—</td><td>—</td><td>&lt;90%</td><td>—</td></tr>
+      <tr><td><b>Regressions</b></td><td>0</td><td>1–2 Low</td><td>—</td><td>1+ Med</td><td>—</td><td>Any High/Crit</td></tr>
+      <tr><td><b>Critical tests</b></td><td>All pass</td><td>—</td><td>—</td><td>—</td><td>—</td><td>Any fail</td></tr>
+      <tr><td><b>Flaky tests</b></td><td>—</td><td>≤3</td><td>4–5</td><td>&gt;5</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <div class="callout mt-m"><h4>Maximum score = 9</h4><p>Regressions and critical-test failures carry the heaviest negative weight — that's intentional.</p></div>
+  <div class="notes">Four factors, each weighted by how much it should move a release decision. Regressions and critical-test failures carry the heaviest negative weight — that's intentional.</div>
+</section>
+
+<section class="slide" data-title="Thresholds">
+  <p class="kicker">phase 3 · thresholds</p>
+  <h2 class="h2" data-anim="fade-up">Score maps to one of three verdicts</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>GO — score ≥ 7</h4><p class="dim">Release approved; mark the candidate, schedule a post-deploy smoke.</p><span class="tag mt-s">ship it</span></div>
+    <div class="card card-accent"><h4>CAUTION — score 4–6</h4><p class="dim">Manual review required; document the accepted risks and proceed deliberately with the team lead.</p><span class="tag mt-s">human review</span></div>
+    <div class="card card-accent"><h4>NO-GO — score &lt; 4</h4><p class="dim">Block the release; assign regression issues, schedule fix verification, plan a re-run.</p><span class="tag mt-s">block</span></div>
+  </div>
+  <div class="notes">The score is a guide, not gospel — CAUTION explicitly hands the decision to a human who documents what risk they're accepting.</div>
+</section>
+
+<section class="slide" data-title="Hard vetoes">
+  <p class="kicker">phase 3 · hard vetoes</p>
+  <h2 class="h2" data-anim="fade-up">Three vetoes overrule any score</h2>
+  <div class="callout warn mt-l"><h4>Never auto-GO if…</h4><p>(1) any @critical test fails · (2) any REGRESSION with HIGH or CRITICAL severity exists · (3) pass rate &lt; 90%. Hard vetoes regardless of how high the weighted score is.</p></div>
+  <div class="callout mt-m"><h4>R2 &amp; R6</h4><p>R2: the quality gate is binary — known REGRESSION count &gt; 0 means you cannot emit GO. R6: never blend smoke + regression results into one pass-rate number; they have different SLOs.</p></div>
+  <div class="notes">This is the spine of the whole method. A run can score 8/9 and still be NO-GO because one critical test went red. The veto always wins.</div>
+</section>
+
+<section class="slide" data-title="Report">
+  <p class="kicker">phase 3 · report</p>
+  <h2 class="h2" data-anim="fade-up">Turn the decision into a stakeholder report</h2>
+  <div class="steps s4 mt-m anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>Executive summary</h4><p>Verdict + score/9 + one-line rationale.</p></div>
+    <div class="step"><div class="num">2</div><h4>Metrics table</h4><p>Pass Rate, Regressions, Critical fails, Flaky, Duration — each vs its threshold (ok/warn/fail).</p></div>
+    <div class="step"><div class="num">3</div><h4>Failure details</h4><p>One section per category, Regressions first (test | ATC ID | last-passed | issue | cause).</p></div>
+    <div class="step"><div class="num">4</div><h4>Trend + links + recs</h4><p>Last-5-runs sparkline; workflow/Allure/issue links; Immediate / Short-term / Long-term actions.</p></div>
+  </div>
+  <div class="callout mt-m"><h4>Save to</h4><p>.context/reports/regression-{env}-{date}.md</p></div>
+  <div class="notes">The report is the deliverable a PM actually reads. Verdict first, evidence underneath, recommendations at the end. Same shape every time so people learn to scan it.</div>
+</section>
+
+<section class="slide" data-title="File &amp; sync">
+  <p class="kicker">phase 3 · file &amp; sync</p>
+  <h2 class="h2" data-anim="fade-up">When it's NO-GO, open issues and close the loop</h2>
+  <ul class="blist anim-stagger-list">
+    <li><b>One issue per regression.</b> Title "[REGRESSION] {test} failing in {suite}", labels regression,bug,automated-tests, body carries Test ID, suite, run ID, env, error block, evidence links, last-passed run.</li>
+    <li><b>R7.</b> Never mark a test KNOWN without a Jira ticket linking the suppression to a tracking issue.</li>
+    <li><b>R5.</b> Never trigger a regression run without pinning the commit SHA; a different commit is a different baseline.</li>
+    <li><b>TMS sync (optional).</b> Push per-ATC results into the Test Execution when a TMS is configured.</li>
+  </ul>
+  <div class="notes">A NO-GO that doesn't create assigned, traceable issues is just a complaint. Each regression gets a ticket with full evidence so a dev can pick it up cold.</div>
+</section>
+
+<section class="slide" data-title="Anti-patterns">
+  <p class="kicker">phase 1–3 · anti-patterns</p>
+  <h2 class="h2" data-anim="fade-up">The mistakes that sink a release gate</h2>
+  <div class="vs mt-m">
+    <div class="card bad-side side"><h3>❌ Sinks the gate</h3><ul>
+      <li>Tag FLAKY without re-running in isolation.</li>
+      <li>Emit GO with one known REGRESSION "because the score was fine".</li>
+      <li>Skip the Allure download on a red build.</li>
+      <li>Mark a first-ever failure as REGRESSION.</li>
+      <li>Run without pinning the commit SHA.</li>
+    </ul></div>
+    <div class="mid">→</div>
+    <div class="card good-side side"><h3>✅ Trustworthy</h3><ul>
+      <li>Re-run in isolation before calling flaky (R1).</li>
+      <li>Treat any REGRESSION as a binary block (R2).</li>
+      <li>Download evidence first, before retention expires (R4).</li>
+      <li>First-run failure = NEW TEST, verify, then reclassify.</li>
+      <li>Pin --ref &lt;commit-sha&gt; so the baseline is fixed (R5).</li>
+    </ul></div>
+  </div>
+  <div class="notes">Each left-hand habit is a real way teams ship bugs or block good releases. The right column is the discipline that makes the verdict trustworthy.</div>
+</section>
+
+<section class="slide divider" data-title="Part 2">
+  <div>
+    <p class="part-no">PART 02</p>
+    <h1 class="h1">The Acceleration<br><span class="grad">the skill runs the whole gate</span></h1>
+    <p class="lede">Everything in Part 1 — suite selection, monitoring, the 5-way triage, scoring, the report — driven from one prompt in your terminal.</p>
+  </div>
+  <div class="notes">Now we show how the regression-testing skill executes the exact method we just learned, with the human still owning the verdict.</div>
+</section>
+
+<section class="slide" data-title="Invocation">
+  <p class="kicker">part 02 · invocation</p>
+  <h2 class="h2" data-anim="fade-up">One trigger phrase loads the whole pipeline</h2>
+  <ul class="blist anim-stagger-list">
+    <li><b>Trigger.</b> "run regression", "GO/NO-GO decision", "analyze test results", "quality report", "release readiness", or /regression-testing.</li>
+    <li><b>Auto-loads context.</b> Workflow YAMLs, master-test-plan (Epic key + SLOs), playwright.config.ts (retry/shard), the previous run's Allure baseline, kata-manifest.json, jira-required.yaml.</li>
+    <li><b>Won't trigger for.</b> Writing new regression tests (that's test-automation) or manually retesting one bug fix (that's sprint-testing).</li>
+  </ul>
+  <div class="notes">The skill description is tuned so it fires on release-gate language but stays out of the way for test-writing or single-ticket retest work.</div>
+</section>
+
+<section class="slide" data-title="Orchestration">
+  <p class="kicker">part 02 · orchestration</p>
+  <h2 class="h2" data-anim="fade-up">Main thread is command center; subagents do the heavy lifting</h2>
+  <div class="flow mt-m anim-stagger-list">
+    <div class="stage"><div class="sx">1</div><div><h4>Trigger (Single, inline)</h4><p>One shell call, no dispatch.</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>Monitor (Background)</h4><p>One subagent watches gh run watch while the main thread preps the report scaffold and loads the rubric.</p></div></div>
+    <div class="stage"><div class="sx">3</div><div><h4>Download (Parallel ×3)</h4><p>Three subagents, one per artifact (allure / evidence / playwright), capped at 3.</p></div></div>
+    <div class="stage"><div class="sx">4</div><div><h4>Classify (Parallel, cap 10)</h4><p>Failures sharded into chunks of ~10, one subagent per chunk, JSON merged in the main thread.</p></div></div>
+    <div class="stage"><div class="sx">5</div><div><h4>Compute + Verdict (Single, inline)</h4><p>Release decisions live on the main thread only.</p></div></div>
+  </div>
+  <div class="notes">The pattern is deliberate: long waits and high-volume classification fan out to subagents; the decision itself never leaves the main thread, because that's where the human is.</div>
+</section>
+
+<section class="slide center tc" data-title="Resume">
+  <div>
+    <p class="kicker">part 02 · resume</p>
+    <div class="bigstat"><span class="grad">20–60 min</span></div>
+    <h3>The killer feature: re-attach, don't re-run</h3>
+    <p class="lede mt-m">If the Monitor subagent dies mid-watch but RUN_ID was persisted to plan.md, Phase 0 re-attaches via "gh run view &lt;RUN_ID&gt;" instead of re-triggering CI — saving a full regression run of wall-clock. Session state lives at .session/regression-testing/&lt;env&gt;-&lt;date&gt;/.</p>
+  </div>
+  <div class="notes">This is why persisting RUN_ID immediately matters. A crashed watcher costs zero CI time if the run ID was written down — the skill just reconnects.</div>
+</section>
+
+<section class="slide" data-title="Tools">
+  <p class="kicker">part 02 · tools</p>
+  <h2 class="h2" data-anim="fade-up">What the skill drives under the hood</h2>
+  <table class="dtable mt-m">
+    <thead><tr><th>Tool</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><b>gh CLI</b></td><td>trigger workflows, watch runs, download artifacts, file issues</td></tr>
+      <tr><td><b>bunx allure</b></td><td>local Allure 3 — bun allure:agent emits AI-readable markdown, no global install</td></tr>
+      <tr><td><b>/xray-cli</b></td><td>optional TMS sync of per-ATC results into a Test Execution</td></tr>
+      <tr><td><b>/playwright-cli</b></td><td>inspect traces/screenshots for a failure</td></tr>
+      <tr><td><b>jira-required.yaml</b></td><td>Jira project/work-type/transition refs for regression issues</td></tr>
+    </tbody>
+  </table>
+  <div class="callout mt-m"><h4>Outputs</h4><p>Artifacts land in ./analysis/, the report in .context/reports/.</p></div>
+  <div class="notes">It's CLI-first by design — gh and allure carry the load, with xray-cli and playwright-cli pulled in only when a failure needs TMS sync or deep trace inspection.</div>
+</section>
+
+<section class="slide" data-title="In practice">
+  <p class="kicker">part 02 · in practice</p>
+  <h2 class="h2" data-anim="fade-up">One prompt, full release verdict</h2>
+  <div class="terminal mt-m">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>claude-code</span></div>
+<pre><span class="p">▸ </span><span class="c">run regression on staging and tell me if we can deploy</span>
+<span class="o">  [Phase 0] No prior session for staging-2026-06-03 — starting fresh.</span>
+<span class="o">  [Phase 1] gh workflow run regression.yml -f environment=staging -f generate_allure=true</span>
+<span class="o">            RUN_ID=8421337 captured → persisted to plan.md</span>
+<span class="o">  [Monitor·bg] gh run watch 8421337 … completed: failure (47m12s)</span>
+<span class="o">  [Download·×3] merged-allure-results-staging ✓  evidence ✓  playwright ✓</span>
+<span class="o">  [Classify·×2] 14 failures → 1 REGRESSION (CRITICAL), 9 FLAKY, 3 ENV, 1 KNOWN</span>
+<span class="o">  [Score] Pass rate 93.1% (+1.2 vs prev). Score 2/9.</span>
+<span class="o">  VERDICT: NO-GO — 1 CRITICAL regression on checkout vetoes release.</span>
+<span class="o">  Filed #312 [REGRESSION] checkout.payment failing.</span>
+<span class="o">  Report → .context/reports/regression-staging-2026-06-03.md</span></pre>
+  </div>
+  <div class="notes">Walk the transcript line by line — it maps one-to-one onto Part 1's three phases. Note the veto firing: 93% pass rate but one critical regression forces NO-GO.</div>
+</section>
+
+<section class="slide" data-title="Human in the loop">
+  <p class="kicker">part 02 · human in the loop</p>
+  <h2 class="h2" data-anim="fade-up">The AI proposes; the human owns the release</h2>
+  <div class="callout mt-l"><h4>Plan-first &amp; error protocol</h4><p>Phase 0 writes plan.md before any CI trigger and surfaces resume/restart/abort on an existing session. Any subagent failure → STOP, report full context, offer retry/skip/abort — never auto-fix.</p></div>
+  <div class="callout warn mt-m"><h4>Coded vetoes</h4><p>The verdict and issue-filing stay on the main thread under your eye. The hard vetoes (@critical fail, HIGH/CRITICAL regression, pass-rate &lt;90%) are coded in so the AI cannot rubber-stamp a GO it shouldn't.</p></div>
+  <div class="notes">The acceleration is real but bounded — the skill can't be talked into a GO past a veto, and it stops and asks rather than papering over a failure.</div>
+</section>
+
+<section class="slide" data-title="Takeaways">
+  <p class="kicker">// takeaways</p>
+  <h2 class="h2" data-anim="fade-up">Three things to carry out of here</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>1 · Read before you label</h4><p class="dim">Every failure gets one of five labels from the precedence tree — never call REGRESSION without checking history, or FLAKY without the &gt;20% / 10-run math.</p></div>
+    <div class="card card-accent"><h4>2 · Vetoes beat scores</h4><p class="dim">One @critical fail, one HIGH/CRITICAL regression, or pass-rate &lt;90% is an automatic NO-GO regardless of the 9-point score.</p></div>
+    <div class="card card-accent"><h4>3 · The skill runs it, you own the verdict</h4><p class="dim">One prompt drives execute→analyze→report with subagents and gh/allure, but plan-first and hard vetoes keep the human in control.</p></div>
+  </div>
+  <div class="notes">If they remember nothing else: classify honestly, respect the vetoes, and trust the method — the AI just runs it faster.</div>
+</section>
+
+<section class="slide center tc" data-title="Thanks">
+  <div>
+    <h1 class="h1"><span class="grad">Now go make a verdict nobody can argue with.</span></h1>
+    <p class="lede mt-m">Execute → Analyze → Report. Five classifications, four scoring factors, three vetoes, one decision.</p>
+    <p class="lede" style="margin:14px auto">Trigger it: <kbd>/regression-testing</kbd> · references/failure-classification.md · references/ci-cd-integration.md</p>
+  </div>
+  <div class="notes">Close by pointing them to the two reference files for the deep catalogue — the error patterns and the full CI/CD setup live there.</div>
+</section>
+
+</div>
+<script>
+/* html-ppt :: runtime.js
+ * Keyboard-driven deck runtime. Zero dependencies.
+ *
+ * Features:
+ *   ← → / space / PgUp PgDn / Home End  navigation
+ *   F  fullscreen
+ *   S  presenter mode (opens a NEW WINDOW with current/next slide preview + notes + timer)
+ *       The original window stays as audience view, synced via BroadcastChannel.
+ *       Slide previews use CSS transform:scale() at design resolution for pixel-perfect layout.
+ *   N  quick notes overlay (bottom drawer)
+ *   O  slide overview grid
+ *   T  cycle themes (reads data-themes on <html> or <body>)
+ *   A  cycle demo animation on current slide
+ *   URL hash #/N  deep-link to slide N (1-based)
+ *   Progress bar auto-managed
+ */
+(function () {
+  'use strict';
+
+  const ANIMS = ['fade-up','fade-down','fade-left','fade-right','rise-in','drop-in',
+    'zoom-pop','blur-in','glitch-in','typewriter','neon-glow','shimmer-sweep',
+    'gradient-flow','stagger-list','counter-up','path-draw','parallax-tilt',
+    'card-flip-3d','cube-rotate-3d','page-turn-3d','perspective-zoom',
+    'marquee-scroll','kenburns','confetti-burst','spotlight','morph-shape','ripple-reveal'];
+
+  function ready(fn){ if(document.readyState!='loading')fn(); else document.addEventListener('DOMContentLoaded',fn);}
+
+  /* ========== Parse URL for preview-only mode ==========
+   * When loaded as iframe.src = "index.html?preview=3", runtime enters a
+   * locked single-slide mode: only slide N is visible, no chrome, no keys,
+   * no hash updates. This is how the presenter window shows pixel-perfect
+   * previews — by loading the actual deck file in an iframe and telling it
+   * to display only a specific slide.
+   */
+  function getPreviewIdx() {
+    const m = /[?&]preview=(\d+)/.exec(location.search || '');
+    return m ? parseInt(m[1], 10) - 1 : -1;
+  }
+
+  ready(function () {
+    const deck = document.querySelector('.deck');
+    if (!deck) return;
+    const slides = Array.from(deck.querySelectorAll('.slide'));
+    if (!slides.length) return;
+
+    const previewOnlyIdx = getPreviewIdx();
+    const isPreviewMode = previewOnlyIdx >= 0 && previewOnlyIdx < slides.length;
+
+    /* ===== Preview-only mode: show one slide, hide everything else ===== */
+    if (isPreviewMode) {
+      function showSlide(i) {
+        slides.forEach((s, j) => {
+          const active = (j === i);
+          s.classList.toggle('is-active', active);
+          s.style.display = active ? '' : 'none';
+          if (active) {
+            s.style.opacity = '1';
+            s.style.transform = 'none';
+            s.style.pointerEvents = 'auto';
+          }
+        });
+      }
+      showSlide(previewOnlyIdx);
+      /* Hide chrome that the presenter shouldn't see in preview */
+      const hideSel = '.progress-bar, .notes-overlay, .overview, .notes, aside.notes, .speaker-notes';
+      document.querySelectorAll(hideSel).forEach(el => { el.style.display = 'none'; });
+      document.documentElement.setAttribute('data-preview', '1');
+      document.body.setAttribute('data-preview', '1');
+      /* Auto-detect theme base path for theme switching in preview mode */
+      function getPreviewThemeBase() {
+        const base = document.documentElement.getAttribute('data-theme-base');
+        if (base) return base;
+        const tl = document.getElementById('theme-link');
+        if (tl) {
+          const raw = tl.getAttribute('href') || '';
+          const ls = raw.lastIndexOf('/');
+          if (ls >= 0) return raw.substring(0, ls + 1);
+        }
+        return 'assets/themes/';
+      }
+      const previewThemeBase = getPreviewThemeBase();
+
+      /* Listen for postMessage from parent presenter window:
+       *  - preview-goto: switch visible slide WITHOUT reloading
+       *  - preview-theme: switch theme CSS link to match audience window */
+      window.addEventListener('message', function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'preview-goto') {
+          const n = parseInt(e.data.idx, 10);
+          if (n >= 0 && n < slides.length) showSlide(n);
+        } else if (e.data.type === 'preview-theme' && e.data.name) {
+          let link = document.getElementById('theme-link');
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.id = 'theme-link';
+            document.head.appendChild(link);
+          }
+          link.href = previewThemeBase + e.data.name + '.css';
+          document.documentElement.setAttribute('data-theme', e.data.name);
+        }
+      });
+      /* Signal to parent that preview iframe is ready */
+      try { window.parent && window.parent.postMessage({ type: 'preview-ready' }, '*'); } catch(e) {}
+      return;
+    }
+
+    let idx = 0;
+    const total = slides.length;
+
+    /* ===== BroadcastChannel for presenter sync ===== */
+    const CHANNEL_NAME = 'html-ppt-presenter-' + location.pathname;
+    let bc;
+    try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
+
+    // Are we running inside the presenter popup? (legacy flag, now unused)
+    const isPresenterWindow = false;
+
+    /* ===== progress bar ===== */
+    let bar = document.querySelector('.progress-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'progress-bar';
+      bar.innerHTML = '<span></span>';
+      document.body.appendChild(bar);
+    }
+    const barFill = bar.querySelector('span');
+
+    /* ===== notes overlay (N key) ===== */
+    let notes = document.querySelector('.notes-overlay');
+    if (!notes) {
+      notes = document.createElement('div');
+      notes.className = 'notes-overlay';
+      document.body.appendChild(notes);
+    }
+
+    /* ===== overview grid (O key) ===== */
+    let overview = document.querySelector('.overview');
+    if (!overview) {
+      overview = document.createElement('div');
+      overview.className = 'overview';
+      slides.forEach((s, i) => {
+        const t = document.createElement('div');
+        t.className = 'thumb';
+        // Force 16:9 aspect ratio robustly
+        t.style.padding = '0 0 56.25% 0';
+        t.style.height = '0';
+        t.style.position = 'relative';
+        t.style.overflow = 'hidden';
+
+        const title = s.getAttribute('data-title') ||
+          (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1));
+        
+        // Create a container for the mini-slide
+        const mini = document.createElement('div');
+        mini.className = 'mini-slide';
+        mini.style.position = 'absolute';
+        mini.style.top = '0';
+        mini.style.left = '0';
+        mini.style.width = '1920px';
+        mini.style.height = '1080px';
+        mini.style.transformOrigin = 'top left';
+        mini.style.pointerEvents = 'none';
+        mini.style.background = 'var(--bg)';
+        
+        // Clone the slide content
+        const clone = s.cloneNode(true);
+        clone.className = 'slide is-active'; // force active styles
+        clone.style.position = 'absolute';
+        clone.style.inset = '0';
+        clone.style.transform = 'none';
+        clone.style.opacity = '1';
+        clone.style.padding = '72px 96px'; // ensure padding is kept
+        
+        mini.appendChild(clone);
+        t.appendChild(mini);
+
+        // Add the number and title overlay
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.inset = '0';
+        overlay.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.8) 100%)';
+        overlay.style.color = '#fff';
+        overlay.style.zIndex = '10';
+        overlay.style.pointerEvents = 'none';
+        
+        const n = document.createElement('div');
+        n.className = 'n';
+        n.textContent = i + 1;
+        n.style.position = 'absolute';
+        n.style.top = '12px';
+        n.style.left = '16px';
+        n.style.fontWeight = '700';
+        n.style.fontSize = '16px';
+        n.style.color = '#fff';
+        n.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        const text = document.createElement('div');
+        text.className = 't';
+        text.textContent = title.trim().slice(0,80);
+        text.style.position = 'absolute';
+        text.style.bottom = '12px';
+        text.style.left = '16px';
+        text.style.right = '16px';
+        text.style.fontWeight = '600';
+        text.style.fontSize = '14px';
+        text.style.color = '#fff';
+        text.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        overlay.appendChild(n);
+        overlay.appendChild(text);
+        t.appendChild(overlay);
+
+        t.addEventListener('click', () => { go(i); toggleOverview(false); });
+        overview.appendChild(t);
+      });
+      document.body.appendChild(overview);
+    }
+
+    /* ===== navigation ===== */
+    function go(n, fromRemote){
+      n = Math.max(0, Math.min(total-1, n));
+      slides.forEach((s,i) => {
+        s.classList.toggle('is-active', i===n);
+        s.classList.toggle('is-prev', i<n);
+      });
+      idx = n;
+      barFill.style.width = ((n+1)/total*100)+'%';
+      const numEl = document.querySelector('.slide-number');
+      if (numEl) { numEl.setAttribute('data-current', n+1); numEl.setAttribute('data-total', total); }
+
+      // notes (bottom overlay)
+      const note = slides[n].querySelector('.notes, aside.notes, .speaker-notes');
+      notes.innerHTML = note ? note.innerHTML : '';
+
+      // hash
+      const hashTarget = '#/'+(n+1);
+      if (location.hash !== hashTarget && !isPresenterWindow) {
+        history.replaceState(null,'', hashTarget);
+      }
+
+      // re-trigger entry animations
+      slides[n].querySelectorAll('[data-anim]').forEach(el => {
+        const a = el.getAttribute('data-anim');
+        el.classList.remove('anim-'+a);
+        void el.offsetWidth;
+        el.classList.add('anim-'+a);
+      });
+
+      // counter-up
+      slides[n].querySelectorAll('.counter').forEach(el => {
+        const target = parseFloat(el.getAttribute('data-to')||el.textContent);
+        const dur = parseInt(el.getAttribute('data-dur')||'1200',10);
+        const start = performance.now();
+        const from = 0;
+        function tick(now){
+          const t = Math.min(1,(now-start)/dur);
+          const v = from + (target-from)*(1-Math.pow(1-t,3));
+          el.textContent = (target % 1 === 0) ? Math.round(v) : v.toFixed(1);
+          if (t<1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+
+      // Broadcast to other window (audience ↔ presenter)
+      if (!fromRemote && bc) {
+        bc.postMessage({ type: 'go', idx: n });
+      }
+    }
+
+    /* ===== listen for remote navigation / theme changes ===== */
+    if (bc) {
+      bc.onmessage = function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'go' && typeof e.data.idx === 'number') {
+          go(e.data.idx, true);
+        } else if (e.data.type === 'theme' && e.data.name) {
+          /* Sync theme across windows */
+          const i = themes.indexOf(e.data.name);
+          if (i >= 0) themeIdx = i;
+          applyTheme(e.data.name);
+        }
+      };
+    }
+
+    function toggleNotes(force){ notes.classList.toggle('open', force!==undefined?force:!notes.classList.contains('open')); }
+    function toggleOverview(force){
+      const isOpen = force!==undefined ? force : !overview.classList.contains('open');
+      overview.classList.toggle('open', isOpen);
+      if (isOpen) {
+        requestAnimationFrame(() => {
+          const thumbs = overview.querySelectorAll('.thumb');
+          if (thumbs.length) {
+            const scale = thumbs[0].clientWidth / 1920;
+            overview.querySelectorAll('.mini-slide').forEach(m => {
+              m.style.transform = 'scale(' + scale + ')';
+            });
+          }
+        });
+      }
+    }
+
+    /* ========== PRESENTER MODE — Magnetic-card popup window ========== */
+    /* Opens a new window with 4 draggable, resizable cards:
+     *   CURRENT  — iframe(?preview=N)   pixel-perfect preview of current slide
+     *   NEXT     — iframe(?preview=N+1) pixel-perfect preview of next slide
+     *   SCRIPT   — large speaker notes (逐字稿)
+     *   TIMER    — elapsed timer + page counter + controls
+     * Cards remember position/size in localStorage.
+     * Two windows sync via BroadcastChannel.
+     */
+    let presenterWin = null;
+
+    function openPresenterWindow() {
+      if (presenterWin && !presenterWin.closed) {
+        presenterWin.focus();
+        return;
+      }
+
+      // Build absolute URL of THIS deck file (without hash/query)
+      const deckUrl = location.protocol + '//' + location.host + location.pathname;
+
+      // Collect slide titles + notes (HTML strings)
+      const slideMeta = slides.map((s, i) => {
+        const note = s.querySelector('.notes, aside.notes, .speaker-notes');
+        return {
+          title: s.getAttribute('data-title') ||
+            (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1)),
+          notes: note ? note.innerHTML : ''
+        };
+      });
+
+      /* Capture current theme so presenter previews match the audience */
+      const currentTheme = root.getAttribute('data-theme') || (themes[themeIdx] || '');
+      const presenterHTML = buildPresenterHTML(deckUrl, slideMeta, total, idx, CHANNEL_NAME, currentTheme);
+
+      presenterWin = window.open('', 'html-ppt-presenter', 'width=1280,height=820,menubar=no,toolbar=no');
+      if (!presenterWin) {
+        alert('请允许弹出窗口以使用演讲者视图');
+        return;
+      }
+      presenterWin.document.open();
+      presenterWin.document.write(presenterHTML);
+      presenterWin.document.close();
+    }
+
+    function buildPresenterHTML(deckUrl, slideMeta, total, startIdx, channelName, currentTheme) {
+      const metaJSON = JSON.stringify(slideMeta);
+      const deckUrlJSON = JSON.stringify(deckUrl);
+      const channelJSON = JSON.stringify(channelName);
+      const themeJSON = JSON.stringify(currentTheme || '');
+      const storageKey = 'html-ppt-presenter:' + location.pathname;
+
+      // Build the document as a single template string for clarity
+      return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Presenter View</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #1a1d24;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(88,166,255,.04), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(188,140,255,.04), transparent 50%);
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+  }
+  /* Stage: positioned area where cards live */
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+
+  /* Magnetic card */
+  .pcard {
+    position: absolute;
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    min-width: 180px; min-height: 100px;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  .pcard.dragging { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(88,166,255,.5); border-color: #58a6ff; transition: none; z-index: 9999; }
+  .pcard.resizing { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(63,185,80,.5); border-color: #3fb950; transition: none; z-index: 9999; }
+  .pcard:hover { border-color: rgba(88,166,255,.3); }
+
+  /* Card header (drag handle) */
+  .pcard-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    cursor: move;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .pcard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot-color, #58a6ff); flex-shrink: 0; }
+  .pcard-title {
+    font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    font-weight: 700; color: #8b949e; flex: 1;
+  }
+  .pcard-meta { font-size: 11px; color: #6e7681; }
+
+  /* Card body */
+  .pcard-body { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+
+  /* Preview cards (CURRENT/NEXT) — iframe-based pixel-perfect render */
+  .pcard-preview .pcard-body { background: #000; }
+  .pcard-preview iframe {
+    position: absolute; top: 0; left: 0;
+    width: 1920px; height: 1080px;
+    border: none;
+    transform-origin: top left;
+    pointer-events: none;
+    background: transparent;
+  }
+  .pcard-preview .preview-end {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #484f58; font-size: 14px; letter-spacing: .12em;
+  }
+
+  /* Notes card */
+  .pcard-notes .pcard-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    font-size: 18px; line-height: 1.75;
+    color: #d0d7de;
+    font-family: "Noto Sans SC", -apple-system, sans-serif;
+  }
+  .pcard-notes .pcard-body p { margin: 0 0 .7em 0; }
+  .pcard-notes .pcard-body strong { color: #f0883e; }
+  .pcard-notes .pcard-body em { color: #58a6ff; font-style: normal; }
+  .pcard-notes .pcard-body code {
+    font-family: "SF Mono", monospace; font-size: .9em;
+    background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
+  }
+  .pcard-notes .empty { color: #484f58; font-style: italic; }
+
+  /* Timer card */
+  .pcard-timer .pcard-body {
+    display: flex; flex-direction: column; gap: 14px;
+    padding: 18px 20px; justify-content: center;
+  }
+  .timer-display {
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    font-size: 42px; font-weight: 700;
+    color: #3fb950;
+    letter-spacing: .04em;
+    line-height: 1;
+  }
+  .timer-row {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: #8b949e;
+  }
+  .timer-row .label { font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: #6e7681; }
+  .timer-row .val { color: #e6edf3; font-weight: 600; font-family: "SF Mono", monospace; }
+  .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .timer-btn {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .timer-btn:hover { background: rgba(88,166,255,.15); border-color: #58a6ff; }
+  .timer-btn:active { transform: translateY(1px); }
+
+  /* Resize handle */
+  .pcard-resize {
+    position: absolute; right: 0; bottom: 0;
+    width: 18px; height: 18px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,.25) 50%, rgba(255,255,255,.25) 60%, transparent 60%, transparent 70%, rgba(255,255,255,.25) 70%, rgba(255,255,255,.25) 80%, transparent 80%);
+    z-index: 5;
+  }
+  .pcard-resize:hover { background: linear-gradient(135deg, transparent 50%, #58a6ff 50%, #58a6ff 60%, transparent 60%, transparent 70%, #58a6ff 70%, #58a6ff 80%, transparent 80%); }
+
+  /* Bottom hint bar */
+  .hint-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding: 6px 16px;
+    font-size: 11px; color: #8b949e;
+    display: flex; gap: 18px; align-items: center;
+    z-index: 1000;
+  }
+  .hint-bar kbd {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px; border-radius: 3px;
+    font-family: "SF Mono", monospace;
+    font-size: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+  }
+  .hint-bar .reset-layout {
+    margin-left: auto;
+    background: transparent; border: 1px solid rgba(255,255,255,.15);
+    color: #8b949e; padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; cursor: pointer; font-family: inherit;
+  }
+  .hint-bar .reset-layout:hover { background: rgba(248,81,73,.15); border-color: #f85149; color: #f85149; }
+
+  body.is-dragging-card * { user-select: none !important; }
+  body.is-dragging-card iframe { pointer-events: none !important; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="pcard pcard-preview" id="card-cur" style="--dot-color:#58a6ff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">CURRENT</span>
+      <span class="pcard-meta" id="cur-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-cur"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-preview" id="card-nxt" style="--dot-color:#bc8cff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">NEXT</span>
+      <span class="pcard-meta" id="nxt-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-nxt"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-notes" id="card-notes" style="--dot-color:#f0883e">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">SPEAKER SCRIPT · 逐字稿</span>
+    </div>
+    <div class="pcard-body" id="notes-body"></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-timer" id="card-timer" style="--dot-color:#3fb950">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">TIMER</span>
+    </div>
+    <div class="pcard-body">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-row">
+        <span class="label">Slide</span>
+        <span class="val" id="timer-count">1 / ${total}</span>
+      </div>
+      <div class="timer-controls">
+        <button class="timer-btn" id="btn-prev">← Prev</button>
+        <button class="timer-btn" id="btn-next">Next →</button>
+        <button class="timer-btn" id="btn-reset">⏱ Reset</button>
+      </div>
+    </div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+</div>
+
+<div class="hint-bar">
+  <span><kbd>← →</kbd> 翻页</span>
+  <span><kbd>R</kbd> 重置计时</span>
+  <span><kbd>Esc</kbd> 关闭</span>
+  <span style="color:#6e7681">拖动卡片头部移动 · 拖动右下角调整大小</span>
+  <button class="reset-layout" id="reset-layout">重置布局</button>
+</div>
+
+<script>
+(function(){
+  var slideMeta = ${metaJSON};
+  var total = ${total};
+  var idx = ${startIdx};
+  var deckUrl = ${deckUrlJSON};
+  var STORAGE_KEY = ${JSON.stringify(storageKey)};
+  var bc;
+  try { bc = new BroadcastChannel(${channelJSON}); } catch(e) {}
+
+  var iframeCur = document.getElementById('iframe-cur');
+  var iframeNxt = document.getElementById('iframe-nxt');
+  var notesBody = document.getElementById('notes-body');
+  var curMeta = document.getElementById('cur-meta');
+  var nxtMeta = document.getElementById('nxt-meta');
+  var timerDisplay = document.getElementById('timer-display');
+  var timerCount = document.getElementById('timer-count');
+
+  /* ===== Default card layout ===== */
+  function defaultLayout() {
+    var w = window.innerWidth;
+    var h = window.innerHeight - 36; /* leave room for hint bar */
+    return {
+      'card-cur':   { x: 16,        y: 16,            w: Math.round(w*0.55) - 24, h: Math.round(h*0.62) - 16 },
+      'card-nxt':   { x: Math.round(w*0.55) + 8, y: 16, w: w - Math.round(w*0.55) - 24, h: Math.round(h*0.42) - 16 },
+      'card-notes': { x: Math.round(w*0.55) + 8, y: Math.round(h*0.42) + 8, w: w - Math.round(w*0.55) - 24, h: h - Math.round(h*0.42) - 16 },
+      'card-timer': { x: 16,        y: Math.round(h*0.62) + 8, w: Math.round(w*0.55) - 24, h: h - Math.round(h*0.62) - 16 }
+    };
+  }
+
+  /* ===== Apply / save / restore layout ===== */
+  function applyLayout(layout) {
+    Object.keys(layout).forEach(function(id){
+      var el = document.getElementById(id);
+      var l = layout[id];
+      if (el && l) {
+        el.style.left = l.x + 'px';
+        el.style.top = l.y + 'px';
+        el.style.width = l.w + 'px';
+        el.style.height = l.h + 'px';
+      }
+    });
+    rescaleAll();
+  }
+  function readLayout() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return defaultLayout();
+  }
+  function saveLayout() {
+    var layout = {};
+    ['card-cur','card-nxt','card-notes','card-timer'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) {
+        layout[id] = {
+          x: parseInt(el.style.left,10) || 0,
+          y: parseInt(el.style.top,10) || 0,
+          w: parseInt(el.style.width,10) || 300,
+          h: parseInt(el.style.height,10) || 200
+        };
+      }
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)); } catch(e) {}
+  }
+
+  /* ===== iframe rescale to fit card body ===== */
+  function rescaleIframe(iframe) {
+    if (!iframe || iframe.style.display === 'none') return;
+    var body = iframe.parentElement;
+    var cw = body.clientWidth, ch = body.clientHeight;
+    if (!cw || !ch) return;
+    var s = Math.min(cw / 1920, ch / 1080);
+    iframe.style.transform = 'scale(' + s + ')';
+    /* Center the scaled iframe in the body */
+    var sw = 1920 * s, sh = 1080 * s;
+    iframe.style.left = Math.max(0, (cw - sw) / 2) + 'px';
+    iframe.style.top = Math.max(0, (ch - sh) / 2) + 'px';
+  }
+  function rescaleAll() {
+    rescaleIframe(iframeCur);
+    rescaleIframe(iframeNxt);
+  }
+  window.addEventListener('resize', rescaleAll);
+
+  /* ===== Drag (move card by header) ===== */
+  document.querySelectorAll('[data-drag]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault();
+      card.classList.add('dragging');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startL = parseInt(card.style.left,10) || 0;
+      var startT = parseInt(card.style.top,10)  || 0;
+      function onMove(ev){
+        var nx = Math.max(0, Math.min(window.innerWidth - 100, startL + ev.clientX - startX));
+        var ny = Math.max(0, Math.min(window.innerHeight - 50, startT + ev.clientY - startY));
+        card.style.left = nx + 'px';
+        card.style.top = ny + 'px';
+      }
+      function onUp(){
+        card.classList.remove('dragging');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Resize (drag bottom-right corner) ===== */
+  document.querySelectorAll('[data-resize]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault(); e.stopPropagation();
+      card.classList.add('resizing');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startW = parseInt(card.style.width,10)  || card.offsetWidth;
+      var startH = parseInt(card.style.height,10) || card.offsetHeight;
+      function onMove(ev){
+        var nw = Math.max(180, startW + ev.clientX - startX);
+        var nh = Math.max(100, startH + ev.clientY - startY);
+        card.style.width = nw + 'px';
+        card.style.height = nh + 'px';
+        if (card.querySelector('iframe')) rescaleIframe(card.querySelector('iframe'));
+      }
+      function onUp(){
+        card.classList.remove('resizing');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        rescaleAll();
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Preview iframe ready tracking =====
+   * Each iframe loads the deck ONCE with ?preview=1 on init. Subsequent
+   * slide changes are sent via postMessage('preview-goto') so the iframe
+   * just toggles visibility of a different .slide — no reload, no flicker.
+   */
+  var iframeReady = { cur: false, nxt: false };
+  var currentTheme = ${themeJSON};
+  window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'preview-ready') return;
+    var iframe = null;
+    if (e.source === iframeCur.contentWindow) {
+      iframeReady.cur = true;
+      iframe = iframeCur;
+      postPreviewGoto(iframeCur, idx);
+    } else if (e.source === iframeNxt.contentWindow) {
+      iframeReady.nxt = true;
+      iframe = iframeNxt;
+      postPreviewGoto(iframeNxt, idx + 1 < total ? idx + 1 : idx);
+    }
+    /* Sync current theme to the iframe */
+    if (iframe && currentTheme) {
+      try { iframe.contentWindow.postMessage({ type: 'preview-theme', name: currentTheme }, '*'); } catch(err) {}
+    }
+    if (iframe) rescaleIframe(iframe);
+  });
+
+  function postPreviewGoto(iframe, n) {
+    try {
+      iframe.contentWindow.postMessage({ type: 'preview-goto', idx: n }, '*');
+    } catch(e) {}
+  }
+
+  /* ===== Update content =====
+   * Smooth (no-reload) navigation: send postMessage to iframes instead of
+   * resetting src. Iframes stay loaded, just switch visible .slide.
+   */
+  function update(n) {
+    n = Math.max(0, Math.min(total - 1, n));
+    idx = n;
+
+    /* Current preview — postMessage (smooth) */
+    if (iframeReady.cur) postPreviewGoto(iframeCur, n);
+    curMeta.textContent = (n + 1) + '/' + total;
+
+    /* Next preview */
+    if (n + 1 < total) {
+      iframeNxt.style.display = '';
+      var endEl = document.querySelector('#card-nxt .preview-end');
+      if (endEl) endEl.remove();
+      if (iframeReady.nxt) postPreviewGoto(iframeNxt, n + 1);
+      nxtMeta.textContent = (n + 2) + '/' + total;
+    } else {
+      iframeNxt.style.display = 'none';
+      var body = document.querySelector('#card-nxt .pcard-body');
+      if (body && !body.querySelector('.preview-end')) {
+        var end = document.createElement('div');
+        end.className = 'preview-end';
+        end.textContent = '— END OF DECK —';
+        body.appendChild(end);
+      }
+      nxtMeta.textContent = 'END';
+    }
+
+    /* Notes */
+    var note = slideMeta[n].notes;
+    notesBody.innerHTML = note || '<span class="empty">（这一页还没有逐字稿）</span>';
+
+    /* Timer count */
+    timerCount.textContent = (n + 1) + ' / ' + total;
+  }
+
+  /* ===== Timer ===== */
+  var tStart = Date.now();
+  setInterval(function(){
+    var s = Math.floor((Date.now() - tStart) / 1000);
+    var mm = String(Math.floor(s/60)).padStart(2,'0');
+    var ss = String(s%60).padStart(2,'0');
+    timerDisplay.textContent = mm + ':' + ss;
+  }, 1000);
+  function resetTimer(){ tStart = Date.now(); timerDisplay.textContent = '00:00'; }
+
+  /* ===== BroadcastChannel sync ===== */
+  if (bc) {
+    bc.onmessage = function(e){
+      if (!e.data) return;
+      if (e.data.type === 'go') update(e.data.idx);
+      else if (e.data.type === 'theme' && e.data.name) {
+        currentTheme = e.data.name;
+        /* Forward theme change to preview iframes */
+        [iframeCur, iframeNxt].forEach(function(iframe){
+          try {
+            iframe.contentWindow.postMessage({ type: 'preview-theme', name: e.data.name }, '*');
+          } catch(err) {}
+        });
+      }
+    };
+  }
+  function go(n) {
+    update(n);
+    if (bc) bc.postMessage({ type: 'go', idx: idx });
+  }
+
+  /* ===== Buttons ===== */
+  document.getElementById('btn-prev').addEventListener('click', function(){ go(idx - 1); });
+  document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
+  document.getElementById('btn-reset').addEventListener('click', resetTimer);
+  document.getElementById('reset-layout').addEventListener('click', function(){
+    if (confirm('恢复默认卡片布局？')) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+      applyLayout(defaultLayout());
+    }
+  });
+
+  /* ===== Keyboard ===== */
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch(e.key) {
+      case 'ArrowRight': case ' ': case 'PageDown': go(idx + 1); e.preventDefault(); break;
+      case 'ArrowLeft':  case 'PageUp':   go(idx - 1); e.preventDefault(); break;
+      case 'Home': go(0); break;
+      case 'End':  go(total - 1); break;
+      case 'r': case 'R': resetTimer(); break;
+      case 'Escape': window.close(); break;
+    }
+  });
+
+  /* ===== Iframe load → rescale (catches initial size) ===== */
+  iframeCur.addEventListener('load', function(){ rescaleIframe(iframeCur); });
+  iframeNxt.addEventListener('load', function(){ rescaleIframe(iframeNxt); });
+
+  /* ===== Init =====
+   * Load each iframe ONCE with the deck file. After they post
+   * 'preview-ready', all subsequent navigation is via postMessage
+   * (smooth, no reload, no flicker).
+   */
+  applyLayout(readLayout());
+  iframeCur.src = deckUrl + '?preview=' + (idx + 1);
+  if (idx + 1 < total) iframeNxt.src = deckUrl + '?preview=' + (idx + 2);
+  /* Initialize notes/timer/count without touching iframes */
+  notesBody.innerHTML = slideMeta[idx].notes || '<span class="empty">（这一页还没有逐字稿）</span>';
+  curMeta.textContent = (idx + 1) + '/' + total;
+  nxtMeta.textContent = (idx + 2) + '/' + total;
+  timerCount.textContent = (idx + 1) + ' / ' + total;
+})();
+</` + `script>
+</body></html>`;
+    }
+
+    function fullscreen(){ const el=document.documentElement;
+      if (!document.fullscreenElement) el.requestFullscreen&&el.requestFullscreen();
+      else document.exitFullscreen&&document.exitFullscreen();
+    }
+
+    // theme cycling
+    const root = document.documentElement;
+    const themesAttr = root.getAttribute('data-themes') || document.body.getAttribute('data-themes');
+    const themes = themesAttr ? themesAttr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    let themeIdx = 0;
+
+    // Auto-detect theme base path from existing <link id="theme-link">
+    let themeBase = root.getAttribute('data-theme-base');
+    if (!themeBase) {
+      const existingLink = document.getElementById('theme-link');
+      if (existingLink) {
+        // el.getAttribute('href') gives the raw relative path written in HTML
+        const rawHref = existingLink.getAttribute('href') || '';
+        const lastSlash = rawHref.lastIndexOf('/');
+        themeBase = lastSlash >= 0 ? rawHref.substring(0, lastSlash + 1) : 'assets/themes/';
+      } else {
+        themeBase = 'assets/themes/';
+      }
+    }
+
+    function applyTheme(name) {
+      let link = document.getElementById('theme-link');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.id = 'theme-link';
+        document.head.appendChild(link);
+      }
+      link.href = themeBase + name + '.css';
+      root.setAttribute('data-theme', name);
+      const ind = document.querySelector('.theme-indicator');
+      if (ind) ind.textContent = name;
+    }
+    function cycleTheme(fromRemote){
+      if (!themes.length) return;
+      themeIdx = (themeIdx+1) % themes.length;
+      const name = themes[themeIdx];
+      applyTheme(name);
+      /* Broadcast to other window (audience ↔ presenter) */
+      if (!fromRemote && bc) bc.postMessage({ type: 'theme', name: name });
+    }
+
+    // animation cycling on current slide
+    let animIdx = 0;
+    function cycleAnim(){
+      animIdx = (animIdx+1) % ANIMS.length;
+      const a = ANIMS[animIdx];
+      const target = slides[idx].querySelector('[data-anim-target]') || slides[idx];
+      ANIMS.forEach(x => target.classList.remove('anim-'+x));
+      void target.offsetWidth;
+      target.classList.add('anim-'+a);
+      target.setAttribute('data-anim', a);
+      const ind = document.querySelector('.anim-indicator');
+      if (ind) ind.textContent = a;
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.metaKey||e.ctrlKey||e.altKey) return;
+      switch (e.key) {
+        case 'ArrowRight': case ' ': case 'PageDown': case 'Enter': go(idx+1); e.preventDefault(); break;
+        case 'ArrowLeft': case 'PageUp': case 'Backspace': go(idx-1); e.preventDefault(); break;
+        case 'Home': go(0); break;
+        case 'End': go(total-1); break;
+        case 'f': case 'F': fullscreen(); break;
+        case 's': case 'S': openPresenterWindow(); break;
+        case 'n': case 'N': toggleNotes(); break;
+        case 'o': case 'O': toggleOverview(); break;
+        case 't': case 'T': cycleTheme(); break;
+        case 'a': case 'A': cycleAnim(); break;
+        case 'Escape': toggleOverview(false); toggleNotes(false); break;
+      }
+    });
+
+    // hash deep-link
+    function fromHash(){
+      const m = /^#\/(\d+)/.exec(location.hash||'');
+      if (m) go(Math.max(0, parseInt(m[1],10)-1));
+    }
+    window.addEventListener('hashchange', fromHash);
+    fromHash();
+    go(idx);
+  });
+})();
+
+</script>
+</body></html>

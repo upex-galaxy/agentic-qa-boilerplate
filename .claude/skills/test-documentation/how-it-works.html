@@ -1,0 +1,1823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test Documentation &amp; ROI — The Craft &amp; The AI</title>
+<style>
+/* html-ppt :: shared webfonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+/* html-ppt :: base.css — reset + shared tokens + layout primitives */
+/* Default tokens. Themes in assets/themes/*.css override the :root block. */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f2f2f4;
+  --border: rgba(0,0,0,.08);
+  --border-strong: rgba(0,0,0,.16);
+  --text-1: #111216;
+  --text-2: #55596a;
+  --text-3: #8a8f9e;
+  --accent: #3b6cff;
+  --accent-2: #7a5cff;
+  --accent-3: #ff5c8a;
+  --good: #1aaf6c;
+  --warn: #f5a524;
+  --bad:  #e0445a;
+  --grad: linear-gradient(135deg,#3b6cff,#7a5cff 55%,#ff5c8a);
+  --grad-soft: linear-gradient(135deg,#eef2ff,#f5ecff 55%,#ffeef5);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 26px;
+  --shadow: 0 10px 30px rgba(18,24,40,.08), 0 2px 6px rgba(18,24,40,.04);
+  --shadow-lg: 0 24px 60px rgba(18,24,40,.14), 0 6px 16px rgba(18,24,40,.06);
+  --font-sans: 'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  --font-serif: 'Playfair Display','Noto Serif SC',Georgia,serif;
+  --font-mono: 'JetBrains Mono','IBM Plex Mono',SFMono-Regular,Menlo,monospace;
+  --font-display: var(--font-sans);
+  --letter-tight: -.03em;
+  --letter-normal: -.01em;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);font-weight:400;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:var(--letter-normal)}
+img,svg,video{max-width:100%;display:block}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+
+/* ================= SLIDE SYSTEM ================= */
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;background:var(--bg)}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:72px 96px;
+  box-sizing:border-box;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+  transform:translateX(30px);
+  overflow:hidden;
+}
+.slide.is-active{opacity:1;pointer-events:auto;transform:translateX(0);z-index:2}
+.slide.is-prev{transform:translateX(-30px)}
+
+/* single-page standalone (used when a layout file is opened directly) */
+body.single .slide{position:relative;width:100vw;height:100vh;opacity:1;transform:none;pointer-events:auto}
+
+/* ================= TYPOGRAPHY ================= */
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+.kicker{font-size:14px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+h1.title,.h1{font-family:var(--font-display);font-size:72px;line-height:1.05;font-weight:800;letter-spacing:var(--letter-tight);margin:0 0 18px;color:var(--text-1)}
+h2.title,.h2{font-family:var(--font-display);font-size:54px;line-height:1.1;font-weight:700;letter-spacing:var(--letter-tight);margin:0 0 14px}
+h3,.h3{font-size:32px;line-height:1.2;font-weight:600;letter-spacing:var(--letter-normal);margin:0 0 10px}
+h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
+.lede{font-size:22px;line-height:1.55;color:var(--text-2);font-weight:300;max-width:62ch}
+.dim{color:var(--text-2)}
+.dim2{color:var(--text-3)}
+.mono{font-family:var(--font-mono)}
+.serif{font-family:var(--font-serif)}
+.gradient-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* ================= LAYOUT PRIMITIVES ================= */
+.stack>*+*{margin-top:14px}
+.row{display:flex;gap:24px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid{display:grid;gap:24px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.center{display:flex;align-items:center;justify-content:center;text-align:center}
+.fill{flex:1}
+.sp-t{padding-top:24px}.sp-b{padding-bottom:24px}
+.mt-s{margin-top:8px}.mt-m{margin-top:18px}.mt-l{margin-top:32px}
+.mb-s{margin-bottom:8px}.mb-m{margin-bottom:18px}.mb-l{margin-bottom:32px}
+
+/* ================= CARDS ================= */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.card-outline{background:transparent;border:1.5px solid var(--border-strong);box-shadow:none}
+.card-accent{background:var(--surface);border-top:3px solid var(--accent)}
+.card-hover{transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.card-hover:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:500;
+  background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.pill-accent{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+
+/* ================= BARS / DIVIDERS ================= */
+.divider{height:1px;background:var(--border);width:100%}
+.divider-accent{height:3px;width:72px;background:var(--accent);border-radius:2px}
+
+/* ================= CHROME (header/footer/progress) ================= */
+.deck-header{position:absolute;top:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);letter-spacing:.12em;text-transform:uppercase;z-index:10;pointer-events:none}
+.deck-footer{position:absolute;bottom:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);z-index:10;pointer-events:none}
+.slide-number::before{content:attr(data-current)}
+.slide-number::after{content:" / " attr(data-total)}
+.progress-bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:transparent;z-index:20}
+.progress-bar > span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+
+/* ================= PRESENTER / OVERVIEW ================= */
+.notes{display:none!important}
+.notes-overlay{position:fixed;inset:auto 0 0 0;max-height:42vh;background:rgba(20,22,30,.95);color:#e8ebf4;
+  padding:20px 32px;font-size:16px;line-height:1.6;border-top:1px solid rgba(255,255,255,.1);transform:translateY(100%);
+  transition:transform .3s var(--ease);z-index:40;overflow:auto;font-family:var(--font-sans)}
+.notes-overlay.open{transform:translateY(0)}
+.overview{position:fixed;inset:0;background:rgba(10,12,18,.92);backdrop-filter:blur(12px);z-index:50;
+  display:none;padding:40px;overflow:auto}
+.overview.open{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-content:start}
+.overview .thumb{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  aspect-ratio:16/9;overflow:hidden;cursor:pointer;position:relative;color:var(--text-1);padding:16px;
+  font-size:11px;transition:transform .2s var(--ease)}
+.overview .thumb:hover{transform:scale(1.04)}
+.overview .thumb .n{position:absolute;top:8px;left:10px;font-weight:700;font-size:14px;color:var(--text-3)}
+.overview .thumb .t{position:absolute;bottom:10px;left:14px;right:14px;font-weight:600;color:var(--text-1)}
+
+/* ================= PRESENTER VIEW ================= */
+/* Presenter view opens in a separate popup window (S key).
+ * All presenter styles are self-contained in the popup HTML generated by runtime.js.
+ * The audience window (this file) is NOT affected — it stays as normal deck view.
+ * Only the .notes class below is needed to hide speaker notes from audience. */
+
+/* ================= UTILITY ================= */
+.hidden{display:none!important}
+.nowrap{white-space:nowrap}
+.tr{text-align:right}.tc{text-align:center}.tl{text-align:left}
+.uppercase{text-transform:uppercase;letter-spacing:.12em}
+
+/* ================= PRINT ================= */
+@media print{
+  .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
+  .deck-header,.deck-footer,.progress-bar,.notes-overlay,.overview{display:none!important}
+}
+/* html-ppt :: animations.css
+ * Apply by adding class="anim-<name>" or data-anim="<name>".
+ * Durations are deliberately snappy; tweak --anim-dur per element.
+ */
+:root{--anim-dur:.7s;--anim-ease:cubic-bezier(.4,0,.2,1)}
+
+/* ---------- FADE DIRECTIONALS ---------- */
+@keyframes kf-fade-up{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-down{from{opacity:0;transform:translateY(-32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-left{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-right{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.anim-fade-up{animation:kf-fade-up var(--anim-dur) var(--anim-ease) both}
+.anim-fade-down{animation:kf-fade-down var(--anim-dur) var(--anim-ease) both}
+.anim-fade-left{animation:kf-fade-left var(--anim-dur) var(--anim-ease) both}
+.anim-fade-right{animation:kf-fade-right var(--anim-dur) var(--anim-ease) both}
+
+/* ---------- RISE / DROP / ZOOM / BLUR / GLITCH ---------- */
+@keyframes kf-rise{from{opacity:0;transform:translateY(60px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes kf-drop{from{opacity:0;transform:translateY(-60px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes kf-zoom{0%{opacity:0;transform:scale(.6)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes kf-blur{from{opacity:0;filter:blur(18px)}to{opacity:1;filter:none}}
+@keyframes kf-glitch{0%{opacity:0;transform:translateX(0);clip-path:inset(0 0 0 0)}
+  20%{opacity:1;transform:translateX(-6px);clip-path:inset(20% 0 30% 0)}
+  40%{transform:translateX(4px);clip-path:inset(50% 0 10% 0)}
+  60%{transform:translateX(-3px);clip-path:inset(10% 0 60% 0)}
+  80%{transform:translateX(2px);clip-path:inset(0 0 0 0)}
+  100%{opacity:1;transform:none}}
+.anim-rise-in{animation:kf-rise .9s var(--anim-ease) both}
+.anim-drop-in{animation:kf-drop .8s var(--anim-ease) both}
+.anim-zoom-pop{animation:kf-zoom .7s cubic-bezier(.22,1.3,.36,1) both}
+.anim-blur-in{animation:kf-blur .8s var(--anim-ease) both}
+.anim-glitch-in{animation:kf-glitch .8s steps(5,end) both}
+
+/* ---------- TYPEWRITER ---------- */
+.anim-typewriter{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid currentColor;
+  width:0;animation:kf-type 2.4s steps(40,end) forwards, kf-caret 1s step-end infinite}
+@keyframes kf-type{to{width:100%}}
+@keyframes kf-caret{50%{border-color:transparent}}
+
+/* ---------- GLOW / SHIMMER / GRADIENT-FLOW ---------- */
+@keyframes kf-neon{0%,100%{text-shadow:0 0 8px var(--accent),0 0 20px var(--accent)}
+  50%{text-shadow:0 0 16px var(--accent),0 0 40px var(--accent),0 0 80px var(--accent)}}
+.anim-neon-glow{animation:kf-neon 2s ease-in-out infinite}
+
+.anim-shimmer-sweep{position:relative;overflow:hidden}
+.anim-shimmer-sweep::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);
+  transform:translateX(-100%);animation:kf-shimmer 2.4s var(--anim-ease) infinite}
+@keyframes kf-shimmer{to{transform:translateX(100%)}}
+
+.anim-gradient-flow{background:linear-gradient(90deg,var(--accent),var(--accent-2,var(--accent)),var(--accent-3,var(--accent)),var(--accent));
+  background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:kf-gradflow 4s linear infinite}
+@keyframes kf-gradflow{to{background-position:300% 0}}
+
+/* ---------- STAGGER LIST ---------- */
+.anim-stagger-list > *{opacity:0;animation:kf-rise .65s var(--anim-ease) both}
+.anim-stagger-list > *:nth-child(1){animation-delay:.05s}
+.anim-stagger-list > *:nth-child(2){animation-delay:.15s}
+.anim-stagger-list > *:nth-child(3){animation-delay:.25s}
+.anim-stagger-list > *:nth-child(4){animation-delay:.35s}
+.anim-stagger-list > *:nth-child(5){animation-delay:.45s}
+.anim-stagger-list > *:nth-child(6){animation-delay:.55s}
+.anim-stagger-list > *:nth-child(7){animation-delay:.65s}
+.anim-stagger-list > *:nth-child(8){animation-delay:.75s}
+.anim-stagger-list > *:nth-child(n+9){animation-delay:.85s}
+
+/* ---------- COUNTER-UP (JS-driven, marker class only) ---------- */
+.counter{font-variant-numeric:tabular-nums}
+
+/* ---------- SVG PATH DRAW ---------- */
+.anim-path-draw path,.anim-path-draw line,.anim-path-draw polyline,.anim-path-draw circle,.anim-path-draw rect{
+  stroke-dasharray:1000;stroke-dashoffset:1000;animation:kf-draw 2s var(--anim-ease) forwards}
+@keyframes kf-draw{to{stroke-dashoffset:0}}
+
+/* ---------- PARALLAX TILT (hover) ---------- */
+.anim-parallax-tilt{transform-style:preserve-3d;transition:transform .4s var(--anim-ease)}
+.anim-parallax-tilt:hover{transform:perspective(900px) rotateX(6deg) rotateY(-8deg) translateZ(10px)}
+
+/* ---------- CARD FLIP 3D ---------- */
+@keyframes kf-flip{from{transform:perspective(1200px) rotateY(-90deg);opacity:0}
+  to{transform:perspective(1200px) rotateY(0);opacity:1}}
+.anim-card-flip-3d{animation:kf-flip .9s var(--anim-ease) both;transform-style:preserve-3d;backface-visibility:hidden}
+
+/* ---------- CUBE ROTATE 3D ---------- */
+@keyframes kf-cube{from{transform:perspective(1200px) rotateX(20deg) rotateY(-90deg) translateZ(-200px);opacity:0}
+  to{transform:perspective(1200px) rotateX(0) rotateY(0) translateZ(0);opacity:1}}
+.anim-cube-rotate-3d{animation:kf-cube 1s var(--anim-ease) both}
+
+/* ---------- PAGE TURN 3D ---------- */
+@keyframes kf-pageturn{from{transform:perspective(1600px) rotateY(-85deg);transform-origin:left center;opacity:0}
+  to{transform:perspective(1600px) rotateY(0);opacity:1}}
+.anim-page-turn-3d{animation:kf-pageturn 1s var(--anim-ease) both;transform-origin:left center}
+
+/* ---------- PERSPECTIVE ZOOM ---------- */
+@keyframes kf-pzoom{from{opacity:0;transform:perspective(1400px) translateZ(-400px) rotateX(12deg)}
+  to{opacity:1;transform:none}}
+.anim-perspective-zoom{animation:kf-pzoom 1s var(--anim-ease) both}
+
+/* ---------- MARQUEE SCROLL ---------- */
+.anim-marquee-scroll{display:flex;gap:48px;white-space:nowrap;animation:kf-marquee 20s linear infinite}
+@keyframes kf-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- KEN BURNS ---------- */
+@keyframes kf-kenburns{0%{transform:scale(1) translate(0,0)}100%{transform:scale(1.15) translate(-2%,-1%)}}
+.anim-kenburns{animation:kf-kenburns 14s ease-in-out infinite alternate}
+
+/* ---------- CONFETTI BURST (pseudo — pure CSS sparkles) ---------- */
+.anim-confetti-burst{position:relative}
+.anim-confetti-burst::before,.anim-confetti-burst::after{
+  content:"";position:absolute;top:50%;left:50%;width:8px;height:8px;border-radius:50%;
+  background:var(--accent);box-shadow:
+    20px -30px 0 var(--accent-2,var(--accent)),-25px -20px 0 var(--accent-3,var(--accent)),
+    30px 20px 0 var(--good,#1aaf6c),-30px 25px 0 var(--warn,#f5a524),
+    40px -10px 0 var(--bad,#e0445a),-45px 0 0 var(--accent),
+    10px 40px 0 var(--accent-2,var(--accent)),-15px -40px 0 var(--accent-3,var(--accent));
+  opacity:0;animation:kf-confetti 1.2s var(--anim-ease) forwards}
+.anim-confetti-burst::after{animation-delay:.15s;transform:rotate(45deg)}
+@keyframes kf-confetti{0%{opacity:0;transform:scale(.2)}30%{opacity:1}100%{opacity:0;transform:scale(2.2)}}
+
+/* ---------- SPOTLIGHT ---------- */
+@keyframes kf-spot{0%{clip-path:circle(0% at 50% 50%)}100%{clip-path:circle(140% at 50% 50%)}}
+.anim-spotlight{animation:kf-spot 1.1s var(--anim-ease) both}
+
+/* ---------- MORPH SHAPE (SVG) ---------- */
+.anim-morph-shape path{animation:kf-morph 6s ease-in-out infinite alternate}
+@keyframes kf-morph{0%{d:path("M60,120 Q120,20 180,120 T300,120")}
+  100%{d:path("M60,120 Q120,220 180,120 T300,120")}}
+
+/* ---------- RIPPLE REVEAL ---------- */
+@keyframes kf-ripple{0%{clip-path:circle(0% at 20% 80%);opacity:.4}
+  100%{clip-path:circle(160% at 20% 80%);opacity:1}}
+.anim-ripple-reveal{animation:kf-ripple 1.2s var(--anim-ease) both}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  [class*="anim-"]{animation:none!important;transition:none!important}
+}
+/* ===========================================================================
+   how-it-works deck theme — dark engineering, accent-parametrized
+   Set per deck on <body class="tpl-howto" style="--a1:..;--a2:..;--a3:..">
+   =========================================================================== */
+.tpl-howto{
+  --a1:#7ee787; --a2:#79c0ff; --a3:#d2a8ff;            /* fallbacks */
+  --bg:#0d1117; --bg-soft:#161b22; --surface:#161b22; --surface-2:#1c2230;
+  --border:rgba(139,148,158,.22); --border-strong:rgba(139,148,158,.42);
+  --text-1:#e6edf3; --text-2:#9aa6b2; --text-3:#6e7681;
+  --accent:var(--a1); --accent-2:var(--a2); --accent-3:var(--a3);
+  --good:#3fb950; --warn:#d29922; --bad:#f85149;
+  --grad:linear-gradient(120deg,var(--a1) 0%,var(--a2) 55%,var(--a3) 100%);
+  --radius:14px; --radius-lg:20px;
+  --shadow:0 20px 60px rgba(0,0,0,.5);
+  font-family:'Inter','Noto Sans SC',sans-serif;
+  background:#0d1117; color:var(--text-1);
+}
+.tpl-howto .deck{background:#0d1117}
+.tpl-howto .slide{padding:64px 88px;background:#0d1117;color:var(--text-1)}
+.tpl-howto .slide::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+   radial-gradient(58% 48% at 88% 8%,color-mix(in srgb,var(--a2) 14%,transparent),transparent 60%),
+   radial-gradient(52% 50% at 8% 92%,color-mix(in srgb,var(--a1) 10%,transparent),transparent 62%);}
+.tpl-howto .slide>*{position:relative;z-index:1}
+
+/* ---------- typography ---------- */
+.tpl-howto .h1{font-size:74px;line-height:1.04;font-weight:800;letter-spacing:-.03em;color:#fff}
+.tpl-howto .h2{font-size:50px;line-height:1.08;font-weight:700;letter-spacing:-.025em;color:#fff}
+.tpl-howto h3,.tpl-howto .h3{color:#fff;font-weight:600}
+.tpl-howto h4,.tpl-howto .h4{color:#fff;font-weight:600}
+.tpl-howto .lede{color:var(--text-2);font-weight:300}
+.tpl-howto .dim{color:var(--text-2)} .tpl-howto .dim2{color:var(--text-3)}
+.tpl-howto .mono{font-family:'JetBrains Mono','IBM Plex Mono',monospace}
+.tpl-howto .gradient-text,.tpl-howto .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.tpl-howto .kicker{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;text-transform:none;letter-spacing:.02em}
+.tpl-howto .kicker::before{content:"// "}
+.tpl-howto .kicker.run::before{content:"> "}
+.tpl-howto .divider-accent{height:3px;width:64px;background:var(--grad);border-radius:2px}
+
+/* ---------- cards ---------- */
+.tpl-howto .card{background:var(--surface);border:1px solid var(--border);box-shadow:none;border-radius:var(--radius)}
+.tpl-howto .card-accent{border-top:3px solid var(--accent)}
+.tpl-howto .card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.tpl-howto .card h4{margin-bottom:8px}
+.tpl-howto .card p{font-size:15px;line-height:1.6}
+.tpl-howto .num-badge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;
+  background:color-mix(in srgb,var(--a1) 16%,transparent);color:var(--accent);font-weight:800;font-family:'JetBrains Mono',monospace;font-size:16px;border:1px solid color-mix(in srgb,var(--a1) 30%,transparent)}
+
+/* ---------- tags / pills / kbd ---------- */
+.tpl-howto .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:7px;font-family:'JetBrains Mono',monospace;
+  font-size:12px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)}
+.tpl-howto .tag.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent);background:color-mix(in srgb,var(--good) 12%,transparent)}
+.tpl-howto .tag.no{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.tpl-howto .tag.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent)}
+.tpl-howto .pill{background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.tpl-howto .pill-accent{background:color-mix(in srgb,var(--a1) 14%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--a1) 32%,transparent)}
+.tpl-howto kbd,.tpl-howto .kbd{font-family:'JetBrains Mono',monospace;font-size:13px;padding:3px 10px;border-radius:7px;
+  background:color-mix(in srgb,var(--a1) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--a1) 30%,transparent);white-space:nowrap}
+
+/* ---------- terminal / code ---------- */
+.tpl-howto .terminal{background:#010409;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:14.5px;line-height:1.7}
+.tpl-howto .terminal .bar{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#161b22;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-3)}
+.tpl-howto .terminal .dot{width:11px;height:11px;border-radius:50%;background:#ff5f56}
+.tpl-howto .terminal .dot:nth-child(2){background:#ffbd2e}
+.tpl-howto .terminal .dot:nth-child(3){background:#27c93f}
+.tpl-howto .terminal pre{margin:0;padding:22px 26px;color:#e6edf3;overflow:auto;max-height:520px;white-space:pre-wrap}
+.tpl-howto .terminal .p{color:var(--accent);font-weight:600}   /* prompt $ */
+.tpl-howto .terminal .c{color:#e6edf3}                          /* command */
+.tpl-howto .terminal .o{color:var(--text-2)}                    /* output */
+.tpl-howto .kw{color:#ff7b72} .tpl-howto .fn{color:#d2a8ff} .tpl-howto .str{color:#a5d6ff}
+.tpl-howto .cmt{color:#6e7681;font-style:italic} .tpl-howto .num{color:#79c0ff}
+.tpl-howto .caret{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;animation:hb-blink 1s step-end infinite}
+@keyframes hb-blink{50%{opacity:0}}
+
+/* ---------- agenda rows ---------- */
+.tpl-howto .agenda-row{display:flex;align-items:baseline;gap:22px;padding:15px 0;border-bottom:1px dashed var(--border);font-family:'JetBrains Mono',monospace}
+.tpl-howto .agenda-row .anum{color:var(--accent);flex:none;width:42px}
+.tpl-howto .agenda-row .at{color:#fff;font-size:22px;flex:1;font-family:'Inter',sans-serif;font-weight:600}
+.tpl-howto .agenda-row .ad{color:var(--text-3);font-size:12px}
+
+/* ---------- numbered steps (process) ---------- */
+.tpl-howto .steps{display:grid;gap:20px;margin-top:34px}
+.tpl-howto .steps.s2{grid-template-columns:repeat(2,1fr)}
+.tpl-howto .steps.s3{grid-template-columns:repeat(3,1fr)}
+.tpl-howto .steps.s4{grid-template-columns:repeat(4,1fr)}
+.tpl-howto .step{position:relative;padding:24px 22px 20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+.tpl-howto .step .num{position:absolute;top:-18px;left:20px;width:40px;height:40px;border-radius:11px;background:var(--grad);color:#03121a;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;font-family:'JetBrains Mono',monospace}
+.tpl-howto .step h4{margin:14px 0 7px;font-size:17px}
+.tpl-howto .step p{font-size:13.5px;color:var(--text-2);line-height:1.55}
+
+/* ---------- vertical stage flow ---------- */
+.tpl-howto .flow{display:flex;flex-direction:column;gap:0;margin-top:24px}
+.tpl-howto .flow .stage{display:grid;grid-template-columns:46px 1fr;gap:18px;padding:14px 0;align-items:start}
+.tpl-howto .flow .stage .sx{width:46px;height:46px;border-radius:12px;background:color-mix(in srgb,var(--a1) 14%,transparent);
+  border:1px solid color-mix(in srgb,var(--a1) 34%,transparent);color:var(--accent);display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-family:'JetBrains Mono',monospace;font-size:17px}
+.tpl-howto .flow .stage h4{font-size:19px;margin-bottom:3px}
+.tpl-howto .flow .stage p{font-size:14px;color:var(--text-2);line-height:1.55;margin:0}
+.tpl-howto .flow .stage+.stage{border-top:1px dashed var(--border)}
+
+/* ---------- comparison (manual pain vs craft / do vs dont) ---------- */
+.tpl-howto .vs{display:grid;grid-template-columns:1fr 64px 1fr;gap:22px;align-items:stretch;margin-top:26px}
+.tpl-howto .vs .side{padding:26px 28px}
+.tpl-howto .vs .mid{font-size:42px;font-weight:800;color:var(--text-3);display:flex;align-items:center;justify-content:center}
+.tpl-howto .vs .bad-side{border-top:3px solid var(--bad)}
+.tpl-howto .vs .good-side{border-top:3px solid var(--good)}
+.tpl-howto .vs h3{font-size:21px;margin-bottom:12px}
+.tpl-howto .vs ul{padding-left:18px;margin:0;font-size:14.5px;line-height:1.75;color:var(--text-2)}
+.tpl-howto .vs .bad-side li::marker{color:var(--bad)}
+.tpl-howto .vs .good-side li::marker{color:var(--good)}
+
+/* ---------- callout / note box ---------- */
+.tpl-howto .callout{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--a1) 7%,transparent);
+  padding:18px 22px;border-radius:0 10px 10px 0;margin-top:20px}
+.tpl-howto .callout h4{font-size:16px;margin-bottom:5px;color:var(--accent)}
+.tpl-howto .callout p{font-size:15px;color:var(--text-2);line-height:1.6;margin:0}
+.tpl-howto .callout.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent)}
+.tpl-howto .callout.warn h4{color:var(--warn)}
+
+/* ---------- decision / data table ---------- */
+.tpl-howto .dtable{width:100%;border-collapse:collapse;margin-top:24px;font-size:15px}
+.tpl-howto .dtable th{text-align:left;padding:12px 16px;color:var(--text-3);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-strong)}
+.tpl-howto .dtable td{padding:13px 16px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top}
+.tpl-howto .dtable tr:last-child td{border-bottom:none}
+.tpl-howto .dtable td b,.tpl-howto .dtable td strong{color:#fff;font-weight:600}
+
+/* ---------- bullet list (clean) ---------- */
+.tpl-howto .blist{list-style:none;padding:0;margin:22px 0 0}
+.tpl-howto .blist li{position:relative;padding:9px 0 9px 30px;font-size:17px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
+.tpl-howto .blist li:last-child{border-bottom:none}
+.tpl-howto .blist li::before{content:"▸";position:absolute;left:4px;top:9px;color:var(--accent);font-weight:700}
+.tpl-howto .blist li b{color:#fff;font-weight:600}
+
+/* ---------- speaker / cover meta ---------- */
+.tpl-howto .speaker{display:flex;align-items:center;gap:14px;margin-top:26px}
+.tpl-howto .speaker .av{width:50px;height:50px;border-radius:13px;background:var(--grad)}
+.tpl-howto .speaker b{display:block;color:#fff;font-size:17px}
+.tpl-howto .speaker span{color:var(--text-3);font-size:12.5px;font-family:'JetBrains Mono',monospace}
+
+/* ---------- section divider ---------- */
+.tpl-howto .slide.divider{justify-content:center;height:auto}
+.tpl-howto .part-no{font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent);letter-spacing:.1em}
+.tpl-howto .slide.divider .h1{font-size:64px;margin-top:10px;max-width:20ch}
+.tpl-howto .slide.divider .lede{margin-top:26px;font-size:20px}
+
+/* ---------- big stat ---------- */
+.tpl-howto .bigstat{font-size:180px;font-weight:900;line-height:1;letter-spacing:-.04em}
+
+/* ---------- footer ---------- */
+.tpl-howto .deck-footer .mono{color:var(--text-3)}
+.tpl-howto .slide-number{color:var(--text-3)}
+
+/* fix: cover .speaker must not collide with the absolute .deck-footer */
+.tpl-howto .slide:has(> .speaker){padding-bottom:160px}
+.tpl-howto .slide .speaker{position:absolute;left:88px;right:88px;bottom:70px;margin-top:0;z-index:3}</style>
+</head>
+<body class="tpl-howto" style="--a1:#c084fc;--a2:#a78bfa;--a3:#f0abfc">
+<div class="deck">
+<section class="slide" data-title="Cover">
+  <p class="kicker run">QA Methodology · Stage 4</p>
+  <h1 class="h1 anim-fade-up" data-anim="fade-up">Test Documentation &amp; ROI<br>— The Craft Behind the <span class="grad">Terminal</span></h1>
+  <p class="lede mt-m">How a QA engineer turns validated tests into a traceable, prioritized TMS repository — by hand, then at terminal speed.</p>
+  <div class="speaker"><div class="av"></div><div><b>Analyze → Prioritize → Document</b><span>Jira / Xray · US↔ATP↔ATR↔TC</span></div></div>
+  <div class="deck-footer"><span class="mono">#qa #roi #traceability</span><span class="slide-number" data-current="1" data-total="33"></span></div>
+  <div class="notes">Welcome the room. This is the bridge between manual QA and automation — the discipline that decides what we actually invest in automating, and how we keep it auditable.</div>
+</section>
+
+<section class="slide center tc" data-title="Why it exists">
+  <div>
+    <p class="kicker">Why this discipline exists</p>
+    <div class="bigstat"><span class="grad">&lt; 0.5</span></div>
+    <h3>Most tests should never be automated</h3>
+    <p class="lede mt-s">ROI below 0.5 = Defer. Every test has a maintenance cost, most bugs don't recur, and fewer well-chosen tests beat many low-value ones. If a module yields 80 scenarios and 60 land in regression, you scored too softly — re-apply the filter harder.</p>
+  </div>
+  <div class="notes">Anchor the whole talk on this counter-intuitive truth: the default answer is Defer. Automation is an investment, not a reflex.</div>
+</section>
+
+<section class="slide" data-title="Agenda">
+  <p class="kicker">What we'll cover</p>
+  <h2 class="h2" data-anim="fade-up">From craft to acceleration</h2>
+  <div class="stack mt-l anim-stagger-list">
+    <div class="agenda-row"><span class="anum">01</span><span class="at">The Craft — the manual methodology</span><span class="ad">part 1</span></div>
+    <div class="agenda-row"><span class="anum">02</span><span class="at">The Acceleration — the skill drives it from the terminal</span><span class="ad">part 2</span></div>
+    <div class="agenda-row"><span class="anum">03</span><span class="at">Takeaways — what to remember tomorrow morning</span><span class="ad">close</span></div>
+  </div>
+  <div class="notes">Two halves. First we learn to do it by hand so we understand every rule; then we see how the AI executes those exact rules faster.</div>
+</section>
+
+<section class="slide divider" data-title="Part 1">
+  <div>
+    <p class="part-no">PART 01</p>
+    <h1 class="h1">The Craft<br><span class="grad">documenting tests by hand</span></h1>
+    <p class="lede">If the AI did not exist, what would a senior QA engineer do — step by step — to document tests well? Every stage, every gate, every formula.</p>
+  </div>
+  <div class="notes">For this whole section, imagine no automation. Just you, Jira, and a methodology you have to apply with judgment.</div>
+</section>
+
+<section class="slide" data-title="Prerequisite">
+  <p class="kicker">The one hard prerequisite</p>
+  <h2 class="h2" data-anim="fade-up">Only document what's already validated</h2>
+  <div class="callout mt-l"><h4>The TMS is for documentation + regression protection — NOT exploration</h4><p>You may only document behavior already validated: a QA-Approved story, a closed/verified bug, or a finished exploratory session. If you can't confidently describe the expected behavior, the feature isn't ready for the TMS.</p></div>
+  <p class="lede mt-m">Explore → Analyze → Document. Never document mid-exploration.</p>
+  <div class="notes">This is the gate before the gate. Documenting unstable behavior creates maintenance debt. If you're still finding out what the system does, you're not ready to write a TC.</div>
+</section>
+
+<section class="slide" data-title="Three phases">
+  <p class="kicker">The spine of the method</p>
+  <h2 class="h2" data-anim="fade-up">Three phases, always in this order</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>1 · Analyze</h4><p class="dim">Identify the real scenarios; separate user flows from cross-cutting traits; validate the design against actual code.</p><span class="tag mt-s">find scenarios</span></div>
+    <div class="card card-accent"><h4>2 · Prioritize (ROI)</h4><p class="dim">Run every scenario through 3 filters, then the ROI formula → Candidate / Manual / Deferred.</p><span class="tag mt-s">the gate</span></div>
+    <div class="card card-accent"><h4>3 · Document</h4><p class="dim">Create ATP/ATR/TC in the TMS, link them, transition states, cache locally.</p><span class="tag mt-s">write + link</span></div>
+  </div>
+  <div class="callout warn mt-m"><h4>Never skip Prioritize</h4><p>Most scenarios should end Deferred. The order is non-negotiable.</p></div>
+  <div class="notes">Memorize this spine. Skipping prioritization is how teams end up with bloated, brittle suites. The order is non-negotiable.</div>
+</section>
+
+<section class="slide" data-title="TMS modality">
+  <p class="kicker">Gate 0 — pick your TMS modality</p>
+  <h2 class="h2" data-anim="fade-up">Same concepts, different containers</h2>
+  <div class="vs mt-l">
+    <div class="card side"><h3>Modality A — Xray on Jira</h3><ul><li>ATP = a real <b>Test Plan</b> issue</li><li>ATR = a real <b>Test Execution</b> holding Test Runs</li><li>TC = an Xray <b>Test</b> (Manual/Cucumber/Generic)</li><li>CI imports JUnit/Cucumber → runs auto-update</li><li>Test Set / Pre-Condition are first-class</li></ul></div>
+    <div class="mid">vs</div>
+    <div class="card side"><h3>Modality B — Jira-native, no Xray</h3><ul><li>ATP = Story's <b>Acceptance Test Plan</b> field</li><li>ATR = Story's <b>Acceptance Test Results</b> field</li><li>TC = a custom <b>Test</b> issue type</li><li>no separate plan/execution issues</li><li>CI updates a Test Status field via script</li></ul></div>
+  </div>
+  <div class="notes">Before anything else, answer: does this project have Xray licensed? The artifacts are the same four concepts but live in completely different containers. Resolve once, treat as sticky, never mix the two inside one story. Neither column is "bad" — they're the two valid worlds.</div>
+</section>
+
+<section class="slide" data-title="Auto-resolve modality">
+  <p class="kicker">Resolving modality without asking</p>
+  <h2 class="h2" data-anim="fade-up">Auto-resolve before you interrupt the user</h2>
+  <div class="steps s4 mt-l anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>Check config</h4><p>Look for the TMS CLI value: <span class="mono">bun xray</span> → Xray; <span class="mono">acli</span>-only/unset → Jira-native.</p></div>
+    <div class="step"><div class="num">2</div><h4>Check the MTP</h4><p>A line like <span class="mono">TMS: Xray on Jira</span> or <span class="mono">TMS: Jira native</span>.</p></div>
+    <div class="step"><div class="num">3</div><h4>List issue types</h4><p>If Test Plan / Test Execution / Test Set / Pre-Condition exist → Xray; else native.</p></div>
+    <div class="step"><div class="num">4</div><h4>Only then ask</h4><p>If all three checks fail, ask the one question. Persist; don't re-resolve mid-session.</p></div>
+  </div>
+  <div class="notes">A good engineer doesn't interrupt with questions they can answer themselves. Three deterministic probes first; the human is the last resort, not the first.</div>
+</section>
+
+<section class="slide" data-title="Four scopes">
+  <p class="kicker">Pick the scope by its input</p>
+  <h2 class="h2" data-anim="fade-up">Four scopes, one pipeline</h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Scope</th><th>Input</th><th>Typical volume</th><th>Default bias</th></tr></thead>
+    <tbody>
+      <tr><td><b>Module-driven</b></td><td>a module explored end-to-end</td><td>20-100+ scenarios</td><td>most will be Deferred</td></tr>
+      <tr><td><b>Ticket-driven</b></td><td>a QA-Approved user story</td><td>3-8 scenarios</td><td>ATP/ATR created per story</td></tr>
+      <tr><td><b>Bug-driven</b></td><td>a closed bug with verified fix</td><td>1-2 scenarios</td><td>biased UP → defaults to Candidate</td></tr>
+      <tr><td><b>Ad-hoc / Exploratory</b></td><td>new scenarios from exploration</td><td>1-10 scenarios</td><td>apply the 3 filters harshly</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">Pick scope from the input, not the output. A story ID → ticket-driven; a bug ID → bug-driven; a module name → module-driven. All four share the same Analyze→Prioritize→Document pipeline; only the defaults change.</div>
+</section>
+
+<section class="slide divider" data-title="Phase 1">
+  <div>
+    <p class="part-no">PART 01 · PHASE 1</p>
+    <h1 class="h1">Analyze<br><span class="grad">find the REAL scenarios</span></h1>
+    <p class="lede">Before you score or document anything, you have to know what a test case actually is — and what is not one.</p>
+  </div>
+  <div class="notes">Analysis is where most beginners go wrong. They count assertions as tests and treat cross-cutting traits as scenarios. Let's fix that.</div>
+</section>
+
+<section class="slide" data-title="Not a TC">
+  <p class="kicker">What is NOT a test case</p>
+  <h2 class="h2" data-anim="fade-up">Cross-cutting traits live inside tests</h2>
+  <div class="vs mt-l">
+    <div class="card bad-side side"><h3>❌ NOT standalone TCs</h3><ul><li>Mobile responsive</li><li>XSS prevention</li><li>Performance</li><li>Accessibility</li><li>API contract / generic error handling</li></ul></div>
+    <div class="mid">→</div>
+    <div class="card good-side side"><h3>✓ How they're actually validated</h3><ul><li>run each test in a mobile viewport</li><li>special-character test data inside tests</li><li>timing assertions inside tests</li><li>a11y assertions inside UI tests</li><li>schema checks / specific negative paths</li></ul></div>
+  </div>
+  <div class="notes">These are APP-LEVEL suites, not per-feature TCs. Promoting "XSS prevention" to its own test case is a classic beginner mistake — it's a property you assert everywhere, not a flow you test once.</div>
+</section>
+
+<section class="slide" data-title="TC identity">
+  <p class="kicker">The load-bearing rule of Analyze</p>
+  <h2 class="h2" data-anim="fade-up">One (Precondition + Action) = one TC</h2>
+  <div class="callout mt-l"><h4>A TC is defined by Precondition + Action</h4><p>ALL expected results from that same pair belong to the SAME TC.</p></div>
+  <div class="vs mt-m">
+    <div class="card good-side side"><h3>✓ SAME TC (5 assertions)</h3><ul><li>pre <b>valid credentials</b>, action <b>submit login</b></li><li>redirect to dashboard + auth token</li><li>profile via /auth/me + session cookie + welcome msg</li></ul></div>
+    <div class="mid">≠</div>
+    <div class="card bad-side side"><h3>✓ DIFFERENT TCs (preconditions differ)</h3><ul><li>valid credentials → success (TC-A)</li><li>locked account → 423 (TC-B)</li><li>invalid credentials → 401 (TC-C)</li></ul></div>
+  </div>
+  <div class="notes">Burn this in. If the precondition and action are identical, it's one test case no matter how many things you assert. Different preconditions producing different outcomes — those are different TCs. Splitting "check panel A / B / C" is the single most-diagnosed anti-pattern in reviews.</div>
+</section>
+
+<section class="slide" data-title="Source validation">
+  <p class="kicker">Don't trust the plan — read the code</p>
+  <h2 class="h2" data-anim="fade-up">Source-code validation is mandatory</h2>
+  <ul class="blist mt-l anim-stagger-list">
+    <li><b>Why.</b> The ATP was written BEFORE the code existed; its assumptions may be stale.</li>
+    <li><b>Open the implementation plan.</b> List the files it touches.</li>
+    <li><b>Grep the real code.</b> Search for <span class="mono">data-testid=</span>, route handlers, API paths, text formats.</li>
+    <li><b>Common discrepancies.</b> Assumed API is actually SSR/direct-DB; "based on N reviews" vs real "(N reviews)"; hardcoded IDs vs a variable pattern.</li>
+    <li><b>Log it.</b> Record divergences in a Refinement Notes section on the TC.</li>
+  </ul>
+  <div class="notes">The plan is a hypothesis; the code is the truth. Five minutes of grepping saves a whole broken automation suite downstream. Always reconcile design against implementation before you document.</div>
+</section>
+
+<section class="slide" data-title="Naming">
+  <p class="kicker">Naming + partitioning</p>
+  <h2 class="h2" data-anim="fade-up">Name a TC so anyone can find it</h2>
+  <ul class="blist mt-l anim-stagger-list">
+    <li><b>The format that matters.</b> <span class="mono">{US_ID or TS_ID}: TC#: Validate &lt;CORE&gt; &lt;CONDITIONAL&gt;</span></li>
+    <li><b>CORE.</b> verb + object: <span class="mono">successful login</span>, <span class="mono">authentication error</span>, <span class="mono">order creation</span>.</li>
+    <li><b>CONDITIONAL.</b> the distinguishing condition: <span class="mono">with valid credentials</span>, <span class="mono">when password is incorrect</span>.</li>
+    <li><b>Worked example.</b> <span class="mono">GX-101: TC2: Validate authentication error when password is incorrect</span>.</li>
+    <li><b>Reject these.</b> <span class="mono">Login test</span> · <span class="mono">Login - error</span> · <span class="mono">TC1: Test form</span> · <span class="mono">Should work correctly</span>.</li>
+  </ul>
+  <div class="notes">A good name is searchable, unique, and self-documenting. Equivalence partitioning: same output → one parameterized TC (Scenario Outline + Examples); different output → separate TCs. The anti-patterns are real titles people ship — vague and useless six months later.</div>
+</section>
+
+<section class="slide divider" data-title="Phase 2">
+  <div>
+    <p class="part-no">PART 01 · PHASE 2</p>
+    <h1 class="h1">Prioritize<br><span class="grad">the ROI gate</span></h1>
+    <p class="lede">The heart of the discipline: deciding, with numbers, which validated scenarios are worth the lifetime cost of automation.</p>
+  </div>
+  <div class="notes">Now the judgment phase. Every scenario passes through filters, then a formula, then lands in exactly one of three buckets.</div>
+</section>
+
+<section class="slide" data-title="Phase 0 filters">
+  <p class="kicker">Phase 0 — apply BEFORE the formula</p>
+  <h2 class="h2" data-anim="fade-up">Three filter questions; fail any → Deferred</h2>
+  <div class="steps s3 mt-l anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>Future regressions?</h4><p>Does it protect against FUTURE regressions? A one-time typo in a stable area → No → Defer.</p></div>
+    <div class="step"><div class="num">2</div><h4>Prior bugs here?</h4><p>Yes → prioritize even at moderate ROI. "It failed once, it can fail again."</p></div>
+    <div class="step"><div class="num">3</div><h4>App- or feature-level?</h4><p>XSS / a11y / perf / responsive are APP-LEVEL suites → Defer from this scope.</p></div>
+  </div>
+  <div class="callout warn mt-m"><h4>Gate logic</h4><p>Phase 0 fails → Deferred immediately. Phase 0 passes → now compute ROI.</p></div>
+  <div class="notes">These three questions kill most candidates before you ever do arithmetic. The prior-bug rule is special — it can override a mediocre ROI score, because a bug is empirical proof the area regresses.</div>
+</section>
+
+<section class="slide center tc" data-title="ROI formula">
+  <div>
+    <p class="kicker">The formula you must memorize</p>
+    <div class="bigstat"><span class="grad">÷</span></div>
+    <h3>ROI = (Frequency × Impact × Stability) / (Effort × Dependencies)</h3>
+    <p class="lede mt-s">Three multipliers on top (Frequency, Impact, Stability — higher is better). Two DIVISORS on the bottom (Effort, Dependencies — higher is WORSE). A "critical flow" with Effort=5 and Dependencies=5 SHOULD score low — that's the formula working, not a bug. Each factor scored 1-5 independently.</p>
+  </div>
+  <div class="notes">The divisors are the part people get wrong. Effort and Dependencies belong in the denominator. A glamorous, expensive, externally-coupled flow is correctly penalized — automation cost is real.</div>
+</section>
+
+<section class="slide" data-title="ROI rubric">
+  <p class="kicker">Scoring each factor 1-5</p>
+  <h2 class="h2" data-anim="fade-up">The ROI rubric</h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Factor</th><th>1</th><th>3</th><th>5</th></tr></thead>
+    <tbody>
+      <tr><td><b>Frequency</b> (how often run)</td><td>Yearly / rarely</td><td>Every sprint</td><td>Every PR / commit</td></tr>
+      <tr><td><b>Impact</b> (if it fails)</td><td>Cosmetic</td><td>Degrades UX</td><td>Revenue / core business</td></tr>
+      <tr><td><b>Stability</b> (of the flow)</td><td>Very volatile</td><td>Moderate</td><td>Unchanged for months</td></tr>
+      <tr><td><b>Effort</b> to automate (÷)</td><td>Trivial</td><td>1-2 days</td><td>Week+</td></tr>
+      <tr><td><b>Dependencies</b> (÷)</td><td>None</td><td>3-4</td><td>Complex externals</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">Walk one example: a login flow run on every PR (5), revenue-critical (5), stable for months (5), hours to automate (Effort 2), one dependency (1). That's (5×5×5)/(2×1) = 62.5 — automate without hesitation. Most flows are not login.</div>
+</section>
+
+<section class="slide" data-title="Component value">
+  <p class="kicker">The reusability multiplier</p>
+  <h2 class="h2" data-anim="fade-up">Component Value bonus — reuse rescues low ROI</h2>
+  <div class="callout mt-l"><h4>Component Value = Base ROI × (1 + 0.2 × N)</h4><p>N = number of E2E flows that reuse the TC.</p></div>
+  <p class="lede mt-m">A humble atomic like <span class="mono">authenticateSuccessfully</span> scores base ROI <b>1.5</b> — borderline Defer. Reused in 5 E2E flows: 1.5 × (1 + 0.2×5) = 1.5 × 2.0 = <b class="grad">3.0</b> → now an automate-worthy Candidate. Reusable components earn their keep through composition, not solo value.</p>
+  <div class="notes">This is why atomic, composable test cases matter. A login step nobody automates in isolation becomes essential once five flows depend on it. Think of TCs as reusable components.</div>
+</section>
+
+<section class="slide" data-title="The verdict">
+  <p class="kicker">The verdict — exactly one of three</p>
+  <h2 class="h2" data-anim="fade-up">Candidate / Manual / Deferred</h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Outcome</th><th>Triggers it</th><th>Where it goes</th><th>TMS status flow</th></tr></thead>
+    <tbody>
+      <tr><td><b>Candidate</b></td><td>ROI &gt; 3.0, OR (1.5-3.0 AND prior bug), OR critical happy path</td><td>feeds /test-automation</td><td>Draft→In Design→Ready→In Review→Candidate</td></tr>
+      <tr><td><b>Manual</b></td><td>ROI 0.5-1.5 AND not automatable, or explicitly manual-only</td><td>manual regression suite</td><td>Draft→In Design→Ready→Manual</td></tr>
+      <tr><td><b>Deferred</b></td><td>ROI &lt; 0.5, OR failed Phase-0, OR one-time validation</td><td>NOT in regression</td><td>no TC — in the report</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn mt-m"><h4>No fourth bucket</h4><p>If &gt;50% land Candidate/Manual, re-apply Phase 0 harder.</p></div>
+  <div class="notes">Three buckets, no exceptions. Deferred doesn't even create a TMS issue — you just document the decision. If too much is surviving, your filter is too soft.</div>
+</section>
+
+<section class="slide divider" data-title="Phase 3">
+  <div>
+    <p class="part-no">PART 01 · PHASE 3</p>
+    <h1 class="h1">Document<br><span class="grad">create &amp; link in the TMS</span></h1>
+    <p class="lede">The scenarios that survived get written into Jira/Xray as real, linked, traceable artifacts — in a strict order.</p>
+  </div>
+  <div class="notes">Documentation is mechanical but unforgiving about order. Get the sequence wrong and you create orphans that only a traceability-repair tool can fix.</div>
+</section>
+
+<section class="slide" data-title="Entity model">
+  <p class="kicker">The four entities + the Regression Epic</p>
+  <h2 class="h2" data-anim="fade-up">Preflight, then build the entity model</h2>
+  <div class="flow mt-m anim-stagger-list">
+    <div class="stage"><div class="sx">0</div><div><h4>Find the Regression Epic</h4><p>Search <span class="mono">type = Epic AND labels = "test-repository"</span>; if none, ask before creating <span class="mono">{{PROJECT_KEY}} Test Repository</span>. Every TC needs this parent.</p></div></div>
+    <div class="stage"><div class="sx">US</div><div><h4>Story</h4><p>The requirement (pre-existing), <span class="mono">{{PROJECT_KEY}}-{n}</span>.</p></div></div>
+    <div class="stage"><div class="sx">ATP</div><div><h4>Acceptance Test Plan</h4><p><span class="mono">Test Plan: {{PROJECT_KEY}}-{n}</span> — Test Analysis + AC→TC coverage.</p></div></div>
+    <div class="stage"><div class="sx">ATR</div><div><h4>Acceptance Test Results</h4><p><span class="mono">Test Results: {{PROJECT_KEY}}-{n}</span> — Test Report + execution results.</p></div></div>
+    <div class="stage"><div class="sx">TC</div><div><h4>Test Case</h4><p><span class="mono">{US_ID}: TC#: Validate &lt;CORE&gt; &lt;CONDITIONAL&gt;</span> — Precondition + Action + Expected.</p></div></div>
+  </div>
+  <div class="notes">Four entities, one permanent home. The Regression Epic is the single test repository for the whole project — never orphan a TC outside it.</div>
+</section>
+
+<section class="slide" data-title="Linking order">
+  <p class="kicker">The order is not optional</p>
+  <h2 class="h2" data-anim="fade-up">ATP → ATR → link → THEN every TC</h2>
+  <div class="callout mt-l"><h4>Linking order</h4><p>(1) Create ATP, link to US. (2) Create ATR, link to US. (3) Update ATP, link to ATR (bidirectional). (4) For each TC: create, then link to US + ATP + ATR + AC.</p></div>
+  <p class="lede mt-m">By the time a TC is created, both ATP and ATR already exist, so all three links land at creation. Create TCs first and you get orphans — and <span class="mono">fix-traceability</span> becomes the only way out. The model is bidirectional: <b class="grad">US↔ATP↔ATR↔TC</b>. Given any one, you must reach the other three — that IS traceability.</p>
+  <div class="notes">This is the order people break under deadline pressure. Plan and results first, then tests. Cardinality matters too: US↔ATP and US↔ATR are 1:1; an ATR is never linked to two ATPs.</div>
+</section>
+
+<section class="slide" data-title="Gherkin artifact">
+  <p class="kicker">The artifact — high-quality Gherkin</p>
+  <h2 class="h2" data-anim="fade-up">Variables, never hardcoded data</h2>
+  <div class="terminal mt-m">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>TC-GX-101.feature</span></div>
+<pre><span class="cmt">@critical @regression @automation-candidate @GX-101</span>
+<span class="kw">Scenario Outline:</span> Validate authentication error when password is incorrect
+  <span class="cmt">"""</span>
+  <span class="cmt">Bugs covered: GX-202   Related Story: GX-101   ROI Score: 4.0</span>
+  <span class="cmt">"""</span>
+  <span class="cmt"># === PRECONDITIONS ===</span>
+  <span class="kw">Given</span> a verified user exists with <span class="str">{email}</span> in the database
+  <span class="cmt"># === ACTION ===</span>
+  <span class="kw">When</span> the user submits login with <span class="str">{email}</span> and <span class="str">{wrong_password}</span>
+  <span class="cmt"># === VALIDATIONS ===</span>
+  <span class="kw">Then</span> a <span class="num">401</span> error is returned with format <span class="str">"&lt;message&gt;"</span>
+  <span class="cmt"># === EQUIVALENT PARTITIONS ===</span>
+  <span class="kw">Examples:</span> Wrong password | Empty password | Unknown email</pre>
+  </div>
+  <div class="notes">Variables table is mandatory: {email} → SELECT email FROM users WHERE active=true LIMIT 1. Tags always carry priority + suite + automation flag + story ID. Never paste a literal UUID or email — staging data changes over years. Structured comments and docstring metadata make the TC self-explaining and automatable.</div>
+</section>
+
+<section class="slide" data-title="Workflow state machine">
+  <p class="kicker">Workflow state machine — never skip a state</p>
+  <h2 class="h2" data-anim="fade-up">How a TC moves through its life</h2>
+  <div class="flow mt-m anim-stagger-list">
+    <div class="stage"><div class="sx">1</div><div><h4>Draft → In Design → Ready</h4><p>Documentation written and reviewed.</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>Ready splits</h4><p><span class="mono">for_manual</span> → Manual (terminal), OR <span class="mono">automation_review</span> → In Review.</p></div></div>
+    <div class="stage"><div class="sx">3</div><div><h4>In Review → Candidate</h4><p><span class="mono">approve_to_automate</span> → In Automation → Pull Request → Automated.</p></div></div>
+  </div>
+  <div class="callout warn mt-m"><h4>No jumps</h4><p>Draft can't go straight to Automated. Rework only via <span class="mono">back_from_&lt;state&gt;</span>. <span class="mono">Deprecated</span> reachable from any state. Manual can re-enter In Review if ROI changes.</p></div>
+  <div class="notes">The lifecycle is strictly sequential. Remember two independent fields: Test Status (workflow — where it is in its life) versus Execution Status (the run — did it pass last time). "Automated" + last run "FAIL" is a normal, valid combination.</div>
+</section>
+
+<section class="slide" data-title="Finish cleanly">
+  <p class="kicker">Finish the job cleanly</p>
+  <h2 class="h2" data-anim="fade-up">Labels, the two-call Xray rule, and the local cache</h2>
+  <ul class="blist mt-l anim-stagger-list">
+    <li><b>Scope label (required).</b> <span class="mono">regression</span> almost always; <span class="mono">smoke</span> only for critical paths (10-20% of suite); plus <span class="mono">e2e</span>/<span class="mono">integration</span>/<span class="mono">functional</span>.</li>
+    <li><b>Status labels.</b> <span class="mono">automation-candidate</span> ↔ <span class="mono">manual-only</span> are mutually exclusive; swap to <span class="mono">automated</span> once merged.</li>
+    <li><b>Xray needs TWO calls.</b> one <span class="mono">Create Test</span> (registers) THEN one <span class="mono">Update Issue</span> for the Description — skip the second and the TC has no readable docs.</li>
+    <li><b>Never hand-write ADF JSON.</b> use the markdown→ADF path; hand-authored ADF drifts and breaks renderers.</li>
+    <li><b>Cache locally.</b> one markdown per TC under <span class="mono">.../stories/STORY-&lt;KEY&gt;/test-cases/{TC-ID}.md</span> for clean handoff.</li>
+  </ul>
+  <div class="notes">These finishing details separate a clean repository from a messy one. The Xray two-call pattern is the most common silent failure — a registered test with an empty body.</div>
+</section>
+
+<section class="slide divider" data-title="Part 2">
+  <div>
+    <p class="part-no">PART 02</p>
+    <h1 class="h1">The Acceleration<br><span class="grad">driving it from the terminal</span></h1>
+    <p class="lede">Everything in Part 1 — the modality gate, the ROI math, the linking order, the workflow transitions — the /test-documentation skill executes from one command. Here's how, and how you stay in control.</p>
+  </div>
+  <div class="notes">Now we map the manual craft onto the skill. Same rules, same gates — the AI just runs them faster and never forgets the linking order.</div>
+</section>
+
+<section class="slide" data-title="Trigger + context">
+  <p class="kicker">Trigger + what loads</p>
+  <h2 class="h2" data-anim="fade-up">One phrase, full context auto-loaded</h2>
+  <ul class="blist mt-l anim-stagger-list">
+    <li><b>Trigger.</b> <span class="mono">/test-documentation</span>, or natural phrasing: "document tests", "ROI analysis", "which tests to automate", "Candidate vs Manual", "turn this bug into a regression test".</li>
+    <li><b>Phase -1 resume check.</b> reads <span class="mono">.session/test-documentation/&lt;scope&gt;/progress.md</span>; offers resume / restart / abort if a prior run was interrupted.</li>
+    <li><b>Phase 0 modality gate.</b> auto-resolves Xray vs Jira-native (config → master-test-plan → list issue types → ask).</li>
+    <li><b>Auto-loads context.</b> the synced Story folder (<span class="mono">story.md</span>, <span class="mono">acceptance-criteria.md</span>, <span class="mono">comments.md</span>), the Jira catalogs, and <span class="mono">master-test-plan.md</span>.</li>
+  </ul>
+  <div class="notes">You don't paste the methodology — the skill carries it. It even checks whether a previous documentation session was interrupted and offers to resume exactly where it stopped.</div>
+</section>
+
+<section class="slide" data-title="Orchestration">
+  <p class="kicker">Orchestration model</p>
+  <h2 class="h2" data-anim="fade-up">Main thread decides; subagents do the bulk writes</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>Inline (orchestrator)</h4><p class="dim">Phase 1 Analyze and Phase 2 ROI stay in the main thread; decisions and planning don't get delegated.</p><span class="tag mt-s">judgment</span></div>
+    <div class="card card-accent"><h4>Parallel (subagents)</h4><p class="dim">Phase 3 bulk TC creation when N &gt; 10: shard into chunks of ~5-10, cap at 10 subagents (~10 writes/sec → avoid 429s).</p><span class="tag mt-s">fan-out</span></div>
+    <div class="card card-accent"><h4>Inline again</h4><p class="dim">Traceability linking and the final coverage matrix need aggregated state, so they run in the orchestrator after subagents return.</p><span class="tag mt-s">aggregate</span></div>
+  </div>
+  <div class="notes">The split is deliberate: judgment lives in the command center, raw API writes fan out. The 10-subagent cap exists because both Jira and Xray throttle around 10 writes per second.</div>
+</section>
+
+<section class="slide" data-title="Tools">
+  <p class="kicker">The tools it drives</p>
+  <h2 class="h2" data-anim="fade-up">CLI-first, MCP fallback</h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Need</th><th>Primary tool</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Detailed reads (fields, ACs, ATP/ATR, comments)</td><td><span class="mono">bun run jira:sync-issues get &lt;KEY&gt;</span></td><td>read the synced .md — <span class="mono">acli view</span> returns null for custom fields</td></tr>
+      <tr><td>Xray TMS writes</td><td><span class="mono">/xray-cli</span> (<span class="mono">bun xray</span>)</td><td>Modality jira-xray only</td></tr>
+      <tr><td>Jira writes / links / transitions</td><td><span class="mono">/acli</span></td><td>both modalities; native falls through here</td></tr>
+      <tr><td>Field / workflow IDs</td><td><span class="mono">bun run jira:sync-fields</span></td><td>never hardcode <span class="mono">customfield_NNNNN</span></td></tr>
+      <tr><td>Source-code validation</td><td>Grep / Read</td><td>confirm <span class="mono">data-testid=</span>, routes, formats</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">Reads and writes are split on purpose. Detailed field reads go through the sync script into local markdown; only writes, links, and transitions hit the live TMS through acli or xray-cli.</div>
+</section>
+
+<section class="slide" data-title="Live transcript">
+  <p class="kicker">One realistic invocation</p>
+  <h2 class="h2" data-anim="fade-up">A bug-driven documentation run</h2>
+  <div class="terminal mt-m">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>claude-code</span></div>
+<pre><span class="p">$ </span><span class="c">claude</span>
+<span class="p">&gt; </span><span class="c">Turn closed bug UPEX-202 into a regression test and document it.</span>
+
+<span class="o">[Phase -1] No prior session for UPEX-202 — starting fresh.</span>
+<span class="o">[Phase 0]  Resolved modality: Jira-native (acli; no Xray types).</span>
+<span class="o">[Phase 1]  Read UPEX-202 + story UPEX-101. Grepped code:</span>
+<span class="o">           data-testid="login-error" confirmed; route /api/auth/login.</span>
+<span class="o">[Phase 2]  Filter: prior bug = YES. ROI = (4×5×4)/(2×1) = 40.</span>
+<span class="o">           Verdict: CANDIDATE (bug-driven defaults to Candidate).</span>
+<span class="o">[Phase 3]  Regression Epic UPEX-9 found. Creating 1 TC inline...</span>
+<span class="o">             UPEX-540 "UPEX-101: TC2: Validate authentication</span>
+<span class="o">             error when password is incorrect" [automation-candidate]</span>
+<span class="o">           Linked: is tested by → UPEX-101. Cached locally.</span>
+<span class="o">  Plan ready: create UPEX-540, transition to Candidate. Proceed?</span>
+<span class="p">&gt; </span><span class="c">y</span>
+<span class="o">  Done. 1 Candidate documented, traceability verified.</span></pre>
+  </div>
+  <div class="notes">Walk the room through it line by line. Notice every Part-1 rule is visible: modality gate, code grep, the prior-bug override, the ROI math, the naming convention, the linking, and the local cache. The plan-before-write confirmation gate keeps you in control.</div>
+</section>
+
+<section class="slide" data-title="Takeaways">
+  <p class="kicker">// takeaways</p>
+  <h2 class="h2" data-anim="fade-up">Three things to carry into tomorrow</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>1 · Default to Defer</h4><p class="dim">Most validated scenarios should NOT be automated. Run the 3 filters, then ROI = (F×I×S)/(E×D). Keep the suite small and high-signal.</p></div>
+    <div class="card card-accent"><h4>2 · One Pre+Action = one TC</h4><p class="dim">Never split assertions into separate TCs; never promote cross-cutting traits to standalone tests; always validate design against real code.</p></div>
+    <div class="card card-accent"><h4>3 · Order + traceability sacred</h4><p class="dim">ATP→ATR→link→TC; every TC reaches US/ATP/ATR/AC. The skill runs it from <span class="mono">/test-documentation</span> behind your confirmation gate.</p></div>
+  </div>
+  <div class="notes">If they remember only three things: Defer is the default, identity is precondition+action, and traceability order is non-negotiable. The AI accelerates the craft — it doesn't replace your judgment.</div>
+</section>
+
+<section class="slide center tc" data-title="Thanks">
+  <div>
+    <h1 class="h1"><span class="grad">Thanks — now go document with intent.</span></h1>
+    <p class="lede" style="margin:14px auto">Analyze → Prioritize (ROI) → Document, with full US↔ATP↔ATR↔TC traceability. Candidates flow to <kbd>/test-automation</kbd>; Manual and Deferred are terminal.</p>
+    <p class="lede" style="margin:8px auto">Try it: <kbd>/test-documentation</kbd> · ← → navigate · S speaker notes · O overview</p>
+  </div>
+  <div class="notes">Close by situating this in the bigger pipeline — Stage 4 sits between manual QA and automation. Invite questions and point them at their next QA-approved ticket.</div>
+</section>
+
+</div>
+<script>
+/* html-ppt :: runtime.js
+ * Keyboard-driven deck runtime. Zero dependencies.
+ *
+ * Features:
+ *   ← → / space / PgUp PgDn / Home End  navigation
+ *   F  fullscreen
+ *   S  presenter mode (opens a NEW WINDOW with current/next slide preview + notes + timer)
+ *       The original window stays as audience view, synced via BroadcastChannel.
+ *       Slide previews use CSS transform:scale() at design resolution for pixel-perfect layout.
+ *   N  quick notes overlay (bottom drawer)
+ *   O  slide overview grid
+ *   T  cycle themes (reads data-themes on <html> or <body>)
+ *   A  cycle demo animation on current slide
+ *   URL hash #/N  deep-link to slide N (1-based)
+ *   Progress bar auto-managed
+ */
+(function () {
+  'use strict';
+
+  const ANIMS = ['fade-up','fade-down','fade-left','fade-right','rise-in','drop-in',
+    'zoom-pop','blur-in','glitch-in','typewriter','neon-glow','shimmer-sweep',
+    'gradient-flow','stagger-list','counter-up','path-draw','parallax-tilt',
+    'card-flip-3d','cube-rotate-3d','page-turn-3d','perspective-zoom',
+    'marquee-scroll','kenburns','confetti-burst','spotlight','morph-shape','ripple-reveal'];
+
+  function ready(fn){ if(document.readyState!='loading')fn(); else document.addEventListener('DOMContentLoaded',fn);}
+
+  /* ========== Parse URL for preview-only mode ==========
+   * When loaded as iframe.src = "index.html?preview=3", runtime enters a
+   * locked single-slide mode: only slide N is visible, no chrome, no keys,
+   * no hash updates. This is how the presenter window shows pixel-perfect
+   * previews — by loading the actual deck file in an iframe and telling it
+   * to display only a specific slide.
+   */
+  function getPreviewIdx() {
+    const m = /[?&]preview=(\d+)/.exec(location.search || '');
+    return m ? parseInt(m[1], 10) - 1 : -1;
+  }
+
+  ready(function () {
+    const deck = document.querySelector('.deck');
+    if (!deck) return;
+    const slides = Array.from(deck.querySelectorAll('.slide'));
+    if (!slides.length) return;
+
+    const previewOnlyIdx = getPreviewIdx();
+    const isPreviewMode = previewOnlyIdx >= 0 && previewOnlyIdx < slides.length;
+
+    /* ===== Preview-only mode: show one slide, hide everything else ===== */
+    if (isPreviewMode) {
+      function showSlide(i) {
+        slides.forEach((s, j) => {
+          const active = (j === i);
+          s.classList.toggle('is-active', active);
+          s.style.display = active ? '' : 'none';
+          if (active) {
+            s.style.opacity = '1';
+            s.style.transform = 'none';
+            s.style.pointerEvents = 'auto';
+          }
+        });
+      }
+      showSlide(previewOnlyIdx);
+      /* Hide chrome that the presenter shouldn't see in preview */
+      const hideSel = '.progress-bar, .notes-overlay, .overview, .notes, aside.notes, .speaker-notes';
+      document.querySelectorAll(hideSel).forEach(el => { el.style.display = 'none'; });
+      document.documentElement.setAttribute('data-preview', '1');
+      document.body.setAttribute('data-preview', '1');
+      /* Auto-detect theme base path for theme switching in preview mode */
+      function getPreviewThemeBase() {
+        const base = document.documentElement.getAttribute('data-theme-base');
+        if (base) return base;
+        const tl = document.getElementById('theme-link');
+        if (tl) {
+          const raw = tl.getAttribute('href') || '';
+          const ls = raw.lastIndexOf('/');
+          if (ls >= 0) return raw.substring(0, ls + 1);
+        }
+        return 'assets/themes/';
+      }
+      const previewThemeBase = getPreviewThemeBase();
+
+      /* Listen for postMessage from parent presenter window:
+       *  - preview-goto: switch visible slide WITHOUT reloading
+       *  - preview-theme: switch theme CSS link to match audience window */
+      window.addEventListener('message', function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'preview-goto') {
+          const n = parseInt(e.data.idx, 10);
+          if (n >= 0 && n < slides.length) showSlide(n);
+        } else if (e.data.type === 'preview-theme' && e.data.name) {
+          let link = document.getElementById('theme-link');
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.id = 'theme-link';
+            document.head.appendChild(link);
+          }
+          link.href = previewThemeBase + e.data.name + '.css';
+          document.documentElement.setAttribute('data-theme', e.data.name);
+        }
+      });
+      /* Signal to parent that preview iframe is ready */
+      try { window.parent && window.parent.postMessage({ type: 'preview-ready' }, '*'); } catch(e) {}
+      return;
+    }
+
+    let idx = 0;
+    const total = slides.length;
+
+    /* ===== BroadcastChannel for presenter sync ===== */
+    const CHANNEL_NAME = 'html-ppt-presenter-' + location.pathname;
+    let bc;
+    try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
+
+    // Are we running inside the presenter popup? (legacy flag, now unused)
+    const isPresenterWindow = false;
+
+    /* ===== progress bar ===== */
+    let bar = document.querySelector('.progress-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'progress-bar';
+      bar.innerHTML = '<span></span>';
+      document.body.appendChild(bar);
+    }
+    const barFill = bar.querySelector('span');
+
+    /* ===== notes overlay (N key) ===== */
+    let notes = document.querySelector('.notes-overlay');
+    if (!notes) {
+      notes = document.createElement('div');
+      notes.className = 'notes-overlay';
+      document.body.appendChild(notes);
+    }
+
+    /* ===== overview grid (O key) ===== */
+    let overview = document.querySelector('.overview');
+    if (!overview) {
+      overview = document.createElement('div');
+      overview.className = 'overview';
+      slides.forEach((s, i) => {
+        const t = document.createElement('div');
+        t.className = 'thumb';
+        // Force 16:9 aspect ratio robustly
+        t.style.padding = '0 0 56.25% 0';
+        t.style.height = '0';
+        t.style.position = 'relative';
+        t.style.overflow = 'hidden';
+
+        const title = s.getAttribute('data-title') ||
+          (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1));
+        
+        // Create a container for the mini-slide
+        const mini = document.createElement('div');
+        mini.className = 'mini-slide';
+        mini.style.position = 'absolute';
+        mini.style.top = '0';
+        mini.style.left = '0';
+        mini.style.width = '1920px';
+        mini.style.height = '1080px';
+        mini.style.transformOrigin = 'top left';
+        mini.style.pointerEvents = 'none';
+        mini.style.background = 'var(--bg)';
+        
+        // Clone the slide content
+        const clone = s.cloneNode(true);
+        clone.className = 'slide is-active'; // force active styles
+        clone.style.position = 'absolute';
+        clone.style.inset = '0';
+        clone.style.transform = 'none';
+        clone.style.opacity = '1';
+        clone.style.padding = '72px 96px'; // ensure padding is kept
+        
+        mini.appendChild(clone);
+        t.appendChild(mini);
+
+        // Add the number and title overlay
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.inset = '0';
+        overlay.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.8) 100%)';
+        overlay.style.color = '#fff';
+        overlay.style.zIndex = '10';
+        overlay.style.pointerEvents = 'none';
+        
+        const n = document.createElement('div');
+        n.className = 'n';
+        n.textContent = i + 1;
+        n.style.position = 'absolute';
+        n.style.top = '12px';
+        n.style.left = '16px';
+        n.style.fontWeight = '700';
+        n.style.fontSize = '16px';
+        n.style.color = '#fff';
+        n.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        const text = document.createElement('div');
+        text.className = 't';
+        text.textContent = title.trim().slice(0,80);
+        text.style.position = 'absolute';
+        text.style.bottom = '12px';
+        text.style.left = '16px';
+        text.style.right = '16px';
+        text.style.fontWeight = '600';
+        text.style.fontSize = '14px';
+        text.style.color = '#fff';
+        text.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        overlay.appendChild(n);
+        overlay.appendChild(text);
+        t.appendChild(overlay);
+
+        t.addEventListener('click', () => { go(i); toggleOverview(false); });
+        overview.appendChild(t);
+      });
+      document.body.appendChild(overview);
+    }
+
+    /* ===== navigation ===== */
+    function go(n, fromRemote){
+      n = Math.max(0, Math.min(total-1, n));
+      slides.forEach((s,i) => {
+        s.classList.toggle('is-active', i===n);
+        s.classList.toggle('is-prev', i<n);
+      });
+      idx = n;
+      barFill.style.width = ((n+1)/total*100)+'%';
+      const numEl = document.querySelector('.slide-number');
+      if (numEl) { numEl.setAttribute('data-current', n+1); numEl.setAttribute('data-total', total); }
+
+      // notes (bottom overlay)
+      const note = slides[n].querySelector('.notes, aside.notes, .speaker-notes');
+      notes.innerHTML = note ? note.innerHTML : '';
+
+      // hash
+      const hashTarget = '#/'+(n+1);
+      if (location.hash !== hashTarget && !isPresenterWindow) {
+        history.replaceState(null,'', hashTarget);
+      }
+
+      // re-trigger entry animations
+      slides[n].querySelectorAll('[data-anim]').forEach(el => {
+        const a = el.getAttribute('data-anim');
+        el.classList.remove('anim-'+a);
+        void el.offsetWidth;
+        el.classList.add('anim-'+a);
+      });
+
+      // counter-up
+      slides[n].querySelectorAll('.counter').forEach(el => {
+        const target = parseFloat(el.getAttribute('data-to')||el.textContent);
+        const dur = parseInt(el.getAttribute('data-dur')||'1200',10);
+        const start = performance.now();
+        const from = 0;
+        function tick(now){
+          const t = Math.min(1,(now-start)/dur);
+          const v = from + (target-from)*(1-Math.pow(1-t,3));
+          el.textContent = (target % 1 === 0) ? Math.round(v) : v.toFixed(1);
+          if (t<1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+
+      // Broadcast to other window (audience ↔ presenter)
+      if (!fromRemote && bc) {
+        bc.postMessage({ type: 'go', idx: n });
+      }
+    }
+
+    /* ===== listen for remote navigation / theme changes ===== */
+    if (bc) {
+      bc.onmessage = function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'go' && typeof e.data.idx === 'number') {
+          go(e.data.idx, true);
+        } else if (e.data.type === 'theme' && e.data.name) {
+          /* Sync theme across windows */
+          const i = themes.indexOf(e.data.name);
+          if (i >= 0) themeIdx = i;
+          applyTheme(e.data.name);
+        }
+      };
+    }
+
+    function toggleNotes(force){ notes.classList.toggle('open', force!==undefined?force:!notes.classList.contains('open')); }
+    function toggleOverview(force){
+      const isOpen = force!==undefined ? force : !overview.classList.contains('open');
+      overview.classList.toggle('open', isOpen);
+      if (isOpen) {
+        requestAnimationFrame(() => {
+          const thumbs = overview.querySelectorAll('.thumb');
+          if (thumbs.length) {
+            const scale = thumbs[0].clientWidth / 1920;
+            overview.querySelectorAll('.mini-slide').forEach(m => {
+              m.style.transform = 'scale(' + scale + ')';
+            });
+          }
+        });
+      }
+    }
+
+    /* ========== PRESENTER MODE — Magnetic-card popup window ========== */
+    /* Opens a new window with 4 draggable, resizable cards:
+     *   CURRENT  — iframe(?preview=N)   pixel-perfect preview of current slide
+     *   NEXT     — iframe(?preview=N+1) pixel-perfect preview of next slide
+     *   SCRIPT   — large speaker notes (逐字稿)
+     *   TIMER    — elapsed timer + page counter + controls
+     * Cards remember position/size in localStorage.
+     * Two windows sync via BroadcastChannel.
+     */
+    let presenterWin = null;
+
+    function openPresenterWindow() {
+      if (presenterWin && !presenterWin.closed) {
+        presenterWin.focus();
+        return;
+      }
+
+      // Build absolute URL of THIS deck file (without hash/query)
+      const deckUrl = location.protocol + '//' + location.host + location.pathname;
+
+      // Collect slide titles + notes (HTML strings)
+      const slideMeta = slides.map((s, i) => {
+        const note = s.querySelector('.notes, aside.notes, .speaker-notes');
+        return {
+          title: s.getAttribute('data-title') ||
+            (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1)),
+          notes: note ? note.innerHTML : ''
+        };
+      });
+
+      /* Capture current theme so presenter previews match the audience */
+      const currentTheme = root.getAttribute('data-theme') || (themes[themeIdx] || '');
+      const presenterHTML = buildPresenterHTML(deckUrl, slideMeta, total, idx, CHANNEL_NAME, currentTheme);
+
+      presenterWin = window.open('', 'html-ppt-presenter', 'width=1280,height=820,menubar=no,toolbar=no');
+      if (!presenterWin) {
+        alert('请允许弹出窗口以使用演讲者视图');
+        return;
+      }
+      presenterWin.document.open();
+      presenterWin.document.write(presenterHTML);
+      presenterWin.document.close();
+    }
+
+    function buildPresenterHTML(deckUrl, slideMeta, total, startIdx, channelName, currentTheme) {
+      const metaJSON = JSON.stringify(slideMeta);
+      const deckUrlJSON = JSON.stringify(deckUrl);
+      const channelJSON = JSON.stringify(channelName);
+      const themeJSON = JSON.stringify(currentTheme || '');
+      const storageKey = 'html-ppt-presenter:' + location.pathname;
+
+      // Build the document as a single template string for clarity
+      return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Presenter View</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #1a1d24;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(88,166,255,.04), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(188,140,255,.04), transparent 50%);
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+  }
+  /* Stage: positioned area where cards live */
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+
+  /* Magnetic card */
+  .pcard {
+    position: absolute;
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    min-width: 180px; min-height: 100px;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  .pcard.dragging { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(88,166,255,.5); border-color: #58a6ff; transition: none; z-index: 9999; }
+  .pcard.resizing { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(63,185,80,.5); border-color: #3fb950; transition: none; z-index: 9999; }
+  .pcard:hover { border-color: rgba(88,166,255,.3); }
+
+  /* Card header (drag handle) */
+  .pcard-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    cursor: move;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .pcard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot-color, #58a6ff); flex-shrink: 0; }
+  .pcard-title {
+    font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    font-weight: 700; color: #8b949e; flex: 1;
+  }
+  .pcard-meta { font-size: 11px; color: #6e7681; }
+
+  /* Card body */
+  .pcard-body { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+
+  /* Preview cards (CURRENT/NEXT) — iframe-based pixel-perfect render */
+  .pcard-preview .pcard-body { background: #000; }
+  .pcard-preview iframe {
+    position: absolute; top: 0; left: 0;
+    width: 1920px; height: 1080px;
+    border: none;
+    transform-origin: top left;
+    pointer-events: none;
+    background: transparent;
+  }
+  .pcard-preview .preview-end {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #484f58; font-size: 14px; letter-spacing: .12em;
+  }
+
+  /* Notes card */
+  .pcard-notes .pcard-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    font-size: 18px; line-height: 1.75;
+    color: #d0d7de;
+    font-family: "Noto Sans SC", -apple-system, sans-serif;
+  }
+  .pcard-notes .pcard-body p { margin: 0 0 .7em 0; }
+  .pcard-notes .pcard-body strong { color: #f0883e; }
+  .pcard-notes .pcard-body em { color: #58a6ff; font-style: normal; }
+  .pcard-notes .pcard-body code {
+    font-family: "SF Mono", monospace; font-size: .9em;
+    background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
+  }
+  .pcard-notes .empty { color: #484f58; font-style: italic; }
+
+  /* Timer card */
+  .pcard-timer .pcard-body {
+    display: flex; flex-direction: column; gap: 14px;
+    padding: 18px 20px; justify-content: center;
+  }
+  .timer-display {
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    font-size: 42px; font-weight: 700;
+    color: #3fb950;
+    letter-spacing: .04em;
+    line-height: 1;
+  }
+  .timer-row {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: #8b949e;
+  }
+  .timer-row .label { font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: #6e7681; }
+  .timer-row .val { color: #e6edf3; font-weight: 600; font-family: "SF Mono", monospace; }
+  .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .timer-btn {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .timer-btn:hover { background: rgba(88,166,255,.15); border-color: #58a6ff; }
+  .timer-btn:active { transform: translateY(1px); }
+
+  /* Resize handle */
+  .pcard-resize {
+    position: absolute; right: 0; bottom: 0;
+    width: 18px; height: 18px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,.25) 50%, rgba(255,255,255,.25) 60%, transparent 60%, transparent 70%, rgba(255,255,255,.25) 70%, rgba(255,255,255,.25) 80%, transparent 80%);
+    z-index: 5;
+  }
+  .pcard-resize:hover { background: linear-gradient(135deg, transparent 50%, #58a6ff 50%, #58a6ff 60%, transparent 60%, transparent 70%, #58a6ff 70%, #58a6ff 80%, transparent 80%); }
+
+  /* Bottom hint bar */
+  .hint-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding: 6px 16px;
+    font-size: 11px; color: #8b949e;
+    display: flex; gap: 18px; align-items: center;
+    z-index: 1000;
+  }
+  .hint-bar kbd {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px; border-radius: 3px;
+    font-family: "SF Mono", monospace;
+    font-size: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+  }
+  .hint-bar .reset-layout {
+    margin-left: auto;
+    background: transparent; border: 1px solid rgba(255,255,255,.15);
+    color: #8b949e; padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; cursor: pointer; font-family: inherit;
+  }
+  .hint-bar .reset-layout:hover { background: rgba(248,81,73,.15); border-color: #f85149; color: #f85149; }
+
+  body.is-dragging-card * { user-select: none !important; }
+  body.is-dragging-card iframe { pointer-events: none !important; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="pcard pcard-preview" id="card-cur" style="--dot-color:#58a6ff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">CURRENT</span>
+      <span class="pcard-meta" id="cur-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-cur"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-preview" id="card-nxt" style="--dot-color:#bc8cff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">NEXT</span>
+      <span class="pcard-meta" id="nxt-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-nxt"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-notes" id="card-notes" style="--dot-color:#f0883e">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">SPEAKER SCRIPT · 逐字稿</span>
+    </div>
+    <div class="pcard-body" id="notes-body"></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-timer" id="card-timer" style="--dot-color:#3fb950">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">TIMER</span>
+    </div>
+    <div class="pcard-body">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-row">
+        <span class="label">Slide</span>
+        <span class="val" id="timer-count">1 / ${total}</span>
+      </div>
+      <div class="timer-controls">
+        <button class="timer-btn" id="btn-prev">← Prev</button>
+        <button class="timer-btn" id="btn-next">Next →</button>
+        <button class="timer-btn" id="btn-reset">⏱ Reset</button>
+      </div>
+    </div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+</div>
+
+<div class="hint-bar">
+  <span><kbd>← →</kbd> 翻页</span>
+  <span><kbd>R</kbd> 重置计时</span>
+  <span><kbd>Esc</kbd> 关闭</span>
+  <span style="color:#6e7681">拖动卡片头部移动 · 拖动右下角调整大小</span>
+  <button class="reset-layout" id="reset-layout">重置布局</button>
+</div>
+
+<script>
+(function(){
+  var slideMeta = ${metaJSON};
+  var total = ${total};
+  var idx = ${startIdx};
+  var deckUrl = ${deckUrlJSON};
+  var STORAGE_KEY = ${JSON.stringify(storageKey)};
+  var bc;
+  try { bc = new BroadcastChannel(${channelJSON}); } catch(e) {}
+
+  var iframeCur = document.getElementById('iframe-cur');
+  var iframeNxt = document.getElementById('iframe-nxt');
+  var notesBody = document.getElementById('notes-body');
+  var curMeta = document.getElementById('cur-meta');
+  var nxtMeta = document.getElementById('nxt-meta');
+  var timerDisplay = document.getElementById('timer-display');
+  var timerCount = document.getElementById('timer-count');
+
+  /* ===== Default card layout ===== */
+  function defaultLayout() {
+    var w = window.innerWidth;
+    var h = window.innerHeight - 36; /* leave room for hint bar */
+    return {
+      'card-cur':   { x: 16,        y: 16,            w: Math.round(w*0.55) - 24, h: Math.round(h*0.62) - 16 },
+      'card-nxt':   { x: Math.round(w*0.55) + 8, y: 16, w: w - Math.round(w*0.55) - 24, h: Math.round(h*0.42) - 16 },
+      'card-notes': { x: Math.round(w*0.55) + 8, y: Math.round(h*0.42) + 8, w: w - Math.round(w*0.55) - 24, h: h - Math.round(h*0.42) - 16 },
+      'card-timer': { x: 16,        y: Math.round(h*0.62) + 8, w: Math.round(w*0.55) - 24, h: h - Math.round(h*0.62) - 16 }
+    };
+  }
+
+  /* ===== Apply / save / restore layout ===== */
+  function applyLayout(layout) {
+    Object.keys(layout).forEach(function(id){
+      var el = document.getElementById(id);
+      var l = layout[id];
+      if (el && l) {
+        el.style.left = l.x + 'px';
+        el.style.top = l.y + 'px';
+        el.style.width = l.w + 'px';
+        el.style.height = l.h + 'px';
+      }
+    });
+    rescaleAll();
+  }
+  function readLayout() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return defaultLayout();
+  }
+  function saveLayout() {
+    var layout = {};
+    ['card-cur','card-nxt','card-notes','card-timer'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) {
+        layout[id] = {
+          x: parseInt(el.style.left,10) || 0,
+          y: parseInt(el.style.top,10) || 0,
+          w: parseInt(el.style.width,10) || 300,
+          h: parseInt(el.style.height,10) || 200
+        };
+      }
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)); } catch(e) {}
+  }
+
+  /* ===== iframe rescale to fit card body ===== */
+  function rescaleIframe(iframe) {
+    if (!iframe || iframe.style.display === 'none') return;
+    var body = iframe.parentElement;
+    var cw = body.clientWidth, ch = body.clientHeight;
+    if (!cw || !ch) return;
+    var s = Math.min(cw / 1920, ch / 1080);
+    iframe.style.transform = 'scale(' + s + ')';
+    /* Center the scaled iframe in the body */
+    var sw = 1920 * s, sh = 1080 * s;
+    iframe.style.left = Math.max(0, (cw - sw) / 2) + 'px';
+    iframe.style.top = Math.max(0, (ch - sh) / 2) + 'px';
+  }
+  function rescaleAll() {
+    rescaleIframe(iframeCur);
+    rescaleIframe(iframeNxt);
+  }
+  window.addEventListener('resize', rescaleAll);
+
+  /* ===== Drag (move card by header) ===== */
+  document.querySelectorAll('[data-drag]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault();
+      card.classList.add('dragging');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startL = parseInt(card.style.left,10) || 0;
+      var startT = parseInt(card.style.top,10)  || 0;
+      function onMove(ev){
+        var nx = Math.max(0, Math.min(window.innerWidth - 100, startL + ev.clientX - startX));
+        var ny = Math.max(0, Math.min(window.innerHeight - 50, startT + ev.clientY - startY));
+        card.style.left = nx + 'px';
+        card.style.top = ny + 'px';
+      }
+      function onUp(){
+        card.classList.remove('dragging');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Resize (drag bottom-right corner) ===== */
+  document.querySelectorAll('[data-resize]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault(); e.stopPropagation();
+      card.classList.add('resizing');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startW = parseInt(card.style.width,10)  || card.offsetWidth;
+      var startH = parseInt(card.style.height,10) || card.offsetHeight;
+      function onMove(ev){
+        var nw = Math.max(180, startW + ev.clientX - startX);
+        var nh = Math.max(100, startH + ev.clientY - startY);
+        card.style.width = nw + 'px';
+        card.style.height = nh + 'px';
+        if (card.querySelector('iframe')) rescaleIframe(card.querySelector('iframe'));
+      }
+      function onUp(){
+        card.classList.remove('resizing');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        rescaleAll();
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Preview iframe ready tracking =====
+   * Each iframe loads the deck ONCE with ?preview=1 on init. Subsequent
+   * slide changes are sent via postMessage('preview-goto') so the iframe
+   * just toggles visibility of a different .slide — no reload, no flicker.
+   */
+  var iframeReady = { cur: false, nxt: false };
+  var currentTheme = ${themeJSON};
+  window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'preview-ready') return;
+    var iframe = null;
+    if (e.source === iframeCur.contentWindow) {
+      iframeReady.cur = true;
+      iframe = iframeCur;
+      postPreviewGoto(iframeCur, idx);
+    } else if (e.source === iframeNxt.contentWindow) {
+      iframeReady.nxt = true;
+      iframe = iframeNxt;
+      postPreviewGoto(iframeNxt, idx + 1 < total ? idx + 1 : idx);
+    }
+    /* Sync current theme to the iframe */
+    if (iframe && currentTheme) {
+      try { iframe.contentWindow.postMessage({ type: 'preview-theme', name: currentTheme }, '*'); } catch(err) {}
+    }
+    if (iframe) rescaleIframe(iframe);
+  });
+
+  function postPreviewGoto(iframe, n) {
+    try {
+      iframe.contentWindow.postMessage({ type: 'preview-goto', idx: n }, '*');
+    } catch(e) {}
+  }
+
+  /* ===== Update content =====
+   * Smooth (no-reload) navigation: send postMessage to iframes instead of
+   * resetting src. Iframes stay loaded, just switch visible .slide.
+   */
+  function update(n) {
+    n = Math.max(0, Math.min(total - 1, n));
+    idx = n;
+
+    /* Current preview — postMessage (smooth) */
+    if (iframeReady.cur) postPreviewGoto(iframeCur, n);
+    curMeta.textContent = (n + 1) + '/' + total;
+
+    /* Next preview */
+    if (n + 1 < total) {
+      iframeNxt.style.display = '';
+      var endEl = document.querySelector('#card-nxt .preview-end');
+      if (endEl) endEl.remove();
+      if (iframeReady.nxt) postPreviewGoto(iframeNxt, n + 1);
+      nxtMeta.textContent = (n + 2) + '/' + total;
+    } else {
+      iframeNxt.style.display = 'none';
+      var body = document.querySelector('#card-nxt .pcard-body');
+      if (body && !body.querySelector('.preview-end')) {
+        var end = document.createElement('div');
+        end.className = 'preview-end';
+        end.textContent = '— END OF DECK —';
+        body.appendChild(end);
+      }
+      nxtMeta.textContent = 'END';
+    }
+
+    /* Notes */
+    var note = slideMeta[n].notes;
+    notesBody.innerHTML = note || '<span class="empty">（这一页还没有逐字稿）</span>';
+
+    /* Timer count */
+    timerCount.textContent = (n + 1) + ' / ' + total;
+  }
+
+  /* ===== Timer ===== */
+  var tStart = Date.now();
+  setInterval(function(){
+    var s = Math.floor((Date.now() - tStart) / 1000);
+    var mm = String(Math.floor(s/60)).padStart(2,'0');
+    var ss = String(s%60).padStart(2,'0');
+    timerDisplay.textContent = mm + ':' + ss;
+  }, 1000);
+  function resetTimer(){ tStart = Date.now(); timerDisplay.textContent = '00:00'; }
+
+  /* ===== BroadcastChannel sync ===== */
+  if (bc) {
+    bc.onmessage = function(e){
+      if (!e.data) return;
+      if (e.data.type === 'go') update(e.data.idx);
+      else if (e.data.type === 'theme' && e.data.name) {
+        currentTheme = e.data.name;
+        /* Forward theme change to preview iframes */
+        [iframeCur, iframeNxt].forEach(function(iframe){
+          try {
+            iframe.contentWindow.postMessage({ type: 'preview-theme', name: e.data.name }, '*');
+          } catch(err) {}
+        });
+      }
+    };
+  }
+  function go(n) {
+    update(n);
+    if (bc) bc.postMessage({ type: 'go', idx: idx });
+  }
+
+  /* ===== Buttons ===== */
+  document.getElementById('btn-prev').addEventListener('click', function(){ go(idx - 1); });
+  document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
+  document.getElementById('btn-reset').addEventListener('click', resetTimer);
+  document.getElementById('reset-layout').addEventListener('click', function(){
+    if (confirm('恢复默认卡片布局？')) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+      applyLayout(defaultLayout());
+    }
+  });
+
+  /* ===== Keyboard ===== */
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch(e.key) {
+      case 'ArrowRight': case ' ': case 'PageDown': go(idx + 1); e.preventDefault(); break;
+      case 'ArrowLeft':  case 'PageUp':   go(idx - 1); e.preventDefault(); break;
+      case 'Home': go(0); break;
+      case 'End':  go(total - 1); break;
+      case 'r': case 'R': resetTimer(); break;
+      case 'Escape': window.close(); break;
+    }
+  });
+
+  /* ===== Iframe load → rescale (catches initial size) ===== */
+  iframeCur.addEventListener('load', function(){ rescaleIframe(iframeCur); });
+  iframeNxt.addEventListener('load', function(){ rescaleIframe(iframeNxt); });
+
+  /* ===== Init =====
+   * Load each iframe ONCE with the deck file. After they post
+   * 'preview-ready', all subsequent navigation is via postMessage
+   * (smooth, no reload, no flicker).
+   */
+  applyLayout(readLayout());
+  iframeCur.src = deckUrl + '?preview=' + (idx + 1);
+  if (idx + 1 < total) iframeNxt.src = deckUrl + '?preview=' + (idx + 2);
+  /* Initialize notes/timer/count without touching iframes */
+  notesBody.innerHTML = slideMeta[idx].notes || '<span class="empty">（这一页还没有逐字稿）</span>';
+  curMeta.textContent = (idx + 1) + '/' + total;
+  nxtMeta.textContent = (idx + 2) + '/' + total;
+  timerCount.textContent = (idx + 1) + ' / ' + total;
+})();
+</` + `script>
+</body></html>`;
+    }
+
+    function fullscreen(){ const el=document.documentElement;
+      if (!document.fullscreenElement) el.requestFullscreen&&el.requestFullscreen();
+      else document.exitFullscreen&&document.exitFullscreen();
+    }
+
+    // theme cycling
+    const root = document.documentElement;
+    const themesAttr = root.getAttribute('data-themes') || document.body.getAttribute('data-themes');
+    const themes = themesAttr ? themesAttr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    let themeIdx = 0;
+
+    // Auto-detect theme base path from existing <link id="theme-link">
+    let themeBase = root.getAttribute('data-theme-base');
+    if (!themeBase) {
+      const existingLink = document.getElementById('theme-link');
+      if (existingLink) {
+        // el.getAttribute('href') gives the raw relative path written in HTML
+        const rawHref = existingLink.getAttribute('href') || '';
+        const lastSlash = rawHref.lastIndexOf('/');
+        themeBase = lastSlash >= 0 ? rawHref.substring(0, lastSlash + 1) : 'assets/themes/';
+      } else {
+        themeBase = 'assets/themes/';
+      }
+    }
+
+    function applyTheme(name) {
+      let link = document.getElementById('theme-link');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.id = 'theme-link';
+        document.head.appendChild(link);
+      }
+      link.href = themeBase + name + '.css';
+      root.setAttribute('data-theme', name);
+      const ind = document.querySelector('.theme-indicator');
+      if (ind) ind.textContent = name;
+    }
+    function cycleTheme(fromRemote){
+      if (!themes.length) return;
+      themeIdx = (themeIdx+1) % themes.length;
+      const name = themes[themeIdx];
+      applyTheme(name);
+      /* Broadcast to other window (audience ↔ presenter) */
+      if (!fromRemote && bc) bc.postMessage({ type: 'theme', name: name });
+    }
+
+    // animation cycling on current slide
+    let animIdx = 0;
+    function cycleAnim(){
+      animIdx = (animIdx+1) % ANIMS.length;
+      const a = ANIMS[animIdx];
+      const target = slides[idx].querySelector('[data-anim-target]') || slides[idx];
+      ANIMS.forEach(x => target.classList.remove('anim-'+x));
+      void target.offsetWidth;
+      target.classList.add('anim-'+a);
+      target.setAttribute('data-anim', a);
+      const ind = document.querySelector('.anim-indicator');
+      if (ind) ind.textContent = a;
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.metaKey||e.ctrlKey||e.altKey) return;
+      switch (e.key) {
+        case 'ArrowRight': case ' ': case 'PageDown': case 'Enter': go(idx+1); e.preventDefault(); break;
+        case 'ArrowLeft': case 'PageUp': case 'Backspace': go(idx-1); e.preventDefault(); break;
+        case 'Home': go(0); break;
+        case 'End': go(total-1); break;
+        case 'f': case 'F': fullscreen(); break;
+        case 's': case 'S': openPresenterWindow(); break;
+        case 'n': case 'N': toggleNotes(); break;
+        case 'o': case 'O': toggleOverview(); break;
+        case 't': case 'T': cycleTheme(); break;
+        case 'a': case 'A': cycleAnim(); break;
+        case 'Escape': toggleOverview(false); toggleNotes(false); break;
+      }
+    });
+
+    // hash deep-link
+    function fromHash(){
+      const m = /^#\/(\d+)/.exec(location.hash||'');
+      if (m) go(Math.max(0, parseInt(m[1],10)-1));
+    }
+    window.addEventListener('hashchange', fromHash);
+    fromHash();
+    go(idx);
+  });
+})();
+
+</script>
+</body></html>
