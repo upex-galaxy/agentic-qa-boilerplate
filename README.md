@@ -181,6 +181,7 @@ bunx -y ccstatusline@latest
 # Drive the QA lifecycle inside the agent:
 /agentic-qa-onboard     # first-time orientation tour
 /project-discovery      # reverse-engineer the target app into .context/
+/adapt-framework        # wire KATA to the target stack (auth, vars, CI, MCP) — run once after discovery
 /shift-left-testing     # Stage 0: pre-sprint AC refinement on backlog batch
 /sprint-testing         # in-sprint manual QA per ticket (plan + execute + report)
 /test-documentation     # TMS docs + ROI scoring (Candidate / Manual / Deferred)
@@ -727,7 +728,7 @@ Validation: `bun run skills:check` checks tier coherence (orphan categories, tie
 
 | Command                 | Purpose                                                                                                                                       |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/adapt-framework`      | Adapt KATA architecture (`tests/`, `api/schemas/`, `config/`) to target stack. Plan → Approval → Implement.                                   |
+| `/adapt-framework`      | Adapt KATA architecture + config/CI/MCP to target stack (10-phase idempotent flow; no writes before approval; re-run reports a GENERIC/ADAPTED checklist). Covers `tests/`, `api/schemas/`, `config/`, `.agents/project.yaml`, `.env`, CI workflows, MCP registry, `dbhub.toml`, `allurerc.mjs`, `kata-manifest`. Hands off to `/sync-ai-memory` for docs. |
 | `/sync-ai-memory`       | Sync all AI-critical docs (`README.md`, `CLAUDE.md`, `INSTALLER.md`, `CONTEXT.md`, `docs/**`) against current `.context/` and `package.json`. |
 | `/business-data-map`    | Refresh `.context/business/business-data-map.md` (entities, flows, state machines).                                                           |
 | `/business-feature-map` | Refresh `.context/business/business-feature-map.md` (feature catalog, CRUD matrix, integrations).                                             |
@@ -839,6 +840,10 @@ touch tests/e2e/your-module/your-feature.test.ts
 ### 4. Generate Context
 
 Load the `/project-discovery` skill in your AI assistant to generate project-specific context (PRD, SRS, business-data-map, business-feature-map, business-api-map, master-test-plan).
+
+### 5. Adapt the Framework
+
+Once `.context/` exists, run `/adapt-framework` to wire the KATA architecture to your stack — auth, variables, OpenAPI facades, CI workflows, and the MCP registry. It runs a 10-phase idempotent flow (no writes before your approval) and, on re-run, reports a GENERIC / ADAPTED checklist of what is still example-project boilerplate. After it passes, you can start writing automated tests.
 
 <br />
 
