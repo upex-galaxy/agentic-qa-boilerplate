@@ -2096,6 +2096,15 @@ export async function runUpdate(
     }
   }
 
+  // Drop generated, per-repo files that must never be synced (e.g.
+  // .claude/skills/REGISTRY.md). One filter point covers all three detection
+  // paths — bootstrap, content reconcile, and git-log delta — since they all
+  // feed into `entries`. Each repo regenerates these from its own state.
+  if (cfg.excludePaths && cfg.excludePaths.length > 0) {
+    const excluded = new Set(cfg.excludePaths.map(p => p.replace(/\\/g, '/')));
+    entries = entries.filter(e => !excluded.has(e.path.replace(/\\/g, '/')));
+  }
+
   // Filter out unchanged / binary-skip from the user-facing pool
   const visible = entries.filter(
     e => e.classification !== 'unchanged' && e.classification !== 'binary-skip',

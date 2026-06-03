@@ -439,6 +439,15 @@ export interface UpdaterConfig {
   packageJsonSpecs?: PackageJsonSpec[]
   deprecatedFiles: DeprecatedFile[]
   bootstrapOnlyPaths: string[]
+  /**
+   * Generated, per-repo files that live INSIDE a synced component but must NEVER
+   * be synced (each repo regenerates its own). Matched by exact repo-relative
+   * path. Excluded from every detection path — bootstrap, content reconcile, and
+   * git-log delta — so they are never copied, overwritten, or deleted.
+   * Example: `.claude/skills/REGISTRY.md` (built by `bun run skills:registry`
+   * from the repo's own installed skill set, including local community skills).
+   */
+  excludePaths?: string[]
   agentsFrameworkFiles?: string[]
   /**
    * Optional component name (e.g. `'cli'`) whose files contain the updater itself.
