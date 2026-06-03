@@ -114,7 +114,11 @@ COMPONENTES: ${COMPONENTS.map(c => c.name).join(', ')}
 ATAJOS:      all, rollback, help
 
 FLAGS:
-  --auto                 Modo no-interactivo (CI)
+  --auto                 Modo no-interactivo seguro (CI): aplica nuevos +
+                         fast-forward, PRESERVA tus cambios al divergir, NO borra.
+  --force                Modo no-interactivo agresivo: el upstream gana siempre.
+                         Sobreescribe divergencias y borra lo que upstream borró.
+                         No pregunta nada. Hay backup + --rollback de respaldo.
   --dry-run              Preview, sin escribir
   --rollback             Restaura backup mas reciente
   --skill a,b,c          Sincroniza solo los skills indicados (subcomando skills)
@@ -127,7 +131,8 @@ EJEMPLOS:
   bun up skills --skill a,b,c            # Skills especificos
   bun up --list                          # Listar skills disponibles
   bun up commands docs                   # Multiples componentes
-  bun up --auto                          # CI mode
+  bun up --auto                          # CI mode (seguro, preserva lo tuyo)
+  bun up --force                         # Forzar todo del upstream (sin preguntar)
   bun up --dry-run                       # Preview
   bun up --rollback                      # Restaurar backup
 `;
@@ -410,6 +415,21 @@ function buildSink(): ReportSink {
         required: false,
       });
       return abortOnCancel<string[]>(r);
+    },
+
+    resolvePackageJsonKey: async (file, section, key, drift) => {
+      const body = `=== Tu versión (local) ===\n${drift.localValue}\n\n=== Versión del boilerplate (upstream) ===\n${drift.upstreamValue}`;
+      tui.note(body, `${file} → ${section}.${key}`);
+      const r = await tui.select({
+        message: `${section}.${key} difiere — ¿qué hacemos?`,
+        options: [
+          { value: 'mine', label: 'Mantener la mía (predeterminado)' },
+          { value: 'theirs', label: 'Actualizar a la del boilerplate' },
+          { value: 'skip', label: 'Decidir después (preguntar de nuevo)' },
+        ],
+        initialValue: 'mine',
+      });
+      return abortOnCancel<string>(r) as 'theirs' | 'mine' | 'skip';
     },
 
     resolveDiverged: async (entry, diff) => {

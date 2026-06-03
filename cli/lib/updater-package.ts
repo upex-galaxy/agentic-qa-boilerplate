@@ -155,6 +155,7 @@ export function detectPackageJsonDelta(
     const localMap = getSection(local.data, section);
     const appliedKeys = state?.packageJsonSync?.[spec.path]?.[section]?.appliedKeys ?? [];
     const appliedSet = new Set(appliedKeys);
+    const keptKeys = state?.packageJsonSync?.[spec.path]?.[section]?.keptKeys ?? {};
 
     const upstreamOnlyKeys: Record<string, string> = {};
     const localOverrideKeys: Record<string, { localValue: string, upstreamValue: string }> = {};
@@ -169,6 +170,9 @@ export function detectPackageJsonDelta(
       }
       const localValue = localMap[key];
       if (localValue !== upstreamValue) {
+        // Suppress keys the user already chose to keep ('mine') against this
+        // exact upstream value. If upstream changed since, re-surface it.
+        if (keptKeys[key] === upstreamValue) { continue; }
         localOverrideKeys[key] = { localValue, upstreamValue };
       }
     }
@@ -263,6 +267,71 @@ export function applyPackageJsonAppend(
 
     if (writtenForSection.length > 0) {
       parsed.data[section] = localMap;
+      written[section] = writtenForSection;
+      changed = true;
+    }
+  }
+
+  if (!changed) {
+    return {};
+  }
+
+  fs.writeFileSync(filePath, stringifyPackageJson(parsed));
+  return written;
+}
+
+/**
+ * Overwrite EXISTING keys in the local package.json with upstream values.
+ *
+ * Counterpart to `applyPackageJsonAppend` — that one only adds NEW keys and
+ * never touches existing ones. This one is the explicit "use upstream" ('theirs')
+ * resolution for diverged keys: it replaces the local value of a key that
+ * already exists. Only keys present in `overridesBySection[section]` AND already
+ * present locally are written (a missing local key is ignored — append handles
+ * those). Key order is preserved (in-place replacement, no re-sort).
+ *
+ * Never adds new sections. Never removes keys. Preserves file formatting.
+ *
+ * Returns the keys actually overwritten per section. Empty result → no write.
+ */
+export function applyPackageJsonOverride(
+  spec: PackageJsonSpec,
+  overridesBySection: Record<string, Record<string, string>>,
+  repoRoot: string,
+): Record<string, string[]> {
+  const filePath = path.join(repoRoot, spec.path);
+  if (!fs.existsSync(filePath)) {
+    return {};
+  }
+
+  let parsed: ParsedPackageJson;
+  try {
+    parsed = parsePackageJson(filePath);
+  }
+  catch {
+    return {};
+  }
+
+  const written: Record<string, string[]> = {};
+  let changed = false;
+
+  for (const section of spec.sections) {
+    const overrides = overridesBySection[section] ?? {};
+    const keys = Object.keys(overrides);
+    if (keys.length === 0) { continue; }
+
+    const existingSection = parsed.data[section];
+    if (existingSection === null || typeof existingSection !== 'object') { continue; }
+    const localMap = existingSection as Record<string, unknown>;
+
+    const writtenForSection: string[] = [];
+    for (const key of keys) {
+      if (!(key in localMap)) { continue; } // append handles brand-new keys
+      localMap[key] = overrides[key];
+      writtenForSection.push(key);
+    }
+
+    if (writtenForSection.length > 0) {
       written[section] = writtenForSection;
       changed = true;
     }
