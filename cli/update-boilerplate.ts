@@ -114,11 +114,12 @@ COMPONENTES: ${COMPONENTS.map(c => c.name).join(', ')}
 ATAJOS:      all, rollback, help
 
 FLAGS:
-  --auto                 Modo no-interactivo seguro (CI): aplica nuevos +
-                         fast-forward, PRESERVA tus cambios al divergir, NO borra.
-  --force                Modo no-interactivo agresivo: el upstream gana siempre.
-                         Sobreescribe divergencias y borra lo que upstream borró.
-                         No pregunta nada. Hay backup + --rollback de respaldo.
+  --auto                 Modo no-interactivo: sincroniza TODO el boilerplate
+                         (copia archivos nuevos + sobreescribe divergencias con
+                         la versión upstream). NO borra archivos que upstream
+                         eliminó. El boilerplate es canónico (match 1:1).
+  --force                Como --auto pero TAMBIÉN borra archivos que el upstream
+                         eliminó. Hay backup + --rollback de respaldo.
   --dry-run              Preview, sin escribir
   --rollback             Restaura backup mas reciente
   --skill a,b,c          Sincroniza solo los skills indicados (subcomando skills)

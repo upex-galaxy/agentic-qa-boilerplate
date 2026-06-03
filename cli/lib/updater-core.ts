@@ -683,6 +683,160 @@ export function computeDelta(
   return dedupeDeltaByPath(delta, components, componentIndex, logger);
 }
 
+// ============================================================================
+// CONTENT RECONCILE (Profundidad B — full 1:1 sync, cursor-independent)
+// ============================================================================
+
+/**
+ * Batch-resolve the HEAD blob SHA of every file under `pathspecs` in the
+ * template clone. One `git ls-tree -r HEAD` call (cheap) → map relPath → sha.
+ */
+function batchUpstreamShas(templateDir: string, pathspecs: string[]): Map<string, string> {
+  const map = new Map<string, string>();
+  if (pathspecs.length === 0) { return map; }
+  try {
+    const args = pathspecs.map(p => `"${p}"`).join(' ');
+    const out = execSync(
+      `git -C "${templateDir}" ls-tree -r HEAD -- ${args}`,
+      { stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 1024 * 1024 * 64 },
+    ).toString();
+    for (const line of out.split('\n')) {
+      // <mode> blob <sha>\t<path>
+      const m = /^\S+\s+blob\s+([0-9a-f]{40})\t(.+)$/.exec(line);
+      if (m) { map.set(m[2].replace(/\\/g, '/'), m[1]); }
+    }
+  }
+  catch {
+    // empty map → caller treats every file as new (safe — copies wholesale)
+  }
+  return map;
+}
+
+/**
+ * Batch-compute the git blob SHA of the given local files. Uses
+ * `git hash-object --stdin-paths` (one call) and falls back to per-file
+ * `computeBlobSha` if the batch call fails. Missing files are omitted.
+ */
+function batchLocalShas(repoRoot: string, relPaths: string[]): Map<string, string> {
+  const map = new Map<string, string>();
+  if (relPaths.length === 0) { return map; }
+  try {
+    const out = execSync('git hash-object --stdin-paths', {
+      cwd: repoRoot,
+      input: relPaths.join('\n'),
+      stdio: ['pipe', 'pipe', 'pipe'],
+      maxBuffer: 1024 * 1024 * 64,
+    }).toString().trim();
+    const shas = out.split('\n');
+    relPaths.forEach((p, i) => {
+      const sha = shas[i]?.trim();
+      if (sha && /^[0-9a-f]{40}$/.test(sha)) { map.set(p, sha); }
+    });
+  }
+  catch {
+    for (const p of relPaths) {
+      const sha = computeBlobSha(path.join(repoRoot, p));
+      if (sha) { map.set(p, sha); }
+    }
+  }
+  return map;
+}
+
+/**
+ * Full content reconcile for regular framework components (Profundidad B).
+ *
+ * Unlike `computeDelta` (which only sees files touched in the git-log range
+ * cursor..HEAD), this walks the ENTIRE upstream component tree and compares
+ * each file's content against the local copy by git blob SHA — independent of
+ * the stored SHA cursor. This guarantees a 1:1 match with the boilerplate: a
+ * file missing locally OR locally edited while upstream stayed the same is
+ * still detected and re-synced.
+ *
+ * Emits per file:
+ *   - 'new-upstream'      → missing locally (copy)
+ *   - 'locally-diverged'  → present but bytes differ (overwritten with 'theirs')
+ *   - (nothing)           → bytes identical
+ *   - binary extensions   → skipped (mirrors classifyFile rule 1)
+ *
+ * Bootstrap-only files keep their preserve-if-present / copy-if-missing rule
+ * (project-owned — never overwritten). Deleted-upstream files are NOT detected
+ * here (a removed-upstream file can't appear in an upstream tree walk); that
+ * stays with `computeDelta`'s git-log `D` entries, which safely flag only files
+ * the boilerplate explicitly removed (never project-local-only files).
+ */
+export function reconcileComponentsByContent(
+  templateDir: string,
+  components: readonly Component[],
+  localRepoRoot: string,
+  agentsBootstrapFiles: readonly string[],
+): DeltaEntry[] {
+  const out: DeltaEntry[] = [];
+
+  for (const component of components) {
+    const relPaths = collectComponentRelPaths(component, templateDir);
+    if (relPaths.length === 0) { continue; }
+
+    const pathspecs = component.type === 'file-list'
+      ? relPaths
+      : component.paths;
+    const upstreamShas = batchUpstreamShas(templateDir, pathspecs);
+
+    // Decide each file's fate; collect the present ones for a batched local hash.
+    const present: string[] = [];
+    const missing: string[] = [];
+    const bootstrapMissing: string[] = [];
+    for (const relPath of relPaths) {
+      const ext = path.extname(relPath).toLowerCase();
+      if (BINARY_EXTENSIONS.has(ext)) { continue; } // mirror classifyFile rule 1
+
+      const basename = path.basename(relPath);
+      const isFrameworkExempt = component.bootstrapOnly === true
+        && component.frameworkFiles?.includes(basename) === true;
+      const isBootstrapFile = !isFrameworkExempt && (
+        component.bootstrapOnly === true
+        || (component.name === 'agents' && agentsBootstrapFiles.includes(basename))
+      );
+
+      const localExists = fs.existsSync(path.join(localRepoRoot, relPath));
+      if (isBootstrapFile) {
+        // project-owned: copy only if missing, never overwrite
+        if (!localExists) { bootstrapMissing.push(relPath); }
+        continue;
+      }
+      if (!localExists) { missing.push(relPath); }
+      else { present.push(relPath); }
+    }
+
+    for (const relPath of [...missing, ...bootstrapMissing]) {
+      out.push(bootstrapEntry(component.name, relPath, templateDir));
+    }
+
+    const localShas = batchLocalShas(localRepoRoot, present);
+    for (const relPath of present) {
+      const upstreamSha = upstreamShas.get(relPath);
+      if (!upstreamSha) { continue; } // not tracked upstream — leave alone
+      const localSha = localShas.get(relPath);
+      if (localSha && localSha === upstreamSha) { continue; } // identical → nothing
+
+      out.push({
+        component: component.name,
+        path: relPath,
+        status: 'M',
+        fromSha: '',
+        toSha: upstreamSha,
+        added: 0,
+        removed: 0,
+        isBinary: false,
+        templateOldSha: null,
+        templateNewSha: upstreamSha,
+        classification: 'locally-diverged',
+      });
+    }
+  }
+
+  return out;
+}
+
 /**
  * Internal helper for the Level 2 dedupe pass at the end of `computeDelta`.
  *
@@ -1089,24 +1243,22 @@ export function renderLocalDiff(entry: DeltaEntry, repoDir: string, localRepoRoo
 /**
  * Build the non-interactive apply plan from a set of delta entries.
  *
- * Two policies, selected by `forceMode`:
+ * Upstream is canonical for framework files: new + diverged files are ALWAYS
+ * applied with 'theirs' (full overwrite), regardless of mode. `forceMode` only
+ * controls the one destructive edge — deleting files upstream removed:
  *
- * `--auto` (forceMode = false) — CI-safe, never destructive:
+ * Both modes:
  *   - clean-fastforward → apply 'theirs'
- *   - new-upstream      → apply 'theirs'
- *   - locally-diverged  → skip (preserve local — not a CI error)
- *   - deleted-upstream  → deferred (NEVER delete in auto mode)
- *   - binary-skip       → skip
- *
- * `--force` (forceMode = true) — upstream wins everywhere, no prompts:
- *   - clean-fastforward → apply 'theirs'
- *   - new-upstream      → apply 'theirs'
+ *   - new-upstream      → apply 'theirs' (copy)
  *   - locally-diverged  → apply 'theirs' (OVERWRITE local with upstream)
- *   - deleted-upstream  → apply 'delete' (remove local — upstream removed it)
  *   - binary-skip       → skip
+ *
+ * `--auto` (forceMode = false):  deleted-upstream → deferred (never delete)
+ * `--force` (forceMode = true):  deleted-upstream → apply 'delete'
  *
  * `unchanged` is excluded in both modes (filtered upstream). A backup is taken
- * before any destructive write, so `--force` remains reversible via --rollback.
+ * before any destructive write, so every overwrite/delete is reversible via
+ * --rollback.
  */
 export function planAuto(
   entries: DeltaEntry[],
@@ -1122,7 +1274,8 @@ export function planAuto(
         plan.push({ entry, resolution: 'theirs' });
         break;
       case 'locally-diverged':
-        plan.push({ entry, resolution: forceMode ? 'theirs' : 'skip' });
+        // Upstream canonical — overwrite local divergence in every mode.
+        plan.push({ entry, resolution: 'theirs' });
         break;
       case 'deleted-upstream':
         if (forceMode) { plan.push({ entry, resolution: 'delete' }); }
@@ -1903,6 +2056,22 @@ export async function runUpdate(
       const agentsBootstrapBasenames = cfg.bootstrapOnlyPaths
         .filter(p => p.startsWith('.agents/'))
         .map(p => path.basename(p));
+
+      // Content reconcile (Profundidad B) is the authoritative source for
+      // new + diverged files: it walks the FULL upstream tree and compares by
+      // blob SHA, independent of the cursor — so missing files and local edits
+      // are always caught (a git-log delta keyed on the cursor misses both).
+      const reconciled = reconcileComponentsByContent(
+        templateDir,
+        deltaComponents,
+        repoRoot,
+        agentsBootstrapBasenames,
+      );
+
+      // computeDelta is still run, but ONLY its deleted-upstream entries are
+      // kept — those flag files the boilerplate explicitly removed (a tree walk
+      // cannot detect a deletion). Its A/M entries are superseded by the
+      // content reconcile above (which also catches cursor-passed drift).
       const deltaEntries = computeDelta(
         templateDir,
         deltaComponents,
@@ -1911,7 +2080,19 @@ export async function runUpdate(
         agentsBootstrapBasenames,
         makeCoreLoggerFromSink(sink),
       );
-      entries.push(...deltaEntries);
+      const deletes = deltaEntries.filter(e => e.classification === 'deleted-upstream');
+
+      // Merge + dedupe by path (reconcile wins; deletes never overlap since a
+      // removed-upstream file is absent from the reconcile tree walk).
+      const componentIndex = new Map<string, number>();
+      cfg.components.forEach((c, idx) => { componentIndex.set(c.name, idx); });
+      const merged = dedupeDeltaByPath(
+        [...reconciled, ...deletes],
+        cfg.components,
+        componentIndex,
+        makeCoreLoggerFromSink(sink),
+      );
+      entries.push(...merged);
     }
   }
 
@@ -2112,31 +2293,27 @@ export async function runUpdate(
 
     // Per-file handling
     for (const entry of selected) {
-      const paired = buildPairedDiff(entry, templateDir, repoRoot);
-
       if (entry.classification === 'locally-diverged') {
-        // Auto-show paired diff via sink.resolveDiverged
-        const resolution = await sink.resolveDiverged(entry, paired);
-        if (resolution === 'skip') {
-          skipped.push(entry);
-          continue;
-        }
+        // Upstream is canonical for framework files — no skip/mine prompt.
+        // The user already controls inclusion via scope/file selection above;
+        // a SELECTED diverged file is overwritten wholesale ('theirs'). Backup
+        // is taken inside applyResolution, so --rollback restores it.
         if (opts.dryRun) {
-          sink.step(`[dry-run] resolvería como ${resolution}: ${entry.path}`);
-          applied.push({ entry, resolution });
+          sink.step(`[dry-run] sobreescribiría con upstream: ${entry.path}`);
+          applied.push({ entry, resolution: 'theirs' });
           continue;
         }
         try {
           await applyResolution(
             entry,
-            resolution,
+            'theirs',
             templateDir,
             repoRoot,
             ensureBackup(),
             false,
             makeCoreLoggerFromSink(sink),
           );
-          applied.push({ entry, resolution });
+          applied.push({ entry, resolution: 'theirs' });
         }
         catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -2179,6 +2356,7 @@ export async function runUpdate(
       // Only ask when user explicitly chose 'pick' (audit mode); 'all' means
       // blanket accept — no preview prompts.
       if (sink.showDiff && strategy === 'pick') {
+        const paired = buildPairedDiff(entry, templateDir, repoRoot);
         await sink.showDiff(entry, paired);
       }
       if (opts.dryRun) {
