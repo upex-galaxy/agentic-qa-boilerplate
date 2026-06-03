@@ -41,6 +41,7 @@
       "Bash(jq *)",
       "Bash(curl *)",
       "Bash(playwright *)",
+      "Bash(playwright-cli *)",
       "Bash(allure *)",
       "Bash(acli *)",
       "mcp__context7__*",
