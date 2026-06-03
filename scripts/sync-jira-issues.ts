@@ -912,7 +912,8 @@ function processInlineContent(content: AdfNode[] | undefined): string {
                 text = `\`${text}\``;
                 break;
               case 'link':
-                text = `[${text}](${mark.attrs?.href})`;
+                // href comes from Jira content — rewrite upexgalaxy hosts too.
+                text = `[${text}](${toDisplayUrl(String(mark.attrs?.href ?? ''))})`;
                 break;
               case 'strike':
                 text = `~~${text}~~`;
@@ -925,7 +926,12 @@ function processInlineContent(content: AdfNode[] | undefined): string {
       if (item.type === 'hardBreak') { return '\n'; }
       if (item.type === 'mention') { return `@${String(item.attrs?.text || 'user')}`; }
       if (item.type === 'emoji') { return String(item.attrs?.shortName || ''); }
-      if (item.type === 'inlineCard') { return `[${String(item.attrs?.url || 'link')}](${String(item.attrs?.url || '')})`; }
+      if (item.type === 'inlineCard') {
+        // Smart-link card — the URL is shown as BOTH label and target. It is
+        // commonly a Jira issue link, so rewrite upexgalaxy hosts in both.
+        const cardUrl = toDisplayUrl(String(item.attrs?.url || ''));
+        return `[${cardUrl || 'link'}](${cardUrl})`;
+      }
       return '';
     })
     .join('');
