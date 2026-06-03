@@ -236,28 +236,41 @@ bun xray import xray --file xray-results.json
 
 ### Backup & Restore
 
+Backup schema **v2.0** captures the full footprint: tests, preconditions, test
+plans, test sets, repository folders, and (opt-in) executions + run statuses.
+v1.0 backups (tests + executions only) still restore. Full detail +
+cross-site/migration runbook → [references/backup-restore.md](references/backup-restore.md).
+
 ```bash
-# Export all tests from project
+# Export the full footprint (everything except executions)
 bun xray backup export --project DEMO --output demo-backup.json
 
-# Export with test execution runs
+# Add executions + run statuses (heavier)
 bun xray backup export --project DEMO --output demo-backup.json --include-runs
 
-# Export only tests with Xray data (excludes empty tests)
-bun xray backup export --project DEMO --output demo-backup.json --only-with-data
+# Legacy v1.0 shape (tests only) / skip a specific entity
+bun xray backup export --project DEMO --tests-only
+bun xray backup export --project DEMO --no-preconditions --no-folders
 
 # Dry run restore (preview changes)
 bun xray backup restore --file demo-backup.json --project NEW_PROJ --dry-run
 
-# Full restore (creates new tests)
+# Full restore (creates new issues; emits key-mapping CSV)
 bun xray backup restore --file demo-backup.json --project NEW_PROJ
 
-# Sync mode (updates existing tests instead of creating duplicates)
+# Sync mode — match existing issues by KEY (needs target Jira creds).
+# Use this for site->site migration where keys were preserved.
 bun xray backup restore --file demo-backup.json --project {{PROJECT_KEY}} --sync
 
-# Restore with key mapping
+# Restore with explicit key mapping (when keys changed)
 bun xray backup restore --file demo-backup.json --project {{PROJECT_KEY}} --map-keys mappings.csv
 ```
+
+> **Cross-site gotcha**: Xray's GraphQL addresses by numeric `issueId` (re-assigned
+> per Jira site); a project migration preserves the **key**, not the id. Always use
+> `--sync` for site→site moves so restore re-resolves ids by key. Auth config holds
+> **one** site at a time — re-run `auth login` to switch sites between export and
+> restore, and confirm with `auth status`.
 
 ## Environment Variables
 
@@ -315,20 +328,26 @@ bun xray import junit --file test-results/junit.xml --project DEMO
 bun xray exec list --project DEMO --limit 5
 ```
 
-## Example: Project Migration
+## Example: Project / Site Migration
 
 ```bash
-# 1. Export from source project
-bun xray backup export --project OLD_PROJ --output backup.json --include-runs --only-with-data
+# 1. Point CLI at SOURCE site, export the full footprint
+bun xray auth login --client-id $A_ID --client-secret $A_SECRET   # source Xray creds
+bun xray backup export --project PROJ --output backup.json --include-runs
 
-# 2. Preview what will be restored
-bun xray backup restore --file backup.json --project NEW_PROJ --dry-run
+# 2. (Site->site only) migrate the Jira project natively (JCMA/CSV), keys preserved.
+#    Reinstall Xray on the destination so it re-detects the migrated Test issues.
 
-# 3. Restore to target project
+# 3. Point CLI at TARGET site (Xray + target Jira creds), preview, then restore
+bun xray auth login \
+  --client-id $B_ID --client-secret $B_SECRET \
+  --jira-url $B_URL --jira-email $B_EMAIL --jira-token $B_TOKEN   # target site
+bun xray backup restore --file backup.json --project PROJ --sync --dry-run
+
+# 4a. Keys preserved (same project key)  -> sync by key
+bun xray backup restore --file backup.json --project PROJ --sync
+# 4b. Keys changed (different project)    -> create fresh, then reconcile via emitted CSV
 bun xray backup restore --file backup.json --project NEW_PROJ
-
-# 4. If tests already exist, use sync mode
-bun xray backup restore --file backup.json --project NEW_PROJ --sync
 ```
 
 ## Anti-patterns — NEVER do these

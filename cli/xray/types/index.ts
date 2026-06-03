@@ -190,6 +190,49 @@ export interface BackupTest {
   gherkin?: string
   unstructured?: string
   labels?: string[]
+  /** Test Repository folder path (e.g. `/Regression/Login`). Root tests omit this. */
+  folderPath?: string
+  /** Original keys of Preconditions associated with this Test. */
+  preconditionKeys?: string[]
+  /**
+   * Original keys of requirement/story issues this Test covers.
+   * Recorded for reference only — coverage is a Jira issue-link and is carried
+   * by a native Jira project migration, so restore does NOT re-create it.
+   */
+  coverageKeys?: string[]
+}
+
+/** A Precondition issue (Xray) captured for backup. */
+export interface BackupPrecondition {
+  originalKey: string
+  issueId: string
+  summary: string
+  description?: string
+  /** Precondition type name: `Manual` | `Generic` | `Cucumber`. */
+  preconditionType: 'Manual' | 'Generic' | 'Cucumber'
+  definition?: string
+  labels?: string[]
+  folderPath?: string
+}
+
+/**
+ * Shared shape for the two test-container issue types — Test Plan and Test Set.
+ * Membership is stored as original Test keys; restore remaps them to the
+ * destination issueIds via the key map.
+ */
+export interface BackupTestContainer {
+  originalKey: string
+  issueId: string
+  summary: string
+  description?: string
+  testKeys: string[]
+}
+
+/** A Test Repository folder and the Tests it directly contains. */
+export interface BackupFolder {
+  /** Absolute folder path, e.g. `/Regression/Login`. */
+  path: string
+  testKeys: string[]
 }
 
 export interface BackupTestRunStep {
@@ -219,11 +262,22 @@ export interface BackupExecution {
 export interface BackupData {
   exportedAt: string
   project: string
+  /** Backup schema version. `1.0` = tests + executions only. `2.0` adds preconditions, plans, sets, folders. */
   version: string
   testsCount: number
   executionsCount: number
+  /** v2.0 counts — absent in v1.0 backups. */
+  preconditionsCount?: number
+  testPlansCount?: number
+  testSetsCount?: number
+  foldersCount?: number
   tests: BackupTest[]
   executions: BackupExecution[]
+  /** v2.0 entity arrays — absent in v1.0 backups; restore treats them as empty. */
+  preconditions?: BackupPrecondition[]
+  testPlans?: BackupTestContainer[]
+  testSets?: BackupTestContainer[]
+  folders?: BackupFolder[]
 }
 
 // ============================================================================

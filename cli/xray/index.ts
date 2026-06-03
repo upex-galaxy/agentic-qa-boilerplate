@@ -175,19 +175,32 @@ ${colors.bold}IMPORT RESULTS${colors.reset}
                      --file <path>      JSON file path (required)
 
 ${colors.bold}BACKUP & RESTORE${colors.reset}
-  backup export      Export all Xray data from a project
+  backup export      Export the full Xray footprint of a project (v2.0):
+                     tests, preconditions, test plans, test sets, repository
+                     folders, and (opt-in) executions + run statuses.
                      --project <key>    Project key (required)
                      --output <file>    Output file path
-                     --include-runs     Include test execution runs and statuses
-                     --only-with-data   Only export tests with Xray data (steps, gherkin, definition)
+                     --include-runs     Include test executions + run statuses
+                     --only-with-data   Only tests with Xray data (steps/gherkin/definition)
                      --limit <n>        Batch size for fetching (default: 100)
+                     --tests-only       Legacy v1.0 shape: tests only
+                     --no-preconditions / --no-plans / --no-sets / --no-folders
+                                        Skip a specific entity type
 
-  backup restore     Restore Xray data to a project
+  backup restore     Restore Xray data into a project. Order: preconditions ->
+                     tests (+folder +precondition links) -> folders -> sets ->
+                     plans -> executions (+run statuses). v1.0 backups also work.
                      --file <path>      Backup file path (required)
                      --project <key>    Target project key (required)
                      --dry-run          Preview changes without making them
-                     --sync             Update existing tests instead of creating duplicates
+                     --sync             Match existing issues by KEY (needs target
+                                        Jira creds) instead of creating duplicates
                      --map-keys <file>  CSV file with old_key,new_key mappings
+
+                     CROSS-SITE: Xray addresses by numeric issueId (re-assigned
+                     per site); a Jira migration preserves the KEY. Use --sync so
+                     restore re-resolves ids by key. Re-run 'auth login' to switch
+                     sites between export and restore (one site per session).
 
 ${colors.bold}REPAIR${colors.reset}
   repair             Bulk Jira-layer ↔ Xray-layer reconciliation across a project.
