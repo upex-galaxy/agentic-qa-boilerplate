@@ -84,6 +84,8 @@ const DOC_META_ALLOWLIST: Array<[string, string]> = [
   ['VAR', 'CLAUDE.md'],
   // §Tool Resolution pseudocode type list: "`{{PROJECT_VAR}}` (from `.agents/project.yaml`)"
   ['PROJECT_VAR', 'CLAUDE.md'],
+  // §3.5 Validate / §Verify checklist: adapt-framework.md documents the {{VAR}} syntax inside vars:check comments
+  ['VAR', 'adapt-framework.md'],
 ];
 
 // -----------------------------------------------------------------------------
