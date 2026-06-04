@@ -285,7 +285,7 @@ Copy `.env.example` → `.env` if absent. Populate the **real key scheme** (no i
 ### 3.5 Validate
 
 ```bash
-bun run vars:check        # lint-vars: {{...}} refs resolve against project.yaml
+bun run vars:check        # lint-vars: {{VAR}} refs resolve against project.yaml
 bun run vars:env:check    # check-vars: .env.example ↔ variables-manifest parity
 bun run test:env:check    # validateTestEnv: current TEST_ENV creds present
 ```
@@ -458,7 +458,7 @@ Run in this exact order. Stop on the first failure; report with diagnostics; do 
 ```bash
 1. bun run types:check
 2. bun run lint:check
-3. bun run vars:check            # {{...}} resolution
+3. bun run vars:check            # {{VAR}} resolution
 4. bun run vars:env:check        # .env parity
 5. bun run kata:manifest:check   # manifest matches disk
 6. bun run test --project=api-setup
