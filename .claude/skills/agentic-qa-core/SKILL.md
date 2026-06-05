@@ -25,6 +25,7 @@ This skill does NOT orchestrate workflows, does NOT generate files, and does NOT
 | `references/orchestration-doctrine.md` | Subagents that need orchestration rules without pulling the whole `CLAUDE.md` | Cacheable mirror of `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)". |
 | `references/skill-composition-strategy.md` | `framework-development`, every workflow skill | T1-T4 tier model + SDD boundary + composition contract. |
 | `references/skill-resolver.md` | Skills that resolve composable skills at runtime via the registry | Skill Resolver Protocol used by sub-agent launches. Companion: `scripts/build-skill-registry.ts` → `.claude/skills/REGISTRY.md`. |
+| `references/preflight-gate.md` | `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development` | Readiness Preflight Gate doctrine — probe tools/MCPs/CLIs/credentials and surface a user checklist BEFORE a skill starts its real work. Owns the secret/token handling + OpenAPI `api-login` → RESTART flow. |
 
 When a skill cites one of these, it includes a Dependencies block at the top so the AI knows to load `agentic-qa-core` before continuing.
 

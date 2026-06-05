@@ -127,6 +127,22 @@ Phase 3 — Handoff
 
 ---
 
+## Readiness Preflight Gate (MANDATORY — runs before Phase 0)
+
+> Full doctrine: `agentic-qa-core/references/preflight-gate.md`. Runs FIRST, before the resume check. Two laws: (1) **args-as-answers** — treat anything the user already stated (the Story IDs, the modality, "groom the backlog") as provided args; ask only real gaps. (2) **probe, don't assume**. Surface gaps + REDs as ONE `AskUserQuestion` checklist; self-fix with approval + explanation; STOP on any blocking RED. This skill does NO live execution (no env/DB/API/browser), so its gate is light — it is mostly a tooling + context readiness check. **Generic baseline** (env resolution, test-user creds, secret/restart handling, the two laws, output contract) is inherited from the reference §3.1 — not repeated here. Below is only this skill's **specific capability delta**.
+
+| Capability | Need | Why here |
+|---|---|---|
+| Issue-tracker (`[ISSUE_TRACKER_TOOL]`) | REQUIRED | All refinement output lands on Jira (description, ATP DRAFT field, comment, labels, transitions). Load `/acli`; validate setup via `bun run jira:check`. |
+| TMS modality resolved | REQUIRED | Decides whether the ATP DRAFT is a Story field/comment (jira-native) or a Test Plan link (jira-xray). 4-step probe; ask only if all auto-checks fail. |
+| `/xray-cli` + `XRAY_*` creds | OPTIONAL | Only when the user opts into a Test Plan link per Story (default is NO Test Plan in shift-left). |
+| Business context files | REQUIRED | `.context/business/*` + `.context/master-test-plan.md` — refinement without them produces low-value questions. Missing → hand off to `/project-discovery`. |
+| Candidate Story list | REQUIRED | Explicit IDs (args) or a backlog JQL. Confirm size with the user before Phase 1. |
+
+Env reachability, test-user creds, DBHub, OpenAPI/`API_TOKEN`, Playwright and `resend` are **N/A** here — shift-left never executes against a running system. After the gate clears (all REQUIRED GREEN), continue to Phase 0 below.
+
+---
+
 ## Phase 0 — Session resume check + Session Init
 
 0.0 **Session resume check** (per `agentic-qa-core/references/session-management.md` §4). Compute `<batch-id>` = `<YYYY-MM-DD>-<descriptor>` from the invocation context. Check `.session/shift-left-testing/<batch-id>/progress.md`. If it exists, read `plan.md` + the tail of `progress.md`, surface the last completed phase + next planned phase + any blocking notes, and offer **resume / restart / abort**. On `restart`, archive the current directory to `.session/.archive/<YYYY-MM-DD>-shift-left-testing-<batch-id>-aborted/` before proceeding. On `abort`, stop here.

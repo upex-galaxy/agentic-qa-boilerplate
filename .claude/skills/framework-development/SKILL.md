@@ -55,6 +55,21 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 
 ---
 
+## Readiness Preflight Gate (MANDATORY — runs before Phase 0)
+
+> Full doctrine: `agentic-qa-core/references/preflight-gate.md`. Runs FIRST, before the path self-check and resume check. Two laws: (1) **args-as-answers** — the change name and touched paths are provided args; ask only the gaps. (2) **probe, don't assume**. Surface gaps + REDs as ONE `AskUserQuestion` checklist; self-fix with approval + explanation; STOP on any blocking RED. This skill evolves the framework itself — it does NOT hit a live env, Jira, DB, or API — so its gate is a **dev-toolchain readiness** check that pairs with the Phase 0 path self-check. **Generic baseline** (the two laws, secret/restart handling, output contract) is inherited from the reference §3.1 — not repeated here; the env/creds half of the baseline is N/A for meta-work. Below is only this skill's **specific capability delta**.
+
+| Capability | Need | Why here |
+|---|---|---|
+| Dev toolchain | REQUIRED | Phase 3 Verify runs `bun run test` / `bun run types:check` / `bun run lint:check` / `bun run skills:check`. All four must resolve at t=0. `bun install` if a dep is missing. |
+| `kata-manifest.json` clean | REQUIRED | Source of truth (Critical Rule #12). Framework changes can invalidate it — `bun run kata:manifest:check` clean, `bun run kata:manifest` to regenerate. |
+| Playwright browsers | SCOPE — touching fixtures / KATA bases / tests | Verify of a fixture or base-class change runs the suite, which needs chromium (`bun run pw:install`). |
+| `/github-actions-docs` + `/playwright-best-practices` | OPTIONAL | Injected per dispatch when the change touches CI YAML or fixtures/tests (already noted in the briefing skeleton). |
+
+Active env, test-user creds, OpenAPI/`API_TOKEN`, DBHub, issue-tracker, TMS and `resend` are **N/A** — framework evolution is meta-work on this repo. After the gate clears (all REQUIRED GREEN), continue to Phase 0 below.
+
+---
+
 ## Phase 0 — Path self-check + session resume check (mandatory, runs first)
 
 Before invoking any subagent, the orchestrator MUST (a) list the files / directories the change will touch and verify each one against the ALLOWED / FORBIDDEN tables in `references/kata-invariants.md` §10, and (b) run the session resume check per `./session-management.md` §4. Skipping Phase 0 is the most common way framework changes leak into ticket-owned surface area OR lose mid-run state on interruption.

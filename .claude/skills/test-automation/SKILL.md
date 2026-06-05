@@ -69,6 +69,25 @@ Canonical reading order for any AI starting cold on a test-automation workflow. 
 
 ---
 
+## Readiness Preflight Gate (MANDATORY — runs before Phase 0)
+
+> Full doctrine: `agentic-qa-core/references/preflight-gate.md`. Runs FIRST, before the resume check and scope picker. Two laws: (1) **args-as-answers** — the scope, ticket key, and "API test" vs "E2E test" are provided args; ask only the gaps. (2) **probe, don't assume**. Surface gaps + REDs as ONE `AskUserQuestion` checklist; self-fix with approval + explanation; STOP on any blocking RED. Note: this is distinct from the **anti-duplication** "Pre-flight checklist" inside Phase 1 (which cross-checks `kata-manifest.json` for reuse) — this gate is about tools + env being ready to write and run code. **Generic baseline** (env resolution, test-user creds, secret/restart handling, the two laws, output contract) is inherited from the reference §3.1 — not repeated here. Below is only this skill's **specific capability delta**.
+
+| Capability | Need | Why here |
+|---|---|---|
+| Framework adapted (artifacts present) | REQUIRED | Cannot write project ATCs against the generic `Example*` scaffolds the boilerplate ships. Probe the reference §4 ADAPTED signals; still generic → STOP and tell the user to run `/project-discovery` → `/adapt-framework` themselves. The gate NEVER auto-runs them. |
+| Dev toolchain | REQUIRED | The Review gate runs `bun run test` / `bun run types:check` / `bun run lint:check`. Resolve them at t=0, not at Phase 3. `bun install` if a dep is missing. |
+| `kata-manifest.json` clean | REQUIRED | Anti-duplication source of truth (Critical Rule #12). `bun run kata:manifest:check` clean before proposing components/ATCs; `bun run kata:manifest` if stale. |
+| Active env + test-user creds | REQUIRED | Authored tests run live against `<<ACTIVE_ENV>>`. Env reachable + `.env` creds for the env (per role if multi-role). |
+| Playwright browsers | REQUIRED | `bunx playwright` resolves + chromium installed (`bun run pw:install`). |
+| OpenAPI MCP + `API_TOKEN` + `api/schemas/` synced | SCOPE — API/integration tests; needed at **Phase 1 Plan** too | Phase 1 explores endpoints (via the `openapi` MCP) to design ATCs + classify test-data — so the MCP is plan-time, not just run-time. Api components consume OpenAPI-derived types (`api/schemas/`; refresh `bun run api:sync`); authenticated calls need a live `API_TOKEN` (api-login flow, reference §6 → RESTART). |
+| DBHub MCP | SCOPE — data setup/validation; needed at **Phase 1 Plan** too | Phase 1 explores the schema (via the `dbhub` MCP) to design data fixtures (Discover / Modify / Generate) — plan-time, not just run-time. `dbhub` answers a schema probe; `DBHUB_*` in `.env`. Unset → fill `.env` + RESTART. |
+| Issue-tracker (`[ISSUE_TRACKER_TOOL]`) | SCOPE — ticket/regression-driven | ATP + AC reads via `bun run jira:sync-issues`; TMS modality for the ATP source. Pure module-driven from an existing spec may not need it. |
+
+Surfaces (UI vs API vs both) follow the chosen planning scope + the ATCs Phase 1 designs — NEVER a user question (reference §5). After the gate clears (generic baseline + the surface tools the scope needs GREEN), continue to Phase 0 below.
+
+---
+
 ## Phase 0 — Resume check (MANDATORY, inline)
 
 Before picking the planning scope, run the session resume contract from `agentic-qa-core/references/session-management.md` §4:

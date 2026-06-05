@@ -56,6 +56,20 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 
 ---
 
+## Readiness Preflight Gate (MANDATORY — runs before Phase -1)
+
+> Full doctrine: `agentic-qa-core/references/preflight-gate.md`. Runs FIRST, before the resume check and before the TMS-modality gate. Two laws: (1) **args-as-answers** — the scope (module / ticket / bug / ad-hoc) and any stated modality are provided args; ask only the gaps. (2) **probe, don't assume**. Surface gaps + REDs as ONE `AskUserQuestion` checklist; self-fix with approval + explanation; STOP on any blocking RED. This skill documents already-validated behavior in the TMS — it does NOT execute against a live system, so its gate centers on TMS write capability. **Generic baseline** (env resolution, test-user creds, secret/restart handling, the two laws, output contract) is inherited from the reference §3.1 — not repeated here. Below is only this skill's **specific capability delta**.
+
+| Capability | Need | Why here |
+|---|---|---|
+| Issue-tracker (`[ISSUE_TRACKER_TOOL]`) | REQUIRED | TC / ATP / ATR creation, linking, transitions. Load `/acli`; validate via `bun run jira:check`. |
+| TMS modality + `[TMS_TOOL]` | REQUIRED | The whole Phase 0 gate. jira-xray → `/xray-cli` loaded + `XRAY_*` creds set + Xray issue types present. jira-native → `/acli` covers it. Resolve before Phase 1; ask only if all auto-checks fail. |
+| Source repos readable | OPTIONAL | Phase 1 source-code validation reads backend/frontend code, not a running env — no live-env or DB/API/browser probe needed. |
+
+Active env, test-user creds, DBHub, OpenAPI/`API_TOKEN`, Playwright, `resend` and `kata-manifest.json` (an automation-only concern owned by `/test-automation`) are **N/A** — documentation never hits a live system nor writes test code. After the gate clears (all REQUIRED GREEN), continue to Phase -1 below.
+
+---
+
 ## Phase -1 — Session resume check (MANDATORY, inline)
 
 Runs BEFORE Phase 0 (TMS modality gate). Compute prospective `<scope>` from invocation: `<JIRA-KEY>` for ticket/bug scope, `<module-slug>` for module scope, `<YYYY-MM-DD>-adhoc` for ad-hoc. Then:

@@ -429,6 +429,8 @@ bun run kata:manifest:check    # must exit 0
 
 **Emit a copy-paste "GitHub repo Secrets to set" block** (these live outside the repo): `<ENV>_USER_EMAIL/_PASSWORD`, `XRAY_CLIENT_ID/SECRET` + `ATLASSIAN_*` if `AUTO_SYNC=true`, optional `SLACK_WEBHOOK_URL`. Note the manual external steps: create the `gh-pages` branch + enable GitHub Pages.
 
+**Offer to push the CI secrets from `.env` automatically** (opt-in — ask first, never push silently): when `gh auth status` is authenticated, the values already exist in `.env`, and the user approves, set each via `gh secret set <NAME>` (add `--env <env>` for environment-scoped secrets; `gh variable set <NAME>` for non-secret config). This is the low-friction alternative to the manual copy-paste block above — the regression-testing readiness gate probes these same secrets via `gh secret list`, so setting them here means the first CI run does not 401. Skip for any value not present in `.env` (surface it instead) and never echo a secret's value back to the user.
+
 ### 7.3 MCP registry — DUAL-FILE sync (highest-risk surface)
 
 `.mcp.json` (Claude Code: `mcpServers`, `env`, `${VAR}`) and `opencode.jsonc` (OpenCode: `mcp`, `environment`, `{env:VAR}`) ship the **same** servers (`context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman`). **Every change must land in BOTH** with the right syntax — a single-file edit half-breaks the other agent. Per CLAUDE.md Rule #10, a missing/empty MCP var is a HARD SESSION STOP, not a soft CI failure.

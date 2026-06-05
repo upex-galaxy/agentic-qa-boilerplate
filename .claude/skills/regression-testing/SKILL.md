@@ -61,6 +61,24 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 
 ---
 
+## Readiness Preflight Gate (MANDATORY — runs before Phase 0)
+
+> Full doctrine: `agentic-qa-core/references/preflight-gate.md`. Runs FIRST, before the resume check and any `gh workflow run`. Two laws: (1) **args-as-answers** — the suite (regression/smoke/sanity), env, and any grep/test_file are provided args; ask only the gaps. (2) **probe, don't assume**. Surface gaps + REDs as ONE `AskUserQuestion` checklist; self-fix with approval + explanation; STOP on any blocking RED. This generalizes the Phase 1 §Preflight (`gh auth`) to a full readiness check pulled to t=0. **Generic baseline** (env resolution, secret/restart handling, the two laws, output contract) is inherited from the reference §3.1 — not repeated here. Below is only this skill's **specific capability delta** (note: test-user creds, MCPs and browsers live inside the CI runner, not the orchestrator).
+
+| Capability | Need | Why here |
+|---|---|---|
+| GitHub CLI authenticated | REQUIRED | Every stage drives CI via `gh` (`gh auth status`, `gh workflow run`, `gh run watch`, `gh run download`). Not authed → user runs `gh auth login` (suggest the `!` prefix); do not proceed. |
+| Workflow files present | REQUIRED | `.github/workflows/` must hold the regression/smoke/sanity workflow for the chosen suite, with the inputs this skill passes. |
+| GitHub Actions Secrets/Variables | REQUIRED | The runner authenticates with env-prefixed creds (`secrets.<ENV>_USER_EMAIL` / `_PASSWORD`) + `XRAY_*` / `ATLASSIAN_*` as Repository/Environment Secrets — the suite 401s mid-run without them. `gh secret list` (add `--env <env>` for environment scope) shows them; missing → `gh secret set <NAME>` from `.env`. `/adapt-framework` only emits a manual list today, so this is the most common silent gap. |
+| Allure 3 local | REQUIRED | `bunx allure` resolves (devDep, no global install); `allurerc.mjs` present for `bun allure:agent` markdown triage. |
+| Active env | REQUIRED | The suite runs against `<<ACTIVE_ENV>>` (default `{{DEFAULT_ENV}}`). Confirm it is the intended target before a 20–60 min run. |
+| `[TMS_TOOL]` (result sync) | OPTIONAL | Only when `.agents/project.yaml` `testing.tms_cli` is set — Stage 3 pushes run status. jira-xray → `/xray-cli` + `XRAY_*`. |
+| `[ISSUE_TRACKER_TOOL]` (file regression issues) | OPTIONAL | Only on NO-GO / CAUTION-with-regressions, to file issues. Load `/acli` then. |
+
+Test-user creds, OpenAPI/`API_TOKEN`, DBHub and Playwright browsers live **inside the CI runner**, not the orchestrator — this skill does not exercise them locally, so they are out of scope for this gate. After the gate clears (all REQUIRED GREEN), continue to Phase 0 below.
+
+---
+
 ## Phase 0 — Session resume check (MANDATORY, inline)
 
 Before suite selection or any `gh workflow run`, run the resume contract from `agentic-qa-core/references/session-management.md` §4:
