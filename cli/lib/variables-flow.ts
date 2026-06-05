@@ -402,19 +402,21 @@ function maybeNoticeXrayAtlassian(setNames: string[]): void {
 // ----------------------------------------------------------------------------
 
 /**
- * Prompt the CRITICAL set (manifest `critical: true`) into `.env`. For an
- * already-set var, asks whether to overwrite (auto-yes under `force`). Never
- * prints values. Records each outcome into `rows`.
+ * Prompt for each spec in `specs` and upsert non-empty answers into `.env`.
+ * Shared engine behind the critical-set path AND the var-by-var walk. For an
+ * already-set var, asks whether to overwrite (auto-yes under `force`). Blank
+ * input keeps the existing value (idempotent, no clobber). Secrets are masked
+ * by `promptForVar`; values are never printed. Records each outcome into `rows`.
  */
-async function runCriticalSet(
+async function promptVarsInto(
+  specs: VarSpec[],
   opts: VariablesFlowOptions,
   rows: Map<string, VarReportRow>,
 ): Promise<void> {
-  const critical = criticalVars();
   const existing = parseEnvFile(await readFile(ENV_PATH, 'utf8'));
   const collected: Record<string, string> = {};
 
-  for (const spec of critical) {
+  for (const spec of specs) {
     const row = ensureRow(rows, spec);
     const current = (existing[spec.name] ?? '').trim();
     const alreadySet = current.length > 0;
@@ -446,17 +448,31 @@ async function runCriticalSet(
   }
 }
 
+/**
+ * Prompt the CRITICAL set (manifest `critical: true`) into `.env`. Thin wrapper
+ * over {@link promptVarsInto}.
+ */
+async function runCriticalSet(
+  opts: VariablesFlowOptions,
+  rows: Map<string, VarReportRow>,
+): Promise<void> {
+  await promptVarsInto(criticalVars(), opts, rows);
+}
+
 // ----------------------------------------------------------------------------
 // Interactive menu (shown when no explicit mode flag was given + a TTY exists)
 // ----------------------------------------------------------------------------
 
-type MenuChoice = 'critical' | 'remote' | 'everything' | 'leave';
+type MenuChoice = 'walk' | 'critical' | 'remote' | 'everything' | 'leave';
 
 /**
- * Drive the interactive menu (QA has no Vercel pull, so no option "c"):
- *   (a) Set / reset the CRITICAL variables (the 5 project-independent creds).
- *   (b) Push local .env → GitHub Actions secrets.
- *   (d) Everything (a then b) / leave as-is.
+ * Drive the interactive menu (QA has no Vercel pull, so no infra-pull option):
+ *   (a) Walk — set EVERY local var one by one (Enter skips; overwrite-confirm on
+ *       already-set). The flag-free human path; `--variables-local` is now purely
+ *       a scripting alias.
+ *   (b) Set / reset the CRITICAL variables (the 5 project-independent creds).
+ *   (c) Push local .env → GitHub Actions secrets.
+ *   (d) Everything (critical then push) / leave as-is.
  * Returns the rows map to print, plus the remote outcome for the closing notice.
  */
 async function runMenu(opts: VariablesFlowOptions): Promise<void> {
@@ -465,12 +481,13 @@ async function runMenu(opts: VariablesFlowOptions): Promise<void> {
   const choice = await tui.select<MenuChoice>({
     message: 'What do you want to do?',
     options: [
+      { label: 'Set variables one by one (walk all local vars)', value: 'walk' as const },
       { label: 'Set / reset the critical variables (Atlassian, Resend, Tavily)', value: 'critical' as const },
       { label: 'Push local .env → GitHub Actions secrets', value: 'remote' as const },
       { label: 'Everything (set critical, then push remote)', value: 'everything' as const },
       { label: 'Leave as-is (exit)', value: 'leave' as const },
     ],
-    initialValue: 'critical' as const,
+    initialValue: 'walk' as const,
   });
 
   if (tui.isCancel(choice) || choice === 'leave') {
@@ -481,6 +498,11 @@ async function runMenu(opts: VariablesFlowOptions): Promise<void> {
   // Back up `.env` before any mutation (D5).
   const backup = await backupEnv();
   if (backup) { tui.log.info(`Backed up .env → ${backup}`); }
+
+  if (choice === 'walk') {
+    tui.section('Set variables one by one');
+    await promptVarsInto(varsFor('local'), opts, rows);
+  }
 
   if (choice === 'critical' || choice === 'everything') {
     tui.section('Set / reset critical variables');
