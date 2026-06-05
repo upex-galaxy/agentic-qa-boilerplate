@@ -261,6 +261,33 @@ export const QUERIES = {
     }
   `,
 
+  // Lighter variant without the coverableIssues subquery. Coverage is
+  // record-only (never used by restore) and its resolver can be slow enough to
+  // 504 on projects with heavy requirement coverage — use this via
+  // `backup export --no-coverage` when the full query times out.
+  getTestsFullDataNoCoverage: `
+    query GetTestsFullDataNoCoverage($jql: String, $limit: Int!, $start: Int!) {
+      getTests(jql: $jql, limit: $limit, start: $start) {
+        total
+        start
+        limit
+        results {
+          issueId
+          projectId
+          testType { name kind }
+          steps { id action data result }
+          gherkin
+          unstructured
+          folder { path }
+          preconditions(limit: 100) {
+            results { issueId jira(fields: ["key"]) }
+          }
+          jira(fields: ["key", "summary", "description", "labels"])
+        }
+      }
+    }
+  `,
+
   getPreconditionsFullData: `
     query GetPreconditionsFullData($jql: String, $limit: Int!, $start: Int!) {
       getPreconditions(jql: $jql, limit: $limit, start: $start) {

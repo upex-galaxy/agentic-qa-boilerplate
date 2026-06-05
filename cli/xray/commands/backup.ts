@@ -209,6 +209,11 @@ export async function backupExport(flags: Flags): Promise<void> {
   const withPlans = !testsOnly && !getBoolFlag(flags, 'no-plans');
   const withSets = !testsOnly && !getBoolFlag(flags, 'no-sets');
   const withFolders = !testsOnly && !getBoolFlag(flags, 'no-folders');
+  // Coverage is record-only (restore never uses it). Drop the subquery with
+  // --no-coverage when its resolver times out (CloudFront 504) on a project
+  // with heavy requirement coverage.
+  const withCoverage = !getBoolFlag(flags, 'no-coverage');
+  const testsQuery = withCoverage ? QUERIES.getTestsFullData : QUERIES.getTestsFullDataNoCoverage;
 
   log.title(`Xray Backup Export - Project: ${project}`);
   if (onlyWithData) {
@@ -237,7 +242,7 @@ export async function backupExport(flags: Flags): Promise<void> {
           jira: { key?: string, summary?: string, description?: string, labels?: string[] }
         }>
       }
-    }>(QUERIES.getTestsFullData, {
+    }>(testsQuery, {
       jql: `project = ${project} AND issuetype = Test`,
       limit,
       start,
@@ -1080,13 +1085,22 @@ async function restoreRunStatuses(
       if (run.comment) {
         await graphql(MUTATIONS.updateTestRunComment, { id: runId, comment: run.comment });
       }
-      if (run.defects && run.defects.length > 0) {
-        await graphql(MUTATIONS.addDefectsToTestRun, { id: runId, issues: run.defects });
-      }
       applied++;
     }
     catch (error) {
       log.error(`  Failed to set run status for ${destKey}: ${error instanceof Error ? error.message : String(error)}`);
+      continue;
+    }
+
+    // Defects are linked independently: a defect key that does not resolve on
+    // the destination (e.g. a bug not migrated) must not fail the run status.
+    if (run.defects && run.defects.length > 0) {
+      try {
+        await graphql(MUTATIONS.addDefectsToTestRun, { id: runId, issues: run.defects });
+      }
+      catch (error) {
+        log.warn(`  Run ${destKey} status set, but defect link skipped: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
   }
   return applied;

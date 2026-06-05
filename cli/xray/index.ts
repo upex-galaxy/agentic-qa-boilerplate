@@ -186,6 +186,9 @@ ${colors.bold}BACKUP & RESTORE${colors.reset}
                      --tests-only       Legacy v1.0 shape: tests only
                      --no-preconditions / --no-plans / --no-sets / --no-folders
                                         Skip a specific entity type
+                     --no-coverage      Drop the coverableIssues subquery
+                                        (record-only; fixes CloudFront 504 on
+                                        projects with heavy requirement coverage)
 
   backup restore     Restore Xray data into a project. Order: preconditions ->
                      tests (+folder +precondition links) -> folders -> sets ->

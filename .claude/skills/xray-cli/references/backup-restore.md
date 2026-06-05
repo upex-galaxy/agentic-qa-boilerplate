@@ -39,6 +39,7 @@ bun xray backup export --project <key> [options]
 | `--no-plans` | Skip test plans |
 | `--no-sets` | Skip test sets |
 | `--no-folders` | Skip repository folders |
+| `--no-coverage` | Drop the `coverableIssues` subquery (record-only — never used by restore). Use when export 504s on a project with heavy requirement coverage |
 
 By default **all** entity types are exported (except executions, which stay behind `--include-runs`).
 
@@ -183,6 +184,8 @@ If keys were **not** preserved (different project key on destination), drop `--s
 | Run statuses not applied | Execution had no attached tests at the Xray layer, or destination Test keys didn't match. Confirm tests restored first; check the run-status count in the summary. |
 | Restored against the wrong site | You forgot to re-`auth login`. Run `bun xray auth status` before export and before restore. |
 | Large export times out | Lower `--limit` (e.g. `--limit 50`). |
+| Export 504s (CloudFront) even at low `--limit` | The `coverableIssues` resolver is slow on heavy-coverage projects. Re-run with `--no-coverage` (coverage is record-only, never restored). |
+| Run status applied but `No valid issues to add as defects` | A run's defect references a bug key that doesn't resolve on the destination. The status IS set; only the defect link is skipped (logged as a warning). |
 
 ## Official API references (verified)
 
