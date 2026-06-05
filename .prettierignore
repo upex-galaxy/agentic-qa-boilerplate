@@ -87,6 +87,14 @@ docs/mcp/
 .playwright-mcp/
 
 # ===========================================
+# Xray backup artifacts - generated, gitignored
+# ===========================================
+# `bun xray backup export` writes JSON dumps and `restore` writes key-mapping
+# CSVs into .backups/ (gitignored). They are machine-generated data, not
+# hand-authored source — Prettier must skip them or format:check fails on them.
+.backups/
+
+# ===========================================
 # Git worktrees - another branch's checkout, not this tree
 # ===========================================
 # A git worktree placed under .claude/worktrees/ is a separate branch's full
