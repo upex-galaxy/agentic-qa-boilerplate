@@ -18,6 +18,9 @@ import { getFlag } from '../lib/parser.js';
 export async function login(flags: Flags): Promise<void> {
   log.title('Xray CLI Authentication');
 
+  // Each credential resolves from its flag first, then the matching env var.
+  // Pass a flag only to OVERRIDE the environment (e.g. switching to another
+  // site mid-migration). With a populated .env, `auth login` needs no flags.
   const clientId = getFlag(flags, 'client-id') || process.env.XRAY_CLIENT_ID;
   const clientSecret = getFlag(flags, 'client-secret') || process.env.XRAY_CLIENT_SECRET;
   const defaultProject = getFlag(flags, 'project');
@@ -26,6 +29,17 @@ export async function login(flags: Flags): Promise<void> {
   const jiraBaseUrl = getFlag(flags, 'jira-url') || process.env.ATLASSIAN_URL;
   const jiraEmail = getFlag(flags, 'jira-email') || process.env.ATLASSIAN_EMAIL;
   const jiraApiToken = getFlag(flags, 'jira-token') || process.env.ATLASSIAN_API_TOKEN;
+
+  // Surface where each credential came from so the user knows whether the
+  // environment or a flag is in effect.
+  const src = (flag: string, env: string): string => (getFlag(flags, flag) ? 'flag' : process.env[env] ? 'env' : 'unset');
+  log.dim(
+    `Credentials: client-id=${src('client-id', 'XRAY_CLIENT_ID')}, `
+    + `client-secret=${src('client-secret', 'XRAY_CLIENT_SECRET')}, `
+    + `jira-url=${src('jira-url', 'ATLASSIAN_URL')}, `
+    + `jira-email=${src('jira-email', 'ATLASSIAN_EMAIL')}, `
+    + `jira-token=${src('jira-token', 'ATLASSIAN_API_TOKEN')}`,
+  );
 
   if (!clientId || !clientSecret) {
     log.error('Missing credentials. Provide them via flags or environment variables:');

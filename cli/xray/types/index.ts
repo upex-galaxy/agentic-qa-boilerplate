@@ -259,6 +259,24 @@ export interface BackupExecution {
   testRuns: BackupTestRun[]
 }
 
+/**
+ * Snapshot of the source project's Xray configuration, captured at export time
+ * so `backup preflight` can diff it against the destination. Config cannot be
+ * written via the Xray API — this drives a manual setup checklist.
+ */
+export interface BackupProjectSettings {
+  /** Test type names defined for the project (e.g. Manual, Generic, Cucumber, + customs). */
+  testTypes: string[]
+  /** Default test type name, if resolvable. */
+  defaultTestType?: string
+  /** Test Run status names in use/available (from getStatuses). */
+  runStatuses: string[]
+  /** Configured Test Environments. */
+  testEnvironments: string[]
+  /** Issue type names treated as defects. */
+  defectIssueTypes: string[]
+}
+
 export interface BackupData {
   exportedAt: string
   project: string
@@ -278,6 +296,8 @@ export interface BackupData {
   testPlans?: BackupTestContainer[]
   testSets?: BackupTestContainer[]
   folders?: BackupFolder[]
+  /** Source Xray config snapshot for `preflight` diffing (v2.0+; may be absent). */
+  projectSettings?: BackupProjectSettings
 }
 
 // ============================================================================

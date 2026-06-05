@@ -47,6 +47,56 @@ export async function getJiraIssueId(key: string): Promise<string | null> {
   }
 }
 
+/**
+ * Enumerate every project on the Jira site (key + name + numeric id) via
+ * `GET /rest/api/3/project/search`, paginating `maxResults=50`. Used by
+ * `backup export --all` to discover which projects to probe for Xray data.
+ *
+ * Returns `null` when Jira credentials are not configured (caller surfaces a
+ * guiding error). Throws on a non-OK Jira response.
+ */
+export async function listProjects(): Promise<Array<{ key: string, name: string, id: string }> | null> {
+  const config = loadConfig();
+  const baseUrl = config?.jira_base_url || process.env.ATLASSIAN_URL;
+  const email = config?.jira_email || process.env.ATLASSIAN_EMAIL;
+  const token = config?.jira_api_token || process.env.ATLASSIAN_API_TOKEN;
+
+  if (!baseUrl || !email || !token) {
+    return null;
+  }
+
+  const auth = Buffer.from(`${email}:${token}`).toString('base64');
+  const projects: Array<{ key: string, name: string, id: string }> = [];
+  let startAt = 0;
+  const maxResults = 50;
+
+  for (;;) {
+    const response = await fetch(
+      `${baseUrl}/rest/api/3/project/search?startAt=${startAt}&maxResults=${maxResults}`,
+      { headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' } },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Jira REST project search failed: ${response.status} ${response.statusText}`);
+    }
+
+    const page = (await response.json()) as {
+      isLast?: boolean
+      values?: Array<{ id: string, key: string, name: string }>
+    };
+    for (const p of page.values ?? []) {
+      projects.push({ key: p.key, name: p.name, id: p.id });
+    }
+
+    if (page.isLast || !page.values || page.values.length < maxResults) {
+      break;
+    }
+    startAt += maxResults;
+  }
+
+  return projects;
+}
+
 // ============================================================================
 // ISSUE REFERENCE RESOLUTION
 // ============================================================================

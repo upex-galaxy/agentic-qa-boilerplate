@@ -369,6 +369,29 @@ export const QUERIES = {
       }
     }
   `,
+
+  getProjectSettings: `
+    query GetProjectSettings($projectIdOrKey: String!) {
+      getProjectSettings(projectIdOrKey: $projectIdOrKey) {
+        projectId
+        testEnvironments
+        defectIssueTypes
+        testTypeSettings {
+          testTypes { id name kind }
+          defaultTestTypeId
+        }
+      }
+    }
+  `,
+
+  getStatuses: `
+    query GetStatuses {
+      getStatuses {
+        name
+        final
+      }
+    }
+  `,
 };
 
 // ============================================================================

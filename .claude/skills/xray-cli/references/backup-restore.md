@@ -29,8 +29,9 @@ bun xray backup export --project <key> [options]
 
 | Option | Description |
 |--------|-------------|
-| `--project <key>` | Project key (required) |
-| `--output <file>` | Output path (default: `xray-backup-<project>-<timestamp>.json`) |
+| `--project <key>` | Project key (required unless `--all`) |
+| `--all` | Export EVERY project on the site with Xray data into `.backups/<KEY>-backup.json`. Lists projects via Jira REST, probes each, prints an inventory, auto-retries a project without coverage on a 504. One login per **site** instead of per project. |
+| `--output <file>` | Output path, single-project mode (default: `xray-backup-<project>-<timestamp>.json`) |
 | `--include-runs` | Also export Test Executions + run statuses (heavier) |
 | `--only-with-data` | Skip tests that have no Xray data (steps/gherkin/definition) |
 | `--limit <n>` | Fetch batch size (default: 100) |
@@ -144,7 +145,26 @@ Per entity in sync mode:
 
 **Requires target-site Jira creds** (`ATLASSIAN_URL` / `EMAIL` / `API_TOKEN` in `.env`, or `--jira-*` on `auth login`). Without them, key→id resolution fails and sync falls back to create.
 
+## Preflight — destination config gaps
+
+```bash
+bun xray backup preflight --dir .backups   # or --file <one-backup.json>
+```
+
+Read-only. Export captures the source project's Xray config (test types, run
+statuses, test environments) into each backup. Run preflight **while authed to
+the destination**: it reads the live destination config and reports what is
+**missing** there. Xray has **no config-write API**, so the output is a manual
+checklist — create the listed test types / run statuses / test environments in
+the destination Xray admin before importing. `--project` overrides the
+destination key (default: each backup's own key). `defectIssueTypes` are
+captured but not diffed (numeric IDs differ per site).
+
 ## Full site-to-site migration runbook
+
+> The complete agnostic, AI-runnable procedure lives in
+> [migration-runbook.md](migration-runbook.md) — auth source → `export --all` →
+> auth dest → `preflight` → fix config → `restore --sync`. The condensed version:
 
 ```bash
 # 1. Point CLI at SOURCE site, export everything

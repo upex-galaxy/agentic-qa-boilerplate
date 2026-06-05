@@ -26,6 +26,7 @@ import type {
   BackupExecution,
   BackupFolder,
   BackupPrecondition,
+  BackupProjectSettings,
   BackupTest,
   BackupTestContainer,
   BackupTestRun,
@@ -33,12 +34,28 @@ import type {
   Flags,
   TestStepResponse,
 } from '../types/index.js';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
-import { getJiraIssueId } from '../lib/jira.js';
+import { getJiraIssueId, listProjects } from '../lib/jira.js';
 import { log } from '../lib/logger.js';
 import { getBoolFlag, getFlag, requireFlag } from '../lib/parser.js';
+
+/** Default directory for backup dumps and key-mapping files (gitignored). */
+const BACKUPS_DIR = '.backups';
+
+/** Options controlling what `exportProject` fetches. */
+interface ExportOpts {
+  includeRuns: boolean
+  onlyWithData: boolean
+  limit: number
+  withPreconditions: boolean
+  withPlans: boolean
+  withSets: boolean
+  withFolders: boolean
+  withCoverage: boolean
+}
 
 // ============================================================================
 // SHARED GraphQL RESPONSE SHAPES
@@ -192,27 +209,14 @@ function mapKeysToIds(keys: string[] | undefined, idMap: Map<string, string>): s
 // EXPORT
 // ============================================================================
 
-export async function backupExport(flags: Flags): Promise<void> {
-  const config = loadConfig();
-  const project = getFlag(flags, 'project') || config?.default_project;
-  if (!project) {
-    throw new Error('Missing required flag: --project (or set default_project in config)');
-  }
-  const output = getFlag(flags, 'output') || `xray-backup-${project}-${Date.now()}.json`;
-  const includeRuns = getBoolFlag(flags, 'include-runs');
-  const onlyWithData = getBoolFlag(flags, 'only-with-data');
-  const limit = Number.parseInt(getFlag(flags, 'limit', '100') || '100', 10);
-
-  // v2.0 entities are exported by default; opt out per-entity or all at once.
-  const testsOnly = getBoolFlag(flags, 'tests-only');
-  const withPreconditions = !testsOnly && !getBoolFlag(flags, 'no-preconditions');
-  const withPlans = !testsOnly && !getBoolFlag(flags, 'no-plans');
-  const withSets = !testsOnly && !getBoolFlag(flags, 'no-sets');
-  const withFolders = !testsOnly && !getBoolFlag(flags, 'no-folders');
-  // Coverage is record-only (restore never uses it). Drop the subquery with
-  // --no-coverage when its resolver times out (CloudFront 504) on a project
-  // with heavy requirement coverage.
-  const withCoverage = !getBoolFlag(flags, 'no-coverage');
+/**
+ * Fetch the full Xray footprint of one project and return it as BackupData.
+ * Pure data — does not write a file or print a final summary (the caller owns
+ * persistence and reporting, so this is reusable by both single-project and
+ * `--all` export).
+ */
+export async function exportProject(project: string, opts: ExportOpts): Promise<BackupData> {
+  const { includeRuns, onlyWithData, limit, withPreconditions, withPlans, withSets, withFolders, withCoverage } = opts;
   const testsQuery = withCoverage ? QUERIES.getTestsFullData : QUERIES.getTestsFullDataNoCoverage;
 
   log.title(`Xray Backup Export - Project: ${project}`);
@@ -453,8 +457,11 @@ export async function backupExport(flags: Flags): Promise<void> {
     );
   }
 
-  // Step 6: Build and save backup file
-  const backup: BackupData = {
+  // Step 6: Capture the source Xray config snapshot (best-effort) so preflight
+  // can diff it against the destination.
+  const projectSettings = await captureProjectSettings(project);
+
+  return {
     exportedAt: new Date().toISOString(),
     project,
     version: '2.0',
@@ -470,11 +477,51 @@ export async function backupExport(flags: Flags): Promise<void> {
     testPlans: testPlansData,
     testSets: testSetsData,
     folders: foldersData,
+    projectSettings,
   };
+}
 
-  writeFileSync(output, JSON.stringify(backup, null, 2));
+/**
+ * Read the project's Xray configuration (test types, run statuses, test
+ * environments, defect issue types) for preflight diffing. Best-effort — a
+ * failure (e.g. permissions) returns undefined rather than aborting the export.
+ */
+async function captureProjectSettings(projectKey: string): Promise<BackupProjectSettings | undefined> {
+  try {
+    const [settingsRes, statusesRes] = await Promise.all([
+      graphql<{
+        getProjectSettings: {
+          testEnvironments?: string[]
+          defectIssueTypes?: string[]
+          testTypeSettings?: {
+            testTypes?: Array<{ id?: string, name?: string }>
+            defaultTestTypeId?: string
+          }
+        }
+      }>(QUERIES.getProjectSettings, { projectIdOrKey: projectKey }),
+      graphql<{ getStatuses: Array<{ name?: string, final?: boolean }> }>(QUERIES.getStatuses),
+    ]);
 
-  log.success(`Backup saved to: ${output}`);
+    const tt = settingsRes.getProjectSettings?.testTypeSettings;
+    const testTypeList = tt?.testTypes || [];
+    const defaultTestType = testTypeList.find(t => t.id === tt?.defaultTestTypeId)?.name;
+
+    return {
+      testTypes: testTypeList.map(t => t.name).filter((n): n is string => Boolean(n)),
+      defaultTestType,
+      runStatuses: (statusesRes.getStatuses || []).map(s => s.name).filter((n): n is string => Boolean(n)),
+      testEnvironments: settingsRes.getProjectSettings?.testEnvironments || [],
+      defectIssueTypes: settingsRes.getProjectSettings?.defectIssueTypes || [],
+    };
+  }
+  catch (error) {
+    log.dim(`  Project settings not captured: ${error instanceof Error ? error.message : String(error)}`);
+    return undefined;
+  }
+}
+
+/** Print the per-project entity summary after an export. */
+function printBackupSummary(backup: BackupData): void {
   console.log('\nSummary:');
   console.log(`  Tests:         ${backup.testsCount}`);
   console.log(`  Preconditions: ${backup.preconditionsCount}`);
@@ -483,6 +530,250 @@ export async function backupExport(flags: Flags): Promise<void> {
   console.log(`  Folders:       ${backup.foldersCount}`);
   console.log(`  Executions:    ${backup.executionsCount}`);
   console.log(`  File size:     ${(Buffer.byteLength(JSON.stringify(backup)) / 1024).toFixed(2)} KB`);
+}
+
+/**
+ * Export one project, retrying once without the coverage subquery if Xray
+ * returns a CloudFront 504 (its `coverableIssues` resolver times out on
+ * heavy-coverage projects). Coverage is record-only, so the retry is lossless.
+ */
+async function exportProjectResilient(project: string, opts: ExportOpts): Promise<BackupData> {
+  try {
+    return await exportProject(project, opts);
+  }
+  catch (error) {
+    if (opts.withCoverage && /\b504\b/.test(error instanceof Error ? error.message : String(error))) {
+      log.warn(`${project}: 504 with coverage — retrying without coverage`);
+      return exportProject(project, { ...opts, withCoverage: false });
+    }
+    throw error;
+  }
+}
+
+function ensureBackupsDir(): void {
+  if (!existsSync(BACKUPS_DIR)) {
+    mkdirSync(BACKUPS_DIR, { recursive: true });
+  }
+}
+
+function parseExportOpts(flags: Flags): ExportOpts {
+  const testsOnly = getBoolFlag(flags, 'tests-only');
+  return {
+    includeRuns: getBoolFlag(flags, 'include-runs'),
+    onlyWithData: getBoolFlag(flags, 'only-with-data'),
+    limit: Number.parseInt(getFlag(flags, 'limit', '100') || '100', 10),
+    withPreconditions: !testsOnly && !getBoolFlag(flags, 'no-preconditions'),
+    withPlans: !testsOnly && !getBoolFlag(flags, 'no-plans'),
+    withSets: !testsOnly && !getBoolFlag(flags, 'no-sets'),
+    withFolders: !testsOnly && !getBoolFlag(flags, 'no-folders'),
+    // Coverage is record-only; drop it with --no-coverage when it 504s.
+    withCoverage: !getBoolFlag(flags, 'no-coverage'),
+  };
+}
+
+/**
+ * CLI entry: `backup export`. Routes to a single project (default/--project)
+ * or, with --all, every project on the site that has Xray data.
+ */
+export async function backupExport(flags: Flags): Promise<void> {
+  if (getBoolFlag(flags, 'all')) {
+    await exportAllProjects(flags);
+    return;
+  }
+
+  const config = loadConfig();
+  const project = getFlag(flags, 'project') || config?.default_project;
+  if (!project) {
+    throw new Error('Missing required flag: --project (or --all, or set default_project in config)');
+  }
+  const output = getFlag(flags, 'output') || `xray-backup-${project}-${Date.now()}.json`;
+
+  const backup = await exportProject(project, parseExportOpts(flags));
+  writeFileSync(output, JSON.stringify(backup, null, 2));
+  log.success(`Backup saved to: ${output}`);
+  printBackupSummary(backup);
+}
+
+/**
+ * `backup export --all`: enumerate every project on the site (Jira REST),
+ * probe each for Xray Tests, and export the ones that have data into
+ * `.backups/<KEY>-backup.json`. Prints an inventory of what was exported and
+ * what was skipped — the list of projects to configure on the destination.
+ */
+async function exportAllProjects(flags: Flags): Promise<void> {
+  const opts = parseExportOpts(flags);
+  log.title('Xray Backup Export - ALL projects');
+
+  const projects = await listProjects();
+  if (!projects) {
+    throw new Error(
+      'Cannot list projects: Jira credentials not configured. '
+      + 'Set ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN in .env, '
+      + 'or run \'bun xray auth login --jira-url <url> --jira-email <email> --jira-token <token>\'.',
+    );
+  }
+  log.info(`Found ${projects.length} projects on the site. Probing for Xray data...`);
+  ensureBackupsDir();
+
+  const inventory: Array<{ key: string, exported: boolean, backup?: BackupData, reason?: string }> = [];
+
+  for (const p of projects) {
+    let total = 0;
+    try {
+      const probe = await graphql<{ getTests: { total: number } }>(QUERIES.getTestsFullDataNoCoverage, {
+        jql: `project = ${p.key} AND issuetype = Test`,
+        limit: 1,
+        start: 0,
+      });
+      total = probe.getTests.total;
+    }
+    catch (error) {
+      log.dim(`  ${p.key}: probe failed (${error instanceof Error ? error.message : String(error)}) — skipping`);
+      inventory.push({ key: p.key, exported: false, reason: 'probe failed' });
+      continue;
+    }
+
+    if (total === 0) {
+      inventory.push({ key: p.key, exported: false, reason: 'no Xray tests' });
+      continue;
+    }
+
+    try {
+      const backup = await exportProjectResilient(p.key, opts);
+      const outPath = join(BACKUPS_DIR, `${p.key}-backup.json`);
+      writeFileSync(outPath, JSON.stringify(backup, null, 2));
+      log.success(`${p.key}: saved to ${outPath}`);
+      inventory.push({ key: p.key, exported: true, backup });
+    }
+    catch (error) {
+      log.error(`${p.key}: export failed — ${error instanceof Error ? error.message : String(error)}`);
+      inventory.push({ key: p.key, exported: false, reason: 'export failed' });
+    }
+  }
+
+  // Inventory table — the "what to configure on destination" list.
+  const exported = inventory.filter(i => i.exported);
+  console.log(`\n${'='.repeat(64)}`);
+  log.title('Export inventory');
+  console.log('  PROJECT   TESTS  PRE  SETS  PLANS  EXECS');
+  for (const i of exported) {
+    const b = i.backup!;
+    console.log(
+      `  ${i.key.padEnd(8)}  ${String(b.testsCount).padStart(4)}  ${String(b.preconditionsCount ?? 0).padStart(3)}  `
+      + `${String(b.testSetsCount ?? 0).padStart(4)}  ${String(b.testPlansCount ?? 0).padStart(4)}  ${String(b.executionsCount).padStart(4)}`,
+    );
+  }
+  console.log(`\n  Exported: ${exported.length} project(s) -> ${BACKUPS_DIR}/`);
+  const skipped = inventory.filter(i => !i.exported);
+  if (skipped.length > 0) {
+    console.log(`  Skipped:  ${skipped.length} (${skipped.map(s => s.key).join(', ')})`);
+  }
+}
+
+// ============================================================================
+// PREFLIGHT — destination config gap report (read-only)
+// ============================================================================
+
+/** Case-insensitive set difference: names in `source` missing from `dest`. */
+function missingOnDest(source: string[], dest: string[]): string[] {
+  const destSet = new Set(dest.map(s => s.toLowerCase()));
+  return source.filter(s => !destSet.has(s.toLowerCase()));
+}
+
+/**
+ * `backup preflight`: compare the Xray config captured in a backup (source) with
+ * the destination project's live config, and report what must be created
+ * MANUALLY on the destination before importing. Read-only — Xray's API has no
+ * config-write mutations, so this is a checklist, not an auto-fix.
+ *
+ * Targets `--file <backup>` or every `*-backup.json` in `--dir` (default
+ * `.backups/`). The destination project key defaults to each backup's own key
+ * (preserved across a key-preserving migration); override with `--project`.
+ */
+export async function preflight(flags: Flags): Promise<void> {
+  const file = getFlag(flags, 'file');
+  const dir = getFlag(flags, 'dir') || BACKUPS_DIR;
+  const projectOverride = getFlag(flags, 'project');
+
+  const files: string[] = [];
+  if (file) {
+    if (!existsSync(file)) {
+      throw new Error(`Backup file not found: ${file}`);
+    }
+    files.push(file);
+  }
+  else {
+    if (!existsSync(dir)) {
+      throw new Error(`No backup file given and directory not found: ${dir} (use --file or --dir)`);
+    }
+    for (const f of readdirSync(dir)) {
+      if (f.endsWith('-backup.json')) {
+        files.push(join(dir, f));
+      }
+    }
+    if (files.length === 0) {
+      throw new Error(`No *-backup.json files in ${dir} (use --file)`);
+    }
+  }
+
+  log.title('Xray Migration Preflight - destination config gaps');
+  log.info('Read-only. Xray config cannot be created via API — apply gaps manually in Xray admin.');
+
+  let totalGaps = 0;
+
+  for (const f of files) {
+    const backup: BackupData = JSON.parse(readFileSync(f, 'utf-8'));
+    const destProject = projectOverride || backup.project;
+    console.log(`\n${'-'.repeat(56)}`);
+    console.log(`Project ${backup.project}  ->  destination ${destProject}`);
+
+    const src = backup.projectSettings;
+    if (!src) {
+      log.warn('  No source config captured in this backup (re-export with the current CLI). Skipping.');
+      continue;
+    }
+
+    const dest = await captureProjectSettings(destProject);
+    if (!dest) {
+      log.warn('  Could not read destination config (check Jira/Xray auth + project key). Skipping.');
+      continue;
+    }
+
+    // Run statuses actually used by the backup's runs — the ones that matter most.
+    const usedStatuses = [
+      ...new Set(
+        backup.executions.flatMap(e => e.testRuns.map(r => r.status)).filter((s): s is string => Boolean(s)),
+      ),
+    ];
+
+    // Diff name-based config only. defectIssueTypes are numeric issue-type IDs
+    // that differ per site, so they are captured for record but not diffed
+    // (they would always read as "missing" cross-site).
+    const gaps: Array<{ label: string, missing: string[] }> = [
+      { label: 'Test types', missing: missingOnDest(src.testTypes, dest.testTypes) },
+      { label: 'Run statuses (used by runs)', missing: missingOnDest(usedStatuses, dest.runStatuses) },
+      { label: 'Run statuses (defined)', missing: missingOnDest(src.runStatuses, dest.runStatuses) },
+      { label: 'Test environments', missing: missingOnDest(src.testEnvironments, dest.testEnvironments) },
+    ].filter(g => g.missing.length > 0);
+
+    if (gaps.length === 0) {
+      log.success('  Config matches — no manual setup needed.');
+      continue;
+    }
+
+    for (const g of gaps) {
+      totalGaps += g.missing.length;
+      log.warn(`  Missing ${g.label}: ${g.missing.join(', ')}`);
+    }
+  }
+
+  console.log(`\n${'='.repeat(56)}`);
+  if (totalGaps === 0) {
+    log.success('Preflight clean — destination config covers all backups.');
+  }
+  else {
+    log.warn(`Preflight found ${totalGaps} config item(s) to create on the destination before import.`);
+  }
 }
 
 /** Paginate a Test Plan / Test Set query and push normalized containers. */

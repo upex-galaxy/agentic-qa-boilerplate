@@ -54,8 +54,15 @@ bun xray exec add-tests --execution 1042389 --tests 1041000,1041001,1041002
 
 ### Authentication
 
+`auth login` reads every credential from `.env` by default
+(`XRAY_CLIENT_ID/SECRET`, `ATLASSIAN_URL/EMAIL/API_TOKEN`); bun auto-loads `.env`.
+Pass a flag ONLY to override the environment — e.g. switching to another site
+mid-migration. With a populated `.env`, `bun xray auth login` (no args) is enough.
+Login prints which source (env/flag/unset) each credential resolved from.
+
 ```bash
-bun xray auth login --client-id <id> --client-secret <secret>
+bun xray auth login                                    # all creds from .env
+bun xray auth login --client-id <id> --client-secret <secret>   # override XRAY creds (other site)
 bun xray auth login --client-id <id> --client-secret <secret> --project DEMO
 bun xray auth login --jira-url https://your-instance.atlassian.net --jira-email user@email.com --jira-token <token>
 bun xray auth logout
@@ -245,6 +252,10 @@ cross-site/migration runbook → [references/backup-restore.md](references/backu
 # Export the full footprint (everything except executions)
 bun xray backup export --project DEMO --output demo-backup.json
 
+# Export EVERY project on the site that has Xray data -> .backups/<KEY>-backup.json
+# (lists projects via Jira, prints an inventory, 504-resilient). One login per SITE.
+bun xray backup export --all --include-runs
+
 # Add executions + run statuses (heavier)
 bun xray backup export --project DEMO --output demo-backup.json --include-runs
 
@@ -264,7 +275,14 @@ bun xray backup restore --file demo-backup.json --project {{PROJECT_KEY}} --sync
 
 # Restore with explicit key mapping (when keys changed)
 bun xray backup restore --file demo-backup.json --project {{PROJECT_KEY}} --map-keys mappings.csv
+
+# Preflight: report destination config gaps before importing (read-only, authed to dest)
+bun xray backup preflight --dir .backups
 ```
+
+> **Full cross-site migration**: follow the agnostic runbook in
+> [references/migration-runbook.md](references/migration-runbook.md) — auth source →
+> `export --all` → auth dest → `preflight` → fix config → `restore --sync`.
 
 > **Cross-site gotcha**: Xray's GraphQL addresses by numeric `issueId` (re-assigned
 > per Jira site); a project migration preserves the **key**, not the id. Always use
