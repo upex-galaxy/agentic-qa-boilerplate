@@ -40,7 +40,7 @@ This skill is also the **front desk** for anyone who is confused: *"I don't know
 
 ## How-it-works presentations (visual, in the browser)
 
-Five of the workflow skills ship a **self-contained HTML presentation** that teaches the activity twice: **Part 1 "The Craft"** (how a QA engineer does it by hand, step by step) and **Part 2 "The Acceleration"** (how the skill makes the AI do it from the terminal). Each exists in **English and Spanish** (technical terms stay in English in both).
+Five of the workflow skills ship a **self-contained HTML presentation** that teaches the activity twice: **Part 1 "The Craft"** (how a QA engineer does it by hand, step by step) and **Part 2 "The Acceleration"** (how the skill makes the AI do it from the terminal). The `xray-cli` skill ships a sixth deck of a different kind — a **concept primer** that explains Xray itself from zero (what it is, its six issue types, the natural flow, coverage, traceability, defects). Each exists in **English and Spanish** (technical terms stay in English in both).
 
 | Skill / activity         | English deck                                            | Spanish deck                                              |
 | ------------------------ | ------------------------------------------------------- | --------------------------------------------------------- |
@@ -49,6 +49,7 @@ Five of the workflow skills ship a **self-contained HTML presentation** that tea
 | Test Documentation & ROI | `.claude/skills/test-documentation/how-it-works.html`   | `.claude/skills/test-documentation/how-it-works.es.html`  |
 | Test Automation (KATA)   | `.claude/skills/test-automation/how-it-works.html`      | `.claude/skills/test-automation/how-it-works.es.html`     |
 | Regression & GO/NO-GO    | `.claude/skills/regression-testing/how-it-works.html`   | `.claude/skills/regression-testing/how-it-works.es.html`  |
+| Xray for Jira (concept)  | `.claude/skills/xray-cli/how-it-works.html`             | `.claude/skills/xray-cli/how-it-works.es.html`            |
 
 Single files (CSS + JS inlined) — they open by double-click, no server. Navigate with `←` `→`, `S` for speaker notes, `O` for the slide overview, `F` for fullscreen.
 
