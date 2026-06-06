@@ -365,7 +365,7 @@ ATP = `Test Plan` issue. ATR = `Test Execution` issue. Both linked bidirectional
   description: {full ATP body}
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "tests"
+  linkType: "is tested by"
   outward: {ATP_KEY}
   inward:  {STORY_KEY}
 

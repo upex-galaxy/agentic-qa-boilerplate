@@ -93,7 +93,7 @@ Branch on modality (resolved in Phase 0.1).
   description: <full shift-left-refinement.md body>
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "tests"
+  linkType: "is tested by"
   outward: {ATP_KEY}
   inward:  {STORY_KEY}
 ```

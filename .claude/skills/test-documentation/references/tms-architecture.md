@@ -473,7 +473,7 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
   environment: {from session context}
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "tests"
+  linkType: "is tested by"
   outward: {ATP_KEY}
   inward:  {STORY_KEY}
 

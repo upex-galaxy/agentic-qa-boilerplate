@@ -283,7 +283,7 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
        project: {{PROJECT_KEY}}
        title: "Test Plan (Shift-Left DRAFT): {{PROJECT_KEY}}-{n}"
      [ISSUE_TRACKER_TOOL] Link Issues:
-       linkType: "tests"
+       linkType: "is tested by"
        outward: {ATP_KEY}
        inward:  {STORY_KEY}
      [ISSUE_TRACKER_TOOL] Update Issue:
