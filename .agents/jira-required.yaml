@@ -257,6 +257,9 @@ work_types:
   story:
     jira_issue_type: Story
     description: User story / feature work item
+    sync: default
+    coverable: true
+    content: split
     required_statuses:
       backlog: { description: Initial state for a freshly created story }
       shift_left_qa: { description: Story under early QA review (shift-left quality check) }
@@ -356,6 +359,10 @@ work_types:
   bug:
     jira_issue_type: Bug
     description: Defect / bug work item
+    sync: default
+    coverable: true
+    content: single
+    local_dir: bugs
     required_statuses:
       open: { description: Newly reported bug awaiting triage }
       in_progress: { description: Developer actively fixing }
@@ -411,6 +418,8 @@ work_types:
   test_case:
     jira_issue_type: Test
     description: Test case (TC) work item
+    sync: never
+    local_dir: tests
     required_statuses:
       draft: { description: 'Just created, not yet designed' }
       in_design: { description: Test scenario being authored }
@@ -485,3 +494,86 @@ work_types:
       deprecated: { from: any, to: deprecated, description: Retire the TC (global transition) }
       recover: { from: deprecated, to: draft, description: Restore a deprecated TC back to draft }
     used_by: [test-documentation, test-automation]
+
+  # ---- Registry-only types (coverage sync). Workflows (statuses/transitions) are
+  # resolved by `bun run jira:sync-workflows` per workspace when these types exist;
+  # the keys below drive `sync-jira-issues.ts` coverage routing. ----
+  epic:
+    jira_issue_type: Epic
+    description: Epic / feature container (holds child stories)
+    sync: default
+    container: true
+    content: split
+    local_dir: epics
+
+  defect:
+    jira_issue_type: Defect
+    description: Defect found during QA of a coverable issue (story / bug / etc.)
+    sync: discovery
+    coverable: true
+    content: single
+    local_dir: defects
+    defect_link_types: [problem_incident, blocks, blocking, defect, xray_defect]
+
+  improvement:
+    jira_issue_type: Improvement
+    description: Improvement / enhancement work item
+    sync: optional
+    recommended: true
+    coverable: true
+    content: single
+    local_dir: improvements
+
+  tech_story:
+    jira_issue_type: Tech Story
+    description: Technical story (same coverage shape as a user story)
+    sync: optional
+    recommended: true
+    coverable: true
+    content: auto
+    local_dir: tech-stories
+
+  tech_debt:
+    jira_issue_type: Tech Debt
+    description: Technical debt work item (coverable like a story)
+    sync: optional
+    recommended: true
+    coverable: true
+    content: auto
+    local_dir: tech-debts
+
+  test_plan:
+    jira_issue_type: Test Plan
+    description: Xray Test Plan — holds the ATP body in its description (role atp)
+    sync: discovery
+    role: atp
+    content: description
+    local_dir: test-plans
+
+  test_execution:
+    jira_issue_type: Test Execution
+    description: Xray Test Execution — holds the ATR body in its description (role atr)
+    sync: discovery
+    role: atr
+    content: description
+    local_dir: test-executions
+
+  re_test_execution:
+    jira_issue_type: Re-Test Execution
+    description: Xray Re-Test Execution (subtask) — retest ATR (role atr)
+    sync: discovery
+    role: atr
+    content: description
+    local_dir: test-executions
+
+  test_set:
+    jira_issue_type: Test Set
+    description: Xray Test Set — grouping of tests (not synced)
+    sync: never
+    local_dir: test-sets
+
+  precondition:
+    jira_issue_type: Precondition
+    description: Xray Precondition — reusable test prerequisite (not synced)
+    sync: never
+    local_dir: preconditions

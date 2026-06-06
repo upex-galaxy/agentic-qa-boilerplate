@@ -79,6 +79,7 @@ import { parse as parseYaml } from 'yaml';
 
 const DEFAULT_OUTPUT_DIR = '.context/PBI';
 const PROJECT_YAML_PATH = join(import.meta.dir, '..', '.agents', 'project.yaml');
+const JIRA_REQUIRED_PATH = join(import.meta.dir, '..', '.agents', 'jira-required.yaml');
 
 // No files are protected from overwrite. Jira is the single source of truth and the
 // sync re-materializes every file it owns on each run (per-field files only when the
@@ -263,6 +264,109 @@ const IMPROVEMENT_FIELDS = [
 ];
 
 // ============================================================================
+// WORK-TYPE REGISTRY (.agents/jira-required.yaml → work_types)
+// ============================================================================
+
+type SyncMode = 'default' | 'optional' | 'discovery' | 'never';
+type ContentMode = 'split' | 'single' | 'description' | 'auto';
+
+interface WorkTypeEntry {
+  slug: string
+  jiraIssueType: string
+  sync: SyncMode
+  recommended: boolean
+  coverable: boolean
+  container: boolean
+  role: 'atp' | 'atr' | null
+  content: ContentMode | null
+  defectLinkTypes: string[]
+  localDir: string | null
+}
+
+interface Registry {
+  list: WorkTypeEntry[]
+  byJiraType: Map<string, WorkTypeEntry>
+  bySlug: Map<string, WorkTypeEntry>
+}
+
+/** Folder-name prefixes per work-type slug (preserves the existing on-disk filenames). */
+const FOLDER_PREFIX: Record<string, string> = {
+  bug: 'BUG',
+  defect: 'DEFECT',
+  improvement: 'IMPROVEMENT',
+  tech_story: 'TECHSTORY',
+  tech_debt: 'TECHDEBT',
+  test_case: 'TEST',
+  test_plan: 'TESTPLAN',
+  test_execution: 'TESTEXEC',
+  re_test_execution: 'RETESTEXEC',
+  test_set: 'TESTSET',
+  precondition: 'PRECONDITION',
+};
+
+let REGISTRY_CACHE: Registry | null = null;
+
+/**
+ * Loads the work-type registry from `.agents/jira-required.yaml` → `work_types`.
+ * Each entry declares how its Jira issue type is synced: `sync` mode, `coverable`,
+ * Xray `role` (atp/atr), `content` strategy, `defect_link_types`, and `local_dir`.
+ * Replaces the former hardcoded `switch(type)` so adding a type is a YAML edit.
+ */
+function loadRegistry(): Registry {
+  if (REGISTRY_CACHE) { return REGISTRY_CACHE; }
+
+  const list: WorkTypeEntry[] = [];
+  if (existsSync(JIRA_REQUIRED_PATH)) {
+    let parsed: unknown = null;
+    try {
+      parsed = parseYaml(readFileSync(JIRA_REQUIRED_PATH, 'utf8'));
+    }
+    catch {
+      parsed = null;
+    }
+    const workTypes = (parsed as Record<string, unknown> | null)?.work_types;
+    if (workTypes && typeof workTypes === 'object') {
+      for (const [slug, raw] of Object.entries(workTypes as Record<string, unknown>)) {
+        if (!raw || typeof raw !== 'object') { continue; }
+        const e = raw as Record<string, unknown>;
+        const jiraIssueType = typeof e.jira_issue_type === 'string' ? e.jira_issue_type.trim() : '';
+        if (!jiraIssueType) { continue; }
+
+        const role: 'atp' | 'atr' | null = e.role === 'atp' ? 'atp' : e.role === 'atr' ? 'atr' : null;
+        const cr = e.content;
+        const content: ContentMode | null
+          = cr === 'split' || cr === 'single' || cr === 'description' || cr === 'auto' ? cr : null;
+        const sr = e.sync;
+        const sync: SyncMode
+          = sr === 'default' || sr === 'optional' || sr === 'discovery' || sr === 'never' ? sr : 'never';
+
+        list.push({
+          slug,
+          jiraIssueType,
+          sync,
+          recommended: e.recommended === true,
+          coverable: e.coverable === true,
+          container: e.container === true,
+          role,
+          content,
+          defectLinkTypes: Array.isArray(e.defect_link_types) ? (e.defect_link_types as string[]) : [],
+          localDir: typeof e.local_dir === 'string' ? e.local_dir : null,
+        });
+      }
+    }
+  }
+
+  const byJiraType = new Map<string, WorkTypeEntry>();
+  const bySlug = new Map<string, WorkTypeEntry>();
+  for (const e of list) {
+    byJiraType.set(e.jiraIssueType, e);
+    bySlug.set(e.slug, e);
+  }
+  REGISTRY_CACHE = { list, byJiraType, bySlug };
+  return REGISTRY_CACHE;
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
@@ -394,6 +498,9 @@ interface SyncOptions {
   includeComments: boolean
   dryRun: boolean
   json: boolean
+  sprints?: string // sprint selector: active | current | closed | >=N | 7,8,10
+  types?: string[] // optional extra work-type slugs to pull (beyond the default scope)
+  noDefects?: boolean // skip defect discovery/nesting
 }
 
 interface SyncResult {
@@ -425,6 +532,10 @@ interface ParsedArgs {
   includeComments: boolean
   dryRun: boolean
   json: boolean
+  sprints?: string
+  types?: string[]
+  noDefects?: boolean
+  project?: string
 }
 
 // ============================================================================
@@ -507,7 +618,31 @@ function parseArgs(args: string[]): ParsedArgs {
       case '--json':
         result.json = true;
         break;
+      case '--sprint':
+      case '--sprints':
+        result.sprints = nextArg;
+        i++;
+        break;
+      case '--types':
+        result.types = (nextArg ?? '').split(',').map(s => s.trim()).filter(Boolean);
+        i++;
+        break;
+      case '--no-defects':
+        result.noDefects = true;
+        break;
+      case '--project':
+        result.project = nextArg;
+        i++;
+        break;
     }
+  }
+
+  // Env defaults (a flag always wins; env fills in only when the flag is absent).
+  const envSprints = process.env.JIRA_SYNC_SPRINTS;
+  if (result.sprints === undefined && envSprints) { result.sprints = envSprints; }
+  const envTypes = process.env.JIRA_SYNC_TYPES;
+  if (result.types === undefined && envTypes) {
+    result.types = envTypes.split(',').map(s => s.trim()).filter(Boolean);
   }
 
   // Positional capture for single-issue / JQL read commands.
@@ -519,6 +654,33 @@ function parseArgs(args: string[]): ParsedArgs {
   }
 
   return result;
+}
+
+/**
+ * Builds a JQL `sprint ...` fragment from a selector. Empty selector → '' (no filter).
+ *   active | current → sprint in openSprints()   (active + future — JQL has no split)
+ *   closed           → sprint in closedSprints()
+ *   >=N              → sprint >= N                (sprint id; see plan caveat)
+ *   7,8,10           → sprint in (7, 8, 10)       (ids/numbers) or quoted names
+ */
+function buildSprintJql(selector?: string): string {
+  const sel = selector?.trim();
+  if (!sel) { return ''; }
+  const low = sel.toLowerCase();
+  if (low === 'active' || low === 'current') { return 'sprint in openSprints()'; }
+  if (low === 'closed') { return 'sprint in closedSprints()'; }
+  const ge = sel.match(/^>=\s*(\d+)$/);
+  if (ge) { return `sprint >= ${ge[1]}`; }
+  const parts = sel.split(',').map(s => s.trim()).filter(Boolean);
+  if (parts.length === 0) { return ''; }
+  if (parts.every(p => /^\d+$/.test(p))) { return `sprint in (${parts.join(', ')})`; }
+  return `sprint in (${parts.map(p => `"${p.replace(/"/g, '')}"`).join(', ')})`;
+}
+
+/** ` AND <sprint clause>` for injecting into a project/type JQL, or '' when no sprint filter. */
+function sprintAndClause(options: SyncOptions): string {
+  const clause = buildSprintJql(options.sprints);
+  return clause ? ` AND ${clause}` : '';
 }
 
 // ============================================================================
@@ -1770,6 +1932,153 @@ function generateEpicTreeMarkdown(
 }
 
 // ============================================================================
+// COVERAGE DISCOVERY (ATP / ATR / Defects auto-nested under a coverable issue)
+// ============================================================================
+
+interface CoverageLink {
+  key: string
+  issueType: string
+  summary: string
+  linkTypeName: string
+}
+
+function bumpFile(status: 'created' | 'updated' | 'skipped', result: SyncResult): void {
+  if (status === 'created') { result.files.created++; }
+  else if (status === 'updated') { result.files.updated++; }
+  else { result.files.skipped++; }
+}
+
+let LINK_CATALOG_CACHE: Record<string, string> | null = null;
+
+/** Resolves defect link-type slugs (e.g. `blocks`) to their Jira link-type names (`Blocks`). */
+function loadLinkTypeNames(slugs: string[]): Set<string> {
+  if (!LINK_CATALOG_CACHE) {
+    LINK_CATALOG_CACHE = {};
+    const p = join(import.meta.dir, '..', '.agents', 'jira-link-types.json');
+    if (existsSync(p)) {
+      try {
+        const raw = JSON.parse(readFileSync(p, 'utf8')) as Record<string, { name?: string }>;
+        for (const [slug, def] of Object.entries(raw)) {
+          if (def && typeof def.name === 'string') { LINK_CATALOG_CACHE[slug] = def.name; }
+        }
+      }
+      catch { /* leave the catalog empty — validation just won't flag atypical links */ }
+    }
+  }
+  const names = new Set<string>();
+  for (const slug of slugs) {
+    const name = LINK_CATALOG_CACHE[slug];
+    if (name) { names.add(name); }
+  }
+  return names;
+}
+
+/** Splits an issue's links into ATP (Test Plan), ATR (Test / Re-Test Execution) and Defect buckets. */
+function classifyCoverageLinks(issue: JiraIssue, reg: Registry): {
+  atp: CoverageLink[]
+  atr: CoverageLink[]
+  defects: Array<CoverageLink & { linkOk: boolean }>
+} {
+  const atp: CoverageLink[] = [];
+  const atr: CoverageLink[] = [];
+  const defects: Array<CoverageLink & { linkOk: boolean }> = [];
+  const acceptedDefectNames = loadLinkTypeNames(reg.bySlug.get('defect')?.defectLinkTypes ?? []);
+
+  for (const link of issue.fields.issuelinks ?? []) {
+    const other = link.inwardIssue ?? link.outwardIssue;
+    if (!other) { continue; }
+    const entry = reg.byJiraType.get(other.fields.issuetype?.name ?? '');
+    if (!entry) { continue; }
+    const cl: CoverageLink = {
+      key: other.key,
+      issueType: other.fields.issuetype?.name ?? '',
+      summary: other.fields.summary,
+      linkTypeName: link.type.name,
+    };
+    if (entry.role === 'atp') { atp.push(cl); }
+    else if (entry.role === 'atr') { atr.push(cl); }
+    else if (entry.slug === 'defect') { defects.push({ ...cl, linkOk: acceptedDefectNames.has(link.type.name) }); }
+  }
+  return { atp, atr, defects };
+}
+
+/** Provenance footer appended to an ATP/ATR file synced from a linked Xray artifact. */
+function coverageProvenance(label: string, source: CoverageLink, config: Config): string {
+  return `\n---\n_Source: Xray ${source.issueType} [${source.key}](${config.displayUrl}/browse/${source.key}) description · ${label} · synced by sync-jira-issues_\n`;
+}
+
+/**
+ * Discovers and materializes a coverable issue's QA coverage from its issue links:
+ * the linked Xray Test Plan (ATP) and Test / Re-Test Execution (ATR) `description`
+ * bodies override the canonical `acceptance-test-plan.md` / `acceptance-test-results.md`
+ * (Xray wins over the custom-field copy), and linked Defects are nested under `defects/`.
+ * Mis-typed traceability links are reported as warnings (Jira config gaps to fix).
+ */
+async function discoverCoverage(
+  config: Config,
+  issue: JiraIssue,
+  folder: string,
+  options: SyncOptions,
+  result: SyncResult,
+): Promise<void> {
+  const reg = loadRegistry();
+  const { atp, atr, defects } = classifyCoverageLinks(issue, reg);
+
+  // --- ATP: Xray Test Plan description overrides the custom-field copy ---
+  if (atp.length > 0) {
+    const chosen = atp[0];
+    if (atp.length > 1) {
+      result.warnings.push(`${issue.key}: ${atp.length} Test Plans linked — using ${chosen.key} as ATP`);
+    }
+    if (chosen.linkTypeName !== 'Test') {
+      result.warnings.push(`${issue.key} ↔ ${chosen.key} (ATP) linked via '${chosen.linkTypeName}' (expected 'is tested by') — fix Jira link`);
+    }
+    const tp = await fetchIssue(config, chosen.key, TEST_FIELDS);
+    const body = generateXrayArtifactMarkdown(tp, 'ACCEPTANCE TEST PLAN (ATP)', config) + coverageProvenance('ATP', chosen, config);
+    bumpFile(writeIndexFile(join(folder, 'acceptance-test-plan.md'), body, options.dryRun).status, result);
+  }
+
+  // --- ATR: newest Test / Re-Test Execution → canonical; all → test-executions/ when >1 ---
+  if (atr.length > 0) {
+    const execs = await Promise.all(atr.map(async l => fetchIssue(config, l.key, TEST_FIELDS)));
+    const indexed = execs.map((ex, i) => ({ ex, link: atr[i] }));
+    indexed.sort((a, b) => (Date.parse(b.ex.fields.updated) || 0) - (Date.parse(a.ex.fields.updated) || 0));
+    const latest = indexed[0];
+    if (latest.link.linkTypeName !== 'Test') {
+      result.warnings.push(`${issue.key} ↔ ${latest.link.key} (ATR) linked via '${latest.link.linkTypeName}' (expected 'is tested by') — fix Jira link`);
+    }
+    const note = atr.length > 1 ? ` (latest of ${atr.length} — see test-executions/)` : '';
+    const body = generateXrayArtifactMarkdown(latest.ex, `ACCEPTANCE TEST RESULTS (ATR)${note}`, config) + coverageProvenance('ATR', latest.link, config);
+    bumpFile(writeIndexFile(join(folder, 'acceptance-test-results.md'), body, options.dryRun).status, result);
+
+    if (atr.length > 1) {
+      const exDir = join(folder, 'test-executions');
+      if (!options.dryRun) { ensureDir(exDir); }
+      for (const { ex, link } of indexed) {
+        const prefix = FOLDER_PREFIX[reg.byJiraType.get(link.issueType)?.slug ?? 'test_execution'] ?? 'TESTEXEC';
+        const exBody = generateXrayArtifactMarkdown(ex, link.issueType.toUpperCase(), config);
+        bumpFile(writeIndexFile(join(exDir, `${prefix}-${ex.key}-${generateSlug(ex.fields.summary)}.md`), exBody, options.dryRun).status, result);
+      }
+    }
+  }
+
+  // --- Defects: nested under defects/ (skipped with --no-defects) ---
+  if (defects.length > 0 && !options.noDefects) {
+    const defDir = join(folder, 'defects');
+    if (!options.dryRun) { ensureDir(defDir); }
+    for (const d of defects) {
+      if (!d.linkOk) {
+        result.warnings.push(`${issue.key} ↔ ${d.key} (Defect) linked via '${d.linkTypeName}' (atypical — expected causes / is blocked by / Defect) — verify Jira link`);
+      }
+      const dIssue = await fetchIssue(config, d.key, BUG_FIELDS);
+      const body = generateDefectMarkdown(dIssue, { key: issue.key, summary: issue.fields.summary }, config);
+      bumpFile(writeIndexFile(join(defDir, `DEFECT-${d.key}-${generateSlug(dIssue.fields.summary)}.md`), body, options.dryRun).status, result);
+      result.synced.defects++;
+    }
+  }
+}
+
+// ============================================================================
 // SYNC ENGINE
 // ============================================================================
 
@@ -1796,6 +2105,10 @@ async function syncStory(
 
   // Materialize per-field files first so the index can list which exist.
   const present = syncFieldFiles(story.key, story.fields, STORY_FIELD_FILES, storyFolder, config, options.dryRun, result);
+
+  // Auto-discover Xray ATP/ATR + nested defects from the story's issue links. The
+  // Xray Test Plan / Execution description overrides the custom-field ATP/ATR copy.
+  await discoverCoverage(config, story, storyFolder, options, result);
 
   // Write story.md (index)
   const storyContent = generateStoryMarkdown(story, epic, config, present);
@@ -1838,7 +2151,7 @@ async function syncEpic(
   // Fetch stories for this epic (only Stories, not Bugs/Tests/etc.)
   const stories = await searchIssues(
     config,
-    `project = ${config.project} AND parent = ${epicKey} AND issuetype = Story ORDER BY key ASC`,
+    `project = ${config.project} AND parent = ${epicKey} AND issuetype = Story${sprintAndClause(options)} ORDER BY key ASC`,
     STORY_FIELDS,
   );
 
@@ -1992,7 +2305,7 @@ async function syncAll(config: Config, options: SyncOptions): Promise<SyncResult
       // Also find orphan stories (stories without parent epic)
       const orphanStories = await searchIssues(
         config,
-        `project = ${config.project} AND issuetype = Story AND parent is EMPTY ORDER BY key ASC`,
+        `project = ${config.project} AND issuetype = Story AND parent is EMPTY${sprintAndClause(options)} ORDER BY key ASC`,
         STORY_FIELDS,
       );
 
@@ -2031,62 +2344,54 @@ async function syncAll(config: Config, options: SyncOptions): Promise<SyncResult
   return result;
 }
 
+/**
+ * Generic registry-driven sweep: pulls every issue of a work type and routes each to its
+ * coverable-folder sync (Bug / Improvement / Tech Story / Tech Debt) or the flat standalone
+ * writer. Accumulates into `result`. Emits an INFO line (not an error) when a `recommended`
+ * type has no issues, so a project that simply hasn't created any isn't treated as broken.
+ */
+async function syncTypeSweep(
+  config: Config,
+  entry: WorkTypeEntry,
+  options: SyncOptions,
+  result: SyncResult,
+): Promise<void> {
+  if (!options.json) { log.info(`Fetching ${entry.jiraIssueType} issues...`); }
+  const jql = `project = ${config.project} AND issuetype = "${entry.jiraIssueType}"${sprintAndClause(options)} ORDER BY key ASC`;
+  const issues = await searchIssues(config, jql, ['issuetype', 'summary']);
+  if (!options.json) { log.success(`Found ${issues.length} ${entry.jiraIssueType} issue(s)`); }
+
+  if (issues.length === 0) {
+    if (entry.recommended) {
+      result.warnings.push(`INFO: no '${entry.jiraIssueType}' issues in ${config.project} — this project commonly tracks ${entry.jiraIssueType}.`);
+    }
+    return;
+  }
+
+  for (let i = 0; i < issues.length; i++) {
+    const m = issues[i];
+    if (!options.json) { log.tree(m.key, m.fields.summary, i === issues.length - 1); }
+    if (entry.coverable) {
+      await syncCoverableStandalone(config, m.key, entry, options, result);
+    }
+    else {
+      await syncStandaloneIssue(config, m.key, entry.jiraIssueType, options, result);
+    }
+  }
+}
+
+/** Pulls all Bugs as coverable folders (own body + nested ATP/ATR + defects). */
 async function syncBugs(config: Config, options: SyncOptions): Promise<SyncResult> {
   const startTime = Date.now();
-
-  const result: SyncResult = {
-    success: true,
-    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0 },
-    warnings: [],
-    files: { created: 0, updated: 0, skipped: 0 },
-    duration_ms: 0,
-  };
-
+  const result = emptyResult();
   try {
-    const bugsDir = join(config.outputDir, 'bugs');
-    if (!options.dryRun) {
-      ensureDir(bugsDir);
-    }
-
-    if (!options.json) {
-      log.info('Fetching bugs from Jira...');
-    }
-
-    const bugs = await searchIssues(
-      config,
-      `project = ${config.project} AND issuetype = Bug ORDER BY key ASC`,
-      BUG_FIELDS,
-    );
-
-    if (!options.json) {
-      log.success(`Found ${bugs.length} bugs`);
-    }
-
-    for (const bug of bugs) {
-      const slug = generateSlug(bug.fields.summary);
-      const filename = `BUG-${bug.key}-${slug}.md`;
-      const filePath = join(bugsDir, filename);
-
-      if (!options.json) {
-        log.tree(bug.key, bug.fields.summary, bug === bugs[bugs.length - 1]);
-      }
-
-      const content = generateBugMarkdown(bug, config);
-      const writeResult = writeIndexFile(filePath, content, options.dryRun);
-
-      if (writeResult.status === 'created') { result.files.created++; }
-      else if (writeResult.status === 'updated') { result.files.updated++; }
-      else { result.files.skipped++; }
-
-      result.synced.bugs++;
-    }
+    const entry = loadRegistry().bySlug.get('bug');
+    if (entry) { await syncTypeSweep(config, entry, options, result); }
   }
   catch (error) {
     result.success = false;
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    result.warnings.push(`Error: ${errorMessage}`);
+    result.warnings.push(`Error: ${error instanceof Error ? error.message : String(error)}`);
   }
-
   result.duration_ms = Date.now() - startTime;
   return result;
 }
@@ -2136,7 +2441,7 @@ async function syncDefects(config: Config, options: SyncOptions): Promise<SyncRe
 
     const defects = await searchIssues(
       config,
-      `project = ${config.project} AND issuetype = Defect ORDER BY key ASC`,
+      `project = ${config.project} AND issuetype = Defect${sprintAndClause(options)} ORDER BY key ASC`,
       BUG_FIELDS, // Defects use the same fields as Bugs
     );
 
@@ -2217,62 +2522,18 @@ async function syncDefects(config: Config, options: SyncOptions): Promise<SyncRe
   return result;
 }
 
+/** Pulls all Improvements as coverable folders (own body + nested ATP/ATR + defects). */
 async function syncImprovements(config: Config, options: SyncOptions): Promise<SyncResult> {
   const startTime = Date.now();
-
-  const result: SyncResult = {
-    success: true,
-    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0 },
-    warnings: [],
-    files: { created: 0, updated: 0, skipped: 0 },
-    duration_ms: 0,
-  };
-
+  const result = emptyResult();
   try {
-    const improvementsDir = join(config.outputDir, 'improvements');
-    if (!options.dryRun) {
-      ensureDir(improvementsDir);
-    }
-
-    if (!options.json) {
-      log.info('Fetching improvements from Jira...');
-    }
-
-    const improvements = await searchIssues(
-      config,
-      `project = ${config.project} AND issuetype = Improvement ORDER BY key ASC`,
-      IMPROVEMENT_FIELDS,
-    );
-
-    if (!options.json) {
-      log.success(`Found ${improvements.length} improvements`);
-    }
-
-    for (const improvement of improvements) {
-      const slug = generateSlug(improvement.fields.summary);
-      const filename = `IMPROVEMENT-${improvement.key}-${slug}.md`;
-      const filePath = join(improvementsDir, filename);
-
-      if (!options.json) {
-        log.tree(improvement.key, improvement.fields.summary, improvement === improvements[improvements.length - 1]);
-      }
-
-      const content = generateImprovementMarkdown(improvement, config);
-      const writeResult = writeIndexFile(filePath, content, options.dryRun);
-
-      if (writeResult.status === 'created') { result.files.created++; }
-      else if (writeResult.status === 'updated') { result.files.updated++; }
-      else { result.files.skipped++; }
-
-      result.synced.improvements++;
-    }
+    const entry = loadRegistry().bySlug.get('improvement');
+    if (entry) { await syncTypeSweep(config, entry, options, result); }
   }
   catch (error) {
     result.success = false;
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    result.warnings.push(`Error: ${errorMessage}`);
+    result.warnings.push(`Error: ${error instanceof Error ? error.message : String(error)}`);
   }
-
   result.duration_ms = Date.now() - startTime;
   return result;
 }
@@ -2300,7 +2561,7 @@ async function syncTests(config: Config, options: SyncOptions): Promise<SyncResu
 
     const tests = await searchIssues(
       config,
-      `project = ${config.project} AND issuetype = Test ORDER BY key ASC`,
+      `project = ${config.project} AND issuetype = Test${sprintAndClause(options)} ORDER BY key ASC`,
       TEST_FIELDS,
     );
 
@@ -2351,11 +2612,178 @@ function emptyResult(): SyncResult {
   };
 }
 
+/** Field set to request per registry entry (broad enough to materialize its content). */
+function fieldsForEntry(entry: WorkTypeEntry): string[] {
+  if (entry.content === 'auto') { return ['*all']; } // tech_story / tech_debt → autodetect every field
+  if (entry.slug === 'improvement') { return IMPROVEMENT_FIELDS; }
+  if (entry.content === 'single') { return BUG_FIELDS; } // bug / defect → full custom fields
+  return TEST_FIELDS; // description / atp / atr → description + issuelinks + components
+}
+
+/** Renders the body for a standalone (non Epic/Story) issue per its registry content mode. */
+function renderStandaloneContent(
+  entry: WorkTypeEntry,
+  issue: JiraIssue,
+  type: string,
+  config: Config,
+): string {
+  switch (entry.slug) {
+    case 'defect': return generateDefectMarkdown(issue, findLinkedStory(issue), config);
+    case 'bug': return generateBugMarkdown(issue, config);
+    case 'improvement': return generateImprovementMarkdown(issue, config);
+    case 'test_case': return generateTestMarkdown(issue, config);
+    // atp / atr / test_set / precondition / tech_story / tech_debt → description capture.
+    // NOTE: tech_story / tech_debt gain full rich-text autodetect in F2 (content: auto).
+    default: return generateXrayArtifactMarkdown(issue, type.toUpperCase(), config);
+  }
+}
+
+/** Bumps the matching SyncResult counter for a synced standalone issue. */
+function bumpSyncedCounter(slug: string, result: SyncResult): void {
+  if (slug === 'bug') { result.synced.bugs++; }
+  else if (slug === 'defect') { result.synced.defects++; }
+  else if (slug === 'improvement') { result.synced.improvements++; }
+  else if (slug === 'test_case') { result.synced.tests++; }
+}
+
+/** Reuses an existing `PREFIX-<key>-*` folder under baseDir so re-syncs stay idempotent. */
+function findStandaloneFolder(baseDir: string, key: string, prefix: string): string | null {
+  if (!existsSync(baseDir)) { return null; }
+  const match = readdirSync(baseDir, { withFileTypes: true })
+    .find(d => d.isDirectory() && d.name.startsWith(`${prefix}-${key}-`));
+  return match ? join(baseDir, match.name) : null;
+}
+
+let FIELD_NAME_BY_ID: Record<string, string> | null = null;
+
+/** Maps `customfield_XXXXX` → human field name from `.agents/jira-fields.json` (for `auto` content). */
+function fieldNameById(): Record<string, string> {
+  if (!FIELD_NAME_BY_ID) {
+    FIELD_NAME_BY_ID = {};
+    try {
+      for (const entry of Object.values(loadJiraFields())) {
+        if (entry && typeof entry.id === 'string' && typeof entry.name === 'string') {
+          FIELD_NAME_BY_ID[entry.id] = entry.name;
+        }
+      }
+    }
+    catch { /* no catalog — fall back to raw field ids as section titles */ }
+  }
+  return FIELD_NAME_BY_ID;
+}
+
+/** Best-effort rendering of an arbitrary Jira field value for the `auto` content strategy. */
+function renderAutoFieldValue(raw: unknown): string {
+  if (typeof raw === 'string') { return raw; }
+  if (raw && typeof raw === 'object') {
+    const o = raw as Record<string, unknown>;
+    if (o.type === 'doc' && Array.isArray(o.content)) { return adfToMarkdown(raw as AdfDocument); }
+    if (typeof o.value === 'string') { return o.value; }
+    if (typeof o.name === 'string') { return o.name; }
+    if (typeof o.displayName === 'string') { return o.displayName; }
+  }
+  return ''; // numbers / booleans / arrays / unknown shapes → skip (avoid dumping noise)
+}
+
 /**
- * Writes a single non-Story/Epic issue to its type folder. Handles Bug, Defect,
- * Improvement, Test (full custom-field materializers) plus the Xray container types
- * Test Plan / Test Execution / Test Set / Pre-Condition (generic description capture —
- * this is where the ATP/ATR body lives in Modality jira-xray).
+ * Generic content renderer for coverable types without a curated field list
+ * (Tech Story / Tech Debt). Auto-detects rich-text (ADF) and string custom fields,
+ * names them from `.agents/jira-fields.json`, and emits one consolidated Markdown file.
+ */
+function renderAutoContent(issue: JiraIssue, entry: WorkTypeEntry, config: Config): string {
+  const f = issue.fields;
+  const names = fieldNameById();
+  const lines: string[] = [
+    `# ${entry.jiraIssueType}: ${f.summary}`,
+    '',
+    `**Jira Key:** [${issue.key}](${config.displayUrl}/browse/${issue.key})`,
+    `**Status:** ${f.status?.name ?? 'Unknown'}`,
+    `**Type:** ${f.issuetype?.name ?? entry.jiraIssueType}`,
+    '',
+    '---',
+    '',
+    '## Description',
+    '',
+    adfToMarkdown(f.description) || '_No description provided_',
+    '',
+  ];
+
+  const sections: Array<{ title: string, body: string }> = [];
+  for (const [fid, raw] of Object.entries(f)) {
+    if (!fid.startsWith('customfield_') || raw == null) { continue; }
+    const body = renderAutoFieldValue(raw).trim();
+    if (!body) { continue; }
+    sections.push({ title: names[fid] ?? fid, body });
+  }
+  sections.sort((a, b) => a.title.localeCompare(b.title));
+  if (sections.length > 0) {
+    lines.push('---', '', '## Fields', '');
+    for (const s of sections) { lines.push(`### ${s.title}`, '', s.body, ''); }
+  }
+
+  lines.push(
+    '---',
+    '',
+    '## Metadata',
+    '',
+    `- **Created:** ${f.created ? new Date(f.created).toLocaleDateString() : 'Unknown'}`,
+    `- **Updated:** ${f.updated ? new Date(f.updated).toLocaleDateString() : 'Unknown'}`,
+    `- **Reporter:** ${f.reporter?.displayName ?? 'Unknown'}`,
+    `- **Assignee:** ${f.assignee?.displayName ?? 'Unassigned'}`,
+  );
+  if (f.labels?.length) { lines.push(`- **Labels:** ${f.labels.join(', ')}`); }
+  lines.push('', '---', '', '_Synced from Jira by sync-jira-issues_', '');
+  return lines.join('\n');
+}
+
+/** Renders a coverable issue's own body file per its content strategy. */
+function renderCoverableContent(entry: WorkTypeEntry, issue: JiraIssue, config: Config): string {
+  if (entry.content === 'auto') { return renderAutoContent(issue, entry, config); }
+  if (entry.slug === 'defect') { return generateDefectMarkdown(issue, findLinkedStory(issue), config); }
+  if (entry.slug === 'improvement') { return generateImprovementMarkdown(issue, config); }
+  if (entry.slug === 'bug') { return generateBugMarkdown(issue, config); }
+  return generateXrayArtifactMarkdown(issue, entry.jiraIssueType.toUpperCase(), config);
+}
+
+/**
+ * Syncs a coverable non-Story issue (Bug / Defect / Improvement / Tech Story / Tech Debt)
+ * into its OWN folder: the issue body (content strategy) plus auto-discovered ATP/ATR and
+ * nested defects (via discoverCoverage) — mirroring how a Story is synced.
+ */
+async function syncCoverableStandalone(
+  config: Config,
+  key: string,
+  entry: WorkTypeEntry,
+  options: SyncOptions,
+  result: SyncResult,
+): Promise<void> {
+  const baseDir = join(config.outputDir, entry.localDir ?? entry.slug);
+  const prefix = FOLDER_PREFIX[entry.slug] ?? entry.slug.toUpperCase();
+
+  const issue = await fetchIssue(config, key, fieldsForEntry(entry));
+  const folder = findStandaloneFolder(baseDir, key, prefix)
+    ?? join(baseDir, `${prefix}-${key}-${generateSlug(issue.fields.summary)}`);
+  if (!options.dryRun) { ensureDir(folder); }
+
+  const contentFile = `${entry.slug.replace(/_/g, '-')}.md`;
+  bumpFile(writeIndexFile(join(folder, contentFile), renderCoverableContent(entry, issue, config), options.dryRun).status, result);
+
+  await discoverCoverage(config, issue, folder, options, result);
+
+  if (options.includeComments) {
+    const comments = await fetchComments(config, key);
+    bumpFile(writeIndexFile(join(folder, 'comments.md'), generateCommentsMarkdown(comments, key, config), options.dryRun).status, result);
+  }
+
+  bumpSyncedCounter(entry.slug, result);
+}
+
+/**
+ * Writes a single non-Story/Epic issue to its registry-declared folder. The work-type
+ * registry (`.agents/jira-required.yaml`) drives the target dir, filename prefix, field
+ * set and content strategy — replacing the former hardcoded `switch(type)`. Unknown types
+ * are reported rather than silently dropped; Xray container types (Test Plan = ATP, Test
+ * Execution / Re-Test Execution = ATR) capture their `description` body.
  */
 async function syncStandaloneIssue(
   config: Config,
@@ -2364,44 +2792,41 @@ async function syncStandaloneIssue(
   options: SyncOptions,
   result: SyncResult,
 ): Promise<void> {
-  let fields: string[];
-  let subdir: string;
-  let prefix: string;
-  switch (type) {
-    case 'Bug': fields = BUG_FIELDS; subdir = 'bugs'; prefix = 'BUG'; break;
-    case 'Defect': fields = BUG_FIELDS; subdir = 'defects'; prefix = 'DEFECT'; break;
-    case 'Improvement': fields = IMPROVEMENT_FIELDS; subdir = 'improvements'; prefix = 'IMPROVEMENT'; break;
-    case 'Test': fields = TEST_FIELDS; subdir = 'tests'; prefix = 'TEST'; break;
-    case 'Test Plan': fields = TEST_FIELDS; subdir = 'test-plans'; prefix = 'TESTPLAN'; break;
-    case 'Test Execution': fields = TEST_FIELDS; subdir = 'test-executions'; prefix = 'TESTEXEC'; break;
-    case 'Test Set': fields = TEST_FIELDS; subdir = 'test-sets'; prefix = 'TESTSET'; break;
-    case 'Pre-Condition': fields = TEST_FIELDS; subdir = 'preconditions'; prefix = 'PRECONDITION'; break;
-    default:
-      result.warnings.push(`${key}: unsupported issue type '${type}' — skipped`);
-      return;
+  const entry = loadRegistry().byJiraType.get(type);
+  if (!entry) {
+    result.warnings.push(
+      `${key}: issue type '${type}' is not declared under work_types: in .agents/jira-required.yaml — skipped`,
+    );
+    return;
+  }
+  if (entry.container || entry.slug === 'story') {
+    result.warnings.push(`${key}: '${type}' is routed via pull/epic/story, not as a standalone issue — skipped`);
+    return;
   }
 
-  const issue = await fetchIssue(config, key, fields);
+  // Coverable non-Story issues (Bug / Defect / Improvement / Tech Story / Tech Debt) get their
+  // own folder + auto-discovered ATP/ATR + nested defects, just like a Story.
+  if (entry.coverable) {
+    await syncCoverableStandalone(config, key, entry, options, result);
+    return;
+  }
+
+  const subdir = entry.localDir ?? entry.slug;
+  const prefix = FOLDER_PREFIX[entry.slug] ?? entry.slug.toUpperCase();
+
+  const issue = await fetchIssue(config, key, fieldsForEntry(entry));
   const dir = join(config.outputDir, subdir);
   if (!options.dryRun) { ensureDir(dir); }
   const filePath = join(dir, `${prefix}-${key}-${generateSlug(issue.fields.summary)}.md`);
 
-  let content: string;
-  if (type === 'Defect') { content = generateDefectMarkdown(issue, findLinkedStory(issue), config); }
-  else if (type === 'Bug') { content = generateBugMarkdown(issue, config); }
-  else if (type === 'Improvement') { content = generateImprovementMarkdown(issue, config); }
-  else if (type === 'Test') { content = generateTestMarkdown(issue, config); }
-  else { content = generateXrayArtifactMarkdown(issue, type.toUpperCase(), config); }
+  const content = renderStandaloneContent(entry, issue, type, config);
 
   const r = writeIndexFile(filePath, content, options.dryRun);
   if (r.status === 'created') { result.files.created++; }
   else if (r.status === 'updated') { result.files.updated++; }
   else { result.files.skipped++; }
 
-  if (type === 'Bug') { result.synced.bugs++; }
-  else if (type === 'Defect') { result.synced.defects++; }
-  else if (type === 'Improvement') { result.synced.improvements++; }
-  else if (type === 'Test') { result.synced.tests++; }
+  bumpSyncedCounter(entry.slug, result);
 }
 
 /** Detects an issue's type and routes it to the correct materializer (full custom fields). */
@@ -2491,9 +2916,36 @@ async function cmdStatus(): Promise<void> {
   }
 }
 
+/**
+ * Audits Defects that have NO traceability link to a coverable parent (Story / Bug /
+ * Improvement / Tech Story / Tech Debt). Such defects are invisible to per-parent discovery —
+ * surfacing them as a warning lets QA re-link the lost ones. Skipped with --no-defects.
+ */
+async function auditOrphanDefects(config: Config, options: SyncOptions, result: SyncResult): Promise<void> {
+  if (options.noDefects) { return; }
+  const reg = loadRegistry();
+  const defects = await searchIssues(
+    config,
+    `project = ${config.project} AND issuetype = Defect${sprintAndClause(options)} ORDER BY key ASC`,
+    ['issuetype', 'summary', 'issuelinks'],
+  );
+  const orphans: string[] = [];
+  for (const d of defects) {
+    const hasParent = (d.fields.issuelinks ?? []).some((link) => {
+      const other = link.inwardIssue ?? link.outwardIssue;
+      const e = other ? reg.byJiraType.get(other.fields.issuetype?.name ?? '') : undefined;
+      return e?.coverable === true && e.slug !== 'defect';
+    });
+    if (!hasParent) { orphans.push(d.key); }
+  }
+  if (orphans.length > 0) {
+    result.warnings.push(`${orphans.length} orphan Defect(s) with no coverable parent link — re-link in Jira: ${orphans.join(', ')}`);
+  }
+}
+
 async function cmdPull(options: SyncOptions): Promise<void> {
   const issueTypeLabels: Record<IssueTypeFilter, string> = {
-    stories: 'Epics & Stories',
+    stories: 'Epics, Stories & Bugs',
     bugs: 'Bugs',
     defects: 'Defects',
     improvements: 'Improvements',
@@ -2531,6 +2983,18 @@ async function cmdPull(options: SyncOptions): Promise<void> {
       case 'stories':
       default:
         result = await syncAll(config, options);
+        // Default scope also pulls Bugs (+ optional --types) unless scoped to a single epic/story.
+        if (!options.epicKey && !options.storyKey) {
+          const reg = loadRegistry();
+          const bug = reg.bySlug.get('bug');
+          if (bug) { await syncTypeSweep(config, bug, options, result); }
+          for (const slug of options.types ?? []) {
+            const e = reg.bySlug.get(slug) ?? reg.bySlug.get(slug.replace(/-/g, '_'));
+            if (e) { await syncTypeSweep(config, e, options, result); }
+            else { result.warnings.push(`INFO: --types '${slug}' is not a known work_type slug — skipped.`); }
+          }
+          await auditOrphanDefects(config, options, result);
+        }
         break;
     }
 
@@ -2556,6 +3020,9 @@ async function cmdPull(options: SyncOptions): Promise<void> {
       if (options.issueType === 'stories') {
         log.line(`Epics synced:   ${result.synced.epics}`);
         log.line(`Stories synced: ${result.synced.stories}`);
+        if (result.synced.bugs > 0) { log.line(`Bugs synced:    ${result.synced.bugs}`); }
+        if (result.synced.defects > 0) { log.line(`Defects synced: ${result.synced.defects}`); }
+        if (result.synced.improvements > 0) { log.line(`Improvements synced: ${result.synced.improvements}`); }
       }
       else if (options.issueType === 'bugs') {
         log.line(`Bugs synced:    ${result.synced.bugs}`);
@@ -2666,28 +3133,52 @@ async function cmdJql(jql: string, options: SyncOptions): Promise<void> {
 function cmdHelp(): void {
   console.log(`
 ${colors.bold}${colors.cyan}Jira Sync CLI${colors.reset}
-Sync Jira Epics & Stories to local Markdown files
+Sync Jira work items to local Markdown — registry-driven coverage (ATP/ATR/defects auto-nested)
 
 ${colors.bold}USAGE${colors.reset}
   bun run jira:sync-issues <command> [subcommand] [options]
 
 ${colors.bold}COMMANDS${colors.reset}
   status              Check configuration and connection
-  pull                Sync Epics and Stories from Jira (default)
+  pull                Sync Epics + Stories + Bugs from Jira (default scope)
   get <KEY>           Sync ONE issue (any type) with ALL custom fields → local files
   jql "<query>"       Sync EVERY issue matching a raw JQL query (custom fields incl.)
   help                Show this help message
 
 ${colors.bold}PULL SUBCOMMANDS${colors.reset}
-  pull                Sync Epics + Stories (default) → .context/PBI/epics/
-  pull bugs           Sync Bugs → .context/PBI/bugs/
-  pull defects        Sync Defects → inside Story folders
-  pull improvements   Sync Improvements → .context/PBI/improvements/
+  pull                Sync Epics + Stories + Bugs (default) → .context/PBI/
+  pull bugs           Sync Bugs → .context/PBI/bugs/BUG-<KEY>-<slug>/
+  pull defects        Sync Defects → nested under their coverable parent (defects/)
+  pull improvements   Sync Improvements → .context/PBI/improvements/IMPROVEMENT-<KEY>-<slug>/
   pull tests          Sync Tests → .context/PBI/tests/
+
+${colors.bold}COVERABLE FOLDERS${colors.reset}
+  Coverable issues — Story, Bug, Defect, Improvement, Tech Story, Tech Debt — each
+  get their OWN folder holding the issue body (story.md / bug.md / improvement.md /
+  tech-story.md / tech-debt.md / defect.md), acceptance-test-plan.md (ATP),
+  acceptance-test-results.md (ATR), a test-executions/ subfolder (only when >1
+  execution is linked), and a defects/ subfolder (linked defects nested inside).
+  ATP/ATR precedence: linked Xray Test Plan description = ATP, linked Test Execution
+  / Re-Test Execution description = ATR (newest wins) OVERRIDE the Story custom-field
+  copy → fall back to the issue custom field → then to a Jira comment ONLY with
+  --include-comments → otherwise silent.
+  Standalone dirs: bugs/, improvements/, tech-stories/, tech-debts/. Stories stay
+  under epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/.
+
+${colors.bold}TRACEABILITY VALIDATION${colors.reset}
+  End-of-run WARNINGS flag: an ATP/ATR linked via the wrong link type (expected the
+  'Test' type, i.e. "is tested by" from the Story); a Defect linked via an atypical
+  type (accepted: causes / is blocked by / Defect–Xray Defect); and orphan Defects
+  with no coverable parent link (re-link them in Jira). Skipped with --no-defects.
 
 ${colors.bold}OPTIONS${colors.reset}
   --epic <key>        Sync specific epic with all its stories
   --story <key>       Sync specific story only
+  --sprint <sel>      Filter by sprint. sel ∈ active | current | closed | >=N | 7,8,10
+                      (active/current → openSprints(); closed → closedSprints())
+  --types <csv>       Extra coverable types to pull (e.g. improvement,tech-story,tech-debt)
+  --no-defects        Skip defect discovery / nesting and the orphan-Defect audit
+  --project <KEY>     Override the project key for this run (beats env + project.yaml)
   --include-comments  Include Jira comments in comments.md
   --dry-run           Show what would be done without writing files
   --json              Output results as JSON
@@ -2695,6 +3186,9 @@ ${colors.bold}OPTIONS${colors.reset}
 ${colors.bold}EXAMPLES${colors.reset}
   bun run jira:sync-issues status
   bun run jira:sync-issues pull
+  bun run jira:sync-issues pull --sprint active
+  bun run jira:sync-issues pull --types tech-story,tech-debt
+  bun run jira:sync-issues pull --project {{PROJECT_KEY}}
   bun run jira:sync-issues pull --epic {{PROJECT_KEY}}-20
   bun run jira:sync-issues pull --story {{PROJECT_KEY}}-21
   bun run jira:sync-issues pull bugs
@@ -2709,12 +3203,16 @@ ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
   ATLASSIAN_URL         Jira instance URL (required)
   ATLASSIAN_EMAIL       Your email (required)
   ATLASSIAN_API_TOKEN   API token (required)
-  JIRA_PROJECT_KEY          Project key override (default: read from .agents/project.yaml)
+  JIRA_PROJECT_KEY      Project key override (default: read from .agents/project.yaml)
   JIRA_SYNC_OUTPUT      Output directory (default: .context/PBI)
+  JIRA_SYNC_SPRINTS     Default sprint selector for --sprint (same grammar)
+  JIRA_SYNC_TYPES       Default csv of optional coverable work-type slugs for --types
+  Precedence: flag > env var > default. --project beats JIRA_PROJECT_KEY beats
+  .agents/project.yaml project_key.
 
 ${colors.bold}OVERWRITE POLICY${colors.reset}
   Jira is the source of truth — NO files are protected. Every file the sync owns
-  (story.md, epic.md, per-field .md, comments.md, bug/test/test-plan/... .md) is
+  (story.md, epic.md, per-field .md, comments.md, bug/improvement/tech-story/... .md) is
   re-materialized on each run (per-field files only when the Jira field is non-empty).
   Hand-authored NON-Jira files (context.md, evidence/, test-specs/) use names the
   sync never writes.
@@ -2730,6 +3228,10 @@ ${colors.dim}Get API token: https://id.atlassian.com/manage-profile/security/api
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
 
+  // --project takes precedence over JIRA_PROJECT_KEY env and project.yaml. Setting the env
+  // var here is the least-invasive way to feed resolveProjectKey (env is its #1 source).
+  if (args.project) { process.env.JIRA_PROJECT_KEY = args.project; }
+
   switch (args.command) {
     case 'status':
       await cmdStatus();
@@ -2743,6 +3245,9 @@ async function main(): Promise<void> {
         includeComments: args.includeComments,
         dryRun: args.dryRun,
         json: args.json,
+        sprints: args.sprints,
+        types: args.types,
+        noDefects: args.noDefects,
       });
       break;
 
@@ -2756,6 +3261,7 @@ async function main(): Promise<void> {
         includeComments: args.includeComments,
         dryRun: args.dryRun,
         json: args.json,
+        noDefects: args.noDefects,
       });
       break;
 
@@ -2769,6 +3275,7 @@ async function main(): Promise<void> {
         includeComments: args.includeComments,
         dryRun: args.dryRun,
         json: args.json,
+        noDefects: args.noDefects,
       });
       break;
 
