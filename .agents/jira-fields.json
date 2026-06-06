@@ -1,82 +1,130 @@
 {
   "acceptance_criteria": {
-    "id": "customfield_10141",
+    "id": "customfield_10063",
     "type": "string",
     "name": "✅ Acceptance Criteria (Gherkin)"
   },
   "acceptance_test_plan": {
-    "id": "customfield_10120",
+    "id": "customfield_10067",
     "type": "string",
     "name": "🧪 Acceptance Test Plan (ATP)"
   },
   "acceptance_test_results": {
-    "id": "customfield_10284",
+    "id": "customfield_10147",
     "type": "string",
     "name": "🧪 Acceptance Test Results (ATR)"
   },
+  "actual_end": {
+    "id": "customfield_10009",
+    "type": "datetime",
+    "name": "Actual end"
+  },
   "actual_result": {
-    "id": "customfield_10133",
+    "id": "customfield_10056",
     "type": "string",
     "name": "🐞 Actual Result (Comportamiento)"
   },
+  "actual_start": {
+    "id": "customfield_10008",
+    "type": "datetime",
+    "name": "Actual start"
+  },
   "affected_hardware": {
-    "id": "customfield_10209",
+    "id": "customfield_10060",
     "type": "string",
     "name": "Affected hardware"
   },
   "approver_groups": {
-    "id": "customfield_10193",
+    "id": "customfield_10149",
     "type": "array",
     "name": "Approver groups"
   },
+  "approvers": {
+    "id": "customfield_10003",
+    "type": "array",
+    "name": "Approvers"
+  },
   "backout_plan": {
-    "id": "customfield_10203",
+    "id": "customfield_10098",
     "type": "string",
     "name": "Backout plan"
   },
   "begin_date": {
-    "id": "customfield_10101",
+    "id": "customfield_10043",
     "type": "datetime",
     "name": "Begin Date"
   },
   "business_rules_specification": {
-    "id": "customfield_10134",
+    "id": "customfield_10116",
     "type": "string",
     "name": "🚩Business Rules Specification"
   },
   "category": {
-    "id": "customfield_10123",
+    "id": "customfield_10110",
     "type": "option",
     "name": "Category",
     "options": {}
   },
+  "change_reason": {
+    "id": "customfield_10007",
+    "type": "option",
+    "name": "Change reason",
+    "options": {
+      "maintenance": "10013",
+      "new_functionality": "10014",
+      "other": "10015",
+      "repair": "10011",
+      "upgrade": "10012"
+    }
+  },
+  "change_risk": {
+    "id": "customfield_10006",
+    "type": "option",
+    "name": "Change risk",
+    "options": {
+      "critical": "10007",
+      "high": "10008",
+      "low": "10010",
+      "medium": "10009"
+    }
+  },
+  "change_type": {
+    "id": "customfield_10005",
+    "type": "option",
+    "name": "Change type",
+    "options": {
+      "emergency": "10006",
+      "normal": "10005",
+      "standard": "10004"
+    }
+  },
   "checklist_completed": {
-    "id": "customfield_10149",
+    "id": "customfield_10123",
     "type": "string",
     "name": "Checklist Completed"
   },
   "checklist_content_yaml": {
-    "id": "customfield_10153",
+    "id": "customfield_10129",
     "type": "string",
     "name": "Checklist Content YAML"
   },
   "checklist_text": {
-    "id": "customfield_10112",
+    "id": "customfield_10062",
     "type": "string",
     "name": "Checklist Text"
   },
   "criterios_de_aceptacion": {
-    "id": "customfield_10217",
+    "id": "customfield_10154",
     "type": "string",
     "name": "✅ Criterios de Aceptación"
   },
   "descripcion_del_bug": {
-    "id": "customfield_10196",
+    "id": "customfield_10078",
     "type": "string",
     "name": "DESCRIPCIÓN DEL BUG"
   },
   "end_date": {
-    "id": "customfield_10102",
+    "id": "customfield_10044",
     "type": "datetime",
     "name": "End Date"
   },
@@ -114,47 +162,47 @@
     "provider": "com.pyxis.greenhopper.jira"
   },
   "error_type": {
-    "id": "customfield_10190",
+    "id": "customfield_10141",
     "type": "option",
     "name": "Error Type",
     "options": {
-      "content": "10118",
-      "crash": "10120",
-      "data": "10121",
-      "functional": "10116",
-      "integration": "10122",
-      "performance": "10119",
-      "security": "10123",
-      "visual": "10117"
+      "content": "10166",
+      "crash": "10168",
+      "data": "10169",
+      "functional": "10164",
+      "integration": "10170",
+      "performance": "10167",
+      "security": "10171",
+      "visual": "10165"
     }
   },
   "evidence": {
-    "id": "customfield_10140",
+    "id": "customfield_10061",
     "type": "string",
     "name": "🧫EVIDENCE"
   },
   "expected_result": {
-    "id": "customfield_10137",
+    "id": "customfield_10059",
     "type": "string",
     "name": "✅ Expected Result (Output)"
   },
   "feature_implementation_plan": {
-    "id": "customfield_10166",
+    "id": "customfield_10083",
     "type": "string",
     "name": "🛠️ Feature Implementation Plan (Dev)"
   },
   "feature_test_plan": {
-    "id": "customfield_10211",
+    "id": "customfield_10106",
     "type": "string",
     "name": "🧪 Feature Test Plan (QA)"
   },
   "fix": {
-    "id": "customfield_10114",
+    "id": "customfield_10107",
     "type": "option",
     "name": "Fix",
     "options": {
-      "bugfix": "10267",
-      "hotfix": "10266"
+      "bugfix": "10043",
+      "hotfix": "10042"
     }
   },
   "flagged": {
@@ -166,18 +214,18 @@
     }
   },
   "focus_areas": {
-    "id": "customfield_10036",
+    "id": "customfield_10038",
     "type": "array",
     "name": "Focus Areas"
   },
   "frecuency": {
-    "id": "customfield_10155",
+    "id": "customfield_10122",
     "type": "option",
     "name": "FRECUENCY",
     "options": {
-      "ocasional": "10114",
-      "raro": "10115",
-      "siempre": "10113"
+      "ocasional": "10076",
+      "raro": "10077",
+      "siempre": "10075"
     }
   },
   "goals": {
@@ -185,24 +233,35 @@
     "type": "array",
     "name": "Goals"
   },
+  "impact": {
+    "id": "customfield_10004",
+    "type": "option",
+    "name": "Impact",
+    "options": {
+      "extensive_widespread": "10000",
+      "minor_localized": "10003",
+      "moderate_limited": "10002",
+      "significant_large": "10001"
+    }
+  },
   "in_regression_plan": {
-    "id": "customfield_10157",
+    "id": "customfield_10133",
     "type": "option",
     "name": "In Regression Plan (QA)📊",
     "options": {
-      "no": "10198",
-      "yes": "10199"
+      "no": "10040",
+      "yes": "10041"
     }
   },
   "investigation_reason": {
-    "id": "customfield_10115",
+    "id": "customfield_10052",
     "type": "option",
     "name": "Investigation reason",
     "options": {
-      "high_impact_incident": "10109",
-      "non_routine_incident": "10111",
-      "other": "10112",
-      "recurring_incident": "10110"
+      "high_impact_incident": "10071",
+      "non_routine_incident": "10073",
+      "other": "10074",
+      "recurring_incident": "10072"
     }
   },
   "issue_color": {
@@ -213,18 +272,18 @@
     "provider": "com.pyxis.greenhopper.jira"
   },
   "mockup": {
-    "id": "customfield_10186",
+    "id": "customfield_10137",
     "type": "string",
     "name": "Mockup 🎴"
   },
   "operational_categorization": {
-    "id": "customfield_10194",
+    "id": "customfield_10144",
     "type": "option-with-child",
     "name": "Operational categorization",
     "options": {}
   },
   "out_of_scope": {
-    "id": "customfield_10135",
+    "id": "customfield_10075",
     "type": "string",
     "name": "Out Of Scope 🏴"
   },
@@ -236,63 +295,63 @@
     "provider": "com.atlassian.jpo"
   },
   "pending_reason": {
-    "id": "customfield_10127",
+    "id": "customfield_10113",
     "type": "option",
     "name": "Pending reason",
     "options": {
-      "awaiting_approval": "10195",
-      "more_info_required": "10194",
-      "pending_on_change_request": "10197",
-      "waiting_on_vendor": "10196"
+      "awaiting_approval": "10177",
+      "more_info_required": "10176",
+      "pending_on_change_request": "10179",
+      "waiting_on_vendor": "10178"
     }
   },
   "planned_end": {
-    "id": "customfield_10125",
+    "id": "customfield_10068",
     "type": "datetime",
     "name": "Planned end"
   },
   "planned_start": {
-    "id": "customfield_10121",
+    "id": "customfield_10111",
     "type": "datetime",
     "name": "Planned start"
   },
   "precondition": {
-    "id": "customfield_10214",
+    "id": "customfield_10151",
     "type": "string",
     "name": "Precondition"
   },
   "probando_field": {
-    "id": "customfield_10180",
+    "id": "customfield_10145",
     "type": "string",
     "name": "Probando Field"
   },
   "product_categorization": {
-    "id": "customfield_10148",
+    "id": "customfield_10121",
     "type": "option-with-child",
     "name": "Product categorization",
     "options": {}
   },
   "project": {
-    "id": "customfield_10317",
+    "id": "customfield_10036",
     "type": "atlas-project",
     "name": "Project"
   },
   "qa_framework": {
-    "id": "customfield_10124",
+    "id": "customfield_10112",
     "type": "option",
     "name": "QA Framework🤖",
     "options": {
-      "cypress": "10253",
-      "cypress_cucumber": "10254",
-      "playwright_javascript": "10259",
-      "playwright_python": "10260",
-      "postman": "10251",
-      "postman_newman": "10252",
-      "selenium_c": "10258",
-      "selenium_java": "10257",
-      "selenium_python": "10255",
-      "selenium_python_behave": "10256",
-      "xray_only": "10250"
+      "cypress": "10052",
+      "cypress_cucumber": "10053",
+      "playwright_javascript": "10058",
+      "playwright_python": "10059",
+      "postman": "10050",
+      "postman_newman": "10051",
+      "selenium_c": "10057",
+      "selenium_java": "10056",
+      "selenium_python": "10054",
+      "selenium_python_behave": "10055",
+      "xray_only": "10049"
     }
   },
   "rank": {
@@ -303,76 +362,76 @@
     "provider": "com.pyxis.greenhopper.jira"
   },
   "repro_steps": {
-    "id": "customfield_10218",
+    "id": "customfield_10153",
     "type": "string",
     "name": "Repro Steps (Input)"
   },
   "reviewer": {
-    "id": "customfield_10130",
+    "id": "customfield_10117",
     "type": "user",
     "name": "Reviewer🔎"
   },
   "revision": {
-    "id": "customfield_10100",
+    "id": "customfield_10042",
     "type": "string",
     "name": "Revision"
   },
   "root_cause": {
-    "id": "customfield_10118",
+    "id": "customfield_10109",
     "type": "option",
     "name": "Root Cause🐞",
     "options": {
-      "code_error": "10233",
-      "config_env_error": "10234",
-      "data_error": "10240",
-      "environment_error": "10235",
-      "integration_error": "10239",
-      "requirement_error": "10236",
-      "third_party_error": "10238",
-      "working_as_designed": "10237"
+      "code_error": "10146",
+      "config_env_error": "10147",
+      "data_error": "10153",
+      "environment_error": "10148",
+      "integration_error": "10152",
+      "requirement_error": "10149",
+      "third_party_error": "10151",
+      "working_as_designed": "10150"
     }
   },
   "scenario": {
-    "id": "customfield_10147",
+    "id": "customfield_10066",
     "type": "option",
     "name": "SCENARIO",
     "options": {
-      "negativo": "10262",
-      "positivo": "10261"
+      "negativo": "10163",
+      "positivo": "10162"
     }
   },
   "scope": {
-    "id": "customfield_10142",
+    "id": "customfield_10119",
     "type": "string",
     "name": "Scope ⛳"
   },
   "severity": {
-    "id": "customfield_10177",
+    "id": "customfield_10143",
     "type": "option",
     "name": "Severity 🚩",
     "options": {
-      "critica": "10188",
-      "mayor": "10189",
-      "menor": "10191",
-      "moderada": "10190",
-      "trivial": "10192"
+      "critica": "10025",
+      "mayor": "10026",
+      "menor": "10028",
+      "moderada": "10027",
+      "trivial": "10029"
     }
   },
   "source": {
-    "id": "customfield_10145",
+    "id": "customfield_10064",
     "type": "option",
     "name": "Source",
     "options": {
-      "customer": "10186",
-      "email": "10182",
-      "monitoring_systems": "10184",
-      "other": "10187",
-      "phone": "10183",
-      "vendor_technical_advisory": "10185"
+      "customer": "10184",
+      "email": "10180",
+      "monitoring_systems": "10182",
+      "other": "10185",
+      "phone": "10181",
+      "vendor_technical_advisory": "10183"
     }
   },
   "spec_implementation_plan": {
-    "id": "customfield_10198",
+    "id": "customfield_10095",
     "type": "string",
     "name": "🛠️ Spec Implementation Plan (Dev)"
   },
@@ -389,7 +448,7 @@
     "name": "Start date"
   },
   "steps": {
-    "id": "customfield_10188",
+    "id": "customfield_10091",
     "type": "string",
     "name": "STEPS"
   },
@@ -406,17 +465,17 @@
     "name": "Story Points"
   },
   "story_points_estimation": {
-    "id": "customfield_10158",
+    "id": "customfield_10124",
     "type": "option",
     "name": "Story Points Estimation",
     "options": {
-      "1": "10226",
-      "2": "10227",
-      "3": "10228",
-      "5": "10229",
-      "8": "10230",
-      "13": "10231",
-      "21": "10232"
+      "1": "10060",
+      "2": "10061",
+      "3": "10062",
+      "5": "10063",
+      "8": "10064",
+      "13": "10065",
+      "21": "10066"
     }
   },
   "target_end": {
@@ -439,131 +498,131 @@
     "name": "Team"
   },
   "test_analysis": {
-    "id": "customfield_10183",
+    "id": "customfield_10146",
     "type": "string",
     "name": "🔬 Test Analysis"
   },
   "test_data": {
-    "id": "customfield_10187",
+    "id": "customfield_10074",
     "type": "string",
     "name": "TEST DATA"
   },
   "test_description": {
-    "id": "customfield_10163",
+    "id": "customfield_10136",
     "type": "string",
     "name": "TEST DESCRIPTION"
   },
   "test_design": {
-    "id": "customfield_10132",
+    "id": "customfield_10114",
     "type": "string",
     "name": "Test Design 🧪"
   },
   "test_environment": {
-    "id": "customfield_10136",
+    "id": "customfield_10057",
     "type": "option",
     "name": "Test Environment 📦️",
     "options": {
-      "dev": "10241",
-      "production": "10245",
-      "qa": "10242",
-      "staging": "10244",
-      "uat": "10243"
+      "dev": "10044",
+      "production": "10048",
+      "qa": "10045",
+      "staging": "10047",
+      "uat": "10046"
     }
   },
   "test_outline": {
-    "id": "customfield_10165",
+    "id": "customfield_10138",
     "type": "string",
     "name": "Test Outline 🧪 "
   },
   "test_status": {
-    "id": "customfield_10138",
+    "id": "customfield_10118",
     "type": "option",
     "name": "Test Status🧪",
     "options": {
-      "blocked": "10249",
-      "failed": "10248",
-      "n_r": "10246",
-      "passed": "10247"
+      "blocked": "10070",
+      "failed": "10069",
+      "n_r": "10067",
+      "passed": "10068"
     }
   },
   "test_strategy": {
-    "id": "customfield_10105",
+    "id": "customfield_10100",
     "type": "string",
     "name": "🧪 Test Strategy"
   },
   "to_be_automated": {
-    "id": "customfield_10104",
+    "id": "customfield_10047",
     "type": "option",
     "name": "To Be Automated (QA)🧪",
     "options": {
-      "no": "10269",
-      "yes": "10268"
+      "no": "10039",
+      "yes": "10038"
     }
   },
   "upex_level": {
-    "id": "customfield_10251",
+    "id": "customfield_10128",
     "type": "option",
     "name": "UPEX Level",
     "options": {
-      "l1": "10311",
-      "l2": "10312",
-      "l3": "10313",
-      "l4": "10314"
+      "l1": "10154",
+      "l2": "10155",
+      "l3": "10156",
+      "l4": "10157"
     }
   },
   "urgency": {
-    "id": "customfield_10103",
+    "id": "customfield_10046",
     "type": "option",
     "name": "Urgency",
     "options": {
-      "critical": "10270",
-      "high": "10271",
-      "low": "10273",
-      "medium": "10272"
+      "critical": "10158",
+      "high": "10159",
+      "low": "10161",
+      "medium": "10160"
     }
   },
   "url_de_web": {
-    "id": "customfield_10215",
+    "id": "customfield_10152",
     "type": "string",
     "name": "URL de Web (Weblink)"
   },
   "vcr_estimation": {
-    "id": "customfield_10152",
+    "id": "customfield_10120",
     "type": "string",
     "name": "💊 VCR Estimation"
   },
   "version_del_sistema": {
-    "id": "customfield_10169",
+    "id": "customfield_10086",
     "type": "string",
     "name": "VERSIÓN DEL SISTEMA"
   },
   "weblink": {
-    "id": "customfield_10159",
+    "id": "customfield_10081",
     "type": "string",
     "name": "Weblink (URL)"
   },
   "workaround": {
-    "id": "customfield_10109",
+    "id": "customfield_10102",
     "type": "string",
     "name": "🚩 Workaround"
   },
   "workflow": {
-    "id": "customfield_10161",
+    "id": "customfield_10082",
     "type": "string",
     "name": "Workflow 🧬"
   },
   "xray_begin_date": {
-    "id": "customfield_10143",
+    "id": "customfield_10079",
     "type": "datetime",
     "name": "Xray Begin Date"
   },
   "xray_end_date": {
-    "id": "customfield_10107",
+    "id": "customfield_10058",
     "type": "datetime",
     "name": "Xray End Date"
   },
   "xray_revision": {
-    "id": "customfield_10110",
+    "id": "customfield_10049",
     "type": "string",
     "name": "Xray Revision"
   }
