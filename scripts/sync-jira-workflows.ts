@@ -1686,6 +1686,25 @@ async function main(): Promise<void> {
     perWorkTypeStats.set(wt.slug, result.stats);
   }
 
+  // 7b. INFO-only: report project issue types that EXIST in Jira but are NOT
+  // declared under `work_types:` in .agents/jira-required.yaml. Reuses the
+  // already-fetched /statuses payload (no extra network call) and the same
+  // case-insensitive name comparison `syncWorkType` uses to resolve declared
+  // types. Purely informational — never throws, never affects the exit code.
+  const declaredIssueTypeNames = new Set(
+    workTypes
+      .map(w => w.jiraIssueType.trim().toLowerCase())
+      .filter(name => name !== ''),
+  );
+  for (const it of issueTypeStatuses) {
+    if (!declaredIssueTypeNames.has(it.name.trim().toLowerCase())) {
+      log.info(
+        `Project issue type "${it.name}" exists in ${projectKey} but is not declared in `
+        + '.agents/jira-required.yaml work_types — declare it to catalog its workflow.',
+      );
+    }
+  }
+
   // 8. Persist (or print on dry-run).
   if (flags.dryRun) {
     out(JSON.stringify(newCatalog, null, 2));
