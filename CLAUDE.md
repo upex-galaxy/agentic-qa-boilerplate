@@ -312,17 +312,24 @@ Project values live in **`.agents/project.yaml`** — load once per session, cac
       context.md  test-session-memory.md         [skill — non-Jira, OK]
       shift-left-refinement.md                   [skill — non-Jira, OK]
       test-cases/  evidence/                     [skill — non-Jira, OK]
-      defects/DEFECT-<KEY>-<slug>.md             [SYNC]
-  bugs/ defects/ improvements/ tests/            [SYNC — standalone issue types]
+      test-executions/                           [SYNC — only when >1 Execution linked]
+      defects/<PREFIX>-<KEY>-<slug>/             [SYNC — linked defects nested as coverable folders]
+  bugs/BUG-<KEY>-<slug>/                         [SYNC — coverable folder: bug.md + ATP + ATR + test-executions/ + defects/]
+  improvements/IMPROVEMENT-<KEY>-<slug>/         [SYNC — coverable folder: improvement.md + ATP + ATR + …]
+  tech-stories/TECHSTORY-<KEY>-<slug>/           [SYNC — coverable folder: tech-story.md + ATP + ATR + …]
+  tech-debts/TECHDEBT-<KEY>-<slug>/              [SYNC — coverable folder: tech-debt.md + ATP + ATR + …]
+  defects/ tests/                                [SYNC — standalone defect / test issues]
   test-plans/ test-executions/ test-sets/ preconditions/   [SYNC — Xray container issues (jira-xray); description holds the ATP/ATR body]
   shift-left-sessions/<date>/batch-report.md     [skill — non-Jira, OK]
 ```
+
+**Default `pull` scope = Epics + Stories + Bugs** (+ optional `--types` / `JIRA_SYNC_TYPES`). **Coverable** types (Story, Bug, Defect, Improvement, Tech Story, Tech Debt) each get their OWN folder: body md + `acceptance-test-plan.md` + `acceptance-test-results.md` + `test-executions/` (only when >1 Execution linked) + nested `defects/`. **ATP/ATR precedence**: linked Xray Test Plan desc (ATP) / Test Execution / Re-Test Execution desc (ATR, newest wins) OVERRIDE the Story custom-field copy → else issue field → else Jira comment (only `--include-comments`) → else silent. Sync emits end-of-run **traceability WARNINGS** for ATP/ATR linked via the wrong link type, atypical Defect links, and orphan Defects with no coverable parent.
 
 **`[SYNC]` files = forbidden to hand-write** (overwritten on every sync — NO file is hard-protected; Jira is the source of truth). **Rule of thumb**: file mirrors a Jira/Xray field → read the synced copy, never author it locally. File holds info NOT in Jira (session notes, specs, ATC, roadmaps, evidence) → author it locally as usual.
 
 **DETAILED READS via the script** (replaces `acli view` for custom fields):
 - `bun run jira:sync-issues get <KEY> --include-comments` → one issue, ALL custom fields + comments → read the generated `.md`.
-- `bun run jira:sync-issues jql "<query>"` → batch. `pull --epic <KEY>` / `--story <KEY>` → scoped.
+- `bun run jira:sync-issues jql "<query>"` → batch. `pull --epic <KEY>` / `--story <KEY>` → scoped. New flags: `--sprint <active|current|closed|>=N|7,8,10>` (sprint filter), `--types <csv>` (extra coverable types), `--no-defects` (skip defect discovery), `--project <KEY>` (override key). Env defaults: `JIRA_SYNC_SPRINTS`, `JIRA_SYNC_TYPES` (flag > env > default).
 - Traceability (link graph Story↔ATP↔ATR↔TC) + Xray run status STAY on `acli`/`xray-cli` — the script only mirrors field content.
 
 **FALLBACK**: if a custom field a skill must fill is absent from the instance, the skill writes the content as a structured Jira comment (`## <label>`) per `.agents/jira-required.yaml` → `fallback:`. The sync then emits a pointer stub for that field's `.md`. Never block on a missing field.
