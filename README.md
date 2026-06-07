@@ -207,7 +207,13 @@ bun run opencode      # OpenCode
 # Optional: direnv autoload (any OS with direnv installed)
 direnv allow          # one-time per repo (the installer offers to run this)
 claude                # direct binary picks up .env from your shell
+
+# Or load .env into your CURRENT shell once, then run any binary directly:
+set -a; source .env; set +a   # exports every .env key into this terminal session
+claude                        # now claude / opencode / acli / bun xray all see the vars
 ```
+
+> The `set -a; source .env; set +a` snippet is saved as the `env` script for reference. Run it **inline** (or `source` it) — `bun run env` executes in a child subshell, so the exports would not survive back to your terminal. Run it directly and every agent/CLI launched in that same shell inherits `.env` with no wrapper.
 
 direnv works on macOS / Linux / Windows. On Windows install via `winget install direnv` — Git Bash is recommended; PowerShell support is experimental and requires direnv 2.37+. See [INSTALLER.md § Launching the agent](./INSTALLER.md#launching-the-agent-after-setup) for the per-shell hook lines.
 
