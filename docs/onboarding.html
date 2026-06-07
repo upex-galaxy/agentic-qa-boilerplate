@@ -1217,7 +1217,7 @@
         </a>
         <a class="cta" href="#section-7">
           <span class="cta-title">Skills catalog</span>
-          <span class="cta-desc">All 11 skills, what they do, when to call them.</span>
+          <span class="cta-desc">All 12 skills, what they do, when to call them.</span>
         </a>
         <a class="cta" href="#section-6">
           <span class="cta-title">Cheat sheet</span>
@@ -1310,7 +1310,7 @@ bunx create-agentic-qa@latest &lt;your-repo-name&gt;</pre
                   <li>Fresh <code>git init -b main</code> + initial commit</li>
                   <li><code>bun install</code></li>
                   <li>
-                    <code>bun run setup</code> — gentle-ai, 11 T1 skills, MCPs, <code>.env</code>,
+                    <code>bun run setup</code> — gentle-ai, 12 T1 skills, MCPs, <code>.env</code>,
                     optional <code>gh repo create</code>
                   </li>
                 </ol>
@@ -2032,14 +2032,15 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                       <code>tests/components/api/*.ts</code>, <code>tests/components/ui/*.ts</code>,
                       <code>tests/components/TestFixture.ts</code>,
                       <code>config/variables.ts</code>, and <code>api/schemas/</code> wired to the
-                      target's auth model and stack. Two strict sub-phases:
-                      <strong>Plan</strong> (no writes, presents the diff) → user approval →
-                      <strong>Implement</strong> (writes).
+                      target's auth model and stack. A 10-phase idempotent flow: Phases 0-2 (prereq
+                      + genericness gate, no writes) present the plan → user approval → Phases 3-9
+                      (writes), ending with a genericness scan.
                     </dd>
                     <dt>When to repeat</dt>
                     <dd>
-                      Once per target. Re-run only when the target's auth or stack changes
-                      meaningfully.
+                      Once per target. Idempotent — a re-run reports a GENERIC / ADAPTED checklist
+                      and only re-touches what is still generic, so it's safe whenever the target's
+                      auth or stack changes meaningfully.
                     </dd>
                   </dl>
                   <pre><code>/adapt-framework</code></pre>
@@ -2787,6 +2788,34 @@ bun run jira:check            # verify both catalogs against the manifest</code>
               lean — the heavy reading happens inside subagents.
             </p>
 
+            <div class="callout callout-info">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              <div>
+                <p class="callout-title">Readiness preflight gate (t=0)</p>
+                <p>
+                  Before any real work, the six testing skills (<code>/shift-left-testing</code>,
+                  <code>/sprint-testing</code>, <code>/test-documentation</code>,
+                  <code>/test-automation</code>, <code>/regression-testing</code>,
+                  <code>/framework-development</code>) run a mandatory readiness probe — missing
+                  tools, dead MCPs, expired tokens, unset credentials, or an unadapted framework are
+                  caught at the start instead of mid-run. Each skill declares only its own
+                  capability delta; the shared baseline lives in
+                  <code>agentic-qa-core/references/preflight-gate.md</code>.
+                </p>
+              </div>
+            </div>
+
             <h3 id="circuit-cli">Circuit 3 — CLI auto-load</h3>
             <p>
               Every shell binary the AI may run has an owning skill that must be in context first —
@@ -3041,9 +3070,10 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <p class="callout-title">Framework evolution is NOT a QA path</p>
                 <p>
                   Modifying KATA bases, fixtures, <code>cli/</code>, <code>scripts/</code>, or
-                  <code>api/schemas/</code> goes through <code>/framework-development</code> — the
-                  sole legitimate entry point for chaining the SDD-* skills in this repo. NEVER
-                  invoke SDD-* directly from <code>/sprint-testing</code>,
+                  <code>api/schemas/</code> goes through <code>/framework-development</code> — a
+                  self-contained Plan → Code → Verify → Archive orchestrator that needs no SDD-*
+                  skills (those are opt-in only if a contributor installs them manually). NEVER run
+                  framework-evolution work through <code>/sprint-testing</code>,
                   <code>/test-documentation</code>, <code>/test-automation</code>, or
                   <code>/regression-testing</code>. The boundary is enforced inline in each workflow
                   skill.
@@ -3131,6 +3161,10 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     <td><code>bun run jira:sync-issues</code></td>
                   </tr>
                   <tr>
+                    <td>Set / reset env credentials or push <code>.env</code> to GitHub secrets</td>
+                    <td><code>bun run setup --variables</code></td>
+                  </tr>
+                  <tr>
                     <td>Validate <code>{{VAR}}</code> / <code>{{jira.*}}</code> placeholders</td>
                     <td><code>bun run vars:check</code></td>
                   </tr>
@@ -3176,10 +3210,11 @@ bun run jira:check            # verify both catalogs against the manifest</code>
               the skills <em>we</em> maintain in this repo. Some you invoke directly; others (the
               tool skills and the foundation) load automatically when a workflow skill needs them.
               Community skills (T3/T4 — <code>playwright-cli</code>,
-              <code>playwright-best-practices</code>, <code>skill-creator</code>, etc.) are
-              <em>not</em> listed here; the installer fetches them from upstream at setup time. The
-              authoritative lists live in <code>cli/install.ts</code> as
-              <code>PROJECT_LEVEL_SKILLS</code> and <code>USER_LEVEL_SKILLS</code>.
+              <code>playwright-best-practices</code>, <code>resend-cli</code>,
+              <code>skill-creator</code>, <code>wokitoki</code>, etc.) are <em>not</em> listed here;
+              the installer fetches them from upstream at setup time. The authoritative lists live
+              in <code>cli/install.ts</code> as <code>PROJECT_LEVEL_SKILLS</code> and
+              <code>USER_LEVEL_SKILLS</code>.
             </p>
 
             <h3 id="tiers">Legend — Category vs Tier</h3>
@@ -3212,7 +3247,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <h4>Tier — where it lives</h4>
                 <p>
                   <span class="badge badge-tier-t1">T1</span> Project-owned, committed in
-                  <code>.claude/skills/</code> (the 11 listed below).
+                  <code>.claude/skills/</code> (the 12 listed below).
                 </p>
                 <p>
                   <span class="badge badge-tier-t2">T2</span> gentle-ai dependency at user level via
@@ -3254,8 +3289,11 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <p class="skill-card-trigger">/agentic-qa-onboard</p>
                 <p class="skill-card-desc">
                   First-time orientation tour. Explains the stack, the 6-stage pipeline, the MCPs,
-                  and hands off to the right downstream workflow skill. Entry point for new
-                  contributors.
+                  and hands off to the right downstream workflow skill. Also the teaching front desk
+                  for anyone who is lost: it suspends the compressed / caveman register, explains in
+                  plain language (mirroring your language), and can open the per-skill
+                  <code>how-it-works</code> presentation decks (English + Spanish) in your browser —
+                  ask-first, one at a time.
                 </p>
               </article>
 
@@ -3351,10 +3389,11 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 </div>
                 <p class="skill-card-trigger">/framework-development</p>
                 <p class="skill-card-desc">
-                  Gateway skill for chaining <code>/sdd-*</code> on framework evolution — KATA
-                  bases, fixtures, <code>cli/</code>, <code>scripts/</code>,
-                  <code>api/schemas/</code>
-                  pipeline. Sole legitimate entry point for SDD in this repo. Not for per-ticket QA.
+                  Framework-evolution orchestrator for the boilerplate itself — KATA bases,
+                  fixtures, <code>cli/</code>, <code>scripts/</code>, <code>api/schemas/</code>
+                  pipeline. Self-contained Plan → Code → Verify → Archive; runs under
+                  <code>gentle-ai install --preset minimal</code> (no <code>/sdd-*</code> skills
+                  required). Not for per-ticket QA.
                 </p>
               </article>
 
@@ -3395,7 +3434,10 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <p class="skill-card-trigger">(auto on git intents)</p>
                 <p class="skill-card-desc">
                   End-to-end Git operator. Auto-detects the branching strategy and adapts every
-                  branch / commit / push / PR / conflict-fix / chained-PR action to it.
+                  branch / commit / push / PR / conflict-fix / chained-PR / worktree action to it. A
+                  <strong>Strategy Setup</strong> operation can bootstrap a strategy on a fresh repo
+                  — including <strong>sdet</strong> (an ephemeral per-suite integration trunk
+                  recommended for chained test-automation suites).
                 </p>
               </article>
             </div>
@@ -3425,10 +3467,10 @@ bun run jira:check            # verify both catalogs against the manifest</code>
 
             <h3 id="composition">Skill composition — how skills load each other</h3>
             <p>
-              Read top to bottom. Workflow skills compose other workflow skills only via
-              <code>/framework-development</code> (the SDD gateway). Per-ticket workflow skills do
-              not compose each other — they hand off sequentially via the 6-stage pipeline. Tool
-              skills sit at the bottom of the food chain.
+              Read top to bottom. <code>/framework-development</code> is the only self-contained
+              orchestrator for boilerplate evolution; per-ticket workflow skills do not compose each
+              other — they hand off sequentially via the 6-stage pipeline. Tool skills sit at the
+              bottom of the food chain.
             </p>
 
             <div class="composition">
@@ -3444,13 +3486,12 @@ bun run jira:check            # verify both catalogs against the manifest</code>
               <div class="composition-layer">
                 <span class="composition-layer-num">2</span>
                 <div>
-                  <strong>Composed workflow skill</strong> — <code>/framework-development</code> is
-                  the SOLE QA-side composer; it silently chains
-                  <code
-                    >/sdd-init → /sdd-design → /sdd-tasks → /sdd-apply → /sdd-verify →
-                    /sdd-archive</code
-                  >
-                  for framework evolution. Per-ticket workflow skills do NOT compose each other.
+                  <strong>Self-contained orchestrator</strong> —
+                  <code>/framework-development</code> runs its own Plan → Code → Verify → Archive
+                  pipeline for framework evolution under the
+                  <code>gentle-ai install --preset minimal</code> install (no <code>/sdd-*</code>
+                  skills required; the SDD suite is opt-in only if a contributor installs it
+                  manually). Per-ticket workflow skills do NOT compose each other.
                 </div>
               </div>
               <div class="composition-layer">
@@ -3498,8 +3539,9 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     <code>/adapt-framework</code>
                     <span class="muted"
                       >Adapt KATA architecture (<code>tests/</code>, <code>api/schemas/</code>,
-                      <code>config/</code>) to a discovered target. Plan → user approval →
-                      Implement.</span
+                      <code>config/</code>, CI, MCP) to a discovered target. 10-phase idempotent
+                      flow (Phase&nbsp;0 prereq/genericness gate → Phase&nbsp;9 scan): no writes
+                      before approval; re-runs report a GENERIC / ADAPTED checklist.</span
                     >
                   </li>
                   <li>
@@ -3562,9 +3604,41 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 </p>
                 <ul class="list-plain">
                   <li>
+                    <code>bun run env</code>
+                    <span class="muted"
+                      >Canonical <code>set -a; source .env; set +a</code> snippet. Run it
+                      <strong>inline</strong> in your terminal (not via <code>bun run</code>, which
+                      uses a child subshell) to export every <code>.env</code> key into the current
+                      shell — then bare <code>claude</code>, <code>opencode</code>,
+                      <code>acli</code>, <code>bun xray</code> all inherit the vars with no
+                      wrapper.</span
+                    >
+                  </li>
+                  <li>
                     <code>bun run agents:setup</code>
                     <span class="muted"
                       >Interactive walkthrough that fills <code>.agents/project.yaml</code>.</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run setup --variables</code>
+                    <span class="muted"
+                      >Idempotent env-variable setup menu — set / reset the critical tool
+                      credentials (Atlassian, Resend, Tavily) in <code>.env</code>, walk every
+                      variable one-by-one, or push the local <code>.env</code> to GitHub Actions
+                      secrets via <code>gh secret set</code>. Scriptable with
+                      <code>--variables-local</code> / <code>--variables-remote</code> /
+                      <code>--yes</code> / <code>--force</code>. Remote writes are gated behind an
+                      explicit confirm and refused in CI; no secret value is ever printed.</span
+                    >
+                  </li>
+                  <li>
+                    <code>bun run vars:env:check</code>
+                    <span class="muted"
+                      >Validate <code>.env</code> against the typed variables manifest
+                      (<code>cli/lib/variables-manifest.ts</code>) — enforces
+                      manifest&nbsp;↔&nbsp;<code>.env.example</code> parity. Wired into
+                      <code>repo:check</code>.</span
                     >
                   </li>
                   <li>
@@ -3595,10 +3669,28 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     >
                   </li>
                   <li>
+                    <code>bun run jira:sync-link-types</code>
+                    <span class="muted"
+                      >Catalog the Jira issue-link types into
+                      <code>.agents/jira-link-types.json</code> so traceability links (ATP / ATR /
+                      defect) resolve to the right relationship name.</span
+                    >
+                  </li>
+                  <li>
                     <code>bun run jira:sync-issues</code>
                     <span class="muted"
-                      >Pull Jira Epics / Stories into <code>.context/PBI/</code> markdown for local
-                      reference during planning + automation.</span
+                      >Registry-driven pull of Jira issues into <code>.context/PBI/</code> markdown
+                      (default scope: Epics + Stories + Bugs). Each coverable type
+                      (Story&nbsp;/&nbsp;Bug&nbsp;/&nbsp;Defect&nbsp;/&nbsp;Improvement&nbsp;/&nbsp;Tech&nbsp;Story&nbsp;/&nbsp;Tech&nbsp;Debt)
+                      gets its own folder with auto-discovered ATP&nbsp;/&nbsp;ATR (a linked Xray
+                      Test Plan&nbsp;/&nbsp;Execution description overrides the custom-field copy),
+                      nested defects, and traceability + orphan-defect warnings. Sub-commands
+                      <code>get &lt;KEY&gt;</code> (one issue, all custom fields;
+                      <code>--include-comments</code>) and <code>jql "&lt;query&gt;"</code> (batch);
+                      flags <code>--sprint</code>, <code>--types</code>, <code>--no-defects</code>,
+                      <code>--project</code> (env defaults <code>JIRA_SYNC_SPRINTS</code> /
+                      <code>JIRA_SYNC_TYPES</code>;
+                      flag&nbsp;&gt;&nbsp;env&nbsp;&gt;&nbsp;default).</span
                     >
                   </li>
                   <li>
@@ -3916,6 +4008,47 @@ bun run jira:check            # verify both catalogs against the manifest</code>
           </a>
         </div>
 
+        <h3 style="margin-top: 1.5rem">
+          How-it-works decks — per-skill visual primers (EN&nbsp;+&nbsp;ES)
+        </h3>
+        <p class="muted small">
+          Self-contained HTML presentations that teach each activity as a manual craft first, then
+          show how the skill drives it from the terminal. <code>/agentic-qa-onboard</code> can open
+          the matching deck (<code>.html</code> / <code>.es.html</code>) for you on request.
+        </p>
+        <div class="footer-grid">
+          <a class="footer-card" href="../.claude/skills/shift-left-testing/how-it-works.html">
+            <span class="footer-card-title">shift-left-testing / how-it-works</span>
+            <span class="footer-card-desc"
+              >Pre-sprint AC refinement, the manual craft + the skill.</span
+            >
+          </a>
+          <a class="footer-card" href="../.claude/skills/sprint-testing/how-it-works.html">
+            <span class="footer-card-title">sprint-testing / how-it-works</span>
+            <span class="footer-card-desc">In-sprint manual QA per ticket, end to end.</span>
+          </a>
+          <a class="footer-card" href="../.claude/skills/test-documentation/how-it-works.html">
+            <span class="footer-card-title">test-documentation / how-it-works</span>
+            <span class="footer-card-desc">TMS test cases + ROI prioritization explained.</span>
+          </a>
+          <a class="footer-card" href="../.claude/skills/test-automation/how-it-works.html">
+            <span class="footer-card-title">test-automation / how-it-works</span>
+            <span class="footer-card-desc"
+              >KATA + Playwright Plan → Code → Review, demystified.</span
+            >
+          </a>
+          <a class="footer-card" href="../.claude/skills/regression-testing/how-it-works.html">
+            <span class="footer-card-title">regression-testing / how-it-works</span>
+            <span class="footer-card-desc"
+              >CI regression suites + GO / CAUTION / NO-GO verdicts.</span
+            >
+          </a>
+          <a class="footer-card" href="../.claude/skills/xray-cli/how-it-works.html">
+            <span class="footer-card-title">xray-cli / how-it-works</span>
+            <span class="footer-card-desc">Xray concept primer — Test, Plan, Execution, runs.</span>
+          </a>
+        </div>
+
         <h3 style="margin-top: 1.5rem">Workflows — recurring ops</h3>
         <div class="footer-grid">
           <a class="footer-card" href="workflows/test-manual-lifecycle.md">
@@ -3966,8 +4099,8 @@ bun run jira:check            # verify both catalogs against the manifest</code>
         </div>
 
         <p class="footer-meta">
-          <code>agentic-qa-boilerplate</code> · MIT License · Onboarding page v1.4 · Last updated
-          2026-05-16
+          <code>agentic-qa-boilerplate</code> · MIT License · Onboarding page v1.5 · Last updated
+          2026-06-07
         </p>
       </footer>
     </div>
