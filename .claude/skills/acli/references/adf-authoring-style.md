@@ -87,6 +87,19 @@ curl -sS -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
 
 Then author `@[Person Name](<accountId>)`. Verified live: the node round-trips as `{id:<accountId>, text:"@Name", accessLevel:""}` — a real, notifying tag. Use mentions sparingly (a mention pings the person); reserve them for assignment / hand-off / blocker call-outs, not decoration.
 
+**Media (images / videos) — upload first, then embed (use the helper).** `![](path)` does NOT work in Jira ADF: a media node needs the opaque media-services UUID of an uploaded file, which the public attachments API does not hand back directly. The bundled helper `scripts/jira-attach-media.ts` runs the verified 3-step recipe (upload attachment → resolve the UUID from the attachment-content redirect → build the `mediaSingle > media` node) so you never assemble it by hand:
+
+```bash
+# attach a screenshot to a bug AND post it as an evidence comment in one call
+bun .claude/skills/acli/scripts/jira-attach-media.ts BUG-123 ./repro-step-3.png \
+  --caption "Repro step 3 — validation error not shown" --publish
+
+# or just emit the media node JSON to splice into a larger ADF body you are assembling
+bun .claude/skills/acli/scripts/jira-attach-media.ts BUG-123 ./diagram.png --doc > media.adf.json
+```
+
+The helper auto-detects PNG / JPEG / GIF dimensions (pass `--width`/`--height` for video or other formats), and `collection` is always stored as `""` (Jira ignores the input). Reach for media when a picture genuinely beats words — a bug screenshot, a failing-UI capture, an architecture diagram — not for decoration. The image must be uploaded to the *same issue* it is embedded in.
+
 ## <a id="before-after"></a>4. Before / after — flat vs structured
 
 **Test steps** — parallel data across the same columns → a table out-scans bullets every time:

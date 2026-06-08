@@ -72,6 +72,15 @@ _RELATED STORIES_
 * Blocks: [other issues]
 ```
 
+**Attach visual evidence** (screenshot of the failing UI, console capture, repro recording). `![](path)` does NOT embed in Jira — use the bundled helper, which uploads the file and posts it inline as a real image:
+
+```bash
+bun .claude/skills/acli/scripts/jira-attach-media.ts {{PROJECT_KEY}}-<bug> ./evidence/repro-step-3.png \
+  --caption "Step 3 — validation error not shown" --publish
+```
+
+One call per evidence file (the image is embedded as a comment on the bug). Full recipe + when-to-use in `../../acli/references/adf-authoring-style.md` §media. This is the high-value case: a reviewer sees the failing screen inline instead of clicking through to the Attachments panel.
+
 ### 1.4 Severity matrix
 
 | Severity | Criteria | Examples |

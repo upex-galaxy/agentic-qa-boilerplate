@@ -590,6 +590,8 @@ const NODE_RULES: Record<
   tableRow: { kind: "block", children: ["tableCell", "tableHeader"] },
   tableCell: { kind: "block", children: "block" },
   tableHeader: { kind: "block", children: "block" },
+  mediaSingle: { kind: "block", children: ["media"] },
+  media: { kind: "block", children: "none", requiredAttrs: ["type", "id"] },
   text: { kind: "inline", children: "none" },
   hardBreak: { kind: "inline", children: "none" },
   emoji: { kind: "inline", children: "none", requiredAttrs: ["shortName"] },
