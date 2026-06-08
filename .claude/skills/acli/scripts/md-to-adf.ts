@@ -7,8 +7,12 @@
  *
  * Covered Markdown subset:
  *   - Headings: # / ## / ### / #### / ##### / ###### → ADF heading levels 1-6
- *   - Bullet lists: -, * (single level)
- *   - Ordered lists: 1. (single level)
+ *   - Bullet lists: -, * (nested via indentation — 2+ spaces deepens a level)
+ *   - Ordered lists: 1. (nested via indentation; mixes with bullets per level)
+ *   - Tables: GFM pipe tables (| a | b | + |---|---| separator) → ADF table
+ *   - Panels: GitHub-alert blockquotes (> [!NOTE] / [!WARNING] / [!INFO] /
+ *     [!SUCCESS] / [!ERROR] / [!TIP] / [!IMPORTANT] / [!CAUTION]) → ADF panel
+ *   - Expand: <details><summary>Title</summary> … </details> → ADF expand
  *   - Fenced code blocks: ```lang ... ``` (language tag preserved as attrs.language)
  *   - Inline code: `code`
  *   - Bold: **text** or __text__
@@ -20,8 +24,8 @@
  *   - Paragraphs (default block)
  *
  * Out of scope (extend if your project needs them):
- *   nested lists, tables, mentions, panels, status macros, expand blocks,
- *   media / images.
+ *   mentions, status macros, media / images, nestedExpand (expand inside a
+ *   table cell).
  *
  * Validation gate (zero-dependency):
  *   Conversion output is validated against an embedded ADF allowlist BEFORE it
@@ -221,6 +225,48 @@ function mdToAdf(markdown: string): {
   const blocks: ADFNode[] = [];
   let i = 0;
 
+  // A list line at any indentation: capture (indent, marker, text).
+  const LIST_LINE = /^(\s*)([-*]|\d+\.)\s+(.*)$/;
+  // A GFM table separator row: |---|:--:|---| (pipes optional at the edges).
+  const TABLE_SEP = /^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?\s*$/;
+  // GitHub-alert blockquote opener: > [!NOTE] etc. (alone on its own line).
+  const PANEL_OPEN = /^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|INFO|SUCCESS|ERROR)\]\s*$/i;
+  // GitHub alert keyword → ADF panelType (info | note | success | warning | error).
+  const PANEL_TYPE: Record<string, string> = {
+    note: "info",
+    info: "info",
+    tip: "success",
+    success: "success",
+    important: "note",
+    warning: "warning",
+    caution: "error",
+    error: "error",
+  };
+
+  // Split a table row on unescaped pipes, honouring `\|`, then trim the empty
+  // cells produced by leading/trailing edge pipes.
+  const splitRow = (row: string): string[] => {
+    const cells: string[] = [];
+    let cur = "";
+    for (let k = 0; k < row.length; k++) {
+      if (row[k] === "\\" && row[k + 1] === "|") {
+        cur += "|";
+        k++;
+        continue;
+      }
+      if (row[k] === "|") {
+        cells.push(cur);
+        cur = "";
+        continue;
+      }
+      cur += row[k];
+    }
+    cells.push(cur);
+    if (cells.length && cells[0].trim() === "") cells.shift();
+    if (cells.length && cells[cells.length - 1].trim() === "") cells.pop();
+    return cells.map((c) => c.trim());
+  };
+
   const consumeFencedCode = (): ADFNode | null => {
     const open = lines[i].match(/^```(\w*)\s*$/);
     if (!open) return null;
@@ -240,32 +286,116 @@ function mdToAdf(markdown: string): {
     };
   };
 
-  const consumeBulletList = (): ADFNode | null => {
-    if (!/^[\-*]\s+/.test(lines[i])) return null;
+  // Nested-list parser. Indentation defines depth: a list line whose indent is
+  // strictly greater than the current item's becomes a sublist attached inside
+  // that item's listItem. List type (bullet vs ordered) is fixed per level by
+  // the first marker seen at that indent.
+  const parseListAtIndent = (indent: number): ADFNode => {
+    const first = lines[i].match(LIST_LINE)!;
+    const ordered = /\d+\./.test(first[2]);
     const items: ADFNode[] = [];
-    while (i < lines.length && /^[\-*]\s+/.test(lines[i])) {
-      const itemText = lines[i].replace(/^[\-*]\s+/, "");
-      items.push({
-        type: "listItem",
-        content: [{ type: "paragraph", content: parseInline(itemText) }],
-      });
+    while (i < lines.length) {
+      const m = lines[i].match(LIST_LINE);
+      if (!m) break;
+      const curIndent = m[1].length;
+      if (curIndent !== indent) break; // dedent or deeper indent → not our level
+      const itemContent: ADFNode[] = [
+        { type: "paragraph", content: parseInline(m[3]) },
+      ];
       i++;
+      const next = i < lines.length ? lines[i].match(LIST_LINE) : null;
+      if (next && next[1].length > indent) {
+        itemContent.push(parseListAtIndent(next[1].length));
+      }
+      items.push({ type: "listItem", content: itemContent });
     }
-    return { type: "bulletList", content: items };
+    return { type: ordered ? "orderedList" : "bulletList", content: items };
   };
 
-  const consumeOrderedList = (): ADFNode | null => {
-    if (!/^\d+\.\s+/.test(lines[i])) return null;
-    const items: ADFNode[] = [];
-    while (i < lines.length && /^\d+\.\s+/.test(lines[i])) {
-      const itemText = lines[i].replace(/^\d+\.\s+/, "");
-      items.push({
-        type: "listItem",
-        content: [{ type: "paragraph", content: parseInline(itemText) }],
+  const consumeList = (): ADFNode | null => {
+    const m = lines[i].match(LIST_LINE);
+    if (!m) return null;
+    return parseListAtIndent(m[1].length);
+  };
+
+  // GFM pipe table. Recognised only when the line contains a pipe AND the next
+  // line is a separator row (|---|---|), which disambiguates it from prose that
+  // happens to contain a pipe character.
+  const consumeTable = (): ADFNode | null => {
+    if (!lines[i].includes("|")) return null;
+    if (i + 1 >= lines.length || !TABLE_SEP.test(lines[i + 1])) return null;
+    const headerCells = splitRow(lines[i]);
+    i += 2; // consume the header row + the separator row
+    const rows: ADFNode[] = [
+      {
+        type: "tableRow",
+        content: headerCells.map((c) => ({
+          type: "tableHeader",
+          content: [{ type: "paragraph", content: parseInline(c) }],
+        })),
+      },
+    ];
+    while (i < lines.length && lines[i].trim() !== "" && lines[i].includes("|")) {
+      const cells = splitRow(lines[i]);
+      rows.push({
+        type: "tableRow",
+        content: cells.map((c) => ({
+          type: "tableCell",
+          content: [{ type: "paragraph", content: parseInline(c) }],
+        })),
       });
       i++;
     }
-    return { type: "orderedList", content: items };
+    return {
+      type: "table",
+      attrs: { isNumberColumnEnabled: false, layout: "default" },
+      content: rows,
+    };
+  };
+
+  // GitHub-alert blockquote → ADF panel. The body (every following `>` line) is
+  // re-parsed as Markdown so panels can hold lists, code, paragraphs, etc.
+  const consumePanel = (): ADFNode | null => {
+    const m = lines[i].match(PANEL_OPEN);
+    if (!m) return null;
+    const panelType = PANEL_TYPE[m[1].toLowerCase()];
+    i++;
+    const body: string[] = [];
+    while (i < lines.length && /^>\s?/.test(lines[i])) {
+      body.push(lines[i].replace(/^>\s?/, ""));
+      i++;
+    }
+    const inner = mdToAdf(body.join("\n")).content;
+    return {
+      type: "panel",
+      attrs: { panelType },
+      content: inner.length ? inner : [{ type: "paragraph", content: [] }],
+    };
+  };
+
+  // <details><summary>Title</summary> … </details> → ADF expand. The body is
+  // re-parsed as Markdown so expand blocks can hold any block content.
+  const consumeExpand = (): ADFNode | null => {
+    if (!/^<details>\s*$/.test(lines[i])) return null;
+    i++;
+    let title = "";
+    const sm = i < lines.length ? lines[i].match(/^<summary>(.*)<\/summary>\s*$/) : null;
+    if (sm) {
+      title = sm[1].trim();
+      i++;
+    }
+    const body: string[] = [];
+    while (i < lines.length && !/^<\/details>\s*$/.test(lines[i])) {
+      body.push(lines[i]);
+      i++;
+    }
+    if (i < lines.length) i++; // consume the closing </details>
+    const inner = mdToAdf(body.join("\n")).content;
+    return {
+      type: "expand",
+      attrs: { title },
+      content: inner.length ? inner : [{ type: "paragraph", content: [] }],
+    };
   };
 
   const consumeBlockquote = (): ADFNode | null => {
@@ -310,11 +440,13 @@ function mdToAdf(markdown: string): {
       i < lines.length &&
       lines[i].trim() !== "" &&
       !/^#{1,6}\s+/.test(lines[i]) &&
-      !/^[\-*]\s+/.test(lines[i]) &&
-      !/^\d+\.\s+/.test(lines[i]) &&
+      !/^\s*[-*]\s+/.test(lines[i]) &&
+      !/^\s*\d+\.\s+/.test(lines[i]) &&
       !/^>\s?/.test(lines[i]) &&
       !/^```/.test(lines[i]) &&
-      !/^---+\s*$/.test(lines[i])
+      !/^<details>\s*$/.test(lines[i]) &&
+      !/^---+\s*$/.test(lines[i]) &&
+      !(lines[i].includes("|") && i + 1 < lines.length && TABLE_SEP.test(lines[i + 1]))
     ) {
       buf.push(lines[i]);
       i++;
@@ -331,15 +463,19 @@ function mdToAdf(markdown: string): {
     let block: ADFNode | null = null;
     block = consumeFencedCode();
     if (block) { blocks.push(block); continue; }
+    block = consumeExpand();
+    if (block) { blocks.push(block); continue; }
     block = consumeHeading();
     if (block) { blocks.push(block); continue; }
     block = consumeHorizontalRule();
     if (block) { blocks.push(block); continue; }
-    block = consumeBulletList();
+    block = consumeTable();
     if (block) { blocks.push(block); continue; }
-    block = consumeOrderedList();
+    block = consumePanel();
     if (block) { blocks.push(block); continue; }
     block = consumeBlockquote();
+    if (block) { blocks.push(block); continue; }
+    block = consumeList();
     if (block) { blocks.push(block); continue; }
     blocks.push(consumeParagraph());
   }
@@ -383,6 +519,7 @@ const NODE_RULES: Record<
   listItem: { kind: "block", children: "block" },
   codeBlock: { kind: "block", children: ["text"] },
   panel: { kind: "block", children: "block", requiredAttrs: ["panelType"] },
+  expand: { kind: "block", children: "block" },
   rule: { kind: "block", children: "none" },
   table: { kind: "block", children: ["tableRow"] },
   tableRow: { kind: "block", children: ["tableCell", "tableHeader"] },
@@ -396,6 +533,8 @@ const NODE_RULES: Record<
   status: { kind: "inline", children: "none" },
   inlineCard: { kind: "inline", children: "none" },
 };
+
+const VALID_PANEL_TYPES = new Set(["info", "note", "success", "warning", "error"]);
 
 const VALID_MARKS = new Set([
   "code",
@@ -495,6 +634,16 @@ function validateNode(
 
   if (node.type === "text" && (typeof node.text !== "string" || node.text.length === 0)) {
     errors.push({ path, message: "text node must have a non-empty string `text`" });
+  }
+
+  if (node.type === "panel" && node.attrs && node.attrs.panelType !== undefined) {
+    const pt = node.attrs.panelType;
+    if (typeof pt !== "string" || !VALID_PANEL_TYPES.has(pt)) {
+      errors.push({
+        path,
+        message: `panel panelType must be one of ${Array.from(VALID_PANEL_TYPES).join(" | ")}, got ${JSON.stringify(pt)}`,
+      });
+    }
   }
 
   if (node.marks) {

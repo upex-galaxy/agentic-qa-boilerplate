@@ -183,7 +183,7 @@ The JSON shape from `workitem search` has a top-level `issues` array (not `worki
 
 ## Publishing rich text (the default workflow)
 
-Jira stores rich-text content (descriptions, comments, and any rich-text field) as **ADF — Atlassian Document Format**, a JSON tree of typed nodes (`heading`, `paragraph`, `bulletList`, `orderedList`, `codeBlock`, `blockquote`, `rule`) with inline marks (`strong`, `em`, `code`, `link`, `strike`).
+Jira stores rich-text content (descriptions, comments, and any rich-text field) as **ADF — Atlassian Document Format**, a JSON tree of typed nodes (`heading`, `paragraph`, `bulletList`, `orderedList`, `codeBlock`, `blockquote`, `rule`, `table`, `panel`, `expand`) with inline marks (`strong`, `em`, `code`, `link`, `strike`).
 
 `acli` accepts ADF JSON in every rich-text input. `acli` **never** converts markdown — passing `# Heading` to `--description` or `--body` stores the literal string `# Heading` wrapped in a single ADF paragraph.
 
@@ -220,9 +220,18 @@ const adf = mdToAdf(markdownString);  // returns { type: "doc", version: 1, cont
 const { valid, errors } = validateAdf(adf);  // gate ANY ADF before publishing
 ```
 
-**Covered markdown subset**: headings 1–6, bullet lists, ordered lists, fenced code blocks (with optional language tag), inline code, bold, italic (snake_case-safe), strikethrough, links, blockquotes, horizontal rule, paragraphs.
+**Covered markdown subset**: headings 1–6, bullet lists, ordered lists, **nested lists** (indentation-based), **GFM tables** (`| a | b |` + `|---|---|` separator), **panels** (GitHub-alert blockquotes), **expand blocks** (`<details><summary>`), fenced code blocks (with optional language tag), inline code, bold, italic (snake_case-safe), strikethrough, links, blockquotes, horizontal rule, paragraphs.
 
-**Out of scope** (extend the converter if your project needs them): nested lists, tables, mentions, panels, status macros, expand blocks, media / images.
+Rich-block syntax cheat-sheet:
+
+| Markdown you write | ADF node produced |
+|---|---|
+| `\| H1 \| H2 \|` then `\| --- \| --- \|` then body rows | `table` (header row → `tableHeader`, body → `tableCell`; inline marks work inside cells; `\|` escapes a literal pipe) |
+| `> [!NOTE]` / `[!INFO]` (blue) · `[!TIP]` / `[!SUCCESS]` (green) · `[!IMPORTANT]` (purple) · `[!WARNING]` (yellow) · `[!CAUTION]` / `[!ERROR]` (red), then `> body` lines | `panel` with `panelType` `info` / `success` / `note` / `warning` / `error`. Body re-parsed as Markdown (can hold lists, code, etc.) |
+| Two-space (or deeper) indentation under a list item | nested `bulletList` / `orderedList` inside that `listItem`; depth = indent width; bullet/ordered mix per level |
+| `<details>` / `<summary>Title</summary>` / body / `</details>` | `expand` with `attrs.title`; body re-parsed as Markdown |
+
+**Out of scope** (extend the converter if your project needs them): mentions, status macros, media / images, `nestedExpand` (expand inside a table cell).
 
 ### Validation gate (fail fast before Jira)
 
