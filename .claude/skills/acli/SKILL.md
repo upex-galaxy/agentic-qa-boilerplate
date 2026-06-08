@@ -233,6 +233,8 @@ Rich-block syntax cheat-sheet:
 
 **Out of scope** (extend the converter if your project needs them): mentions, status macros, media / images, `nestedExpand` (expand inside a table cell).
 
+> **This section covers HOW Markdown becomes ADF. For WHEN to reach for a table vs a panel vs a nested list — i.e. how to make field content visually scannable instead of flat prose — see `references/adf-authoring-style.md`.** Workflow skills cite that file at each point they fill a Jira rich-text field.
+
 ### Validation gate (fail fast before Jira)
 
 The converter **validates its output by default** against an embedded ADF allowlist, then refuses to write and exits non-zero if the document is invalid. This turns an opaque Jira `HTTP 400 INVALID_INPUT` at publish time into a node-level diagnostic at author time. The gate is **zero-dependency** — it does NOT use `@atlaskit/adf-utils` (that package transitively pulls ProseMirror + Statsig and breaks the converter's zero-dep contract). The rules are inlined in `md-to-adf.ts`.
@@ -476,6 +478,7 @@ Load the reference that matches the user's current need. Do not preload all of t
 | Pipe output, produce JSON/CSV, dry-run, run on CI/CD                 | `references/output-and-automation.md`       |
 | Diagnose surprising behavior, known bugs, REST fallback points       | `references/gotchas.md`                     |
 | Publish rich text to descriptions, comments, or custom fields        | Inline section "Publishing rich text" + `scripts/md-to-adf.ts` |
+| Make Jira field content visually excellent (when to use tables / panels / nested lists for readability) | `references/adf-authoring-style.md` |
 | Plug `acli` into the host repo's workflow (TMS modality, slug catalog, project conventions, anti-patterns specific to this repo) | `<repo-core>/references/acli-integration.md` |
 
 ## Working style

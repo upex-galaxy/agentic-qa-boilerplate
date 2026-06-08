@@ -201,7 +201,7 @@ Rules:
 
 ## 7. Description template (full TC documentation)
 
-The Description is load-bearing in Jira Native mode and still recommended in Xray mode (Xray's structured Steps field is minimal). Paste this after the Test is created with `[ISSUE_TRACKER_TOOL] Update Issue`.
+The Description is load-bearing in Jira Native mode and still recommended in Xray mode (Xray's structured Steps field is minimal). Paste this after the Test is created with `[ISSUE_TRACKER_TOOL] Update Issue`. **Format per `../../acli/references/adf-authoring-style.md`**: prefer a table for the step → expected grid (more scannable than bullet lists), nested lists for multi-level preconditions, and a panel for a critical assumption — richness with purpose, not decoration.
 
 ```
 ## Related Story

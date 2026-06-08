@@ -14,6 +14,7 @@ This reference is for **manual / exploratory in-sprint testing per ticket RIGHT 
 For feature / multi-story scope see `feature-test-planning.md`.
 
 > **Before publishing ATP body to Story rich-text fields** (`{{jira.acceptance_test_plan}}` or description), read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
+> **And format for readability** per `../../acli/references/adf-authoring-style.md` — ATP test steps read best as a table (step → expected); use a panel for a shared precondition that spans scenarios. The field's hard-rule wins: if a scenario must be Gherkin, keep the fenced block — do not replace it with a table.
 
 ---
 

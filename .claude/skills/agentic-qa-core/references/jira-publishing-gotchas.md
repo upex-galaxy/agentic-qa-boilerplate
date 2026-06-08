@@ -3,6 +3,7 @@
 > **Purpose**: When QA methodology workflows write to Jira rich-text fields (description, AC, ATP body, ATR body, bug evidence, scope, business rules, workflow narrative, story comments), they pass through Markdown → ADF (Atlassian Document Format) conversion. Two converter / API bugs cost real cycles. Pre-empt both so future workflows do not hit the same wall.
 > **Use when**: Any QA workflow is about to publish to a Jira rich-text field (Story / Bug / Test issue body or custom field), or when an HTTP 400 surfaces during publish.
 > **Companion references (QA-side)**: `sprint-testing/references/reporting-templates.md`, `sprint-testing/references/acceptance-test-planning.md`, `test-documentation/references/jira-setup.md`, `test-documentation/references/jira-test-management.md`, `test-documentation/references/tms-architecture.md`, `shift-left-testing/references/atp-draft-template.md`, `acli/references/gotchas.md` (covers acli CLI usage gotchas — different surface).
+> **Scope boundary**: this file is **what BREAKS** at publish (HTTP 400 edges). For **what READS WELL** — when to use a table / panel / nested list so ATP / ATR / TC content is scannable instead of flat prose, including the now-supported GFM tables — see `../../acli/references/adf-authoring-style.md`.
 
 ---
 
