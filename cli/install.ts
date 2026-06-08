@@ -366,7 +366,11 @@ const SKIP_PLAYWRIGHT = process.env.INSTALL_SKIP_PLAYWRIGHT === '1';
 const SKIP_AGENTS_SETUP = process.env.INSTALL_SKIP_AGENTS_SETUP === '1';
 const FORCE_AGENTS_SETUP = process.env.INSTALL_FORCE_AGENTS_SETUP === '1';
 const FORCE_GENTLE_AI = process.env.INSTALL_FORCE_GENTLE_AI === '1';
-const FORCE_COMMUNITY = process.env.INSTALL_FORCE_COMMUNITY === '1';
+// --sync-skills: standalone repair mode — re-installs community skills targeting
+// the selected agent(s) so they land in each agent's own skills dir (e.g. Claude
+// Code's `.claude/skills/`). Implies a forced community re-run.
+const SYNC_SKILLS = process.argv.includes('--sync-skills');
+const FORCE_COMMUNITY = process.env.INSTALL_FORCE_COMMUNITY === '1' || SYNC_SKILLS;
 const FORCE_GITHUB = process.env.INSTALL_FORCE_GITHUB === '1';
 const SKIP_JIRA = process.env.INSTALL_SKIP_JIRA === '1';
 const SKIP_API = process.env.INSTALL_SKIP_API === '1';
@@ -848,6 +852,7 @@ function describeSkill(item: CommunitySkill): string {
 }
 
 async function installCommunitySkills(
+  agents: AgentId[],
   state: InstallState,
   level: 'project' | 'global',
   forceKeys: Set<string>,
@@ -889,17 +894,22 @@ async function installCommunitySkills(
       log.dim(`  skipping ${slug} (already installed)`);
       continue;
     }
-    // Community skills install to `.agents/skills/<slug>/` by default (no `--agent`
-    // flag passed). This is INTENTIONAL: T1 repo-owned skills live in
-    // `.claude/skills/`, T3/T4 community skills live in `.agents/skills/`. Keeping
-    // them separate prevents visual confusion and ensures community installs are
-    // gitignored independently of T1 skill commits.
+    // Install into each selected agent's skills directory via `--agent`. Claude
+    // Code only discovers skills under `.claude/skills/` (plus ~/.claude/skills/,
+    // plugins, and --add-dir) — it NEVER scans `.agents/skills/`. Without an
+    // explicit `--agent`, `bunx skills add` writes only to `.agents/skills/` (the
+    // agent-agnostic store read by Copilot/OpenCode/Warp), so the skills stay
+    // invisible to Claude Code. Passing the selected agents lands each skill where
+    // that agent actually loads it.
     const args = ['skills', 'add', item.package];
     if (item.skill && item.skill !== '*') {
       args.push('--skill', item.skill);
     }
     if (level === 'global') {
       args.push('--global');
+    }
+    for (const agent of agents) {
+      args.push('--agent', agent);
     }
     args.push('--yes');
 
@@ -2580,6 +2590,34 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
+  // --sync-skills: standalone repair mode. Re-installs community skills (project +
+  // user level) targeting the selected agent(s) and exits — no full install. Fixes
+  // projects scaffolded before community installs passed `--agent`, where skills
+  // landed only in `.agents/skills/` and Claude Code never discovered them. The
+  // SYNC_SKILLS flag forces a community re-run regardless of prior install state.
+  if (SYNC_SKILLS) {
+    process.stdout.write(`${tui.logo()}\n\n`);
+    process.stdout.write(`${tui.headline('agentic-qa-boilerplate — sync community skills')}\n\n`);
+    await verifyRepoRoot();
+    const detected = await detectAgents();
+    log.info(
+      `Claude Code: ${detected.claudeCode ? 'found' : 'not found'} | OpenCode: ${detected.opencode ? 'found' : 'not found'}`,
+    );
+    const agents = await promptAgentSelection(detected);
+    if (agents.length === 0) {
+      log.warn('No agents selected — nothing to sync.');
+      process.exit(0);
+    }
+    const state = buildInitialState(await loadPriorState());
+    state.agents = agents;
+    const syncForceKeys = new Set<string>();
+    await installCommunitySkills(agents, state, 'project', syncForceKeys);
+    await installCommunitySkills(agents, state, 'global', syncForceKeys);
+    await writeInstallState(state);
+    log.success(`Community skills synced to: ${agents.join(', ')}.`);
+    process.exit(0);
+  }
+
   // Build forced-step set for this run
   const forceKeys = new Set<string>();
   if (FORCE_STEP_KEY) { forceKeys.add(FORCE_STEP_KEY); }
@@ -2711,8 +2749,8 @@ async function main(): Promise<void> {
     }
   }
   else {
-    await installCommunitySkills(state, 'project', forceKeys);
-    await installCommunitySkills(state, 'global', forceKeys);
+    await installCommunitySkills(agents, state, 'project', forceKeys);
+    await installCommunitySkills(agents, state, 'global', forceKeys);
   }
 
   // ── PHASE 3 — CONFIGURATION ──────────────────────────────────────────────
