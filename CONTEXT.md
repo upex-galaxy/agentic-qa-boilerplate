@@ -98,6 +98,11 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 .context/
 ├── PRD/                       → Product Requirements (generated)
 ├── SRS/                       → Software Requirements (generated)
+│
+├── ADR/                       → Architecture Decision Records — test architecture (append-only, never regenerated)
+│   ├── README.md                  → When-to-write (two-gate) + status lifecycle + index
+│   └── ADR-NNNN-template.md       → Copy → ADR-NNNN-<slug>.md per decision (supersede, never delete)
+│
 ├── PBI/                       → Per-module + per-ticket context (generated)
 │
 ├── business/                   → Business maps (command-generated)
@@ -188,6 +193,7 @@ These files have stable names and locations. Reference them confidently:
 | `.agents/jira-required.yaml` | Manifest of Jira custom fields the methodology requires |
 | `.agents/jira-fields.json` | Auto-generated catalog of the workspace's Jira fields (`{{jira.<slug>}}` resolution) |
 | `agentic-qa-core/SKILL.md` | Foundation skill: bootstrap + shared references for every workflow skill |
+| `.context/ADR/README.md` | Test-architecture decision log — when to write one, status lifecycle, index (append-only) |
 | `/test-automation` skill | Entry point for writing tests (KATA) |
 | `/sprint-testing` skill | QA workflow orchestrator (plan + execute + report) |
 | `/project-discovery` skill | Generate project documentation + `.context/` |
@@ -224,6 +230,8 @@ After discovery, run these commands (orchestrated by `/project-discovery` or inv
 /master-test-plan           → .context/master-test-plan.md
 bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 ```
+
+> **`.context/ADR/` is the exception — append-only, never regenerated.** Architecture Decision Records are the one `.context/` artifact that is authored (by a human QA architect, or an AI workflow drafting for human approval — `/project-discovery` SRS/infra, `/framework-development`, `/sprint-testing` + `/test-automation` Stage 1) and **never re-run**. Each captures one important, hard-to-reverse test-architecture decision (runner, fixtures, isolation, auth-in-tests, selector contract, flake policy). Superseded by a newer ADR that links back — never overwritten or deleted. See `.context/ADR/README.md`.
 
 ### QA Stages (Per User Story)
 
@@ -316,6 +324,12 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 - Workflow steps change (update the SKILL.md orchestration)
 - New outputs required or better instructions discovered
 
+### When to Record an ADR
+
+- A hard-to-reverse **test-architecture** decision is made (test runner, fixture / test-data strategy, isolation & parallelization model, auth-in-tests, selector contract, flake-retry policy)
+- It passes the two-gate test (architectural **AND** hard to reverse) → author `.context/ADR/ADR-NNNN-<slug>.md` (append-only; supersede, never edit). AI drafts `Proposed`; the human approves → `Accepted`
+- Ticket-local test trade-offs stay in the ticket's plan, not an ADR. Detection + authoring: `agentic-qa-core/references/adr-doctrine.md`; convention: `.context/ADR/README.md`
+
 ---
 
 ## Related Documentation
@@ -323,6 +337,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 - **CLAUDE.md** - Operational context (project root)
 - **README.md** - Project overview for humans
 - `.agents/README.md` - Variable resolution contract (`{{VAR}}`, `<<VAR>>`, `{{jira.<slug>}}`)
+- `.context/ADR/README.md` - Test-architecture decision records (when to write one, status lifecycle, index)
 - `/test-automation` skill - KATA Architecture entry point
 - `.claude/skills/` - Workflow skills (each one self-describes via its SKILL.md)
 

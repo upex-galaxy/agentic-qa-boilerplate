@@ -133,6 +133,8 @@ Dispatch: **Single**. The Plan subagent writes one consolidated artifact at `.se
 
 Present the plan to the user. Wait for approval before Phase 2.
 
+**ADR seeding (framework architecture).** When the chosen approach reshapes the framework's test architecture — KATA layers, fixture APIs, the test runner, the isolation/parallelization model, or the OpenAPI/type pipeline — and the decision passes the two-gate test (architectural AND hard to reverse per `agentic-qa-core/references/adr-doctrine.md` §1), record a `.context/ADR/ADR-NNNN-<slug>.md` after the plan is approved and before Phase 2 coding. Framework evolution is meta-work: its decisions bind every test session that follows, so historicize them rather than leaving them in a one-off `plan.md` that gets archived. The plan's "Invariants touched" / "Public API delta" sections are the prime ADR candidates. Draft `Proposed`; the human accepts. Template + lifecycle: `.context/ADR/README.md`.
+
 ### Phase 2 — Code
 
 Dispatch: **Sequential** — one subagent per task batch. The orchestrator decides batching from the plan's task list; rule of thumb is 1 batch per 3-5 closely-coupled tasks, or 1 batch per task when the task touches a load-bearing file such as `ApiBase.ts` / `UiBase.ts` / `TestContext.ts`.
@@ -185,6 +187,7 @@ Archive is a "close-the-loop" step, not "ship-the-code". Code is shipped by `/gi
 - **F5.** NEVER bump major versions of Playwright / Bun / TypeScript without a regression run on a representative E2E suite. Lockstep upgrades hide breaking changes in fixture lifecycle, locator engines, or type-emit behavior.
 - **F6.** NEVER add a new fixture API without updating `tests/components/TestFixture.ts` (or the matching `ApiFixture.ts` / `UiFixture.ts`) AND `kata-manifest.json` AND citing at least one existing test that consumes it. Orphan fixtures rot — and `kata-manifest.json` is the anti-duplication gate (Critical Rule #12).
 - **F7.** NEVER refactor `cli/install.ts` without testing the full install flow on a clean clone. The installer is the only surface where a bug ships silently to every new user — verification on the developer's already-installed repo proves nothing.
+- **F8.** NEVER introduce a hard-to-reverse test-framework architectural decision (KATA-layer reshape, new fixture API, test-runner swap, isolation/parallelization model) without recording it as an ADR in `.context/ADR/`. Framework evolution binds every later test session — a decision left only in an archived `plan.md` gets re-litigated or silently violated. Draft `Proposed` before Phase 2; the human approves. ADRs are append-only: supersede, never rewrite. See `agentic-qa-core/references/adr-doctrine.md`.
 
 ---
 

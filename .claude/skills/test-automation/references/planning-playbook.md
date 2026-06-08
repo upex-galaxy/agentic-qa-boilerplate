@@ -252,6 +252,8 @@ The automation plan is the technical contract — what code to write, which comp
 
 ## 2. Architecture Decisions
 
+> **ADR promotion check.** The decisions in this section are **ticket-local** by default — they stay in this plan. If one is **architectural AND hard to reverse** (a fixture lifecycle reused across tickets, a test-data-isolation contract, a Page-Object-vs-Screenplay shift, an auth-in-tests change, a flake-retry policy), it is no longer ticket-local: promote it to a standalone `ADR-NNNN-<slug>.md` in `.context/ADR/` and leave a `See ADR-NNNN` backlink in the table below. Detection + procedure: `agentic-qa-core/references/adr-doctrine.md` §1–§2; template + lifecycle: `.context/ADR/README.md`. AI drafts `Proposed`; the human approves.
+
 ### Component Strategy
 | Decision | Value | Rationale |
 | Component | {Resource}Api.ts / {Page}Page.ts | New or existing? |

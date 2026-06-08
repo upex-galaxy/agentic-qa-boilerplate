@@ -152,6 +152,8 @@ SRS sub-steps (run after PRD, serially):
 
 > **API contracts are NOT an SRS output.** The technical surface is owned by `bun run api:sync` (generates `api/openapi-types.ts` from the project's OpenAPI spec). The business angle is owned by the `/business-api-map` command (`.context/business/business-api-map.md`). Phase 2 SRS only records where the spec lives (or flags its absence as a Discovery Gap). See `references/phase-2-srs.md` §2.
 
+> **Test-architecture ADR seeding (Phase 2 SRS + Phase 3).** When the Architecture Specs / Infrastructure sub-steps settle a hard-to-reverse **test**-architecture decision — test runner/framework, isolation & parallelization model, fixture/test-data strategy, auth-in-tests, selector/`data-testid` contract, exploratory-vs-scripted boundary, CI sharding — promote each one that passes the two-gate test (architectural AND hard to reverse) to a standalone `ADR-NNNN-<slug>.md` in `.context/ADR/`, and reference it from `architecture.md` / `infrastructure/`. Greenfield: you are ENCODING the decision; brownfield: you are RECORDING the one you discovered. Follow `agentic-qa-core/references/adr-doctrine.md` (detection + authoring) and `.context/ADR/README.md` (template + lifecycle). AI drafts `Proposed`; the human accepts.
+
 **Completion gate**: `.context/PRD/executive-summary.md`, `user-personas.md`, `user-journeys.md`, `.context/SRS/architecture.md`, `functional-specs.md`, `non-functional-specs.md` all exist. API contract source (OpenAPI URL, `api/openapi-types.ts`, or "Discovery Gap — no spec") is recorded in `.context/project-config.md`. `business-feature-map.md` is produced post-discovery by `/business-feature-map` (see "Next recommended steps" after Phase 4). Soft content checks:
 - `architecture.md` contains at least one ` ```mermaid` block AND one of (`## Data Flow`, `## Database Schema`, `## Component Structure`).
 - `functional-specs.md` contains at least one `FR-` identifier and one `BR-` identifier.
@@ -293,6 +295,7 @@ Base stack detection (package.json → Node, pyproject.toml → Python, go.mod �
 ## Gotchas
 
 - **Discovery is read-only on the target repo.** `.context/` is the only write target. For modifications to this boilerplate's `tests/`, `api/schemas/`, and `config/`, use `/adapt-framework`.
+- **Hard-to-reverse test decisions become ADRs, not buried prose.** When Phase 2/3 settles a test-runner, isolation, fixture/data, auth-in-tests, or selector-contract decision that is architectural AND hard to reverse, record it as `.context/ADR/ADR-NNNN-<slug>.md` (append-only) instead of leaving it only inside `architecture.md`. Draft `Proposed`; the human approves. See `agentic-qa-core/references/adr-doctrine.md`.
 - **Credentials never live in discovery docs.** Read them from `.env` (`LOCAL_USER_EMAIL`, `STAGING_USER_EMAIL`, etc.). If missing, ask the user to create `.env.example` or hand over secrets out-of-band -- do not paste them into markdown.
 - **"Discovery Gaps" section is mandatory in every output.** If you could not verify something from the code (e.g., traffic volume, uptime targets), list it in a `## Discovery Gaps` section rather than inventing a number. This signals to future sessions what still needs human input.
 - **PRD/SRS discovered from code is authoritative, not aspirational.** Describe what the system does, not what product wants it to do. If the user wants a "to-be" doc, that is PRD/SRS *creation* (out of scope for this skill); point them to their own product workflow.
@@ -365,6 +368,7 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 - **Phase 2 PRD (executive summary, personas, journeys, features)** -> read `references/phase-2-prd.md`.
 - **Phase 2 SRS (architecture, API contracts, functional, non-functional)** -> read `references/phase-2-srs.md`.
 - **Phase 3 (backend, frontend, infrastructure)** -> read `references/phase-3-infrastructure.md`.
+- **Recording a hard-to-reverse test-architecture decision (ADR)** -> read `agentic-qa-core/references/adr-doctrine.md` + `.context/ADR/README.md`.
 - **Phase 4 (backlog mapping, templates)** -> read `references/phase-4-specification.md`.
 - **Generating `business-data-map.md`** -> read `references/context-generators.md`. For the test plan, run `/master-test-plan` (command, not skill).
 - **API endpoint sync (technical) or business-API map** -> NOT this skill. Use `bun run api:sync` (technical types) or `/business-api-map` command (business angle).
