@@ -257,6 +257,9 @@ The knowledge layer is organised in three tiers, mirroring the scope at which th
 ├── PRD/                          # Project level — product requirements (phase 2 of discovery)
 │   └── business/                 #   Business constitution, domain glossary
 ├── SRS/                          # Project level — software requirements (phase 2 of discovery)
+├── ADR/                          # Project level — test-architecture decisions (append-only, never regenerated)
+│   ├── README.md                #   When-to-write (two-gate) + status lifecycle + index
+│   └── ADR-NNNN-template.md     #   Copy → ADR-NNNN-<slug>.md per decision
 └── PBI/                          # Epic + Story level (Module = Epic, 1:1)
     ├── epic-tree.md              # Master index of every Epic            [SYNC]
     └── epics/
