@@ -78,7 +78,7 @@
  * Usage: bun run scripts/lint-skills.ts   (or: bun run skills:check)
  */
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 // -----------------------------------------------------------------------------
@@ -886,6 +886,10 @@ function main(): void {
 
   for (const entry of readdirSync(SKILLS_DIR)) {
     const slugPath = join(SKILLS_DIR, entry);
+    // Symlinked entries (community skills linked from .agents/skills) are NOT
+    // T1 — their tier comes from install.ts. Mirrors the symlink-awareness in
+    // build-skill-registry.ts so tier classification stays consistent.
+    if (lstatSync(slugPath).isSymbolicLink()) { continue; }
     if (!statSync(slugPath).isDirectory()) { continue; }
 
     const skillMd = join(slugPath, 'SKILL.md');
