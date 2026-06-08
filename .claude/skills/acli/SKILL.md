@@ -220,7 +220,7 @@ const adf = mdToAdf(markdownString);  // returns { type: "doc", version: 1, cont
 const { valid, errors } = validateAdf(adf);  // gate ANY ADF before publishing
 ```
 
-**Covered markdown subset**: headings 1–6, bullet lists, ordered lists, **nested lists** (indentation-based), **GFM tables** (`| a | b |` + `|---|---|` separator), **panels** (GitHub-alert blockquotes), **expand blocks** (`<details><summary>`), fenced code blocks (with optional language tag), inline code, bold, italic (snake_case-safe), strikethrough, links, blockquotes, horizontal rule, paragraphs.
+**Covered markdown subset**: headings 1–6, bullet lists, ordered lists, **nested lists** (indentation-based), **GFM tables** (`| a | b |` + `|---|---|` separator), **panels** (GitHub-alert blockquotes), **expand blocks** (`<details><summary>`), **Jira-native emoji** (`:short_name:`), **status lozenges** (`{status:color|TEXT}`), fenced code blocks (with optional language tag), inline code, bold, italic (snake_case-safe), strikethrough, links, blockquotes, horizontal rule, paragraphs.
 
 Rich-block syntax cheat-sheet:
 
@@ -230,8 +230,10 @@ Rich-block syntax cheat-sheet:
 | `> [!NOTE]` / `[!INFO]` (blue) · `[!TIP]` / `[!SUCCESS]` (green) · `[!IMPORTANT]` (purple) · `[!WARNING]` (yellow) · `[!CAUTION]` / `[!ERROR]` (red), then `> body` lines | `panel` with `panelType` `info` / `success` / `note` / `warning` / `error`. Body re-parsed as Markdown (can hold lists, code, etc.) |
 | Two-space (or deeper) indentation under a list item | nested `bulletList` / `orderedList` inside that `listItem`; depth = indent width; bullet/ordered mix per level |
 | `<details>` / `<summary>Title</summary>` / body / `</details>` | `expand` with `attrs.title`; body re-parsed as Markdown |
+| `:white_check_mark:` `:x:` `:warning:` … any `:short_name:` | `emoji` node (Jira resolves the shortName; curated status marks also carry a Unicode `text` fallback). Inline code is parsed first, so a colon inside `` `code` `` is safe |
+| `{status:green\|DONE}` (colors: `neutral` `purple` `blue` `red` `yellow` `green`) | `status` node — the coloured lozenge/pill for transition states. `localId` not required (Jira injects none on publish) |
 
-**Out of scope** (extend the converter if your project needs them): mentions, status macros, media / images, `nestedExpand` (expand inside a table cell).
+**Out of scope** (extend the converter if your project needs them): mentions (needs an Atlassian `accountId`, not a plain name), media / images (needs an upload-first round-trip — see `references/adf-authoring-style.md` §media), `nestedExpand` (expand inside a table cell).
 
 > **This section covers HOW Markdown becomes ADF. For WHEN to reach for a table vs a panel vs a nested list — i.e. how to make field content visually scannable instead of flat prose — see `references/adf-authoring-style.md`.** Workflow skills cite that file at each point they fill a Jira rich-text field.
 

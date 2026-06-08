@@ -55,8 +55,24 @@ Every block below is emitted by the bundled converter from ordinary Markdown —
 | **Blockquote** | quoting a source — a stakeholder line, a spec excerpt, an error message verbatim | callouts (use a panel); general emphasis | `> quoted line` |
 | **Expand** | long supporting detail that would bury the main content — full logs, an exhaustive enumeration, optional deep-dive | content the reader needs up front (expands hide it behind a click) | `<details><summary>Title</summary>` … `</details>` |
 | **Bold / inline code** | a key term, a literal value, an identifier inline | whole sentences; never put inline `code` *inside* `**bold**` — Jira rejects the combined marks (HTTP 400) | `**term**`, `` `value` `` |
+| **Emoji** (Jira-native) | a per-line status mark in a checklist or report so a human reads pass/fail/pending at a glance | sprinkling for tone; more than one idea per line | `:white_check_mark:` `:x:` `:warning:` … any `:short_name:` |
+| **Status lozenge** | a transition/lifecycle state as a coloured pill — `DONE`, `IN PROGRESS`, `BLOCKED`, `TODO` | ordinary emphasis; a value that is not a state | `{status:green\|DONE}` (colors: `neutral` `purple` `blue` `red` `yellow` `green`) |
 
 Panel-type semantics (GitHub-alert keyword → ADF `panelType`): `[!NOTE]`/`[!INFO]` → info (blue) · `[!TIP]`/`[!SUCCESS]` → success (green) · `[!IMPORTANT]` → note (purple) · `[!WARNING]` → warning (yellow) · `[!CAUTION]`/`[!ERROR]` → error (red). Pick the colour that matches the *meaning*, not the one that looks nicest.
+
+**Emoji & status — the curated set for reports.** A report or checklist where the AI marks each item reads far better with a glyph or a coloured pill than with the word "passed". Keep to this small, meaningful set — do not flood content with emoji:
+
+| Intent | Emoji (`:short_name:`) | Status lozenge |
+|---|---|---|
+| pass / done | `:white_check_mark:` ✅ | `{status:green\|DONE}` |
+| fail | `:x:` ❌ | `{status:red\|FAIL}` |
+| in progress | `:hourglass_flowing_sand:` ⏳ | `{status:yellow\|IN PROGRESS}` |
+| pending / to-do | `:white_circle:` ⚪ | `{status:neutral\|TODO}` |
+| blocked | `:no_entry:` ⛔ | `{status:red\|BLOCKED}` |
+| warning / risk | `:warning:` ⚠️ | — |
+| note / info | `:information_source:` ℹ️ | `{status:blue\|INFO}` |
+
+Use the **lozenge** for a single transition state of the whole item (a pill reads as a state); use the **emoji** for a per-line mark inside a list or table cell (a glyph reads as a tick). A checklist with a leading `:white_check_mark:` / `:x:` per line is exactly the high-value case — a human scans the list and sees every item's status without reading a word.
 
 ## <a id="before-after"></a>4. Before / after — flat vs structured
 
