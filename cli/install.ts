@@ -989,17 +989,26 @@ export async function ensureEnvFileExists(): Promise<void> {
 export async function appendVarsToEnv(vars: Record<string, string>): Promise<void> {
   if (Object.keys(vars).length === 0) { return; }
   const existing = await readFile(ENV_PATH, 'utf8');
-  // Upsert: replace an existing `KEY=` line in place so re-runs and the acli
-  // retry loop never accumulate duplicate secret lines; append only new keys.
+  // Upsert: replace an existing declaration of KEY in place — whether it is an
+  // active `KEY=`, a commented-out `# KEY=`, or an `export KEY=` line — so re-runs
+  // and the acli retry loop never accumulate duplicate lines, and a commented
+  // placeholder copied from `.env.example` is filled in place (uncommented)
+  // instead of a second active copy being appended. Only genuinely-absent keys
+  // are appended under the header.
   const lines = existing.split('\n');
   const remaining: Record<string, string> = { ...vars };
+  // Optional indent, optional comment marker(s), optional `export`, then an
+  // identifier immediately followed by `=`. Prose comments like
+  // `# ===== Added by ... =====` never match (no identifier before the `=`).
+  const declRe = /^(\s*)(?:#+\s*)?(export\s+)?([A-Za-z_]\w*)\s*=/;
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trimStart().startsWith('#')) { continue; }
-    const eq = lines[i].indexOf('=');
-    if (eq <= 0) { continue; }
-    const key = lines[i].slice(0, eq).trim();
+    const m = lines[i].match(declRe);
+    if (m === null) { continue; }
+    const indent = m[1];
+    const exportPrefix = m[2] ?? '';
+    const key = m[3];
     if (Object.prototype.hasOwnProperty.call(remaining, key)) {
-      lines[i] = `${key}=${remaining[key]}`;
+      lines[i] = `${indent}${exportPrefix}${key}=${remaining[key]}`;
       delete remaining[key];
     }
   }
