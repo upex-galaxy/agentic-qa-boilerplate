@@ -74,6 +74,19 @@ Panel-type semantics (GitHub-alert keyword → ADF `panelType`): `[!NOTE]`/`[!IN
 
 Use the **lozenge** for a single transition state of the whole item (a pill reads as a state); use the **emoji** for a per-line mark inside a list or table cell (a glyph reads as a tick). A checklist with a leading `:white_check_mark:` / `:x:` per line is exactly the high-value case — a human scans the list and sees every item's status without reading a word.
 
+**Mentions — resolve the `accountId` first (one external step).** A mention needs the target's opaque Atlassian `accountId`, not their name — Jira has no way to resolve a bare `@name`. The converter emits the node from an explicit `@[Display Name](accountId)`; you supply the id, resolved out-of-band once:
+
+```bash
+# by email (exact match)
+curl -sS -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
+  "$ATLASSIAN_URL/rest/api/3/user/search?query=person@example.com" | jq -r '.[0].accountId'
+# your own account
+curl -sS -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
+  "$ATLASSIAN_URL/rest/api/3/myself" | jq -r '.accountId'
+```
+
+Then author `@[Person Name](<accountId>)`. Verified live: the node round-trips as `{id:<accountId>, text:"@Name", accessLevel:""}` — a real, notifying tag. Use mentions sparingly (a mention pings the person); reserve them for assignment / hand-off / blocker call-outs, not decoration.
+
 ## <a id="before-after"></a>4. Before / after — flat vs structured
 
 **Test steps** — parallel data across the same columns → a table out-scans bullets every time:

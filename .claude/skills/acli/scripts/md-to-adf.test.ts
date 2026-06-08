@@ -157,3 +157,29 @@ describe("status lozenge", () => {
     expect(validateAdf(bad).valid).toBe(false);
   });
 });
+
+describe("mention", () => {
+  test("@[Name](accountId) → mention node", () => {
+    const adf = valid("ping @[Ada Lovelace](557058:abc-123) please");
+    const mention = adf.content[0].content!.find((n) => n.type === "mention");
+    expect(mention!.attrs).toEqual({ id: "557058:abc-123", text: "@Ada Lovelace" });
+  });
+
+  test("a bare @name is NOT a mention (no accountId available)", () => {
+    const adf = valid("cc @ada and @bob");
+    expect(adf.content[0].content!.some((n) => n.type === "mention")).toBe(false);
+    expect(adf.content[0].content!.map((n) => n.text ?? "").join("")).toBe("cc @ada and @bob");
+  });
+
+  test("a normal [label](url) link is not mistaken for a mention", () => {
+    const adf = valid("see [docs](https://x.dev)");
+    const link = adf.content[0].content!.find((n) => n.marks?.some((m) => m.type === "link"));
+    expect(link).toBeDefined();
+    expect(adf.content[0].content!.some((n) => n.type === "mention")).toBe(false);
+  });
+
+  test("validator rejects a mention missing id", () => {
+    const bad = { type: "doc", version: 1, content: [{ type: "paragraph", content: [{ type: "mention", attrs: { text: "@x" } }] }] };
+    expect(validateAdf(bad).valid).toBe(false);
+  });
+});

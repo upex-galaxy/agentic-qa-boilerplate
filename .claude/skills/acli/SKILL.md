@@ -220,7 +220,7 @@ const adf = mdToAdf(markdownString);  // returns { type: "doc", version: 1, cont
 const { valid, errors } = validateAdf(adf);  // gate ANY ADF before publishing
 ```
 
-**Covered markdown subset**: headings 1–6, bullet lists, ordered lists, **nested lists** (indentation-based), **GFM tables** (`| a | b |` + `|---|---|` separator), **panels** (GitHub-alert blockquotes), **expand blocks** (`<details><summary>`), **Jira-native emoji** (`:short_name:`), **status lozenges** (`{status:color|TEXT}`), fenced code blocks (with optional language tag), inline code, bold, italic (snake_case-safe), strikethrough, links, blockquotes, horizontal rule, paragraphs.
+**Covered markdown subset**: headings 1–6, bullet lists, ordered lists, **nested lists** (indentation-based), **GFM tables** (`| a | b |` + `|---|---|` separator), **panels** (GitHub-alert blockquotes), **expand blocks** (`<details><summary>`), **Jira-native emoji** (`:short_name:`), **status lozenges** (`{status:color|TEXT}`), **mentions** (`@[Name](accountId)`), fenced code blocks (with optional language tag), inline code, bold, italic (snake_case-safe), strikethrough, links, blockquotes, horizontal rule, paragraphs.
 
 Rich-block syntax cheat-sheet:
 
@@ -232,8 +232,9 @@ Rich-block syntax cheat-sheet:
 | `<details>` / `<summary>Title</summary>` / body / `</details>` | `expand` with `attrs.title`; body re-parsed as Markdown |
 | `:white_check_mark:` `:x:` `:warning:` … any `:short_name:` | `emoji` node (Jira resolves the shortName; curated status marks also carry a Unicode `text` fallback). Inline code is parsed first, so a colon inside `` `code` `` is safe |
 | `{status:green\|DONE}` (colors: `neutral` `purple` `blue` `red` `yellow` `green`) | `status` node — the coloured lozenge/pill for transition states. `localId` not required (Jira injects none on publish) |
+| `@[Display Name](accountId)` | `mention` node. The `accountId` is supplied explicitly (resolve it via `/rest/api/3/user/search` — see `references/adf-authoring-style.md` §mentions); a bare `@name` is NOT converted |
 
-**Out of scope** (extend the converter if your project needs them): mentions (needs an Atlassian `accountId`, not a plain name), media / images (needs an upload-first round-trip — see `references/adf-authoring-style.md` §media), `nestedExpand` (expand inside a table cell).
+**Out of scope** (extend the converter if your project needs them): media / images (needs an upload-first round-trip, not a Markdown link), `nestedExpand` (expand inside a table cell).
 
 > **This section covers HOW Markdown becomes ADF. For WHEN to reach for a table vs a panel vs a nested list — i.e. how to make field content visually scannable instead of flat prose — see `references/adf-authoring-style.md`.** Workflow skills cite that file at each point they fill a Jira rich-text field.
 

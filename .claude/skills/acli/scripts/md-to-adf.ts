@@ -21,6 +21,8 @@
  *   - Emoji (Jira-native): :short_name: → ADF emoji node (Jira resolves the name)
  *   - Status lozenge: {status:color|TEXT} → ADF status pill
  *     (color: neutral | purple | blue | red | yellow | green)
+ *   - Mention: @[Display Name](accountId) → ADF mention node (accountId is the
+ *     opaque Atlassian id, resolved out-of-band — a bare @name cannot mention)
  *   - Links: [label](url)
  *   - Blockquotes: > line
  *   - Horizontal rule: ---
@@ -211,6 +213,21 @@ function parseInline(input: string): ADFNode[] {
       }
     }
 
+    // Jira mention: @[Display Name](accountId) → mention node. The accountId must
+    // be supplied explicitly — a bare @name cannot mention (Jira needs the opaque
+    // Atlassian accountId, resolved out-of-band; see references/adf-authoring-style.md).
+    if (input[i] === "@" && input[i + 1] === "[") {
+      const m = /^@\[([^\]]+)\]\(([^)]+)\)/.exec(input.slice(i));
+      if (m) {
+        nodes.push({
+          type: "mention",
+          attrs: { id: m[2].trim(), text: `@${m[1].trim()}` },
+        });
+        i += m[0].length;
+        continue;
+      }
+    }
+
     // Jira-native emoji: :short_name: → emoji node (Jira resolves the shortName).
     // Pattern is the GitHub/Slack shortname shape; inline code is parsed earlier,
     // so a colon inside `code` never reaches here.
@@ -245,7 +262,7 @@ function parseInline(input: string): ADFNode[] {
     let chunkEnd = i;
     while (chunkEnd < input.length) {
       const c = input[chunkEnd];
-      if (c === "`" || c === "[" || c === "*" || c === "_" || c === "~" || c === ":" || c === "{") {
+      if (c === "`" || c === "[" || c === "*" || c === "_" || c === "~" || c === ":" || c === "{" || c === "@") {
         break;
       }
       chunkEnd++;
