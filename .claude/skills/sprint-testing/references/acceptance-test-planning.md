@@ -366,7 +366,7 @@ ATP = `Test Plan` issue. ATR = `Test Execution` issue. Both linked bidirectional
   description: {full ATP body}
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "is tested by"
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan
   outward: {ATP_KEY}
   inward:  {STORY_KEY}
 
@@ -378,10 +378,12 @@ ATP = `Test Plan` issue. ATR = `Test Execution` issue. Both linked bidirectional
   # tests: [] — filled at Stage 3 or by CI import
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "is tested by"
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Execution
   outward: {ATR_KEY}
   inward:  {STORY_KEY}
 ```
+
+> Resolve the `test` link type by slug only and verify direction after each create — see `agentic-qa-core/references/traceability-linking.md` (§2 slug resolution, §4 directionality + mandatory verification).
 
 Load `/xray-cli` skill for the concrete CLI syntax.
 

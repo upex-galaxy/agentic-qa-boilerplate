@@ -93,10 +93,12 @@ Branch on modality (resolved in Phase 0.1).
   description: <full shift-left-refinement.md body>
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "is tested by"
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan — coverage edge
   outward: {ATP_KEY}
   inward:  {STORY_KEY}
 ```
+
+> Resolve the link type by slug only and verify direction after creation — see `agentic-qa-core/references/traceability-linking.md` (§2 slug resolution, §4 directionality + mandatory verification).
 
 Then ALSO populate the custom field on the Story so the field+comment mirror works the same as Modality jira-native:
 

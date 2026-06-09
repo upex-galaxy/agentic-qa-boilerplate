@@ -297,7 +297,7 @@ Notes:
 [ISSUE_TRACKER_TOOL] Link Issues:
   from: {TEST_KEY}
   to:   {STORY_KEY}
-  linkType: "is tested by"
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test
 
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {TEST_KEY}
@@ -309,6 +309,8 @@ Notes:
   # later: ready to run
   # later: for manual OR automation review -> approve to automate
 ```
+
+> Resolve the `test` link type by slug only and verify direction after creation — see `agentic-qa-core/references/traceability-linking.md` (§2 slug resolution, §4 directionality + mandatory verification).
 
 ### Jira + Xray (Cucumber)
 
@@ -329,17 +331,21 @@ Notes:
 [ISSUE_TRACKER_TOOL] Link Issues:
   from: {TEST_KEY}
   to:   {STORY_KEY}
-  linkType: "is tested by"
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test
 
-[ISSUE_TRACKER_TOOL] Link Issues:
-  from: {TEST_KEY}
-  to:   {TEST_SET_KEY}
-  linkType: "is part of test set"   # if using Test Sets
+# Test ↔ Test Set membership is NOT a Jira issuelink — do NOT create it via
+# [ISSUE_TRACKER_TOOL] link create. It is Xray-internal state managed via the
+# /xray-cli skill (add-to-set). See traceability-linking.md §9.
+[TMS_TOOL] Add Test to Test Set:   # /xray-cli only — Xray-internal, NOT a Jira link
+  test:    {TEST_KEY}
+  testSet: {TEST_SET_KEY}
 
 [ISSUE_TRACKER_TOOL] Transition Issue:
   issue: {TEST_KEY}
   transition: start design
 ```
+
+> Resolve the `test` link type by slug only and verify direction after creation — see `agentic-qa-core/references/traceability-linking.md` (§2 slug resolution, §4 directionality, §9 Test Set caveat: membership goes through `/xray-cli`, never `acli link create`).
 
 ### Jira + Xray (Manual)
 

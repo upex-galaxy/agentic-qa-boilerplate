@@ -373,7 +373,7 @@ Exact instructions:
      c. [ISSUE_TRACKER_TOOL] Update Issue: issue=<TEST_KEY>, description={full Description template per jira-test-management.md §7}.
      d. [TMS_TOOL] AddTests: testPlan=<ATP_KEY>, tests=[<TEST_KEY>].
      e. [TMS_TOOL] AddTests: execution=<ATR_KEY>, tests=[<TEST_KEY>].
-     f. [ISSUE_TRACKER_TOOL] Link Issues: linkType="is tested by", outward=<TEST_KEY>, inward=<STORY_KEY>.
+     f. [ISSUE_TRACKER_TOOL] Link Issues: linkType={{jira.link_types.test.name}}, outward=<TEST_KEY>, inward=<STORY_KEY>.   # Story is tested by Test (resolve by slug + verify direction per agentic-qa-core/references/traceability-linking.md §2/§4)
   2. Apply labels per the methodology naming convention (see `tms-conventions.md` §Labels).
 
 Report format:
@@ -420,7 +420,7 @@ Exact instructions:
      a. [ISSUE_TRACKER_TOOL] Create Issue: project=<PROJECT_KEY>, issueType=Test, summary="{per TC naming convention}", priority={Critical|High|Medium|Low}, labels=[regression, ...], epic=<REGRESSION_EPIC_KEY>.
      b. Capture the returned issue key as <TEST_KEY>.
      c. [ISSUE_TRACKER_TOOL] Update Issue: issue=<TEST_KEY>, description={full Description template per jira-test-management.md §7}, fields={ {{jira.test_status}}: Draft, {{jira.to_be_automated}}: <bool> }.
-     d. [ISSUE_TRACKER_TOOL] Link Issues: linkType="is tested by", outward=<TEST_KEY>, inward=<STORY_KEY>.
+     d. [ISSUE_TRACKER_TOOL] Link Issues: linkType={{jira.link_types.test.name}}, outward=<TEST_KEY>, inward=<STORY_KEY>.   # Story is tested by Test
   2. Do NOT recreate ATP/ATR custom fields on the Story — those were already populated by the orchestrator before dispatch.
 
 Report format:
@@ -473,12 +473,12 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
   environment: {from session context}
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "is tested by"
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan
   outward: {ATP_KEY}
   inward:  {STORY_KEY}
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "is tested by"
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Execution
   outward: {ATR_KEY}
   inward:  {STORY_KEY}
 
@@ -537,7 +537,7 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
     Test Status: Draft
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "is tested by"
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test
   outward: {TEST_KEY}
   inward:  {STORY_KEY}
 ```

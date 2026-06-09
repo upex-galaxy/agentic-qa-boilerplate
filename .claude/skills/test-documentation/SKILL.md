@@ -487,7 +487,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
   tests: []                       # filled as TCs are created
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "is tested by"
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan (resolve by slug + verify direction per agentic-qa-core/references/traceability-linking.md §2/§4)
   outward: {ATP_KEY}
   inward:  {STORY_KEY}
 
@@ -500,7 +500,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
   tests: []                       # filled at Stage 3 or via CI import
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "is tested by"
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Execution
   outward: {ATR_KEY}
   inward:  {STORY_KEY}
 
@@ -524,7 +524,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
   execution: {ATR_KEY}
   tests: [{TEST_KEY}]
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "is tested by"
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test
   outward: {TEST_KEY}
   inward:  {STORY_KEY}
 
@@ -583,7 +583,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
     Test Status: Draft                          # custom field per jira-setup.md
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: "is tested by"
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test
   outward: {TEST_KEY}
   inward:  {STORY_KEY}
 
