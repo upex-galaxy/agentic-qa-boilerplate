@@ -59,10 +59,21 @@ interface UnmappedEntry {
   used_by?: string[]
 }
 
+interface LinkTypeEntry {
+  name?: string
+  outward?: string
+  inward?: string
+  fallback?: string | null
+  description?: string
+  used_by?: string[]
+}
+
 interface Manifest {
   required: Record<string, RequiredEntry>
   optional: Record<string, RequiredEntry>
   unmapped: Record<string, UnmappedEntry>
+  linkTypesRequired: Record<string, LinkTypeEntry>
+  linkTypesOptional: Record<string, LinkTypeEntry>
 }
 
 // ---- Work types (workflow validation) ---------------------------------------
@@ -164,6 +175,7 @@ const REPO_ROOT = join(import.meta.dir, '..');
 const MANIFEST_PATH = join(REPO_ROOT, '.agents', 'jira-required.yaml');
 const CATALOG_PATH = join(REPO_ROOT, '.agents', 'jira-fields.json');
 const WORKFLOWS_PATH = join(REPO_ROOT, '.agents', 'jira-workflows.json');
+const LINK_TYPES_PATH = join(REPO_ROOT, '.agents', 'jira-link-types.json');
 
 function loadManifest(): Manifest {
   if (!existsSync(MANIFEST_PATH)) {
@@ -187,7 +199,10 @@ function loadManifest(): Manifest {
   const required = (root.required ?? {}) as Record<string, RequiredEntry>;
   const optional = (root.optional ?? {}) as Record<string, RequiredEntry>;
   const unmapped = (root.unmapped ?? {}) as Record<string, UnmappedEntry>;
-  return { required, optional, unmapped };
+  const linkTypesRaw = (root.link_types ?? {}) as Record<string, unknown>;
+  const linkTypesRequired = (linkTypesRaw.required ?? {}) as Record<string, LinkTypeEntry>;
+  const linkTypesOptional = (linkTypesRaw.optional ?? {}) as Record<string, LinkTypeEntry>;
+  return { required, optional, unmapped, linkTypesRequired, linkTypesOptional };
 }
 
 function loadCatalog(): Record<string, JiraFieldEntry> {
@@ -1006,6 +1021,161 @@ Exit code:
 `);
 }
 
+// -----------------------------------------------------------------------------
+// link_types validation
+// -----------------------------------------------------------------------------
+
+interface LinkTypeReport {
+  slug: string
+  scope: 'required' | 'optional'
+  severity: 'ok' | 'fallback' | 'missing' | 'deferred'
+  expected: LinkTypeEntry
+  fallbackSlug?: string
+}
+
+interface LinkTypeCatalogEntry {
+  id?: string
+  name?: string
+  outward?: string
+  inward?: string
+  exists_in_workspace?: boolean
+}
+
+function loadLinkTypesCatalog(): Record<string, LinkTypeCatalogEntry> | null {
+  if (!existsSync(LINK_TYPES_PATH)) { return null; }
+  try {
+    const parsed = JSON.parse(readFileSync(LINK_TYPES_PATH, 'utf8')) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, LinkTypeCatalogEntry>;
+    }
+  }
+  catch {
+    // fall through — treat malformed as missing
+  }
+  return null;
+}
+
+/**
+ * A slug counts as "resolved in workspace" only when its catalog entry exists
+ * AND its `exists_in_workspace` flag is not explicitly false. The sync script
+ * keeps declared-but-missing slugs in the catalog as stubs with
+ * `exists_in_workspace: false` — those must NOT pass validation.
+ */
+function isWorkspaceResolved(entry: LinkTypeCatalogEntry | undefined): boolean {
+  if (!entry) { return false; }
+  return entry.exists_in_workspace !== false;
+}
+
+function checkLinkTypes(
+  manifest: Manifest,
+  catalog: Record<string, LinkTypeCatalogEntry> | null,
+): { results: LinkTypeReport[], deferred: boolean } {
+  const results: LinkTypeReport[] = [];
+  const deferred = catalog === null;
+
+  for (const [slug, entry] of Object.entries(manifest.linkTypesRequired)) {
+    if (deferred) {
+      results.push({ slug, scope: 'required', severity: 'deferred', expected: entry });
+      continue;
+    }
+    if (isWorkspaceResolved(catalog[slug])) {
+      results.push({ slug, scope: 'required', severity: 'ok', expected: entry });
+      continue;
+    }
+    const fb = entry.fallback ?? null;
+    if (fb && isWorkspaceResolved(catalog[fb])) {
+      results.push({
+        slug,
+        scope: 'required',
+        severity: 'fallback',
+        expected: entry,
+        fallbackSlug: fb,
+      });
+      continue;
+    }
+    results.push({ slug, scope: 'required', severity: 'missing', expected: entry });
+  }
+
+  for (const [slug, entry] of Object.entries(manifest.linkTypesOptional)) {
+    if (deferred) {
+      results.push({ slug, scope: 'optional', severity: 'deferred', expected: entry });
+      continue;
+    }
+    const present = isWorkspaceResolved(catalog[slug]);
+    results.push({
+      slug,
+      scope: 'optional',
+      severity: present ? 'ok' : 'missing',
+      expected: entry,
+    });
+  }
+
+  return { results, deferred };
+}
+
+function printLinkTypesReport(results: LinkTypeReport[], deferred: boolean): boolean {
+  if (results.length === 0) { return false; }
+  console.log('Link Types');
+  console.log('==========');
+  if (deferred) {
+    console.log('💡 DEFERRED — .agents/jira-link-types.json not found.');
+    console.log('   Run `bun run jira:sync-link-types` to populate the catalog.');
+    console.log('   Validation skipped; degrade gracefully.');
+    console.log('');
+    return false;
+  }
+
+  let hasMissingRequired = false;
+  const okCount = results.filter(r => r.severity === 'ok').length;
+  const fallbackCount = results.filter(r => r.severity === 'fallback').length;
+  const missingRequired = results.filter(r => r.scope === 'required' && r.severity === 'missing');
+  const missingOptional = results.filter(r => r.scope === 'optional' && r.severity === 'missing');
+
+  console.log(
+    `Summary: ✅ ${okCount} OK   ⚠️ ${fallbackCount} via fallback   `
+    + `❌ ${missingRequired.length} required missing   💡 ${missingOptional.length} optional absent`,
+  );
+  console.log('');
+
+  // Per-slug present/fallback/absent report.
+  for (const r of results.filter(x => x.scope === 'required')) {
+    if (r.severity === 'ok') {
+      console.log(`  ✅ ${r.slug} → present`);
+    }
+    else if (r.severity === 'fallback') {
+      console.log(`  ⚠️  ${r.slug} → via fallback "${r.fallbackSlug}"`);
+    }
+    else {
+      console.log(`  ❌ ${r.slug} → absent (workspace lacks the type AND its fallback)`);
+    }
+  }
+  for (const r of results.filter(x => x.scope === 'optional')) {
+    console.log(`  ${r.severity === 'ok' ? '✅' : '💡'} ${r.slug} (optional) → ${r.severity === 'ok' ? 'present' : 'absent'}`);
+  }
+  console.log('');
+
+  if (missingRequired.length > 0) {
+    hasMissingRequired = true;
+    console.log('❌ MISSING required link types (workspace lacks the type AND its fallback):');
+    for (const r of missingRequired) {
+      console.log(`  - ${r.slug} (expected name "${r.expected.name ?? r.slug}")`);
+      console.log('    Action: create the link type in Jira admin → Issues → Issue link types,');
+      console.log('            then re-run `bun run jira:sync-link-types`.');
+    }
+    console.log('');
+  }
+
+  if (fallbackCount > 0) {
+    console.log('⚠️ DEGRADED — required link types resolved via fallback (direction may be lost):');
+    for (const r of results.filter(x => x.severity === 'fallback')) {
+      console.log(`  - ${r.slug} → fallback "${r.fallbackSlug}" — consumers must flag direction loss.`);
+    }
+    console.log('');
+  }
+
+  return hasMissingRequired;
+}
+
 function main(): void {
   const args = process.argv.slice(2);
   if (args.includes('-h') || args.includes('--help')) {
@@ -1052,6 +1222,15 @@ function main(): void {
   }
   const workTypeCounters = tallyWorkTypes(workTypeResults);
 
+  // ----- link_types validation block ------------------------------------------
+  const linkTypesCatalog = loadLinkTypesCatalog();
+  const { results: linkTypeResults, deferred: linkTypesDeferred } = checkLinkTypes(
+    manifest,
+    linkTypesCatalog,
+  );
+  const linkTypesMissingRequired = !linkTypesDeferred
+    && linkTypeResults.some(r => r.scope === 'required' && r.severity === 'missing');
+
   if (asJson) {
     printJsonReport(
       results,
@@ -1073,6 +1252,7 @@ function main(): void {
       workTypes.length,
       workflowsCatalogPresent,
     );
+    printLinkTypesReport(linkTypeResults, linkTypesDeferred);
   }
 
   const fieldExitTrigger = results.some(
@@ -1081,7 +1261,7 @@ function main(): void {
   const workTypeExitTrigger = workTypeResults.some(
     r => r.severity === 'missing' || r.severity === 'mismatch',
   );
-  const exitCode = fieldExitTrigger || workTypeExitTrigger ? 1 : 0;
+  const exitCode = fieldExitTrigger || workTypeExitTrigger || linkTypesMissingRequired ? 1 : 0;
   process.exit(exitCode);
 }
 
