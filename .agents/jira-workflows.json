@@ -176,6 +176,14 @@
         "from_canonical": "blocked",
         "to_canonical": "in_progress"
       },
+      "back_to_dev": {
+        "id": "27",
+        "name": "back to dev",
+        "from_status_id": "10026",
+        "to_status_id": "10012",
+        "from_canonical": "blocked",
+        "to_canonical": "ready_for_dev"
+      },
       "qa_sign_off": {
         "id": "10",
         "name": "QA Sign-Off",
