@@ -523,6 +523,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </tbody>
   </table>
   <p class="dim mt-s">When in doubt, ASK. Never assume "module" just because several TC IDs appear.</p>
+  <p class="dim mt-s">These scopes consume the <b>Candidate</b> verdicts from /test-documentation — mapping: Module ← module-driven · Ticket ← ticket-driven · Regression ← bug-driven · ad-hoc → wherever it fits. Manual and Deferred are terminal.</p>
   <div class="notes">Scope dictates how much planning ceremony you produce. Only Candidate verdicts from test-documentation reach automation — Manual and Deferred are terminal.</div>
 </section>
 
@@ -719,6 +720,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <span class="cmt">// Locator ladder:  1 getByTestId  2 getByRole  3 getByLabel  4 getByText  5 CSS/XPath</span>
 <span class="cmt">// BANNED: .btn-primary · div &gt; form &gt; button:nth-child(3) · page.waitForTimeout(3000)</span></pre>
   </div>
+  <p class="dim mt-s">Coming from the getByRole-first standard? Here data-testid is rung 1 because the dev team provides them as a stable testing contract — getByRole remains the immediate fallback.</p>
   <div class="notes">Prefer data-testid every time it exists. CSS-class and structural selectors decay on every refactor. UI ATCs return void; assertions live inside.</div>
 </section>
 
@@ -809,6 +811,20 @@ test.<span class="fn">describe</span>(<span class="str">'UPEX-411: Apply Discoun
   <div class="notes">The skill auto-loads on these phrases. It explicitly will NOT trigger for running suites (regression-testing), documenting TCs (test-documentation), or onboarding a repo (project-discovery).</div>
 </section>
 
+<section class="slide" data-title="Preflight gate">
+  <p class="kicker">before everything — readiness preflight gate (MANDATORY)</p>
+  <h2 class="h2" data-anim="fade-up">The Readiness Gate Runs BEFORE Any Planning</h2>
+  <ul class="blist anim-stagger-list">
+    <li><b>Framework adapted.</b> No ATCs are written against the boilerplate's Example* scaffolds. Still generic? STOP — run /project-discovery → /adapt-framework first (the gate never auto-runs them).</li>
+    <li><b>Toolchain + manifest clean.</b> bun run test / types:check / lint:check resolve at t=0, not at Phase 3; kata:manifest:check clean before proposing components or ATCs.</li>
+    <li><b>Live environment + credentials.</b> Authored tests run against the active env: URL reachable, test users in .env (per role if applicable), Playwright browsers installed.</li>
+    <li><b>MCPs at PLAN-time.</b> The OpenAPI MCP (explore endpoints) and DBHub MCP (explore schema) are needed while DESIGNING ATCs and classifying data in Phase 1 — not just at run-time.</li>
+    <li><b>Two laws.</b> args-as-answers (what's already provided is never re-asked) and probe-don't-assume; gaps and REDs surface as ONE checklist, STOP on any blocking RED.</li>
+  </ul>
+  <p class="dim mt-s">After the gate comes Phase 0: if a prior session exists for the scope, it offers resume / restart / abort — you pick up exactly where you left off.</p>
+  <div class="notes">A recent, MANDATORY addition to the skill: it runs before the Phase 0 resume check and the scope picker. It prevents discovering mid-Code that a credential, an MCP, or the framework adaptation was missing. Distinct from Phase 1's anti-duplication pre-flight (which cross-checks the manifest for reuse); this gate is about tools and environment being ready to write and run code.</div>
+</section>
+
 <section class="slide" data-title="Auto-loaded context">
   <p class="kicker">what it auto-loads</p>
   <h2 class="h2" data-anim="fade-up">Context the Skill Pulls In For You</h2>
@@ -868,6 +884,7 @@ test.<span class="fn">describe</span>(<span class="str">'UPEX-411: Apply Discoun
 <pre><span class="p">▸ </span><span class="c">/test-automation</span>
 <span class="o">  Scope? (module / ticket / regression) — ticket UPEX-411</span>
 
+<span class="o">[Preflight] framework adapted ✓ toolchain ✓ env+creds ✓ manifest ✓ browsers ✓ — GREEN.</span>
 <span class="o">[Phase 0] No prior session for UPEX-411 → fresh start.</span>
 <span class="o">[Plan]   Syncing Story… jira:sync-issues get UPEX-411 --include-comments</span>
 <span class="o">         kata-manifest.json: CheckoutPage exists; reuse. New ATC: completeCheckoutSuccessfully.</span>

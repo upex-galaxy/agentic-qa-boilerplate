@@ -523,6 +523,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </tbody>
   </table>
   <p class="dim mt-s">Ante la duda, PREGUNTA. Nunca asumas "módulo" solo porque aparecen varios IDs de TC.</p>
+  <p class="dim mt-s">Estos scopes consumen los veredictos <b>Candidate</b> de /test-documentation — mapeo: Module ← module-driven · Ticket ← ticket-driven · Regression ← bug-driven · ad-hoc → donde encaje. Manual y Deferred son terminales.</p>
   <div class="notes">El scope dicta cuánta ceremonia de planificación produces. Solo los veredictos Candidate de test-documentation llegan a automation — Manual y Deferred son terminales.</div>
 </section>
 
@@ -719,6 +720,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <span class="cmt">// Locator ladder:  1 getByTestId  2 getByRole  3 getByLabel  4 getByText  5 CSS/XPath</span>
 <span class="cmt">// BANNED: .btn-primary · div &gt; form &gt; button:nth-child(3) · page.waitForTimeout(3000)</span></pre>
   </div>
+  <p class="dim mt-s">¿Vienes del estándar getByRole-first? Aquí data-testid es el peldaño 1 porque el equipo dev los provee como contrato estable de testing — getByRole sigue siendo el fallback inmediato.</p>
   <div class="notes">Prefiere data-testid siempre que exista. Los selectores por clase CSS y estructurales decaen en cada refactor. Los ATCs de UI retornan void; las assertions viven adentro.</div>
 </section>
 
@@ -809,6 +811,20 @@ test.<span class="fn">describe</span>(<span class="str">'UPEX-411: Apply Discoun
   <div class="notes">La skill se auto-carga con estas frases. Explícitamente NO se dispara para correr suites (regression-testing), documentar TCs (test-documentation) ni onboardear un repo (project-discovery).</div>
 </section>
 
+<section class="slide" data-title="Preflight gate">
+  <p class="kicker">antes de todo — readiness preflight gate (MANDATORY)</p>
+  <h2 class="h2" data-anim="fade-up">El Gate de Preparación Corre ANTES de Planear</h2>
+  <ul class="blist anim-stagger-list">
+    <li><b>Framework adaptado.</b> No se escriben ATCs contra los scaffolds Example* del boilerplate. ¿Sigue genérico? STOP — corre /project-discovery → /adapt-framework primero (el gate nunca los auto-ejecuta).</li>
+    <li><b>Toolchain + manifest limpios.</b> bun run test / types:check / lint:check resuelven en t=0, no en Phase 3; kata:manifest:check limpio antes de proponer componentes o ATCs.</li>
+    <li><b>Entorno + credenciales vivos.</b> Los tests corren contra el entorno activo: URL alcanzable, test users en .env (por rol si aplica), browsers de Playwright instalados.</li>
+    <li><b>MCPs en PLAN-time.</b> OpenAPI MCP (explorar endpoints) y DBHub MCP (explorar schema) se necesitan al DISEÑAR los ATCs y clasificar datos en Phase 1 — no solo al ejecutar.</li>
+    <li><b>Dos leyes.</b> args-as-answers (lo ya provisto no se re-pregunta) y probe-don't-assume; gaps y REDs se muestran como UN solo checklist, STOP ante cualquier RED bloqueante.</li>
+  </ul>
+  <p class="dim mt-s">Tras el gate viene Phase 0: si existe sesión previa para el scope, ofrece resume / restart / abort — retomas exactamente donde quedaste.</p>
+  <div class="notes">Adición reciente y MANDATORY del skill: corre antes del resume check de Phase 0 y del scope picker. Evita descubrir a mitad del Code que faltaba una credencial, un MCP o que el framework seguía genérico. Distinto del pre-flight anti-duplicación de Phase 1 (ese cruza el manifest buscando reuso); este gate es sobre tools y entorno listos para escribir y correr código.</div>
+</section>
+
 <section class="slide" data-title="Auto-loaded context">
   <p class="kicker">qué auto-carga</p>
   <h2 class="h2" data-anim="fade-up">Contexto que la Skill Trae Por Ti</h2>
@@ -868,6 +884,7 @@ test.<span class="fn">describe</span>(<span class="str">'UPEX-411: Apply Discoun
 <pre><span class="p">▸ </span><span class="c">/test-automation</span>
 <span class="o">  Scope? (module / ticket / regression) — ticket UPEX-411</span>
 
+<span class="o">[Preflight] framework adapted ✓ toolchain ✓ env+creds ✓ manifest ✓ browsers ✓ — GREEN.</span>
 <span class="o">[Phase 0] No prior session for UPEX-411 → fresh start.</span>
 <span class="o">[Plan]   Syncing Story… jira:sync-issues get UPEX-411 --include-comments</span>
 <span class="o">         kata-manifest.json: CheckoutPage exists; reuse. New ATC: completeCheckoutSuccessfully.</span>
