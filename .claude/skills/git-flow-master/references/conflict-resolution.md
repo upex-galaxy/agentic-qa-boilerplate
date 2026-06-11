@@ -318,9 +318,12 @@ If the user provided context, use it. If not, ask:
    **[2] Abort and keep the stash**:
 
    ```bash
-   git checkout -- .                   # discard working-tree changes from the apply
-   git reset HEAD                      # unstage anything that got staged
+   git stash show --name-only          # list ONLY the paths the stash touches
+   git checkout -- <paths-from-stash>  # discard ONLY those paths, never `.`
+   git reset HEAD <paths-from-stash>   # unstage anything that got staged
    ```
+
+   > ⚠️ Never `git checkout -- .` here — other agent sessions may hold uncommitted work in the same working tree (Anti-pattern G9, Critical Rule #15). Discard only the paths the stash apply touched.
 
    The stash is still in `git stash list`. Apply again later when the working tree is in a different state.
 
@@ -407,7 +410,9 @@ git reflog
 # Recover a "lost" commit by sha
 git checkout -b recovery <sha>
 
-# Reset to a specific reflog entry (DESTRUCTIVE — current changes lost)
+# Reset to a specific reflog entry (DESTRUCTIVE — current changes lost).
+# Requires explicit user OK AND a working tree with no other session's
+# uncommitted work (Anti-pattern G9, Critical Rule #15).
 git reset --hard HEAD@{N}
 
 # Clean up an aborted operation safely

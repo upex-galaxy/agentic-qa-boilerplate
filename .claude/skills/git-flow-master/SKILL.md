@@ -414,6 +414,7 @@ The branch plan that comes out of the decision is the **contract** for execution
 9. **PRs stop at creation.** Merging is the user's explicit next step.
 10. **Strategy is sticky.** Once resolved, persist in `CLAUDE.md`. The next invocation re-reads the marker rather than asking again.
 11. **Language**: artifacts (commits, branches, PR bodies, CLAUDE.md sections) in English. Mirror the user's language only in conversation.
+12. **No global discards.** Never `git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, or `git clean -f` — concurrent agent sessions may share this working tree without worktrees. Discard only explicit paths this session modified; if file ownership is unclear, stop and ask the user. (Critical Rule #15 in `CLAUDE.md`; see also `references/worktrees.md` for true isolation.)
 
 ---
 
@@ -427,6 +428,7 @@ The branch plan that comes out of the decision is the **contract** for execution
 - **G6.** NEVER bypass pre-commit / pre-push hooks with `--no-verify` to "ship faster" — hooks exist to catch the bug you didn't notice. Fix the hook failure and create a new commit.
 - **G7.** NEVER mix concerns in a single commit (feat + refactor + lint fix bundled together) — atomic commits enable surgical revert and clean blame.
 - **G8.** NEVER stack PRs without naming the dependency chain in the PR body — reviewers can't tell which PR to read first or what each one depends on.
+- **G9.** NEVER discard working-tree changes globally (`git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`) — when multiple agent sessions share one working tree without worktrees, a global discard destroys another session's uncommitted work with no recovery. Target only the explicit paths this session modified; unclear ownership → stop and ask the user (Critical Rule #15).
 
 ---
 
@@ -457,6 +459,7 @@ WIP does not teleport**, so `mv` it in (or commit first). Keep the primary tree'
 - [ ] Branch / commit / push / PR / conflict operation followed the runbook for that strategy.
 - [ ] Each commit is atomic, conventional, and free of AI attribution.
 - [ ] No `git add -A` / `--force` / `--no-verify` used unless explicitly authorised.
+- [ ] No global discard ran (`git restore .` / `git checkout -- .` / `git reset --hard` / untargeted `git stash` / `git clean`); any discard targeted explicit session-owned paths only.
 - [ ] PR (if created) has Title <70 chars, body with Summary / Changes / Test Plan / Traceability / Risk, base branch matches strategy.
 - [ ] PR URL returned to the user; no merge attempted.
 - [ ] Conflicts (if any) are fully resolved AND verified (`git status` clean, `git log` sensible).
