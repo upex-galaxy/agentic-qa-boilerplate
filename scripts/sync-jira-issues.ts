@@ -512,6 +512,8 @@ interface SyncResult {
     defects: number
     improvements: number
     tests: number
+    tech_stories: number
+    tech_debts: number
   }
   warnings: string[]
   files: {
@@ -836,8 +838,10 @@ async function searchIssues(
   let hasMorePages = true;
 
   while (hasMorePages) {
+    // /rest/api/3/search/jql requires the same jql/fields on every page —
+    // a token-only body returns 400 "next page token is invalid or expired".
     const body: Record<string, unknown> = nextPageToken
-      ? { nextPageToken }
+      ? { jql, fields, maxResults, nextPageToken }
       : { jql, fields, maxResults };
 
     const response = await jiraFetch<JiraSearchResponse>(
@@ -2257,7 +2261,7 @@ async function syncAll(config: Config, options: SyncOptions): Promise<SyncResult
 
   const result: SyncResult = {
     success: true,
-    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0 },
+    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0 },
     warnings: [],
     files: { created: 0, updated: 0, skipped: 0 },
     duration_ms: 0,
@@ -2428,7 +2432,7 @@ async function syncDefects(config: Config, options: SyncOptions): Promise<SyncRe
 
   const result: SyncResult = {
     success: true,
-    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0 },
+    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0 },
     warnings: [],
     files: { created: 0, updated: 0, skipped: 0 },
     duration_ms: 0,
@@ -2543,7 +2547,7 @@ async function syncTests(config: Config, options: SyncOptions): Promise<SyncResu
 
   const result: SyncResult = {
     success: true,
-    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0 },
+    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0 },
     warnings: [],
     files: { created: 0, updated: 0, skipped: 0 },
     duration_ms: 0,
@@ -2605,7 +2609,7 @@ async function syncTests(config: Config, options: SyncOptions): Promise<SyncResu
 function emptyResult(): SyncResult {
   return {
     success: true,
-    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0 },
+    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0 },
     warnings: [],
     files: { created: 0, updated: 0, skipped: 0 },
     duration_ms: 0,
@@ -2644,6 +2648,8 @@ function bumpSyncedCounter(slug: string, result: SyncResult): void {
   else if (slug === 'defect') { result.synced.defects++; }
   else if (slug === 'improvement') { result.synced.improvements++; }
   else if (slug === 'test_case') { result.synced.tests++; }
+  else if (slug === 'tech_story') { result.synced.tech_stories++; }
+  else if (slug === 'tech_debt') { result.synced.tech_debts++; }
 }
 
 /** Reuses an existing `PREFIX-<key>-*` folder under baseDir so re-syncs stay idempotent. */
@@ -2861,7 +2867,7 @@ function printGetSummary(result: SyncResult, options: SyncOptions): void {
   log.title('Summary');
   log.line('─'.repeat(20));
   const s = result.synced;
-  log.line(`Synced: ${s.epics} epic(s), ${s.stories} story(ies), ${s.bugs} bug(s), ${s.defects} defect(s), ${s.improvements} improvement(s), ${s.tests} test(s)`);
+  log.line(`Synced: ${s.epics} epic(s), ${s.stories} story(ies), ${s.bugs} bug(s), ${s.defects} defect(s), ${s.improvements} improvement(s), ${s.tests} test(s), ${s.tech_stories} tech-story(ies), ${s.tech_debts} tech-debt(s)`);
   log.line(`Files created:  ${result.files.created}`);
   log.line(`Files updated:  ${result.files.updated}`);
   log.line(`Files skipped:  ${result.files.skipped}`);
@@ -3023,6 +3029,8 @@ async function cmdPull(options: SyncOptions): Promise<void> {
         if (result.synced.bugs > 0) { log.line(`Bugs synced:    ${result.synced.bugs}`); }
         if (result.synced.defects > 0) { log.line(`Defects synced: ${result.synced.defects}`); }
         if (result.synced.improvements > 0) { log.line(`Improvements synced: ${result.synced.improvements}`); }
+        if (result.synced.tech_stories > 0) { log.line(`Tech Stories synced: ${result.synced.tech_stories}`); }
+        if (result.synced.tech_debts > 0) { log.line(`Tech Debts synced: ${result.synced.tech_debts}`); }
       }
       else if (options.issueType === 'bugs') {
         log.line(`Bugs synced:    ${result.synced.bugs}`);
