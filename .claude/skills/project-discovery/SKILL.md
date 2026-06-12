@@ -387,7 +387,7 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 - **P3.** NEVER fill `.context/business/business-data-map.md` from memory or from a prior session's draft. Re-read target code and PRD per session, regenerate via the `/business-data-map` command so the map stays anchored to current source.
 - **P4.** NEVER mix `/project-discovery` with `/adapt-framework` in the same session. Discovery reads the target repo only; adapt edits THIS boilerplate. The blast radii are different and interleaving them confuses the read-only contract.
 - **P5.** NEVER use `/project-discovery` for incremental updates. Use the `/business-*-map` regenerative commands instead — discovery is one-shot per project (or rare full refresh), not a per-feature loop.
-- **P6.** NEVER skip the domain glossary in Phase 1. Downstream skills (`sprint-testing`, `test-documentation`) treat it as the authoritative vocabulary for UI labels, code identifiers, and entity names.
+- **P6.** NEVER skip the domain glossary in Phase 1. Downstream skills read it as a precondition when present: `sprint-testing` lists it in its Stage 1 planning inputs (ATP, refined ACs, TC outlines) and `test-documentation` uses it as the vocabulary reference for TC naming and bodies.
 - **P7.** NEVER fabricate Jira / Xray field IDs or status names in `.context/master-test-plan.md` or any PBI template. Run `bun run jira:sync-fields --force` and reference `{{jira.<slug>}}` via the slug catalog in `.agents/jira-required.yaml`.
 
 ---
