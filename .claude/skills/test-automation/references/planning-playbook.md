@@ -310,7 +310,8 @@ Teardown: ...
 - [ ] Update TMS status to "Automated"
 
 ## 7. Success Criteria
-- [ ] All ACs covered
+- [ ] All ACs covered — **the floor, not the bar.** Also: risk-beyond-AC covered (invalid/boundary inputs, auth/error paths, state transitions, anomalies the AC is silent on) per `agentic-qa-core/references/test-design-doctrine.md`
+- [ ] Boundary cases (BVA) automated wherever an AC has a range / limit / length / date-window (EP-merge does NOT cover off-by-one)
 - [ ] KATA compliance
 - [ ] Fixture correct
 - [ ] No hardcoded waits
@@ -395,8 +396,18 @@ async {methodName}({params}): {ReturnType} { /* ... */ }
 
 ## 5. Code Template              — copy-pasteable skeleton with placeholders
 
-## 6. Equivalence Partitioning check
+## 6. Technique-derivation check (decides the ATC set — 1:N per AC)
+> Full canon + triggers: `agentic-qa-core/references/test-design-doctrine.md`. EP-merge collapses inputs only WITHIN a partition — never across partitions, boundaries, or states.
+
+| AC | Technique fired | ATCs produced |
+|----|-----------------|---------------|
+| (per AC) | EP (always) / BVA (range·limit·length·date) / State-Transition (status field) / Decision Table (2+ interacting conditions) / Pairwise (3+ factors) | … |
+
+**Equivalence Partitioning detail:**
 | Input | Expected output | Same ATC? |
+
+**Boundary Value Analysis detail** (mandatory if any range/limit exists — else state N/A):
+| Field + range | Boundary ATCs (`min-1·min·min+1 … max-1·max·max+1`, zero/empty/null) |
 
 ## 7. Dependencies
 - Precondition Steps
