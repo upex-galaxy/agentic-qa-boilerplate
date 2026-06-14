@@ -20,6 +20,7 @@ This skill does NOT orchestrate workflows, does NOT generate files, and does NOT
 
 | File | Cited by | Purpose |
 |------|----------|---------|
+| `references/test-design-doctrine.md` | `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation` | **Canonical doctrine for deriving test cases / ATCs from acceptance criteria**: the 5 principles (AC-verify ≠ testing; AC = floor not ceiling; criterion-vs-test-case; 1:N explode-default/justify-collapse; risk-outside-criterion), the redefined coverage model, and the formal techniques (EP, BVA, State-Transition, Decision Tables, Pairwise, Error Guessing, Risk-based) with binding triggers + the Test-Design Checklist gate. |
 | `references/briefing-template.md` | `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery` | The 7-component subagent briefing template, with concrete filled examples per dispatch pattern. |
 | `references/dispatch-patterns.md` | All workflow skills with a "Subagent Dispatch Strategy" section | Decision table + heuristic for picking Single / Sequential / Parallel / Background. |
 | `references/orchestration-doctrine.md` | Subagents that need orchestration rules without pulling the whole `CLAUDE.md` | Cacheable mirror of `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)". |
