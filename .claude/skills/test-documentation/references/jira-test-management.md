@@ -347,6 +347,20 @@ Notes:
 
 > Resolve the `test` link type by slug only and verify direction after creation — see `agentic-qa-core/references/traceability-linking.md` (§2 slug resolution, §4 directionality, §9 Test Set caveat: membership goes through `/xray-cli`, never `acli link create`).
 
+### Stage-4 promote + enrich — tool resolution map (Modality jira-xray)
+
+When `/test-documentation` Stage 4 promotes a sprint Xray Test into regression, resolve each operation to its tool via pseudocode — load `/xray-cli` for the exact command (HOW lives there, never here). The `[TMS_TOOL]` operations below were verified to exist before this map was written:
+
+| Promote / enrich op | Resolves via | Coverage |
+|---|---|---|
+| Add Test → feature **Test Set** | `[TMS_TOOL]` (Xray-internal membership) | ✓ supported |
+| Add Test → **Regression Test Plan** | `[TMS_TOOL]` | ✓ supported |
+| Label `regression-candidate` on an **existing** Test | `[ISSUE_TRACKER_TOOL]` (labels are a Jira field) | ✓ (no `[TMS_TOOL]` update-label for an existing Test; route via the issue tracker) |
+| Enrich **Manual** Test steps | `[TMS_TOOL]` | ✓ supported |
+| Enrich **Gherkin** / change **test type** on an existing Test | — | ⚠ **resolver gap**: `[TMS_TOOL]` exposes no operation to update an existing Test's Gherkin/definition/type; the underlying Xray mutation runs only inside a backup-restore sync. |
+
+**Implication for our flow**: prefer creating automation-**Candidate** Xray Tests as **Cucumber with their rich Gherkin set at creation time**, so Stage-4 enrichment is *additive* (membership + label + steps), not a Gherkin rewrite on an existing Test. Until `[TMS_TOOL]` surfaces an update-Gherkin/definition/type operation (a small `/framework-development` task to wire the existing Xray mutation to a command), Gherkin enrichment on an existing Test requires recreating it or a backup-restore round-trip.
+
 ### Jira + Xray (Manual)
 
 > **Prerequisite**: Load `/xray-cli` and `/acli` skills before executing commands below.
