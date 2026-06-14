@@ -18,6 +18,15 @@ Use this catalog as a **rubric**, not a script. If the Story is already explicit
    - **Important** -> blocks implementation (Technical Questions for Dev)
    - **Edge** -> testable but not blocking (Edge Cases not in Story, with NEEDS PO/DEV CONFIRMATION)
 5. If a question's answer can be inferred from `.context/business/*` or module-context, cite the source and skip the PO ask.
+6. **Map each archetype to the formal technique it implies, then derive outlines by that technique** (canon: `agentic-qa-core/references/test-design-doctrine.md` Part 2). A gap is not just a PO question — it is also a missing outline.
+
+| Archetype | Formal technique it triggers | Outlines to derive |
+|---|---|---|
+| State Machine (order, subscription, KYC, dispute, document lifecycle) | **State-Transition** | one per valid transition + one per *invalid* transition (SM3 / SM10) |
+| Money / Billing, Search/Filter ranges, List CRUD limits | **Boundary Value Analysis** | `min-1·min·min+1 … max-1·max·max+1`, zero / empty / null |
+| Permissions / RBAC, Auth (role × state × flag) | **Decision Table** | one per surviving rule of the condition matrix |
+| Integration / multi-factor configs (provider × locale × plan) | **Pairwise** | all-pairs set; log the reduction |
+| Universal (U5 idempotency, U-series retries/concurrency) | **Error Guessing charter** | double-submit, retry, race, timeout, rollback |
 
 ---
 

@@ -144,7 +144,7 @@ For each refined scenario:
 
 Mark any scenario that the refinement INFERRED (not literally in the original Story) with **NEEDS PO/DEV CONFIRMATION**. The marker survives into the Jira comment in Phase 3 — PO must see it during sprint planning.
 
-Do not force a minimum count. A 1-line AC may need 1 scenario.
+**1:N is the default — explode, then justify any collapse.** A non-trivial AC implies several scenarios. Derive them by the AC's shape (`agentic-qa-core/references/test-design-doctrine.md` Part 2): a range/limit → boundary scenarios (BVA); a status field → valid + invalid transition scenarios; 2+ interacting conditions → a decision-table set; 3+ factors → pairwise. Collapse an AC to a single scenario ONLY when it is trivially atomic (one boolean, no ranges/states/interactions) and say so. Counting estimate aside, a 1-line AC that hides a range or a state is NOT a 1-scenario AC.
 
 Capture in `## Phase 3 — Refined Acceptance Criteria` section of `shift-left-refinement.md`.
 
@@ -238,7 +238,7 @@ The orchestrator presents the per-Story summary to the user, waits for OK, then 
 
 1. **Light code reads.** Reproduction-grade exploration is for `/sprint-testing` Stage 2. Here, "is this feasible in the current codebase" is the bar.
 2. **PO/Dev confirmation marker.** Any inferred scenario MUST carry `NEEDS PO/DEV CONFIRMATION` — verbatim, in English, in the local file and (later) in the Jira comment.
-3. **Refinement quality > volume.** A Story with 4 ACs may legitimately yield 4 questions and 6 outlines. Forcing 15 outlines to look thorough dilutes value.
+3. **Quality via technique, not via minimization.** Outline count = whatever the technique triggers yield (EP partitions + BVA boundaries + state transitions + decision-table rules), not a number picked to "look thorough" OR to "stay lean". Padding (an outline exploring nothing new) and under-derivation (a range with no boundary outline, a status field with no invalid-transition outline) are BOTH failures. A 4-AC Story with two ranges and a state machine will legitimately exceed 6 outlines.
 4. **Cite, do not duplicate.** `acceptance-test-planning.md` is the source of truth for Phases 1-5 mechanics. If a future change to that file affects shift-left, the change propagates automatically.
 5. **Coverage estimate matters.** PO uses the per-Type counts to estimate Story points. Always include the table even if some Types are 0.
 6. **Module-context reuse.** If `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/module-context.md` exists (module = Epic, 1:1), read it and skip module-level code exploration. Story-level reads only.
