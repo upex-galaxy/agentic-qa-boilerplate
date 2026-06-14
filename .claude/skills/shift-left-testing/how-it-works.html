@@ -787,7 +787,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <li>Per-outline test-data JSON</li>
         <li>Numbered test steps</li>
         <li>Faker generation recipes</li>
-        <li>Creating TCs in the TMS</li>
+        <li>Creating any TMS test entity — TCs, ATP/ATR issues, Test Plans — in EITHER modality (the feature does not exist yet; Stage 4 creates them later)</li>
       </ul>
     </div>
     <div class="mid">→</div>
@@ -802,6 +802,36 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
   </div>
   <div class="notes">The discipline that separates Shift-Left from real test design: you produce outline TITLES and a coverage COUNT, never the data. The feature does not exist — generating Faker recipes now is wasted work that gets redone in-sprint.</div>
+</section>
+
+<section class="slide" data-title="AC is the floor">
+  <p class="kicker">test-design doctrine — the core principle</p>
+  <h2 class="h2" data-anim="fade-up">Refinement pushes <span class="grad">past</span> the happy-path contract</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>1 · Passing ≠ probing</h4><p class="dim">A satisfiable AC confirms the business condition. It doesn't make the feature robust, safe, or error-resistant.</p></div>
+    <div class="card card-accent"><h4>2 · Floor, not ceiling</h4><p class="dim">ACs are the baseline for "done". Refinement's job is to surface what lives above that line.</p></div>
+    <div class="card card-accent"><h4>3 · Criterion vs outline</h4><p class="dim">A refined AC (Given/When/Then) is the business assertion; the outline (Should &lt;behavior&gt; &lt;condition&gt;) is its exploration.</p></div>
+    <div class="card card-accent"><h4>4 · 1 : N by default</h4><p class="dim">A non-trivial AC implies several outlines. Collapse to one only with a written "trivially atomic" reason — never the default.</p></div>
+    <div class="card card-accent"><h4>5 · Risk lives outside</h4><p class="dim">The heart of shift-left: surface the boundaries, states, and anomalies the Story is silent on — as PO questions AND as outlines.</p></div>
+    <div class="card"><h4>A gap is an outline</h4><p class="dim"><b>A gap is not just a question for the PO — it's a missing outline.</b> Map each archetype to the technique it implies.</p></div>
+  </div>
+  <div class="notes">Canon: agentic-qa-core/references/test-design-doctrine.md. The coverage estimate the PO uses must reflect the real 1:N, not a minimized count.</div>
+</section>
+
+<section class="slide" data-title="Archetype to technique">
+  <p class="kicker">test-design doctrine — refine by technique</p>
+  <h2 class="h2" data-anim="fade-up">Each archetype implies a <span class="grad">technique</span> — and outlines</h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Archetype in the Story</th><th>Technique (binding)</th><th>Outlines to derive</th></tr></thead>
+    <tbody>
+      <tr><td>State Machine (order, subscription, KYC, dispute)</td><td><b>State-Transition</b></td><td>one per valid transition + one per invalid transition</td></tr>
+      <tr><td>Money / ranges / list limits</td><td><b>Boundary Value Analysis</b></td><td>min-1·min·min+1 … max-1·max·max+1, zero / empty / null</td></tr>
+      <tr><td>Permissions / RBAC / auth (role × state × flag)</td><td><b>Decision Table</b></td><td>one per surviving rule of the condition matrix</td></tr>
+      <tr><td>Integration / multi-factor config</td><td><b>Pairwise</b></td><td>all-pairs set (log the reduction)</td></tr>
+      <tr><td>Idempotency / retries / concurrency</td><td><b>Error-Guessing charter</b></td><td>double-submit, retry, race, timeout, rollback</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">EP applies everywhere as the starting lens. A range with no boundary outline, or a status field with no invalid-transition outline, is an incomplete refinement.</div>
 </section>
 
 <section class="slide" data-title="Output File">
@@ -821,26 +851,26 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">A Clean Story Is a Valid Outcome</h2>
   <div class="vs">
     <div class="card bad-side side">
-      <h3>❌ Checklist theater</h3>
+      <h3>❌ Both failures, not one</h3>
       <ul>
-        <li>Force a question onto every Story to look thorough</li>
-        <li>Ask 15 outlines when 6 suffice</li>
+        <li>Padding: force a question or duplicate outline to look thorough</li>
+        <li>Under-deriving: treat a 1-line AC that hides a range or a state as a single scenario</li>
         <li>Re-ask what the AC already answers</li>
         <li>Put project-wide answers as PO questions when business-data-map already defines them</li>
       </ul>
     </div>
     <div class="mid">→</div>
     <div class="card good-side side">
-      <h3>✅ Signal over volume</h3>
+      <h3>✅ Explode, then justify any collapse</h3>
       <ul>
-        <li>Empty question list when the Story is clear — say 'Story quality: good'</li>
-        <li>4 ACs may legitimately yield 4 questions and 6 outlines</li>
-        <li>Cite business-data-map and skip the PO ask</li>
-        <li>The reader's bandwidth is the scarcest resource in grooming</li>
+        <li>Default 1:N — derive every outline the AC implies, then collapse only with a written reason</li>
+        <li>4 ACs over a range or a state machine legitimately yield many more than 4 outlines</li>
+        <li>Empty question list when the Story is genuinely clear — say 'Story quality: good'</li>
+        <li>Cite business-data-map and skip the PO ask; the reader's bandwidth is the scarcest resource in grooming</li>
       </ul>
     </div>
   </div>
-  <div class="notes">This is the anti-pattern that separates seniors from juniors. Inflating question counts trains the team to skim your output. Shift-Left adds value by surfacing REAL risk, not by filling a checklist.</div>
+  <div class="notes">This is the anti-pattern that separates seniors from juniors. Padding AND under-derivation both destroy trust: inflated counts train the team to skim, while a collapsed 1:N hides real risk. Shift-Left adds value by surfacing every REAL scenario the AC implies — neither more nor fewer.</div>
 </section>
 
 <section class="slide" data-title="Six Jira Mutations">

@@ -551,7 +551,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <tbody>
       <tr><td><b>Por módulo</b></td><td>un módulo explorado de punta a punta</td><td>20-100+ escenarios</td><td>la mayoría serán Deferred</td></tr>
       <tr><td><b>Por ticket</b></td><td>una Story de usuario QA-Approved</td><td>3-8 escenarios</td><td>ATP/ATR creados por Story</td></tr>
-      <tr><td><b>Por bug</b></td><td>un bug cerrado con fix verificado</td><td>1-2 escenarios</td><td>sesgo HACIA ARRIBA → por defecto Candidate</td></tr>
+      <tr><td><b>Por bug</b></td><td>un bug cerrado con fix verificado</td><td>0-2 escenarios</td><td>sesgo HACIA ARRIBA; si es digno de regression → reutiliza-o-crea un Test</td></tr>
       <tr><td><b>Ad-hoc / Exploratorio</b></td><td>escenarios nuevos de exploración</td><td>1-10 escenarios</td><td>aplica los 3 filtros con dureza</td></tr>
     </tbody>
   </table>
@@ -588,6 +588,48 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="card bad-side side"><h3>✓ TC DISTINTOS (las precondiciones difieren)</h3><ul><li>credenciales válidas → éxito (TC-A)</li><li>cuenta bloqueada → 423 (TC-B)</li><li>credenciales inválidas → 401 (TC-C)</li></ul></div>
   </div>
   <div class="notes">Graba esto a fuego. Si la precondición y la acción son idénticas, es un solo test case sin importar cuántas cosas asseveres. Precondiciones distintas que producen resultados distintos — esos son TC distintos. Dividir "verifica el panel A / B / C" es el antipatrón más diagnosticado en las revisiones.</div>
+</section>
+
+<section class="slide" data-title="AC es el piso">
+  <p class="kicker">doctrina de diseño de pruebas — el principio central</p>
+  <h2 class="h2" data-anim="fade-up">Un mapa AC→TC es el <span class="grad">piso</span>, no la cobertura</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>1 · Aprobar ≠ probar</h4><p class="dim">"Cada AC tiene un TC en verde" confirma el contrato. No prueba que el sistema sea robusto, seguro ni resistente al error.</p></div>
+    <div class="card card-accent"><h4>2 · Piso, no techo</h4><p class="dim">≥1 TC por AC es el mínimo, nunca la meta. La documentación de calidad supera la línea base del AC.</p></div>
+    <div class="card card-accent"><h4>3 · Criterio vs caso</h4><p class="dim">Un criterio es una afirmación de negocio. Un TC es una exploración concreta: precondición + acción + resultado verificable.</p></div>
+    <div class="card card-accent"><h4>4 · 1 : N por defecto</h4><p class="dim">Un AC → muchos TCs (particiones, límites, estados). Colapsar a uno solo con justificación escrita "trivialmente atómico".</p></div>
+    <div class="card card-accent"><h4>5 · El riesgo vive fuera</h4><p class="dim">Documenta los TCs de límite / negativos / estado / anomalía que el AC calla — ahí se esconden las regresiones.</p></div>
+    <div class="card"><h4>Tres capas, tres conteos</h4><p class="dim"><b>Deriva muchos, documenta pocos, automatiza menos.</b> <span class="grad">analizados 80 → documentados 12 → automatizados 8</span> — nunca "documentar los 80". ROI poda; el resto son Deferred, nunca borrados.</p></div>
+  </div>
+  <div class="notes">Canon: agentic-qa-core/references/test-design-doctrine.md. ROI es un filtro de automatización, no de derivación. La siguiente diapositiva hace explícita la regla de tres capas / derivar-amplio-documentar-estrecho.</div>
+</section>
+
+<section class="slide" data-title="Tres capas">
+  <p class="kicker">derivar amplio · documentar estrecho · automatizar menos</p>
+  <h2 class="h2" data-anim="fade-up">Tres capas, tres conteos — no uno</h2>
+  <div class="flow mt-m anim-stagger-list">
+    <div class="stage"><div class="sx">1</div><div><h4>DISEÑAR / derivar (1:N)</h4><p>En la planificación + exploración de sprint-testing: considera muchos casos por técnica. Vive en el análisis de priorización, <b>aún no en el TMS</b>.</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>DOCUMENTAR solo lo repetible</h4><p>Crea un TC persistente en el TMS <b>solo</b> para Candidate + Manual — escenarios que vale la pena reejecutar. <b>jira-native: Deferred NO se crea en el TMS</b> (solo reporte). jira-xray: "documentar 12" significa <b>promover 12</b> al Regression Test Plan, dejando el resto como artefactos de sprint sin promover.</p></div></div>
+    <div class="stage"><div class="sx">3</div><div><h4>AUTOMATIZAR los Candidates</h4><p>Solo los Candidates fluyen a <span class="mono">/test-automation</span>. Manual y Deferred son terminales.</p></div></div>
+  </div>
+  <div class="callout mt-m"><h4>La forma saludable</h4><p><span class="grad">analizados 80 → documentados 12 → automatizados 8</span>. Documentas un test porque será reejecutado — <b>nunca para alcanzar un conteo</b>. La mayoría de los escenarios son Deferred.</p></div>
+  <div class="notes">Esta es la columna vertebral de toda la disciplina. Derivar amplio es gratis; persistir está controlado por ROI. El mayor error de principiante es "documentar los 80" — tratar la documentación como un marcador de cobertura en vez de una inversión de protección de regression. En nativo, Deferred ni siquiera se vuelve un issue de Jira. En Xray los 80 ya pueden ser artefactos Test de sprint, así que "documentar 12" en realidad es "promover 12". Si la mayoría de los escenarios terminan en Candidate/Manual, reaplica la Fase 0 con más rigor.</div>
+</section>
+
+<section class="slide" data-title="Técnicas por disparador">
+  <p class="kicker">doctrina de diseño de pruebas — derivar por técnica</p>
+  <h2 class="h2" data-anim="fade-up">Un criterio → N TCs, elegidos por la <span class="grad">forma</span> del AC</h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Disparador en el AC</th><th>Técnica (obligatoria)</th><th>TCs que produce</th></tr></thead>
+    <tbody>
+      <tr><td>Cualquier input (siempre)</td><td><b>Particiones Equivalentes</b></td><td>mismo output → un TC parametrizado; output distinto → TCs separados</td></tr>
+      <tr><td>Un rango / límite / longitud / ventana de fecha</td><td><b>Valores Límite (BVA)</b></td><td>min-1·min·min+1 … max-1·max·max+1, cero / vacío / null</td></tr>
+      <tr><td>Un campo de estado / ciclo de vida</td><td><b>Transición de Estados</b></td><td>cada transición válida + cada transición inválida</td></tr>
+      <tr><td>2+ condiciones que interactúan</td><td><b>Tabla de Decisión</b></td><td>un TC por regla sobreviviente de la matriz</td></tr>
+      <tr><td>3+ factores combinables</td><td><b>Pairwise</b></td><td>conjunto all-pairs de TCs (registra la reducción)</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">EP sin BVA se pierde el off-by-one. Los disparadores son obligatorios; ROI luego decide Candidate / Manual / Deferred por TC.</div>
 </section>
 
 <section class="slide" data-title="Validación de fuente">
@@ -679,11 +721,36 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <tbody>
       <tr><td><b>Candidate</b></td><td>ROI &gt; 3.0, O (1.5-3.0 Y bug previo), O happy path crítico</td><td>alimenta /test-automation</td><td>Draft→In Design→Ready→In Review→Candidate</td></tr>
       <tr><td><b>Manual</b></td><td>ROI 0.5-1.5 Y no automatizable, o explícitamente solo-manual</td><td>suite de regression manual</td><td>Draft→In Design→Ready→Manual</td></tr>
-      <tr><td><b>Deferred</b></td><td>ROI &lt; 0.5, O falló Fase 0, O validación de una sola vez</td><td>NO va a regression</td><td>sin TC — en el reporte</td></tr>
+      <tr><td><b>Deferred</b></td><td>ROI &lt; 0.5, O falló Fase 0, O validación de una sola vez</td><td>NO va a regression</td><td>nativo: sin TC — solo reporte · xray: el Test de sprint queda sin promover</td></tr>
     </tbody>
   </table>
-  <div class="callout warn mt-m"><h4>No hay un cuarto bucket</h4><p>Si &gt;50% aterriza en Candidate/Manual, reaplica la Fase 0 con más rigor.</p></div>
-  <div class="notes">Tres buckets, sin excepciones. Deferred ni siquiera crea un issue en el TMS — solo documentas la decisión. Si demasiado está sobreviviendo, tu filtro es demasiado suave.</div>
+  <div class="callout warn mt-m"><h4>No hay un cuarto bucket</h4><p>Si &gt;50% aterriza en Candidate/Manual, reaplica la Fase 0 con más rigor. La mayoría de los escenarios deberían ser Deferred.</p></div>
+  <div class="notes">Tres buckets, sin excepciones. En jira-native, Deferred ni siquiera crea un issue en el TMS — solo documentas la decisión en el reporte de priorización. En jira-xray el Test de sprint ya existe desde la Etapa 1 de sprint-testing, así que Deferred ahí significa que queda como artefacto de sprint sin promover, no borrado. Si demasiado está sobreviviendo, tu filtro es demasiado suave.</div>
+</section>
+
+<section class="slide" data-title="El verbo, no el veredicto">
+  <p class="kicker">Mismo veredicto, distinta acción</p>
+  <h2 class="h2" data-anim="fade-up">La modalidad cambia el <span class="grad">verbo</span>, no el veredicto</h2>
+  <p class="lede mt-s">El resultado de ROI (Candidate / Manual / Deferred) es idéntico en ambos mundos. Lo que cambia es lo que la Fase 3 <b>hace</b> con él.</p>
+  <div class="vs mt-l">
+    <div class="card side"><h3>jira-native — CREAR</h3><ul><li>Aún no existen Tests de sprint</li><li>La Fase 3 <b>crea</b> un work item <span class="mono">Test</span> solo para Candidate + Manual</li><li>Deferred = <b>solo reporte</b>, no se crea issue</li><li>El mismo pipeline Analizar→Priorizar→Documentar</li></ul></div>
+    <div class="mid">vs</div>
+    <div class="card side"><h3>jira-xray — PROMOVER + ENRIQUECER</h3><ul><li>Los <span class="mono">Test</span> ya existen desde la Etapa 1 de sprint-testing</li><li>La Fase 3 <b>selecciona + promueve</b> los dignos de regression al Regression Test Plan + Test Set</li><li>y los <b>enriquece</b> (Gherkin rico, parametrización, casos límite)</li><li>Los Tests de sprint Deferred quedan sin promover, no borrados</li></ul></div>
+  </div>
+  <div class="notes">Este es el matiz que más se pasa por alto. La aritmética del veredicto es compartida; el verbo es específico de la modalidad. En nativo, escribes los Tests desde cero para los sobrevivientes. En Xray los sobrevivientes ya nacieron como artefactos Test de sprint en la Etapa 1 — tu trabajo es elegir los dignos de regression, agregarlos al Regression Test Plan y al Test Set de la feature, etiquetarlos como regression-candidate, y especificarlos mucho más a fondo. Deferred nunca es un borrado en ninguno de los dos mundos.</div>
+</section>
+
+<section class="slide" data-title="Regla de oro del bug">
+  <p class="kicker">Por bug — la regla que vale oro</p>
+  <h2 class="h2" data-anim="fade-up">Un bug digno de regression DEBE terminar con un <span class="grad">Test</span></h2>
+  <p class="lede mt-s">No todo bug se vuelve un TC de regression — pero si lo hace, debe terminar con un Test. <b>Reutiliza</b> el Test fallido existente si el bug vino de uno; si no, <b>crea</b> uno. Ambas modalidades.</p>
+  <div class="vs mt-l">
+    <div class="card bad-side side"><h3>❌ NO califica → Deferred</h3><ul><li>typo de una sola vez en un área estable</li><li>tratado como un test fallido — el fix ya fue verificado en sprint-testing</li><li><b>sin Test nuevo</b>, regístralo como Deferred</li></ul></div>
+    <div class="mid">→</div>
+    <div class="card good-side side"><h3>✓ Digno de regression → debe tener un Test</h3><ul><li>vino de un Test fallido existente → <b>REUTILÍZALO</b>, enlaza + promueve, nunca dupliques</li><li>sin Test previo → <b>CREA</b> + diseña uno</li><li>enlaza vía <span class="mono">tests / is tested by</span></li></ul></div>
+  </div>
+  <div class="callout warn mt-m"><h4>Anula "el bug es el test case"</h4><p>Esa frase de sprint-testing cubre solo el retest inmediato dentro del sprint — NO la regression futura. Esta regla decide si debe existir un Test <i>persistente</i> para que el bug nunca pueda regresar en silencio.</p></div>
+  <div class="notes">Regla de oro: donde existe un bug importante, un test debe atraparlo de nuevo. Un bug cerrado es prueba empírica fuerte de que el área regresa, así que la mayoría califica y se inclina a Candidate — pero no todos. El árbol de decisión: ¿candidato de regression? No → trátalo como un test fallido, Deferred, listo. Sí → ¿vino de un Test ejecutado existente? Reutiliza ese. ¿Sin Test previo? Crea y diseña uno. Nunca reabras un bug cerrado para adjuntar el TC — crea un TC nuevo y enlázalo.</div>
 </section>
 
 <section class="slide divider" data-title="Fase 3">
@@ -704,14 +771,27 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="stage"><div class="sx">ATP</div><div><h4>Acceptance Test Plan</h4><p><span class="mono">Test Plan: {{PROJECT_KEY}}-{n}</span> — Test Analysis + cobertura AC→TC.</p></div></div>
     <div class="stage"><div class="sx">ATR</div><div><h4>Acceptance Test Results</h4><p><span class="mono">Test Results: {{PROJECT_KEY}}-{n}</span> — Test Report + resultados de ejecución.</p></div></div>
     <div class="stage"><div class="sx">TC</div><div><h4>Test Case</h4><p><span class="mono">{US_ID}: TC#: Validate &lt;CORE&gt; &lt;CONDITIONAL&gt;</span> — Precondición + Acción + Esperado.</p></div></div>
+    <div class="stage"><div class="sx">TS</div><div><h4>Test Set <span class="tag">solo xray</span></h4><p><span class="mono">Test Set: &lt;EPIC_KEY&gt; &lt;feature&gt;</span> — agrupación por feature (1:1 con el Epic) de los Tests de regression promovidos. Nativo: reemplazado por un label de feature/Epic, sin entidad.</p></div></div>
   </div>
-  <div class="notes">Cuatro entidades, un hogar permanente. El Regression Epic es el único repositorio de tests de todo el proyecto — nunca dejes un TC huérfano fuera de él.</div>
+  <div class="notes">Las cuatro entidades core tienen un hogar permanente en el Regression Epic — nunca dejes un TC huérfano fuera de él. El Test Set es un organizador a nivel de feature solo de Xray; la siguiente diapositiva separa los tres contenedores que la gente tiende a confundir.</div>
+</section>
+
+<section class="slide" data-title="Tres contenedores">
+  <p class="kicker">No confundas los tres contenedores</p>
+  <h2 class="h2" data-anim="fade-up">Epic · Test Set · Test Plan — tres cosas distintas</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>Regression Epic</h4><p class="dim">El <b>paraguas del repositorio</b> — uno por proyecto. Todo TC documentado vive bajo él. <span class="mono">type=Epic, labels=test-repository</span>.</p><span class="tag mt-s">paraguas</span></div>
+    <div class="card card-accent"><h4>Test Set <span class="tag">solo xray</span></h4><p class="dim"><b>Agrupación por feature</b>, 1:1 con el Epic/feature. Contiene los Tests de regression promovidos de UNA feature. Equivalente nativo = Regression Epic + un label de feature/Epic.</p><span class="tag mt-s">feature</span></div>
+    <div class="card card-accent"><h4>Test Plan</h4><p class="dim"><b>Alcance de ejecución / regression</b> — el conjunto de Tests corridos para un release o ciclo de regression. El ATP en jira-xray es un issue Test Plan.</p><span class="tag mt-s">ejecución</span></div>
+  </div>
+  <div class="callout mt-m"><h4>Auto-crea el Test Set de forma perezosa (pregunta primero)</h4><p>jira-xray: si el Test Set de la feature falta cuando una promoción lo necesita, la IA lo crea de forma perezosa en la Etapa 4 — <b>pregunta al usuario primero</b>, espejando la regla de preguntar-antes-de-crear del Regression Epic. Solo se agregan los Tests Candidate/Manual <b>promovidos</b>; los Tests de sprint Deferred no.</p></div>
+  <div class="notes">La gente fusiona estos rutinariamente. El Epic es todo el repositorio. Un Test Set agrupa los Tests de regression de una feature, uno-a-uno con el Epic de la feature. Un Test Plan es un alcance de ejecución. En jira-native no existe la entidad Test Set en absoluto — logras la misma agrupación con el Regression Epic más un label de feature/Epic en cada TC. La IA solo crea el Test Set de forma perezosa, cuando una promoción realmente lo necesita, y siempre pregunta antes de crear.</div>
 </section>
 
 <section class="slide" data-title="Orden de enlazado">
   <p class="kicker">El orden no es opcional</p>
   <h2 class="h2" data-anim="fade-up">ATP → ATR → enlazar → LUEGO cada TC</h2>
-  <div class="callout mt-l"><h4>Orden de enlazado</h4><p>(1) Crea ATP, enlaza a US. (2) Crea ATR, enlaza a US. (3) Actualiza ATP, enlaza a ATR (bidireccional). (4) Por cada TC: créalo, luego enlázalo a US + ATP + ATR + AC.</p></div>
+  <div class="callout mt-l"><h4>Orden de enlazado</h4><p>(1) Crea ATP, enlaza a US. (2) Crea ATR, enlaza a US. (3) Actualiza ATP, enlaza a ATR (bidireccional). (4) Por cada TC: créalo, luego enlázalo a US + ATP + ATR + AC. (5) Por cada TC <b>promovido</b> — xray: agrégalo al Test Set de la feature + al Regression Test Plan + label <span class="mono">regression-candidate</span>; nativo: aplica el label de feature/Epic (sin entidad Test Set).</p></div>
   <p class="lede mt-m">Para cuando se crea un TC, tanto ATP como ATR ya existen, así que los tres enlaces aterrizan en la creación. Crea los TC primero y obtienes huérfanos — y <span class="mono">fix-traceability</span> se vuelve la única salida. El modelo es bidireccional: <b class="grad">US↔ATP↔ATR↔TC</b>. Dado cualquiera, debes alcanzar los otros tres — ESO es trazabilidad.</p>
   <div class="notes">Este es el orden que la gente rompe bajo presión de deadline. Plan y resultados primero, luego los tests. La cardinalidad también importa: US↔ATP y US↔ATR son 1:1; un ATR nunca se enlaza a dos ATP.</div>
 </section>

@@ -592,6 +592,36 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Distintos status codes, estados de UI o resultados de negocio son ATCs separados. Mismo resultado, distintos datos, es uno. Esto mantiene honesto el conteo de ATCs.</div>
 </section>
 
+<section class="slide" data-title="AC es el piso">
+  <p class="kicker">doctrina de diseño de pruebas — el principio central</p>
+  <h2 class="h2" data-anim="fade-up">"Todos los ACs cubiertos" es el <span class="grad">piso</span>, no la barra de éxito</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>1 · Aprobar ≠ probar</h4><p class="dim">Los ACs en verde confirman el contrato. No prueban que el sistema sea robusto, seguro ni resistente al error.</p></div>
+    <div class="card card-accent"><h4>2 · Piso, no techo</h4><p class="dim">"Todos los ACs cubiertos" es la barra de entrada. El set de ATCs debe cubrir además el riesgo-más-allá-del-AC.</p></div>
+    <div class="card card-accent"><h4>3 · Criterio vs caso</h4><p class="dim">Un criterio es una afirmación de negocio. Un ATC es su exploración concreta: precondición + acción + aserciones.</p></div>
+    <div class="card card-accent"><h4>4 · 1 : N por defecto</h4><p class="dim">Un AC → muchos ATCs. EP-merge colapsa SOLO dentro de una partición — nunca entre particiones, límites o estados.</p></div>
+    <div class="card card-accent"><h4>5 · El riesgo vive fuera</h4><p class="dim">Automatiza los inputs inválidos/límite, rutas de auth/error, transiciones de estado y anomalías que el AC calla.</p></div>
+    <div class="card"><h4>EP ≠ BVA</h4><p class="dim"><b>El merge por mismo-comportamiento esconde el off-by-one.</b> Donde haya un rango/límite/longitud/ventana de fecha, agrega ATCs de límite explícitos.</p></div>
+  </div>
+  <div class="notes">Canon: agentic-qa-core/references/test-design-doctrine.md. El gate de review (§3.4.1 dominio de input, §3.4.2 estado/temporal) lo exige en código.</div>
+</section>
+
+<section class="slide" data-title="Técnicas por disparador">
+  <p class="kicker">doctrina de diseño de pruebas — derivar por técnica</p>
+  <h2 class="h2" data-anim="fade-up">Un criterio → N ATCs, elegidos por la <span class="grad">forma</span> del AC</h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Disparador en el AC</th><th>Técnica (obligatoria)</th><th>ATCs que produce</th></tr></thead>
+    <tbody>
+      <tr><td>Cualquier input (siempre)</td><td><b>Particiones Equivalentes</b></td><td>inputs de mismo comportamiento → un ATC parametrizado; particiones distintas → ATCs separados</td></tr>
+      <tr><td>Un rango / límite / longitud / ventana de fecha</td><td><b>Valores Límite (BVA)</b></td><td>min-1·min·min+1 … max-1·max·max+1, cero / vacío / null</td></tr>
+      <tr><td>Un campo de estado / ciclo de vida</td><td><b>Transición de Estados</b></td><td>cada transición válida + cada transición inválida</td></tr>
+      <tr><td>2+ condiciones que interactúan</td><td><b>Tabla de Decisión</b></td><td>un ATC por regla sobreviviente de la matriz</td></tr>
+      <tr><td>3+ factores combinables</td><td><b>Pairwise</b></td><td>conjunto all-pairs de ATCs (registra la reducción)</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">EP sin BVA se pierde el off-by-one. Un campo de estado sin ATC de transición inválida es un plan incompleto. Los disparadores son obligatorios.</div>
+</section>
+
 <section class="slide" data-title="ATC craft rules">
   <p class="kicker">reglas del oficio del ATC</p>
   <h2 class="h2" data-anim="fade-up">Cinco Reglas que Deciden la Aceptación en el Review</h2>
@@ -766,6 +796,7 @@ test.<span class="fn">describe</span>(<span class="str">'UPEX-411: Apply Discoun
   <ul class="blist anim-stagger-list">
     <li><b>Primero tres checklists compartidos.</b> Review de Componente / ATC / Archivo de test — nombres, extensión de capa, decoradores, retornos de tupla, locators inline, prefijo de ticket-ID.</li>
     <li><b>Luego el delta.</b> Delta E2E (calidad de locators, waits basados en condición, reuso de sesión) O delta API (cumplimiento de facade, disciplina de tupla, cobertura de status, auth).</li>
+    <li><b>La cobertura gatea el handoff.</b> Más allá del status HTTP: §3.4.1 dominio de input (EP + límites BVA) y §3.4.2 transición de estados / idempotencia / concurrencia / timeout deben estar cubiertos o marcados explícitamente N/A.</li>
     <li><b>Modelo de severidad.</b> CRITICAL y HIGH bloquean el merge; MEDIUM recomendado; LOW deseable. Un waitForTimeout hardcodeado o un @atc faltante es CRITICAL.</li>
     <li><b>Techo de revisiones.</b> Máx 2 loops de revisión. ¿Aún no APPROVED tras 2 rondas? Escala al usuario; nunca itera para siempre.</li>
     <li><b>Gate adversarial opcional.</b> Para cambios de alto riesgo (nuevos fixtures, ediciones de base compartida) corre un review de doble juez antes del commit.</li>
