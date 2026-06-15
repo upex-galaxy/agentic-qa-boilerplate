@@ -409,6 +409,14 @@ async {methodName}({params}): {ReturnType} { /* ... */ }
 **Boundary Value Analysis detail** (mandatory if any range/limit exists — else state N/A):
 | Field + range | Boundary ATCs (`min-1·min·min+1 … max-1·max·max+1`, zero/empty/null) |
 
+**Two reduction axes — keep them separate** (canon: doctrine §"Part 2.5"):
+- **EP/BVA decide the ATC COUNT** — how many parameterized `@atc`s the cases split across (one per partition + boundary + state).
+- **Decision Table / Pairwise reduce the DATA ROWS inside one parameterized ATC** — when an ATC's data set combines 2+ interacting conditions (Decision Table → one row per surviving rule) or 3+ factors (Pairwise → all-pairs rows instead of the full cartesian product). They shrink the fixture/`data-factory` row set, NOT the ATC count. Log the reduction in the fixture or the spec so it is visible, not a silent cap.
+
+| Parameterized ATC | Reduction applied | Rows after reduction |
+|---|---|---|
+| (per multi-factor ATC) | Decision Table / Pairwise / none | … |
+
 ## 7. Dependencies
 - Precondition Steps
 - Required Components (exists? action needed)

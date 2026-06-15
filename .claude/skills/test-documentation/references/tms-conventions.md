@@ -340,6 +340,15 @@ And the average rating {average} = sum of ratings / {N}
 
 ### Variables table (mandatory in TC Description)
 
+> **`Examples:` vs `Variables` — two different tables, do not conflate.** The
+> `Examples:` table (in the Gherkin §"Gherkin") supplies the **varying data values
+> per equivalence partition** — *what* changes each parameterized run (the
+> artifact-economy lever, doctrine §"Part 2.5"). The `Variables` table (here, in
+> the Description) explains **how to OBTAIN each variable at runtime** (the SQL /
+> source query) — it does not vary per run. Rule of thumb: a value that *changes
+> the case* → an `Examples` column; a value you must *look up to run the case* → a
+> `Variables` row. A parameterized TC typically has BOTH.
+
 Every TC with variables must include a table explaining how to obtain each one:
 
 ```
