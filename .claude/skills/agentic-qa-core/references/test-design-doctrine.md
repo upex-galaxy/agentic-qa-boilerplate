@@ -182,6 +182,47 @@ explicit and logged — never a silent omission disguised as "covered".
 
 ---
 
+## Part 2.5 — Parametrization: one artifact, many data rows (artifact economy)
+
+Deriving widely (Principle 4) does NOT mean authoring one artifact per data value.
+The lever that keeps coverage high while artifact count low is **parametrization**:
+
+> **One parameterized artifact per equivalence partition** — same preconditions,
+> same actions, **only the data varies**, same expected outcome-shape. The varying
+> rows (boundaries, valid representatives, distinct invalid inputs of the *same*
+> behavior) live INSIDE that one artifact, not as N separate test cases / ATCs.
+
+This is the operational consequence of EP + BVA, stated as doctrine so it is not
+re-derived ad hoc:
+
+- **Parametrize when**: precondition + action are fixed and only the input data
+  changes while the *outcome behavior* is the same (e.g. every invalid-credential
+  variant → 401). Render the variants as data rows; one artifact.
+- **Split when**: the action, the outcome, the status code, or the system state
+  differs (e.g. valid → 200, locked → 423, at `max+1` → 400). Different behavior
+  = different artifact, even if the input field is the same.
+- **The split rule and the explode rule are the same rule** seen from two sides:
+  explode *across* partitions/boundaries/states (separate artifacts); collapse
+  *within* a partition (data rows in one artifact). Parametrization is the
+  collapse half; it never erases a distinct partition/boundary/state.
+
+**Two materializations of the same doctrine** (the downstream skills own the
+syntax, not this file):
+
+| Layer | One parameterized artifact = | Where the data rows live |
+|---|---|---|
+| Manual / TMS (`test-documentation`) | one Gherkin `Scenario Outline` Test | the `Examples:` table (one block per partition) |
+| Automation / KATA (`test-automation`) | one parameterized `@atc` | a fixture file / data factory iterated by the test |
+
+Net effect: a money-withdrawal AC with ~20 derived cases may become **3–5
+parameterized artifacts** (valid-range outline, below/above-min boundary outline,
+account-state outline, decision-rule outline) — each carrying many data rows —
+instead of 20 artifacts. Coverage is unchanged; the TMS / suite stays legible.
+Combinatorial techniques (Decision Table, Pairwise) reduce the *rows* inside an
+`Examples`/fixture set; EP/BVA decide *how many artifacts* the rows split across.
+
+---
+
 ## Part 3 — Test-Design Checklist (the gate)
 
 Run this whenever deriving cases from an AC set. A plan that cannot answer YES (or
@@ -202,6 +243,8 @@ a justified N/A) to each is not done.
          (or N/A: stateless)
 [ ] DT   2+ interacting conditions → decision table built? (or N/A: ≤1 condition)
 [ ] PW   3+ combinable factors → pairwise applied + logged? (or N/A: <3 factors)
+[ ] PARAM Same-behavior data variants collapsed into ONE parameterized artifact
+         per partition (Examples / fixture rows), not N separate artifacts?
 [ ] RISK Cases prioritized; any scope-driven drop logged explicitly?
 ```
 
