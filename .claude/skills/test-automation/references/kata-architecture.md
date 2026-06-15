@@ -254,6 +254,8 @@ async loginWithInvalidCredentials(payload: LoginPayload) {
 
 Different status codes, different UI states, or different business outcomes = separate ATCs. Same outcome, different data = one parameterized ATC. Minor conditional variations within the same behavior are acceptable; fundamentally different behavior is a separate ATC.
 
+> Rule 3 is a *within-partition* dedup rule — it does NOT authorize collapsing distinct partitions, boundaries, or states into one ATC, and it does NOT replace Boundary Value Analysis. One AC still maps to multiple ATCs (1:N): one per partition + boundary cases + state transitions. Derivation canon + triggers: `agentic-qa-core/references/test-design-doctrine.md`.
+
 ### Rule 4 — Locators inline
 
 Locators go inside the ATC, not in separate files.

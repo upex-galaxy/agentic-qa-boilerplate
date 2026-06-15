@@ -242,6 +242,26 @@ For every endpoint the component exposes, the test file (or sibling test files) 
 | PUT / PATCH | 200/204 success + 400 validation + 404 not found + 401 unauthenticated |
 | DELETE | 204 success + 404 not found + 401 unauthenticated |
 
+> Status codes are the AUTH/protocol layer of risk-beyond-AC. They are necessary but **not sufficient** — §3.4.1 (data boundaries) and §3.4.2 (state/temporal) cover the rest. Full canon: `agentic-qa-core/references/test-design-doctrine.md`.
+
+### 3.4.1 Input-domain coverage (EP + BVA) — gates handoff
+
+| ID | Check | Severity |
+|----|-------|----------|
+| A-B1 | Each request field with a **range / limit / length** has boundary ATCs: `min-1·min·min+1` and `max-1·max·max+1` (parameterized). EP-merge does NOT satisfy this. | HIGH |
+| A-B2 | Empty / null / missing-required-field cases produce the expected 400 (one ATC per distinct invalid partition, not one lump "invalid" test). | HIGH |
+| A-B3 | Type/format violations (string where number, malformed date, oversized payload, unicode/emoji) are covered where the field accepts free input. | MEDIUM |
+| A-B4 | If no field has a range/limit, this section is explicitly marked N/A in the plan — not silently skipped. | LOW |
+
+### 3.4.2 State-transition & temporal coverage — gates handoff
+
+| ID | Check | Severity |
+|----|-------|----------|
+| A-S1 | Stateful entities (status/lifecycle) have an ATC per valid transition AND per invalid transition (trigger fired in a state that should reject it). | HIGH |
+| A-S2 | Idempotency / double-submit is exercised for mutating endpoints that must be safe to retry. | MEDIUM |
+| A-S3 | Concurrency (two writers on the same resource → expected 409 / last-write-wins) is covered where the AC or domain implies it. | MEDIUM |
+| A-S4 | Timeout / retry / partial-failure rollback is covered for flows with external dependencies. | MEDIUM |
+
 ### 3.5 Error-contract assertions
 
 | ID | Check | Severity |
@@ -299,6 +319,9 @@ Before marking the ticket complete and opening the PR, **every** box below must 
 
 - [ ] Happy path covered.
 - [ ] All realistic error cases from §3.4 covered (API) or all primary UI error states covered (E2E): empty state, loading state, error banner, disabled CTA.
+- [ ] Input-domain boundaries (§3.4.1, EP + BVA) covered or explicitly N/A.
+- [ ] State transitions + temporal/concurrency risks (§3.4.2) covered or explicitly N/A.
+- [ ] Coverage exceeds the AC floor: risk-beyond-AC cases present (not just "every AC has a green test").
 - [ ] Auth-failure test present if the feature is behind auth.
 - [ ] At least one test tagged `@critical` or `@smoke` if the feature is in the release-blocking set.
 

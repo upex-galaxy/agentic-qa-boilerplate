@@ -181,6 +181,10 @@ async loginWithInvalidCredentials(payload: LoginPayload) {
 
 **Rule of thumb**: if the **actions** inside the ATC change, it is a different ATC. If only the **data** changes but the system behaves identically, it is the same ATC.
 
+> **EP-merge collapses WITHIN a partition — never across.** Parameterizing the three invalid-credential inputs above into one 401 ATC is correct: they share a partition. It is a *defect* to use the same merge to swallow distinct partitions, boundaries, or states. A valid login (→ 200), a locked account (→ 423), and a value at `max+1` (→ 400 boundary) are **separate ATCs** — merging them loses coverage. EP is a 1:N expansion tool first (one ATC per partition) and a deduplication tool second (one ATC within a partition). See `agentic-qa-core/references/test-design-doctrine.md`.
+
+> **EP does not replace BVA.** Same-behavior merge hides off-by-one defects. Wherever a field has a range / limit / length / date-window, add explicit boundary ATCs (`min-1·min·min+1 … max-1·max·max+1`, plus zero / empty / null) — these are *distinct partitions at the edges*, so they are separate (often parameterized) ATCs, not folded into the happy-path case.
+
 ### Tests validate FLOWS, not individual properties
 
 Do not create N tests checking N fields of the same response. One test validates the complete flow with multiple assertions.

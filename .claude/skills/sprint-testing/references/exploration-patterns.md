@@ -73,10 +73,13 @@ Apply per input / interaction that accepts data or state changes:
 
 | Category | Checks |
 |----------|--------|
-| Boundary | Empty, max length, numeric 0 / -1 / MAX_INT, special chars `<script>`, `'; DROP TABLE` |
-| State | Refresh mid-flow, back button, duplicate tabs, timeout / idle |
+| Boundary (BVA) | Empty, `min-1·min·min+1`, `max-1·max·max+1`, numeric 0 / -1 / MAX_INT, special chars `<script>`, `'; DROP TABLE` |
+| UI/session state | Refresh mid-flow, back button, duplicate tabs, timeout / idle |
+| Lifecycle / state-transition | For any entity with a status (draft→submitted→approved, cart→paid→shipped): fire each *valid* transition, then fire a transition the current state should *reject* (e.g. approve an already-closed item) — invalid transitions are where defects hide |
 | Data validation | Invalid email, weak password, duplicate submission, concurrent edit |
 | Visual | Responsive breakpoints, loading states, broken layouts, overlapping elements |
+
+> Exploration here executes the risk-beyond-AC outlines Stage 1 derived by technique (`agentic-qa-core/references/test-design-doctrine.md`). If exploration surfaces a partition / boundary / transition the Stage-1 ATP missed, add it back to the outline set — coverage is the floor (ACs) plus this risk layer, not exploration *instead of* planning.
 
 ### 1.4 DevTools observation rules
 

@@ -73,6 +73,15 @@ ${colors.bold}TEST MANAGEMENT${colors.reset}
                      --action <text>    Step action (required)
                      --data <text>      Step test data
                      --result <text>    Expected result
+  test update-gherkin    Replace the Gherkin definition of an existing Cucumber test
+                     --test <id>        Test issue ID (required)
+                     --gherkin <feature> New Gherkin feature (required)
+  test update-definition Replace the unstructured definition of an existing Generic test
+                     --test <id>        Test issue ID (required)
+                     --definition <text> New definition (required)
+  test update-type   Change the type of an existing test (Manual/Generic/Cucumber)
+                     --test <id>        Test issue ID (required)
+                     --type <name>      New test type (required)
 
 ${colors.bold}TEST EXECUTIONS${colors.reset}
   exec create        Create a test execution
@@ -329,9 +338,18 @@ async function main(): Promise<void> {
           case 'add-step':
             await test.addStep(flags);
             break;
+          case 'update-gherkin':
+            await test.updateGherkin(flags);
+            break;
+          case 'update-definition':
+            await test.updateDefinition(flags);
+            break;
+          case 'update-type':
+            await test.updateType(flags);
+            break;
           default:
             log.error(`Unknown test command: ${subcommand}`);
-            log.info('Available: create, get, list, add-step');
+            log.info('Available: create, get, list, add-step, update-gherkin, update-definition, update-type');
         }
         break;
 

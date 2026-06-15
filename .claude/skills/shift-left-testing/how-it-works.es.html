@@ -787,7 +787,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <li>JSON de datos de test por outline</li>
         <li>Pasos de test numerados</li>
         <li>Recetas de generación con Faker</li>
-        <li>Crear TCs en el TMS</li>
+        <li>Crear cualquier entidad de test en el TMS — TCs, issues ATP/ATR, Test Plans — en CUALQUIER modalidad (la feature aún no existe; la Etapa 4 las crea después)</li>
       </ul>
     </div>
     <div class="mid">→</div>
@@ -802,6 +802,36 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
   </div>
   <div class="notes">La disciplina que separa Shift-Left del diseño de tests real: produces TÍTULOS de outline y un CONTEO de cobertura, nunca los datos. La feature no existe — generar recetas de Faker ahora es trabajo desperdiciado que se rehace in-sprint.</div>
+</section>
+
+<section class="slide" data-title="AC es el piso">
+  <p class="kicker">doctrina de diseño de pruebas — el principio central</p>
+  <h2 class="h2" data-anim="fade-up">El refinamiento empuja <span class="grad">más allá</span> del contrato del camino feliz</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>1 · Aprobar ≠ probar</h4><p class="dim">Un AC satisfacible confirma la condición de negocio. No hace la feature robusta, segura ni resistente al error.</p></div>
+    <div class="card card-accent"><h4>2 · Piso, no techo</h4><p class="dim">Los ACs son la línea base de "terminado". El trabajo del refinamiento es sacar a la luz lo que vive por encima de esa línea.</p></div>
+    <div class="card card-accent"><h4>3 · Criterio vs outline</h4><p class="dim">Un AC refinado (Given/When/Then) es la afirmación de negocio; el outline (Should &lt;comportamiento&gt; &lt;condición&gt;) es su exploración.</p></div>
+    <div class="card card-accent"><h4>4 · 1 : N por defecto</h4><p class="dim">Un AC no trivial implica varios outlines. Colapsar a uno solo con justificación escrita "trivialmente atómico" — nunca por defecto.</p></div>
+    <div class="card card-accent"><h4>5 · El riesgo vive fuera</h4><p class="dim">El corazón del shift-left: sacar a la luz los límites, estados y anomalías que la Story calla — como preguntas al PO Y como outlines.</p></div>
+    <div class="card"><h4>Un gap es un outline</h4><p class="dim"><b>Un gap no es solo una pregunta para el PO — es un outline faltante.</b> Mapea cada arquetipo a la técnica que implica.</p></div>
+  </div>
+  <div class="notes">Canon: agentic-qa-core/references/test-design-doctrine.md. La estimación de cobertura que usa el PO debe reflejar el 1:N real, no un conteo minimizado.</div>
+</section>
+
+<section class="slide" data-title="Arquetipo a técnica">
+  <p class="kicker">doctrina de diseño de pruebas — refinar por técnica</p>
+  <h2 class="h2" data-anim="fade-up">Cada arquetipo implica una <span class="grad">técnica</span> — y outlines</h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Arquetipo en la Story</th><th>Técnica (obligatoria)</th><th>Outlines a derivar</th></tr></thead>
+    <tbody>
+      <tr><td>Máquina de Estados (orden, suscripción, KYC, disputa)</td><td><b>Transición de Estados</b></td><td>uno por transición válida + uno por transición inválida</td></tr>
+      <tr><td>Dinero / rangos / límites de lista</td><td><b>Valores Límite (BVA)</b></td><td>min-1·min·min+1 … max-1·max·max+1, cero / vacío / null</td></tr>
+      <tr><td>Permisos / RBAC / auth (rol × estado × flag)</td><td><b>Tabla de Decisión</b></td><td>uno por regla sobreviviente de la matriz de condiciones</td></tr>
+      <tr><td>Integración / config multi-factor</td><td><b>Pairwise</b></td><td>conjunto all-pairs (registra la reducción)</td></tr>
+      <tr><td>Idempotencia / reintentos / concurrencia</td><td><b>Charter de Error-Guessing</b></td><td>doble submit, reintento, carrera, timeout, rollback</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">EP aplica en todas partes como lente inicial. Un rango sin outline de límite, o un campo de estado sin outline de transición inválida, es un refinamiento incompleto.</div>
 </section>
 
 <section class="slide" data-title="Output File">
@@ -821,26 +851,26 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Una Story Limpia Es un Resultado Válido</h2>
   <div class="vs">
     <div class="card bad-side side">
-      <h3>❌ Teatro de checklist</h3>
+      <h3>❌ Dos fallas, no una</h3>
       <ul>
-        <li>Forzar una pregunta en cada Story para parecer exhaustivo</li>
-        <li>Pedir 15 outlines cuando 6 bastan</li>
+        <li>Relleno: forzar una pregunta u outline duplicado para parecer exhaustivo</li>
+        <li>Sub-derivar: tratar un AC de una línea que esconde un rango o un estado como un solo escenario</li>
         <li>Re-preguntar lo que el AC ya responde</li>
         <li>Poner respuestas a nivel proyecto como preguntas al PO cuando el business-data-map ya las define</li>
       </ul>
     </div>
     <div class="mid">→</div>
     <div class="card good-side side">
-      <h3>✅ Señal sobre volumen</h3>
+      <h3>✅ Explota, luego justifica cualquier colapso</h3>
       <ul>
-        <li>Lista de preguntas vacía cuando la Story está clara — di 'Calidad de Story: buena'</li>
-        <li>4 ACs pueden legítimamente dar 4 preguntas y 6 outlines</li>
-        <li>Cita el business-data-map y sáltate la pregunta al PO</li>
-        <li>El ancho de banda del lector es el recurso más escaso en el grooming</li>
+        <li>1:N por defecto — deriva cada outline que el AC implica, luego colapsa solo con justificación escrita</li>
+        <li>4 ACs sobre un rango o una máquina de estados dan legítimamente muchos más de 4 outlines</li>
+        <li>Lista de preguntas vacía cuando la Story está genuinamente clara — di 'Calidad de Story: buena'</li>
+        <li>Cita el business-data-map y sáltate la pregunta al PO; el ancho de banda del lector es el recurso más escaso en el grooming</li>
       </ul>
     </div>
   </div>
-  <div class="notes">Este es el anti-patrón que separa seniors de juniors. Inflar el conteo de preguntas entrena al equipo a saltarse tu output. Shift-Left añade valor sacando a la luz riesgo REAL, no llenando un checklist.</div>
+  <div class="notes">Este es el anti-patrón que separa seniors de juniors. El relleno Y la sub-derivación destruyen la confianza: los conteos inflados entrenan al equipo a saltarse tu output, mientras que un 1:N colapsado esconde riesgo real. Shift-Left añade valor sacando a la luz cada escenario REAL que el AC implica — ni más ni menos.</div>
 </section>
 
 <section class="slide" data-title="Six Jira Mutations">

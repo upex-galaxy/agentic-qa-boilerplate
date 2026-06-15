@@ -592,6 +592,36 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Different status codes, UI states, or business outcomes are separate ATCs. Same outcome, different data, is one. This keeps the ATC count honest.</div>
 </section>
 
+<section class="slide" data-title="AC is the floor">
+  <p class="kicker">test-design doctrine — the core principle</p>
+  <h2 class="h2" data-anim="fade-up">"All ACs covered" is the <span class="grad">floor</span>, not the success bar</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>1 · Passing ≠ probing</h4><p class="dim">Green ACs confirm the contract. They don't prove the system is robust, safe, or error-resistant.</p></div>
+    <div class="card card-accent"><h4>2 · Floor, not ceiling</h4><p class="dim">"All ACs covered" is the entry bar. The ATC set must also cover risk-beyond-AC.</p></div>
+    <div class="card card-accent"><h4>3 · Criterion vs case</h4><p class="dim">A criterion is a business assertion. An ATC is its concrete exploration: precondition + action + assertions.</p></div>
+    <div class="card card-accent"><h4>4 · 1 : N by default</h4><p class="dim">One AC → many ATCs. EP-merge collapses WITHIN a partition only — never across partitions, boundaries, or states.</p></div>
+    <div class="card card-accent"><h4>5 · Risk lives outside</h4><p class="dim">Automate the invalid/boundary inputs, auth/error paths, state transitions, and anomalies the AC is silent on.</p></div>
+    <div class="card"><h4>EP ≠ BVA</h4><p class="dim"><b>Same-behavior merge hides off-by-one.</b> Wherever a range/limit/length/date-window exists, add explicit boundary ATCs.</p></div>
+  </div>
+  <div class="notes">Canon: agentic-qa-core/references/test-design-doctrine.md. The review gate (§3.4.1 input-domain, §3.4.2 state/temporal) enforces this in code.</div>
+</section>
+
+<section class="slide" data-title="Techniques by trigger">
+  <p class="kicker">test-design doctrine — derive by technique</p>
+  <h2 class="h2" data-anim="fade-up">One criterion → N ATCs, chosen by the AC's <span class="grad">shape</span></h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Trigger in the AC</th><th>Technique (binding)</th><th>ATCs it produces</th></tr></thead>
+    <tbody>
+      <tr><td>Any input (always)</td><td><b>Equivalence Partitioning</b></td><td>same-behavior inputs → one parameterized ATC; distinct partitions → separate ATCs</td></tr>
+      <tr><td>A range / limit / length / date-window</td><td><b>Boundary Value Analysis</b></td><td>min-1·min·min+1 … max-1·max·max+1, zero / empty / null</td></tr>
+      <tr><td>A status / lifecycle field</td><td><b>State-Transition</b></td><td>every valid transition + every invalid transition</td></tr>
+      <tr><td>2+ interacting conditions</td><td><b>Decision Table</b></td><td>one ATC per surviving rule of the combo matrix</td></tr>
+      <tr><td>3+ combinable factors</td><td><b>Pairwise</b></td><td>all-pairs ATC set (log the reduction)</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">EP without BVA misses off-by-one. A status field with no invalid-transition ATC is an incomplete plan. The triggers are binding.</div>
+</section>
+
 <section class="slide" data-title="ATC craft rules">
   <p class="kicker">ATC craft rules</p>
   <h2 class="h2" data-anim="fade-up">Five Rules That Decide Acceptance at Review</h2>
@@ -766,6 +796,7 @@ test.<span class="fn">describe</span>(<span class="str">'UPEX-411: Apply Discoun
   <ul class="blist anim-stagger-list">
     <li><b>Three shared checklists first.</b> Component / ATC / Test-file review — naming, layer extension, decorators, tuple returns, inline locators, ticket-ID prefix.</li>
     <li><b>Then the delta.</b> E2E delta (locator quality, condition-based waits, session reuse) OR API delta (facade compliance, tuple discipline, status coverage, auth).</li>
+    <li><b>Coverage gates the handoff.</b> Beyond HTTP status: §3.4.1 input-domain (EP + BVA boundaries) and §3.4.2 state-transition / idempotency / concurrency / timeout must be covered or marked explicitly N/A.</li>
     <li><b>Severity model.</b> CRITICAL &amp; HIGH block merge; MEDIUM recommended; LOW nice-to-have. A hardcoded waitForTimeout or missing @atc is CRITICAL.</li>
     <li><b>Revision ceiling.</b> Max 2 revision loops. Still not APPROVED after 2 rounds? Escalate to the user; never loop forever.</li>
     <li><b>Optional adversarial gate.</b> For high-risk changes (new fixtures, shared base edits) run a dual-judge review before commit.</li>

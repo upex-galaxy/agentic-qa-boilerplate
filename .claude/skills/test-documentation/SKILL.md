@@ -30,9 +30,37 @@ One hard prerequisite: the tests being documented must describe behavior that wa
 
 ---
 
+## Dependencies
+
+Requires `agentic-qa-core`. Loads on demand:
+
+- `agentic-qa-core/references/test-design-doctrine.md` — **MANDATORY before deriving TCs from acceptance criteria.** Governs the 1:N TC explosion, the formal-technique triggers, and the floor-not-ceiling coverage model. EP + BVA are operationalized here against the canon.
+- `agentic-qa-core/references/briefing-template.md`, `./dispatch-patterns.md`, `./orchestration-doctrine.md`, `./session-management.md`, `./preflight-gate.md`, `./traceability-linking.md` — cited inline by the sections that use them.
+
+## Compact Rules
+
+**Test-design doctrine (binding — full canon: `agentic-qa-core/references/test-design-doctrine.md`):**
+
+- Documenting an AC→TC map is the FLOOR (≥1 TC per AC is a minimum, never a target). Coverage = AC-conformance + risk-beyond-AC; the TC set must include boundary / negative / state / anomaly cases the AC is silent on.
+- 1:N applies to DERIVATION (consider many cases by technique), not to the REGRESSION repository. Only regression-worthy scenarios (Candidate/Manual) are persisted there; most are Deferred. jira-native: Stage 4 CREATES `Test`s for those only (Deferred = report-only). jira-xray: sprint `Test`s already exist (Stage 1) — Stage 4 PROMOTES the regression-worthy into the Test Plan + enriches them. Document because it will be re-run, never to hit a count.
+- Apply techniques by trigger: EP always; BVA wherever a range/limit/length/date-window exists; State-Transition for stateful entities; Decision Table when 2+ conditions interact; Pairwise when 3+ combinable factors.
+- Cross-cutting characteristics (XSS, perf, a11y) deferred to app-level suites are an EXPLICIT handoff, not a silent drop — name the receiving suite or file the gap.
+
+**Test-documentation operational rules:**
+
+- Documents already-validated behavior only — not an exploration tool (exploration belongs to `/sprint-testing`).
+- TC identity = Precondition + Action + verifiable outcome. Naming: `Validate <CORE> <CONDITIONAL>`. Reject `"Login test"`, `"Login - error"`, `"TC1: Test form"`.
+- ROI formula → one of three verdicts per TC: Candidate (feeds test-automation), Manual, Deferred. Prioritize by risk.
+- Cardinality: US→TC is 1:N; AC→TC is N:1 or N:M. Resolve TMS modality (Xray vs Jira-native) in Phase 0 before documenting.
+- Bug-driven (GOLDEN RULE): not every bug is a regression TC, but a regression-worthy bug MUST end with a Test — REUSE the existing failed Test if it came from one, else CREATE one (both modalities). A non-qualifying bug is treated like a failed test → Deferred, no new Test.
+
+**Read full SKILL.md when**: resolving TMS modality, computing ROI, writing Gherkin, or wiring US-ATP-ATR-TC traceability links.
+
+---
+
 ## Subagent Dispatch Strategy
 
-> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
+> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional. The orchestrator also applies the per-stage **Definition-of-Done gates** in `./stage-gates.md`: verify a stage's DoD (planning stages include the Test-Design Checklist) BEFORE recording its progress checkpoint and advancing.
 
 This skill is **per-scope**: `<scope>` = `<JIRA-KEY>` (ticket / bug scope), `<module-slug>` (module scope), or `<YYYY-MM-DD>-adhoc` (ad-hoc scope). Session state lives at `.session/test-documentation/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9.
 
@@ -135,10 +163,29 @@ Pick the scope based on the input, not the output. All four scopes share the sam
 |-------|-------|----------------|----------------|-------|
 | **Module-driven** | A module of the system explored end-to-end | 20-100+ scenarios | `regression`, `e2e` or `integration` | Batch of TCs grouped under the Regression Epic. Most scenarios will be Deferred. |
 | **Ticket-driven** | A QA Approved user story from a sprint | 3-8 scenarios | `regression`, plus the test type | Output of a `sprint-testing` session. ATP/ATR created per US. |
-| **Bug-driven** | A closed bug with a verified fix | 1-2 scenarios | `regression`, `automation-candidate` (usually) | One regression TC per bug. ROI is biased up: "it failed once, it can fail again." |
+| **Bug-driven** | A closed bug with a verified fix | 0-2 scenarios | `regression`, `automation-candidate` (usually) | Run the Bug-driven decision (below). Not every bug qualifies; if it does, **reuse the existing failed Test or create one** — an important bug must end with a Test. ROI biased up: "it failed once, it can fail again." |
 | **Ad-hoc / Exploratory** | New scenarios found in exploratory testing | 1-10 scenarios | `regression` | Apply the 3 Phase-0 questions harshly; ad-hoc scenarios are often one-time validations. |
 
 If the user gives you a story ID, use ticket-driven. If they give you a bug ID, use bug-driven. If they give you a module name or a session output, use module- or ad-hoc accordingly.
+
+### Bug-driven decision — "an important bug must have a test" (GOLDEN RULE)
+
+Not every bug becomes a regression Test — a one-time typo in a stable area is **treated like a failed test** (the fix was verified in sprint-testing) and Deferred. But run the **same analysis + prioritization** you'd run on any scenario; if the bug IS regression-worthy, it **MUST end with a Test that covers it**, in BOTH modalities. *Where there is an important bug, there must be a test that catches it again — this rule is worth gold.*
+
+```
+1. Is this Bug/Defect a regression candidate?  (apply Phase-0 filter + ROI; the prior-bug rule biases up)
+   NO  -> No new Test. Treat as a failed test: fix already verified in sprint-testing -> log as Deferred. Done.
+   YES -> step 2.
+
+2. Was the bug found FROM an existing, already-executed Test?  (a Test that ran and failed — jira-native OR xray)
+   YES -> REUSE that existing Test for the bug's retest + regression. It already lives in the test set;
+          ensure it is linked to the bug (`tests / is tested by`) and promoted into regression. Do NOT duplicate.
+   NO  -> CREATE + design the corresponding Test for the bug's retest.
+          jira-native: new `Test` issue.  jira-xray: new Xray `Test` (+ plugin-appropriate Test Plan / Test Set linking).
+          Link to the bug via `tests / is tested by`.
+```
+
+This **overrides** sprint-testing's "the bug is the test case" — that phrase covers only the immediate in-sprint retest, NOT future regression. The retest reproduces+verifies the fix now; this rule decides whether a *persistent* Test must exist (reuse or create) so the bug can never silently return.
 
 **Scope handoff to `/test-automation`.** The `Candidate` TCs produced here flow downstream to `/test-automation`, which **re-scopes** them into its own 3 planning scopes: `module-driven → Module (Macro)`, `ticket-driven → Ticket (Medium)`, `bug-driven → Regression-driven (Micro)`. `ad-hoc / exploratory` Candidates have no 1:1 automation scope — they enter under whichever fits (a module batch, or regression-driven for a single TC). `Manual` and `Deferred` verdicts are terminal and never reach automation.
 
@@ -173,6 +220,8 @@ Cross-cutting traits are **validated inside every test**, not as separate TCs.
 | API contract | Response schema checks inside API tests |
 | Generic "error handling" | Specific negative-path scenarios |
 
+> **Deferral ≠ omission.** Moving a cross-cutting trait out of per-feature TC scope is an **explicit handoff**, not a silent drop. Each row must land somewhere: woven into a TC's data/assertions (the table above) OR owned by a named app-level suite (XSS / perf / a11y regression suite). If no such suite exists for a trait the feature genuinely exposes, file the gap (Deferred TC or a note in the ATR) — never let it evaporate.
+
 A real scenario is a **user flow**: clear business objective, concrete precondition + action, verifiable outcome. Name format: `Validate <CORE> <CONDITIONAL>`.
 
 ### Source-code validation (mandatory before documenting)
@@ -204,9 +253,19 @@ Same TC:                                    Different TCs:
 
 Splitting one (precondition, action) into N "check panel A / check panel B / check panel C" TCs is a textbook anti-pattern. One TC, multiple assertions.
 
-### Equivalence Partitioning
+### Technique-driven TC derivation (1:N — full canon: `agentic-qa-core/references/test-design-doctrine.md`)
 
-Inputs that produce the **same output** -> one parameterized TC (Scenario Outline + Examples). Inputs that produce **different outputs** -> separate TCs.
+One AC yields **multiple** TCs by default. Derive them by the AC's shape, then let the TC-identity rule above merge only *within* a partition — never across partitions, boundaries, or states. Reduce an AC to a single TC only with a written `trivially atomic` justification.
+
+| Trigger in the AC | Technique | TCs produced |
+|---|---|---|
+| Any input (always) | **Equivalence Partitioning** | same-output inputs → one parameterized TC (Scenario Outline + Examples); different-output inputs → separate TCs |
+| A range / limit / length / date-window | **Boundary Value Analysis** | TCs at `min-1·min·min+1 … max-1·max·max+1` + zero / empty / null / overflow (EP alone misses off-by-one) |
+| A status / lifecycle field | **State-Transition** | one TC per valid transition + per invalid transition |
+| 2+ interacting conditions | **Decision Table** | enumerate combos, collapse equivalents, one TC per surviving rule |
+| 3+ combinable factors | **Pairwise** | all-pairs TC set (log the reduction) |
+
+These are **candidate scenarios** derived by technique — not yet TMS work items. ROI (Phase 2) then decides which become **persistent regression TCs** (Candidate → automated, Manual → manual) and which stay **Deferred** (recorded in the prioritization report, **NOT created in the TMS**). Deriving widely is free; persisting is ROI-gated — most scenarios are Deferred. You document a scenario because it will be re-run, never to hit a count.
 
 ---
 
@@ -256,9 +315,11 @@ Every scenario ends in exactly one of these buckets. There is no fourth.
 |---------|------------|--------------------|------------------|
 | **Candidate** | ROI > 3.0, OR (ROI 1.5-3.0 AND prior bug), OR critical happy path | Feeds `test-automation` skill | Draft -> In Design -> Ready -> In Review -> Candidate |
 | **Manual** | ROI 0.5-1.5 AND not automatable (human judgment, visual inspection), OR explicitly manual-only | Terminal: manual regression suite | Draft -> In Design -> Ready -> Manual |
-| **Deferred** | ROI < 0.5, OR failed Phase-0 filter, OR one-time validation | Terminal: not in regression. Can be revisited if system changes | Do not create TC in TMS; document as Deferred in the prioritization report |
+| **Deferred** | ROI < 0.5, OR failed Phase-0 filter, OR one-time validation | Terminal: not in regression. Can be revisited if system changes | **jira-native**: do not create a TC in the TMS — document as Deferred in the prioritization report. **jira-xray**: the sprint `Test` (created in `/sprint-testing` Stage 1) is **not promoted** to the Regression Test Plan — it stays as a sprint execution artifact, not deleted. |
 
 **Rule of thumb**: if more than 50% of candidates end up Candidate or Manual, re-apply Phase 0 more strictly. Most scenarios should be Deferred.
+
+> **Modality changes the verb in Phase 3, not the verdict here.** The ROI verdicts (Candidate / Manual / Deferred) are identical in both modalities. What differs is the action: **jira-native** — Phase 3 *creates* `Test` work items for Candidate + Manual only (Deferred is report-only). **jira-xray** — the `Test` work items already exist from `/sprint-testing` Stage 1 (Xray's `Test` is the execution unit); Phase 3 *selects + promotes* the Candidate/Manual ones into the Regression Test Plan (label `regression-candidate`) and **enriches** them (rich Gherkin, parameterization, edge elaboration — the "specify much more" pass). Deferred sprint Tests are left as-is, unpromoted. See `sprint-testing/SKILL.md` §"TC creation timing (modality-aware)".
 
 ---
 
@@ -278,6 +339,13 @@ Every documented TC must have a parent Regression Epic (single test repository f
 
 If none exists, ask the user before creating one with name `{{PROJECT_KEY}} Test Repository` and labels `test-repository, regression`.
 
+### Preflight: Test Set — feature organizer (1:1 with the Epic)
+
+A **Test Set** groups all regression Tests of ONE feature — **1:1 with the Epic/module**. It is the feature-level organizer under the Regression Epic. Three containers, do not conflate: **Regression Epic** = repository umbrella · **Test Set** = feature grouping · **Test Plan** = execution/regression scope.
+
+- **Modality jira-xray**: resolve the feature's Test Set (match by Epic key / feature name) via `[TMS_TOOL]`. If it does **not** exist, **ask the user before creating** one named `Test Set: <EPIC_KEY> <feature>` (mirror the Regression-Epic ask-before-create rule — creation is otherwise async/manual; the AI only creates it lazily here when a promotion needs it). **Only promoted, regression-worthy Tests (Candidate/Manual) are added to the Set** in this phase — Deferred sprint Tests are NOT added.
+- **Modality jira-native**: there is **no Test Set entity**. Achieve the same feature grouping with the **Regression Epic + a feature/Epic label** (e.g. `epic-<EPIC_KEY>` or the feature slug). Apply the label to each documented TC.
+
 ### Entity model: ATP / ATR / TC
 
 Four entities, always linked US <-> ATP <-> ATR <-> TC:
@@ -288,6 +356,7 @@ Four entities, always linked US <-> ATP <-> ATR <-> TC:
 | **ATP** | Stage 1 (or now, if missing) | `Test Plan: {{PROJECT_KEY}}-{n}` | Test Analysis + AC-to-TC coverage |
 | **ATR** | Stage 1 (or now, if missing) | `Test Results: {{PROJECT_KEY}}-{n}` | Test Report + execution results |
 | **TC** | Stage 4 (this phase) | `{US_ID}: TC#: Validate <CORE> <CONDITIONAL>` | Precondition + Action + Expected |
+| **Test Set** (xray only) | Lazily in Stage 4 if missing (ask first); else pre-existing (async) | `Test Set: <EPIC_KEY> <feature>` | Feature-level grouping (1:1 Epic) of promoted regression Tests. Native: replaced by a feature/Epic label, no entity. |
 
 Read `references/tms-architecture.md` when creating ATP/ATR/TC for a ticket, checking required links, or validating that a story is fully documented.
 
@@ -299,7 +368,13 @@ Read `references/tms-architecture.md` when creating ATP/ATR/TC for a ticket, che
 3. Update ATP -> link to ATR (bidirectional plan/results)
 4. For each TC:
      Create TC -> link to US + ATP + ATR + AC
+5. For each PROMOTED (regression-worthy) TC:
+     jira-xray  -> [TMS_TOOL] add TC to the feature Test Set (resolve/create per Preflight) + [TMS_TOOL] add to the Regression Test Plan
+                   + [ISSUE_TRACKER_TOOL] label `regression-candidate` (labels are a Jira field; xray-cli has no update-label for existing Tests)
+     jira-native -> [ISSUE_TRACKER_TOOL] apply the feature/Epic label (no Test Set entity)
 ```
+
+> Per-op tool resolution + the Gherkin-enrichment CLI gap: `references/jira-test-management.md` §"Stage-4 promote + enrich — tool resolution map". Load `/xray-cli` for command syntax — never hardcode it here.
 
 Creating a TC before the ATP and ATR exist leaves orphaned references. Fix any broken links with `references/tms-architecture.md` §Traceability Rules.
 
@@ -408,9 +483,9 @@ On Phase 3 partial failure (some chunks 429-rate-limited, some succeeded), archi
 - **Xray requires two calls**: one `[TMS_TOOL] Create Test` (registers in Xray), then one `[ISSUE_TRACKER_TOOL] Update Issue` to paste the full Description. Skipping the second call leaves a TC with no readable documentation in Jira.
 - **Never hardcode UUIDs or emails** in Gherkin. Always use `{variable}` with a Variables table and a query showing how to obtain the real value at runtime.
 - **One (precondition, action) = one TC**. Multiple expected results all belong to the same TC. Splitting assertions into separate TCs is the single most-diagnosed anti-pattern in reviews.
-- **Bug-driven TCs default to Candidate**. A closed bug is empirical evidence that the area regresses. Start at "automate" unless automation is technically impossible.
+- **Bug-driven: evaluate first, but if regression-worthy it MUST have a Test (reuse or create).** A closed bug is strong empirical evidence the area regresses, so most qualify and lean Candidate — but not all do (a one-time typo in a stable area is treated like a failed test → Deferred, no new Test). When it qualifies, follow the Bug-driven decision: reuse the existing failed Test if the bug came from one, else create + design a new Test. Golden rule: where an important bug exists, a test must cover it.
 - **Source-code validation is mandatory**: the ATP was written before code. Grep for `data-testid=`, routes, text formats. Log discrepancies in a Refinement Notes section on the TC.
-- **Most candidates should be Deferred**. If a module produces 80 scenarios and 60 end up in regression, re-apply Phase 0 more harshly. Target: a few well-chosen TCs per story (1-3 simple, 3-5 complex).
+- **Derive widely, document only the repeatable, automate the few — three layers, three counts.** (1) DESIGN/derive (in `/sprint-testing` planning + exploration): consider many cases by technique (1:N) — this lives in the prioritization analysis, NOT yet in the TMS. (2) DOCUMENT (this skill): create a persistent TMS TC **only** for scenarios worth re-running — Candidate (automated regression) + Manual (manual regression). Deferred scenarios are recorded in the prioritization report and **NOT created in the TMS** (see Three outcomes). (3) AUTOMATE (`/test-automation`): the Candidates. So "analyzed 80 → documented 12 → automated 8" is the healthy shape — **never "document all 80"**. (jira-xray nuance: the 80 may already exist as sprint `Test` artifacts from `/sprint-testing` Stage 1; there "document 12" means **promote 12** into the Regression Test Plan, leaving the rest as unpromoted sprint artifacts.) The guiding principle: *a test enters the regression repository because it will be re-executed (manual or automated), never to hit a coverage count.* If most scenarios end up Candidate/Manual, re-apply Phase 0 harder — most should be Deferred.
 - **Test Plan / Test Set ID (Xray) vs User Story ID (native Jira)**: the TC prefix depends on stack. In Xray with a Test Set, prefix is the TS ID. In native Jira, prefix is the US ID. Both work — pick one per project and stay consistent.
 
 ---
@@ -421,7 +496,7 @@ On Phase 3 partial failure (some chunks 429-rate-limited, some succeeded), archi
 - **Naming a TC, filling fields, picking labels, or choosing Gherkin vs Traditional** -> read `references/tms-conventions.md` (naming formulas, label taxonomy, workflow state machine, ROI table).
 - **Working in Jira native or Jira+Xray mode, creating tests via the right tool, or producing the full Description template** -> read `references/jira-test-management.md` (mode comparison, Xray issue types, Description template, local cache template, CI/CD sync).
 - **Fixing broken traceability (TC not linked to US/ATP/ATR, name wrong)** -> use the procedure in the Linking Order section above, backed by `references/tms-architecture.md` §Traceability Rules.
-- **Deciding if a bug deserves a regression TC** -> apply Phase 0 question 2 (prior bug = prioritize), then ROI; bug-driven scope defaults to Candidate.
+- **Deciding if a bug deserves a regression TC** -> run the **Bug-driven decision** (§"When to use each scope"): Phase 0 Q2 (prior bug = prioritize) + ROI → if regression-worthy, **reuse the existing failed Test or create a new one** (golden rule); if not, treat as a failed test → Deferred, no new Test.
 - **TMS operations** -> load `/xray-cli` skill for concrete CLI syntax. Issue-tracker operations resolve via `[ISSUE_TRACKER_TOOL]` per CLAUDE.md Tool Resolution.
   - **Reads vs writes split** (per `agentic-qa-core/references/acli-integration.md` §"Reads vs writes"): detailed READS (custom fields, ACs, ATP/ATR, description, comments, linked bugs) -> `bun run jira:sync-issues get <KEY> --include-comments` (or `jql "<query>"`), then read the synced `.md` — NEVER `acli workitem view` for custom fields. TMS WRITES (create Test / Test Plan / Test Execution / link / transition / comment / import) + traceability/List-Tests link-graph reads -> `[TMS_TOOL]` (acli/xray). Trivial metadata + list/search lookups (issue types, key lists) -> acli `view`/`search`.
 - **Session contract (Phase -1 resume, plan.md/progress.md schemas, per-chunk checkpoint for Parallel TC creation, archive policy, Engram per-phase checkpoint)** -> read `../agentic-qa-core/references/session-management.md`. This skill is a producer of `session/test-documentation/<scope>/...` topic keys.

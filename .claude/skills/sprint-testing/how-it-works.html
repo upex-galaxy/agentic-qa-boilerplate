@@ -520,8 +520,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">pick the mode first</p>
   <h2 class="h2" data-anim="fade-up">Three ways in, same three stages</h2>
   <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>Single — User Story</h4><p class="dim">In: one story ID at Ready-for-QA. Out: ATP + ATR + TCs + QA comment, ticket moved to QA-approved.</p><span class="tag mt-s">story run</span></div>
-    <div class="card card-accent"><h4>Single — Bug</h4><p class="dim">In: one bug ID on staging. Out: a triage decision, then code-review-only OR ATP + ATR + verification (no TCs).</p><span class="tag mt-s">bug run</span></div>
+    <div class="card card-accent"><h4>Single — User Story</h4><p class="dim">In: one story ID at Ready-for-QA. Out: ATP + ATR + QA comment, ticket moved to QA-approved. TC artifacts depend on modality (see "TC creation timing").</p><span class="tag mt-s">story run</span></div>
+    <div class="card card-accent"><h4>Single — Bug</h4><p class="dim">In: one bug ID on staging. Out: a triage decision, then code-review-only OR ATP + ATR + verification (no TCs in-sprint; regression Test reused/created in Stage 4 if worthy).</p><span class="tag mt-s">bug run</span></div>
     <div class="card card-accent"><h4>Batch sprint</h4><p class="dim">In: a SPRINT-N-TESTING.md framework. Out: per-ticket artifacts + updated framework + summary, with resume support.</p><span class="tag mt-s">batch</span></div>
   </div>
   <div class="notes">Rule of thumb: a story at Ready-for-QA is a story run; a deployed bug is a bug run; "process sprint 5" is batch. The stages are identical — only bookkeeping differs.</div>
@@ -577,14 +577,45 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <li>Random clicking through the app</li>
     </ul></div>
     <div class="mid">→</div>
-    <div class="card good-side side"><h3>✅ From the spec</h3><ul>
-      <li>Verify STORY-XXX meets its acceptance criteria</li>
+    <div class="card good-side side"><h3>✅ Anchored, not AC-bounded</h3><ul>
+      <li>Start from STORY-XXX's ACs, then probe <b>beyond</b> them</li>
       <li>AC-3 of STORY-XXX fails: submit doesn't respond after click</li>
-      <li>I verified each AC and its documented edge cases</li>
-      <li>Focused exploration on the story's risk areas</li>
+      <li>Each AC verified (the floor) + boundaries / errors / states it's silent on</li>
+      <li>Charter-driven exploration on the story's risk areas</li>
     </ul></div>
   </div>
-  <div class="notes">Every finding — pass, fail, or bug — references the story AND the specific AC. That traceability is what makes coverage measurable and bugs actionable.</div>
+  <div class="notes">Spec-driven means ANCHORED (every case traces to an AC or a risk), not AC-BOUNDED. Every finding references the story AND the specific AC — but coverage doesn't stop when the ACs go green.</div>
+</section>
+
+<section class="slide" data-title="AC is the floor">
+  <p class="kicker">test-design doctrine — the core principle</p>
+  <h2 class="h2" data-anim="fade-up">Verifying acceptance criteria is the <span class="grad">floor</span>, not the testing</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>1 · Passing ≠ probing</h4><p class="dim">An AC-pass confirms the business condition holds. It does not prove the system is robust, safe, or error-resistant.</p></div>
+    <div class="card card-accent"><h4>2 · Floor, not ceiling</h4><p class="dim">ACs are the mandatory baseline for "done". Quality testing exceeds that line — it never rests on it.</p></div>
+    <div class="card card-accent"><h4>3 · Criterion vs case</h4><p class="dim">A criterion is a business assertion. A test case is a concrete exploration of how that assertion holds or breaks.</p></div>
+    <div class="card card-accent"><h4>4 · 1 : N by default</h4><p class="dim">One AC → many cases (partitions, boundaries, states). Collapse to one only with a written "trivially atomic" reason.</p></div>
+    <div class="card card-accent"><h4>5 · Risk lives outside</h4><p class="dim">Defects cluster where the AC is silent: limits, invalid data, concurrency, timeouts, rollback, anomalies.</p></div>
+    <div class="card"><h4>Coverage =</h4><p class="dim"><b>AC-conformance (floor) + risk-beyond-AC.</b> "100% of ACs verified" is the floor — report it as such, then report what you probed above it.</p></div>
+  </div>
+  <div class="notes">This is the doctrine the whole ATP is built on. Canon: agentic-qa-core/references/test-design-doctrine.md. The Phase 4 outline set must cross both axes, never just the AC list.</div>
+</section>
+
+<section class="slide" data-title="Techniques by trigger">
+  <p class="kicker">test-design doctrine — derive by technique</p>
+  <h2 class="h2" data-anim="fade-up">One criterion → N cases, chosen by the AC's <span class="grad">shape</span></h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Trigger in the AC</th><th>Technique (binding)</th><th>Cases it produces</th></tr></thead>
+    <tbody>
+      <tr><td>Any input (always)</td><td><b>Equivalence Partitioning</b></td><td>one case per valid class + per distinct invalid class</td></tr>
+      <tr><td>A range / limit / length / date-window</td><td><b>Boundary Value Analysis</b></td><td>min-1·min·min+1 … max-1·max·max+1, zero / empty / null</td></tr>
+      <tr><td>A status / lifecycle field</td><td><b>State-Transition</b></td><td>every valid transition + every invalid transition</td></tr>
+      <tr><td>2+ interacting conditions</td><td><b>Decision Table</b></td><td>one case per surviving rule of the combo matrix</td></tr>
+      <tr><td>3+ combinable factors</td><td><b>Pairwise</b></td><td>all-pairs set (log the reduction)</td></tr>
+      <tr><td>Experience-based risk</td><td><b>Error-Guessing charter</b></td><td>double-submit, back-button, expired token, race…</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">EP without BVA misses off-by-one. A status field with no invalid-transition case is an incomplete plan. The triggers are binding — when one fires, the technique is required, not optional.</div>
 </section>
 
 <section class="slide" data-title="Veto table">
@@ -675,12 +706,27 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">This split matters. Hand-authoring the synced cache gets overwritten and breaks the audit trail. Author in Jira, sync down, read back to confirm.</div>
 </section>
 
+<section class="slide" data-title="TC timing">
+  <p class="kicker">tc creation timing — modality-aware</p>
+  <h2 class="h2" data-anim="fade-up">When does a test case become a <span class="grad">work item</span>?</h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Stage</th><th>Modality jira-native</th><th>Modality jira-xray (<span class="mono">bun xray</span>)</th></tr></thead>
+    <tbody>
+      <tr><td><b>Stage 1 — Planning</b></td><td>TC <b>outlines only</b> (names + 1-line precond/expected). NO <span class="mono">Test</span> work items — a native Test issue is documentation.</td><td><b>Create + execute</b> <span class="mono">Test</span> issues for the planned outlines, run via a Test Execution. The Test IS Xray's execution unit, by plugin design.</td></tr>
+      <tr><td><b>Stage 2 — Execution</b></td><td>Run outlines + explore beyond them; track PASS/FAIL in session memory.</td><td>Execute the created Tests + explore beyond them. A probe becomes a Test only if it found a defect or is worth repeating.</td></tr>
+      <tr><td><b>Stage 4 — docs</b></td><td><b>Create</b> Tests only for regression-worthy scenarios after ROI.</td><td><b>Select + promote</b> the regression-worthy Tests into the Regression Test Plan + Test Set, then enrich.</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn mt-m"><h4>The principle</h4><p>An <b>execution artifact</b> (how you run a test this sprint) is NOT the <b>regression repository</b> (the curated, repeatable set). The persistent regression set is ROI-gated in Stage 4 — never assumed in Stage 1.</p></div>
+  <div class="notes">This is the single rule that decides the whole skill's shape. The wide 1:N technique derivation feeds outlines (native) or sprint Test artifacts (xray) — either way it never auto-populates the regression repository. Heavy specification is spent only on Stage-4 regression candidates, never on Deferred scenarios.</div>
+</section>
+
 <section class="slide" data-title="Stage 1 closeout">
   <p class="kicker">stage 1 closeout</p>
   <h2 class="h2" data-anim="fade-up">Verify traceability before you touch a browser</h2>
   <div class="callout mt-l"><h4>Run the trace check</h4><p>Story → ATP → ATR must link, and each TC → Story + ATP + ATR. Add the label <span class="mono">shift-left-reviewed</span> and append the refined ACs to the ticket description.</p></div>
-  <div class="callout warn mt-m"><h4>Bugs are the exception</h4><p>For bugs: ATP + ATR but NO test cases. The bug ticket IS the implicit test case; reproduction steps ARE the test steps — so "missing TC" trace warnings are expected and fine.</p></div>
-  <div class="notes">Traceability is pillar #2 of SDT. If the chain is broken, the finding cannot survive an audit. Bugs are the deliberate exception.</div>
+  <div class="callout warn mt-m"><h4>Bugs are the exception</h4><p>For bugs: ATP + ATR but NO TCs in-sprint. The bug ticket IS the immediate retest case; reproduction steps ARE the test steps — so "missing TC" trace warnings are expected. <b>Golden rule:</b> if the bug is regression-worthy, Stage 4 MUST end with a persistent Test — reuse the failed Test or create one. Not every bug qualifies (a one-time typo in a stable area is treated like a failed test).</p></div>
+  <div class="notes">Traceability is pillar #2 of SDT. If the chain is broken, the finding cannot survive an audit. Bugs are the deliberate in-sprint exception — but the regression golden rule still applies: a regression-worthy bug ends with a persistent Test in Stage 4 (reuse or create).</div>
 </section>
 
 <section class="slide divider" data-title="Stage 2">

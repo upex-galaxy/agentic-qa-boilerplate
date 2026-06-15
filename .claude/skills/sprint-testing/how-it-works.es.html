@@ -520,8 +520,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">elige el modo primero</p>
   <h2 class="h2" data-anim="fade-up">Tres formas de entrar, las mismas tres etapas</h2>
   <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>Single — User Story</h4><p class="dim">Entra: un ID de Story en Ready-for-QA. Sale: ATP + ATR + TCs + comentario QA, ticket movido a QA-approved.</p><span class="tag mt-s">story run</span></div>
-    <div class="card card-accent"><h4>Single — Bug</h4><p class="dim">Entra: un ID de Bug en staging. Sale: una decisión de triage, luego solo code-review O ATP + ATR + verificación (sin TCs).</p><span class="tag mt-s">bug run</span></div>
+    <div class="card card-accent"><h4>Single — User Story</h4><p class="dim">Entra: un ID de Story en Ready-for-QA. Sale: ATP + ATR + comentario QA, ticket movido a QA-approved. Los artefactos TC dependen de la modalidad (ver "Cuándo nace un TC").</p><span class="tag mt-s">story run</span></div>
+    <div class="card card-accent"><h4>Single — Bug</h4><p class="dim">Entra: un ID de Bug en staging. Sale: una decisión de triage, luego solo code-review O ATP + ATR + verificación (sin TCs en el sprint; Test de regresión reutilizado/creado en la Etapa 4 si lo amerita).</p><span class="tag mt-s">bug run</span></div>
     <div class="card card-accent"><h4>Batch sprint</h4><p class="dim">Entra: un framework SPRINT-N-TESTING.md. Sale: artefactos por ticket + framework actualizado + resumen, con soporte de resume.</p><span class="tag mt-s">batch</span></div>
   </div>
   <div class="notes">Regla práctica: una Story en Ready-for-QA es un story run; un Bug desplegado es un bug run; "procesa el sprint 5" es batch. Las etapas son idénticas — solo cambia la contabilidad.</div>
@@ -578,13 +578,44 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </ul></div>
     <div class="mid">→</div>
     <div class="card good-side side"><h3>✅ Desde la spec</h3><ul>
-      <li>Verificar que STORY-XXX cumple sus acceptance criteria</li>
+      <li>Los ACs de STORY-XXX son el piso; cada caso traza a un AC o a un riesgo</li>
       <li>AC-3 de STORY-XXX falla: submit no responde tras el click</li>
-      <li>Verifiqué cada AC y sus edge cases documentados</li>
-      <li>Exploración enfocada en las áreas de riesgo de la Story</li>
+      <li>Cubrí la conformidad-AC y luego probé MÁS ALLÁ: límites, datos inválidos, estados</li>
+      <li>Exploración anclada — enfocada en las áreas de riesgo de la Story, no clics al azar</li>
     </ul></div>
   </div>
-  <div class="notes">Cada hallazgo — pass, fail o bug — referencia la Story Y el AC específico. Esa trazabilidad es lo que hace la cobertura medible y los bugs accionables.</div>
+  <div class="notes">Spec-driven significa ANCLADO, no acotado por los ACs: los ACs son el piso obligatorio, el testing prueba más allá. Cobertura = conformidad-AC + riesgo-más-allá-del-AC. Cada hallazgo — pass, fail o bug — referencia la Story Y el AC (o el riesgo) específico. Esa trazabilidad es lo que hace la cobertura medible y los bugs accionables.</div>
+</section>
+
+<section class="slide" data-title="AC es el piso">
+  <p class="kicker">doctrina de diseño de pruebas — el principio central</p>
+  <h2 class="h2" data-anim="fade-up">Verificar criterios de aceptación es el <span class="grad">piso</span>, no el testing</h2>
+  <div class="grid g3 mt-l anim-stagger-list">
+    <div class="card card-accent"><h4>1 · Aprobar ≠ probar</h4><p class="dim">Un AC en verde confirma que la condición de negocio se cumple. No prueba que el sistema sea robusto, seguro ni resistente al error.</p></div>
+    <div class="card card-accent"><h4>2 · Piso, no techo</h4><p class="dim">Los ACs son la línea base obligatoria de "terminado". El testing de calidad la supera; nunca se queda en ella.</p></div>
+    <div class="card card-accent"><h4>3 · Criterio vs caso</h4><p class="dim">Un criterio es una afirmación de negocio. Un caso de prueba es una exploración concreta de cómo esa afirmación se cumple o se rompe.</p></div>
+    <div class="card card-accent"><h4>4 · 1 : N por defecto</h4><p class="dim">Un AC → muchos casos (particiones, límites, estados). Colapsar a uno solo con justificación escrita "trivialmente atómico".</p></div>
+    <div class="card card-accent"><h4>5 · El riesgo vive fuera</h4><p class="dim">Los defectos se concentran donde el AC calla: límites, datos inválidos, concurrencia, timeouts, rollback, anomalías.</p></div>
+    <div class="card"><h4>Cobertura =</h4><p class="dim"><b>Conformidad-AC (piso) + riesgo-más-allá-del-AC.</b> "100% de ACs verificados" es el piso — repórtalo como tal y luego lo que probaste por encima.</p></div>
+  </div>
+  <div class="notes">Esta es la doctrina sobre la que se construye todo el ATP. Canon: agentic-qa-core/references/test-design-doctrine.md. El set de outlines de la Fase 4 debe cruzar ambos ejes, nunca solo la lista de ACs.</div>
+</section>
+
+<section class="slide" data-title="Técnicas por disparador">
+  <p class="kicker">doctrina de diseño de pruebas — derivar por técnica</p>
+  <h2 class="h2" data-anim="fade-up">Un criterio → N casos, elegidos por la <span class="grad">forma</span> del AC</h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Disparador en el AC</th><th>Técnica (obligatoria)</th><th>Casos que produce</th></tr></thead>
+    <tbody>
+      <tr><td>Cualquier input (siempre)</td><td><b>Particiones Equivalentes</b></td><td>un caso por clase válida + por clase inválida distinta</td></tr>
+      <tr><td>Un rango / límite / longitud / ventana de fecha</td><td><b>Valores Límite (BVA)</b></td><td>min-1·min·min+1 … max-1·max·max+1, cero / vacío / null</td></tr>
+      <tr><td>Un campo de estado / ciclo de vida</td><td><b>Transición de Estados</b></td><td>cada transición válida + cada transición inválida</td></tr>
+      <tr><td>2+ condiciones que interactúan</td><td><b>Tabla de Decisión</b></td><td>un caso por regla sobreviviente de la matriz</td></tr>
+      <tr><td>3+ factores combinables</td><td><b>Pairwise</b></td><td>conjunto all-pairs (registra la reducción)</td></tr>
+      <tr><td>Riesgo por experiencia</td><td><b>Charter de Error-Guessing</b></td><td>doble submit, botón atrás, token expirado, carrera…</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">EP sin BVA se pierde el off-by-one. Un campo de estado sin caso de transición inválida es un plan incompleto. Los disparadores son obligatorios: cuando uno se dispara, la técnica es requerida, no opcional.</div>
 </section>
 
 <section class="slide" data-title="Veto table">
@@ -675,12 +706,27 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Este split importa. El caché sincronizado escrito a mano se sobrescribe y rompe la traza. Escribe en Jira, sincroniza hacia abajo, vuelve a leer para confirmar.</div>
 </section>
 
+<section class="slide" data-title="TC timing">
+  <p class="kicker">cuándo nace un tc — según la modalidad</p>
+  <h2 class="h2" data-anim="fade-up">¿Cuándo un test case se vuelve un <span class="grad">work item</span>?</h2>
+  <table class="dtable mt-l">
+    <thead><tr><th>Etapa</th><th>Modality jira-native</th><th>Modality jira-xray (<span class="mono">bun xray</span>)</th></tr></thead>
+    <tbody>
+      <tr><td><b>Etapa 1 — Planning</b></td><td><b>Solo outlines</b> de TC (nombres + precond/expected de 1 línea). SIN work items <span class="mono">Test</span> — un Test nativo es documentación.</td><td><b>Crea + ejecuta</b> issues <span class="mono">Test</span> para los outlines planeados, corridos vía un Test Execution. El Test ES la unidad de ejecución de Xray, por diseño del plugin.</td></tr>
+      <tr><td><b>Etapa 2 — Ejecución</b></td><td>Corre los outlines + explora más allá de ellos; registra PASS/FAIL en la memoria de sesión.</td><td>Ejecuta los Tests creados + explora más allá. Una sonda se vuelve Test solo si halló un defecto o vale la pena repetirla.</td></tr>
+      <tr><td><b>Etapa 4 — docs</b></td><td><b>Crea</b> Tests solo para los escenarios que ameritan regresión, tras el ROI.</td><td><b>Selecciona + promueve</b> los Tests que ameritan regresión al Regression Test Plan + Test Set, luego los enriquece.</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn mt-m"><h4>El principio</h4><p>Un <b>artefacto de ejecución</b> (cómo corres un test este sprint) NO es el <b>repositorio de regresión</b> (el conjunto curado y repetible). El set de regresión persistente se decide por ROI en la Etapa 4 — nunca se asume en la Etapa 1.</p></div>
+  <div class="notes">Esta es la única regla que define la forma de todo el skill. La derivación 1:N amplia alimenta los outlines (native) o los artefactos Test del sprint (xray) — de cualquier modo nunca puebla automáticamente el repositorio de regresión. La especificación pesada se gasta solo en los candidatos de regresión de la Etapa 4, nunca en escenarios Deferred.</div>
+</section>
+
 <section class="slide" data-title="Stage 1 closeout">
   <p class="kicker">cierre de etapa 1</p>
   <h2 class="h2" data-anim="fade-up">Verifica la trazabilidad antes de tocar un browser</h2>
   <div class="callout mt-l"><h4>Corre el chequeo de traza</h4><p>Story → ATP → ATR deben linkear, y cada TC → Story + ATP + ATR. Agrega el label <span class="mono">shift-left-reviewed</span> y anexa las ACs refinadas a la descripción del ticket.</p></div>
-  <div class="callout warn mt-m"><h4>Los bugs son la excepción</h4><p>Para bugs: ATP + ATR pero SIN test cases. El ticket del bug ES el test case implícito; los pasos de reproducción SON los pasos del test — así que las advertencias de traza "missing TC" son esperadas y están bien.</p></div>
-  <div class="notes">La trazabilidad es el pilar #2 del SDT. Si la cadena está rota, el hallazgo no sobrevive a una auditoría. Los bugs son la excepción deliberada.</div>
+  <div class="callout warn mt-m"><h4>Los bugs son la excepción</h4><p>Para bugs: ATP + ATR pero SIN TCs en el sprint. El ticket del bug ES el caso de retest inmediato; los pasos de reproducción SON los pasos del test — así que las advertencias de traza "missing TC" son esperadas. <b>Regla de oro:</b> si el bug amerita regresión, la Etapa 4 DEBE terminar con un Test persistente — reutiliza el Test fallido o crea uno. No todo bug califica (un typo único en un área estable se trata como un test fallido).</p></div>
+  <div class="notes">La trazabilidad es el pilar #2 del SDT. Si la cadena está rota, el hallazgo no sobrevive a una auditoría. Los bugs son la excepción deliberada en el sprint — pero la regla de oro de regresión sigue aplicando: un bug que amerita regresión termina con un Test persistente en la Etapa 4 (reutilizar o crear).</div>
 </section>
 
 <section class="slide divider" data-title="Stage 2">
