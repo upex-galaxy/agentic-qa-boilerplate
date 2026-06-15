@@ -87,7 +87,7 @@ Requires `agentic-qa-core`. Loads on demand:
 
 ## Subagent Dispatch Strategy
 
-> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
+> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional. The orchestrator also applies the per-stage **Definition-of-Done gates** in `./stage-gates.md`: verify a stage's DoD (planning stages include the Test-Design Checklist) BEFORE recording its progress checkpoint and advancing.
 
 This skill is **per-batch scope**: `<scope>` = `<YYYY-MM-DD>-<descriptor>` (e.g. `2026-05-20-payments-area`). Session state lives at `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The per-Story `shift-left-refinement.md` files stay under each Story's PBI folder (domain artifact, not session state).
 

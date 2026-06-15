@@ -58,7 +58,7 @@ Requires `agentic-qa-core`. Loads on demand:
 
 ## Subagent Dispatch Strategy
 
-> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
+> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional. The orchestrator also applies the per-stage **Definition-of-Done gates** in `./stage-gates.md`: verify a stage's DoD (planning stages include the Test-Design Checklist) BEFORE recording its progress checkpoint and advancing.
 
 This skill is **per-scope**: `<scope>` = `<JIRA-KEY>` (ticket-driven / regression-driven) or `<module-slug>` (module-driven). Session state lives at `.session/test-automation/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The session `plan.md` is a thin INDEX that cites the canonical domain artifacts (`spec.md`, `automation-plan.md`, `atc/*.md`) under the Epic's `test-specs/` tree (`.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/`) — domain content stays in the existing PBI tree, not duplicated.
 

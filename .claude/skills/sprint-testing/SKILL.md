@@ -79,7 +79,7 @@ Canonical reading order for any AI starting cold on a sprint-testing workflow. R
 
 ## Subagent Dispatch Strategy
 
-> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
+> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional. The orchestrator also applies the per-stage **Definition-of-Done gates** in `./stage-gates.md`: verify a stage's DoD (planning stages include the Test-Design Checklist) BEFORE recording its progress checkpoint and advancing.
 
 This skill scopes per ticket. Single-ticket mode: `<scope>` = `<JIRA-KEY>` (e.g. `UPEX-123`). Batch-sprint mode: `<scope>` = `sprint-<N>/<JIRA-KEY>` (one nested directory per ticket in the wave). Session state lives at `.session/sprint-testing/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The per-ticket `test-session-memory.md` is a SEPARATE concern: it carries TMS modality + ticket context + stage state shared across the 4 sub-agent dispatches (domain memory). Both files coexist — `plan.md` indexes the session; `test-session-memory.md` holds the cross-stage shared payload.
 
