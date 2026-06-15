@@ -205,3 +205,49 @@ export async function addStep(flags: Flags): Promise<void> {
     console.log(`  Expected: ${step.result}`);
   }
 }
+
+// ============================================================================
+// UPDATE DEFINITION (enrich an EXISTING test — Gherkin / unstructured / type)
+// ============================================================================
+
+export async function updateGherkin(flags: Flags): Promise<void> {
+  const issueId = requireFlag(flags, 'test');
+  const gherkin = requireFlag(flags, 'gherkin');
+
+  log.dim(`Updating Gherkin definition of test ${issueId}...`);
+
+  const response = await graphql<{ updateGherkinTestDefinition: { issueId: string } }>(
+    MUTATIONS.updateGherkinTestDefinition,
+    { issueId, gherkin },
+  );
+
+  log.success(`Gherkin definition updated (issueId: ${response.updateGherkinTestDefinition.issueId})`);
+}
+
+export async function updateDefinition(flags: Flags): Promise<void> {
+  const issueId = requireFlag(flags, 'test');
+  const unstructured = requireFlag(flags, 'definition');
+
+  log.dim(`Updating unstructured definition of test ${issueId}...`);
+
+  const response = await graphql<{ updateUnstructuredTestDefinition: { issueId: string } }>(
+    MUTATIONS.updateUnstructuredTestDefinition,
+    { issueId, unstructured },
+  );
+
+  log.success(`Definition updated (issueId: ${response.updateUnstructuredTestDefinition.issueId})`);
+}
+
+export async function updateType(flags: Flags): Promise<void> {
+  const issueId = requireFlag(flags, 'test');
+  const typeName = requireFlag(flags, 'type');
+
+  log.dim(`Updating test type of ${issueId} to ${typeName}...`);
+
+  const response = await graphql<{ updateTestType: { issueId: string, testType: { name: string } } }>(
+    MUTATIONS.updateTestType,
+    { issueId, testType: { name: typeName } },
+  );
+
+  log.success(`Test type updated to ${response.updateTestType.testType.name} (issueId: ${response.updateTestType.issueId})`);
+}

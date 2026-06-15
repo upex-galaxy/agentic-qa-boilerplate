@@ -94,6 +94,11 @@ bun xray test list --jql "project = DEMO AND labels = critical"
 
 # Add step to existing test
 bun xray test add-step --test <issueId> --action "Click button" --result "Form submits"
+
+# Enrich an EXISTING test (e.g. Stage-4 regression promotion: add rich Gherkin to a sprint test)
+bun xray test update-gherkin --test <issueId> --gherkin "Feature: Login..."
+bun xray test update-definition --test <issueId> --definition "curl http://api.test"
+bun xray test update-type --test <issueId> --type Cucumber
 ```
 
 ### Test Executions

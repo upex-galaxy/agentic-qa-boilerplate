@@ -357,9 +357,9 @@ When `/test-documentation` Stage 4 promotes a sprint Xray Test into regression, 
 | Add Test → **Regression Test Plan** | `[TMS_TOOL]` | ✓ supported |
 | Label `regression-candidate` on an **existing** Test | `[ISSUE_TRACKER_TOOL]` (labels are a Jira field) | ✓ (no `[TMS_TOOL]` update-label for an existing Test; route via the issue tracker) |
 | Enrich **Manual** Test steps | `[TMS_TOOL]` | ✓ supported |
-| Enrich **Gherkin** / change **test type** on an existing Test | — | ⚠ **resolver gap**: `[TMS_TOOL]` exposes no operation to update an existing Test's Gherkin/definition/type; the underlying Xray mutation runs only inside a backup-restore sync. |
+| Enrich **Gherkin** / definition / change **test type** on an existing Test | `[TMS_TOOL]` | ✓ supported (update-gherkin / update-definition / update-type) |
 
-**Implication for our flow**: prefer creating automation-**Candidate** Xray Tests as **Cucumber with their rich Gherkin set at creation time**, so Stage-4 enrichment is *additive* (membership + label + steps), not a Gherkin rewrite on an existing Test. Until `[TMS_TOOL]` surfaces an update-Gherkin/definition/type operation (a small `/framework-development` task to wire the existing Xray mutation to a command), Gherkin enrichment on an existing Test requires recreating it or a backup-restore round-trip.
+**Implication for our flow**: every Stage-4 promote + enrich op now resolves through a tool — `[TMS_TOOL]` for Test Set / Test Plan membership, step + Gherkin/definition/type enrichment; `[ISSUE_TRACKER_TOOL]` for labels on an existing Test. You may either author rich Gherkin at creation time or enrich an existing sprint Test in place during promotion — both paths are supported. Load `/xray-cli` for the exact command.
 
 ### Jira + Xray (Manual)
 
