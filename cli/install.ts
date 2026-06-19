@@ -28,8 +28,9 @@
  *   PHASE 5 — INITIAL CONFIGURATION
  *     7-agents-setup    Run agents:setup (.agents/project.yaml populator)
  *     12.4-acli-auth    Atlassian credentials + acli session login
- *     13-jira-sync-fields  Jira auth loop + `bun run jira:sync-fields`
- *     13b-jira-sync-workflows  `bun run jira:sync-workflows`
+ *     13-jira-sync        Catalog-source prompt (own / upex / skip) → fields +
+ *                         workflows + link-types sync; empty {} placeholders for
+ *                         any catalog still missing (anti STALE-PATH)
  *     14-jira-check     `bun run jira:check`
  *
  * Idempotency: each step writes an ISO timestamp to state.steps[<key>] on success.
@@ -1912,13 +1913,70 @@ function runJiraSyncCapturingMarker(
 }
 
 /**
+ * Print a one-line status for a Jira sync outcome. `own` adds a hint pointing
+ * at the `--upex` fallback when the user's own-workspace sync was skipped for
+ * lack of Administer permission.
+ */
+function reportJiraOutcome(
+  label: string,
+  outcome: 'completed' | 'failed' | 'skipped-no-admin',
+  own = false,
+): void {
+  if (outcome === 'completed') {
+    process.stdout.write(`${tui.statusIcon('ok')} ${label} completed\n`);
+  }
+  else if (outcome === 'skipped-no-admin') {
+    process.stdout.write(`${tui.statusIcon('warn')} ${label} skipped — your Jira user is not an Administrator.\n`);
+    process.stdout.write('  The bundled .agents catalog stays as-is (repo still works).\n');
+    if (own) {
+      process.stdout.write('  Tip: re-run with the UPEX standard catalog, e.g. bun run jira:sync-fields --upex\n');
+    }
+  }
+  else {
+    process.stdout.write(`${tui.statusIcon('fail')} ${label} failed. Continuing.\n`);
+  }
+}
+
+/**
+ * Jira catalog JSON files referenced by SKILL.md bodies. The lint-skills
+ * STALE-PATH check (ERROR severity) fails repo:check / the pre-push hook when
+ * any of these is missing on disk. The bootstrap scaffolder
+ * (packages/create-agentic-qa) deletes jira-fields.json + jira-workflows.json
+ * so a fresh project never inherits UPEX's cached catalogs — which leaves the
+ * SKILL.md path references dangling until the user runs a sync.
+ */
+const JIRA_CATALOG_PLACEHOLDERS = [
+  '.agents/jira-fields.json',
+  '.agents/jira-workflows.json',
+  '.agents/jira-link-types.json',
+] as const;
+
+/**
+ * Write an empty `{}` placeholder for any Jira catalog still missing on disk
+ * after the sync phase (skip, no-auth, no-admin, or a failed fetch). This:
+ *   - satisfies the STALE-PATH lint check (the file now exists), and
+ *   - is treated as "not yet populated" by sync-jira-*.ts, which only refuse to
+ *     overwrite a file that is NOT the empty `{}` placeholder — so a later
+ *     `bun run jira:sync-*` populates it cleanly without needing --force.
+ */
+async function ensureJiraCatalogPlaceholders(): Promise<void> {
+  for (const rel of JIRA_CATALOG_PLACEHOLDERS) {
+    const abs = join(REPO_ROOT, rel);
+    if (!existsSync(abs)) {
+      await writeFile(abs, '{}\n', 'utf8');
+      process.stdout.write(`${tui.statusIcon('ok')} Wrote empty placeholder ${rel} (run jira:sync-* to populate).\n`);
+    }
+  }
+}
+
+/**
  * PHASE 5 — INITIAL CONFIGURATION
  *
  * Steps:
  *   7-agents-setup        bun run agents:setup (.agents/project.yaml)
  *   12.4-acli-auth        Atlassian credentials + acli session login
- *   13-jira-sync-fields   jira auth loop + bun run jira:sync-fields
- *   13b-jira-sync-workflows bun run jira:sync-workflows
+ *   13-jira-sync          catalog-source prompt → fields + workflows + link
+ *                         types sync (own/upex/skip) + {} placeholder safety net
  *   14-jira-check         bun run jira:check
  *
  * NON_INTERACTIVE skips this entire phase cleanly — each step is marked
@@ -2059,89 +2117,114 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
     }
   }
 
-  // ── Step 13: Jira fields sync (with auth pre-flight loop) ─────────────────
-  tui.section('Step 13: Jira fields sync');
+  // ── Step 13: Jira catalogs sync (fields + workflows + link types) ─────────
+  // One prompt picks the catalog source for the whole project:
+  //   own  → live-fetch from the user's Atlassian site (needs admin)
+  //   upex → download the UPEX-Galaxy standard catalogs from GitHub (no admin)
+  //   skip → leave empty {} placeholders, configure later
+  // Whatever the outcome, ensureJiraCatalogPlaceholders() below guarantees the
+  // SKILL.md-referenced JSON files exist so the STALE-PATH lint never breaks
+  // the pre-push hook on a freshly bootstrapped project.
+  tui.section('Step 13: Jira catalogs sync (fields + workflows + link types)');
+
+  const jiraAlreadyDone
+    = state.postInstall.jiraSyncFields === 'completed'
+      && state.postInstall.jiraSyncWorkflows === 'completed';
 
   if (SKIP_JIRA) {
-    log.dim('  INSTALL_SKIP_JIRA=1, skipping Jira bootstrap.');
+    log.dim('  INSTALL_SKIP_JIRA=1, skipping Jira catalog sync.');
     state.postInstall.jiraSyncFields = 'skipped-non-interactive';
+    state.postInstall.jiraSyncWorkflows = 'skipped-non-interactive';
   }
-  else if (state.postInstall.jiraSyncFields === 'completed') {
+  else if (jiraAlreadyDone) {
     process.stdout.write(`${tui.statusIcon('ok')} Already completed in a prior run.\n`);
   }
   else if (AUTO_NON_INTERACTIVE) {
     state.postInstall.jiraSyncFields = 'skipped-non-interactive';
-    process.stdout.write(`${tui.statusIcon('warn')} Skipped (no TTY). Re-run via: bun run jira:sync-fields\n`);
+    state.postInstall.jiraSyncWorkflows = 'skipped-non-interactive';
+    process.stdout.write(`${tui.statusIcon('warn')} Skipped (no TTY). Re-run via: bun run jira:sync-fields && bun run jira:sync-workflows\n`);
   }
   else {
-    const authResult = await jiraAuthLoop();
-    if (authResult === 'skipped') {
+    const mode = await tui.select<'own' | 'upex' | 'skip'>({
+      message: 'Jira catalogs (custom fields, workflows, link types) — which source?',
+      options: [
+        {
+          value: 'own',
+          label: 'My own Jira workspace — live-fetch from your Atlassian site (needs Administer permission)',
+        },
+        {
+          value: 'upex',
+          label: 'UPEX-Galaxy standard — download the reference catalogs from GitHub (no admin needed)',
+        },
+        {
+          value: 'skip',
+          label: 'Skip for now — write empty {} placeholders, configure later',
+        },
+      ],
+    });
+
+    if (tui.isCancel(mode) || mode === 'skip') {
       state.postInstall.jiraSyncFields = 'skipped-no-auth';
-      process.stdout.write(`${tui.statusIcon('warn')} Skipped by user. Re-run via: bun run jira:sync-fields\n`);
+      state.postInstall.jiraSyncWorkflows = 'skipped-no-auth';
+      process.stdout.write(`${tui.statusIcon('warn')} Skipped by user. Re-run later: bun run jira:sync-fields (add --upex for the UPEX standard).\n`);
+    }
+    else if (mode === 'upex') {
+      // --upex short-circuits the Jira API entirely (downloads the cached
+      // UPEX-standard catalogs from GitHub raw), so no auth loop is needed.
+      // --force overwrites the bootstrap-pruned/stale copy unconditionally.
+      const fOut = runJiraSyncCapturingMarker(['run', 'jira:sync-fields', '--', '--upex', '--force']);
+      state.postInstall.jiraSyncFields = fOut;
+      reportJiraOutcome('jira:sync-fields --upex', fOut);
+
+      const wOut = runJiraSyncCapturingMarker(['run', 'jira:sync-workflows', '--', '--upex', '--force']);
+      state.postInstall.jiraSyncWorkflows = wOut;
+      reportJiraOutcome('jira:sync-workflows --upex', wOut);
+
+      // link-types is USER-OK (no admin) and not bootstrap-pruned, but we sync
+      // it here too so 'upex' means the full standard. It has no --force flag;
+      // --upex already overwrites with the upstream catalog.
+      const lOut = runJiraSyncCapturingMarker(['run', 'jira:sync-link-types', '--', '--upex']);
+      reportJiraOutcome('jira:sync-link-types --upex', lOut);
     }
     else {
-      // We're here only when jiraSyncFields is not 'completed' (early-exit
-      // upstream returns when it is). That means this is a first-run pass, so
-      // we always force-overwrite the template's stale jira-fields.json. The
-      // script's safety check still protects user edits in later sessions
-      // because the early-exit guard above short-circuits subsequent runs.
-      const syncArgs = ['run', 'jira:sync-fields', '--', '--force'];
-      const outcome = runJiraSyncCapturingMarker(syncArgs);
-      state.postInstall.jiraSyncFields = outcome;
-      if (outcome === 'completed') {
-        process.stdout.write(`${tui.statusIcon('ok')} jira:sync-fields completed\n`);
-      }
-      else if (outcome === 'skipped-no-admin') {
-        process.stdout.write(`${tui.statusIcon('warn')} jira:sync-fields skipped — your Jira user is not an Administrator.\n`);
-        process.stdout.write('  The boilerplate-bundled .agents/jira-fields.json stays as-is (repo still works).\n');
-        process.stdout.write('  Options: ask a Jira admin to run `bun run jira:sync-fields` and commit the result,\n');
-        process.stdout.write('           or download the UPEX standard catalog via `bun run jira:sync-fields --upex`.\n');
+      // mode === 'own' — live-fetch from the user's Atlassian site. --force is
+      // always passed during setup so a stale bootstrap copy is refreshed; the
+      // script's own populated-file guard protects user edits in later sessions
+      // (this branch only runs while state is not yet 'completed').
+      const authResult = await jiraAuthLoop();
+      if (authResult === 'skipped') {
+        state.postInstall.jiraSyncFields = 'skipped-no-auth';
+        state.postInstall.jiraSyncWorkflows = 'skipped-no-auth';
+        process.stdout.write(`${tui.statusIcon('warn')} Skipped by user. Re-run via: bun run jira:sync-fields (or --upex for the UPEX standard).\n`);
       }
       else {
-        process.stdout.write(`${tui.statusIcon('fail')} jira:sync-fields failed. Continuing.\n`);
+        const fOut = runJiraSyncCapturingMarker(['run', 'jira:sync-fields', '--', '--force']);
+        state.postInstall.jiraSyncFields = fOut;
+        reportJiraOutcome('jira:sync-fields', fOut, true);
+
+        if (fOut === 'skipped-no-admin') {
+          // Same root cause (no Administer permission) applies to workflows.
+          state.postInstall.jiraSyncWorkflows = 'skipped-no-admin';
+          process.stdout.write(`${tui.statusIcon('warn')} jira:sync-workflows skipped — same no-admin reason.\n`);
+          process.stdout.write('  Tip: re-run with the UPEX standard: bun run jira:sync-workflows --upex\n');
+        }
+        else if (fOut !== 'completed') {
+          state.postInstall.jiraSyncWorkflows = 'skipped-no-auth';
+          process.stdout.write(`${tui.statusIcon('warn')} jira:sync-workflows skipped — jira:sync-fields did not complete (shared credentials).\n`);
+        }
+        else {
+          const wOut = runJiraSyncCapturingMarker(['run', 'jira:sync-workflows', '--', '--force']);
+          state.postInstall.jiraSyncWorkflows = wOut;
+          reportJiraOutcome('jira:sync-workflows', wOut, true);
+        }
       }
     }
   }
 
-  // ── Step 13b: Jira workflows + statuses sync ─────────────────────────────
-  tui.section('Step 13b: Jira workflows + statuses sync');
-
-  if (SKIP_JIRA) {
-    state.postInstall.jiraSyncWorkflows = 'skipped-non-interactive';
-    log.dim('  INSTALL_SKIP_JIRA=1, skipping jira:sync-workflows.');
-  }
-  else if (state.postInstall.jiraSyncWorkflows === 'completed') {
-    process.stdout.write(`${tui.statusIcon('ok')} Already completed in a prior run.\n`);
-  }
-  else if (AUTO_NON_INTERACTIVE) {
-    state.postInstall.jiraSyncWorkflows = 'skipped-non-interactive';
-    process.stdout.write(`${tui.statusIcon('warn')} Skipped (no TTY). Re-run via: bun run jira:sync-workflows\n`);
-  }
-  else if (state.postInstall.jiraSyncFields === 'skipped-no-admin') {
-    // Same root cause — admin permission missing. Skip to keep messages consistent.
-    state.postInstall.jiraSyncWorkflows = 'skipped-no-admin';
-    process.stdout.write(`${tui.statusIcon('warn')} Skipped — jira:sync-fields detected no Administer permission. Same applies here.\n`);
-    process.stdout.write('  UPEX-standard alternative: `bun run jira:sync-workflows --upex`.\n');
-  }
-  else if (state.postInstall.jiraSyncFields !== 'completed') {
-    state.postInstall.jiraSyncWorkflows = 'skipped-no-auth';
-    process.stdout.write(`${tui.statusIcon('warn')} Skipped — jira:sync-fields did not complete (uses same Atlassian credentials).\n`);
-  }
-  else {
-    const outcome = runJiraSyncCapturingMarker(['run', 'jira:sync-workflows']);
-    state.postInstall.jiraSyncWorkflows = outcome;
-    if (outcome === 'completed') {
-      process.stdout.write(`${tui.statusIcon('ok')} jira:sync-workflows completed\n`);
-    }
-    else if (outcome === 'skipped-no-admin') {
-      process.stdout.write(`${tui.statusIcon('warn')} jira:sync-workflows skipped — your Jira user is not an Administrator.\n`);
-      process.stdout.write('  The boilerplate-bundled .agents/jira-workflows.json stays as-is (repo still works).\n');
-      process.stdout.write('  UPEX-standard alternative: `bun run jira:sync-workflows --upex`.\n');
-    }
-    else {
-      process.stdout.write(`${tui.statusIcon('fail')} jira:sync-workflows failed. Continuing.\n`);
-    }
-  }
+  // Safety net (anti STALE-PATH): every Jira catalog referenced by SKILL.md
+  // bodies must exist on disk or the lint-skills check fails the pre-push hook.
+  // Any path still missing after the sync phase gets an empty {} placeholder.
+  await ensureJiraCatalogPlaceholders();
 
   // ── Step 14: Jira manifest check ─────────────────────────────────────────
   tui.section('Step 14: Jira manifest check');
