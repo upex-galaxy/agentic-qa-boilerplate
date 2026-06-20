@@ -1134,7 +1134,7 @@ function findExistingFolder(baseDir: string, key: string, type: 'epic' | 'story'
   try {
     const entries = readdirSync(searchDir, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.isDirectory() && entry.name.startsWith(prefix)) {
+      if (entry.isDirectory() && entry.name.startsWith(`${prefix}-`)) {
         return join(searchDir, entry.name);
       }
     }
