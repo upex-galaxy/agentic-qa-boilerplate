@@ -2491,6 +2491,11 @@ function printClosingSummary(state: InstallState): void {
   process.stdout.write(`  ${COLORS.bold}/regression-testing${COLORS.reset}      Regression / GO-NO-GO — Stage 6\n`);
   process.stdout.write(`  ${COLORS.bold}bun xray${COLORS.reset}                 Xray Cloud CLI (bun run xray --help for all commands)\n\n`);
 
+  // Git strategy reminder — the project inherited the boilerplate's git_strategy block.
+  tui.section('Git strategy');
+  process.stdout.write(`  This project inherited the boilerplate's git strategy. Run ${COLORS.bold}"set up our git strategy"${COLORS.reset} in Claude\n`);
+  process.stdout.write(`  ${COLORS.dim}(git-flow-master Strategy Setup) to define your own flow.${COLORS.reset}\n\n`);
+
   // Missing CLIs
   if (cliMissing.length > 0) {
     tui.section('Missing CLIs — install when ready');
