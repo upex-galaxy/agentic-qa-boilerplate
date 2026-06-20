@@ -137,6 +137,9 @@ function loadDeclaredVariables(yamlPath: string): DeclaredVars {
   const envCatalog = new Map<string, Set<string>>();
 
   for (const [sectionName, sectionVal] of Object.entries(root)) {
+    // `git_strategy` is read DIRECTLY by the git-flow-master skill — its leaves are NOT
+    // {{VAR}} template variables, so they must not be harvested as declared vars.
+    if (sectionName === 'git_strategy') { continue; }
     if (sectionName === 'environments') {
       // Nested: each child is an environment whose leaves are env-scoped vars.
       if (!sectionVal || typeof sectionVal !== 'object' || Array.isArray(sectionVal)) {

@@ -34,6 +34,39 @@ testing:
 qa:
   formal_blocked_gate: true # When true and the substrate exposes a `blocked` story status, FAILED stories dispatch `defect_reported` (in_test -> blocked). When false (or no `blocked` slug), the skill leaves the story in `in_test` with the linked bug — non-strict fallback. See sprint-testing/references/sprint-orchestration.md Briefing 4 Step 5.
 
+# Git workflow for THIS project — the SOURCE OF TRUTH read by the git-flow-master skill
+# before any git/gh operation. Ships `null` (template): on the first git intent git-flow-master
+# OFFERS "Strategy Setup" and fills these fields (it never auto-picks). Tracked + frozen by the
+# updater (bootstrapOnly), so each project keeps its own. Filled by git-flow-master, NOT by
+# `agents:setup`. These leaves are read directly (not {{VAR}} template vars) → skipped by vars:check.
+git_strategy:
+  strategy: solo-main # null until Strategy Setup runs; then one of: solo-main | main-integration | enterprise | trunk-based | gitflow | github-flow | gitlab-flow | sdet
+  description: >
+    Single long-lived branch (main); single maintainer (this repo is the boilerplate
+    template itself). Work is committed and pushed directly to main (PRs optional).
+    Every push to main is effectively a release of the template. No integration branch,
+    no promotion path, no hotfix ceremony.
+  branches:
+    production: main # release / default branch
+    integration: null # long-lived integration branch name (e.g. staging), or null
+    ephemeral_pattern: null # on-demand trunk pattern (e.g. "test/<module>-suite" for sdet), or null
+  protected: [main] # branches requiring explicit confirm before a direct push
+  decisions: # captured by the Strategy Setup questionnaire (Q1/Q2/Q3)
+    promote_method: n/a # ff-only | merge-commit | squash | n/a
+    feature_merge: n/a # merge-commit | squash | rebase-merge | n/a
+    hotfix_policy: n/a # branch-off-prod-backmerge | via-integration | none | n/a
+  policy: # how strictly protected branches are guarded (set by Strategy Setup Q4; defaults are safe)
+    direct_push_to_protected: allowed # forbidden | confirm | allowed (solo-main = allowed)
+    admin_bypass: true # team POLICY: may a repo admin bypass PR/protection for urgent changes? actual capability still depends on the GitHub user's role — the skill re-confirms at runtime
+    require_pr_reviews: 0 # null | 0 | N — min approvals before merge to a protected branch (informational)
+  branch_prefixes:
+    precedence: [feat, fix, refactor, test, docs, chore]
+    naming_with_key: '{prefix}/{ISSUE-KEY}-{kebab-slug}'
+    naming_without_key: '{prefix}/{kebab-slug}'
+  meta:
+    setup_version: 1
+    created: 2026-06-20 # YYYY-MM-DD stamped by Strategy Setup
+
 # Per-environment config. Add/remove environments freely (production, dev, qa, uat, etc.).
 # Each environment must define ALL four keys: web_url, api_url, db_mcp, api_mcp.
 # Skills referencing {{WEB_URL}} / {{API_URL}} / {{DB_MCP}} / {{API_MCP}} resolve to the

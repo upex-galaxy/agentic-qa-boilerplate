@@ -72,11 +72,14 @@ Eight strategies are supported. Each one tells the skill where new branches star
 - Pros: single review gate; staging environment matches production; rollbacks are straightforward (revert the promotion PR).
 - Cons: integration branch can drift if releases are rare; double-merge cost when promoting (cherry-pick / merge / rebase / re-PR).
 
-**Persisted markers**:
+**Persisted in the `git_strategy:` block of `.agents/project.yaml`**:
 
-```markdown
-<!-- git-flow-master:strategy:main-integration -->
-<!-- git-flow-master:integration-branch:staging -->
+```yaml
+git_strategy:
+  strategy: main-integration
+  branches:
+    production: main
+    integration: staging
 ```
 
 ---
@@ -243,7 +246,7 @@ Eight strategies are supported. Each one tells the skill where new branches star
 
 **Detection signals**:
 
-- `<!-- git-flow-master:strategy:sdet -->` marker in `CLAUDE.md` (primary — this strategy is opt-in, never silently auto-detected).
+- `git_strategy.strategy: sdet` in `.agents/project.yaml` (primary — this strategy is opt-in, never silently auto-detected).
 - A long-lived-for-the-suite `test/<module>-suite` trunk + multiple `test/{KEY}-*` ticket PRs targeting it (not `main`).
 - A QA/test-automation boilerplate repo (KATA, Playwright, `/test-automation` skill present).
 
@@ -266,14 +269,20 @@ Eight strategies are supported. Each one tells the skill where new branches star
 
 **CI-fallback clause**: when a Sanity-CI red is purely infra / known-flake (proven by a local pass on both `local` and `staging` AND the red being present independent of the change), the local double-pass authorizes merging **into the trunk** only — never the final `trunk → main` PR. This is NOT a skip of the tests→types→lint rule (local gate still fully passes); it only governs whether a remote infra-red blocks a trunk-internal merge. ENVIRONMENT-class classification is owned by `/regression-testing`.
 
-**Persisted markers**:
+**Persisted in the `git_strategy:` block of `.agents/project.yaml`**:
 
-```markdown
-<!-- git-flow-master:strategy:sdet -->
-<!-- git-flow-master:feature-merge:merge-commit -->
+```yaml
+git_strategy:
+  strategy: sdet
+  branches:
+    production: main
+    integration: null
+    ephemeral_pattern: "test/<module>-suite"
+  decisions:
+    feature_merge: merge-commit
 ```
 
-`feature-merge` is fixed at `merge-commit` (`--no-ff`) — it is a defining property, not a questionnaire answer. `integration-branch` is NOT persisted (the trunk is ephemeral per-suite, named `test/<module>-suite` at suite start). `promote-method` / `hotfix-policy` do not apply (no production deploy; `main` is the confirmed-tests branch).
+`git_strategy.decisions.feature_merge` is fixed at `merge-commit` (`--no-ff`) — it is a defining property, not a questionnaire answer. `git_strategy.branches.integration` stays `null` (the trunk is ephemeral per-suite, captured in `git_strategy.branches.ephemeral_pattern`). `git_strategy.decisions.promote_method` / `.hotfix_policy` stay `n/a` (no production deploy; `main` is the confirmed-tests branch).
 
 **Trade-offs**:
 
@@ -287,8 +296,9 @@ Eight strategies are supported. Each one tells the skill where new branches star
 The combined detection runs in this order. Stop at the first definitive answer.
 
 ```
-1. Read CLAUDE.md for `<!-- git-flow-master:strategy:VALUE -->`.
-   If found, use VALUE. (Sticky decision wins.)
+1. Read the `git_strategy:` block of `.agents/project.yaml`. If `git_strategy.strategy`
+   is non-null, use it + `git_strategy.branches` + `git_strategy.decisions` (and
+   `git_strategy.policy`) fields. (Sticky decision wins.)
 
 2. Inspect `git branch -a`:
    - Only `main` (or `master`) → solo-main.
@@ -313,21 +323,23 @@ The combined detection runs in this order. Stop at the first definitive answer.
    with one-line descriptions. Mirror their language. Do not pick silently.
 
 Note on `sdet`: it is **opt-in only** — never inferred silently from layout. It is
-resolved from the marker (step 1) or chosen explicitly in the fallback (step 5). On a
+resolved from the `git_strategy:` block in `.agents/project.yaml` (step 1) or chosen explicitly in the fallback (step 5). On a
 test-automation repo (KATA / Playwright / `/test-automation`), surface it as the
 recommended option in the fallback list. A live `test/<module>-suite` trunk with
 `test/{KEY}-*` PRs targeting it confirms an already-active `sdet` suite.
 ```
 
-After resolution, persist:
+After resolution, persist to the `git_strategy:` block in `.agents/project.yaml` (in place, preserving the rest of the file):
 
-```markdown
-## Git Strategy
-
-<!-- git-flow-master:strategy:VALUE -->
-<!-- git-flow-master:integration-branch:NAME -->  <!-- only if VALUE uses one with non-default name -->
-
-This project uses the `VALUE` flow: <one-paragraph description for humans>.
+```yaml
+git_strategy:
+  strategy: VALUE
+  branches:
+    production: main
+    integration: NAME            # null when the strategy has none
+    ephemeral_pattern: null
+  description: >
+    This project uses the `VALUE` flow: <one-paragraph description for humans>.
 ```
 
 ---
@@ -381,354 +393,258 @@ The chosen plan is a **contract** for execution. If the actual diff exceeds the 
 
 ---
 
-## Runbook render rules
+## git_strategy field rules (per strategy)
 
-Strategy Setup (SKILL.md 3.6) renders a `## Git Strategy` section into `CLAUDE.md`. This is the single source of truth for WHAT that section contains per strategy. Each rule produces up to FOUR blocks, filled from the resolved strategy + the Q1/Q2/Q3 answers:
+Strategy Setup (SKILL.md 3.6) no longer renders a prose runbook into `CLAUDE.md` — it **populates the `git_strategy:` block in `.agents/project.yaml`** (in place, preserving the rest of the file), the single source of truth. This section is the authoritative reference for WHAT field VALUES each strategy writes into that block. The detailed operational HOW (release commands, hotfix commands, invariant prose) is NOT persisted anywhere — it lives in this catalogue (the per-strategy sections above) and in `references/sdet-integration-trunk.md`, read on demand. (The yaml snippets below show only the `git_strategy` block; everything nests under that key inside `.agents/project.yaml`.)
 
-- **(a) Markers** — strategy + integration-branch (if any) + the applicable decision markers. Omit any decision marker the strategy doesn't use.
-- **(b) Invariant** — render ONLY when promotion is `ff-only`. For `merge-commit`/`squash` promotion, OMIT the invariant (it does not hold). Single-branch strategies have no invariant at all.
-- **(c) Branch-role table** — rows = the long-lived branches for that strategy (materialization table) + the work-branch prefixes.
-- **(d) Merge methods + promotion + hotfix** — rendered from Q1/Q2/Q3. If promotion is `merge-commit`/`squash`, render that command shape and DROP the byte-identical/ancestor claims. Single-branch strategies render commit rules only — no promotion, no hotfix.
+The conceptual blocks that the old runbook rendered now map to `git_strategy` fields:
 
-> When promotion = `ff-only`, render the fast-forward release block AND the invariant. When promotion = `merge-commit` or `squash`, render the merge/squash release command instead and OMIT the invariant + byte-identical claims.
+- **(a) Markers → fields** — `git_strategy.strategy` + `git_strategy.branches.integration` (or `ephemeral_pattern`) + the applicable `git_strategy.decisions.*`. Decisions a strategy doesn't use stay `n/a`.
+- **(b) Invariant** — NOT persisted. It is implied by `git_strategy.decisions.promote_method: ff-only` (the "production is an ancestor of integration" invariant holds only for `ff-only`). The prose explaining it lives in this catalogue's per-strategy section, read on demand.
+- **(c) Branch-role table → `branches` + `protected`** — `git_strategy.branches.production` / `.integration` / `.ephemeral_pattern` capture the long-lived/ephemeral branches; `git_strategy.protected` lists the branches needing confirm-before-push. Work-branch prefixes live in `git_strategy.branch_prefixes`.
+- **(d) Merge methods + promotion + hotfix → `decisions`** — `feature_merge` (work-branch → integration/trunk), `promote_method` (integration → production), `hotfix_policy`. The actual command shapes are read from this catalogue, not stored in the block.
+- **(e) Protection policy → `policy`** (Q4, applies to ALL strategies) — `direct_push_to_protected` (`forbidden` | `confirm` | `allowed`), `admin_bypass` (team POLICY intent, not enforcement), `require_pr_reviews`. Consumed by the Push operation (SKILL.md 3.3). Per-strategy defaults are listed in each field-rule block below.
 
-### `solo-main` — render rule (MINIMAL)
+> `git_strategy.decisions.promote_method: ff-only` is the marker for the fast-forward release model + the ancestor invariant. `merge-commit`/`squash` means the invariant does NOT hold — the per-strategy catalogue section explains the alternative command shape.
 
-Single long-lived branch. No invariant, no promotion, no hotfix.
+### `solo-main` — field rule (MINIMAL)
 
-- **(a) Markers**: `strategy:solo-main` only.
-- **(c) Branch table**: `main` (production; all work lands here) + work prefixes (`feat/*`, `fix/*`, …) when PRs are used at all.
-- **(d) Commit rules**: work lands on `main` directly or via an optional PR → `main`; atomic conventional commits; no AI attribution. No promotion block, no hotfix block.
+Single long-lived branch. No integration, no promotion, no hotfix — all `decisions.*` stay `n/a`.
 
-Example shape:
-
-```markdown
-### Git Strategy
-
-<!-- git-flow-master:strategy:solo-main -->
-
-This project uses the `solo-main` flow. One long-lived branch; every push to `main` is a release.
-
-| Branch | Role                                                      |
-| ------ | --------------------------------------------------------- |
-| main   | The only long-lived branch. All work lands here directly. |
-
-Work lands on `main` directly, or via an optional PR → `main` when a review/CI gate is wanted.
-Commits: atomic, conventional, no AI attribution. No promotion or hotfix ceremony — there is one branch.
+```yaml
+git_strategy:
+  strategy: solo-main
+  description: >
+    This project uses the `solo-main` flow. One long-lived branch; every push to `main` is a release.
+  branches:
+    production: main
+    integration: null
+    ephemeral_pattern: null
+  protected:
+    - main
+  decisions:
+    promote_method: n/a
+    feature_merge: n/a
+    hotfix_policy: n/a
+  policy:
+    direct_push_to_protected: allowed   # Q4 — solo dev pushes straight to main
+    admin_bypass: false                 # n/a in practice (single operator); kept false
+    require_pr_reviews: 0
 ```
 
-### `github-flow` — render rule (MINIMAL)
+Work lands on `main` directly, or via an optional PR → `main` when a review/CI gate is wanted. No promotion or hotfix ceremony — there is one branch. Q4 policy: direct push to `main` is `allowed` (still confirmed once per the Push op), no admin bypass, zero required reviews.
 
-`main` always deployable; feature branches → PR → merge → deploy. No invariant, no promotion, no hotfix.
+### `github-flow` — field rule (MINIMAL)
 
-- **(a) Markers**: `strategy:github-flow` only.
-- **(c) Branch table**: `main` (production, always deployable) + `feature/*`/`fix/*` (off `main`, PR → `main`).
-- **(d) Commit rules**: every change is a short-lived branch → PR → `main`; merge = deploy. No promotion block, no hotfix block.
+`main` always deployable; feature branches → PR → merge → deploy. No integration, no promotion, no hotfix.
 
-Example shape:
-
-```markdown
-### Git Strategy
-
-<!-- git-flow-master:strategy:github-flow -->
-
-This project uses the `github-flow` flow. `main` is always deployable; every change is a short-lived branch merged via PR.
-
-| Branch    | Role                                                 |
-| --------- | ---------------------------------------------------- |
-| main      | Production. Always deployable. Merge to main deploys.|
-| feature/* | Branched off main. PR → main.                        |
-| fix/*     | Branched off main. PR → main.                        |
-
-Work lands on `main` via PR. Merge = deploy; rollback = revert the PR.
-Commits: atomic, conventional, no AI attribution. No integration branch, no promotion, no hotfix path.
+```yaml
+git_strategy:
+  strategy: github-flow
+  description: >
+    This project uses the `github-flow` flow. `main` is always deployable; every change is a
+    short-lived branch merged via PR. Merge = deploy; rollback = revert the PR.
+  branches:
+    production: main
+    integration: null
+    ephemeral_pattern: null
+  protected:
+    - main
+  decisions:
+    promote_method: n/a
+    feature_merge: n/a
+    hotfix_policy: n/a
+  policy:
+    direct_push_to_protected: forbidden   # Q4 — everything lands via PR
+    admin_bypass: false
+    require_pr_reviews: 1
 ```
 
-### `trunk-based` — render rule (MINIMAL)
+Every change is a short-lived `feature/*` / `fix/*` branch off `main` → PR → `main`. Q4 policy: direct push to `main` is `forbidden` (PR-only), no admin bypass, 1 required review.
 
-Trunk (`main`) is the only long-lived branch; short-lived branches merge fast behind flags. No invariant, no promotion, no hotfix.
+### `trunk-based` — field rule (MINIMAL)
 
-- **(a) Markers**: `strategy:trunk-based` (+ `feature-merge` if Q2 was asked).
-- **(c) Branch table**: `main` (trunk) + short-lived branches (off `main`, <1 day).
-- **(d) Commit rules**: short-lived branch → fast merge to trunk; CI gate is non-negotiable; incomplete work behind feature flags. No promotion block, no hotfix block.
+Trunk (`main`) is the only long-lived branch; short-lived branches merge fast behind flags. CI gate non-negotiable.
 
-Example shape:
-
-```markdown
-### Git Strategy
-
-<!-- git-flow-master:strategy:trunk-based -->
-
-This project uses the `trunk-based` flow. `main` is the only long-lived branch; short-lived branches merge fast, incomplete work hides behind feature flags. The CI gate is non-negotiable.
-
-| Branch    | Role                                                   |
-| --------- | ------------------------------------------------------ |
-| main      | Trunk. The only long-lived branch. CI-gated.           |
-| <short>/* | Short-lived (<1 day). Fast merge to main behind flags. |
-
-Work lands on `main` via a fast, CI-gated merge. No integration branch, no promotion, no hotfix path.
-Commits: atomic, conventional, no AI attribution.
+```yaml
+git_strategy:
+  strategy: trunk-based
+  description: >
+    This project uses the `trunk-based` flow. `main` is the only long-lived branch; short-lived
+    branches merge fast, incomplete work hides behind feature flags. The CI gate is non-negotiable.
+  branches:
+    production: main
+    integration: null
+    ephemeral_pattern: null
+  protected:
+    - main
+  decisions:
+    promote_method: n/a
+    feature_merge: merge-commit   # or n/a if Q2 was not asked
+    hotfix_policy: n/a
+  policy:
+    direct_push_to_protected: forbidden   # Q4 — CI-gated PRs only
+    admin_bypass: false
+    require_pr_reviews: 1
 ```
 
-### `main-integration` — render rule
+Short-lived branch (off `main`, <1 day) → fast, CI-gated merge to trunk. `feature_merge` is recorded only if Q2 was asked; otherwise leave `n/a`. Q4 policy: direct push to `main` is `forbidden` (the CI gate runs on PRs), no admin bypass, 1 required review.
 
-`main` (production) + one integration branch. Renders all four blocks. This is the GOLD shape (reproduced verbatim in this repo and in S7 of the spec).
+### `main-integration` — field rule
 
-- **(a) Markers**: `strategy:main-integration` + `integration-branch:NAME` + the three decision markers.
-- **(b) Invariant**: ONLY when Q1 = `ff-only` — "`main` MUST always be an ancestor of `<integration>`". OMIT for merge-commit/squash promotion.
-- **(c) Branch table**: `main`, `<integration>`, `feature/*`, `fix/*`.
-- **(d)**: merge-methods table (Q2 for feature→integration, Q1 for integration→main), release block (ff or merge/squash per Q1), hotfix block per Q3.
+`main` (production) + one integration branch. Populates `branches.integration` + all three `decisions.*`. This is the GOLD shape.
 
-GOLD render (Q1=ff-only, Q2=merge-commit, Q3=branch-off-prod-backmerge, integration=`staging`):
-
-```markdown
-### Git Strategy
-
-<!-- git-flow-master:strategy:main-integration -->
-<!-- git-flow-master:integration-branch:staging -->
-<!-- git-flow-master:promote-method:ff-only -->
-<!-- git-flow-master:feature-merge:merge-commit -->
-<!-- git-flow-master:hotfix-policy:branch-off-prod-backmerge -->
-
-This project uses the `main-integration` flow. One environment per branch:
-localhost (dev) → staging (integration, own Vercel env) → main (production, own Vercel env).
-
-Core invariant: `main` MUST always be an ancestor of `staging`. This is what allows
-release promotion to be a clean fast-forward. Anything that lands on `main` without
-going through `staging` (a hotfix) breaks the invariant and MUST be back-merged into
-`staging` immediately to restore it.
-
-Flow:
-  localhost → feature/fix (off staging) --merge commit--> staging --ff-only--> main
-
-| Branch      | Role                                                              |
-| ----------- | ----------------------------------------------------------------- |
-| main        | Production. Updated ONLY via fast-forward release from staging.   |
-| staging     | Integration. Default base for all work branches + all dev PRs.    |
-| feature/*   | Branched off staging. feature/TICKET-ID-desc.                     |
-| fix/*       | Branched off staging. fix/TICKET-ID-desc.                         |
-
-Merge methods (decided, do not improvise):
-| Transition                  | Method                  |
-| feature/fix → staging       | Merge commit (--no-ff)  |
-| staging → main (release)    | Fast-forward only       |
-
-Release promotion (local, NOT via GitHub squash/merge UI which rewrites SHAs):
-  git checkout main && git pull
-  git merge --ff-only staging   # fails loudly if main is not an ancestor of staging
-  git push origin main
-
-Hotfix flow:
-  git checkout -b fix/TICKET-desc main        # off main, NOT staging
-  # fix, PR → main, merge
-  git checkout staging && git merge main && git push origin staging   # back-merge same day
+```yaml
+git_strategy:
+  strategy: main-integration
+  description: >
+    This project uses the `main-integration` flow. One environment per branch:
+    localhost (dev) → staging (integration) → main (production).
+    Core invariant (ff-only promotion): `main` MUST always be an ancestor of `staging`.
+  branches:
+    production: main
+    integration: staging
+    ephemeral_pattern: null
+  protected:
+    - main
+    - staging
+  decisions:
+    promote_method: ff-only                 # Q1
+    feature_merge: merge-commit             # Q2
+    hotfix_policy: branch-off-prod-backmerge # Q3
+  policy:
+    direct_push_to_protected: forbidden     # Q4 — main + staging are PR-only
+    admin_bypass: false
+    require_pr_reviews: 1
 ```
 
-> If Q1 = merge-commit/squash: drop the "Core invariant" block, change the release line to `git checkout main && git merge --no-ff staging` (or `git merge --squash staging && git commit`), and remove the "ff-only" / ancestor wording from the merge-methods table.
+- `decisions.promote_method: ff-only` → the "main is an ancestor of staging" invariant holds; release is `git merge --ff-only staging`. For `merge-commit`/`squash` the invariant does NOT hold and the release command is `git merge --no-ff staging` (or `--squash`).
+- `decisions.feature_merge` → how `feature/fix → staging` accrues history.
+- `decisions.hotfix_policy: branch-off-prod-backmerge` → hotfix branches off `main`, PRs to `main`, back-merges to `staging` same day. Command shapes live in the `main-integration` catalogue section above.
 
-### `gitflow` — render rule
+### `gitflow` — field rule
 
-`main` + `develop`; `release/*` cut off `develop`, merged to `main` AND back-merged to `develop`; `hotfix/*` off `main`. Renders all four blocks; the invariant is about `develop`/`main` divergence at releases.
+`main` + `develop`; `release/*` cut off `develop`, merged to `main` AND back-merged to `develop`; `hotfix/*` off `main`.
 
-- **(a) Markers**: `strategy:gitflow` + `integration-branch:develop` + decision markers (Q1 = `develop → main` promotion via `release/*`; Q3 hotfix off `main`).
-- **(b) Invariant**: `develop` and `main` diverge between releases by design; at each release `main` is brought to the release point and `develop` is back-merged so it never falls behind `main`. (This is NOT the "production is ancestor of integration" invariant — gitflow's is the back-merge discipline.)
-- **(c) Branch table**: `main`, `develop`, `feature/*` (off `develop`), `release/*` (off `develop` → `main`), `hotfix/*` (off `main`).
-- **(d)**: feature → `develop` per Q2; release `release/*` → `main` + back-merge to `develop`; hotfix off `main` → `main` + back-merge to `develop`.
-
-> Render note: gitflow's `promote-method` marker is `merge-commit` by nature — a `release/* → main` merge is inherently a merge commit, never a fast-forward. Do NOT normalize the example marker to the Q1 `ff-only` default; gitflow's discipline is the same-day back-merge to `develop`, not an ancestor invariant.
-
-Example shape:
-
-```markdown
-### Git Strategy
-
-<!-- git-flow-master:strategy:gitflow -->
-<!-- git-flow-master:integration-branch:develop -->
-<!-- git-flow-master:promote-method:merge-commit -->
-<!-- git-flow-master:feature-merge:merge-commit -->
-<!-- git-flow-master:hotfix-policy:branch-off-prod-backmerge -->
-
-This project uses the `gitflow` flow. `develop` is integration; `main` holds releases only.
-
-Invariant: `develop` and `main` diverge between releases by design. Every release (and every
-hotfix) that lands on `main` MUST be back-merged into `develop` the same day, so `develop`
-never falls behind `main`.
-
-| Branch     | Role                                                        |
-| ---------- | ----------------------------------------------------------- |
-| main       | Releases only. Receives release/* and hotfix/* merges.      |
-| develop    | Integration. Default base for feature work.                 |
-| feature/*  | Branched off develop. PR → develop.                         |
-| release/*  | Branched off develop. PR → main, then back-merge to develop.|
-| hotfix/*   | Branched off main. PR → main, then back-merge to develop.   |
-
-Merge methods (decided, do not improvise):
-| Transition                  | Method                  |
-| feature/* → develop         | Merge commit (--no-ff)  |
-| release/* → main            | Merge commit (--no-ff)  |
-
-Release flow:
-  git checkout -b release/X.Y.Z develop     # cut release off develop
-  # stabilise, then PR release/X.Y.Z → main, merge, tag
-  git checkout develop && git merge main && git push origin develop   # back-merge to develop
-
-Hotfix flow:
-  git checkout -b hotfix/X.Y.Z main         # off main
-  # fix, PR → main, merge, tag
-  git checkout develop && git merge main && git push origin develop   # back-merge same day
+```yaml
+git_strategy:
+  strategy: gitflow
+  description: >
+    This project uses the `gitflow` flow. `develop` is integration; `main` holds releases only.
+    Invariant: `develop` and `main` diverge between releases by design; every release/hotfix that
+    lands on `main` is back-merged into `develop` the same day (back-merge discipline).
+  branches:
+    production: main
+    integration: develop
+    ephemeral_pattern: null
+  protected:
+    - main
+    - develop
+  decisions:
+    promote_method: merge-commit             # release/* → main is inherently a merge commit, never ff
+    feature_merge: merge-commit              # Q2: feature/* → develop
+    hotfix_policy: branch-off-prod-backmerge # Q3: hotfix off main, back-merge to develop
+  policy:
+    direct_push_to_protected: forbidden      # Q4 — main + develop are PR-only
+    admin_bypass: false
+    require_pr_reviews: 1
 ```
 
-### `gitlab-flow` — render rule
+> Field note: gitflow's `promote_method` is `merge-commit` BY NATURE — a `release/* → main` merge is inherently a merge commit, never a fast-forward. Do NOT normalize it to the Q1 `ff-only` default. gitflow's invariant is the same-day back-merge to `develop`, not an ancestor relation. `release/*` / `hotfix/*` are on-demand branches (not stored in `branches:`); their roles + command shapes live in the `gitflow` catalogue section above.
 
-`main` + environment branches; code flows one direction `main → pre-production → production`. `production` is the production branch. Renders all four blocks.
+### `gitlab-flow` — field rule
 
-- **(a) Markers**: `strategy:gitlab-flow` + `integration-branch:main` (feature base) + decision markers (Q1 promotion through env branches).
-- **(b) Invariant**: ONLY when Q1 = `ff-only` — each downstream env branch is a pure ancestor of the one upstream (`production` is an ancestor of `pre-production` is an ancestor of `main`). OMIT for merge-commit/squash.
-- **(c) Branch table**: `main` (work base + first env), `pre-production`, `production` (the production branch), `feature/*`/`fix/*` off `main`.
-- **(d)**: feature → `main` per Q2; promotion `main → pre-production → production` per Q1; hotfix per Q3 (typically branch off `production` → back-promote / cherry-pick up the chain).
+`main` + environment branches; code flows one direction `main → pre-production → production`. `production` is the production branch.
 
-Example shape:
-
-```markdown
-### Git Strategy
-
-<!-- git-flow-master:strategy:gitlab-flow -->
-<!-- git-flow-master:integration-branch:main -->
-<!-- git-flow-master:promote-method:ff-only -->
-<!-- git-flow-master:feature-merge:merge-commit -->
-<!-- git-flow-master:hotfix-policy:branch-off-prod-backmerge -->
-
-This project uses the `gitlab-flow` flow. Work merges to `main`; code is promoted one
-direction through environment branches: main → pre-production → production.
-`production` is the production branch.
-
-Invariant (ff-only promotion): each environment branch is a pure ancestor of the one
-upstream — `production` is an ancestor of `pre-production`, which is an ancestor of `main`.
-Promotion is a clean fast-forward in one direction; no back-merges.
-
-| Branch          | Role                                                       |
-| --------------- | ---------------------------------------------------------- |
-| main            | Integration + first env. Default base for all work.        |
-| pre-production  | Staging env. Receives fast-forward promotion from main.    |
-| production      | Production env. Receives fast-forward promotion from pre-production. |
-| feature/*       | Branched off main. PR → main.                              |
-| fix/*           | Branched off main. PR → main.                              |
-
-Merge methods (decided, do not improvise):
-| Transition                       | Method                 |
-| feature/fix → main               | Merge commit (--no-ff) |
-| main → pre-production            | Fast-forward only      |
-| pre-production → production      | Fast-forward only      |
-
-Promotion flow (one direction, no back-merge):
-  git checkout pre-production && git merge --ff-only main && git push origin pre-production
-  git checkout production && git merge --ff-only pre-production && git push origin production
-
-Hotfix flow:
-  git checkout -b fix/TICKET-desc production    # off production
-  # fix, PR → production, merge
-  # cherry-pick / forward-port the fix up the chain to pre-production and main same day
+```yaml
+git_strategy:
+  strategy: gitlab-flow
+  description: >
+    This project uses the `gitlab-flow` flow. Work merges to `main`; code is promoted one
+    direction through environment branches: main → pre-production → production.
+    Invariant (ff-only promotion): each env branch is a pure ancestor of the one upstream.
+  branches:
+    production: production
+    integration: main          # feature base + first env
+    ephemeral_pattern: null
+  protected:
+    - main
+    - pre-production
+    - production
+  decisions:
+    promote_method: ff-only                 # Q1: promotion through env branches
+    feature_merge: merge-commit             # Q2: feature/fix → main
+    hotfix_policy: branch-off-prod-backmerge # Q3: branch off production, forward-port up the chain
+  policy:
+    direct_push_to_protected: forbidden     # Q4 — env branches are promotion-only (ff), work via PR to main
+    admin_bypass: false
+    require_pr_reviews: 1
 ```
 
-### `enterprise` — render rule
+- `branches.production` is `production` (NOT `main` — work integrates at `main`, production is the last env). The env branches `pre-production` / `production` carry the promotion chain; their roles + ff-promotion commands live in the `gitlab-flow` catalogue section above.
+- `decisions.hotfix_policy` for one-direction flows means branch off `production`, then forward-port / cherry-pick up the chain (no literal back-merge).
 
-`main` + integration + on-demand `feature/*`, `fix/*`, `release/*`, `hotfix/*`. Renders all four blocks; promotion is integration → `main` AND `release/*` → `main`.
+### `enterprise` — field rule
 
-- **(a) Markers**: `strategy:enterprise` + `integration-branch:NAME` + decision markers.
-- **(b) Invariant**: ONLY when Q1 = `ff-only` — `main` is an ancestor of integration (same shape as main-integration). OMIT for merge-commit/squash.
-- **(c) Branch table**: `main`, `<integration>`, `feature/*`/`fix/*` (off integration), `release/*` (off integration → `main`), `hotfix/*` (off `main`).
-- **(d)**: feature → integration per Q2; promotion integration → `main` per Q1 AND `release/*` → `main` (back-merge to integration); hotfix off `main` per Q3.
+`main` + integration + on-demand `feature/*`, `fix/*`, `release/*`, `hotfix/*`. Promotion is integration → `main` AND `release/*` → `main`.
 
-Example shape:
-
-```markdown
-### Git Strategy
-
-<!-- git-flow-master:strategy:enterprise -->
-<!-- git-flow-master:integration-branch:staging -->
-<!-- git-flow-master:promote-method:ff-only -->
-<!-- git-flow-master:feature-merge:merge-commit -->
-<!-- git-flow-master:hotfix-policy:branch-off-prod-backmerge -->
-
-This project uses the `enterprise` flow. `main` (production) + integration, with on-demand
-release/* stabilisation branches and hotfix/* off main.
-
-Invariant (ff-only promotion): `main` is a pure ancestor of `staging`. Anything that lands on
-`main` outside the integration path (a hotfix, a release merge) MUST be back-merged into
-`staging` the same day to restore the invariant.
-
-| Branch     | Role                                                          |
-| ---------- | ------------------------------------------------------------- |
-| main       | Production. Updated via ff release from staging or release/*. |
-| staging    | Integration. Default base for feature/fix work.               |
-| feature/*  | Branched off staging. PR → staging.                           |
-| fix/*      | Branched off staging. PR → staging.                           |
-| release/*  | Cut off staging on demand. PR → main, back-merge to staging.  |
-| hotfix/*   | Branched off main. PR → main, back-merge to staging.          |
-
-Merge methods (decided, do not improvise):
-| Transition                  | Method                  |
-| feature/fix → staging       | Merge commit (--no-ff)  |
-| staging → main (release)    | Fast-forward only       |
-| release/* → main            | Fast-forward only       |
-
-Release flow:
-  git checkout main && git pull
-  git merge --ff-only staging          # or merge the release/* branch
-  git push origin main
-  git checkout staging && git merge main && git push origin staging   # back-merge
-
-Hotfix flow:
-  git checkout -b hotfix/X.Y.Z main    # off main
-  # fix, PR → main, merge
-  git checkout staging && git merge main && git push origin staging   # back-merge same day
+```yaml
+git_strategy:
+  strategy: enterprise
+  description: >
+    This project uses the `enterprise` flow. `main` (production) + integration, with on-demand
+    release/* stabilisation branches and hotfix/* off main.
+    Invariant (ff-only promotion): `main` is a pure ancestor of the integration branch.
+  branches:
+    production: main
+    integration: staging
+    ephemeral_pattern: null
+  protected:
+    - main
+    - staging
+    # release/* are protected-when-alive (on-demand, not stored here)
+  decisions:
+    promote_method: ff-only                 # Q1
+    feature_merge: merge-commit             # Q2: feature/fix → integration
+    hotfix_policy: branch-off-prod-backmerge # Q3
+  policy:
+    direct_push_to_protected: forbidden     # Q4 — main + integration (+ release/*) are PR-only
+    admin_bypass: false
+    require_pr_reviews: 1
 ```
 
-### `sdet` — render rule
+`release/*` / `hotfix/*` / `feature/*` are on-demand branches (created by the Branch operation, not at setup); their roles, the `release/* → main` promotion, and back-merge command shapes live in the `enterprise` catalogue section above.
 
-`main` (permanent) + an ephemeral per-suite integration trunk. No production invariant (no deploy), no hotfix block. The trunk is NOT a persisted long-lived branch — it is named per suite and deleted after the final PR — so the branch table documents the *pattern*, not a fixed branch name.
+### `sdet` — field rule
 
-- **(a) Markers**: `strategy:sdet` + `feature-merge:merge-commit` (fixed). NO `integration-branch` marker (trunk is ephemeral per-suite). NO `promote-method` / `hotfix-policy` (no production deploy).
-- **(b) Invariant**: none. `main` holds confirmed tests, not a deployed app; there is no ancestor invariant.
-- **(c) Branch table**: `main` + the trunk pattern `test/<module>-suite` + `test/{KEY}-*` ticket branches + Plus Branches (`docs/*`/`chore/*`/`fix/*`).
-- **(d)**: ticket/Plus → trunk is `--no-ff` (fixed); the sync gate + single final `trunk → main` PR replace any promotion/hotfix block. Point to `references/sdet-integration-trunk.md` for the per-ticket loop, CI-fallback clause, and sync gate.
+`main` (permanent) + an ephemeral per-suite integration trunk. No production deploy → no invariant, no promotion, no hotfix. The trunk is NOT a fixed branch name — it is a per-suite pattern captured in `branches.ephemeral_pattern`.
 
-Example shape:
-
-```markdown
-### Git Strategy
-
-<!-- git-flow-master:strategy:sdet -->
-<!-- git-flow-master:feature-merge:merge-commit -->
-
-This project uses the `sdet` (SDET Gitflow) flow. `main` holds confirmed, regression-ready
-tests. Each test suite runs on an ephemeral integration trunk `test/<module>-suite` (created
-off `main`, deleted after the suite merges). Tickets chain through the trunk; one final
-reviewed PR promotes the suite to `main`. Full runbook: `.claude/skills/git-flow-master/references/sdet-integration-trunk.md`.
-
-| Branch              | Role                                                                  |
-| ------------------- | --------------------------------------------------------------------- |
-| main                | Confirmed tests. Only the final suite PR (reviewed, green CI) lands.   |
-| test/<module>-suite   | Ephemeral per-suite integration trunk. Surrogate-main for the suite.  |
-| test/{KEY}-{slug}   | Ticket branch. Cut from the trunk; PR → trunk; merged --no-ff.        |
-| docs/* chore/* fix/*| Plus Branches. Adjacent non-test work; PR → trunk like tickets.       |
-
-Merge methods (decided, do not improvise):
-| Transition                  | Method                                          |
-| ticket/Plus → trunk         | Merge commit (--no-ff) — never squash           |
-| trunk → main (final PR)     | Repo merge setting (prefer merge-commit)        |
-
-Per-suite flow:
-  git checkout -b test/<module>-suite main && git push -u origin test/<module>-suite   # start suite
-  # per ticket: cut from trunk → local PASS on local AND staging → push → Sanity CI
-  #             → PR into trunk → review → merge --no-ff → next ticket from updated trunk
-  git checkout test/<module>-suite && git merge origin/main          # sync gate before final PR
-  # final PR trunk → main (only PR facing rulesets; genuinely green, no CI-fallback)
-  git push origin --delete test/<module>-suite                       # after merge
-
-CI-fallback clause (trunk merges only, never the final PR): a Sanity-CI red that is purely
-infra/known-flake — proven by a local pass on BOTH local and staging AND the red existing
-independent of the change — lets the local double-pass authorize a trunk-internal merge.
-This is not a skip of tests→types→lint (the local gate fully passes). ENVIRONMENT-class
-classification is owned by /regression-testing.
+```yaml
+git_strategy:
+  strategy: sdet
+  description: >
+    This project uses the `sdet` (SDET Gitflow) flow. `main` holds confirmed, regression-ready
+    tests. Each test suite runs on an ephemeral integration trunk `test/<module>-suite` (created
+    off `main`, deleted after the suite merges). Tickets chain through the trunk; one final
+    reviewed PR promotes the suite to `main`. Full runbook:
+    .claude/skills/git-flow-master/references/sdet-integration-trunk.md
+  branches:
+    production: main
+    integration: null                       # the trunk is ephemeral, not a fixed long-lived branch
+    ephemeral_pattern: "test/<module>-suite"
+  protected:
+    - main
+  decisions:
+    promote_method: n/a                     # no production deploy
+    feature_merge: merge-commit             # FIXED — ticket/Plus → trunk is always --no-ff, never squash
+    hotfix_policy: n/a
+  policy:
+    direct_push_to_protected: confirm       # Q4 — maintainer self-merges the trunk; main confirms
+    admin_bypass: false
+    require_pr_reviews: 0                    # 0 on the trunk (self-merge); 1 on the final trunk → main PR
 ```
+
+- `git_strategy.branches.ephemeral_pattern` holds the per-suite trunk pattern (`test/<module>-suite`); `git_strategy.branches.integration` stays `null` because no fixed integration branch persists.
+- `git_strategy.decisions.feature_merge: merge-commit` is FIXED (a defining property, never a questionnaire choice). `promote_method` / `hotfix_policy` stay `n/a`.
+- `git_strategy.policy`: `direct_push_to_protected: confirm` (the maintainer self-merges the trunk; pushes to `main` are confirmed), `admin_bypass: false`, `require_pr_reviews: 0` on the trunk / `1` on the final `trunk → main` PR.
+- The per-ticket loop, `--no-ff` ticket merges, Plus Branches, the sync gate, the single final `trunk → main` PR, and the CI-fallback clause are NOT in the yaml — they live in `references/sdet-integration-trunk.md` and the `sdet` catalogue section above.

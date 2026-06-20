@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "I just finished work on UPEX-277 (empty states for the reservations module). Need to commit the 4 changed files and push the branch — there's no PR yet. Repo uses main + staging.",
-      "expected_output": "Skill detects main-integration strategy from layout (main+staging), persists marker to CLAUDE.md if missing, groups the 4 files into atomic conventional commits with scope UPEX-277, asks before pushing to current feature branch, and offers to open PR against staging next. No AI attribution. No git add -A.",
+      "expected_output": "Skill detects main-integration strategy from layout (main+staging), persists strategy + branches into the git_strategy block of .agents/project.yaml (in place, never a separate file) if git_strategy.strategy is null, groups the 4 files into atomic conventional commits with scope UPEX-277, asks before pushing to current feature branch, and offers to open PR against staging next. No AI attribution. No git add -A.",
       "should_trigger": true,
       "files": []
     },
@@ -25,7 +25,7 @@
     {
       "id": 4,
       "prompt": "We're starting a brand new repo for a side project. Just me, no team. What's the simplest git setup? I'll mostly push directly to main.",
-      "expected_output": "Skill recognises the strategy-selection intent, presents the 7 supported strategies with one-line descriptions, recommends solo-main given the context (single contributor, simplicity), and writes the marker <!-- git-flow-master:strategy:solo-main --> to CLAUDE.md so future invocations skip the question.",
+      "expected_output": "Skill recognises the strategy-selection intent, presents the 7 supported strategies with one-line descriptions, recommends solo-main given the context (single contributor, simplicity), and writes git_strategy.strategy: solo-main into the git_strategy block of .agents/project.yaml (in place) so future invocations skip the question.",
       "should_trigger": true,
       "files": []
     },
@@ -60,21 +60,21 @@
     {
       "id": 9,
       "prompt": "Brand new automation repo, just me writing Playwright specs. Run our git strategy setup — I'll only ever push to main, keep it dead simple.",
-      "expected_output": "Strategy Setup (3.6) runs. Resolves solo-main (single contributor, only main, simplicity). Creates NO integration branch (materialization table: solo-main = main only). Asks NONE of Q1/Q2/Q3 (single-branch strategy gates them all out). Writes a MINIMAL runbook: marker <!-- git-flow-master:strategy:solo-main -->, branch table (main only), 'work lands on main via PR', commit rules. No invariant, no promotion, no hotfix block. No --force, no AI attribution.",
+      "expected_output": "Strategy Setup (3.6) runs. Resolves solo-main (single contributor, only main, simplicity). Creates NO integration branch (materialization table: solo-main = main only). Asks NONE of Q1/Q2/Q3 (single-branch strategy gates them all out) but DOES ask Q4 (protection policy, universal) with solo-main defaults. Writes a MINIMAL git_strategy block in .agents/project.yaml (in place, preserving the rest of the file): git_strategy.strategy:solo-main, branches.integration null, branches.ephemeral_pattern null, protected:[main], all decisions.* n/a, policy.direct_push_to_protected:allowed + policy.admin_bypass:false + policy.require_pr_reviews:0, description. NEVER a separate git-strategy.yaml file. No prose runbook rendered into CLAUDE.md. No --force, no AI attribution.",
       "should_trigger": true,
       "files": []
     },
     {
       "id": 10,
       "prompt": "Set up our git strategy. Repo has main + staging already; staging is behind main. Use fast-forward promotion, merge commits for features, hotfix off prod with same-day back-merge.",
-      "expected_output": "Strategy Setup runs. Resolves main-integration (main + staging). Materializes: staging already exists so it is NOT recreated; ancestry check (git log main..staging empty) shows main is ahead and staging is a pure ancestor, so ff-syncs staging up to main via 'git push origin origin/main:refs/heads/staging' — NEVER --force; confirms before the protected-branch push. Records all 5 markers (strategy:main-integration, integration-branch:staging, promote-method:ff-only, feature-merge:merge-commit, hotfix-policy:branch-off-prod-backmerge). Renders the GOLD main-integration runbook verbatim (invariant: main is ancestor of staging; ff-only release block; hotfix off main + back-merge). No AI attribution.",
+      "expected_output": "Strategy Setup runs. Resolves main-integration (main + staging). Materializes: staging already exists so it is NOT recreated; ancestry check (git log main..staging empty) shows main is ahead and staging is a pure ancestor, so ff-syncs staging up to main via 'git push origin origin/main:refs/heads/staging' — NEVER --force; confirms before the protected-branch push. Writes the git_strategy block in .agents/project.yaml (in place, preserving the rest of the file; never a separate git-strategy.yaml) with strategy:main-integration, branches.production main + branches.integration staging, protected:[main,staging], decisions.promote_method ff-only + decisions.feature_merge merge-commit + decisions.hotfix_policy branch-off-prod-backmerge, policy.direct_push_to_protected forbidden + policy.admin_bypass false + policy.require_pr_reviews 1 (Q4 defaults), and a description capturing the main-is-ancestor-of-staging invariant. No prose runbook rendered into CLAUDE.md. No AI attribution.",
       "should_trigger": true,
       "files": []
     },
     {
       "id": 11,
-      "prompt": "We use gitflow here — develop plus release branches. Configure the git strategy and write the runbook.",
-      "expected_output": "Strategy Setup runs. Resolves gitflow (develop present). Ensures develop exists (off main if missing); does NOT create release/* or hotfix/* at setup. Sets work-branch base to develop. Renders the gitflow runbook: feature/* off develop, release/* off develop -> main with back-merge to develop, hotfix/* off main with back-merge to develop. Invariant rendered as the develop/main back-merge discipline (NOT 'production is ancestor of integration'). Markers include strategy:gitflow + integration-branch:develop + decision markers. No --force, no AI attribution.",
+      "prompt": "We use gitflow here — develop plus release branches. Configure the git strategy.",
+      "expected_output": "Strategy Setup runs. Resolves gitflow (develop present). Ensures develop exists (off main if missing); does NOT create release/* or hotfix/* at setup. Sets work-branch base to develop. Writes the git_strategy block in .agents/project.yaml (in place; never a separate git-strategy.yaml) with strategy:gitflow, branches.production main + branches.integration develop, protected:[main,develop], decisions.promote_method merge-commit (release/* -> main is inherently a merge commit, NOT normalized to ff-only) + decisions.feature_merge merge-commit + decisions.hotfix_policy branch-off-prod-backmerge, policy.direct_push_to_protected forbidden + policy.admin_bypass false + policy.require_pr_reviews 1 (Q4), and a description capturing the develop/main back-merge discipline (NOT 'production is ancestor of integration'). The release/hotfix command shapes stay in the catalogue, not the block. No --force, no AI attribution.",
       "should_trigger": true,
       "files": []
     },
@@ -87,15 +87,22 @@
     },
     {
       "id": 13,
-      "prompt": "Re-run git strategy setup. CLAUDE.md already has the strategy:main-integration, integration-branch:staging, promote-method:ff-only and feature-merge:merge-commit markers, but no hotfix-policy marker.",
-      "expected_output": "Detection (Step 2 extension) reads the existing decision markers and treats Q1 (promote-method) and Q2 (feature-merge) as already answered => SKIPS them. Only Q3 (hotfix-policy, marker missing) is asked. Existing branches are not recreated. Idempotent: the only new write is the hotfix-policy marker plus the corresponding hotfix block in the runbook. No re-asking of answered questions, no --force.",
+      "prompt": "Re-run git strategy setup. The git_strategy block in .agents/project.yaml already has strategy:main-integration, branches.integration staging, decisions.promote_method ff-only and decisions.feature_merge merge-commit, but decisions.hotfix_policy is still n/a.",
+      "expected_output": "Detection (Step 2 extension) reads the git_strategy block of .agents/project.yaml and treats Q1 (git_strategy.decisions.promote_method) and Q2 (git_strategy.decisions.feature_merge) as already answered (non-n/a) => SKIPS them. Q3 (git_strategy.decisions.hotfix_policy, still n/a) is asked; Q4 (git_strategy.policy.*) is asked only if its policy fields are still at defaults/unset. Existing branches are not recreated. Idempotent: the only new write is git_strategy.decisions.hotfix_policy (plus policy.* if Q4 ran) in the same block, in place. No re-asking of answered questions, no separate file, no --force.",
       "should_trigger": true,
       "files": []
     },
     {
       "id": 14,
       "prompt": "configura el flujo de git para este repo de automatización nuevo",
-      "expected_output": "Strategy Setup runs (Spanish trigger 'configura el flujo de git'). Conversation mirrors Spanish; artifacts (markers, runbook, CLAUDE.md section) stay English. Step 1 repo state -> Step 2 detection -> if undetermined, present the 7 strategies and ask for one slug (detect-then-questionnaire), then run the applicable Q1/Q2/Q3 gated on the resolved strategy. Proposes branch creation (never auto-executes), never --force, no AI attribution.",
+      "expected_output": "Strategy Setup runs (Spanish trigger 'configura el flujo de git'). Conversation mirrors Spanish; artifacts (the git_strategy block fields + description in .agents/project.yaml) stay English. Step 1 repo state -> Step 2 detection -> if undetermined, present the 7 strategies and ask for one slug (detect-then-questionnaire), then run the applicable Q1/Q2/Q3 gated on the resolved strategy plus the universal Q4 (protection policy). Persists in place to the git_strategy block (never a separate git-strategy.yaml). Proposes branch creation (never auto-executes), never --force, no AI attribution.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 15,
+      "prompt": "We run github-flow, everything goes through PRs to main. But push directly to main for me real quick, I'm in a hurry.",
+      "expected_output": "Skill reads git_strategy.policy.direct_push_to_protected from the git_strategy block in .agents/project.yaml. For github-flow the default is 'forbidden', so the skill REFUSES the direct push to the protected branch main and redirects to the PR flow (3.4) — propose a work branch + gh pr create. Because git_strategy.policy.admin_bypass is false, it does NOT offer an admin bypass regardless of role. No --force, no --no-verify, no AI attribution. (Had policy been allowed it would push after the normal confirm; had it been confirm it would always ask first.)",
       "should_trigger": true,
       "files": []
     }

@@ -1,14 +1,14 @@
 # Strategy Setup — Mechanics (questionnaire, materialization, sync, persist, report)
 
-This file is the heavy reference behind operation **3.6 Strategy Setup** in `SKILL.md`. The SKILL.md section holds WHEN and the six-step flow; this file holds HOW. Per-strategy runbook RENDER rules live in `references/branching-strategies.md` → "Runbook render rules" — this file does not duplicate them.
+This file is the heavy reference behind operation **3.6 Strategy Setup** in `SKILL.md`. The SKILL.md section holds WHEN and the six-step flow; this file holds HOW. Per-strategy `git_strategy` field values live in `references/branching-strategies.md` → "git_strategy field rules (per strategy)" — this file does not duplicate them.
 
-Strategy Setup is **detection + questionnaire → conditional materialization → render**. Nothing is baked in. A single-branch strategy creates no branches and writes a minimal runbook; a strategy with an integration branch creates/syncs exactly the branches its row in the materialization table requires.
+Strategy Setup is **detection + questionnaire → conditional materialization → write the `git_strategy:` block in `.agents/project.yaml`** (in place, preserving the rest of the file — NEVER a separate file). Nothing is baked in. A single-branch strategy creates no branches and writes a minimal block (integration null, all decisions `n/a`); a strategy with an integration branch creates/syncs exactly the branches its row in the materialization table requires and records them in the block.
 
 ---
 
 ## 1. Decision questionnaire — full detail
 
-Run after the strategy slug is resolved (Step 2). Ask the questions in order. For each question: if its decision marker already exists in `CLAUDE.md`, SKIP it (idempotent). If the question does not apply to the resolved strategy (gating column below), SKIP it. Present the default first and let the user override.
+Run after the strategy slug is resolved (Step 2). Ask the questions in order. For each question: if its `git_strategy.decisions.*` field (or, for Q4, its `git_strategy.policy.*` field) in `.agents/project.yaml` is already set (not `n/a`/empty/null-by-default), SKIP it (idempotent). If the question does not apply to the resolved strategy (gating column below), SKIP it. Present the default first and let the user override. Q1/Q2/Q3 are strategy-gated; **Q4 applies to ALL strategies**.
 
 ### Q1 — Promotion method, integration → production
 
@@ -18,7 +18,7 @@ Run after the strategy slug is resolved (Step 2). Ask the questions in order. Fo
   1. **Fast-forward only** — production is always a pure ancestor of integration; promotion is `git merge --ff-only`. Keeps the two branches byte-identical at release. This is the default.
   2. **Merge commit (`--no-ff`)** — promotion creates a merge commit on production. Branches are NOT byte-identical; the ancestor invariant does not hold.
   3. **Squash** — promotion squashes integration into one commit on production. Rewrites SHAs; invariant does not hold.
-- **Marker**: `<!-- git-flow-master:promote-method:ff-only|merge-commit|squash -->`
+- **Persisted as**: `git_strategy.decisions.promote_method: ff-only|merge-commit|squash`
 - **Drives**: the release runbook block, and whether the "production is an ancestor of integration" invariant is rendered (only for `ff-only`).
 
 ### Q2 — Merge method, work-branch → integration (or → trunk)
@@ -29,7 +29,7 @@ Run after the strategy slug is resolved (Step 2). Ask the questions in order. Fo
   1. **Merge commit (`--no-ff`)** — preserves the branch topology in history. Default.
   2. **Squash** — one commit per work-branch on integration; linear history, loses intermediate commits.
   3. **Rebase + merge** — replays work-branch commits onto integration; linear history, preserves individual commits.
-- **Marker**: `<!-- git-flow-master:feature-merge:merge-commit|squash|rebase-merge -->`
+- **Persisted as**: `git_strategy.decisions.feature_merge: merge-commit|squash|rebase-merge`
 - **Drives**: how integration history accrues; referenced by the merge-methods table in the runbook.
 
 ### Q3 — Hotfix policy
@@ -40,21 +40,34 @@ Run after the strategy slug is resolved (Step 2). Ask the questions in order. Fo
   1. **Branch off production → PR to production → back-merge to integration same day** — keeps the ff-only invariant intact. Default.
   2. **Always via integration** — hotfix flows through integration like any change; slower but no back-merge to forget.
   3. **No policy** — decide per incident (records intent to NOT standardize).
-- **Marker**: `<!-- git-flow-master:hotfix-policy:branch-off-prod-backmerge|via-integration|none -->`
+- **Persisted as**: `git_strategy.decisions.hotfix_policy: branch-off-prod-backmerge|via-integration|none`
 - **Drives**: the hotfix runbook block + the invariant-maintenance note.
 - **Note (one-direction flows)**: for `gitlab-flow` the "back-merge to integration" is realized as a forward-port / cherry-pick up the environment chain (`production` → `pre-production` → `main`), not a literal merge back — gitlab-flow has no back-merges.
 
 > The defaults (ff-only / merge-commit / branch-off-prod-backmerge) are the `main-integration` worked-example choices. They are DEFAULTS. Always present them as overridable, never auto-select without showing the alternatives.
 
+### Q4 — Protected-branch bypass policy
+
+- **Applies to**: **ALL strategies** (single-branch ones too — a solo `main` is still a protected branch). Q4 is never strategy-gated out.
+- **Drives**: the Push operation (SKILL.md 3.3) — how strictly a direct push to a protected branch is guarded, and whether an admin bypass may even be offered.
+- **Sub-questions (defaults are per-strategy — see `references/branching-strategies.md` → "git_strategy field rules (per strategy)")**:
+  1. **`direct_push_to_protected`** — `forbidden` | `confirm` | `allowed`. How a direct push to a protected branch is treated. `allowed` = proceed after the normal confirm; `confirm` = always ask (current behaviour); `forbidden` = refuse the direct push, redirect to the PR flow. Default per strategy: `solo-main` = `allowed`; multi-branch (`main-integration` / `enterprise` / `gitflow` / `github-flow` / `trunk-based` / `gitlab-flow`) = `forbidden`; `sdet` = `confirm` (trunk self-merge).
+  2. **`admin_bypass`** — `true` | `false`. May a repo admin bypass PR/protection for an urgent change? Default `false`. **This is a team POLICY intent, NOT an enforcement check** — the real capability depends on the GitHub user's role. When `true`, the Push op may OFFER a bypass but MUST re-confirm at runtime (a) that the operator actually holds admin rights (ASK — the skill cannot know the role) and (b) the irreversible action. When `false`, never offer a bypass regardless of role.
+  3. **`require_pr_reviews`** — `null` | `0` | `N`. Minimum approvals before merge to a protected branch (informational; the skill does not enforce GitHub rulesets, it records intent). Default `null` for solo-main (`0`); strategy-appropriate otherwise (typically `1` for multi-branch flows; `0` on the sdet trunk / `1` on the final sdet PR).
+- **Persisted as**: `git_strategy.policy.direct_push_to_protected` + `git_strategy.policy.admin_bypass` + `git_strategy.policy.require_pr_reviews`.
+
+> Q4 has no single global default — each sub-field's default is keyed off the resolved strategy (per the branching-strategies.md field rules). Present each default first and let the user override.
+
 ### `sdet` — questionnaire is mostly pre-answered
 
-`sdet` does not run the open questionnaire. Its answers are fixed by the strategy's definition:
+`sdet` does not run the open Q1/Q2/Q3 questionnaire. Those answers are fixed by the strategy's definition (Q4 still runs — see below):
 
-- **Q1 (promotion)** — n/a. There is no production deploy; `main` holds confirmed tests. The final `trunk → main` PR follows the **repo's allowed merge method** (prefer merge-commit to preserve the multi-branch look; squash collapses the suite). Do NOT write a `promote-method` marker.
-- **Q2 (work-branch merge)** — **fixed at `merge-commit` (`--no-ff`)**, write `feature-merge:merge-commit`. Never offer squash/rebase: preserving per-ticket history is a defining property of `sdet`.
-- **Q3 (hotfix)** — n/a. Write no `hotfix-policy` marker.
+- **Q1 (promotion)** — n/a. There is no production deploy; `main` holds confirmed tests. The final `trunk → main` PR follows the **repo's allowed merge method** (prefer merge-commit to preserve the multi-branch look; squash collapses the suite). Leave `git_strategy.decisions.promote_method: n/a`.
+- **Q2 (work-branch merge)** — **fixed at `merge-commit` (`--no-ff`)**, set `git_strategy.decisions.feature_merge: merge-commit`. Never offer squash/rebase: preserving per-ticket history is a defining property of `sdet`.
+- **Q3 (hotfix)** — n/a. Leave `git_strategy.decisions.hotfix_policy: n/a`.
+- **Q4 (protection policy)** — STILL ASKED (Q4 is universal). `sdet` defaults: `git_strategy.policy.direct_push_to_protected: confirm` (the trunk is self-merged by the maintainer), `git_strategy.policy.admin_bypass: false`, `git_strategy.policy.require_pr_reviews: 0` on the trunk / `1` on the final `trunk → main` PR.
 
-So Strategy Setup for `sdet` writes exactly two markers (`strategy:sdet` + `feature-merge:merge-commit`), materializes nothing extra at setup (the trunk is per-suite, created on demand by the Branch operation), and renders the `sdet` runbook block. The full per-suite operational detail lives in `references/sdet-integration-trunk.md`, not in the rendered `CLAUDE.md` block.
+So Strategy Setup for `sdet` sets `git_strategy.strategy: sdet` + `git_strategy.decisions.feature_merge: merge-commit` + the `sdet` Q4 `policy` defaults (the other `decisions.*` stay `n/a`, `branches.integration` stays null, `branches.ephemeral_pattern: "test/<module>-suite"`), materializes nothing extra at setup (the trunk is per-suite, created on demand by the Branch operation). The full per-suite operational detail lives in `references/sdet-integration-trunk.md`.
 
 ---
 
@@ -124,12 +137,19 @@ git push origin <ahead-ref>:refs/heads/<behind-branch>
 
 Once branches are materialized and decisions captured, persist in this order:
 
-1. **Locate or create the `## Git Strategy` section** in `CLAUDE.md`. If a neutral placeholder section exists (shipped by the boilerplate), replace its body. If the section is absent, append it near the existing `## Git Workflow` section.
-2. **Write the markers** that apply to the resolved strategy (strategy + integration-branch if any + the applicable decision markers). Omit markers that do not apply.
-3. **Render the full runbook body** below the markers, following the per-strategy render rule in `references/branching-strategies.md` → "Runbook render rules". Single-branch strategies render the minimal section (marker + branch table + "work lands on main via PR" + commit rules) — no invariant, no promotion, no hotfix blocks.
-4. **Set up local tracking** for any newly-ensured branch (`git branch --set-upstream-to=origin/<branch> <branch>` or `git checkout -b <branch> origin/<branch>`), so later operations don't re-detect.
+1. **Write the `git_strategy:` block in `.agents/project.yaml`** (in place — create the block if absent; overwrite the relevant fields if it exists; preserve the rest of the file, which holds project identity + env config). NEVER write a separate file. Populate the fields that apply to the resolved strategy (all nested under `git_strategy`):
+   - `strategy` — the resolved slug.
+   - `branches` — `production` (release/default branch), `integration` (long-lived integration branch name or `null`), `ephemeral_pattern` (strategy-specific on-demand trunk pattern or `null`).
+   - `protected` — branches requiring explicit confirm before a direct push.
+   - `decisions` — `promote_method` / `feature_merge` / `hotfix_policy`, each captured from Q1/Q2/Q3 or left `n/a` when the question does not apply.
+   - `policy` — `direct_push_to_protected` / `admin_bypass` / `require_pr_reviews`, captured from Q4 (applies to every strategy; defaults are per-strategy).
+   - `branch_prefixes` — `precedence` + naming patterns (carry the defaults unless the user overrides).
+   - `description` — the one-paragraph human summary of the flow for this repo.
+   - `meta.created` — today's date; bump `meta.setup_version` on a re-run that changes the schema.
+   Per-strategy field values: `references/branching-strategies.md` → "git_strategy field rules (per strategy)".
+2. **Set up local tracking** for any newly-ensured branch (`git branch --set-upstream-to=origin/<branch> <branch>` or `git checkout -b <branch> origin/<branch>`), so later operations don't re-detect.
 
-The markers are the source of truth; the prose is for humans. A later Strategy Setup re-run re-reads the markers and only fills gaps.
+CLAUDE.md's `## Git Strategy` section is a shipped pointer to `.agents/project.yaml` (`git_strategy:` block) — NEVER write strategy policy there. The block is the source of truth; its `git_strategy.description` field is the human summary. A later Strategy Setup re-run re-reads the block and only fills the `git_strategy.decisions.*` / `git_strategy.policy.*` fields still unset.
 
 ---
 
@@ -144,11 +164,16 @@ Branches:
   - <branch>: created off <base> | already existed | ff-synced to <ahead-ref> (no force) | skipped (n/a for this strategy)
 
 Decisions captured:
-  - promote-method: <value | n/a>
-  - feature-merge:  <value | n/a>
-  - hotfix-policy:  <value | n/a>
+  - promote_method: <value | n/a>
+  - feature_merge:  <value | n/a>
+  - hotfix_policy:  <value | n/a>
 
-Runbook: CLAUDE.md → ## Git Strategy (<N> markers, <render-shape> render)
+Policy captured (Q4):
+  - direct_push_to_protected: <forbidden | confirm | allowed>
+  - admin_bypass:             <true | false>
+  - require_pr_reviews:       <null | 0 | N>
+
+Definition: .agents/project.yaml (git_strategy block, <N> fields populated)
 
 Next: branch off <work-branch-base> to start work; the Branch operation will use this strategy automatically.
 ```
