@@ -77,7 +77,11 @@ build/
 # marks a repo as bootstrapped from this boilerplate).
 # `.template/installer.state.json` is GITIGNORED (per-dev runtime idempotency
 # state written by cli/install.ts — must never enter the repo).
+# `.template/claude-md.upstream.sha` is GITIGNORED (per-dev runtime marker —
+# records the last upstream CLAUDE.md the updater advised about, so the merge
+# nudge fires once per upstream change, not every `bun up`).
 .template/installer.state.json
+.template/claude-md.upstream.sha
 
 # ===== MCP Configuration =====
 # .mcp.json and opencode.jsonc are COMMITTED — they reference secrets via
