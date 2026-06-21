@@ -20,6 +20,7 @@ import * as backup from './commands/backup.js';
 import * as exec from './commands/exec.js';
 import * as importCmd from './commands/import.js';
 import * as plan from './commands/plan.js';
+import * as precondition from './commands/precondition.js';
 import * as repairCmd from './commands/repair.js';
 import * as run from './commands/run.js';
 import * as set from './commands/set.js';
@@ -58,9 +59,11 @@ ${colors.bold}TEST MANAGEMENT${colors.reset}
                  --description <text>   Test description
                  --labels <l1,l2>       Comma-separated labels
                  --folder <path>        Folder path in Xray
-                 --step <action|result> Test step (repeatable for Manual tests)
                  --definition <text>    Definition (for Generic tests)
                  --gherkin <feature>    Gherkin feature (for Cucumber tests)
+                 ${colors.yellow}NOTE: Manual steps are NOT created here.${colors.reset} Xray Cloud
+                 does not persist steps passed on create — add each one
+                 afterwards with 'test add-step' (see below).
 
   test get <key>     Get test details
   test list          List tests
@@ -68,11 +71,15 @@ ${colors.bold}TEST MANAGEMENT${colors.reset}
                      --jql <query>      Custom JQL filter
                      --limit <n>        Max results (default: 20)
 
-  test add-step      Add step to existing test
+  test add-step      Add step to existing test (the reliable way to add Manual
+                     steps — one call per step)
                      --test <id>        Test issue ID (required)
                      --action <text>    Step action (required)
                      --data <text>      Step test data
                      --result <text>    Expected result
+  test remove-step   Remove a step from a test
+                     --test <id>        Test issue ID (required)
+                     --step <id>        Step ID to remove (required)
   test update-gherkin    Replace the Gherkin definition of an existing Cucumber test
                      --test <id>        Test issue ID (required)
                      --gherkin <feature> New Gherkin feature (required)
@@ -83,11 +90,31 @@ ${colors.bold}TEST MANAGEMENT${colors.reset}
                      --test <id>        Test issue ID (required)
                      --type <name>      New test type (required)
 
+${colors.bold}PRECONDITIONS${colors.reset}
+  precondition create      Create a Precondition issue
+                     --project <key>    Project key (required)
+                     --summary <text>   Precondition summary (required)
+                     --type <type>      Manual|Generic|Cucumber (default: Manual)
+                     --definition <text> Precondition definition / setup body
+                     --labels <l1,l2>   Comma-separated labels
+                     --folder <path>    Folder path in Xray
+  precondition add-to-test Attach precondition(s) to a test
+                     --test <id>        Test key or numeric issue ID (required)
+                     --preconditions <k1,k2> Precondition keys/ids (required)
+  precondition update      Update a precondition's definition / type
+                     --precondition <id> Precondition key or issue ID (required)
+                     --definition <text> New definition
+                     --type <name>      New precondition type
+
 ${colors.bold}TEST EXECUTIONS${colors.reset}
   exec create        Create a test execution
                      --project <key>    Project key (required)
                      --summary <text>   Execution summary (required)
                      --tests <id1,id2>  Test issue IDs to include
+                     --environment <e>  Test Environment (repeatable or comma-
+                                        separated). Pins the execution to an
+                                        environment (e.g. staging) so results are
+                                        congruent across runs and comparable.
 
   exec get <id>      Get execution details with test runs
   exec list          List executions
@@ -95,6 +122,9 @@ ${colors.bold}TEST EXECUTIONS${colors.reset}
                      --execution <id>   Execution issue ID
                      --tests <id1,id2>  Test issue IDs to add
   exec remove-tests  Remove tests from an execution
+  exec set-environment  Associate Test Environment(s) with an existing execution
+                     --execution <id>   Execution key or numeric issue ID
+                     --environment <e>  Test Environment (repeatable or CSV)
   exec sync          Diff Jira-layer issuelinks vs Xray-layer attachment
                      --execution <id>   Execution key or numeric issue ID
                      --apply            Re-attach missing tests at the Xray layer
@@ -240,10 +270,13 @@ ${colors.bold}EXAMPLES${colors.reset}
   # Login
   xray auth login --client-id ABC123 --client-secret xyz789
 
-  # Create a manual test with steps
-  xray test create --project DEMO --summary "Verify login" \\
-    --step "Open app|Login form is displayed" \\
-    --step "Enter credentials|user@test.com|Success message"
+  # Create a manual test, THEN add steps (steps are not persisted on create)
+  xray test create --project DEMO --summary "Verify login" --type Manual
+  xray test add-step --test 1042389 --action "Open app" --result "Login form is displayed"
+  xray test add-step --test 1042389 --action "Enter credentials" --data "user@test.com" --result "Success message"
+
+  # Create an execution pinned to a Test Environment
+  xray exec create --project DEMO --summary "Sprint 5 Regression" --environment staging
 
   # Update test run status
   xray run status --id 5acc7ab0a3fe1b --status PASSED
@@ -338,6 +371,9 @@ async function main(): Promise<void> {
           case 'add-step':
             await test.addStep(flags);
             break;
+          case 'remove-step':
+            await test.removeStep(flags);
+            break;
           case 'update-gherkin':
             await test.updateGherkin(flags);
             break;
@@ -349,7 +385,25 @@ async function main(): Promise<void> {
             break;
           default:
             log.error(`Unknown test command: ${subcommand}`);
-            log.info('Available: create, get, list, add-step, update-gherkin, update-definition, update-type');
+            log.info('Available: create, get, list, add-step, remove-step, update-gherkin, update-definition, update-type');
+        }
+        break;
+
+      case 'precondition':
+      case 'precond': // shorthand
+        switch (subcommand) {
+          case 'create':
+            await precondition.create(flags);
+            break;
+          case 'add-to-test':
+            await precondition.addToTest(flags);
+            break;
+          case 'update':
+            await precondition.update(flags);
+            break;
+          default:
+            log.error(`Unknown precondition command: ${subcommand}`);
+            log.info('Available: create, add-to-test, update');
         }
         break;
 
@@ -374,9 +428,12 @@ async function main(): Promise<void> {
           case 'sync':
             await exec.sync(flags);
             break;
+          case 'set-environment':
+            await exec.setEnvironment(flags);
+            break;
           default:
             log.error(`Unknown exec command: ${subcommand}`);
-            log.info('Available: create, get, list, add-tests, remove-tests, sync');
+            log.info('Available: create, get, list, add-tests, remove-tests, sync, set-environment');
         }
         break;
 

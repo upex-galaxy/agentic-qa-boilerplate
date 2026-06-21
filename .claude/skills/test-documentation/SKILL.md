@@ -349,7 +349,7 @@ A **Test Set** groups all regression Tests of ONE feature — **1:1 with the Epi
 
 ### Entity model: ATP / ATR / TC
 
-Four entities, always linked US <-> ATP <-> ATR <-> TC:
+Four entities. **Traceability model (jira-xray):** the **Story links ONLY to its ATP and ATR** ("is tested by"); **TCs are NOT linked directly to the Story** (avoids noise) — they aggregate through the ATP/ATR. The **ATP "designs" the TCs** (TC "is designed by" ATP) and the **ATR "executes" the TCs** (TC "is executed by" ATR). Full doctrine: `references/traceability-linking.md` + `references/tms-architecture.md`.
 
 | Entity | Created | Naming | Main content |
 |--------|---------|--------|--------------|
@@ -364,11 +364,13 @@ Read `references/tms-architecture.md` when creating ATP/ATR/TC for a ticket, che
 ### Linking order (always)
 
 ```
-1. Create ATP -> link to US
-2. Create ATR -> link to US
+1. Create ATP -> link to US (Story "is tested by" ATP)
+2. Create ATR -> link to US (Story "is tested by" ATR)
 3. Update ATP -> link to ATR (bidirectional plan/results)
 4. For each TC:
-     Create TC -> link to US + ATP + ATR + AC
+     Create TC -> link to ATP (TC "is designed by" ATP) + ATR (TC "is executed by" ATR)
+     # Do NOT link the TC directly to the Story — TCs aggregate via ATP/ATR (avoids Story-link noise).
+     # AC coverage is recorded in the ATP's AC-to-TC matrix, not as a Story<->TC issuelink.
 5. For each PROMOTED (regression-worthy) TC:
      jira-xray  -> [TMS_TOOL] add TC to the feature Test Set (resolve/create per Preflight) + [TMS_TOOL] add to the Regression Test Plan
                    + [ISSUE_TRACKER_TOOL] label `regression-candidate` (labels are a Jira field; xray-cli has no update-label for existing Tests)
@@ -383,7 +385,7 @@ Creating a TC before the ATP and ATR exist leaves orphaned references. Fix any b
 
 | TMS stack | Manual test | Automation-candidate test |
 |-----------|-------------|---------------------------|
-| **Xray on Jira** | `[TMS_TOOL] Create Test: type=Manual, steps=...` then `[ISSUE_TRACKER_TOOL] Update Issue` to paste the complete Description template | `[TMS_TOOL] Create Test: type=Cucumber, gherkin=<high-quality gherkin>` then `[ISSUE_TRACKER_TOOL] Update Issue` with the Description template |
+| **Xray on Jira** | **Two-step** (Xray Cloud silently drops inline steps): (1) `[TMS_TOOL] Create Test: type=Manual` **without** inline steps, (2) `[TMS_TOOL] Add Test Step` per step (optionally verify with `[TMS_TOOL] Get Test`), then `[ISSUE_TRACKER_TOOL] Update Issue` to paste the complete Description template | `[TMS_TOOL] Create Test: type=Cucumber, gherkin=<high-quality gherkin>` then `[ISSUE_TRACKER_TOOL] Update Issue` with the Description template |
 | **Native Jira (no Xray)** | `[ISSUE_TRACKER_TOOL] Create Issue: issueType=Test, description=<steps table>` | `[ISSUE_TRACKER_TOOL] Create Issue: issueType=Test, description=<gherkin in Description>` |
 
 Always populate Description with the full TC template (Related Story, Priority, ROI, Prior bugs, Test Design gherkin/steps, Variables table, Implementation Code table, Architecture, Available Test IDs, Preconditions, Expected Results). Read `references/jira-test-management.md` when choosing between Xray and native Jira, or when the Description must be filled.
@@ -482,6 +484,7 @@ On Phase 3 partial failure (some chunks 429-rate-limited, some succeeded), archi
 - **Cross-cutting is not a TC**: "Mobile responsive", "XSS prevention", "Performance" are never TCs on their own. They are validated inside other TCs or in an app-level suite.
 - **Linking order is not optional**: create ATP and ATR BEFORE the first TC. If you create TCs first, you get orphaned references and `fix-traceability` is the only way out.
 - **Xray requires two calls**: one `[TMS_TOOL] Create Test` (registers in Xray), then one `[ISSUE_TRACKER_TOOL] Update Issue` to paste the full Description. Skipping the second call leaves a TC with no readable documentation in Jira.
+- **Xray Manual steps are added AFTER create, never inline**: Xray Cloud **silently drops** steps passed to the create call. For a `type=Manual` Test, create it WITHOUT inline steps, then add each step one-by-one via `[TMS_TOOL] Add Test Step`; optionally verify with `[TMS_TOOL] Get Test`. Cucumber Tests are unaffected (Gherkin is a single field). Concrete CLI syntax lives in `/xray-cli`.
 - **Never hardcode UUIDs or emails** in Gherkin. Always use `{variable}` with a Variables table and a query showing how to obtain the real value at runtime.
 - **One (precondition, action) = one TC**. Multiple expected results all belong to the same TC. Splitting assertions into separate TCs is the single most-diagnosed anti-pattern in reviews.
 - **Bug-driven: evaluate first, but if regression-worthy it MUST have a Test (reuse or create).** A closed bug is strong empirical evidence the area regresses, so most qualify and lean Candidate — but not all do (a one-time typo in a stable area is treated like a failed test → Deferred, no new Test). When it qualifies, follow the Bug-driven decision: reuse the existing failed Test if the bug came from one, else create + design a new Test. Golden rule: where an important bug exists, a test must cover it.
@@ -594,17 +597,15 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
   issue: {TEST_KEY}
   description: {full Description template}
 
-# Link TC to ATP, ATR, Story
+# Link TC to ATP (designs) and ATR (executes) — NOT to the Story.
+# TCs aggregate to the Story via the ATP/ATR; a direct Story<->TC link adds noise.
 [TMS_TOOL] AddTests:
-  testPlan: {ATP_KEY}
+  testPlan: {ATP_KEY}        # ATP "designs" the TC (TC "is designed by" ATP)
   tests: [{TEST_KEY}]
 [TMS_TOOL] AddTests:
-  execution: {ATR_KEY}
+  execution: {ATR_KEY}       # ATR "executes" the TC (TC "is executed by" ATR)
   tests: [{TEST_KEY}]
-[ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: {{jira.link_types.test.name}}   # Story is tested by Test
-  outward: {TEST_KEY}
-  inward:  {STORY_KEY}
+# Do NOT create a Story<->TC issuelink. The Story is linked only to the ATP + ATR (above).
 
 # CI result flow (Stage 6)
 [TMS_TOOL] Import Results:
@@ -660,8 +661,11 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
   fields:
     Test Status: Draft                          # custom field per jira-setup.md
 
+# jira-native ONLY: with no Test Plan/Execution issues, the ATP/ATR are Story fields,
+# so the Story<->TC link is the available traceability edge here (no ATP/ATR issue to aggregate through).
+# This does NOT apply to jira-xray, where TCs link to the ATP (designed-by) + ATR (executed-by) and the Story links only to ATP/ATR.
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: {{jira.link_types.test.name}}   # Story is tested by Test
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test (jira-native traceability edge)
   outward: {TEST_KEY}
   inward:  {STORY_KEY}
 

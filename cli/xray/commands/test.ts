@@ -4,11 +4,11 @@
  * Commands: create, get, list, add-step
  */
 
-import type { Flags, PreconditionResult, TestResult, TestStep, TestStepResponse } from '../types/index.js';
+import type { Flags, PreconditionResult, TestResult, TestStepResponse } from '../types/index.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
 import { log } from '../lib/logger.js';
-import { getFlag, requireFlag } from '../lib/parser.js';
+import { getFlag, getFlagArray, requireFlag } from '../lib/parser.js';
 
 // ============================================================================
 // CREATE
@@ -27,31 +27,17 @@ export async function create(flags: Flags): Promise<void> {
   const labels = labelsStr ? labelsStr.split(',').map(l => l.trim()) : undefined;
   const folderPath = getFlag(flags, 'folder');
 
-  // Collect all --step flags
-  const stepsFlags: string[] = [];
-  for (const [key, value] of Object.entries(flags)) {
-    if (key === 'step' && typeof value === 'string') {
-      stepsFlags.push(value);
-    }
-  }
+  // Manual steps are NOT created here. Xray Cloud's `createTest` mutation
+  // accepts a `steps` argument but does not persist it reliably (steps silently
+  // drop — observed stepCount:0 after a "Test created" success). The reliable
+  // path is the dedicated `addTestStep` mutation. We therefore create the test
+  // WITHOUT inline steps and require a follow-up `test add-step` per step.
+  const stepsFlags = getFlagArray(flags, 'step');
 
-  let steps: TestStep[] | undefined;
   let unstructured: string | undefined;
   let gherkin: string | undefined;
 
-  if (testType === 'Manual' && stepsFlags.length > 0) {
-    steps = stepsFlags.map((s) => {
-      const parts = s.split('|');
-      if (parts.length === 2) {
-        return { action: parts[0], result: parts[1] };
-      }
-      else if (parts.length >= 3) {
-        return { action: parts[0], data: parts[1], result: parts[2] };
-      }
-      return { action: s, result: '' };
-    });
-  }
-  else if (testType === 'Generic') {
+  if (testType === 'Generic') {
     unstructured = getFlag(flags, 'definition') || summary;
   }
   else if (testType === 'Cucumber') {
@@ -65,7 +51,6 @@ export async function create(flags: Flags): Promise<void> {
 
   const result = await graphql<{ createTest: { test: { jira: { key: string, summary: string }, testType: { name: string }, issueId: string }, warnings: string[] } }>(MUTATIONS.createTest, {
     testType: { name: testType },
-    steps,
     unstructured,
     gherkin,
     projectKey,
@@ -86,6 +71,23 @@ export async function create(flags: Flags): Promise<void> {
   if (warnings && warnings.length > 0) {
     log.warn('Warnings:');
     warnings.forEach((w: string) => console.log(`  - ${w}`));
+  }
+
+  // Surface the two-step requirement loudly so the operator never assumes the
+  // steps they passed on `create` were persisted (they are not).
+  if (stepsFlags.length > 0) {
+    log.warn(`${stepsFlags.length} --step value(s) were NOT added — Xray Cloud does not persist steps on create.`);
+    log.warn('Add each step explicitly, e.g.:');
+    stepsFlags.forEach((s) => {
+      const parts = s.split('|');
+      const action = parts[0] ?? s;
+      const hasData = parts.length >= 3;
+      const data = hasData ? parts[1] : '';
+      const expected = hasData ? parts[2] : (parts[1] ?? '');
+      const dataFlag = data ? ` --data "${data}"` : '';
+      const resultFlag = expected ? ` --result "${expected}"` : '';
+      console.log(`  bun xray test add-step --test ${test.issueId} --action "${action}"${dataFlag}${resultFlag}`);
+    });
   }
 }
 
@@ -204,6 +206,24 @@ export async function addStep(flags: Flags): Promise<void> {
   if (step.result) {
     console.log(`  Expected: ${step.result}`);
   }
+}
+
+// ============================================================================
+// REMOVE STEP
+// ============================================================================
+
+export async function removeStep(flags: Flags): Promise<void> {
+  const issueId = requireFlag(flags, 'test');
+  const stepId = requireFlag(flags, 'step');
+
+  log.dim(`Removing step ${stepId} from test ${issueId}...`);
+
+  await graphql<{ deleteTestStep: boolean }>(MUTATIONS.deleteTestStep, {
+    issueId,
+    stepId,
+  });
+
+  log.success(`Step ${stepId} removed from test ${issueId}`);
 }
 
 // ============================================================================

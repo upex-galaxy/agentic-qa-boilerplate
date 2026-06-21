@@ -9,7 +9,20 @@ import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
 import { getLinkedTests, resolveIssueId, resolveIssueIds } from '../lib/jira.js';
 import { log } from '../lib/logger.js';
-import { getBoolFlag, getFlag, requireFlag } from '../lib/parser.js';
+import { getBoolFlag, getFlag, getFlagArray, requireFlag } from '../lib/parser.js';
+
+/**
+ * Collect Test Environments from `--environment` (repeatable) and/or a single
+ * comma-separated value. Returns `undefined` when none were passed so the
+ * GraphQL variable is omitted rather than sent as an empty list.
+ */
+function collectEnvironments(flags: Flags): string[] | undefined {
+  const envs = getFlagArray(flags, 'environment')
+    .flatMap(v => v.split(','))
+    .map(v => v.trim())
+    .filter(Boolean);
+  return envs.length > 0 ? envs : undefined;
+}
 
 // ============================================================================
 // CREATE
@@ -27,6 +40,7 @@ export async function create(flags: Flags): Promise<void> {
   const testIssueIds = testsStr
     ? await resolveIssueIds(testsStr.split(',').map(t => t.trim()))
     : [];
+  const testEnvironments = collectEnvironments(flags);
 
   log.dim(`Creating Test Execution in project ${projectKey}...`);
 
@@ -35,12 +49,41 @@ export async function create(flags: Flags): Promise<void> {
     summary,
     description,
     testIssueIds,
+    testEnvironments,
   });
 
   const exec = result.createTestExecution.testExecution;
   log.success(`Test Execution created: ${exec.jira.key}`);
   console.log(`  Summary: ${exec.jira.summary}`);
   console.log(`  Issue ID: ${exec.issueId}`);
+  if (testEnvironments) {
+    console.log(`  Environments: ${testEnvironments.join(', ')}`);
+  }
+}
+
+// ============================================================================
+// SET ENVIRONMENT (associate Test Environments with an existing execution)
+// ============================================================================
+
+export async function setEnvironment(flags: Flags): Promise<void> {
+  const issueId = await resolveIssueId(requireFlag(flags, 'execution'));
+  const testEnvironments = collectEnvironments(flags);
+  if (!testEnvironments) {
+    throw new Error('Missing required flag: --environment (repeatable or comma-separated)');
+  }
+
+  log.dim(`Setting ${testEnvironments.length} environment(s) on execution ${issueId}...`);
+
+  const result = await graphql<{ addTestEnvironmentsToTestExecution: { associatedTestEnvironments: string[], warning?: string } }>(
+    MUTATIONS.addTestEnvironmentsToTestExecution,
+    { issueId, testEnvironments },
+  );
+
+  const assoc = result.addTestEnvironmentsToTestExecution.associatedTestEnvironments ?? [];
+  log.success(`Associated environments: ${assoc.join(', ') || '(none returned)'}`);
+  if (result.addTestEnvironmentsToTestExecution.warning) {
+    log.warn(result.addTestEnvironmentsToTestExecution.warning);
+  }
 }
 
 // ============================================================================

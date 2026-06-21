@@ -46,9 +46,9 @@ Key consequences:
 | ID | Yes | `{{PROJECT_KEY}}-{n}` auto-assigned |
 | Title | Yes | |
 | Acceptance Criteria | Yes | Testable conditions |
-| Test Plan link | Yes (once ATP exists) | Bidirectional to ATP |
-| Test Results link | Yes (once ATR exists) | Bidirectional to ATR |
-| Test Cases links | Yes (once TCs exist) | 1:N |
+| Test Plan link (ATP) | Yes (once ATP exists) | `is tested by` ATP |
+| Test Results link (ATR) | Yes (once ATR exists) | `is tested by` ATR |
+| Test Cases links | No — never direct | TCs reach the Story THROUGH the ATP (`designs`) and ATR (`executes`), not via a direct Story↔TC link |
 
 ### ATP
 
@@ -78,9 +78,9 @@ Key consequences:
 | ID | Yes | Auto-generated (e.g., `{{PROJECT_KEY}}-456`) |
 | Name | Yes | `{US_ID or TS_ID}: TC#: Validate <CORE> <CONDITIONAL>` |
 | Acceptance Criterion | Yes | Which AC this TC covers (1:N from TC side) |
-| User Story link | Yes | Back-link to US |
-| Test Plan link | Yes | Link to ATP |
-| Test Results link | Yes | Link to ATR |
+| User Story link | No — never direct | TC is NOT linked to the US directly; it reaches the US through the ATP/ATR |
+| Test Plan link (ATP) | Yes | `is designed by` ATP (`test_design`) |
+| Test Results link (ATR) | Yes | `is executed by` ATR (`test_execute`) |
 | Precondition | Yes | Environment, login state, test data, DB state |
 | Specification | Yes | Step-by-step verification (Gherkin or table) |
 | Test Status | Yes | `NOT RUN` / `PASSED` / `FAILED` |
@@ -95,40 +95,45 @@ Key consequences:
 ## 3. Entity relationships
 
 ```
-+------------------------------------------------------------+
-|                                                            |
-|   User Story ({{PROJECT_KEY}}-123)                         |
-|     |                                                      |
-|     +--- Test Plan link ---> ATP (Test Plan: ...-123)      |
-|     |                          |                           |
-|     +--- Test Results link ---> ATR (Test Results: ...-123)|
-|     |                          |                           |
-|     +--- Test Cases links --+                              |
-|                             |                              |
-|                             v                              |
-|                        [ TC-1, TC-2, TC-3, ... TC-N ]      |
-|                           |   |    |                       |
-|                           |   |    +--- links to US, ATP, ATR, AC |
-|                           |   +----- links to US, ATP, ATR, AC    |
-|                           +-------- links to US, ATP, ATR, AC     |
-|                                                                   |
-|   All arrows are bidirectional: US <-> ATP <-> ATR <-> TC         |
-+------------------------------------------------------------+
++--------------------------------------------------------------------+
+|                                                                    |
+|   User Story ({{PROJECT_KEY}}-123)                                 |
+|     |                                                              |
+|     +--- is tested by ---> ATP (Test Plan: ...-123)                |
+|     |                        |                                     |
+|     +--- is tested by ---> ATR (Test Results: ...-123)             |
+|                              |                                     |
+|         ATP designs (test_design)   ATR executes (test_execute)    |
+|                  \                          /                      |
+|                   v                        v                       |
+|                  [ TC-1, TC-2, TC-3, ... TC-N ]                     |
+|                     |    |    |                                    |
+|                     |    |    +-- is designed by ATP, executed by ATR, covers AC |
+|                     |    +------- is designed by ATP, executed by ATR, covers AC |
+|                     +------------ is designed by ATP, executed by ATR, covers AC |
+|                                                                    |
+|   The Story links ONLY to ATP and ATR (`test`). TCs are NOT linked |
+|   to the Story directly — they aggregate to it THROUGH the ATP     |
+|   (`designs`) and ATR (`executes`). All edges render bidirectionally:|
+|     US <-> ATP <-> TC   (designs / is designed by)                 |
+|     US <-> ATR <-> TC   (executes / is executed by)                |
+|     ATP <-> ATR         (plan / results)                           |
++--------------------------------------------------------------------+
 ```
 
 ### Cardinality
 
 | From | To | Cardinality | Link direction |
 |------|----|-------------|----------------|
-| US | ATP | 1:1 | Bidirectional |
-| US | ATR | 1:1 | Bidirectional |
-| US | TC | 1:N | Bidirectional |
-| ATP | ATR | 1:1 | Bidirectional |
-| ATP | TC | 1:N | TC references ATP |
-| ATR | TC | 1:N | TC references ATR |
+| US | ATP | 1:1 | `is tested by` (`test`) |
+| US | ATR | 1:1 | `is tested by` (`test`) |
+| US | TC | 1:N | **via ATP/ATR — no direct link** (TCs aggregate through `designs` / `executes`) |
+| ATP | ATR | 1:1 | Bidirectional (plan / results) |
+| ATP | TC | 1:N | ATP `designs` TC / TC `is designed by` ATP (`test_design`) |
+| ATR | TC | 1:N | ATR `executes` TC / TC `is executed by` ATR (`test_execute`) |
 | TC | AC | N:1 (or N:M) | TC covers one or more ACs |
 
-Given any one of the four, you must be able to navigate to the other three. That is what "traceability" means.
+Given any one of the four, you must be able to navigate to the other three. That is what "traceability" means. The US↔TC navigation is INDIRECT by design: from the Story walk `is tested by` → ATP/ATR, then walk `designs` / `executes` → TCs. Linking every TC to the Story directly was dropped because it floods the Story panel with noise; the ATP/ATR are the single aggregation point.
 
 ---
 
@@ -136,26 +141,28 @@ Given any one of the four, you must be able to navigate to the other three. That
 
 ### Mandatory links
 
-| Entity | Required link | Value | When to set |
-|--------|---------------|-------|-------------|
-| **ATP** | User Story | US ID or title | At creation |
-| **ATP** | Test Results (ATR) | ATR ID or name | After ATR is created |
-| **ATR** | User Story | US ID or title | At creation |
-| **TC** | User Story | US ID or title | At creation |
-| **TC** | Test Plan (ATP) | ATP ID or name | At creation (if ATP exists) |
-| **TC** | Test Result (ATR) | ATR ID or name | At creation (if ATR exists) |
+| Entity | Required link | Type / direction | When to set |
+|--------|---------------|------------------|-------------|
+| **ATP** | User Story | `is tested by` (`test`) | At creation |
+| **ATP** | Test Results (ATR) | Bidirectional (plan / results) | After ATR is created |
+| **ATP** | each TC | ATP `designs` TC (`test_design`) | At TC creation |
+| **ATR** | User Story | `is tested by` (`test`) | At creation |
+| **ATR** | each TC | ATR `executes` TC (`test_execute`) | At TC creation |
+| **TC** | Test Plan (ATP) | `is designed by` ATP (`test_design`) | At creation |
+| **TC** | Test Result (ATR) | `is executed by` ATR (`test_execute`) | At creation |
 | **TC** | Acceptance Criterion | AC reference | At creation |
 
-A TC that is missing even one of Story / ATP / ATR is broken — use `fix-traceability` to repair.
+A TC is **NOT** linked to the User Story directly — it reaches the Story through the ATP (`designs`) and ATR (`executes`). A TC that is missing its ATP or ATR link is broken — use `fix-traceability` to repair. **The Xray-internal attach (`plan add-tests` / `exec add-tests`) creates NO Jira links** — the `designs`/`executes` Jira edges MUST be created explicitly via `[ISSUE_TRACKER_TOOL]` (`/acli`). (Slug-layer mechanics live in `agentic-qa-core/references/traceability-linking.md` §3/§9.)
 
 ### Validation checklist (before marking Complete)
 
-- [ ] ATP links to User Story AND ATR
-- [ ] ATR links to User Story
-- [ ] Every TC links to User Story, ATP, and ATR
+- [ ] ATP links to User Story (`is tested by`) AND ATR
+- [ ] ATR links to User Story (`is tested by`)
+- [ ] Every TC links to ATP (`is designed by`) and ATR (`is executed by`) — NOT to the User Story directly
+- [ ] No direct Story↔TC links exist (TCs aggregate via ATP/ATR)
 - [ ] ATP Test Coverage maps all ACs to TCs
 - [ ] ATR Test Coverage reflects execution results
-- [ ] User Story panel shows references to ATP, ATR, and all TCs
+- [ ] User Story panel shows references to ATP and ATR only (TCs reachable one hop further, through the ATP/ATR)
 
 ---
 
@@ -167,21 +174,21 @@ Artifacts must be created in a specific sequence. Creating TCs first, ATP second
 
 ```
 Step 1. Create ATP
-        -> link ATP to User Story
+        -> link ATP to User Story (Story `is tested by` ATP, `test`)
         (ATR link left empty for now)
 
 Step 2. Create ATR
-        -> link ATR to User Story
+        -> link ATR to User Story (Story `is tested by` ATR, `test`)
 
 Step 3. Update ATP
         -> link ATP to ATR (bidirectional plan/results)
 
 Step 4. For each TC (as Stage 4 progresses):
         Create TC
-        -> link TC to User Story
-        -> link TC to ATP
-        -> link TC to ATR
+        -> link TC to ATP (ATP `designs` TC / TC `is designed by` ATP, `test_design`)
+        -> link TC to ATR (ATR `executes` TC / TC `is executed by` ATR, `test_execute`)
         -> link TC to AC
+        # Do NOT link TC to the User Story directly — it aggregates via ATP/ATR.
 ```
 
 ### Why this order
@@ -189,7 +196,7 @@ Step 4. For each TC (as Stage 4 progresses):
 1. **ATP first**: the plan must exist before execution results can reference it. Even if the Test Analysis content is filled later, the artifact is created early so that TCs can link to it.
 2. **ATR second**: created early so the ATP can reference it. Test Report content is filled after execution.
 3. **ATP <-> ATR third**: once both exist, wire up the bidirectional link.
-4. **TCs last**: by the time a TC is created, both ATP and ATR exist, so all three links are set at creation.
+4. **TCs last**: by the time a TC is created, both ATP and ATR exist, so the `designs` (ATP) and `executes` (ATR) links are set at creation. The TC is bound to the Story's graph through those two edges — never via a direct Story↔TC link.
 
 ### Pseudocode — full sequence
 
@@ -198,23 +205,27 @@ Step 4. For each TC (as Stage 4 progresses):
 ```
 [TMS_TOOL] Create ATP:
   name: Test Plan: {{PROJECT_KEY}}-{n}
-  story: {from User Story title}
+  story: {from User Story title}            # Story `is tested by` ATP (test)
 
 [TMS_TOOL] Create ATR:
   name: Test Results: {{PROJECT_KEY}}-{n}
-  story: {from User Story title}
+  story: {from User Story title}            # Story `is tested by` ATR (test)
 
 [TMS_TOOL] Update ATP:
   id: {from ATP created above}
-  results: {from ATR name created above}
+  results: {from ATR name created above}    # ATP <-> ATR (plan / results)
 
 [TMS_TOOL] Create TC:
   name: {per TC naming convention}
-  story: {from User Story title}
-  test-plan: {from ATP name}
-  test-result: {from ATR name}
+  test-plan: {from ATP name}                # ATP `designs` TC (test_design)
+  test-result: {from ATR name}              # ATR `executes` TC (test_execute)
   ac: {from the Acceptance Criterion this TC covers}
   project: {{PROJECT_KEY}}
+  # NO `story:` link — the TC is NOT linked to the User Story directly.
+  # It aggregates to the Story through the ATP (`designs`) and ATR (`executes`).
+  # The Xray-internal attach creates NO Jira links — the designs/executes edges
+  # are created explicitly via [ISSUE_TRACKER_TOOL] (/acli). Slug layering:
+  # traceability-linking.md §3/§9.
 ```
 
 ---
@@ -245,24 +256,26 @@ When all In-Sprint Testing stages are complete, the User Story panel in the TMS 
 ```
 User Story: PROJ-123 — <Story Title>
 
-| Test Plan     | Test Plan: PROJ-123           | Complete |
-| Test Results  | Test Results: PROJ-123        | Complete |
-| Test Cases    | TC-1, TC-2, TC-3, TC-4        | All with status |
+| Test Plan (is tested by)    | Test Plan: PROJ-123           | Complete |
+| Test Results (is tested by) | Test Results: PROJ-123        | Complete |
+(No direct Test Case links on the Story — TCs are reached through the ATP/ATR.)
 
 ATP (Test Plan: PROJ-123)
-  User Story:    PROJ-123
+  User Story:    PROJ-123 (tests / is tested by)
   Test Analysis: [filled]
+  Designs:       TC-1, TC-2, TC-3, TC-4        (test_design)
   Test Coverage: AC1 -> TC-1; AC2 -> TC-2; AC3 -> TC-3, TC-4
   Test Results:  Test Results: PROJ-123
   Complete:      Yes
 
 ATR (Test Results: PROJ-123)
-  User Story:    PROJ-123
+  User Story:    PROJ-123 (tests / is tested by)
   Test Report:   [filled]
+  Executes:      TC-1, TC-2, TC-3, TC-4        (test_execute)
   Test Coverage: AC1 -> TC-1 PASSED; AC2 -> TC-2 PASSED; AC3 -> TC-3 PASSED, TC-4 FAILED
   Complete:      Yes
 
-Test Cases
+Test Cases (each: is designed by ATP, is executed by ATR — NOT linked to the US)
   TC-1 | PASSED | AC1 | Should <behavior> when <condition>
   TC-2 | PASSED | AC2 | Should <behavior> when <condition>
   TC-3 | PASSED | AC3 | Should <behavior> when <condition>
@@ -278,8 +291,8 @@ A User Story is fully documented when:
 3. Every TC has a Test Status (`PASSED`, `FAILED`, or `NOT RUN`).
 4. Every AC has either at least one **documented** TC OR an explicit Deferred note in the prioritization report. The documented TC set is intentionally sparse — only the regression-worthy scenarios (Candidate + Manual) are persisted; the wide 1:N derivation happened upstream (in `/sprint-testing` planning + exploration) and most of it is correctly Deferred (no TMS TC). Do NOT inflate documentation to "N TCs per AC" — that is a design/execution concern, not a documentation one.
 5. Where a regression-worthy scenario IS persisted, its TC is technique-shaped: a documented boundary TC uses BVA values, a documented state TC covers the transition, etc. (`agentic-qa-core/references/test-design-doctrine.md`). Technique governs the SHAPE of what you document, not how MUCH you document.
-6. ATP and ATR are bidirectionally linked.
-7. Every TC links to US, ATP, and ATR.
+6. ATP and ATR are bidirectionally linked, and both are linked to the US via `is tested by`.
+7. Every TC links to the ATP (`is designed by`) and ATR (`is executed by`) — and NOT to the US directly.
 
 Any failing criterion -> the story is not ready to close QA.
 
@@ -357,7 +370,7 @@ When the candidate list has more than 10 TCs, creating them serially burns the o
 Briefing (6 components per `agentic-qa-core/references/briefing-template.md`):
 
 ```
-Goal: Create <K> Xray Test issues in Jira project <PROJECT_KEY> for chunk <I>/<TOTAL>, link them to ATP <ATP_KEY> and ATR <ATR_KEY>, and return their issue keys.
+Goal: Create <K> Xray Test issues in Jira project <PROJECT_KEY> for chunk <I>/<TOTAL>, link each to ATP <ATP_KEY> (designs) and ATR <ATR_KEY> (executes), and return their issue keys. Do NOT link the Tests to the Story <STORY_KEY> directly — the Story is linked only to the ATP and ATR.
 
 Context docs:
   - <PBI_FOLDER>/test-specs/<spec>.md (TC definitions for this chunk)
@@ -369,12 +382,13 @@ Skills to load: /xray-cli, /acli
 
 Exact instructions:
   1. For each TC in the chunk:
-     a. [TMS_TOOL] Create Test: project=<PROJECT_KEY>, type={Cucumber|Manual}, title="{per TC naming convention}", steps-or-gherkin={from spec}.
+     a. [TMS_TOOL] Create Test: project=<PROJECT_KEY>, type={Cucumber|Manual}, title="{per TC naming convention}". For Manual: create WITHOUT inline steps (Xray Cloud drops steps on create), then add each step via [TMS_TOOL] add-step. For Cucumber: pass gherkin={from spec}.
      b. Capture the returned issue key as <TEST_KEY>.
      c. [ISSUE_TRACKER_TOOL] Update Issue: issue=<TEST_KEY>, description={full Description template per jira-test-management.md §7}.
-     d. [TMS_TOOL] AddTests: testPlan=<ATP_KEY>, tests=[<TEST_KEY>].
-     e. [TMS_TOOL] AddTests: execution=<ATR_KEY>, tests=[<TEST_KEY>].
-     f. [ISSUE_TRACKER_TOOL] Link Issues: linkType={{jira.link_types.test.name}}, outward=<TEST_KEY>, inward=<STORY_KEY>.   # Story is tested by Test (resolve by slug + verify direction per agentic-qa-core/references/traceability-linking.md §2/§4)
+     d. [TMS_TOOL] AddTests: testPlan=<ATP_KEY>, tests=[<TEST_KEY>].   # Xray-internal membership only — creates NO Jira link
+     e. [TMS_TOOL] AddTests: execution=<ATR_KEY>, tests=[<TEST_KEY>].  # Xray-internal membership only — creates NO Jira link
+     f. Jira-layer design/execute edges (SEPARATE from steps d/e): the Xray attach creates NO Jira links (confirmed, traceability-linking.md §9), so create them explicitly via [ISSUE_TRACKER_TOOL] (/acli): [ISSUE_TRACKER_TOOL] Link Issues linkType={{jira.link_types.test_design.name}} (ATP `designs` TC) and linkType={{jira.link_types.test_execute.name}} (ATR `executes` TC), then verify direction per traceability-linking.md §2/§4.
+     g. Do NOT link the Test to the Story <STORY_KEY> directly — coverage aggregates to the Story through the ATP/ATR.
   2. Apply labels per the methodology naming convention (see `tms-conventions.md` §Labels).
 
 Report format:
@@ -385,7 +399,9 @@ Report format:
       "issue_key": "<PROJ>-<N>",
       "linked_to_atp": true,
       "linked_to_atr": true,
-      "linked_to_story": true,
+      "designs_link": true,
+      "executes_link": true,
+      "linked_to_story": false,
       "errors": []
     },
     ...
@@ -474,12 +490,12 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
   environment: {from session context}
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan (ATP)
   outward: {ATP_KEY}
   inward:  {STORY_KEY}
 
 [ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Execution
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Execution (ATR)
   outward: {ATR_KEY}
   inward:  {STORY_KEY}
 
@@ -487,14 +503,30 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
   project: {{PROJECT_KEY}}
   type: Cucumber | Manual | Generic
   title: {per TC naming convention}
-  steps-or-gherkin: {from test design}
+  # Cucumber/Generic: pass gherkin/definition here.
+  # Manual: create WITHOUT inline steps (Xray Cloud drops steps on create),
+  #         then add each step via [TMS_TOOL] add-step.
 
-[TMS_TOOL] AddTests:
+[TMS_TOOL] AddTests:                          # Xray-internal membership only — creates NO Jira link
   testPlan: {ATP_KEY}
   tests: [{TEST_KEY}]
-[TMS_TOOL] AddTests:
+[TMS_TOOL] AddTests:                          # Xray-internal membership only — creates NO Jira link
   execution: {ATR_KEY}
   tests: [{TEST_KEY}]
+
+# Jira-layer coverage edges (ATP designs TC, ATR executes TC). The two AddTests
+# calls above create NO Jira links (confirmed, traceability-linking.md §9) — these
+# are SEPARATE from the Xray-internal membership and MUST be created explicitly:
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: {{jira.link_types.test_design.name}}    # ATP designs TC / TC is designed by ATP
+  outward: {ATP_KEY}
+  inward:  {TEST_KEY}
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: {{jira.link_types.test_execute.name}}   # ATR executes TC / TC is executed by ATR
+  outward: {ATR_KEY}
+  inward:  {TEST_KEY}
+# Do NOT link the Test to {STORY_KEY} directly — it aggregates via ATP/ATR.
+# Resolve slugs + verify direction per traceability-linking.md §2/§4.
 ```
 
 #### Modality jira-native (no Xray)
@@ -576,7 +608,7 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
   issue: {from ticket ID}
 ```
 
-Expected output: all links verified (US <-> ATP <-> ATR <-> TCs). If any link is missing, apply the fixes in §10.
+Expected output: all links verified — US `is tested by` ATP and ATR; each TC `is designed by` ATP and `is executed by` ATR; NO direct US↔TC link. If any link is missing (or a stray Story↔TC link exists), apply the fixes in §10.
 
 ---
 
@@ -586,11 +618,12 @@ Common failure modes and their fixes:
 
 | Issue | Fix |
 |-------|-----|
-| TC not linked to Story | Update TC with Story reference |
-| TC not linked to ATP | Update TC with ATP reference |
-| TC not linked to ATR | Update TC with ATR reference |
+| TC linked directly to Story | Remove the direct Story↔TC link — TCs aggregate via ATP/ATR, never link to the Story directly |
+| TC not designed-by ATP | Link ATP `designs` TC (`test_design`) |
+| TC not executed-by ATR | Link ATR `executes` TC (`test_execute`) |
 | ATP not linked to ATR | Update ATP with ATR reference |
-| ATP not linked to Story | Update ATP with Story reference |
+| ATP not linked to Story | Link Story `is tested by` ATP (`test`) |
+| ATR not linked to Story | Link Story `is tested by` ATR (`test`) |
 | TC name doesn't follow convention | Rename TC to `{US_ID}: TC#: Validate <CORE> <CONDITIONAL>` |
 | ATP name wrong | Rename to `Test Plan: {{PROJECT_KEY}}-{n}` |
 | ATR name wrong | Rename to `Test Results: {{PROJECT_KEY}}-{n}` |

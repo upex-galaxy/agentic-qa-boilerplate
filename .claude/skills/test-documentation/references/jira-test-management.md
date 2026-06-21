@@ -124,7 +124,7 @@ Same concept, different storage. Use this when translating a TC design into actu
 | Priority | `Priority` field | `Priority` field |
 | Labels | `Labels` field | `Labels` field |
 | Components | `Components` field | `Components` field |
-| Trace to User Story | Linked Issue "is tested by" | Linked Issue "is tested by" |
+| Trace to User Story | Linked Issue "is tested by" (TC → Story, direct) | INDIRECT — TC "is designed by" ATP + "is executed by" ATR; the ATP/ATR carry "is tested by" to the Story. No direct TC → Story link. |
 | Execution result | `Test Status` custom field | Xray `Test Run` inside a Test Execution |
 
 Xray additionally exposes:
@@ -328,10 +328,16 @@ Notes:
   issue: {TEST_KEY}
   description: {full Description template from §7}
 
+# Coverage edges: ATP designs TC, ATR executes TC. The Test is NOT linked to the
+# Story directly — coverage aggregates to the Story through the ATP/ATR.
 [ISSUE_TRACKER_TOOL] Link Issues:
-  from: {TEST_KEY}
-  to:   {STORY_KEY}
-  linkType: {{jira.link_types.test.name}}   # Story is tested by Test
+  from: {ATP_KEY}
+  to:   {TEST_KEY}
+  linkType: {{jira.link_types.test_design.name}}    # ATP designs TC / TC is designed by ATP
+[ISSUE_TRACKER_TOOL] Link Issues:
+  from: {ATR_KEY}
+  to:   {TEST_KEY}
+  linkType: {{jira.link_types.test_execute.name}}   # ATR executes TC / TC is executed by ATR
 
 # Test ↔ Test Set membership is NOT a Jira issuelink — do NOT create it via
 # [ISSUE_TRACKER_TOOL] link create. It is Xray-internal state managed via the
@@ -345,7 +351,7 @@ Notes:
   transition: start design
 ```
 
-> Resolve the `test` link type by slug only and verify direction after creation — see `agentic-qa-core/references/traceability-linking.md` (§2 slug resolution, §4 directionality, §9 Test Set caveat: membership goes through `/xray-cli`, never `acli link create`).
+> Resolve the `test_design` / `test_execute` link types by slug only and verify direction after creation — see `agentic-qa-core/references/traceability-linking.md` (§2 slug resolution, §3 catalog, §4 directionality, §9 Test Set caveat). **Confirmed: the Xray-internal attach (`plan add-tests` / `exec add-tests`) creates NO Jira links** — the `designs`/`executes` Jira edges MUST be created explicitly via `[ISSUE_TRACKER_TOOL]` (`/acli`), SEPARATE from the Xray-internal membership. Membership goes through `/xray-cli`, never `acli link create`; the Jira coverage links go through `/acli`, never `/xray-cli`. Do NOT link the Test to the Story directly under Modality jira-xray.
 
 ### Stage-4 promote + enrich — tool resolution map (Modality jira-xray)
 
@@ -370,19 +376,35 @@ When `/test-documentation` Stage 4 promotes a sprint Xray Test into regression, 
   project: {{PROJECT_KEY}}
   type: Manual
   title: {per TC naming convention}
-  steps:
-    - action: {step 1}
-      data:   {step 1 data}
-      result: {expected step 1}
-    - action: {step 2}
-      ...
+  # NO inline steps here — Xray Cloud drops steps passed on create. Create the
+  # Test bare, then add each step in a follow-up call.
+
+[TMS_TOOL] Add Step:           # one call per step (Xray Cloud only registers steps added post-create)
+  test:   {TEST_KEY}
+  action: {step 1}
+  data:   {step 1 data}
+  result: {expected step 1}
+# ...repeat [TMS_TOOL] Add Step for each remaining step...
 
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {TEST_KEY}
   description: {full Description template from §7}
+
+# Coverage edges: ATP designs TC, ATR executes TC. The Test is NOT linked to the
+# Story directly. The Xray-internal attach creates NO Jira links — these designs/
+# executes edges are SEPARATE and created explicitly here via /acli. (Slug +
+# direction: traceability-linking.md §3/§4/§9.)
+[ISSUE_TRACKER_TOOL] Link Issues:
+  from: {ATP_KEY}
+  to:   {TEST_KEY}
+  linkType: {{jira.link_types.test_design.name}}    # ATP designs TC
+[ISSUE_TRACKER_TOOL] Link Issues:
+  from: {ATR_KEY}
+  to:   {TEST_KEY}
+  linkType: {{jira.link_types.test_execute.name}}   # ATR executes TC
 ```
 
-The two-call pattern (Xray + Update Issue) is mandatory in Xray mode. Skipping the second call leaves a TC with no readable documentation in Jira — only the bare Xray Steps field.
+The two-call pattern (Xray + Update Issue) is mandatory in Xray mode. Skipping the Update Issue call leaves a TC with no readable documentation in Jira — only the bare Xray Steps field. Manual-step gotcha: Xray Cloud drops any steps passed on `Create Test`; always create the Test without steps, then add each step via `[TMS_TOOL] Add Step` (one call per step).
 
 ---
 
@@ -558,7 +580,7 @@ The frontmatter is machine-readable. A later `test-automation` run greps for `ou
 ## 13. Completeness checklist (per TC before moving to Ready)
 
 - [ ] Summary follows `{PREFIX}: TC#: Validate <CORE> <CONDITIONAL>` — no anti-patterns
-- [ ] Linked to User Story via "is tested by"
+- [ ] Traced to the User Story: Modality jira-xray → "is designed by" ATP + "is executed by" ATR (NO direct TC → Story link); Modality jira-native → "is tested by" the Story directly
 - [ ] Linked to Regression Epic (Epic Link)
 - [ ] Priority set
 - [ ] Labels include scope (regression/smoke/e2e/integration) and automation intent (automation-candidate or manual-only)
@@ -580,6 +602,7 @@ The frontmatter is machine-readable. A later `test-automation` run greps for `ou
 - **Hardcoded data**: UUIDs, emails, passwords in Gherkin. Use `{variable}` + Variables table.
 - **Splitting assertions into separate TCs**: "TC1: check panel A appears", "TC2: check panel B appears", "TC3: check panel C appears" where precondition+action is identical. These are one TC with three assertions.
 - **Cross-cutting as TCs**: "Mobile responsive", "XSS prevention", "Performance", "Accessibility" as standalone TCs. These are validated inside other TCs or in an app-level suite.
-- **Creating TCs before ATP/ATR exist**: leaves orphaned references. Always create ATP and ATR first, link them to the US, link ATP to ATR, and only then create each TC with links to US + ATP + ATR + AC.
+- **Creating TCs before ATP/ATR exist**: leaves orphaned references. Always create ATP and ATR first, link them to the US (`is tested by`), link ATP to ATR, and only then create each TC with links to ATP (`is designed by`) + ATR (`is executed by`) + AC. Modality jira-native only: link the TC to the US (`is tested by`) directly, since there are no ATP/ATR issues.
+- **Linking every TC directly to the Story (Modality jira-xray)**: floods the Story panel with noise. Under jira-xray the Story is linked ONLY to its ATP and ATR; TCs aggregate to the Story THROUGH the ATP (`designs`) and ATR (`executes`). Never create a direct Story↔TC link in jira-xray.
 - **Summary > 255 chars**: truncates silently. Shorten CONDITIONAL if needed.
 - **Manual steps in Xray with no Description**: creating Xray Manual Tests but skipping `[ISSUE_TRACKER_TOOL] Update Issue` leaves a TC with minimal context. Always populate the full Description template.

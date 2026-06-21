@@ -568,10 +568,12 @@ export const MUTATIONS = {
       $projectKey: String!,
       $summary: String!,
       $description: String,
-      $testIssueIds: [String]
+      $testIssueIds: [String],
+      $testEnvironments: [String]
     ) {
       createTestExecution(
         testIssueIds: $testIssueIds,
+        testEnvironments: $testEnvironments,
         jira: {
           fields: {
             summary: $summary,
@@ -585,6 +587,15 @@ export const MUTATIONS = {
           jira(fields: ["key", "summary"])
         }
         warnings
+      }
+    }
+  `,
+
+  addTestEnvironmentsToTestExecution: `
+    mutation AddTestEnvironmentsToTestExecution($issueId: String!, $testEnvironments: [String]!) {
+      addTestEnvironmentsToTestExecution(issueId: $issueId, testEnvironments: $testEnvironments) {
+        associatedTestEnvironments
+        warning
       }
     }
   `,

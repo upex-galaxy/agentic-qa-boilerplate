@@ -38,22 +38,34 @@ Manual tests contain structured steps that a tester follows.
 
 ### Creating Manual Tests
 
-```bash
-# With steps inline
-bun xray test create --project DEMO --summary "Verify login" --type Manual \
-  --step "Open app|Login form displayed" \
-  --step "Enter credentials|user@test.com|Success"
+Manual steps are created in **two phases**: create the test WITHOUT inline steps,
+then add each step with its own `test add-step` call.
 
-# Create empty, add steps later
+```bash
+# 1. Create the Manual test (no inline steps)
 bun xray test create --project DEMO --summary "Verify login" --type Manual
-bun xray test add-step --test <issueId> --action "Open app" --result "Form displayed"
+
+# 2. Add each step (one call per step) — this is the reliable path
+bun xray test add-step --test <issueId> --action "Open app" --result "Login form displayed"
+bun xray test add-step --test <issueId> --action "Enter credentials" --data "user@test.com" --result "Success"
+
+# Remove a step you no longer want
+bun xray test remove-step --test <issueId> --step <stepId>
 ```
 
-### Step Format
+> **Why two phases (gotcha).** Xray Cloud's `createTest` mutation accepts a `steps`
+> argument but does **not** persist it — steps silently drop (observed `stepCount:0`
+> right after a "Test created" success). The `--step` flag on `test create` is
+> therefore **deprecated**: if passed, the test is still created but the CLI prints a
+> loud WARNING listing the exact `test add-step` commands to run. Always verify steps
+> landed with `bun xray test get <key>` (or the GraphQL `getTest { steps { id } }`).
 
-The `--step` flag accepts these formats:
-- `action|result` - Action and expected result
-- `action|data|result` - Action, test data, and expected result
+### Step Fields (add-step)
+
+`test add-step` takes one step per call via explicit flags:
+- `--action <text>` - what the tester does (required)
+- `--data <text>` - input values / test data (optional)
+- `--result <text>` - expected observable outcome (optional)
 
 ## Generic Tests
 

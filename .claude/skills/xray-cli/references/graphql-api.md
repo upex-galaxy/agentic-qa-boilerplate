@@ -146,6 +146,16 @@ mutation AddTestStep(
 }
 ```
 
+### Delete Test Step
+
+Backs `bun xray test remove-step --test <id> --step <stepId>`.
+
+```graphql
+mutation DeleteTestStep($issueId: String!, $stepId: String!) {
+  deleteTestStep(issueId: $issueId, stepId: $stepId)
+}
+```
+
 ### Update Test Type
 
 ```graphql
@@ -155,6 +165,63 @@ mutation UpdateTestType($issueId: String!, $testTypeId: String!) {
       issueId
       testType { name }
     }
+  }
+}
+```
+
+### Preconditions
+
+These three mutations now have dedicated CLI commands (`bun xray precondition create`
+/ `add-to-test` / `update`) — no need to drop to raw GraphQL.
+
+```graphql
+mutation CreatePrecondition(
+  $projectKey: String!
+  $summary: String!
+  $preconditionType: PreconditionTypeInput!
+  $definition: String
+) {
+  createPrecondition(
+    projectKey: $projectKey
+    preconditionType: $preconditionType
+    definition: $definition
+    jira: { fields: { summary: $summary } }
+  ) {
+    precondition { issueId jira(fields: ["key", "summary"]) }
+    warnings
+  }
+}
+
+mutation AddPreconditionsToTest($issueId: String!, $preconditionIssueIds: [String]!) {
+  addPreconditionsToTest(issueId: $issueId, preconditionIssueIds: $preconditionIssueIds) {
+    addedPreconditions
+    warning
+  }
+}
+
+mutation UpdatePrecondition($issueId: String!, $data: UpdatePreconditionInput!) {
+  updatePrecondition(issueId: $issueId, data: $data) {
+    issueId
+    definition
+  }
+}
+```
+
+### Add Test Environments To Test Execution
+
+Backs `bun xray exec create --environment <e>` and `bun xray exec set-environment`.
+Pinning an execution to a Test Environment makes results congruent and comparable
+across environments (e.g. a `staging` run is never blindly compared with a `production`
+run).
+
+```graphql
+mutation AddTestEnvironmentsToTestExecution(
+  $issueId: String!
+  $testEnvironments: [String]!
+) {
+  addTestEnvironmentsToTestExecution(issueId: $issueId, testEnvironments: $testEnvironments) {
+    associatedTestEnvironments
+    warning
   }
 }
 ```
@@ -176,10 +243,12 @@ mutation CreateTestExecution(
   $projectKey: String!
   $summary: String!
   $testIssueIds: [String]
+  $testEnvironments: [String]
 ) {
   createTestExecution(
     projectKey: $projectKey
     testIssueIds: $testIssueIds
+    testEnvironments: $testEnvironments
     jira: { fields: { summary: $summary } }
   ) {
     testExecution {
@@ -189,6 +258,10 @@ mutation CreateTestExecution(
   }
 }
 ```
+
+> `testEnvironments` is supplied by `bun xray exec create --environment <e>` (repeatable
+> or comma-separated). For an existing execution use `bun xray exec set-environment`
+> (backed by `addTestEnvironmentsToTestExecution`, below).
 
 ### Add Evidence To Test Run
 

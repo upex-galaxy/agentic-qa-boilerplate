@@ -78,10 +78,10 @@ bun xray test create --project DEMO --summary "Verify login" --type Manual
 bun xray test create --project DEMO --summary "API check" --type Generic --definition "curl http://api.test"
 bun xray test create --project DEMO --summary "Login flow" --type Cucumber --gherkin "Feature: Login..."
 
-# Manual test with steps
-bun xray test create --project DEMO --summary "Verify login" \
-  --step "Open app|Login form is displayed" \
-  --step "Enter credentials|user@test.com|Success message"
+# Manual test with steps — TWO-STEP pattern (create, THEN one add-step per step)
+bun xray test create --project DEMO --summary "Verify login" --type Manual
+bun xray test add-step --test <issueId> --action "Open app" --result "Login form is displayed"
+bun xray test add-step --test <issueId> --action "Enter credentials" --data "user@test.com" --result "Success message"
 
 # Get test details
 bun xray test get DEMO-123
@@ -92,13 +92,46 @@ bun xray test list --project DEMO
 bun xray test list --project DEMO --limit 50
 bun xray test list --jql "project = DEMO AND labels = critical"
 
-# Add step to existing test
+# Add step to existing test (the reliable way to add Manual steps — one call per step)
 bun xray test add-step --test <issueId> --action "Click button" --result "Form submits"
+bun xray test add-step --test <issueId> --action "Submit form" --data "valid payload" --result "200 OK"
+
+# Remove a step from a test
+bun xray test remove-step --test <issueId> --step <stepId>
 
 # Enrich an EXISTING test (e.g. Stage-4 regression promotion: add rich Gherkin to a sprint test)
 bun xray test update-gherkin --test <issueId> --gherkin "Feature: Login..."
 bun xray test update-definition --test <issueId> --definition "curl http://api.test"
 bun xray test update-type --test <issueId> --type Cucumber
+```
+
+> **Manual steps do NOT persist on `create` (gotcha).** Xray Cloud silently drops
+> any steps passed to the `createTest` mutation (observed `stepCount:0` after a
+> "Test created" success). The `--step` flag on `test create` is therefore
+> **deprecated**: if you pass it the test is still created, but the CLI prints a
+> loud WARNING listing the exact `test add-step` calls you must run. The reliable
+> path is always: `test create --type Manual` (no inline steps) → one
+> `test add-step` per step. Verify the steps landed with `bun xray test get <key>`
+> (or the GraphQL `getTest { steps { id } }` / `stepCount`).
+
+### Preconditions
+
+Preconditions are first-class Xray issues (issuetype `Precondition`) that hold setup
+state shared across Tests. The GraphQL mutations were always available; these commands
+expose them so you never have to drop to raw GraphQL.
+
+```bash
+# Create a precondition (default --type Manual; also Generic / Cucumber)
+bun xray precondition create --project DEMO --summary "User is logged in"
+bun xray precondition create --project DEMO --summary "DB seeded" --type Generic \
+  --definition "bun run db:seed" --labels setup,smoke --folder /Auth
+
+# Attach precondition(s) to a test (keys or numeric ids, both forms accepted)
+bun xray precondition add-to-test --test {{PROJECT_KEY}}-123 --preconditions {{PROJECT_KEY}}-90,{{PROJECT_KEY}}-91
+
+# Update a precondition's definition and/or type
+bun xray precondition update --precondition {{PROJECT_KEY}}-90 --definition "Seed with v2 fixtures"
+bun xray precondition update --precondition {{PROJECT_KEY}}-90 --type Generic
 ```
 
 ### Test Executions
@@ -107,6 +140,11 @@ bun xray test update-type --test <issueId> --type Cucumber
 # Create execution
 bun xray exec create --project DEMO --summary "Sprint 1 Regression"
 bun xray exec create --project DEMO --summary "Sprint 1" --tests <id1>,<id2>,<id3>
+
+# Pin the execution to a Test Environment (repeatable OR comma-separated)
+bun xray exec create --project DEMO --summary "Sprint 1" --environment staging
+bun xray exec create --project DEMO --summary "Sprint 1" --environment staging --environment chrome
+bun xray exec create --project DEMO --summary "Sprint 1" --environment staging,chrome
 
 # Get execution details
 bun xray exec get <issueId>
@@ -117,7 +155,16 @@ bun xray exec list --project DEMO
 # Manage tests in execution
 bun xray exec add-tests --execution <id> --tests <id1>,<id2>
 bun xray exec remove-tests --execution <id> --tests <id1>,<id2>
+
+# Associate Test Environment(s) with an EXISTING execution
+bun xray exec set-environment --execution <id> --environment staging
+bun xray exec set-environment --execution {{PROJECT_KEY}}-194 --environment staging,chrome
 ```
+
+> **Why Test Environments matter**: an execution pinned to an environment (e.g.
+> `staging` vs `production`, or `chrome` vs `firefox`) makes results **congruent and
+> comparable** — you never blindly compare a staging run against a prod run. Set them
+> at creation with `--environment`, or attach them later with `exec set-environment`.
 
 ### Test Runs
 
@@ -335,20 +382,59 @@ If `xray` CLI is not installed or authenticated, fall back to the Atlassian MCP 
 # 1. Login
 bun xray auth login --client-id $XRAY_CLIENT_ID --client-secret $XRAY_CLIENT_SECRET --project DEMO
 
-# 2. Create a manual test with steps
-bun xray test create --project DEMO --summary "Verify user registration" \
-  --step "Navigate to signup page|Signup form displayed" \
-  --step "Fill required fields|Fields accept input" \
-  --step "Submit form|Success message shown"
+# 2. Create a manual test, THEN add each step (steps do NOT persist on create)
+bun xray test create --project DEMO --summary "Verify user registration" --type Manual
+#    -> note the issueId returned, then:
+bun xray test add-step --test <issueId> --action "Navigate to signup page" --result "Signup form displayed"
+bun xray test add-step --test <issueId> --action "Fill required fields" --result "Fields accept input"
+bun xray test add-step --test <issueId> --action "Submit form" --result "Success message shown"
 
-# 3. Create a test execution
-bun xray exec create --project DEMO --summary "Registration Tests - Sprint 5"
+# 3. Create a test execution pinned to the environment under test
+bun xray exec create --project DEMO --summary "Registration Tests - Sprint 5" --environment staging
 
 # 4. Run automated tests and import results
 bun xray import junit --file test-results/junit.xml --project DEMO
 
 # 5. Check execution status
 bun xray exec list --project DEMO --limit 5
+```
+
+## Example: Canonical End-to-End Flow (ATP -> Tests -> ATR -> results)
+
+This is the authoritative order when wiring a full Test Plan / Test Execution by hand.
+The Plan↔Test and Execution↔Test membership operations below are **XRAY-INTERNAL**
+(managed by these CLI commands at the Xray GraphQL layer) and are DISTINCT from
+Jira-layer issue links — `plan add-tests` / `exec add-tests` register the test with
+Xray itself, not just an `issuelink` on the Jira issue. (When only the Jira layer is
+wired but the Xray layer is not, runs come back empty — repair with `exec sync` /
+`plan sync`; see the Sync & Repair section.)
+
+```bash
+# 1. Create the Test Plan (ATP container)
+bun xray plan create --project {{PROJECT_KEY}} --summary "Auth Suite - Q3 ATP"
+#    -> {{PROJECT_KEY}}-110
+
+# 2. Create the Tests, adding steps one call at a time (Manual)
+bun xray test create --project {{PROJECT_KEY}} --summary "Verify login" --type Manual   # -> {{PROJECT_KEY}}-100
+bun xray test add-step --test <id-100> --action "Open app" --result "Login form displayed"
+bun xray test add-step --test <id-100> --action "Enter credentials" --data "user@test.com" --result "Dashboard shown"
+#    (repeat create + add-step per Test, e.g. {{PROJECT_KEY}}-101 ...)
+
+# 3. Attach the Tests to the Plan  (XRAY-INTERNAL membership)
+bun xray plan add-tests --plan {{PROJECT_KEY}}-110 --tests {{PROJECT_KEY}}-100,{{PROJECT_KEY}}-101
+
+# 4. Create the Test Execution (ATR container), pinned to a Test Environment
+bun xray exec create --project {{PROJECT_KEY}} --summary "Auth Suite - Sprint 12 ATR" --environment staging
+#    -> {{PROJECT_KEY}}-194
+
+# 5. Attach the Tests to the Execution  (XRAY-INTERNAL membership)
+bun xray exec add-tests --execution {{PROJECT_KEY}}-194 --tests {{PROJECT_KEY}}-100,{{PROJECT_KEY}}-101
+
+# 6. Run / import results, then set run statuses
+bun xray import junit --file test-results/junit.xml --execution {{PROJECT_KEY}}-194
+#    or drive runs manually:
+bun xray run list --execution {{PROJECT_KEY}}-194
+bun xray run status --id <runId> --status PASSED
 ```
 
 ## Example: Project / Site Migration

@@ -16,11 +16,13 @@ Traceability linking turns QA intent into a queryable graph in Jira. Five touchp
 
 | Touchpoint              | Moment                                                          | Link created                                  |
 | ----------------------- | -------------------------------------------------------------- | --------------------------------------------- |
-| `shift-left-testing`    | Test Plan authored ahead of dev for a Story / feature          | Story `is tested by` Test Plan (`test`)       |
+| `shift-left-testing`    | Test Plan (ATP) authored ahead of dev for a Story / feature    | Story `is tested by` ATP (`test`)             |
+| `test-documentation`    | ATP (Test Plan) + ATR (Test Execution) created for a Story (Modality `jira-xray`) | Story `is tested by` ATP and ATR (`test`)     |
+| `test-documentation`    | Test Case created for a Story under an ATP / ATR (Modality `jira-xray`) | ATP `designs` TC (`test_design`); ATR `executes` TC (`test_execute`). Story is **NOT** linked to the TC directly — coverage aggregates to the Story through the ATP/ATR. |
+| `test-documentation`    | Test / Test Execution issue created for a Story (Modality `jira-native`) | Story `is tested by` Test / Test Exec (`test`)|
 | `sprint-testing`        | Defect found during in-sprint QA of a Story                     | Story `causes` Bug (`problem_incident`)       |
 | `sprint-testing`        | QA blocks a Story on an open defect (the `defect_reported → blocked` gate) | Story `is blocked by` Bug (`blocks`)          |
-| `test-documentation`    | Test / Test Execution issue created for a Story (Modality `jira-native`) | Story `is tested by` Test / Test Exec (`test`)|
-| `regression-testing`    | Existing Test re-bound to a Story for a regression cycle        | Story `is tested by` Test (`test`); optional `test_execute` refinement |
+| `regression-testing`    | Existing Test re-bound to a Story for a regression cycle        | ATP `designs` Test (`test_design`); ATR `executes` Test (`test_execute`) |
 
 Skip the phase only when there is genuinely no relationship to record (e.g. an exploratory session with no Story under test and no defect filed) — but still record `no_links: true` in the workflow output so the consumer knows the phase ran.
 
@@ -52,15 +54,17 @@ All slugs below are present in the seeded `.agents/jira-link-types.json`. Resolv
 
 | Slug               | Semantic (illustrative)            | Source → Target                                              | Outward (illustrative) | Inward (illustrative) | Required / Optional | When to create                                                                 |
 | ------------------ | ---------------------------------- | ----------------------------------------------------------- | ---------------------- | --------------------- | ------------------- | ------------------------------------------------------------------------------ |
-| `test`             | Coverage — Story is tested by test artifact | Story → Test / Test Plan / Test Execution            | `tests`                | `is tested by`        | **REQUIRED**        | Canonical Story↔test-artifact link. Any time a Test / Test Plan / Test Execution covers a Story. The default coverage edge for shift-left, test-documentation, regression. |
+| `test`             | Coverage — Story is tested by ATP / ATR | Story → ATP (Test Plan) / ATR (Test Execution)         | `tests`                | `is tested by`        | **REQUIRED**        | Canonical Story↔coverage-container link. Created when the ATP (Test Plan) and ATR (Test Execution) are created for a Story. **Targets the ATP and ATR ONLY — NOT individual Test Cases.** From the Story you read `is tested by ATP` and `is tested by ATR`; TCs aggregate to the Story through the ATP/ATR, not via a direct Story↔TC edge. |
 | `problem_incident` | Causation — Story causes a defect  | Story → Bug / Defect                                        | `causes`               | `is caused by`        | **REQUIRED**        | When a defect is filed against a Story under test (sprint-testing bug filing). Records that the Story's behaviour caused the defect. |
 | `blocks`           | Blocking — Story is blocked by an open defect | Bug / Defect / Story / TechStory / TechDebt → Story | `blocks`               | `is blocked by`       | **REQUIRED**        | When QA blocks a Story on an open defect — the `defect_reported → blocked` gate. The defect (or blocking issue) `blocks` the Story; the Story `is blocked by` it. |
 | `relates`          | Symmetric reference (fallback)     | Any ↔ Any (symmetric)                                       | `relates to`           | `relates to`          | Fallback            | Degradation target ONLY when a required type is absent from the workspace. **Direction is lost** — warn on degradation (§6). |
-| `test_design`      | Xray refinement — test designs a thing | Test → design artifact                                   | `designs`              | `is designed by`      | Optional            | Xray-special refinement when a Test designs a requirement/spec and the project wants the finer edge over generic `test`. |
-| `test_execute`     | Xray refinement — execution runs a test | Test Execution → Test                                   | `executes`             | `is executed by`      | Optional            | Xray-special refinement to record that a Test Execution executes a specific Test (finer than generic `test`). |
+| `test_design`      | Coverage — ATP designs a Test Case | ATP (Test Plan) → TC (Test)                                 | `designs`              | `is designed by`      | **REQUIRED** (jira-xray) / N-A (jira-native) | The prescribed ATP↔TC edge under Modality `jira-xray`. Created for each TC the ATP plans. Inside the ATP you read `designs TC-x`; inside the TC you read `is designed by ATP`. Replaces any direct Story↔TC link. |
+| `test_execute`     | Coverage — ATR executes a Test Case | ATR (Test Execution) → TC (Test)                           | `executes`             | `is executed by`      | **REQUIRED** (jira-xray) / N-A (jira-native) | The prescribed ATR↔TC edge under Modality `jira-xray`. Created for each TC the ATR runs. Inside the ATR you read `executes TC-x`; inside the TC you read `is executed by ATR`. Replaces any direct Story↔TC link. |
 | `test_automation`  | Xray refinement — automation covers a manual test | Automation → manual Test                          | `automation test for`  | `is automated by`     | Optional            | Xray-special refinement to bind an automated test to the manual Test it automates (test-automation Stage). |
 
-> The three optional `test_*` refinements are Xray-special and apply chiefly under Modality `jira-xray`. The generic `test` link is the canonical, modality-agnostic coverage edge — always prefer it unless the project explicitly wants the finer Xray semantics.
+> **Coverage topology under Modality `jira-xray`**: the Story is linked ONLY to its ATP and ATR via `test`. Each Test Case is linked to the ATP via `test_design` (`designs` / `is designed by`) and to the ATR via `test_execute` (`executes` / `is executed by`). The Story is deliberately NOT linked to each TC — linking every TC to the Story creates noise; TCs aggregate to the Story THROUGH the ATP and ATR. The `test_*` design/execute edges are therefore the PRESCRIBED ATP↔TC and ATR↔TC links here, not optional refinements.
+>
+> Under Modality `jira-native` (no Xray) there are no separate ATP/ATR issues, so `test_design` / `test_execute` are N-A; the Story is linked directly to each Test via the generic `test` edge instead. `test_automation` stays an optional refinement in both modalities.
 
 ---
 
@@ -126,13 +130,24 @@ The "Verified direction" column is `no` only for symmetric types (`relates`) —
 
 ```
 shift-left-testing
-  └─ Test Plan authored for Story/feature
-        → Story is tested by Test Plan        [test]
+  └─ Test Plan (ATP) authored for Story/feature
+        → Story is tested by ATP              [test]
+
+test-documentation  (Modality jira-xray)
+  ├─ ATP (Test Plan) + ATR (Test Execution) created for Story
+  │     → Story is tested by ATP              [test]   (acli — [ISSUE_TRACKER_TOOL])
+  │     → Story is tested by ATR              [test]   (acli — [ISSUE_TRACKER_TOOL])
+  └─ Test Case created under the ATP/ATR
+        → Xray-internal attach (plan add-tests / exec add-tests)  (xray-cli — membership only, NO Jira link)
+        → ATP designs TC                       [test_design]   (acli — [ISSUE_TRACKER_TOOL], create explicitly)
+        → ATR executes TC                      [test_execute]  (acli — [ISSUE_TRACKER_TOOL], create explicitly)
+        (Story is NOT linked to the TC — coverage aggregates via ATP/ATR.
+         The Xray attach creates NO Jira links; the design/execute edges are SEPARATE and explicit.)
+        → (opt) automation automates Test      [test_automation]
 
 test-documentation  (Modality jira-native)
   └─ Test / Test Execution created for Story
         → Story is tested by Test/TestExec    [test]
-        → (opt) TestExec executes Test        [test_execute]
         → (opt) automation automates Test     [test_automation]
 
 sprint-testing
@@ -143,13 +158,14 @@ sprint-testing
 
 regression-testing
   └─ existing Test re-bound for regression cycle
-        → Story is tested by Test              [test]
-        → (opt) Test designs requirement       [test_design]
+        → ATP designs Test                     [test_design]
+        → ATR executes Test                    [test_execute]
 ```
 
 Edge ownership in one line:
 
-- **Story → tested_by → Test/TestPlan/TestExec** created on **test creation** (test-documentation, shift-left, regression) via `test`.
+- **Story → tested_by → ATP/ATR** created on **ATP/ATR creation** (test-documentation, shift-left) via `test`. The Story is linked to the ATP and ATR only — never to individual TCs.
+- **ATP → designs → TC** and **ATR → executes → TC** created on **TC creation** (test-documentation, regression) via `test_design` / `test_execute`. These are the coverage edges that bind TCs into the Story's graph (through the ATP/ATR), replacing any direct Story↔TC link.
 - **Story → causes → Bug** created on **bug filing** (sprint-testing) via `problem_incident`.
 - **Story → blocked-by → Bug** created on **QA block** (sprint-testing `defect_reported → blocked` gate) via `blocks`.
 
@@ -160,6 +176,15 @@ Edge ownership in one line:
 **Test ↔ Test Set membership is NOT a Jira issuelink.** Neither is Test ↔ Test Plan membership in an Xray-managed project. These are Xray-internal associations stored in Xray's own data model, not in Jira's `issuelinks`. They MUST be handled via **`/xray-cli`** (Xray REST / GraphQL), NEVER via `acli jira workitem link create`.
 
 **Explicit warning**: do NOT attempt to create membership with the (currently buggy) `"is part of test set"` link-type literal. It is not a real Jira link type in this workspace catalog, it bypasses the slug resolver (violating §2), and the Xray membership it appears to imply will not register. Test Set / Test Plan membership goes through `/xray-cli` only. The `test` issuelink in §3 covers Story↔test-artifact COVERAGE — it does not and cannot express Test-Set MEMBERSHIP.
+
+### Jira-layer links vs Xray-internal membership for the `designs` / `executes` edges — CONFIRMED
+
+The TARGET model (§3, §8) prescribes two distinct layers for an ATP/ATR↔TC relationship:
+
+- **Jira layer** — the `test_design` (`designs` / `is designed by`) and `test_execute` (`executes` / `is executed by`) **issue links**, readable on the ATP / ATR / TC issue panels and walkable via `issuelinks`.
+- **Xray layer** — the Test's membership of the Test Plan / Test Execution, stored in Xray's own data model (NOT in `issuelinks`), managed through `/xray-cli` (`plan add-tests` / `exec add-tests`).
+
+**CONFIRMED (empirically verified against a live Xray Cloud + Jira instance):** attaching a Test to a Test Plan (`plan add-tests`) or Test Execution (`exec add-tests`) via Xray creates **ZERO Jira-layer issue links** — the membership is purely Xray-internal (visible only in Xray's own panels, never in Jira's "Linked issues" / `issuelinks` / REST). The Jira-layer `test_design` (`designs` / `is designed by`) and `test_execute` (`executes` / `is executed by`) links are therefore NOT a by-product of the Xray attach and MUST be created EXPLICITLY via `[ISSUE_TRACKER_TOOL]` (`/acli`) using the `test_design` / `test_execute` slug, then direction-verified per §4. The two operations are independent: the Xray-internal attach (`/xray-cli`) handles membership; the Jira coverage edges go through acli — `/xray-cli` does NOT and cannot create them.
 
 ---
 
@@ -178,7 +203,7 @@ Edge ownership in one line:
 ## used_by
 
 - `sprint-testing` — files Bug (`problem_incident`) and blocks Story (`blocks`) during in-sprint QA.
-- `shift-left-testing` — binds Story to Test Plan (`test`) during pre-dev refinement.
-- `test-documentation` — binds Story to Test / Test Execution (`test`, opt. `test_execute` / `test_automation`) in Modality `jira-native`.
-- `regression-testing` — re-binds existing Tests to Stories (`test`, opt. `test_design`) per regression cycle.
+- `shift-left-testing` — binds Story to ATP/Test Plan (`test`) during pre-dev refinement.
+- `test-documentation` — binds Story to ATP + ATR (`test`); binds each TC to the ATP (`test_design`) and ATR (`test_execute`), NOT to the Story directly (Modality `jira-xray`). In Modality `jira-native` binds Story to Test / Test Execution (`test`, opt. `test_automation`).
+- `regression-testing` — re-binds existing Tests via ATP (`test_design`) and ATR (`test_execute`) per regression cycle.
 - `xray-cli` — owns Xray-internal Test Set / Test Plan membership (NOT a Jira issuelink — §9).
