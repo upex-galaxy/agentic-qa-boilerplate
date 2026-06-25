@@ -76,7 +76,7 @@ Key consequences:
 | Field | Required | Value source |
 |-------|----------|--------------|
 | ID | Yes | Auto-generated (e.g., `{{PROJECT_KEY}}-456`) |
-| Name | Yes | `{US_ID or TS_ID}: TC#: Validate <CORE> <CONDITIONAL>` |
+| Name | Yes | `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` |
 | Acceptance Criterion | Yes | Which AC this TC covers (1:N from TC side) |
 | User Story link | No — never direct | TC is NOT linked to the US directly; it reaches the US through the ATP/ATR |
 | Test Plan link (ATP) | Yes | `is designed by` ATP (`test_design`) |
@@ -237,13 +237,13 @@ Step 4. For each TC (as Stage 4 progresses):
 | User Story | `{{PROJECT_KEY}}-{n}` | `PROJ-123` |
 | ATP | `Test Plan: {{PROJECT_KEY}}-{n}` | `Test Plan: PROJ-123` |
 | ATR | `Test Results: {{PROJECT_KEY}}-{n}` | `Test Results: PROJ-123` |
-| TC (TMS title) | `{US_ID or TS_ID}: TC#: Validate <CORE> <CONDITIONAL>` | `PROJ-150: TC1: Validate successful login with valid credentials` |
-| TC (code / ATC) | `Should <behavior> when <condition>` | `Should display error when password is incorrect` |
+| TC (TMS title) | `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` | `PROJ-101: TC1: should grant access when credentials are valid` |
+| TC (code / ATC) | `{US_ID}: should <behavior> when <condition>` | `PROJ-101: should display error when password is incorrect` |
 
 Rules:
 
 1. ATP and ATR names always include the User Story ID. This makes them searchable, unique per story, and impossible to confuse across stories.
-2. TC names follow the pattern `{US_ID or TS_ID}: TC#: Validate <CORE> <CONDITIONAL>`, where `CORE` is verb + object describing the behavior (e.g., `successful login`, `authentication error`) and `CONDITIONAL` is the distinguishing condition (e.g., `with valid credentials`, `when password is incorrect`). The prefix is the Test Set ID (Xray with Test Sets) or the User Story ID (native Jira or Xray without Test Sets).
+2. TC names follow the pattern `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]`, where `CORE` is the expected outcome (verb + object phrased after `should`, e.g., `grant access`, `reject login`) and `CONDITIONAL` is the optional connector clause (`when …` / `if …`, e.g., `when credentials are valid`, `if password is incorrect`) plus an optional `given …` precondition. The prefix is ALWAYS the User Story ID, in every modality; Test Set membership is expressed as an issue link, never baked into the title.
 3. Code-side IDs match the TMS-generated key exactly. The `@atc('PROJ-456')` decorator uses the TMS issue key, not an invented module prefix.
 4. Module prefixes (e.g., `AUTH-`, `ORD-`) are used only for local folder/file organization under `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/` — they are not the canonical ID.
 
@@ -276,10 +276,10 @@ ATR (Test Results: PROJ-123)
   Complete:      Yes
 
 Test Cases (each: is designed by ATP, is executed by ATR — NOT linked to the US)
-  TC-1 | PASSED | AC1 | Should <behavior> when <condition>
-  TC-2 | PASSED | AC2 | Should <behavior> when <condition>
-  TC-3 | PASSED | AC3 | Should <behavior> when <condition>
-  TC-4 | FAILED | AC3 | Should <behavior> when <condition>
+  TC-1 | PASSED | AC1 | should <behavior> when <condition>
+  TC-2 | PASSED | AC2 | should <behavior> when <condition>
+  TC-3 | PASSED | AC3 | should <behavior> when <condition>
+  TC-4 | FAILED | AC3 | should <behavior> when <condition>
 ```
 
 ### Completeness criteria
@@ -624,7 +624,7 @@ Common failure modes and their fixes:
 | ATP not linked to ATR | Update ATP with ATR reference |
 | ATP not linked to Story | Link Story `is tested by` ATP (`test`) |
 | ATR not linked to Story | Link Story `is tested by` ATR (`test`) |
-| TC name doesn't follow convention | Rename TC to `{US_ID}: TC#: Validate <CORE> <CONDITIONAL>` |
+| TC name doesn't follow convention | Rename TC to `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` |
 | ATP name wrong | Rename to `Test Plan: {{PROJECT_KEY}}-{n}` |
 | ATR name wrong | Rename to `Test Results: {{PROJECT_KEY}}-{n}` |
 | TC has no AC link | Identify which AC it covers and add the reference |

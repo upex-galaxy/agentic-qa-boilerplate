@@ -146,7 +146,7 @@ TCs in `spec.md` must reference TMS-generated IDs, never local-only IDs. Before 
 3. **If TCs are missing** — create them in the TMS first (`[TMS_TOOL] Create Test`), capture the returned IDs, then write `spec.md`.
 4. **If partial** — consume what exists, create the gaps in TMS, write `spec.md` with the combined set.
 
-Local `{PREFIX}-T{NN}` naming is filesystem scaffolding. All TC headings inside `spec.md` use the TMS IDs (`### TC-47: Should ...` or `### UPEX-123: Should ...`). The same IDs become `@atc('TC-47')` decorators during the Code phase.
+Local `{PREFIX}-T{NN}` naming is filesystem scaffolding. All TC headings inside `spec.md` use the TMS IDs (`### PROJ-101: should ...`). The same IDs become `@atc('PROJ-101')` decorators during the Code phase.
 
 ---
 
@@ -174,7 +174,7 @@ The spec is the business-facing contract. A reader with zero context should unde
 
 ## Test Cases
 
-### {TMS_TC_ID}: Should {behavior} when {condition}
+### {TMS_TC_ID}: should {behavior} when {condition}
 
 **Preconditions**: {System state}
 **Action**: {User action — the trigger}
@@ -184,7 +184,7 @@ The spec is the business-facing contract. A reader with zero context should unde
 - {What should NOT be visible}
 
 \`\`\`gherkin
-Scenario: {TMS_TC_ID} - Should {behavior} when {condition}
+Scenario: {TMS_TC_ID} - should {behavior} when {condition}
   Given {state}
   When the user {active action}
   Then {outcome}
@@ -206,7 +206,7 @@ Scenario: {TMS_TC_ID} - Should {behavior} when {condition}
 
 Rules for `spec.md`:
 
-- TC heading format — `### {TMS_TC_ID}: Should {behavior} when {condition}`.
+- TC heading format — `### {TMS_TC_ID}: should {behavior} when {condition}`.
 - Gherkin `When` describes a **user action**, not a passive system event.
 - No hardcoded values in Gherkin — use variables `{user_id}`, `{order_id}`, `{month}`.
 - Multi-step flows (2+ actions with intermediate verifications) are flagged as multi-ATC tests, not a single TC.
@@ -466,7 +466,7 @@ Include two tables in the implementation plan based on manifest output:
 - **Existing ATCs (Reuse)** — populated from manifest entries whose `id` matches ACs already covered.
 - **New ATCs (Create)** — ATC IDs that must be created for this ticket.
 
-A planned "new component" that the manifest already lists is a duplicate and will be rejected in review. A planned `@atc('TC-XXX')` ID that already appears in `atcs[].id` is an ID collision and will be rejected. Both errors are avoidable by reading `kata-manifest.json` first.
+A planned "new component" that the manifest already lists is a duplicate and will be rejected in review. A planned `@atc('PROJ-XXX')` ID that already appears in `atcs[].id` is an ID collision and will be rejected. Both errors are avoidable by reading `kata-manifest.json` first.
 
 ---
 

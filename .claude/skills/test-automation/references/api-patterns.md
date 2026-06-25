@@ -462,7 +462,7 @@ const [response, body] = await this.apiGET<ApiErrorResponse>(`${this.baseEndpoin
 import { test, expect } from '@TestFixture';
 import type { CreateOrderRequest } from '@schemas/orders.types';
 
-test.describe('TICKET-ID: Orders API', () => {
+test.describe('TICKET-ID: Validate orders API', () => {
   let customer: CustomerCandidate | null;
 
   test.beforeAll(async ({ api }) => {

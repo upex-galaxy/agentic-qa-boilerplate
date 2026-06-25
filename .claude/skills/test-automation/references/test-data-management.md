@@ -275,7 +275,7 @@ If setup **modifies** or **generates** data, restore or delete it so the environ
 | `afterAll` | One shared mutation in `beforeAll` — restore once at end |
 
 ```typescript
-test.describe('TICKET-ID: Order status actions', () => {
+test.describe('TICKET-ID: Validate order status actions', () => {
   let originalStatus: string;
 
   test.beforeAll(async ({ api }) => {

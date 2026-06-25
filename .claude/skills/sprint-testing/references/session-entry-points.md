@@ -333,7 +333,7 @@ Output checkpoint:
 ```markdown
 ## Stage 1 Complete
 - [ ] ATP created with N scenarios
-- [ ] TC nomenclature `{US_ID}: TC#: Validate <CORE> <CONDITIONAL>` applied
+- [ ] TC nomenclature `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` applied
 - [ ] Variables + test data identified
 - [ ] Traceability verified
 - [ ] Ready for execution testing

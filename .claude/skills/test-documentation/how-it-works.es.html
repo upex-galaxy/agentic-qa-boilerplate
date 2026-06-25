@@ -649,10 +649,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">Nomenclatura + particionamiento</p>
   <h2 class="h2" data-anim="fade-up">Nombra un TC para que cualquiera lo encuentre</h2>
   <ul class="blist mt-l anim-stagger-list">
-    <li><b>El formato que importa.</b> <span class="mono">{US_ID or TS_ID}: TC#: Validate &lt;CORE&gt; &lt;CONDITIONAL&gt;</span></li>
-    <li><b>CORE.</b> verbo + objeto: <span class="mono">successful login</span>, <span class="mono">authentication error</span>, <span class="mono">order creation</span>.</li>
-    <li><b>CONDITIONAL.</b> la condición que lo distingue: <span class="mono">with valid credentials</span>, <span class="mono">when password is incorrect</span>.</li>
-    <li><b>Ejemplo resuelto.</b> <span class="mono">GX-101: TC2: Validate authentication error when password is incorrect</span>.</li>
+    <li><b>El formato que importa.</b> <span class="mono">{US_ID}: TC#: should &lt;outcome&gt; when &lt;condition&gt;</span></li>
+    <li><b>CORE — resultado esperado.</b> verbo + objeto tras <span class="mono">should</span>: <span class="mono">grant access</span>, <span class="mono">reject login</span>, <span class="mono">cap input length</span>.</li>
+    <li><b>CONDITIONAL.</b> la cláusula conectora opcional: <span class="mono">when credentials are valid</span>, <span class="mono">if password is incorrect</span>, opcional <span class="mono">given &lt;precondition&gt;</span>.</li>
+    <li><b>Ejemplo resuelto.</b> <span class="mono">GX-101: TC2: should show auth error when password is incorrect</span>.</li>
     <li><b>Rechaza estos.</b> <span class="mono">Login test</span> · <span class="mono">Login - error</span> · <span class="mono">TC1: Test form</span> · <span class="mono">Should work correctly</span>.</li>
   </ul>
   <div class="notes">Un buen nombre es buscable, único y autoexplicativo. Particionamiento por equivalencia: misma salida → un TC parametrizado (Scenario Outline + Examples); distinta salida → TC separados. Los antipatrones son títulos reales que la gente entrega — vagos e inútiles seis meses después.</div>
@@ -770,7 +770,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="stage"><div class="sx">US</div><div><h4>Story</h4><p>El requisito (preexistente), <span class="mono">{{PROJECT_KEY}}-{n}</span>.</p></div></div>
     <div class="stage"><div class="sx">ATP</div><div><h4>Acceptance Test Plan</h4><p><span class="mono">Test Plan: {{PROJECT_KEY}}-{n}</span> — Test Analysis + cobertura AC→TC.</p></div></div>
     <div class="stage"><div class="sx">ATR</div><div><h4>Acceptance Test Results</h4><p><span class="mono">Test Results: {{PROJECT_KEY}}-{n}</span> — Test Report + resultados de ejecución.</p></div></div>
-    <div class="stage"><div class="sx">TC</div><div><h4>Test Case</h4><p><span class="mono">{US_ID}: TC#: Validate &lt;CORE&gt; &lt;CONDITIONAL&gt;</span> — Precondición + Acción + Esperado.</p></div></div>
+    <div class="stage"><div class="sx">TC</div><div><h4>Test Case</h4><p><span class="mono">{US_ID}: TC#: should &lt;outcome&gt; when &lt;condition&gt;</span> — Precondición + Acción + Esperado.</p></div></div>
     <div class="stage"><div class="sx">TS</div><div><h4>Test Set <span class="tag">solo xray</span></h4><p><span class="mono">Test Set: &lt;EPIC_KEY&gt; &lt;feature&gt;</span> — agrupación por feature (1:1 con el Epic) de los Tests de regression promovidos. Nativo: reemplazado por un label de feature/Epic, sin entidad.</p></div></div>
   </div>
   <div class="notes">Las cuatro entidades core tienen un hogar permanente en el Regression Epic — nunca dejes un TC huérfano fuera de él. El Test Set es un organizador a nivel de feature solo de Xray; la siguiente diapositiva separa los tres contenedores que la gente tiende a confundir.</div>
@@ -802,7 +802,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="terminal mt-m">
     <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>TC-GX-101.feature</span></div>
 <pre><span class="cmt">@critical @regression @automation-candidate @GX-101</span>
-<span class="kw">Scenario Outline:</span> Validate authentication error when password is incorrect
+<span class="kw">Scenario Outline:</span> should show auth error when password is incorrect
   <span class="cmt">"""</span>
   <span class="cmt">Bugs covered: GX-202   Related Story: GX-101   ROI Score: 4.0</span>
   <span class="cmt">"""</span>
@@ -906,8 +906,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <span class="o">[Phase 2]  Filter: prior bug = YES. ROI = (4×5×4)/(2×1) = 40.</span>
 <span class="o">           Verdict: CANDIDATE (bug-driven defaults to Candidate).</span>
 <span class="o">[Phase 3]  Regression Epic UPEX-9 found. Creating 1 TC inline...</span>
-<span class="o">             UPEX-540 "UPEX-101: TC2: Validate authentication</span>
-<span class="o">             error when password is incorrect" [automation-candidate]</span>
+<span class="o">             UPEX-540 "UPEX-101: TC2: should show auth error</span>
+<span class="o">             when password is incorrect" [automation-candidate]</span>
 <span class="o">           Linked: is tested by → UPEX-101. Cached locally.</span>
 <span class="o">  Plan ready: create UPEX-540, transition to Candidate. Proceed?</span>
 <span class="p">&gt; </span><span class="c">y</span>

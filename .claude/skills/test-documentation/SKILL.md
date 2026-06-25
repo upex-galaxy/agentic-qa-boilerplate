@@ -50,7 +50,7 @@ Requires `agentic-qa-core`. Loads on demand:
 **Test-documentation operational rules:**
 
 - Documents already-validated behavior only — not an exploration tool (exploration belongs to `/sprint-testing`).
-- TC identity = Precondition + Action + verifiable outcome. Naming: `Validate <CORE> <CONDITIONAL>`. Reject `"Login test"`, `"Login - error"`, `"TC1: Test form"`.
+- TC identity = Precondition + Action + verifiable outcome. Naming (TC): `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]`; `Validate <feature>` is reserved for the GROUPING layer (Test Set summary / `describe()`). Reject `"Login test"`, `"Login - error"`, `"TC1: Test form"`.
 - ROI formula → one of three verdicts per TC: Candidate (feeds test-automation), Manual, Deferred. Prioritize by risk.
 - Cardinality: US→TC is 1:N; AC→TC is N:1 or N:M. Resolve TMS modality (Xray vs Jira-native) in Phase 0 before documenting.
 - Bug-driven (GOLDEN RULE): not every bug is a regression TC, but a regression-worthy bug MUST end with a Test — REUSE the existing failed Test if it came from one, else CREATE one (both modalities). A non-qualifying bug is treated like a failed test → Deferred, no new Test.
@@ -223,7 +223,7 @@ Cross-cutting traits are **validated inside every test**, not as separate TCs.
 
 > **Deferral ≠ omission.** Moving a cross-cutting trait out of per-feature TC scope is an **explicit handoff**, not a silent drop. Each row must land somewhere: woven into a TC's data/assertions (the table above) OR owned by a named app-level suite (XSS / perf / a11y regression suite). If no such suite exists for a trait the feature genuinely exposes, file the gap (Deferred TC or a note in the ATR) — never let it evaporate.
 
-A real scenario is a **user flow**: clear business objective, concrete precondition + action, verifiable outcome. Name format: `Validate <CORE> <CONDITIONAL>`.
+A real scenario is a **user flow**: clear business objective, concrete precondition + action, verifiable outcome. The TC name uses the `should` form — `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]`; reserve `Validate <feature>` for the GROUPING layer (Test Set summary / `describe()`), never for the individual case.
 
 ### Source-code validation (mandatory before documenting)
 
@@ -356,7 +356,7 @@ Four entities. **Traceability model (jira-xray):** the **Story links ONLY to its
 | **US** (Story) | Pre-existing | `{{PROJECT_KEY}}-{n}` | The requirement |
 | **ATP** | Stage 1 (or now, if missing) | `Test Plan: {{PROJECT_KEY}}-{n}` | Test Analysis + AC-to-TC coverage |
 | **ATR** | Stage 1 (or now, if missing) | `Test Results: {{PROJECT_KEY}}-{n}` | Test Report + execution results |
-| **TC** | Stage 4 (this phase) | `{US_ID}: TC#: Validate <CORE> <CONDITIONAL>` | Precondition + Action + Expected |
+| **TC** | Stage 4 (this phase) | `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` | Precondition + Action + Expected |
 | **Test Set** (xray only) | Lazily in Stage 4 if missing (ask first); else pre-existing (async) | `Test Set: <EPIC_KEY> <feature>` | Feature-level grouping (1:1 Epic) of promoted regression Tests. Native: replaced by a feature/Epic label, no entity. |
 
 Read `references/tms-architecture.md` when creating ATP/ATR/TC for a ticket, checking required links, or validating that a story is fully documented.
@@ -396,7 +396,7 @@ Always populate Description with the full TC template (Related Story, Priority, 
 
 ```gherkin
 @{priority} @regression @automation-candidate @{US_ID}
-Scenario Outline: Validate <core> <conditional>
+Scenario Outline: should <outcome> <connector> <condition>
   """
   Bugs covered: BUG-1, BUG-2
   Related Story: {US_ID}
@@ -443,13 +443,14 @@ Never jump states. If a TC needs rework, use a `back_from_<state>` transition (e
 ### Naming — the one rule that matters
 
 ```
-{US_ID or TS_ID}: TC#: Validate <CORE> <CONDITIONAL>
+{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]
 ```
 
-- `CORE`: verb + object — the behavior itself (`successful login`, `authentication error`, `order creation`).
-- `CONDITIONAL`: the distinguishing condition (`with valid credentials`, `when password is incorrect`, `when exceeding 5 failed attempts`).
-- Vocabulary: entity and process names inside `<CORE>` / `<CONDITIONAL>` come from `.context/business/domain-glossary.md` when present — canonical terms only; anti-glossary banned terms must not appear in TC titles or bodies.
-- In code (KATA): `@atc('{US_ID}-TC#')` decorator and `Should <behavior> when <condition>` in `test()` blocks.
+- Prefix is **ALWAYS `{US_ID}`** (the User Story key) in every modality — Jira-native, Xray with Test Sets, Xray without. Test Set membership is expressed via an issue **link** ("is part of" / Test Set membership), NEVER in the TC title.
+- `CORE` (expected outcome): verb + object phrased after `should` — the asserted behavior (`grant access`, `reject login`, `cap input length`).
+- `CONDITIONAL`: the optional connector clause (`when …` / `if …`) plus an optional `given <precondition>`. Omit entirely for unconditional behavior.
+- Vocabulary: entity and process names inside `<expected outcome>` / `<condition>` come from `.context/business/domain-glossary.md` when present — canonical terms only; anti-glossary banned terms must not appear in TC titles or bodies.
+- In code (KATA): `@atc('PROJ-101')` decorator (the TC's Jira key, string literal only — no template literals) and `should <behavior> when <condition>` in `test()` blocks; the grouping `describe()` uses the `'{US_ID}: Validate <feature>'` form.
 
 Anti-patterns to reject: `"Login test"`, `"Login - error"`, `"TC1: Test form"`.
 
@@ -490,7 +491,7 @@ On Phase 3 partial failure (some chunks 429-rate-limited, some succeeded), archi
 - **Bug-driven: evaluate first, but if regression-worthy it MUST have a Test (reuse or create).** A closed bug is strong empirical evidence the area regresses, so most qualify and lean Candidate — but not all do (a one-time typo in a stable area is treated like a failed test → Deferred, no new Test). When it qualifies, follow the Bug-driven decision: reuse the existing failed Test if the bug came from one, else create + design a new Test. Golden rule: where an important bug exists, a test must cover it.
 - **Source-code validation is mandatory**: the ATP was written before code. Grep for `data-testid=`, routes, text formats. Log discrepancies in a Refinement Notes section on the TC.
 - **Derive widely, document only the repeatable, automate the few — three layers, three counts.** (1) DESIGN/derive (in `/sprint-testing` planning + exploration): consider many cases by technique (1:N) — this lives in the prioritization analysis, NOT yet in the TMS. (2) DOCUMENT (this skill): create a persistent TMS TC **only** for scenarios worth re-running — Candidate (automated regression) + Manual (manual regression). Deferred scenarios are recorded in the prioritization report and **NOT created in the TMS** (see Three outcomes). (3) AUTOMATE (`/test-automation`): the Candidates. So "analyzed 80 → documented 12 → automated 8" is the healthy shape — **never "document all 80"**. (jira-xray nuance: the 80 may already exist as sprint `Test` artifacts from `/sprint-testing` Stage 1; there "document 12" means **promote 12** into the Regression Test Plan, leaving the rest as unpromoted sprint artifacts.) The guiding principle: *a test enters the regression repository because it will be re-executed (manual or automated), never to hit a coverage count.* If most scenarios end up Candidate/Manual, re-apply Phase 0 harder — most should be Deferred.
-- **Test Plan / Test Set ID (Xray) vs User Story ID (native Jira)**: the TC prefix depends on stack. In Xray with a Test Set, prefix is the TS ID. In native Jira, prefix is the US ID. Both work — pick one per project and stay consistent.
+- **TC prefix is ALWAYS the User Story key (`{US_ID}`)** — no longer modality-dependent. In every modality (Jira-native, Xray with Test Sets, Xray without), the TC title is prefixed with the US key. Test Set membership is expressed via an issue link ("is part of" / Test Set membership), NEVER in the TC title.
 
 ---
 
@@ -589,7 +590,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
 [TMS_TOOL] Create Test:
   project: {{PROJECT_KEY}}
   type: Cucumber
-  title: {US_ID}: TC#: Validate <CORE> <CONDITIONAL>
+  title: {US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]
   labels: regression, automation-candidate, e2e, critical
   gherkin: {from high-quality gherkin}
 
@@ -650,7 +651,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
 [ISSUE_TRACKER_TOOL] Create Issue:
   project: {{PROJECT_KEY}}
   issueType: Test                               # or Task with a Test Type custom field
-  summary: {US_ID}: TC#: Validate <CORE> <CONDITIONAL>
+  summary: {US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]
   priority: {Critical|High|Medium|Low}
   labels: [regression, automation-candidate, e2e, critical]
   epic: {REGRESSION_EPIC_KEY}

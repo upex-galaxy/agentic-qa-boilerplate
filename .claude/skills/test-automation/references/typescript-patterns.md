@@ -316,7 +316,7 @@ Pattern: `{verb}{Feature}.test.ts` in camelCase with a verb describing the user 
 ### Test block naming
 
 ```typescript
-test.describe('TICKET-ID: Apply Discount Code', () => {
+test.describe('TICKET-ID: Validate discount codes', () => {
   test('TICKET-ID: should apply percentage discount when code is valid', ...);
   test('TICKET-ID: should apply fixed-amount discount when code is valid', ...);
   test('TICKET-ID: should reject discount when code has expired', ...);

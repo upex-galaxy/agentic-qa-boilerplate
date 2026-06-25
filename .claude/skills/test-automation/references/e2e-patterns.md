@@ -322,7 +322,7 @@ test('TICKET-ID: should show welcome banner after login', async ({ ui }) => {
 ```typescript
 import { test, expect } from '@TestFixture';
 
-test.describe('TICKET-ID: Checkout flow', () => {
+test.describe('TICKET-ID: Validate checkout flow', () => {
   let product: ProductCandidate | null;
 
   test.beforeAll(async ({ api }) => {

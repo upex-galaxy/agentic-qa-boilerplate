@@ -310,7 +310,7 @@ Two-command discipline for the test author:
 |---|---|---|
 | `--check` exits 1 with "stale" | Component or ATC change not regenerated | `bun run kata:manifest && git add kata-manifest.json` |
 | `--check` exits 1 with "missing" | `kata-manifest.json` not committed yet | `bun run kata:manifest && git add kata-manifest.json` (first-time only) |
-| ATC missing from manifest after regen | Used template literal `` @atc(`TC-${id}`) `` instead of string literal | Change to `@atc('TC-XXX')` — the scanner only matches string literals |
+| ATC missing from manifest after regen | Used template literal `` @atc(`PROJ-${id}`) `` instead of string literal | Change to `@atc('PROJ-XXX')` — the scanner only matches string literals |
 | Phantom ATC in manifest | `@atc(...)` example inside a JSDoc/comment was captured | Confirm the scanner is comment-aware (commit `c339533` fixed this); ensure the comment line begins with `//` or `*` |
 | Component missing from manifest | File listed in `EXCLUDED_FILES` (`scripts/kata-manifest.ts`) | Rename the file, or remove it from the exclusion list |
 | Class name in manifest looks wrong | First `export class PascalCase` in the file is not the intended one | Make the intended class the first export; or refactor the file |

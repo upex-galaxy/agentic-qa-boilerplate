@@ -68,7 +68,7 @@ Module (directory)        -> tests/e2e/orders/
 |-------|---------|--------|---------|
 | Directory | Module / product area | kebab-case | `orders/`, `products/`, `auth/` |
 | File | Feature / functional area | `{verb}{Feature}.test.ts` (camelCase) | `applyDiscount.test.ts` |
-| `describe()` | Ticket / User Story | `'{TICKET-ID}: {Title}'` | `'UPEX-411: Apply Discount Code'` |
+| `describe()` | Ticket / User Story | `'{TICKET-ID}: Validate {feature}'` | `'UPEX-411: Validate discount codes'` |
 | `test()` | Scenario / test case | `'{TICKET-ID}: should {behavior} when {condition}'` | `'UPEX-411: should apply percentage discount when code is valid'` |
 
 Every `test()` must include the ticket ID as a prefix. `describe` blocks may include the ticket ID when the file is tied to a single ticket.
@@ -308,13 +308,13 @@ Use Playwright tags on `test()` and `describe()` to group runs and drive the CI 
 | `@smoke` | Post-deploy health check. Runs on every deployment. | Smoke workflow. |
 | `@regression` | Full coverage. Runs nightly / pre-release. | Regression workflow. |
 | `@e2e` | End-to-end (UI + API). | Scope selection in CI. |
-| `@api` / `@integration` | API-only tests. | Scope selection in CI. |
+| `@integration` | API / integration tests. | Scope selection in CI. |
 | `@flaky` | Known intermittent — under stabilization. | Excluded from `@critical` runs. |
 
 Example:
 
 ```typescript
-test.describe('TICKET-ID: Apply Discount Code @regression', () => {
+test.describe('TICKET-ID: Validate discount codes @regression', () => {
   test('TICKET-ID: should apply percentage discount when code is valid @critical', async ({ api }) => {
     ...
   });

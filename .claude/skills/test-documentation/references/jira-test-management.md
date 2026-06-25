@@ -34,7 +34,7 @@ Decision rule:
 - **Xray present** -> use Jira + Xray. The extra issue types (Test Plan, Test Set, Test Execution) are worth the complexity.
 - **Xray absent** -> use Jira Native. Build a custom `Test` issue type and treat Description as the source of truth.
 
-Once chosen, stay consistent: TC prefix depends on mode (see §5).
+Once chosen, stay consistent. The TC prefix is always the User Story key regardless of mode (see §5).
 
 ---
 
@@ -62,7 +62,7 @@ Five extra issue types available:
 |------------|---------|--------------|
 | **Test** | Individual test case (Manual, Cucumber, Generic). | Child of Regression Epic; linked to User Story. |
 | **Test Plan** | Groups Tests for a release / sprint. Contains Tests. | Planning-level container. |
-| **Test Set** | Groups Tests by criteria (smoke, regression, domain). | Re-usable grouping; `TS_ID` becomes TC prefix. |
+| **Test Set** | Groups Tests by criteria (smoke, regression, domain). | Re-usable grouping; membership is a link, NEVER the TC prefix (prefix is always `{US_ID}`). |
 | **Test Execution** | One execution instance. Generates Test Runs. | Executes a Test Plan or ad-hoc set of Tests. |
 | **Precondition** | Reusable prerequisite for Tests. | Referenced by Tests that share setup. |
 
@@ -73,7 +73,7 @@ Regression Epic
     |
     +-- Test Plan: PROJ Sprint 50
     |       |
-    |       +-- Test Set: Sanity: PROJ-101: Allow credit card payment
+    |       +-- Test Set: Sanity: PROJ-101: Validate credit card payment
     |       |       +-- Test (TC1, TC2, ...)
     |       |
     |       +-- Test Set: Regression: Checkout v2
@@ -135,28 +135,28 @@ Xray additionally exposes:
 
 ---
 
-## 5. Naming — prefix depends on mode
+## 5. Naming — prefix is always the User Story key
 
-The TC naming convention is the same in both modes — only the prefix differs.
+The TC naming convention is identical in every modality — the prefix is **ALWAYS the User Story key** (`{US_ID}`), never the Test Set ID.
 
 ```
-{PREFIX}: TC#: Validate <CORE> <CONDITIONAL>
+{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]
 ```
 
-| Mode | `PREFIX` |
+| Modality | `PREFIX` |
 |------|----------|
 | **Jira Native** | User Story ID (`PROJ-101`) |
-| **Jira + Xray with Test Sets** | Test Set ID (`PROJ-150`) |
+| **Jira + Xray with Test Sets** | User Story ID (`PROJ-101`) — Test Set membership is a link, not a prefix |
 | **Jira + Xray without Test Sets** | User Story ID (`PROJ-101`) |
 
-Pick one and stay consistent across the whole project. Mixing prefixes makes JQL searches unreliable.
+The prefix never changes with mode. Test Set association is expressed via an issue **link** ("is part of" the Test Set), NEVER in the TC title — so JQL by Story key stays reliable across the whole project.
 
 Related naming:
 
 | Entity | Pattern | Example |
 |--------|---------|---------|
 | Test Plan | `QA: TestPlan: <Strategy> <Version>` | `QA: TestPlan: Regression v2.1` |
-| Test Set | `<Strategy>: <ID>: <Summary>` | `Sanity: PROJ-101: Allow credit card payment` |
+| Test Set | `<Strategy>: <ID>: Validate <feature>` | `Sanity: PROJ-101: Validate credit card payment` |
 | Test Execution | `<Strategy>: <ID>: <Summary>` | `Regression: TP-50: Sprint 50 Regression` |
 | ReTesting (bug fix) | `ReTest: <BUG_ID>: <Summary>` | `ReTest: PROJ-202: Wrong error on invalid password` |
 | Precondition | `<Epic>: <Component>: PRC: For <Action>` | `Checkout: Payment: PRC: For credit card flow` |
@@ -233,7 +233,7 @@ The Description is load-bearing in Jira Native mode and still recommended in Xra
 ### Gherkin (if Candidate)
 ```gherkin
 @{priority} @regression @automation-candidate @{US_ID}
-Scenario Outline: Validate <core> <conditional>
+Scenario Outline: should <outcome> <connector> <condition>
   Given <entity> exists with <identifier>
   When the user <main_action>
   Then <assertion 1>
@@ -437,7 +437,7 @@ Groups Tests by domain / strategy. Reusable across sprints. TC prefix can be the
 [ISSUE_TRACKER_TOOL] Create Issue:
   project: {{PROJECT_KEY}}
   issueType: Test Set
-  summary: Sanity: {{PROJECT_KEY}}-101: Allow credit card payment
+  summary: Sanity: {{PROJECT_KEY}}-101: Validate credit card payment
   labels: [regression, sanity]
 ```
 
@@ -520,7 +520,7 @@ outcome: Candidate
 labels: [regression, automation-candidate, e2e, high]
 ---
 
-# PROJ-456: TC1: Validate successful login with valid credentials
+# PROJ-456: TC1: should grant access when credentials are valid
 
 ## Preconditions
 - <precondition 1>
@@ -567,7 +567,7 @@ The frontmatter is machine-readable. A later `test-automation` run greps for `ou
 
 8. **Gherkin rendering**: Jira's rich-text editor mangles Gherkin indentation when pasted without a code block. Always wrap Gherkin in triple-backticks (``` ```gherkin ``` ```) inside the Description, or use Xray's dedicated Gherkin field.
 
-9. **Character limits**: Summary is capped at 255 chars. Long TC titles ("PROJ-101: TC14: Validate successful checkout when user has multiple cards and applies stacked discounts...") truncate silently. Keep CORE + CONDITIONAL tight.
+9. **Character limits**: Summary is capped at 255 chars. Long TC titles ("PROJ-101: TC14: should complete checkout when user has multiple cards and applies stacked discounts...") truncate silently. Keep CORE + CONDITIONAL tight.
 
 10. **Xray Test Type cannot change**: once a Test is created as `Manual`, converting it to `Cucumber` typically requires deletion and recreation. Pick the type correctly at creation time.
 
@@ -579,7 +579,7 @@ The frontmatter is machine-readable. A later `test-automation` run greps for `ou
 
 ## 13. Completeness checklist (per TC before moving to Ready)
 
-- [ ] Summary follows `{PREFIX}: TC#: Validate <CORE> <CONDITIONAL>` — no anti-patterns
+- [ ] Summary follows `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` — no anti-patterns
 - [ ] Traced to the User Story: Modality jira-xray → "is designed by" ATP + "is executed by" ATR (NO direct TC → Story link); Modality jira-native → "is tested by" the Story directly
 - [ ] Linked to Regression Epic (Epic Link)
 - [ ] Priority set

@@ -311,7 +311,7 @@ Examples:
 
 Anti-patterns: `Login test`, `Login - error`, `Test the form`, `Negative case`. Always describe behavior AND condition.
 
-**Note:** In Stage 4 `test-documentation` prepends `<TS_ID>: TC#:` to formalize these in Xray. Do not add the prefix here — this is manual / shift-left, not formal TC.
+**Note:** In Stage 4 `test-documentation` prepends `{US_ID}: TC#:` (always the User Story key, never the Test Set ID) to formalize these in Xray; Test Set membership is expressed via an issue link, not in the title. Do not add the prefix here — this is manual / shift-left, not formal TC.
 
 ### Outline structure (per scenario)
 

@@ -28,7 +28,7 @@ Every TMS artifact becomes one of these:
 | Issue type | Purpose | Notes |
 |------------|---------|-------|
 | **Test** | Individual test case (Manual / Cucumber / Generic) | Child of Regression Epic; linked to Story. |
-| **Test Set** | Groups tests by criteria (smoke / regression / domain) | Reusable across sprints; `TS_ID` can become TC prefix. |
+| **Test Set** | Groups tests by criteria (smoke / regression / domain) | Reusable across sprints; membership is an issue link, NEVER the TC prefix (the TC prefix is always `{US_ID}`). Set summary uses `Validate <feature>`. |
 | **Test Plan** | Strategic planning for a release / sprint | Planning-level container; one per release cadence. Maps to **ATP**. |
 | **Test Execution** | One execution cycle; holds Test Runs | Maps to **ATR**. Carries Environment, Begin/End Date. Target of CI result import. |
 | **Pre-Condition** | Reusable prerequisites | Linked to Tests that share setup (e.g. "User logged in as Admin"). |
