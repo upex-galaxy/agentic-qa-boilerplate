@@ -1,1 +1,18 @@
-bun run repo:check
+# Pre-push gate: ONLY the checks pre-commit does NOT already run per-commit.
+#
+# pre-commit covers (every commit): types:check, vars:check, skills:check
+#   + conditional kata:manifest:check (when staged files affect the kata manifest)
+#   + conditional skills:registry:check (when staged files affect the registry).
+# pre-push adds the full-repo checks pre-commit skips for speed:
+#   - format:check / lint:check  full repo (lint-staged only touches staged files at commit)
+#   - vars:env:check             not run at commit time
+#   - skills:registry:check      unconditional safety net — a commit in the push range may
+#                                have changed the registry without pre-commit catching it.
+#   - kata:manifest:check        unconditional safety net — same rationale as the registry.
+#
+# Commands are INLINED (not an aggregate npm script) on purpose: this hook syncs to
+# downstream projects via the boilerplate updater's `husky` directory component, and must
+# never depend on a package.json script key that could land in a separate, partially-applied
+# sync phase. Every command below already exists in every scaffolded project.
+# The full suite (incl. types/vars/skills) lives in `repo:check` for CI / manual runs.
+bun run format:check && bun run lint:check && bun run vars:env:check && bun run skills:registry:check && bun run kata:manifest:check
