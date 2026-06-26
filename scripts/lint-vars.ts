@@ -70,6 +70,7 @@ const SKIP_DIRS = new Set([
   'node_modules',
   '.git',
   'worktrees', // git worktrees under .claude/ are another branch's checkout — not this tree
+  'PBI', // [SYNC] files owned by sync-jira-issues.ts — Jira data cache, never contain {{VAR}} / <<VAR>> / {{jira.*}} syntax. Skipping avoids walking thousands of synced .md files in mature projects.
   '.scratch',
   'tests',
   'api',
