@@ -431,6 +431,146 @@ function makeGitStrategyUpsertHook(
   };
 }
 
+// --- METHODOLOGY YAML BLOCK BACK-FILL (qa_epics, qa_assignee — afterApply hooks) ---
+//
+// Two defect-management blocks live in bootstrapOnly files (the sync NEVER
+// overwrites them): the `qa_epics` block under `qa:` in `.agents/project.yaml`,
+// and the `qa_assignee` required-field entry in `.agents/jira-required.yaml`. A
+// pre-existing downstream project would silently miss both — and because the
+// synced skills + doctrine reference `{{jira.qa_assignee}}` and `qa.qa_epics.*`,
+// a missing entry BREAKS that project's `vars:check` / `jira:check`. These hooks
+// back-fill the blocks INSERT-ONLY (never editing an existing line), idempotent
+// (skip when the key is already present), `--auto` only warns. Declaring
+// `qa_assignee` early is safe even before the field exists in the consumer's
+// Jira: it carries a comment fallback, so the slug resolves regardless.
+
+/**
+ * Extract a NESTED block (`<indent><key>:` + its deeper-indented body) from a
+ * YAML string, INCLUDING the contiguous comment header at the SAME indent that
+ * immediately precedes the key. Returns the block verbatim (original indentation
+ * preserved) or null when the key is absent at that indent.
+ */
+export function extractIndentedYamlBlock(yaml: string, key: string, indent: string): string | null {
+  const lines = yaml.split('\n');
+  const keyIdx = lines.findIndex(l => l.startsWith(`${indent}${key}:`));
+  if (keyIdx === -1) { return null; }
+  // Walk backwards over the contiguous comment header at the same indent.
+  let start = keyIdx;
+  while (start - 1 >= 0 && lines[start - 1].startsWith(`${indent}#`)) { start -= 1; }
+  // Walk forwards over body lines MORE indented than the key (blanks tolerated).
+  let end = keyIdx;
+  for (let i = keyIdx + 1; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (line.trim() === '') { continue; }
+    const leading = line.match(/^[ \t]*/)![0];
+    if (leading.length > indent.length) { end = i; continue; }
+    break; // same-or-shallower indent → sibling/parent → block ended
+  }
+  return lines.slice(start, end + 1).join('\n').replace(/[ \t\n]+$/, '');
+}
+
+/**
+ * Insert `block` at the END of a TOP-LEVEL `<sectionKey>:` section's body (after
+ * its last non-blank indented line, before the next top-level key). Returns the
+ * new YAML, or null when the section is absent. `block` must already carry the
+ * indentation of a child of that section.
+ */
+export function insertBlockAtEndOfSection(yaml: string, sectionKey: string, block: string): string | null {
+  const lines = yaml.split('\n');
+  const secIdx = lines.findIndex(l => l.startsWith(`${sectionKey}:`));
+  if (secIdx === -1) { return null; }
+  let lastContent = secIdx;
+  for (let i = secIdx + 1; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (line.trim() === '') { continue; }
+    if (/^[ \t]/.test(line)) { lastContent = i; continue; } // indented → still in section
+    break; // top-level key/comment → section ended
+  }
+  return [...lines.slice(0, lastContent + 1), block, ...lines.slice(lastContent + 1)].join('\n');
+}
+
+interface YamlBackfillSpec {
+  consumerRel: string
+  presence: RegExp
+  extract: (upstreamYaml: string) => string | null
+  insert: (consumerYaml: string, block: string) => string | null
+  label: string
+}
+
+const QA_EPICS_BACKFILL: YamlBackfillSpec = {
+  consumerRel: path.join('.agents', 'project.yaml'),
+  presence: /^[ \t]*qa_epics:/m,
+  extract: y => extractIndentedYamlBlock(y, 'qa_epics', '  '),
+  insert: (y, b) => insertBlockAtEndOfSection(y, 'qa', b),
+  label: 'qa_epics',
+};
+
+const QA_ASSIGNEE_BACKFILL: YamlBackfillSpec = {
+  consumerRel: path.join('.agents', 'jira-required.yaml'),
+  presence: /^[ \t]*qa_assignee:/m,
+  extract: y => extractIndentedYamlBlock(y, 'qa_assignee', '  '),
+  insert: (y, b) => insertBlockAtEndOfSection(y, 'required', b),
+  label: 'qa_assignee',
+};
+
+/**
+ * Build an afterApply hook that back-fills one missing methodology YAML block
+ * into a bootstrapOnly consumer file. Mirrors makeGitStrategyUpsertHook: the
+ * upstream clone still sits in `tempDir`; `--auto` only warns (never mutates).
+ */
+function makeYamlBackfillHook(
+  spec: YamlBackfillSpec,
+  tempDir: string,
+  sink: ReportSink,
+  auto: boolean,
+): (summary: RunSummary) => Promise<void> {
+  return async (_summary: RunSummary): Promise<void> => {
+    const consumerPath = path.join(process.cwd(), spec.consumerRel);
+    if (!fs.existsSync(consumerPath)) { return; }
+
+    let consumerContent: string;
+    try { consumerContent = fs.readFileSync(consumerPath, 'utf8'); }
+    catch { return; }
+
+    // Already present → NO-OP. Never touch it.
+    if (spec.presence.test(consumerContent)) { return; }
+
+    const upstreamPath = path.join(tempDir, spec.consumerRel);
+    if (!fs.existsSync(upstreamPath)) { return; }
+
+    let block: string | null;
+    try { block = spec.extract(fs.readFileSync(upstreamPath, 'utf8')); }
+    catch { return; }
+    if (!block) { return; }
+
+    const next = spec.insert(consumerContent, block);
+    if (next === null) { return; } // target section absent in consumer — skip silently
+
+    // CI / non-interactive: never modify the file — just flag it.
+    if (auto) {
+      sink.warn(`Tu \`${spec.consumerRel}\` no tiene el bloque \`${spec.label}\` (estándar de defect-management).`);
+      sink.step('Modo --auto: ejecuta el updater de forma interactiva para agregarlo (o añádelo manualmente).');
+      return;
+    }
+
+    const proceed = await sink.confirm(
+      `Tu \`${spec.consumerRel}\` no tiene el bloque \`${spec.label}\` (estándar de defect-management). ¿Agregarlo ahora? (insert-only — tus valores existentes nunca se modifican)`,
+      false,
+    );
+    if (!proceed) {
+      sink.step(`Omitido. Puedes agregar el bloque \`${spec.label}\` más tarde.`);
+      return;
+    }
+
+    try { fs.writeFileSync(consumerPath, next.endsWith('\n') ? next : `${next}\n`); }
+    catch (err) {
+      sink.warn(`No se pudo agregar \`${spec.label}\`: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+    sink.step(`Bloque \`${spec.label}\` agregado a \`${spec.consumerRel}\` (insert-only).`);
+  };
+}
+
 /** Run several afterApply hooks in sequence (each isolated; one failure warns, never aborts). */
 function composeHooks(
   sink: ReportSink,
@@ -844,6 +984,8 @@ async function main(): Promise<void> {
             makeSkillsRegistryHook(sink),
             makeEnvDriftHook(TEMP_DIR, sink, parsed.auto),
             makeGitStrategyUpsertHook(TEMP_DIR, sink, parsed.auto),
+            makeYamlBackfillHook(QA_EPICS_BACKFILL, TEMP_DIR, sink, parsed.auto),
+            makeYamlBackfillHook(QA_ASSIGNEE_BACKFILL, TEMP_DIR, sink, parsed.auto),
             makeClaudeMdDriftHook(TEMP_DIR, TEMPLATE_REPO, sink),
           ),
     },
@@ -870,11 +1012,15 @@ async function main(): Promise<void> {
   tui.outro(parsed.dryRun ? 'Dry-run completado.' : 'Sincronizacion completada.');
 }
 
-main().catch((err: unknown) => {
-  if (err instanceof Error && err.name === 'ExitPromptError') {
-    tui.cancel('Aborted by user.');
-    process.exit(130);
-  }
-  tui.log.error(err instanceof Error ? err.message : String(err));
-  process.exit(1);
-});
+// Guard so the pure helpers above (extractIndentedYamlBlock,
+// insertBlockAtEndOfSection) can be imported by tests without running the CLI.
+if ((import.meta as { main?: boolean }).main) {
+  main().catch((err: unknown) => {
+    if (err instanceof Error && err.name === 'ExitPromptError') {
+      tui.cancel('Aborted by user.');
+      process.exit(130);
+    }
+    tui.log.error(err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  });
+}
