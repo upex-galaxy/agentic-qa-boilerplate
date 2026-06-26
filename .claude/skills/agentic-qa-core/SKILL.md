@@ -34,6 +34,21 @@ When a skill cites one of these, it includes a Dependencies block at the top so 
 
 ---
 
+## The Naming Codex (visual reference deck)
+
+`agentic-qa-core` hosts the canonical **naming-conventions presentation** — a self-contained, dark-themed html-ppt deck that documents every test-artifact title format across the seven layers (CASE · GROUP · CONTAINER · CODE · JIRA · GIT · FILESYSTEM), plus a coverage audit of the open naming gaps.
+
+| File | Language |
+|------|----------|
+| `naming-conventions.html` | English |
+| `naming-conventions.es.html` | Spanish |
+
+It is the human-facing mirror of the naming rules that live in prose across the workflow skills' `references/*.md` (TC titles, `@atc` decorator, `describe()`/Test Set grouping, KATA components, tags, branch/commit/PR shapes, the PBI tree). Open it in a browser (arrow keys navigate; `O` = overview; `F` = fullscreen). Offer to open it when a user asks how artifacts are named or wants to review the conventions visually.
+
+**Keep it canonical**: when a naming rule changes, edit the owning skill's `references/*.md`, regenerate `REGISTRY.md` (`bun run skills:registry`), then refresh BOTH decks so the codex never drifts from the prose source.
+
+---
+
 ## Dependency declaration for downstream skills
 
 Every workflow skill that cites `agentic-qa-core/references/*.md` should declare it explicitly so the AI knows what to load on demand. Example block to add near the top of the skill's `SKILL.md`:
