@@ -280,6 +280,8 @@ Notes:
 
 ## 8. Creating a TC — pseudocode by mode
 
+> **Parenting + components (binding — `../../agentic-qa-core/references/defect-management-doctrine.md`).** In **both** modalities every created `Test` (TC) parents to the **QA Test Repository process epic** — found-or-created by `qa.qa_epics.test_repository_epic.name` (**"QA Test Repository"**), never a product/dev epic, never unparented (Part 4). Its `components` field is **mandatory** and names the affected product module (Part 3). Per the three-axis model the **parent says only "which QA bucket"**, while `components` carries the product area and the **Story coverage travels on the issue link** ("is tested by" under jira-native; ATP/ATR aggregation under jira-xray) — never on the parent. The `epic:` / `REGRESSION_EPIC_KEY` referenced in the blocks below resolves to this QA Test Repository epic.
+
 ### Jira Native (Manual or Gherkin)
 
 > **Prerequisite**: Load `/acli` skill before executing commands below.

@@ -33,6 +33,7 @@ The same three-stage pipeline runs in every mode. Only the entry point and the b
 Requires `agentic-qa-core`. Loads on demand:
 
 - `agentic-qa-core/references/test-design-doctrine.md` — **MANDATORY before designing any ATP / TC coverage from acceptance criteria.** Governs the 5 principles, the floor-not-ceiling coverage model, the 1:N explode-default rule, and the formal-technique triggers.
+- `agentic-qa-core/references/defect-management-doctrine.md` — **MANDATORY before taking a Story into testing and before filing any Bug / Defect / Improvement.** Governs issue-type classification (Bug vs Defect vs Improvement by feature lifecycle), the QA-Assignee self-assign + never-overwrite rule, mandatory Components, the three-axis model (parent = QA process epic · link = source Story · components = product module), and Severity→Priority auto-derive.
 - `agentic-qa-core/references/briefing-template.md`, `./dispatch-patterns.md`, `./orchestration-doctrine.md`, `./session-management.md`, `./preflight-gate.md`, `./adr-doctrine.md` — cited inline by the sections that use them.
 
 ## Compact Rules
@@ -43,6 +44,14 @@ Requires `agentic-qa-core`. Loads on demand:
 - 1:N is the default: explode every non-trivial AC into multiple cases (EP partitions + boundaries + states + contexts). Collapsing an AC to one case requires a written "trivially atomic" justification.
 - Apply techniques by trigger: EP always; BVA wherever a range / limit / length / date-window exists; State-Transition for stateful entities; Decision Table when 2+ conditions interact; Pairwise when 3+ combinable factors (log the reduction); Error-Guessing charters for experience-based risk.
 - A criterion is a business assertion; a test case is a concrete exploration of it. Run the Test-Design Checklist before finalizing the ATP.
+
+**Defect-management doctrine (binding — full canon: `agentic-qa-core/references/defect-management-doctrine.md`):**
+
+- CLASSIFY before filing — stop hardcoding "Bug". **Bug** = affected feature already live above Staging (end-user visible); **Defect** = feature still pre-release (Staging or below), the normal output of sprint testing; **Improvement** = not a broken AC (an enhancement, or an under-specified/absent AC surfaced by a test-beyond-AC). Classification follows the FEATURE's lifecycle stage, not where the problem was found (Part 1).
+- `qa_assignee` (`{{jira.qa_assignee}}`) = the authenticated session user (self-assign). Set it when a Story is TAKEN INTO TESTING (start_testing) and on every filed Bug / Defect / Improvement. NEVER-OVERWRITE an existing owner (read-before-write); distinct from the native dev `assignee` (Part 2).
+- `components` (native, MANDATORY) = the affected product module/Epic, must pre-exist in the Jira Components module (Part 3).
+- Three-axis model: **parent** = QA Defect Management process epic (`qa.qa_epics.defect_epic`, found-or-created — NEVER a product/dev epic, NEVER the Story); **issue link** = the source Story (traceability); **components** = product module (Part 4).
+- `priority` (native) is auto-derived from `{{jira.severity}}` (critica→Highest, mayor→High, moderada→Medium, menor→Low, trivial→Lowest); override with a 1-line justification (Part 5.1).
 
 **Sprint-testing operational rules:**
 

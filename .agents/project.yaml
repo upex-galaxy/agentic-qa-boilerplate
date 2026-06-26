@@ -33,6 +33,19 @@ testing:
 
 qa:
   formal_blocked_gate: true # When true and the substrate exposes a `blocked` story status, FAILED stories dispatch `defect_reported` (in_test -> blocked). When false (or no `blocked` slug), the skill leaves the story in `in_test` with the linked bug — non-strict fallback. See sprint-testing/references/sprint-orchestration.md Briefing 4 Step 5.
+  # QA process epics — buckets that hold QA artifacts so they never pollute product epics/roadmap.
+  # Bug/Defect/Improvement parent to `defect_epic`; Test (TC) issues parent to `test_repository_epic`.
+  # Skills resolve the epic by NAME (the methodology convention shipped below) and find-or-create it,
+  # caching the discovered `*.key` here. NEVER parent a quality issue to a product/dev epic.
+  # Read directly by skills (not {{VAR}} tokens) → skipped by vars:check, like git_strategy leaves.
+  # Doctrine: .claude/skills/agentic-qa-core/references/defect-management-doctrine.md (Part 4).
+  qa_epics:
+    defect_epic:
+      name: QA Defect Management # convention name; the `QA ` prefix marks a process epic, not product
+      key: null # discovered/created at runtime, then cached here (e.g. PROJ-123)
+    test_repository_epic:
+      name: QA Test Repository # convention name; holds every Test (TC) issue
+      key: null # discovered/created at runtime, then cached here (e.g. PROJ-456)
 
 # Git workflow for THIS project — the SOURCE OF TRUTH read by the git-flow-master skill
 # before any git/gh operation. Ships `null` (template): on the first git intent git-flow-master

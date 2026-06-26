@@ -63,6 +63,7 @@ The reuse story is **deliberate**: ~70% of the refinement logic already lives in
 Requires `agentic-qa-core`. Loads on demand:
 
 - `agentic-qa-core/references/test-design-doctrine.md` — **MANDATORY before refining ACs or estimating outline coverage.** A refinement that does not surface risk-beyond-AC and 1:N coverage is incomplete.
+- `agentic-qa-core/references/defect-management-doctrine.md` — **MANDATORY for the QA-Assignee hook (Part 2).** This skill is the EARLIEST QA pickup of a backlog Story: when a QA takes a Story into Shift-Left refinement, set `qa_assignee` to the authenticated session user (self) — read-before-write, NEVER overwrite an existing owner except on explicit, justified handover. This skill still files NO Bug/Defect/Improvement (Phase 1 rejects non-Story types); only the QA-Assignee semantics of Part 2 apply here.
 - `agentic-qa-core/references/briefing-template.md`, `./dispatch-patterns.md`, `./orchestration-doctrine.md`, `./session-management.md`, `./preflight-gate.md` — cited inline by the sections that use them.
 
 ## Compact Rules
@@ -79,6 +80,7 @@ Requires `agentic-qa-core`. Loads on demand:
 - Stories ONLY (no bugs — nothing to refine upstream). Entry status Backlog / Shift-Left QA / Estimation / Ready For Dev.
 - Output = refined ACs + gap/ambiguity questions + ATP DRAFT (outline NAMES + coverage estimate, no test code, no execution).
 - The heart of the skill (Phase 2) = edge cases not in story + ambiguities + gaps — feed them to PO/Dev as questions AND as derived outlines.
+- On taking a Story into refinement (first QA pickup), set `qa_assignee` to self — read-before-write, never overwrite an existing owner (`agentic-qa-core/references/defect-management-doctrine.md` Part 2). This skill files NO Bug/Defect/Improvement; only the QA-Assignee hook applies.
 - On completion: add label `shift-left-reviewed`; transition Backlog → Shift-Left QA → Estimation.
 
 **Read full SKILL.md when**: running the batch grooming pipeline, writing the per-Story `shift-left-refinement.md`, or handling the PO/Dev handoff.
@@ -337,7 +339,15 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
        issue: {STORY_KEY}
        labels: +shift-left-reviewed, +shift-left-{{YYYY-MM-DD}}
 
-5. Transition (Story must be currently in backlog / shift_left_qa / estimation):
+5. Set QA Assignee + Transition (Story must be currently in backlog / shift_left_qa / estimation):
+     # First QA pickup of the Story — set qa_assignee to the authenticated session
+     # user (self), the same moment the QA pulls it into Shift-Left refinement
+     # (backlog -> shift_left_qa, the earliest pickup). Read-before-write:
+     # set ONLY when empty; NEVER overwrite an existing QA owner except on explicit,
+     # justified handover. Per defect-management-doctrine.md Part 2. NOTE: acli
+     # `workitem edit` CANNOT set customfields → use REST PUT /rest/api/3/issue/{KEY}
+     # with { fields: { {{jira.qa_assignee}}: { accountId } } } (doctrine Part 6).
+     [ISSUE_TRACKER_TOOL] Set qa_assignee = <authenticated session user>   # read-before-write; skip if already owned
      # If currently in backlog:
      [ISSUE_TRACKER_TOOL] Transition: {{jira.transition.story.analyze}}      # backlog -> shift_left_qa
      [ISSUE_TRACKER_TOOL] Transition: {{jira.transition.story.estimate}}     # shift_left_qa -> estimation

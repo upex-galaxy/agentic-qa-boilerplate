@@ -35,6 +35,7 @@ One hard prerequisite: the tests being documented must describe behavior that wa
 Requires `agentic-qa-core`. Loads on demand:
 
 - `agentic-qa-core/references/test-design-doctrine.md` — **MANDATORY before deriving TCs from acceptance criteria.** Governs the 1:N TC explosion, the formal-technique triggers, and the floor-not-ceiling coverage model. EP + BVA are operationalized here against the canon.
+- `agentic-qa-core/references/defect-management-doctrine.md` — **MANDATORY before parenting a Test or raising an Improvement.** Governs QA process-epic parenting (every `Test` hangs from the **QA Test Repository** epic, Part 4), the mandatory `components` axis (Part 3), and the Improvement bridge for under-specified ACs (Part 1). This skill files no Bugs.
 - `agentic-qa-core/references/briefing-template.md`, `./dispatch-patterns.md`, `./orchestration-doctrine.md`, `./session-management.md`, `./preflight-gate.md`, `./traceability-linking.md` — cited inline by the sections that use them.
 
 ## Compact Rules
@@ -268,6 +269,8 @@ One AC yields **multiple** TCs by default. Derive them by the AC's shape, then l
 
 These are **candidate scenarios** derived by technique — not yet TMS work items. ROI (Phase 2) then decides which become **persistent regression TCs** (Candidate → automated, Manual → manual) and which stay **Deferred** (recorded in the prioritization report, **NOT created in the TMS**). Deriving widely is free; persisting is ROI-gated — most scenarios are Deferred. You document a scenario because it will be re-run, never to hit a count.
 
+> **Improvement bridge (`agentic-qa-core/references/defect-management-doctrine.md` Part 1).** When a test-beyond-AC exposes a gap **because the AC was under-specified or absent** — the system violated no defined criterion — the right artifact is an **Improvement** issue (filed per the doctrine, or delegated to `/sprint-testing`), NOT a regression TC and NOT a silent widening of the Story's ACs. Track the proposal as an Improvement; do not edit the Story's AC set after the fact.
+
 ---
 
 ## Phase 2 — Prioritize (ROI)
@@ -329,6 +332,8 @@ Every scenario ends in exactly one of these buckets. There is no fourth.
 ### Preflight: Regression Epic
 
 Every documented TC must have a parent Regression Epic (single test repository for the project).
+
+> **This Regression Epic IS the QA Test Repository process epic** (`agentic-qa-core/references/defect-management-doctrine.md` Part 4). Resolve it **found-or-created** by the configured name `qa.qa_epics.test_repository_epic.name` (**"QA Test Repository"**); on absence create it once, write the test-repository strategy into its description, and cache its key into `.agents/project.yaml` `qa.qa_epics.test_repository_epic.key`. It is a **QA process epic — never a product/dev epic, never unparented.** Per the three-axis model this parent says only "which QA bucket tracks the Test"; the Test's **product area travels on `components`** (Part 3) and its **Story coverage travels on the issue link** (Part 4) — never on this parent.
 
 > **Prerequisite**: Load `/acli` skill before executing commands below.
 

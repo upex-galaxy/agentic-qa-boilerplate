@@ -44,6 +44,11 @@
     "type": "array",
     "name": "Approvers"
   },
+  "atlassian_project": {
+    "id": "customfield_10036",
+    "type": "atlas-project",
+    "name": "Atlassian Project"
+  },
   "backout_plan": {
     "id": "customfield_10098",
     "type": "string",
@@ -331,10 +336,10 @@
     "name": "Product categorization",
     "options": {}
   },
-  "project": {
-    "id": "customfield_10036",
-    "type": "atlas-project",
-    "name": "Project"
+  "qa_assignee": {
+    "id": "customfield_10188",
+    "type": "user",
+    "name": "QA Assignee"
   },
   "qa_framework": {
     "id": "customfield_10112",
@@ -382,9 +387,9 @@
     "name": "Root Cause🐞",
     "options": {
       "code_error": "10146",
-      "config_env_error": "10147",
+      "configuration_error": "10147",
       "data_error": "10153",
-      "environment_error": "10148",
+      "infrastructure_error": "10148",
       "integration_error": "10152",
       "requirement_error": "10149",
       "third_party_error": "10151",

@@ -174,9 +174,9 @@ required:
     fallback: { target: comment, label: Root Cause }
     options:
       - code_error
-      - config_env_error
+      - configuration_error
       - data_error
-      - environment_error
+      - infrastructure_error
       - integration_error
       - requirement_error
       - third_party_error
@@ -205,6 +205,21 @@ required:
     options: [bugfix, hotfix]
     description: Type of fix applied (bugfix vs urgent hotfix).
     used_by: [sync-jira-issues, sprint-testing]
+
+  # ---- Cross-work-type QA ownership (consumed by every work-type skill) ----
+  qa_assignee:
+    name: QA Assignee
+    type: user
+    fallback: { target: comment, label: QA Assignee }
+    description: |
+      The QA who owns testing for a work item — the QA-lane parallel of the native
+      `assignee` (dev owner), distinct from `reporter` (who raised it ≠ who retests it).
+      Set on EVERY work-type issue (story / tech_story / tech_debt / bug / defect /
+      improvement) to the authenticated session user (self-assign); NEVER overwrite an
+      existing owner except on an explicit, justified handover. Doctrine:
+      agentic-qa-core/references/defect-management-doctrine.md (Part 2).
+    used_by:
+      [sprint-testing, test-documentation, test-automation, regression-testing, shift-left-testing]
 
   # ---- TMS Modality jira-native fields (no Xray) ----
   acceptance_test_plan:

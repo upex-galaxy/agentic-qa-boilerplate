@@ -36,6 +36,7 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 - Previous run's Allure report (artifact URL or local download under `./analysis/previous/`) — baseline for trend computation.
 - `kata-manifest.json` — registry of tests and ATCs available; used to cross-reference failed test IDs.
 - `.agents/jira-required.yaml` — Jira refs (project key, work types, transitions) for filing regression issues.
+- `agentic-qa-core/references/defect-management-doctrine.md` — **canonical authority** for classifying (Bug/Defect/Improvement), the mandatory field matrix, QA-Assignee ownership, and the QA process epic when a confirmed regression is filed in Jira (Phase 3). Read BEFORE filing any defect.
 
 ---
 
@@ -265,11 +266,11 @@ Failed test
 
 | Category | Impact | Action |
 |----------|--------|--------|
-| REGRESSION | HIGH | Block release, create issue, assign |
-| FLAKY | MEDIUM | Schedule stabilization, do not block |
-| KNOWN ISSUE | LOW | Document, do not block |
-| ENVIRONMENT | MEDIUM | Re-run after infra check |
-| NEW TEST | LOW | Manual verification, then accept or fix |
+| REGRESSION | HIGH | Block release, file Jira Bug/Defect (Phase 3 §File defects in Jira, doctrine Part 1), assign |
+| FLAKY | MEDIUM | Schedule stabilization, do not block — **no Jira bug** |
+| KNOWN ISSUE | LOW | Document against existing ticket, do not block — **no new Jira bug** |
+| ENVIRONMENT | MEDIUM | Re-run after infra check — **no Jira bug** |
+| NEW TEST | LOW | Manual verification → if a genuine product defect, file Jira Bug/Defect; else accept or fix |
 
 > **`sdet` CI-fallback clause** (integration-trunk suites only): an ENVIRONMENT-class red on a Sanity-CI run for a ticket branch may authorize merging **into the integration trunk** — never the final `trunk → main` PR — when proven by BOTH (a) the change passing locally on `local` AND `staging`, and (b) the same red being present independent of the change (nightly already red, or the failing line is shared pre-existing code). File a separate infra/flake ticket and reference it in the PR. This is NOT a relaxation of the GO bar: a REGRESSION-class failure is never eligible, and the final PR to `main` still requires a genuinely green test step. See `.claude/skills/git-flow-master/references/sdet-integration-trunk.md` §CI-fallback clause.
 
@@ -312,37 +313,51 @@ Compute a weighted score from the analysis. Maximum is 9.
 
 Never auto-GO if: any `@critical` test fails, any REGRESSION with HIGH/CRITICAL severity exists, or pass rate < 90%. These are hard vetoes regardless of score.
 
-### Create issues (when decision = NO-GO or CAUTION with regressions)
+### File defects in Jira (when decision = NO-GO or CAUTION with regressions)
 
-For each REGRESSION, open one issue:
+> **Quality issues go to Jira, not GitHub.** A regression-discovered product
+> failure is a defect-management artifact and follows
+> `agentic-qa-core/references/defect-management-doctrine.md` — the same authority
+> `/sprint-testing` uses. This skill files the issue IN JIRA with the full
+> mandatory field matrix; it does NOT open a GitHub issue.
 
-```bash
-gh issue create \
-  --title "[REGRESSION] {test_name} failing in {suite}" \
-  --label "regression,bug,automated-tests" \
-  --body "$(cat <<EOF
-## Regression Details
-- Test ID: {atc_id}
-- Suite: {suite}
-- Run ID: {run_id}
-- Environment: {environment}
+**Only CONFIRMED real product failures become Jira issues.** Use the Phase 2
+Step 4 triage as the gate: file in Jira **only** for the `REGRESSION` class and
+for a `NEW TEST` failure once it is manually confirmed to be a genuine product
+defect (not a bad assertion). **`FLAKY`, `ENVIRONMENT`, and `KNOWN ISSUE` do NOT
+get a Jira bug** — they route to stabilization / infra / the existing ticket as
+the classification table already prescribes. The failure-triage classification
+and the defect issue-type are **separate axes**: triage decides *whether* to
+file; the doctrine decides *what type* and *what fields*.
 
-## Error
-\`\`\`
-{error_message}
-\`\`\`
+For each issue that clears the gate:
 
-## Evidence
-- [Workflow run]({run_url})
-- [Allure report]({allure_url})
+1. **Classify Bug vs Defect** by the affected feature's lifecycle stage, NOT by
+   where the failure ran (doctrine Part 1): the regressed feature is **already
+   live above Staging (production / superior env)** → **Bug**; the feature is
+   still **pre-release (Staging or below)** → **Defect**. A genuinely new,
+   desirable behavior surfaced beyond the AC → **Improvement** (Part 1).
+2. **File it in Jira with the full mandatory field matrix** (doctrine Part 5):
+   `severity` (impact-based) → `priority` auto-derived (Part 5.1), native
+   `components` = affected product module (Part 3, mandatory & pre-existing),
+   `root_cause` + `error_type` + `test_environment`, `qa_assignee` = the
+   authenticated session user (self; never-overwrite, Part 2), and `evidence`
+   (Allure link + failure screenshots/traces/logs from `./analysis/evidence/`).
+3. **Parent to the QA Defect Management epic** — the QA process epic
+   (`qa.qa_epics.defect_epic.name`), found-or-created; NEVER a product/dev epic
+   (Part 4).
+4. **Link to the source Story/feature** for traceability via the causal link
+   (Part 4) — the regressed ATC's covering Story.
+5. **Write via acli/REST** (doctrine Part 6): create with acli
+   `workitem create --from-json` (create-time customfields under
+   `additionalAttributes.customfield_*`, native `components:[{name}]`); set
+   customfields/components on an existing issue via REST `PUT
+   /rest/api/3/issue/{KEY}`; `qa_assignee` is read-before-write. Because this
+   stage may run **from CI**, **load `/acli` first** (it owns auth, syntax, and
+   the REST-PUT pattern in `references/acli-integration.md`).
 
-## Last passed
-{last_pass_date} (Run #{last_pass_run})
-EOF
-)"
-```
-
-Save the returned issue number to reference in the report.
+Run the doctrine's **filing gate** (Part 9) before submitting each issue. Save
+the returned Jira key to reference in the report.
 
 ### TMS sync (optional, when `[TMS_TOOL]` is configured via `.agents/project.yaml` `testing.tms_cli`)
 
