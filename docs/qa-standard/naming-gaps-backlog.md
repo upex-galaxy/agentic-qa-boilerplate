@@ -1,12 +1,19 @@
-# Naming Gaps — Approved Backlog (implement AFTER the planning ladder is ratified)
+# Naming Gaps — IMPLEMENTED (all 12 ratified + documented)
 
-> **Status**: all 12 conventions **APPROVED by the user**. **Blocked**: do NOT implement
-> until `planning-ladder-proposal.md` (the MTP/FTP/STP/ATP + FTR/STR/ATR nomenclature) is
-> ratified and propagated first — the ladder is the structural backbone these gaps hang off.
+> **Status**: all 12 conventions **RATIFIED and IMPLEMENTED** (2026-06-26). Each is written into
+> its owning skill `references/*.md` and reflected in the Naming Codex deck (EN + ES). REGISTRY
+> regenerated. Doc-only roll-out — no new scripts/scaffolds/lint rules (those were declined in
+> favor of low-risk documentation; lint enforcement remains an optional future pass).
 >
-> **On implementation**: for each gap, write the convention into the owning skill's
-> `references/*.md`, add a lint rule where enforceable, and add it to the Naming Codex deck
-> (EN + ES) under the relevant layer. Then regenerate `REGISTRY.md`.
+> **Ratification deltas vs the original proposals** (decided at implementation):
+> - **Gap 4 (ADR)** — manual allocation via the README Index (`max(NNNN)+1`); the `bun run adr:next`
+>   script was NOT built.
+> - **Gap 8 (test-execution folders)** — documented the EXISTING sync convention
+>   `test-executions/{TESTEXEC|RETESTEXEC}-{KEY}-{slug}.md` (NOT the rejected `{EXEC-KEY}-{ts}/`).
+> - **Gap 9 (nested defect files)** — documented the EXISTING sync convention
+>   `defects/DEFECT-{KEY}-{slug}.md` (NOT the rejected `bug.md + evidence/ + related-tests/`).
+> - **Gap 10 (DataFactory)** — naming documented in `kata-architecture.md`; the stub TS files were
+>   NOT scaffolded (that is a `/framework-development` task).
 
 | # | Gap | Approved convention | Owning surface |
 |---|---|---|---|

@@ -259,6 +259,7 @@ Assertions are checkpoints along a flow, not the purpose of the test. The test i
       {Domain}Steps.ts
   /data
     /fixtures                    # JSON/CSV for parameterization (commit)
+    /mocks                       # Mock/stub API responses {endpoint}/{METHOD}.{status}.json (commit)
     /uploads                     # Files for upload tests (commit)
     /downloads                   # Download destination (gitignore)
   /integration
@@ -294,7 +295,18 @@ export default defineConfig({
 });
 ```
 
-`test-results/` and `tests/data/downloads/` are gitignored. `tests/data/fixtures/` and `tests/data/uploads/` are committed.
+`test-results/` and `tests/data/downloads/` are gitignored. `tests/data/fixtures/`, `tests/data/mocks/`, and `tests/data/uploads/` are committed.
+
+### Test module folders (`{module}`)
+
+The `{module}` segment under `tests/integration/` and `tests/e2e/` is the **business domain**, named in **kebab-case, plural where natural**. It maps 1:1 to the Jira Component / product area, so the folder name and the Component label stay aligned.
+
+| Good | Why |
+|------|-----|
+| `orders/`, `users/`, `payments/` | Business domain, plural where natural |
+| `user-management/`, `checkout-flows/` | Multi-word domain, kebab-case |
+
+Do not name a module folder after a UI section, a page, or a sprint (`tab-2/`, `Q3/`, `LoginScreen/`). The same `{module}` value is reused by the spec scaffolding (`{PREFIX}` abbreviation in `planning-playbook.md`) and by the Jira Component, so it must read as a product area.
 
 ---
 
@@ -484,10 +496,18 @@ Rule: every test generates its own unique data so parallel runs and retries neve
 
 ### Fixture files (parameterisation)
 
-For data-driven tests, load from JSON/CSV in `tests/data/fixtures/`:
+For data-driven tests, load from JSON/CSV in `tests/data/fixtures/`.
+
+**File naming**: `{resource}-{variant}.json` — lowercase, kebab-case. The `{resource}` is the entity (`users`, `orders`, `payments`); the `{variant}` names the scenario or partition the rows belong to, so reuse is explicit at the import site.
+
+| File | Holds |
+|------|-------|
+| `users-valid.json` | Valid user rows for happy-path parameterization |
+| `orders-boundary.json` | Boundary-value rows (BVA) for order limits |
+| `payments-error-cases.json` | Invalid payment inputs expecting error responses |
 
 ```typescript
-import usersData from '@data/fixtures/users.json';
+import usersData from '@data/fixtures/users-valid.json';
 
 for (const user of usersData) {
   test(`TICKET-ID: should signup ${user.type} user`, async ({ ui }) => {
@@ -500,6 +520,23 @@ for (const user of usersData) {
 ```
 
 Data flow: files → test arguments → ATC arguments.
+
+### Mock / stub response files
+
+When a test intercepts a backend call and supplies a canned response (Playwright `route.fulfill()`), the response body lives as a static fixture under `tests/data/mocks/`, named `tests/data/mocks/{endpoint-path}/{METHOD}.{status}.json`. The endpoint path mirrors the API route (discoverable); the HTTP method and status code in the filename signal exactly which interaction and outcome the mock stands in for.
+
+| File | Stubs |
+|------|-------|
+| `tests/data/mocks/auth/login/POST.200.json` | Successful login response |
+| `tests/data/mocks/users/POST.201.json` | User-creation success |
+| `tests/data/mocks/users/create/POST.400.json` | User-creation validation error |
+
+```typescript
+import loginOk from '@data/mocks/auth/login/POST.200.json';
+await page.route('**/auth/login', route => route.fulfill({ status: 200, json: loginOk }));
+```
+
+Use mocks only to isolate the unit under test from an unavailable or non-deterministic dependency — prefer real backend calls (the Discover → Modify → Generate strategy above) for functional coverage.
 
 ### Discover → Modify → Generate
 
@@ -563,6 +600,27 @@ async verifyOptionalField() { ... }
 | Optional form fields | Critical functionality |
 | Exploratory tests | Blocking validation |
 | Non-critical features that should not stop the flow | When failure means subsequent ATCs are meaningless |
+
+### Blocked by a known bug
+
+When a test cannot pass because of a **known product bug** (not a test bug, not flakiness), mark it `test.fail('Blocked by {BUG-KEY}')` AND tag it `@blocked:{BUG-KEY}`:
+
+```typescript
+test('TICKET-ID: should reject signup with invalid email @blocked:UPEX-999', async ({ api }) => {
+  test.fail(true, 'Blocked by UPEX-999');  // server-side validation missing
+  await api.users.signupWithInvalidEmail(payload);
+});
+```
+
+The test stays in the suite (no silent skip) so the failure remains informative, and the `@blocked:{BUG-KEY}` tag lets regression runs filter it out of GO/NO-GO until the bug is fixed. Remove both markers when the bug closes and the test goes green.
+
+| Marker | Means | Use when |
+|--------|-------|----------|
+| `test.fail('Blocked by {BUG-KEY}')` + `@blocked:{BUG-KEY}` | A known product bug prevents passing | The product is broken — a bug key exists |
+| `softFail` (decorator option) | Non-critical assertion tolerated | Optional field / exploratory check that should not stop the flow |
+| `@flaky` (tag) | Intermittent, under stabilization | The test itself is unstable — no product bug |
+
+These three are distinct: `@blocked:{BUG-KEY}` blames the product (a filed bug), `softFail` tolerates a non-critical assertion, and `@flaky` flags an unstable test. Never use one in place of another. (Regression GO/NO-GO consumption of `@blocked:{BUG-KEY}` is documented in `regression-testing`.)
 
 ---
 

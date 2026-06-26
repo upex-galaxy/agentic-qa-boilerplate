@@ -100,8 +100,18 @@ environments:
     api_url: null # TODO: API base URL for local env (e.g. http://localhost:3000/api)
     db_mcp: null # TODO: MCP server name for local DB (e.g. myproject-local-db)
     api_mcp: null # TODO: MCP server name for local API (e.g. myproject-local-api)
+  qa:
+    web_url: null # TODO: Frontend URL for qa env (e.g. https://qa.myproject.com)
+    api_url: null # TODO: API base URL for qa env (e.g. https://api-qa.myproject.com)
+    db_mcp: null # TODO: MCP server name for qa DB (e.g. myproject-qa-db)
+    api_mcp: null # TODO: MCP server name for qa API (e.g. myproject-qa-api)
   staging:
     web_url: null # TODO: Frontend URL for staging env (e.g. https://staging.myproject.com)
     api_url: null # TODO: API base URL for staging env (e.g. https://api-staging.myproject.com)
     db_mcp: null # TODO: MCP server name for staging DB (e.g. myproject-staging-db)
     api_mcp: null # TODO: MCP server name for staging API (e.g. myproject-staging-api)
+  production:
+    web_url: null # TODO: Frontend URL for production env (e.g. https://myproject.com)
+    api_url: null # TODO: API base URL for production env (e.g. https://api.myproject.com)
+    db_mcp: null # TODO: MCP server name for production DB (e.g. myproject-production-db)
+    api_mcp: null # TODO: MCP server name for production API (e.g. myproject-production-api)

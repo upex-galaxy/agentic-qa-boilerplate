@@ -289,7 +289,7 @@ Project values live in **`.agents/project.yaml`** — load once per session, cac
 5. **DEFECT-MANAGEMENT DOCTRINE (binding)**: classify every quality issue as Bug / Defect / Improvement by the FEATURE's lifecycle stage, NOT where it was found (Bug = feature already live above Staging; Defect = still pre-release; Improvement = not a broken AC — an enhancement or under-/un-specified AC surfaced by a test-beyond-AC). Set `qa_assignee` to self (never overwrite an existing owner — read-before-write) on every work item (story / tech_story / tech_debt / bug / defect / improvement). Components are mandatory (affected product module). Parent quality issues to the QA PROCESS epic — "QA Defect Management" for bug/defect/improvement, "QA Test Repository" for Test issues, "QA Master Test Plan" for Test Plans (FTP/STP/ATP), "QA Test Artifacts" for Test Executions (FTR/STR/ATR) + Preconditions + Test Sets — NEVER a product/dev epic; carry the source Story via an issue-link. Fill the mandatory field matrix; auto-derive Priority from Severity. Canon: `agentic-qa-core/references/defect-management-doctrine.md`.
 6. **LANGUAGE**: see §1 #14 LANGUAGE DETECTION + MIRRORING (canonical rule).
 
-**ENVIRONMENT SELECTION**: default **staging** unless user specifies otherwise. Ask when ambiguous. URLs from `.agents/project.yaml`. Credentials from `.env`.
+**ENVIRONMENT SELECTION**: canonical environment identifiers are `local` · `qa` · `staging` · `production` (lowercase, no abbreviations — never `prod`, `stg`, `uat`, unless a project genuinely adds its own). Default **staging** unless user specifies otherwise. Ask when ambiguous. URLs from `.agents/project.yaml`. Credentials from `.env`.
 
 **CONTEXT EFFICIENCY**: main conversation stays lean. Subagents do heavy reading. Skills load only references current phase needs.
 
@@ -323,8 +323,8 @@ Project values live in **`.agents/project.yaml`** — load once per session, cac
       context.md  test-session-memory.md         [skill — non-Jira, OK]
       shift-left-refinement.md                   [skill — non-Jira, OK]
       test-cases/  evidence/                     [skill — non-Jira, OK]
-      test-executions/                           [SYNC — only when >1 Execution linked]
-      defects/<PREFIX>-<KEY>-<slug>/             [SYNC — linked defects nested as coverable folders]
+      test-executions/{TESTEXEC|RETESTEXEC}-<KEY>-<slug>.md   [SYNC — only when >1 Execution linked]
+      defects/DEFECT-<KEY>-<slug>.md             [SYNC — one md file per linked defect]
   bugs/BUG-<KEY>-<slug>/                         [SYNC — coverable folder: bug.md + ATP + ATR + test-executions/ + defects/]
   improvements/IMPROVEMENT-<KEY>-<slug>/         [SYNC — coverable folder: improvement.md + ATP + ATR + …]
   tech-stories/TECHSTORY-<KEY>-<slug>/           [SYNC — coverable folder: tech-story.md + ATP + ATR + …]

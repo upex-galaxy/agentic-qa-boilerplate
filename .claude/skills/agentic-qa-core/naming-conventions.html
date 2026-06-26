@@ -166,7 +166,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="row mt-l" style="gap:10px;flex-wrap:wrap">
     <span class="chip"><span class="dot"></span>7 layers</span>
     <span class="chip" style="--ac:#a78bfa"><span class="dot"></span>30+ artifacts</span>
-    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>12 open gaps</span>
+    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>12 conventions ratified</span>
     <span class="chip" style="--ac:#a3e635"><span class="dot"></span>0 contradictions</span>
   </div>
   <p class="dim3 mono mt-l" style="font-size:12px">Lives under <b>.claude/skills/agentic-qa-core/</b> — the global foundation skill.</p>
@@ -489,25 +489,25 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 
 <!-- 15 · GAPS divider -->
 <section class="slide" style="--ac:#fbbf24" data-t="Coverage audit">
-  <p class="kick">Coverage audit · what still has no canonical name</p>
-  <h1>The <span class="grad">open gaps</span></h1>
-  <p class="lede">Twelve artifacts in the QA + automation flow have only an implicit or undefined name. Each is a decision waiting to be made — proposed conventions below, none yet ratified.</p>
+  <p class="kick">Coverage audit · the 12 conventions now ratified</p>
+  <h1>The <span class="grad">ratified conventions</span></h1>
+  <p class="lede">Twelve artifacts that had only an implicit or undefined name are now ratified conventions — written into the skills' references and enforced by convention.</p>
   <div class="row mt-m" style="gap:10px;flex-wrap:wrap">
-    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>12 gaps</span>
-    <span class="chip" style="--ac:#a3e635"><span class="dot"></span>proposals ready</span>
-    <span class="chip" style="--ac:#f472b6"><span class="dot"></span>your call</span>
+    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>12 ratified</span>
+    <span class="chip" style="--ac:#a3e635"><span class="dot"></span>now canon</span>
+    <span class="chip" style="--ac:#f472b6"><span class="dot"></span>lint-enforceable next</span>
   </div>
 </section>
 
 <!-- 16 · GAPS grid 1 -->
 <section class="slide" style="--ac:#fbbf24" data-t="Gaps 1-6">
   <p class="kick">Gaps · data, evidence &amp; architecture</p>
-  <h2>Open gaps · 1–6</h2>
+  <h2>Ratified · 1–6</h2>
   <div class="grid g3 mt-m">
     <div class="gap"><h4>1 · Test-data files</h4><p class="dim" style="font-size:13.5px">Fixtures in tests/data/ have no shape.</p><span class="prop">{resource}-{variant}.json → users-valid.json</span></div>
     <div class="gap"><h4>2 · Evidence / screenshots</h4><p class="dim" style="font-size:13.5px">evidence/ files are ad-hoc.</p><span class="prop">{KEY}-step{NN}-{action}.png</span></div>
     <div class="gap"><h4>3 · Mock / stub responses</h4><p class="dim" style="font-size:13.5px">No home or name for API mocks.</p><span class="prop">data/mocks/{endpoint}/{method}.{status}.json</span></div>
-    <div class="gap"><h4>4 · ADR file numbering</h4><p class="dim" style="font-size:13.5px">ADR-NNNN collides across parallel agents.</p><span class="prop">ADR-{NNNN}-{slug}.md + bun adr:next</span></div>
+    <div class="gap"><h4>4 · ADR file numbering</h4><p class="dim" style="font-size:13.5px">ADR-NNNN collides across parallel agents.</p><span class="prop">ADR-{NNNN}-{slug}.md · manual via README Index (no script)</span></div>
     <div class="gap"><h4>5 · Env identifiers</h4><p class="dim" style="font-size:13.5px">Env names only implied by URLs.</p><span class="prop">local · qa · staging · production</span></div>
     <div class="gap"><h4>6 · Test module folders</h4><p class="dim" style="font-size:13.5px">e2e/integration subfolders unspec'd.</p><span class="prop">{domain-plural}/ kebab-case</span></div>
   </div>
@@ -516,16 +516,16 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 <!-- 17 · GAPS grid 2 -->
 <section class="slide" style="--ac:#fbbf24" data-t="Gaps 7-12">
   <p class="kick">Gaps · reporting, runs &amp; data models</p>
-  <h2>Open gaps · 7–12</h2>
+  <h2>Ratified · 7–12</h2>
   <div class="grid g3 mt-m">
     <div class="gap"><h4>7 · Allure suite labels</h4><p class="dim" style="font-size:13.5px">Reporter grouping undefined.</p><span class="prop">derive from Playwright tag — single source</span></div>
-    <div class="gap"><h4>8 · Test-execution folders</h4><p class="dim" style="font-size:13.5px">Multiple runs/sprint need IDs.</p><span class="prop">test-executions/{EXEC-KEY}-{ts}/</span></div>
-    <div class="gap"><h4>9 · Nested defect files</h4><p class="dim" style="font-size:13.5px">defects/&lt;KEY&gt;/ inner files unnamed.</p><span class="prop">mirror Story: bug.md + evidence/ + related-tests/</span></div>
+    <div class="gap"><h4>8 · Test-execution files</h4><p class="dim" style="font-size:13.5px">One md file per linked execution (sync convention).</p><span class="prop">test-executions/{TESTEXEC|RETESTEXEC}-{KEY}-{slug}.md</span></div>
+    <div class="gap"><h4>9 · Nested defect files</h4><p class="dim" style="font-size:13.5px">One md file per linked defect (sync convention).</p><span class="prop">defects/DEFECT-{KEY}-{slug}.md</span></div>
     <div class="gap"><h4>10 · Data factory / types</h4><p class="dim" style="font-size:13.5px">Faker payloads &amp; models vary.</p><span class="prop">DataFactory.ts · types.ts · constants.ts</span></div>
     <div class="gap"><h4>11 · Gherkin variables</h4><p class="dim" style="font-size:13.5px">Placeholder style implicit.</p><span class="prop">{snake_case} → {user_id}, {order_amount}</span></div>
     <div class="gap"><h4>12 · Blocked-test marker</h4><p class="dim" style="font-size:13.5px">Bug-blocked tests inconsistently tagged.</p><span class="prop">@blocked:{BUG-KEY} + test.fail()</span></div>
   </div>
-  <div class="callout mt-m" style="--ac:#a3e635;padding:11px 14px"><p style="margin:0" class="dim">None of these are ratified. Pick the ones worth standardizing and they enter the codex (and the skill docs) as canon.</p></div>
+  <div class="callout mt-m" style="--ac:#a3e635;padding:11px 14px"><p style="margin:0" class="dim">All 12 are ratified — now canon in the skills' references. Next: optional lint enforcement.</p></div>
 </section>
 
 <!-- 18 · MASTER cheat-sheet -->
@@ -558,7 +558,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="grid g3 mt-m">
     <div class="card lyr" style="--ac:#22d3ee"><h4>Where it lives</h4><p class="dim">This deck sits under <span class="mono">agentic-qa-core</span> — the global skill cited by every workflow. The prose source is the skills' <span class="mono">references/</span>.</p></div>
     <div class="card lyr" style="--ac:#a78bfa"><h4>When it changes</h4><p class="dim">Edit the canonical <span class="mono">references/*.md</span>, regenerate <span class="mono">REGISTRY.md</span>, then refresh this deck (EN + ES) so the codex never drifts.</p></div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>What's next</h4><p class="dim">Ratify the gaps that matter. Each one chosen becomes canon across the skills and lands here.</p></div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>What's next</h4><p class="dim">All gaps ratified. Next: optional lint rules to enforce them.</p></div>
   </div>
   <p class="dim3 mono mt-l" style="font-size:12px">should = case · Validate = group · prefix = Story · @atc = Jira key · @integration ≠ @api</p>
 </section>

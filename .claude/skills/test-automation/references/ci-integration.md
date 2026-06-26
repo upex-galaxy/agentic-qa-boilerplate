@@ -126,6 +126,14 @@ The final `atc_results.json` aggregation is written in `KataReporter.onEnd()`, n
 
 `ApiBase` attaches every request/response pair to Allure automatically. `@atc` adds `allure.label`, `allure.severity`, `allure.link` based on the decorator argument. There is no manual `testInfo.attach()` or `allure.step()` needed in a well-written component — if you see them, flag in review.
 
+### 3.2.1 Allure suite labels — single source of truth (Playwright tags)
+
+Allure suite / grouping labels are **derived from the Playwright tag** on the test — there is no separate Allure label taxonomy to maintain. The `@smoke` / `@regression` / `@e2e` / `@integration` / `@critical` tag is the **single source of truth**: it drives BOTH CI scope selection (`--grep @smoke`) AND Allure suite grouping. A test tagged `@integration` lands in the Allure `integration` suite/label automatically — do not add a duplicate Allure label for the same grouping.
+
+- **One tag, two consumers.** The same tag the CI workflow greps on is the tag Allure groups by. Never label a test `@integration` for grep and then hand-set a different Allure suite — they must agree by construction because they are the same string.
+- **No parallel taxonomy.** Do not invent Allure-only suite names. If a new grouping is needed, add it as a Playwright tag (so CI can select it) and let Allure inherit it.
+- **Where it is consumed downstream:** `regression-testing` reads the `suite` label off each Allure result during failure analysis — see `regression-testing/SKILL.md` (Phase 2 §Parse results). Because the label is tag-derived, the suite shown in a regression report is exactly the scope CI ran.
+
 ### 3.3 Artifact output paths
 
 | Artifact | Path | When |

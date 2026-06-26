@@ -58,7 +58,7 @@ When you promote, leave a one-line backlink in the plan's `## Technical Decision
 ## 3. Authoring procedure
 
 1. **Confirm both gates** (§1). If unsure, ask.
-2. **Allocate the number.** Read `.context/ADR/README.md` → Index for the highest existing `ADR-NNNN`; the new one is the next 4-digit, zero-padded number. Numbers are never reused.
+2. **Allocate the number (manual — no script).** Open `.context/ADR/README.md` → read the **Index** table, take `max(existing NNNN) + 1`, and zero-pad to 4 digits. The Index table is the only allocator; there is no `adr:next` command. Numbers are never reused, even when an ADR is superseded or deprecated.
 3. **Copy the template.** `.context/ADR/ADR-NNNN-template.md` → `.context/ADR/ADR-<NNNN>-<slug>.md` (`<slug>` = short kebab summary). Fill every section — Context, Decision, Consequences (positive **and** negative), Alternatives considered.
 4. **Set status honestly.** Open question remaining → `Proposed`. Agreed and binding → `Accepted` **after the human approves**. An AI workflow drafts; the human accepts.
 5. **Update the Index** table in `.context/ADR/README.md` (ADR / Title / Status / Supersedes / Superseded by).

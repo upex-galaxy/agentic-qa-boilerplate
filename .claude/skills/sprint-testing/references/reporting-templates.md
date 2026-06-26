@@ -254,6 +254,8 @@ There are two distinct failure modes:
 
 Use absolute paths under the ticket's `evidence/` folder. Supported: `.png`, `.jpg`, `.gif`, `.mp4`, `.log`, `.txt`, `.pdf`. Provide the 1-2 most informative screenshots (the bug state, not navigation screens).
 
+**Evidence file naming (mandatory).** Name every file in `evidence/` as `{KEY}-step{NN}-{action}.{ext}` — `{KEY}` = the ticket key, `step{NN}` = zero-padded step number tying the file to a specific reproduction / test step, `{action}` = short kebab-case description, `{ext}` ∈ `png` · `jpg` · `gif` · `mp4` · `log` · `txt` · `pdf` (plus capture-format extensions such as `har` for network traces). Examples: `UPEX-411-step1-form-validation.png`, `UPEX-101-step3-error-shown.png`, `GX-202-step2-network-trace.har`. The `step{NN}` token lets bug reports (§1.3 Steps to Reproduce) and regression analysis reference each piece of evidence by step.
+
 ### 1.12 Human confirmation gate
 
 Before calling `[ISSUE_TRACKER_TOOL] Create issue`, present the full draft (title, severity, error type, environment, custom-field summary, attachments list) and wait for user OK. Never skip this gate.
@@ -517,9 +519,11 @@ After posting any Template A-D comment, surface 1-2 screenshot paths so the user
 Comment posted to TMS.
 
 Evidence screenshots to attach:
-1. {abs-path-to-evidence}/{{PROJECT_KEY}}-{number}-{primary}.png — {desc}
-2. {abs-path-to-evidence}/{{PROJECT_KEY}}-{number}-{secondary}.png — {desc, if applicable}
+1. {abs-path-to-evidence}/{KEY}-step{NN}-{action}.png — {desc}
+2. {abs-path-to-evidence}/{KEY}-step{NN}-{action}.png — {desc, if applicable}
 ```
+
+Evidence files in the ticket's `evidence/` folder follow the mandatory naming rule `{KEY}-step{NN}-{action}.{ext}` (see §1.11) — `{KEY}` = ticket key, `step{NN}` = zero-padded step number, `{action}` = short kebab description, `{ext}` ∈ {png, jpg, gif, mp4, log, txt, pdf}. Examples: `UPEX-411-step1-form-validation.png`, `UPEX-101-step3-error-shown.png`. The `step{NN}` token ties each shot to the step it evidences.
 
 Rules: pick the most informative 1-2 shots; for bugs show the fix working (Template C) or the persisting failure (Template D); for stories show key ACs verified; never list intermediate navigation shots.
 

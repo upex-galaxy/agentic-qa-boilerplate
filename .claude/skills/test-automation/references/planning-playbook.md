@@ -648,4 +648,4 @@ T01 ──┬──► T02 ──► T04
 | `signup > invalid email rejects` | UPEX-999 | Server-side validation missing | 2026-04-20 |
 ````
 
-The Blocked tests table is populated from §12.3 — every `@blocked:{BUG-KEY}` test must appear here with the reason and the date the block began. Remove a row only when the bug is closed and the test goes green.
+The Blocked tests table is populated from §12.3 — every test marked `test.fail('Blocked by {BUG-KEY}')` + tagged `@blocked:{BUG-KEY}` (the blocked-by-bug convention defined in `automation-standards.md` §7, distinct from `softFail` and `@flaky`) must appear here with the bug key, the reason, and the date the block began. Remove a row only when the bug is closed and the test goes green.

@@ -150,7 +150,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="row mt-l" style="gap:10px;flex-wrap:wrap">
     <span class="chip"><span class="dot"></span>7 capas</span>
     <span class="chip" style="--ac:#a78bfa"><span class="dot"></span>30+ artefactos</span>
-    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>12 huecos abiertos</span>
+    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>12 convenciones ratificadas</span>
     <span class="chip" style="--ac:#a3e635"><span class="dot"></span>0 contradicciones</span>
   </div>
   <p class="dim3 mono mt-l" style="font-size:12px">Vive en <b>.claude/skills/agentic-qa-core/</b> — el skill base global.</p>
@@ -473,25 +473,25 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 
 <!-- 15 · Divisor GAPS -->
 <section class="slide" style="--ac:#fbbf24" data-t="Auditoría de cobertura">
-  <p class="kick">Auditoría de cobertura · qué aún no tiene nombre canónico</p>
-  <h1>Los <span class="grad">huecos abiertos</span></h1>
-  <p class="lede">Doce artefactos del flujo de QA + automatización tienen solo un nombre implícito o indefinido. Cada uno es una decisión pendiente — propuestas abajo, ninguna ratificada aún.</p>
+  <p class="kick">Auditoría de cobertura · las 12 convenciones ahora ratificadas</p>
+  <h1>Las <span class="grad">convenciones ratificadas</span></h1>
+  <p class="lede">Doce artefactos que solo tenían un nombre implícito o indefinido ahora son convenciones ratificadas — escritas en los references de los skills y aplicadas por convención.</p>
   <div class="row mt-m" style="gap:10px;flex-wrap:wrap">
-    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>12 huecos</span>
-    <span class="chip" style="--ac:#a3e635"><span class="dot"></span>propuestas listas</span>
-    <span class="chip" style="--ac:#f472b6"><span class="dot"></span>tu decisión</span>
+    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>12 ratificadas</span>
+    <span class="chip" style="--ac:#a3e635"><span class="dot"></span>ahora canon</span>
+    <span class="chip" style="--ac:#f472b6"><span class="dot"></span>lint a futuro</span>
   </div>
 </section>
 
 <!-- 16 · GAPS grid 1 -->
 <section class="slide" style="--ac:#fbbf24" data-t="Huecos 1-6">
   <p class="kick">Huecos · datos, evidencia y arquitectura</p>
-  <h2>Huecos abiertos · 1–6</h2>
+  <h2>Ratificadas · 1–6</h2>
   <div class="grid g3 mt-m">
     <div class="gap"><h4>1 · Archivos de test-data</h4><p class="dim" style="font-size:13.5px">Los fixtures en tests/data/ no tienen forma.</p><span class="prop">{resource}-{variant}.json → users-valid.json</span></div>
     <div class="gap"><h4>2 · Evidencia / screenshots</h4><p class="dim" style="font-size:13.5px">Los archivos en evidence/ son ad-hoc.</p><span class="prop">{KEY}-step{NN}-{action}.png</span></div>
     <div class="gap"><h4>3 · Mocks / stubs</h4><p class="dim" style="font-size:13.5px">Sin hogar ni nombre para mocks de API.</p><span class="prop">data/mocks/{endpoint}/{method}.{status}.json</span></div>
-    <div class="gap"><h4>4 · Numeración de ADR</h4><p class="dim" style="font-size:13.5px">ADR-NNNN colisiona entre agentes paralelos.</p><span class="prop">ADR-{NNNN}-{slug}.md + bun adr:next</span></div>
+    <div class="gap"><h4>4 · Numeración de ADR</h4><p class="dim" style="font-size:13.5px">ADR-NNNN colisiona entre agentes paralelos.</p><span class="prop">ADR-{NNNN}-{slug}.md · manual vía README Index (sin script)</span></div>
     <div class="gap"><h4>5 · Identificadores de env</h4><p class="dim" style="font-size:13.5px">Nombres de env solo implícitos por URL.</p><span class="prop">local · qa · staging · production</span></div>
     <div class="gap"><h4>6 · Carpetas de módulo de test</h4><p class="dim" style="font-size:13.5px">Subcarpetas e2e/integration sin spec.</p><span class="prop">{domain-plural}/ kebab-case</span></div>
   </div>
@@ -500,16 +500,16 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 <!-- 17 · GAPS grid 2 -->
 <section class="slide" style="--ac:#fbbf24" data-t="Huecos 7-12">
   <p class="kick">Huecos · reporting, corridas y modelos de datos</p>
-  <h2>Huecos abiertos · 7–12</h2>
+  <h2>Ratificadas · 7–12</h2>
   <div class="grid g3 mt-m">
     <div class="gap"><h4>7 · Labels de suite Allure</h4><p class="dim" style="font-size:13.5px">Agrupación del reporter indefinida.</p><span class="prop">derivar del tag Playwright — única fuente</span></div>
-    <div class="gap"><h4>8 · Carpetas de test-execution</h4><p class="dim" style="font-size:13.5px">Varias corridas/sprint necesitan IDs.</p><span class="prop">test-executions/{EXEC-KEY}-{ts}/</span></div>
-    <div class="gap"><h4>9 · Archivos de defect anidados</h4><p class="dim" style="font-size:13.5px">defects/&lt;KEY&gt;/ sin nombres internos.</p><span class="prop">espejar Story: bug.md + evidence/ + related-tests/</span></div>
+    <div class="gap"><h4>8 · Archivos de test-execution</h4><p class="dim" style="font-size:13.5px">Un archivo md por ejecución vinculada (convención de sync).</p><span class="prop">test-executions/{TESTEXEC|RETESTEXEC}-{KEY}-{slug}.md</span></div>
+    <div class="gap"><h4>9 · Archivos de defect anidados</h4><p class="dim" style="font-size:13.5px">Un archivo md por defect vinculado (convención de sync).</p><span class="prop">defects/DEFECT-{KEY}-{slug}.md</span></div>
     <div class="gap"><h4>10 · Data factory / types</h4><p class="dim" style="font-size:13.5px">Payloads Faker y modelos varían.</p><span class="prop">DataFactory.ts · types.ts · constants.ts</span></div>
     <div class="gap"><h4>11 · Variables Gherkin</h4><p class="dim" style="font-size:13.5px">Estilo de placeholder implícito.</p><span class="prop">{snake_case} → {user_id}, {order_amount}</span></div>
     <div class="gap"><h4>12 · Marcador de test bloqueado</h4><p class="dim" style="font-size:13.5px">Tests bloqueados por bug se taggean inconsistente.</p><span class="prop">@blocked:{BUG-KEY} + test.fail()</span></div>
   </div>
-  <div class="callout mt-m" style="--ac:#a3e635;padding:11px 14px"><p style="margin:0" class="dim">Ninguno está ratificado. Elige los que valga la pena estandarizar y entran al códice (y a los docs de los skills) como canon.</p></div>
+  <div class="callout mt-m" style="--ac:#a3e635;padding:11px 14px"><p style="margin:0" class="dim">Las 12 están ratificadas — ahora canon en los references de los skills. Siguiente: enforcement por lint (opcional).</p></div>
 </section>
 
 <!-- 18 · MASTER cheat-sheet -->
@@ -542,7 +542,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="grid g3 mt-m">
     <div class="card lyr" style="--ac:#22d3ee"><h4>Dónde vive</h4><p class="dim">Este deck vive en <span class="mono">agentic-qa-core</span> — el skill global citado por cada workflow. La fuente en prosa son los <span class="mono">references/</span> de los skills.</p></div>
     <div class="card lyr" style="--ac:#a78bfa"><h4>Cuándo cambia</h4><p class="dim">Edita los <span class="mono">references/*.md</span> canónicos, regenera <span class="mono">REGISTRY.md</span>, y luego refresca este deck (EN + ES) para que el códice nunca derive.</p></div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>Qué sigue</h4><p class="dim">Ratifica los huecos que importen. Cada uno elegido se vuelve canon en los skills y aterriza aquí.</p></div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Qué sigue</h4><p class="dim">Todos los huecos ratificados. Siguiente: reglas de lint opcionales para hacerlos cumplir.</p></div>
   </div>
   <p class="dim3 mono mt-l" style="font-size:12px">should = caso · Validate = grupo · prefijo = Story · @atc = clave Jira · @integration ≠ @api</p>
 </section>

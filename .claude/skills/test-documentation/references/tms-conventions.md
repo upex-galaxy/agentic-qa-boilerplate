@@ -335,6 +335,10 @@ Use Traditional when: visual/subjective verification, exploratory elements, or e
 
 Never hardcode real data in TCs. Tests are executed repeatedly throughout the project's life; production/staging data changes. Use variables that describe the **type** of data.
 
+### Placeholder style (mandatory)
+
+Variable placeholders in scenario steps are **`{snake_case}` in curly braces** — `{user_id}`, `{order_amount}`, `{discount_code}`. The only exception is a short uppercase symbol for a count or index (`{N}`), kept terse by convention. No hardcoded values in scenario steps; every value a step consumes is referenced by its `{snake_case}` name and resolved through the Variables table below. (This is distinct from the `<column>` angle-bracket syntax a `Scenario Outline` binds to its `Examples:` columns — angle brackets name a per-row Examples value, curly braces name a Variables-table lookup; see the `Examples:` vs `Variables` note below.)
+
 ### When to use a specific value
 
 Only when the acceptance criterion itself defines the value:

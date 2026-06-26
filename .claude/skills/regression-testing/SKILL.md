@@ -225,6 +225,8 @@ Each subagent uses the briefing shape in `agentic-qa-core/references/briefing-te
 
 Source of truth priority: **Allure results JSON > Playwright `report.json` > raw logs**. Each Allure result has `status`, `statusDetails.message`, `statusDetails.trace`, and `labels[]` (look for `testId` = ATC ID, `suite`, and `severity`).
 
+> **The `suite` label is tag-derived — single source of truth.** Allure suite/grouping labels are NOT a separate taxonomy: they derive from the Playwright tag (`@smoke` / `@regression` / `@e2e` / `@integration` / `@critical`) that also drives CI scope selection. A test tagged `@integration` reports `suite: integration` automatically. So the `suite` you read here is exactly the scope CI ran — never reconcile it against a parallel Allure label set. Convention owner: `test-automation/references/ci-integration.md` §3.2.1.
+
 ### Step 3: Compute metrics
 
 | Metric | Formula |
@@ -234,6 +236,13 @@ Source of truth priority: **Allure results JSON > Playwright `report.json` > raw
 | Pass Rate | `Passed / Total * 100` |
 | Duration | `max(stop) - min(start)` |
 | Trend | current pass rate − previous run pass rate |
+
+> **Exclude KNOWN-BLOCKED from the gating pass-rate.** Tests classified
+> KNOWN-BLOCKED (tagged `@blocked:{BUG-KEY}`, see Step 4) are parked behind an
+> already-filed bug — they are NOT regression failures and must not depress the
+> pass-rate that drives the GO/NO-GO score. Compute the gating Pass Rate over
+> `Total − KNOWN-BLOCKED`, and report the blocked count separately (with each
+> `{BUG-KEY}`) so the release decision is not gamed in either direction.
 
 Previous-run comparison requires downloading artifacts of the previous run:
 
@@ -251,6 +260,10 @@ Apply this decision tree to each failed test (whether classified inline or insid
 ```
 Failed test
   │
+  ├── Tagged @blocked:{BUG-KEY}? ────────────► KNOWN-BLOCKED
+  │   (test asserts test.fail('Blocked by {BUG-KEY}') — a deliberately
+  │    parked test, not a fresh regression; excluded from gating pass-rate)
+  │
   ├── Linked to a known-issue ticket? ───────► KNOWN ISSUE
   │
   ├── Error matches environment pattern? ────► ENVIRONMENT ISSUE
@@ -266,11 +279,23 @@ Failed test
 
 | Category | Impact | Action |
 |----------|--------|--------|
+| KNOWN-BLOCKED | LOW | Already tracked by `{BUG-KEY}` — exclude from gating pass-rate, list in report with the blocking bug key. **No new Jira bug** (the marker already names the open bug) |
 | REGRESSION | HIGH | Block release, file Jira Bug/Defect (Phase 3 §File defects in Jira, doctrine Part 1), assign |
 | FLAKY | MEDIUM | Schedule stabilization, do not block — **no Jira bug** |
 | KNOWN ISSUE | LOW | Document against existing ticket, do not block — **no new Jira bug** |
 | ENVIRONMENT | MEDIUM | Re-run after infra check — **no Jira bug** |
 | NEW TEST | LOW | Manual verification → if a genuine product defect, file Jira Bug/Defect; else accept or fix |
+
+> **KNOWN-BLOCKED — consuming the blocked-test marker.** The `@blocked:{BUG-KEY}`
+> tag + `test.fail('Blocked by {BUG-KEY}')` marker is **defined in
+> `test-automation`** (`references/automation-standards.md` §7 Stability; the
+> `PROGRESS.md` blocked-tests note lives in `references/planning-playbook.md`) —
+> this skill only *consumes* it. The GO/NO-GO gate MUST recognize `@blocked:{BUG-KEY}` tests and
+> classify them as **KNOWN-BLOCKED, never REGRESSION**: they are deliberately
+> parked behind an already-filed bug, not a fresh failure. Exclude them from the
+> pass-rate that gates the release (see §Compute metrics), and list each in the
+> report under its own heading with the blocking `{BUG-KEY}`. Do NOT file a new
+> Jira bug — the marker already names the open one.
 
 > **`sdet` CI-fallback clause** (integration-trunk suites only): an ENVIRONMENT-class red on a Sanity-CI run for a ticket branch may authorize merging **into the integration trunk** — never the final `trunk → main` PR — when proven by BOTH (a) the change passing locally on `local` AND `staging`, and (b) the same red being present independent of the change (nightly already red, or the failing line is shared pre-existing code). File a separate infra/flake ticket and reference it in the PR. This is NOT a relaxation of the GO bar: a REGRESSION-class failure is never eligible, and the final PR to `main` still requires a genuinely green test step. See `.claude/skills/git-flow-master/references/sdet-integration-trunk.md` §CI-fallback clause.
 
@@ -408,6 +433,8 @@ Score: {score}/9. {one-line rationale}
 
 ### Flaky ({n}) — schedule stabilization
 ### Known Issues ({n}) — accepted
+### Known-Blocked ({n}) — excluded from gating pass-rate
+  - {test} | {atc_id} | blocked by [{BUG-KEY}]({url})
 ### Environment ({n}) — re-run after infra check
 
 ## Trend (last 5 runs)

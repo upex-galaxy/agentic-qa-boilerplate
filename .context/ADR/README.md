@@ -49,7 +49,7 @@ Proposed ──→ Accepted ──→ Superseded   (by ADR-NNNN, which links bac
 ## How to write one
 
 1. Copy [`ADR-NNNN-template.md`](./ADR-NNNN-template.md) to `ADR-<NNNN>-<slug>.md`.
-   - `<NNNN>` = next free 4-digit number, zero-padded (`0001`, `0002`, …). Numbers are never reused.
+   - `<NNNN>` = next free 4-digit number, zero-padded (`0001`, `0002`, …). **Allocate it manually — there is no script:** open this README, read the **Index** table below, take `max(existing NNNN) + 1`, and zero-pad to 4 digits. The Index table is the only allocator. Numbers are never reused, even when an ADR is superseded or deprecated.
    - `<slug>` = short kebab-case summary (`playwright-over-cypress`, `transactional-test-isolation`).
 2. Fill every section. If a decision is still open, set `Status: Proposed` and say what's unresolved.
 3. Add a row to the **Index** below.
