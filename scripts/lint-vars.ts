@@ -159,9 +159,13 @@ function loadDeclaredVariables(yamlPath: string): DeclaredVars {
       }
       continue;
     }
-    // Flat section: each child is a flat leaf.
+    // Flat section: each SCALAR child is a flat {{VAR}} leaf. Nested-mapping leaves
+    // (e.g. `qa.qa_epics`) are structured config read DIRECTLY by skills, not {{VAR}}
+    // template variables, so they are NOT harvested as declared vars (same rationale
+    // as the `git_strategy` carve-out above).
     if (sectionVal && typeof sectionVal === 'object' && !Array.isArray(sectionVal)) {
-      for (const leafKey of Object.keys(sectionVal as Record<string, unknown>)) {
+      for (const [leafKey, leafVal] of Object.entries(sectionVal as Record<string, unknown>)) {
+        if (leafVal !== null && typeof leafVal === 'object') { continue; }
         flat.add(leafKey.toUpperCase());
       }
     }
