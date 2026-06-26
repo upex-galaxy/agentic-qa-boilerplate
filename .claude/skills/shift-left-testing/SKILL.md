@@ -308,9 +308,10 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
 2. Populate ATP DRAFT — branch on modality:
 
    Modality jira-xray — Xray (Test Plan creation opted in)
-     [TMS_TOOL] Create TestPlan:
+     [TMS_TOOL] Create TestPlan:                  # a Test Plan item, by excellence; field = fallback only
        project: {{PROJECT_KEY}}
-       title: "Test Plan (Shift-Left DRAFT): {{PROJECT_KEY}}-{n}"
+       title: "ATP: {STORY-KEY}: {story title} (Shift-Left DRAFT)"
+       parent: "QA Master Test Plan"   # qa.qa_epics.master_test_plan_epic — resolve by name, find-or-create
      [ISSUE_TRACKER_TOOL] Link Issues:
        linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan (resolve by slug + verify direction per agentic-qa-core/references/traceability-linking.md §2/§4)
        outward: {ATP_KEY}

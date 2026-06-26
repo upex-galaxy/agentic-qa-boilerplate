@@ -404,9 +404,9 @@ Output checkpoint:
 ```
 USER STORY ({{PROJECT_KEY}}-XXX)
     |
-    +--> ATP (Test Plan: {{PROJECT_KEY}}-XXX)
+    +--> ATP (ATP: {STORY-KEY}: {story title})
     |        |
-    |        +--> ATR (Test Results: {{PROJECT_KEY}}-XXX)
+    |        +--> ATR (ATR: {STORY-KEY}: Story Testing)
     |                 |
     +--> TCs ---------+
          (linked to Story + ATP + ATR)
@@ -523,8 +523,8 @@ If triage is Code Review, skip Phases 2-3:
 
 For bugs that need Full Retesting:
 
-- ATP: "Test Plan: {{PROJECT_KEY}}-{number}"
-- ATR: "Test Results: {{PROJECT_KEY}}-{number}"
+- ATP: "ATP: {STORY-KEY}: {story title}"
+- ATR: "ATR: {STORY-KEY}: Story Testing"
 - Link ATP to ATR
 
 Why no TCs in-sprint: the bug ticket is the implicit *immediate* retest case. Reproduction steps = test steps. Expected vs Actual = pass/fail criteria. **Regression follow-up (golden rule)**: if the bug is regression-worthy, Stage 4 (`test-documentation` bug-driven decision) ensures a persistent Test covers it — reuse the existing failed Test or create one. Not every bug qualifies (a one-time typo in a stable area is treated like a failed test).

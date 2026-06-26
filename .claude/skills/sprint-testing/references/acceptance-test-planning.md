@@ -375,6 +375,15 @@ The modality was resolved in Session Start (§0) and persisted into `test-sessio
 
 > **Prerequisite (both modalities)**: Load `/acli` skill before executing any `[ISSUE_TRACKER_TOOL]` block below. In Modality jira-xray, additionally load `/xray-cli` for `[TMS_TOOL]` calls. Skip if Session Start §0.1 in `SKILL.md` already loaded them.
 
+> **Title grammar (QA planning ladder)** — every Plan and Run uses `{ACRONYM}: {scope-id}: {descriptor}`:
+> - **ATP** (Story Test Plan): `ATP: {STORY-KEY}: {story title}` — e.g. `ATP: PROJ-123: Apply discount at checkout`.
+> - **ATR** (Story Test Execution): `ATR: {STORY-KEY}: Story Testing` — the Story-level run is named **Story Testing** and runs ONCE per sprint per Story — e.g. `ATR: PROJ-123: Story Testing`.
+> - **FTP** (Feature Test Plan, feature/Epic altitude — see `feature-test-planning.md`): `FTP: {EPIC-KEY}: {feature}` — e.g. `FTP: PROJ-42: Checkout & Payments`.
+> - **FTR** (Feature Test Run): `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` — the feature run is named **Feature Testing** and may run ≥1 per sprint — e.g. `FTR: PROJ-42: Feature Testing — Checkout · run 2`.
+> Bug-fix verification keeps `ReTest: {BUG_KEY}: {summary}` (a Test Execution). Sprint regression (`STP` / `STR`) lives in `/regression-testing`.
+
+> **Items over fields (excellence default, both modalities)** — by excellence ATP is a **Test Plan** issue and ATR is a **Test Execution** issue; parent every Test Plan (ATP / FTP) to the **QA Master Test Plan** epic and every Test Execution (ATR / FTR) to the **QA Test Artifacts** epic. The Story custom field (`{{jira.acceptance_test_plan}}` / `{{jira.acceptance_test_results}}`) is a **fallback ONLY** when the Test Plan / Test Execution work types are unavailable in the instance.
+
 #### Modality jira-xray
 
 ATP = `Test Plan` issue. ATR = `Test Execution` issue. Both linked bidirectionally to the Story.
@@ -382,7 +391,8 @@ ATP = `Test Plan` issue. ATR = `Test Execution` issue. Both linked bidirectional
 ```
 [TMS_TOOL] Create TestPlan:
   project: {{PROJECT_KEY}}
-  title: Test Plan: {{PROJECT_KEY}}-{n}
+  title: ATP: {STORY-KEY}: {story title}
+  parentEpic: QA Master Test Plan
 
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {ATP_KEY}
@@ -395,7 +405,8 @@ ATP = `Test Plan` issue. ATR = `Test Execution` issue. Both linked bidirectional
 
 [TMS_TOOL] Create Execution:
   project: {{PROJECT_KEY}}
-  title: Test Results: {{PROJECT_KEY}}-{n}
+  title: ATR: {STORY-KEY}: Story Testing
+  parentEpic: QA Test Artifacts
   testPlan: {ATP_KEY}
   environment: {from session context, e.g. "Staging"}
   # tests: [] — filled at Stage 3 or by CI import
@@ -410,9 +421,9 @@ ATP = `Test Plan` issue. ATR = `Test Execution` issue. Both linked bidirectional
 
 Load `/xray-cli` skill for the concrete CLI syntax.
 
-#### Modality jira-native (no Xray)
+#### Modality jira-native (no Xray) — fallback only
 
-ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md`: `{{jira.acceptance_test_plan}}` for ATP and `{{jira.acceptance_test_results}}` for ATR. Each field is the source of truth; a `## <label>` comment is posted ONLY as a fallback when the field is absent on the instance. `fix-traceability` checks the field, or the fallback comment when the field is absent.
+This branch is the **degraded fallback** (Test Plan / Test Execution work types unavailable). ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md`: `{{jira.acceptance_test_plan}}` for ATP and `{{jira.acceptance_test_results}}` for ATR. Each field is the source of truth; a `## <label>` comment is posted ONLY as a fallback when the field is absent on the instance. `fix-traceability` checks the field, or the fallback comment when the field is absent.
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -432,7 +443,7 @@ ATP/ATR live on the Story itself — no separate issues. Use the custom field ID
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
-    {{jira.acceptance_test_results}}: "Test Results: {{PROJECT_KEY}}-{n} — pending execution"
+    {{jira.acceptance_test_results}}: "ATR: {STORY-KEY}: Story Testing — pending execution"
 ```
 
 Load `/acli` skill for the concrete Jira CLI syntax.

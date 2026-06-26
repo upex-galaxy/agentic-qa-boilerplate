@@ -766,10 +766,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">The four entities + the Regression Epic</p>
   <h2 class="h2" data-anim="fade-up">Preflight, then build the entity model</h2>
   <div class="flow mt-m anim-stagger-list">
-    <div class="stage"><div class="sx">0</div><div><h4>Find the Regression Epic</h4><p>Search <span class="mono">type = Epic AND labels = "test-repository"</span>; if none, ask before creating <span class="mono">{{PROJECT_KEY}} Test Repository</span>. Every TC needs this parent.</p></div></div>
+    <div class="stage"><div class="sx">0</div><div><h4>Find the Regression Epic</h4><p>Search <span class="mono">type = Epic AND summary ~ "QA Test Repository"</span>; if none, ask before creating <span class="mono">QA Test Repository</span>. Every TC needs this parent.</p></div></div>
     <div class="stage"><div class="sx">US</div><div><h4>Story</h4><p>The requirement (pre-existing), <span class="mono">{{PROJECT_KEY}}-{n}</span>.</p></div></div>
-    <div class="stage"><div class="sx">ATP</div><div><h4>Acceptance Test Plan</h4><p><span class="mono">Test Plan: {{PROJECT_KEY}}-{n}</span> — Test Analysis + AC→TC coverage.</p></div></div>
-    <div class="stage"><div class="sx">ATR</div><div><h4>Acceptance Test Results</h4><p><span class="mono">Test Results: {{PROJECT_KEY}}-{n}</span> — Test Report + execution results.</p></div></div>
+    <div class="stage"><div class="sx">ATP</div><div><h4>Acceptance Test Plan</h4><p><span class="mono">ATP: {{PROJECT_KEY}}-{n}: {story title}</span> — Test Analysis + AC→TC coverage.</p></div></div>
+    <div class="stage"><div class="sx">ATR</div><div><h4>Acceptance Test Results</h4><p><span class="mono">ATR: {{PROJECT_KEY}}-{n}: Story Testing</span> — Test Report + execution results.</p></div></div>
     <div class="stage"><div class="sx">TC</div><div><h4>Test Case</h4><p><span class="mono">{US_ID}: TC#: should &lt;outcome&gt; when &lt;condition&gt;</span> — Precondition + Action + Expected.</p></div></div>
     <div class="stage"><div class="sx">TS</div><div><h4>Test Set <span class="tag">xray only</span></h4><p><span class="mono">Test Set: &lt;EPIC_KEY&gt; &lt;feature&gt;</span> — feature grouping (1:1 with the Epic) of promoted regression Tests. Native: replaced by a feature/Epic label, no entity.</p></div></div>
   </div>

@@ -82,6 +82,8 @@ The Handoff subagent must read the current description FIRST (from the synced `.
 
 ### Step 2 — Populate ATP DRAFT
 
+> **Items over fields (excellence default)** — by excellence the ATP DRAFT is a real **Test Plan** issue titled `ATP: {STORY-KEY}: {story title} (Shift-Left DRAFT)`, parented to the **QA Master Test Plan** epic and linked to the Story. The Story custom field (`{{jira.acceptance_test_plan}}`) is a **fallback ONLY** when the Test Plan work type is unavailable in the instance.
+
 Branch on modality (resolved in Phase 0.1).
 
 #### Modality jira-xray — Xray (Test Plan opt-in CHOSEN by user)
@@ -89,7 +91,8 @@ Branch on modality (resolved in Phase 0.1).
 ```
 [TMS_TOOL] Create TestPlan:
   project: {{PROJECT_KEY}}
-  title: "Test Plan (Shift-Left DRAFT): {{PROJECT_KEY}}-{n}"
+  title: "ATP: {STORY-KEY}: {story title} (Shift-Left DRAFT)"
+  parentEpic: QA Master Test Plan
   description: <full shift-left-refinement.md body>
 
 [ISSUE_TRACKER_TOOL] Link Issues:

@@ -363,9 +363,16 @@ the returned Jira key to reference in the report.
 
 > **Prerequisite**: Load `/xray-cli` skill (Modality jira-xray) before executing the `[TMS_TOOL]` commands below. In Modality jira-native, load `/acli` instead and map test-execution operations to native Jira issues (see `test-documentation/references/jira-setup.md`).
 
+The sprint regression maps to two Jira **items** (items-first by excellence — the Story custom field is never used at this altitude):
+
+- **STP** (Sprint Test Plan) — a **Test Plan** item titled `STP: Sprint#{N}: Regression` (e.g. `STP: Sprint#30: Regression`). Parents to the **QA Master Test Plan** epic (`qa.qa_epics.master_test_plan_epic.name`); `relates to` the Sprint.
+- **STR** (Sprint Test Run) — a **Test Execution** item titled `STR: Sprint#{N}: Regression Testing` (e.g. `STR: Sprint#30: Regression Testing`). Parents to the **QA Test Artifacts** epic (`qa.qa_epics.test_artifacts_epic.name`); `relates to` the Sprint; `testPlan` → STP. The run's term is **Regression Testing** — "Sprint" already comes from the `Sprint#{N}` scope-id, so the title carries no redundant "Sprint Regression".
+
+The `Update Test Execution` below targets the **STR** item.
+
 ```
 [TMS_TOOL] Update Test Execution:
-  executionKey: {execution-key}
+  executionKey: {STR execution-key}
   results: {per-ATC status + failure comments from Phase 2}
 ```
 

@@ -326,6 +326,8 @@ Apply the branch that matches the resolved modality (do not mix).
 
 > **Prerequisite (both modalities)**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call below. In Modality jira-xray additionally load `/xray-cli` for `[TMS_TOOL] Update Run` and `[TMS_TOOL] Import Results`. Skip if Session Start §0.1 in `SKILL.md` already loaded them.
 
+> **ATR item (excellence default)** — by excellence the ATR is the **Test Execution** issue titled `ATR: {STORY-KEY}: Story Testing` (the Story-level run, named **Story Testing**, runs ONCE per sprint), created in Stage 1 and parented to the **QA Test Artifacts** epic; Stage 3 fills its body + run results below. The Story custom field (`{{jira.acceptance_test_results}}`) is a **fallback ONLY** when the Test Execution work type is unavailable.
+
 #### Modality jira-xray (ATR = Test Execution)
 
 ```

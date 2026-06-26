@@ -6,6 +6,8 @@ This is the **DRAFT** ATP body used during pre-sprint Shift-Left. Different from
 
 The skeleton below is the canonical body for `shift-left-refinement.md`. The same body is mirrored byte-for-byte in Jira during Phase 3 (custom field `{{jira.acceptance_test_plan}}` + Story description QA Refinements section + comment mirror).
 
+> **ATP DRAFT item title** — the `# Shift-Left Refinement: …` heading below is only the local file heading. When Phase 3 publishes the DRAFT (see `handoff-protocol.md` Step 2), by excellence it is a real **Test Plan** issue titled `ATP: {STORY-KEY}: {story title} (Shift-Left DRAFT)`, parented to the **QA Master Test Plan** epic. The Story custom field is a **fallback ONLY** when the Test Plan work type is unavailable.
+
 > **Before Phase 3 publishes ATP DRAFT body to Jira rich-text fields**, read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
 
 ---

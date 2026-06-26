@@ -51,6 +51,28 @@ Keep the feature plan **feature-level**: no per-story test cases, no test data v
 
 ---
 
+## Nomenclature — FTP / FTR (items over fields)
+
+The feature altitude is this doc's home altitude, so its two artifacts are named here per the
+ratified QA Planning Ladder (`docs/qa-standard/planning-ladder-proposal.md`). Grammar:
+`{ACRONYM}: {scope-id}: {descriptor}`.
+
+| Artifact | Jira work type | Title pattern | Example | Parent Epic (axis 1) | Scope link (axis 2) |
+|----------|----------------|---------------|---------|----------------------|---------------------|
+| **FTP** — Feature Test Plan | **Test Plan** | `FTP: {EPIC-KEY}: {feature}` | `FTP: PROJ-42: Checkout & Payments` | **QA Master Test Plan** (`qa.qa_epics.master_test_plan_epic`) | `tests` the product **feature Epic** |
+| **FTR** — Feature Test Run | **Test Execution** | `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` | `FTR: PROJ-42: Feature Testing — Checkout · run 2` | **QA Test Artifacts** (`qa.qa_epics.test_artifacts_epic`) | `is tested by` feature Epic · `testPlan` → FTP |
+
+- **Items over fields (by excellence).** The FTP **Test Plan** issue is the home of the
+  feature-test-plan body (the 7 sections below); the epic feature-test-plan custom field /
+  `## Feature Test Plan` comment is the **degraded fallback only** when the Test Plan work type
+  is absent from the instance. As soon as the FTP item exists it is the single source of truth.
+- **Cardinality.** FTP = **1 per feature**. FTR uses the term **"Feature Testing"** and may run
+  **≥1 time per sprint** (`· run N` disambiguates re-runs).
+- **Roll-up (optional).** Each per-story ATP MAY link `ATP is part of FTP` for coverage
+  aggregation; parent of every Plan stays the QA Master Test Plan Epic regardless of roll-up.
+
+---
+
 ## Section order of `feature-test-plan.md`
 
 The output document has seven sections. AI fills each one by reading the specified inputs.

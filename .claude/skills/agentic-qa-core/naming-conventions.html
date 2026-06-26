@@ -193,7 +193,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="lstack mt-m">
     <div class="lbar" style="--ac:#22d3ee"><span class="ln">CASE</span><span class="ld">The individual test — what is asserted</span><span class="lx">should &lt;outcome&gt;</span></div>
     <div class="lbar" style="--ac:#a3e635"><span class="ln">GROUP</span><span class="ld">The container of cases — the feature under test</span><span class="lx">Validate &lt;feature&gt;</span></div>
-    <div class="lbar" style="--ac:#fbbf24"><span class="ln">CONTAINER</span><span class="ld">Planning &amp; execution vessels — ATP / ATR / PRC</span><span class="lx">Strategy: ID: …</span></div>
+    <div class="lbar" style="--ac:#fbbf24"><span class="ln">CONTAINER</span><span class="ld">Planning &amp; execution vessels — ATP/ATR/FTP/STP + Test Set/PRC</span><span class="lx">{ACRONYM}: {scope}: …</span></div>
     <div class="lbar" style="--ac:#a78bfa"><span class="ln">CODE</span><span class="ld">KATA — components, ATCs, files, tags</span><span class="lx">@atc · {Resource}Api</span></div>
     <div class="lbar" style="--ac:#60a5fa"><span class="ln">JIRA</span><span class="ld">Workflow states, labels, quality-issue titles</span><span class="lx">Epic: Component: …</span></div>
     <div class="lbar" style="--ac:#fb923c"><span class="ln">GIT</span><span class="ld">Branches, commits, PR titles</span><span class="lx">type(KEY): …</span></div>
@@ -267,21 +267,25 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       <div class="ex mt-s"><b>'UPEX-411:</b> Validate discount codes'</div>
       <p><span class="src">automation-standards.md</span></p>
     </div>
-    <div class="card lyr" style="--ac:#a3e635"><h4>Xray Test Set</h4>
-      <div class="tmpl sm" style="--ac:#a3e635"><span class="t-var">&lt;Strategy&gt;</span><span class="t-pun">: </span><span class="t-pre">&lt;ID&gt;</span><span class="t-pun">: </span><span class="t-fix" style="color:#a3e635">Validate</span> <span class="t-var">&lt;feature&gt;</span></div>
-      <div class="ex mt-s">Sanity: <b>GX-101:</b> Validate credit card payment</div>
+    <div class="card lyr" style="--ac:#a3e635"><h4>Test Set · TS</h4>
+      <div class="tmpl sm" style="--ac:#a3e635"><span class="t-fix" style="color:#a3e635">TS:</span> <span class="t-pre">{EPIC-KEY|module}</span><span class="t-pun">: </span><span class="t-fix" style="color:#a3e635">Validate</span> <span class="t-var">{feature}</span></div>
+      <div class="ex mt-s">TS: <b>GX-101:</b> Validate credit card payment</div>
       <p class="dim3" style="font-size:12.5px">Membership is an issue link — never the TC prefix.</p>
     </div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>Test Plan · ATP <span class="dim3" style="font-size:12px">(Xray)</span></h4>
-      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">QA: TestPlan:</span> <span class="t-var">&lt;Strategy&gt; &lt;Version&gt;</span></div>
-      <div class="ex mt-s">QA: TestPlan: Regression S50</div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Test Plan · ATP <span class="dim3" style="font-size:12px">(Story)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">ATP:</span> <span class="t-pre">{STORY-KEY}</span><span class="t-pun">: </span><span class="t-var">{story title}</span></div>
+      <div class="ex mt-s">ATP: PROJ-123: Apply discount at checkout</div>
     </div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>Test Plan · ATP <span class="dim3" style="font-size:12px">(Jira-native)</span></h4>
-      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">Test Plan:</span> <span class="t-pre">{{PROJECT_KEY}}-{n}</span></div>
-      <div class="ex mt-s">Test Plan: PROJ-123</div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Test Plan · FTP <span class="dim3" style="font-size:12px">(Feature)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">FTP:</span> <span class="t-pre">{EPIC-KEY}</span><span class="t-pun">: </span><span class="t-var">{feature}</span></div>
+      <div class="ex mt-s">FTP: PROJ-42: Checkout &amp; Payments</div>
+    </div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Test Plan · STP <span class="dim3" style="font-size:12px">(Sprint)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">STP:</span> <span class="t-pre">Sprint#{N}</span><span class="t-pun">: </span><span class="t-var">Regression</span></div>
+      <div class="ex mt-s">STP: Sprint#30: Regression</div>
     </div>
   </div>
-  <p class="mt-s"><span class="src">tms-conventions.md §3 · jira-test-management.md §5</span></p>
+  <p class="mt-s"><span class="src">tms-conventions.md §3 · jira-test-management.md §5 · planning-ladder</span></p>
 </section>
 
 <!-- 7 · CONTAINER layer -->
@@ -289,24 +293,55 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <p class="kick">Layer · CONTAINER — execution &amp; setup vessels</p>
   <h2>Execution &amp; setup vessels</h2>
   <div class="grid g2 mt-m">
-    <div class="card lyr" style="--ac:#fbbf24"><h4>Test Execution · ATR <span class="dim3" style="font-size:12px">(Xray)</span></h4>
-      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-var">&lt;Strategy&gt;</span><span class="t-pun">: </span><span class="t-pre">&lt;ID&gt;</span><span class="t-pun">: </span><span class="t-var">&lt;SUMMARY&gt;</span></div>
-      <div class="ex mt-s">Regression: TP-50: Sprint 50 Regression</div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>ATR · Story Test Execution <span class="dim3" style="font-size:12px">(Story Testing)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">ATR:</span> <span class="t-pre">{STORY-KEY}</span><span class="t-pun">: </span><span class="t-var">Story Testing</span></div>
+      <div class="ex mt-s">ATR: GX-123: Story Testing</div>
     </div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>Test Results · ATR <span class="dim3" style="font-size:12px">(Jira-native)</span></h4>
-      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">Test Results:</span> <span class="t-pre">{{PROJECT_KEY}}-{n}</span></div>
-      <div class="ex mt-s">Test Results: PROJ-123</div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>STR · Sprint Test Execution <span class="dim3" style="font-size:12px">(Regression Testing)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">STR:</span> <span class="t-pre">Sprint#{N}</span><span class="t-pun">: </span><span class="t-var">Regression Testing</span></div>
+      <div class="ex mt-s">STR: Sprint#30: Regression Testing</div>
     </div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>ReTesting <span class="dim3" style="font-size:12px">(post bug-fix)</span></h4>
-      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">ReTest:</span> <span class="t-pre">&lt;BUG_ID&gt;</span><span class="t-pun">: </span><span class="t-var">&lt;summary&gt;</span></div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>ReTest <span class="dim3" style="font-size:12px">(bug re-test)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">ReTest:</span> <span class="t-pre">{BUG-KEY}</span><span class="t-pun">: </span><span class="t-var">{summary}</span></div>
       <div class="ex mt-s">ReTest: GX-202: Wrong error on invalid password</div>
     </div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>Precondition · PRC</h4>
-      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-pre">&lt;Epic&gt;</span><span class="t-pun">: </span><span class="t-pre">&lt;Component&gt;</span><span class="t-pun">: </span><span class="t-fix" style="color:#fbbf24">PRC: For</span> <span class="t-var">&lt;action&gt;</span></div>
-      <div class="ex mt-s">Checkout: Payment: PRC: For credit card flow</div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Precondition · PRC <span class="dim3" style="font-size:12px">(title = the state)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">PRC:</span> <span class="t-pre">{COMPONENT}</span><span class="t-pun">: </span><span class="t-var">{required state}</span></div>
+      <div class="ex mt-s">PRC: Payment: Authenticated user with a saved card</div>
+      <p class="dim3" style="font-size:12px">Title states the <b>state</b>; the setup steps live in the content.</p>
     </div>
   </div>
-  <p class="mt-s"><span class="src">tms-conventions.md §3 · xray-platform.md</span></p>
+  <p class="mt-s"><span class="src">tms-conventions.md §3 · xray-platform.md · planning-ladder</span></p>
+</section>
+
+<!-- 7b · THE PLANNING LADDER -->
+<section class="slide" style="--ac:#fbbf24" data-t="Planning ladder">
+  <p class="kick">Layer · CONTAINER — the planning ladder</p>
+  <h2>The Planning Ladder</h2>
+  <p class="lede mt-s">Every Plan and every Run carries a 3-letter acronym prefix, so altitude and plan-vs-run read in the first token. Four QA-process Epics give each artifact type one governance home.</p>
+  <div class="row mt-m" style="gap:9px;flex-wrap:wrap">
+    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>QA Master Test Plan · all Test Plans</span>
+    <span class="chip" style="--ac:#a3e635"><span class="dot"></span>QA Test Repository · all Tests</span>
+    <span class="chip" style="--ac:#22d3ee"><span class="dot"></span>QA Test Artifacts · all Runs + PRC + Test Sets</span>
+    <span class="chip" style="--ac:#f87171"><span class="dot"></span>QA Defect Management · all bug/defect/improvement</span>
+  </div>
+  <div class="lstack mt-m">
+    <div class="lbar" style="--ac:#a78bfa"><span class="ln">PRODUCT</span><span class="ld">MTP — Master Test Plan</span><span class="lx">Epic QA Master Test Plan</span></div>
+    <div class="lbar" style="--ac:#34d399"><span class="ln">FEATURE</span><span class="ld">FTP → FTR — "Feature Testing", ≥1 run/sprint</span><span class="lx">{EPIC-KEY}</span></div>
+    <div class="lbar" style="--ac:#60a5fa"><span class="ln">SPRINT</span><span class="ld">STP → STR — "Regression Testing", 1/sprint</span><span class="lx">Sprint#{N}</span></div>
+    <div class="lbar" style="--ac:#22d3ee"><span class="ln">STORY</span><span class="ld">ATP → ATR — "Story Testing", 1 run</span><span class="lx">{STORY-KEY}</span></div>
+  </div>
+  <table class="mt-m">
+    <thead><tr><th>Altitude</th><th>Plan</th><th>Runner</th><th>Pattern</th></tr></thead>
+    <tbody>
+      <tr><td>Product</td><td class="m"><span class="lp">MTP</span></td><td class="dim">—</td><td class="m">Epic <span class="dim">QA Master Test Plan</span> (+ local master-test-plan.md)</td></tr>
+      <tr><td>Feature</td><td class="m"><span class="lp">FTP</span></td><td class="m"><span class="lp">FTR</span></td><td class="m">FTP/FTR: {EPIC-KEY}: … <span class="dim">— FTR term "Feature Testing", ≥1 run/sprint</span></td></tr>
+      <tr><td>Sprint</td><td class="m"><span class="lp">STP</span></td><td class="m"><span class="lp">STR</span></td><td class="m">STP/STR: Sprint#{N}: … <span class="dim">— STR term "Regression Testing", 1/sprint</span></td></tr>
+      <tr><td>Story</td><td class="m"><span class="lp">ATP</span></td><td class="m"><span class="lp">ATR</span></td><td class="m">ATP/ATR: {STORY-KEY}: … <span class="dim">— ATR term "Story Testing", 1 run</span></td></tr>
+    </tbody>
+  </table>
+  <div class="callout mt-m" style="padding:12px 15px"><p style="margin:0" class="dim"><b>Items over fields</b> — every Plan is a Test Plan issue, every Run is a Test Execution issue (both modalities); the Story custom field is a fallback only. 3-axis: <b>parent</b> = QA epic · <b>link</b> = scope · <b>components</b> = module.</p></div>
+  <p class="mt-s"><span class="src">defect-management-doctrine.md · traceability-linking.md · planning-ladder</span></p>
 </section>
 
 <!-- 8 · CODE layer divider -->
@@ -503,9 +538,9 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       <tr><td><span class="mono" style="color:#22d3ee">CASE</span></td><td>TC title</td><td class="m">{US_ID}: TC#: should &lt;outcome&gt; [conn cond] [given pre]</td><td class="m">PROJ-101: TC1: should grant access when valid</td></tr>
       <tr><td><span class="mono" style="color:#22d3ee">CASE</span></td><td>test() block</td><td class="m">'{KEY}: should {behavior} when {cond}'</td><td class="m">'UPEX-411: should apply discount when valid'</td></tr>
       <tr><td><span class="mono" style="color:#a3e635">GROUP</span></td><td>describe()</td><td class="m">'{KEY}: Validate {feature}'</td><td class="m">'UPEX-411: Validate discount codes'</td></tr>
-      <tr><td><span class="mono" style="color:#a3e635">GROUP</span></td><td>Test Set</td><td class="m">&lt;Strategy&gt;: &lt;ID&gt;: Validate &lt;feature&gt;</td><td class="m">Sanity: GX-101: Validate credit card payment</td></tr>
-      <tr><td><span class="mono" style="color:#fbbf24">CONTAINER</span></td><td>Test Plan / Exec</td><td class="m">QA: TestPlan: … · &lt;Strategy&gt;: &lt;ID&gt;: &lt;sum&gt;</td><td class="m">Regression: TP-50: Sprint 50 Regression</td></tr>
-      <tr><td><span class="mono" style="color:#fbbf24">CONTAINER</span></td><td>ReTest · PRC</td><td class="m">ReTest: &lt;BUG&gt;: … · &lt;E&gt;: &lt;C&gt;: PRC: For …</td><td class="m">ReTest: GX-202: Wrong error</td></tr>
+      <tr><td><span class="mono" style="color:#a3e635">GROUP</span></td><td>Test Set</td><td class="m">TS: {EPIC|module}: Validate {feature}</td><td class="m">TS: GX-101: Validate credit card payment</td></tr>
+      <tr><td><span class="mono" style="color:#fbbf24">CONTAINER</span></td><td>Plan / Run</td><td class="m">{ACRONYM}: {scope}: {desc}</td><td class="m">ATP: PROJ-123: … · STR: Sprint#30: Regression Testing</td></tr>
+      <tr><td><span class="mono" style="color:#fbbf24">CONTAINER</span></td><td>ReTest · PRC · TS</td><td class="m">ReTest: {BUG}: … · PRC: {COMPONENT}: {state} · TS: {EPIC}: Validate {feature}</td><td class="m">ReTest: GX-202: … · PRC: Payment: … · TS: GX-101: Validate …</td></tr>
       <tr><td><span class="mono" style="color:#a78bfa">CODE</span></td><td>@atc · ATC · file</td><td class="m">@atc('KEY') · {verb}{Res}{Scen} · {verb}{Feat}.test.ts</td><td class="m">@atc('PROJ-101') · applyDiscount.test.ts</td></tr>
       <tr><td><span class="mono" style="color:#a78bfa">CODE</span></td><td>components</td><td class="m">{Resource}Api · {Page}Page · {Domain}Steps · {Type}Fixture</td><td class="m">UsersApi · LoginPage · AuthSteps</td></tr>
       <tr><td><span class="mono" style="color:#a78bfa">CODE</span></td><td>tags</td><td class="m">@critical @smoke @regression @e2e @integration @flaky</td><td class="m">@integration (not @api)</td></tr>

@@ -21,19 +21,26 @@ Every QA-tested user story produces four artifact types. The model is tool-agnos
 
 The entity model is tool-agnostic, but the **container** each entity lives in changes with the TMS modality. Resolve modality via `test-documentation/SKILL.md` §Phase 0 before using these mappings.
 
-| Entity | Modality jira-xray | Modality jira-native (no Xray) |
-|--------|---------------------------|-------------------------------------|
-| **US** | Jira `Story` | Jira `Story` |
-| **ATP** | Xray `Test Plan` issue. Named `Test Plan: {{PROJECT_KEY}}-{n}`. Linked to the Story via "tests". | Story's `{{jira.acceptance_test_plan}}` field (source of truth); falls back to a `## Acceptance Test Plan (ATP)` comment only when the field is absent. **No separate issue created.** |
-| **ATR** | Xray `Test Execution` issue. Named `Test Results: {{PROJECT_KEY}}-{n}`. Holds `Test Runs` per TC, plus Environment, Begin/End Date. Gets populated by CI import. | Story's `{{jira.acceptance_test_results}}` field (source of truth); falls back to a `## Acceptance Test Results (ATR)` comment only when the field is absent. **No separate issue.** CI updates Test Status field on each TC directly. |
-| **TC** | Xray `Test` issue (type Manual / Cucumber / Generic) | Jira-native `Test` custom issue type (set up per `references/jira-setup.md`) or `Task` with a `Test Type` custom field. |
-| **Test Set / Precondition / Test Plan hierarchy** | First-class Xray issue types | Not available — group by labels + Regression Epic. |
+> **Items over fields (by excellence).** Every Plan is a **Test Plan** issue and every Run is a
+> **Test Execution** issue — in BOTH modalities. These are native Jira work types (Xray-independent),
+> so the standard does NOT branch on modality for *structure*; Xray only adds the run/coverage engine.
+> The Story custom field for ATP/ATR is a **degraded fallback ONLY**, used when the Test Plan /
+> Test Execution work types are unavailable in the instance. The column below labelled "field
+> fallback" is that degraded mode, not the default.
+
+| Entity | Items first (both modalities) | Degraded fallback (work type unavailable) |
+|--------|-------------------------------|--------------------------------------------|
+| **US** | Jira `Story` | — |
+| **ATP** | A native Jira `Test Plan` issue, titled `ATP: {STORY-KEY}: {story title}`. Parented to **QA Master Test Plan**, linked to the Story via "tests". Real, queryable, JQL-filterable. Under Xray it is also the coverage anchor. | Story's `{{jira.acceptance_test_plan}}` field; else a `## Acceptance Test Plan (ATP)` comment. **No separate issue** — used only when the work type is absent. |
+| **ATR** | A native Jira `Test Execution` issue, titled `ATR: {STORY-KEY}: Story Testing`. Parented to **QA Test Artifacts**. Under Xray it holds `Test Runs` per TC, plus Environment, Begin/End Date, and is the target of `[TMS_TOOL] Import Results` at the end of every CI run. | Story's `{{jira.acceptance_test_results}}` field; else a `## Acceptance Test Results (ATR)` comment. **No separate issue.** CI updates the Test Status field on each TC directly. |
+| **TC** | Xray `Test` issue (type Manual / Cucumber / Generic), or a Jira-native `Test` custom issue type (set up per `references/jira-setup.md`) / `Task` with a `Test Type` custom field. Parented to **QA Test Repository**. | — |
+| **Test Set / Precondition** | Native Jira work types, parented to **QA Test Artifacts** (first-class under Xray; selectable plain Jira issue types otherwise). | Group by labels + the QA Test Repository / QA Test Artifacts Epic when the work type is absent. |
 
 Key consequences:
 
-- In **Modality jira-native**, there is no separate "Test Plan issue" to link to — all ATP/ATR content lives on the Story itself. Traceability from a TC back to the plan/results walks via the "is tested by" link to the Story, then reads the Story's custom fields.
-- In **Modality jira-xray**, the `Test Plan` and `Test Execution` issues are real, queryable, filterable by JQL, and (critically) the Test Execution is the target of `[TMS_TOOL] Import Results` at the end of every CI run.
-- The naming convention (`Test Plan: {{PROJECT_KEY}}-{n}` / `Test Results: {{PROJECT_KEY}}-{n}`) stays the same in both modalities — in B it identifies the section header in the Story comment, not an issue key.
+- **By excellence the Test Plan and Test Execution issues exist in both modalities** — they are real, queryable, filterable by JQL, carry real issue-links (Plan→scope, Run→Plan, Run→TC) and an independent status lifecycle. The Test Execution is the target of `[TMS_TOOL] Import Results` at the end of every CI run.
+- **Only in the degraded fallback** (the work type is unavailable in the instance) does ATP/ATR content live on the Story custom field. There, traceability from a TC back to the plan/results walks via the "is tested by" link to the Story, then reads the Story's custom fields.
+- The title grammar (`ATP: {STORY-KEY}: {story title}` / `ATR: {STORY-KEY}: Story Testing`) is identical in both modalities — in the fallback it identifies the section header in the Story comment, not an issue key.
 
 ---
 
@@ -54,7 +61,7 @@ Key consequences:
 
 | Field | Required | Value source |
 |-------|----------|--------------|
-| Name | Yes | `Test Plan: {{PROJECT_KEY}}-{n}` |
+| Name | Yes | `ATP: {STORY-KEY}: {story title}` |
 | User Story link | Yes | Back-link to US |
 | Test Coverage | Yes | AC-to-TC mapping table |
 | Test Analysis | Yes | Rich text: approach, risks, test data, scenarios |
@@ -65,7 +72,7 @@ Key consequences:
 
 | Field | Required | Value source |
 |-------|----------|--------------|
-| Name | Yes | `Test Results: {{PROJECT_KEY}}-{n}` |
+| Name | Yes | `ATR: {STORY-KEY}: Story Testing` |
 | User Story link | Yes | Back-link to US |
 | Test Coverage | Yes | Same AC-to-TC view as ATP (shared or mirrored) |
 | Test Report | Yes | Rich text: session summary, env, findings, evidence |
@@ -99,9 +106,9 @@ Key consequences:
 |                                                                    |
 |   User Story ({{PROJECT_KEY}}-123)                                 |
 |     |                                                              |
-|     +--- is tested by ---> ATP (Test Plan: ...-123)                |
+|     +--- is tested by ---> ATP (ATP: ...-123: <story title>)       |
 |     |                        |                                     |
-|     +--- is tested by ---> ATR (Test Results: ...-123)             |
+|     +--- is tested by ---> ATR (ATR: ...-123: Story Testing)        |
 |                              |                                     |
 |         ATP designs (test_design)   ATR executes (test_execute)    |
 |                  \                          /                      |
@@ -204,12 +211,14 @@ Step 4. For each TC (as Stage 4 progresses):
 
 ```
 [TMS_TOOL] Create ATP:
-  name: Test Plan: {{PROJECT_KEY}}-{n}
+  name: ATP: {STORY-KEY}: {story title}
   story: {from User Story title}            # Story `is tested by` ATP (test)
+  # Parent Epic: QA Master Test Plan
 
 [TMS_TOOL] Create ATR:
-  name: Test Results: {{PROJECT_KEY}}-{n}
+  name: ATR: {STORY-KEY}: Story Testing
   story: {from User Story title}            # Story `is tested by` ATR (test)
+  # Parent Epic: QA Test Artifacts
 
 [TMS_TOOL] Update ATP:
   id: {from ATP created above}
@@ -235,8 +244,8 @@ Step 4. For each TC (as Stage 4 progresses):
 | Entity | Pattern | Example |
 |--------|---------|---------|
 | User Story | `{{PROJECT_KEY}}-{n}` | `PROJ-123` |
-| ATP | `Test Plan: {{PROJECT_KEY}}-{n}` | `Test Plan: PROJ-123` |
-| ATR | `Test Results: {{PROJECT_KEY}}-{n}` | `Test Results: PROJ-123` |
+| ATP | `ATP: {STORY-KEY}: {story title}` | `ATP: PROJ-123: Apply discount at checkout` |
+| ATR | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-123: Story Testing` |
 | TC (TMS title) | `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` | `PROJ-101: TC1: should grant access when credentials are valid` |
 | TC (code / ATC) | `{US_ID}: should <behavior> when <condition>` | `PROJ-101: should display error when password is incorrect` |
 
@@ -256,19 +265,19 @@ When all In-Sprint Testing stages are complete, the User Story panel in the TMS 
 ```
 User Story: PROJ-123 — <Story Title>
 
-| Test Plan (is tested by)    | Test Plan: PROJ-123           | Complete |
-| Test Results (is tested by) | Test Results: PROJ-123        | Complete |
+| Test Plan (is tested by)    | ATP: PROJ-123: Apply discount at checkout | Complete |
+| Test Results (is tested by) | ATR: PROJ-123: Story Testing              | Complete |
 (No direct Test Case links on the Story — TCs are reached through the ATP/ATR.)
 
-ATP (Test Plan: PROJ-123)
+ATP (ATP: PROJ-123: Apply discount at checkout)
   User Story:    PROJ-123 (tests / is tested by)
   Test Analysis: [filled]
   Designs:       TC-1, TC-2, TC-3, TC-4        (test_design)
   Test Coverage: AC1 -> TC-1; AC2 -> TC-2; AC3 -> TC-3, TC-4
-  Test Results:  Test Results: PROJ-123
+  Test Results:  ATR: PROJ-123: Story Testing
   Complete:      Yes
 
-ATR (Test Results: PROJ-123)
+ATR (ATR: PROJ-123: Story Testing)
   User Story:    PROJ-123 (tests / is tested by)
   Test Report:   [filled]
   Executes:      TC-1, TC-2, TC-3, TC-4        (test_execute)
@@ -481,13 +490,15 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
 ```
 [TMS_TOOL] Create TestPlan:
   project: {{PROJECT_KEY}}
-  title: Test Plan: {{PROJECT_KEY}}-{n}
+  title: ATP: {STORY-KEY}: {story title}
+  # Parent Epic: QA Master Test Plan
 
 [TMS_TOOL] Create Execution:
   project: {{PROJECT_KEY}}
-  title: Test Results: {{PROJECT_KEY}}-{n}
+  title: ATR: {STORY-KEY}: Story Testing
   testPlan: {ATP_KEY}
   environment: {from session context}
+  # Parent Epic: QA Test Artifacts
 
 [ISSUE_TRACKER_TOOL] Link Issues:
   linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan (ATP)
@@ -529,12 +540,18 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
 # Resolve slugs + verify direction per traceability-linking.md §2/§4.
 ```
 
-#### Modality jira-native (no Xray)
+#### Modality jira-native — DEGRADED FALLBACK ONLY (Test Plan / Test Execution work types unavailable)
 
+> **Items first**: by excellence a native Jira `Test Plan` issue (`ATP: {STORY-KEY}: {story title}`)
+> and `Test Execution` issue (`ATR: {STORY-KEY}: Story Testing`) are created in jira-native too —
+> use the `[TMS_TOOL] Create TestPlan` / `Create Execution` blocks above, since both are native
+> Jira work types. The Story-field path below is the **degraded fallback**, used ONLY when those
+> work types are absent from the instance.
+>
 > **Prerequisite**: Load `/acli` skill before executing commands below.
 
 ```
-# ATP — lives on the Story, no new issue
+# ATP — fallback only: lives on the Story when no Test Plan work type
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
@@ -543,9 +560,9 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
-  body: "=== Test Plan: {{PROJECT_KEY}}-{n} ===\n{Test Analysis body}"
+  body: "=== ATP: {STORY-KEY}: {story title} ===\n{Test Analysis body}"
 
-# ATR — lives on the Story, no new issue
+# ATR — fallback only: lives on the Story when no Test Execution work type
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {STORY_KEY}
   fields:
@@ -553,7 +570,7 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
-  body: "=== Test Results: {{PROJECT_KEY}}-{n} ===\n{Test Report body}"
+  body: "=== ATR: {STORY-KEY}: Story Testing ===\n{Test Report body}"
 
 # TC — Jira-native Test issue
 [ISSUE_TRACKER_TOOL] Create Issue:
@@ -625,8 +642,8 @@ Common failure modes and their fixes:
 | ATP not linked to Story | Link Story `is tested by` ATP (`test`) |
 | ATR not linked to Story | Link Story `is tested by` ATR (`test`) |
 | TC name doesn't follow convention | Rename TC to `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` |
-| ATP name wrong | Rename to `Test Plan: {{PROJECT_KEY}}-{n}` |
-| ATR name wrong | Rename to `Test Results: {{PROJECT_KEY}}-{n}` |
+| ATP name wrong | Rename to `ATP: {STORY-KEY}: {story title}` |
+| ATR name wrong | Rename to `ATR: {STORY-KEY}: Story Testing` |
 | TC has no AC link | Identify which AC it covers and add the reference |
 
 Procedure:
@@ -646,8 +663,8 @@ The canonical implementation this file was derived from uses Jira with Xray. Map
 |-----------------|-------------------------|
 | Test Case ID | Jira issue key (e.g., `PROJ-123`) |
 | Test Case issue type | Xray Test |
-| Test Plan | Xray Test Plan (or Jira Story + custom field) |
-| Test Execution (ATR) | Xray Test Execution |
+| Test Plan | Jira `Test Plan` issue (items first; Story custom field = degraded fallback only) |
+| Test Execution (ATR) | Jira `Test Execution` issue (Xray adds the run engine) |
 | Regression Epic | Jira Epic with label `test-repository` |
 | Results import | Xray REST API (JUnit / Cucumber formats) |
 | CLI | `bun xray` (load `/xray-cli` skill) |

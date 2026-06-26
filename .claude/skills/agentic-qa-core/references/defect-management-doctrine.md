@@ -176,13 +176,20 @@ components          ->  PRODUCT module/epic  ("what part of the product it affec
   via the parent.
 - **components** = the affected product area (Part 3).
 
-### The two QA process epics
+### The four QA process epics
 
 | Epic | Holds | Project-configured name |
 |---|---|---|
-| **Defect epic** | every `bug` / `defect` / `improvement` | `qa.qa_epics.defect_epic.name` — **"QA Defect Management"** |
-| **Test Repository epic** | every `Test` (TC) issue | `qa.qa_epics.test_repository_epic.name` — **"QA Test Repository"** |
+| **Master Test Plan epic** | every **Test Plan** (FTP/STP/ATP) | `qa.qa_epics.master_test_plan_epic.name` — **"QA Master Test Plan"** |
+| **Test Repository epic** | every **Test** (TC) | `qa.qa_epics.test_repository_epic.name` — **"QA Test Repository"** |
+| **Test Artifacts epic** | every **Test Execution** (FTR/STR/ATR), **Precondition**, **Test Set** | `qa.qa_epics.test_artifacts_epic.name` — **"QA Test Artifacts"** |
+| **Defect epic** | every **bug/defect/improvement** | `qa.qa_epics.defect_epic.name` — **"QA Defect Management"** |
 
+- The **Master Test Plan epic has a special role**: it is an **Epic** (not a Test
+  Plan work type), is the **parent of all Test Plans** (FTP/STP/ATP), mirrors
+  `.context/master-test-plan.md` + points to the official QA team repository, and is
+  cross-linked (`relates to`) to its three sibling QA epics (Test Repository, Test
+  Artifacts, Defect Management) — so the four form a navigable QA-governance cluster.
 - The **`QA `/ project prefix is deliberate**: a reader scanning epics sees `QA …`
   and knows it is a *process* epic, not a product feature.
 - Epic identity (name + key) is configured per project in `.agents/project.yaml`

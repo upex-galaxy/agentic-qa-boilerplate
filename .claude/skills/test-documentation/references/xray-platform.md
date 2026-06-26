@@ -28,23 +28,29 @@ Every TMS artifact becomes one of these:
 | Issue type | Purpose | Notes |
 |------------|---------|-------|
 | **Test** | Individual test case (Manual / Cucumber / Generic) | Child of Regression Epic; linked to Story. |
-| **Test Set** | Groups tests by criteria (smoke / regression / domain) | Reusable across sprints; membership is an issue link, NEVER the TC prefix (the TC prefix is always `{US_ID}`). Set summary uses `Validate <feature>`. |
-| **Test Plan** | Strategic planning for a release / sprint | Planning-level container; one per release cadence. Maps to **ATP**. |
-| **Test Execution** | One execution cycle; holds Test Runs | Maps to **ATR**. Carries Environment, Begin/End Date. Target of CI result import. |
-| **Pre-Condition** | Reusable prerequisites | Linked to Tests that share setup (e.g. "User logged in as Admin"). |
+| **Test Set** | Groups tests by criteria (smoke / regression / domain) | Reusable across sprints; membership is an issue link, NEVER the TC prefix (the TC prefix is always `{US_ID}`). Title: `TS: {EPIC-KEY\|module}: Validate {feature}`. Parented to **QA Test Artifacts**. |
+| **Test Plan** | Strategic planning for a release / sprint | Planning-level container. Holds **FTP / STP / ATP** Plans (titles `FTP: …` / `STP: Sprint#{N}: Regression` / `ATP: {STORY-KEY}: {story title}`). Parented to **QA Master Test Plan**. |
+| **Test Execution** | One execution cycle; holds Test Runs | Holds **FTR / STR / ATR** Runs (titles `FTR: …` / `STR: Sprint#{N}: Regression Testing` / `ATR: {STORY-KEY}: Story Testing`). Carries Environment, Begin/End Date. Target of CI result import. Parented to **QA Test Artifacts**. |
+| **Pre-Condition** | Reusable prerequisites | Linked to Tests that share setup. Title: `PRC: {COMPONENT}: {required state}` — the **title states the required state**, the **content holds the setup steps** (kept distinct), e.g. `PRC: Auth: User logged in as Admin`. Parented to **QA Test Artifacts**. |
 | **Test Run** | *Not a Jira issue* — internal entity inside a Test Execution | One per Test per Execution. Carries PASS/FAIL/TODO/BLOCKED/ABORTED/EXECUTING. |
 
-Typical hierarchy:
+Typical hierarchy (parents are the QA-process Epics):
 
 ```
-Regression Epic
-  +-- Test Plan: {{PROJECT_KEY}}-{n}               (= ATP)
-  |      +-- Test Set: Sanity: core auth           (optional grouping)
-  |      |       +-- Test (TC1, TC2, ...)
-  |      +-- Test Set: Regression: checkout v2
-  |              +-- Test (TC3, TC4, ...)
-  +-- Test Execution: {{PROJECT_KEY}}-{n}          (= ATR)
+QA Master Test Plan (Epic)
+  +-- Test Plan: ATP: {STORY-KEY}: {story title}   (= ATP)
+  +-- Test Plan: STP: Sprint#{N}: Regression       (sprint plan)
+
+QA Test Artifacts (Epic)
+  +-- Test Set: TS: {EPIC-KEY}: Validate core auth      (optional grouping)
+  |       +-- Test (TC1, TC2, ...)
+  +-- Test Set: TS: Checkout: Validate checkout v2
+  |       +-- Test (TC3, TC4, ...)
+  +-- Test Execution: ATR: {STORY-KEY}: Story Testing   (= ATR)
          +-- Test Run per Test (PASS / FAIL / TODO)
+
+QA Test Repository (Epic)
+  +-- Test (TC1, TC2, TC3, TC4, ...)               (permanent test repository)
 ```
 
 ---

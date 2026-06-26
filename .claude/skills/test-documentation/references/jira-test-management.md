@@ -52,7 +52,7 @@ Test (TEST-456)
 Regression Epic (EPIC-001 — "Test Repository")
 ```
 
-ATP and ATR live as additional custom issue types or as documents linked to the story. In this skill's convention, ATP = `Test Plan: {{PROJECT_KEY}}-{n}` and ATR = `Test Results: {{PROJECT_KEY}}-{n}` are stored as Jira issues of a generic type (Task or a custom "Test Plan" / "Test Results" type). Linking order: (1) create ATP and link to US; (2) create ATR and link to US; (3) update ATP to link to ATR; (4) for each TC, link to US + ATP + ATR + AC.
+**Items over fields (by excellence)**: ATP and ATR are real Jira issues even without Xray — a `Test Plan` issue titled `ATP: {STORY-KEY}: {story title}` (parented to **QA Master Test Plan**) and a `Test Execution` issue titled `ATR: {STORY-KEY}: Story Testing` (parented to **QA Test Artifacts**). These are native Jira work types; create them as such. ATP/ATR as Story custom fields (or a Task standing in) is a **degraded fallback ONLY**, used when those work types are unavailable in the instance. Linking order: (1) create ATP and link to US; (2) create ATR and link to US; (3) update ATP to link to ATR; (4) for each TC, link to US + ATP + ATR + AC.
 
 ### Jira + Xray
 
@@ -66,21 +66,27 @@ Five extra issue types available:
 | **Test Execution** | One execution instance. Generates Test Runs. | Executes a Test Plan or ad-hoc set of Tests. |
 | **Precondition** | Reusable prerequisite for Tests. | Referenced by Tests that share setup. |
 
-Typical hierarchy:
+Typical hierarchy (parents are the QA-process Epics — Plans under **QA Master Test Plan**; Executions / Sets / Preconditions under **QA Test Artifacts**; Tests under **QA Test Repository**):
 
 ```
-Regression Epic
+QA Master Test Plan (Epic)
     |
-    +-- Test Plan: PROJ Sprint 50
-    |       |
-    |       +-- Test Set: Sanity: PROJ-101: Validate credit card payment
-    |       |       +-- Test (TC1, TC2, ...)
-    |       |
-    |       +-- Test Set: Regression: Checkout v2
-    |               +-- Test (TC3, TC4, ...)
+    +-- Test Plan: STP: Sprint#50: Regression           (sprint plan)
+    +-- Test Plan: ATP: PROJ-101: Pay with credit card  (story plan)
+            |
+            +-- (Test Set / Tests grouped via links)
+
+QA Test Artifacts (Epic)
     |
-    +-- Test Execution: Sanity: PROJ-101
+    +-- Test Set: TS: PROJ-101: Validate credit card payment
+    |       +-- Test (TC1, TC2, ...)        (membership = link, prefix stays {US_ID})
+    +-- Test Set: TS: Checkout: Validate checkout v2
+    |       +-- Test (TC3, TC4, ...)
+    +-- Test Execution: ATR: PROJ-101: Story Testing
             +-- Test Run per Test (PASS / FAIL / TODO)
+
+QA Test Repository (Epic)
+    +-- Test (TC1, TC2, TC3, TC4, ...)       (the permanent test repository)
 ```
 
 ---
@@ -151,15 +157,21 @@ The TC naming convention is identical in every modality — the prefix is **ALWA
 
 The prefix never changes with mode. Test Set association is expressed via an issue **link** ("is part of" the Test Set), NEVER in the TC title — so JQL by Story key stays reliable across the whole project.
 
-Related naming:
+Related naming — the unified planning-ladder grammar `{ACRONYM}: {scope-id}: {descriptor}` (full table: `tms-conventions.md` §3):
 
-| Entity | Pattern | Example |
-|--------|---------|---------|
-| Test Plan | `QA: TestPlan: <Strategy> <Version>` | `QA: TestPlan: Regression v2.1` |
-| Test Set | `<Strategy>: <ID>: Validate <feature>` | `Sanity: PROJ-101: Validate credit card payment` |
-| Test Execution | `<Strategy>: <ID>: <Summary>` | `Regression: TP-50: Sprint 50 Regression` |
-| ReTesting (bug fix) | `ReTest: <BUG_ID>: <Summary>` | `ReTest: PROJ-202: Wrong error on invalid password` |
-| Precondition | `<Epic>: <Component>: PRC: For <Action>` | `Checkout: Payment: PRC: For credit card flow` |
+| Entity | Jira work type | Pattern | Example |
+|--------|----------------|---------|---------|
+| Story Test Plan (ATP) | Test Plan | `ATP: {STORY-KEY}: {story title}` | `ATP: PROJ-101: Pay with credit card` |
+| Story Test Execution (ATR) | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-101: Story Testing` |
+| Feature Test Plan (FTP) | Test Plan | `FTP: {EPIC-KEY}: {feature}` | `FTP: PROJ-42: Checkout & Payments` |
+| Feature Test Execution (FTR) | Test Execution | `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` | `FTR: PROJ-42: Feature Testing — Checkout · run 2` |
+| Sprint Test Plan (STP) | Test Plan | `STP: Sprint#{N}: Regression` | `STP: Sprint#50: Regression` |
+| Sprint Test Execution (STR) | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#50: Regression Testing` |
+| Test Set | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature}` | `TS: PROJ-101: Validate credit card payment` |
+| ReTesting (bug fix) | Test Execution | `ReTest: {BUG-KEY}: {summary}` | `ReTest: PROJ-202: Wrong error on invalid password` |
+| Precondition | Precondition | `PRC: {COMPONENT}: {required state}` | `PRC: Payment: Authenticated user with a saved card` |
+
+> **Precondition**: the **title states the required state**; the **content holds the setup steps** — kept distinct.
 
 ---
 
@@ -410,8 +422,10 @@ The two-call pattern (Xray + Update Issue) is mandatory in Xray mode. Skipping t
 
 ---
 
-## 9. Test Plan / Test Set / Test Execution — Xray only
+## 9. Test Plan / Test Set / Test Execution
 
+> **Items over fields**: `Test Plan`, `Test Set`, and `Test Execution` are native Jira work types — create them as real issues in both modalities (Xray only adds the run/coverage engine and result import on top). Titles follow the unified ladder grammar (§5). Parent Plans to **QA Master Test Plan**; parent Executions / Sets / Preconditions to **QA Test Artifacts**.
+>
 > **Prerequisite**: Load `/xray-cli` and `/acli` skills before executing the commands in this section. `Test Plan` and `Test Set` are created via `[ISSUE_TRACKER_TOOL]` (acli); `Test Execution` result imports use `[TMS_TOOL]` (xray-cli).
 
 ### Test Plan
@@ -422,8 +436,9 @@ Groups Tests for a release or sprint. One per release cadence.
 [ISSUE_TRACKER_TOOL] Create Issue:
   project: {{PROJECT_KEY}}
   issueType: Test Plan
-  summary: QA: TestPlan: Regression v2.1
+  summary: STP: Sprint#50: Regression
   labels: [regression, {release}]
+  # Parent Epic: QA Master Test Plan
 
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {TP_KEY}
@@ -433,14 +448,15 @@ Groups Tests for a release or sprint. One per release cadence.
 
 ### Test Set
 
-Groups Tests by domain / strategy. Reusable across sprints. TC prefix can be the Test Set ID.
+Groups Tests by domain / strategy. Reusable across sprints. The TC title prefix is **ALWAYS `{US_ID}`** (the User Story key) regardless of Test Set membership (see §5) — Test Set membership is expressed via an issue **link** ("is part of" the Test Set), NEVER the TC prefix.
 
 ```
 [ISSUE_TRACKER_TOOL] Create Issue:
   project: {{PROJECT_KEY}}
   issueType: Test Set
-  summary: Sanity: {{PROJECT_KEY}}-101: Validate credit card payment
+  summary: TS: {{PROJECT_KEY}}-101: Validate credit card payment
   labels: [regression, sanity]
+  # Parent Epic: QA Test Artifacts
 ```
 
 ### Test Execution
@@ -450,8 +466,9 @@ One per execution run. Holds Test Runs with PASS / FAIL / TODO per Test.
 ```
 [TMS_TOOL] Create Execution:
   project: {{PROJECT_KEY}}
-  title: Sanity: {{PROJECT_KEY}}-101: <date>
+  title: ATR: {{PROJECT_KEY}}-101: Story Testing
   tests: [{TEST_KEY_1}, ...]
+  # Parent Epic: QA Test Artifacts
 
 [TMS_TOOL] Import Results:
   format: junit      # or cucumber, xray-json

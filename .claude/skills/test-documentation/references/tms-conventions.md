@@ -82,16 +82,36 @@ The prefix is the TMS-generated key (e.g., `PROJ-101`), not an invented conventi
 
 ## 3. Naming for other TMS artifact types
 
-| Artifact | Format | Example |
-|----------|--------|---------|
-| User Story | `{{PROJECT_KEY}}-{n}` | `PROJ-123` |
-| ATP | `Test Plan: {{PROJECT_KEY}}-{n}` | `Test Plan: PROJ-123` |
-| ATR | `Test Results: {{PROJECT_KEY}}-{n}` | `Test Results: PROJ-123` |
-| Test Suite (TS) | `<Strategy>: <ID>: <SUMMARY>` | `Sanity: GX-101: Validate credit card payment`; `Smoke: Core Features v2.0`; `Regression: Sprint 50` |
-| Test Plan (Xray) | `QA: TestPlan: <Strategy> <Version>` | `QA: TestPlan: Regression S50`; `QA: TestPlan: Smoke v2` |
-| Test Execution (TX) | `<Strategy>: <ID>: <SUMMARY>` | `Sanity: GX-101: Validate credit card payment`; `Regression: TP-50: Sprint 50 Regression` |
-| ReTesting (RTX) | `ReTest: <BUGID>: <ISSUE_SUMMARY>` | `ReTest: GX-202: Does not show error when entering incorrect password` |
-| Precondition (PRC) | `<EPIC>: <COMPONENT>: PRC: For <NEXT_ACTION>` | `CheckoutFlow: Payment: PRC: For processing credit card payment` |
+All Plans and Runs follow one **unified grammar** — the QA planning ladder:
+
+```
+{ACRONYM}: {scope-id}: {descriptor}
+```
+
+- **ACRONYM** — `FTP` · `STP` · `ATP` (Plans) · `FTR` · `STR` · `ATR` (Runs) · `TS` (Test Set) · `PRC` (Precondition) · `ReTest` (bug re-test Run). A reader / JQL sees altitude + plan-vs-run in the first token, and Plan pairs with Run visually.
+- **scope-id** — the key of the thing under test at that altitude: feature-Epic key, `Sprint#{N}`, or Story key.
+- **descriptor** — human-readable; embeds the testing term where required (`Story Testing`, `Feature Testing`, `Regression Testing`).
+
+| Artifact | Jira work type | Format | Example |
+|----------|----------------|--------|---------|
+| User Story | Story | `{{PROJECT_KEY}}-{n}` | `PROJ-123` |
+| ATP — Story Test Plan | Test Plan | `ATP: {STORY-KEY}: {story title}` | `ATP: PROJ-123: Apply discount at checkout` |
+| ATR — Story Test Execution | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-123: Story Testing` |
+| FTP — Feature Test Plan | Test Plan | `FTP: {EPIC-KEY}: {feature}` | `FTP: PROJ-42: Checkout & Payments` |
+| FTR — Feature Test Execution | Test Execution | `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` | `FTR: PROJ-42: Feature Testing — Checkout · run 2` |
+| STP — Sprint Test Plan | Test Plan | `STP: Sprint#{N}: Regression` | `STP: Sprint#30: Regression` |
+| STR — Sprint Test Execution | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#30: Regression Testing` |
+| Test Set (TS) | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature}` | `TS: GX-101: Validate credit card payment` |
+| ReTesting (RTX) | Test Execution | `ReTest: {BUG-KEY}: {summary}` | `ReTest: GX-202: Does not show error when entering incorrect password` |
+| Precondition (PRC) | Precondition | `PRC: {COMPONENT}: {required state}` | `PRC: Payment: Authenticated user with a saved card` |
+
+Notes:
+
+- **Items over fields (by excellence).** Every Plan is a **Test Plan** issue and every Run is a **Test Execution** issue — in BOTH modalities (these are native Jira work types, Xray-independent). The Story custom field for ATP/ATR is a **degraded fallback ONLY**, used when those work types are unavailable in the instance. See `tms-architecture.md` §Container per modality.
+- **QA-process Epic homes** (3-axis model): every **Test Plan** (FTP/STP/ATP) parents to **QA Master Test Plan**; every **Test Execution** (FTR/STR/ATR), **Test Set**, and **Precondition** parents to **QA Test Artifacts**; every **Test** (TC) parents to **QA Test Repository**. The parent says only which QA bucket; scope (Story / feature / Sprint) travels on an issue link, product area on `components`.
+- **`ReTest:`** is already prefix-style and stays as-is. It is a Test Execution under **QA Test Artifacts**.
+- **Precondition**: the **title states the required state**, the **content holds the setup steps** — the two are kept distinct (`PRC: Payment: Authenticated user with a saved card` titles the state; the steps to reach it live in the issue body).
+- `Validate` stays the Test Set grouping word (consistent with the code `describe()` law); the `TS:` prefix adds the work-type / altitude signal on top.
 
 ---
 
@@ -574,7 +594,7 @@ If none exists, ask the user before creating:
 [ISSUE_TRACKER_TOOL] Create Issue:
   project: {{PROJECT_KEY}}
   issueType: Epic
-  title: "{{PROJECT_KEY}} Test Repository"
+  title: "QA Test Repository"   # configured name qa.qa_epics.test_repository_epic.name
   description: "Container epic for all {{PROJECT_KEY}} regression tests."
   labels: test-repository, regression, qa
 ```
@@ -582,7 +602,7 @@ If none exists, ask the user before creating:
 Typical structure:
 
 ```
-EPIC: {{PROJECT_KEY}} Test Repository
+EPIC: QA Test Repository
   |-- TC-001: [Smoke] Basic login
   |-- TC-002: [Smoke] Main navigation
   |-- TC-003: [Regression] Complete checkout

@@ -49,7 +49,7 @@ answered YES or a justified N/A) — not vibes. "N/A" is a valid answer only whe
 ### sprint-testing — Stage 1 Planning
 
 ```
-[ ] ATP authored in the modality's home (native: Story field; xray: Test Plan desc)
+[ ] ATP authored as a **Test Plan** item (`ATP: {STORY-KEY}: {title}`); Story custom field only as fallback
 [ ] Coverage = two axes: AC-conformance (floor) + risk-beyond-AC, both present
 [ ] Test-Design Checklist applied (techniques fired per AC shape; collapses justified)
 [ ] Bug: veto + risk-score decision tree applied before the ATP
@@ -70,7 +70,7 @@ answered YES or a justified N/A) — not vibes. "N/A" is a valid answer only whe
 ### sprint-testing — Stage 3 Reporting
 
 ```
-[ ] ATR authored in the modality's home (native: Story field; xray: Test Execution)
+[ ] ATR authored as a **Test Execution** item (`ATR: {STORY-KEY}: Story Testing`); Story custom field only as fallback
 [ ] QA comment posted; ticket transitioned to the correct status
 [ ] Regression follow-up noted for any regression-worthy bug (Stage-4 hand-off)
 [ ] Traceability verified (Story ↔ ATP ↔ ATR)
