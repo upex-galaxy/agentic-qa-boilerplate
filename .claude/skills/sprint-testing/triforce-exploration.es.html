@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shift-Left Testing — The Craft &amp; The AI</title>
+<title>La Trifuerza — Exploración por Capas (UI · API · DB)</title>
 <style>
 /* html-ppt :: shared webfonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
@@ -458,562 +458,669 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 /* fix: cover .speaker must not collide with the absolute .deck-footer */
 .tpl-howto .slide:has(> .speaker){padding-bottom:160px}
 .tpl-howto .slide .speaker{position:absolute;left:88px;right:88px;bottom:70px;margin-top:0;z-index:3}</style>
+<style>
+/* ===== defect-management :: extra components (quiz, lifecycle, metric cards) ===== */
+.tpl-howto .lifecycle{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:22px}
+.tpl-howto .lstate{padding:9px 15px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:600;border:1px solid;white-space:nowrap}
+.tpl-howto .lstate.new{color:var(--text-1);background:var(--surface-2);border-color:var(--border-strong)}
+.tpl-howto .lstate.prog{color:var(--warn);background:color-mix(in srgb,var(--warn) 13%,transparent);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+.tpl-howto .lstate.good{color:var(--good);background:color-mix(in srgb,var(--good) 13%,transparent);border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+.tpl-howto .lstate.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
+.tpl-howto .arr{color:var(--text-3);font-weight:700;font-size:15px}
+
+/* triage fan */
+.tpl-howto .triage{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.tpl-howto .tnode{padding:13px 16px;border:1px solid var(--border);border-radius:11px;background:var(--surface)}
+.tpl-howto .tnode .tt{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:5px}
+.tpl-howto .tnode .ts{font-size:13.5px;color:var(--text-2);line-height:1.5}
+.tpl-howto .tnode b{color:#fff;font-weight:600}
+
+/* horizontal bar chart (real data) */
+.tpl-howto .bars{display:grid;gap:11px;margin-top:22px}
+.tpl-howto .barrow{display:grid;grid-template-columns:150px 1fr 48px;align-items:center;gap:14px;font-size:14px}
+.tpl-howto .barrow .bl{color:var(--text-2);font-family:'JetBrains Mono',monospace;font-size:13px;text-align:right}
+.tpl-howto .barrow .bt{height:22px;border-radius:6px;background:var(--grad);min-width:3px}
+.tpl-howto .barrow .bt.muted{background:var(--surface-2);border:1px solid var(--border-strong)}
+.tpl-howto .barrow .bn{color:#fff;font-weight:700;font-family:'JetBrains Mono',monospace;font-size:14px}
+
+/* metric stat cards */
+.tpl-howto .mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
+.tpl-howto .mcard{padding:20px;border:1px solid var(--border);border-radius:14px;background:var(--surface);border-top:3px solid var(--accent)}
+.tpl-howto .mcard .mv{font-size:40px;font-weight:900;line-height:1;letter-spacing:-.03em}
+.tpl-howto .mcard .mk{font-size:13px;color:var(--text-3);margin-top:8px;font-family:'JetBrains Mono',monospace}
+.tpl-howto .mcard .md{font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.5}
+
+/* ===== QUIZ ===== */
+.tpl-howto .quiz{margin-top:18px}
+.tpl-howto .qitem{margin-bottom:18px}
+.tpl-howto .qq{font-size:19px;font-weight:600;color:#fff;margin-bottom:12px;display:flex;gap:12px;line-height:1.4}
+.tpl-howto .qq .qn{flex:none;color:var(--accent);font-family:'JetBrains Mono',monospace}
+.tpl-howto .opts{display:grid;gap:9px}
+.tpl-howto .opt{display:flex;align-items:center;gap:13px;padding:12px 17px;border:1px solid var(--border);border-radius:11px;background:var(--surface);cursor:pointer;font-size:15px;color:var(--text-2);transition:border-color .15s,background .15s,color .15s}
+.tpl-howto .opt:hover{border-color:var(--border-strong);color:#fff}
+.tpl-howto .opt .mk{flex:none;width:26px;height:26px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-2)}
+.tpl-howto .opt.correct{border-color:var(--good);background:color-mix(in srgb,var(--good) 15%,transparent);color:#fff}
+.tpl-howto .opt.correct .mk{background:var(--good);border-color:var(--good);color:#03130b}
+.tpl-howto .opt.reveal-correct{border-color:var(--good);color:#fff}
+.tpl-howto .opt.reveal-correct .mk{background:var(--good);border-color:var(--good);color:#03130b}
+.tpl-howto .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent);color:#fff}
+.tpl-howto .opt.wrong .mk{background:var(--bad);border-color:var(--bad);color:#190405}
+.tpl-howto .qitem.answered .opt{cursor:default}
+.tpl-howto .qexp{margin-top:11px;font-size:14px;color:var(--text-2);border-left:3px solid var(--good);padding:11px 16px;background:color-mix(in srgb,var(--good) 7%,transparent);border-radius:0 9px 9px 0;display:none;line-height:1.6}
+.tpl-howto .qitem.answered .qexp{display:block}
+.tpl-howto .qexp b{color:#fff}
+.tpl-howto .qhint{font-size:13px;color:var(--text-3);font-family:'JetBrains Mono',monospace;margin-top:6px}
+
+/* ===== naming anatomy — segmented title ===== */
+.tpl-howto .nameline{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin-top:24px;font-family:'JetBrains Mono',monospace}
+.tpl-howto .seg{display:flex;flex-direction:column;gap:5px;align-items:center;padding:12px 16px;border-radius:11px;border:1px solid;text-align:center}
+.tpl-howto .seg .sv{font-size:18px;font-weight:700;color:#fff}
+.tpl-howto .seg .sl{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;font-family:'Inter',sans-serif}
+.tpl-howto .seg.id{border-color:color-mix(in srgb,var(--a2) 45%,transparent);background:color-mix(in srgb,var(--a2) 12%,transparent)}
+.tpl-howto .seg.id .sl{color:var(--a2)}
+.tpl-howto .seg.tc{border-color:color-mix(in srgb,var(--a1) 45%,transparent);background:color-mix(in srgb,var(--a1) 12%,transparent)}
+.tpl-howto .seg.tc .sl{color:var(--a1)}
+.tpl-howto .seg.core{border-color:color-mix(in srgb,var(--a3) 45%,transparent);background:color-mix(in srgb,var(--a3) 12%,transparent)}
+.tpl-howto .seg.core .sl{color:var(--a3)}
+.tpl-howto .seg.cond{border-color:var(--border-strong);background:var(--surface-2)}
+.tpl-howto .seg.cond .sl{color:var(--text-3)}
+.tpl-howto .seg .vstop{color:var(--text-3);font-weight:700;align-self:center;font-size:20px;display:flex;align-items:center}
+.tpl-howto .sep{color:var(--text-3);font-weight:700;font-size:20px;display:flex;align-items:center}
+
+/* gherkin keyword tint reuse: Given/When/Then via .gk */
+.tpl-howto .gk{color:#56d4dd;font-weight:600}
+.tpl-howto .tag-g{color:#d2a8ff}
+</style>
 </head>
-<body class="tpl-howto" style="--a1:#22d3ee;--a2:#38bdf8;--a3:#a78bfa">
+<body class="tpl-howto" style="--a1:#f5b942;--a2:#e879f9;--a3:#22d3ee">
 <div class="deck">
-<section class="slide" data-title="Cover">
-  <p class="kicker run">QA Methodology · Stage 0</p>
-  <h1 class="h1 anim-fade-up" data-anim="fade-up">Shift-Left Testing — Prevent Defects <span class="grad">Before Code Exists</span></h1>
-  <p class="lede mt-m">Pre-sprint AC refinement on a backlog batch — the craft, then the AI that runs it from the terminal.</p>
-  <div class="speaker"><div class="av"></div><div><b>The Craft → The Acceleration</b><span>From the agentic-qa-boilerplate <code>/shift-left-testing</code> skill</span></div></div>
-  <div class="deck-footer"><span class="mono">#qa #shift-left #stage-0</span><span class="slide-number" data-current="1" data-total="34"></span></div>
-  <div class="notes">Welcome. Today we learn the single highest-leverage QA activity there is — fixing requirements before a line of code is written — first as a human craft, then how one terminal command automates it.</div>
+
+<!-- 1. COVER -->
+<section class="slide" data-title="Portada">
+  <p class="kicker run">how-it-works · agentic-qa · sprint-testing</p>
+  <h1 class="h1 anim-fade-up" data-anim="fade-up">La <span class="grad">Trifuerza</span> — Exploración por Capas</h1>
+  <p class="lede mt-m">UI · API · DB. Cómo se prueba de verdad una feature: una pantalla verde puede esconder una API rota y un trigger que falla en silencio. Smoke primero, luego las tres capas, con sondas de seguridad e integridad.</p>
+  <div class="speaker"><div class="av"></div><div><b>Smoke → UI → API → DB</b><span>Stage 2 · ejecución manual / exploratoria en el sprint</span></div></div>
+  <div class="deck-footer"><span class="mono">Playwright · OpenAPI · DBHub · /sprint-testing</span><span class="slide-number" data-current="1" data-total="34"></span></div>
+  <div class="notes">Encuadre: esto es Stage 2 de sprint-testing — el acto de ejecutar QA. No es planificar (Stage 1) ni reportar (Stage 3). Es validar la feature a través de tres capas. Las tres fuerzas: UI (oro), API (magenta), DB (cian).</div>
 </section>
 
-<section class="slide center tc" data-title="Stat">
+<!-- 2. STAT HOOK -->
+<section class="slide center tc" data-title="Stat gancho">
   <div>
-    <p class="kicker">why bother</p>
-    <div class="bigstat"><span class="grad">1 : 10 : 100</span></div>
-    <h3>Relative cost to fix the same defect at requirements vs. development vs. production. Shift-Left lives at the '1'. Every ambiguity you kill in the Story is a 10x-to-100x bug you never pay for.</h3>
+    <p class="kicker">la verdad que duele</p>
+    <div class="bigstat"><span class="grad">201 ≠ DB ✓</span></div>
+    <h3>Un <b>201 Created</b> no prueba que la base de datos quedó correcta — los triggers pueden no ejecutarse en silencio. La capa que <b>responde</b> bien no es la capa que <b>persiste</b> bien. Por eso se prueban las tres.</h3>
   </div>
-  <div class="notes">This is the entire economic case. We are not testing software here — there is no software yet. We are testing the IDEA, and ideas are cheap to fix.</div>
+  <div class="notes">La regla cross-layer más importante: un 201 no prueba persistencia correcta. La pantalla verde, el status code OK y la fila en DB son tres verdades distintas. La Trifuerza existe para no confundirlas.</div>
 </section>
 
+<!-- 3. AGENDA -->
 <section class="slide" data-title="Agenda">
-  <p class="kicker">roadmap</p>
-  <h2 class="h2" data-anim="fade-up">Two Parts</h2>
+  <p class="kicker">qué cubriremos</p>
+  <h2 class="h2" data-anim="fade-up">El Acto de Testear, por Capas</h2>
   <div class="stack mt-l anim-stagger-list">
-    <div class="agenda-row"><span class="anum">01</span><span class="at">The Craft — how a human QA engineer refines a backlog by hand: selection triage, the refinement playbook, the question catalog, the handoff.</span><span class="ad">part 1</span></div>
-    <div class="agenda-row"><span class="anum">02</span><span class="at">The Acceleration — how the <code>/shift-left-testing</code> skill drives it all from one terminal command with subagents, Jira/Xray CLIs, and human approval gates.</span><span class="ad">part 2</span></div>
+    <div class="agenda-row"><span class="anum">00</span><span class="at">Smoke first — el gate Go/No-Go que valida el ambiente antes de explorar</span><span class="ad">el gate</span></div>
+    <div class="agenda-row"><span class="anum">01</span><span class="at">Capa UI — el loop por AC, edge cases, transiciones inválidas, DevTools</span><span class="ad">oro</span></div>
+    <div class="agenda-row"><span class="anum">02</span><span class="at">Capa API — la matriz de status codes y la sonda de RLS A/B</span><span class="ad">magenta</span></div>
+    <div class="agenda-row"><span class="anum">03</span><span class="at">Capa DB — sondas de constraints, barridos de integridad, RLS en SQL</span><span class="ad">cian</span></div>
+    <div class="agenda-row"><span class="anum">04</span><span class="at">Disciplina — triage bloqueante/no-bloqueante, TTL, sin NOT RUN, evidencia</span><span class="ad">el oficio</span></div>
   </div>
-  <div class="notes">First we earn the methodology by hand. Only then do we hand it to the machine — because you cannot supervise what you do not understand.</div>
+  <p class="qhint mt-l">3 quizzes interactivos a lo largo del recorrido — haz clic en las respuestas.</p>
+  <div class="notes">Cinco partes: el gate de smoke, las tres capas (UI/API/DB) y la disciplina transversal. El corazón es entender qué prueba cada capa.</div>
 </section>
 
-<section class="slide divider" data-title="Part 01">
+<!-- 4. TRIFORCE MODEL -->
+<section class="slide" data-title="Modelo Trifuerza">
+  <p class="kicker">el modelo</p>
+  <h2 class="h2" data-anim="fade-up">Tres Capas, Tres Verdades</h2>
+  <div class="grid g3 mt-m">
+    <div class="card" style="border-top:3px solid #f5b942"><h4 style="color:#f5b942">UI</h4><p class="dim">Lo que el usuario ve. ¿Renderiza, fluye, da feedback? Puede mostrar datos cacheados o mock.</p></div>
+    <div class="card" style="border-top:3px solid #e879f9"><h4 style="color:#e879f9">API</h4><p class="dim">El contrato. ¿Status correcto, schema válido, auth y RLS? El 2xx no garantiza la DB.</p></div>
+    <div class="card" style="border-top:3px solid #22d3ee"><h4 style="color:#22d3ee">DB</h4><p class="dim">La verdad persistida. ¿La fila existe, el trigger corrió, los constraints aguantan?</p></div>
+  </div>
+  <table class="dtable mt-l" style="font-size:14px">
+    <thead><tr><th>Tipo de feature</th><th>Orden de capas</th></tr></thead>
+    <tbody>
+      <tr><td>UI-focused</td><td><span class="mono">UI → API → DB</span></td></tr>
+      <tr><td>API-first</td><td><span class="mono">API → DB → UI</span></td></tr>
+      <tr><td>Data-focused</td><td><span class="mono">DB → API → UI</span></td></tr>
+      <tr><td>Full-stack</td><td><span class="mono">las tres</span></td></tr>
+    </tbody>
+  </table>
+  <div class="notes">El orden de capas lo decide el tipo de feature. UI-focused empieza por UI; data-focused por DB. Smoke siempre va primero, antes de cualquier capa.</div>
+</section>
+
+<!-- 5. DIVIDER PART 1 — SMOKE -->
+<section class="slide divider" data-title="Smoke">
   <div>
-    <p class="part-no">PART 01</p>
-    <h1 class="h1">The Craft<br><span class="grad">Refining a Backlog by Hand</span></h1>
-    <p class="lede">If the AI did not exist, what would a senior QA engineer do, step by step, to groom a batch of Stories before sprint planning?</p>
+    <p class="part-no">EL GATE</p>
+    <h1 class="h1">Smoke First<br><span class="grad">Valida el Ambiente, no la Feature</span></h1>
+    <p class="lede">5-10 minutos de Go/No-Go. Nunca entres a explorar a fondo hasta que el smoke pase. Un ambiente roto produce reportes de bug falsos.</p>
   </div>
-  <div class="notes">Imagine no AI. Just you, a backlog, a Jira board, and a grooming meeting tomorrow. Here is the discipline.</div>
+  <div class="notes">Smoke es obligatorio y primero. Valida que el ambiente esté vivo, no que la feature funcione — son preguntas distintas, ambas necesarias.</div>
 </section>
 
-<section class="slide" data-title="Shift-Left vs In-Sprint">
-  <p class="kicker">position in the pipeline</p>
-  <h2 class="h2" data-anim="fade-up">Shift-Left vs. In-Sprint Testing</h2>
-  <div class="grid g2 mt-l anim-stagger-list">
-    <div class="card card-accent">
-      <h4>Shift-Left · Stage 0 (this activity)</h4>
-      <ul class="dim">
-        <li>Pre-sprint, batch of N Stories</li>
-        <li>Entry: Backlog / Shift-Left QA / Estimation</li>
-        <li>Audience: PO + BA + tester</li>
-        <li>NO execution — the feature does not exist</li>
-        <li>Output: refined ACs + risk map + ATP DRAFT</li>
-      </ul>
-    </div>
-    <div class="card card-accent">
-      <h4>Sprint Testing · Stages 1-3</h4>
-      <ul class="dim">
-        <li>In-sprint, ticket-by-ticket</li>
-        <li>Entry: Ready For QA</li>
-        <li>Audience: Dev + tester</li>
-        <li>Smoke + UI/API/DB exploration</li>
-        <li>Output: ATP + ATR + bugs + evidence</li>
-      </ul>
-    </div>
+<!-- 6. SMOKE CHECKLIST -->
+<section class="slide" data-title="Smoke checklist">
+  <p class="kicker">en orden, ≤10 min</p>
+  <h2 class="h2" data-anim="fade-up">El Checklist de Smoke</h2>
+  <div class="flow mt-m">
+    <div class="stage"><div class="sx">1</div><div><h4>Acceso básico</h4><p>La app carga, sin 500, assets renderizan, consola sin errores rojos (warnings amarillos OK).</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>Autenticación</h4><p>Login, la sesión persiste al refrescar, logout funciona (saltar si el ticket es pre-auth).</p></div></div>
+    <div class="stage"><div class="sx">3</div><div><h4>Happy path</h4><p>El flujo primario del ticket de punta a punta, 3-5 pasos, marca cada uno al funcionar.</p></div></div>
+    <div class="stage"><div class="sx">4</div><div><h4>Integración backend</h4><p>Network tab durante el happy path: todas las llamadas <span class="mono">/api/*</span> en 2xx, los datos persisten tras F5.</p></div></div>
   </div>
-  <div class="notes">Know which game you are playing. Shift-Left is forward-looking and code-free. If you find yourself running the app, you are in the wrong activity.</div>
+  <div class="callout warn mt-m"><h4>SIEMPRE revisa el Network tab — aunque la UI se vea bien</h4><p>La UI puede renderizar datos cacheados o mock. La red no miente: si la UI muestra algo pero no hubo llamada 2xx, no confíes en la pantalla.</p></div>
+  <div class="notes">4 pasos en orden. El paso 4 es clave: la UI puede engañar con cache/mock; el Network tab revela la verdad. Siempre revisar la red.</div>
 </section>
 
-<section class="slide" data-title="The Pipeline">
-  <p class="kicker">the shape of the work</p>
-  <h2 class="h2" data-anim="fade-up">One Pipeline, Three Phases — Always In Order</h2>
-  <div class="flow mt-m anim-stagger-list">
-    <div class="stage"><div class="sx">0</div><div><h4>Session Init</h4><p>Resolve the candidate list; confirm business context exists.</p></div></div>
-    <div class="stage"><div class="sx">1</div><div><h4>Selection</h4><p>Triage which Stories deserve refinement, and at what depth.</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>Refinement</h4><p>Per Story — surface gaps, refine ACs, draft outlines.</p></div></div>
-    <div class="stage"><div class="sx">3</div><div><h4>Handoff</h4><p>Push to Jira, label, transition to Estimation, write the batch report.</p></div></div>
-  </div>
-  <div class="notes">Memorize this spine: Selection, Refinement, Handoff. Everything else hangs off these three. Never refine before you select; never hand off before you refine.</div>
-</section>
-
-<section class="slide" data-title="Before Triage">
-  <p class="kicker">phase 0 — before you start</p>
-  <h2 class="h2" data-anim="fade-up">Three Things You Need Before Triage</h2>
-  <ul class="blist mt-l anim-stagger-list">
-    <li><b>A candidate list.</b> Either explicit Story IDs (UPEX-100,101,102) or a backlog JQL query you build by hand.</li>
-    <li><b>Business context on hand.</b> business-data-map, business-feature-map, business-api-map, master-test-plan. Without domain vocabulary your PO questions are vague and worthless.</li>
-    <li><b>A batch size of 1-12.</b> The sweet spot. Past ~10-12 Stories attention collapses and quality degrades — split big groomings into multiple sessions.</li>
-  </ul>
-  <div class="notes">The fatal beginner mistake is refining without business context — you produce generic questions any junior could ask. Anchor every refined AC in a real entity and a real flow.</div>
-</section>
-
-<section class="slide" data-title="Candidate JQL">
-  <p class="kicker">phase 0 — backlog mode</p>
-  <h2 class="h2" data-anim="fade-up">The Candidate JQL</h2>
-  <div class="terminal mt-m">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>candidate-query.jql</span></div>
-<pre><span class="kw">project</span> = UPEX
-<span class="kw">AND</span> issueType = Story
-<span class="kw">AND</span> status <span class="kw">in</span> (Backlog, <span class="str">"Shift-Left QA"</span>, Estimation, <span class="str">"Ready For Dev"</span>)
-<span class="kw">ORDER BY</span> priority DESC, created DESC
-
-<span class="cmt"># optional layers</span>
-<span class="kw">AND</span> sprint <span class="kw">in</span> openSprints()        <span class="cmt"># next-sprint candidates</span>
-<span class="kw">AND</span> <span class="str">"Epic Link"</span> = EPIC-KEY          <span class="cmt"># groom one epic</span>
-<span class="kw">AND</span> updated &gt;= -<span class="num">14</span>d              <span class="cmt"># recent additions</span></pre>
-  </div>
-  <div class="notes">When the user just says "groom the backlog," this is the query. Note the four entry statuses — those are the only states a Story can be in to qualify for Shift-Left.</div>
-</section>
-
-<section class="slide" data-title="Stories Only">
-  <p class="kicker">phase 1 — the hard type filter</p>
-  <h2 class="h2" data-anim="fade-up">Stories Only — Reject Everything Else, Loudly</h2>
+<!-- 7. SMOKE VERDICT + RESTRICTIONS -->
+<section class="slide" data-title="Smoke verdict">
+  <p class="kicker">el veredicto y sus reglas</p>
+  <h2 class="h2" data-anim="fade-up">Go / No-Go</h2>
   <div class="vs">
-    <div class="card bad-side side">
-      <h3>❌ Silently process or drop</h3>
+    <div class="card good-side">
+      <h3>✓ PASS → continúa</h3>
       <ul>
-        <li>Refine a Bug — reactive, no upstream ACs</li>
-        <li>Refine a Spike — no implementable ACs</li>
-        <li>Silently delete a mislabeled Tech-debt</li>
+        <li>Registra <span class="mono">Smoke: PASSED</span> en memory</li>
+        <li>Procede a UI / API / DB</li>
+        <li>Captura evidencia del home</li>
       </ul>
     </div>
-    <div class="mid">→</div>
-    <div class="card good-side side">
-      <h3>✅ Loud reject with reason</h3>
+    <div class="mid">vs</div>
+    <div class="card bad-side">
+      <h3>✗ FAIL → STOP</h3>
       <ul>
-        <li>UPEX-115 [Bug] — Shift-Left refines only forward-looking ACs</li>
-        <li>UPEX-127 [Spike] — refine the follow-up Story instead</li>
-        <li>UPEX-141 [Tech-debt] — no user-facing AC; convert to a Story first</li>
+        <li>Es un bloqueante de ambiente</li>
+        <li>Triagea primero (NO auto-Critical)</li>
+        <li>Surfacea al usuario, NO explores a fondo</li>
       </ul>
     </div>
   </div>
-  <div class="notes">The rejection is not noise — it IS value. Surfacing a mislabeled Bug tells the team their board is wrong. Never drop silently; always state the one-line reason.</div>
+  <div class="callout mt-m"><h4>Las restricciones del smoke</h4><p>Durante el smoke: <b>no</b> corras edge cases ni negativos · <b>no</b> abras bugs menores (solo bloqueantes) · <b>no</b> excedas 10 minutos. El smoke detecta bloqueantes, no documenta calidad.</p></div>
+  <div class="notes">PASS→continúa, FAIL→STOP (bloqueante de ambiente, triagea sin auto-Critical). Restricciones: solo bloqueantes, sin edge cases, ≤10min. Reportar bugs falsos por un ambiente roto es el peor desperdicio.</div>
 </section>
 
-<section class="slide" data-title="Triage Funnel">
-  <p class="kicker">phase 1 — the triage funnel</p>
-  <h2 class="h2" data-anim="fade-up">Five Gates Every Candidate Passes Through</h2>
-  <div class="steps s4 mt-l anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>Type filter</h4><p>Reject non-Stories. Hard gate.</p></div>
-    <div class="step"><div class="num">2</div><h4>Label freshness</h4><p>Already 'shift-left-reviewed' &lt;30 days? Surface separately; ask skip/refresh.</p></div>
-    <div class="step"><div class="num">3</div><h4>Veto table</h4><p>Money/auth/data-integrity force FULL; CSS/copy/tech-debt get SKIPPED.</p></div>
-    <div class="step"><div class="num">4</div><h4>Risk score</h4><p>Only if no veto fired — sum factors into 0-3 / 4-7 / 8+.</p></div>
+<!-- 8. SMOKE != DEEP -->
+<section class="slide" data-title="Smoke vs deep">
+  <p class="kicker">dos preguntas distintas</p>
+  <h2 class="h2" data-anim="fade-up">Smoke ≠ Exploración Profunda</h2>
+  <div class="grid g2 mt-m">
+    <div class="card card-accent"><h4>Smoke pregunta…</h4><p class="dim" style="font-size:18px">"¿El <b>ambiente</b> está vivo?" — ¿carga, autentica, persiste el happy path? Si no, todo lo demás es ruido.</p></div>
+    <div class="card card-accent"><h4>La Trifuerza pregunta…</h4><p class="dim" style="font-size:18px">"¿La <b>feature</b> funciona bien?" — ¿cumple los ACs, aguanta edge cases, es segura e íntegra en sus tres capas?</p></div>
   </div>
-  <div class="callout mt-m"><h4>5 · Data-feasibility scan</h4><p>HIGH-risk only, doc-only — flags <code>DATA-FEASIBILITY-RISK</code>.</p></div>
-  <div class="notes">This is a funnel, in order. Type before label, label before veto, veto before score. The veto SHORT-CIRCUITS the score — that is the most important sequencing rule in selection.</div>
+  <div class="callout warn mt-m"><h4>El orden importa</h4><p>Un ambiente roto produce <b>reportes de bug falsos</b>. Si smoke falla y exploras igual, vas a reportar "bugs" que en realidad son el ambiente caído. Smoke valida el ambiente; la Trifuerza valida la feature. Primero uno, luego la otra.</p></div>
+  <div class="notes">Anti-patrón S7: nunca saltar el smoke antes de la trifuerza. Son preguntas distintas — ambiente vs feature. El reachability gate (Stage Start) es aún anterior: ¿el env responde? Tres gates, tres preguntas.</div>
 </section>
 
-<section class="slide" data-title="Veto Table">
-  <p class="kicker">phase 1 — veto beats score</p>
-  <h2 class="h2" data-anim="fade-up">The Veto Table — Force or Skip, Override the Math</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Verdict</th><th>Triggers</th><th>Why</th></tr></thead>
-    <tbody>
-      <tr><td><b>FORCE FULL</b></td><td>Money, billing, refund, currency</td><td>calculation + audit trail</td></tr>
-      <tr><td><b>FORCE FULL</b></td><td>Auth / authz / session / RBAC</td><td>security perimeter</td></tr>
-      <tr><td><b>FORCE FULL</b></td><td>Data integrity on core entities</td><td>persistent corruption risk</td></tr>
-      <tr><td><b>FORCE FULL</b></td><td>External integrations (Stripe, Auth0)</td><td>contract drift</td></tr>
-      <tr><td><b>FORCE FULL</b></td><td>State machines / formulas (tax, interest)</td><td>transition + precision</td></tr>
-      <tr><td><b>SKIP</b></td><td>Pure CSS / static copy / docs</td><td>no AC complexity</td></tr>
-      <tr><td><b>SKIP</b></td><td>Tech-debt refactor, zero behavior change</td><td>no AC change</td></tr>
-      <tr><td><b>SKIP</b></td><td>Backend-only, no UI + no API contract change</td><td>nothing user-observable</td></tr>
-    </tbody>
-  </table>
-  <div class="notes">Veto fires BEFORE you score. A refund feature is mandatory-refine even if its risk score is low. A CSS tweak is auto-skip even if it touched five files. Judgment overrides arithmetic.</div>
-</section>
-
-<section class="slide" data-title="Scoring Factors">
-  <p class="kicker">phase 1 — the risk score</p>
-  <h2 class="h2" data-anim="fade-up">Scoring Factors — Only When No Veto Fired</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Factor</th><th>Points</th><th>Condition</th></tr></thead>
-    <tbody>
-      <tr><td><b>New feature</b></td><td>+3</td><td>new functionality vs modification</td></tr>
-      <tr><td><b>Dynamic data (API/DB)</b></td><td>+3</td><td>not hardcoded / static</td></tr>
-      <tr><td><b>Explicit ACs present</b></td><td>+2</td><td>acceptance criteria defined</td></tr>
-      <tr><td><b>User-facing</b></td><td>+2</td><td>affects UI or visible behavior</td></tr>
-      <tr><td><b>High effort</b></td><td>+2</td><td>&ge;5 story points OR &ge;600-word description</td></tr>
-      <tr><td><b>AC-light flag</b></td><td>+2</td><td>&lt;2 ACs OR 1-line ACs — needs most refinement</td></tr>
-      <tr><td><b>High priority</b></td><td>+1</td><td>High or Critical</td></tr>
-      <tr><td><b>Multi-component</b></td><td>+1</td><td>frontend + backend / multiple services</td></tr>
-      <tr><td><b>External dependency</b></td><td>+1</td><td>3rd-party API / partner integration</td></tr>
-      <tr><td><b>Comment activity</b></td><td>+1</td><td>&gt;5 substantive comments — unresolved disagreement</td></tr>
-    </tbody>
-  </table>
-  <div class="notes">Memorize the heavy hitters: new feature and dynamic data are +3 each. AC-light is +2 — a thin Story scores high precisely because it needs you most. Comment-storm is +1 — noisy threads mean the team never agreed.</div>
-</section>
-
-<section class="slide" data-title="Score Bands">
-  <p class="kicker">phase 1 — reading the score</p>
-  <h2 class="h2" data-anim="fade-up">Score Bands → Refinement Depth</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Score</th><th>Level</th><th>Action</th></tr></thead>
-    <tbody>
-      <tr><td><b>0-3</b></td><td>LOW</td><td>SKIP — PO/Dev can write ACs without QA help</td></tr>
-      <tr><td><b>4-7</b></td><td>MEDIUM</td><td>Standard refinement (Phases 1-3 + outline-only Phase 4)</td></tr>
-      <tr><td><b>8+</b></td><td>HIGH</td><td>Extended — emphasize ambiguities + edge-cases-not-in-story; widen the PO/Dev question set</td></tr>
-    </tbody>
-  </table>
-  <div class="callout mt-m"><h4>Score is advisory</h4><p>The user may override a LOW skip into the set if they smell hidden complexity.</p></div>
-  <div class="notes">The band sets your DEPTH, not just in-or-out. HIGH does not mean 'do it harder randomly' — it means lean into Phase 2's ambiguity and edge-case hunt and widen the question set.</div>
-</section>
-
-<section class="slide" data-title="Selection Gate">
-  <p class="kicker">phase 1 — the gate</p>
-  <h2 class="h2" data-anim="fade-up">STOP — Present the Candidate Table and WAIT for OK</h2>
-  <div class="callout warn mt-l">
-    <h4>Hard human-in-the-loop gate</h4>
-    <p>Selection ends with a ranked candidate table: Accepted (Story / Risk / Score / Veto override / Data-feasibility / Notes), Rejected non-Stories, Skipped LOW-risk, Already-Reviewed — plus a recommended refinement order and open questions.</p>
-  </div>
-  <p class="lede mt-m">You DO NOT start refining until the human confirms the set. The user can veto a Story, override a LOW skip, or change the order.</p>
-  <div class="notes">Selection is a proposal, not a decision. The table goes to the human, you wait, they OK or override. This gate is non-negotiable — it keeps the human steering the batch.</div>
-</section>
-
-<section class="slide divider" data-title="Part 01 · Phase 2">
+<!-- 9. DIVIDER PART 2 — UI -->
+<section class="slide divider" data-title="Capa UI">
   <div>
-    <p class="part-no">PART 01 · PHASE 2</p>
-    <h1 class="h1">Refinement<br><span class="grad">The Heart of Shift-Left</span></h1>
-    <p class="lede">Now the real craft: per accepted Story, take a vague backlog item and turn it into a testable, gap-free, estimable Story.</p>
+    <p class="part-no" style="color:#f5b942">CAPA 01 · UI</p>
+    <h1 class="h1">La Capa <span style="color:#f5b942">UI</span><br>Lo que el Usuario Ve</h1>
+    <p class="lede">Valida los ACs, descubre edge cases, captura evidencia — y desconfía de la pantalla: puede esconder un fallo de la capa de abajo.</p>
   </div>
-  <div class="notes">Selection decided WHAT to refine. Phase 2 is HOW. This is where a QA engineer earns their seat at the grooming table.</div>
+  <div class="notes">UI = oro. El loop por AC + edge cases + transiciones inválidas + reglas de DevTools.</div>
 </section>
 
-<section class="slide" data-title="Refinement Playbook">
-  <p class="kicker">phase 2 — the five sub-passes</p>
-  <h2 class="h2" data-anim="fade-up">The Refinement Playbook — Per Story</h2>
-  <div class="flow mt-m anim-stagger-list">
-    <div class="stage"><div class="sx">1</div><div><h4>Critical Analysis</h4><p>Business + technical context, complexity rating (LIGHT code reads only).</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>Story Quality Analysis</h4><p>Ambiguities, gaps, edge cases, contradictions, testability.</p></div></div>
-    <div class="stage"><div class="sx">3</div><div><h4>Refined ACs</h4><p>Given / When / Then with specific data.</p></div></div>
-    <div class="stage"><div class="sx">4</div><div><h4>Test Outlines</h4><p>Coverage estimate + outline NAMES only.</p></div></div>
-    <div class="stage"><div class="sx">5</div><div><h4>Edge Cases</h4><p>Names + criticality only.</p></div></div>
+<!-- 10. UI SCENARIO LOOP -->
+<section class="slide" data-title="UI loop">
+  <p class="kicker">el loop por cada AC</p>
+  <h2 class="h2" data-anim="fade-up">Navega → Observa → Captura</h2>
+  <div class="flow mt-s">
+    <div class="stage"><div class="sx">1</div><div><h4>Navega + snapshot</h4><p>Abre la URL de inicio, captura la estructura del DOM / árbol de accesibilidad.</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>Ejecuta + observa</h4><p>Acciones del happy path paso a paso. ¿Resultado esperado? ¿estado UI raro? ¿consola roja? ¿red 4xx/5xx?</p></div></div>
+    <div class="stage"><div class="sx">3</div><div><h4>Captura + propaga estado</h4><p>Screenshot en el estado clave (<span class="mono">{KEY}-{n}-ac{N}-desc.png</span>) y marca el outline PASSED/FAILED en memory.</p></div></div>
   </div>
-  <div class="notes">This is the engine reused from sprint-testing's acceptance-test-planning — but in DRAFT mode. The whole skill deliberately reuses ~70% of that planning logic rather than reinventing it.</div>
+  <div class="callout warn mt-m"><h4>Reglas de DevTools</h4><p>Consola: <b>rojo = log</b> (amarillo OK). Red: filas <b>rojas (4xx/5xx) siempre se anotan</b> aunque la UI se vea bien — la UI puede enmascarar un fallo de API. &gt;5s de carga = hallazgo de Performance. Desactiva el cache.</p></div>
+  <div class="notes">El loop: navegar→snapshot→ejecutar→observar(consola+red)→capturar→propagar estado. La regla de oro de DevTools: las filas rojas de red siempre cuentan, aunque la UI se vea verde.</div>
 </section>
 
-<section class="slide" data-title="Critical Analysis">
-  <p class="kicker">phase 2 — step 1</p>
-  <h2 class="h2" data-anim="fade-up">Critical Analysis — Context Without Reproduction</h2>
-  <ul class="blist mt-l anim-stagger-list">
-    <li><b>Business context.</b> Primary/secondary personas, value proposition, KPIs influenced, position in the user journey.</li>
-    <li><b>Technical context.</b> Frontend components/routes, backend endpoints (cited from business-api-map), DB tables, external services, integration points.</li>
-    <li><b>Complexity rating.</b> Rate Business logic / Integration / Data validation / UI as Low/Med/High — this drives Step 2 depth and feeds the PO's estimate.</li>
-  </ul>
-  <div class="notes">The hard rule here is LIGHT code reads. Read the entry files and one or two neighbors to confirm 'a senior dev would call this feasible.' You are NOT tracing call graphs or reproducing — that is in-sprint work.</div>
-</section>
-
-<section class="slide" data-title="Story Quality Analysis">
-  <p class="kicker">phase 2 — step 2 (the heart)</p>
-  <h2 class="h2" data-anim="fade-up">Story Quality Analysis — Five Things You Hunt</h2>
-  <div class="grid g2 mt-l anim-stagger-list">
-    <div class="card card-accent">
-      <h4>Find the holes</h4>
-      <ul class="dim">
-        <li><b>Ambiguities</b> — location in Story + the question + impact on testing + suggested clarification</li>
-        <li><b>Gaps</b> — missing AC / business rule, why critical, what to add, risk if omitted</li>
-        <li><b>Edge cases not in the Story</b> — scenario + best-guess behavior + criticality</li>
-      </ul>
-    </div>
-    <div class="card card-accent">
-      <h4>Validate + reconcile</h4>
-      <ul class="dim">
-        <li><b>Contradictions</b> — 'Description says X but AC3 says Y', surfaced explicitly</li>
-        <li><b>Testability</b> — verdict Yes / Partial / No, listing every vague AC, missing error message, or un-isolatable dependency</li>
-      </ul>
-    </div>
-  </div>
-  <div class="notes">This is THE step. PO can still act, so push harder than you would in-sprint. Every ambiguity here is a production defect you are deleting before it is born.</div>
-</section>
-
-<section class="slide" data-title="Question Catalog">
-  <p class="kicker">phase 2 — step 2 toolkit</p>
-  <h2 class="h2" data-anim="fade-up">The Question Catalog — Walk the Archetypes</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Archetype</th><th>A killer question it forces</th></tr></thead>
+<!-- 11. UI EDGE-CASE CHECKLIST -->
+<section class="slide" data-title="UI edge cases">
+  <p class="kicker">el checklist por input / interacción</p>
+  <h2 class="h2" data-anim="fade-up">Edge Cases de la Capa UI</h2>
+  <table class="dtable mt-s" style="font-size:14px">
+    <thead><tr><th>Categoría</th><th>Qué probar</th></tr></thead>
     <tbody>
-      <tr><td><b>Auth/Session</b></td><td>Response on unauthenticated access — redirect, 401, 403, or 404? (403 vs 404 leaks existence)</td></tr>
-      <tr><td><b>Money/Billing</b></td><td>Currency precision + rounding rule? Off-by-one cent across millions of transactions</td></tr>
-      <tr><td><b>Search/List</b></td><td>Empty state distinct from 'still loading'? Pagination skip/dupe on insert?</td></tr>
-      <tr><td><b>State Machine</b></td><td>ALL valid states + transitions? Behavior on an invalid transition?</td></tr>
-      <tr><td><b>Integration</b></td><td>Timeout + retry policy? Idempotency-key strategy on retry?</td></tr>
-      <tr><td><b>Permissions/RBAC</b></td><td>Owner-vs-other — own records only or any in scope?</td></tr>
+      <tr><td><b>Boundary (BVA)</b></td><td>vacío · <span class="mono">min-1·min·min+1</span> · <span class="mono">max-1·max·max+1</span> · 0 / -1 / MAX_INT · especiales <span class="mono">&lt;script&gt;</span>, <span class="mono">'; DROP TABLE</span></td></tr>
+      <tr><td><b>UI / sesión</b></td><td>refrescar a mitad de flujo · botón atrás · pestañas duplicadas · timeout / idle</td></tr>
+      <tr><td><b>Estado / transición</b></td><td>cada transición válida, luego una que el estado debe <b>rechazar</b></td></tr>
+      <tr><td><b>Validación de datos</b></td><td>email inválido · password débil · doble submit · edición concurrente</td></tr>
+      <tr><td><b>Visual</b></td><td>breakpoints responsive · loading states · layouts rotos · elementos solapados</td></tr>
     </tbody>
   </table>
-  <p class="dim mt-s">Plus 10 Universal questions (exact error text, success surface, idempotency, audit, rollback…).</p>
-  <div class="notes">A Story usually hits 2-3 archetypes. Walk each archetype's list; any question the Story does not already answer becomes a candidate gap. This catalog encodes failures testers usually only discover when execution fails.</div>
+  <div class="callout mt-m"><h4>Si exploras y encuentras un caso nuevo…</h4><p>…que el ATP de Stage 1 no derivó (una partición, un boundary, una transición), <b>añádelo de vuelta</b> al set de outlines. La cobertura es el piso (ACs) <b>más</b> esta capa de riesgo, no la exploración en lugar de la planificación.</p></div>
+  <div class="notes">El checklist de edge cases UI. Los caracteres especiales (script/DROP TABLE) son sondas de seguridad básicas. Lo encontrado se realimenta al plan, no reemplaza al plan.</div>
 </section>
 
-<section class="slide" data-title="Gap Triage">
-  <p class="kicker">phase 2 — step 2 classification</p>
-  <h2 class="h2" data-anim="fade-up">Triage Every Gap Into One of Three Buckets</h2>
-  <div class="steps s3 mt-l anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>CRITICAL</h4><p>Blocks sprint planning. Goes into 'Critical Questions for PO'. e.g. an auth gate (A1) or refund cap (M2).</p></div>
-    <div class="step"><div class="num">2</div><h4>IMPORTANT</h4><p>Blocks implementation, not planning. Goes into 'Technical Questions for Dev'. e.g. which Auth0 SDK version is pinned.</p></div>
-    <div class="step"><div class="num">3</div><h4>EDGE</h4><p>Testable but not blocking. Goes into 'Edge Cases not in Story', tagged NEEDS PO/DEV CONFIRMATION.</p></div>
+<!-- 12. INVALID STATE TRANSITIONS -->
+<section class="slide" data-title="Transiciones inválidas">
+  <p class="kicker">donde se esconden los defectos</p>
+  <h2 class="h2" data-anim="fade-up">Transiciones Inválidas — el Punto Ciego</h2>
+  <p class="lede mt-s">Para cualquier entidad con estado (draft→submitted→approved, cart→paid→shipped): dispara cada transición <b>válida</b>, luego dispara una que el estado actual <b>debería rechazar</b>.</p>
+  <div class="lifecycle mt-l">
+    <span class="lstate new">draft</span><span class="arr">→</span>
+    <span class="lstate prog">submitted</span><span class="arr">→</span>
+    <span class="lstate good">approved</span><span class="arr">→</span>
+    <span class="lstate bad">closed</span>
   </div>
-  <div class="notes">Misclassifying signals bad judgment. Putting a 'what does the success toast say' question next to an auth-bypass question in the Critical list tells the PO you cannot prioritize. Bucket with care.</div>
-</section>
-
-<section class="slide" data-title="Refined AC Example">
-  <p class="kicker">phase 2 — step 3 worked example</p>
-  <h2 class="h2" data-anim="fade-up">A Refined AC — Given / When / Then With Real Data</h2>
-  <div class="terminal mt-m">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>shift-left-refinement.md</span></div>
-<pre><span class="cmt">#### Scenario 1.2: Should reject login when OTP is incorrect (Type: Negative, Priority: High)</span>
-<span class="kw">- Given:</span> user with an active OTP requested &lt;5 min ago
-<span class="kw">- When:</span>  user submits code <span class="str">"000000"</span> (wrong)
-<span class="kw">- Then:</span>
-    <span class="fn">UI:</span>           inline error <span class="str">"Invalid code"</span>
-    <span class="fn">API:</span>          <span class="num">401</span>, body { error: <span class="str">"invalid_otp"</span> }
-    <span class="fn">DB:</span>           no session row created
-    <span class="fn">System state:</span> attempt counter +<span class="num">1</span>
-
-<span class="cmt">#### Scenario E1 (Type: Edge) — NEEDS PO/DEV CONFIRMATION</span>
-<span class="cmt">- behavior inferred — confirm before sprint planning</span></pre>
+  <div class="lifecycle mt-m">
+    <span class="dim2 mono" style="font-size:13px">la sonda:</span>
+    <span class="lstate bad">approve(closed) → ¿rechazado?</span>
+    <span class="dim2 mono" style="font-size:13px">un 200 silencioso sin cambio de estado = bug</span>
   </div>
-  <div class="notes">Refined ACs name exact inputs and assert across UI, API, AND DB. Anything you INFERRED — not literally in the original Story — carries the verbatim marker NEEDS PO/DEV CONFIRMATION so the PO sees it during planning. Tooling later greps for that exact string.</div>
+  <div class="callout warn mt-m"><h4>El happy path casi siempre funciona</h4><p>Lo que rompe es cuando alguien intenta hacer lo que el negocio no permite — aprobar algo ya cerrado, cancelar algo ya enviado. <b>Las transiciones inválidas son donde viven los bugs de máquina de estados.</b></p></div>
+  <div class="notes">Conecta con la técnica State-Transition: 1 TC por transición inválida. El bug típico: un 200 OK silencioso que no cambia nada deja al usuario confundido.</div>
 </section>
 
-<section class="slide" data-title="DRAFT Discipline">
-  <p class="kicker">phase 2 — steps 4 &amp; 5 the boundary</p>
-  <h2 class="h2" data-anim="fade-up">Outlines Yes, Test Data No — The DRAFT Discipline</h2>
+<!-- 13. ESCALATE TO API/DB -->
+<section class="slide" data-title="Escalar capas">
+  <p class="kicker">cuándo bajar una capa</p>
+  <h2 class="h2" data-anim="fade-up">Cuándo Escalar a API / DB</h2>
+  <div class="grid g3 mt-m">
+    <div class="card card-accent"><h4>UI renderiza pero el dato se ve mal</h4><p class="dim">→ baja a <b style="color:#22d3ee">§DB</b> para confirmar qué se persistió de verdad.</p></div>
+    <div class="card card-accent"><h4>Un botón dispara un request non-2xx</h4><p class="dim">→ baja a <b style="color:#e879f9">§API</b> para reproducir la llamada directamente.</p></div>
+    <div class="card card-accent"><h4>Sospecha de RLS — ves filas que no deberías</h4><p class="dim">→ baja a <b style="color:#e879f9">§API</b> <b>y</b> <b style="color:#22d3ee">§DB</b> ambas.</p></div>
+  </div>
+  <div class="callout mt-m"><h4>La UI es el síntoma, no el diagnóstico</h4><p>Cuando algo se ve mal arriba, la causa casi siempre está abajo. Escalar de capa es cómo pasas de "esto se ve raro" a "esto está roto aquí, por esto".</p></div>
+  <div class="notes">Reglas de escalado: dato mal→DB; non-2xx→API replay; RLS→ambas. La UI te dice QUE algo falla; las capas de abajo te dicen POR QUÉ.</div>
+</section>
+
+<!-- 14. DIVIDER PART 3 — API -->
+<section class="slide divider" data-title="Capa API">
+  <div>
+    <p class="part-no" style="color:#e879f9">CAPA 02 · API</p>
+    <h1 class="h1">La Capa <span style="color:#e879f9">API</span><br>El Contrato</h1>
+    <p class="lede">Confirma contratos, auth, manejo de errores y RLS. Cada status code no es un número — es una prueba de que algo funciona (o no).</p>
+  </div>
+  <div class="notes">API = magenta. La matriz de status codes "qué prueba" + la sonda de RLS A/B. Esta capa enseña a leer status codes como evidencia.</div>
+</section>
+
+<!-- 15. API SETUP -->
+<section class="slide" data-title="API setup">
+  <p class="kicker">descubrir + autenticar</p>
+  <h2 class="h2" data-anim="fade-up">Preparar la Exploración de API</h2>
+  <div class="terminal mt-s">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>auth una vez, reutiliza</span></div>
+<pre><span class="cmt"># credenciales SIEMPRE desde .env — nunca hardcodear</span>
+<span class="kw">POST</span> /auth/v1/token
+  body: { email: {{env.STAGING_USER_EMAIL}}, password: {{env.STAGING_USER_PASSWORD}} }
+  store: <span class="fn">access_token</span>, <span class="fn">refresh_token</span>, <span class="fn">user.id</span>
+
+<span class="cmt"># registra los endpoints del ticket en una tabla en memory:</span>
+<span class="cmt"># | Method | Endpoint | Purpose | AC |</span></pre>
+  </div>
+  <div class="callout warn mt-m"><h4>Gotcha de propagación de token</h4><p>Algunos backends scopean el token por workspace/tenant. Si un request da <b>200 para un usuario y 403 para otro con el mismo rol</b>, la propagación es la sospechosa — anótalo como <b>descubrimiento</b>, no como bug, hasta confirmarlo con el equipo.</p></div>
+  <div class="notes">Token una vez desde .env, reutilizar. La gotcha de propagación: mismo rol, distinto resultado = problema de scoping, no necesariamente bug. Confirmar antes de reportar.</div>
+</section>
+
+<!-- 16. STATUS-CODE MATRIX -->
+<section class="slide" data-title="Status codes">
+  <p class="kicker">cada status PRUEBA algo</p>
+  <h2 class="h2" data-anim="fade-up">La Matriz de Status Codes</h2>
+  <table class="dtable mt-s" style="font-size:13.5px">
+    <thead><tr><th>Escenario</th><th>Esperado</th><th>Qué prueba</th></tr></thead>
+    <tbody>
+      <tr><td>Happy path</td><td><span class="tag ok">200 / 201</span></td><td>Contrato + data feliz</td></tr>
+      <tr><td>Campo requerido faltante</td><td><span class="tag warn">400</span></td><td>Validación viva</td></tr>
+      <tr><td>Input sobre-largo</td><td><span class="tag warn">400 / 413</span></td><td>Guardia de tamaño</td></tr>
+      <tr><td>Sin header de auth</td><td><span class="tag warn">401</span></td><td>Auth requerida</td></tr>
+      <tr><td>Token expirado</td><td><span class="tag warn">401</span></td><td>La rotación de token funciona</td></tr>
+      <tr><td>Recurso de otro tenant</td><td><span class="tag no">403 / vacío</span></td><td><b>RLS / aislamiento de tenant</b></td></tr>
+      <tr><td>Recurso inexistente</td><td>200+vacío (PostgREST) / 404</td><td>Semántica de not-found</td></tr>
+      <tr><td>Único duplicado</td><td><span class="tag no">409</span></td><td>Manejo de conflicto</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">La idea núcleo de la capa API: un status code es evidencia. 400 prueba que la validación está viva; 403 prueba aislamiento de tenant; 409 prueba manejo de conflicto. No probar el negativo = no saber si la guardia existe.</div>
+</section>
+
+<!-- 17. RLS PROBE -->
+<section class="slide" data-title="RLS probe">
+  <p class="kicker">la sonda de seguridad que casi nadie corre</p>
+  <h2 class="h2" data-anim="fade-up">Sonda de RLS / Autorización — A/B</h2>
+  <p class="lede mt-s">Crítica para apps multi-tenant. Dos usuarios (A, B), <b>el mismo rol</b>. La pregunta: ¿puede A tocar lo de B?</p>
+  <div class="terminal mt-s">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>A intenta acceder a lo de B</span></div>
+<pre><span class="num">1.</span> A lista recursos              <span class="kw">→</span> solo las filas de A
+<span class="num">2.</span> A lee <span class="str">resource?user_id=eq.B</span>   <span class="kw">→</span> array vacío o 403
+<span class="num">3.</span> A hace PATCH a la fila de B    <span class="kw">→</span> 0 filas afectadas o 403
+
+<span class="cmt"># resultado por sonda:</span>  <span class="tag ok">VERIFIED</span>  o  <span class="tag no">VULNERABLE</span></pre>
+  </div>
+  <div class="callout warn mt-m"><h4>Cualquier <span class="mono">VULNERABLE</span> es territorio de bug Critical</h4><p>Si A puede leer o escribir lo de B, es una fuga cross-tenant — el peor tipo de defecto. Es un finding <b>bloqueante</b>: detiene la pasada de inmediato.</p></div>
+  <div class="notes">La sonda A/B con dos usuarios del mismo rol: listar-solo-lo-mío, leer-otro-tenant, PATCH-otra-fila. VULNERABLE = Critical = bloqueante. Esta es la sonda de seguridad de mayor valor de la capa API.</div>
+</section>
+
+<!-- 18. CROSS-LAYER HANDOFF -->
+<section class="slide" data-title="201 ≠ DB">
+  <p class="kicker">el handoff cross-layer</p>
+  <h2 class="h2" data-anim="fade-up">Un 201 No Prueba la DB</h2>
+  <div class="flow mt-m">
+    <div class="stage"><div class="sx">✓</div><div><h4>La API responde 201 Created</h4><p>El contrato dice "creado". Pero un POST/PATCH exitoso solo prueba que la API <b>aceptó</b> la petición.</p></div></div>
+    <div class="stage"><div class="sx">?</div><div><h4>¿El trigger corrió? ¿La fila quedó bien?</h4><p>Los triggers pueden no ejecutarse en silencio. El total calculado, las relaciones, los timestamps — todo eso vive en la DB.</p></div></div>
+    <div class="stage"><div class="sx">→</div><div><h4>Baja a §DB a confirmar</h4><p>Tras cada POST/PATCH exitoso, verifica persistencia y ejecución de triggers en la base. La respuesta no es la verdad.</p></div></div>
+  </div>
+  <div class="callout warn mt-m"><h4>La regla de oro de la Trifuerza</h4><p>Cada capa prueba <b>su</b> verdad. La API prueba el contrato; solo la DB prueba la persistencia. Confiar en el 201 es confiar en la capa equivocada.</p></div>
+  <div class="notes">El handoff cross-layer: 201 ≠ DB correcta (triggers silenciosos). Siempre confirmar persistencia en DB tras un write exitoso. Esta es la lección que une las tres capas.</div>
+</section>
+
+<!-- 19. QUIZ 1 -->
+<section class="slide" data-title="Quiz 1">
+  <p class="kicker">quiz · smoke + UI + API</p>
+  <h2 class="h2" data-anim="fade-up">Las Capas de Arriba</h2>
+  <div class="quiz">
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q1</span><span>El POST devuelve 201 y la UI muestra "Orden creada". ¿Es suficiente para marcar el AC como PASSED?</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span>Sí — 201 + UI verde = creado correctamente</span></div>
+        <div class="opt" data-correct="1"><span class="mk">B</span><span>No — un 201 no prueba la DB; baja a confirmar fila + trigger</span></div>
+        <div class="opt"><span class="mk">C</span><span>Sí, si la consola no tiene errores rojos</span></div>
+      </div>
+      <div class="qexp"><b>No.</b> Un 201 prueba que la API aceptó la petición, no que la DB quedó correcta — los triggers pueden no correr en silencio. Confirma persistencia (fila, total calculado, relaciones) en §DB antes de dar PASSED.</div>
+    </div>
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q2</span><span>El usuario A, con su token, hace <span class="mono">GET resource?user_id=eq.B</span> y recibe las filas de B (200). ¿Veredicto?</span></div>
+      <div class="opts">
+        <div class="opt" data-correct="1"><span class="mk">A</span><span>VULNERABLE — fuga cross-tenant, bug Critical, finding bloqueante</span></div>
+        <div class="opt"><span class="mk">B</span><span>VERIFIED — devolvió 200, el endpoint funciona</span></div>
+        <div class="opt"><span class="mk">C</span><span>Observación menor — depende del rol</span></div>
+      </div>
+      <div class="qexp"><b>VULNERABLE.</b> A no debería ver nada de B. Leer datos de otro tenant es una fuga de aislamiento — Critical, y bloqueante: detiene la pasada de inmediato. La sonda RLS A/B es justo para cazar esto.</div>
+    </div>
+  </div>
+  <div class="notes">Las dos lecciones clave de UI+API: el 201 no prueba la DB, y la sonda RLS A/B caza fugas cross-tenant (VULNERABLE = Critical bloqueante).</div>
+</section>
+
+<!-- 20. DIVIDER PART 4 — DB -->
+<section class="slide divider" data-title="Capa DB">
+  <div>
+    <p class="part-no" style="color:#22d3ee">CAPA 03 · DB</p>
+    <h1 class="h1">La Capa <span style="color:#22d3ee">DB</span><br>La Verdad Persistida</h1>
+    <p class="lede">Confirma estado, constraints, triggers y RLS a nivel SQL. Aquí la pregunta cambia: en las sondas negativas, el <b>éxito es el bug</b>.</p>
+  </div>
+  <div class="notes">DB = cian. State verification + constraint probes (éxito=bug) + integrity sweeps + RLS en SQL. La capa donde se invierte la lógica: las sondas negativas deben fallar.</div>
+</section>
+
+<!-- 21. DB STATE VERIFICATION -->
+<section class="slide" data-title="DB state">
+  <p class="kicker">después de una acción API / UI</p>
+  <h2 class="h2" data-anim="fade-up">Verificación de Estado</h2>
+  <table class="dtable mt-s" style="font-size:14px">
+    <thead><tr><th>Check</th><th>Patrón de query</th></tr></thead>
+    <tbody>
+      <tr><td>La fila existe</td><td><span class="mono">SELECT * FROM {table} WHERE id = '{id}'</span></td></tr>
+      <tr><td>La relación</td><td><span class="mono">JOIN</span> hijo a padre, compara el conteo esperado</td></tr>
+      <tr><td>El trigger corrió</td><td>compara el total guardado vs <span class="mono">SUM(items)</span></td></tr>
+      <tr><td>Timestamps sanos</td><td><span class="mono">created_at</span> reciente, <span class="mono">updated_at &gt;= created_at</span></td></tr>
+    </tbody>
+  </table>
+  <div class="callout mt-m"><h4>Aquí se cobra el 201</h4><p>El "trigger corrió" es exactamente la verdad que el 201 no podía dar: si el total guardado ≠ la suma de los items, el trigger falló en silencio aunque la API respondió 201.</p></div>
+  <div class="notes">Las 4 verificaciones de estado post-acción. "El trigger corrió" (total guardado vs SUM) es donde se atrapa el trigger silencioso que el 201 ocultó.</div>
+</section>
+
+<!-- 22. CONSTRAINT PROBES -->
+<section class="slide" data-title="Constraint probes">
+  <p class="kicker">la lógica invertida</p>
+  <h2 class="h2" data-anim="fade-up">Sondas de Constraints — el Éxito es el Bug</h2>
+  <table class="dtable mt-s" style="font-size:15px">
+    <thead><tr><th>Constraint</th><th>Sonda (todas deben ERRORAR)</th></tr></thead>
+    <tbody>
+      <tr><td><b>FK</b></td><td>INSERT hijo con parent id inexistente</td></tr>
+      <tr><td><b>CHECK</b></td><td>UPDATE a un valor de enum inválido</td></tr>
+      <tr><td><b>UNIQUE</b></td><td>INSERT duplicado de columna única</td></tr>
+      <tr><td><b>NOT NULL</b></td><td>INSERT con NULL en columna requerida</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn mt-m"><h4>Si la sonda <b>tiene éxito</b>, el constraint falta — y eso es el bug</h4><p>Estas sondas deben fallar TODAS. Un INSERT inválido que pasa significa que la base no está protegiendo la integridad. <b>Envuelve cada sonda en una transacción y haz ROLLBACK</b> para no contaminar staging.</p></div>
+  <div class="notes">La lógica se invierte: en sondas negativas, el éxito = constraint ausente = bug. FK/CHECK/UNIQUE/NOT NULL deben errorar todas. Siempre en transacción + ROLLBACK.</div>
+</section>
+
+<!-- 23. INTEGRITY SWEEPS -->
+<section class="slide" data-title="Integrity sweeps">
+  <p class="kicker">barridos de integridad</p>
+  <h2 class="h2" data-anim="fade-up">Cazar Datos Corruptos</h2>
+  <div class="terminal mt-s">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>SQL · estas queries deben volver 0 filas</span></div>
+<pre><span class="cmt">-- huérfanos: hijos sin padre</span>
+<span class="kw">SELECT</span> c.* <span class="kw">FROM</span> child c <span class="kw">LEFT JOIN</span> parent p <span class="kw">ON</span> c.fk=p.id <span class="kw">WHERE</span> p.id <span class="kw">IS NULL</span>;
+
+<span class="cmt">-- calc mismatch: total guardado ≠ suma real</span>
+<span class="kw">SELECT</span> o.id, o.total, COALESCE(SUM(i.qty*i.unit_price),0) <span class="kw">AS</span> calc
+<span class="kw">FROM</span> orders o <span class="kw">LEFT JOIN</span> order_items i <span class="kw">ON</span> o.id=i.order_id
+<span class="kw">GROUP BY</span> o.id, o.total <span class="kw">HAVING</span> o.total != calc;
+
+<span class="cmt">-- estados de dominio imposibles</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> orders <span class="kw">WHERE</span> status=<span class="str">'delivered'</span> <span class="kw">AND</span> payment_status!=<span class="str">'completed'</span>;</pre>
+  </div>
+  <div class="callout mt-m"><h4>Cualquier fila devuelta es un defecto de integridad</h4><p>Un pedido "entregado" sin pago "completado" es un estado que el negocio jamás debería permitir. Estos barridos cazan la corrupción que ninguna prueba de UI vería.</p></div>
+  <div class="notes">Tres barridos: huérfanos, calc mismatch, estados imposibles. Cada uno debe volver 0 filas. Correr periódicamente en features con mucha data. Caza lo que la UI nunca muestra.</div>
+</section>
+
+<!-- 24. RLS SQL + CLEANUP -->
+<section class="slide" data-title="RLS SQL + cleanup">
+  <p class="kicker">RLS real + cascadas</p>
+  <h2 class="h2" data-anim="fade-up">RLS a Nivel SQL y Limpieza</h2>
+  <div class="grid g2 mt-s">
+    <div class="card card-accent">
+      <h4>RLS de verdad</h4>
+      <p class="dim mb-s">El rol <span class="mono">qa_team</span> suele saltar RLS. Para probarla real, impersona el JWT:</p>
+      <div class="terminal" style="box-shadow:none">
+<pre style="max-height:160px"><span class="kw">BEGIN</span>;
+<span class="kw">SET LOCAL</span> request.jwt.claim.sub = <span class="str">'{user-a}'</span>;
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> {table}; <span class="cmt">-- solo filas de A</span>
+<span class="kw">ROLLBACK</span>;</pre>
+      </div>
+    </div>
+    <div class="card card-accent">
+      <h4>Cascadas de limpieza</h4>
+      <p class="dim mb-s">Tras probar flujos CRUD, verifica que la limpieza cascadea:</p>
+      <ul class="blist" style="margin-top:4px;font-size:14px">
+        <li>DELETE padre → ¿los hijos se van?</li>
+        <li>Soft-delete: ¿flag puesto, fila aún presente?</li>
+        <li>Registra <span class="mono">CLEANUP COMPLETE / INCOMPLETE</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout mt-m"><h4>Si el SQL directo salta la RLS</h4><p>Cae a la sonda API §RLS A/B — esa pasa por el enforcement real de la aplicación. Dos caminos para la misma verdad de seguridad.</p></div>
+  <div class="notes">RLS real necesita impersonar el JWT (qa_team la salta). Cleanup: cascadas de DELETE y soft-delete. Si el SQL salta RLS, usar la sonda API A/B (enforcement real).</div>
+</section>
+
+<!-- 25. QUIZ 2 -->
+<section class="slide" data-title="Quiz 2">
+  <p class="kicker">quiz · capa DB</p>
+  <h2 class="h2" data-anim="fade-up">La Verdad Persistida</h2>
+  <div class="quiz">
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q1</span><span>Sondas la constraint UNIQUE insertando un duplicado, y el INSERT <b>tiene éxito</b> (no errora). ¿Qué significa?</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span>Bien — la base aceptó el dato, todo en orden</span></div>
+        <div class="opt" data-correct="1"><span class="mk">B</span><span>Bug — el constraint UNIQUE falta; la sonda negativa debía errorar</span></div>
+        <div class="opt"><span class="mk">C</span><span>Observación — depende de la columna</span></div>
+      </div>
+      <div class="qexp"><b>Bug.</b> En sondas de constraints la lógica se invierte: el éxito es el defecto. Un duplicado que pasa = la base no protege la unicidad. Por eso las sondas FK/CHECK/UNIQUE/NOT NULL deben errorar todas (en transacción + ROLLBACK).</div>
+    </div>
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q2</span><span>Tu barrido devuelve un pedido con <span class="mono">status='delivered'</span> y <span class="mono">payment_status='pending'</span>. ¿Acción?</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span>Ignorar — la UI no lo muestra, no afecta al usuario</span></div>
+        <div class="opt" data-correct="1"><span class="mk">B</span><span>Defecto de integridad — un estado de dominio imposible que el negocio nunca debe permitir</span></div>
+        <div class="opt"><span class="mk">C</span><span>Normal — los estados son independientes</span></div>
+      </div>
+      <div class="qexp"><b>Defecto de integridad.</b> "Entregado sin pago completado" es un estado imposible. Los barridos de integridad cazan exactamente esta corrupción silenciosa — invisible en la UI, real en los datos.</div>
+    </div>
+  </div>
+  <div class="notes">Las dos lecciones DB: en sondas de constraints el éxito = bug; y los estados de dominio imposibles son defectos de integridad aunque la UI no los muestre.</div>
+</section>
+
+<!-- 26. DIVIDER PART 5 — DISCIPLINE -->
+<section class="slide divider" data-title="Disciplina">
+  <div>
+    <p class="part-no">EL OFICIO</p>
+    <h1 class="h1">La Disciplina<br><span class="grad">Que Hace la Pasada Confiable</span></h1>
+    <p class="lede">Cuándo detenerse y cuándo seguir, cómo tratar el tiempo, y por qué ningún test puede quedar en NOT RUN.</p>
+  </div>
+  <div class="notes">La capa transversal: triage de findings, TTL, status propagation, evidencia. Lo que separa una pasada profesional de un click-around.</div>
+</section>
+
+<!-- 27. FINDING TRIAGE -->
+<section class="slide" data-title="Finding triage">
+  <p class="kicker">la pausa graduada</p>
+  <h2 class="h2" data-anim="fade-up">Bloqueante vs No-Bloqueante</h2>
+  <p class="lede mt-s">Un FAIL durante la exploración <b>no</b> es automáticamente Critical y <b>no</b> detiene la pasada por sí solo. Triagea primero, luego decide.</p>
   <div class="vs">
-    <div class="card bad-side side">
-      <h3>❌ Over-engineering pre-code</h3>
+    <div class="card bad-side">
+      <h3>Bloqueante → STOP</h3>
       <ul>
-        <li>Parametrization tables</li>
-        <li>Per-outline test-data JSON</li>
-        <li>Numbered test steps</li>
-        <li>Faker generation recipes</li>
-        <li>Creating any TMS test entity — TCs, ATP/ATR issues, Test Plans — in EITHER modality (the feature does not exist yet; Stage 4 creates them later)</li>
+        <li>smoke / ambiente caído</li>
+        <li>corrupción / pérdida de integridad</li>
+        <li>seguridad explotable (RLS <span class="mono">VULNERABLE</span>, bypass de auth, cross-tenant)</li>
       </ul>
     </div>
-    <div class="mid">→</div>
-    <div class="card good-side side">
-      <h3>✅ Shift-Left DRAFT scope</h3>
+    <div class="mid">vs</div>
+    <div class="card good-side">
+      <h3>No-bloqueante → log + sigue</h3>
       <ul>
-        <li>Coverage estimate table (Pos/Neg/Boundary/Integration counts → drives PO estimation)</li>
-        <li>Outline NAMES: 'Should reject negative refund amount on POST /refunds'</li>
-        <li>One-line precondition + one-line expected per outline</li>
-        <li>Edge-case names + criticality only</li>
+        <li>cosmético, gap de validación menor</li>
+        <li>edge case en un TC no crítico</li>
+        <li>finding de seguridad/framework-default pendiente de recalibración</li>
       </ul>
     </div>
   </div>
-  <div class="notes">The discipline that separates Shift-Left from real test design: you produce outline TITLES and a coverage COUNT, never the data. The feature does not exist — generating Faker recipes now is wasted work that gets redone in-sprint.</div>
+  <div class="callout warn mt-m"><h4>Por qué no parar por todo</h4><p>Pausar una pasada de 17 TCs por un hallazgo cosmético desperdicia el dispatch y pierde cobertura. Un finding no-bloqueante se registra y la pasada <b>continúa</b>; todos se surfacean juntos al cierre de Stage 2. Un bloqueante genuino sí detiene de inmediato.</p></div>
+  <div class="notes">La pausa graduada: bloqueante (env/corrupción/seguridad) detiene; no-bloqueante (cosmético/menor) se registra y la pasada sigue. Un FAIL no es auto-Critical. El objetivo es cobertura completa.</div>
 </section>
 
-<section class="slide" data-title="AC is the floor">
-  <p class="kicker">test-design doctrine — the core principle</p>
-  <h2 class="h2" data-anim="fade-up">Refinement pushes <span class="grad">past</span> the happy-path contract</h2>
-  <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>1 · Passing ≠ probing</h4><p class="dim">A satisfiable AC confirms the business condition. It doesn't make the feature robust, safe, or error-resistant.</p></div>
-    <div class="card card-accent"><h4>2 · Floor, not ceiling</h4><p class="dim">ACs are the baseline for "done". Refinement's job is to surface what lives above that line.</p></div>
-    <div class="card card-accent"><h4>3 · Criterion vs outline</h4><p class="dim">A refined AC (Given/When/Then) is the business assertion; the outline (Should &lt;behavior&gt; &lt;condition&gt;) is its exploration.</p></div>
-    <div class="card card-accent"><h4>4 · 1 : N by default</h4><p class="dim">A non-trivial AC implies several outlines. Collapse to one only with a written "trivially atomic" reason — never the default.</p></div>
-    <div class="card card-accent"><h4>5 · Risk lives outside</h4><p class="dim">The heart of shift-left: surface the boundaries, states, and anomalies the Story is silent on — as PO questions AND as outlines.</p></div>
-    <div class="card"><h4>A gap is an outline</h4><p class="dim"><b>A gap is not just a question for the PO — it's a missing outline.</b> Map each archetype to the technique it implies.</p></div>
+<!-- 28. TTL PLAYBOOK -->
+<section class="slide" data-title="TTL">
+  <p class="kicker">probar el tiempo sin esperar</p>
+  <h2 class="h2" data-anim="fade-up">Casos Dependientes del Tiempo (TTL)</h2>
+  <p class="lede mt-s">Magic links, OTPs, tokens, sesiones, caches: "a las 14:59 funciona, a las 15:01 no". No se prueban haciendo clic más rápido — necesitas controlar el tiempo. Elige la opción más alta que el stack permita.</p>
+  <div class="steps s3 mt-m">
+    <div class="step"><div class="num">1</div><h4>Fixture / TTL corto</h4><p>La mejor. Si el env expone un TTL configurable, ponlo en segundos y prueba el borde 14:59/15:01 real. Ejercita el código de expiry verdadero.</p></div>
+    <div class="step"><div class="num">2</div><h4>Clock-mock</h4><p>Si el stack permite inyectar/congelar el tiempo, avanza el reloj y asegura la expiración — siempre que el mock maneje la lógica real, no una rama de test.</p></div>
+    <div class="step"><div class="num">3</div><h4>Defer manual escrito</h4><p>Último recurso. Documenta el borde que no pudiste ejercitar, por qué, y el follow-up concreto (ej. "añadir <span class="mono">MAGIC_LINK_TTL</span> override").</p></div>
   </div>
-  <div class="notes">Canon: agentic-qa-core/references/test-design-doctrine.md. The coverage estimate the PO uses must reflect the real 1:N, not a minimized count.</div>
+  <div class="callout warn mt-m"><h4>Nunca un <span class="mono">BLOCKED</span> a secas</h4><p>Marca <span class="mono">BLOCKED — needs time fixture</span> con la opción elegida (1/2/3) y una línea de razón. Un BLOCKED sin camino de decisión pierde cobertura en silencio.</p></div>
+  <div class="notes">La escalera TTL de 3 opciones por prioridad: fixture > clock-mock > defer escrito. Nunca un BLOCKED desnudo — siempre "BLOCKED — needs time fixture" + opción + razón.</div>
 </section>
 
-<section class="slide" data-title="Archetype to technique">
-  <p class="kicker">test-design doctrine — refine by technique</p>
-  <h2 class="h2" data-anim="fade-up">Each archetype implies a <span class="grad">technique</span> — and outlines</h2>
-  <table class="dtable mt-l">
-    <thead><tr><th>Archetype in the Story</th><th>Technique (binding)</th><th>Outlines to derive</th></tr></thead>
-    <tbody>
-      <tr><td>State Machine (order, subscription, KYC, dispute)</td><td><b>State-Transition</b></td><td>one per valid transition + one per invalid transition</td></tr>
-      <tr><td>Money / ranges / list limits</td><td><b>Boundary Value Analysis</b></td><td>min-1·min·min+1 … max-1·max·max+1, zero / empty / null</td></tr>
-      <tr><td>Permissions / RBAC / auth (role × state × flag)</td><td><b>Decision Table</b></td><td>one per surviving rule of the condition matrix</td></tr>
-      <tr><td>Integration / multi-factor config</td><td><b>Pairwise</b></td><td>all-pairs set (log the reduction)</td></tr>
-      <tr><td>Idempotency / retries / concurrency</td><td><b>Error-Guessing charter</b></td><td>double-submit, retry, race, timeout, rollback</td></tr>
-    </tbody>
-  </table>
-  <div class="notes">EP applies everywhere as the starting lens. A range with no boundary outline, or a status field with no invalid-transition outline, is an incomplete refinement.</div>
-</section>
-
-<section class="slide" data-title="Output File">
-  <p class="kicker">phase 2 — the deliverable</p>
-  <h2 class="h2" data-anim="fade-up">The Output File — shift-left-refinement.md</h2>
-  <div class="callout mt-l">
-    <h4>One working file per Story</h4>
-    <p><code>.context/PBI/epics/EPIC-&lt;KEY&gt;/stories/STORY-&lt;KEY&gt;/shift-left-refinement.md</code></p>
-  </div>
-  <p class="lede mt-m">Canonical section order (do not reorder — maps 1:1 to the Jira block the PO reads): Critical Analysis · Story Quality Analysis · Refined ACs · Test Outlines (DRAFT) · Edge Cases (DRAFT) · Quality Assessment · Critical Questions for PO · Technical Questions for Dev · Suggested Improvements · Data-feasibility flags.</p>
-  <p class="dim mt-s">Empty sections STAY, marked 'None identified' — easier to verify completeness than to spot an absent section.</p>
-  <div class="notes">This is the historical record of pre-sprint analysis. Section order is load-bearing because it becomes the Jira description the PO grooms from. And present each Story's summary to the human, wait for OK, before moving to the next.</div>
-</section>
-
-<section class="slide" data-title="Clean Story">
-  <p class="kicker">phase 2 — the professional's instinct</p>
-  <h2 class="h2" data-anim="fade-up">A Clean Story Is a Valid Outcome</h2>
-  <div class="vs">
-    <div class="card bad-side side">
-      <h3>❌ Both failures, not one</h3>
-      <ul>
-        <li>Padding: force a question or duplicate outline to look thorough</li>
-        <li>Under-deriving: treat a 1-line AC that hides a range or a state as a single scenario</li>
-        <li>Re-ask what the AC already answers</li>
-        <li>Put project-wide answers as PO questions when business-data-map already defines them</li>
-      </ul>
-    </div>
-    <div class="mid">→</div>
-    <div class="card good-side side">
-      <h3>✅ Explode, then justify any collapse</h3>
-      <ul>
-        <li>Default 1:N — derive every outline the AC implies, then collapse only with a written reason</li>
-        <li>4 ACs over a range or a state machine legitimately yield many more than 4 outlines</li>
-        <li>Empty question list when the Story is genuinely clear — say 'Story quality: good'</li>
-        <li>Cite business-data-map and skip the PO ask; the reader's bandwidth is the scarcest resource in grooming</li>
-      </ul>
-    </div>
-  </div>
-  <div class="notes">This is the anti-pattern that separates seniors from juniors. Padding AND under-derivation both destroy trust: inflated counts train the team to skim, while a collapsed 1:N hides real risk. Shift-Left adds value by surfacing every REAL scenario the AC implies — neither more nor fewer.</div>
-</section>
-
-<section class="slide" data-title="Six Jira Mutations">
-  <p class="kicker">phase 3 — handoff per Story</p>
-  <h2 class="h2" data-anim="fade-up">Six Jira Mutations to Hand Off a Story</h2>
-  <ul class="blist mt-l anim-stagger-list">
-    <li><b>1 · Write refined ACs</b> to the acceptance_criteria field (fallback: structured comment).</li>
-    <li><b>2 · Append</b> 'QA Refinements (Shift-Left Analysis)' to the description; populate the ATP DRAFT field with the full body.</li>
-    <li><b>3 · Post ONE handoff comment</b> notifying PO/Dev (mention handles only if in project.yaml).</li>
-    <li><b>4 · Add BOTH labels</b> — shift-left-reviewed + shift-left-{YYYY-MM-DD}.</li>
-    <li><b>5 · Transition</b> Backlog → Shift-Left QA → Estimation. <b>6 · Verify trace</b> — field + comment are byte-for-byte mirrors.</li>
-  </ul>
-  <div class="notes">Jira is canonical — there is no git commit. The local refinement file is the source for what you push, and the field/comment must mirror it byte-for-byte because fix-traceability checks this later.</div>
-</section>
-
-<section class="slide" data-title="Transition Guardrail">
-  <p class="kicker">phase 3 — the guardrail</p>
-  <h2 class="h2" data-anim="fade-up">NEVER Advance Past Estimation — and Always Both Labels</h2>
-  <div class="callout warn mt-l">
-    <h4>Stop at Estimation</h4>
-    <p>From Backlog apply Analyze (→ Shift-Left QA) then Estimate (→ Estimation). PO + Dev lead own Estimate → Ready For Dev and sprint commitment — THEIR decision, not QA's. Already past Estimation? Log a warning, SKIP the transition; the refinement still lands.</p>
-  </div>
-  <div class="callout mt-m">
-    <h4>Both labels, populated DRAFT</h4>
-    <p>'shift-left-reviewed' is the marker /sprint-testing reads to short-circuit; 'shift-left-{date}' is the freshness stamp (still &lt;30 days). Never transition to Estimation without a populated ATP DRAFT — the DRAFT is what makes the Story estimable.</p>
-  </div>
-  <div class="notes">Two non-negotiables. One: you never estimate or commit a Story — that is the PO's job, so you stop at Estimation. Two: both labels every time, or the whole short-circuit machinery downstream breaks.</div>
-</section>
-
-<section class="slide" data-title="Batch Report">
-  <p class="kicker">phase 3 — the closing artifact</p>
-  <h2 class="h2" data-anim="fade-up">The Batch Report — One Session-Level Deliverable</h2>
-  <div class="grid g2 mt-l anim-stagger-list">
+<!-- 29. NO NOT RUN + EVIDENCE -->
+<section class="slide" data-title="No NOT RUN">
+  <p class="kicker">cerrar la pasada con rigor</p>
+  <h2 class="h2" data-anim="fade-up">Sin NOT RUN · Evidencia que Sirve</h2>
+  <div class="grid g2 mt-s">
     <div class="card card-accent">
-      <h4>What it aggregates</h4>
-      <ul class="dim">
-        <li>Session metadata (candidate/accepted/rejected/skipped counts)</li>
-        <li>Per-Story line: risk, gaps, critical PO Qs, tech Qs, outline count, status, trace</li>
-        <li>Aggregated Critical PO questions, DEDUPED and ranked by how many Stories each blocks</li>
-        <li>Risk distribution (HIGH/MEDIUM/LOW) + data-feasibility blockers</li>
-      </ul>
+      <h4>Propagación de estado</h4>
+      <p class="dim">Al cerrar Stage 2, cada outline / TC tiene <b>PASSED o FAILED</b>. Sin NOT RUN. Si uno queda NOT RUN: o está fuera de scope (di por qué en Notes) o está incompleto (vuelve al loop).</p>
     </div>
     <div class="card card-accent">
-      <h4>Where it goes</h4>
-      <ul class="dim">
-        <li>Recommended sprint-planning order, by risk + dependency</li>
-        <li>Posted as a comment on the parent epic IF all Stories share one</li>
-        <li>Otherwise delivered inline as the session-closing message</li>
-        <li>Pointer: when a Story hits Ready For QA, /sprint-testing short-circuits via the label</li>
+      <h4>Disciplina de evidencia</h4>
+      <ul class="blist" style="margin-top:4px;font-size:14px">
+        <li>Nombre: <span class="mono">{KEY}-{n}-ac{N}-desc.png</span></li>
+        <li>Captura en el <b>estado de fallo</b>, no navegando hacia él</li>
+        <li><span class="mono">evidence/</span> gitignored, nunca commiteado</li>
       </ul>
     </div>
   </div>
-  <div class="notes">The batch report is the one thing the grooming meeting actually reads. Deduped, ranked PO questions are gold — 'this one question blocks three Stories' is exactly how a PO wants to triage.</div>
+  <div class="callout mt-m"><h4>El log es el handoff a Stage 3</h4><p>El bloque Stage-2 de <span class="mono">test-session-memory.md</span> (smoke + tablas UI/API/DB + Findings) es lo que Stage 3 consume: los Findings alimentan los bugs, los pass/fail alimentan el ATR.</p></div>
+  <div class="notes">Sin NOT RUN: todo termina PASSED o FAILED. Evidencia en el estado de fallo, nombrada y gitignored. El memory de Stage 2 es el input de Stage 3 (Findings→bugs, pass/fail→ATR).</div>
 </section>
 
-<section class="slide divider" data-title="Part 02">
-  <div>
-    <p class="part-no">PART 02</p>
-    <h1 class="h1">The Acceleration<br><span class="grad">One Command Runs the Whole Craft</span></h1>
-    <p class="lede">Everything in Part 1 — selection triage, the refinement playbook, the question catalog, the six Jira mutations — driven by the AI from a single terminal invocation, with you in the loop at every gate.</p>
+<!-- 30. QUIZ 3 -->
+<section class="slide" data-title="Quiz 3">
+  <p class="kicker">quiz · disciplina</p>
+  <h2 class="h2" data-anim="fade-up">El Oficio de la Pasada</h2>
+  <div class="quiz">
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q1</span><span>En el TC #4 de 17 encuentras un texto desalineado (cosmético). ¿Detienes la pasada?</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span>Sí — todo FAIL detiene la pasada y se reporta de inmediato</span></div>
+        <div class="opt" data-correct="1"><span class="mk">B</span><span>No — es no-bloqueante: lo registro y sigo; lo surfaceo todo junto al cierre</span></div>
+        <div class="opt"><span class="mk">C</span><span>Sí — abro un bug Critical para no olvidarlo</span></div>
+      </div>
+      <div class="qexp"><b>No, sigue.</b> Un cosmético es no-bloqueante: se registra en Findings, el TC queda FAILED y la pasada continúa para no perder los otros 13 TCs. Solo lo bloqueante (env/corrupción/seguridad) detiene. Un FAIL no es auto-Critical.</div>
+    </div>
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q2</span><span>Un TC valida que un magic link expira a los 15 min, pero no hay forma de adelantar el reloj hoy. ¿Cómo lo cierras?</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span>Lo dejas en <span class="mono">NOT RUN</span></span></div>
+        <div class="opt"><span class="mk">B</span><span><span class="mono">BLOCKED</span> a secas — no se pudo correr</span></div>
+        <div class="opt" data-correct="1"><span class="mk">C</span><span><span class="mono">BLOCKED — needs time fixture</span> + la opción elegida y la razón</span></div>
+      </div>
+      <div class="qexp"><b>BLOCKED — needs time fixture.</b> Nunca un BLOCKED desnudo ni un NOT RUN. Documenta el borde, por qué no se pudo, y el follow-up (opción 3: defer escrito). Así la cobertura no se pierde en silencio y viaja a Stage 3.</div>
+    </div>
   </div>
-  <div class="notes">You now know the craft. Here is how the skill makes the AI perform it end-to-end while keeping you in command.</div>
+  <div class="notes">Las dos reglas de disciplina: cosmético = no-bloqueante (sigue), y nunca BLOCKED/NOT RUN desnudo (siempre con razón + camino).</div>
 </section>
 
-<section class="slide" data-title="Trigger and Auto-Load">
-  <p class="kicker">how to invoke</p>
-  <h2 class="h2" data-anim="fade-up">The Trigger and What Auto-Loads</h2>
-  <ul class="blist mt-l anim-stagger-list">
-    <li><b>Trigger.</b> <code>/shift-left-testing</code>, or natural language: 'shift-left these stories', 'groom the backlog', 'pre-sprint QA', or pasting Story IDs sitting in Backlog with 'refine these'.</li>
-    <li><b>Auto-loads context.</b> business-data-map, business-feature-map, business-api-map, master-test-plan; the Story via <code>bun run jira:sync-issues get &lt;KEY&gt; --include-comments</code>.</li>
-    <li><b>Auto-loads tools.</b> <code>/acli</code> always; <code>/xray-cli</code> only if Xray modality and you opt into a Test Plan.</li>
-    <li><b>Resolves modality.</b> Xray-on-Jira (A) vs Jira-native (B) — and persists it to the session plan.</li>
+<!-- 31. WHOLE PASS AT A GLANCE -->
+<section class="slide" data-title="Pasada completa">
+  <p class="kicker">todo junto</p>
+  <h2 class="h2" data-anim="fade-up">La Pasada Completa de Stage 2</h2>
+  <div class="lifecycle">
+    <span class="lstate" style="color:var(--text-1);background:var(--surface-2);border:1px solid var(--border-strong)">Smoke ✓</span>
+    <span class="arr">→</span>
+    <span class="lstate" style="color:#f5b942;background:color-mix(in srgb,#f5b942 13%,transparent);border:1px solid color-mix(in srgb,#f5b942 40%,transparent)">UI</span>
+    <span class="arr">→</span>
+    <span class="lstate" style="color:#e879f9;background:color-mix(in srgb,#e879f9 13%,transparent);border:1px solid color-mix(in srgb,#e879f9 40%,transparent)">API</span>
+    <span class="arr">→</span>
+    <span class="lstate" style="color:#22d3ee;background:color-mix(in srgb,#22d3ee 13%,transparent);border:1px solid color-mix(in srgb,#22d3ee 40%,transparent)">DB</span>
+    <span class="arr">→</span>
+    <span class="lstate good">Findings</span>
+  </div>
+  <ul class="blist mt-l">
+    <li><b>Smoke primero</b> — Go/No-Go del ambiente, ≤10 min, siempre revisa la red.</li>
+    <li><b>Capas por tipo de feature</b> — el orden lo decide qué cambió; cada capa prueba su verdad.</li>
+    <li><b>Triagea cada finding</b> — bloqueante detiene, no-bloqueante registra y sigue.</li>
+    <li><b>Cierra con rigor</b> — sin NOT RUN, evidencia en el estado de fallo, Findings al handoff de Stage 3.</li>
   </ul>
-  <div class="notes">One phrase starts it. The skill self-loads the business context and the right Jira CLI so the AI is never flying blind on domain vocabulary or syntax.</div>
+  <div class="notes">El recap del flujo completo: smoke → UI/API/DB (orden por feature) → triage → status → findings a Stage 3. Las tres fuerzas en una pasada.</div>
 </section>
 
-<section class="slide" data-title="Orchestration">
-  <p class="kicker">orchestration model</p>
-  <h2 class="h2" data-anim="fade-up">Command Center + Specialist Subagents</h2>
-  <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>Selection (Single)</h4><p class="dim">Pulls candidates, applies veto + risk-score triage, returns the ranked table.</p><span class="tag mt-s">phase 1</span></div>
-    <div class="card card-accent"><h4>Refinement (Sequential)</h4><p class="dim">ONE per Story — runs the playbook, writes shift-left-refinement.md, returns a compact JSON summary. NEVER parallel; the human OKs each Story.</p><span class="tag mt-s">phase 2</span></div>
-    <div class="card card-accent"><h4>Handoff + Batch-Report</h4><p class="dim">Handoff does the six Jira mutations per Story; Batch-Report aggregates deduped questions and posts to the epic.</p><span class="tag mt-s">phase 3</span></div>
+<!-- 32. HOW TO DO IT WELL -->
+<section class="slide" data-title="Cómo hacerlo bien">
+  <p class="kicker">el checklist del explorador</p>
+  <h2 class="h2" data-anim="fade-up">Cómo Hacerlo Bien</h2>
+  <div class="grid g2 mt-s">
+    <ul class="blist">
+      <li><b>Smoke antes que todo</b> — un ambiente roto da bugs falsos.</li>
+      <li><b>Desconfía de la UI</b> — revisa la red aunque se vea verde.</li>
+      <li><b>Lee los status codes como evidencia</b> — cada uno prueba algo.</li>
+      <li><b>Corre la sonda RLS A/B</b> — multi-tenant siempre.</li>
+    </ul>
+    <ul class="blist">
+      <li><b>Confirma en DB tras cada write</b> — el 201 no basta.</li>
+      <li><b>Sondas negativas: éxito = bug</b> — en transacción + ROLLBACK.</li>
+      <li><b>Prueba las transiciones inválidas</b> — ahí viven los defectos.</li>
+      <li><b>Cierra sin NOT RUN</b> — cada TC PASSED o FAILED, con evidencia.</li>
+    </ul>
   </div>
-  <div class="notes">The main thread is the command center; subagents are executors. Refinement is deliberately SEQUENTIAL — parallelism would burn your attention and break the per-Story approval rhythm the grooming cadence depends on.</div>
+  <div class="callout mt-m"><h4>La meta</h4><p>Que ningún defecto cruce las tres capas sin ser visto: ni el que la UI esconde, ni el que la API maquilla, ni el que la DB corrompe en silencio.</p></div>
+  <div class="notes">El checklist operativo del cómo hacerlo bien. Cada punto es una palanca contra un punto ciego de capa.</div>
 </section>
 
-<section class="slide" data-title="Terminal Session">
-  <p class="kicker">a real session</p>
-  <h2 class="h2" data-anim="fade-up">What It Looks Like From the Terminal</h2>
-  <div class="terminal mt-m">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>claude-code</span></div>
-<pre><span class="p">$ </span><span class="c">claude</span>
-<span class="p">&gt; </span><span class="c">shift-left these stories: UPEX-100, UPEX-101, UPEX-102</span>
-
-<span class="o">[Phase 0] Modality: Jira-native (B). Context present. Session: 2026-06-03-payments/</span>
-<span class="o">[Phase 1] Triage complete — candidate table:</span>
-<span class="o">  ACCEPTED  UPEX-100 Add OTP login        HIGH  score 11  veto: auth perimeter</span>
-<span class="o">  ACCEPTED  UPEX-101 Refund partial amount HIGH  score 9   veto: money  DATA-FEASIBILITY-RISK</span>
-<span class="o">  SKIPPED   UPEX-102 Footer tooltip        LOW   score 2   PO can write AC directly</span>
-<span class="o">  -&gt; Confirm this set? (y / override)</span>
-<span class="p">&gt; </span><span class="c">y</span>
-<span class="o">[Phase 2] Refining UPEX-100... done. 4 gaps, 2 critical PO Qs, 12 outlines. OK? (y)</span>
-<span class="p">&gt; </span><span class="c">y</span>
-<span class="o">[Phase 2] Refining UPEX-101... done. 6 gaps, 3 critical PO Qs, data-feasibility flagged. OK? (y)</span>
-<span class="p">&gt; </span><span class="c">y</span>
-<span class="o">[Phase 3] Handoff: ACs + ATP DRAFT written, labels added, transitioned -&gt; Estimation. Trace: ok</span>
-<span class="o">[Phase 3] Batch report posted to epic UPEX-90. Session archived.</span></pre>
+<!-- 33. TAKEAWAYS -->
+<section class="slide" data-title="Conclusiones">
+  <p class="kicker">para llevar</p>
+  <h2 class="h2" data-anim="fade-up">Tres Ideas que se Quedan</h2>
+  <div class="steps s3 mt-l">
+    <div class="step"><div class="num">1</div><h4>Cada capa, su verdad</h4><p>La UI muestra, la API contrata, la DB persiste. Un 201 no prueba la base; una pantalla verde no prueba la API.</p></div>
+    <div class="step"><div class="num">2</div><h4>El negativo es el oro</h4><p>Los status de error, las transiciones inválidas, las sondas de constraint (éxito=bug) y RLS A/B cazan lo que el happy path nunca toca.</p></div>
+    <div class="step"><div class="num">3</div><h4>Disciplina sobre impulso</h4><p>Smoke primero, triage graduado, sin NOT RUN. La cobertura completa vale más que parar por el primer hallazgo.</p></div>
   </div>
-  <div class="notes">Walk through it: the AI proposes the triage, you confirm, it refines one Story at a time pausing for your OK, then hands off to Jira and writes the batch report. You approved at every gate.</div>
+  <div class="notes">Los tres conceptos núcleo: cada capa su verdad, el valor del negativo/seguridad, y la disciplina de la pasada.</div>
 </section>
 
-<section class="slide" data-title="Artifacts and Control">
-  <p class="kicker">artifacts + control</p>
-  <h2 class="h2" data-anim="fade-up">Where Everything Lands — and Who Stays in Charge</h2>
-  <ul class="blist mt-l anim-stagger-list">
-    <li><b>Per-Story refinement</b> → <code>.context/PBI/epics/EPIC-&lt;KEY&gt;/stories/STORY-&lt;KEY&gt;/shift-left-refinement.md</code> (gitignored working file).</li>
-    <li><b>Jira</b> → refined ACs in the field, ATP DRAFT, handoff comment, two labels, status at Estimation — the canonical source of truth.</li>
-    <li><b>Batch report</b> → session folder + posted to the parent epic; then the session is archived.</li>
-    <li><b>You stay in control.</b> Confirm the set, OK each Story summary, no transition past Estimation, no git commit, no test execution. The AI proposes; the human disposes.</li>
-  </ul>
-  <div class="notes">The skill never runs the app, never queries a DB, never advances a Story into a sprint. It surfaces risk and hands off. Every consequential step is gated by your explicit approval.</div>
-</section>
-
-<section class="slide" data-title="Takeaways">
-  <p class="kicker">// remember three things</p>
-  <h2 class="h2" data-anim="fade-up">Takeaways</h2>
-  <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>1 · Prevent, don't detect</h4><p class="dim">The cheapest defect is the one killed in the Story's words, at the '1' of the 1:10:100 curve, before code exists.</p></div>
-    <div class="card card-accent"><h4>2 · Veto beats score; signal beats volume</h4><p class="dim">Money/auth/data force full refinement; a clean Story with zero questions is a valid, honest outcome.</p></div>
-    <div class="card card-accent"><h4>3 · One command, every gate</h4><p class="dim"><code>/shift-left-testing</code> runs selection → refinement → handoff with sequential subagents, stops at Estimation, pauses for your OK at every Story.</p></div>
-  </div>
-  <div class="notes">If you remember nothing else: shift left to prevent, let judgment override arithmetic, keep your output high-signal, and supervise the AI at every approval gate.</div>
-</section>
-
-<section class="slide center tc" data-title="Thanks">
+<!-- 34. THANKS -->
+<section class="slide center tc" data-title="Cierre">
   <div>
-    <p class="kicker">stage 0 complete</p>
-    <h1 class="h1"><span class="grad">Now Go Groom a Backlog.</span></h1>
-    <p class="lede" style="margin:14px auto">When each refined Story reaches Ready For QA, <kbd>/sprint-testing</kbd> detects the <code>shift-left-reviewed</code> label and short-circuits the redundant planning phases.</p>
-    <p class="lede" style="margin:14px auto">Trigger it: <kbd>/shift-left-testing</kbd> · ← → navigate · S speaker notes · O overview</p>
+    <h1 class="h1"><span class="grad">Tres Capas. Una Verdad. Ningún Punto Ciego.</span></h1>
+    <p class="lede" style="margin:14px auto">Smoke valida el ambiente → la Trifuerza valida la feature: UI (lo que se ve), API (el contrato), DB (lo que persiste). Prueba el negativo, confirma una capa abajo, cierra sin NOT RUN.</p>
+    <p class="lede" style="margin:14px auto">← → navegar · S notas del orador · O resumen · T tema</p>
   </div>
-  <div class="notes">Thanks for your attention. The payoff for doing Shift-Left well is that in-sprint testing gets faster — the label you set today saves the team work next sprint.</div>
+  <div class="notes">Cierra atando las tres capas y la disciplina. La Trifuerza es cómo un defecto no cruza las tres capas sin ser visto.</div>
 </section>
 
 </div>
@@ -1980,7 +2087,24 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 })();
 
 </script>
-
+<script>
+/* defect-management :: interactive quiz — click to answer, reveals correct + explanation */
+(function(){
+  document.addEventListener('click', function(e){
+    var opt = e.target.closest ? e.target.closest('.opt') : null;
+    if(!opt) return;
+    var item = opt.closest('.qitem');
+    if(!item || item.classList.contains('answered')) return;
+    item.classList.add('answered');
+    var opts = item.querySelectorAll('.opt');
+    for(var i=0;i<opts.length;i++){
+      if(opts[i].dataset.correct) opts[i].classList.add('reveal-correct');
+    }
+    opt.classList.remove('reveal-correct');
+    opt.classList.add(opt.dataset.correct ? 'correct' : 'wrong');
+  }, true);
+})();
+</script>
 <script>
 /* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
    Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
