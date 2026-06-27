@@ -609,6 +609,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
         deck.style.width = ''; deck.style.height = '';
         deck.style.position = ''; deck.style.left = ''; deck.style.top = '';
         document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+        document.documentElement.style.background = '';
         return;
       }
       var scale = Math.min(vw / BASE_W, vh / BASE_H);
@@ -621,6 +622,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       deck.style.top = ((vh - BASE_H * scale) / 2) + 'px';
       document.documentElement.style.overflow = 'hidden';
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.background = (function(){var d=getComputedStyle(deck).backgroundColor;if(d&&d!=='rgba(0, 0, 0, 0)'&&d!=='transparent')return d;var b=getComputedStyle(document.body).backgroundColor;return (b&&b!=='rgba(0, 0, 0, 0)'&&b!=='transparent')?b:'#0d1117';})();
     }
     fit();
     window.addEventListener('resize', fit);
