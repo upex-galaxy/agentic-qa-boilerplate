@@ -1112,6 +1112,12 @@ function tick(){
 const TOTAL_Q = $$('.quiz').length;
 const answered = {};
 let score = 0;
+/* ---------- quiz score persistence ---------- */
+const SCORE_KEY = 'coding-classes.es.html-score:' + location.pathname;
+let qstate = { q:{}, score:0 };
+try { const _s = JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); if(_s && typeof _s === 'object'){ qstate.q = _s.q || {}; qstate.score = _s.score || 0; } } catch(e){ qstate = { q:{}, score:0 }; }
+score = qstate.score;
+function saveQuiz(){ qstate.score = score; try { localStorage.setItem(SCORE_KEY, JSON.stringify(qstate)); } catch(e){} }
 const chip = $('#score-chip');
 function updateChip(){
   chip.textContent = '⭐ ' + score + '/' + TOTAL_Q;
@@ -1134,8 +1140,23 @@ $$('.quiz').forEach(qz=>{
       } else {
         btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong');
       }
+      qstate.q[id] = { a:true, c: ok || (qstate.q[id] && qstate.q[id].c) || false };
+      saveQuiz();
     });
   });
+});
+/* ---------- restore answered quizzes on load (no confetti) ---------- */
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz, st = qstate.q[id];
+  if(!st) return;
+  if(st.a) answered[id] = true;
+  if(st.c){
+    const okBtn = $('.opt[data-ok="1"]', qz);
+    if(okBtn) okBtn.classList.add('correct');
+    qz.classList.add('locked');
+    const ex = $('.quiz-expl', qz);
+    if(ex) ex.classList.add('show');
+  }
 });
 
 function renderFinal(){
