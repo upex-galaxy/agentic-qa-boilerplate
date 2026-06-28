@@ -2406,24 +2406,6 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
 </script>
 <script>
-/* defect-management :: interactive quiz — click to answer, reveals correct + explanation */
-(function(){
-  document.addEventListener('click', function(e){
-    var opt = e.target.closest ? e.target.closest('.opt') : null;
-    if(!opt) return;
-    var item = opt.closest('.qitem');
-    if(!item || item.classList.contains('answered')) return;
-    item.classList.add('answered');
-    var opts = item.querySelectorAll('.opt');
-    for(var i=0;i<opts.length;i++){
-      if(opts[i].dataset.correct) opts[i].classList.add('reveal-correct');
-    }
-    opt.classList.remove('reveal-correct');
-    opt.classList.add(opt.dataset.correct ? 'correct' : 'wrong');
-  }, true);
-})();
-</script>
-<script>
 /* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
    Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
 (function(){
