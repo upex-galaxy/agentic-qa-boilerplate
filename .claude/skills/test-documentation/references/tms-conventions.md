@@ -98,9 +98,9 @@ All Plans and Runs follow one **unified grammar** — the QA planning ladder:
 | ATP — Story Test Plan | Test Plan | `ATP: {STORY-KEY}: {story title}` | `ATP: PROJ-123: Apply discount at checkout` |
 | ATR — Story Test Execution | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-123: Story Testing` |
 | FTP — Feature Test Plan | Test Plan | `FTP: {EPIC-KEY}: {feature}` | `FTP: PROJ-42: Checkout & Payments` |
-| FTR — Feature Test Execution | Test Execution | `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` | `FTR: PROJ-42: Feature Testing — Checkout · run 2` |
+| FTR — Feature Test Results | Test Execution | `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` | `FTR: PROJ-42: Feature Testing — Checkout · run 2` |
 | STP — Sprint Test Plan | Test Plan | `STP: Sprint#{N}: Regression` | `STP: Sprint#30: Regression` |
-| STR — Sprint Test Execution | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#30: Regression Testing` |
+| STR — Sprint Test Results | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#30: Regression Testing` |
 | Test Set (TS) | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature}` | `TS: GX-101: Validate credit card payment` |
 | ReTesting (RTX) | Test Execution | `ReTest: {BUG-KEY}: {summary}` | `ReTest: GX-202: Does not show error when entering incorrect password` |
 | Precondition (PRC) | Precondition | `PRC: {COMPONENT}: {required state}` | `PRC: Payment: Authenticated user with a saved card` |

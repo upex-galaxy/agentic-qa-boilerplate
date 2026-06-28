@@ -164,9 +164,9 @@ Related naming — the unified planning-ladder grammar `{ACRONYM}: {scope-id}: {
 | Story Test Plan (ATP) | Test Plan | `ATP: {STORY-KEY}: {story title}` | `ATP: PROJ-101: Pay with credit card` |
 | Story Test Execution (ATR) | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-101: Story Testing` |
 | Feature Test Plan (FTP) | Test Plan | `FTP: {EPIC-KEY}: {feature}` | `FTP: PROJ-42: Checkout & Payments` |
-| Feature Test Execution (FTR) | Test Execution | `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` | `FTR: PROJ-42: Feature Testing — Checkout · run 2` |
+| Feature Test Results (FTR) | Test Execution | `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` | `FTR: PROJ-42: Feature Testing — Checkout · run 2` |
 | Sprint Test Plan (STP) | Test Plan | `STP: Sprint#{N}: Regression` | `STP: Sprint#50: Regression` |
-| Sprint Test Execution (STR) | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#50: Regression Testing` |
+| Sprint Test Results (STR) | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#50: Regression Testing` |
 | Test Set | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature}` | `TS: PROJ-101: Validate credit card payment` |
 | ReTesting (bug fix) | Test Execution | `ReTest: {BUG-KEY}: {summary}` | `ReTest: PROJ-202: Wrong error on invalid password` |
 | Precondition | Precondition | `PRC: {COMPONENT}: {required state}` | `PRC: Payment: Authenticated user with a saved card` |

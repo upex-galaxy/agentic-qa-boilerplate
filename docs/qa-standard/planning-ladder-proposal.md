@@ -110,8 +110,8 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 | Altitude | Plan | Runner | Jira work type | When / who | Cardinality |
 |---|---|---|---|---|---|
 | **Product** | **MTP** Master Test Plan | — | **Epic** (+ local file) | bootstrap once; refresh via `/master-test-plan` | 1 per project |
-| **Feature / Epic** | **FTP** Feature Test Plan | **FTR** Feature Test Run | Test Plan → Test Execution | `feature-test-planning` (sprint-testing) when a feature enters testing | FTP 1 per feature · FTR ≥1 per sprint ("Feature Testing") |
-| **Sprint** | **STP** Sprint Test Plan | **STR** Sprint Test Run | Test Plan → Test Execution | regression-testing at sprint close | 1 per sprint (term: "Regression Testing"; "Sprint" comes from the `Sprint#{N}` scope-id) |
+| **Feature / Epic** | **FTP** Feature Test Plan | **FTR** Feature Test Results | Test Plan → Test Execution | `feature-test-planning` (sprint-testing) when a feature enters testing | FTP 1 per feature · FTR ≥1 per sprint ("Feature Testing") |
+| **Sprint** | **STP** Sprint Test Plan | **STR** Sprint Test Results | Test Plan → Test Execution | regression-testing at sprint close | 1 per sprint (term: "Regression Testing"; "Sprint" comes from the `Sprint#{N}` scope-id) |
 | **User Story** | **ATP** Acceptance Test Plan | **ATR** Acceptance Test Results | Test Plan → Test Execution | sprint-testing S1 (ATP) / S3 (ATR) | ATP 1 per Story · ATR 1 run ("Story Testing") |
 
 ---

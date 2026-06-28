@@ -60,7 +60,7 @@ ratified QA Planning Ladder (`docs/qa-standard/planning-ladder-proposal.md`). Gr
 | Artifact | Jira work type | Title pattern | Example | Parent Epic (axis 1) | Scope link (axis 2) |
 |----------|----------------|---------------|---------|----------------------|---------------------|
 | **FTP** — Feature Test Plan | **Test Plan** | `FTP: {EPIC-KEY}: {feature}` | `FTP: PROJ-42: Checkout & Payments` | **QA Master Test Plan** (`qa.qa_epics.master_test_plan_epic`) | `tests` the product **feature Epic** |
-| **FTR** — Feature Test Run | **Test Execution** | `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` | `FTR: PROJ-42: Feature Testing — Checkout · run 2` | **QA Test Artifacts** (`qa.qa_epics.test_artifacts_epic`) | `is tested by` feature Epic · `testPlan` → FTP |
+| **FTR** — Feature Test Results | **Test Execution** | `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` | `FTR: PROJ-42: Feature Testing — Checkout · run 2` | **QA Test Artifacts** (`qa.qa_epics.test_artifacts_epic`) | `is tested by` feature Epic · `testPlan` → FTP |
 
 - **Items over fields (by excellence).** The FTP **Test Plan** issue is the home of the
   feature-test-plan body (the 7 sections below); the epic feature-test-plan custom field /

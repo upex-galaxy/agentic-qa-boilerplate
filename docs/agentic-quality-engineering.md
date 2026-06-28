@@ -138,7 +138,7 @@ The rest of this document describes how that strategy is implemented in code and
 | **ATP**               | Acceptance Test Plan. The risk triage and scenario design produced in Stage 1 (Planning).                                    |
 | **ATR**               | Acceptance Test Results. The report filed in Stage 3 (Reporting).                                                            |
 | **TC**                | Test Case. A single, traceable verification linked to an acceptance criterion.                                               |
-| **ATC**               | Automated Test Case. A TC implemented as code, carrying an `@atc('{{PROJECT_KEY}}-XXX-TC#')` decorator.                      |
+| **ATC**               | Acceptance Test Case. A TC implemented as code, carrying an `@atc('{{PROJECT_KEY}}-XXX-TC#')` decorator.                     |
 | **PBI**               | Product Backlog Item. In this repo, the local folder (`.context/PBI/...`) that stores per-ticket and per-module knowledge.   |
 | **KATA**              | Komponent Action Test Architecture. The four-layer pattern used to organise automated tests.                                 |
 | **Subagent Dispatch Strategy** | Per-skill table declaring which stages delegate to subagents and with what pattern (Single / Sequential / Parallel / Background). Lives in each workflow `SKILL.md` under `## Subagent Dispatch Strategy`. |
@@ -553,7 +553,7 @@ Automated tests live in a four-layer architecture called **KATA** (Komponent Act
 ### Three load-bearing principles
 
 **Principle 1 — ATC = complete flow, not a single click.**
-An Automated Test Case (ATC) is a full scenario: navigate + act + verify. ATCs are atomic — they do not call each other. When a reusable chain is needed, it lives in the Steps module. Fixed assertions stay inside the ATC; test-level assertions live in the test file.
+An Acceptance Test Case (ATC) is a full scenario: navigate + act + verify. ATCs are atomic — they do not call each other. When a reusable chain is needed, it lives in the Steps module. Fixed assertions stay inside the ATC; test-level assertions live in the test file.
 
 **Principle 2 — `@atc` decorator traces to the TMS.**
 Every automated test carries an `@atc('{{PROJECT_KEY}}-XXX-TC#')` decorator. When CI fails, the decorator makes it possible to walk the chain in reverse: failing ATC → TMS TC → ATP → User Story → Acceptance Criterion. The AI can answer "which requirement is at risk?" in one hop.

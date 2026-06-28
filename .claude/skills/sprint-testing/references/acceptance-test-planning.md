@@ -379,7 +379,7 @@ The modality was resolved in Session Start (§0) and persisted into `test-sessio
 > - **ATP** (Story Test Plan): `ATP: {STORY-KEY}: {story title}` — e.g. `ATP: PROJ-123: Apply discount at checkout`.
 > - **ATR** (Story Test Execution): `ATR: {STORY-KEY}: Story Testing` — the Story-level run is named **Story Testing** and runs ONCE per sprint per Story — e.g. `ATR: PROJ-123: Story Testing`.
 > - **FTP** (Feature Test Plan, feature/Epic altitude — see `feature-test-planning.md`): `FTP: {EPIC-KEY}: {feature}` — e.g. `FTP: PROJ-42: Checkout & Payments`.
-> - **FTR** (Feature Test Run): `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` — the feature run is named **Feature Testing** and may run ≥1 per sprint — e.g. `FTR: PROJ-42: Feature Testing — Checkout · run 2`.
+> - **FTR** (Feature Test Results): `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` — the feature run is named **Feature Testing** and may run ≥1 per sprint — e.g. `FTR: PROJ-42: Feature Testing — Checkout · run 2`.
 > Bug-fix verification keeps `ReTest: {BUG_KEY}: {summary}` (a Test Execution). Sprint regression (`STP` / `STR`) lives in `/regression-testing`.
 
 > **Items over fields (excellence default, both modalities)** — by excellence ATP is a **Test Plan** issue and ATR is a **Test Execution** issue; parent every Test Plan (ATP / FTP) to the **QA Master Test Plan** epic and every Test Execution (ATR / FTR) to the **QA Test Artifacts** epic. The Story custom field (`{{jira.acceptance_test_plan}}` / `{{jira.acceptance_test_results}}`) is a **fallback ONLY** when the Test Plan / Test Execution work types are unavailable in the instance.

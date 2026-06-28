@@ -142,7 +142,7 @@ Backlog → Shift-Left QA → Estimation → Ready For Dev → In Progress → I
 3. Explores the relevant code in the target repo.
 4. Authors the ATP (Acceptance Test Plan) → writes it to the Jira field (or fallback comment) → re-syncs; hand-writes only NON-Jira files (context.md, evidence/).
 5. Executes smoke + trifuerza exploration (UI / API / DB).
-6. Files ATR (Acceptance Test Report) + bug reports if defects found.
+6. Files ATR (Acceptance Test Results) + bug reports if defects found.
 7. Transitions the ticket through QA states.
 8. Hands off to Stage 4 (`/test-documentation`) when a Candidate test case should be promoted to TMS.
 

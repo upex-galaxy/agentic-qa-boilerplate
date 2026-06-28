@@ -52,7 +52,7 @@ KATA solves these problems through two complementary strategies:
 
 ### 2.1 ATC (Acceptance Test Case)
 
-An **ATC** is an automated acceptance test case that represents a **functional unit** of the system.
+An **ATC** is an acceptance test case that represents a **functional unit** of the system.
 
 **Key characteristics:**
 
@@ -1830,7 +1830,7 @@ def test_multi_section_form(fixture):
 
 | Term                      | Definition                                                             |
 | ------------------------- | ---------------------------------------------------------------------- |
-| **ATC**                   | Acceptance Test Case - Automated acceptance test case                  |
+| **ATC**                   | ATC — Acceptance Test Case                                             |
 | **Shared Action**         | An ATC implemented as a reusable method                                |
 | **Component**             | Class that encapsulates related system functionality                   |
 | **Fixture**               | Entry point that groups components via Dependency Injection            |
