@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>La Trifuerza — Exploración por Capas (UI · API · DB)</title>
+<title>La Trifuerza — Probar Features por Capas (UI · API · DB)</title>
 <style>
 /* html-ppt :: shared webfonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
@@ -538,11 +538,11 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <!-- 1. COVER -->
 <section class="slide" data-title="Portada">
   <p class="kicker run">how-it-works · agentic-qa · sprint-testing</p>
-  <h1 class="h1 anim-fade-up" data-anim="fade-up">La <span class="grad">Trifuerza</span> — Exploración por Capas</h1>
-  <p class="lede mt-m">UI · API · DB. Cómo se prueba de verdad una feature: una pantalla verde puede esconder una API rota y un trigger que falla en silencio. Smoke primero, luego las tres capas, con sondas de seguridad e integridad.</p>
-  <div class="speaker"><div class="av"></div><div><b>Smoke → UI → API → DB</b><span>Stage 2 · ejecución manual / exploratoria en el sprint</span></div></div>
-  <div class="deck-footer"><span class="mono">Playwright · OpenAPI · DBHub · /sprint-testing</span><span class="slide-number" data-current="1" data-total="34"></span></div>
-  <div class="notes">Encuadre: esto es Stage 2 de sprint-testing — el acto de ejecutar QA. No es planificar (Stage 1) ni reportar (Stage 3). Es validar la feature a través de tres capas. Las tres fuerzas: UI (oro), API (magenta), DB (cian).</div>
+  <h1 class="h1 anim-fade-up" data-anim="fade-up">La <span class="grad">Trifuerza</span> — Probar Features por Capas</h1>
+  <p class="lede mt-m">UI · API · DB. Pruebes lo que pruebes en una feature o historia de usuario, piensas SIEMPRE en las tres capas: una pantalla verde puede esconder una API rota y un trigger que falla en silencio. Smoke primero, luego las tres capas, con sondas de seguridad e integridad.</p>
+  <div class="speaker"><div class="av"></div><div><b>Smoke → UI → API → DB</b><span>Tu lente al probar cualquier feature en el sprint</span></div></div>
+  <div class="deck-footer"><span class="mono">Playwright · OpenAPI · DBHub · /sprint-testing</span><span class="slide-number" data-current="1" data-total="35"></span></div>
+  <div class="notes">Encuadre: la Trifuerza no es una técnica exclusiva de testing exploratorio — es el lente con el que pruebas CUALQUIER feature o historia de usuario. Cada vez que validas una funcionalidad, piensas en sus tres capas. Las tres fuerzas: UI (oro), API (magenta), DB (cian).</div>
 </section>
 
 <!-- 2. STAT HOOK -->
@@ -558,16 +558,17 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <!-- 3. AGENDA -->
 <section class="slide" data-title="Agenda">
   <p class="kicker">qué cubriremos</p>
-  <h2 class="h2" data-anim="fade-up">El Acto de Testear, por Capas</h2>
+  <h2 class="h2" data-anim="fade-up">Probar Toda Feature, por Capas</h2>
   <div class="stack mt-l anim-stagger-list">
-    <div class="agenda-row"><span class="anum">00</span><span class="at">Smoke first — el gate Go/No-Go que valida el ambiente antes de explorar</span><span class="ad">el gate</span></div>
-    <div class="agenda-row"><span class="anum">01</span><span class="at">Capa UI — el loop por AC, edge cases, transiciones inválidas, DevTools</span><span class="ad">oro</span></div>
-    <div class="agenda-row"><span class="anum">02</span><span class="at">Capa API — la matriz de status codes y la sonda de RLS A/B</span><span class="ad">magenta</span></div>
-    <div class="agenda-row"><span class="anum">03</span><span class="at">Capa DB — sondas de constraints, barridos de integridad, RLS en SQL</span><span class="ad">cian</span></div>
-    <div class="agenda-row"><span class="anum">04</span><span class="at">Disciplina — triage bloqueante/no-bloqueante, TTL, sin NOT RUN, evidencia</span><span class="ad">el oficio</span></div>
+    <div class="agenda-row"><span class="anum">00</span><span class="at">Ejes del testing — capas (la Trifuerza) vs niveles vs tipos, y cómo se cruzan</span><span class="ad">el marco</span></div>
+    <div class="agenda-row"><span class="anum">01</span><span class="at">Smoke first — el gate Go/No-Go que valida el ambiente antes de probar a fondo</span><span class="ad">el gate</span></div>
+    <div class="agenda-row"><span class="anum">02</span><span class="at">Capa UI — el loop por AC, edge cases, transiciones inválidas, DevTools</span><span class="ad">oro</span></div>
+    <div class="agenda-row"><span class="anum">03</span><span class="at">Capa API — la matriz de status codes y la sonda de RLS A/B</span><span class="ad">magenta</span></div>
+    <div class="agenda-row"><span class="anum">04</span><span class="at">Capa DB — sondas de constraints, barridos de integridad, RLS en SQL</span><span class="ad">cian</span></div>
+    <div class="agenda-row"><span class="anum">05</span><span class="at">Disciplina — triage bloqueante/no-bloqueante, TTL, sin NOT RUN, evidencia</span><span class="ad">el oficio</span></div>
   </div>
   <p class="qhint mt-l">3 quizzes interactivos a lo largo del recorrido — haz clic en las respuestas.</p>
-  <div class="notes">Cinco partes: el gate de smoke, las tres capas (UI/API/DB) y la disciplina transversal. El corazón es entender qué prueba cada capa.</div>
+  <div class="notes">Seis partes: el marco de ejes (capas vs niveles vs tipos), el gate de smoke, las tres capas (UI/API/DB) y la disciplina transversal. El corazón es entender qué prueba cada capa — y que las capas se atraviesan SIEMPRE, sin importar el nivel o tipo de prueba.</div>
 </section>
 
 <!-- 4. TRIFORCE MODEL -->
@@ -591,17 +592,31 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">El orden de capas lo decide el tipo de feature. UI-focused empieza por UI; data-focused por DB. Smoke siempre va primero, antes de cualquier capa.</div>
 </section>
 
-<!-- 5. DIVIDER PART 1 — SMOKE -->
+<!-- 5. TESTING AXES — LAYERS vs LEVELS vs TYPES -->
+<section class="slide" data-title="Ejes del testing">
+  <p class="kicker">tres ejes, no uno</p>
+  <h2 class="h2" data-anim="fade-up">Capas · Niveles · Tipos</h2>
+  <p class="lede mt-s">La Trifuerza es UN eje: <b>las capas — dónde sondeas</b> (UI · API · DB). Es <b>ortogonal</b> a otros dos ejes que el tester decide en cada prueba. No compiten: se combinan.</p>
+  <div class="grid g3 mt-m">
+    <div class="card card-accent" style="border-top-color:#f5b942"><h4 style="color:#f5b942">Capas — ¿dónde sondeas?</h4><p class="dim"><b>La Trifuerza.</b> UI · API · DB. Cada feature se atraviesa por sus tres capas, siempre.</p></div>
+    <div class="card card-accent" style="border-top-color:#e879f9"><h4 style="color:#e879f9">Niveles — ¿qué alcance?</h4><p class="dim">component → integration → end-to-end (e2e). Cuánto del sistema entra en la prueba.</p></div>
+    <div class="card card-accent" style="border-top-color:#22d3ee"><h4 style="color:#22d3ee">Tipos — ¿con qué intención?</h4><p class="dim">funcional · regresión · smoke · seguridad · performance · usabilidad…</p></div>
+  </div>
+  <div class="callout mt-m"><h4>Cómo se cruzan</h4><p>Una misma historia de usuario se prueba <b>eligiendo un nivel y un tipo</b> — pero <b>SIEMPRE atravesando las tres capas</b>. Ej.: un e2e funcional del checkout y una prueba de seguridad de la API distinta en nivel y tipo, idénticas en que ambas piensan UI/API/DB.</p></div>
+  <div class="notes">El marco mental clave: la Trifuerza es el eje de CAPAS (dónde), ortogonal a NIVELES (alcance: component/integration/e2e) y TIPOS (intención: funcional/regresión/smoke/seguridad/performance/usabilidad). El tester elige nivel + tipo por prueba, pero las tres capas se atraviesan siempre. Esto evita el malentendido de que la Trifuerza es solo para exploratorio.</div>
+</section>
+
+<!-- 6. DIVIDER PART 1 — SMOKE -->
 <section class="slide divider" data-title="Smoke">
   <div>
     <p class="part-no">EL GATE</p>
     <h1 class="h1">Smoke First<br><span class="grad">Valida el Ambiente, no la Feature</span></h1>
-    <p class="lede">5-10 minutos de Go/No-Go. Nunca entres a explorar a fondo hasta que el smoke pase. Un ambiente roto produce reportes de bug falsos.</p>
+    <p class="lede">5-10 minutos de Go/No-Go. Nunca entres a probar a fondo hasta que el smoke pase. Un ambiente roto produce reportes de bug falsos.</p>
   </div>
   <div class="notes">Smoke es obligatorio y primero. Valida que el ambiente esté vivo, no que la feature funcione — son preguntas distintas, ambas necesarias.</div>
 </section>
 
-<!-- 6. SMOKE CHECKLIST -->
+<!-- 7. SMOKE CHECKLIST -->
 <section class="slide" data-title="Smoke checklist">
   <p class="kicker">en orden, ≤10 min</p>
   <h2 class="h2" data-anim="fade-up">El Checklist de Smoke</h2>
@@ -615,7 +630,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">4 pasos en orden. El paso 4 es clave: la UI puede engañar con cache/mock; el Network tab revela la verdad. Siempre revisar la red.</div>
 </section>
 
-<!-- 7. SMOKE VERDICT + RESTRICTIONS -->
+<!-- 8. SMOKE VERDICT + RESTRICTIONS -->
 <section class="slide" data-title="Smoke verdict">
   <p class="kicker">el veredicto y sus reglas</p>
   <h2 class="h2" data-anim="fade-up">Go / No-Go</h2>
@@ -634,7 +649,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <ul>
         <li>Es un bloqueante de ambiente</li>
         <li>Triagea primero (NO auto-Critical)</li>
-        <li>Surfacea al usuario, NO explores a fondo</li>
+        <li>Surfacea al usuario, NO pruebes a fondo</li>
       </ul>
     </div>
   </div>
@@ -642,19 +657,19 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">PASS→continúa, FAIL→STOP (bloqueante de ambiente, triagea sin auto-Critical). Restricciones: solo bloqueantes, sin edge cases, ≤10min. Reportar bugs falsos por un ambiente roto es el peor desperdicio.</div>
 </section>
 
-<!-- 8. SMOKE != DEEP -->
+<!-- 9. SMOKE != DEEP -->
 <section class="slide" data-title="Smoke vs deep">
   <p class="kicker">dos preguntas distintas</p>
-  <h2 class="h2" data-anim="fade-up">Smoke ≠ Exploración Profunda</h2>
+  <h2 class="h2" data-anim="fade-up">Smoke ≠ Testing Profundo de la Feature</h2>
   <div class="grid g2 mt-m">
     <div class="card card-accent"><h4>Smoke pregunta…</h4><p class="dim" style="font-size:18px">"¿El <b>ambiente</b> está vivo?" — ¿carga, autentica, persiste el happy path? Si no, todo lo demás es ruido.</p></div>
     <div class="card card-accent"><h4>La Trifuerza pregunta…</h4><p class="dim" style="font-size:18px">"¿La <b>feature</b> funciona bien?" — ¿cumple los ACs, aguanta edge cases, es segura e íntegra en sus tres capas?</p></div>
   </div>
-  <div class="callout warn mt-m"><h4>El orden importa</h4><p>Un ambiente roto produce <b>reportes de bug falsos</b>. Si smoke falla y exploras igual, vas a reportar "bugs" que en realidad son el ambiente caído. Smoke valida el ambiente; la Trifuerza valida la feature. Primero uno, luego la otra.</p></div>
+  <div class="callout warn mt-m"><h4>El orden importa</h4><p>Un ambiente roto produce <b>reportes de bug falsos</b>. Si smoke falla y pruebas igual, vas a reportar "bugs" que en realidad son el ambiente caído. Smoke valida el ambiente; la Trifuerza valida la feature. Primero uno, luego la otra.</p></div>
   <div class="notes">Anti-patrón S7: nunca saltar el smoke antes de la trifuerza. Son preguntas distintas — ambiente vs feature. El reachability gate (Stage Start) es aún anterior: ¿el env responde? Tres gates, tres preguntas.</div>
 </section>
 
-<!-- 9. DIVIDER PART 2 — UI -->
+<!-- 10. DIVIDER PART 2 — UI -->
 <section class="slide divider" data-title="Capa UI">
   <div>
     <p class="part-no" style="color:#f5b942">CAPA 01 · UI</p>
@@ -664,7 +679,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">UI = oro. El loop por AC + edge cases + transiciones inválidas + reglas de DevTools.</div>
 </section>
 
-<!-- 10. UI SCENARIO LOOP -->
+<!-- 11. UI SCENARIO LOOP -->
 <section class="slide" data-title="UI loop">
   <p class="kicker">el loop por cada AC</p>
   <h2 class="h2" data-anim="fade-up">Navega → Observa → Captura</h2>
@@ -677,7 +692,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">El loop: navegar→snapshot→ejecutar→observar(consola+red)→capturar→propagar estado. La regla de oro de DevTools: las filas rojas de red siempre cuentan, aunque la UI se vea verde.</div>
 </section>
 
-<!-- 11. UI EDGE-CASE CHECKLIST -->
+<!-- 12. UI EDGE-CASE CHECKLIST -->
 <section class="slide" data-title="UI edge cases">
   <p class="kicker">el checklist por input / interacción</p>
   <h2 class="h2" data-anim="fade-up">Edge Cases de la Capa UI</h2>
@@ -691,11 +706,11 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td><b>Visual</b></td><td>breakpoints responsive · loading states · layouts rotos · elementos solapados</td></tr>
     </tbody>
   </table>
-  <div class="callout mt-m"><h4>Si exploras y encuentras un caso nuevo…</h4><p>…que el ATP de Stage 1 no derivó (una partición, un boundary, una transición), <b>añádelo de vuelta</b> al set de outlines. La cobertura es el piso (ACs) <b>más</b> esta capa de riesgo, no la exploración en lugar de la planificación.</p></div>
+  <div class="callout mt-m"><h4>Si al probar encuentras un caso nuevo…</h4><p>…que el ATP de Stage 1 no derivó (una partición, un boundary, una transición), <b>añádelo de vuelta</b> al set de outlines. La cobertura es el piso (ACs) <b>más</b> esta capa de riesgo, no el testing improvisado en lugar de la planificación.</p></div>
   <div class="notes">El checklist de edge cases UI. Los caracteres especiales (script/DROP TABLE) son sondas de seguridad básicas. Lo encontrado se realimenta al plan, no reemplaza al plan.</div>
 </section>
 
-<!-- 12. INVALID STATE TRANSITIONS -->
+<!-- 13. INVALID STATE TRANSITIONS -->
 <section class="slide" data-title="Transiciones inválidas">
   <p class="kicker">donde se esconden los defectos</p>
   <h2 class="h2" data-anim="fade-up">Transiciones Inválidas — el Punto Ciego</h2>
@@ -715,7 +730,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Conecta con la técnica State-Transition: 1 TC por transición inválida. El bug típico: un 200 OK silencioso que no cambia nada deja al usuario confundido.</div>
 </section>
 
-<!-- 13. ESCALATE TO API/DB -->
+<!-- 14. ESCALATE TO API/DB -->
 <section class="slide" data-title="Escalar capas">
   <p class="kicker">cuándo bajar una capa</p>
   <h2 class="h2" data-anim="fade-up">Cuándo Escalar a API / DB</h2>
@@ -728,7 +743,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Reglas de escalado: dato mal→DB; non-2xx→API replay; RLS→ambas. La UI te dice QUE algo falla; las capas de abajo te dicen POR QUÉ.</div>
 </section>
 
-<!-- 14. DIVIDER PART 3 — API -->
+<!-- 15. DIVIDER PART 3 — API -->
 <section class="slide divider" data-title="Capa API">
   <div>
     <p class="part-no" style="color:#e879f9">CAPA 02 · API</p>
@@ -738,10 +753,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">API = magenta. La matriz de status codes "qué prueba" + la sonda de RLS A/B. Esta capa enseña a leer status codes como evidencia.</div>
 </section>
 
-<!-- 15. API SETUP -->
+<!-- 16. API SETUP -->
 <section class="slide" data-title="API setup">
   <p class="kicker">descubrir + autenticar</p>
-  <h2 class="h2" data-anim="fade-up">Preparar la Exploración de API</h2>
+  <h2 class="h2" data-anim="fade-up">Preparar el Testing de la Capa API</h2>
   <div class="terminal mt-s">
     <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>auth una vez, reutiliza</span></div>
 <pre><span class="cmt"># credenciales SIEMPRE desde .env — nunca hardcodear</span>
@@ -756,7 +771,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Token una vez desde .env, reutilizar. La gotcha de propagación: mismo rol, distinto resultado = problema de scoping, no necesariamente bug. Confirmar antes de reportar.</div>
 </section>
 
-<!-- 16. STATUS-CODE MATRIX -->
+<!-- 17. STATUS-CODE MATRIX -->
 <section class="slide" data-title="Status codes">
   <p class="kicker">cada status PRUEBA algo</p>
   <h2 class="h2" data-anim="fade-up">La Matriz de Status Codes</h2>
@@ -776,7 +791,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">La idea núcleo de la capa API: un status code es evidencia. 400 prueba que la validación está viva; 403 prueba aislamiento de tenant; 409 prueba manejo de conflicto. No probar el negativo = no saber si la guardia existe.</div>
 </section>
 
-<!-- 17. RLS PROBE -->
+<!-- 18. RLS PROBE -->
 <section class="slide" data-title="RLS probe">
   <p class="kicker">la sonda de seguridad que casi nadie corre</p>
   <h2 class="h2" data-anim="fade-up">Sonda de RLS / Autorización — A/B</h2>
@@ -793,7 +808,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">La sonda A/B con dos usuarios del mismo rol: listar-solo-lo-mío, leer-otro-tenant, PATCH-otra-fila. VULNERABLE = Critical = bloqueante. Esta es la sonda de seguridad de mayor valor de la capa API.</div>
 </section>
 
-<!-- 18. CROSS-LAYER HANDOFF -->
+<!-- 19. CROSS-LAYER HANDOFF -->
 <section class="slide" data-title="201 ≠ DB">
   <p class="kicker">el handoff cross-layer</p>
   <h2 class="h2" data-anim="fade-up">Un 201 No Prueba la DB</h2>
@@ -806,7 +821,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">El handoff cross-layer: 201 ≠ DB correcta (triggers silenciosos). Siempre confirmar persistencia en DB tras un write exitoso. Esta es la lección que une las tres capas.</div>
 </section>
 
-<!-- 19. QUIZ 1 -->
+<!-- 20. QUIZ 1 -->
 <section class="slide" data-title="Quiz 1">
   <p class="kicker">quiz · smoke + UI + API</p>
   <h2 class="h2" data-anim="fade-up">Las Capas de Arriba</h2>
@@ -833,7 +848,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Las dos lecciones clave de UI+API: el 201 no prueba la DB, y la sonda RLS A/B caza fugas cross-tenant (VULNERABLE = Critical bloqueante).</div>
 </section>
 
-<!-- 20. DIVIDER PART 4 — DB -->
+<!-- 21. DIVIDER PART 4 — DB -->
 <section class="slide divider" data-title="Capa DB">
   <div>
     <p class="part-no" style="color:#22d3ee">CAPA 03 · DB</p>
@@ -843,7 +858,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">DB = cian. State verification + constraint probes (éxito=bug) + integrity sweeps + RLS en SQL. La capa donde se invierte la lógica: las sondas negativas deben fallar.</div>
 </section>
 
-<!-- 21. DB STATE VERIFICATION -->
+<!-- 22. DB STATE VERIFICATION -->
 <section class="slide" data-title="DB state">
   <p class="kicker">después de una acción API / UI</p>
   <h2 class="h2" data-anim="fade-up">Verificación de Estado</h2>
@@ -860,7 +875,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Las 4 verificaciones de estado post-acción. "El trigger corrió" (total guardado vs SUM) es donde se atrapa el trigger silencioso que el 201 ocultó.</div>
 </section>
 
-<!-- 22. CONSTRAINT PROBES -->
+<!-- 23. CONSTRAINT PROBES -->
 <section class="slide" data-title="Constraint probes">
   <p class="kicker">la lógica invertida</p>
   <h2 class="h2" data-anim="fade-up">Sondas de Constraints — el Éxito es el Bug</h2>
@@ -877,7 +892,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">La lógica se invierte: en sondas negativas, el éxito = constraint ausente = bug. FK/CHECK/UNIQUE/NOT NULL deben errorar todas. Siempre en transacción + ROLLBACK.</div>
 </section>
 
-<!-- 23. INTEGRITY SWEEPS -->
+<!-- 24. INTEGRITY SWEEPS -->
 <section class="slide" data-title="Integrity sweeps">
   <p class="kicker">barridos de integridad</p>
   <h2 class="h2" data-anim="fade-up">Cazar Datos Corruptos</h2>
@@ -898,7 +913,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Tres barridos: huérfanos, calc mismatch, estados imposibles. Cada uno debe volver 0 filas. Correr periódicamente en features con mucha data. Caza lo que la UI nunca muestra.</div>
 </section>
 
-<!-- 24. RLS SQL + CLEANUP -->
+<!-- 25. RLS SQL + CLEANUP -->
 <section class="slide" data-title="RLS SQL + cleanup">
   <p class="kicker">RLS real + cascadas</p>
   <h2 class="h2" data-anim="fade-up">RLS a Nivel SQL y Limpieza</h2>
@@ -927,7 +942,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">RLS real necesita impersonar el JWT (qa_team la salta). Cleanup: cascadas de DELETE y soft-delete. Si el SQL salta RLS, usar la sonda API A/B (enforcement real).</div>
 </section>
 
-<!-- 25. QUIZ 2 -->
+<!-- 26. QUIZ 2 -->
 <section class="slide" data-title="Quiz 2">
   <p class="kicker">quiz · capa DB</p>
   <h2 class="h2" data-anim="fade-up">La Verdad Persistida</h2>
@@ -954,7 +969,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Las dos lecciones DB: en sondas de constraints el éxito = bug; y los estados de dominio imposibles son defectos de integridad aunque la UI no los muestre.</div>
 </section>
 
-<!-- 26. DIVIDER PART 5 — DISCIPLINE -->
+<!-- 27. DIVIDER PART 5 — DISCIPLINE -->
 <section class="slide divider" data-title="Disciplina">
   <div>
     <p class="part-no">EL OFICIO</p>
@@ -964,11 +979,11 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">La capa transversal: triage de findings, TTL, status propagation, evidencia. Lo que separa una pasada profesional de un click-around.</div>
 </section>
 
-<!-- 27. FINDING TRIAGE -->
+<!-- 28. FINDING TRIAGE -->
 <section class="slide" data-title="Finding triage">
   <p class="kicker">la pausa graduada</p>
   <h2 class="h2" data-anim="fade-up">Bloqueante vs No-Bloqueante</h2>
-  <p class="lede mt-s">Un FAIL durante la exploración <b>no</b> es automáticamente Critical y <b>no</b> detiene la pasada por sí solo. Triagea primero, luego decide.</p>
+  <p class="lede mt-s">Un FAIL durante el testing de la feature <b>no</b> es automáticamente Critical y <b>no</b> detiene la pasada por sí solo. Triagea primero, luego decide.</p>
   <div class="vs">
     <div class="card bad-side">
       <h3>Bloqueante → STOP</h3>
@@ -992,7 +1007,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">La pausa graduada: bloqueante (env/corrupción/seguridad) detiene; no-bloqueante (cosmético/menor) se registra y la pasada sigue. Un FAIL no es auto-Critical. El objetivo es cobertura completa.</div>
 </section>
 
-<!-- 28. TTL PLAYBOOK -->
+<!-- 29. TTL PLAYBOOK -->
 <section class="slide" data-title="TTL">
   <p class="kicker">probar el tiempo sin esperar</p>
   <h2 class="h2" data-anim="fade-up">Casos Dependientes del Tiempo (TTL)</h2>
@@ -1006,7 +1021,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">La escalera TTL de 3 opciones por prioridad: fixture > clock-mock > defer escrito. Nunca un BLOCKED desnudo — siempre "BLOCKED — needs time fixture" + opción + razón.</div>
 </section>
 
-<!-- 29. NO NOT RUN + EVIDENCE -->
+<!-- 30. NO NOT RUN + EVIDENCE -->
 <section class="slide" data-title="No NOT RUN">
   <p class="kicker">cerrar la pasada con rigor</p>
   <h2 class="h2" data-anim="fade-up">Sin NOT RUN · Evidencia que Sirve</h2>
@@ -1028,7 +1043,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Sin NOT RUN: todo termina PASSED o FAILED. Evidencia en el estado de fallo, nombrada y gitignored. El memory de Stage 2 es el input de Stage 3 (Findings→bugs, pass/fail→ATR).</div>
 </section>
 
-<!-- 30. QUIZ 3 -->
+<!-- 31. QUIZ 3 -->
 <section class="slide" data-title="Quiz 3">
   <p class="kicker">quiz · disciplina</p>
   <h2 class="h2" data-anim="fade-up">El Oficio de la Pasada</h2>
@@ -1055,10 +1070,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Las dos reglas de disciplina: cosmético = no-bloqueante (sigue), y nunca BLOCKED/NOT RUN desnudo (siempre con razón + camino).</div>
 </section>
 
-<!-- 31. WHOLE PASS AT A GLANCE -->
+<!-- 32. WHOLE PASS AT A GLANCE -->
 <section class="slide" data-title="Pasada completa">
   <p class="kicker">todo junto</p>
-  <h2 class="h2" data-anim="fade-up">La Pasada Completa de Stage 2</h2>
+  <h2 class="h2" data-anim="fade-up">La Pasada Completa de Testing de una Feature</h2>
   <div class="lifecycle">
     <span class="lstate" style="color:var(--text-1);background:var(--surface-2);border:1px solid var(--border-strong)">Smoke ✓</span>
     <span class="arr">→</span>
@@ -1079,9 +1094,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">El recap del flujo completo: smoke → UI/API/DB (orden por feature) → triage → status → findings a Stage 3. Las tres fuerzas en una pasada.</div>
 </section>
 
-<!-- 32. HOW TO DO IT WELL -->
+<!-- 33. HOW TO DO IT WELL -->
 <section class="slide" data-title="Cómo hacerlo bien">
-  <p class="kicker">el checklist del explorador</p>
+  <p class="kicker">el checklist del tester</p>
   <h2 class="h2" data-anim="fade-up">Cómo Hacerlo Bien</h2>
   <div class="grid g2 mt-s">
     <ul class="blist">
@@ -1101,7 +1116,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">El checklist operativo del cómo hacerlo bien. Cada punto es una palanca contra un punto ciego de capa.</div>
 </section>
 
-<!-- 33. TAKEAWAYS -->
+<!-- 34. TAKEAWAYS -->
 <section class="slide" data-title="Conclusiones">
   <p class="kicker">para llevar</p>
   <h2 class="h2" data-anim="fade-up">Tres Ideas que se Quedan</h2>
@@ -1113,7 +1128,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Los tres conceptos núcleo: cada capa su verdad, el valor del negativo/seguridad, y la disciplina de la pasada.</div>
 </section>
 
-<!-- 34. THANKS -->
+<!-- 35. THANKS -->
 <section class="slide center tc" data-title="Cierre">
   <div>
     <h1 class="h1"><span class="grad">Tres Capas. Una Verdad. Ningún Punto Ciego.</span></h1>
