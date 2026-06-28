@@ -156,10 +156,91 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <p class="dim3 mono mt-l" style="font-size:12px">Vive en <b>.claude/skills/agentic-qa-core/</b> — el skill base global.</p>
 </section>
 
-<!-- 2 · LAS LEYES -->
-<section class="slide" style="--ac:#34d399" data-t="Las cinco leyes">
-  <p class="kick">Lee estas cinco primero — todo lo demás deriva de ellas</p>
-  <h2>Las Cinco Leyes</h2>
+<!-- A · POR QUÉ UN CÓDICE -->
+<section class="slide" style="--ac:#34d399" data-t="Por qué un códice">
+  <p class="kick">Antes de las formas — por qué existe este sistema</p>
+  <h2>¿Por qué un códice de nombres?</h2>
+  <p class="lede mt-s">Un nombre no es decoración: es el primer dato de cada artefacto. Cuando cada nombre sigue una forma estricta, su <b>capa</b>, su <b>alcance</b> y su <b>intención</b> se leen sin abrir nada — por una persona o por una máquina.</p>
+  <div class="grid g4 mt-l">
+    <div class="card lyr" style="--ac:#22d3ee"><h4>Legible de un vistazo</h4><p class="dim" style="font-size:14px">El prefijo y el primer token dicen qué es y a qué capa pertenece antes de leer la frase.</p></div>
+    <div class="card lyr" style="--ac:#a3e635"><h4>Trazable</h4><p class="dim" style="font-size:14px">La clave Jira viaja en el nombre, así Story ↔ test ↔ código ↔ rama quedan atados.</p></div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Legible por máquina</h4><p class="dim" style="font-size:14px">Lint, sync y el <span class="mono">kata-manifest</span> dependen de formas predecibles para automatizar.</p></div>
+    <div class="card lyr" style="--ac:#f472b6"><h4>Anti-duplicación</h4><p class="dim" style="font-size:14px">Una sola forma por artefacto evita dos nombres para la misma cosa.</p></div>
+  </div>
+  <p class="dim3 mt-l">Aprende la forma una vez; lee la intención de cualquier artefacto para siempre.</p>
+</section>
+
+<!-- B · CONCEPTOS BASE -->
+<section class="slide" style="--ac:#a3e635" data-t="Conceptos base">
+  <p class="kick">El vocabulario primero — define esto antes de cualquier nombre</p>
+  <h2>Conceptos base</h2>
+  <p class="lede mt-s">Todo el códice usa estos términos. Léelos una vez; el resto del deck asume que ya los conoces.</p>
+  <div class="grid g3 mt-m">
+    <div class="card"><h4>TMS</h4><p class="dim" style="font-size:13.5px">Test Management System — dónde viven tests, planes y corridas (aquí, Jira + Xray).</p></div>
+    <div class="card"><h4>Epic / Story / PBI</h4><p class="dim" style="font-size:13.5px">Epic = feature; Story = unidad de trabajo con criterios de aceptación; PBI = el ítem del backlog.</p></div>
+    <div class="card"><h4>Test Case (TC)</h4><p class="dim" style="font-size:13.5px">Un caso individual — un comportamiento afirmado. La hoja del árbol.</p></div>
+    <div class="card"><h4>Test Set</h4><p class="dim" style="font-size:13.5px">Agrupación lógica de TCs por feature. No planifica ni ejecuta — solo agrupa.</p></div>
+    <div class="card"><h4>Test Plan</h4><p class="dim" style="font-size:13.5px">Qué se va a probar y su alcance (Story / Feature / Sprint / Producto).</p></div>
+    <div class="card"><h4>Test Execution</h4><p class="dim" style="font-size:13.5px">Una corrida de ese plan — el registro de qué pasó o falló.</p></div>
+    <div class="card"><h4>Precondition (PRC)</h4><p class="dim" style="font-size:13.5px">El estado requerido antes de ejecutar (ej. usuario autenticado).</p></div>
+    <div class="card"><h4>ATC</h4><p class="dim" style="font-size:13.5px">Automated Test Case — el método KATA que implementa un TC en código.</p></div>
+    <div class="card"><h4>KATA</h4><p class="dim" style="font-size:13.5px">La arquitectura de pruebas en capas (L1–L4) del framework. Ver la capa CODE.</p></div>
+    <div class="card"><h4>Fixture</h4><p class="dim" style="font-size:13.5px">Inyección de dependencias de KATA — entrega api/ui/test ya listos al test.</p></div>
+    <div class="card"><h4>Xray</h4><p class="dim" style="font-size:13.5px">El plugin de TMS sobre Jira que aporta Test, Test Set, Test Plan, Test Execution.</p></div>
+    <div class="card"><h4>Modalidad</h4><p class="dim" style="font-size:13.5px">Cómo guarda el proyecto los TCs: Xray (issues dedicados) o Jira-nativo (campos).</p></div>
+  </div>
+</section>
+
+<!-- C · ACRÓNIMOS -->
+<section class="slide" style="--ac:#fbbf24" data-t="Acrónimos">
+  <p class="kick">La clave de siglas — cada acrónimo del códice, expandido</p>
+  <h2>Acrónimos de un vistazo</h2>
+  <div class="grid g2 mt-m">
+    <table>
+      <thead><tr><th>Sigla</th><th>Significa</th><th>Capa</th></tr></thead>
+      <tbody>
+        <tr><td class="m"><span class="lp">TC</span></td><td>Test Case</td><td class="dim">CASE</td></tr>
+        <tr><td class="m"><span class="lp">ATC</span></td><td>Automated Test Case</td><td class="dim">CODE</td></tr>
+        <tr><td class="m"><span class="lp">TS</span></td><td>Test Set</td><td class="dim">GROUP</td></tr>
+        <tr><td class="m"><span class="lp">MTP</span></td><td>Master Test Plan</td><td class="dim">CONTAINER · Producto</td></tr>
+        <tr><td class="m"><span class="lp">FTP</span></td><td>Feature Test Plan</td><td class="dim">CONTAINER · Feature</td></tr>
+        <tr><td class="m"><span class="lp">STP</span></td><td>Sprint Test Plan</td><td class="dim">CONTAINER · Sprint</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>Sigla</th><th>Significa</th><th>Capa</th></tr></thead>
+      <tbody>
+        <tr><td class="m"><span class="lp">ATP</span></td><td>Acceptance Test Plan (Story)</td><td class="dim">CONTAINER · Story</td></tr>
+        <tr><td class="m"><span class="lp">FTR</span></td><td>Feature Test Run (Execution)</td><td class="dim">CONTAINER · Feature</td></tr>
+        <tr><td class="m"><span class="lp">STR</span></td><td>Sprint Test Run (Execution)</td><td class="dim">CONTAINER · Sprint</td></tr>
+        <tr><td class="m"><span class="lp">ATR</span></td><td>Acceptance Test Run (Story)</td><td class="dim">CONTAINER · Story</td></tr>
+        <tr><td class="m"><span class="lp">PRC</span></td><td>Precondition</td><td class="dim">CONTAINER</td></tr>
+        <tr><td class="m"><span class="lp">PBI</span></td><td>Product Backlog Item</td><td class="dim">Jira / Filesystem</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout mt-m" style="padding:11px 14px"><p style="margin:0" class="dim">Patrón mnemotécnico: la <b>última letra</b> — <b>P</b> = Plan (qué se probará) · <b>R</b> = Run/Execution (qué pasó). La <b>primera letra</b> = la altitud: <b>M</b>aster · <b>F</b>eature · <b>S</b>print · <b>A</b>cceptance (Story).</p></div>
+</section>
+
+<!-- D · AXIOMAS -->
+<section class="slide" style="--ac:#34d399" data-t="Los 5 axiomas">
+  <p class="kick">Las leyes de verdad — todo nombre del códice obedece estas cinco</p>
+  <h2>Los Cinco Axiomas</h2>
+  <p class="lede mt-s">No son reglas sueltas: son el patrón que emana de toda la nomenclatura. Si un nombre nuevo no cabe en estos cinco, está mal formado.</p>
+  <div class="lstack mt-m">
+    <div class="lbar" style="--ac:#60a5fa"><span class="ln">A · CLAVE</span><span class="ld">Todo nombre lleva su clave Jira — así Story ↔ test ↔ código ↔ rama quedan atados</span><span class="lx">PROJ-101: …</span></div>
+    <div class="lbar" style="--ac:#a78bfa"><span class="ln">B · CAPA</span><span class="ld">El primer token codifica la capa/altitud — se lee antes que la frase</span><span class="lx">ATP: · TS: · @atc</span></div>
+    <div class="lbar" style="--ac:#22d3ee"><span class="ln">C · RESULTADO</span><span class="ld">Los casos se nombran por su resultado, no por su acción — verbo primero</span><span class="lx">should &lt;outcome&gt;</span></div>
+    <div class="lbar" style="--ac:#fbbf24"><span class="ln">D · PLAN vs RUN</span><span class="ld">Plan y ejecución se distinguen en el primer token (P = plan, R = run)</span><span class="lx">ATP → ATR</span></div>
+    <div class="lbar" style="--ac:#a3e635"><span class="ln">E · UNA FORMA</span><span class="ld">Una sola forma por artefacto; la membresía es un link, nunca se mete en el nombre</span><span class="lx">link ≠ prefijo</span></div>
+  </div>
+  <div class="callout good mt-m" style="padding:11px 14px"><p style="margin:0" class="dim">El siguiente slide aplica estos axiomas a los <b>5 errores</b> que más se cometen al ignorarlos.</p></div>
+</section>
+
+<!-- 2 · LOS 5 ERRORES MÁS COMUNES -->
+<section class="slide" style="--ac:#f87171" data-t="5 errores comunes">
+  <p class="kick">Aplicando los axiomas — las cinco confusiones que más se cometen</p>
+  <h2>Los Cinco Errores Más Comunes</h2>
   <div class="grid g2 mt-m">
     <div class="card lyr" style="--ac:#22d3ee"><h4>1 · <span class="mono">should</span> = el caso</h4><p class="dim">Cada test case <b>individual</b> (TC del TMS, ATC, E2E, integración) afirma su comportamiento con <span class="mono" style="color:#22d3ee">should</span>. Resultado primero, nunca "Validate".</p></div>
     <div class="card lyr" style="--ac:#a3e635"><h4>2 · <span class="mono">Validate</span> = el grupo</h4><p class="dim"><span class="mono" style="color:#a3e635">Validate &lt;feature&gt;</span> nombra solo la capa <b>agrupadora</b> — el summary de un Xray Test Set o un <span class="mono">describe()</span> en código. Nunca un caso individual.</p></div>
@@ -175,13 +256,36 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <h2>Siete Capas de Nomenclatura</h2>
   <p class="lede mt-s">La <b>capa</b> de un nombre te dice qué tipo de cosa es antes de leer una sola palabra. Cada capa tiene su color en este códice.</p>
   <div class="lstack mt-m">
-    <div class="lbar" style="--ac:#22d3ee"><span class="ln">CASE</span><span class="ld">El test individual — lo que se afirma</span><span class="lx">should &lt;outcome&gt;</span></div>
+    <div class="lbar" style="--ac:#22d3ee"><span class="ln">CASE</span><span class="ld">El Test Case (TC) individual — lo que se afirma</span><span class="lx">should &lt;outcome&gt;</span></div>
     <div class="lbar" style="--ac:#a3e635"><span class="ln">GROUP</span><span class="ld">El contenedor de casos — la feature bajo prueba</span><span class="lx">Validate &lt;feature&gt;</span></div>
     <div class="lbar" style="--ac:#fbbf24"><span class="ln">CONTAINER</span><span class="ld">Vasijas de planificación y ejecución — ATP/ATR/FTP/STP + Test Set/PRC</span><span class="lx">{ACRONYM}: {scope}: …</span></div>
     <div class="lbar" style="--ac:#a78bfa"><span class="ln">CODE</span><span class="ld">KATA — componentes, ATCs, archivos, tags</span><span class="lx">@atc · {Resource}Api</span></div>
     <div class="lbar" style="--ac:#60a5fa"><span class="ln">JIRA</span><span class="ld">Estados de workflow, labels, títulos de issues de calidad</span><span class="lx">Epic: Component: …</span></div>
     <div class="lbar" style="--ac:#fb923c"><span class="ln">GIT</span><span class="ld">Ramas, commits, títulos de PR</span><span class="lx">type(KEY): …</span></div>
     <div class="lbar" style="--ac:#f472b6"><span class="ln">FILESYSTEM</span><span class="ld">Árbol PBI, archivos spec/plan, carpetas KATA</span><span class="lx">EPIC-&lt;KEY&gt;-&lt;slug&gt;</span></div>
+  </div>
+  <div class="callout mt-m" style="padding:10px 14px"><p style="margin:0" class="dim"><b>GROUP vs CONTAINER</b> — ambos "contienen", pero <b style="color:#a3e635">GROUP</b> solo agrupa casos por feature (<span class="mono">describe</span> / Test Set), mientras <b style="color:#fbbf24">CONTAINER</b> son las vasijas de planificación y ejecución (Plan / Run). GROUP organiza; CONTAINER planifica + ejecuta.</p></div>
+</section>
+
+<!-- E · MODELO MENTAL -->
+<section class="slide" style="--ac:#a78bfa" data-t="Modelo mental">
+  <p class="kick">Cómo encajan las capas — una imagen antes de los detalles</p>
+  <h2>El modelo mental</h2>
+  <p class="lede mt-s">Cada capa anida en la siguiente. Una Story se planifica, agrupa sus casos, se ejecuta, y el código la espeja — todo atado por la misma clave Jira.</p>
+  <div class="tmpl mt-m" style="font-size:15px;line-height:1.75;--ac:#a78bfa">
+<span class="t-pre">STORY PROJ-101</span>  <span class="t-pun">— la unidad de trabajo</span><br>
+&nbsp;├─ <span style="color:#fbbf24">ATP: PROJ-101: …</span>      <span class="t-pun">PLAN: qué se probará · CONTAINER</span><br>
+&nbsp;├─ <span style="color:#a3e635">TS: Validate login</span>   <span class="t-pun">GROUP: agrupa los casos</span><br>
+&nbsp;│&nbsp;&nbsp;├─ <span style="color:#22d3ee">PROJ-101: TC1: should grant access…</span>  <span class="t-pun">CASE</span><br>
+&nbsp;│&nbsp;&nbsp;└─ <span style="color:#22d3ee">PROJ-101: TC2: should reject login…</span>  <span class="t-pun">CASE</span><br>
+&nbsp;├─ <span style="color:#fbbf24">ATR: PROJ-101: Story Testing</span>  <span class="t-pun">RUN: qué pasó/falló · CONTAINER</span><br>
+&nbsp;└─ <span style="color:#a78bfa">@atc('PROJ-101') loginWithValidCredentials()</span>  <span class="t-pun">CODE espeja el caso</span>
+  </div>
+  <div class="row mt-m" style="gap:10px;flex-wrap:wrap">
+    <span class="chip" style="--ac:#60a5fa"><span class="dot"></span>misma clave Jira en todo</span>
+    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>Plan → Run</span>
+    <span class="chip" style="--ac:#a3e635"><span class="dot"></span>Group contiene Cases</span>
+    <span class="chip" style="--ac:#a78bfa"><span class="dot"></span>Code espeja Case vía @atc</span>
   </div>
 </section>
 
@@ -214,6 +318,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       <div class="ex bad"><s>should work correctly</s> — sin outcome concreto</div>
     </div>
   </div>
+  <div class="callout warn mt-m" style="padding:10px 14px"><p style="margin:0" class="dim"><b>Regla de mayúsculas</b> — <span class="mono" style="color:#22d3ee">should</span> va en minúscula porque <b>continúa</b> el prefijo <span class="mono">{US_ID}: TC#:</span> (frase corrida). <span class="mono" style="color:#a3e635">Validate</span> va en mayúscula porque <b>inicia</b> el summary del grupo. La capa decide el casing.</p></div>
   <p class="mt-m"><span class="src">tms-conventions.md · jira-test-management.md · tms-architecture.md</span></p>
 </section>
 
@@ -276,6 +381,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 <section class="slide" style="--ac:#fbbf24" data-t="Capa Container">
   <p class="kick">Capa · CONTAINER — vasijas de ejecución y setup</p>
   <h2>Vasijas de ejecución y setup</h2>
+  <p class="dim mt-s" style="font-size:15px"><b>Vasija</b> (ing. <i>vessel</i>) = el subconjunto de artefactos que <b>contiene</b> una corrida o un plan. Todo en el códice es un artefacto; la vasija es la que se ejecuta o se planifica — por eso no la llamamos solo "artefacto".</p>
   <div class="grid g2 mt-m">
     <div class="card lyr" style="--ac:#fbbf24"><h4>ATR · Ejecución de Story <span class="dim3" style="font-size:12px">(Story Testing)</span></h4>
       <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">ATR:</span> <span class="t-pre">{STORY-KEY}</span><span class="t-pun">: </span><span class="t-var">Story Testing</span></div>
@@ -333,6 +439,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <p class="kick">Capa · CODE</p>
   <h1>Nombres de <span class="grad">código KATA</span></h1>
   <p class="lede">Componentes, ATCs, archivos, fixtures, tags — los nombres que viven en TypeScript. La clave del decorador ata cada línea de vuelta a Jira.</p>
+  <div class="callout mt-m" style="padding:12px 15px"><p style="margin:0" class="dim"><b>KATA</b> = <i>Component Action Test Architecture</i> — no es solo naming: es la estrategia arquitectónica del framework (inyección de dependencias, capas L1–L4, fixtures y nomenclatura). Aquí cubrimos solo sus <b>nombres</b>; la arquitectura completa vive en <span class="mono">kata-architecture.md</span>.</p></div>
 </section>
 
 <!-- 9 · ATC + @atc + archivos + test() -->
@@ -405,8 +512,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 
 <!-- 12 · Capa JIRA -->
 <section class="slide" style="--ac:#60a5fa" data-t="Capa Jira">
-  <p class="kick">Capa · JIRA — estados, labels, títulos de calidad</p>
-  <h2>Nombres en Jira / TMS</h2>
+  <p class="kick">Capa · ISSUE TRACKER (Jira) — estados, labels, títulos de calidad</p>
+  <h2>Nombres en el Issue Tracker (Jira / TMS)</h2>
   <div class="grid g2 mt-m">
     <div class="card lyr" style="--ac:#60a5fa"><h4>Título de issue de calidad <span class="dim3" style="font-size:12px">bug / defect / improvement</span></h4>
       <div class="tmpl sm" style="--ac:#60a5fa"><span class="t-pre">&lt;EPIC&gt;</span><span class="t-pun">: </span><span class="t-pre">&lt;COMPONENT&gt;</span><span class="t-pun">: </span><span class="t-var">&lt;summary&gt;</span></div>
@@ -426,6 +533,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   </div>
   <div class="row mt-m" style="gap:8px;flex-wrap:wrap"><span class="dim3 mono" style="font-size:12px">labels:</span>
     <span class="tag">smoke</span><span class="tag">regression</span><span class="tag">e2e</span><span class="tag">integration</span><span class="tag">functional</span><span class="tag">automation-candidate</span><span class="tag">manual-only</span><span class="tag">automated</span></div>
+  <div class="callout mt-m" style="--ac:#60a5fa;padding:10px 14px"><p style="margin:0" class="dim">Esta capa es <b>agnóstica del gestor</b> — Jira es el ejemplo de referencia; las mismas formas aplican a cualquier issue tracker (estados, labels, títulos de calidad).</p></div>
   <p class="mt-s"><span class="src">tms-conventions.md · reporting-templates.md · defect-management-doctrine.md</span></p>
 </section>
 
