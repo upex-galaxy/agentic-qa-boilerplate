@@ -510,6 +510,66 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 .tpl-howto .qitem.answered .qexp{display:block}
 .tpl-howto .qexp b{color:#fff}
 .tpl-howto .qhint{font-size:13px;color:var(--text-3);font-family:'JetBrains Mono',monospace;margin-top:6px}
+
+/* ===== DASHBOARD CHART CARDS (donut / pie / gauge / stacked / blocked) ===== */
+.tpl-howto .chartcard{display:flex;flex-direction:column;padding:18px 20px}
+.tpl-howto .chartcard .cq{font-size:16px;font-weight:700;color:#fff;line-height:1.32;min-height:42px}
+.tpl-howto .chartcard .cm{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--accent);margin-top:5px;text-transform:none}
+.tpl-howto .chartcard .cm.ill{color:var(--warn)}
+.tpl-howto .chartwrap{display:flex;align-items:center;justify-content:center;gap:16px;margin:14px 0;flex:1;min-height:128px}
+.tpl-howto .chartans{font-size:12.5px;color:var(--text-2);line-height:1.5;border-top:1px dashed var(--border);padding-top:9px;margin-top:auto}
+.tpl-howto .chartans b{color:#fff;font-weight:600}
+
+/* donut & pie */
+.tpl-howto .donut{position:relative;width:124px;height:124px;border-radius:50%;flex:none}
+.tpl-howto .donut::before{content:"";position:absolute;inset:25px;border-radius:50%;background:var(--surface);z-index:1}
+.tpl-howto .donut .dlabel{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2}
+.tpl-howto .donut .dlabel .dv{font-size:29px;font-weight:900;line-height:1;letter-spacing:-.02em}
+.tpl-howto .donut .dlabel .dn{font-size:10px;color:var(--text-3);font-family:'JetBrains Mono',monospace;margin-top:3px}
+.tpl-howto .pie{position:relative;width:120px;height:120px;border-radius:50%;flex:none;box-shadow:0 0 0 1px var(--border) inset}
+
+/* legend */
+.tpl-howto .legend{display:flex;flex-direction:column;gap:6px;font-size:12px;min-width:124px}
+.tpl-howto .legend-item{display:flex;align-items:center;gap:8px;color:var(--text-2);white-space:nowrap}
+.tpl-howto .legend-item .swatch{width:11px;height:11px;border-radius:3px;flex:none}
+.tpl-howto .legend-item b{color:#fff;font-weight:700;font-family:'JetBrains Mono',monospace;margin-left:auto;padding-left:8px}
+
+/* stacked bar */
+.tpl-howto .stackwrap{display:flex;flex-direction:column;gap:12px;width:100%}
+.tpl-howto .stacked{display:flex;width:100%;height:30px;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.tpl-howto .stacked .seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;min-width:0;overflow:hidden}
+.tpl-howto .stacked-legend{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px;font-size:11.5px}
+
+/* gauge (semicircle) */
+.tpl-howto .gauge{position:relative;width:156px;height:88px;overflow:hidden;flex:none}
+.tpl-howto .gauge .garc{position:absolute;top:0;left:0;width:156px;height:156px;border-radius:50%}
+.tpl-howto .gauge .ghole{position:absolute;top:26px;left:26px;width:104px;height:104px;border-radius:50%;background:var(--surface)}
+.tpl-howto .gauge .gval{position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:26px;font-weight:900;line-height:1;letter-spacing:-.02em}
+.tpl-howto .gauge .gsub{position:absolute;left:0;right:0;bottom:-18px;text-align:center;font-size:10px;color:var(--text-3);font-family:'JetBrains Mono',monospace}
+
+/* blocked / unmeasurable chart */
+.tpl-howto .blocked{position:relative;width:100%}
+.tpl-howto .blocked .bars{margin-top:0;filter:grayscale(1) opacity(.5)}
+.tpl-howto .blocked .blockover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:repeating-linear-gradient(135deg,transparent 0 9px,color-mix(in srgb,var(--bad) 7%,transparent) 9px 18px)}
+.tpl-howto .blocked .blockover span{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--bad);
+  background:var(--surface);border:1px solid color-mix(in srgb,var(--bad) 45%,transparent);border-radius:8px;padding:6px 12px}
+
+/* ===== mini chart icons (primer / legend slide) ===== */
+.tpl-howto .iconwrap{display:flex;align-items:center;justify-content:center;height:70px;margin-bottom:10px}
+.tpl-howto .donut.mini{width:62px;height:62px}
+.tpl-howto .donut.mini::before{inset:13px}
+.tpl-howto .pie.mini{width:60px;height:60px}
+.tpl-howto .gauge.mini{width:80px;height:46px}
+.tpl-howto .gauge.mini .garc{width:80px;height:80px}
+.tpl-howto .gauge.mini .ghole{top:13px;left:13px;width:54px;height:54px}
+.tpl-howto .stacked.mini{height:18px;width:86px}
+.tpl-howto .minibars{display:flex;flex-direction:column;gap:5px;width:80px}
+.tpl-howto .minibars .bt{height:9px}
+.tpl-howto .chartcard.tiny{padding:16px 18px}
+.tpl-howto .chartcard.tiny h4{margin:0 0 4px;font-size:16px}
+.tpl-howto .chartcard.tiny p{font-size:12.5px;color:var(--text-2);margin:0;line-height:1.45}
+.tpl-howto .chartcard.tiny p b{color:#fff;font-weight:600}
 </style>
 </head>
 <body class="tpl-howto" style="--a1:#ff7b72;--a2:#f0883e;--a3:#d2a8ff">
@@ -521,7 +581,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h1 class="h1 anim-fade-up" data-anim="fade-up">Defect Management — Gestionar la <span class="grad">Calidad por sus Incidencias</span></h1>
   <p class="lede mt-m">Bug, Defect, Improvement: el mismo síntoma, distinta estrategia de gestión. Cómo se reportan bajo un estándar de calidad reusable, cómo viven en su workflow, y cómo se convierten en métricas que responden preguntas de calidad.</p>
   <div class="speaker"><div class="av"></div><div><b>Del reporte a la métrica</b><span>parte 1: las 3 incidencias · parte 2: workflow + campos del estándar · parte 3: medir (ejemplo ShopFlow)</span></div></div>
-  <div class="deck-footer"><span class="mono">Jira · estándar de calidad · proyecto de ejemplo ShopFlow (SHOP)</span><span class="slide-number" data-current="1" data-total="34"></span></div>
+  <div class="deck-footer"><span class="mono">Jira · estándar de calidad · proyecto de ejemplo ShopFlow (SHOP)</span><span class="slide-number" data-current="1" data-total="38"></span></div>
   <div class="notes">Encuadre: esto NO es sobre casos de prueba ni test plans — es sobre la gestión de incidencias de error (Bug/Defect/Improvement): cómo se reportan, cómo transitan y cómo se miden. La meta final es que el equipo de producto vea la salud de la app con sus propios ojos.</div>
 </section>
 
@@ -1044,7 +1104,252 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Cerrar el arco: el dashboard NO es de pruebas (eso es otra presentación) — es de gestión de incidencias. Lo construible de inmediato vs lo que exige higiene primero (ilustrado con ShopFlow). Tres bloques: salud, gravedad/causa, ownership.</div>
 </section>
 
-<!-- 31. QUIZ 3 -->
+<!-- 31. PRIMER — CÓMO LEER ESTOS GRÁFICOS -->
+<section class="slide" data-title="Cómo leer">
+  <p class="kicker">leyenda · antes del dashboard</p>
+  <h2 class="h2" data-anim="fade-up">Cómo Leer Estos Gráficos</h2>
+  <div class="grid g4 mt-s">
+
+    <div class="card chartcard tiny">
+      <div class="iconwrap">
+        <div class="donut mini" style="background:conic-gradient(var(--a1) 0 58%,var(--a2) 58% 84%,var(--a3) 84% 100%)"></div>
+      </div>
+      <h4>Donut / Pie</h4>
+      <p>Proporción de un total; las partes suman 100%. <b>"¿Cómo se reparte el total?"</b></p>
+    </div>
+
+    <div class="card chartcard tiny">
+      <div class="iconwrap">
+        <div class="minibars">
+          <span class="bt" style="width:100%"></span>
+          <span class="bt" style="width:64%;background:var(--a2)"></span>
+          <span class="bt" style="width:38%;background:var(--a3)"></span>
+        </div>
+      </div>
+      <h4>Barras</h4>
+      <p>Comparar la magnitud entre categorías. <b>"¿Cuál es mayor?"</b></p>
+    </div>
+
+    <div class="card chartcard tiny">
+      <div class="iconwrap">
+        <div class="stacked mini">
+          <div class="seg" style="width:45%;background:var(--good)"></div>
+          <div class="seg" style="width:30%;background:var(--warn)"></div>
+          <div class="seg" style="width:25%;background:#79c0ff"></div>
+        </div>
+      </div>
+      <h4>Barra apilada</h4>
+      <p>La composición de UN total dentro de una sola barra. <b>"¿De qué se compone esto?"</b></p>
+    </div>
+
+    <div class="card chartcard tiny">
+      <div class="iconwrap">
+        <div class="gauge mini">
+          <div class="garc" style="background:conic-gradient(from 270deg,var(--warn) 0 54deg,var(--surface-2) 54deg 180deg,transparent 180deg)"></div>
+          <div class="ghole"></div>
+        </div>
+      </div>
+      <h4>Gauge (medidor)</h4>
+      <p>Un valor único contra su máximo/meta (un %). <b>"¿Qué tan cerca del tope?"</b></p>
+    </div>
+
+  </div>
+  <table class="dtable mt-m" style="font-size:13.5px">
+    <thead><tr><th>Término</th><th>Qué es</th><th>Ejemplo en este dashboard</th></tr></thead>
+    <tbody>
+      <tr><td><b>Rate / Tasa</b></td><td>Proporción expresada de 0 a 100%</td><td>Escape Rate = fugados / total</td></tr>
+      <tr><td><b>Ratio</b></td><td>Relación entre dos cantidades</td><td>Rejection Ratio = ruido / total</td></tr>
+      <tr><td><b>Distribución</b></td><td>Cómo se reparte el conteo entre categorías</td><td>por Severity, por Root Cause…</td></tr>
+      <tr><td><b>Índice ponderado</b></td><td>Σ(peso × conteo) / total — no todo pesa igual</td><td>Severity Index: una crítica pesa más que una menor</td></tr>
+      <tr><td><b>Slice "Sin asignar"</b></td><td>La porción de datos faltantes; mostrarla = honestidad</td><td>el campo vacío no se esconde, se grafica (muted)</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">Slide-glosario: que nadie se pierda con donut/gauge/barra apilada antes de ver el dashboard. Idea clave a verbalizar: cada forma responde una pregunta distinta — proporción (donut), comparación (barras), composición (apilada), valor-contra-meta (gauge). Y el slice "Sin asignar" en muted es deliberado: graficar el dato faltante es ser honesto, no esconder la brecha de higiene. Los íconos son los mismos componentes CSS que verán a tamaño completo en los 3 dashboards siguientes.</div>
+</section>
+
+<!-- 32. DASHBOARD D1 — SALUD GENERAL -->
+<section class="slide" data-title="Dashboard · Salud">
+  <p class="kicker">dashboard en vivo · bloque 1/3 · ejemplo ShopFlow</p>
+  <h2 class="h2" data-anim="fade-up">Dashboard · Salud General</h2>
+  <div class="grid g3 mt-s">
+
+    <!-- chart 1: escape rate donut -->
+    <div class="card chartcard">
+      <div class="cq">¿Detenemos los defectos antes de que escapen a prod?</div>
+      <div class="cm">métrica · Defect Escape Rate</div>
+      <div class="chartwrap">
+        <div class="donut" style="background:conic-gradient(var(--bad) 0 87%,var(--good) 87% 100%)">
+          <div class="dlabel"><span class="dv" style="color:var(--bad)">87%</span><span class="dn">escapado</span></div>
+        </div>
+      </div>
+      <div class="chartans"><b>87% se fugó</b> — fuga real o sub-uso del tipo Defect; ambas accionables.</div>
+    </div>
+
+    <!-- chart 2: type split donut -->
+    <div class="card chartcard">
+      <div class="cq">¿De qué se compone la familia de incidencias?</div>
+      <div class="cm">métrica · Type split (33 total)</div>
+      <div class="chartwrap">
+        <div class="donut" style="background:conic-gradient(var(--a1) 0 81.8%,var(--a2) 81.8% 93.9%,var(--a3) 93.9% 100%)">
+          <div class="dlabel"><span class="dv grad">33</span><span class="dn">incidencias</span></div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:var(--a1)"></span>Bug<b>27</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--a2)"></span>Defect<b>4</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--a3)"></span>Improvement<b>2</b></div>
+        </div>
+      </div>
+      <div class="chartans"><b>Bug = 82%</b>; vigila que no sean Defects mal tipados.</div>
+    </div>
+
+    <!-- chart 3: status lifecycle stacked bar -->
+    <div class="card chartcard">
+      <div class="cq">¿En qué punto del ciclo están?</div>
+      <div class="cm">métrica · Status lifecycle (33 total)</div>
+      <div class="chartwrap">
+        <div class="stackwrap">
+          <div class="stacked">
+            <div class="seg" style="width:45.5%;background:var(--good);color:#03130b">45%</div>
+            <div class="seg" style="width:24.2%;background:var(--warn);color:#1a1303">24%</div>
+            <div class="seg" style="width:15.2%;background:var(--text-3);color:#0d1117">15%</div>
+            <div class="seg" style="width:12.1%;background:#79c0ff;color:#04121f">12%</div>
+            <div class="seg" style="width:3%;background:var(--bad)"></div>
+          </div>
+          <div class="stacked-legend">
+            <div class="legend-item"><span class="swatch" style="background:var(--good)"></span>Closed/VERIFIED<b>15</b></div>
+            <div class="legend-item"><span class="swatch" style="background:var(--warn)"></span>Open<b>8</b></div>
+            <div class="legend-item"><span class="swatch" style="background:var(--text-3)"></span>Duplicated<b>5</b></div>
+            <div class="legend-item"><span class="swatch" style="background:#79c0ff"></span>Ready For QA<b>4</b></div>
+            <div class="legend-item"><span class="swatch" style="background:var(--bad)"></span>REJECTED<b>1</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="chartans"><b>8 vivas + 4 esperando QA</b>; 15 cerradas.</div>
+    </div>
+
+  </div>
+  <div class="notes">Bloque 1 del dashboard blueprint materializado. Cifras ilustrativas del proyecto de ejemplo ShopFlow. Escape Rate (donut) lee doble: fuga real o sub-uso del work type Defect. Type split: Bug domina 82%. Lifecycle (barra apilada): 8 Open + 4 Ready For QA siguen vivas; 5 Duplicated + 1 REJECTED son ruido (lo retomamos en el bloque 3). Estos tres gadgets son construibles HOY en ShopFlow (type y status están al 100%).</div>
+</section>
+
+<!-- 32. DASHBOARD D2 — GRAVEDAD & CAUSA -->
+<section class="slide" data-title="Dashboard · Gravedad">
+  <p class="kicker">dashboard en vivo · bloque 2/3 · ejemplo ShopFlow</p>
+  <h2 class="h2" data-anim="fade-up">Dashboard · Gravedad &amp; Causa</h2>
+  <div class="grid g3 mt-s">
+
+    <!-- chart 4: severity bars -->
+    <div class="card chartcard">
+      <div class="cq">¿Qué tan grave es lo que encontramos?</div>
+      <div class="cm">métrica · Severity dist. (33 total)</div>
+      <div class="chartwrap" style="align-items:stretch">
+        <div class="bars" style="margin-top:0;width:100%">
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Crítica</span><span class="bt" style="width:47%;background:var(--bad)"></span><span class="bn">7</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Mayor</span><span class="bt" style="width:40%;background:var(--warn)"></span><span class="bn">6</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Moderada</span><span class="bt" style="width:27%;background:#79c0ff"></span><span class="bn">4</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Menor</span><span class="bt" style="width:7%;background:var(--good)"></span><span class="bn">1</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Sin asignar</span><span class="bt muted" style="width:100%"></span><span class="bn">15</span></div>
+        </div>
+      </div>
+      <div class="chartans"><b>7 críticas vivas</b> — pero 45% sin Severity: el dato cojea.</div>
+    </div>
+
+    <!-- chart 5: root cause pie -->
+    <div class="card chartcard">
+      <div class="cq">¿Por qué fallamos?</div>
+      <div class="cm ill">métrica · Root Cause · ilustrativo</div>
+      <div class="chartwrap">
+        <div class="pie" style="background:conic-gradient(var(--a1) 0 33.3%,var(--a2) 33.3% 51.5%,var(--a3) 51.5% 66.7%,#79c0ff 66.7% 78.8%,var(--text-3) 78.8% 100%)"></div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:var(--a1)"></span>Lógica código<b>11</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--a2)"></span>Req. ambiguo<b>6</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--a3)"></span>Datos/config<b>5</b></div>
+          <div class="legend-item"><span class="swatch" style="background:#79c0ff"></span>Integración<b>4</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--text-3)"></span>Sin asignar<b>7</b></div>
+        </div>
+      </div>
+      <div class="chartans"><b>La lógica de código domina</b> → foco de mejora de proceso.</div>
+    </div>
+
+    <!-- chart 6: error type bars -->
+    <div class="card chartcard">
+      <div class="cq">¿Qué clase de fallas dominan?</div>
+      <div class="cm ill">métrica · Error Type · ilustrativo</div>
+      <div class="chartwrap" style="align-items:stretch">
+        <div class="bars" style="margin-top:0;width:100%">
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Funcional</span><span class="bt" style="width:53%;background:var(--a1)"></span><span class="bn">8</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">UI</span><span class="bt" style="width:27%;background:var(--a2)"></span><span class="bn">4</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Validación</span><span class="bt" style="width:27%;background:#79c0ff"></span><span class="bn">4</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Performance</span><span class="bt" style="width:13%;background:var(--warn)"></span><span class="bn">2</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Sin asignar</span><span class="bt muted" style="width:100%"></span><span class="bn">15</span></div>
+        </div>
+      </div>
+      <div class="chartans"><b>Funcional domina</b>; 45% sin Error Type → otra brecha de higiene.</div>
+    </div>
+
+  </div>
+  <div class="notes">Bloque 2 del dashboard. Root Cause y Error Type son cifras ILUSTRATIVAS de ShopFlow (marcadas en ámbar). Las tres gráficas muestran honestamente el slice "Sin asignar" en muted: Severity y Error Type van ~45% sin rellenar — la barra muted al 100% grita la brecha de higiene. Severity revela 7 críticas vivas; Root Cause apunta a lógica de código como foco de mejora de proceso.</div>
+</section>
+
+<!-- 33. DASHBOARD D3 — OWNERSHIP & PROCESO -->
+<section class="slide" data-title="Dashboard · Ownership">
+  <p class="kicker">dashboard en vivo · bloque 3/3 · ejemplo ShopFlow</p>
+  <h2 class="h2" data-anim="fade-up">Dashboard · Ownership &amp; Proceso</h2>
+  <div class="grid g3 mt-s">
+
+    <!-- chart 7: components blocked -->
+    <div class="card chartcard">
+      <div class="cq">¿Qué parte de la app falla más?</div>
+      <div class="cm" style="color:var(--bad)">métrica · Defects por Component · bloqueado</div>
+      <div class="chartwrap" style="align-items:stretch">
+        <div class="blocked">
+          <div class="bars" style="margin-top:0;width:100%">
+            <div class="barrow" style="grid-template-columns:80px 1fr 30px"><span class="bl">Checkout</span><span class="bt muted" style="width:3%"></span><span class="bn">1</span></div>
+            <div class="barrow" style="grid-template-columns:80px 1fr 30px"><span class="bl">Catálogo</span><span class="bt muted" style="width:1%"></span><span class="bn">0</span></div>
+            <div class="barrow" style="grid-template-columns:80px 1fr 30px"><span class="bl">Carrito</span><span class="bt muted" style="width:1%"></span><span class="bn">0</span></div>
+            <div class="barrow" style="grid-template-columns:80px 1fr 30px"><span class="bl">Auth</span><span class="bt muted" style="width:1%"></span><span class="bn">0</span></div>
+          </div>
+          <div class="blockover"><span>campo vacío · 1/33 (3%)</span></div>
+        </div>
+      </div>
+      <div class="chartans"><b>Este gráfico NO existe</b> hasta rellenar Components — campo vacío = pregunta sin respuesta.</div>
+    </div>
+
+    <!-- chart 8: reopen rate gauge -->
+    <div class="card chartcard">
+      <div class="cq">¿Qué tan bueno es el fix? (¿reabrimos?)</div>
+      <div class="cm ill">métrica · Reopen Rate · ilustrativo</div>
+      <div class="chartwrap">
+        <div class="gauge">
+          <div class="garc" style="background:conic-gradient(from 270deg,var(--warn) 0 36deg,var(--surface-2) 36deg 180deg,transparent 180deg)"></div>
+          <div class="ghole"></div>
+          <div class="gval" style="color:var(--warn)">20%</div>
+          <div class="gsub">3 reabiertos / 15 cerrados</div>
+        </div>
+      </div>
+      <div class="chartans"><b>1 de cada 5 fixes se reabre</b> → revisar criterios de Done.</div>
+    </div>
+
+    <!-- chart 9: rejection ratio donut -->
+    <div class="card chartcard">
+      <div class="cq">¿Cuánto ruido genera el reporte?</div>
+      <div class="cm">métrica · Rejection Ratio (33 total)</div>
+      <div class="chartwrap">
+        <div class="donut" style="background:conic-gradient(var(--warn) 0 18%,var(--good) 18% 100%)">
+          <div class="dlabel"><span class="dv" style="color:var(--warn)">18%</span><span class="dn">ruido</span></div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:var(--warn)"></span>Dup + REJ<b>6</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--good)"></span>Señal<b>27</b></div>
+        </div>
+      </div>
+      <div class="chartans"><b>18% del reporte es ruido</b> (duplicado/rechazado) → afinar criterios de reporte.</div>
+    </div>
+
+  </div>
+  <div class="notes">Bloque 3 del dashboard — y el más honesto. Components (gráfico 1) está BLOQUEADO: con 1/33 relleno (3%), el gadget no se puede dibujar — campo vacío = pregunta sin respuesta. Reopen Rate (gauge) es ILUSTRATIVO: 3/15 = 20%, 1 de cada 5 fixes se reabre → señal de calidad de desarrollo, no de QA. Rejection Ratio (donut): los 6 descartados (5 Duplicated + 1 REJECTED) son el 18% de ruido del reporte. Cierra el arco: dos de tres gadgets ya viven; el tercero solo necesita disciplina de higiene.</div>
+</section>
+
+<!-- 34. QUIZ 3 -->
 <section class="slide" data-title="Quiz 3">
   <p class="kicker">quiz · parte 3</p>
   <h2 class="h2" data-anim="fade-up">Métricas &amp; Dashboards</h2>
