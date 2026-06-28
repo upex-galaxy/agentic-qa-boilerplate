@@ -769,6 +769,15 @@ issue in defectsCreatedDuringTestExecution(CALC-400)</div>
 
 </div>
 
+<!-- keyboard-nav hint (ported from defect-management deck) -->
+<div id="help-hint">← → navegar · O resumen · S presentador · N notas · F pantalla</div>
+<style id="upex-hint-style">
+#help-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:60;pointer-events:none;
+  font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--text-3)}
+@media (max-width:768px){#help-hint{display:none}}
+@media (pointer:coarse){#help-hint{display:none}}
+@media print{#help-hint{display:none!important}}
+</style>
 <script>
 /* ---- runtime.js ---- */
 /* html-ppt :: runtime.js
