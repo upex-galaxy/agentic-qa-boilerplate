@@ -130,6 +130,16 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 .ovc .n{font-family:var(--mono);font-size:10px;color:var(--t3)}
 .ovc .t{font-size:12.5px;color:var(--t1);margin-top:5px;font-weight:500;line-height:1.25}
 
+.wf{margin-top:8px}
+.wf svg{width:100%;height:auto;display:block;max-height:54vh}
+.wfn{font-family:var(--mono);font-size:12px;font-weight:600;text-anchor:middle}
+.wfe{font-family:var(--mono);font-size:10.5px;text-anchor:middle;paint-order:stroke;stroke:#0b0d12;stroke-width:3px;stroke-linejoin:round}
+.wf-legend{display:flex;gap:15px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:12px;color:var(--t2)}
+.wf-legend .lg2{display:inline-flex;align-items:center;gap:6px}
+.wf-legend .nd{width:13px;height:13px;border-radius:4px;border:1px solid}
+.wf-global{margin:6px 0 0;font-family:var(--mono);font-size:11.5px;color:var(--t3)}
+.wf-take{margin-top:8px;font-size:14px;color:var(--t1)}
+.notes{margin-top:7px;font-size:11.5px;line-height:1.5;color:var(--t3);border-left:2px solid var(--line-2);padding-left:12px}
 @media print{body{overflow:visible}.slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:auto;min-height:100vh}}
 </style>
 </head>
@@ -183,7 +193,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <div class="card"><h4>Test Plan</h4><p class="dim" style="font-size:13.5px">Qué se va a probar y su alcance (Story / Feature / Sprint / Producto).</p></div>
     <div class="card"><h4>Test Execution</h4><p class="dim" style="font-size:13.5px">Una corrida de ese plan — el registro de qué pasó o falló.</p></div>
     <div class="card"><h4>Precondition (PRC)</h4><p class="dim" style="font-size:13.5px">El estado requerido antes de ejecutar (ej. usuario autenticado).</p></div>
-    <div class="card"><h4>ATC</h4><p class="dim" style="font-size:13.5px">Automated Test Case — el método KATA que implementa un TC en código.</p></div>
+    <div class="card"><h4>ATC</h4><p class="dim" style="font-size:13.5px">Acceptance Test Case — el método KATA que implementa un TC en código.</p></div>
     <div class="card"><h4>KATA</h4><p class="dim" style="font-size:13.5px">La arquitectura de pruebas en capas (L1–L4) del framework. Ver la capa CODE.</p></div>
     <div class="card"><h4>Fixture</h4><p class="dim" style="font-size:13.5px">Inyección de dependencias de KATA — entrega api/ui/test ya listos al test.</p></div>
     <div class="card"><h4>Xray</h4><p class="dim" style="font-size:13.5px">El plugin de TMS sobre Jira que aporta Test, Test Set, Test Plan, Test Execution.</p></div>
@@ -195,31 +205,29 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 <section class="slide" style="--ac:#fbbf24" data-t="Acrónimos">
   <p class="kick">La clave de siglas — cada acrónimo del códice, expandido</p>
   <h2>Acrónimos de un vistazo</h2>
+  <p class="dim mt-s" style="font-size:14px">Cada <b>Plan (P)</b> se empareja con sus <b>Results (R)</b> en la misma altitud — lee cada fila de lado a lado.</p>
   <div class="grid g2 mt-m">
+    <table>
+      <thead><tr><th>Altitud</th><th>Plan (P)</th><th>Results (R)</th></tr></thead>
+      <tbody>
+        <tr><td>Producto</td><td class="m"><span class="lp">MTP</span> — Master Test Plan</td><td class="dim">—</td></tr>
+        <tr><td>Feature</td><td class="m"><span class="lp">FTP</span> — Feature Test Plan</td><td class="m"><span class="lp">FTR</span> — Feature Test Results</td></tr>
+        <tr><td>Sprint</td><td class="m"><span class="lp">STP</span> — Sprint Test Plan</td><td class="m"><span class="lp">STR</span> — Sprint Test Results</td></tr>
+        <tr><td>Story</td><td class="m"><span class="lp">ATP</span> — Acceptance Test Plan</td><td class="m"><span class="lp">ATR</span> — Acceptance Test Results</td></tr>
+      </tbody>
+    </table>
     <table>
       <thead><tr><th>Sigla</th><th>Significa</th><th>Capa</th></tr></thead>
       <tbody>
         <tr><td class="m"><span class="lp">TC</span></td><td>Test Case</td><td class="dim">CASE</td></tr>
-        <tr><td class="m"><span class="lp">ATC</span></td><td>Automated Test Case</td><td class="dim">CODE</td></tr>
+        <tr><td class="m"><span class="lp">ATC</span></td><td>Acceptance Test Case</td><td class="dim">CODE</td></tr>
         <tr><td class="m"><span class="lp">TS</span></td><td>Test Set</td><td class="dim">GROUP</td></tr>
-        <tr><td class="m"><span class="lp">MTP</span></td><td>Master Test Plan</td><td class="dim">CONTAINER · Producto</td></tr>
-        <tr><td class="m"><span class="lp">FTP</span></td><td>Feature Test Plan</td><td class="dim">CONTAINER · Feature</td></tr>
-        <tr><td class="m"><span class="lp">STP</span></td><td>Sprint Test Plan</td><td class="dim">CONTAINER · Sprint</td></tr>
-      </tbody>
-    </table>
-    <table>
-      <thead><tr><th>Sigla</th><th>Significa</th><th>Capa</th></tr></thead>
-      <tbody>
-        <tr><td class="m"><span class="lp">ATP</span></td><td>Acceptance Test Plan (Story)</td><td class="dim">CONTAINER · Story</td></tr>
-        <tr><td class="m"><span class="lp">FTR</span></td><td>Feature Test Run (Execution)</td><td class="dim">CONTAINER · Feature</td></tr>
-        <tr><td class="m"><span class="lp">STR</span></td><td>Sprint Test Run (Execution)</td><td class="dim">CONTAINER · Sprint</td></tr>
-        <tr><td class="m"><span class="lp">ATR</span></td><td>Acceptance Test Run (Story)</td><td class="dim">CONTAINER · Story</td></tr>
         <tr><td class="m"><span class="lp">PRC</span></td><td>Precondition</td><td class="dim">CONTAINER</td></tr>
-        <tr><td class="m"><span class="lp">PBI</span></td><td>Product Backlog Item</td><td class="dim">Jira / Filesystem</td></tr>
+        <tr><td class="m"><span class="lp">PBI</span></td><td>Product Backlog Item</td><td class="dim">Jira / FS</td></tr>
       </tbody>
     </table>
   </div>
-  <div class="callout mt-m" style="padding:11px 14px"><p style="margin:0" class="dim">Patrón mnemotécnico: la <b>última letra</b> — <b>P</b> = Plan (qué se probará) · <b>R</b> = Run/Execution (qué pasó). La <b>primera letra</b> = la altitud: <b>M</b>aster · <b>F</b>eature · <b>S</b>print · <b>A</b>cceptance (Story).</p></div>
+  <div class="callout mt-m" style="padding:11px 14px"><p style="margin:0" class="dim"><b>Primera letra</b> = altitud: <b>M</b>aster · <b>F</b>eature · <b>S</b>print · <b>A</b>cceptance (Story). <b>Última letra</b>: <b>P</b> = Plan (qué se probará) · <b>R</b> = <b>Results</b> (el paraguas: la ejecución y sus runs). Un "run" = una iteración de la ejecución.</p></div>
 </section>
 
 <!-- D · AXIOMAS -->
@@ -231,7 +239,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <div class="lbar" style="--ac:#60a5fa"><span class="ln">A · CLAVE</span><span class="ld">Todo nombre lleva su clave Jira — así Story ↔ test ↔ código ↔ rama quedan atados</span><span class="lx">PROJ-101: …</span></div>
     <div class="lbar" style="--ac:#a78bfa"><span class="ln">B · CAPA</span><span class="ld">El primer token codifica la capa/altitud — se lee antes que la frase</span><span class="lx">ATP: · TS: · @atc</span></div>
     <div class="lbar" style="--ac:#22d3ee"><span class="ln">C · RESULTADO</span><span class="ld">Los casos se nombran por su resultado, no por su acción — verbo primero</span><span class="lx">should &lt;outcome&gt;</span></div>
-    <div class="lbar" style="--ac:#fbbf24"><span class="ln">D · PLAN vs RUN</span><span class="ld">Plan y ejecución se distinguen en el primer token (P = plan, R = run)</span><span class="lx">ATP → ATR</span></div>
+    <div class="lbar" style="--ac:#fbbf24"><span class="ln">D · PLAN vs RESULTS</span><span class="ld">Plan y results se distinguen en el primer token (P = Plan, R = Results)</span><span class="lx">ATP → ATR</span></div>
     <div class="lbar" style="--ac:#a3e635"><span class="ln">E · UNA FORMA</span><span class="ld">Una sola forma por artefacto; la membresía es un link, nunca se mete en el nombre</span><span class="lx">link ≠ prefijo</span></div>
   </div>
   <div class="callout good mt-m" style="padding:11px 14px"><p style="margin:0" class="dim">El siguiente slide aplica estos axiomas a los <b>5 errores</b> que más se cometen al ignorarlos.</p></div>
@@ -239,14 +247,17 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 
 <!-- 2 · LOS 5 ERRORES MÁS COMUNES -->
 <section class="slide" style="--ac:#f87171" data-t="5 errores comunes">
-  <p class="kick">Aplicando los axiomas — las cinco confusiones que más se cometen</p>
-  <h2>Los Cinco Errores Más Comunes</h2>
+  <p class="kick">Aplicando los axiomas — las confusiones a nunca cometer, como reglas</p>
+  <h2>Errores &amp; Reglas de Oro</h2>
   <div class="grid g2 mt-m">
-    <div class="card lyr" style="--ac:#22d3ee"><h4>1 · <span class="mono">should</span> = el caso</h4><p class="dim">Cada test case <b>individual</b> (TC del TMS, ATC, E2E, integración) afirma su comportamiento con <span class="mono" style="color:#22d3ee">should</span>. Resultado primero, nunca "Validate".</p></div>
-    <div class="card lyr" style="--ac:#a3e635"><h4>2 · <span class="mono">Validate</span> = el grupo</h4><p class="dim"><span class="mono" style="color:#a3e635">Validate &lt;feature&gt;</span> nombra solo la capa <b>agrupadora</b> — el summary de un Xray Test Set o un <span class="mono">describe()</span> en código. Nunca un caso individual.</p></div>
-    <div class="card lyr" style="--ac:#60a5fa"><h4>3 · El prefijo = la Story</h4><p class="dim">El título de un TC siempre lleva como prefijo la <b>clave de la User Story</b> en toda modalidad. La membresía a un Test Set es un <b>link</b> — nunca el prefijo.</p></div>
-    <div class="card lyr" style="--ac:#a78bfa"><h4>4 · <span class="mono">@atc</span> = la clave Jira</h4><p class="dim">El decorador lleva la clave Jira propia del TC como <b>string literal</b>: <span class="mono" style="color:#a78bfa">@atc('PROJ-101')</span>. Sin IDs sintéticos, sin template literals.</p></div>
-    <div class="card lyr" style="--ac:#fb923c;grid-column:span 2"><h4>5 · <span class="mono">@integration</span>, no <span class="mono">@api</span></h4><p class="dim">El tag de pruebas API es <span class="mono" style="color:#fb923c">@integration</span> — la contraparte equitativa de <span class="mono">@e2e</span>. (El alias de import <span class="mono">@api/</span> es otra cosa y se mantiene.)</p></div>
+    <div class="card lyr" style="--ac:#22d3ee"><h4>1 · <span class="mono">should</span> = caso · <span class="mono">Validate</span> = grupo</h4><p class="dim">El caso afirma un comportamiento (<span class="mono">should</span>); el grupo solo nombra la caja (<span class="mono">Validate</span>). Nunca al revés.</p></div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>2 · ATC = <b>Acceptance</b> Test Case</h4><p class="dim">No "Automated". El ATC es el método KATA mapeado 1:1 a un TC; la clave <span class="mono">@atc</span> lo ata a Jira.</p></div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>3 · R = <b>Results</b>, no Run</h4><p class="dim">ATR / FTR / STR son Test <b>Results</b>. Un "run" es solo una iteración de la ejecución; Results es el paraguas.</p></div>
+    <div class="card lyr" style="--ac:#60a5fa"><h4>4 · El prefijo = la clave de la Story</h4><p class="dim">El título de un TC lleva la clave de su User Story. La pertenencia a un Test Set es un <b>link</b>, nunca va en el nombre.</p></div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>5 · <span class="mono">@atc('PROJ-101')</span> literal</h4><p class="dim">El decorador lleva una clave Jira literal — sin template literals, sin IDs sintéticos.</p></div>
+    <div class="card lyr" style="--ac:#fb923c"><h4>6 · <span class="mono">@integration</span>, no <span class="mono">@api</span></h4><p class="dim">El tag de API tests es <span class="mono">@integration</span> (contraparte de <span class="mono">@e2e</span>). <span class="mono">@api/</span> es el alias de import — otra cosa.</p></div>
+    <div class="card lyr" style="--ac:#22d3ee"><h4>7 · El casing sigue a la capa</h4><p class="dim"><span class="mono">should</span> minúscula (continúa el prefijo) · <span class="mono">Validate</span> mayúscula (inicia el summary del grupo).</p></div>
+    <div class="card lyr" style="--ac:#a3e635"><h4>8 · Una forma · primer token = capa</h4><p class="dim">Una sola forma por artefacto; el primer token codifica su capa/altitud. Lee la intención antes de la frase.</p></div>
   </div>
 </section>
 
@@ -278,7 +289,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 &nbsp;├─ <span style="color:#a3e635">TS: Validate login</span>   <span class="t-pun">GROUP: agrupa los casos</span><br>
 &nbsp;│&nbsp;&nbsp;├─ <span style="color:#22d3ee">PROJ-101: TC1: should grant access…</span>  <span class="t-pun">CASE</span><br>
 &nbsp;│&nbsp;&nbsp;└─ <span style="color:#22d3ee">PROJ-101: TC2: should reject login…</span>  <span class="t-pun">CASE</span><br>
-&nbsp;├─ <span style="color:#fbbf24">ATR: PROJ-101: Story Testing</span>  <span class="t-pun">RUN: qué pasó/falló · CONTAINER</span><br>
+&nbsp;├─ <span style="color:#fbbf24">ATR: PROJ-101: Story Testing</span>  <span class="t-pun">RESULTS: qué pasó/falló · CONTAINER</span><br>
 &nbsp;└─ <span style="color:#a78bfa">@atc('PROJ-101') loginWithValidCredentials()</span>  <span class="t-pun">CODE espeja el caso</span>
   </div>
   <div class="row mt-m" style="gap:10px;flex-wrap:wrap">
@@ -383,11 +394,11 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <h2>Vasijas de ejecución y setup</h2>
   <p class="dim mt-s" style="font-size:15px"><b>Vasija</b> (ing. <i>vessel</i>) = el subconjunto de artefactos que <b>contiene</b> una corrida o un plan. Todo en el códice es un artefacto; la vasija es la que se ejecuta o se planifica — por eso no la llamamos solo "artefacto".</p>
   <div class="grid g2 mt-m">
-    <div class="card lyr" style="--ac:#fbbf24"><h4>ATR · Ejecución de Story <span class="dim3" style="font-size:12px">(Story Testing)</span></h4>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>ATR · Acceptance Test Results <span class="dim3" style="font-size:12px">(Story Testing · issue Test Execution)</span></h4>
       <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">ATR:</span> <span class="t-pre">{STORY-KEY}</span><span class="t-pun">: </span><span class="t-var">Story Testing</span></div>
       <div class="ex mt-s">ATR: GX-123: Story Testing</div>
     </div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>STR · Ejecución de Sprint <span class="dim3" style="font-size:12px">(Regression Testing)</span></h4>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>STR · Sprint Test Results <span class="dim3" style="font-size:12px">(Regression Testing · issue Test Execution)</span></h4>
       <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">STR:</span> <span class="t-pre">Sprint#{N}</span><span class="t-pun">: </span><span class="t-var">Regression Testing</span></div>
       <div class="ex mt-s">STR: Sprint#30: Regression Testing</div>
     </div>
@@ -422,7 +433,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <div class="lbar" style="--ac:#22d3ee"><span class="ln">STORY</span><span class="ld">ATP → ATR — "Story Testing", 1 run</span><span class="lx">{STORY-KEY}</span></div>
   </div>
   <table class="mt-m">
-    <thead><tr><th>Altitud</th><th>Plan</th><th>Runner</th><th>Patrón</th></tr></thead>
+    <thead><tr><th>Altitud</th><th>Plan</th><th>Results</th><th>Patrón</th></tr></thead>
     <tbody>
       <tr><td>Product</td><td class="m"><span class="lp">MTP</span></td><td class="dim">—</td><td class="m">Epic <span class="dim">QA Master Test Plan</span> (+ master-test-plan.md local)</td></tr>
       <tr><td>Feature</td><td class="m"><span class="lp">FTP</span></td><td class="m"><span class="lp">FTR</span></td><td class="m">FTP/FTR: {EPIC-KEY}: … <span class="dim">— término FTR "Feature Testing", ≥1 run/sprint</span></td></tr>
@@ -618,6 +629,154 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <div class="gap"><h4>12 · Marcador de test bloqueado</h4><p class="dim" style="font-size:13.5px">Tests bloqueados por bug se taggean inconsistente.</p><span class="prop">@blocked:{BUG-KEY} + test.fail()</span></div>
   </div>
   <div class="callout mt-m" style="--ac:#a3e635;padding:11px 14px"><p style="margin:0" class="dim">Las 12 están ratificadas — ahora canon en los references de los skills. Siguiente: enforcement por lint (opcional).</p></div>
+</section>
+
+<!-- WF · Workflow de Story -->
+<section class="slide" style="--ac:#60a5fa" data-t="Workflow de Story">
+  <p class="kick">Capa · workflow JIRA — el ciclo de vida de la User Story / Feature</p>
+  <h2>Workflow de Story</h2>
+  <div class="wf-legend"><span class="lg2"><span class="nd" style="background:rgba(96,165,250,.16);border-color:#60a5fa"></span>Nuevo</span><span class="lg2"><span class="nd" style="background:rgba(167,139,250,.17);border-color:#a78bfa"></span>En progreso</span><span class="lg2"><span class="nd" style="background:rgba(52,211,153,.15);border-color:#34d399"></span>Hecho</span><span class="lg2"><span class="nd" style="background:rgba(248,113,113,.15);border-color:#f87171"></span>Abortado / rechazado</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#8b96ab" stroke-width="2" /></svg>Avance</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#e8993f" stroke-width="2" stroke-dasharray="6 5" /></svg>Retorno (back)</span></div>
+  <p class="wf-global">⚡ Global (desde cualquier estado): Create → Backlog · Ready For Dev · Ready For QA · ABORTED</p>
+  <div class="wf">
+  <svg viewBox="0 0 1180 470" role="img" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <marker id="wfArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+    </marker>
+  </defs>
+  <path d="M152,88 L222,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Analyze</title></path>
+  <path d="M354,88 L424,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Estimate</title></path>
+  <path d="M556,88 L626,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Estimated and Ready to work</title></path>
+  <path d="M758,88 L828,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Start working</title></path>
+  <path d="M960,88 L1030,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Pull Request</title></path>
+  <path d="M1096,112 L1096,248" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Deployed</title></path>
+  <path d="M1030,272 L960,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Start Testing</title></path>
+  <path d="M828,272 L758,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>QA Sign-Off</title></path>
+  <path d="M626,272 L556,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>include in release</title></path>
+  <path d="M424,272 L354,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>released</title></path>
+  <path d="M86,64 Q288,14 490,64" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Ready to Estimate</title></path><text x="288" y="35" class="wfe" fill="#7fe3ee">Ready to Estimate</text>
+  <path d="M894,112 Q1096,238 1062,248" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Pushed</title></path><text x="1043" y="209" class="wfe" fill="#7fe3ee">Pushed</text>
+  <path d="M878,296 L878,392" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>defect reported</title></path><text x="826" y="344" class="wfe" fill="#7fe3ee">defect reported</text>
+  <path d="M960,416 Q1098,264 936,112" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Fix defect</title></path><text x="1141" y="350" class="wfe" fill="#7fe3ee">Fix defect</text>
+  <path d="M894,392 Q665,316 692,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back to dev</title></path><text x="703" y="344" class="wfe" fill="#f0b377">back to dev</text>
+  <path d="M288,112 Q187,158 86,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M490,112 Q389,156 288,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>needs quality</title></path><text x="389" y="142" class="wfe" fill="#f0b377">needs quality</text>
+  <path d="M490,112 Q288,210 86,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M894,112 Q793,158 692,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M894,296 Q995,342 1096,296" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M692,296 Q793,342 894,296" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M910,392 L910,296" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M86,440 Q669,394 692,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>Recover</title></path><text x="529" y="365" class="wfe" fill="#f0b377">Recover</text>
+  <g><title>Backlog — idea registrada, sin refinar</title><rect x="20" y="64" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Backlog — idea registrada, sin refinar</title></rect><text x="86" y="88" class="wfn" fill="#cfe0fb" dominant-baseline="central">Backlog</text></g>
+  <g><title>Shift-Left QA — QA refina los ACs antes del sprint</title><rect x="222" y="64" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>Shift-Left QA — QA refina los ACs antes del sprint</title></rect><text x="288" y="88" class="wfn" fill="#e0d6fb" dominant-baseline="central"><tspan x="288" dy="-0.55em">Shift-Left</tspan><tspan x="288" dy="1.15em">QA</tspan></text></g>
+  <g><title>Estimation — el equipo estima el esfuerzo</title><rect x="424" y="64" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>Estimation — el equipo estima el esfuerzo</title></rect><text x="490" y="88" class="wfn" fill="#e0d6fb" dominant-baseline="central">Estimation</text></g>
+  <g><title>Ready For Dev — refinada y estimada, lista para desarrollo</title><rect x="626" y="64" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Ready For Dev — refinada y estimada, lista para desarrollo</title></rect><text x="692" y="88" class="wfn" fill="#cfe0fb" dominant-baseline="central"><tspan x="692" dy="-0.55em">Ready For</tspan><tspan x="692" dy="1.15em">Dev</tspan></text></g>
+  <g><title>In Progress — desarrollo en curso</title><rect x="828" y="64" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Progress — desarrollo en curso</title></rect><text x="894" y="88" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Progress</text></g>
+  <g><title>In Review — code review / PR abierto</title><rect x="1030" y="64" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Review — code review / PR abierto</title></rect><text x="1096" y="88" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Review</text></g>
+  <g><title>Ready For QA — desarrollada, lista para pruebas</title><rect x="1030" y="248" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Ready For QA — desarrollada, lista para pruebas</title></rect><text x="1096" y="272" class="wfn" fill="#cfe0fb" dominant-baseline="central"><tspan x="1096" dy="-0.55em">Ready For</tspan><tspan x="1096" dy="1.15em">QA</tspan></text></g>
+  <g><title>In Test — QA probando la historia</title><rect x="828" y="248" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Test — QA probando la historia</title></rect><text x="894" y="272" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Test</text></g>
+  <g><title>QA Approved — QA aprobó la historia</title><rect x="626" y="248" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>QA Approved — QA aprobó la historia</title></rect><text x="692" y="272" class="wfn" fill="#c5f0de" dominant-baseline="central"><tspan x="692" dy="-0.55em">QA</tspan><tspan x="692" dy="1.15em">Approved</tspan></text></g>
+  <g><title>Ready For Release — aprobada, lista para liberar</title><rect x="424" y="248" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>Ready For Release — aprobada, lista para liberar</title></rect><text x="490" y="272" class="wfn" fill="#c5f0de" dominant-baseline="central"><tspan x="490" dy="-0.55em">Ready For</tspan><tspan x="490" dy="1.15em">Release</tspan></text></g>
+  <g><title>Deployed to Production — en producción</title><rect x="222" y="248" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>Deployed to Production — en producción</title></rect><text x="288" y="272" class="wfn" fill="#c5f0de" dominant-baseline="central"><tspan x="288" dy="-0.55em">Deployed to</tspan><tspan x="288" dy="1.15em">Production</tspan></text></g>
+  <g><title>BLOCKED — bloqueada (p.ej. defecto reportado en pruebas)</title><rect x="828" y="392" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>BLOCKED — bloqueada (p.ej. defecto reportado en pruebas)</title></rect><text x="894" y="416" class="wfn" fill="#cfe0fb" dominant-baseline="central">BLOCKED</text></g>
+  <g><title>ABORTED — descartada</title><rect x="20" y="392" width="132" height="48" rx="11" fill="rgba(248,113,113,.15)" stroke="#f87171" stroke-width="1.5"><title>ABORTED — descartada</title></rect><text x="86" y="416" class="wfn" fill="#f9cccc" dominant-baseline="central">ABORTED</text></g>
+</svg>
+  </div>
+  <p class="wf-take">El camino feliz va Backlog → Shift-Left QA → Estimation → Ready For Dev → In Progress → In Review → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production.</p>
+  <p class="notes"><b>Notas.</b> El camino feliz es la espina de izquierda a derecha en las dos filas. Bucles principales: "back" retorna en casi cada etapa, "needs quality" devuelve Estimation a Shift-Left QA, y la rama BLOCKED (defect reported → Fix defect / back to dev) atiende defectos hallados en pruebas. Los globales Create / Ready For Dev / Ready For QA / ABORTED aplican desde cualquier estado; Recover devuelve una historia ABORTED a Ready For Dev.</p>
+</section>
+
+<!-- WF · Bug / Defect / Improvement -->
+<section class="slide" style="--ac:#f87171" data-t="Bug / Defect / Improvement">
+  <p class="kick">Capa · workflow JIRA — Bug / Defect / Improvement (un ciclo de vida compartido)</p>
+  <h2>Bug / Defect / Improvement</h2>
+  <div class="wf-legend"><span class="lg2"><span class="nd" style="background:rgba(96,165,250,.16);border-color:#60a5fa"></span>Nuevo</span><span class="lg2"><span class="nd" style="background:rgba(167,139,250,.17);border-color:#a78bfa"></span>En progreso</span><span class="lg2"><span class="nd" style="background:rgba(52,211,153,.15);border-color:#34d399"></span>Hecho</span><span class="lg2"><span class="nd" style="background:rgba(248,113,113,.15);border-color:#f87171"></span>Abortado / rechazado</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#8b96ab" stroke-width="2" /></svg>Avance</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#e8993f" stroke-width="2" stroke-dasharray="6 5" /></svg>Retorno (back)</span></div>
+  <p class="wf-global">⚡ Global (desde cualquier estado): Create → Open · Re-Open → Open · ABORTED</p>
+  <div class="wf">
+  <svg viewBox="0 0 1180 470" role="img" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <marker id="wfArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+    </marker>
+  </defs>
+  <path d="M152,84 L300,84" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>start fixing</title></path>
+  <path d="M432,84 L580,84" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Pull Request</title></path>
+  <path d="M712,84 L840,84" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Fixed &amp; Deployed</title></path>
+  <path d="M972,84 L1028,84" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>ReTest Passed</title></path>
+  <path d="M366,60 Q636,10 906,60" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Hard pushed</title></path><text x="636" y="31" class="wfe" fill="#7fe3ee">Hard pushed</text>
+  <path d="M86,108 Q65,177 96,210" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>is CNR</title></path><text x="52" y="168" class="wfe" fill="#7fe3ee">is CNR</text>
+  <path d="M86,108 Q2,376 30,344" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>defer</title></path><text x="10" y="301" class="wfe" fill="#7fe3ee">defer</text>
+  <path d="M86,108 Q300,172 386,200" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>is duplicated</title></path><text x="298" y="163" class="wfe" fill="#7fe3ee">is duplicated</text>
+  <path d="M86,108 Q239,339 320,314" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>is WAD</title></path><text x="231" y="275" class="wfe" fill="#7fe3ee">is WAD</text>
+  <path d="M86,108 Q209,468 320,404" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>is not a Bug</title></path><text x="214" y="362" class="wfe" fill="#7fe3ee">is not a Bug</text>
+  <path d="M162,344 Q394,290 366,108" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>resume fix</title></path><text x="363" y="260" class="wfe" fill="#7fe3ee">resume fix</text>
+  <path d="M1094,108 Q1000,164 906,108" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path><text x="1000" y="144" class="wfe" fill="#f0b377">back</text>
+  <g><title>Open — reportada, sin atender</title><rect x="20" y="60" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Open — reportada, sin atender</title></rect><text x="86" y="84" class="wfn" fill="#cfe0fb" dominant-baseline="central">Open</text></g>
+  <g><title>In Progress — en corrección</title><rect x="300" y="60" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Progress — en corrección</title></rect><text x="366" y="84" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Progress</text></g>
+  <g><title>In Review — fix en revisión / PR</title><rect x="580" y="60" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Review — fix en revisión / PR</title></rect><text x="646" y="84" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Review</text></g>
+  <g><title>Ready For QA — fix listo para re-test</title><rect x="840" y="60" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Ready For QA — fix listo para re-test</title></rect><text x="906" y="84" class="wfn" fill="#cfe0fb" dominant-baseline="central"><tspan x="906" dy="-0.55em">Ready For</tspan><tspan x="906" dy="1.15em">QA</tspan></text></g>
+  <g><title>Closed — verificada y cerrada</title><rect x="1028" y="60" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>Closed — verificada y cerrada</title></rect><text x="1094" y="84" class="wfn" fill="#c5f0de" dominant-baseline="central">Closed</text></g>
+  <g><title>Cannot Reproduce — no reproducible</title><rect x="30" y="210" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>Cannot Reproduce — no reproducible</title></rect><text x="96" y="234" class="wfn" fill="#c5f0de" dominant-baseline="central"><tspan x="96" dy="-0.55em">Cannot</tspan><tspan x="96" dy="1.15em">Reproduce</tspan></text></g>
+  <g><title>Deferred — pospuesta</title><rect x="30" y="320" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>Deferred — pospuesta</title></rect><text x="96" y="344" class="wfn" fill="#e0d6fb" dominant-baseline="central">Deferred</text></g>
+  <g><title>Duplicated — duplicada de otra</title><rect x="320" y="200" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>Duplicated — duplicada de otra</title></rect><text x="386" y="224" class="wfn" fill="#c5f0de" dominant-baseline="central">Duplicated</text></g>
+  <g><title>REJECTED — no procede (works as designed)</title><rect x="320" y="290" width="132" height="48" rx="11" fill="rgba(248,113,113,.15)" stroke="#f87171" stroke-width="1.5"><title>REJECTED — no procede (works as designed)</title></rect><text x="386" y="314" class="wfn" fill="#f9cccc" dominant-baseline="central">REJECTED</text></g>
+  <g><title>Enhancement — reclasificada como mejora (no es bug)</title><rect x="320" y="380" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>Enhancement — reclasificada como mejora (no es bug)</title></rect><text x="386" y="404" class="wfn" fill="#c5f0de" dominant-baseline="central">Enhancement</text></g>
+  <g><title>ABORTED — descartada</title><rect x="1028" y="360" width="132" height="48" rx="11" fill="rgba(248,113,113,.15)" stroke="#f87171" stroke-width="1.5"><title>ABORTED — descartada</title></rect><text x="1094" y="384" class="wfn" fill="#f9cccc" dominant-baseline="central">ABORTED</text></g>
+</svg>
+  </div>
+  <p class="wf-take">El camino feliz va Open → In Progress → In Review → Ready For QA → Closed; desde Open, el triage se bifurca a CNR / Deferred / Duplicated / REJECTED / Enhancement.</p>
+  <p class="notes"><b>Notas.</b> Bug, Defect e Improvement comparten UN workflow byte-idéntico. El camino feliz es la espina superior. El triage se abre desde Open (is CNR / defer / is duplicated / is WAD / is not a Bug); Deferred puede reanudar la corrección. Bucles: Hard pushed salta la revisión, "back" reabre un ítem Closed para re-test, y Re-Open (global) reabre cualquier ítem resuelto.</p>
+</section>
+
+<!-- WF · Workflow de Test -->
+<section class="slide" style="--ac:#a78bfa" data-t="Workflow de Test">
+  <p class="kick">Capa · workflow JIRA — el ciclo de vida del Test Case</p>
+  <h2>Workflow de Test</h2>
+  <div class="wf-legend"><span class="lg2"><span class="nd" style="background:rgba(96,165,250,.16);border-color:#60a5fa"></span>Nuevo</span><span class="lg2"><span class="nd" style="background:rgba(167,139,250,.17);border-color:#a78bfa"></span>En progreso</span><span class="lg2"><span class="nd" style="background:rgba(52,211,153,.15);border-color:#34d399"></span>Hecho</span><span class="lg2"><span class="nd" style="background:rgba(248,113,113,.15);border-color:#f87171"></span>Abortado / rechazado</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#8b96ab" stroke-width="2" /></svg>Avance</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#e8993f" stroke-width="2" stroke-dasharray="6 5" /></svg>Retorno (back)</span></div>
+  <p class="wf-global">⚡ Global (desde cualquier estado): Create → Draft · Deprecated → DEPRECATED</p>
+  <div class="wf">
+  <svg viewBox="0 0 1180 480" role="img" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <marker id="wfArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+    </marker>
+  </defs>
+  <path d="M152,88 L356,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>start design</title></path>
+  <path d="M488,88 L692,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>ready to run</title></path>
+  <path d="M824,88 L1028,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>automation review</title></path>
+  <path d="M1094,112 L1094,248" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>approve to automate</title></path>
+  <path d="M1028,272 L824,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>start automation</title></path>
+  <path d="M692,272 L488,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>create PR</title></path>
+  <path d="M356,272 L152,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>merged</title></path>
+  <path d="M86,64 Q590,14 1094,64" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>automation review</title></path><text x="590" y="35" class="wfe" fill="#7fe3ee">automation review</text>
+  <path d="M758,112 Q577,445 488,426" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>for manual</title></path><text x="634" y="357" class="wfe" fill="#7fe3ee">for manual</text>
+  <path d="M1094,296 Q941,478 488,412" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>manual execution</title></path><text x="912" y="416" class="wfe" fill="#7fe3ee">manual execution</text>
+  <path d="M86,296 Q175,450 356,412" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>manual execution</title></path>
+  <path d="M356,412 Q125,418 86,296" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>automated</title></path><text x="153" y="386" class="wfe" fill="#7fe3ee">automated</text>
+  <path d="M488,426 Q956,425 1108,296" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>for automation</title></path><text x="905" y="393" class="wfe" fill="#7fe3ee">for automation</text>
+  <path d="M488,426 Q1071,303 1094,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>automation review</title></path><text x="965" y="286" class="wfe" fill="#f0b377">automation review</text>
+  <path d="M86,248 Q254,240 422,296" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>Fix</title></path><text x="254" y="250" class="wfe" fill="#f0b377">Fix</text>
+  <path d="M422,112 Q254,158 86,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M758,112 Q590,158 422,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M1094,112 Q926,158 758,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M1160,272 Q1236,180 1160,88" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M788,248 Q956,226 1124,296" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M452,248 Q620,226 788,296" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M1094,402 Q380,223 86,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>recover</title></path><text x="451" y="240" class="wfe" fill="#f0b377">recover</text>
+  <g><title>Draft — borrador inicial</title><rect x="20" y="64" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Draft — borrador inicial</title></rect><text x="86" y="88" class="wfn" fill="#cfe0fb" dominant-baseline="central">Draft</text></g>
+  <g><title>In Design — diseñándose el caso</title><rect x="356" y="64" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Design — diseñándose el caso</title></rect><text x="422" y="88" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Design</text></g>
+  <g><title>READY — diseñado, listo para ejecutar</title><rect x="692" y="64" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>READY — diseñado, listo para ejecutar</title></rect><text x="758" y="88" class="wfn" fill="#c5f0de" dominant-baseline="central">READY</text></g>
+  <g><title>In Review — en revisión (para automatizar)</title><rect x="1028" y="64" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Review — en revisión (para automatizar)</title></rect><text x="1094" y="88" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Review</text></g>
+  <g><title>Candidate — candidato a automatización</title><rect x="1028" y="248" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Candidate — candidato a automatización</title></rect><text x="1094" y="272" class="wfn" fill="#cfe0fb" dominant-baseline="central">Candidate</text></g>
+  <g><title>In Automation — automatizándose</title><rect x="692" y="248" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Automation — automatizándose</title></rect><text x="758" y="272" class="wfn" fill="#e0d6fb" dominant-baseline="central"><tspan x="758" dy="-0.55em">In</tspan><tspan x="758" dy="1.15em">Automation</tspan></text></g>
+  <g><title>Pull Request — PR de automatización abierto</title><rect x="356" y="248" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>Pull Request — PR de automatización abierto</title></rect><text x="422" y="272" class="wfn" fill="#e0d6fb" dominant-baseline="central">Pull Request</text></g>
+  <g><title>AUTOMATED — automatizado</title><rect x="20" y="248" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>AUTOMATED — automatizado</title></rect><text x="86" y="272" class="wfn" fill="#c5f0de" dominant-baseline="central">AUTOMATED</text></g>
+  <g><title>MANUAL — caso de ejecución manual</title><rect x="356" y="402" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>MANUAL — caso de ejecución manual</title></rect><text x="422" y="426" class="wfn" fill="#c5f0de" dominant-baseline="central">MANUAL</text></g>
+  <g><title>DEPRECATED — obsoleto</title><rect x="1028" y="402" width="132" height="48" rx="11" fill="rgba(248,113,113,.15)" stroke="#f87171" stroke-width="1.5"><title>DEPRECATED — obsoleto</title></rect><text x="1094" y="426" class="wfn" fill="#f9cccc" dominant-baseline="central">DEPRECATED</text></g>
+</svg>
+  </div>
+  <p class="wf-take">El camino de automatización va Draft → In Design → READY → In Review → Candidate → In Automation → Pull Request → AUTOMATED; la rama MANUAL puede reingresar a automatización.</p>
+  <p class="notes"><b>Notas.</b> El camino feliz de automatización es la espina de izquierda a derecha en las dos filas. MANUAL es el hub: un caso puede enviarse a manual (desde READY / Candidate / AUTOMATED) y reingresar a automatización (automated / for automation / automation review). Bucles: "back" baja la cadena en cada etapa, Fix devuelve AUTOMATED a Pull Request. Deprecated (global) retira cualquier caso; recover devuelve DEPRECATED a Draft.</p>
 </section>
 
 <!-- 18 · MASTER cheat-sheet -->
