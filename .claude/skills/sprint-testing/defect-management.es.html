@@ -519,9 +519,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <section class="slide" data-title="Portada">
   <p class="kicker run">how-it-works · agentic-qa · defect-management</p>
   <h1 class="h1 anim-fade-up" data-anim="fade-up">Defect Management — Gestionar la <span class="grad">Calidad por sus Incidencias</span></h1>
-  <p class="lede mt-m">Bug, Defect, Improvement: el mismo síntoma, distinta estrategia de gestión. Cómo se reportan bajo el estándar UPEX, cómo viven en su workflow, y cómo se convierten en métricas que responden preguntas de calidad.</p>
-  <div class="speaker"><div class="av"></div><div><b>Del reporte a la métrica</b><span>parte 1: las 3 incidencias · parte 2: workflow + campos UPEX · parte 3: medir con datos reales de BK</span></div></div>
-  <div class="deck-footer"><span class="mono">Jira · estándar UPEX · proyecto Bunkai (BK)</span><span class="slide-number" data-current="1" data-total="34"></span></div>
+  <p class="lede mt-m">Bug, Defect, Improvement: el mismo síntoma, distinta estrategia de gestión. Cómo se reportan bajo un estándar de calidad reusable, cómo viven en su workflow, y cómo se convierten en métricas que responden preguntas de calidad.</p>
+  <div class="speaker"><div class="av"></div><div><b>Del reporte a la métrica</b><span>parte 1: las 3 incidencias · parte 2: workflow + campos del estándar · parte 3: medir (ejemplo ShopFlow)</span></div></div>
+  <div class="deck-footer"><span class="mono">Jira · estándar de calidad · proyecto de ejemplo ShopFlow (SHOP)</span><span class="slide-number" data-current="1" data-total="34"></span></div>
   <div class="notes">Encuadre: esto NO es sobre casos de prueba ni test plans — es sobre la gestión de incidencias de error (Bug/Defect/Improvement): cómo se reportan, cómo transitan y cómo se miden. La meta final es que el equipo de producto vea la salud de la app con sus propios ojos.</div>
 </section>
 
@@ -530,7 +530,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div>
     <p class="kicker">el dato que duele</p>
     <div class="bigstat"><span class="grad">1 / 33</span></div>
-    <h3>En BK, solo <b>1 de 33</b> incidencias tiene el campo <span class="mono">Components</span> relleno. La data existe — pero no responde ni una pregunta. Una incidencia mal documentada es una incidencia que no se puede medir.</h3>
+    <h3>Imagina ShopFlow: si solo <b>1 de cada 33</b> incidencias tiene el campo <span class="mono">Components</span> relleno, la data existe — pero no responde ni una pregunta. Una incidencia mal documentada es una incidencia que no se puede medir.</h3>
   </div>
   <div class="notes">Arranca con la tesis: gestionar defectos no es abrir tickets, es generar datos que respondan preguntas. Si los campos están vacíos, el dashboard está ciego. Volveremos a este número en la parte 3.</div>
 </section>
@@ -541,8 +541,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Tres Partes: Distinguir, Gestionar, Medir</h2>
   <div class="stack mt-l anim-stagger-list">
     <div class="agenda-row"><span class="anum">01</span><span class="at">Las tres incidencias — Bug vs Defect vs Improvement: mismo término, distinta estrategia de gestión</span><span class="ad">distinguir</span></div>
-    <div class="agenda-row"><span class="anum">02</span><span class="at">El estándar UPEX — un solo workflow, los mismos campos, y el rol clave de Components</span><span class="ad">gestionar</span></div>
-    <div class="agenda-row"><span class="anum">03</span><span class="at">Medir la calidad — de campos rellenos a métricas y dashboards que responden preguntas (datos reales de BK)</span><span class="ad">medir</span></div>
+    <div class="agenda-row"><span class="anum">02</span><span class="at">El estándar de calidad — un solo workflow, los mismos campos, y el rol clave de Components</span><span class="ad">gestionar</span></div>
+    <div class="agenda-row"><span class="anum">03</span><span class="at">Medir la calidad — de campos rellenos a métricas y dashboards que responden preguntas (ejemplo ShopFlow)</span><span class="ad">medir</span></div>
   </div>
   <p class="qhint mt-l">3 quizzes interactivos a lo largo del recorrido — haz clic en las respuestas.</p>
   <div class="notes">La parte 3 es la más importante: las métricas. Las partes 1 y 2 construyen el vocabulario y la disciplina que hacen posible medir.</div>
@@ -638,7 +638,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <p class="dim">Un Bug/Defect pasa por <b>RCA</b> y se descubre que el "error" era en realidad el comportamiento especificado. Se transforma: a Improvement, o a una nueva User Story.</p>
     </div>
   </div>
-  <div class="callout warn mt-m"><h4>En el workflow esto es literal</h4><p>La transición <span class="mono">is not a Bug</span> lleva un Bug/Defect desde <span class="mono">Open</span> al estado terminal <span class="mono">Enhancement</span> — la reclasificación está cableada en el flujo UPEX, no es informal.</p></div>
+  <div class="callout warn mt-m"><h4>En el workflow esto es literal</h4><p>La transición <span class="mono">is not a Bug</span> lleva un Bug/Defect desde <span class="mono">Open</span> al estado terminal <span class="mono">Enhancement</span> — la reclasificación está cableada en el flujo del estándar, no es informal.</p></div>
   <div class="notes">Conectar con la parte 2: el estado terminal "Enhancement" y la transición "is not a Bug" son exactamente este camino. RCA puede convertir un reporte de error en un requerimiento.</div>
 </section>
 
@@ -691,10 +691,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <section class="slide divider" data-title="Parte 2">
   <div>
     <p class="part-no">PARTE 02</p>
-    <h1 class="h1">El Estándar UPEX<br><span class="grad">Un Workflow, los Mismos Campos</span></h1>
+    <h1 class="h1">El Estándar de Calidad<br><span class="grad">Un Workflow, los Mismos Campos</span></h1>
     <p class="lede">Las tres incidencias comparten <b>exactamente</b> el mismo esquema de workflow y los mismos campos. Reportar disciplinadamente hoy es lo que habilita medir mañana.</p>
   </div>
-  <div class="notes">Aclarar que esto es un estándar UPEX — una recomendación de gestión, no una ley universal. Pero es un estándar probado y consistente entre proyectos UPEX en Jira.</div>
+  <div class="notes">Aclarar que esto es un estándar de gestión reusable — una recomendación, no una ley universal. Pero es un estándar probado y consistente que cualquier equipo puede adoptar en Jira.</div>
 </section>
 
 <!-- 13. SAME SCHEME -->
@@ -768,7 +768,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <!-- 17. FIELDS -->
 <section class="slide" data-title="Campos">
   <p class="kicker">qué se rellena al reportar</p>
-  <h2 class="h2" data-anim="fade-up">Los Campos del Estándar UPEX</h2>
+  <h2 class="h2" data-anim="fade-up">Los Campos del Estándar de Calidad</h2>
   <div class="grid g2 mt-s">
     <div>
       <h4 class="mb-s" style="color:var(--good)">Siempre (alta señal)</h4>
@@ -854,8 +854,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <p class="dim">"¿Qué parte de la app falla más?" se vuelve una sola query. Habilita <b>ownership</b> (qué equipo dueño de qué componente) y <b>routing</b> automático de incidencias.</p>
     </div>
   </div>
-  <div class="callout warn mt-m"><h4>Pero solo si se rellena</h4><p>En BK hoy: <b>1 de 33</b> incidencias tiene Components. Un dashboard por componente estaría <b>vacío</b>. Es la recomendación #1 de higiene — lo vemos en la parte 3.</p></div>
-  <div class="notes">Énfasis del usuario: Components es flexible (épicas/features) y poderoso para agrupar. Pero la data real de BK muestra que está sin usar — gran oportunidad de enseñanza sobre por qué configurar y rellenar este campo.</div>
+  <div class="callout warn mt-m"><h4>Pero solo si se rellena</h4><p>Antipatrón común: si solo <b>1 de cada 33</b> incidencias tiene Components (como en nuestro ShopFlow de ejemplo), un dashboard por componente estaría <b>vacío</b>. Es la recomendación #1 de higiene — lo vemos en la parte 3.</p></div>
+  <div class="notes">Énfasis: Components es flexible (épicas/features) y poderoso para agrupar. El antipatrón ilustrado con ShopFlow — el campo sin usar — es una gran oportunidad de enseñanza sobre por qué configurar y rellenar este campo.</div>
 </section>
 
 <!-- 21. QUIZ 2 -->
@@ -879,7 +879,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="opt"><span class="mk">B</span><span>Priority</span></div>
         <div class="opt" data-correct="1"><span class="mk">C</span><span>Components</span></div>
       </div>
-      <div class="qexp"><b>Components.</b> Es el campo de agrupación por parte del producto (features/épicas). Sin él relleno, ese dashboard no se puede construir — exactamente el gap real de BK (1/33).</div>
+      <div class="qexp"><b>Components.</b> Es el campo de agrupación por parte del producto (features/épicas). Sin él relleno, ese dashboard no se puede construir — exactamente el antipatrón ilustrado con ShopFlow (1 de cada 33).</div>
     </div>
   </div>
   <div class="notes">Refuerza: triage terminal (is WAD → REJECTED) y el rol de Components. Recuerda también el otro eje: un typo cosmético antes de una demo = Severity Trivial (impacto bajo) pero Priority High (urgencia alta) — ejes independientes, dos campos (ver slide 18).</div>
@@ -890,9 +890,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div>
     <p class="part-no">PARTE 03</p>
     <h1 class="h1">Medir la Calidad<br><span class="grad">De Campos a Preguntas Respondidas</span></h1>
-    <p class="lede">Un dashboard no es una lista de datos — es un set de <b>respuestas</b>. La meta: que producto vea, con sus propios ojos, cómo va la app. Con datos reales de BK.</p>
+    <p class="lede">Un dashboard no es una lista de datos — es un set de <b>respuestas</b>. La meta: que producto vea, con sus propios ojos, cómo va la app. Lo ilustramos con el proyecto de ejemplo ShopFlow.</p>
   </div>
-  <div class="notes">La parte que más le importa al usuario. El principio rector: nadie quiere ver métricas, quiere resolver dudas. Las métricas son el medio.</div>
+  <div class="notes">La parte más importante. El principio rector: nadie quiere ver métricas, quiere resolver dudas. Las métricas son el medio. Los números de ShopFlow son ilustrativos, no de un proyecto real.</div>
 </section>
 
 <!-- 23. PHILOSOPHY -->
@@ -923,10 +923,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">Primero la pregunta de calidad, luego la métrica, luego el campo, luego la query. Nunca al revés. Este orden es el corazón de la enseñanza.</div>
 </section>
 
-<!-- 24. REAL BK DATA -->
-<section class="slide" data-title="BK real">
-  <p class="kicker">snapshot real · proyecto BK</p>
-  <h2 class="h2" data-anim="fade-up">Lo que BK Tiene Hoy</h2>
+<!-- 24. EXAMPLE SNAPSHOT (ShopFlow) -->
+<section class="slide" data-title="Ejemplo ShopFlow">
+  <p class="kicker">snapshot ilustrativo · proyecto de ejemplo ShopFlow</p>
+  <h2 class="h2" data-anim="fade-up">Un Snapshot Típico: ShopFlow</h2>
   <div class="mgrid">
     <div class="mcard"><div class="mv grad">33</div><div class="mk">familia de defectos</div><div class="md">27 Bug · 4 Defect · 2 Improvement (de 159 issues totales)</div></div>
     <div class="mcard"><div class="mv grad">15</div><div class="mk">Closed (VERIFIED)</div><div class="md">8 Open · 5 Duplicated · 4 Ready For QA · 1 REJECTED</div></div>
@@ -937,13 +937,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="barrow"><span class="bl">Defect</span><span class="bt" style="width:12%"></span><span class="bn">4</span></div>
     <div class="barrow"><span class="bl">Improvement</span><span class="bt" style="width:6%"></span><span class="bn">2</span></div>
   </div>
-  <div class="notes">Datos reales pulidos del proyecto BK (jira.upexgalaxy.com) el 2026-06-25. 27 Bugs vs 4 Defects — guardar esta proporción para la slide de escape rate; tiene una lectura doble (escape real vs disciplina de taxonomía).</div>
+  <div class="notes">Cifras ilustrativas del proyecto de ejemplo ShopFlow (no son de ningún proyecto real). 27 Bugs vs 4 Defects — guardar esta proporción para la slide de escape rate; tiene una lectura doble (escape real vs disciplina de taxonomía).</div>
 </section>
 
 <!-- 25. HYGIENE REALITY -->
 <section class="slide" data-title="Higiene">
   <p class="kicker">no puedes medir lo que no rellenas</p>
-  <h2 class="h2" data-anim="fade-up">La Realidad de los Campos en BK</h2>
+  <h2 class="h2" data-anim="fade-up">El Antipatrón: Campos a Medio Llenar</h2>
   <div class="bars">
     <div class="barrow"><span class="bl">Priority</span><span class="bt" style="width:100%"></span><span class="bn">100%</span></div>
     <div class="barrow"><span class="bl">Root Cause</span><span class="bt" style="width:79%"></span><span class="bn">79%</span></div>
@@ -973,7 +973,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td>¿Cuánto ruido genera el reporte?</td><td><b>Rejection Ratio</b> = (Dup+REJ+CNR)/total</td><td>resolution / status</td></tr>
     </tbody>
   </table>
-  <div class="notes">ESTA es la slide núcleo de la petición. El orden siempre: pregunta primero, métrica después, campo al final. Cada fila es directamente construible (o casi) con los campos UPEX. Escape Rate es la estrella — la siguiente slide la desarrolla.</div>
+  <div class="notes">ESTA es la slide núcleo. El orden siempre: pregunta primero, métrica después, campo al final. Cada fila es directamente construible (o casi) con los campos del estándar. Escape Rate es la estrella — la siguiente slide la desarrolla.</div>
 </section>
 
 <!-- 27. JQL -->
@@ -981,19 +981,19 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">de la pregunta a la query</p>
   <h2 class="h2" data-anim="fade-up">JQL — el Lenguaje de los Dashboards</h2>
   <div class="terminal mt-s">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>JQL · proyecto BK</span></div>
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>JQL · proyecto SHOP (ejemplo)</span></div>
 <pre><span class="cmt"># Todos los defectos críticos aún abiertos</span>
-<span class="kw">project</span> = BK <span class="kw">AND</span> issuetype <span class="kw">in</span> (Bug, Defect) <span class="kw">AND</span> <span class="str">"Severity[Select List]"</span> = Crítica <span class="kw">AND</span> statusCategory != Done
+<span class="kw">project</span> = SHOP <span class="kw">AND</span> issuetype <span class="kw">in</span> (Bug, Defect) <span class="kw">AND</span> <span class="str">"Severity[Select List]"</span> = Crítica <span class="kw">AND</span> statusCategory != Done
 
 <span class="cmt"># Escape: bugs post-release vs defects in-sprint</span>
-<span class="kw">project</span> = BK <span class="kw">AND</span> issuetype = Bug      <span class="cmt">→ 27 (escaparon)</span>
-<span class="kw">project</span> = BK <span class="kw">AND</span> issuetype = Defect   <span class="cmt">→ 4  (contenidos)</span>
+<span class="kw">project</span> = SHOP <span class="kw">AND</span> issuetype = Bug      <span class="cmt">→ 27 (escaparon)</span>
+<span class="kw">project</span> = SHOP <span class="kw">AND</span> issuetype = Defect   <span class="cmt">→ 4  (contenidos)</span>
 
 <span class="cmt"># Agrupar por componente (necesita Components relleno)</span>
-<span class="kw">project</span> = BK <span class="kw">AND</span> issuetype = Bug <span class="kw">ORDER BY</span> component
+<span class="kw">project</span> = SHOP <span class="kw">AND</span> issuetype = Bug <span class="kw">ORDER BY</span> component
 
 <span class="cmt"># Ruido de reporte: descartados</span>
-<span class="kw">project</span> = BK <span class="kw">AND</span> status <span class="kw">in</span> (Duplicated, REJECTED, <span class="str">"Cannot Reproduce"</span>)  <span class="cmt">→ 6</span></pre>
+<span class="kw">project</span> = SHOP <span class="kw">AND</span> status <span class="kw">in</span> (Duplicated, REJECTED, <span class="str">"Cannot Reproduce"</span>)  <span class="cmt">→ 6</span></pre>
   </div>
   <div class="notes">JQL es el motor detrás de cada gadget de dashboard. Una pregunta de calidad bien planteada se traduce casi 1:1 a una cláusula JQL + un group-by. Mostrar que los campos son literalmente los filtros.</div>
 </section>
@@ -1003,7 +1003,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">vocabulario de métricas de defectos</p>
   <h2 class="h2" data-anim="fade-up">Las Métricas que Debes Nombrar</h2>
   <table class="dtable mt-s" style="font-size:14px">
-    <thead><tr><th>Métrica</th><th>Qué mide</th><th>Fórmula (en términos UPEX)</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Qué mide</th><th>Fórmula (en términos del estándar)</th></tr></thead>
     <tbody>
       <tr><td><b>Defect Escape Rate</b></td><td>Fugas a producción</td><td>Bugs / (Bugs + Defects)</td></tr>
       <tr><td><b>DDP / DRE</b></td><td>Eficiencia de detección</td><td>Defects / (Defects + Bugs) — el inverso del escape</td></tr>
@@ -1036,12 +1036,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">el home de producto en jira</p>
   <h2 class="h2" data-anim="fade-up">El Dashboard que Producto Quiere Ver</h2>
   <div class="grid g3 mt-s">
-    <div class="card card-accent"><h4>Salud general</h4><p class="dim">Gadgets: por <b>type</b>, por <b>status</b> (lifecycle slice), Escape Rate. <span class="tag ok">listo en BK</span></p></div>
+    <div class="card card-accent"><h4>Salud general</h4><p class="dim">Gadgets: por <b>type</b>, por <b>status</b> (lifecycle slice), Escape Rate. <span class="tag ok">listo en ShopFlow</span></p></div>
     <div class="card card-accent"><h4>Gravedad &amp; causa</h4><p class="dim">Pie por <b>Severity</b>, por <b>Root Cause</b>, por <b>Error Type</b>. <span class="tag warn">con slice "sin asignar"</span></p></div>
     <div class="card card-accent"><h4>Ownership</h4><p class="dim">Por <b>Component</b> + Reopen trend + Aging. <span class="tag no">bloqueado: rellenar Components</span></p></div>
   </div>
   <div class="callout mt-m"><h4>El objetivo final</h4><p>Una página donde el PO/PM abre Jira y, sin preguntar a nadie, <b>ve</b>: cuántas incidencias vivas, qué tan graves, qué parte de la app sufre, si el fix mejora. La gestión de incidencias se vuelve transparente.</p></div>
-  <div class="notes">Cerrar el arco: el dashboard NO es de pruebas (eso es otra presentación) — es de gestión de incidencias. Lo construible hoy en BK vs lo que exige higiene primero. Tres bloques: salud, gravedad/causa, ownership.</div>
+  <div class="notes">Cerrar el arco: el dashboard NO es de pruebas (eso es otra presentación) — es de gestión de incidencias. Lo construible de inmediato vs lo que exige higiene primero (ilustrado con ShopFlow). Tres bloques: salud, gravedad/causa, ownership.</div>
 </section>
 
 <!-- 31. QUIZ 3 -->
@@ -1059,7 +1059,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qexp"><b>Defect Escape Rate.</b> La proporción Bug/Defect mide exactamente la fuga, porque Defect=en sprint y Bug=post-release. Es la métrica núcleo del shift-left.</div>
     </div>
     <div class="qitem">
-      <div class="qq"><span class="qn">Q2</span><span>En BK, ¿cuál de estos dashboards NO se puede construir de forma fiable hoy?</span></div>
+      <div class="qq"><span class="qn">Q2</span><span>En ShopFlow, ¿cuál de estos dashboards NO se puede construir de forma fiable hoy?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Incidencias por status</span></div>
         <div class="opt"><span class="mk">B</span><span>Incidencias por root cause</span></div>
@@ -1098,7 +1098,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Tres Ideas que se Quedan</h2>
   <div class="steps s3 mt-l">
     <div class="step"><div class="num">1</div><h4>El momento define el tipo</h4><p>Bug = defecto = síntoma idéntico. Lo que cambia es cuándo nace y qué le dice al equipo. Defect contiene; Bug se fuga; Improvement mejora.</p></div>
-    <div class="step"><div class="num">2</div><h4>Un workflow, los mismos campos</h4><p>Estándar UPEX: las tres incidencias comparten esquema. La disciplina al rellenar — sobre todo Components — es la materia prima de toda métrica.</p></div>
+    <div class="step"><div class="num">2</div><h4>Un workflow, los mismos campos</h4><p>El estándar de calidad: las tres incidencias comparten esquema. La disciplina al rellenar — sobre todo Components — es la materia prima de toda métrica.</p></div>
     <div class="step"><div class="num">3</div><h4>Mide preguntas, no datos</h4><p>Un dashboard es un set de respuestas. Pregunta primero, métrica después, campo al final. Escape Rate es la estrella del shift-left.</p></div>
   </div>
   <div class="notes">El cierre de los tres conceptos. Si el público recuerda solo tres cosas, que sean estas.</div>
