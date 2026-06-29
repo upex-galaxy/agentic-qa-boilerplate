@@ -230,37 +230,6 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="callout mt-m" style="padding:11px 14px"><p style="margin:0" class="dim"><b>Primera letra</b> = altitud: <b>M</b>aster · <b>F</b>eature · <b>S</b>print · <b>A</b>cceptance (Story). <b>Última letra</b>: <b>P</b> = Plan (qué se probará) · <b>R</b> = <b>Results</b> (el paraguas: la ejecución y sus runs). Un "run" = una iteración de la ejecución.</p></div>
 </section>
 
-<!-- D · AXIOMAS -->
-<section class="slide" style="--ac:#34d399" data-t="Los 5 axiomas">
-  <p class="kick">Las leyes de verdad — todo nombre del códice obedece estas cinco</p>
-  <h2>Los Cinco Axiomas</h2>
-  <p class="lede mt-s">No son reglas sueltas: son el patrón que emana de toda la nomenclatura. Si un nombre nuevo no cabe en estos cinco, está mal formado.</p>
-  <div class="lstack mt-m">
-    <div class="lbar" style="--ac:#60a5fa"><span class="ln">A · CLAVE</span><span class="ld">Todo nombre lleva su clave Jira — así Story ↔ test ↔ código ↔ rama quedan atados</span><span class="lx">PROJ-101: …</span></div>
-    <div class="lbar" style="--ac:#a78bfa"><span class="ln">B · CAPA</span><span class="ld">El primer token codifica la capa/altitud — se lee antes que la frase</span><span class="lx">ATP: · TS: · @atc</span></div>
-    <div class="lbar" style="--ac:#22d3ee"><span class="ln">C · RESULTADO</span><span class="ld">Los casos se nombran por su resultado, no por su acción — verbo primero</span><span class="lx">should &lt;outcome&gt;</span></div>
-    <div class="lbar" style="--ac:#fbbf24"><span class="ln">D · PLAN vs RESULTS</span><span class="ld">Plan y results se distinguen en el primer token (P = Plan, R = Results)</span><span class="lx">ATP → ATR</span></div>
-    <div class="lbar" style="--ac:#a3e635"><span class="ln">E · UNA FORMA</span><span class="ld">Una sola forma por artefacto; la membresía es un link, nunca se mete en el nombre</span><span class="lx">link ≠ prefijo</span></div>
-  </div>
-  <div class="callout good mt-m" style="padding:11px 14px"><p style="margin:0" class="dim">El siguiente slide aplica estos axiomas a los <b>5 errores</b> que más se cometen al ignorarlos.</p></div>
-</section>
-
-<!-- 2 · LOS 5 ERRORES MÁS COMUNES -->
-<section class="slide" style="--ac:#f87171" data-t="5 errores comunes">
-  <p class="kick">Aplicando los axiomas — las confusiones a nunca cometer, como reglas</p>
-  <h2>Errores &amp; Reglas de Oro</h2>
-  <div class="grid g2 mt-m">
-    <div class="card lyr" style="--ac:#22d3ee"><h4>1 · <span class="mono">should</span> = caso · <span class="mono">Validate</span> = grupo</h4><p class="dim">El caso afirma un comportamiento (<span class="mono">should</span>); el grupo solo nombra la caja (<span class="mono">Validate</span>). Nunca al revés.</p></div>
-    <div class="card lyr" style="--ac:#a78bfa"><h4>2 · ATC = <b>Acceptance</b> Test Case</h4><p class="dim">No "Automated". El ATC es el método KATA mapeado 1:1 a un TC; la clave <span class="mono">@atc</span> lo ata a Jira.</p></div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>3 · R = <b>Results</b>, no Run</h4><p class="dim">ATR / FTR / STR son Test <b>Results</b>. Un "run" es solo una iteración de la ejecución; Results es el paraguas.</p></div>
-    <div class="card lyr" style="--ac:#60a5fa"><h4>4 · El prefijo = la clave de la Story</h4><p class="dim">El título de un TC lleva la clave de su User Story. La pertenencia a un Test Set es un <b>link</b>, nunca va en el nombre.</p></div>
-    <div class="card lyr" style="--ac:#a78bfa"><h4>5 · <span class="mono">@atc('PROJ-101')</span> literal</h4><p class="dim">El decorador lleva una clave Jira literal — sin template literals, sin IDs sintéticos.</p></div>
-    <div class="card lyr" style="--ac:#fb923c"><h4>6 · <span class="mono">@integration</span>, no <span class="mono">@api</span></h4><p class="dim">El tag de API tests es <span class="mono">@integration</span> (contraparte de <span class="mono">@e2e</span>). <span class="mono">@api/</span> es el alias de import — otra cosa.</p></div>
-    <div class="card lyr" style="--ac:#22d3ee"><h4>7 · El casing sigue a la capa</h4><p class="dim"><span class="mono">should</span> minúscula (continúa el prefijo) · <span class="mono">Validate</span> mayúscula (inicia el summary del grupo).</p></div>
-    <div class="card lyr" style="--ac:#a3e635"><h4>8 · Una forma · primer token = capa</h4><p class="dim">Una sola forma por artefacto; el primer token codifica su capa/altitud. Lee la intención antes de la frase.</p></div>
-  </div>
-</section>
-
 <!-- 3 · LAS 7 CAPAS -->
 <section class="slide" style="--ac:#a78bfa" data-t="Siete capas">
   <p class="kick">El mapa · los nombres se organizan por altitud</p>
@@ -777,6 +746,37 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   </div>
   <p class="wf-take">El camino de automatización va Draft → In Design → READY → In Review → Candidate → In Automation → Pull Request → AUTOMATED; la rama MANUAL puede reingresar a automatización.</p>
   <p class="notes"><b>Notas.</b> El camino feliz de automatización es la espina de izquierda a derecha en las dos filas. MANUAL es el hub: un caso puede enviarse a manual (desde READY / Candidate / AUTOMATED) y reingresar a automatización (automated / for automation / automation review). Bucles: "back" baja la cadena en cada etapa, Fix devuelve AUTOMATED a Pull Request. Deprecated (global) retira cualquier caso; recover devuelve DEPRECATED a Draft.</p>
+</section>
+
+<!-- D · AXIOMAS -->
+<section class="slide" style="--ac:#34d399" data-t="Los 5 axiomas">
+  <p class="kick">Las leyes de verdad — todo nombre del códice obedece estas cinco</p>
+  <h2>Los Cinco Axiomas</h2>
+  <p class="lede mt-s">No son reglas sueltas: son el patrón que emana de toda la nomenclatura. Si un nombre nuevo no cabe en estos cinco, está mal formado.</p>
+  <div class="lstack mt-m">
+    <div class="lbar" style="--ac:#60a5fa"><span class="ln">A · CLAVE</span><span class="ld">Todo nombre lleva su clave Jira — así Story ↔ test ↔ código ↔ rama quedan atados</span><span class="lx">PROJ-101: …</span></div>
+    <div class="lbar" style="--ac:#a78bfa"><span class="ln">B · CAPA</span><span class="ld">El primer token codifica la capa/altitud — se lee antes que la frase</span><span class="lx">ATP: · TS: · @atc</span></div>
+    <div class="lbar" style="--ac:#22d3ee"><span class="ln">C · RESULTADO</span><span class="ld">Los casos se nombran por su resultado, no por su acción — verbo primero</span><span class="lx">should &lt;outcome&gt;</span></div>
+    <div class="lbar" style="--ac:#fbbf24"><span class="ln">D · PLAN vs RESULTS</span><span class="ld">Plan y results se distinguen en el primer token (P = Plan, R = Results)</span><span class="lx">ATP → ATR</span></div>
+    <div class="lbar" style="--ac:#a3e635"><span class="ln">E · UNA FORMA</span><span class="ld">Una sola forma por artefacto; la membresía es un link, nunca se mete en el nombre</span><span class="lx">link ≠ prefijo</span></div>
+  </div>
+  <div class="callout good mt-m" style="padding:11px 14px"><p style="margin:0" class="dim">El siguiente slide aplica estos axiomas a los <b>5 errores</b> que más se cometen al ignorarlos.</p></div>
+</section>
+
+<!-- 2 · LOS 5 ERRORES MÁS COMUNES -->
+<section class="slide" style="--ac:#f87171" data-t="5 errores comunes">
+  <p class="kick">Aplicando los axiomas — las confusiones a nunca cometer, como reglas</p>
+  <h2>Errores &amp; Reglas de Oro</h2>
+  <div class="grid g2 mt-m">
+    <div class="card lyr" style="--ac:#22d3ee"><h4>1 · <span class="mono">should</span> = caso · <span class="mono">Validate</span> = grupo</h4><p class="dim">El caso afirma un comportamiento (<span class="mono">should</span>); el grupo solo nombra la caja (<span class="mono">Validate</span>). Nunca al revés.</p></div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>2 · ATC = <b>Acceptance</b> Test Case</h4><p class="dim">No "Automated". El ATC es el método KATA mapeado 1:1 a un TC; la clave <span class="mono">@atc</span> lo ata a Jira.</p></div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>3 · R = <b>Results</b>, no Run</h4><p class="dim">ATR / FTR / STR son Test <b>Results</b>. Un "run" es solo una iteración de la ejecución; Results es el paraguas.</p></div>
+    <div class="card lyr" style="--ac:#60a5fa"><h4>4 · El prefijo = la clave de la Story</h4><p class="dim">El título de un TC lleva la clave de su User Story. La pertenencia a un Test Set es un <b>link</b>, nunca va en el nombre.</p></div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>5 · <span class="mono">@atc('PROJ-101')</span> literal</h4><p class="dim">El decorador lleva una clave Jira literal — sin template literals, sin IDs sintéticos.</p></div>
+    <div class="card lyr" style="--ac:#fb923c"><h4>6 · <span class="mono">@integration</span>, no <span class="mono">@api</span></h4><p class="dim">El tag de API tests es <span class="mono">@integration</span> (contraparte de <span class="mono">@e2e</span>). <span class="mono">@api/</span> es el alias de import — otra cosa.</p></div>
+    <div class="card lyr" style="--ac:#22d3ee"><h4>7 · El casing sigue a la capa</h4><p class="dim"><span class="mono">should</span> minúscula (continúa el prefijo) · <span class="mono">Validate</span> mayúscula (inicia el summary del grupo).</p></div>
+    <div class="card lyr" style="--ac:#a3e635"><h4>8 · Una forma · primer token = capa</h4><p class="dim">Una sola forma por artefacto; el primer token codifica su capa/altitud. Lee la intención antes de la frase.</p></div>
+  </div>
 </section>
 
 <!-- 18 · MASTER cheat-sheet -->

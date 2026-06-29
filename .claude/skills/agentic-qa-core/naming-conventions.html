@@ -246,37 +246,6 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="callout mt-m" style="padding:11px 14px"><p style="margin:0" class="dim"><b>First letter</b> = altitude: <b>M</b>aster · <b>F</b>eature · <b>S</b>print · <b>A</b>cceptance (Story). <b>Last letter</b>: <b>P</b> = Plan (what will be tested) · <b>R</b> = <b>Results</b> (the umbrella: the execution and its runs). "Run" = one iteration of the execution.</p></div>
 </section>
 
-<!-- D · AXIOMS -->
-<section class="slide" style="--ac:#34d399" data-t="The 5 axioms">
-  <p class="kick">The real laws — every name in the codex obeys these five</p>
-  <h2>The Five Axioms</h2>
-  <p class="lede mt-s">Not loose rules: they are the pattern that emanates from the whole nomenclature. If a new name does not fit these five, it is malformed.</p>
-  <div class="lstack mt-m">
-    <div class="lbar" style="--ac:#60a5fa"><span class="ln">A · KEY</span><span class="ld">Every name carries its Jira key — so Story ↔ test ↔ code ↔ branch stay tied</span><span class="lx">PROJ-101: …</span></div>
-    <div class="lbar" style="--ac:#a78bfa"><span class="ln">B · LAYER</span><span class="ld">The first token encodes the layer/altitude — read before the sentence</span><span class="lx">ATP: · TS: · @atc</span></div>
-    <div class="lbar" style="--ac:#22d3ee"><span class="ln">C · OUTCOME</span><span class="ld">Cases are named by their outcome, not their action — verb first</span><span class="lx">should &lt;outcome&gt;</span></div>
-    <div class="lbar" style="--ac:#fbbf24"><span class="ln">D · PLAN vs RESULTS</span><span class="ld">Plan and results are distinguished in the first token (P = Plan, R = Results)</span><span class="lx">ATP → ATR</span></div>
-    <div class="lbar" style="--ac:#a3e635"><span class="ln">E · ONE SHAPE</span><span class="ld">One shape per artifact; membership is a link, never stuffed into the name</span><span class="lx">link ≠ prefix</span></div>
-  </div>
-  <div class="callout good mt-m" style="padding:11px 14px"><p style="margin:0" class="dim">The next slide applies these axioms to the <b>5 mistakes</b> most often made by ignoring them.</p></div>
-</section>
-
-<!-- 2 · THE FIVE MOST COMMON MISTAKES -->
-<section class="slide" style="--ac:#f87171" data-t="5 common mistakes">
-  <p class="kick">Applying the axioms — the confusions to never make, as rules</p>
-  <h2>Mistakes &amp; Golden Rules</h2>
-  <div class="grid g2 mt-m">
-    <div class="card lyr" style="--ac:#22d3ee"><h4>1 · <span class="mono">should</span> = case · <span class="mono">Validate</span> = group</h4><p class="dim">A case asserts a behavior (<span class="mono">should</span>); the group only names the box (<span class="mono">Validate</span>). Never swap them.</p></div>
-    <div class="card lyr" style="--ac:#a78bfa"><h4>2 · ATC = <b>Acceptance</b> Test Case</h4><p class="dim">Not "Automated". ATC is the KATA method mapped 1:1 to a TC; the <span class="mono">@atc</span> key ties it to Jira.</p></div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>3 · R = <b>Results</b>, not Run</h4><p class="dim">ATR / FTR / STR are Test <b>Results</b>. A "run" is just one iteration of the execution; Results is the umbrella.</p></div>
-    <div class="card lyr" style="--ac:#60a5fa"><h4>4 · Prefix = the Story key</h4><p class="dim">A TC title is prefixed by its User Story key. Test Set membership is a <b>link</b>, never baked into the name.</p></div>
-    <div class="card lyr" style="--ac:#a78bfa"><h4>5 · <span class="mono">@atc('PROJ-101')</span> literal</h4><p class="dim">The decorator carries a literal Jira-key string — no template literals, no synthetic IDs.</p></div>
-    <div class="card lyr" style="--ac:#fb923c"><h4>6 · <span class="mono">@integration</span>, not <span class="mono">@api</span></h4><p class="dim">The API-test tag is <span class="mono">@integration</span> (counterpart to <span class="mono">@e2e</span>). <span class="mono">@api/</span> is the import alias — a different thing.</p></div>
-    <div class="card lyr" style="--ac:#22d3ee"><h4>7 · Casing follows the layer</h4><p class="dim"><span class="mono">should</span> lowercase (continues the prefix) · <span class="mono">Validate</span> capitalized (starts the group summary).</p></div>
-    <div class="card lyr" style="--ac:#a3e635"><h4>8 · One shape · first token = layer</h4><p class="dim">One canonical shape per artifact; the first token encodes its layer/altitude. Read intent before the sentence.</p></div>
-  </div>
-</section>
-
 <!-- 3 · THE 7 LAYERS -->
 <section class="slide" style="--ac:#a78bfa" data-t="Seven layers">
   <p class="kick">The map · names are organized by altitude</p>
@@ -793,6 +762,37 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   </div>
   <p class="wf-take">Automation path runs Draft → In Design → READY → In Review → Candidate → In Automation → Pull Request → AUTOMATED; the MANUAL branch can re-enter automation.</p>
   <p class="notes"><b>Notes.</b> Automation happy path is the left-to-right spine across both rows. MANUAL is the hub: a case can be sent for manual (from READY / Candidate / AUTOMATED) and re-enter automation (automated / for automation / automation review). Loops: "back" steps down the chain at every stage, Fix sends AUTOMATED back to Pull Request. Deprecated (global) retires any case; recover brings DEPRECATED back to Draft.</p>
+</section>
+
+<!-- D · AXIOMS -->
+<section class="slide" style="--ac:#34d399" data-t="The 5 axioms">
+  <p class="kick">The real laws — every name in the codex obeys these five</p>
+  <h2>The Five Axioms</h2>
+  <p class="lede mt-s">Not loose rules: they are the pattern that emanates from the whole nomenclature. If a new name does not fit these five, it is malformed.</p>
+  <div class="lstack mt-m">
+    <div class="lbar" style="--ac:#60a5fa"><span class="ln">A · KEY</span><span class="ld">Every name carries its Jira key — so Story ↔ test ↔ code ↔ branch stay tied</span><span class="lx">PROJ-101: …</span></div>
+    <div class="lbar" style="--ac:#a78bfa"><span class="ln">B · LAYER</span><span class="ld">The first token encodes the layer/altitude — read before the sentence</span><span class="lx">ATP: · TS: · @atc</span></div>
+    <div class="lbar" style="--ac:#22d3ee"><span class="ln">C · OUTCOME</span><span class="ld">Cases are named by their outcome, not their action — verb first</span><span class="lx">should &lt;outcome&gt;</span></div>
+    <div class="lbar" style="--ac:#fbbf24"><span class="ln">D · PLAN vs RESULTS</span><span class="ld">Plan and results are distinguished in the first token (P = Plan, R = Results)</span><span class="lx">ATP → ATR</span></div>
+    <div class="lbar" style="--ac:#a3e635"><span class="ln">E · ONE SHAPE</span><span class="ld">One shape per artifact; membership is a link, never stuffed into the name</span><span class="lx">link ≠ prefix</span></div>
+  </div>
+  <div class="callout good mt-m" style="padding:11px 14px"><p style="margin:0" class="dim">The next slide applies these axioms to the <b>5 mistakes</b> most often made by ignoring them.</p></div>
+</section>
+
+<!-- 2 · THE FIVE MOST COMMON MISTAKES -->
+<section class="slide" style="--ac:#f87171" data-t="5 common mistakes">
+  <p class="kick">Applying the axioms — the confusions to never make, as rules</p>
+  <h2>Mistakes &amp; Golden Rules</h2>
+  <div class="grid g2 mt-m">
+    <div class="card lyr" style="--ac:#22d3ee"><h4>1 · <span class="mono">should</span> = case · <span class="mono">Validate</span> = group</h4><p class="dim">A case asserts a behavior (<span class="mono">should</span>); the group only names the box (<span class="mono">Validate</span>). Never swap them.</p></div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>2 · ATC = <b>Acceptance</b> Test Case</h4><p class="dim">Not "Automated". ATC is the KATA method mapped 1:1 to a TC; the <span class="mono">@atc</span> key ties it to Jira.</p></div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>3 · R = <b>Results</b>, not Run</h4><p class="dim">ATR / FTR / STR are Test <b>Results</b>. A "run" is just one iteration of the execution; Results is the umbrella.</p></div>
+    <div class="card lyr" style="--ac:#60a5fa"><h4>4 · Prefix = the Story key</h4><p class="dim">A TC title is prefixed by its User Story key. Test Set membership is a <b>link</b>, never baked into the name.</p></div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>5 · <span class="mono">@atc('PROJ-101')</span> literal</h4><p class="dim">The decorator carries a literal Jira-key string — no template literals, no synthetic IDs.</p></div>
+    <div class="card lyr" style="--ac:#fb923c"><h4>6 · <span class="mono">@integration</span>, not <span class="mono">@api</span></h4><p class="dim">The API-test tag is <span class="mono">@integration</span> (counterpart to <span class="mono">@e2e</span>). <span class="mono">@api/</span> is the import alias — a different thing.</p></div>
+    <div class="card lyr" style="--ac:#22d3ee"><h4>7 · Casing follows the layer</h4><p class="dim"><span class="mono">should</span> lowercase (continues the prefix) · <span class="mono">Validate</span> capitalized (starts the group summary).</p></div>
+    <div class="card lyr" style="--ac:#a3e635"><h4>8 · One shape · first token = layer</h4><p class="dim">One canonical shape per artifact; the first token encodes its layer/altitude. Read intent before the sentence.</p></div>
+  </div>
 </section>
 
 <!-- 18 · MASTER cheat-sheet -->
