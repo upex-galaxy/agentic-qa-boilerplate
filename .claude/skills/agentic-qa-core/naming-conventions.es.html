@@ -112,6 +112,12 @@ tbody tr:hover{background:var(--panel)}
 
 .hd{position:fixed;top:20px;left:40px;right:40px;display:flex;justify-content:space-between;align-items:center;
   font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--t3);z-index:30;pointer-events:none}
+/* El brand izquierdo del header ocupa la esquina superior izquierda, donde el
+   visor de cursos (DeckViewer) inyecta su chrome flotante (≡ menú · ← Decks ·
+   Siguiente →). Lo ocultamos para evitar el solape: el visor ya da contexto de
+   navegación, y el span derecho ("agentic-qa · nomenclatura") sigue anclado a la
+   derecha vía space-between. visibility (no display) preserva ese anclaje. */
+.hd>span:first-child{visibility:hidden}
 .ft{position:fixed;bottom:18px;left:40px;right:40px;display:flex;justify-content:space-between;align-items:center;
   font-family:var(--mono);font-size:11px;color:var(--t3);z-index:30;pointer-events:none}
 .pbar{position:fixed;left:0;bottom:0;height:3px;z-index:40;background:transparent}
