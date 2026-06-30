@@ -67,7 +67,7 @@ args = [
 [mcp_servers.openapi.env]
 API_BASE_URL = "${API_BASE_URL}"
 OPENAPI_SPEC_PATH = "${OPENAPI_SPEC_PATH}"
-API_HEADERS = "Authorization:Bearer ${API_TOKEN}"
+# NOTE: schema-read-only — no API_TOKEN/API_HEADERS injected; auth runs via curl (bun run api:login).
 
 # ============================================
 # ATLASSIAN — OPT-IN

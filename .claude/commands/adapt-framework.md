@@ -436,7 +436,7 @@ bun run kata:manifest:check    # must exit 0
 `.mcp.json` (Claude Code: `mcpServers`, `env`, `${VAR}`) and `opencode.jsonc` (OpenCode: `mcp`, `environment`, `{env:VAR}`) ship the **same** servers (`context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman`). **Every change must land in BOTH** with the right syntax — a single-file edit half-breaks the other agent. Per CLAUDE.md Rule #10, a missing/empty MCP var is a HARD SESSION STOP, not a soft CI failure.
 
 - `project.yaml` `environments.<env>.db_mcp` / `api_mcp` resolve to MCP **server names**. Default: point them at the existing `dbhub` / `openapi` servers. If the target needs per-env DB/API servers, add those entries to **both** files.
-- `openapi` server reads `API_BASE_URL` / `OPENAPI_SPEC_PATH` / `API_TOKEN` (via `API_HEADERS`). If the target has **no API**, disable/remove the `openapi` entry in both files (else it spins against empty env and `[API_TOOL]` breaks).
+- `openapi` server reads `API_BASE_URL` / `OPENAPI_SPEC_PATH` ONLY — it is **schema-read-only**, so do NOT inject `API_TOKEN` / `API_HEADERS` (authenticated requests run via curl using `.auth/tokens.env` from `bun run api:login`; canon: `agentic-qa-core/references/api-testing-doctrine.md`). If the target has **no API**, disable/remove the `openapi` entry in both files (else it spins against empty env and `[API_TOOL]` breaks).
 - `dbhub` server reads `dbhub.toml`. Verify it stays consistent with `DBHUB_*`.
 
 ### 7.4 `dbhub.toml`

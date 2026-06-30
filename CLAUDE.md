@@ -200,7 +200,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | MCP | Use for | Rule |
 |---|---|---|
 | Playwright | E2E, UI automation, screenshots | Fallback for `[AUTOMATION_TOOL]` (primary = `/playwright-cli`) |
-| OpenAPI | API endpoint exploration, contract testing | `[API_TOOL]` primary |
+| OpenAPI | API **schema** read-only (endpoint discovery, request/response contracts) | `[API_TOOL]` schema-read leg ONLY. Authenticated execution is `curl`, NOT the MCP — see `agentic-qa-core/references/api-testing-doctrine.md`. |
 | DBHub | DB queries, data validation | `[DB_TOOL]` primary |
 | Context7 | Library official docs ("how to use X") | `[DOCS_TOOL]` primary. **MANDATORY** for any library / framework / SDK / API / CLI doc lookup (React, Next, Playwright, Prisma, Tailwind, Express, etc.). PREFER OVER built-in `WebSearch` / `WebFetch` — Context7 returns current versioned docs; built-in web search returns stale blog posts. |
 | Tavily | Community solutions ("how to solve X"), troubleshooting, non-doc web research | `[WEB_SEARCH_TOOL]` primary. **MANDATORY** for any general web search — community fixes, error message lookups, "how to solve X". PREFER OVER built-in `WebSearch` / `WebFetch` — Tavily returns ranked + summarized results; built-in is shallower. |
@@ -217,7 +217,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | `[TMS_TOOL]` | Test management | Modality jira-xray: `/xray-cli`. Modality jira-native: `/acli` | MCP Atlassian (opt-in — see docs/mcp/) |
 | `[AUTOMATION_TOOL]` | Browser automation | `/playwright-cli` | MCP Playwright |
 | `[DB_TOOL]` | Database | DBHub MCP | Supabase MCP / raw SQL |
-| `[API_TOOL]` | API exploration | OpenAPI MCP | Postman / curl |
+| `[API_TOOL]` | API testing | **Schema read**: OpenAPI MCP (read-only). **Execute**: `curl` (token via `bun run api:login` → `.auth/tokens.env`). Canon: `agentic-qa-core/references/api-testing-doctrine.md` | Postman |
 | `[DOCS_TOOL]` | Library / framework / SDK / API / CLI official docs | Context7 MCP (`mcp__context7__resolve-library-id` → `mcp__context7__query-docs`) | built-in `WebSearch` / `WebFetch` (last resort only) |
 | `[WEB_SEARCH_TOOL]` | General web search, community fixes, troubleshooting, non-doc research | Tavily MCP (`mcp__tavily__tavily_search` / `tavily_extract` / `tavily_research`) | built-in `WebSearch` / `WebFetch` (last resort only) |
 
@@ -229,6 +229,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 - Before any `[TMS_TOOL] ...` Modality jira-xray → load `/xray-cli`
 - Before any `[TMS_TOOL] ...` Modality jira-native → load `/acli`
 - Before any `[AUTOMATION_TOOL] ...` → load `/playwright-cli`
+- Before any `[API_TOOL] ...` → the OpenAPI MCP is **schema-read-only** (discover endpoints + read schemas); load `agentic-qa-core/references/api-testing-doctrine.md` for the schema → `bun run api:login` → `curl` maneuver. Execute authenticated requests with curl, NEVER via the MCP.
 - Before any `[DOCS_TOOL] ...` → use Context7 MCP tools directly (no skill load — MCP self-documents). NEVER substitute with `WebSearch` / `WebFetch` for library docs.
 - Before any `[WEB_SEARCH_TOOL] ...` → use Tavily MCP tools directly. NEVER substitute with built-in `WebSearch` / `WebFetch` unless Tavily unavailable.
 

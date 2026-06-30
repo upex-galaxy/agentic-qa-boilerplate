@@ -49,8 +49,8 @@ Probe only what the skill's matrix lists. `[TAG_TOOL]` resolve per `CLAUDE.md` �
 | **Framework adapted (artifacts present — NOT a generic boilerplate)** | The OUTPUT that `/adapt-framework` produces is in place. Probe its Phase 9 ADAPTED signals, read-only: `bun run vars:check` exits 0 AND `.agents/project.yaml` has zero `null #` lines; none of `ExampleApi.ts` / `ExamplePage.ts` / `ExampleSteps.ts` / `api/schemas/example.types.ts` exist; no `module-example` spec dirs remain under `tests/e2e/` / `tests/integration/`. | Still generic → **STOP and hand the user the commands to run THEMSELVES**: `/project-discovery` (if `.context/` is missing) then `/adapt-framework`. The gate **never auto-runs** them — it verifies their artifacts only. |
 | **Active env reachable** | HTTP HEAD/GET on `{{WEB_URL}}` and `{{API_URL}}` root → 2xx/3xx (a login redirect counts). | 404/410/5xx, refused, or a dead-deploy page → STOP; offer a session env override (user-supplied alt URL). |
 | **Test-user credentials** | `<<ACTIVE_ENV>>`-scoped creds present in `.env` (`LOCAL_USER_*` / `STAGING_USER_*`). | Empty → user fills `.env` (template in `.env.example`). Never hardcode, never echo the value back. |
-| **User roles** | The project's role count is known and each role has creds in `.env`. | Multi-role project with one cred set → ask how many roles; have the user add `<ROLE>_USER_*` rows. `scripts/api-login.ts` authenticates the active `config.testUser`; one token per role. |
-| **OpenAPI MCP (authenticated API calls)** | `openapi` server present in `.mcp.json`; `OPENAPI_SPEC_PATH` set; `API_TOKEN` present AND unexpired (a dynamic tool call returns 2xx, not 401). | Missing/expired token → run the api-login flow (§6) then RESTART. Spec path unset / endpoints generic → the project never ran `/adapt-framework`; hand off there. |
+| **User roles** | The project's role count is known and each role has creds in `.env`. | Multi-role project with one cred set → ask how many roles; have the user add per-role creds. `bun run api:login [<env>] --role <role>` mints one token per role into `.auth/tokens.env` (var `API_TOKEN_<ROLE>_<ENV>`). |
+| **OpenAPI MCP (schema read-only)** | `openapi` server present in `.mcp.json`; `OPENAPI_SPEC_PATH` set (local file OR live URL); a `list-api-endpoints` / `get-api-endpoint-schema` call returns the spec. No token needed — the MCP does NOT execute. | Spec path unset / endpoints generic → the project never ran `/adapt-framework`; hand off there. Authenticated execution is curl's job (see §6 + `api-testing-doctrine.md`). |
 | **DBHub MCP (data validation)** | `dbhub` server present; `DBHUB_*` set in `.env`; a probe query lists tables / returns the schema. | Unset vars or auth failure → user fills `.env` DBHUB_* block, then RESTART (spawn-time, §6). |
 | **Issue-tracker (`[ISSUE_TRACKER_TOOL]`)** | `/acli` loaded; auth check per `/acli` references passes (`bun run jira:check` validates the Jira field/workflow setup). | Not authenticated / token missing → tell the user the exact var (`ATLASSIAN_*`) + `.env`, ask them to fix + RESTART. |
 | **TMS (`[TMS_TOOL]`)** | Modality resolved (jira-xray vs jira-native, per `test-documentation/SKILL.md` §Phase 0). Modality jira-xray → `/xray-cli` loaded + `XRAY_*` creds set. | Xray creds missing → user fills `.env` `XRAY_*`. Modality unresolved → run the 4-step probe; ask only if all auto-checks fail. |
@@ -67,7 +67,7 @@ Split REDs into:
 
 - **Self-fixable in-session** (no restart): run `bun run pw:install`, `bun run kata:manifest`, load a tool skill, run `bun run jira:check`. → Offer to do it, **explain what it does**, ask approval, then do it.
 - **User-action** (a secret you must not invent, or an interactive login): missing `.env` value, `gh auth login`. → Tell the user the **exact var + file + why**, ask them to fix it.
-- **MCP-spawn-time** (§6): `API_TOKEN`, `OPENAPI_SPEC_PATH`, any `DBHUB_*` — even when you can write the value, the running MCP will not see it until restart. → Write it (token only, via the script), then STOP and ask for a restart.
+- **MCP-spawn-time** (§6): `OPENAPI_SPEC_PATH`, any `DBHUB_*` — even when you can write the value, the running MCP will not see it until restart. → Write it, then STOP and ask for a restart. (NOTE: the API token is NOT in this class — it never enters an MCP; curl reads `.auth/tokens.env` live, no restart.)
 
 Surface them as a **single batched checklist** with `AskUserQuestion` (≤4 questions/call; multi-select where natural). Compose questions only for genuine gaps + REDs — never to pad a checklist (per `CLAUDE.md` Critical Rule #4, Shift-Left). One question per real decision: environment (ONLY if unresolved by an arg), missing-secret intents, and a confirm-to-fix for each self-fixable remedy.
 
@@ -80,16 +80,16 @@ GREEN items are reported, not asked.
 ## 6. Secret & token handling (load-bearing — read every time)
 
 - Secrets live in `.env` ONLY. Never hardcode, never paste a secret into a skill artifact, a Jira field, a commit, or chat. When reporting status, say "set" / "unset" / "expired" — never the value.
-- `.mcp.json` consumes secrets as `${VAR}`; `opencode.jsonc` as `{env:VAR}`. Both read the value **at MCP-server spawn time** — there is no mid-session refresh (per `CLAUDE.md` Critical Rule #10). So any write to `.env` that an MCP depends on (`API_TOKEN`, `OPENAPI_SPEC_PATH`, `DBHUB_*`, `XRAY_*`, `TAVILY_API_KEY`) requires the user to **restart the agent** (`bun claude` / `bun opencode`) before the change takes effect. Always end such a remedy with that instruction and STOP.
+- `.mcp.json` consumes secrets as `${VAR}`; `opencode.jsonc` as `{env:VAR}`. Both read the value **at MCP-server spawn time** — there is no mid-session refresh (per `CLAUDE.md` Critical Rule #10). So any write to `.env` that an MCP depends on (`OPENAPI_SPEC_PATH`, `DBHUB_*`, `XRAY_*`, `TAVILY_API_KEY`) requires the user to **restart the agent** (`bun claude` / `bun opencode`) before the change takes effect. (The API token is exempt — it is no longer injected into any MCP; curl reads `.auth/tokens.env` live.) Always end such a remedy with that instruction and STOP.
 
-### The OpenAPI authenticated-call flow (canonical)
+### The API testing maneuver (canonical — schema read / token / curl)
 
-The OpenAPI MCP can invoke project endpoints **authenticated** — it injects `Authorization: Bearer ${API_TOKEN}`. The AI is responsible for minting that token, safely:
+The OpenAPI MCP is **schema-read-only**; authenticated requests run via **curl**. Canon: `agentic-qa-core/references/api-testing-doctrine.md`.
 
-1. **Precondition:** `scripts/api-login.ts` is project-adapted (auth endpoint + payload shape wired by `/adapt-framework`), and `<<ACTIVE_ENV>>`-scoped creds exist in `.env`. If api-login is still generic → hand off to `/adapt-framework`; do not improvise an auth call.
-2. **Mint:** run `bun run api:login:<env>` (or `bun run api:login` for the `.env` default). It authenticates `config.testUser`, writes `API_TOKEN` to `.env`, and stores the Playwright state at `.auth/api-state.json`. The AI never sees the raw token.
-3. **Activate:** ask the user to **restart the agent** so the `openapi` MCP re-spawns with the fresh `${API_TOKEN}`. Until then, treat authenticated OpenAPI calls as RED.
-4. **Per role:** repeat per role the scope needs (each role = its own creds → its own token); note that only one `API_TOKEN` is live at a time.
+1. **Schema (read-only):** use the `openapi` MCP's `list-api-endpoints` + `get-api-endpoint-schema` to learn the contract. `OPENAPI_SPEC_PATH` is a local file OR a live URL (commonly the localhost backend). No token needed.
+2. **Precondition for execution:** `scripts/api-login.ts` is project-adapted (auth endpoint + payload shape wired by `/adapt-framework`), and `<<ACTIVE_ENV>>`-scoped creds exist in `.env`. Still generic → hand off to `/adapt-framework`; do not improvise an auth call.
+3. **Mint the token:** run `bun run api:login [<env>] [--role <role>]`. It authenticates the env+role creds and writes `.auth/tokens.env` (`export API_TOKEN_<ROLE>_<ENV>='…'`) + `.auth/tokens.json` (metadata) + `.auth/api-state.json` (Playwright). The AI never pastes the raw token.
+4. **Execute (curl):** `source .auth/tokens.env && curl -H "Authorization: Bearer $API_TOKEN_<ROLE>_<ENV>" "$API_BASE_URL/<path>"` — `source` + `curl` in the SAME Bash call. **No restart** (the token never enters an MCP). Multiple roles/envs coexist in the same files.
 
 ## 7. Output contract
 

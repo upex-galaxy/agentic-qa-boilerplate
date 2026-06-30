@@ -259,8 +259,8 @@ export const VAR_MANIFEST: VarSpec[] = [
     secret: true,
     required: false,
     critical: false,
-    obtainHint: 'auto-populated by `bun run api:login` against your project; no manual entry needed.',
-    note: 'Bearer token for API exploration (auto-populated by api:login). Local only.',
+    obtainHint: 'legacy/optional — `bun run api:login` now writes the curl token to .auth/tokens.env, not here.',
+    note: 'Legacy. The OpenAPI MCP is schema-read-only and no longer reads this; api:login mints the token into .auth/tokens.env for curl-based API testing. Local only.',
   },
   {
     name: 'RESEND_API_KEY',

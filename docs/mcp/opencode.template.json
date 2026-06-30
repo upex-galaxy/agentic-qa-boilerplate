@@ -57,8 +57,7 @@
       "enabled": true,
       "environment": {
         "API_BASE_URL": "{env:API_BASE_URL}",
-        "OPENAPI_SPEC_PATH": "{env:OPENAPI_SPEC_PATH}",
-        "API_HEADERS": "Authorization:Bearer {env:API_TOKEN}"
+        "OPENAPI_SPEC_PATH": "{env:OPENAPI_SPEC_PATH}"
       }
     },
     "postman": {

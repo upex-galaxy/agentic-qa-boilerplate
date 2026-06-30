@@ -2,6 +2,16 @@
 
 Esta guía explica cómo configurar MCP (Model Context Protocol) servers para diferentes herramientas de AI coding: **Claude Code**, **OpenCode**, **Codex CLI**, y **Gemini CLI**.
 
+> [!IMPORTANT]
+> **El OpenAPI MCP de este repo es SOLO-LECTURA-DE-SCHEMA.** Sirve para descubrir endpoints y
+> leer esquemas (`list-api-endpoints`, `get-api-endpoint-schema`), NO para ejecutar requests
+> autenticados. **NO inyectes el token del proyecto vía `API_HEADERS`** en ningún agente
+> (Claude Code / OpenCode / Codex / Gemini) — los bloques de ejemplo de abajo ya NO lo llevan.
+> Los requests autenticados se ejecutan con **curl**, usando el token que mintea
+> `bun run api:login` (→ `.auth/tokens.env`, var `API_TOKEN_<ROLE>_<ENV>`); sin reinicio del
+> agente al rotar el token. Doctrina canónica:
+> `.claude/skills/agentic-qa-core/references/api-testing-doctrine.md`.
+
 ---
 
 ## Tabla de Contenidos
@@ -138,8 +148,7 @@ claude mcp add-json --scope=user my-server '{"command":"npx","args":[...]}'
       "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
       "env": {
         "API_BASE_URL": "https://staging-upexsoloq.vercel.app/api",
-        "OPENAPI_SPEC_PATH": "https://staging-upexsoloq.vercel.app/api/openapi",
-        "API_HEADERS": "Authorization:Bearer {{JWT_ACCESS_TOKEN}}"
+        "OPENAPI_SPEC_PATH": "https://staging-upexsoloq.vercel.app/api/openapi"
       }
     },
     "sql": {
@@ -210,8 +219,7 @@ claude mcp add-json --scope=user my-server '{"command":"npx","args":[...]}'
       "command": ["npx", "-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
       "environment": {
         "API_BASE_URL": "https://staging-upexsoloq.vercel.app/api",
-        "OPENAPI_SPEC_PATH": "https://staging-upexsoloq.vercel.app/api/openapi",
-        "API_HEADERS": "Authorization:Bearer {{JWT_ACCESS_TOKEN}}"
+        "OPENAPI_SPEC_PATH": "https://staging-upexsoloq.vercel.app/api/openapi"
       },
       "enabled": true
     },
@@ -287,7 +295,6 @@ args = ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"]
 [mcp_servers.openapi.env]
 API_BASE_URL = "https://staging-upexsoloq.vercel.app/api"
 OPENAPI_SPEC_PATH = "https://staging-upexsoloq.vercel.app/api/openapi"
-API_HEADERS = "Authorization:Bearer {{JWT_ACCESS_TOKEN}}"
 
 [mcp_servers.sql]
 command = "npx"
@@ -364,8 +371,7 @@ gemini mcp remove server-name
       "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
       "env": {
         "API_BASE_URL": "https://staging-upexsoloq.vercel.app/api",
-        "OPENAPI_SPEC_PATH": "https://staging-upexsoloq.vercel.app/api/openapi",
-        "API_HEADERS": "Authorization:Bearer {{JWT_ACCESS_TOKEN}}"
+        "OPENAPI_SPEC_PATH": "https://staging-upexsoloq.vercel.app/api/openapi"
       }
     },
     "sql": {
@@ -483,7 +489,7 @@ postgresql://{{DB_USER}}:{{DB_PASSWORD}}@aws-1-us-east-2.pooler.supabase.com:543
 
 1. URL base de la API
 2. URL del spec OpenAPI (JSON/YAML)
-3. Bearer Token de autenticación (ver [Flujo de Autenticación](#flujo-de-autenticación-api))
+3. (El MCP NO requiere token — es solo-lectura-de-schema. El token solo lo usa curl para ejecutar, vía `bun run api:login`; ver [Flujo de Autenticación](#flujo-de-autenticación-api).)
 
 ### Paso 1: Configurar el MCP
 
@@ -497,8 +503,7 @@ postgresql://{{DB_USER}}:{{DB_PASSWORD}}@aws-1-us-east-2.pooler.supabase.com:543
   "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
   "env": {
     "API_BASE_URL": "https://staging-upexsoloq.vercel.app/api",
-    "OPENAPI_SPEC_PATH": "https://staging-upexsoloq.vercel.app/api/openapi",
-    "API_HEADERS": "Authorization:Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "OPENAPI_SPEC_PATH": "https://staging-upexsoloq.vercel.app/api/openapi"
   }
 }
 ```
@@ -511,8 +516,7 @@ postgresql://{{DB_USER}}:{{DB_PASSWORD}}@aws-1-us-east-2.pooler.supabase.com:543
   "command": ["npx", "-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
   "environment": {
     "API_BASE_URL": "https://staging-upexsoloq.vercel.app/api",
-    "OPENAPI_SPEC_PATH": "https://staging-upexsoloq.vercel.app/api/openapi",
-    "API_HEADERS": "Authorization:Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "OPENAPI_SPEC_PATH": "https://staging-upexsoloq.vercel.app/api/openapi"
   },
   "enabled": true
 }
@@ -528,7 +532,6 @@ args = ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"]
 [mcp_servers.openapi.env]
 API_BASE_URL = "https://staging-upexsoloq.vercel.app/api"
 OPENAPI_SPEC_PATH = "https://staging-upexsoloq.vercel.app/api/openapi"
-API_HEADERS = "Authorization:Bearer {{JWT_ACCESS_TOKEN}}"
 ```
 
 #### Gemini CLI (`settings.json`)
@@ -539,8 +542,7 @@ API_HEADERS = "Authorization:Bearer {{JWT_ACCESS_TOKEN}}"
   "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
   "env": {
     "API_BASE_URL": "https://staging-upexsoloq.vercel.app/api",
-    "OPENAPI_SPEC_PATH": "https://staging-upexsoloq.vercel.app/api/openapi",
-    "API_HEADERS": "Authorization:Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "OPENAPI_SPEC_PATH": "https://staging-upexsoloq.vercel.app/api/openapi"
   }
 }
 ```
@@ -551,7 +553,7 @@ API_HEADERS = "Authorization:Bearer {{JWT_ACCESS_TOKEN}}"
 | ------------------------- | ------------------------------------- |
 | `list-api-endpoints`      | Lista todos los endpoints disponibles |
 | `get-api-endpoint-schema` | Obtiene el schema JSON de un endpoint |
-| `invoke-api-endpoint`     | Ejecuta un endpoint con parámetros    |
+| `invoke-api-endpoint`     | Ejecuta un endpoint (NO usado en este repo — sin token inyectado da 401; ejecuta con curl) |
 
 ---
 
@@ -716,7 +718,7 @@ curl 'https://staging-upexsoloq.vercel.app/api/clients' \
 
 | MCP         | Para qué sirve                        | Requiere           |
 | ----------- | ------------------------------------- | ------------------ |
-| **OpenAPI** | Invocar endpoints directamente        | Bearer Token SoloQ |
+| **OpenAPI** | Descubrir endpoints + leer schemas (solo lectura) | Nada (sin token) |
 | **Postman** | Gestionar colecciones, ejecutar tests | API Key Postman    |
 | **DBHub**   | Verificar datos en la base de datos   | Connection string  |
 
@@ -756,11 +758,10 @@ Deberías ver todos los MCPs configurados y sus tools disponibles.
 - Confirma las credenciales de la base de datos
 - Asegúrate de que la base de datos sea accesible desde tu red
 
-### Token expirado en OpenAPI
+### Token expirado (curl 401)
 
-- Vuelve a ejecutar el flujo de autenticación
-- Actualiza el token en la configuración
-- Reinicia el agente
+- El token NO vive en la config del MCP. Si curl devuelve 401, re-mintea con `bun run api:login [<env>] [--role <role>]` → `.auth/tokens.env`.
+- El siguiente curl toma el token nuevo automáticamente — NO edites la config del MCP ni reinicies el agente.
 
 ### Error "command not found" en OpenCode
 

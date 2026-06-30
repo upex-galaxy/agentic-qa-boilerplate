@@ -98,15 +98,34 @@ Apply per input / interaction that accepts data or state changes:
 
 ## §2. API exploration
 
-Exercise `{{API_URL}}` via `[API_TOOL]` (OpenAPI MCP, Postman, or curl). Goal: confirm contracts, auth, error handling and RLS.
+Exercise the API following the **three-tool maneuver** — OpenAPI MCP for schema (read-only), `bun run api:login` for the token, **curl** for authenticated execution. Goal: confirm contracts, auth, error handling and RLS. Canonical doctrine: `agentic-qa-core/references/api-testing-doctrine.md` — load it before exercising any endpoint.
 
-### 2.1 Endpoint discovery (OpenAPI)
+### 2.0 API Testing Maneuver (READ FIRST)
+
+| Step | Tool | Job |
+|------|------|-----|
+| 1. Schema | OpenAPI MCP (`list-api-endpoints`, `get-api-endpoint-schema`) | Discover endpoints + read request/response schemas. **READ ONLY — never execute.** |
+| 2. Token | `bun run api:login [<env>] [--role <role>]` | Mint the token → `.auth/tokens.env` (`export API_TOKEN_<ROLE>_<ENV>='…'`) + `.auth/tokens.json`. |
+| 3. Execute | `curl` | Run authenticated requests. |
+
+**Hard rule:** the OpenAPI MCP is **schema-read-only**; it does NOT execute authenticated requests. Every request goes through curl, with `source` + `curl` in the SAME Bash call (shell env vars do not persist across the agent's separate calls — the file on disk is the source of truth):
+
+```bash
+source .auth/tokens.env && \
+curl -s -H "Authorization: Bearer $API_TOKEN_<ROLE>_<ENV>" "$API_BASE_URL/<path>"
+```
+
+`<ROLE>` defaults to `user`; uppercase role+env (e.g. `API_TOKEN_ADMIN_STAGING`).
+
+**⚠ Schema drift:** the schema is typically dev/latest; the target env (e.g. `staging`) may lag. On an unexpected 4xx or shape mismatch, suspect drift before filing a bug. Full rationale + token-freshness checks + anti-patterns live in the doctrine.
+
+### 2.1 Endpoint discovery (OpenAPI MCP — schema read-only)
 
 ```
-[API_TOOL] List endpoints / collections:
-  - source: {OpenAPI spec or curated collection}
+OpenAPI MCP  list-api-endpoints
+  - source: {OpenAPI spec — local file or live URL, commonly the localhost backend}
 
-[API_TOOL] Inspect endpoint schema:
+OpenAPI MCP  get-api-endpoint-schema
   - endpoint: {method + path}
 ```
 
@@ -115,14 +134,18 @@ Record endpoints relevant to the ticket into a compact table in `test-session-me
 | Method | Endpoint | Purpose | AC |
 |--------|----------|---------|----|
 
-### 2.2 Authenticated setup
+### 2.2 Authenticated setup (token via api:login, execute via curl)
 
-Always pull credentials from `.env` — never hardcode. Acquire the access token once, reuse across requests:
+Never hardcode credentials — they live in `.env`. Mint the token ONCE per role+env, then reuse across requests:
 
-```
-[API_TOOL] POST /auth/v1/token
-  body: { email: {{env.STAGING_USER_EMAIL}}, password: {{env.STAGING_USER_PASSWORD}} }
-  store: access_token, refresh_token, user.id
+```bash
+# 1. Mint (writes .auth/tokens.env + .auth/tokens.json; no restart needed)
+bun run api:login staging                 # role=user  -> $API_TOKEN_USER_STAGING
+bun run api:login staging --role admin    # role=admin -> $API_TOKEN_ADMIN_STAGING
+
+# 2. Execute (source + curl in ONE Bash call)
+source .auth/tokens.env && \
+curl -s -H "Authorization: Bearer $API_TOKEN_USER_STAGING" "$API_BASE_URL/<path>"
 ```
 
 **Token-propagation gotcha**: some backends scope tokens by workspace / tenant. If a request 200s for one user and 403s for another with the same role, propagation is the suspect — note it as a discovery rather than a bug until confirmed with the team.

@@ -120,8 +120,8 @@ const VAR_HINTS: Record<string, { hint: string, where: string }> = {
     where: 'e.g. https://api.yourapp.com/openapi.json (or a local file path)',
   },
   API_TOKEN: {
-    hint: 'Bearer token for OpenAPI MCP requests (auto-populated by `bun run api:login`)',
-    where: 'Run `bun run api:login` after API_BASE_URL is set',
+    hint: 'Legacy/optional — the OpenAPI MCP is now schema-read-only and does NOT use this. `bun run api:login` writes the curl token to .auth/tokens.env instead',
+    where: 'Not required; run `bun run api:login` to mint a token for curl-based API testing',
   },
   POSTMAN_API_KEY: {
     hint: 'Postman API key for Postman MCP (project-bound — only needed if you use Postman collections)',

@@ -306,7 +306,7 @@ const MCP_SERVER_SECRETS: Record<string, readonly string[]> = {
   tavily: ['TAVILY_API_KEY'],
   playwright: [],
   dbhub: ['DBHUB_HOST', 'DBHUB_DATABASE', 'DBHUB_USER', 'DBHUB_PASSWORD'],
-  openapi: ['API_BASE_URL', 'OPENAPI_SPEC_PATH', 'API_TOKEN'],
+  openapi: ['API_BASE_URL', 'OPENAPI_SPEC_PATH'],
   postman: ['POSTMAN_API_KEY'],
 };
 
@@ -317,7 +317,6 @@ const MCP_SERVER_SECRETS: Record<string, readonly string[]> = {
 const INSTALLER_DEFERRED_VARS = new Set<string>([
   'API_BASE_URL',
   'OPENAPI_SPEC_PATH',
-  'API_TOKEN',
   'POSTMAN_API_KEY',
   'DBHUB_HOST',
   'DBHUB_DATABASE',
@@ -1389,9 +1388,10 @@ function sanitizeRepoName(name: string): string {
 // ============================================================================
 
 /**
- * Offer to run `bun run api:login` to populate API_TOKEN in .env so the
- * OpenAPI MCP server can authenticate against the target backend. This
- * accelerates MCP-driven API testing and exploration after install.
+ * Offer to run `bun run api:login` to mint a session token into
+ * `.auth/tokens.env` (sourceable) for curl-based agentic API testing. The
+ * token is NOT injected into the OpenAPI MCP (which is schema-read-only) — it
+ * is used to execute authenticated requests via curl after install.
  */
 async function optionalApiBootstrap(state: InstallState, forceKeys: Set<string>): Promise<void> {
   const key = '12-api-bootstrap';

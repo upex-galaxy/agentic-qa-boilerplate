@@ -597,19 +597,20 @@ test('Response matches schema', async ({ request }) => {
       "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
       "env": {
         "API_BASE_URL": "http://localhost:3000/api",
-        "OPENAPI_SPEC_PATH": "http://localhost:3000/api/openapi",
-        "API_HEADERS": "X-API-Key:dev-api-key"
+        "OPENAPI_SPEC_PATH": "http://localhost:3000/api/openapi"
       }
     }
   }
 }
 ```
 
-AI can now:
+> The MCP is **schema-read-only** — do NOT inject an auth header (`API_HEADERS`) for this repo's flow. Authenticated requests run via curl with a token from `bun run api:login` (→ `.auth/tokens.env`).
+
+AI can now (schema-read-only — the MCP does not execute):
 
 - See all available endpoints
 - Know required parameters
-- Execute correctly formatted requests
+- Build correctly formatted requests (to run via curl)
 - Understand expected responses
 
 ### 5. What tools can I use with the OpenAPI spec?
@@ -686,7 +687,7 @@ This document covers **Flow B: Generate OpenAPI from Zod**. Other flows exist fo
 | ------------------- | ----------------------------------------- | -------------------------------------------------------------- |
 | **sync-openapi.ts** | External backend has the spec (other repo)| See `scripts/sync-openapi.ts`                                  |
 | **Zod-to-OpenAPI**  | You define schemas with Zod (this doc)    | This document                                                  |
-| **MCP OpenAPI**     | AI testing using any spec                 | [mcp-openapi.md](../../setup/mcp-openapi.md)                   |
+| **MCP OpenAPI**     | AI schema/endpoint reads from any spec (execution = curl) | [mcp-openapi.md](../../setup/mcp-openapi.md)                   |
 
 ---
 

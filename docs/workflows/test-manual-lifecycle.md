@@ -145,7 +145,7 @@ Error genérico "Payment failed" sin más detalle
 **Screenshots:** [adjuntos]
 ```
 
-**Herramientas:** `[AUTOMATION_TOOL]` (playwright-cli) para screenshots/trazas, `[API_TOOL]` para probar endpoints, `[DB_TOOL]` para validar data integrity.
+**Herramientas:** `[AUTOMATION_TOOL]` (playwright-cli) para screenshots/trazas, `[API_TOOL]` para endpoints (schema vía OpenAPI MCP solo-lectura, ejecución vía curl + `bun run api:login`), `[DB_TOOL]` para validar data integrity.
 
 ---
 

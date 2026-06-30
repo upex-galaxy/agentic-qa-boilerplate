@@ -59,14 +59,19 @@
       "command": ["bunx", "-y", "@bytebase/dbhub@latest", "--config", "dbhub.toml"],
       "enabled": true
     },
+    // SCHEMA-READ-ONLY: no API_TOKEN / Authorization header is injected here.
+    // The OpenAPI MCP is used ONLY to discover endpoints + read schemas
+    // (list-api-endpoints, get-api-endpoint-schema). Authenticated requests are
+    // executed with curl (token from `bun run api:login` → .auth/tokens.env).
+    // Keeping credentials out of the MCP also removes the spawn-time restart
+    // requirement for API auth. OPENAPI_SPEC_PATH may be a local file OR a URL.
     "openapi": {
       "type": "local",
       "command": ["bunx", "-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
       "enabled": true,
       "environment": {
         "API_BASE_URL": "{env:API_BASE_URL}",
-        "OPENAPI_SPEC_PATH": "{env:OPENAPI_SPEC_PATH}",
-        "API_HEADERS": "Authorization:Bearer {env:API_TOKEN}"
+        "OPENAPI_SPEC_PATH": "{env:OPENAPI_SPEC_PATH}"
       }
     },
     "postman": {

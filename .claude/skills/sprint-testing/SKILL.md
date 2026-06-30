@@ -59,6 +59,7 @@ Requires `agentic-qa-core`. Loads on demand:
 - Jira is source of truth. Read tickets via `bun run jira:sync-issues get <KEY> --include-comments`, then the synced `.md`. NEVER `acli workitem view` for custom fields (returns `null`).
 - Bugs run the veto + triage + risk-score decision tree BEFORE any ATP is written.
 - Execution = smoke pass first, then trifuerza (UI/API/DB) exploration; capture evidence under the PBI folder.
+- API testing = three-tool maneuver: OpenAPI MCP for schema (READ-ONLY) → `bun run api:login` for the token (→ `.auth/tokens.env`) → **curl** for authenticated requests. NEVER execute via the OpenAPI MCP. Canon: `agentic-qa-core/references/api-testing-doctrine.md`.
 - Consult `domain-glossary.md` (if present) before authoring the ATP, refined ACs, and TC outlines.
 - On any subagent failure: STOP, report partial state, offer retry / skip-stage / abort. No auto-fix, no auto-rollback.
 
@@ -213,7 +214,8 @@ Session-start is the universal entry. **Single-ticket mode runs the same 4 dispa
 | Active env reachable | REQUIRED | Authoring an ATP against a dead env is the highest-cost waste. Probe `{{WEB_URL}}` + `{{API_URL}}` root. This subsumes the env half of Session Start §0.6 — pulled to t=0. |
 | Test-user credentials + roles | REQUIRED | `<<ACTIVE_ENV>>` creds in `.env`. Ask how many roles the ticket needs; one token per role via `scripts/api-login.ts`. |
 | Issue-tracker (`[ISSUE_TRACKER_TOOL]`) + TMS modality | REQUIRED | All ATP/ATR/QA-comment/transition writes go to Jira. Load `/acli`; resolve modality; load `/xray-cli` + `XRAY_*` if jira-xray. |
-| OpenAPI MCP + valid `API_TOKEN` | SCOPE — when API surface is in scope | The `openapi` MCP invokes endpoints **authenticated**. If the token is missing/expired → run the api-login flow (reference §6): `bun run api:login:<env>` writes `API_TOKEN` to `.env`; then the user must **restart the agent** so the MCP re-spawns. Generic spec → `/adapt-framework`. |
+| OpenAPI MCP (schema read-only) | SCOPE — when API surface is in scope | The `openapi` MCP is **schema-read-only** — discover endpoints + read schemas (`list-api-endpoints` / `get-api-endpoint-schema`); it does NOT execute authenticated requests. Probe that a schema call returns the spec. Generic/unset spec → `/adapt-framework`. Execution is curl's job (next row). |
+| API token for curl (`bun run api:login`) | SCOPE — when API execution is in scope | Authenticated requests run via **curl**, not the MCP. Mint: `bun run api:login [<env>] [--role <role>]` → `.auth/tokens.env`. Execute: `source .auth/tokens.env && curl -H "Authorization: Bearer $API_TOKEN_<ROLE>_<ENV>" "$API_BASE_URL/<path>"`. **No restart needed** (the token never enters an MCP). Canon: `agentic-qa-core/references/api-testing-doctrine.md`. |
 | DBHub MCP | SCOPE — when DB validation is in scope | The trifuerza DB leg. Probe `dbhub` lists schema/tables; `DBHUB_*` in `.env`. Unset → user fills `.env` + RESTART (spawn-time). |
 | Playwright / `/playwright-cli` | SCOPE — when UI surface is in scope | Smoke + UI exploration. Browser present (`bun run pw:install` if not). |
 | Email (`resend`) — can RECEIVE | SCOPE — magic-link / auth-token tickets only | Subsumes the inbox half of Session Start §0.6. A send-only provider cannot complete a magic-link flow → STOP before Stage 1. |
@@ -366,7 +368,7 @@ If Session Start reports that any of the project-wide context files are missing,
 > **Reads vs writes split** (per `agentic-qa-core/references/acli-integration.md` §"Reads vs writes"): **detailed reads** of an issue (custom fields, ACs, ATP/ATR, description, comments) use `bun run jira:sync-issues get <KEY> --include-comments` (or `jql "<query>"`) then read the synced `.md` — NEVER `acli workitem view` (returns `null` for custom fields). **Writes / transitions / links / bug creation / trivial summary-or-status lookups** stay on `[ISSUE_TRACKER_TOOL]` (`/acli`). **Traceability** (link graph Story↔ATP↔ATR↔TC, Xray run status) stays on `[TMS_TOOL]` / `/acli` / `/xray-cli` — do NOT migrate trace reads to the sync.
 | `[AUTOMATION_TOOL]` | playwright-cli skill or Playwright MCP | `CLAUDE.md` Tool Resolution |
 | `[DB_TOOL]` | DBHub MCP or Supabase MCP | `CLAUDE.md` Tool Resolution |
-| `[API_TOOL]` | OpenAPI MCP, Postman, or curl | `CLAUDE.md` Tool Resolution |
+| `[API_TOOL]` | Schema read → OpenAPI MCP (read-only); execute → curl (token via `bun run api:login`) | `CLAUDE.md` Tool Resolution + `agentic-qa-core/references/api-testing-doctrine.md` |
 
 Concrete tools (`bun`, `git`, `gh`) are used literally. Project variables like `{{PROJECT_KEY}}`, `{{DB_MCP}}`, `{{WEB_URL}}` are resolved from `.agents/project.yaml` (env-scoped vars resolve to the active environment).
 
