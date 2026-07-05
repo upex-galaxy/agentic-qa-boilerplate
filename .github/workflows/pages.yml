@@ -1,0 +1,85 @@
+name: GitHub Pages — Docs Hub
+
+# Publishes the learning hub to gh-pages:
+#   /            -> homepage dashboard (packages/pages-home)
+#   /kata/       -> KATA Explorable build (packages/kata-explorable)
+#   /decks/      -> how-it-works + curriculum decks from .claude/skills/
+#   /<env>/regression/ -> Allure reports (owned by regression.yml — NEVER touched here;
+#                         keep_files: true preserves them on every deploy)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/kata-explorable/**'
+      - 'packages/pages-home/**'
+      - '.claude/skills/**/*.html'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-docs-hub
+  cancel-in-progress: false
+
+jobs:
+  build-deploy:
+    name: Build & Deploy Docs Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Explorable Dependencies
+        working-directory: packages/kata-explorable
+        run: bun install --frozen-lockfile
+
+      - name: Type-check Explorable
+        working-directory: packages/kata-explorable
+        run: bun run check
+
+      - name: Build Explorable
+        working-directory: packages/kata-explorable
+        run: bun run build
+
+      - name: Assemble Site
+        run: |
+          mkdir -p _site/kata _site/decks
+          touch _site/.nojekyll
+
+          # Homepage dashboard
+          cp packages/pages-home/index.html _site/index.html
+
+          # KATA Explorable (built with base: './' so it works under /kata/)
+          cp -R packages/kata-explorable/dist/. _site/kata/
+
+          # Decks: every HTML deck in .claude/skills/<skill>/ -> /decks/<skill>/
+          for f in .claude/skills/*/*.html; do
+            skill=$(basename "$(dirname "$f")")
+            mkdir -p "_site/decks/$skill"
+            cp "$f" "_site/decks/$skill/"
+          done
+
+          echo "Site tree:"
+          find _site -maxdepth 2 -type d | sort
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: _site
+          keep_files: true
+
+      - name: Post Site URL
+        run: |
+          echo "## Docs Hub" >> $GITHUB_STEP_SUMMARY
+          echo "Homepage: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
+          echo "KATA Explorable: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/kata/" >> $GITHUB_STEP_SUMMARY

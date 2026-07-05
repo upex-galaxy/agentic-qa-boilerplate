@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agentic QA — UPEX Galaxy</title>
+    <meta
+      name="description"
+      content="Hub de aprendizaje y documentación del boilerplate Agentic QA: KATA Explorable, decks de los workflows QA y reportes de regresión."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --surface-2: #1c2230;
+        --text-1: #e6edf3;
+        --text-2: #9aa6b2;
+        --text-3: #6e7681;
+        --border: rgba(139, 148, 158, 0.22);
+        --border-strong: rgba(139, 148, 158, 0.42);
+        --good: #3fb950;
+        --a1: #ffa657;
+        --a2: #ff7b72;
+        --a3: #d2a8ff;
+        --grad: linear-gradient(120deg, var(--a1), var(--a2) 55%, var(--a3));
+        --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+        --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+        --radius: 14px;
+        --radius-lg: 20px;
+        color-scheme: dark;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text-1);
+        font-family: var(--font-ui);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: inherit;
+      }
+      .wrap {
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* header */
+      header {
+        border-bottom: 1px solid var(--border);
+        padding: 18px 0;
+        position: sticky;
+        top: 0;
+        background: rgba(13, 17, 23, 0.88);
+        backdrop-filter: blur(8px);
+        z-index: 10;
+      }
+      .header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        text-decoration: none;
+      }
+      .brand strong {
+        font-size: 1.05rem;
+        font-weight: 800;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        white-space: nowrap;
+      }
+      .brand span {
+        color: var(--text-3);
+        font-size: 0.8rem;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .header-links {
+        display: flex;
+        gap: 18px;
+        font-size: 0.85rem;
+      }
+      .header-links a {
+        color: var(--text-2);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+      .header-links a:hover {
+        color: var(--text-1);
+      }
+
+      /* hero */
+      .hero {
+        padding: 72px 0 56px;
+        text-align: center;
+      }
+      .hero .kicker {
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--a1);
+        margin-bottom: 14px;
+      }
+      .hero h1 {
+        font-size: clamp(2rem, 5vw, 3.2rem);
+        font-weight: 800;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        margin-bottom: 16px;
+      }
+      .hero h1 .grad {
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .hero p {
+        color: var(--text-2);
+        max-width: 640px;
+        margin: 0 auto 32px;
+        font-size: 1.05rem;
+      }
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--grad);
+        color: #0d1117;
+        font-weight: 700;
+        font-size: 1.05rem;
+        padding: 14px 30px;
+        border-radius: 999px;
+        text-decoration: none;
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s;
+        box-shadow: 0 8px 30px rgba(255, 123, 114, 0.25);
+      }
+      .cta:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px rgba(255, 123, 114, 0.35);
+      }
+      .cta-sub {
+        margin-top: 14px;
+        font-size: 0.82rem;
+        color: var(--text-3);
+        font-family: var(--font-mono);
+      }
+
+      /* sections */
+      section {
+        padding: 40px 0;
+      }
+      .section-head {
+        margin-bottom: 22px;
+      }
+      .section-head h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .section-head p {
+        color: var(--text-2);
+        font-size: 0.92rem;
+        margin-top: 4px;
+      }
+      .section-head .tag {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: var(--a3);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        transition:
+          border-color 0.15s,
+          transform 0.15s;
+      }
+      .card:hover {
+        border-color: var(--border-strong);
+        transform: translateY(-2px);
+      }
+      .card .skill {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--text-3);
+        letter-spacing: 0.08em;
+      }
+      .card h3 {
+        font-size: 0.98rem;
+        font-weight: 600;
+        line-height: 1.4;
+      }
+      .card .langs {
+        display: flex;
+        gap: 8px;
+        margin-top: auto;
+        padding-top: 6px;
+        flex-wrap: wrap;
+      }
+      .langs a {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-decoration: none;
+        color: var(--a1);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 4px 14px;
+        transition:
+          border-color 0.15s,
+          color 0.15s,
+          background 0.15s;
+      }
+      .langs a:hover {
+        border-color: var(--a1);
+        background: rgba(255, 166, 87, 0.08);
+      }
+
+      /* numbered curriculum cards */
+      .card .num {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--a2);
+        letter-spacing: 0.08em;
+      }
+
+      /* reports strip */
+      .report-strip {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+      .report-strip .info h3 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .report-strip .info p {
+        color: var(--text-2);
+        font-size: 0.88rem;
+      }
+      .report-strip .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--good);
+        margin-right: 8px;
+      }
+      .btn-ghost {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        color: var(--text-1);
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        padding: 10px 22px;
+        white-space: nowrap;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+      }
+      .btn-ghost:hover {
+        border-color: var(--a1);
+        background: rgba(255, 166, 87, 0.08);
+      }
+
+      footer {
+        border-top: 1px solid var(--border);
+        margin-top: 48px;
+        padding: 28px 0 40px;
+        color: var(--text-3);
+        font-size: 0.82rem;
+        display: block;
+      }
+      .footer-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      footer a {
+        color: var(--text-2);
+        text-decoration: none;
+      }
+      footer a:hover {
+        color: var(--text-1);
+      }
+
+      @media (max-width: 640px) {
+        .hero {
+          padding: 48px 0 40px;
+        }
+        .header-links {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap header-row">
+        <a class="brand" href="./">
+          <strong>Agentic QA</strong>
+          <span>UPEX Galaxy</span>
+        </a>
+        <nav class="header-links">
+          <a href="./kata/">KATA Explorable</a>
+          <a href="#workflows">Workflows</a>
+          <a href="#curriculum">Currículum</a>
+          <a href="#reportes">Reportes</a>
+          <a
+            href="https://github.com/upex-galaxy/agentic-qa-boilerplate"
+            target="_blank"
+            rel="noopener"
+            >GitHub</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="hero wrap">
+        <div class="kicker">agentic-qa-boilerplate · hub de aprendizaje</div>
+        <h1>Aprende QA agéntico<br /><span class="grad">explorando, no leyendo</span></h1>
+        <p>
+          Documentación interactiva del boilerplate Agentic QA: la arquitectura KATA como biblioteca
+          explorable, los decks de cada workflow del pipeline y los reportes de regresión en vivo.
+        </p>
+        <a class="cta" href="./kata/">Entrar al KATA Explorable →</a>
+        <div class="cta-sub">Svelte · 8 capítulos interactivos · modo presentación (tecla P)</div>
+      </div>
+
+      <section id="workflows" class="wrap">
+        <div class="section-head">
+          <span class="tag">El oficio y la IA</span>
+          <h2>Workflows del pipeline QA</h2>
+          <p>Cómo funciona cada etapa — qué hace el humano, qué hace el agente.</p>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <span class="skill">shift-left-testing</span>
+            <h3>Shift-Left Testing — refinar ACs antes del sprint</h3>
+            <div class="langs">
+              <a href="./decks/shift-left-testing/how-it-works.es.html">Español</a>
+              <a href="./decks/shift-left-testing/how-it-works.html">English</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="skill">sprint-testing</span>
+            <h3>Sprint Testing — QA manual por ticket (Stages 1-3)</h3>
+            <div class="langs">
+              <a href="./decks/sprint-testing/how-it-works.es.html">Español</a>
+              <a href="./decks/sprint-testing/how-it-works.html">English</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="skill">test-documentation</span>
+            <h3>Test Documentation &amp; ROI — qué automatizar y por qué</h3>
+            <div class="langs">
+              <a href="./decks/test-documentation/how-it-works.es.html">Español</a>
+              <a href="./decks/test-documentation/how-it-works.html">English</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="skill">test-automation</span>
+            <h3>Test Automation (KATA) — Plan → Code → Review</h3>
+            <div class="langs">
+              <a href="./decks/test-automation/how-it-works.es.html">Español</a>
+              <a href="./decks/test-automation/how-it-works.html">English</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="skill">regression-testing</span>
+            <h3>Regression Testing &amp; GO/NO-GO — decidir el release</h3>
+            <div class="langs">
+              <a href="./decks/regression-testing/how-it-works.es.html">Español</a>
+              <a href="./decks/regression-testing/how-it-works.html">English</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="skill">xray-cli</span>
+            <h3>Xray para Jira — test management desde la terminal</h3>
+            <div class="langs">
+              <a href="./decks/xray-cli/how-it-works.es.html">Español</a>
+              <a href="./decks/xray-cli/how-it-works.html">English</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="curriculum" class="wrap">
+        <div class="section-head">
+          <span class="tag">De cero a KATA</span>
+          <h2>Currículum de automatización</h2>
+          <p>Ruta pedagógica en español: fundamentos de código → Playwright → arquitectura KATA.</p>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <span class="num">01</span>
+            <h3>Coding Base — fundamentos de programación para QA Testers</h3>
+            <div class="langs">
+              <a href="./decks/test-automation/coding-base.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="num">02</span>
+            <h3>Coding Classes — del código a las clases</h3>
+            <div class="langs">
+              <a href="./decks/test-automation/coding-classes.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="num">03</span>
+            <h3>Dev Craft — terminal, Git y tu primer Pull Request</h3>
+            <div class="langs">
+              <a href="./decks/test-automation/dev-craft.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="num">04</span>
+            <h3>Playwright Pro — de scripts sueltos a suite profesional</h3>
+            <div class="langs">
+              <a href="./decks/test-automation/playwright-pro.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="num">05</span>
+            <h3>Dojo Lab I — primeros specs contra una app real</h3>
+            <div class="langs">
+              <a href="./decks/test-automation/dojo-lab-1.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="num">06</span>
+            <h3>KATA Bridge — del Page Object al framework profesional</h3>
+            <div class="langs">
+              <a href="./decks/test-automation/kata-bridge.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="num">07</span>
+            <h3>Automation Patterns — POM · Fixtures · Paralelización · KATA</h3>
+            <div class="langs">
+              <a href="./decks/test-automation/automation-patterns.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="num">08</span>
+            <h3>API Automation con Playwright — request · aserciones · KATA</h3>
+            <div class="langs">
+              <a href="./decks/test-automation/api-automation-playwright.es.html">Abrir deck</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="oficio" class="wrap">
+        <div class="section-head">
+          <span class="tag">Doctrina aplicada</span>
+          <h2>El oficio QA</h2>
+          <p>Decks de práctica profunda: exploración, defectos, documentación y nomenclatura.</p>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <span class="skill">shift-left-testing</span>
+            <h3>El Arte del Shift-Left — prevenir, no detectar</h3>
+            <div class="langs">
+              <a href="./decks/shift-left-testing/shift-left-craft.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="skill">sprint-testing</span>
+            <h3>La Trifuerza — probar features por capas (UI · API · DB)</h3>
+            <div class="langs">
+              <a href="./decks/sprint-testing/triforce-exploration.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="skill">sprint-testing</span>
+            <h3>Defect Management — gestionar la calidad por sus incidencias</h3>
+            <div class="langs">
+              <a href="./decks/sprint-testing/defect-management.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="skill">test-documentation</span>
+            <h3>El Arte de Documentar Test Cases — scopes, nomenclatura, ROI</h3>
+            <div class="langs">
+              <a href="./decks/test-documentation/test-case-craft.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card">
+            <span class="skill">agentic-qa-core</span>
+            <h3>El Códice de Nomenclatura — convenciones de QA &amp; automatización</h3>
+            <div class="langs">
+              <a href="./decks/agentic-qa-core/naming-conventions.es.html">Español</a>
+              <a href="./decks/agentic-qa-core/naming-conventions.html">English</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="reportes" class="wrap">
+        <div class="section-head">
+          <span class="tag">CI/CD en vivo</span>
+          <h2>Reportes de regresión</h2>
+        </div>
+        <div class="report-strip">
+          <div class="info">
+            <h3><span class="dot"></span>Allure — staging</h3>
+            <p>Último reporte de la suite de regresión publicado por el workflow de CI.</p>
+          </div>
+          <a class="btn-ghost" href="./staging/regression/">Ver reporte →</a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap footer-row">
+        <span>Agentic QA · UPEX Galaxy</span>
+        <span>
+          <a
+            href="https://github.com/upex-galaxy/agentic-qa-boilerplate"
+            target="_blank"
+            rel="noopener"
+            >github.com/upex-galaxy/agentic-qa-boilerplate</a
+          >
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>
