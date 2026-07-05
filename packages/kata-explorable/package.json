@@ -1,8 +1,8 @@
 {
   "name": "kata-explorable",
-  "private": true,
-  "version": "0.1.0",
   "type": "module",
+  "version": "0.1.0",
+  "private": true,
   "description": "Biblioteca interactiva para aprender KATA (Component Action Test Architecture)",
   "scripts": {
     "dev": "vite",
