@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dev Craft — Terminal, Git y tu primer Pull Request</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ===================== TOKYO NIGHT TOKENS ===================== */
+:root{
+  --bg:#16161e; --bg-2:#1a1b26; --surface:#24283b; --surface-2:#1f2335;
+  --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16);
+  --text-1:#c0caf5; --text-2:#9aa5ce; --text-3:#565f89;
+  --blue:#7aa2f7; --purple:#bb9af7; --cyan:#7dcfff; --green:#9ece6a;
+  --red:#f7768e; --orange:#ff9e64; --yellow:#e0af68;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#7dcfff);
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 14px 40px rgba(0,0,0,.45);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono',Menlo,monospace;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden}
+code,pre,kbd,textarea,input{font-family:var(--font-mono)}
+b,strong{color:var(--text-1)}
+::selection{background:rgba(122,162,247,.35)}
+
+/* ===================== SLIDE SYSTEM ===================== */
+.slide{position:fixed;inset:0;display:none;flex-direction:column;justify-content:center;
+  padding:6vh 6.5vw 9vh;background:var(--bg)}
+.slide.is-active{display:flex}
+.slide h1{font-size:clamp(2.4rem,5.6vw,4.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .4em}
+.slide h2{font-size:clamp(1.6rem,3.2vw,2.5rem);font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 .5em}
+.slide h3{font-size:clamp(1.05rem,1.7vw,1.35rem);font-weight:700;margin:0 0 .5em}
+.slide p,.slide li{font-size:clamp(.92rem,1.4vw,1.12rem);color:var(--text-2)}
+.kicker{font-size:.78rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start}
+.cols-32{display:grid;grid-template-columns:1.25fr 1fr;gap:2rem;align-items:start}
+.notes{display:none}
+
+/* chrome */
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--grad);width:0%;z-index:60;transition:width .3s var(--ease)}
+#counter{position:fixed;bottom:18px;right:24px;font-family:var(--font-mono);font-size:.75rem;color:var(--text-3);z-index:60}
+#act-label{position:fixed;bottom:18px;left:24px;font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);z-index:60}
+#score-chip{position:fixed;top:16px;right:22px;z-index:60;font-family:var(--font-mono);font-size:.82rem;font-weight:700;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:999px;padding:.4rem .9rem;color:var(--yellow);
+  box-shadow:var(--shadow);transition:transform .25s var(--ease)}
+#score-chip.bump{transform:scale(1.18)}
+#help-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-size:.7rem;color:var(--text-3);z-index:60;font-family:var(--font-mono)}
+
+/* notes drawer */
+#notes-drawer{position:fixed;left:0;right:0;bottom:0;max-height:34vh;overflow:auto;background:var(--surface-2);
+  border-top:2px solid var(--blue);padding:1rem 2.2rem 1.4rem;z-index:80;transform:translateY(100%);transition:transform .3s var(--ease)}
+#notes-drawer.open{transform:translateY(0)}
+#notes-drawer .nd-tag{font-size:.7rem;font-weight:800;letter-spacing:.2em;color:var(--blue);text-transform:uppercase;margin-bottom:.4rem}
+#notes-drawer p{margin:.3rem 0;font-size:.95rem;color:var(--text-2)}
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+@keyframes slideL{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.slide.is-active [data-anim="fade-up"]{animation:fadeUp .7s var(--ease) both}
+.slide.is-active [data-anim="pop"]{animation:popIn .55s var(--ease) both}
+.slide.is-active [data-anim="slide-l"]{animation:slideL .6s var(--ease) both}
+.slide.is-active [data-stagger]>*{animation:fadeUp .55s var(--ease) both}
+.slide.is-active [data-stagger]>*:nth-child(1){animation-delay:.05s}
+.slide.is-active [data-stagger]>*:nth-child(2){animation-delay:.15s}
+.slide.is-active [data-stagger]>*:nth-child(3){animation-delay:.25s}
+.slide.is-active [data-stagger]>*:nth-child(4){animation-delay:.35s}
+.slide.is-active [data-stagger]>*:nth-child(5){animation-delay:.45s}
+.slide.is-active [data-stagger]>*:nth-child(6){animation-delay:.55s}
+.slide.is-active [data-stagger]>*:nth-child(7){animation-delay:.65s}
+.slide.is-active [data-stagger]>*:nth-child(8){animation-delay:.75s}
+
+/* ===================== CODE / TERMINAL ===================== */
+pre.code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:1rem 1.2rem;font-size:clamp(.78rem,1.2vw,.98rem);line-height:1.68;overflow:auto;margin:0;
+  box-shadow:var(--shadow);white-space:pre}
+.tk-k{color:var(--purple)} .tk-s{color:var(--green)} .tk-n{color:var(--orange)}
+.tk-b{color:var(--orange)} .tk-f{color:var(--blue)} .tk-c{color:var(--text-3);font-style:italic}
+.code-window{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.code-window .cw-bar{display:flex;align-items:center;gap:.45rem;padding:.6rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.cw-bar .dot{width:11px;height:11px;border-radius:50%}
+.cw-bar .dot:nth-child(1){background:#f7768e}.cw-bar .dot:nth-child(2){background:#e0af68}.cw-bar .dot:nth-child(3){background:#9ece6a}
+.cw-bar .cw-title{margin-left:.5rem;font-family:var(--font-mono);font-size:.74rem;color:var(--text-3)}
+.code-window pre.code{border:none;border-radius:0;box-shadow:none}
+
+.term{background:#0d0d14;border:1px solid var(--border-strong);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.term .term-bar{background:#1d1e2e;padding:.5rem .9rem;display:flex;gap:.45rem;align-items:center}
+.term .term-bar .dot{width:10px;height:10px;border-radius:50%}
+.term pre{margin:0;padding:.9rem 1.2rem;font-size:clamp(.78rem,1.25vw,.98rem);line-height:1.8;color:var(--text-2);white-space:pre;overflow:auto}
+.t-green{color:var(--green)} .t-red{color:var(--red)} .t-dim{color:var(--text-3)} .t-cyan{color:var(--cyan)} .t-yellow{color:var(--yellow)}
+
+.cmd{display:flex;align-items:center;gap:.7rem;background:#0d0d14;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.6rem 1rem;margin:.45rem 0;cursor:pointer;transition:border-color .2s,transform .15s}
+.cmd:hover{border-color:var(--cyan);transform:translateX(3px)}
+.cmd .ps{color:var(--cyan);font-family:var(--font-mono);font-size:.85rem;flex:0 0 auto}
+.cmd .ct{color:var(--text-1);font-family:var(--font-mono);font-size:clamp(.78rem,1.25vw,.95rem);overflow-x:auto;white-space:nowrap}
+.cmd .copy{margin-left:auto;font-family:var(--font-mono);font-size:.68rem;color:var(--text-3);flex:0 0 auto}
+.cmd.copied{border-color:var(--green)}
+.cmd.copied .copy{color:var(--green)}
+
+/* ===================== TERMINAL SIMULATOR ===================== */
+.termsim{display:grid;grid-template-columns:1fr 1.5fr;gap:1.3rem;width:100%;align-items:start}
+.ts-goals{display:flex;flex-direction:column;gap:.5rem}
+.ts-goal{display:flex;align-items:center;gap:.7rem;background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.6rem 1rem;font-family:var(--font-mono);font-size:.82rem;color:var(--text-3);transition:all .3s}
+.ts-goal.cur{border-color:var(--orange);color:var(--orange)}
+.ts-goal.ok{border-color:var(--green);color:var(--green)}
+.ts-term{background:#0d0d14;border:1px solid var(--border-strong);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.ts-bar{background:#1d1e2e;padding:.5rem .9rem;display:flex;gap:.45rem;align-items:center}
+.ts-bar .dot{width:10px;height:10px;border-radius:50%}
+.ts-bar .ts-title{margin-left:.5rem;font-family:var(--font-mono);font-size:.72rem;color:var(--text-3)}
+.ts-out{padding:.8rem 1.1rem;font-family:var(--font-mono);font-size:.84rem;line-height:1.75;color:var(--text-2);
+  height:260px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+.ts-out .o-cmd{color:var(--text-1)} .ts-out .o-ok{color:var(--green)} .ts-out .o-err{color:var(--red)}
+.ts-out .o-dim{color:var(--text-3)} .ts-out .o-cyan{color:var(--cyan)} .ts-out .o-yellow{color:var(--yellow)}
+.ts-inline{display:flex;align-items:center;gap:.6rem;border-top:1px solid var(--border);padding:.55rem 1.1rem}
+.ts-inline .ps{color:var(--cyan);font-size:.9rem}
+.ts-inline input{flex:1;background:transparent;border:none;outline:none;color:var(--text-1);font-size:.9rem;caret-color:#c0caf5}
+.ts-reset{cursor:pointer;font-family:var(--font-mono);font-size:.72rem;border-radius:8px;padding:.3rem .8rem;
+  border:1px solid var(--border-strong);background:var(--surface);color:var(--text-3)}
+.ts-reset:hover{color:var(--text-1)}
+
+/* cards / tables / callouts / missions / quiz — same system as serie */
+.cards{display:grid;gap:1rem}
+.cards.c3{grid-template-columns:repeat(3,1fr)}
+.cards.c2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem 1.3rem;box-shadow:var(--shadow)}
+.card .ico{font-size:1.8rem;margin-bottom:.45rem}
+.card h3{margin-bottom:.3rem}
+.card p{font-size:.92rem;margin:.2rem 0}
+.card.hl{border-color:var(--blue);background:linear-gradient(160deg,rgba(122,162,247,.12),rgba(187,154,247,.08))}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:.78rem;padding:.2rem .65rem;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--border-strong);color:var(--cyan);margin:.15rem .2rem}
+table.cmp{width:100%;border-collapse:collapse;font-size:clamp(.85rem,1.3vw,1.05rem)}
+table.cmp th{text-align:left;padding:.65rem .9rem;font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);border-bottom:2px solid var(--border-strong)}
+table.cmp td{padding:.6rem .9rem;border-bottom:1px solid var(--border);color:var(--text-2)}
+table.cmp td:first-child{color:var(--text-1)}
+table.cmp td code{color:var(--cyan);font-size:.9em}
+.callout{display:flex;gap:.9rem;align-items:flex-start;background:rgba(158,206,106,.1);border:1px solid rgba(158,206,106,.35);
+  border-radius:var(--radius-sm);padding:.85rem 1.1rem;margin-top:1.2rem}
+.callout.warn{background:rgba(247,118,142,.1);border-color:rgba(247,118,142,.4)}
+.callout.info{background:rgba(122,162,247,.1);border-color:rgba(122,162,247,.4)}
+.callout .co-ico{font-size:1.35rem;line-height:1.3}
+.callout p{margin:0;font-size:clamp(.88rem,1.3vw,1.05rem)}
+.mission{background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius);
+  padding:1.2rem 1.5rem 1.3rem;box-shadow:var(--shadow);width:100%;transition:border-color .3s}
+.mission.done{border-color:var(--green)}
+.m-head{display:flex;align-items:center;gap:1rem;margin-bottom:.7rem;flex-wrap:wrap}
+.m-badge{font-family:var(--font-mono);font-size:.74rem;font-weight:700;letter-spacing:.16em;
+  background:rgba(255,158,100,.14);border:1px solid rgba(255,158,100,.5);color:var(--orange);
+  border-radius:999px;padding:.3rem .9rem;flex:0 0 auto}
+.mission.done .m-badge{background:rgba(158,206,106,.14);border-color:var(--green);color:var(--green)}
+.m-head h3{margin:0;flex:1 1 auto;font-size:clamp(1.1rem,1.9vw,1.5rem)}
+.m-check{display:flex;align-items:center;gap:.5rem;cursor:pointer;font-family:var(--font-mono);font-size:.8rem;
+  color:var(--text-3);background:var(--surface-2);border:1px solid var(--border-strong);border-radius:999px;
+  padding:.4rem 1rem;flex:0 0 auto;user-select:none;transition:all .2s}
+.m-check:hover{border-color:var(--green);color:var(--green)}
+.m-check input{accent-color:#9ece6a;width:1rem;height:1rem;cursor:pointer}
+.mission.done .m-check{border-color:var(--green);color:var(--green);background:rgba(158,206,106,.1)}
+.m-obj{font-size:clamp(.92rem,1.4vw,1.1rem);color:var(--text-2);margin:.3rem 0 .8rem}
+.m-obj b{color:var(--text-1)}
+.m-crit{display:flex;gap:.7rem;align-items:flex-start;background:rgba(158,206,106,.08);border:1px dashed rgba(158,206,106,.45);
+  border-radius:var(--radius-sm);padding:.7rem 1rem;margin-top:.9rem;font-size:clamp(.85rem,1.3vw,1.02rem);color:var(--text-2)}
+.m-crit b{color:var(--green)}
+details.m-hint{margin-top:.8rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+details.m-hint summary{cursor:pointer;padding:.6rem 1rem;font-size:.88rem;font-weight:600;color:var(--cyan);user-select:none;list-style:none}
+details.m-hint summary::before{content:'💡 '}
+details.m-hint[open] summary{border-bottom:1px solid var(--border)}
+details.m-hint .hint-body{padding:.7rem 1rem .9rem;font-size:.88rem;color:var(--text-2)}
+details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
+.quiz{max-width:880px;width:100%;margin:0 auto}
+.quiz-tag{display:inline-block;font-family:var(--font-mono);font-size:.75rem;font-weight:700;letter-spacing:.2em;
+  color:var(--yellow);background:rgba(224,175,104,.12);border:1px solid rgba(224,175,104,.4);
+  border-radius:999px;padding:.3rem .9rem;margin-bottom:1.1rem}
+.quiz-q{font-size:clamp(1.25rem,2.3vw,1.85rem);font-weight:800;margin:0 0 1.3rem;line-height:1.25}
+.quiz-opts{display:grid;gap:.8rem}
+.quiz .opt{display:flex;align-items:center;gap:1rem;text-align:left;width:100%;cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
+  padding:.95rem 1.2rem;color:var(--text-1);font-family:var(--font-sans);font-size:clamp(.92rem,1.45vw,1.12rem);
+  transition:border-color .2s,background .2s,transform .15s}
+.quiz .opt:hover{border-color:var(--blue);transform:translateX(4px)}
+.quiz .opt .key{flex:0 0 auto;font-family:var(--font-mono);font-weight:700;font-size:.8rem;width:1.8rem;height:1.8rem;
+  display:grid;place-items:center;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-3)}
+.quiz .opt code{color:var(--cyan)}
+.quiz .opt.correct{border-color:var(--green);background:rgba(158,206,106,.14)}
+.quiz .opt.correct .key{background:var(--green);color:#16161e;border-color:var(--green)}
+.quiz .opt.wrong{border-color:var(--red);background:rgba(247,118,142,.12);animation:shake .4s}
+.quiz.locked .opt{pointer-events:none;opacity:.8}
+.quiz.locked .opt.correct{opacity:1}
+.quiz-expl{display:none;margin-top:1.2rem;background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);
+  border-radius:var(--radius-sm);padding:.9rem 1.2rem;color:var(--text-2);font-size:clamp(.88rem,1.35vw,1.05rem)}
+.quiz-expl.show{display:block;animation:fadeUp .4s var(--ease)}
+
+/* git flow diagram */
+.gitflow{display:flex;align-items:center;justify-content:center;gap:.6rem;flex-wrap:wrap;margin:1rem 0}
+.gf-box{background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
+  padding:.7rem 1.1rem;font-family:var(--font-mono);font-size:.82rem;text-align:center;color:var(--text-2)}
+.gf-box b{display:block;font-size:.95rem;color:var(--text-1)}
+.gf-box.hl{border-color:var(--blue);color:var(--blue)}
+.gf-box.hl b{color:var(--blue)}
+.gf-arrow{color:var(--text-3);font-family:var(--font-mono);font-size:.8rem;text-align:center}
+
+#fx-cover{position:absolute;inset:0;z-index:0}
+.cover-inner{position:relative;z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.1rem}
+.cover-chips{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+.final-list{display:grid;gap:.5rem;max-width:640px;margin:1rem auto 0;text-align:left}
+.final-list .fl-item{display:flex;align-items:center;gap:.8rem;background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.55rem 1rem;font-family:var(--font-mono);font-size:.85rem;color:var(--text-3)}
+.final-list .fl-item.ok{border-color:var(--green);color:var(--green)}
+#confetti-canvas{position:fixed;inset:0;z-index:200;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="score-chip">🎯 0/4 · ⭐ 0/3</div>
+<div id="counter">1 / 19</div>
+<div id="act-label"></div>
+<div id="help-hint">← → navegar · N notas presentador · F pantalla completa · click en comandos = copiar</div>
+<canvas id="confetti-canvas"></canvas>
+<div id="notes-drawer"><div class="nd-tag">🎙 Notas del presentador</div><div id="nd-content"></div></div>
+
+<!-- ================================================================ -->
+<!-- ACTO 0 · BRIEFING -->
+<!-- ================================================================ -->
+
+<!-- 1 · Portada -->
+<section class="slide" data-act="Acto 0 · Briefing" style="align-items:center">
+  <canvas id="fx-cover"></canvas>
+  <div class="cover-inner">
+    <div class="kicker" data-anim="fade-up">Sesión 5 · QA Engineering</div>
+    <h1 data-anim="fade-up" style="animation-delay:.1s">Dev <span class="grad-text">Craft</span> 🛠️</h1>
+    <p data-anim="fade-up" style="animation-delay:.2s;max-width:660px;font-size:clamp(1.05rem,1.8vw,1.35rem)">
+      Tu suite vive solo en tu laptop — para el equipo, <b>no existe</b>.<br>Hoy: terminal con soltura, Git sin miedo y tu primer <b>Pull Request</b>.</p>
+    <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
+      <span class="pill">terminal</span><span class="pill">package.json</span><span class="pill">git</span><span class="pill">GitHub + PR</span><span class="pill">2 simuladores 🎮</span><span class="pill">4 misiones 🎯</span>
+    </div>
+  </div>
+  <div class="notes"><p>Sesión 6 de la serie (deck 5). El gap silencioso: saben escribir tests pero no compartirlos como profesionales. Hoy hay 2 terminales SIMULADAS dentro del deck (practican git sin riesgo) + misiones reales sobre su proyecto del lab. Prerrequisito: proyecto mi-dojo-lab funcionando. Duración: 90-120 min.</p></div>
+</section>
+
+<!-- 2 · Por qué -->
+<section class="slide" data-act="Acto 0 · Briefing">
+  <div class="kicker">La verdad incómoda</div>
+  <h2 data-anim="fade-up">Código que no está en Git <span class="grad-text">es un castillo de arena</span> 🏖️</h2>
+  <div class="cols">
+    <div data-stagger>
+      <div class="card"><div class="ico">💀</div><h3>Sin Git</h3><p>Laptop muere = suite muere. "¿Qué cambié ayer?" = misterio. Dos personas editando = caos de versiones por email.</p></div>
+      <div class="card" style="margin-top:.9rem"><div class="ico">🤝</div><h3>El QA Engineer real</h3><p>Tu suite entra al repo del equipo <b>por Pull Request</b>, con revisión, igual que el código de los devs. Mismo flujo, mismos estándares.</p></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.3s">
+      <div class="card hl"><h3>🗺️ El plan de hoy</h3>
+        <p style="font-family:var(--font-mono);font-size:.88rem;line-height:2.1">
+        Acto 1 → terminal sin miedo<br>
+        Acto 2 → package.json y scripts<br>
+        Acto 3 → Git local 🎮 (simulador + real)<br>
+        Acto 4 → GitHub + tu primer PR 🎮<br>
+        Boss → tu suite del lab, publicada</p></div>
+      <div class="callout info" style="margin-top:.9rem"><span class="co-ico">🎮</span><p>Hoy estrenamos <b>terminales simuladas</b> dentro del deck: practicas los comandos aquí (imposible romper nada) y DESPUÉS los corres de verdad.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Motivación con dolor real: pregunta quién ha perdido trabajo por no tener respaldo. El paralelo de identidad importa: entregar por PR es lo que distingue al QA Engineer del tester que automatiza por su cuenta — entras al flujo de ingeniería del equipo. El simulador baja la ansiedad de los que le temen a la terminal.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 1 · TERMINAL -->
+<!-- ================================================================ -->
+
+<!-- 3 · Terminal sin miedo -->
+<section class="slide" data-act="Acto 1 · Terminal">
+  <h2 data-anim="fade-up">Terminal sin miedo: <span class="grad-text">6 comandos te bastan</span> ⌨️</h2>
+  <table class="cmp" data-stagger>
+    <tr><th>Comando</th><th>Qué hace</th><th>Mnemonia</th></tr>
+    <tr><td><code>pwd</code></td><td>¿DÓNDE estoy parado?</td><td>print working directory</td></tr>
+    <tr><td><code>ls</code></td><td>¿QUÉ hay aquí?</td><td>list</td></tr>
+    <tr><td><code>cd mi-dojo-lab</code></td><td>Entra a una carpeta</td><td>change directory</td></tr>
+    <tr><td><code>cd ..</code></td><td>Sube un nivel</td><td>.. = la carpeta padre</td></tr>
+    <tr><td><code>mkdir pages</code></td><td>Crea una carpeta</td><td>make directory</td></tr>
+    <tr><td><code>code .</code></td><td>Abre VS Code AQUÍ</td><td>. = esta carpeta</td></tr>
+  </table>
+  <div class="callout" data-anim="fade-up"><span class="co-ico">⚡</span><p><b>Los dos superpoderes:</b> <code>Tab</code> autocompleta nombres (escribe <code>cd mi-d</code> + Tab) · flecha <code>↑</code> repite comandos anteriores. Quien los usa parece senior en una semana.</p></div>
+  <div class="notes"><p>Desmitificación: 6 comandos cubren el 90% del día a día. El concepto subyacente: la terminal SIEMPRE está parada en una carpeta (pwd lo revela) y todo es relativo a ella — el mismo concepto de las rutas relativas de los imports (../pages). Tab y ↑ son los hábitos que más aceleran a un principiante.</p></div>
+</section>
+
+<!-- 4 · M D1 -->
+<section class="slide" data-act="Acto 1 · Terminal">
+  <div class="mission" data-mission="d1" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISIÓN D1</span><h3>Navega como profesional</h3>
+      <label class="m-check"><input type="checkbox"> Completada</label></div>
+    <div class="m-obj">🎯 Desde una terminal NUEVA, llegar hasta tu proyecto del lab usando solo comandos, y abrirlo en VS Code.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
+        1. Abre una terminal nueva (no la de VS Code — esa hace trampa)<br>
+        2. <code class="pill">pwd</code> para ubicarte, <code class="pill">ls</code> para mirar<br>
+        3. Navega con <code class="pill">cd</code> + <code class="pill">Tab</code> hasta <code class="pill">mi-dojo-lab</code><br>
+        4. Remata con:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">code .</span><span class="copy">📋</span></div>
+      </div>
+      <div>
+        <details class="m-hint"><summary>Pista: "code: command not found" (Mac)</summary><div class="hint-body"><p>Abre VS Code → Cmd+Shift+P → escribe "shell command" → "Install 'code' command in PATH". Reabre la terminal.</p></div></details>
+        <details class="m-hint"><summary>Pista: me perdí en las carpetas</summary><div class="hint-body"><p><code>cd ~</code> te teletransporta a tu carpeta de usuario (home). Desde ahí, ls y a navegar de nuevo. Imposible perderse para siempre.</p></div></details>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Criterio de éxito:</b> VS Code abierto en tu proyecto, lanzado 100% desde la terminal, sin tocar el Finder/Explorador.</span></div>
+  </div>
+  <div class="notes"><p>Misión corta (5-10 min) pero diagnóstica: quien no fluye aquí va a sufrir con git. "Terminal nueva, no la de VS Code" fuerza la navegación real. cd ~ como botón de pánico elimina el miedo a perderse.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 2 · PACKAGE.JSON -->
+<!-- ================================================================ -->
+
+<!-- 5 · package.json -->
+<section class="slide" data-act="Acto 2 · package.json">
+  <h2 data-anim="fade-up">package.json: <span class="grad-text">la cédula del proyecto</span> 📋</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <div class="code-window">
+        <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">package.json</span></div>
+        <pre class="code" style="font-size:clamp(.75rem,1.15vw,.92rem)">
+{
+  <span class="tk-s">"name"</span>: <span class="tk-s">"mi-dojo-lab"</span>,
+  <span class="tk-s">"scripts"</span>: {
+    <span class="tk-s">"test"</span>: <span class="tk-s">"playwright test"</span>,
+    <span class="tk-s">"test:ui"</span>: <span class="tk-s">"playwright test --ui"</span>
+  },
+  <span class="tk-s">"devDependencies"</span>: {
+    <span class="tk-s">"@playwright/test"</span>: <span class="tk-s">"^1.52.0"</span>
+  }
+}</pre>
+      </div>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>📛 name</h3><p>Identidad del proyecto.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>📜 scripts</h3><p>El <b>recetario de comandos</b> del equipo: alias cortos para comandos largos. Se corren con <code class="pill">npm run &lt;nombre&gt;</code>.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>📦 devDependencies</h3><p>La <b>lista de compras</b>: qué herramientas necesita el proyecto y en qué versión. <code class="pill">npm install</code> las trae todas.</p></div>
+      <div class="card hl" style="margin-top:.75rem"><h3>🚫 node_modules NO viaja</h3><p>Pesa cientos de MB y se <b>reconstruye</b> desde la lista con npm install. Por eso JAMÁS se sube a Git (lo ignoraremos en el Acto 3).</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>La metáfora doble: scripts = recetario, dependencies = lista de compras, node_modules = la despensa llena (reconstruible, no se comparte). Esta lógica explica el ritual universal "clonar → npm install" y prepara el .gitignore del acto 3. dependencies vs devDependencies: para un proyecto de tests, todo es dev — no profundices.</p></div>
+</section>
+
+<!-- 6 · M D2 -->
+<section class="slide" data-act="Acto 2 · package.json">
+  <div class="mission" data-mission="d2" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISIÓN D2</span><h3>Arma tu recetario de scripts</h3>
+      <label class="m-check"><input type="checkbox"> Completada</label></div>
+    <div class="m-obj">🎯 Definir los 4 scripts estándar de tu suite y usarlos con <b>npm run</b>.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;margin:.2rem 0 .4rem">1. En tu package.json, dentro de <code class="pill">"scripts"</code>:</p>
+        <pre class="code" style="font-size:.8rem">
+<span class="tk-s">"test"</span>: <span class="tk-s">"playwright test"</span>,
+<span class="tk-s">"test:ui"</span>: <span class="tk-s">"playwright test --ui"</span>,
+<span class="tk-s">"test:headed"</span>: <span class="tk-s">"playwright test --headed"</span>,
+<span class="tk-s">"report"</span>: <span class="tk-s">"playwright show-report"</span></pre>
+        <p style="font-size:.9rem;margin:.6rem 0 .2rem">2. Pruébalos:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npm run test</span><span class="copy">📋</span></div>
+      </div>
+      <div>
+        <details class="m-hint"><summary>Pista: "Unexpected token" al correr npm</summary><div class="hint-body"><p>JSON es estricto: comillas dobles SIEMPRE, coma entre entradas, ninguna coma después de la última. VS Code subraya el error exacto.</p></div></details>
+        <div class="callout info" style="margin-top:.8rem"><span class="co-ico">🤝</span><p>El valor real: <b>contrato de equipo</b>. Cualquier persona (o un pipeline de CI) corre tu suite con <code>npm run test</code> sin saber qué hay detrás. Estándar universal del ecosistema.</p></div>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Criterio de éxito:</b> <code style="color:var(--cyan)">npm run test</code> y <code style="color:var(--cyan)">npm run test:ui</code> funcionan en tu proyecto.</span></div>
+  </div>
+  <div class="notes"><p>Primera edición a mano de un JSON — el error de sintaxis de la pista le pasará a alguien, garantizado, y es buena lección (JSON estricto vs JS laxo). El concepto "contrato de equipo" conecta con CI/CD futuro: los pipelines corren npm run test, no comandos crudos.</p></div>
+</section>
+
+<!-- 7 · QUIZ 1 -->
+<section class="slide" data-act="Acto 2 · package.json" style="align-items:center">
+  <div class="quiz" data-quiz="q1">
+    <div class="quiz-tag">⭐ QUIZ 1 · El ritual del clon</div>
+    <h3 class="quiz-q">Clonas el proyecto de un compañero, corres <code style="color:var(--cyan)">npm run test</code> y explota: "Cannot find module '@playwright/test'". ¿Primer comando?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Reinstalar Node.js completo</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span><code>npm install</code> — reconstruir node_modules desde la lista de compras</span></button>
+      <button class="opt"><span class="key">C</span><span>Copiarle la carpeta node_modules por USB</span></button>
+    </div>
+    <div class="quiz-expl">💡 node_modules no viaja con el repo (está ignorado) — el clon llega "sin despensa". <code>npm install</code> lee las dependencies del package.json y la reconstruye exacta. El ritual universal: <b>clonar → npm install → a trabajar</b>. La opción C funciona… como funciona pegar un billete roto con cinta: no lo hagas.</div>
+  </div>
+  <div class="notes"><p>Este error lo VAN a vivir la primera vez que clonen algo — el quiz lo convierte en momento "ya sabía". El ritual clonar → npm install → npx playwright install (browsers) completo lo verán en la misión boss cuando clonen su propio repo si hay tiempo.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 3 · GIT LOCAL -->
+<!-- ================================================================ -->
+
+<!-- 8 · Git modelo mental -->
+<section class="slide" data-act="Acto 3 · Git local">
+  <h2 data-anim="fade-up">Git: <span class="grad-text">checkpoints para tu código</span> 📸</h2>
+  <div class="gitflow" data-anim="fade-up">
+    <div class="gf-box"><b>📝 Working</b>tus archivos<br>tal como están</div>
+    <div class="gf-arrow">─ git add →<br><span style="font-size:.7rem">"esto entra en la foto"</span></div>
+    <div class="gf-box"><b>📦 Staging</b>lo seleccionado<br>para la próxima foto</div>
+    <div class="gf-arrow">─ git commit →<br><span style="font-size:.7rem">"¡click! foto tomada"</span></div>
+    <div class="gf-box hl"><b>📚 Historia</b>checkpoints<br>permanentes</div>
+  </div>
+  <div class="cards c3" data-stagger style="margin-top:.6rem">
+    <div class="card"><div class="ico">🎮</div><h3>Como un videojuego</h3><p>Commit = grabar partida. ¿Rompiste todo? Vuelves al último checkpoint. Nada se pierde de verdad después de un commit.</p></div>
+    <div class="card"><div class="ico">📦</div><h3>¿Por qué staging?</h3><p>Eliges QUÉ entra en cada foto. Cambiaste 5 archivos pero 2 son de otra tarea → fotos separadas, historia limpia.</p></div>
+    <div class="card"><div class="ico">🔍</div><h3>git status = tu brújula</h3><p>Te dice qué está modificado, qué está en staging y qué falta. <b>Cuando dudes: git status.</b> Siempre.</p></div>
+  </div>
+  <div class="notes"><p>El modelo de 3 zonas ES git — todo comando se entiende desde aquí. Insiste en "git status como brújula": el hábito que salva a todo principiante (no castiga, solo informa). La metáfora checkpoint de videojuego baja el miedo: con commits frecuentes, nada se pierde.</p></div>
+</section>
+
+<!-- 9 · El ciclo + mensajes -->
+<section class="slide" data-act="Acto 3 · Git local">
+  <h2 data-anim="fade-up">El ciclo sagrado <span class="grad-text">+ mensajes dignos</span></h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>El ciclo (lo harás 1000 veces)</h3>
+      <div class="cmd"><span class="ps">$</span><span class="ct">git status</span><span class="copy">📋</span></div>
+      <div class="cmd"><span class="ps">$</span><span class="ct">git add .</span><span class="copy">📋</span></div>
+      <div class="cmd"><span class="ps">$</span><span class="ct">git commit -m "mensaje claro"</span><span class="copy">📋</span></div>
+      <p style="font-size:.88rem;margin-top:.5rem"><code class="pill">git add .</code> = todo lo modificado al staging · <code class="pill">-m</code> = mensaje inline.</p>
+      <div class="callout warn" style="margin-top:.8rem"><span class="co-ico">🙈</span><p>Antes del primer commit: crea <code>.gitignore</code> con <code>node_modules/</code>, <code>test-results/</code> y <code>playwright-report/</code> — la despensa y los reportes NO van en la historia.</p></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>El mensaje es para un humano del futuro</h3>
+      <table class="cmp" style="font-size:.88rem">
+        <tr><th>❌ Indigno</th><th>✅ Digno</th></tr>
+        <tr><td>"cambios"</td><td>"add login page object with semantic locators"</td></tr>
+        <tr><td>"fix"</td><td>"fix flaky register test with unique email"</td></tr>
+        <tr><td>"asdfgh"</td><td>"add API tests for auth endpoints"</td></tr>
+      </table>
+      <p style="font-size:.88rem;margin-top:.6rem">Fórmula: <b>verbo + qué + (por qué si no es obvio)</b>. El humano del futuro que lee tu historia… casi siempre eres tú.</p>
+    </div>
+  </div>
+  <div class="notes"><p>El .gitignore ANTES del primer commit es crítico — commitear node_modules es el error #1 de novato (repo de 500MB). Mensajes: la prueba está en git log — una historia de "cambios, fix, más cambios" no le sirve a nadie. Convención del repo profesional al que van: prefijos semánticos (feat:, fix:, test:) — menciónalo como adelanto.</p></div>
+</section>
+
+<!-- 10 · SIMULADOR 1 -->
+<section class="slide" data-act="Acto 3 · Git local">
+  <div class="kicker">🎮 Terminal simulada · imposible romper nada</div>
+  <h2 data-anim="fade-up">Practica el ciclo <span class="grad-text">aquí mismo</span></h2>
+  <div class="termsim" data-anim="fade-up">
+    <div class="ts-goals" id="ts1-goals"></div>
+    <div class="ts-term">
+      <div class="ts-bar"><span class="dot" style="background:#f7768e"></span><span class="dot" style="background:#e0af68"></span><span class="dot" style="background:#9ece6a"></span>
+        <span class="ts-title">~/mi-dojo-lab — simulador</span><button class="ts-reset" id="ts1-reset" style="margin-left:auto">↺ Reiniciar</button></div>
+      <div class="ts-out" id="ts1-out"></div>
+      <div class="ts-inline"><span class="ps">$</span><input id="ts1-in" autocomplete="off" spellcheck="false" placeholder="escribe un comando y Enter…"></div>
+    </div>
+  </div>
+  <div class="notes"><p>Primer simulador: el ciclo status → add → commit → log en un sandbox. Pide que NO miren la slide anterior — que recuerden el ciclo (la lista de objetivos a la izquierda guía). Tras completarlo aquí, la misión D3 lo repite en su proyecto real. La opción "help" lista comandos si se traban.</p></div>
+</section>
+
+<!-- 11 · M D3 -->
+<section class="slide" data-act="Acto 3 · Git local">
+  <div class="mission" data-mission="d3" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISIÓN D3</span><h3>Git de verdad en tu proyecto</h3>
+      <label class="m-check"><input type="checkbox"> Completada</label></div>
+    <div class="m-obj">🎯 Poner tu proyecto del lab bajo control de versiones: init, .gitignore y primer commit con mensaje digno.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">git init</span><span class="copy">📋</span></div>
+        <p style="font-size:.88rem;margin:.5rem 0 .2rem">Crea <code class="pill">.gitignore</code> (raíz del proyecto) con:</p>
+        <pre class="code" style="font-size:.8rem">node_modules/
+test-results/
+playwright-report/</pre>
+        <div class="cmd" style="margin-top:.6rem"><span class="ps">$</span><span class="ct">git add .</span><span class="copy">📋</span></div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">git commit -m "add dojo test suite with POM and fixtures"</span><span class="copy">📋</span></div>
+      </div>
+      <div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">git log --oneline</span><span class="copy">📋</span></div>
+        <details class="m-hint"><summary>Pista: git pide tu identidad</summary><div class="hint-body"><p>Primera vez con git en esta máquina:</p><pre class="code" style="font-size:.75rem">git config --global user.name "Tu Nombre"
+git config --global user.email "tu@email.com"</pre><p style="margin-top:.3rem">Una sola vez, queda configurado para siempre.</p></div></details>
+        <details class="m-hint"><summary>Pista: ¿el .gitignore funcionó?</summary><div class="hint-body"><p><code>git status</code> ANTES del add: si node_modules aparece en la lista, el .gitignore tiene un typo o está en la carpeta equivocada.</p></div></details>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Criterio de éxito:</b> <code style="color:var(--cyan)">git log --oneline</code> muestra tu commit inicial, y <code style="color:var(--cyan)">git status</code> NO lista node_modules.</span></div>
+  </div>
+  <div class="notes"><p>Del sandbox a la realidad. El config de identidad detendrá a la mayoría (primera vez con git) — la pista lo resuelve. Verificación del gitignore vía git status: hábito de comprobar, no asumir. Si alguien ya commiteó node_modules: borra .git completo y reinicia la misión — más simple que enseñar a deshacer hoy.</p></div>
+</section>
+
+<!-- 12 · QUIZ 2 -->
+<section class="slide" data-act="Acto 3 · Git local" style="align-items:center">
+  <div class="quiz" data-quiz="q2">
+    <div class="quiz-tag">⭐ QUIZ 2 · Las 3 zonas</div>
+    <h3 class="quiz-q">Modificaste 5 archivos, pero 2 pertenecen a otra tarea. ¿Cómo logras un commit limpio con solo los 3 relevantes?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Imposible — git add . se lleva todo, es todo o nada</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span><code>git add archivo1 archivo2 archivo3</code> — el staging existe exactamente para elegir qué entra en la foto</span></button>
+      <button class="opt"><span class="key">C</span><span>Borrar los 2 archivos ajenos y recrearlos después del commit</span></button>
+    </div>
+    <div class="quiz-expl">💡 <code>git add</code> acepta archivos específicos — esa es la razón de ser del staging: componer CADA foto deliberadamente. <code>git add .</code> es el atajo para "todo", no la única forma. Historia limpia = un commit por intención = futuro tú feliz.</div>
+  </div>
+  <div class="notes"><p>Valida el modelo de 3 zonas con el caso de uso que justifica el staging. La opción C (borrar y recrear) suena absurda pero es lo que hace la gente que no entiende staging — nómbralo con humor. Commits por intención preparan el terreno para PRs enfocados.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 4 · GITHUB + PR -->
+<!-- ================================================================ -->
+
+<!-- 13 · Remoto -->
+<section class="slide" data-act="Acto 4 · GitHub + PR">
+  <h2 data-anim="fade-up">GitHub: <span class="grad-text">tu historia, en la nube</span> ☁️</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <div class="gitflow" style="flex-direction:column;gap:.4rem">
+        <div class="gf-box"><b>💻 Tu repo local</b>la historia en tu máquina</div>
+        <div class="gf-arrow">↑ git push (subir) &nbsp;·&nbsp; ↓ git pull (bajar)</div>
+        <div class="gf-box hl"><b>☁️ GitHub (remoto)</b>la copia compartida del equipo</div>
+      </div>
+      <p style="margin-top:.8rem;font-size:.95rem">Remoto = el repo "oficial" compartido. <b>push</b> sube tus commits; <b>pull</b> baja los de otros. Laptop muere → la historia vive.</p>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>Conectar tu proyecto (una vez)</h3>
+      <p style="font-size:.88rem;margin:.2rem 0 .3rem">Con GitHub CLI (recomendado — crea el repo Y lo conecta):</p>
+      <div class="cmd"><span class="ps">$</span><span class="ct">gh auth login</span><span class="copy">📋</span></div>
+      <div class="cmd"><span class="ps">$</span><span class="ct">gh repo create mi-dojo-lab --private --source=. --push</span><span class="copy">📋</span></div>
+      <details class="m-hint"><summary>Alternativa sin gh (web)</summary><div class="hint-body"><p>github.com → New repository → copia los comandos que GitHub te muestra bajo "push an existing repository": <code>git remote add origin …</code> + <code>git push -u origin main</code>.</p></div></details>
+    </div>
+  </div>
+  <div class="notes"><p>Modelo simple: local = tu copia, remoto = la oficial compartida. gh CLI hace en 1 comando lo que la web hace en 5 pasos — pero requiere gh instalado (brew install gh / winget install GitHub.cli); la alternativa web siempre funciona. gh auth login es interactivo: guíalo en vivo.</p></div>
+</section>
+
+<!-- 14 · Branch + PR -->
+<section class="slide" data-act="Acto 4 · GitHub + PR">
+  <h2 data-anim="fade-up">Branches y PR: <span class="grad-text">proponer, no imponer</span> 🌿</h2>
+  <div class="gitflow" data-anim="fade-up">
+    <div class="gf-box"><b>🌿 rama</b>git checkout -b<br>test/login-suite</div>
+    <div class="gf-arrow">→ commits →</div>
+    <div class="gf-box"><b>☁️ push</b>la rama sube<br>a GitHub</div>
+    <div class="gf-arrow">→</div>
+    <div class="gf-box hl"><b>🔀 Pull Request</b>"revisen mi<br>propuesta"</div>
+    <div class="gf-arrow">→ review ✓ →</div>
+    <div class="gf-box"><b>🎉 merge</b>tu código entra<br>a main</div>
+  </div>
+  <div class="cards c3" data-stagger style="margin-top:.6rem">
+    <div class="card"><div class="ico">🛡️</div><h3>main es sagrada</h3><p>Nadie empuja directo a main: es la versión estable. Tu rama = borrador seguro donde nada se rompe.</p></div>
+    <div class="card"><div class="ico">💬</div><h3>El PR es conversación</h3><p>Descripción de qué y por qué, código comentable línea por línea, aprobación antes del merge. Ahí ocurre la revisión real.</p></div>
+    <div class="card hl"><div class="ico">🧪</div><h3>En QA</h3><p>Tus suites entran por PR al repo del equipo — y los pipelines de CI corren los tests EN el PR antes de aprobar. Tu trabajo se vuelve gate de calidad.</p></div>
+  </div>
+  <div class="notes"><p>El flujo branch→PR→review→merge es EL flujo de la industria (GitHub Flow). Para QA doble relevancia: (1) entregan suites por PR, (2) sus tests CORREN en los PRs de otros como gate — su trabajo decide si el código de los devs entra. Convención de nombres de rama: test/*, feat/*, fix/* — el repo profesional la usa.</p></div>
+</section>
+
+<!-- 15 · SIMULADOR 2 -->
+<section class="slide" data-act="Acto 4 · GitHub + PR">
+  <div class="kicker">🎮 Terminal simulada · el flujo completo</div>
+  <h2 data-anim="fade-up">Practica: <span class="grad-text">de la rama al PR</span></h2>
+  <div class="termsim" data-anim="fade-up">
+    <div class="ts-goals" id="ts2-goals"></div>
+    <div class="ts-term">
+      <div class="ts-bar"><span class="dot" style="background:#f7768e"></span><span class="dot" style="background:#e0af68"></span><span class="dot" style="background:#9ece6a"></span>
+        <span class="ts-title">~/mi-dojo-lab — simulador</span><button class="ts-reset" id="ts2-reset" style="margin-left:auto">↺ Reiniciar</button></div>
+      <div class="ts-out" id="ts2-out"></div>
+      <div class="ts-inline"><span class="ps">$</span><input id="ts2-in" autocomplete="off" spellcheck="false" placeholder="escribe un comando y Enter…"></div>
+    </div>
+  </div>
+  <div class="notes"><p>Segundo simulador: el flujo completo rama → add → commit → push → gh pr create. Es el ensayo general de la misión boss. La lista de objetivos guía el orden; "help" lista comandos válidos. Al completar: la URL del PR simulado aparece — exactamente lo que verán en la realidad.</p></div>
+</section>
+
+<!-- 16 · M D4 BOSS -->
+<section class="slide" data-act="Acto 4 · GitHub + PR">
+  <div class="mission" data-mission="d4" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISIÓN D4 · BOSS 🏆</span><h3>Tu suite, publicada con PR</h3>
+      <label class="m-check"><input type="checkbox"> Completada</label></div>
+    <div class="m-obj">🎯 Tu proyecto del lab en GitHub, con una mejora entrando por <b>Pull Request</b> — el flujo profesional completo, de verdad.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;line-height:1.85;margin:.2rem 0">
+        1. Repo en GitHub conectado (slide 13)<br>
+        2. Crea una rama para una mejora pequeña (un test nuevo, un script, el POM de otra página):</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">git checkout -b test/mi-mejora</span><span class="copy">📋</span></div>
+        <p style="font-size:.9rem;margin:.4rem 0">3. Haz el cambio → add → commit → push:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">git push -u origin test/mi-mejora</span><span class="copy">📋</span></div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">gh pr create --fill</span><span class="copy">📋</span></div>
+      </div>
+      <div>
+        <details class="m-hint"><summary>Pista: sin gh CLI</summary><div class="hint-body"><p>Tras el push, GitHub imprime una URL "Create a pull request" en la propia terminal — ábrela. O en la web del repo: botón "Compare & pull request".</p></div></details>
+        <details class="m-hint"><summary>Pista: ¿y quién me lo aprueba?</summary><div class="hint-body"><p>Hoy: revísalo tú (mira el diff con ojos de reviewer — ¿entenderías este cambio sin contexto?) y dale merge. En equipo real, un colega aprueba. Si están en pareja: ¡revísense mutuamente! Eso es code review real.</p></div></details>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Criterio de éxito:</b> URL de un PR tuyo, mergeado, en tu repo de GitHub. Guárdala — es tu primera entrega con flujo profesional.</span></div>
+  </div>
+  <div class="notes"><p>El boss produce un artefacto REAL con URL: su primer PR. Si hay pares, crúzalos para review mutuo — el feedback de un colega en un diff es la experiencia profesional completa. El diff del PR en GitHub además les muestra visualmente qué cambió: la utilidad de git se vuelve tangible.</p></div>
+</section>
+
+<!-- 17 · QUIZ 3 -->
+<section class="slide" data-act="Acto 4 · GitHub + PR" style="align-items:center">
+  <div class="quiz" data-quiz="q3">
+    <div class="quiz-tag">⭐ QUIZ 3 · El porqué del ritual</div>
+    <h3 class="quiz-q">Trabajas SOLO en tu suite. ¿Tiene sentido seguir usando ramas y PRs?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>No — los PRs solo sirven cuando hay un equipo que revise</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>Sí — historial revisable, CI se engancha a los PRs, y practicas el flujo que usarás en equipo</span></button>
+      <button class="opt"><span class="key">C</span><span>Solo si el proyecto es público</span></button>
+    </div>
+    <div class="quiz-expl">💡 Tres razones aun en solitario: (1) cada PR documenta un cambio con intención — historial navegable; (2) los pipelines de CI corren los tests EN el PR: tu red de seguridad automática; (3) el hábito — quien trabaja con ramas en solitario no improvisa cuando entra a un equipo. El flujo ES el entrenamiento.</div>
+  </div>
+  <div class="notes"><p>Cierra el arco de motivación: el flujo no es burocracia para equipos grandes, es disciplina profesional con beneficios inmediatos (CI en PRs llega en regression-testing del repo profesional). "El flujo ES el entrenamiento" — frase de cierre del acto.</p></div>
+</section>
+
+<!-- 18 · Recap herramientas -->
+<section class="slide" data-act="Acto 4 · GitHub + PR">
+  <div class="kicker">Tu nueva caja de herramientas</div>
+  <h2 data-anim="fade-up" style="text-align:center">El kit del oficio, <span class="grad-text">completo</span> 🧰</h2>
+  <table class="cmp" data-stagger style="max-width:880px;margin:0 auto">
+    <tr><th>Herramienta</th><th>Tu nuevo superpoder</th></tr>
+    <tr><td>⌨️ Terminal</td><td>Navegas y ejecutas sin miedo — pwd, cd, Tab, ↑</td></tr>
+    <tr><td>📋 package.json</td><td>Lees la cédula de cualquier proyecto JS y defines scripts de equipo</td></tr>
+    <tr><td>📸 Git local</td><td>Checkpoints con mensajes dignos — nada se pierde nunca más</td></tr>
+    <tr><td>☁️ GitHub</td><td>Tu código vive en la nube, sobrevive a tu laptop</td></tr>
+    <tr><td>🔀 Pull Request</td><td>Entregas cambios como profesional: propuesta → review → merge</td></tr>
+  </table>
+  <div class="callout" data-anim="fade-up" style="max-width:880px;margin:1.2rem auto 0"><span class="co-ico">🥋</span><p>El repo profesional al que vas usa EXACTAMENTE este flujo (con ramas <code>test/*</code> y prefijos semánticos en commits) — más un detalle: allí <code>bun</code> reemplaza a <code>npm</code>. Mismos conceptos, otro instalador.</p></div>
+  <div class="notes"><p>Recap-espejo: cada fila es una capacidad que NO tenían al empezar la sesión. El aviso de bun evita el desconcierto en el repo profesional: bun install = npm install, bun run = npm run — conceptos idénticos. Con esto, la única pieza que falta es KATA: el próximo y último deck.</p></div>
+</section>
+
+<!-- 19 · Cierre -->
+<section class="slide" data-act="Acto 4 · GitHub + PR" style="align-items:center;text-align:center">
+  <div class="kicker" data-anim="fade-up">Debrief</div>
+  <h2 data-anim="fade-up" style="animation-delay:.1s">Misiones completadas</h2>
+  <div class="final-list" id="final-list" data-anim="fade-up" style="animation-delay:.2s"></div>
+  <p id="final-msg" data-anim="fade-up" style="animation-delay:.3s;max-width:600px;margin-top:1rem"></p>
+  <div class="cards c2" data-stagger style="margin-top:1.2rem;max-width:760px">
+    <div class="card"><div class="ico">🏠</div><h3>Tarea</h3><p>Un commit diario en tu proyecto esta semana — el músculo se hace con repetición. Y termina misiones pendientes.</p></div>
+    <div class="card hl"><div class="ico">🥋</div><h3>Última parada: KATA Bridge</h3><p>Tienes TODO: código, clases, Playwright pro, fixtures, git. El próximo deck cruza el puente final al framework profesional.</p></div>
+  </div>
+  <div class="notes"><p>Penúltima sesión de la serie. Logro: dejaron de ser "personas que escriben tests" y son "profesionales que entregan código" — terminal, scripts, checkpoints, PR con URL real. La tarea del commit diario instala el hábito. Anuncia KATA Bridge como graduación: ya no aprenderán piezas nuevas, sino el mapa de cómo el repo profesional las ensambla.</p></div>
+</section>
+
+<script>
+/* ================================================================
+   RUNTIME — navegación, quizzes, misiones persistentes, comandos
+   copiables y TERMINALES SIMULADAS. Sin dependencias.
+   ================================================================ */
+(function(){
+'use strict';
+
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- slide navigation ---------- */
+const slides = $$('.slide');
+const N = slides.length;
+let cur = 0;
+const progress = $('#progress'), counter = $('#counter'), actLabel = $('#act-label');
+const drawer = $('#notes-drawer'), ndContent = $('#nd-content');
+
+function go(i){
+  cur = Math.max(0, Math.min(N-1, i));
+  slides.forEach((s,k)=> s.classList.toggle('is-active', k===cur));
+  progress.style.width = ((cur+1)/N*100) + '%';
+  counter.textContent = (cur+1) + ' / ' + N;
+  actLabel.textContent = slides[cur].dataset.act || '';
+  history.replaceState(null,'','#/'+(cur+1));
+  const notes = $('.notes', slides[cur]);
+  ndContent.innerHTML = notes ? notes.innerHTML : '<p>(sin notas para esta slide)</p>';
+  if(cur === N-1) renderFinal();
+}
+const fromHash = ()=>{ const m = location.hash.match(/^#\/(\d+)/); go(m ? parseInt(m[1],10)-1 : 0); };
+window.addEventListener('hashchange', fromHash);
+
+document.addEventListener('keydown', e=>{
+  const t = e.target;
+  if(t && (t.tagName==='TEXTAREA' || t.tagName==='INPUT')) return;
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown') { e.preventDefault(); go(cur+1); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp') { e.preventDefault(); go(cur-1); }
+  else if(e.key==='Home') go(0);
+  else if(e.key==='End') go(N-1);
+  else if(e.key==='f'||e.key==='F'){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+  else if(e.key==='n'||e.key==='N'||e.key==='s'||e.key==='S') drawer.classList.toggle('open');
+  else if(e.key==='Escape') drawer.classList.remove('open');
+});
+
+/* ---------- confetti ---------- */
+const cv = $('#confetti-canvas'), cx = cv.getContext('2d');
+let parts = [], rafC = null;
+function sizeCanvas(){ cv.width = innerWidth; cv.height = innerHeight; }
+sizeCanvas(); window.addEventListener('resize', sizeCanvas);
+const COLORS = ['#7aa2f7','#bb9af7','#7dcfff','#9ece6a','#ff9e64','#e0af68','#f7768e'];
+function confetti(x, y, n){
+  for(let i=0;i<(n||70);i++){
+    const a = Math.PI*2*Math.random(), v = 3+Math.random()*7;
+    parts.push({x:x, y:y, vx:Math.cos(a)*v, vy:Math.sin(a)*v-3, g:.22, life:1, d:.012+Math.random()*.012,
+      c:COLORS[(Math.random()*COLORS.length)|0], r:3+Math.random()*4, rot:Math.random()*Math.PI});
+  }
+  if(!rafC) tick();
+}
+function tick(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts = parts.filter(p=>p.life>0);
+  for(const p of parts){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.life-=p.d; p.rot+=.08;
+    cx.save(); cx.globalAlpha=Math.max(p.life,0); cx.translate(p.x,p.y); cx.rotate(p.rot);
+    cx.fillStyle=p.c; cx.fillRect(-p.r,-p.r/2,p.r*2,p.r); cx.restore();
+  }
+  rafC = parts.length ? requestAnimationFrame(tick) : null;
+}
+
+/* ---------- missions (persisted) ---------- */
+const LS_KEY = 'dev-craft-progress';
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch(e){ saved = {}; }
+const missions = $$('.mission');
+const M_TOTAL = missions.length;
+const M_TITLES = {
+  d1:'D1 · Navega con terminal', d2:'D2 · Scripts npm', d3:'D3 · Git init + commit', d4:'D4 · Boss: tu primer PR'
+};
+function missionsDone(){ return missions.filter(m=>$('input',m).checked).length; }
+
+missions.forEach(m=>{
+  const id = m.dataset.mission, cb = $('input', m);
+  cb.checked = !!saved[id];
+  m.classList.toggle('done', cb.checked);
+  cb.addEventListener('change', ()=>{
+    saved[id] = cb.checked;
+    try { localStorage.setItem(LS_KEY, JSON.stringify(saved)); } catch(e){}
+    m.classList.toggle('done', cb.checked);
+    updateChip();
+    if(cb.checked){
+      const r = cb.getBoundingClientRect();
+      confetti(r.left, r.top, 50);
+      if(missionsDone() === M_TOTAL) setTimeout(()=>confetti(innerWidth/2, innerHeight*0.3, 160), 400);
+    }
+  });
+});
+
+/* ---------- quiz engine ---------- */
+const TOTAL_Q = $$('.quiz').length;
+const answered = {};
+let score = 0;
+/* ---------- quiz score persistence ---------- */
+const SCORE_KEY = 'dev-craft.es.html-score:' + location.pathname;
+let qstate = { q:{}, score:0 };
+try { const _s = JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); if(_s && typeof _s === 'object'){ qstate.q = _s.q || {}; qstate.score = _s.score || 0; } } catch(e){ qstate = { q:{}, score:0 }; }
+score = qstate.score;
+function saveQuiz(){ qstate.score = score; try { localStorage.setItem(SCORE_KEY, JSON.stringify(qstate)); } catch(e){} }
+const chip = $('#score-chip');
+function updateChip(){
+  chip.textContent = '🎯 ' + missionsDone() + '/' + M_TOTAL + ' · ⭐ ' + score + '/' + TOTAL_Q;
+  chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump');
+}
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz;
+  $$('.opt', qz).forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const ok = btn.dataset.ok === '1';
+      const first = !answered[id];
+      if(first) answered[id] = true;
+      if(ok){
+        btn.classList.add('correct');
+        qz.classList.add('locked');
+        $('.quiz-expl', qz).classList.add('show');
+        const r = btn.getBoundingClientRect();
+        confetti(r.left + r.width/2, r.top + r.height/2, 80);
+        if(first){ score++; updateChip(); }
+      } else {
+        btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong');
+      }
+      qstate.q[id] = { a:true, c: ok || (qstate.q[id] && qstate.q[id].c) || false };
+      saveQuiz();
+    });
+  });
+});
+/* ---------- restore answered quizzes on load (no confetti) ---------- */
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz, st = qstate.q[id];
+  if(!st) return;
+  if(st.a) answered[id] = true;
+  if(st.c){
+    const okBtn = $('.opt[data-ok="1"]', qz);
+    if(okBtn) okBtn.classList.add('correct');
+    qz.classList.add('locked');
+    const ex = $('.quiz-expl', qz);
+    if(ex) ex.classList.add('show');
+  }
+});
+
+/* ---------- final board ---------- */
+function renderFinal(){
+  const list = $('#final-list');
+  list.innerHTML = missions.map(m=>{
+    const id = m.dataset.mission, done = $('input', m).checked;
+    return '<div class="fl-item'+(done?' ok':'')+'">'+(done?'✅':'⬜')+' '+(M_TITLES[id]||id)+'</div>';
+  }).join('');
+  const d = missionsDone();
+  $('#final-msg').textContent =
+    d === M_TOTAL ? '4/4 — kit completo. Tu suite vive en GitHub y entregas como profesional. 🏆' :
+    d >= 2 ? d + '/' + M_TOTAL + ' — buen avance. D3 y D4 (git + PR) son las que te gradúan: termínalas en casa.' :
+    'El lab queda contigo — un commit diario esta semana y el músculo se instala solo. 🌱';
+  if(d === M_TOTAL) setTimeout(()=>confetti(innerWidth/2, innerHeight*0.3, 140), 450);
+}
+
+/* ---------- copy-on-click commands ---------- */
+$$('.cmd').forEach(c=>{
+  c.addEventListener('click', ()=>{
+    const txt = $('.ct', c).textContent;
+    const done = ()=>{
+      c.classList.add('copied');
+      const tag = $('.copy', c), old = tag.textContent;
+      tag.textContent = '✓ copiado';
+      setTimeout(()=>{ c.classList.remove('copied'); tag.textContent = old; }, 1400);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done).catch(done);
+    } else { done(); }
+  });
+});
+
+/* ================================================================
+   TERMINAL SIMULATOR
+   Linear scenario: each step accepts regex(es); helper commands
+   (help, clear, git status, git log, ls) always available.
+   ================================================================ */
+function termSim(opts){
+  const out = $(opts.out), input = $(opts.in), goalsBox = $(opts.goals), resetBtn = $(opts.reset);
+  if(!out || !input) return;
+  let step = 0;
+
+  function renderGoals(){
+    goalsBox.innerHTML = opts.steps.map((s,i)=>{
+      const cls = i < step ? 'ok' : (i === step ? 'cur' : '');
+      const ico = i < step ? '✅' : (i === step ? '👉' : '⬜');
+      return '<div class="ts-goal '+cls+'">'+ico+' '+s.label+'</div>';
+    }).join('');
+  }
+  function print(html){ out.innerHTML += html + '\n'; out.scrollTop = out.scrollHeight; }
+  function echo(cmd){ print('<span class="o-dim">$</span> <span class="o-cmd">'+esc(cmd)+'</span>'); }
+
+  function reset(){
+    step = 0;
+    out.innerHTML = '';
+    print('<span class="o-dim">'+opts.intro+'</span>');
+    print('<span class="o-dim">Escribe "help" si te trabas. Objetivo 1: '+opts.steps[0].label+'</span>\n');
+    renderGoals();
+  }
+
+  function handle(cmd){
+    echo(cmd);
+    const c = cmd.trim();
+    if(!c) return;
+    if(/^help$/i.test(c)){
+      print('<span class="o-cyan">Comandos de este ejercicio (en orden):</span>');
+      opts.steps.forEach((s,i)=> print('<span class="o-dim">  '+(i+1)+'. '+esc(s.example)+'</span>'));
+      print('<span class="o-dim">  extra: git status · git log --oneline · ls · clear</span>');
+      return;
+    }
+    if(/^clear$/i.test(c)){ out.innerHTML=''; return; }
+    if(/^ls$/.test(c)){ print('<span class="o-cyan">fixtures.ts  pages/  tests/  package.json  playwright.config.ts</span>'); return; }
+
+    const st = opts.steps[step];
+    if(st && st.re.some(r=>r.test(c))){
+      print(st.out);
+      step++;
+      renderGoals();
+      if(step === opts.steps.length){
+        print('\n<span class="o-ok">🎉 ¡Ejercicio completo! Esto mismo harás en tu proyecto real.</span>');
+        const r = out.getBoundingClientRect();
+        confetti(r.left + r.width/2, r.top + 40, 80);
+      } else {
+        print('<span class="o-dim">Siguiente objetivo: '+opts.steps[step].label+'</span>');
+      }
+      return;
+    }
+    /* contextual helpers */
+    if(/^git status$/.test(c) && opts.statusAt){ print(opts.statusAt(step)); return; }
+    if(/^git log( --oneline)?$/.test(c)){ print(step >= (opts.logAfter||99) ? opts.logOut : '<span class="o-dim">fatal: aún no hay commits en este ejercicio</span>'); return; }
+    print('<span class="o-err">✗ ese comando no avanza el ejercicio.</span> <span class="o-dim">Objetivo actual: '+ (st ? st.label : '—') +' (prueba "help")</span>');
+  }
+
+  input.addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){ const v = input.value; input.value=''; handle(v); }
+    e.stopPropagation();
+  });
+  resetBtn.addEventListener('click', reset);
+  reset();
+}
+
+/* --- Simulador 1: ciclo local --- */
+termSim({
+  out:'#ts1-out', in:'#ts1-in', goals:'#ts1-goals', reset:'#ts1-reset',
+  intro:'Simulador git — acabas de terminar tu suite y quieres tu primer checkpoint.',
+  logAfter: 3,
+  logOut:'<span class="o-yellow">a1b2c3d</span> <span class="o-cyan">(HEAD -> main)</span> add dojo test suite with POM',
+  statusAt: s => s === 0
+    ? '<span class="o-red">Untracked files:</span>\n  <span class="o-red">fixtures.ts  pages/  tests/  package.json</span>\n<span class="o-dim">nothing added to commit but untracked files present</span>'
+    : (s === 1
+      ? '<span class="o-red">Untracked files:</span>\n  <span class="o-red">fixtures.ts  pages/  tests/  package.json</span>'
+      : (s === 2
+        ? '<span class="o-green">Changes to be committed:</span>\n  <span class="o-green">new file: fixtures.ts  pages/  tests/  package.json</span>'
+        : '<span class="o-dim">nothing to commit, working tree clean</span>')),
+  steps:[
+    { label:'Mira el estado del repo', example:'git status',
+      re:[/^git status$/],
+      out:'<span class="o-red">Untracked files:</span>\n  <span class="o-red">fixtures.ts  pages/  tests/  package.json</span>\n<span class="o-dim">nothing added to commit but untracked files present</span>' },
+    { label:'Pon los archivos en staging', example:'git add .',
+      re:[/^git add \.$/, /^git add -A$/, /^git add --all$/],
+      out:'<span class="o-ok">✓ archivos al staging (la próxima foto los incluye)</span>' },
+    { label:'Crea el commit con mensaje', example:'git commit -m "add dojo test suite"',
+      re:[/^git commit -m ".+"$/, /^git commit -m '.+'$/],
+      out:'<span class="o-cyan">[main a1b2c3d]</span> add dojo test suite with POM\n<span class="o-dim"> 9 files changed, 214 insertions(+)</span>' },
+    { label:'Mira tu historia', example:'git log --oneline',
+      re:[/^git log( --oneline)?$/],
+      out:'<span class="o-yellow">a1b2c3d</span> <span class="o-cyan">(HEAD -> main)</span> add dojo test suite with POM\n<span class="o-dim">Tu primer checkpoint. Nada se pierde después de esto.</span>' }
+  ]
+});
+
+/* --- Simulador 2: rama → PR --- */
+termSim({
+  out:'#ts2-out', in:'#ts2-in', goals:'#ts2-goals', reset:'#ts2-reset',
+  intro:'Simulador git — tu repo ya está en GitHub. Hoy: una mejora entra por PR.',
+  logAfter: 3,
+  logOut:'<span class="o-yellow">e4f5a6b</span> <span class="o-cyan">(HEAD -> test/login-suite)</span> add logout spec\n<span class="o-yellow">a1b2c3d</span> add dojo test suite with POM',
+  statusAt: s => s <= 1
+    ? '<span class="o-red">modified: tests/logout.spec.ts</span>'
+    : '<span class="o-dim">nothing to commit, working tree clean</span>',
+  steps:[
+    { label:'Crea una rama de trabajo', example:'git checkout -b test/login-suite',
+      re:[/^git checkout -b [\w\/.-]+$/, /^git switch -c [\w\/.-]+$/],
+      out:'<span class="o-ok">Switched to a new branch</span> <span class="o-cyan">test/login-suite</span>\n<span class="o-dim">main queda intacta — aquí trabajas seguro.</span>' },
+    { label:'Stagea tus cambios', example:'git add .',
+      re:[/^git add \.$/, /^git add -A$/, /^git add [\w\/.-]+$/],
+      out:'<span class="o-ok">✓ cambios al staging</span>' },
+    { label:'Commit con mensaje digno', example:'git commit -m "add logout spec"',
+      re:[/^git commit -m ".+"$/, /^git commit -m '.+'$/],
+      out:'<span class="o-cyan">[test/login-suite e4f5a6b]</span> add logout spec\n<span class="o-dim"> 1 file changed, 18 insertions(+)</span>' },
+    { label:'Sube la rama a GitHub', example:'git push -u origin test/login-suite',
+      re:[/^git push( -u)?( origin)?( [\w\/.-]+)?$/],
+      out:'<span class="o-dim">Enumerating objects: 5, done.</span>\n<span class="o-ok">✓ rama publicada en GitHub</span>\n<span class="o-dim">remote: Create a pull request for test/login-suite:</span>\n<span class="o-cyan">remote:   https://github.com/tu-user/mi-dojo-lab/pull/new/test/login-suite</span>' },
+    { label:'Abre el Pull Request', example:'gh pr create --fill',
+      re:[/^gh pr create( --fill)?.*$/],
+      out:'<span class="o-dim">Creating pull request for test/login-suite into main…</span>\n<span class="o-ok">✓ PR creado:</span> <span class="o-cyan">https://github.com/tu-user/mi-dojo-lab/pull/1</span>\n<span class="o-dim">En la vida real: aquí un colega revisa, comenta y aprueba. Luego: merge. 🎉</span>' }
+  ]
+});
+
+/* ---------- cover FX: constellation ---------- */
+(function(){
+  const c = $('#fx-cover'); if(!c) return;
+  const ctx = c.getContext('2d');
+  let pts = [], raf = null;
+  function size(){ c.width = c.offsetWidth; c.height = c.offsetHeight; }
+  function init(){
+    size();
+    pts = Array.from({length:70}, ()=>({
+      x:Math.random()*c.width, y:Math.random()*c.height,
+      vx:(Math.random()-.5)*.45, vy:(Math.random()-.5)*.45, r:1+Math.random()*1.8}));
+  }
+  function frame(){
+    if(!slides[0].classList.contains('is-active')){ raf=null; return; }
+    ctx.clearRect(0,0,c.width,c.height);
+    for(const p of pts){
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>c.width) p.vx*=-1;
+      if(p.y<0||p.y>c.height) p.vy*=-1;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7);
+      ctx.fillStyle='rgba(122,162,247,.55)'; ctx.fill();
+    }
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const a=pts[i], b=pts[j], dx=a.x-b.x, dy=a.y-b.y, d=dx*dx+dy*dy;
+      if(d<150*150){
+        ctx.strokeStyle='rgba(187,154,247,'+(0.16*(1-d/22500)).toFixed(3)+')';
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', init);
+  init();
+  new MutationObserver(()=>{ if(slides[0].classList.contains('is-active') && !raf) raf=requestAnimationFrame(frame); })
+    .observe(slides[0], {attributes:true, attributeFilter:['class']});
+  raf = requestAnimationFrame(frame);
+})();
+
+/* ---------- init ---------- */
+updateChip();
+fromHash();
+})();
+</script>
+<!-- ============ MOBILE PATCH v3 (UPEX) — swipe + layout responsive + tip desktop ============ -->
+<style id="upex-mobile-style">
+/* Layout en pantallas angostas: 1 columna + scroll vertical dentro del slide */
+@media (max-width:768px){
+  .slide{padding:max(6vh,52px) 5vw 10vh;overflow-y:auto;justify-content:flex-start}
+  /* spacers flexibles: centran verticalmente cuando el contenido cabe y
+     colapsan a 0 cuando desborda (permitiendo scroll desde arriba) */
+  .slide::before{content:"";margin-top:auto}
+  .slide::after{content:"";margin-bottom:auto}
+  .cols,.cols-32,.cards.c3,.cards.c2,.memviz,.playground,.ba,.stepper,.termsim,.api-playground{grid-template-columns:1fr}
+  #help-hint,#act-label{display:none}
+  /* score chip compacto y pegado al borde superior para no tapar títulos */
+  #score-chip{top:6px;right:8px;font-size:.62rem;padding:.16rem .5rem;box-shadow:none}
+}
+@media (pointer:coarse){
+  #help-hint{display:none}
+}
+/* Tip de una sola vez en móvil: los playgrounds se disfrutan mejor en desktop */
+#upex-tip{position:fixed;left:50%;transform:translateX(-50%);bottom:44px;z-index:90;
+  max-width:min(92vw,420px);display:flex;align-items:flex-start;gap:.6rem;
+  background:rgba(36,40,59,.96);border:1px solid rgba(255,255,255,.18);border-radius:12px;
+  padding:.65rem .8rem;font-size:.78rem;line-height:1.45;color:#9aa5ce;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);animation:upexTipIn .4s ease both}
+#upex-tip b{color:#c0caf5}
+#upex-tip-x{flex:0 0 auto;background:none;border:none;color:#565f89;font-size:.95rem;
+  cursor:pointer;padding:0 .15rem;margin-left:auto;line-height:1.3}
+@keyframes upexTipIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%)}}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Navega despachando eventos de teclado sintéticos — el runtime del deck ya
+   escucha keydown (ArrowLeft/ArrowRight) y protege textareas/inputs. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+/* Swipe horizontal — ignora gestos que empiezan en zonas interactivas/scrollables */
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,.quiz,.lc-editor,.memviz,.playground'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Tip de una sola vez (compartido entre todos los decks del dominio vía
+   localStorage). ?tip=1 lo fuerza para QA en navegadores sin touch. */
+var KEY='upex-deck-mobile-tip-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]tip=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var tip=document.createElement('div'); tip.id='upex-tip';
+  var msg=document.createElement('span');
+  msg.innerHTML='💻 <b>Tip:</b> para practicar en los playgrounds de código, vuelve a este deck desde tu computadora.';
+  var x=document.createElement('button'); x.id='upex-tip-x'; x.textContent='✕'; x.setAttribute('aria-label','Cerrar tip');
+  var close=function(){ if(tip.isConnected) tip.remove(); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  x.addEventListener('click',close);
+  tip.appendChild(msg); tip.appendChild(x); document.body.appendChild(tip);
+  setTimeout(close,12000);
+}
+})();
+</script>
+
+</body>
+</html>

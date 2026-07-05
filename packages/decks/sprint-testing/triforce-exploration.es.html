@@ -1,0 +1,2274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>La Trifuerza — Probar Features por Capas (UI · API · DB)</title>
+<style>
+/* html-ppt :: shared webfonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+/* html-ppt :: base.css — reset + shared tokens + layout primitives */
+/* Default tokens. Themes in assets/themes/*.css override the :root block. */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f2f2f4;
+  --border: rgba(0,0,0,.08);
+  --border-strong: rgba(0,0,0,.16);
+  --text-1: #111216;
+  --text-2: #55596a;
+  --text-3: #8a8f9e;
+  --accent: #3b6cff;
+  --accent-2: #7a5cff;
+  --accent-3: #ff5c8a;
+  --good: #1aaf6c;
+  --warn: #f5a524;
+  --bad:  #e0445a;
+  --grad: linear-gradient(135deg,#3b6cff,#7a5cff 55%,#ff5c8a);
+  --grad-soft: linear-gradient(135deg,#eef2ff,#f5ecff 55%,#ffeef5);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 26px;
+  --shadow: 0 10px 30px rgba(18,24,40,.08), 0 2px 6px rgba(18,24,40,.04);
+  --shadow-lg: 0 24px 60px rgba(18,24,40,.14), 0 6px 16px rgba(18,24,40,.06);
+  --font-sans: 'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  --font-serif: 'Playfair Display','Noto Serif SC',Georgia,serif;
+  --font-mono: 'JetBrains Mono','IBM Plex Mono',SFMono-Regular,Menlo,monospace;
+  --font-display: var(--font-sans);
+  --letter-tight: -.03em;
+  --letter-normal: -.01em;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);font-weight:400;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:var(--letter-normal)}
+img,svg,video{max-width:100%;display:block}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+
+/* ================= SLIDE SYSTEM ================= */
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;background:var(--bg)}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:72px 96px;
+  box-sizing:border-box;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+  transform:translateX(30px);
+  overflow:hidden;
+}
+.slide.is-active{opacity:1;pointer-events:auto;transform:translateX(0);z-index:2}
+.slide.is-prev{transform:translateX(-30px)}
+
+/* single-page standalone (used when a layout file is opened directly) */
+body.single .slide{position:relative;width:100vw;height:100vh;opacity:1;transform:none;pointer-events:auto}
+
+/* ================= TYPOGRAPHY ================= */
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+.kicker{font-size:14px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+h1.title,.h1{font-family:var(--font-display);font-size:72px;line-height:1.05;font-weight:800;letter-spacing:var(--letter-tight);margin:0 0 18px;color:var(--text-1)}
+h2.title,.h2{font-family:var(--font-display);font-size:54px;line-height:1.1;font-weight:700;letter-spacing:var(--letter-tight);margin:0 0 14px}
+h3,.h3{font-size:32px;line-height:1.2;font-weight:600;letter-spacing:var(--letter-normal);margin:0 0 10px}
+h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
+.lede{font-size:22px;line-height:1.55;color:var(--text-2);font-weight:300;max-width:62ch}
+.dim{color:var(--text-2)}
+.dim2{color:var(--text-3)}
+.mono{font-family:var(--font-mono)}
+.serif{font-family:var(--font-serif)}
+.gradient-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* ================= LAYOUT PRIMITIVES ================= */
+.stack>*+*{margin-top:14px}
+.row{display:flex;gap:24px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid{display:grid;gap:24px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.center{display:flex;align-items:center;justify-content:center;text-align:center}
+.fill{flex:1}
+.sp-t{padding-top:24px}.sp-b{padding-bottom:24px}
+.mt-s{margin-top:8px}.mt-m{margin-top:18px}.mt-l{margin-top:32px}
+.mb-s{margin-bottom:8px}.mb-m{margin-bottom:18px}.mb-l{margin-bottom:32px}
+
+/* ================= CARDS ================= */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.card-outline{background:transparent;border:1.5px solid var(--border-strong);box-shadow:none}
+.card-accent{background:var(--surface);border-top:3px solid var(--accent)}
+.card-hover{transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.card-hover:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:500;
+  background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.pill-accent{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+
+/* ================= BARS / DIVIDERS ================= */
+.divider{height:1px;background:var(--border);width:100%}
+.divider-accent{height:3px;width:72px;background:var(--accent);border-radius:2px}
+
+/* ================= CHROME (header/footer/progress) ================= */
+.deck-header{position:absolute;top:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);letter-spacing:.12em;text-transform:uppercase;z-index:10;pointer-events:none}
+.deck-footer{position:absolute;bottom:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);z-index:10;pointer-events:none}
+.slide-number::before{content:attr(data-current)}
+.slide-number::after{content:" / " attr(data-total)}
+.progress-bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:transparent;z-index:20}
+.progress-bar > span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+
+/* ================= PRESENTER / OVERVIEW ================= */
+.notes{display:none!important}
+.notes-overlay{position:fixed;inset:auto 0 0 0;max-height:42vh;background:rgba(20,22,30,.95);color:#e8ebf4;
+  padding:20px 32px;font-size:16px;line-height:1.6;border-top:1px solid rgba(255,255,255,.1);transform:translateY(100%);
+  transition:transform .3s var(--ease);z-index:40;overflow:auto;font-family:var(--font-sans)}
+.notes-overlay.open{transform:translateY(0)}
+.overview{position:fixed;inset:0;background:rgba(10,12,18,.92);backdrop-filter:blur(12px);z-index:50;
+  display:none;padding:40px;overflow:auto}
+.overview.open{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-content:start}
+.overview .thumb{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  aspect-ratio:16/9;overflow:hidden;cursor:pointer;position:relative;color:var(--text-1);padding:16px;
+  font-size:11px;transition:transform .2s var(--ease)}
+.overview .thumb:hover{transform:scale(1.04)}
+.overview .thumb .n{position:absolute;top:8px;left:10px;font-weight:700;font-size:14px;color:var(--text-3)}
+.overview .thumb .t{position:absolute;bottom:10px;left:14px;right:14px;font-weight:600;color:var(--text-1)}
+
+/* ================= PRESENTER VIEW ================= */
+/* Presenter view opens in a separate popup window (S key).
+ * All presenter styles are self-contained in the popup HTML generated by runtime.js.
+ * The audience window (this file) is NOT affected — it stays as normal deck view.
+ * Only the .notes class below is needed to hide speaker notes from audience. */
+
+/* ================= UTILITY ================= */
+.hidden{display:none!important}
+.nowrap{white-space:nowrap}
+.tr{text-align:right}.tc{text-align:center}.tl{text-align:left}
+.uppercase{text-transform:uppercase;letter-spacing:.12em}
+
+/* ================= PRINT ================= */
+@media print{
+  .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
+  .deck-header,.deck-footer,.progress-bar,.notes-overlay,.overview{display:none!important}
+}
+/* html-ppt :: animations.css
+ * Apply by adding class="anim-<name>" or data-anim="<name>".
+ * Durations are deliberately snappy; tweak --anim-dur per element.
+ */
+:root{--anim-dur:.7s;--anim-ease:cubic-bezier(.4,0,.2,1)}
+
+/* ---------- FADE DIRECTIONALS ---------- */
+@keyframes kf-fade-up{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-down{from{opacity:0;transform:translateY(-32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-left{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-right{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.anim-fade-up{animation:kf-fade-up var(--anim-dur) var(--anim-ease) both}
+.anim-fade-down{animation:kf-fade-down var(--anim-dur) var(--anim-ease) both}
+.anim-fade-left{animation:kf-fade-left var(--anim-dur) var(--anim-ease) both}
+.anim-fade-right{animation:kf-fade-right var(--anim-dur) var(--anim-ease) both}
+
+/* ---------- RISE / DROP / ZOOM / BLUR / GLITCH ---------- */
+@keyframes kf-rise{from{opacity:0;transform:translateY(60px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes kf-drop{from{opacity:0;transform:translateY(-60px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes kf-zoom{0%{opacity:0;transform:scale(.6)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes kf-blur{from{opacity:0;filter:blur(18px)}to{opacity:1;filter:none}}
+@keyframes kf-glitch{0%{opacity:0;transform:translateX(0);clip-path:inset(0 0 0 0)}
+  20%{opacity:1;transform:translateX(-6px);clip-path:inset(20% 0 30% 0)}
+  40%{transform:translateX(4px);clip-path:inset(50% 0 10% 0)}
+  60%{transform:translateX(-3px);clip-path:inset(10% 0 60% 0)}
+  80%{transform:translateX(2px);clip-path:inset(0 0 0 0)}
+  100%{opacity:1;transform:none}}
+.anim-rise-in{animation:kf-rise .9s var(--anim-ease) both}
+.anim-drop-in{animation:kf-drop .8s var(--anim-ease) both}
+.anim-zoom-pop{animation:kf-zoom .7s cubic-bezier(.22,1.3,.36,1) both}
+.anim-blur-in{animation:kf-blur .8s var(--anim-ease) both}
+.anim-glitch-in{animation:kf-glitch .8s steps(5,end) both}
+
+/* ---------- TYPEWRITER ---------- */
+.anim-typewriter{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid currentColor;
+  width:0;animation:kf-type 2.4s steps(40,end) forwards, kf-caret 1s step-end infinite}
+@keyframes kf-type{to{width:100%}}
+@keyframes kf-caret{50%{border-color:transparent}}
+
+/* ---------- GLOW / SHIMMER / GRADIENT-FLOW ---------- */
+@keyframes kf-neon{0%,100%{text-shadow:0 0 8px var(--accent),0 0 20px var(--accent)}
+  50%{text-shadow:0 0 16px var(--accent),0 0 40px var(--accent),0 0 80px var(--accent)}}
+.anim-neon-glow{animation:kf-neon 2s ease-in-out infinite}
+
+.anim-shimmer-sweep{position:relative;overflow:hidden}
+.anim-shimmer-sweep::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);
+  transform:translateX(-100%);animation:kf-shimmer 2.4s var(--anim-ease) infinite}
+@keyframes kf-shimmer{to{transform:translateX(100%)}}
+
+.anim-gradient-flow{background:linear-gradient(90deg,var(--accent),var(--accent-2,var(--accent)),var(--accent-3,var(--accent)),var(--accent));
+  background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:kf-gradflow 4s linear infinite}
+@keyframes kf-gradflow{to{background-position:300% 0}}
+
+/* ---------- STAGGER LIST ---------- */
+.anim-stagger-list > *{opacity:0;animation:kf-rise .65s var(--anim-ease) both}
+.anim-stagger-list > *:nth-child(1){animation-delay:.05s}
+.anim-stagger-list > *:nth-child(2){animation-delay:.15s}
+.anim-stagger-list > *:nth-child(3){animation-delay:.25s}
+.anim-stagger-list > *:nth-child(4){animation-delay:.35s}
+.anim-stagger-list > *:nth-child(5){animation-delay:.45s}
+.anim-stagger-list > *:nth-child(6){animation-delay:.55s}
+.anim-stagger-list > *:nth-child(7){animation-delay:.65s}
+.anim-stagger-list > *:nth-child(8){animation-delay:.75s}
+.anim-stagger-list > *:nth-child(n+9){animation-delay:.85s}
+
+/* ---------- COUNTER-UP (JS-driven, marker class only) ---------- */
+.counter{font-variant-numeric:tabular-nums}
+
+/* ---------- SVG PATH DRAW ---------- */
+.anim-path-draw path,.anim-path-draw line,.anim-path-draw polyline,.anim-path-draw circle,.anim-path-draw rect{
+  stroke-dasharray:1000;stroke-dashoffset:1000;animation:kf-draw 2s var(--anim-ease) forwards}
+@keyframes kf-draw{to{stroke-dashoffset:0}}
+
+/* ---------- PARALLAX TILT (hover) ---------- */
+.anim-parallax-tilt{transform-style:preserve-3d;transition:transform .4s var(--anim-ease)}
+.anim-parallax-tilt:hover{transform:perspective(900px) rotateX(6deg) rotateY(-8deg) translateZ(10px)}
+
+/* ---------- CARD FLIP 3D ---------- */
+@keyframes kf-flip{from{transform:perspective(1200px) rotateY(-90deg);opacity:0}
+  to{transform:perspective(1200px) rotateY(0);opacity:1}}
+.anim-card-flip-3d{animation:kf-flip .9s var(--anim-ease) both;transform-style:preserve-3d;backface-visibility:hidden}
+
+/* ---------- CUBE ROTATE 3D ---------- */
+@keyframes kf-cube{from{transform:perspective(1200px) rotateX(20deg) rotateY(-90deg) translateZ(-200px);opacity:0}
+  to{transform:perspective(1200px) rotateX(0) rotateY(0) translateZ(0);opacity:1}}
+.anim-cube-rotate-3d{animation:kf-cube 1s var(--anim-ease) both}
+
+/* ---------- PAGE TURN 3D ---------- */
+@keyframes kf-pageturn{from{transform:perspective(1600px) rotateY(-85deg);transform-origin:left center;opacity:0}
+  to{transform:perspective(1600px) rotateY(0);opacity:1}}
+.anim-page-turn-3d{animation:kf-pageturn 1s var(--anim-ease) both;transform-origin:left center}
+
+/* ---------- PERSPECTIVE ZOOM ---------- */
+@keyframes kf-pzoom{from{opacity:0;transform:perspective(1400px) translateZ(-400px) rotateX(12deg)}
+  to{opacity:1;transform:none}}
+.anim-perspective-zoom{animation:kf-pzoom 1s var(--anim-ease) both}
+
+/* ---------- MARQUEE SCROLL ---------- */
+.anim-marquee-scroll{display:flex;gap:48px;white-space:nowrap;animation:kf-marquee 20s linear infinite}
+@keyframes kf-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- KEN BURNS ---------- */
+@keyframes kf-kenburns{0%{transform:scale(1) translate(0,0)}100%{transform:scale(1.15) translate(-2%,-1%)}}
+.anim-kenburns{animation:kf-kenburns 14s ease-in-out infinite alternate}
+
+/* ---------- CONFETTI BURST (pseudo — pure CSS sparkles) ---------- */
+.anim-confetti-burst{position:relative}
+.anim-confetti-burst::before,.anim-confetti-burst::after{
+  content:"";position:absolute;top:50%;left:50%;width:8px;height:8px;border-radius:50%;
+  background:var(--accent);box-shadow:
+    20px -30px 0 var(--accent-2,var(--accent)),-25px -20px 0 var(--accent-3,var(--accent)),
+    30px 20px 0 var(--good,#1aaf6c),-30px 25px 0 var(--warn,#f5a524),
+    40px -10px 0 var(--bad,#e0445a),-45px 0 0 var(--accent),
+    10px 40px 0 var(--accent-2,var(--accent)),-15px -40px 0 var(--accent-3,var(--accent));
+  opacity:0;animation:kf-confetti 1.2s var(--anim-ease) forwards}
+.anim-confetti-burst::after{animation-delay:.15s;transform:rotate(45deg)}
+@keyframes kf-confetti{0%{opacity:0;transform:scale(.2)}30%{opacity:1}100%{opacity:0;transform:scale(2.2)}}
+
+/* ---------- SPOTLIGHT ---------- */
+@keyframes kf-spot{0%{clip-path:circle(0% at 50% 50%)}100%{clip-path:circle(140% at 50% 50%)}}
+.anim-spotlight{animation:kf-spot 1.1s var(--anim-ease) both}
+
+/* ---------- MORPH SHAPE (SVG) ---------- */
+.anim-morph-shape path{animation:kf-morph 6s ease-in-out infinite alternate}
+@keyframes kf-morph{0%{d:path("M60,120 Q120,20 180,120 T300,120")}
+  100%{d:path("M60,120 Q120,220 180,120 T300,120")}}
+
+/* ---------- RIPPLE REVEAL ---------- */
+@keyframes kf-ripple{0%{clip-path:circle(0% at 20% 80%);opacity:.4}
+  100%{clip-path:circle(160% at 20% 80%);opacity:1}}
+.anim-ripple-reveal{animation:kf-ripple 1.2s var(--anim-ease) both}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  [class*="anim-"]{animation:none!important;transition:none!important}
+}
+/* ===========================================================================
+   how-it-works deck theme — dark engineering, accent-parametrized
+   Set per deck on <body class="tpl-howto" style="--a1:..;--a2:..;--a3:..">
+   =========================================================================== */
+.tpl-howto{
+  --a1:#7ee787; --a2:#79c0ff; --a3:#d2a8ff;            /* fallbacks */
+  --bg:#0d1117; --bg-soft:#161b22; --surface:#161b22; --surface-2:#1c2230;
+  --border:rgba(139,148,158,.22); --border-strong:rgba(139,148,158,.42);
+  --text-1:#e6edf3; --text-2:#9aa6b2; --text-3:#6e7681;
+  --accent:var(--a1); --accent-2:var(--a2); --accent-3:var(--a3);
+  --good:#3fb950; --warn:#d29922; --bad:#f85149;
+  --grad:linear-gradient(120deg,var(--a1) 0%,var(--a2) 55%,var(--a3) 100%);
+  --radius:14px; --radius-lg:20px;
+  --shadow:0 20px 60px rgba(0,0,0,.5);
+  font-family:'Inter','Noto Sans SC',sans-serif;
+  background:#0d1117; color:var(--text-1);
+}
+.tpl-howto .deck{background:#0d1117}
+.tpl-howto .slide{padding:64px 88px;background:#0d1117;color:var(--text-1)}
+.tpl-howto .slide::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+   radial-gradient(58% 48% at 88% 8%,color-mix(in srgb,var(--a2) 14%,transparent),transparent 60%),
+   radial-gradient(52% 50% at 8% 92%,color-mix(in srgb,var(--a1) 10%,transparent),transparent 62%);}
+.tpl-howto .slide>*{position:relative;z-index:1}
+
+/* ---------- typography ---------- */
+.tpl-howto .h1{font-size:74px;line-height:1.04;font-weight:800;letter-spacing:-.03em;color:#fff}
+.tpl-howto .h2{font-size:50px;line-height:1.08;font-weight:700;letter-spacing:-.025em;color:#fff}
+.tpl-howto h3,.tpl-howto .h3{color:#fff;font-weight:600}
+.tpl-howto h4,.tpl-howto .h4{color:#fff;font-weight:600}
+.tpl-howto .lede{color:var(--text-2);font-weight:300}
+.tpl-howto .dim{color:var(--text-2)} .tpl-howto .dim2{color:var(--text-3)}
+.tpl-howto .mono{font-family:'JetBrains Mono','IBM Plex Mono',monospace}
+.tpl-howto .gradient-text,.tpl-howto .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.tpl-howto .kicker{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;text-transform:none;letter-spacing:.02em}
+.tpl-howto .kicker::before{content:"// "}
+.tpl-howto .kicker.run::before{content:"> "}
+.tpl-howto .divider-accent{height:3px;width:64px;background:var(--grad);border-radius:2px}
+
+/* ---------- cards ---------- */
+.tpl-howto .card{background:var(--surface);border:1px solid var(--border);box-shadow:none;border-radius:var(--radius)}
+.tpl-howto .card-accent{border-top:3px solid var(--accent)}
+.tpl-howto .card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.tpl-howto .card h4{margin-bottom:8px}
+.tpl-howto .card p{font-size:15px;line-height:1.6}
+.tpl-howto .num-badge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;
+  background:color-mix(in srgb,var(--a1) 16%,transparent);color:var(--accent);font-weight:800;font-family:'JetBrains Mono',monospace;font-size:16px;border:1px solid color-mix(in srgb,var(--a1) 30%,transparent)}
+
+/* ---------- tags / pills / kbd ---------- */
+.tpl-howto .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:7px;font-family:'JetBrains Mono',monospace;
+  font-size:12px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)}
+.tpl-howto .tag.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent);background:color-mix(in srgb,var(--good) 12%,transparent)}
+.tpl-howto .tag.no{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.tpl-howto .tag.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent)}
+.tpl-howto .pill{background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.tpl-howto .pill-accent{background:color-mix(in srgb,var(--a1) 14%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--a1) 32%,transparent)}
+.tpl-howto kbd,.tpl-howto .kbd{font-family:'JetBrains Mono',monospace;font-size:13px;padding:3px 10px;border-radius:7px;
+  background:color-mix(in srgb,var(--a1) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--a1) 30%,transparent);white-space:nowrap}
+
+/* ---------- terminal / code ---------- */
+.tpl-howto .terminal{background:#010409;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:14.5px;line-height:1.7}
+.tpl-howto .terminal .bar{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#161b22;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-3)}
+.tpl-howto .terminal .dot{width:11px;height:11px;border-radius:50%;background:#ff5f56}
+.tpl-howto .terminal .dot:nth-child(2){background:#ffbd2e}
+.tpl-howto .terminal .dot:nth-child(3){background:#27c93f}
+.tpl-howto .terminal pre{margin:0;padding:22px 26px;color:#e6edf3;overflow:auto;max-height:520px;white-space:pre-wrap}
+.tpl-howto .terminal .p{color:var(--accent);font-weight:600}   /* prompt $ */
+.tpl-howto .terminal .c{color:#e6edf3}                          /* command */
+.tpl-howto .terminal .o{color:var(--text-2)}                    /* output */
+.tpl-howto .kw{color:#ff7b72} .tpl-howto .fn{color:#d2a8ff} .tpl-howto .str{color:#a5d6ff}
+.tpl-howto .cmt{color:#6e7681;font-style:italic} .tpl-howto .num{color:#79c0ff}
+.tpl-howto .caret{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;animation:hb-blink 1s step-end infinite}
+@keyframes hb-blink{50%{opacity:0}}
+
+/* ---------- agenda rows ---------- */
+.tpl-howto .agenda-row{display:flex;align-items:baseline;gap:22px;padding:15px 0;border-bottom:1px dashed var(--border);font-family:'JetBrains Mono',monospace}
+.tpl-howto .agenda-row .anum{color:var(--accent);flex:none;width:42px}
+.tpl-howto .agenda-row .at{color:#fff;font-size:22px;flex:1;font-family:'Inter',sans-serif;font-weight:600}
+.tpl-howto .agenda-row .ad{color:var(--text-3);font-size:12px}
+
+/* ---------- numbered steps (process) ---------- */
+.tpl-howto .steps{display:grid;gap:20px;margin-top:34px}
+.tpl-howto .steps.s2{grid-template-columns:repeat(2,1fr)}
+.tpl-howto .steps.s3{grid-template-columns:repeat(3,1fr)}
+.tpl-howto .steps.s4{grid-template-columns:repeat(4,1fr)}
+.tpl-howto .step{position:relative;padding:24px 22px 20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+.tpl-howto .step .num{position:absolute;top:-18px;left:20px;width:40px;height:40px;border-radius:11px;background:var(--grad);color:#03121a;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;font-family:'JetBrains Mono',monospace}
+.tpl-howto .step h4{margin:14px 0 7px;font-size:17px}
+.tpl-howto .step p{font-size:13.5px;color:var(--text-2);line-height:1.55}
+
+/* ---------- vertical stage flow ---------- */
+.tpl-howto .flow{display:flex;flex-direction:column;gap:0;margin-top:24px}
+.tpl-howto .flow .stage{display:grid;grid-template-columns:46px 1fr;gap:18px;padding:14px 0;align-items:start}
+.tpl-howto .flow .stage .sx{width:46px;height:46px;border-radius:12px;background:color-mix(in srgb,var(--a1) 14%,transparent);
+  border:1px solid color-mix(in srgb,var(--a1) 34%,transparent);color:var(--accent);display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-family:'JetBrains Mono',monospace;font-size:17px}
+.tpl-howto .flow .stage h4{font-size:19px;margin-bottom:3px}
+.tpl-howto .flow .stage p{font-size:14px;color:var(--text-2);line-height:1.55;margin:0}
+.tpl-howto .flow .stage+.stage{border-top:1px dashed var(--border)}
+
+/* ---------- comparison (manual pain vs craft / do vs dont) ---------- */
+.tpl-howto .vs{display:grid;grid-template-columns:1fr 64px 1fr;gap:22px;align-items:stretch;margin-top:26px}
+.tpl-howto .vs .side{padding:26px 28px}
+.tpl-howto .vs .mid{font-size:42px;font-weight:800;color:var(--text-3);display:flex;align-items:center;justify-content:center}
+.tpl-howto .vs .bad-side{border-top:3px solid var(--bad)}
+.tpl-howto .vs .good-side{border-top:3px solid var(--good)}
+.tpl-howto .vs h3{font-size:21px;margin-bottom:12px}
+.tpl-howto .vs ul{padding-left:18px;margin:0;font-size:14.5px;line-height:1.75;color:var(--text-2)}
+.tpl-howto .vs .bad-side li::marker{color:var(--bad)}
+.tpl-howto .vs .good-side li::marker{color:var(--good)}
+
+/* ---------- callout / note box ---------- */
+.tpl-howto .callout{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--a1) 7%,transparent);
+  padding:18px 22px;border-radius:0 10px 10px 0;margin-top:20px}
+.tpl-howto .callout h4{font-size:16px;margin-bottom:5px;color:var(--accent)}
+.tpl-howto .callout p{font-size:15px;color:var(--text-2);line-height:1.6;margin:0}
+.tpl-howto .callout.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent)}
+.tpl-howto .callout.warn h4{color:var(--warn)}
+
+/* ---------- decision / data table ---------- */
+.tpl-howto .dtable{width:100%;border-collapse:collapse;margin-top:24px;font-size:15px}
+.tpl-howto .dtable th{text-align:left;padding:12px 16px;color:var(--text-3);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-strong)}
+.tpl-howto .dtable td{padding:13px 16px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top}
+.tpl-howto .dtable tr:last-child td{border-bottom:none}
+.tpl-howto .dtable td b,.tpl-howto .dtable td strong{color:#fff;font-weight:600}
+
+/* ---------- bullet list (clean) ---------- */
+.tpl-howto .blist{list-style:none;padding:0;margin:22px 0 0}
+.tpl-howto .blist li{position:relative;padding:9px 0 9px 30px;font-size:17px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
+.tpl-howto .blist li:last-child{border-bottom:none}
+.tpl-howto .blist li::before{content:"▸";position:absolute;left:4px;top:9px;color:var(--accent);font-weight:700}
+.tpl-howto .blist li b{color:#fff;font-weight:600}
+
+/* ---------- speaker / cover meta ---------- */
+.tpl-howto .speaker{display:flex;align-items:center;gap:14px;margin-top:26px}
+.tpl-howto .speaker .av{width:50px;height:50px;border-radius:13px;background:var(--grad)}
+.tpl-howto .speaker b{display:block;color:#fff;font-size:17px}
+.tpl-howto .speaker span{color:var(--text-3);font-size:12.5px;font-family:'JetBrains Mono',monospace}
+
+/* ---------- section divider ---------- */
+.tpl-howto .slide.divider{justify-content:center;height:auto}
+.tpl-howto .part-no{font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent);letter-spacing:.1em}
+.tpl-howto .slide.divider .h1{font-size:64px;margin-top:10px;max-width:20ch}
+.tpl-howto .slide.divider .lede{margin-top:26px;font-size:20px}
+
+/* ---------- big stat ---------- */
+.tpl-howto .bigstat{font-size:180px;font-weight:900;line-height:1;letter-spacing:-.04em}
+
+/* ---------- footer ---------- */
+.tpl-howto .deck-footer .mono{color:var(--text-3)}
+.tpl-howto .slide-number{color:var(--text-3)}
+
+/* fix: cover .speaker must not collide with the absolute .deck-footer */
+.tpl-howto .slide:has(> .speaker){padding-bottom:160px}
+.tpl-howto .slide .speaker{position:absolute;left:88px;right:88px;bottom:70px;margin-top:0;z-index:3}</style>
+<style>
+/* ===== defect-management :: extra components (quiz, lifecycle, metric cards) ===== */
+.tpl-howto .lifecycle{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:22px}
+.tpl-howto .lstate{padding:9px 15px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:600;border:1px solid;white-space:nowrap}
+.tpl-howto .lstate.new{color:var(--text-1);background:var(--surface-2);border-color:var(--border-strong)}
+.tpl-howto .lstate.prog{color:var(--warn);background:color-mix(in srgb,var(--warn) 13%,transparent);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+.tpl-howto .lstate.good{color:var(--good);background:color-mix(in srgb,var(--good) 13%,transparent);border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+.tpl-howto .lstate.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
+.tpl-howto .arr{color:var(--text-3);font-weight:700;font-size:15px}
+
+/* triage fan */
+.tpl-howto .triage{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.tpl-howto .tnode{padding:13px 16px;border:1px solid var(--border);border-radius:11px;background:var(--surface)}
+.tpl-howto .tnode .tt{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:5px}
+.tpl-howto .tnode .ts{font-size:13.5px;color:var(--text-2);line-height:1.5}
+.tpl-howto .tnode b{color:#fff;font-weight:600}
+
+/* horizontal bar chart (real data) */
+.tpl-howto .bars{display:grid;gap:11px;margin-top:22px}
+.tpl-howto .barrow{display:grid;grid-template-columns:150px 1fr 48px;align-items:center;gap:14px;font-size:14px}
+.tpl-howto .barrow .bl{color:var(--text-2);font-family:'JetBrains Mono',monospace;font-size:13px;text-align:right}
+.tpl-howto .barrow .bt{height:22px;border-radius:6px;background:var(--grad);min-width:3px}
+.tpl-howto .barrow .bt.muted{background:var(--surface-2);border:1px solid var(--border-strong)}
+.tpl-howto .barrow .bn{color:#fff;font-weight:700;font-family:'JetBrains Mono',monospace;font-size:14px}
+
+/* metric stat cards */
+.tpl-howto .mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
+.tpl-howto .mcard{padding:20px;border:1px solid var(--border);border-radius:14px;background:var(--surface);border-top:3px solid var(--accent)}
+.tpl-howto .mcard .mv{font-size:40px;font-weight:900;line-height:1;letter-spacing:-.03em}
+.tpl-howto .mcard .mk{font-size:13px;color:var(--text-3);margin-top:8px;font-family:'JetBrains Mono',monospace}
+.tpl-howto .mcard .md{font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.5}
+
+/* ===== QUIZ ===== */
+.tpl-howto .quiz{margin-top:18px}
+.tpl-howto .qitem{margin-bottom:18px}
+.tpl-howto .qq{font-size:19px;font-weight:600;color:#fff;margin-bottom:12px;display:flex;gap:12px;line-height:1.4}
+.tpl-howto .qq .qn{flex:none;color:var(--accent);font-family:'JetBrains Mono',monospace}
+.tpl-howto .opts{display:grid;gap:9px}
+.tpl-howto .opt{display:flex;align-items:center;gap:13px;padding:12px 17px;border:1px solid var(--border);border-radius:11px;background:var(--surface);cursor:pointer;font-size:15px;color:var(--text-2);transition:border-color .15s,background .15s,color .15s}
+.tpl-howto .opt:hover{border-color:var(--border-strong);color:#fff}
+.tpl-howto .opt .mk{flex:none;width:26px;height:26px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-2)}
+.tpl-howto .opt.correct{border-color:var(--good);background:color-mix(in srgb,var(--good) 15%,transparent);color:#fff}
+.tpl-howto .opt.correct .mk{background:var(--good);border-color:var(--good);color:#03130b}
+.tpl-howto .opt.reveal-correct{border-color:var(--good);color:#fff}
+.tpl-howto .opt.reveal-correct .mk{background:var(--good);border-color:var(--good);color:#03130b}
+.tpl-howto .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent);color:#fff}
+.tpl-howto .opt.wrong .mk{background:var(--bad);border-color:var(--bad);color:#190405}
+.tpl-howto .qitem.answered .opt{cursor:default}
+.tpl-howto .qexp{margin-top:11px;font-size:14px;color:var(--text-2);border-left:3px solid var(--good);padding:11px 16px;background:color-mix(in srgb,var(--good) 7%,transparent);border-radius:0 9px 9px 0;display:none;line-height:1.6}
+.tpl-howto .qitem.answered .qexp{display:block}
+.tpl-howto .qexp b{color:#fff}
+.tpl-howto .qhint{font-size:13px;color:var(--text-3);font-family:'JetBrains Mono',monospace;margin-top:6px}
+
+/* ===== naming anatomy — segmented title ===== */
+.tpl-howto .nameline{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin-top:24px;font-family:'JetBrains Mono',monospace}
+.tpl-howto .seg{display:flex;flex-direction:column;gap:5px;align-items:center;padding:12px 16px;border-radius:11px;border:1px solid;text-align:center}
+.tpl-howto .seg .sv{font-size:18px;font-weight:700;color:#fff}
+.tpl-howto .seg .sl{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;font-family:'Inter',sans-serif}
+.tpl-howto .seg.id{border-color:color-mix(in srgb,var(--a2) 45%,transparent);background:color-mix(in srgb,var(--a2) 12%,transparent)}
+.tpl-howto .seg.id .sl{color:var(--a2)}
+.tpl-howto .seg.tc{border-color:color-mix(in srgb,var(--a1) 45%,transparent);background:color-mix(in srgb,var(--a1) 12%,transparent)}
+.tpl-howto .seg.tc .sl{color:var(--a1)}
+.tpl-howto .seg.core{border-color:color-mix(in srgb,var(--a3) 45%,transparent);background:color-mix(in srgb,var(--a3) 12%,transparent)}
+.tpl-howto .seg.core .sl{color:var(--a3)}
+.tpl-howto .seg.cond{border-color:var(--border-strong);background:var(--surface-2)}
+.tpl-howto .seg.cond .sl{color:var(--text-3)}
+.tpl-howto .seg .vstop{color:var(--text-3);font-weight:700;align-self:center;font-size:20px;display:flex;align-items:center}
+.tpl-howto .sep{color:var(--text-3);font-weight:700;font-size:20px;display:flex;align-items:center}
+
+/* gherkin keyword tint reuse: Given/When/Then via .gk */
+.tpl-howto .gk{color:#56d4dd;font-weight:600}
+.tpl-howto .tag-g{color:#d2a8ff}
+
+/* ===== PART C :: horizontal centering (match reference automation decks) =====
+   Big screens left an awkward right gap because content stretched full-width.
+   Center each in-flow block and cap its width → balanced, centered layout.
+   Absolutely-positioned chrome (footer, speaker, notes) is excluded. */
+.tpl-howto .slide{align-items:center}
+.tpl-howto .slide > *:not(.deck-footer):not(.deck-header):not(.notes):not(.speaker){
+  width:100%;max-width:1360px;margin-left:auto;margin-right:auto}
+.tpl-howto .slide.center > *:not(.deck-footer):not(.notes):not(.speaker),
+.tpl-howto .slide.divider > *:not(.deck-footer):not(.notes):not(.speaker){max-width:1120px}
+</style>
+</head>
+<body class="tpl-howto" style="--a1:#f5b942;--a2:#e879f9;--a3:#22d3ee">
+<div class="deck">
+
+<!-- 1. COVER -->
+<section class="slide" data-title="Portada">
+  <p class="kicker run">how-it-works · agentic-qa · sprint-testing</p>
+  <h1 class="h1 anim-fade-up" data-anim="fade-up">La <span class="grad">Trifuerza</span> — Probar Features por Capas</h1>
+  <p class="lede mt-m">UI · API · DB. Pruebes lo que pruebes en una feature o historia de usuario, piensas SIEMPRE en las tres capas: una pantalla verde puede esconder una API rota y un trigger que falla en silencio. Smoke primero, luego las tres capas, con sondas de seguridad e integridad.</p>
+  <div class="speaker"><div class="av"></div><div><b>Smoke → UI → API → DB</b><span>Tu lente al probar cualquier feature en el sprint</span></div></div>
+  <div class="deck-footer"><span class="mono">Playwright · OpenAPI · DBHub · /sprint-testing</span><span class="slide-number" data-current="1" data-total="35"></span></div>
+  <div class="notes">Encuadre: la Trifuerza no es una técnica exclusiva de testing exploratorio — es el lente con el que pruebas CUALQUIER feature o historia de usuario. Cada vez que validas una funcionalidad, piensas en sus tres capas. Las tres fuerzas: UI (oro), API (magenta), DB (cian).</div>
+</section>
+
+<!-- 2. STAT HOOK -->
+<section class="slide center tc" data-title="Stat gancho">
+  <div>
+    <p class="kicker">la verdad que duele</p>
+    <div class="bigstat"><span class="grad">201 ≠ DB ✓</span></div>
+    <h3>Un <b>201 Created</b> no prueba que la base de datos quedó correcta — los triggers pueden no ejecutarse en silencio. La capa que <b>responde</b> bien no es la capa que <b>persiste</b> bien. Por eso se prueban las tres.</h3>
+  </div>
+  <div class="notes">La regla cross-layer más importante: un 201 no prueba persistencia correcta. La pantalla verde, el status code OK y la fila en DB son tres verdades distintas. La Trifuerza existe para no confundirlas.</div>
+</section>
+
+<!-- 3. AGENDA -->
+<section class="slide" data-title="Agenda">
+  <p class="kicker">qué cubriremos</p>
+  <h2 class="h2" data-anim="fade-up">Probar Toda Feature, por Capas</h2>
+  <div class="stack mt-l anim-stagger-list">
+    <div class="agenda-row"><span class="anum">00</span><span class="at">Ejes del testing — capas (la Trifuerza) vs niveles vs tipos, y cómo se cruzan</span><span class="ad">el marco</span></div>
+    <div class="agenda-row"><span class="anum">01</span><span class="at">Smoke first — el gate Go/No-Go que valida el ambiente antes de probar a fondo</span><span class="ad">el gate</span></div>
+    <div class="agenda-row"><span class="anum">02</span><span class="at">Capa UI — el loop por AC, edge cases, transiciones inválidas, DevTools</span><span class="ad">oro</span></div>
+    <div class="agenda-row"><span class="anum">03</span><span class="at">Capa API — la matriz de status codes y la sonda de RLS A/B</span><span class="ad">magenta</span></div>
+    <div class="agenda-row"><span class="anum">04</span><span class="at">Capa DB — sondas de constraints, barridos de integridad, RLS en SQL</span><span class="ad">cian</span></div>
+    <div class="agenda-row"><span class="anum">05</span><span class="at">Disciplina — triage bloqueante/no-bloqueante, TTL, sin NOT RUN, evidencia</span><span class="ad">el oficio</span></div>
+  </div>
+  <p class="qhint mt-l">3 quizzes interactivos a lo largo del recorrido — haz clic en las respuestas.</p>
+  <div class="notes">Seis partes: el marco de ejes (capas vs niveles vs tipos), el gate de smoke, las tres capas (UI/API/DB) y la disciplina transversal. El corazón es entender qué prueba cada capa — y que las capas se atraviesan SIEMPRE, sin importar el nivel o tipo de prueba.</div>
+</section>
+
+<!-- 4. TRIFORCE MODEL -->
+<section class="slide" data-title="Modelo Trifuerza">
+  <p class="kicker">el modelo</p>
+  <h2 class="h2" data-anim="fade-up">Tres Capas, Tres Verdades</h2>
+  <div class="grid g3 mt-m">
+    <div class="card" style="border-top:3px solid #f5b942"><h4 style="color:#f5b942">UI</h4><p class="dim">Lo que el usuario ve. ¿Renderiza, fluye, da feedback? Puede mostrar datos cacheados o mock.</p></div>
+    <div class="card" style="border-top:3px solid #e879f9"><h4 style="color:#e879f9">API</h4><p class="dim">El contrato. ¿Status correcto, schema válido, auth y RLS? El 2xx no garantiza la DB.</p></div>
+    <div class="card" style="border-top:3px solid #22d3ee"><h4 style="color:#22d3ee">DB</h4><p class="dim">La verdad persistida. ¿La fila existe, el trigger corrió, los constraints aguantan?</p></div>
+  </div>
+  <table class="dtable mt-l" style="font-size:14px">
+    <thead><tr><th>Tipo de feature</th><th>Orden de capas</th></tr></thead>
+    <tbody>
+      <tr><td>UI-focused</td><td><span class="mono">UI → API → DB</span></td></tr>
+      <tr><td>API-first</td><td><span class="mono">API → DB → UI</span></td></tr>
+      <tr><td>Data-focused</td><td><span class="mono">DB → API → UI</span></td></tr>
+      <tr><td>Full-stack</td><td><span class="mono">las tres</span></td></tr>
+    </tbody>
+  </table>
+  <div class="notes">El orden de capas lo decide el tipo de feature. UI-focused empieza por UI; data-focused por DB. Smoke siempre va primero, antes de cualquier capa.</div>
+</section>
+
+<!-- 5. TESTING AXES — LAYERS vs LEVELS vs TYPES -->
+<section class="slide" data-title="Ejes del testing">
+  <p class="kicker">tres ejes, no uno</p>
+  <h2 class="h2" data-anim="fade-up">Capas · Niveles · Tipos</h2>
+  <p class="lede mt-s">La Trifuerza es UN eje: <b>las capas — dónde sondeas</b> (UI · API · DB). Es <b>ortogonal</b> a otros dos ejes que el tester decide en cada prueba. No compiten: se combinan.</p>
+  <div class="grid g3 mt-m">
+    <div class="card card-accent" style="border-top-color:#f5b942"><h4 style="color:#f5b942">Capas — ¿dónde sondeas?</h4><p class="dim"><b>La Trifuerza.</b> UI · API · DB. Cada feature se atraviesa por sus tres capas, siempre.</p></div>
+    <div class="card card-accent" style="border-top-color:#e879f9"><h4 style="color:#e879f9">Niveles — ¿qué alcance?</h4><p class="dim">component → integration → end-to-end (e2e). Cuánto del sistema entra en la prueba.</p></div>
+    <div class="card card-accent" style="border-top-color:#22d3ee"><h4 style="color:#22d3ee">Tipos — ¿con qué intención?</h4><p class="dim">funcional · regresión · smoke · seguridad · performance · usabilidad…</p></div>
+  </div>
+  <div class="callout mt-m"><h4>Cómo se cruzan</h4><p>Una misma historia de usuario se prueba <b>eligiendo un nivel y un tipo</b> — pero <b>SIEMPRE atravesando las tres capas</b>. Ej.: un e2e funcional del checkout y una prueba de seguridad de la API distinta en nivel y tipo, idénticas en que ambas piensan UI/API/DB.</p></div>
+  <div class="notes">El marco mental clave: la Trifuerza es el eje de CAPAS (dónde), ortogonal a NIVELES (alcance: component/integration/e2e) y TIPOS (intención: funcional/regresión/smoke/seguridad/performance/usabilidad). El tester elige nivel + tipo por prueba, pero las tres capas se atraviesan siempre. Esto evita el malentendido de que la Trifuerza es solo para exploratorio.</div>
+</section>
+
+<!-- 6. DIVIDER PART 1 — SMOKE -->
+<section class="slide divider" data-title="Smoke">
+  <div>
+    <p class="part-no">EL GATE</p>
+    <h1 class="h1">Smoke First<br><span class="grad">Valida el Ambiente, no la Feature</span></h1>
+    <p class="lede">5-10 minutos de Go/No-Go. Nunca entres a probar a fondo hasta que el smoke pase. Un ambiente roto produce reportes de bug falsos.</p>
+  </div>
+  <div class="notes">Smoke es obligatorio y primero. Valida que el ambiente esté vivo, no que la feature funcione — son preguntas distintas, ambas necesarias.</div>
+</section>
+
+<!-- 7. SMOKE CHECKLIST -->
+<section class="slide" data-title="Smoke checklist">
+  <p class="kicker">en orden, ≤10 min</p>
+  <h2 class="h2" data-anim="fade-up">El Checklist de Smoke</h2>
+  <div class="flow mt-m">
+    <div class="stage"><div class="sx">1</div><div><h4>Acceso básico</h4><p>La app carga, sin 500, assets renderizan, consola sin errores rojos (warnings amarillos OK).</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>Autenticación</h4><p>Login, la sesión persiste al refrescar, logout funciona (saltar si el ticket es pre-auth).</p></div></div>
+    <div class="stage"><div class="sx">3</div><div><h4>Happy path</h4><p>El flujo primario del ticket de punta a punta, 3-5 pasos, marca cada uno al funcionar.</p></div></div>
+    <div class="stage"><div class="sx">4</div><div><h4>Integración backend</h4><p>Network tab durante el happy path: todas las llamadas <span class="mono">/api/*</span> en 2xx, los datos persisten tras F5.</p></div></div>
+  </div>
+  <div class="callout warn mt-m"><h4>SIEMPRE revisa el Network tab — aunque la UI se vea bien</h4><p>La UI puede renderizar datos cacheados o mock. La red no miente: si la UI muestra algo pero no hubo llamada 2xx, no confíes en la pantalla.</p></div>
+  <div class="notes">4 pasos en orden. El paso 4 es clave: la UI puede engañar con cache/mock; el Network tab revela la verdad. Siempre revisar la red.</div>
+</section>
+
+<!-- 8. SMOKE VERDICT + RESTRICTIONS -->
+<section class="slide" data-title="Smoke verdict">
+  <p class="kicker">el veredicto y sus reglas</p>
+  <h2 class="h2" data-anim="fade-up">Go / No-Go</h2>
+  <div class="vs">
+    <div class="card good-side">
+      <h3>✓ PASS → continúa</h3>
+      <ul>
+        <li>Registra <span class="mono">Smoke: PASSED</span> en memory</li>
+        <li>Procede a UI / API / DB</li>
+        <li>Captura evidencia del home</li>
+      </ul>
+    </div>
+    <div class="mid">vs</div>
+    <div class="card bad-side">
+      <h3>✗ FAIL → STOP</h3>
+      <ul>
+        <li>Es un bloqueante de ambiente</li>
+        <li>Triagea primero (NO auto-Critical)</li>
+        <li>Surfacea al usuario, NO pruebes a fondo</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout mt-m"><h4>Las restricciones del smoke</h4><p>Durante el smoke: <b>no</b> corras edge cases ni negativos · <b>no</b> abras bugs menores (solo bloqueantes) · <b>no</b> excedas 10 minutos. El smoke detecta bloqueantes, no documenta calidad.</p></div>
+  <div class="notes">PASS→continúa, FAIL→STOP (bloqueante de ambiente, triagea sin auto-Critical). Restricciones: solo bloqueantes, sin edge cases, ≤10min. Reportar bugs falsos por un ambiente roto es el peor desperdicio.</div>
+</section>
+
+<!-- 9. SMOKE != DEEP -->
+<section class="slide" data-title="Smoke vs deep">
+  <p class="kicker">dos preguntas distintas</p>
+  <h2 class="h2" data-anim="fade-up">Smoke ≠ Testing Profundo de la Feature</h2>
+  <div class="grid g2 mt-m">
+    <div class="card card-accent"><h4>Smoke pregunta…</h4><p class="dim" style="font-size:18px">"¿El <b>ambiente</b> está vivo?" — ¿carga, autentica, persiste el happy path? Si no, todo lo demás es ruido.</p></div>
+    <div class="card card-accent"><h4>La Trifuerza pregunta…</h4><p class="dim" style="font-size:18px">"¿La <b>feature</b> funciona bien?" — ¿cumple los ACs, aguanta edge cases, es segura e íntegra en sus tres capas?</p></div>
+  </div>
+  <div class="callout warn mt-m"><h4>El orden importa</h4><p>Un ambiente roto produce <b>reportes de bug falsos</b>. Si smoke falla y pruebas igual, vas a reportar "bugs" que en realidad son el ambiente caído. Smoke valida el ambiente; la Trifuerza valida la feature. Primero uno, luego la otra.</p></div>
+  <div class="notes">Anti-patrón S7: nunca saltar el smoke antes de la trifuerza. Son preguntas distintas — ambiente vs feature. El reachability gate (Stage Start) es aún anterior: ¿el env responde? Tres gates, tres preguntas.</div>
+</section>
+
+<!-- 10. DIVIDER PART 2 — UI -->
+<section class="slide divider" data-title="Capa UI">
+  <div>
+    <p class="part-no" style="color:#f5b942">CAPA 01 · UI</p>
+    <h1 class="h1">La Capa <span style="color:#f5b942">UI</span><br>Lo que el Usuario Ve</h1>
+    <p class="lede">Valida los ACs, descubre edge cases, captura evidencia — y desconfía de la pantalla: puede esconder un fallo de la capa de abajo.</p>
+  </div>
+  <div class="notes">UI = oro. El loop por AC + edge cases + transiciones inválidas + reglas de DevTools.</div>
+</section>
+
+<!-- 11. UI SCENARIO LOOP -->
+<section class="slide" data-title="UI loop">
+  <p class="kicker">el loop por cada AC</p>
+  <h2 class="h2" data-anim="fade-up">Navega → Observa → Captura</h2>
+  <div class="flow mt-s">
+    <div class="stage"><div class="sx">1</div><div><h4>Navega + snapshot</h4><p>Abre la URL de inicio, captura la estructura del DOM / árbol de accesibilidad.</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>Ejecuta + observa</h4><p>Acciones del happy path paso a paso. ¿Resultado esperado? ¿estado UI raro? ¿consola roja? ¿red 4xx/5xx?</p></div></div>
+    <div class="stage"><div class="sx">3</div><div><h4>Captura + propaga estado</h4><p>Screenshot en el estado clave (<span class="mono">{KEY}-{n}-ac{N}-desc.png</span>) y marca el outline PASSED/FAILED en memory.</p></div></div>
+  </div>
+  <div class="callout warn mt-m"><h4>Reglas de DevTools</h4><p>Consola: <b>rojo = log</b> (amarillo OK). Red: filas <b>rojas (4xx/5xx) siempre se anotan</b> aunque la UI se vea bien — la UI puede enmascarar un fallo de API. &gt;5s de carga = hallazgo de Performance. Desactiva el cache.</p></div>
+  <div class="notes">El loop: navegar→snapshot→ejecutar→observar(consola+red)→capturar→propagar estado. La regla de oro de DevTools: las filas rojas de red siempre cuentan, aunque la UI se vea verde.</div>
+</section>
+
+<!-- 12. UI EDGE-CASE CHECKLIST -->
+<section class="slide" data-title="UI edge cases">
+  <p class="kicker">el checklist por input / interacción</p>
+  <h2 class="h2" data-anim="fade-up">Edge Cases de la Capa UI</h2>
+  <table class="dtable mt-s" style="font-size:14px">
+    <thead><tr><th>Categoría</th><th>Qué probar</th></tr></thead>
+    <tbody>
+      <tr><td><b>Boundary (BVA)</b></td><td>vacío · <span class="mono">min-1·min·min+1</span> · <span class="mono">max-1·max·max+1</span> · 0 / -1 / MAX_INT · especiales <span class="mono">&lt;script&gt;</span>, <span class="mono">'; DROP TABLE</span></td></tr>
+      <tr><td><b>UI / sesión</b></td><td>refrescar a mitad de flujo · botón atrás · pestañas duplicadas · timeout / idle</td></tr>
+      <tr><td><b>Estado / transición</b></td><td>cada transición válida, luego una que el estado debe <b>rechazar</b></td></tr>
+      <tr><td><b>Validación de datos</b></td><td>email inválido · password débil · doble submit · edición concurrente</td></tr>
+      <tr><td><b>Visual</b></td><td>breakpoints responsive · loading states · layouts rotos · elementos solapados</td></tr>
+    </tbody>
+  </table>
+  <div class="callout mt-m"><h4>Si al probar encuentras un caso nuevo…</h4><p>…que el ATP de Stage 1 no derivó (una partición, un boundary, una transición), <b>añádelo de vuelta</b> al set de outlines. La cobertura es el piso (ACs) <b>más</b> esta capa de riesgo, no el testing improvisado en lugar de la planificación.</p></div>
+  <div class="notes">El checklist de edge cases UI. Los caracteres especiales (script/DROP TABLE) son sondas de seguridad básicas. Lo encontrado se realimenta al plan, no reemplaza al plan.</div>
+</section>
+
+<!-- 13. INVALID STATE TRANSITIONS -->
+<section class="slide" data-title="Transiciones inválidas">
+  <p class="kicker">donde se esconden los defectos</p>
+  <h2 class="h2" data-anim="fade-up">Transiciones Inválidas — el Punto Ciego</h2>
+  <p class="lede mt-s">Para cualquier entidad con estado (draft→submitted→approved, cart→paid→shipped): dispara cada transición <b>válida</b>, luego dispara una que el estado actual <b>debería rechazar</b>.</p>
+  <div class="lifecycle mt-l">
+    <span class="lstate new">draft</span><span class="arr">→</span>
+    <span class="lstate prog">submitted</span><span class="arr">→</span>
+    <span class="lstate good">approved</span><span class="arr">→</span>
+    <span class="lstate bad">closed</span>
+  </div>
+  <div class="lifecycle mt-m">
+    <span class="dim2 mono" style="font-size:13px">la sonda:</span>
+    <span class="lstate bad">approve(closed) → ¿rechazado?</span>
+    <span class="dim2 mono" style="font-size:13px">un 200 silencioso sin cambio de estado = bug</span>
+  </div>
+  <div class="callout warn mt-m"><h4>El happy path casi siempre funciona</h4><p>Lo que rompe es cuando alguien intenta hacer lo que el negocio no permite — aprobar algo ya cerrado, cancelar algo ya enviado. <b>Las transiciones inválidas son donde viven los bugs de máquina de estados.</b></p></div>
+  <div class="notes">Conecta con la técnica State-Transition: 1 TC por transición inválida. El bug típico: un 200 OK silencioso que no cambia nada deja al usuario confundido.</div>
+</section>
+
+<!-- 14. ESCALATE TO API/DB -->
+<section class="slide" data-title="Escalar capas">
+  <p class="kicker">cuándo bajar una capa</p>
+  <h2 class="h2" data-anim="fade-up">Cuándo Escalar a API / DB</h2>
+  <div class="grid g3 mt-m">
+    <div class="card card-accent"><h4>UI renderiza pero el dato se ve mal</h4><p class="dim">→ baja a <b style="color:#22d3ee">§DB</b> para confirmar qué se persistió de verdad.</p></div>
+    <div class="card card-accent"><h4>Un botón dispara un request non-2xx</h4><p class="dim">→ baja a <b style="color:#e879f9">§API</b> para reproducir la llamada directamente.</p></div>
+    <div class="card card-accent"><h4>Sospecha de RLS — ves filas que no deberías</h4><p class="dim">→ baja a <b style="color:#e879f9">§API</b> <b>y</b> <b style="color:#22d3ee">§DB</b> ambas.</p></div>
+  </div>
+  <div class="callout mt-m"><h4>La UI es el síntoma, no el diagnóstico</h4><p>Cuando algo se ve mal arriba, la causa casi siempre está abajo. Escalar de capa es cómo pasas de "esto se ve raro" a "esto está roto aquí, por esto".</p></div>
+  <div class="notes">Reglas de escalado: dato mal→DB; non-2xx→API replay; RLS→ambas. La UI te dice QUE algo falla; las capas de abajo te dicen POR QUÉ.</div>
+</section>
+
+<!-- 15. DIVIDER PART 3 — API -->
+<section class="slide divider" data-title="Capa API">
+  <div>
+    <p class="part-no" style="color:#e879f9">CAPA 02 · API</p>
+    <h1 class="h1">La Capa <span style="color:#e879f9">API</span><br>El Contrato</h1>
+    <p class="lede">Confirma contratos, auth, manejo de errores y RLS. Cada status code no es un número — es una prueba de que algo funciona (o no).</p>
+  </div>
+  <div class="notes">API = magenta. La matriz de status codes "qué prueba" + la sonda de RLS A/B. Esta capa enseña a leer status codes como evidencia.</div>
+</section>
+
+<!-- 16. API SETUP -->
+<section class="slide" data-title="API setup">
+  <p class="kicker">descubrir + autenticar</p>
+  <h2 class="h2" data-anim="fade-up">Preparar el Testing de la Capa API</h2>
+  <div class="terminal mt-s">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>auth una vez, reutiliza</span></div>
+<pre><span class="cmt"># credenciales SIEMPRE desde .env — nunca hardcodear</span>
+<span class="kw">POST</span> /auth/v1/token
+  body: { email: {{env.STAGING_USER_EMAIL}}, password: {{env.STAGING_USER_PASSWORD}} }
+  store: <span class="fn">access_token</span>, <span class="fn">refresh_token</span>, <span class="fn">user.id</span>
+
+<span class="cmt"># registra los endpoints del ticket en una tabla en memory:</span>
+<span class="cmt"># | Method | Endpoint | Purpose | AC |</span></pre>
+  </div>
+  <div class="callout warn mt-m"><h4>Gotcha de propagación de token</h4><p>Algunos backends scopean el token por workspace/tenant. Si un request da <b>200 para un usuario y 403 para otro con el mismo rol</b>, la propagación es la sospechosa — anótalo como <b>descubrimiento</b>, no como bug, hasta confirmarlo con el equipo.</p></div>
+  <div class="notes">Token una vez desde .env, reutilizar. La gotcha de propagación: mismo rol, distinto resultado = problema de scoping, no necesariamente bug. Confirmar antes de reportar.</div>
+</section>
+
+<!-- 17. STATUS-CODE MATRIX -->
+<section class="slide" data-title="Status codes">
+  <p class="kicker">cada status PRUEBA algo</p>
+  <h2 class="h2" data-anim="fade-up">La Matriz de Status Codes</h2>
+  <table class="dtable mt-s" style="font-size:13.5px">
+    <thead><tr><th>Escenario</th><th>Esperado</th><th>Qué prueba</th></tr></thead>
+    <tbody>
+      <tr><td>Happy path</td><td><span class="tag ok">200 / 201</span></td><td>Contrato + data feliz</td></tr>
+      <tr><td>Campo requerido faltante</td><td><span class="tag warn">400</span></td><td>Validación viva</td></tr>
+      <tr><td>Input sobre-largo</td><td><span class="tag warn">400 / 413</span></td><td>Guardia de tamaño</td></tr>
+      <tr><td>Sin header de auth</td><td><span class="tag warn">401</span></td><td>Auth requerida</td></tr>
+      <tr><td>Token expirado</td><td><span class="tag warn">401</span></td><td>La rotación de token funciona</td></tr>
+      <tr><td>Recurso de otro tenant</td><td><span class="tag no">403 / vacío</span></td><td><b>RLS / aislamiento de tenant</b></td></tr>
+      <tr><td>Recurso inexistente</td><td>200+vacío (PostgREST) / 404</td><td>Semántica de not-found</td></tr>
+      <tr><td>Único duplicado</td><td><span class="tag no">409</span></td><td>Manejo de conflicto</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">La idea núcleo de la capa API: un status code es evidencia. 400 prueba que la validación está viva; 403 prueba aislamiento de tenant; 409 prueba manejo de conflicto. No probar el negativo = no saber si la guardia existe.</div>
+</section>
+
+<!-- 18. RLS PROBE -->
+<section class="slide" data-title="RLS probe">
+  <p class="kicker">la sonda de seguridad que casi nadie corre</p>
+  <h2 class="h2" data-anim="fade-up">Sonda de RLS / Autorización — A/B</h2>
+  <p class="lede mt-s">Crítica para apps multi-tenant. Dos usuarios (A, B), <b>el mismo rol</b>. La pregunta: ¿puede A tocar lo de B?</p>
+  <div class="terminal mt-s">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>A intenta acceder a lo de B</span></div>
+<pre><span class="num">1.</span> A lista recursos              <span class="kw">→</span> solo las filas de A
+<span class="num">2.</span> A lee <span class="str">resource?user_id=eq.B</span>   <span class="kw">→</span> array vacío o 403
+<span class="num">3.</span> A hace PATCH a la fila de B    <span class="kw">→</span> 0 filas afectadas o 403
+
+<span class="cmt"># resultado por sonda:</span>  <span class="tag ok">VERIFIED</span>  o  <span class="tag no">VULNERABLE</span></pre>
+  </div>
+  <div class="callout warn mt-m"><h4>Cualquier <span class="mono">VULNERABLE</span> es territorio de bug Critical</h4><p>Si A puede leer o escribir lo de B, es una fuga cross-tenant — el peor tipo de defecto. Es un finding <b>bloqueante</b>: detiene la pasada de inmediato.</p></div>
+  <div class="notes">La sonda A/B con dos usuarios del mismo rol: listar-solo-lo-mío, leer-otro-tenant, PATCH-otra-fila. VULNERABLE = Critical = bloqueante. Esta es la sonda de seguridad de mayor valor de la capa API.</div>
+</section>
+
+<!-- 19. CROSS-LAYER HANDOFF -->
+<section class="slide" data-title="201 ≠ DB">
+  <p class="kicker">el handoff cross-layer</p>
+  <h2 class="h2" data-anim="fade-up">Un 201 No Prueba la DB</h2>
+  <div class="flow mt-m">
+    <div class="stage"><div class="sx">✓</div><div><h4>La API responde 201 Created</h4><p>El contrato dice "creado". Pero un POST/PATCH exitoso solo prueba que la API <b>aceptó</b> la petición.</p></div></div>
+    <div class="stage"><div class="sx">?</div><div><h4>¿El trigger corrió? ¿La fila quedó bien?</h4><p>Los triggers pueden no ejecutarse en silencio. El total calculado, las relaciones, los timestamps — todo eso vive en la DB.</p></div></div>
+    <div class="stage"><div class="sx">→</div><div><h4>Baja a §DB a confirmar</h4><p>Tras cada POST/PATCH exitoso, verifica persistencia y ejecución de triggers en la base. La respuesta no es la verdad.</p></div></div>
+  </div>
+  <div class="callout warn mt-m"><h4>La regla de oro de la Trifuerza</h4><p>Cada capa prueba <b>su</b> verdad. La API prueba el contrato; solo la DB prueba la persistencia. Confiar en el 201 es confiar en la capa equivocada.</p></div>
+  <div class="notes">El handoff cross-layer: 201 ≠ DB correcta (triggers silenciosos). Siempre confirmar persistencia en DB tras un write exitoso. Esta es la lección que une las tres capas.</div>
+</section>
+
+<!-- 20. QUIZ 1 -->
+<section class="slide" data-title="Quiz 1">
+  <p class="kicker">quiz · smoke + UI + API</p>
+  <h2 class="h2" data-anim="fade-up">Las Capas de Arriba</h2>
+  <div class="quiz">
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q1</span><span>El POST devuelve 201 y la UI muestra "Orden creada". ¿Es suficiente para marcar el AC como PASSED?</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span>Sí — 201 + UI verde = creado correctamente</span></div>
+        <div class="opt" data-correct="1"><span class="mk">B</span><span>No — un 201 no prueba la DB; baja a confirmar fila + trigger</span></div>
+        <div class="opt"><span class="mk">C</span><span>Sí, si la consola no tiene errores rojos</span></div>
+      </div>
+      <div class="qexp"><b>No.</b> Un 201 prueba que la API aceptó la petición, no que la DB quedó correcta — los triggers pueden no correr en silencio. Confirma persistencia (fila, total calculado, relaciones) en §DB antes de dar PASSED.</div>
+    </div>
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q2</span><span>El usuario A, con su token, hace <span class="mono">GET resource?user_id=eq.B</span> y recibe las filas de B (200). ¿Veredicto?</span></div>
+      <div class="opts">
+        <div class="opt" data-correct="1"><span class="mk">A</span><span>VULNERABLE — fuga cross-tenant, bug Critical, finding bloqueante</span></div>
+        <div class="opt"><span class="mk">B</span><span>VERIFIED — devolvió 200, el endpoint funciona</span></div>
+        <div class="opt"><span class="mk">C</span><span>Observación menor — depende del rol</span></div>
+      </div>
+      <div class="qexp"><b>VULNERABLE.</b> A no debería ver nada de B. Leer datos de otro tenant es una fuga de aislamiento — Critical, y bloqueante: detiene la pasada de inmediato. La sonda RLS A/B es justo para cazar esto.</div>
+    </div>
+  </div>
+  <div class="notes">Las dos lecciones clave de UI+API: el 201 no prueba la DB, y la sonda RLS A/B caza fugas cross-tenant (VULNERABLE = Critical bloqueante).</div>
+</section>
+
+<!-- 21. DIVIDER PART 4 — DB -->
+<section class="slide divider" data-title="Capa DB">
+  <div>
+    <p class="part-no" style="color:#22d3ee">CAPA 03 · DB</p>
+    <h1 class="h1">La Capa <span style="color:#22d3ee">DB</span><br>La Verdad Persistida</h1>
+    <p class="lede">Confirma estado, constraints, triggers y RLS a nivel SQL. Aquí la pregunta cambia: en las sondas negativas, el <b>éxito es el bug</b>.</p>
+  </div>
+  <div class="notes">DB = cian. State verification + constraint probes (éxito=bug) + integrity sweeps + RLS en SQL. La capa donde se invierte la lógica: las sondas negativas deben fallar.</div>
+</section>
+
+<!-- 22. DB STATE VERIFICATION -->
+<section class="slide" data-title="DB state">
+  <p class="kicker">después de una acción API / UI</p>
+  <h2 class="h2" data-anim="fade-up">Verificación de Estado</h2>
+  <table class="dtable mt-s" style="font-size:14px">
+    <thead><tr><th>Check</th><th>Patrón de query</th></tr></thead>
+    <tbody>
+      <tr><td>La fila existe</td><td><span class="mono">SELECT * FROM {table} WHERE id = '{id}'</span></td></tr>
+      <tr><td>La relación</td><td><span class="mono">JOIN</span> hijo a padre, compara el conteo esperado</td></tr>
+      <tr><td>El trigger corrió</td><td>compara el total guardado vs <span class="mono">SUM(items)</span></td></tr>
+      <tr><td>Timestamps sanos</td><td><span class="mono">created_at</span> reciente, <span class="mono">updated_at &gt;= created_at</span></td></tr>
+    </tbody>
+  </table>
+  <div class="callout mt-m"><h4>Aquí se cobra el 201</h4><p>El "trigger corrió" es exactamente la verdad que el 201 no podía dar: si el total guardado ≠ la suma de los items, el trigger falló en silencio aunque la API respondió 201.</p></div>
+  <div class="notes">Las 4 verificaciones de estado post-acción. "El trigger corrió" (total guardado vs SUM) es donde se atrapa el trigger silencioso que el 201 ocultó.</div>
+</section>
+
+<!-- 23. CONSTRAINT PROBES -->
+<section class="slide" data-title="Constraint probes">
+  <p class="kicker">la lógica invertida</p>
+  <h2 class="h2" data-anim="fade-up">Sondas de Constraints — el Éxito es el Bug</h2>
+  <table class="dtable mt-s" style="font-size:15px">
+    <thead><tr><th>Constraint</th><th>Sonda (todas deben ERRORAR)</th></tr></thead>
+    <tbody>
+      <tr><td><b>FK</b></td><td>INSERT hijo con parent id inexistente</td></tr>
+      <tr><td><b>CHECK</b></td><td>UPDATE a un valor de enum inválido</td></tr>
+      <tr><td><b>UNIQUE</b></td><td>INSERT duplicado de columna única</td></tr>
+      <tr><td><b>NOT NULL</b></td><td>INSERT con NULL en columna requerida</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn mt-m"><h4>Si la sonda <b>tiene éxito</b>, el constraint falta — y eso es el bug</h4><p>Estas sondas deben fallar TODAS. Un INSERT inválido que pasa significa que la base no está protegiendo la integridad. <b>Envuelve cada sonda en una transacción y haz ROLLBACK</b> para no contaminar staging.</p></div>
+  <div class="notes">La lógica se invierte: en sondas negativas, el éxito = constraint ausente = bug. FK/CHECK/UNIQUE/NOT NULL deben errorar todas. Siempre en transacción + ROLLBACK.</div>
+</section>
+
+<!-- 24. INTEGRITY SWEEPS -->
+<section class="slide" data-title="Integrity sweeps">
+  <p class="kicker">barridos de integridad</p>
+  <h2 class="h2" data-anim="fade-up">Cazar Datos Corruptos</h2>
+  <div class="terminal mt-s">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>SQL · estas queries deben volver 0 filas</span></div>
+<pre><span class="cmt">-- huérfanos: hijos sin padre</span>
+<span class="kw">SELECT</span> c.* <span class="kw">FROM</span> child c <span class="kw">LEFT JOIN</span> parent p <span class="kw">ON</span> c.fk=p.id <span class="kw">WHERE</span> p.id <span class="kw">IS NULL</span>;
+
+<span class="cmt">-- calc mismatch: total guardado ≠ suma real</span>
+<span class="kw">SELECT</span> o.id, o.total, COALESCE(SUM(i.qty*i.unit_price),0) <span class="kw">AS</span> calc
+<span class="kw">FROM</span> orders o <span class="kw">LEFT JOIN</span> order_items i <span class="kw">ON</span> o.id=i.order_id
+<span class="kw">GROUP BY</span> o.id, o.total <span class="kw">HAVING</span> o.total != calc;
+
+<span class="cmt">-- estados de dominio imposibles</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> orders <span class="kw">WHERE</span> status=<span class="str">'delivered'</span> <span class="kw">AND</span> payment_status!=<span class="str">'completed'</span>;</pre>
+  </div>
+  <div class="callout mt-m"><h4>Cualquier fila devuelta es un defecto de integridad</h4><p>Un pedido "entregado" sin pago "completado" es un estado que el negocio jamás debería permitir. Estos barridos cazan la corrupción que ninguna prueba de UI vería.</p></div>
+  <div class="notes">Tres barridos: huérfanos, calc mismatch, estados imposibles. Cada uno debe volver 0 filas. Correr periódicamente en features con mucha data. Caza lo que la UI nunca muestra.</div>
+</section>
+
+<!-- 25. RLS SQL + CLEANUP -->
+<section class="slide" data-title="RLS SQL + cleanup">
+  <p class="kicker">RLS real + cascadas</p>
+  <h2 class="h2" data-anim="fade-up">RLS a Nivel SQL y Limpieza</h2>
+  <div class="grid g2 mt-s">
+    <div class="card card-accent">
+      <h4>RLS de verdad</h4>
+      <p class="dim mb-s">El rol <span class="mono">qa_team</span> suele saltar RLS. Para probarla real, impersona el JWT:</p>
+      <div class="terminal" style="box-shadow:none">
+<pre style="max-height:160px"><span class="kw">BEGIN</span>;
+<span class="kw">SET LOCAL</span> request.jwt.claim.sub = <span class="str">'{user-a}'</span>;
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> {table}; <span class="cmt">-- solo filas de A</span>
+<span class="kw">ROLLBACK</span>;</pre>
+      </div>
+    </div>
+    <div class="card card-accent">
+      <h4>Cascadas de limpieza</h4>
+      <p class="dim mb-s">Tras probar flujos CRUD, verifica que la limpieza cascadea:</p>
+      <ul class="blist" style="margin-top:4px;font-size:14px">
+        <li>DELETE padre → ¿los hijos se van?</li>
+        <li>Soft-delete: ¿flag puesto, fila aún presente?</li>
+        <li>Registra <span class="mono">CLEANUP COMPLETE / INCOMPLETE</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout mt-m"><h4>Si el SQL directo salta la RLS</h4><p>Cae a la sonda API §RLS A/B — esa pasa por el enforcement real de la aplicación. Dos caminos para la misma verdad de seguridad.</p></div>
+  <div class="notes">RLS real necesita impersonar el JWT (qa_team la salta). Cleanup: cascadas de DELETE y soft-delete. Si el SQL salta RLS, usar la sonda API A/B (enforcement real).</div>
+</section>
+
+<!-- 26. QUIZ 2 -->
+<section class="slide" data-title="Quiz 2">
+  <p class="kicker">quiz · capa DB</p>
+  <h2 class="h2" data-anim="fade-up">La Verdad Persistida</h2>
+  <div class="quiz">
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q1</span><span>Sondas la constraint UNIQUE insertando un duplicado, y el INSERT <b>tiene éxito</b> (no errora). ¿Qué significa?</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span>Bien — la base aceptó el dato, todo en orden</span></div>
+        <div class="opt" data-correct="1"><span class="mk">B</span><span>Bug — el constraint UNIQUE falta; la sonda negativa debía errorar</span></div>
+        <div class="opt"><span class="mk">C</span><span>Observación — depende de la columna</span></div>
+      </div>
+      <div class="qexp"><b>Bug.</b> En sondas de constraints la lógica se invierte: el éxito es el defecto. Un duplicado que pasa = la base no protege la unicidad. Por eso las sondas FK/CHECK/UNIQUE/NOT NULL deben errorar todas (en transacción + ROLLBACK).</div>
+    </div>
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q2</span><span>Tu barrido devuelve un pedido con <span class="mono">status='delivered'</span> y <span class="mono">payment_status='pending'</span>. ¿Acción?</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span>Ignorar — la UI no lo muestra, no afecta al usuario</span></div>
+        <div class="opt" data-correct="1"><span class="mk">B</span><span>Defecto de integridad — un estado de dominio imposible que el negocio nunca debe permitir</span></div>
+        <div class="opt"><span class="mk">C</span><span>Normal — los estados son independientes</span></div>
+      </div>
+      <div class="qexp"><b>Defecto de integridad.</b> "Entregado sin pago completado" es un estado imposible. Los barridos de integridad cazan exactamente esta corrupción silenciosa — invisible en la UI, real en los datos.</div>
+    </div>
+  </div>
+  <div class="notes">Las dos lecciones DB: en sondas de constraints el éxito = bug; y los estados de dominio imposibles son defectos de integridad aunque la UI no los muestre.</div>
+</section>
+
+<!-- 27. DIVIDER PART 5 — DISCIPLINE -->
+<section class="slide divider" data-title="Disciplina">
+  <div>
+    <p class="part-no">EL OFICIO</p>
+    <h1 class="h1">La Disciplina<br><span class="grad">Que Hace la Pasada Confiable</span></h1>
+    <p class="lede">Cuándo detenerse y cuándo seguir, cómo tratar el tiempo, y por qué ningún test puede quedar en NOT RUN.</p>
+  </div>
+  <div class="notes">La capa transversal: triage de findings, TTL, status propagation, evidencia. Lo que separa una pasada profesional de un click-around.</div>
+</section>
+
+<!-- 28. FINDING TRIAGE -->
+<section class="slide" data-title="Finding triage">
+  <p class="kicker">la pausa graduada</p>
+  <h2 class="h2" data-anim="fade-up">Bloqueante vs No-Bloqueante</h2>
+  <p class="lede mt-s">Un FAIL durante el testing de la feature <b>no</b> es automáticamente Critical y <b>no</b> detiene la pasada por sí solo. Triagea primero, luego decide.</p>
+  <div class="vs">
+    <div class="card bad-side">
+      <h3>Bloqueante → STOP</h3>
+      <ul>
+        <li>smoke / ambiente caído</li>
+        <li>corrupción / pérdida de integridad</li>
+        <li>seguridad explotable (RLS <span class="mono">VULNERABLE</span>, bypass de auth, cross-tenant)</li>
+      </ul>
+    </div>
+    <div class="mid">vs</div>
+    <div class="card good-side">
+      <h3>No-bloqueante → log + sigue</h3>
+      <ul>
+        <li>cosmético, gap de validación menor</li>
+        <li>edge case en un TC no crítico</li>
+        <li>finding de seguridad/framework-default pendiente de recalibración</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout warn mt-m"><h4>Por qué no parar por todo</h4><p>Pausar una pasada de 17 TCs por un hallazgo cosmético desperdicia el dispatch y pierde cobertura. Un finding no-bloqueante se registra y la pasada <b>continúa</b>; todos se surfacean juntos al cierre de Stage 2. Un bloqueante genuino sí detiene de inmediato.</p></div>
+  <div class="notes">La pausa graduada: bloqueante (env/corrupción/seguridad) detiene; no-bloqueante (cosmético/menor) se registra y la pasada sigue. Un FAIL no es auto-Critical. El objetivo es cobertura completa.</div>
+</section>
+
+<!-- 29. TTL PLAYBOOK -->
+<section class="slide" data-title="TTL">
+  <p class="kicker">probar el tiempo sin esperar</p>
+  <h2 class="h2" data-anim="fade-up">Casos Dependientes del Tiempo (TTL)</h2>
+  <p class="lede mt-s">Magic links, OTPs, tokens, sesiones, caches: "a las 14:59 funciona, a las 15:01 no". No se prueban haciendo clic más rápido — necesitas controlar el tiempo. Elige la opción más alta que el stack permita.</p>
+  <div class="steps s3 mt-m">
+    <div class="step"><div class="num">1</div><h4>Fixture / TTL corto</h4><p>La mejor. Si el env expone un TTL configurable, ponlo en segundos y prueba el borde 14:59/15:01 real. Ejercita el código de expiry verdadero.</p></div>
+    <div class="step"><div class="num">2</div><h4>Clock-mock</h4><p>Si el stack permite inyectar/congelar el tiempo, avanza el reloj y asegura la expiración — siempre que el mock maneje la lógica real, no una rama de test.</p></div>
+    <div class="step"><div class="num">3</div><h4>Defer manual escrito</h4><p>Último recurso. Documenta el borde que no pudiste ejercitar, por qué, y el follow-up concreto (ej. "añadir <span class="mono">MAGIC_LINK_TTL</span> override").</p></div>
+  </div>
+  <div class="callout warn mt-m"><h4>Nunca un <span class="mono">BLOCKED</span> a secas</h4><p>Marca <span class="mono">BLOCKED — needs time fixture</span> con la opción elegida (1/2/3) y una línea de razón. Un BLOCKED sin camino de decisión pierde cobertura en silencio.</p></div>
+  <div class="notes">La escalera TTL de 3 opciones por prioridad: fixture > clock-mock > defer escrito. Nunca un BLOCKED desnudo — siempre "BLOCKED — needs time fixture" + opción + razón.</div>
+</section>
+
+<!-- 30. NO NOT RUN + EVIDENCE -->
+<section class="slide" data-title="No NOT RUN">
+  <p class="kicker">cerrar la pasada con rigor</p>
+  <h2 class="h2" data-anim="fade-up">Sin NOT RUN · Evidencia que Sirve</h2>
+  <div class="grid g2 mt-s">
+    <div class="card card-accent">
+      <h4>Propagación de estado</h4>
+      <p class="dim">Al cerrar Stage 2, cada outline / TC tiene <b>PASSED o FAILED</b>. Sin NOT RUN. Si uno queda NOT RUN: o está fuera de scope (di por qué en Notes) o está incompleto (vuelve al loop).</p>
+    </div>
+    <div class="card card-accent">
+      <h4>Disciplina de evidencia</h4>
+      <ul class="blist" style="margin-top:4px;font-size:14px">
+        <li>Nombre: <span class="mono">{KEY}-{n}-ac{N}-desc.png</span></li>
+        <li>Captura en el <b>estado de fallo</b>, no navegando hacia él</li>
+        <li><span class="mono">evidence/</span> gitignored, nunca commiteado</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout mt-m"><h4>El log es el handoff a Stage 3</h4><p>El bloque Stage-2 de <span class="mono">test-session-memory.md</span> (smoke + tablas UI/API/DB + Findings) es lo que Stage 3 consume: los Findings alimentan los bugs, los pass/fail alimentan el ATR.</p></div>
+  <div class="notes">Sin NOT RUN: todo termina PASSED o FAILED. Evidencia en el estado de fallo, nombrada y gitignored. El memory de Stage 2 es el input de Stage 3 (Findings→bugs, pass/fail→ATR).</div>
+</section>
+
+<!-- 31. QUIZ 3 -->
+<section class="slide" data-title="Quiz 3">
+  <p class="kicker">quiz · disciplina</p>
+  <h2 class="h2" data-anim="fade-up">El Oficio de la Pasada</h2>
+  <div class="quiz">
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q1</span><span>En el TC #4 de 17 encuentras un texto desalineado (cosmético). ¿Detienes la pasada?</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span>Sí — todo FAIL detiene la pasada y se reporta de inmediato</span></div>
+        <div class="opt" data-correct="1"><span class="mk">B</span><span>No — es no-bloqueante: lo registro y sigo; lo surfaceo todo junto al cierre</span></div>
+        <div class="opt"><span class="mk">C</span><span>Sí — abro un bug Critical para no olvidarlo</span></div>
+      </div>
+      <div class="qexp"><b>No, sigue.</b> Un cosmético es no-bloqueante: se registra en Findings, el TC queda FAILED y la pasada continúa para no perder los otros 13 TCs. Solo lo bloqueante (env/corrupción/seguridad) detiene. Un FAIL no es auto-Critical.</div>
+    </div>
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q2</span><span>Un TC valida que un magic link expira a los 15 min, pero no hay forma de adelantar el reloj hoy. ¿Cómo lo cierras?</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span>Lo dejas en <span class="mono">NOT RUN</span></span></div>
+        <div class="opt"><span class="mk">B</span><span><span class="mono">BLOCKED</span> a secas — no se pudo correr</span></div>
+        <div class="opt" data-correct="1"><span class="mk">C</span><span><span class="mono">BLOCKED — needs time fixture</span> + la opción elegida y la razón</span></div>
+      </div>
+      <div class="qexp"><b>BLOCKED — needs time fixture.</b> Nunca un BLOCKED desnudo ni un NOT RUN. Documenta el borde, por qué no se pudo, y el follow-up (opción 3: defer escrito). Así la cobertura no se pierde en silencio y viaja a Stage 3.</div>
+    </div>
+  </div>
+  <div class="notes">Las dos reglas de disciplina: cosmético = no-bloqueante (sigue), y nunca BLOCKED/NOT RUN desnudo (siempre con razón + camino).</div>
+</section>
+
+<!-- 32. WHOLE PASS AT A GLANCE -->
+<section class="slide" data-title="Pasada completa">
+  <p class="kicker">todo junto</p>
+  <h2 class="h2" data-anim="fade-up">La Pasada Completa de Testing de una Feature</h2>
+  <div class="lifecycle">
+    <span class="lstate" style="color:var(--text-1);background:var(--surface-2);border:1px solid var(--border-strong)">Smoke ✓</span>
+    <span class="arr">→</span>
+    <span class="lstate" style="color:#f5b942;background:color-mix(in srgb,#f5b942 13%,transparent);border:1px solid color-mix(in srgb,#f5b942 40%,transparent)">UI</span>
+    <span class="arr">→</span>
+    <span class="lstate" style="color:#e879f9;background:color-mix(in srgb,#e879f9 13%,transparent);border:1px solid color-mix(in srgb,#e879f9 40%,transparent)">API</span>
+    <span class="arr">→</span>
+    <span class="lstate" style="color:#22d3ee;background:color-mix(in srgb,#22d3ee 13%,transparent);border:1px solid color-mix(in srgb,#22d3ee 40%,transparent)">DB</span>
+    <span class="arr">→</span>
+    <span class="lstate good">Findings</span>
+  </div>
+  <ul class="blist mt-l">
+    <li><b>Smoke primero</b> — Go/No-Go del ambiente, ≤10 min, siempre revisa la red.</li>
+    <li><b>Capas por tipo de feature</b> — el orden lo decide qué cambió; cada capa prueba su verdad.</li>
+    <li><b>Triagea cada finding</b> — bloqueante detiene, no-bloqueante registra y sigue.</li>
+    <li><b>Cierra con rigor</b> — sin NOT RUN, evidencia en el estado de fallo, Findings al handoff de Stage 3.</li>
+  </ul>
+  <div class="notes">El recap del flujo completo: smoke → UI/API/DB (orden por feature) → triage → status → findings a Stage 3. Las tres fuerzas en una pasada.</div>
+</section>
+
+<!-- 33. HOW TO DO IT WELL -->
+<section class="slide" data-title="Cómo hacerlo bien">
+  <p class="kicker">el checklist del tester</p>
+  <h2 class="h2" data-anim="fade-up">Cómo Hacerlo Bien</h2>
+  <div class="grid g2 mt-s">
+    <ul class="blist">
+      <li><b>Smoke antes que todo</b> — un ambiente roto da bugs falsos.</li>
+      <li><b>Desconfía de la UI</b> — revisa la red aunque se vea verde.</li>
+      <li><b>Lee los status codes como evidencia</b> — cada uno prueba algo.</li>
+      <li><b>Corre la sonda RLS A/B</b> — multi-tenant siempre.</li>
+    </ul>
+    <ul class="blist">
+      <li><b>Confirma en DB tras cada write</b> — el 201 no basta.</li>
+      <li><b>Sondas negativas: éxito = bug</b> — en transacción + ROLLBACK.</li>
+      <li><b>Prueba las transiciones inválidas</b> — ahí viven los defectos.</li>
+      <li><b>Cierra sin NOT RUN</b> — cada TC PASSED o FAILED, con evidencia.</li>
+    </ul>
+  </div>
+  <div class="callout mt-m"><h4>La meta</h4><p>Que ningún defecto cruce las tres capas sin ser visto: ni el que la UI esconde, ni el que la API maquilla, ni el que la DB corrompe en silencio.</p></div>
+  <div class="notes">El checklist operativo del cómo hacerlo bien. Cada punto es una palanca contra un punto ciego de capa.</div>
+</section>
+
+<!-- 34. TAKEAWAYS -->
+<section class="slide" data-title="Conclusiones">
+  <p class="kicker">para llevar</p>
+  <h2 class="h2" data-anim="fade-up">Tres Ideas que se Quedan</h2>
+  <div class="steps s3 mt-l">
+    <div class="step"><div class="num">1</div><h4>Cada capa, su verdad</h4><p>La UI muestra, la API contrata, la DB persiste. Un 201 no prueba la base; una pantalla verde no prueba la API.</p></div>
+    <div class="step"><div class="num">2</div><h4>El negativo es el oro</h4><p>Los status de error, las transiciones inválidas, las sondas de constraint (éxito=bug) y RLS A/B cazan lo que el happy path nunca toca.</p></div>
+    <div class="step"><div class="num">3</div><h4>Disciplina sobre impulso</h4><p>Smoke primero, triage graduado, sin NOT RUN. La cobertura completa vale más que parar por el primer hallazgo.</p></div>
+  </div>
+  <div class="notes">Los tres conceptos núcleo: cada capa su verdad, el valor del negativo/seguridad, y la disciplina de la pasada.</div>
+</section>
+
+<!-- 35. THANKS -->
+<section class="slide center tc" data-title="Cierre">
+  <div>
+    <h1 class="h1"><span class="grad">Tres Capas. Una Verdad. Ningún Punto Ciego.</span></h1>
+    <p class="lede" style="margin:14px auto">Smoke valida el ambiente → la Trifuerza valida la feature: UI (lo que se ve), API (el contrato), DB (lo que persiste). Prueba el negativo, confirma una capa abajo, cierra sin NOT RUN.</p>
+    <p class="lede" style="margin:14px auto">← → navegar · S notas del orador · O resumen · T tema</p>
+  </div>
+  <div class="notes">Cierra atando las tres capas y la disciplina. La Trifuerza es cómo un defecto no cruza las tres capas sin ser visto.</div>
+</section>
+
+</div>
+
+<!-- PART B :: score chip + keyboard-nav hint (ported from coding-classes/playwright-pro) -->
+<div id="score-chip">⭐ 0/6</div>
+<div id="help-hint">← → navegar · O resumen · S presentador · N notas · F pantalla</div>
+<style id="upex-chip-hint-style">
+#score-chip{position:fixed;top:18px;right:24px;z-index:60;font-family:'JetBrains Mono','IBM Plex Mono',monospace;
+  font-size:14px;font-weight:700;background:var(--surface-2);border:1px solid var(--border-strong);
+  border-radius:999px;padding:6px 15px;color:var(--accent);box-shadow:var(--shadow);transition:transform .25s var(--ease)}
+#score-chip.bump{transform:scale(1.25)}
+#help-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:60;pointer-events:none;
+  font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--text-3)}
+@media (max-width:768px){#help-hint{display:none}#score-chip{top:8px;right:10px;font-size:11px;padding:4px 10px;box-shadow:none}}
+@media (pointer:coarse){#help-hint{display:none}}
+@media print{#score-chip,#help-hint{display:none!important}}
+</style>
+
+<script>
+/* html-ppt :: runtime.js
+ * Keyboard-driven deck runtime. Zero dependencies.
+ *
+ * Features:
+ *   ← → / space / PgUp PgDn / Home End  navigation
+ *   F  fullscreen
+ *   S  presenter mode (opens a NEW WINDOW with current/next slide preview + notes + timer)
+ *       The original window stays as audience view, synced via BroadcastChannel.
+ *       Slide previews use CSS transform:scale() at design resolution for pixel-perfect layout.
+ *   N  quick notes overlay (bottom drawer)
+ *   O  slide overview grid
+ *   T  cycle themes (reads data-themes on <html> or <body>)
+ *   A  cycle demo animation on current slide
+ *   URL hash #/N  deep-link to slide N (1-based)
+ *   Progress bar auto-managed
+ */
+(function () {
+  'use strict';
+
+  const ANIMS = ['fade-up','fade-down','fade-left','fade-right','rise-in','drop-in',
+    'zoom-pop','blur-in','glitch-in','typewriter','neon-glow','shimmer-sweep',
+    'gradient-flow','stagger-list','counter-up','path-draw','parallax-tilt',
+    'card-flip-3d','cube-rotate-3d','page-turn-3d','perspective-zoom',
+    'marquee-scroll','kenburns','confetti-burst','spotlight','morph-shape','ripple-reveal'];
+
+  function ready(fn){ if(document.readyState!='loading')fn(); else document.addEventListener('DOMContentLoaded',fn);}
+
+  /* ========== Parse URL for preview-only mode ==========
+   * When loaded as iframe.src = "index.html?preview=3", runtime enters a
+   * locked single-slide mode: only slide N is visible, no chrome, no keys,
+   * no hash updates. This is how the presenter window shows pixel-perfect
+   * previews — by loading the actual deck file in an iframe and telling it
+   * to display only a specific slide.
+   */
+  function getPreviewIdx() {
+    const m = /[?&]preview=(\d+)/.exec(location.search || '');
+    return m ? parseInt(m[1], 10) - 1 : -1;
+  }
+
+  ready(function () {
+    const deck = document.querySelector('.deck');
+    if (!deck) return;
+    const slides = Array.from(deck.querySelectorAll('.slide'));
+    if (!slides.length) return;
+
+    const previewOnlyIdx = getPreviewIdx();
+    const isPreviewMode = previewOnlyIdx >= 0 && previewOnlyIdx < slides.length;
+
+    /* ===== Preview-only mode: show one slide, hide everything else ===== */
+    if (isPreviewMode) {
+      function showSlide(i) {
+        slides.forEach((s, j) => {
+          const active = (j === i);
+          s.classList.toggle('is-active', active);
+          s.style.display = active ? '' : 'none';
+          if (active) {
+            s.style.opacity = '1';
+            s.style.transform = 'none';
+            s.style.pointerEvents = 'auto';
+          }
+        });
+      }
+      showSlide(previewOnlyIdx);
+      /* Hide chrome that the presenter shouldn't see in preview */
+      const hideSel = '.progress-bar, .notes-overlay, .overview, .notes, aside.notes, .speaker-notes';
+      document.querySelectorAll(hideSel).forEach(el => { el.style.display = 'none'; });
+      document.documentElement.setAttribute('data-preview', '1');
+      document.body.setAttribute('data-preview', '1');
+      /* Auto-detect theme base path for theme switching in preview mode */
+      function getPreviewThemeBase() {
+        const base = document.documentElement.getAttribute('data-theme-base');
+        if (base) return base;
+        const tl = document.getElementById('theme-link');
+        if (tl) {
+          const raw = tl.getAttribute('href') || '';
+          const ls = raw.lastIndexOf('/');
+          if (ls >= 0) return raw.substring(0, ls + 1);
+        }
+        return 'assets/themes/';
+      }
+      const previewThemeBase = getPreviewThemeBase();
+
+      /* Listen for postMessage from parent presenter window:
+       *  - preview-goto: switch visible slide WITHOUT reloading
+       *  - preview-theme: switch theme CSS link to match audience window */
+      window.addEventListener('message', function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'preview-goto') {
+          const n = parseInt(e.data.idx, 10);
+          if (n >= 0 && n < slides.length) showSlide(n);
+        } else if (e.data.type === 'preview-theme' && e.data.name) {
+          let link = document.getElementById('theme-link');
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.id = 'theme-link';
+            document.head.appendChild(link);
+          }
+          link.href = previewThemeBase + e.data.name + '.css';
+          document.documentElement.setAttribute('data-theme', e.data.name);
+        }
+      });
+      /* Signal to parent that preview iframe is ready */
+      try { window.parent && window.parent.postMessage({ type: 'preview-ready' }, '*'); } catch(e) {}
+      return;
+    }
+
+    let idx = 0;
+    const total = slides.length;
+
+    /* ===== BroadcastChannel for presenter sync ===== */
+    const CHANNEL_NAME = 'html-ppt-presenter-' + location.pathname;
+    let bc;
+    try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
+
+    // Are we running inside the presenter popup? (legacy flag, now unused)
+    const isPresenterWindow = false;
+
+    /* ===== progress bar ===== */
+    let bar = document.querySelector('.progress-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'progress-bar';
+      bar.innerHTML = '<span></span>';
+      document.body.appendChild(bar);
+    }
+    const barFill = bar.querySelector('span');
+
+    /* ===== notes overlay (N key) ===== */
+    let notes = document.querySelector('.notes-overlay');
+    if (!notes) {
+      notes = document.createElement('div');
+      notes.className = 'notes-overlay';
+      document.body.appendChild(notes);
+    }
+
+    /* ===== overview grid (O key) ===== */
+    let overview = document.querySelector('.overview');
+    if (!overview) {
+      overview = document.createElement('div');
+      overview.className = 'overview';
+      slides.forEach((s, i) => {
+        const t = document.createElement('div');
+        t.className = 'thumb';
+        // Force 16:9 aspect ratio robustly
+        t.style.padding = '0 0 56.25% 0';
+        t.style.height = '0';
+        t.style.position = 'relative';
+        t.style.overflow = 'hidden';
+
+        const title = s.getAttribute('data-title') ||
+          (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1));
+        
+        // Create a container for the mini-slide
+        const mini = document.createElement('div');
+        mini.className = 'mini-slide';
+        mini.style.position = 'absolute';
+        mini.style.top = '0';
+        mini.style.left = '0';
+        mini.style.width = '1920px';
+        mini.style.height = '1080px';
+        mini.style.transformOrigin = 'top left';
+        mini.style.pointerEvents = 'none';
+        mini.style.background = 'var(--bg)';
+        
+        // Clone the slide content
+        const clone = s.cloneNode(true);
+        clone.className = 'slide is-active'; // force active styles
+        clone.style.position = 'absolute';
+        clone.style.inset = '0';
+        clone.style.transform = 'none';
+        clone.style.opacity = '1';
+        clone.style.padding = '72px 96px'; // ensure padding is kept
+        
+        mini.appendChild(clone);
+        t.appendChild(mini);
+
+        // Add the number and title overlay
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.inset = '0';
+        overlay.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.8) 100%)';
+        overlay.style.color = '#fff';
+        overlay.style.zIndex = '10';
+        overlay.style.pointerEvents = 'none';
+        
+        const n = document.createElement('div');
+        n.className = 'n';
+        n.textContent = i + 1;
+        n.style.position = 'absolute';
+        n.style.top = '12px';
+        n.style.left = '16px';
+        n.style.fontWeight = '700';
+        n.style.fontSize = '16px';
+        n.style.color = '#fff';
+        n.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        const text = document.createElement('div');
+        text.className = 't';
+        text.textContent = title.trim().slice(0,80);
+        text.style.position = 'absolute';
+        text.style.bottom = '12px';
+        text.style.left = '16px';
+        text.style.right = '16px';
+        text.style.fontWeight = '600';
+        text.style.fontSize = '14px';
+        text.style.color = '#fff';
+        text.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        overlay.appendChild(n);
+        overlay.appendChild(text);
+        t.appendChild(overlay);
+
+        t.addEventListener('click', () => { go(i); toggleOverview(false); });
+        overview.appendChild(t);
+      });
+      document.body.appendChild(overview);
+    }
+
+    /* ===== navigation ===== */
+    function go(n, fromRemote){
+      n = Math.max(0, Math.min(total-1, n));
+      slides.forEach((s,i) => {
+        s.classList.toggle('is-active', i===n);
+        s.classList.toggle('is-prev', i<n);
+      });
+      idx = n;
+      barFill.style.width = ((n+1)/total*100)+'%';
+      const numEl = document.querySelector('.slide-number');
+      if (numEl) { numEl.setAttribute('data-current', n+1); numEl.setAttribute('data-total', total); }
+
+      // notes (bottom overlay)
+      const note = slides[n].querySelector('.notes, aside.notes, .speaker-notes');
+      notes.innerHTML = note ? note.innerHTML : '';
+
+      // hash
+      const hashTarget = '#/'+(n+1);
+      if (location.hash !== hashTarget && !isPresenterWindow) {
+        history.replaceState(null,'', hashTarget);
+      }
+
+      // re-trigger entry animations
+      slides[n].querySelectorAll('[data-anim]').forEach(el => {
+        const a = el.getAttribute('data-anim');
+        el.classList.remove('anim-'+a);
+        void el.offsetWidth;
+        el.classList.add('anim-'+a);
+      });
+
+      // counter-up
+      slides[n].querySelectorAll('.counter').forEach(el => {
+        const target = parseFloat(el.getAttribute('data-to')||el.textContent);
+        const dur = parseInt(el.getAttribute('data-dur')||'1200',10);
+        const start = performance.now();
+        const from = 0;
+        function tick(now){
+          const t = Math.min(1,(now-start)/dur);
+          const v = from + (target-from)*(1-Math.pow(1-t,3));
+          el.textContent = (target % 1 === 0) ? Math.round(v) : v.toFixed(1);
+          if (t<1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+
+      // Broadcast to other window (audience ↔ presenter)
+      if (!fromRemote && bc) {
+        bc.postMessage({ type: 'go', idx: n });
+      }
+    }
+
+    /* ===== listen for remote navigation / theme changes ===== */
+    if (bc) {
+      bc.onmessage = function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'go' && typeof e.data.idx === 'number') {
+          go(e.data.idx, true);
+        } else if (e.data.type === 'theme' && e.data.name) {
+          /* Sync theme across windows */
+          const i = themes.indexOf(e.data.name);
+          if (i >= 0) themeIdx = i;
+          applyTheme(e.data.name);
+        }
+      };
+    }
+
+    function toggleNotes(force){ notes.classList.toggle('open', force!==undefined?force:!notes.classList.contains('open')); }
+    function toggleOverview(force){
+      const isOpen = force!==undefined ? force : !overview.classList.contains('open');
+      overview.classList.toggle('open', isOpen);
+      if (isOpen) {
+        requestAnimationFrame(() => {
+          const thumbs = overview.querySelectorAll('.thumb');
+          if (thumbs.length) {
+            const scale = thumbs[0].clientWidth / 1920;
+            overview.querySelectorAll('.mini-slide').forEach(m => {
+              m.style.transform = 'scale(' + scale + ')';
+            });
+          }
+        });
+      }
+    }
+
+    /* ========== PRESENTER MODE — Magnetic-card popup window ========== */
+    /* Opens a new window with 4 draggable, resizable cards:
+     *   CURRENT  — iframe(?preview=N)   pixel-perfect preview of current slide
+     *   NEXT     — iframe(?preview=N+1) pixel-perfect preview of next slide
+     *   SCRIPT   — large speaker notes (Guion)
+     *   TIMER    — elapsed timer + page counter + controls
+     * Cards remember position/size in localStorage.
+     * Two windows sync via BroadcastChannel.
+     */
+    let presenterWin = null;
+
+    function openPresenterWindow() {
+      if (presenterWin && !presenterWin.closed) {
+        presenterWin.focus();
+        return;
+      }
+
+      // Build absolute URL of THIS deck file (without hash/query)
+      const deckUrl = location.protocol + '//' + location.host + location.pathname;
+
+      // Collect slide titles + notes (HTML strings)
+      const slideMeta = slides.map((s, i) => {
+        const note = s.querySelector('.notes, aside.notes, .speaker-notes');
+        return {
+          title: s.getAttribute('data-title') ||
+            (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1)),
+          notes: note ? note.innerHTML : ''
+        };
+      });
+
+      /* Capture current theme so presenter previews match the audience */
+      const currentTheme = root.getAttribute('data-theme') || (themes[themeIdx] || '');
+      const presenterHTML = buildPresenterHTML(deckUrl, slideMeta, total, idx, CHANNEL_NAME, currentTheme);
+
+      presenterWin = window.open('', 'html-ppt-presenter', 'width=1280,height=820,menubar=no,toolbar=no');
+      if (!presenterWin) {
+        alert('Permite las ventanas emergentes para usar la vista de presentador');
+        return;
+      }
+      presenterWin.document.open();
+      presenterWin.document.write(presenterHTML);
+      presenterWin.document.close();
+    }
+
+    function buildPresenterHTML(deckUrl, slideMeta, total, startIdx, channelName, currentTheme) {
+      const metaJSON = JSON.stringify(slideMeta);
+      const deckUrlJSON = JSON.stringify(deckUrl);
+      const channelJSON = JSON.stringify(channelName);
+      const themeJSON = JSON.stringify(currentTheme || '');
+      const storageKey = 'html-ppt-presenter:' + location.pathname;
+
+      // Build the document as a single template string for clarity
+      return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Presenter View</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #1a1d24;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(88,166,255,.04), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(188,140,255,.04), transparent 50%);
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+  }
+  /* Stage: positioned area where cards live */
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+
+  /* Magnetic card */
+  .pcard {
+    position: absolute;
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    min-width: 180px; min-height: 100px;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  .pcard.dragging { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(88,166,255,.5); border-color: #58a6ff; transition: none; z-index: 9999; }
+  .pcard.resizing { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(63,185,80,.5); border-color: #3fb950; transition: none; z-index: 9999; }
+  .pcard:hover { border-color: rgba(88,166,255,.3); }
+
+  /* Card header (drag handle) */
+  .pcard-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    cursor: move;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .pcard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot-color, #58a6ff); flex-shrink: 0; }
+  .pcard-title {
+    font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    font-weight: 700; color: #8b949e; flex: 1;
+  }
+  .pcard-meta { font-size: 11px; color: #6e7681; }
+
+  /* Card body */
+  .pcard-body { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+
+  /* Preview cards (CURRENT/NEXT) — iframe-based pixel-perfect render */
+  .pcard-preview .pcard-body { background: #000; }
+  .pcard-preview iframe {
+    position: absolute; top: 0; left: 0;
+    width: 1920px; height: 1080px;
+    border: none;
+    transform-origin: top left;
+    pointer-events: none;
+    background: transparent;
+  }
+  .pcard-preview .preview-end {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #484f58; font-size: 14px; letter-spacing: .12em;
+  }
+
+  /* Notes card */
+  .pcard-notes .pcard-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    font-size: 18px; line-height: 1.75;
+    color: #d0d7de;
+    font-family: "Noto Sans SC", -apple-system, sans-serif;
+  }
+  .pcard-notes .pcard-body p { margin: 0 0 .7em 0; }
+  .pcard-notes .pcard-body strong { color: #f0883e; }
+  .pcard-notes .pcard-body em { color: #58a6ff; font-style: normal; }
+  .pcard-notes .pcard-body code {
+    font-family: "SF Mono", monospace; font-size: .9em;
+    background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
+  }
+  .pcard-notes .empty { color: #484f58; font-style: italic; }
+
+  /* Timer card */
+  .pcard-timer .pcard-body {
+    display: flex; flex-direction: column; gap: 14px;
+    padding: 18px 20px; justify-content: center;
+  }
+  .timer-display {
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    font-size: 42px; font-weight: 700;
+    color: #3fb950;
+    letter-spacing: .04em;
+    line-height: 1;
+  }
+  .timer-row {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: #8b949e;
+  }
+  .timer-row .label { font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: #6e7681; }
+  .timer-row .val { color: #e6edf3; font-weight: 600; font-family: "SF Mono", monospace; }
+  .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .timer-btn {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .timer-btn:hover { background: rgba(88,166,255,.15); border-color: #58a6ff; }
+  .timer-btn:active { transform: translateY(1px); }
+
+  /* Resize handle */
+  .pcard-resize {
+    position: absolute; right: 0; bottom: 0;
+    width: 18px; height: 18px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,.25) 50%, rgba(255,255,255,.25) 60%, transparent 60%, transparent 70%, rgba(255,255,255,.25) 70%, rgba(255,255,255,.25) 80%, transparent 80%);
+    z-index: 5;
+  }
+  .pcard-resize:hover { background: linear-gradient(135deg, transparent 50%, #58a6ff 50%, #58a6ff 60%, transparent 60%, transparent 70%, #58a6ff 70%, #58a6ff 80%, transparent 80%); }
+
+  /* Bottom hint bar */
+  .hint-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding: 6px 16px;
+    font-size: 11px; color: #8b949e;
+    display: flex; gap: 18px; align-items: center;
+    z-index: 1000;
+  }
+  .hint-bar kbd {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px; border-radius: 3px;
+    font-family: "SF Mono", monospace;
+    font-size: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+  }
+  .hint-bar .reset-layout {
+    margin-left: auto;
+    background: transparent; border: 1px solid rgba(255,255,255,.15);
+    color: #8b949e; padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; cursor: pointer; font-family: inherit;
+  }
+  .hint-bar .reset-layout:hover { background: rgba(248,81,73,.15); border-color: #f85149; color: #f85149; }
+
+  body.is-dragging-card * { user-select: none !important; }
+  body.is-dragging-card iframe { pointer-events: none !important; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="pcard pcard-preview" id="card-cur" style="--dot-color:#58a6ff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">CURRENT</span>
+      <span class="pcard-meta" id="cur-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-cur"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-preview" id="card-nxt" style="--dot-color:#bc8cff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">NEXT</span>
+      <span class="pcard-meta" id="nxt-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-nxt"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-notes" id="card-notes" style="--dot-color:#f0883e">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">SPEAKER SCRIPT · Guion</span>
+    </div>
+    <div class="pcard-body" id="notes-body"></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-timer" id="card-timer" style="--dot-color:#3fb950">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">TIMER</span>
+    </div>
+    <div class="pcard-body">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-row">
+        <span class="label">Slide</span>
+        <span class="val" id="timer-count">1 / ${total}</span>
+      </div>
+      <div class="timer-controls">
+        <button class="timer-btn" id="btn-prev">← Prev</button>
+        <button class="timer-btn" id="btn-next">Next →</button>
+        <button class="timer-btn" id="btn-reset">⏱ Reset</button>
+      </div>
+    </div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+</div>
+
+<div class="hint-bar">
+  <span><kbd>← →</kbd> Pasar diapositiva</span>
+  <span><kbd>R</kbd> Reiniciar tiempo</span>
+  <span><kbd>Esc</kbd> Cerrar</span>
+  <span style="color:#6e7681">Arrastra el encabezado para mover · Arrastra la esquina inferior derecha para redimensionar</span>
+  <button class="reset-layout" id="reset-layout">Reiniciar disposición</button>
+</div>
+
+<script>
+(function(){
+  var slideMeta = ${metaJSON};
+  var total = ${total};
+  var idx = ${startIdx};
+  var deckUrl = ${deckUrlJSON};
+  var STORAGE_KEY = ${JSON.stringify(storageKey)};
+  var bc;
+  try { bc = new BroadcastChannel(${channelJSON}); } catch(e) {}
+
+  var iframeCur = document.getElementById('iframe-cur');
+  var iframeNxt = document.getElementById('iframe-nxt');
+  var notesBody = document.getElementById('notes-body');
+  var curMeta = document.getElementById('cur-meta');
+  var nxtMeta = document.getElementById('nxt-meta');
+  var timerDisplay = document.getElementById('timer-display');
+  var timerCount = document.getElementById('timer-count');
+
+  /* ===== Default card layout ===== */
+  function defaultLayout() {
+    var w = window.innerWidth;
+    var h = window.innerHeight - 36; /* leave room for hint bar */
+    return {
+      'card-cur':   { x: 16,        y: 16,            w: Math.round(w*0.55) - 24, h: Math.round(h*0.62) - 16 },
+      'card-nxt':   { x: Math.round(w*0.55) + 8, y: 16, w: w - Math.round(w*0.55) - 24, h: Math.round(h*0.42) - 16 },
+      'card-notes': { x: Math.round(w*0.55) + 8, y: Math.round(h*0.42) + 8, w: w - Math.round(w*0.55) - 24, h: h - Math.round(h*0.42) - 16 },
+      'card-timer': { x: 16,        y: Math.round(h*0.62) + 8, w: Math.round(w*0.55) - 24, h: h - Math.round(h*0.62) - 16 }
+    };
+  }
+
+  /* ===== Apply / save / restore layout ===== */
+  function applyLayout(layout) {
+    Object.keys(layout).forEach(function(id){
+      var el = document.getElementById(id);
+      var l = layout[id];
+      if (el && l) {
+        el.style.left = l.x + 'px';
+        el.style.top = l.y + 'px';
+        el.style.width = l.w + 'px';
+        el.style.height = l.h + 'px';
+      }
+    });
+    rescaleAll();
+  }
+  function readLayout() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return defaultLayout();
+  }
+  function saveLayout() {
+    var layout = {};
+    ['card-cur','card-nxt','card-notes','card-timer'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) {
+        layout[id] = {
+          x: parseInt(el.style.left,10) || 0,
+          y: parseInt(el.style.top,10) || 0,
+          w: parseInt(el.style.width,10) || 300,
+          h: parseInt(el.style.height,10) || 200
+        };
+      }
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)); } catch(e) {}
+  }
+
+  /* ===== iframe rescale to fit card body ===== */
+  function rescaleIframe(iframe) {
+    if (!iframe || iframe.style.display === 'none') return;
+    var body = iframe.parentElement;
+    var cw = body.clientWidth, ch = body.clientHeight;
+    if (!cw || !ch) return;
+    var s = Math.min(cw / 1920, ch / 1080);
+    iframe.style.transform = 'scale(' + s + ')';
+    /* Center the scaled iframe in the body */
+    var sw = 1920 * s, sh = 1080 * s;
+    iframe.style.left = Math.max(0, (cw - sw) / 2) + 'px';
+    iframe.style.top = Math.max(0, (ch - sh) / 2) + 'px';
+  }
+  function rescaleAll() {
+    rescaleIframe(iframeCur);
+    rescaleIframe(iframeNxt);
+  }
+  window.addEventListener('resize', rescaleAll);
+
+  /* ===== Drag (move card by header) ===== */
+  document.querySelectorAll('[data-drag]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault();
+      card.classList.add('dragging');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startL = parseInt(card.style.left,10) || 0;
+      var startT = parseInt(card.style.top,10)  || 0;
+      function onMove(ev){
+        var nx = Math.max(0, Math.min(window.innerWidth - 100, startL + ev.clientX - startX));
+        var ny = Math.max(0, Math.min(window.innerHeight - 50, startT + ev.clientY - startY));
+        card.style.left = nx + 'px';
+        card.style.top = ny + 'px';
+      }
+      function onUp(){
+        card.classList.remove('dragging');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Resize (drag bottom-right corner) ===== */
+  document.querySelectorAll('[data-resize]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault(); e.stopPropagation();
+      card.classList.add('resizing');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startW = parseInt(card.style.width,10)  || card.offsetWidth;
+      var startH = parseInt(card.style.height,10) || card.offsetHeight;
+      function onMove(ev){
+        var nw = Math.max(180, startW + ev.clientX - startX);
+        var nh = Math.max(100, startH + ev.clientY - startY);
+        card.style.width = nw + 'px';
+        card.style.height = nh + 'px';
+        if (card.querySelector('iframe')) rescaleIframe(card.querySelector('iframe'));
+      }
+      function onUp(){
+        card.classList.remove('resizing');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        rescaleAll();
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Preview iframe ready tracking =====
+   * Each iframe loads the deck ONCE with ?preview=1 on init. Subsequent
+   * slide changes are sent via postMessage('preview-goto') so the iframe
+   * just toggles visibility of a different .slide — no reload, no flicker.
+   */
+  var iframeReady = { cur: false, nxt: false };
+  var currentTheme = ${themeJSON};
+  window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'preview-ready') return;
+    var iframe = null;
+    if (e.source === iframeCur.contentWindow) {
+      iframeReady.cur = true;
+      iframe = iframeCur;
+      postPreviewGoto(iframeCur, idx);
+    } else if (e.source === iframeNxt.contentWindow) {
+      iframeReady.nxt = true;
+      iframe = iframeNxt;
+      postPreviewGoto(iframeNxt, idx + 1 < total ? idx + 1 : idx);
+    }
+    /* Sync current theme to the iframe */
+    if (iframe && currentTheme) {
+      try { iframe.contentWindow.postMessage({ type: 'preview-theme', name: currentTheme }, '*'); } catch(err) {}
+    }
+    if (iframe) rescaleIframe(iframe);
+  });
+
+  function postPreviewGoto(iframe, n) {
+    try {
+      iframe.contentWindow.postMessage({ type: 'preview-goto', idx: n }, '*');
+    } catch(e) {}
+  }
+
+  /* ===== Update content =====
+   * Smooth (no-reload) navigation: send postMessage to iframes instead of
+   * resetting src. Iframes stay loaded, just switch visible .slide.
+   */
+  function update(n) {
+    n = Math.max(0, Math.min(total - 1, n));
+    idx = n;
+
+    /* Current preview — postMessage (smooth) */
+    if (iframeReady.cur) postPreviewGoto(iframeCur, n);
+    curMeta.textContent = (n + 1) + '/' + total;
+
+    /* Next preview */
+    if (n + 1 < total) {
+      iframeNxt.style.display = '';
+      var endEl = document.querySelector('#card-nxt .preview-end');
+      if (endEl) endEl.remove();
+      if (iframeReady.nxt) postPreviewGoto(iframeNxt, n + 1);
+      nxtMeta.textContent = (n + 2) + '/' + total;
+    } else {
+      iframeNxt.style.display = 'none';
+      var body = document.querySelector('#card-nxt .pcard-body');
+      if (body && !body.querySelector('.preview-end')) {
+        var end = document.createElement('div');
+        end.className = 'preview-end';
+        end.textContent = '— END OF DECK —';
+        body.appendChild(end);
+      }
+      nxtMeta.textContent = 'END';
+    }
+
+    /* Notes */
+    var note = slideMeta[n].notes;
+    notesBody.innerHTML = note || '<span class="empty">(Esta diapositiva aún no tiene guion)</span>';
+
+    /* Timer count */
+    timerCount.textContent = (n + 1) + ' / ' + total;
+  }
+
+  /* ===== Timer ===== */
+  var tStart = Date.now();
+  setInterval(function(){
+    var s = Math.floor((Date.now() - tStart) / 1000);
+    var mm = String(Math.floor(s/60)).padStart(2,'0');
+    var ss = String(s%60).padStart(2,'0');
+    timerDisplay.textContent = mm + ':' + ss;
+  }, 1000);
+  function resetTimer(){ tStart = Date.now(); timerDisplay.textContent = '00:00'; }
+
+  /* ===== BroadcastChannel sync ===== */
+  if (bc) {
+    bc.onmessage = function(e){
+      if (!e.data) return;
+      if (e.data.type === 'go') update(e.data.idx);
+      else if (e.data.type === 'theme' && e.data.name) {
+        currentTheme = e.data.name;
+        /* Forward theme change to preview iframes */
+        [iframeCur, iframeNxt].forEach(function(iframe){
+          try {
+            iframe.contentWindow.postMessage({ type: 'preview-theme', name: e.data.name }, '*');
+          } catch(err) {}
+        });
+      }
+    };
+  }
+  function go(n) {
+    update(n);
+    if (bc) bc.postMessage({ type: 'go', idx: idx });
+  }
+
+  /* ===== Buttons ===== */
+  document.getElementById('btn-prev').addEventListener('click', function(){ go(idx - 1); });
+  document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
+  document.getElementById('btn-reset').addEventListener('click', resetTimer);
+  document.getElementById('reset-layout').addEventListener('click', function(){
+    if (confirm('¿Restaurar la disposición por defecto?')) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+      applyLayout(defaultLayout());
+    }
+  });
+
+  /* ===== Keyboard ===== */
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch(e.key) {
+      case 'ArrowRight': case ' ': case 'PageDown': go(idx + 1); e.preventDefault(); break;
+      case 'ArrowLeft':  case 'PageUp':   go(idx - 1); e.preventDefault(); break;
+      case 'Home': go(0); break;
+      case 'End':  go(total - 1); break;
+      case 'r': case 'R': resetTimer(); break;
+      case 'Escape': window.close(); break;
+    }
+  });
+
+  /* ===== Iframe load → rescale (catches initial size) ===== */
+  iframeCur.addEventListener('load', function(){ rescaleIframe(iframeCur); });
+  iframeNxt.addEventListener('load', function(){ rescaleIframe(iframeNxt); });
+
+  /* ===== Init =====
+   * Load each iframe ONCE with the deck file. After they post
+   * 'preview-ready', all subsequent navigation is via postMessage
+   * (smooth, no reload, no flicker).
+   */
+  applyLayout(readLayout());
+  iframeCur.src = deckUrl + '?preview=' + (idx + 1);
+  if (idx + 1 < total) iframeNxt.src = deckUrl + '?preview=' + (idx + 2);
+  /* Initialize notes/timer/count without touching iframes */
+  notesBody.innerHTML = slideMeta[idx].notes || '<span class="empty">(Esta diapositiva aún no tiene guion)</span>';
+  curMeta.textContent = (idx + 1) + '/' + total;
+  nxtMeta.textContent = (idx + 2) + '/' + total;
+  timerCount.textContent = (idx + 1) + ' / ' + total;
+})();
+</` + `script>
+</body></html>`;
+    }
+
+    function fullscreen(){ const el=document.documentElement;
+      if (!document.fullscreenElement) el.requestFullscreen&&el.requestFullscreen();
+      else document.exitFullscreen&&document.exitFullscreen();
+    }
+
+    // theme cycling
+    const root = document.documentElement;
+    const themesAttr = root.getAttribute('data-themes') || document.body.getAttribute('data-themes');
+    const themes = themesAttr ? themesAttr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    let themeIdx = 0;
+
+    // Auto-detect theme base path from existing <link id="theme-link">
+    let themeBase = root.getAttribute('data-theme-base');
+    if (!themeBase) {
+      const existingLink = document.getElementById('theme-link');
+      if (existingLink) {
+        // el.getAttribute('href') gives the raw relative path written in HTML
+        const rawHref = existingLink.getAttribute('href') || '';
+        const lastSlash = rawHref.lastIndexOf('/');
+        themeBase = lastSlash >= 0 ? rawHref.substring(0, lastSlash + 1) : 'assets/themes/';
+      } else {
+        themeBase = 'assets/themes/';
+      }
+    }
+
+    function applyTheme(name) {
+      let link = document.getElementById('theme-link');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.id = 'theme-link';
+        document.head.appendChild(link);
+      }
+      link.href = themeBase + name + '.css';
+      root.setAttribute('data-theme', name);
+      const ind = document.querySelector('.theme-indicator');
+      if (ind) ind.textContent = name;
+    }
+    function cycleTheme(fromRemote){
+      if (!themes.length) return;
+      themeIdx = (themeIdx+1) % themes.length;
+      const name = themes[themeIdx];
+      applyTheme(name);
+      /* Broadcast to other window (audience ↔ presenter) */
+      if (!fromRemote && bc) bc.postMessage({ type: 'theme', name: name });
+    }
+
+    // animation cycling on current slide
+    let animIdx = 0;
+    function cycleAnim(){
+      animIdx = (animIdx+1) % ANIMS.length;
+      const a = ANIMS[animIdx];
+      const target = slides[idx].querySelector('[data-anim-target]') || slides[idx];
+      ANIMS.forEach(x => target.classList.remove('anim-'+x));
+      void target.offsetWidth;
+      target.classList.add('anim-'+a);
+      target.setAttribute('data-anim', a);
+      const ind = document.querySelector('.anim-indicator');
+      if (ind) ind.textContent = a;
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.metaKey||e.ctrlKey||e.altKey) return;
+      switch (e.key) {
+        case 'ArrowRight': case ' ': case 'PageDown': case 'Enter': go(idx+1); e.preventDefault(); break;
+        case 'ArrowLeft': case 'PageUp': case 'Backspace': go(idx-1); e.preventDefault(); break;
+        case 'Home': go(0); break;
+        case 'End': go(total-1); break;
+        case 'f': case 'F': fullscreen(); break;
+        case 's': case 'S': openPresenterWindow(); break;
+        case 'n': case 'N': toggleNotes(); break;
+        case 'o': case 'O': toggleOverview(); break;
+        case 't': case 'T': cycleTheme(); break;
+        case 'a': case 'A': cycleAnim(); break;
+        case 'Escape': toggleOverview(false); toggleNotes(false); break;
+      }
+    });
+
+    // hash deep-link
+    function fromHash(){
+      const m = /^#\/(\d+)/.exec(location.hash||'');
+      if (m) go(Math.max(0, parseInt(m[1],10)-1));
+    }
+    window.addEventListener('hashchange', fromHash);
+    fromHash();
+    go(idx);
+  });
+})();
+
+</script>
+<!-- ============ PART B :: QUIZ SCORE ENGINE (accumulating + localStorage) ============
+     Ported from test-automation/playwright-pro.es.html (quiz engine + score chip +
+     bump animation + localStorage persistence). Adapted to this deck's .qitem markup:
+     each .qitem locks on first answer, reveals .qexp, the running score accumulates in
+     the #score-chip and survives reloads via localStorage. -->
+<script id="upex-quiz-engine">
+(function(){
+'use strict';
+function init(){
+  var qitems = Array.prototype.slice.call(document.querySelectorAll('.qitem'));
+  if(!qitems.length) return;
+  var TOTAL = qitems.length;
+  var chip = document.getElementById('score-chip');
+  var KEY = 'triforce-exploration-quiz:' + location.pathname;
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ state = {}; }
+  var score = 0;
+
+  function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+  function recount(){ score = 0; for(var k in state){ if(state[k] === 'correct') score++; } }
+  function updateChip(){
+    if(!chip) return;
+    chip.textContent = '⭐ ' + score + '/' + TOTAL;
+    chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump');
+  }
+  function correctOpt(qi){
+    var opts = qi.querySelectorAll('.opt');
+    for(var i=0;i<opts.length;i++){ if(opts[i].getAttribute('data-correct') === '1') return opts[i]; }
+    return null;
+  }
+  function lock(qi, clickedOpt, ok){
+    qi.classList.add('answered');
+    var co = correctOpt(qi);
+    if(ok){
+      (clickedOpt || co || {classList:{add:function(){}}}).classList.add('correct');
+    } else {
+      if(clickedOpt) clickedOpt.classList.add('wrong');
+      if(co) co.classList.add('reveal-correct');
+    }
+  }
+
+  qitems.forEach(function(qi, i){
+    var id = 'q' + i;
+    if(state[id]) lock(qi, null, state[id] === 'correct');   // replay saved answers
+    Array.prototype.forEach.call(qi.querySelectorAll('.opt'), function(opt){
+      opt.addEventListener('click', function(){
+        if(qi.classList.contains('answered')) return;          // one shot per question
+        var ok = opt.getAttribute('data-correct') === '1';
+        state[id] = ok ? 'correct' : 'wrong';
+        lock(qi, opt, ok);
+        persist(); recount(); updateChip();
+      });
+    });
+  });
+
+  recount(); updateChip();
+}
+if(document.readyState !== 'loading') init();
+else document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+<script>
+/* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
+   Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
+(function(){
+  try{
+    if (new URLSearchParams(location.search).has('preview')) return;
+    var BASE_W = 1280, BASE_H = 720;
+    var deck = document.querySelector('.deck');
+    if (!deck) return;
+    function fit(){
+      var vw = window.innerWidth, vh = window.innerHeight;
+      if (vw >= 1024 && vh >= 640){
+        deck.style.transform = '';
+        deck.style.width = ''; deck.style.height = '';
+        deck.style.position = ''; deck.style.left = ''; deck.style.top = '';
+        document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+        document.documentElement.style.background = '';
+        return;
+      }
+      var scale = Math.min(vw / BASE_W, vh / BASE_H);
+      deck.style.width = BASE_W + 'px';
+      deck.style.height = BASE_H + 'px';
+      deck.style.transformOrigin = 'top left';
+      deck.style.transform = 'scale(' + scale + ')';
+      deck.style.position = 'absolute';
+      deck.style.left = ((vw - BASE_W * scale) / 2) + 'px';
+      deck.style.top = ((vh - BASE_H * scale) / 2) + 'px';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.background = (function(){var d=getComputedStyle(deck).backgroundColor;if(d&&d!=='rgba(0, 0, 0, 0)'&&d!=='transparent')return d;var b=getComputedStyle(document.body).backgroundColor;return (b&&b!=='rgba(0, 0, 0, 0)'&&b!=='transparent')?b:'#0d1117';})();
+    }
+    fit();
+    window.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', function(){ setTimeout(fit, 60); });
+  }catch(e){ /* never break the deck over a fit error */ }
+})();
+</script>
+
+<!-- ============ MOBILE NAV (UPEX) — swipe → flechas + hint once-only. scale-to-fit vive en el deck fuente ============ -->
+<style id="upex-navhint-style">
+#upex-navhint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;
+  display:flex;align-items:center;gap:.4rem;background:rgba(20,22,34,.94);
+  border:1px solid rgba(255,255,255,.18);border-radius:999px;
+  padding:.5rem .95rem;font:600 13px/1.2 system-ui,-apple-system,sans-serif;color:#c0caf5;
+  box-shadow:0 6px 20px rgba(0,0,0,.45);animation:upexHintIn .35s ease both;cursor:pointer}
+@keyframes upexHintIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%)}}
+#upex-navhint.out{opacity:0;transition:opacity .4s}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Navegación por swipe: el runtime del deck escucha keydown ArrowLeft/Right. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,a,.quiz'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Hint de navegación: solo móvil (chrome del deck oculto por scale-to-fit),
+   una sola vez por dominio (localStorage). ?hint=1 lo fuerza para QA. */
+var KEY='upex-deck-navhint-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]hint=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var h=document.createElement('div'); h.id='upex-navhint';
+  h.textContent='👆 Desliza para avanzar →';
+  var close=function(){ if(!h.isConnected)return; h.classList.add('out'); setTimeout(function(){h.remove();},400); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  h.addEventListener('click',close);
+  document.body.appendChild(h);
+  setTimeout(close,5000);
+}
+})();
+</script>
+
+</body></html>

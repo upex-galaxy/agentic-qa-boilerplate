@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>El Códice de Nomenclatura — Convenciones de QA &amp; Automatización</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root{
+  --bg:#0b0d12; --bg-2:#0e1118; --panel:#12161f; --panel-2:#161b26;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14);
+  --t1:#eef1f7; --t2:#9aa3b4; --t3:#5f6878;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Space Grotesk','Inter',-apple-system,system-ui,sans-serif;
+  --case:#22d3ee; --group:#a3e635; --container:#fbbf24; --code:#a78bfa;
+  --jira:#60a5fa; --git:#fb923c; --fs:#f472b6; --law:#34d399;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--t1);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+body{overflow:hidden}
+
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+  padding:64px 88px 84px;opacity:0;pointer-events:none;
+  transform:translateY(16px) scale(.99);transition:opacity .45s var(--ease),transform .45s var(--ease);
+  overflow:auto}
+.slide.is-active{opacity:1;pointer-events:auto;transform:none;z-index:2}
+.slide::-webkit-scrollbar{width:8px}
+.slide::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:8px}
+
+.slide::before{content:"";position:absolute;inset:0;z-index:-1;
+  background:radial-gradient(900px 500px at 12% -8%,color-mix(in srgb,var(--ac,#22d3ee) 13%,transparent),transparent 60%),
+             radial-gradient(800px 600px at 110% 120%,color-mix(in srgb,var(--ac,#22d3ee) 9%,transparent),transparent 55%);
+  pointer-events:none}
+
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--t3)}
+.kick{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ac,#22d3ee)}
+h1{font-size:68px;line-height:1.02;font-weight:700;letter-spacing:-.03em;margin:14px 0 18px}
+h2{font-size:46px;line-height:1.05;font-weight:700;letter-spacing:-.03em;margin:10px 0 14px}
+h3{font-size:27px;line-height:1.15;font-weight:600;margin:0 0 10px}
+h4{font-size:18px;font-weight:600;margin:0 0 6px}
+p{margin:0 0 10px}
+.lede{font-size:21px;line-height:1.5;color:var(--t2);font-weight:300;max-width:76ch}
+.dim{color:var(--t2)} .dim3{color:var(--t3)}
+.mono{font-family:var(--mono)}
+.grad{background:linear-gradient(100deg,var(--case),var(--code) 55%,var(--fs));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.big{font-family:var(--mono);font-weight:800;font-size:118px;line-height:1;letter-spacing:-.04em}
+
+.row{display:flex;gap:20px} .row.wrap{flex-wrap:wrap} .center{align-items:center}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.stack>*+*{margin-top:12px}
+.mt-s{margin-top:8px}.mt-m{margin-top:18px}.mt-l{margin-top:30px}
+.fill{flex:1}
+
+.chip{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;padding:5px 11px;border-radius:999px;
+  background:color-mix(in srgb,var(--ac,#22d3ee) 13%,transparent);color:var(--ac,#22d3ee);
+  border:1px solid color-mix(in srgb,var(--ac,#22d3ee) 34%,transparent)}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--ac,#22d3ee);box-shadow:0 0 10px var(--ac,#22d3ee)}
+.tag{display:inline-block;font-family:var(--mono);font-size:11.5px;padding:3px 9px;border-radius:6px;
+  background:var(--panel-2);color:var(--t2);border:1px solid var(--line)}
+.src{display:inline-block;font-family:var(--mono);font-size:11px;color:var(--t3);
+  border:1px dashed var(--line-2);border-radius:6px;padding:2px 8px}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;position:relative}
+.card.lyr{border-top:2px solid var(--ac,#22d3ee)}
+.card-soft{background:var(--panel-2)}
+.callout{border-radius:14px;padding:16px 18px;background:color-mix(in srgb,var(--ac,#22d3ee) 8%,var(--panel));
+  border:1px solid color-mix(in srgb,var(--ac,#22d3ee) 28%,transparent)}
+.callout.warn{--ac:#fbbf24} .callout.bad{--ac:#f87171} .callout.good{--ac:#34d399}
+
+.tmpl{font-family:var(--mono);font-size:22px;font-weight:600;line-height:1.55;letter-spacing:-.01em;
+  background:var(--bg-2);border:1px solid var(--line-2);border-left:3px solid var(--ac,#22d3ee);
+  border-radius:12px;padding:18px 22px;color:var(--t1);white-space:normal;word-break:break-word}
+.tmpl.sm{font-size:19px}
+.t-pre{color:var(--jira);font-weight:700}
+.t-fix{color:var(--ac,#22d3ee);font-weight:800}
+.t-var{color:var(--t1)}
+.t-opt{color:var(--t3);font-style:italic}
+.t-pun{color:var(--t3)}
+.ex{font-family:var(--mono);font-size:14.5px;color:var(--t2);padding:5px 0;border-bottom:1px dashed var(--line)}
+.ex b{color:var(--ac,#22d3ee);font-weight:700}
+.ex:last-child{border-bottom:0}
+.ex.bad{color:#f8a4a4} .ex.bad s{opacity:.7}
+.ex.good{color:#aee9c4}
+
+.lg{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--t2)}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);font-weight:600}
+td.m,.m{font-family:var(--mono)}
+td .lp{color:var(--ac,#22d3ee);font-weight:600}
+tbody tr:hover{background:var(--panel)}
+
+.lstack{display:flex;flex-direction:column;gap:9px;max-width:1040px}
+.lbar{display:flex;align-items:center;gap:18px;padding:13px 18px;border-radius:12px;background:var(--panel);
+  border:1px solid var(--line);border-left:4px solid var(--ac);transition:transform .2s var(--ease)}
+.lbar:hover{transform:translateX(6px)}
+.lbar .ln{font-family:var(--mono);font-weight:700;font-size:15px;color:var(--ac);min-width:128px;letter-spacing:.04em}
+.lbar .ld{color:var(--t2);font-size:14.5px}
+.lbar .lx{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--t3)}
+
+.gap{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;border-left:3px solid #fbbf24}
+.gap h4{color:#fde68a}
+.gap .prop{font-family:var(--mono);font-size:12.5px;color:#aee9c4;margin-top:7px;display:block}
+
+.hd{position:fixed;top:20px;left:40px;right:40px;display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--t3);z-index:30;pointer-events:none}
+/* El brand izquierdo del header ocupa la esquina superior izquierda, donde el
+   visor de cursos (DeckViewer) inyecta su chrome flotante (≡ menú · ← Decks ·
+   Siguiente →). Lo ocultamos para evitar el solape: el visor ya da contexto de
+   navegación, y el span derecho ("agentic-qa · nomenclatura") sigue anclado a la
+   derecha vía space-between. visibility (no display) preserva ese anclaje. */
+.hd>span:first-child{visibility:hidden}
+.ft{position:fixed;bottom:18px;left:40px;right:40px;display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:11px;color:var(--t3);z-index:30;pointer-events:none}
+.pbar{position:fixed;left:0;bottom:0;height:3px;z-index:40;background:transparent}
+.pbar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--case),var(--code),var(--fs));transition:width .35s var(--ease)}
+.rail{position:fixed;right:18px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;z-index:30}
+.rail i{width:8px;height:8px;border-radius:50%;background:var(--line-2);cursor:pointer;transition:all .2s}
+.rail i.on{background:var(--code);box-shadow:0 0 10px var(--code);transform:scale(1.35)}
+.hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-family:var(--mono);font-size:11px;color:var(--t3);z-index:30;opacity:.6}
+kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px;color:var(--t2)}
+
+.ov{position:fixed;inset:0;background:rgba(6,8,12,.96);z-index:60;display:none;padding:48px;overflow:auto}
+.ov.show{display:block}
+.ovg{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.ovc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;min-height:78px;transition:all .2s}
+.ovc:hover{border-color:var(--code);transform:translateY(-2px)}
+.ovc .n{font-family:var(--mono);font-size:10px;color:var(--t3)}
+.ovc .t{font-size:12.5px;color:var(--t1);margin-top:5px;font-weight:500;line-height:1.25}
+
+.wf{margin-top:8px}
+.wf svg{width:100%;height:auto;display:block;max-height:54vh}
+.wfn{font-family:var(--mono);font-size:12px;font-weight:600;text-anchor:middle}
+.wfe{font-family:var(--mono);font-size:10.5px;text-anchor:middle;paint-order:stroke;stroke:#0b0d12;stroke-width:3px;stroke-linejoin:round}
+.wf-legend{display:flex;gap:15px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:12px;color:var(--t2)}
+.wf-legend .lg2{display:inline-flex;align-items:center;gap:6px}
+.wf-legend .nd{width:13px;height:13px;border-radius:4px;border:1px solid}
+.wf-global{margin:6px 0 0;font-family:var(--mono);font-size:11.5px;color:var(--t3)}
+.wf-take{margin-top:8px;font-size:14px;color:var(--t1)}
+.notes{margin-top:7px;font-size:11.5px;line-height:1.5;color:var(--t3);border-left:2px solid var(--line-2);padding-left:12px}
+@media print{body{overflow:visible}.slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:auto;min-height:100vh}}
+</style>
+</head>
+<body>
+<div class="hd"><span>El Códice de Nomenclatura</span><span>agentic-qa · nomenclatura</span></div>
+<div class="ft"><span class="mono">#naming #conventions #single-source-of-truth</span><span><span id="cur">1</span> / <span id="tot">00</span></span></div>
+<div class="pbar"><span id="pf"></span></div>
+<div class="rail" id="rail"></div>
+<div class="hint">← → navegar · <kbd>O</kbd> vista general · <kbd>F</kbd> pantalla completa</div>
+
+<div class="deck" id="deck">
+
+<!-- 1 · PORTADA -->
+<section class="slide" style="--ac:#22d3ee" data-t="Portada">
+  <p class="kick">Metodología QA · Códice de Referencia</p>
+  <h1>El Códice de <span class="grad">Nomenclatura</span></h1>
+  <p class="lede">Cada artefacto de prueba en este framework tiene una forma de nombre exacta. Esta es la única fuente de verdad — desde un test case en el TMS hasta un componente KATA, una rama, una carpeta. Aprende la forma una vez; lee la intención de cualquier artefacto de un vistazo.</p>
+  <div class="row mt-l" style="gap:10px;flex-wrap:wrap">
+    <span class="chip"><span class="dot"></span>7 capas</span>
+    <span class="chip" style="--ac:#a78bfa"><span class="dot"></span>30+ artefactos</span>
+    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>12 convenciones ratificadas</span>
+    <span class="chip" style="--ac:#a3e635"><span class="dot"></span>0 contradicciones</span>
+  </div>
+  <p class="dim3 mono mt-l" style="font-size:12px">Vive en <b>.claude/skills/agentic-qa-core/</b> — el skill base global.</p>
+</section>
+
+<!-- A · POR QUÉ UN CÓDICE -->
+<section class="slide" style="--ac:#34d399" data-t="Por qué un códice">
+  <p class="kick">Antes de las formas — por qué existe este sistema</p>
+  <h2>¿Por qué un códice de nombres?</h2>
+  <p class="lede mt-s">Un nombre no es decoración: es el primer dato de cada artefacto. Cuando cada nombre sigue una forma estricta, su <b>capa</b>, su <b>alcance</b> y su <b>intención</b> se leen sin abrir nada — por una persona o por una máquina.</p>
+  <div class="grid g4 mt-l">
+    <div class="card lyr" style="--ac:#22d3ee"><h4>Legible de un vistazo</h4><p class="dim" style="font-size:14px">El prefijo y el primer token dicen qué es y a qué capa pertenece antes de leer la frase.</p></div>
+    <div class="card lyr" style="--ac:#a3e635"><h4>Trazable</h4><p class="dim" style="font-size:14px">La clave Jira viaja en el nombre, así Story ↔ test ↔ código ↔ rama quedan atados.</p></div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Legible por máquina</h4><p class="dim" style="font-size:14px">Lint, sync y el <span class="mono">kata-manifest</span> dependen de formas predecibles para automatizar.</p></div>
+    <div class="card lyr" style="--ac:#f472b6"><h4>Anti-duplicación</h4><p class="dim" style="font-size:14px">Una sola forma por artefacto evita dos nombres para la misma cosa.</p></div>
+  </div>
+  <p class="dim3 mt-l">Aprende la forma una vez; lee la intención de cualquier artefacto para siempre.</p>
+</section>
+
+<!-- B · CONCEPTOS BASE -->
+<section class="slide" style="--ac:#a3e635" data-t="Conceptos base">
+  <p class="kick">El vocabulario primero — define esto antes de cualquier nombre</p>
+  <h2>Conceptos base</h2>
+  <p class="lede mt-s">Todo el códice usa estos términos. Léelos una vez; el resto del deck asume que ya los conoces.</p>
+  <div class="grid g3 mt-m">
+    <div class="card"><h4>TMS</h4><p class="dim" style="font-size:13.5px">Test Management System — dónde viven tests, planes y corridas (aquí, Jira + Xray).</p></div>
+    <div class="card"><h4>Epic / Story / PBI</h4><p class="dim" style="font-size:13.5px">Epic = feature; Story = unidad de trabajo con criterios de aceptación; PBI = el ítem del backlog.</p></div>
+    <div class="card"><h4>Test Case (TC)</h4><p class="dim" style="font-size:13.5px">Un caso individual — un comportamiento afirmado. La hoja del árbol.</p></div>
+    <div class="card"><h4>Test Set</h4><p class="dim" style="font-size:13.5px">Agrupación lógica de TCs por feature. No planifica ni ejecuta — solo agrupa.</p></div>
+    <div class="card"><h4>Test Plan</h4><p class="dim" style="font-size:13.5px">Qué se va a probar y su alcance (Story / Feature / Sprint / Producto).</p></div>
+    <div class="card"><h4>Test Execution</h4><p class="dim" style="font-size:13.5px">Una corrida de ese plan — el registro de qué pasó o falló.</p></div>
+    <div class="card"><h4>Precondition (PRC)</h4><p class="dim" style="font-size:13.5px">El estado requerido antes de ejecutar (ej. usuario autenticado).</p></div>
+    <div class="card"><h4>ATC</h4><p class="dim" style="font-size:13.5px">Acceptance Test Case — el método KATA que implementa un TC en código.</p></div>
+    <div class="card"><h4>KATA</h4><p class="dim" style="font-size:13.5px">La arquitectura de pruebas en capas (L1–L4) del framework. Ver la capa CODE.</p></div>
+    <div class="card"><h4>Fixture</h4><p class="dim" style="font-size:13.5px">Inyección de dependencias de KATA — entrega api/ui/test ya listos al test.</p></div>
+    <div class="card"><h4>Xray</h4><p class="dim" style="font-size:13.5px">El plugin de TMS sobre Jira que aporta Test, Test Set, Test Plan, Test Execution.</p></div>
+    <div class="card"><h4>Modalidad</h4><p class="dim" style="font-size:13.5px">Cómo guarda el proyecto los TCs: Xray (issues dedicados) o Jira-nativo (campos).</p></div>
+  </div>
+</section>
+
+<!-- C · ACRÓNIMOS -->
+<section class="slide" style="--ac:#fbbf24" data-t="Acrónimos">
+  <p class="kick">La clave de siglas — cada acrónimo del códice, expandido</p>
+  <h2>Acrónimos de un vistazo</h2>
+  <p class="dim mt-s" style="font-size:14px">Cada <b>Plan (P)</b> se empareja con sus <b>Results (R)</b> en la misma altitud — lee cada fila de lado a lado.</p>
+  <div class="grid g2 mt-m">
+    <table>
+      <thead><tr><th>Altitud</th><th>Plan (P)</th><th>Results (R)</th></tr></thead>
+      <tbody>
+        <tr><td>Producto</td><td class="m"><span class="lp">MTP</span> — Master Test Plan</td><td class="dim">—</td></tr>
+        <tr><td>Feature</td><td class="m"><span class="lp">FTP</span> — Feature Test Plan</td><td class="m"><span class="lp">FTR</span> — Feature Test Results</td></tr>
+        <tr><td>Sprint</td><td class="m"><span class="lp">STP</span> — Sprint Test Plan</td><td class="m"><span class="lp">STR</span> — Sprint Test Results</td></tr>
+        <tr><td>Story</td><td class="m"><span class="lp">ATP</span> — Acceptance Test Plan</td><td class="m"><span class="lp">ATR</span> — Acceptance Test Results</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>Sigla</th><th>Significa</th><th>Capa</th></tr></thead>
+      <tbody>
+        <tr><td class="m"><span class="lp">TC</span></td><td>Test Case</td><td class="dim">CASE</td></tr>
+        <tr><td class="m"><span class="lp">ATC</span></td><td>Acceptance Test Case</td><td class="dim">CODE</td></tr>
+        <tr><td class="m"><span class="lp">TS</span></td><td>Test Set</td><td class="dim">GROUP</td></tr>
+        <tr><td class="m"><span class="lp">PRC</span></td><td>Precondition</td><td class="dim">CONTAINER</td></tr>
+        <tr><td class="m"><span class="lp">PBI</span></td><td>Product Backlog Item</td><td class="dim">Jira / FS</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout mt-m" style="padding:11px 14px"><p style="margin:0" class="dim"><b>Primera letra</b> = altitud: <b>M</b>aster · <b>F</b>eature · <b>S</b>print · <b>A</b>cceptance (Story). <b>Última letra</b>: <b>P</b> = Plan (qué se probará) · <b>R</b> = <b>Results</b> (el paraguas: la ejecución y sus runs). Un "run" = una iteración de la ejecución.</p></div>
+</section>
+
+<!-- 3 · LAS 7 CAPAS -->
+<section class="slide" style="--ac:#a78bfa" data-t="Siete capas">
+  <p class="kick">El mapa · los nombres se organizan por altitud</p>
+  <h2>Siete Capas de Nomenclatura</h2>
+  <p class="lede mt-s">La <b>capa</b> de un nombre te dice qué tipo de cosa es antes de leer una sola palabra. Cada capa tiene su color en este códice.</p>
+  <div class="lstack mt-m">
+    <div class="lbar" style="--ac:#22d3ee"><span class="ln">CASE</span><span class="ld">El Test Case (TC) individual — lo que se afirma</span><span class="lx">should &lt;outcome&gt;</span></div>
+    <div class="lbar" style="--ac:#a3e635"><span class="ln">GROUP</span><span class="ld">El contenedor de casos — la feature bajo prueba</span><span class="lx">Validate &lt;feature&gt;</span></div>
+    <div class="lbar" style="--ac:#fbbf24"><span class="ln">CONTAINER</span><span class="ld">Vasijas de planificación y ejecución — ATP/ATR/FTP/STP + Test Set/PRC</span><span class="lx">{ACRONYM}: {scope}: …</span></div>
+    <div class="lbar" style="--ac:#a78bfa"><span class="ln">CODE</span><span class="ld">KATA — componentes, ATCs, archivos, tags</span><span class="lx">@atc · {Resource}Api</span></div>
+    <div class="lbar" style="--ac:#60a5fa"><span class="ln">JIRA</span><span class="ld">Estados de workflow, labels, títulos de issues de calidad</span><span class="lx">Epic: Component: …</span></div>
+    <div class="lbar" style="--ac:#fb923c"><span class="ln">GIT</span><span class="ld">Ramas, commits, títulos de PR</span><span class="lx">type(KEY): …</span></div>
+    <div class="lbar" style="--ac:#f472b6"><span class="ln">FILESYSTEM</span><span class="ld">Árbol PBI, archivos spec/plan, carpetas KATA</span><span class="lx">EPIC-&lt;KEY&gt;-&lt;slug&gt;</span></div>
+  </div>
+  <div class="callout mt-m" style="padding:10px 14px"><p style="margin:0" class="dim"><b>GROUP vs CONTAINER</b> — ambos "contienen", pero <b style="color:#a3e635">GROUP</b> solo agrupa casos por feature (<span class="mono">describe</span> / Test Set), mientras <b style="color:#fbbf24">CONTAINER</b> son las vasijas de planificación y ejecución (Plan / Run). GROUP organiza; CONTAINER planifica + ejecuta.</p></div>
+</section>
+
+<!-- E · MODELO MENTAL -->
+<section class="slide" style="--ac:#a78bfa" data-t="Modelo mental">
+  <p class="kick">Cómo encajan las capas — una imagen antes de los detalles</p>
+  <h2>El modelo mental</h2>
+  <p class="lede mt-s">Cada capa anida en la siguiente. Una Story se planifica, agrupa sus casos, se ejecuta, y el código la espeja — todo atado por la misma clave Jira.</p>
+  <div class="tmpl mt-m" style="font-size:15px;line-height:1.75;--ac:#a78bfa">
+<span class="t-pre">STORY PROJ-101</span>  <span class="t-pun">— la unidad de trabajo</span><br>
+&nbsp;├─ <span style="color:#fbbf24">ATP: PROJ-101: …</span>      <span class="t-pun">PLAN: qué se probará · CONTAINER</span><br>
+&nbsp;├─ <span style="color:#a3e635">TS: Validate login</span>   <span class="t-pun">GROUP: agrupa los casos</span><br>
+&nbsp;│&nbsp;&nbsp;├─ <span style="color:#22d3ee">PROJ-101: TC1: should grant access…</span>  <span class="t-pun">CASE</span><br>
+&nbsp;│&nbsp;&nbsp;└─ <span style="color:#22d3ee">PROJ-101: TC2: should reject login…</span>  <span class="t-pun">CASE</span><br>
+&nbsp;├─ <span style="color:#fbbf24">ATR: PROJ-101: Story Testing</span>  <span class="t-pun">RESULTS: qué pasó/falló · CONTAINER</span><br>
+&nbsp;└─ <span style="color:#a78bfa">@atc('PROJ-101') loginWithValidCredentials()</span>  <span class="t-pun">CODE espeja el caso</span>
+  </div>
+  <div class="row mt-m" style="gap:10px;flex-wrap:wrap">
+    <span class="chip" style="--ac:#60a5fa"><span class="dot"></span>misma clave Jira en todo</span>
+    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>Plan → Run</span>
+    <span class="chip" style="--ac:#a3e635"><span class="dot"></span>Group contiene Cases</span>
+    <span class="chip" style="--ac:#a78bfa"><span class="dot"></span>Code espeja Case vía @atc</span>
+  </div>
+</section>
+
+<!-- 4 · ANATOMÍA del título de TC -->
+<section class="slide" style="--ac:#22d3ee" data-t="Anatomía del TC">
+  <p class="kick">Capa · CASE — la forma más importante del códice</p>
+  <h2>Anatomía del título de un Test Case</h2>
+  <div class="tmpl mt-m"><span class="t-pre">{US_ID}</span><span class="t-pun">: </span><span class="t-pre">TC#</span><span class="t-pun">: </span><span class="t-fix">should</span> <span class="t-var">&lt;expected outcome&gt;</span> <span class="t-opt">[&lt;connector&gt; &lt;condition&gt;]</span> <span class="t-opt">[given &lt;precondition&gt;]</span></div>
+  <div class="row mt-m" style="gap:22px;flex-wrap:wrap">
+    <span class="lg"><span class="sw" style="background:#60a5fa"></span><b class="mono">{US_ID}</b> — clave de la User Story, siempre</span>
+    <span class="lg"><span class="sw" style="background:#60a5fa"></span><b class="mono">TC#</b> — secuencial (TC1, TC2…)</span>
+    <span class="lg"><span class="sw" style="background:#22d3ee"></span><b class="mono">should</b> — fijo, verbo primero</span>
+    <span class="lg"><span class="sw" style="background:#eef1f7"></span><b class="mono">&lt;outcome&gt;</b> — verbo + objeto afirmado</span>
+    <span class="lg"><span class="sw" style="background:#5f6878"></span><b class="mono">[connector]</b> — when / if · opcional</span>
+    <span class="lg"><span class="sw" style="background:#5f6878"></span><b class="mono">[given]</b> — alcance / permiso · opcional</span>
+  </div>
+  <div class="grid g2 mt-m">
+    <div class="card">
+      <h4 class="dim3 mono" style="font-size:12px">EJEMPLOS</h4>
+      <div class="ex"><b>PROJ-101: TC1:</b> should grant access when credentials are valid</div>
+      <div class="ex"><b>PROJ-101: TC2:</b> should reject login if password is incorrect</div>
+      <div class="ex"><b>PROJ-101: TC3:</b> should cap input when exceeding 50 chars</div>
+      <div class="ex"><b>PROJ-101: TC4:</b> should block checkout when cart is empty <span class="dim3">given a logged-in user</span></div>
+    </div>
+    <div class="card">
+      <h4 class="dim3 mono" style="font-size:12px">RECHAZAR — vago, no por la palabra "should"</h4>
+      <div class="ex bad"><s>Login test</s> — sin ID, sin TC#, sin outcome</div>
+      <div class="ex bad"><s>Login - error</s> — demasiado vago</div>
+      <div class="ex bad"><s>TC1: Test form</s> — falta el prefijo US_ID</div>
+      <div class="ex bad"><s>should work correctly</s> — sin outcome concreto</div>
+    </div>
+  </div>
+  <div class="callout warn mt-m" style="padding:10px 14px"><p style="margin:0" class="dim"><b>Regla de mayúsculas</b> — <span class="mono" style="color:#22d3ee">should</span> va en minúscula porque <b>continúa</b> el prefijo <span class="mono">{US_ID}: TC#:</span> (frase corrida). <span class="mono" style="color:#a3e635">Validate</span> va en mayúscula porque <b>inicia</b> el summary del grupo. La capa decide el casing.</p></div>
+  <p class="mt-m"><span class="src">tms-conventions.md · jira-test-management.md · tms-architecture.md</span></p>
+</section>
+
+<!-- 5 · should vs Validate -->
+<section class="slide" style="--ac:#a3e635" data-t="should vs Validate">
+  <p class="kick">La distinción que rige todo el códice</p>
+  <h2><span class="mono" style="color:#22d3ee">should</span> &nbsp;vs&nbsp; <span class="mono" style="color:#a3e635">Validate</span></h2>
+  <div class="grid g2 mt-m">
+    <div class="card lyr" style="--ac:#22d3ee">
+      <span class="chip"><span class="dot"></span>CASE · la hoja</span>
+      <h3 class="mt-s">should &lt;outcome&gt;</h3>
+      <p class="dim">Un comportamiento concreto, afirmado. Lo que pasa o falla.</p>
+      <div class="tmpl sm mt-s"><span class="t-fix">should</span> grant access <span class="t-opt">when credentials valid</span></div>
+      <p class="dim mt-s mono" style="font-size:13px">Aplica a: TC del TMS · intención del método ATC · <span style="color:#22d3ee">test()</span> · Gherkin Scenario</p>
+    </div>
+    <div class="card lyr" style="--ac:#a3e635">
+      <span class="chip" style="--ac:#a3e635"><span class="dot"></span>GROUP · la rama</span>
+      <h3 class="mt-s">Validate &lt;feature&gt;</h3>
+      <p class="dim">El conjunto de casos de una capacidad. Nombra la caja, no un caso.</p>
+      <div class="tmpl sm mt-s" style="--ac:#a3e635"><span class="t-fix" style="color:#a3e635">Validate</span> user login</div>
+      <p class="dim mt-s mono" style="font-size:13px">Aplica a: summary de Xray Test Set · <span style="color:#a3e635">describe()</span> en código</p>
+    </div>
+  </div>
+  <div class="callout good mt-m"><h4>Juntos en código</h4>
+  <div class="tmpl sm mt-s" style="white-space:normal"><span style="color:#a3e635">describe</span>(<span class="t-pre">'PROJ-101: Validate user login'</span>, () =&gt; {<br>&nbsp;&nbsp;<span style="color:#22d3ee">test</span>(<span class="t-pre">'PROJ-101: should grant access when credentials are valid'</span>)<br>&nbsp;&nbsp;<span style="color:#22d3ee">test</span>(<span class="t-pre">'PROJ-101: should reject login when password is wrong'</span>)<br>})</div></div>
+</section>
+
+<!-- 6 · Capa GROUP -->
+<section class="slide" style="--ac:#a3e635" data-t="Capa Group">
+  <p class="kick">Capa · GROUP y contenedores de planificación</p>
+  <h2>Agrupar los casos</h2>
+  <div class="grid g2 mt-m">
+    <div class="card lyr" style="--ac:#a3e635"><h4><span class="mono">describe()</span> en código</h4>
+      <div class="tmpl sm" style="--ac:#a3e635"><span class="t-pre">'{TICKET-ID}: </span><span class="t-fix" style="color:#a3e635">Validate</span><span class="t-pre"> {feature}'</span></div>
+      <div class="ex mt-s"><b>'UPEX-411:</b> Validate discount codes'</div>
+      <p><span class="src">automation-standards.md</span></p>
+    </div>
+    <div class="card lyr" style="--ac:#a3e635"><h4>Test Set · TS</h4>
+      <div class="tmpl sm" style="--ac:#a3e635"><span class="t-fix" style="color:#a3e635">TS:</span> <span class="t-pre">{EPIC-KEY|module}</span><span class="t-pun">: </span><span class="t-fix" style="color:#a3e635">Validate</span> <span class="t-var">{feature}</span></div>
+      <div class="ex mt-s">TS: <b>GX-101:</b> Validate credit card payment</div>
+      <p class="dim3" style="font-size:12.5px">La membresía es un link — nunca el prefijo del TC.</p>
+    </div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Test Plan · ATP <span class="dim3" style="font-size:12px">(Story)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">ATP:</span> <span class="t-pre">{STORY-KEY}</span><span class="t-pun">: </span><span class="t-var">{story title}</span></div>
+      <div class="ex mt-s">ATP: PROJ-123: Apply discount at checkout</div>
+    </div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Test Plan · FTP <span class="dim3" style="font-size:12px">(Feature)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">FTP:</span> <span class="t-pre">{EPIC-KEY}</span><span class="t-pun">: </span><span class="t-var">{feature}</span></div>
+      <div class="ex mt-s">FTP: PROJ-42: Checkout &amp; Payments</div>
+    </div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Test Plan · STP <span class="dim3" style="font-size:12px">(Sprint)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">STP:</span> <span class="t-pre">Sprint#{N}</span><span class="t-pun">: </span><span class="t-var">Regression</span></div>
+      <div class="ex mt-s">STP: Sprint#30: Regression</div>
+    </div>
+  </div>
+  <p class="mt-s"><span class="src">tms-conventions.md §3 · jira-test-management.md §5 · planning-ladder</span></p>
+</section>
+
+<!-- 7 · Capa CONTAINER -->
+<section class="slide" style="--ac:#fbbf24" data-t="Capa Container">
+  <p class="kick">Capa · CONTAINER — vasijas de ejecución y setup</p>
+  <h2>Vasijas de ejecución y setup</h2>
+  <p class="dim mt-s" style="font-size:15px"><b>Vasija</b> (ing. <i>vessel</i>) = el subconjunto de artefactos que <b>contiene</b> una corrida o un plan. Todo en el códice es un artefacto; la vasija es la que se ejecuta o se planifica — por eso no la llamamos solo "artefacto".</p>
+  <div class="grid g2 mt-m">
+    <div class="card lyr" style="--ac:#fbbf24"><h4>ATR · Acceptance Test Results <span class="dim3" style="font-size:12px">(Story Testing · issue Test Execution)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">ATR:</span> <span class="t-pre">{STORY-KEY}</span><span class="t-pun">: </span><span class="t-var">Story Testing</span></div>
+      <div class="ex mt-s">ATR: GX-123: Story Testing</div>
+    </div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>STR · Sprint Test Results <span class="dim3" style="font-size:12px">(Regression Testing · issue Test Execution)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">STR:</span> <span class="t-pre">Sprint#{N}</span><span class="t-pun">: </span><span class="t-var">Regression Testing</span></div>
+      <div class="ex mt-s">STR: Sprint#30: Regression Testing</div>
+    </div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>ReTest <span class="dim3" style="font-size:12px">(re-test de bug)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">ReTest:</span> <span class="t-pre">{BUG-KEY}</span><span class="t-pun">: </span><span class="t-var">{summary}</span></div>
+      <div class="ex mt-s">ReTest: GX-202: Wrong error on invalid password</div>
+    </div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Precondition · PRC <span class="dim3" style="font-size:12px">(título = el estado)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">PRC:</span> <span class="t-pre">{COMPONENT}</span><span class="t-pun">: </span><span class="t-var">{required state}</span></div>
+      <div class="ex mt-s">PRC: Payment: Authenticated user with a saved card</div>
+      <p class="dim3" style="font-size:12px">El título indica el <b>estado</b>; los pasos de setup viven en el contenido.</p>
+    </div>
+  </div>
+  <p class="mt-s"><span class="src">tms-conventions.md §3 · xray-platform.md · planning-ladder</span></p>
+</section>
+
+<!-- 7b · LA ESCALERA DE PLANIFICACIÓN -->
+<section class="slide" style="--ac:#fbbf24" data-t="Escalera de planificación">
+  <p class="kick">Capa · CONTAINER — la escalera de planificación</p>
+  <h2>La Escalera de Planificación</h2>
+  <p class="lede mt-s">Cada Plan y cada Run lleva un prefijo acrónimo de 3 letras, así la altitud y el plan-vs-run se leen en el primer token. Cuatro Epics de proceso QA le dan a cada tipo de artefacto un único hogar de gobierno.</p>
+  <div class="row mt-m" style="gap:9px;flex-wrap:wrap">
+    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>QA Master Test Plan · todos los Test Plans</span>
+    <span class="chip" style="--ac:#a3e635"><span class="dot"></span>QA Test Repository · todos los Tests</span>
+    <span class="chip" style="--ac:#22d3ee"><span class="dot"></span>QA Test Artifacts · todos los Runs + PRC + Test Sets</span>
+    <span class="chip" style="--ac:#f87171"><span class="dot"></span>QA Defect Management · todos los bug/defect/improvement</span>
+  </div>
+  <div class="lstack mt-m">
+    <div class="lbar" style="--ac:#a78bfa"><span class="ln">PRODUCT</span><span class="ld">MTP — Master Test Plan</span><span class="lx">Epic QA Master Test Plan</span></div>
+    <div class="lbar" style="--ac:#34d399"><span class="ln">FEATURE</span><span class="ld">FTP → FTR — "Feature Testing", ≥1 run/sprint</span><span class="lx">{EPIC-KEY}</span></div>
+    <div class="lbar" style="--ac:#60a5fa"><span class="ln">SPRINT</span><span class="ld">STP → STR — "Regression Testing", 1/sprint</span><span class="lx">Sprint#{N}</span></div>
+    <div class="lbar" style="--ac:#22d3ee"><span class="ln">STORY</span><span class="ld">ATP → ATR — "Story Testing", 1 run</span><span class="lx">{STORY-KEY}</span></div>
+  </div>
+  <table class="mt-m">
+    <thead><tr><th>Altitud</th><th>Plan</th><th>Results</th><th>Patrón</th></tr></thead>
+    <tbody>
+      <tr><td>Product</td><td class="m"><span class="lp">MTP</span></td><td class="dim">—</td><td class="m">Epic <span class="dim">QA Master Test Plan</span> (+ master-test-plan.md local)</td></tr>
+      <tr><td>Feature</td><td class="m"><span class="lp">FTP</span></td><td class="m"><span class="lp">FTR</span></td><td class="m">FTP/FTR: {EPIC-KEY}: … <span class="dim">— término FTR "Feature Testing", ≥1 run/sprint</span></td></tr>
+      <tr><td>Sprint</td><td class="m"><span class="lp">STP</span></td><td class="m"><span class="lp">STR</span></td><td class="m">STP/STR: Sprint#{N}: … <span class="dim">— término STR "Regression Testing", 1/sprint</span></td></tr>
+      <tr><td>Story</td><td class="m"><span class="lp">ATP</span></td><td class="m"><span class="lp">ATR</span></td><td class="m">ATP/ATR: {STORY-KEY}: … <span class="dim">— término ATR "Story Testing", 1 run</span></td></tr>
+    </tbody>
+  </table>
+  <div class="callout mt-m" style="padding:12px 15px"><p style="margin:0" class="dim"><b>Items sobre campos</b> — cada Plan es un issue Test Plan, cada Run es un issue Test Execution (ambas modalidades); el custom field de la Story es solo un fallback. 3 ejes: <b>parent</b> = epic QA · <b>link</b> = alcance · <b>components</b> = módulo.</p></div>
+  <p class="mt-s"><span class="src">defect-management-doctrine.md · traceability-linking.md · planning-ladder</span></p>
+</section>
+
+<!-- 8 · Divisor CODE -->
+<section class="slide" style="--ac:#a78bfa" data-t="Capa Code">
+  <p class="kick">Capa · CODE</p>
+  <h1>Nombres de <span class="grad">código KATA</span></h1>
+  <p class="lede">Componentes, ATCs, archivos, fixtures, tags — los nombres que viven en TypeScript. La clave del decorador ata cada línea de vuelta a Jira.</p>
+  <div class="callout mt-m" style="padding:12px 15px"><p style="margin:0" class="dim"><b>KATA</b> = <i>Component Action Test Architecture</i> — no es solo naming: es la estrategia arquitectónica del framework (inyección de dependencias, capas L1–L4, fixtures y nomenclatura). Aquí cubrimos solo sus <b>nombres</b>; la arquitectura completa vive en <span class="mono">kata-architecture.md</span>.</p></div>
+</section>
+
+<!-- 9 · ATC + @atc + archivos + test() -->
+<section class="slide" style="--ac:#a78bfa" data-t="ATC + decorador">
+  <p class="kick">Capa · CODE — la unidad de test case</p>
+  <h2>ATC, decorador, archivo, <span class="mono">test()</span></h2>
+  <div class="grid g2 mt-m">
+    <div class="card lyr" style="--ac:#a78bfa"><h4>Nombre de método ATC</h4>
+      <div class="tmpl sm" style="--ac:#a78bfa"><span class="t-var">{verb}{Resource}{Scenario}</span> <span class="t-pun">// camelCase</span></div>
+      <div class="ex mt-s">loginWithValidCredentials()</div>
+      <div class="ex">getUserWithNonExistentId()</div>
+      <p class="dim3" style="font-size:12px">Describe acción + outcome esperado. Nunca un solo click.</p>
+    </div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>Decorador @atc</h4>
+      <div class="tmpl sm" style="--ac:#a78bfa"><span class="t-fix" style="color:#a78bfa">@atc</span>(<span class="t-pre">'{JIRA_KEY}'</span>)</div>
+      <div class="ex mt-s">@atc(<b>'PROJ-101'</b>)</div>
+      <div class="callout bad mt-s" style="padding:10px 12px"><p class="mono" style="font-size:12.5px;margin:0">✗ <span class="dim">sin template literal:</span> @atc(&#96;TC-$&#123;id&#125;&#96;)</p></div>
+    </div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>Archivo de test</h4>
+      <div class="tmpl sm" style="--ac:#a78bfa"><span class="t-var">{verb}{Feature}</span><span class="t-fix" style="color:#a78bfa">.test.ts</span></div>
+      <div class="ex mt-s">applyDiscount.test.ts</div>
+      <div class="ex">authenticateUser.test.ts</div>
+      <p class="dim3" style="font-size:12px">El verbo = acción del usuario (apply, create) — no "verify/check/test".</p>
+    </div>
+    <div class="card lyr" style="--ac:#22d3ee"><h4>Bloque <span class="mono">test()</span> <span class="dim3" style="font-size:12px">CASE</span></h4>
+      <div class="tmpl sm" style="--ac:#22d3ee"><span class="t-pre">'{TICKET-ID}: </span><span class="t-fix">should</span><span class="t-pre"> {behavior} when {cond}'</span></div>
+      <div class="ex mt-s"><b>'UPEX-411:</b> should apply percentage discount when code is valid'</div>
+    </div>
+  </div>
+  <p class="mt-s"><span class="src">automation-standards.md · SKILL.md · kata-manifest.json</span></p>
+</section>
+
+<!-- 10 · componentes + fixtures -->
+<section class="slide" style="--ac:#a78bfa" data-t="Componentes">
+  <p class="kick">Capa · CODE — clases KATA (PascalCase, archivo = clase)</p>
+  <h2>Componentes y fixtures</h2>
+  <table class="mt-m">
+    <thead><tr><th>Tipo</th><th>Patrón</th><th>Ejemplo</th><th>Capa KATA</th></tr></thead>
+    <tbody>
+      <tr><td>Componente API</td><td class="m"><span class="lp">{Resource}</span>Api</td><td class="m">UsersApi.ts · OrdersApi.ts</td><td class="dim">L3</td></tr>
+      <tr><td>Componente UI (Page)</td><td class="m"><span class="lp">{Page}</span>Page</td><td class="m">LoginPage.ts · CheckoutPage.ts</td><td class="dim">L3</td></tr>
+      <tr><td>Módulo Steps</td><td class="m"><span class="lp">{Domain}</span>Steps</td><td class="m">AuthSteps.ts · CheckoutSteps.ts</td><td class="dim">cadenas L3</td></tr>
+      <tr><td>Fixture</td><td class="m"><span class="lp">{Type}</span>Fixture</td><td class="m">ApiFixture.ts · UiFixture.ts · TestFixture.ts</td><td class="dim">L4</td></tr>
+      <tr><td>Bases</td><td class="m">ApiBase · UiBase</td><td class="m">ApiBase.ts · UiBase.ts</td><td class="dim">L2</td></tr>
+      <tr><td>Context</td><td class="m">TestContext</td><td class="m">TestContext.ts</td><td class="dim">L1</td></tr>
+    </tbody>
+  </table>
+  <p class="mt-s"><span class="src">automation-standards.md §10 · kata-architecture.md</span></p>
+</section>
+
+<!-- 11 · tags + gherkin -->
+<section class="slide" style="--ac:#a78bfa" data-t="Tags + Gherkin">
+  <p class="kick">Capa · CODE — metadata de selección</p>
+  <h2>Tags y Gherkin</h2>
+  <div class="row mt-m" style="gap:10px;flex-wrap:wrap">
+    <span class="tag" style="color:#f87171;border-color:#f8717140">@critical</span>
+    <span class="tag" style="color:#34d399;border-color:#34d39940">@smoke</span>
+    <span class="tag" style="color:#60a5fa;border-color:#60a5fa40">@regression</span>
+    <span class="tag" style="color:#22d3ee;border-color:#22d3ee40">@e2e</span>
+    <span class="tag" style="color:#fb923c;border-color:#fb923c40">@integration</span>
+    <span class="tag" style="color:#9aa3b4">@flaky</span>
+  </div>
+  <div class="callout warn mt-m" style="padding:11px 14px"><p style="margin:0" class="dim"><b class="mono" style="color:#fbbf24">@integration</b> es el tag de pruebas API (reemplaza a <span class="mono">@api</span>). No confundir con el alias de import <span class="mono">@api/</span> — es otra cosa, intacto.</p></div>
+  <div class="grid g2 mt-m">
+    <div class="card"><h4>Gherkin Feature</h4><div class="tmpl sm"><span class="t-fix">Feature:</span> <span class="t-var">&lt;Entity&gt; &lt;Action&gt;</span></div><div class="ex mt-s">Feature: User Login</div></div>
+    <div class="card lyr" style="--ac:#22d3ee"><h4>Gherkin Scenario <span class="dim3" style="font-size:12px">CASE</span></h4><div class="tmpl sm" style="--ac:#22d3ee"><span class="t-fix">Scenario Outline: should</span> <span class="t-var">&lt;outcome&gt; &lt;conn&gt; &lt;cond&gt;</span></div><div class="ex mt-s">should grant access when credentials are valid</div></div>
+  </div>
+  <p class="mt-s"><span class="src">automation-standards.md · tms-conventions.md §6</span></p>
+</section>
+
+<!-- 12 · Capa JIRA -->
+<section class="slide" style="--ac:#60a5fa" data-t="Capa Jira">
+  <p class="kick">Capa · ISSUE TRACKER (Jira) — estados, labels, títulos de calidad</p>
+  <h2>Nombres en el Issue Tracker (Jira / TMS)</h2>
+  <div class="grid g2 mt-m">
+    <div class="card lyr" style="--ac:#60a5fa"><h4>Título de issue de calidad <span class="dim3" style="font-size:12px">bug / defect / improvement</span></h4>
+      <div class="tmpl sm" style="--ac:#60a5fa"><span class="t-pre">&lt;EPIC&gt;</span><span class="t-pun">: </span><span class="t-pre">&lt;COMPONENT&gt;</span><span class="t-pun">: </span><span class="t-var">&lt;summary&gt;</span></div>
+      <div class="ex mt-s">CheckoutFlow: Payment: Error not shown for incorrect password</div>
+      <p class="dim3" style="font-size:12px">Clasifica por la etapa del ciclo de vida de la feature — no por dónde se encontró.</p>
+    </div>
+    <div class="card lyr" style="--ac:#60a5fa"><h4>Clave de User Story</h4>
+      <div class="tmpl sm" style="--ac:#60a5fa"><span class="t-pre">{{PROJECT_KEY}}-{n}</span></div>
+      <div class="ex mt-s">PROJ-123 · GX-101</div>
+    </div>
+    <div class="card"><h4>Test Status <span class="dim3" style="font-size:12px">ciclo de workflow</span></h4>
+      <p class="mono dim" style="font-size:12.5px;line-height:1.7">Draft → In Design → Ready → <span style="color:#60a5fa">Manual</span> / In Review → Candidate → In Automation → Pull Request → <span style="color:#34d399">Automated</span> · Deprecated</p>
+    </div>
+    <div class="card"><h4>Execution Status <span class="dim3" style="font-size:12px">por corrida — campo distinto</span></h4>
+      <p class="mono" style="font-size:12.5px;line-height:1.8"><span style="color:#9aa3b4">TODO</span> · <span style="color:#60a5fa">EXECUTING</span> · <span style="color:#34d399">PASS</span> · <span style="color:#f87171">FAIL</span> · <span style="color:#fb923c">ABORTED</span> · <span style="color:#fbbf24">BLOCKED</span></p>
+    </div>
+  </div>
+  <div class="row mt-m" style="gap:8px;flex-wrap:wrap"><span class="dim3 mono" style="font-size:12px">labels:</span>
+    <span class="tag">smoke</span><span class="tag">regression</span><span class="tag">e2e</span><span class="tag">integration</span><span class="tag">functional</span><span class="tag">automation-candidate</span><span class="tag">manual-only</span><span class="tag">automated</span></div>
+  <div class="callout mt-m" style="--ac:#60a5fa;padding:10px 14px"><p style="margin:0" class="dim">Esta capa es <b>agnóstica del gestor</b> — Jira es el ejemplo de referencia; las mismas formas aplican a cualquier issue tracker (estados, labels, títulos de calidad).</p></div>
+  <p class="mt-s"><span class="src">tms-conventions.md · reporting-templates.md · defect-management-doctrine.md</span></p>
+</section>
+
+<!-- 13 · Capa GIT -->
+<section class="slide" style="--ac:#fb923c" data-t="Capa Git">
+  <p class="kick">Capa · GIT — ramas, commits, PRs</p>
+  <h2>Nombres de control de versiones</h2>
+  <div class="grid g3 mt-m">
+    <div class="card lyr" style="--ac:#fb923c"><h4>Rama</h4>
+      <div class="tmpl sm" style="--ac:#fb923c;font-size:16px"><span class="t-fix" style="color:#fb923c">{prefix}/</span><span class="t-pre">{KEY}-</span><span class="t-var">{slug}</span></div>
+      <div class="ex mt-s">test/UPEX-123-bulk-assign</div>
+      <p class="mono dim3" style="font-size:11.5px">feat · fix · test · docs · refactor · chore</p>
+    </div>
+    <div class="card lyr" style="--ac:#fb923c"><h4>Commit</h4>
+      <div class="tmpl sm" style="--ac:#fb923c;font-size:16px"><span class="t-fix" style="color:#fb923c">{type}</span>(<span class="t-pre">{scope}</span>)<span class="t-pun">:</span> <span class="t-var">{desc}</span></div>
+      <div class="ex mt-s">feat(UPEX-123): add bulk-assign</div>
+      <p class="dim3" style="font-size:11.5px">Imperativo · ≤72 chars · sin atribución AI</p>
+    </div>
+    <div class="card lyr" style="--ac:#fb923c"><h4>Título de PR <span class="dim3" style="font-size:12px">(tests)</span></h4>
+      <div class="tmpl sm" style="--ac:#fb923c;font-size:16px"><span class="t-fix" style="color:#fb923c">{type}</span>(<span class="t-pre">{KEY}</span>)<span class="t-pun">:</span> <span class="t-var">{desc}</span></div>
+      <div class="ex mt-s">test(UPEX-123): discount coverage</div>
+    </div>
+  </div>
+  <p class="mt-m"><span class="src">conventional-commits.md · git-flow-master/SKILL.md</span></p>
+</section>
+
+<!-- 14 · Capa FILESYSTEM -->
+<section class="slide" style="--ac:#f472b6" data-t="Capa Filesystem">
+  <p class="kick">Capa · FILESYSTEM — los árboles PBI y KATA</p>
+  <h2>Nombres de archivos y carpetas</h2>
+  <table class="mt-m">
+    <thead><tr><th>Qué</th><th>Patrón</th><th>Ejemplo</th></tr></thead>
+    <tbody>
+      <tr><td>Carpeta de Epic</td><td class="m"><span class="lp">EPIC</span>-&lt;KEY&gt;-&lt;slug&gt;</td><td class="m">EPIC-GX-101-user-auth</td></tr>
+      <tr><td>Carpeta de Story</td><td class="m"><span class="lp">STORY</span>-&lt;KEY&gt;-&lt;slug&gt;</td><td class="m">STORY-UPEX-110-discount-code</td></tr>
+      <tr><td>Carpetas coverable</td><td class="m"><span class="lp">BUG / IMPROVEMENT / TECHSTORY</span>-&lt;KEY&gt;-&lt;slug&gt;</td><td class="m">BUG-GX-202-login-error</td></tr>
+      <tr><td>Scope de test-spec</td><td class="m"><span class="lp">{PREFIX}</span>-T{NN}-{name}</td><td class="m">OD-T01-discount-validation</td></tr>
+      <tr><td>Spec por ATC</td><td class="m">atc/<span class="lp">{TICKET-ID}</span>-{brief}.md</td><td class="m">atc/UPEX-411-discount-20pct.md</td></tr>
+      <tr><td>Archivos canónicos</td><td class="m">spec.md · automation-plan.md · ROADMAP.md · PROGRESS.md</td><td class="dim">nombres fijos</td></tr>
+      <tr><td>Archivos de test KATA</td><td class="m">tests/{e2e,integration}/<span class="lp">{module}</span>/{verbFeature}.test.ts</td><td class="m">tests/e2e/orders/applyDiscount.test.ts</td></tr>
+    </tbody>
+  </table>
+  <p class="mt-s"><span class="src">CLAUDE.md §9 · planning-playbook.md</span></p>
+</section>
+
+<!-- 15 · Divisor GAPS -->
+<section class="slide" style="--ac:#fbbf24" data-t="Auditoría de cobertura">
+  <p class="kick">Auditoría de cobertura · las 12 convenciones ahora ratificadas</p>
+  <h1>Las <span class="grad">convenciones ratificadas</span></h1>
+  <p class="lede">Doce artefactos que solo tenían un nombre implícito o indefinido ahora son convenciones ratificadas — escritas en los references de los skills y aplicadas por convención.</p>
+  <div class="row mt-m" style="gap:10px;flex-wrap:wrap">
+    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>12 ratificadas</span>
+    <span class="chip" style="--ac:#a3e635"><span class="dot"></span>ahora canon</span>
+    <span class="chip" style="--ac:#f472b6"><span class="dot"></span>lint a futuro</span>
+  </div>
+</section>
+
+<!-- 16 · GAPS grid 1 -->
+<section class="slide" style="--ac:#fbbf24" data-t="Huecos 1-6">
+  <p class="kick">Huecos · datos, evidencia y arquitectura</p>
+  <h2>Ratificadas · 1–6</h2>
+  <div class="grid g3 mt-m">
+    <div class="gap"><h4>1 · Archivos de test-data</h4><p class="dim" style="font-size:13.5px">Los fixtures en tests/data/ no tienen forma.</p><span class="prop">{resource}-{variant}.json → users-valid.json</span></div>
+    <div class="gap"><h4>2 · Evidencia / screenshots</h4><p class="dim" style="font-size:13.5px">Los archivos en evidence/ son ad-hoc.</p><span class="prop">{KEY}-step{NN}-{action}.png</span></div>
+    <div class="gap"><h4>3 · Mocks / stubs</h4><p class="dim" style="font-size:13.5px">Sin hogar ni nombre para mocks de API.</p><span class="prop">data/mocks/{endpoint}/{method}.{status}.json</span></div>
+    <div class="gap"><h4>4 · Numeración de ADR</h4><p class="dim" style="font-size:13.5px">ADR-NNNN colisiona entre agentes paralelos.</p><span class="prop">ADR-{NNNN}-{slug}.md · manual vía README Index (sin script)</span></div>
+    <div class="gap"><h4>5 · Identificadores de env</h4><p class="dim" style="font-size:13.5px">Nombres de env solo implícitos por URL.</p><span class="prop">local · qa · staging · production</span></div>
+    <div class="gap"><h4>6 · Carpetas de módulo de test</h4><p class="dim" style="font-size:13.5px">Subcarpetas e2e/integration sin spec.</p><span class="prop">{domain-plural}/ kebab-case</span></div>
+  </div>
+</section>
+
+<!-- 17 · GAPS grid 2 -->
+<section class="slide" style="--ac:#fbbf24" data-t="Huecos 7-12">
+  <p class="kick">Huecos · reporting, corridas y modelos de datos</p>
+  <h2>Ratificadas · 7–12</h2>
+  <div class="grid g3 mt-m">
+    <div class="gap"><h4>7 · Labels de suite Allure</h4><p class="dim" style="font-size:13.5px">Agrupación del reporter indefinida.</p><span class="prop">derivar del tag Playwright — única fuente</span></div>
+    <div class="gap"><h4>8 · Archivos de test-execution</h4><p class="dim" style="font-size:13.5px">Un archivo md por ejecución vinculada (convención de sync).</p><span class="prop">test-executions/{TESTEXEC|RETESTEXEC}-{KEY}-{slug}.md</span></div>
+    <div class="gap"><h4>9 · Archivos de defect anidados</h4><p class="dim" style="font-size:13.5px">Un archivo md por defect vinculado (convención de sync).</p><span class="prop">defects/DEFECT-{KEY}-{slug}.md</span></div>
+    <div class="gap"><h4>10 · Data factory / types</h4><p class="dim" style="font-size:13.5px">Payloads Faker y modelos varían.</p><span class="prop">DataFactory.ts · types.ts · constants.ts</span></div>
+    <div class="gap"><h4>11 · Variables Gherkin</h4><p class="dim" style="font-size:13.5px">Estilo de placeholder implícito.</p><span class="prop">{snake_case} → {user_id}, {order_amount}</span></div>
+    <div class="gap"><h4>12 · Marcador de test bloqueado</h4><p class="dim" style="font-size:13.5px">Tests bloqueados por bug se taggean inconsistente.</p><span class="prop">@blocked:{BUG-KEY} + test.fail()</span></div>
+  </div>
+  <div class="callout mt-m" style="--ac:#a3e635;padding:11px 14px"><p style="margin:0" class="dim">Las 12 están ratificadas — ahora canon en los references de los skills. Siguiente: enforcement por lint (opcional).</p></div>
+</section>
+
+<!-- WF · Workflow de Story -->
+<section class="slide" style="--ac:#60a5fa" data-t="Workflow de Story">
+  <p class="kick">Capa · workflow JIRA — el ciclo de vida de la User Story / Feature</p>
+  <h2>Workflow de Story</h2>
+  <div class="wf-legend"><span class="lg2"><span class="nd" style="background:rgba(96,165,250,.16);border-color:#60a5fa"></span>Nuevo</span><span class="lg2"><span class="nd" style="background:rgba(167,139,250,.17);border-color:#a78bfa"></span>En progreso</span><span class="lg2"><span class="nd" style="background:rgba(52,211,153,.15);border-color:#34d399"></span>Hecho</span><span class="lg2"><span class="nd" style="background:rgba(248,113,113,.15);border-color:#f87171"></span>Abortado / rechazado</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#8b96ab" stroke-width="2" /></svg>Avance</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#e8993f" stroke-width="2" stroke-dasharray="6 5" /></svg>Retorno (back)</span></div>
+  <p class="wf-global">⚡ Global (desde cualquier estado): Create → Backlog · Ready For Dev · Ready For QA · ABORTED</p>
+  <div class="wf">
+  <svg viewBox="0 0 1180 470" role="img" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <marker id="wfArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+    </marker>
+  </defs>
+  <path d="M152,88 L222,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Analyze</title></path>
+  <path d="M354,88 L424,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Estimate</title></path>
+  <path d="M556,88 L626,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Estimated and Ready to work</title></path>
+  <path d="M758,88 L828,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Start working</title></path>
+  <path d="M960,88 L1030,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Pull Request</title></path>
+  <path d="M1096,112 L1096,248" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Deployed</title></path>
+  <path d="M1030,272 L960,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Start Testing</title></path>
+  <path d="M828,272 L758,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>QA Sign-Off</title></path>
+  <path d="M626,272 L556,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>include in release</title></path>
+  <path d="M424,272 L354,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>released</title></path>
+  <path d="M86,64 Q288,14 490,64" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Ready to Estimate</title></path><text x="288" y="35" class="wfe" fill="#7fe3ee">Ready to Estimate</text>
+  <path d="M894,112 Q1096,238 1062,248" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Pushed</title></path><text x="1043" y="209" class="wfe" fill="#7fe3ee">Pushed</text>
+  <path d="M878,296 L878,392" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>defect reported</title></path><text x="826" y="344" class="wfe" fill="#7fe3ee">defect reported</text>
+  <path d="M960,416 Q1098,264 936,112" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Fix defect</title></path><text x="1141" y="350" class="wfe" fill="#7fe3ee">Fix defect</text>
+  <path d="M894,392 Q665,316 692,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back to dev</title></path><text x="703" y="344" class="wfe" fill="#f0b377">back to dev</text>
+  <path d="M288,112 Q187,158 86,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M490,112 Q389,156 288,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>needs quality</title></path><text x="389" y="142" class="wfe" fill="#f0b377">needs quality</text>
+  <path d="M490,112 Q288,210 86,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M894,112 Q793,158 692,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M894,296 Q995,342 1096,296" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M692,296 Q793,342 894,296" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M910,392 L910,296" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M86,440 Q669,394 692,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>Recover</title></path><text x="529" y="365" class="wfe" fill="#f0b377">Recover</text>
+  <g><title>Backlog — idea registrada, sin refinar</title><rect x="20" y="64" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Backlog — idea registrada, sin refinar</title></rect><text x="86" y="88" class="wfn" fill="#cfe0fb" dominant-baseline="central">Backlog</text></g>
+  <g><title>Shift-Left QA — QA refina los ACs antes del sprint</title><rect x="222" y="64" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>Shift-Left QA — QA refina los ACs antes del sprint</title></rect><text x="288" y="88" class="wfn" fill="#e0d6fb" dominant-baseline="central"><tspan x="288" dy="-0.55em">Shift-Left</tspan><tspan x="288" dy="1.15em">QA</tspan></text></g>
+  <g><title>Estimation — el equipo estima el esfuerzo</title><rect x="424" y="64" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>Estimation — el equipo estima el esfuerzo</title></rect><text x="490" y="88" class="wfn" fill="#e0d6fb" dominant-baseline="central">Estimation</text></g>
+  <g><title>Ready For Dev — refinada y estimada, lista para desarrollo</title><rect x="626" y="64" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Ready For Dev — refinada y estimada, lista para desarrollo</title></rect><text x="692" y="88" class="wfn" fill="#cfe0fb" dominant-baseline="central"><tspan x="692" dy="-0.55em">Ready For</tspan><tspan x="692" dy="1.15em">Dev</tspan></text></g>
+  <g><title>In Progress — desarrollo en curso</title><rect x="828" y="64" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Progress — desarrollo en curso</title></rect><text x="894" y="88" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Progress</text></g>
+  <g><title>In Review — code review / PR abierto</title><rect x="1030" y="64" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Review — code review / PR abierto</title></rect><text x="1096" y="88" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Review</text></g>
+  <g><title>Ready For QA — desarrollada, lista para pruebas</title><rect x="1030" y="248" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Ready For QA — desarrollada, lista para pruebas</title></rect><text x="1096" y="272" class="wfn" fill="#cfe0fb" dominant-baseline="central"><tspan x="1096" dy="-0.55em">Ready For</tspan><tspan x="1096" dy="1.15em">QA</tspan></text></g>
+  <g><title>In Test — QA probando la historia</title><rect x="828" y="248" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Test — QA probando la historia</title></rect><text x="894" y="272" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Test</text></g>
+  <g><title>QA Approved — QA aprobó la historia</title><rect x="626" y="248" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>QA Approved — QA aprobó la historia</title></rect><text x="692" y="272" class="wfn" fill="#c5f0de" dominant-baseline="central"><tspan x="692" dy="-0.55em">QA</tspan><tspan x="692" dy="1.15em">Approved</tspan></text></g>
+  <g><title>Ready For Release — aprobada, lista para liberar</title><rect x="424" y="248" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>Ready For Release — aprobada, lista para liberar</title></rect><text x="490" y="272" class="wfn" fill="#c5f0de" dominant-baseline="central"><tspan x="490" dy="-0.55em">Ready For</tspan><tspan x="490" dy="1.15em">Release</tspan></text></g>
+  <g><title>Deployed to Production — en producción</title><rect x="222" y="248" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>Deployed to Production — en producción</title></rect><text x="288" y="272" class="wfn" fill="#c5f0de" dominant-baseline="central"><tspan x="288" dy="-0.55em">Deployed to</tspan><tspan x="288" dy="1.15em">Production</tspan></text></g>
+  <g><title>BLOCKED — bloqueada (p.ej. defecto reportado en pruebas)</title><rect x="828" y="392" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>BLOCKED — bloqueada (p.ej. defecto reportado en pruebas)</title></rect><text x="894" y="416" class="wfn" fill="#cfe0fb" dominant-baseline="central">BLOCKED</text></g>
+  <g><title>ABORTED — descartada</title><rect x="20" y="392" width="132" height="48" rx="11" fill="rgba(248,113,113,.15)" stroke="#f87171" stroke-width="1.5"><title>ABORTED — descartada</title></rect><text x="86" y="416" class="wfn" fill="#f9cccc" dominant-baseline="central">ABORTED</text></g>
+</svg>
+  </div>
+  <p class="wf-take">El camino feliz va Backlog → Shift-Left QA → Estimation → Ready For Dev → In Progress → In Review → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production.</p>
+  <p class="notes"><b>Notas.</b> El camino feliz es la espina de izquierda a derecha en las dos filas. Bucles principales: "back" retorna en casi cada etapa, "needs quality" devuelve Estimation a Shift-Left QA, y la rama BLOCKED (defect reported → Fix defect / back to dev) atiende defectos hallados en pruebas. Los globales Create / Ready For Dev / Ready For QA / ABORTED aplican desde cualquier estado; Recover devuelve una historia ABORTED a Ready For Dev.</p>
+</section>
+
+<!-- WF · Bug / Defect / Improvement -->
+<section class="slide" style="--ac:#f87171" data-t="Bug / Defect / Improvement">
+  <p class="kick">Capa · workflow JIRA — Bug / Defect / Improvement (un ciclo de vida compartido)</p>
+  <h2>Bug / Defect / Improvement</h2>
+  <div class="wf-legend"><span class="lg2"><span class="nd" style="background:rgba(96,165,250,.16);border-color:#60a5fa"></span>Nuevo</span><span class="lg2"><span class="nd" style="background:rgba(167,139,250,.17);border-color:#a78bfa"></span>En progreso</span><span class="lg2"><span class="nd" style="background:rgba(52,211,153,.15);border-color:#34d399"></span>Hecho</span><span class="lg2"><span class="nd" style="background:rgba(248,113,113,.15);border-color:#f87171"></span>Abortado / rechazado</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#8b96ab" stroke-width="2" /></svg>Avance</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#e8993f" stroke-width="2" stroke-dasharray="6 5" /></svg>Retorno (back)</span></div>
+  <p class="wf-global">⚡ Global (desde cualquier estado): Create → Open · Re-Open → Open · ABORTED</p>
+  <div class="wf">
+  <svg viewBox="0 0 1180 470" role="img" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <marker id="wfArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+    </marker>
+  </defs>
+  <path d="M152,84 L300,84" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>start fixing</title></path>
+  <path d="M432,84 L580,84" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Pull Request</title></path>
+  <path d="M712,84 L840,84" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Fixed &amp; Deployed</title></path>
+  <path d="M972,84 L1028,84" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>ReTest Passed</title></path>
+  <path d="M366,60 Q636,10 906,60" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>Hard pushed</title></path><text x="636" y="31" class="wfe" fill="#7fe3ee">Hard pushed</text>
+  <path d="M86,108 Q65,177 96,210" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>is CNR</title></path><text x="52" y="168" class="wfe" fill="#7fe3ee">is CNR</text>
+  <path d="M86,108 Q2,376 30,344" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>defer</title></path><text x="10" y="301" class="wfe" fill="#7fe3ee">defer</text>
+  <path d="M86,108 Q300,172 386,200" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>is duplicated</title></path><text x="298" y="163" class="wfe" fill="#7fe3ee">is duplicated</text>
+  <path d="M86,108 Q239,339 320,314" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>is WAD</title></path><text x="231" y="275" class="wfe" fill="#7fe3ee">is WAD</text>
+  <path d="M86,108 Q209,468 320,404" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>is not a Bug</title></path><text x="214" y="362" class="wfe" fill="#7fe3ee">is not a Bug</text>
+  <path d="M162,344 Q394,290 366,108" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>resume fix</title></path><text x="363" y="260" class="wfe" fill="#7fe3ee">resume fix</text>
+  <path d="M1094,108 Q1000,164 906,108" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path><text x="1000" y="144" class="wfe" fill="#f0b377">back</text>
+  <g><title>Open — reportada, sin atender</title><rect x="20" y="60" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Open — reportada, sin atender</title></rect><text x="86" y="84" class="wfn" fill="#cfe0fb" dominant-baseline="central">Open</text></g>
+  <g><title>In Progress — en corrección</title><rect x="300" y="60" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Progress — en corrección</title></rect><text x="366" y="84" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Progress</text></g>
+  <g><title>In Review — fix en revisión / PR</title><rect x="580" y="60" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Review — fix en revisión / PR</title></rect><text x="646" y="84" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Review</text></g>
+  <g><title>Ready For QA — fix listo para re-test</title><rect x="840" y="60" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Ready For QA — fix listo para re-test</title></rect><text x="906" y="84" class="wfn" fill="#cfe0fb" dominant-baseline="central"><tspan x="906" dy="-0.55em">Ready For</tspan><tspan x="906" dy="1.15em">QA</tspan></text></g>
+  <g><title>Closed — verificada y cerrada</title><rect x="1028" y="60" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>Closed — verificada y cerrada</title></rect><text x="1094" y="84" class="wfn" fill="#c5f0de" dominant-baseline="central">Closed</text></g>
+  <g><title>Cannot Reproduce — no reproducible</title><rect x="30" y="210" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>Cannot Reproduce — no reproducible</title></rect><text x="96" y="234" class="wfn" fill="#c5f0de" dominant-baseline="central"><tspan x="96" dy="-0.55em">Cannot</tspan><tspan x="96" dy="1.15em">Reproduce</tspan></text></g>
+  <g><title>Deferred — pospuesta</title><rect x="30" y="320" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>Deferred — pospuesta</title></rect><text x="96" y="344" class="wfn" fill="#e0d6fb" dominant-baseline="central">Deferred</text></g>
+  <g><title>Duplicated — duplicada de otra</title><rect x="320" y="200" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>Duplicated — duplicada de otra</title></rect><text x="386" y="224" class="wfn" fill="#c5f0de" dominant-baseline="central">Duplicated</text></g>
+  <g><title>REJECTED — no procede (works as designed)</title><rect x="320" y="290" width="132" height="48" rx="11" fill="rgba(248,113,113,.15)" stroke="#f87171" stroke-width="1.5"><title>REJECTED — no procede (works as designed)</title></rect><text x="386" y="314" class="wfn" fill="#f9cccc" dominant-baseline="central">REJECTED</text></g>
+  <g><title>Enhancement — reclasificada como mejora (no es bug)</title><rect x="320" y="380" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>Enhancement — reclasificada como mejora (no es bug)</title></rect><text x="386" y="404" class="wfn" fill="#c5f0de" dominant-baseline="central">Enhancement</text></g>
+  <g><title>ABORTED — descartada</title><rect x="1028" y="360" width="132" height="48" rx="11" fill="rgba(248,113,113,.15)" stroke="#f87171" stroke-width="1.5"><title>ABORTED — descartada</title></rect><text x="1094" y="384" class="wfn" fill="#f9cccc" dominant-baseline="central">ABORTED</text></g>
+</svg>
+  </div>
+  <p class="wf-take">El camino feliz va Open → In Progress → In Review → Ready For QA → Closed; desde Open, el triage se bifurca a CNR / Deferred / Duplicated / REJECTED / Enhancement.</p>
+  <p class="notes"><b>Notas.</b> Bug, Defect e Improvement comparten UN workflow byte-idéntico. El camino feliz es la espina superior. El triage se abre desde Open (is CNR / defer / is duplicated / is WAD / is not a Bug); Deferred puede reanudar la corrección. Bucles: Hard pushed salta la revisión, "back" reabre un ítem Closed para re-test, y Re-Open (global) reabre cualquier ítem resuelto.</p>
+</section>
+
+<!-- WF · Workflow de Test -->
+<section class="slide" style="--ac:#a78bfa" data-t="Workflow de Test">
+  <p class="kick">Capa · workflow JIRA — el ciclo de vida del Test Case</p>
+  <h2>Workflow de Test</h2>
+  <div class="wf-legend"><span class="lg2"><span class="nd" style="background:rgba(96,165,250,.16);border-color:#60a5fa"></span>Nuevo</span><span class="lg2"><span class="nd" style="background:rgba(167,139,250,.17);border-color:#a78bfa"></span>En progreso</span><span class="lg2"><span class="nd" style="background:rgba(52,211,153,.15);border-color:#34d399"></span>Hecho</span><span class="lg2"><span class="nd" style="background:rgba(248,113,113,.15);border-color:#f87171"></span>Abortado / rechazado</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#8b96ab" stroke-width="2" /></svg>Avance</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#e8993f" stroke-width="2" stroke-dasharray="6 5" /></svg>Retorno (back)</span></div>
+  <p class="wf-global">⚡ Global (desde cualquier estado): Create → Draft · Deprecated → DEPRECATED</p>
+  <div class="wf">
+  <svg viewBox="0 0 1180 480" role="img" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <marker id="wfArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+    </marker>
+  </defs>
+  <path d="M152,88 L356,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>start design</title></path>
+  <path d="M488,88 L692,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>ready to run</title></path>
+  <path d="M824,88 L1028,88" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>automation review</title></path>
+  <path d="M1094,112 L1094,248" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>approve to automate</title></path>
+  <path d="M1028,272 L824,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>start automation</title></path>
+  <path d="M692,272 L488,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>create PR</title></path>
+  <path d="M356,272 L152,272" fill="none" stroke="#8b96ab" stroke-width="1.7" marker-end="url(#wfArrow)"><title>merged</title></path>
+  <path d="M86,64 Q590,14 1094,64" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>automation review</title></path><text x="590" y="35" class="wfe" fill="#7fe3ee">automation review</text>
+  <path d="M758,112 Q577,445 488,426" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>for manual</title></path><text x="634" y="357" class="wfe" fill="#7fe3ee">for manual</text>
+  <path d="M1094,296 Q941,478 488,412" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>manual execution</title></path><text x="912" y="416" class="wfe" fill="#7fe3ee">manual execution</text>
+  <path d="M86,296 Q175,450 356,412" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>manual execution</title></path>
+  <path d="M356,412 Q125,418 86,296" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>automated</title></path><text x="153" y="386" class="wfe" fill="#7fe3ee">automated</text>
+  <path d="M488,426 Q956,425 1108,296" fill="none" stroke="#22d3ee" stroke-width="1.7" marker-end="url(#wfArrow)"><title>for automation</title></path><text x="905" y="393" class="wfe" fill="#7fe3ee">for automation</text>
+  <path d="M488,426 Q1071,303 1094,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>automation review</title></path><text x="965" y="286" class="wfe" fill="#f0b377">automation review</text>
+  <path d="M86,248 Q254,240 422,296" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>Fix</title></path><text x="254" y="250" class="wfe" fill="#f0b377">Fix</text>
+  <path d="M422,112 Q254,158 86,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M758,112 Q590,158 422,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M1094,112 Q926,158 758,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M1160,272 Q1236,180 1160,88" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M788,248 Q956,226 1124,296" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M452,248 Q620,226 788,296" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>back</title></path>
+  <path d="M1094,402 Q380,223 86,112" fill="none" stroke="#e8993f" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#wfArrow)"><title>recover</title></path><text x="451" y="240" class="wfe" fill="#f0b377">recover</text>
+  <g><title>Draft — borrador inicial</title><rect x="20" y="64" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Draft — borrador inicial</title></rect><text x="86" y="88" class="wfn" fill="#cfe0fb" dominant-baseline="central">Draft</text></g>
+  <g><title>In Design — diseñándose el caso</title><rect x="356" y="64" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Design — diseñándose el caso</title></rect><text x="422" y="88" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Design</text></g>
+  <g><title>READY — diseñado, listo para ejecutar</title><rect x="692" y="64" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>READY — diseñado, listo para ejecutar</title></rect><text x="758" y="88" class="wfn" fill="#c5f0de" dominant-baseline="central">READY</text></g>
+  <g><title>In Review — en revisión (para automatizar)</title><rect x="1028" y="64" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Review — en revisión (para automatizar)</title></rect><text x="1094" y="88" class="wfn" fill="#e0d6fb" dominant-baseline="central">In Review</text></g>
+  <g><title>Candidate — candidato a automatización</title><rect x="1028" y="248" width="132" height="48" rx="11" fill="rgba(96,165,250,.16)" stroke="#60a5fa" stroke-width="1.5"><title>Candidate — candidato a automatización</title></rect><text x="1094" y="272" class="wfn" fill="#cfe0fb" dominant-baseline="central">Candidate</text></g>
+  <g><title>In Automation — automatizándose</title><rect x="692" y="248" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>In Automation — automatizándose</title></rect><text x="758" y="272" class="wfn" fill="#e0d6fb" dominant-baseline="central"><tspan x="758" dy="-0.55em">In</tspan><tspan x="758" dy="1.15em">Automation</tspan></text></g>
+  <g><title>Pull Request — PR de automatización abierto</title><rect x="356" y="248" width="132" height="48" rx="11" fill="rgba(167,139,250,.17)" stroke="#a78bfa" stroke-width="1.5"><title>Pull Request — PR de automatización abierto</title></rect><text x="422" y="272" class="wfn" fill="#e0d6fb" dominant-baseline="central">Pull Request</text></g>
+  <g><title>AUTOMATED — automatizado</title><rect x="20" y="248" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>AUTOMATED — automatizado</title></rect><text x="86" y="272" class="wfn" fill="#c5f0de" dominant-baseline="central">AUTOMATED</text></g>
+  <g><title>MANUAL — caso de ejecución manual</title><rect x="356" y="402" width="132" height="48" rx="11" fill="rgba(52,211,153,.15)" stroke="#34d399" stroke-width="1.5"><title>MANUAL — caso de ejecución manual</title></rect><text x="422" y="426" class="wfn" fill="#c5f0de" dominant-baseline="central">MANUAL</text></g>
+  <g><title>DEPRECATED — obsoleto</title><rect x="1028" y="402" width="132" height="48" rx="11" fill="rgba(248,113,113,.15)" stroke="#f87171" stroke-width="1.5"><title>DEPRECATED — obsoleto</title></rect><text x="1094" y="426" class="wfn" fill="#f9cccc" dominant-baseline="central">DEPRECATED</text></g>
+</svg>
+  </div>
+  <p class="wf-take">El camino de automatización va Draft → In Design → READY → In Review → Candidate → In Automation → Pull Request → AUTOMATED; la rama MANUAL puede reingresar a automatización.</p>
+  <p class="notes"><b>Notas.</b> El camino feliz de automatización es la espina de izquierda a derecha en las dos filas. MANUAL es el hub: un caso puede enviarse a manual (desde READY / Candidate / AUTOMATED) y reingresar a automatización (automated / for automation / automation review). Bucles: "back" baja la cadena en cada etapa, Fix devuelve AUTOMATED a Pull Request. Deprecated (global) retira cualquier caso; recover devuelve DEPRECATED a Draft.</p>
+</section>
+
+<!-- D · AXIOMAS -->
+<section class="slide" style="--ac:#34d399" data-t="Los 5 axiomas">
+  <p class="kick">Las leyes de verdad — todo nombre del códice obedece estas cinco</p>
+  <h2>Los Cinco Axiomas</h2>
+  <p class="lede mt-s">No son reglas sueltas: son el patrón que emana de toda la nomenclatura. Si un nombre nuevo no cabe en estos cinco, está mal formado.</p>
+  <div class="lstack mt-m">
+    <div class="lbar" style="--ac:#60a5fa"><span class="ln">A · CLAVE</span><span class="ld">Todo nombre lleva su clave Jira — así Story ↔ test ↔ código ↔ rama quedan atados</span><span class="lx">PROJ-101: …</span></div>
+    <div class="lbar" style="--ac:#a78bfa"><span class="ln">B · CAPA</span><span class="ld">El primer token codifica la capa/altitud — se lee antes que la frase</span><span class="lx">ATP: · TS: · @atc</span></div>
+    <div class="lbar" style="--ac:#22d3ee"><span class="ln">C · RESULTADO</span><span class="ld">Los casos se nombran por su resultado, no por su acción — verbo primero</span><span class="lx">should &lt;outcome&gt;</span></div>
+    <div class="lbar" style="--ac:#fbbf24"><span class="ln">D · PLAN vs RESULTS</span><span class="ld">Plan y results se distinguen en el primer token (P = Plan, R = Results)</span><span class="lx">ATP → ATR</span></div>
+    <div class="lbar" style="--ac:#a3e635"><span class="ln">E · UNA FORMA</span><span class="ld">Una sola forma por artefacto; la membresía es un link, nunca se mete en el nombre</span><span class="lx">link ≠ prefijo</span></div>
+  </div>
+  <div class="callout good mt-m" style="padding:11px 14px"><p style="margin:0" class="dim">El siguiente slide aplica estos axiomas a los <b>5 errores</b> que más se cometen al ignorarlos.</p></div>
+</section>
+
+<!-- 2 · LOS 5 ERRORES MÁS COMUNES -->
+<section class="slide" style="--ac:#f87171" data-t="5 errores comunes">
+  <p class="kick">Aplicando los axiomas — las confusiones a nunca cometer, como reglas</p>
+  <h2>Errores &amp; Reglas de Oro</h2>
+  <div class="grid g2 mt-m">
+    <div class="card lyr" style="--ac:#22d3ee"><h4>1 · <span class="mono">should</span> = caso · <span class="mono">Validate</span> = grupo</h4><p class="dim">El caso afirma un comportamiento (<span class="mono">should</span>); el grupo solo nombra la caja (<span class="mono">Validate</span>). Nunca al revés.</p></div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>2 · ATC = <b>Acceptance</b> Test Case</h4><p class="dim">No "Automated". El ATC es el método KATA mapeado 1:1 a un TC; la clave <span class="mono">@atc</span> lo ata a Jira.</p></div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>3 · R = <b>Results</b>, no Run</h4><p class="dim">ATR / FTR / STR son Test <b>Results</b>. Un "run" es solo una iteración de la ejecución; Results es el paraguas.</p></div>
+    <div class="card lyr" style="--ac:#60a5fa"><h4>4 · El prefijo = la clave de la Story</h4><p class="dim">El título de un TC lleva la clave de su User Story. La pertenencia a un Test Set es un <b>link</b>, nunca va en el nombre.</p></div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>5 · <span class="mono">@atc('PROJ-101')</span> literal</h4><p class="dim">El decorador lleva una clave Jira literal — sin template literals, sin IDs sintéticos.</p></div>
+    <div class="card lyr" style="--ac:#fb923c"><h4>6 · <span class="mono">@integration</span>, no <span class="mono">@api</span></h4><p class="dim">El tag de API tests es <span class="mono">@integration</span> (contraparte de <span class="mono">@e2e</span>). <span class="mono">@api/</span> es el alias de import — otra cosa.</p></div>
+    <div class="card lyr" style="--ac:#22d3ee"><h4>7 · El casing sigue a la capa</h4><p class="dim"><span class="mono">should</span> minúscula (continúa el prefijo) · <span class="mono">Validate</span> mayúscula (inicia el summary del grupo).</p></div>
+    <div class="card lyr" style="--ac:#a3e635"><h4>8 · Una forma · primer token = capa</h4><p class="dim">Una sola forma por artefacto; el primer token codifica su capa/altitud. Lee la intención antes de la frase.</p></div>
+  </div>
+</section>
+
+<!-- 18 · MASTER cheat-sheet -->
+<section class="slide" style="--ac:#a78bfa" data-t="Hoja maestra">
+  <p class="kick">Una pantalla · todo el códice</p>
+  <h2>Hoja de referencia maestra</h2>
+  <table class="mt-m" style="font-size:12.5px">
+    <thead><tr><th>Capa</th><th>Artefacto</th><th>Patrón</th><th>Ejemplo</th></tr></thead>
+    <tbody>
+      <tr><td><span class="mono" style="color:#22d3ee">CASE</span></td><td>TC title</td><td class="m">{US_ID}: TC#: should &lt;outcome&gt; [conn cond] [given pre]</td><td class="m">PROJ-101: TC1: should grant access when valid</td></tr>
+      <tr><td><span class="mono" style="color:#22d3ee">CASE</span></td><td>test() block</td><td class="m">'{KEY}: should {behavior} when {cond}'</td><td class="m">'UPEX-411: should apply discount when valid'</td></tr>
+      <tr><td><span class="mono" style="color:#a3e635">GROUP</span></td><td>describe()</td><td class="m">'{KEY}: Validate {feature}'</td><td class="m">'UPEX-411: Validate discount codes'</td></tr>
+      <tr><td><span class="mono" style="color:#a3e635">GROUP</span></td><td>Test Set</td><td class="m">TS: {EPIC|module}: Validate {feature}</td><td class="m">TS: GX-101: Validate credit card payment</td></tr>
+      <tr><td><span class="mono" style="color:#fbbf24">CONTAINER</span></td><td>Plan / Run</td><td class="m">{ACRONYM}: {scope}: {desc}</td><td class="m">ATP: PROJ-123: … · STR: Sprint#30: Regression Testing</td></tr>
+      <tr><td><span class="mono" style="color:#fbbf24">CONTAINER</span></td><td>ReTest · PRC · TS</td><td class="m">ReTest: {BUG}: … · PRC: {COMPONENT}: {state} · TS: {EPIC}: Validate {feature}</td><td class="m">ReTest: GX-202: … · PRC: Payment: … · TS: GX-101: Validate …</td></tr>
+      <tr><td><span class="mono" style="color:#a78bfa">CODE</span></td><td>@atc · ATC · file</td><td class="m">@atc('KEY') · {verb}{Res}{Scen} · {verb}{Feat}.test.ts</td><td class="m">@atc('PROJ-101') · applyDiscount.test.ts</td></tr>
+      <tr><td><span class="mono" style="color:#a78bfa">CODE</span></td><td>components</td><td class="m">{Resource}Api · {Page}Page · {Domain}Steps · {Type}Fixture</td><td class="m">UsersApi · LoginPage · AuthSteps</td></tr>
+      <tr><td><span class="mono" style="color:#a78bfa">CODE</span></td><td>tags</td><td class="m">@critical @smoke @regression @e2e @integration @flaky</td><td class="m">@integration (no @api)</td></tr>
+      <tr><td><span class="mono" style="color:#60a5fa">JIRA</span></td><td>quality title</td><td class="m">&lt;EPIC&gt;: &lt;COMPONENT&gt;: &lt;summary&gt;</td><td class="m">CheckoutFlow: Payment: Error not shown</td></tr>
+      <tr><td><span class="mono" style="color:#fb923c">GIT</span></td><td>branch · commit · PR</td><td class="m">{prefix}/{KEY}-{slug} · {type}({scope}): … </td><td class="m">test/UPEX-123-… · feat(UPEX-123): …</td></tr>
+      <tr><td><span class="mono" style="color:#f472b6">FILESYSTEM</span></td><td>árbol PBI</td><td class="m">EPIC-&lt;KEY&gt;-&lt;slug&gt; · STORY-&lt;KEY&gt;-&lt;slug&gt; · {PREFIX}-T{NN}</td><td class="m">EPIC-GX-101-user-auth</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 19 · CIERRE -->
+<section class="slide" style="--ac:#22d3ee" data-t="Cierre">
+  <p class="kick">Mantenlo canónico</p>
+  <h1>Una forma, <span class="grad">una verdad</span></h1>
+  <div class="grid g3 mt-m">
+    <div class="card lyr" style="--ac:#22d3ee"><h4>Dónde vive</h4><p class="dim">Este deck vive en <span class="mono">agentic-qa-core</span> — el skill global citado por cada workflow. La fuente en prosa son los <span class="mono">references/</span> de los skills.</p></div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>Cuándo cambia</h4><p class="dim">Edita los <span class="mono">references/*.md</span> canónicos, regenera <span class="mono">REGISTRY.md</span>, y luego refresca este deck (EN + ES) para que el códice nunca derive.</p></div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Qué sigue</h4><p class="dim">Todos los huecos ratificados. Siguiente: reglas de lint opcionales para hacerlos cumplir.</p></div>
+  </div>
+  <p class="dim3 mono mt-l" style="font-size:12px">should = caso · Validate = grupo · prefijo = Story · @atc = clave Jira · @integration ≠ @api</p>
+</section>
+
+</div>
+
+<div class="ov" id="ov"><div class="ovg" id="ovg"></div></div>
+
+<script>
+(function(){
+  var deck=document.getElementById('deck');
+  var slides=[].slice.call(deck.querySelectorAll('.slide'));
+  var n=slides.length, i=0;
+  document.getElementById('tot').textContent=n;
+  var rail=document.getElementById('rail');
+  slides.forEach(function(s,k){var d=document.createElement('i');d.onclick=function(){go(k)};rail.appendChild(d)});
+  var dots=[].slice.call(rail.children);
+  var ovg=document.getElementById('ovg'), ov=document.getElementById('ov');
+  slides.forEach(function(s,k){var c=document.createElement('div');c.className='ovc';
+    c.innerHTML='<div class="n">'+String(k+1).padStart(2,'0')+'</div><div class="t">'+(s.dataset.t||'')+'</div>';
+    c.onclick=function(){go(k);toggleOv(false)};ovg.appendChild(c)});
+  function render(){
+    slides.forEach(function(s,k){s.classList.toggle('is-active',k===i)});
+    dots.forEach(function(d,k){d.classList.toggle('on',k===i)});
+    document.getElementById('cur').textContent=i+1;
+    document.getElementById('pf').style.width=((i)/(n-1)*100)+'%';
+    if(location.hash!=='#'+(i+1))history.replaceState(null,'','#'+(i+1));
+  }
+  function go(k){i=Math.max(0,Math.min(n-1,k));render()}
+  function next(){go(i+1)} function prev(){go(i-1)}
+  function toggleOv(f){ov.classList.toggle('show',f===undefined?!ov.classList.contains('show'):f)}
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' '||e.key==='PageDown'){e.preventDefault();next()}
+    else if(e.key==='ArrowLeft'||e.key==='ArrowUp'||e.key==='PageUp'){e.preventDefault();prev()}
+    else if(e.key==='Home'){go(0)} else if(e.key==='End'){go(n-1)}
+    else if(e.key==='o'||e.key==='O'){toggleOv()}
+    else if(e.key==='f'||e.key==='F'){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen()}
+    else if(e.key==='Escape')toggleOv(false);
+  });
+  var sx=0;
+  deck.addEventListener('touchstart',function(e){sx=e.touches[0].clientX},{passive:true});
+  deck.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>50){dx<0?next():prev()}},{passive:true});
+  window.addEventListener('hashchange',function(){
+    var k=parseInt((location.hash||'#1').slice(1),10); if(k>=1&&k<=n&&k-1!==i)go(k-1);
+  });
+  var h=parseInt((location.hash||'#1').slice(1),10); if(h>=1&&h<=n)i=h-1;
+  render();
+})();
+</script>
+
+<script>
+/* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
+   Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
+(function(){
+  try{
+    if (new URLSearchParams(location.search).has('preview')) return;
+    var BASE_W = 1280, BASE_H = 720;
+    var deck = document.querySelector('.deck');
+    if (!deck) return;
+    function fit(){
+      var vw = window.innerWidth, vh = window.innerHeight;
+      if (vw >= 1024 && vh >= 640){
+        deck.style.transform = '';
+        deck.style.width = ''; deck.style.height = '';
+        deck.style.position = ''; deck.style.left = ''; deck.style.top = '';
+        document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+        document.documentElement.style.background = '';
+        return;
+      }
+      var scale = Math.min(vw / BASE_W, vh / BASE_H);
+      deck.style.width = BASE_W + 'px';
+      deck.style.height = BASE_H + 'px';
+      deck.style.transformOrigin = 'top left';
+      deck.style.transform = 'scale(' + scale + ')';
+      deck.style.position = 'absolute';
+      deck.style.left = ((vw - BASE_W * scale) / 2) + 'px';
+      deck.style.top = ((vh - BASE_H * scale) / 2) + 'px';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.background = (function(){var d=getComputedStyle(deck).backgroundColor;if(d&&d!=='rgba(0, 0, 0, 0)'&&d!=='transparent')return d;var b=getComputedStyle(document.body).backgroundColor;return (b&&b!=='rgba(0, 0, 0, 0)'&&b!=='transparent')?b:'#0d1117';})();
+    }
+    fit();
+    window.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', function(){ setTimeout(fit, 60); });
+  }catch(e){ /* never break the deck over a fit error */ }
+})();
+</script>
+
+<!-- ============ MOBILE NAV (UPEX) — swipe → flechas + hint once-only. scale-to-fit vive en el deck fuente ============ -->
+<style id="upex-navhint-style">
+#upex-navhint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;
+  display:flex;align-items:center;gap:.4rem;background:rgba(20,22,34,.94);
+  border:1px solid rgba(255,255,255,.18);border-radius:999px;
+  padding:.5rem .95rem;font:600 13px/1.2 system-ui,-apple-system,sans-serif;color:#c0caf5;
+  box-shadow:0 6px 20px rgba(0,0,0,.45);animation:upexHintIn .35s ease both;cursor:pointer}
+@keyframes upexHintIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%)}}
+#upex-navhint.out{opacity:0;transition:opacity .4s}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Navegación por swipe: el runtime del deck escucha keydown ArrowLeft/Right. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,a,.quiz'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Hint de navegación: solo móvil (chrome del deck oculto por scale-to-fit),
+   una sola vez por dominio (localStorage). ?hint=1 lo fuerza para QA. */
+var KEY='upex-deck-navhint-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]hint=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var h=document.createElement('div'); h.id='upex-navhint';
+  h.textContent='👆 Desliza para avanzar →';
+  var close=function(){ if(!h.isConnected)return; h.classList.add('out'); setTimeout(function(){h.remove();},400); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  h.addEventListener('click',close);
+  document.body.appendChild(h);
+  setTimeout(close,5000);
+}
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coding Classes — Del código a las clases · Coding Base 2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ===================== TOKYO NIGHT TOKENS ===================== */
+:root{
+  --bg:#16161e; --bg-2:#1a1b26; --surface:#24283b; --surface-2:#1f2335;
+  --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16);
+  --text-1:#c0caf5; --text-2:#9aa5ce; --text-3:#565f89;
+  --blue:#7aa2f7; --purple:#bb9af7; --cyan:#7dcfff; --green:#9ece6a;
+  --red:#f7768e; --orange:#ff9e64; --yellow:#e0af68;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#7dcfff);
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 14px 40px rgba(0,0,0,.45);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono',Menlo,monospace;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden}
+code,pre,kbd,textarea{font-family:var(--font-mono)}
+b,strong{color:var(--text-1)}
+::selection{background:rgba(122,162,247,.35)}
+
+/* ===================== SLIDE SYSTEM ===================== */
+.slide{position:fixed;inset:0;display:none;flex-direction:column;justify-content:center;
+  padding:7vh 7vw 10vh;background:var(--bg)}
+.slide.is-active{display:flex}
+.slide h1{font-size:clamp(2.4rem,5.6vw,4.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .4em}
+.slide h2{font-size:clamp(1.7rem,3.4vw,2.7rem);font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 .55em}
+.slide h3{font-size:clamp(1.05rem,1.7vw,1.35rem);font-weight:700;margin:0 0 .5em}
+.slide p,.slide li{font-size:clamp(.95rem,1.45vw,1.18rem);color:var(--text-2)}
+.kicker{font-size:.78rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2.2rem;align-items:start}
+.cols-32{display:grid;grid-template-columns:1.25fr 1fr;gap:2.2rem;align-items:start}
+.notes{display:none}
+
+/* chrome */
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--grad);width:0%;z-index:60;transition:width .3s var(--ease)}
+#counter{position:fixed;bottom:18px;right:24px;font-family:var(--font-mono);font-size:.75rem;color:var(--text-3);z-index:60}
+#act-label{position:fixed;bottom:18px;left:24px;font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);z-index:60}
+#score-chip{position:fixed;top:16px;right:22px;z-index:60;font-family:var(--font-mono);font-size:.82rem;font-weight:700;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:999px;padding:.4rem .9rem;color:var(--yellow);
+  box-shadow:var(--shadow);transition:transform .25s var(--ease)}
+#score-chip.bump{transform:scale(1.25)}
+#help-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-size:.7rem;color:var(--text-3);z-index:60;font-family:var(--font-mono)}
+
+/* notes drawer */
+#notes-drawer{position:fixed;left:0;right:0;bottom:0;max-height:34vh;overflow:auto;background:var(--surface-2);
+  border-top:2px solid var(--blue);padding:1rem 2.2rem 1.4rem;z-index:80;transform:translateY(100%);transition:transform .3s var(--ease)}
+#notes-drawer.open{transform:translateY(0)}
+#notes-drawer .nd-tag{font-size:.7rem;font-weight:800;letter-spacing:.2em;color:var(--blue);text-transform:uppercase;margin-bottom:.4rem}
+#notes-drawer p{margin:.3rem 0;font-size:.95rem;color:var(--text-2)}
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+@keyframes slideL{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.slide.is-active [data-anim="fade-up"]{animation:fadeUp .7s var(--ease) both}
+.slide.is-active [data-anim="pop"]{animation:popIn .55s var(--ease) both}
+.slide.is-active [data-anim="slide-l"]{animation:slideL .6s var(--ease) both}
+.slide.is-active [data-stagger]>*{animation:fadeUp .55s var(--ease) both}
+.slide.is-active [data-stagger]>*:nth-child(1){animation-delay:.05s}
+.slide.is-active [data-stagger]>*:nth-child(2){animation-delay:.15s}
+.slide.is-active [data-stagger]>*:nth-child(3){animation-delay:.25s}
+.slide.is-active [data-stagger]>*:nth-child(4){animation-delay:.35s}
+.slide.is-active [data-stagger]>*:nth-child(5){animation-delay:.45s}
+.slide.is-active [data-stagger]>*:nth-child(6){animation-delay:.55s}
+.slide.is-active [data-stagger]>*:nth-child(7){animation-delay:.65s}
+.slide.is-active [data-stagger]>*:nth-child(8){animation-delay:.75s}
+
+/* ===================== CODE BLOCKS ===================== */
+pre.code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:1.1rem 1.3rem;font-size:clamp(.85rem,1.35vw,1.05rem);line-height:1.7;overflow:auto;margin:0;
+  box-shadow:var(--shadow);white-space:pre}
+pre.code.big{font-size:clamp(1rem,1.7vw,1.35rem)}
+.tk-k{color:var(--purple)} .tk-s{color:var(--green)} .tk-n{color:var(--orange)}
+.tk-b{color:var(--orange)} .tk-f{color:var(--blue)} .tk-c{color:var(--text-3);font-style:italic}
+.code-window{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.code-window .cw-bar{display:flex;align-items:center;gap:.45rem;padding:.6rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.cw-bar .dot{width:11px;height:11px;border-radius:50%}
+.cw-bar .dot:nth-child(1){background:#f7768e}.cw-bar .dot:nth-child(2){background:#e0af68}.cw-bar .dot:nth-child(3){background:#9ece6a}
+.cw-bar .cw-title{margin-left:.5rem;font-family:var(--font-mono);font-size:.74rem;color:var(--text-3)}
+.code-window pre.code{border:none;border-radius:0;box-shadow:none}
+
+/* zoom breadcrumb */
+.zoomline{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.3rem}
+.zoomline span{font-family:var(--font-mono);font-size:.72rem;padding:.25rem .7rem;border-radius:999px;
+  border:1px solid var(--border);color:var(--text-3)}
+.zoomline span.on{background:rgba(122,162,247,.16);border-color:var(--blue);color:var(--blue);font-weight:700}
+
+/* cards */
+.cards{display:grid;gap:1.1rem}
+.cards.c3{grid-template-columns:repeat(3,1fr)}
+.cards.c2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem 1.4rem;box-shadow:var(--shadow)}
+.card .ico{font-size:1.9rem;margin-bottom:.5rem}
+.card h3{margin-bottom:.3rem}
+.card p{font-size:.95rem;margin:.2rem 0}
+.card.hl{border-color:var(--blue);background:linear-gradient(160deg,rgba(122,162,247,.12),rgba(187,154,247,.08))}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:.78rem;padding:.2rem .65rem;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--border-strong);color:var(--cyan);margin:.15rem .2rem}
+
+/* compare table */
+table.cmp{width:100%;border-collapse:collapse;font-size:clamp(.9rem,1.4vw,1.1rem)}
+table.cmp th{text-align:left;padding:.7rem 1rem;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);border-bottom:2px solid var(--border-strong)}
+table.cmp td{padding:.7rem 1rem;border-bottom:1px solid var(--border);color:var(--text-2)}
+table.cmp td:first-child{color:var(--text-1)}
+table.cmp td code{color:var(--cyan);font-size:.92em}
+
+/* callout */
+.callout{display:flex;gap:.9rem;align-items:flex-start;background:rgba(158,206,106,.1);border:1px solid rgba(158,206,106,.35);
+  border-radius:var(--radius-sm);padding:.9rem 1.2rem;margin-top:1.4rem}
+.callout.warn{background:rgba(247,118,142,.1);border-color:rgba(247,118,142,.4)}
+.callout.info{background:rgba(122,162,247,.1);border-color:rgba(122,162,247,.4)}
+.callout .co-ico{font-size:1.4rem;line-height:1.3}
+.callout p{margin:0;font-size:clamp(.9rem,1.35vw,1.08rem)}
+
+/* ===================== QUIZ ===================== */
+.quiz{max-width:880px;width:100%;margin:0 auto}
+.quiz-tag{display:inline-block;font-family:var(--font-mono);font-size:.75rem;font-weight:700;letter-spacing:.2em;
+  color:var(--yellow);background:rgba(224,175,104,.12);border:1px solid rgba(224,175,104,.4);
+  border-radius:999px;padding:.3rem .9rem;margin-bottom:1.1rem}
+.quiz-q{font-size:clamp(1.3rem,2.4vw,1.9rem);font-weight:800;margin:0 0 1.3rem;line-height:1.25}
+.quiz-opts{display:grid;gap:.8rem}
+.quiz .opt{display:flex;align-items:center;gap:1rem;text-align:left;width:100%;cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
+  padding:.95rem 1.2rem;color:var(--text-1);font-family:var(--font-sans);font-size:clamp(.95rem,1.5vw,1.15rem);
+  transition:border-color .2s,background .2s,transform .15s}
+.quiz .opt:hover{border-color:var(--blue);transform:translateX(4px)}
+.quiz .opt .key{flex:0 0 auto;font-family:var(--font-mono);font-weight:700;font-size:.8rem;width:1.8rem;height:1.8rem;
+  display:grid;place-items:center;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-3)}
+.quiz .opt code{color:var(--cyan)}
+.quiz .opt.correct{border-color:var(--green);background:rgba(158,206,106,.14)}
+.quiz .opt.correct .key{background:var(--green);color:#16161e;border-color:var(--green)}
+.quiz .opt.wrong{border-color:var(--red);background:rgba(247,118,142,.12);animation:shake .4s}
+.quiz.locked .opt{pointer-events:none;opacity:.8}
+.quiz.locked .opt.correct{opacity:1}
+.quiz-expl{display:none;margin-top:1.2rem;background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);
+  border-radius:var(--radius-sm);padding:.9rem 1.2rem;color:var(--text-2);font-size:clamp(.9rem,1.4vw,1.08rem)}
+.quiz-expl.show{display:block;animation:fadeUp .4s var(--ease)}
+
+/* ===================== LIVE CELL ===================== */
+.livecell{background:var(--bg-2);border:1px solid var(--border-strong);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;width:100%}
+.lc-bar{display:flex;align-items:center;gap:.6rem;padding:.55rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.lc-bar .lc-name{font-family:var(--font-mono);font-size:.76rem;color:var(--text-3);margin-right:auto}
+.lc-bar button{cursor:pointer;font-family:var(--font-mono);font-size:.78rem;font-weight:700;border-radius:8px;
+  padding:.4rem .95rem;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);transition:all .2s}
+.lc-bar button.lc-run{background:rgba(158,206,106,.16);border-color:var(--green);color:var(--green)}
+.lc-bar button:hover{transform:translateY(-1px);filter:brightness(1.2)}
+.lc-editor{position:relative;min-height:120px}
+.lc-editor pre,.lc-editor textarea{margin:0;padding:1rem 1.2rem;font-size:clamp(.85rem,1.3vw,1rem);line-height:1.65;
+  font-family:var(--font-mono);white-space:pre;overflow:auto;tab-size:2}
+.lc-editor pre{position:absolute;inset:0;pointer-events:none;color:var(--text-1)}
+.lc-editor textarea{position:relative;width:100%;height:100%;min-height:inherit;display:block;background:transparent;
+  color:transparent;caret-color:#c0caf5;border:none;outline:none;resize:none;-webkit-text-fill-color:transparent}
+.lc-console{border-top:1px solid var(--border);background:#13131a;padding:.8rem 1.2rem;min-height:2.6rem;max-height:160px;overflow:auto}
+.lc-console .ln{font-family:var(--font-mono);font-size:.85rem;color:var(--green);padding:.08rem 0}
+.lc-console .ln.err{color:var(--red)}
+.lc-console .ln.dim{color:var(--text-3);font-style:italic}
+
+/* ===================== MEMORY VISUALIZER ===================== */
+.memviz{display:grid;grid-template-columns:1.3fr 1fr;gap:1.4rem;width:100%}
+.mv-code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem 0;box-shadow:var(--shadow)}
+.mv-code .cl{font-family:var(--font-mono);font-size:clamp(.82rem,1.3vw,1rem);line-height:1.85;padding:0 1.2rem;white-space:pre;transition:background .25s;border-left:3px solid transparent}
+.mv-code .cl.cur{background:rgba(122,162,247,.16);border-left-color:var(--blue)}
+.mv-side{display:flex;flex-direction:column;gap:1rem}
+.mv-vars{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem 1.2rem;flex:1}
+.mv-vars h4{margin:0 0 .7rem;font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3)}
+.mv-var{display:flex;align-items:center;gap:.7rem;margin:.45rem 0;animation:popIn .3s var(--ease)}
+.mv-var .vn{font-family:var(--font-mono);font-size:.85rem;color:var(--cyan);min-width:6.2rem}
+.mv-var .vv{font-family:var(--font-mono);font-size:.85rem;background:var(--bg-2);border:1px solid var(--border-strong);
+  border-radius:8px;padding:.25rem .7rem;color:var(--orange)}
+.mv-var .vv.this-arrow{color:var(--purple);border-color:var(--purple)}
+.mv-note{background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);border-radius:var(--radius-sm);
+  padding:.7rem 1rem;font-size:.92rem;color:var(--text-2);min-height:3.4rem}
+.mv-out{background:#13131a;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.7rem 1rem;min-height:3.4rem}
+.mv-out .ln{font-family:var(--font-mono);font-size:.85rem;color:var(--green);padding:.05rem 0}
+.mv-ctrl{display:flex;gap:.7rem;align-items:center;margin-top:1.1rem}
+.mv-ctrl button{cursor:pointer;font-family:var(--font-mono);font-weight:700;font-size:.85rem;border-radius:10px;
+  padding:.55rem 1.3rem;border:1px solid var(--blue);background:rgba(122,162,247,.15);color:var(--blue);transition:all .2s}
+.mv-ctrl button:hover{filter:brightness(1.25);transform:translateY(-1px)}
+.mv-ctrl button.ghost{border-color:var(--border-strong);background:var(--surface);color:var(--text-2)}
+.mv-ctrl .mv-step{font-family:var(--font-mono);font-size:.8rem;color:var(--text-3);margin-left:auto}
+
+/* ===================== MINI APP + SIMULATOR ===================== */
+.playground{display:grid;grid-template-columns:1fr 1.2fr;gap:1.6rem;width:100%;align-items:stretch}
+.app-frame{position:relative;background:#e8ecf4;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);min-height:380px;display:flex;flex-direction:column}
+.app-frame .af-bar{display:flex;align-items:center;gap:.45rem;background:#cdd4e3;padding:.5rem .8rem}
+.af-bar .dot{width:10px;height:10px;border-radius:50%}
+.af-bar .dot:nth-child(1){background:#f06a6a}.af-bar .dot:nth-child(2){background:#e8b04e}.af-bar .dot:nth-child(3){background:#67c46f}
+.af-bar .af-url{flex:1;background:#fff;border-radius:6px;font-family:var(--font-mono);font-size:.68rem;color:#5a6478;padding:.22rem .7rem;margin-left:.4rem}
+.app-body{flex:1;display:flex;align-items:center;justify-content:center;padding:1.6rem}
+.app-card{background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(30,40,80,.18);padding:1.6rem 1.7rem;width:min(320px,90%)}
+.app-card h4{margin:0 0 .2rem;color:#1d2540;font-size:1.15rem}
+.app-card .app-sub{color:#7c86a0;font-size:.8rem;margin:0 0 1.1rem}
+.app-card label{display:block;font-size:.72rem;font-weight:700;color:#5a6478;letter-spacing:.06em;text-transform:uppercase;margin:.7rem 0 .25rem}
+.app-card input{width:100%;border:1.5px solid #cdd4e3;border-radius:8px;padding:.55rem .8rem;font-size:.92rem;color:#1d2540;
+  font-family:var(--font-sans);outline:none;transition:border-color .2s;background:#fff}
+.app-card input:focus{border-color:#5b7cfa}
+.app-card button.app-login{width:100%;margin-top:1.1rem;background:#5b7cfa;color:#fff;border:none;border-radius:8px;
+  padding:.65rem;font-weight:700;font-size:.95rem;cursor:pointer;font-family:var(--font-sans);transition:background .2s}
+.app-card button.app-login:hover{background:#4a69e8}
+.app-msg{margin-top:.9rem;border-radius:8px;padding:.6rem .8rem;font-size:.85rem;font-weight:600;display:none}
+.app-msg.ok{background:#e3f6e6;color:#1e7c32;border:1px solid #9adfa6}
+.app-msg.bad{background:#fde8eb;color:#c22743;border:1px solid #f5b3c0}
+.app-msg.show{display:block}
+.ghost-cursor{position:absolute;z-index:40;width:26px;height:26px;pointer-events:none;opacity:0;
+  transition:left .55s var(--ease),top .55s var(--ease),opacity .3s;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4))}
+.ghost-cursor.click-pulse{animation:cursorPulse .35s}
+@keyframes cursorPulse{50%{transform:scale(.7)}}
+.sim-right{display:flex;flex-direction:column;gap:.9rem}
+.sim-log{background:#13131a;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.7rem 1rem;flex:1;min-height:80px;max-height:150px;overflow:auto}
+.sim-log .ln{font-family:var(--font-mono);font-size:.8rem;padding:.07rem 0;color:var(--text-2)}
+.sim-log .ln.ok{color:var(--green)} .sim-log .ln.fail{color:var(--red)} .sim-log .ln.info{color:var(--cyan)}
+.sim-banner{display:none;border-radius:var(--radius-sm);padding:.7rem 1.1rem;font-weight:800;font-size:1rem;text-align:center;letter-spacing:.08em}
+.sim-banner.pass{display:block;background:rgba(158,206,106,.16);border:1.5px solid var(--green);color:var(--green)}
+.sim-banner.fail{display:block;background:rgba(247,118,142,.14);border:1.5px solid var(--red);color:var(--red)}
+
+/* before/after */
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;align-items:start}
+.ba .ba-tag{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  border-radius:999px;padding:.25rem .8rem;margin-bottom:.6rem}
+.ba .bad-tag{background:rgba(247,118,142,.14);border:1px solid rgba(247,118,142,.45);color:var(--red)}
+.ba .good-tag{background:rgba(158,206,106,.14);border:1px solid rgba(158,206,106,.45);color:var(--green)}
+
+/* KATA layers diagram */
+.kata-stack{display:flex;flex-direction:column;gap:.55rem;max-width:560px;margin:0 auto}
+.kata-stack .layer{display:flex;align-items:center;gap:1rem;background:var(--surface);border:1.5px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.75rem 1.2rem;font-family:var(--font-mono);font-size:clamp(.82rem,1.3vw,1rem);color:var(--text-3)}
+.kata-stack .layer .ly-note{margin-left:auto;font-family:var(--font-sans);font-size:.78rem}
+.kata-stack .layer.star{border-color:var(--green);background:rgba(158,206,106,.12);color:var(--green);font-weight:700;
+  box-shadow:0 0 24px rgba(158,206,106,.15)}
+.kata-stack .arrow{text-align:center;color:var(--text-3);font-size:.85rem;line-height:.6}
+
+/* cover + final */
+#fx-cover{position:absolute;inset:0;z-index:0}
+.cover-inner{position:relative;z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.1rem}
+.cover-chips{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+.big-mono{font-family:var(--font-mono);font-size:clamp(2.2rem,6.5vw,4.6rem);font-weight:700;color:var(--green)}
+#final-score{font-family:var(--font-mono);font-size:clamp(2.6rem,7vw,5rem);font-weight:700;color:var(--yellow)}
+#confetti-canvas{position:fixed;inset:0;z-index:200;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="score-chip">⭐ 0/6</div>
+<div id="counter">1 / 29</div>
+<div id="act-label"></div>
+<div id="help-hint">← → navegar · N notas presentador · F pantalla completa</div>
+<canvas id="confetti-canvas"></canvas>
+<div id="notes-drawer"><div class="nd-tag">🎙 Notas del presentador</div><div id="nd-content"></div></div>
+
+<!-- ================================================================ -->
+<!-- ACTO 0 · RECAP -->
+<!-- ================================================================ -->
+
+<!-- 1 · Portada -->
+<section class="slide" data-act="Acto 0 · Recap" style="align-items:center">
+  <canvas id="fx-cover"></canvas>
+  <div class="cover-inner">
+    <div class="kicker" data-anim="fade-up">Coding Base 2 · QA Engineering</div>
+    <h1 data-anim="fade-up" style="animation-delay:.1s">Coding <span class="grad-text">Classes</span></h1>
+    <p data-anim="fade-up" style="animation-delay:.2s;max-width:660px;font-size:clamp(1.05rem,1.8vw,1.35rem)">
+      Del código suelto a las <b>clases</b>.<br>El último escalón antes de la arquitectura profesional de automation.</p>
+    <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
+      <span class="pill">JS moderno</span><span class="pill">map / filter</span><span class="pill">class + extends</span><span class="pill">Page Object</span><span class="pill">6 quizzes ⭐</span>
+    </div>
+  </div>
+  <div class="notes"><p>Sesión 2 de la serie. Prerequisito: Coding Base (valores, variables, funciones, loops, objetos, async/await, anatomía de un test). Hoy: el código moderno que ven en specs reales + clases y herencia — EL concepto que toda arquitectura de automation usa. Final: construyen su primer Page Object y lo ven ejecutarse en vivo.</p></div>
+</section>
+
+<!-- 2 · Dónde estamos -->
+<section class="slide" data-act="Acto 0 · Recap">
+  <div class="kicker">El viaje continúa</div>
+  <h2 data-anim="fade-up">Ya hablas el idioma. <span class="grad-text">Hoy aprendes a construir.</span></h2>
+  <div class="cols">
+    <div data-stagger>
+      <div class="card"><h3>✅ Coding Base (sesión 1)</h3><p>Valores · variables · operadores · funciones · if/else · loops · arrays · objetos · async/await · tu primer test ejecutado.</p></div>
+      <div class="card hl" style="margin-top:1rem"><h3>🎯 Coding Classes (hoy)</h3><p>JS moderno (el que ves en specs reales) → arrays con superpoderes → <b>clases y herencia</b> → tu primer <b>Page Object</b>.</p></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.3s">
+      <pre class="code big">
+<span class="tk-c">// El zoom-out sigue creciendo:</span>
+
+función          <span class="tk-c">← ya la dominas</span>
+  ↓
+<span class="tk-k">class</span>            <span class="tk-c">← hoy: funciones + datos juntos</span>
+  ↓
+Page Object      <span class="tk-c">← hoy: una clase que envuelve una página</span>
+  ↓
+Framework KATA   <span class="tk-c">← próxima parada: el repo profesional</span></pre>
+    </div>
+  </div>
+  <div class="notes"><p>Recuerda la mecánica del zoom-out de la sesión 1: nada aparece de la nada. La función que dominan es el ladrillo; hoy lo apilan en clases; el Page Object es una clase con propósito de testing; KATA (el framework profesional) es Page Objects con esteroides. Hoy cierran el gap más grande del roadmap.</p></div>
+</section>
+
+<!-- 3 · QUIZ 0 relámpago -->
+<section class="slide" data-act="Acto 0 · Recap" style="align-items:center">
+  <div class="quiz" data-quiz="q0">
+    <div class="quiz-tag">⭐ QUIZ relámpago · ¿Sigues caliente de la sesión 1?</div>
+    <h3 class="quiz-q">¿Cómo accedo al email de este objeto?</h3>
+    <pre class="code" style="margin-bottom:1.3rem">
+<span class="tk-k">const</span> creds = { email: <span class="tk-s">"ana@qa.com"</span>, password: <span class="tk-s">"secreto123"</span> };</pre>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span><code>creds[email]</code> — con corchetes directos</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span><code>creds.email</code> — el punto de toda la vida</span></button>
+      <button class="opt"><span class="key">C</span><span><code>creds->email</code> — con flecha</span></button>
+    </div>
+    <div class="quiz-expl">💡 El punto: "del objeto <code>creds</code>, dame <code>email</code>". Lo usaste 20 veces en la sesión 1 — y hoy lo vas a usar con <code>this</code>: <code>this.email</code> significa "de ESTA instancia, dame email". Guarda esa idea.</div>
+  </div>
+  <div class="notes"><p>Calentamiento con doble propósito: reactivar el conocimiento de objetos Y plantar la semilla de this (la explicación menciona this.email). Si la sala falla este quiz, dedica 5 minutos a repasar objetos de Coding Base antes de seguir — clases sin objetos claros no funcionan.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 1 · JS MODERNO -->
+<!-- ================================================================ -->
+
+<!-- 4 · Template literals -->
+<section class="slide" data-act="Acto 1 · JS moderno">
+  <div class="zoomline"><span class="on">js moderno</span><span>arrays pro</span><span>clases</span><span>herencia</span><span>page object</span></div>
+  <h2 data-anim="fade-up">Template literals: <span class="grad-text">texto con huecos</span></h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>😐 Como lo hacías ayer</h3>
+      <pre class="code">
+<span class="tk-k">const</span> msg = <span class="tk-s">"Hola, "</span> + name + <span class="tk-s">"! Tienes "</span> + bugs + <span class="tk-s">" bugs"</span>;</pre>
+      <p style="margin-top:.7rem;font-size:.95rem">Funciona, pero con 3+ variables se vuelve sopa de comillas y signos <code class="pill">+</code>.</p>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>😎 Desde hoy</h3>
+      <pre class="code">
+<span class="tk-k">const</span> msg = <span class="tk-s">`Hola, ${name}! Tienes ${bugs} bugs`</span>;</pre>
+      <p style="margin-top:.7rem;font-size:.95rem"><b>Backticks</b> <code class="pill">`</code> (no comillas) + <code class="pill">${...}</code> = hueco donde entra cualquier variable o expresión.</p>
+    </div>
+  </div>
+  <div class="callout info" data-anim="fade-up"><span class="co-ico">⌨️</span><p>El backtick <code>`</code> está junto al 1 en teclado US, o <code>AltGr + }</code> en teclado ES/LA. Práctica obligada: lo usarás en cada test.</p></div>
+  <div class="notes"><p>Concepto trivial pero de uso diario — el spec real está lleno de template literals. Truco de retención: "string con huecos". Importante señalar dónde está el backtick en SU teclado — es la fricción real #1 con esta sintaxis. Todo lo de sesión 1 con "+" sigue siendo válido; esto es ergonomía.</p></div>
+</section>
+
+<!-- 5 · Arrow functions -->
+<section class="slide" data-act="Acto 1 · JS moderno">
+  <div class="zoomline"><span class="on">js moderno</span><span>arrays pro</span><span>clases</span><span>herencia</span><span>page object</span></div>
+  <h2 data-anim="fade-up">Arrow functions: <span class="grad-text">ya las usabas sin saberlo</span> 🏹</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <p style="margin-bottom:.6rem">La misma función, en 3 pasos de transformación:</p>
+      <pre class="code">
+<span class="tk-c">// 1. La clásica de la sesión 1</span>
+<span class="tk-k">function</span> <span class="tk-f">double</span>(n) { <span class="tk-k">return</span> n * <span class="tk-n">2</span>; }
+
+<span class="tk-c">// 2. Misma función, con flecha</span>
+<span class="tk-k">const</span> double = (n) => { <span class="tk-k">return</span> n * <span class="tk-n">2</span>; };
+
+<span class="tk-c">// 3. Una sola expresión → return implícito</span>
+<span class="tk-k">const</span> double = (n) => n * <span class="tk-n">2</span>;</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🏹 La flecha <code style="font-size:.85em">=></code></h3><p>Se lee: "recibe <code class="pill">n</code> → devuelve <code class="pill">n * 2</code>". Función compacta, ideal para pasarla a OTRA función.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>👀 ¿Te suena de algún lado?</h3>
+        <pre class="code" style="font-size:.8rem;margin-top:.4rem">
+<span class="tk-f">test</span>(<span class="tk-s">"login"</span>, <span class="tk-k">async</span> ({ page }) => {
+  ...
+});</pre>
+        <p style="margin-top:.5rem">¡Tu test de la sesión 1 ERA una arrow function! Hoy por fin sabes leer cada símbolo.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>El momento "¡ahhh!" del acto: el test() que escribieron en sesión 1 ya usaba arrow + async. La transformación en 3 pasos es el camino mental — muéstrala despacio. Para qué sirve la compacidad: pasarle funciones a map/filter (siguiente acto). No menciones diferencias de this entre function y arrow — ruido innecesario en este nivel.</p></div>
+</section>
+
+<!-- 6 · Destructuring -->
+<section class="slide" data-act="Acto 1 · JS moderno">
+  <div class="zoomline"><span class="on">js moderno</span><span>arrays pro</span><span>clases</span><span>herencia</span><span>page object</span></div>
+  <h2 data-anim="fade-up">Destructuring: <span class="grad-text">desempacar cajas</span> 📤</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-k">const</span> user = { name: <span class="tk-s">"Ana"</span>, role: <span class="tk-s">"admin"</span> };
+
+<span class="tk-c">// ayer: uno por uno</span>
+<span class="tk-k">const</span> name = user.name;
+<span class="tk-k">const</span> role = user.role;
+
+<span class="tk-c">// hoy: desempaca de un tirón</span>
+<span class="tk-k">const</span> { name, role } = user;</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>📤 La regla</h3><p>Llaves a la IZQUIERDA del <code class="pill">=</code> significan "extrae estas propiedades del objeto de la derecha". Los nombres deben coincidir.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🎭 El misterio resuelto</h3>
+        <pre class="code" style="font-size:.8rem;margin-top:.4rem"><span class="tk-k">async</span> ({ page }) => { ... }</pre>
+        <p style="margin-top:.5rem">Playwright entrega un objeto LLENO de herramientas. <code class="pill">({ page })</code> = "del paquete que me das, solo desempaco <b>page</b>". Misterio de la sesión 1: cerrado. 🔓</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Segundo "¡ahhh!" del acto: ({ page }) por fin explicado. Playwright pasa un objeto de fixtures (page, request, context, browser...) y el test desempaca lo que necesita. Cuando lleguen a KATA verán ({ api }), ({ ui }), ({ test }) — exactamente el mismo patrón. Esa conexión vale la sesión entera.</p></div>
+</section>
+
+<!-- 7 · LIVE CELL 1 -->
+<section class="slide" data-act="Acto 1 · JS moderno">
+  <div class="kicker">🎮 Playground en vivo</div>
+  <h2 data-anim="fade-up">JS moderno, <span class="grad-text">a tus dedos</span></h2>
+  <div class="livecell" data-anim="fade-up">
+    <div class="lc-bar"><span class="lc-name">modern.js — editable</span>
+      <button class="lc-reset">↺ Reset</button><button class="lc-run">▶ Ejecutar</button></div>
+    <div class="lc-editor"><pre class="lc-hl"></pre><textarea spellcheck="false">const user = { name: "Ana", role: "admin", bugs: 12 };
+
+// 1) Template literal: texto con ${huecos}
+console.log(`${user.name} reportó ${user.bugs} bugs`);
+
+// 2) Arrow function compacta
+const double = (n) => n * 2;
+console.log(double(21));
+
+// 3) Destructuring: desempacar
+const { name, role } = user;
+console.log(`${name} es ${role}`);
+
+// Reto 1: crea greet = (who) => `Hola, ${who}!` y úsala
+// Reto 2: desempaca también "bugs" en la línea del destructuring</textarea></div>
+    <div class="lc-console"><div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div></div>
+  </div>
+  <div class="notes"><p>Los 3 conceptos del acto en una celda. Error esperable del reto 1: usar comillas normales en vez de backticks → ${} sale literal en el texto. Es el error PERFECTO: muéstralo y todos recordarán la diferencia para siempre.</p></div>
+</section>
+
+<!-- 8 · QUIZ 1 -->
+<section class="slide" data-act="Acto 1 · JS moderno" style="align-items:center">
+  <div class="quiz" data-quiz="q1">
+    <div class="quiz-tag">⭐ QUIZ 1 · JS moderno</div>
+    <h3 class="quiz-q">En <code style="color:var(--cyan)">test("login", async ({ page }) => {...})</code> — ¿qué hace <code style="color:var(--cyan)">({ page })</code>?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Crea un objeto nuevo llamado page</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>Desempaca la propiedad <code>page</code> del objeto de herramientas que Playwright entrega</span></button>
+      <button class="opt"><span class="key">C</span><span>Es decoración obligatoria de la sintaxis</span></button>
+    </div>
+    <div class="quiz-expl">💡 Destructuring en los parámetros: Playwright llama a tu función pasándole un objeto lleno de fixtures (<code>page</code>, <code>request</code>, <code>context</code>…) y tú desempacas solo lo que usas. Por eso a veces verás <code>({ page, request })</code> — desempacando dos.</div>
+  </div>
+  <div class="notes"><p>Valida el concepto más transferible del acto. La mención de ({ page, request }) prepara terreno para tests híbridos UI+API que verán en Playwright Pro. Si dudan entre A y B: vuelve al ejemplo de user = {name, role} — mismo patrón, solo que dentro de paréntesis de función.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 2 · ARRAYS PRO -->
+<!-- ================================================================ -->
+
+<!-- 9 · map -->
+<section class="slide" data-act="Acto 2 · Arrays con superpoderes">
+  <div class="zoomline"><span>js moderno</span><span class="on">arrays pro</span><span>clases</span><span>herencia</span><span>page object</span></div>
+  <h2 data-anim="fade-up">.map(): <span class="grad-text">transformar cada elemento</span> 🔄</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-k">const</span> users = [<span class="tk-s">"ana"</span>, <span class="tk-s">"luis"</span>, <span class="tk-s">"mia"</span>];
+
+<span class="tk-k">const</span> emails = users.<span class="tk-f">map</span>(u => <span class="tk-s">`${u}@qa.com`</span>);
+
+<span class="tk-c">// ["ana@qa.com", "luis@qa.com", "mia@qa.com"]</span></pre>
+      <p style="margin-top:.9rem">Se lee: "<b>por cada</b> <code class="pill">u</code> del array, <b>devuélveme</b> <code class="pill">`${u}@qa.com`</code>". Array nuevo, mismo tamaño, elementos transformados.</p>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🆚 El loop de ayer</h3>
+        <pre class="code" style="font-size:.78rem;margin-top:.4rem">
+<span class="tk-k">const</span> emails = [];
+<span class="tk-k">for</span> (<span class="tk-k">const</span> u <span class="tk-k">of</span> users) {
+  emails.<span class="tk-f">push</span>(<span class="tk-s">`${u}@qa.com`</span>);
+}</pre>
+        <p style="margin-top:.5rem">Mismo resultado, 4 líneas. <code class="pill">map</code> lo dice en 1: arrow functions pagando dividendos.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🧪 En testing</h3><p>Generar emails de prueba, extraer ids de una respuesta de API, preparar la columna de datos que el test necesita.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>map/filter/find existen porque las arrow functions hacen barato pasar "mini-recetas" a otros métodos. Lectura en voz alta del patrón: "por cada u, devuélveme X". El loop de ayer NO queda obsoleto — map es el atajo para el caso más común (transformar lista completa).</p></div>
+</section>
+
+<!-- 10 · filter + find -->
+<section class="slide" data-act="Acto 2 · Arrays con superpoderes">
+  <div class="zoomline"><span>js moderno</span><span class="on">arrays pro</span><span>clases</span><span>herencia</span><span>page object</span></div>
+  <h2 data-anim="fade-up">.filter() y .find(): <span class="grad-text">elegir con criterio</span> 🎯</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>🚿 filter — todos los que cumplen</h3>
+      <pre class="code">
+<span class="tk-k">const</span> users = [
+  { name: <span class="tk-s">"Ana"</span>,  role: <span class="tk-s">"admin"</span>  },
+  { name: <span class="tk-s">"Luis"</span>, role: <span class="tk-s">"viewer"</span> },
+  { name: <span class="tk-s">"Mia"</span>,  role: <span class="tk-s">"admin"</span>  },
+];
+
+<span class="tk-k">const</span> admins = users.<span class="tk-f">filter</span>(u => u.role === <span class="tk-s">"admin"</span>);
+<span class="tk-c">// [Ana, Mia] — array, puede venir vacío []</span></pre>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>🔍 find — el primero que cumple</h3>
+      <pre class="code">
+<span class="tk-k">const</span> luis = users.<span class="tk-f">find</span>(u => u.name === <span class="tk-s">"Luis"</span>);
+<span class="tk-c">// { name: "Luis", role: "viewer" }</span>
+<span class="tk-c">// UN objeto — o undefined si nadie cumple</span></pre>
+      <div class="callout info" style="margin-top:.9rem"><span class="co-ico">🧪</span><p>Tu tabla de test data, filtrada con código: "dame solo los admins", "encuentra el usuario inactivo". La condición es la MISMA del if/else de ayer.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Distinción clave: filter devuelve ARRAY (posiblemente vacío), find devuelve UN elemento (o undefined — conecta con el undefined que vieron en sesión 1). La condición dentro es una expresión booleana idéntica a las del if. Trío completo: map transforma, filter selecciona varios, find busca uno.</p></div>
+</section>
+
+<!-- 11 · LIVE CELL 2 -->
+<section class="slide" data-act="Acto 2 · Arrays con superpoderes">
+  <div class="kicker">🎮 Playground en vivo</div>
+  <h2 data-anim="fade-up">Tu test data, <span class="grad-text">dominada</span></h2>
+  <div class="livecell" data-anim="fade-up">
+    <div class="lc-bar"><span class="lc-name">data-power.js — editable</span>
+      <button class="lc-reset">↺ Reset</button><button class="lc-run">▶ Ejecutar</button></div>
+    <div class="lc-editor"><pre class="lc-hl"></pre><textarea spellcheck="false">const users = [
+  { name: "Ana", role: "admin", bugs: 12 },
+  { name: "Luis", role: "viewer", bugs: 3 },
+  { name: "Mia", role: "admin", bugs: 7 },
+];
+
+const names = users.map(u => u.name);
+console.log(names);
+
+const admins = users.filter(u => u.role === "admin");
+console.log(`Hay ${admins.length} admins`);
+
+const top = users.find(u => u.bugs > 10);
+console.log(`Top bug hunter: ${top.name}`);
+
+// Reto 1: filtra los usuarios con 7+ bugs
+// Reto 2: del resultado, saca solo los nombres con map
+//         (pista: se pueden encadenar — .filter(...).map(...))</textarea></div>
+    <div class="lc-console"><div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div></div>
+  </div>
+  <div class="notes"><p>El reto 2 introduce encadenamiento (.filter().map()) — patrón que verán constantemente en código real. Si alguien pregunta por qué console.log(names) imprime con corchetes: los arrays se imprimen completos, útil para depurar. Deja 3-4 minutos de juego libre con los datos.</p></div>
+</section>
+
+<!-- 12 · QUIZ 2 -->
+<section class="slide" data-act="Acto 2 · Arrays con superpoderes" style="align-items:center">
+  <div class="quiz" data-quiz="q2">
+    <div class="quiz-tag">⭐ QUIZ 2 · Arrays con superpoderes</div>
+    <h3 class="quiz-q">¿Qué devuelve <code style="color:var(--cyan)">[1, 2, 3, 4].filter(n => n > 2)</code>?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span><code>[1, 2]</code> — los que NO cumplen</span></button>
+      <button class="opt"><span class="key">B</span><span><code>3</code> — el primero que cumple</span></button>
+      <button class="opt" data-ok="1"><span class="key">C</span><span><code>[3, 4]</code> — array con todos los que cumplen</span></button>
+    </div>
+    <div class="quiz-expl">💡 <code>filter</code> = colador: deja pasar los elementos cuya condición da <code>true</code> y devuelve un <b>array nuevo</b> con ellos. La opción B describe a <code>find</code> (que devolvería <code>3</code>, sin corchetes) — esa es exactamente la diferencia entre ambos.</div>
+  </div>
+  <div class="notes"><p>La opción B está diseñada para discutir filter vs find una vez más — distinción que en código real causa bugs (esperar un objeto y recibir un array). Cierre del acto: ya saben transformar y seleccionar datos como profesionales.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 3 · CLASES -->
+<!-- ================================================================ -->
+
+<!-- 13 · Por qué clases -->
+<section class="slide" data-act="Acto 3 · Clases">
+  <div class="zoomline"><span>js moderno</span><span>arrays pro</span><span class="on">clases</span><span>herencia</span><span>page object</span></div>
+  <h2 data-anim="fade-up">El problema: <span class="grad-text">datos y funciones viven separados</span></h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>😵 Todo suelto</h3>
+      <pre class="code">
+<span class="tk-k">const</span> tester1 = { name: <span class="tk-s">"Ana"</span>, bugs: <span class="tk-n">0</span> };
+<span class="tk-k">const</span> tester2 = { name: <span class="tk-s">"Luis"</span>, bugs: <span class="tk-n">0</span> };
+
+<span class="tk-k">function</span> <span class="tk-f">findBug</span>(tester) {
+  tester.bugs = tester.bugs + <span class="tk-n">1</span>;
+}
+<span class="tk-c">// ¿qué funciones van con qué objetos?</span>
+<span class="tk-c">// ¿quién me garantiza que tester tiene .bugs?</span></pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🧩 El síntoma</h3><p>Objetos por un lado, funciones por otro. Con 5 objetos y 15 funciones, nadie sabe qué combina con qué.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>💡 La idea</h3><p>Una <b>clase</b> junta en un solo lugar: los <b>datos</b> (propiedades) + las <b>funciones que operan sobre ellos</b> (métodos). Un molde 🍪 que fabrica objetos ya equipados.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Motivación ANTES de sintaxis: el dolor es real (desorden de funciones y objetos sueltos) y la clase es la solución natural. Analogía molde de galletas: la clase es el MOLDE, los objetos que fabrica son las GALLETAS — cada una independiente pero con la misma forma. Esa analogía carga toda la sección.</p></div>
+</section>
+
+<!-- 14 · Anatomía class -->
+<section class="slide" data-act="Acto 3 · Clases">
+  <div class="zoomline"><span>js moderno</span><span>arrays pro</span><span class="on">clases</span><span>herencia</span><span>page object</span></div>
+  <h2 data-anim="fade-up">Anatomía de una <span class="grad-text">clase</span> 🏗️</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-k">class</span> Tester {
+  <span class="tk-f">constructor</span>(name) {
+    <span class="tk-k">this</span>.name = name;
+    <span class="tk-k">this</span>.bugs = <span class="tk-n">0</span>;
+  }
+
+  <span class="tk-f">findBug</span>() {
+    <span class="tk-k">this</span>.bugs = <span class="tk-k">this</span>.bugs + <span class="tk-n">1</span>;
+    <span class="tk-k">return</span> <span class="tk-s">`${</span><span class="tk-k">this</span><span class="tk-s">.name}: ${</span><span class="tk-k">this</span><span class="tk-s">.bugs} bugs`</span>;
+  }
+}</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3 style="color:var(--purple)">class Tester</h3><p>"Defino el molde Tester." Nombre SIEMPRE con mayúscula inicial — convención universal.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3 style="color:var(--blue)">constructor(name)</h3><p>La función que corre automáticamente <b>al fabricar</b> cada objeto. Recibe los datos iniciales.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3 style="color:var(--purple)">this</h3><p>"<b>Este</b> objeto en particular" — la galleta que se está fabricando o usando, no el molde.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3 style="color:var(--blue)">findBug()</h3><p>Un <b>método</b>: función que vive DENTRO de la clase y trabaja con los datos de <code class="pill">this</code>. Sin la palabra function.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Cuatro piezas, una por tarjeta. this es LA dificultad — definición operativa: "el objeto concreto con el que se está trabajando ahora". No filosofar más: la siguiente slide fabrica instancias y la 16 lo muestra paso a paso en memoria. Detalle sintáctico: métodos sin la palabra function, sin comas entre ellos.</p></div>
+</section>
+
+<!-- 15 · new + instancias -->
+<section class="slide" data-act="Acto 3 · Clases">
+  <div class="zoomline"><span>js moderno</span><span>arrays pro</span><span class="on">clases</span><span>herencia</span><span>page object</span></div>
+  <h2 data-anim="fade-up">new: <span class="grad-text">fabricar galletas</span> 🍪</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-k">const</span> ana  = <span class="tk-k">new</span> <span class="tk-f">Tester</span>(<span class="tk-s">"Ana"</span>);
+<span class="tk-k">const</span> luis = <span class="tk-k">new</span> <span class="tk-f">Tester</span>(<span class="tk-s">"Luis"</span>);
+
+ana.<span class="tk-f">findBug</span>();  <span class="tk-c">// "Ana: 1 bugs"</span>
+ana.<span class="tk-f">findBug</span>();  <span class="tk-c">// "Ana: 2 bugs"</span>
+luis.<span class="tk-f">findBug</span>(); <span class="tk-c">// "Luis: 1 bugs" ← ¡SU propio contador!</span></pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🏭 new Tester("Ana")</h3><p>"Fabrica un objeto con el molde Tester" → corre el constructor con <code class="pill">name = "Ana"</code> → entrega la <b>instancia</b>.</p></div>
+      <div class="card" style="margin-top:.9rem"><h3>🍪 Cada instancia, su memoria</h3><p><code class="pill">ana.bugs</code> y <code class="pill">luis.bugs</code> son contadores <b>independientes</b>. El molde es uno; las galletas, muchas.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>👀 Spoiler</h3><p><code class="pill">page</code> de Playwright… es una instancia de una clase. <code class="pill">page.click()</code> = método. Llevas una sesión entera usando clases.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Independencia de instancias = concepto del quiz 3, márcalo fuerte: cada new crea memoria nueva. El spoiler de page es otro puente potente: no van hacia territorio desconocido, van hacia entender lo que YA usan. Pregunta de control antes de seguir: "si hago new Tester('Mia') y llamo findBug una vez, ¿cuánto vale mia.bugs?"</p></div>
+</section>
+
+<!-- 16 · MEMORY VIZ: this -->
+<section class="slide" data-act="Acto 3 · Clases">
+  <div class="kicker">🧠 Visualizador de memoria</div>
+  <h2 data-anim="fade-up"><span class="grad-text">this</span>, paso a paso</h2>
+  <div class="memviz" data-anim="fade-up">
+    <div>
+      <div class="mv-code" id="mv-code">
+        <div class="cl" data-l="1"><span class="tk-k">class</span> User {</div>
+        <div class="cl" data-l="2">  <span class="tk-f">constructor</span>(email) {</div>
+        <div class="cl" data-l="3">    <span class="tk-k">this</span>.email = email;</div>
+        <div class="cl" data-l="4">  }</div>
+        <div class="cl" data-l="5">  <span class="tk-f">greet</span>() {</div>
+        <div class="cl" data-l="6">    <span class="tk-k">return</span> <span class="tk-s">`Hola, ${</span><span class="tk-k">this</span><span class="tk-s">.email}`</span>;</div>
+        <div class="cl" data-l="7">  }</div>
+        <div class="cl" data-l="8">}</div>
+        <div class="cl" data-l="9"><span class="tk-k">const</span> ana = <span class="tk-k">new</span> <span class="tk-f">User</span>(<span class="tk-s">"ana@qa.com"</span>);</div>
+        <div class="cl" data-l="10">console.<span class="tk-f">log</span>(ana.<span class="tk-f">greet</span>());</div>
+      </div>
+      <div class="mv-ctrl">
+        <button id="mv-next">▶ Siguiente paso</button>
+        <button class="ghost" id="mv-reset">↺ Reiniciar</button>
+        <span class="mv-step" id="mv-stepn">paso 0 / 6</span>
+      </div>
+    </div>
+    <div class="mv-side">
+      <div class="mv-vars"><h4>📦 Memoria</h4><div id="mv-vars"><p style="font-size:.85rem;color:var(--text-3);margin:0">— vacía —</p></div></div>
+      <div class="mv-note" id="mv-note">Presiona "Siguiente paso": vas a ver a quién apunta <b>this</b> en cada momento.</div>
+      <div class="mv-out" id="mv-out"><div class="ln" style="color:var(--text-3);font-style:italic">consola…</div></div>
+    </div>
+  </div>
+  <div class="notes"><p>La slide más importante de la sesión. Pausa en el paso 3 (this → instancia ana durante el constructor) y en el 5 (this → ana durante greet). Mensaje final: this apunta SIEMPRE al objeto a la izquierda del punto en la llamada — ana.greet() → this es ana. Con esa regla resuelven el 95% de los casos que verán.</p></div>
+</section>
+
+<!-- 17 · LIVE CELL 3 -->
+<section class="slide" data-act="Acto 3 · Clases">
+  <div class="kicker">🎮 Playground en vivo</div>
+  <h2 data-anim="fade-up">Fabrica tus <span class="grad-text">propias instancias</span></h2>
+  <div class="livecell" data-anim="fade-up">
+    <div class="lc-bar"><span class="lc-name">tester-class.js — editable</span>
+      <button class="lc-reset">↺ Reset</button><button class="lc-run">▶ Ejecutar</button></div>
+    <div class="lc-editor"><pre class="lc-hl"></pre><textarea spellcheck="false">class Tester {
+  constructor(name) {
+    this.name = name;
+    this.bugs = 0;
+  }
+
+  findBug() {
+    this.bugs = this.bugs + 1;
+    return `${this.name} encontró un bug! Total: ${this.bugs}`;
+  }
+}
+
+const ana = new Tester("Ana");
+console.log(ana.findBug());
+console.log(ana.findBug());
+
+const luis = new Tester("Luis");
+console.log(luis.findBug()); // su PROPIO contador
+
+// Reto: agrega un método report() que devuelva
+//       `${this.name}: ${this.bugs} bugs reportados` y úsalo</textarea></div>
+    <div class="lc-console"><div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div></div>
+  </div>
+  <div class="notes"><p>Primera clase escrita por ellos. El reto (método report) valida la sintaxis de métodos: sin function, usando this. Error esperable: olvidar this y escribir name a secas → ReferenceError: name is not defined — error pedagógicamente perfecto: dentro de un método, los datos de la instancia SIEMPRE viajan con this.</p></div>
+</section>
+
+<!-- 18 · QUIZ 3 -->
+<section class="slide" data-act="Acto 3 · Clases" style="align-items:center">
+  <div class="quiz" data-quiz="q3">
+    <div class="quiz-tag">⭐ QUIZ 3 · Clases e instancias</div>
+    <h3 class="quiz-q">Después de este código, ¿cuánto vale <code style="color:var(--cyan)">luis.bugs</code>?</h3>
+    <pre class="code" style="margin-bottom:1.3rem">
+<span class="tk-k">const</span> ana  = <span class="tk-k">new</span> <span class="tk-f">Tester</span>(<span class="tk-s">"Ana"</span>);
+<span class="tk-k">const</span> luis = <span class="tk-k">new</span> <span class="tk-f">Tester</span>(<span class="tk-s">"Luis"</span>);
+ana.<span class="tk-f">findBug</span>();
+ana.<span class="tk-f">findBug</span>();
+ana.<span class="tk-f">findBug</span>();</pre>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span><code>3</code> — los contadores se comparten</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span><code>0</code> — cada instancia tiene su propia memoria</span></button>
+      <button class="opt"><span class="key">C</span><span><code>undefined</code> — luis no tiene bugs</span></button>
+    </div>
+    <div class="quiz-expl">💡 <code>new</code> fabrica objetos <b>independientes</b>: los 3 <code>findBug()</code> fueron sobre <code>ana</code> (this = ana), así que <code>luis.bugs</code> sigue en su valor inicial <code>0</code> del constructor. El molde es uno, cada galleta lleva su propia cuenta. 🍪</div>
+  </div>
+  <div class="notes"><p>Valida los DOS conceptos críticos juntos: independencia de instancias + this resolviéndose al objeto de la llamada. La opción C tienta a quien cree que las propiedades solo existen si se usan — el constructor ya las inicializó. Si aciertan masivamente: el acto más difícil está ganado.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 4 · HERENCIA -->
+<!-- ================================================================ -->
+
+<!-- 19 · El problema duplicado -->
+<section class="slide" data-act="Acto 4 · Herencia">
+  <div class="zoomline"><span>js moderno</span><span>arrays pro</span><span>clases</span><span class="on">herencia</span><span>page object</span></div>
+  <h2 data-anim="fade-up">Nuevo dolor: <span class="grad-text">clases que se repiten</span> 😩</h2>
+  <div class="ba" data-anim="fade-up">
+    <div>
+      <pre class="code">
+<span class="tk-k">class</span> Admin {
+  <span class="tk-f">constructor</span>(name) { <span class="tk-k">this</span>.name = name; }
+  <span class="tk-f">login</span>() { <span class="tk-k">return</span> <span class="tk-s">`${</span><span class="tk-k">this</span><span class="tk-s">.name} entró`</span>; }
+  <span class="tk-f">deleteProject</span>() { <span class="tk-k">return</span> <span class="tk-s">"💥 borrado"</span>; }
+}</pre>
+    </div>
+    <div>
+      <pre class="code">
+<span class="tk-k">class</span> Viewer {
+  <span class="tk-f">constructor</span>(name) { <span class="tk-k">this</span>.name = name; }
+  <span class="tk-f">login</span>() { <span class="tk-k">return</span> <span class="tk-s">`${</span><span class="tk-k">this</span><span class="tk-s">.name} entró`</span>; }
+  <span class="tk-f">watch</span>() { <span class="tk-k">return</span> <span class="tk-s">"👀 mirando"</span>; }
+}</pre>
+    </div>
+  </div>
+  <div class="callout warn" data-anim="fade-up"><span class="co-ico">🚨</span><p><code>constructor</code> y <code>login()</code> están <b>copiados y pegados</b>. ¿Te suena? Es el mismo dolor de los test cases repetidos de la sesión 1 — y la solución tiene la misma forma: escribir lo común UNA vez.</p></div>
+  <div class="notes"><p>Herencia motivada por el mismo principio que motivó funciones en sesión 1: no repetir. Admin y Viewer comparten constructor y login; difieren en un método propio cada uno. Pregunta a la sala: "¿dónde han visto este copy-paste antes?" — la respuesta (test cases duplicados) les pertenece y hace suya la solución.</p></div>
+</section>
+
+<!-- 20 · extends + super -->
+<section class="slide" data-act="Acto 4 · Herencia">
+  <div class="zoomline"><span>js moderno</span><span>arrays pro</span><span>clases</span><span class="on">herencia</span><span>page object</span></div>
+  <h2 data-anim="fade-up">extends: <span class="grad-text">heredar lo común</span> 🧬</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code">
+<span class="tk-k">class</span> User {
+  <span class="tk-f">constructor</span>(name) { <span class="tk-k">this</span>.name = name; }
+  <span class="tk-f">login</span>() { <span class="tk-k">return</span> <span class="tk-s">`${</span><span class="tk-k">this</span><span class="tk-s">.name} entró`</span>; }
+}
+
+<span class="tk-k">class</span> Admin <span class="tk-k">extends</span> User {
+  <span class="tk-f">deleteProject</span>() { <span class="tk-k">return</span> <span class="tk-s">"💥 borrado"</span>; }
+}
+
+<span class="tk-k">const</span> ana = <span class="tk-k">new</span> <span class="tk-f">Admin</span>(<span class="tk-s">"Ana"</span>);
+ana.<span class="tk-f">login</span>();         <span class="tk-c">// heredado del padre ✅</span>
+ana.<span class="tk-f">deleteProject</span>(); <span class="tk-c">// propio de Admin ✅</span></pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🧬 extends</h3><p>"Admin <b>es un</b> User, más sus extras." Hereda constructor, propiedades y métodos del padre — gratis.</p></div>
+      <div class="card" style="margin-top:.9rem"><h3>📞 super(...)</h3><p>Si el hijo define su PROPIO constructor, la primera línea debe ser <code class="pill">super(name)</code>: "padre, haz tu parte primero". Si no define constructor, hereda el del padre directo.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🥋 Por qué te importa</h3><p>El framework KATA al que vas es una cadena de <code class="pill">extends</code>: tu Page <b>hereda</b> docenas de helpers ya escritos. Entender esto = leer KATA sin miedo.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Lectura de extends: "es un... más extras". super solo cuando el hijo define constructor propio — el ejemplo lo evita a propósito para mostrar el caso simple primero; el playground siguiente SÍ usa super. La tarjeta KATA es el porqué de toda la sesión: en el repo profesional, LoginPage extends UiBase extends TestContext — leerán esa cadena con naturalidad.</p></div>
+</section>
+
+<!-- 21 · LIVE CELL 4 -->
+<section class="slide" data-act="Acto 4 · Herencia">
+  <div class="kicker">🎮 Playground en vivo</div>
+  <h2 data-anim="fade-up">Herencia <span class="grad-text">en acción</span></h2>
+  <div class="livecell" data-anim="fade-up">
+    <div class="lc-bar"><span class="lc-name">inheritance.js — editable</span>
+      <button class="lc-reset">↺ Reset</button><button class="lc-run">▶ Ejecutar</button></div>
+    <div class="lc-editor"><pre class="lc-hl"></pre><textarea spellcheck="false">class User {
+  constructor(name) {
+    this.name = name;
+  }
+  login() {
+    return `${this.name} entró al sistema`;
+  }
+}
+
+class Admin extends User {
+  constructor(name) {
+    super(name); // "padre, haz tu parte primero"
+    this.power = "total";
+  }
+  deleteProject() {
+    return `${this.name} borró el proyecto 💥`;
+  }
+}
+
+const ana = new Admin("Ana");
+console.log(ana.login());         // heredado de User
+console.log(ana.deleteProject()); // propio de Admin
+
+// Reto: crea class Viewer extends User con un método
+//       watch() => `${this.name} está mirando 👀` y pruébalo</textarea></div>
+    <div class="lc-console"><div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div></div>
+  </div>
+  <div class="notes"><p>Aquí super aparece con su comentario inline. Experimento valioso en vivo: borrar la línea super(name) y ejecutar → "ReferenceError: Must call super constructor..." — el lenguaje OBLIGA a llamar al padre primero. El reto Viewer es deliberadamente simétrico al ejemplo de la slide 19: cierra el círculo del dolor → solución.</p></div>
+</section>
+
+<!-- 22 · QUIZ 4 -->
+<section class="slide" data-act="Acto 4 · Herencia" style="align-items:center">
+  <div class="quiz" data-quiz="q4">
+    <div class="quiz-tag">⭐ QUIZ 4 · Herencia</div>
+    <h3 class="quiz-q">En <code style="color:var(--cyan)">class Admin extends User</code> — ¿qué hace <code style="color:var(--cyan)">super(name)</code>?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Crea una instancia nueva de User</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>Llama al constructor del padre para que inicialice su parte (<code>this.name</code>)</span></button>
+      <button class="opt"><span class="key">C</span><span>Borra los métodos heredados del padre</span></button>
+    </div>
+    <div class="quiz-expl">💡 <code>super(name)</code> = "padre, ejecuta TU constructor con este dato". Así <code>User</code> asigna <code>this.name</code> y luego <code>Admin</code> agrega lo suyo. Sin esa llamada, el lenguaje lanza error: el hijo no puede usar <code>this</code> antes de que el padre haga su parte.</div>
+  </div>
+  <div class="notes"><p>Último concepto duro de la sesión. Si vieron el experimento de borrar super en el playground, este quiz es cosecha directa. Con esto cerrado, todo lo que queda (Page Object) es APLICAR lo aprendido — anúncialo así para bajar la tensión: "lo difícil ya pasó".</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 5 · PAGE OBJECT -->
+<!-- ================================================================ -->
+
+<!-- 23 · El dolor: spec repetitivo -->
+<section class="slide" data-act="Acto 5 · Page Object">
+  <div class="zoomline"><span>js moderno</span><span>arrays pro</span><span>clases</span><span>herencia</span><span class="on">page object</span></div>
+  <h2 data-anim="fade-up">Mira este spec real. <span class="grad-text">¿Notas algo?</span> 🔍</h2>
+  <div class="code-window" data-anim="fade-up" style="max-width:900px">
+    <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">login.spec.ts — 3 tests</span></div>
+    <pre class="code" style="font-size:clamp(.75rem,1.15vw,.95rem)">
+<span class="tk-f">test</span>(<span class="tk-s">"login exitoso"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#email"</span>, <span class="tk-s">"ana@qa.com"</span>);     <span class="tk-c">┐</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#password"</span>, <span class="tk-s">"secreto123"</span>);  <span class="tk-c">│ los mismos</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);              <span class="tk-c">┘ 3 pasos…</span>
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">"#welcome"</span>)).<span class="tk-f">toBeVisible</span>();
+});
+
+<span class="tk-f">test</span>(<span class="tk-s">"login con password inválida"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#email"</span>, <span class="tk-s">"ana@qa.com"</span>);     <span class="tk-c">┐</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#password"</span>, <span class="tk-s">"malamala"</span>);    <span class="tk-c">│ …otra vez…</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);              <span class="tk-c">┘</span>
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">"#error-msg"</span>)).<span class="tk-f">toBeVisible</span>();
+});
+
+<span class="tk-c">// test 3, test 4, test 5… ¿y si mañana #login-btn cambia de id? 💀</span></pre>
+  </div>
+  <div class="notes"><p>Deja que ELLOS nombren el problema antes de decirlo: pasos duplicados + selectores regados por todos lados. La pregunta asesina: "si el dev renombra #login-btn, ¿cuántos lugares corriges?" Con 50 tests, 50 lugares. Ya saben la herramienta para encapsular: una clase. La siguiente slide la presenta con nombre y apellido.</p></div>
+</section>
+
+<!-- 24 · La idea POM -->
+<section class="slide" data-act="Acto 5 · Page Object">
+  <div class="zoomline"><span>js moderno</span><span>arrays pro</span><span>clases</span><span>herencia</span><span class="on">page object</span></div>
+  <h2 data-anim="fade-up">Page Object: <span class="grad-text">una clase que envuelve una página</span> 🎁</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <pre class="code">
+<span class="tk-k">class</span> LoginPage {
+  <span class="tk-f">constructor</span>(page) {
+    <span class="tk-k">this</span>.page = page;   <span class="tk-c">// guarda el "control remoto"</span>
+  }
+
+  <span class="tk-k">async</span> <span class="tk-f">login</span>(email, password) {
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">fill</span>(<span class="tk-s">"#email"</span>, email);
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">fill</span>(<span class="tk-s">"#password"</span>, password);
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
+  }
+}</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🎁 La jugada</h3><p>TODO lo que se puede hacer en la página de login, encapsulado en UNA clase. Los selectores viven aquí y solo aquí.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>📺 constructor(page)</h3><p>Recibe el <code class="pill">page</code> de Playwright y lo guarda en <code class="pill">this.page</code> — el control remoto del navegador, ahora de la instancia.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>🧬 Todo lo de hoy, junto</h3><p>class ✓ · constructor ✓ · this ✓ · método async ✓ · await ✓. Cero conceptos nuevos — solo composición.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Énfasis: NO hay nada nuevo en esta slide — es la clase de Tester con page adentro. this.page.fill = "del control remoto de ESTA instancia, llama fill". Nombre oficial: Page Object Model (POM), patrón estándar de la industria — suelta el término para que lo reconozcan en artículos y entrevistas.</p></div>
+</section>
+
+<!-- 25 · Antes/después -->
+<section class="slide" data-act="Acto 5 · Page Object">
+  <h2 data-anim="fade-up">El refactor: <span class="grad-text">antes / después</span></h2>
+  <div class="ba" data-anim="fade-up">
+    <div>
+      <span class="ba-tag bad-tag">❌ Antes — 8 líneas por test</span>
+      <pre class="code" style="font-size:clamp(.72rem,1.1vw,.9rem)">
+<span class="tk-f">test</span>(<span class="tk-s">"login exitoso"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#email"</span>, <span class="tk-s">"ana@qa.com"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#password"</span>, <span class="tk-s">"secreto123"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">"#welcome"</span>))
+    .<span class="tk-f">toBeVisible</span>();
+});</pre>
+    </div>
+    <div>
+      <span class="ba-tag good-tag">✅ Después — el test cuenta una historia</span>
+      <pre class="code" style="font-size:clamp(.72rem,1.1vw,.9rem)">
+<span class="tk-f">test</span>(<span class="tk-s">"login exitoso"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">const</span> loginPage = <span class="tk-k">new</span> <span class="tk-f">LoginPage</span>(page);
+  <span class="tk-k">await</span> loginPage.<span class="tk-f">login</span>(<span class="tk-s">"ana@qa.com"</span>, <span class="tk-s">"secreto123"</span>);
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">"#welcome"</span>))
+    .<span class="tk-f">toBeVisible</span>();
+});</pre>
+    </div>
+  </div>
+  <div class="callout" data-anim="fade-up"><span class="co-ico">🏆</span><p>El test ahora se lee como un test case manual: "crea la página de login, entra con estas credenciales, verifica la bienvenida". Y si <code>#login-btn</code> cambia → corriges <b>1 línea</b> dentro de LoginPage, no 50 tests.</p></div>
+  <div class="notes"><p>Doble victoria a destacar: legibilidad (el test se lee como su test case manual — círculo completo con la slide 2 de Coding Base) y mantenimiento (selector cambia → 1 solo lugar). La aserción se queda en el test a propósito: las acciones van al Page Object, los expect se quedan donde se decide pasa/falla. Esa división reaparece en KATA.</p></div>
+</section>
+
+<!-- 26 · PLAYGROUND simulador POM -->
+<section class="slide" data-act="Acto 5 · Page Object">
+  <div class="kicker">🎮 Playground · El gran momento</div>
+  <h2 data-anim="fade-up">Tu Page Object, <span class="grad-text">ejecutándose en vivo</span> 🤖</h2>
+  <div class="playground">
+    <div class="app-frame" id="sim-frame">
+      <div class="af-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="af-url">https://bunkai-bank.test/login</span></div>
+      <div class="app-body">
+        <div class="app-card">
+          <h4>🏦 Bunkai Bank</h4>
+          <p class="app-sub">Acceso a tu cuenta</p>
+          <label>Email</label><input id="s-email" data-sel="#email" type="text" placeholder="tu@email.com">
+          <label>Password</label><input id="s-password" data-sel="#password" type="password" placeholder="••••••••">
+          <button class="app-login" id="s-login-btn" data-sel="#login-btn">Entrar</button>
+          <div class="app-msg ok" id="s-welcome" data-sel="#welcome">✅ ¡Bienvenida, Ana!</div>
+          <div class="app-msg bad" id="s-error-msg" data-sel="#error-msg">❌ Credenciales inválidas</div>
+        </div>
+      </div>
+      <svg class="ghost-cursor" id="ghost-cursor" viewBox="0 0 24 24" fill="#ffd166" stroke="#1d2540" stroke-width="1.4"><path d="M5 2 L5 19 L9.5 15.5 L12.5 21.5 L15 20 L12 14.5 L18 14 Z"/></svg>
+    </div>
+    <div class="sim-right">
+      <div class="livecell" style="flex:0 0 auto">
+        <div class="lc-bar"><span class="lc-name">login-page.spec.ts — ¡código real, clases reales!</span>
+          <button class="lc-reset" id="sim-reset">↺ Reset</button><button class="lc-run" id="sim-run">▶ Ejecutar test</button></div>
+        <div class="lc-editor" style="min-height:230px"><pre class="lc-hl" id="sim-hl"></pre><textarea id="sim-src" spellcheck="false">class LoginPage {
+  constructor(page) {
+    this.page = page;
+  }
+  async login(email, password) {
+    await this.page.fill("#email", email);
+    await this.page.fill("#password", password);
+    await this.page.click("#login-btn");
+  }
+}
+
+test("login con Page Object", async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.login("ana@qa.com", "secreto123");
+  await expect(page.locator("#welcome")).toBeVisible();
+});</textarea></div>
+      </div>
+      <div class="sim-log" id="sim-log"><div class="ln" style="color:var(--text-3);font-style:italic">▶ Ejecuta — esta vez tu CLASE controla el cursor…</div></div>
+      <div class="sim-banner" id="sim-banner"></div>
+    </div>
+  </div>
+  <div class="notes"><p>Clímax de la serie: a diferencia del simulador de Coding Base (que interpretaba línea a línea), este EJECUTA el JavaScript de verdad — su clase LoginPage corre tal cual correría en Playwright. Demos en vivo: (1) ejecutar tal cual → PASS; (2) password incorrecta → FAIL con expected/received; (3) el experimento estrella: cambiar "#login-btn" por "#boton-entrar" DENTRO de la clase → error "No existe el elemento" → corregir EN UN SOLO LUGAR → verde. Ese momento ES el argumento del Page Object.</p></div>
+</section>
+
+<!-- 27 · QUIZ 5 -->
+<section class="slide" data-act="Acto 5 · Page Object" style="align-items:center">
+  <div class="quiz" data-quiz="q5">
+    <div class="quiz-tag">⭐ QUIZ 5 · El integrador</div>
+    <h3 class="quiz-q">El dev renombra <code style="color:var(--cyan)">#login-btn</code> a <code style="color:var(--cyan)">#signin-btn</code>. Tienes 50 tests que hacen login usando LoginPage. ¿Cuántos lugares corriges?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>50 — uno por test</span></button>
+      <button class="opt"><span class="key">B</span><span>Ninguno — Playwright lo detecta solo</span></button>
+      <button class="opt" data-ok="1"><span class="key">C</span><span>1 — el selector vive solo dentro de LoginPage</span></button>
+    </div>
+    <div class="quiz-expl">💡 Esa es TODA la promesa del Page Object: los selectores viven en un único lugar. Los 50 tests llaman <code>loginPage.login(...)</code> y ni se enteran del cambio. Acabas de entender por qué TODA arquitectura profesional de automation (incluido KATA) se construye sobre clases.</div>
+  </div>
+  <div class="notes"><p>Si hicieron el experimento del selector en el simulador, este quiz es la formalización de lo que VIVIERON. La opción B caza al optimista mágico — ninguna herramienta adivina renombres. Respuesta correcta masiva aquí = sesión cumplida.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 6 · CIERRE -->
+<!-- ================================================================ -->
+
+<!-- 28 · Teaser KATA -->
+<section class="slide" data-act="Acto 6 · Cierre">
+  <div class="kicker">Próxima parada</div>
+  <h2 data-anim="fade-up" style="text-align:center">KATA es esto mismo… <span class="grad-text">con esteroides</span> 🥋</h2>
+  <div class="kata-stack" data-stagger style="margin-top:.6rem">
+    <div class="layer">TestContext <span class="ly-note">config, datos fake, utilidades</span></div>
+    <div class="arrow">↓ extends</div>
+    <div class="layer">UiBase <span class="ly-note">helpers de Playwright ya escritos</span></div>
+    <div class="arrow">↓ extends</div>
+    <div class="layer star">⭐ LoginPage <span class="ly-note" style="color:var(--green)">¡ESTO ya lo sabes construir!</span></div>
+    <div class="arrow">↓ usada por</div>
+    <div class="layer">TestFixture <span class="ly-note">el ({ page }) pero con tus clases</span></div>
+    <div class="arrow">↓ usada por</div>
+    <div class="layer">login.spec.ts <span class="ly-note">tests que cuentan historias</span></div>
+  </div>
+  <div class="callout" data-anim="fade-up" style="max-width:720px;margin:1.4rem auto 0"><span class="co-ico">🗺️</span><p>Cada capa es una clase que <code>extends</code> la anterior — la cadena de herencia que acabas de dominar. Tu LoginPage de hoy es el corazón del framework profesional.</p></div>
+  <div class="notes"><p>Teaser, NO lección: no expliques cada capa — solo muestra que la estrella verde (la Page que construyeron HOY) es el centro del framework, y que el resto son las mismas dos herramientas de esta sesión (extends + fixtures/destructuring) aplicadas con más capas. El miedo a la arquitectura muere cuando reconocen las piezas. Próximos pasos del roadmap: práctica real con Playwright contra el dojo, luego el puente KATA completo.</p></div>
+</section>
+
+<!-- 29 · Cierre -->
+<section class="slide" data-act="Acto 6 · Cierre" style="align-items:center;text-align:center">
+  <div class="kicker" data-anim="fade-up">Misión cumplida</div>
+  <h2 data-anim="fade-up" style="animation-delay:.1s">Tu puntaje final</h2>
+  <div id="final-score" data-anim="pop">— / 6</div>
+  <p id="final-msg" data-anim="fade-up" style="animation-delay:.25s;max-width:560px"></p>
+  <div class="cards c3" data-stagger style="margin-top:1.6rem;max-width:1000px">
+    <div class="card"><div class="ico">🏠</div><h3>Re-practica en casa</h3><p>Este archivo funciona offline: re-juega los 4 playgrounds y los retos.</p></div>
+    <div class="card"><div class="ico">🧪</div><h3>Reto puente</h3><p>Escribe un <code class="pill">SignupPage</code> imaginario en papel: ¿qué métodos tendría? ¿qué selectores guardaría?</p></div>
+    <div class="card hl"><div class="ico">🥷</div><h3>Próxima sesión</h3><p>Playwright real contra <b>UPEX Dojo</b>: instalas el kit y tus Page Objects controlan un navegador DE VERDAD. 🚀</p></div>
+  </div>
+  <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.4rem;color:var(--text-3);font-size:.95rem">Hoy: JS moderno → map/filter/find → clases → this → herencia → <b style="color:var(--text-2)">tu primer Page Object</b>. El gap más grande del camino: cerrado.</p>
+  <div class="notes"><p>Celebra el score y nombra el logro exacto: hoy cruzaron la frontera entre "escribir scripts" y "construir arquitectura". El reto puente (SignupPage en papel) consolida sin computadora. Anuncia la sesión Dojo Lab: misma LoginPage, navegador real, app real (dojo.upexgalaxy.com). Comparte el archivo HTML.</p></div>
+</section>
+
+<script>
+/* ================================================================
+   RUNTIME — navegación, quizzes, playgrounds. Sin dependencias.
+   Coding Classes: el simulador ejecuta JavaScript REAL (clases incluidas).
+   ================================================================ */
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* simple syntax highlighter (escaped input) */
+function hl(src){
+  return esc(src).replace(
+    /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|of|while|async|await|import|from|export|new|interface|type|class|extends|super|this|constructor|string|number|boolean)\b|\b(true|false|null|undefined)\b|\b(\d+(?:\.\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()/g,
+    function(m,c,s,k,b,n,f){
+      if(c) return '<span class="tk-c">'+c+'</span>';
+      if(s) return '<span class="tk-s">'+s+'</span>';
+      if(k) return '<span class="tk-k">'+k+'</span>';
+      if(b) return '<span class="tk-b">'+b+'</span>';
+      if(n) return '<span class="tk-n">'+n+'</span>';
+      if(f) return '<span class="tk-f">'+f+'</span>';
+      return m;
+    });
+}
+
+/* ---------- slide navigation ---------- */
+const slides = $$('.slide');
+const N = slides.length;
+let cur = 0;
+const progress = $('#progress'), counter = $('#counter'), actLabel = $('#act-label');
+const drawer = $('#notes-drawer'), ndContent = $('#nd-content');
+
+function go(i){
+  cur = Math.max(0, Math.min(N-1, i));
+  slides.forEach((s,k)=> s.classList.toggle('is-active', k===cur));
+  progress.style.width = ((cur+1)/N*100) + '%';
+  counter.textContent = (cur+1) + ' / ' + N;
+  actLabel.textContent = slides[cur].dataset.act || '';
+  history.replaceState(null,'','#/'+(cur+1));
+  const notes = $('.notes', slides[cur]);
+  ndContent.innerHTML = notes ? notes.innerHTML : '<p>(sin notas para esta slide)</p>';
+  if(cur === N-1) renderFinal();
+  /* re-fit editors now that the slide is visible (hidden slides report height 0) */
+  requestAnimationFrame(()=>{ $$('textarea', slides[cur]).forEach(t=>{ if(t.__fit) t.__fit(); }); });
+}
+const fromHash = ()=>{ const m = location.hash.match(/^#\/(\d+)/); go(m ? parseInt(m[1],10)-1 : 0); };
+window.addEventListener('hashchange', fromHash);
+
+document.addEventListener('keydown', e=>{
+  const t = e.target;
+  if(t && (t.tagName==='TEXTAREA' || t.tagName==='INPUT')) return;
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown') { e.preventDefault(); go(cur+1); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp') { e.preventDefault(); go(cur-1); }
+  else if(e.key==='Home') go(0);
+  else if(e.key==='End') go(N-1);
+  else if(e.key==='f'||e.key==='F'){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+  else if(e.key==='n'||e.key==='N'||e.key==='s'||e.key==='S') drawer.classList.toggle('open');
+  else if(e.key==='Escape') drawer.classList.remove('open');
+});
+
+/* ---------- confetti ---------- */
+const cv = $('#confetti-canvas'), cx = cv.getContext('2d');
+let parts = [], rafC = null;
+function sizeCanvas(){ cv.width = innerWidth; cv.height = innerHeight; }
+sizeCanvas(); window.addEventListener('resize', sizeCanvas);
+const COLORS = ['#7aa2f7','#bb9af7','#7dcfff','#9ece6a','#ff9e64','#e0af68','#f7768e'];
+function confetti(x, y, n){
+  for(let i=0;i<(n||70);i++){
+    const a = Math.PI*2*Math.random(), v = 3+Math.random()*7;
+    parts.push({x:x, y:y, vx:Math.cos(a)*v, vy:Math.sin(a)*v-3, g:.22, life:1, d:.012+Math.random()*.012,
+      c:COLORS[(Math.random()*COLORS.length)|0], r:3+Math.random()*4, rot:Math.random()*Math.PI});
+  }
+  if(!rafC) tick();
+}
+function tick(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts = parts.filter(p=>p.life>0);
+  for(const p of parts){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.life-=p.d; p.rot+=.08;
+    cx.save(); cx.globalAlpha=Math.max(p.life,0); cx.translate(p.x,p.y); cx.rotate(p.rot);
+    cx.fillStyle=p.c; cx.fillRect(-p.r,-p.r/2,p.r*2,p.r); cx.restore();
+  }
+  rafC = parts.length ? requestAnimationFrame(tick) : null;
+}
+
+/* ---------- quiz engine ---------- */
+const TOTAL_Q = $$('.quiz').length;
+const answered = {};
+let score = 0;
+/* ---------- quiz score persistence ---------- */
+const SCORE_KEY = 'coding-classes.es.html-score:' + location.pathname;
+let qstate = { q:{}, score:0 };
+try { const _s = JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); if(_s && typeof _s === 'object'){ qstate.q = _s.q || {}; qstate.score = _s.score || 0; } } catch(e){ qstate = { q:{}, score:0 }; }
+score = qstate.score;
+function saveQuiz(){ qstate.score = score; try { localStorage.setItem(SCORE_KEY, JSON.stringify(qstate)); } catch(e){} }
+const chip = $('#score-chip');
+function updateChip(){
+  chip.textContent = '⭐ ' + score + '/' + TOTAL_Q;
+  chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump');
+}
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz;
+  $$('.opt', qz).forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const ok = btn.dataset.ok === '1';
+      const first = !answered[id];
+      if(first) answered[id] = true;
+      if(ok){
+        btn.classList.add('correct');
+        qz.classList.add('locked');
+        $('.quiz-expl', qz).classList.add('show');
+        const r = btn.getBoundingClientRect();
+        confetti(r.left + r.width/2, r.top + r.height/2, 80);
+        if(first){ score++; updateChip(); }
+      } else {
+        btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong');
+      }
+      qstate.q[id] = { a:true, c: ok || (qstate.q[id] && qstate.q[id].c) || false };
+      saveQuiz();
+    });
+  });
+});
+/* ---------- restore answered quizzes on load (no confetti) ---------- */
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz, st = qstate.q[id];
+  if(!st) return;
+  if(st.a) answered[id] = true;
+  if(st.c){
+    const okBtn = $('.opt[data-ok="1"]', qz);
+    if(okBtn) okBtn.classList.add('correct');
+    qz.classList.add('locked');
+    const ex = $('.quiz-expl', qz);
+    if(ex) ex.classList.add('show');
+  }
+});
+
+function renderFinal(){
+  $('#final-score').textContent = score + ' / ' + TOTAL_Q;
+  const pct = score/TOTAL_Q;
+  $('#final-msg').textContent =
+    pct === 1 ? '¡Perfecto! Clases, herencia y Page Objects dominados. El framework profesional te espera. 🏆' :
+    pct >= .75 ? '¡Excelente! La base de arquitectura está firme — llegas al Dojo con ventaja. 💪' :
+    pct >= .5 ? 'Muy buen avance. Repasa this y herencia con los playgrounds de este archivo y estás del otro lado. 👍' :
+    'Las clases toman dos pasadas — es normal. Re-juega los playgrounds en casa: la segunda vez, this hace click. 🌱';
+  setTimeout(()=>{ confetti(innerWidth/2, innerHeight*0.32, 140); }, 450);
+}
+
+/* ---------- cover FX: constellation ---------- */
+(function(){
+  const c = $('#fx-cover'); if(!c) return;
+  const ctx = c.getContext('2d');
+  let pts = [], raf = null;
+  function size(){ c.width = c.offsetWidth; c.height = c.offsetHeight; }
+  function init(){
+    size();
+    pts = Array.from({length:70}, ()=>({
+      x:Math.random()*c.width, y:Math.random()*c.height,
+      vx:(Math.random()-.5)*.45, vy:(Math.random()-.5)*.45, r:1+Math.random()*1.8}));
+  }
+  function frame(){
+    if(!slides[0].classList.contains('is-active')){ raf=null; return; }
+    ctx.clearRect(0,0,c.width,c.height);
+    for(const p of pts){
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>c.width) p.vx*=-1;
+      if(p.y<0||p.y>c.height) p.vy*=-1;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7);
+      ctx.fillStyle='rgba(122,162,247,.55)'; ctx.fill();
+    }
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const a=pts[i], b=pts[j], dx=a.x-b.x, dy=a.y-b.y, d=dx*dx+dy*dy;
+      if(d<150*150){
+        ctx.strokeStyle='rgba(187,154,247,'+(0.16*(1-d/22500)).toFixed(3)+')';
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', init);
+  init();
+  new MutationObserver(()=>{ if(slides[0].classList.contains('is-active') && !raf) raf=requestAnimationFrame(frame); })
+    .observe(slides[0], {attributes:true, attributeFilter:['class']});
+  raf = requestAnimationFrame(frame);
+})();
+
+/* ---------- live cells ---------- */
+function fmt(v){
+  if(typeof v==='string') return v;
+  if(typeof v==='object' && v!==null){ try{ return JSON.stringify(v); }catch(e){ return String(v); } }
+  return String(v);
+}
+$$('.livecell').forEach(cell=>{
+  const ta = $('textarea', cell), pre = $('.lc-hl', cell), out = $('.lc-console', cell);
+  if(!ta || !pre) return;
+  if(ta.id === 'sim-src') return; // simulator wires its own
+  const initial = ta.value;
+  const render = ()=>{ pre.innerHTML = hl(ta.value) + '\n'; };
+  const sync = ()=>{ pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; };
+  ta.addEventListener('input', render);
+  ta.addEventListener('scroll', sync);
+  render();
+  // auto-size editor to content, capped so the console below stays visible
+  const fit = ()=>{
+    ta.style.height='auto';
+    const cap = Math.round(innerHeight * 0.52);
+    const h = Math.min(Math.max(ta.scrollHeight + 4, 120), cap);
+    ta.style.height = h + 'px'; pre.style.height = h + 'px';
+  };
+  ta.__fit = fit;
+  ta.addEventListener('input', fit); fit();
+  $('.lc-run', cell).addEventListener('click', ()=>{
+    if(!out) return;
+    out.innerHTML='';
+    const logs = [];
+    const fake = { log: (...a)=>logs.push({t:a.map(fmt).join(' ')}),
+                   error:(...a)=>logs.push({t:a.map(fmt).join(' '),e:1}),
+                   warn: (...a)=>logs.push({t:a.map(fmt).join(' ')}) };
+    try { new Function('console', '"use strict";\n'+ta.value)(fake); }
+    catch(err){ logs.push({t:'⛔ '+err.name+': '+err.message, e:1}); }
+    if(!logs.length) logs.push({t:'(sin salida — ¿olvidaste console.log?)', d:1});
+    logs.forEach(l=>{
+      const d = document.createElement('div');
+      d.className = 'ln' + (l.e?' err':'') + (l.d?' dim':'');
+      d.textContent = l.t; out.appendChild(d);
+    });
+  });
+  $('.lc-reset', cell).addEventListener('click', ()=>{
+    ta.value = initial; render(); fit();
+    if(out) out.innerHTML = '<div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div>';
+  });
+});
+
+/* ---------- memory visualizer: this ---------- */
+(function(){
+  const codeBox = $('#mv-code'); if(!codeBox) return;
+  const steps = [
+    {l:9, vars:{}, note:'new User("ana@qa.com") → se fabrica un objeto nuevo y se ejecuta el constructor.'},
+    {l:2, vars:{'email (param)':'"ana@qa.com"', 'this':'→ 🍪 instancia nueva'}, note:'Dentro del constructor, this apunta al objeto que se está fabricando.'},
+    {l:3, vars:{'email (param)':'"ana@qa.com"', 'this':'→ 🍪 instancia nueva', 'this.email':'"ana@qa.com"'}, note:'this.email = email → el dato queda guardado DENTRO de la instancia.'},
+    {l:9, vars:{'ana':'{ email: "ana@qa.com" }'}, note:'La instancia terminada se guarda en la variable ana.'},
+    {l:10, vars:{'ana':'{ email: "ana@qa.com" }', 'this':'→ ana'}, note:'ana.greet() → this apunta al objeto a la IZQUIERDA del punto: ana.'},
+    {l:6, vars:{'ana':'{ email: "ana@qa.com" }', 'this':'→ ana', 'this.email':'"ana@qa.com"'}, out:'Hola, ana@qa.com', note:'this.email lee el dato de ESTA instancia → return → se imprime. 🎉'}
+  ];
+  let s = 0;
+  const varsBox = $('#mv-vars'), note = $('#mv-note'), out = $('#mv-out'), stepn = $('#mv-stepn');
+  function paint(){
+    $$('.cl', codeBox).forEach(cl=> cl.classList.toggle('cur', s>0 && +cl.dataset.l === steps[s-1].l));
+    stepn.textContent = 'paso ' + s + ' / ' + steps.length;
+    if(s===0){
+      varsBox.innerHTML = '<p style="font-size:.85rem;color:var(--text-3);margin:0">— vacía —</p>';
+      note.innerHTML = 'Presiona "Siguiente paso": vas a ver a quién apunta <b>this</b> en cada momento.';
+      out.innerHTML = '<div class="ln" style="color:var(--text-3);font-style:italic">consola…</div>';
+      return;
+    }
+    const st = steps[s-1];
+    varsBox.innerHTML = Object.entries(st.vars).map(([k,v])=>
+      '<div class="mv-var"><span class="vn">'+esc(k)+'</span><span class="vv'+(k==='this'?' this-arrow':'')+'">'+esc(v)+'</span></div>').join('')
+      || '<p style="font-size:.85rem;color:var(--text-3);margin:0">— vacía —</p>';
+    note.textContent = st.note;
+    const lines = steps.slice(0,s).filter(x=>x.out).map(x=>'<div class="ln">'+esc(x.out)+'</div>');
+    out.innerHTML = lines.length ? lines.join('') : '<div class="ln" style="color:var(--text-3);font-style:italic">consola…</div>';
+  }
+  $('#mv-next').addEventListener('click', ()=>{ if(s<steps.length){ s++; paint(); } });
+  $('#mv-reset').addEventListener('click', ()=>{ s=0; paint(); });
+  paint();
+})();
+
+/* ---------- POM simulator: executes REAL JavaScript ---------- */
+(function(){
+  const frame = $('#sim-frame'); if(!frame) return;
+  const CREDS = { email:'ana@qa.com', password:'secreto123' };
+  const em = $('#s-email', frame), pw = $('#s-password', frame),
+        btn = $('#s-login-btn', frame), okMsg = $('#s-welcome', frame), badMsg = $('#s-error-msg', frame);
+  btn.addEventListener('click', ()=>{
+    okMsg.classList.remove('show'); badMsg.classList.remove('show');
+    if(em.value.trim() === CREDS.email && pw.value === CREDS.password) okMsg.classList.add('show');
+    else badMsg.classList.add('show');
+  });
+  function resetApp(){ em.value=''; pw.value=''; okMsg.classList.remove('show'); badMsg.classList.remove('show'); }
+
+  const cursor = $('#ghost-cursor'), ta = $('#sim-src'), pre = $('#sim-hl'),
+        logBox = $('#sim-log'), banner = $('#sim-banner');
+  const initial = ta.value;
+  const render = ()=>{ pre.innerHTML = hl(ta.value) + '\n'; };
+  ta.addEventListener('input', render);
+  ta.addEventListener('scroll', ()=>{ pre.scrollTop=ta.scrollTop; pre.scrollLeft=ta.scrollLeft; });
+  render();
+  // auto-size sim editor, tighter cap (log + banner share the column)
+  const fitSim = ()=>{
+    ta.style.height='auto';
+    const cap = Math.round(innerHeight * 0.42);
+    const h = Math.min(Math.max(ta.scrollHeight + 4, 230), cap);
+    ta.style.height = h + 'px'; pre.style.height = h + 'px';
+  };
+  ta.__fit = fitSim;
+  ta.addEventListener('input', fitSim); fitSim();
+
+  const bySel = sel => frame.querySelector('[data-sel="'+sel+'"]');
+  function log(t, cls){
+    const d = document.createElement('div'); d.className='ln'+(cls?' '+cls:''); d.textContent=t;
+    logBox.appendChild(d); logBox.scrollTop = logBox.scrollHeight;
+  }
+  async function moveTo(el){
+    const fr = frame.getBoundingClientRect(), r = el.getBoundingClientRect();
+    cursor.style.opacity = '1';
+    cursor.style.left = (r.left - fr.left + r.width/2 - 6) + 'px';
+    cursor.style.top  = (r.top - fr.top + r.height/2 - 4) + 'px';
+    await sleep(620);
+  }
+  async function typeInto(el, text){
+    el.value = '';
+    for(const ch of String(text)){ el.value += ch; await sleep(38); }
+  }
+
+  /* fake Playwright API — real async methods that drive the mini-app */
+  function need(sel){
+    const el = bySel(sel);
+    if(!el) throw new Error('No existe el elemento "'+sel+'" en la página');
+    return el;
+  }
+  const fakePage = {
+    async goto(url){ resetApp(); log('✓ page.goto("'+url+'")', 'ok'); },
+    async fill(sel, txt){
+      const el = need(sel);
+      await moveTo(el); await typeInto(el, txt);
+      log('✓ page.fill("'+sel+'", "'+txt+'")', 'ok');
+    },
+    async click(sel){
+      const el = need(sel);
+      await moveTo(el);
+      cursor.classList.add('click-pulse'); await sleep(220); cursor.classList.remove('click-pulse');
+      el.click(); await sleep(320);
+      log('✓ page.click("'+sel+'")', 'ok');
+    },
+    locator(sel){ return { __sel: sel }; }
+  };
+  function expectFn(target){
+    const sel = target && target.__sel;
+    if(!sel) throw new Error('expect(...) espera un page.locator("selector")');
+    return {
+      async toBeVisible(){
+        const el = bySel(sel);
+        const vis = !!el && getComputedStyle(el).display !== 'none';
+        if(!vis) throw new Error('expect("'+sel+'").toBeVisible() → Expected: visible · Received: hidden');
+        log('✓ expect("'+sel+'").toBeVisible() → PASSED', 'ok');
+      },
+      async toHaveText(t){
+        const el = bySel(sel);
+        const actual = el ? el.textContent.trim() : '(no existe)';
+        if(!el || actual !== t) throw new Error('expect("'+sel+'").toHaveText("'+t+'") → Expected: "'+t+'" · Received: "'+actual+'"');
+        log('✓ expect("'+sel+'").toHaveText("'+t+'") → PASSED', 'ok');
+      }
+    };
+  }
+
+  const AsyncFn = Object.getPrototypeOf(async function(){}).constructor;
+  let running = false;
+  async function run(){
+    if(running) return;
+    running = true;
+    logBox.innerHTML=''; banner.className='sim-banner'; banner.textContent='';
+    resetApp();
+    const queue = [];
+    const testFn = (name, fn) => { queue.push({name, fn}); };
+    try {
+      const body = new AsyncFn('test','expect','page', '"use strict";\n' + ta.value);
+      await body(testFn, expectFn, fakePage);
+      if(!queue.length){
+        log('⚠ No se declaró ningún test(...) — envuelve tus pasos en test("nombre", async ({ page }) => { ... })', 'info');
+      }
+      for(const t of queue){
+        log('🧪 ' + t.name, 'info');
+        await t.fn({ page: fakePage });
+      }
+      cursor.style.opacity = '0';
+      banner.className = 'sim-banner pass';
+      banner.textContent = '✓ ' + (queue.length||1) + ' passed — ¡tu Page Object funciona!';
+      const r = banner.getBoundingClientRect();
+      confetti(r.left + r.width/2, r.top, 110);
+    } catch(err){
+      cursor.style.opacity = '0';
+      log('✗ ' + err.message, 'fail');
+      banner.className = 'sim-banner fail';
+      banner.textContent = '✗ 1 failed — el test encontró algo. Lee el error con calma: dice qué y dónde.';
+    }
+    running = false;
+  }
+  $('#sim-run').addEventListener('click', run);
+  $('#sim-reset').addEventListener('click', ()=>{
+    ta.value = initial; render(); fitSim(); resetApp();
+    logBox.innerHTML = '<div class="ln" style="color:var(--text-3);font-style:italic">▶ Ejecuta — esta vez tu CLASE controla el cursor…</div>';
+    banner.className='sim-banner'; banner.textContent='';
+  });
+})();
+
+/* ---------- init ---------- */
+updateChip();
+fromHash();
+})();
+</script>
+<!-- ============ MOBILE PATCH v3 (UPEX) — swipe + layout responsive + tip desktop ============ -->
+<style id="upex-mobile-style">
+/* Layout en pantallas angostas: 1 columna + scroll vertical dentro del slide */
+@media (max-width:768px){
+  .slide{padding:max(6vh,52px) 5vw 10vh;overflow-y:auto;justify-content:flex-start}
+  /* spacers flexibles: centran verticalmente cuando el contenido cabe y
+     colapsan a 0 cuando desborda (permitiendo scroll desde arriba) */
+  .slide::before{content:"";margin-top:auto}
+  .slide::after{content:"";margin-bottom:auto}
+  .cols,.cols-32,.cards.c3,.cards.c2,.memviz,.playground,.ba,.stepper,.termsim,.api-playground{grid-template-columns:1fr}
+  #help-hint,#act-label{display:none}
+  /* score chip compacto y pegado al borde superior para no tapar títulos */
+  #score-chip{top:6px;right:8px;font-size:.62rem;padding:.16rem .5rem;box-shadow:none}
+}
+@media (pointer:coarse){
+  #help-hint{display:none}
+}
+/* Tip de una sola vez en móvil: los playgrounds se disfrutan mejor en desktop */
+#upex-tip{position:fixed;left:50%;transform:translateX(-50%);bottom:44px;z-index:90;
+  max-width:min(92vw,420px);display:flex;align-items:flex-start;gap:.6rem;
+  background:rgba(36,40,59,.96);border:1px solid rgba(255,255,255,.18);border-radius:12px;
+  padding:.65rem .8rem;font-size:.78rem;line-height:1.45;color:#9aa5ce;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);animation:upexTipIn .4s ease both}
+#upex-tip b{color:#c0caf5}
+#upex-tip-x{flex:0 0 auto;background:none;border:none;color:#565f89;font-size:.95rem;
+  cursor:pointer;padding:0 .15rem;margin-left:auto;line-height:1.3}
+@keyframes upexTipIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%)}}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Navega despachando eventos de teclado sintéticos — el runtime del deck ya
+   escucha keydown (ArrowLeft/ArrowRight) y protege textareas/inputs. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+/* Swipe horizontal — ignora gestos que empiezan en zonas interactivas/scrollables */
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,.quiz,.lc-editor,.memviz,.playground'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Tip de una sola vez (compartido entre todos los decks del dominio vía
+   localStorage). ?tip=1 lo fuerza para QA en navegadores sin touch. */
+var KEY='upex-deck-mobile-tip-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]tip=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var tip=document.createElement('div'); tip.id='upex-tip';
+  var msg=document.createElement('span');
+  msg.innerHTML='💻 <b>Tip:</b> para practicar en los playgrounds de código, vuelve a este deck desde tu computadora.';
+  var x=document.createElement('button'); x.id='upex-tip-x'; x.textContent='✕'; x.setAttribute('aria-label','Cerrar tip');
+  var close=function(){ if(tip.isConnected) tip.remove(); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  x.addEventListener('click',close);
+  tip.appendChild(msg); tip.appendChild(x); document.body.appendChild(tip);
+  setTimeout(close,12000);
+}
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>API Automation con Playwright — request · aserciones · KATA</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ===================== TOKYO NIGHT TOKENS ===================== */
+:root{
+  --bg:#16161e; --bg-2:#1a1b26; --surface:#24283b; --surface-2:#1f2335;
+  --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16);
+  --text-1:#c0caf5; --text-2:#9aa5ce; --text-3:#565f89;
+  --blue:#7aa2f7; --purple:#bb9af7; --cyan:#7dcfff; --green:#9ece6a;
+  --red:#f7768e; --orange:#ff9e64; --yellow:#e0af68;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#7dcfff);
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 14px 40px rgba(0,0,0,.45);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono',Menlo,monospace;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden}
+code,pre,kbd,textarea{font-family:var(--font-mono)}
+b,strong{color:var(--text-1)}
+::selection{background:rgba(122,162,247,.35)}
+
+/* ===================== SLIDE SYSTEM ===================== */
+.slide{position:fixed;inset:0;display:none;flex-direction:column;justify-content:center;
+  padding:6.5vh 6.5vw 9vh;background:var(--bg)}
+.slide.is-active{display:flex}
+.slide h1{font-size:clamp(2.4rem,5.6vw,4.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .4em}
+.slide h2{font-size:clamp(1.6rem,3.2vw,2.6rem);font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 .5em}
+.slide h3{font-size:clamp(1.02rem,1.7vw,1.32rem);font-weight:700;margin:0 0 .5em}
+.slide p,.slide li{font-size:clamp(.92rem,1.4vw,1.15rem);color:var(--text-2)}
+.kicker{font-size:.78rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2.1rem;align-items:start}
+.cols-32{display:grid;grid-template-columns:1.25fr 1fr;gap:2.1rem;align-items:start}
+.notes{display:none}
+
+/* chrome */
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--grad);width:0%;z-index:60;transition:width .3s var(--ease)}
+#counter{position:fixed;bottom:16px;right:24px;font-family:var(--font-mono);font-size:.75rem;color:var(--text-3);z-index:60}
+#act-label{position:fixed;bottom:16px;left:24px;font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);z-index:60}
+#score-chip{position:fixed;top:16px;right:22px;z-index:60;font-family:var(--font-mono);font-size:.82rem;font-weight:700;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:999px;padding:.4rem .9rem;color:var(--yellow);
+  box-shadow:var(--shadow);transition:transform .25s var(--ease)}
+#score-chip.bump{transform:scale(1.25)}
+#help-hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);font-size:.7rem;color:var(--text-3);z-index:60;font-family:var(--font-mono)}
+
+/* notes drawer */
+#notes-drawer{position:fixed;left:0;right:0;bottom:0;max-height:36vh;overflow:auto;background:var(--surface-2);
+  border-top:2px solid var(--blue);padding:1rem 2.2rem 1.4rem;z-index:80;transform:translateY(100%);transition:transform .3s var(--ease)}
+#notes-drawer.open{transform:translateY(0)}
+#notes-drawer .nd-tag{font-size:.7rem;font-weight:800;letter-spacing:.2em;color:var(--blue);text-transform:uppercase;margin-bottom:.4rem}
+#notes-drawer p{margin:.3rem 0;font-size:.95rem;color:var(--text-2)}
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+@keyframes slideL{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.slide.is-active [data-anim="fade-up"]{animation:fadeUp .7s var(--ease) both}
+.slide.is-active [data-anim="pop"]{animation:popIn .55s var(--ease) both}
+.slide.is-active [data-anim="slide-l"]{animation:slideL .6s var(--ease) both}
+.slide.is-active [data-stagger]>*{animation:fadeUp .55s var(--ease) both}
+.slide.is-active [data-stagger]>*:nth-child(1){animation-delay:.05s}
+.slide.is-active [data-stagger]>*:nth-child(2){animation-delay:.15s}
+.slide.is-active [data-stagger]>*:nth-child(3){animation-delay:.25s}
+.slide.is-active [data-stagger]>*:nth-child(4){animation-delay:.35s}
+.slide.is-active [data-stagger]>*:nth-child(5){animation-delay:.45s}
+.slide.is-active [data-stagger]>*:nth-child(6){animation-delay:.55s}
+.slide.is-active [data-stagger]>*:nth-child(7){animation-delay:.65s}
+.slide.is-active [data-stagger]>*:nth-child(8){animation-delay:.75s}
+
+/* ===================== CODE BLOCKS ===================== */
+pre.code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:1.05rem 1.25rem;font-size:clamp(.82rem,1.3vw,1.02rem);line-height:1.7;overflow:auto;margin:0;
+  box-shadow:var(--shadow);white-space:pre}
+pre.code.big{font-size:clamp(.95rem,1.6vw,1.3rem)}
+.tk-k{color:var(--purple)} .tk-s{color:var(--green)} .tk-n{color:var(--orange)}
+.tk-b{color:var(--orange)} .tk-f{color:var(--blue)} .tk-c{color:var(--text-3);font-style:italic}
+.tk-d{color:var(--yellow)}
+.code-window{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.code-window .cw-bar{display:flex;align-items:center;gap:.45rem;padding:.6rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.cw-bar .dot{width:11px;height:11px;border-radius:50%}
+.cw-bar .dot:nth-child(1){background:#f7768e}.cw-bar .dot:nth-child(2){background:#e0af68}.cw-bar .dot:nth-child(3){background:#9ece6a}
+.cw-bar .cw-title{margin-left:.5rem;font-family:var(--font-mono);font-size:.74rem;color:var(--text-3)}
+.code-window pre.code{border:none;border-radius:0;box-shadow:none}
+
+/* zoom breadcrumb */
+.zoomline{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.2rem}
+.zoomline span{font-family:var(--font-mono);font-size:.72rem;padding:.25rem .7rem;border-radius:999px;
+  border:1px solid var(--border);color:var(--text-3)}
+.zoomline span.on{background:rgba(122,162,247,.16);border-color:var(--blue);color:var(--blue);font-weight:700}
+
+/* cards */
+.cards{display:grid;gap:1.05rem}
+.cards.c3{grid-template-columns:repeat(3,1fr)}
+.cards.c2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.35rem;box-shadow:var(--shadow)}
+.card .ico{font-size:1.9rem;margin-bottom:.5rem}
+.card h3{margin-bottom:.3rem}
+.card p{font-size:.93rem;margin:.2rem 0}
+.card.hl{border-color:var(--blue);background:linear-gradient(160deg,rgba(122,162,247,.12),rgba(187,154,247,.08))}
+.card.hl-g{border-color:var(--green);background:linear-gradient(160deg,rgba(158,206,106,.12),rgba(125,207,255,.06))}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:.78rem;padding:.2rem .65rem;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--border-strong);color:var(--cyan);margin:.15rem .2rem}
+
+/* compare table */
+table.cmp{width:100%;border-collapse:collapse;font-size:clamp(.88rem,1.35vw,1.08rem)}
+table.cmp th{text-align:left;padding:.65rem 1rem;font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);border-bottom:2px solid var(--border-strong)}
+table.cmp td{padding:.62rem 1rem;border-bottom:1px solid var(--border);color:var(--text-2)}
+table.cmp td:first-child{color:var(--text-1)}
+table.cmp td code{color:var(--cyan);font-size:.92em}
+
+/* callout */
+.callout{display:flex;gap:.9rem;align-items:flex-start;background:rgba(158,206,106,.1);border:1px solid rgba(158,206,106,.35);
+  border-radius:var(--radius-sm);padding:.85rem 1.15rem;margin-top:1.3rem}
+.callout.warn{background:rgba(247,118,142,.1);border-color:rgba(247,118,142,.4)}
+.callout.info{background:rgba(122,162,247,.1);border-color:rgba(122,162,247,.4)}
+.callout .co-ico{font-size:1.4rem;line-height:1.3}
+.callout p{margin:0;font-size:clamp(.88rem,1.32vw,1.06rem)}
+
+/* ===================== QUIZ ===================== */
+.quiz{max-width:900px;width:100%;margin:0 auto}
+.quiz-tag{display:inline-block;font-family:var(--font-mono);font-size:.75rem;font-weight:700;letter-spacing:.2em;
+  color:var(--yellow);background:rgba(224,175,104,.12);border:1px solid rgba(224,175,104,.4);
+  border-radius:999px;padding:.3rem .9rem;margin-bottom:1.1rem}
+.quiz-q{font-size:clamp(1.25rem,2.3vw,1.85rem);font-weight:800;margin:0 0 1.3rem;line-height:1.25}
+.quiz-opts{display:grid;gap:.75rem}
+.quiz .opt{display:flex;align-items:center;gap:1rem;text-align:left;width:100%;cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
+  padding:.9rem 1.15rem;color:var(--text-1);font-family:var(--font-sans);font-size:clamp(.93rem,1.45vw,1.12rem);
+  transition:border-color .2s,background .2s,transform .15s}
+.quiz .opt:hover{border-color:var(--blue);transform:translateX(4px)}
+.quiz .opt .key{flex:0 0 auto;font-family:var(--font-mono);font-weight:700;font-size:.8rem;width:1.8rem;height:1.8rem;
+  display:grid;place-items:center;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-3)}
+.quiz .opt code{color:var(--cyan)}
+.quiz .opt.correct{border-color:var(--green);background:rgba(158,206,106,.14)}
+.quiz .opt.correct .key{background:var(--green);color:#16161e;border-color:var(--green)}
+.quiz .opt.wrong{border-color:var(--red);background:rgba(247,118,142,.12);animation:shake .4s}
+.quiz.locked .opt{pointer-events:none;opacity:.8}
+.quiz.locked .opt.correct{opacity:1}
+.quiz-expl{display:none;margin-top:1.2rem;background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);
+  border-radius:var(--radius-sm);padding:.85rem 1.15rem;color:var(--text-2);font-size:clamp(.88rem,1.35vw,1.05rem)}
+.quiz-expl.show{display:block;animation:fadeUp .4s var(--ease)}
+
+/* ===================== LIVE CELL ===================== */
+.livecell{background:var(--bg-2);border:1px solid var(--border-strong);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;width:100%}
+.lc-bar{display:flex;align-items:center;gap:.6rem;padding:.55rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.lc-bar .lc-name{font-family:var(--font-mono);font-size:.76rem;color:var(--text-3);margin-right:auto}
+.lc-bar button{cursor:pointer;font-family:var(--font-mono);font-size:.78rem;font-weight:700;border-radius:8px;
+  padding:.4rem .95rem;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);transition:all .2s}
+.lc-bar button.lc-run{background:rgba(158,206,106,.16);border-color:var(--green);color:var(--green)}
+.lc-bar button:hover{transform:translateY(-1px);filter:brightness(1.2)}
+.lc-editor{position:relative;min-height:120px}
+.lc-editor pre,.lc-editor textarea{margin:0;padding:1rem 1.2rem;font-size:clamp(.83rem,1.25vw,1rem);line-height:1.62;
+  font-family:var(--font-mono);white-space:pre;overflow:auto;tab-size:2}
+.lc-editor pre{position:absolute;inset:0;pointer-events:none;color:var(--text-1)}
+.lc-editor textarea{position:relative;width:100%;height:100%;min-height:inherit;display:block;background:transparent;
+  color:transparent;caret-color:#c0caf5;border:none;outline:none;resize:none;-webkit-text-fill-color:transparent}
+.lc-console{border-top:1px solid var(--border);background:#13131a;padding:.8rem 1.2rem;min-height:2.6rem;max-height:170px;overflow:auto}
+.lc-console .ln{font-family:var(--font-mono);font-size:.84rem;color:var(--green);padding:.08rem 0;white-space:pre-wrap}
+.lc-console .ln.err{color:var(--red)}
+.lc-console .ln.dim{color:var(--text-3);font-style:italic}
+.lc-console .ln.info{color:var(--cyan)}
+.lc-console .ln.setup{color:var(--purple)}
+.lc-console .ln.teardown{color:var(--orange)}
+
+/* ===================== STEPPER ===================== */
+.stepper{display:grid;grid-template-columns:1.25fr 1fr;gap:1.3rem;width:100%}
+.st-code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem 0;box-shadow:var(--shadow)}
+.st-code .cl{font-family:var(--font-mono);font-size:clamp(.78rem,1.22vw,.98rem);line-height:1.8;padding:0 1.15rem;white-space:pre;transition:background .25s;border-left:3px solid transparent}
+.st-code .cl.cur{background:rgba(122,162,247,.16);border-left-color:var(--blue)}
+.st-code .cl.cur2{background:rgba(158,206,106,.13);border-left-color:var(--green)}
+.st-side{display:flex;flex-direction:column;gap:.9rem}
+.st-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem 1.1rem;flex:1}
+.st-panel h4{margin:0 0 .55rem;font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3)}
+.st-row{display:flex;align-items:center;gap:.6rem;margin:.4rem 0;animation:popIn .3s var(--ease);font-family:var(--font-mono);font-size:.84rem}
+.st-row .tag{font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;padding:.18rem .5rem}
+.st-row .tag.l1{background:rgba(86,95,137,.25);color:var(--text-2)}
+.st-row .tag.l2{background:rgba(122,162,247,.18);color:var(--blue)}
+.st-row .tag.l3{background:rgba(187,154,247,.18);color:var(--purple)}
+.st-row .tag.l4{background:rgba(158,206,106,.18);color:var(--green)}
+.st-note{background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);border-radius:var(--radius-sm);
+  padding:.7rem 1rem;font-size:.9rem;color:var(--text-2);min-height:3.2rem}
+.st-out{background:#13131a;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.65rem 1rem;min-height:2.6rem}
+.st-out .ln{font-family:var(--font-mono);font-size:.83rem;padding:.05rem 0}
+.st-ctrl{display:flex;gap:.7rem;align-items:center;margin-top:1rem}
+.st-ctrl button{cursor:pointer;font-family:var(--font-mono);font-weight:700;font-size:.84rem;border-radius:10px;
+  padding:.52rem 1.2rem;border:1px solid var(--blue);background:rgba(122,162,247,.15);color:var(--blue);transition:all .2s}
+.st-ctrl button:hover{filter:brightness(1.25);transform:translateY(-1px)}
+.st-ctrl button.ghost{border-color:var(--border-strong);background:var(--surface);color:var(--text-2)}
+.st-ctrl .st-stepn{font-family:var(--font-mono);font-size:.8rem;color:var(--text-3);margin-left:auto}
+
+/* ===================== SPEED SIMULATOR (API vs UI) ===================== */
+.psim{width:100%;display:flex;flex-direction:column;gap:1rem}
+.psim-top{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+.psim-top .lbl{font-family:var(--font-mono);font-size:.8rem;color:var(--text-3)}
+.psim-wbtn{cursor:pointer;font-family:var(--font-mono);font-weight:700;font-size:.86rem;border-radius:9px;
+  padding:.45rem 1rem;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);transition:all .18s}
+.psim-wbtn.on{border-color:var(--blue);background:rgba(122,162,247,.18);color:var(--blue)}
+.psim-run{cursor:pointer;font-family:var(--font-mono);font-weight:700;font-size:.86rem;border-radius:9px;
+  padding:.45rem 1.2rem;border:1px solid var(--green);background:rgba(158,206,106,.16);color:var(--green);transition:all .18s;margin-left:auto}
+.psim-run:hover{filter:brightness(1.2)}
+.psim-reset{cursor:pointer;font-family:var(--font-mono);font-weight:700;font-size:.86rem;border-radius:9px;
+  padding:.45rem 1rem;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2)}
+.psim-lanes{display:flex;flex-direction:column;gap:.55rem}
+.psim-lane{display:flex;align-items:center;gap:.8rem}
+.psim-lane .wlbl{flex:0 0 auto;width:8.5rem;font-family:var(--font-mono);font-size:.76rem;color:var(--cyan);
+  display:flex;align-items:center;gap:.4rem}
+.psim-track{flex:1;display:flex;gap:4px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:4px;min-height:2.4rem}
+.pblock{position:relative;border-radius:5px;overflow:hidden;border:1px solid var(--border-strong);
+  background:var(--surface-2);display:flex;align-items:center;justify-content:center;min-width:36px}
+.pblock .pfill{position:absolute;inset:0;width:0%;background:linear-gradient(90deg,rgba(122,162,247,.35),rgba(187,154,247,.35));transition:none}
+.pblock .pname{position:relative;font-family:var(--font-mono);font-size:.68rem;color:var(--text-2);padding:0 .35rem;white-space:nowrap;z-index:2}
+.pblock.done{border-color:var(--green)}
+.pblock.done .pfill{background:linear-gradient(90deg,rgba(158,206,106,.4),rgba(125,207,255,.3))}
+.psim-stats{display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center;font-family:var(--font-mono)}
+.psim-stat{background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:.55rem 1rem}
+.psim-stat .k{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);display:block}
+.psim-stat .v{font-size:1.25rem;font-weight:700;color:var(--text-1)}
+.psim-stat .v.clock{color:var(--cyan)} .psim-stat .v.speed{color:var(--green)}
+
+/* KATA layers diagram */
+.kata-stack{display:flex;flex-direction:column;gap:.5rem;max-width:600px;margin:0 auto;width:100%}
+.kata-stack .layer{display:flex;align-items:center;gap:1rem;background:var(--surface);border:1.5px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.7rem 1.15rem;font-family:var(--font-mono);font-size:clamp(.8rem,1.28vw,1rem);color:var(--text-3);transition:all .25s}
+.kata-stack .layer .ly-note{margin-left:auto;font-family:var(--font-sans);font-size:.76rem}
+.kata-stack .layer.star{border-color:var(--green);background:rgba(158,206,106,.12);color:var(--green);font-weight:700;
+  box-shadow:0 0 24px rgba(158,206,106,.15)}
+.kata-stack .layer.lit{border-color:var(--blue);background:rgba(122,162,247,.16);color:var(--blue);box-shadow:0 0 22px rgba(122,162,247,.18)}
+.kata-stack .arrow{text-align:center;color:var(--text-3);font-size:.82rem;line-height:.6}
+
+/* ===================== API REQUEST RUNNER ===================== */
+.api-playground{display:grid;grid-template-columns:1fr 1.2fr;gap:1.5rem;width:100%;align-items:stretch}
+.api-stage{position:relative;display:flex;flex-direction:column;gap:.55rem;background:#0f0f16;border:1px solid var(--border);
+  border-radius:var(--radius);padding:1rem;box-shadow:var(--shadow);min-height:380px}
+.client-box{background:#e8ecf4;border-radius:var(--radius-sm);padding:.85rem 1rem;color:#1d2540}
+.client-box h4{margin:0 0 .15rem;font-size:1rem;color:#1d2540}
+.client-box p{margin:0;font-size:.74rem;color:#7c86a0}
+.wire{display:flex;align-items:center;justify-content:center;gap:.5rem;color:var(--text-3);font-family:var(--font-mono);font-size:.72rem;height:1.1rem}
+.wire::before,.wire::after{content:"";height:1px;flex:1;background:var(--border-strong)}
+.server-box{flex:1;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:.85rem 1rem;transition:box-shadow .25s}
+.server-box.hit{box-shadow:0 0 26px rgba(122,162,247,.3)}
+.server-box .sv-title{font-family:var(--font-mono);font-size:.78rem;color:var(--cyan);margin-bottom:.55rem}
+.endpoint{display:flex;align-items:center;gap:.5rem;font-family:var(--font-mono);font-size:.7rem;color:var(--text-3);padding:.12rem 0}
+.endpoint .m{font-weight:700;border-radius:5px;padding:.08rem .4rem;font-size:.64rem}
+.m.get{color:var(--green);background:rgba(158,206,106,.14)}
+.m.post{color:var(--orange);background:rgba(255,158,100,.14)}
+.m.put{color:var(--blue);background:rgba(122,162,247,.14)}
+.m.del{color:var(--red);background:rgba(247,118,142,.14)}
+.db-table{margin-top:.6rem;border-top:1px solid var(--border);padding-top:.5rem}
+.db-table .dbh{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:.3rem}
+.db-row{font-family:var(--font-mono);font-size:.72rem;color:var(--text-2);padding:.16rem .5rem;border-radius:5px;background:var(--surface-2);margin:.18rem 0;animation:popIn .3s var(--ease)}
+.db-empty{font-family:var(--font-mono);font-size:.72rem;color:var(--text-3);font-style:italic}
+.packet{position:absolute;z-index:30;font-family:var(--font-mono);font-size:.7rem;font-weight:700;
+  padding:.22rem .55rem;border-radius:6px;opacity:0;transition:left .5s var(--ease),top .5s var(--ease),opacity .25s;
+  border:1px solid var(--border-strong);background:var(--surface-2);color:var(--cyan);white-space:nowrap;pointer-events:none}
+.packet.req{color:var(--blue);border-color:var(--blue)}
+.packet.ok{color:var(--green);border-color:var(--green)}
+.packet.err{color:var(--red);border-color:var(--red)}
+.sim-right{display:flex;flex-direction:column;gap:.9rem}
+.sim-log{background:#13131a;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.7rem 1rem;flex:1;min-height:80px;max-height:150px;overflow:auto}
+.sim-log .ln{font-family:var(--font-mono);font-size:.8rem;padding:.07rem 0;color:var(--text-2)}
+.sim-log .ln.ok{color:var(--green)} .sim-log .ln.fail{color:var(--red)} .sim-log .ln.info{color:var(--cyan)}
+.sim-banner{display:none;border-radius:var(--radius-sm);padding:.7rem 1.1rem;font-weight:800;font-size:1rem;text-align:center;letter-spacing:.08em}
+.sim-banner.pass{display:block;background:rgba(158,206,106,.16);border:1.5px solid var(--green);color:var(--green)}
+.sim-banner.fail{display:block;background:rgba(247,118,142,.14);border:1.5px solid var(--red);color:var(--red)}
+
+/* before/after */
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:1.3rem;align-items:start}
+.ba .ba-tag{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  border-radius:999px;padding:.25rem .8rem;margin-bottom:.6rem}
+.ba .bad-tag{background:rgba(247,118,142,.14);border:1px solid rgba(247,118,142,.45);color:var(--red)}
+.ba .good-tag{background:rgba(158,206,106,.14);border:1px solid rgba(158,206,106,.45);color:var(--green)}
+
+/* cover + final */
+#fx-cover{position:absolute;inset:0;z-index:0}
+.cover-inner{position:relative;z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.1rem}
+.cover-chips{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+#final-score{font-family:var(--font-mono);font-size:clamp(2.6rem,7vw,5rem);font-weight:700;color:var(--yellow)}
+#confetti-canvas{position:fixed;inset:0;z-index:200;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="score-chip">⭐ 0/6</div>
+<div id="counter">1 / 28</div>
+<div id="act-label"></div>
+<div id="help-hint">← → navegar · N notas presentador · F pantalla completa</div>
+<canvas id="confetti-canvas"></canvas>
+<div id="notes-drawer"><div class="nd-tag">🎙 Notas del presentador</div><div id="nd-content"></div></div>
+
+<!-- ================================================================ -->
+<!-- ACTO 0 · POR QUÉ PROBAR LA API -->
+<!-- ================================================================ -->
+
+<!-- 1 · Portada -->
+<section class="slide" data-act="Acto 0 · Por qué probar la API" style="align-items:center">
+  <canvas id="fx-cover"></canvas>
+  <div class="cover-inner">
+    <div class="kicker" data-anim="fade-up">QA Engineering · Automatización de pruebas</div>
+    <h1 data-anim="fade-up" style="animation-delay:.1s">API Automation <span class="grad-text">con Playwright</span></h1>
+    <p data-anim="fade-up" style="animation-delay:.2s;max-width:760px;font-size:clamp(1.05rem,1.8vw,1.35rem)">
+      Probar el <b>backend</b> directo — sin navegador, sin clics.<br>
+      La fixture <code class="pill">request</code> · aserciones de respuesta · validación de schema · KATA para API.</p>
+    <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
+      <span class="pill">request fixture</span><span class="pill">status + body</span><span class="pill">schema</span><span class="pill">KATA · ApiBase</span><span class="pill">runner real</span><span class="pill">6 quizzes ⭐</span>
+    </div>
+  </div>
+  <div class="notes"><p>Sesión de API automation con Playwright. Prerequisito: ya entienden tests, clases y fixtures básicas (sesión Automation Patterns). Hoy bajamos del navegador a la capa HTTP: probar endpoints directo. Misma promesa pedagógica: primero el dolor, luego la herramienta. Todo en vivo — un runner que ejecuta JavaScript real contra una API falsa en memoria, un trazador del ciclo de vida de una request, un simulador que compara velocidad API vs UI, y un trazador de capas KATA. Que la sala TOQUE cada widget.</p></div>
+</section>
+
+<!-- 2 · La pirámide de testing -->
+<section class="slide" data-act="Acto 0 · Por qué probar la API">
+  <div class="kicker">El salto de hoy</div>
+  <h2 data-anim="fade-up">Bajas un piso: <span class="grad-text">del navegador a la API</span> 🪜</h2>
+  <div class="cols">
+    <div data-stagger>
+      <div class="card"><h3>✅ Lo que ya sabes</h3><p>Escribir un <code class="pill">test()</code> · Page Objects · fixtures con <code class="pill">use()</code>. Probar la app <b>por la pantalla</b>.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🎯 Lo que sumas hoy</h3><p>Probar la app <b>por debajo de la pantalla</b>: golpear el endpoint HTTP directo. Más rápido, más estable, más barato.</p></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.3s">
+      <pre class="code big">
+<span class="tk-c">// La pirámide del testing</span>
+
+      /\        E2E (UI)   <span class="tk-c">lento, frágil</span>
+     /  \       pocos
+    /----\      <span class="tk-f">API</span>        <span class="tk-c">⟵ hoy: rápido</span>
+   /      \     muchos          <span class="tk-c">y estable</span>
+  /--------\    Unit       <span class="tk-c">los devs</span></pre>
+      <div class="callout info" style="margin-top:1rem"><span class="co-ico">🧭</span><p>La capa API es el <b>punto dulce</b> de QA: cubre lógica de negocio real, sin el costo ni la fragilidad de manejar un navegador.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Encuadre: la pirámide de testing. Arriba E2E (UI) — realista pero lento y frágil. Abajo unit (de los devs). En medio, la capa API: el punto dulce de QA. Un test de API arranca en milisegundos (no abre navegador), no se rompe porque cambió un color o un botón, y prueba la lógica de negocio de verdad: validaciones, permisos, estados. Mensaje clave de la sesión: si un caso se puede probar por API, pruébalo por API — guarda el navegador para lo que SOLO se ve en pantalla.</p></div>
+</section>
+
+<!-- 3 · QUIZ 0 relámpago -->
+<section class="slide" data-act="Acto 0 · Por qué probar la API" style="align-items:center">
+  <div class="quiz" data-quiz="q0">
+    <div class="quiz-tag">⭐ QUIZ relámpago · calentamiento</div>
+    <h3 class="quiz-q">Un <b>test de API</b> es, en una frase…</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Un test que abre el navegador y hace clic en botones</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>Un test que envía una <b>petición HTTP</b> a un endpoint y verifica la <b>respuesta</b> (status, body, headers)</span></button>
+      <button class="opt"><span class="key">C</span><span>Un test que solo revisa el código fuente sin ejecutarlo</span></button>
+    </div>
+    <div class="quiz-expl">💡 Un test de API habla con el backend en su idioma: <code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>DELETE</code> sobre una URL, y comprueba lo que vuelve. Sin pantalla, sin clics — solo petición y respuesta. Hoy aprendemos a escribirlos con Playwright.</div>
+  </div>
+  <div class="notes"><p>Calentamiento que fija el vocabulario: petición → respuesta. La opción A confunde API con E2E (el error más común al empezar). La C lo confunde con análisis estático. Si la sala duda, recálcales: API test = mandar una request HTTP y verificar la response. Es exactamente lo que hace Postman, pero automatizado y dentro de la suite.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 1 · LA FIXTURE request -->
+<!-- ================================================================ -->
+
+<!-- 4 · El dolor: navegador para un endpoint -->
+<section class="slide" data-act="Acto 1 · La fixture request">
+  <div class="zoomline"><span class="on">request</span><span>aserciones</span><span>schema · datos</span><span>kata</span></div>
+  <h2 data-anim="fade-up">El dolor: <span class="grad-text">abrir un navegador entero para probar un endpoint</span> 🐌</h2>
+  <div class="code-window" data-anim="fade-up" style="max-width:940px">
+    <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">orders.spec.ts — probando la API… por la UI</span></div>
+    <pre class="code" style="font-size:clamp(.74rem,1.13vw,.94rem)">
+<span class="tk-f">test</span>(<span class="tk-s">"el pedido se crea"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"/login"</span>);              <span class="tk-c">┐</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#email"</span>, EMAIL);       <span class="tk-c">│ 8 segundos de</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#password"</span>, PASS);     <span class="tk-c">│ navegador, clics</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">click</span>(<span class="tk-s">"#login"</span>);             <span class="tk-c">│ y esperas…</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"/orders/new"</span>);         <span class="tk-c">│</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#item"</span>, <span class="tk-s">"Coffee"</span>);     <span class="tk-c">│</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">click</span>(<span class="tk-s">"#submit"</span>);            <span class="tk-c">┘</span>
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">".toast"</span>)).<span class="tk-f">toBeVisible</span>();  <span class="tk-c">// ¿de verdad se guardó?</span>
+});</pre>
+  </div>
+  <div class="callout warn" data-anim="fade-up"><span class="co-ico">🚨</span><p>Solo quería saber si <code>POST /orders</code> funciona. Pagué <b>8 segundos</b>, un login completo y un navegador… y al final confío en un <i>toast</i>, no en la respuesta real del servidor.</p></div>
+  <div class="notes"><p>Deja que ELLOS sientan el desperdicio: para verificar UN endpoint, montamos login + navegación + formulario + un navegador entero. Y peor: la aserción final mira un toast en pantalla, no la respuesta HTTP. Si el toast aparece pero el backend devolvió 500, el test pasa en falso. El gancho del acto: hay una puerta directa al backend que evita TODO esto. Sostén la incomodidad antes de revelar la fixture request.</p></div>
+</section>
+
+<!-- 5 · El patrón: la fixture request -->
+<section class="slide" data-act="Acto 1 · La fixture request">
+  <div class="zoomline"><span class="on">request</span><span>aserciones</span><span>schema · datos</span><span>kata</span></div>
+  <h2 data-anim="fade-up">La cura: <span class="grad-text">la fixture <code>request</code></span> — HTTP sin navegador 🚀</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-f">test</span>(<span class="tk-s">"POST /orders"</span>, <span class="tk-k">async</span> ({ request }) => {
+  <span class="tk-c">//                          ▲</span>
+  <span class="tk-c">//         otra fixture, como page</span>
+  <span class="tk-k">const</span> res = <span class="tk-k">await</span> request.<span class="tk-f">post</span>(<span class="tk-s">"/orders"</span>, {
+    data: { item: <span class="tk-s">"Coffee"</span>, qty: <span class="tk-n">2</span> },
+  });
+
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(res).<span class="tk-f">toBeOK</span>();   <span class="tk-c">// 2xx</span>
+});</pre>
+      <div class="callout info" style="margin-top:1rem"><span class="co-ico">⚡</span><p>Sin <code>goto</code>, sin clics, sin esperar render. Una petición directa, una respuesta directa. <b>Milisegundos</b>, no segundos.</p></div>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🎁 <code style="font-size:.85em">request</code> es una fixture built-in</h3><p>Igual que <code class="pill">page</code>, Playwright te la presta lista. Es un cliente HTTP: <code class="pill">APIRequestContext</code>.</p></div>
+      <div class="card" style="margin-top:.7rem"><h3>📨 Habla HTTP directo</h3><p><code class="pill">.get()</code> · <code class="pill">.post()</code> · <code class="pill">.put()</code> · <code class="pill">.delete()</code>. El mismo idioma del backend.</p></div>
+      <div class="card hl" style="margin-top:.7rem"><h3>🧬 Cero conceptos nuevos</h3><p>Pides <code class="pill">{ request }</code> en vez de <code class="pill">{ page }</code>. Mismo <code class="pill">await</code>, mismo <code class="pill">expect</code>. Solo cambia el canal.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>La revelación del acto: existe una fixture hermana de page llamada request. Es un APIRequestContext — un cliente HTTP completo que Playwright arma y limpia por ti, con el baseURL y los headers de tu config ya aplicados. Mensaje tranquilizador: no es una librería nueva ni conceptos nuevos; pides { request } en lugar de { page } y ya. El cambio mental es: dejas de manejar la pantalla y empiezas a hablar con el servidor en su idioma (verbos HTTP). El toBeOK lo vemos a fondo en el acto 2.</p></div>
+</section>
+
+<!-- 6 · Los verbos y la respuesta -->
+<section class="slide" data-act="Acto 1 · La fixture request">
+  <div class="zoomline"><span class="on">request</span><span>aserciones</span><span>schema · datos</span><span>kata</span></div>
+  <h2 data-anim="fade-up">Anatomía: <span class="grad-text">una petición, una respuesta</span> 📦</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>🚩 Los 4 verbos que usarás siempre</h3>
+      <pre class="code" style="font-size:clamp(.78rem,1.18vw,.96rem)">
+<span class="tk-c">// leer</span>
+<span class="tk-k">await</span> request.<span class="tk-f">get</span>(<span class="tk-s">"/orders"</span>);
+<span class="tk-k">await</span> request.<span class="tk-f">get</span>(<span class="tk-s">"/orders/42"</span>);
+
+<span class="tk-c">// crear (con cuerpo JSON)</span>
+<span class="tk-k">await</span> request.<span class="tk-f">post</span>(<span class="tk-s">"/orders"</span>, { data });
+
+<span class="tk-c">// actualizar / borrar</span>
+<span class="tk-k">await</span> request.<span class="tk-f">put</span>(<span class="tk-s">"/orders/42"</span>, { data });
+<span class="tk-k">await</span> request.<span class="tk-f">delete</span>(<span class="tk-s">"/orders/42"</span>);</pre>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>📥 Qué te devuelve cada llamada</h3>
+      <pre class="code" style="font-size:clamp(.78rem,1.18vw,.96rem)">
+<span class="tk-k">const</span> res = <span class="tk-k">await</span> request.<span class="tk-f">get</span>(<span class="tk-s">"/orders/42"</span>);
+
+res.<span class="tk-f">status</span>();    <span class="tk-c">// 200, 404, 500…</span>
+res.<span class="tk-f">ok</span>();        <span class="tk-c">// true si es 2xx</span>
+<span class="tk-k">await</span> res.<span class="tk-f">json</span>();  <span class="tk-c">// el body como objeto JS</span>
+res.<span class="tk-f">headers</span>();   <span class="tk-c">// los headers</span></pre>
+      <div class="callout" style="margin-top:.9rem"><span class="co-ico">🔑</span><p><code>status()</code> y <code>ok()</code> son <b>síncronos</b>. <code>json()</code> es <code>async</code> — el body llega como stream, por eso lleva <code>await</code>.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>El mapa mínimo y verídico de Playwright. Izquierda: los 4 verbos. El segundo argumento { data } serializa a JSON automáticamente y pone el header content-type. Derecha: la respuesta (APIResponse). Detalle que confunde a todos: status() y ok() son síncronos (ya tienes el status apenas vuelve), pero json() es async porque el cuerpo se lee como stream — de ahí el await res.json(). En la siguiente slide lo ejecutan en vivo contra una API falsa que responde de verdad.</p></div>
+</section>
+
+<!-- 7 · LIVE: API request runner -->
+<section class="slide" data-act="Acto 1 · La fixture request">
+  <div class="kicker">🎮 Playground · código real, servidor real (en memoria)</div>
+  <h2 data-anim="fade-up">Tu cliente de API, <span class="grad-text">hablando con el backend</span> 🤖</h2>
+  <div class="api-playground">
+    <div class="api-stage" id="api-stage">
+      <div class="client-box" id="client-box">
+        <h4>🧪 Test runner</h4>
+        <p>tu test envía peticiones HTTP →</p>
+      </div>
+      <div class="wire">HTTP</div>
+      <div class="server-box" id="server-box">
+        <div class="sv-title">🌐 bunkai-bank API · /orders</div>
+        <div class="endpoint"><span class="m post">POST</span> /orders <span style="margin-left:auto">→ 201</span></div>
+        <div class="endpoint"><span class="m get">GET</span> /orders/:id <span style="margin-left:auto">→ 200 · 404</span></div>
+        <div class="endpoint"><span class="m put">PUT</span> /orders/:id <span style="margin-left:auto">→ 200</span></div>
+        <div class="endpoint"><span class="m del">DEL</span> /orders/:id <span style="margin-left:auto">→ 204</span></div>
+        <div class="db-table">
+          <div class="dbh">🗄️ base de datos (en memoria)</div>
+          <div id="db-rows"><div class="db-empty">— sin registros —</div></div>
+        </div>
+      </div>
+      <div class="packet" id="api-packet">REQ</div>
+    </div>
+    <div class="sim-right">
+      <div class="livecell" style="flex:0 0 auto">
+        <div class="lc-bar"><span class="lc-name">orders-api.spec.ts — clase real, ejecución real</span>
+          <button class="lc-reset" id="api-reset">↺ Reset</button><button class="lc-run" id="api-run">▶ Ejecutar test</button></div>
+        <div class="lc-editor" style="min-height:240px"><pre class="lc-hl" id="api-hl"></pre><textarea id="api-src" spellcheck="false">class OrdersApi {
+  constructor(api) {
+    this.api = api;
+  }
+  async createOrder(data) {
+    const res = await this.api.post("/orders", { data });
+    expect(res.status()).toBe(201);
+    return await res.json();
+  }
+  async getOrder(id) {
+    return await this.api.get("/orders/" + id);
+  }
+}
+
+test("crea y luego lee un pedido", async ({ api }) => {
+  const orders = new OrdersApi(api);
+  const created = await orders.createOrder({ item: "Coffee", qty: 2 });
+
+  const res = await orders.getOrder(created.id);
+  await expect(res).toBeOK();
+
+  const body = await res.json();
+  expect(body.item).toBe("Coffee");
+});</textarea></div>
+      </div>
+      <div class="sim-log" id="api-log"><div class="ln" style="color:var(--text-3);font-style:italic">▶ Ejecuta — tu CLIENTE va a enviar peticiones reales…</div></div>
+      <div class="sim-banner" id="api-banner"></div>
+    </div>
+  </div>
+  <div class="notes"><p>Este runner EJECUTA JavaScript real: la clase OrdersApi corre tal cual contra una API falsa en memoria que valida, escribe en una "base de datos" visible y devuelve status reales. Tres demos en vivo: (1) ejecutar tal cual → POST 201, GET 200, PASS verde, y la fila aparece en la DB; (2) cambiar expect(body.item).toBe("Coffee") por "Tea" → FAIL con expected/received legible; (3) el experimento estrella: dentro de createOrder, cambiar "/orders" por "/order" (typo) → POST /order → 404 → falla → corregir EN UN SOLO LUGAR → verde. Ese momento ES el argumento del componente de API: el endpoint vive centralizado, igual que un selector en un Page Object.</p></div>
+</section>
+
+<!-- 8 · QUIZ 1 -->
+<section class="slide" data-act="Acto 1 · La fixture request" style="align-items:center">
+  <div class="quiz" data-quiz="q1">
+    <div class="quiz-tag">⭐ QUIZ 1 · La fixture request</div>
+    <h3 class="quiz-q">Quieres probar <code style="color:var(--cyan)">GET /orders</code> sin tocar la interfaz. ¿Qué fixture pides en tu test?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span><code>{ page }</code> — y navegas hasta la lista de pedidos</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span><code>{ request }</code> — y haces <code>request.get("/orders")</code> directo</span></button>
+      <button class="opt"><span class="key">C</span><span><code>{ browser }</code> — abres Chrome a mano</span></button>
+    </div>
+    <div class="quiz-expl">💡 <code>{ request }</code> es el cliente HTTP: golpea el endpoint sin abrir navegador. Pedir <code>{ page }</code> o <code>{ browser }</code> arranca un navegador que no necesitas — segundos perdidos en cada test. Para probar la API, habla con la API.</div>
+  </div>
+  <div class="notes"><p>Si hicieron el experimento del endpoint en el runner, este quiz formaliza lo vivido. Opción A es el reflejo de quien aún piensa en UI; B es la respuesta. Transición: "request resuelve el canal… pero toBeOK() solo mira el status. ¿Y si el status es 200 pero el body viene mal? Ese es el siguiente dolor: aserciones de verdad."</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 2 · ASERCIONES DE API -->
+<!-- ================================================================ -->
+
+<!-- 9 · El dolor: status 200 no basta -->
+<section class="slide" data-act="Acto 2 · Aserciones de API">
+  <div class="zoomline"><span>request</span><span class="on">aserciones</span><span>schema · datos</span><span>kata</span></div>
+  <h2 data-anim="fade-up">Nuevo dolor: <span class="grad-text">"200 OK" no significa "correcto"</span> ⚠️</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code" style="font-size:clamp(.78rem,1.18vw,.96rem)">
+<span class="tk-f">test</span>(<span class="tk-s">"trae el pedido"</span>, <span class="tk-k">async</span> ({ request }) => {
+  <span class="tk-k">const</span> res = <span class="tk-k">await</span> request.<span class="tk-f">get</span>(<span class="tk-s">"/orders/42"</span>);
+
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(res).<span class="tk-f">toBeOK</span>();   <span class="tk-c">// ✅ 200… ¿y ya?</span>
+});
+
+<span class="tk-c">// El server respondió 200, pero el body era:</span>
+<span class="tk-c">// { "id": 42, "item": null, "qty": -3 }</span>
+<span class="tk-c">// ☠️ datos basura, y el test pasó feliz</span></pre>
+      <div class="callout warn" style="margin-top:1rem"><span class="co-ico">🕳️</span><p>Verificar solo el status es un colador: el endpoint puede responder <code>200</code> con un body incompleto, campos <code>null</code> o tipos equivocados.</p></div>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🎯 Tres capas que verificar</h3><p><b>1. Status</b> — ¿el código correcto? <b>2. Body</b> — ¿los datos correctos? <b>3. Contrato</b> — ¿la forma correcta?</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🧩 El síntoma</h3><p>Tests "verdes" que no atrapan nada. Pasan aunque el backend devuelva basura, porque solo miran el status.</p></div>
+      <div class="card hl" style="margin-top:.8rem"><h3>💡 La idea</h3><p>Afirmar sobre el <b>contenido</b>: campos exactos, tipos, y la <b>forma completa</b> del JSON (schema).</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>El dolor del acto: una aserción débil da falsa seguridad. 200 OK solo dice "el servidor respondió", no "respondió bien". Tres niveles a cubrir: status (¿201 o 422?), body (¿item es "Coffee" y qty es 2?), y contrato/schema (¿el JSON tiene todos los campos con los tipos correctos?). El ejemplo del body con null y qty negativo es el clásico: pasa el status, pasa el test, y el bug llega a producción. La cura viene en las dos slides siguientes.</p></div>
+</section>
+
+<!-- 10 · El patrón: aserciones por capas -->
+<section class="slide" data-act="Acto 2 · Aserciones de API">
+  <div class="zoomline"><span>request</span><span class="on">aserciones</span><span>schema · datos</span><span>kata</span></div>
+  <h2 data-anim="fade-up">La cura: <span class="grad-text">afirma status, body y headers</span> 🎯</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <pre class="code" style="font-size:clamp(.76rem,1.15vw,.94rem)">
+<span class="tk-f">test</span>(<span class="tk-s">"GET /orders/42 completo"</span>, <span class="tk-k">async</span> ({ request }) => {
+  <span class="tk-k">const</span> res = <span class="tk-k">await</span> request.<span class="tk-f">get</span>(<span class="tk-s">"/orders/42"</span>);
+
+  <span class="tk-c">// 1 · STATUS</span>
+  <span class="tk-f">expect</span>(res.<span class="tk-f">status</span>()).<span class="tk-f">toBe</span>(<span class="tk-n">200</span>);
+
+  <span class="tk-c">// 2 · BODY (el contenido importa)</span>
+  <span class="tk-k">const</span> body = <span class="tk-k">await</span> res.<span class="tk-f">json</span>();
+  <span class="tk-f">expect</span>(body.id).<span class="tk-f">toBe</span>(<span class="tk-n">42</span>);
+  <span class="tk-f">expect</span>(body.item).<span class="tk-f">toBe</span>(<span class="tk-s">"Coffee"</span>);
+  <span class="tk-f">expect</span>(body.qty).<span class="tk-f">toBeGreaterThan</span>(<span class="tk-n">0</span>);
+
+  <span class="tk-c">// 3 · HEADERS</span>
+  <span class="tk-f">expect</span>(res.<span class="tk-f">headers</span>()[<span class="tk-s">"content-type"</span>])
+    .<span class="tk-f">toContain</span>(<span class="tk-s">"application/json"</span>);
+});</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🔢 Status exacto</h3><p><code class="pill">toBe(201)</code> para creación, <code class="pill">422</code> para validación, <code class="pill">404</code> para no-existe. El código <b>cuenta una historia</b>.</p></div>
+      <div class="card hl" style="margin-top:.7rem"><h3>📋 Body campo a campo</h3><p><code class="pill">toBe</code> · <code class="pill">toEqual</code> · <code class="pill">toBeGreaterThan</code> · <code class="pill">toBeDefined</code>. Las <b>mismas</b> aserciones que ya usas.</p></div>
+      <div class="card" style="margin-top:.7rem"><h3>📨 Headers cuando importan</h3><p>content-type, paginación, rate-limit, auth. No siempre, pero cuando el contrato lo exige.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>La cura por capas, con matchers que YA conocen (toBe, toEqual, toBeGreaterThan) — no hay API nueva de aserciones, es el mismo expect de siempre aplicado al JSON. Mensaje sobre el status: cada código cuenta una historia y debes afirmar el EXACTO, no solo "2xx" — 201 vs 200 distingue "creé" de "ya existía", 422 vs 400 distingue validación de error genérico. El body es donde se atrapan los bugs reales. Headers: solo cuando el contrato lo pide. Pero afirmar 8 campos a mano es tedioso y frágil — eso abre la siguiente slide: validar la forma completa con schema.</p></div>
+</section>
+
+<!-- 11 · Schema validation + LIVE cell -->
+<section class="slide" data-act="Acto 2 · Aserciones de API">
+  <div class="zoomline"><span>request</span><span class="on">aserciones</span><span>schema · datos</span><span>kata</span></div>
+  <h2 data-anim="fade-up">El nivel pro: <span class="grad-text">validar la forma completa</span> con un schema 📐</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <p style="margin-bottom:.7rem">En vez de afirmar 10 campos a mano, defines la <b>forma esperada</b> una vez (con <code class="pill">Zod</code>) y validas todo el body de golpe. Si falta un campo o cambia un tipo, el schema lo caza.</p>
+      <pre class="code" style="font-size:clamp(.76rem,1.15vw,.93rem)">
+<span class="tk-k">import</span> { z } <span class="tk-k">from</span> <span class="tk-s">"zod"</span>;
+
+<span class="tk-k">const</span> OrderSchema = z.<span class="tk-f">object</span>({
+  id:   z.<span class="tk-f">number</span>(),
+  item: z.<span class="tk-f">string</span>(),
+  qty:  z.<span class="tk-f">number</span>().<span class="tk-f">positive</span>(),
+});
+
+<span class="tk-k">const</span> body = <span class="tk-k">await</span> res.<span class="tk-f">json</span>();
+OrderSchema.<span class="tk-f">parse</span>(body);  <span class="tk-c">// 💥 lanza si la forma no calza</span></pre>
+      <div class="callout info" style="margin-top:.85rem"><span class="co-ico">🔗</span><p>En este repo los schemas se <b>generan desde la OpenAPI</b> (<code>bun run api:sync</code> → <code>api/schemas/</code>). El contrato del backend y tus tests no pueden divergir.</p></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <div class="livecell">
+        <div class="lc-bar"><span class="lc-name">schema-check.js — valida el body en vivo</span>
+          <button class="lc-reset">↺ Reset</button><button class="lc-run">▶ Ejecutar</button></div>
+        <div class="lc-editor" style="min-height:230px"><pre class="lc-hl"></pre><textarea spellcheck="false">// Mini-validador (idea de Zod, en JS puro)
+function checkOrder(body) {
+  const errors = [];
+  if (typeof body.id !== "number") errors.push("id debe ser number");
+  if (typeof body.item !== "string") errors.push("item debe ser string");
+  if (typeof body.qty !== "number" || body.qty <= 0)
+    errors.push("qty debe ser number positivo");
+  return errors;
+}
+
+// 👇 Cambia un valor y vuelve a ejecutar
+const body = { id: 42, item: "Coffee", qty: 2 };
+
+const errors = checkOrder(body);
+if (errors.length === 0) {
+  console.log("✓ schema OK — el body respeta el contrato");
+} else {
+  console.error("✗ schema FALLÓ:");
+  errors.forEach(e => console.error("  · " + e));
+}</textarea></div>
+        <div class="lc-console"><div class="ln dim">▶ Ejecuta para validar el body…</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes"><p>El salto de "afirmar campos sueltos" a "validar el contrato completo". Zod define la forma una vez y parse() lanza si algo no calza — un campo faltante, un tipo cambiado, un null inesperado. Dato verídico y potente del repo: los schemas NO se escriben a mano, se generan desde la OpenAPI del backend con bun run api:sync hacia api/schemas/. Eso significa que si el backend cambia su contrato, tus tipos se actualizan y los tests que asumían lo viejo fallan en compilación — trazabilidad real entre contrato y prueba. Demo del live cell: ejecutar tal cual → OK; cambiar qty a -3 o item a 99 → ver los errores concretos. Que la sala rompa el body y vea el validador atraparlo.</p></div>
+</section>
+
+<!-- 12 · STEPPER: ciclo de vida de una request -->
+<section class="slide" data-act="Acto 2 · Aserciones de API">
+  <div class="kicker">🧠 Visualizador · el viaje de una petición</div>
+  <h2 data-anim="fade-up">Qué pasa en <span class="grad-text">await request.post(...)</span>, paso a paso</h2>
+  <div class="stepper" data-anim="fade-up">
+    <div>
+      <div class="st-code" id="rq-code">
+        <div class="cl" data-l="1"><span class="tk-f">test</span>(<span class="tk-s">"POST /orders"</span>, <span class="tk-k">async</span> ({ request }) => {</div>
+        <div class="cl" data-l="2">  <span class="tk-k">const</span> res = <span class="tk-k">await</span> request.<span class="tk-f">post</span>(<span class="tk-s">"/orders"</span>, {</div>
+        <div class="cl" data-l="3">    data: { item: <span class="tk-s">"Coffee"</span>, qty: <span class="tk-n">2</span> },</div>
+        <div class="cl" data-l="4">  });</div>
+        <div class="cl" data-l="5">  <span class="tk-f">expect</span>(res.<span class="tk-f">status</span>()).<span class="tk-f">toBe</span>(<span class="tk-n">201</span>);</div>
+        <div class="cl" data-l="6">  <span class="tk-k">const</span> body = <span class="tk-k">await</span> res.<span class="tk-f">json</span>();</div>
+        <div class="cl" data-l="7">  <span class="tk-f">expect</span>(body.id).<span class="tk-f">toBeDefined</span>();</div>
+        <div class="cl" data-l="8">});</div>
+      </div>
+      <div class="st-ctrl">
+        <button id="rq-next">▶ Siguiente paso</button>
+        <button class="ghost" id="rq-reset">↺ Reiniciar</button>
+        <span class="st-stepn" id="rq-stepn">paso 0 / 6</span>
+      </div>
+    </div>
+    <div class="st-side">
+      <div class="st-panel"><h4>📍 ¿Dónde está la petición?</h4><div id="rq-where"><p style="font-size:.85rem;color:var(--text-3);margin:0">— en reposo —</p></div></div>
+      <div class="st-note" id="rq-note">Presiona "Siguiente paso": vas a seguir la petición desde tu test hasta el servidor y de vuelta.</div>
+      <div class="st-out" id="rq-out"><div class="ln" style="color:var(--text-3);font-style:italic">consola…</div></div>
+    </div>
+  </div>
+  <div class="notes"><p>Vuelve tangible el viaje de una request HTTP. Paso 1: se arma la petición (verbo POST + ruta + body JSON). Paso 2: await la envía por la red y el control se PAUSA esperando. Paso 3: el servidor la recibe, valida, escribe en DB y prepara la respuesta 201. Paso 4: la respuesta vuelve y await se resuelve con el objeto res. Paso 5: afirmamos el status (síncrono, ya está). Paso 6: await res.json() lee el body (stream) y afirmamos un campo. Mensaje a martillar: el await del paso 2 es la espera de RED; el await del paso 6 es la espera de leer el CUERPO. Dos awaits, dos esperas distintas — eso confunde a casi todos al inicio.</p></div>
+</section>
+
+<!-- 13 · QUIZ 2 -->
+<section class="slide" data-act="Acto 2 · Aserciones de API" style="align-items:center">
+  <div class="quiz" data-quiz="q2">
+    <div class="quiz-tag">⭐ QUIZ 2 · Aserciones</div>
+    <h3 class="quiz-q">Tu test hace <code style="color:var(--cyan)">expect(res).toBeOK()</code> y pasa. Pero el body llegó <code style="color:var(--cyan)">{ item: null, qty: -3 }</code>. ¿Qué falló en tu test?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Nada — si el status es 2xx, el endpoint está correcto</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>La aserción es débil: faltó verificar el <b>body</b> (campos y tipos), no solo el status</span></button>
+      <button class="opt"><span class="key">C</span><span>Playwright debió rechazar el body automáticamente</span></button>
+    </div>
+    <div class="quiz-expl">💡 <code>toBeOK()</code> solo mira el status. Un 200 con datos basura pasa igual. Una buena aserción de API cubre las tres capas: <b>status</b> exacto, <b>body</b> (campos + tipos, idealmente con schema) y <b>headers</b> cuando el contrato lo pide. Ninguna herramienta adivina qué body es "correcto" — eso lo defines tú.</div>
+  </div>
+  <div class="notes"><p>Caza la falsa seguridad del status-only. Opción A es el error mental central del acto; C es el "que la herramienta piense por mí". La respuesta B reactiva las tres capas. Si aciertan masivo, internalizaron que probar API = verificar contenido, no solo conexión. Transición: "Ya sabes enviar y verificar. Pero cada test necesita un usuario logueado y datos previos. Volver a hacerlo por UN endpoint a mano es el siguiente dolor: el setup de datos."</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 3 · DATOS, AUTH Y VELOCIDAD -->
+<!-- ================================================================ -->
+
+<!-- 14 · El dolor: cada test repite login + data -->
+<section class="slide" data-act="Acto 3 · Datos, auth y velocidad">
+  <div class="zoomline"><span>request</span><span>aserciones</span><span class="on">schema · datos</span><span>kata</span></div>
+  <h2 data-anim="fade-up">Nuevo dolor: <span class="grad-text">cada test re-crea su mundo</span> 🔁</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code" style="font-size:clamp(.76rem,1.15vw,.93rem)">
+<span class="tk-f">test</span>(<span class="tk-s">"actualiza un pedido"</span>, <span class="tk-k">async</span> ({ request }) => {
+  <span class="tk-c">// 1 · login para sacar token…</span>
+  <span class="tk-k">const</span> auth = <span class="tk-k">await</span> request.<span class="tk-f">post</span>(<span class="tk-s">"/login"</span>, {data:creds});
+  <span class="tk-k">const</span> { token } = <span class="tk-k">await</span> auth.<span class="tk-f">json</span>();
+
+  <span class="tk-c">// 2 · crear un pedido para tener qué editar…</span>
+  <span class="tk-k">const</span> made = <span class="tk-k">await</span> request.<span class="tk-f">post</span>(<span class="tk-s">"/orders"</span>, {
+    headers: { Authorization: <span class="tk-s">`Bearer ${token}`</span> },
+    data: { item: <span class="tk-s">"Coffee"</span>, qty: <span class="tk-n">1</span> },
+  });
+
+  <span class="tk-c">// 3 · …y recién AQUÍ empieza el test real 😩</span>
+});</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🧩 El síntoma</h3><p>Login + crear precondiciones <b>antes</b> de cada test. 15 líneas de ritual por 3 líneas de prueba real.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🔑 El token regado</h3><p>El <code class="pill">Authorization: Bearer</code> repetido en cada llamada. Cópialo mal una vez y son <code>401</code> misteriosos.</p></div>
+      <div class="card hl" style="margin-top:.8rem"><h3>💡 La idea</h3><p>Una <b>fixture</b> que loguee una vez, entregue un cliente ya autenticado y datos frescos — y limpie al final. Lo que viste con <code class="pill">use()</code>, ahora para API.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>El dolor conecta directo con la sesión de fixtures: el setup de API también se repite. Dos caras: (1) la autenticación — sacar el token y arrastrarlo en cada header; (2) las precondiciones — crear el pedido que vas a editar/borrar. La idea es la misma fixture con use() del patrón anterior, ahora preparando un request ya autenticado + datos. Subraya el riesgo del token a mano: un Bearer mal copiado da 401 que parecen bugs del backend pero son del test. La solución: centralizar auth y data en fixtures componibles — exactamente lo que KATA hace en el acto 4.</p></div>
+</section>
+
+<!-- 15 · Auth + data fresca con faker -->
+<section class="slide" data-act="Acto 3 · Datos, auth y velocidad">
+  <div class="zoomline"><span>request</span><span>aserciones</span><span class="on">schema · datos</span><span>kata</span></div>
+  <h2 data-anim="fade-up">La cura: <span class="grad-text">auth una vez + datos únicos por test</span> 🔐</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>🔑 Cliente autenticado, listo</h3>
+      <pre class="code" style="font-size:clamp(.74rem,1.13vw,.92rem)">
+<span class="tk-k">export const</span> test = base.<span class="tk-f">extend</span>({
+  api: <span class="tk-k">async</span> ({ playwright }, use) => {
+    <span class="tk-c">// login UNA vez, reusa el token</span>
+    <span class="tk-k">const</span> ctx = <span class="tk-k">await</span> playwright.request.<span class="tk-f">newContext</span>({
+      baseURL: BASE,
+      extraHTTPHeaders: { Authorization: <span class="tk-s">`Bearer ${TOKEN}`</span> },
+    });
+    <span class="tk-k">await</span> <span class="tk-f">use</span>(ctx);     <span class="tk-c">// el test lo recibe ya logueado</span>
+    <span class="tk-k">await</span> ctx.<span class="tk-f">dispose</span>();
+  },
+});</pre>
+      <p style="margin-top:.6rem;font-size:.88rem">Todas las llamadas salen ya con el token. Cero <code>Bearer</code> regados.</p>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>🎲 Datos frescos = tests independientes</h3>
+      <pre class="code" style="font-size:clamp(.74rem,1.13vw,.92rem)">
+<span class="tk-k">import</span> { faker } <span class="tk-k">from</span> <span class="tk-s">"@faker-js/faker"</span>;
+
+<span class="tk-c">// cada test genera SU propio dato único</span>
+<span class="tk-k">const</span> order = {
+  item: faker.commerce.<span class="tk-f">productName</span>(),
+  qty:  faker.number.<span class="tk-f">int</span>({ min: <span class="tk-n">1</span>, max: <span class="tk-n">9</span> }),
+};
+<span class="tk-k">await</span> api.<span class="tk-f">post</span>(<span class="tk-s">"/orders"</span>, { data: order });</pre>
+      <div class="callout" style="margin-top:.7rem"><span class="co-ico">🧱</span><p>Datos únicos = ningún test pisa a otro. Es el requisito para poder correr en <b>paralelo</b> sin choques.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Las dos piezas que ordenan el setup de API. Izquierda: una fixture api que crea un APIRequestContext con baseURL y el header Authorization ya puestos (newContext + extraHTTPHeaders) — el token se resuelve una vez y todas las llamadas salen autenticadas. dispose() limpia al final. Derecha: faker para datos únicos por test. Esto es CRÍTICO y conecta con paralelización: si dos tests crean "Coffee" con el mismo id fijo, chocan; con faker cada uno tiene su propio dato y son verdaderamente independientes. La independencia es el boleto de entrada al paralelismo, que medimos en la siguiente slide.</p></div>
+</section>
+
+<!-- 16 · SIMULADOR velocidad API vs UI -->
+<section class="slide" data-act="Acto 3 · Datos, auth y velocidad">
+  <div class="kicker">🎮 Simulador · misma cobertura, distinta capa</div>
+  <h2 data-anim="fade-up">6 casos: <span class="grad-text">por UI vs por API</span> — mira el reloj ⏱️</h2>
+  <div class="psim" data-anim="fade-up">
+    <div class="psim-top">
+      <span class="lbl">capa de test:</span>
+      <button class="psim-wbtn" data-m="ui">🖥️ UI · E2E</button>
+      <button class="psim-wbtn" data-m="mix">🔀 Híbrido</button>
+      <button class="psim-wbtn on" data-m="api">⚡ API puro</button>
+      <button class="psim-run" id="psim-run">▶ Ejecutar suite</button>
+      <button class="psim-reset" id="psim-reset">↺ Reset</button>
+    </div>
+    <div class="psim-lanes" id="psim-lanes"></div>
+    <div class="psim-stats">
+      <div class="psim-stat"><span class="k">Reloj de pared</span><span class="v clock" id="psim-clock">—</span></div>
+      <div class="psim-stat"><span class="k">Cobertura</span><span class="v" id="psim-cov">6 / 6 casos</span></div>
+      <div class="psim-stat"><span class="k">Velocidad vs UI</span><span class="v speed" id="psim-speed">—</span></div>
+    </div>
+  </div>
+  <div class="notes"><p>El widget estrella del acto. Los MISMOS 6 casos de negocio, ejecutados en tres capas. Demo: arranca en "API puro" → reloj ~5s. Cambia a "UI · E2E" → ~29s. Cambia a "Híbrido" → ~11.5s. Dos verdades que la sala debe ver: (1) la COBERTURA es idéntica — 6/6 casos en las tres; lo que cambia brutalmente es el reloj. (2) API es ~5-6× más rápido que UI para la misma verificación, porque no hay navegador, render ni esperas visuales. El híbrido (setup por API + una verificación por UI) es el punto medio realista. Mensaje: elige la capa más barata que aún pruebe lo que necesitas. Reserva la UI para lo que SOLO se ve en pantalla.</p></div>
+</section>
+
+<!-- 17 · QUIZ 3 -->
+<section class="slide" data-act="Acto 3 · Datos, auth y velocidad" style="align-items:center">
+  <div class="quiz" data-quiz="q3">
+    <div class="quiz-tag">⭐ QUIZ 3 · Datos y velocidad</div>
+    <h3 class="quiz-q">¿Por qué cada test de API debe generar sus datos con <code style="color:var(--cyan)">faker</code> en vez de usar un id fijo como <code style="color:var(--cyan)">"order-1"</code>?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Porque faker hace los tests más cortos de escribir</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>Para que sean <b>independientes</b>: con datos únicos ningún test pisa a otro y pueden correr en paralelo</span></button>
+      <button class="opt"><span class="key">C</span><span>Porque Playwright exige datos aleatorios obligatoriamente</span></button>
+    </div>
+    <div class="quiz-expl">💡 Datos fijos compartidos = colisiones: dos tests crean <code>"order-1"</code> y uno rompe al otro. Datos únicos por test = aislamiento total, y el aislamiento es lo que permite paralelizar sin flakiness. La velocidad de API solo se aprovecha si los tests no se estorban entre sí.</div>
+  </div>
+  <div class="notes"><p>Une datos (faker) con velocidad (paralelismo). La respuesta exige entender que la independencia es la condición para correr rápido. Opción A subestima (es un beneficio menor); C inventa una obligación. Si en el simulador vieron el salto de velocidad, aquí entienden el requisito que lo habilita: sin independencia, paralelizar multiplica flakiness, no velocidad. Transición al cierre: "request, aserciones, datos, velocidad… ¿cómo se organiza todo esto a escala en el repo real? KATA, ahora por el lado de la API."</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 4 · KATA PARA API -->
+<!-- ================================================================ -->
+
+<!-- 18 · KATA = síntesis para API -->
+<section class="slide" data-act="Acto 4 · KATA para API">
+  <div class="zoomline"><span>request</span><span>aserciones</span><span>schema · datos</span><span class="on">kata</span></div>
+  <h2 data-anim="fade-up">KATA: <span class="grad-text">todo lo de hoy, ordenado en capas</span> 🥋</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <p style="margin-bottom:.8rem">KATA (<b>Component Action Test Architecture</b>) no inventa nada: <b>organiza</b> el cliente, las aserciones y los datos en 4 capas, donde cada una <code class="pill">extends</code> la anterior. El lado API es idéntico al UI — solo cambia la base.</p>
+      <div class="cards" data-stagger>
+        <div class="card"><h3>🎁 Cliente → Componentes</h3><p>Tu <code class="pill">OrdersApi</code> es un componente de dominio. Ahí viven las <b>ATCs</b> de API.</p></div>
+        <div class="card"><h3>🎯 Aserciones → dentro de la ATC</h3><p>Status y schema fijos van <b>dentro</b>; las de negocio, en el test.</p></div>
+        <div class="card"><h3>🔧 Auth + datos → Fixtures (L4)</h3><p><code class="pill">{ api }</code> entrega el cliente autenticado y listo.</p></div>
+      </div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.25s">
+      <pre class="code" style="font-size:clamp(.74rem,1.13vw,.92rem)">
+<span class="tk-c">// La cadena de herencia REAL del repo (API)</span>
+
+<span class="tk-k">class</span> TestContext { ... }        <span class="tk-c">// L1 · config, faker</span>
+<span class="tk-k">class</span> ApiBase <span class="tk-k">extends</span> TestContext <span class="tk-c">// L2 · helpers HTTP</span>
+<span class="tk-k">class</span> OrdersApi <span class="tk-k">extends</span> ApiBase <span class="tk-c">// L3 ⟵ tu cliente</span>
+
+<span class="tk-c">// y la fixture lo inyecta:</span>
+<span class="tk-k">class</span> ApiFixture {
+  orders = <span class="tk-k">new</span> <span class="tk-f">OrdersApi</span>(options);
+}</pre>
+      <div class="callout" style="margin-top:.85rem"><span class="co-ico">🧬</span><p>Misma arquitectura que el lado UI: solo cambia <code>ApiBase</code> por <code>UiBase</code>. Aprendes una vez, aplicas a ambos.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Tesis del acto: KATA es la síntesis de request + aserciones + datos en una estructura. Mapea explícito: tu cliente OrdersApi = componente (L3), las aserciones fijas viven dentro de la ATC, la auth y los datos los inyecta la fixture { api } (L4). La cadena TestContext → ApiBase → OrdersApi es real y verídica (kata-architecture.md), y es ESPEJO de la cadena UI (TestContext → UiBase → LoginPage). Mensaje que baja el miedo: el lado API y el lado UI comparten L1 (TestContext) y solo difieren en L2 (ApiBase vs UiBase). Si entendiste un lado, entiendes el otro.</p></div>
+</section>
+
+<!-- 19 · Las 4 capas (API) -->
+<section class="slide" data-act="Acto 4 · KATA para API">
+  <div class="zoomline"><span>request</span><span>aserciones</span><span>schema · datos</span><span class="on">kata</span></div>
+  <h2 data-anim="fade-up" style="text-align:center">Las <span class="grad-text">4 capas</span> de KATA, lado API 🏛️</h2>
+  <div class="kata-stack" data-stagger style="margin-top:.4rem">
+    <div class="layer">L4 · Fixtures (DI)<span class="ly-note">ApiFixture · TestFixture — inyectan el cliente autenticado</span></div>
+    <div class="arrow">↑ usa</div>
+    <div class="layer">L3.5 · Steps <span class="ly-note">cadenas de ATCs reutilizables (precondiciones)</span></div>
+    <div class="arrow">↑ usa</div>
+    <div class="layer star">⭐ L3 · Componentes de dominio <span class="ly-note" style="color:var(--green)">OrdersApi · UsersApi — aquí viven las ATCs</span></div>
+    <div class="arrow">↑ extends</div>
+    <div class="layer">L2 · ApiBase <span class="ly-note">helpers HTTP: get/post/put/del + parseo + auth</span></div>
+    <div class="arrow">↑ extends</div>
+    <div class="layer">L1 · TestContext <span class="ly-note">config · logger · faker · entorno (compartido con UI)</span></div>
+  </div>
+  <div class="callout info" data-anim="fade-up" style="max-width:780px;margin:1.2rem auto 0"><span class="co-ico">📐</span><p>Regla única: una capa superior puede usar una inferior, <b>nunca</b> al revés. Tu cliente de API (L3, estrella) es el corazón — escribes ATCs ahí y todo lo demás ya viene hecho.</p></div>
+  <div class="notes"><p>El mapa de KATA en su versión API, verídico (kata-architecture.md §1). De abajo arriba: TestContext (utilidades globales, compartido con UI), ApiBase (helpers HTTP: envuelve request, parsea respuestas, aplica auth), Componentes/ATCs (la estrella, tu OrdersApi), Steps (cadenas reutilizables para precondiciones, opcional), Fixtures (DI, entregan el cliente listo). La regla de direccionalidad mantiene el orden. Marca la capa estrella: ahí pasa el equipo el 90% del tiempo escribiendo ATCs. ApiBase y las fixtures ya vienen en el boilerplate — no se reescriben.</p></div>
+</section>
+
+<!-- 20 · ATC de API + decorador -->
+<section class="slide" data-act="Acto 4 · KATA para API">
+  <div class="zoomline"><span>request</span><span>aserciones</span><span>schema · datos</span><span class="on">kata</span></div>
+  <h2 data-anim="fade-up">La pieza nueva: <span class="grad-text">la ATC de API</span> 🎯</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <pre class="code" style="font-size:clamp(.73rem,1.12vw,.92rem)">
+<span class="tk-k">class</span> OrdersApi <span class="tk-k">extends</span> ApiBase {
+
+  <span class="tk-d">@atc</span>(<span class="tk-s">"PROJ-201"</span>)
+  <span class="tk-k">async</span> <span class="tk-f">createOrder</span>(data) {
+    <span class="tk-k">const</span> res = <span class="tk-k">await</span> <span class="tk-k">this</span>.<span class="tk-f">post</span>(<span class="tk-s">"/orders"</span>, { data });
+
+    <span class="tk-c">// aserciones FIJAS dentro:</span>
+    <span class="tk-f">expect</span>(res.<span class="tk-f">status</span>()).<span class="tk-f">toBe</span>(<span class="tk-n">201</span>);
+    <span class="tk-k">const</span> body = <span class="tk-k">await</span> res.<span class="tk-f">json</span>();
+    OrderSchema.<span class="tk-f">parse</span>(body);   <span class="tk-c">// contrato</span>
+    <span class="tk-k">return</span> body;
+  }
+}</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🎯 ATC = un caso completo</h3><p><b>A</b>cceptance <b>T</b>est <b>C</b>ase: no una llamada suelta, sino un <b>mini-flujo</b> — request → status fijo → schema → devuelve datos.</p></div>
+      <div class="card hl" style="margin-top:.7rem"><h3 style="color:var(--yellow)"><code style="font-size:.85em">@atc("PROJ-201")</code></h3><p>El decorador ata la ATC a su <b>ticket</b> de Jira 1:1. Trazabilidad y tracing automático.</p></div>
+      <div class="card" style="margin-top:.7rem"><h3>⚖️ Fijas dentro, negocio fuera</h3><p>Status <code class="pill">201</code> y schema (siempre ciertos) van <b>dentro</b>. Las aserciones de negocio van en el <b>test</b>.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>La única pieza realmente nueva: la ATC de API y el decorador @atc. Código real, espejo del LoginPage del repo. Define ATC: caso completo (request + aserciones fijas + devuelve datos para que el test siga), no una llamada aislada. Las aserciones FIJAS (status 201 esperado, schema del contrato) viven dentro porque son parte de "la acción terminó bien"; las de NEGOCIO (¿el total es el correcto? ¿aparece en la lista del usuario?) van en el test. Es la misma regla acciones-vs-decisión del lado UI. Reglas duras: ATC atómica (nunca llama a otra ATC; las cadenas son Steps), y el @atc da trazabilidad 1:1 con Jira.</p></div>
+</section>
+
+<!-- 21 · STEPPER: trazar una ATC de API por las capas -->
+<section class="slide" data-act="Acto 4 · KATA para API">
+  <div class="kicker">🧠 Trazador · sigue una llamada por las 4 capas</div>
+  <h2 data-anim="fade-up">Un test llama <span class="grad-text">api.orders.createOrder()</span> — ¿por dónde viaja?</h2>
+  <div class="stepper" data-anim="fade-up">
+    <div>
+      <div class="st-code" id="kt-code">
+        <div class="cl" data-l="1"><span class="tk-f">test</span>(<span class="tk-s">"PROJ-201: crea pedido"</span>, <span class="tk-k">async</span> ({ api }) => {</div>
+        <div class="cl" data-l="2">  <span class="tk-k">await</span> api.orders.<span class="tk-f">createOrder</span>(data);</div>
+        <div class="cl" data-l="3">});</div>
+        <div class="cl" data-l="4"> </div>
+        <div class="cl" data-l="5"><span class="tk-c">// L4</span> ApiFixture.orders = <span class="tk-k">new</span> <span class="tk-f">OrdersApi</span>(opts)</div>
+        <div class="cl" data-l="6"><span class="tk-c">// L3</span> <span class="tk-k">class</span> OrdersApi <span class="tk-k">extends</span> ApiBase</div>
+        <div class="cl" data-l="7"><span class="tk-c">// L2</span> <span class="tk-k">class</span> ApiBase <span class="tk-k">extends</span> TestContext</div>
+        <div class="cl" data-l="8"><span class="tk-c">// L1</span> <span class="tk-k">class</span> TestContext { config, faker, request }</div>
+      </div>
+      <div class="st-ctrl">
+        <button id="kt-next">▶ Siguiente paso</button>
+        <button class="ghost" id="kt-reset">↺ Reiniciar</button>
+        <span class="st-stepn" id="kt-stepn">paso 0 / 5</span>
+      </div>
+    </div>
+    <div class="st-side">
+      <div class="st-panel"><h4>🏛️ Capa activa</h4><div id="kt-where"><p style="font-size:.85rem;color:var(--text-3);margin:0">— en reposo —</p></div></div>
+      <div class="st-note" id="kt-note">Presiona "Siguiente paso": vas a seguir la llamada bajando por las 4 capas de KATA.</div>
+    </div>
+  </div>
+  <div class="notes"><p>Cierra el círculo: una sola línea de test (api.orders.createOrder) atraviesa las 4 capas. Paso 1: el test pide la fixture { api } (L4). Paso 2: la fixture ya tiene OrdersApi instanciada y autenticada como api.orders (L4→L3). Paso 3: createOrder es la ATC en OrdersApi (L3). Paso 4: usa el helper this.post() heredado de ApiBase (L2). Paso 5: que a su vez hereda config/faker/request de TestContext (L1). Mensaje: el test escribe UNA línea legible; las 4 capas hacen el trabajo pesado debajo. La arquitectura pagando dividendos.</p></div>
+</section>
+
+<!-- 22 · Selección de fixture en KATA -->
+<section class="slide" data-act="Acto 4 · KATA para API">
+  <div class="zoomline"><span>request</span><span>aserciones</span><span>schema · datos</span><span class="on">kata</span></div>
+  <h2 data-anim="fade-up">En la práctica: <span class="grad-text">pides la fixture según lo que pruebas</span> 🎚️</h2>
+  <table class="cmp" data-anim="fade-up">
+    <thead><tr><th>Tipo de test</th><th>Fixture</th><th>¿Navegador?</th><th>Cuándo</th></tr></thead>
+    <tbody>
+      <tr><td>API pura (integration)</td><td><code>{ api }</code></td><td>No</td><td>Testing de API. Default en <code>tests/integration/</code></td></tr>
+      <tr><td>Solo UI</td><td><code>{ ui }</code></td><td>Sí</td><td>Flujo de UI sin setup por API</td></tr>
+      <tr><td>Híbrido</td><td><code>{ test }</code></td><td>Sí</td><td>Setup por API + acción/verificación UI</td></tr>
+      <tr><td>Precondiciones repetidas</td><td><code>{ steps }</code></td><td>Depende</td><td>3+ ATCs repetidas en 3+ archivos</td></tr>
+    </tbody>
+  </table>
+  <div class="cols" style="margin-top:1.1rem">
+    <div data-anim="slide-l">
+      <pre class="code" style="font-size:clamp(.73rem,1.1vw,.91rem)">
+<span class="tk-c">// API pura — NO abre navegador (lazy)</span>
+<span class="tk-f">test</span>(<span class="tk-s">"PROJ-7: lista pedidos"</span>, <span class="tk-k">async</span> ({ api }) => {
+  <span class="tk-k">await</span> api.orders.<span class="tk-f">getOrders</span>({ limit: <span class="tk-n">10</span> });
+});</pre>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <pre class="code" style="font-size:clamp(.73rem,1.1vw,.91rem)">
+<span class="tk-c">// Híbrido — crea por API, verifica por UI</span>
+<span class="tk-f">test</span>(<span class="tk-s">"PROJ-9: aparece en lista"</span>, <span class="tk-k">async</span> ({ test }) => {
+  <span class="tk-k">const</span> o = <span class="tk-k">await</span> test.api.orders.<span class="tk-f">createOrder</span>(data);
+  <span class="tk-k">await</span> test.ui.orders.<span class="tk-f">verifyVisible</span>(o.id);
+});</pre>
+    </div>
+  </div>
+  <div class="notes"><p>Cierre operativo y verídico (kata-architecture.md §7): la tabla de selección de fixture es decisión diaria. Para API pura → { api }: como las fixtures son lazy, NO abre navegador → suites de integración en milisegundos. El { test } híbrido es la joya: crea el estado por API (rápido) y verifica por UI (realista), compartiendo contexto — el patrón que el simulador de la slide 16 llamó "híbrido". Estos snippets son el patrón real del repo. Con esto, el alumno sabe LEER cualquier test y ELEGIR su fixture con criterio de costo.</p></div>
+</section>
+
+<!-- 23 · QUIZ 4 -->
+<section class="slide" data-act="Acto 4 · KATA para API" style="align-items:center">
+  <div class="quiz" data-quiz="q4">
+    <div class="quiz-tag">⭐ QUIZ 4 · KATA</div>
+    <h3 class="quiz-q">En una ATC <code style="color:var(--cyan)">createOrder()</code>, ¿qué aserción va <b>dentro</b> de la ATC y cuál en el <b>test</b>?</h3>
+    <div class="quiz-opts">
+      <button class="opt" data-ok="1"><span class="key">A</span><span><b>Dentro:</b> status <code>201</code> + schema (siempre ciertos). <b>En el test:</b> "el total facturado es 14€" (regla de negocio)</span></button>
+      <button class="opt"><span class="key">B</span><span>Todas dentro de la ATC — así el test queda más corto</span></button>
+      <button class="opt"><span class="key">C</span><span>Todas en el test — la ATC solo debe hacer la llamada HTTP</span></button>
+    </div>
+    <div class="quiz-expl">💡 Aserciones <b>fijas e inevitables</b> (un 201 al crear, el schema del contrato) son parte de "la acción terminó bien" → van dentro. Las de <b>negocio</b>, que cambian por caso (el total, el descuento, quién puede verlo) → van en el test, visibles. Misma regla que en el lado UI: efectos dentro, veredicto fuera.</div>
+  </div>
+  <div class="notes"><p>Integra la regla acciones-vs-decisión (acto 2 de la sesión de patrones) con la ATC de API. La respuesta A separa bien: fijas dentro (201, schema), negocio fuera (montos, permisos). B mete todo dentro (oculta el veredicto); C deja la ATC sin garantía de éxito. Si aciertan masivo, dominan la frontera más sutil de KATA. Cierre del acto: pasamos al integrador y al score.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 5 · CIERRE -->
+<!-- ================================================================ -->
+
+<!-- 24 · QUIZ 5 integrador -->
+<section class="slide" data-act="Acto 5 · Cierre" style="align-items:center">
+  <div class="quiz" data-quiz="q5">
+    <div class="quiz-tag">⭐ QUIZ 5 · El integrador</div>
+    <h3 class="quiz-q">Conecta cada dolor con su cura:</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>navegador para un endpoint → schema · status débil → faker · setup repetido → request</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>navegador para un endpoint → <b>request</b> · "200" no basta → <b>aserciones + schema</b> · setup repetido → <b>fixtures + faker</b></span></button>
+      <button class="opt"><span class="key">C</span><span>todos los dolores → un solo truco mágico</span></button>
+    </div>
+    <div class="quiz-expl">💡 Cada herramienta cura un dolor: <b>request</b> habla HTTP sin navegador, <b>aserciones + schema</b> verifican contenido y contrato, <b>fixtures + faker</b> ordenan auth y datos. Y <b>KATA</b> apila todo en capas para que escale. Cuatro herramientas, cuatro problemas.</div>
+  </div>
+  <div class="notes"><p>El quiz que amarra el arco: dolor→cura, ahora como evaluación. Respuesta correcta = el alumno internalizó que cada técnica responde a un dolor concreto, no es ceremonia. KATA cierra como el meta-marco que las organiza. Tras este quiz, celebra y pasa al score final.</p></div>
+</section>
+
+<!-- 25 · Dónde vive en el repo -->
+<section class="slide" data-act="Acto 5 · Cierre">
+  <div class="kicker">Del concepto al repositorio</div>
+  <h2 data-anim="fade-up">Dónde vive cada pieza <span class="grad-text">en este repo</span> 🗂️</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code" style="font-size:clamp(.72rem,1.1vw,.9rem)">
+tests/
+  components/
+    TestContext.ts        <span class="tk-c">// L1</span>
+    api/ApiBase.ts        <span class="tk-c">// L2 · helpers HTTP</span>
+    api/OrdersApi.ts      <span class="tk-c">// L3 · cliente + ATCs</span>
+    steps/*.ts            <span class="tk-c">// L3.5 · Steps</span>
+    ApiFixture.ts         <span class="tk-c">// L4 · Fixtures</span>
+    TestFixture.ts        <span class="tk-c">// L4 · híbrido</span>
+  integration/**          <span class="tk-c">// tests API puros</span>
+  e2e/**                  <span class="tk-c">// tests UI (+API)</span>
+api/schemas/              <span class="tk-c">// Zod desde OpenAPI</span>
+playwright.config.ts      <span class="tk-c">// baseURL, workers</span></pre>
+    </div>
+    <div data-stagger>
+      <div class="card hl"><h3>📍 Tu zona de trabajo</h3><p>El 90% del tiempo: escribir <b>ATCs</b> en <code class="pill">components/api/</code> y orquestarlas en <code class="pill">integration/</code>.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🛠️ Ya hecho por ti</h3><p>TestContext, ApiBase y las Fixtures vienen en el boilerplate. Heredas helpers; no los reescribes. Los schemas se generan: <code class="pill">bun run api:sync</code>.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>📖 Para profundizar</h3><p>Skill <code class="pill">/test-automation</code> + <code class="pill">references/kata-architecture.md</code>: reglas de ATC, fixtures y schemas.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Aterriza todo en la estructura REAL del repo. Mensaje tranquilizador: las capas bajas (TestContext, ApiBase, fixtures) ya están construidas; el alumno trabaja sobre todo en components/api (ATCs) y integration (tests). Punteros reales: la skill /test-automation y references/kata-architecture.md tienen las reglas completas de ATC y la tabla de fixtures; los schemas Zod se generan desde la OpenAPI con bun run api:sync (no se escriben a mano). Esta slide es el puente del aprendizaje a la práctica del lunes.</p></div>
+</section>
+
+<!-- 26 · Recap visual -->
+<section class="slide" data-act="Acto 5 · Cierre">
+  <h2 data-anim="fade-up" style="text-align:center">Cuatro herramientas, <span class="grad-text">un mapa</span> 🗺️</h2>
+  <table class="cmp" data-anim="fade-up" style="max-width:1000px;margin:1rem auto 0">
+    <thead><tr><th>Herramienta</th><th>Dolor que cura</th><th>Pieza clave</th><th>En KATA</th></tr></thead>
+    <tbody>
+      <tr><td>🚀 request fixture</td><td>navegador para un endpoint</td><td><code>request.post(...)</code></td><td>ApiBase (L2)</td></tr>
+      <tr><td>🎯 Aserciones + schema</td><td>"200" no significa correcto</td><td><code>status + body + Zod</code></td><td>dentro de la ATC (L3)</td></tr>
+      <tr><td>🔧 Fixtures + faker</td><td>setup/auth/datos repetidos</td><td><code>{ api }</code> + datos únicos</td><td>Fixtures (L4)</td></tr>
+      <tr><td>🥋 KATA</td><td>todo junto, a escala</td><td>4 capas + ATC</td><td>el marco completo</td></tr>
+    </tbody>
+  </table>
+  <div class="callout" data-anim="fade-up" style="max-width:800px;margin:1.3rem auto 0"><span class="co-ico">🏆</span><p>Cruzaste de <b>"probar por la pantalla"</b> a <b>probar el backend directo</b>: más rápido, más estable, más profundo. Lo que hace un SDET de API.</p></div>
+  <div class="notes"><p>El recap de una mirada: tabla que cruza herramienta × dolor × pieza × lugar en KATA. Pídeles que la fotografíen o la peguen en Confluence — es el resumen portátil. Nombra el logro: pasaron de probar por la UI a probar el backend directo, que es el salto a SDET de API. Prepara el score final.</p></div>
+</section>
+
+<!-- 27 · Cierre / score -->
+<section class="slide" data-act="Acto 5 · Cierre" style="align-items:center;text-align:center">
+  <div class="kicker" data-anim="fade-up">Misión cumplida</div>
+  <h2 data-anim="fade-up" style="animation-delay:.1s">Tu puntaje final</h2>
+  <div id="final-score" data-anim="pop">— / 6</div>
+  <p id="final-msg" data-anim="fade-up" style="animation-delay:.25s;max-width:600px"></p>
+  <div class="cards c3" data-stagger style="margin-top:1.5rem;max-width:1020px">
+    <div class="card"><div class="ico">🏠</div><h3>Re-juega en casa</h3><p>Este archivo corre offline: vuelve al runner de API, al validador de schema y al simulador de velocidad. Toca todo.</p></div>
+    <div class="card"><div class="ico">🧪</div><h3>Reto puente</h3><p>Abre <code class="pill">tests/components/api/</code> del repo y ubica: capa, ATC, decorador <code class="pill">@atc</code>, aserciones fijas, schema.</p></div>
+    <div class="card hl"><div class="ico">🥷</div><h3>Próximo paso</h3><p>Escribe tu primera ATC de API real con <code class="pill">/test-automation</code> — Plan → Code → Review sobre KATA.</p></div>
+  </div>
+  <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.3rem;color:var(--text-3);font-size:.93rem">Hoy: <code>request</code> → aserciones + schema → fixtures + faker → <b style="color:var(--text-2)">KATA</b>. De la pantalla al backend.</p>
+  <div class="notes"><p>Celebra el score y nombra el logro: hoy aprendieron a probar el backend directo — request, aserciones de contenido + schema, fixtures con auth y datos, y KATA para escalar. Todo vivido en vivo, no memorizado. Reto puente sin computadora: abrir un componente api real e identificar cada concepto en código de producción. Próximo paso accionable: la skill /test-automation para escribir su primera ATC de API. Comparte el HTML — funciona offline.</p></div>
+</section>
+
+<!-- 28 · Gracias -->
+<section class="slide" data-act="Acto 5 · Cierre" style="align-items:center;text-align:center">
+  <div class="cover-inner">
+    <div class="kicker" data-anim="fade-up">QA Engineering · API Automation</div>
+    <h1 data-anim="fade-up" style="animation-delay:.1s">De la pantalla <span class="grad-text">al backend</span> 🔌</h1>
+    <p data-anim="fade-up" style="animation-delay:.2s;max-width:680px;font-size:clamp(1.02rem,1.7vw,1.3rem)">
+      request · aserciones · schema · KATA.<br>Probar la API: rápido, estable y al hueso.</p>
+    <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
+      <span class="pill">¿Preguntas?</span><span class="pill">/test-automation</span><span class="pill">references/kata-architecture.md</span>
+    </div>
+  </div>
+  <div class="notes"><p>Slide de cierre y espacio para preguntas. Reabre el runner de API o el simulador de velocidad si alguien quiere ver algo otra vez — son la mejor herramienta para resolver dudas en vivo. Punteros finales: la skill /test-automation y la referencia de arquitectura KATA. Gracias y a escribir ATCs de API.</p></div>
+</section>
+
+<script>
+/* ================================================================
+   RUNTIME — navegación, quizzes, live cells, steppers, simuladores.
+   Sin dependencias.
+   ================================================================ */
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const clamp = (v,a,b)=> Math.max(a, Math.min(b,v));
+function fmt(v){
+  if(typeof v==='string') return v;
+  if(typeof v==='object' && v!==null){ try{ return JSON.stringify(v); }catch(e){ return String(v); } }
+  return String(v);
+}
+
+/* simple syntax highlighter (escaped input) */
+function hl(src){
+  return esc(src).replace(
+    /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|of|while|async|await|import|from|export|new|class|extends|super|this|constructor)\b|\b(true|false|null|undefined)\b|\b(\d+(?:\.\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()/g,
+    function(m,c,s,k,b,n,f){
+      if(c) return '<span class="tk-c">'+c+'</span>';
+      if(s) return '<span class="tk-s">'+s+'</span>';
+      if(k) return '<span class="tk-k">'+k+'</span>';
+      if(b) return '<span class="tk-b">'+b+'</span>';
+      if(n) return '<span class="tk-n">'+n+'</span>';
+      if(f) return '<span class="tk-f">'+f+'</span>';
+      return m;
+    });
+}
+
+/* ---------- slide navigation ---------- */
+const slides = $$('.slide');
+const N = slides.length;
+let cur = 0;
+const progress = $('#progress'), counter = $('#counter'), actLabel = $('#act-label');
+const drawer = $('#notes-drawer'), ndContent = $('#nd-content');
+
+function go(i){
+  cur = clamp(i, 0, N-1);
+  slides.forEach((s,k)=> s.classList.toggle('is-active', k===cur));
+  progress.style.width = ((cur+1)/N*100) + '%';
+  counter.textContent = (cur+1) + ' / ' + N;
+  actLabel.textContent = slides[cur].dataset.act || '';
+  history.replaceState(null,'','#/'+(cur+1));
+  const notes = $('.notes', slides[cur]);
+  ndContent.innerHTML = notes ? notes.innerHTML : '<p>(sin notas para esta slide)</p>';
+  if(cur === N-1) renderFinal();
+  requestAnimationFrame(()=>{ $$('textarea', slides[cur]).forEach(t=>{ if(t.__fit) t.__fit(); }); });
+}
+const fromHash = ()=>{ const m = location.hash.match(/^#\/(\d+)/); go(m ? parseInt(m[1],10)-1 : 0); };
+window.addEventListener('hashchange', fromHash);
+
+document.addEventListener('keydown', e=>{
+  const t = e.target;
+  if(t && (t.tagName==='TEXTAREA' || t.tagName==='INPUT')) return;
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown') { e.preventDefault(); go(cur+1); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp') { e.preventDefault(); go(cur-1); }
+  else if(e.key==='Home') go(0);
+  else if(e.key==='End') go(N-1);
+  else if(e.key==='f'||e.key==='F'){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+  else if(e.key==='n'||e.key==='N'||e.key==='s'||e.key==='S') drawer.classList.toggle('open');
+  else if(e.key==='Escape') drawer.classList.remove('open');
+});
+
+/* ---------- confetti ---------- */
+const cv = $('#confetti-canvas'), cx = cv.getContext('2d');
+let parts = [], rafC = null;
+function sizeCanvas(){ cv.width = innerWidth; cv.height = innerHeight; }
+sizeCanvas(); window.addEventListener('resize', sizeCanvas);
+const COLORS = ['#7aa2f7','#bb9af7','#7dcfff','#9ece6a','#ff9e64','#e0af68','#f7768e'];
+function confetti(x, y, n){
+  for(let i=0;i<(n||70);i++){
+    const a = Math.PI*2*Math.random(), v = 3+Math.random()*7;
+    parts.push({x:x, y:y, vx:Math.cos(a)*v, vy:Math.sin(a)*v-3, g:.22, life:1, d:.012+Math.random()*.012,
+      c:COLORS[(Math.random()*COLORS.length)|0], r:3+Math.random()*4, rot:Math.random()*Math.PI});
+  }
+  if(!rafC) tick();
+}
+function tick(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts = parts.filter(p=>p.life>0);
+  for(const p of parts){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.life-=p.d; p.rot+=.08;
+    cx.save(); cx.globalAlpha=Math.max(p.life,0); cx.translate(p.x,p.y); cx.rotate(p.rot);
+    cx.fillStyle=p.c; cx.fillRect(-p.r,-p.r/2,p.r*2,p.r); cx.restore();
+  }
+  rafC = parts.length ? requestAnimationFrame(tick) : null;
+}
+
+/* ---------- quiz engine ---------- */
+const TOTAL_Q = $$('.quiz').length;
+const answered = {};
+let score = 0;
+/* ---------- quiz score persistence ---------- */
+const SCORE_KEY = 'api-automation-playwright.es.html-score:' + location.pathname;
+let qstate = { q:{}, score:0 };
+try { const _s = JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); if(_s && typeof _s === 'object'){ qstate.q = _s.q || {}; qstate.score = _s.score || 0; } } catch(e){ qstate = { q:{}, score:0 }; }
+score = qstate.score;
+function saveQuiz(){ qstate.score = score; try { localStorage.setItem(SCORE_KEY, JSON.stringify(qstate)); } catch(e){} }
+const chip = $('#score-chip');
+function updateChip(){
+  chip.textContent = '⭐ ' + score + '/' + TOTAL_Q;
+  chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump');
+}
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz;
+  $$('.opt', qz).forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const ok = btn.dataset.ok === '1';
+      const first = !answered[id];
+      if(first) answered[id] = true;
+      if(ok){
+        btn.classList.add('correct');
+        qz.classList.add('locked');
+        $('.quiz-expl', qz).classList.add('show');
+        const r = btn.getBoundingClientRect();
+        confetti(r.left + r.width/2, r.top + r.height/2, 80);
+        if(first){ score++; updateChip(); }
+      } else {
+        btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong');
+      }
+      qstate.q[id] = { a:true, c: ok || (qstate.q[id] && qstate.q[id].c) || false };
+      saveQuiz();
+    });
+  });
+});
+/* ---------- restore answered quizzes on load (no confetti) ---------- */
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz, st = qstate.q[id];
+  if(!st) return;
+  if(st.a) answered[id] = true;
+  if(st.c){
+    const okBtn = $('.opt[data-ok="1"]', qz);
+    if(okBtn) okBtn.classList.add('correct');
+    qz.classList.add('locked');
+    const ex = $('.quiz-expl', qz);
+    if(ex) ex.classList.add('show');
+  }
+});
+
+function renderFinal(){
+  $('#final-score').textContent = score + ' / ' + TOTAL_Q;
+  const pct = score/TOTAL_Q;
+  $('#final-msg').textContent =
+    pct === 1 ? '¡Perfecto! request, aserciones, schema y KATA dominados. Piensas como SDET de API. 🏆' :
+    pct >= .75 ? '¡Excelente! La base de API testing está firme — ya pruebas el backend con criterio. 💪' :
+    pct >= .5 ? 'Muy buen avance. Re-juega el runner de API y el simulador de velocidad — la segunda pasada lo fija. 👍' :
+    'La capa API toma dos vueltas, es normal. Re-juega los simuladores de este archivo: la próxima, hace click. 🌱';
+  setTimeout(()=>{ confetti(innerWidth/2, innerHeight*0.32, 140); }, 450);
+}
+
+/* ---------- cover FX: constellation ---------- */
+(function(){
+  const c = $('#fx-cover'); if(!c) return;
+  const ctx = c.getContext('2d');
+  let pts = [], raf = null;
+  function size(){ c.width = c.offsetWidth; c.height = c.offsetHeight; }
+  function init(){
+    size();
+    pts = Array.from({length:70}, ()=>({
+      x:Math.random()*c.width, y:Math.random()*c.height,
+      vx:(Math.random()-.5)*.45, vy:(Math.random()-.5)*.45, r:1+Math.random()*1.8}));
+  }
+  function frame(){
+    if(!slides[0].classList.contains('is-active')){ raf=null; return; }
+    ctx.clearRect(0,0,c.width,c.height);
+    for(const p of pts){
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>c.width) p.vx*=-1;
+      if(p.y<0||p.y>c.height) p.vy*=-1;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7);
+      ctx.fillStyle='rgba(122,162,247,.55)'; ctx.fill();
+    }
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const a=pts[i], b=pts[j], dx=a.x-b.x, dy=a.y-b.y, d=dx*dx+dy*dy;
+      if(d<150*150){
+        ctx.strokeStyle='rgba(187,154,247,'+(0.16*(1-d/22500)).toFixed(3)+')';
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', init);
+  init();
+  new MutationObserver(()=>{ if(slides[0].classList.contains('is-active') && !raf) raf=requestAnimationFrame(frame); })
+    .observe(slides[0], {attributes:true, attributeFilter:['class']});
+  raf = requestAnimationFrame(frame);
+})();
+
+/* ---------- live cells (async-capable real JS) ---------- */
+const AsyncFn = Object.getPrototypeOf(async function(){}).constructor;
+$$('.livecell').forEach(cell=>{
+  const ta = $('textarea', cell), pre = $('.lc-hl', cell), out = $('.lc-console', cell);
+  if(!ta || !pre) return;
+  if(ta.id === 'api-src') return; // el runner de API conecta lo suyo
+  const initial = ta.value;
+  const render = ()=>{ pre.innerHTML = hl(ta.value) + '\n'; };
+  const sync = ()=>{ pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; };
+  ta.addEventListener('input', render);
+  ta.addEventListener('scroll', sync);
+  render();
+  const fit = ()=>{
+    ta.style.height='auto';
+    const cap = Math.round(innerHeight * 0.52);
+    const h = Math.min(Math.max(ta.scrollHeight + 4, 120), cap);
+    ta.style.height = h + 'px'; pre.style.height = h + 'px';
+  };
+  ta.__fit = fit;
+  ta.addEventListener('input', fit); fit();
+  const runBtn = $('.lc-run', cell);
+  if(runBtn) runBtn.addEventListener('click', ()=>{
+    if(!out) return;
+    out.innerHTML='';
+    const logs = [];
+    const mk = cls => (...a)=>logs.push({t:a.map(fmt).join(' '), cls});
+    const fake = { log: mk(''), error: mk('err'), warn: mk(''),
+      setup: mk('setup'), teardown: mk('teardown'), info: mk('info') };
+    const flush = ()=>{
+      if(!logs.length) logs.push({t:'(sin salida — ¿olvidaste console.log?)', cls:'dim'});
+      logs.forEach(l=>{ const d=document.createElement('div'); d.className='ln'+(l.cls?' '+l.cls:''); d.textContent=l.t; out.appendChild(d); });
+    };
+    (async ()=>{
+      try { await new AsyncFn('console','"use strict";\n'+ta.value)(fake); }
+      catch(err){ logs.push({t:'⛔ '+err.name+': '+err.message, cls:'err'}); }
+      flush();
+    })();
+  });
+  const resetBtn = $('.lc-reset', cell);
+  if(resetBtn) resetBtn.addEventListener('click', ()=>{
+    ta.value = initial; render(); fit();
+    if(out) out.innerHTML = '<div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div>';
+  });
+});
+
+/* ================================================================
+   GENERIC STEPPER (request lifecycle + KATA trace)
+   ================================================================ */
+function buildStepper(prefix, steps){
+  const codeBox = $('#'+prefix+'-code'); if(!codeBox) return;
+  const whereBox = $('#'+prefix+'-where'), note = $('#'+prefix+'-note'),
+        outBox = $('#'+prefix+'-out'), stepn = $('#'+prefix+'-stepn');
+  let s = 0;
+  function paint(){
+    $$('.cl', codeBox).forEach(cl=>{
+      cl.classList.remove('cur','cur2');
+      if(s>0){
+        const st = steps[s-1];
+        const L = st.l||[], L2 = st.l2||[];
+        if(L.indexOf(+cl.dataset.l) >= 0) cl.classList.add('cur');
+        if(L2.indexOf(+cl.dataset.l) >= 0) cl.classList.add('cur2');
+      }
+    });
+    if(stepn) stepn.textContent = 'paso ' + s + ' / ' + steps.length;
+    if(s===0){
+      if(whereBox) whereBox.innerHTML = '<p style="font-size:.85rem;color:var(--text-3);margin:0">— en reposo —</p>';
+      if(note) note.innerHTML = note.dataset.idle || 'Presiona "Siguiente paso".';
+      if(outBox) outBox.innerHTML = '<div class="ln" style="color:var(--text-3);font-style:italic">consola…</div>';
+      return;
+    }
+    const st = steps[s-1];
+    if(whereBox) whereBox.innerHTML = st.where || '';
+    if(note) note.textContent = st.note || '';
+    if(outBox){
+      const lines = steps.slice(0,s).filter(x=>x.out).map(x=>'<div class="ln '+(x.outCls||'')+'">'+esc(x.out)+'</div>');
+      outBox.innerHTML = lines.length ? lines.join('') : '<div class="ln" style="color:var(--text-3);font-style:italic">consola…</div>';
+    }
+  }
+  const nx = $('#'+prefix+'-next'), rs = $('#'+prefix+'-reset');
+  if(note) note.dataset.idle = note.innerHTML;
+  if(nx) nx.addEventListener('click', ()=>{ if(s<steps.length){ s++; paint(); } });
+  if(rs) rs.addEventListener('click', ()=>{ s=0; paint(); });
+  paint();
+}
+
+/* request lifecycle stepper */
+buildStepper('rq', [
+  {l:[2,3], where:'<div class="st-row"><span class="tag l3">TEST</span> arma la petición</div>',
+    note:'Se construye la request: verbo POST + ruta /orders + body JSON { item, qty }.', out:'→ POST /orders  body={item:"Coffee",qty:2}', outCls:'info'},
+  {l:[2], where:'<div class="st-row"><span class="tag l2">RED</span> await — viajando</div>',
+    note:'await ENVÍA la petición por la red. El test se PAUSA esperando la respuesta.', out:'⌛ esperando al servidor…', outCls:''},
+  {l:[2], where:'<div class="st-row"><span class="tag l1">SERVER</span> procesa</div>',
+    note:'El servidor recibe, valida los datos, escribe en la base de datos y prepara la respuesta.', out:'· valida · guarda · prepara 201', outCls:'setup'},
+  {l:[2], where:'<div class="st-row"><span class="tag l2">RED</span> respuesta de vuelta</div>',
+    note:'La respuesta vuelve y await se resuelve: res ya tiene status + body listos para leer.', out:'← 201 Created  res lista', outCls:'info'},
+  {l:[5], where:'<div class="st-row"><span class="tag l3">TEST</span> afirma el status</div>',
+    note:'res.status() es SÍNCRONO: ya lo tienes. expect(...).toBe(201) verifica el código.', out:'✓ status 201 → PASSED', outCls:''},
+  {l:[6,7], l2:[7], where:'<div class="st-row"><span class="tag l3">TEST</span> lee body y afirma</div>',
+    note:'await res.json() lee el cuerpo (stream). Luego afirmamos un campo: body.id existe. 🎉', out:'✓ body.id está definido → PASSED', outCls:'setup'},
+]);
+
+/* KATA API layer trace stepper */
+buildStepper('kt', [
+  {l:[1], where:'<div class="st-row"><span class="tag l4">L4 · Fixture</span> { api }</div>',
+    note:'El test pide la fixture { api } por nombre (DI). Playwright se la inyecta lista y autenticada.'},
+  {l:[1,5], l2:[5], where:'<div class="st-row"><span class="tag l4">L4 · Fixture</span> api.orders = new OrdersApi</div>',
+    note:'La ApiFixture ya tiene OrdersApi instanciada y registrada como api.orders.'},
+  {l:[2,6], l2:[6], where:'<div class="st-row"><span class="tag l3">L3 · Componente</span> OrdersApi · ATC</div>',
+    note:'api.orders.createOrder() es la ATC: el mini-flujo completo (request + status + schema) vive aquí.'},
+  {l:[6,7], l2:[7], where:'<div class="st-row"><span class="tag l2">L2 · Base</span> ApiBase (helpers HTTP)</div>',
+    note:'OrdersApi extends ApiBase: usa el helper this.post() (envuelve request) heredado.'},
+  {l:[7,8], l2:[8], where:'<div class="st-row"><span class="tag l1">L1 · TestContext</span> config · faker · request</div>',
+    note:'ApiBase extends TestContext: hasta abajo, config/faker/request. Una línea, 4 capas. 🥋'},
+]);
+
+/* ================================================================
+   SPEED SIMULATOR — misma cobertura, capa UI vs Híbrido vs API
+   ================================================================ */
+(function(){
+  const lanesBox = $('#psim-lanes'); if(!lanesBox) return;
+  const SCEN = [
+    {id:'POST /orders',       ui:6, mix:2.5, api:1},
+    {id:'GET /orders',        ui:4, mix:1.5, api:0.5},
+    {id:'PUT /orders/:id',    ui:5, mix:2,   api:1},
+    {id:'DELETE /orders/:id', ui:4, mix:1.5, api:0.5},
+    {id:'422 validación',     ui:5, mix:2,   api:1},
+    {id:'401 auth',           ui:5, mix:2,   api:1},
+  ];
+  const UI_TOTAL = SCEN.reduce((a,f)=>a+f.ui,0); // 29
+  const TIMESCALE = 300;  // real ms per simulated second
+  let MODE = 'api', raf = null, running = false;
+  const clockEl = $('#psim-clock'), speedEl = $('#psim-speed');
+  const labelOf = { ui:'🖥️ UI · E2E', mix:'🔀 Híbrido', api:'⚡ API puro' };
+
+  function durOf(f){ return f[MODE]; }
+  function renderLane(){
+    lanesBox.innerHTML = '';
+    const row = document.createElement('div'); row.className = 'psim-lane';
+    const lbl = document.createElement('div'); lbl.className = 'wlbl';
+    lbl.innerHTML = labelOf[MODE];
+    const track = document.createElement('div'); track.className = 'psim-track';
+    let offset = 0;
+    SCEN.forEach(f=>{
+      const dur = durOf(f);
+      const blk = document.createElement('div'); blk.className = 'pblock';
+      blk.style.flex = dur + ' 0 0';
+      blk.dataset.dur = dur; blk.dataset.offset = offset;
+      blk.innerHTML = '<div class="pfill"></div><span class="pname">'+f.id+' · '+dur+'s</span>';
+      track.appendChild(blk); offset += dur;
+    });
+    row.appendChild(lbl); row.appendChild(track);
+    lanesBox.appendChild(row);
+    const wall = SCEN.reduce((a,f)=>a+durOf(f),0);
+    clockEl.textContent = wall.toFixed(1) + 's';
+    speedEl.textContent = (UI_TOTAL/wall).toFixed(2) + '×';
+  }
+  function stopRaf(){ if(raf){ cancelAnimationFrame(raf); raf=null; } }
+  function run(){
+    if(running) return;
+    running = true; stopRaf();
+    renderLane();
+    const wall = SCEN.reduce((a,f)=>a+durOf(f),0);
+    const blocks = $$('.pblock', lanesBox);
+    const start = performance.now();
+    function frame(now){
+      const simT = (now - start) / TIMESCALE;
+      blocks.forEach(b=>{
+        const off = +b.dataset.offset, dur = +b.dataset.dur;
+        const p = clamp((simT - off)/dur, 0, 1);
+        $('.pfill', b).style.width = (p*100) + '%';
+        b.classList.toggle('done', p>=1);
+      });
+      clockEl.textContent = Math.min(simT, wall).toFixed(1) + 's';
+      if(simT < wall){ raf = requestAnimationFrame(frame); }
+      else {
+        clockEl.textContent = wall.toFixed(1) + 's';
+        speedEl.textContent = (UI_TOTAL/wall).toFixed(2) + '×';
+        running = false; raf = null;
+        const r = lanesBox.getBoundingClientRect();
+        confetti(r.left + r.width/2, r.top + r.height/2, 70);
+      }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  function reset(){ running = false; stopRaf(); renderLane(); }
+  $$('.psim-wbtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(running) return;
+      $$('.psim-wbtn').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      MODE = btn.dataset.m;
+      renderLane();
+    });
+  });
+  $('#psim-run').addEventListener('click', run);
+  $('#psim-reset').addEventListener('click', reset);
+  renderLane();
+})();
+
+/* ================================================================
+   API REQUEST RUNNER — ejecuta JavaScript real contra una API falsa
+   ================================================================ */
+(function(){
+  const stage = $('#api-stage'); if(!stage) return;
+  const clientBox = $('#client-box'), serverBox = $('#server-box'),
+        packet = $('#api-packet'), dbRows = $('#db-rows'),
+        ta = $('#api-src'), pre = $('#api-hl'), logBox = $('#api-log'), banner = $('#api-banner');
+
+  /* ---- fake in-memory REST API ---- */
+  const DB = { rows: [], seq: 1 };
+  function renderDB(){
+    if(!DB.rows.length){ dbRows.innerHTML = '<div class="db-empty">— sin registros —</div>'; return; }
+    dbRows.innerHTML = DB.rows.map(r=>
+      '<div class="db-row">#'+r.id+' · '+esc(String(r.item))+' ×'+esc(String(r.qty))+'</div>').join('');
+  }
+  function route(method, path, opts){
+    const mAll = /^\/orders\/?$/.test(path);
+    const mId  = path.match(/^\/orders\/(\w+)$/);
+    if(method==='POST' && mAll){
+      const d = (opts&&opts.data)||{};
+      if(d.item===undefined || d.qty===undefined) return {status:422, body:{error:'item and qty are required'}};
+      const row = { id: DB.seq++, item:d.item, qty:d.qty };
+      DB.rows.push(row); renderDB();
+      return {status:201, body:row};
+    }
+    if(method==='GET' && mAll)  return {status:200, body:DB.rows};
+    if(method==='GET' && mId){ const r=DB.rows.find(x=>x.id==mId[1]); return r?{status:200,body:r}:{status:404,body:{error:'order not found'}}; }
+    if(method==='PUT' && mId){ const r=DB.rows.find(x=>x.id==mId[1]); if(!r) return {status:404,body:{error:'order not found'}}; Object.assign(r,(opts&&opts.data)||{}); renderDB(); return {status:200,body:r}; }
+    if(method==='DELETE' && mId){ const i=DB.rows.findIndex(x=>x.id==mId[1]); if(i<0) return {status:404,body:{error:'order not found'}}; DB.rows.splice(i,1); renderDB(); return {status:204,body:null}; }
+    return {status:404, body:{error:'no route for '+method+' '+path}};
+  }
+
+  /* ---- packet animation ---- */
+  function center(el){ const s=stage.getBoundingClientRect(), r=el.getBoundingClientRect();
+    return {x:r.left-s.left+r.width/2, y:r.top-s.top+r.height/2}; }
+  function place(p){ packet.style.left=(p.x-22)+'px'; packet.style.top=(p.y-12)+'px'; }
+  async function flyRequest(method, path){
+    packet.className='packet req'; packet.textContent=method+' '+path;
+    place(center(clientBox)); packet.style.opacity='1'; await sleep(70);
+    place(center(serverBox)); await sleep(520);
+    serverBox.classList.add('hit'); await sleep(180); serverBox.classList.remove('hit');
+  }
+  async function flyResponse(status){
+    packet.className='packet '+(status<300?'ok':'err'); packet.textContent='← '+status;
+    place(center(serverBox)); await sleep(70);
+    place(center(clientBox)); await sleep(520);
+    packet.style.opacity='0';
+  }
+
+  /* ---- the injected `api` client (APIRequestContext analog) ---- */
+  function log(t, cls){ const d=document.createElement('div'); d.className='ln'+(cls?' '+cls:''); d.textContent=t; logBox.appendChild(d); logBox.scrollTop=logBox.scrollHeight; }
+  function makeRes(r){
+    return { __isRes:true,
+      status(){ return r.status; },
+      ok(){ return r.status>=200 && r.status<300; },
+      async json(){ return r.body; },
+      headers(){ return {'content-type':'application/json'}; } };
+  }
+  async function call(method, path, opts){
+    await flyRequest(method, path);
+    const r = route(method, path, opts);
+    await flyResponse(r.status);
+    log(method+' '+path+' → '+r.status, r.status<300?'ok':'fail');
+    return makeRes(r);
+  }
+  const api = {
+    get:(p,o)=>call('GET',p,o), post:(p,o)=>call('POST',p,o),
+    put:(p,o)=>call('PUT',p,o), delete:(p,o)=>call('DELETE',p,o),
+  };
+
+  /* ---- expect adapted for API (response + plain values) ---- */
+  function expectApi(target){
+    const isRes = target && target.__isRes;
+    const api = {
+      toBeOK(){ if(!isRes) throw new Error('expect(...).toBeOK() espera una respuesta'); if(!target.ok()) throw new Error('expect(res).toBeOK() → Expected: 2xx · Received: '+target.status()); log('✓ expect(res).toBeOK() → PASSED ('+target.status()+')','ok'); return api; },
+      toBe(v){ if(target!==v) throw new Error('toBe → Expected: '+fmt(v)+' · Received: '+fmt(target)); log('✓ toBe('+fmt(v)+') → PASSED','ok'); return api; },
+      toEqual(v){ if(JSON.stringify(target)!==JSON.stringify(v)) throw new Error('toEqual → Expected: '+fmt(v)+' · Received: '+fmt(target)); log('✓ toEqual → PASSED','ok'); return api; },
+      toBeDefined(){ if(target===undefined) throw new Error('toBeDefined → Received: undefined'); log('✓ toBeDefined → PASSED','ok'); return api; },
+      toBeGreaterThan(v){ if(!(target>v)) throw new Error('toBeGreaterThan('+v+') → Received: '+fmt(target)); log('✓ toBeGreaterThan('+v+') → PASSED','ok'); return api; },
+      toContain(v){ const ok = typeof target==='string' ? target.indexOf(v)>=0 : (Array.isArray(target) && target.indexOf(v)>=0); if(!ok) throw new Error('toContain('+fmt(v)+') → not found in '+fmt(target)); log('✓ toContain → PASSED','ok'); return api; },
+    };
+    return api;
+  }
+  // allow `await expect(res).toBeOK()` (matchers return sync, await is harmless)
+
+  /* ---- editor wiring ---- */
+  const initial = ta.value;
+  const render = ()=>{ pre.innerHTML = hl(ta.value) + '\n'; };
+  ta.addEventListener('input', render);
+  ta.addEventListener('scroll', ()=>{ pre.scrollTop=ta.scrollTop; pre.scrollLeft=ta.scrollLeft; });
+  render();
+  const fit = ()=>{
+    ta.style.height='auto';
+    const cap = Math.round(innerHeight * 0.44);
+    const h = Math.min(Math.max(ta.scrollHeight + 4, 240), cap);
+    ta.style.height = h + 'px'; pre.style.height = h + 'px';
+  };
+  ta.__fit = fit; ta.addEventListener('input', fit); fit();
+
+  let running = false;
+  async function run(){
+    if(running) return; running = true;
+    logBox.innerHTML=''; banner.className='sim-banner'; banner.textContent='';
+    DB.rows = []; DB.seq = 1; renderDB();
+    const queue = [];
+    const testFn = (name, fn)=>{ queue.push({name, fn}); };
+    try {
+      const body = new AsyncFn('test','expect','api','"use strict";\n'+ta.value);
+      await body(testFn, expectApi, api);
+      if(!queue.length){
+        log('⚠ No se declaró ningún test(...) — envuelve tus pasos en test("nombre", async ({ api }) => { ... })','info');
+      }
+      for(const t of queue){
+        log('🧪 '+t.name,'info');
+        await t.fn({ api });
+      }
+      packet.style.opacity='0';
+      banner.className='sim-banner pass';
+      banner.textContent='✓ '+(queue.length||1)+' passed — ¡tu cliente de API funciona!';
+      const r = banner.getBoundingClientRect();
+      confetti(r.left + r.width/2, r.top, 110);
+    } catch(err){
+      packet.style.opacity='0';
+      log('✗ '+err.message,'fail');
+      banner.className='sim-banner fail';
+      banner.textContent='✗ 1 failed — el test encontró algo. Lee el error: dice qué y dónde.';
+    }
+    running = false;
+  }
+  $('#api-run').addEventListener('click', run);
+  $('#api-reset').addEventListener('click', ()=>{
+    ta.value = initial; render(); fit();
+    DB.rows=[]; DB.seq=1; renderDB();
+    logBox.innerHTML='<div class="ln" style="color:var(--text-3);font-style:italic">▶ Ejecuta — tu CLIENTE va a enviar peticiones reales…</div>';
+    banner.className='sim-banner'; banner.textContent='';
+    packet.style.opacity='0';
+  });
+  renderDB();
+})();
+
+/* ---------- init ---------- */
+updateChip();
+fromHash();
+})();
+</script>
+<!-- ============ MOBILE PATCH v3 (UPEX) — swipe + layout responsive + tip desktop ============ -->
+<style id="upex-mobile-style">
+/* Layout en pantallas angostas: 1 columna + scroll vertical dentro del slide */
+@media (max-width:768px){
+  .slide{padding:max(6vh,52px) 5vw 10vh;overflow-y:auto;justify-content:flex-start}
+  /* spacers flexibles: centran verticalmente cuando el contenido cabe y
+     colapsan a 0 cuando desborda (permitiendo scroll desde arriba) */
+  .slide::before{content:"";margin-top:auto}
+  .slide::after{content:"";margin-bottom:auto}
+  .cols,.cols-32,.cards.c3,.cards.c2,.memviz,.playground,.ba,.stepper,.termsim,.api-playground{grid-template-columns:1fr}
+  #help-hint,#act-label{display:none}
+  /* score chip compacto y pegado al borde superior para no tapar títulos */
+  #score-chip{top:6px;right:8px;font-size:.62rem;padding:.16rem .5rem;box-shadow:none}
+}
+@media (pointer:coarse){
+  #help-hint{display:none}
+}
+/* Tip de una sola vez en móvil: los playgrounds se disfrutan mejor en desktop */
+#upex-tip{position:fixed;left:50%;transform:translateX(-50%);bottom:44px;z-index:90;
+  max-width:min(92vw,420px);display:flex;align-items:flex-start;gap:.6rem;
+  background:rgba(36,40,59,.96);border:1px solid rgba(255,255,255,.18);border-radius:12px;
+  padding:.65rem .8rem;font-size:.78rem;line-height:1.45;color:#9aa5ce;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);animation:upexTipIn .4s ease both}
+#upex-tip b{color:#c0caf5}
+#upex-tip-x{flex:0 0 auto;background:none;border:none;color:#565f89;font-size:.95rem;
+  cursor:pointer;padding:0 .15rem;margin-left:auto;line-height:1.3}
+@keyframes upexTipIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%)}}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Navega despachando eventos de teclado sintéticos — el runtime del deck ya
+   escucha keydown (ArrowLeft/ArrowRight) y protege textareas/inputs. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+/* Swipe horizontal — ignora gestos que empiezan en zonas interactivas/scrollables */
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,.quiz,.lc-editor,.memviz,.playground'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Tip de una sola vez (compartido entre todos los decks del dominio vía
+   localStorage). ?tip=1 lo fuerza para QA en navegadores sin touch. */
+var KEY='upex-deck-mobile-tip-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]tip=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var tip=document.createElement('div'); tip.id='upex-tip';
+  var msg=document.createElement('span');
+  msg.innerHTML='💻 <b>Tip:</b> para practicar en los playgrounds de código, vuelve a este deck desde tu computadora.';
+  var x=document.createElement('button'); x.id='upex-tip-x'; x.textContent='✕'; x.setAttribute('aria-label','Cerrar tip');
+  var close=function(){ if(tip.isConnected) tip.remove(); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  x.addEventListener('click',close);
+  tip.appendChild(msg); tip.appendChild(x); document.body.appendChild(tip);
+  setTimeout(close,12000);
+}
+})();
+</script>
+
+</body>
+</html>

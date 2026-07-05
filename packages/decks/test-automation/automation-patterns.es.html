@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Automation Patterns — POM · Fixtures · Paralelización · KATA</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ===================== TOKYO NIGHT TOKENS ===================== */
+:root{
+  --bg:#16161e; --bg-2:#1a1b26; --surface:#24283b; --surface-2:#1f2335;
+  --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16);
+  --text-1:#c0caf5; --text-2:#9aa5ce; --text-3:#565f89;
+  --blue:#7aa2f7; --purple:#bb9af7; --cyan:#7dcfff; --green:#9ece6a;
+  --red:#f7768e; --orange:#ff9e64; --yellow:#e0af68;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#7dcfff);
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 14px 40px rgba(0,0,0,.45);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono',Menlo,monospace;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden}
+code,pre,kbd,textarea{font-family:var(--font-mono)}
+b,strong{color:var(--text-1)}
+::selection{background:rgba(122,162,247,.35)}
+
+/* ===================== SLIDE SYSTEM ===================== */
+.slide{position:fixed;inset:0;display:none;flex-direction:column;justify-content:center;
+  padding:6.5vh 6.5vw 9vh;background:var(--bg)}
+.slide.is-active{display:flex}
+.slide h1{font-size:clamp(2.4rem,5.6vw,4.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .4em}
+.slide h2{font-size:clamp(1.6rem,3.2vw,2.6rem);font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 .5em}
+.slide h3{font-size:clamp(1.02rem,1.7vw,1.32rem);font-weight:700;margin:0 0 .5em}
+.slide p,.slide li{font-size:clamp(.92rem,1.4vw,1.15rem);color:var(--text-2)}
+.kicker{font-size:.78rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2.1rem;align-items:start}
+.cols-32{display:grid;grid-template-columns:1.25fr 1fr;gap:2.1rem;align-items:start}
+.notes{display:none}
+
+/* chrome */
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--grad);width:0%;z-index:60;transition:width .3s var(--ease)}
+#counter{position:fixed;bottom:16px;right:24px;font-family:var(--font-mono);font-size:.75rem;color:var(--text-3);z-index:60}
+#act-label{position:fixed;bottom:16px;left:24px;font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);z-index:60}
+#score-chip{position:fixed;top:16px;right:22px;z-index:60;font-family:var(--font-mono);font-size:.82rem;font-weight:700;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:999px;padding:.4rem .9rem;color:var(--yellow);
+  box-shadow:var(--shadow);transition:transform .25s var(--ease)}
+#score-chip.bump{transform:scale(1.25)}
+#help-hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);font-size:.7rem;color:var(--text-3);z-index:60;font-family:var(--font-mono)}
+
+/* notes drawer */
+#notes-drawer{position:fixed;left:0;right:0;bottom:0;max-height:36vh;overflow:auto;background:var(--surface-2);
+  border-top:2px solid var(--blue);padding:1rem 2.2rem 1.4rem;z-index:80;transform:translateY(100%);transition:transform .3s var(--ease)}
+#notes-drawer.open{transform:translateY(0)}
+#notes-drawer .nd-tag{font-size:.7rem;font-weight:800;letter-spacing:.2em;color:var(--blue);text-transform:uppercase;margin-bottom:.4rem}
+#notes-drawer p{margin:.3rem 0;font-size:.95rem;color:var(--text-2)}
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+@keyframes slideL{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.slide.is-active [data-anim="fade-up"]{animation:fadeUp .7s var(--ease) both}
+.slide.is-active [data-anim="pop"]{animation:popIn .55s var(--ease) both}
+.slide.is-active [data-anim="slide-l"]{animation:slideL .6s var(--ease) both}
+.slide.is-active [data-stagger]>*{animation:fadeUp .55s var(--ease) both}
+.slide.is-active [data-stagger]>*:nth-child(1){animation-delay:.05s}
+.slide.is-active [data-stagger]>*:nth-child(2){animation-delay:.15s}
+.slide.is-active [data-stagger]>*:nth-child(3){animation-delay:.25s}
+.slide.is-active [data-stagger]>*:nth-child(4){animation-delay:.35s}
+.slide.is-active [data-stagger]>*:nth-child(5){animation-delay:.45s}
+.slide.is-active [data-stagger]>*:nth-child(6){animation-delay:.55s}
+.slide.is-active [data-stagger]>*:nth-child(7){animation-delay:.65s}
+.slide.is-active [data-stagger]>*:nth-child(8){animation-delay:.75s}
+
+/* ===================== CODE BLOCKS ===================== */
+pre.code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:1.05rem 1.25rem;font-size:clamp(.82rem,1.3vw,1.02rem);line-height:1.7;overflow:auto;margin:0;
+  box-shadow:var(--shadow);white-space:pre}
+pre.code.big{font-size:clamp(.95rem,1.6vw,1.3rem)}
+.tk-k{color:var(--purple)} .tk-s{color:var(--green)} .tk-n{color:var(--orange)}
+.tk-b{color:var(--orange)} .tk-f{color:var(--blue)} .tk-c{color:var(--text-3);font-style:italic}
+.tk-d{color:var(--yellow)}
+.code-window{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.code-window .cw-bar{display:flex;align-items:center;gap:.45rem;padding:.6rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.cw-bar .dot{width:11px;height:11px;border-radius:50%}
+.cw-bar .dot:nth-child(1){background:#f7768e}.cw-bar .dot:nth-child(2){background:#e0af68}.cw-bar .dot:nth-child(3){background:#9ece6a}
+.cw-bar .cw-title{margin-left:.5rem;font-family:var(--font-mono);font-size:.74rem;color:var(--text-3)}
+.code-window pre.code{border:none;border-radius:0;box-shadow:none}
+
+/* zoom breadcrumb */
+.zoomline{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.2rem}
+.zoomline span{font-family:var(--font-mono);font-size:.72rem;padding:.25rem .7rem;border-radius:999px;
+  border:1px solid var(--border);color:var(--text-3)}
+.zoomline span.on{background:rgba(122,162,247,.16);border-color:var(--blue);color:var(--blue);font-weight:700}
+
+/* cards */
+.cards{display:grid;gap:1.05rem}
+.cards.c3{grid-template-columns:repeat(3,1fr)}
+.cards.c2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.35rem;box-shadow:var(--shadow)}
+.card .ico{font-size:1.9rem;margin-bottom:.5rem}
+.card h3{margin-bottom:.3rem}
+.card p{font-size:.93rem;margin:.2rem 0}
+.card.hl{border-color:var(--blue);background:linear-gradient(160deg,rgba(122,162,247,.12),rgba(187,154,247,.08))}
+.card.hl-g{border-color:var(--green);background:linear-gradient(160deg,rgba(158,206,106,.12),rgba(125,207,255,.06))}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:.78rem;padding:.2rem .65rem;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--border-strong);color:var(--cyan);margin:.15rem .2rem}
+
+/* compare table */
+table.cmp{width:100%;border-collapse:collapse;font-size:clamp(.88rem,1.35vw,1.08rem)}
+table.cmp th{text-align:left;padding:.65rem 1rem;font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);border-bottom:2px solid var(--border-strong)}
+table.cmp td{padding:.62rem 1rem;border-bottom:1px solid var(--border);color:var(--text-2)}
+table.cmp td:first-child{color:var(--text-1)}
+table.cmp td code{color:var(--cyan);font-size:.92em}
+
+/* callout */
+.callout{display:flex;gap:.9rem;align-items:flex-start;background:rgba(158,206,106,.1);border:1px solid rgba(158,206,106,.35);
+  border-radius:var(--radius-sm);padding:.85rem 1.15rem;margin-top:1.3rem}
+.callout.warn{background:rgba(247,118,142,.1);border-color:rgba(247,118,142,.4)}
+.callout.info{background:rgba(122,162,247,.1);border-color:rgba(122,162,247,.4)}
+.callout .co-ico{font-size:1.4rem;line-height:1.3}
+.callout p{margin:0;font-size:clamp(.88rem,1.32vw,1.06rem)}
+
+/* ===================== QUIZ ===================== */
+.quiz{max-width:900px;width:100%;margin:0 auto}
+.quiz-tag{display:inline-block;font-family:var(--font-mono);font-size:.75rem;font-weight:700;letter-spacing:.2em;
+  color:var(--yellow);background:rgba(224,175,104,.12);border:1px solid rgba(224,175,104,.4);
+  border-radius:999px;padding:.3rem .9rem;margin-bottom:1.1rem}
+.quiz-q{font-size:clamp(1.25rem,2.3vw,1.85rem);font-weight:800;margin:0 0 1.3rem;line-height:1.25}
+.quiz-opts{display:grid;gap:.75rem}
+.quiz .opt{display:flex;align-items:center;gap:1rem;text-align:left;width:100%;cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
+  padding:.9rem 1.15rem;color:var(--text-1);font-family:var(--font-sans);font-size:clamp(.93rem,1.45vw,1.12rem);
+  transition:border-color .2s,background .2s,transform .15s}
+.quiz .opt:hover{border-color:var(--blue);transform:translateX(4px)}
+.quiz .opt .key{flex:0 0 auto;font-family:var(--font-mono);font-weight:700;font-size:.8rem;width:1.8rem;height:1.8rem;
+  display:grid;place-items:center;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-3)}
+.quiz .opt code{color:var(--cyan)}
+.quiz .opt.correct{border-color:var(--green);background:rgba(158,206,106,.14)}
+.quiz .opt.correct .key{background:var(--green);color:#16161e;border-color:var(--green)}
+.quiz .opt.wrong{border-color:var(--red);background:rgba(247,118,142,.12);animation:shake .4s}
+.quiz.locked .opt{pointer-events:none;opacity:.8}
+.quiz.locked .opt.correct{opacity:1}
+.quiz-expl{display:none;margin-top:1.2rem;background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);
+  border-radius:var(--radius-sm);padding:.85rem 1.15rem;color:var(--text-2);font-size:clamp(.88rem,1.35vw,1.05rem)}
+.quiz-expl.show{display:block;animation:fadeUp .4s var(--ease)}
+
+/* ===================== LIVE CELL ===================== */
+.livecell{background:var(--bg-2);border:1px solid var(--border-strong);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;width:100%}
+.lc-bar{display:flex;align-items:center;gap:.6rem;padding:.55rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.lc-bar .lc-name{font-family:var(--font-mono);font-size:.76rem;color:var(--text-3);margin-right:auto}
+.lc-bar button{cursor:pointer;font-family:var(--font-mono);font-size:.78rem;font-weight:700;border-radius:8px;
+  padding:.4rem .95rem;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);transition:all .2s}
+.lc-bar button.lc-run{background:rgba(158,206,106,.16);border-color:var(--green);color:var(--green)}
+.lc-bar button:hover{transform:translateY(-1px);filter:brightness(1.2)}
+.lc-editor{position:relative;min-height:120px}
+.lc-editor pre,.lc-editor textarea{margin:0;padding:1rem 1.2rem;font-size:clamp(.83rem,1.25vw,1rem);line-height:1.62;
+  font-family:var(--font-mono);white-space:pre;overflow:auto;tab-size:2}
+.lc-editor pre{position:absolute;inset:0;pointer-events:none;color:var(--text-1)}
+.lc-editor textarea{position:relative;width:100%;height:100%;min-height:inherit;display:block;background:transparent;
+  color:transparent;caret-color:#c0caf5;border:none;outline:none;resize:none;-webkit-text-fill-color:transparent}
+.lc-console{border-top:1px solid var(--border);background:#13131a;padding:.8rem 1.2rem;min-height:2.6rem;max-height:170px;overflow:auto}
+.lc-console .ln{font-family:var(--font-mono);font-size:.84rem;color:var(--green);padding:.08rem 0;white-space:pre-wrap}
+.lc-console .ln.err{color:var(--red)}
+.lc-console .ln.dim{color:var(--text-3);font-style:italic}
+.lc-console .ln.info{color:var(--cyan)}
+.lc-console .ln.setup{color:var(--purple)}
+.lc-console .ln.teardown{color:var(--orange)}
+
+/* ===================== STEPPER (fixture lifecycle / KATA trace) ===================== */
+.stepper{display:grid;grid-template-columns:1.25fr 1fr;gap:1.3rem;width:100%}
+.st-code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem 0;box-shadow:var(--shadow)}
+.st-code .cl{font-family:var(--font-mono);font-size:clamp(.78rem,1.22vw,.98rem);line-height:1.8;padding:0 1.15rem;white-space:pre;transition:background .25s;border-left:3px solid transparent}
+.st-code .cl.cur{background:rgba(122,162,247,.16);border-left-color:var(--blue)}
+.st-code .cl.cur2{background:rgba(158,206,106,.13);border-left-color:var(--green)}
+.st-side{display:flex;flex-direction:column;gap:.9rem}
+.st-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem 1.1rem;flex:1}
+.st-panel h4{margin:0 0 .55rem;font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3)}
+.st-row{display:flex;align-items:center;gap:.6rem;margin:.4rem 0;animation:popIn .3s var(--ease);font-family:var(--font-mono);font-size:.84rem}
+.st-row .tag{font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;padding:.18rem .5rem}
+.st-row .tag.l1{background:rgba(86,95,137,.25);color:var(--text-2)}
+.st-row .tag.l2{background:rgba(122,162,247,.18);color:var(--blue)}
+.st-row .tag.l3{background:rgba(187,154,247,.18);color:var(--purple)}
+.st-row .tag.l4{background:rgba(158,206,106,.18);color:var(--green)}
+.st-note{background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);border-radius:var(--radius-sm);
+  padding:.7rem 1rem;font-size:.9rem;color:var(--text-2);min-height:3.2rem}
+.st-out{background:#13131a;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.65rem 1rem;min-height:2.6rem}
+.st-out .ln{font-family:var(--font-mono);font-size:.83rem;padding:.05rem 0}
+.st-ctrl{display:flex;gap:.7rem;align-items:center;margin-top:1rem}
+.st-ctrl button{cursor:pointer;font-family:var(--font-mono);font-weight:700;font-size:.84rem;border-radius:10px;
+  padding:.52rem 1.2rem;border:1px solid var(--blue);background:rgba(122,162,247,.15);color:var(--blue);transition:all .2s}
+.st-ctrl button:hover{filter:brightness(1.25);transform:translateY(-1px)}
+.st-ctrl button.ghost{border-color:var(--border-strong);background:var(--surface);color:var(--text-2)}
+.st-ctrl .st-stepn{font-family:var(--font-mono);font-size:.8rem;color:var(--text-3);margin-left:auto}
+
+/* ===================== PARALLELIZATION SIMULATOR ===================== */
+.psim{width:100%;display:flex;flex-direction:column;gap:1rem}
+.psim-top{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+.psim-top .lbl{font-family:var(--font-mono);font-size:.8rem;color:var(--text-3)}
+.psim-wbtn{cursor:pointer;font-family:var(--font-mono);font-weight:700;font-size:.86rem;border-radius:9px;
+  padding:.45rem 1rem;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);transition:all .18s}
+.psim-wbtn.on{border-color:var(--blue);background:rgba(122,162,247,.18);color:var(--blue)}
+.psim-run{cursor:pointer;font-family:var(--font-mono);font-weight:700;font-size:.86rem;border-radius:9px;
+  padding:.45rem 1.2rem;border:1px solid var(--green);background:rgba(158,206,106,.16);color:var(--green);transition:all .18s;margin-left:auto}
+.psim-run:hover{filter:brightness(1.2)}
+.psim-reset{cursor:pointer;font-family:var(--font-mono);font-weight:700;font-size:.86rem;border-radius:9px;
+  padding:.45rem 1rem;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2)}
+.psim-lanes{display:flex;flex-direction:column;gap:.55rem}
+.psim-lane{display:flex;align-items:center;gap:.8rem}
+.psim-lane .wlbl{flex:0 0 auto;width:8.5rem;font-family:var(--font-mono);font-size:.76rem;color:var(--cyan);
+  display:flex;align-items:center;gap:.4rem}
+.psim-track{flex:1;display:flex;gap:4px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:4px;min-height:2.4rem}
+.pblock{position:relative;border-radius:5px;overflow:hidden;border:1px solid var(--border-strong);
+  background:var(--surface-2);display:flex;align-items:center;justify-content:center;min-width:36px}
+.pblock .pfill{position:absolute;inset:0;width:0%;background:linear-gradient(90deg,rgba(122,162,247,.35),rgba(187,154,247,.35));transition:none}
+.pblock .pname{position:relative;font-family:var(--font-mono);font-size:.68rem;color:var(--text-2);padding:0 .35rem;white-space:nowrap;z-index:2}
+.pblock.done{border-color:var(--green)}
+.pblock.done .pfill{background:linear-gradient(90deg,rgba(158,206,106,.4),rgba(125,207,255,.3))}
+.psim-stats{display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center;font-family:var(--font-mono)}
+.psim-stat{background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:.55rem 1rem}
+.psim-stat .k{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);display:block}
+.psim-stat .v{font-size:1.25rem;font-weight:700;color:var(--text-1)}
+.psim-stat .v.clock{color:var(--cyan)} .psim-stat .v.speed{color:var(--green)}
+
+/* KATA layers diagram */
+.kata-stack{display:flex;flex-direction:column;gap:.5rem;max-width:600px;margin:0 auto;width:100%}
+.kata-stack .layer{display:flex;align-items:center;gap:1rem;background:var(--surface);border:1.5px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.7rem 1.15rem;font-family:var(--font-mono);font-size:clamp(.8rem,1.28vw,1rem);color:var(--text-3);transition:all .25s}
+.kata-stack .layer .ly-note{margin-left:auto;font-family:var(--font-sans);font-size:.76rem}
+.kata-stack .layer.star{border-color:var(--green);background:rgba(158,206,106,.12);color:var(--green);font-weight:700;
+  box-shadow:0 0 24px rgba(158,206,106,.15)}
+.kata-stack .layer.lit{border-color:var(--blue);background:rgba(122,162,247,.16);color:var(--blue);box-shadow:0 0 22px rgba(122,162,247,.18)}
+.kata-stack .arrow{text-align:center;color:var(--text-3);font-size:.82rem;line-height:.6}
+
+/* before/after */
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:1.3rem;align-items:start}
+.ba .ba-tag{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  border-radius:999px;padding:.25rem .8rem;margin-bottom:.6rem}
+.ba .bad-tag{background:rgba(247,118,142,.14);border:1px solid rgba(247,118,142,.45);color:var(--red)}
+.ba .good-tag{background:rgba(158,206,106,.14);border:1px solid rgba(158,206,106,.45);color:var(--green)}
+
+/* mini-app + POM simulator */
+.playground{display:grid;grid-template-columns:1fr 1.2fr;gap:1.5rem;width:100%;align-items:stretch}
+.app-frame{position:relative;background:#e8ecf4;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);min-height:380px;display:flex;flex-direction:column}
+.app-frame .af-bar{display:flex;align-items:center;gap:.45rem;background:#cdd4e3;padding:.5rem .8rem}
+.af-bar .dot{width:10px;height:10px;border-radius:50%}
+.af-bar .dot:nth-child(1){background:#f06a6a}.af-bar .dot:nth-child(2){background:#e8b04e}.af-bar .dot:nth-child(3){background:#67c46f}
+.af-bar .af-url{flex:1;background:#fff;border-radius:6px;font-family:var(--font-mono);font-size:.68rem;color:#5a6478;padding:.22rem .7rem;margin-left:.4rem}
+.app-body{flex:1;display:flex;align-items:center;justify-content:center;padding:1.6rem}
+.app-card{background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(30,40,80,.18);padding:1.5rem 1.6rem;width:min(320px,90%)}
+.app-card h4{margin:0 0 .2rem;color:#1d2540;font-size:1.15rem}
+.app-card .app-sub{color:#7c86a0;font-size:.8rem;margin:0 0 1.1rem}
+.app-card label{display:block;font-size:.72rem;font-weight:700;color:#5a6478;letter-spacing:.06em;text-transform:uppercase;margin:.7rem 0 .25rem}
+.app-card input{width:100%;border:1.5px solid #cdd4e3;border-radius:8px;padding:.55rem .8rem;font-size:.92rem;color:#1d2540;
+  font-family:var(--font-sans);outline:none;transition:border-color .2s;background:#fff}
+.app-card input:focus{border-color:#5b7cfa}
+.app-card button.app-login{width:100%;margin-top:1.1rem;background:#5b7cfa;color:#fff;border:none;border-radius:8px;
+  padding:.65rem;font-weight:700;font-size:.95rem;cursor:pointer;font-family:var(--font-sans);transition:background .2s}
+.app-card button.app-login:hover{background:#4a69e8}
+.app-msg{margin-top:.9rem;border-radius:8px;padding:.6rem .8rem;font-size:.85rem;font-weight:600;display:none}
+.app-msg.ok{background:#e3f6e6;color:#1e7c32;border:1px solid #9adfa6}
+.app-msg.bad{background:#fde8eb;color:#c22743;border:1px solid #f5b3c0}
+.app-msg.show{display:block}
+.ghost-cursor{position:absolute;z-index:40;width:26px;height:26px;pointer-events:none;opacity:0;
+  transition:left .55s var(--ease),top .55s var(--ease),opacity .3s;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4))}
+.ghost-cursor.click-pulse{animation:cursorPulse .35s}
+@keyframes cursorPulse{50%{transform:scale(.7)}}
+.sim-right{display:flex;flex-direction:column;gap:.9rem}
+.sim-log{background:#13131a;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.7rem 1rem;flex:1;min-height:80px;max-height:150px;overflow:auto}
+.sim-log .ln{font-family:var(--font-mono);font-size:.8rem;padding:.07rem 0;color:var(--text-2)}
+.sim-log .ln.ok{color:var(--green)} .sim-log .ln.fail{color:var(--red)} .sim-log .ln.info{color:var(--cyan)}
+.sim-banner{display:none;border-radius:var(--radius-sm);padding:.7rem 1.1rem;font-weight:800;font-size:1rem;text-align:center;letter-spacing:.08em}
+.sim-banner.pass{display:block;background:rgba(158,206,106,.16);border:1.5px solid var(--green);color:var(--green)}
+.sim-banner.fail{display:block;background:rgba(247,118,142,.14);border:1.5px solid var(--red);color:var(--red)}
+
+/* cover + final */
+#fx-cover{position:absolute;inset:0;z-index:0}
+.cover-inner{position:relative;z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.1rem}
+.cover-chips{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+#final-score{font-family:var(--font-mono);font-size:clamp(2.6rem,7vw,5rem);font-weight:700;color:var(--yellow)}
+#confetti-canvas{position:fixed;inset:0;z-index:200;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="score-chip">⭐ 0/6</div>
+<div id="counter">1 / 30</div>
+<div id="act-label"></div>
+<div id="help-hint">← → navegar · N notas presentador · F pantalla completa</div>
+<canvas id="confetti-canvas"></canvas>
+<div id="notes-drawer"><div class="nd-tag">🎙 Notas del presentador</div><div id="nd-content"></div></div>
+
+<!-- ================================================================ -->
+<!-- ACTO 0 · POR QUÉ PATRONES -->
+<!-- ================================================================ -->
+
+<!-- 1 · Portada -->
+<section class="slide" data-act="Acto 0 · Por qué patrones" style="align-items:center">
+  <canvas id="fx-cover"></canvas>
+  <div class="cover-inner">
+    <div class="kicker" data-anim="fade-up">QA Engineering · Patrones de automatización</div>
+    <h1 data-anim="fade-up" style="animation-delay:.1s">Automation <span class="grad-text">Patterns</span></h1>
+    <p data-anim="fade-up" style="animation-delay:.2s;max-width:720px;font-size:clamp(1.05rem,1.8vw,1.35rem)">
+      De clases sueltas a una <b>arquitectura de pruebas</b>.<br>
+      Page Object · Fixtures · Paralelización · KATA — los patrones que sostienen todo framework profesional.</p>
+    <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
+      <span class="pill">POM</span><span class="pill">Fixtures (DI)</span><span class="pill">Parallel workers</span><span class="pill">KATA</span><span class="pill">código real Playwright</span><span class="pill">6 quizzes ⭐</span>
+    </div>
+  </div>
+  <div class="notes"><p>Sesión de patrones. Prerequisito: ya saben clases, herencia y un Page Object básico (sesión Coding Classes). Hoy subimos un escalón: por qué existen los patrones, qué problema resuelve cada uno, y cómo se combinan en KATA — el framework real de este repo. Todo lo ejecutamos en vivo: live cells con JS real, un simulador de Page Object que mueve el cursor, un simulador de workers en paralelo, y un trazador de capas KATA. Que la sala TOQUE cada widget — la interacción es el punto.</p></div>
+</section>
+
+<!-- 2 · Dónde estamos -->
+<section class="slide" data-act="Acto 0 · Por qué patrones">
+  <div class="kicker">El salto de hoy</div>
+  <h2 data-anim="fade-up">Ya escribes tests. <span class="grad-text">Hoy los conviertes en arquitectura.</span></h2>
+  <div class="cols">
+    <div data-stagger>
+      <div class="card"><h3>✅ Lo que ya tienes</h3><p>JS moderno · clases + <code class="pill">extends</code> · un Page Object que envuelve una página · tu primer <code class="pill">test()</code> ejecutado.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🎯 Lo que sumas hoy</h3><p>Los <b>4 patrones</b> que escalan de 5 a 5.000 tests sin que el proyecto colapse: <b>POM</b> a fondo · <b>Fixtures</b> · <b>Paralelización</b> · <b>KATA</b>.</p></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.3s">
+      <pre class="code big">
+<span class="tk-c">// Un patrón = una respuesta probada</span>
+<span class="tk-c">// a un dolor que SIEMPRE reaparece:</span>
+
+selector cambió      <span class="tk-c">→ Page Object</span>
+setup repetido       <span class="tk-c">→ Fixtures</span>
+suite lentísima      <span class="tk-c">→ Paralelización</span>
+todo junto, a escala <span class="tk-c">→ KATA</span></pre>
+      <div class="callout info" style="margin-top:1rem"><span class="co-ico">🧭</span><p>Cada acto: <b>primero el dolor</b>, luego el patrón que lo cura. Nunca sintaxis sin motivo.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Encuadre central de la sesión: un patrón NO es decoración, es la respuesta consensuada de la industria a un dolor recurrente. La columna derecha mapea dolor→patrón — es el índice de la charla. Promesa pedagógica: cada acto abre con el dolor concreto (mostrado en código), para que el patrón se sienta inevitable, no impuesto. Si alguien pregunta "¿por qué no escribir el test y ya?": funciona con 5 tests; a 500, sin patrones, el proyecto se vuelve inmantenible. Eso es lo que vamos a vivir.</p></div>
+</section>
+
+<!-- 3 · QUIZ 0 relámpago -->
+<section class="slide" data-act="Acto 0 · Por qué patrones" style="align-items:center">
+  <div class="quiz" data-quiz="q0">
+    <div class="quiz-tag">⭐ QUIZ relámpago · ¿Caliente de la sesión anterior?</div>
+    <h3 class="quiz-q">Un Page Object es, en una frase…</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Un archivo de configuración de Playwright</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>Una <code>class</code> que envuelve una página y guarda sus selectores + acciones en un solo lugar</span></button>
+      <button class="opt"><span class="key">C</span><span>Una función que abre el navegador</span></button>
+    </div>
+    <div class="quiz-expl">💡 Page Object Model (POM): una <code>class</code> donde viven los selectores y las acciones de UNA página. Los tests la usan sin tocar selectores. Hoy lo llevamos más lejos — y descubrimos que es solo el <b>primero</b> de cuatro patrones que se apilan.</div>
+  </div>
+  <div class="notes"><p>Calentamiento que reactiva POM y fija el vocabulario. Si la sala falla esto masivamente, dedica 3 minutos a repasar el Page Object de la sesión anterior antes de seguir — el resto de la charla se apoya en este concepto. La explicación planta la semilla de "cuatro patrones apilados", que es el arco completo.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 1 · PAGE OBJECT MODEL (a fondo) -->
+<!-- ================================================================ -->
+
+<!-- 4 · El dolor: selectores regados -->
+<section class="slide" data-act="Acto 1 · Page Object Model">
+  <div class="zoomline"><span class="on">page object</span><span>fixtures</span><span>paralelización</span><span>kata</span></div>
+  <h2 data-anim="fade-up">El dolor: <span class="grad-text">selectores regados por todo el spec</span> 🔍</h2>
+  <div class="code-window" data-anim="fade-up" style="max-width:920px">
+    <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">login.spec.ts — sin patrón</span></div>
+    <pre class="code" style="font-size:clamp(.74rem,1.13vw,.94rem)">
+<span class="tk-f">test</span>(<span class="tk-s">"login exitoso"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#email"</span>, <span class="tk-s">"ana@qa.com"</span>);      <span class="tk-c">┐</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#password"</span>, <span class="tk-s">"secreto123"</span>);   <span class="tk-c">│ mismos selectores,</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);               <span class="tk-c">┘ copiados en cada test</span>
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">"#welcome"</span>)).<span class="tk-f">toBeVisible</span>();
+});
+
+<span class="tk-f">test</span>(<span class="tk-s">"login inválido"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#email"</span>, <span class="tk-s">"ana@qa.com"</span>);      <span class="tk-c">… otra vez …</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#password"</span>, <span class="tk-s">"malamala"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">"#error-msg"</span>)).<span class="tk-f">toBeVisible</span>();
+});
+
+<span class="tk-c">// 50 tests más… y mañana el dev renombra #login-btn 💀</span></pre>
+  </div>
+  <div class="callout warn" data-anim="fade-up"><span class="co-ico">🚨</span><p>Pregunta asesina: si <code>#login-btn</code> cambia de id, ¿cuántos lugares corriges? Con 50 tests → <b>50 ediciones</b> y un riesgo de error en cada una.</p></div>
+  <div class="notes"><p>Deja que ELLOS nombren el problema: pasos duplicados + selectores dispersos. La pregunta del "renombre" es el gancho de todo el acto — sostén la incomodidad unos segundos antes de revelar la cura. Conecta con un dolor que ya conocen: test cases manuales copiados. La herramienta para encapsular ya la tienen: una clase.</p></div>
+</section>
+
+<!-- 5 · POM a fondo -->
+<section class="slide" data-act="Acto 1 · Page Object Model">
+  <div class="zoomline"><span class="on">page object</span><span>fixtures</span><span>paralelización</span><span>kata</span></div>
+  <h2 data-anim="fade-up">El patrón: <span class="grad-text">una clase = una página</span> 🎁</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <pre class="code">
+<span class="tk-k">class</span> LoginPage {
+  <span class="tk-f">constructor</span>(page) {
+    <span class="tk-k">this</span>.page = page;        <span class="tk-c">// el "control remoto"</span>
+  }
+
+  <span class="tk-c">// selectores: una sola fuente</span>
+  email    = () => <span class="tk-k">this</span>.page.<span class="tk-f">locator</span>(<span class="tk-s">"#email"</span>);
+  password = () => <span class="tk-k">this</span>.page.<span class="tk-f">locator</span>(<span class="tk-s">"#password"</span>);
+  submit   = () => <span class="tk-k">this</span>.page.<span class="tk-f">locator</span>(<span class="tk-s">"#login-btn"</span>);
+
+  <span class="tk-k">async</span> <span class="tk-f">login</span>(email, password) {
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.<span class="tk-f">email</span>().<span class="tk-f">fill</span>(email);
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.<span class="tk-f">password</span>().<span class="tk-f">fill</span>(password);
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.<span class="tk-f">submit</span>().<span class="tk-f">click</span>();
+  }
+}</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>📍 Selectores arriba, una vez</h3><p>Cada selector vive en UN getter. ¿Cambió <code class="pill">#login-btn</code>? Editas <b>1 línea</b> — los 50 tests ni se enteran.</p></div>
+      <div class="card" style="margin-top:.7rem"><h3>🎬 Acciones como métodos</h3><p><code class="pill">login()</code> cuenta una historia: llena, llena, clic. El test lee como un caso manual.</p></div>
+      <div class="card hl" style="margin-top:.7rem"><h3>🧬 Cero conceptos nuevos</h3><p>Es la clase de siempre: <code class="pill">constructor</code> · <code class="pill">this</code> · método <code class="pill">async</code> · <code class="pill">await</code>. POM = clase + propósito.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Subimos del POM básico: aquí los selectores se centralizan en getters arrow (this.page.locator). Regla profesional que verán en KATA: un locator usado en 2+ acciones se extrae a un getter; usado una vez, va inline. No filosofar todavía — la siguiente slide muestra la regla acción-vs-aserción, y luego lo ejecutan en vivo. Suelta el término oficial: Page Object Model, patrón estándar de industria.</p></div>
+</section>
+
+<!-- 6 · Acciones vs aserciones -->
+<section class="slide" data-act="Acto 1 · Page Object Model">
+  <div class="zoomline"><span class="on">page object</span><span>fixtures</span><span>paralelización</span><span>kata</span></div>
+  <h2 data-anim="fade-up">La regla de oro: <span class="grad-text">acciones dentro, decisión fuera</span> ⚖️</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>El Page Object: solo ACCIONES</h3>
+      <pre class="code" style="font-size:clamp(.78rem,1.18vw,.96rem)">
+<span class="tk-k">class</span> LoginPage {
+  <span class="tk-k">async</span> <span class="tk-f">login</span>(email, pass) {
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.<span class="tk-f">email</span>().<span class="tk-f">fill</span>(email);
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.<span class="tk-f">password</span>().<span class="tk-f">fill</span>(pass);
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.<span class="tk-f">submit</span>().<span class="tk-f">click</span>();
+  }                       <span class="tk-c">// hace cosas, no juzga</span>
+}</pre>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>El test: la DECISIÓN pasa/falla</h3>
+      <pre class="code" style="font-size:clamp(.78rem,1.18vw,.96rem)">
+<span class="tk-f">test</span>(<span class="tk-s">"login exitoso"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">const</span> login = <span class="tk-k">new</span> <span class="tk-f">LoginPage</span>(page);
+  <span class="tk-k">await</span> login.<span class="tk-f">login</span>(<span class="tk-s">"ana@qa.com"</span>, <span class="tk-s">"secreto123"</span>);
+
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">"#welcome"</span>))
+    .<span class="tk-f">toBeVisible</span>();    <span class="tk-c">// aquí se decide</span>
+});</pre>
+    </div>
+  </div>
+  <div class="callout" data-anim="fade-up"><span class="co-ico">🎯</span><p>Misma acción <code>login()</code> sirve para el caso feliz y el inválido — solo cambia el <code>expect</code> que pone el test. Reutilización máxima, decisión en un solo lugar visible. <b>Esta división reaparece idéntica en KATA.</b></p></div>
+  <div class="notes"><p>Distinción que separa el POM amateur del profesional: las acciones (efectos) viven en el Page Object; las aserciones de negocio (el veredicto) viven en el test. Matiz honesto: aserciones FIJAS e inevitables (un redirect obligatorio, status 201) sí pueden ir dentro de la acción como parte de "la acción terminó bien"; las aserciones de NEGOCIO van fuera. Esta misma regla es la Regla 6 de KATA (fixed assertions inside, flow assertions outside) — anúncialo, es un puente directo.</p></div>
+</section>
+
+<!-- 7 · LIVE: POM simulator -->
+<section class="slide" data-act="Acto 1 · Page Object Model">
+  <div class="kicker">🎮 Playground · código real, cursor real</div>
+  <h2 data-anim="fade-up">Tu Page Object, <span class="grad-text">controlando el navegador</span> 🤖</h2>
+  <div class="playground">
+    <div class="app-frame" id="sim-frame">
+      <div class="af-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="af-url">https://bunkai-bank.test/login</span></div>
+      <div class="app-body">
+        <div class="app-card">
+          <h4>🏦 Bunkai Bank</h4>
+          <p class="app-sub">Acceso a tu cuenta</p>
+          <label>Email</label><input id="s-email" data-sel="#email" type="text" placeholder="tu@email.com">
+          <label>Password</label><input id="s-password" data-sel="#password" type="password" placeholder="••••••••">
+          <button class="app-login" id="s-login-btn" data-sel="#login-btn">Entrar</button>
+          <div class="app-msg ok" id="s-welcome" data-sel="#welcome">✅ ¡Bienvenida, Ana!</div>
+          <div class="app-msg bad" id="s-error-msg" data-sel="#error-msg">❌ Credenciales inválidas</div>
+        </div>
+      </div>
+      <svg class="ghost-cursor" id="ghost-cursor" viewBox="0 0 24 24" fill="#ffd166" stroke="#1d2540" stroke-width="1.4"><path d="M5 2 L5 19 L9.5 15.5 L12.5 21.5 L15 20 L12 14.5 L18 14 Z"/></svg>
+    </div>
+    <div class="sim-right">
+      <div class="livecell" style="flex:0 0 auto">
+        <div class="lc-bar"><span class="lc-name">login-page.spec.ts — clase real, ejecución real</span>
+          <button class="lc-reset" id="sim-reset">↺ Reset</button><button class="lc-run" id="sim-run">▶ Ejecutar test</button></div>
+        <div class="lc-editor" style="min-height:220px"><pre class="lc-hl" id="sim-hl"></pre><textarea id="sim-src" spellcheck="false">class LoginPage {
+  constructor(page) {
+    this.page = page;
+  }
+  async login(email, password) {
+    await this.page.fill("#email", email);
+    await this.page.fill("#password", password);
+    await this.page.click("#login-btn");
+  }
+}
+
+test("login con Page Object", async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.login("ana@qa.com", "secreto123");
+  await expect(page.locator("#welcome")).toBeVisible();
+});</textarea></div>
+      </div>
+      <div class="sim-log" id="sim-log"><div class="ln" style="color:var(--text-3);font-style:italic">▶ Ejecuta — tu CLASE va a mover el cursor…</div></div>
+      <div class="sim-banner" id="sim-banner"></div>
+    </div>
+  </div>
+  <div class="notes"><p>Este simulador EJECUTA el JavaScript de verdad: la clase LoginPage corre tal cual correría en Playwright contra un page falso que mueve el cursor. Tres demos en vivo: (1) ejecutar tal cual → PASS verde; (2) cambiar password a "malamala" → FAIL con expected/received legible; (3) el experimento estrella: dentro de la clase, cambiar "#login-btn" por "#boton-entrar" → error "No existe el elemento" → corregir EN UN SOLO LUGAR → verde. Ese momento ES el argumento del Page Object, vivido en carne propia.</p></div>
+</section>
+
+<!-- 8 · QUIZ 1 -->
+<section class="slide" data-act="Acto 1 · Page Object Model" style="align-items:center">
+  <div class="quiz" data-quiz="q1">
+    <div class="quiz-tag">⭐ QUIZ 1 · Page Object</div>
+    <h3 class="quiz-q">El dev renombra <code style="color:var(--cyan)">#login-btn</code> → <code style="color:var(--cyan)">#signin-btn</code>. Tienes 50 tests que hacen login con <code style="color:var(--cyan)">LoginPage</code>. ¿Cuántos lugares corriges?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>50 — uno por test</span></button>
+      <button class="opt"><span class="key">B</span><span>Ninguno — Playwright lo detecta solo</span></button>
+      <button class="opt" data-ok="1"><span class="key">C</span><span>1 — el selector vive solo dentro de LoginPage</span></button>
+    </div>
+    <div class="quiz-expl">💡 Esa es TODA la promesa del Page Object: los selectores viven en un único lugar. Los 50 tests llaman <code>login.login(...)</code> y no se enteran del cambio. La opción B es el optimista mágico — ninguna herramienta adivina un renombre.</div>
+  </div>
+  <div class="notes"><p>Si hicieron el experimento del selector en el simulador, este quiz formaliza lo que VIVIERON. Respuesta correcta masiva = acto cumplido. Transición: "POM resuelve los selectores… pero todavía cada test escribe new LoginPage(page) y prepara su propio setup. Ese es el siguiente dolor: las Fixtures."</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 2 · FIXTURES -->
+<!-- ================================================================ -->
+
+<!-- 9 · El dolor: setup repetido -->
+<section class="slide" data-act="Acto 2 · Fixtures">
+  <div class="zoomline"><span>page object</span><span class="on">fixtures</span><span>paralelización</span><span>kata</span></div>
+  <h2 data-anim="fade-up">Nuevo dolor: <span class="grad-text">cada test repite su preparación</span> 🔁</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code" style="font-size:clamp(.76rem,1.16vw,.94rem)">
+<span class="tk-f">test</span>(<span class="tk-s">"ve su dashboard"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">const</span> login = <span class="tk-k">new</span> <span class="tk-f">LoginPage</span>(page);   <span class="tk-c">┐</span>
+  <span class="tk-k">await</span> login.<span class="tk-f">goto</span>();                     <span class="tk-c">│ el MISMO</span>
+  <span class="tk-k">await</span> login.<span class="tk-f">login</span>(EMAIL, PASS);         <span class="tk-c">│ ritual de</span>
+  <span class="tk-k">const</span> dash = <span class="tk-k">new</span> <span class="tk-f">DashboardPage</span>(page); <span class="tk-c">┘ arranque…</span>
+  <span class="tk-k">await</span> dash.<span class="tk-f">expectVisible</span>();
+});
+
+<span class="tk-f">test</span>(<span class="tk-s">"edita su perfil"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">const</span> login = <span class="tk-k">new</span> <span class="tk-f">LoginPage</span>(page);   <span class="tk-c">… copiado …</span>
+  <span class="tk-k">await</span> login.<span class="tk-f">goto</span>();
+  <span class="tk-k">await</span> login.<span class="tk-f">login</span>(EMAIL, PASS);
+  <span class="tk-c">// y recién aquí empieza el test real 😩</span>
+});</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🧩 El síntoma</h3><p>Construir objetos, navegar, autenticar — <b>antes</b> de cada test. Ruido que tapa lo que el test realmente prueba.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🧹 ¿Y la limpieza?</h3><p>¿Quién cierra sesión, borra el usuario creado, resetea el estado <b>después</b>? Hoy: nadie, o copiado en cada test.</p></div>
+      <div class="card hl" style="margin-top:.8rem"><h3>💡 La idea</h3><p>Que alguien prepare el escenario <b>antes</b> y lo limpie <b>después</b>, y le entregue al test solo lo que pidió, listo para usar. Eso es una <b>Fixture</b>.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>El dolor de las fixtures tiene DOS caras: el setup repetido (arriba) y el teardown olvidado (limpieza). Subraya ambas — la limpieza es la que casi nadie hace bien a mano. La idea de fixture = "preparar antes + entregar + limpiar después" cubre las dos. Pista que ya conocen: ({ page }) YA es una fixture que Playwright les da preparada. Hoy aprenden a fabricar las suyas.</p></div>
+</section>
+
+<!-- 10 · ({ page }) ya es una fixture -->
+<section class="slide" data-act="Acto 2 · Fixtures">
+  <div class="zoomline"><span>page object</span><span class="on">fixtures</span><span>paralelización</span><span>kata</span></div>
+  <h2 data-anim="fade-up">Sorpresa: <span class="grad-text">llevas toda la vida usando fixtures</span> 🎭</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-f">test</span>(<span class="tk-s">"login"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-c">//                  ▲</span>
+  <span class="tk-c">//        esto YA es una fixture</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"/login"</span>);
+});</pre>
+      <div class="callout info" style="margin-top:1rem"><span class="co-ico">🔓</span><p>Playwright construye un <code>page</code> fresco <b>antes</b> de tu test, te lo presta, y lo <b>desecha después</b>. Tú nunca escribiste <code>new Page()</code> ni lo cerraste. Eso es una fixture trabajando.</p></div>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>📦 ¿Qué es una fixture?</h3><p>Un <b>recurso listo para usar</b> que el framework arma, te inyecta por nombre, y limpia solo. Inyección de Dependencias (DI) aplicada a tests.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🎁 Built-in de Playwright</h3><p><code class="pill">page</code> · <code class="pill">request</code> · <code class="pill">context</code> · <code class="pill">browser</code>. Pides por nombre lo que usas; lo demás ni se crea.</p></div>
+      <div class="card hl-g" style="margin-top:.8rem"><h3>🛠️ Lo nuevo de hoy</h3><p>Crear las <b>tuyas</b> con <code class="pill">test.extend</code>: una fixture <code class="pill">loginPage</code>, una <code class="pill">authedUser</code>… que lleguen ya preparadas a cada test.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>El "¡ahhh!" del acto: ({ page }) siempre fue una fixture. Define fixture en términos llanos: recurso listo, inyectado por nombre, auto-limpiado. Menciona el término técnico (Dependency Injection) una vez, sin enredarte — lo importante es la intuición. El destructuring ({ page }) que ya dominan es exactamente cómo se piden las fixtures: por nombre, desempacando solo lo necesario.</p></div>
+</section>
+
+<!-- 11 · test.extend anatomía -->
+<section class="slide" data-act="Acto 2 · Fixtures">
+  <div class="zoomline"><span>page object</span><span class="on">fixtures</span><span>paralelización</span><span>kata</span></div>
+  <h2 data-anim="fade-up">Fabricar una fixture: <span class="grad-text">setup → use → teardown</span> 🔧</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <pre class="code" style="font-size:clamp(.76rem,1.16vw,.95rem)">
+<span class="tk-k">import</span> { test <span class="tk-k">as</span> base } <span class="tk-k">from</span> <span class="tk-s">"@playwright/test"</span>;
+
+<span class="tk-k">export const</span> test = base.<span class="tk-f">extend</span>({
+  <span class="tk-c">// fixture llamada "loginPage"</span>
+  loginPage: <span class="tk-k">async</span> ({ page }, use) => {
+    <span class="tk-c">// 1 · SETUP (antes del test)</span>
+    <span class="tk-k">const</span> login = <span class="tk-k">new</span> <span class="tk-f">LoginPage</span>(page);
+    <span class="tk-k">await</span> login.<span class="tk-f">goto</span>();
+
+    <span class="tk-c">// 2 · entregar al test</span>
+    <span class="tk-k">await</span> <span class="tk-f">use</span>(login);
+
+    <span class="tk-c">// 3 · TEARDOWN (después del test)</span>
+    <span class="tk-k">await</span> page.<span class="tk-f">close</span>();
+  },
+});</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3 style="color:var(--purple)">1 · Antes de <code style="font-size:.8em">use</code></h3><p>Todo lo que escribes <b>arriba</b> de <code class="pill">use()</code> corre como preparación, una vez por test que la pida.</p></div>
+      <div class="card hl" style="margin-top:.7rem"><h3 style="color:var(--blue)">2 · <code style="font-size:.8em">await use(value)</code></h3><p>La frontera. <code class="pill">value</code> es lo que el test recibe en <code class="pill">({ loginPage })</code>. El test corre <b>durante</b> esta línea.</p></div>
+      <div class="card" style="margin-top:.7rem"><h3 style="color:var(--orange)">3 · Después de <code style="font-size:.8em">use</code></h3><p>Todo lo de <b>abajo</b> es limpieza: cerrar, borrar, resetear. Corre <b>siempre</b>, incluso si el test falla.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>EL concepto técnico del acto: la firma async ({ deps }, use) => {} y el papel partidor de await use(). Mensaje clave: use() NO es "ejecuta el código", es "PAUSA aquí y entrégale el control al test; cuando el test termine, sigue con la limpieza de abajo". Es un sándwich: setup arriba, test en el medio (use), teardown abajo. La siguiente slide lo muestra paso a paso para que vean el control saltando dentro y fuera del test. El teardown corre aunque el test falle — garantía crítica que a mano se pierde.</p></div>
+</section>
+
+<!-- 12 · STEPPER: ciclo de vida de la fixture -->
+<section class="slide" data-act="Acto 2 · Fixtures">
+  <div class="kicker">🧠 Visualizador · el salto del control</div>
+  <h2 data-anim="fade-up">Qué pasa en <span class="grad-text">await use(...)</span>, paso a paso</h2>
+  <div class="stepper" data-anim="fade-up">
+    <div>
+      <div class="st-code" id="fx-code">
+        <div class="cl" data-l="1">loginPage: <span class="tk-k">async</span> ({ page }, use) => {</div>
+        <div class="cl" data-l="2">  <span class="tk-k">const</span> login = <span class="tk-k">new</span> <span class="tk-f">LoginPage</span>(page);</div>
+        <div class="cl" data-l="3">  <span class="tk-k">await</span> login.<span class="tk-f">goto</span>();</div>
+        <div class="cl" data-l="4">  <span class="tk-k">await</span> <span class="tk-f">use</span>(login);   <span class="tk-c">// ⟵ frontera</span></div>
+        <div class="cl" data-l="5">  <span class="tk-k">await</span> page.<span class="tk-f">close</span>();</div>
+        <div class="cl" data-l="6">}</div>
+        <div class="cl" data-l="7"> </div>
+        <div class="cl" data-l="8"><span class="tk-f">test</span>(<span class="tk-s">"dashboard"</span>, <span class="tk-k">async</span> ({ loginPage }) => {</div>
+        <div class="cl" data-l="9">  <span class="tk-k">await</span> loginPage.<span class="tk-f">login</span>(EMAIL, PASS);</div>
+        <div class="cl" data-l="10">  <span class="tk-k">await</span> <span class="tk-f">expect</span>(dash).<span class="tk-f">toBeVisible</span>();</div>
+        <div class="cl" data-l="11">});</div>
+      </div>
+      <div class="st-ctrl">
+        <button id="fx-next">▶ Siguiente paso</button>
+        <button class="ghost" id="fx-reset">↺ Reiniciar</button>
+        <span class="st-stepn" id="fx-stepn">paso 0 / 6</span>
+      </div>
+    </div>
+    <div class="st-side">
+      <div class="st-panel"><h4>📍 ¿Dónde corre el control?</h4><div id="fx-where"><p style="font-size:.85rem;color:var(--text-3);margin:0">— en reposo —</p></div></div>
+      <div class="st-note" id="fx-note">Presiona "Siguiente paso": vas a ver el control saltar de la fixture al test y volver.</div>
+      <div class="st-out" id="fx-out"><div class="ln" style="color:var(--text-3);font-style:italic">consola…</div></div>
+    </div>
+  </div>
+  <div class="notes"><p>La slide que vuelve tangible la mecánica de use(). Pausa en el paso 4 (await use → el control SALTA al cuerpo del test, líneas 8-10) y en el paso 5 (el test terminó → el control VUELVE a la línea de abajo, page.close). Mensaje a martillar: el test ocurre "dentro" de await use(); por eso el teardown de abajo siempre se ejecuta al final. Hazlo dos veces si hace falta: este modelo mental es lo que confunde a casi todos al principio.</p></div>
+</section>
+
+<!-- 13 · Lazy + composición -->
+<section class="slide" data-act="Acto 2 · Fixtures">
+  <div class="zoomline"><span>page object</span><span class="on">fixtures</span><span>paralelización</span><span>kata</span></div>
+  <h2 data-anim="fade-up">Dos superpoderes: <span class="grad-text">perezosas y combinables</span> ⚡</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>😴 Lazy: solo se crea lo que pides</h3>
+      <pre class="code" style="font-size:clamp(.76rem,1.15vw,.93rem)">
+<span class="tk-c">// pide solo "api" → NO abre navegador</span>
+<span class="tk-f">test</span>(<span class="tk-s">"GET /orders"</span>, <span class="tk-k">async</span> ({ api }) => {
+  <span class="tk-k">await</span> api.orders.<span class="tk-f">getOrders</span>({ limit: <span class="tk-n">10</span> });
+});
+
+<span class="tk-c">// pide "ui" → SÍ abre navegador</span>
+<span class="tk-f">test</span>(<span class="tk-s">"ve la lista"</span>, <span class="tk-k">async</span> ({ ui }) => {
+  <span class="tk-k">await</span> ui.orders.<span class="tk-f">navigateTo</span>();
+});</pre>
+      <p style="margin-top:.7rem;font-size:.9rem">Playwright instancia <b>solo</b> las fixtures que el test nombra. Tests de API puros no pagan el costo de un navegador.</p>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>🧩 Combinables: fixtures sobre fixtures</h3>
+      <pre class="code" style="font-size:clamp(.76rem,1.15vw,.93rem)">
+base.<span class="tk-f">extend</span>({
+  <span class="tk-c">// authedUser DEPENDE de api</span>
+  authedUser: <span class="tk-k">async</span> ({ api }, use) => {
+    <span class="tk-k">const</span> user = <span class="tk-k">await</span> api.users.<span class="tk-f">create</span>();
+    <span class="tk-k">await</span> api.auth.<span class="tk-f">login</span>(user);
+    <span class="tk-k">await</span> <span class="tk-f">use</span>(user);
+    <span class="tk-k">await</span> api.users.<span class="tk-f">remove</span>(user.id); <span class="tk-c">// limpia</span>
+  },
+});</pre>
+      <p style="margin-top:.7rem;font-size:.9rem">Una fixture pide otras en su <code class="pill">({ ... })</code>. Playwright resuelve la cadena y el orden de limpieza por ti.</p>
+    </div>
+  </div>
+  <div class="callout" data-anim="fade-up"><span class="co-ico">🥋</span><p>Estos dos poderes son el motor de KATA: <code>{ api }</code> sin navegador, <code>{ ui }</code> con navegador, <code>{ test }</code> combinando ambos — fixtures que dependen de fixtures.</p></div>
+  <div class="notes"><p>Dos propiedades que justifican toda la inversión en fixtures: (1) Lazy — pedir solo { api } literalmente no abre navegador; es un ahorro de tiempo enorme en suites de API. Dato verídico del repo: la TestFixture expone api/ui/test y Playwright las instancia perezosamente. (2) Composición — una fixture lista otras en su destructuring y Playwright ordena setup y teardown en cascada. La callout conecta directo con KATA, que veremos en el acto 4: { api }, { ui }, { test } son exactamente estas fixtures combinadas.</p></div>
+</section>
+
+<!-- 14 · QUIZ 2 -->
+<section class="slide" data-act="Acto 2 · Fixtures" style="align-items:center">
+  <div class="quiz" data-quiz="q2">
+    <div class="quiz-tag">⭐ QUIZ 2 · Fixtures</div>
+    <h3 class="quiz-q">En una fixture, ¿qué hace exactamente <code style="color:var(--cyan)">await use(value)</code>?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Importa el valor desde otro archivo</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>Entrega <code>value</code> al test y pausa la fixture; al terminar el test, sigue con el teardown de abajo</span></button>
+      <button class="opt"><span class="key">C</span><span>Verifica que el valor no sea <code>undefined</code></span></button>
+    </div>
+    <div class="quiz-expl">💡 <code>use()</code> parte la fixture en dos: lo de <b>arriba</b> es setup, lo de <b>abajo</b> es teardown, y el <b>test corre en medio</b>. Por eso la limpieza ocurre siempre al final — incluso si el test falla. Es el sándwich setup → use → teardown.</div>
+  </div>
+  <div class="notes"><p>Valida EL concepto del acto. Si vieron el stepper, esto es cosecha directa. Opción C caza a quien confunde use con una validación. Cierre del acto: "POM ordenó los selectores, las fixtures ordenaron el setup/teardown… pero la suite sigue corriendo un test tras otro. Lentísima. El siguiente patrón ataca el RELOJ: paralelización."</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 3 · PARALELIZACIÓN -->
+<!-- ================================================================ -->
+
+<!-- 15 · El dolor: el reloj -->
+<section class="slide" data-act="Acto 3 · Paralelización">
+  <div class="zoomline"><span>page object</span><span>fixtures</span><span class="on">paralelización</span><span>kata</span></div>
+  <h2 data-anim="fade-up">Nuevo dolor: <span class="grad-text">300 tests, uno tras otro, 40 minutos</span> ⏳</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-c">// Secuencial: la suma de TODO</span>
+
+test 1  ████████        <span class="tk-c">8s</span>
+test 2          ██████  <span class="tk-c">6s</span>
+test 3                ████████ <span class="tk-c">…</span>
+                          ⌛ total = 8+6+...+N
+                          = la suite completa, sumada</pre>
+      <div class="callout warn" style="margin-top:1rem"><span class="co-ico">🐌</span><p>En CI, una suite secuencial de 300 tests bloquea cada PR media hora. El feedback lento mata el shift-left.</p></div>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🧩 El síntoma</h3><p>Tu máquina tiene 8 núcleos y usas <b>1</b>. Los otros 7 miran cómo un solo test corre a la vez.</p></div>
+      <div class="card hl" style="margin-top:.8rem"><h3>💡 La idea</h3><p>Repartir los tests entre varios <b>workers</b> (procesos) que corren <b>a la vez</b>. El reloj de pared baja al del worker más cargado, no a la suma.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>⚠️ El requisito</h3><p>Para correr en paralelo, los tests deben ser <b>independientes</b>: sin estado compartido, sin depender del orden.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>El dolor de la paralelización es el reloj de pared y se siente en CI. Encuadre del recurso desperdiciado: 8 núcleos, 1 en uso. La idea — workers en paralelo — y el requisito no negociable — independencia de tests — van juntos: el paralelismo es gratis SOLO si los tests no comparten estado. Eso conecta con la regla de independencia de KATA (cada test genera su propia data con faker). El simulador de la siguiente slide hace visible y tocable el ahorro.</p></div>
+</section>
+
+<!-- 16 · Cómo funciona: workers -->
+<section class="slide" data-act="Acto 3 · Paralelización">
+  <div class="zoomline"><span>page object</span><span>fixtures</span><span class="on">paralelización</span><span>kata</span></div>
+  <h2 data-anim="fade-up">El patrón: <span class="grad-text">workers = procesos aislados</span> 👷</h2>
+  <div class="cols">
+    <div data-stagger>
+      <div class="card"><h3>👷 Un worker = un proceso</h3><p>Playwright lanza varios <b>procesos de Node</b>. Cada uno toma tests del lote y los corre. Por defecto reparte tests a <code class="pill">~½ de tus núcleos</code>.</p></div>
+      <div class="card" style="margin-top:.7rem"><h3>🧱 Aislamiento total</h3><p>Cada worker tiene su <b>propio navegador</b> y sus <b>propias fixtures</b>. Lo que pasa en un worker no toca a otro — por eso la independencia importa.</p></div>
+      <div class="card hl" style="margin-top:.7rem"><h3>📂 Por defecto: archivos en paralelo</h3><p>Playwright corre <b>archivos</b> distintos en paralelo; los tests <b>dentro</b> de un archivo, en orden. <code class="pill">fullyParallel: true</code> paraleliza también dentro del archivo.</p></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.25s">
+      <pre class="code" style="font-size:clamp(.74rem,1.13vw,.92rem)">
+<span class="tk-c">// playwright.config.ts</span>
+<span class="tk-k">export default</span> <span class="tk-f">defineConfig</span>({
+  <span class="tk-c">// nº de procesos en paralelo</span>
+  workers: process.env.CI ? <span class="tk-n">4</span> : <span class="tk-k">undefined</span>,
+
+  <span class="tk-c">// paraleliza tests DENTRO de cada archivo</span>
+  fullyParallel: <span class="tk-k">true</span>,
+});
+
+<span class="tk-c">// control fino por bloque:</span>
+test.<span class="tk-f">describe</span>.<span class="tk-f">configure</span>({ mode: <span class="tk-s">"parallel"</span> });
+test.<span class="tk-f">describe</span>.<span class="tk-f">configure</span>({ mode: <span class="tk-s">"serial"</span> });</pre>
+      <div class="callout info" style="margin-top:.9rem"><span class="co-ico">🎚️</span><p><code>workers</code> = cuántos procesos. <code>fullyParallel</code> = si los tests de un mismo archivo también se reparten.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Modelo mental correcto y verídico: worker = proceso de Node con su propio navegador. Por defecto Playwright usa ~la mitad de los núcleos y paraleliza a nivel de ARCHIVO (no de test) salvo que pongas fullyParallel: true. mode "serial" fuerza orden dentro de un describe (úsalo solo cuando los tests genuinamente dependen entre sí — antipatrón a evitar). Datos del config son reales de Playwright. La siguiente slide lo vuelve interactivo: que la sala elija 1/2/4 workers y vea el reloj bajar.</p></div>
+</section>
+
+<!-- 17 · SIMULADOR de workers -->
+<section class="slide" data-act="Acto 3 · Paralelización">
+  <div class="kicker">🎮 Simulador · mueve los workers, mira el reloj</div>
+  <h2 data-anim="fade-up">Reparte 6 archivos entre <span class="grad-text">1, 2 o 4 workers</span> ⚙️</h2>
+  <div class="psim" data-anim="fade-up">
+    <div class="psim-top">
+      <span class="lbl">workers:</span>
+      <button class="psim-wbtn" data-w="1">1</button>
+      <button class="psim-wbtn on" data-w="2">2</button>
+      <button class="psim-wbtn" data-w="4">4</button>
+      <button class="psim-run" id="psim-run">▶ Ejecutar suite</button>
+      <button class="psim-reset" id="psim-reset">↺ Reset</button>
+    </div>
+    <div class="psim-lanes" id="psim-lanes"></div>
+    <div class="psim-stats">
+      <div class="psim-stat"><span class="k">Reloj de pared</span><span class="v clock" id="psim-clock">—</span></div>
+      <div class="psim-stat"><span class="k">Trabajo total (CPU)</span><span class="v" id="psim-total">15.0s</span></div>
+      <div class="psim-stat"><span class="k">Aceleración vs 1 worker</span><span class="v speed" id="psim-speed">—</span></div>
+    </div>
+  </div>
+  <div class="notes"><p>El widget estrella de la paralelización. Demo: arranca en 2 workers, ejecuta → reloj ~8s. Cambia a 4 → reloj ~6s, speedup ~2.5×. Cambia a 1 → reloj 15s, speedup 1×. Dos verdades que la sala debe ver: (1) el trabajo total de CPU NO cambia — 15s de cómputo siempre; lo que baja es el reloj de PARED. (2) La aceleración no es lineal: 4 workers no dan 4× porque el archivo más largo (4s) marca un piso — eso es balanceo de carga, no magia. Honestidad: con 6 archivos y un archivo de 4s, ningún número de workers baja de 4s. Gran momento para nombrar el límite real.</p></div>
+</section>
+
+<!-- 18 · Sharding + postura del repo -->
+<section class="slide" data-act="Acto 3 · Paralelización">
+  <div class="zoomline"><span>page object</span><span>fixtures</span><span class="on">paralelización</span><span>kata</span></div>
+  <h2 data-anim="fade-up">Más allá: <span class="grad-text">sharding</span> · y por qué este repo va con cuidado 🧭</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>🌐 Sharding: repartir entre máquinas</h3>
+      <pre class="code" style="font-size:clamp(.76rem,1.15vw,.93rem)">
+<span class="tk-c"># máquina 1 de 3 en CI</span>
+npx playwright test --shard=<span class="tk-n">1</span>/<span class="tk-n">3</span>
+<span class="tk-c"># máquina 2 de 3</span>
+npx playwright test --shard=<span class="tk-n">2</span>/<span class="tk-n">3</span>
+<span class="tk-c"># máquina 3 de 3</span>
+npx playwright test --shard=<span class="tk-n">3</span>/<span class="tk-n">3</span></pre>
+      <p style="margin-top:.7rem;font-size:.9rem"><b>Workers</b> = paralelo dentro de una máquina. <b>Shards</b> = paralelo entre <b>varias máquinas</b> de CI, y luego se fusionan los reportes.</p>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>🐢 La postura honesta de este repo</h3>
+      <pre class="code" style="font-size:clamp(.76rem,1.15vw,.93rem)">
+<span class="tk-c">// playwright.config.ts (real)</span>
+fullyParallel: <span class="tk-k">false</span>,
+retries: <span class="tk-n">0</span>,
+<span class="tk-c">// "Single worker for now - increase</span>
+<span class="tk-c">//  when tests are stable"</span>
+workers: <span class="tk-n">1</span>,</pre>
+      <div class="callout" style="margin-top:.8rem"><span class="co-ico">🎯</span><p>Primero <b>determinismo</b>, después velocidad. Con la suite joven se corre en serie para cazar dependencias ocultas; el paralelismo se sube cuando los tests ya son sólidos.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Dos cierres del acto. Sharding: el siguiente nivel arriba de workers — distribuye entre MÁQUINAS de CI con --shard=i/n y fusiona reportes (blob report + merge-reports). Y la honestidad del repo: el playwright.config.ts REAL trae workers:1, fullyParallel:false, retries:0 con el comentario "increase when tests are stable". Es una decisión deliberada, no un olvido: primero garantizas que los tests son deterministas e independientes, y SOLO entonces subes workers. Enseña el principio: paralelizar tests frágiles multiplica la flakiness, no la velocidad útil.</p></div>
+</section>
+
+<!-- 19 · QUIZ 3 -->
+<section class="slide" data-act="Acto 3 · Paralelización" style="align-items:center">
+  <div class="quiz" data-quiz="q3">
+    <div class="quiz-tag">⭐ QUIZ 3 · Paralelización</div>
+    <h3 class="quiz-q">Subes de 1 a 4 workers y la suite pasa de 40 a 12 min. ¿Qué bajó?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>El trabajo total de CPU — se ejecuta menos código</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>El <b>reloj de pared</b> — el mismo trabajo se reparte entre 4 procesos a la vez</span></button>
+      <button class="opt"><span class="key">C</span><span>El número de tests — Playwright salta los repetidos</span></button>
+    </div>
+    <div class="quiz-expl">💡 El cómputo total es idéntico: se ejecutan los mismos tests, el mismo código. Lo que cambia es el <b>tiempo de pared</b>, porque 4 workers trabajan en paralelo. Y el límite lo pone el worker más cargado — por eso 4 workers casi nunca dan exactamente 4×.</div>
+  </div>
+  <div class="notes"><p>Refuerza la distinción que el simulador hizo visible: trabajo total (constante) vs reloj de pared (lo que baja). Opción A es el malentendido más común. Si en el simulador notaron que 4 workers no daban 4×, este quiz lo formaliza. Transición al cierre: "POM, fixtures y paralelización… ¿cómo se viven los tres juntos, a escala, en un proyecto real? Eso es KATA."</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 4 · KATA -->
+<!-- ================================================================ -->
+
+<!-- 20 · KATA = síntesis -->
+<section class="slide" data-act="Acto 4 · KATA">
+  <div class="zoomline"><span>page object</span><span>fixtures</span><span>paralelización</span><span class="on">kata</span></div>
+  <h2 data-anim="fade-up">KATA: <span class="grad-text">los tres patrones, ordenados en capas</span> 🥋</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <p style="margin-bottom:.8rem">KATA (<b>Component Action Test Architecture</b>) no inventa nada nuevo: <b>organiza</b> lo que ya viste en una arquitectura de 4 capas, donde cada capa <code class="pill">extends</code> la anterior.</p>
+      <div class="cards" data-stagger>
+        <div class="card"><h3>🎁 POM → capa de Componentes</h3><p>Tu <code class="pill">LoginPage</code> es un componente de dominio. Ahí viven las <b>ATCs</b>.</p></div>
+        <div class="card"><h3>🔧 Fixtures → capa 4</h3><p><code class="pill">{ api }</code>, <code class="pill">{ ui }</code>, <code class="pill">{ test }</code> inyectan los componentes ya listos.</p></div>
+        <div class="card"><h3>⚙️ Paralelización → config</h3><p>La misma <code class="pill">playwright.config.ts</code>: workers, projects, dependencias.</p></div>
+      </div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.25s">
+      <pre class="code" style="font-size:clamp(.74rem,1.13vw,.92rem)">
+<span class="tk-c">// La cadena de herencia REAL del repo</span>
+
+<span class="tk-k">class</span> TestContext { ... }        <span class="tk-c">// L1</span>
+<span class="tk-k">class</span> UiBase <span class="tk-k">extends</span> TestContext  <span class="tk-c">// L2</span>
+<span class="tk-k">class</span> LoginPage <span class="tk-k">extends</span> UiBase  <span class="tk-c">// L3 ⟵ tu POM</span>
+
+<span class="tk-c">// y la fixture los junta:</span>
+<span class="tk-k">class</span> UiFixture {
+  login = <span class="tk-k">new</span> <span class="tk-f">LoginPage</span>(options);
+}</pre>
+      <div class="callout" style="margin-top:.85rem"><span class="co-ico">🧬</span><p>El <code>extends</code> que dominaste es el esqueleto. KATA es Page Objects + Fixtures con capas y nombres.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Tesis del acto: KATA no es un quinto concepto, es la SÍNTESIS de los tres anteriores en una estructura. Mapea explícito: POM=componentes (capa 3), fixtures=capa 4, paralelización=config. La cadena TestContext → UiBase → LoginPage es real y verídica del repo (kata-architecture.md). Mensaje que baja el miedo: si entendiste extends, fixtures y POM, ya entiendes el 90% de KATA — solo falta el vocabulario y el orden de las capas, que viene ahora.</p></div>
+</section>
+
+<!-- 21 · Las 4 capas -->
+<section class="slide" data-act="Acto 4 · KATA">
+  <div class="zoomline"><span>page object</span><span>fixtures</span><span>paralelización</span><span class="on">kata</span></div>
+  <h2 data-anim="fade-up" style="text-align:center">Las <span class="grad-text">4 capas</span> de KATA 🏛️</h2>
+  <div class="kata-stack" data-stagger style="margin-top:.4rem">
+    <div class="layer">L4 · Fixtures (DI)<span class="ly-note">TestFixture · ApiFixture · UiFixture — inyectan todo</span></div>
+    <div class="arrow">↑ usa</div>
+    <div class="layer">L3.5 · Steps <span class="ly-note">cadenas de ATCs reutilizables (precondiciones)</span></div>
+    <div class="arrow">↑ usa</div>
+    <div class="layer star">⭐ L3 · Componentes de dominio <span class="ly-note" style="color:var(--green)">LoginPage · UsersApi — aquí viven las ATCs</span></div>
+    <div class="arrow">↑ extends</div>
+    <div class="layer">L2 · Bases <span class="ly-note">ApiBase (HTTP) · UiBase (Playwright)</span></div>
+    <div class="arrow">↑ extends</div>
+    <div class="layer">L1 · TestContext <span class="ly-note">config · logger · faker · entorno</span></div>
+  </div>
+  <div class="callout info" data-anim="fade-up" style="max-width:760px;margin:1.2rem auto 0"><span class="co-ico">📐</span><p>Regla única: una capa superior puede usar una inferior, <b>nunca</b> al revés. Tu Page Object (L3, estrella) es el corazón — todo lo demás existe para servirlo o consumirlo.</p></div>
+  <div class="notes"><p>El mapa de KATA, verídico (kata-architecture.md §1). De abajo arriba: TestContext (utilidades globales), Bases (helpers HTTP/Playwright), Componentes/ATCs (la estrella, tu POM), Steps (cadenas reutilizables para precondiciones, opcional), Fixtures (DI). La regla de direccionalidad (superior usa inferior, nunca al revés) es la que mantiene el orden. Marca la capa estrella: es donde el equipo pasa el 90% del tiempo escribiendo ATCs. El resto del andamiaje ya viene hecho en el boilerplate.</p></div>
+</section>
+
+<!-- 22 · ATC + decorador -->
+<section class="slide" data-act="Acto 4 · KATA">
+  <div class="zoomline"><span>page object</span><span>fixtures</span><span>paralelización</span><span class="on">kata</span></div>
+  <h2 data-anim="fade-up">La pieza nueva: <span class="grad-text">la ATC</span> 🎯</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <pre class="code" style="font-size:clamp(.74rem,1.14vw,.93rem)">
+<span class="tk-k">class</span> LoginPage <span class="tk-k">extends</span> UiBase {
+
+  <span class="tk-d">@atc</span>(<span class="tk-s">"PROJ-101"</span>)
+  <span class="tk-k">async</span> <span class="tk-f">loginSuccessfully</span>(creds) {
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.<span class="tk-f">fillAndSubmit</span>(creds);
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">waitForURL</span>(
+      url => !url.pathname.<span class="tk-f">includes</span>(<span class="tk-s">"/login"</span>));
+    <span class="tk-k">await</span> <span class="tk-f">expect</span>(<span class="tk-k">this</span>.page)
+      .<span class="tk-k">not</span>.<span class="tk-f">toHaveURL</span>(<span class="tk-s">/.*\/login.*/</span>);
+  }
+}</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🎯 ATC = un caso de prueba completo</h3><p><b>A</b>cceptance <b>T</b>est <b>C</b>ase: no un clic suelto, sino un <b>mini-flujo</b> entero (precondición → acción → aserción fija).</p></div>
+      <div class="card hl" style="margin-top:.7rem"><h3 style="color:var(--yellow)"><code style="font-size:.85em">@atc("PROJ-101")</code></h3><p>El decorador ata la ATC a su <b>ticket</b> de Jira 1:1. Da trazabilidad y tracing automático. Es un método con etiqueta.</p></div>
+      <div class="card" style="margin-top:.7rem"><h3>🧱 Atómica</h3><p>Una ATC <b>nunca</b> llama a otra ATC. ¿Cadenas reutilizables? Eso es un <b>Step</b> (capa 3.5).</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>La ÚNICA pieza realmente nueva de KATA respecto a lo que ya saben: la ATC y el decorador @atc. Código real, adaptado del LoginPage del repo (PROJ-101, loginSuccessfully). Define ATC: caso de prueba completo (mini-flujo), no una interacción. El decorador @atc('TICKET') la liga a Jira 1:1 — trazabilidad. Reglas duras a mencionar sin agobiar: ATC atómica (no llama a otra ATC), aserciones fijas dentro / de negocio fuera (la regla del acto 1, ahora con nombre KATA). Un decorador es solo "un método con una etiqueta que añade comportamiento" — no te metas en la mecánica de decorators aquí.</p></div>
+</section>
+
+<!-- 23 · STEPPER: trazar una ATC por las capas -->
+<section class="slide" data-act="Acto 4 · KATA">
+  <div class="kicker">🧠 Trazador · sigue una llamada por las 4 capas</div>
+  <h2 data-anim="fade-up">Un test llama <span class="grad-text">ui.login.loginSuccessfully()</span> — ¿por dónde viaja?</h2>
+  <div class="stepper" data-anim="fade-up">
+    <div>
+      <div class="st-code" id="kt-code">
+        <div class="cl" data-l="1"><span class="tk-f">test</span>(<span class="tk-s">"PROJ-101: login"</span>, <span class="tk-k">async</span> ({ ui }) => {</div>
+        <div class="cl" data-l="2">  <span class="tk-k">await</span> ui.login.<span class="tk-f">goto</span>();</div>
+        <div class="cl" data-l="3">  <span class="tk-k">await</span> ui.login.<span class="tk-f">loginSuccessfully</span>(creds);</div>
+        <div class="cl" data-l="4">});</div>
+        <div class="cl" data-l="5"> </div>
+        <div class="cl" data-l="6"><span class="tk-c">// L4</span> UiFixture.login = <span class="tk-k">new</span> <span class="tk-f">LoginPage</span>(opts)</div>
+        <div class="cl" data-l="7"><span class="tk-c">// L3</span> <span class="tk-k">class</span> LoginPage <span class="tk-k">extends</span> UiBase</div>
+        <div class="cl" data-l="8"><span class="tk-c">// L2</span> <span class="tk-k">class</span> UiBase <span class="tk-k">extends</span> TestContext</div>
+        <div class="cl" data-l="9"><span class="tk-c">// L1</span> <span class="tk-k">class</span> TestContext { config, faker }</div>
+      </div>
+      <div class="st-ctrl">
+        <button id="kt-next">▶ Siguiente paso</button>
+        <button class="ghost" id="kt-reset">↺ Reiniciar</button>
+        <span class="st-stepn" id="kt-stepn">paso 0 / 5</span>
+      </div>
+    </div>
+    <div class="st-side">
+      <div class="st-panel"><h4>🏛️ Capa activa</h4><div id="kt-where"><p style="font-size:.85rem;color:var(--text-3);margin:0">— en reposo —</p></div></div>
+      <div class="st-note" id="kt-note">Presiona "Siguiente paso": vas a seguir la llamada bajando por las 4 capas de KATA.</div>
+    </div>
+  </div>
+  <div class="notes"><p>Cierra el círculo: muestra que una sola línea de test (ui.login.loginSuccessfully) atraviesa las 4 capas. Paso 1: el test pide la fixture { ui } (L4). Paso 2: la fixture ya tiene LoginPage instanciada (L4→L3). Paso 3: loginSuccessfully es la ATC en LoginPage (L3). Paso 4: usa helpers de Playwright heredados de UiBase (L2). Paso 5: que a su vez heredan config/faker de TestContext (L1). Mensaje: el test escribe UNA línea legible; las 4 capas hacen el trabajo pesado por debajo. Eso es la arquitectura pagando dividendos.</p></div>
+</section>
+
+<!-- 24 · Selección de fixture en KATA -->
+<section class="slide" data-act="Acto 4 · KATA">
+  <div class="zoomline"><span>page object</span><span>fixtures</span><span>paralelización</span><span class="on">kata</span></div>
+  <h2 data-anim="fade-up">En la práctica: <span class="grad-text">pides la fixture según lo que pruebas</span> 🎚️</h2>
+  <table class="cmp" data-anim="fade-up">
+    <thead><tr><th>Tipo de test</th><th>Fixture</th><th>¿Navegador?</th><th>Cuándo</th></tr></thead>
+    <tbody>
+      <tr><td>API pura (integration)</td><td><code>{ api }</code></td><td>No</td><td>Testing de API. Default en <code>tests/integration/</code></td></tr>
+      <tr><td>Solo UI</td><td><code>{ ui }</code></td><td>Sí</td><td>Flujo de UI sin setup por API</td></tr>
+      <tr><td>Híbrido</td><td><code>{ test }</code></td><td>Sí</td><td>Setup por API + acción UI + verificación API</td></tr>
+      <tr><td>Precondiciones repetidas</td><td><code>{ steps }</code></td><td>Depende</td><td>3+ ATCs repetidas en 3+ archivos</td></tr>
+    </tbody>
+  </table>
+  <div class="cols" style="margin-top:1.1rem">
+    <div data-anim="slide-l">
+      <pre class="code" style="font-size:clamp(.74rem,1.12vw,.92rem)">
+<span class="tk-c">// API pura — NO abre navegador (lazy)</span>
+<span class="tk-f">test</span>(<span class="tk-s">"PROJ-7: lista pedidos"</span>, <span class="tk-k">async</span> ({ api }) => {
+  <span class="tk-k">await</span> api.orders.<span class="tk-f">getOrders</span>({ limit: <span class="tk-n">10</span> });
+});</pre>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <pre class="code" style="font-size:clamp(.74rem,1.12vw,.92rem)">
+<span class="tk-c">// Híbrido — crea por API, verifica por UI</span>
+<span class="tk-f">test</span>(<span class="tk-s">"PROJ-9: aparece en lista"</span>, <span class="tk-k">async</span> ({ test }) => {
+  <span class="tk-k">const</span> [, o] = <span class="tk-k">await</span> test.api.orders.<span class="tk-f">create</span>(data);
+  <span class="tk-k">await</span> test.ui.orders.<span class="tk-f">verifyVisible</span>(o.id);
+});</pre>
+    </div>
+  </div>
+  <div class="notes"><p>Cierre operativo y verídico (kata-architecture.md §7): la tabla de selección de fixture es decisión diaria del equipo. La lazy-init del acto 2 aquí es regla de oro: { api } no abre navegador → suites de API muchísimo más rápidas. El { test } híbrido es la joya: crea estado por API (rápido) y verifica por UI (realista), compartiendo el mismo contexto. Estos snippets son el patrón real del repo. Con esto, el alumno ya sabe LEER cualquier test del repo y ELEGIR su fixture.</p></div>
+</section>
+
+<!-- 25 · QUIZ 4 -->
+<section class="slide" data-act="Acto 4 · KATA" style="align-items:center">
+  <div class="quiz" data-quiz="q4">
+    <div class="quiz-tag">⭐ QUIZ 4 · KATA</div>
+    <h3 class="quiz-q">Vas a probar <b>solo un endpoint</b> <code style="color:var(--cyan)">GET /orders</code>, sin tocar UI. ¿Qué fixture pides?</h3>
+    <div class="quiz-opts">
+      <button class="opt" data-ok="1"><span class="key">A</span><span><code>{ api }</code> — API pura, no abre navegador (lazy)</span></button>
+      <button class="opt"><span class="key">B</span><span><code>{ ui }</code> — siempre conviene tener el navegador abierto</span></button>
+      <button class="opt"><span class="key">C</span><span><code>{ test }</code> — para estar seguros, pide todo</span></button>
+    </div>
+    <div class="quiz-expl">💡 <code>{ api }</code>: como las fixtures son <b>lazy</b>, pedir solo <code>api</code> NO arranca un navegador — el test corre en milisegundos. Pedir <code>{ ui }</code> o <code>{ test }</code> "por si acaso" desperdicia segundos de arranque de browser en cada test. Pide lo mínimo que uses.</p></div>
+  </div>
+  <div class="notes"><p>Integra lazy-init (acto 2) + selección de fixture (acto 4). La respuesta correcta exige recordar que { api } no abre navegador. Opciones B y C son el antipatrón "pide de más por si acaso", que en una suite grande cuesta minutos. Si aciertan masivo, la sesión está cumplida: saben elegir fixture con criterio de costo.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 5 · CIERRE -->
+<!-- ================================================================ -->
+
+<!-- 26 · QUIZ 5 integrador -->
+<section class="slide" data-act="Acto 5 · Cierre" style="align-items:center">
+  <div class="quiz" data-quiz="q5">
+    <div class="quiz-tag">⭐ QUIZ 5 · El integrador</div>
+    <h3 class="quiz-q">Conecta cada dolor con el patrón que lo cura:</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>selector regado → Fixtures · setup repetido → POM · suite lenta → KATA</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>selector regado → <b>POM</b> · setup/teardown repetido → <b>Fixtures</b> · suite lenta → <b>Paralelización</b></span></button>
+      <button class="opt"><span class="key">C</span><span>todos los dolores → un solo patrón mágico</span></button>
+    </div>
+    <div class="quiz-expl">💡 Cada patrón ataca un dolor distinto: <b>POM</b> centraliza selectores, <b>Fixtures</b> ordenan el setup/teardown, <b>Paralelización</b> baja el reloj. Y <b>KATA</b> es el marco que los apila en capas para que escalen juntos. Cuatro herramientas, cuatro problemas.</div>
+  </div>
+  <div class="notes"><p>El quiz que amarra el arco completo de la sesión: dolor→patrón. Es la tabla de la slide 2, ahora como evaluación. Respuesta correcta = el alumno internalizó que los patrones no son moda, son respuestas a dolores específicos. KATA cierra como el meta-patrón que los organiza. Tras este quiz, celebra y pasa al score final.</p></div>
+</section>
+
+<!-- 27 · Dónde vive en el repo -->
+<section class="slide" data-act="Acto 5 · Cierre">
+  <div class="kicker">Del concepto al repositorio</div>
+  <h2 data-anim="fade-up">Dónde vive cada patrón <span class="grad-text">en este repo</span> 🗂️</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code" style="font-size:clamp(.72rem,1.1vw,.9rem)">
+tests/
+  components/
+    TestContext.ts        <span class="tk-c">// L1</span>
+    ui/UiBase.ts          <span class="tk-c">// L2</span>
+    ui/LoginPage.ts       <span class="tk-c">// L3 · POM + ATCs</span>
+    api/ApiBase.ts        <span class="tk-c">// L2</span>
+    steps/*.ts            <span class="tk-c">// L3.5 · Steps</span>
+    TestFixture.ts        <span class="tk-c">// L4 · Fixtures</span>
+    UiFixture.ts          <span class="tk-c">// L4</span>
+  e2e/**                  <span class="tk-c">// tests UI (+API)</span>
+  integration/**          <span class="tk-c">// tests API puros</span>
+playwright.config.ts      <span class="tk-c">// workers, projects</span></pre>
+    </div>
+    <div data-stagger>
+      <div class="card hl"><h3>📍 Tu zona de trabajo</h3><p>El 90% del tiempo: escribir <b>ATCs</b> en <code class="pill">components/ui/</code> y <code class="pill">components/api/</code>, y orquestarlas en <code class="pill">e2e/</code> · <code class="pill">integration/</code>.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🛠️ Ya hecho por ti</h3><p>TestContext, las Bases y las Fixtures vienen en el boilerplate. Heredas helpers; no los reescribes.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>📖 Para profundizar</h3><p>Skill <code class="pill">/test-automation</code> + <code class="pill">references/kata-architecture.md</code>: reglas completas de ATC, fixtures y Steps.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Aterriza todo en la estructura REAL de carpetas del repo (verídica). Mensaje tranquilizador: las capas bajas ya están construidas en el boilerplate; el alumno trabaja sobre todo en componentes (ATCs) y tests. Punteros reales para seguir: la skill /test-automation y references/kata-architecture.md tienen las 10 reglas de ATC, la tabla de fixtures y el módulo Steps al detalle. Esta slide es el puente del aprendizaje a la práctica del lunes.</p></div>
+</section>
+
+<!-- 28 · Recap visual -->
+<section class="slide" data-act="Acto 5 · Cierre">
+  <h2 data-anim="fade-up" style="text-align:center">Cuatro patrones, <span class="grad-text">un mapa</span> 🗺️</h2>
+  <table class="cmp" data-anim="fade-up" style="max-width:980px;margin:1rem auto 0">
+    <thead><tr><th>Patrón</th><th>Dolor que cura</th><th>Pieza clave</th><th>En KATA</th></tr></thead>
+    <tbody>
+      <tr><td>🎁 Page Object</td><td>selectores regados</td><td><code>class</code> = una página</td><td>Componentes (L3)</td></tr>
+      <tr><td>🔧 Fixtures</td><td>setup/teardown repetido</td><td><code>test.extend</code> + <code>use()</code></td><td>Fixtures (L4)</td></tr>
+      <tr><td>⚙️ Paralelización</td><td>suite lentísima</td><td><code>workers</code> aislados</td><td>config + projects</td></tr>
+      <tr><td>🥋 KATA</td><td>todo junto, a escala</td><td>4 capas + ATC</td><td>el marco completo</td></tr>
+    </tbody>
+  </table>
+  <div class="callout" data-anim="fade-up" style="max-width:780px;margin:1.3rem auto 0"><span class="co-ico">🏆</span><p>Cruzaste la frontera entre <b>escribir tests</b> y <b>diseñar una arquitectura de pruebas</b>. Lo mismo que hace un SDET senior, ahora con nombre y forma.</p></div>
+  <div class="notes"><p>El recap de una mirada: tabla que cruza patrón × dolor × pieza × lugar en KATA. Pídeles que la fotografíen o péguenla en Confluence — es el resumen portátil de la sesión. Nombra el logro exacto: pasaron de "escribir tests" a "diseñar arquitectura de pruebas", que es el salto de QA a SDET. Prepara el score final.</p></div>
+</section>
+
+<!-- 29 · Cierre / score -->
+<section class="slide" data-act="Acto 5 · Cierre" style="align-items:center;text-align:center">
+  <div class="kicker" data-anim="fade-up">Misión cumplida</div>
+  <h2 data-anim="fade-up" style="animation-delay:.1s">Tu puntaje final</h2>
+  <div id="final-score" data-anim="pop">— / 6</div>
+  <p id="final-msg" data-anim="fade-up" style="animation-delay:.25s;max-width:580px"></p>
+  <div class="cards c3" data-stagger style="margin-top:1.5rem;max-width:1020px">
+    <div class="card"><div class="ico">🏠</div><h3>Re-juega en casa</h3><p>Este archivo corre offline: vuelve al simulador POM, al de workers y a los steppers. Toca todo.</p></div>
+    <div class="card"><div class="ico">🧪</div><h3>Reto puente</h3><p>Abre <code class="pill">tests/components/ui/LoginPage.ts</code> del repo y ubica: capa, ATC, decorador <code class="pill">@atc</code>, aserciones fijas.</p></div>
+    <div class="card hl"><div class="ico">🥷</div><h3>Próximo paso</h3><p>Escribe tu primera ATC real con <code class="pill">/test-automation</code> — Plan → Code → Review sobre KATA.</p></div>
+  </div>
+  <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.3rem;color:var(--text-3);font-size:.93rem">Hoy: POM a fondo → Fixtures (<code>use()</code>) → Paralelización (workers) → <b style="color:var(--text-2)">KATA</b>. De script a arquitectura.</p>
+  <div class="notes"><p>Celebra el score y nombra el logro: hoy entendieron los cuatro patrones que sostienen cualquier framework profesional, vividos en vivo, no memorizados. Reto puente sin computadora: abrir el LoginPage.ts real e identificar cada concepto en código de producción. Próximo paso accionable: la skill /test-automation para escribir su primera ATC real. Comparte el archivo HTML — funciona offline para repasar.</p></div>
+</section>
+
+<!-- 30 · Gracias -->
+<section class="slide" data-act="Acto 5 · Cierre" style="align-items:center;text-align:center">
+  <div class="cover-inner">
+    <div class="kicker" data-anim="fade-up">QA Engineering · Automation Patterns</div>
+    <h1 data-anim="fade-up" style="animation-delay:.1s">De script <span class="grad-text">a arquitectura</span> 🏛️</h1>
+    <p data-anim="fade-up" style="animation-delay:.2s;max-width:660px;font-size:clamp(1.02rem,1.7vw,1.3rem)">
+      POM · Fixtures · Paralelización · KATA.<br>Cuatro patrones, una forma de pensar las pruebas.</p>
+    <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
+      <span class="pill">¿Preguntas?</span><span class="pill">/test-automation</span><span class="pill">references/kata-architecture.md</span>
+    </div>
+  </div>
+  <div class="notes"><p>Slide de cierre y espacio para preguntas. Reabre el simulador de workers o el stepper de use() si alguien quiere ver algo otra vez — son la mejor herramienta para resolver dudas en vivo. Punteros finales: la skill /test-automation y la referencia de arquitectura KATA. Gracias y a escribir ATCs.</p></div>
+</section>
+
+<script>
+/* ================================================================
+   RUNTIME — navegación, quizzes, playgrounds, simuladores. Sin deps.
+   ================================================================ */
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const clamp = (v,a,b)=> Math.max(a, Math.min(b,v));
+
+/* simple syntax highlighter (escaped input) */
+function hl(src){
+  return esc(src).replace(
+    /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|of|while|async|await|import|from|export|new|class|extends|super|this|constructor)\b|\b(true|false|null|undefined)\b|\b(\d+(?:\.\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()/g,
+    function(m,c,s,k,b,n,f){
+      if(c) return '<span class="tk-c">'+c+'</span>';
+      if(s) return '<span class="tk-s">'+s+'</span>';
+      if(k) return '<span class="tk-k">'+k+'</span>';
+      if(b) return '<span class="tk-b">'+b+'</span>';
+      if(n) return '<span class="tk-n">'+n+'</span>';
+      if(f) return '<span class="tk-f">'+f+'</span>';
+      return m;
+    });
+}
+
+/* ---------- slide navigation ---------- */
+const slides = $$('.slide');
+const N = slides.length;
+let cur = 0;
+const progress = $('#progress'), counter = $('#counter'), actLabel = $('#act-label');
+const drawer = $('#notes-drawer'), ndContent = $('#nd-content');
+
+function go(i){
+  cur = clamp(i, 0, N-1);
+  slides.forEach((s,k)=> s.classList.toggle('is-active', k===cur));
+  progress.style.width = ((cur+1)/N*100) + '%';
+  counter.textContent = (cur+1) + ' / ' + N;
+  actLabel.textContent = slides[cur].dataset.act || '';
+  history.replaceState(null,'','#/'+(cur+1));
+  const notes = $('.notes', slides[cur]);
+  ndContent.innerHTML = notes ? notes.innerHTML : '<p>(sin notas para esta slide)</p>';
+  if(cur === N-1) renderFinal();
+  requestAnimationFrame(()=>{ $$('textarea', slides[cur]).forEach(t=>{ if(t.__fit) t.__fit(); }); });
+}
+const fromHash = ()=>{ const m = location.hash.match(/^#\/(\d+)/); go(m ? parseInt(m[1],10)-1 : 0); };
+window.addEventListener('hashchange', fromHash);
+
+document.addEventListener('keydown', e=>{
+  const t = e.target;
+  if(t && (t.tagName==='TEXTAREA' || t.tagName==='INPUT')) return;
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown') { e.preventDefault(); go(cur+1); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp') { e.preventDefault(); go(cur-1); }
+  else if(e.key==='Home') go(0);
+  else if(e.key==='End') go(N-1);
+  else if(e.key==='f'||e.key==='F'){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+  else if(e.key==='n'||e.key==='N'||e.key==='s'||e.key==='S') drawer.classList.toggle('open');
+  else if(e.key==='Escape') drawer.classList.remove('open');
+});
+
+/* ---------- confetti ---------- */
+const cv = $('#confetti-canvas'), cx = cv.getContext('2d');
+let parts = [], rafC = null;
+function sizeCanvas(){ cv.width = innerWidth; cv.height = innerHeight; }
+sizeCanvas(); window.addEventListener('resize', sizeCanvas);
+const COLORS = ['#7aa2f7','#bb9af7','#7dcfff','#9ece6a','#ff9e64','#e0af68','#f7768e'];
+function confetti(x, y, n){
+  for(let i=0;i<(n||70);i++){
+    const a = Math.PI*2*Math.random(), v = 3+Math.random()*7;
+    parts.push({x:x, y:y, vx:Math.cos(a)*v, vy:Math.sin(a)*v-3, g:.22, life:1, d:.012+Math.random()*.012,
+      c:COLORS[(Math.random()*COLORS.length)|0], r:3+Math.random()*4, rot:Math.random()*Math.PI});
+  }
+  if(!rafC) tick();
+}
+function tick(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts = parts.filter(p=>p.life>0);
+  for(const p of parts){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.life-=p.d; p.rot+=.08;
+    cx.save(); cx.globalAlpha=Math.max(p.life,0); cx.translate(p.x,p.y); cx.rotate(p.rot);
+    cx.fillStyle=p.c; cx.fillRect(-p.r,-p.r/2,p.r*2,p.r); cx.restore();
+  }
+  rafC = parts.length ? requestAnimationFrame(tick) : null;
+}
+
+/* ---------- quiz engine ---------- */
+const TOTAL_Q = $$('.quiz').length;
+const answered = {};
+let score = 0;
+/* ---------- quiz score persistence ---------- */
+const SCORE_KEY = 'automation-patterns.es.html-score:' + location.pathname;
+let qstate = { q:{}, score:0 };
+try { const _s = JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); if(_s && typeof _s === 'object'){ qstate.q = _s.q || {}; qstate.score = _s.score || 0; } } catch(e){ qstate = { q:{}, score:0 }; }
+score = qstate.score;
+function saveQuiz(){ qstate.score = score; try { localStorage.setItem(SCORE_KEY, JSON.stringify(qstate)); } catch(e){} }
+const chip = $('#score-chip');
+function updateChip(){
+  chip.textContent = '⭐ ' + score + '/' + TOTAL_Q;
+  chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump');
+}
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz;
+  $$('.opt', qz).forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const ok = btn.dataset.ok === '1';
+      const first = !answered[id];
+      if(first) answered[id] = true;
+      if(ok){
+        btn.classList.add('correct');
+        qz.classList.add('locked');
+        $('.quiz-expl', qz).classList.add('show');
+        const r = btn.getBoundingClientRect();
+        confetti(r.left + r.width/2, r.top + r.height/2, 80);
+        if(first){ score++; updateChip(); }
+      } else {
+        btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong');
+      }
+      qstate.q[id] = { a:true, c: ok || (qstate.q[id] && qstate.q[id].c) || false };
+      saveQuiz();
+    });
+  });
+});
+/* ---------- restore answered quizzes on load (no confetti) ---------- */
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz, st = qstate.q[id];
+  if(!st) return;
+  if(st.a) answered[id] = true;
+  if(st.c){
+    const okBtn = $('.opt[data-ok="1"]', qz);
+    if(okBtn) okBtn.classList.add('correct');
+    qz.classList.add('locked');
+    const ex = $('.quiz-expl', qz);
+    if(ex) ex.classList.add('show');
+  }
+});
+
+function renderFinal(){
+  $('#final-score').textContent = score + ' / ' + TOTAL_Q;
+  const pct = score/TOTAL_Q;
+  $('#final-msg').textContent =
+    pct === 1 ? '¡Perfecto! POM, Fixtures, Paralelización y KATA dominados. Piensas como SDET. 🏆' :
+    pct >= .75 ? '¡Excelente! La base de arquitectura está firme — ya lees y diseñas tests con criterio. 💪' :
+    pct >= .5 ? 'Muy buen avance. Re-juega el stepper de use() y el simulador de workers — la segunda pasada lo fija. 👍' :
+    'Los patrones toman dos vueltas, es normal. Re-juega los simuladores de este archivo: la próxima, hace click. 🌱';
+  setTimeout(()=>{ confetti(innerWidth/2, innerHeight*0.32, 140); }, 450);
+}
+
+/* ---------- cover FX: constellation ---------- */
+(function(){
+  const c = $('#fx-cover'); if(!c) return;
+  const ctx = c.getContext('2d');
+  let pts = [], raf = null;
+  function size(){ c.width = c.offsetWidth; c.height = c.offsetHeight; }
+  function init(){
+    size();
+    pts = Array.from({length:70}, ()=>({
+      x:Math.random()*c.width, y:Math.random()*c.height,
+      vx:(Math.random()-.5)*.45, vy:(Math.random()-.5)*.45, r:1+Math.random()*1.8}));
+  }
+  function frame(){
+    if(!slides[0].classList.contains('is-active')){ raf=null; return; }
+    ctx.clearRect(0,0,c.width,c.height);
+    for(const p of pts){
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>c.width) p.vx*=-1;
+      if(p.y<0||p.y>c.height) p.vy*=-1;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7);
+      ctx.fillStyle='rgba(122,162,247,.55)'; ctx.fill();
+    }
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const a=pts[i], b=pts[j], dx=a.x-b.x, dy=a.y-b.y, d=dx*dx+dy*dy;
+      if(d<150*150){
+        ctx.strokeStyle='rgba(187,154,247,'+(0.16*(1-d/22500)).toFixed(3)+')';
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', init);
+  init();
+  new MutationObserver(()=>{ if(slides[0].classList.contains('is-active') && !raf) raf=requestAnimationFrame(frame); })
+    .observe(slides[0], {attributes:true, attributeFilter:['class']});
+  raf = requestAnimationFrame(frame);
+})();
+
+/* ---------- live cells (async-capable real JS) ---------- */
+function fmt(v){
+  if(typeof v==='string') return v;
+  if(typeof v==='object' && v!==null){ try{ return JSON.stringify(v); }catch(e){ return String(v); } }
+  return String(v);
+}
+const AsyncFn = Object.getPrototypeOf(async function(){}).constructor;
+$$('.livecell').forEach(cell=>{
+  const ta = $('textarea', cell), pre = $('.lc-hl', cell), out = $('.lc-console', cell);
+  if(!ta || !pre) return;
+  if(ta.id === 'sim-src') return; // simulator wires its own
+  const initial = ta.value;
+  const render = ()=>{ pre.innerHTML = hl(ta.value) + '\n'; };
+  const sync = ()=>{ pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; };
+  ta.addEventListener('input', render);
+  ta.addEventListener('scroll', sync);
+  render();
+  const fit = ()=>{
+    ta.style.height='auto';
+    const cap = Math.round(innerHeight * 0.52);
+    const h = Math.min(Math.max(ta.scrollHeight + 4, 120), cap);
+    ta.style.height = h + 'px'; pre.style.height = h + 'px';
+  };
+  ta.__fit = fit;
+  ta.addEventListener('input', fit); fit();
+  const runBtn = $('.lc-run', cell);
+  if(runBtn) runBtn.addEventListener('click', ()=>{
+    if(!out) return;
+    out.innerHTML='';
+    const logs = [];
+    const mk = cls => (...a)=>logs.push({t:a.map(fmt).join(' '), cls});
+    const fake = { log: mk(''), error: mk('err'), warn: mk(''),
+      setup: mk('setup'), teardown: mk('teardown'), info: mk('info') };
+    const flush = ()=>{
+      if(!logs.length) logs.push({t:'(sin salida — ¿olvidaste console.log?)', cls:'dim'});
+      logs.forEach(l=>{ const d=document.createElement('div'); d.className='ln'+(l.cls?' '+l.cls:''); d.textContent=l.t; out.appendChild(d); });
+    };
+    (async ()=>{
+      try { await new AsyncFn('console','"use strict";\n'+ta.value)(fake); }
+      catch(err){ logs.push({t:'⛔ '+err.name+': '+err.message, cls:'err'}); }
+      flush();
+    })();
+  });
+  const resetBtn = $('.lc-reset', cell);
+  if(resetBtn && !$('#sim-reset', cell)) resetBtn.addEventListener('click', ()=>{
+    ta.value = initial; render(); fit();
+    if(out) out.innerHTML = '<div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div>';
+  });
+});
+
+/* ================================================================
+   GENERIC STEPPER (fixture lifecycle + KATA trace)
+   ================================================================ */
+function buildStepper(prefix, steps){
+  const codeBox = $('#'+prefix+'-code'); if(!codeBox) return;
+  const whereBox = $('#'+prefix+'-where'), note = $('#'+prefix+'-note'),
+        outBox = $('#'+prefix+'-out'), stepn = $('#'+prefix+'-stepn');
+  let s = 0;
+  function paint(){
+    $$('.cl', codeBox).forEach(cl=>{
+      cl.classList.remove('cur','cur2');
+      if(s>0){
+        const st = steps[s-1];
+        const L = st.l||[], L2 = st.l2||[];
+        if(L.indexOf(+cl.dataset.l) >= 0) cl.classList.add('cur');
+        if(L2.indexOf(+cl.dataset.l) >= 0) cl.classList.add('cur2');
+      }
+    });
+    if(stepn) stepn.textContent = 'paso ' + s + ' / ' + steps.length;
+    if(s===0){
+      if(whereBox) whereBox.innerHTML = '<p style="font-size:.85rem;color:var(--text-3);margin:0">— en reposo —</p>';
+      if(note) note.innerHTML = note.dataset.idle || 'Presiona "Siguiente paso".';
+      if(outBox) outBox.innerHTML = '<div class="ln" style="color:var(--text-3);font-style:italic">consola…</div>';
+      return;
+    }
+    const st = steps[s-1];
+    if(whereBox) whereBox.innerHTML = st.where || '';
+    if(note) note.textContent = st.note || '';
+    if(outBox){
+      const lines = steps.slice(0,s).filter(x=>x.out).map(x=>'<div class="ln '+(x.outCls||'')+'">'+esc(x.out)+'</div>');
+      outBox.innerHTML = lines.length ? lines.join('') : '<div class="ln" style="color:var(--text-3);font-style:italic">consola…</div>';
+    }
+  }
+  const nx = $('#'+prefix+'-next'), rs = $('#'+prefix+'-reset');
+  if(note) note.dataset.idle = note.innerHTML;
+  if(nx) nx.addEventListener('click', ()=>{ if(s<steps.length){ s++; paint(); } });
+  if(rs) rs.addEventListener('click', ()=>{ s=0; paint(); });
+  paint();
+}
+
+/* fixture lifecycle stepper */
+buildStepper('fx', [
+  {l:[2,3], where:'<div class="st-row"><span class="tag l4">FIXTURE</span> setup (antes)</div>',
+    note:'SETUP: la fixture construye LoginPage y navega. Corre ANTES del test.', out:'· LoginPage creada · goto("/login")', outCls:'setup'},
+  {l:[4], where:'<div class="st-row"><span class="tag l4">FIXTURE</span> await use(login)</div>',
+    note:'await use(login): la fixture se PAUSA y entrega "login" al test. La frontera.', out:'⟶ entrego "login" al test', outCls:'info'},
+  {l:[8,9,10], l2:[9,10], where:'<div class="st-row"><span class="tag l3">TEST</span> corriendo (dentro de use)</div>',
+    note:'El control SALTÓ al test. loginSuccessfully + expect corren AHORA, durante use().', out:'TEST: login + assert dashboard', outCls:''},
+  {l:[4], where:'<div class="st-row"><span class="tag l4">FIXTURE</span> use() retorna</div>',
+    note:'El test terminó. use() retorna y el control VUELVE a la fixture, justo debajo.', out:'⟵ el test terminó, vuelvo', outCls:'info'},
+  {l:[5], where:'<div class="st-row"><span class="tag l4">FIXTURE</span> teardown (después)</div>',
+    note:'TEARDOWN: page.close(). Corre SIEMPRE al final — incluso si el test hubiera fallado.', out:'· page.close() — limpieza', outCls:'teardown'},
+  {l:[6], where:'<div class="st-row"><span class="tag l4">FIN</span> fixture completa</div>',
+    note:'Sándwich completo: setup → use(test) → teardown. Eso es una fixture. 🎉', out:'✓ ciclo de vida completo', outCls:'setup'},
+]);
+
+/* KATA layer trace stepper */
+buildStepper('kt', [
+  {l:[1], where:'<div class="st-row"><span class="tag l4">L4 · Fixture</span> { ui }</div>',
+    note:'El test pide la fixture { ui } por nombre (DI). Playwright se la inyecta lista.'},
+  {l:[1,6], l2:[6], where:'<div class="st-row"><span class="tag l4">L4 · Fixture</span> ui.login = new LoginPage</div>',
+    note:'La UiFixture ya tiene LoginPage instanciada y registrada como ui.login.'},
+  {l:[3,7], l2:[7], where:'<div class="st-row"><span class="tag l3">L3 · Componente</span> LoginPage · ATC</div>',
+    note:'ui.login.loginSuccessfully() es la ATC: el mini-flujo completo vive aquí.'},
+  {l:[7,8], l2:[8], where:'<div class="st-row"><span class="tag l2">L2 · Base</span> UiBase (helpers Playwright)</div>',
+    note:'LoginPage extends UiBase: usa helpers de Playwright (waitForURL, etc.) heredados.'},
+  {l:[8,9], l2:[9], where:'<div class="st-row"><span class="tag l1">L1 · TestContext</span> config · faker</div>',
+    note:'UiBase extends TestContext: hasta abajo, config/faker/entorno. Una línea, 4 capas. 🥋'},
+]);
+
+/* ================================================================
+   PARALLELIZATION SIMULATOR
+   ================================================================ */
+(function(){
+  const lanesBox = $('#psim-lanes'); if(!lanesBox) return;
+  const FILES = [
+    {id:'login.spec', dur:3}, {id:'cart.spec', dur:2}, {id:'checkout.spec', dur:4},
+    {id:'profile.spec', dur:1}, {id:'search.spec', dur:3}, {id:'orders.spec', dur:2},
+  ];
+  const TOTAL = FILES.reduce((a,f)=>a+f.dur,0); // 15
+  const PXPS = 46;        // px per simulated second
+  const TIMESCALE = 300;  // real ms per simulated second
+  let W = 2, raf = null, running = false;
+  const clockEl = $('#psim-clock'), totalEl = $('#psim-total'), speedEl = $('#psim-speed');
+  totalEl.textContent = TOTAL.toFixed(1) + 's';
+
+  function assign(w){
+    const lanes = Array.from({length:w}, ()=>({load:0, items:[]}));
+    // longest-processing-time greedy
+    [...FILES].sort((a,b)=>b.dur-a.dur).forEach(f=>{
+      let m = lanes[0];
+      for(const ln of lanes) if(ln.load < m.load) m = ln;
+      m.items.push(f); m.load += f.dur;
+    });
+    return lanes;
+  }
+  let lanes = [];
+  function renderLanes(){
+    lanes = assign(W);
+    lanesBox.innerHTML = '';
+    lanes.forEach((ln, i)=>{
+      const row = document.createElement('div'); row.className = 'psim-lane';
+      const lbl = document.createElement('div'); lbl.className = 'wlbl';
+      lbl.innerHTML = '👷 worker ' + (i+1);
+      const track = document.createElement('div'); track.className = 'psim-track';
+      let offset = 0;
+      ln.items.forEach(f=>{
+        const blk = document.createElement('div'); blk.className = 'pblock';
+        blk.style.flex = f.dur + ' 0 0';
+        blk.dataset.dur = f.dur; blk.dataset.offset = offset;
+        blk.innerHTML = '<div class="pfill"></div><span class="pname">'+f.id+' · '+f.dur+'s</span>';
+        track.appendChild(blk); offset += f.dur;
+      });
+      row.appendChild(lbl); row.appendChild(track);
+      lanesBox.appendChild(row);
+    });
+    const wall = Math.max(...lanes.map(l=>l.load));
+    clockEl.textContent = wall.toFixed(1) + 's';
+    speedEl.textContent = (TOTAL/wall).toFixed(2) + '×';
+  }
+
+  function stopRaf(){ if(raf){ cancelAnimationFrame(raf); raf=null; } }
+  function run(){
+    if(running) return;
+    running = true; stopRaf();
+    renderLanes();
+    const wall = Math.max(...lanes.map(l=>l.load));
+    const blocks = $$('.pblock', lanesBox);
+    const start = performance.now();
+    function frame(now){
+      const simT = (now - start) / TIMESCALE; // simulated seconds elapsed
+      blocks.forEach(b=>{
+        const off = +b.dataset.offset, dur = +b.dataset.dur;
+        const p = clamp((simT - off)/dur, 0, 1);
+        $('.pfill', b).style.width = (p*100) + '%';
+        b.classList.toggle('done', p>=1);
+      });
+      clockEl.textContent = Math.min(simT, wall).toFixed(1) + 's';
+      if(simT < wall){ raf = requestAnimationFrame(frame); }
+      else {
+        clockEl.textContent = wall.toFixed(1) + 's';
+        speedEl.textContent = (TOTAL/wall).toFixed(2) + '×';
+        running = false; raf = null;
+        const r = lanesBox.getBoundingClientRect();
+        confetti(r.left + r.width/2, r.top + r.height/2, 70);
+      }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  function reset(){
+    running = false; stopRaf();
+    renderLanes();
+  }
+  $$('.psim-wbtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(running) return;
+      $$('.psim-wbtn').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      W = +btn.dataset.w;
+      renderLanes();
+    });
+  });
+  $('#psim-run').addEventListener('click', run);
+  $('#psim-reset').addEventListener('click', reset);
+  renderLanes();
+})();
+
+/* ---------- POM simulator: executes REAL JavaScript ---------- */
+(function(){
+  const frame = $('#sim-frame'); if(!frame) return;
+  const CREDS = { email:'ana@qa.com', password:'secreto123' };
+  const em = $('#s-email', frame), pw = $('#s-password', frame),
+        btn = $('#s-login-btn', frame), okMsg = $('#s-welcome', frame), badMsg = $('#s-error-msg', frame);
+  btn.addEventListener('click', ()=>{
+    okMsg.classList.remove('show'); badMsg.classList.remove('show');
+    if(em.value.trim() === CREDS.email && pw.value === CREDS.password) okMsg.classList.add('show');
+    else badMsg.classList.add('show');
+  });
+  function resetApp(){ em.value=''; pw.value=''; okMsg.classList.remove('show'); badMsg.classList.remove('show'); }
+
+  const cursor = $('#ghost-cursor'), ta = $('#sim-src'), pre = $('#sim-hl'),
+        logBox = $('#sim-log'), banner = $('#sim-banner');
+  const initial = ta.value;
+  const render = ()=>{ pre.innerHTML = hl(ta.value) + '\n'; };
+  ta.addEventListener('input', render);
+  ta.addEventListener('scroll', ()=>{ pre.scrollTop=ta.scrollTop; pre.scrollLeft=ta.scrollLeft; });
+  render();
+  const fitSim = ()=>{
+    ta.style.height='auto';
+    const cap = Math.round(innerHeight * 0.42);
+    const h = Math.min(Math.max(ta.scrollHeight + 4, 220), cap);
+    ta.style.height = h + 'px'; pre.style.height = h + 'px';
+  };
+  ta.__fit = fitSim;
+  ta.addEventListener('input', fitSim); fitSim();
+
+  const bySel = sel => frame.querySelector('[data-sel="'+sel+'"]');
+  function log(t, cls){
+    const d = document.createElement('div'); d.className='ln'+(cls?' '+cls:''); d.textContent=t;
+    logBox.appendChild(d); logBox.scrollTop = logBox.scrollHeight;
+  }
+  async function moveTo(el){
+    const fr = frame.getBoundingClientRect(), r = el.getBoundingClientRect();
+    cursor.style.opacity = '1';
+    cursor.style.left = (r.left - fr.left + r.width/2 - 6) + 'px';
+    cursor.style.top  = (r.top - fr.top + r.height/2 - 4) + 'px';
+    await sleep(620);
+  }
+  async function typeInto(el, text){
+    el.value = '';
+    for(const ch of String(text)){ el.value += ch; await sleep(38); }
+  }
+  function need(sel){
+    const el = bySel(sel);
+    if(!el) throw new Error('No existe el elemento "'+sel+'" en la página');
+    return el;
+  }
+  const fakePage = {
+    async goto(url){ resetApp(); log('✓ page.goto("'+url+'")', 'ok'); },
+    async fill(sel, txt){
+      const el = need(sel);
+      await moveTo(el); await typeInto(el, txt);
+      log('✓ page.fill("'+sel+'", "'+txt+'")', 'ok');
+    },
+    async click(sel){
+      const el = need(sel);
+      await moveTo(el);
+      cursor.classList.add('click-pulse'); await sleep(220); cursor.classList.remove('click-pulse');
+      el.click(); await sleep(320);
+      log('✓ page.click("'+sel+'")', 'ok');
+    },
+    locator(sel){ return { __sel: sel }; }
+  };
+  function expectFn(target){
+    const sel = target && target.__sel;
+    if(!sel) throw new Error('expect(...) espera un page.locator("selector")');
+    return {
+      async toBeVisible(){
+        const el = bySel(sel);
+        const vis = !!el && getComputedStyle(el).display !== 'none';
+        if(!vis) throw new Error('expect("'+sel+'").toBeVisible() → Expected: visible · Received: hidden');
+        log('✓ expect("'+sel+'").toBeVisible() → PASSED', 'ok');
+      },
+      async toHaveText(t){
+        const el = bySel(sel);
+        const actual = el ? el.textContent.trim() : '(no existe)';
+        if(!el || actual !== t) throw new Error('expect("'+sel+'").toHaveText("'+t+'") → Expected: "'+t+'" · Received: "'+actual+'"');
+        log('✓ expect("'+sel+'").toHaveText("'+t+'") → PASSED', 'ok');
+      }
+    };
+  }
+  let running = false;
+  async function run(){
+    if(running) return;
+    running = true;
+    logBox.innerHTML=''; banner.className='sim-banner'; banner.textContent='';
+    resetApp();
+    const queue = [];
+    const testFn = (name, fn) => { queue.push({name, fn}); };
+    try {
+      const body = new AsyncFn('test','expect','page', '"use strict";\n' + ta.value);
+      await body(testFn, expectFn, fakePage);
+      if(!queue.length){
+        log('⚠ No se declaró ningún test(...) — envuelve tus pasos en test("nombre", async ({ page }) => { ... })', 'info');
+      }
+      for(const t of queue){
+        log('🧪 ' + t.name, 'info');
+        await t.fn({ page: fakePage });
+      }
+      cursor.style.opacity = '0';
+      banner.className = 'sim-banner pass';
+      banner.textContent = '✓ ' + (queue.length||1) + ' passed — ¡tu Page Object funciona!';
+      const r = banner.getBoundingClientRect();
+      confetti(r.left + r.width/2, r.top, 110);
+    } catch(err){
+      cursor.style.opacity = '0';
+      log('✗ ' + err.message, 'fail');
+      banner.className = 'sim-banner fail';
+      banner.textContent = '✗ 1 failed — el test encontró algo. Lee el error con calma: dice qué y dónde.';
+    }
+    running = false;
+  }
+  $('#sim-run').addEventListener('click', run);
+  $('#sim-reset').addEventListener('click', ()=>{
+    ta.value = initial; render(); fitSim(); resetApp();
+    logBox.innerHTML = '<div class="ln" style="color:var(--text-3);font-style:italic">▶ Ejecuta — tu CLASE va a mover el cursor…</div>';
+    banner.className='sim-banner'; banner.textContent='';
+  });
+})();
+
+/* ---------- init ---------- */
+updateChip();
+fromHash();
+})();
+</script>
+<!-- ============ MOBILE PATCH v3 (UPEX) — swipe + layout responsive + tip desktop ============ -->
+<style id="upex-mobile-style">
+/* Layout en pantallas angostas: 1 columna + scroll vertical dentro del slide */
+@media (max-width:768px){
+  .slide{padding:max(6vh,52px) 5vw 10vh;overflow-y:auto;justify-content:flex-start}
+  /* spacers flexibles: centran verticalmente cuando el contenido cabe y
+     colapsan a 0 cuando desborda (permitiendo scroll desde arriba) */
+  .slide::before{content:"";margin-top:auto}
+  .slide::after{content:"";margin-bottom:auto}
+  .cols,.cols-32,.cards.c3,.cards.c2,.memviz,.playground,.ba,.stepper,.termsim,.api-playground{grid-template-columns:1fr}
+  #help-hint,#act-label{display:none}
+  /* score chip compacto y pegado al borde superior para no tapar títulos */
+  #score-chip{top:6px;right:8px;font-size:.62rem;padding:.16rem .5rem;box-shadow:none}
+}
+@media (pointer:coarse){
+  #help-hint{display:none}
+}
+/* Tip de una sola vez en móvil: los playgrounds se disfrutan mejor en desktop */
+#upex-tip{position:fixed;left:50%;transform:translateX(-50%);bottom:44px;z-index:90;
+  max-width:min(92vw,420px);display:flex;align-items:flex-start;gap:.6rem;
+  background:rgba(36,40,59,.96);border:1px solid rgba(255,255,255,.18);border-radius:12px;
+  padding:.65rem .8rem;font-size:.78rem;line-height:1.45;color:#9aa5ce;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);animation:upexTipIn .4s ease both}
+#upex-tip b{color:#c0caf5}
+#upex-tip-x{flex:0 0 auto;background:none;border:none;color:#565f89;font-size:.95rem;
+  cursor:pointer;padding:0 .15rem;margin-left:auto;line-height:1.3}
+@keyframes upexTipIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%)}}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Navega despachando eventos de teclado sintéticos — el runtime del deck ya
+   escucha keydown (ArrowLeft/ArrowRight) y protege textareas/inputs. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+/* Swipe horizontal — ignora gestos que empiezan en zonas interactivas/scrollables */
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,.quiz,.lc-editor,.memviz,.playground'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Tip de una sola vez (compartido entre todos los decks del dominio vía
+   localStorage). ?tip=1 lo fuerza para QA en navegadores sin touch. */
+var KEY='upex-deck-mobile-tip-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]tip=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var tip=document.createElement('div'); tip.id='upex-tip';
+  var msg=document.createElement('span');
+  msg.innerHTML='💻 <b>Tip:</b> para practicar en los playgrounds de código, vuelve a este deck desde tu computadora.';
+  var x=document.createElement('button'); x.id='upex-tip-x'; x.textContent='✕'; x.setAttribute('aria-label','Cerrar tip');
+  var close=function(){ if(tip.isConnected) tip.remove(); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  x.addEventListener('click',close);
+  tip.appendChild(msg); tip.appendChild(x); document.body.appendChild(tip);
+  setTimeout(close,12000);
+}
+})();
+</script>
+
+</body>
+</html>

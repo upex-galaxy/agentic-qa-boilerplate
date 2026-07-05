@@ -3,9 +3,13 @@ name: GitHub Pages — Docs Hub
 # Publishes the learning hub to gh-pages:
 #   /            -> homepage dashboard (packages/pages-home)
 #   /kata/       -> KATA Explorable build (packages/kata-explorable)
-#   /decks/      -> how-it-works + curriculum decks from .claude/skills/
+#   /decks/      -> how-it-works + curriculum decks from packages/decks/
 #   /<env>/regression/ -> Allure reports (owned by regression.yml — NEVER touched here;
 #                         keep_files: true preserves them on every deploy)
+#
+# packages/decks/ is the canonical source for the published site. The copies
+# still living in .claude/skills/*/ are kept for external consumers and will
+# be removed in a later phase (see packages/decks/README.md).
 
 on:
   push:
@@ -13,7 +17,7 @@ on:
     paths:
       - 'packages/kata-explorable/**'
       - 'packages/pages-home/**'
-      - '.claude/skills/**/*.html'
+      - 'packages/decks/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -60,12 +64,9 @@ jobs:
           # KATA Explorable (built with base: './' so it works under /kata/)
           cp -R packages/kata-explorable/dist/. _site/kata/
 
-          # Decks: every HTML deck in .claude/skills/<skill>/ -> /decks/<skill>/
-          for f in .claude/skills/*/*.html; do
-            skill=$(basename "$(dirname "$f")")
-            mkdir -p "_site/decks/$skill"
-            cp "$f" "_site/decks/$skill/"
-          done
+          # Decks: every HTML deck in packages/decks/<skill>/ -> /decks/<skill>/
+          cp -R packages/decks/. _site/decks/
+          rm -f _site/decks/README.md
 
           echo "Site tree:"
           find _site -maxdepth 2 -type d | sort

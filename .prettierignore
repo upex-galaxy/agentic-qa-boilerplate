@@ -56,6 +56,9 @@ Thumbs.db
 .claude/skills/
 .claude/settings.local.json
 .agents/skills/
+# Published deck HTMLs (copies of the skill decks; single-file artifacts whose
+# embedded HTML prettier cannot always parse — same rationale as .claude/skills/)
+packages/decks/
 
 # ===========================================
 # MCP reference templates - never format
