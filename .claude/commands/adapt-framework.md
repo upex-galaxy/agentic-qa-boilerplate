@@ -208,7 +208,7 @@ Ask only what context cannot reveal. Short, specific questions. Group and ask in
 **CI + reporting + docs**
 - TMS modality + `AUTO_SYNC`: Xray / Jira-native / none, and which GitHub Secrets you can set (these live outside the repo).
 - Allure report name (`allurerc.mjs`, currently `Agentic QA Boilerplate`).
-- Is the `gh-pages` branch created and GitHub Pages enabled? (Workflows publish to `{owner}.github.io/{repo}/{env}/{type}/` — external repo config.)
+- Is the `gh-pages` branch created and GitHub Pages enabled? (Workflows publish to `{owner}.github.io/{repo}/{env}/{type}/` — external repo config.) If not enabled and the user wants browsable reports, run the maneuver in `.claude/skills/regression-testing/references/github-pages-setup.md` (enable via `gh api`, first-build gotcha, history-squash job) during Phase 7.
 - After adaptation, hand off to `/sync-ai-memory` to scrub `upexgalaxy`/`UPEX`/`dojo` from README/CONTEXT/INSTALLER/docs, or leave for a separate pass?
 
 Fold answers into the plan §§2, 6, 9. Unanswered items → Discovery Gaps.

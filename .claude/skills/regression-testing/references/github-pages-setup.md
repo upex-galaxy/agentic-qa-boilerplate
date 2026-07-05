@@ -1,0 +1,93 @@
+# GitHub Pages Setup — publish Allure reports for THIS project
+
+> One-time setup that makes the Allure reports your CI already pushes to
+> `gh-pages` actually reachable in a browser. The regression / smoke / sanity
+> workflows shipped with this boilerplate publish to the `gh-pages` branch out
+> of the box (`peaceiris/actions-gh-pages`, `keep_files: true`,
+> `keep_reports: 3`) — but GitHub does NOT serve that branch until Pages is
+> explicitly enabled on the repo. This reference is the full maneuver, learned
+> the hard way on the boilerplate repo itself.
+
+## When to run this
+
+- User asks any variant of: "set up GitHub Pages", "publish the Allure
+  reports", "why is the report URL 404", "enable the reports site".
+- `/adapt-framework` finished wiring CI and the project wants browsable
+  reports.
+- The `Post Report URL` step of a suite run prints a URL that returns 404.
+
+## Preconditions (probe, don't assume)
+
+| Check | Command | Blocker if |
+| --- | --- | --- |
+| gh CLI authenticated | `gh auth status` | fails → stop, ask user to `gh auth login` |
+| gh-pages branch exists on origin | `git ls-remote --heads origin gh-pages` | empty → run a suite first (any Allure deploy creates it) |
+| Repo visibility | `gh repo view --json visibility` | `PRIVATE` + free plan → Pages requires a paid plan; surface to user |
+| Pages state | `gh api repos/{owner}/{repo}/pages` | `404` means NOT enabled → proceed with setup |
+
+## Step 1 — Enable Pages serving the gh-pages branch
+
+```bash
+gh api -X POST repos/{owner}/{repo}/pages \
+  -f "source[branch]=gh-pages" -f "source[path]=/"
+```
+
+Success returns `"html_url": "https://{owner}.github.io/{repo}/"`. If it
+returns `409 Conflict`, Pages is already enabled — check its source with
+`gh api repos/{owner}/{repo}/pages` and fix the branch if it points elsewhere
+(`gh api -X PUT ... -f "source[branch]=gh-pages"`).
+
+## Step 2 — Verify the first build (KNOWN GOTCHA: it can silently fail)
+
+The first build after enablement — on a branch that already has content — can
+error with a generic "Page build failed." or hang in `building` for a long
+time. Do NOT push commits to "wake it up"; request a rebuild instead:
+
+```bash
+# status of the latest build
+gh api repos/{owner}/{repo}/pages/builds/latest --jq '{status, error: .error.message}'
+
+# if status is "errored" (or stuck "building" for >10 min): force a rebuild
+gh api -X POST repos/{owner}/{repo}/pages/builds
+```
+
+Then poll `builds/latest` until `status: built` and confirm with curl:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" https://{owner}.github.io/{repo}/{env}/regression/
+```
+
+`{env}` is the project's active environment (e.g. `staging`). Expect `200`.
+
+## Step 3 — Long-term storage hygiene (prevent unbounded branch growth)
+
+Two independent growth vectors, two controls:
+
+1. **Working tree** — already controlled: the shipped workflows use
+   `keep_reports: 3`, so only the last 3 reports per suite live on the branch.
+   Screenshots/videos live inside each report and rotate with it.
+2. **Git history** — NOT controlled by keep_reports: every deploy commit keeps
+   its blobs in history forever, so the branch grows on every run even though
+   the served site does not. Fix: a scheduled squash job that rewrites
+   `gh-pages` to a single orphan commit holding the current content. This is
+   the ONLY sanctioned force-push in the project — `gh-pages` is 100%
+   workflow-generated, nobody develops on it. Template (adapt repo name; runs
+   monthly + on demand): see `.github/workflows/pages-squash.yml` in the
+   boilerplate source repo (upex-galaxy/agentic-qa-boilerplate) — copy it
+   verbatim; it is repo-agnostic.
+
+## Report to the user
+
+- Site URL + the per-suite report URLs (`/{env}/regression/`, `/{env}/smoke/`,
+  `/{env}/sanity/` — whichever workflows the project runs).
+- Whether the squash job was installed (recommended: yes).
+- Reminder: on public repos the reports are public — screenshots may leak
+  UI/data of the app under test; confirm the team is OK with that or keep the
+  repo private (Pages on private repos needs a paid plan).
+
+## Scope guard
+
+This reference sets up ALLURE report publishing for consumer projects. The
+boilerplate's own `pages.yml` (docs hub: KATA Explorable + decks + homepage)
+is boilerplate-EXCLUSIVE — never replicate it in a consumer project; the
+scaffolder deliberately excludes it.

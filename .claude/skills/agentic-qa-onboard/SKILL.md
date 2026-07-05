@@ -53,20 +53,35 @@ Five of the workflow skills ship a **self-contained HTML presentation** that tea
 
 Single files (CSS + JS inlined) — they open by double-click, no server. Navigate with `←` `→`, `S` for speaker notes, `O` for the slide overview, `F` for fullscreen.
 
+### Published site (PREFERRED source — works in every project)
+
+All decks — plus the interactive **KATA Explorable** and the boilerplate homepage — are published on the boilerplate's GitHub Pages hub:
+
+```
+https://upex-galaxy.github.io/agentic-qa-boilerplate/           ← homepage (deck catalog)
+https://upex-galaxy.github.io/agentic-qa-boilerplate/kata/      ← KATA Explorable (interactive)
+https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/<skill>/<deck>.html
+```
+
+Example: `.../decks/sprint-testing/how-it-works.es.html`. The `<skill>/<file>` segment matches the local paths in the table above. **Prefer the published URL** — it always works, even in consumer projects scaffolded from this boilerplate (which may not carry the local HTML files). Use the local file only when offline or when the user explicitly wants the repo copy.
+
 ### Opening protocol (ALWAYS ask first)
 
 Opening a deck launches the user's default browser — an outward, local action — so **never open one without asking, and open only ONE at a time.**
 
 1. **Announce + ask.** "I can open a short visual deck that walks through how `/sprint-testing` works — first the manual craft, then how the skill does it from the terminal. Want me to open it in your browser?"
 2. **Match the language** of the conversation: Spanish user → the `.es.html` file; English user → the `.html` file.
-3. **On a yes, open exactly one deck** (pick the OS command for the user's platform):
+3. **On a yes, open exactly one deck** — published URL first; local file as offline fallback (pick the OS command for the user's platform):
    ```bash
-   open ".claude/skills/sprint-testing/how-it-works.es.html"     # macOS  → default browser
-   xdg-open ".claude/skills/sprint-testing/how-it-works.es.html" # Linux
-   start "" ".claude/skills/sprint-testing/how-it-works.es.html" # Windows
+   open "https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/sprint-testing/how-it-works.es.html"  # macOS → default browser
+   xdg-open "https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/sprint-testing/how-it-works.es.html" # Linux
+   start "" "https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/sprint-testing/how-it-works.es.html" # Windows
+   # offline / repo-copy fallback (only if the file exists locally):
+   open ".claude/skills/sprint-testing/how-it-works.es.html"
    ```
 4. **One at a time.** Let the person watch and come back with questions before offering the next skill's deck. Do not batch-open several.
 5. **After it opens,** tell them the keys (`←` `→` to move, `S` for speaker notes) and offer to walk the slides together or answer questions as they go.
+6. **For "how does KATA work" / architecture questions,** also offer the interactive KATA Explorable (`.../kata/`) — 8 interactive chapters, Spanish, presentation mode with the `P` key.
 
 ---
 

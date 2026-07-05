@@ -488,6 +488,7 @@ On Verdict = NO-GO with regressions still being filed as issues, archive WAITS u
 ## Specific tasks
 
 * **Configuring or debugging GitHub Actions workflows** — read `references/ci-cd-integration.md`
+* **Enabling GitHub Pages so the published Allure reports are browsable ("set up GitHub Pages", "report URL is 404", "publish the reports site")** — read `references/github-pages-setup.md` (enable via `gh api`, first-build stuck/errored gotcha + manual rebuild, gh-pages history squash job)
 * **Classifying a borderline failure (REGRESSION vs FLAKY vs ENVIRONMENT)** — read `references/failure-classification.md`
 * **TMS / Xray result import** — load `/xray-cli` skill
 * **Downloading traces or screenshots for a failure** — use `[AUTOMATION_TOOL]` per CLAUDE.md Tool Resolution; for Playwright trace inspection load `/playwright-cli`
