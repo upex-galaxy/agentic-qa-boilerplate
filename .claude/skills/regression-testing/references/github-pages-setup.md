@@ -16,6 +16,18 @@
   reports.
 - The `Post Report URL` step of a suite run prints a URL that returns 404.
 
+## Step 0 — Allure version-currency check (MANDATORY)
+
+Before touching Pages, run the **§Allure version-currency check** from
+`SKILL.md` §Local reporting: the boilerplate's pinned `allure` /
+`allure-playwright` / `allure-js-commons` versions are usually behind upstream
+by the time a scaffolded project reaches this setup. Summarize the news to the
+user, offer the same-major `bun update`, never cross a major silently, and
+re-generate one report to confirm the landing page still shows the Awesome +
+QA Dashboard + Smoke Release Gate cards. The published site inherits whatever
+version generates in CI, so an outdated local pin means an outdated public
+report.
+
 ## Preconditions (probe, don't assume)
 
 | Check | Command | Blocker if |

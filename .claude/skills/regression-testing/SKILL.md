@@ -109,7 +109,7 @@ If the user says "run regression" with no qualifier, default to `regression` on 
 
 ## Local reporting (Allure 3, no global install)
 
-Allure 3 is a devDep — `bunx allure` resolves to the local `node_modules/.bin/allure`, no `brew install allure` / `scoop install allure` required. Configuration lives at `allurerc.mjs` (Awesome plugin enabled).
+Allure 3 is a devDep — `bunx allure` resolves to the local `node_modules/.bin/allure`, no `brew install allure` / `scoop install allure` required. Configuration lives at `allurerc.mjs`, which generates THREE report views (one landing-page card each): **Awesome** (full drill-down), **QA Dashboard** (executive charts over all suites — status, dynamics, severities, stability, testing pyramid, durations), and **Smoke — Release Gate** (same-plugin second instance filtered to `@critical`-tagged tests). Trend charts are fed by `historyPath: ./.allure/history.jsonl` and populate from the 2nd run onward.
 
 | Use case | Script | Underlying command |
 |---|---|---|
@@ -122,6 +122,20 @@ Allure 3 is a devDep — `bunx allure` resolves to the local `node_modules/.bin/
 `bun allure:agent` is the AI-friendly entry point: it produces a markdown summary the orchestrator (or a Verifier subagent) can read directly without parsing HTML. Use it whenever you need a structured pass/fail breakdown after a local re-run while triaging a CI failure (Phase 2 step 1, before downloading the merged-allure-results artifact from CI).
 
 CI artifacts (`merged-allure-results-{env}`) are still produced by the workflow and downloaded via `gh run download` as documented in Phase 2 — those use the same allurerc config inside the runner.
+
+### Allure version-currency check (MANDATORY during any Allure/Pages setup)
+
+The boilerplate pins `allure` / `allure-playwright` / `allure-js-commons` at scaffold time, so by the time someone installs the repo and runs this setup they are usually behind upstream. Whenever this skill performs **Allure setup** (first local report, preflight RED on the "Allure 3 local" row) or **GitHub Pages setup** (`references/github-pages-setup.md`), run this check FIRST:
+
+1. `npm view allure version && npm view allure-playwright version` → compare against `package.json`.
+2. **Same major behind** → summarize the news for the user (release notes: `gh api repos/allure-framework/allure3/releases`), then offer `bun update allure allure-playwright allure-js-commons` (or bump the `^` ranges + `bun install`). Keep `allure-js-commons` in lockstep with `allure-playwright` (it is imported directly by `tests/components/TestFixture.ts` for the `layer` auto-label).
+3. **New major available** → NEVER upgrade silently. Present breaking changes and wait for explicit user approval.
+4. After any bump: `bun allure:generate` from existing results (or a sandbox run) and confirm the report renders — landing page must show the Awesome card + both Dashboard cards (`QA Dashboard`, `Smoke — Release Gate`).
+
+Known gotchas to preserve on upgrade (context in `allurerc.mjs` comments):
+- Dashboard chart `type` values must match `ChartType` in `@allurereport/charts-api` — the plugin README's `trend`/`pie` examples are stale and yield an empty dashboard (404 on `widgets/charts.json`).
+- `historyPath` must stay OUTSIDE `allure-report/` (`./.allure/history.jsonl`) or `test:clean` erases trend history.
+- The `smoke-dashboard` plugin instance needs its explicit `import: '@allurereport/plugin-dashboard'` — a custom key alone does not resolve.
 
 ---
 
@@ -488,7 +502,8 @@ On Verdict = NO-GO with regressions still being filed as issues, archive WAITS u
 ## Specific tasks
 
 * **Configuring or debugging GitHub Actions workflows** — read `references/ci-cd-integration.md`
-* **Enabling GitHub Pages so the published Allure reports are browsable ("set up GitHub Pages", "report URL is 404", "publish the reports site")** — read `references/github-pages-setup.md` (enable via `gh api`, first-build stuck/errored gotcha + manual rebuild, gh-pages history squash job)
+* **Enabling GitHub Pages so the published Allure reports are browsable ("set up GitHub Pages", "report URL is 404", "publish the reports site")** — read `references/github-pages-setup.md` (enable via `gh api`, first-build stuck/errored gotcha + manual rebuild, gh-pages history squash job). Run the §Allure version-currency check first.
+* **Setting up Allure locally for the first time, or the user asks "is Allure up to date?"** — run the §Allure version-currency check under §Local reporting.
 * **Classifying a borderline failure (REGRESSION vs FLAKY vs ENVIRONMENT)** — read `references/failure-classification.md`
 * **TMS / Xray result import** — load `/xray-cli` skill
 * **Downloading traces or screenshots for a failure** — use `[AUTOMATION_TOOL]` per CLAUDE.md Tool Resolution; for Playwright trace inspection load `/playwright-cli`
