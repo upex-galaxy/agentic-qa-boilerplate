@@ -36,6 +36,7 @@ import { test as base, expect } from '@playwright/test';
 import { TestContext } from '@TestContext';
 import { UiFixture } from '@UiFixture';
 import { config, env } from '@variables';
+import { label } from 'allure-js-commons';
 
 // ============================================
 // E2E Fixture (Page + API)
@@ -129,7 +130,26 @@ export const test = base.extend<{
   test: TestFixture
   api: ApiFixture
   ui: UiFixture
+  _allureLayer: void
 }>({
+  // Auto-fixture: labels every test with its test layer (derived from the
+  // spec path) so Allure dashboard charts (testing pyramid, durations by
+  // layer) can group results without per-test boilerplate.
+  _allureLayer: [
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use, testInfo) => {
+      const file = testInfo.file.replace(/\\/g, '/');
+      const layer = file.includes('/integration/')
+        ? 'integration'
+        : file.includes('/e2e/') ? 'e2e' : undefined;
+      if (layer) {
+        await label('layer', layer);
+      }
+      await use();
+    },
+    { auto: true },
+  ],
+
   // Full test fixture with UI + API (for E2E tests)
   test: async ({ page, request }, use) => {
     const fixture = new TestFixture(page, request);

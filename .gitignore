@@ -32,6 +32,7 @@ node_modules/
 # ===== Allure Reports =====
 /allure-results/
 /allure-report/
+/.allure/
 
 # ===== Custom Reports =====
 /reports/
