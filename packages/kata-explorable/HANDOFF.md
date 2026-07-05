@@ -81,6 +81,14 @@ Ejecutado y verificado (build + type-check + smoke HTTP + screenshots):
 Gotcha nuevo: `keep_files: true` nunca borra — si un deck se renombra, el
 HTML viejo queda huérfano en `gh-pages` (limpieza manual si importa).
 
+Hallazgo: GitHub Pages NUNCA estuvo habilitado en el repo (Allure se pusheaba
+a la rama pero nadie lo servía). Habilitado 2026-07-05 vía
+`gh api -X POST repos/upex-galaxy/agentic-qa-boilerplate/pages` (branch
+gh-pages, path /, build_type legacy). URL del sitio:
+https://upex-galaxy.github.io/agentic-qa-boilerplate/ (homepage · /kata/ ·
+/decks/<skill>/ · /staging/regression/). Si las rutas dan 404, revisar
+`gh api repos/upex-galaxy/agentic-qa-boilerplate/pages/builds/latest`.
+
 ### P1 — Deep-links por hash
 
 `/kata#simulador`, `#la-receta`, etc. Necesario para que el dashboard y el
