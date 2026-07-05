@@ -1,0 +1,56 @@
+name: GitHub Pages — Squash History
+
+# gh-pages is a generated branch: every Allure/docs-hub deploy adds a commit,
+# and old report blobs (screenshots, videos) stay in the branch HISTORY forever
+# even after keep_reports rotates them out of the working tree. Left alone, the
+# branch grows until clones and deploys crawl.
+#
+# This job rewrites gh-pages to a SINGLE orphan commit holding the exact
+# current content. Safe because nobody develops on gh-pages — it is 100%
+# workflow-generated. GitHub garbage-collects the orphaned blobs afterwards.
+#
+# Runs monthly, or on demand via workflow_dispatch.
+
+on:
+  schedule:
+    - cron: '0 4 1 * *' # 04:00 UTC, 1st of every month
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-squash
+  cancel-in-progress: false
+
+jobs:
+  squash:
+    name: Squash gh-pages history
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+
+      - name: Report size before
+        run: |
+          echo "Commits: $(git rev-list --count HEAD)"
+          echo "Repo size: $(du -sh .git | cut -f1)"
+
+      - name: Squash to single orphan commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan gh-pages-squashed
+          git add -A
+          git commit -m "pages: squashed history ($(date -u +%Y-%m-%d))"
+          git branch -D gh-pages
+          git branch -m gh-pages
+          git push --force origin gh-pages
+
+      - name: Report size after
+        run: |
+          echo "Commits: $(git rev-list --count HEAD)"
+          echo "## gh-pages squashed to 1 commit" >> $GITHUB_STEP_SUMMARY
