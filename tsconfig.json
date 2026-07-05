@@ -50,6 +50,7 @@
     "node_modules",
     "packages/*/node_modules",
     "packages/*/dist",
+    "packages/kata-explorable",
     "playwright-report",
     "test-results",
     "allure-results",

@@ -1,0 +1,274 @@
+/* ============================================================
+   KATA Explorable — design tokens
+   Paleta heredada del tema `tpl-howto` de los decks del repo
+   (GitHub-dark + acentos naranja/salmón/púrpura) para
+   continuidad de marca.
+   ============================================================ */
+
+:root {
+  /* superficies */
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-2: #1c2230;
+  --terminal-body: #010409;
+  --terminal-bar: #161b22;
+
+  /* texto */
+  --text-1: #e6edf3;
+  --text-2: #9aa6b2;
+  --text-3: #6e7681;
+
+  /* bordes */
+  --border: rgba(139, 148, 158, 0.22);
+  --border-strong: rgba(139, 148, 158, 0.42);
+
+  /* semánticos */
+  --good: #3fb950;
+  --warn: #d29922;
+  --bad: #f85149;
+
+  /* acentos (mismos del deck de test-automation) */
+  --a1: #ffa657;
+  --a2: #ff7b72;
+  --a3: #d2a8ff;
+  --grad: linear-gradient(120deg, var(--a1), var(--a2) 55%, var(--a3));
+
+  /* sintaxis (tema GitHub) */
+  --syn-keyword: #ff7b72;
+  --syn-function: #d2a8ff;
+  --syn-string: #a5d6ff;
+  --syn-comment: #6e7681;
+  --syn-number: #79c0ff;
+  --syn-decorator: #ffa657;
+  --syn-type: #7ee787;
+
+  /* tipografía */
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* geometría */
+  --radius: 14px;
+  --radius-lg: 20px;
+  --shadow-deep: 0 30px 80px rgba(0, 0, 0, 0.6);
+
+  color-scheme: dark;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  height: 100vh;
+  height: 100dvh;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: #fff;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: var(--a1);
+}
+
+::selection {
+  background: rgba(255, 166, 87, 0.28);
+}
+
+/* ---------- primitivas compartidas ---------- */
+
+/* texto con gradiente de marca */
+.grad {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* kicker monoespaciado estilo comentario */
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.kicker::before {
+  content: '// ';
+  color: var(--a1);
+}
+
+/* caja de nota */
+.callout {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--a1);
+  border-radius: 10px;
+  padding: 14px 18px;
+  color: var(--text-2);
+}
+.callout.warn {
+  border-left-color: var(--warn);
+}
+.callout.bad {
+  border-left-color: var(--bad);
+}
+.callout.good {
+  border-left-color: var(--good);
+}
+.callout strong {
+  color: var(--text-1);
+}
+
+/* etiquetas */
+.tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.tag.ok {
+  color: var(--good);
+  border-color: rgba(63, 185, 80, 0.5);
+}
+.tag.no {
+  color: var(--bad);
+  border-color: rgba(248, 81, 73, 0.5);
+}
+.tag.warn {
+  color: var(--warn);
+  border-color: rgba(210, 153, 34, 0.5);
+}
+
+/* terminal */
+.terminal {
+  background: var(--terminal-body);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-deep);
+}
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--terminal-bar);
+  border-bottom: 1px solid var(--border);
+}
+.terminal-bar .dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+.terminal-bar .dot.r {
+  background: #ff5f57;
+}
+.terminal-bar .dot.y {
+  background: #febc2e;
+}
+.terminal-bar .dot.g {
+  background: #28c840;
+}
+.terminal-bar .title {
+  margin-left: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+/* botón primario */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 10px 22px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--a1);
+}
+.btn.primary {
+  background: var(--grad);
+  color: #0d1117;
+  border: none;
+}
+.btn.primary:hover {
+  filter: brightness(1.08);
+}
+
+/* lista con viñeta ▸ */
+.blist {
+  list-style: none;
+}
+.blist li {
+  padding-left: 1.3em;
+  position: relative;
+  color: var(--text-2);
+  margin-bottom: 0.45em;
+}
+.blist li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--a1);
+}
+.blist li strong {
+  color: var(--text-1);
+}
+
+/* scrollbars discretos */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-2) transparent;
+}
