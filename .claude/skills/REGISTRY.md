@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-06-30T17:12:09.930Z`
+> Generated: `2026-07-05T17:17:56.940Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.claude/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -72,13 +72,13 @@ Skills indexed: 13
 - **Hand off when oriented.** Once they know which skill to call, point them at it and step back.
 - **Announce + ask.** "I can open a short visual deck that walks through how `/sprint-testing` works — first the manual craft, then how the skill does it from the terminal. Want me to open it in your browser?"
 - **Match the language** of the conversation: Spanish user → the `.es.html` file; English user → the `.html` file.
-- **On a yes, open exactly one deck** (pick the OS command for the user's platform):
+- **On a yes, open exactly one deck** — published URL first; local file as offline fallback (pick the OS command for the user's platform):
 - **One at a time.** Let the person watch and come back with questions before offering the next skill's deck. Do not batch-open several.
 - **After it opens,** tell them the keys (`←` `→` to move, `S` for speaker notes) and offer to walk the slides together or answer questions as they go.
+- **For "how does KATA work" / architecture questions,** also offer the interactive KATA Explorable (`.../kata/`) — 8 interactive chapters, Spanish, presentation mode with the `P` key.
 - Syncs the ticket from Jira via `bun run jira:sync-issues get <KEY> --include-comments` (canonical detailed read — `acli view` returns null for custom fields), then reads the materialized `.md` files.
 - Loads the synced context from `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` (Module = Epic; Jira-synced files are a read-only cache).
 - Explores the relevant code in the target repo.
-- Authors the ATP (Acceptance Test Plan) → writes it to the Jira field (or fallback comment) → re-syncs; hand-writes only NON-Jira files (context.md, evidence/).
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).

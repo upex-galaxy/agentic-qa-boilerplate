@@ -61,8 +61,13 @@ interface ParsedArgs {
   help: boolean
   dryRun: boolean
   rollback: boolean
-  auto: boolean
-  force: boolean
+  interactive: boolean
+  /**
+   * Legacy flags (pre-default-force). Parsed only to print an informational
+   *  note — they no longer change behavior (default IS force).
+   */
+  legacyAuto: boolean
+  legacyForce: boolean
 }
 
 function parseArgs(args: string[]): ParsedArgs {
@@ -73,17 +78,19 @@ function parseArgs(args: string[]): ParsedArgs {
     help: false,
     dryRun: false,
     rollback: false,
-    auto: false,
-    force: false,
+    interactive: false,
+    legacyAuto: false,
+    legacyForce: false,
   };
   const valid = new Set(COMPONENTS.map(c => c.name).concat(['all', 'help', 'rollback']));
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === 'help' || a === '--help' || a === '-h') { out.help = true; }
-    else if (a === '--auto') { out.auto = true; }
+    else if (a === '--interactive' || a === '-i') { out.interactive = true; }
+    else if (a === '--auto') { out.legacyAuto = true; }
     else if (a === '--dry-run') { out.dryRun = true; }
     else if (a === '--rollback' || a === 'rollback') { out.rollback = true; }
-    else if (a === '--force') { out.force = true; }
+    else if (a === '--force') { out.legacyForce = true; }
     else if (a === '--list') { out.listSkills = true; }
     else if (a === '--skill' || a === '--skills') {
       const next = args[i + 1];
@@ -114,27 +121,34 @@ USO:
 COMPONENTES: ${COMPONENTS.map(c => c.name).join(', ')}
 ATAJOS:      all, rollback, help
 
+COMPORTAMIENTO POR DEFECTO (sin flags):
+  Sincroniza TODO el boilerplate sin preguntar: copia archivos nuevos,
+  sobreescribe divergencias con la versión upstream y borra archivos que el
+  upstream eliminó. El boilerplate es canónico (match 1:1). Antes de escribir
+  corre un gate de seguridad: si hay cambios sin commitear en rutas que este
+  updater sincroniza, aborta y las lista (commitea/stashea y re-ejecuta).
+  Cambios fuera de esas rutas (tests/, tu código) nunca bloquean. Todo lo
+  sobrescrito tiene backup (.backups/) restaurable con --rollback, y el diff
+  exacto queda visible en git.
+
 FLAGS:
-  --auto                 Modo no-interactivo: sincroniza TODO el boilerplate
-                         (copia archivos nuevos + sobreescribe divergencias con
-                         la versión upstream). NO borra archivos que upstream
-                         eliminó. El boilerplate es canónico (match 1:1).
-  --force                Como --auto pero TAMBIÉN borra archivos que el upstream
-                         eliminó. Hay backup + --rollback de respaldo.
+  --interactive, -i      Modo con preguntas: revisar componente por componente,
+                         resolver divergencias y confirmar borrados uno a uno.
   --dry-run              Preview, sin escribir
   --rollback             Restaura backup mas reciente
   --skill a,b,c          Sincroniza solo los skills indicados (subcomando skills)
   --list                 Lista los skills disponibles en el template
   --help, -h             Esta ayuda
+  --auto, --force        LEGACY: ya no hacen falta — el comportamiento por
+                         defecto ya es ese. Se aceptan sin error.
 
 EJEMPLOS:
-  bun up                                 # Flujo interactivo (5 fases)
+  bun up                                 # Sincroniza todo (default = force)
+  bun up --interactive                   # Flujo interactivo (5 fases)
   bun up skills                          # Solo agent skills
   bun up skills --skill a,b,c            # Skills especificos
   bun up --list                          # Listar skills disponibles
   bun up commands docs                   # Multiples componentes
-  bun up --auto                          # CI mode (seguro, preserva lo tuyo)
-  bun up --force                         # Forzar todo del upstream (sin preguntar)
   bun up --dry-run                       # Preview
   bun up --rollback                      # Restaurar backup
 `;
@@ -919,6 +933,19 @@ async function main(): Promise<void> {
   if (parsed.rollback) { rollbackFromBackup(); process.exit(0); }
   if (parsed.listSkills) { await listAvailableSkills(); process.exit(0); }
 
+  // Legacy flags: informational only — never an error, never a behavior change.
+  if (parsed.legacyForce) {
+    tui.log.info('Nota: --force ya no hace falta — el comportamiento por defecto ya sincroniza y borra todo lo del upstream (backup + --rollback disponibles). Usa --interactive si prefieres el modo con preguntas.');
+  }
+  if (parsed.legacyAuto) {
+    tui.log.info('Nota: --auto fue reemplazado por el comportamiento por defecto (sin preguntas). Usa --interactive si prefieres el modo con preguntas.');
+  }
+
+  // Two modes only: default (non-interactive, force semantics: overwrite +
+  // delete-upstream, gated by the scoped dirty check in runUpdate) and
+  // --interactive (per-file prompts). The core still consumes auto/force.
+  const nonInteractive = !parsed.interactive;
+
   ensureGitVersion();
   await validatePrerequisites();
 
@@ -982,10 +1009,10 @@ async function main(): Promise<void> {
         : composeHooks(
             sink,
             makeSkillsRegistryHook(sink),
-            makeEnvDriftHook(TEMP_DIR, sink, parsed.auto),
-            makeGitStrategyUpsertHook(TEMP_DIR, sink, parsed.auto),
-            makeYamlBackfillHook(QA_EPICS_BACKFILL, TEMP_DIR, sink, parsed.auto),
-            makeYamlBackfillHook(QA_ASSIGNEE_BACKFILL, TEMP_DIR, sink, parsed.auto),
+            makeEnvDriftHook(TEMP_DIR, sink, nonInteractive),
+            makeGitStrategyUpsertHook(TEMP_DIR, sink, nonInteractive),
+            makeYamlBackfillHook(QA_EPICS_BACKFILL, TEMP_DIR, sink, nonInteractive),
+            makeYamlBackfillHook(QA_ASSIGNEE_BACKFILL, TEMP_DIR, sink, nonInteractive),
             makeClaudeMdDriftHook(TEMP_DIR, TEMPLATE_REPO, sink),
           ),
     },
@@ -994,10 +1021,10 @@ async function main(): Promise<void> {
   tui.intro(tui.headline(`UPEX QA Boilerplate Updater v${CLI_VERSION}`));
 
   const summary = await runUpdate(cfg, sink, {
-    auto: parsed.auto,
+    auto: nonInteractive,
     dryRun: parsed.dryRun,
     rollback: false,
-    force: parsed.force,
+    force: nonInteractive,
   });
 
   process.stdout.write(`${tui.successBox([

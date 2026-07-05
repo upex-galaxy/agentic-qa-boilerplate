@@ -594,23 +594,25 @@ The `bun run up` CLI keeps your project aligned with the official template by tr
 2. Clones the template lazily (sparse checkout, only the dirs that get synced)
 3. Computes the exact list of changed files between your synced SHA and template HEAD
 4. Classifies each file: clean fast-forward, locally diverged, new upstream, deleted upstream, binary, or whitespace-only
-5. In interactive mode: shows you a space-bar checkbox menu with `[M/A/D]` badges and `+N/-M` line counts. For files where you edited locally, shows you both diffs and lets you pick `theirs`, `mine`, or `skip`
-6. In `--auto` / CI mode: applies safe changes, skips your edits, never deletes, prints a summary table
+5. **Default mode (no flags)**: applies everything without prompting — copies new files, overwrites local divergences with the upstream version, and deletes files upstream removed. The boilerplate is canonical (1:1 match). A safety gate runs first: if you have uncommitted changes in paths the updater syncs, it aborts and lists them (commit/stash and re-run). Uncommitted changes elsewhere (your tests, your code) never block. Every overwrite is backed up (`.backups/`, restorable with `--rollback`) and the exact diff stays visible in git history
+6. In `--interactive` mode: shows you a space-bar checkbox menu with `[M/A/D]` badges and `+N/-M` line counts. For files where you edited locally, shows you both diffs and lets you pick `theirs`, `mine`, or `skip`
 7. Writes the new SHA only for components where every changed file was processed (skip = no SHA advance, so a skipped file resurfaces next run)
 
 **Requirements**: git ≥ 2.25 (for partial-clone with `--filter=blob:none`), Bun, GitHub CLI authenticated.
 
-Run interactively:
+Run (default — sync everything, no prompts):
 
 ```bash
 bun run up
 ```
 
-Run non-interactively (for CI):
+Run interactively (per-file review):
 
 ```bash
-bun run up --auto
+bun run up --interactive
 ```
+
+> Legacy `--auto` / `--force` flags are still accepted: they print an informational note (the default behavior already covers them) and run normally.
 
 Preview without writing:
 

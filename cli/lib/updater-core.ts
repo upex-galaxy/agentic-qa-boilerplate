@@ -1741,6 +1741,59 @@ export function cleanupDeprecated(
   return removed;
 }
 
+/**
+ * List uncommitted working-tree paths that fall INSIDE the updater's write
+ * surface (component dirs/files, ignore-files, package.json specs, deprecated
+ * files). Paths outside that surface (tests/, .context/, user code…) are never
+ * touched by the sync, so they must never trigger the dirty gate.
+ *
+ * bootstrapOnly components are excluded: when their files exist locally the
+ * classifier forces `unchanged`, so local edits there are never overwritten.
+ * Rename lines ("old -> new") match if EITHER side is watched.
+ */
+export function scopedDirtyPaths(cfg: UpdaterConfig, repoRoot: string): string[] {
+  let lines: string[] = [];
+  try {
+    lines = execSync(`git -C "${repoRoot}" status --porcelain`, { encoding: 'utf8' })
+      .split('\n')
+      .map(l => l.slice(3).trim())
+      .filter(Boolean);
+  }
+  catch {
+    return []; // not a git repo / git unavailable — nothing to guard against
+  }
+
+  const prefixes: string[] = [];
+  const exact = new Set<string>();
+  for (const c of cfg.components) {
+    if (c.bootstrapOnly) { continue; }
+    if (c.type === 'directory' || c.type === 'mixed') {
+      for (const p of c.paths) { prefixes.push(`${p.replace(/\/+$/, '')}/`); }
+    }
+    if (c.files) {
+      const base = c.paths[0] === '.' ? '' : `${c.paths[0].replace(/\/+$/, '')}/`;
+      for (const f of c.files) { exact.add(`${base}${f}`); }
+    }
+  }
+  for (const ig of cfg.ignoreFiles) { exact.add(ig.path); }
+  for (const spec of cfg.packageJsonSpecs ?? []) { exact.add(spec.path); }
+  for (const dep of cfg.deprecatedFiles) { exact.add(dep.path); }
+
+  // cfg.excludePaths are never written by the sync (e.g. the per-repo generated
+  // REGISTRY.md, project-adapted api-login.ts) — dirty state there is normal
+  // and must not block the run.
+  const excluded = new Set((cfg.excludePaths ?? []).map(p => p.replace(/\\/g, '/')));
+
+  const strip = (p: string): string => p.replace(/^"|"$/g, ''); // porcelain quotes paths with spaces
+  const watched = (p: string): boolean =>
+    !excluded.has(p) && (exact.has(p) || prefixes.some(pre => p.startsWith(pre)));
+
+  return lines.filter((line) => {
+    const sides = line.split(' -> ').map(s => strip(s.trim()));
+    return sides.some(watched);
+  });
+}
+
 // ============================================================================
 // ORCHESTRATOR — runUpdate (Phase B mega-flow)
 // ============================================================================
@@ -1793,23 +1846,22 @@ export async function runUpdate(
     componentsHeldBack: [],
   };
 
-  // --- DIRTY WORKING TREE GUARD (data-loss safety, pre-fetch) ---
-  // Pre-write backups live in .backups/, which is gitignored — so an
-  // uncommitted user who proceeds and later runs `git clean` / `git stash` can
-  // lose both the working copy and the backup. Refuse on a dirty tree unless
-  // --force; interactive mode offers an explicit override.
-  if (!opts.dryRun && !opts.force) {
-    let dirty = '';
-    try {
-      dirty = execSync(`git -C "${repoRoot}" status --porcelain`, { encoding: 'utf8' }).trim();
-    }
-    catch {
-      dirty = ''; // not a git repo / git unavailable — nothing to guard against
-    }
-    if (dirty) {
-      sink.warn('El árbol de trabajo tiene cambios sin commitear. Los backups del updater van a .backups/ (gitignored); un `git clean` posterior podría perderlos. Commitea o haz stash antes de actualizar.');
-      if (opts.auto) {
-        sink.error('Abortado: árbol sucio en modo --auto. Re-ejecuta con --force para forzar.');
+  // --- SCOPED DIRTY WORKING TREE GATE (data-loss safety, pre-fetch) ---
+  // Only uncommitted changes INSIDE the updater's write surface block the run:
+  // those files would be overwritten and their pre-write backups live in
+  // .backups/ (gitignored), so a later `git clean` could lose both copies.
+  // Dirty paths OUTSIDE the surface (tests/, user code…) never trigger this.
+  // Interactive mode may override with an explicit confirm; the default
+  // (non-interactive) mode always aborts — commit/stash/restore and re-run.
+  if (!opts.dryRun) {
+    const dirtyWatched = scopedDirtyPaths(cfg, repoRoot);
+    if (dirtyWatched.length > 0) {
+      sink.warn(`Hay ${dirtyWatched.length} ruta(s) con cambios sin commitear que este updater SINCRONIZA (serían sobrescritas; sus backups van a .backups/, que está gitignored):`);
+      for (const p of dirtyWatched.slice(0, 20)) { sink.step(`  ${p}`); }
+      if (dirtyWatched.length > 20) { sink.step(`  … y ${dirtyWatched.length - 20} más`); }
+      const interactive = !opts.auto && opts.force !== true;
+      if (!interactive) {
+        sink.error('Abortado: commitea, stashea o restaura esas rutas y vuelve a ejecutar. (Con --interactive puedes continuar bajo confirmación explícita.)');
         return emptySummary;
       }
       const proceed = await sink.confirm('¿Continuar de todas formas pese a los cambios sin commitear?', false);
