@@ -81,7 +81,7 @@
       ]
     },
     "communityUserSkills": {
-      "count": 6,
+      "count": 7,
       "items": [
         {
           "name": "skill-creator",
@@ -112,6 +112,11 @@
           "name": "bun",
           "purpose": "Bun runtime reference — installation, scripts, package management, testing.",
           "source": "https://bun.sh/docs"
+        },
+        {
+          "name": "wokitoki",
+          "purpose": "Community skill: wokitoki",
+          "source": "https://github.com/upex-galaxy/agentic-user-skills"
         }
       ]
     }
@@ -140,7 +145,7 @@
       },
       {
         "name": "openapi",
-        "envVars": ["API_BASE_URL", "OPENAPI_SPEC_PATH", "API_TOKEN"],
+        "envVars": ["API_BASE_URL", "OPENAPI_SPEC_PATH"],
         "purpose": "OpenAPI MCP — explore API endpoints and contract testing from the agent."
       },
       {
