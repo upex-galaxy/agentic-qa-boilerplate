@@ -118,6 +118,11 @@ jobs:
     if: ${{ always() && github.event.inputs.generate_allure != 'false' }}
 
     steps:
+      # Full repo checkout: the report is generated with the repo's own
+      # allurerc.mjs + allure devDependency (identical to local runs).
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Get Allure History
         uses: actions/checkout@v4
         with:
@@ -145,26 +150,25 @@ jobs:
             echo "has_results=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build Allure Report
+      - name: Setup Bun
         if: steps.check_allure.outputs.has_results == 'true'
-        uses: simple-elf/allure-report-action@master
+        uses: oven-sh/setup-bun@v2
         with:
-          gh_pages: gh-pages
-          subfolder: ${{ env.TEST_ENV }}/smoke
-          allure_results: smoke-artifacts/allure-results
-          allure_report: allure-report
-          allure_history: allure-history
-          keep_reports: 3
+          bun-version: latest
 
-      - name: Deploy to GitHub Pages
+      - name: Install Dependencies
         if: steps.check_allure.outputs.has_results == 'true'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: allure-history/${{ env.TEST_ENV }}/smoke
-          destination_dir: ${{ env.TEST_ENV }}/smoke
-          keep_files: true
+        run: bun install
+
+      # Allure 3 generate + publish: same allurerc.mjs as local (multi-view
+      # landing with trends via historyPath), real retention, latest redirect.
+      - name: Build & Publish Allure Report (Allure 3)
+        if: steps.check_allure.outputs.has_results == 'true'
+        run: |
+          bun scripts/ci/publish-allure-pages.ts \
+            --env "${{ env.TEST_ENV }}" --suite smoke \
+            --run "${{ github.run_number }}" \
+            --results smoke-artifacts/allure-results --pages gh-pages --keep 10
 
       - name: Post Report URL
         if: steps.check_allure.outputs.has_results == 'true'

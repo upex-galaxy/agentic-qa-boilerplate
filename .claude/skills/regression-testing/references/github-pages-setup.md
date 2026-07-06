@@ -3,10 +3,12 @@
 > One-time setup that makes the Allure reports your CI already pushes to
 > `gh-pages` actually reachable in a browser. The regression / smoke / sanity
 > workflows shipped with this boilerplate publish to the `gh-pages` branch out
-> of the box (`peaceiris/actions-gh-pages`, `keep_files: true`,
-> `keep_reports: 3`) — but GitHub does NOT serve that branch until Pages is
-> explicitly enabled on the repo. This reference is the full maneuver, learned
-> the hard way on the boilerplate repo itself.
+> of the box via `scripts/ci/publish-allure-pages.ts` (Allure 3, same
+> `allurerc.mjs` as local runs: multi-view landing with Awesome + QA Dashboard
+> + Smoke Release Gate, trend history per env/suite, latest-run redirect,
+> last-10-runs retention) — but GitHub does NOT serve that branch until Pages
+> is explicitly enabled on the repo. This reference is the full maneuver,
+> learned the hard way on the boilerplate repo itself.
 
 ## When to run this
 
@@ -75,10 +77,11 @@ curl -s -o /dev/null -w "%{http_code}" https://{owner}.github.io/{repo}/{env}/re
 
 Two independent growth vectors, two controls:
 
-1. **Working tree** — already controlled: the shipped workflows use
-   `keep_reports: 3`, so only the last 3 reports per suite live on the branch.
-   Screenshots/videos live inside each report and rotate with it.
-2. **Git history** — NOT controlled by keep_reports: every deploy commit keeps
+1. **Working tree** — already controlled: `scripts/ci/publish-allure-pages.ts`
+   prunes to the last 10 run dirs per env/suite (`--keep`, adjustable in each
+   workflow). Screenshots/videos live inside each report and rotate with it;
+   `history.jsonl` (trend data) persists independently and stays small.
+2. **Git history** — NOT controlled by run pruning: every deploy commit keeps
    its blobs in history forever, so the branch grows on every run even though
    the served site does not. Fix: a scheduled squash job that rewrites
    `gh-pages` to a single orphan commit holding the current content. This is
