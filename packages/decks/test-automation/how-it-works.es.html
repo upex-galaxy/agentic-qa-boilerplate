@@ -1,9 +1,17 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="tokyo-night">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Test Automation (KATA) — El Oficio y la IA</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test Automation · Cómo funciona</title>
 <style>
+/* ============================================================
+   Self-contained deck — html-ppt assets inlined (fonts, base,
+   tokyo-night theme, animations) + deck-local styles.
+   Source: ~/.agents/skills/html-ppt (examples/xray-explained-tokyo).
+   ============================================================ */
+
+/* ---- fonts.css ---- */
 /* html-ppt :: shared webfonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;600;700;900&display=swap');
@@ -13,6 +21,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+
+
+/* ---- base.css ---- */
 /* html-ppt :: base.css — reset + shared tokens + layout primitives */
 /* Default tokens. Themes in assets/themes/*.css override the :root block. */
 :root {
@@ -163,6 +174,26 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
   .deck-header,.deck-footer,.progress-bar,.notes-overlay,.overview{display:none!important}
 }
+
+
+/* ---- themes/tokyo-night.css ---- */
+/* theme: tokyo-night */
+:root{
+  --bg:#1a1b26;--bg-soft:#16161e;--surface:#24283b;--surface-2:#2f334d;
+  --border:rgba(192,202,245,.12);--border-strong:rgba(192,202,245,.24);
+  --text-1:#c0caf5;--text-2:#a9b1d6;--text-3:#565f89;
+  --accent:#7aa2f7;--accent-2:#bb9af7;--accent-3:#7dcfff;
+  --good:#9ece6a;--warn:#e0af68;--bad:#f7768e;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#f7768e);
+  --grad-soft:linear-gradient(135deg,#24283b,#2f334d);
+  --radius:12px;--radius-sm:8px;--radius-lg:20px;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --shadow-lg:0 24px 62px rgba(0,0,0,.6);
+  --font-sans:'Inter','Noto Sans SC',sans-serif;
+}
+
+
+/* ---- animations/animations.css ---- */
 /* html-ppt :: animations.css
  * Apply by adding class="anim-<name>" or data-anim="<name>".
  * Durations are deliberately snappy; tweak --anim-dur per element.
@@ -301,683 +332,437 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 @media (prefers-reduced-motion: reduce){
   [class*="anim-"]{animation:none!important;transition:none!important}
 }
-/* ===========================================================================
-   how-it-works deck theme — dark engineering, accent-parametrized
-   Set per deck on <body class="tpl-howto" style="--a1:..;--a2:..;--a3:..">
-   =========================================================================== */
-.tpl-howto{
-  --a1:#7ee787; --a2:#79c0ff; --a3:#d2a8ff;            /* fallbacks */
-  --bg:#0d1117; --bg-soft:#161b22; --surface:#161b22; --surface-2:#1c2230;
-  --border:rgba(139,148,158,.22); --border-strong:rgba(139,148,158,.42);
-  --text-1:#e6edf3; --text-2:#9aa6b2; --text-3:#6e7681;
-  --accent:var(--a1); --accent-2:var(--a2); --accent-3:var(--a3);
-  --good:#3fb950; --warn:#d29922; --bad:#f85149;
-  --grad:linear-gradient(120deg,var(--a1) 0%,var(--a2) 55%,var(--a3) 100%);
-  --radius:14px; --radius-lg:20px;
-  --shadow:0 20px 60px rgba(0,0,0,.5);
-  font-family:'Inter','Noto Sans SC',sans-serif;
-  background:#0d1117; color:var(--text-1);
-}
-.tpl-howto .deck{background:#0d1117}
-.tpl-howto .slide{padding:64px 88px;background:#0d1117;color:var(--text-1)}
-.tpl-howto .slide::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
-  background:
-   radial-gradient(58% 48% at 88% 8%,color-mix(in srgb,var(--a2) 14%,transparent),transparent 60%),
-   radial-gradient(52% 50% at 8% 92%,color-mix(in srgb,var(--a1) 10%,transparent),transparent 62%);}
-.tpl-howto .slide>*{position:relative;z-index:1}
 
-/* ---------- typography ---------- */
-.tpl-howto .h1{font-size:74px;line-height:1.04;font-weight:800;letter-spacing:-.03em;color:#fff}
-.tpl-howto .h2{font-size:50px;line-height:1.08;font-weight:700;letter-spacing:-.025em;color:#fff}
-.tpl-howto h3,.tpl-howto .h3{color:#fff;font-weight:600}
-.tpl-howto h4,.tpl-howto .h4{color:#fff;font-weight:600}
-.tpl-howto .lede{color:var(--text-2);font-weight:300}
-.tpl-howto .dim{color:var(--text-2)} .tpl-howto .dim2{color:var(--text-3)}
-.tpl-howto .mono{font-family:'JetBrains Mono','IBM Plex Mono',monospace}
-.tpl-howto .gradient-text,.tpl-howto .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
-.tpl-howto .kicker{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;text-transform:none;letter-spacing:.02em}
-.tpl-howto .kicker::before{content:"// "}
-.tpl-howto .kicker.run::before{content:"> "}
-.tpl-howto .divider-accent{height:3px;width:64px;background:var(--grad);border-radius:2px}
 
-/* ---------- cards ---------- */
-.tpl-howto .card{background:var(--surface);border:1px solid var(--border);box-shadow:none;border-radius:var(--radius)}
-.tpl-howto .card-accent{border-top:3px solid var(--accent)}
-.tpl-howto .card-soft{background:var(--surface-2);border:1px solid var(--border)}
-.tpl-howto .card h4{margin-bottom:8px}
-.tpl-howto .card p{font-size:15px;line-height:1.6}
-.tpl-howto .num-badge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;
-  background:color-mix(in srgb,var(--a1) 16%,transparent);color:var(--accent);font-weight:800;font-family:'JetBrains Mono',monospace;font-size:16px;border:1px solid color-mix(in srgb,var(--a1) 30%,transparent)}
+/* ---- deck-local (test-automation · how-it-works) ---- */
+  .slide{padding:52px 76px}
+  .h1{font-size:80px;line-height:1.04}
+  .h2{font-size:40px;line-height:1.12;margin-bottom:8px}
+  .kicker{font-family:var(--font-mono);font-size:14px;font-weight:600;text-transform:none;letter-spacing:.03em}
+  .kicker::before{content:"// "}
+  .lede{font-size:21px;line-height:1.5;font-weight:400}
+  .small{font-size:15px;line-height:1.55}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
 
-/* ---------- tags / pills / kbd ---------- */
-.tpl-howto .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:7px;font-family:'JetBrains Mono',monospace;
-  font-size:12px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)}
-.tpl-howto .tag.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent);background:color-mix(in srgb,var(--good) 12%,transparent)}
-.tpl-howto .tag.no{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:color-mix(in srgb,var(--bad) 12%,transparent)}
-.tpl-howto .tag.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent)}
-.tpl-howto .pill{background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
-.tpl-howto .pill-accent{background:color-mix(in srgb,var(--a1) 14%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--a1) 32%,transparent)}
-.tpl-howto kbd,.tpl-howto .kbd{font-family:'JetBrains Mono',monospace;font-size:13px;padding:3px 10px;border-radius:7px;
-  background:color-mix(in srgb,var(--a1) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--a1) 30%,transparent);white-space:nowrap}
+  /* cover */
+  .cover-title{font-family:var(--font-mono);font-size:88px;font-weight:700;letter-spacing:-.045em;line-height:1.04;color:var(--text-1);margin:14px 0 20px}
+  .cover-title .slash{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+  .chips{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+  .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;font-family:var(--font-mono);font-size:14px;background:var(--surface);border:1px solid var(--border-strong);color:var(--text-2)}
+  .chip b{color:var(--accent);font-weight:700}
 
-/* ---------- terminal / code ---------- */
-.tpl-howto .terminal{background:#010409;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
-  box-shadow:0 30px 80px rgba(0,0,0,.6);font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:14.5px;line-height:1.7}
-.tpl-howto .terminal .bar{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#161b22;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-3)}
-.tpl-howto .terminal .dot{width:11px;height:11px;border-radius:50%;background:#ff5f56}
-.tpl-howto .terminal .dot:nth-child(2){background:#ffbd2e}
-.tpl-howto .terminal .dot:nth-child(3){background:#27c93f}
-.tpl-howto .terminal pre{margin:0;padding:22px 26px;color:#e6edf3;overflow:auto;max-height:520px;white-space:pre-wrap}
-.tpl-howto .terminal .p{color:var(--accent);font-weight:600}   /* prompt $ */
-.tpl-howto .terminal .c{color:#e6edf3}                          /* command */
-.tpl-howto .terminal .o{color:var(--text-2)}                    /* output */
-.tpl-howto .kw{color:#ff7b72} .tpl-howto .fn{color:#d2a8ff} .tpl-howto .str{color:#a5d6ff}
-.tpl-howto .cmt{color:#6e7681;font-style:italic} .tpl-howto .num{color:#79c0ff}
-.tpl-howto .caret{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;animation:hb-blink 1s step-end infinite}
-@keyframes hb-blink{50%{opacity:0}}
+  /* cards */
+  .card{padding:18px 20px;box-shadow:none;border:1px solid var(--border-strong)}
+  .card h4{font-size:16.5px;margin:0 0 6px}
+  .card p{font-size:14px;line-height:1.5;margin:0;color:var(--text-2)}
+  .card p b{color:var(--text-1)}
+  .card-accent{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
 
-/* ---------- agenda rows ---------- */
-.tpl-howto .agenda-row{display:flex;align-items:baseline;gap:22px;padding:15px 0;border-bottom:1px dashed var(--border);font-family:'JetBrains Mono',monospace}
-.tpl-howto .agenda-row .anum{color:var(--accent);flex:none;width:42px}
-.tpl-howto .agenda-row .at{color:#fff;font-size:22px;flex:1;font-family:'Inter',sans-serif;font-weight:600}
-.tpl-howto .agenda-row .ad{color:var(--text-3);font-size:12px}
+  /* bullets */
+  .blist{list-style:none;margin:16px 0 0;padding:0}
+  .blist li{position:relative;padding:8px 0 8px 26px;font-size:15.5px;line-height:1.5;color:var(--text-2);border-bottom:1px dashed var(--border)}
+  .blist li:last-child{border-bottom:none}
+  .blist li::before{content:"▸";position:absolute;left:2px;top:8px;color:var(--accent);font-weight:700}
+  .blist li b{color:var(--text-1);font-weight:600}
+  .blist.numbered{counter-reset:bl}
+  .blist.numbered li{padding-left:36px}
+  .blist.numbered li::before{counter-increment:bl;content:counter(bl);font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--accent);
+    border:1px solid rgba(122,162,247,.4);background:rgba(122,162,247,.1);border-radius:6px;width:22px;height:22px;
+    display:inline-flex;align-items:center;justify-content:center;left:0;top:9px}
 
-/* ---------- numbered steps (process) ---------- */
-.tpl-howto .steps{display:grid;gap:20px;margin-top:34px}
-.tpl-howto .steps.s2{grid-template-columns:repeat(2,1fr)}
-.tpl-howto .steps.s3{grid-template-columns:repeat(3,1fr)}
-.tpl-howto .steps.s4{grid-template-columns:repeat(4,1fr)}
-.tpl-howto .step{position:relative;padding:24px 22px 20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
-.tpl-howto .step .num{position:absolute;top:-18px;left:20px;width:40px;height:40px;border-radius:11px;background:var(--grad);color:#03121a;
-  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;font-family:'JetBrains Mono',monospace}
-.tpl-howto .step h4{margin:14px 0 7px;font-size:17px}
-.tpl-howto .step p{font-size:13.5px;color:var(--text-2);line-height:1.55}
+  /* tables */
+  table.tt{width:100%;border-collapse:collapse;margin-top:16px;font-size:14.5px}
+  table.tt th{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-2);
+    text-align:left;padding:6px 12px;border-bottom:1px solid var(--border-strong)}
+  table.tt td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top;line-height:1.45}
+  table.tt tr:last-child td{border-bottom:none}
+  table.tt td b{color:var(--text-1);font-weight:600}
+  table.tt td .mono,table.tt th .mono{font-size:.92em}
 
-/* ---------- vertical stage flow ---------- */
-.tpl-howto .flow{display:flex;flex-direction:column;gap:0;margin-top:24px}
-.tpl-howto .flow .stage{display:grid;grid-template-columns:46px 1fr;gap:18px;padding:14px 0;align-items:start}
-.tpl-howto .flow .stage .sx{width:46px;height:46px;border-radius:12px;background:color-mix(in srgb,var(--a1) 14%,transparent);
-  border:1px solid color-mix(in srgb,var(--a1) 34%,transparent);color:var(--accent);display:flex;align-items:center;justify-content:center;
-  font-weight:800;font-family:'JetBrains Mono',monospace;font-size:17px}
-.tpl-howto .flow .stage h4{font-size:19px;margin-bottom:3px}
-.tpl-howto .flow .stage p{font-size:14px;color:var(--text-2);line-height:1.55;margin:0}
-.tpl-howto .flow .stage+.stage{border-top:1px dashed var(--border)}
+  /* callouts */
+  .callout{border-left:3px solid var(--accent);background:rgba(122,162,247,.08);padding:12px 18px;border-radius:0 10px 10px 0;margin-top:16px}
+  .callout.good{border-left-color:var(--good);background:rgba(158,206,106,.08)}
+  .callout.warn{border-left-color:var(--warn);background:rgba(224,175,104,.08)}
+  .callout.bad{border-left-color:var(--bad);background:rgba(247,118,142,.08)}
+  .callout h4{font-size:14px;margin:0 0 3px;color:var(--accent)}
+  .callout.good h4{color:var(--good)}.callout.warn h4{color:var(--warn)}.callout.bad h4{color:var(--bad)}
+  .callout p{font-size:14px;margin:0;color:var(--text-2);line-height:1.5}
+  .callout p b{color:var(--text-1)}
 
-/* ---------- comparison (manual pain vs craft / do vs dont) ---------- */
-.tpl-howto .vs{display:grid;grid-template-columns:1fr 64px 1fr;gap:22px;align-items:stretch;margin-top:26px}
-.tpl-howto .vs .side{padding:26px 28px}
-.tpl-howto .vs .mid{font-size:42px;font-weight:800;color:var(--text-3);display:flex;align-items:center;justify-content:center}
-.tpl-howto .vs .bad-side{border-top:3px solid var(--bad)}
-.tpl-howto .vs .good-side{border-top:3px solid var(--good)}
-.tpl-howto .vs h3{font-size:21px;margin-bottom:12px}
-.tpl-howto .vs ul{padding-left:18px;margin:0;font-size:14.5px;line-height:1.75;color:var(--text-2)}
-.tpl-howto .vs .bad-side li::marker{color:var(--bad)}
-.tpl-howto .vs .good-side li::marker{color:var(--good)}
+  /* numbered step grid */
+  .steps{display:grid;gap:22px 18px;margin-top:30px}
+  .steps.s4{grid-template-columns:repeat(4,1fr)}
+  .steps.s5{grid-template-columns:repeat(5,1fr)}
+  .step{position:relative;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:22px 16px 14px}
+  .step .num{position:absolute;top:-14px;left:14px;width:30px;height:30px;border-radius:9px;background:var(--grad);color:#1a1b26;
+    font-family:var(--font-mono);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .step h4{font-size:15px;margin:4px 0}
+  .step p{font-size:13px;color:var(--text-2);line-height:1.45;margin:0}
 
-/* ---------- callout / note box ---------- */
-.tpl-howto .callout{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--a1) 7%,transparent);
-  padding:18px 22px;border-radius:0 10px 10px 0;margin-top:20px}
-.tpl-howto .callout h4{font-size:16px;margin-bottom:5px;color:var(--accent)}
-.tpl-howto .callout p{font-size:15px;color:var(--text-2);line-height:1.6;margin:0}
-.tpl-howto .callout.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent)}
-.tpl-howto .callout.warn h4{color:var(--warn)}
+  /* KATA layer flow */
+  .layers{display:flex;flex-direction:column;margin-top:14px}
+  .layer{display:grid;grid-template-columns:84px 1fr;gap:16px;align-items:center;padding:9px 0}
+  .layer+.layer{border-top:1px dashed var(--border)}
+  .layer .lx{font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--accent);background:rgba(122,162,247,.12);
+    border:1px solid rgba(122,162,247,.3);border-radius:8px;padding:6px 0;text-align:center}
+  .layer h4{font-size:16px;margin:0 0 1px}
+  .layer p{font-size:13.5px;color:var(--text-2);margin:0;line-height:1.4}
+  .layer h4 .mono{font-size:.85em;color:var(--accent-3)}
 
-/* ---------- decision / data table ---------- */
-.tpl-howto .dtable{width:100%;border-collapse:collapse;margin-top:24px;font-size:15px}
-.tpl-howto .dtable th{text-align:left;padding:12px 16px;color:var(--text-3);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-strong)}
-.tpl-howto .dtable td{padding:13px 16px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top}
-.tpl-howto .dtable tr:last-child td{border-bottom:none}
-.tpl-howto .dtable td b,.tpl-howto .dtable td strong{color:#fff;font-weight:600}
+  /* workflow map (slide 2) */
+  .wf{display:grid;grid-template-columns:repeat(6,1fr);gap:20px 22px;margin-top:24px;align-items:stretch}
+  .wf-node{position:relative;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:11px 13px}
+  .wf-node .n{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.05em;text-transform:uppercase}
+  .wf-node h4{font-size:14px;margin:3px 0;color:var(--text-1);line-height:1.25}
+  .wf-node p{font-size:11.5px;line-height:1.4;color:var(--text-3);margin:0}
+  .wf-node p .mono{font-size:.95em}
+  .wf-node.m:not(.last)::after{content:"→";position:absolute;right:-19px;top:50%;transform:translateY(-50%);color:var(--accent);font-weight:800;font-size:15px}
+  .wf-node.side{border-style:dashed;background:rgba(36,40,59,.55)}
+  .wf-node.side .n{color:var(--accent-2)}
+  .wf-node.side.down::after{content:"↓";position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);color:var(--accent-2);font-weight:800;font-size:14px}
+  .wf-node.side.loop{border-color:rgba(247,118,142,.55)}
+  .wf-node.side.loop .n{color:var(--bad)}
+  .wf-node.side.loop::before{content:"↺";position:absolute;left:50%;top:-18px;transform:translateX(-50%);color:var(--bad);font-weight:800;font-size:15px}
+  .wf-node.side.next{border-color:rgba(158,206,106,.55)}
+  .wf-node.side.next .n{color:var(--good)}
+  .wf-node.side.next::before{content:"↓";position:absolute;left:50%;top:-18px;transform:translateX(-50%);color:var(--good);font-weight:800;font-size:14px}
 
-/* ---------- bullet list (clean) ---------- */
-.tpl-howto .blist{list-style:none;padding:0;margin:22px 0 0}
-.tpl-howto .blist li{position:relative;padding:9px 0 9px 30px;font-size:17px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
-.tpl-howto .blist li:last-child{border-bottom:none}
-.tpl-howto .blist li::before{content:"▸";position:absolute;left:4px;top:9px;color:var(--accent);font-weight:700}
-.tpl-howto .blist li b{color:#fff;font-weight:600}
+  /* terminal */
+  .term{background:#16161e;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);
+    font-family:var(--font-mono);font-size:14px;line-height:1.62}
+  .term .bar{display:flex;gap:8px;align-items:center;padding:10px 14px;background:#1f2335;border-bottom:1px solid var(--border);
+    font-size:12px;color:var(--text-3);font-family:var(--font-mono)}
+  .term .dot{width:10px;height:10px;border-radius:50%;background:#f7768e}
+  .term .dot:nth-of-type(2){background:#e0af68}
+  .term .dot:nth-of-type(3){background:#9ece6a}
+  .term pre{margin:0;padding:16px 20px;white-space:pre;overflow:auto;color:#c0caf5}
+  .term .p{color:#9ece6a;font-weight:700}
+  .term .c{color:#c0caf5}
+  .term .o{color:#787c99}
+  .kw{color:#bb9af7}.fn{color:#7aa2f7}.str{color:#9ece6a}.cmt{color:#565f89;font-style:italic}.num{color:#ff9e64}
 
-/* ---------- speaker / cover meta ---------- */
-.tpl-howto .speaker{display:flex;align-items:center;gap:14px;margin-top:26px}
-.tpl-howto .speaker .av{width:50px;height:50px;border-radius:13px;background:var(--grad)}
-.tpl-howto .speaker b{display:block;color:#fff;font-size:17px}
-.tpl-howto .speaker span{color:var(--text-3);font-size:12.5px;font-family:'JetBrains Mono',monospace}
-
-/* ---------- section divider ---------- */
-.tpl-howto .slide.divider{justify-content:center;height:auto}
-.tpl-howto .part-no{font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent);letter-spacing:.1em}
-.tpl-howto .slide.divider .h1{font-size:64px;margin-top:10px;max-width:20ch}
-.tpl-howto .slide.divider .lede{margin-top:26px;font-size:20px}
-
-/* ---------- big stat ---------- */
-.tpl-howto .bigstat{font-size:180px;font-weight:900;line-height:1;letter-spacing:-.04em}
-
-/* ---------- footer ---------- */
-.tpl-howto .deck-footer .mono{color:var(--text-3)}
-.tpl-howto .slide-number{color:var(--text-3)}
-
-/* fix: cover .speaker must not collide with the absolute .deck-footer */
-.tpl-howto .slide:has(> .speaker){padding-bottom:160px}
-.tpl-howto .slide .speaker{position:absolute;left:88px;right:88px;bottom:70px;margin-top:0;z-index:3}</style>
+  .kbd{font-family:var(--font-mono);font-size:13px;padding:3px 10px;border-radius:7px;white-space:nowrap;
+    background:rgba(122,162,247,.12);color:var(--accent);border:1px solid rgba(122,162,247,.3)}
+  .cols{display:grid;gap:20px}
+  .cols.c2{grid-template-columns:repeat(2,1fr)}
+  .cols.c3{grid-template-columns:repeat(3,1fr)}
+</style>
 </head>
-<body class="tpl-howto" style="--a1:#ffa657;--a2:#ff7b72;--a3:#d2a8ff">
+<body>
+
 <div class="deck">
-<section class="slide" data-title="Portada">
-  <p class="kicker run">how-it-works · agentic-qa</p>
-  <h1 class="h1 anim-fade-up" data-anim="fade-up">De los Acceptance Criteria a una <span class="grad">Suite Confiable</span></h1>
-  <p class="lede mt-m">Cómo un ingeniero de QA planifica, programa y revisa tests automatizados a mano — y cómo un solo slash command lo hace desde la terminal.</p>
-  <div class="speaker"><div class="av"></div><div><b>El Oficio → La Aceleración</b><span>parte 1: KATA a mano · parte 2: la skill /test-automation</span></div></div>
-  <div class="deck-footer"><span class="mono">Playwright · TypeScript · Plan → Code → Review</span><span class="slide-number" data-current="1" data-total="33"></span></div>
-  <div class="notes">Marca el encuadre: convertir los Acceptance Criteria de una Story en tests automatizados atómicos, trazables y estables — primero como oficio, luego acelerado por IA.</div>
-</section>
 
-<section class="slide center tc" data-title="Stat">
-  <div>
-    <p class="kicker">por qué importa</p>
-    <div class="bigstat"><span class="grad">retries: 0</span></div>
-    <h3>El impuesto del test flaky — default local de KATA. Si un test pasa solo en el retry, es flaky: un bug que investigar, no un pass que aceptar. Sin <span class="mono">waitForTimeout</span> arbitrario, sin estado compartido, cada test crea sus propios datos.</h3>
-  </div>
-  <div class="notes">Arranca con la regla cultural que define todo el método. La flakiness es el asesino silencioso de las suites automatizadas; KATA se niega a ocultarla tras retries.</div>
-</section>
+  <!-- 1 · PORTADA -->
+  <section class="slide is-active" data-title="Portada">
+    <p class="eyebrow">AGENTIC QA · WORKFLOW SKILL</p>
+    <h1 class="cover-title" data-anim="fade-up"><span class="slash">/</span>test-automation</h1>
+    <p class="lede">Planifica, escribe y revisa tests automatizados KATA sobre Playwright + TypeScript — tres fases en orden estricto, <b>Plan → Code → Review</b>, nunca directo al código.</p>
+    <div class="chips anim-stagger-list">
+      <span class="chip"><b>Stage 5</b> — Test Automation</span>
+      <span class="chip">Plan → Code → Review</span>
+      <span class="chip">KATA · Playwright · TypeScript</span>
+    </div>
+    <div class="notes">Encuadre: esta skill convierte los veredictos Candidate de test-documentation en tests automatizados atómicos y trazables. KATA reescribe el Page Object clásico: si escribes tests "a la manera estándar", el review los rechaza.</div>
+  </section>
 
-<section class="slide" data-title="Agenda">
-  <p class="kicker">qué cubriremos</p>
-  <h2 class="h2" data-anim="fade-up">Dos Mitades: El Oficio, luego La Aceleración</h2>
-  <div class="stack mt-l anim-stagger-list">
-    <div class="agenda-row"><span class="anum">01</span><span class="at">El Oficio — KATA manual: scope, plan, arquitectura por capas, identidad del ATC, datos, código, gate de review</span><span class="ad">parte 1</span></div>
-    <div class="agenda-row"><span class="anum">02</span><span class="at">La Aceleración — cómo /test-automation lo conduce: trigger, contexto, subagentes, tools, artefactos</span><span class="ad">parte 2</span></div>
-    <div class="agenda-row"><span class="anum">03</span><span class="at">Conclusiones — las reglas que mantienen una suite confiable a escala</span><span class="ad">cierre</span></div>
-  </div>
-  <div class="notes">La parte 1 es el grueso — aprende a hacerlo a mano. La parte 2 muestra a la IA haciendo exactamente eso, más rápido, con el humano aún al control.</div>
-</section>
+  <!-- 2 · MAPA DEL WORKFLOW -->
+  <section class="slide" data-title="Mapa del workflow">
+    <p class="kicker">el mapa — índice mental del deck</p>
+    <h2 class="h2" data-anim="fade-up">Plan → Code → Review, con sus <span class="grad">gates</span></h2>
+    <div class="wf" data-anim-target>
+      <div class="wf-node side down" style="grid-column:1;grid-row:1"><span class="n">← /test-documentation</span><h4>Solo veredictos Candidate</h4><p>Manual y Deferred son terminales — jamás se automatizan (Stage 4 decide).</p></div>
+      <div class="wf-node side down" style="grid-column:3;grid-row:1"><span class="n">gate anti-duplicación</span><h4><span class="mono">kata-manifest.json</span></h4><p>Registro de Componentes + IDs <span class="mono">@atc</span>. Se consulta ANTES de proponer nada (Critical Rule #12).</p></div>
+      <div class="wf-node side down" style="grid-column:5;grid-row:1"><span class="n">/judgment-day · opcional</span><h4>Doble juez ciego</h4><p>Para cambios de alto riesgo (fixtures nuevos, bases compartidas). Nunca automático.</p></div>
+      <div class="wf-node m" style="grid-column:1;grid-row:2"><span class="n">Gate 0 · Preflight</span><h4>Readiness</h4><p>Framework adaptado, toolchain, env + creds, browsers. STOP en RED.</p></div>
+      <div class="wf-node m" style="grid-column:2;grid-row:2"><span class="n">Phase 0</span><h4>Resume + scope</h4><p><span class="mono">.session/…</span> → resume / restart / abort. Scope: module · ticket · regression.</p></div>
+      <div class="wf-node m" style="grid-column:3;grid-row:2"><span class="n">Phase 1</span><h4>Plan ✋</h4><p><span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span>. TÚ apruebas antes de codear.</p></div>
+      <div class="wf-node m" style="grid-column:4;grid-row:2"><span class="n">Phase 2</span><h4>Code</h4><p>Types → componente → fixture → test file → <span class="mono">bun run test</span>.</p></div>
+      <div class="wf-node m" style="grid-column:5;grid-row:2"><span class="n">Phase 3</span><h4>Review</h4><p>3 Verifiers paralelos: <span class="mono">test</span> · <span class="mono">types:check</span> · <span class="mono">lint:check</span>.</p></div>
+      <div class="wf-node m last" style="grid-column:6;grid-row:2"><span class="n">Accept</span><h4>Handoff</h4><p>Checkpoint + archivo de sesión. La skill se detiene aquí — sin git.</p></div>
+      <div class="wf-node side loop" style="grid-column:4/6;grid-row:3"><span class="n">reject</span><h4>STOP — sin auto-fix</h4><p>Reporte fallido verbatim; re-despachar Code SOLO con tu aprobación. Bug real → confirma y crea el bug.</p></div>
+      <div class="wf-node side next" style="grid-column:6;grid-row:3"><span class="n">→ siguiente</span><h4><span class="mono">/git-flow-master</span></h4><p>Branch <span class="mono">test/*</span>, PR, merge. Luego <span class="mono">/regression-testing</span> (Stage 6) en CI.</p></div>
+    </div>
+    <p class="small dim2 mt-m">Cada fase del mapa = una sección de este deck, en el mismo orden.</p>
+    <div class="notes">Camino principal: Preflight → Phase 0 → Plan → Code → Review → Handoff. Adyacentes: la entrada desde test-documentation, el gate del manifest en Plan, judgment-day opcional en Review, el loop de REJECT y el handoff a git-flow-master + regression-testing.</div>
+  </section>
 
-<section class="slide divider" data-title="Part 1">
-  <div>
-    <p class="part-no">PARTE 01</p>
-    <h1 class="h1">El Oficio<br><span class="grad">KATA a mano</span></h1>
-    <p class="lede">Si la IA no existiera, ¿qué haría un ingeniero de QA, paso a paso? Planificar antes de programar. Respetar las capas. Un ATC = un test case. Revisar cada línea contra el checklist.</p>
-  </div>
-  <div class="notes">Todo en la parte 1 es el método real que sigue un humano. La IA luego automatiza esta misma secuencia — así que domínalo primero.</div>
-</section>
+  <!-- 3 · ENTRADA + SCOPE -->
+  <section class="slide" data-title="Entrada + scope">
+    <p class="kicker">antes de nada — qué entra y a qué tamaño</p>
+    <h2 class="h2" data-anim="fade-up">Elige el <span class="grad">scope</span> primero, una sola vez</h2>
+    <div class="callout"><h4>La entrada viene de /test-documentation (Stage 4)</h4><p>Solo los TCs con veredicto <b>Candidate</b> llegan a automation. <b>Manual</b> y <b>Deferred</b> son terminales. Mapeo: Module ← module-driven · Ticket ← ticket-driven · Regression ← bug-driven · ad-hoc → donde encaje.</p></div>
+    <table class="tt">
+      <thead><tr><th>Scope</th><th>Entrada</th><th>Salida</th><th>Úsalo cuando</th></tr></thead>
+      <tbody>
+        <tr><td><b>Module-driven</b> (Macro)</td><td>Un módulo + lista de TCs candidatos</td><td>1 spec de módulo + N specs de ATC</td><td>Lote de 10+ tests; primera pasada sobre un área nueva</td></tr>
+        <tr><td><b>Ticket-driven</b> (Medium)</td><td>Un Story ID con escenarios</td><td>1 plan de implementación del ticket</td><td>Una user story completa — default del trabajo de sprint</td></tr>
+        <tr><td><b>Regression-driven</b> (Micro)</td><td>Un TC concreto (post-bugfix)</td><td>1 plan de implementación de ATC</td><td>Un test de regresión tras un fix — unidad mínima</td></tr>
+      </tbody>
+    </table>
+    <p class="small dim mt-m">Ante la duda, PREGUNTA al usuario. Nunca asumas "module" solo porque aparecen varios IDs de TC en el briefing.</p>
+    <div class="notes">El scope dicta cuánta ceremonia de planificación se produce y cuántos subagentes de Code se despachan después. Elegirlo mal es programar el alcance equivocado.</div>
+  </section>
 
-<section class="slide" data-title="Pipeline">
-  <p class="kicker">el pipeline innegociable</p>
-  <h2 class="h2" data-anim="fade-up">Plan → Code → Review (Nunca Saltes una Fase)</h2>
-  <div class="flow mt-m">
-    <div class="stage"><div class="sx">1</div><div><h4>Plan</h4><p>Escribe spec.md + automation-plan.md; elige scope, ATCs, fixture, estrategia de datos.</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>Code</h4><p>types → clase del componente → registra el fixture → archivo de test → ejecuta + verifica.</p></div></div>
-    <div class="stage"><div class="sx">3</div><div><h4>Review</h4><p>Corre el checklist KATA; tres gates (test / types / lint) todos en verde = merge.</p></div></div>
-  </div>
-  <div class="callout mt-m"><h4>Cada flecha es un GATE</h4><p>No empieces Code antes de aprobar el Plan; no cierres el ticket antes de que pase el Review.</p></div>
-  <div class="notes">Este orden de tres fases es estructural, no cortesía. Programar el scope equivocado es la falla más común — el gate de Plan lo previene.</div>
-</section>
+  <!-- 4 · PREFLIGHT GATE -->
+  <section class="slide" data-title="Preflight gate">
+    <p class="kicker">gate 0 · readiness preflight — MANDATORY, corre antes que todo</p>
+    <h2 class="h2" data-anim="fade-up">¿Está todo listo para escribir y <span class="grad">correr</span> código?</h2>
+    <table class="tt">
+      <thead><tr><th>Capacidad</th><th>Nivel</th><th>Por qué aquí</th></tr></thead>
+      <tbody>
+        <tr><td><b>Framework adaptado</b></td><td>REQUIRED</td><td>Sin ATCs contra los scaffolds <span class="mono">Example*</span>. ¿Genérico? STOP → el usuario corre <span class="mono">/project-discovery</span> → <span class="mono">/adapt-framework</span> (el gate nunca los auto-ejecuta)</td></tr>
+        <tr><td><b>Toolchain + manifest</b></td><td>REQUIRED</td><td><span class="mono">bun run test / types:check / lint:check</span> resuelven en t=0; <span class="mono">kata:manifest:check</span> limpio antes de proponer componentes</td></tr>
+        <tr><td><b>Env activo + credenciales</b></td><td>REQUIRED</td><td>Los tests corren en vivo: URL alcanzable + test users en <span class="mono">.env</span> (por rol si aplica) + browsers Playwright (<span class="mono">bun run pw:install</span>)</td></tr>
+        <tr><td><b>OpenAPI MCP + <span class="mono">api/schemas/</span></b></td><td>SCOPE · API</td><td>Se necesita ya en PLAN-time: explorar endpoints para diseñar ATCs y clasificar datos</td></tr>
+        <tr><td><b>DBHub MCP</b></td><td>SCOPE · datos</td><td>PLAN-time también: explorar el schema para diseñar fixtures de datos</td></tr>
+        <tr><td><b>Issue tracker</b></td><td>SCOPE · ticket</td><td>Lecturas de ATP + ACs vía <span class="mono">bun run jira:sync-issues</span></td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn"><h4>Dos leyes</h4><p><b>args-as-answers</b> — lo que ya diste (scope, ticket, API vs E2E) no se re-pregunta. <b>probe, don't assume</b> — se verifica, no se supone. Gaps + REDs → UN solo checklist de preguntas; STOP ante cualquier RED bloqueante.</p></div>
+    <div class="notes">Distinto del pre-flight anti-duplicación de Phase 1 (ese cruza el manifest buscando reuso): este gate va de tools y entorno listos. Evita descubrir a mitad del Code que faltaba una credencial o que el framework seguía genérico.</div>
+  </section>
 
-<section class="slide" data-title="Scopes">
-  <p class="kicker">fase 0 — elige tu scope</p>
-  <h2 class="h2" data-anim="fade-up">Tres Scopes, Tres Tamaños de Trabajo</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Scope</th><th>Entrada</th><th>Salida</th><th>Úsalo cuando</th></tr></thead>
-    <tbody>
-      <tr><td><b>Módulo (Macro)</b></td><td>Módulo + TCs candidatos</td><td>1 plan de módulo + N specs de ATC</td><td>Automatizando un área en lote, 10+ tests</td></tr>
-      <tr><td><b>Ticket (Medio)</b></td><td>Un ID de Story + escenarios</td><td>1 implementation plan</td><td>Una Story — default para trabajo de sprint</td></tr>
-      <tr><td><b>Regression (Micro)</b></td><td>Un TC (post-bugfix)</td><td>1 implementation plan de ATC</td><td>Un test de regression tras un fix</td></tr>
-    </tbody>
-  </table>
-  <p class="dim mt-s">Ante la duda, PREGUNTA. Nunca asumas "módulo" solo porque aparecen varios IDs de TC.</p>
-  <p class="dim mt-s">Estos scopes consumen los veredictos <b>Candidate</b> de /test-documentation — mapeo: Module ← module-driven · Ticket ← ticket-driven · Regression ← bug-driven · ad-hoc → donde encaje. Manual y Deferred son terminales.</p>
-  <div class="notes">El scope dicta cuánta ceremonia de planificación produces. Solo los veredictos Candidate de test-documentation llegan a automation — Manual y Deferred son terminales.</div>
-</section>
+  <!-- 5 · PHASE 0 -->
+  <section class="slide" data-title="Phase 0 · Resume">
+    <p class="kicker">phase 0 · resume check — inline, &lt;1 minuto</p>
+    <h2 class="h2" data-anim="fade-up">¿Hay una sesión previa? <span class="grad">Retómala</span>, no la repitas</h2>
+    <div class="steps s4 anim-stagger-list">
+      <div class="step"><div class="num">1</div><h4>Determina el scope</h4><p>Ticket key, TC de regresión o module slug — según la invocación.</p></div>
+      <div class="step"><div class="num">2</div><h4>Busca la sesión</h4><p><span class="mono">.session/test-automation/&lt;scope&gt;/progress.md</span> — ¿existe?</p></div>
+      <div class="step"><div class="num">3</div><h4>No existe</h4><p>Sesión nueva → scope picker + Phase 1 (Plan).</p></div>
+      <div class="step"><div class="num">4</div><h4>Existe</h4><p>Lee <span class="mono">plan.md</span> + cola de <span class="mono">progress.md</span> → informa última fase completada → ofrece <b>resume / restart / abort</b>.</p></div>
+    </div>
+    <div class="callout mt-l"><h4>La sesión es un índice, no el contenido</h4><p>El <span class="mono">plan.md</span> de sesión es un índice DELGADO que cita los artefactos canónicos — <span class="mono">spec.md</span>, <span class="mono">automation-plan.md</span>, <span class="mono">atc/*.md</span> — bajo <span class="mono">.context/PBI/epics/EPIC-&lt;KEY&gt;-&lt;slug&gt;/test-specs/&lt;scope&gt;/</span>. El dominio vive UNA vez, nunca duplicado. Con <b>restart</b>, la sesión vieja se archiva en <span class="mono">.session/.archive/</span> antes de empezar.</p></div>
+    <div class="notes">Phase 0 corre inline (sin subagente). Para module-driven, el resume a mitad de lote lee los checkpoints de progress.md y salta los ATCs ya codificados.</div>
+  </section>
 
-<section class="slide" data-title="Plan inputs">
-  <p class="kicker">fase de plan — lee primero, en orden</p>
-  <h2 class="h2" data-anim="fade-up">Insumos que Reúnes Antes de Redactar Nada</h2>
-  <ul class="blist anim-stagger-list">
-    <li><b>kata-manifest.json (root).</b> Registro autoritativo de cada Componente y @atc('ID'). Cárgalo PRIMERO para evitar duplicados y colisiones de ID.</li>
-    <li><b>Referencias KATA.</b> Doctrina de capas, identidad del ATC, selección de fixture, aliases de import.</li>
-    <li><b>tests/components/.</b> Las formas Api/Page/Steps existentes en disco con las que alinearte.</li>
-    <li><b>La carpeta sincronizada de la Story.</b> Lee la carpeta ENTERA — ACs, scope, business rules, Y comments — no un solo campo.</li>
-    <li><b>api/schemas/ + .env.</b> Types derivados de OpenAPI (refresca si están viejos); credenciales vía config.testUser — nunca hardcodear.</li>
-  </ul>
-  <div class="notes">El manifest es el gate anti-duplicación (Critical Rule #12). Saltarlo produce Pages duplicadas, IDs de ATC duplicados y reuso perdido — todo rechazado en el review.</div>
-</section>
+  <!-- 6 · PHASE 1 · PLAN — LO QUE LEE -->
+  <section class="slide" data-title="Plan · lee">
+    <p class="kicker">phase 1 · plan — lo que se lee, en este orden</p>
+    <h2 class="h2" data-anim="fade-up">El manifest <span class="grad">primero</span>; la Story completa, después</h2>
+    <ul class="blist numbered anim-stagger-list">
+      <li><b><span class="mono">kata-manifest.json</span> (root).</b> Cruza cada TC ID contra los <span class="mono">@atc</span> existentes y cada nombre de componente contra el registro. ¿Coincide? Reusa o extiende — NUNCA dupliques. Husky lo refuerza en pre-commit.</li>
+      <li><b>Doctrina KATA.</b> <span class="mono">references/kata-architecture.md</span> + <span class="mono">typescript-patterns.md</span> — capas, identidad del ATC, fixtures, aliases.</li>
+      <li><b><span class="mono">tests/components/</span>.</b> Las formas Api / Page / Steps que ya existen en disco — naming y patrones a seguir.</li>
+      <li><b>La Story sincronizada.</b> <span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span> → lee la carpeta ENTERA: ACs, scope, business rules Y <span class="mono">comments.md</span>. NUNCA <span class="mono">acli view</span> para <span class="mono">customfield_*</span> (devuelve null).</li>
+      <li><b>El ATP, según modalidad.</b> jira-native: campo del Story → <span class="mono">acceptance-test-plan.md</span>. jira-xray: description del Test Plan issue → <span class="mono">test-plans/…md</span>.</li>
+      <li><b><span class="mono">api/schemas/</span> + <span class="mono">.env</span>.</b> Types de OpenAPI (refresca con <span class="mono">bun run api:sync</span>); credenciales vía <span class="mono">config.testUser</span> — jamás hardcodear.</li>
+    </ul>
+    <div class="notes">Saltarse el manifest produce Pages duplicadas, IDs @atc repetidos y reuso perdido — todo rechazado en review. Leer solo un campo de la Story produce ATCs incompletos: los comments suelen contener el contexto que cambia el plan.</div>
+  </section>
 
-<section class="slide" data-title="What is an ATC">
-  <p class="kicker">el corazón de KATA — ¿qué es un ATC?</p>
-  <h2 class="h2" data-anim="fade-up">ATC = Test Case Completo, No un Click</h2>
-  <div class="vs">
-    <div class="card bad-side side"><h3>❌ NO es un ATC</h3><ul>
-      <li>clickLoginButton() — interacción única</li>
-      <li>fillEmailSuccessfully() — envuelve un page.fill()</li>
-      <li>submitFormSuccessfully() — una interacción, no un resultado</li>
-    </ul></div>
-    <div class="mid">→</div>
-    <div class="card good-side side"><h3>✅ Un ATC real</h3><ul>
-      <li>loginWithValidCredentials(data) — goto, fill, submit, assert redirect</li>
-      <li>createOrderSuccessfully(payload) — POST, assert 201, assert body.id, return tuple</li>
-    </ul></div>
-  </div>
-  <p class="dim mt-s">Si el método envuelve en una línea page.click(), bórralo.</p>
-  <div class="notes">El reencuadre más importante de todos. Un ATC es un mini-flujo atómico con sus propias assertions fijas, decorado @atc('TICKET-ID'), con mapeo 1:1 a un ticket de TMS.</div>
-</section>
+  <!-- 7 · PHASE 1 · PLAN — LO QUE ESCRIBE -->
+  <section class="slide" data-title="Plan · escribe">
+    <p class="kicker">phase 1 · plan — lo que se escribe, y el gate humano</p>
+    <h2 class="h2" data-anim="fade-up">Un plan que responde 5 preguntas — y <span class="grad">espera tu sí</span></h2>
+    <div class="cols c2 mt-m">
+      <div class="card card-accent"><h4>Artefactos canónicos (git)</h4><p><span class="mono">.context/PBI/epics/EPIC-&lt;KEY&gt;-&lt;slug&gt;/test-specs/&lt;scope&gt;/</span><br>→ <span class="mono">spec.md</span> · <span class="mono">automation-plan.md</span> · <span class="mono">atc/*.md</span><br>Hand-authored, NO-Jira. Distinto del <span class="mono">implementation-plan.md</span> del Story (plan DEV, sincronizado, read-only).</p></div>
+      <div class="card"><h4>Índice de sesión</h4><p><span class="mono">.session/test-automation/&lt;scope&gt;/plan.md</span> — Goal, Inputs, Approach, fases, riesgos, verificación. Cita los canónicos; no los duplica. Tras aprobar: checkpoint en <span class="mono">progress.md</span>.</p></div>
+    </div>
+    <ul class="blist mt-m">
+      <li><b>1 · Escenarios:</b> ¿cuáles se vuelven tests, cuáles ATCs, cuáles preconditions compartidas (Steps)?</li>
+      <li><b>2 · Componentes:</b> ¿qué <span class="mono">*Api.ts</span> / <span class="mono">*Page.ts</span> ya existen y cuáles se crean?</li>
+      <li><b>3 · Datos:</b> clasificados Discover / Modify / Generate — nunca asumas que existen en staging.</li>
+      <li><b>4 · Fixture:</b> <span class="mono">{api}</span>, <span class="mono">{ui}</span>, <span class="mono">{test}</span> o <span class="mono">{steps}</span>.</li>
+      <li><b>5 · Trazabilidad:</b> qué ATC ID del TMS mapea a qué método del componente.</li>
+    </ul>
+    <div class="callout good"><h4>Gate de fase</h4><p>Un subagente Plan (patrón Single) produce los artefactos; el orquestador te presenta el plan y <b>ESPERA tu aprobación</b>. Phase 2 jamás arranca sin ella (anti-pattern T2: nunca saltar el Plan, ni para un test "simple").</p></div>
+    <div class="notes">El subagente único de Plan protege el contexto del orquestador de las lecturas KATA pesadas. El briefing SIEMPRE incluye kata-manifest.json como context doc.</div>
+  </section>
 
-<section class="slide" data-title="TC identity">
-  <p class="kicker">regla de identidad del TC</p>
-  <h2 class="h2" data-anim="fade-up">Un TC = Una Precondición + Una Acción</h2>
-  <div class="callout"><h4>La definición</h4><p>Un test case es exactamente dos cosas: la PRECONDICIÓN (estado) y la ACCIÓN (disparador). CADA resultado esperado de la misma precondición + acción es una assertion del MISMO TC — sin importar qué panel, endpoint o sección valide.</p></div>
-  <div class="vs mt-m">
-    <div class="card bad-side side"><h3>❌ MAL</h3><ul><li>TC-A: verificar bloque Pricing</li><li>TC-B: verificar bloque Reviews</li><li>TC-C: verificar estructura de página</li></ul></div>
-    <div class="mid">→</div>
-    <div class="card good-side side"><h3>✅ BIEN</h3><ul><li>Un TC: "Abrir página de detalle de producto"</li><li>Pricing, Reviews, estructura = sus assertions</li></ul></div>
-  </div>
-  <div class="notes">Dividir las assertions de una acción en múltiples TCs es el error de sobreconteo más común. Infla la suite y rompe la trazabilidad. Colápsalos.</div>
-</section>
+  <!-- 8 · CRAFT · DISEÑO DE PRUEBAS -->
+  <section class="slide" data-title="Craft · diseño de pruebas">
+    <p class="kicker">craft del plan · test-design doctrine — binding</p>
+    <h2 class="h2" data-anim="fade-up">Cubrir los ACs es el <span class="grad">piso</span>, no la meta</h2>
+    <div class="cols c3 mt-m anim-stagger-list">
+      <div class="card"><h4>1 : N por defecto</h4><p>Un AC → varios ATCs. EP-merge colapsa SOLO dentro de una partición (mismo comportamiento → un ATC parametrizado) — nunca entre particiones, límites o estados.</p></div>
+      <div class="card"><h4>EP no reemplaza BVA</h4><p>Donde haya rango / límite / longitud / ventana de fecha: casos de borde explícitos (min−1 · min · min+1 …). El merge esconde el off-by-one.</p></div>
+      <div class="card"><h4>El riesgo vive fuera del AC</h4><p>Inputs inválidos, rutas de auth/error, transiciones de estado y anomalías que el AC calla también entran al set de ATCs.</p></div>
+    </div>
+    <table class="tt">
+      <thead><tr><th>Disparador en el AC</th><th>Técnica obligatoria</th><th>Produce</th></tr></thead>
+      <tbody>
+        <tr><td>Cualquier input (siempre)</td><td><b>Equivalence Partitioning</b></td><td>Un ATC parametrizado por partición; particiones distintas → ATCs separados</td></tr>
+        <tr><td>Rango / límite / longitud</td><td><b>BVA</b></td><td>Bordes + cero / vacío / null</td></tr>
+        <tr><td>Campo de estado</td><td><b>State-Transition</b></td><td>Cada transición válida + cada inválida</td></tr>
+        <tr><td>2+ condiciones que interactúan</td><td><b>Decision Table</b></td><td>Un ATC por regla superviviente</td></tr>
+        <tr><td>3+ factores combinables</td><td><b>Pairwise</b></td><td>Set all-pairs (registra la reducción)</td></tr>
+      </tbody>
+    </table>
+    <p class="small dim2 mt-s">Canon: <span class="mono">agentic-qa-core/references/test-design-doctrine.md</span> — carga MANDATORY antes de derivar ATCs desde ACs. Nunca reportes "% de ACs verificados" como completitud.</p>
+    <div class="notes">Un AC es la afirmación de negocio; un ATC es su exploración concreta (precondición + acción + aserciones). Colapsar a 1:1 exige una justificación escrita "trivially atomic".</div>
+  </section>
 
-<section class="slide" data-title="Equivalence partitioning">
-  <p class="kicker">equivalence partitioning</p>
-  <h2 class="h2" data-anim="fade-up">Mismo Output = Un ATC Parametrizado</h2>
-  <div class="vs">
-    <div class="card bad-side side"><h3>❌ Tres ATCs, un resultado</h3><ul>
-      <li>@atc('T1') loginWithWrongEmail()</li>
-      <li>@atc('T2') loginWithWrongPassword()</li>
-      <li>@atc('T3') loginWithEmptyFields()</li>
-      <li>todos retornan HTTP 401</li>
-    </ul></div>
-    <div class="mid">→</div>
-    <div class="card good-side side"><h3>✅ Un ATC parametrizado</h3><ul>
-      <li>@atc('T1') loginWithInvalidCredentials(payload)</li>
-      <li>el archivo de test parametriza las entradas</li>
-      <li>todos producen 401 + cuerpo de error</li>
-    </ul></div>
-  </div>
-  <p class="dim mt-s">Cambian las acciones internas → ATC distinto. Solo cambian los DATOS pero el comportamiento es idéntico → mismo ATC, parametrizado.</p>
-  <div class="notes">Distintos status codes, estados de UI o resultados de negocio son ATCs separados. Mismo resultado, distintos datos, es uno. Esto mantiene honesto el conteo de ATCs.</div>
-</section>
+  <!-- 9 · CRAFT · DATOS -->
+  <section class="slide" data-title="Craft · datos">
+    <p class="kicker">craft del plan · estrategia de datos — se clasifica al PLANEAR</p>
+    <h2 class="h2" data-anim="fade-up">Discover → Modify → Generate <span class="grad">(prioridad estricta)</span></h2>
+    <div class="steps s4 anim-stagger-list">
+      <div class="step"><div class="num">1</div><h4>Discover</h4><p>Busca datos ya en el estado requerido. Cero impacto en DB. Preferido.</p></div>
+      <div class="step"><div class="num">2</div><h4>Modify</h4><p>Toma datos existentes y mútalos vía API al estado requerido. Una mutación.</p></div>
+      <div class="step"><div class="num">3</div><h4>Generate</h4><p>Crea desde cero: faker + POST. Último recurso — contamina el entorno.</p></div>
+      <div class="step"><div class="num">4</div><h4>Blocker</h4><p>Ningún patrón viable → NO automatizable; documenta el gap y escala.</p></div>
+    </div>
+    <div class="callout mt-l"><h4>Override</h4><p>Usa <b>Generate</b> aunque los datos pudieran descubrirse SI el test muta estado — evita dependencias de orden. Cada test genera sus PROPIOS datos (<span class="mono">DataFactory</span> / faker): sin estado compartido entre tests.</p></div>
+    <div class="callout warn"><h4>La trampa del beforeAll</h4><p>Nunca <span class="mono">expect()</span> dentro de <span class="mono">beforeAll</span> — una assertion fallida mata TODO el describe y oculta la causa. <span class="mono">beforeAll</span> solo descubre; cada test resguarda su precondición: <span class="mono">test.skip(!order, 'No order available')</span>. Así el reporte distingue "skipped — faltan datos" de "failed — bug real".</p></div>
+    <div class="notes">Esta clasificación ocurre en el plan, jamás diferida al código. Cleanup: Discover no necesita; Modify restaura en afterAll; Generate borra en afterEach.</div>
+  </section>
 
-<section class="slide" data-title="AC es el piso">
-  <p class="kicker">doctrina de diseño de pruebas — el principio central</p>
-  <h2 class="h2" data-anim="fade-up">"Todos los ACs cubiertos" es el <span class="grad">piso</span>, no la barra de éxito</h2>
-  <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>1 · Aprobar ≠ probar</h4><p class="dim">Los ACs en verde confirman el contrato. No prueban que el sistema sea robusto, seguro ni resistente al error.</p></div>
-    <div class="card card-accent"><h4>2 · Piso, no techo</h4><p class="dim">"Todos los ACs cubiertos" es la barra de entrada. El set de ATCs debe cubrir además el riesgo-más-allá-del-AC.</p></div>
-    <div class="card card-accent"><h4>3 · Criterio vs caso</h4><p class="dim">Un criterio es una afirmación de negocio. Un ATC es su exploración concreta: precondición + acción + aserciones.</p></div>
-    <div class="card card-accent"><h4>4 · 1 : N por defecto</h4><p class="dim">Un AC → muchos ATCs. EP-merge colapsa SOLO dentro de una partición — nunca entre particiones, límites o estados.</p></div>
-    <div class="card card-accent"><h4>5 · El riesgo vive fuera</h4><p class="dim">Automatiza los inputs inválidos/límite, rutas de auth/error, transiciones de estado y anomalías que el AC calla.</p></div>
-    <div class="card"><h4>EP ≠ BVA</h4><p class="dim"><b>El merge por mismo-comportamiento esconde el off-by-one.</b> Donde haya un rango/límite/longitud/ventana de fecha, agrega ATCs de límite explícitos.</p></div>
-  </div>
-  <div class="notes">Canon: agentic-qa-core/references/test-design-doctrine.md. El gate de review (§3.4.1 dominio de input, §3.4.2 estado/temporal) lo exige en código.</div>
-</section>
+  <!-- 10 · PHASE 2 · CODE -->
+  <section class="slide" data-title="Code · orden">
+    <p class="kicker">phase 2 · code — orden de construcción innegociable</p>
+    <h2 class="h2" data-anim="fade-up">Types → componente → fixture → test → <span class="grad">verificar</span></h2>
+    <div class="steps s5 anim-stagger-list">
+      <div class="step"><div class="num">1</div><h4>Types</h4><p>Payloads, responses y DTOs al tope del archivo del componente.</p></div>
+      <div class="step"><div class="num">2</div><h4>Componente</h4><p>Extiende <span class="mono">ApiBase</span> / <span class="mono">UiBase</span>. Helpers primero (sin decorator), ATCs después (<span class="mono">@atc('TICKET-ID')</span>).</p></div>
+      <div class="step"><div class="num">3</div><h4>Registrar</h4><p>En <span class="mono">ApiFixture</span> / <span class="mono">UiFixture</span> / <span class="mono">StepsFixture</span>. Sin registro = inalcanzable.</p></div>
+      <div class="step"><div class="num">4</div><h4>Test file</h4><p><span class="mono">tests/e2e/{module}/</span> o <span class="mono">tests/integration/{module}/</span>, con el fixture correcto.</p></div>
+      <div class="step"><div class="num">5</div><h4>Run + verify</h4><p>Los tres comandos, en orden — si algo falla, se arregla ANTES del Review.</p></div>
+    </div>
+    <div class="term mt-l">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>local validation loop</span></div>
+<pre><span class="p">$</span> <span class="c">bun run test tests/e2e/checkout/processCheckout.test.ts</span>   <span class="cmt"># ¿pasa? (0 retries)</span>
+<span class="p">$</span> <span class="c">bun run types:check</span>                                       <span class="cmt"># tsc --noEmit, sin errores</span>
+<span class="p">$</span> <span class="c">bun run lint:check</span>                                        <span class="cmt"># ESLint, sin errores</span>
+<span class="p">$</span> <span class="c">bun allure:agent</span>                                          <span class="cmt"># opcional: reporte markdown por bloque @atc</span></pre>
+    </div>
+    <p class="small dim2 mt-s">Dispatch Sequential: un subagente de Code por unidad de scope (module: 1 por TC · ticket: 1 total). Cada uno carga <span class="mono">/playwright-best-practices</span> junto a esta skill; retorna archivos cambiados + resumen — el orquestador nunca lee diffs.</p>
+    <div class="notes">Checkpoint en progress.md tras cada subagente de Code — el resume a mitad de lote salta lo ya codificado. Allure 3 vive como devDep: bunx allure resuelve local, sin instalar global.</div>
+  </section>
 
-<section class="slide" data-title="Técnicas por disparador">
-  <p class="kicker">doctrina de diseño de pruebas — derivar por técnica</p>
-  <h2 class="h2" data-anim="fade-up">Un criterio → N ATCs, elegidos por la <span class="grad">forma</span> del AC</h2>
-  <table class="dtable mt-l">
-    <thead><tr><th>Disparador en el AC</th><th>Técnica (obligatoria)</th><th>ATCs que produce</th></tr></thead>
-    <tbody>
-      <tr><td>Cualquier input (siempre)</td><td><b>Particiones Equivalentes</b></td><td>inputs de mismo comportamiento → un ATC parametrizado; particiones distintas → ATCs separados</td></tr>
-      <tr><td>Un rango / límite / longitud / ventana de fecha</td><td><b>Valores Límite (BVA)</b></td><td>min-1·min·min+1 … max-1·max·max+1, cero / vacío / null</td></tr>
-      <tr><td>Un campo de estado / ciclo de vida</td><td><b>Transición de Estados</b></td><td>cada transición válida + cada transición inválida</td></tr>
-      <tr><td>2+ condiciones que interactúan</td><td><b>Tabla de Decisión</b></td><td>un ATC por regla sobreviviente de la matriz</td></tr>
-      <tr><td>3+ factores combinables</td><td><b>Pairwise</b></td><td>conjunto all-pairs de ATCs (registra la reducción)</td></tr>
-    </tbody>
-  </table>
-  <div class="notes">EP sin BVA se pierde el off-by-one. Un campo de estado sin ATC de transición inválida es un plan incompleto. Los disparadores son obligatorios.</div>
-</section>
+  <!-- 11 · CRAFT · CAPAS KATA -->
+  <section class="slide" data-title="Craft · capas KATA">
+    <p class="kicker">craft del code · la arquitectura — nunca colapses capas (T3)</p>
+    <h2 class="h2" data-anim="fade-up">Las capas <span class="grad">KATA</span>, de abajo hacia arriba</h2>
+    <div class="layers anim-stagger-list">
+      <div class="layer"><span class="lx">L1</span><div><h4>TestContext</h4><p>Config, logger, faker, accesores de entorno. Nada de Playwright ni HTTP aquí.</p></div></div>
+      <div class="layer"><span class="lx">L2</span><div><h4>ApiBase / UiBase</h4><p>Helpers HTTP (retornos de tupla tipados) y helpers de Playwright. Todo lo genérico vive aquí, una sola vez.</p></div></div>
+      <div class="layer"><span class="lx">L3</span><div><h4>Componentes de dominio — <span class="mono">UsersApi, LoginPage</span></h4><p><span class="mono">@atc</span> vive aquí. Un componente por archivo: <span class="mono">{Resource}Api.ts</span> / <span class="mono">{Page}Page.ts</span>.</p></div></div>
+      <div class="layer"><span class="lx">L3.5</span><div><h4>Steps — <span class="mono">AuthSteps, CheckoutSteps</span></h4><p>Cadenas de ATCs reusables para preconditions. NO se decoran con <span class="mono">@atc</span>.</p></div></div>
+      <div class="layer"><span class="lx">L4</span><div><h4>Fixtures — <span class="mono">TestFixture, ApiFixture, UiFixture, StepsFixture</span></h4><p>Inyección de dependencias. Los tests piden el fixture y reciben los componentes.</p></div></div>
+      <div class="layer"><span class="lx">Tests</span><div><h4><span class="mono">tests/e2e/**</span> · <span class="mono">tests/integration/**</span></h4><p>Orquestan ATCs en escenarios. Validan FLUJOS, no propiedades sueltas.</p></div></div>
+    </div>
+    <div class="callout"><h4>Dos reglas duras</h4><p>Una capa superior usa una inferior — <b>nunca al revés</b>. Imports SIEMPRE por alias (<span class="mono">@api/ @ui/ @utils/ @variables @TestContext @schemas/</span>) — el lint rechaza los relativos (<span class="mono">../../../</span>).</p></div>
+    <div class="notes">Aplanar capas es rechazo automático en Review (anti-pattern T3). La separación permite que helpers HTTP, helpers UI y utilidades agnósticas tengan un solo hogar cada uno.</div>
+  </section>
 
-<section class="slide" data-title="ATC craft rules">
-  <p class="kicker">reglas del oficio del ATC</p>
-  <h2 class="h2" data-anim="fade-up">Cinco Reglas que Deciden la Aceptación en el Review</h2>
-  <ul class="blist anim-stagger-list">
-    <li><b>Los ATCs son atómicos.</b> Un ATC NUNCA llama a otro ATC. Las cadenas reusables viven en un módulo Steps (sin @atc).</li>
-    <li><b>Locators inline.</b> Sin locators/*.ts. ¿Reusado en 2+ ATCs del mismo componente? Promuévelo a una arrow function private readonly.</li>
-    <li><b>Helpers vs ATCs.</b> Un GET de solo lectura es un helper (@step). Una acción que cambia estado es un ATC. Un GET que verifica la acción vive DENTRO del ATC.</li>
-    <li><b>Fijo adentro, flujo afuera.</b> Status / campos requeridos / redirect van en el ATC; los chequeos de resultado combinado van en el archivo de test.</li>
-    <li><b>Máx 2 params posicionales.</b> 3+ deben usar un param objeto nombrado — fn(args: Args).</li>
-  </ul>
-  <div class="notes">Estas cinco son las razones recurrentes de rechazo. Internalízalas y la mayoría de tu código pasa el review en la primera vuelta.</div>
-</section>
+  <!-- 12 · CRAFT · FIXTURES -->
+  <section class="slide" data-title="Craft · fixtures">
+    <p class="kicker">craft del code · selección de fixture — carga estructural</p>
+    <h2 class="h2" data-anim="fade-up">El fixture decide si se abre un <span class="grad">browser</span></h2>
+    <table class="tt">
+      <thead><tr><th>Tipo de test</th><th>Fixture</th><th>¿Browser?</th><th>Úsalo cuando</th></tr></thead>
+      <tbody>
+        <tr><td><b>Solo API</b> (integration)</td><td class="mono">{ api }</td><td>No (lazy)</td><td>API puro — default para <span class="mono">tests/integration/**</span></td></tr>
+        <tr><td><b>Solo UI</b></td><td class="mono">{ ui }</td><td>Sí</td><td>Centrado en UI, sin setup de backend vía API</td></tr>
+        <tr><td><b>Híbrido</b></td><td class="mono">{ test }</td><td>Sí</td><td>Setup de datos vía API, flujo vía UI, verificación vía API</td></tr>
+        <tr><td><b>Cadenas de precondición</b></td><td class="mono">{ steps }</td><td>Depende</td><td>3+ ATCs repetidos en 3+ archivos</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn mt-l"><h4>Regla de oro</h4><p>Nunca pidas <span class="mono">{ ui }</span> para un test que jamás toca la UI — abre un browser para nada. E2E usa <span class="mono">{ ui }</span> si no necesita setup por API; si lo necesita, <span class="mono">{ test }</span>.</p></div>
+    <div class="notes">Playwright instancia lazy solo lo que el test pide. El fixture equivocado significa un browser lento innecesario o un contexto faltante.</div>
+  </section>
 
-<section class="slide" data-title="Layers">
-  <p class="kicker">la arquitectura que debes respetar</p>
-  <h2 class="h2" data-anim="fade-up">Las Capas de KATA — Nunca las Colapses</h2>
-  <div class="flow mt-m">
-    <div class="stage"><div class="sx">1</div><div><h4>TestContext</h4><p>config, logger, faker, accesores de entorno.</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>ApiBase / UiBase</h4><p>Helpers HTTP (retornos de tupla tipados) y helpers de Playwright.</p></div></div>
-    <div class="stage"><div class="sx">3</div><div><h4>Componentes de Dominio + Steps</h4><p>UsersApi, LoginPage — @atc vive aquí. Steps = cadenas de ATC reusables (sin @atc).</p></div></div>
-    <div class="stage"><div class="sx">4</div><div><h4>Fixtures → Tests</h4><p>Los fixtures Api/Ui/Steps/Test inyectan; los tests orquestan ATCs en escenarios.</p></div></div>
-  </div>
-  <p class="dim mt-s">Una capa superior puede usar una inferior, nunca al revés.</p>
-  <div class="notes">Aplanar estas capas es un rechazo automático. La separación es lo que permite que los helpers de API, los de UI y las utilidades agnósticas queden en sus hogares correctos.</div>
-</section>
+  <!-- 13 · CRAFT · REGLAS ATC -->
+  <section class="slide" data-title="Craft · reglas ATC">
+    <p class="kicker">craft del code · las reglas que deciden el review</p>
+    <h2 class="h2" data-anim="fade-up">Reglas <span class="grad">ATC</span> — los rechazos más comunes</h2>
+    <div class="cols c2 mt-m anim-stagger-list">
+      <div class="card"><h4>ATC = test case completo</h4><p><span class="mono">clickLoginButton()</span> NO es un ATC; <span class="mono">loginWithValidCredentials(data)</span> SÍ. Si envuelve en una línea un <span class="mono">page.click()</span>, bórralo.</p></div>
+      <div class="card"><h4>Identidad: precondición + acción = 1 TC</h4><p>Todos los resultados esperados de la misma precondición + acción son assertions del MISMO TC — no lo dividas por paneles ni endpoints.</p></div>
+      <div class="card"><h4>Mismo output → un ATC parametrizado</h4><p>Tres ATCs que devuelven 401 están mal: un solo <span class="mono">loginWithInvalidCredentials(payload)</span> parametrizado.</p></div>
+      <div class="card"><h4>Un ATC nunca llama a otro ATC</h4><p>Cadenas reusables → módulo Steps (<span class="mono">tests/components/steps/</span>), sin <span class="mono">@atc</span>.</p></div>
+      <div class="card"><h4>Locators inline · helpers vs ATCs</h4><p>Sin <span class="mono">locators/*.ts</span>: el selector vive en el ATC; 2+ usos → <span class="mono">private readonly</span> arrow. GET de lectura = helper (<span class="mono">@step</span>); acción que muta estado = ATC.</p></div>
+      <div class="card"><h4>Disciplina anti-flake</h4><p>Máx 2 params posicionales (3+ → objeto). Sin <span class="mono">waitForTimeout</span> — espera condiciones. <span class="mono">retries: 0</span>: un pass en retry es un bug. Ticket-ID en cada <span class="mono">test()</span>.</p></div>
+    </div>
+    <div class="notes">Assertions fijas (status, campos, redirect) van DENTRO del ATC; las de flujo, en el test file. Internalizar estas seis tarjetas hace que la mayoría del código pase el review a la primera.</div>
+  </section>
 
-<section class="slide" data-title="Fixture selection">
-  <p class="kicker">selección de fixture — carga estructural en cada test</p>
-  <h2 class="h2" data-anim="fade-up">Elige el Fixture, Decide si se Abre un Browser</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Tipo de test</th><th>Fixture</th><th>¿Browser?</th><th>Úsalo cuando</th></tr></thead>
-    <tbody>
-      <tr><td><b>Solo API</b></td><td>{ api }</td><td>No (lazy)</td><td>API puro — default para tests/integration/**</td></tr>
-      <tr><td><b>Solo UI</b></td><td>{ ui }</td><td>Sí</td><td>Centrado en UI, sin setup de API</td></tr>
-      <tr><td><b>Híbrido</b></td><td>{ test }</td><td>Sí</td><td>Setup vía API, conducir vía UI, verificar vía API</td></tr>
-      <tr><td><b>Cadenas de precondición</b></td><td>{ steps }</td><td>Depende</td><td>3+ ATCs repetidos en 3+ archivos</td></tr>
-    </tbody>
-  </table>
-  <p class="dim mt-s">Nunca pidas { ui } para un test que nunca toca la UI — abre un browser para nada.</p>
-  <div class="notes">El fixture equivocado significa un context de browser faltante o un lanzamiento de browser lento e innecesario. Playwright instancia de forma lazy solo los fixtures que un test pide.</div>
-</section>
-
-<section class="slide" data-title="Data strategy">
-  <p class="kicker">estrategia de datos de test — clasifica durante la PLANIFICACIÓN</p>
-  <h2 class="h2" data-anim="fade-up">Discover → Modify → Generate (Prioridad Estricta)</h2>
-  <div class="steps s4 anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>Discover</h4><p>Consulta el sistema por datos ya en el estado requerido. Cero impacto en DB. Preferido.</p></div>
-    <div class="step"><div class="num">2</div><h4>Modify</h4><p>Encuentra datos existentes, mútalos vía API al estado requerido. Una mutación.</p></div>
-    <div class="step"><div class="num">3</div><h4>Generate</h4><p>Crea desde cero vía payload de faker + POST. Último recurso; contamina el entorno.</p></div>
-    <div class="step"><div class="num">4</div><h4>Blocker</h4><p>Ningún patrón viable → marca NO automatizable, documenta el gap, escala.</p></div>
-  </div>
-  <p class="dim mt-s">Override: usa Generate incluso cuando los datos podrían descubrirse SI el test muta estado (evita dependencias de orden).</p>
-  <div class="notes">Esta clasificación ocurre en el plan, nunca diferida al código. Discover corre en beforeAll; si no encuentra nada el test usa test.skip — nunca un expect sobre datos de precondición.</div>
-</section>
-
-<section class="slide" data-title="beforeAll trap">
-  <p class="kicker">la trampa del beforeAll</p>
-  <h2 class="h2" data-anim="fade-up">Nunca Pongas expect() Dentro de beforeAll</h2>
-  <div class="callout warn"><h4>Cuidado</h4><p>Una assertion fallida en beforeAll mata CADA test del bloque describe — incluidos los no relacionados — y oculta lo que realmente se rompió.</p></div>
-  <div class="callout mt-m"><h4>Patrón correcto</h4><p>beforeAll solo DESCUBRE (sin assertions, puebla vars con scope de describe). Cada test resguarda su propia precondición: <span class="mono">if (!order) return test.skip(true, 'No order available')</span>. El reporte entonces distingue "skipped — datos faltantes" de "failed — bug real". Cleanup: Discover no necesita; Modify restaura en afterAll; Generate borra en afterEach.</p></div>
-  <div class="notes">Una regla sutil pero de alto impacto. Las assertions en setup compartido convierten un fixture faltante en un muro de fallas rojas que oscurece la señal real.</div>
-</section>
-
-<section class="slide" data-title="API component code">
-  <p class="kicker">fase de código — la forma del componente API</p>
-  <h2 class="h2" data-anim="fade-up">Un Componente API de KATA (Capa 3)</h2>
-  <div class="terminal mt-m">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>OrdersApi.ts</span></div>
+  <!-- 14 · CODE · EJEMPLO -->
+  <section class="slide" data-title="Code · ejemplo">
+    <p class="kicker">phase 2 · code — la forma de un componente API (L3)</p>
+    <h2 class="h2" data-anim="fade-up">Helper sin decorator, ATC con <span class="grad">@atc</span></h2>
+    <div class="term mt-m">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>tests/components/api/OrdersApi.ts</span></div>
 <pre><span class="kw">export class</span> <span class="fn">OrdersApi</span> <span class="kw">extends</span> <span class="fn">ApiBase</span> {
   <span class="kw">private readonly</span> baseEndpoint = <span class="str">'/api/v1/orders'</span>;
 
-  <span class="fn">@step</span>                                <span class="cmt">// helper — read-only, no @atc</span>
+  <span class="fn">@step</span>                                  <span class="cmt">// helper — read-only, sin @atc</span>
   <span class="kw">async</span> <span class="fn">getOrderById</span>(id: <span class="kw">string</span>): Promise&lt;[APIResponse, Order]&gt; {
     <span class="kw">return this</span>.<span class="fn">apiGET</span>&lt;Order&gt;(<span class="str">`${this.baseEndpoint}/${id}`</span>);
   }
 
-  <span class="fn">@atc</span>(<span class="str">'TICKET-ID'</span>)                      <span class="cmt">// ATC — state-changing</span>
+  <span class="fn">@atc</span>(<span class="str">'UPEX-411'</span>)                        <span class="cmt">// ATC — muta estado, trazado al TMS</span>
   <span class="kw">async</span> <span class="fn">createOrderSuccessfully</span>(payload: CreateOrderRequest) {
-    <span class="kw">const</span> [response, body, sent] =
-      <span class="kw">await this</span>.<span class="fn">apiPOST</span>(<span class="kw">this</span>.baseEndpoint, payload);
-    <span class="fn">expect</span>(response.<span class="fn">status</span>()).<span class="fn">toBe</span>(<span class="num">201</span>);  <span class="cmt">// FIXED assertion</span>
-    <span class="fn">expect</span>(body.id).<span class="fn">toBeDefined</span>();       <span class="cmt">// FIXED assertion</span>
-    <span class="kw">return</span> [response, body, sent];       <span class="cmt">// 3-tuple: enables chaining</span>
+    <span class="kw">const</span> [response, body, sent] = <span class="kw">await this</span>.<span class="fn">apiPOST</span>(<span class="kw">this</span>.baseEndpoint, payload);
+    <span class="fn">expect</span>(response.<span class="fn">status</span>()).<span class="fn">toBe</span>(<span class="num">201</span>);   <span class="cmt">// assertion FIJA — vive en el ATC</span>
+    <span class="fn">expect</span>(body.id).<span class="fn">toBeDefined</span>();
+    <span class="kw">return</span> [response, body, sent];        <span class="cmt">// 3-tupla: permite encadenar</span>
   }
 }</pre>
-  </div>
-  <div class="notes">Nota el orden: baseEndpoint, constructor, helpers, luego ATCs. GET/DELETE retornan 2-tuplas; POST/PUT/PATCH retornan 3-tuplas para que los tests puedan comparar lo enviado contra lo recibido.</div>
-</section>
+    </div>
+    <p class="small dim mt-m">GET / DELETE retornan 2-tuplas; POST / PUT / PATCH retornan 3-tuplas (comparar lo enviado vs lo recibido). Test files: <span class="mono">{verb}{Feature}.test.ts</span> e importan de <span class="mono">@TestFixture</span>, nunca de <span class="mono">@playwright/test</span>.</p>
+    <div class="notes">Orden interno del archivo: types, baseEndpoint, constructor, helpers, ATCs. En UI el patrón es igual: locators inline con getByTestId como primer peldaño, assertions fijas dentro del ATC, retorno void.</div>
+  </section>
 
-<section class="slide" data-title="Status matrix">
-  <p class="kicker">matriz de status-code de API</p>
-  <h2 class="h2" data-anim="fade-up">Un ATC por Resultado Esperado</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Resultado</th><th>Status</th><th>Patrón de nombre del ATC</th><th>Tipo de respuesta</th></tr></thead>
-    <tbody>
-      <tr><td><b>Created</b></td><td>201</td><td>create{Resource}Successfully</td><td>{Resource}Response</td></tr>
-      <tr><td><b>Read</b></td><td>200</td><td>get{Resource}Successfully</td><td>{Resource}/ListResponse</td></tr>
-      <tr><td><b>Delete</b></td><td>204/200</td><td>delete{Resource}Successfully</td><td>void</td></tr>
-      <tr><td><b>Validation error</b></td><td>400</td><td>create{Resource}WithInvalid{Field}</td><td>ApiErrorResponse</td></tr>
-      <tr><td><b>Unauthenticated</b></td><td>401</td><td>get{Resources}Unauthorized</td><td>ApiErrorResponse</td></tr>
-      <tr><td><b>Not found</b></td><td>404</td><td>get{Resource}WithNonExistentId</td><td>ApiErrorResponse</td></tr>
-      <tr><td><b>Conflict</b></td><td>409</td><td>create{Resource}WithDuplicate{Field}</td><td>ApiErrorResponse</td></tr>
-    </tbody>
-  </table>
-  <p class="dim mt-s">Status Y forma de cada resultado difieren → ATC separado. Los ATCs de error tipan el cuerpo como ApiErrorResponse.</p>
-  <div class="notes">Los types vienen de @schemas/{domain}.types — solo los archivos facade importan de @openapi. Olvidar conectar un componente nuevo al setAuthToken del fixture es la causa #1 de 401s sorpresa.</div>
-</section>
+  <!-- 15 · PHASE 3 · REVIEW -->
+  <section class="slide" data-title="Review">
+    <p class="kicker">phase 3 · review — el gate de merge</p>
+    <h2 class="h2" data-anim="fade-up">Tres Verifiers en paralelo; <span class="grad">cero</span> blockers para aceptar</h2>
+    <table class="tt">
+      <thead><tr><th>Verifier (paralelo)</th><th>Comando</th><th>Debe dar</th></tr></thead>
+      <tbody>
+        <tr><td><b>Tests</b></td><td class="mono">bun run test {path}</td><td>Todo verde, cero retries usados</td></tr>
+        <tr><td><b>Types</b></td><td class="mono">bun run types:check</td><td>Sin errores</td></tr>
+        <tr><td><b>Lint</b></td><td class="mono">bun run lint:check</td><td>Sin errores</td></tr>
+        <tr><td><b>+ Checklist KATA</b> (visual)</td><td class="mono">references/review-checklists.md</td><td>Fixture registrado · <span class="mono">@atc</span> ↔ TC real del TMS · naming — cada ítem fallido es un blocker</td></tr>
+      </tbody>
+    </table>
+    <div class="cols c2 mt-m">
+      <div class="callout bad" style="margin-top:0"><h4>REJECT — protocolo de error</h4><p>STOP: el reporte fallido se te muestra <b>verbatim</b>. Sin auto-fix, sin re-despachar Code sin tu aprobación. La sesión NO se archiva — queda para debug.</p></div>
+      <div class="callout good" style="margin-top:0"><h4>ACCEPT — cierre limpio</h4><p>Checkpoint final en <span class="mono">progress.md</span> → sesión archivada en <span class="mono">.session/.archive/</span> → <span class="mono">bun run kata:manifest</span> + <span class="mono">git add</span> para el gate de husky.</p></div>
+    </div>
+    <div class="callout"><h4>Gate adversarial opcional — /judgment-day</h4><p>Para cambios de alto riesgo (fixtures nuevos, modificaciones a bases Page/Api compartidas, refactors multi-ATC): dos jueces ciegos en paralelo; solo aprueba si ambos coinciden. Opt-in por ticket, nunca automático.</p></div>
+    <div class="notes">La agregación es inline: el orquestador lee los 3 reportes y decide. Si un test falla por un bug REAL de producto: busca bug existente, anota test.fail('Blocked by {BUG-KEY}') o crea el bug con tu confirmación — un test rojo sin bug key nunca es override aceptable.</div>
+  </section>
 
-<section class="slide" data-title="UI component code">
-  <p class="kicker">fase de código — el componente UI y los locators</p>
-  <h2 class="h2" data-anim="fade-up">Un Componente Page de KATA con la Escalera de Locators</h2>
-  <div class="terminal mt-m">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>LoginPage.ts</span></div>
-<pre><span class="kw">export class</span> <span class="fn">LoginPage</span> <span class="kw">extends</span> <span class="fn">UiBase</span> {
-  <span class="cmt">// shared locator: used in 2+ ATCs → private readonly arrow (lazy)</span>
-  <span class="kw">private readonly</span> submitButton = () =&gt; <span class="kw">this</span>.page.<span class="fn">getByTestId</span>(<span class="str">'login_submit_button'</span>);
+  <!-- 16 · HANDOFF -->
+  <section class="slide" data-title="Handoff">
+    <p class="kicker">después del accept — git y ciclo de vida del TC</p>
+    <h2 class="h2" data-anim="fade-up">La skill se detiene en un review local <span class="grad">limpio</span></h2>
+    <div class="term mt-m">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>handoff</span></div>
+<pre><span class="o">Local gate green. Ready for /git-flow-master:</span>
+<span class="o">cut test/UPEX-411-checkout from the integration trunk, push, Sanity-CI, PR, merge --no-ff.</span></pre>
+    </div>
+    <ul class="blist anim-stagger-list">
+      <li><b>Nada de git aquí.</b> Branch, push y PR son trabajo de <span class="mono">/git-flow-master</span> — la skill solo anuncia el handoff, jamás lo auto-ejecuta.</li>
+      <li><b>Bajo estrategia <span class="mono">sdet</span></b> (suites encadenadas): el gate local debe pasar en <b>local Y staging</b> antes del push; el Git Ledger se apendiza a <span class="mono">progress.md</span> tras cada acción de branch.</li>
+      <li><b>Ciclo de vida del TC:</b> → <b>In Review</b> cuando abre el PR del ticket hacia el trunk; → <b>Automated</b> SOLO cuando el PR final <span class="mono">trunk → main</span> mergea con CI verde. Mergear al trunk NO es "Automated".</li>
+      <li><b>Transiciones</b> vía <span class="mono">/test-documentation</span> + <span class="mono">acli</span>; nombres de estado contra <span class="mono">.agents/jira-workflows.json</span>.</li>
+      <li><b>Después, en el pipeline:</b> <span class="mono">/regression-testing</span> (Stage 6) corre las suites en CI y emite GO / CAUTION / NO-GO.</li>
+    </ul>
+    <div class="notes">Los PRs de test siguen la convención test/* con título {type}({ISSUE-KEY}): {description}. Nunca mezclar código de producto y de test en el mismo PR (anti-pattern T8).</div>
+  </section>
 
-  <span class="fn">@atc</span>(<span class="str">'TICKET-ID'</span>)
-  <span class="kw">async</span> <span class="fn">loginWithValidCredentials</span>(data: LoginData): Promise&lt;<span class="kw">void</span>&gt; {
-    <span class="kw">await this</span>.page.<span class="fn">getByTestId</span>(<span class="str">'email_input'</span>).<span class="fn">fill</span>(data.email);  <span class="cmt">// inline (used once)</span>
-    <span class="kw">await this</span>.page.<span class="fn">getByTestId</span>(<span class="str">'password_input'</span>).<span class="fn">fill</span>(data.password);
-    <span class="kw">await this</span>.<span class="fn">submitButton</span>().<span class="fn">click</span>();
-    <span class="kw">await</span> <span class="fn">expect</span>(<span class="kw">this</span>.page).<span class="fn">toHaveURL</span>(/.*dashboard.*/);            <span class="cmt">// fixed assertion</span>
-  }
-}
-<span class="cmt">// Locator ladder:  1 getByTestId  2 getByRole  3 getByLabel  4 getByText  5 CSS/XPath</span>
-<span class="cmt">// BANNED: .btn-primary · div &gt; form &gt; button:nth-child(3) · page.waitForTimeout(3000)</span></pre>
-  </div>
-  <p class="dim mt-s">¿Vienes del estándar getByRole-first? Aquí data-testid es el peldaño 1 porque el equipo dev los provee como contrato estable de testing — getByRole sigue siendo el fallback inmediato.</p>
-  <div class="notes">Prefiere data-testid siempre que exista. Los selectores por clase CSS y estructurales decaen en cada refactor. Los ATCs de UI retornan void; las assertions viven adentro.</div>
-</section>
+  <!-- 17 · CIERRE -->
+  <section class="slide" data-title="Cierre">
+    <p class="kicker">cierre — cómo invocarlo y qué deja</p>
+    <h2 class="h2" data-anim="fade-up"><span class="mono grad">/test-automation</span> — planéalo, codéalo por capas, pásalo en verde</h2>
+    <div class="cols c3 mt-m anim-stagger-list">
+      <div class="card"><h4>Cómo se invoca</h4><p><span class="kbd">/test-automation</span> o frases como <i>"write test"</i>, <i>"automate ticket"</i>, <i>"create API test"</i>, <i>"KATA"</i>, <i>"review test code"</i>. Siempre se carga ANTES de escribir código de test.</p></div>
+      <div class="card"><h4>Artefactos clave</h4><p><span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span> + <span class="mono">atc/*.md</span> · componentes y tests en <span class="mono">tests/**</span> · <span class="mono">kata-manifest.json</span> regenerado · sesión archivada.</p></div>
+      <div class="card"><h4>En el pipeline</h4><p>← <span class="mono">/test-documentation</span> (Stage 4, veredictos Candidate) · → <span class="mono">/git-flow-master</span> (branch + PR) · → <span class="mono">/regression-testing</span> (Stage 6, CI).</p></div>
+    </div>
+    <div class="callout good"><h4>Las tres reglas para llevarte</h4><p><b>1</b> · Un ATC = un test case atómico, trazado con <span class="mono">@atc('TICKET-ID')</span>. <b>2</b> · Plan → Code → Review, siempre en orden y con tu aprobación en medio. <b>3</b> · La estabilidad es disciplina: <span class="mono">retries: 0</span>, sin waits fijos, datos propios por test.</p></div>
+    <p class="small dim2 mt-m tc">← → navegar · <b>O</b> resumen · <b>S</b> presentador · <b>N</b> notas · <b>F</b> pantalla completa</p>
+    <div class="notes">Cierre: la skill no reemplaza la metodología — ejecuta exactamente esta metodología, más rápido, con el humano aprobando el plan y revisando las fallas.</div>
+  </section>
 
-<section class="slide" data-title="Test file code">
-  <p class="kicker">los tests orquestan; no implementan</p>
-  <h2 class="h2" data-anim="fade-up">El Archivo de Test — Flujos, No Chequeos de Propiedad</h2>
-  <div class="terminal mt-m">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>processCheckout.test.ts</span></div>
-<pre><span class="kw">import</span> { test, expect } <span class="kw">from</span> <span class="str">'@TestFixture'</span>;   <span class="cmt">// NOT from @playwright/test</span>
-
-test.<span class="fn">describe</span>(<span class="str">'UPEX-411: Apply Discount Code'</span>, () =&gt; {
-  <span class="cmt">// RIGHT: ONE test = complete flow with multiple assertions</span>
-  <span class="fn">test</span>(<span class="str">'UPEX-411: applies % discount when code is valid @critical'</span>,
-    <span class="kw">async</span> ({ api }) =&gt; {
-    <span class="kw">const</span> [, order] = <span class="kw">await</span> api.orders.<span class="fn">createOrderSuccessfully</span>(api.data.<span class="fn">createOrder</span>());
-    <span class="kw">const</span> totals = <span class="kw">await</span> api.orders.<span class="fn">getTotals</span>({ orderId: order.id });
-    <span class="fn">expect</span>(order.discountApplied).<span class="fn">toBe</span>(<span class="kw">true</span>);
-    <span class="fn">expect</span>(totals.finalAmount).<span class="fn">toBe</span>(totals.baseAmount - totals.discountAmount);
-  });
-});
-<span class="cmt">// WRONG: six tests each checking one field of the same response.</span>
-<span class="cmt">// Ticket-ID in describe AND every test(). One ticket per describe; never split across files.</span></pre>
-  </div>
-  <div class="notes">Jerarquía de nombres: directorio = módulo, archivo = {verb}{Feature}.test.ts, describe = ticket, test = escenario. Separa tests solo para flujos, precondiciones o roles fundamentalmente distintos.</div>
-</section>
-
-<section class="slide" data-title="Verification loop">
-  <p class="kicker">fase de código — el loop de verificación</p>
-  <h2 class="h2" data-anim="fade-up">Ejecuta + Verifica, En Este Orden Exacto</h2>
-  <div class="steps s4 anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>Build</h4><p>types → clase del componente → registra en fixture → archivo de test.</p></div>
-    <div class="step"><div class="num">2</div><h4>Test</h4><p>bun run test &lt;path&gt; — todo en verde, cero retries usados.</p></div>
-    <div class="step"><div class="num">3</div><h4>Types + Lint</h4><p>types:check (tsc --noEmit), luego lint:check. Arregla tests ANTES de perseguir lint.</p></div>
-    <div class="step"><div class="num">4</div><h4>Manifest</h4><p>kata:manifest → git add → kata:manifest:check (el gate pre-commit de husky).</p></div>
-  </div>
-  <p class="dim mt-s">Opcional: bun allure:agent para un reporte markdown legible por IA por bloque @atc.</p>
-  <div class="notes">El orden importa. Un componente no registrado en su fixture es inalcanzable. El manifest debe regenerarse y stagearse o el hook pre-commit bloquea el commit.</div>
-</section>
-
-<section class="slide" data-title="Review gate">
-  <p class="kicker">fase de review — el gate de merge</p>
-  <h2 class="h2" data-anim="fade-up">Un Review Limpio Es el Gate de Merge</h2>
-  <ul class="blist anim-stagger-list">
-    <li><b>Primero tres checklists compartidos.</b> Review de Componente / ATC / Archivo de test — nombres, extensión de capa, decoradores, retornos de tupla, locators inline, prefijo de ticket-ID.</li>
-    <li><b>Luego el delta.</b> Delta E2E (calidad de locators, waits basados en condición, reuso de sesión) O delta API (cumplimiento de facade, disciplina de tupla, cobertura de status, auth).</li>
-    <li><b>La cobertura gatea el handoff.</b> Más allá del status HTTP: §3.4.1 dominio de input (EP + límites BVA) y §3.4.2 transición de estados / idempotencia / concurrencia / timeout deben estar cubiertos o marcados explícitamente N/A.</li>
-    <li><b>Modelo de severidad.</b> CRITICAL y HIGH bloquean el merge; MEDIUM recomendado; LOW deseable. Un waitForTimeout hardcodeado o un @atc faltante es CRITICAL.</li>
-    <li><b>Techo de revisiones.</b> Máx 2 loops de revisión. ¿Aún no APPROVED tras 2 rondas? Escala al usuario; nunca itera para siempre.</li>
-    <li><b>Gate adversarial opcional.</b> Para cambios de alto riesgo (nuevos fixtures, ediciones de base compartida) corre un review de doble juez antes del commit.</li>
-  </ul>
-  <div class="notes">Cada ítem de checklist fallido es un blocker. El checklist de handoff ('ready for CI') debe ser todo-verdadero: cero CRITICAL, cero HIGH, los tres gates en verde.</div>
-</section>
-
-<section class="slide" data-title="Bug protocol">
-  <p class="kicker">quality gates G1–G4 y el protocolo de bug</p>
-  <h2 class="h2" data-anim="fade-up">Cuando un Test Descubre un Bug Real</h2>
-  <div class="callout"><h4>Gates nombrados bloquean la progresión</h4><p>G1 Plan existe → G2 Tests pasan → G3 Review APPROVED → G4 Progress actualizado.</p></div>
-  <div class="callout warn mt-m"><h4>Si G2 falla por un Bug de producto REAL</h4><p>(1) busca en el tracker un bug existente; (2) si está reportado, anota <span class="mono">test.fail('Blocked by {BUG-KEY}')</span> o etiqueta <span class="mono">@blocked:{BUG-KEY}</span> y consérvalo; (3) si no, muestra el diff observado-vs-esperado, obtén confirmación, luego crea el bug; (4) regístralo en PROGRESS.md. Solo ENTONCES puede G2 sobreescribirse de forma suave. Un test fallido sin un bug key detrás nunca es un override aceptable.</p></div>
-  <div class="notes">Esto mantiene un bug encontrado visible y trazable en vez de silenciosamente saltado. La etiqueta @blocked deja que regression-testing lo excluya del GO/NO-GO hasta que aterrice el fix.</div>
-</section>
-
-<section class="slide divider" data-title="Part 2">
-  <div>
-    <p class="part-no">PARTE 02</p>
-    <h1 class="h1">La Aceleración<br><span class="grad">un comando lo hace todo</span></h1>
-    <p class="lede">Todo en la parte 1 — elegir scope, el plan, el código por capas, el review de tres gates — es lo que /test-automation conduce desde la terminal. Tú sigues siendo el aprobador; la IA es el ejecutor.</p>
-  </div>
-  <div class="notes">Ahora mapeamos el oficio manual sobre la skill. El humano aún resguarda el plan y revisa las fallas; la IA hace la lectura y escritura pesadas.</div>
-</section>
-
-<section class="slide" data-title="Trigger">
-  <p class="kicker">el trigger</p>
-  <h2 class="h2" data-anim="fade-up">Cómo lo Invocas</h2>
-  <div class="terminal mt-m">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>claude-code</span></div>
-<pre><span class="p">▸ </span><span class="c">/test-automation</span>
-
-<span class="o">Triggers on: "write test", "automate test", "create E2E test",</span>
-<span class="o">"create API test", "integration test", "KATA", "page object",</span>
-<span class="o">"API component", "ATC", "review test code", "automate this ticket".</span>
-
-<span class="p">▸ </span><span class="c">Write an E2E test for the checkout flow — add product to</span>
-<span class="c">  cart, go to checkout, confirm the purchase.</span>
-
-<span class="o">  ↳ Always loads BEFORE any test code — KATA fixture selection,</span>
-<span class="o">    inline-locator rule, ATC-identity rule, and import aliases</span>
-<span class="o">    differ from standard Playwright conventions.</span></pre>
-  </div>
-  <div class="notes">La skill se auto-carga con estas frases. Explícitamente NO se dispara para correr suites (regression-testing), documentar TCs (test-documentation) ni onboardear un repo (project-discovery).</div>
-</section>
-
-<section class="slide" data-title="Preflight gate">
-  <p class="kicker">antes de todo — readiness preflight gate (MANDATORY)</p>
-  <h2 class="h2" data-anim="fade-up">El Gate de Preparación Corre ANTES de Planear</h2>
-  <ul class="blist anim-stagger-list">
-    <li><b>Framework adaptado.</b> No se escriben ATCs contra los scaffolds Example* del boilerplate. ¿Sigue genérico? STOP — corre /project-discovery → /adapt-framework primero (el gate nunca los auto-ejecuta).</li>
-    <li><b>Toolchain + manifest limpios.</b> bun run test / types:check / lint:check resuelven en t=0, no en Phase 3; kata:manifest:check limpio antes de proponer componentes o ATCs.</li>
-    <li><b>Entorno + credenciales vivos.</b> Los tests corren contra el entorno activo: URL alcanzable, test users en .env (por rol si aplica), browsers de Playwright instalados.</li>
-    <li><b>MCPs en PLAN-time.</b> OpenAPI MCP (explorar endpoints) y DBHub MCP (explorar schema) se necesitan al DISEÑAR los ATCs y clasificar datos en Phase 1 — no solo al ejecutar.</li>
-    <li><b>Dos leyes.</b> args-as-answers (lo ya provisto no se re-pregunta) y probe-don't-assume; gaps y REDs se muestran como UN solo checklist, STOP ante cualquier RED bloqueante.</li>
-  </ul>
-  <p class="dim mt-s">Tras el gate viene Phase 0: si existe sesión previa para el scope, ofrece resume / restart / abort — retomas exactamente donde quedaste.</p>
-  <div class="notes">Adición reciente y MANDATORY del skill: corre antes del resume check de Phase 0 y del scope picker. Evita descubrir a mitad del Code que faltaba una credencial, un MCP o que el framework seguía genérico. Distinto del pre-flight anti-duplicación de Phase 1 (ese cruza el manifest buscando reuso); este gate es sobre tools y entorno listos para escribir y correr código.</div>
-</section>
-
-<section class="slide" data-title="Auto-loaded context">
-  <p class="kicker">qué auto-carga</p>
-  <h2 class="h2" data-anim="fade-up">Contexto que la Skill Trae Por Ti</h2>
-  <div class="grid g2 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>Registro y doctrina</h4><p class="dim">kata-manifest.json (gate anti-duplicación, primera lectura OBLIGATORIA), las referencias de arquitectura KATA + typescript-patterns, y las formas existentes en tests/components/.</p><span class="tag mt-s">leer primero</span></div>
-    <div class="card card-accent"><h4>Requisitos y types</h4><p class="dim">La carpeta de Story sincronizada vía jira:sync-issues get &lt;KEY&gt; --include-comments (ACs, scope, rules, comments), el ATP, los types de api/schemas/, y las credenciales de .env.</p><span class="tag mt-s">por ticket</span></div>
-  </div>
-  <div class="notes">El subagente lee todo esto en su propio contexto, no en el del orquestador — manteniendo el hilo principal liviano. El manifest se incluye en cada briefing de Plan y Code.</div>
-</section>
-
-<section class="slide" data-title="Orchestration">
-  <p class="kicker">el patrón de orquestación</p>
-  <h2 class="h2" data-anim="fade-up">Centro de Comando + Subagentes, Uno por Fase</h2>
-  <div class="flow mt-m">
-    <div class="stage"><div class="sx">1</div><div><h4>Plan — un subagente</h4><p>Retorna spec.md + automation-plan.md como JSON; mantiene las lecturas KATA fuera del orquestador.</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>Code — subagente secuencial</h4><p>Edita muchos archivos en aislamiento, retorna una lista de archivos cambiados + resúmenes de una línea (el orquestador nunca lee diffs).</p></div></div>
-    <div class="stage"><div class="sx">3</div><div><h4>Review — 3 verificadores paralelos</h4><p>Uno corre test, otro types:check, otro lint:check, simultáneamente.</p></div></div>
-    <div class="stage"><div class="sx">4</div><div><h4>Agregar — inline</h4><p>0 blockers → candidato a merge; &gt;0 → rechaza y muestra verbatim, SIN auto-fix.</p></div></div>
-  </div>
-  <div class="notes">Cada fase tiene necesidades distintas de aislamiento de contexto. Ante cualquier falla de Verificador el orquestador SE DETIENE, retorna el reporte fallido verbatim, y no re-despacha Code sin aprobación del usuario.</div>
-</section>
-
-<section class="slide" data-title="Tools">
-  <p class="kicker">las tools que conduce</p>
-  <h2 class="h2" data-anim="fade-up">CLI + MCP Bajo el Capó</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Tool</th><th>Rol</th></tr></thead>
-    <tbody>
-      <tr><td><b>bun run jira:sync-issues</b></td><td>Materializa Story/ATP/TC en .md local (lee campos que acli view no puede)</td></tr>
-      <tr><td><b>/acli</b></td><td>Escrituras en Jira — comenta de vuelta el estado del test automatizado, transiciones</td></tr>
-      <tr><td><b>/xray-cli (bun xray)</b></td><td>Sync TMS de Xray — test executions, run status (modalidad jira-xray)</td></tr>
-      <tr><td><b>test / types:check / lint:check</b></td><td>Los tres quality gates</td></tr>
-      <tr><td><b>kata:manifest(:check)</b></td><td>Regenera + valida el registro de Componente/ATC</td></tr>
-      <tr><td><b>api:sync</b></td><td>Regenera los types TypeScript de OpenAPI</td></tr>
-      <tr><td><b>/playwright-best-practices + /playwright-cli</b></td><td>Oficio Playwright genérico + exploración de browser en vivo</td></tr>
-    </tbody>
-  </table>
-  <p class="dim mt-s">Lecturas detalladas vía el script de sync; escrituras vía /acli; nunca acli view para customfield_*.</p>
-  <div class="notes">Lecturas y escrituras están separadas deliberadamente. La skill carga /playwright-best-practices en cada subagente de Code junto a sí misma — reglas KATA aquí, oficio Playwright genérico allá.</div>
-</section>
-
-<section class="slide" data-title="Artifacts">
-  <p class="kicker">qué emite, y dónde</p>
-  <h2 class="h2" data-anim="fade-up">Artefactos: Planes, Código, Estado de Sesión</h2>
-  <div class="grid g2 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>Planes y código</h4><p class="dim">spec.md, automation-plan.md, atc/*.md bajo .context/PBI/.../test-specs/&lt;scope&gt;/ (commiteado); código de componente en tests/components/{api,ui,steps}/; archivos de test en tests/{e2e,integration}/{module}/.</p><span class="tag mt-s">commiteado</span></div>
-    <div class="card card-accent"><h4>Sesión y trazabilidad</h4><p class="dim">Índice de sesión + progreso en .session/test-automation/&lt;scope&gt;/, archivado en ACCEPT; kata-manifest.json actualizado; @atc('ID') enlazando cada ATC a su ticket de TMS; captura NDJSON → atc_results.json.</p><span class="tag mt-s">estado de sesión</span></div>
-  </div>
-  <div class="notes">El plan.md de sesión es un índice delgado que cita los artefactos canónicos del PBI — el contenido de dominio vive una vez en el árbol PBI, nunca duplicado. En un review limpio la sesión se archiva y se guarda un resumen en memoria.</div>
-</section>
-
-<section class="slide" data-title="Live transcript">
-  <p class="kicker">una corrida realista</p>
-  <h2 class="h2" data-anim="fade-up">Transcript en Vivo — Automatizando un Test de Checkout</h2>
-  <div class="terminal mt-m">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>claude-code</span></div>
-<pre><span class="p">▸ </span><span class="c">/test-automation</span>
-<span class="o">  Scope? (module / ticket / regression) — ticket UPEX-411</span>
-
-<span class="o">[Preflight] framework adapted ✓ toolchain ✓ env+creds ✓ manifest ✓ browsers ✓ — GREEN.</span>
-<span class="o">[Phase 0] No prior session for UPEX-411 → fresh start.</span>
-<span class="o">[Plan]   Syncing Story… jira:sync-issues get UPEX-411 --include-comments</span>
-<span class="o">         kata-manifest.json: CheckoutPage exists; reuse. New ATC: completeCheckoutSuccessfully.</span>
-<span class="o">         Wrote spec.md (3 TCs) + automation-plan.md. Fixture: { test }. Data: Discover. 1 question.</span>
-
-<span class="p">▸ </span><span class="c">Plan ready. 3 TCs, 1 new ATC, reuses CheckoutPage. Approve? (y/n)  y</span>
-
-<span class="o">[Code]   Coded CheckoutPage.completeCheckoutSuccessfully + processCheckout.test.ts</span>
-<span class="o">         test … 3 passed (0 retries)   types:check … clean   lint:check … clean</span>
-<span class="o">[Review] Verifier A/B/C parallel → 0 blockers.  ACCEPT.</span>
-<span class="o">         Manifest regenerated + staged. Session archived.</span>
-
-<span class="o">>> Local gate green. Ready for /git-flow-master: cut test/UPEX-411-checkout, push, PR.</span></pre>
-  </div>
-  <div class="notes">Nota el gate de aprobación humana tras el Plan, los tres verificadores paralelos, y el handoff explícito. La skill se detiene en un review local limpio — no crea branch, no hace push ni abre PRs por sí sola.</div>
-</section>
-
-<section class="slide" data-title="Human in control">
-  <p class="kicker">cómo el humano mantiene el control</p>
-  <h2 class="h2" data-anim="fade-up">La IA Ejecuta; Tú Decides</h2>
-  <ul class="blist anim-stagger-list">
-    <li><b>Gate de plan-antes-de-código.</b> La Fase 2 nunca empieza sin un plan escrito que aprobaste; las precondiciones riesgosas/blocker se muestran para tu decisión.</li>
-    <li><b>Sin auto-fix silencioso.</b> Ante cualquier falla de Verificador la IA SE DETIENE y retorna el reporte fallido verbatim; no muta código ni re-corre Code sin aprobación.</li>
-    <li><b>Confirmación de bug real.</b> Un defecto encontrado necesita tu sí antes de crear un bug y anotar el test.</li>
-    <li><b>La anti-duplicación se aplica.</b> El manifest + el gate pre-commit de husky bloquean componentes e IDs de ATC duplicados mecánicamente.</li>
-    <li><b>Se detiene antes de Git.</b> Un review local limpio es la frontera; crear branch, push y PRs quedan con /git-flow-master a tu orden.</li>
-  </ul>
-  <div class="notes">La aceleración está en el tecleo y la lectura, no en el criterio. Cada decisión consecuente — aprobar plan, confirmar bug, push — sigue siendo tuya.</div>
-</section>
-
-<section class="slide" data-title="Takeaways">
-  <p class="kicker">// conclusiones</p>
-  <h2 class="h2" data-anim="fade-up">Tres Reglas que Mantienen una Suite Confiable</h2>
-  <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>1 · Un ATC = un test case</h4><p class="dim">Un mini-flujo atómico con assertions fijas, decorado @atc('TICKET-ID'), nunca llamando a otro ATC. Mismo output + distintos datos = un ATC parametrizado.</p></div>
-    <div class="card card-accent"><h4>2 · Plan → Code → Review, siempre</h4><p class="dim">Nunca saltes al código; nunca omitas el chequeo del manifest; nunca hagas merge con un hallazgo CRITICAL/HIGH o un gate no-verde.</p></div>
-    <div class="card card-accent"><h4>3 · La estabilidad es disciplina</h4><p class="dim">retries: 0, sin waits hardcodeados, cada test crea sus propios datos, sin expect() en beforeAll. Un pass flaky es un bug.</p></div>
-  </div>
-  <div class="notes">Si tu audiencia recuerda solo tres cosas, son estas. Son la diferencia entre una suite en la que la gente confía y una que ignora.</div>
-</section>
-
-<section class="slide center tc" data-title="Stat">
-  <div>
-    <p class="kicker">la recompensa</p>
-    <div class="bigstat"><span class="grad">@atc('TICKET-ID')</span></div>
-    <h3>Trazabilidad 1:1, de punta a punta. Cada ATC enlaza a un ticket real de TMS; los resultados fluyen de vuelta vía NDJSON → atc_results.json → sync de TMS. El manifest sabe qué existe en código; el archivo de resultados sabe qué corrió. Juntos: cobertura que puedes defender ante un PO.</h3>
-  </div>
-  <div class="notes">Esta trazabilidad es lo que eleva a KATA de 'tests que pasan' a 'evidencia de qué está cubierto y por qué' — el artefacto que una conversación de calidad realmente necesita.</div>
-</section>
-
-<section class="slide center tc" data-title="Thanks">
-  <div>
-    <h1 class="h1"><span class="grad">Planéalo, Codifícalo a las Capas, Pásalo en Verde.</span></h1>
-    <p class="lede" style="margin:14px auto">El oficio: scope → plan → capas KATA → identidad del ATC → datos → review de tres gates. La aceleración: <kbd>/test-automation</kbd> conduce todo — tú apruebas el plan y revisas las fallas.</p>
-    <p class="lede" style="margin:14px auto">← → navegar · S notas del orador · O resumen</p>
-  </div>
-  <div class="notes">Cierra atando las dos mitades: la IA no reemplaza la metodología — ejecuta la metodología exacta que acabas de aprender, más rápido, contigo en el loop.</div>
-</section>
+  <div class="deck-footer"><span class="mono">/test-automation · Plan → Code → Review · KATA</span><span class="slide-number" data-current="1" data-total="17"></span></div>
 
 </div>
-<!-- keyboard-nav hint (ported from defect-management deck) -->
-<div id="help-hint">← → navegar · O resumen · S presentador · N notas · F pantalla</div>
+
 <style id="upex-hint-style">
 #help-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:60;pointer-events:none;
   font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--text-3)}
@@ -986,6 +771,7 @@ test.<span class="fn">describe</span>(<span class="str">'UPEX-411: Apply Discoun
 @media print{#help-hint{display:none!important}}
 </style>
 <script>
+/* ---- runtime.js ---- */
 /* html-ppt :: runtime.js
  * Keyboard-driven deck runtime. Zero dependencies.
  *
@@ -1341,7 +1127,7 @@ test.<span class="fn">describe</span>(<span class="str">'UPEX-411: Apply Discoun
 
       // Build the document as a single template string for clarity
       return `<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="es">
 <head>
 <meta charset="utf-8">
 <title>Presenter View</title>
@@ -1948,6 +1734,144 @@ test.<span class="fn">describe</span>(<span class="str">'UPEX-411: Apply Discoun
 })();
 
 </script>
+<script>
+/* ---- animations/fx-runtime.js (self-contained variant) ----
+ * Canvas FX lifecycle manager.
+ * - FX modules are INLINED on window.HPX below (no external fetch — the deck
+ *   is a single self-contained file, so the upstream FX_LIST autoloader would
+ *   404 on every module; here `ready` resolves immediately instead).
+ * - Initializes [data-fx] elements when their slide becomes active
+ * - Calls handle.stop() when the slide leaves (MutationObserver on .slide class)
+ */
+(function(){
+  'use strict';
+
+  /* ===== inlined FX modules ===== */
+  window.HPX = window.HPX || {};
+  window.HPX.constellation = function(host){
+    var canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+    host.appendChild(canvas);
+    var ctx = canvas.getContext('2d');
+    var raf = 0, running = true;
+    var N = 70, LINK = 130, pts = [];
+    function size(){
+      canvas.width = host.clientWidth || 1280;
+      canvas.height = host.clientHeight || 720;
+    }
+    size();
+    for (var i = 0; i < N; i++){
+      pts.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - .5) * .35,
+        vy: (Math.random() - .5) * .35,
+        r: Math.random() * 1.8 + .6
+      });
+    }
+    function tick(){
+      if (!running) return;
+      if (canvas.width !== (host.clientWidth || canvas.width) ||
+          canvas.height !== (host.clientHeight || canvas.height)) size();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      var i, a, b, p;
+      for (i = 0; i < N; i++){
+        p = pts[i];
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 6.2832);
+        ctx.fillStyle = 'rgba(122,162,247,.8)';
+        ctx.fill();
+      }
+      for (a = 0; a < N; a++) for (b = a + 1; b < N; b++){
+        var dx = pts[a].x - pts[b].x, dy = pts[a].y - pts[b].y, d2 = dx*dx + dy*dy;
+        if (d2 < LINK * LINK){
+          ctx.strokeStyle = 'rgba(187,154,247,' + (0.35 * (1 - Math.sqrt(d2) / LINK)).toFixed(3) + ')';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(pts[a].x, pts[a].y);
+          ctx.lineTo(pts[b].x, pts[b].y);
+          ctx.stroke();
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return { stop: function(){
+      running = false;
+      cancelAnimationFrame(raf);
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    } };
+  };
+
+  /* ===== lifecycle (same contract as upstream fx-runtime.js) ===== */
+  const ready = Promise.resolve();
+
+  window.__hpxActive = window.__hpxActive || new Map();
+
+  function initFxIn(root){
+    if (!window.HPX) return;
+    const els = root.querySelectorAll('[data-fx]');
+    els.forEach((el) => {
+      if (window.__hpxActive.has(el)) return;
+      const name = el.getAttribute('data-fx');
+      const fn = window.HPX[name];
+      if (typeof fn !== 'function') return;
+      try {
+        const handle = fn(el, {}) || { stop(){} };
+        window.__hpxActive.set(el, handle);
+      } catch(e){ console.warn('[hpx-fx]', name, e); }
+    });
+  }
+
+  function stopFxIn(root){
+    const els = root.querySelectorAll('[data-fx]');
+    els.forEach((el) => {
+      const h = window.__hpxActive.get(el);
+      if (h && typeof h.stop === 'function'){
+        try{ h.stop(); }catch(e){}
+      }
+      window.__hpxActive.delete(el);
+    });
+  }
+
+  function reinitFxIn(root){
+    stopFxIn(root);
+    initFxIn(root);
+  }
+  window.__hpxReinit = reinitFxIn;
+
+  function boot(){
+    ready.then(() => {
+      const active = document.querySelector('.slide.is-active') || document.querySelector('.slide');
+      if (active) initFxIn(active);
+
+      // Watch all slides for class changes
+      const slides = document.querySelectorAll('.slide');
+      slides.forEach((sl) => {
+        const mo = new MutationObserver((muts) => {
+          for (const m of muts){
+            if (m.attributeName === 'class'){
+              if (sl.classList.contains('is-active')) initFxIn(sl);
+              else stopFxIn(sl);
+            }
+          }
+        });
+        mo.observe(sl, { attributes: true, attributeFilter: ['class'] });
+      });
+    });
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+
+</script>
 
 <script>
 /* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
@@ -2031,4 +1955,5 @@ if(force||(isMobile&&!seen)){
 })();
 </script>
 
-</body></html>
+</body>
+</html>

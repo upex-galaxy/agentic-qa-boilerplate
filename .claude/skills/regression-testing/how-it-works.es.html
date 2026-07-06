@@ -1,9 +1,17 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="tokyo-night">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Regression Testing &amp; GO/NO-GO — El Oficio y la IA</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Regression Testing · Cómo funciona</title>
 <style>
+/* ============================================================
+   Self-contained deck — html-ppt assets inlined (fonts, base,
+   tokyo-night theme, animations) + deck-local styles.
+   Source: ~/.agents/skills/html-ppt (harness) · content: regression-testing SKILL.md.
+   ============================================================ */
+
+/* ---- fonts.css ---- */
 /* html-ppt :: shared webfonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;600;700;900&display=swap');
@@ -13,6 +21,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+
+
+/* ---- base.css ---- */
 /* html-ppt :: base.css — reset + shared tokens + layout primitives */
 /* Default tokens. Themes in assets/themes/*.css override the :root block. */
 :root {
@@ -163,6 +174,26 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
   .deck-header,.deck-footer,.progress-bar,.notes-overlay,.overview{display:none!important}
 }
+
+
+/* ---- themes/tokyo-night.css ---- */
+/* theme: tokyo-night */
+:root{
+  --bg:#1a1b26;--bg-soft:#16161e;--surface:#24283b;--surface-2:#2f334d;
+  --border:rgba(192,202,245,.12);--border-strong:rgba(192,202,245,.24);
+  --text-1:#c0caf5;--text-2:#a9b1d6;--text-3:#565f89;
+  --accent:#7aa2f7;--accent-2:#bb9af7;--accent-3:#7dcfff;
+  --good:#9ece6a;--warn:#e0af68;--bad:#f7768e;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#f7768e);
+  --grad-soft:linear-gradient(135deg,#24283b,#2f334d);
+  --radius:12px;--radius-sm:8px;--radius-lg:20px;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --shadow-lg:0 24px 62px rgba(0,0,0,.6);
+  --font-sans:'Inter','Noto Sans SC',sans-serif;
+}
+
+
+/* ---- animations/animations.css ---- */
 /* html-ppt :: animations.css
  * Apply by adding class="anim-<name>" or data-anim="<name>".
  * Durations are deliberately snappy; tweak --anim-dur per element.
@@ -301,613 +332,497 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 @media (prefers-reduced-motion: reduce){
   [class*="anim-"]{animation:none!important;transition:none!important}
 }
-/* ===========================================================================
-   how-it-works deck theme — dark engineering, accent-parametrized
-   Set per deck on <body class="tpl-howto" style="--a1:..;--a2:..;--a3:..">
-   =========================================================================== */
-.tpl-howto{
-  --a1:#7ee787; --a2:#79c0ff; --a3:#d2a8ff;            /* fallbacks */
-  --bg:#0d1117; --bg-soft:#161b22; --surface:#161b22; --surface-2:#1c2230;
-  --border:rgba(139,148,158,.22); --border-strong:rgba(139,148,158,.42);
-  --text-1:#e6edf3; --text-2:#9aa6b2; --text-3:#6e7681;
-  --accent:var(--a1); --accent-2:var(--a2); --accent-3:var(--a3);
-  --good:#3fb950; --warn:#d29922; --bad:#f85149;
-  --grad:linear-gradient(120deg,var(--a1) 0%,var(--a2) 55%,var(--a3) 100%);
-  --radius:14px; --radius-lg:20px;
-  --shadow:0 20px 60px rgba(0,0,0,.5);
-  font-family:'Inter','Noto Sans SC',sans-serif;
-  background:#0d1117; color:var(--text-1);
-}
-.tpl-howto .deck{background:#0d1117}
-.tpl-howto .slide{padding:64px 88px;background:#0d1117;color:var(--text-1)}
-.tpl-howto .slide::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
-  background:
-   radial-gradient(58% 48% at 88% 8%,color-mix(in srgb,var(--a2) 14%,transparent),transparent 60%),
-   radial-gradient(52% 50% at 8% 92%,color-mix(in srgb,var(--a1) 10%,transparent),transparent 62%);}
-.tpl-howto .slide>*{position:relative;z-index:1}
 
-/* ---------- typography ---------- */
-.tpl-howto .h1{font-size:74px;line-height:1.04;font-weight:800;letter-spacing:-.03em;color:#fff}
-.tpl-howto .h2{font-size:50px;line-height:1.08;font-weight:700;letter-spacing:-.025em;color:#fff}
-.tpl-howto h3,.tpl-howto .h3{color:#fff;font-weight:600}
-.tpl-howto h4,.tpl-howto .h4{color:#fff;font-weight:600}
-.tpl-howto .lede{color:var(--text-2);font-weight:300}
-.tpl-howto .dim{color:var(--text-2)} .tpl-howto .dim2{color:var(--text-3)}
-.tpl-howto .mono{font-family:'JetBrains Mono','IBM Plex Mono',monospace}
-.tpl-howto .gradient-text,.tpl-howto .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
-.tpl-howto .kicker{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;text-transform:none;letter-spacing:.02em}
-.tpl-howto .kicker::before{content:"// "}
-.tpl-howto .kicker.run::before{content:"> "}
-.tpl-howto .divider-accent{height:3px;width:64px;background:var(--grad);border-radius:2px}
+/* ---- deck-local: regression-testing workflow ---- */
+.slide{padding:52px 76px}
+.kicker{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:14px;font-weight:600;letter-spacing:.03em;text-transform:none;color:var(--accent)}
+.kicker::before{content:"// "}
+.kicker.run::before{content:"> "}
+.h1{font-size:72px;line-height:1.05}
+.h2{font-size:40px;line-height:1.1;margin-bottom:6px}
+.lede{font-size:20px;line-height:1.5}
+.small{font-size:14px;line-height:1.55}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.mono{font-family:'JetBrains Mono','IBM Plex Mono',monospace}
 
-/* ---------- cards ---------- */
-.tpl-howto .card{background:var(--surface);border:1px solid var(--border);box-shadow:none;border-radius:var(--radius)}
-.tpl-howto .card-accent{border-top:3px solid var(--accent)}
-.tpl-howto .card-soft{background:var(--surface-2);border:1px solid var(--border)}
-.tpl-howto .card h4{margin-bottom:8px}
-.tpl-howto .card p{font-size:15px;line-height:1.6}
-.tpl-howto .num-badge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;
-  background:color-mix(in srgb,var(--a1) 16%,transparent);color:var(--accent);font-weight:800;font-family:'JetBrains Mono',monospace;font-size:16px;border:1px solid color-mix(in srgb,var(--a1) 30%,transparent)}
+/* cover */
+.cover-cmd{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:76px;font-weight:700;letter-spacing:-.03em;color:var(--text-1);margin:14px 0 10px;line-height:1.05}
+.cover-cmd .sl{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.chip{display:inline-flex;align-items:center;gap:9px;padding:8px 15px;border-radius:10px;font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:13.5px;background:var(--surface);border:1px solid var(--border-strong);color:var(--text-2)}
+.chip b{color:var(--text-1);font-weight:600}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
 
-/* ---------- tags / pills / kbd ---------- */
-.tpl-howto .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:7px;font-family:'JetBrains Mono',monospace;
-  font-size:12px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)}
-.tpl-howto .tag.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent);background:color-mix(in srgb,var(--good) 12%,transparent)}
-.tpl-howto .tag.no{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:color-mix(in srgb,var(--bad) 12%,transparent)}
-.tpl-howto .tag.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent)}
-.tpl-howto .pill{background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
-.tpl-howto .pill-accent{background:color-mix(in srgb,var(--a1) 14%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--a1) 32%,transparent)}
-.tpl-howto kbd,.tpl-howto .kbd{font-family:'JetBrains Mono',monospace;font-size:13px;padding:3px 10px;border-radius:7px;
-  background:color-mix(in srgb,var(--a1) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--a1) 30%,transparent);white-space:nowrap}
+/* terminal */
+.term{background:#16161e;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.term .bar{display:flex;gap:7px;padding:9px 14px;background:#1f2335;border-bottom:1px solid var(--border);align-items:center}
+.term .bar .d{width:10px;height:10px;border-radius:50%;background:#f7768e;flex:none}
+.term .bar .d:nth-child(2){background:#e0af68}
+.term .bar .d:nth-child(3){background:#9ece6a}
+.term .bar .t{margin-left:6px;font:500 13px/1 'JetBrains Mono',monospace;color:var(--text-3)}
+.term pre{margin:0;padding:14px 20px;font:500 13.5px/1.7 'JetBrains Mono','IBM Plex Mono',monospace;color:#c0caf5;overflow-x:auto;white-space:pre}
+.term .p{color:#9ece6a;font-weight:700}
+.term .cm{color:#565f89;font-style:italic}
+.term .o{color:#787fa8}
+.term .hi{color:#e0af68}
+.term .bad{color:#f7768e}
+.term .okc{color:#9ece6a}
 
-/* ---------- terminal / code ---------- */
-.tpl-howto .terminal{background:#010409;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
-  box-shadow:0 30px 80px rgba(0,0,0,.6);font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:14.5px;line-height:1.7}
-.tpl-howto .terminal .bar{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#161b22;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-3)}
-.tpl-howto .terminal .dot{width:11px;height:11px;border-radius:50%;background:#ff5f56}
-.tpl-howto .terminal .dot:nth-child(2){background:#ffbd2e}
-.tpl-howto .terminal .dot:nth-child(3){background:#27c93f}
-.tpl-howto .terminal pre{margin:0;padding:22px 26px;color:#e6edf3;overflow:auto;max-height:520px;white-space:pre-wrap}
-.tpl-howto .terminal .p{color:var(--accent);font-weight:600}   /* prompt $ */
-.tpl-howto .terminal .c{color:#e6edf3}                          /* command */
-.tpl-howto .terminal .o{color:var(--text-2)}                    /* output */
-.tpl-howto .kw{color:#ff7b72} .tpl-howto .fn{color:#d2a8ff} .tpl-howto .str{color:#a5d6ff}
-.tpl-howto .cmt{color:#6e7681;font-style:italic} .tpl-howto .num{color:#79c0ff}
-.tpl-howto .caret{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;animation:hb-blink 1s step-end infinite}
-@keyframes hb-blink{50%{opacity:0}}
+/* tables */
+table.tbl{width:100%;border-collapse:collapse;font-size:14.5px}
+table.tbl th{text-align:left;padding:8px 13px;color:var(--accent-2);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-strong);font-family:'JetBrains Mono',monospace}
+table.tbl td{padding:9px 13px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top;line-height:1.45}
+table.tbl tr:last-child td{border-bottom:none}
+table.tbl td b{color:var(--text-1);font-weight:600}
+table.tbl .mono{font-size:13px}
 
-/* ---------- agenda rows ---------- */
-.tpl-howto .agenda-row{display:flex;align-items:baseline;gap:22px;padding:15px 0;border-bottom:1px dashed var(--border);font-family:'JetBrains Mono',monospace}
-.tpl-howto .agenda-row .anum{color:var(--accent);flex:none;width:42px}
-.tpl-howto .agenda-row .at{color:#fff;font-size:22px;flex:1;font-family:'Inter',sans-serif;font-weight:600}
-.tpl-howto .agenda-row .ad{color:var(--text-3);font-size:12px}
+/* workflow map */
+.wf{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+.wf-row{display:flex;align-items:stretch;gap:7px}
+.wf-lbl{flex:none;width:96px;display:flex;align-items:center;font:700 13px/1.25 'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.04em}
+.wf-lbl.alt{color:var(--accent-2)}
+.wf-node{display:flex;flex-direction:column;justify-content:center;padding:6px 11px;border:1px solid var(--border-strong);border-radius:9px;background:var(--surface);font-size:13px;line-height:1.3;color:var(--text-2);white-space:nowrap}
+.wf-node b{color:var(--text-1);font-weight:600;font-size:13px}
+.wf-node small{font-size:13px;color:var(--text-3)}
+.wf-node.gate{border-color:color-mix(in srgb,var(--warn) 55%,transparent);background:color-mix(in srgb,var(--warn) 9%,transparent)}
+.wf-node.go{border-color:color-mix(in srgb,var(--good) 60%,transparent);background:color-mix(in srgb,var(--good) 10%,transparent)}
+.wf-node.caution{border-color:color-mix(in srgb,var(--warn) 60%,transparent);background:color-mix(in srgb,var(--warn) 10%,transparent)}
+.wf-node.nogo{border-color:color-mix(in srgb,var(--bad) 60%,transparent);background:color-mix(in srgb,var(--bad) 10%,transparent)}
+.wf-node.hand{border-style:dashed;background:transparent}
+.wf-arr{flex:none;display:flex;align-items:center;color:var(--text-3);font-family:'JetBrains Mono',monospace;font-size:14px}
+.wf-arr.loop{color:var(--warn)}
 
-/* ---------- numbered steps (process) ---------- */
-.tpl-howto .steps{display:grid;gap:20px;margin-top:34px}
-.tpl-howto .steps.s2{grid-template-columns:repeat(2,1fr)}
-.tpl-howto .steps.s3{grid-template-columns:repeat(3,1fr)}
-.tpl-howto .steps.s4{grid-template-columns:repeat(4,1fr)}
-.tpl-howto .step{position:relative;padding:24px 22px 20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
-.tpl-howto .step .num{position:absolute;top:-18px;left:20px;width:40px;height:40px;border-radius:11px;background:var(--grad);color:#03121a;
-  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;font-family:'JetBrains Mono',monospace}
-.tpl-howto .step h4{margin:14px 0 7px;font-size:17px}
-.tpl-howto .step p{font-size:13.5px;color:var(--text-2);line-height:1.55}
+/* cards / steps */
+.cards{display:grid;gap:13px}
+.c2{grid-template-columns:repeat(2,1fr)}
+.c3{grid-template-columns:repeat(3,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 17px;box-shadow:none}
+.card h4{font-size:15.5px;margin:0 0 5px;color:var(--text-1)}
+.card p{font-size:13.5px;margin:0;color:var(--text-2);line-height:1.5}
+.card.acc{border-top:2px solid var(--accent)}
+.num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:color-mix(in srgb,var(--accent) 16%,transparent);border:1px solid color-mix(in srgb,var(--accent) 34%,transparent);color:var(--accent);font:700 13.5px 'JetBrains Mono',monospace;margin-bottom:7px}
 
-/* ---------- vertical stage flow ---------- */
-.tpl-howto .flow{display:flex;flex-direction:column;gap:0;margin-top:24px}
-.tpl-howto .flow .stage{display:grid;grid-template-columns:46px 1fr;gap:18px;padding:14px 0;align-items:start}
-.tpl-howto .flow .stage .sx{width:46px;height:46px;border-radius:12px;background:color-mix(in srgb,var(--a1) 14%,transparent);
-  border:1px solid color-mix(in srgb,var(--a1) 34%,transparent);color:var(--accent);display:flex;align-items:center;justify-content:center;
-  font-weight:800;font-family:'JetBrains Mono',monospace;font-size:17px}
-.tpl-howto .flow .stage h4{font-size:19px;margin-bottom:3px}
-.tpl-howto .flow .stage p{font-size:14px;color:var(--text-2);line-height:1.55;margin:0}
-.tpl-howto .flow .stage+.stage{border-top:1px dashed var(--border)}
+/* callouts */
+.callout{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent);padding:11px 17px;border-radius:0 10px 10px 0}
+.callout h4{font-size:14.5px;margin:0 0 3px;color:var(--accent)}
+.callout p{font-size:13.5px;color:var(--text-2);line-height:1.5;margin:0}
+.callout.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent)}
+.callout.warn h4{color:var(--warn)}
+.callout.bad{border-left-color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,transparent)}
+.callout.bad h4{color:var(--bad)}
 
-/* ---------- comparison (manual pain vs craft / do vs dont) ---------- */
-.tpl-howto .vs{display:grid;grid-template-columns:1fr 64px 1fr;gap:22px;align-items:stretch;margin-top:26px}
-.tpl-howto .vs .side{padding:26px 28px}
-.tpl-howto .vs .mid{font-size:42px;font-weight:800;color:var(--text-3);display:flex;align-items:center;justify-content:center}
-.tpl-howto .vs .bad-side{border-top:3px solid var(--bad)}
-.tpl-howto .vs .good-side{border-top:3px solid var(--good)}
-.tpl-howto .vs h3{font-size:21px;margin-bottom:12px}
-.tpl-howto .vs ul{padding-left:18px;margin:0;font-size:14.5px;line-height:1.75;color:var(--text-2)}
-.tpl-howto .vs .bad-side li::marker{color:var(--bad)}
-.tpl-howto .vs .good-side li::marker{color:var(--good)}
+/* tags */
+.tag{display:inline-block;padding:3px 9px;border-radius:6px;font:600 13px 'JetBrains Mono',monospace;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-2)}
+.tag.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,transparent);background:color-mix(in srgb,var(--good) 11%,transparent)}
+.tag.no{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,transparent);background:color-mix(in srgb,var(--bad) 11%,transparent)}
+.tag.wr{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent);background:color-mix(in srgb,var(--warn) 11%,transparent)}
+.tag.bl{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,transparent);background:color-mix(in srgb,var(--accent) 11%,transparent)}
 
-/* ---------- callout / note box ---------- */
-.tpl-howto .callout{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--a1) 7%,transparent);
-  padding:18px 22px;border-radius:0 10px 10px 0;margin-top:20px}
-.tpl-howto .callout h4{font-size:16px;margin-bottom:5px;color:var(--accent)}
-.tpl-howto .callout p{font-size:15px;color:var(--text-2);line-height:1.6;margin:0}
-.tpl-howto .callout.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent)}
-.tpl-howto .callout.warn h4{color:var(--warn)}
+/* bullet list */
+.blist{list-style:none;padding:0;margin:14px 0 0}
+.blist li{position:relative;padding:7px 0 7px 24px;font-size:14.5px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
+.blist li:last-child{border-bottom:none}
+.blist li::before{content:"▸";position:absolute;left:2px;top:7px;color:var(--accent);font-weight:700}
+.blist li b{color:var(--text-1);font-weight:600}
 
-/* ---------- decision / data table ---------- */
-.tpl-howto .dtable{width:100%;border-collapse:collapse;margin-top:24px;font-size:15px}
-.tpl-howto .dtable th{text-align:left;padding:12px 16px;color:var(--text-3);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-strong)}
-.tpl-howto .dtable td{padding:13px 16px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top}
-.tpl-howto .dtable tr:last-child td{border-bottom:none}
-.tpl-howto .dtable td b,.tpl-howto .dtable td strong{color:#fff;font-weight:600}
-
-/* ---------- bullet list (clean) ---------- */
-.tpl-howto .blist{list-style:none;padding:0;margin:22px 0 0}
-.tpl-howto .blist li{position:relative;padding:9px 0 9px 30px;font-size:17px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
-.tpl-howto .blist li:last-child{border-bottom:none}
-.tpl-howto .blist li::before{content:"▸";position:absolute;left:4px;top:9px;color:var(--accent);font-weight:700}
-.tpl-howto .blist li b{color:#fff;font-weight:600}
-
-/* ---------- speaker / cover meta ---------- */
-.tpl-howto .speaker{display:flex;align-items:center;gap:14px;margin-top:26px}
-.tpl-howto .speaker .av{width:50px;height:50px;border-radius:13px;background:var(--grad)}
-.tpl-howto .speaker b{display:block;color:#fff;font-size:17px}
-.tpl-howto .speaker span{color:var(--text-3);font-size:12.5px;font-family:'JetBrains Mono',monospace}
-
-/* ---------- section divider ---------- */
-.tpl-howto .slide.divider{justify-content:center;height:auto}
-.tpl-howto .part-no{font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent);letter-spacing:.1em}
-.tpl-howto .slide.divider .h1{font-size:64px;margin-top:10px;max-width:20ch}
-.tpl-howto .slide.divider .lede{margin-top:26px;font-size:20px}
-
-/* ---------- big stat ---------- */
-.tpl-howto .bigstat{font-size:180px;font-weight:900;line-height:1;letter-spacing:-.04em}
-
-/* ---------- footer ---------- */
-.tpl-howto .deck-footer .mono{color:var(--text-3)}
-.tpl-howto .slide-number{color:var(--text-3)}
-
-/* fix: cover .speaker must not collide with the absolute .deck-footer */
-.tpl-howto .slide:has(> .speaker){padding-bottom:160px}
-.tpl-howto .slide .speaker{position:absolute;left:88px;right:88px;bottom:70px;margin-top:0;z-index:3}</style>
+/* footer chrome */
+.deck-footer .mono{font-size:12px}
+</style>
 </head>
-<body class="tpl-howto" style="--a1:#f5a524;--a2:#ffd27a;--a3:#ff7b72">
+<body>
+
 <div class="deck">
-<section class="slide" data-title="Portada">
-  <p class="kicker run">how-it-works · agentic-qa</p>
-  <h1 class="h1 anim-fade-up" data-anim="fade-up">Regression Testing y la <span class="grad">decisión GO/NO-GO</span></h1>
-  <p class="lede mt-m">De un CI en rojo a un veredicto de release defendible — primero el oficio, luego la IA que lo ejecuta desde tu terminal.</p>
-  <div class="speaker"><div class="av"></div><div><b>Ejecutar → Analizar → Reportar</b><span>parte 1: hazlo a mano · parte 2: la skill con IA</span></div></div>
-  <div class="deck-footer"><span class="mono">#regression #release-gate</span><span class="slide-number" data-current="1" data-total="36"></span></div>
-  <div class="notes">Encuadra el tema: esta es la última puerta antes de un release. Aprendemos primero el método manual, luego cómo la skill lo automatiza de principio a fin.</div>
-</section>
 
-<section class="slide center tc" data-title="Por qué importa">
-  <div>
-    <p class="kicker">por qué importa</p>
-    <div class="bigstat"><span class="grad">20%</span></div>
-    <h3>Una sola mala clasificación cambia todo el veredicto</h3>
-    <p class="lede mt-m">Un test solo es FLAKY por encima del 20% de fallos en las últimas 10 ejecuciones — por debajo de esa línea, un fallo es una REGRESSION que BLOQUEA el release. Llámalo "flaky" por reflejo y publicas el bug.</p>
-  </div>
-  <div class="notes">Toda la disciplina depende de no etiquetar fallos como 'flaky' por pereza. El umbral del 20% es la línea clara entre 'bloquea el release' y 'no'.</div>
-</section>
+  <div class="deck-footer"><span class="mono">upex-galaxy · agentic-qa-boilerplate</span><span class="slide-number" data-current="1" data-total="16"></span></div>
 
-<section class="slide" data-title="Agenda">
-  <p class="kicker">qué cubriremos</p>
-  <h2 class="h2" data-anim="fade-up">Dos mitades: el oficio, luego la aceleración</h2>
-  <div class="stack mt-l anim-stagger-list">
-    <div class="agenda-row"><span class="anum">01</span><span class="at">El oficio — ejecutar un release gate a mano: suites, ejecución, el triage de 5 vías, severidad, el score de 9 puntos, el reporte</span><span class="ad">parte 1</span></div>
-    <div class="agenda-row"><span class="anum">02</span><span class="at">La aceleración — la skill conduce todo el pipeline desde un prompt, con subagentes, gh CLI y Allure</span><span class="ad">parte 2</span></div>
-    <div class="agenda-row"><span class="anum">03</span><span class="at">Conclusiones — clasifica con honestidad, respeta los vetos, asume el veredicto</span><span class="ad">cierre</span></div>
-  </div>
-  <div class="notes">Diles que la Parte 1 es el grueso — aprende el método a mano para poder confiar (y anular) a la IA en la Parte 2.</div>
-</section>
+  <!-- 1. PORTADA -->
+  <section class="slide is-active" data-title="Portada">
+    <p class="eyebrow">AGENTIC QA · WORKFLOW SKILL</p>
+    <h1 class="cover-cmd anim-rise-in" data-anim="rise-in"><span class="sl">/</span>regression-testing</h1>
+    <p class="lede" style="max-width:58ch">Ejecuta la suite en CI, clasifica cada fallo con evidencia y convierte el resultado en un veredicto de release defendible: <b class="grad">GO / CAUTION / NO-GO</b>.</p>
+    <div class="row wrap mt-l" style="gap:11px">
+      <span class="chip"><span class="dot" style="background:var(--accent)"></span><b>Stage 6</b> · Regression / Smoke / Sanity</span>
+      <span class="chip"><span class="dot" style="background:var(--good)"></span>Execute → Analyze → Report</span>
+      <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>gh CLI · Allure 3 · /acli · /xray-cli</span>
+    </div>
+    <p class="small dim2 mt-l mono">→ avanzar · O overview · S presentador · N notas · F pantalla completa</p>
+    <div class="notes">Deck del workflow del skill regression-testing. Tres fases en orden fijo: Execute → Analyze → Report. Nunca saltar el análisis; nunca clasificar sin leer los logs del fallo.</div>
+  </section>
 
-<section class="slide divider" data-title="Parte 1">
-  <div>
-    <p class="part-no">PARTE 01</p>
-    <h1 class="h1">El oficio<br><span class="grad">ejecutar un release gate a mano</span></h1>
-    <p class="lede">Si la IA no existiera, ¿qué haría un QA cuidadoso, paso a paso, para convertir un CI en una decisión de release que nadie pueda discutir?</p>
-  </div>
-  <div class="notes">Todo en esta mitad es el método real que la skill codifica — mismos umbrales, mismos árboles, mismas plantillas.</div>
-</section>
+  <!-- 2. MAPA DEL WORKFLOW -->
+  <section class="slide" data-title="Mapa del workflow">
+    <p class="kicker">mapa completo — este es el índice del deck</p>
+    <h2 class="h2">De un prompt a un veredicto de release</h2>
+    <div class="wf">
+      <div class="wf-row">
+        <span class="wf-lbl alt">GATES</span>
+        <div class="wf-node gate"><b>Preflight Gate</b><small>gh auth · workflows · Secrets · Allure 3 · env</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node gate"><b>Phase 0 · Resume check</b><small>.session/regression-testing/&lt;env&gt;-&lt;fecha&gt;/</small></div>
+        <span class="wf-arr loop">⟲</span>
+        <div class="wf-node"><small>RUN_ID en plan.md → <b>re-attach</b> sin re-disparar CI</small></div>
+      </div>
+      <div class="wf-row">
+        <span class="wf-lbl">FASE 1</span>
+        <div class="wf-node"><b>Elegir suite</b><small>regression·smoke·sanity</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><b>plan.md</b><small>plan-first</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><b>Trigger</b><small>gh workflow run</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><b>RUN_ID</b><small>persistir ya</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><b>Monitor</b><small>subagente background</small></div>
+      </div>
+      <div class="wf-row">
+        <span class="wf-lbl">FASE 2</span>
+        <div class="wf-node"><b>Collect ×3 ∥</b><small>allure·evidence·playwright</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><b>Parse</b><small>Allure JSON</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><b>Métricas</b><small>pass-rate·trend</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><b>Clasificar 6 vías</b><small>∥ si &gt;10 fallos</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><b>Severidad</b><small>eje aparte</small></div>
+      </div>
+      <div class="wf-row">
+        <span class="wf-lbl">FASE 3</span>
+        <div class="wf-node"><b>Score /9</b></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><b>Vetos duros</b><small>@critical·regression·&lt;90%</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node go"><b>GO ≥7</b></div>
+        <div class="wf-node caution"><b>CAUTION 4–6</b></div>
+        <div class="wf-node nogo"><b>NO-GO &lt;4</b></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><b>Report</b><small>.context/reports/</small></div>
+      </div>
+      <div class="wf-row">
+        <span class="wf-lbl alt">ADYACENTES</span>
+        <div class="wf-node nogo"><small>NO-GO → <b>Jira Bug/Defect</b> vía /acli → fix → re-run ⟲ Fase 1</small></div>
+        <div class="wf-node"><small>ENVIRONMENT → re-run tras infra-check</small></div>
+        <div class="wf-node"><small>TMS sync <b>STP/STR</b> (/xray-cli)</small></div>
+        <div class="wf-node"><small>Archive session + memoria</small></div>
+      </div>
+      <div class="wf-row">
+        <span class="wf-lbl alt">HANDOFFS</span>
+        <div class="wf-node hand"><small><b>/test-automation</b> escribe los tests + marker @blocked:{BUG-KEY}</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node hand"><small>esta skill <b>consume y decide</b></small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node hand"><small><b>/sprint-testing</b> verifica el fix del bug a mano</small></div>
+      </div>
+    </div>
+    <div class="notes">Este mapa es el índice mental: cada fila FASE corresponde a las secciones que siguen. Los caminos adyacentes — re-attach, re-run, filing en Jira y handoffs — también se cubren dentro de cada fase.</div>
+  </section>
 
-<section class="slide" data-title="El pipeline">
-  <p class="kicker">el pipeline</p>
-  <h2 class="h2" data-anim="fade-up">Tres fases, siempre en este orden</h2>
-  <div class="flow mt-m anim-stagger-list">
-    <div class="stage"><div class="sx">1</div><div><h4>Ejecutar</h4><p>Elige la suite correcta, dispara el CI, monitorea hasta el final, captura el run ID.</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>Analizar</h4><p>Descarga artefactos, parsea resultados, calcula métricas, clasifica cada fallo, evalúa severidad.</p></div></div>
-    <div class="stage"><div class="sx">3</div><div><h4>Reportar y decidir</h4><p>Puntúa la ejecución, aplica los vetos duros, emite GO/CAUTION/NO-GO, escribe el reporte para stakeholders.</p></div></div>
-  </div>
-  <div class="notes">Recalca la regla de orden: nunca saltes el análisis y vayas directo al reporte; nunca adivines una clasificación sin leer los logs del fallo. El orden es innegociable.</div>
-</section>
+  <!-- 3. PREFLIGHT GATE -->
+  <section class="slide" data-title="Preflight Gate">
+    <p class="kicker">antes de todo · preflight gate (obligatorio)</p>
+    <h2 class="h2">Nada se dispara sin el gate en verde</h2>
+    <table class="tbl mt-m">
+      <thead><tr><th>Capacidad</th><th>Nivel</th><th>Por qué aquí</th></tr></thead>
+      <tbody>
+        <tr><td><b>gh CLI autenticado</b></td><td><span class="tag ok">REQUIRED</span></td><td>Todo el pipeline vive en <span class="mono">gh</span>: trigger, watch, download. Sin auth → STOP, el usuario corre <span class="mono">gh auth login</span>.</td></tr>
+        <tr><td><b>Workflow files</b></td><td><span class="tag ok">REQUIRED</span></td><td><span class="mono">.github/workflows/</span> debe tener el YAML de la suite elegida con sus inputs.</td></tr>
+        <tr><td><b>GitHub Actions Secrets</b></td><td><span class="tag ok">REQUIRED</span></td><td>El runner usa <span class="mono">secrets.&lt;ENV&gt;_USER_EMAIL/_PASSWORD</span> + <span class="mono">XRAY_*</span>/<span class="mono">ATLASSIAN_*</span>. Verificar con <span class="mono">gh secret list</span> — el gap silencioso más común.</td></tr>
+        <tr><td><b>Allure 3 local</b></td><td><span class="tag ok">REQUIRED</span></td><td><span class="mono">bunx allure</span> resuelve (devDep, sin install global) + <span class="mono">allurerc.mjs</span> presente para <span class="mono">bun allure:agent</span>.</td></tr>
+        <tr><td><b>Env activo confirmado</b></td><td><span class="tag ok">REQUIRED</span></td><td>Confirmar el target antes de un run de 20–60 min (default: <span class="mono">staging</span>).</td></tr>
+        <tr><td><b>[TMS_TOOL] · [ISSUE_TRACKER_TOOL]</b></td><td><span class="tag wr">OPTIONAL</span></td><td><span class="mono">/xray-cli</span> solo si hay sync TMS; <span class="mono">/acli</span> solo si el veredicto obliga a abrir issues.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout mt-m"><h4>Dos leyes del gate</h4><p><b>args-as-answers</b> — suite, env y grep/test_file ya vienen como argumentos: pregunta solo los huecos. <b>probe, don't assume</b> — cada capacidad se prueba con un comando real. Gaps + REDs se presentan en UNA checklist; cualquier RED bloqueante → STOP.</p></div>
+    <div class="notes">Las credenciales de test, MCPs y browsers viven DENTRO del runner de CI, no en el orquestador — quedan fuera de este gate. CI usa GitHub Secrets, nunca valores copiados del .env local.</div>
+  </section>
 
-<section class="slide" data-title="Selección de suite">
-  <p class="kicker">fase 1 · elegir</p>
-  <h2 class="h2" data-anim="fade-up">Elige la suite correcta antes de disparar nada</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Suite</th><th>Workflow</th><th>Duración</th><th>Usar cuando</th></tr></thead>
-    <tbody>
-      <tr><td><b>regression</b></td><td>regression.yml</td><td>20–60 min</td><td>Validación pre-release, corrida nocturna completa</td></tr>
-      <tr><td><b>smoke</b></td><td>smoke.yml</td><td>2–5 min</td><td>Health check post-deploy, solo @critical</td></tr>
-      <tr><td><b>sanity</b></td><td>sanity.yml</td><td>1–10 min</td><td>Una feature / un archivo / un patrón grep</td></tr>
-    </tbody>
-  </table>
-  <div class="callout mt-m"><h4>Regla por defecto</h4><p>Un "run regression" pelado → regression en el env por defecto · "critical only" → smoke · un archivo o grep → sanity.</p></div>
-  <div class="notes">La suite equivocada da la señal equivocada — un smoke de 3 minutos en verde NO es un release gate. Empareja la suite con la pregunta que se está haciendo.</div>
-</section>
+  <!-- 4. PHASE 0 RESUME -->
+  <section class="slide" data-title="Phase 0 · Resume">
+    <p class="kicker">phase 0 · session resume check (obligatorio, inline)</p>
+    <h2 class="h2">¿Ya había una sesión? Reanuda, no repitas</h2>
+    <div class="cards c2 mt-m" style="align-items:start">
+      <div class="card acc">
+        <h4>El contrato de sesión</h4>
+        <p>Scope = <span class="mono">&lt;env&gt;-&lt;YYYY-MM-DD&gt;</span> (ej. <span class="mono">staging-2026-07-06</span>). Estado en <span class="mono">.session/regression-testing/&lt;scope&gt;/{plan.md, progress.md}</span>. Si <span class="mono">progress.md</span> no existe → sesión nueva. Si existe → ofrecer <b>resume / restart / abort</b> (restart archiva primero).</p>
+      </div>
+      <div class="card acc">
+        <h4>El caso estrella: re-attach del RUN_ID</h4>
+        <p>Si el Monitor murió a mitad del watch pero <span class="mono">plan.md</span> ya capturó el <span class="mono">RUN_ID</span>, la skill se <b>re-engancha</b> al run vivo en lugar de re-disparar el CI — ahorra 20–60 min de reloj.</p>
+      </div>
+    </div>
+    <div class="term mt-m">
+      <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">phase-0 · re-attach</span></div>
+<pre><span class="cm"># progress.md dice "Phase 1.Trigger completed" pero el Monitor no reportó:</span>
+<span class="p">$</span> gh run view <span class="hi">&lt;RUN_ID&gt;</span> --json status,conclusion
+<span class="o">{ "status": "in_progress" }   → re-atacharse al watch, NO re-disparar</span></pre>
+    </div>
+    <div class="notes">Phase 0 y la escritura de plan.md en Fase 1 no son opcionales — es el contrato de session-management.md. El re-attach es la razón #1 por la que el RUN_ID se persiste inmediatamente después del trigger.</div>
+  </section>
 
-<section class="slide" data-title="Ejecutar">
-  <p class="kicker">fase 1 · ejecutar</p>
-  <h2 class="h2" data-anim="fade-up">Dispara, luego captura el run ID — en ese orden</h2>
-  <div class="steps s4 mt-m anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>Preflight</h4><p>Confirma la auth de CI y que el workflow existe (gh auth status, gh workflow list). Sin auth → STOP, pide al usuario que inicie sesión.</p></div>
-    <div class="step"><div class="num">2</div><h4>Disparar</h4><p>Dispara el workflow con inputs explícitos (environment, generate_allure=true).</p></div>
-    <div class="step"><div class="num">3</div><h4>Capturar run ID</h4><p>Espera 3–5s (la ejecución no es consultable al instante), luego lee el databaseId de la ejecución más reciente.</p></div>
-    <div class="step"><div class="num">4</div><h4>Persistir</h4><p>Anota el RUN_ID primero; todo lo que sigue depende de él.</p></div>
-  </div>
-  <div class="notes">La condición de carrera es real — gh workflow run retorna antes de que la ejecución se registre, así que debes dormir 3-5s. Perder el RUN_ID significa no poder re-engancharte a una ejecución de 60 minutos.</div>
-</section>
+  <!-- 5. FASE 1 · ELEGIR SUITE -->
+  <section class="slide" data-title="Fase 1 · Elegir suite">
+    <p class="kicker">fase 1 · execute — elegir la suite</p>
+    <h2 class="h2">La suite equivocada da la señal equivocada</h2>
+    <table class="tbl mt-m">
+      <thead><tr><th>Suite</th><th>Workflow</th><th>Duración</th><th>Usar cuando</th></tr></thead>
+      <tbody>
+        <tr><td><b>regression</b></td><td class="mono">regression.yml</td><td>20–60 min</td><td>Validación pre-release, corrida nocturna completa</td></tr>
+        <tr><td><b>smoke</b></td><td class="mono">smoke.yml</td><td>2–5 min</td><td>Health check post-deploy, solo tests <span class="mono">@critical</span></td></tr>
+        <tr><td><b>sanity</b></td><td class="mono">sanity.yml</td><td>1–10 min</td><td>Una feature / un archivo / un patrón <span class="mono">grep</span></td></tr>
+      </tbody>
+    </table>
+    <div class="cards c2 mt-m">
+      <div class="callout"><h4>Regla por defecto</h4><p>"run regression" pelado → <b>regression</b> en el env por defecto · "smoke" o "critical only" → <b>smoke</b> · un archivo o grep → <b>sanity</b>.</p></div>
+      <div class="callout warn"><h4>Gotcha: grep XOR test_file</h4><p>En sanity, <span class="mono">grep</span> y <span class="mono">test_file</span> son mutuamente excluyentes — pasar ambos hace que el workflow ignore uno en silencio. Elige uno.</p></div>
+    </div>
+    <div class="notes">Un smoke verde de 3 minutos NO es un release gate. Emparejar la suite con la pregunta que el usuario está haciendo es el primer acto de criterio del workflow.</div>
+  </section>
 
-<section class="slide" data-title="Monitorear">
-  <p class="kicker">fase 1 · monitorear</p>
-  <h2 class="h2" data-anim="fade-up">Observa hasta el final — no analices una ejecución a medias</h2>
-  <div class="callout mt-l"><h4>Observa con un flag de exit-status</h4><p>El estado avanza queued → in_progress → completed. Solo cuando está completed obtienes una conclusión: success / failure / cancelled / timed_out. En una suite larga que expira por timeout, recurre a poll cada 60–90s.</p></div>
-  <div class="callout warn mt-m"><h4>Regla</h4><p>No inicies la Fase 2 hasta que el estado = completed. Una ejecución cancelled no es un fallo — sácala a la luz y espera dirección, nunca re-dispares en silencio.</p></div>
-  <div class="notes">Las ejecuciones leídas a medias producen veredictos basura. El campo conclusion solo existe cuando la ejecución termina — esa es tu luz verde para analizar.</div>
-</section>
+  <!-- 6. FASE 1 · TRIGGER -->
+  <section class="slide" data-title="Fase 1 · Trigger">
+    <p class="kicker">fase 1 · execute — plan, trigger, RUN_ID</p>
+    <h2 class="h2">Plan primero, dispara después, persiste el RUN_ID ya</h2>
+    <div class="term mt-m">
+      <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">fase-1 · trigger</span></div>
+<pre><span class="cm"># 1 · preflight de fase (siempre)</span>
+<span class="p">$</span> gh auth status &amp;&amp; gh repo view --json name,owner &amp;&amp; gh workflow list
+<span class="cm"># 2 · escribir .session/regression-testing/&lt;scope&gt;/plan.md ANTES del trigger</span>
+<span class="cm"># 3 · disparar la suite con inputs explícitos</span>
+<span class="p">$</span> gh workflow run regression.yml -f environment=staging -f video_record=false -f generate_allure=true
+<span class="cm"># sanity: grep O test_file — nunca ambos</span>
+<span class="p">$</span> gh workflow run sanity.yml -f environment=staging -f test_type=e2e -f grep=<span class="hi">"@auth"</span>
+<span class="cm"># 4 · capturar RUN_ID (esperar 3–5s: el run no es consultable al instante)</span>
+<span class="p">$</span> RUN_ID=$(gh run list --workflow=regression.yml --limit=1 --json databaseId -q '.[0].databaseId')</pre>
+    </div>
+    <div class="cards c2 mt-m">
+      <div class="callout"><h4>Checkpoint crítico</h4><p>El <span class="mono">RUN_ID</span> se añade a <span class="mono">plan.md §Inputs</span> + entrada en <span class="mono">progress.md</span>. Trigger sin RUN_ID persistido = resume sin re-attach.</p></div>
+      <div class="callout warn"><h4>Anti-patrón R5</h4><p>Nunca disparar sin <span class="mono">--ref &lt;commit-sha&gt;</span> fijado — commit distinto = baseline distinta. Y el video (<span class="mono">video_record=true</span>) infla artefactos 5–10×: solo para debug.</p></div>
+    </div>
+    <div class="notes">La condición de carrera es real: gh workflow run retorna antes de que el run exista en la API — de ahí los 3-5s. Video solo al depurar flakiness o capturar evidencia de un bug puntual.</div>
+  </section>
 
-<section class="slide" data-title="Recolectar evidencia">
-  <p class="kicker">fase 2 · recolectar</p>
-  <h2 class="h2" data-anim="fade-up">Recoge la evidencia antes de que expire</h2>
-  <div class="steps s3 mt-m anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>Solo logs fallidos</h4><p>Recoge solo los logs de los pasos fallidos — el log completo puede superar 50MB; --log-failed es la porción pequeña y rica en señal.</p></div>
-    <div class="step"><div class="num">2</div><h4>Tres artefactos</h4><p>Resultados Allure merged, evidencia de fallos (screenshots/traces/videos) y el reporte HTML de Playwright en ./analysis/.</p></div>
-    <div class="step"><div class="num">3</div><h4>Ejecución previa</h4><p>Descarga el Allure de la ejecución anterior en ./analysis/previous/ para la tendencia.</p></div>
-  </div>
-  <div class="callout warn mt-m"><h4>Regla R4</h4><p>Nunca saltes la descarga de artefactos en builds rojos — la evidencia desaparece tras la ventana de retención.</p></div>
-  <div class="notes">En un build rojo los screenshots y traces son tu única prueba; una vez que expira la retención se pierden para siempre. Tómalos primero, analiza después.</div>
-</section>
+  <!-- 7. FASE 1 · MONITOR -->
+  <section class="slide" data-title="Fase 1 · Monitor">
+    <p class="kicker">fase 1 · execute — monitor (dispatch background)</p>
+    <h2 class="h2">Un subagente observa; el hilo principal prepara el análisis</h2>
+    <div class="term mt-m">
+      <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">subagente Monitor</span></div>
+<pre><span class="p">$</span> gh run watch <span class="hi">&lt;RUN_ID&gt;</span> --exit-status
+<span class="cm"># fallback si watch expira en suites largas: poll cada 60–90s</span>
+<span class="p">$</span> gh run view <span class="hi">&lt;RUN_ID&gt;</span> --json status,conclusion
+<span class="o">status:     queued | in_progress | <b>completed</b></span>
+<span class="o">conclusion: <span class="okc">success</span> | <span class="bad">failure</span> | cancelled | timed_out   (solo al completar)</span></pre>
+    </div>
+    <ul class="blist">
+      <li><b>Dispatch Background.</b> El watch vive en un subagente Monitor; mientras, el hilo principal arma el scaffold del reporte y carga la rúbrica de clasificación.</li>
+      <li><b>Gate de fase.</b> La Fase 2 NO empieza hasta que el Monitor devuelve <span class="mono">status: completed</span> — un run a medias produce veredictos basura.</li>
+      <li><b>Salida de Fase 1.</b> Resumen con run ID, env, duración, conclusión por job, lista de artefactos y la URL de Allure: <span class="mono">https://{owner}.github.io/{repo}/{env}/{suite}/</span>.</li>
+    </ul>
+    <div class="notes">Gotcha: la URL de Allure es predecible pero solo está viva cuando el job "Build &amp; Deploy Allure Report" terminó en verde — si falló, se analiza desde los artefactos descargados. Config de workflows: references/ci-cd-integration.md.</div>
+  </section>
 
-<section class="slide" data-title="Parsear y medir">
-  <p class="kicker">fase 2 · parsear y medir</p>
-  <h2 class="h2" data-anim="fade-up">Confía primero en Allure, luego calcula seis números</h2>
-  <ul class="blist anim-stagger-list">
-    <li><b>Prioridad de fuente de verdad.</b> Allure results JSON &gt; Playwright report.json &gt; logs crudos; cada resultado lleva status, statusDetails y labels (testId = ATC ID, suite, severity).</li>
-    <li><b>Pass Rate y conteos.</b> Passed / Total × 100; más Passed / Failed / Skipped / Broken por status.</li>
-    <li><b>Duración y tendencia.</b> max(stop) − min(start); tendencia = pass rate actual − pass rate de la ejecución previa.</li>
-    <li><b>Salvedad de retry.</b> Un resultado passed con retriesCount &gt; 0 es un flake oculto — cuéntalo aunque Allure lo muestre en verde.</li>
-  </ul>
-  <div class="notes">Seis números, un orden de fuente de verdad. La regla de retry-pass es la sutil: verde-tras-retry sigue significando inestable.</div>
-</section>
+  <!-- 8. FASE 2 · COLLECT -->
+  <section class="slide" data-title="Fase 2 · Collect">
+    <p class="kicker">fase 2 · analyze — collect (dispatch parallel ×3)</p>
+    <h2 class="h2">Recoge la evidencia antes de que expire la retención</h2>
+    <div class="term mt-m">
+      <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">fase-2 · collect</span></div>
+<pre><span class="cm"># inline (hilo principal): contexto + SOLO logs fallidos (--log completo puede pasar 50MB)</span>
+<span class="p">$</span> gh run view <span class="hi">&lt;RUN_ID&gt;</span> --log-failed
+<span class="cm"># tres subagentes en paralelo, uno por artefacto (cap = 3)</span>
+<span class="p">$</span> gh run download <span class="hi">&lt;RUN_ID&gt;</span> -n merged-allure-results-staging -D ./analysis/            <span class="cm"># A</span>
+<span class="p">$</span> gh run download <span class="hi">&lt;RUN_ID&gt;</span> -n e2e-failure-evidence          -D ./analysis/evidence/   <span class="cm"># B</span>
+<span class="p">$</span> gh run download <span class="hi">&lt;RUN_ID&gt;</span> -n e2e-playwright-report         -D ./analysis/playwright/ <span class="cm"># C</span>
+<span class="cm"># run anterior → baseline de tendencia</span>
+<span class="p">$</span> PREV=$(gh run list --workflow=regression.yml --limit=2 --json databaseId -q '.[1].databaseId')
+<span class="p">$</span> gh run download $PREV -n merged-allure-results-staging -D ./analysis/previous/</pre>
+    </div>
+    <div class="callout bad mt-m"><h4>Anti-patrón R4</h4><p>Nunca saltes la descarga de Allure en builds rojos — screenshots, traces y videos desaparecen al vencer la ventana de retención. Evidencia primero, análisis después.</p></div>
+    <div class="notes">Los metadata-reads (gh run view) quedan inline porque son cortos; solo las tres descargas justifican dispatch. Para triage local previo: bun allure:agent emite markdown legible por la IA sin parsear HTML.</div>
+  </section>
 
-<section class="slide divider" data-title="Parte 1 · El corazón">
-  <div>
-    <p class="part-no">PARTE 01 · EL CORAZÓN</p>
-    <h1 class="h1">Clasifica cada fallo<br><span class="grad">el triage de 5 vías</span></h1>
-    <p class="lede">Aquí se ganan o se pierden los releases. Cada test en rojo recibe EXACTAMENTE una etiqueta, y la etiqueta decide si bloquea el release.</p>
-  </div>
-  <div class="notes">Este es el grupo de slides más importante. Baja la velocidad aquí.</div>
-</section>
+  <!-- 9. FASE 2 · PARSE + MÉTRICAS -->
+  <section class="slide" data-title="Fase 2 · Parse y métricas">
+    <p class="kicker">fase 2 · analyze — parse + métricas</p>
+    <h2 class="h2">Allure manda; el pass-rate que gatea excluye lo bloqueado</h2>
+    <div class="cards c2 mt-m" style="align-items:start">
+      <div>
+        <table class="tbl">
+          <thead><tr><th>Métrica</th><th>Fórmula</th></tr></thead>
+          <tbody>
+            <tr><td><b>Pass Rate</b></td><td class="mono">Passed / Total × 100</td></tr>
+            <tr><td><b>Pass Rate (gating)</b></td><td class="mono">sobre Total − KNOWN-BLOCKED</td></tr>
+            <tr><td><b>Duración</b></td><td class="mono">max(stop) − min(start)</td></tr>
+            <tr><td><b>Trend</b></td><td class="mono">pass rate actual − run previo</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="gap:10px;display:flex;flex-direction:column">
+        <div class="callout"><h4>Fuente de verdad, en orden</h4><p>Allure results JSON &gt; Playwright <span class="mono">report.json</span> &gt; logs crudos. Cada resultado trae <span class="mono">status</span>, <span class="mono">statusDetails</span> y <span class="mono">labels[]</span> (testId = ATC ID, suite, severity).</p></div>
+        <div class="callout"><h4>El label suite deriva del tag</h4><p><span class="mono">@smoke/@regression/@e2e/@integration/@critical</span> es la única taxonomía: el <span class="mono">suite</span> que lees ES el scope que CI corrió. Nunca reconcilies contra otro set de labels.</p></div>
+      </div>
+    </div>
+    <div class="callout warn mt-m"><h4>Los retries enmascaran flakiness</h4><p>CI corre con <span class="mono">retries: 2</span> — un test que pasa al reintentar sigue siendo flaky. Inspecciona el conteo de <span class="mono">retries</span> en Allure, no solo el status final (anti-patrón R3: el reporte debe exponer los retries).</p></div>
+    <div class="notes">Los KNOWN-BLOCKED (tests @blocked:{BUG-KEY} deliberadamente aparcados tras un bug ya archivado) no son fallos de regresión: se excluyen del pass-rate que gatea y se reportan aparte con su BUG-KEY — así la decisión no se manipula en ningún sentido.</div>
+  </section>
 
-<section class="slide" data-title="Cinco categorías">
-  <p class="kicker">fase 2 · clasificar</p>
-  <h2 class="h2" data-anim="fade-up">Cinco categorías, una etiqueta por fallo</h2>
-  <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>REGRESSION</h4><p class="dim">Pasaba hace poco, ahora falla de forma consistente tras un cambio de código/datos.</p><span class="tag mt-s">HIGH · bloquea release</span></div>
-    <div class="card card-accent"><h4>FLAKY</h4><p class="dim">Intermitente (&gt;20% en las últimas 10 ejecuciones) sobre un build sin cambios.</p><span class="tag mt-s">MEDIUM · no bloquea</span></div>
-    <div class="card card-accent"><h4>KNOWN ISSUE</h4><p class="dim">Rastreado por un ticket existente.</p><span class="tag mt-s">LOW · documentado</span></div>
-    <div class="card card-accent"><h4>ENVIRONMENT</h4><p class="dim">Infra/red/externo, no la app.</p><span class="tag mt-s">MEDIUM · re-run</span></div>
-    <div class="card card-accent"><h4>NEW TEST</h4><p class="dim">Primera ejecución, sin historial.</p><span class="tag mt-s">LOW · verificar a mano</span></div>
-    <div class="card card-accent"><h4>La regla</h4><p class="dim">Un fallo pertenece a exactamente una categoría — nunca improvises.</p><span class="tag mt-s">una etiqueta</span></div>
-  </div>
-  <div class="notes">Memoriza estas cinco. Todo el release gate se construye sobre meter cada test en rojo en el bucket correcto.</div>
-</section>
+  <!-- 10. FASE 2 · ÁRBOL DE CLASIFICACIÓN -->
+  <section class="slide" data-title="Fase 2 · Clasificar">
+    <p class="kicker">fase 2 · analyze — clasificar cada fallo (6 vías)</p>
+    <h2 class="h2">El árbol se recorre en orden — primera coincidencia gana</h2>
+    <div class="term mt-m">
+      <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">decision-tree · references/failure-classification.md</span></div>
+<pre>Test fallido
+  ├─ ¿tag <span class="hi">@blocked:{BUG-KEY}</span>?  ──────────────► <span class="okc">KNOWN-BLOCKED</span>  <span class="cm">(aparcado; fuera del gating)</span>
+  ├─ ¿un ticket conocido ya lo rastrea? ────► <span class="okc">KNOWN ISSUE</span>
+  ├─ ¿patrón de error de entorno? ──────────► <span class="hi">ENVIRONMENT</span>
+  │    <span class="cm">ECONNREFUSED · ETIMEDOUT · net::ERR_ · Navigation timeout · browserType.launch · 502/503</span>
+  ├─ ¿sin historial (primer run)? ──────────► <span class="hi">NEW TEST</span>
+  ├─ ¿falla &gt;20% en los últimos 10 runs? ───► <span class="hi">FLAKY</span>
+  └─ ¿pasaba hace ≤5 runs y ahora falla? ───► <span class="bad">REGRESSION   ← bloquea el release</span></pre>
+    </div>
+    <div class="cards c2 mt-m">
+      <div class="callout bad"><h4>La misclasificación #1</h4><p>NUNCA marques REGRESSION sin revisar el historial primero. Y un primer fallo sin historia no es regresión: es NEW TEST — se verifica a mano una vez antes de clasificar.</p></div>
+      <div class="callout"><h4>Dispatch por volumen</h4><p>&gt;10 fallos → chunks de ~10 con un subagente clasificador por chunk (cap 10), merge de JSONs en el hilo principal. ≤10 → inline: el overhead no se justifica.</p></div>
+    </div>
+    <div class="notes">Flakiness necesita mínimo 10 runs de historial — con menos, se anota "insufficient history" y se reevalúa el próximo sprint (nunca se adivina). R1: jamás FLAKY sin re-ejecutar en aislamiento.</div>
+  </section>
 
-<section class="slide" data-title="Árbol de triage">
-  <p class="kicker">fase 2 · árbol de triage</p>
-  <h2 class="h2" data-anim="fade-up">Recorre el árbol de arriba abajo — detente en la primera coincidencia</h2>
-  <div class="flow mt-m anim-stagger-list">
-    <div class="stage"><div class="sx">1</div><div><h4>¿Ticket conocido?</h4><p>→ KNOWN ISSUE.</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>¿Patrón de error de env?</h4><p>ECONNREFUSED, ETIMEDOUT, net::ERR_, Navigation timeout, browserType.launch, 502/503 → ENVIRONMENT.</p></div></div>
-    <div class="stage"><div class="sx">3</div><div><h4>¿Primera ejecución?</h4><p>→ NEW TEST.</p></div></div>
-    <div class="stage"><div class="sx">4</div><div><h4>¿Tasa &gt; 20% en las últimas 10?</h4><p>→ FLAKY.</p></div></div>
-    <div class="stage"><div class="sx">5</div><div><h4>¿Pasó en las últimas ≤5, ahora falla?</h4><p>→ REGRESSION (bloquea release).</p></div></div>
-  </div>
-  <div class="notes">El orden importa — es una escalera de precedencia, no un menú. La regla de oro: NUNCA marques un test como REGRESSION sin revisar primero el historial — esa es la mala clasificación #1.</div>
-</section>
+  <!-- 11. FASE 2 · CATEGORÍA → ACCIÓN -->
+  <section class="slide" data-title="Fase 2 · Categoría → acción">
+    <p class="kicker">fase 2 · analyze — de la etiqueta a la acción</p>
+    <h2 class="h2">Solo dos categorías pueden llegar a Jira</h2>
+    <table class="tbl mt-m">
+      <thead><tr><th>Categoría</th><th>Impacto</th><th>Acción</th><th>¿Issue en Jira?</th></tr></thead>
+      <tbody>
+        <tr><td><b>KNOWN-BLOCKED</b></td><td><span class="tag bl">LOW</span></td><td>Excluir del gating, listar con su <span class="mono">{BUG-KEY}</span></td><td>No — el marker ya nombra el bug abierto</td></tr>
+        <tr><td><b>REGRESSION</b></td><td><span class="tag no">HIGH</span></td><td>Bloquea el release, archivar y asignar</td><td><b>Sí</b> — Bug/Defect (Fase 3)</td></tr>
+        <tr><td><b>FLAKY</b></td><td><span class="tag wr">MEDIUM</span></td><td>Agendar estabilización, no bloquea</td><td>No</td></tr>
+        <tr><td><b>KNOWN ISSUE</b></td><td><span class="tag bl">LOW</span></td><td>Documentar contra el ticket existente</td><td>No</td></tr>
+        <tr><td><b>ENVIRONMENT</b></td><td><span class="tag wr">MEDIUM</span></td><td>Re-run tras revisar la infra</td><td>No</td></tr>
+        <tr><td><b>NEW TEST</b></td><td><span class="tag bl">LOW</span></td><td>Verificación manual primero</td><td>Solo si se confirma defecto real</td></tr>
+      </tbody>
+    </table>
+    <div class="cards c2 mt-m">
+      <div class="callout warn"><h4>ENVIRONMENT no es chivo expiatorio</h4><p><span class="mono">ECONNREFUSED</span> a tu propia API suele significar que la app se cayó. Muchos tests sin relación rojos en el mismo host → ENVIRONMENT; UN test fallando en un endpoint que otros usan bien → probable REGRESSION disfrazada.</p></div>
+      <div class="callout"><h4>Cláusula sdet CI-fallback</h4><p>Solo en suites integration-trunk: un rojo clase ENVIRONMENT en Sanity-CI puede autorizar merge <b>al trunk de integración</b> (nunca al PR final a main) si el cambio pasó en local + staging y el rojo existe sin el cambio. REGRESSION jamás califica.</p></div>
+    </div>
+    <div class="notes">El triage decide SI se archiva; la doctrina de defect-management decide QUÉ tipo y con qué campos — son ejes separados. R7: nunca marcar KNOWN sin ticket de Jira que vincule la supresión.</div>
+  </section>
 
-<section class="slide" data-title="Precedencia">
-  <p class="kicker">fase 2 · precedencia</p>
-  <h2 class="h2" data-anim="fade-up">Cuando dos reglas coinciden, la precedencia desempata</h2>
-  <div class="callout mt-l"><h4>Orden: KNOWN ISSUE &gt; ENVIRONMENT &gt; NEW TEST &gt; REGRESSION &gt; FLAKY</h4><p>Si un ticket ya lo rastrea, deja de buscar. Si el error es claramente infraestructura, no culpes al código. Un test sin historial todavía no puede ser una regression. Solo tras descartar todo eso pesas REGRESSION vs FLAKY en la línea del 20%.</p></div>
-  <div class="notes">Este orden es deliberado. Te empuja a agotar las explicaciones baratas y no bloqueantes antes de recurrir a la cara etiqueta de 'bloquea el release'.</div>
-</section>
+  <!-- 12. FASE 2 · SEVERIDAD -->
+  <section class="slide" data-title="Fase 2 · Severidad">
+    <p class="kicker">fase 2 · analyze — severidad por fallo</p>
+    <h2 class="h2">La severidad es ortogonal a la clasificación</h2>
+    <p class="lede" style="font-size:17px">Un test FLAKY sobre el checkout sigue siendo CRITICAL. La clasificación responde <i>por qué falló</i>; la severidad, <i>cuánto nos importa</i>.</p>
+    <table class="tbl mt-m">
+      <thead><tr><th>Severidad</th><th>Criterio</th></tr></thead>
+      <tbody>
+        <tr><td><b>CRITICAL</b></td><td>Flujo central del usuario (login, checkout, payment) — o cualquier test con tag <span class="mono">@critical</span></td></tr>
+        <tr><td><b>HIGH</b></td><td>Feature mayor (search, profile, dashboard)</td></tr>
+        <tr><td><b>MEDIUM</b></td><td>Feature secundaria (filtros, preferencias)</td></tr>
+        <tr><td><b>LOW</b></td><td>Edge case o ruta solo-admin</td></tr>
+      </tbody>
+    </table>
+    <div class="callout mt-m"><h4>Salida de la Fase 2</h4><p>Bloque de análisis: tabla de métricas + delta de tendencia, una sección por categoría (Regressions primero), detalle por test fallido (nombre, ATC ID, suite, error, last-pass, screenshot) y un veredicto preliminar.</p></div>
+    <div class="notes">Estos dos ejes se cruzan en la Fase 3: una REGRESSION con severidad HIGH/CRITICAL es veto duro por sí sola, sin importar el score.</div>
+  </section>
 
-<section class="slide" data-title="ENV no es chivo expiatorio">
-  <p class="kicker">fase 2 · no culpes a la infra</p>
-  <h2 class="h2" data-anim="fade-up">ENVIRONMENT no es un chivo expiatorio</h2>
-  <div class="vs mt-m">
-    <div class="card bad-side side"><h3>❌ Etiqueta ENV perezosa</h3><ul>
-      <li>ECONNREFUSED → "fallo de infra", sigue de largo.</li>
-      <li>Navigation timeout en una página → culpa a la red.</li>
-      <li>Etiqueta todo con forma de red como environment para que nada bloquee.</li>
-    </ul></div>
-    <div class="mid">→</div>
-    <div class="card good-side side"><h3>✅ Disciplinado</h3><ul>
-      <li>ECONNREFUSED + muchos tests no relacionados rojos en el mismo host → ENVIRONMENT.</li>
-      <li>ECONNREFUSED en UN endpoint que otros usan bien → REGRESSION disfrazada.</li>
-      <li>Nav timeout: una página tras deploy → REGRESSION; en muchas → ENVIRONMENT.</li>
-    </ul></div>
-  </div>
-  <div class="notes">La prueba de alcance lo es todo: ¿es un test o todo el host? Un test que falla donde otros tienen éxito en el mismo endpoint es un bug disfrazado de infra.</div>
-</section>
+  <!-- 13. FASE 3 · SCORE + VEREDICTO -->
+  <section class="slide" data-title="Fase 3 · Score y veredicto">
+    <p class="kicker">fase 3 · report &amp; decide — el score de 9 puntos</p>
+    <h2 class="h2">Un score guía; tres vetos mandan</h2>
+    <table class="tbl mt-s">
+      <thead><tr><th>Factor</th><th>+3</th><th>+1</th><th>0</th><th>−1</th><th>−2</th><th>−3</th></tr></thead>
+      <tbody>
+        <tr><td><b>Pass Rate</b></td><td>≥95%</td><td>90–95%</td><td>—</td><td>—</td><td>&lt;90%</td><td>—</td></tr>
+        <tr><td><b>Regressions</b></td><td>0</td><td>1–2 Low</td><td>—</td><td>1+ Medium</td><td>—</td><td>High/Critical</td></tr>
+        <tr><td><b>Tests @critical</b></td><td>Todos pasan</td><td>—</td><td>—</td><td>—</td><td>—</td><td>Cualquier fallo</td></tr>
+        <tr><td><b>Flaky</b></td><td>—</td><td>≤3</td><td>4–5</td><td>&gt;5</td><td>—</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div class="cards c3 mt-m">
+      <div class="card" style="border-top:2px solid var(--good)"><h4>GO — score ≥ 7</h4><p>Release aprobado; smoke post-deploy agendado.</p></div>
+      <div class="card" style="border-top:2px solid var(--warn)"><h4>CAUTION — 4–6</h4><p>Revisión manual; riesgos aceptados documentados.</p></div>
+      <div class="card" style="border-top:2px solid var(--bad)"><h4>NO-GO — &lt; 4</h4><p>Release bloqueado; fix + re-run planificados.</p></div>
+    </div>
+    <div class="callout bad mt-m"><h4>Vetos duros — nunca auto-GO si…</h4><p>(1) falla cualquier test <span class="mono">@critical</span> · (2) existe cualquier REGRESSION HIGH/CRITICAL · (3) pass rate &lt; 90%. Anulan cualquier score. R2: el gate es binario — REGRESSION conocida &gt; 0 = no hay GO. R6: nunca mezclar smoke + regression en un solo pass-rate.</p></div>
+    <div class="notes">El veredicto y la apertura de issues quedan inline en el hilo principal — las decisiones de release nunca se delegan a un subagente.</div>
+  </section>
 
-<section class="slide" data-title="Búsqueda de patrón">
-  <p class="kicker">fase 2 · búsqueda de patrón</p>
-  <h2 class="h2" data-anim="fade-up">El mensaje de error suele darte la respuesta</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Patrón de error</th><th>Clase probable</th><th>Nota</th></tr></thead>
-    <tbody>
-      <tr><td><b>Element not found / Target closed</b></td><td>REGRESSION</td><td>selector roto, UI cambió</td></tr>
-      <tr><td><b>expect(...).toBe mismatch</b></td><td>REGRESSION</td><td>cambio de lógica/datos</td></tr>
-      <tr><td><b>ECONNREFUSED</b></td><td>ENVIRONMENT</td><td>app caída o puerto incorrecto</td></tr>
-      <tr><td><b>status 500/502</b></td><td>ENV o REGRESSION</td><td>aislado → REGRESSION, muchos → ENV</td></tr>
-      <tr><td><b>Nav timeout (1 página post-deploy)</b></td><td>REGRESSION</td><td>página lenta</td></tr>
-      <tr><td><b>Intermitente en build sin cambios</b></td><td>FLAKY</td><td>mismo build, distinto resultado</td></tr>
-      <tr><td><b>No snapshot found</b></td><td>NEW TEST</td><td>primera ejecución de visual-snapshot</td></tr>
-      <tr><td><b>SyntaxError/TypeError en el test</b></td><td>REGRESSION</td><td>el propio código del test se rompió</td></tr>
-    </tbody>
-  </table>
-  <div class="notes">Anti-patrón: nunca clasifiques solo por el NOMBRE del test. Lee el texto real del error — suele ser definitivo.</div>
-</section>
+  <!-- 14. FASE 3 · DEFECTOS EN JIRA -->
+  <section class="slide" data-title="Fase 3 · Defectos en Jira">
+    <p class="kicker">fase 3 · report &amp; decide — archivar defectos (NO-GO / CAUTION con regressions)</p>
+    <h2 class="h2">Los quality issues van a Jira, no a GitHub</h2>
+    <div class="cards c2 mt-m" style="align-items:start">
+      <div class="card acc">
+        <h4>1 · Gate + clasificación</h4>
+        <p>Solo <b>REGRESSION</b> y <b>NEW TEST confirmado</b> llegan a Jira. Tipo según el ciclo de vida de la FEATURE, no dónde falló: ya live sobre Staging → <b>Bug</b> · pre-release → <b>Defect</b> · comportamiento deseable más allá del AC → <b>Improvement</b>.</p>
+      </div>
+      <div class="card acc">
+        <h4>2 · Matriz de campos obligatoria</h4>
+        <p><span class="mono">severity</span> → <span class="mono">priority</span> auto-derivada · <span class="mono">components</span> = módulo afectado · <span class="mono">root_cause</span> + <span class="mono">error_type</span> + <span class="mono">test_environment</span> · <span class="mono">qa_assignee</span> = uno mismo (read-before-write) · <span class="mono">evidence</span> = link Allure + <span class="mono">./analysis/evidence/</span>.</p>
+      </div>
+      <div class="card acc">
+        <h4>3 · Tres ejes de trazabilidad</h4>
+        <p>Parent = epic <b>QA Defect Management</b> (nunca un epic de producto) · issue-link causal → la Story que cubre el ATC regresionado · components = módulo de producto.</p>
+      </div>
+      <div class="card acc">
+        <h4>4 · Escritura vía /acli</h4>
+        <p>Cargar <span class="mono">/acli</span> primero (auth + sintaxis). Crear con <span class="mono">acli workitem create --from-json</span>; customfields sobre issue existente vía REST <span class="mono">PUT /rest/api/3/issue/{KEY}</span>. Filing gate de la doctrina antes de enviar; guardar la key para el reporte.</p>
+      </div>
+    </div>
+    <div class="callout mt-m"><h4>Canon</h4><p><span class="mono">agentic-qa-core/references/defect-management-doctrine.md</span> — la misma autoridad que usa <span class="mono">/sprint-testing</span>. FLAKY, ENVIRONMENT y KNOWN ISSUE nunca generan bug nuevo.</p></div>
+    <div class="notes">El triage (Fase 2) decide si se archiva; la doctrina decide tipo y campos. La skill NO abre issues de GitHub para fallos de producto.</div>
+  </section>
 
-<section class="slide" data-title="Matemática de flakiness">
-  <p class="kicker">fase 2 · matemática de flakiness</p>
-  <h2 class="h2" data-anim="fade-up">Calcular la tasa flaky &gt;20% con honestidad</h2>
-  <div class="steps s4 mt-m anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>Reunir</h4><p>Resultados de las últimas 10 ejecuciones del mismo workflow + env (mínimo 5).</p></div>
-    <div class="step"><div class="num">2</div><h4>Excluir</h4><p>Descarta ejecuciones sobre un build distinto (commit SHA distinto) — quieres "mismo build, distintos resultados".</p></div>
-    <div class="step"><div class="num">3</div><h4>Calcular</h4><p>failure_rate = failed / total; con retry = (failed + retried_passes) / total.</p></div>
-    <div class="step"><div class="num">4</div><h4>Umbral</h4><p>&gt;0.20 → FLAKY; ≤0.20 con un pass en las últimas 5 → REGRESSION; N&lt;5 → "INSUFFICIENT HISTORY".</p></div>
-  </div>
-  <div class="notes">La flakiness necesita al menos 5 (idealmente 10) ejecuciones de historial. Por debajo escribes 'insufficient history' y lo revisas el próximo sprint — nunca inventas una etiqueta flaky de la nada.</div>
-</section>
+  <!-- 15. FASE 3 · REPORTE + TMS + ARCHIVE -->
+  <section class="slide" data-title="Fase 3 · Reporte y cierre">
+    <p class="kicker">fase 3 · report &amp; decide — reporte, TMS sync, archive</p>
+    <h2 class="h2">El entregable: un reporte que un PM puede leer en frío</h2>
+    <div class="cards c2 mt-m" style="align-items:start">
+      <div class="term">
+        <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">.context/reports/regression-{env}-{date}.md</span></div>
+<pre><span class="hi"># Regression Quality Report — staging — 2026-07-06</span>
+<span class="okc">## Executive Summary</span>   Verdict + score/9 + 1 línea
+<span class="okc">## Metrics</span>             Pass Rate·Regressions·Critical·Flaky vs umbral
+<span class="okc">## Release Blockers</span>    si NO-GO: regressions + owner + ETA
+<span class="okc">## Failure Details</span>     Regressions → Flaky → Known → Blocked → Env
+<span class="okc">## Trend</span>               últimos 5 runs · <span class="okc">## Links</span> · <span class="okc">## Recommendations</span></pre>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="callout"><h4>TMS sync (opcional, items-first)</h4><p><b>STP</b> = Test Plan <span class="mono">STP: Sprint#{N}: Regression</span> → epic QA Master Test Plan · <b>STR</b> = Test Execution <span class="mono">STR: Sprint#{N}: Regression Testing</span> → epic QA Test Artifacts. El update de resultados por ATC apunta al STR, vía <span class="mono">/xray-cli</span> (o <span class="mono">/acli</span> en jira-native).</p></div>
+        <div class="callout"><h4>Post-decisión</h4><p><b>GO</b> → candidato aprobado + smoke post-deploy · <b>CAUTION</b> → revisión con el lead, riesgos por escrito · <b>NO-GO</b> → bloquear, asignar issues, planificar re-run.</p></div>
+        <div class="callout warn"><h4>Archive de sesión</h4><p>Tras el veredicto: <span class="mono">.session/…/&lt;scope&gt;/</span> → <span class="mono">.session/.archive/</span> + resumen a memoria. Con NO-GO, el archive espera a que termine la creación de issues.</p></div>
+      </div>
+    </div>
+    <div class="notes">El reporte canónico queda commiteado en .context/reports/ como entregable; el estado de sesión se archiva aparte. Misma estructura en cada run para que stakeholders aprendan a escanearla.</div>
+  </section>
 
-<section class="slide" data-title="Casos difíciles">
-  <p class="kicker">fase 2 · casos difíciles</p>
-  <h2 class="h2" data-anim="fade-up">REGRESSION vs FLAKY — los juicios de criterio</h2>
-  <div class="grid g2 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>Racha verde, un fallo</h4><p class="dim">Código desplegado entre el último pass y ahora → REGRESSION. Sin deploy, mismo commit → candidato a FLAKY, monitorea la próxima ejecución.</p></div>
-    <div class="card card-accent"><h4>Pasa en retry siempre</h4><p class="dim">FLAKY — el usuario ve verde pero el test es inestable. Estabilízalo.</p></div>
-    <div class="card card-accent"><h4>Una sola assertion flakea</h4><p class="dim">En un test multi-assertion, el test es FLAKY — arregla la única assertion sensible al timing, no marques todo como REGRESSION.</p></div>
-    <div class="card card-accent"><h4>Falla solo en webkit</h4><p class="dim">API específica del browser → REGRESSION (compat roto). Sensible al layout → revisa el historial por browser, puede ser FLAKY.</p></div>
-  </div>
-  <div class="notes">Estos cuatro son donde se nota la experiencia. La pregunta decisiva casi siempre es '¿aterrizó un cambio de código entre el último verde y este rojo?'</div>
-</section>
-
-<section class="slide" data-title="Severidad">
-  <p class="kicker">fase 2 · severidad</p>
-  <h2 class="h2" data-anim="fade-up">La severidad es ortogonal — un test de checkout flaky sigue siendo CRITICAL</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Severidad</th><th>Criterio</th></tr></thead>
-    <tbody>
-      <tr><td><b>CRITICAL</b></td><td>Flujo central (login, signup, checkout, payment, búsqueda principal) o cualquier test con tag @critical</td></tr>
-      <tr><td><b>HIGH</b></td><td>Feature mayor (perfil, dashboard, filtros principales, gestión de cuenta)</td></tr>
-      <tr><td><b>MEDIUM</b></td><td>Feature secundaria (ordenamiento, preferencias, filtros no principales, notificaciones)</td></tr>
-      <tr><td><b>LOW</b></td><td>Solo admin, edge case, herramientas internas</td></tr>
-    </tbody>
-  </table>
-  <div class="callout mt-m"><h4>Entradas</h4><p>Tags del test (@critical/@smoke/@regression), nombre de la suite (Auth/Payment = CRITICAL), prioridad del ticket TMS vinculado.</p></div>
-  <div class="notes">La clasificación responde 'por qué falló'; la severidad responde 'cuánto nos importa'. Son ejes independientes — nunca los colapses.</div>
-</section>
-
-<section class="slide" data-title="La matriz">
-  <p class="kicker">fase 2 · la matriz</p>
-  <h2 class="h2" data-anim="fade-up">Clasificación × Severidad → el impacto en el release</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Clase \ Sev</th><th>CRITICAL</th><th>HIGH</th><th>MEDIUM</th><th>LOW</th></tr></thead>
-    <tbody>
-      <tr><td><b>REGRESSION</b></td><td>NO-GO</td><td>NO-GO</td><td>CAUTION</td><td>CAUTION</td></tr>
-      <tr><td><b>FLAKY</b></td><td>CAUTION + estabilizar</td><td>CAUTION</td><td>monitor</td><td>monitor</td></tr>
-      <tr><td><b>KNOWN</b></td><td>CAUTION (reevaluar)</td><td>documentar</td><td>documentar</td><td>documentar</td></tr>
-      <tr><td><b>ENV</b></td><td>re-run, escalar</td><td>re-run</td><td>re-run</td><td>re-run</td></tr>
-      <tr><td><b>NEW TEST</b></td><td>verificar antes de GO</td><td>verificar</td><td>verificar</td><td>verificar</td></tr>
-    </tbody>
-  </table>
-  <div class="notes">Esta grilla es el puente del análisis a la decisión. Una REGRESSION en un flujo CRITICAL es un NO-GO automático antes incluso de puntuar la ejecución.</div>
-</section>
-
-<section class="slide divider" data-title="Parte 1 · El veredicto">
-  <div>
-    <p class="part-no">PARTE 01 · EL VEREDICTO</p>
-    <h1 class="h1">Puntúa la ejecución<br><span class="grad">aplica los vetos, decide</span></h1>
-    <p class="lede">Todo el análisis converge en un número sobre una escala de 9 puntos — pero los vetos pueden anular un score alto en un instante.</p>
-  </div>
-  <div class="notes">Ahora convertimos la evidencia en una decisión defendible.</div>
-</section>
-
-<section class="slide" data-title="Scoring">
-  <p class="kicker">fase 3 · scoring</p>
-  <h2 class="h2" data-anim="fade-up">El score ponderado de 9 puntos</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Factor</th><th>+3</th><th>+1</th><th>0</th><th>−1</th><th>−2</th><th>−3</th></tr></thead>
-    <tbody>
-      <tr><td><b>Pass Rate</b></td><td>≥95%</td><td>90–95%</td><td>—</td><td>—</td><td>&lt;90%</td><td>—</td></tr>
-      <tr><td><b>Regressions</b></td><td>0</td><td>1–2 Low</td><td>—</td><td>1+ Med</td><td>—</td><td>Cualquier High/Crit</td></tr>
-      <tr><td><b>Tests critical</b></td><td>Todos pasan</td><td>—</td><td>—</td><td>—</td><td>—</td><td>Cualquier fallo</td></tr>
-      <tr><td><b>Tests flaky</b></td><td>—</td><td>≤3</td><td>4–5</td><td>&gt;5</td><td>—</td><td>—</td></tr>
-    </tbody>
-  </table>
-  <div class="callout mt-m"><h4>Score máximo = 9</h4><p>Las regressions y los fallos de tests critical cargan el peso negativo más fuerte — es intencional.</p></div>
-  <div class="notes">Cuatro factores, cada uno ponderado por cuánto debería mover una decisión de release. Las regressions y los fallos de tests critical cargan el peso negativo más fuerte — es intencional.</div>
-</section>
-
-<section class="slide" data-title="Umbrales">
-  <p class="kicker">fase 3 · umbrales</p>
-  <h2 class="h2" data-anim="fade-up">El score mapea a uno de tres veredictos</h2>
-  <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>GO — score ≥ 7</h4><p class="dim">Release aprobado; marca el candidato, agenda un smoke post-deploy.</p><span class="tag mt-s">publicar</span></div>
-    <div class="card card-accent"><h4>CAUTION — score 4–6</h4><p class="dim">Requiere revisión manual; documenta los riesgos aceptados y procede con cuidado junto al team lead.</p><span class="tag mt-s">revisión humana</span></div>
-    <div class="card card-accent"><h4>NO-GO — score &lt; 4</h4><p class="dim">Bloquea el release; asigna issues de regression, agenda la verificación de fixes, planea un re-run.</p><span class="tag mt-s">bloquear</span></div>
-  </div>
-  <div class="notes">El score es una guía, no un dogma — CAUTION entrega explícitamente la decisión a un humano que documenta qué riesgo está aceptando.</div>
-</section>
-
-<section class="slide" data-title="Vetos duros">
-  <p class="kicker">fase 3 · vetos duros</p>
-  <h2 class="h2" data-anim="fade-up">Tres vetos anulan cualquier score</h2>
-  <div class="callout warn mt-l"><h4>Nunca auto-GO si…</h4><p>(1) falla cualquier test @critical · (2) existe cualquier REGRESSION con severidad HIGH o CRITICAL · (3) pass rate &lt; 90%. Vetos duros sin importar lo alto que sea el score ponderado.</p></div>
-  <div class="callout mt-m"><h4>R2 y R6</h4><p>R2: el quality gate es binario — un conteo de REGRESSION conocidas &gt; 0 significa que no puedes emitir GO. R6: nunca mezcles resultados de smoke + regression en un solo número de pass-rate; tienen SLOs distintos.</p></div>
-  <div class="notes">Esta es la columna vertebral de todo el método. Una ejecución puede sacar 8/9 y aun así ser NO-GO porque un test critical se puso en rojo. El veto siempre gana.</div>
-</section>
-
-<section class="slide" data-title="Reporte">
-  <p class="kicker">fase 3 · reporte</p>
-  <h2 class="h2" data-anim="fade-up">Convierte la decisión en un reporte para stakeholders</h2>
-  <div class="steps s4 mt-m anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>Resumen ejecutivo</h4><p>Veredicto + score/9 + justificación de una línea.</p></div>
-    <div class="step"><div class="num">2</div><h4>Tabla de métricas</h4><p>Pass Rate, Regressions, fallos Critical, Flaky, Duración — cada uno vs su umbral (ok/warn/fail).</p></div>
-    <div class="step"><div class="num">3</div><h4>Detalle de fallos</h4><p>Una sección por categoría, Regressions primero (test | ATC ID | last-passed | issue | causa).</p></div>
-    <div class="step"><div class="num">4</div><h4>Tendencia + links + recs</h4><p>Sparkline de las últimas 5 ejecuciones; links a workflow/Allure/issue; acciones Inmediatas / Corto plazo / Largo plazo.</p></div>
-  </div>
-  <div class="callout mt-m"><h4>Guardar en</h4><p>.context/reports/regression-{env}-{date}.md</p></div>
-  <div class="notes">El reporte es el entregable que un PM realmente lee. Veredicto primero, evidencia debajo, recomendaciones al final. La misma forma cada vez para que la gente aprenda a escanearlo.</div>
-</section>
-
-<section class="slide" data-title="Registrar y sincronizar">
-  <p class="kicker">fase 3 · registrar y sincronizar</p>
-  <h2 class="h2" data-anim="fade-up">Cuando es NO-GO, abre issues y cierra el ciclo</h2>
-  <ul class="blist anim-stagger-list">
-    <li><b>Un issue por regression.</b> Título "[REGRESSION] {test} failing in {suite}", labels regression,bug,automated-tests, el body lleva Test ID, suite, run ID, env, bloque de error, links de evidencia, ejecución last-passed.</li>
-    <li><b>R7.</b> Nunca marques un test como KNOWN sin un ticket de Jira que vincule la supresión a un issue de seguimiento.</li>
-    <li><b>R5.</b> Nunca dispares una ejecución de regression sin fijar el commit SHA; un commit distinto es una baseline distinta.</li>
-    <li><b>Sync TMS (opcional).</b> Empuja resultados por ATC al Test Execution cuando hay un TMS configurado.</li>
-  </ul>
-  <div class="notes">Un NO-GO que no crea issues asignados y trazables es solo una queja. Cada regression recibe un ticket con evidencia completa para que un dev pueda tomarlo en frío.</div>
-</section>
-
-<section class="slide" data-title="Anti-patrones">
-  <p class="kicker">fase 1–3 · anti-patrones</p>
-  <h2 class="h2" data-anim="fade-up">Los errores que hunden un release gate</h2>
-  <div class="vs mt-m">
-    <div class="card bad-side side"><h3>❌ Hunde el gate</h3><ul>
-      <li>Etiquetar FLAKY sin re-ejecutar en aislamiento.</li>
-      <li>Emitir GO con una REGRESSION conocida "porque el score estaba bien".</li>
-      <li>Saltar la descarga de Allure en un build rojo.</li>
-      <li>Marcar un primer fallo como REGRESSION.</li>
-      <li>Ejecutar sin fijar el commit SHA.</li>
-    </ul></div>
-    <div class="mid">→</div>
-    <div class="card good-side side"><h3>✅ Confiable</h3><ul>
-      <li>Re-ejecuta en aislamiento antes de llamarlo flaky (R1).</li>
-      <li>Trata cualquier REGRESSION como bloqueo binario (R2).</li>
-      <li>Descarga evidencia primero, antes de que expire la retención (R4).</li>
-      <li>Fallo en primera ejecución = NEW TEST, verifica, luego reclasifica.</li>
-      <li>Fija --ref &lt;commit-sha&gt; para que la baseline quede fija (R5).</li>
-    </ul></div>
-  </div>
-  <div class="notes">Cada hábito de la izquierda es una forma real en que los equipos publican bugs o bloquean buenos releases. La columna derecha es la disciplina que hace confiable el veredicto.</div>
-</section>
-
-<section class="slide divider" data-title="Parte 2">
-  <div>
-    <p class="part-no">PARTE 02</p>
-    <h1 class="h1">La aceleración<br><span class="grad">la skill ejecuta todo el gate</span></h1>
-    <p class="lede">Todo lo de la Parte 1 — selección de suite, monitoreo, el triage de 5 vías, scoring, el reporte — conducido desde un prompt en tu terminal.</p>
-  </div>
-  <div class="notes">Ahora mostramos cómo la skill de regression-testing ejecuta el método exacto que acabamos de aprender, con el humano aún dueño del veredicto.</div>
-</section>
-
-<section class="slide" data-title="Invocación">
-  <p class="kicker">parte 02 · invocación</p>
-  <h2 class="h2" data-anim="fade-up">Una frase de trigger carga todo el pipeline</h2>
-  <ul class="blist anim-stagger-list">
-    <li><b>Trigger.</b> "run regression", "GO/NO-GO decision", "analyze test results", "quality report", "release readiness", o /regression-testing.</li>
-    <li><b>Auto-carga contexto.</b> YAMLs de workflow, master-test-plan (Epic key + SLOs), playwright.config.ts (retry/shard), la baseline de Allure de la ejecución previa, kata-manifest.json, jira-required.yaml.</li>
-    <li><b>No se dispara para.</b> Escribir nuevos tests de regression (eso es test-automation) o re-testear a mano un fix de bug (eso es sprint-testing).</li>
-  </ul>
-  <div class="notes">La descripción de la skill está afinada para activarse con lenguaje de release-gate pero mantenerse al margen del trabajo de escribir tests o re-testear un solo ticket.</div>
-</section>
-
-<section class="slide" data-title="Orquestación">
-  <p class="kicker">parte 02 · orquestación</p>
-  <h2 class="h2" data-anim="fade-up">El hilo principal es el centro de mando; los subagentes hacen el trabajo pesado</h2>
-  <div class="flow mt-m anim-stagger-list">
-    <div class="stage"><div class="sx">1</div><div><h4>Trigger (Single, inline)</h4><p>Una llamada de shell, sin dispatch.</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>Monitor (Background)</h4><p>Un subagente observa gh run watch mientras el hilo principal prepara el scaffold del reporte y carga la rúbrica.</p></div></div>
-    <div class="stage"><div class="sx">3</div><div><h4>Download (Parallel ×3)</h4><p>Tres subagentes, uno por artefacto (allure / evidence / playwright), con tope de 3.</p></div></div>
-    <div class="stage"><div class="sx">4</div><div><h4>Classify (Parallel, tope 10)</h4><p>Fallos divididos en chunks de ~10, un subagente por chunk, JSON merged en el hilo principal.</p></div></div>
-    <div class="stage"><div class="sx">5</div><div><h4>Compute + Verdict (Single, inline)</h4><p>Las decisiones de release viven solo en el hilo principal.</p></div></div>
-  </div>
-  <div class="notes">El patrón es deliberado: las esperas largas y la clasificación de alto volumen se reparten a subagentes; la decisión en sí nunca sale del hilo principal, porque ahí está el humano.</div>
-</section>
-
-<section class="slide center tc" data-title="Reanudar">
-  <div>
-    <p class="kicker">parte 02 · reanudar</p>
-    <div class="bigstat"><span class="grad">20–60 min</span></div>
-    <h3>La feature estrella: re-engancha, no re-ejecutes</h3>
-    <p class="lede mt-m">Si el subagente Monitor muere a mitad del watch pero el RUN_ID quedó persistido en plan.md, la Fase 0 se re-engancha vía "gh run view &lt;RUN_ID&gt;" en lugar de re-disparar el CI — ahorrando una ejecución completa de regression en tiempo real. El estado de sesión vive en .session/regression-testing/&lt;env&gt;-&lt;date&gt;/.</p>
-  </div>
-  <div class="notes">Por esto importa persistir el RUN_ID de inmediato. Un watcher caído cuesta cero tiempo de CI si el run ID quedó anotado — la skill simplemente se reconecta.</div>
-</section>
-
-<section class="slide" data-title="Herramientas">
-  <p class="kicker">parte 02 · herramientas</p>
-  <h2 class="h2" data-anim="fade-up">Qué conduce la skill bajo el capó</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Herramienta</th><th>Rol</th></tr></thead>
-    <tbody>
-      <tr><td><b>gh CLI</b></td><td>dispara workflows, observa ejecuciones, descarga artefactos, abre issues</td></tr>
-      <tr><td><b>bunx allure</b></td><td>Allure 3 local — bun allure:agent emite markdown legible por la IA, sin install global</td></tr>
-      <tr><td><b>/xray-cli</b></td><td>sync TMS opcional de resultados por ATC a un Test Execution</td></tr>
-      <tr><td><b>/playwright-cli</b></td><td>inspecciona traces/screenshots de un fallo</td></tr>
-      <tr><td><b>jira-required.yaml</b></td><td>refs de proyecto/work-type/transition de Jira para issues de regression</td></tr>
-    </tbody>
-  </table>
-  <div class="callout mt-m"><h4>Salidas</h4><p>Los artefactos aterrizan en ./analysis/, el reporte en .context/reports/.</p></div>
-  <div class="notes">Es CLI-first por diseño — gh y allure cargan el peso, con xray-cli y playwright-cli traídos solo cuando un fallo necesita sync TMS o inspección profunda de trace.</div>
-</section>
-
-<section class="slide" data-title="En la práctica">
-  <p class="kicker">parte 02 · en la práctica</p>
-  <h2 class="h2" data-anim="fade-up">Un prompt, veredicto de release completo</h2>
-  <div class="terminal mt-m">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>claude-code</span></div>
-<pre><span class="p">▸ </span><span class="c">run regression on staging and tell me if we can deploy</span>
-<span class="o">  [Phase 0] No prior session for staging-2026-06-03 — starting fresh.</span>
-<span class="o">  [Phase 1] gh workflow run regression.yml -f environment=staging -f generate_allure=true</span>
-<span class="o">            RUN_ID=8421337 captured → persisted to plan.md</span>
-<span class="o">  [Monitor·bg] gh run watch 8421337 … completed: failure (47m12s)</span>
-<span class="o">  [Download·×3] merged-allure-results-staging ✓  evidence ✓  playwright ✓</span>
-<span class="o">  [Classify·×2] 14 failures → 1 REGRESSION (CRITICAL), 9 FLAKY, 3 ENV, 1 KNOWN</span>
-<span class="o">  [Score] Pass rate 93.1% (+1.2 vs prev). Score 2/9.</span>
-<span class="o">  VERDICT: NO-GO — 1 CRITICAL regression on checkout vetoes release.</span>
-<span class="o">  Filed #312 [REGRESSION] checkout.payment failing.</span>
-<span class="o">  Report → .context/reports/regression-staging-2026-06-03.md</span></pre>
-  </div>
-  <div class="notes">Recorre la transcripción línea por línea — mapea uno a uno con las tres fases de la Parte 1. Nota el veto disparándose: 93% de pass rate pero una regression critical fuerza NO-GO.</div>
-</section>
-
-<section class="slide" data-title="Humano en el loop">
-  <p class="kicker">parte 02 · humano en el loop</p>
-  <h2 class="h2" data-anim="fade-up">La IA propone; el humano es dueño del release</h2>
-  <div class="callout mt-l"><h4>Plan-first y protocolo de error</h4><p>La Fase 0 escribe plan.md antes de cualquier trigger de CI y ofrece resume/restart/abort sobre una sesión existente. Cualquier fallo de subagente → STOP, reporta el contexto completo, ofrece retry/skip/abort — nunca auto-fix.</p></div>
-  <div class="callout warn mt-m"><h4>Vetos codificados</h4><p>El veredicto y la apertura de issues quedan en el hilo principal bajo tu mirada. Los vetos duros (fallo @critical, regression HIGH/CRITICAL, pass-rate &lt;90%) están codificados para que la IA no pueda aprobar de oficio un GO que no debería.</p></div>
-  <div class="notes">La aceleración es real pero acotada — a la skill no se la puede convencer de un GO pasando un veto, y se detiene y pregunta en lugar de tapar un fallo.</div>
-</section>
-
-<section class="slide" data-title="Conclusiones">
-  <p class="kicker">// conclusiones</p>
-  <h2 class="h2" data-anim="fade-up">Tres cosas para llevarte de aquí</h2>
-  <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>1 · Lee antes de etiquetar</h4><p class="dim">Cada fallo recibe una de cinco etiquetas del árbol de precedencia — nunca llames REGRESSION sin revisar el historial, ni FLAKY sin la matemática de &gt;20% / 10 ejecuciones.</p></div>
-    <div class="card card-accent"><h4>2 · Los vetos ganan a los scores</h4><p class="dim">Un fallo @critical, una regression HIGH/CRITICAL, o pass-rate &lt;90% es un NO-GO automático sin importar el score de 9 puntos.</p></div>
-    <div class="card card-accent"><h4>3 · La skill lo ejecuta, tú eres dueño del veredicto</h4><p class="dim">Un prompt conduce ejecutar→analizar→reportar con subagentes y gh/allure, pero plan-first y los vetos duros mantienen al humano en control.</p></div>
-  </div>
-  <div class="notes">Si no recuerdan nada más: clasifica con honestidad, respeta los vetos y confía en el método — la IA solo lo ejecuta más rápido.</div>
-</section>
-
-<section class="slide center tc" data-title="Gracias">
-  <div>
-    <h1 class="h1"><span class="grad">Ahora ve y haz un veredicto que nadie pueda discutir.</span></h1>
-    <p class="lede mt-m">Ejecutar → Analizar → Reportar. Cinco clasificaciones, cuatro factores de scoring, tres vetos, una decisión.</p>
-    <p class="lede" style="margin:14px auto">Dispáralo: <kbd>/regression-testing</kbd> · references/failure-classification.md · references/ci-cd-integration.md</p>
-  </div>
-  <div class="notes">Cierra apuntándolos a los dos archivos de referencia para el catálogo profundo — los patrones de error y el setup completo de CI/CD viven ahí.</div>
-</section>
+  <!-- 16. CIERRE -->
+  <section class="slide" data-title="Cierre">
+    <p class="kicker run">cierre — cómo se invoca y qué sigue</p>
+    <h2 class="h2">Cinco clasificaciones + una, tres vetos, <span class="grad">una decisión</span></h2>
+    <div class="cards c3 mt-m" style="align-items:start">
+      <div class="card acc">
+        <h4>Invocación</h4>
+        <p><span class="mono">/regression-testing</span> — o "run regression", "smoke suite", "analyze test results", "GO/NO-GO decision", "release readiness", "quality report".</p>
+      </div>
+      <div class="card acc">
+        <h4>Handoffs</h4>
+        <p>Entra desde <span class="mono">/test-automation</span> (Stage 5: escribe los tests y el marker <span class="mono">@blocked</span>). Sale hacia <span class="mono">/sprint-testing</span> (verificar el fix a mano) y de vuelta a <span class="mono">/test-automation</span> (estabilizar flaky, nuevos tests).</p>
+      </div>
+      <div class="card acc">
+        <h4>Artefactos clave</h4>
+        <p><span class="mono">plan.md + progress.md</span> (sesión) · <span class="mono">./analysis/</span> (artefactos CI) · <span class="mono">.context/reports/regression-&lt;env&gt;-&lt;date&gt;.md</span> · issues Jira (Bug/Defect) · STP/STR en el TMS.</p>
+      </div>
+    </div>
+    <div class="callout mt-m"><h4>Profundizar</h4><p><span class="mono">references/failure-classification.md</span> (catálogo de patrones de error) · <span class="mono">references/ci-cd-integration.md</span> (workflows, sharding, secrets) · <span class="mono">references/github-pages-setup.md</span> (publicar los reportes Allure — correr antes el version-currency check).</p></div>
+    <p class="lede mt-m" style="font-size:18px">Clasifica con honestidad, respeta los vetos, y el veredicto no lo discute nadie.</p>
+    <div class="notes">Cierre: esta skill no escribe tests (eso es test-automation) ni re-testea fixes a mano (eso es sprint-testing). Ejecuta, analiza y decide — con el humano dueño del veredicto.</div>
+  </section>
 
 </div>
+
 <!-- keyboard-nav hint (ported from defect-management deck) -->
 <div id="help-hint">← → navegar · O resumen · S presentador · N notas · F pantalla</div>
 <style id="upex-hint-style">
@@ -918,6 +833,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 @media print{#help-hint{display:none!important}}
 </style>
 <script>
+/* ---- runtime.js ---- */
 /* html-ppt :: runtime.js
  * Keyboard-driven deck runtime. Zero dependencies.
  *
@@ -1880,6 +1796,144 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 })();
 
 </script>
+<script>
+/* ---- animations/fx-runtime.js (self-contained variant) ----
+ * Canvas FX lifecycle manager.
+ * - FX modules are INLINED on window.HPX below (no external fetch — the deck
+ *   is a single self-contained file, so the upstream FX_LIST autoloader would
+ *   404 on every module; here `ready` resolves immediately instead).
+ * - Initializes [data-fx] elements when their slide becomes active
+ * - Calls handle.stop() when the slide leaves (MutationObserver on .slide class)
+ */
+(function(){
+  'use strict';
+
+  /* ===== inlined FX modules ===== */
+  window.HPX = window.HPX || {};
+  window.HPX.constellation = function(host){
+    var canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+    host.appendChild(canvas);
+    var ctx = canvas.getContext('2d');
+    var raf = 0, running = true;
+    var N = 70, LINK = 130, pts = [];
+    function size(){
+      canvas.width = host.clientWidth || 1280;
+      canvas.height = host.clientHeight || 720;
+    }
+    size();
+    for (var i = 0; i < N; i++){
+      pts.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - .5) * .35,
+        vy: (Math.random() - .5) * .35,
+        r: Math.random() * 1.8 + .6
+      });
+    }
+    function tick(){
+      if (!running) return;
+      if (canvas.width !== (host.clientWidth || canvas.width) ||
+          canvas.height !== (host.clientHeight || canvas.height)) size();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      var i, a, b, p;
+      for (i = 0; i < N; i++){
+        p = pts[i];
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 6.2832);
+        ctx.fillStyle = 'rgba(122,162,247,.8)';
+        ctx.fill();
+      }
+      for (a = 0; a < N; a++) for (b = a + 1; b < N; b++){
+        var dx = pts[a].x - pts[b].x, dy = pts[a].y - pts[b].y, d2 = dx*dx + dy*dy;
+        if (d2 < LINK * LINK){
+          ctx.strokeStyle = 'rgba(187,154,247,' + (0.35 * (1 - Math.sqrt(d2) / LINK)).toFixed(3) + ')';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(pts[a].x, pts[a].y);
+          ctx.lineTo(pts[b].x, pts[b].y);
+          ctx.stroke();
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return { stop: function(){
+      running = false;
+      cancelAnimationFrame(raf);
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    } };
+  };
+
+  /* ===== lifecycle (same contract as upstream fx-runtime.js) ===== */
+  const ready = Promise.resolve();
+
+  window.__hpxActive = window.__hpxActive || new Map();
+
+  function initFxIn(root){
+    if (!window.HPX) return;
+    const els = root.querySelectorAll('[data-fx]');
+    els.forEach((el) => {
+      if (window.__hpxActive.has(el)) return;
+      const name = el.getAttribute('data-fx');
+      const fn = window.HPX[name];
+      if (typeof fn !== 'function') return;
+      try {
+        const handle = fn(el, {}) || { stop(){} };
+        window.__hpxActive.set(el, handle);
+      } catch(e){ console.warn('[hpx-fx]', name, e); }
+    });
+  }
+
+  function stopFxIn(root){
+    const els = root.querySelectorAll('[data-fx]');
+    els.forEach((el) => {
+      const h = window.__hpxActive.get(el);
+      if (h && typeof h.stop === 'function'){
+        try{ h.stop(); }catch(e){}
+      }
+      window.__hpxActive.delete(el);
+    });
+  }
+
+  function reinitFxIn(root){
+    stopFxIn(root);
+    initFxIn(root);
+  }
+  window.__hpxReinit = reinitFxIn;
+
+  function boot(){
+    ready.then(() => {
+      const active = document.querySelector('.slide.is-active') || document.querySelector('.slide');
+      if (active) initFxIn(active);
+
+      // Watch all slides for class changes
+      const slides = document.querySelectorAll('.slide');
+      slides.forEach((sl) => {
+        const mo = new MutationObserver((muts) => {
+          for (const m of muts){
+            if (m.attributeName === 'class'){
+              if (sl.classList.contains('is-active')) initFxIn(sl);
+              else stopFxIn(sl);
+            }
+          }
+        });
+        mo.observe(sl, { attributes: true, attributeFilter: ['class'] });
+      });
+    });
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+
+</script>
 
 <script>
 /* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
@@ -1963,4 +2017,5 @@ if(force||(isMobile&&!seen)){
 })();
 </script>
 
-</body></html>
+</body>
+</html>

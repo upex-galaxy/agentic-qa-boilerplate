@@ -1,9 +1,17 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="tokyo-night">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shift-Left Testing — El Oficio y la IA</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shift-Left Testing · Cómo funciona</title>
 <style>
+/* ============================================================
+   Self-contained deck — html-ppt assets inlined (fonts, base,
+   tokyo-night theme, animations) + deck-local styles.
+   Source: ~/.agents/skills/html-ppt (tokyo-night harness).
+   ============================================================ */
+
+/* ---- fonts.css ---- */
 /* html-ppt :: shared webfonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;600;700;900&display=swap');
@@ -13,6 +21,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+
+
+/* ---- base.css ---- */
 /* html-ppt :: base.css — reset + shared tokens + layout primitives */
 /* Default tokens. Themes in assets/themes/*.css override the :root block. */
 :root {
@@ -163,6 +174,26 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
   .deck-header,.deck-footer,.progress-bar,.notes-overlay,.overview{display:none!important}
 }
+
+
+/* ---- themes/tokyo-night.css ---- */
+/* theme: tokyo-night */
+:root{
+  --bg:#1a1b26;--bg-soft:#16161e;--surface:#24283b;--surface-2:#2f334d;
+  --border:rgba(192,202,245,.12);--border-strong:rgba(192,202,245,.24);
+  --text-1:#c0caf5;--text-2:#a9b1d6;--text-3:#565f89;
+  --accent:#7aa2f7;--accent-2:#bb9af7;--accent-3:#7dcfff;
+  --good:#9ece6a;--warn:#e0af68;--bad:#f7768e;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#f7768e);
+  --grad-soft:linear-gradient(135deg,#24283b,#2f334d);
+  --radius:12px;--radius-sm:8px;--radius-lg:20px;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --shadow-lg:0 24px 62px rgba(0,0,0,.6);
+  --font-sans:'Inter','Noto Sans SC',sans-serif;
+}
+
+
+/* ---- animations/animations.css ---- */
 /* html-ppt :: animations.css
  * Apply by adding class="anim-<name>" or data-anim="<name>".
  * Durations are deliberately snappy; tweak --anim-dur per element.
@@ -301,721 +332,490 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 @media (prefers-reduced-motion: reduce){
   [class*="anim-"]{animation:none!important;transition:none!important}
 }
-/* ===========================================================================
-   how-it-works deck theme — dark engineering, accent-parametrized
-   Set per deck on <body class="tpl-howto" style="--a1:..;--a2:..;--a3:..">
-   =========================================================================== */
-.tpl-howto{
-  --a1:#7ee787; --a2:#79c0ff; --a3:#d2a8ff;            /* fallbacks */
-  --bg:#0d1117; --bg-soft:#161b22; --surface:#161b22; --surface-2:#1c2230;
-  --border:rgba(139,148,158,.22); --border-strong:rgba(139,148,158,.42);
-  --text-1:#e6edf3; --text-2:#9aa6b2; --text-3:#6e7681;
-  --accent:var(--a1); --accent-2:var(--a2); --accent-3:var(--a3);
-  --good:#3fb950; --warn:#d29922; --bad:#f85149;
-  --grad:linear-gradient(120deg,var(--a1) 0%,var(--a2) 55%,var(--a3) 100%);
-  --radius:14px; --radius-lg:20px;
-  --shadow:0 20px 60px rgba(0,0,0,.5);
-  font-family:'Inter','Noto Sans SC',sans-serif;
-  background:#0d1117; color:var(--text-1);
-}
-.tpl-howto .deck{background:#0d1117}
-.tpl-howto .slide{padding:64px 88px;background:#0d1117;color:var(--text-1)}
-.tpl-howto .slide::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
-  background:
-   radial-gradient(58% 48% at 88% 8%,color-mix(in srgb,var(--a2) 14%,transparent),transparent 60%),
-   radial-gradient(52% 50% at 8% 92%,color-mix(in srgb,var(--a1) 10%,transparent),transparent 62%);}
-.tpl-howto .slide>*{position:relative;z-index:1}
 
-/* ---------- typography ---------- */
-.tpl-howto .h1{font-size:74px;line-height:1.04;font-weight:800;letter-spacing:-.03em;color:#fff}
-.tpl-howto .h2{font-size:50px;line-height:1.08;font-weight:700;letter-spacing:-.025em;color:#fff}
-.tpl-howto h3,.tpl-howto .h3{color:#fff;font-weight:600}
-.tpl-howto h4,.tpl-howto .h4{color:#fff;font-weight:600}
-.tpl-howto .lede{color:var(--text-2);font-weight:300}
-.tpl-howto .dim{color:var(--text-2)} .tpl-howto .dim2{color:var(--text-3)}
-.tpl-howto .mono{font-family:'JetBrains Mono','IBM Plex Mono',monospace}
-.tpl-howto .gradient-text,.tpl-howto .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
-.tpl-howto .kicker{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;text-transform:none;letter-spacing:.02em}
-.tpl-howto .kicker::before{content:"// "}
-.tpl-howto .kicker.run::before{content:"> "}
-.tpl-howto .divider-accent{height:3px;width:64px;background:var(--grad);border-radius:2px}
 
-/* ---------- cards ---------- */
-.tpl-howto .card{background:var(--surface);border:1px solid var(--border);box-shadow:none;border-radius:var(--radius)}
-.tpl-howto .card-accent{border-top:3px solid var(--accent)}
-.tpl-howto .card-soft{background:var(--surface-2);border:1px solid var(--border)}
-.tpl-howto .card h4{margin-bottom:8px}
-.tpl-howto .card p{font-size:15px;line-height:1.6}
-.tpl-howto .num-badge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;
-  background:color-mix(in srgb,var(--a1) 16%,transparent);color:var(--accent);font-weight:800;font-family:'JetBrains Mono',monospace;font-size:16px;border:1px solid color-mix(in srgb,var(--a1) 30%,transparent)}
+/* ---- deck-local (shift-left-testing · workflow paso a paso) ---- */
+.slide{padding:52px 80px}
+.h1{font-size:72px;line-height:1.04;color:var(--text-1)}
+.h2{font-size:40px;line-height:1.1;margin-bottom:8px;color:var(--text-1)}
+h4,.h4{font-size:17px;color:var(--text-1)}
+.mono-title{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-weight:700;letter-spacing:-.03em}
+.kicker{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:14px;font-weight:600;text-transform:none;letter-spacing:.02em}
+.kicker::before{content:"// ";opacity:.7}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.lede{font-size:21px;max-width:66ch}
+.sm{font-size:14px;line-height:1.55;color:var(--text-2);margin:0}
+.sm b,.sm strong{color:var(--text-1)}
+.above{position:relative;z-index:1}
+.fx-host{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.45}
+.slide code,.slide kbd{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:.9em;
+  background:rgba(122,162,247,.12);border:1px solid rgba(122,162,247,.25);border-radius:6px;
+  padding:1px 6px;color:#9cc2ff;white-space:nowrap}
 
-/* ---------- tags / pills / kbd ---------- */
-.tpl-howto .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:7px;font-family:'JetBrains Mono',monospace;
-  font-size:12px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)}
-.tpl-howto .tag.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent);background:color-mix(in srgb,var(--good) 12%,transparent)}
-.tpl-howto .tag.no{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:color-mix(in srgb,var(--bad) 12%,transparent)}
-.tpl-howto .tag.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent)}
-.tpl-howto .pill{background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
-.tpl-howto .pill-accent{background:color-mix(in srgb,var(--a1) 14%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--a1) 32%,transparent)}
-.tpl-howto kbd,.tpl-howto .kbd{font-family:'JetBrains Mono',monospace;font-size:13px;padding:3px 10px;border-radius:7px;
-  background:color-mix(in srgb,var(--a1) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--a1) 30%,transparent);white-space:nowrap}
+/* ---- chips ---- */
+.chip{display:inline-flex;align-items:center;gap:9px;padding:9px 15px;border-radius:10px;font-size:14.5px;
+  font-weight:600;background:var(--surface);border:1px solid var(--border-strong);color:var(--text-1)}
+.cdot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none}
 
-/* ---------- terminal / code ---------- */
-.tpl-howto .terminal{background:#010409;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
-  box-shadow:0 30px 80px rgba(0,0,0,.6);font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:14.5px;line-height:1.7}
-.tpl-howto .terminal .bar{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#161b22;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-3)}
-.tpl-howto .terminal .dot{width:11px;height:11px;border-radius:50%;background:#ff5f56}
-.tpl-howto .terminal .dot:nth-child(2){background:#ffbd2e}
-.tpl-howto .terminal .dot:nth-child(3){background:#27c93f}
-.tpl-howto .terminal pre{margin:0;padding:22px 26px;color:#e6edf3;overflow:auto;max-height:520px;white-space:pre-wrap}
-.tpl-howto .terminal .p{color:var(--accent);font-weight:600}   /* prompt $ */
-.tpl-howto .terminal .c{color:#e6edf3}                          /* command */
-.tpl-howto .terminal .o{color:var(--text-2)}                    /* output */
-.tpl-howto .kw{color:#ff7b72} .tpl-howto .fn{color:#d2a8ff} .tpl-howto .str{color:#a5d6ff}
-.tpl-howto .cmt{color:#6e7681;font-style:italic} .tpl-howto .num{color:#79c0ff}
-.tpl-howto .caret{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;animation:hb-blink 1s step-end infinite}
-@keyframes hb-blink{50%{opacity:0}}
+/* ---- cards ---- */
+.card{padding:20px 22px;border:1px solid var(--border-strong)}
+.card h4{margin:0 0 8px}
+.card-accent{border-top:3px solid var(--accent)}
 
-/* ---------- agenda rows ---------- */
-.tpl-howto .agenda-row{display:flex;align-items:baseline;gap:22px;padding:15px 0;border-bottom:1px dashed var(--border);font-family:'JetBrains Mono',monospace}
-.tpl-howto .agenda-row .anum{color:var(--accent);flex:none;width:42px}
-.tpl-howto .agenda-row .at{color:#fff;font-size:22px;flex:1;font-family:'Inter',sans-serif;font-weight:600}
-.tpl-howto .agenda-row .ad{color:var(--text-3);font-size:12px}
+/* ---- bullet list ---- */
+.blist{list-style:none;padding:0;margin:14px 0 0}
+.blist li{position:relative;padding:8px 0 8px 26px;font-size:14.5px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
+.blist li:last-child{border-bottom:none}
+.blist li::before{content:"\25B8";position:absolute;left:2px;top:8px;color:var(--accent);font-weight:700}
+.blist li b{color:var(--text-1);font-weight:600}
+.blist.tight li{padding:6px 0 6px 26px;font-size:13.5px}
 
-/* ---------- numbered steps (process) ---------- */
-.tpl-howto .steps{display:grid;gap:20px;margin-top:34px}
-.tpl-howto .steps.s2{grid-template-columns:repeat(2,1fr)}
-.tpl-howto .steps.s3{grid-template-columns:repeat(3,1fr)}
-.tpl-howto .steps.s4{grid-template-columns:repeat(4,1fr)}
-.tpl-howto .step{position:relative;padding:24px 22px 20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
-.tpl-howto .step .num{position:absolute;top:-18px;left:20px;width:40px;height:40px;border-radius:11px;background:var(--grad);color:#03121a;
-  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;font-family:'JetBrains Mono',monospace}
-.tpl-howto .step h4{margin:14px 0 7px;font-size:17px}
-.tpl-howto .step p{font-size:13.5px;color:var(--text-2);line-height:1.55}
+/* ---- data table ---- */
+.dtable{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+.dtable th{text-align:left;padding:9px 12px;color:var(--accent-2);font-weight:700;font-size:12px;
+  text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border-strong)}
+.dtable td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top;line-height:1.45}
+.dtable tr:last-child td{border-bottom:none}
+.dtable td b{color:var(--text-1);font-weight:600}
+.dtable td.ok{color:var(--good);font-weight:700;white-space:nowrap}
+.dtable td.opt{color:var(--warn);font-weight:700;white-space:nowrap}
 
-/* ---------- vertical stage flow ---------- */
-.tpl-howto .flow{display:flex;flex-direction:column;gap:0;margin-top:24px}
-.tpl-howto .flow .stage{display:grid;grid-template-columns:46px 1fr;gap:18px;padding:14px 0;align-items:start}
-.tpl-howto .flow .stage .sx{width:46px;height:46px;border-radius:12px;background:color-mix(in srgb,var(--a1) 14%,transparent);
-  border:1px solid color-mix(in srgb,var(--a1) 34%,transparent);color:var(--accent);display:flex;align-items:center;justify-content:center;
-  font-weight:800;font-family:'JetBrains Mono',monospace;font-size:17px}
-.tpl-howto .flow .stage h4{font-size:19px;margin-bottom:3px}
-.tpl-howto .flow .stage p{font-size:14px;color:var(--text-2);line-height:1.55;margin:0}
-.tpl-howto .flow .stage+.stage{border-top:1px dashed var(--border)}
+/* ---- terminal ---- */
+.term{background:#16161e;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;
+  font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:13.5px;line-height:1.62;box-shadow:var(--shadow)}
+.term .bar{display:flex;align-items:center;gap:7px;padding:9px 14px;background:#1f2335;
+  border-bottom:1px solid var(--border);font-size:11.5px;color:var(--text-3)}
+.term .tdot{width:10px;height:10px;border-radius:50%;background:#f7768e;flex:none}
+.term .tdot:nth-child(2){background:#e0af68}
+.term .tdot:nth-child(3){background:#9ece6a}
+.term pre{margin:0;padding:16px 20px;color:#c0caf5;overflow:auto;white-space:pre}
+.term .p{color:#9ece6a;font-weight:700}
+.term .c{color:#c0caf5}
+.term .o{color:#a9b1d6}
+.term .cmt{color:#565f89;font-style:italic}
+.term .kw{color:#f7768e}
+.term .str{color:#9ece6a}
+.term .fn{color:#bb9af7}
+.term .num{color:#ff9e64}
 
-/* ---------- comparison (manual pain vs craft / do vs dont) ---------- */
-.tpl-howto .vs{display:grid;grid-template-columns:1fr 64px 1fr;gap:22px;align-items:stretch;margin-top:26px}
-.tpl-howto .vs .side{padding:26px 28px}
-.tpl-howto .vs .mid{font-size:42px;font-weight:800;color:var(--text-3);display:flex;align-items:center;justify-content:center}
-.tpl-howto .vs .bad-side{border-top:3px solid var(--bad)}
-.tpl-howto .vs .good-side{border-top:3px solid var(--good)}
-.tpl-howto .vs h3{font-size:21px;margin-bottom:12px}
-.tpl-howto .vs ul{padding-left:18px;margin:0;font-size:14.5px;line-height:1.75;color:var(--text-2)}
-.tpl-howto .vs .bad-side li::marker{color:var(--bad)}
-.tpl-howto .vs .good-side li::marker{color:var(--good)}
+/* ---- callout ---- */
+.callout{border-left:3px solid var(--accent);background:rgba(122,162,247,.08);padding:13px 18px;
+  border-radius:0 10px 10px 0;margin-top:14px}
+.callout h4{font-size:14.5px;margin:0 0 4px;color:var(--accent)}
+.callout p{font-size:13.5px;color:var(--text-2);line-height:1.55;margin:0}
+.callout.warn{border-left-color:var(--warn);background:rgba(224,175,104,.09)}
+.callout.warn h4{color:var(--warn)}
 
-/* ---------- callout / note box ---------- */
-.tpl-howto .callout{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--a1) 7%,transparent);
-  padding:18px 22px;border-radius:0 10px 10px 0;margin-top:20px}
-.tpl-howto .callout h4{font-size:16px;margin-bottom:5px;color:var(--accent)}
-.tpl-howto .callout p{font-size:15px;color:var(--text-2);line-height:1.6;margin:0}
-.tpl-howto .callout.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent)}
-.tpl-howto .callout.warn h4{color:var(--warn)}
+/* ---- numbered step cards ---- */
+.steps{display:grid;gap:24px 18px;margin-top:30px}
+.steps.s3{grid-template-columns:repeat(3,1fr)}
+.steps.s4{grid-template-columns:repeat(4,1fr)}
+.step{position:relative;padding:22px 18px 16px;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface)}
+.step .num{position:absolute;top:-15px;left:16px;width:32px;height:32px;border-radius:9px;background:var(--grad);
+  color:#16161e;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;
+  font-family:'JetBrains Mono',monospace}
+.step h4{margin:8px 0 6px;font-size:15px}
+.step p{font-size:13px;color:var(--text-2);line-height:1.5;margin:0}
 
-/* ---------- decision / data table ---------- */
-.tpl-howto .dtable{width:100%;border-collapse:collapse;margin-top:24px;font-size:15px}
-.tpl-howto .dtable th{text-align:left;padding:12px 16px;color:var(--text-3);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-strong)}
-.tpl-howto .dtable td{padding:13px 16px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top}
-.tpl-howto .dtable tr:last-child td{border-bottom:none}
-.tpl-howto .dtable td b,.tpl-howto .dtable td strong{color:#fff;font-weight:600}
+/* ---- do / don't comparison ---- */
+.vs{display:grid;grid-template-columns:1fr 52px 1fr;gap:16px;align-items:stretch;margin-top:18px}
+.vs .mid{font-size:34px;font-weight:800;color:var(--text-3);display:flex;align-items:center;justify-content:center}
+.vs .bad-side{border-top:3px solid var(--bad)}
+.vs .good-side{border-top:3px solid var(--good)}
+.vs h3{font-size:17px;margin:0 0 10px;color:var(--text-1)}
+.vs ul{padding-left:17px;margin:0;font-size:13.5px;line-height:1.7;color:var(--text-2)}
+.vs .bad-side li::marker{color:var(--bad)}
+.vs .good-side li::marker{color:var(--good)}
 
-/* ---------- bullet list (clean) ---------- */
-.tpl-howto .blist{list-style:none;padding:0;margin:22px 0 0}
-.tpl-howto .blist li{position:relative;padding:9px 0 9px 30px;font-size:17px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
-.tpl-howto .blist li:last-child{border-bottom:none}
-.tpl-howto .blist li::before{content:"▸";position:absolute;left:4px;top:9px;color:var(--accent);font-weight:700}
-.tpl-howto .blist li b{color:#fff;font-weight:600}
-
-/* ---------- speaker / cover meta ---------- */
-.tpl-howto .speaker{display:flex;align-items:center;gap:14px;margin-top:26px}
-.tpl-howto .speaker .av{width:50px;height:50px;border-radius:13px;background:var(--grad)}
-.tpl-howto .speaker b{display:block;color:#fff;font-size:17px}
-.tpl-howto .speaker span{color:var(--text-3);font-size:12.5px;font-family:'JetBrains Mono',monospace}
-
-/* ---------- section divider ---------- */
-.tpl-howto .slide.divider{justify-content:center;height:auto}
-.tpl-howto .part-no{font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent);letter-spacing:.1em}
-.tpl-howto .slide.divider .h1{font-size:64px;margin-top:10px;max-width:20ch}
-.tpl-howto .slide.divider .lede{margin-top:26px;font-size:20px}
-
-/* ---------- big stat ---------- */
-.tpl-howto .bigstat{font-size:180px;font-weight:900;line-height:1;letter-spacing:-.04em}
-
-/* ---------- footer ---------- */
-.tpl-howto .deck-footer .mono{color:var(--text-3)}
-.tpl-howto .slide-number{color:var(--text-3)}
-
-/* fix: cover .speaker must not collide with the absolute .deck-footer */
-.tpl-howto .slide:has(> .speaker){padding-bottom:160px}
-.tpl-howto .slide .speaker{position:absolute;left:88px;right:88px;bottom:70px;margin-top:0;z-index:3}</style>
+/* ---- workflow map (slide 2) ---- */
+.wf{position:relative;margin-top:16px}
+.wf::before{content:"";position:absolute;left:17px;top:16px;bottom:16px;width:2px;
+  background:linear-gradient(180deg,var(--warn),var(--accent) 30%,var(--accent-2) 70%,var(--good));opacity:.45}
+.wf-row{display:grid;grid-template-columns:216px 1fr 270px;gap:14px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border)}
+.wf-row:last-child{border-bottom:none}
+.wf-node{display:flex;align-items:center;gap:11px;font-weight:700;font-size:15px;color:var(--text-1);position:relative;z-index:1}
+.wf-num{flex:none;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-weight:800;font-size:15px;background:var(--surface);
+  border:1px solid var(--accent);color:var(--accent);box-shadow:0 0 0 4px var(--bg)}
+.wf-node.gatey .wf-num{border-color:var(--warn);color:var(--warn)}
+.wf-node.okey .wf-num{border-color:var(--good);color:var(--good)}
+.wf-what{font-size:13.5px;color:var(--text-2);line-height:1.45}
+.wf-what b{color:var(--text-1);font-weight:600}
+.wf-side{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.gate,.fb,.hand{display:inline-block;padding:3px 10px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:11.5px;white-space:nowrap}
+.gate{background:rgba(224,175,104,.14);border:1px solid rgba(224,175,104,.5);color:var(--warn)}
+.fb{background:transparent;border:1px dashed var(--border-strong);color:var(--text-3)}
+.hand{background:rgba(158,206,106,.13);border:1px solid rgba(158,206,106,.5);color:var(--good)}
+</style>
 </head>
-<body class="tpl-howto" style="--a1:#22d3ee;--a2:#38bdf8;--a3:#a78bfa">
+<body>
+
 <div class="deck">
-<section class="slide" data-title="Cover">
-  <p class="kicker run">Metodología QA · Etapa 0</p>
-  <h1 class="h1 anim-fade-up" data-anim="fade-up">Shift-Left Testing — Prevenir Defectos <span class="grad">Antes de que Exista el Código</span></h1>
-  <p class="lede mt-m">Refinamiento de AC pre-sprint sobre un lote del backlog — primero el oficio, luego la IA que lo ejecuta desde la terminal.</p>
-  <div class="speaker"><div class="av"></div><div><b>El Oficio → La Aceleración</b><span>Desde la skill <code>/shift-left-testing</code> del agentic-qa-boilerplate</span></div></div>
-  <div class="deck-footer"><span class="mono">#qa #shift-left #stage-0</span><span class="slide-number" data-current="1" data-total="34"></span></div>
-  <div class="notes">Bienvenidos. Hoy aprendemos la actividad de QA con mayor apalancamiento que existe — corregir requisitos antes de escribir una línea de código — primero como oficio humano, luego cómo un solo comando de terminal lo automatiza.</div>
-</section>
 
-<section class="slide center tc" data-title="Stat">
-  <div>
-    <p class="kicker">por qué molestarse</p>
-    <div class="bigstat"><span class="grad">1 : 10 : 100</span></div>
-    <h3>Costo relativo de corregir el mismo defecto en requisitos vs. desarrollo vs. producción. Shift-Left vive en el '1'. Cada ambigüedad que eliminas en la Story es un bug 10x-a-100x que nunca pagas.</h3>
-  </div>
-  <div class="notes">Este es el caso económico completo. No estamos probando software aquí — todavía no hay software. Estamos probando la IDEA, y las ideas son baratas de corregir.</div>
-</section>
-
-<section class="slide" data-title="Agenda">
-  <p class="kicker">roadmap</p>
-  <h2 class="h2" data-anim="fade-up">Dos Partes</h2>
-  <div class="stack mt-l anim-stagger-list">
-    <div class="agenda-row"><span class="anum">01</span><span class="at">El Oficio — cómo un QA engineer senior refina un backlog a mano: triage de selección, el playbook de refinamiento, el catálogo de preguntas, el handoff.</span><span class="ad">parte 1</span></div>
-    <div class="agenda-row"><span class="anum">02</span><span class="at">La Aceleración — cómo la skill <code>/shift-left-testing</code> lo conduce todo desde un comando de terminal con subagentes, CLIs de Jira/Xray y gates de aprobación humana.</span><span class="ad">parte 2</span></div>
-  </div>
-  <div class="notes">Primero ganamos la metodología a mano. Solo después la entregamos a la máquina — porque no puedes supervisar lo que no entiendes.</div>
-</section>
-
-<section class="slide divider" data-title="Part 01">
-  <div>
-    <p class="part-no">PARTE 01</p>
-    <h1 class="h1">El Oficio<br><span class="grad">Refinar un Backlog a Mano</span></h1>
-    <p class="lede">Si la IA no existiera, ¿qué haría un QA engineer senior, paso a paso, para groomear un lote de Stories antes del sprint planning?</p>
-  </div>
-  <div class="notes">Imagina que no hay IA. Solo tú, un backlog, un tablero de Jira y una reunión de grooming mañana. Esta es la disciplina.</div>
-</section>
-
-<section class="slide" data-title="Shift-Left vs In-Sprint">
-  <p class="kicker">posición en el pipeline</p>
-  <h2 class="h2" data-anim="fade-up">Shift-Left vs. Testing In-Sprint</h2>
-  <div class="grid g2 mt-l anim-stagger-list">
-    <div class="card card-accent">
-      <h4>Shift-Left · Etapa 0 (esta actividad)</h4>
-      <ul class="dim">
-        <li>Pre-sprint, lote de N Stories</li>
-        <li>Entrada: Backlog / Shift-Left QA / Estimation</li>
-        <li>Audiencia: PO + BA + tester</li>
-        <li>SIN ejecución — la feature no existe</li>
-        <li>Salida: ACs refinados + mapa de riesgo + ATP DRAFT</li>
-      </ul>
-    </div>
-    <div class="card card-accent">
-      <h4>Sprint Testing · Etapas 1-3</h4>
-      <ul class="dim">
-        <li>In-sprint, ticket por ticket</li>
-        <li>Entrada: Ready For QA</li>
-        <li>Audiencia: Dev + tester</li>
-        <li>Smoke + exploración UI/API/DB</li>
-        <li>Salida: ATP + ATR + bugs + evidencia</li>
-      </ul>
+<!-- 1. PORTADA -->
+<section class="slide is-active" data-title="Portada">
+  <div class="fx-host" data-fx="constellation"></div>
+  <div class="above">
+    <p class="eyebrow">AGENTIC QA · WORKFLOW SKILL · STAGE 0</p>
+    <h1 class="h1 mono-title anim-rise-in" data-anim="rise-in"><span class="grad">/</span>shift-left-testing</h1>
+    <p class="lede mt-m">QA pre-sprint sobre un lote de Stories del backlog: refina los Acceptance Criteria, saca a la luz gaps y ambigüedades, y entrega un ATP DRAFT — los defectos se <b>previenen en los requisitos</b>, no se detectan tras implementar.</p>
+    <div class="row wrap mt-l" style="gap:10px">
+      <span class="chip"><span class="cdot" style="background:var(--accent)"></span>Stage 0 · Pre-sprint</span>
+      <span class="chip"><span class="cdot" style="background:var(--accent-2)"></span>Batch de 1-12 Stories</span>
+      <span class="chip"><span class="cdot" style="background:var(--warn)"></span>Sin ejecución — la feature no existe</span>
+      <span class="chip"><span class="cdot" style="background:var(--good)"></span>Jira es canónico</span>
     </div>
   </div>
-  <div class="notes">Sabe qué juego estás jugando. Shift-Left mira hacia adelante y no tiene código. Si te encuentras ejecutando la app, estás en la actividad equivocada.</div>
+  <div class="notes">Bienvenidos. Este deck recorre el workflow real del skill /shift-left-testing paso a paso: qué entra, qué hace la IA, qué gates esperan tu aprobación y qué artefactos salen. Regla de oro: corregir un defecto en los requisitos cuesta 1; en desarrollo, 10; en producción, 100.</div>
 </section>
 
-<section class="slide" data-title="The Pipeline">
-  <p class="kicker">la forma del trabajo</p>
-  <h2 class="h2" data-anim="fade-up">Un Pipeline, Tres Fases — Siempre en Orden</h2>
-  <div class="flow mt-m anim-stagger-list">
-    <div class="stage"><div class="sx">0</div><div><h4>Init de Sesión</h4><p>Resolver la lista de candidatos; confirmar que existe contexto de negocio.</p></div></div>
-    <div class="stage"><div class="sx">1</div><div><h4>Selección</h4><p>Triage de qué Stories merecen refinamiento, y a qué profundidad.</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>Refinamiento</h4><p>Por Story — sacar a la luz gaps, refinar ACs, esbozar outlines.</p></div></div>
-    <div class="stage"><div class="sx">3</div><div><h4>Handoff</h4><p>Push a Jira, etiquetar, transicionar a Estimation, escribir el reporte de lote.</p></div></div>
+<!-- 2. MAPA DEL WORKFLOW -->
+<section class="slide" data-title="Mapa del workflow">
+  <p class="kicker">el mapa completo — índice mental del deck</p>
+  <h2 class="h2" data-anim="fade-up">Un pipeline, tres fases <span class="grad">+ gates humanos</span></h2>
+  <div class="wf anim-stagger-list">
+    <div class="wf-row">
+      <div class="wf-node gatey"><span class="wf-num">!</span>Preflight Gate</div>
+      <div class="wf-what">Readiness de tooling + contexto. <b>Args-as-answers</b> · <b>probe, don't assume</b>. Un solo checklist de gaps; RED bloqueante → STOP.</div>
+      <div class="wf-side"><span class="fb">RED → arregla .env + reinicia</span></div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-node"><span class="wf-num">0</span>Session Init</div>
+      <div class="wf-what">Resume check · modalidad TMS A/B · carga <b>/acli</b> (+ /xray-cli opt-in) · verifica <b>.context/</b> · resuelve candidatos · crea <b>.session/&lt;batch-id&gt;/</b></div>
+      <div class="wf-side"><span class="fb">falta contexto → /project-discovery</span></div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-node"><span class="wf-num">1</span>Selection</div>
+      <div class="wf-what">Sync-read por candidato → filtro de tipo → frescura de label → <b>veto</b> → <b>risk score</b> → tabla ranqueada de candidatos</div>
+      <div class="wf-side"><span class="gate">GATE · OK del usuario</span><span class="fb">no-Story → rechazo en voz alta</span></div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-node"><span class="wf-num">2</span>Refinement ×N</div>
+      <div class="wf-what">1 subagente por Story, <b>SECUENCIAL</b> · playbook en modo DRAFT → <b>shift-left-refinement.md</b> + resumen por Story</div>
+      <div class="wf-side"><span class="gate">GATE · OK por Story</span><span class="fb">error → retry / skip / abort</span></div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-node"><span class="wf-num">3</span>Handoff ×N</div>
+      <div class="wf-what">6 mutaciones Jira por Story · labels · qa_assignee · transición <b>Backlog → Shift-Left QA → Estimation</b> y STOP</div>
+      <div class="wf-side"><span class="fb">campo ausente → comment fallback</span><span class="fb">Modalidad A → Test Plan opt-in</span></div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-node okey"><span class="wf-num">✓</span>Batch report</div>
+      <div class="wf-what">Agrega preguntas PO/Dev (dedupe) → <b>batch-report.md</b> → comment en el epic padre si comparten uno · archiva la sesión</div>
+      <div class="wf-side"><span class="hand">→ /sprint-testing · cortocircuito</span></div>
+    </div>
   </div>
-  <div class="notes">Memoriza esta columna: Selección, Refinamiento, Handoff. Todo lo demás cuelga de estas tres. Nunca refines antes de seleccionar; nunca hagas handoff antes de refinar.</div>
+  <p class="dim2 mt-s" style="font-size:13px"><span class="gate">GATE</span> espera aprobación humana &nbsp;·&nbsp; <span class="fb">caja punteada</span> fallback / camino adyacente &nbsp;·&nbsp; <span class="hand">→</span> handoff a otra skill</p>
+  <div class="notes">Memoriza esta columna: Preflight → Init → Selection → Refinement → Handoff → Batch report. Cada fila es una sección del deck. A la derecha viven los caminos adyacentes: gates de aprobación, fallbacks y handoffs hacia otras skills.</div>
 </section>
 
-<section class="slide" data-title="Before Triage">
-  <p class="kicker">fase 0 — antes de empezar</p>
-  <h2 class="h2" data-anim="fade-up">Tres Cosas que Necesitas Antes del Triage</h2>
-  <ul class="blist mt-l anim-stagger-list">
-    <li><b>Una lista de candidatos.</b> IDs de Story explícitos (UPEX-100,101,102) o una consulta JQL del backlog que construyes a mano.</li>
-    <li><b>Contexto de negocio a mano.</b> business-data-map, business-feature-map, business-api-map, master-test-plan. Sin vocabulario de dominio tus preguntas al PO son vagas e inútiles.</li>
-    <li><b>Un tamaño de lote de 1-12.</b> El punto óptimo. Pasadas ~10-12 Stories la atención colapsa y la calidad se degrada — divide groomings grandes en varias sesiones.</li>
-  </ul>
-  <div class="notes">El error fatal de principiante es refinar sin contexto de negocio — produces preguntas genéricas que cualquier junior podría hacer. Ancla cada AC refinado en una entidad real y un flujo real.</div>
-</section>
-
-<section class="slide" data-title="Candidate JQL">
-  <p class="kicker">fase 0 — modo backlog</p>
-  <h2 class="h2" data-anim="fade-up">El JQL de Candidatos</h2>
-  <div class="terminal mt-m">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>candidate-query.jql</span></div>
-<pre><span class="kw">project</span> = UPEX
-<span class="kw">AND</span> issueType = Story
-<span class="kw">AND</span> status <span class="kw">in</span> (Backlog, <span class="str">"Shift-Left QA"</span>, Estimation, <span class="str">"Ready For Dev"</span>)
-<span class="kw">ORDER BY</span> priority DESC, created DESC
-
-<span class="cmt"># optional layers</span>
-<span class="kw">AND</span> sprint <span class="kw">in</span> openSprints()        <span class="cmt"># next-sprint candidates</span>
-<span class="kw">AND</span> <span class="str">"Epic Link"</span> = EPIC-KEY          <span class="cmt"># groom one epic</span>
-<span class="kw">AND</span> updated &gt;= -<span class="num">14</span>d              <span class="cmt"># recent additions</span></pre>
+<!-- 3. PREFLIGHT GATE -->
+<section class="slide" data-title="Preflight Gate">
+  <p class="kicker">antes de la Phase 0 — readiness gate</p>
+  <h2 class="h2" data-anim="fade-up">Preflight: <span class="grad">probar, no asumir</span></h2>
+  <div class="grid g2 mt-m anim-stagger-list">
+    <div class="card card-accent"><h4>Ley 1 · Args-as-answers</h4><p class="sm">Lo que el usuario ya dijo (los IDs de Story, la modalidad, "groom the backlog") cuenta como respuesta dada. Solo se preguntan los gaps reales — todos juntos, en UN checklist.</p></div>
+    <div class="card card-accent"><h4>Ley 2 · Probe, don't assume</h4><p class="sm">Cada capacidad se verifica con un probe real. Un RED bloqueante detiene la sesión: la skill nombra la env var exacta, apunta a <code>.env</code> y pide reiniciar la sesión del agente.</p></div>
   </div>
-  <div class="notes">Cuando el usuario solo dice "groomea el backlog", esta es la consulta. Nota los cuatro estados de entrada — esos son los únicos estados en que una Story puede estar para calificar a Shift-Left.</div>
+  <table class="dtable">
+    <thead><tr><th>Capacidad</th><th>Necesidad</th><th>Probe / por qué</th></tr></thead>
+    <tbody>
+      <tr><td><b>/acli</b> — issue tracker</td><td class="ok">REQUIRED</td><td><code>bun run jira:check</code> — todo el output del refinamiento aterriza en Jira</td></tr>
+      <tr><td><b>Modalidad TMS resuelta</b></td><td class="ok">REQUIRED</td><td>A: Xray · B: Jira-native — decide dónde vive el ATP DRAFT</td></tr>
+      <tr><td><b>/xray-cli</b> + creds <code>XRAY_*</code></td><td class="opt">OPTIONAL</td><td>Solo si el usuario opta por un Test Plan por Story (default: NO)</td></tr>
+      <tr><td><b>Contexto de negocio</b></td><td class="ok">REQUIRED</td><td><code>.context/business/*</code> + <code>master-test-plan.md</code> — sin ellos, preguntas vagas al PO</td></tr>
+      <tr><td><b>Lista de candidatos</b></td><td class="ok">REQUIRED</td><td>IDs explícitos o JQL de backlog — tamaño confirmado con el usuario</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><h4>Gate ligero por diseño</h4><p>Shift-left nunca ejecuta contra un sistema vivo: env de la app, credenciales de test-user, DBHub, OpenAPI, Playwright y resend son N/A aquí. La viabilidad se establece LEYENDO código, APIs y schema — jamás corriendo la app.</p></div>
+  <div class="notes">El preflight corre antes que todo, incluso antes del resume check. Sus dos leyes evitan los dos fallos clásicos: interrogar al usuario por cosas que ya dijo, y asumir que una CLI está autenticada sin probarla.</div>
 </section>
 
-<section class="slide" data-title="Stories Only">
-  <p class="kicker">fase 1 — el filtro duro de tipo</p>
-  <h2 class="h2" data-anim="fade-up">Solo Stories — Rechaza Todo lo Demás, en Voz Alta</h2>
+<!-- 4. PHASE 0 -->
+<section class="slide" data-title="Phase 0 · Session Init">
+  <p class="kicker">phase 0 — session resume check + init</p>
+  <h2 class="h2" data-anim="fade-up">Phase 0 · Arrancar <span class="grad">o retomar</span> la sesión</h2>
+  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
+    <ul class="blist tight anim-stagger-list" style="margin-top:0">
+      <li><b>0.0 Resume check.</b> ¿Existe <code>progress.md</code> del batch? → ofrecer <b>resume / restart / abort</b>. Restart archiva lo anterior como <code>-aborted</code>.</li>
+      <li><b>0.1 Modalidad TMS.</b> Probe de 4 pasos (A: Xray · B: Jira-native). Se persiste en <code>plan.md</code> §Inputs.</li>
+      <li><b>0.2 Tool skills.</b> <code>/acli</code> siempre (escrituras + búsqueda trivial). Lecturas de detalle → <code>bun run jira:sync-issues</code>, nunca <code>acli view</code>.</li>
+      <li><b>0.3 Contexto.</b> 4 archivos <code>.context/</code> verificados; si falta uno → STOP → <b>/project-discovery</b>.</li>
+      <li><b>0.4 Candidatos.</b> IDs explícitos (UPEX-100,101,102) o JQL de backlog. Sweet spot 1-12; &gt;12 se divide en sesiones.</li>
+      <li><b>0.5 Carpeta de sesión</b> + <code>plan.md</code> (Goal · Inputs · fases · riesgos) + primer entry en <code>progress.md</code>.</li>
+    </ul>
+    <div class="term">
+      <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>estado de sesión — dónde vive cada cosa</span></div>
+<pre><span class="fn">.session/shift-left-testing/2026-07-06-payments/</span>
+├─ plan.md          <span class="cmt"># canónico: modalidad + candidatos + fases</span>
+├─ progress.md      <span class="cmt"># append-only, 1 entry por fase → resume</span>
+├─ candidates.md    <span class="cmt"># output de Phase 1</span>
+└─ batch-report.md  <span class="cmt"># output de Phase 3</span>
+
+<span class="cmt"># el entregable por Story vive en su carpeta PBI:</span>
+<span class="fn">.context/PBI/epics/EPIC-&lt;KEY&gt;-&lt;slug&gt;/stories/</span>
+<span class="fn">  STORY-&lt;KEY&gt;-&lt;slug&gt;/</span>shift-left-refinement.md
+
+<span class="cmt"># al cerrar: mv → .session/.archive/&lt;fecha&gt;-...-&lt;batch-id&gt;/</span></pre>
+    </div>
+  </div>
+  <div class="notes">La sesión es resumible por diseño: plan.md es el registro canónico de decisiones y progress.md permite retomar a mitad de lote sin repetir Stories ya refinadas. El descriptor kebab-case permite dos sesiones el mismo día.</div>
+</section>
+
+<!-- 5. PHASE 1 · EMBUDO -->
+<section class="slide" data-title="Phase 1 · Selection">
+  <p class="kicker">phase 1 — selection · el embudo de triage</p>
+  <h2 class="h2" data-anim="fade-up">Selection: leer bien, <span class="grad">filtrar en voz alta</span></h2>
+  <div class="term mt-s">
+    <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>lectura de detalle — regla reads-vs-writes</span></div>
+<pre><span class="p">$ </span><span class="c">bun run jira:sync-issues get UPEX-100 --include-comments</span>   <span class="cmt"># 1 Story: ACs + custom fields + comments</span>
+<span class="p">$ </span><span class="c">bun run jira:sync-issues jql "project = UPEX AND issueType = Story AND status in (Backlog, ...)"</span>
+<span class="cmt"># NUNCA `acli view` para custom fields — devuelve null. `acli search` solo para la lista trivial.</span></pre>
+  </div>
+  <div class="steps s4 anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>Filtro de tipo</h4><p>Solo Stories. Bug / Spike / Sub-task / Tech-debt → rechazo CON motivo de una línea, nunca en silencio.</p></div>
+    <div class="step"><div class="num">2</div><h4>Frescura de label</h4><p>¿Ya <code>shift-left-reviewed</code> &lt;30 días? Se muestra aparte — el usuario decide skip o refresh.</p></div>
+    <div class="step"><div class="num">3</div><h4>Tabla de veto</h4><p>Money / auth / data-integrity / integración / state machine → FORZAR FULL. CSS puro / copy / docs → SKIP.</p></div>
+    <div class="step"><div class="num">4</div><h4>Risk score</h4><p>Solo sin veto. Feature nueva +3 · datos dinámicos +3 · AC-light +2 · esfuerzo +2 · &gt;5 comentarios +1…</p></div>
+  </div>
+  <div class="callout"><h4>5 · Escaneo de viabilidad de datos (solo HIGH)</h4><p>Lectura de <code>business-data-map</code> / <code>business-api-map</code> / <code>master-test-plan</code> — sin queries, sin API calls. Si el modelo de datos no soporta los ACs → flag <code>DATA-FEASIBILITY-RISK</code> (suave: no bloquea, se vuelve pregunta crítica al PO).</p></div>
+  <div class="notes">El embudo va en orden estricto: tipo antes que label, label antes que veto, veto antes que score. El rechazo ruidoso ES valor — a menudo revela que el tablero está mal etiquetado.</div>
+</section>
+
+<!-- 6. PHASE 1 · VETO vs SCORE + GATE -->
+<section class="slide" data-title="Phase 1 · Veto y gate">
+  <p class="kicker">phase 1 — el veto vence al score · gate de candidatos</p>
+  <h2 class="h2" data-anim="fade-up">El juicio anula la aritmética — <span class="grad">y tú apruebas el set</span></h2>
+  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
+    <div>
+      <table class="dtable" style="margin-top:0">
+        <thead><tr><th>Score</th><th>Nivel</th><th>Profundidad de refinamiento</th></tr></thead>
+        <tbody>
+          <tr><td><b>0-3</b></td><td>LOW</td><td>SKIP — PO/Dev escriben los ACs sin QA</td></tr>
+          <tr><td><b>4-7</b></td><td>MEDIUM</td><td>Refinamiento estándar (Fases 1-3 + outlines)</td></tr>
+          <tr><td><b>8+</b></td><td>HIGH</td><td>Extendido — más caza de ambigüedades y edge cases; set de preguntas ampliado</td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="margin-top:12px"><h4>El score es orientativo</h4><p>El usuario puede rescatar una LOW si huele complejidad oculta. Y el VETO cortocircuita: una Story de refunds es refinamiento obligatorio aunque puntúe 2; un retoque de CSS es skip aunque toque cinco archivos.</p></div>
+    </div>
+    <div class="card" style="border-top:3px solid var(--warn)">
+      <h4 style="color:var(--warn)">GATE — presenta la tabla y ESPERA el OK</h4>
+      <p class="sm mt-s">Phase 1 termina con una tabla ranqueada: <b>Accepted</b> (riesgo · score · veto override · data-feasibility), <b>Rejected</b> (no-Story, con motivo), <b>Skipped</b> (LOW), <b>Already Reviewed</b> (skip/refresh?), orden recomendado y preguntas abiertas.</p>
+      <p class="sm mt-s"><b>No se refina nada</b> hasta que el humano confirme el set. Puede vetar Stories, rescatar LOWs o cambiar el orden. La lista aceptada se persiste en <code>plan.md</code> §Inputs y se registra el checkpoint en <code>progress.md</code>.</p>
+    </div>
+  </div>
+  <div class="notes">La selección es una propuesta, no una decisión. Este gate mantiene al humano dirigiendo el lote — el mismo patrón que el Story Explanation gate de sprint-testing.</div>
+</section>
+
+<!-- 7. PHASE 2 · EL LOOP DRAFT -->
+<section class="slide" data-title="Phase 2 · Loop DRAFT">
+  <p class="kicker">phase 2 — refinement · un subagente por story, secuencial</p>
+  <h2 class="h2" data-anim="fade-up">Refinement: el playbook, en <span class="grad">modo DRAFT</span></h2>
+  <p class="sm" style="max-width:100ch">Reuso deliberado: ~70% de la lógica vive en <code>sprint-testing/references/acceptance-test-planning.md</code> §Fases 1-3 — el subagente la cita y aplica el <b>delta shift-left</b>. Secuencial por diseño: presentas cada resumen al usuario antes de despachar la siguiente Story.</p>
   <div class="vs">
-    <div class="card bad-side side">
-      <h3>❌ Procesar o descartar en silencio</h3>
+    <div class="card good-side">
+      <h3>Corre (alcance DRAFT)</h3>
       <ul>
-        <li>Refinar un Bug — reactivo, sin ACs upstream</li>
-        <li>Refinar un Spike — sin ACs implementables</li>
-        <li>Borrar en silencio un Tech-debt mal etiquetado</li>
+        <li><b>Fase 1 · Critical Analysis</b> — contexto negocio + técnico; lecturas de código LIGERAS (¿es viable?), sin reproducción</li>
+        <li><b>Fase 2 · Story Quality Analysis</b> — el corazón (siguiente slide)</li>
+        <li><b>Fase 3 · Refined ACs</b> — Given/When/Then con datos específicos</li>
+        <li><b>Fase 4 · outlines</b> — solo NOMBRES + coverage estimate (guía la estimación del PO)</li>
+        <li><b>Fase 5 · edge cases</b> — solo nombres + criticidad</li>
       </ul>
     </div>
-    <div class="mid">→</div>
-    <div class="card good-side side">
-      <h3>✅ Rechazo en voz alta con motivo</h3>
+    <div class="mid">vs</div>
+    <div class="card bad-side">
+      <h3>Difiere o prohíbe</h3>
       <ul>
-        <li>UPEX-115 [Bug] — Shift-Left refina solo ACs prospectivos</li>
-        <li>UPEX-127 [Spike] — refina la Story de seguimiento en su lugar</li>
-        <li>UPEX-141 [Tech-debt] — sin AC visible para el usuario; conviértelo en Story primero</li>
+        <li>Tablas de parametrización, test-data JSON, recetas Faker → in-sprint (<code>/sprint-testing</code>)</li>
+        <li>Creación de TCs en el TMS → Stage 4 (<code>/test-documentation</code>)</li>
+        <li>Mutaciones Jira → las hace Phase 3, nunca el subagente</li>
+        <li>Ejecución: smoke, queries DB, API calls → NADA corre</li>
+        <li>Git: sin branch, sin commit — Jira es canónico</li>
+        <li>Carpeta <code>evidence/</code> — no existe nada que capturar</li>
       </ul>
     </div>
   </div>
-  <div class="notes">El rechazo no es ruido — ES valor. Sacar a la luz un Bug mal etiquetado le dice al equipo que su tablero está mal. Nunca descartes en silencio; siempre indica el motivo de una línea.</div>
+  <div class="notes">La disciplina DRAFT separa shift-left del diseño de tests real: títulos de outline y conteo de cobertura, nunca los datos. Generar recetas de Faker ahora sería trabajo desperdiciado que se rehace in-sprint.</div>
 </section>
 
-<section class="slide" data-title="Triage Funnel">
-  <p class="kicker">fase 1 — el embudo de triage</p>
-  <h2 class="h2" data-anim="fade-up">Cinco Gates por los que Pasa Cada Candidato</h2>
-  <div class="steps s4 mt-l anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>Filtro de tipo</h4><p>Rechaza no-Stories. Gate duro.</p></div>
-    <div class="step"><div class="num">2</div><h4>Frescura de label</h4><p>¿Ya 'shift-left-reviewed' &lt;30 días? Sácalo aparte; pregunta skip/refresh.</p></div>
-    <div class="step"><div class="num">3</div><h4>Tabla de veto</h4><p>Money/auth/data-integrity fuerzan FULL; CSS/copy/tech-debt quedan SKIPPED.</p></div>
-    <div class="step"><div class="num">4</div><h4>Score de riesgo</h4><p>Solo si no disparó veto — suma factores en 0-3 / 4-7 / 8+.</p></div>
-  </div>
-  <div class="callout mt-m"><h4>5 · Escaneo de viabilidad de datos</h4><p>Solo riesgo HIGH, solo-doc — marca <code>DATA-FEASIBILITY-RISK</code>.</p></div>
-  <div class="notes">Esto es un embudo, en orden. Tipo antes que label, label antes que veto, veto antes que score. El veto CORTOCIRCUITA el score — esa es la regla de secuencia más importante en la selección.</div>
-</section>
-
-<section class="slide" data-title="Veto Table">
-  <p class="kicker">fase 1 — el veto vence al score</p>
-  <h2 class="h2" data-anim="fade-up">La Tabla de Veto — Forzar o Saltar, Anular las Matemáticas</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Veredicto</th><th>Disparadores</th><th>Por qué</th></tr></thead>
-    <tbody>
-      <tr><td><b>FORZAR FULL</b></td><td>Money, billing, refund, divisa</td><td>cálculo + audit trail</td></tr>
-      <tr><td><b>FORZAR FULL</b></td><td>Auth / authz / sesión / RBAC</td><td>perímetro de seguridad</td></tr>
-      <tr><td><b>FORZAR FULL</b></td><td>Integridad de datos en entidades core</td><td>riesgo de corrupción persistente</td></tr>
-      <tr><td><b>FORZAR FULL</b></td><td>Integraciones externas (Stripe, Auth0)</td><td>deriva de contrato</td></tr>
-      <tr><td><b>FORZAR FULL</b></td><td>Máquinas de estado / fórmulas (impuesto, interés)</td><td>transición + precisión</td></tr>
-      <tr><td><b>SKIP</b></td><td>CSS puro / copy estático / docs</td><td>sin complejidad de AC</td></tr>
-      <tr><td><b>SKIP</b></td><td>Refactor de tech-debt, cero cambio de comportamiento</td><td>sin cambio de AC</td></tr>
-      <tr><td><b>SKIP</b></td><td>Solo backend, sin UI + sin cambio de contrato de API</td><td>nada observable por el usuario</td></tr>
-    </tbody>
-  </table>
-  <div class="notes">El veto dispara ANTES de que puntúes. Una feature de refund es de refinamiento obligatorio aunque su score de riesgo sea bajo. Un retoque de CSS es auto-skip aunque tocara cinco archivos. El juicio anula la aritmética.</div>
-</section>
-
-<section class="slide" data-title="Scoring Factors">
-  <p class="kicker">fase 1 — el score de riesgo</p>
-  <h2 class="h2" data-anim="fade-up">Factores de Score — Solo Cuando No Disparó Veto</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Factor</th><th>Puntos</th><th>Condición</th></tr></thead>
-    <tbody>
-      <tr><td><b>Feature nueva</b></td><td>+3</td><td>funcionalidad nueva vs modificación</td></tr>
-      <tr><td><b>Datos dinámicos (API/DB)</b></td><td>+3</td><td>no hardcodeado / estático</td></tr>
-      <tr><td><b>ACs explícitos presentes</b></td><td>+2</td><td>acceptance criteria definidos</td></tr>
-      <tr><td><b>Visible para el usuario</b></td><td>+2</td><td>afecta UI o comportamiento visible</td></tr>
-      <tr><td><b>Alto esfuerzo</b></td><td>+2</td><td>&ge;5 story points O descripción &ge;600 palabras</td></tr>
-      <tr><td><b>Flag AC-light</b></td><td>+2</td><td>&lt;2 ACs O ACs de 1 línea — necesita más refinamiento</td></tr>
-      <tr><td><b>Alta prioridad</b></td><td>+1</td><td>High o Critical</td></tr>
-      <tr><td><b>Multi-componente</b></td><td>+1</td><td>frontend + backend / múltiples servicios</td></tr>
-      <tr><td><b>Dependencia externa</b></td><td>+1</td><td>API de terceros / integración con partner</td></tr>
-      <tr><td><b>Actividad de comentarios</b></td><td>+1</td><td>&gt;5 comentarios sustantivos — desacuerdo sin resolver</td></tr>
-    </tbody>
-  </table>
-  <div class="notes">Memoriza los pesos fuertes: feature nueva y datos dinámicos son +3 cada uno. AC-light es +2 — una Story delgada puntúa alto precisamente porque te necesita más. Tormenta de comentarios es +1 — hilos ruidosos significan que el equipo nunca se puso de acuerdo.</div>
-</section>
-
-<section class="slide" data-title="Score Bands">
-  <p class="kicker">fase 1 — leer el score</p>
-  <h2 class="h2" data-anim="fade-up">Bandas de Score → Profundidad de Refinamiento</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Score</th><th>Nivel</th><th>Acción</th></tr></thead>
-    <tbody>
-      <tr><td><b>0-3</b></td><td>LOW</td><td>SKIP — PO/Dev pueden escribir ACs sin ayuda de QA</td></tr>
-      <tr><td><b>4-7</b></td><td>MEDIUM</td><td>Refinamiento estándar (Fases 1-3 + Fase 4 solo-outline)</td></tr>
-      <tr><td><b>8+</b></td><td>HIGH</td><td>Extendido — enfatiza ambigüedades + casos borde no en la story; amplía el set de preguntas a PO/Dev</td></tr>
-    </tbody>
-  </table>
-  <div class="callout mt-m"><h4>El score es orientativo</h4><p>El usuario puede meter una LOW saltada en el set si huele complejidad oculta.</p></div>
-  <div class="notes">La banda fija tu PROFUNDIDAD, no solo dentro-o-fuera. HIGH no significa 'hazlo más fuerte al azar' — significa apoyarte en la caza de ambigüedades y casos borde de la Fase 2 y ampliar el set de preguntas.</div>
-</section>
-
-<section class="slide" data-title="Selection Gate">
-  <p class="kicker">fase 1 — el gate</p>
-  <h2 class="h2" data-anim="fade-up">STOP — Presenta la Tabla de Candidatos y ESPERA el OK</h2>
-  <div class="callout warn mt-l">
-    <h4>Gate duro human-in-the-loop</h4>
-    <p>La selección termina con una tabla ranqueada de candidatos: Aceptados (Story / Riesgo / Score / Override de veto / Viabilidad de datos / Notas), no-Stories Rechazadas, LOW-risk Saltadas, Ya-Revisadas — más un orden de refinamiento recomendado y preguntas abiertas.</p>
-  </div>
-  <p class="lede mt-m">NO empiezas a refinar hasta que el humano confirme el set. El usuario puede vetar una Story, meter una LOW saltada, o cambiar el orden.</p>
-  <div class="notes">La selección es una propuesta, no una decisión. La tabla va al humano, esperas, él da OK o anula. Este gate es innegociable — mantiene al humano dirigiendo el lote.</div>
-</section>
-
-<section class="slide divider" data-title="Part 01 · Phase 2">
-  <div>
-    <p class="part-no">PARTE 01 · FASE 2</p>
-    <h1 class="h1">Refinamiento<br><span class="grad">El Corazón de Shift-Left</span></h1>
-    <p class="lede">Ahora el verdadero oficio: por cada Story aceptada, toma un ítem vago del backlog y conviértelo en una Story testeable, sin gaps y estimable.</p>
-  </div>
-  <div class="notes">La selección decidió QUÉ refinar. La Fase 2 es CÓMO. Aquí es donde un QA engineer se gana su asiento en la mesa de grooming.</div>
-</section>
-
-<section class="slide" data-title="Refinement Playbook">
-  <p class="kicker">fase 2 — los cinco sub-pasos</p>
-  <h2 class="h2" data-anim="fade-up">El Playbook de Refinamiento — Por Story</h2>
-  <div class="flow mt-m anim-stagger-list">
-    <div class="stage"><div class="sx">1</div><div><h4>Análisis Crítico</h4><p>Contexto de negocio + técnico, rating de complejidad (lecturas de código LIGERAS solamente).</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>Análisis de Calidad de Story</h4><p>Ambigüedades, gaps, casos borde, contradicciones, testeabilidad.</p></div></div>
-    <div class="stage"><div class="sx">3</div><div><h4>ACs Refinados</h4><p>Given / When / Then con datos específicos.</p></div></div>
-    <div class="stage"><div class="sx">4</div><div><h4>Outlines de Test</h4><p>Estimación de cobertura + solo NOMBRES de outline.</p></div></div>
-    <div class="stage"><div class="sx">5</div><div><h4>Casos Borde</h4><p>Solo nombres + criticidad.</p></div></div>
-  </div>
-  <div class="notes">Este es el motor reutilizado del acceptance-test-planning de sprint-testing — pero en modo DRAFT. La skill completa reutiliza deliberadamente ~70% de esa lógica de planificación en vez de reinventarla.</div>
-</section>
-
-<section class="slide" data-title="Critical Analysis">
-  <p class="kicker">fase 2 — paso 1</p>
-  <h2 class="h2" data-anim="fade-up">Análisis Crítico — Contexto Sin Reproducción</h2>
-  <ul class="blist mt-l anim-stagger-list">
-    <li><b>Contexto de negocio.</b> Personas primaria/secundaria, propuesta de valor, KPIs influidos, posición en el user journey.</li>
-    <li><b>Contexto técnico.</b> Componentes/rutas de frontend, endpoints de backend (citados del business-api-map), tablas de DB, servicios externos, puntos de integración.</li>
-    <li><b>Rating de complejidad.</b> Califica Lógica de negocio / Integración / Validación de datos / UI como Low/Med/High — esto guía la profundidad del Paso 2 y alimenta la estimación del PO.</li>
-  </ul>
-  <div class="notes">La regla dura aquí son lecturas de código LIGERAS. Lee los archivos de entrada y uno o dos vecinos para confirmar 'un dev senior lo llamaría viable'. NO estás trazando call graphs ni reproduciendo — eso es trabajo in-sprint.</div>
-</section>
-
-<section class="slide" data-title="Story Quality Analysis">
-  <p class="kicker">fase 2 — paso 2 (el corazón)</p>
-  <h2 class="h2" data-anim="fade-up">Análisis de Calidad de Story — Cinco Cosas que Cazas</h2>
-  <div class="grid g2 mt-l anim-stagger-list">
+<!-- 8. PHASE 2 · EL CORAZÓN -->
+<section class="slide" data-title="Phase 2 · El corazón">
+  <p class="kicker">phase 2 — story quality analysis + doctrina de diseño</p>
+  <h2 class="h2" data-anim="fade-up">El corazón: <span class="grad">lo que la Story calla</span></h2>
+  <div class="grid g2 mt-m anim-stagger-list" style="align-items:start">
     <div class="card card-accent">
-      <h4>Encuentra los agujeros</h4>
-      <ul class="dim">
-        <li><b>Ambigüedades</b> — ubicación en la Story + la pregunta + impacto en testing + aclaración sugerida</li>
-        <li><b>Gaps</b> — AC / regla de negocio faltante, por qué es crítico, qué añadir, riesgo si se omite</li>
-        <li><b>Casos borde no en la Story</b> — escenario + comportamiento más probable + criticidad</li>
+      <h4>Qué cazas (Fase 2 del playbook)</h4>
+      <ul class="blist tight">
+        <li><b>Ambigüedades</b> — ubicación + pregunta a PO/Dev + impacto en testing + aclaración sugerida</li>
+        <li><b>Gaps</b> — AC / regla de negocio faltante, por qué es crítico, riesgo si se omite</li>
+        <li><b>Edge cases no escritos</b> — escenario + comportamiento probable + criticidad</li>
+        <li><b>Contradicciones</b> — "la descripción dice X pero el AC3 dice Y", explícito</li>
+        <li><b>Testeabilidad</b> — Yes / Partial / No, listando cada AC vago o dependencia no aislable</li>
       </ul>
+      <p class="sm mt-s">Toolkit: <code>refinement-questions.md</code> — catálogo por arquetipo (auth, money, search, state machine, integración, RBAC).</p>
     </div>
     <div class="card card-accent">
-      <h4>Valida + reconcilia</h4>
-      <ul class="dim">
-        <li><b>Contradicciones</b> — 'La descripción dice X pero el AC3 dice Y', sacadas a la luz explícitamente</li>
-        <li><b>Testeabilidad</b> — veredicto Yes / Partial / No, listando cada AC vago, mensaje de error faltante, o dependencia no aislable</li>
+      <h4>Doctrina de diseño (vinculante)</h4>
+      <ul class="blist tight">
+        <li><b>Los ACs son el PISO</b>, no el techo — el refinamiento empuja más allá del happy path</li>
+        <li><b>1:N por defecto</b> — un AC no trivial implica varios outlines; colapsar a 1 exige justificación escrita "trivially atomic"</li>
+        <li><b>Técnica por gatillo</b> — rangos → BVA · estados → State-Transition · condiciones que interactúan → Decision Table · 3+ factores → Pairwise</li>
+        <li><b>Todo escenario inferido</b> lleva el marcador <code>NEEDS PO/DEV CONFIRMATION</code> — textual, hasta Jira</li>
+        <li><b>Una Story limpia es resultado válido</b> — cero preguntas forzadas; relleno y sub-derivación son AMBOS fallos</li>
       </ul>
     </div>
   </div>
-  <div class="notes">Este es EL paso. El PO todavía puede actuar, así que empuja más fuerte que in-sprint. Cada ambigüedad aquí es un defecto de producción que estás borrando antes de que nazca.</div>
+  <div class="notes">Aquí es donde el shift-left crea valor: el PO todavía puede actuar. Cada ambigüedad cazada es un defecto de producción borrado antes de nacer. Un gap no es solo una pregunta — es un outline faltante.</div>
 </section>
 
-<section class="slide" data-title="Question Catalog">
-  <p class="kicker">fase 2 — toolkit del paso 2</p>
-  <h2 class="h2" data-anim="fade-up">El Catálogo de Preguntas — Recorre los Arquetipos</h2>
-  <table class="dtable mt-m">
-    <thead><tr><th>Arquetipo</th><th>Una pregunta letal que fuerza</th></tr></thead>
-    <tbody>
-      <tr><td><b>Auth/Sesión</b></td><td>¿Respuesta en acceso no autenticado — redirect, 401, 403 o 404? (403 vs 404 filtra existencia)</td></tr>
-      <tr><td><b>Money/Billing</b></td><td>¿Precisión de divisa + regla de redondeo? Off-by-one de un centavo entre millones de transacciones</td></tr>
-      <tr><td><b>Search/List</b></td><td>¿Estado vacío distinto de 'aún cargando'? ¿Paginación con skip/dupe al insertar?</td></tr>
-      <tr><td><b>Máquina de estado</b></td><td>¿TODOS los estados válidos + transiciones? ¿Comportamiento en una transición inválida?</td></tr>
-      <tr><td><b>Integración</b></td><td>¿Política de timeout + retry? ¿Estrategia de idempotency-key en el retry?</td></tr>
-      <tr><td><b>Permisos/RBAC</b></td><td>Owner-vs-otro — ¿solo registros propios o cualquiera en alcance?</td></tr>
-    </tbody>
-  </table>
-  <p class="dim mt-s">Más 10 preguntas Universales (texto exacto de error, superficie de éxito, idempotencia, audit, rollback…).</p>
-  <div class="notes">Una Story suele tocar 2-3 arquetipos. Recorre la lista de cada arquetipo; cualquier pregunta que la Story no responda ya se vuelve un gap candidato. Este catálogo codifica fallos que los testers normalmente solo descubren cuando la ejecución falla.</div>
-</section>
-
-<section class="slide" data-title="Gap Triage">
-  <p class="kicker">fase 2 — clasificación del paso 2</p>
-  <h2 class="h2" data-anim="fade-up">Clasifica Cada Gap en Uno de Tres Buckets</h2>
-  <div class="steps s3 mt-l anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>CRITICAL</h4><p>Bloquea el sprint planning. Va en 'Critical Questions for PO'. p.ej. un gate de auth (A1) o tope de refund (M2).</p></div>
-    <div class="step"><div class="num">2</div><h4>IMPORTANT</h4><p>Bloquea la implementación, no la planificación. Va en 'Technical Questions for Dev'. p.ej. qué versión del SDK de Auth0 está fijada.</p></div>
-    <div class="step"><div class="num">3</div><h4>EDGE</h4><p>Testeable pero no bloqueante. Va en 'Edge Cases not in Story', etiquetado NEEDS PO/DEV CONFIRMATION.</p></div>
-  </div>
-  <div class="notes">Clasificar mal señala mal juicio. Poner una pregunta de 'qué dice el toast de éxito' junto a una de bypass de auth en la lista Critical le dice al PO que no sabes priorizar. Clasifica con cuidado.</div>
-</section>
-
-<section class="slide" data-title="Refined AC Example">
-  <p class="kicker">fase 2 — ejemplo trabajado del paso 3</p>
-  <h2 class="h2" data-anim="fade-up">Un AC Refinado — Given / When / Then con Datos Reales</h2>
-  <div class="terminal mt-m">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>shift-left-refinement.md</span></div>
-<pre><span class="cmt">#### Scenario 1.2: Should reject login when OTP is incorrect (Type: Negative, Priority: High)</span>
-<span class="kw">- Given:</span> user with an active OTP requested &lt;5 min ago
-<span class="kw">- When:</span>  user submits code <span class="str">"000000"</span> (wrong)
-<span class="kw">- Then:</span>
-    <span class="fn">UI:</span>           inline error <span class="str">"Invalid code"</span>
-    <span class="fn">API:</span>          <span class="num">401</span>, body { error: <span class="str">"invalid_otp"</span> }
-    <span class="fn">DB:</span>           no session row created
-    <span class="fn">System state:</span> attempt counter +<span class="num">1</span>
-
-<span class="cmt">#### Scenario E1 (Type: Edge) — NEEDS PO/DEV CONFIRMATION</span>
-<span class="cmt">- behavior inferred — confirm before sprint planning</span></pre>
-  </div>
-  <div class="notes">Los ACs refinados nombran inputs exactos y asertan a lo largo de UI, API Y DB. Cualquier cosa que INFERISTE — no literalmente en la Story original — lleva el marcador textual NEEDS PO/DEV CONFIRMATION para que el PO la vea durante la planificación. El tooling luego greps esa cadena exacta.</div>
-</section>
-
-<section class="slide" data-title="DRAFT Discipline">
-  <p class="kicker">fase 2 — pasos 4 &amp; 5 la frontera</p>
-  <h2 class="h2" data-anim="fade-up">Outlines Sí, Datos de Test No — La Disciplina DRAFT</h2>
-  <div class="vs">
-    <div class="card bad-side side">
-      <h3>❌ Sobreingeniería pre-código</h3>
-      <ul>
-        <li>Tablas de parametrización</li>
-        <li>JSON de datos de test por outline</li>
-        <li>Pasos de test numerados</li>
-        <li>Recetas de generación con Faker</li>
-        <li>Crear cualquier entidad de test en el TMS — TCs, issues ATP/ATR, Test Plans — en CUALQUIER modalidad (la feature aún no existe; la Etapa 4 las crea después)</li>
-      </ul>
+<!-- 9. PHASE 2 · ENTREGABLE -->
+<section class="slide" data-title="Phase 2 · Entregable">
+  <p class="kicker">phase 2 — el entregable + gate por story</p>
+  <h2 class="h2" data-anim="fade-up">shift-left-refinement.md — <span class="grad">y tu OK por Story</span></h2>
+  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
+    <div class="term" style="font-size:12.5px">
+      <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>shift-left-refinement.md — esqueleto + ejemplo</span></div>
+<pre>├─ Phase 1 · Critical Analysis
+├─ Phase 2 · Story Quality Analysis   <span class="cmt">← el corazón</span>
+├─ Phase 3 · Refined ACs
+│   <span class="kw">Given</span> user with active OTP &lt;5 min
+│   <span class="kw">When</span>  submits code <span class="str">"000000"</span> (wrong)
+│   <span class="kw">Then</span>  UI <span class="str">"Invalid code"</span> · API <span class="num">401</span> · DB no session
+│   <span class="fn">NEEDS PO/DEV CONFIRMATION</span> <span class="cmt">← si fue inferido</span>
+├─ Phase 4 · Test Outlines (DRAFT)    <span class="cmt">← nombres + coverage</span>
+├─ Phase 5 · Edge Cases (DRAFT)       <span class="cmt">← nombres + criticidad</span>
+├─ Story Quality Assessment · Critical Questions for PO
+├─ Technical Questions for Dev · Suggested Improvements
+└─ Data feasibility flags · Recommended testing strategy</pre>
     </div>
-    <div class="mid">→</div>
-    <div class="card good-side side">
-      <h3>✅ Alcance DRAFT de Shift-Left</h3>
-      <ul>
-        <li>Tabla de estimación de cobertura (conteos Pos/Neg/Boundary/Integration → guía la estimación del PO)</li>
-        <li>NOMBRES de outline: 'Should reject negative refund amount on POST /refunds'</li>
-        <li>Precondición de una línea + esperado de una línea por outline</li>
-        <li>Solo nombres de casos borde + criticidad</li>
+    <div>
+      <ul class="blist tight" style="margin-top:0">
+        <li><b>Archivo NON-Jira</b> en la carpeta PBI de la Story — se escribe a mano. Los espejos Jira (<code>story.md</code>, <code>acceptance-criteria.md</code>) SOLO los genera el sync.</li>
+        <li><b>Bootstrap</b> — si la carpeta PBI no existe, el subagente la crea con un <code>context.md</code> mínimo. Sin <code>evidence/</code>.</li>
+        <li><b>Convención de outline</b> — <code>Should &lt;behavior&gt; &lt;condition&gt;</code>, agrupados por tipo con tabla de coverage (Positive / Negative / Boundary / Integration).</li>
+        <li><b>Retorno al orquestador</b> — JSON compacto: quality, #gaps, #preguntas PO/Dev, outlines por tipo, flags.</li>
+        <li><b>GATE</b> — el orquestador presenta el resumen, espera tu OK, registra el checkpoint <code>Phase 2.&lt;n&gt;</code> en <code>progress.md</code> y recién entonces despacha la siguiente Story.</li>
       </ul>
     </div>
   </div>
-  <div class="notes">La disciplina que separa Shift-Left del diseño de tests real: produces TÍTULOS de outline y un CONTEO de cobertura, nunca los datos. La feature no existe — generar recetas de Faker ahora es trabajo desperdiciado que se rehace in-sprint.</div>
+  <div class="notes">El orden de secciones es estructural: se convierte en el bloque que el PO lee en Jira. El checkpoint por Story permite retomar un lote a la mitad sin repetir trabajo.</div>
 </section>
 
-<section class="slide" data-title="AC es el piso">
-  <p class="kicker">doctrina de diseño de pruebas — el principio central</p>
-  <h2 class="h2" data-anim="fade-up">El refinamiento empuja <span class="grad">más allá</span> del contrato del camino feliz</h2>
-  <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>1 · Aprobar ≠ probar</h4><p class="dim">Un AC satisfacible confirma la condición de negocio. No hace la feature robusta, segura ni resistente al error.</p></div>
-    <div class="card card-accent"><h4>2 · Piso, no techo</h4><p class="dim">Los ACs son la línea base de "terminado". El trabajo del refinamiento es sacar a la luz lo que vive por encima de esa línea.</p></div>
-    <div class="card card-accent"><h4>3 · Criterio vs outline</h4><p class="dim">Un AC refinado (Given/When/Then) es la afirmación de negocio; el outline (Should &lt;comportamiento&gt; &lt;condición&gt;) es su exploración.</p></div>
-    <div class="card card-accent"><h4>4 · 1 : N por defecto</h4><p class="dim">Un AC no trivial implica varios outlines. Colapsar a uno solo con justificación escrita "trivialmente atómico" — nunca por defecto.</p></div>
-    <div class="card card-accent"><h4>5 · El riesgo vive fuera</h4><p class="dim">El corazón del shift-left: sacar a la luz los límites, estados y anomalías que la Story calla — como preguntas al PO Y como outlines.</p></div>
-    <div class="card"><h4>Un gap es un outline</h4><p class="dim"><b>Un gap no es solo una pregunta para el PO — es un outline faltante.</b> Mapea cada arquetipo a la técnica que implica.</p></div>
+<!-- 10. PHASE 3 · 6 MUTACIONES -->
+<section class="slide" data-title="Phase 3 · Handoff">
+  <p class="kicker">phase 3 — handoff · 6 mutaciones jira por story (vía /acli)</p>
+  <h2 class="h2" data-anim="fade-up">Handoff: <span class="grad">seis mutaciones</span>, en orden</h2>
+  <div class="steps s3 anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>ACs → campo</h4><p>Refined ACs al campo <code>acceptance_criteria</code>. Fallback si no existe: comentario "## Acceptance Criteria". Verifica con re-sync.</p></div>
+    <div class="step"><div class="num">2</div><h4>Descripción</h4><p>Append de "QA Refinements (Shift-Left Analysis)": edge cases + reglas aclaradas + preguntas. Leer primero — NUNCA sobrescribir.</p></div>
+    <div class="step"><div class="num">3</div><h4>ATP DRAFT</h4><p>Default: campo <code>acceptance_test_plan</code> con el body completo. Modalidad A + opt-in: Test Plan "ATP: … (Shift-Left DRAFT)" bajo el epic QA Master Test Plan + link a la Story.</p></div>
+    <div class="step"><div class="num">4</div><h4>Comentario</h4><p>UN comentario de handoff: puntero al campo (@PO / @Dev-lead solo si están en <code>project.yaml</code>). Body completo inline SOLO si el campo no existe.</p></div>
+    <div class="step"><div class="num">5</div><h4>Labels + QA Assignee</h4><p><code>shift-left-reviewed</code> + <code>shift-left-{YYYY-MM-DD}</code>. <code>qa_assignee</code> = self, read-before-write, vía REST PUT (acli no escribe customfields).</p></div>
+    <div class="step"><div class="num">6</div><h4>Transición + traza</h4><p>analyze → estimate y STOP en Estimation. Verifica el espejo campo ↔ comentario byte a byte — <code>fix-traceability</code> lo audita después.</p></div>
   </div>
-  <div class="notes">Canon: agentic-qa-core/references/test-design-doctrine.md. La estimación de cobertura que usa el PO debe reflejar el 1:N real, no un conteo minimizado.</div>
+  <div class="callout" style="margin-top:24px"><h4>Nunca ADF a mano</h4><p>El body se autoría en Markdown local y <code>/acli</code> lo convierte en su ruta md-to-ADF. ADF artesanal rompe el espejo byte a byte.</p></div>
+  <div class="notes">Secuencial, una Story a la vez, para que revises el estado de Jira antes de la siguiente mutación. El subagente devuelve un log por Story: atp_container, labels, transiciones, trace_status.</div>
 </section>
 
-<section class="slide" data-title="Arquetipo a técnica">
-  <p class="kicker">doctrina de diseño de pruebas — refinar por técnica</p>
-  <h2 class="h2" data-anim="fade-up">Cada arquetipo implica una <span class="grad">técnica</span> — y outlines</h2>
-  <table class="dtable mt-l">
-    <thead><tr><th>Arquetipo en la Story</th><th>Técnica (obligatoria)</th><th>Outlines a derivar</th></tr></thead>
-    <tbody>
-      <tr><td>Máquina de Estados (orden, suscripción, KYC, disputa)</td><td><b>Transición de Estados</b></td><td>uno por transición válida + uno por transición inválida</td></tr>
-      <tr><td>Dinero / rangos / límites de lista</td><td><b>Valores Límite (BVA)</b></td><td>min-1·min·min+1 … max-1·max·max+1, cero / vacío / null</td></tr>
-      <tr><td>Permisos / RBAC / auth (rol × estado × flag)</td><td><b>Tabla de Decisión</b></td><td>uno por regla sobreviviente de la matriz de condiciones</td></tr>
-      <tr><td>Integración / config multi-factor</td><td><b>Pairwise</b></td><td>conjunto all-pairs (registra la reducción)</td></tr>
-      <tr><td>Idempotencia / reintentos / concurrencia</td><td><b>Charter de Error-Guessing</b></td><td>doble submit, reintento, carrera, timeout, rollback</td></tr>
-    </tbody>
-  </table>
-  <div class="notes">EP aplica en todas partes como lente inicial. Un rango sin outline de límite, o un campo de estado sin outline de transición inválida, es un refinamiento incompleto.</div>
-</section>
-
-<section class="slide" data-title="Output File">
-  <p class="kicker">fase 2 — el entregable</p>
-  <h2 class="h2" data-anim="fade-up">El Archivo de Salida — shift-left-refinement.md</h2>
-  <div class="callout mt-l">
-    <h4>Un archivo de trabajo por Story</h4>
-    <p><code>.context/PBI/epics/EPIC-&lt;KEY&gt;/stories/STORY-&lt;KEY&gt;/shift-left-refinement.md</code></p>
-  </div>
-  <p class="lede mt-m">Orden canónico de secciones (no reordenar — mapea 1:1 al bloque de Jira que lee el PO): Análisis Crítico · Análisis de Calidad de Story · ACs Refinados · Outlines de Test (DRAFT) · Casos Borde (DRAFT) · Evaluación de Calidad · Critical Questions for PO · Technical Questions for Dev · Mejoras Sugeridas · Flags de viabilidad de datos.</p>
-  <p class="dim mt-s">Las secciones vacías SE QUEDAN, marcadas 'None identified' — es más fácil verificar completitud que detectar una sección ausente.</p>
-  <div class="notes">Este es el registro histórico del análisis pre-sprint. El orden de secciones es estructural porque se vuelve la descripción de Jira desde la que el PO groomea. Y presenta el resumen de cada Story al humano, espera el OK, antes de pasar a la siguiente.</div>
-</section>
-
-<section class="slide" data-title="Clean Story">
-  <p class="kicker">fase 2 — el instinto del profesional</p>
-  <h2 class="h2" data-anim="fade-up">Una Story Limpia Es un Resultado Válido</h2>
-  <div class="vs">
-    <div class="card bad-side side">
-      <h3>❌ Dos fallas, no una</h3>
-      <ul>
-        <li>Relleno: forzar una pregunta u outline duplicado para parecer exhaustivo</li>
-        <li>Sub-derivar: tratar un AC de una línea que esconde un rango o un estado como un solo escenario</li>
-        <li>Re-preguntar lo que el AC ya responde</li>
-        <li>Poner respuestas a nivel proyecto como preguntas al PO cuando el business-data-map ya las define</li>
-      </ul>
+<!-- 11. PHASE 3 · GUARDRAILS -->
+<section class="slide" data-title="Phase 3 · Guardrails">
+  <p class="kicker">phase 3 — guardrails de transición + resume</p>
+  <h2 class="h2" data-anim="fade-up">STOP en Estimation — <span class="grad">y todo re-ejecutable</span></h2>
+  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
+    <div>
+      <table class="dtable" style="margin-top:0">
+        <thead><tr><th>Status actual</th><th>Acción</th></tr></thead>
+        <tbody>
+          <tr><td><b>Backlog</b></td><td><code>analyze</code> → Shift-Left QA, luego <code>estimate</code> → Estimation</td></tr>
+          <tr><td><b>Shift-Left QA</b></td><td>solo <code>estimate</code></td></tr>
+          <tr><td><b>Estimation</b></td><td>nada — ya está en el objetivo</td></tr>
+          <tr><td><b>Más allá</b> (Ready For Dev…)</td><td>SKIP + warning — el refinamiento aterriza igual, el workflow no se toca</td></tr>
+        </tbody>
+      </table>
+      <div class="callout warn" style="margin-top:12px"><h4>La estimación es del PO + Dev lead</h4><p>QA jamás avanza <code>estimate → ready_for_dev</code> ni compromete la Story a un sprint. Y NUNCA se transiciona a Estimation sin ATP DRAFT populado — el DRAFT es lo que hace estimable a la Story (anti-patrón L5).</p></div>
     </div>
-    <div class="mid">→</div>
-    <div class="card good-side side">
-      <h3>✅ Explota, luego justifica cualquier colapso</h3>
-      <ul>
-        <li>1:N por defecto — deriva cada outline que el AC implica, luego colapsa solo con justificación escrita</li>
-        <li>4 ACs sobre un rango o una máquina de estados dan legítimamente muchos más de 4 outlines</li>
-        <li>Lista de preguntas vacía cuando la Story está genuinamente clara — di 'Calidad de Story: buena'</li>
-        <li>Cita el business-data-map y sáltate la pregunta al PO; el ancho de banda del lector es el recurso más escaso en el grooming</li>
+    <div class="card">
+      <h4>Resume seguro — cada paso es idempotente</h4>
+      <ul class="blist tight">
+        <li>Sección ya en la descripción → skip · campo ATP → overwrite OK · comentario ya existente → skip</li>
+        <li>Labels son set-based · transición lee el status antes de aplicar</li>
+        <li>Test Plan (Modalidad A): busca por título antes de crear</li>
+        <li><b>Error de subagente</b> → STOP, estado parcial reportado, opciones retry / skip / abort. Sin auto-rollback: las mutaciones quedan registradas en el batch report para retomar.</li>
       </ul>
     </div>
   </div>
-  <div class="notes">Este es el anti-patrón que separa seniors de juniors. El relleno Y la sub-derivación destruyen la confianza: los conteos inflados entrenan al equipo a saltarse tu output, mientras que un 1:N colapsado esconde riesgo real. Shift-Left añade valor sacando a la luz cada escenario REAL que el AC implica — ni más ni menos.</div>
+  <div class="notes">Dos innegociables: parar en Estimation (la estimación es decisión de negocio) y ambos labels siempre — sin ellos se rompe el cortocircuito de /sprint-testing el próximo sprint.</div>
 </section>
 
-<section class="slide" data-title="Six Jira Mutations">
-  <p class="kicker">fase 3 — handoff por Story</p>
-  <h2 class="h2" data-anim="fade-up">Seis Mutaciones de Jira para Hacer Handoff de una Story</h2>
-  <ul class="blist mt-l anim-stagger-list">
-    <li><b>1 · Escribe los ACs refinados</b> al campo acceptance_criteria (fallback: comentario estructurado).</li>
-    <li><b>2 · Anexa</b> 'QA Refinements (Shift-Left Analysis)' a la descripción; popula el campo ATP DRAFT con el body completo.</li>
-    <li><b>3 · Publica UN comentario de handoff</b> notificando a PO/Dev (mention handles solo si están en project.yaml).</li>
-    <li><b>4 · Añade AMBOS labels</b> — shift-left-reviewed + shift-left-{YYYY-MM-DD}.</li>
-    <li><b>5 · Transiciona</b> Backlog → Shift-Left QA → Estimation. <b>6 · Verifica la traza</b> — campo + comentario son espejos byte-a-byte.</li>
-  </ul>
-  <div class="notes">Jira es canónico — no hay commit de git. El archivo de refinamiento local es la fuente de lo que pusheas, y el campo/comentario debe espejarlo byte-a-byte porque fix-traceability lo verifica después.</div>
-</section>
-
-<section class="slide" data-title="Transition Guardrail">
-  <p class="kicker">fase 3 — la barrera</p>
-  <h2 class="h2" data-anim="fade-up">NUNCA Avances Más Allá de Estimation — y Siempre Ambos Labels</h2>
-  <div class="callout warn mt-l">
-    <h4>Detente en Estimation</h4>
-    <p>Desde Backlog aplica Analyze (→ Shift-Left QA) luego Estimate (→ Estimation). PO + Dev lead son dueños de Estimate → Ready For Dev y del compromiso de sprint — SU decisión, no de QA. ¿Ya pasada de Estimation? Registra un warning, SALTA la transición; el refinamiento igual aterriza.</p>
-  </div>
-  <div class="callout mt-m">
-    <h4>Ambos labels, DRAFT populado</h4>
-    <p>'shift-left-reviewed' es el marcador que lee /sprint-testing para cortocircuitar; 'shift-left-{date}' es el sello de frescura (aún &lt;30 días). Nunca transiciones a Estimation sin un ATP DRAFT populado — el DRAFT es lo que hace estimable a la Story.</p>
-  </div>
-  <div class="notes">Dos innegociables. Uno: nunca estimas ni comprometes una Story — ese es el trabajo del PO, así que paras en Estimation. Dos: ambos labels cada vez, o toda la maquinaria de cortocircuito downstream se rompe.</div>
-</section>
-
-<section class="slide" data-title="Batch Report">
-  <p class="kicker">fase 3 — el artefacto de cierre</p>
-  <h2 class="h2" data-anim="fade-up">El Reporte de Lote — Un Entregable a Nivel Sesión</h2>
-  <div class="grid g2 mt-l anim-stagger-list">
+<!-- 12. BATCH REPORT + ARCHIVE -->
+<section class="slide" data-title="Batch report">
+  <p class="kicker">phase 3 — cierre de sesión · batch report + archive</p>
+  <h2 class="h2" data-anim="fade-up">El batch report: <span class="grad">lo único que el grooming lee</span></h2>
+  <div class="grid g2 mt-m anim-stagger-list" style="align-items:start">
     <div class="card card-accent">
       <h4>Qué agrega</h4>
-      <ul class="dim">
-        <li>Metadatos de sesión (conteos candidatos/aceptados/rechazados/saltados)</li>
-        <li>Línea por Story: riesgo, gaps, Qs críticas al PO, Qs técnicas, conteo de outlines, status, traza</li>
-        <li>Preguntas críticas al PO agregadas, DEDUPLICADAS y ranqueadas por cuántas Stories bloquea cada una</li>
-        <li>Distribución de riesgo (HIGH/MEDIUM/LOW) + bloqueadores de viabilidad de datos</li>
+      <ul class="blist tight">
+        <li>Metadatos de sesión — candidatos / aceptadas / rechazadas / saltadas / refinadas</li>
+        <li>Línea por Story: riesgo · #gaps · #preguntas PO · #tech Qs · #outlines · status final · traza</li>
+        <li><b>Preguntas al PO dedupeadas</b> y ranqueadas por cuántas Stories bloquea cada una</li>
+        <li>Distribución de riesgo + bloqueadores <code>DATA-FEASIBILITY</code> con pre-work requerido</li>
+        <li>Orden recomendado de sprint planning (riesgo + dependencias)</li>
       </ul>
     </div>
     <div class="card card-accent">
-      <h4>Adónde va</h4>
-      <ul class="dim">
-        <li>Orden de sprint-planning recomendado, por riesgo + dependencia</li>
-        <li>Publicado como comentario en el epic padre SI todas las Stories comparten uno</li>
-        <li>De lo contrario entregado inline como el mensaje de cierre de sesión</li>
-        <li>Puntero: cuando una Story llega a Ready For QA, /sprint-testing cortocircuita vía el label</li>
+      <h4>Adónde va — y el cierre</h4>
+      <ul class="blist tight">
+        <li>Siempre: <code>.session/shift-left-testing/&lt;batch-id&gt;/batch-report.md</code></li>
+        <li>Si TODAS las Stories comparten epic padre → se publica como comentario en ese epic; si no, se entrega inline al usuario</li>
+        <li>Nunca se publica en cada Story — el comentario per-Story ya existe (paso 4)</li>
+        <li>Entry final en <code>progress.md</code> → <b>Archive</b>: la carpeta de sesión se mueve a <code>.session/.archive/</code></li>
+        <li>Cierre de memoria: <code>mem_session_summary</code> con el resumen + ruta del archive</li>
       </ul>
     </div>
   </div>
-  <div class="notes">El reporte de lote es lo único que la reunión de grooming realmente lee. Las preguntas al PO dedupeadas y ranqueadas son oro — 'esta pregunta bloquea tres Stories' es exactamente cómo un PO quiere triagear.</div>
+  <div class="notes">"Esta pregunta bloquea tres Stories" es exactamente cómo un PO quiere triagear. Si publicar en el epic falla, no aborta: el reporte local es autoritativo.</div>
 </section>
 
-<section class="slide divider" data-title="Part 02">
-  <div>
-    <p class="part-no">PARTE 02</p>
-    <h1 class="h1">La Aceleración<br><span class="grad">Un Comando Ejecuta Todo el Oficio</span></h1>
-    <p class="lede">Todo lo de la Parte 1 — triage de selección, el playbook de refinamiento, el catálogo de preguntas, las seis mutaciones de Jira — conducido por la IA desde una sola invocación de terminal, contigo en el loop en cada gate.</p>
+<!-- 13. CIERRE -->
+<section class="slide" data-title="Cierre">
+  <p class="kicker">cómo invocar · qué sigue en el pipeline</p>
+  <h2 class="h2" data-anim="fade-up">Dispara la skill — <span class="grad">y qué viene después</span></h2>
+  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
+    <div>
+      <div class="term">
+        <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>claude-code</span></div>
+<pre><span class="p">&gt; </span><span class="c">/shift-left-testing UPEX-100,101,102</span>
+<span class="cmt"># o en lenguaje natural:</span>
+<span class="p">&gt; </span><span class="c">groom the backlog</span>
+<span class="p">&gt; </span><span class="c">shift-left these stories</span>
+<span class="p">&gt; </span><span class="c">pre-sprint QA on these 5 stories</span></pre>
+      </div>
+      <div class="row wrap mt-m" style="gap:8px">
+        <span class="chip" style="font-size:12.5px">Refined ACs en Jira</span>
+        <span class="chip" style="font-size:12.5px">ATP DRAFT</span>
+        <span class="chip" style="font-size:12.5px">2 labels</span>
+        <span class="chip" style="font-size:12.5px">Status: Estimation</span>
+        <span class="chip" style="font-size:12.5px">shift-left-refinement.md</span>
+        <span class="chip" style="font-size:12.5px">batch-report.md</span>
+      </div>
+    </div>
+    <table class="dtable" style="margin-top:0">
+      <thead><tr><th>Después necesitas…</th><th>Skill</th></tr></thead>
+      <tbody>
+        <tr><td>La Story llega a <b>Ready For QA</b></td><td><code>/sprint-testing</code> — lee <code>shift-left-reviewed</code> (&lt;30 días) y cortocircuita sus fases de planning</td></tr>
+        <tr><td>TCs formales + ROI, cuando la Story shippea</td><td><code>/test-documentation</code> — Stage 4</td></tr>
+        <tr><td>Código de test automatizado</td><td><code>/test-automation</code> — Stage 5 · luego <code>/regression-testing</code> — Stage 6</td></tr>
+        <tr><td>Falta contexto de negocio</td><td><code>/project-discovery</code> + <code>/business-*-map</code> + <code>/master-test-plan</code></td></tr>
+        <tr><td>Revisión adversarial del refinamiento (opcional)</td><td><code>/judgment-day</code> — nunca auto-invocado</td></tr>
+      </tbody>
+    </table>
   </div>
-  <div class="notes">Ya conoces el oficio. Aquí está cómo la skill hace que la IA lo ejecute de punta a punta mientras te mantiene al mando.</div>
+  <p class="dim2 mt-m" style="font-size:13px">← → navegar · O overview · S presentador · N notas · F pantalla completa</p>
+  <div class="notes">Recuerda tres cosas: prevenir antes que detectar; el veto vence al score y la señal vence al volumen; un comando conduce las tres fases con un gate humano en cada paso de consecuencia. El label que pones hoy le ahorra trabajo al equipo el próximo sprint.</div>
 </section>
 
-<section class="slide" data-title="Trigger and Auto-Load">
-  <p class="kicker">cómo invocar</p>
-  <h2 class="h2" data-anim="fade-up">El Trigger y Qué se Auto-Carga</h2>
-  <ul class="blist mt-l anim-stagger-list">
-    <li><b>Trigger.</b> <code>/shift-left-testing</code>, o lenguaje natural: 'shift-left these stories', 'groom the backlog', 'pre-sprint QA', o pegar IDs de Story que están en Backlog con 'refine these'.</li>
-    <li><b>Auto-carga contexto.</b> business-data-map, business-feature-map, business-api-map, master-test-plan; la Story vía <code>bun run jira:sync-issues get &lt;KEY&gt; --include-comments</code>.</li>
-    <li><b>Auto-carga tools.</b> <code>/acli</code> siempre; <code>/xray-cli</code> solo si la modalidad es Xray y optas por un Test Plan.</li>
-    <li><b>Resuelve la modalidad.</b> Xray-on-Jira (A) vs Jira-native (B) — y la persiste en el plan de sesión.</li>
-  </ul>
-  <div class="notes">Una frase la arranca. La skill auto-carga el contexto de negocio y la CLI de Jira correcta para que la IA nunca vuele a ciegas sobre vocabulario de dominio o sintaxis.</div>
-</section>
-
-<section class="slide" data-title="Orchestration">
-  <p class="kicker">modelo de orquestación</p>
-  <h2 class="h2" data-anim="fade-up">Centro de Mando + Subagentes Especialistas</h2>
-  <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>Selección (Single)</h4><p class="dim">Trae candidatos, aplica triage de veto + score de riesgo, devuelve la tabla ranqueada.</p><span class="tag mt-s">fase 1</span></div>
-    <div class="card card-accent"><h4>Refinamiento (Sequential)</h4><p class="dim">UNO por Story — corre el playbook, escribe shift-left-refinement.md, devuelve un resumen JSON compacto. NUNCA en paralelo; el humano da OK a cada Story.</p><span class="tag mt-s">fase 2</span></div>
-    <div class="card card-accent"><h4>Handoff + Reporte de Lote</h4><p class="dim">Handoff hace las seis mutaciones de Jira por Story; Reporte de Lote agrega preguntas dedupeadas y las publica en el epic.</p><span class="tag mt-s">fase 3</span></div>
-  </div>
-  <div class="notes">El hilo principal es el centro de mando; los subagentes son ejecutores. El refinamiento es deliberadamente SECUENCIAL — el paralelismo quemaría tu atención y rompería el ritmo de aprobación por Story del que depende la cadencia de grooming.</div>
-</section>
-
-<section class="slide" data-title="Terminal Session">
-  <p class="kicker">una sesión real</p>
-  <h2 class="h2" data-anim="fade-up">Cómo se Ve Desde la Terminal</h2>
-  <div class="terminal mt-m">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>claude-code</span></div>
-<pre><span class="p">$ </span><span class="c">claude</span>
-<span class="p">&gt; </span><span class="c">shift-left these stories: UPEX-100, UPEX-101, UPEX-102</span>
-
-<span class="o">[Phase 0] Modality: Jira-native (B). Context present. Session: 2026-06-03-payments/</span>
-<span class="o">[Phase 1] Triage complete — candidate table:</span>
-<span class="o">  ACCEPTED  UPEX-100 Add OTP login        HIGH  score 11  veto: auth perimeter</span>
-<span class="o">  ACCEPTED  UPEX-101 Refund partial amount HIGH  score 9   veto: money  DATA-FEASIBILITY-RISK</span>
-<span class="o">  SKIPPED   UPEX-102 Footer tooltip        LOW   score 2   PO can write AC directly</span>
-<span class="o">  -&gt; Confirm this set? (y / override)</span>
-<span class="p">&gt; </span><span class="c">y</span>
-<span class="o">[Phase 2] Refining UPEX-100... done. 4 gaps, 2 critical PO Qs, 12 outlines. OK? (y)</span>
-<span class="p">&gt; </span><span class="c">y</span>
-<span class="o">[Phase 2] Refining UPEX-101... done. 6 gaps, 3 critical PO Qs, data-feasibility flagged. OK? (y)</span>
-<span class="p">&gt; </span><span class="c">y</span>
-<span class="o">[Phase 3] Handoff: ACs + ATP DRAFT written, labels added, transitioned -&gt; Estimation. Trace: ok</span>
-<span class="o">[Phase 3] Batch report posted to epic UPEX-90. Session archived.</span></pre>
-  </div>
-  <div class="notes">Recórrela: la IA propone el triage, confirmas, refina una Story a la vez pausando para tu OK, luego hace handoff a Jira y escribe el reporte de lote. Aprobaste en cada gate.</div>
-</section>
-
-<section class="slide" data-title="Artifacts and Control">
-  <p class="kicker">artefactos + control</p>
-  <h2 class="h2" data-anim="fade-up">Dónde Aterriza Todo — y Quién Sigue al Mando</h2>
-  <ul class="blist mt-l anim-stagger-list">
-    <li><b>Refinamiento por Story</b> → <code>.context/PBI/epics/EPIC-&lt;KEY&gt;/stories/STORY-&lt;KEY&gt;/shift-left-refinement.md</code> (archivo de trabajo gitignored).</li>
-    <li><b>Jira</b> → ACs refinados en el campo, ATP DRAFT, comentario de handoff, dos labels, status en Estimation — la fuente de verdad canónica.</li>
-    <li><b>Reporte de lote</b> → carpeta de sesión + publicado en el epic padre; luego la sesión se archiva.</li>
-    <li><b>Tú sigues al mando.</b> Confirma el set, da OK a cada resumen de Story, sin transición más allá de Estimation, sin commit de git, sin ejecución de tests. La IA propone; el humano dispone.</li>
-  </ul>
-  <div class="notes">La skill nunca corre la app, nunca consulta una DB, nunca avanza una Story a un sprint. Saca a la luz riesgo y hace handoff. Cada paso de consecuencia está gated por tu aprobación explícita.</div>
-</section>
-
-<section class="slide" data-title="Takeaways">
-  <p class="kicker">// recuerda tres cosas</p>
-  <h2 class="h2" data-anim="fade-up">Conclusiones</h2>
-  <div class="grid g3 mt-l anim-stagger-list">
-    <div class="card card-accent"><h4>1 · Prevenir, no detectar</h4><p class="dim">El defecto más barato es el que se elimina en las palabras de la Story, en el '1' de la curva 1:10:100, antes de que exista código.</p></div>
-    <div class="card card-accent"><h4>2 · El veto vence al score; la señal vence al volumen</h4><p class="dim">Money/auth/data fuerzan refinamiento full; una Story limpia con cero preguntas es un resultado válido y honesto.</p></div>
-    <div class="card card-accent"><h4>3 · Un comando, cada gate</h4><p class="dim"><code>/shift-left-testing</code> corre selección → refinamiento → handoff con subagentes secuenciales, se detiene en Estimation, pausa para tu OK en cada Story.</p></div>
-  </div>
-  <div class="notes">Si no recuerdas nada más: shift left para prevenir, deja que el juicio anule la aritmética, mantén tu output de alta señal, y supervisa a la IA en cada gate de aprobación.</div>
-</section>
-
-<section class="slide center tc" data-title="Thanks">
-  <div>
-    <p class="kicker">etapa 0 completa</p>
-    <h1 class="h1"><span class="grad">Ahora Ve a Groomear un Backlog.</span></h1>
-    <p class="lede" style="margin:14px auto">Cuando cada Story refinada llega a Ready For QA, <kbd>/sprint-testing</kbd> detecta el label <code>shift-left-reviewed</code> y cortocircuita las fases de planificación redundantes.</p>
-    <p class="lede" style="margin:14px auto">Dispárala: <kbd>/shift-left-testing</kbd> · ← → navegar · S notas del orador · O vista general</p>
-  </div>
-  <div class="notes">Gracias por su atención. La recompensa de hacer bien Shift-Left es que el testing in-sprint se vuelve más rápido — el label que pones hoy le ahorra trabajo al equipo el próximo sprint.</div>
-</section>
-
+  <div class="deck-footer"><span class="mono">/shift-left-testing · Stage 0 · Pre-sprint QA</span><span class="slide-number" data-current="1" data-total="13"></span></div>
 </div>
 <!-- keyboard-nav hint (ported from defect-management deck) -->
 <div id="help-hint">← → navegar · O resumen · S presentador · N notas · F pantalla</div>
@@ -1027,6 +827,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 @media print{#help-hint{display:none!important}}
 </style>
 <script>
+/* ---- runtime.js ---- */
 /* html-ppt :: runtime.js
  * Keyboard-driven deck runtime. Zero dependencies.
  *
@@ -1382,7 +1183,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
       // Build the document as a single template string for clarity
       return `<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="es">
 <head>
 <meta charset="utf-8">
 <title>Presenter View</title>
@@ -1989,6 +1790,144 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 })();
 
 </script>
+<script>
+/* ---- animations/fx-runtime.js (self-contained variant) ----
+ * Canvas FX lifecycle manager.
+ * - FX modules are INLINED on window.HPX below (no external fetch — the deck
+ *   is a single self-contained file, so the upstream FX_LIST autoloader would
+ *   404 on every module; here `ready` resolves immediately instead).
+ * - Initializes [data-fx] elements when their slide becomes active
+ * - Calls handle.stop() when the slide leaves (MutationObserver on .slide class)
+ */
+(function(){
+  'use strict';
+
+  /* ===== inlined FX modules ===== */
+  window.HPX = window.HPX || {};
+  window.HPX.constellation = function(host){
+    var canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+    host.appendChild(canvas);
+    var ctx = canvas.getContext('2d');
+    var raf = 0, running = true;
+    var N = 70, LINK = 130, pts = [];
+    function size(){
+      canvas.width = host.clientWidth || 1280;
+      canvas.height = host.clientHeight || 720;
+    }
+    size();
+    for (var i = 0; i < N; i++){
+      pts.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - .5) * .35,
+        vy: (Math.random() - .5) * .35,
+        r: Math.random() * 1.8 + .6
+      });
+    }
+    function tick(){
+      if (!running) return;
+      if (canvas.width !== (host.clientWidth || canvas.width) ||
+          canvas.height !== (host.clientHeight || canvas.height)) size();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      var i, a, b, p;
+      for (i = 0; i < N; i++){
+        p = pts[i];
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 6.2832);
+        ctx.fillStyle = 'rgba(122,162,247,.8)';
+        ctx.fill();
+      }
+      for (a = 0; a < N; a++) for (b = a + 1; b < N; b++){
+        var dx = pts[a].x - pts[b].x, dy = pts[a].y - pts[b].y, d2 = dx*dx + dy*dy;
+        if (d2 < LINK * LINK){
+          ctx.strokeStyle = 'rgba(187,154,247,' + (0.35 * (1 - Math.sqrt(d2) / LINK)).toFixed(3) + ')';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(pts[a].x, pts[a].y);
+          ctx.lineTo(pts[b].x, pts[b].y);
+          ctx.stroke();
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return { stop: function(){
+      running = false;
+      cancelAnimationFrame(raf);
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    } };
+  };
+
+  /* ===== lifecycle (same contract as upstream fx-runtime.js) ===== */
+  const ready = Promise.resolve();
+
+  window.__hpxActive = window.__hpxActive || new Map();
+
+  function initFxIn(root){
+    if (!window.HPX) return;
+    const els = root.querySelectorAll('[data-fx]');
+    els.forEach((el) => {
+      if (window.__hpxActive.has(el)) return;
+      const name = el.getAttribute('data-fx');
+      const fn = window.HPX[name];
+      if (typeof fn !== 'function') return;
+      try {
+        const handle = fn(el, {}) || { stop(){} };
+        window.__hpxActive.set(el, handle);
+      } catch(e){ console.warn('[hpx-fx]', name, e); }
+    });
+  }
+
+  function stopFxIn(root){
+    const els = root.querySelectorAll('[data-fx]');
+    els.forEach((el) => {
+      const h = window.__hpxActive.get(el);
+      if (h && typeof h.stop === 'function'){
+        try{ h.stop(); }catch(e){}
+      }
+      window.__hpxActive.delete(el);
+    });
+  }
+
+  function reinitFxIn(root){
+    stopFxIn(root);
+    initFxIn(root);
+  }
+  window.__hpxReinit = reinitFxIn;
+
+  function boot(){
+    ready.then(() => {
+      const active = document.querySelector('.slide.is-active') || document.querySelector('.slide');
+      if (active) initFxIn(active);
+
+      // Watch all slides for class changes
+      const slides = document.querySelectorAll('.slide');
+      slides.forEach((sl) => {
+        const mo = new MutationObserver((muts) => {
+          for (const m of muts){
+            if (m.attributeName === 'class'){
+              if (sl.classList.contains('is-active')) initFxIn(sl);
+              else stopFxIn(sl);
+            }
+          }
+        });
+        mo.observe(sl, { attributes: true, attributeFilter: ['class'] });
+      });
+    });
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+
+</script>
 
 <script>
 /* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
@@ -2072,4 +2011,5 @@ if(force||(isMobile&&!seen)){
 })();
 </script>
 
-</body></html>
+</body>
+</html>

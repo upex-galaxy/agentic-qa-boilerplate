@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Xray para Jira · Cómo funciona</title>
+<title>xray-cli · Cómo funciona</title>
 <style>
 /* ============================================================
    Self-contained deck — html-ppt assets inlined (fonts, base,
@@ -385,388 +385,388 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   .fx-host{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.45}
   .above{position:relative;z-index:1}
   .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* ===== workflow map (slide 2) ===== */
+  .wf-row{display:flex;align-items:stretch;gap:8px}
+  .wf-node{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px}
+  .wf-node p{margin:0}
+  .wf-node .n{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--accent-2);text-transform:uppercase}
+  .wf-node .t{font-size:17px;font-weight:700;line-height:1.25;margin-top:2px}
+  .wf-node .c{font-family:var(--font-mono);font-size:12px;color:var(--text-3);margin-top:5px;line-height:1.5}
+  .wf-node.gate{border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset}
+  .wf-node.alt{background:var(--grad-soft)}
+  .wf-arr{align-self:center;color:var(--accent);font-size:20px;font-weight:800;flex:none}
+  .wf-lane{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);font-weight:700;margin:16px 0 8px}
+  /* slides densos: cards compactas + heading contenido */
+  .slide.compact .card{padding:16px 20px}
+  .slide.compact .h2{font-size:46px}
+  .slide.compact .small{font-size:18px;line-height:1.5}
 </style>
 </head>
 <body>
 
 <div class="deck">
 
-  <!-- 1. COVER -->
+  <!-- 1. PORTADA -->
   <section class="slide is-active" data-title="Portada">
-    <div class="fx-host" data-fx="constellation"></div>
-    <div class="above">
-      <p class="kicker">QA · Gestión de Pruebas · Guía de introducción</p>
-      <h1 class="h1 anim-rise-in" data-anim="rise-in">Xray para Jira<br><span class="grad">explicado de cero</span></h1>
-      <p class="lede mt-m">Qué es, cómo se usa, sus piezas, el flujo natural y cómo encajan la trazabilidad y los defectos — todo dentro de Jira.</p>
-      <div class="row wrap mt-l" style="gap:12px">
-        <span class="chip"><span class="dot" style="background:var(--accent)"></span>Todo es un issue</span>
-        <span class="chip"><span class="dot" style="background:var(--good)"></span>Cobertura</span>
-        <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>Trazabilidad</span>
-        <span class="chip"><span class="dot" style="background:var(--bad)"></span>Defectos</span>
-      </div>
+    <p class="eyebrow" style="margin-bottom:20px">Agentic QA · Workflow Skill</p>
+    <h1 class="h1 mono anim-rise-in" data-anim="rise-in" style="font-size:86px;letter-spacing:-.02em"><span class="grad">/</span>xray-cli</h1>
+    <p class="lede mt-m">Gestión de pruebas en <b>Xray Cloud</b> desde la terminal: Tests, Test Plans, Test Executions, import de resultados, evidencia, defectos, backup y migración — todo vía <span class="mono">bun xray</span>.</p>
+    <div class="row wrap mt-l" style="gap:12px">
+      <span class="chip"><span class="dot" style="background:var(--accent)"></span><span class="mono" style="font-size:17px">[TMS_TOOL]</span>&nbsp;· Modality jira-xray</span>
+      <span class="chip"><span class="dot" style="background:var(--good)"></span>Sirve a Stages 1–6 del pipeline QA</span>
+      <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>Xray GraphQL + Jira REST</span>
     </div>
-    <div class="notes">Deck para presentar Xray a alguien que nunca lo usó. Contenido parafraseado de docs.getxray.app + skills del repo. Pulsa S para modo presentador, → para avanzar, T para cambiar de tema, F para pantalla completa.</div>
+    <div class="notes">Deck del skill xray-cli: el operador de Xray Cloud del repo. Es un skill utilitario: los workflow skills (sprint-testing, test-documentation, regression-testing) lo cargan cuando resuelven [TMS_TOOL] en modalidad jira-xray. Pulsa → para avanzar, S para modo presentador, O para overview, F para pantalla completa.</div>
   </section>
 
-  <!-- 2. QUE ES -->
-  <section class="slide" data-title="Qué es">
-    <p class="kicker">Concepto · 1 de 18</p>
-    <h2 class="h2">¿Qué es Xray?</h2>
-    <div class="grid g2 mt-l" style="align-items:center;gap:48px">
-      <div class="stack">
-        <p class="lede">Xray es una <b>app de gestión de pruebas que vive <span class="grad">dentro</span> de Jira</b>. No es una herramienta aparte: añade tipos de issue nuevos al mismo Jira que ya usas.</p>
-        <p class="small dim mt-m">QA planifica, ejecuta y reporta sin salir del tablero — las pruebas conviven con las historias y los bugs.</p>
-      </div>
+  <!-- 2. MAPA DEL WORKFLOW -->
+  <section class="slide" data-title="Mapa del workflow">
+    <p class="kicker">Mapa · 2 de 17</p>
+    <h2 class="h2" style="font-size:42px">El workflow completo de <span class="mono grad">bun xray</span></h2>
+    <div class="wf-row mt-m">
+      <div class="wf-node gate"><p class="n">Gate 0</p><p class="t">¿Modalidad jira-xray?</p><p class="c">no → /acli<br>(jira-native)</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fase 1</p><p class="t">Autenticar</p><p class="c">auth login · status<br>.env · token 24 h</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fase 2</p><p class="t">Especificar</p><p class="c">test create + add-step<br>precondition · set</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fase 3</p><p class="t">Planificar (ATP)</p><p class="c">plan create<br>plan add-tests</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fase 4</p><p class="t">Ejecutar (ATR)</p><p class="c">exec create --environment<br>exec add-tests</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fase 5</p><p class="t">Reportar</p><p class="c">run status · evidence · defect<br>ó import junit/cucumber/xray</p></div>
+    </div>
+    <p class="wf-lane">Caminos adyacentes</p>
+    <div class="wf-row">
+      <div class="wf-node alt"><p class="n">Reparar</p><p class="t">Sync &amp; Repair</p><p class="c">exec sync · plan sync · repair --apply — cuando la capa Jira y la capa Xray divergen</p></div>
+      <div class="wf-node alt"><p class="n">Preservar</p><p class="t">Backup &amp; Migración</p><p class="c">backup export --all → preflight → restore --sync (site → site)</p></div>
+      <div class="wf-node alt"><p class="n">Fallback</p><p class="t">Atlassian MCP</p><p class="c">sin binario o sin auth, operación simple — bulk siempre CLI</p></div>
+    </div>
+    <p class="wf-lane">Handoffs</p>
+    <div class="row wrap" style="gap:10px">
+      <span class="chip" style="font-size:16px;padding:8px 14px"><span class="dot" style="background:var(--accent)"></span>← /sprint-testing · ATP + ATR por ticket</span>
+      <span class="chip" style="font-size:16px;padding:8px 14px"><span class="dot" style="background:var(--accent-2)"></span>← /test-documentation · Stage 4, TCs + ROI</span>
+      <span class="chip" style="font-size:16px;padding:8px 14px"><span class="dot" style="background:var(--good)"></span>→ /regression-testing · Stage 6, GO/NO-GO</span>
+    </div>
+    <div class="notes">Índice mental del deck: un gate de modalidad, cinco fases del camino principal, tres caminos adyacentes y los handoffs con las demás skills. Cada nodo del mapa es una sección de las que siguen.</div>
+  </section>
+
+  <!-- 3. GATE 0 · MODALIDAD -->
+  <section class="slide compact" data-title="Gate 0 · Modalidad">
+    <p class="kicker">Gate 0 · 3 de 17</p>
+    <h2 class="h2">Antes de teclear: ¿este proyecto usa <span class="grad">Xray</span>?</h2>
+    <div class="grid g2 mt-l" style="gap:36px">
       <div class="card card-accent">
-        <p class="lbl">La idea que lo cambia todo</p>
-        <p class="q grad mt-s">Una prueba<br>es un issue.</p>
-        <p class="small mt-m">Un caso, un plan, una ejecución… cada cosa es un issue Jira con su clave (<span class="mono">CALC-123</span>), su estado, su asignado y sus enlaces.</p>
+        <p class="lbl">Modality jira-xray</p>
+        <p class="small mt-s">Jira Cloud <b>+ plugin Xray</b>. Este skill es el dueño de <span class="mono">[TMS_TOOL]</span>: Tests, Plans, Executions y Preconditions son issues Xray.</p>
+        <p class="small mt-s" style="color:var(--good)">→ continúa con este deck.</p>
+      </div>
+      <div class="card">
+        <p class="lbl" style="color:var(--warn)">Modality jira-native</p>
+        <p class="small mt-s">Sin plugin Xray. <b>No uses este skill</b>: carga <span class="mono">/acli</span> — el TMS se mapea a issues Jira nativos (<span class="mono">test-documentation/references/jira-setup.md</span>).</p>
       </div>
     </div>
-    <div class="notes">Clave: Xray no reinventa Jira, lo extiende. Todo lo que crea son issues normales → heredan permisos, workflows, JQL, dashboards. Fuente: docs.getxray.app — Xray Work Item Types.</div>
-  </section>
-
-  <!-- 3. POR QUE IMPORTA -->
-  <section class="slide" data-title="Todo es issue">
-    <p class="kicker">Concepto · 2 de 18</p>
-    <h2 class="h2">«Todo es un issue» — y por qué importa</h2>
-    <div class="grid g3 mt-l anim-stagger-list" data-anim-target>
-      <div class="card"><p class="lbl">JQL</p><p class="small mt-s">Buscas pruebas, planes y ejecuciones con el mismo lenguaje de búsqueda de Jira.</p></div>
-      <div class="card"><p class="lbl">Permisos</p><p class="small mt-s">Quién ve o edita una prueba lo decide el esquema de permisos del proyecto.</p></div>
-      <div class="card"><p class="lbl">Enlaces</p><p class="small mt-s">Una prueba se enlaza a una historia igual que un bug se enlaza a una historia.</p></div>
-      <div class="card"><p class="lbl">Tableros</p><p class="small mt-s">Las ejecuciones pueden aparecer en el board ágil junto a Stories y Bugs.</p></div>
-      <div class="card"><p class="lbl">Dashboards</p><p class="small mt-s">Los gadgets de Jira leen los datos de Xray sin integración extra.</p></div>
-      <div class="card card-accent"><p class="lbl">Resultado</p><p class="small mt-s"><b>Cero contexto perdido.</b> Requisito, prueba y defecto viven en el mismo lugar.</p></div>
+    <div class="card card-soft mt-l">
+      <p class="small"><b>¿Quién decide?</b> La modalidad se resuelve UNA sola vez en <span class="mono">/test-documentation</span> §Phase 0 y las fases posteriores la heredan — nunca se re-decide a mitad de flujo <span class="dim">(anti-patrón X6)</span>. Y los workflow skills nunca escriben <span class="mono">bun xray</span> literal: usan pseudocódigo <span class="mono">[TMS_TOOL]</span> y cargan este skill, que es el único dueño de la sintaxis <span class="dim">(anti-patrón X1)</span>.</p>
     </div>
-    <div class="notes">Ventaja estructural frente a TMS externos: al ser issues nativos, no hay sincronización ni doble fuente de verdad.</div>
+    <div class="notes">Puerta de entrada del skill. Si un agente llega desde un bloque [TMS_TOOL] sin haber resuelto la modalidad, debe pausar y consultar el resolver de test-documentation antes de seguir.</div>
   </section>
 
-  <!-- 4. LAS 6 PIEZAS -->
-  <section class="slide" data-title="6 piezas">
-    <p class="kicker">Las piezas · 3 de 18</p>
-    <h2 class="h2">Las <span class="grad">6 piezas</span> de Xray</h2>
-    <p class="small dim">Seis tipos de work item. Cada uno responde a una pregunta distinta.</p>
-    <div class="grid g3 mt-l anim-stagger-list" data-anim-target>
-      <div class="card"><span class="tag tag-test">Test</span><p class="small mt-s"><b>El QUÉ.</b> La especificación de un caso de prueba.</p></div>
-      <div class="card"><span class="tag tag-story">Precondition</span><p class="small mt-s"><b>El ANTES.</b> Un estado inicial reutilizable.</p></div>
-      <div class="card"><span class="tag tag-story">Test Set</span><p class="small mt-s"><b>El GRUPO.</b> Una carpeta lógica para organizar pruebas.</p></div>
-      <div class="card"><span class="tag tag-plan">Test Plan</span><p class="small mt-s"><b>El SEGUIMIENTO.</b> El paraguas que consolida el progreso.</p></div>
-      <div class="card"><span class="tag tag-exec">Test Execution</span><p class="small mt-s"><b>El CUÁNDO.</b> La tarea de correr pruebas y recoger resultados.</p></div>
-      <div class="card"><span class="tag tag-story">Sub-Test Exec</span><p class="small mt-s"><b>El MISMO, pero hijo</b> de un requisito, para el board.</p></div>
+  <!-- 4. MODELO CONCEPTUAL -->
+  <section class="slide compact" data-title="Modelo conceptual">
+    <p class="kicker">Craft · 4 de 17</p>
+    <h2 class="h2">Las piezas que el CLI manipula</h2>
+    <div class="grid g3 mt-m anim-stagger-list" data-anim-target>
+      <div class="card"><span class="tag tag-test">Test</span><p class="small mt-s"><b>El QUÉ.</b> La especificación de un caso (TC). Manual, Generic o Cucumber.</p></div>
+      <div class="card"><span class="tag tag-story">Precondition</span><p class="small mt-s"><b>El ANTES.</b> Estado inicial reutilizable entre Tests.</p></div>
+      <div class="card"><span class="tag tag-story">Test Set</span><p class="small mt-s"><b>El GRUPO.</b> Carpeta lógica: organiza, no ejecuta.</p></div>
+      <div class="card"><span class="tag tag-plan">Test Plan</span><p class="small mt-s"><b>El SEGUIMIENTO.</b> El alcance. En este repo: el <b>ATP</b>.</p></div>
+      <div class="card"><span class="tag tag-exec">Test Execution</span><p class="small mt-s"><b>El CUÁNDO.</b> El ciclo de corridas. En este repo: el <b>ATR</b>.</p></div>
+      <div class="card card-accent"><span class="tag tag-bug">Test Run</span><p class="small mt-s"><b>El RESULTADO.</b> Una corrida de un Test dentro de una Execution. <b>No es un issue</b>: su id es GraphQL.</p></div>
     </div>
-    <div class="notes">Mnemotécnica: cada pieza responde una pregunta → QUÉ / ANTES / GRUPO / SEGUIMIENTO / CUÁNDO. Fuente: docs.getxray.app — purpose of each Xray entity.</div>
-  </section>
-
-  <!-- 5. TEST 3 SABORES -->
-  <section class="slide" data-title="Test">
-    <p class="kicker">Las piezas · 4 de 18</p>
-    <h2 class="h2"><span class="tag tag-test">Test</span> &nbsp;tiene tres sabores</h2>
-    <div class="grid g3 mt-l">
-      <div class="card"><p class="lbl">Manual</p><h4 class="h4 mt-s">Pasos para un humano</h4><p class="small mt-s">Acción → Dato → Resultado esperado.</p><p class="mono small dim mt-s">steps[]</p></div>
-      <div class="card"><p class="lbl">Generic</p><h4 class="h4 mt-s">Automatizado</h4><p class="small mt-s">Referencia al test automatizado (archivo, comando, ID).</p><p class="mono small dim mt-s">unstructured</p></div>
-      <div class="card"><p class="lbl">Cucumber</p><h4 class="h4 mt-s">BDD / Gherkin</h4><p class="small mt-s">Given / When / Then como doc viva ejecutable.</p><p class="mono small dim mt-s">gherkin</p></div>
+    <div class="card card-soft mt-m">
+      <p class="small"><b>Claves vs ids:</b> los flags de issue (<span class="mono">--execution · --plan · --set · --tests</span>) aceptan clave Jira (<span class="mono">PROJ-194</span>) o issueId numérico. Los <b>run ids</b> son la excepción: GraphQL, nunca claves Jira.</p>
     </div>
-    <div class="mk mt-l">  Test  CALC-201   "Verificar login con credenciales válidas"   [Manual]
-  ├─ Paso 1   Abrir /login        →  se muestra el formulario
-  ├─ Paso 2   Ingresar user+pass  →  credenciales aceptadas
-  └─ Paso 3   Click "Entrar"      →  redirige al dashboard</div>
-    <div class="notes">Un Test es solo la ESPECIFICACIÓN — aún no se ejecutó. Fuente: repo xray-cli/references/test-types.md + docs oficiales.</div>
+    <div class="notes">Mnemotécnica: QUÉ / ANTES / GRUPO / SEGUIMIENTO / CUÁNDO + RESULTADO. Mapping del repo: ATP→Test Plan, ATR→Test Execution, TC→Test. Si solo hay credenciales Xray y pasas una clave Jira, el CLI falla con un error guía que apunta a los flags --jira-*.</div>
   </section>
 
-  <!-- 6. PRECONDITION + TEST SET -->
-  <section class="slide" data-title="Precondition + Set">
-    <p class="kicker">Las piezas · 5 de 18</p>
+  <!-- 5. FASE 1 · AUTH -->
+  <section class="slide compact" data-title="Fase 1 · Auth">
+    <p class="kicker">Fase 1 · 5 de 17</p>
+    <h2 class="h2">Autenticar: <span class="mono grad">auth login</span></h2>
+    <div class="grid g2 mt-m" style="gap:36px;align-items:start">
+      <div>
+        <div class="mk" style="font-size:13.5px">$ bun xray auth status
+$ bun xray auth login                # todo desde .env
+$ bun xray auth login \
+    --client-id &lt;id&gt; --client-secret &lt;secret&gt;   # override: otro site
+$ bun xray auth login --jira-url https://org.atlassian.net \
+    --jira-email user@email.com --jira-token &lt;token&gt;
+$ bun xray auth logout</div>
+        <p class="small dim mt-s">Login imprime de qué fuente salió cada credencial (env / flag / unset). Flags solo para overrides.</p>
+        <p class="small dim mt-s"><b>Dónde vive:</b> <span class="mono">~/.xray-cli/config.json</span> (creds + proyecto default) · <span class="mono">token.json</span> (token 24 h) · <b>UN site a la vez</b>.</p>
+      </div>
+      <div class="stack">
+        <div class="card"><p class="lbl">Dos patas de credenciales</p><p class="small mt-s"><b>Xray GraphQL:</b> <span class="mono">XRAY_CLIENT_ID/SECRET</span> · <b>Jira REST:</b> <span class="mono">ATLASSIAN_URL/EMAIL/API_TOKEN</span> — resuelven claves Jira → issueId y habilitan Sync &amp; Repair.</p></div>
+        <div class="card card-accent"><p class="lbl" style="color:var(--bad)">Gotcha X2</p><p class="small mt-s">Token &gt;24 h = <b>401 silencioso</b> que parece blip de red. Re-auth con <span class="mono">auth login</span>; no atrapes el error.</p></div>
+      </div>
+    </div>
+    <div class="notes">bun auto-carga .env. La config guarda UN site a la vez — eso vuelve a aparecer en la fase de migración (re-login entre export y restore).</div>
+  </section>
+
+  <!-- 6. FASE 2 · TESTS -->
+  <section class="slide compact" data-title="Fase 2 · Tests">
+    <p class="kicker">Fase 2 · 6 de 17</p>
+    <h2 class="h2">Especificar: crear <span class="tag tag-test">Test</span></h2>
+    <div class="grid g3 mt-s" style="gap:16px">
+      <div class="card"><p class="lbl">Manual</p><p class="small mt-s">Pasos humanos: acción → dato → resultado.</p><p class="mono small dim">steps[]</p></div>
+      <div class="card"><p class="lbl">Generic</p><p class="small mt-s">Referencia al test automatizado.</p><p class="mono small dim">--definition</p></div>
+      <div class="card"><p class="lbl">Cucumber</p><p class="small mt-s">BDD Given / When / Then.</p><p class="mono small dim">--gherkin</p></div>
+    </div>
+    <div class="mk mt-s" style="font-size:13px;line-height:1.45;padding:16px 22px">$ bun xray test create --project DEMO --summary "Verify login" --type Manual
+$ bun xray test add-step --test &lt;issueId&gt; --action "Enter credentials" --data "user@test.com" --result "Dashboard"   # un add-step POR paso
+$ bun xray test get DEMO-123        # verificar que los steps aterrizaron</div>
+    <div class="card card-accent mt-s">
+      <p class="small"><b style="color:var(--bad)">Gotcha:</b> los steps <b>NO persisten en <span class="mono">create</span></b> — Xray Cloud los descarta en silencio (<span class="mono">stepCount:0</span>) y <span class="mono">--step</span> está deprecado. Patrón fiable: <b>create → un <span class="mono">add-step</span> por paso → verificar con <span class="mono">test get</span></b>. Enriquecer un Test existente: <span class="mono">update-gherkin · update-definition · update-type</span>.</p>
+    </div>
+    <div class="notes">También: test list --jql "project = DEMO AND labels = critical", test remove-step. La promoción de Stage 4 (regresión) usa update-gherkin sobre tests creados en sprint.</div>
+  </section>
+
+  <!-- 7. FASE 2 · PRECONDITIONS + SETS -->
+  <section class="slide" data-title="Fase 2 · Preconditions + Sets">
+    <p class="kicker">Fase 2 · 7 de 17</p>
     <h2 class="h2">Reutilizar y agrupar</h2>
-    <div class="grid g2 mt-l" style="gap:40px">
+    <div class="grid g2 mt-l" style="gap:36px">
       <div class="card card-soft">
         <span class="tag tag-story">Precondition</span>
-        <p class="small mt-m"><b>Estado inicial reutilizable.</b> En vez de repetir «usuario logueado con saldo > 0» en 20 pruebas, lo defines una vez.</p>
-        <div class="mk mt-m" style="font-size:16px">Precondition "Usuario admin"
-   ↑ usada por
-   ├─ Test CALC-201
-   ├─ Test CALC-202
-   └─ Test CALC-205</div>
+        <p class="small mt-m"><b>Issue Xray de primera clase</b> con el setup compartido — se define una vez, se ata a N Tests.</p>
+        <div class="mk mt-m" style="font-size:13px">$ bun xray precondition create --project DEMO \
+    --summary "DB seeded" --type Generic \
+    --definition "bun run db:seed" --labels setup,smoke
+$ bun xray precondition add-to-test --test PROJ-123 \
+    --preconditions PROJ-90,PROJ-91
+$ bun xray precondition update --precondition PROJ-90 --type Generic</div>
       </div>
       <div class="card card-soft">
         <span class="tag tag-story">Test Set</span>
-        <p class="small mt-m"><b>Carpeta lógica</b> para juntar pruebas afines y seleccionarlas rápido. <u>No ejecuta</u> — solo organiza.</p>
-        <div class="mk mt-m" style="font-size:16px">Test Set "Regresión·Login"
-   ├─ Test CALC-201
-   ├─ Test CALC-202
-   └─ Test CALC-210</div>
+        <p class="small mt-m"><b>Carpeta lógica</b> para seleccionar pruebas afines rápido. <u>No ejecuta</u> — solo organiza.</p>
+        <div class="mk mt-m" style="font-size:13px">$ bun xray set create --project DEMO --summary "Smoke Tests"
+$ bun xray set add-tests --set &lt;id&gt; --tests &lt;id1&gt;,&lt;id2&gt;
+$ bun xray set remove-tests --set &lt;id&gt; --tests &lt;id1&gt;
+$ bun xray set get &lt;issueId&gt;
+$ bun xray set list --project DEMO</div>
       </div>
     </div>
-    <div class="notes">Ninguno ejecuta. Precondition = condición previa compartida; Test Set = agrupación. Fuente: docs.getxray.app.</div>
+    <div class="notes">Ninguno de los dos corre pruebas. Precondition default --type Manual; admite Generic / Cucumber, labels y folder del test repository.</div>
   </section>
 
-  <!-- 7. TEST PLAN -->
-  <section class="slide" data-title="Test Plan">
-    <p class="kicker">Las piezas · 6 de 18</p>
-    <h2 class="h2"><span class="tag tag-plan">Test Plan</span> &nbsp;— el paraguas</h2>
-    <div class="grid g2 mt-l" style="align-items:center;gap:44px">
+  <!-- 8. FASE 3 · TEST PLAN -->
+  <section class="slide compact" data-title="Fase 3 · Test Plan (ATP)">
+    <p class="kicker">Fase 3 · 8 de 17</p>
+    <h2 class="h2">Planificar: <span class="tag tag-plan">Test Plan</span> = el ATP</h2>
+    <div class="grid g2 mt-m" style="gap:36px;align-items:start">
+      <div>
+        <div class="mk" style="font-size:14px">$ bun xray plan create --project PROJ \
+    --summary "Auth Suite - Q3 ATP"
+#   → PROJ-110
+$ bun xray plan add-tests --plan PROJ-110 \
+    --tests PROJ-100,PROJ-101
+$ bun xray plan remove-tests --plan PROJ-110 --tests PROJ-100
+$ bun xray plan list --project PROJ</div>
+        <p class="small dim mt-m">El Test Plan es el contenedor del <b>ATP</b>: define el alcance y consolida el progreso de sus ejecuciones.</p>
+      </div>
       <div class="stack">
-        <p class="lede">Agrupa pruebas y <b>consolida el resultado de todas sus ejecuciones</b> (ciclos).</p>
-        <ul class="big mt-m">
-          <li><b>Último estado calculado</b> de cada prueba.</li>
-          <li><b>Vista de progreso</b> del alcance — ideal por sprint.</li>
-          <li>Cruza resultados por <b>entorno</b>.</li>
-        </ul>
+        <div class="card card-accent">
+          <p class="lbl">Craft · dos capas de trazabilidad</p>
+          <p class="small mt-s"><span class="mono">plan add-tests</span> / <span class="mono">exec add-tests</span> registran el Test <b>en la capa interna de Xray</b> (membership GraphQL) — <b>no</b> son issuelinks de Jira. <i>«Jira enlaza issues, Xray enlaza resultados».</i></p>
+        </div>
+        <div class="card">
+          <p class="lbl" style="color:var(--warn)">Si solo se cableó la capa Jira</p>
+          <p class="small mt-s">Ocurre con fallbacks creados sin auth Xray: el issue existe, pero los runs vuelven vacíos y los estados no se pueden fijar. Se repara con <span class="mono">plan sync / exec sync</span> (camino adyacente, slide 14).</p>
+        </div>
       </div>
-      <div class="mk">Test Plan  CALC-300 "Sprint 14·Pagos"
-─────────────────────────────────────
- Test       Estado     Ejecuciones
- CALC-201   ● PASS         2
- CALC-202   ● FAIL         3
- CALC-205   ● PASS         1
- CALC-210   ○ TODO         0
-─────────────────────────────────────
- Overall  52% PASS·24% FAIL·24% TODO</div>
     </div>
-    <div class="notes">El Test Plan NO ejecuta — observa. Fuente: docs.getxray.app — Test Plans in the Testing Board / Tracking Progress.</div>
+    <div class="notes">Distinción crítica del skill: membership XRAY-INTERNAL ≠ issuelink Jira. El flujo canónico del slide 13 marca qué pasos son de qué capa.</div>
   </section>
 
-  <!-- 8. EXECUTION + RUN -->
-  <section class="slide" data-title="Execution + Run">
-    <p class="kicker">Las piezas · 7 de 18</p>
-    <h2 class="h2"><span class="tag tag-exec">Test Execution</span> &nbsp;y el Test Run</h2>
-    <div class="grid g2 mt-l" style="gap:40px">
-      <div class="card card-soft">
-        <p class="lbl">Test Execution</p>
-        <p class="small mt-m"><b>Tarea asignable</b> de correr un grupo de pruebas, para una versión y un entorno. Contiene varios <b>Test Runs</b>.</p>
-      </div>
-      <div class="card card-soft">
-        <p class="lbl">Test Run</p>
-        <p class="small mt-m"><b>Registro de UNA corrida</b> de UNA prueba. Aquí viven estado, evidencia, defectos y el estado por paso.</p>
-      </div>
+  <!-- 9. FASE 4 · TEST EXECUTION -->
+  <section class="slide compact" data-title="Fase 4 · Test Execution (ATR)">
+    <p class="kicker">Fase 4 · 9 de 17</p>
+    <h2 class="h2">Ejecutar: <span class="tag tag-exec">Test Execution</span> = el ATR</h2>
+    <div class="mk mt-m" style="font-size:14px">$ bun xray exec create --project PROJ --summary "Auth Suite - Sprint 12 ATR" \
+    --environment staging              # repetible o CSV: --environment staging,chrome
+#   → PROJ-194
+$ bun xray exec add-tests --execution PROJ-194 --tests PROJ-100,PROJ-101
+$ bun xray exec remove-tests --execution PROJ-194 --tests PROJ-101
+$ bun xray exec set-environment --execution PROJ-194 --environment staging,chrome
+$ bun xray exec get PROJ-194
+$ bun xray exec list --project PROJ</div>
+    <div class="card card-accent mt-m">
+      <p class="lbl">Por qué importan los Test Environments</p>
+      <p class="small mt-s">Una ejecución fijada a un entorno (<span class="mono">staging</span> vs <span class="mono">production</span>, <span class="mono">chrome</span> vs <span class="mono">firefox</span>) hace los resultados <b>congruentes y comparables</b> — nunca compares a ciegas un run de staging contra uno de prod. Se fijan al crear con <span class="mono">--environment</span> o después con <span class="mono">exec set-environment</span>.</p>
     </div>
-    <p class="lbl mt-l">Estados de una corrida</p>
-    <div class="row wrap mt-s" style="gap:14px">
+    <div class="notes">La Execution es el contenedor del ATR: la tarea asignable de correr un grupo de pruebas. Contiene los Test Runs (uno por Test incluido).</div>
+  </section>
+
+  <!-- 10. FASE 5 · TEST RUNS -->
+  <section class="slide" data-title="Fase 5 · Test Runs">
+    <p class="kicker">Fase 5 · 10 de 17</p>
+    <h2 class="h2">Reportar a mano: el <span class="grad">Test Run</span></h2>
+    <div class="mk mt-m" style="font-size:14px">$ bun xray run list --execution PROJ-194      # → runIds (GraphQL, NO claves Jira)
+$ bun xray run get &lt;runId&gt;
+$ bun xray run status --id &lt;runId&gt; --status PASSED
+$ bun xray run step-status --run &lt;runId&gt; --step &lt;stepId&gt; --status PASSED
+$ bun xray run comment --id &lt;runId&gt; --comment "Test completed successfully"
+$ bun xray run step-comment --run &lt;runId&gt; --step &lt;stepId&gt; --comment "build 4172"   # sobrescribe el anterior</div>
+    <p class="lbl mt-m">Estados de run que acepta <span class="mono">--status</span></p>
+    <div class="row wrap mt-s" style="gap:12px">
       <span class="chip"><span class="dot" style="background:var(--text-3)"></span>TODO</span>
       <span class="chip"><span class="dot" style="background:var(--accent-3)"></span>EXECUTING</span>
-      <span class="chip"><span class="dot" style="background:var(--good)"></span>PASS</span>
-      <span class="chip"><span class="dot" style="background:var(--bad)"></span>FAIL</span>
+      <span class="chip"><span class="dot" style="background:var(--good)"></span>PASSED</span>
+      <span class="chip"><span class="dot" style="background:var(--bad)"></span>FAILED</span>
       <span class="chip"><span class="dot" style="background:var(--warn)"></span>ABORTED</span>
+      <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>BLOCKED</span>
     </div>
-    <div class="notes">Execution = la sesión de corridas; Run = una línea dentro. Estados: TODO/EXECUTING/PASS/FAIL/ABORTED. Fuente: docs.getxray.app — Execute Tests.</div>
+    <div class="notes">El Run es la unidad real de resultado: una corrida de UNA prueba. step-comment sobrescribe el comentario previo del paso — no acumula histórico.</div>
   </section>
 
-  <!-- 9. MOCKUP JIRA -->
-  <section class="slide" data-title="Mockup ejecución">
-    <p class="kicker">Cómo se ve · 8 de 18</p>
-    <h2 class="h2">Una ejecución, vista en Jira</h2>
-    <div class="mk mt-m" style="font-size:17px">┌────────────────────────────────────────────────────────────┐
-│ CALC-400 · Test Execution         Entorno: Staging  v3.0   │
-│ "Test Results · Sprint 14 · Pagos"      Asignado: @ely     │
-├────────────────────────────────────────────────────────────┤
-│  #    Prueba    Resumen                     Estado    Def.  │
-│  ───────────────────────────────────────────────────────── │
-│  1  CALC-201  Login válido                 ● PASS      –    │
-│  2  CALC-202  Pago con tarjeta caducada    ● FAIL    🐞 1   │
-│  3  CALC-205  Logout limpia sesión         ● PASS      –    │
-│  4  CALC-210  Reintento tras timeout       ○ TODO      –    │
-├────────────────────────────────────────────────────────────┤
-│  [ Execute ]  Por paso → estado · evidencia · crear defecto │
-└────────────────────────────────────────────────────────────┘</div>
-    <p class="small dim mt-m">Desde esta misma pantalla el tester marca cada paso, <b>adjunta evidencia</b> y <b>crea defectos</b> sin salir.</p>
-    <div class="notes">Mockup ilustrativo (no captura real). Refleja lo que la doc describe: pantalla con pasos, estados, evidencia y creación de defectos in situ.</div>
+  <!-- 11. FASE 5 · EVIDENCIA + DEFECTOS -->
+  <section class="slide compact" data-title="Fase 5 · Evidencia + defectos">
+    <p class="kicker">Fase 5 · 11 de 17</p>
+    <h2 class="h2">Evidencia y <span class="tag tag-bug">defectos</span> sobre el Run</h2>
+    <div class="mk mt-m" style="font-size:14px">$ bun xray run evidence --id &lt;runId&gt; --file ./screenshots/error.png
+$ bun xray run evidence --id &lt;runId&gt; --dir ./.context/PBI/.../evidence/
+$ bun xray run step-evidence --run &lt;runId&gt; --step &lt;stepId&gt; --file step3.png
+$ bun xray run evidence-list --id &lt;runId&gt;
+$ bun xray run evidence-rm --id &lt;runId&gt; --filename error.png
+$ bun xray run defect --id &lt;runId&gt; --issues DEMO-456,DEMO-789</div>
+    <div class="grid g2 mt-m" style="gap:24px">
+      <div class="card"><p class="lbl">Límite de 20 MB</p><p class="small mt-s">Xray Cloud rechaza requests &gt;20 MB. El CLI auto-trocea los <span class="mono">--dir</span> en lotes de ~15 MB; un archivo suelto de 30 MB sí se rechaza — comprímelo o divídelo antes.</p></div>
+      <div class="card card-accent"><p class="lbl">Craft · el bug nace en la corrida</p><p class="small mt-s">El defecto se enlaza al <b>Test Run</b>, no al Test abstracto: un mismo Test puede tener 0 bugs en una corrida y 1 en otra. Nunca empujes runs a TCs con veredicto <span class="mono">to_be_automated=no</span> <span class="dim">(anti-patrón X7)</span>.</p></div>
+    </div>
+    <div class="notes">La carpeta evidence/ del PBI local (.context/PBI/.../evidence/) se sube entera con --dir. evidence-rm acepta --evidence &lt;id&gt; o --filename.</div>
   </section>
 
-  <!-- 10. FLUJO NATURAL -->
-  <section class="slide" data-title="Flujo natural">
-    <p class="kicker">El flujo · 9 de 18</p>
-    <h2 class="h2">El <span class="grad">flujo natural</span> de Xray</h2>
-    <div class="mk mt-m" style="font-size:17px">  ① ESPECIFICAR       ② ORGANIZAR        ③ PLANIFICAR
-     Test (caso)   →   Test Set +    →    Test Plan
-                       Precondition        (alcance)
-        │                                     │
-        └─────────────────┐                   ▼
-                          ④ EJECUTAR ──────► Test Execution
-                                               │ (Test Runs)
-                                               ▼
-                          ⑤ REPORTAR ──────► PASS / FAIL  +  🐞 Defectos
-                                               │
-                                               ▼
-                          ⑥ CUBRIR ────────► Cobertura (OK / NOK)</div>
-    <div class="card card-accent mt-m">
-      <p class="lbl">Mnemotécnica · «ÓPERA»</p>
-      <p class="small mt-s"><b>E</b>specificar · <b>O</b>rganizar · <b>P</b>lanificar · <b>E</b>jecutar · <b>R</b>eportar · <b>C</b>ubrir. <span class="dim">Cada prueba es una función que sube al escenario, actúa y deja crítica.</span></p>
+  <!-- 12. FASE 5 · IMPORT DE RESULTADOS -->
+  <section class="slide compact" data-title="Fase 5 · Import de resultados">
+    <p class="kicker">Fase 5 · 12 de 17</p>
+    <h2 class="h2">Reportar en bloque: <span class="mono grad">import</span></h2>
+    <div class="mk mt-m" style="font-size:14px">$ bun xray import junit --file results.xml --project DEMO
+$ bun xray import junit --file results.xml --plan DEMO-100        # cuelga la Execution del Plan
+$ bun xray import junit --file results.xml --execution DEMO-200   # rellena una Execution existente
+$ bun xray import cucumber --file cucumber-report.json --project DEMO
+$ bun xray import xray --file xray-results.json</div>
+    <div class="grid g3 mt-m" style="gap:24px">
+      <div class="card"><p class="lbl" style="color:var(--warn)">X3 · pre-check</p><p class="small mt-s">Verifica que Plan / Execution existan con <span class="mono">plan list</span> / <span class="mono">exec get</span> antes de importar: los resultados huérfanos abortan el import completo.</p></div>
+      <div class="card"><p class="lbl" style="color:var(--warn)">X5 · dry-run primero</p><p class="small mt-s">Nunca contra producción sin previsualizar: <span class="mono">import</span> y <span class="mono">restore</span> escriben de forma irreversible sobre cientos de TCs y runs.</p></div>
+      <div class="card"><p class="lbl" style="color:var(--warn)">X4 · JSON canónico</p><p class="small mt-s">Nunca fabriques a mano payloads Xray (<span class="mono">testInfo, iterations, evidences</span>): el CLI es dueño de la forma canónica.</p></div>
     </div>
-    <div class="notes">Orden lógico, no rígido: una ejecución puede nacer ad hoc o clonarse de un Plan previo. Fuente: docs.getxray.app — Process / Executing Tests.</div>
+    <div class="notes">Es el camino natural tras una corrida automatizada (Playwright → junit.xml). regression-testing (Stage 6) consume estos resultados para el GO/NO-GO.</div>
   </section>
 
-  <!-- 11. JERARQUIA -->
-  <section class="slide" data-title="Jerarquía">
-    <p class="kicker">El flujo · 10 de 18</p>
-    <h2 class="h2">Cómo se conectan las piezas</h2>
-    <div class="mk mt-m" style="font-size:17px">  STORY           CALC-10  "Pagar con tarjeta"
-     │  la cubre / "is tested by"
-     ▼
-  TEST  CALC-201 ─┐
-  TEST  CALC-202 ─┤── agrupados en ──► TEST SET "Pagos"
-  TEST  CALC-205 ─┘
-     │  incluidos en el alcance
-     ▼
-  TEST PLAN       CALC-300  "Sprint 14·Pagos"
-     │  genera ciclos de corrida
-     ▼
-  TEST EXECUTION  CALC-400  ── contiene ──► Test Runs
-     │
-     ▼  al fallar una corrida
-  BUG             CALC-455</div>
-    <p class="small dim mt-m">Story se cubre con <b>Tests</b> → entran en un <b>Plan</b> → el Plan genera <b>Executions</b> → cada <b>Run</b> puede parir un <b>Bug</b>.</p>
-    <div class="notes">Columna vertebral. La Story es un issue Jira normal (un "requisito coverable"). El resto son issues Xray. Fuente: docs.getxray.app — Requirement Traceability Report.</div>
+  <!-- 13. FLUJO CANONICO -->
+  <section class="slide compact" data-title="Flujo canónico">
+    <p class="kicker">Recap · 13 de 17</p>
+    <h2 class="h2">Flujo canónico: ATP → Tests → ATR</h2>
+    <div class="mk mt-m" style="font-size:13px;line-height:1.45"># 1. Test Plan (contenedor del ATP)
+$ bun xray plan create --project PROJ --summary "Auth Suite - Q3 ATP"              # → PROJ-110
+# 2. Tests + steps, un add-step por paso
+$ bun xray test create --project PROJ --summary "Verify login" --type Manual       # → PROJ-100
+$ bun xray test add-step --test &lt;id-100&gt; --action "Open app" --result "Login form displayed"
+# 3. Adjuntar Tests al Plan            (membership XRAY-INTERNA, no issuelink)
+$ bun xray plan add-tests --plan PROJ-110 --tests PROJ-100,PROJ-101
+# 4. Test Execution (contenedor del ATR), fijada a entorno
+$ bun xray exec create --project PROJ --summary "Auth Suite - Sprint 12 ATR" --environment staging   # → PROJ-194
+# 5. Adjuntar Tests a la Execution     (membership XRAY-INTERNA)
+$ bun xray exec add-tests --execution PROJ-194 --tests PROJ-100,PROJ-101
+# 6. Resultados: en bloque o run a run
+$ bun xray import junit --file test-results/junit.xml --execution PROJ-194   # ó runs a mano:
+$ bun xray run status --id &lt;runId&gt; --status PASSED</div>
+    <p class="small dim mt-m">Este es el <b>orden autoritativo</b> al cablear un Test Plan / Test Execution a mano. Los pasos 3 y 5 viven en la capa interna de Xray — si esa capa falta, los runs vuelven vacíos.</p>
+    <div class="notes">Espejo del "Canonical End-to-End Flow" del SKILL.md. Sirve como chuleta: todo lo demás del deck son variaciones y salvaguardas alrededor de estos 6 pasos.</div>
   </section>
 
-  <!-- 12. COBERTURA -->
-  <section class="slide" data-title="Cobertura">
-    <p class="kicker">Cobertura · 11 de 18</p>
-    <h2 class="h2">¿Está <span class="grad">probado</span> el requisito?</h2>
-    <p class="small dim">Xray calcula un campo <b>«Requirement Status»</b> en cada Story desde el estado de sus pruebas.</p>
-    <div class="grid g4 mt-l anim-stagger-list" data-anim-target>
-      <div class="card"><p style="font-size:24px;font-weight:800"><span class="dot" style="background:var(--good);width:20px;height:20px"></span> OK</p><p class="small mt-s">Todas las pruebas pasaron.</p></div>
-      <div class="card"><p style="font-size:24px;font-weight:800"><span class="dot" style="background:var(--bad);width:20px;height:20px"></span> NOK</p><p class="small mt-s">Al menos una falló.</p></div>
-      <div class="card"><p style="font-size:24px;font-weight:800"><span class="dot" style="background:var(--warn);width:20px;height:20px"></span> NOT RUN</p><p class="small mt-s">Alguna sin correr (sin fallos).</p></div>
-      <div class="card"><p style="font-size:24px;font-weight:800"><span class="dot" style="background:var(--text-3);width:20px;height:20px"></span> UNCOVERED</p><p class="small mt-s">Sin pruebas asociadas.</p></div>
+  <!-- 14. ADYACENTE · SYNC & REPAIR -->
+  <section class="slide compact" data-title="Sync &amp; Repair">
+    <p class="kicker">Camino adyacente · 14 de 17</p>
+    <h2 class="h2">Sync &amp; Repair: reconciliar <span class="grad">Jira ↔ Xray</span></h2>
+    <p class="small dim mt-s"><b>Cuándo:</b> un Execution / Plan nació por un fallback Jira sin auth Xray → la capa Jira aceptó el issue, pero Xray nunca registró los tests: runs vacíos, estados imposibles de fijar.</p>
+    <div class="mk mt-m" style="font-size:13px;line-height:1.45">$ bun xray exec sync --execution PROJ-194            # diff — dry-run por defecto
+$ bun xray exec sync --execution PROJ-194 --apply    # re-adjunta en la capa Xray
+$ bun xray plan sync --plan PROJ-110 [--apply]
+$ bun xray repair --project PROJ                     # scan masivo: todos los Plans + Executions
+$ bun xray repair --project PROJ --apply --limit 200</div>
+    <div class="grid g2 mt-s" style="gap:24px">
+      <div class="card"><p class="lbl" style="color:var(--good)">Missing at Xray layer</p><p class="small mt-s">Tests enlazados en Jira pero no registrados en Xray → <span class="mono">--apply</span> los re-adjunta.</p></div>
+      <div class="card"><p class="lbl" style="color:var(--warn)">Missing at Jira layer</p><p class="small mt-s">Tests registrados en Xray sin issuelink Jira → <b>solo se reporta</b>; sync nunca auto-borra.</p></div>
     </div>
-    <div class="card card-accent mt-l">
-      <p class="lbl">Mnemotécnica · «el semáforo + gris»</p>
-      <p class="small mt-s">🟢 OK · 🔴 NOK · 🟡 NOT RUN · ⚪ UNCOVERED. <b>La cobertura sube por jerarquía:</b> si un hijo está NOK, el padre (Epic/Story) se vuelve NOK.</p>
-    </div>
-    <div class="notes">Cálculo: todas PASS→OK; alguna FAIL→NOK; alguna TODO sin fails→NOT RUN; sin pruebas→UNCOVERED. Hasta 3 niveles (Epic→Stories→Subtasks). Fuente: docs.getxray.app — calculation of coverage status.</div>
+    <p class="small dim mt-s"><b>Requisito:</b> credenciales Xray <b>y</b> Jira configuradas — la vista Jira sale de Jira REST, separada del GraphQL de Xray.</p>
+    <div class="notes">Es la materialización operativa del craft de "dos capas" del slide 8. repair es el barrido bulk; exec/plan sync el bisturí por issue.</div>
   </section>
 
-  <!-- 13. TRAZABILIDAD 2 CAPAS -->
-  <section class="slide" data-title="Trazabilidad · 2 capas">
-    <p class="kicker">Trazabilidad · 12 de 18</p>
-    <h2 class="h2">Trazabilidad: <span class="grad">dos capas</span></h2>
-    <div class="grid g2 mt-l" style="gap:40px">
-      <div class="card card-soft">
-        <p class="lbl" style="color:var(--accent)">Capa 1 · Enlaces Jira</p>
-        <h4 class="h4 mt-s">El parentesco visible</h4>
-        <p class="small mt-s">Los <i>issue links</i> de Jira: <span class="mono">"tests"</span>, <span class="mono">"is tested by"</span>. Conectan Story ↔ prueba/plan/ejecución.</p>
-      </div>
-      <div class="card card-soft">
-        <p class="lbl" style="color:var(--warn)">Capa 2 · Interna de Xray</p>
-        <h4 class="h4 mt-s">El ADN de la corrida</h4>
-        <p class="small mt-s">La pertenencia propia de Xray: qué Tests hay en un Plan, qué Runs en una Execution, qué Defectos en un Run. <b>No son issue links.</b></p>
-      </div>
+  <!-- 15. ADYACENTE · BACKUP & MIGRACION -->
+  <section class="slide compact" data-title="Backup &amp; Migración">
+    <p class="kicker">Camino adyacente · 15 de 17</p>
+    <h2 class="h2">Backup, restore y <span class="grad">migración de site</span></h2>
+    <div class="mk mt-m" style="font-size:13px;line-height:1.45">$ bun xray backup export --project DEMO --output demo-backup.json [--include-runs]
+$ bun xray backup export --all --include-runs     # cada proyecto con datos Xray → .backups/&lt;KEY&gt;-backup.json
+$ bun xray backup preflight --dir .backups        # gaps de config en destino (read-only)
+$ bun xray backup restore --file demo-backup.json --project NEW_PROJ --dry-run
+$ bun xray backup restore --file demo-backup.json --project PROJ --sync          # site→site, claves preservadas
+$ bun xray backup restore --file demo-backup.json --project PROJ --map-keys mappings.csv</div>
+    <div class="grid g2 mt-m" style="gap:24px">
+      <div class="card"><p class="lbl">Schema v2.0</p><p class="small mt-s">Footprint completo: tests, preconditions, plans, sets y folders; executions + run statuses opt-in (<span class="mono">--include-runs</span>). Los backups v1.0 restauran igual.</p></div>
+      <div class="card card-accent"><p class="lbl" style="color:var(--bad)">Gotcha cross-site</p><p class="small mt-s">GraphQL usa <b>issueId numérico</b>, re-asignado por site; la migración preserva la <b>KEY</b> → usa siempre <span class="mono">--sync</span> site→site, y re-corre <span class="mono">auth login</span> entre export y restore.</p></div>
     </div>
-    <div class="card card-accent mt-l">
-      <p class="small"><b>Mnemotécnica:</b> <i>«Jira enlaza ISSUES, Xray enlaza RESULTADOS».</i> Por eso algo «se ve enlazado» en Jira pero la corrida no aparece en el Plan — son dos capas distintas.</p>
-    </div>
-    <div class="notes">Crítico para fix-traceability del repo: en jira-xray hay que reparar AMBAS capas. Capa 1 = acli/issue links; capa 2 = xray-cli (membership Test↔Plan↔Execution↔Run).</div>
+    <p class="small dim mt-s"><b>Runbook completo</b> (<span class="mono">references/migration-runbook.md</span>): auth source → <span class="mono">export --all</span> → auth dest → <span class="mono">preflight</span> → corregir config → <span class="mono">restore --sync</span>.</p>
+    <div class="notes">Restore en modo create emite un CSV de key-mapping; --map-keys lo consume cuando las claves cambiaron. preflight se corre autenticado al destino y no escribe nada.</div>
   </section>
 
-  <!-- 14. REPORTE TRAZABILIDAD -->
-  <section class="slide" data-title="Reporte trazabilidad">
-    <p class="kicker">Trazabilidad · 13 de 18</p>
-    <h2 class="h2">Requirement Traceability Report</h2>
-    <p class="small dim">El reporte estrella: rastrea un requisito <b>hacia adelante y hacia atrás</b>, en cuatro columnas.</p>
-    <table class="tt mt-m">
-      <tr><th>Requisito</th><th>Tests</th><th>Test Runs</th><th>Defectos</th></tr>
-      <tr>
-        <td><span class="tag tag-story">CALC-10</span><br><span class="small">Pagar con tarjeta</span><br><span class="dot" style="background:var(--bad)"></span> <b>NOK</b></td>
-        <td class="small">CALC-201 ● PASS<br>CALC-202 ● FAIL<br>CALC-205 ● PASS</td>
-        <td class="small">Runs de todas las<br>ejecuciones<br>asociadas</td>
-        <td class="small"><span class="tag tag-bug">CALC-455</span><br>«Tarjeta caducada<br>no rechaza»</td>
-      </tr>
+  <!-- 16. ANTI-PATRONES -->
+  <section class="slide compact" data-title="Anti-patrones">
+    <p class="kicker">Salvaguardas · 16 de 17</p>
+    <h2 class="h2">Anti-patrones — <span class="grad">nunca</span> hacer</h2>
+    <table class="tt mt-m" style="font-size:16px;border-spacing:0 6px">
+      <tr><th style="width:64px">#</th><th>Regla</th></tr>
+      <tr><td style="padding:9px 16px"><b class="mono">X1</b></td><td style="padding:10px 16px" class="small">Nunca llamar <span class="mono">bun xray</span> directo desde workflow skills — usan <span class="mono">[TMS_TOOL]</span> y cargan este skill.</td></tr>
+      <tr><td style="padding:9px 16px"><b class="mono">X2</b></td><td style="padding:10px 16px" class="small">Nunca cachear tokens más allá de su TTL de 24 h — el 401 silencioso se cura con re-auth, no con try/catch.</td></tr>
+      <tr><td style="padding:9px 16px"><b class="mono">X3</b></td><td style="padding:10px 16px" class="small">Nunca importar resultados en bloque sin verificar antes que las claves de Plan / Execution existen.</td></tr>
+      <tr><td style="padding:9px 16px"><b class="mono">X4</b></td><td style="padding:10px 16px" class="small">Nunca fabricar a mano JSON de Xray (<span class="mono">testInfo, iterations, evidences</span>) fuera de <span class="mono">bun xray</span>.</td></tr>
+      <tr><td style="padding:9px 16px"><b class="mono">X5</b></td><td style="padding:10px 16px" class="small">Nunca correr <span class="mono">import</span> ni <span class="mono">backup restore</span> contra producción sin <span class="mono">--dry-run</span> previo.</td></tr>
+      <tr><td style="padding:9px 16px"><b class="mono">X6</b></td><td style="padding:10px 16px" class="small">Nunca mezclar modalidades jira-xray y jira-native en la misma fase — se resuelve una vez en Phase 0.</td></tr>
+      <tr><td style="padding:9px 16px"><b class="mono">X7</b></td><td style="padding:10px 16px" class="small">Nunca empujar runs automatizados a TCs con veredicto Manual terminal (<span class="mono">to_be_automated=no</span>).</td></tr>
     </table>
-    <div class="grid g4 mt-m small dim">
-      <div><b class="grad">Requisito</b><br>estado de cobertura</div>
-      <div><b class="grad">Tests</b><br>estado calculado</div>
-      <div><b class="grad">Test Runs</b><br>resultado por corrida</div>
-      <div><b class="grad">Defectos</b><br>bugs enlazados a Runs</div>
-    </div>
-    <div class="notes">Hasta 3 niveles (Epic→Story→Subtask). La columna Defectos lista bugs DIRECTAMENTE enlazados a los Test Runs. Fuente: docs.getxray.app — Requirement Traceability Report.</div>
+    <div class="notes">Los siete anti-patrones del SKILL.md, tal cual. X1/X6 protegen la arquitectura de skills; X2-X5 protegen los datos; X7 protege el reporting Candidate/Manual/Deferred.</div>
   </section>
 
-  <!-- 15. DEFECTOS -->
-  <section class="slide" data-title="Defectos">
-    <p class="kicker">Defectos · 14 de 18</p>
-    <h2 class="h2">Los <span class="tag tag-bug">defectos</span> en Xray</h2>
-    <div class="grid g2 mt-l" style="gap:40px;align-items:start">
-      <div class="stack">
-        <p class="lede"><b>El bug nace en la corrida.</b> Cuando una prueba falla, el tester lo crea desde la ejecución y queda enganchado a ese <b>Test Run</b>.</p>
-        <ul class="big mt-m">
-          <li>Es un issue Jira de tipo <span class="tag tag-bug">Bug</span> normal.</li>
-          <li>Se enlaza al <b>Test Run</b> (no al Test abstracto).</li>
-          <li>Aflora en la columna <b>Defectos</b> del reporte.</li>
-        </ul>
+  <!-- 17. CIERRE -->
+  <section class="slide compact" data-title="Cierre">
+    <p class="kicker">Cierre · 17 de 17</p>
+    <h2 class="h2">Invocación, handoffs y <span class="grad">artefactos</span></h2>
+    <div class="grid g3 mt-m" style="gap:24px;align-items:start">
+      <div class="card">
+        <p class="lbl">Cómo se invoca</p>
+        <p class="small mt-s"><span class="mono">/xray-cli</span> — o frases como <i>"create a test in Xray"</i>, <i>"import test results to Xray"</i>, <i>"update run status"</i>, <i>"backup Xray project"</i>, <i>"link defect to run"</i>. Los workflow skills llegan vía <span class="mono">[TMS_TOOL]</span>.</p>
       </div>
       <div class="card">
-        <p class="lbl">JQL de defectos en Xray</p>
-        <div class="mk mt-m" style="font-size:15px">// bugs al ejecutar un requisito
-issue in defectsCreatedForRequirement("CALC-10")
-
-// bugs durante una ejecución
-issue in defectsCreatedDuringTestExecution(CALC-400)</div>
-        <p class="small dim mt-m">Xray sabe qué bug salió de qué corrida → traza bidireccional prueba ↔ defecto.</p>
+        <p class="lbl">Handoffs</p>
+        <p class="small mt-s">← <span class="mono">/sprint-testing</span> S1–3: ATP + ATR por ticket.<br>← <span class="mono">/test-documentation</span> Stage 4: TCs + ROI.<br>→ <span class="mono">/regression-testing</span> Stage 6: resultados para el GO/NO-GO.</p>
+      </div>
+      <div class="card">
+        <p class="lbl">Fallback</p>
+        <p class="small mt-s">Sin binario o sin auth y operación simple → <b>Atlassian MCP</b> (cobertura parcial). Bulk import, backup/restore y Plans/Executions a escala → siempre el CLI.</p>
       </div>
     </div>
-    <div class="notes">"El bug es hijo del Run, no del Test": un mismo Test puede tener 0 bugs en una corrida y 1 en otra. Fuente: docs.getxray.app — Execute Tests, defectsCreatedForRequirement / defectsCreatedDuringTestExecution.</div>
-  </section>
-
-  <!-- 16. NUESTRO FLUJO -->
-  <section class="slide" data-title="Nuestro flujo">
-    <p class="kicker">En este repo · 15 de 18</p>
-    <h2 class="h2">Cómo lo usamos <span class="grad">aquí</span></h2>
-    <p class="small dim">Nuestros artefactos de QA se materializan como issues Xray (modalidad <b>jira-xray</b>):</p>
-    <table class="tt mt-m">
-      <tr><th>Nuestro artefacto</th><th>Issue Xray</th><th>Quién lo crea</th></tr>
-      <tr><td><b>ATP</b> · Acceptance Test Plan</td><td><span class="tag tag-plan">Test Plan</span></td><td class="small">sprint-testing · Stage 1</td></tr>
-      <tr><td><b>TC</b> · casos de prueba</td><td><span class="tag tag-test">Test</span></td><td class="small">sprint-testing S1 / test-documentation S4</td></tr>
-      <tr><td><b>ATR</b> · Acceptance Test Results</td><td><span class="tag tag-exec">Test Execution</span></td><td class="small">sprint-testing · Stage 3</td></tr>
-      <tr><td>Defecto encontrado</td><td><span class="tag tag-bug">Bug</span></td><td class="small">sprint-testing · al ejecutar</td></tr>
-    </table>
     <div class="card card-accent mt-m">
-      <p class="small"><b>Orden obligatorio:</b> primero el <span class="tag tag-plan">Test Plan</span> → los <span class="tag tag-test">Test</span> enlazan a él → al final el <span class="tag tag-exec">Test Execution</span> reporta los Runs. Sin Plan, los TC no enlazan.</p>
+      <p class="lbl">Artefactos que deja el skill</p>
+      <p class="small mt-s"><span class="tag tag-plan">Test Plan</span> = ATP · <span class="tag tag-exec">Test Execution</span> = ATR · <span class="tag tag-test">Test</span> + steps = TCs · Runs con evidencia y <span class="tag tag-bug">defectos</span> enlazados · backups en <span class="mono">.backups/*.json</span> · config en <span class="mono">~/.xray-cli/</span>.</p>
     </div>
-    <div class="notes">Shift-left (Stage 0) solo deja un ATP DRAFT (opcional como Test Plan). Sprint-testing crea Test Plan + Tests + Test Execution reales. Fuente: repo sprint-testing/SKILL.md.</div>
+    <p class="small dim mt-m">Referencias: <span class="mono">references/backup-restore.md · migration-runbook.md · graphql-api.md · test-types.md</span></p>
+    <div class="notes">Fin del recorrido. El mapa del slide 2 resume todo: gate de modalidad → auth → especificar → planificar → ejecutar → reportar, con sync/backup/MCP como caminos adyacentes.</div>
   </section>
 
-  <!-- 17. ENLACES -->
-  <section class="slide" data-title="Enlaces del flujo">
-    <p class="kicker">En este repo · 16 de 18</p>
-    <h2 class="h2">Quién se enlaza con quién</h2>
-    <div class="mk mt-m" style="font-size:17px">                       STORY
-            ┌─────────────┴─────────────┐
-     linkType "tests"            linkType "is tested by"
-            │                           │
-       TEST PLAN  ◄─── testPlan: ───  TEST EXECUTION
-        (ATP)         capa Xray          (ATR)
-            │                           │
-        membership                   Test Runs
-            │                           │
-            └──────────► TEST (TC) ◄────┘
-            cada TC enlaza: Story + Plan + Execution</div>
-    <ul class="big mt-m">
-      <li><b>Plan → Story:</b> enlace Jira <span class="mono">"tests"</span> · <b>Execution → Story:</b> <span class="mono">"is tested by"</span>.</li>
-      <li><b>Execution → Plan:</b> parámetro <span class="mono">testPlan</span> (capa interna Xray).</li>
-      <li><span class="mono">/fix-traceability</span> repara <b>ambas capas</b> según la modalidad.</li>
-    </ul>
-    <div class="notes">El Execution queda alineado a Story por enlace Jira ("is tested by") Y al Plan por membership Xray (testPlan) — dos mecanismos. Fuente: repo acceptance-test-planning.md 356-383.</div>
-  </section>
-
-  <!-- 18. RESUMEN -->
-  <section class="slide" data-title="Resumen">
-    <div class="fx-host" data-fx="knowledge-graph"></div>
-    <div class="above">
-      <div class="deck-header"><span class="eyebrow">Resumen</span><span class="eyebrow">Xray + Jira</span></div>
-      <p class="kicker">Para llevarte · 17 de 18</p>
-      <h2 class="h2">Cinco ideas para <span class="grad">no olvidar</span></h2>
-      <div class="grid g2 mt-l anim-stagger-list" data-anim-target>
-        <div class="card"><p class="small"><b>1 · Todo es un issue.</b> <span class="dim">Xray vive dentro de Jira; hereda JQL, permisos y enlaces.</span></p></div>
-        <div class="card"><p class="small"><b>2 · ÓPERA.</b> <span class="dim">Especificar·Organizar·Planificar·Ejecutar·Reportar·Cubrir.</span></p></div>
-        <div class="card"><p class="small"><b>3 · Plan observa, Execution corre.</b> <span class="dim">El Run es la unidad real de resultado.</span></p></div>
-        <div class="card"><p class="small"><b>4 · Semáforo + gris.</b> <span class="dim">OK·NOK·NOT RUN·UNCOVERED = la cobertura.</span></p></div>
-        <div class="card"><p class="small"><b>5 · Dos capas de traza.</b> <span class="dim">Jira enlaza issues; Xray enlaza resultados. El bug es hijo del Run.</span></p></div>
-        <div class="card card-accent"><p class="small"><b>En este repo:</b> ATP→Plan · TC→Test · ATR→Execution. Plan primero, siempre.</p></div>
-      </div>
-      <p class="small dim mt-m">Fuentes: <span class="mono">docs.getxray.app</span> (parafraseado) + skills del repo (sprint-testing, xray-cli, fix-traceability).</p>
-    </div>
-    <div class="notes">Cierre. S = modo presentador, O = overview, T = cambiar tema. Todo el contenido factual proviene de docs oficiales de Xray y de los skills del repo — nada inventado.</div>
-  </section>
-
+  <div class="deck-footer"><span class="mono">/xray-cli · bun xray</span><span class="slide-number" data-current="1" data-total="17"></span></div>
 </div>
 
 <!-- keyboard-nav hint (ported from defect-management deck) -->
@@ -1135,7 +1135,7 @@ issue in defectsCreatedDuringTestExecution(CALC-400)</div>
 
       // Build the document as a single template string for clarity
       return `<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="es">
 <head>
 <meta charset="utf-8">
 <title>Presenter View</title>
@@ -1739,109 +1739,6 @@ issue in defectsCreatedDuringTestExecution(CALC-400)</div>
     fromHash();
     go(idx);
   });
-})();
-
-</script>
-<script>
-/* ---- animations/fx-runtime.js ---- */
-/* html-ppt :: fx-runtime.js
- * Canvas FX autoloader + lifecycle manager.
- * - Dynamically loads all fx modules listed in FX_LIST
- * - Initializes [data-fx] elements when their slide becomes active
- * - Calls handle.stop() when the slide leaves
- */
-(function(){
-  'use strict';
-
-  const FX_LIST = [
-    '_util',
-    'particle-burst','confetti-cannon','firework','starfield','matrix-rain',
-    'knowledge-graph','neural-net','constellation','orbit-ring','galaxy-swirl',
-    'word-cascade','letter-explode','chain-react','magnetic-field','data-stream',
-    'gradient-blob','sparkle-trail','shockwave','typewriter-multi','counter-explosion'
-  ];
-
-  // Resolve base path of this script so it works from any page location.
-  const myScript = document.currentScript || (function(){
-    const all = document.getElementsByTagName('script');
-    for (const s of all){ if (s.src && s.src.indexOf('fx-runtime.js')>-1) return s; }
-    return null;
-  })();
-  const base = myScript ? myScript.src.replace(/fx-runtime\.js.*$/, 'fx/') : 'assets/animations/fx/';
-
-  let loaded = 0;
-  const total = FX_LIST.length;
-  const ready = new Promise((resolve) => {
-    if (!total) return resolve();
-    FX_LIST.forEach((name) => {
-      const s = document.createElement('script');
-      s.src = base + name + '.js';
-      s.async = false;
-      s.onload = s.onerror = () => { if (++loaded >= total) resolve(); };
-      document.head.appendChild(s);
-    });
-  });
-
-  window.__hpxActive = window.__hpxActive || new Map();
-
-  function initFxIn(root){
-    if (!window.HPX) return;
-    const els = root.querySelectorAll('[data-fx]');
-    els.forEach((el) => {
-      if (window.__hpxActive.has(el)) return;
-      const name = el.getAttribute('data-fx');
-      const fn = window.HPX[name];
-      if (typeof fn !== 'function') return;
-      try {
-        const handle = fn(el, {}) || { stop(){} };
-        window.__hpxActive.set(el, handle);
-      } catch(e){ console.warn('[hpx-fx]', name, e); }
-    });
-  }
-
-  function stopFxIn(root){
-    const els = root.querySelectorAll('[data-fx]');
-    els.forEach((el) => {
-      const h = window.__hpxActive.get(el);
-      if (h && typeof h.stop === 'function'){
-        try{ h.stop(); }catch(e){}
-      }
-      window.__hpxActive.delete(el);
-    });
-  }
-
-  function reinitFxIn(root){
-    stopFxIn(root);
-    initFxIn(root);
-  }
-  window.__hpxReinit = reinitFxIn;
-
-  function boot(){
-    ready.then(() => {
-      const active = document.querySelector('.slide.is-active') || document.querySelector('.slide');
-      if (active) initFxIn(active);
-
-      // Watch all slides for class changes
-      const slides = document.querySelectorAll('.slide');
-      slides.forEach((sl) => {
-        const mo = new MutationObserver((muts) => {
-          for (const m of muts){
-            if (m.attributeName === 'class'){
-              if (sl.classList.contains('is-active')) initFxIn(sl);
-              else stopFxIn(sl);
-            }
-          }
-        });
-        mo.observe(sl, { attributes: true, attributeFilter: ['class'] });
-      });
-    });
-  }
-
-  if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
-  }
 })();
 
 </script>
