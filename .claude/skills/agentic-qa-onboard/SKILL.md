@@ -55,11 +55,11 @@ Single files (CSS + JS inlined) — they open by double-click, no server. Naviga
 
 ### Published site (PREFERRED source — works in every project)
 
-All decks — plus the interactive **KATA Explorable** and the boilerplate homepage — are published on the boilerplate's GitHub Pages hub:
+All decks — plus the interactive **KATA Academy** and the boilerplate homepage — are published on the boilerplate's GitHub Pages hub:
 
 ```
 https://upex-galaxy.github.io/agentic-qa-boilerplate/           ← homepage (deck catalog)
-https://upex-galaxy.github.io/agentic-qa-boilerplate/kata/      ← KATA Explorable (interactive)
+https://upex-galaxy.github.io/agentic-qa-boilerplate/kata/      ← KATA Academy (interactive)
 https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/<skill>/<deck>.html
 ```
 
@@ -81,7 +81,7 @@ Opening a deck launches the user's default browser — an outward, local action 
    ```
 4. **One at a time.** Let the person watch and come back with questions before offering the next skill's deck. Do not batch-open several.
 5. **After it opens,** tell them the keys (`←` `→` to move, `S` for speaker notes) and offer to walk the slides together or answer questions as they go.
-6. **For "how does KATA work" / architecture questions,** also offer the interactive KATA Explorable (`.../kata/`) — 8 interactive chapters, Spanish, presentation mode with the `P` key.
+6. **For "how does KATA work" / architecture questions,** also offer the interactive KATA Academy (`.../kata/`) — 8 interactive chapters, Spanish, presentation mode with the `P` key.
 
 ---
 

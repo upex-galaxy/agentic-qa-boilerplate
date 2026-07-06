@@ -103,6 +103,6 @@ Two independent growth vectors, two controls:
 ## Scope guard
 
 This reference sets up ALLURE report publishing for consumer projects. The
-boilerplate's own `pages.yml` (docs hub: KATA Explorable + decks + homepage)
+boilerplate's own `pages.yml` (docs hub: KATA Academy + decks + homepage)
 is boilerplate-EXCLUSIVE — never replicate it in a consumer project; the
 scaffolder deliberately excludes it.

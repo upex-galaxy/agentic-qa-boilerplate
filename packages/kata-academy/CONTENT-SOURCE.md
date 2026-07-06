@@ -1,4 +1,4 @@
-# CONTENT-SOURCE — Dossier canónico del Explorable KATA
+# CONTENT-SOURCE — Dossier canónico de KATA Academy
 
 > Fuente única para los agentes que escriben capítulos. Todo lo de aquí fue
 > extraído del boilerplate real (`agentic-qa-boilerplate`) y de su doctrina
@@ -29,7 +29,7 @@
 ## 1. Qué es KATA (el corazón del mensaje)
 
 KATA = **Component Action Test Architecture**. La idea central que TODO el
-explorable debe transmitir:
+la academia debe transmitir:
 
 > En vez de escribir los casos de prueba dentro de los archivos de prueba de
 > Playwright, KATA los empaqueta como **métodos reutilizables dentro de
@@ -77,7 +77,7 @@ Roles en una frase:
   o `{ test }` y Playwright construye SOLO lo necesario (lazy): `{ api }`
   jamás abre navegador.
 
-## 3. Reglas de oro (las que enseña el explorable)
+## 3. Reglas de oro (las que enseña la academia)
 
 1. **Un ATC es un mini-flujo completo, atómico. NUNCA llama a otro ATC.**
    Un wrapper de un click NO es un ATC. Cadenas reutilizables → Steps.
@@ -475,7 +475,7 @@ Reglas que el ensamblador debe hacer cumplir (con feedback visual):
 
 ## 9. Mnemotecnia oficial: la cocina profesional
 
-El explorable se recuerda con UNA imagen: **KATA es una cocina profesional**.
+La academia se recuerda con UNA imagen: **KATA es una cocina profesional**.
 Diccionario canónico de anclajes (aprobado — úsalos tal cual):
 
 | KATA | La cocina |

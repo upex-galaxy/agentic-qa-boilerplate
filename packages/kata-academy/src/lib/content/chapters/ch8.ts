@@ -63,7 +63,7 @@ export const WORKFLOWS: WorkflowCard[] = [
   },
 ];
 
-/** Pasos del círculo de trazabilidad (cierre del explorable). */
+/** Pasos del círculo de trazabilidad (cierre de la academia). */
 export const FULL_CIRCLE: { icon: string, label: string }[] = [
   { icon: '🎫', label: 'ticket en Jira' },
   { icon: '🧩', label: 'ATC en código — @atc(\'PROJ-101\')' },

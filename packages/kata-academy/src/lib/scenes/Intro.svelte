@@ -19,7 +19,7 @@
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* Anti-example: invented on purpose (CONTENT-SOURCE §5.1) — the ONLY
-     code the explorable is allowed to make up. Every smell is deliberate:
+     code the academy is allowed to make up. Every smell is deliberate:
      repeated selectors, waitForTimeout, hardcoded credentials, the login
      block copy-pasted twice, zero structure, zero traceability. */
   const SPAGHETTI: string[] = [

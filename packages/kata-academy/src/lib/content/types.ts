@@ -1,5 +1,5 @@
 /**
- * Modelo de contenido del Explorable.
+ * Modelo de contenido de KATA Academy.
  *
  * Los capítulos son escenas Svelte lazy-cargadas; sus metadatos viven
  * aquí para que el mapa, la navegación y la ruta guiada no necesiten

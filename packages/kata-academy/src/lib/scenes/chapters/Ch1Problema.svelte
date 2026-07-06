@@ -123,7 +123,7 @@
 
     <div class="callout good closing">
       <strong>El caso de prueba se escribe UNA vez. Los specs solo eligen piezas.</strong>
-      Ese es el corazón de KATA — y el resto del explorable es aprender a tallar la pieza.
+      Ese es el corazón de KATA — y el resto de la academia es aprender a tallar la pieza.
     </div>
   </section>
 </div>

@@ -130,7 +130,7 @@ export function initGitRepo(projectDir: string): void {
 // or removing an entry requires republishing @upex/create-agentic-qa.
 const TEMPLATE_EXCLUDES = [
   'packages',
-  // Boilerplate-only docs-hub workflows: they build/publish the KATA Explorable,
+  // Boilerplate-only docs-hub workflows: they build/publish the KATA Academy,
   // homepage and decks that live under packages/ (already excluded above). A
   // consumer project has none of that content — its Allure workflows publish to
   // gh-pages on their own; Pages setup for consumers is driven by the

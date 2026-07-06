@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "kata-explorable",
+      "name": "kata-academy",
       "devDependencies": {
         "@sveltejs/vite-plugin-svelte": "^5.0.3",
         "@types/node": "^26.1.0",

@@ -1,15 +1,15 @@
-# HANDOFF — KATA Explorable → siguiente sesión
+# HANDOFF — KATA Academy → siguiente sesión
 
 > **Cómo usar**: adjunta este archivo en una sesión nueva de Claude Code (repo
 > `agentic-qa-boilerplate`). Contiene el estado, las decisiones cerradas, los
 > gotchas técnicos y la cola de trabajo priorizada. La memoria engram del
-> proyecto tiene el detalle histórico (`mem_search "kata explorable"`).
+> proyecto tiene el detalle histórico (`mem_search "kata academy"` (histórico previo: "kata explorable")).
 
 ---
 
 ## 1. Qué es esto
 
-**KATA Explorable** (`kata-explorable/`, hoy UNTRACKED en la raíz del repo):
+**KATA Academy** (`kata-academy/`, hoy UNTRACKED en la raíz del repo):
 mini-app Svelte 5 + Vite + TS estricto que enseña la arquitectura KATA como
 "super mega documentación interactiva". Español, audiencia con OOP mínimo.
 
@@ -32,7 +32,7 @@ mini-app Svelte 5 + Vite + TS estricto que enseña la arquitectura KATA como
 (~30KB gzip main + capítulos code-split) · auditoría responsive (390/768/1440)
 y auditoría UX de 19 hallazgos COMPLETAS y corregidas · 0 errores de consola.
 
-**Comandos** (desde `kata-explorable/`): `bun install` · `bun run dev`
+**Comandos** (desde `kata-academy/`): `bun install` · `bun run dev`
 (localhost:4173) · `bun run check` · `bun run build`.
 
 ---
@@ -57,7 +57,7 @@ y auditoría UX de 19 hallazgos COMPLETAS y corregidas · 0 errores de consola.
 
 Ejecutado y verificado (build + type-check + smoke HTTP + screenshots):
 
-1. **Movido** a `packages/kata-explorable/` (con `.gitignore` interno
+1. **Movido** a `packages/kata-academy/` (con `.gitignore` interno
    `node_modules/` + `dist/`). Root `package.json` NO declara workspaces →
    paquete independiente con su propio `bun install`.
 2. **`base: './'`** en `vite.config.ts`. Verificado: assets relativos en
@@ -68,7 +68,7 @@ Ejecutado y verificado (build + type-check + smoke HTTP + screenshots):
    usuario). Hero CTA → `./kata/` + 3 secciones de decks (Workflows EN/ES ·
    Currículum 01-08 · Oficio QA) + strip Allure → `./staging/regression/`.
    TODOS los 26 decks publicados (decisión usuario; repo ya es público).
-4. **Workflow** `.github/workflows/pages.yml`: build + type-check explorable →
+4. **Workflow** `.github/workflows/pages.yml`: build + type-check de la academy →
    ensambla `_site/` (homepage raíz + `kata/` + `decks/<skill>/` +
    `.nojekyll`) → deploy peaceiris a `gh-pages` con `keep_files: true`
    (protege `<env>/regression/` de Allure — hoy solo existe `staging/`).
@@ -143,7 +143,7 @@ en el mapa (decidir zona) y en el registry.
 ## 5. Mapa de archivos clave
 
 ```
-packages/kata-explorable/
+packages/kata-academy/
 ├── CONTENT-SOURCE.md            ← dossier canónico (doctrina + código real + §8 contrato ingeniería + §9 mnemotecnia)
 ├── HANDOFF.md                   ← este archivo
 ├── vite.config.ts               ← base: './' (NO quitar — el build vive bajo /kata/)

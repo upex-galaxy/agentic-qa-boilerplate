@@ -1,7 +1,7 @@
 import type { ChapterId, SceneId } from '$lib/content/types';
 import { chapterMetas } from '$lib/content/chapters/registry';
 
-const STORAGE_KEY = 'kata-explorable:visited';
+const STORAGE_KEY = 'kata-academy:visited';
 
 function loadVisited(): ChapterId[] {
   try {

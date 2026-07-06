@@ -2,7 +2,7 @@ name: GitHub Pages — Docs Hub
 
 # Publishes the learning hub to gh-pages:
 #   /            -> homepage dashboard (packages/pages-home)
-#   /kata/       -> KATA Explorable build (packages/kata-explorable)
+#   /kata/       -> KATA Academy build (packages/kata-academy)
 #   /decks/      -> how-it-works + curriculum decks from packages/decks/
 #   /<env>/regression/ -> Allure reports (owned by regression.yml — NEVER touched here;
 #                         keep_files: true preserves them on every deploy)
@@ -15,7 +15,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/kata-explorable/**'
+      - 'packages/kata-academy/**'
       - 'packages/pages-home/**'
       - 'packages/decks/**'
       - '.github/workflows/pages.yml'
@@ -41,16 +41,16 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install Explorable Dependencies
-        working-directory: packages/kata-explorable
+      - name: Install Academy Dependencies
+        working-directory: packages/kata-academy
         run: bun install --frozen-lockfile
 
-      - name: Type-check Explorable
-        working-directory: packages/kata-explorable
+      - name: Type-check Academy
+        working-directory: packages/kata-academy
         run: bun run check
 
-      - name: Build Explorable
-        working-directory: packages/kata-explorable
+      - name: Build Academy
+        working-directory: packages/kata-academy
         run: bun run build
 
       - name: Assemble Site
@@ -61,8 +61,8 @@ jobs:
           # Homepage dashboard
           cp packages/pages-home/index.html _site/index.html
 
-          # KATA Explorable (built with base: './' so it works under /kata/)
-          cp -R packages/kata-explorable/dist/. _site/kata/
+          # KATA Academy (built with base: './' so it works under /kata/)
+          cp -R packages/kata-academy/dist/. _site/kata/
 
           # Decks: every HTML deck in packages/decks/<skill>/ -> /decks/<skill>/
           cp -R packages/decks/. _site/decks/
@@ -83,4 +83,4 @@ jobs:
         run: |
           echo "## Docs Hub" >> $GITHUB_STEP_SUMMARY
           echo "Homepage: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
-          echo "KATA Explorable: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/kata/" >> $GITHUB_STEP_SUMMARY
+          echo "KATA Academy: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/kata/" >> $GITHUB_STEP_SUMMARY
