@@ -260,6 +260,64 @@
         letter-spacing: 0.08em;
       }
 
+      /* card identities: skill (orange) vs academy (violet) */
+      .card.skill-card {
+        border-left: 3px solid var(--a1);
+      }
+      .card.academy-card {
+        border-left: 3px solid var(--a3);
+      }
+      .card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .chip {
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        border-radius: 999px;
+        padding: 2px 10px;
+      }
+      .chip-skill {
+        color: var(--a1);
+        background: rgba(255, 166, 87, 0.12);
+        border: 1px solid rgba(255, 166, 87, 0.35);
+      }
+      .chip-academy {
+        color: var(--a3);
+        background: rgba(210, 168, 255, 0.12);
+        border: 1px solid rgba(210, 168, 255, 0.35);
+      }
+      .stage {
+        font-family: var(--font-mono);
+        font-size: 0.66rem;
+        color: var(--text-3);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .card h3.mono-title {
+        font-family: var(--font-mono);
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .card h3.mono-title .slash {
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .card .desc {
+        color: var(--text-2);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+
       /* reports strip */
       .report-strip {
         background: var(--surface);
@@ -349,8 +407,8 @@
         </a>
         <nav class="header-links">
           <a href="./kata/">KATA Academy</a>
-          <a href="#workflows">Workflows</a>
-          <a href="#curriculum">Currículum</a>
+          <a href="#skills">Skills</a>
+          <a href="#academia">Academia</a>
           <a href="#reportes">Reportes</a>
           <a
             href="https://github.com/upex-galaxy/agentic-qa-boilerplate"
@@ -374,51 +432,94 @@
         <div class="cta-sub">Svelte · 8 capítulos interactivos · modo presentación (tecla P)</div>
       </div>
 
-      <section id="workflows" class="wrap">
+      <section id="skills" class="wrap">
         <div class="section-head">
-          <span class="tag">El oficio y la IA</span>
+          <span class="tag">⚡ Skills · cómo trabaja el agente</span>
           <h2>Workflows del pipeline QA</h2>
-          <p>Cómo funciona cada etapa — qué hace el humano, qué hace el agente.</p>
+          <p>
+            Un deck <em>how-it-works</em> por skill: el workflow paso a paso, en el orden del
+            pipeline.
+          </p>
         </div>
         <div class="grid">
-          <div class="card">
-            <span class="skill">shift-left-testing</span>
-            <h3>Shift-Left Testing — refinar ACs antes del sprint</h3>
+          <div class="card skill-card">
+            <div class="card-top">
+              <span class="chip chip-skill">Skill</span>
+              <span class="stage">Stage 0</span>
+            </div>
+            <h3 class="mono-title"><span class="slash">/</span>shift-left-testing</h3>
+            <p class="desc">
+              Refinar ACs del backlog antes del sprint: gaps, ambigüedades y ATP draft — prevenir,
+              no detectar.
+            </p>
             <div class="langs">
               <a href="./decks/shift-left-testing/how-it-works.es.html">Ver deck →</a>
             </div>
           </div>
-          <div class="card">
-            <span class="skill">sprint-testing</span>
-            <h3>Sprint Testing — QA manual por ticket (Stages 1-3)</h3>
+          <div class="card skill-card">
+            <div class="card-top">
+              <span class="chip chip-skill">Skill</span>
+              <span class="stage">Stages 1-3</span>
+            </div>
+            <h3 class="mono-title"><span class="slash">/</span>sprint-testing</h3>
+            <p class="desc">
+              QA manual por ticket: planning, ejecución con la Trifuerza (UI · API · DB) y reporte
+              final.
+            </p>
             <div class="langs">
               <a href="./decks/sprint-testing/how-it-works.es.html">Ver deck →</a>
             </div>
           </div>
-          <div class="card">
-            <span class="skill">test-documentation</span>
-            <h3>Test Documentation &amp; ROI — qué automatizar y por qué</h3>
+          <div class="card skill-card">
+            <div class="card-top">
+              <span class="chip chip-skill">Skill</span>
+              <span class="stage">Stage 4</span>
+            </div>
+            <h3 class="mono-title"><span class="slash">/</span>test-documentation</h3>
+            <p class="desc">
+              Test cases en el TMS + ROI: decidir qué se automatiza, qué queda manual y qué se
+              difiere.
+            </p>
             <div class="langs">
               <a href="./decks/test-documentation/how-it-works.es.html">Ver deck →</a>
             </div>
           </div>
-          <div class="card">
-            <span class="skill">test-automation</span>
-            <h3>Test Automation (KATA) — Plan → Code → Review</h3>
+          <div class="card skill-card">
+            <div class="card-top">
+              <span class="chip chip-skill">Skill</span>
+              <span class="stage">Stage 5</span>
+            </div>
+            <h3 class="mono-title"><span class="slash">/</span>test-automation</h3>
+            <p class="desc">
+              Plan → Code → Review sobre KATA + Playwright + TypeScript, del Candidate al PR.
+            </p>
             <div class="langs">
               <a href="./decks/test-automation/how-it-works.es.html">Ver deck →</a>
             </div>
           </div>
-          <div class="card">
-            <span class="skill">regression-testing</span>
-            <h3>Regression Testing &amp; GO/NO-GO — decidir el release</h3>
+          <div class="card skill-card">
+            <div class="card-top">
+              <span class="chip chip-skill">Skill</span>
+              <span class="stage">Stage 6</span>
+            </div>
+            <h3 class="mono-title"><span class="slash">/</span>regression-testing</h3>
+            <p class="desc">
+              Suites por CI/CD, clasificación de fallos y decisión de release: GO / CAUTION / NO-GO.
+            </p>
             <div class="langs">
               <a href="./decks/regression-testing/how-it-works.es.html">Ver deck →</a>
             </div>
           </div>
-          <div class="card">
-            <span class="skill">xray-cli</span>
-            <h3>Xray para Jira — test management desde la terminal</h3>
+          <div class="card skill-card">
+            <div class="card-top">
+              <span class="chip chip-skill">Skill</span>
+              <span class="stage">Herramienta</span>
+            </div>
+            <h3 class="mono-title"><span class="slash">/</span>xray-cli</h3>
+            <p class="desc">
+              Test management de Xray desde la terminal: tests, planes, ejecuciones e import de
+              resultados.
+            </p>
             <div class="langs">
               <a href="./decks/xray-cli/how-it-works.es.html">Ver deck →</a>
             </div>
@@ -426,113 +527,163 @@
         </div>
       </section>
 
-      <section id="curriculum" class="wrap">
+      <section id="academia" class="wrap">
         <div class="section-head">
-          <span class="tag">De cero a KATA</span>
-          <h2>Currículum de automatización</h2>
-          <p>Ruta pedagógica en español: fundamentos de código → Playwright → arquitectura KATA.</p>
+          <span class="tag">🎓 Academia · doctrina aplicada</span>
+          <h2>El oficio QA</h2>
+          <p>Temarios del testing manual, ordenados por la etapa del pipeline donde se aplican.</p>
         </div>
         <div class="grid">
-          <div class="card">
-            <span class="num">01</span>
-            <h3>Coding Base — fundamentos de programación para QA Testers</h3>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="stage">Transversal</span>
+            </div>
+            <h3>El Códice de Nomenclatura — convenciones de QA &amp; automatización</h3>
+            <p class="desc">Cómo se nombra todo en el pipeline: artefactos, tests, ramas, IDs.</p>
             <div class="langs">
-              <a href="./decks/test-automation/coding-base.es.html">Abrir deck</a>
+              <a href="./decks/agentic-qa-core/naming-conventions.es.html">Abrir deck</a>
             </div>
           </div>
-          <div class="card">
-            <span class="num">02</span>
-            <h3>Coding Classes — del código a las clases</h3>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="stage">Stage 0</span>
+            </div>
+            <h3>El Arte del Shift-Left — prevenir, no detectar</h3>
+            <p class="desc">La doctrina detrás del skill: defectos que mueren en los requisitos.</p>
             <div class="langs">
-              <a href="./decks/test-automation/coding-classes.es.html">Abrir deck</a>
+              <a href="./decks/shift-left-testing/shift-left-craft.es.html">Abrir deck</a>
             </div>
           </div>
-          <div class="card">
-            <span class="num">03</span>
-            <h3>Dev Craft — terminal, Git y tu primer Pull Request</h3>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="stage">Stage 2</span>
+            </div>
+            <h3>La Trifuerza — probar features por capas (UI · API · DB)</h3>
+            <p class="desc">
+              Exploración en tres frentes: lo que se ve, lo que viaja, lo que queda.
+            </p>
             <div class="langs">
-              <a href="./decks/test-automation/dev-craft.es.html">Abrir deck</a>
+              <a href="./decks/sprint-testing/triforce-exploration.es.html">Abrir deck</a>
             </div>
           </div>
-          <div class="card">
-            <span class="num">04</span>
-            <h3>Playwright Pro — de scripts sueltos a suite profesional</h3>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="stage">Stages 2-3</span>
+            </div>
+            <h3>Defect Management — gestionar la calidad por sus incidencias</h3>
+            <p class="desc">
+              Bug vs Defect vs Improvement, severidad, prioridad y traza a la Story.
+            </p>
             <div class="langs">
-              <a href="./decks/test-automation/playwright-pro.es.html">Abrir deck</a>
+              <a href="./decks/sprint-testing/defect-management.es.html">Abrir deck</a>
             </div>
           </div>
-          <div class="card">
-            <span class="num">05</span>
-            <h3>Dojo Lab I — primeros specs contra una app real</h3>
-            <div class="langs">
-              <a href="./decks/test-automation/dojo-lab-1.es.html">Abrir deck</a>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="stage">Stage 4</span>
             </div>
-          </div>
-          <div class="card">
-            <span class="num">06</span>
-            <h3>KATA Bridge — del Page Object al framework profesional</h3>
+            <h3>El Arte de Documentar Test Cases — scopes, nomenclatura, ROI</h3>
+            <p class="desc">Del hallazgo al test case bien escrito que otro pueda ejecutar.</p>
             <div class="langs">
-              <a href="./decks/test-automation/kata-bridge.es.html">Abrir deck</a>
-            </div>
-          </div>
-          <div class="card">
-            <span class="num">07</span>
-            <h3>Automation Patterns — POM · Fixtures · Paralelización · KATA</h3>
-            <div class="langs">
-              <a href="./decks/test-automation/automation-patterns.es.html">Abrir deck</a>
-            </div>
-          </div>
-          <div class="card">
-            <span class="num">08</span>
-            <h3>API Automation con Playwright — request · aserciones · KATA</h3>
-            <div class="langs">
-              <a href="./decks/test-automation/api-automation-playwright.es.html">Abrir deck</a>
+              <a href="./decks/test-documentation/test-case-craft.es.html">Abrir deck</a>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="oficio" class="wrap">
+      <section id="curriculum" class="wrap">
         <div class="section-head">
-          <span class="tag">Doctrina aplicada</span>
-          <h2>El oficio QA</h2>
-          <p>Decks de práctica profunda: exploración, defectos, documentación y nomenclatura.</p>
+          <span class="tag">🎓 Academia · de cero a KATA</span>
+          <h2>Currículum de automatización</h2>
+          <p>
+            Ruta pedagógica secuencial — seguir en orden: fundamentos de código → Playwright →
+            arquitectura KATA.
+          </p>
         </div>
         <div class="grid">
-          <div class="card">
-            <span class="skill">shift-left-testing</span>
-            <h3>El Arte del Shift-Left — prevenir, no detectar</h3>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="num">01</span>
+            </div>
+            <h3>Coding Base — fundamentos de programación para QA Testers</h3>
             <div class="langs">
-              <a href="./decks/shift-left-testing/shift-left-craft.es.html">Abrir deck</a>
+              <a href="./decks/test-automation/coding-base.es.html">Abrir deck</a>
             </div>
           </div>
-          <div class="card">
-            <span class="skill">sprint-testing</span>
-            <h3>La Trifuerza — probar features por capas (UI · API · DB)</h3>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="num">02</span>
+            </div>
+            <h3>Coding Classes — del código a las clases</h3>
             <div class="langs">
-              <a href="./decks/sprint-testing/triforce-exploration.es.html">Abrir deck</a>
+              <a href="./decks/test-automation/coding-classes.es.html">Abrir deck</a>
             </div>
           </div>
-          <div class="card">
-            <span class="skill">sprint-testing</span>
-            <h3>Defect Management — gestionar la calidad por sus incidencias</h3>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="num">03</span>
+            </div>
+            <h3>Dev Craft — terminal, Git y tu primer Pull Request</h3>
             <div class="langs">
-              <a href="./decks/sprint-testing/defect-management.es.html">Abrir deck</a>
+              <a href="./decks/test-automation/dev-craft.es.html">Abrir deck</a>
             </div>
           </div>
-          <div class="card">
-            <span class="skill">test-documentation</span>
-            <h3>El Arte de Documentar Test Cases — scopes, nomenclatura, ROI</h3>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="num">04</span>
+            </div>
+            <h3>Playwright Pro — de scripts sueltos a suite profesional</h3>
             <div class="langs">
-              <a href="./decks/test-documentation/test-case-craft.es.html">Abrir deck</a>
+              <a href="./decks/test-automation/playwright-pro.es.html">Abrir deck</a>
             </div>
           </div>
-          <div class="card">
-            <span class="skill">agentic-qa-core</span>
-            <h3>El Códice de Nomenclatura — convenciones de QA &amp; automatización</h3>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="num">05</span>
+            </div>
+            <h3>Dojo Lab I — primeros specs contra una app real</h3>
             <div class="langs">
-              <a href="./decks/agentic-qa-core/naming-conventions.es.html">Español</a>
-              <a href="./decks/agentic-qa-core/naming-conventions.html">English</a>
+              <a href="./decks/test-automation/dojo-lab-1.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="num">06</span>
+            </div>
+            <h3>KATA Bridge — del Page Object al framework profesional</h3>
+            <div class="langs">
+              <a href="./decks/test-automation/kata-bridge.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="num">07</span>
+            </div>
+            <h3>Automation Patterns — POM · Fixtures · Paralelización · KATA</h3>
+            <div class="langs">
+              <a href="./decks/test-automation/automation-patterns.es.html">Abrir deck</a>
+            </div>
+          </div>
+          <div class="card academy-card">
+            <div class="card-top">
+              <span class="chip chip-academy">Academia</span>
+              <span class="num">08</span>
+            </div>
+            <h3>API Automation con Playwright — request · aserciones · KATA</h3>
+            <div class="langs">
+              <a href="./decks/test-automation/api-automation-playwright.es.html">Abrir deck</a>
             </div>
           </div>
         </div>

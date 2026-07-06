@@ -194,7 +194,7 @@ run/coverage engine on top.
 - `shift-left-testing/references/atp-draft-template.md` · `handoff-protocol.md` — ATP DRAFT title.
 - `regression-testing/SKILL.md` — STP/STR (Sprint Regression Testing).
 - `scripts/sync-jira-issues.ts` — Plan/Run as items; field-fallback precedence.
-- `.claude/skills/agentic-qa-core/naming-conventions.html` + `.es.html` — new "Planning Ladder" layer/slide.
+- `.claude/skills/agentic-qa-core/naming-conventions.es.html` — new "Planning Ladder" layer/slide.
 - `.agents/jira-required.yaml` / `jira-fields.json` — Test Plan / Test Execution / Test Set / Precondition work-type config.
 
 ---
