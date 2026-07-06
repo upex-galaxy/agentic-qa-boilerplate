@@ -174,6 +174,12 @@ export function buildDriftPrompt(drifted: DriftedEntry[], templateRepo: string):
     '   decision instead of silently overwriting.',
     '6. Show me a concise before/after diff per file BEFORE writing anything.',
     '',
+    'BEFORE porting any config that depends on a pinned tool (e.g. allurerc.mjs depends on',
+    'the `allure` devDependency), check the pinned version against the latest SAME-major',
+    '(`npm view <pkg> version` vs package.json) and offer the update first — `bun run update`',
+    'appends new devDependencies but never bumps existing ones, so new config options may',
+    'not exist in the locally pinned version.',
+    '',
     'After migrating, run the project verification (tests -> types -> lint) and report results.',
   ].join('\n');
 }
