@@ -1751,7 +1751,7 @@ export function cleanupDeprecated(
  * classifier forces `unchanged`, so local edits there are never overwritten.
  * Rename lines ("old -> new") match if EITHER side is watched.
  */
-export function scopedDirtyPaths(cfg: UpdaterConfig, repoRoot: string): string[] {
+export function scopedDirtyPaths(cfg: UpdaterConfig, repoRoot: string, extraExcludedPaths: string[] = []): string[] {
   let lines: string[] = [];
   try {
     lines = execSync(`git -C "${repoRoot}" status --porcelain`, { encoding: 'utf8' })
@@ -1782,7 +1782,10 @@ export function scopedDirtyPaths(cfg: UpdaterConfig, repoRoot: string): string[]
   // cfg.excludePaths are never written by the sync (e.g. the per-repo generated
   // REGISTRY.md, project-adapted api-login.ts) — dirty state there is normal
   // and must not block the run.
-  const excluded = new Set((cfg.excludePaths ?? []).map(p => p.replace(/\\/g, '/')));
+  const excluded = new Set([
+    ...(cfg.excludePaths ?? []),
+    ...extraExcludedPaths,
+  ].map(p => p.replace(/\\/g, '/')));
 
   const strip = (p: string): string => p.replace(/^"|"$/g, ''); // porcelain quotes paths with spaces
   const watched = (p: string): boolean =>
@@ -1854,7 +1857,10 @@ export async function runUpdate(
   // Interactive mode may override with an explicit confirm; the default
   // (non-interactive) mode always aborts — commit/stash/restore and re-run.
   if (!opts.dryRun) {
-    const dirtyWatched = scopedDirtyPaths(cfg, repoRoot);
+    // Files the self-update parent just wrote from upstream are excluded: they
+    // match upstream exactly, so overwriting them loses nothing (see re-exec env).
+    const selfUpdatedPaths = (process.env.UPEX_UPDATER_SELFUPDATED ?? '').split('\n').filter(Boolean);
+    const dirtyWatched = scopedDirtyPaths(cfg, repoRoot, selfUpdatedPaths);
     if (dirtyWatched.length > 0) {
       sink.warn(`Hay ${dirtyWatched.length} ruta(s) con cambios sin commitear que este updater SINCRONIZA (serían sobrescritas; sus backups van a .backups/, que está gitignored):`);
       for (const p of dirtyWatched.slice(0, 20)) { sink.step(`  ${p}`); }
@@ -1924,11 +1930,15 @@ export async function runUpdate(
   const templateDir = cfg.tempDir;
   try {
     // Sparse-checkout must include component paths, ignore-file paths AND
-    // package.json paths so Phase 4.5 / 4.5b can read them out of the partial clone.
+    // package.json paths so Phase 4.5 / 4.5b can read them out of the partial
+    // clone — plus any extra paths hooks need to read from upstream (e.g. the
+    // protected-file drift watchlist; without them the advisory silently
+    // skips every entry because the upstream copy "does not exist").
     const sparsePatterns = [
       ...buildSparseCheckoutPatterns(cfg.components),
       ...cfg.ignoreFiles.map(spec => spec.path),
       ...(cfg.packageJsonSpecs ?? []).map(spec => spec.path),
+      ...(cfg.sparseExtraPaths ?? []),
     ];
     await partialCloneTemplate(cfg.templateRepo, cfg.tempDir, sparsePatterns);
     fetchSpin.stop(`Template descargado (sparse-checkout): ${cfg.templateRepo}`);
@@ -2027,7 +2037,11 @@ export async function runUpdate(
         sink.step('Re-ejecutando con código actualizado…');
         const child = spawnSync(process.execPath, [process.argv[1], ...process.argv.slice(2)], {
           stdio: 'inherit',
-          env: { ...process.env, UPEX_UPDATER_REEXEC: '1' },
+          // UPEX_UPDATER_SELFUPDATED: the cli/ files THIS parent just wrote from
+          // upstream. The child's scoped dirty check excludes them — they match
+          // upstream byte-for-byte, so "would be overwritten" loses nothing, and
+          // without the exclusion every self-update aborts on its own writes.
+          env: { ...process.env, UPEX_UPDATER_REEXEC: '1', UPEX_UPDATER_SELFUPDATED: stale.join('\n') },
         });
         cleanupTempDir(cfg.tempDir);
         if (child.error) {

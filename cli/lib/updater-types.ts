@@ -448,6 +448,13 @@ export interface UpdaterConfig {
    * from the repo's own installed skill set, including local community skills).
    */
   excludePaths?: string[]
+  /**
+   * Extra repo-relative paths added to the sparse-checkout of the template
+   * clone. Not synced — they exist so afterApply hooks can READ the upstream
+   * copy (e.g. the protected-file drift watchlist). Without them the partial
+   * clone omits those files and upstream-comparison hooks silently no-op.
+   */
+  sparseExtraPaths?: string[]
   agentsFrameworkFiles?: string[]
   /**
    * Optional component name (e.g. `'cli'`) whose files contain the updater itself.

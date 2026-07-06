@@ -931,6 +931,9 @@ async function main(): Promise<void> {
       path.join(SKILLS_CANONICAL_DIR, 'REGISTRY.md').replace(/\\/g, '/'),
       'scripts/api-login.ts',
     ],
+    // Watchlist files are NOT synced — included in the sparse clone only so
+    // the protected-drift hook can read their upstream copies.
+    sparseExtraPaths: PROTECTED_WATCHLIST.map(e => e.path),
     selfUpdateComponent: 'cli',
     hooks: {
       skillsResolver: resolveTemplateSkills,
