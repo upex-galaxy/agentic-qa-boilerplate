@@ -2217,6 +2217,19 @@ export async function runUpdate(
 
   if (visible.length === 0 && ignoreDeltasPre.length === 0 && pkgJsonDeltasPre.length === 0) {
     sink.step('Sin cambios detectados respecto al upstream. Nada que sincronizar.');
+    // Advisory hooks still run: protected watchlist files (not synced
+    // components) can drift upstream even when every component is current,
+    // and the template clone they read from is still on disk here.
+    if (cfg.hooks?.afterApply && !opts.dryRun) {
+      try {
+        await cfg.hooks.afterApply(emptySummary);
+      }
+      catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        sink.warn(`afterApply hook falló: ${msg}`);
+      }
+    }
+    cleanupTempDir(cfg.tempDir);
     return emptySummary;
   }
   if (visible.length > 0) {
