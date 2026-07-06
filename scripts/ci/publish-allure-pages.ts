@@ -5,8 +5,8 @@
  * Replaces simple-elf/allure-report-action (Allure 2) + peaceiris deploy so
  * that CI uses EXACTLY the same generator and config as local runs: the
  * `allure` devDependency driven by the repo's `allurerc.mjs`. The published
- * report is byte-for-byte the same multi-view landing (Awesome + QA Dashboard
- * + Smoke Release Gate) a developer sees with `bun run allure:open`.
+ * report is byte-for-byte what a developer sees with `bun run allure:open` —
+ * the Awesome report served directly (Report | Graphs | Timeline modes).
  *
  * Per {env}/{suite} the published tree looks like:
  *

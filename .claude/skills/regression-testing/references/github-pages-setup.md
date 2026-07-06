@@ -4,11 +4,11 @@
 > `gh-pages` actually reachable in a browser. The regression / smoke / sanity
 > workflows shipped with this boilerplate publish to the `gh-pages` branch out
 > of the box via `scripts/ci/publish-allure-pages.ts` (Allure 3, same
-> `allurerc.mjs` as local runs: multi-view landing with Awesome + QA Dashboard
-> + Smoke Release Gate, trend history per env/suite, latest-run redirect,
-> last-10-runs retention) — but GitHub does NOT serve that branch until Pages
-> is explicitly enabled on the repo. This reference is the full maneuver,
-> learned the hard way on the boilerplate repo itself.
+> `allurerc.mjs` as local runs: the Awesome report served directly with its
+> Report | Graphs | Timeline modes, trend history per env/suite, latest-run
+> redirect, last-10-runs retention) — but GitHub does NOT serve that branch
+> until Pages is explicitly enabled on the repo. This reference is the full
+> maneuver, learned the hard way on the boilerplate repo itself.
 
 ## When to run this
 
@@ -25,10 +25,10 @@ Before touching Pages, run the **§Allure version-currency check** from
 `allure-playwright` / `allure-js-commons` versions are usually behind upstream
 by the time a scaffolded project reaches this setup. Summarize the news to the
 user, offer the same-major `bun update`, never cross a major silently, and
-re-generate one report to confirm the landing page still shows the Awesome +
-QA Dashboard + Smoke Release Gate cards. The published site inherits whatever
-version generates in CI, so an outdated local pin means an outdated public
-report.
+re-generate one report to confirm the root `index.html` still opens the
+Awesome report directly (Report | Graphs | Timeline). The published site
+inherits whatever version generates in CI, so an outdated local pin means an
+outdated public report.
 
 ## Preconditions (probe, don't assume)
 

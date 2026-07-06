@@ -3,56 +3,27 @@ import { defineConfig } from 'allure';
 /**
  * Allure 3 report configuration.
  *
- * Landing page shows one card per plugin instance below:
- *   1. Awesome    — full drill-down report (tests, steps, attachments).
- *   2. Dashboard  — executive QA dashboard over ALL suites.
- *   3. Dashboard  — smoke/release-gate view (@critical-tagged tests only).
+ * SINGLE-PLUGIN BY DESIGN. With only the Awesome plugin, the generated
+ * index.html IS the report (no landing/card-chooser screen), and Awesome
+ * already ships everything in one UI via its top-left mode dropdown:
+ *   - Report   — full drill-down (tests, steps, attachments, tag filters).
+ *   - Graphs   — the COMPLETE chart set (defaultChartsConfig from
+ *                @allurereport/charts-api): status, dynamics, severities,
+ *                transitions, stability by suite/feature/epic/story,
+ *                testing pyramid, durations, growth, coverage diff…
+ *                Customizable via the `charts: ChartOptions[]` option.
+ *   - Timeline — per-worker execution timeline.
  *
- * Chart `type` values MUST match the ChartType enum in
- * @allurereport/charts-api (dist/types.d.ts). The plugin-dashboard README
- * examples (`trend`/`pie`) predate 3.14 and silently produce an EMPTY
- * dashboard (404 on widgets/charts.json) — do not copy them.
+ * Do NOT add @allurereport/plugin-dashboard instances here: they duplicate
+ * Awesome's Graphs tab with fewer charts AND bring back the card-chooser
+ * landing in front of every published report. If a filtered executive view
+ * is ever needed (e.g. @critical-only), Awesome itself accepts a `filter`
+ * option on a second instance — but prefer the in-report Tags filter.
  *
- * Trend-style charts (dynamics/transitions/growth/age) need run history:
- * they render meaningfully from the 2nd generated report onward.
+ * Trend-style charts need run history: they render from the 2nd generated
+ * report onward. The `layer` label feeding testingPyramid/durations-by-layer
+ * comes from the _allureLayer auto-fixture in tests/components/TestFixture.ts.
  */
-
-// Executive dashboard over all suites — ordered health → risk → hygiene.
-const qaDashboardLayout = [
-  // Health at a glance
-  { type: 'currentStatus', title: 'Current status' },
-  { type: 'statusDynamics', title: 'Status dynamics (last 20 runs)', limit: 20 },
-  { type: 'statusTransitions', title: 'Status transitions vs previous run', limit: 20 },
-  // Risk: what is broken, how severe, where
-  { type: 'testResultSeverities', title: 'Results by severity', includeUnset: true },
-  { type: 'problemsDistribution', by: 'environment', title: 'Problems by environment' },
-  { type: 'statusAgePyramid', title: 'Failure age (how long tests have been failing)' },
-  // Stability & coverage shape
-  {
-    type: 'stabilityDistribution',
-    title: 'Stability by suite (flakiness radar)',
-    groupBy: 'suite',
-    threshold: 90,
-    skipStatuses: ['skipped', 'unknown'],
-  },
-  // Layers come from the `layer` label set by the _allureLayer auto-fixture
-  // in tests/components/TestFixture.ts (derived from e2e/ vs integration/).
-  { type: 'testingPyramid', title: 'Testing pyramid', layers: ['integration', 'e2e'] },
-  { type: 'successRateDistribution', title: 'Success rate map' },
-  { type: 'coverageDiff', title: 'Coverage diff vs previous run' },
-  { type: 'testBaseGrowthDynamics', title: 'Test base growth' },
-  // Performance of the suite itself
-  { type: 'durations', title: 'Durations by layer', groupBy: 'layer' },
-  { type: 'durationDynamics', title: 'Duration dynamics (suite speed over time)', limit: 20 },
-];
-
-// Release-gate view: only what matters right after a deploy.
-const smokeDashboardLayout = [
-  { type: 'currentStatus', title: 'Critical tests — current status' },
-  { type: 'statusDynamics', title: 'Critical tests — status dynamics', limit: 20 },
-  { type: 'statusTransitions', title: 'Critical tests — transitions vs previous run', limit: 20 },
-  { type: 'durationDynamics', title: 'Smoke duration dynamics', limit: 20 },
-];
 
 export default defineConfig({
   name: 'Agentic QA Boilerplate',
@@ -80,29 +51,9 @@ export default defineConfig({
     },
   ],
   plugins: {
-    'awesome': {
+    awesome: {
       options: {
         reportLanguage: 'en',
-      },
-    },
-    'dashboard': {
-      options: {
-        reportName: 'QA Dashboard',
-        reportLanguage: 'en',
-        layout: qaDashboardLayout,
-      },
-    },
-    // Second instance of the same plugin: custom key + explicit `import`.
-    // Playwright tags (e.g. `{ tag: '@critical' }`) reach Allure as `tag`
-    // labels with the leading `@` stripped.
-    'smoke-dashboard': {
-      import: '@allurereport/plugin-dashboard',
-      options: {
-        reportName: 'Smoke — Release Gate',
-        reportLanguage: 'en',
-        layout: smokeDashboardLayout,
-        filter: testResult =>
-          testResult.labels.some(({ name, value }) => name === 'tag' && value === 'critical'),
       },
     },
   },

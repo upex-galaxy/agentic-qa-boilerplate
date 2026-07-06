@@ -160,8 +160,8 @@ jobs:
         if: steps.check_allure.outputs.has_results == 'true'
         run: bun install
 
-      # Allure 3 generate + publish: same allurerc.mjs as local (multi-view
-      # landing with trends via historyPath), real retention, latest redirect.
+      # Allure 3 generate + publish: same allurerc.mjs as local (Awesome report
+      # served directly, trends via historyPath), real retention, latest redirect.
       - name: Build & Publish Allure Report (Allure 3)
         if: steps.check_allure.outputs.has_results == 'true'
         run: |
