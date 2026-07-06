@@ -191,7 +191,7 @@ The Selection subagent returns this table verbatim. The orchestrator pastes it i
 - Confirm refinement order above? (or override)
 ```
 
-The user replies with OKs or overrides. The orchestrator persists the FINAL accepted list into `session-memory.md` before dispatching Phase 2 refinement subagents.
+The user replies with OKs or overrides. The orchestrator persists the FINAL accepted list into the session's `progress.md` (`.session/shift-left-testing/<batch-id>/`) before dispatching Phase 2 refinement subagents.
 
 ---
 

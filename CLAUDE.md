@@ -332,7 +332,6 @@ Project values live in **`.agents/project.yaml`** — load once per session, cac
   tech-debts/TECHDEBT-<KEY>-<slug>/              [SYNC — coverable folder: tech-debt.md + ATP + ATR + …]
   defects/ tests/                                [SYNC — standalone defect / test issues]
   test-plans/ test-executions/ test-sets/ preconditions/   [SYNC — Xray container issues (jira-xray); description holds the ATP/ATR body]
-  shift-left-sessions/<date>/batch-report.md     [skill — non-Jira, OK]
 ```
 
 **Default `pull` scope = Epics + Stories + Bugs** (+ optional `--types` / `JIRA_SYNC_TYPES`). **Coverable** types (Story, Bug, Defect, Improvement, Tech Story, Tech Debt) each get their OWN folder: body md + `acceptance-test-plan.md` + `acceptance-test-results.md` + `test-executions/` (only when >1 Execution linked) + nested `defects/`. **ATP/ATR precedence** (items-first — a **Test Plan** item for ATP / **Test Execution** item for ATR by excellence; the Story custom field is fallback only): linked Xray Test Plan desc (ATP) / Test Execution / Re-Test Execution desc (ATR, newest wins) OVERRIDE the Story custom-field copy → else issue field → else Jira comment (only `--include-comments`) → else silent. Sync emits end-of-run **traceability WARNINGS** for ATP/ATR linked via the wrong link type, atypical Defect links, and orphan Defects with no coverable parent.

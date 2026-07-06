@@ -35,7 +35,6 @@ Per-epic and per-story QA workspace shared by `/shift-left-testing`, `/sprint-te
   tech-debts/TECHDEBT-<KEY>-<slug>/               [SYNC — coverable folder: tech-debt.md + ATP + ATR + …]
   defects/ tests/                                 [SYNC — standalone defect / test issues]
   test-plans/ test-executions/ test-sets/ preconditions/   [SYNC — Xray container issues (jira-xray); description holds the ATP/ATR body]
-  shift-left-sessions/<date>/batch-report.md      [skill — non-Jira, OK]
 ```
 
 Folder naming follows Jira IDs verbatim — `<KEY>` is the Jira issue key, `<slug>` is `kebab-case` from the summary. Epic and Story folders are prefixed `EPIC-` / `STORY-`. Every Story lives under its Epic's `stories/` (Module = Epic, 1:1).
@@ -45,7 +44,7 @@ Folder naming follows Jira IDs verbatim — `<KEY>` is the Jira issue key, `<slu
 ## `[SYNC]` vs skill-authored
 
 - **`[SYNC]` files = forbidden to hand-write.** They are overwritten on every sync — **NO file is hard-protected.** A file that mirrors a Jira/Xray field → read the synced copy, never author it locally.
-- **Skill-authored, non-Jira files** (`module-context.md`, `test-specs/`, `context.md`, `test-session-memory.md`, `shift-left-refinement.md`, `test-cases/`, `evidence/`, `shift-left-sessions/`) hold info that is NOT in Jira → author them locally as usual.
+- **Skill-authored, non-Jira files** (`module-context.md`, `test-specs/`, `context.md`, `test-session-memory.md`, `shift-left-refinement.md`, `test-cases/`, `evidence/`) hold info that is NOT in Jira → author them locally as usual.
 
 ## Jira-first generation contract
 

@@ -19,7 +19,7 @@ This reference defines:
 | Refined refinement file (NON-Jira working file) | `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/shift-left-refinement.md` |
 | Current Story status | `bun run jira:sync-issues get {STORY_KEY}`, then read synced status (or `acli search` for the trivial status-only lookup) |
 | Current Story labels | Same synced read — labels list |
-| Modality | From `session-memory.md` (resolved in shift-left-testing Phase 0.1) |
+| Modality | From the session's `progress.md` (`.session/shift-left-testing/<batch-id>/`, resolved in shift-left-testing Phase 0.1) |
 | TMS field map | `.agents/jira-fields.json` → `{{jira.acceptance_criteria}}`, `{{jira.acceptance_test_plan}}` |
 | Workflow transitions | `.agents/jira-workflows.json` → `{{jira.transition.story.analyze}}`, `{{jira.transition.story.estimate}}` |
 
@@ -247,7 +247,7 @@ Dispatched ONCE after every Story has run Phase 3.
 ### Output path
 
 ```
-.context/PBI/shift-left-sessions/{{YYYY-MM-DD}}-{suffix?}/batch-report.md
+.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/batch-report.md
 ```
 
 ### Template
@@ -256,7 +256,7 @@ Dispatched ONCE after every Story has run Phase 3.
 # Shift-Left Batch Report — {{YYYY-MM-DD}}
 
 ## Session metadata
-- **Session folder**: `.context/PBI/shift-left-sessions/{{YYYY-MM-DD}}-{suffix?}/`
+- **Session folder**: `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/`
 - **Mode**: Modality {A | B}
 - **Candidate count**: {n}
 - **Accepted for refinement**: {n}
@@ -325,7 +325,7 @@ Sorted by risk + dependency:
 
 ### Posting rules
 
-1. **Always write** the file under `.context/PBI/shift-left-sessions/{{YYYY-MM-DD}}-{suffix?}/batch-report.md`.
+1. **Always write** the file under `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/batch-report.md`.
 2. **If all refined Stories share ONE parent epic**, post the batch report as a comment on that epic — the team grooms by epic, so the report lands where decision-makers look.
 3. **If Stories span multiple epics or have no common parent**, do NOT post to any epic — deliver inline to the user as the session-closing message.
 4. **Never post the report on every Story**. The per-Story comment is already mirrored in Step 3; the batch report is a session-level artifact.
@@ -336,7 +336,7 @@ Sorted by risk + dependency:
 
 The session is resumable. If interrupted (subagent failure, user abort, network drop), the next invocation:
 
-1. Reads `session-memory.md` to know which Stories are pending vs handed-off.
+1. Reads the session's `progress.md` (`.session/shift-left-testing/<batch-id>/`) to know which Stories are pending vs handed-off.
 2. Reads each pending Story's `shift-left-refinement.md` (if it exists) to know Phase 2 is done.
 3. Continues from the first incomplete step (Step 1 if description not yet updated, Step 2 if ATP not populated, ...).
 
@@ -372,9 +372,9 @@ Each step is idempotent:
 ## Checklist before closing the session
 
 - [ ] All accepted Stories ran the per-Story handoff
-- [ ] Each per-Story log captured in `session-memory.md`
+- [ ] Each per-Story log captured in the session's `progress.md`
 - [ ] No transition advanced beyond `{{jira.status.story.estimation}}`
-- [ ] Batch report written to `.context/PBI/shift-left-sessions/{{YYYY-MM-DD}}-{suffix?}/batch-report.md`
+- [ ] Batch report written to `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/batch-report.md`
 - [ ] Batch report posted to parent epic (if all Stories share one) OR delivered inline
 - [ ] User informed: when each Story reaches `Ready For QA`, run `/sprint-testing` (short-circuit thanks to `shift-left-reviewed`)
 - [ ] Warnings + errors surfaced explicitly in the user-facing session-close message
