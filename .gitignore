@@ -34,6 +34,9 @@ node_modules/
 /allure-report/
 /.allure/
 
+# ===== Auto-generated AI prompts (single-use, written by bun run update) =====
+/.agents/prompts/
+
 # ===== Custom Reports =====
 /reports/
 *.json.bak
