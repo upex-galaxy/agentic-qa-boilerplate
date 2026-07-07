@@ -47,8 +47,10 @@
  *      WARN severity (does not fail CI).
  *
  *   8. STALE-PATH — path-like literals in inline backtick spans of T1 SKILL.md
- *      bodies (outside fenced code blocks) must resolve to existing files
- *      relative to repo root. ERROR severity.
+ *      bodies AND each skill's references/*.md (outside fenced code blocks)
+ *      must resolve to existing files relative to the skill dir or repo root.
+ *      Known gitignored artifacts + illustrative example paths are exempted
+ *      via STALE_PATH_ALLOWED. ERROR severity.
  *
  *   9. DUPLICATE-TIER — a skill slug appearing in more than one of
  *      PROJECT_LEVEL_SKILLS, USER_LEVEL_SKILLS is an install conflict.
@@ -549,11 +551,34 @@ function stripFencedCodeBlocks(md: string): string {
 const INLINE_CODE_PATH
   = /`((?:\.claude\/skills|scripts|cli|\.agents|tests|api)\/[\w./-]+)`/g;
 
+/**
+ * Paths exempt from STALE-PATH — inline-code path literals that are correct
+ * but resolve to nothing in a fresh checkout, in two families:
+ *   - gitignored generated/config artifacts (produced by `bun run api:sync` /
+ *     written at adapt time) that docs legitimately cite;
+ *   - illustrative example paths in doctrine docs (hypothetical components,
+ *     mock-naming-convention samples) that intentionally name no real file.
+ * Keep entries exact; NEVER add a stale reference to a real file here — fix
+ * the reference instead.
+ */
+const STALE_PATH_ALLOWED = new Set<string>([
+  // Gitignored generated/config artifacts (see .gitignore)
+  'api/openapi.json',
+  'api/.openapi-config.json',
+  // Illustrative examples (docs teach a naming shape, not a real file)
+  'tests/components/UsersPage.ts',
+  'tests/components/AdminFixture.ts',
+  'tests/data/mocks/auth/login/POST.200.json',
+  'tests/data/mocks/users/POST.201.json',
+  'tests/data/mocks/users/create/POST.400.json',
+]);
+
 function checkStalePaths(
   skillSlug: string,
   skillDir: string,
   body: string,
   repoRoot: string,
+  sourceFile: string,
 ): Violation[] {
   const result: Violation[] = [];
   const stripped = stripFencedCodeBlocks(body);
@@ -564,6 +589,7 @@ function checkStalePaths(
     // Skip absolute paths.
     if (path.startsWith('/')) { continue; }
     if (path.endsWith('/')) { continue; } // directory-shape illustration, not a file ref
+    if (STALE_PATH_ALLOWED.has(path)) { continue; } // gitignored artifact / intentional example
     // Skill-dir-first resolution: shorthand like `scripts/foo.ts` inside a skill
     // body should resolve against the skill's own directory; fall back to repo
     // root for paths that are genuinely repo-rooted (e.g. `.claude/skills/...`).
@@ -572,7 +598,7 @@ function checkStalePaths(
     result.push({
       severity: 'ERROR',
       scope: skillSlug,
-      msg: `STALE-PATH: \`${path}\` referenced in SKILL.md body does not exist on disk`,
+      msg: `STALE-PATH: \`${path}\` referenced in ${sourceFile} body does not exist on disk`,
     });
   }
 
@@ -992,9 +1018,18 @@ function main(): void {
     }
   }
 
-  // Check 8: STALE-PATH
+  // Check 8: STALE-PATH — SKILL.md bodies + each skill's references/*.md
   for (const skill of t1Skills) {
-    violations.push(...checkStalePaths(skill.slug, skill.skillDir, skill.body, REPO_ROOT));
+    violations.push(...checkStalePaths(skill.slug, skill.skillDir, skill.body, REPO_ROOT, 'SKILL.md'));
+    const refsDir = join(skill.skillDir, 'references');
+    if (!existsSync(refsDir)) { continue; }
+    for (const ref of readdirSync(refsDir)) {
+      if (!ref.endsWith('.md')) { continue; }
+      let refText: string;
+      try { refText = readFileSync(join(refsDir, ref), 'utf8'); }
+      catch { continue; }
+      violations.push(...checkStalePaths(skill.slug, skill.skillDir, refText, REPO_ROOT, `references/${ref}`));
+    }
   }
 
   // Check 9: DUPLICATE-TIER
@@ -1021,7 +1056,7 @@ function main(): void {
     '`framework-development` exclusivity',
     'anti-leak (`/sdd-` outside Forbidden invocations)',
     'TIER-MISMATCH (CLAUDE.md §5 vs install.ts)',
-    'STALE-PATH (inline-code path references in SKILL.md bodies)',
+    'STALE-PATH (inline-code path references in SKILL.md + references/*.md bodies)',
     'DUPLICATE-TIER (skill slug in multiple tier arrays)',
     'SESSION-BANNER-MISSING (retrofitted SKILL.md missing session-management banner)',
     'SESSION-PHASE-0-MISSING (retrofitted SKILL.md missing Phase 0 with .session/ ref)',
