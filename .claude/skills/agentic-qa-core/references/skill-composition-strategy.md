@@ -142,8 +142,7 @@ Without the gate, an AI orchestrator handed "QA this user story `UPEX-277`" will
 - `scripts/`
 - `.agents/` (structure changes only — not `project.yaml` values)
 - `tests/utils/` (utility evolution, not test specs)
-- `tests/components/` (Layer 2 + 3 base classes + fixtures; NOT per-module ATCs)
-- `tests/fixtures/` (fixture registry evolution)
+- `tests/components/` (Layer 2 + 3 base classes + fixtures — the fixture registry lives in `tests/components/TestFixture.ts`; NOT per-module ATCs)
 - `scripts/sync-openapi.ts` and the sync pipeline (NOT generated `types.ts`)
 - `package.json` deps + scripts
 - `.claude/skills/agentic-qa-core/references/`
