@@ -99,6 +99,9 @@ Two independent growth vectors, two controls:
 - Reminder: on public repos the reports are public — screenshots may leak
   UI/data of the app under test; confirm the team is OK with that or keep the
   repo private (Pages on private repos needs a paid plan).
+- If the team needs reports behind a login instead, switch to the PRIVATE
+  Test Report Portal mode — runbook: `references/private-hosting-setup.md`
+  (the suite workflows are already dual-mode; only secrets are wired).
 
 ## Scope guard
 

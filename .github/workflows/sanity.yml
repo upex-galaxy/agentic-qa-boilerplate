@@ -211,20 +211,36 @@ jobs:
 
       # Allure 3 generate + publish: same allurerc.mjs as local (Awesome report
       # served directly, trends via historyPath), real retention, latest redirect.
+      # PRIVATE portal mode is opt-in: when the PORTAL_URL secret is set, the
+      # report goes to the auth-walled Test Report Portal (R2) INSTEAD of
+      # public GitHub Pages. Runbook: .claude/skills/regression-testing/
+      # references/private-hosting-setup.md
       - name: Build & Publish Allure Report (Allure 3)
         if: steps.check_allure.outputs.has_results == 'true'
+        env:
+          PORTAL_URL: ${{ secrets.PORTAL_URL }}
+          PORTAL_PROJECT: ${{ secrets.PORTAL_PROJECT }}
+          PORTAL_API_KEY: ${{ secrets.PORTAL_API_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
-          bun scripts/ci/publish-allure-pages.ts \
-            --env "${{ env.TEST_ENV }}" \
-            --suite "${{ github.event.inputs.custom_allure_url || 'sanity' }}" \
-            --run "${{ github.run_number }}" \
-            --results sanity-artifacts/allure-results --pages gh-pages --keep 10
-
-      - name: Post Report URL
-        if: steps.check_allure.outputs.has_results == 'true'
-        run: |
-          echo "## Allure Report" >> $GITHUB_STEP_SUMMARY
-          echo "View the report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ env.TEST_ENV }}/${{ github.event.inputs.custom_allure_url }}/" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$PORTAL_URL" ]; then
+            bun scripts/ci/publish-allure-portal.ts \
+              --env "${{ env.TEST_ENV }}" \
+              --suite "${{ github.event.inputs.custom_allure_url || 'sanity' }}" \
+              --run "${{ github.run_number }}" \
+              --results sanity-artifacts/allure-results
+          else
+            bun scripts/ci/publish-allure-pages.ts \
+              --env "${{ env.TEST_ENV }}" \
+              --suite "${{ github.event.inputs.custom_allure_url || 'sanity' }}" \
+              --run "${{ github.run_number }}" \
+              --results sanity-artifacts/allure-results --pages gh-pages --keep 10
+            echo "## Allure Report" >> $GITHUB_STEP_SUMMARY
+            echo "View the report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ env.TEST_ENV }}/${{ github.event.inputs.custom_allure_url }}/" >> $GITHUB_STEP_SUMMARY
+          fi
 
   # ============================================
   # TODO: Implement Slack notification job
