@@ -571,6 +571,7 @@ const STALE_PATH_ALLOWED = new Set<string>([
   'tests/data/mocks/auth/login/POST.200.json',
   'tests/data/mocks/users/POST.201.json',
   'tests/data/mocks/users/create/POST.400.json',
+  'api/schemas/example.types.ts',
 ]);
 
 function checkStalePaths(
