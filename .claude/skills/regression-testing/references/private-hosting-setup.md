@@ -40,8 +40,15 @@ CI (this repo)                                  Portal (deployed once per org)
 
 ## Part A — Portal deployment (once per organization)
 
-Skip to Part B if the org already runs a portal instance. Work from a local
-clone of the portal repo.
+Skip to Part B if the org already runs a portal instance (ask for its URL).
+Otherwise, clone the portal yourself — it is the deploy vehicle for the
+org's OWN infrastructure (the clone is not used after setup, only kept for
+upgrades and `create-project` runs):
+
+```bash
+git clone https://github.com/upex-galaxy/upex-test-report-portal.git ../upex-test-report-portal
+cd ../upex-test-report-portal && bun install
+```
 
 ### A0 — HUMAN CHECKPOINT: accounts + three one-time credentials
 
