@@ -1,0 +1,195 @@
+<!doctype html>
+<!--
+  shapes.html — copy-paste annotation shape library for the bug-screenshot-annotation skill.
+
+  USAGE: this file is a reference to copy FROM, not to ship as-is. Copy the block(s) you need
+  (style rule + matching div) into your own scratchpad HTML file, replace the placeholder
+  <div class="screenshot"> with your real <img src="crop.png">, then adjust coordinates/text
+  per case. Keep <meta charset="utf-8"> — without it, em-dashes and accents corrupt into
+  mojibake when captured.
+
+  Z-INDEX SCALE — the #1 source of annotation bugs is skipping this. Every shape class below
+  already sets the right z-index; a new one-off shape slots into this scale, never guesses:
+
+    1   base screenshot / crop image
+    10  circles, arrows, axis ticks   (shapes that point AT something)
+    20  callout boxes                 (text that EXPLAINS something)
+    30  corner badge                  (always on top — the "you are looking at a bug" flag)
+
+  SECTIONS: canvas + screenshot · circle-callout · arrow-to-region · callout-box ·
+  badge-corner · axis-tick + axis-tag · before-after. Three worked examples in <body>.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Annotation shape library</title>
+    <style>
+      /* ---- canvas + screenshot (z 1) -------------------------------------
+         .canvas is the positioning context wrapper. Replace .screenshot with
+         your real <img src="crop.png">, then resize the playwright-cli
+         viewport to match the image's natural dimensions before capture. */
+      body {
+        margin: 0;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      .canvas {
+        position: relative;
+        display: inline-block;
+        z-index: 1;
+      }
+      .screenshot {
+        display: block;
+        width: 900px;
+        height: 500px;
+        background: #d8d8d8;
+        z-index: 1;
+      }
+
+      /* ---- circle-callout (z 10) ------------------------------------------
+         Oval/circle outline around the broken region. The border draws
+         OUTSIDE the visual target — pad the box ~8-12px past the element or
+         it looks like it cuts through the UI. */
+      .circle-callout {
+        position: absolute;
+        border: 4px solid #e00;
+        border-radius: 50%;
+        box-sizing: border-box;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      /* ---- arrow-to-region (z 10) ------------------------------------------
+         Line + triangle head via ::after. Position top/left at the TAIL,
+         width = arrow length, rotate with transform (pivot is the tail).
+         0deg points right; increase for clockwise. */
+      .arrow-to-region {
+        position: absolute;
+        height: 4px;
+        background: #e00;
+        transform-origin: left center;
+        z-index: 10;
+      }
+      .arrow-to-region::after {
+        content: "";
+        position: absolute;
+        right: -12px;
+        top: -7px;
+        border-left: 14px solid #e00;
+        border-top: 9px solid transparent;
+        border-bottom: 9px solid transparent;
+      }
+
+      /* ---- callout-box (z 20) ----------------------------------------------
+         White text box that EXPLAINS the defect. Keep max-width + normal
+         white-space — dropping them is exactly the "text clipped at the edge"
+         gotcha. Size the box to its text, not the other way around. */
+      .callout-box {
+        position: absolute;
+        background: #fff;
+        border: 2.5px solid #e00;
+        border-radius: 6px;
+        padding: 10px 14px;
+        max-width: 260px;
+        white-space: normal;
+        font-size: 15px;
+        line-height: 1.35;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        z-index: 20;
+      }
+
+      /* ---- badge-corner (z 30) ----------------------------------------------
+         The "BUG — <KEY>" flag. Always top z-index (30) — it must never hide
+         behind a callout box. Pick whichever corner the bug region isn't near. */
+      .badge-corner {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: #e00;
+        color: #fff;
+        font-weight: 700;
+        font-size: 16px;
+        letter-spacing: 0.5px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        z-index: 30;
+      }
+
+      /* ---- axis-tick + axis-tag (z 10 / 20) ---------------------------------
+         For date/value-offset bugs on chart axes: a vertical tick down to the
+         axis plus a label showing the CORRECT value beneath it, while the
+         chart's own (wrong) label stays visible — the reader sees both. */
+      .axis-tick {
+        position: absolute;
+        width: 2px;
+        background: #e00;
+        z-index: 10;
+      }
+      .axis-tag {
+        position: absolute;
+        background: #e00;
+        color: #fff;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 3px 8px;
+        border-radius: 3px;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        z-index: 20;
+      }
+
+      /* ---- before-after (layout) ---------------------------------------------
+         Two crops side by side sharing a caption row. Each pane can still
+         carry its own circle/arrow/callout overlays. */
+      .before-after {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      .before-after .pane {
+        position: relative;
+        display: inline-block;
+      }
+      .before-after .caption {
+        text-align: center;
+        font-size: 14px;
+        font-weight: 600;
+        margin-top: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- EXAMPLE 1 — combined: circle + arrow + callout + badge on one screenshot -->
+    <div class="canvas">
+      <div class="screenshot"></div>
+      <div class="badge-corner">BUG — UPEX-512</div>
+      <div class="circle-callout" style="left: 520px; top: 210px; width: 140px; height: 90px"></div>
+      <div class="arrow-to-region" style="left: 350px; top: 300px; width: 150px; transform: rotate(-20deg)"></div>
+      <div class="callout-box" style="left: 120px; top: 310px">
+        Two data points render at the exact same pixel — hotel names are indistinguishable on hover.
+      </div>
+    </div>
+
+    <!-- EXAMPLE 2 — axis-highlight for a date-offset bug -->
+    <div class="canvas" style="margin-top: 40px">
+      <div class="screenshot"></div>
+      <div class="badge-corner">BUG — UPEX-514</div>
+      <div class="axis-tick" style="left: 610px; top: 380px; height: 70px"></div>
+      <div class="axis-tag" style="left: 611px; top: 456px">Should be Jun 14</div>
+    </div>
+
+    <!-- EXAMPLE 3 — before / after side by side -->
+    <div class="before-after" style="margin-top: 40px">
+      <div class="pane">
+        <div class="screenshot" style="width: 440px; height: 260px"></div>
+        <div class="caption">Before fix — dots overlap</div>
+      </div>
+      <div class="pane">
+        <div class="screenshot" style="width: 440px; height: 260px"></div>
+        <div class="caption">After fix — dots separated</div>
+      </div>
+    </div>
+  </body>
+</html>
