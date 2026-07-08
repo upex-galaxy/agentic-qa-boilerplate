@@ -402,6 +402,7 @@ After the batch report lands, append the final progress entry `## Phase 3 — Ha
 10. **Label hygiene.** Always add BOTH `shift-left-reviewed` AND `shift-left-{{YYYY-MM-DD}}`. The dated label lets `/sprint-testing` decide whether the refinement is still fresh (<30 days) and short-circuit, or whether to redo Phases 1-3.
 11. **Jira is canonical.** No git commit, no test branch. Local `shift-left-refinement.md` is a working artifact — gitignored under `.context/PBI/**`. The byte-for-byte mirror between Jira custom field + comment + local file is the contract `fix-traceability` checks later.
 12. **Language**: artifacts + Jira content always English. Mirror the user's language only in conversation (per CLAUDE.md §1 Rule #14).
+13. **Session-footer contract (mandatory at close).** The final phase is not done until the two chat-facing blocks from `../agentic-qa-core/references/session-footer-contract.md` are printed: (1) consolidated screenshot list — repo-relative paths, verified on disk, bug annotations first — plus in-flow surfacing of every capture's path the instant it lands; (2) Session Footer listing skills/MCPs/CLIs actually used + testing levels touched, with explicit "none" entries for expected-but-untouched levels. Framing for this skill: execution. Multi-subagent sessions: each stage report carries the five footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`); the orchestrator compiles the footer ONCE at close. Chat only — never in a Jira comment or ATR body.
 
 ---
 
@@ -486,3 +487,4 @@ All references are self-contained. Load one at a time.
 - [ ] Archive: `.session/shift-left-testing/<batch-id>/` moved to `.session/.archive/<YYYY-MM-DD>-shift-left-testing-<batch-id>/` and `mem_session_summary` called
 - [ ] No git commit (Jira is canonical for this skill)
 - [ ] User informed: when each Story reaches `Ready For QA`, run `/sprint-testing` (will short-circuit thanks to `shift-left-reviewed`)
+- [ ] Session footer + consolidated screenshot list printed in chat per session-footer-contract (never in a Jira comment)

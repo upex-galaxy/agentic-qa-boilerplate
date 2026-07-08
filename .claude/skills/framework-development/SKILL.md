@@ -191,6 +191,12 @@ Archive is a "close-the-loop" step, not "ship-the-code". Code is shipped by `/gi
 
 ---
 
+## Session close contract
+
+**Session-footer contract (mandatory at close).** The final phase is not done until the two chat-facing blocks from `../agentic-qa-core/references/session-footer-contract.md` are printed: (1) consolidated screenshot list — repo-relative paths, verified on disk, bug annotations first — plus in-flow surfacing of every capture's path the instant it lands; (2) Session Footer listing skills/MCPs/CLIs actually used + testing levels touched, with explicit "none" entries for expected-but-untouched levels. Framing for this skill: meta. Multi-subagent sessions: each stage report carries the five footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`); the orchestrator compiles the footer ONCE at close. Chat only — never in a Jira comment or ATR body.
+
+---
+
 ## References
 
 - `references/kata-invariants.md` — INVARIANT vs EXTENSIBLE rules for the 4 KATA layers, fixture selection, ATC identity, DRY scope, import aliases, public-method contract, extension points, evolution checklist, out-of-scope surfaces, and §10 ALLOWED / FORBIDDEN path tables. Required reading before any Plan or Code subagent that touches `tests/components/`, `api/schemas/`, or fixtures.

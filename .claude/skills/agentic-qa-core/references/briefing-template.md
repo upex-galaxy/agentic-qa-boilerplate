@@ -10,7 +10,7 @@
 3. **Project Standards (auto-resolved)** — REQUIRED. Compact rules of skills relevant to this dispatch. Pulled from `.claude/skills/REGISTRY.md` (built once per session by `bun run skills:registry`). The subagent treats this section as authoritative for the listed conventions and does NOT re-read the full SKILL.md unless explicitly told to. Protocol: `agentic-qa-core/references/skill-resolver.md`.
 4. **Skills to load** — skill triggers (e.g. `/acli`, `/xray-cli`, `/playwright-cli`) the subagent must invoke before issuing tool calls. The orchestrator never inlines tool syntax — that lives in the owning skill.
 5. **Exact instructions** — numbered steps. No ambiguity. Each step names the tool / skill action.
-6. **Report format** — what the subagent returns to the orchestrator. Either a JSON object with named fields, or a bullet list with explicit headings. Avoid free-form prose.
+6. **Report format** — what the subagent returns to the orchestrator. Either a JSON object with named fields, or a bullet list with explicit headings. Avoid free-form prose. For workflow-skill stage dispatches, append the mandatory session-footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`) per `agentic-qa-core/references/session-footer-contract.md` §Briefing snippet — the orchestrator unions them into ONE session-close footer.
 7. **Rules** — constraints (relevant Critical Rules from `CLAUDE.md`, project-specific guardrails, Git rules, env-selection rules).
 
 ## Filled template (skeleton)

@@ -296,6 +296,7 @@ Rules:
 15. **One component per file, one file per feature.** Components follow `{Resource}Api.ts` or `{Page}Page.ts`. Test files follow `{verb}{Feature}.test.ts` (e.g., `applyDiscount.test.ts`, never `discount.test.ts`).
 16. **Don't propose components or ATCs without consulting the manifest.** `kata-manifest.json` is the registry. Skipping it produces (a) duplicate Pages — proposing `LoginPage` when `LoginPage.ts` already exists; (b) duplicate ATC IDs — minting `@atc('PROJ-90')` twice; (c) missed reuse — creating `getBookingById` when `BookingsApi.getById` already does it. Always start the Plan phase by loading the manifest. The husky pre-commit gate enforces freshness; Critical Rule #12 in `CLAUDE.md` enforces consultation.
 17. **Cross-cutting test-architecture decisions become ADRs, not plan-buried prose.** When Plan or Code reveals a decision that is architectural AND hard to reverse — a fixture lifecycle reused across 3+ ATCs or 2+ tickets, a test-data-isolation contract, an auth-in-tests change, a flake-retry-policy shift, a Page-Object-vs-Screenplay move — promote it from `planning-playbook.md` §2 "Architecture Decisions" to a standalone `.context/ADR/ADR-NNNN-<slug>.md` and leave a `See ADR-NNNN` backlink. Ticket-local choices stay in the plan. ADRs are append-only: supersede, never rewrite. See `agentic-qa-core/references/adr-doctrine.md`.
+18. **Session-footer contract (mandatory at close).** The final phase is not done until the two chat-facing blocks from `../agentic-qa-core/references/session-footer-contract.md` are printed: (1) consolidated screenshot list — repo-relative paths, verified on disk, bug annotations first — plus in-flow surfacing of every capture's path the instant it lands; (2) Session Footer listing skills/MCPs/CLIs actually used + testing levels touched, with explicit "none" entries for expected-but-untouched levels. Framing for this skill: authoring. Multi-subagent sessions: each stage report carries the five footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`); the orchestrator compiles the footer ONCE at close. Chat only — never in a Jira comment or ATR body.
 
 ---
 
@@ -384,6 +385,7 @@ export class UiFixture extends TestContext {
 | Fixture registered | visual | Component is in `ApiFixture` / `UiFixture` / `StepsFixture` |
 | ATC IDs linked | visual | Every `@atc('X')` matches a real TMS test case ID |
 | Naming | visual | Files PascalCase for components, camelCase verb for test files |
+| Session footer | chat | Session footer + consolidated screenshot list printed in chat per session-footer-contract (never in a Jira comment) |
 
 ---
 
