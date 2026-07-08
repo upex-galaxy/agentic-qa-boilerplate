@@ -41,14 +41,21 @@ CI (this repo)                                  Portal (deployed once per org)
 ## Part A — Portal deployment (once per organization)
 
 Skip to Part B if the org already runs a portal instance (ask for its URL).
-Otherwise, clone the portal yourself — it is the deploy vehicle for the
-org's OWN infrastructure (the clone is not used after setup, only kept for
-upgrades and `create-project` runs):
+Otherwise, **FORK the portal** (not a plain clone): the org gets its OWN
+repo — Vercel connects to it (every push auto-deploys), branding/tweaks have
+a home, and upstream updates arrive via the `upstream` remote that `gh` wires
+automatically:
 
 ```bash
-git clone https://github.com/upex-galaxy/upex-test-report-portal.git ../upex-test-report-portal
-cd ../upex-test-report-portal && bun install
+gh repo fork upex-galaxy/upex-test-report-portal --clone -- ../test-report-portal
+cd ../test-report-portal && bun install
+# Later upgrades: git pull upstream main && git push   (auto-redeploys)
 ```
+
+The local checkout is the deploy vehicle for the org's own infrastructure —
+after setup it is only revisited for upgrades and `create-project` runs.
+(Humans without an AI can use the "Deploy to Vercel" button in the portal
+README instead — same fork-and-deploy result in one click.)
 
 ### A0 — HUMAN CHECKPOINT: accounts + three one-time credentials
 
