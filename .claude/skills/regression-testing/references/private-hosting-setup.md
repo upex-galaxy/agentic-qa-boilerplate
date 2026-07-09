@@ -38,6 +38,27 @@ CI (this repo)                                  Portal (deployed once per org)
   serving (Settings → Pages → Source: None); deleting the gh-pages branch
   requires explicit user confirmation (Critical Rule #6).
 
+## Part 0 — Already-configured detection (idempotency gate, run FIRST)
+
+Probe before provisioning anything — every level short-circuits:
+
+```bash
+gh secret list | grep -E "PORTAL_URL|PORTAL_PROJECT|PORTAL_API_KEY|R2_"   # repo already wired?
+```
+
+| Probe result | Meaning | Action |
+|---|---|---|
+| All 7 secrets present | **This repo is fully wired** | Nothing to install. Offer: verify (Part C), rotate key, or change retention. |
+| Some secrets present | Partial/broken wiring | Diff against the Part B table, fill only the missing ones. |
+| No secrets, but user/org has a portal (ask; also check Engram `mem_search "portal URL"`) | Part A done previously | `curl -s -o /dev/null -w "%{http_code}" <PORTAL_URL>/api/metrics` → `401` = portal alive and walled → skip to Part B. |
+| No secrets, no portal | Fresh install | Run Part A → Part B → Part C. |
+
+Part A steps are themselves check-before-create: `supabase projects list`
+before `projects create`, `wrangler r2 bucket list` before `bucket create`,
+`vercel ls` before `vercel link`, and `create-project.ts` upserts (re-running
+it ROTATES the project's API key — only do that deliberately, it invalidates
+the old key in CI secrets).
+
 ## Part A — Portal deployment (once per organization)
 
 Skip to Part B if the org already runs a portal instance (ask for its URL).
