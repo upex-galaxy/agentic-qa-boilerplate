@@ -44,12 +44,12 @@ Six of the skills ship a **self-contained HTML presentation** (Spanish; technica
 
 | Skill / activity         | Deck (Spanish)                                             |
 | ------------------------ | ---------------------------------------------------------- |
-| Shift-Left Testing       | `.claude/skills/shift-left-testing/how-it-works.es.html`   |
-| Sprint Testing           | `.claude/skills/sprint-testing/how-it-works.es.html`       |
-| Test Documentation & ROI | `.claude/skills/test-documentation/how-it-works.es.html`   |
-| Test Automation (KATA)   | `.claude/skills/test-automation/how-it-works.es.html`      |
-| Regression & GO/NO-GO    | `.claude/skills/regression-testing/how-it-works.es.html`   |
-| Xray for Jira (workflow) | `.claude/skills/xray-cli/how-it-works.es.html`             |
+| Shift-Left Testing       | `packages/decks/shift-left-testing/how-it-works.es.html`   |
+| Sprint Testing           | `packages/decks/sprint-testing/how-it-works.es.html`       |
+| Test Documentation & ROI | `packages/decks/test-documentation/how-it-works.es.html`   |
+| Test Automation (KATA)   | `packages/decks/test-automation/how-it-works.es.html`      |
+| Regression & GO/NO-GO    | `packages/decks/regression-testing/how-it-works.es.html`   |
+| Xray for Jira (workflow) | `packages/decks/xray-cli/how-it-works.es.html`             |
 
 Single files (CSS + JS inlined) — they open by double-click, no server. Navigate with `←` `→`, `S` for speaker notes, `O` for the slide overview, `F` for fullscreen.
 
@@ -77,7 +77,7 @@ Opening a deck launches the user's default browser — an outward, local action 
    xdg-open "https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/sprint-testing/how-it-works.es.html" # Linux
    start "" "https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/sprint-testing/how-it-works.es.html" # Windows
    # offline / repo-copy fallback (only if the file exists locally):
-   open ".claude/skills/sprint-testing/how-it-works.es.html"
+   open "packages/decks/sprint-testing/how-it-works.es.html"
    ```
 4. **One at a time.** Let the person watch and come back with questions before offering the next skill's deck. Do not batch-open several.
 5. **After it opens,** tell them the keys (`←` `→` to move, `S` for speaker notes) and offer to walk the slides together or answer questions as they go.
