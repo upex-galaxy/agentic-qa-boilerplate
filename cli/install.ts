@@ -1237,7 +1237,7 @@ async function configureDayZeroCredentials(state: InstallState): Promise<void> {
       log.dim('  resend CLI not installed — skipping auto-login. Install: npm i -g resend-cli');
     }
     else {
-      const loginRes = spawnSync('resend', ['login', '--api-key', resendToken], {
+      const loginRes = spawnSync('resend', ['login', '--key', resendToken], {
         stdio: ['ignore', 'pipe', 'pipe'],
         timeout: 10000,
       });
