@@ -104,3 +104,14 @@ docs/mcp/
 # checkout. Prettier (which honors only .prettierignore, not .git metadata)
 # would otherwise recurse into it and flag formatting on files we don't own here.
 .claude/worktrees/
+
+# ===========================================
+# Contribution audit - local-only artifacts (PII) + syntax-sensitive template
+# ===========================================
+# roster.local.json and out/ are gitignored (participant emails — kept local),
+# but Prettier honors only .prettierignore, so format:check would fail on them
+# in any working tree that has run the audit. The report template embeds
+# placeholder tokens Prettier would reflow.
+scripts/contribution-audit/out/
+scripts/contribution-audit/roster.local.json
+scripts/contribution-audit/report_template.html
