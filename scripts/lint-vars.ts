@@ -96,6 +96,13 @@ const DOC_META_ALLOWLIST: Array<[string, string]> = [
   ['PROJECT_VAR', 'CLAUDE.md'],
   // §3.5 Validate / §Verify checklist: adapt-framework.md documents the {{VAR}} syntax inside vars:check comments
   ['VAR', 'adapt-framework.md'],
+  // resend-cli (vendored community skill) reference docs use Resend's own
+  // Handlebars-style triple-mustache {{{VAR_NAME}}} email-template placeholders —
+  // third-party syntax unrelated to this repo's {{VAR}} project convention.
+  // PROJECT_RE matches the inner {{VAR_NAME}} substring of {{{VAR_NAME}}}.
+  ['VAR_NAME', 'resend-cli/references/templates.md'],
+  ['NAME', 'resend-cli/references/workflows.md'],
+  ['PLAN', 'resend-cli/references/workflows.md'],
 ];
 
 // -----------------------------------------------------------------------------
