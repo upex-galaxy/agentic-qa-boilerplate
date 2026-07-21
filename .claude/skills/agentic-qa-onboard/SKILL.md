@@ -40,7 +40,7 @@ This skill is also the **front desk** for anyone who is confused: *"I don't know
 
 ## How-it-works presentations (visual, in the browser)
 
-Six of the skills ship a **self-contained HTML presentation** (Spanish; technical terms in English) that teaches the skill as a **step-by-step workflow**: slide 1 is the cover (`/skill-name`), slide 2 is the full workflow map (main path + adjacent paths: gates, fallbacks, handoffs), then one phase per slide with the craft concepts embedded where they apply, closing with handoffs and how to invoke the skill.
+Six of the workflow skills ship a **self-contained HTML presentation** (Spanish; technical terms in English) that teaches the skill as a **step-by-step workflow** — and `agentic-qa-core` adds two cross-cutting reference decks (naming conventions + skills inputs/outputs; see the section below). Each how-it-works deck follows the same shape: slide 1 is the cover (`/skill-name`), slide 2 is the full workflow map (main path + adjacent paths: gates, fallbacks, handoffs), then one phase per slide with the craft concepts embedded where they apply, closing with handoffs and how to invoke the skill.
 
 | Skill / activity         | Deck (Spanish)                                             |
 | ------------------------ | ---------------------------------------------------------- |
@@ -50,6 +50,17 @@ Six of the skills ship a **self-contained HTML presentation** (Spanish; technica
 | Test Automation (KATA)   | `packages/decks/test-automation/how-it-works.es.html`      |
 | Regression & GO/NO-GO    | `packages/decks/regression-testing/how-it-works.es.html`   |
 | Xray for Jira (workflow) | `packages/decks/xray-cli/how-it-works.es.html`             |
+
+### Cross-cutting reference decks (agentic-qa-core)
+
+Beyond the per-skill workflow decks, `agentic-qa-core` ships two transversal reference decks. Offer them by intent, not by skill:
+
+| User intent                                                                                              | Deck (Spanish)                                              |
+| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| "How is everything named?" — artifact/test/branch/ID naming conventions                                   | `packages/decks/agentic-qa-core/naming-conventions.es.html` |
+| "How do the skills fit together?" — the E2E flow (story → refinement → dev → testing) as **inputs & outputs** per skill: what each phase reads, which skills it loads, what it produces, which Jira fields/transitions it touches | `packages/decks/agentic-qa-core/skills-io-flow.es.html`     |
+
+The skills-io deck is the best single answer to "what does skill X need / produce" or "show me the whole pipeline" — it renders as a Mac-style terminal with one tab per phase (arrow keys or `1-9` to switch tabs). The full deck catalog (including the academy/craft decks per skill) lives on the published homepage below.
 
 Single files (CSS + JS inlined) — they open by double-click, no server. Navigate with `←` `→`, `S` for speaker notes, `O` for the slide overview, `F` for fullscreen.
 

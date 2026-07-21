@@ -12,22 +12,21 @@ means consumer projects scaffolded from this template do NOT carry ~2.7 MB of
 academic HTML — they browse the published site instead (the `agentic-qa-onboard`
 skill links to it).
 
-## Transitional duplication (phase 2 pending)
+## Single home (phase 2 done)
 
-The same decks currently ALSO exist in `.claude/skills/<skill>/*.html`. Those
-copies are kept on purpose — an external project consumes the skills directories
-and renders their HTML. Do NOT delete them yet. When that consumer migrates,
-phase 2 removes the skill-side copies and this directory becomes the only home.
-Until then: **edit decks here AND mirror the change to the skill-side copy** (or
-regenerate both from the same source).
+This directory is the ONLY home of the decks. The skill-side copies
+(`.claude/skills/<skill>/*.html`) were removed in phase 2 — do not reintroduce
+them. Edit decks here only; the published site is regenerated on push.
 
-### Phase 2 runbook (when the external consumer no longer needs the skill-side copies)
+## Adding a new deck
 
-1. `git rm .claude/skills/*/*.html` in the boilerplate.
-2. Add each removed path to `deprecatedFiles` in `cli/update-boilerplate.ts` —
-   this guarantees deletion in consumer repos on `bun run update` in EVERY mode.
-   (Without it: interactive mode asks per file, `--force` deletes, but `--auto`
-   only defers deleted-upstream files and never removes them.)
-3. Update the local-fallback references in
-   `.claude/skills/agentic-qa-onboard/SKILL.md` (published URLs become the only
-   source).
+1. Create `packages/decks/<skill>/<slug>.<lang>.html` (self-contained: CSS + JS
+   inlined; Spanish decks use `.es.html`, technical terms stay in English).
+2. Register a card in `packages/pages-home/index.html` (the homepage catalog is
+   hardcoded HTML).
+3. If the AI should proactively offer it, register it in
+   `.claude/skills/agentic-qa-onboard/SKILL.md` (deck tables) and, for
+   `agentic-qa-core` decks, in `.claude/skills/agentic-qa-core/SKILL.md`.
+4. Nothing else: `pages.yml` copies this whole directory verbatim, so the new
+   file publishes automatically at
+   `https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/<skill>/<file>`.

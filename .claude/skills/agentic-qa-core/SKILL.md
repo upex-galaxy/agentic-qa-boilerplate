@@ -35,17 +35,18 @@ When a skill cites one of these, it includes a Dependencies block at the top so 
 
 ---
 
-## The Naming Codex (visual reference deck)
+## Core reference decks (visual, human-facing)
 
-`agentic-qa-core` hosts the canonical **naming-conventions presentation** — a self-contained, dark-themed html-ppt deck that documents every test-artifact title format across the seven layers (CASE · GROUP · CONTAINER · CODE · JIRA · GIT · FILESYSTEM), plus a coverage audit of the open naming gaps.
+`agentic-qa-core` hosts two canonical presentations under `packages/decks/agentic-qa-core/` (published on the GitHub Pages hub; see `agentic-qa-onboard` for the opening protocol):
 
-| File | Language |
-|------|----------|
-| `naming-conventions.es.html` | Spanish (technical terms in English) |
+| File | Teaches | Language |
+|------|---------|----------|
+| `naming-conventions.es.html` | The Naming Codex — every test-artifact title format across the seven layers (CASE · GROUP · CONTAINER · CODE · JIRA · GIT · FILESYSTEM), plus a coverage audit of open naming gaps. | Spanish (technical terms in English) |
+| `skills-io-flow.es.html` | The E2E flow (Historia → Refinamiento → Dev → Testing) seen through each skill's **inputs & outputs** — what every phase reads (stdin), which skills it loads (deps), what it produces (stdout), and which Jira fields/transitions it touches. Mac-terminal UI with one tab per phase. | Spanish (technical terms in English) |
 
-It is the human-facing mirror of the naming rules that live in prose across the workflow skills' `references/*.md` (TC titles, `@atc` decorator, `describe()`/Test Set grouping, KATA components, tags, branch/commit/PR shapes, the PBI tree). Open it in a browser (arrow keys navigate; `O` = overview; `F` = fullscreen). Offer to open it when a user asks how artifacts are named or wants to review the conventions visually.
+They are the human-facing mirror of the rules that live in prose across the workflow skills' `references/*.md`. The Naming Codex answers "how is this artifact named"; the skills-io deck answers "what does this skill need and emit". Navigate with arrow keys (naming deck: `O` = overview, `F` = fullscreen; skills-io deck: tabs + `1-9`). Offer the matching deck when a user asks about naming or about how the skills chain together end-to-end.
 
-**Keep it canonical**: when a naming rule changes, edit the owning skill's `references/*.md`, regenerate `REGISTRY.md` (`bun run skills:registry`), then refresh the deck (both the skill-side copy and `packages/decks/agentic-qa-core/`) so the codex never drifts from the prose source.
+**Keep them canonical**: when a rule changes, edit the owning skill's `references/*.md`, regenerate `REGISTRY.md` (`bun run skills:registry`), then refresh the deck in `packages/decks/agentic-qa-core/` (the only copy — skill-side HTML copies were removed) so the decks never drift from the prose source.
 
 ---
 

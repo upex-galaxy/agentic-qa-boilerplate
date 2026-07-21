@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>skills-io — Flujo E2E · inputs &amp; outputs</title>
+<meta name="description" content="Cómo fluye una historia de principio a fin — agentic-dev-boilerplate + agentic-qa-boilerplate — vista por inputs y outputs de cada skill.">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#0b0d12; --bg-2:#0e1118; --panel:#12161f; --panel-2:#161b26;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14);
+  --t1:#eef1f7; --t2:#9aa3b4; --t3:#5f6878;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Space Grotesk','Inter',-apple-system,system-ui,sans-serif;
+  --in:#22d3ee;      /* stdin  — cian    */
+  --out:#a3e635;     /* stdout — verde   */
+  --dep:#a78bfa;     /* skills — violeta */
+  --jira:#60a5fa;    /* jira   — azul    */
+  --git:#fb923c;     /* dev    — naranja */
+  --qa:#22d3ee;      /* qa     — cian    */
+  --law:#34d399;     /* mapa   — esmeralda */
+  --warn:#fbbf24;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1100px 500px at 15% -10%, rgba(96,165,250,.07), transparent 60%),
+    radial-gradient(900px 500px at 90% 110%, rgba(163,230,53,.05), transparent 60%),
+    var(--bg);
+  color:var(--t1); font-family:var(--mono); font-size:15px; line-height:1.55;
+  letter-spacing:-.01em; -webkit-font-smoothing:antialiased;
+  display:flex; align-items:center; justify-content:center; padding:26px;
+}
+
+/* ---------- ventana terminal ---------- */
+.term{
+  width:min(1180px,100%); height:min(860px, calc(100vh - 52px));
+  display:flex; flex-direction:column;
+  background:linear-gradient(180deg, var(--panel) 0%, var(--bg-2) 100%);
+  border:1px solid var(--line-2); border-radius:14px; overflow:hidden;
+  box-shadow:0 40px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* barra de título */
+.tbar{
+  flex:0 0 auto; display:flex; align-items:center; gap:14px;
+  padding:11px 16px; background:linear-gradient(180deg,#1a1f2b,#141824);
+  border-bottom:1px solid var(--line);
+}
+.lights{display:flex; gap:8px}
+.l{width:12px;height:12px;border-radius:50%;box-shadow:inset 0 0 2px rgba(0,0,0,.4)}
+.l.r{background:#ff5f57}.l.y{background:#febc2e}.l.g{background:#28c840}
+.ttitle{
+  flex:1; text-align:center; color:var(--t2); font-size:12.5px; font-weight:500;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.tright{color:var(--t3); font-size:11px}
+
+/* pestañas */
+.tabs{
+  flex:0 0 auto; display:flex; align-items:stretch; gap:2px;
+  background:#0d1017; border-bottom:1px solid var(--line);
+  padding:6px 10px 0; overflow-x:auto; scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  appearance:none; border:1px solid transparent; border-bottom:none;
+  background:transparent; color:var(--t3); cursor:pointer;
+  font-family:var(--mono); font-size:12px; font-weight:500; white-space:nowrap;
+  padding:8px 13px 9px; border-radius:9px 9px 0 0;
+  display:flex; align-items:center; gap:7px; transition:color .15s var(--ease), background .15s var(--ease);
+}
+.tab .dot{width:7px;height:7px;border-radius:50%;background:var(--ac,#5f6878);opacity:.55;flex:0 0 auto}
+.tab:hover{color:var(--t2)}
+.tab.is-active{
+  background:linear-gradient(180deg, var(--panel-2), var(--panel));
+  border-color:var(--line); color:var(--t1);
+}
+.tab.is-active .dot{opacity:1; box-shadow:0 0 8px var(--ac)}
+.tsep{align-self:center; color:var(--t3); font-size:10px; padding:0 6px; letter-spacing:.12em; text-transform:uppercase; user-select:none}
+
+/* panel de contenido */
+.panes{flex:1 1 auto; position:relative; overflow:hidden}
+.pane{
+  position:absolute; inset:0; overflow-y:auto; padding:28px 34px 40px;
+  opacity:0; visibility:hidden; transform:translateY(6px);
+  transition:opacity .22s var(--ease), transform .22s var(--ease), visibility .22s;
+  scrollbar-width:thin; scrollbar-color:var(--line-2) transparent;
+}
+.pane::-webkit-scrollbar{width:9px}
+.pane::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px}
+.pane.is-active{opacity:1; visibility:visible; transform:none}
+
+/* barra de estado */
+.sbar{
+  flex:0 0 auto; display:flex; justify-content:space-between; gap:14px;
+  padding:8px 16px; background:#0d1017; border-top:1px solid var(--line);
+  color:var(--t3); font-size:11.5px;
+}
+.sbar b{color:var(--t2); font-weight:600}
+
+/* ---------- tipografía de contenido ---------- */
+.kick{color:var(--ac,var(--law)); font-size:11.5px; letter-spacing:.18em; text-transform:uppercase; font-weight:600; margin-bottom:10px}
+h2{font-family:var(--sans); font-size:30px; font-weight:700; letter-spacing:-.03em; line-height:1.12; margin-bottom:8px}
+h2 .grad{background:linear-gradient(90deg, var(--ac,var(--in)), var(--t1)); -webkit-background-clip:text; background-clip:text; color:transparent}
+.lede{color:var(--t2); font-size:14.5px; max-width:72ch; margin-bottom:22px}
+.lede code{color:var(--t1)}
+code{font-family:var(--mono); font-size:.93em; background:rgba(255,255,255,.06); border:1px solid var(--line); border-radius:5px; padding:1px 6px; white-space:nowrap}
+.muted{color:var(--t3); font-weight:400}
+
+/* línea de comando */
+.cmd{margin:20px 0 12px; font-size:13.5px; color:var(--t2)}
+.cmd .ps1{color:var(--law); font-weight:600}
+.cmd .path{color:var(--jira); font-weight:600}
+.cmd .dollar{color:var(--t3); margin:0 8px 0 6px}
+.cmd .bin{color:var(--t1); font-weight:600}
+.cmd .flag{color:var(--dep)}
+
+/* tarjeta de proceso */
+.proc{
+  background:var(--panel-2); border:1px solid var(--line); border-left:3px solid var(--ac,var(--in));
+  border-radius:12px; padding:16px 18px 14px; margin-bottom:16px;
+}
+.proc-hd{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:12px}
+.pid{
+  font-size:11px; font-weight:700; color:var(--ac,var(--in));
+  border:1px solid var(--ac,var(--in)); border-radius:6px; padding:2px 8px; opacity:.95;
+}
+.proc-hd h3{font-family:var(--sans); font-size:17.5px; font-weight:600; letter-spacing:-.02em; flex:1}
+.repo{font-size:10.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; border-radius:999px; padding:3px 10px}
+.repo.dev{color:var(--git); border:1px solid rgba(251,146,60,.45); background:rgba(251,146,60,.08)}
+.repo.qa{color:var(--qa); border:1px solid rgba(34,211,238,.4); background:rgba(34,211,238,.07)}
+.repo.both{color:var(--dep); border:1px solid rgba(167,139,250,.45); background:rgba(167,139,250,.08)}
+
+/* filas input/output */
+.io{display:grid; grid-template-columns:96px 1fr; gap:12px; padding:7px 0; border-top:1px dashed var(--line); font-size:13.2px}
+.io:first-of-type{border-top:none}
+.io-k{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; padding-top:2px; white-space:nowrap}
+.io.deps .io-k{color:var(--dep)}
+.io.in   .io-k{color:var(--in)}
+.io.out  .io-k{color:var(--out)}
+.io.jira .io-k{color:var(--jira)}
+.io.note .io-k{color:var(--warn)}
+.io > div{color:var(--t2)}
+.io b{color:var(--t1); font-weight:600}
+.io .hi-in{color:var(--in)} .io .hi-out{color:var(--out)} .io .hi-jira{color:var(--jira)} .io .hi-warn{color:var(--warn)}
+
+/* chips de skill */
+.chip{
+  display:inline-block; font-size:11.5px; color:var(--t1);
+  border:1px solid var(--line-2); background:rgba(255,255,255,.04);
+  border-radius:999px; padding:2px 10px; margin:2px 4px 2px 0;
+}
+.chip.mand{border-color:rgba(251,191,36,.5); color:var(--warn)}
+
+/* resultado de fase */
+.exit{
+  margin:6px 0 26px; padding:10px 14px; border-radius:10px; font-size:13px;
+  background:rgba(52,211,153,.07); border:1px solid rgba(52,211,153,.3); color:var(--t2);
+}
+.exit b{color:var(--law)}
+
+/* diagrama / bloques pre */
+.map{
+  background:#0d1017; border:1px solid var(--line); border-radius:12px;
+  padding:18px 20px; overflow-x:auto; font-size:12.8px; line-height:1.7;
+  color:var(--t2); margin:14px 0 22px; white-space:pre;
+}
+.map .f1{color:var(--git)} .map .f2{color:var(--dep)} .map .f3{color:var(--git)} .map .f4{color:var(--qa)} .map .ar{color:var(--t3)}
+
+/* leyenda */
+.legend{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin:10px 0 24px}
+.lg{background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:11px 14px; font-size:12.8px; color:var(--t2)}
+.lg .io-k{display:inline-block; margin-right:8px}
+.lg.k-in .io-k{color:var(--in)} .lg.k-out .io-k{color:var(--out)} .lg.k-dep .io-k{color:var(--dep)} .lg.k-jira .io-k{color:var(--jira)}
+
+.callout{
+  border:1px solid rgba(251,191,36,.4); background:rgba(251,191,36,.06);
+  border-radius:12px; padding:13px 16px; font-size:13px; color:var(--t2); margin:8px 0 22px;
+}
+.callout b{color:var(--warn)}
+.callout.good{border-color:rgba(52,211,153,.35); background:rgba(52,211,153,.06)}
+.callout.good b{color:var(--law)}
+
+ul.plain{list-style:none; margin:4px 0 18px}
+ul.plain li{padding:5px 0 5px 20px; position:relative; color:var(--t2); font-size:13.2px}
+ul.plain li::before{content:'▸'; position:absolute; left:2px; color:var(--ac,var(--in))}
+ul.plain b{color:var(--t1)}
+
+/* ---------- responsive ---------- */
+@media (max-width:760px){
+  body{padding:0}
+  .term{width:100%; height:100vh; height:100dvh; border-radius:0; border:none}
+  .pane{padding:20px 16px 34px}
+  h2{font-size:23px}
+  .io{grid-template-columns:1fr; gap:3px}
+  .tsep{display:none}
+}
+
+/* ---------- print: todas las pestañas en vertical ---------- */
+@media print{
+  body{display:block; padding:0; background:#fff}
+  .term{width:100%; height:auto; border:none; box-shadow:none; background:#fff}
+  .tbar,.tabs,.sbar{display:none}
+  .panes{overflow:visible}
+  .pane{position:static; opacity:1; visibility:visible; transform:none; overflow:visible; page-break-after:always; color:#111}
+}
+</style>
+</head>
+<body>
+
+<main class="term">
+
+  <header class="tbar">
+    <div class="lights" aria-hidden="true"><span class="l r"></span><span class="l y"></span><span class="l g"></span></div>
+    <div class="ttitle">upex@galaxy — skills-io · flujo E2E · historia → refinamiento → dev → testing</div>
+    <div class="tright">zsh</div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Fases del flujo">
+    <button class="tab" data-pane="p0" style="--ac:#34d399"><span class="dot"></span>~/mapa</button>
+    <span class="tsep">dev</span>
+    <button class="tab" data-pane="p1" style="--ac:#fb923c"><span class="dot"></span>fase-1 historia</button>
+    <button class="tab" data-pane="p2" style="--ac:#a78bfa"><span class="dot"></span>fase-2 refinamiento</button>
+    <button class="tab" data-pane="p3" style="--ac:#fb923c"><span class="dot"></span>fase-3 implementación</button>
+    <span class="tsep">qa</span>
+    <button class="tab" data-pane="p4" style="--ac:#22d3ee"><span class="dot"></span>4a sprint-testing</button>
+    <button class="tab" data-pane="p5" style="--ac:#60a5fa"><span class="dot"></span>4b tms</button>
+    <button class="tab" data-pane="p6" style="--ac:#a3e635"><span class="dot"></span>4c automatización</button>
+    <button class="tab" data-pane="p7" style="--ac:#f472b6"><span class="dot"></span>4d regresión</button>
+    <span class="tsep">·</span>
+    <button class="tab" data-pane="p8" style="--ac:#fbbf24"><span class="dot"></span>transversal</button>
+  </nav>
+
+  <section class="panes" id="panes">
+
+    <!-- ══════════════════ TAB 0 · MAPA ══════════════════ -->
+    <article class="pane" id="p0" style="--ac:#34d399">
+      <p class="kick">skills-io · cómo leer este deck</p>
+      <h2>Una historia, dos repos, <span class="grad">un pipeline</span></h2>
+      <p class="lede">
+        Cada skill del ecosistema se comporta como un <b>proceso de terminal</b>: recibe
+        <code>stdin</code> (archivos de contexto, campos de Jira), depende de otras skills
+        (<code>deps</code>) y emite <code>stdout</code> (artefactos, issues, transiciones).
+        Este deck documenta ese contrato de inputs/outputs, fase por fase.
+      </p>
+
+      <div class="map"><span class="f1">FASE 1 · Historia</span>          <span class="ar">dev-boilerplate · product-management</span>
+      │
+      ▼
+<span class="f2">FASE 2 · Refinamiento</span>  ⟲ loop  <span class="ar">dev (INVEST) ⇄ qa (shift-left-testing)</span>
+      │
+      ▼
+<span class="f3">FASE 3 · Implementación</span>       <span class="ar">dev-boilerplate · sprint-development (5 stages)</span>
+      │
+      ▼
+<span class="f4">FASE 4 · Testing</span>              <span class="ar">qa-boilerplate</span>
+      ├─ 4a sprint-testing      <span class="ar">QA manual por ticket</span>
+      ├─ 4b test-documentation  <span class="ar">TMS + ROI</span>
+      ├─ 4c test-automation     <span class="ar">KATA · solo verdict Candidate</span>
+      └─ 4d regression-testing  <span class="ar">release gate GO / NO-GO</span></div>
+
+      <div class="legend">
+        <div class="lg k-dep"><span class="io-k">skills</span>qué skills y references carga la tarea</div>
+        <div class="lg k-in"><span class="io-k">stdin ←</span>lo que la skill necesita leer antes de actuar</div>
+        <div class="lg k-out"><span class="io-k">stdout →</span>lo que la skill produce (archivos, issues)</div>
+        <div class="lg k-jira"><span class="io-k">jira ⇄</span>campos, labels y transiciones que toca</div>
+      </div>
+
+      <div class="callout good">
+        <b>Regla de oro [SYNC]:</b> todo <code>.md</code> que refleja un campo de Jira es
+        <b>solo lectura</b> — se regenera con <code>bun run jira:sync-issues</code>. Jira es la
+        fuente de verdad; el filesystem es cache.
+      </div>
+
+      <div class="callout">
+        <b>Navegación:</b> pestañas arriba · <code>←</code>/<code>→</code> cambia de pestaña ·
+        <code>1-9</code> salto directo · imprimir muestra todo en vertical.
+      </div>
+    </article>
+
+    <!-- ══════════════════ TAB 1 · FASE 1 ══════════════════ -->
+    <article class="pane" id="p1" style="--ac:#fb923c">
+      <p class="kick">fase 1 · repo dev-boilerplate</p>
+      <h2>Crear la <span class="grad">Historia</span></h2>
+      <p class="lede">Skill de entrada: <code>product-management</code>. Del PRD/SRS al backlog en Jira.</p>
+
+      <p class="cmd"><span class="ps1">upex@galaxy</span> <span class="path">~/fase-1</span><span class="dollar">$</span> <span class="bin">skill</span> product-management <span class="flag">--ref</span> product-backlog-seed.md</p>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">1a</span><h3>Backlog seed inicial <span class="muted">(solo primera vez)</span></h3><span class="repo dev">dev</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">product-management</span><span class="chip">acli · [ISSUE_TRACKER_TOOL]</span><span class="chip">agentic-dev-core (session-management · skill-composition-strategy)</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>.context/PRD/</code> (mvp-scope · user-personas · user-journeys) · <code>.context/SRS/</code> (functional-specs · non-functional-specs) · los 3 <b>business maps</b> · <code>.context/PBI/epic-tree.md</code> · <code>.agents/project.yaml</code> + catálogos <code>jira-*.{yaml,json}</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><b>Epics + Stories</b> creados en Jira bajo <code>{{PROJECT_KEY}}</code> → <code>bun run jira:sync-issues pull</code> materializa <code>epic-tree.md</code> + <code>epics/EPIC-&lt;KEY&gt;-&lt;slug&gt;/</code> · sesión en <code>.session/product-management/seed/{plan.md, progress.md}</code></div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">1b</span><h3>Épica / historia individual</h3><span class="repo dev">dev</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">product-management (references/epic-creation.md)</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Lista de lectura canónica (igual que 1a) + metas del PRD para trazabilidad</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Epic + stories hijas en Jira · sync → <code>epic.md</code> + carpetas de stories · memoria con topic_key <code>pbi/{epic-slug}/epic</code> (UPSERT)</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">1c</span><h3>Redacción de AC en Gherkin</h3><span class="repo dev">dev</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">product-management (references/acceptance-criteria.md)</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Campo actual <code>{{jira.acceptance_criteria}}</code> · PRD/SRS como fuente de verdad</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>{{jira.acceptance_criteria}}</code> reescrito en bloque <code>```gherkin```</code> · cache local <code>stories/STORY-&lt;KEY&gt;-&lt;slug&gt;/spec.md</code></div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">1d</span><h3>Enumeración de edge cases</h3><span class="repo dev">dev</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">product-management (references/edge-cases-enumeration.md)</span><span class="chip">brainstorming (T4 · opcional)</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Spec de la feature/historia · PRD/SRS</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>stories/STORY-&lt;KEY&gt;-&lt;slug&gt;/edge-cases.md</code> · los de <b>alta criticidad</b> se promueven a <code>{{jira.acceptance_criteria}}</code></div></div>
+      </div>
+
+      <div class="exit"><b>exit 0</b> → historia creada en Jira · status <b>Backlog</b></div>
+    </article>
+
+    <!-- ══════════════════ TAB 2 · FASE 2 ══════════════════ -->
+    <article class="pane" id="p2" style="--ac:#a78bfa">
+      <p class="kick">fase 2 · loop entre dos repos</p>
+      <h2>Refinamiento <span class="grad">dev ⇄ qa</span></h2>
+      <p class="lede">La historia rebota entre INVEST (dev) y Shift-Left QA (qa) hasta que los ACs quedan firmes.</p>
+
+      <div class="proc" style="--ac:#fb923c">
+        <div class="proc-hd"><span class="pid">2a</span><h3>Refinamiento INVEST</h3><span class="repo dev">dev</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">product-management (references/story-refinement.md)</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Historia existente en Jira · <code>.context/PRD/</code> · <code>business/domain-glossary.md</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Historia validada <b>INVEST</b> · notas 3-amigos (sin archivo — no es session-managed) · checklist <b>ready-for-dev</b> confirmado</div></div>
+      </div>
+
+      <p class="cmd"><span class="ps1">upex@galaxy</span> <span class="path">~/fase-2</span><span class="dollar">$</span> <span class="bin">skill</span> shift-left-testing <span class="flag">--batch</span> UPEX-100,UPEX-101,UPEX-102</p>
+
+      <div class="callout"><b>Preflight (gate):</b> <code>acli</code> autenticado + <code>bun run jira:check</code>. No produce output — solo bloquea si falla.</div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">P0</span><h3>Init / Resume de sesión</h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">agentic-qa-core (session-management)</span><span class="chip">test-documentation §Phase 0 (modalidad TMS)</span><span class="chip">acli / xray-cli</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Los 3 <b>business maps</b> · <code>master-test-plan.md</code> · <code>jira-workflows.json</code> · <code>jira-required.yaml</code> · sesión previa si existe</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>.session/shift-left-testing/&lt;YYYY-MM-DD&gt;-&lt;descriptor&gt;/</code> con <code>{plan.md, progress.md, candidates.md, batch-report.md}</code></div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">P1</span><h3>Selección de candidatas</h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">references/backlog-selection.md</span><span class="chip">acli</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>bun run jira:sync-issues get &lt;KEY&gt;</code> o <code>jql "&lt;JQL&gt;"</code> → issueType · status · labels (<code>shift-left-reviewed</code>) · priority · sprint · epic padre</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>candidates.md</code> (tabla ranqueada) · lista aceptada → <code>plan.md §Inputs</code></div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">P2</span><h3>Refinamiento <span class="muted">(loop por historia)</span></h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">sprint-testing/references/acceptance-test-planning.md §1-3+4</span><span class="chip">refinement-playbook.md</span><span class="chip">atp-draft-template.md</span><span class="chip">refinement-questions.md</span><span class="chip mand">test-design-doctrine.md — MANDATORIO</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>story.md</code> · <code>acceptance-criteria.md</code> · <code>comments.md</code> sincronizados · contexto de negocio (P0)</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>stories/STORY-&lt;KEY&gt;-&lt;slug&gt;/shift-left-refinement.md</code> por historia (artefacto local, NO Jira)</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">P3</span><h3>Handoff a Jira</h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">references/handoff-protocol.md</span><span class="chip">acli / xray-cli</span><span class="chip">defect-management-doctrine.md</span><span class="chip">traceability-linking.md</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>shift-left-refinement.md</code> · <code>acceptance-criteria.md</code> re-sincronizado</div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Campos: <code>{{jira.acceptance_criteria}}</code> · <code>{{jira.acceptance_test_plan}}</code> (o Test Plan issue si Xray + opt-in) · <code>{{jira.qa_assignee}}</code> <b class="hi-warn">solo si está vacío</b> · Labels: <code>shift-left-reviewed</code> + <code>shift-left-{{YYYY-MM-DD}}</code> · Transiciones: <b>Backlog → Shift-Left QA → Estimation</b> · Comentario: «ATP — Shift-Left DRAFT»</div></div>
+      </div>
+
+      <div class="exit"><b>loop 2a ⇄ 2b</b> hasta ACs firmes → <b>exit 0</b> → status <b>Ready For Dev</b></div>
+    </article>
+
+    <!-- ══════════════════ TAB 3 · FASE 3 ══════════════════ -->
+    <article class="pane" id="p3" style="--ac:#fb923c">
+      <p class="kick">fase 3 · repo dev-boilerplate</p>
+      <h2>Implementación <span class="grad">sprint-development</span></h2>
+      <p class="lede">Mega-orquestador de 5 stages. Las references <code>adr-doctrine.md</code> y <code>session-management.md</code> viven en <code>agentic-dev-core/references/</code>.</p>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">S1</span><h3>Planning</h3><span class="repo dev">dev</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">story-plan.md · feature-plan.md</span><span class="chip">agentic-dev-core (adr-doctrine.md · session-management.md)</span><span class="chip">acli</span><span class="chip">git-flow-master (solo gate de riesgo alto)</span><span class="chip">/dev-roadmap (si falta)</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>.agents/project.yaml</code> + catálogos jira · <code>master-implementation-plan.md</code> · <code>dev-roadmap.md</code> · <code>domain-glossary.md</code> · <code>stories/STORY-*/context.md</code> · <code>.context/ADR/</code> · <code>DESIGN.md</code> · campos <code>{{jira.acceptance_criteria}}</code> + <code>{{jira.acceptance_test_plan}}</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Plan escrito al campo <code>spec_implementation_plan</code> (o comentario fallback) → sync-back <code>implementation-plan.md</code> · ADR opcional <code>ADR-NNNN-&lt;slug&gt;.md</code> (status Proposed)</div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Transición: <b>Ready For Dev → In Progress</b></div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">S2</span><h3>Implementation</h3><span class="repo dev">dev</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">implement-story.md · bug-fix-workflow.md · continue-implementation.md · code-standards.md</span><span class="chip">unit-testing (TDD · mid-stage)</span><span class="chip">Playwright CLI (live-UI check)</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>implementation-plan.md</code> sincronizado · código fuente · <code>code-standards.md</code> · <code>.env</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Commits atómicos · <code>bugs/BUG-&lt;KEY&gt;-&lt;slug&gt;/bug-fix.md</code> (solo bugfix) · <code>progress.md</code> por chunk · <b class="hi-warn">sin transición Jira</b></div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">S3</span><h3>Code Review</h3><span class="repo dev">dev</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">git-flow-master (abre PR)</span><span class="chip">review-pr.md · spec-compliance-matrix.md · fix-issues.md</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Diff del PR · <code>DESIGN.md</code> + <code>master-design-plan.md</code> · ACs de la historia</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>PR <code>feat({{PROJECT_KEY}}-N): &lt;short&gt;</code> · <code>review.md</code> · <code>compliance-matrix.md</code></div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Transición: <b>In Progress → In Review</b></div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">S4</span><h3>Staging Deploy</h3><span class="repo dev">dev</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">git-flow-master (gh pr merge --squash)</span><span class="chip">vercel-cli / CI</span><span class="chip">acli (asignación)</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>PR mergeado · estado del CI · <code>.env</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Merge a <code>staging</code> → auto-deploy · comentario de notificación a QA (PR URL + @-mention)</div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Transición: <b>In Review → Ready For QA</b> · assignee = QA owner (quien hizo el shift-left; si no se identifica, queda sin asignar)</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">S5</span><h3>Prod Deploy <span class="muted">(gateado)</span></h3><span class="repo dev">dev</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">pre-deploy-checklist.md · production-deploy.md · rollback-plan.md</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Confirmación <b>QA-green en staging</b> + aprobación explícita de negocio</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Deploy a producción + ventana de monitoreo · sin transición Jira estándar (solo status interno del sprint-report)</div></div>
+      </div>
+
+      <p class="cmd"><span class="ps1">upex@galaxy</span> <span class="path">~/fase-3</span><span class="dollar">$</span> <span class="bin">ps</span> <span class="flag">--nested</span></p>
+      <ul class="plain">
+        <li><b>unit-testing</b> — stdin: función bajo test · tests hermanos · callers · config del runner (<code>vitest.config.ts</code>/<code>jest.config.ts</code>) · helpers/fixtures (prereq: test command en <code>package.json</code>). stdout: <code>*.test.ts</code>/<code>*.spec.ts</code> — sin Jira, sin git.</li>
+        <li><b>git-flow-master</b> — stdin: <code>git status/branch/log/diff</code> · bloque <code>git_strategy:</code> en <code>.agents/project.yaml</code>. stdout: branch <code>{prefix}/{ISSUE-KEY}-{slug}</code> · commit <code>{type}({KEY}): {desc}</code> · PR con body templado.</li>
+        <li><b>judgment-day</b> (opcional) — stdin: diff/PR bajo revisión · <code>CLAUDE.md</code> · <code>REGISTRY.md</code>. stdout: veredicto en chat <b>APPROVED ✅ / ESCALATED ⚠️</b> (detalle en pestaña transversal).</li>
+      </ul>
+
+      <div class="exit"><b>exit 0</b> → historia en <b>Ready For QA</b></div>
+    </article>
+
+    <!-- ══════════════════ TAB 4 · 4a SPRINT TESTING ══════════════════ -->
+    <article class="pane" id="p4" style="--ac:#22d3ee">
+      <p class="kick">fase 4a · repo qa-boilerplate</p>
+      <h2>Sprint Testing <span class="grad">manual por ticket</span></h2>
+      <p class="lede">Skill <code>/sprint-testing</code>: Stages 1-3 — Planning · Execution · Reporting.</p>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">S1</span><h3>Planning</h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">test-design-doctrine.md — MANDATORIO</span><span class="chip mand">defect-management-doctrine.md — MANDATORIO</span><span class="chip">acli / xray-cli</span><span class="chip">shift-left-testing (short-circuit si label &lt;30 días)</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>story.md</code> · <code>acceptance-criteria.md</code> · <code>acceptance-test-plan.md</code> · <code>comments.md</code> · <code>domain-glossary.md</code> · <code>master-test-plan.md</code> · campos <code>{{jira.qa_assignee}}</code> · AC · priority · label <code>shift-left-reviewed</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Test Plan <b>«ATP: {STORY}: {título}»</b> → epic <b class="hi-jira">QA Master Test Plan</b> · (Xray) Test issues + Test Execution · links Story↔ATP · triage de riesgo en bugs: <b>0-3 LOW · 4-7 MEDIUM (pregunta) · 8+ HIGH</b></div></div>
+        <div class="io note"><span class="io-k">nota</span><div><code>kata-manifest.json</code> se vuelve load-bearing recién en el hand-off de Stage 3 → test-automation, no en Planning.</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">S2</span><h3>Execution <span class="muted">(trifuerza UI · API · DB)</span></h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">playwright-cli (UI)</span><span class="chip">OpenAPI MCP + curl (API)</span><span class="chip">DBHub MCP (DB)</span><span class="chip">bug-screenshot-annotation (bugs visuales)</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>ATP de Stage 1 · <code>test-session-memory.md</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Evidencia en <code>stories/STORY-*/evidence/</code> · imágenes anotadas · PASS/FAIL en <code>test-session-memory.md</code> (o Test Run) · Test nuevo <b>solo si hay defecto reproducible</b></div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">S3</span><h3>Reporting</h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">acli / xray-cli</span><span class="chip mand">defect-management-doctrine.md</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Evidencia de S2 · ATP · campos <code>{{jira.severity}}</code> (deriva priority) · <code>{{jira.qa_assignee}}</code></div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Test Execution <b>«ATR: {STORY}: Story Testing»</b> → epic <b class="hi-jira">QA Test Artifacts</b> · comentario QA (PASS/FAIL) · transición a <b>qa_approved</b> o <b>blocked</b> · Bug/Defect/Improvement → epic <b class="hi-jira">QA Defect Management</b> con components + link a la Story + <code>qa_assignee</code> self-set</div></div>
+      </div>
+
+      <div class="exit"><b>exit 0</b> → ticket <b>qa_approved</b> (o <b>blocked</b> con bugs filed)</div>
+    </article>
+
+    <!-- ══════════════════ TAB 5 · 4b TMS ══════════════════ -->
+    <article class="pane" id="p5" style="--ac:#60a5fa">
+      <p class="kick">fase 4b · repo qa-boilerplate</p>
+      <h2>Documentación <span class="grad">TMS + ROI</span></h2>
+      <p class="lede">Skill <code>/test-documentation</code>: del testing manual al repositorio de test cases.</p>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">P0</span><h3>Detección de modalidad</h3><span class="repo qa">qa</span></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>master-test-plan.md</code> — línea <code>TMS: Xray on Jira</code> o <code>TMS: Jira native</code> · <code>[ISSUE_TRACKER_TOOL]</code> List issue types</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Decisión de modalidad → carga <code>xray-cli</code> o <code>acli</code> · escrita a <code>plan.md §Inputs</code></div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">P1</span><h3>Analyze</h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">test-design-doctrine.md</span><span class="chip mand">defect-management-doctrine.md</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Todos los archivos sincronizados de la historia · ATP/ATR · implementation-plan/código (<code>data-testid=</code>, rutas, endpoints) · <code>domain-glossary.md</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Lista de escenarios candidatos (sin escritura en el TMS todavía)</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">P2</span><h3>Prioritize <span class="muted">(ROI)</span></h3><span class="repo qa">qa</span></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Escenarios de P1 + señales de bugs previos</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Veredicto por escenario: <b class="hi-out">Candidate</b> (→ automation) · <b>Manual</b> (terminal) · <b>Deferred</b> (terminal)</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">P3</span><h3>Document</h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">acli / xray-cli</span><span class="chip">tms-architecture.md · traceability-linking.md</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>qa.qa_epics.test_repository_epic</code> · <code>jira-required.yaml</code> · <code>jira-fields.json</code> · <code>jira-workflows.json</code></div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Test issues (TC) creados: description con template TC · labels · Test Status · links <b>Story-ATP-ATR-TC</b> · transición <b>Draft → In Design → Ready → (Manual | In Review → Candidate)</b></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Cache local <code>stories/STORY-*/test-cases/{TC-ID}-{slug}.md</code></div></div>
+      </div>
+
+      <div class="exit"><b>exit 0</b> → TCs trazados en el TMS · los <b>Candidate</b> alimentan la fase 4c</div>
+    </article>
+
+    <!-- ══════════════════ TAB 6 · 4c AUTOMATIZACIÓN ══════════════════ -->
+    <article class="pane" id="p6" style="--ac:#a3e635">
+      <p class="kick">fase 4c · repo qa-boilerplate · solo verdict candidate</p>
+      <h2>Automatización <span class="grad">KATA</span></h2>
+      <p class="lede">Skill <code>/test-automation</code>: Plan → Code → Review sobre Playwright + TypeScript.</p>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">P1</span><h3>Plan</h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">test-design-doctrine.md — MANDATORIO</span><span class="chip">kata-architecture.md · typescript-patterns.md</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>kata-manifest.json</code> (<b>gate anti-duplicación</b>) · <code>tests/components/</code> · <code>implementation-plan.md</code> + ATP de la historia · <code>api/schemas/</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>test-specs/&lt;scope&gt;/{spec.md, automation-plan.md, atc/*.md}</code> (artefactos locales, NO Jira)</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">P2</span><h3>Code</h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">playwright-best-practices — obligatoria</span><span class="chip">playwright-cli</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Artefactos del Plan aprobado · <code>kata-manifest.json</code> · <code>api/schemas/</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>tests/components/api/{Resource}Api.ts</code> o <code>tests/components/ui/{Page}Page.ts</code> · registro en <code>ApiFixture</code>/<code>UiFixture</code>/<code>StepsFixture</code> · <code>tests/e2e/{module}/{verbFeature}.test.ts</code></div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">P3</span><h3>Review</h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">judgment-day (opcional)</span><span class="chip">test-documentation + acli (transición del TC)</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Archivos nuevos/modificados de Code</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>kata-manifest.json</code> regenerado (<code>bun run kata:manifest</code>)</div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>TC → <b>In Review</b> (al abrir PR) → <b>Automated</b> (al mergear a main con CI verde)</div></div>
+      </div>
+
+      <div class="exit"><b>exit 0</b> → ATC en la suite · manifest al día · TC en status <b>Automated</b></div>
+    </article>
+
+    <!-- ══════════════════ TAB 7 · 4d REGRESIÓN ══════════════════ -->
+    <article class="pane" id="p7" style="--ac:#f472b6">
+      <p class="kick">fase 4d · repo qa-boilerplate · release gate</p>
+      <h2>Regresión <span class="grad">GO / NO-GO</span></h2>
+      <p class="lede">Skill <code>/regression-testing</code>: suites vía CI/CD, clasificación de fallos y veredicto de release.</p>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">4d</span><h3>Suite + análisis + veredicto</h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">agentic-qa-core (dispatch · session)</span><span class="chip">xray-cli / acli</span><span class="chip">playwright-cli (trace)</span><span class="chip">git-flow-master (fallback SDET)</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>.github/workflows/*.yml</code> · <code>master-test-plan.md</code> · <code>playwright.config.ts</code> · Allure previo (<code>./analysis/previous/</code>) · <code>kata-manifest.json</code> · artefactos CI: <code>merged-allure-results</code> · <code>e2e-failure-evidence</code> · <code>e2e-playwright-report</code> · campos Allure (<code>status</code>, <code>statusDetails</code>, <code>labels[]</code>)</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>.context/reports/regression-{env}-{date}.md</code> · Bug/Defect filed (<code>acli workitem create</code>) con severity → priority auto · components · root_cause · error_type · TMS: STP/STR actualizados</div></div>
+        <div class="io note"><span class="io-k">score</span><div>Veredicto <b>Score/9</b> → <b class="hi-out">GO ≥7</b> · <b class="hi-warn">CAUTION 4-6</b> · <b style="color:#ff5f57">NO-GO &lt;4</b></div></div>
+      </div>
+
+      <div class="callout good"><b>Clasificación de fallos:</b> REGRESSION · FLAKY · KNOWN · ENVIRONMENT · NEW TEST — cada categoría pesa distinto en el score.</div>
+
+      <div class="exit"><b>exit 0</b> → decisión de release documentada + issues de regresión creados</div>
+    </article>
+
+    <!-- ══════════════════ TAB 8 · TRANSVERSAL ══════════════════ -->
+    <article class="pane" id="p8" style="--ac:#fbbf24">
+      <p class="kick">reglas que cruzan todas las fases</p>
+      <h2>Notas <span class="grad">transversales</span></h2>
+      <p class="lede">Contratos que aplican sin importar en qué fase estés.</p>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">⚖</span><h3>judgment-day</h3><span class="repo both">dev + qa</span></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Diff/PR bajo revisión · <code>CLAUDE.md</code> · <code>REGISTRY.md</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Veredicto en chat: <b>APPROVED ✅ / ESCALATED ⚠️</b> · en la fase de fix <b>sí</b> puede modificar archivos (delega un fix agent) — lo que nunca toca es Jira</div></div>
+        <div class="io note"><span class="io-k">nota</span><div><b>Nunca auto-invocado.</b> Gate opcional en: Stage 3 dev · Review de test-automation · pre-PR de git-flow-master.</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">✏</span><h3>bug-screenshot-annotation</h3><span class="repo qa">qa</span></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Screenshot crudo en <code>evidence/</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>evidence/{KEY}-BUG-{BUG-KEY}-annotated.png</code> · embed opcional como comentario Jira vía <code>jira-attach-media.ts</code> · render 100% local (loopback HTTP + playwright-cli)</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">⟳</span><h3>Archivos [SYNC]</h3><span class="repo both">dev + qa</span></div>
+        <div class="io note"><span class="io-k">regla</span><div>Cualquier <code>.md</code> que refleje un campo de Jira es <b>de solo lectura</b> — prohibido escribirlo a mano. Se genera vía <code>bun run jira:sync-issues get / jql / pull</code>. Jira manda; el filesystem es cache.</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">◆</span><h3>Los 3 epics QA fijos</h3><span class="repo qa">qa</span></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div><b>QA Defect Management</b> → bugs / defects / improvements · <b>QA Master Test Plan</b> → ATP / Test Plans · <b>QA Test Artifacts</b> → ATR / Test Executions · <b class="hi-warn">nunca un epic de producto</b> — la Story origen viaja por issue-link, el módulo afectado por components (modelo de 3 ejes)</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">⎇</span><h3>git-flow-master</h3><span class="repo both">dev + qa</span></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Branch <code>{prefix}/{ISSUE-KEY}-{slug}</code> · commit <code>{type}({KEY}): {desc}</code> · PR con body templado (Summary / Changes / Test Plan / Traceability / Risk)</div></div>
+      </div>
+
+      <div class="exit"><b>eof</b> — deck hermano: <b>naming-conventions</b> (el Códice de Nomenclatura) define cómo se llama cada artefacto que este flujo produce.</div>
+    </article>
+
+  </section>
+
+  <footer class="sbar">
+    <span><b>←/→</b> cambiar pestaña · <b>1-9</b> salto directo · <b>⌘P</b> imprime todo en vertical</span>
+    <span id="pos">1/9</span>
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var panes = Array.prototype.slice.call(document.querySelectorAll('.pane'));
+  var pos = document.getElementById('pos');
+  var idx = 0;
+
+  function activate(i, pushHash){
+    idx = Math.max(0, Math.min(tabs.length - 1, i));
+    tabs.forEach(function(t, k){
+      var on = k === idx;
+      t.classList.toggle('is-active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    panes.forEach(function(p, k){ p.classList.toggle('is-active', k === idx); });
+    pos.textContent = (idx + 1) + '/' + tabs.length;
+    tabs[idx].scrollIntoView({block:'nearest', inline:'nearest', behavior:'smooth'});
+    if (pushHash !== false) {
+      try { history.replaceState(null, '', '#' + (idx + 1)); } catch(e){}
+    }
+  }
+
+  tabs.forEach(function(t, k){
+    t.setAttribute('role', 'tab');
+    t.addEventListener('click', function(){ activate(k); });
+  });
+
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'ArrowRight') { activate(idx + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft') { activate(idx - 1); e.preventDefault(); }
+    else if (e.key === 'Home') { activate(0); e.preventDefault(); }
+    else if (e.key === 'End') { activate(tabs.length - 1); e.preventDefault(); }
+    else if (/^[1-9]$/.test(e.key)) {
+      var n = parseInt(e.key, 10) - 1;
+      if (n < tabs.length) { activate(n); e.preventDefault(); }
+    }
+  });
+
+  // swipe táctil
+  var x0 = null;
+  document.addEventListener('touchstart', function(e){ x0 = e.touches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    if (x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 60) activate(idx + (dx < 0 ? 1 : -1));
+    x0 = null;
+  }, {passive:true});
+
+  // deep-link #N
+  function fromHash(){
+    var m = (location.hash || '').match(/^#(\d+)$/);
+    activate(m ? parseInt(m[1], 10) - 1 : 0, false);
+  }
+  window.addEventListener('hashchange', fromHash);
+  fromHash();
+})();
+</script>
+
+</body>
+</html>
