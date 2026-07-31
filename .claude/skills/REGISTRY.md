@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-07-08T16:52:25.119Z`
+> Generated: `2026-07-31T05:52:01.182Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.claude/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -8,7 +8,7 @@ This file is the per-session compact-rules cache for the Skill Resolver protocol
 The orchestrator copies one or more `## Skill: <slug>` blocks below into every subagent briefing under `## Project Standards (auto-resolved)`.
 Subagents trust those compact rules and only read the full SKILL.md when explicitly instructed.
 
-Skills indexed: 14
+Skills indexed: 15
 
 ---
 ## Skill: acli
@@ -196,6 +196,34 @@ Skills indexed: 14
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
 > Source: `.claude/skills/judgment-day/SKILL.md` · phase: `unknown` · extraction strategy: B
+
+---
+
+## Skill: pr-review-lead
+
+**Purpose**: Acts as a QA Lead / QA Architect reviewing a pull request's test-automation work against this repo's KATA doctrine (or the target repo's...
+
+**Compact Rules**:
+- `agentic-qa-core/references/briefing-template.md`, `./dispatch-patterns.md`, `./orchestration-doctrine.md` — when a PR is large enough to warrant subagent fan-out (see Step 2).
+- The default doctrine set for KATA/test-automation PRs, read fresh every invocation (never from memory of a prior session): `test-automation/references/kata-architecture.md`, `./typescript-patterns.md`, `./review-checklists.md`, `agentic-qa-core/references/test-design-doctrine.md`, `./defect-management-doctrine.md`.
+- `references/severity-and-scoring.md`, `references/evidence-and-doctrine-lookup.md`, `references/output-and-posting-flow.md` — this skill's own reference material, read at the step noted below.
+- **Flexible** — only flag things that are evidently wrong or could hurt test reliability/design: real bugs, hardcoded secrets, flaky-prone data dependencies, missing coverage that's genuinely unaddressed. A pattern that diverges from "textbook" KATA but works fine is not a finding.
+- **Standard (recommended default)** — same real-defect bar as Flexible, plus doctrine-pattern deviations surface as light observations, explicitly framed as a comparison ("the documented pattern does X, this PR does Y") rather than an error. Never let a pattern note drag the score the way a real defect does.
+- **Strict** — full literal compliance pass against every applicable doctrine file. A deviation is a tagged finding even when it works fine, especially anything that isn't really part of the documented flow/architecture. Still keep the Real vs. Pattern buckets separate in the output — Strict widens what counts as a finding, it does not turn pattern notes into "errors."
+- **This repo**: load `CLAUDE.md` in full, plus the doctrine files listed under Dependencies above. This is the reference standard.
+- **External repo**: check whether the target repo ships its own `CLAUDE.md` / `.claude/skills/` / `.context/` doctrine before assuming anything — many sibling projects are forked from this same boilerplate and carry (a possibly-evolved version of) the same KATA doctrine, but you cannot assume that without checking. If it has its own doctrine, that repo's doctrine is authoritative for this review, not this repo's copy. If it has none, fall back to this repo's KATA doctrine as the reference standard, and say so explicitly in the output ("this repo has no doctrine of its own, findings are graded against `agentic-qa-boilerplate`'s KATA conventions").
+- **This repo, current branch's PR**: `gh pr view`/`gh pr diff` against the working repo.
+- **External repo**: `gh pr view <N> --repo <owner>/<repo> --json ...` for metadata/commits/files, then per-file `gh api repos/<owner>/<repo>/pulls/<N>/files --paginate` for patches. Large PRs (`gh pr diff` errors past ~20k lines, a real limit you will hit) fall back to per-file patches via the same paginated `files` endpoint — never give up and skim the PR description instead of the code.
+- Distinguish real work from noise: a large diff is sometimes 95%+ an unrelated bulk sync/vendor-update commit. Check `commits[].messageHeadline` before assuming every line matters; call this out to the user rather than reviewing the noise commit line-by-line.
+- A concrete code location (file:line in the diff) showing the defect itself, and/or
+- A doctrine file:section backing the "this is wrong per our conventions" claim.
+- **Real / Reliability** — bugs, hardcoded credentials, data dependencies that can silently break, scalability foot-guns, genuinely unaddressed coverage gaps. Weighted at every strictness level.
+- **Pattern / Doctrine-deviation** — diverges from a documented convention but isn't a functional defect. Weight depends on the Step 0 level (soft observation at Flexible/Standard, tagged finding at Strict — see `references/severity-and-scoring.md`).
+- (truncated — read full SKILL.md for the rest)
+
+**Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
+
+> Source: `.claude/skills/pr-review-lead/SKILL.md` · phase: `unknown` · extraction strategy: B
 
 ---
 
