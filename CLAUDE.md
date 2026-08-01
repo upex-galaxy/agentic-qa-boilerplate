@@ -197,6 +197,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | `/master-test-plan` | Refresh `.context/master-test-plan.md` (what to test and why). |
 | `/break-down-tests` | Plain-English breakdown of automated tests for a module / spec. |
 | `/fix-traceability` | Repair broken US-ATP-ATR-TC traceability links in TMS. |
+| `/jira-instance-migration` | Repoint the repo at a new Atlassian instance (`.env` + `.agents/project.yaml` + machine-global `acli` session) and regenerate the `.agents/` catalogs the migration invalidated. Takes source + target instance as arguments; asks for whatever is missing. |
 
 ### MCPs (decision rules)
 
