@@ -678,12 +678,31 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   { path: 'tests/components/api/ApiBase.ts', reason: 'KATA L2 HTTP base adapted to the target API' },
   { path: 'tests/components/ui/UiBase.ts', reason: 'KATA L2 UI base adapted to the target app' },
   { path: 'scripts/api-login.ts', reason: 'project auth flow (excluded from script sync)' },
+  { path: '.agents/jira-required.yaml', reason: 'methodology manifest: upstream owns the baseline work_types + field slugs, the project owns its fallbacks and omissions. It is the INPUT to jira:sync-workflows, which catalogs only the work_types declared in it — a stale manifest silently regenerates a truncated jira-workflows.json and still exits 0.' },
   { path: '.mcp.json', reason: 'MCP registry with project-specific servers/vars' },
   { path: 'opencode.jsonc', reason: 'OpenCode MCP registry (paired with .mcp.json)' },
   { path: '.github/workflows/regression.yml', reason: 'CI suite adapted (secrets, envs, jobs)' },
   { path: '.github/workflows/smoke.yml', reason: 'CI suite adapted (secrets, envs, jobs)' },
   { path: '.github/workflows/sanity.yml', reason: 'CI suite adapted (secrets, envs, jobs)' },
+  { path: '.agents/project.yaml', reason: 'per-project identity + env map, but upstream keeps ADDING structural blocks (e.g. git_strategy). A project scaffolded before a block existed never learns it should have one.' },
+  { path: 'tsconfig.json', reason: 'path aliases (@utils, @api, @schemas, @variables) are the contract every synced file imports through — a new upstream alias breaks synced code in a project whose tsconfig never learned it.' },
+  { path: 'eslint.config.js', reason: 'lint rules evolve upstream and .husky/pre-commit (which IS synced) runs eslint against this local config.' },
 ];
+
+// NOT on the watchlist, deliberately — do not "fix" this asymmetry:
+//
+//  - `.agents/jira-fields.json` / `jira-workflows.json` / `jira-link-types.json`
+//    are pure per-INSTANCE data. The upstream copies describe the boilerplate
+//    authors' own Jira workspace. Watching them would fire every time upstream
+//    regenerates its catalogs and advise every downstream project to merge
+//    field IDs that belong to a workspace they have no relation to — the exact
+//    silent-wrong-field corruption the migration runbook exists to prevent.
+//    Their correct source is the project's own `bun run jira:sync-*`.
+//    (`jira-required.yaml` IS watched: it holds slugs and structure, not IDs.)
+//  - `.claude/skills/REGISTRY.md`, `kata-manifest.json`, `bun.lock` are
+//    generated artefacts; upstream's copy carries no information for a
+//    downstream repo. Regenerate, never merge.
+//  - `README.md` is rewritten wholesale per project; an advisory would be noise.
 
 const DRIFT_PROMPT_PATH = path.join('.agents', 'prompts', 'boilerplate-drift-prompt.md');
 
@@ -911,6 +930,19 @@ async function main(): Promise<void> {
     versionFile: VERSION_FILE,
     components,
     ignoreFiles: ['.gitignore', '.prettierignore'].map(p => ({ path: p, sentinel: '# ===== Synced from boilerplate' })),
+    // KNOWN GAP, not an oversight — see `PackageJsonSection` in
+    // ./lib/updater-types.ts, which excludes runtime `dependencies` on purpose
+    // ("higher blast radius — separate decision"). Consequence to weigh before
+    // changing it: the `cli` component is synced wholesale and imports
+    // picocolors / yaml / boxen / cli-table3 / figures / @clack/prompts /
+    // @inquirer/prompts at RUNTIME, all declared only in `dependencies`. A
+    // future upstream cli/ change that adds a runtime dep ships the code
+    // without the package, and `bun run up` then crashes on import in every
+    // downstream repo. Same shape for `lint-staged`: `.husky/pre-commit` is
+    // synced and shells out to `bunx lint-staged`, whose config lives here and
+    // does not travel. The sync is append-only (upstream-only keys added,
+    // divergent keys reported FYI, nothing overwritten), so widening the union
+    // would not clobber a project's own entries.
     packageJsonSpecs: [
       { path: 'package.json', sections: ['scripts', 'devDependencies'] },
     ],
