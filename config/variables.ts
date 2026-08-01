@@ -58,7 +58,7 @@ const {
   ATLASSIAN_EMAIL = '',
   ATLASSIAN_API_TOKEN = '',
   // === Jira-specific operational params (NOT credentials) ===
-  JIRA_TEST_STATUS_FIELD = 'customfield_10100', // Used: config.tms.jira.testStatusField
+  JIRA_TEST_STATUS_FIELD = 'customfield_10082', // Used: config.tms.jira.testStatusField
 
   // === Browser Configuration ===
   HEADLESS = 'true', // Used: config.browser.headless (playwright.config)
