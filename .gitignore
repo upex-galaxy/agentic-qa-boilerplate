@@ -84,8 +84,11 @@ build/
 # `.template/claude-md.upstream.sha` is GITIGNORED (per-dev runtime marker —
 # records the last upstream CLAUDE.md the updater advised about, so the merge
 # nudge fires once per upstream change, not every `bun up`).
+# `.template/upstream-sha/` is the same idea generalized: one marker per entry
+# of PROTECTED_WATCHLIST, written by the protected-file drift hook.
 .template/installer.state.json
 .template/claude-md.upstream.sha
+.template/upstream-sha/
 
 # ===== MCP Configuration =====
 # .mcp.json and opencode.jsonc are COMMITTED — they reference secrets via
