@@ -1,6 +1,6 @@
 {
   "blocking": {
-    "id": "10008",
+    "id": "10010",
     "name": "Blocking",
     "outward": "blocks",
     "inward": "is blocked by",
@@ -70,7 +70,7 @@
     "exists_in_workspace": true
   },
   "test_design": {
-    "id": "10010",
+    "id": "10008",
     "name": "Test Design",
     "outward": "designs",
     "inward": "is designed by",
