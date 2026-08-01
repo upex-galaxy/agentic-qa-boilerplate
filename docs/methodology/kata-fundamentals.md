@@ -1184,11 +1184,13 @@ def _sync_to_xray_cloud(results: dict):
 #         ATLASSIAN_URL: Your Atlassian site URL
 #         ATLASSIAN_EMAIL: Atlassian account email
 #         ATLASSIAN_API_TOKEN: Atlassian API token
-#         JIRA_TRANSITION_PASS: Transition ID to PASS (default: 31)
-#         JIRA_TRANSITION_FAIL: Transition ID to FAIL (default: 41)
+#         JIRA_TRANSITION_PASS: Transition ID to PASS (e.g.: NN)
+#         JIRA_TRANSITION_FAIL: Transition ID to FAIL (e.g.: NN)
 #
-#     Note: Transition IDs vary by configured workflow.
-#     To get them: GET /rest/api/3/issue/{test_id}/transitions
+#     Note: Transition IDs vary by configured workflow. Never hardcode one.
+#     Resolve them from .agents/jira-workflows.json via
+#     {{jira.transition.<work_type>.<slug>}}, or read them live with
+#     GET /rest/api/3/issue/{test_id}/transitions
 #
 #     Documentation: https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/#api-rest-api-3-issue-issueidorkey-transitions-post
 #     """
@@ -1197,8 +1199,8 @@ def _sync_to_xray_cloud(results: dict):
 #     jira_token = os.getenv("ATLASSIAN_API_TOKEN")
 #
 #     transition_ids = {
-#         "PASS": os.getenv("JIRA_TRANSITION_PASS", "31"),
-#         "FAIL": os.getenv("JIRA_TRANSITION_FAIL", "41")
+#         "PASS": os.getenv("JIRA_TRANSITION_PASS"),
+#         "FAIL": os.getenv("JIRA_TRANSITION_FAIL")
 #     }
 #
 #     auth = (jira_user, jira_token)
@@ -1339,9 +1341,9 @@ XRAY_PROJECT_KEY=DEMO
 # For Custom Field:
 # JIRA_TEST_STATUS_FIELD=customfield_NNNNN
 #
-# For Transitions:
-# JIRA_TRANSITION_PASS=31
-# JIRA_TRANSITION_FAIL=41
+# For Transitions (resolve from .agents/jira-workflows.json — ids vary per workflow):
+# JIRA_TRANSITION_PASS=
+# JIRA_TRANSITION_FAIL=
 
 # ===== CI/CD =====
 BUILD_ID=${CI_BUILD_ID}  # CI/CD variable
