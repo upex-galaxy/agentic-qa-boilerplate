@@ -99,6 +99,8 @@ Anything that fits neither list — a CI workflow, a README, `.mcp.json`, a depl
 2. `.agents/project.yaml` -> `atlassian_url: <target>`
 3. Re-authenticate `acli`:
 
+> **Template-repo carve-out for step 2.** A boilerplate/template repo ships `.agents/project.yaml` with every value `null` on purpose — downstream projects inherit the file verbatim, so a concrete site baked into it is wrong for all of them. Detect this by reading `project.project_name` in the same file: if it is `null`, the repo is an un-onboarded template. **Leave `atlassian_url: null`** and say so in the report. The same rule applies to `project_key` in Phase 4. Only a real, onboarded project gets the value written.
+
 ```bash
 TOKEN=$(grep '^ATLASSIAN_API_TOKEN=' .env | cut -d= -f2-)
 EMAIL=$(grep '^ATLASSIAN_EMAIL=' .env | cut -d= -f2-)
@@ -106,6 +108,8 @@ printf '%s' "$TOKEN" | acli jira auth login --site "<target>" --email "$EMAIL" -
 ```
 
 > **Secret hygiene**: never `cat` the `.env` or grep it broadly — that dumps `ATLASSIAN_API_TOKEN` into the terminal, the scrollback, and the agent transcript. Filter by the exact key every time. If a token does get printed, say so plainly and recommend rotating it.
+>
+> **Do not back the `.env` up inside the repo.** `cp .env .env.bak` feels prudent and is not: `.gitignore` usually covers the exact name `.env`, not arbitrary suffixes, so the backup lands as an untracked file holding a live API token, one `git add -A` away from being committed. Verify with `git check-ignore -v <path>` before writing any copy, or put it outside the working tree entirely. The `.env` edit here is a single line and is trivially reversible without a backup.
 
 The `acli` session is **global to the machine**, so this re-login repoints every project on it. That is usually what you want after a company-wide migration. If the operator still needs the old instance for another repo, stop and tell them — `acli` holds one session per product, and they will have to switch back and forth with `acli jira auth switch`.
 
@@ -141,20 +145,58 @@ Agentic variables never hardcode Jira IDs; they resolve *slugs* against three wo
 | `.agents/jira-workflows.json` | `bun run jira:sync-workflows` | statuses and transitions per work type |
 | `.agents/jira-link-types.json` | `bun run jira:sync-link-types` | issue link types |
 
-`.agents/jira-required.yaml` references everything **by slug**, never by ID. It is not touched.
+`.agents/jira-required.yaml` holds no IDs — it declares everything **by slug**, so the migration does not invalidate its contents. But it is not a bystander either, and the next section is why.
+
+### Pre-flight: the manifest caps what the catalogs can contain
+
+**Do this BEFORE running any sync.** `.agents/jira-required.yaml` is the *input* to the regeneration, not a sibling output. `jira:sync-workflows` walks its `work_types:` section and catalogs **only the types declared there** — anything else is skipped with a `log.info` line that scrolls past in a wall of successful output:
+
+```
+Project issue type "Task" exists in <KEY> but is not declared in
+.agents/jira-required.yaml work_types — declare it to catalog its workflow.
+```
+
+So a stale manifest declaring 3 work types regenerates a catalog with 3 work types, exits `0`, and reports success. The migration looks clean and the catalog is missing everything the manifest forgot to ask for. Same silent-success failure this whole command exists to prevent, entering through the input side.
+
+The manifest goes stale invisibly because **the boilerplate updater neither syncs it nor warns about it**: it sits in `bootstrapOnlyPaths` (so `bun run update` never overwrites the project's customizations) and is absent from the drift watchlist (so nothing reports that it has fallen behind). A project scaffolded from an older boilerplate can be many versions behind with zero signal.
+
+Compare against upstream before regenerating:
+
+There is no published URL for the manifest itself — derive it from the one the scripts already hardcode, by swapping the filename on `UPEX_UPSTREAM_URL` (it points at `jira-workflows.json` in the same `.agents/` directory):
+
+```bash
+UPSTREAM=$(grep -oE "https://raw\.githubusercontent\.com/[^']+" scripts/sync-jira-workflows.ts \
+  | head -1 | sed 's|/[^/]*$|/jira-required.yaml|')
+echo "comparing against: $UPSTREAM"
+curl -fsSL "$UPSTREAM" -o /tmp/jira-required.upstream.yaml || echo "upstream fetch FAILED — do not assume parity"
+
+wt() { awk '/^work_types:/{f=1;next} f&&/^[a-z_]+:/{f=0} f&&/^  [a-z_]+:/{print $1}' "$1"; }
+diff <(wt .agents/jira-required.yaml) <(wt /tmp/jira-required.upstream.yaml)
+```
+
+The same `wt` shape works on the `required:` / `optional:` sections by changing the anchor — check those too, not just `work_types:`. A missing field slug is quieter than a missing work type but breaks the skill that references it.
+
+Report the delta and **stop for a decision** — do not merge it silently. The file is genuinely co-owned: upstream owns the baseline contract (which work types and slugs the skills reference), the project owns its adaptations (fields its Jira lacks, `fallback:` declarations). Blindly adopting upstream clobbers real local customization; ignoring the delta ships an amputated catalog. Present both sides and let the operator choose per work type.
+
+If the manifest does need updating, **update it first, then run the syncs** — in the other order the catalogs get regenerated twice.
 
 ### With Administer permission (the correct path)
 
 ```bash
 bun run jira:sync-fields --force
-bun run jira:sync-link-types --force
+bun run jira:sync-link-types
 bun run jira:sync-workflows
 ```
 
-Two behaviors to anticipate:
+Three behaviors to anticipate, and they differ per script — do not assume one rule covers all three:
+
+- **`jira:sync-fields` REQUIRES `--force`.** Its populated-catalog guard sits on the main path, so a plain re-run stops with `already populated. Re-run with --force to overwrite.` and exits `1`.
+- **`jira:sync-workflows` does NOT need `--force`, and should not get it.** Its identical-looking guard lives *inside* the `--upex` branch only, so the normal Jira path is idempotent. Adding `--force` re-prompts for already-mapped slugs and buys nothing. (In practice a canonical slug with exactly one candidate auto-resolves either way; prompts only appear on a collision or a no-match.)
+- **`jira:sync-link-types` has NO `--force` flag at all.** Its argument parser knows only `--dry-run`, `--json`, `--verbose`, `--help` and `--upex`, and has no `default:` case — so `--force` is silently swallowed rather than rejected. Passing it appears to work, which is exactly why it is worth not teaching.
+
+Plus one behavior shared with Phase 2:
 
 - **`jira:sync-workflows` prompts for the project key** when `.agents/project.yaml` has it null, and then **persists the answer into that file**. In a real project that is correct, leave it. In a boilerplate/template repo that must ship `project_key: null`, revert that one line after syncing. There is no CLI flag for it — the prompt is the only channel.
-- **Run `jira:sync-workflows` without `--force`.** With the flag it re-prompts for every already-mapped slug. Without it, re-runs are idempotent and ask only about what is new.
 
 ### The `--upex` flag — usually NOT what you want
 
@@ -182,24 +224,64 @@ git diff .agents/jira-fields.json | grep -E '^[+-].*"id"' | head -20
 
 Pick one known slug and state its before/after explicitly. Reassignment is normal and is the whole point — a diff showing zero ID changes means the sync did not reach the new instance.
 
+**A changed ID is not a correct ID.** The diff proves the sync reached somewhere; it does not prove each slug now points at the field it names. Two slugs can *swap* IDs during a migration, which survives every check above: both IDs still exist, both still resolve, and each now names the other's entity. Verify by asking the live instance what each catalogued ID actually is, and comparing against the name the catalog recorded:
+
+```bash
+URL=$(grep '^ATLASSIAN_URL=' .env | cut -d= -f2-); B="${URL%/}"
+curl -sS -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" "$B/rest/api/3/field" > /tmp/live-fields.json
+
+jq -s -r '
+  (.[1] | map({key: .id, value: .name}) | from_entries) as $live
+  | .[0] | to_entries
+  | map(select( ($live[.value.id] // null) != .value.name ))
+  | map("\(.key)\t\(.value.id)\tcatalog=\(.value.name)\tlive=\($live[.value.id] // "MISSING")")
+  | if length==0 then ["all field ids verified"] else . end | .[]' \
+  .agents/jira-fields.json /tmp/live-fields.json
+```
+
+Repeat the same shape for `jira-link-types.json` against `/rest/api/3/issueLinkType` (`.issueLinkTypes[]`) and for `jira-workflows.json` against `/rest/api/3/issuetype` and `/rest/api/3/status`. Any row printed is a mismatch and must be resolved before committing.
+
+**Check the option values came back too.** `jira-fields.json` stores the child options of select-type fields, and the options endpoint can return `404` per field while the parent sync still exits `0` — the warning goes to stderr and scrolls past. A field left with `options: []` looks catalogued and is not:
+
+```bash
+jq -r 'to_entries[] | select(.value.options != null and (.value.options|length)==0)
+  | "\(.key)\t\(.value.id)\t\(.value.type)\tOPTIONS EMPTY"' .agents/jira-fields.json
+```
+
+Report each one. It is only harmless if no skill resolves `{{jira.<slug>.<option>}}` for that field — confirm rather than assume.
+
 Then confirm no ID escaped the catalog:
 
 ```bash
-grep -rn "customfield_" --include="*.ts" --include="*.md" --include="*.yaml" . \
-  | grep -v node_modules | grep -v "^./.agents/"
+grep -rnE "customfield_[0-9]{4,}" --include="*.ts" --include="*.md" --include="*.yaml" . \
+  | grep -v node_modules | grep -v "^\./\.agents/"
 ```
 
-Expected: nothing. A literal ID in a script, skill, or doc is a latent bug — it must resolve by slug against `.agents/jira-fields.json`. Report any hit; do not silently rewrite it.
+**Match on digits, not on the `customfield_` prefix alone.** A bare-prefix grep also hits every legitimate mention: prose about `customfield_XXXXX`, the `customfield_*` wildcard, `customfield_<slug>` markers for unmapped fields, and `customfield_NNNNN` placeholders. In a mature repo that is dozens of false positives, and an operator told to "expect nothing" will either panic or learn to ignore the check.
+
+Expect only hits you can justify. A literal ID in a script, skill, or doc is a latent bug — it must resolve by slug against `.agents/jira-fields.json`. Two exemptions are legitimate: a tool-owner skill demonstrating CLI syntax (`acli jira field update --id customfield_10122`), where the number is a sample argument carrying no slug mapping, and any file the repo's own linter allowlists for this. Report every hit and classify it; do not silently rewrite.
+
+**Custom fields are not the only per-instance IDs.** Statuses, transitions and link types are reassigned by the same migration and hide in the same places — env examples, docs, commented reference implementations:
+
+```bash
+grep -rnE '(TRANSITION|STATUS|LINK_?TYPE)[A-Z_]*\s*[=:]\s*"?[0-9]{2,}' \
+  --include="*.ts" --include="*.js" --include="*.md" --include="*.yaml" --include="*.env*" . \
+  | grep -v node_modules | grep -v "^\./\.agents/"
+```
+
+These resolve through `.agents/jira-workflows.json` (`{{jira.transition.<work_type>.<slug>}}`, `{{jira.<work_type>.<status>}}`) and `.agents/jira-link-types.json`. A literal number is the same latent bug wearing different clothes.
 
 **Also sweep the override channel.** Projects often expose an env var or config constant that PINS a field ID, as an escape hatch over the catalog (`*_FIELD`, `*_FIELD_ID`, `*_CUSTOM_FIELD`). A pinned value survives the catalog regeneration untouched and keeps pointing at the old instance — the exact silent-write bug this command exists to prevent, reintroduced through the back door:
 
 ```bash
-grep -rniE '(FIELD|CUSTOMFIELD)(_ID)?\s*[=:]\s*.?customfield_' \
+grep -rniE '(FIELD|CUSTOMFIELD)(_ID)?\s*[=:]\s*.?customfield_[0-9]{4,}' \
   --include="*.ts" --include="*.js" --include="*.env*" --include="*.yaml" --include="*.md" . \
   | grep -v node_modules
 ```
 
-Every hit is either re-pointed at the new ID or, better, changed to resolve from the catalog by slug and left empty as an override.
+Same digit rule as above — without it the pattern flags its own `customfield_NNNNN` placeholder as a finding.
+
+Every hit is either re-pointed at the new ID or, better, changed to resolve from the catalog by slug and left empty as an override. Prefer the second: an empty default plus a catalog lookup cannot go stale, and a pinned value silently survives the next migration too. **Before rewriting one, trace whether the code path is even reachable** — a constant guarded behind a provider switch or a disabled feature flag may be dormant, which changes the urgency but not the fix.
 
 ---
 
@@ -214,16 +296,26 @@ chore(jira): point atlassian_url at the <target> instance
 chore(jira): refresh field, workflow and link-type catalogs for <target>
 ```
 
+**In a template repo the first commit has no content.** `.env` is gitignored and `atlassian_url` deliberately stayed `null` (Phase 2 carve-out), so there is nothing to stage. Skip it and say so — do not manufacture an empty commit, and do not "fix" the emptiness by writing the value.
+
+If the manifest pre-flight produced a change, that is a third commit and it goes **first**, because the catalogs are generated from it:
+
+```
+chore(jira): sync jira-required.yaml work types with upstream
+```
+
 Follow the repo's git strategy via `/git-flow-master`. **Do not push without explicit confirmation** — in a boilerplate, publishing catalogs affects every downstream project that later runs `--upex`.
 
 ---
 
 ## Closing report
 
-Give the operator these, and flag the last two as needing a human:
+Give the operator these, and flag the last three as needing a human:
 
-1. The three config points, with before/after.
-2. Catalog counts: fields, work types, link types, plus any missing required slug.
-3. At least one custom-field ID before/after, as proof the regeneration reached the new instance.
-4. **Manual check**: does the vanity/alias domain now resolve to the target? Not visible from the repo.
-5. **Team broadcast**: everyone re-runs the `acli` login on their own machine. If the team consumes the upstream reference catalog via `--upex`, add that nobody should run it until the upstream has published its post-migration catalogs.
+1. The three config points, with before/after. In a template repo, state explicitly that `atlassian_url` was left `null` by design so it does not read as an oversight.
+2. The manifest pre-flight result: local vs upstream work-type counts, and whether anything was adopted.
+3. Catalog counts: fields, work types, link types, plus any missing required slug and any field left with empty options.
+4. At least one custom-field ID before/after, as proof the regeneration reached the new instance, **plus** the id-to-name verification result — "N ids checked against the live instance, 0 mismatches" is the claim worth making; "the diff was large" is not.
+5. **Manual check**: does the vanity/alias domain now resolve to the target? Not visible from the repo.
+6. **Manual check**: if the manifest was behind, whatever made it drift will make it drift again. The updater treats it as bootstrap-only and does not watch it for drift, so nothing will report the next gap either. Say so.
+7. **Team broadcast**: everyone re-runs the `acli` login on their own machine — a stale session returns old-instance data with no error, which is the one failure mode nobody notices. If the team consumes the upstream reference catalog via `--upex`, add that nobody should run it until the upstream has published its post-migration catalogs.
