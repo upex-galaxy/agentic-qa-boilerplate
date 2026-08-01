@@ -10,6 +10,8 @@
  */
 
 import type { AtcResult } from '@utils/decorators';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { config, env } from '@variables';
 
 // ============================================
@@ -175,12 +177,49 @@ async function syncToXray(results: Record<string, AtcResult[]>): Promise<SyncRes
 // Jira Direct Sync
 // ============================================
 
+/**
+ * Resolve the Jira custom field that holds a test's run status.
+ *
+ * Custom-field ids are per-instance data: they differ between workspaces and
+ * are reassigned by a site migration. The catalog `.agents/jira-fields.json`
+ * is their single source of truth, so the id is never hardcoded in config or
+ * docs. `JIRA_TEST_STATUS_FIELD` stays available as an explicit override.
+ *
+ * Returns null when neither source provides one — the caller aborts rather
+ * than PUT an empty field key, which Jira answers with an opaque 400.
+ */
+function resolveTestStatusField(): string | null {
+  if (config.tms.jira.testStatusField) {
+    return config.tms.jira.testStatusField;
+  }
+
+  try {
+    const catalogPath = join(process.cwd(), '.agents', 'jira-fields.json');
+    const catalog = JSON.parse(readFileSync(catalogPath, 'utf8')) as Record<string, { id?: string }>;
+    return catalog.test_status?.id ?? null;
+  }
+  catch {
+    return null;
+  }
+}
+
 async function syncToJiraDirect(results: Record<string, AtcResult[]>): Promise<SyncResult> {
-  const { url, user, apiToken, testStatusField } = config.tms.jira;
+  const { url, user, apiToken } = config.tms.jira;
 
   if (!url || !user || !apiToken) {
     console.error('[ERROR] Missing Atlassian credentials. Check ATLASSIAN_URL, ATLASSIAN_EMAIL, ATLASSIAN_API_TOKEN.');
     return { provider: 'jira', success: false, message: 'Missing credentials' };
+  }
+
+  const testStatusField = resolveTestStatusField();
+
+  if (!testStatusField) {
+    console.error(
+      '[ERROR] Could not resolve the test status field. Regenerate the catalog with '
+      + '`bun run jira:sync-fields --force` so `.agents/jira-fields.json` carries a '
+      + '`test_status` slug, or set JIRA_TEST_STATUS_FIELD in .env to override it.',
+    );
+    return { provider: 'jira', success: false, message: 'Unresolved test status field' };
   }
 
   const auth = btoa(`${user}:${apiToken}`);

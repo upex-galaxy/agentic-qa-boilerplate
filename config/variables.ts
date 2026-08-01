@@ -58,7 +58,11 @@ const {
   ATLASSIAN_EMAIL = '',
   ATLASSIAN_API_TOKEN = '',
   // === Jira-specific operational params (NOT credentials) ===
-  JIRA_TEST_STATUS_FIELD = 'customfield_10082', // Used: config.tms.jira.testStatusField
+  // Optional override. Left empty on purpose: custom-field ids are per-instance
+  // data and must not be hardcoded here (see the `acli` skill, anti-pattern T2).
+  // When empty, it resolves at runtime from `.agents/jira-fields.json` -> the
+  // `test_status` slug. Regenerate that catalog with `bun run jira:sync-fields --force`.
+  JIRA_TEST_STATUS_FIELD = '', // Used: config.tms.jira.testStatusField
 
   // === Browser Configuration ===
   HEADLESS = 'true', // Used: config.browser.headless (playwright.config)

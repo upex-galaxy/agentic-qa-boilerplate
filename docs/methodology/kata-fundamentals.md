@@ -1074,20 +1074,20 @@ def _sync_to_xray_cloud(results: dict):
 #         1. Create custom field type "Select List (single choice)"
 #         2. Name: "Test Status" (or similar)
 #         3. Options: PASS, FAIL, BLOCKED, NOT_RUN
-#         4. Get custom field ID (e.g.: customfield_10100)
+#         4. Get custom field ID (e.g.: customfield_NNNNN)
 #
 #     Environment variables:
 #         ATLASSIAN_URL: Your Atlassian site URL (e.g.: https://company.atlassian.net)
 #         ATLASSIAN_EMAIL: Atlassian account email
 #         ATLASSIAN_API_TOKEN: Atlassian API token
-#         JIRA_TEST_STATUS_FIELD: Custom field ID (e.g.: customfield_10100)
+#         JIRA_TEST_STATUS_FIELD: Custom field ID (e.g.: customfield_NNNNN)
 #
 #     Documentation: https://developer.atlassian.com/cloud/jira/platform/rest/v3/
 #     """
 #     jira_url = os.getenv("ATLASSIAN_URL")
 #     jira_user = os.getenv("ATLASSIAN_EMAIL")
 #     jira_token = os.getenv("ATLASSIAN_API_TOKEN")
-#     custom_field_id = os.getenv("JIRA_TEST_STATUS_FIELD", "customfield_10100")
+#     custom_field_id = os.getenv("JIRA_TEST_STATUS_FIELD", "customfield_NNNNN")
 #
 #     auth = (jira_user, jira_token)
 #     headers = {"Content-Type": "application/json"}
@@ -1337,7 +1337,7 @@ XRAY_PROJECT_KEY=DEMO
 # ATLASSIAN_API_TOKEN=your_api_token_here
 #
 # For Custom Field:
-# JIRA_TEST_STATUS_FIELD=customfield_10100
+# JIRA_TEST_STATUS_FIELD=customfield_NNNNN
 #
 # For Transitions:
 # JIRA_TRANSITION_PASS=31
