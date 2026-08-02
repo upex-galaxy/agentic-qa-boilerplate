@@ -930,21 +930,16 @@ async function main(): Promise<void> {
     versionFile: VERSION_FILE,
     components,
     ignoreFiles: ['.gitignore', '.prettierignore'].map(p => ({ path: p, sentinel: '# ===== Synced from boilerplate' })),
-    // KNOWN GAP, not an oversight — see `PackageJsonSection` in
-    // ./lib/updater-types.ts, which excludes runtime `dependencies` on purpose
-    // ("higher blast radius — separate decision"). Consequence to weigh before
-    // changing it: the `cli` component is synced wholesale and imports
+    // Append-only per section: upstream-only keys are added, same-key/
+    // different-value is reported FYI and NEVER overwritten. `dependencies` is
+    // here because the `cli` component is synced wholesale and imports
     // picocolors / yaml / boxen / cli-table3 / figures / @clack/prompts /
-    // @inquirer/prompts at RUNTIME, all declared only in `dependencies`. A
-    // future upstream cli/ change that adds a runtime dep ships the code
-    // without the package, and `bun run up` then crashes on import in every
-    // downstream repo. Same shape for `lint-staged`: `.husky/pre-commit` is
-    // synced and shells out to `bunx lint-staged`, whose config lives here and
-    // does not travel. The sync is append-only (upstream-only keys added,
-    // divergent keys reported FYI, nothing overwritten), so widening the union
-    // would not clobber a project's own entries.
+    // @inquirer/prompts at RUNTIME, all declared only there — syncing the code
+    // without the package leaves `bun run up` crashing on import.
+    // `lint-staged` is here because `.husky/pre-commit` is synced and shells
+    // out to `bunx lint-staged`, which reads its config from this file.
     packageJsonSpecs: [
-      { path: 'package.json', sections: ['scripts', 'devDependencies'] },
+      { path: 'package.json', sections: ['scripts', 'devDependencies', 'dependencies', 'lint-staged'] },
     ],
     deprecatedFiles: [],
     bootstrapOnlyPaths: [
