@@ -8,7 +8,7 @@ import type { Flags, TestResult, TestSetResult } from '../types/index.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
 import { resolveIssueId, resolveIssueIds } from '../lib/jira.js';
-import { log } from '../lib/logger.js';
+import { log, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
 import { getFlag, requireFlag } from '../lib/parser.js';
 
 // ============================================================================
@@ -80,12 +80,18 @@ export async function list(flags: Flags): Promise<void> {
 
   const result = await graphql<{ getTestSets: { total: number, results: TestSetResult[] } }>(QUERIES.getTestSets, { jql, limit });
 
-  log.title(`Test Sets (${result.getTestSets.total} total)`);
+  log.title(`Test Sets (${result.getTestSets.total} total, showing ${result.getTestSets.results.length})`);
 
   if (result.getTestSets.results.length === 0) {
+    if (result.getTestSets.total > 0 && limit > 0) {
+      warnCountedButUnresolved('test sets', result.getTestSets.total);
+      return;
+    }
     log.warn('No test sets found');
     return;
   }
+
+  warnIfTruncated(result.getTestSets.total, result.getTestSets.results.length, limit);
 
   result.getTestSets.results.forEach((s: TestSetResult) => {
     const sStatus = typeof s.jira.status === 'object' && s.jira.status !== null ? s.jira.status.name : (s.jira.status || 'Unknown');

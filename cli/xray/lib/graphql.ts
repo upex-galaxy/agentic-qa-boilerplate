@@ -102,6 +102,26 @@ export const QUERIES = {
     }
   `,
 
+  // Same projection as getTest, addressed by numeric issueId instead of JQL.
+  // Needed because issueIds are the only stable handle during a cross-site
+  // migration, where the same key resolves to a different id on each site.
+  getTestById: `
+    query GetTestById($issueIds: [String]) {
+      getTests(issueIds: $issueIds, limit: 1) {
+        results {
+          issueId
+          projectId
+          testType { name }
+          steps { id action data result }
+          gherkin
+          unstructured
+          preconditions(limit: 10) { results { issueId jira(fields: ["key", "summary"]) } }
+          jira(fields: ["key", "summary", "description", "status", "labels"])
+        }
+      }
+    }
+  `,
+
   getTests: `
     query GetTests($jql: String, $limit: Int!) {
       getTests(jql: $jql, limit: $limit) {

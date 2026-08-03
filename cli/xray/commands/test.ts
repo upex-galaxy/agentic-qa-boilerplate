@@ -7,7 +7,7 @@
 import type { Flags, PreconditionResult, TestResult, TestStepResponse } from '../types/index.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
-import { log } from '../lib/logger.js';
+import { log, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
 import { getFlag, getFlagArray, requireFlag } from '../lib/parser.js';
 
 // ============================================================================
@@ -97,16 +97,20 @@ export async function create(flags: Flags): Promise<void> {
 
 export async function get(flags: Flags, positional: string[]): Promise<void> {
   const key = positional[0] || getFlag(flags, 'key');
-  if (!key) {
-    throw new Error('Test key required. Usage: xray test get PROJ-123');
+  const issueId = getFlag(flags, 'id');
+
+  if (!key && !issueId) {
+    throw new Error('Test key or --id required. Usage: xray test get PROJ-123 | xray test get --id 11942');
   }
 
-  const result = await graphql<{ getTests: { results: TestResult[] } }>(QUERIES.getTest, {
-    jql: `key = ${key}`,
-  });
+  // Addressing by numeric issueId is the only way to reach a test whose key you
+  // do not know, and the handle that survives a JQL-unfriendly context.
+  const result = issueId
+    ? await graphql<{ getTests: { results: TestResult[] } }>(QUERIES.getTestById, { issueIds: [issueId] })
+    : await graphql<{ getTests: { results: TestResult[] } }>(QUERIES.getTest, { jql: `key = ${key}` });
 
   if (!result.getTests.results || result.getTests.results.length === 0) {
-    throw new Error(`Test not found: ${key}`);
+    throw new Error(`Test not found: ${key || `id ${issueId}`}`);
   }
 
   const test = result.getTests.results[0];
@@ -169,9 +173,15 @@ export async function list(flags: Flags): Promise<void> {
   log.title(`Tests (${result.getTests.total} total, showing ${result.getTests.results.length})`);
 
   if (result.getTests.results.length === 0) {
+    if (result.getTests.total > 0 && limit > 0) {
+      warnCountedButUnresolved('tests', result.getTests.total);
+      return;
+    }
     log.warn('No tests found');
     return;
   }
+
+  warnIfTruncated(result.getTests.total, result.getTests.results.length, limit);
 
   result.getTests.results.forEach((t: TestResult) => {
     const rawStatus = t.jira.status;

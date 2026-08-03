@@ -8,7 +8,7 @@ import type { Flags, TestExecutionResult, TestRunResult } from '../types/index.j
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
 import { getLinkedTests, resolveIssueId, resolveIssueIds } from '../lib/jira.js';
-import { log } from '../lib/logger.js';
+import { log, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
 import { getBoolFlag, getFlag, getFlagArray, requireFlag } from '../lib/parser.js';
 
 /**
@@ -125,12 +125,18 @@ export async function list(flags: Flags): Promise<void> {
 
   const result = await graphql<{ getTestExecutions: { total: number, results: TestExecutionResult[] } }>(QUERIES.getTestExecutions, { jql, limit });
 
-  log.title(`Test Executions (${result.getTestExecutions.total} total)`);
+  log.title(`Test Executions (${result.getTestExecutions.total} total, showing ${result.getTestExecutions.results.length})`);
 
   if (result.getTestExecutions.results.length === 0) {
+    if (result.getTestExecutions.total > 0 && limit > 0) {
+      warnCountedButUnresolved('test executions', result.getTestExecutions.total);
+      return;
+    }
     log.warn('No test executions found');
     return;
   }
+
+  warnIfTruncated(result.getTestExecutions.total, result.getTestExecutions.results.length, limit);
 
   result.getTestExecutions.results.forEach((e: TestExecutionResult) => {
     const eStatus = typeof e.jira.status === 'object' && e.jira.status !== null ? e.jira.status.name : (e.jira.status || 'Unknown');

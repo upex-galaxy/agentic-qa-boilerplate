@@ -1015,7 +1015,7 @@ export async function restore(flags: Flags): Promise<void> {
             log.success(`Synced definition: ${test.originalKey}`);
           }
           else {
-            log.dim(`  No Xray data to sync for ${test.originalKey}`);
+            log.dim(`  Nothing to sync for ${test.originalKey} (source has no steps/gherkin/definition)`);
           }
 
           keyMap.set(test.originalKey, existingTest.key);
@@ -1137,13 +1137,13 @@ export async function restore(flags: Flags): Promise<void> {
   // --------------------------------------------------------------------------
   // Phase 4: Test Sets, then Test Plans
   // --------------------------------------------------------------------------
-  const setsCreated = await restoreContainers(testSets, 'Test Set', targetProject, idMap, keyMap, syncMode, dryRun, {
+  const setsResult = await restoreContainers(testSets, 'Test Set', targetProject, idMap, keyMap, syncMode, dryRun, {
     create: MUTATIONS.createTestSet,
     add: MUTATIONS.addTestsToTestSet,
     createRoot: 'createTestSet',
     createField: 'testSet',
   });
-  const plansCreated = await restoreContainers(testPlans, 'Test Plan', targetProject, idMap, keyMap, syncMode, dryRun, {
+  const plansResult = await restoreContainers(testPlans, 'Test Plan', targetProject, idMap, keyMap, syncMode, dryRun, {
     create: MUTATIONS.createTestPlan,
     add: MUTATIONS.addTestsToTestPlan,
     createRoot: 'createTestPlan',
@@ -1154,6 +1154,8 @@ export async function restore(flags: Flags): Promise<void> {
   // Phase 5: Executions + run statuses
   // --------------------------------------------------------------------------
   let execsCreated = 0;
+  let execsSynced = 0;
+  let execsFailed = 0;
   let runsRestored = 0;
 
   if (backup.executions.length > 0) {
@@ -1165,8 +1167,18 @@ export async function restore(flags: Flags): Promise<void> {
         .filter(Boolean);
 
       if (dryRun) {
-        console.log(`  [DRY] Would create execution: ${exec.summary} (${exec.testRuns.length} runs)`);
-        execsCreated++;
+        // Resolve exactly as the real run would, so the preview reports
+        // sync-vs-create truthfully. A dry-run that claims it will CREATE what it
+        // will in fact SYNC reads as a duplication warning and stops migrations.
+        const existingId = syncMode ? await resolveExistingIssue(exec.originalKey) : null;
+        if (existingId) {
+          console.log(`  [DRY] Would sync execution: ${exec.originalKey} (${exec.testRuns.length} runs)`);
+          execsSynced++;
+        }
+        else {
+          console.log(`  [DRY] Would create execution: ${exec.summary} (${exec.testRuns.length} runs)`);
+          execsCreated++;
+        }
         continue;
       }
 
@@ -1191,15 +1203,17 @@ export async function restore(flags: Flags): Promise<void> {
           });
           execIssueId = execResult.createTestExecution.testExecution.issueId;
           log.success(`Created execution: ${execResult.createTestExecution.testExecution.jira?.key} (from ${exec.originalKey})`);
+          execsCreated++;
         }
         else {
           log.success(`Synced execution: ${exec.originalKey}`);
+          execsSynced++;
         }
-        execsCreated++;
 
         runsRestored += await restoreRunStatuses(execIssueId, exec, keyMap);
       }
       catch (error) {
+        execsFailed++;
         const errMsg = error instanceof Error ? error.message : String(error);
         log.error(`Failed to restore execution ${exec.originalKey}: ${errMsg}`);
       }
@@ -1216,18 +1230,24 @@ export async function restore(flags: Flags): Promise<void> {
   if (folders.length > 0) {
     console.log(`  Folders:       ${foldersCreated} populated`);
   }
+  // created-vs-synced is spelled out per entity: "N restored" hides whether the
+  // run duplicated the destination or updated it in place, which is the single
+  // thing an operator checks after a cross-site restore.
   if (testSets.length > 0) {
-    console.log(`  Test Sets:     ${setsCreated} restored`);
+    console.log(`  Test Sets:     ${setsResult.created} created, ${setsResult.synced} synced, ${setsResult.failed} failed`);
   }
   if (testPlans.length > 0) {
-    console.log(`  Test Plans:    ${plansCreated} restored`);
+    console.log(`  Test Plans:    ${plansResult.created} created, ${plansResult.synced} synced, ${plansResult.failed} failed`);
   }
   if (backup.executions.length > 0) {
-    console.log(`  Executions:    ${execsCreated} restored, ${runsRestored} run statuses applied`);
+    console.log(`  Executions:    ${execsCreated} created, ${execsSynced} synced, ${execsFailed} failed, ${runsRestored} run statuses applied`);
   }
 
   if (!dryRun && keyMap.size > 0) {
-    const mapOutput = `key-mapping-${targetProject}-${Date.now()}.csv`;
+    // Alongside the backups (and inside the gitignored dir), not in the caller's
+    // cwd — a migration otherwise litters the repo root with one CSV per project.
+    ensureBackupsDir();
+    const mapOutput = join(BACKUPS_DIR, `key-mapping-${targetProject}-${Date.now()}.csv`);
     const mapContent = Array.from(keyMap.entries())
       .map(([old, newKey]) => `${old},${newKey}`)
       .join('\n');
@@ -1268,7 +1288,13 @@ async function associateTestExtras(
   }
 }
 
-/** Restore a list of Test Plans or Test Sets. Returns the count restored. */
+/**
+ * Restore a list of Test Plans or Test Sets.
+ *
+ * Returns created / synced / failed counts separately: after a cross-site
+ * restore the only question that matters is whether the run duplicated the
+ * destination or updated it in place, and a single total cannot answer it.
+ */
 async function restoreContainers(
   containers: BackupTestContainer[],
   label: string,
@@ -1278,19 +1304,30 @@ async function restoreContainers(
   syncMode: boolean,
   dryRun: boolean,
   ops: { create: string, add: string, createRoot: string, createField: string },
-): Promise<number> {
+): Promise<{ created: number, synced: number, failed: number }> {
   if (containers.length === 0) {
-    return 0;
+    return { created: 0, synced: 0, failed: 0 };
   }
   console.log(`\nRestoring ${label.toLowerCase()}s...`);
-  let count = 0;
+  let created = 0;
+  let synced = 0;
+  let failed = 0;
 
   for (const c of containers) {
     const testIds = mapKeysToIds(c.testKeys, idMap);
 
     if (dryRun) {
-      console.log(`  [DRY] Would restore ${label}: ${c.summary} (${testIds.length} tests)`);
-      count++;
+      // Same reasoning as executions: resolve first so the preview distinguishes
+      // an in-place sync from a duplicate-creating restore.
+      const existingId = syncMode ? await resolveExistingIssue(c.originalKey) : null;
+      if (existingId) {
+        console.log(`  [DRY] Would sync ${label}: ${c.originalKey} (${testIds.length} tests)`);
+        synced++;
+      }
+      else {
+        console.log(`  [DRY] Would create ${label}: ${c.summary} (${testIds.length} tests)`);
+        created++;
+      }
       continue;
     }
 
@@ -1310,25 +1347,29 @@ async function restoreContainers(
           description: c.description,
           testIssueIds: testIds,
         });
-        const created = result[ops.createRoot]?.[ops.createField];
-        if (created?.jira?.key) {
-          keyMap.set(c.originalKey, created.jira.key);
+        const createdIssue = result[ops.createRoot]?.[ops.createField];
+        if (createdIssue?.jira?.key) {
+          keyMap.set(c.originalKey, createdIssue.jira.key);
         }
-        if (created?.issueId) {
-          idMap.set(c.originalKey, created.issueId);
+        if (createdIssue?.issueId) {
+          idMap.set(c.originalKey, createdIssue.issueId);
         }
-        log.success(`Created ${label}: ${created?.jira?.key} (from ${c.originalKey}, ${testIds.length} tests)`);
+        log.success(`Created ${label}: ${createdIssue?.jira?.key} (from ${c.originalKey}, ${testIds.length} tests)`);
+        created++;
       }
       else {
         log.success(`Synced ${label}: ${c.originalKey} (${testIds.length} tests)`);
+        synced++;
       }
-      count++;
     }
     catch (error) {
+      // Counted, not swallowed: without this a run where every container threw
+      // still printed "0 created, 0 synced", which reads as a clean no-op.
+      failed++;
       log.error(`Failed to restore ${label} ${c.originalKey}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  return count;
+  return { created, synced, failed };
 }
 
 /**

@@ -332,6 +332,20 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const { command, subcommand, flags, positional } = parseArgs(args);
 
+  // `--help` / `-h` on a SUBCOMMAND used to fall through to the router and
+  // execute the command instead of printing help: `test list --help` ran an
+  // unfiltered list. On a mutating subcommand that fallthrough would perform the
+  // mutation, so intercept it before anything is dispatched.
+  //
+  // Scanning raw argv is safe here: parseArgs never consumes a token starting
+  // with `-` as another flag's value, so `--help` / `-h` can only ever have been
+  // a flag of their own. (The flip side is that no flag can take a value
+  // starting with `-` at all — a parser limitation, not a help-handling one.)
+  if (args.includes('--help') || args.includes('-h')) {
+    showHelp();
+    return;
+  }
+
   try {
     switch (command) {
       case 'help':
