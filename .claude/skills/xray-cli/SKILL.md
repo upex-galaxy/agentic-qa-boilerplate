@@ -91,7 +91,17 @@ bun xray test get --id <issueId>
 bun xray test list --project DEMO
 bun xray test list --project DEMO --limit 50
 bun xray test list --jql "project = DEMO AND labels = critical"
+```
 
+> **Every `list` command defaults to `--limit 20` and truncates silently.**
+> `test list`, `exec list`, `set list` and `plan list` all print the true total in
+> the header (`Tests (114 total, showing 20)`) while listing only 20 rows. If you
+> are counting, iterating, or deciding anything from the result, pass an explicit
+> `--limit` above the expected count and read the count from the `(N total)`
+> header, not by counting rows. This bites hardest during post-migration
+> verification, where a truncated read looks exactly like data loss.
+
+```bash
 # Add step to existing test (the reliable way to add Manual steps — one call per step)
 bun xray test add-step --test <issueId> --action "Click button" --result "Form submits"
 bun xray test add-step --test <issueId> --action "Submit form" --data "valid payload" --result "200 OK"
@@ -333,14 +343,37 @@ bun xray backup preflight --dir .backups
 ```
 
 > **Full cross-site migration**: follow the agnostic runbook in
-> [references/migration-runbook.md](references/migration-runbook.md) — auth source →
-> `export --all` → auth dest → `preflight` → fix config → `restore --sync`.
+> [references/migration-runbook.md](references/migration-runbook.md) — credential
+> inventory + backup → prove prerequisites → auth source → `export --all` → auth
+> dest → **configure Xray per project (manual UI gate)** → `preflight` →
+> `restore --sync` → verify → `/jira-instance-migration`. Do not improvise the
+> order: step 0 exists because `auth login` overwrites the only on-disk copy of
+> the source credentials.
 
 > **Cross-site gotcha**: Xray's GraphQL addresses by numeric `issueId` (re-assigned
 > per Jira site); a project migration preserves the **key**, not the id. Always use
 > `--sync` for site→site moves so restore re-resolves ids by key. Auth config holds
 > **one** site at a time — re-run `auth login` to switch sites between export and
 > restore, and confirm with `auth status`.
+
+> **Xray API keys are per Xray instance.** A client id/secret generated on site A
+> does not authenticate against site B; the destination pair must be created in
+> Jira > Apps > Xray > Global Settings > API Keys (Xray admin, secret shown once).
+> `auth status` reports only the configured **Jira** URL, so it cannot tell you
+> which site the Xray keys resolve to — compare numeric `issueId` ranges instead
+> (see the runbook's site-discriminator recipe).
+
+> **Installing Xray on the destination is not enough.** Each project must also be
+> configured (Miscellaneous, Test Coverage, Defect Mapping, Test Environments) and
+> re-indexed, all manual UI work with no API. Until then `test list` prints a
+> nonzero total with **zero rows** and `test get <KEY>` returns "Test not found",
+> while `backup preflight` still passes. Restoring in that state makes `--sync`
+> fall back to CREATE and duplicates the whole project.
+
+> **A site move also breaks the repo's Jira custom-field catalogs.** Field IDs are
+> reassigned, and an old ID usually resolves to a *different* field on the new
+> site — a silent `200 OK` writing into the wrong place. Finish any cross-site
+> migration by running `/jira-instance-migration`.
 
 ## Environment Variables
 

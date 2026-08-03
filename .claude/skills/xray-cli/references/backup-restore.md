@@ -20,6 +20,19 @@ Backup schema is **v2.0**. Old **v1.0** backups (tests + executions only) still 
 
 > ### One site per session
 > Auth config (`~/.xray-cli/config.json`) holds **one** `client_id`/`client_secret` at a time. To go site A → site B you must `auth login` with **A**'s creds, export, then `auth login` with **B**'s creds before restore. There are no profiles — verify `auth status` before each phase.
+>
+> **Back up that file before the first `auth login` of a migration.** After a site move it is routinely the ONLY on-disk copy of the source Xray keys (`.env` may hold keys for a different site entirely), and `auth login` overwrites it:
+> ```bash
+> cp ~/.xray-cli/config.json ~/.xray-cli/config.SOURCE-<site>.json.bak
+> ```
+> Xray API keys are **per Xray instance** — a pair generated on site A does not authenticate against site B. Generate the destination pair in Jira > Apps > Xray > Global Settings > API Keys (Xray admin required; the secret is shown once).
+
+> ### `auth status` is only half the check
+> It reports the configured **Jira** URL. The Xray keys are a separate credential and can point somewhere else. Neither test counts nor querying a site-exclusive project discriminate (Xray returns `0 total` for a nonexistent project, same as an empty one). Compare **numeric issueIds** instead — they are reassigned per site, so the same key carries a different id on each:
+> ```bash
+> jq -r '.tests[0:3][] | "\(.originalKey) id=\(.issueId)"' .backups/<KEY>-backup.json
+> # vs the destination's id for the same key, via Jira REST /rest/api/3/search/jql
+> ```
 
 ## Export Command
 
@@ -43,6 +56,10 @@ bun xray backup export --project <key> [options]
 | `--no-coverage` | Drop the `coverableIssues` subquery (record-only — never used by restore). Use when export 504s on a project with heavy requirement coverage |
 
 By default **all** entity types are exported (except executions, which stay behind `--include-runs`).
+
+> **Clear `.backups/` before a fresh `--all` export.** A project whose export fails leaves the previous run's file in place, looking current. And on a **case-insensitive volume (macOS APFS default)** writing `MYM-backup.json` over an existing `mym-backup.json` replaces the content but keeps the old filename — so always build restore paths from `ls .backups/`, never from the project key.
+
+> **`Skipped` conflates two very different things.** A project is skipped both when it is genuinely empty and when its Tests exist only at the Jira layer, never registered with Xray. The second case is real data that will NOT migrate. Reconcile the skip list: compare Jira's `project=<KEY> AND issuetype=Test` count against `bun xray test list --project <KEY>`. Nonzero in Jira with zero in Xray means those Tests were never registered with Xray and cannot be exported. **`bun xray repair` does not fix this** — it reconciles the membership of existing Test Executions and Test Plans, never standalone Test issues (and only writes with `--apply`). Try an Xray re-index on that site; if the counts still disagree, record them as a known loss rather than reporting the project as migrated.
 
 ```bash
 # Full backup of everything, including run history
@@ -145,6 +162,19 @@ Per entity in sync mode:
 
 **Requires target-site Jira creds** (`ATLASSIAN_URL` / `EMAIL` / `API_TOKEN` in `.env`, or `--jira-*` on `auth login`). Without them, key→id resolution fails and sync falls back to create.
 
+#### Sync mode is idempotent — an interrupted restore is safe to re-run
+
+Every entity is resolved by `originalKey` and updated in place, so a repeat run converges and reports `0 created`. This matters because restores are long: **run statuses dominate the runtime** (one API call each), so duration tracks total runs, not test count. Background anything above roughly 50 runs. If a restore is killed mid-flight, re-run it — stopping is what leaves the project half-migrated.
+
+#### Reading a restore summary
+
+Every entity reports `created / synced / failed` separately. **`0 created` is the anti-duplicate signal that matters**: it means every entity resolved by key and was updated in place. A nonzero `created` on a `--sync` run means key resolution failed for those entities and the restore duplicated them.
+
+- `Nothing to sync for <KEY> (source has no steps/gherkin/definition)` is **normal output**, not a failure. It is common at scale for Manual tests whose content lives in the description.
+- A `key-mapping-*.csv` is emitted into `.backups/` even when nothing was created. Noise, not a signal.
+
+`--dry-run` resolves each key exactly as the real run does, so it distinguishes `Would sync <KEY>` from `Would create <summary>` for every entity type including executions, sets and plans. The cost is one Jira REST lookup per entity, which makes a dry-run of a large project noticeably slower than the summary alone would suggest.
+
 ## Preflight — destination config gaps
 
 ```bash
@@ -160,29 +190,62 @@ the destination Xray admin before importing. `--project` overrides the
 destination key (default: each backup's own key). `defectIssueTypes` are
 captured but not diffed (numeric IDs differ per site).
 
+> **Preflight passing does NOT mean the destination is ready.** It reads project
+> *config*; it never exercises entity resolution. A project where Xray is
+> installed but **not configured** passes preflight cleanly while every entity
+> lookup fails. That state has its own signature:
+>
+> ```
+> bun xray test list --project <KEY>   ->  "Tests (114 total, showing 0)"   <- count, no rows
+>                                          + a WARN naming the two possible causes
+> bun xray test get <KEY>-123          ->  "Test not found"
+> ```
+>
+> Fix it in the destination UI per project (Miscellaneous, Test Coverage, Defect
+> Mapping, Test Environments) followed by an Xray **re-index**. There is no API
+> for any of it. The one other cause of the same signature is Test issues that
+> were never registered with Xray — compare against the Jira `issuetype = Test`
+> count to tell them apart. The gate before restoring is that `test list` returns **rows**,
+> not merely a nonzero total — a `--sync` restore that cannot resolve key→issueId
+> falls back to CREATE and duplicates the whole project.
+
 ## Full site-to-site migration runbook
 
 > The complete agnostic, AI-runnable procedure lives in
-> [migration-runbook.md](migration-runbook.md) — auth source → `export --all` →
-> auth dest → `preflight` → fix config → `restore --sync`. The condensed version:
+> [migration-runbook.md](migration-runbook.md) — credential inventory + backup →
+> prove prerequisites → auth source → `export --all` → auth dest → **configure
+> Xray per project (manual UI gate)** → `preflight` → dry-run → `restore --sync`
+> → verify → `/jira-instance-migration`. The condensed version:
 
 ```bash
+# 0. BEFORE any auth login: inventory creds and have the USER back up the cached config
+jq -r '.jira_base_url' ~/.xray-cli/config.json ; grep -E '^(ATLASSIAN_URL|XRAY_CLIENT_ID)' .env
+cp ~/.xray-cli/config.json ~/.xray-cli/config.SOURCE-<site>.json.bak     # user runs this
+
 # 1. Point CLI at SOURCE site, export everything
-bun xray auth login --client-id $A_ID --client-secret $A_SECRET   # site 67 Xray creds
-bun xray backup export --project PROJ --output proj.json --include-runs
+bun xray auth login --client-id $A_ID --client-secret $A_SECRET   # site A Xray creds
+bun xray backup export --all --include-runs        # reconcile the Skipped list vs Jira
 
-# 2. Migrate the Jira project 67 → 69 natively (JCMA / CSV), keys preserved.
-#    Reinstall Xray on the destination; let it re-detect the migrated Test issues.
+# 2. Migrate the Jira projects A → B natively (JCMA / CSV), keys preserved.
+#    Install Xray on the destination AND configure it per project + re-index.
 
-# 3. Point CLI at TARGET site (Xray creds + target Jira creds), then sync
+# 3. Point CLI at TARGET site (Xray creds + target Jira creds)
 bun xray auth login \
   --client-id $B_ID --client-secret $B_SECRET \
-  --jira-url $B_URL --jira-email $B_EMAIL --jira-token $B_TOKEN   # site 69
-bun xray backup restore --file proj.json --project PROJ --sync --dry-run
-bun xray backup restore --file proj.json --project PROJ --sync
+  --jira-url $B_URL --jira-email $B_EMAIL --jira-token $B_TOKEN   # site B
+bun xray backup preflight --dir .backups           # until "Preflight clean"
+bun xray test list --project PROJ --limit 3        # GATE: must print ROWS, not just a total
 
-# 4. Verify
-bun xray test list --project PROJ --limit 50
+# 4. Dry-run, then sync
+bun xray backup restore --file .backups/<FILE> --project PROJ --sync --dry-run
+bun xray backup restore --file .backups/<FILE> --project PROJ --sync
+
+# 5. Verify — ALWAYS pass --limit above the expected count (lists truncate at 20)
+bun xray test list --project PROJ --limit 300
+bun xray exec list --project PROJ --limit 100
+
+# 6. Repoint the repo: custom-field IDs were reassigned by the move
+/jira-instance-migration
 ```
 
 If keys were **not** preserved (different project key on destination), drop `--sync` and restore in create mode, then use the emitted `key-mapping-*.csv`.
@@ -200,6 +263,13 @@ If keys were **not** preserved (different project key on destination), drop `--s
 | Symptom | Cause / fix |
 |---|---|
 | Sync creates duplicates instead of updating | Target Jira creds missing → key→id resolution returned null → fell back to create. Configure `--jira-*` / `.env`. |
+| `test list` prints `(N total, showing 0)`; `test get <KEY>` says `Test not found` | Xray is installed but the **project is not configured** on that site. Configure Miscellaneous / Test Coverage / Defect Mapping / Test Environments in the UI, then re-index. Preflight does NOT catch this. |
+| Post-restore counts look lower than the backup | The list commands default to **20 rows** and truncate silently while the header shows the true total. Re-check with `--limit` above the expected count, and read the `(N total)` header. |
+| Dry-run says `Would create ...` under `--sync` | Real signal: that key did not resolve on the destination, so the restore WOULD duplicate it. Check the key exists there and that `auth status` shows the destination Jira URL. |
+| Restore was interrupted (timeout, Ctrl-C) | Safe to re-run. `--sync` resolves by `originalKey` and updates in place; the repeat converges with `0 created`. Background projects above ~50 runs. |
+| `Nothing to sync for <KEY>` on many tests | Not a failure. Those source tests carry no steps/gherkin/definition. Verify with `jq '[.tests[] \| select((.steps//[])\|length > 0)] \| length'` on the backup. |
+| `jq '.tests[].key'` returns null; backup looks empty | The field is `originalKey`, not `key`. |
+| A project exported before is missing from a new `--all` run, but its file is still there | Stale `.backups/`. Clear it before exporting; on case-insensitive volumes old files also keep their original name. |
 | `Cannot resolve numeric projectId` during folders | Target project has zero Tests yet. Folders resolve `projectId` from an existing Test — restore tests first (same run does this) or seed one. |
 | Run statuses not applied | Execution had no attached tests at the Xray layer, or destination Test keys didn't match. Confirm tests restored first; check the run-status count in the summary. |
 | Restored against the wrong site | You forgot to re-`auth login`. Run `bun xray auth status` before export and before restore. |
