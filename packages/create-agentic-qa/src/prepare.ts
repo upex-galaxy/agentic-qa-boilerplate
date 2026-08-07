@@ -99,9 +99,25 @@ function escapeReg(s: string): string {
 }
 
 export function initGitRepo(projectDir: string): void {
-  const initRes = spawnSync('git', ['init', '-b', 'main'], { cwd: projectDir, stdio: ['ignore', 'pipe', 'pipe'] });
+  // `git init -b <branch>` needs git >= 2.28 (Jul 2020). Ubuntu 20.04 ships
+  // 2.25, Debian 10 ships 2.20, Catalina's CLT ship 2.24 — on those it exits
+  // with "unknown switch `b`" and the caller's rollback deletes the whole
+  // freshly scaffolded project over a branch name. Init plain, then point HEAD
+  // at main via symbolic-ref, which every git version understands.
+  const initRes = spawnSync('git', ['init'], { cwd: projectDir, stdio: ['ignore', 'pipe', 'pipe'] });
   if (initRes.status !== 0) {
     throw new CliError('BOOTSTRAP', 'git init failed.', initRes.stderr.toString());
+  }
+
+  // Before the first commit HEAD is an unborn ref, so this just renames the
+  // branch the initial commit will land on. Non-fatal: a repo on `master` is
+  // still a working repo.
+  const headRes = spawnSync('git', ['symbolic-ref', 'HEAD', 'refs/heads/main'], {
+    cwd: projectDir,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (headRes.status !== 0) {
+    log.warn('  Could not set the default branch to main; continuing on git\'s default.');
   }
 
   const addRes = spawnSync('git', ['add', '.'], { cwd: projectDir, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -130,6 +146,10 @@ export function initGitRepo(projectDir: string): void {
 // or removing an entry requires republishing @upex/create-agentic-qa.
 const TEMPLATE_EXCLUDES = [
   'packages',
+  // The boilerplate's own release history, versioned against the boilerplate
+  // and the create-agentic-qa npm package. A fresh consumer project starts its
+  // own history at 0.1.0 and would only be confused by ours.
+  'CHANGELOG.md',
   // Boilerplate-only docs-hub workflows: they build/publish the KATA Academy,
   // homepage and decks that live under packages/ (already excluded above). A
   // consumer project has none of that content — its Allure workflows publish to

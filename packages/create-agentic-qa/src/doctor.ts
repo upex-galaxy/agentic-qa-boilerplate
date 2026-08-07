@@ -49,11 +49,29 @@ function checkDiskSpace(cwd: string): { ok: boolean, hint: string } {
   }
 }
 
+/**
+ * Probe the real `node` binary rather than `process.versions.node`.
+ *
+ * Under `bunx create-agentic-qa` this runs on Bun, which synthesizes
+ * `process.versions.node` whether or not Node is installed — so reading it
+ * reports "node 24.x OK" on a machine with no Node at all, while the inspect
+ * view (driven by installer-manifest.json) PATH-probes the same prerequisite
+ * and correctly says MISSING. Probing keeps the two views on one answer.
+ */
 function checkNodeVersion(): { ok: boolean, hint: string } {
-  const raw = process.versions.node;
+  const probe = spawnSync('node', ['--version'], {
+    stdio: ['ignore', 'pipe', 'ignore'],
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  if (probe.error || probe.status !== 0) {
+    return { ok: false, hint: 'not found on PATH — install node >= 18: https://nodejs.org' };
+  }
+
+  const raw = (probe.stdout ?? '').trim().replace(/^v/, '');
   const major = Number.parseInt(raw.split('.')[0] ?? '0', 10);
-  if (major < 18) {
-    return { ok: false, hint: `node ${raw} — upgrade to node >= 18` };
+  if (!major || major < 18) {
+    return { ok: false, hint: `node ${raw || 'unknown'} — upgrade to node >= 18` };
   }
   return { ok: true, hint: `node ${raw}` };
 }
@@ -66,7 +84,11 @@ export async function runDoctor(): Promise<{ allPassed: boolean, rows: DoctorRow
   rows.push({
     name: 'bun',
     status: bunOk ? 'ok' : 'fail',
-    hint: bunOk ? 'found' : 'Install: curl -fsSL https://bun.sh/install | bash',
+    hint: bunOk
+      ? 'found'
+      : process.platform === 'win32'
+        ? 'Install: powershell -c "irm bun.sh/install.ps1 | iex"'
+        : 'Install: curl -fsSL https://bun.sh/install | bash',
     required: true,
   });
 

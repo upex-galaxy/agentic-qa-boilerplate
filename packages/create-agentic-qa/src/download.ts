@@ -9,6 +9,34 @@ import { pipeline } from 'node:stream/promises';
 import { CliError } from './errors.ts';
 import { log } from './log.ts';
 
+const TARBALL_NAME = 'template.tar.gz';
+
+/**
+ * Build the `tar` argv used to extract the downloaded template.
+ *
+ * Must stay portable across every `tar` a user can end up with:
+ *   - GNU tar        — Linux, WSL, Git Bash / MSYS on Windows
+ *   - bsdtar         — macOS, and `C:\Windows\System32\tar.exe` on Windows 10
+ *                      1803+ / Windows 11 (what PowerShell and cmd resolve)
+ *
+ * Two constraints drive the shape of this argv:
+ *   1. `--force-local` is GNU-only. bsdtar exits with
+ *      "tar: Option --force-local is not supported", so it can never be passed
+ *      unconditionally on win32 — PowerShell and cmd hit bsdtar, not GNU tar.
+ *   2. GNU tar applies its rsync-style `host:path` heuristic ONLY to the `-f`
+ *      argument, which is why a Windows drive path like `C:/Users/...` used to
+ *      need `--force-local` in the first place.
+ *
+ * Passing a bare relative filename for `-f` (the caller spawns tar with
+ * `cwd` set to the tarball's directory) removes the colon, so no tar flavour
+ * needs the flag. `-C` is a plain chdir on every flavour and takes the real
+ * path; forward slashes keep MSYS happy on Windows.
+ */
+export function buildTarArgs(targetDir: string): string[] {
+  const dst = process.platform === 'win32' ? targetDir.replace(/\\/g, '/') : targetDir;
+  return ['-xzf', TARBALL_NAME, '-C', dst, '--strip-components=1'];
+}
+
 /**
  * Download a GitHub repo as a tarball and extract into `targetDir`.
  * Strips the leading single directory the GitHub tarball wraps everything in.
@@ -25,14 +53,15 @@ export async function downloadTemplate(opts: {
   if (!hasBinary('tar')) {
     throw new CliError(
       'ENVIRONMENT',
-      'GNU/BSD `tar` not found on PATH.',
-      'Install: macOS+Linux have it by default; on Windows use Git Bash or WSL.',
+      '`tar` not found on PATH.',
+      'macOS and Linux ship it by default. Windows 10 1803+ and Windows 11 ship '
+      + 'bsdtar at C:\\Windows\\System32\\tar.exe; if PATH does not reach it, use Git Bash or WSL.',
     );
   }
 
   // 2) Fetch tarball to a temp file
   const tmpRoot = await mkdtemp(join(tmpdir(), 'create-agentic-qa-'));
-  const tarballPath = join(tmpRoot, 'template.tar.gz');
+  const tarballPath = join(tmpRoot, TARBALL_NAME);
 
   log.info(`Downloading template: ${repo}@${ref}`);
   try {
@@ -68,31 +97,34 @@ export async function downloadTemplate(opts: {
 
   // 4) Extract, stripping top-level GitHub-wrapper dir
   log.info(`Extracting into ${targetDir}`);
-  const isWin = process.platform === 'win32';
-  // Windows: GNU tar reads `C:\path` as host:path (rsync-style remote); --force-local disables that.
-  // Forward slashes avoid backslashes being interpreted as escape sequences after --force-local.
-  const tarSrc = isWin ? tarballPath.replace(/\\/g, '/') : tarballPath;
-  const tarDst = isWin ? targetDir.replace(/\\/g, '/') : targetDir;
   const extract = spawnSync(
     'tar',
-    [
-      ...(isWin ? ['--force-local'] : []),
-      '-xzf',
-      tarSrc,
-      '-C',
-      tarDst,
-      '--strip-components=1',
-    ],
-    { stdio: ['ignore', 'inherit', 'inherit'] },
+    buildTarArgs(targetDir),
+    // Run from the tarball's own directory so `-f` gets a bare relative name.
+    { cwd: tmpRoot, stdio: ['ignore', 'inherit', 'inherit'] },
   );
   // Cleanup tarball regardless of extract outcome
   await unlink(tarballPath).catch(() => {});
   await rm(tmpRoot, { recursive: true, force: true }).catch(() => {});
 
+  // A spawn that never launched reports `status: null` + a populated `error`,
+  // which the `status !== 0` check below would mislabel as a tar failure —
+  // pointing the user at "the tar output above" that tar never printed.
+  if (extract.error) {
+    throw new CliError(
+      'BOOTSTRAP',
+      `Could not run tar: ${extract.error.message}`,
+      'tar was found on PATH but could not be started. Ensure the `tar` it resolves to '
+      + 'is a real GNU tar or bsdtar binary, not a shell alias or a .cmd/.bat shim.',
+    );
+  }
+
   if (extract.status !== 0) {
     throw new CliError(
       'BOOTSTRAP',
       `tar extraction failed (exit ${extract.status}).`,
+      'The tar output above says why. Common causes: no write permission on the '
+      + 'target directory, or a third-party `tar` shim on PATH that is neither GNU tar nor bsdtar.',
     );
   }
 }

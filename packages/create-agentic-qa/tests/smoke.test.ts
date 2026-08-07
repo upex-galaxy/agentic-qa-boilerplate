@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { parseArgs } from '../src/args.ts';
+import { buildTarArgs } from '../src/download.ts';
 import { CliError } from '../src/errors.ts';
 import { pruneBootstrapExcludes, sanitizeProjectName } from '../src/prepare.ts';
 
@@ -78,6 +79,31 @@ describe('sanitizeProjectName', () => {
   });
 });
 
+describe('buildTarArgs', () => {
+  // `--force-local` is GNU-only; bsdtar (macOS, and C:\Windows\System32\tar.exe
+  // on Windows 10 1803+ / 11) aborts with "Option --force-local is not supported".
+  test('never passes --force-local, on any platform', () => {
+    expect(buildTarArgs('/tmp/target')).not.toContain('--force-local');
+  });
+
+  test('passes the tarball as a bare relative name (no drive colon for GNU tar)', () => {
+    const args = buildTarArgs('/tmp/target');
+    const file = args[args.indexOf('-xzf') + 1];
+    expect(file).toBe('template.tar.gz');
+    expect(file).not.toContain(':');
+    expect(file).not.toContain('/');
+  });
+
+  test('strips the GitHub wrapper directory', () => {
+    expect(buildTarArgs('/tmp/target')).toContain('--strip-components=1');
+  });
+
+  test('passes the target directory to -C', () => {
+    const args = buildTarArgs('/tmp/target');
+    expect(args[args.indexOf('-C') + 1]).toBe('/tmp/target');
+  });
+});
+
 describe('pruneBootstrapExcludes', () => {
   let dir: string;
 
@@ -98,6 +124,17 @@ describe('pruneBootstrapExcludes', () => {
 
     expect(existsSync(join(dir, 'packages'))).toBe(false);
     expect(existsSync(join(dir, 'keep.txt'))).toBe(true);
+  });
+
+  // The boilerplate's own release history must not travel to a consumer project.
+  test('removes the boilerplate CHANGELOG', async () => {
+    writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog');
+    writeFileSync(join(dir, 'README.md'), '# Keep me');
+
+    await pruneBootstrapExcludes(dir);
+
+    expect(existsSync(join(dir, 'CHANGELOG.md'))).toBe(false);
+    expect(existsSync(join(dir, 'README.md'))).toBe(true);
   });
 
   test('is a no-op when hardcoded excludes are absent', async () => {
