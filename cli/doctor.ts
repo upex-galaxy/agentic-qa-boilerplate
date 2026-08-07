@@ -35,6 +35,7 @@ import { join, resolve } from 'node:path';
 // Canonical variable manifest (source of truth — D1). Imports only `node:fs`,
 // so it is safe to load statically here without breaking the dependency-free
 // `--preflight` contract (no third-party deps pulled in).
+import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
 import { requiredNow, varsFor } from './lib/variables-manifest.ts';
 
 // `tui` pulls third-party deps (boxen/cli-table3/figures/picocolors). It is
@@ -51,7 +52,6 @@ const ENV_PATH = join(REPO_ROOT, '.env');
 const MCP_PATH = join(REPO_ROOT, '.mcp.json');
 const OPENCODE_PATH = join(REPO_ROOT, 'opencode.jsonc');
 const NODE_MODULES_DOTENV = join(REPO_ROOT, 'node_modules', 'dotenv-cli');
-const PW_CACHE = join(homedir(), '.cache', 'ms-playwright');
 // --preflight mode resolves install.ts's only third-party import.
 const INQUIRER_MARKER = join(REPO_ROOT, 'node_modules', '@inquirer', 'prompts', 'package.json');
 
@@ -213,11 +213,22 @@ async function detectDirenv(): Promise<DirenvState> {
   const allowMatch = status.stdout.match(/Found RC allowed (\d+|true)/);
   const envrcAllowed = allowMatch !== null && (allowMatch[1] === '0' || allowMatch[1] === 'true');
 
-  const candidates = ['.bashrc', '.zshrc', '.bash_profile', '.profile'];
+  // Every file `shellHookLine()` may have told the user to edit. The PowerShell
+  // profiles matter on native Windows, where none of the POSIX rc files exist —
+  // without them a user who followed the pwsh instruction to the letter would
+  // still be reported as "hook missing" on every re-run.
+  const candidates = [
+    join(homedir(), '.bashrc'),
+    join(homedir(), '.zshrc'),
+    join(homedir(), '.bash_profile'),
+    join(homedir(), '.profile'),
+    join(homedir(), '.config', 'fish', 'config.fish'),
+    join(homedir(), 'Documents', 'PowerShell', 'Microsoft.PowerShell_profile.ps1'),
+    join(homedir(), 'Documents', 'WindowsPowerShell', 'Microsoft.PowerShell_profile.ps1'),
+  ];
   let hookInRc = false;
   let rcFile: string | undefined;
-  for (const file of candidates) {
-    const path = join(homedir(), file);
+  for (const path of candidates) {
     if (!existsSync(path)) { continue; }
     try {
       const content = await readFile(path, 'utf8');
@@ -338,7 +349,7 @@ async function runDoctor(): Promise<DoctorReport> {
     mcp_json_exists: existsSync(MCP_PATH),
     opencode_jsonc_exists: existsSync(OPENCODE_PATH),
     deps_installed: existsSync(NODE_MODULES_DOTENV),
-    playwright_browsers: existsSync(PW_CACHE),
+    playwright_browsers: playwrightBrowsersInstalled(),
     direnv: { installed: false },
     pending_actions: [],
   };

@@ -71,6 +71,7 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
 import { checkbox, password } from '@inquirer/prompts';
+import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
 import * as tui from './lib/tui.ts';
 import { runVariablesFlow } from './lib/variables-flow.ts';
 import { criticalVars, nonCriticalVars, varsFor } from './lib/variables-manifest.ts';
@@ -672,24 +673,6 @@ async function promptAgentSelection(detected: AgentDetection): Promise<AgentId[]
 
 function nodeModulesLooksReady(): boolean {
   return existsSync(join(REPO_ROOT, 'node_modules', '@playwright', 'test'));
-}
-
-// Playwright caches downloaded browsers in a per-OS directory. Detect any of
-// the documented locations as a proxy for "browsers installed". This avoids
-// spawning `bunx playwright --version` (which only verifies the package, not
-// the browsers themselves).
-function playwrightBrowsersInstalled(): boolean {
-  const overrides = [
-    process.env.PLAYWRIGHT_BROWSERS_PATH,
-  ].filter((p): p is string => Boolean(p) && p !== '0');
-  const home = homedir();
-  const candidates = [
-    ...overrides,
-    join(home, '.cache', 'ms-playwright'),
-    join(home, 'Library', 'Caches', 'ms-playwright'),
-    join(home, 'AppData', 'Local', 'ms-playwright'),
-  ];
-  return candidates.some(p => existsSync(p));
 }
 
 async function runDepsInstall(state: InstallState, forceKeys: Set<string>): Promise<void> {
@@ -2024,7 +2007,13 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
   // ── Step 12.4: Atlassian credentials & acli authentication ──────────────
   tui.section('Step 12.4: Atlassian credentials & acli authentication');
 
-  const MANUAL_ACLI_LOGIN = 'echo "$ATLASSIAN_API_TOKEN" | acli jira auth login --site "$ATLASSIAN_URL" --email "$ATLASSIAN_EMAIL" --token';
+  // Recovery instruction printed whenever acli auth cannot complete. The env
+  // syntax differs per shell, and PowerShell would expand `$ATLASSIAN_URL` as
+  // one of its own (undefined) variables, silently authenticating with an empty
+  // site and token — so pick the form that matches the platform.
+  const MANUAL_ACLI_LOGIN = process.platform === 'win32'
+    ? '$env:ATLASSIAN_API_TOKEN | acli jira auth login --site $env:ATLASSIAN_URL --email $env:ATLASSIAN_EMAIL --token'
+    : 'echo "$ATLASSIAN_API_TOKEN" | acli jira auth login --site "$ATLASSIAN_URL" --email "$ATLASSIAN_EMAIL" --token';
 
   if (state.postInstall.acliAuth === 'completed') {
     process.stdout.write(`${tui.statusIcon('ok')} acli already authenticated in a prior run.\n`);
@@ -2033,45 +2022,45 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
     state.postInstall.acliAuth = 'skipped-non-interactive';
     log.dim('  INSTALL_SKIP_JIRA=1, skipping acli authentication.');
   }
+  else if (AUTO_NON_INTERACTIVE) {
+    // Step 10b never prompted for the ATLASSIAN_* credentials (no TTY), so
+    // there is nothing to authenticate with. Skip like every other Phase-5
+    // step instead of aborting — a no-TTY run is normal in Git Bash on
+    // Windows, whose MSYS pty is a named pipe and reports isTTY false.
+    state.postInstall.acliAuth = 'skipped-non-interactive';
+    process.stdout.write(`${tui.statusIcon('warn')} Skipped (no TTY). Fill ATLASSIAN_* in .env, then re-run via: bun run setup\n`);
+  }
   else {
     // ATLASSIAN_* credentials were collected during Step 10b (day-0 creds).
     // Here we only verify they're present and run the acli auth.
     const ATLASSIAN_VARS = ['ATLASSIAN_URL', 'ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'] as const;
     const stillMissing = ATLASSIAN_VARS.filter(v => !(process.env[v] && process.env[v].trim().length > 0));
+    // Read once, here, so the login branch below needs no second presence
+    // check: past this point `stillMissing` being empty proves all three are set.
+    const url = process.env.ATLASSIAN_URL ?? '';
+    const email = process.env.ATLASSIAN_EMAIL ?? '';
+
     if (stillMissing.length > 0) {
+      // Jira auth is not a prerequisite for Steps 13-14, so record the gap and
+      // let Phase 5 finish writing its catalogs rather than aborting the run.
       state.postInstall.acliAuth = 'skipped-non-interactive';
-      process.stdout.write(`${tui.statusIcon('fail')} Cannot run acli auth — ATLASSIAN_* still missing: ${stillMissing.join(', ')}\n`);
-      process.stdout.write('    Set them in .env (re-run setup) or run manually:\n');
+      process.stdout.write(`${tui.statusIcon('warn')} Cannot run acli auth — ATLASSIAN_* still missing: ${stillMissing.join(', ')}\n`);
+      process.stdout.write('    Set them in .env and re-run `bun run setup`, or run manually:\n');
       process.stdout.write(`    ${MANUAL_ACLI_LOGIN}\n`);
       await writeInstallState(state);
-      process.exit(1);
     }
-
     // Probe existing session: a read-only Jira search returns exit 0 if a session exists.
-    const probe = spawnSync('acli', ['jira', 'workitem', 'search', '--jql', 'created >= -1d', '--limit', '1', '--json'], {
+    else if (spawnSync('acli', ['jira', 'workitem', 'search', '--jql', 'created >= -1d', '--limit', '1', '--json'], {
       stdio: ['ignore', 'pipe', 'pipe'],
       timeout: 8000,
-    });
-
-    if (probe.status === 0) {
+    }).status === 0) {
       state.postInstall.acliAuth = 'completed';
       process.stdout.write(`${tui.statusIcon('ok')} acli already authenticated (existing session detected).\n`);
     }
     else {
       // No session — run the login. Pipe the token via spawnSync `input` to
       // avoid shell injection risks (no `echo $TOKEN | ...` expansion).
-      const url = process.env.ATLASSIAN_URL;
-      const email = process.env.ATLASSIAN_EMAIL;
-      let token = process.env.ATLASSIAN_API_TOKEN;
-
-      if (!url || !email || !token) {
-        // Non-interactive without all three vars preloaded → hard fail.
-        state.postInstall.acliAuth = 'skipped-non-interactive';
-        process.stdout.write(`${tui.statusIcon('fail')} Cannot run acli auth login — ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN missing.\n`);
-        process.stdout.write(`    Manual auth: ${MANUAL_ACLI_LOGIN}\n`);
-        await writeInstallState(state);
-        process.exit(1);
-      }
+      let token = process.env.ATLASSIAN_API_TOKEN ?? '';
 
       const MAX_ATTEMPTS = 3;
       let success = false;
@@ -2108,11 +2097,13 @@ async function runInitialConfigurationPhase(state: InstallState): Promise<void> 
       }
 
       if (!success) {
+        // Record the failure and carry on: Steps 13-14 write the catalog
+        // placeholders the skills reference, and the closing summary reports
+        // acliAuth: failed. Aborting here left every re-run stuck at 12.4.
         state.postInstall.acliAuth = 'failed';
         process.stdout.write(`${tui.statusIcon('fail')} acli auth login failed after ${MAX_ATTEMPTS} attempts.\n`);
         process.stdout.write(`    Manual auth: ${MANUAL_ACLI_LOGIN}\n`);
         await writeInstallState(state);
-        process.exit(1);
       }
     }
   }
