@@ -1,7 +1,7 @@
 {
   "name": "create-agentic-qa",
   "type": "module",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Official scaffolder for the Agentic QA ecosystem — bootstraps a project from agentic-qa-boilerplate and runs its interactive installer.",
   "publishConfig": {
     "access": "public"
