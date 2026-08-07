@@ -15,7 +15,7 @@ That single command:
 1. Downloads `upex-galaxy/agentic-qa-boilerplate` (latest `main`) as a tarball.
 2. Extracts into `./my-app/` (no git history).
 3. Rewrites `package.json` name + `.agents/project.yaml` `project.name`.
-4. Initializes a fresh `git init -b main` and creates the initial commit.
+4. Initializes a fresh repository on `main` and creates the initial commit.
 5. Runs `bun install`.
 6. Hands off to the boilerplate's interactive installer (`bun run setup`),
    which runs `cli/doctor.ts --preflight` first, then configures gentle-ai,
@@ -56,8 +56,8 @@ for the downstream version.
 | #   | Check         | Required | Why                                                       |
 | --- | ------------- | -------- | --------------------------------------------------------- |
 | 1   | `bun`         | yes      | Runs this CLI, `bun install`, and `bun run setup`.        |
-| 2   | `git`         | yes      | `git init -b main` + initial commit (skipped on `--no-git`). |
-| 3   | `node >= 18`  | yes      | Some downstream tools shell out to a Node 18+ runtime.    |
+| 2   | `git`         | yes      | `git init` + initial commit on `main` (skipped on `--no-git`). |
+| 3   | `node >= 18`  | yes      | Some downstream tools shell out to a Node 18+ runtime. Probes the real binary — under `bunx`, `process.versions.node` is emulated by Bun and would pass on a machine with no Node. |
 | 4   | `gh`          | optional | Needed only for `--github-create` at the end of setup.    |
 | 5   | `internet`    | yes      | Reaches `api.github.com` to fetch the template tarball.   |
 | 6   | `disk space`  | optional | Warns if less than 200 MB free in the current directory.  |
@@ -174,10 +174,21 @@ prerequisite list. Both are documented here so you do not get stopped mid-flow.
 
 | Tool  | Min version | Required for                                                            | Where it is checked                                          |
 | ----- | ----------- | ----------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `bun` | `>= 1.0.0`  | Running `bun install` + handing off to `bun run setup`                  | `src/runners.ts` (`ensureBunAvailable`) — exit 10 if missing |
-| `tar` | any         | Extracting the template tarball                                         | `src/download.ts` — exit 10 if missing                       |
-| `git` | any         | `git init -b main` + initial commit (skipped with `--no-git`)           | `src/runners.ts` (`ensureGitAvailable`) — exit 10 if missing |
-| `gh`  | any         | _Optional_ — creating a GitHub repository at the end of `bun run setup` | Verified inside the boilerplate installer, not by this CLI   |
+| `bun`  | `>= 1.0.0`  | Running `bun install` + handing off to `bun run setup`                  | `src/runners.ts` (`ensureBunAvailable`) — exit 10 if missing |
+| `tar`  | any         | Extracting the template tarball. GNU tar or bsdtar, either works        | `src/download.ts` — exit 10 if missing                       |
+| `git`  | any         | `git init` + initial commit on `main` (skipped with `--no-git`)         | `src/runners.ts` (`ensureGitAvailable`) — exit 10 if missing |
+| `node` | `>= 18`     | Running this CLI under `npx`                                            | Reported by **Check prerequisites** in the menu               |
+| `gh`   | any         | _Optional_ — creating a GitHub repository at the end of `bun run setup` | Verified inside the boilerplate installer, not by this CLI   |
+
+**Windows**: PowerShell and cmd are supported; WSL and Git Bash work but are not
+required. Install Bun via `powershell -c "irm bun.sh/install.ps1 | iex"` rather
+than `npm i -g bun` — the npm route writes only a `bun.cmd` shim, which this CLI
+then has to launch through `cmd.exe`. `tar` needs no install: Windows 10 1803+
+and Windows 11 ship bsdtar at `C:\Windows\System32\tar.exe`.
+
+**WSL**: scaffold onto the Linux filesystem (`~/projects/...`). On a `/mnt/c`
+path Bun cannot create its bin shims, and `bun install` fails with
+`could not open bin metadata file`.
 
 ### For `bun run setup` (the boilerplate's interactive installer this CLI hands off to)
 
@@ -257,6 +268,80 @@ To run directly from source without building:
 
 ```bash
 bun run src/cli.ts test-app
+```
+
+## Releasing a new version to npm
+
+Publishing is manual — there is no release workflow in `.github/workflows/`.
+The package is owned by a single npm account, so whoever publishes needs to be
+logged in as an owner (`npm owner ls create-agentic-qa` lists them).
+
+### The ordering that matters
+
+This package and the template it downloads ship **separately**, and the
+scaffolder fetches the template from GitHub `main` at runtime rather than
+bundling it. So a change to the boilerplate itself (`package.json` scripts,
+`cli/`, skills, docs) reaches users the moment it lands on `main` — no publish
+involved. Only changes under `packages/create-agentic-qa/` need npm.
+
+When one release touches both, **push the template first**. Publishing a
+scaffolder that expects template changes which are not yet on `main` breaks
+every scaffold until the push lands.
+
+### Steps
+
+```bash
+# 1. From the repo root — the whole suite must be green before you publish.
+bun run repo:check
+
+# 2. Package-level gates.
+cd packages/create-agentic-qa
+bun test
+bun run types:check
+bun run check:manifest      # installer-manifest.json must not have drifted
+
+# 3. Bump the version. Semver against the PUBLISHED version, not the file:
+#    npm view create-agentic-qa version
+#    patch = bug fix · minor = new flag or behaviour · major = breaking CLI change
+npm version patch --no-git-tag-version
+
+# 4. Record the change in the root CHANGELOG.md (move the relevant
+#    "Unreleased" entries under the new version heading).
+
+# 5. Commit, then push the TEMPLATE side first if this release depends on it.
+git add -A
+git commit -m "chore(create-agentic-qa): bump to X.Y.Z"
+git push origin main
+
+# 6. Publish. `prepublishOnly` runs `check:manifest` + `build` for you.
+npm login                   # if `npm whoami` errors with 401
+npm publish
+
+# 7. Tag the release.
+git tag create-cli-vX.Y.Z
+git push origin create-cli-vX.Y.Z
+
+# 8. Verify what actually went out.
+npm view create-agentic-qa version
+cd "$(mktemp -d)" && bunx create-agentic-qa@latest smoke-test --no-setup
+```
+
+### What ends up in the tarball
+
+`files` is `["README.md", "dist"]`, so the published package is exactly three
+entries — `README.md`, `dist/cli.js`, `package.json` — around 53 kB. Nothing
+under `src/`, `tests/` or `scripts/` ships; `dist/cli.js` is the bundled build
+of all of them.
+
+### Gotcha: `npm pack --dry-run` does not rebuild
+
+`prepublishOnly` is what regenerates `dist/cli.js`, and only `npm publish` runs
+it. `npm pack --dry-run` packs whatever `dist/cli.js` is already on disk — which
+is gitignored, so it can be weeks stale and predate the very fix you are
+shipping. To inspect the real contents before publishing, build first:
+
+```bash
+bun run build && npm pack --dry-run
 ```
 
 ## License

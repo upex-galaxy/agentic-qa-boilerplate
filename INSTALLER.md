@@ -88,12 +88,22 @@ The installer is self-diagnosing: every stage prints the exact install URL or co
 | Tool                                                                               | Min version | Enforced at                                 | Message you see on failure                                                                      |
 | ---------------------------------------------------------------------------------- | ----------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | **Bun**                                                                            | `>= 1.0.0`  | `bun run setup:doctor --preflight` (Step 0) | `✗ Preflight failed · Bun X.Y.Z is too old (need >= 1.0.0) · Fix: bun upgrade`                  |
+| **`node` (the real binary)**                                                       | `>= 18`     | Scaffolder doctor (`packages/…/doctor.ts`)  | `node >= 18 · not found on PATH — install node >= 18: https://nodejs.org`                       |
 | **`node_modules/@inquirer/prompts`** (proxy for `bun install`)                     | —           | Preflight (Step 0)                          | `✗ Preflight failed · Missing node_modules/@inquirer/prompts · Fix: bun install`                |
 | **Agent CLI** — Claude Code (`~/.claude/`) **or** OpenCode (`~/.config/opencode/`) | latest      | `install.ts:556` (Step 4)                   | `✗ No agents detected. Install Claude Code or OpenCode and re-run.` followed by both docs URLs  |
 | `git`                                                                              | any         | Scaffolder (`runners.ts:23`) + Husky hooks  | `ENVIRONMENT · git is required but not found on PATH. · Install: https://git-scm.com/downloads` |
-| `tar`                                                                              | any         | Scaffolder (`download.ts`)                  | `ENVIRONMENT · tar is required to extract the template tarball.`                                |
+| `tar`                                                                              | any         | Scaffolder (`download.ts`)                  | `ENVIRONMENT · \`tar\` not found on PATH.`                                                      |
 
 The agent-CLI check is the gotcha that bites first-timers most often: a missing `gh` or `acli` just yields a warning later, but a missing agent CLI hard-stops Step 4. Install Claude Code or OpenCode first, then run `bun run setup`.
+
+### Windows
+
+PowerShell and cmd are supported directly — WSL and Git Bash work too, but neither is required. Two Windows-specific notes:
+
+- **Install Bun with `powershell -c "irm bun.sh/install.ps1 | iex"`**, not `npm i -g bun`. The npm route writes only a `bun.cmd` shim (no `bun.exe`), which the scaffolder has to launch through `cmd.exe`.
+- **`tar` needs no extra install.** Windows 10 1803+ and Windows 11 ship bsdtar at `C:\Windows\System32\tar.exe`, and the scaffolder builds a tar command line that both bsdtar and GNU tar accept.
+
+Under WSL, keep the project on the Linux filesystem (`~/projects/...`). On a `/mnt/c` path Bun cannot create its bin shims and `bun install` fails with `could not open bin metadata file`.
 
 ### Quasi-required — installer warns and offers install commands
 
