@@ -18,6 +18,24 @@ below names which one it applies to:
 
 ### Fixed
 
+**Scaffolder (`create-agentic-qa` 1.1.2)**
+
+- `rewriteProjectYaml` patched a field named `name`, but `.agents/project.yaml`
+  declares `project_name` — so **every scaffold since the CLI shipped left
+  `project_name: null`** while the CLI logged `Wrote .agents/project.yaml
+  (name=<project>)`. `--project-key` was unaffected, since `project_key` is the
+  field's real name. The field name is fixed, and a field that cannot be matched
+  is now reported as a warning instead of silently reported as written.
+
+**Installer (`cli/install.ts`)**
+
+- The "no agents detected" hard exit now runs before the `NON_INTERACTIVE`
+  guard in `promptAgentSelection`. It is a validation, not a prompt — behind the
+  guard, an unattended install proceeded with zero agents and configured
+  nothing.
+
+### Fixed (earlier in this cycle)
+
 Cross-platform defects across the whole bootstrap path, found by an audit of
 the scaffolder, the installer, and the prerequisite docs. Windows PowerShell and
 cmd are now supported directly; WSL and Git Bash still work but are no longer
