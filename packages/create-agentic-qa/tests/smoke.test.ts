@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { parseArgs } from '../src/args.ts';
 import { buildTarArgs } from '../src/download.ts';
 import { CliError } from '../src/errors.ts';
-import { pruneBootstrapExcludes, sanitizeProjectName } from '../src/prepare.ts';
+import { pruneBootstrapExcludes, rewriteProjectYaml, sanitizeProjectName } from '../src/prepare.ts';
 
 describe('parseArgs', () => {
   test('accepts a project name as positional', () => {
@@ -76,6 +76,60 @@ describe('sanitizeProjectName', () => {
   test('clamps to 214 chars', () => {
     const long = 'a'.repeat(300);
     expect(sanitizeProjectName(long).length).toBeLessThanOrEqual(214);
+  });
+});
+
+describe('rewriteProjectYaml', () => {
+  let dir: string;
+
+  // Mirrors the real .agents/project.yaml shape: the field is `project_name`,
+  // NOT `name`. Targeting the wrong key used to no-op silently on every scaffold.
+  const TEMPLATE_YAML = [
+    'project:',
+    '  project_name: null # TODO: Project name',
+    '  project_key: null # TODO: Project key',
+    '  other: keep-me',
+    '',
+  ].join('\n');
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'caq-yaml-'));
+    mkdirSync(join(dir, '.agents'), { recursive: true });
+    writeFileSync(join(dir, '.agents', 'project.yaml'), TEMPLATE_YAML);
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  function readYaml(): string {
+    return readFileSync(join(dir, '.agents', 'project.yaml'), 'utf8');
+  }
+
+  test('writes project_name, the field the template actually declares', async () => {
+    await rewriteProjectYaml(dir, { projectName: 'my-app' });
+
+    expect(readYaml()).toContain('  project_name: my-app');
+    expect(readYaml()).not.toContain('project_name: null');
+  });
+
+  test('writes project_key only when one is provided', async () => {
+    await rewriteProjectYaml(dir, { projectName: 'my-app' });
+    expect(readYaml()).toContain('  project_key: null');
+
+    await rewriteProjectYaml(dir, { projectName: 'my-app', projectKey: 'ACME' });
+    expect(readYaml()).toContain('  project_key: ACME');
+  });
+
+  test('leaves unrelated fields untouched', async () => {
+    await rewriteProjectYaml(dir, { projectName: 'my-app', projectKey: 'ACME' });
+    expect(readYaml()).toContain('  other: keep-me');
+  });
+
+  test('does not throw when the field is absent', async () => {
+    writeFileSync(join(dir, '.agents', 'project.yaml'), 'project:\n  unrelated: x\n');
+    await rewriteProjectYaml(dir, { projectName: 'my-app' });
+    expect(readYaml()).toContain('  unrelated: x');
   });
 });
 

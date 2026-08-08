@@ -60,8 +60,13 @@ export async function rewritePackageJson(projectDir: string, projectName: string
  * than full YAML parsing to keep this package zero-dep and to preserve comments.
  *
  * Updates supported:
- *   - project.name        (always set if found)
- *   - project.project_key (only if projectKey provided)
+ *   - project.project_name (always set if found)
+ *   - project.project_key  (only if projectKey provided)
+ *
+ * Field names must match `.agents/project.yaml` exactly. A miss is reported,
+ * never swallowed: this function used to target a field called `name`, which
+ * the template does not have, so every scaffold left `project_name: null`
+ * while the CLI logged that it had written the name.
  */
 export async function rewriteProjectYaml(projectDir: string, opts: {
   projectName: string
@@ -76,21 +81,41 @@ export async function rewriteProjectYaml(projectDir: string, opts: {
   }
 
   let content = await readFile(yamlPath, 'utf8');
-  content = replaceYamlField(content, 'name', opts.projectName);
-  if (opts.projectKey) {
-    content = replaceYamlField(content, 'project_key', opts.projectKey);
+  const written: string[] = [];
+  const missed: string[] = [];
+
+  for (const [field, value] of [
+    ['project_name', opts.projectName],
+    ...(opts.projectKey ? [['project_key', opts.projectKey]] : []),
+  ] as Array<[string, string]>) {
+    const next = replaceYamlField(content, field, value);
+    if (next === null) { missed.push(field); }
+    else {
+      content = next;
+      written.push(`${field}=${value}`);
+    }
   }
+
   await writeFile(yamlPath, content, 'utf8');
-  log.dim(`  Wrote .agents/project.yaml (name=${opts.projectName}${opts.projectKey ? `, project_key=${opts.projectKey}` : ''}).`);
+
+  if (written.length > 0) {
+    log.dim(`  Wrote .agents/project.yaml (${written.join(', ')}).`);
+  }
+  for (const field of missed) {
+    log.warn(`  .agents/project.yaml has no \`${field}:\` field — left unset. Fill it in manually.`);
+  }
 }
 
 /**
  * Replace the value of a top-level field inside the `project:` map of the YAML.
  * Matches the first occurrence of `^  <field>: <anything>$`.
+ *
+ * Returns `null` when the field is absent, so the caller can report the miss
+ * rather than silently reporting success.
  */
-function replaceYamlField(content: string, field: string, value: string): string {
+function replaceYamlField(content: string, field: string, value: string): string | null {
   const pattern = new RegExp(`^(\\s{2}${escapeReg(field)}:)\\s*.*$`, 'm');
-  if (!pattern.test(content)) { return content; }
+  if (!pattern.test(content)) { return null; }
   return content.replace(pattern, `$1 ${value}`);
 }
 
