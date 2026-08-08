@@ -625,6 +625,17 @@ function parseAgentsEnv(): AgentId[] | null {
 }
 
 async function promptAgentSelection(detected: AgentDetection): Promise<AgentId[]> {
+  // A validation, not a prompt — it must run in both modes. Skipping it in
+  // non-interactive mode would let the installer proceed with zero agents and
+  // silently configure nothing.
+  if (!detected.claudeCode && !detected.opencode) {
+    log.error('No agents detected. Install Claude Code or OpenCode and re-run.');
+    log.dim('  Claude Code: https://docs.claude.com/en/docs/claude-code');
+    log.dim('  OpenCode:    https://opencode.ai/docs');
+    log.dim('  Then re-run: bun run setup');
+    process.exit(1);
+  }
+
   if (NON_INTERACTIVE) {
     const fromEnv = parseAgentsEnv();
     if (fromEnv && fromEnv.length > 0) { return fromEnv; }
@@ -633,14 +644,6 @@ async function promptAgentSelection(detected: AgentDetection): Promise<AgentId[]
     if (detected.claudeCode) { out.push('claude-code'); }
     if (detected.opencode) { out.push('opencode'); }
     return out;
-  }
-
-  if (!detected.claudeCode && !detected.opencode) {
-    log.error('No agents detected. Install Claude Code or OpenCode and re-run.');
-    log.dim('  Claude Code: https://docs.claude.com/en/docs/claude-code');
-    log.dim('  OpenCode:    https://opencode.ai/docs');
-    log.dim('  Then re-run: bun run setup');
-    process.exit(1);
   }
 
   if (detected.claudeCode && !detected.opencode) {
