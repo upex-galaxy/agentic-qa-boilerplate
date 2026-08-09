@@ -28,7 +28,7 @@
 
 ## 1. Qué es KATA (el corazón del mensaje)
 
-KATA = **Component Action Test Architecture**. La idea central que TODO el
+KATA = **Komponent Action Test Architecture**. La idea central que TODO el
 la academia debe transmitir:
 
 > En vez de escribir los casos de prueba dentro de los archivos de prueba de

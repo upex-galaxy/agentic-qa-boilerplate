@@ -1,12 +1,12 @@
-# KATA: Component Action Test Architecture
+# KATA: Komponent Action Test Architecture
 
-**Component Action Test Architecture**
+**Komponent Action Test Architecture**
 
 > _"Like a kata in martial arts, where each movement is practiced repeatedly until perfection, KATA Architecture converts system actions into reusable and precise blocks."_
 
 ---
 
-> **Note**: This is the **conceptual fundamentals document** for KATA (Component Action Test Architecture).
+> **Note**: This is the **conceptual fundamentals document** for KATA (Komponent Action Test Architecture).
 > This document is for **reference only** - it provides philosophical and conceptual context.
 > **AI agents should NOT load this automatically** - use TAE guidelines instead.
 >

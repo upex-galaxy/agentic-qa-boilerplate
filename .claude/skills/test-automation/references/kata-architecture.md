@@ -1,6 +1,6 @@
 # KATA Architecture — Layers, Fixtures, ATCs, Steps
 
-Full reference for the Component Action Test Architecture (KATA). Load when designing new components, picking fixtures, wiring ATCs, or building Steps chains.
+Full reference for the Komponent Action Test Architecture (KATA). Load when designing new components, picking fixtures, wiring ATCs, or building Steps chains.
 
 ---
 

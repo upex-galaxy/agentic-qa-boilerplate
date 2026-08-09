@@ -1,6 +1,6 @@
 ---
 name: test-automation
-description: "Plan, write, and review automated tests following KATA (Component Action Test Architecture) on Playwright + TypeScript. Use when writing E2E or API/integration tests, creating Page or Api components, designing ATCs, parameterizing test data, registering fixtures, or reviewing test code for KATA compliance. Triggers on: write test, automate test, create E2E test, create API test, integration test, KATA, page object, API component, implementation plan, ATC, automated test case, review test code, automate module, automate ticket, add regression test. Always load before writing any test code -- KATA fixture selection, inline-locator rule, ATC-identity rule, and import-alias requirements differ from standard Playwright conventions. Do NOT use for running suites (regression-testing), documenting TCs in Jira/Xray (test-documentation), onboarding a repo (project-discovery), or orchestrating sprint-wide testing (sprint-testing)."
+description: "Plan, write, and review automated tests following KATA (Komponent Action Test Architecture) on Playwright + TypeScript. Use when writing E2E or API/integration tests, creating Page or Api components, designing ATCs, parameterizing test data, registering fixtures, or reviewing test code for KATA compliance. Triggers on: write test, automate test, create E2E test, create API test, integration test, KATA, page object, API component, implementation plan, ATC, automated test case, review test code, automate module, automate ticket, add regression test. Always load before writing any test code -- KATA fixture selection, inline-locator rule, ATC-identity rule, and import-alias requirements differ from standard Playwright conventions. Do NOT use for running suites (regression-testing), documenting TCs in Jira/Xray (test-documentation), onboarding a repo (project-discovery), or orchestrating sprint-wide testing (sprint-testing)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, testing-api, testing-component, automation-cli, accessibility]
@@ -24,7 +24,7 @@ any `/sdd-` mention outside this section. See:
 
 Produce KATA-compliant automated tests for an existing Playwright + TypeScript project. Three phases, always in this order: **Plan → Code → Review**. Never jump straight to code.
 
-KATA (Component Action Test Architecture) rewires the usual Page Object pattern. If you write tests the "standard" way, most will be rejected at review. Load the relevant reference before writing code in that area.
+KATA (Komponent Action Test Architecture) rewires the usual Page Object pattern. If you write tests the "standard" way, most will be rejected at review. Load the relevant reference before writing code in that area.
 
 ---
 

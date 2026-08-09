@@ -306,7 +306,7 @@ Project values (URLs, project key, Jira fields) live in `.agents/project.yaml` a
 
 | Feature                    | Description                                                                        |
 | -------------------------- | ---------------------------------------------------------------------------------- |
-| **KATA Architecture**      | Component Action Test Architecture for clean test organization                     |
+| **KATA Architecture**      | Komponent Action Test Architecture for clean test organization                     |
 | **Playwright**             | Modern browser automation with auto-waiting and tracing                            |
 | **Allure Reports**         | Rich test reports with history and trends                                          |
 | **TMS Sync**               | Automatic sync of test results to Jira/Xray                                        |
@@ -490,7 +490,7 @@ bun run test:smoke         # smoke / @critical tests
 
 ## KATA Architecture
 
-This boilerplate implements **KATA** (Component Action Test Architecture).
+This boilerplate implements **KATA** (Komponent Action Test Architecture).
 
 ### Architecture Layers
 
