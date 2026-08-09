@@ -800,7 +800,7 @@ if (errors.length === 0) {
   <h2 data-anim="fade-up">KATA: <span class="grad-text">todo lo de hoy, ordenado en capas</span> 🥋</h2>
   <div class="cols">
     <div data-anim="slide-l">
-      <p style="margin-bottom:.8rem">KATA (<b>Component Action Test Architecture</b>) no inventa nada: <b>organiza</b> el cliente, las aserciones y los datos en 4 capas, donde cada una <code class="pill">extends</code> la anterior. El lado API es idéntico al UI — solo cambia la base.</p>
+      <p style="margin-bottom:.8rem">KATA (<b>Komponent Action Test Architecture</b>) no inventa nada: <b>organiza</b> el cliente, las aserciones y los datos en tres capas nombradas sobre una base de utilities y fixtures, donde cada una <code class="pill">extends</code> la anterior. El lado API es idéntico al UI — solo cambia la base.</p>
       <div class="cards" data-stagger>
         <div class="card"><h3>🎁 Cliente → Componentes</h3><p>Tu <code class="pill">OrdersApi</code> es un componente de dominio. Ahí viven las <b>ATCs</b> de API.</p></div>
         <div class="card"><h3>🎯 Aserciones → dentro de la ATC</h3><p>Status y schema fijos van <b>dentro</b>; las de negocio, en el test.</p></div>
@@ -825,10 +825,10 @@ if (errors.length === 0) {
   <div class="notes"><p>Tesis del acto: KATA es la síntesis de request + aserciones + datos en una estructura. Mapea explícito: tu cliente OrdersApi = componente (L3), las aserciones fijas viven dentro de la ATC, la auth y los datos los inyecta la fixture { api } (L4). La cadena TestContext → ApiBase → OrdersApi es real y verídica (kata-architecture.md), y es ESPEJO de la cadena UI (TestContext → UiBase → LoginPage). Mensaje que baja el miedo: el lado API y el lado UI comparten L1 (TestContext) y solo difieren en L2 (ApiBase vs UiBase). Si entendiste un lado, entiendes el otro.</p></div>
 </section>
 
-<!-- 19 · Las 4 capas (API) -->
+<!-- 19 · Las capas de KATA (API) -->
 <section class="slide" data-act="Acto 4 · KATA para API">
   <div class="zoomline"><span>request</span><span>aserciones</span><span>schema · datos</span><span class="on">kata</span></div>
-  <h2 data-anim="fade-up" style="text-align:center">Las <span class="grad-text">4 capas</span> de KATA, lado API 🏛️</h2>
+  <h2 data-anim="fade-up" style="text-align:center">Las <span class="grad-text">capas</span> de KATA, lado API 🏛️</h2>
   <div class="kata-stack" data-stagger style="margin-top:.4rem">
     <div class="layer">L4 · Fixtures (DI)<span class="ly-note">ApiFixture · TestFixture — inyectan el cliente autenticado</span></div>
     <div class="arrow">↑ usa</div>
@@ -876,7 +876,7 @@ if (errors.length === 0) {
 
 <!-- 21 · STEPPER: trazar una ATC de API por las capas -->
 <section class="slide" data-act="Acto 4 · KATA para API">
-  <div class="kicker">🧠 Trazador · sigue una llamada por las 4 capas</div>
+  <div class="kicker">🧠 Trazador · sigue una llamada por las capas</div>
   <h2 data-anim="fade-up">Un test llama <span class="grad-text">api.orders.createOrder()</span> — ¿por dónde viaja?</h2>
   <div class="stepper" data-anim="fade-up">
     <div>
@@ -898,10 +898,10 @@ if (errors.length === 0) {
     </div>
     <div class="st-side">
       <div class="st-panel"><h4>🏛️ Capa activa</h4><div id="kt-where"><p style="font-size:.85rem;color:var(--text-3);margin:0">— en reposo —</p></div></div>
-      <div class="st-note" id="kt-note">Presiona "Siguiente paso": vas a seguir la llamada bajando por las 4 capas de KATA.</div>
+      <div class="st-note" id="kt-note">Presiona "Siguiente paso": vas a seguir la llamada bajando por las capas de KATA.</div>
     </div>
   </div>
-  <div class="notes"><p>Cierra el círculo: una sola línea de test (api.orders.createOrder) atraviesa las 4 capas. Paso 1: el test pide la fixture { api } (L4). Paso 2: la fixture ya tiene OrdersApi instanciada y autenticada como api.orders (L4→L3). Paso 3: createOrder es la ATC en OrdersApi (L3). Paso 4: usa el helper this.post() heredado de ApiBase (L2). Paso 5: que a su vez hereda config/faker/request de TestContext (L1). Mensaje: el test escribe UNA línea legible; las 4 capas hacen el trabajo pesado debajo. La arquitectura pagando dividendos.</p></div>
+  <div class="notes"><p>Cierra el círculo: una sola línea de test (api.orders.createOrder) atraviesa todas las capas. Paso 1: el test pide la fixture { api } (L4). Paso 2: la fixture ya tiene OrdersApi instanciada y autenticada como api.orders (L4→L3). Paso 3: createOrder es la ATC en OrdersApi (L3). Paso 4: usa el helper this.post() heredado de ApiBase (L2). Paso 5: que a su vez hereda config/faker/request de TestContext (L1). Mensaje: el test escribe UNA línea legible; las capas hacen el trabajo pesado debajo. La arquitectura pagando dividendos.</p></div>
 </section>
 
 <!-- 22 · Selección de fixture en KATA -->
@@ -1009,7 +1009,7 @@ playwright.config.ts      <span class="tk-c">// baseURL, workers</span></pre>
       <tr><td>🚀 request fixture</td><td>navegador para un endpoint</td><td><code>request.post(...)</code></td><td>ApiBase (L2)</td></tr>
       <tr><td>🎯 Aserciones + schema</td><td>"200" no significa correcto</td><td><code>status + body + Zod</code></td><td>dentro de la ATC (L3)</td></tr>
       <tr><td>🔧 Fixtures + faker</td><td>setup/auth/datos repetidos</td><td><code>{ api }</code> + datos únicos</td><td>Fixtures (L4)</td></tr>
-      <tr><td>🥋 KATA</td><td>todo junto, a escala</td><td>4 capas + ATC</td><td>el marco completo</td></tr>
+      <tr><td>🥋 KATA</td><td>todo junto, a escala</td><td>arquitectura de capas + ATC</td><td>el marco completo</td></tr>
     </tbody>
   </table>
   <div class="callout" data-anim="fade-up" style="max-width:800px;margin:1.3rem auto 0"><span class="co-ico">🏆</span><p>Cruzaste de <b>"probar por la pantalla"</b> a <b>probar el backend directo</b>: más rápido, más estable, más profundo. Lo que hace un SDET de API.</p></div>
@@ -1351,7 +1351,7 @@ buildStepper('kt', [
   {l:[6,7], l2:[7], where:'<div class="st-row"><span class="tag l2">L2 · Base</span> ApiBase (helpers HTTP)</div>',
     note:'OrdersApi extends ApiBase: usa el helper this.post() (envuelve request) heredado.'},
   {l:[7,8], l2:[8], where:'<div class="st-row"><span class="tag l1">L1 · TestContext</span> config · faker · request</div>',
-    note:'ApiBase extends TestContext: hasta abajo, config/faker/request. Una línea, 4 capas. 🥋'},
+    note:'ApiBase extends TestContext: hasta abajo, config/faker/request. Una línea, toda la arquitectura. 🥋'},
 ]);
 
 /* ================================================================

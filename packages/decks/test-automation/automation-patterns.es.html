@@ -830,7 +830,7 @@ workers: <span class="tk-n">1</span>,</pre>
   <h2 data-anim="fade-up">KATA: <span class="grad-text">los tres patrones, ordenados en capas</span> 🥋</h2>
   <div class="cols">
     <div data-anim="slide-l">
-      <p style="margin-bottom:.8rem">KATA (<b>Component Action Test Architecture</b>) no inventa nada nuevo: <b>organiza</b> lo que ya viste en una arquitectura de 4 capas, donde cada capa <code class="pill">extends</code> la anterior.</p>
+      <p style="margin-bottom:.8rem">KATA (<b>Komponent Action Test Architecture</b>) no inventa nada nuevo: <b>organiza</b> lo que ya viste en tres capas nombradas sobre una base de utilities y fixtures, donde cada capa <code class="pill">extends</code> la anterior.</p>
       <div class="cards" data-stagger>
         <div class="card"><h3>🎁 POM → capa de Componentes</h3><p>Tu <code class="pill">LoginPage</code> es un componente de dominio. Ahí viven las <b>ATCs</b>.</p></div>
         <div class="card"><h3>🔧 Fixtures → capa 4</h3><p><code class="pill">{ api }</code>, <code class="pill">{ ui }</code>, <code class="pill">{ test }</code> inyectan los componentes ya listos.</p></div>
@@ -855,10 +855,10 @@ workers: <span class="tk-n">1</span>,</pre>
   <div class="notes"><p>Tesis del acto: KATA no es un quinto concepto, es la SÍNTESIS de los tres anteriores en una estructura. Mapea explícito: POM=componentes (capa 3), fixtures=capa 4, paralelización=config. La cadena TestContext → UiBase → LoginPage es real y verídica del repo (kata-architecture.md). Mensaje que baja el miedo: si entendiste extends, fixtures y POM, ya entiendes el 90% de KATA — solo falta el vocabulario y el orden de las capas, que viene ahora.</p></div>
 </section>
 
-<!-- 21 · Las 4 capas -->
+<!-- 21 · Las capas de KATA -->
 <section class="slide" data-act="Acto 4 · KATA">
   <div class="zoomline"><span>page object</span><span>fixtures</span><span>paralelización</span><span class="on">kata</span></div>
-  <h2 data-anim="fade-up" style="text-align:center">Las <span class="grad-text">4 capas</span> de KATA 🏛️</h2>
+  <h2 data-anim="fade-up" style="text-align:center">Las <span class="grad-text">capas</span> de KATA 🏛️</h2>
   <div class="kata-stack" data-stagger style="margin-top:.4rem">
     <div class="layer">L4 · Fixtures (DI)<span class="ly-note">TestFixture · ApiFixture · UiFixture — inyectan todo</span></div>
     <div class="arrow">↑ usa</div>
@@ -904,7 +904,7 @@ workers: <span class="tk-n">1</span>,</pre>
 
 <!-- 23 · STEPPER: trazar una ATC por las capas -->
 <section class="slide" data-act="Acto 4 · KATA">
-  <div class="kicker">🧠 Trazador · sigue una llamada por las 4 capas</div>
+  <div class="kicker">🧠 Trazador · sigue una llamada por las capas</div>
   <h2 data-anim="fade-up">Un test llama <span class="grad-text">ui.login.loginSuccessfully()</span> — ¿por dónde viaja?</h2>
   <div class="stepper" data-anim="fade-up">
     <div>
@@ -927,10 +927,10 @@ workers: <span class="tk-n">1</span>,</pre>
     </div>
     <div class="st-side">
       <div class="st-panel"><h4>🏛️ Capa activa</h4><div id="kt-where"><p style="font-size:.85rem;color:var(--text-3);margin:0">— en reposo —</p></div></div>
-      <div class="st-note" id="kt-note">Presiona "Siguiente paso": vas a seguir la llamada bajando por las 4 capas de KATA.</div>
+      <div class="st-note" id="kt-note">Presiona "Siguiente paso": vas a seguir la llamada bajando por las capas de KATA.</div>
     </div>
   </div>
-  <div class="notes"><p>Cierra el círculo: muestra que una sola línea de test (ui.login.loginSuccessfully) atraviesa las 4 capas. Paso 1: el test pide la fixture { ui } (L4). Paso 2: la fixture ya tiene LoginPage instanciada (L4→L3). Paso 3: loginSuccessfully es la ATC en LoginPage (L3). Paso 4: usa helpers de Playwright heredados de UiBase (L2). Paso 5: que a su vez heredan config/faker de TestContext (L1). Mensaje: el test escribe UNA línea legible; las 4 capas hacen el trabajo pesado por debajo. Eso es la arquitectura pagando dividendos.</p></div>
+  <div class="notes"><p>Cierra el círculo: muestra que una sola línea de test (ui.login.loginSuccessfully) atraviesa todas las capas. Paso 1: el test pide la fixture { ui } (L4). Paso 2: la fixture ya tiene LoginPage instanciada (L4→L3). Paso 3: loginSuccessfully es la ATC en LoginPage (L3). Paso 4: usa helpers de Playwright heredados de UiBase (L2). Paso 5: que a su vez heredan config/faker de TestContext (L1). Mensaje: el test escribe UNA línea legible; las capas hacen el trabajo pesado por debajo. Eso es la arquitectura pagando dividendos.</p></div>
 </section>
 
 <!-- 24 · Selección de fixture en KATA -->
@@ -1038,7 +1038,7 @@ playwright.config.ts      <span class="tk-c">// workers, projects</span></pre>
       <tr><td>🎁 Page Object</td><td>selectores regados</td><td><code>class</code> = una página</td><td>Componentes (L3)</td></tr>
       <tr><td>🔧 Fixtures</td><td>setup/teardown repetido</td><td><code>test.extend</code> + <code>use()</code></td><td>Fixtures (L4)</td></tr>
       <tr><td>⚙️ Paralelización</td><td>suite lentísima</td><td><code>workers</code> aislados</td><td>config + projects</td></tr>
-      <tr><td>🥋 KATA</td><td>todo junto, a escala</td><td>4 capas + ATC</td><td>el marco completo</td></tr>
+      <tr><td>🥋 KATA</td><td>todo junto, a escala</td><td>arquitectura de capas + ATC</td><td>el marco completo</td></tr>
     </tbody>
   </table>
   <div class="callout" data-anim="fade-up" style="max-width:780px;margin:1.3rem auto 0"><span class="co-ico">🏆</span><p>Cruzaste la frontera entre <b>escribir tests</b> y <b>diseñar una arquitectura de pruebas</b>. Lo mismo que hace un SDET senior, ahora con nombre y forma.</p></div>
@@ -1379,7 +1379,7 @@ buildStepper('kt', [
   {l:[7,8], l2:[8], where:'<div class="st-row"><span class="tag l2">L2 · Base</span> UiBase (helpers Playwright)</div>',
     note:'LoginPage extends UiBase: usa helpers de Playwright (waitForURL, etc.) heredados.'},
   {l:[8,9], l2:[9], where:'<div class="st-row"><span class="tag l1">L1 · TestContext</span> config · faker</div>',
-    note:'UiBase extends TestContext: hasta abajo, config/faker/entorno. Una línea, 4 capas. 🥋'},
+    note:'UiBase extends TestContext: hasta abajo, config/faker/entorno. Una línea, toda la arquitectura. 🥋'},
 ]);
 
 /* ================================================================
