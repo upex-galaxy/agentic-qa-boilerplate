@@ -426,9 +426,16 @@ export function parseDotEnvExampleKeys(envExamplePath: string): string[] {
 
 /**
  * Parses a dotenv file into KEY -> VALUE pairs, applying the same line rules as
- * `parseDotEnvExampleKeys` plus value handling: strips a single layer of
- * matching quotes and trailing whitespace. Later definitions win, matching how
- * both `bun` and `dotenv` load a file.
+ * `parseDotEnvExampleKeys` plus value handling: one layer of matching quotes is
+ * stripped, and on an UNQUOTED value a trailing `#` comment is removed. Later
+ * definitions win, matching how both `bun` and `dotenv` load a file.
+ *
+ * The comment rule matters in practice: a template line like
+ * `SUPABASE_URL=# https://<project-ref>.supabase.co` carries no value at all, and
+ * reading the comment as the value would report phantom drift against whatever
+ * the process actually holds. A `#` only opens a comment when it starts the value
+ * or follows whitespace, so `pass#word` and `https://host/#anchor` survive intact,
+ * and a quoted value is never touched.
  *
  * Returns an empty map when the file does not exist — callers decide whether an
  * absent `.env` is a skip (CI) or an error.
@@ -453,6 +460,7 @@ export function parseDotEnvPairs(envPath: string): Map<string, string> {
     let value = trimmed.slice(eq + 1).trim();
     const quoted = /^(['"])([\s\S]*)\1$/.exec(value);
     if (quoted) { value = quoted[2]; }
+    else { value = value.replace(/(^|\s)#.*$/, '$1').trim(); }
     pairs.set(lhs, value);
   }
   return pairs;

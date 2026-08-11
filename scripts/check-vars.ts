@@ -99,6 +99,13 @@ function checkEnvDrift(errors: string[], warnings: string[]): 'checked' | 'skipp
     const spec = specByName.get(name);
     if (!spec) { continue; }
 
+    // An EMPTY file value shadows nothing — the process is then the only source,
+    // which is legitimate (a secret injected by the platform, a value the user
+    // exports on purpose). Same carve-out `cli/install.ts` makes when it loads
+    // `.env`: only a non-empty file value overrides the process. Without this the
+    // rule fires on every blank slot in the template and becomes noise.
+    if (fileValue === '') { continue; }
+
     const procValue = process.env[name];
     // Absent from the process is fine: the loader will supply the file value.
     if (procValue === undefined) { continue; }
