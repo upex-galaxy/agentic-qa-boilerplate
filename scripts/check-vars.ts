@@ -78,10 +78,19 @@ function display(spec: VarSpec | undefined, value: string): string {
  *
  * Skipped entirely when `.env` is absent (CI, fresh clone): there is nothing to
  * compare against, and the manifest⇄`.env.example` rules already cover that case.
+ *
+ * SEVERITY IS CALLER-CONTROLLED. Rules 1 and 2 describe the REPOSITORY and are
+ * always fatal. Drift describes the DEVELOPER'S MACHINE, so making it fatal
+ * everywhere would block a CSS fix from being pushed because a shell somewhere up
+ * the ancestry carries a stale Jira host. Set `VARS_ENV_CHECK_DRIFT=warn` to
+ * report drift without failing; `.husky/pre-push` does exactly that. Explicit
+ * runs and `repo:check` leave it unset, so there it stays a hard error.
  */
-function checkEnvDrift(errors: string[]): 'checked' | 'skipped' {
+function checkEnvDrift(errors: string[], warnings: string[]): 'checked' | 'skipped' {
   if (!existsSync(ENV_FILE)) { return 'skipped'; }
 
+  const softFail = process.env.VARS_ENV_CHECK_DRIFT === 'warn';
+  const sink = softFail ? warnings : errors;
   const filePairs = parseDotEnvPairs(ENV_FILE);
   const specByName = new Map(VAR_MANIFEST.map(s => [s.name, s]));
 
@@ -95,7 +104,7 @@ function checkEnvDrift(errors: string[]): 'checked' | 'skipped' {
     if (procValue === undefined) { continue; }
     if (procValue === fileValue) { continue; }
 
-    errors.push(
+    sink.push(
       `ENV_DRIFT: '${name}' differs between the process environment and .env — `
       + `process=${display(spec, procValue)} vs .env=${display(spec, fileValue)}. `
       + 'The process value WINS at load time, so .env is being ignored in silence.',
@@ -107,6 +116,7 @@ function checkEnvDrift(errors: string[]): 'checked' | 'skipped' {
 
 function main(): void {
   const errors: string[] = [];
+  const warnings: string[] = [];
 
   // Step 0 — the manifest itself must be structurally valid.
   try {
@@ -146,18 +156,37 @@ function main(): void {
   }
 
   // Rule 3 — the process environment must not shadow `.env` with a stale value.
-  const driftStatus = checkEnvDrift(errors);
+  const driftStatus = checkEnvDrift(errors, warnings);
+  const driftSoft = process.env.VARS_ENV_CHECK_DRIFT === 'warn';
+
+  const driftLabel = driftStatus === 'skipped'
+    ? 'skipped (no .env)'
+    : driftSoft ? 'checked (warn-only)' : 'checked';
 
   // Report.
   console.log('Variable Manifest ⇄ .env.example Parity');
   console.log('=======================================');
   console.log(`Manifest vars:               ${VAR_MANIFEST.length} (${localVars.length} with dest∋local, ${varsFor('github').length} with dest∋github)`);
   console.log(`Uncommented .env.example keys: ${exampleKeys.length}`);
-  console.log(`Process env ⇄ .env drift:     ${driftStatus === 'skipped' ? 'skipped (no .env)' : 'checked'}`);
+  console.log(`Process env ⇄ .env drift:     ${driftLabel}`);
   console.log('');
 
+  if (warnings.length > 0) {
+    console.log(`WARNINGS (${warnings.length}) — reported, not blocking:`);
+    for (const w of warnings) {
+      console.log(`  - ${w}`);
+    }
+    console.log('');
+    printDriftRemedy();
+    console.log('');
+  }
+
   if (errors.length === 0) {
-    console.log('OK — manifest and .env.example are in lockstep, and no env drift.');
+    console.log(
+      warnings.length > 0
+        ? 'OK — manifest and .env.example are in lockstep. Env drift above is a warning here.'
+        : 'OK — manifest and .env.example are in lockstep, and no env drift.',
+    );
     process.exit(0);
   }
 
@@ -167,12 +196,21 @@ function main(): void {
   }
   console.log('');
   console.log('Fix (MISSING_SLOT / ORPHAN_KEY): add the missing slot to .env.example, or add/remove the var in cli/lib/variables-manifest.ts.');
+  if (errors.some(e => e.startsWith('ENV_DRIFT:'))) {
+    printDriftRemedy();
+  }
+  process.exit(1);
+}
+
+/** Shared remedy block — printed for drift whether it lands as an error or a warning. */
+function printDriftRemedy(): void {
   console.log('Fix (ENV_DRIFT): the process value is stale and shadows .env. Find who injected it —');
   console.log('  ps eww -p $PPID                          # walk the ancestry; repeat up the chain');
   console.log('  env -i HOME=$HOME zsh -l -c \'echo $VAR\'   # test the login shell in isolation');
   console.log('Testing from the contaminated shell inherits the bad value and gives a false negative.');
   console.log('Restarting the app does NOT fix it: the value is re-inherited from the same parent.');
-  process.exit(1);
+  console.log('Relaunch the agent session through `bun run claude` / `bun run opencode` (they pass');
+  console.log('dotenv -o, which forces .env over anything inherited).');
 }
 
 main();
