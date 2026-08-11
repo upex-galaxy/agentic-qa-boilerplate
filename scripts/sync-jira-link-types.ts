@@ -95,6 +95,12 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
+import {
+  formatInstanceMismatchWarning,
+  instanceSourceLabel,
+  resolveAtlassianInstance,
+} from '../cli/lib/atlassian-instance';
+
 // ============================================================================
 // CONSTANTS
 // ============================================================================
@@ -310,12 +316,28 @@ EXIT CODES:
 // ============================================================================
 
 function loadConfig(): Config {
-  const baseUrl = process.env.ATLASSIAN_URL;
+  // Instance host: `.agents/project.yaml` first, `ATLASSIAN_URL` only as fallback.
+  // This script overwrites the versioned `.agents/jira-link-types.json` catalog, so a
+  // stale host silently replaces it with another site's link-type names — every
+  // `{{jira.link_types.*}}` reference would then resolve against the wrong workspace.
+  // Rationale: cli/lib/atlassian-instance.ts.
+  let instance;
+  try {
+    instance = resolveAtlassianInstance();
+  }
+  catch (err) {
+    log.error((err as Error).message);
+    process.exit(1);
+  }
+
+  const warning = formatInstanceMismatchWarning(instance);
+  if (warning) { log.warn(warning); }
+
+  // Credentials stay env-only — never mirrored into the versioned yaml.
   const email = process.env.ATLASSIAN_EMAIL;
   const apiToken = process.env.ATLASSIAN_API_TOKEN;
 
   const missing: string[] = [];
-  if (!baseUrl) { missing.push('ATLASSIAN_URL'); }
   if (!email) { missing.push('ATLASSIAN_EMAIL'); }
   if (!apiToken) { missing.push('ATLASSIAN_API_TOKEN'); }
 
@@ -326,8 +348,10 @@ function loadConfig(): Config {
     process.exit(1);
   }
 
+  log.info(`Using instance=${instance.baseUrl} (source: ${instanceSourceLabel(instance.source)})`);
+
   return {
-    baseUrl: baseUrl!.replace(/\/$/, ''),
+    baseUrl: instance.baseUrl,
     email: email!,
     apiToken: apiToken!,
   };

@@ -21,7 +21,12 @@
  * reads); pass --width / --height to override or for formats / videos we cannot size.
  *
  * Credentials come from the shell env (loaded from .env by the project tooling):
- *   ATLASSIAN_URL · ATLASSIAN_EMAIL · ATLASSIAN_API_TOKEN
+ *   ATLASSIAN_EMAIL · ATLASSIAN_API_TOKEN
+ *
+ * The INSTANCE HOST does not: it is read from `.agents/project.yaml` ->
+ * issue_tracker.atlassian_url, with ATLASSIAN_URL as fallback only. See
+ * cli/lib/atlassian-instance.ts for why (a stale env host attaches evidence to
+ * the wrong Atlassian site).
  *
  * CLI:
  *   bun jira-attach-media.ts <ISSUE-KEY> <file>                 # print the mediaSingle node JSON
@@ -33,6 +38,11 @@
  * Module:
  *   import { uploadAttachment, resolveMediaId, buildMediaNode } from "./jira-attach-media.ts";
  */
+
+import {
+  formatInstanceMismatchWarning,
+  resolveAtlassianInstance,
+} from "../../../../cli/lib/atlassian-instance";
 
 type MediaNode = {
   type: "mediaSingle";
@@ -50,6 +60,24 @@ function env(name: string): string {
     );
   }
   return v;
+}
+
+/**
+ * Instance host, resolved from `.agents/project.yaml` -> issue_tracker.atlassian_url
+ * FIRST and only falling back to `ATLASSIAN_URL`. This helper UPLOADS files and
+ * POSTS comments, so a stale env host would push bug evidence into whatever issue
+ * happens to carry the same key on the other Atlassian site. Resolved once per
+ * process; the mismatch warning is printed at most once.
+ * Rationale: cli/lib/atlassian-instance.ts.
+ */
+let instanceCache: string | null = null;
+function instanceUrl(): string {
+  if (instanceCache !== null) return instanceCache;
+  const resolved = resolveAtlassianInstance();
+  const warning = formatInstanceMismatchWarning(resolved);
+  if (warning) console.error(`⚠ ${warning}`);
+  instanceCache = resolved.baseUrl;
+  return instanceCache;
 }
 
 function authHeader(): string {
@@ -87,7 +115,7 @@ function imageSize(buf: Uint8Array): { width: number; height: number } | null {
 }
 
 async function uploadAttachment(issueKey: string, filePath: string): Promise<Attachment> {
-  const base = env("ATLASSIAN_URL");
+  const base = instanceUrl();
   const bytes = new Uint8Array(await Bun.file(filePath).arrayBuffer());
   const name = filePath.split("/").pop() || "attachment";
   const form = new FormData();
@@ -179,7 +207,7 @@ if (import.meta.main) {
   const doc = { type: "doc", version: 1, content: docContent };
 
   if (has("--publish")) {
-    const res = await fetch(`${env("ATLASSIAN_URL")}/rest/api/3/issue/${issueKey}/comment`, {
+    const res = await fetch(`${instanceUrl()}/rest/api/3/issue/${issueKey}/comment`, {
       method: "POST",
       headers: { Authorization: authHeader(), "Content-Type": "application/json" },
       body: JSON.stringify({ body: doc }),

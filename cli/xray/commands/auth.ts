@@ -6,6 +6,7 @@
 
 import type { Flags } from '../types/index.js';
 import { existsSync, writeFileSync } from 'node:fs';
+import { normalizeAtlassianUrl, readAtlassianUrlFromYaml } from '../../lib/atlassian-instance';
 import { clearToken, configPaths, loadConfig, loadToken, saveConfig, saveToken } from '../lib/config.js';
 import { authenticate } from '../lib/graphql.js';
 import { log } from '../lib/logger.js';
@@ -25,18 +26,34 @@ export async function login(flags: Flags): Promise<void> {
   const clientSecret = getFlag(flags, 'client-secret') || process.env.XRAY_CLIENT_SECRET;
   const defaultProject = getFlag(flags, 'project');
 
-  // Optional Jira credentials for sync features
-  const jiraBaseUrl = getFlag(flags, 'jira-url') || process.env.ATLASSIAN_URL;
+  // Optional Jira credentials for sync features.
+  //
+  // The HOST is the one value that does not follow the flag-then-env rule above:
+  // it resolves from `.agents/project.yaml` -> issue_tracker.atlassian_url before
+  // falling back to `ATLASSIAN_URL`. `login` PERSISTS whatever it picks into the
+  // machine-global `~/.xray-cli/config.json`, which then outlives the repo and is
+  // never revisited — seeding it from a stale env value bakes the wrong site into
+  // a cache no diff will ever show. An explicit `--jira-url` still wins, since
+  // that is a deliberate override. Rationale: cli/lib/atlassian-instance.ts.
+  const jiraBaseUrl = normalizeAtlassianUrl(getFlag(flags, 'jira-url'))
+    ?? readAtlassianUrlFromYaml()
+    ?? normalizeAtlassianUrl(process.env.ATLASSIAN_URL);
   const jiraEmail = getFlag(flags, 'jira-email') || process.env.ATLASSIAN_EMAIL;
   const jiraApiToken = getFlag(flags, 'jira-token') || process.env.ATLASSIAN_API_TOKEN;
 
   // Surface where each credential came from so the user knows whether the
   // environment or a flag is in effect.
   const src = (flag: string, env: string): string => (getFlag(flags, flag) ? 'flag' : process.env[env] ? 'env' : 'unset');
+  // jira-url has its own three-tier precedence, so it cannot use `src`.
+  const jiraUrlSrc = getFlag(flags, 'jira-url')
+    ? 'flag'
+    : readAtlassianUrlFromYaml()
+      ? 'project.yaml'
+      : process.env.ATLASSIAN_URL ? 'env' : 'unset';
   log.dim(
     `Credentials: client-id=${src('client-id', 'XRAY_CLIENT_ID')}, `
     + `client-secret=${src('client-secret', 'XRAY_CLIENT_SECRET')}, `
-    + `jira-url=${src('jira-url', 'ATLASSIAN_URL')}, `
+    + `jira-url=${jiraUrlSrc}, `
     + `jira-email=${src('jira-email', 'ATLASSIAN_EMAIL')}, `
     + `jira-token=${src('jira-token', 'ATLASSIAN_API_TOKEN')}`,
   );
@@ -69,7 +86,7 @@ export async function login(flags: Flags): Promise<void> {
     client_id: clientId,
     client_secret: clientSecret,
     default_project: defaultProject,
-    jira_base_url: jiraBaseUrl,
+    jira_base_url: jiraBaseUrl ?? undefined,
     jira_email: jiraEmail,
     jira_api_token: jiraApiToken,
   });

@@ -5,11 +5,47 @@
  */
 
 import type { JiraIssue } from '../types/index.js';
+import {
+  formatInstanceMismatchWarning,
+  normalizeAtlassianUrl,
+  readAtlassianUrlFromYaml,
+} from '../../lib/atlassian-instance';
 import { loadConfig } from './config.js';
 
 // ============================================================================
 // JIRA REST API CLIENT
 // ============================================================================
+
+/**
+ * Resolves the Jira host for this CLI. Precedence:
+ *   1. `.agents/project.yaml` -> issue_tracker.atlassian_url  (versioned, reviewable)
+ *   2. `~/.xray-cli/config.json` -> jira_base_url             (machine-global cache)
+ *   3. `ATLASSIAN_URL` env var                                (fallback)
+ *
+ * The yaml is first for the same reason as everywhere else in this repo: the
+ * instance host is project identity, and both of the other two sources OUTLIVE a
+ * site migration — the xray config is written once at `auth login` and never
+ * revisited, and the env var is inherited by whatever spawned the process. This
+ * CLI writes run statuses and links defects, so a stale host mutates the wrong
+ * site's test evidence. Rationale: cli/lib/atlassian-instance.ts.
+ *
+ * Returns `null` when no source is set (callers already treat that as
+ * "credentials not configured" and surface a guiding error).
+ */
+function resolveJiraBaseUrl(configuredBaseUrl: string | undefined): string | null {
+  const yamlUrl = readAtlassianUrlFromYaml();
+  const otherUrl = normalizeAtlassianUrl(configuredBaseUrl ?? process.env.ATLASSIAN_URL);
+  if (!yamlUrl) { return otherUrl; }
+  if (otherUrl) {
+    const warning = formatInstanceMismatchWarning({
+      baseUrl: yamlUrl,
+      source: 'project.yaml',
+      mismatch: yamlUrl.toLowerCase() === otherUrl.toLowerCase() ? null : { yaml: yamlUrl, env: otherUrl },
+    });
+    if (warning) { console.warn(`⚠ ${warning}`); }
+  }
+  return yamlUrl;
+}
 
 /**
  * Look up a Jira issue by key to get its numeric ID
@@ -18,7 +54,7 @@ import { loadConfig } from './config.js';
 export async function getJiraIssueId(key: string): Promise<string | null> {
   const config = loadConfig();
 
-  const baseUrl = config?.jira_base_url || process.env.ATLASSIAN_URL;
+  const baseUrl = resolveJiraBaseUrl(config?.jira_base_url);
   const email = config?.jira_email || process.env.ATLASSIAN_EMAIL;
   const token = config?.jira_api_token || process.env.ATLASSIAN_API_TOKEN;
 
@@ -57,7 +93,7 @@ export async function getJiraIssueId(key: string): Promise<string | null> {
  */
 export async function listProjects(): Promise<Array<{ key: string, name: string, id: string }> | null> {
   const config = loadConfig();
-  const baseUrl = config?.jira_base_url || process.env.ATLASSIAN_URL;
+  const baseUrl = resolveJiraBaseUrl(config?.jira_base_url);
   const email = config?.jira_email || process.env.ATLASSIAN_EMAIL;
   const token = config?.jira_api_token || process.env.ATLASSIAN_API_TOKEN;
 
@@ -207,7 +243,7 @@ export interface LinkedTest {
  */
 export async function getLinkedTests(issueKey: string): Promise<LinkedTest[] | null> {
   const config = loadConfig();
-  const baseUrl = config?.jira_base_url || process.env.ATLASSIAN_URL;
+  const baseUrl = resolveJiraBaseUrl(config?.jira_base_url);
   const email = config?.jira_email || process.env.ATLASSIAN_EMAIL;
   const token = config?.jira_api_token || process.env.ATLASSIAN_API_TOKEN;
 
