@@ -78,8 +78,8 @@ Classify every hit into change / do-not-change, and **present the table to the u
 
 | Target | What to write |
 |---|---|
-| `.env` -> `ATLASSIAN_URL` | `https://<target>/` — the line number varies per project, never assume it |
-| `.agents/project.yaml` -> `atlassian_url` | `<target>` — **without** the scheme; this is the slug `acli` derives `--site` from |
+| `.agents/project.yaml` -> `atlassian_url` | `https://<target>` — **the source of truth.** Every sync script resolves the instance from here FIRST and treats `ATLASSIAN_URL` as fallback only (`cli/lib/atlassian-instance.ts`). Write it WITH the scheme, matching what `bun run agents:setup` writes; the resolver also accepts a bare slug, but a mixed repo is harder to review |
+| `.env` -> `ATLASSIAN_URL` | `https://<target>/` — the line number varies per project, never assume it. Still required: `acli` and the Atlassian MCP read it directly, and it is the fallback for a template repo whose yaml is `null` |
 | `acli` session | machine-global (`~/.config/acli`), not a repo file — re-login required per machine |
 
 ### Does not change
@@ -95,11 +95,13 @@ Anything that fits neither list — a CI workflow, a README, `.mcp.json`, a depl
 
 ## Phase 2 — Apply
 
-1. `.env` -> `ATLASSIAN_URL=https://<target>/`
-2. `.agents/project.yaml` -> `atlassian_url: <target>`
+1. `.agents/project.yaml` -> `atlassian_url: https://<target>` — do this FIRST; it is what the sync scripts read.
+2. `.env` -> `ATLASSIAN_URL=https://<target>/`
 3. Re-authenticate `acli`:
 
-> **Template-repo carve-out for step 2.** A boilerplate/template repo ships `.agents/project.yaml` with every value `null` on purpose — downstream projects inherit the file verbatim, so a concrete site baked into it is wrong for all of them. Detect this by reading `project.project_name` in the same file: if it is `null`, the repo is an un-onboarded template. **Leave `atlassian_url: null`** and say so in the report. The same rule applies to `project_key` in Phase 4. Only a real, onboarded project gets the value written.
+> **Verify the process environment, not just the files.** A stale `ATLASSIAN_URL` can live in the PROCESS environment (inherited from whatever spawned the agent session) and WINS over a corrected `.env` — both `bun`'s autoload and `dotenv-cli` skip a variable that is already set. It survives a full application restart, because it is re-inherited every time. Run `bun run vars:env:check` after editing `.env`; it fails on any process⇄`.env` divergence. If it fires, walk the ancestry with `ps eww -p <pid>` and test the login shell in isolation with `env -i HOME=$HOME zsh -l -c 'echo $ATLASSIAN_URL'` — testing from the contaminated shell inherits the bad value and gives a false negative.
+>
+> **Template-repo carve-out for step 1.** A boilerplate/template repo ships `.agents/project.yaml` with every value `null` on purpose — downstream projects inherit the file verbatim, so a concrete site baked into it is wrong for all of them. Detect this by reading `project.project_name` in the same file: if it is `null`, the repo is an un-onboarded template. **Leave `atlassian_url: null`** and say so in the report. The same rule applies to `project_key` in Phase 4. Only a real, onboarded project gets the value written.
 
 ```bash
 TOKEN=$(grep '^ATLASSIAN_API_TOKEN=' .env | cut -d= -f2-)
