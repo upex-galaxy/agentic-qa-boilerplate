@@ -1777,7 +1777,13 @@ export function reloadDotEnv(): void {
       if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith('\'') && v.endsWith('\''))) {
         v = v.slice(1, -1);
       }
-      // Don't overwrite an already-populated value with an empty one from .env.
+      // The FILE WINS over an inherited process value. This is deliberate and must
+      // not be "corrected" to the usual non-override dotenv default: a stale value
+      // inherited from whatever spawned this process (an agent session, a parent
+      // shell) would otherwise shadow a corrected `.env` in silence and survive an
+      // application restart. `bun run vars:env:check` guards the same class
+      // repo-wide; see `cli/lib/atlassian-instance.ts` for the incident this comes
+      // from. Only an EMPTY file value defers to an already-populated process value.
       if (k && (v !== '' || !process.env[k])) { process.env[k] = v; }
     }
   }

@@ -424,6 +424,40 @@ export function parseDotEnvExampleKeys(envExamplePath: string): string[] {
   return keys;
 }
 
+/**
+ * Parses a dotenv file into KEY -> VALUE pairs, applying the same line rules as
+ * `parseDotEnvExampleKeys` plus value handling: strips a single layer of
+ * matching quotes and trailing whitespace. Later definitions win, matching how
+ * both `bun` and `dotenv` load a file.
+ *
+ * Returns an empty map when the file does not exist — callers decide whether an
+ * absent `.env` is a skip (CI) or an error.
+ */
+export function parseDotEnvPairs(envPath: string): Map<string, string> {
+  const pairs = new Map<string, string>();
+  if (!fs.existsSync(envPath)) { return pairs; }
+  const raw = fs.readFileSync(envPath, 'utf8');
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (trimmed === '' || trimmed.startsWith('#') || trimmed.startsWith('*')) {
+      continue;
+    }
+    const eq = trimmed.indexOf('=');
+    if (eq <= 0) {
+      continue;
+    }
+    const lhs = trimmed.slice(0, eq).replace(/^export\s+/, '').trim();
+    if (!/^[a-z_]\w*$/i.test(lhs)) {
+      continue;
+    }
+    let value = trimmed.slice(eq + 1).trim();
+    const quoted = /^(['"])([\s\S]*)\1$/.exec(value);
+    if (quoted) { value = quoted[2]; }
+    pairs.set(lhs, value);
+  }
+  return pairs;
+}
+
 // ----------------------------------------------------------------------------
 // Validation (mirrors the spirit of validateComponentRegistry in
 // cli/update-boilerplate.ts → updater-core.ts: pure, fails fast on a malformed
