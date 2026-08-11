@@ -5,11 +5,7 @@
  */
 
 import type { JiraIssue } from '../types/index.js';
-import {
-  formatInstanceMismatchWarning,
-  normalizeAtlassianUrl,
-  readAtlassianUrlFromYaml,
-} from '../../lib/atlassian-instance';
+import { normalizeAtlassianUrl, readAtlassianUrlFromYaml } from '../../lib/atlassian-instance';
 import { loadConfig } from './config.js';
 
 // ============================================================================
@@ -17,34 +13,54 @@ import { loadConfig } from './config.js';
 // ============================================================================
 
 /**
- * Resolves the Jira host for this CLI. Precedence:
- *   1. `.agents/project.yaml` -> issue_tracker.atlassian_url  (versioned, reviewable)
- *   2. `~/.xray-cli/config.json` -> jira_base_url             (machine-global cache)
- *   3. `ATLASSIAN_URL` env var                                (fallback)
+ * Resolves the Jira host used for REST lookups. Precedence:
+ *   1. `~/.xray-cli/config.json` -> jira_base_url             (the login's decision)
+ *   2. `.agents/project.yaml` -> issue_tracker.atlassian_url  (versioned, reviewable)
+ *   3. `ATLASSIAN_URL` env var                                (last resort)
  *
- * The yaml is first for the same reason as everywhere else in this repo: the
- * instance host is project identity, and both of the other two sources OUTLIVE a
- * site migration — the xray config is written once at `auth login` and never
- * revisited, and the env var is inherited by whatever spawned the process. This
- * CLI writes run statuses and links defects, so a stale host mutates the wrong
- * site's test evidence. Rationale: cli/lib/atlassian-instance.ts.
+ * The stored config stays FIRST because it is not a passive cache: it is what
+ * `auth login` decided, and that decision may have come from an explicit
+ * `--jira-url` (the documented way to point the CLI at another site). Demoting it
+ * below the yaml would silently discard that override at request time while
+ * `auth status` still reported it, which is worse than the problem being fixed.
+ *
+ * The yaml sits ABOVE the env var, though, and that is the actual fix here. When
+ * no login has run, the old code fell straight through to `ATLASSIAN_URL` — the
+ * variable that survives a site migration inside an inherited process
+ * environment. The hazard is not cosmetic: `resolveIssueId` turns a Jira key into
+ * a NUMERIC id, and that id is fed to Xray mutations that write run statuses and
+ * link defects. Resolve the key against the wrong site and the id may still exist
+ * on the right one, pointing at an unrelated issue.
+ *
+ * The Xray API itself is unaffected: XRAY_AUTH_URL / XRAY_GRAPHQL_URL are fixed
+ * global endpoints, and the instance is identified by the client id/secret pair.
+ * Only these Jira REST lookups need a host.
+ *
+ * A stored host that disagrees with the yaml is reported once per process: the
+ * config is machine-global, written once, and never revisited, so after a site
+ * migration it keeps pointing at the old instance until someone re-runs login.
  *
  * Returns `null` when no source is set (callers already treat that as
  * "credentials not configured" and surface a guiding error).
  */
+let staleConfigReported = false;
 function resolveJiraBaseUrl(configuredBaseUrl: string | undefined): string | null {
+  const configUrl = normalizeAtlassianUrl(configuredBaseUrl);
   const yamlUrl = readAtlassianUrlFromYaml();
-  const otherUrl = normalizeAtlassianUrl(configuredBaseUrl ?? process.env.ATLASSIAN_URL);
-  if (!yamlUrl) { return otherUrl; }
-  if (otherUrl) {
-    const warning = formatInstanceMismatchWarning({
-      baseUrl: yamlUrl,
-      source: 'project.yaml',
-      mismatch: yamlUrl.toLowerCase() === otherUrl.toLowerCase() ? null : { yaml: yamlUrl, env: otherUrl },
-    });
-    if (warning) { console.warn(`⚠ ${warning}`); }
+
+  if (configUrl) {
+    if (yamlUrl && !staleConfigReported && configUrl.toLowerCase() !== yamlUrl.toLowerCase()) {
+      staleConfigReported = true;
+      console.warn(
+        `⚠ xray: stored Jira host (${configUrl}) disagrees with .agents/project.yaml (${yamlUrl}). `
+        + 'Using the stored value, since it is what `xray auth login` recorded. If the site was '
+        + 'migrated, re-run `bun xray auth login` to refresh ~/.xray-cli/config.json.',
+      );
+    }
+    return configUrl;
   }
-  return yamlUrl;
+
+  return yamlUrl ?? normalizeAtlassianUrl(process.env.ATLASSIAN_URL);
 }
 
 /**
