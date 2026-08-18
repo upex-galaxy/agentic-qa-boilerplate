@@ -91,13 +91,13 @@ Canonical reading order for any AI starting cold on a sprint-testing workflow. R
 
 > **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional. The orchestrator also applies the per-stage **Definition-of-Done gates** in `./stage-gates.md`: verify a stage's DoD (planning stages include the Test-Design Checklist) BEFORE recording its progress checkpoint and advancing.
 
-This skill scopes per ticket. Single-ticket mode: `<scope>` = `<JIRA-KEY>` (e.g. `UPEX-123`). Batch-sprint mode: `<scope>` = `sprint-<N>/<JIRA-KEY>` (one nested directory per ticket in the wave). Session state lives at `.session/sprint-testing/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The per-ticket `test-session-memory.md` is a SEPARATE concern: it carries TMS modality + ticket context + stage state shared across the 4 sub-agent dispatches (domain memory). Both files coexist — `plan.md` indexes the session; `test-session-memory.md` holds the cross-stage shared payload.
+This skill scopes per ticket. Single-ticket mode: `<scope>` = `<JIRA-KEY>` (e.g. `UPEX-123`). Batch-sprint mode: `<scope>` = `sprint-<N>/<JIRA-KEY>` (one nested directory per ticket in the wave). Session state lives at `.session/sprint-testing/<scope>/{plan.md, progress.md, test-session-memory.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. `test-session-memory.md` is a SEPARATE concern from `plan.md`: it carries TMS modality + ticket context + stage state shared across the 4 sub-agent dispatches (domain memory). All three coexist — `plan.md` indexes the session, `progress.md` decides the next stage, `test-session-memory.md` holds the cross-stage shared payload.
 
 This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. This skill operates in two modes (single-ticket and batch-sprint) and BOTH modes use the same four dispatch points per ticket — Session Start -> Stage 1 -> Stage 2 -> Stage 3. The only difference is that batch mode loops them once per ticket. The full briefings (Goal / Context docs / Skills to load / Exact instructions / Report format / Rules) live in `references/sprint-orchestration.md` §"Sub-agent prompt templates".
 
 | Stage                                              | Pattern    | Subagent role                                                                                                                                                                  |
 |----------------------------------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Session Start (per-ticket)                         | Single     | dispatch a session-start subagent: fetch ticket from issue tracker, load `.context/`, create the PBI folder + `context.md` + `test-session-memory.md`, return ticket summary + AC list |
+| Session Start (per-ticket)                         | Single     | dispatch a session-start subagent: fetch ticket from issue tracker, load `.context/`, create the PBI folder + `context.md` and the session dir + `test-session-memory.md`, return ticket summary + AC list |
 | Stage 1 — Planning (ATP + draft TCs + risk triage) | Sequential | dispatch a Planning subagent: produce the ATP artifact + risk score + draft TC outlines; bug tickets get the veto + triage decision tree applied                                |
 | Stage 2 — Execution (smoke + UI/API/DB exploration)| Sequential | dispatch an Execution subagent: smoke pass first, then triforce (UI/API/DB) exploration; capture evidence under the PBI folder; surface BUG_FOUND if applicable                  |
 | Stage 3 — Reporting (ATR + QA comment + transition)| Sequential | dispatch a Reporting subagent: fill the ATR, post the QA comment, transition the issue, file bug reports if any                                                                 |
@@ -131,7 +131,7 @@ Rules for picking:
 
 ```
 Session Start (always first)
-    -> PBI folder + context.md + test-session-memory.md
+    -> PBI folder + context.md · session dir + test-session-memory.md
     -> Story explanation, WAIT for user OK
 
 Stage 1 — Planning
@@ -234,7 +234,7 @@ Before Session Start dispatch, run the resume contract from `agentic-qa-core/ref
 3. If it does NOT exist → proceed to Session Start (writes `plan.md`).
 4. If it DOES exist:
    - Read `plan.md` + tail of `progress.md`.
-   - Optionally read `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-session-memory.md` for the per-ticket domain state (load-bearing across the 4 sub-agent dispatches).
+   - Optionally read `.session/sprint-testing/<scope>/test-session-memory.md` for the per-ticket domain state (load-bearing across the 4 sub-agent dispatches).
    - Surface to the user: last completed stage (Session Start / Stage 1 / Stage 2 / Stage 3) + next stage + any unresolved BUG_FOUND or TOOL FAILURE from the last entry.
    - Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>-aborted/` first.
 
@@ -270,14 +270,18 @@ Every invocation starts by initializing the session, even in batch mode. Session
 4. Loads or creates `module-context.md` (3-level hierarchy: project -> module -> ticket).
 5. Explores backend (`{{BACKEND_REPO}}`) + frontend (`{{FRONTEND_REPO}}`) code.
 6. Finds test data candidates via `[DB_TOOL]` on `{{DB_MCP}}`.
-7. Creates the PBI folder and files:
+7. Creates the PBI folder and the session directory:
    ```
    .context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-{{PROJECT_KEY}}-{number}-{brief-title}/
-     context.md                # hand-authored: session notes + open questions (NON-Jira)
-     test-session-memory.md    # hand-authored: shared memory across the 4 sub-agent dispatches (NON-Jira)
-     evidence/                 # screenshots, gitignored
+     context.md                # hand-authored: session notes + open questions (NON-Jira, local-only)
+     evidence/                 # screenshots (NON-Jira, local-only)
+
+   .session/sprint-testing/<scope>/
+     test-session-memory.md    # hand-authored: shared memory across the 4 sub-agent dispatches
    ```
    Jira-mirrored files (`story.md`, `acceptance-criteria.md`, `acceptance-test-plan.md`, `acceptance-test-results.md`, `comments.md`, etc.) are NOT hand-written here — they are materialized by `bun run jira:sync-issues get <KEY> --include-comments`.
+
+   The whole PBI tree is gitignored (it is a Jira cache; see `CLAUDE.md` §9), so `context.md` and `evidence/` are local-only by construction. `test-session-memory.md` lives in `.session/` instead because a re-sync rewrites the PBI cache wholesale and this file is what every resume and every sub-agent reads.
 8. **Writes the session `plan.md`** at `.session/sprint-testing/<scope>/plan.md` per `agentic-qa-core/references/session-management.md` §6 — Goal (one sentence per ticket), Inputs (PBI paths + TMS modality + Team Discussion summary), Approach (mode + per-stage dispatch pattern), Phase breakdown (Session Start / Stage 1 / Stage 2 / Stage 3 with dispatch pointer + exit condition), Risks (from triage), Verification checklist, Cross-references (cites `context.md`, `test-session-memory.md`, `acceptance-test-plan.md`, `acceptance-test-results.md`).
 9. Writes a Story Explanation and **STOPS** for user confirmation. Do not proceed until the user OK's.
 10. After OK, appends the first progress entry `## Session Start — <ts>` with `status: completed`, `next: Stage 1 — Planning` to `.session/sprint-testing/<scope>/progress.md`.
@@ -315,7 +319,7 @@ Run the same 4 dispatches; the Stage 1 briefing additionally applies the veto + 
 
 - Pre-step: generate `SPRINT-{N}-TESTING.md` from the sprint backlog if it does not exist (see `sprint-orchestration.md`).
 - Loop: read Wave 1 for the first `PENDING` ticket, dispatch the same 4-stage sequence per ticket, after each ticket update the framework file + present a per-ticket summary + wait for user OK.
-- **Interrupted session resume**: on loop entry per ticket, Phase 0 reads `.session/sprint-testing/sprint-<N>/<TICKET>/progress.md` (canonical resume signal per `agentic-qa-core/references/session-management.md` §4). Domain state for an in-flight ticket is in `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-session-memory.md` (load-bearing for the 4 sub-agent dispatches). The two files serve different concerns: `progress.md` decides "which stage is next?"; `test-session-memory.md` carries the per-ticket payload that each sub-agent reads. Both are checked.
+- **Interrupted session resume**: on loop entry per ticket, Phase 0 reads `.session/sprint-testing/sprint-<N>/<TICKET>/progress.md` (canonical resume signal per `agentic-qa-core/references/session-management.md` §4). Domain state for an in-flight ticket sits beside it in `.session/sprint-testing/sprint-<N>/<TICKET>/test-session-memory.md` (load-bearing for the 4 sub-agent dispatches). The two files serve different concerns: `progress.md` decides "which stage is next?"; `test-session-memory.md` carries the per-ticket payload that each sub-agent reads. Both are checked, and both survive a `jira:sync-issues` re-pull because neither lives in the PBI cache.
 - After each stage subagent returns, the orchestrator appends a phase entry to `progress.md` per `agentic-qa-core/references/session-management.md` §7. After Stage 3 completes, the orchestrator runs Archive: moves `.session/sprint-testing/<scope>/` to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>/` and calls `mem_session_summary`. The PBI artifacts under `.context/PBI/` and the framework file `SPRINT-{N}-TESTING.md` stay in place — those are the canonical deliverables.
 - Stop on TOOL FAILURE. Pause on BUG_FOUND. Update framework file ONLY after Stage 3 completes.
 
@@ -382,7 +386,7 @@ All references are self-contained. Load one at a time.
 | Reference | Read when |
 |-----------|-----------|
 | `sprint-orchestration.md` | Running batch-sprint mode, generating the `SPRINT-{N}-TESTING.md` framework file, resuming a session, updating framework tables, dispatching stage sub-agents, handling stop/pause/`continue-from`. |
-| `session-entry-points.md` | Initializing a session (any mode), loading project + module context, creating the PBI folder + `context.md` + `test-session-memory.md`, Team Discussion extraction rules, user-story workflow step order, bug Triage -> Verify -> Report workflow. |
+| `session-entry-points.md` | Initializing a session (any mode), loading project + module context, creating the PBI folder + `context.md` and the session dir + `test-session-memory.md`, Team Discussion extraction rules, user-story workflow step order, bug Triage -> Verify -> Report workflow. |
 | `acceptance-test-planning.md` | Stage 1 Planning — generating the ATP (Acceptance Test Plan) for a ticket, Test Analysis structure, TC nomenclature `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]`, traceability creation + verification, and the Bug Analysis variant. |
 | `feature-test-planning.md` | Stage 1 Planning at feature / multi-story level — building a feature test plan, risk triage rubric, scenario decomposition, and variable + test-data identification. |
 | `exploration-patterns.md` | Stage 2 Execution — smoke-test Go/No-Go playbook, UI exploration on `{{WEB_URL}}`, API exploration on `{{API_URL}}`, DB cross-validation via `{{DB_MCP}}`, evidence naming + capture rules, edge-case checklist. |
@@ -406,7 +410,7 @@ All references are self-contained. Load one at a time.
 - **S11.** NEVER skip the auto-stage promote (Session Start → Stage 1 → Stage 2 → Stage 3) after a phase completes — each promote is a checkpoint that writes a `progress.md` entry and feeds the next subagent's Context docs.
 - **S12.** NEVER file a bug without a reproducible repro path AND evidence (screenshot, trace, log, network HAR, or DB row reference). "It failed for me once" is not a bug ticket.
 - **S13.** NEVER hardcode `customfield_NNNNN` IDs in ATP / ATR / QA comments or in any reference under this skill. Resolve every Jira field via `{{jira.<slug>}}` against `.agents/jira-required.yaml`.
-- **S14.** NEVER hand-write a Jira-mirrored `.md` in the PBI folder (`story.md`, `acceptance-criteria.md`, `acceptance-test-plan.md`, `acceptance-test-results.md`, `comments.md`, `feature-test-plan.md`, etc.). To SET their content: author it → write to the Jira custom field via `[ISSUE_TRACKER_TOOL]` (or, when the field is absent, a structured comment per `.agents/jira-required.yaml` `fallback:`) → run `bun run jira:sync-issues get <KEY> --include-comments` → READ the materialized file. Only `context.md`, `test-session-memory.md`, `module-context.md`, and `evidence/` are hand-authored locally.
+- **S14.** NEVER hand-write a Jira-mirrored `.md` in the PBI folder (`story.md`, `acceptance-criteria.md`, `acceptance-test-plan.md`, `acceptance-test-results.md`, `comments.md`, `feature-test-plan.md`, `module-context.md`, `test-cases/`, etc.). To SET their content: author it → write to the Jira custom field via `[ISSUE_TRACKER_TOOL]` (or, when the field is absent, a structured comment per `.agents/jira-required.yaml` `fallback:`; `module-context.md` goes to the `## Module Context (QA)` section of the Epic description) → run `bun run jira:sync-issues get <KEY> --include-comments` → READ the materialized file. The whole PBI tree is gitignored, so a hand-written file there is invisible to every other machine. Only `context.md` and `evidence/` are hand-authored inside PBI (local-only by design); `test-session-memory.md` is hand-authored under `.session/sprint-testing/<scope>/`.
 - **S15.** NEVER bury a hard-to-reverse test-architecture decision in a ticket plan. If Stage 1 planning forces a decision that is architectural AND hard to reverse (test-data-isolation contract, auth-in-tests change, fixture topology, flake-retry policy spanning 3+ tests or 2+ tickets), promote it to `.context/ADR/ADR-NNNN-<slug>.md` (append-only; supersede, never edit) and leave a `See ADR-NNNN` backlink in the plan's `## Technical Decisions`. Ticket-local trade-offs stay in the plan. AI drafts `Proposed`; the human approves. See `agentic-qa-core/references/adr-doctrine.md` §1–§2.
 
 ---
@@ -418,7 +422,7 @@ All references are self-contained. Load one at a time.
 - [ ] Session Start complete, user confirmed the story explanation
 - [ ] `.session/sprint-testing/<scope>/plan.md` written (per `session-management.md` §6 schema)
 - [ ] Project-wide context files present (if missing, hand off to `project-discovery`)
-- [ ] PBI folder + `context.md` + `test-session-memory.md` created
+- [ ] PBI folder + `context.md` created · session dir + `test-session-memory.md` created
 - [ ] `.env` credentials loaded (no hardcoded passwords)
 - [ ] Bug path: veto table evaluated BEFORE risk score
 - [ ] Stage 1 artifacts created with full traceability, verified via `[TMS_TOOL] trace`

@@ -80,9 +80,13 @@ Description section template:
 
 The Handoff subagent must read the current description FIRST (from the synced `.md`), then append. Never overwrite.
 
-### Step 2 — Populate ATP DRAFT
+### Step 2 — Populate the ATP
 
-> **Items over fields (excellence default)** — by excellence the ATP DRAFT is a real **Test Plan** issue titled `ATP: {STORY-KEY}: {story title} (Shift-Left DRAFT)`, parented to the **QA Master Test Plan** epic and linked to the Story. The Story custom field (`{{jira.acceptance_test_plan}}`) is a **fallback ONLY** when the Test Plan work type is unavailable in the instance.
+> **ONE ATP per Story, authored early.** Shift-Left does not create a separate DRAFT artifact: it creates the Story's real ATP ahead of the sprint, and `/sprint-testing` Stage 1 refines that same Test Plan issue and that same field into the executable superset. There is no `(Shift-Left DRAFT)` title variant and no second Test Plan to reconcile later.
+>
+> **Items over fields (excellence default)** — by excellence the ATP is a real **Test Plan** issue titled `ATP: {STORY-KEY}: {story title}`, parented to the **QA Master Test Plan** epic and linked to the Story. The Story custom field (`{{jira.acceptance_test_plan}}`) is a **fallback ONLY** when the Test Plan work type is unavailable in the instance.
+>
+> What marks this ATP as pre-sprint is the Story's `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` labels, not the title. Those labels are what Stage 1 reads to decide whether to short-circuit.
 
 Branch on modality (resolved in Phase 0.1).
 
@@ -91,7 +95,7 @@ Branch on modality (resolved in Phase 0.1).
 ```
 [TMS_TOOL] Create TestPlan:
   project: {{PROJECT_KEY}}
-  title: "ATP: {STORY-KEY}: {story title} (Shift-Left DRAFT)"
+  title: "ATP: {STORY-KEY}: {story title}"
   parentEpic: QA Master Test Plan
   description: <full shift-left-refinement.md body>
 
@@ -127,23 +131,23 @@ Custom-field write may fail in Modality jira-xray if the Jira instance has not p
 
 ### Step 3 — Handoff notification + fallback comment
 
-Jira is the source of truth: the ATP DRAFT lives in the `{{jira.acceptance_test_plan}}` field (Step 2) — do NOT mirror it into a comment when the field exists. Post ONE handoff comment on the Story:
+Jira is the source of truth: the ATP lives in the `{{jira.acceptance_test_plan}}` field (Step 2) — do NOT mirror it into a comment when the field exists. Post ONE handoff comment on the Story:
 
-- **Field present (default)**: a SHORT notification — the ATP DRAFT is ready for review in the `{{jira.acceptance_test_plan}}` field. Do NOT paste the full body.
+- **Field present (default)**: a SHORT notification — the pre-sprint ATP is ready for review in the `{{jira.acceptance_test_plan}}` field. Do NOT paste the full body.
 - **FALLBACK — only if `{{jira.acceptance_test_plan}}` is absent on this instance** (per `.agents/jira-required.yaml` → `acceptance_test_plan.fallback`, `{ target: comment, label: "Acceptance Test Plan (ATP)" }`): inline the full body under a `## Acceptance Test Plan (ATP)` heading so the content still lands somewhere readable.
 
 ```
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
-    ## Acceptance Test Plan (ATP) — Shift-Left DRAFT ready for review
+    ## Acceptance Test Plan (ATP) — pre-sprint draft ready for review
     {@PO_HANDLE} {@DEV_LEAD_HANDLE}
-    The ATP DRAFT lives in the {{jira.acceptance_test_plan}} field.
-    # FALLBACK ONLY (field absent): replace the pointer line above with the full shift-left-refinement.md body.
+    The ATP lives in the {{jira.acceptance_test_plan}} field.
+    # FALLBACK ONLY (field absent): replace the pointer line above with the full staged refinement body.
 
     Action Required: review ambiguities, answer critical questions, confirm edge-case behavior, validate parametrization.
     Refined on: {{YYYY-MM-DD}} — QA Shift-Left batch session
-    Local working copy: .context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-{STORY_KEY}-<slug>/shift-left-refinement.md
+    This ATP is refined in-sprint by /sprint-testing Stage 1 into the executable superset.
 ```
 
 `fix-traceability` checks the `{{jira.acceptance_test_plan}}` field, or this `## Acceptance Test Plan (ATP)` fallback comment when the field is absent.

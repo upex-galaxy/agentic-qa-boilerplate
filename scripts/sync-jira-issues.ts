@@ -1364,6 +1364,117 @@ function syncFieldFiles(
 }
 
 // ============================================================================
+// DESCRIPTION-SECTION MATERIALIZATION (module context)
+// ============================================================================
+
+/**
+ * Heading that carries the QA module context inside the Epic `description`.
+ *
+ * Module context deliberately has NO dedicated custom field: `description` exists
+ * on every Jira instance, so a project that never provisions a single custom field
+ * still gets the full methodology. Skills APPEND this section to the Epic
+ * description (read-first, never overwrite) and the sync splits it back out here.
+ */
+const MODULE_CONTEXT_HEADING = 'Module Context (QA)';
+
+/** File the split-out module-context section is materialized into. */
+const MODULE_CONTEXT_FILE = 'module-context.md';
+
+interface DescriptionSplit {
+  /** Description with the named section removed — what `epic.md` renders. */
+  body: string
+  /** The section's content, or null when the heading is absent. */
+  section: string | null
+}
+
+/**
+ * ATX heading level of a line, or 0 when the line is not a heading.
+ *
+ * Hand-parsed rather than matched with `/^#{1,2}\s+(.*)$/`: a `#`-run followed by
+ * `\s+` and then `.*` lets the two quantifiers swap characters, which is
+ * polynomial backtracking on a line of pathological whitespace. This scan is linear.
+ */
+function atxHeadingLevel(line: string): number {
+  let hashes = 0;
+  while (hashes < line.length && line[hashes] === '#') { hashes++; }
+  if (hashes === 0 || hashes >= line.length) { return 0; }
+  // A real ATX heading separates the hash run from its text with whitespace.
+  return /\s/.test(line[hashes]) ? hashes : 0;
+}
+
+/**
+ * Splits a named `##` section out of a Markdown description.
+ *
+ * The section runs from its heading to the next heading of the same or higher
+ * level (`#` / `##`), or to the end of the document. Deeper headings (`###`)
+ * stay inside it. Heading matching is case-insensitive so a human editing the
+ * Epic in the Jira UI cannot silently break the split by retyping the casing.
+ */
+function splitDescriptionSection(markdown: string, heading: string): DescriptionSplit {
+  const lines = markdown.split('\n');
+  const wanted = heading.trim().toLowerCase();
+
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (atxHeadingLevel(lines[i]) !== 2) { continue; }
+    if (lines[i].slice(2).trim().toLowerCase() === wanted) { start = i; break; }
+  }
+  if (start === -1) { return { body: markdown, section: null }; }
+
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    const level = atxHeadingLevel(lines[i]);
+    if (level === 1 || level === 2) { end = i; break; }
+  }
+
+  const section = lines.slice(start + 1, end).join('\n').trim();
+  const body = [...lines.slice(0, start), ...lines.slice(end)].join('\n').trim();
+  return { body, section: section || null };
+}
+
+/** Renders `module-context.md` — per-field file shape, different provenance line. */
+function renderModuleContextFile(issueKey: string, content: string, config: Config): string {
+  return [
+    `# ${issueKey} — Module Context (QA)`,
+    '',
+    `> Jira source: the \`## ${MODULE_CONTEXT_HEADING}\` section of the Epic description · [View in Jira](${config.displayUrl}/browse/${issueKey})`,
+    '',
+    content.trim(),
+    '',
+    '---',
+    '_Synced from Jira by sync-jira-issues_',
+    '',
+  ].join('\n');
+}
+
+/**
+ * Materializes `module-context.md` from the Epic description when the section is
+ * present. Returns true when written, so `epic.md` can link it under Planning.
+ */
+function syncModuleContextFile(
+  epic: JiraIssue,
+  folder: string,
+  config: Config,
+  dryRun: boolean,
+  result: SyncResult,
+): boolean {
+  const { section } = splitDescriptionSection(
+    adfToMarkdown(epic.fields.description),
+    MODULE_CONTEXT_HEADING,
+  );
+  if (!section) { return false; }
+
+  const status = writeFieldFile(
+    join(folder, MODULE_CONTEXT_FILE),
+    renderModuleContextFile(epic.key, section, config),
+    dryRun,
+  );
+  if (status === 'created') { result.files.created++; }
+  else { result.files.updated++; }
+  return true;
+}
+
+// ============================================================================
 // MARKDOWN GENERATORS
 // ============================================================================
 
@@ -1372,9 +1483,15 @@ function generateEpicMarkdown(
   stories: JiraIssue[],
   config: Config,
   presentFields: FieldFileSpec[] = [],
+  hasModuleContext = false,
 ): string {
   const fields = epic.fields;
-  const description = adfToMarkdown(fields.description);
+  // The module-context section is split into its own file, so strip it here —
+  // otherwise the same text lands on disk twice.
+  const description = splitDescriptionSection(
+    adfToMarkdown(fields.description),
+    MODULE_CONTEXT_HEADING,
+  ).body;
 
   // Calculate total story points
   const totalPoints = stories.reduce((sum, story) => {
@@ -1414,10 +1531,13 @@ function generateEpicMarkdown(
   }
 
   // Planning field files (hybrid: epic rich-text plans live in their own files)
-  if (presentFields.length > 0) {
+  if (presentFields.length > 0 || hasModuleContext) {
     lines.push('---', '', '## Planning', '');
     for (const spec of presentFields) {
       lines.push(`- [${spec.title}](./${spec.file})`);
+    }
+    if (hasModuleContext) {
+      lines.push(`- [Module Context (QA)](./${MODULE_CONTEXT_FILE})`);
     }
     lines.push('');
   }
@@ -2033,14 +2153,16 @@ function loadLinkTypeNames(slugs: string[]): Set<string> {
   return names;
 }
 
-/** Splits an issue's links into ATP (Test Plan), ATR (Test / Re-Test Execution) and Defect buckets. */
+/** Splits an issue's links into ATP (Test Plan), ATR (Test / Re-Test Execution), Test and Defect buckets. */
 function classifyCoverageLinks(issue: JiraIssue, reg: Registry): {
   atp: CoverageLink[]
   atr: CoverageLink[]
+  tests: CoverageLink[]
   defects: Array<CoverageLink & { linkOk: boolean }>
 } {
   const atp: CoverageLink[] = [];
   const atr: CoverageLink[] = [];
+  const tests: CoverageLink[] = [];
   const defects: Array<CoverageLink & { linkOk: boolean }> = [];
   const acceptedDefectNames = loadLinkTypeNames(reg.bySlug.get('defect')?.defectLinkTypes ?? []);
 
@@ -2057,9 +2179,10 @@ function classifyCoverageLinks(issue: JiraIssue, reg: Registry): {
     };
     if (entry.role === 'atp') { atp.push(cl); }
     else if (entry.role === 'atr') { atr.push(cl); }
+    else if (entry.slug === 'test_case') { tests.push(cl); }
     else if (entry.slug === 'defect') { defects.push({ ...cl, linkOk: acceptedDefectNames.has(link.type.name) }); }
   }
-  return { atp, atr, defects };
+  return { atp, atr, tests, defects };
 }
 
 /** Provenance footer appended to an ATP/ATR file synced from a linked Xray artifact. */
@@ -2082,7 +2205,7 @@ async function discoverCoverage(
   result: SyncResult,
 ): Promise<void> {
   const reg = loadRegistry();
-  const { atp, atr, defects } = classifyCoverageLinks(issue, reg);
+  const { atp, atr, tests, defects } = classifyCoverageLinks(issue, reg);
 
   // --- ATP: Xray Test Plan description overrides the custom-field copy ---
   if (atp.length > 0) {
@@ -2119,6 +2242,25 @@ async function discoverCoverage(
         const exBody = generateXrayArtifactMarkdown(ex, link.issueType.toUpperCase(), config);
         bumpFile(writeIndexFile(join(exDir, `${prefix}-${ex.key}-${generateSlug(ex.fields.summary)}.md`), exBody, options.dryRun).status, result);
       }
+    }
+  }
+
+  // --- Tests: nested under test-cases/ (the anti-duplication rule) ---
+  // A Test that covers this issue belongs to it. Materializing it here is what
+  // lets `.context/PBI/tests/` shrink to genuinely orphan Tests instead of
+  // holding a second copy of every Test already reachable from a Story.
+  if (tests.length > 0) {
+    const tcDir = join(folder, 'test-cases');
+    if (!options.dryRun) { ensureDir(tcDir); }
+    for (const t of tests) {
+      if (t.linkTypeName !== 'Test') {
+        result.warnings.push(`${issue.key} ↔ ${t.key} (Test) linked via '${t.linkTypeName}' (expected 'is tested by') — fix Jira link`);
+      }
+      const tIssue = await fetchIssue(config, t.key, TEST_FIELDS);
+      const body = generateTestMarkdown(tIssue, config);
+      const prefix = FOLDER_PREFIX.test_case ?? 'TEST';
+      bumpFile(writeIndexFile(join(tcDir, `${prefix}-${tIssue.key}-${generateSlug(tIssue.fields.summary)}.md`), body, options.dryRun).status, result);
+      result.synced.tests++;
     }
   }
 
@@ -2235,8 +2377,11 @@ async function syncEpic(
   // Materialize epic-level planning field files (feature impl plan, feature test plan)
   const presentEpicFields = syncFieldFiles(epic.key, epic.fields, EPIC_FIELD_FILES, epicFolder, config, options.dryRun, result);
 
+  // Split the QA module context out of the Epic description into its own file
+  const hasModuleContext = syncModuleContextFile(epic, epicFolder, config, options.dryRun, result);
+
   // Write epic.md (index)
-  const epicContent = generateEpicMarkdown(epic, stories, config, presentEpicFields);
+  const epicContent = generateEpicMarkdown(epic, stories, config, presentEpicFields, hasModuleContext);
   const epicPath = join(epicFolder, 'epic.md');
   const epicResult = writeIndexFile(epicPath, epicContent, options.dryRun);
 
@@ -2619,14 +2764,30 @@ async function syncTests(config: Config, options: SyncOptions): Promise<SyncResu
       log.info('Fetching tests from Jira...');
     }
 
-    const tests = await searchIssues(
+    const allTests = await searchIssues(
       config,
       `project = ${config.project} AND issuetype = Test${sprintAndClause(options)} ORDER BY key ASC`,
       TEST_FIELDS,
     );
 
+    // A Test linked to a coverable issue is materialized under that issue's
+    // `test-cases/` by discoverCoverage. Writing it here too would put the same
+    // Jira issue on disk twice, so this directory holds ORPHAN Tests only —
+    // the ones no Story/Bug/Improvement covers, which is also a QA smell worth
+    // seeing. Same coverable-parent probe as auditOrphanDefects.
+    const reg = loadRegistry();
+    const tests = allTests.filter(t => !(t.fields.issuelinks ?? []).some((link) => {
+      const other = link.inwardIssue ?? link.outwardIssue;
+      const e = other ? reg.byJiraType.get(other.fields.issuetype?.name ?? '') : undefined;
+      return e?.coverable === true;
+    }));
+    const nested = allTests.length - tests.length;
+
     if (!options.json) {
-      log.success(`Found ${tests.length} tests`);
+      log.success(`Found ${allTests.length} tests — ${tests.length} orphan, ${nested} nested under their coverable parent`);
+    }
+    if (nested > 0) {
+      result.warnings.push(`${nested} Test(s) skipped here — already materialized under their coverable parent's test-cases/`);
     }
 
     for (const test of tests) {
@@ -3371,7 +3532,13 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
-  log.error(error instanceof Error ? error.message : String(error));
-  process.exit(1);
-});
+export { MODULE_CONTEXT_FILE, MODULE_CONTEXT_HEADING, splitDescriptionSection };
+
+// Guarded so the pure helpers above can be imported by tests without running a
+// sync. Same convention as `.claude/skills/acli/scripts/jira-attach-media.ts`.
+if (import.meta.main) {
+  main().catch((error) => {
+    log.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}

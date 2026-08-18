@@ -116,9 +116,11 @@ Read every item before planning. Fail fast if any project-wide context file is m
 ```
 .context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-{{PROJECT_KEY}}-{number}-{brief-title}/
   acceptance-test-plan.md   # ATP — Jira-synced read-only cache (this doc's target output); never hand-written
-  context.md                # hand-authored from session-start (NON-Jira)
-  test-session-memory.md    # hand-authored (NON-Jira)
-  evidence/
+  context.md                # hand-authored from session-start (NON-Jira, local-only)
+  evidence/                 # NON-Jira, local-only
+
+.session/sprint-testing/<scope>/
+  test-session-memory.md    # hand-authored
 ```
 
 Also:
@@ -141,13 +143,16 @@ Before running the veto + risk score, check whether the Story already passed thr
 
 Short-circuit mode action:
 
-- READ `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/shift-left-refinement.md` (the pre-sprint artifact).
+- SYNC then READ `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/acceptance-test-plan.md` — run `bun run jira:sync-issues get <STORY_KEY>` first so the file reflects Jira.
+
+  > **Read the synced ATP, never a local scratch file.** Shift-Left wrote its refinement into the Jira `acceptance_test_plan` field (and the linked Test Plan), so `acceptance-test-plan.md` IS the pre-sprint refinement at this point in the flow. The old instruction pointed at `shift-left-refinement.md`, a local staging file under a gitignored path: it does not exist on a teammate's machine or in a fresh session, so the short-circuit silently degraded to a full re-run and the pre-sprint savings evaporated with no error. Jira is the only copy every session can reach.
+
 - VALIDATE: do the refined ACs still match the current Story description? If yes, **SKIP Phases 1, 2, 3** of this reference — they were done pre-sprint.
 - Continue from Phase 4 (Test Design — outlines), this time WITH parametrization tables + per-outline test-data JSON + numbered test steps. The pre-sprint draft outlined the NAMES only; this Phase 4 fills in the executable detail.
 - ALSO continue with Phase 5 (test-data generation strategy + Faker recipes) — also skipped pre-sprint.
-- The ATP authored here is a SUPERSET of `shift-left-refinement.md`; once written to Jira and synced it materializes as `acceptance-test-plan.md`. Both `shift-left-refinement.md` and `acceptance-test-plan.md` coexist in the STORY folder.
+- The ATP authored here is a SUPERSET of the pre-sprint body, written back to the SAME `acceptance_test_plan` field and the SAME linked Test Plan issue. One ATP per Story: the in-sprint version supersedes the pre-sprint one by design, and the `shift-left-{YYYY-MM-DD}` label records when the early pass happened.
 
-If validation fails (refined ACs no longer match the current Story OR the dated label is >30 days old OR `shift-left-refinement.md` is missing on disk), fall through to the standard Phase 0 below — run veto + risk + Phases 1-3 again. Re-running is cheaper than acting on stale refinement.
+If validation fails (refined ACs no longer match the current Story OR the dated label is >30 days old OR `acceptance-test-plan.md` is empty after the sync), fall through to the standard Phase 0 below — run veto + risk + Phases 1-3 again. Re-running is cheaper than acting on stale refinement.
 
 If the Story has NO `shift-left-reviewed` label, this is normal in-sprint flow — proceed to §0.1.
 

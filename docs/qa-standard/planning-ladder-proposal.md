@@ -135,7 +135,7 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 | **STR** | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#30: Regression Testing` |
 | **ATP** | Test Plan | `ATP: {STORY-KEY}: {story title}` | `ATP: PROJ-123: Apply discount at checkout` |
 | **ATR** | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-123: Story Testing` |
-| **ATP DRAFT** (shift-left) | Test Plan | `ATP: {STORY-KEY}: {story title} (Shift-Left DRAFT)` | `ATP: PROJ-123: Apply discount at checkout (Shift-Left DRAFT)` |
+| **ATP DRAFT** (shift-left) | Test Plan | `ATP: {STORY-KEY}: {story title}` | `ATP: PROJ-123: Apply discount at checkout` |
 
 ### 3.1 Supporting artifacts (QA Test Artifacts epic)
 

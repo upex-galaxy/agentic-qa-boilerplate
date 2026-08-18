@@ -139,6 +139,25 @@ dbhub.local.toml
 # ===== Auto-generated framework caches with timestamps =====
 .context/_framework/testing-capabilities.json
 
+# ===== PBI: Jira-backed cache (Jira is the source of truth) =====
+# `.context/PBI/` mirrors Jira. `bun run context:hydrate` rebuilds it from
+# scratch, so committing it only produces merge conflicts between sessions that
+# re-synced at different times. Ignore the whole tree, then re-include the three
+# things Jira does NOT own.
+#
+# Git cannot re-include a file whose parent directory is excluded, so each level
+# is excluded with `/*` and the directory we want is negated before descending.
+# Keep that ladder intact — collapsing it to `.context/PBI/` silently drops
+# test-specs/ from version control.
+.context/PBI/*
+!.context/PBI/README.md
+!.context/PBI/templates/
+!.context/PBI/epics/
+.context/PBI/epics/*
+!.context/PBI/epics/*/
+.context/PBI/epics/*/*
+!.context/PBI/epics/*/test-specs/
+
 # ===== Skill-creator eval workspaces (local iteration artifacts, never committed) =====
 .claude/skills/*-workspace/
 
