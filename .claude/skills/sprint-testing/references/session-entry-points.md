@@ -151,19 +151,41 @@ The context hierarchy is: Project (system-wide) -> Epic/Module (feature area lik
 
 Derive `<EPIC_KEY>` from the ticket's parent epic and `<EPIC_SLUG>` from the epic/module field — kebab-case (e.g. "Monthly Statement Improvements" -> `monthly-statement`). The module folder is `epics/EPIC-<EPIC_KEY>-<EPIC_SLUG>/`.
 
-Check whether `module-context.md` exists:
+**Jira owns the module context.** It lives in the Epic `description`, under a `## Module Context (QA)` heading, and `bun run jira:sync-issues` splits that section out into `module-context.md`. There is no dedicated custom field on purpose: `description` exists on every Jira instance, so this works on a project that never provisions a single custom field.
+
+Check whether `module-context.md` exists after the Step-1 sync:
 
 | Module Context | Action |
 |----------------|--------|
 | Exists | Read it; skip full code exploration; use the existing knowledge |
-| Missing | Create the module folder; do a full exploration; generate `module-context.md` |
+| Missing | Do a full exploration, then PUBLISH the result to the Epic description and re-sync |
 
 If it exists at `.context/PBI/epics/EPIC-<EPIC_KEY>-<EPIC_SLUG>/module-context.md`, read it. Otherwise, explore code related to the ticket:
 
 - Backend (`{{BACKEND_REPO}}` with entry `{{BACKEND_ENTRY}}`, stack `{{BACKEND_STACK}}`): controllers, services, models related to the feature.
 - Frontend (`{{FRONTEND_REPO}}` with entry `{{FRONTEND_ENTRY}}`, stack `{{FRONTEND_STACK}}`): routes, state, components.
 
-Then generate `module-context.md` from the project template at `.context/PBI/templates/module-context.md` (or `module-context-template.md`). Fill with: routes discovered, state files found, API endpoints, database tables, key entities for testing. Module context is REUSABLE — the next ticket in the same module skips exploration.
+Draft the body from the template at `.context/PBI/templates/module-context-template.md`, filling in: routes discovered, state files found, API endpoints, database tables, key entities for testing. Then publish it:
+
+```
+# 1. READ the current Epic description first — this is an APPEND, never an overwrite.
+#    The PO owns the text above; QA owns only the '## Module Context (QA)' section.
+bun run jira:sync-issues get <EPIC_KEY>          # read the synced epic.md
+
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: <EPIC_KEY>
+  description: |
+    <existing description, verbatim>
+
+    ## Module Context (QA)
+
+    <the drafted body>
+
+# 2. Materialize it back as module-context.md
+bun run jira:sync-issues get <EPIC_KEY>
+```
+
+If a `## Module Context (QA)` section already exists in the description, REPLACE that section only and leave the rest untouched. Module context is REUSABLE — the next ticket in the same module reads it from Jira and skips exploration, on any machine, not just the one that explored.
 
 Document story-specific code that is NOT in module context (ticket-level only).
 
@@ -179,19 +201,24 @@ Skip skills that are not configured for the project.
 ### Step 6 — Create the PBI structure
 
 ```
-.context/PBI/
-  templates/                           # do not edit
-    module-context.md
+.context/PBI/                          # ENTIRELY gitignored — a Jira cache (CLAUDE.md §9)
+  templates/                           # do not edit (committed)
+    module-context-template.md
   epics/
     EPIC-<EPIC_KEY>-<EPIC_SLUG>/       # EPIC / MODULE LEVEL (reusable; module = Epic, 1:1)
-      module-context.md                # hand-authored; persists across tickets (NON-Jira)
+      module-context.md                # Jira-synced: the '## Module Context (QA)' section of the Epic description
       feature-test-plan.md             # Jira-synced read-only cache (epic level; if generated)
+      test-specs/                      # COMMITTED — automation plans, versioned with the test code
       stories/
         STORY-<TICKET_KEY>-<STORY_SLUG>/   # STORY LEVEL (new)
-          context.md                   # hand-authored story-specific context (Step 7, NON-Jira)
+          context.md                   # hand-authored story-specific context (Step 7, NON-Jira, local-only)
           acceptance-test-plan.md      # ATP, Jira-synced read-only cache (Stage 1)
           acceptance-test-results.md   # ATR, Jira-synced read-only cache (Stage 3)
-          evidence/                    # screenshots, gitignored
+          test-cases/                  # Jira-synced: the Test issues linked to this Story
+          evidence/                    # screenshots, NON-Jira, local-only
+
+.session/sprint-testing/<scope>/       # gitignored session state
+  test-session-memory.md               # shared memory across the 4 sub-agent dispatches
 ```
 
 Folder naming:
@@ -199,7 +226,7 @@ Folder naming:
 - `<EPIC_SLUG>`: kebab-case from the ticket's epic/module field.
 - `<STORY_SLUG>`: AI-generated summary, max ~5 words, kebab-case.
 
-Create the folders + the HAND-AUTHORED files (`context.md`, `evidence/`) now. The Jira-mirrored files (`acceptance-test-plan.md` Stage 1, `acceptance-test-results.md` Stage 3, `feature-test-plan.md` if epic-level) are materialized by `bun run jira:sync-issues` — NEVER hand-write them.
+Create the folders + the HAND-AUTHORED files (`context.md`, `evidence/`) now, and `test-session-memory.md` under `.session/sprint-testing/<scope>/`. The Jira-mirrored files (`acceptance-test-plan.md` Stage 1, `acceptance-test-results.md` Stage 3, `module-context.md` + `feature-test-plan.md` if epic-level, `test-cases/`) are materialized by `bun run jira:sync-issues` — NEVER hand-write them.
 
 ### Step 6b — Session env override (record once, session-only)
 

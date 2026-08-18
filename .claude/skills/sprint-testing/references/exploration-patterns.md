@@ -334,20 +334,24 @@ Options, in priority order:
 
 ## §5. Session notes / observation log
 
-All execution output is written into the ticket's PBI folder. Two files are updated during Stage 2: `test-session-memory.md` (live log) and `evidence/` (screenshots).
+Two files are updated during Stage 2: `test-session-memory.md` (live log, in the SESSION dir) and `evidence/` (screenshots, in the PBI folder).
 
-### 5.1 PBI folder layout
+### 5.1 Layout
 
 ```
 .context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-{{PROJECT_KEY}}-{number}-{brief-title}/
-  context.md                  # hand-authored (NON-Jira)
+  context.md                  # hand-authored (NON-Jira, local-only)
   acceptance-test-plan.md     # Stage 1 — Jira-synced read-only cache
-  test-session-memory.md      # Stage 2 live log (hand-authored, NON-Jira)
   acceptance-test-results.md  # Stage 3 — Jira-synced read-only cache (later)
-  evidence/                   # gitignored
+  evidence/                   # NON-Jira, local-only
     {{PROJECT_KEY}}-{number}-smoke-{desc}.png
     {{PROJECT_KEY}}-{number}-ac{N}-{desc}.png
+
+.session/sprint-testing/<scope>/
+  test-session-memory.md      # Stage 2 live log (hand-authored)
 ```
+
+The whole PBI tree is a gitignored Jira cache (`CLAUDE.md` §9). The live log sits in `.session/` so a re-sync cannot clobber it mid-execution.
 
 ### 5.2 `test-session-memory.md` stage 2 block
 

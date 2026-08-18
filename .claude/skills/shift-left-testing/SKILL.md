@@ -262,12 +262,14 @@ For each accepted Story, dispatch ONE Refinement subagent. The subagent loads th
 | Phase 7 — Final QA Feedback Report | Per-Story summary returned to orchestrator. Aggregated into the batch report in Phase 3. |
 | Phase 8 — Commit | **SKIPPED**. Jira is canonical. No git branch, no commit. |
 
-**Output file**: `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/shift-left-refinement.md` (module = Epic, 1:1). This is a NON-Jira working file — author it locally; it is NOT a Jira mirror, so the hand-write ban does not apply to it.
+**Staging file**: `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/shift-left-refinement.md` (module = Epic, 1:1). Author it locally; it is NOT a Jira mirror, so the hand-write ban does not apply to it.
 
-This is a **separate file** from sprint-testing's synced `acceptance-test-plan.md`. Both can co-exist for the same Story:
+**It is a buffer, not a deliverable.** Phase 2 writes it, Phase 3 publishes its full body to the Jira `acceptance_test_plan` field (and the linked Test Plan). After that, Jira holds the canonical copy and the synced `acceptance-test-plan.md` is the readable one. The staging file lives under `.context/PBI/**`, which is gitignored, so it exists only on the machine that ran the batch.
 
-- `shift-left-refinement.md` — written here, pre-sprint, by this skill (NON-Jira working file).
-- `acceptance-test-plan.md` — the in-sprint ATP, authored later by `/sprint-testing` Stage 1, written to the Jira `acceptance_test_plan` field (or fallback comment) and synced down. When it exists, sprint-testing reads `shift-left-refinement.md` as input and short-circuits the redundant phases.
+Two consequences that are easy to get wrong:
+
+- **Nothing downstream may depend on the staging file being on disk.** `/sprint-testing` Stage 1 short-circuits off the SYNCED `acceptance-test-plan.md`, never off `shift-left-refinement.md` — otherwise the short-circuit silently degrades to a full re-run on any other machine.
+- **There is ONE ATP per Story.** This skill authors it early; `/sprint-testing` Stage 1 refines that same field and same Test Plan issue into the executable superset. No `(Shift-Left DRAFT)` variant, no second Test Plan to reconcile.
 
 **Folder bootstrap**: if `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/` does not exist yet (Story has not been through sprint-testing), the refinement subagent creates it. Jira-mirrored content (story.md, acceptance-criteria.md, parent epic, comments) comes from `bun run jira:sync-issues get <STORY_KEY> --include-comments` — NEVER hand-write those files. The only hand-authored files here are the NON-Jira working artifacts (`shift-left-refinement.md`, `context.md` with local session notes). This mirrors `sprint-testing/references/session-entry-points.md` §Step 7. The `evidence/` subfolder is NOT created — there is nothing to capture yet.
 
@@ -305,12 +307,15 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
    After writing, run `bun run jira:sync-issues get {STORY_KEY} --include-comments`
    and read back the synced `acceptance-criteria.md` to confirm the field landed.
 
-2. Populate ATP DRAFT — branch on modality:
+2. Populate the ATP — branch on modality. ONE ATP per Story, authored early: there is no
+   separate DRAFT item and no `(Shift-Left DRAFT)` title. `/sprint-testing` Stage 1 refines
+   THIS Test Plan and THIS field into the executable superset. Full rationale +
+   mutation sequence: `references/handoff-protocol.md` Step 2.
 
    Modality jira-xray — Xray (Test Plan creation opted in)
      [TMS_TOOL] Create TestPlan:                  # a Test Plan item, by excellence; field = fallback only
        project: {{PROJECT_KEY}}
-       title: "ATP: {STORY-KEY}: {story title} (Shift-Left DRAFT)"
+       title: "ATP: {STORY-KEY}: {story title}"
        parent: "QA Master Test Plan"   # qa.qa_epics.master_test_plan_epic — resolve by name, find-or-create
      [ISSUE_TRACKER_TOOL] Link Issues:
        linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan (resolve by slug + verify direction per agentic-qa-core/references/traceability-linking.md §2/§4)
@@ -327,13 +332,13 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
        fields:
          {{jira.acceptance_test_plan}}: <full shift-left-refinement.md body>
 
-3. Handoff notification on the Story (the ATP DRAFT lives in {{jira.acceptance_test_plan}} — do NOT mirror it; inline the full body as a `## Acceptance Test Plan (ATP)` comment ONLY if that field is absent — fallback per jira-required.yaml):
+3. Handoff notification on the Story (the ATP lives in {{jira.acceptance_test_plan}} — do NOT mirror it; inline the full body as a `## Acceptance Test Plan (ATP)` comment ONLY if that field is absent — fallback per jira-required.yaml):
      [ISSUE_TRACKER_TOOL] Add Comment:
        issue: {STORY_KEY}
        body: |
-         ## Acceptance Test Plan (ATP) — Shift-Left DRAFT ready for review
-         ATP DRAFT lives in the {{jira.acceptance_test_plan}} field.
-         # FALLBACK ONLY (field absent): replace the pointer line above with the full shift-left-refinement.md body.
+         ## Acceptance Test Plan (ATP) — pre-sprint draft ready for review
+         The ATP lives in the {{jira.acceptance_test_plan}} field.
+         # FALLBACK ONLY (field absent): replace the pointer line above with the full staged refinement body.
 
 4. Labels:
      [ISSUE_TRACKER_TOOL] Update Issue:
