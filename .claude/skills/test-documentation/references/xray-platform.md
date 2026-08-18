@@ -162,7 +162,7 @@ The KATA convention `@atc('PROJ-101')` + `test('PROJ-101: should ...', ...)` ens
 | `XRAY_CLIENT_ID` | API client ID (Cloud) | Cloud only |
 | `XRAY_CLIENT_SECRET` | API client secret (Cloud) | Cloud only |
 | `XRAY_TOKEN` | Personal Access Token (Server/DC) | Server only |
-| `ATLASSIAN_URL` | Atlassian site URL | Always |
+| _(site host)_ | `.agents/project.yaml` -> `issue_tracker.atlassian_url` — NOT an env var; read with `bun run --silent jira:url` | Always |
 | `ATLASSIAN_EMAIL` | Atlassian account email | Always |
 | `ATLASSIAN_API_TOKEN` | Atlassian API token | Always |
 | `JIRA_PROJECT_KEY` | Default project key | Optional (fallback to `{{PROJECT_KEY}}`) |

@@ -55,7 +55,7 @@ bun xray exec add-tests --execution 1042389 --tests 1041000,1041001,1041002
 ### Authentication
 
 `auth login` reads every credential from `.env` by default
-(`XRAY_CLIENT_ID/SECRET`, `ATLASSIAN_URL/EMAIL/API_TOKEN`); bun auto-loads `.env`.
+(`XRAY_CLIENT_ID/SECRET`, `ATLASSIAN_EMAIL/API_TOKEN`); bun auto-loads `.env`. The Jira site host is not an env var — it comes from `.agents/project.yaml`.
 Pass a flag ONLY to override the environment — e.g. switching to another site
 mid-migration. With a populated `.env`, `bun xray auth login` (no args) is enough.
 Login prints which source (env/flag/unset) each credential resolved from.
@@ -383,7 +383,8 @@ XRAY_CLIENT_ID      # Xray API Client ID
 XRAY_CLIENT_SECRET  # Xray API Client Secret
 
 # Atlassian credentials — single source of truth, no overrides
-ATLASSIAN_URL       # Atlassian site URL (e.g. https://your-org.atlassian.net)
+# Atlassian site URL: NOT an env var. Read from .agents/project.yaml ->
+# issue_tracker.atlassian_url (print it with `bun run --silent jira:url`).
 ATLASSIAN_EMAIL     # Atlassian account email
 ATLASSIAN_API_TOKEN # Atlassian API token
 ```

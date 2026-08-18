@@ -608,7 +608,8 @@ async function exportAllProjects(flags: Flags): Promise<void> {
   if (!projects) {
     throw new Error(
       'Cannot list projects: Jira credentials not configured. '
-      + 'Set ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN in .env, '
+      + 'Set ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN in .env and the site host in '
+      + '.agents/project.yaml (`bun run agents:setup`), '
       + 'or run \'bun xray auth login --jira-url <url> --jira-email <email> --jira-token <token>\'.',
     );
   }

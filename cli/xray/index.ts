@@ -312,9 +312,12 @@ ${colors.bold}EXAMPLES${colors.reset}
 ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
   XRAY_CLIENT_ID      Xray API Client ID
   XRAY_CLIENT_SECRET  Xray API Client Secret
-  ATLASSIAN_URL       Atlassian site URL (for sync features)
   ATLASSIAN_EMAIL     Atlassian account email
   ATLASSIAN_API_TOKEN Atlassian API token
+
+  The Jira site host is NOT an environment variable: it is read from
+  .agents/project.yaml -> issue_tracker.atlassian_url (print it with
+  'bun run --silent jira:url'), or from 'xray auth login --jira-url'.
 
 ${colors.bold}CONFIG FILES${colors.reset}
   ~/.xray-cli/config.json   Stored credentials

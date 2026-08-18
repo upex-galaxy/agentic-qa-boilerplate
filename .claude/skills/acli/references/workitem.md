@@ -208,7 +208,7 @@ Removal flags: `--remove-assignee`, `--remove-labels`.
 
 **Critical limitation — `workitem edit` hard-rejects custom fields.** `acli jira workitem edit --from-json` validates the payload against a strict whitelist of built-in keys (`summary`, `description`, `assignee`, `labels`, `type`, `issues`, `labelsToAdd`, `labelsToRemove`). Every custom-field shape — `additionalAttributes.customfield_X`, `fields.customfield_X`, or `customfield_X` at the root — raises `✗ Error: json: unknown field …` and exits 1. Confirmed empirically against a live workitem; no silent drop, no escape hatch.
 
-**The only working path** is REST `PUT /rest/api/3/issue/{KEY}` with `{"fields": {customfield_NNNNN: <value-or-ADF>}}` — see the dedicated `SKILL.md` "WORKAROUND" subsection for the turnkey curl recipe and `references/gotchas.md` §4 for the wire-level detail. Both use the session env vars `$ATLASSIAN_URL`, `$ATLASSIAN_EMAIL`, `$ATLASSIAN_API_TOKEN` exported from the shell.
+**The only working path** is REST `PUT /rest/api/3/issue/{KEY}` with `{"fields": {customfield_NNNNN: <value-or-ADF>}}` — see the dedicated `SKILL.md` "WORKAROUND" subsection for the turnkey curl recipe and `references/gotchas.md` §4 for the wire-level detail. Both use the session env vars `$ATLASSIAN_EMAIL` and `$ATLASSIAN_API_TOKEN` exported from the shell, plus the host from `bun run --silent jira:url` (read from `.agents/project.yaml`, not from the environment).
 
 ## <a id="transition"></a>transition
 
@@ -475,7 +475,7 @@ Flags: `--id`, `--from-csv`, `--from-json`, `--ignore-errors`, `--yes`. No work-
 `acli` does not expose remote-link (web link) creation. To attach a URL (e.g. a GitHub PR) to a story, fall back to REST:
 
 ```bash
-SITE="${ATLASSIAN_URL#https://}"
+SITE="$(bun run --silent jira:url --slug)"
 curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
   -X POST "https://${SITE}/rest/api/3/issue/{{PROJECT_KEY}}-123/remotelink" \
   -H "Content-Type: application/json" \
@@ -593,7 +593,7 @@ Running `acli jira workitem edit --generate-json` produces:
 For editing a custom-field value on an existing work item (e.g. updating Story Points after estimation, polishing ACs after a 3-amigos), fall back to REST:
 
 ```bash
-SITE="${ATLASSIAN_URL#https://}"
+SITE="$(bun run --silent jira:url --slug)"
 curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
   -X PUT "https://${SITE}/rest/api/3/issue/{{PROJECT_KEY}}-123" \
   -H "Content-Type: application/json" \
@@ -611,7 +611,7 @@ Note the REST shape uses `{"fields": {...}}`, not `additionalAttributes`.
 `acli` cannot enumerate custom fields (`field` group only does create/update/delete/cancel-delete). To discover IDs:
 
 ```bash
-SITE="${ATLASSIAN_URL#https://}"
+SITE="$(bun run --silent jira:url --slug)"
 
 # From an existing item that has the field set
 acli jira workitem view {{PROJECT_KEY}}-123 --json | jq '.fields | keys[] | select(startswith("customfield_"))'

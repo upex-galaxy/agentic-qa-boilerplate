@@ -21,7 +21,8 @@ The Atlassian MCP server is **not enabled by default**. By default this boilerpl
    - Gemini CLI: `gemini.template.json`
    - Codex CLI: `codex.template.toml`
 2. Copy the `atlassian` block into your active config (`.mcp.json` for Claude Code, `opencode.jsonc` for OpenCode, etc.).
-3. Confirm `ATLASSIAN_URL`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN` are set in `.env` (the installer collects these during `bun run setup`).
+3. Confirm `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` are set in `.env` (the installer collects both during `bun run setup`).
+4. Replace `{{ATLASSIAN_URL}}` in the block you pasted with the literal site host — print it with `bun run --silent jira:url`. It is not read from `.env`: an MCP config cannot invoke a command, so this one value is pasted rather than referenced. After a site migration, update `.agents/project.yaml` first, then re-paste here; `bun run setup:doctor` cannot see a stale value inside an MCP config.
 4. Restart your agent so the new MCP server is picked up.
 
 ## Variable Format

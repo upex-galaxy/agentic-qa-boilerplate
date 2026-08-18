@@ -331,11 +331,17 @@ This pattern scales cleanly to dozens of items in one run. The bottleneck is aut
 
 This is the **only** working path as of acli v1.3.18 — there is no acli-native channel for editing custom-field values on existing items. The recipe below is the turnkey workaround.
 
-**Prerequisites.** Three env vars must be exported in the current shell. They are loaded automatically by the project tooling (`bun claude`, `bun opencode`, or `direnv`) from `.env`:
+**Prerequisites.** Two env vars must be exported in the current shell. They are loaded automatically by the project tooling (`bun claude`, `bun opencode`, or `direnv`) from `.env`:
 
-- `ATLASSIAN_URL` — e.g. `https://your-domain.atlassian.net`
 - `ATLASSIAN_EMAIL` — the API-token owner's email
 - `ATLASSIAN_API_TOKEN` — the API token paired with the email
+
+The site host is **not** an env var. It lives in `.agents/project.yaml` ->
+`issue_tracker.atlassian_url`, and the recipes below read it with
+`$(bun run --silent jira:url)`. It was pulled out of `.env` because a stale copy
+inherited from the parent shell silently shadowed the file and pointed the sync
+scripts at a dead Jira site. Never reintroduce `ATLASSIAN_URL` as a shell
+variable in a recipe — resolve the host, do not interpolate it.
 
 **Recipe.**
 
@@ -357,7 +363,7 @@ jq -n --slurpfile adf /tmp/new.adf.json \
 # 4. PUT against the issue
 curl -sS -w "\nHTTP %{http_code}\n" \
   -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-  -X PUT "$ATLASSIAN_URL/rest/api/3/issue/{{PROJECT_KEY}}-123" \
+  -X PUT "$(bun run --silent jira:url)/rest/api/3/issue/{{PROJECT_KEY}}-123" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
   --data-binary @/tmp/put.json
@@ -383,7 +389,7 @@ Same ADF doc through REST PUT: HTTP 204 OK.
 for KEY in {{PROJECT_KEY}}-1 {{PROJECT_KEY}}-2 {{PROJECT_KEY}}-3; do
   status=$(curl -sS -o /dev/null -w "%{http_code}" \
     -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-    -X PUT "$ATLASSIAN_URL/rest/api/3/issue/$KEY" \
+    -X PUT "$(bun run --silent jira:url)/rest/api/3/issue/$KEY" \
     -H "Content-Type: application/json" \
     --data-binary @/tmp/put-"$KEY".json)
   echo "$KEY -> HTTP $status"

@@ -35,8 +35,10 @@
  * ENVIRONMENT
  * ============================================================================
  *
+ * Instance host — NOT an env var. Resolved from `.agents/project.yaml` ->
+ * `issue_tracker.atlassian_url` (see `cli/lib/atlassian-instance.ts`).
+ *
  * Required environment variables (same as `scripts/sync-jira-issues.ts`):
- *   ATLASSIAN_URL=https://your-instance.atlassian.net
  *   ATLASSIAN_EMAIL=your-email@example.com
  *   ATLASSIAN_API_TOKEN=ATATT3x...
  *
@@ -335,8 +337,11 @@ FLAGS:
                        Source: ${UPEX_UPSTREAM_URL}
   --help, -h           Show this help.
 
+INSTANCE HOST (not an env var):
+  .agents/project.yaml -> issue_tracker.atlassian_url
+  Print it with: bun run --silent jira:url
+
 ENVIRONMENT:
-  ATLASSIAN_URL          e.g. https://your-instance.atlassian.net
   ATLASSIAN_EMAIL        e.g. you@example.com
   ATLASSIAN_API_TOKEN    Atlassian API token (https://id.atlassian.com/manage-profile/security/api-tokens)
 

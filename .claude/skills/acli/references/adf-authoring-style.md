@@ -79,10 +79,10 @@ Use the **lozenge** for a single transition state of the whole item (a pill read
 ```bash
 # by email (exact match)
 curl -sS -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-  "$ATLASSIAN_URL/rest/api/3/user/search?query=person@example.com" | jq -r '.[0].accountId'
+  "$(bun run --silent jira:url)/rest/api/3/user/search?query=person@example.com" | jq -r '.[0].accountId'
 # your own account
 curl -sS -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-  "$ATLASSIAN_URL/rest/api/3/myself" | jq -r '.accountId'
+  "$(bun run --silent jira:url)/rest/api/3/myself" | jq -r '.accountId'
 ```
 
 Then author `@[Person Name](<accountId>)`. Verified live: the node round-trips as `{id:<accountId>, text:"@Name", accessLevel:""}` — a real, notifying tag. Use mentions sparingly (a mention pings the person); reserve them for assignment / hand-off / blocker call-outs, not decoration.

@@ -16,7 +16,8 @@ import { loadConfig } from './config.js';
  * Resolves the Jira host used for REST lookups. Precedence:
  *   1. `~/.xray-cli/config.json` -> jira_base_url             (the login's decision)
  *   2. `.agents/project.yaml` -> issue_tracker.atlassian_url  (versioned, reviewable)
- *   3. `ATLASSIAN_URL` env var                                (last resort)
+ *   3. `ATLASSIAN_URL` env var                                (last resort; NOT a
+ *      .env variable anymore — a hit means a stale copy is loose in the process)
  *
  * The stored config stays FIRST because it is not a passive cache: it is what
  * `auth login` decided, and that decision may have come from an explicit

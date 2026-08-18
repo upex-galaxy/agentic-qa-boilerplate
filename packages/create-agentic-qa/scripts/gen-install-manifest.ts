@@ -434,15 +434,19 @@ function buildManifest(src: string): object {
         { path: '.template/installer.state.json', what: 'Installer idempotency state (gitignored). Tracks which steps completed.' },
       ],
       auth: [
+        // `credsFrom` lists ENV vars only. The Atlassian site host is not one:
+        // it lives in `.agents/project.yaml` -> `issue_tracker.atlassian_url`
+        // and is read via `bun run jira:url`. Listing it here would tell users
+        // to put it in `.env`, which is what this repo just stopped doing.
         {
           service: 'acli (Atlassian CLI)',
-          method: 'One-time interactive login — credentials stored in ~/.config/acli/',
-          credsFrom: ['ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN', 'ATLASSIAN_URL'],
+          method: 'One-time interactive login — credentials stored in ~/.config/acli/. Site host from .agents/project.yaml (bun run jira:url --slug), not from the environment.',
+          credsFrom: ['ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'],
         },
         {
           service: 'Jira (HTTP basic auth via MCP)',
-          method: 'Env vars read at MCP startup — no interactive login needed',
-          credsFrom: ['ATLASSIAN_URL', 'ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'],
+          method: 'Env vars read at MCP startup — no interactive login needed. The site host is pasted into the config (an MCP config cannot run a command); print it with bun run jira:url.',
+          credsFrom: ['ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'],
         },
         {
           service: 'Xray Cloud (xray-cli)',

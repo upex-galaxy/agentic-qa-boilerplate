@@ -51,7 +51,7 @@ The command shapes live in `acli/SKILL.md` §Quick Start. The QA flow uses the s
 
 | QA step | Action (see `acli/SKILL.md`) | QA-specific substitutions |
 |---|---|---|
-| Auth | `jira auth login` | `--site "${ATLASSIAN_URL#https://}"` (slug derived from `ATLASSIAN_URL`), `--email "$ATLASSIAN_EMAIL"`, token piped from `$ATLASSIAN_API_TOKEN` (all from `.env`) |
+| Auth | `jira auth login` | `--site "$(bun run --silent jira:url --slug)"` (host from `.agents/project.yaml`, NOT an env var), `--email "$ATLASSIAN_EMAIL"`, token piped from `$ATLASSIAN_API_TOKEN` (both from `.env`) |
 | Verify auth | `jira auth status` | None (same as generic). MUST run before any bulk mutation — see Q6 below. |
 | Fetch a story DETAIL (input for `/sprint-testing` Phase 1) | **NOT acli** → `bun run jira:sync-issues get <KEY> --include-comments` | `<KEY>` = `{{PROJECT_KEY}}-NNN`. Reads ACs / scope / ATP / comments from the synced `.md` files — `acli view` returns null for custom fields. See "Reads vs writes" above. |
 | Transition Ready For QA → In Testing | `jira workitem transition --key <KEY> --status <STATUS>` | `<STATUS>` = `{{jira.status.story.in_test}}` |

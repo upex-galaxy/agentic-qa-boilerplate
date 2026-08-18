@@ -39,7 +39,8 @@ nobody notices until someone opens a test and finds it blank.
   Switching sites means re-running `auth login`. Confirm with `auth status`
   before every export and every restore.
 - Credentials resolve from `.env` (`XRAY_CLIENT_ID/SECRET`,
-  `ATLASSIAN_URL/EMAIL/API_TOKEN`) by default; pass flags only to OVERRIDE for a
+  `ATLASSIAN_EMAIL/API_TOKEN`) by default, and the Jira HOST from
+  `.agents/project.yaml` — not from `.env`; pass flags only to OVERRIDE for a
   site whose creds are not in `.env`.
 - **Xray API keys are per Xray instance.** A key pair generated on
   `<SOURCE_SITE>` does not authenticate against `<DEST_SITE>`. The user must
@@ -76,7 +77,8 @@ Inventory all three sources and report what each one says:
 
 ```bash
 jq -r '"cached  -> \(.jira_base_url)  client=\(.client_id[0:8])..."' ~/.xray-cli/config.json
-grep -E '^(ATLASSIAN_URL|XRAY_CLIENT_ID)' .env
+bun run --silent jira:url    # the host: .agents/project.yaml, not .env
+grep -E '^XRAY_CLIENT_ID' .env
 bun xray auth status
 ```
 
@@ -107,9 +109,14 @@ config, destination from `.env`:
 SRC_URL=$(jq -r .jira_base_url  ~/.xray-cli/config.json | sed 's:/*$::')
 SRC_EMAIL=$(jq -r .jira_email   ~/.xray-cli/config.json)
 SRC_TOKEN=$(jq -r .jira_api_token ~/.xray-cli/config.json)
-set -a; source .env; set +a          # ATLASSIAN_URL / _EMAIL / _API_TOKEN
-DEST_URL="${ATLASSIAN_URL%/}"
+set -a; source .env; set +a          # ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN
+DEST_URL=$(bun run --silent jira:url)
 ```
+
+`DEST_URL` comes from `.agents/project.yaml`, not from `.env` — the host is not
+a local variable. That matters most here: this runbook is precisely the moment a
+stale copy would still name the SOURCE site, and every "destination" check below
+would then pass by inspecting the site you are migrating away from.
 
 Below, `$SITE` / `$EMAIL` / `$TOKEN` stand for one of those pairs; run each check
 against both sites.

@@ -55,7 +55,12 @@
  *     BACKEND_REPO, BACKEND_STACK, BACKEND_ENTRY
  *     FRONTEND_REPO, FRONTEND_STACK, FRONTEND_ENTRY
  *     DB_TYPE
- *     ISSUE_TRACKER, ISSUE_TRACKER_CLI, ATLASSIAN_URL
+ *     ISSUE_TRACKER, ISSUE_TRACKER_CLI
+ *
+ *   NOT seedable from the environment: `issue_tracker.atlassian_url`. It is the
+ *   source of truth for the Atlassian host, so accepting `ATLASSIAN_URL` here
+ *   would let a stale value inherited from the parent shell overwrite the
+ *   versioned one on every --non-interactive run.
  *     DEFAULT_ENV, TMS_CLI
  *
  *   ENV-SCOPED — pattern <KEY>_<ENV>, where KEY is the env-scoped leaf and
@@ -143,8 +148,17 @@ interface FlatFieldSpec {
   section: string
   /** snake_case key in project.yaml. */
   key: string
-  /** UPPER_SNAKE_CASE env-var name. */
-  envVar: string
+  /**
+   * UPPER_SNAKE_CASE env-var name that seeds this field in non-interactive
+   * mode, or `null` for a field that must NEVER be seeded from the environment.
+   *
+   * `null` is not a missing feature. `atlassian_url` uses it because seeding
+   * that field from `ATLASSIAN_URL` inverts the precedence the yaml exists to
+   * establish: a stale host inherited from the parent shell would overwrite the
+   * correct versioned value on any `--non-interactive` run, which is the exact
+   * corruption the anchor was introduced to stop.
+   */
+  envVar: string | null
   validator: ValidatorKind
 }
 
@@ -174,7 +188,10 @@ const FLAT_FIELDS: FlatFieldSpec[] = [
 
   { section: 'issue_tracker', key: 'issue_tracker', envVar: 'ISSUE_TRACKER', validator: 'non_empty' },
   { section: 'issue_tracker', key: 'issue_tracker_cli', envVar: 'ISSUE_TRACKER_CLI', validator: 'non_empty' },
-  { section: 'issue_tracker', key: 'atlassian_url', envVar: 'ATLASSIAN_URL', validator: 'url' },
+  // envVar: null — see FlatFieldSpec.envVar. This field is the source of truth
+  // for the Atlassian host; seeding it from the environment would let a stale
+  // inherited value overwrite the versioned one.
+  { section: 'issue_tracker', key: 'atlassian_url', envVar: null, validator: 'url' },
 
   // default_env is special: validated against the live env list at write time.
   { section: 'testing', key: 'default_env', envVar: 'DEFAULT_ENV', validator: 'env_select' },
@@ -286,7 +303,11 @@ ENV-VAR MAPPING (--non-interactive):
     BACKEND_REPO, BACKEND_STACK, BACKEND_ENTRY
     FRONTEND_REPO, FRONTEND_STACK, FRONTEND_ENTRY
     DB_TYPE
-    ISSUE_TRACKER, ISSUE_TRACKER_CLI, ATLASSIAN_URL
+    ISSUE_TRACKER, ISSUE_TRACKER_CLI
+
+  NOT seedable from the environment: issue_tracker.atlassian_url (source of
+  truth for the Atlassian host — a stale ATLASSIAN_URL must never overwrite it).
+  Set it interactively, or via the installer's day-0 prompt.
     DEFAULT_ENV, TMS_CLI
 
   ENV-SCOPED — pattern <KEY>_<ENV>:
@@ -1130,6 +1151,7 @@ function runNonInteractive(loaded: LoadedConfig, dryRun: boolean): void {
   // Flat field env vars.
   for (const field of FLAT_FIELDS) {
     if (field.key === 'default_env') { continue; } // handled below
+    if (field.envVar === null) { continue; } // never seeded from the environment
     const envValue = process.env[field.envVar];
     if (envValue === undefined) { continue; }
     const result = validateField(field.validator, envValue);

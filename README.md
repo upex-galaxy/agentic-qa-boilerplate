@@ -98,10 +98,12 @@ These are **not optional** for the workflow — each one is required by a specif
 
 ```
 TAVILY_API_KEY
-ATLASSIAN_URL · ATLASSIAN_EMAIL · ATLASSIAN_API_TOKEN
+ATLASSIAN_EMAIL · ATLASSIAN_API_TOKEN
 API_BASE_URL · OPENAPI_SPEC_PATH · API_TOKEN
 POSTMAN_API_KEY
 ```
+
+**The Atlassian site host is not one of them.** It lives in `.agents/project.yaml` -> `issue_tracker.atlassian_url` and is read with `bun run --silent jira:url` (`--slug` for the bare host `acli --site` wants). It was pulled out of `.env` because a stale copy inherited from the parent shell silently shadowed the file — `jira:sync-issues` rebuilt the local PBI cache from a dead Jira site and exited 0, and the Jira-Direct TMS provider would have written results there. A hostname is not a secret, and it is project identity, so it belongs in a versioned file that shows up in a diff.
 
 `.env.example` has the full template with per-var comments. Run `bun run setup:doctor` at any time to see which are still missing — it prints `pending_actions[].where` URLs for every credential.
 
@@ -685,9 +687,9 @@ XRAY_CLIENT_SECRET
 XRAY_PROJECT_KEY
 
 # Atlassian credentials (required if TMS_PROVIDER=jira AND AUTO_SYNC=true; also
-# used by MCP atlassian, acli, xray-cli, and scripts/sync-jira-*.ts — single
-# source of truth across the repo).
-ATLASSIAN_URL
+# used by MCP atlassian, acli, xray-cli, and scripts/sync-jira-*.ts).
+# The site HOST is NOT here: .agents/project.yaml -> issue_tracker.atlassian_url
+# (print it with `bun run --silent jira:url`).
 ATLASSIAN_EMAIL
 ATLASSIAN_API_TOKEN
 JIRA_TEST_STATUS_FIELD      # optional override; resolves from .agents/jira-fields.json -> `test_status`

@@ -195,15 +195,15 @@ jobs:
           chmod +x /usr/local/bin/acli
           acli --version
 
+      - uses: oven-sh/setup-bun@v2
+
       - name: Authenticate
         env:
-          ATLASSIAN_URL: ${{ vars.ATLASSIAN_URL }}
           ATLASSIAN_EMAIL: ${{ vars.ATLASSIAN_EMAIL }}
           ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
         run: |
-          SITE="${ATLASSIAN_URL#https://}"
           echo "$ATLASSIAN_API_TOKEN" | acli jira auth login \
-            --site "$SITE" \
+            --site "$(bun run --silent jira:url --slug)" \
             --email "$ATLASSIAN_EMAIL" \
             --token
 
@@ -228,7 +228,8 @@ pipelines:
         script:
           - curl -LO "https://acli.atlassian.com/linux/1.3.18/acli_linux_amd64/acli"
           - chmod +x ./acli
-          - SITE="${ATLASSIAN_URL#https://}"
+          # Host from the checked-out repo, never a CI variable. See references/auth.md.
+          - SITE=$(sed -n 's/^[[:space:]]*atlassian_url:[[:space:]]*"\{0,1\}https\{0,1\}:\/\/\([^"[:space:]#]*\).*/\1/p' .agents/project.yaml)
           - echo "$ATLASSIAN_API_TOKEN" | ./acli jira auth login \
             --email "$ATLASSIAN_EMAIL" --site "$SITE" --token
           - ./acli jira workitem search --jql "project = $PROJECT_KEY AND updated > -1d" --paginate --csv > changes.csv
@@ -242,7 +243,8 @@ sync-jira:
   script:
     - curl -LO "https://acli.atlassian.com/linux/1.3.18/acli_linux_amd64/acli"
     - chmod +x acli
-    - SITE="${ATLASSIAN_URL#https://}"
+    # Host from the checked-out repo, never a CI variable. See references/auth.md.
+    - SITE=$(sed -n 's/^[[:space:]]*atlassian_url:[[:space:]]*"\{0,1\}https\{0,1\}:\/\/\([^"[:space:]#]*\).*/\1/p' .agents/project.yaml)
     - echo "$ATLASSIAN_API_TOKEN" | ./acli jira auth login --site "$SITE" --email "$ATLASSIAN_EMAIL" --token
     - ./acli jira workitem search --jql "project = $PROJECT_KEY AND updated > -1d" --paginate --json > changes.json
   artifacts:

@@ -27,7 +27,7 @@
     {
       "name": "should-trigger-spanish-acli-trigger",
       "prompt": "Necesito loguearme en acli para mi sitio de Atlassian — paso el token por env, ¿cómo es?",
-      "expected_behavior": "Activates acli skill. Mirrors Spanish in conversation. Loads references/auth.md. Explains the API-token path: `echo \"$ATLASSIAN_API_TOKEN\" | acli jira auth login --site \"${ATLASSIAN_URL#https://}\" --email \"$ATLASSIAN_EMAIL\" --token`. Names the env vars (ATLASSIAN_URL, ATLASSIAN_EMAIL, ATLASSIAN_API_TOKEN). Notes that the site slug is derived from ATLASSIAN_URL by stripping the https:// prefix, and that --token reads only from stdin (pipe/redirect/here-string).",
+      "expected_behavior": "Activates acli skill. Mirrors Spanish in conversation. Loads references/auth.md. Explains the API-token path: `echo \"$ATLASSIAN_API_TOKEN\" | acli jira auth login --site \"$(bun run --silent jira:url --slug)\" --email \"$ATLASSIAN_EMAIL\" --token`. Names the TWO env vars (ATLASSIAN_EMAIL, ATLASSIAN_API_TOKEN) and states that the site host is NOT an env var: it comes from .agents/project.yaml -> issue_tracker.atlassian_url, read via `bun run jira:url` (`--slug` for the bare host acli --site needs). Does NOT suggest interpolating an ATLASSIAN_URL shell variable, nor deriving the slug by stripping https:// off one. Notes that --token reads only from stdin (pipe/redirect/here-string).",
       "category": "positive"
     },
     {

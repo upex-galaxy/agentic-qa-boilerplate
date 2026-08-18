@@ -33,9 +33,11 @@ import { existsSync } from 'node:fs';
 
 import { join } from 'node:path';
 import {
+  envFileVars,
   parseDotEnvExampleKeys,
   parseDotEnvPairs,
   validateVarManifest,
+  valueSourceOf,
   VAR_MANIFEST,
   varsFor,
 } from '../cli/lib/variables-manifest';
@@ -92,7 +94,11 @@ function checkEnvDrift(errors: string[], warnings: string[]): 'checked' | 'skipp
   const softFail = process.env.VARS_ENV_CHECK_DRIFT === 'warn';
   const sink = softFail ? warnings : errors;
   const filePairs = parseDotEnvPairs(ENV_FILE);
-  const specByName = new Map(VAR_MANIFEST.map(s => [s.name, s]));
+  // Scoped to vars actually READ from `.env`. For an externally-sourced var a
+  // process⇄file disagreement is not drift — neither side is consulted — and
+  // reporting it here would bury the STALE_IN_ENV_FILE warning that says the
+  // real thing: delete the line.
+  const specByName = new Map(envFileVars().map(s => [s.name, s]));
 
   for (const [name, fileValue] of filePairs) {
     // Only manifest vars are in scope. An unknown key in `.env` is rule 2's job.
@@ -160,6 +166,36 @@ function main(): void {
   }
   for (const key of orphanKeys) {
     errors.push(`ORPHAN_KEY: '${key}' is uncommented in .env.example but absent from VAR_MANIFEST.`);
+  }
+
+  // Rule 2b — an externally-sourced var must NOT be re-declared in
+  // `.env.example`. Documenting it there invites a second copy that can go stale
+  // and shadow the real source, which is the whole failure being designed out.
+  const externallySourced = VAR_MANIFEST.filter(s => valueSourceOf(s) !== 'env-file');
+  for (const spec of externallySourced) {
+    if (exampleSet.has(spec.name)) {
+      errors.push(
+        `EXTERNALLY_SOURCED_IN_ENV_EXAMPLE: '${spec.name}' takes its value from .agents/project.yaml, `
+        + 'not .env — remove the declaration so no second copy can shadow the real source.',
+      );
+    }
+  }
+
+  // Rule 2c (warning) — an externally-sourced var still holding a value in a real
+  // `.env`. Nothing reads it from there anymore, but leaving it is how a stale
+  // host survives a migration, so consumers pulling this change get told to
+  // delete the dead line. This is the ONLY migration signal a downstream repo gets.
+  if (existsSync(ENV_FILE)) {
+    const filePairs = parseDotEnvPairs(ENV_FILE);
+    for (const spec of externallySourced) {
+      if ((filePairs.get(spec.name) ?? '').trim().length > 0) {
+        warnings.push(
+          `STALE_IN_ENV_FILE: '${spec.name}' still has a value in .env, but nothing reads it from `
+          + 'there anymore. Delete the line — a leftover copy is exactly what goes stale after a '
+          + 'migration. Source of truth: .agents/project.yaml (`bun run --silent jira:url`).',
+        );
+      }
+    }
   }
 
   // Rule 3 — the process environment must not shadow `.env` with a stale value.

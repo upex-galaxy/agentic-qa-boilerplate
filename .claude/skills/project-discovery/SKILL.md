@@ -351,9 +351,10 @@ LOCAL_USER_PASSWORD=
 STAGING_USER_EMAIL=
 STAGING_USER_PASSWORD=
 
-# Atlassian / TMS credentials (single source of truth, used by MCP, acli,
-# xray-cli, sync scripts, and the Jira-Direct TMS provider — no overrides)
-ATLASSIAN_URL=
+# Atlassian / TMS credentials (used by MCP, acli, xray-cli, sync scripts, and
+# the Jira-Direct TMS provider — no overrides)
+# NOTE: the Atlassian site HOST is not a .env variable. It lives in
+# .agents/project.yaml -> issue_tracker.atlassian_url (`bun run agents:setup`).
 ATLASSIAN_EMAIL=
 ATLASSIAN_API_TOKEN=
 ```

@@ -10,6 +10,12 @@
  *   - Standalone: bun run config/validateTestEnv.ts
  */
 
+// The Atlassian host is resolved, not read from the environment: it lives in
+// `.agents/project.yaml` -> `issue_tracker.atlassian_url`. Imported directly
+// rather than through `@variables` so this module keeps working standalone
+// without pulling in the whole config graph.
+import { normalizeAtlassianUrl, readAtlassianUrlFromYaml } from '../cli/lib/atlassian-instance';
+
 /** Variables needed for validation (subset of all env vars) */
 export interface EnvVarsToValidate {
   TEST_ENV: string
@@ -21,6 +27,11 @@ export interface EnvVarsToValidate {
   STAGING_USER_PASSWORD?: string
   XRAY_CLIENT_ID?: string
   XRAY_CLIENT_SECRET?: string
+  /**
+   * The Atlassian site HOST. Despite the name, callers must NOT source this
+   * from `process.env` — it is resolved from `.agents/project.yaml`. The field
+   * keeps the historical name so the shape stays stable for existing callers.
+   */
   ATLASSIAN_URL?: string
   ATLASSIAN_EMAIL?: string
   ATLASSIAN_API_TOKEN?: string
@@ -70,7 +81,11 @@ export function validateTestEnvironment(vars: EnvVarsToValidate): void {
     }
     else if (provider === 'jira') {
       if (!vars.ATLASSIAN_URL) {
-        errors.push('ATLASSIAN_URL is required when AUTO_SYNC=true and TMS_PROVIDER=jira');
+        errors.push(
+          'The Atlassian host is required when AUTO_SYNC=true and TMS_PROVIDER=jira. '
+          + 'It is NOT an env var: set `issue_tracker.atlassian_url` in .agents/project.yaml '
+          + '(`bun run agents:setup`), then check it with `bun run --silent jira:url`.',
+        );
       }
       if (!vars.ATLASSIAN_EMAIL) {
         errors.push('ATLASSIAN_EMAIL is required when AUTO_SYNC=true and TMS_PROVIDER=jira');
@@ -102,7 +117,11 @@ if (import.meta.main) {
     STAGING_USER_PASSWORD: process.env.STAGING_USER_PASSWORD,
     XRAY_CLIENT_ID: process.env.XRAY_CLIENT_ID,
     XRAY_CLIENT_SECRET: process.env.XRAY_CLIENT_SECRET,
-    ATLASSIAN_URL: process.env.ATLASSIAN_URL,
+    // Resolved, not read: the host lives in .agents/project.yaml and only falls
+    // back to the env var for a repo that has not been set up yet.
+    ATLASSIAN_URL: readAtlassianUrlFromYaml()
+      ?? normalizeAtlassianUrl(process.env.ATLASSIAN_URL)
+      ?? undefined,
     ATLASSIAN_EMAIL: process.env.ATLASSIAN_EMAIL,
     ATLASSIAN_API_TOKEN: process.env.ATLASSIAN_API_TOKEN,
   };

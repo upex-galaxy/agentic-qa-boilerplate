@@ -259,7 +259,8 @@ XRAY_PROJECT_KEY=PROJ
 Jira Direct:
 
 ```env
-ATLASSIAN_URL=https://company.atlassian.net
+# NOTE: the Atlassian site HOST is not a .env variable. It lives in
+# .agents/project.yaml -> issue_tracker.atlassian_url (`bun run agents:setup`).
 ATLASSIAN_EMAIL=email@company.com
 ATLASSIAN_API_TOKEN=...
 JIRA_TEST_STATUS_FIELD={{jira.test_status}}   # resolved at runtime against .agents/jira-fields.json (regenerate via `bun run jira:sync-fields --force`)

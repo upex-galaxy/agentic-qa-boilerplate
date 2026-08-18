@@ -32,6 +32,10 @@ import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
+import {
+  formatInstanceMismatchWarning,
+  resolveAtlassianInstance,
+} from './lib/atlassian-instance.ts';
 // Canonical variable manifest (source of truth — D1). Imports only `node:fs`,
 // so it is safe to load statically here without breaking the dependency-free
 // `--preflight` contract (no third-party deps pulled in).
@@ -99,10 +103,6 @@ const VAR_HINTS: Record<string, { hint: string, where: string }> = {
     hint: 'Resend API key (email-flow tests + resend CLI auth)',
     where: 'https://resend.com/api-keys  (docs: https://resend.com/docs/api-reference/introduction)',
   },
-  ATLASSIAN_URL: {
-    hint: 'Atlassian / Jira workspace URL',
-    where: 'e.g. https://yourorg.atlassian.net',
-  },
   ATLASSIAN_EMAIL: {
     hint: 'Email used to log in to Atlassian',
     where: 'Your Atlassian account email',
@@ -158,6 +158,12 @@ interface DoctorReport {
   is_tty: boolean
   env_file_exists: boolean
   env_vars: Record<string, 'set' | 'missing'>
+  /**
+   * The Atlassian site host, resolved from `.agents/project.yaml`. Reported
+   * apart from `env_vars` because it is NOT an env var — listing it there would
+   * report `missing` forever on a correctly configured repo.
+   */
+  atlassian_host: { status: 'set' | 'missing', value?: string, source?: 'project.yaml' | 'env' }
   mcp_json_exists: boolean
   opencode_jsonc_exists: boolean
   deps_installed: boolean
@@ -346,6 +352,7 @@ async function runDoctor(): Promise<DoctorReport> {
     is_tty: Boolean(process.stdin.isTTY),
     env_file_exists: existsSync(ENV_PATH),
     env_vars: {},
+    atlassian_host: { status: 'missing' },
     mcp_json_exists: existsSync(MCP_PATH),
     opencode_jsonc_exists: existsSync(OPENCODE_PATH),
     deps_installed: existsSync(NODE_MODULES_DOTENV),
@@ -385,6 +392,43 @@ async function runDoctor(): Promise<DoctorReport> {
     }
   }
 
+  // Atlassian host — a yaml field, NOT an env var. Checking `process.env` here
+  // would be worse than useless: the variable's absence is the desired state,
+  // and its PRESENCE is the bug (a stale copy inherited from the parent shell is
+  // exactly what pointed the sync scripts and the TMS provider at a dead site).
+  try {
+    const instance = resolveAtlassianInstance();
+    report.atlassian_host = { status: 'set', value: instance.baseUrl, source: instance.source };
+    const warning = formatInstanceMismatchWarning(instance);
+    if (warning !== null) {
+      report.pending_actions.push({
+        type: 'shell_command',
+        target: 'unset ATLASSIAN_URL',
+        hint: warning,
+      });
+    }
+    else if (instance.source === 'env') {
+      report.pending_actions.push({
+        type: 'shell_command',
+        target: 'bun run agents:setup',
+        hint: 'Atlassian host is coming from an ATLASSIAN_URL env var, not from '
+          + '.agents/project.yaml. That fallback exists for a repo that has not been set up '
+          + 'yet; write the host to the yaml so it is versioned and cannot go stale.',
+      });
+    }
+  }
+  catch {
+    report.atlassian_host = { status: 'missing' };
+    report.pending_actions.push({
+      type: 'shell_command',
+      target: 'bun run agents:setup',
+      hint: 'Atlassian host not set. Fill `issue_tracker.atlassian_url` in '
+        + '.agents/project.yaml — it is the source of truth for every jira:sync-* script, for '
+        + '`acli --site`, and for the Jira-Direct TMS provider that writes results back to '
+        + 'issues. Read it back with `bun run --silent jira:url`.',
+    });
+  }
+
   // Warn about legacy JIRA_* credential keys that no longer have any effect.
   // The repo collapsed all Atlassian credentials onto the ATLASSIAN_* family;
   // these names are no longer read by any consumer. acli and
@@ -397,7 +441,8 @@ async function runDoctor(): Promise<DoctorReport> {
   if (legacyPresent.length > 0) {
     tui.log.warn(
       `Found legacy credential keys in .env that are no longer used: ${legacyPresent.join(', ')}.\n`
-      + '       All Atlassian credentials now come from ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN.\n'
+      + '       Atlassian credentials now come from ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN; the site\n'
+      + '       host lives in .agents/project.yaml -> issue_tracker.atlassian_url.\n'
       + '       Move any unique value into the ATLASSIAN_* counterpart and delete the legacy line.',
     );
   }
@@ -501,6 +546,18 @@ function printHuman(report: DoctorReport): void {
     checks.push(['  .envrc allowed', report.direnv.envrc_allowed ? tui.statusIcon('ok') : tui.statusIcon('fail')]);
     checks.push([`  shell hook${report.direnv.rc_file ? ` (in ${report.direnv.rc_file})` : ''}`, report.direnv.hook_in_rc ? tui.statusIcon('ok') : tui.statusIcon('warn')]);
   }
+  // The host is shown by VALUE, not as a set/missing tick. Reading which site
+  // the repo is about to write to is the entire point — a green check that says
+  // "configured" is exactly what let a dead instance go unnoticed.
+  const hostRow = ((): string => {
+    const host = report.atlassian_host;
+    if (host.status !== 'set') { return tui.statusIcon('fail'); }
+    const fromYaml = host.source === 'project.yaml';
+    const icon = tui.statusIcon(fromYaml ? 'ok' : 'warn');
+    const note = fromYaml ? '' : ' (from ATLASSIAN_URL env — not versioned)';
+    return `${icon} ${host.value}${note}`;
+  })();
+  checks.push(['Atlassian host (.agents/project.yaml)', hostRow]);
   process.stdout.write(`${tui.table(['Check', 'Status'], checks)}\n`);
 
   // Env vars as a table

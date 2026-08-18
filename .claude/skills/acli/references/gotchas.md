@@ -81,13 +81,13 @@ This is asymmetric with `acli workitem create`, which **does** accept custom fie
 
 **Fix — WORKAROUND via REST PUT** (the only working path as of v1.3.18).
 
-Prerequisites: `ATLASSIAN_URL`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN` are exported in the current shell.
+Prerequisites: `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` are exported in the current shell. The host is NOT an env var — `bun run --silent jira:url` reads it from `.agents/project.yaml`.
 
 ```bash
 # Simple value (number, string, single-select)
 curl -sS -w "\nHTTP %{http_code}\n" \
   -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-  -X PUT "$ATLASSIAN_URL/rest/api/3/issue/{{PROJECT_KEY}}-123" \
+  -X PUT "$(bun run --silent jira:url)/rest/api/3/issue/{{PROJECT_KEY}}-123" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
   -d '{"fields": {"customfield_NNNN": 8}}'
@@ -115,7 +115,7 @@ acli jira workitem view {{PROJECT_KEY}}-123 --json \
 
 # 2. From REST — enumerate ALL fields on the site
 curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-  "$ATLASSIAN_URL/rest/api/3/field" \
+  "$(bun run --silent jira:url)/rest/api/3/field" \
   | jq '.[] | {id, name, custom, schema}'
 ```
 
@@ -178,7 +178,7 @@ POST /rest/api/3/field/{fieldId}/option
 
 ```bash
 curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-  -X POST "$ATLASSIAN_URL/rest/agile/1.0/sprint/$SPRINT_ID/issue" \
+  -X POST "$(bun run --silent jira:url)/rest/agile/1.0/sprint/$SPRINT_ID/issue" \
   -H "Content-Type: application/json" \
   -d "{\"issues\": [\"{{PROJECT_KEY}}-123\", \"{{PROJECT_KEY}}-124\"]}"
 ```
@@ -201,12 +201,12 @@ acli jira workitem transition --key "{{PROJECT_KEY}}-123" --status "In Progress"
 ```bash
 # 1. Discover the available transitions on the issue
 curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-  "$ATLASSIAN_URL/rest/api/3/issue/{{PROJECT_KEY}}-123/transitions" | jq
+  "$(bun run --silent jira:url)/rest/api/3/issue/{{PROJECT_KEY}}-123/transitions" | jq
 
 # 2. POST with the chosen transition ID (here illustrated as <TRANSITION_ID>)
 curl -s -X POST -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
   -H "Content-Type: application/json" \
-  "$ATLASSIAN_URL/rest/api/3/issue/{{PROJECT_KEY}}-123/transitions" \
+  "$(bun run --silent jira:url)/rest/api/3/issue/{{PROJECT_KEY}}-123/transitions" \
   -d '{"transition":{"id":"<TRANSITION_ID>"}}'
 ```
 
@@ -335,7 +335,7 @@ For any of these, hold a separate basic-auth credential (email + API token base6
 ```bash
 AUTH=$(printf '%s:%s' "$ATLASSIAN_EMAIL" "$ATLASSIAN_API_TOKEN" | base64)
 curl -s -H "Authorization: Basic $AUTH" -H "Content-Type: application/json" \
-  "$ATLASSIAN_URL/rest/api/3/issue/{{PROJECT_KEY}}-123"
+  "$(bun run --silent jira:url)/rest/api/3/issue/{{PROJECT_KEY}}-123"
 ```
 
 ## Meta-gotcha: documentation dates
