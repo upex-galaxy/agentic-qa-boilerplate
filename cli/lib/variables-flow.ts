@@ -49,8 +49,12 @@ import {
   promptForVar,
   reloadDotEnv,
 } from '../install.ts';
+import {
+  resolveAtlassianInstance,
+  writeAtlassianUrlToYaml,
+} from './atlassian-instance.ts';
 import * as tui from './tui.ts';
-import { criticalVars, varsFor } from './variables-manifest.ts';
+import { criticalVars, valueSourceOf, VAR_MANIFEST, varsFor } from './variables-manifest.ts';
 
 // ----------------------------------------------------------------------------
 // Constants + options
@@ -113,6 +117,44 @@ const COLORS = {
  * Mirrors the updater's `.backups/` convention (gitignored). Best-effort: a
  * backup failure does not block the flow, but it is surfaced.
  */
+/**
+ * The current value of a manifest var, from whatever source its spec declares.
+ *
+ * `.env` is the source for almost everything, but not for all of it: a var with
+ * `valueSource: 'atlassian-instance'` is read from `.agents/project.yaml` via
+ * the canonical resolver. Every consumer that needs "the value of this var" must
+ * go through here, or a yaml-sourced var silently reads as unset and gets
+ * skipped — a failure that looks exactly like "not configured yet".
+ *
+ * Returns `''` when unset or unresolvable, matching the `.env` read it replaces.
+ */
+function currentValueOf(spec: VarSpec, env: Record<string, string>): string {
+  if (valueSourceOf(spec) === 'atlassian-instance') {
+    try { return resolveAtlassianInstance().baseUrl; }
+    catch { return ''; }
+  }
+  return (env[spec.name] ?? '').trim();
+}
+
+/** Human label for where a var's value is written, used in prompts + reports. */
+function sourceLabelOf(spec: VarSpec): string {
+  return valueSourceOf(spec) === 'atlassian-instance' ? '.agents/project.yaml' : '.env';
+}
+
+/**
+ * Vars written on THIS machine — `.env` plus the yaml-sourced ones.
+ *
+ * Deliberately wider than `varsFor('local')`: a var can be written locally
+ * without being written to `.env`. Filtering the interactive walk by destination
+ * alone would silently drop ATLASSIAN_URL from every prompt, and "the installer
+ * stopped asking" is a bug users report as "it forgot my Jira".
+ */
+function localWriteVars(): VarSpec[] {
+  return VAR_MANIFEST.filter(
+    spec => spec.destinations.includes('local') || valueSourceOf(spec) !== 'env-file',
+  );
+}
+
 async function backupEnv(): Promise<string | null> {
   if (!existsSync(ENV_PATH)) { return null; }
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -314,7 +356,10 @@ async function runRemote(
 
   for (const spec of githubVars) {
     const row = ensureRow(rows, spec);
-    const value = (existing[spec.name] ?? '').trim();
+    // NOT every github-bound var lives in `.env`: ATLASSIAN_URL is read from
+    // `.agents/project.yaml`, so the yaml is the single origin for both the
+    // local tooling and the CI secret and the two cannot drift apart.
+    const value = currentValueOf(spec, existing);
 
     if (value.length === 0) {
       row.remote = 'skipped';
@@ -418,12 +463,11 @@ async function promptVarsInto(
 
   for (const spec of specs) {
     const row = ensureRow(rows, spec);
-    const current = (existing[spec.name] ?? '').trim();
-    const alreadySet = current.length > 0;
+    const alreadySet = currentValueOf(spec, existing).length > 0;
 
     if (alreadySet && !opts.force) {
       const overwrite = await tui.confirm({
-        message: `${spec.name} is already set. Overwrite it?`,
+        message: `${spec.name} is already set (${sourceLabelOf(spec)}). Overwrite it?`,
         initialValue: false,
       });
       if (tui.isCancel(overwrite) || !overwrite) {
@@ -438,6 +482,23 @@ async function promptVarsInto(
       row.local = alreadySet ? 'set' : 'skipped';
       continue;
     }
+
+    // A yaml-sourced var is written to its own file immediately — batching it
+    // into `collected` would put it back in `.env`, which is the whole point of
+    // the split. A write failure is reported and does NOT abort the walk.
+    if (valueSourceOf(spec) === 'atlassian-instance') {
+      try {
+        const written = writeAtlassianUrlToYaml(entered);
+        process.stdout.write(`  ${tui.statusIcon('ok')} ${spec.name} → .agents/project.yaml (${written})\n`);
+        row.local = 'set';
+      }
+      catch (err) {
+        tui.log.warn(`${spec.name}: ${(err as Error).message}`);
+        row.local = 'failed';
+      }
+      continue;
+    }
+
     collected[spec.name] = entered;
     row.local = 'set';
   }
@@ -501,7 +562,7 @@ async function runMenu(opts: VariablesFlowOptions): Promise<void> {
 
   if (choice === 'walk') {
     tui.section('Set variables one by one');
-    await promptVarsInto(varsFor('local'), opts, rows);
+    await promptVarsInto(localWriteVars(), opts, rows);
   }
 
   if (choice === 'critical' || choice === 'everything') {
