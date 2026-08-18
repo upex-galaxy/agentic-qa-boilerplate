@@ -74,6 +74,12 @@ build/
 .gemini/
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+# Git worktrees created by the agent harness (EnterWorktree) or by hand. A
+# worktree under here is a separate branch's FULL checkout, never repo source:
+# leaving it untracked invites `git add -A` to commit a duplicate tree, and
+# `git clean -fd` to delete it and orphan the metadata in .git/worktrees/.
+# Matches the .prettierignore entry that already calls it "not this tree".
+.claude/worktrees/
 .playwright-mcp
 .backups/
 
