@@ -160,7 +160,7 @@ Per entity in sync mode:
 - **Plan / Set / Execution** → resolves the existing issue and `addTests…` to attach members at the Xray layer (the layer a Jira migration leaves empty — same gap `xray repair` fixes).
 - **Run statuses** → after tests are attached, each run's status/comment/defects are applied by matching destination Test key.
 
-**Requires target-site Jira creds** (`ATLASSIAN_URL` / `EMAIL` / `API_TOKEN` in `.env`, or `--jira-*` on `auth login`). Without them, key→id resolution fails and sync falls back to create.
+**Requires target-site Jira creds** (`ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` in `.env`, plus the host from `.agents/project.yaml`, or `--jira-*` on `auth login`). Without them, key→id resolution fails and sync falls back to create.
 
 #### Sync mode is idempotent — an interrupted restore is safe to re-run
 
@@ -219,7 +219,7 @@ captured but not diffed (numeric IDs differ per site).
 
 ```bash
 # 0. BEFORE any auth login: inventory creds and have the USER back up the cached config
-jq -r '.jira_base_url' ~/.xray-cli/config.json ; grep -E '^(ATLASSIAN_URL|XRAY_CLIENT_ID)' .env
+jq -r '.jira_base_url' ~/.xray-cli/config.json ; bun run --silent jira:url ; grep -E '^XRAY_CLIENT_ID' .env
 cp ~/.xray-cli/config.json ~/.xray-cli/config.SOURCE-<site>.json.bak     # user runs this
 
 # 1. Point CLI at SOURCE site, export everything

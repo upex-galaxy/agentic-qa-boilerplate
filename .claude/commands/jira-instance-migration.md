@@ -35,10 +35,19 @@ A second silent failure sits alongside it: `.env` and the `acli` session are ind
 **Source** — detect it, do not ask first. Read, in order, and report what each one says:
 
 ```bash
-grep -n '^ATLASSIAN_URL' .env 2>/dev/null
-grep -n 'atlassian_url' .agents/project.yaml
-acli jira auth status 2>/dev/null | grep -i site
+grep -n 'atlassian_url' .agents/project.yaml          # the source of truth
+acli jira auth status 2>/dev/null | grep -i site      # the machine-global session
+bun run --silent jira:url 2>&1                        # what the tooling actually resolves
+printenv ATLASSIAN_URL 2>/dev/null                    # should print NOTHING (see below)
+grep -n '^ATLASSIAN_URL' .env 2>/dev/null             # should match NOTHING (see below)
 ```
+
+The last two are **contamination probes, not sources**. `ATLASSIAN_URL` is not a
+local variable in this repo: the host lives only in `.agents/project.yaml`. A hit
+on either line is a leftover from before that split, and it is dangerous
+precisely during a migration — an inherited process value is the thing that
+survives every restart and silently outlives the site it names. Report a hit as
+a finding to clean up, never as evidence of the current instance.
 
 Three outcomes:
 
@@ -78,8 +87,8 @@ Classify every hit into change / do-not-change, and **present the table to the u
 
 | Target | What to write |
 |---|---|
-| `.agents/project.yaml` -> `atlassian_url` | `https://<target>` — **the source of truth.** Every sync script resolves the instance from here FIRST and treats `ATLASSIAN_URL` as fallback only (`cli/lib/atlassian-instance.ts`). Write it WITH the scheme, matching what `bun run agents:setup` writes; the resolver also accepts a bare slug, but a mixed repo is harder to review |
-| `.env` -> `ATLASSIAN_URL` | `https://<target>/` — the line number varies per project, never assume it. Still required: `acli` and the Atlassian MCP read it directly, and it is the fallback for a template repo whose yaml is `null` |
+| `.agents/project.yaml` -> `atlassian_url` | `https://<target>` — **the only place the host is written.** Every script resolves the instance from here (`cli/lib/atlassian-instance.ts`), the test runtime reads it through `config/variables.ts`, and `bun run jira:url` is how shell recipes read it. Write it WITH the scheme, matching what `bun run agents:setup` writes; the resolver accepts a bare slug too, but a mixed repo is harder to review |
+| a stale `ATLASSIAN_URL`, if either probe hit | **delete it**, do not update it. Remove the `.env` line; for a process value, find and fix whatever exports it (`ps eww -p $PPID` up the chain). Updating it instead just recreates a second copy that will go stale at the next migration |
 | `acli` session | machine-global (`~/.config/acli`), not a repo file — re-login required per machine |
 
 ### Does not change
@@ -95,19 +104,25 @@ Anything that fits neither list — a CI workflow, a README, `.mcp.json`, a depl
 
 ## Phase 2 — Apply
 
-1. `.agents/project.yaml` -> `atlassian_url: https://<target>` — do this FIRST; it is what the sync scripts read.
-2. `.env` -> `ATLASSIAN_URL=https://<target>/`
+1. `.agents/project.yaml` -> `atlassian_url: https://<target>` — do this FIRST; it is what everything else reads. Confirm with `bun run --silent jira:url`, which must echo the target back.
+2. **Delete** any stale `ATLASSIAN_URL` the probes found (the `.env` line, and whatever exports it into the process). Do not update it — see the table above.
 3. Re-authenticate `acli`:
 
-> **Verify the process environment, not just the files.** A stale `ATLASSIAN_URL` can live in the PROCESS environment (inherited from whatever spawned the agent session) and WINS over a corrected `.env` — both `bun`'s autoload and `dotenv-cli` skip a variable that is already set. It survives a full application restart, because it is re-inherited every time. Run `bun run vars:env:check` after editing `.env`; it fails on any process⇄`.env` divergence. If it fires, walk the ancestry with `ps eww -p <pid>` and test the login shell in isolation with `env -i HOME=$HOME zsh -l -c 'echo $ATLASSIAN_URL'` — testing from the contaminated shell inherits the bad value and gives a false negative.
+> **The files are not the whole story — check the process environment.** A stale `ATLASSIAN_URL` inherited from whatever spawned this session still shadows anything that reads the env var directly, and it survives a full application restart because it is re-inherited every time. `bun run vars:env:check` reports it; so does `bun run setup:doctor`, which flags a host resolved from the env instead of the yaml. To hunt the source, walk the ancestry with `ps eww -p <pid>` and test the login shell in isolation with `env -i HOME=$HOME zsh -l -c 'printenv ATLASSIAN_URL'` — testing from the contaminated shell inherits the bad value and gives a false negative.
 >
 > **Template-repo carve-out for step 1.** A boilerplate/template repo ships `.agents/project.yaml` with every value `null` on purpose — downstream projects inherit the file verbatim, so a concrete site baked into it is wrong for all of them. Detect this by reading `project.project_name` in the same file: if it is `null`, the repo is an un-onboarded template. **Leave `atlassian_url: null`** and say so in the report. The same rule applies to `project_key` in Phase 4. Only a real, onboarded project gets the value written.
 
 ```bash
 TOKEN=$(grep '^ATLASSIAN_API_TOKEN=' .env | cut -d= -f2-)
 EMAIL=$(grep '^ATLASSIAN_EMAIL=' .env | cut -d= -f2-)
-printf '%s' "$TOKEN" | acli jira auth login --site "<target>" --email "$EMAIL" --token
+printf '%s' "$TOKEN" | acli jira auth login \
+  --site "$(bun run --silent jira:url --slug)" --email "$EMAIL" --token
 ```
+
+`--site` takes the BARE host, which is what `--slug` prints. Reading it back from
+the yaml rather than retyping `<target>` also proves step 1 actually landed: if
+the yaml is wrong, the login fails loudly instead of quietly succeeding against a
+site the repo does not agree with.
 
 > **Secret hygiene**: never `cat` the `.env` or grep it broadly — that dumps `ATLASSIAN_API_TOKEN` into the terminal, the scrollback, and the agent transcript. Filter by the exact key every time. If a token does get printed, say so plainly and recommend rotating it.
 >
@@ -117,21 +132,26 @@ The `acli` session is **global to the machine**, so this re-login repoints every
 
 ---
 
-## Phase 3 — Verify all three agree
+## Phase 3 — Verify
 
-A migration where two of the three match is worse than one where none do, because it looks like it worked.
+A migration where some places match and others do not is worse than one where none do, because it looks like it worked.
 
 ```bash
-acli jira auth status | grep -i site
-grep -n '^ATLASSIAN_URL' .env
-grep -n 'atlassian_url' .agents/project.yaml
-URL=$(grep '^ATLASSIAN_URL=' .env | cut -d= -f2-)
+grep -n 'atlassian_url' .agents/project.yaml     # 1. the source of truth
+bun run --silent jira:url                        # 2. what the tooling resolves
+acli jira auth status | grep -i site             # 3. the acli session
+printenv ATLASSIAN_URL                           # 4. must print NOTHING
+URL=$(bun run --silent jira:url)
 EMAIL=$(grep '^ATLASSIAN_EMAIL=' .env | cut -d= -f2-)
 TOKEN=$(grep '^ATLASSIAN_API_TOKEN=' .env | cut -d= -f2-)
-curl -sS -o /dev/null -w "HTTP %{http_code}\n" -u "$EMAIL:$TOKEN" "${URL%/}/rest/api/3/myself"
+curl -sS -o /dev/null -w "HTTP %{http_code}\n" -u "$EMAIL:$TOKEN" "$URL/rest/api/3/myself"
 ```
 
-All three must name the target, and the REST call must return `200`. Report the four results as a table. Anything short of that is a failed migration — say so and stop.
+Checks 1-3 must name the target, check 4 must be empty, and the REST call must return `200`. Report all five as a table.
+
+Check 2 is not redundant with check 1: it is the only one that proves the resolver agrees with the file, and it prints a warning to stderr if a leftover env var disagrees with the yaml. Check 4 is the one people skip — a surviving process value is invisible in every file yet still reaches anything that reads the variable directly.
+
+Anything short of that is a failed migration — say so and stop.
 
 ---
 
@@ -229,7 +249,7 @@ Pick one known slug and state its before/after explicitly. Reassignment is norma
 **A changed ID is not a correct ID.** The diff proves the sync reached somewhere; it does not prove each slug now points at the field it names. Two slugs can *swap* IDs during a migration, which survives every check above: both IDs still exist, both still resolve, and each now names the other's entity. Verify by asking the live instance what each catalogued ID actually is, and comparing against the name the catalog recorded:
 
 ```bash
-URL=$(grep '^ATLASSIAN_URL=' .env | cut -d= -f2-); B="${URL%/}"
+B=$(bun run --silent jira:url)
 curl -sS -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" "$B/rest/api/3/field" > /tmp/live-fields.json
 
 jq -s -r '

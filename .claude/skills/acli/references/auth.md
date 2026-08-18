@@ -155,20 +155,40 @@ Three rules for CI:
     chmod +x ./acli
     sudo mv ./acli /usr/local/bin/acli
 
+- uses: oven-sh/setup-bun@v2
+
 - name: Authenticate to Jira
   env:
-    ATLASSIAN_URL: ${{ vars.ATLASSIAN_URL }}
     ATLASSIAN_EMAIL: ${{ vars.ATLASSIAN_EMAIL }}
     ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
   run: |
-    SITE="${ATLASSIAN_URL#https://}"
     echo "$ATLASSIAN_API_TOKEN" | acli jira auth login \
-      --site "$SITE" \
+      --site "$(bun run --silent jira:url --slug)" \
       --email "$ATLASSIAN_EMAIL" \
       --token
 ```
 
-Convention: a single `ATLASSIAN_URL` / `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` family — no bot-prefixed names, no separate `ATLASSIAN_SITE` variable. The site slug `acli` wants on `--site` is derived from `ATLASSIAN_URL` (strip the `https://` prefix).
+**The site host is NOT a CI variable.** It comes from the checked-out
+`.agents/project.yaml` via `bun run jira:url`, so there is no repository
+variable to update on a site migration and nothing to drift out of sync with the
+repo. Only the two credentials are injected: `ATLASSIAN_EMAIL` (a var) and
+`ATLASSIAN_API_TOKEN` (a secret).
+
+`--site` wants the BARE host, hence `--slug`. The old recipe derived it by
+stripping the `https://` prefix off the `ATLASSIAN_URL` variable with shell
+parameter expansion, which silently no-ops on an `http://` value and leaves a
+trailing slash in place; `jira:url --slug` handles both.
+
+If a runner genuinely cannot run `bun`, read the field directly instead — still
+from the repo, never from a CI variable:
+
+```bash
+SITE=$(sed -n 's/^[[:space:]]*atlassian_url:[[:space:]]*"\{0,1\}https\{0,1\}:\/\/\([^"[:space:]#]*\).*/\1/p' .agents/project.yaml)
+```
+
+Convention: `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` are the only Atlassian
+credentials — no bot-prefixed names, no separate `ATLASSIAN_SITE` variable, and
+no local `ATLASSIAN_URL`.
 
 Pin the version in the URL (`1.3.18/` instead of `latest/`) — unpinned installs have caused same-day mass failures in the past.
 

@@ -23,7 +23,7 @@ Every output MUST include a `## Discovery Gaps` section if a field could not be 
 
 1. **Do NOT copy the backlog.** The issue tracker is the source of truth for tickets. `.context/PBI/` holds the backlog access recipe (`README.md`) and format-reference guides (`templates/`), never a copy of the full backlog. Per-ticket PBI is synced on demand from Jira by `/sprint-testing` (`bun run jira:sync-issues`) as a read-only cache.
 2. **Per-ticket PBI is synced, not authored.** The canonical synced tree is `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/`, materialized by `/sprint-testing` from Jira. It is a read-only cache and can always be re-synced — this skill does not create it.
-3. **Tracker credentials in `.env` only.** Single keys: `ATLASSIAN_URL`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN` — consumed by MCP, acli, xray-cli, sync scripts, and the Jira-Direct TMS provider. No `JIRA_*` credential aliases exist; if you see them in old docs or `.env` files, migrate them. Never paste tokens in markdown; if the user pastes one in chat, scrub it and redirect them to `.env`. See SKILL.md §Gotchas for the general credential policy.
+3. **Tracker credentials in `.env` only.** Two keys: `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN` — consumed by MCP, acli, xray-cli, sync scripts, and the Jira-Direct TMS provider. The site HOST is NOT a credential and NOT in `.env`: it lives in `.agents/project.yaml` -> `issue_tracker.atlassian_url` (read it with `bun run --silent jira:url`). No `JIRA_*` credential aliases exist; if you see them in old docs or `.env` files, migrate them. Never paste tokens in markdown; if the user pastes one in chat, scrub it and redirect them to `.env`. See SKILL.md §Gotchas for the general credential policy.
 4. **Tool resolution.** When you see `[ISSUE_TRACKER_TOOL]` in this document, resolve via the project's CLAUDE.md Tool Resolution table. Priority order: CLI (fewer tokens) -> MCP (fallback) -> REST API -> manual. For Jira, that means load `/acli` skill first; only fall back to Atlassian MCP if acli is unavailable.
 
 ---
@@ -108,8 +108,9 @@ Record the chosen method and fallback in `.context/PBI/README.md`.
 ### Required env keys (emit to user)
 
 ```
-# Atlassian credentials — single source of truth (no JIRA_* aliases)
-ATLASSIAN_URL=
+# Atlassian credentials (no JIRA_* aliases)
+# NOTE: the Atlassian site HOST is not a .env variable. It lives in
+# .agents/project.yaml -> issue_tracker.atlassian_url (`bun run agents:setup`).
 ATLASSIAN_EMAIL=
 ATLASSIAN_API_TOKEN=
 ```

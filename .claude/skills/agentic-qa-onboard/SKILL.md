@@ -222,7 +222,7 @@ Place these in `.env` before running anything that talks to a real environment:
 | ------------------------------------------------ | -------------------------------------------------- |
 | `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD`       | Local app login (Playwright fixtures)              |
 | `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD`   | Staging smoke tests, manual exploration            |
-| `ATLASSIAN_URL` / `ATLASSIAN_EMAIL` / API token  | `acli` Jira CLI + Atlassian MCP                    |
+| `ATLASSIAN_EMAIL` / API token                    | `acli` Jira CLI + Atlassian MCP. The site HOST is NOT in `.env` — it lives in `.agents/project.yaml` -> `issue_tracker.atlassian_url`; read it with `bun run --silent jira:url` |
 | `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET`          | `bun xray` CLI (Xray Cloud authentication)         |
 | `TAVILY_API_KEY`                                 | Tavily MCP                                         |
 | `POSTMAN_API_KEY`                                | Postman MCP                                        |
