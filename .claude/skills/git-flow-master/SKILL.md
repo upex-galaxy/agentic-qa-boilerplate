@@ -85,6 +85,33 @@ This summary is cheap, prevents 90% of mistakes, and is the input to every subse
 
 ---
 
+## Step 1b — Reconcile the declared policy against the host (once per session)
+
+`git_strategy.policy.*` in `.agents/project.yaml` records what the team DECIDED. The hosting platform records what is actually ENFORCED. These drift, and the drift only surfaces at the worst moment: a merge that stalls on an approval nobody expected, or a "protected" branch that was never protected.
+
+Run this ONCE per session, at the first push / PR / merge intent (not on read-only operations), and cache the result for the rest of the session.
+
+**Run the tool; do not perform the queries by hand:**
+
+```bash
+bun run git:policy verify          # read-only; exit 1 on drift
+bun run git:policy verify --stamp  # same, and records the reconciliation when clean
+```
+
+It queries BOTH GitHub protection mechanisms for every branch in `git_strategy.branches` / `protected`, compares the union against the declared policy, and prints each divergence as `declared` vs `enforced`. The strategy-to-ruleset mapping and what the tool deliberately does not manage: `references/ruleset-parity.md`.
+
+**Why a tool rather than a checklist.** This reconciliation existed only as prose in the sibling boilerplate and kept not happening — that repo shipped `require_pr_reviews: 0` against a host demanding one approval plus a code-owner review, and it surfaced months later as a refused merge. This repo had the identical divergence. A script performs every query on every run; a procedure performs the ones the reader remembered.
+
+**Facts that still bind you when reading its output:**
+
+- **A `404` from `branches/{b}/protection` does NOT mean the branch is unprotected.** A repo governed by rulesets returns `404` there while enforcing PR requirements, approvals, signed commits and non-fast-forward bans through `rules/branches/{b}`. Stopping at the classic endpoint produces a confident "unprotected" reading on a branch that requires a reviewed pull request.
+- **A push that succeeds is not evidence of an absent rule.** Org owners and anyone on the ruleset bypass list push through while the rule still binds everyone else. When a push prints `Changes must be made through a pull request`, that was a BYPASS: report it as one, never as permission.
+- **`require_code_owner_review: true` with no `CODEOWNERS` file is unsatisfiable, not strict.** Nobody outside the bypass list can clear it, so every merge becomes a bypass.
+
+**On drift, report — never auto-correct.** Three legitimate resolutions: update `.agents/project.yaml` to match the host, change the host (`bun run git:policy apply`, dry run until `--yes`), or accept the divergence and record WHY in this project's own `CLAUDE.md`. Editing either side needs the user's choice.
+
+---
+
 ## Step 2 — Resolve the branching strategy
 
 The skill supports eight strategies (see `references/branching-strategies.md` for the full catalogue, detection signals, and trade-offs):
@@ -426,6 +453,8 @@ The branch plan that comes out of the decision is the **contract** for execution
 ## Critical rules — apply every invocation
 
 1. **Diagnose before acting.** Step 1 always runs. Never assume repo state.
+1b. **`policy:` records INTENT, not enforcement.** Reconcile it by RUNNING `bun run git:policy verify` (Step 1b) at the first push / PR / merge intent, then `--stamp` when clean. Never perform the protection queries by hand, and never state what the remote requires from a `declared` reading. `git:policy apply` is a dry run until `--yes`, and refuses to remove a guard, lower the approval bar, turn off code-owner review, or widen the merge methods unless `--allow-loosening` is passed for that specific give-up.
+1c. **`strategy: solo-main` is the shipped DEFAULT, not evidence of a decision.** `meta.strategy_source` tells them apart: `inherited` means nobody chose. On a repo whose `project.project_name` is set and whose `strategy_source` is still `inherited`, OFFER Strategy Setup and say what the default costs (no integration branch, no promotion path, no review gate). Strategy Setup stamps `chosen`; nothing else may.
 2. **One commit = one responsibility.** Never bundle unrelated changes.
 3. **No AI attribution** in commits or PR bodies. Commits look human-authored. (Critical Reminder #3 in `CLAUDE.md`.)
 4. **Confirm before pushing to any protected branch.** Strategy-driven; see Step 3.3. (Critical Reminder #5 in `CLAUDE.md`.)

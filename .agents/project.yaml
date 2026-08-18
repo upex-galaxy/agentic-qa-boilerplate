@@ -69,7 +69,7 @@ qa:
 # updater (bootstrapOnly), so each project keeps its own. Filled by git-flow-master, NOT by
 # `agents:setup`. These leaves are read directly (not {{VAR}} template vars) → skipped by vars:check.
 git_strategy:
-  strategy: solo-main # null until Strategy Setup runs; then one of: solo-main | main-integration | enterprise | trunk-based | gitflow | github-flow | gitlab-flow | sdet
+  strategy: solo-main # DEFAULT, not a decision — see meta.strategy_source. One of: solo-main | main-integration | enterprise | trunk-based | gitflow | github-flow | gitlab-flow | sdet
   description: >
     Single long-lived branch (main); single maintainer (this repo is the boilerplate
     template itself). Work is committed and pushed DIRECTLY to main — never via a PR, and
@@ -95,7 +95,7 @@ git_strategy:
   policy: # how strictly protected branches are guarded (set by Strategy Setup Q4; defaults are safe)
     direct_push_to_protected: allowed # forbidden | confirm | allowed (solo-main = allowed)
     admin_bypass: true # normal flow here: the admin push credential auto-bypasses the ProtectPublic ruleset on every push (no flag needed). "Bypassed rule violations" is expected — never open a PR.
-    require_pr_reviews: 0 # null | 0 | N — min approvals before merge to a protected branch (informational)
+    require_pr_reviews: 1 # VERIFIED 2026-08-18 against ruleset 16809536: required_approving_review_count = 1. Informational here, because this repo pushes directly and the admin credential bypasses the rule (see description) — but the number must still state what the host asks of anyone who does open a PR.
   branch_prefixes:
     precedence: [feat, fix, refactor, test, docs, chore]
     naming_with_key: '{prefix}/{ISSUE-KEY}-{kebab-slug}'
@@ -103,6 +103,12 @@ git_strategy:
   meta:
     setup_version: 1
     created: 2026-06-20 # YYYY-MM-DD stamped by Strategy Setup
+    policy_verified: 2026-08-18 # YYYY-MM-DD of the last `bun run git:policy verify`. null = never reconciled against the host
+    policy_source: declared # verified | declared. Stays `declared` while the accepted divergence below is open — see the note on direct_push_to_protected
+    # Did anyone actually CHOOSE this strategy, or is it just the shipped default?
+    # `strategy:` above is never null, so its value alone cannot answer that. Strategy
+    # Setup flips this to `chosen` when the questionnaire actually runs.
+    strategy_source: inherited # inherited | chosen
 
 # Per-environment config. Add/remove environments freely (production, dev, qa, uat, etc.).
 # Each environment must define ALL four keys: web_url, api_url, db_mcp, api_mcp.
