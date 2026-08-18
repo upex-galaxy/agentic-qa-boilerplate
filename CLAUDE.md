@@ -183,7 +183,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | `agentic-qa-onboard` | `/agentic-qa-onboard` | First-time orientation tour. Explains stack + 6-stage pipeline + MCPs. Hands off to right downstream skill. ALSO the teaching front-desk for confused users: suspends caveman, explains in plain human language, and offers to open the per-skill `how-it-works.es.html` visual decks in the browser (ask first). |
 | `framework-development` | `/framework-development` | Framework-evolution orchestrator for the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. Self-contained Plan → Code → Verify → Archive pipeline; runs under `gentle-ai install --preset minimal` (no SDD-* skills required). |
 | `project-discovery` | `/project-discovery` | 4-phase discovery (Constitution → Architecture → Infrastructure → Specification) → generates PRD, SRS, domain glossary, `.context/`. Reverse-engineering only. |
-| `shift-left-testing` | `/shift-left-testing` | Stage 0: pre-sprint Shift-Left QA on a batch of backlog Stories. Refines ACs, surfaces gaps/ambiguities, produces ATP DRAFT + per-story `shift-left-refinement.md`, transitions `backlog → shift_left_qa → estimation`. Adds label `shift-left-reviewed` so `/sprint-testing` Stage 1 can short-circuit Phases 1-3 later. |
+| `shift-left-testing` | `/shift-left-testing` | Stage 0: pre-sprint Shift-Left QA on a batch of backlog Stories. Refines ACs, surfaces gaps/ambiguities, authors the Story's ATP early (same field + same Test Plan that `/sprint-testing` later refines — no separate DRAFT artifact), transitions `backlog → shift_left_qa → estimation`. Adds labels `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` so `/sprint-testing` Stage 1 can short-circuit Phases 1-3 later. |
 | `sprint-testing` | `/sprint-testing` | Stages 1-3: manual QA per ticket (Planning, Execution, Reporting). Produces PBI folder, ATP, ATR, bug reports. |
 | `test-documentation` | `/test-documentation` | Stage 4: TMS docs + ROI scoring. Produces Candidate / Manual / Deferred verdicts. |
 | `test-automation` | `/test-automation` | Stage 5: Plan → Code → Review on KATA + Playwright + TypeScript. |
@@ -317,7 +317,34 @@ Project values live in **`.agents/project.yaml`**: load once per session, cache.
 
 ## 9. LOCAL CONTEXT (PBI)
 
-> **`.context/PBI/` layout is OWNED by `scripts/sync-jira-issues.ts`.** Module = Epic (1:1). Jira is the source of truth; local `.md` files are a **read-only cache**. NEVER hand-write a Jira-mirrored file: generate content, push it to the Jira field (or fallback), then run the sync. Skill-authored NON-Jira files live INSIDE the same folders.
+> **`.context/PBI/` is a GITIGNORED CACHE of Jira, owned by `scripts/sync-jira-issues.ts`.** Module = Epic (1:1). Jira is the source of truth. NEVER hand-write a Jira-mirrored file: generate content, push it to the Jira field (or fallback), then run the sync. Rebuild the whole tree with `bun run context:hydrate`.
+
+> **WHY IT IS NOT COMMITTED**: this content regenerates. Two sessions that re-sync at different times produce conflicting commits of the same generated text, and a 3-way merge over a full-file rewrite is meaningless. Jira already is the versioned, shared, cloud-hosted copy — committing it duplicates the database into git and buys nothing.
+
+**THREE TIERS** — every path under `.context/PBI/` is exactly one of these. Check before creating any file:
+
+| Tier | Source of truth | In git? | Recovered by |
+|---|---|---|---|
+| `[SYNC]` | Jira | No | `bun run context:hydrate` |
+| `[COMMIT]` | This repo | **Yes** | `git checkout` |
+| `[LOCAL]` | Nothing durable | No | Not recovered — disposable by design |
+
+`[LOCAL]` files may be hand-written, but **nothing downstream may depend on one existing**: it lives only on the machine that made it. A skill that needs to read it on another machine must put the content in Jira instead. `test-session-memory.md` is NOT in this tree — it lives at `.session/sprint-testing/<scope>/` so a re-sync cannot clobber it.
+
+**GITIGNORE LADDER** (git cannot re-include a file whose parent dir is excluded, so it descends level by level — collapsing this to a plain `.context/PBI/` silently drops `test-specs/` from version control):
+
+```gitignore
+.context/PBI/*
+!.context/PBI/README.md
+!.context/PBI/templates/
+!.context/PBI/epics/
+.context/PBI/epics/*
+!.context/PBI/epics/*/
+.context/PBI/epics/*/*
+!.context/PBI/epics/*/test-specs/
+```
+
+Verify any change with `git check-ignore -v` on both a `test-specs/` file (must NOT be ignored) and a `stories/.../story.md` (must be ignored).
 
 > **QA-process parenting (3-axis model).** In Jira, every `bug` / `defect` / `improvement` parents to the QA process epic **"QA Defect Management"** (every `Test` issue to **"QA Test Repository"**, every **Test Plan** FTP/STP/ATP to **"QA Master Test Plan"** (itself an Epic, not a Test Plan work type), and every **Test Execution** FTR/STR/ATR + Precondition + Test Set to **"QA Test Artifacts"**), NEVER a product/dev epic. Traceability to the source Story is carried by an **issue-link**, and the affected product area by **components**: three separate axes (parent = QA bucket · link = source Story · components = product module). Canon: `agentic-qa-core/references/defect-management-doctrine.md`.
 
@@ -325,13 +352,15 @@ Project values live in **`.agents/project.yaml`**: load once per session, cache.
 
 ```
 .context/PBI/
+  README.md                                      [COMMIT] tier rules + gitignore ladder
+  templates/                                     [COMMIT] skeletons
   epic-tree.md                                   [SYNC] master index
   epics/EPIC-<KEY>-<slug>/
     epic.md                                      [SYNC]
+    module-context.md                            [SYNC ← '## Module Context (QA)' section of the Epic description]
     feature-implementation-plan.md               [SYNC ← Jira field / stub]
     feature-test-plan.md                         [SYNC ← Jira field / stub]
-    module-context.md                            [skill: non-Jira, OK]
-    test-specs/                                  [skill: non-Jira, EPIC level]
+    test-specs/                                  [COMMIT] automation plans, versioned with the test code
       ROADMAP.md  PROGRESS.md
       <ID>/ spec.md  automation-plan.md  atc/*.md
     stories/STORY-<KEY>-<slug>/
@@ -340,22 +369,30 @@ Project values live in **`.agents/project.yaml`**: load once per session, cache.
       workflow.md  mockup.md  implementation-plan.md
       acceptance-test-plan.md  acceptance-test-results.md   [SYNC ← Jira fields / stub]
       comments.md                                [SYNC, --include-comments]
-      context.md  test-session-memory.md         [skill: non-Jira, OK]
-      shift-left-refinement.md                   [skill: non-Jira, OK]
-      test-cases/  evidence/                     [skill: non-Jira, OK]
+      test-cases/                                [SYNC ← the Test issues linked to this Story]
       test-executions/{TESTEXEC|RETESTEXEC}-<KEY>-<slug>.md   [SYNC - only when >1 Execution linked]
       defects/DEFECT-<KEY>-<slug>.md             [SYNC - one md file per linked defect]
+      context.md                                 [LOCAL] notes about the repo, not the ticket
+      evidence/                                  [LOCAL] screenshots
+      shift-left-refinement.md                   [LOCAL] staging buffer for the shift-left publish
   bugs/BUG-<KEY>-<slug>/                         [SYNC - coverable folder: bug.md + ATP + ATR + test-executions/ + defects/]
   improvements/IMPROVEMENT-<KEY>-<slug>/         [SYNC - coverable folder: improvement.md + ATP + ATR + …]
   tech-stories/TECHSTORY-<KEY>-<slug>/           [SYNC - coverable folder: tech-story.md + ATP + ATR + …]
   tech-debts/TECHDEBT-<KEY>-<slug>/              [SYNC - coverable folder: tech-debt.md + ATP + ATR + …]
-  defects/ tests/                                [SYNC - standalone defect / test issues]
+  defects/                                       [SYNC - standalone defect issues]
+  tests/                                         [SYNC - ORPHAN Test issues only; covered ones nest under their parent]
   test-plans/ test-executions/ test-sets/ preconditions/   [SYNC - Xray container issues (jira-xray); description holds the ATP/ATR body]
 ```
 
 **Default `pull` scope = Epics + Stories + Bugs** (+ optional `--types` / `JIRA_SYNC_TYPES`). **Coverable** types (Story, Bug, Defect, Improvement, Tech Story, Tech Debt) each get their OWN folder: body md + `acceptance-test-plan.md` + `acceptance-test-results.md` + `test-executions/` (only when >1 Execution linked) + nested `defects/`. **ATP/ATR precedence** (items-first: a **Test Plan** item for ATP / **Test Execution** item for ATR by excellence; the Story custom field is fallback only): linked Xray Test Plan desc (ATP) / Test Execution / Re-Test Execution desc (ATR, newest wins) OVERRIDE the Story custom-field copy → else issue field → else Jira comment (only `--include-comments`) → else silent. Sync emits end-of-run **traceability WARNINGS** for ATP/ATR linked via the wrong link type, atypical Defect links, and orphan Defects with no coverable parent.
 
-**`[SYNC]` files = forbidden to hand-write** (overwritten on every sync: NO file is hard-protected; Jira is the source of truth). **Rule of thumb**: file mirrors a Jira/Xray field → read the synced copy, never author it locally. File holds info NOT in Jira (session notes, specs, ATC, roadmaps, evidence) → author it locally as usual.
+**`[SYNC]` files = forbidden to hand-write** (overwritten on every sync: NO file is hard-protected; Jira is the source of truth). **Rule of thumb**: file mirrors a Jira/Xray field → read the synced copy, never author it locally. File holds info NOT in Jira → author it locally, then decide its tier: does another machine need it? `[COMMIT]`. Only this session? `[LOCAL]`.
+
+**MODULE CONTEXT → EPIC DESCRIPTION.** No custom field: skills APPEND a `## Module Context (QA)` section to the Epic `description` (read-first, never overwrite the PO's text) and the sync splits that section out into `module-context.md`. `description` exists on every Jira instance, so this works on a project that provisions zero custom fields.
+
+**TESTS APPEAR EXACTLY ONCE.** A `Test` linked to a coverable issue materializes under that issue's `test-cases/`. Root `tests/` holds only orphans — Tests that no Story / Bug / Improvement covers, which is itself a coverage smell worth seeing.
+
+**ONE ATP PER STORY.** `/shift-left-testing` authors it pre-sprint into `{{jira.acceptance_test_plan}}` (and the linked Test Plan issue); `/sprint-testing` Stage 1 refines that SAME field and SAME issue into the executable superset. No `(Shift-Left DRAFT)` title variant. The pre-sprint pass is marked by the `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` labels. Stage 1's short-circuit reads the SYNCED `acceptance-test-plan.md` — never a local scratch file, which would be missing on any other machine and would degrade the short-circuit silently.
 
 **DETAILED READS via the script** (replaces `acli view` for custom fields):
 - `bun run jira:sync-issues get <KEY> --include-comments` → one issue, ALL custom fields + comments → read the generated `.md`.
@@ -363,6 +400,8 @@ Project values live in **`.agents/project.yaml`**: load once per session, cache.
 - Traceability (link graph Story↔ATP↔ATR↔TC) + Xray run status STAY on `acli`/`xray-cli`: the script only mirrors field content.
 
 **FALLBACK**: if a custom field a skill must fill is absent from the instance, the skill writes the content as a structured Jira comment (`## <label>`) per `.agents/jira-required.yaml` → `fallback:`. The sync then emits a pointer stub for that field's `.md`. Never block on a missing field.
+
+**COLD CLONE**: a fresh checkout has an almost-empty `.context/PBI/` (this README, `templates/`, committed `test-specs/`). That is the intended state. `bun run context:hydrate` rebuilds the cache; it needs `ATLASSIAN_URL` / `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` in `.env` (validate with `bun run jira:check`). Someone without Jira access keeps an empty cache and can still review `test-specs/`, run the suite, and work on framework code — but not per-ticket QA.
 
 **ENTRY POINT**: invoke `/sprint-testing`: syncs the ticket (`jira:sync-issues get`), explains story, loads the synced PBI, explores code.
 

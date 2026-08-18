@@ -47,7 +47,7 @@ Verify the fix for bug UPEX-456.
 Run QA on this sprint's tickets.
 ```
 
-El skill crea el PBI folder (`.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/`) con `context.md`, `test-session-memory.md` y `evidence/`, explica la historia y **espera tu confirmación** antes de continuar.
+El skill crea el PBI folder (`.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/`) con `context.md` y `evidence/`, mas `test-session-memory.md` en `.session/sprint-testing/<scope>/`, explica la historia y **espera tu confirmación** antes de continuar.
 
 ---
 

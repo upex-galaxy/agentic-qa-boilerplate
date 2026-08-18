@@ -446,7 +446,7 @@ bun run test:smoke         # smoke / @critical tests
 │   ├── master-test-plan.md       # What to test and why
 │   ├── PRD/                      # Product requirements
 │   ├── SRS/                      # Technical specs
-│   └── PBI/                      # Per-ticket backlog items
+│   └── PBI/                      # Per-ticket backlog items (GITIGNORED Jira cache; `bun run context:hydrate`)
 │
 ├── .agents/                      # Agentskills.io spec layout
 │   ├── project.yaml              # AI context vars (resolved as {{VAR}} by skills)
@@ -594,6 +594,7 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run jira:sync-workflows` | Sync Jira workflow statuses + transitions into `.agents/jira-workflows.json`. Same admin requirement as `jira:sync-fields`. |
 | `bun run jira:sync-link-types`| Sync workspace issue-link types into `.agents/jira-link-types.json`. USER-OK (no admin needed). Manual-only — not auto-invoked by setup. |
 | `bun run jira:sync-issues`    | Pull Jira Epics/Stories into `.context/PBI/` markdown files                  |
+| `bun run context:hydrate`     | Rebuild the whole gitignored `.context/PBI/` cache from Jira                 |
 | `bun run jira:check`          | Verify Jira workspace has required custom fields configured                  |
 
 > **`--upex` flag** — every `jira:sync-*` script accepts `--upex` to download the UPEX-standard reference JSON from `upex-galaxy/agentic-qa-boilerplate@main` instead of hitting Jira. Use when you don't have admin access, when you want a working catalog without setting up auth, or when you want the canonical UPEX standard as a reference. Examples: `bun run jira:sync-fields --upex`, `bun run jira:sync-workflows --upex`, `bun run jira:sync-link-types --upex`.

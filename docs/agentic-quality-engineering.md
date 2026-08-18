@@ -260,15 +260,17 @@ The knowledge layer is organised in three tiers, mirroring the scope at which th
 ├── ADR/                          # Project level — test-architecture decisions (append-only, never regenerated)
 │   ├── README.md                #   When-to-write (two-gate) + status lifecycle + index
 │   └── ADR-NNNN-template.md     #   Copy → ADR-NNNN-<slug>.md per decision
-└── PBI/                          # Epic + Story level (Module = Epic, 1:1)
+└── PBI/                          # Epic + Story level (Module = Epic, 1:1) — GITIGNORED cache
+    ├── README.md                 # Tier rules + gitignore ladder         [COMMIT]
+    ├── templates/                # Skeletons                             [COMMIT]
     ├── epic-tree.md              # Master index of every Epic            [SYNC]
     └── epics/
         └── EPIC-<KEY>-<slug>/
             ├── epic.md                          # Epic overview          [SYNC]
+            ├── module-context.md                # '## Module Context (QA)' section of the Epic description [SYNC]
             ├── feature-implementation-plan.md   # Feature-level dev plan [SYNC]
             ├── feature-test-plan.md             # Feature-level test plan[SYNC]
-            ├── module-context.md                # Module overview (non-Jira)
-            ├── test-specs/                      # EPIC-level (non-Jira)
+            ├── test-specs/                      # EPIC-level             [COMMIT]
             │   ├── ROADMAP.md   # All test IDs + automation status
             │   ├── PROGRESS.md  # Current progress
             │   └── <ID>/
@@ -282,11 +284,14 @@ The knowledge layer is organised in three tiers, mirroring the scope at which th
                     ├── acceptance-test-plan.md        # ATP cache        [SYNC]
                     ├── acceptance-test-results.md     # ATR cache        [SYNC]
                     ├── comments.md                    # Jira comments    [SYNC]
-                    ├── context.md                     # Session notes (non-Jira)
-                    └── evidence/*.png                 # Captured evidence (non-Jira)
+                    ├── test-cases/                    # Linked Test issues [SYNC]
+                    ├── context.md                     # Notes about the repo [LOCAL]
+                    └── evidence/*.png                 # Captured evidence  [LOCAL]
 ```
 
-`[SYNC]` files mirror a Jira field and are a read-only cache materialized by `scripts/sync-jira-issues.ts` — never hand-written. Jira is the source of truth.
+Three tiers. **`[SYNC]`** mirrors a Jira field, is materialized by `scripts/sync-jira-issues.ts`, and is never hand-written — Jira is the source of truth and `bun run context:hydrate` rebuilds the lot. **`[COMMIT]`** is versioned in git because it describes the test code, not the ticket. **`[LOCAL]`** is disposable session output; nothing downstream may depend on it existing, because it only exists on the machine that made it.
+
+The PBI tree as a whole is gitignored precisely because it regenerates: two sessions re-syncing at different times would otherwise commit conflicting copies of the same generated text. Per-ticket session state (`test-session-memory.md`) lives in `.session/sprint-testing/<scope>/`, outside the cache, so a re-sync cannot clobber it mid-run.
 
 The canonical shape is documented in `.context/README.md`. The strategic reasoning behind the three-tier split lives in `CONTEXT.md` (repo root) — read that for the full rationale.
 

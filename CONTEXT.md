@@ -103,7 +103,9 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 │   ├── README.md                  → When-to-write (two-gate) + status lifecycle + index
 │   └── ADR-NNNN-template.md       → Copy → ADR-NNNN-<slug>.md per decision (supersede, never delete)
 │
-├── PBI/                       → Per-module + per-ticket context (generated)
+├── PBI/                       → Per-module + per-ticket context — GITIGNORED cache of Jira
+│                                 rebuild: `bun run context:hydrate` · committed exceptions: README.md,
+│                                 templates/, epics/*/test-specs/ (see .context/PBI/README.md)
 │
 ├── business/                   → Business maps (command-generated)
 │   ├── business-data-map.md       → System flows + entities        (/business-data-map)
