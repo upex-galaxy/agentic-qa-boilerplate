@@ -437,9 +437,26 @@ Git / PR work → `/git-flow-master` auto-loads. Details in `.claude/skills/git-
 
 > **Source of truth: the `git_strategy:` block in `.agents/project.yaml`.** `git-flow-master` reads it before any git/gh operation and adapts every branch / commit / push / PR / conflict-fix to the strategy declared there. NEVER define branch policy in this CLAUDE.md: edit the `git_strategy:` block.
 >
-> If `git_strategy.strategy` is **null** (the shipped template value), the strategy is UNSET: `git-flow-master` OFFERS "Strategy Setup" on the first git intent and fills the block (it never auto-picks). `.agents/project.yaml` ships as a per-project template (all `null`) and is frozen by `bun run update` (updater `bootstrapOnlyPaths`), so every project keeps its own strategy. Downstream test-automation projects typically choose `sdet` (chained suites; see `.claude/skills/git-flow-master/references/sdet-integration-trunk.md`).
+> `git_strategy.strategy` ships **`solo-main`**, not null. That is a DEFAULT, not a decision, and `meta.strategy_source: inherited` is what records the difference. `git-flow-master` OFFERS "Strategy Setup" when a project has filled in its `project_name` and `strategy_source` is still `inherited` — a real project running a strategy nobody chose. `.agents/project.yaml` is frozen by `bun run update` (updater `bootstrapOnlyPaths`), so every project keeps its own. Downstream test-automation projects typically choose `sdet` (chained suites; see `.claude/skills/git-flow-master/references/sdet-integration-trunk.md`).
 
-This repository (the boilerplate itself) ships `git_strategy.strategy: null`; with a single `main` branch, `git-flow-master` operates as **`solo-main`** (single maintainer, commit + push directly to `main`). To pin it explicitly: ask git-flow-master to "set up our git strategy".
+This repository (the boilerplate itself) runs `solo-main`: single maintainer, commit and push directly to `main`. To pin it as a real decision rather than the inherited default, ask git-flow-master to "set up our git strategy" — that stamps `strategy_source: chosen`.
+
+### Accepted divergence — declared policy vs enforced ruleset
+
+`bun run git:policy verify` reports one drift on `main`, and it is **intended**. Do not "fix" it:
+
+```
+main.direct_push_to_protected   declared: allowed   enforced: blocked (pull_request rule)
+```
+
+The ruleset `ProtectPublic` (id `16809531`) does require a pull request on `main`. This repo pushes directly anyway, because the push credential is an org admin and sits in the ruleset's bypass list. The remote line `Bypassed rule violations ... Changes must be made through a pull request` is expected here and is not an error.
+
+Why the yaml stays `allowed` rather than being "corrected" to `confirm`: `allowed` describes how work actually lands in this repository, and it is the value `git-flow-master` reads before deciding whether to ask permission for each push. Flipping it would make every agent stop and confirm on a flow that has standing authorization.
+
+Two consequences worth knowing:
+
+- **`meta.policy_source` stays `declared`** while this divergence is open. A `verified` stamp would claim the two sides agree, and they do not.
+- **`bun run git:policy apply` must NOT be run on this repository.** With `direct_push_to_protected: allowed`, the tool derives a ruleset with **no** `pull_request` rule, so applying it would strip the requirement for everyone who is not a bypass actor. The loosening guard blocks it, and that guard is the only thing standing between this config and an open `main`. Surgical host changes here go through `gh api` directly.
 
 ---
 

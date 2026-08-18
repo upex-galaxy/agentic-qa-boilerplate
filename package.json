@@ -82,6 +82,7 @@
     "test": "playwright test",
     "types:check": "tsc --noEmit",
     "up": "bun cli/update-boilerplate.ts",
+    "git:policy": "bun scripts/git-policy.ts",
     "vars:check": "bun scripts/lint-vars.ts",
     "vars:env:check": "bun scripts/check-vars.ts",
     "xray": "bun cli/xray/index.ts"
