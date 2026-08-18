@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Output Style: cómo escribe la IA a partir de ahora</title>
+<style>
+:root{
+  --bg:#0b0d12; --bg-2:#0e1118; --panel:#12161f; --panel-2:#161b26; --panel-3:#1b2130;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14);
+  --t1:#eef1f7; --t2:#9aa3b4; --t3:#5f6878;
+  --mono:ui-monospace,'SF Mono','JetBrains Mono',SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --cyan:#22d3ee; --violet:#a78bfa; --lime:#a3e635; --amber:#fbbf24; --rose:#f472b6;
+  --green:#34d399; --red:#f87171; --blue:#60a5fa;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--t1);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;letter-spacing:-.01em;line-height:1.6}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px 120px}
+
+/* ---------- hero ---------- */
+header.hero{position:relative;padding:76px 0 44px;overflow:hidden}
+header.hero::before{content:"";position:absolute;inset:-40% -20% auto -20%;height:520px;z-index:-1;
+  background:radial-gradient(700px 380px at 18% 0%,rgba(34,211,238,.13),transparent 62%),
+             radial-gradient(620px 420px at 88% 30%,rgba(167,139,250,.11),transparent 58%)}
+.kick{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--cyan);margin:0 0 14px}
+h1{font-size:clamp(34px,5vw,58px);line-height:1.04;font-weight:700;letter-spacing:-.035em;margin:0 0 18px}
+.grad{background:linear-gradient(100deg,var(--cyan),var(--violet) 55%,var(--rose));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.lede{font-size:clamp(16px,1.6vw,20px);line-height:1.55;color:var(--t2);font-weight:300;max-width:74ch;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.tag{font-family:var(--mono);font-size:11.5px;padding:4px 10px;border-radius:6px;
+  background:var(--panel-2);color:var(--t2);border:1px solid var(--line)}
+
+/* ---------- sections ---------- */
+section{margin-top:62px}
+h2{font-size:clamp(24px,3vw,34px);line-height:1.12;font-weight:700;letter-spacing:-.03em;margin:0 0 10px}
+h2 .num{font-family:var(--mono);font-size:.55em;color:var(--t3);margin-right:12px;font-weight:600}
+.sub{color:var(--t2);font-weight:300;max-width:78ch;margin:0 0 26px;font-size:16.5px}
+
+/* ---------- layer table ---------- */
+table.layers{width:100%;border-collapse:collapse;background:var(--panel);
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:14.5px}
+table.layers th{text-align:left;padding:14px 18px;background:var(--panel-2);
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--t3);font-weight:600;border-bottom:1px solid var(--line)}
+table.layers td{padding:15px 18px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--t2)}
+table.layers tr:last-child td{border-bottom:none}
+table.layers td:first-child{color:var(--t1);font-weight:600;white-space:nowrap}
+table.layers code{font-family:var(--mono);font-size:12.5px;background:var(--panel-3);
+  padding:2px 6px;border-radius:5px;color:var(--violet);border:1px solid var(--line)}
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-left:8px}
+.pill.win{background:rgba(52,211,153,.14);color:var(--green);border:1px solid rgba(52,211,153,.32)}
+
+/* ---------- toggle ---------- */
+.switcher{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 22px}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line-2);
+  border-radius:11px;padding:4px;gap:4px}
+.seg button{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;padding:9px 20px;border-radius:8px;border:none;cursor:pointer;
+  background:transparent;color:var(--t3);transition:all .22s var(--ease)}
+.seg button:hover{color:var(--t2)}
+.seg button.on{background:var(--panel-3);color:var(--t1);box-shadow:0 1px 0 rgba(255,255,255,.06) inset}
+.seg button.on[data-mode="before"]{color:var(--red)}
+.seg button.on[data-mode="after"]{color:var(--green)}
+.hint{font-size:13.5px;color:var(--t3)}
+.hint kbd{font-family:var(--mono);font-size:11.5px;background:var(--panel-2);
+  border:1px solid var(--line-2);border-bottom-width:2px;border-radius:5px;padding:2px 7px;color:var(--t2)}
+
+/* ---------- terminal ---------- */
+.term{background:var(--bg-2);border:1px solid var(--line-2);border-radius:14px;overflow:hidden;
+  box-shadow:0 30px 70px -30px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.03)}
+.term-bar{display:flex;align-items:center;gap:9px;padding:12px 16px;background:var(--panel-2);
+  border-bottom:1px solid var(--line)}
+.dot{width:11px;height:11px;border-radius:50%}
+.dot.r{background:#ff5f57}.dot.y{background:#febc2e}.dot.g{background:#28c840}
+.term-title{margin-left:10px;font-family:var(--mono);font-size:12px;color:var(--t3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.term-badge{margin-left:auto;font-family:var(--mono);font-size:10.5px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.term-badge.before{background:rgba(248,113,113,.13);color:var(--red);border:1px solid rgba(248,113,113,.3)}
+.term-badge.after{background:rgba(52,211,153,.13);color:var(--green);border:1px solid rgba(52,211,153,.3)}
+.term-body{padding:26px 28px 30px;font-family:var(--mono);font-size:13.5px;line-height:1.72}
+
+/* user prompt line */
+.uline{display:flex;gap:11px;align-items:flex-start;margin:30px 0 20px}
+.uline:first-child{margin-top:0}
+.uline .caret{color:var(--cyan);font-weight:700;flex-shrink:0}
+.uline .txt{color:var(--t1)}
+
+/* claude reply */
+.reply{border-left:2px solid var(--line-2);padding:2px 0 2px 20px;margin:0 0 8px}
+.reply.after-mode{border-left-color:rgba(52,211,153,.36)}
+.reply.before-mode{border-left-color:rgba(248,113,113,.3)}
+.reply p{margin:0 0 13px;color:var(--t2)}
+.reply p.head{color:var(--t1);font-size:14.5px;margin-bottom:16px}
+.reply strong{color:var(--t1);font-weight:700}
+.reply .punch{color:var(--amber);font-weight:700}
+.reply code{background:var(--panel-3);border:1px solid var(--line);border-radius:5px;
+  padding:1.5px 6px;font-size:12.5px;color:var(--violet)}
+.reply h3{font-size:14px;font-weight:700;color:var(--t1);margin:20px 0 10px;
+  letter-spacing:0;display:flex;align-items:center;gap:9px}
+.reply h3::before{content:"##";font-family:var(--mono);color:var(--t3);font-weight:600;font-size:12px}
+.reply ul{list-style:none;margin:0 0 14px;padding:0}
+.reply ul li{position:relative;padding-left:19px;margin-bottom:7px;color:var(--t2)}
+.reply ul li::before{content:"•";position:absolute;left:2px;color:var(--cyan);font-weight:700}
+.reply .q{color:var(--t3);font-style:italic;margin-bottom:12px}
+.reply table{width:100%;border-collapse:collapse;margin:4px 0 16px;font-size:12.5px}
+.reply table th{text-align:left;padding:8px 12px;color:var(--t3);font-weight:600;
+  border-bottom:1px solid var(--line-2);white-space:nowrap}
+.reply table td{padding:8px 12px;border-bottom:1px solid var(--line);color:var(--t2);vertical-align:top}
+.reply table tr:last-child td{border-bottom:none}
+.reply table td strong{color:var(--amber)}
+.reply pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.6;margin:4px 0 15px;color:var(--t2)}
+.reply pre .c{color:var(--t3)} .reply pre .k{color:var(--cyan)}
+.reply pre .f{color:var(--lime)} .reply pre .a{color:var(--amber)}
+.reply .lang{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);
+  display:block;margin-bottom:8px}
+.reply .dash{color:var(--red);font-weight:700;background:rgba(248,113,113,.14);
+  border-radius:3px;padding:0 3px}
+.reply .wall{color:var(--t2)}
+
+.note{display:flex;gap:12px;margin-top:18px;padding:14px 18px;border-radius:11px;
+  background:var(--panel);border:1px solid var(--line);font-size:14px;color:var(--t2);line-height:1.55}
+.note .ic{flex-shrink:0;font-family:var(--mono);font-weight:700;font-size:12px;
+  letter-spacing:.08em;text-transform:uppercase}
+.note.bad .ic{color:var(--red)} .note.good .ic{color:var(--green)}
+.note strong{color:var(--t1)}
+.note code{font-family:var(--mono);font-size:12.5px;background:var(--panel-3);
+  padding:1.5px 6px;border-radius:5px;color:var(--violet);border:1px solid var(--line)}
+
+/* ---------- changes grid ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;
+  border-top:2px solid var(--ac,var(--cyan))}
+.card h4{margin:0 0 8px;font-size:15.5px;font-weight:700;color:var(--t1);letter-spacing:-.01em}
+.card p{margin:0;font-size:14px;color:var(--t2);line-height:1.55}
+.card .n{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ac,var(--cyan));display:block;margin-bottom:9px}
+.card code{font-family:var(--mono);font-size:12.5px;background:var(--panel-3);
+  padding:1.5px 6px;border-radius:5px;color:var(--violet);border:1px solid var(--line)}
+.card .st{display:inline-block;margin-top:11px;font-family:var(--mono);font-size:10.5px;
+  font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px}
+.st.done{background:rgba(52,211,153,.13);color:var(--green);border:1px solid rgba(52,211,153,.3)}
+.st.wait{background:rgba(251,191,36,.13);color:var(--amber);border:1px solid rgba(251,191,36,.3)}
+
+/* ---------- pending block ---------- */
+pre.snippet{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:18px 20px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.65;
+  color:var(--t2);margin:14px 0 0}
+pre.snippet .k{color:var(--cyan)} pre.snippet .s{color:var(--lime)} pre.snippet .c{color:var(--t3)}
+
+footer{margin-top:80px;padding-top:26px;border-top:1px solid var(--line);
+  font-size:13px;color:var(--t3);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
+
+@media (max-width:760px){
+  .wrap{padding:0 18px 80px}
+  .term-body{padding:20px 18px 24px;font-size:12.5px}
+  .reply{padding-left:14px}
+  table.layers{font-size:13px} table.layers th,table.layers td{padding:11px 12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <p class="kick">Contrato de salida · agentic-qa-boilerplate</p>
+  <h1>Cómo escribe la IA <span class="grad">a partir de ahora</span></h1>
+  <p class="lede">
+    Tres capas gobiernan cada respuesta en el chat, y hasta hoy dos de ellas se contradecían.
+    Esta página muestra el reparto nuevo y una sesión ficticia de QA renderizada en los dos
+    estilos, para que la diferencia se vea en lugar de leerse.
+  </p>
+  <div class="meta">
+    <span class="tag">CLAUDE.md §2</span>
+    <span class="tag">~/.claude/CLAUDE.md → OUTPUT STYLE</span>
+    <span class="tag">caveman@caveman · full</span>
+    <span class="tag">2026-08-17</span>
+  </div>
+</header>
+
+<section id="layers">
+  <h2><span class="num">01</span>El reparto de capas</h2>
+  <p class="sub">
+    Cada capa manda sobre una sola dimensión. Cuando dos capas reclaman la misma, se contradicen,
+    y gana la que se reinyecta más veces por turno, no la que tiene razón. Ese era el problema de fondo.
+  </p>
+  <table class="layers">
+    <thead>
+      <tr><th>Capa</th><th>Dimensión</th><th>Dónde vive</th><th>Frecuencia</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>caveman</td>
+        <td>cuántas <strong>palabras</strong></td>
+        <td><code>caveman@caveman</code> (plugin global, nivel <code>full</code>)</td>
+        <td>cada turno, vía hook</td>
+      </tr>
+      <tr>
+        <td>CLAUDE.md §2<span class="pill win">manda</span></td>
+        <td><strong>qué</strong> se dice, granularidad y registro</td>
+        <td>Butler + PM Voice + Visual Mapping</td>
+        <td>cada turno, vía hook nuevo</td>
+      </tr>
+      <tr>
+        <td>OUTPUT STYLE</td>
+        <td>cómo se <strong>ve</strong> y qué <strong>textura</strong> tiene</td>
+        <td><code>~/.claude/CLAUDE.md</code></td>
+        <td>al arrancar sesión</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="note good">
+    <span class="ic">Regla</span>
+    <div>
+      <strong>§2 gana siempre sobre contenido.</strong> OUTPUT STYLE solo decide el render
+      (títulos, anclas en negrita, <code>backticks</code>, tablas, espaciado) y la textura de las frases
+      (sin guión largo, longitud variable, sin recap final). Si una regla de ahí cambiara
+      <em>qué</em> se dice, la regla está mal puesta y pertenece a §2.
+    </div>
+  </div>
+</section>
+
+<section id="session">
+  <h2><span class="num">02</span>La misma sesión, los dos estilos</h2>
+  <p class="sub">
+    Ticket ficticio <code>UPEX-482</code>, login con 2FA. Mismo trabajo, misma información,
+    misma longitud aproximada. Solo cambia cómo llega.
+  </p>
+
+  <div class="switcher">
+    <div class="seg" role="tablist">
+      <button data-mode="before" class="on">Antes</button>
+      <button data-mode="after">Ahora</button>
+    </div>
+    <span class="hint">Pulsa para alternar, o usa <kbd>←</kbd> <kbd>→</kbd></span>
+  </div>
+
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="term-title">claude · ~/projects/agentic-qa-boilerplate</span>
+      <span class="term-badge before" id="badge">estilo anterior</span>
+    </div>
+    <div class="term-body" id="termBody"></div>
+  </div>
+
+  <div class="note bad" id="verdict"></div>
+</section>
+
+<section id="changes">
+  <h2><span class="num">03</span>Qué se tocó</h2>
+  <p class="sub">
+    Nueve acciones, todas aplicadas y verificadas con <code>bun run repo:check</code>. Las dos
+    últimas tocan ficheros que registran ejecución de código, así que necesitaron aprobación
+    explícita antes de ejecutarse.
+  </p>
+  <div class="cards">
+
+    <div class="card" style="--ac:var(--cyan)">
+      <span class="n">01 · 02</span>
+      <h4>WRITING STYLE pasa a OUTPUT STYLE</h4>
+      <p>De 71 líneas a 46, y de cuatro listas negras a tres bloques (dos de ellos positivos).
+      Caen <code>BANNED VOCABULARY</code>, <code>BANNED PHRASES</code> y
+      <code>BANNED RHETORICAL PATTERNS</code>. Queda una micro-lista de diez palabras con excepción
+      de uso técnico literal, que es lo que faltaba para poder escribir <code>API key</code> sin esquivarlo.</p>
+      <span class="st done">aplicado</span>
+    </div>
+
+    <div class="card" style="--ac:var(--violet)">
+      <span class="n">03</span>
+      <h4>Viñeta Butler sin guión largo</h4>
+      <p>El formato canónico pasa de <code>topic — fragment</code> a <code>topic: fragment</code>.
+      La instrucción <em>mandaba</em> usar guión largo mientras la regla global lo prohibía, así que
+      ninguna corrección iba a funcionar mientras el ejemplo dijera lo contrario.</p>
+      <span class="st done">aplicado</span>
+    </div>
+
+    <div class="card" style="--ac:var(--rose)">
+      <span class="n">04</span>
+      <h4>Barrido de 173 guiones largos</h4>
+      <p>119 en <code>CLAUDE.md</code> y 54 en <code>docs/ai-personality.md</code>. El modelo imita
+      la densidad tipográfica que ve en sus propias instrucciones, y veía 185 guiones largos contra
+      una línea que los prohibía. Ahora quedan cero.</p>
+      <span class="st done">aplicado</span>
+    </div>
+
+    <div class="card" style="--ac:var(--amber)">
+      <span class="n">05</span>
+      <h4>Fuera el headline punch</h4>
+      <p>La regla obligaba a abrir cada respuesta con una frase de enganche distinta cada vez.
+      Teatro fabricado, y contradecía el rasgo <em>anti-theatre</em> de la propia personalidad.
+      La pregunta de orientación del menú se queda: esa sí navega.</p>
+      <span class="st done">aplicado</span>
+    </div>
+
+    <div class="card" style="--ac:var(--lime)">
+      <span class="n">08</span>
+      <h4>ai-personality.md resincronizado</h4>
+      <p>Cinco puntos de deriva: rutas inexistentes de caveman y de los hooks, <code>6-component</code>
+      contra <code>7-COMPONENT</code>, skills <code>/sdd-*</code> que no se instalan, y una descripción
+      del fichero global que listaba cosas que ese fichero nunca tuvo. Se añade la sección 3.7
+      documentando la capa nueva.</p>
+      <span class="st done">aplicado</span>
+    </div>
+
+    <div class="card" style="--ac:var(--blue)">
+      <span class="n">06</span>
+      <h4>Hook de reinyección del contrato</h4>
+      <p><code>.claude/hooks/personality-reinject.js</code>, registrado como
+      <code>UserPromptSubmit</code>. Sin él, PM Voice y Butler se leen una vez y se diluyen mientras
+      caveman se reinyecta cada turno: la asimetría era mecánica, no editorial. Cuesta unos 30
+      tokens por turno.</p>
+      <span class="st done">aplicado</span>
+    </div>
+
+    <div class="card" style="--ac:var(--blue)">
+      <span class="n">07</span>
+      <h4>Deduplicar caveman</h4>
+      <p>Estaba instalado dos veces. El one-liner oficial corre en modo <code>--all</code>, que
+      instala el plugin <code>caveman@caveman</code> <em>y además</em> escribe una segunda copia de
+      los mismos dos hooks en <code>~/.claude/settings.json</code>. Bloque manual eliminado, plugin
+      intacto.</p>
+      <span class="st done">aplicado</span>
+    </div>
+
+    <div class="card" style="--ac:var(--green)">
+      <span class="n">09</span>
+      <h4>El instalador deja de propagar el duplicado</h4>
+      <p>La causa raíz no era una instalación mal hecha: el one-liner que este repo recomendaba corre
+      en modo <code>--all</code> por defecto, y <code>--all</code> instala el plugin <em>y encima</em>
+      registra hooks propios. <code>cli/install.ts</code> e <code>INSTALLER.md</code> ahora recomiendan
+      <code>--no-hooks</code>, que conserva el plugin, la cobertura multi-agente que este repo necesita
+      para OpenCode, y el proxy MCP <code>caveman-shrink</code>.</p>
+      <span class="st done">aplicado</span>
+    </div>
+
+  </div>
+
+  <div class="note good" style="margin-top:22px">
+    <span class="ic">Causa raíz</span>
+    <div>
+      El duplicado de caveman no lo provocó una instalación descuidada. El one-liner oficial se
+      describe a sí mismo como <em>"Plugin + hooks + statusline + MCP shrink"</em>, o sea que
+      <strong>instala el plugin y luego registra una segunda copia de los mismos dos hooks</strong>
+      en <code>~/.claude/settings.json</code>. Cualquiera que copiase el comando de
+      <code>INSTALLER.md</code> acababa con la doble inyección por turno.
+      <pre class="snippet"><span class="c"># Antes (modo --all implícito): plugin + hooks duplicados</span>
+curl -fsSL https://raw.githubusercontent.com/.../install.sh | bash
+
+<span class="c"># Ahora: mismo alcance, sin el registro duplicado</span>
+curl -fsSL https://raw.githubusercontent.com/.../install.sh | bash -s -- <span class="s">--no-hooks</span>
+
+<span class="c"># Windows: irm | iex no acepta flags (caveman #565), se llama al instalador Node directo</span>
+npx -y github:JuliusBrussee/caveman <span class="s">--no-hooks</span></pre>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>Rama <code>worktree-writing-style-refactor</code> · mockup ficticio, ningún ticket es real</span>
+  <span><code>packages/decks/agentic-qa-core/output-style.es.html</code></span>
+</footer>
+
+</div>
+
+<script>
+const SESSION = {
+  before: [
+    {
+      user: '¿cómo quedó el testing de la historia del login con 2FA?',
+      html: `
+<p class="head"><span class="punch">Resumen</span>: se completó la ejecución de la suite manual sobre la historia UPEX-482 <span class="dash">—</span> login con doble factor <span class="dash">—</span> y los resultados se detallan a continuación.</p>
+<p class="wall">Se ejecutaron once casos de prueba en total sobre el entorno de staging, cubriendo tanto el flujo de SMS como el de aplicación autenticadora, y de esos once casos nueve resultaron en estado aprobado mientras que dos presentaron desviaciones respecto al comportamiento esperado descrito en los criterios de aceptación de la historia. La primera desviación corresponde a la ventana de validez del código TOTP, que según el criterio de aceptación número tres debería ser de treinta segundos pero que en la práctica acepta códigos generados hasta noventa segundos antes, lo cual representa un riesgo de seguridad al triplicar la ventana de exposición de un código interceptado. La segunda desviación corresponde a la ausencia de un botón de reenvío de código, situación que obliga al usuario a recargar la página completa para solicitar un código nuevo, degradando la experiencia sin llegar a incumplir ningún criterio de aceptación explícito.</p>
+<p class="wall">Ambos hallazgos fueron reportados en Jira siguiendo la doctrina de gestión de defectos vigente en el repositorio, quedando el primero clasificado como defecto por tratarse de una funcionalidad todavía no liberada a producción y el segundo como mejora por no corresponder a un criterio de aceptación incumplido sino a una carencia de especificación detectada durante la exploración más allá de los criterios.</p>
+<p class="wall">En conclusión, la historia no se encuentra en condiciones de ser cerrada hasta que el defecto de la ventana TOTP sea corregido y verificado nuevamente, mientras que la mejora puede ser priorizada de forma independiente por el equipo de producto.</p>`
+    },
+    {
+      user: 'dame el detalle del defecto del TOTP, ¿en qué archivo está el fixture?',
+      html: `
+<p class="head"><span class="punch">Detalle</span>: el defecto UPEX-517 <span class="dash">—</span> ventana TOTP extendida <span class="dash">—</span> se reproduce de forma consistente.</p>
+<p class="wall">El fixture que genera los códigos de prueba se encuentra en tests/components/auth/TotpApi.ts y expone el método generateCode que internamente utiliza la librería otplib con un parámetro window configurado en tres unidades, cuando el valor correcto para una ventana de treinta segundos sería uno, siendo este parámetro el que multiplica por tres el periodo de validez efectivo. La reproducción requiere generar un código, esperar entre treinta y uno y noventa segundos, e introducirlo en el formulario de verificación, momento en el cual la respuesta del endpoint POST /api/auth/verify-2fa devuelve un código doscientos cuando lo esperado sería un código cuatrocientos uno.</p>
+<p class="wall">El impacto se considera alto dado que triplica la ventana de exposición efectiva de un código interceptado por un atacante, y afecta a la totalidad de los usuarios que tengan activado el segundo factor de autenticación mediante aplicación autenticadora, no así a los que utilicen el canal de SMS.</p>`
+    },
+    {
+      user: 'vale, ¿y qué falta para cerrar el sprint?',
+      html: `
+<p class="head"><span class="punch">Estado</span>: quedan cuatro elementos pendientes antes del cierre.</p>
+<p class="wall">En el apartado de defectos, el ticket UPEX-517 permanece abierto a la espera de corrección por parte del equipo de desarrollo y posterior verificación por parte de QA, siendo este el único bloqueante real del cierre del sprint. En el apartado de documentación, restan por documentar dos casos de prueba en la herramienta de gestión de pruebas, correspondientes a los flujos de expiración y de reenvío, así como la actualización del plan de pruebas de aceptación de la historia. En el apartado de automatización, se identificaron tres candidatos con retorno de inversión favorable que deberían incorporarse a la suite de regresión antes del siguiente ciclo. Finalmente, en el apartado de reportes, queda pendiente la generación del informe ejecutivo de calidad correspondiente al sprint.</p>
+<p class="wall">Espero que este resumen te sea de utilidad, y quedo a la espera de tus indicaciones sobre cuál de estos frentes prefieres abordar en primer lugar.</p>`
+    }
+  ],
+  after: [
+    {
+      user: '¿cómo quedó el testing de la historia del login con 2FA?',
+      html: `
+<p class="head">Login con 2FA queda bloqueado: la <strong>ventana TOTP</strong> acepta códigos caducados de hasta 90 segundos. 9 de 11 casos pasan, y los 2 que fallan son el mismo problema.</p>
+<table>
+  <thead><tr><th>Canal</th><th>Casos</th><th>Pasan</th><th>Fallan</th></tr></thead>
+  <tbody>
+    <tr><td>SMS</td><td>5</td><td>5</td><td>0</td></tr>
+    <tr><td>App autenticadora (TOTP)</td><td>6</td><td>4</td><td>2</td></tr>
+  </tbody>
+</table>
+<p class="q">¿Por dónde quieres entrar?</p>
+<ul>
+  <li><code>UPEX-517</code> (Defect, severidad <strong>Alta</strong>): código TOTP sigue siendo válido 90 s después de generarse, triple de los 30 s especificados en AC-3.</li>
+  <li>Riesgo de negocio: código visto de reojo en la pantalla, o reenviado por WhatsApp, sirve minuto y medio más. No es teórico: los 6 dígitos siguen en pantalla del móvil.</li>
+  <li><code>UPEX-518</code> (Improvement, ningún AC roto): no existe botón de reenvío. Usuario recarga la página entera para pedir otro SMS.</li>
+  <li>Cobertura fuera de ACs: 4 casos añadidos por riesgo (reuso del mismo código, 2FA con sesión previa abierta, cambio de dispositivo a mitad de flujo, bloqueo tras 5 intentos fallidos).</li>
+  <li>Artefactos en Jira: ATP <code>UPEX-505</code> y ATR <code>UPEX-516</code> publicados; la historia se queda en In Testing hasta el retest.</li>
+  <li>Evidencia: 6 capturas y 1 anotada en <code>.context/PBI/epics/EPIC-UPEX-470-auth/stories/STORY-UPEX-482-login-2fa/evidence/</code></li>
+</ul>`
+    },
+    {
+      user: 'dame el detalle del defecto del TOTP, ¿en qué archivo está el fixture?',
+      html: `
+<p class="head">Fixture está en <code>tests/fixtures/test.fixture.ts</code>. El ATC que reproduce el defecto vive en <code>tests/components/auth/api/AuthApi.ts</code>, registrado como <code>@atc('UPEX-491')</code>.</p>
+<table>
+  <thead><tr><th>Antigüedad del código</th><th>Esperado</th><th>Observado</th></tr></thead>
+  <tbody>
+    <tr><td>0-30 s</td><td><code>200</code> acepta</td><td>acepta</td></tr>
+    <tr><td>31-60 s</td><td><code>401 TOTP_EXPIRED</code></td><td><strong>acepta</strong></td></tr>
+    <tr><td>61-90 s</td><td><code>401 TOTP_EXPIRED</code></td><td><strong>acepta</strong></td></tr>
+    <tr><td>91 s en adelante</td><td><code>401 TOTP_EXPIRED</code></td><td>rechaza</td></tr>
+  </tbody>
+</table>
+<p>Causa probable en backend: <code>speakeasy.totp.verify()</code> llamado con <code>window: 3</code>, o sea 3 pasos de 30 s hacia atrás. AC-3 pide <code>window: 1</code>. No confirmado en código de producto, solo inferido por el corte limpio en 90 s.</p>
+<pre><span class="lang">typescript</span><span class="c">// tests/components/auth/api/AuthApi.ts</span>
+<span class="a">@atc</span>(<span class="f">'UPEX-491'</span>)
+<span class="k">async</span> verify2fa({ userId, skewSeconds }: Verify2faInput) {
+  <span class="k">const</span> code = totpAt(<span class="k">this</span>.ctx.seed.totpSecret, Date.now() - skewSeconds * <span class="f">1_000</span>);
+  <span class="k">return</span> <span class="k">this</span>.post(<span class="f">'/api/v1/auth/2fa/verify'</span>, { userId, code });
+}</pre>
+<p>Repro en local:</p>
+<pre><span class="lang">bash</span><span class="k">bunx</span> playwright test tests/integration/auth/totp-window.spec.ts --grep <span class="f">@UPEX-517</span></pre>
+<ul>
+  <li>Fixture usado: <code>{ api }</code>, caso es API puro y no levanta navegador.</li>
+  <li>Helper de reloj: <code>totpAt()</code> en <code>tests/utils/totp.ts</code>, desplaza el timestamp sin tocar el reloj del sistema.</li>
+  <li>Contrato: <code>Verify2faRequest</code> en <code>api/schemas/auth.ts</code>, regenerado con <code>bun run api:sync</code> el 12/08.</li>
+  <li>Manifest: ATC ya está en <code>kata-manifest.json</code>, no hace falta regenerar.</li>
+</ul>`
+    },
+    {
+      user: 'vale, ¿y qué falta para cerrar el sprint?',
+      html: `
+<p class="head">Queda <strong>un solo bloqueante</strong> para cerrar el sprint: el retest del defecto de seguridad. Lo demás es trabajo que no frena la release.</p>
+<p class="q">¿Qué quieres que empuje primero?</p>
+<ul>
+  <li><code>UPEX-517</code>: asignado a dev, fix estimado para hoy. El retest son 3 casos, unos 25 minutos, y devuelve la historia a Tested.</li>
+  <li><code>UPEX-518</code>: parado en decisión del PO. Si entra al sprint siguiente, no toca nada de lo ya probado.</li>
+  <li>Automatización pendiente: 3 casos salieron Candidate en el scoring de ROI (login TOTP feliz, código expirado, bloqueo tras 5 intentos). Sin código todavía.</li>
+  <li>Regresión nocturna: corre en verde, pero la suite aún no incluye 2FA. Hoy es ciega para esta historia.</li>
+</ul>`
+    }
+  ]
+}
+
+const VERDICT = {
+  before: {
+    cls: 'note bad',
+    ic: 'Problema',
+    html: `Cuatro párrafos casi idénticos en longitud, sin una sola ancla donde parar el ojo. Cero <code>backticks</code>, así que <code>TotpApi.ts</code> y <code>/api/auth/verify-2fa</code> se leen como prosa. Guiones largos como muletilla estructural. Frase de enganche fabricada al inicio de cada respuesta. Cierre con "espero que te sea de utilidad". <strong>Toda la información está ahí, y aun así hay que leerlo entero para encontrar qué bloquea el sprint.</strong>`
+  },
+  after: {
+    cls: 'note good',
+    ic: 'Resultado',
+    html: `Esta salida no está escrita a mano: la generó un subagente cargando el <code>CLAUDE.md</code> de esta rama y el <code>OUTPUT STYLE</code> global ya reescritos. El titular responde y se sostiene solo. La comparación va en tabla porque es una comparación. Rutas, ATCs y códigos HTTP en <code>backticks</code>, así que saltan a la vista. Frases de 6 a 30 palabras alternadas. Cero guiones largos, cero recap final. <strong>El menú deja que tires del hilo que te interese en lugar de recibirlo todo de golpe.</strong>`
+  }
+}
+
+let mode = 'before'
+const body = document.getElementById('termBody')
+const badge = document.getElementById('badge')
+const verdict = document.getElementById('verdict')
+
+function render () {
+  body.innerHTML = SESSION[mode].map(t => `
+    <div class="uline"><span class="caret">&gt;</span><span class="txt">${t.user}</span></div>
+    <div class="reply ${mode}-mode">${t.html}</div>`).join('')
+  badge.className = 'term-badge ' + mode
+  badge.textContent = mode === 'before' ? 'estilo anterior' : 'estilo nuevo'
+  const v = VERDICT[mode]
+  verdict.className = v.cls
+  verdict.innerHTML = `<span class="ic">${v.ic}</span><div>${v.html}</div>`
+  document.querySelectorAll('.seg button').forEach(b =>
+    b.classList.toggle('on', b.dataset.mode === mode))
+}
+
+document.querySelectorAll('.seg button').forEach(b =>
+  b.addEventListener('click', () => { mode = b.dataset.mode; render() }))
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') { mode = 'before'; render() }
+  if (e.key === 'ArrowRight') { mode = 'after'; render() }
+})
+
+render()
+</script>
+</body>
+</html>
