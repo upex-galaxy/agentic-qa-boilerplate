@@ -74,7 +74,10 @@ function validateTmsConfig(): void {
   }
   else if (config.tms.provider === 'jira') {
     if (!config.tms.jira.url) {
-      missing.push('ATLASSIAN_URL');
+      // Not an env var: the host comes from .agents/project.yaml. Naming the
+      // variable here would send the operator to edit a file that no longer
+      // carries it.
+      missing.push('issue_tracker.atlassian_url in .agents/project.yaml (set it with `bun run agents:setup`)');
     }
     if (!config.tms.jira.user) {
       missing.push('ATLASSIAN_EMAIL');
