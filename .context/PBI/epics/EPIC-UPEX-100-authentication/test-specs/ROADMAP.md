@@ -4,7 +4,7 @@
 > **Total Tickets**: 1
 > **Total Items**: 4 TCs
 > **Created**: 2026-03-19
-> **Master Document**: [auth-test-plan.md](../auth-test-plan.md)
+> **Master Document**: `../feature-test-plan.md` (synced from the Jira Epic field; run `bun run context:hydrate` if absent). Worked example: [feature-test-plan-example.md](../../../../../docs/testing/automation/feature-test-plan-example.md)
 
 ---
 

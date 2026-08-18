@@ -44,6 +44,7 @@
     "api:login": "bun scripts/api-login.ts",
     "api:sync": "bun scripts/sync-openapi.ts",
     "claude": "dotenv -o -e .env -- claude",
+    "context:hydrate": "bun scripts/sync-jira-issues.ts pull --include-comments",
     "format:check": "prettier --check '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
     "format:fix": "prettier --write '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
     "jira:check": "bun scripts/check-jira-setup.ts",
