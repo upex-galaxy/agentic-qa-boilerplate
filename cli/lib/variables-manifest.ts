@@ -40,6 +40,28 @@ import * as fs from 'node:fs';
 export type VarDestination = 'local' | 'github';
 
 /**
+ * Where the tooling READS a variable's value from when it needs one.
+ *
+ * - `env-file` (the default) — the value lives in `.env`. True for every var
+ *   with a `local` destination, which is almost all of them.
+ * - `atlassian-instance` — resolved by `cli/lib/atlassian-instance.ts` from
+ *   `.agents/project.yaml` -> `issue_tracker.atlassian_url`.
+ *
+ * The second case exists because `ATLASSIAN_URL` is deliberately NOT a local
+ * variable: while it sat in `.env`, a stale copy in the process environment
+ * shadowed the corrected file (both `bun`'s autoload and `dotenv-cli` skip a
+ * var that is already set), and `jira:sync-issues` silently rebuilt the PBI
+ * cache from a dead Jira site with exit code 0. The host is project identity,
+ * so it is anchored to a versioned file that shows up in a diff.
+ *
+ * The NAME keeps a `github` destination because a CI step or third-party action
+ * may still want the variable in its environment. Its value is pushed there FROM
+ * the yaml, so the two cannot drift. The repo's own test runtime does not rely on
+ * that: `config/variables.ts` resolves the host through the same resolver.
+ */
+export type VarValueSource = 'env-file' | 'atlassian-instance';
+
+/**
  * A conditional-required clause: the var is required only when another env var
  * holds a specific value, e.g. `{ ifEnv: 'TEST_ENV=staging' }`.
  */
@@ -69,7 +91,20 @@ export interface VarRequiredIfEnv {
  */
 export interface VarSpec {
   name: string
+  /**
+   * Write destinations. A var declaring a non-default `valueSource` (see
+   * `VarValueSource`) is never written to `.env` and therefore never carries
+   * `local`; `validateVarManifest` enforces that. Note the converse does NOT
+   * hold here: a CI-only var (AUTO_SYNC, SLACK_WEBHOOK_URL) is `github`-only
+   * without declaring a `valueSource`.
+   */
   destinations: VarDestination[]
+  /**
+   * Where the value is read from. Omitted = `env-file` (the overwhelming
+   * default). A var declaring anything else has NO `.env` entry, so it is
+   * absent from `.env.example` and exempt from the parity check.
+   */
+  valueSource?: VarValueSource
   secret: boolean
   required: boolean | VarRequiredIfEnv
   critical: boolean
@@ -180,13 +215,22 @@ export const VAR_MANIFEST: VarSpec[] = [
   },
 
   // --- Atlassian (Day-0 credentials) ---
+  // ATLASSIAN_URL is the ONE var that is not a `.env` entry. It is a public
+  // hostname, not a secret, and it is project IDENTITY — so it is anchored to
+  // `.agents/project.yaml` (versioned, shows up in a diff) instead of a local
+  // file a stale process value can shadow in silence. See `VarValueSource`.
+  //
+  // It keeps a `github` destination so a CI step that wants the variable can be
+  // fed from the yaml rather than a hand-maintained secret. The repo's own test
+  // runtime does not need it: `config/variables.ts` resolves the host directly.
   {
     name: 'ATLASSIAN_URL',
-    destinations: ['local', 'github'],
+    destinations: ['github'],
+    valueSource: 'atlassian-instance',
     secret: false,
     required: true,
     critical: true,
-    note: 'Atlassian site URL. CRITICAL — Day-0 collected; GitHub refs are commented in regression.yml:51-53.',
+    note: 'Atlassian site URL. SOURCE OF TRUTH is .agents/project.yaml -> issue_tracker.atlassian_url, NOT .env — prompted at install and written there. Read it with `bun run --silent jira:url`.',
   },
   {
     name: 'ATLASSIAN_EMAIL',
@@ -336,6 +380,21 @@ export const VAR_MANIFEST: VarSpec[] = [
  */
 export function varsFor(dest: VarDestination): VarSpec[] {
   return VAR_MANIFEST.filter(spec => spec.destinations.includes(dest));
+}
+
+/** A spec's value source, with the `env-file` default applied. */
+export function valueSourceOf(spec: VarSpec): VarValueSource {
+  return spec.valueSource ?? 'env-file';
+}
+
+/**
+ * Vars whose value actually lives in `.env`. This — NOT the whole manifest — is
+ * the set `.env.example` must document and the set the process⇄file drift check
+ * compares, because a var sourced elsewhere has no `.env` line to be right or
+ * wrong about.
+ */
+export function envFileVars(): VarSpec[] {
+  return VAR_MANIFEST.filter(spec => valueSourceOf(spec) === 'env-file');
 }
 
 /**
@@ -523,6 +582,20 @@ export function validateVarManifest(manifest: readonly VarSpec[] = VAR_MANIFEST)
         throw new VarManifestError(`Var '${spec.name}' lists destination '${dest}' more than once.`);
       }
       destSeen.add(dest);
+    }
+
+    // A var sourced OUTSIDE `.env` must never also be written INTO it — that
+    // would re-create the second copy this whole design exists to remove.
+    //
+    // Only this direction is enforced. The converse ("env-file source implies a
+    // local destination") holds in the DEV sibling but NOT here: this repo has a
+    // legitimate CI-only category — AUTO_SYNC, SLACK_WEBHOOK_URL — that lives in
+    // GitHub secrets and never in `.env`. Asserting it would reject them.
+    if (valueSourceOf(spec) !== 'env-file' && spec.destinations.includes('local')) {
+      throw new VarManifestError(
+        `Var '${spec.name}' declares valueSource '${valueSourceOf(spec)}' but also targets 'local'. `
+        + 'A var sourced outside .env must never be written back into it.',
+      );
     }
 
     if (typeof spec.secret !== 'boolean') {
