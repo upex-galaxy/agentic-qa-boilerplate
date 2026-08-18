@@ -290,16 +290,22 @@ Two community tools change how the agent talks and how the terminal looks. Both 
 
 #### caveman — token compression skill
 
-A user-level Claude Code skill that compresses agent output by ~65-75% by talking like caveman: drop articles, fillers, and pleasantries; keep technical substance exact. Code, commits, PRs, and security warnings always render in normal English (built-in boundary).
+A user-level skill that compresses agent output by ~65-75% by talking like caveman: drop articles, fillers, and pleasantries; keep technical substance exact. Code, commits, PRs, and security warnings always render in normal English (built-in boundary).
 
 - Levels: `lite` | `full` (this repo's default) | `ultra` | `wenyan`
 - Reverse triggers (any of these returns the agent to verbose mode): `normal mode`, `habla normal`, `stop caveman`, `speak normally`, `be verbose`, `más detallado`
 - Requires Node >= 18
 
-Install:
+Install with `--no-hooks`:
 
-- macOS / Linux: `curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash`
-- Windows: `irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.ps1 | iex`
+- macOS / Linux: `curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash -s -- --no-hooks`
+- Windows: `npx -y github:JuliusBrussee/caveman --no-hooks`
+
+> **Why `--no-hooks`.** The installer defaults to `--all`, which installs the Claude Code plugin **and** writes a second copy of the same two hooks into `~/.claude/settings.json`. Both copies then fire on every turn, so caveman is injected twice per prompt for no benefit. `--no-hooks` keeps the plugin (which registers those hooks itself, in its own `plugin.json`), the multi-agent coverage that matters here because this repo also runs on OpenCode, and the `caveman-shrink` MCP proxy. It only skips the duplicate registration.
+>
+> Already installed without the flag? Delete the `hooks` block from `~/.claude/settings.json`. Nothing else needs to change, and no files are removed: the scripts under `~/.claude/hooks/` simply stop being registered.
+>
+> On Windows the one-liner cannot take flags (`irm | iex` gets no arguments, see caveman issue #565), so the command above calls the same Node installer the script would have delegated to.
 
 Docs: https://github.com/JuliusBrussee/caveman
 

@@ -254,7 +254,7 @@ After the suspension turn, PM Voice resumes automatically.
 | `.claude/skills/agentic-qa-core/references/skill-composition-strategy.md`       | Skill-tier doctrine and composition rules referenced by every workflow skill                                               | Loaded on demand by workflow skills |
 | `.claude/skills/agentic-qa-core/references/briefing-template.md`                | 7-component subagent briefing template, applied by orchestration mode (§3)                                                 | Loaded on demand by workflow skills |
 | `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`           | Cacheable mirror of orchestration mode for subagents: keeps personality coherent across delegations                       | Loaded on demand by workflow skills |
-| `.claude/hooks/personality-reinject.js` (this repo, UserPromptSubmit)           | Re-injects the §2 output contract every turn so PM Voice and Butler do not dilute in long sessions the way caveman never does | Every turn, once registered in `.claude/settings.json` |
+| `.claude/hooks/personality-reinject.js` (this repo, UserPromptSubmit)           | Re-injects the §2 output contract every turn so PM Voice and Butler do not dilute in long sessions the way caveman never does | Every turn |
 
 Personality is **layered, not monolithic**: removing one source weakens but does not break the others. Disable caveman and the PM Voice + Butler + Visual Mapping personality remains intact.
 

@@ -90,6 +90,20 @@
     ],
     "ask": []
   },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/personality-reinject.js\"",
+            "timeout": 5,
+            "statusMessage": "Loading output contract..."
+          }
+        ]
+      }
+    ]
+  },
   "env": {
     "BASH_DEFAULT_TIMEOUT_MS": "300000",
     "BASH_MAX_TIMEOUT_MS": "600000",
