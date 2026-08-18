@@ -98,14 +98,17 @@ docs/mcp/
 .backups/
 
 # ===========================================
-# Local-only working notes - gitignored, never pushed
+# Local-only session state - gitignored, never pushed
 # ===========================================
-# .scratch/ holds planning drafts, audit reports, and session handoffs (see
-# .gitignore). Any HTML or JSON a session drops there is matched by the
-# format:check glob, and because Prettier honors only .prettierignore it fails
-# the whole check - which the pre-push hook then turns into a blocked push for
-# every branch, including a branch deletion. Nothing in here is repo source.
+# .scratch/ holds planning drafts, audit reports, and session handoffs;
+# .session/ holds per-skill plan.md / progress.md and archived sessions (both
+# per .gitignore). Any HTML, JSON, or YAML a session drops in either one is
+# matched by the format:check glob, and because Prettier honors only
+# .prettierignore it fails the whole check - which the pre-push hook then turns
+# into a blocked push for every branch, including a branch deletion. Nothing in
+# here is repo source.
 .scratch/
+.session/
 
 # ===========================================
 # Git worktrees - another branch's checkout, not this tree
