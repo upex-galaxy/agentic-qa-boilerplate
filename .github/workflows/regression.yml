@@ -46,9 +46,14 @@ env:
   XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}
   XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
   # Atlassian credentials — uncomment when AUTO_SYNC=true (Jira issue lookups
-  # during sync). Single source of truth: also consumed by MCP, acli, xray-cli
-  # and the Jira-Direct TMS provider when run locally. Add as repo Secrets first.
-  # ATLASSIAN_URL: ${{ secrets.ATLASSIAN_URL }}
+  # during sync). Also consumed by MCP, acli, xray-cli and the Jira-Direct TMS
+  # provider when run locally. Add as repo Secrets first.
+  #
+  # There is NO ATLASSIAN_URL secret, on purpose. The site host is read from the
+  # checked-out .agents/project.yaml (issue_tracker.atlassian_url) by
+  # config/variables.ts, so a site migration needs no CI change and the workflow
+  # cannot drift from the repo. A secret here would be a second copy of a value
+  # that already lives in the tree — the exact thing that goes stale unnoticed.
   # ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
   # ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
 

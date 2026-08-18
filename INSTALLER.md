@@ -45,7 +45,7 @@ Validates the environment is usable:
 Interactive post-install configuration steps. Skipped automatically when no TTY is detected (CI / non-interactive mode):
 
 - `agents:setup` — populates `.agents/project.yaml` with project identity, Jira URL, environments
-- `acli` auth probe — collects `ATLASSIAN_URL` / `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` interactively if missing, then runs `acli jira auth login` (stdin-piped token)
+- `acli` auth probe — collects `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` into `.env` and the site host into `.agents/project.yaml` if missing, then runs `acli jira auth login` (stdin-piped token, `--site` from `bun run jira:url --slug`)
 - **Jira catalogs sync (Step 13)** — one prompt picks the catalog source for the whole project, then syncs custom fields + workflow statuses/transitions accordingly:
   - **My own Jira workspace** — runs the Jira auth loop (up to 5 attempts), then `jira:sync-fields --force` + `jira:sync-workflows --force`. **Requires Jira `Administer` permission** (global or project-scoped); without it the scripts exit 0 and the step records `state.postInstall.jiraSync* = "skipped-no-admin"`.
   - **UPEX-Galaxy standard** — `jira:sync-fields --upex --force` + `jira:sync-workflows --upex --force` + `jira:sync-link-types --upex`, downloading the reference catalogs from `upex-galaxy/agentic-qa-boilerplate@main` (no admin, no Jira API — just GitHub raw).
@@ -152,7 +152,8 @@ Missing per-skill CLIs do not exit the installer. Install them lazily when the o
 
 ```
 TAVILY_API_KEY                                  → https://app.tavily.com/ → API keys
-ATLASSIAN_URL, ATLASSIAN_EMAIL, ATLASSIAN_API_TOKEN → https://id.atlassian.com/manage-profile/security/api-tokens
+ATLASSIAN_EMAIL, ATLASSIAN_API_TOKEN → https://id.atlassian.com/manage-profile/security/api-tokens
+(the site host is not a .env var — set it with `bun run agents:setup`)
 API_BASE_URL, OPENAPI_SPEC_PATH, API_TOKEN      → your backend admin / API portal
 POSTMAN_API_KEY                                 → https://postman.com → settings → API keys
 ```
@@ -220,7 +221,6 @@ The installer auto-detects no-TTY (an agent invoking it without a terminal) and 
 ```bash
 INSTALL_AGENTS=claude-code,opencode \
   TAVILY_API_KEY=tvly-... \
-  ATLASSIAN_URL=... \
   ATLASSIAN_EMAIL=... \
   ATLASSIAN_API_TOKEN=... \
   bun run setup --non-interactive

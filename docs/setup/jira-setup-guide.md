@@ -347,7 +347,8 @@ Create or update your `.env` file:
 ```bash
 # Atlassian credentials (single source of truth — also used by MCP, acli,
 # xray-cli, scripts/sync-jira-*.ts, cli/doctor.ts)
-ATLASSIAN_URL=https://your-company.atlassian.net
+# NOTE: the site URL is NOT here. It lives in .agents/project.yaml ->
+# issue_tracker.atlassian_url (`bun run agents:setup`, read via `bun run jira:url`).
 ATLASSIAN_EMAIL=you@example.com
 ATLASSIAN_API_TOKEN=...
 

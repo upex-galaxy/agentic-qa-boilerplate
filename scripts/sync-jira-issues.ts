@@ -32,7 +32,9 @@
  * Instance host resolution (in precedence order — NOTE the inversion vs. the
  * project key below):
  *   1. .agents/project.yaml -> issue_tracker.atlassian_url  (source of truth, versioned)
- *   2. ATLASSIAN_URL env var                                (fallback only)
+ *   2. ATLASSIAN_URL env var                                (transitional fallback —
+ *      NOT a .env variable anymore; a hit means a stale copy is loose in the
+ *      environment, which is the failure this resolution order exists to survive)
  *   3. Neither set -> the script fails with an actionable message.
  *
  *   The host is project identity, not a per-developer override, and it is the
@@ -3273,14 +3275,19 @@ ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
   .agents/project.yaml project_key.
 
 ${colors.bold}INSTANCE RESOLUTION${colors.reset}
-  The Atlassian host is read from .agents/project.yaml -> issue_tracker.atlassian_url
-  FIRST; ATLASSIAN_URL is used only when that field is absent or null. This is the
-  INVERSE of the project-key precedence, on purpose: the host is project identity,
-  not a per-developer override, and it is the value that goes stale after a site
-  migration. A stale host here would silently overwrite .context/PBI/ with another
-  site's content. When both are set and disagree, the yaml wins and a warning names
-  both values — acli and the Atlassian MCP still read ATLASSIAN_URL directly, so the
-  divergence is a real problem you must fix in .env.
+  The Atlassian host comes from .agents/project.yaml -> issue_tracker.atlassian_url.
+  It is NOT a .env variable: the host is project identity, not a per-developer
+  override, and it is the value that goes stale after a site migration. A stale one
+  silently overwrites .context/PBI/ with another site's content — which is exactly
+  what happened while it lived in .env, where a copy inherited from the parent
+  process shadowed the corrected file and this command exited 0.
+  This is the INVERSE of the project-key precedence, on purpose.
+
+  ATLASSIAN_URL is still READ as a last-resort fallback, for a repo whose yaml has
+  not been filled in yet. If it is set AND disagrees with the yaml, the yaml wins
+  and a warning names both values — that variable should not exist locally at all,
+  so a hit means a stale copy is loose in your environment. Print the resolved host
+  with: bun run --silent jira:url
 
 ${colors.bold}OVERWRITE POLICY${colors.reset}
   Jira is the source of truth — NO files are protected. Every file the sync owns

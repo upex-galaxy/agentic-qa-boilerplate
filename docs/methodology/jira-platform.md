@@ -560,7 +560,7 @@ The TMS works alongside the Automation Framework's reporting:
 | `XRAY_CLIENT_ID` | API client ID (Cloud) | Yes (Cloud) |
 | `XRAY_CLIENT_SECRET` | API client secret (Cloud) | Yes (Cloud) |
 | `XRAY_TOKEN` | Personal Access Token (Server/DC) | Yes (Server) |
-| `ATLASSIAN_URL` | Atlassian site URL | Yes |
+| _(site host)_ | `.agents/project.yaml` -> `issue_tracker.atlassian_url` — NOT an env var; print with `bun run --silent jira:url` | Yes |
 | `ATLASSIAN_EMAIL` | Atlassian account email | Yes |
 | `ATLASSIAN_API_TOKEN` | Atlassian API token | Yes |
 | `JIRA_PROJECT_KEY` | Default project key | Optional |

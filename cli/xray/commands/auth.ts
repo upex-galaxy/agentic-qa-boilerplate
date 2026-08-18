@@ -30,7 +30,8 @@ export async function login(flags: Flags): Promise<void> {
   //
   // The HOST is the one value that does not follow the flag-then-env rule above:
   // it resolves from `.agents/project.yaml` -> issue_tracker.atlassian_url before
-  // falling back to `ATLASSIAN_URL`. `login` PERSISTS whatever it picks into the
+  // falling back to `ATLASSIAN_URL` (no longer a .env variable — last resort
+  // only). `login` PERSISTS whatever it picks into the
   // machine-global `~/.xray-cli/config.json`, which then outlives the repo and is
   // never revisited — seeding it from a stale env value bakes the wrong site into
   // a cache no diff will ever show. An explicit `--jira-url` still wins, since
