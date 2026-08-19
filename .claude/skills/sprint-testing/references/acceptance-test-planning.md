@@ -9,7 +9,7 @@ Stage 1 Planning for a single ticket inside a sprint. The ATP is authored in-ses
 
 The old local `test-analysis.md` mirror is **retired** — read the synced ATP file for the active modality instead. Jira is source of truth; never hand-write the synced file.
 
-This reference is for **manual / exploratory in-sprint testing per ticket RIGHT NOW**. Its planning output is **TC outlines** (names + 1-line precond/expected), not the persistent regression TC set. Per the modality-aware TC-creation-timing rule (`sprint-testing/SKILL.md` §"TC creation timing"): **jira-native** creates no `Test` work items here (regression TCs are created in Stage 4, regression-worthy only); **jira-xray** **creates + executes** `Test` issues for the planned outlines this sprint (the `Test` is Xray's execution unit), which Stage 4 then selects + promotes into the Regression Test Plan. Either way this reference does **not** compute ROI scores or decide Candidate/Manual/Deferred (see `test-documentation` for Stage 4), nor produce automation `spec.md` (see `test-automation/planning-playbook.md`). Bug reports are covered in `reporting-templates.md` (pass 5c).
+This reference is for **manual / exploratory in-sprint testing per ticket RIGHT NOW**. Its planning output is **TC outlines** (names + 1-line precond/expected), not the persistent regression TC set. Per the modality-aware TC-creation-timing rule (`sprint-testing/SKILL.md` §"TC creation timing"): **jira-native** creates no `Test` work items here (regression TCs are created in Stage 4, regression-worthy only); **jira-xray** **creates + executes** `Test` issues for the planned outlines this sprint (the `Test` is Xray's execution unit), which Stage 4 then selects + promotes into the Regression Test Plan. Either way this reference does **not** compute ROI scores or decide Candidate/Manual/Deferred (see `test-documentation` for Stage 4), nor produce automation `spec.md` (see `test-automation/references/planning-playbook.md`). Bug reports are covered in `reporting-templates.md` (pass 5c).
 
 For feature / multi-story scope see `feature-test-planning.md`.
 
@@ -193,12 +193,6 @@ For each AC, assess whether test data is obtainable in staging. Classify using o
 | AC1 | {state} | Yes / No | Discover / Modify / Generate | {entity found or blocker} |
 
 If a critical precondition has no data path → flag as risk in the ATP. If a veto-level AC blocks data, escalate to the user before writing outlines.
-
----
-
-## Part 0 — Git preparation
-
-Checkout from `staging`, pull, create branch `test/{JIRA_KEY}/{short-desc}`. Only PBI-folder changes land on this branch (the synced `acceptance-test-plan.md` read-only cache plus hand-authored `context.md`) — no production code, no framework config.
 
 ---
 
@@ -492,16 +486,9 @@ If risk is HIGH, add an extended-edge-cases callout and recommend a pre-implemen
 
 ---
 
-## Phase 8 — Commit
+## Phase 8 — No commit
 
-On branch `test/{JIRA_KEY}/{short-desc}`:
-
-```
-git add .context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/acceptance-test-plan.md
-git commit -m "test({JIRA_KEY}): add shift-left test outlines for {brief-title}"
-```
-
-Never include AI-attribution. Never amend pushed commits. Never push to `main` without explicit user confirmation (see SKILL.md Gotchas).
+Nothing to commit in this stage. The ATP is canonical in Jira; the local `acceptance-test-plan.md` is a gitignored synced cache rebuilt by `bun run jira:sync-issues` (see `CLAUDE.md` §9). Never `git add` it — and never `git add -f` it, which would re-commit a generated Jira mirror.
 
 ---
 
@@ -540,7 +527,6 @@ See SKILL.md veto rules — veto beats risk score for bugs too.
 
 - [ ] Triage decision recorded (SKIP / Code-Review / Full + risk score if computed)
 - [ ] Data feasibility check complete with pattern column
-- [ ] Branch `test/{JIRA_KEY}/{short-desc}` created from `staging`
 - [ ] Phases 1-4 produced with realistic scenario + outline counts
 - [ ] Edge cases labeled, PO-confirmation flags on any inferred behavior
 - [ ] Refined ACs + Edge Cases appended to ticket description
@@ -549,4 +535,4 @@ See SKILL.md veto rules — veto beats risk score for bugs too.
 - [ ] Synced ATP cache materialized (not hand-written) — jira-native: `acceptance-test-plan.md` via `bun run jira:sync-issues get <STORY_KEY> --include-comments`; jira-xray: `test-plans/TESTPLAN-<ATP_KEY>-<slug>.md` via `bun run jira:sync-issues get <ATP_KEY>`
 - [ ] Trace verified via `[TMS_TOOL] trace {TICKET}`
 - [ ] Final report delivered to user with open questions + blocker note if needed
-- [ ] Commit landed on the test branch, no AI attribution
+- [ ] Nothing committed — synced ATP cache left untracked (gitignored; Jira is canonical)

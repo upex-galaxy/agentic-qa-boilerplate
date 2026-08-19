@@ -227,7 +227,7 @@ Different files have different sections that must never be rewritten. Apply the 
 - §10 KATA QUICK-REFERENCE (layer diagram + pointer to `test-automation/references/`)
 - §11 GIT WORKFLOW — POINTERS (auto-loads `/git-flow-master`)
 
-If a section listed here is missing from the file you're syncing, that is structural drift — STOP and surface to the user. Do NOT recreate from this list; structural refactors belong to `/claude-md-tuner`, not `/sync-ai-memory`.
+If a section listed here is missing from the file you're syncing, that is structural drift — STOP and surface it to the user. Do NOT recreate from this list; structural refactors are out of scope for `/sync-ai-memory`.
 
 **`INSTALLER.md`:**
 - Installation flow narrative and step numbers
@@ -342,7 +342,7 @@ Sync the **Available scripts** section against `package.json` — do not invent 
 
 This step focuses on the AI memory file (`CLAUDE.md` or equivalent). It receives a deeper sync than other supplementary files because §5 Registry and §4 Context Loading Map are derived from disk state — they MUST stay in lockstep with `.claude/skills/`, `.claude/commands/`, and `package.json`.
 
-**Important boundary**: the priority §0–§11 structure of CLAUDE.md is the contract enforced by `/claude-md-tuner`. `/sync-ai-memory` PATCHES facts inside that structure; it does NOT restructure. If §-numbering, section names, or section order have drifted from the §0–§11 contract → STOP and tell the user to run `/claude-md-tuner` (sync-mirrors or refactor mode). Do not attempt structural repairs here.
+**Important boundary**: `/sync-ai-memory` PATCHES facts inside the priority §0–§11 structure of CLAUDE.md; it does NOT restructure. If §-numbering, section names, or section order have drifted from the §0–§11 contract → STOP and surface the structural drift to the user. Structural refactors are out of scope for `/sync-ai-memory` — do not attempt structural repairs here.
 
 **Do not**:
 
@@ -390,7 +390,7 @@ After all individual patches are computed (but before any file is written), veri
 | Fact category | Documents to check | Example drift |
 |---|---|---|
 | Command names | All targets | `CLAUDE.md` says `/sync-ai-memory`, `docs/onboarding.html` still says `/refresh-ai-memory` |
-| `.context/` directory paths | `CLAUDE.md`, `README.md`, `docs/context-engineering.md` / `CONTEXT.md` | One file says `.context/business/`, another says `.context/mapping/` |
+| `.context/` directory paths | `CLAUDE.md`, `README.md`, `CONTEXT.md` | One file says `.context/business/`, another says `.context/mapping/` |
 | Skill names | All targets | Skill renamed but not all docs updated |
 | Environment URLs | `.agents/project.yaml` (source of truth), `README.md`, `docs/workflows/environments.md` | Staging URL changed in `.agents/project.yaml`, README + environments.md still show old. NOTE: `CLAUDE.md` no longer holds env URLs — never patch them there. |
 | Script names | `package.json` (source of truth), `README.md`, `docs/onboarding.html` | Script renamed in `package.json` but README + docs still show old. NOTE: `CLAUDE.md` §1 Critical Rule #11 forbids inlining scripts — never patch script names into CLAUDE.md. |

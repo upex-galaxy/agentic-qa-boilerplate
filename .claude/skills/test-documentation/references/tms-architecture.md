@@ -91,7 +91,7 @@ Key consequences:
 | Precondition | Yes | Environment, login state, test data, DB state |
 | Specification | Yes | Step-by-step verification (Gherkin or table) |
 | Test Status | Yes | `NOT RUN` / `PASSED` / `FAILED` |
-| Workflow Status | Yes | `Draft` / `In Design` / `Ready` / `Candidate` / `Manual` / `In Automation` / `In Review` / `Pull Request` / `Automated` / `Deprecated` |
+| Workflow Status | Yes | `Draft` → `In Design` → `READY` → `In Review` → `Candidate` → `In Automation` → `Pull Request` → `AUTOMATED`, plus the `MANUAL` branch and `DEPRECATED` (any state). Exact names + full state machine in §8 — authoritative source `.agents/jira-workflows.json` (`work_types.test_case`) |
 | Priority | Yes | `Critical` / `High` / `Medium` / `Low` |
 | Labels | Yes | At least one scope label (`regression` almost always) |
 | Automation Candidate | Yes (boolean) | True when Candidate path |
@@ -254,7 +254,7 @@ Rules:
 1. ATP and ATR names always include the User Story ID. This makes them searchable, unique per story, and impossible to confuse across stories.
 2. TC names follow the pattern `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]`, where `CORE` is the expected outcome (verb + object phrased after `should`, e.g., `grant access`, `reject login`) and `CONDITIONAL` is the optional connector clause (`when …` / `if …`, e.g., `when credentials are valid`, `if password is incorrect`) plus an optional `given …` precondition. The prefix is ALWAYS the User Story ID, in every modality; Test Set membership is expressed as an issue link, never baked into the title.
 3. Code-side IDs match the TMS-generated key exactly. The `@atc('PROJ-456')` decorator uses the TMS issue key, not an invented module prefix.
-4. Module prefixes (e.g., `AUTH-`, `ORD-`) are used only for local folder/file organization under `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/` — they are not the canonical ID.
+4. Module prefixes (e.g., `AUTH-`, `ORD-`) are a TMS-display convention only (Test Set names, TMS folders) — they are not the canonical ID, and they never appear in file names: the sync materializes each Test as `test-cases/TEST-<KEY>-<slug>.md`.
 
 ---
 
@@ -309,15 +309,15 @@ Any failing criterion -> the story is not ready to close QA.
 
 ## 8. TC workflow state machine
 
-> **Substrate reference**: state and transition names below match the canonical UPEX Jira workflow in `.agents/jira-workflows.json` (see `.agents/jira-required.yaml` `work_types.test_case`). Skills resolve them via `{{jira.status.test_case.<slug>}}` / `{{jira.transition.test_case.<slug>}}`. Rename detection runs via `bun run jira:sync-workflows`.
+> **Substrate reference — AUTHORITATIVE**: `.agents/jira-workflows.json` (`work_types.test_case`) is the source of truth for every status and transition name in this section; `.agents/jira-required.yaml` declares which are required. A status that is not in that JSON does not exist in the instance — never write one from memory (`Approved`, `Automating`, `Merge Request` and `Triaged` are common inventions and none of them exist). Skills resolve names via `{{jira.status.test_case.<slug>}}` / `{{jira.transition.test_case.<slug>}}`. Rename detection runs via `bun run jira:sync-workflows`.
 
-The TC workflow spans three IQL stages. Key transitions: `start_design` (Draft -> In Design), `ready_to_run` (In Design -> Ready), `for_manual` (Ready -> Manual), `automation_review_from_ready` (Ready -> In Review), `approve_to_automate` (In Review -> Candidate), `start_automation` (Candidate -> In Automation), `create_pr` (In Automation -> Pull Request), `merged` (Pull Request -> Automated). Never skip states; use `back_from_ready` / `back_from_in_design` for rework, `deprecated` (any -> Deprecated) to retire a TC.
+The TC workflow spans three IQL stages. Key transitions: `start_design` (Draft -> In Design), `ready_to_run` (In Design -> READY), `for_manual` (READY -> MANUAL), `automation_review_from_ready` (READY -> In Review), `approve_to_automate` (In Review -> Candidate), `start_automation` (Candidate -> In Automation), `create_pr` (In Automation -> Pull Request), `merged` (Pull Request -> AUTOMATED). Never skip states; use `back_from_ready` / `back_from_in_design` for rework, `deprecated` (any -> DEPRECATED) to retire a TC, `recover` (DEPRECATED -> Draft) to revive one.
 
 ```
 Stage 2 (Execution)     Stage 4 (Documentation)     Stage 5 (Automation)
 -----------------       -----------------------     ---------------------
 
-Draft -> In Design -> Ready -+-- for manual --> Manual         (terminal manual)
+Draft -> In Design -> READY -+-- for manual --> MANUAL        (manual regression branch)
                              |
                              +-- automation review --> In Review
                                                          |
@@ -327,15 +327,16 @@ Draft -> In Design -> Ready -+-- for manual --> Manual         (terminal manual)
                                                                                                                      |
                                                                                                                      +-- create PR --> Pull Request
                                                                                                                                           |
-                                                                                                                                          +-- merged --> Automated
+                                                                                                                                          +-- merged --> AUTOMATED
 
-Any state -> Deprecated (when feature is removed)
+MANUAL -- automation review --> In Review   |   MANUAL -- for automation --> Candidate   |   MANUAL -- automated --> AUTOMATED
+Any state -> DEPRECATED (when feature is removed) -- recover --> Draft
 ```
 
 Rules:
-- No state can be skipped. Draft must go through In Design before Ready; Ready cannot go straight to Automated.
-- Backward transitions are limited: only "back to In Design" (rework) and "any state to Deprecated".
-- Manual is not a dead end: a Manual TC can later re-enter In Review if ROI changes.
+- No state can be skipped. Draft must go through In Design before READY; READY cannot go straight to AUTOMATED.
+- Backward transitions are the `back_*` family (one step back per state) plus "any state to DEPRECATED".
+- MANUAL is not a dead end: a MANUAL TC can later re-enter In Review, Candidate, or AUTOMATED if ROI changes.
 
 ---
 

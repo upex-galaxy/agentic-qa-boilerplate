@@ -169,7 +169,7 @@ Repo organizes skills in 4 tiers with different discovery + load rules:
 - **T3**: Community project-level. Installed by `install.ts` into `.claude/skills/` (not committed). Load silent if category matches task domain.
 - **T4**: Community user-level. Installed globally. ALWAYS ASK before loading.
 
-> Layout convention: T1 repo skills → `.claude/skills/<slug>/` (committed source). T3/T4 community skills installed via `bunx skills add` → `.agents/skills/<slug>/` (gitignored, default CLI behavior).
+> Layout convention: T1 repo skills → `.claude/skills/<slug>/` (committed source). T3/T4 community skills installed via `bunx skills add --agent <a>` → `.claude/skills/<slug>/` (project) / `~/.claude/skills/<slug>/` (global). `install.ts` passes `--agent` explicitly because the CLI's default `.agents/skills/` store is never scanned by Claude Code.
 
 Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-strategy.md`
 
@@ -196,6 +196,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | `acli` | `/acli` | Atlassian CLI. Resolves `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` (Modality jira-native). |
 | `git-flow-master` | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR. |
 | `judgment-day` | `/judgment-day`, `juzgar`, `dual review` | T2 vendored from gentle-ai (Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, synthesis, fix loop, re-judge). Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. Never auto-invoked. |
+| `pr-review-lead` | `pr-review-lead`, "review this PR", "revisa este PR" | QA Lead / QA Architect review of a PR's test-automation work against KATA doctrine (or the target repo's own doctrine) — every finding grounded in a doctrine citation or code location. Works on this repo or external repos (`owner/repo#PR` via `gh`). Runs a strictness preflight (Flexible / Standard / Strict); never posts to GitHub without explicit final OK. NOT for reviewing your own uncommitted diff (default code-review flow) or blind dual review (`/judgment-day`). |
 
 ### Commands (single-file utilities in `.claude/commands/`)
 
@@ -476,7 +477,7 @@ Git / PR work → `/git-flow-master` auto-loads. Details in `.claude/skills/git-
 
 > **Source of truth: the `git_strategy:` block in `.agents/project.yaml`.** `git-flow-master` reads it before any git/gh operation and adapts every branch / commit / push / PR / conflict-fix to the strategy declared there. NEVER define branch policy in this CLAUDE.md: edit the `git_strategy:` block.
 >
-> `git_strategy.strategy` ships **`solo-main`**, not null. That is a DEFAULT, not a decision, and `meta.strategy_source: inherited` is what records the difference. `git-flow-master` OFFERS "Strategy Setup" when a project has filled in its `project_name` and `strategy_source` is still `inherited` — a real project running a strategy nobody chose. `.agents/project.yaml` is frozen by `bun run update` (updater `bootstrapOnlyPaths`), so every project keeps its own. Downstream test-automation projects typically choose `sdet` (chained suites; see `.claude/skills/git-flow-master/references/sdet-integration-trunk.md`).
+> `git_strategy.strategy` ships **`solo-main`**, not null. That is a DEFAULT, not a decision, and `meta.strategy_source: inherited` is what records the difference. `git-flow-master` OFFERS "Strategy Setup" when a project has filled in its `project_name` and `strategy_source` is still `inherited` — a real project running a strategy nobody chose. `.agents/project.yaml` is frozen by `bun run up` (updater `bootstrapOnlyPaths`), so every project keeps its own. Downstream test-automation projects typically choose `sdet` (chained suites; see `.claude/skills/git-flow-master/references/sdet-integration-trunk.md`).
 
 This repository (the boilerplate itself) runs `solo-main`: single maintainer, commit and push directly to `main`. To pin it as a real decision rather than the inherited default, ask git-flow-master to "set up our git strategy" — that stamps `strategy_source: chosen`.
 

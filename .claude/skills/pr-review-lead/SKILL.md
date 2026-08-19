@@ -16,8 +16,8 @@ This skill exists because that's what a real review session in this repo looked 
 
 Requires `agentic-qa-core`. Loads on demand:
 
-- `agentic-qa-core/references/briefing-template.md`, `./dispatch-patterns.md`, `./orchestration-doctrine.md` — when a PR is large enough to warrant subagent fan-out (see Step 2).
-- The default doctrine set for KATA/test-automation PRs, read fresh every invocation (never from memory of a prior session): `test-automation/references/kata-architecture.md`, `./typescript-patterns.md`, `./review-checklists.md`, `agentic-qa-core/references/test-design-doctrine.md`, `./defect-management-doctrine.md`.
+- `agentic-qa-core/references/briefing-template.md`, `agentic-qa-core/references/dispatch-patterns.md`, `agentic-qa-core/references/orchestration-doctrine.md` — when a PR is large enough to warrant subagent fan-out (see Step 2).
+- The default doctrine set for KATA/test-automation PRs, read fresh every invocation (never from memory of a prior session): `test-automation/references/kata-architecture.md`, `test-automation/references/typescript-patterns.md`, `test-automation/references/review-checklists.md`, `agentic-qa-core/references/test-design-doctrine.md`, `agentic-qa-core/references/defect-management-doctrine.md`.
 - `references/severity-and-scoring.md`, `references/evidence-and-doctrine-lookup.md`, `references/output-and-posting-flow.md` — this skill's own reference material, read at the step noted below.
 
 ## When to use this vs. a sibling skill

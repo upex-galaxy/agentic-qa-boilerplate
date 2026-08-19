@@ -33,9 +33,11 @@ Each TC requires 3 links: Story, Test Plan (ATP), Test Result (ATR).
 
 | Artifact | Format |
 |----------|--------|
-| ATP | `Test Plan: {TICKET-ID}` |
-| ATR | `Test Results: {TICKET-ID}` |
+| ATP | `ATP: {TICKET-ID}: {story title}` |
+| ATR | `ATR: {TICKET-ID}: Story Testing` |
 | TC | `Should {verb} {behavior} when {condition}` |
+
+Title grammar canon: `sprint-testing/references/acceptance-test-planning.md`.
 
 ---
 
@@ -70,8 +72,8 @@ For each artifact, check:
 | Each TC linked to Story | Yes |
 | Each TC linked to ATP | Yes |
 | Each TC linked to ATR | Yes |
-| ATP name matches convention | `Test Plan: {TICKET-ID}` |
-| ATR name matches convention | `Test Results: {TICKET-ID}` |
+| ATP name matches convention | `ATP: {TICKET-ID}: {story title}` |
+| ATR name matches convention | `ATR: {TICKET-ID}: Story Testing` |
 | TC names match convention | `Should {verb} when {condition}` |
 
 Report all issues found before making any changes.
@@ -123,8 +125,8 @@ Output a summary:
 ### Current State
 | Artifact | ID | Name | Links OK |
 |----------|----|------|----------|
-| ATP | {id} | Test Plan: {TICKET-ID} | Yes |
-| ATR | {id} | Test Results: {TICKET-ID} | Yes |
+| ATP | {id} | ATP: {TICKET-ID}: {story title} | Yes |
+| ATR | {id} | ATR: {TICKET-ID}: Story Testing | Yes |
 | TC | {id} | Should X when Y | Yes |
 ```
 

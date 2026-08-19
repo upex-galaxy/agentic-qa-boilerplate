@@ -81,7 +81,7 @@
  */
 
 import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 // -----------------------------------------------------------------------------
 // Constants
@@ -183,7 +183,7 @@ const SESSION_RETROFITTED_SKILLS: Record<string, RegExp | null> = {
  * between "dispatch" and "main thread" — copy-paste from a retrofitted
  * SKILL.md (e.g. framework-development); do NOT retype.
  */
-const SESSION_BANNER_PREFIX = '> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion).';
+const SESSION_BANNER_PREFIX = '> **Orchestration & Session contracts**: this skill follows `agentic-qa-core/references/orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `agentic-qa-core/references/session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion).';
 
 /**
  * Matches `## Phase 0`, `## Phase 0.0`, `## Phase -1` (ASCII hyphen-minus), or
@@ -552,6 +552,20 @@ const INLINE_CODE_PATH
   = /`((?:\.claude\/skills|scripts|cli|\.agents|tests|api)\/[\w./-]+)`/g;
 
 /**
+ * Relative `./file.md` citations, which `INLINE_CODE_PATH` cannot see because it
+ * anchors on a repo-rooted prefix.
+ *
+ * This is the shape a cross-skill doctrine cite goes stale in: from
+ * `sprint-testing/SKILL.md`, `./session-management.md` resolves to
+ * `sprint-testing/`, where nothing of that name exists — the file lives in
+ * `agentic-qa-core/references/`. A literal reader follows it and reads nothing,
+ * which is silent, so it stayed broken across eight skills until an audit found it.
+ * Resolved against the CITING FILE's own directory, which is where `./` points;
+ * a genuine same-directory sibling therefore still passes.
+ */
+const INLINE_CODE_DOT_PATH = /`(\.\/[\w-]+\.md)`/g;
+
+/**
  * Paths exempt from STALE-PATH — inline-code path literals that are correct
  * but resolve to nothing in a fresh checkout, in two families:
  *   - gitignored generated/config artifacts (produced by `bun run api:sync` /
@@ -600,6 +614,20 @@ function checkStalePaths(
       severity: 'ERROR',
       scope: skillSlug,
       msg: `STALE-PATH: \`${path}\` referenced in ${sourceFile} body does not exist on disk`,
+    });
+  }
+
+  // `./x.md` resolves against the citing file's own directory, not the skill root:
+  // a cite inside `references/` points at a sibling reference, not at SKILL.md's peer.
+  const sourceDir = join(skillDir, dirname(sourceFile));
+  INLINE_CODE_DOT_PATH.lastIndex = 0;
+  for (const match of stripped.matchAll(INLINE_CODE_DOT_PATH)) {
+    const path = match[1];
+    if (existsSync(join(sourceDir, path))) { continue; }
+    result.push({
+      severity: 'ERROR',
+      scope: skillSlug,
+      msg: `STALE-PATH: \`${path}\` in ${sourceFile} resolves to ${dirname(sourceFile)}/ where it does not exist — expand cross-skill cites to their full path (e.g. \`agentic-qa-core/references/${path.slice(2)}\`)`,
     });
   }
 

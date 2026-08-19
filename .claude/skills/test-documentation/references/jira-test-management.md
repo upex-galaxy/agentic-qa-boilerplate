@@ -99,7 +99,7 @@ Create a **Test** issue type in the Jira project with the following fields. This
 |-------|------|---------|
 | Summary | Text | TC title per naming convention. |
 | Description | Long text (rich text) | Full TC documentation (Gherkin or steps + metadata). |
-| Test Status | Select list | `Draft`, `In Design`, `Ready`, `Manual`, `In Review`, `Candidate`, `In Automation`, `Pull Request`, `Automated`, `Deprecated`. |
+| Test Status | Select list | `Draft`, `In Design`, `READY`, `MANUAL`, `In Review`, `Candidate`, `In Automation`, `Pull Request`, `AUTOMATED`, `DEPRECATED` — exact names from `.agents/jira-workflows.json` (`work_types.test_case`), the authoritative source. |
 | Automation Candidate | Checkbox | Redundant with labels but easier to filter in JQL. |
 | Priority | Select list | `Critical`, `High`, `Medium`, `Low`. |
 | Labels | Multi-select | `regression`, `smoke`, `e2e`, `integration`, `automation-candidate`, `manual-only`, etc. |
@@ -186,8 +186,8 @@ Draft
   | start design
 In Design <--+ back
   | ready to run
-Ready
-  +-- for manual -----------> Manual (terminal-manual)
+READY
+  +-- for manual -----------> MANUAL (manual regression branch)
   +-- automation review ----> In Review
                                  | approve to automate
                                  v
@@ -200,14 +200,15 @@ Ready
                                Pull Request
                                  | merged
                                  v
-                               Automated (terminal-automated)
+                               AUTOMATED (terminal-automated)
 ```
 
 Rules:
 
-- Never skip a state. If a TC was wrongly moved to `Ready`, transition back with `back` to `In Design`, don't edit the status field directly.
-- `Manual` and `Automated` are both terminal for day-to-day work. A Manual TC can re-enter `In Review` later if ROI changes.
-- `Deprecated` is reachable from any state and can be recovered to `Draft`.
+- Status and transition names above come from `.agents/jira-workflows.json` (`work_types.test_case`) — the authoritative source. If a name is not in that file it does not exist in the instance.
+- Never skip a state. If a TC was wrongly moved to `READY`, transition back with `back` to `In Design`, don't edit the status field directly.
+- `MANUAL` and `AUTOMATED` are both terminal for day-to-day work. A MANUAL TC can re-enter `In Review`, `Candidate`, or `AUTOMATED` later if ROI changes.
+- `DEPRECATED` is reachable from any state and can be recovered to `Draft` (`recover`).
 
 ---
 
@@ -525,46 +526,39 @@ Jira Native lacks run history per Test. If historical trend matters, store runs 
 
 ---
 
-## 11. Local cache — markdown per TC
+## 11. Local cache — markdown per TC (synced, never hand-authored)
 
-After TMS creation, write one markdown per TC into `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/{TC-ID}-{slug}.md` (NON-Jira hand-authored cache — directory is `test-cases/`, NOT `tests/`, since the sync script owns the top-level `.context/PBI/tests/` tree for Jira Test issues). This lets `test-automation` hand off without re-reading the TMS.
+After TMS creation, run `bun run jira:sync-issues get <STORY_KEY>` — `scripts/sync-jira-issues.ts` materializes every `Test` issue linked to the Story into `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/TEST-<KEY>-<slug>.md`. The directory is a `[SYNC]` Jira mirror (gitignored — see `CLAUDE.md` §9): this skill creates the `Test` issue, links it to the Story, syncs, and READS the materialized file — it never writes into `test-cases/`. This lets `test-automation` hand off without re-reading the TMS. So everything below (Gherkin, Variables table, Refinement Notes, the `outcome` / `labels` metadata) must land in the `Test` issue itself — the Description via the full §7 template, labels as Jira labels — because the synced file only mirrors what Jira holds. A generated file looks like this:
 
 ```markdown
+# TEST: PROJ-123: TC1: should grant access when credentials are valid
+
+**Jira Key:** [PROJ-456](https://.../browse/PROJ-456)
+**Status:** READY
+**Components:** Auth
+
 ---
-tc_id: PROJ-456
-story: PROJ-123
-priority: high
-roi: 3.8
-outcome: Candidate
-labels: [regression, automation-candidate, e2e, high]
+
+## Test Description
+
+{the full §7 Description template as it stands in Jira — Preconditions, Action,
+Expected Results, Gherkin, Variables table, Refinement Notes}
+
 ---
 
-# PROJ-456: TC1: should grant access when credentials are valid
+## Related Issues
 
-## Preconditions
-- <precondition 1>
+- is designed by: [PROJ-441](...) - ATP: PROJ-123: ...
+- is executed by: [PROJ-442](...) - ATR: PROJ-123: Story Testing
 
-## Action
-<action>
+---
 
-## Expected Results
-- <assertion 1>
-- <assertion 2>
+## Metadata
 
-## Gherkin
-```gherkin
-{full gherkin}
+- **Created:** ... / **Updated:** ... / **Reporter:** ...
 ```
 
-## Variables
-| Variable | How to obtain |
-| ...      | ...           |
-
-## Refinement Notes
-<empty or discrepancy notes>
-```
-
-The frontmatter is machine-readable. A later `test-automation` run greps for `outcome: Candidate` and `labels: automation-candidate` to find work to do.
+A later `test-automation` run greps the synced files for `automation-candidate` (mirrored from the Jira labels) to find work to do — which is why the labels must be set on the `Test` issue, not annotated locally.
 
 ---
 
@@ -596,7 +590,7 @@ The frontmatter is machine-readable. A later `test-automation` run greps for `ou
 
 ---
 
-## 13. Completeness checklist (per TC before moving to Ready)
+## 13. Completeness checklist (per TC before moving to READY)
 
 - [ ] Summary follows `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` — no anti-patterns
 - [ ] Traced to the User Story: Modality jira-xray → "is designed by" ATP + "is executed by" ATR (NO direct TC → Story link); Modality jira-native → "is tested by" the Story directly
@@ -609,8 +603,8 @@ The frontmatter is machine-readable. A later `test-automation` run greps for `ou
 - [ ] Refinement Notes filled if source-code validation found discrepancies
 - [ ] Xray mode: Test Type set (Manual / Cucumber / Generic)
 - [ ] Xray mode: Linked to Test Set (if project uses Test Sets)
-- [ ] Workflow state = Ready (or Manual / Candidate once decision is made)
-- [ ] Local cache markdown created under `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/`
+- [ ] Workflow state = READY (or MANUAL / Candidate once decision is made)
+- [ ] Local cache materialized (never hand-written) via `bun run jira:sync-issues get <STORY_KEY>` — one `TEST-<KEY>-<slug>.md` per Test under `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/`
 
 ---
 

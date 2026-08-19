@@ -73,10 +73,10 @@ Rule of thumb: use **Cucumber** for all automation-candidates (high-quality Gher
 
 See `tms-conventions.md` §IQL for the full treatment. One-liner here:
 
-- **Test Status** (Workflow on the Test issue): `Draft` / `In Design` / `Ready` / `Manual` / `In Review` / `Candidate` / `In Automation` / `Pull Request` / `Automated` / `Deprecated`. Long-lived lifecycle.
+- **Test Status** (Workflow on the Test issue): `Draft` / `In Design` / `READY` / `MANUAL` / `In Review` / `Candidate` / `In Automation` / `Pull Request` / `AUTOMATED` / `DEPRECATED` — exact names from `.agents/jira-workflows.json` (`work_types.test_case`), the authoritative source. Long-lived lifecycle.
 - **Execution Status** (per Test Run inside a Test Execution): `TODO` / `EXECUTING` / `PASS` / `FAIL` / `ABORTED` / `BLOCKED`. Per-run, resets each execution.
 
-These are different fields. `Automated` (Test Status) + `FAIL` (Execution Status of last run) is a valid, common combination — the TC is live in CI, and it failed today.
+These are different fields. `AUTOMATED` (Test Status) + `FAIL` (Execution Status of last run) is a valid, common combination — the TC is live in CI, and it failed today.
 
 ---
 

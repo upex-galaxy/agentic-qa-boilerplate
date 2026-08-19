@@ -4,7 +4,7 @@
 > **Read time**: 8 minutes.
 > **Status**: updated 2026-05-17 — 5-phase TUI flow, step idempotency, GitHub repo step.
 >
-> This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram only, minimal preset), community skills via `bunx skills`, locally committed workflow skills (including the vendored `judgment-day`), and the 7 canonical MCPs — are documented below in that order.
+> This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram only, minimal preset), community skills via `bunx skills`, locally committed workflow skills (including the vendored `judgment-day`), and the 6 canonical MCPs — are documented below in that order.
 
 ---
 
@@ -23,7 +23,7 @@ Downloads and installs all software dependencies:
 - `bun install` — project Node/Bun packages including `@playwright/test`
 - `bun run pw:install` — Playwright browser binaries (~300 MB Chromium)
 - `gentle-ai install --preset minimal` — Engram persistent memory only (one batched call per agent). SDD-* and foundation skills are NOT installed — see [What `gentle-ai install` adds](#what-gentle-ai-install-adds) below.
-- `bunx skills add` — project-level skills (`playwright-cli`, `playwright-best-practices`, `resend-cli`) and user-level skills (6 cross-project utilities)
+- `bunx skills add` — project-level skills (`playwright-cli`, `playwright-best-practices`, `resend-cli`) and user-level skills (7 cross-project utilities)
 
 ### Phase 3 — CONFIGURATION
 
@@ -111,7 +111,7 @@ Under WSL, keep the project on the Linux filesystem (`~/projects/...`). On a `/m
 | ------------- | ----------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **gentle-ai** | `>= 1.26.5` | `install.ts:500-545` (Step 2) | Prints `gentle-ai not detected on PATH.` then offers two paths: (a) show install commands (`brew install gentle-ai` on macOS, `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` on Linux) and exit, or (b) continue without gentle-ai. Older-than-min version triggers `gentle-ai X.Y.Z is older than required 1.26.5. Upgrade with: gentle-ai update` and the setup continues with the warning. |
 
-If you skip gentle-ai, Engram persistent memory is NOT installed (no cross-session memory). The locally committed QA workflow skills (`/shift-left-testing`, `/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/agentic-qa-core`, vendored `/judgment-day`) keep working, and the 7 canonical MCPs are still configured.
+If you skip gentle-ai, Engram persistent memory is NOT installed (no cross-session memory). The locally committed QA workflow skills (`/shift-left-testing`, `/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/agentic-qa-core`, vendored `/judgment-day`) keep working, and the 6 canonical MCPs are still configured.
 
 ### Per-skill CLIs — lazy-required, non-blocking at setup
 
@@ -146,9 +146,9 @@ Missing per-skill CLIs do not exit the installer. Install them lazily when the o
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `direnv` | Auto-loads `.env` on `cd` so the bare `claude` / `opencode` binaries see MCP credentials. Without it, the `bun run claude` / `bun run opencode` wrappers (powered by `dotenv-cli`, already a project devDep) do the same thing cross-platform. | `cli/doctor.ts` (`detectDirenv`) reports `direnv.installed`, `version`, `envrc_allowed`, `hook_in_rc`. The installer offers `direnv allow` + a shell-hook nudge. **Windows users**: skip — PowerShell support is experimental (direnv 2.37+); Git Bash works but the wrapper is simpler. The installer offers the prompt anyway; decline freely. |
 
-### MCP credentials — 8 env vars filled into `.env`
+### MCP credentials — 7 env vars filled into `.env`
 
-`cli/doctor.ts:39` declares `REQUIRED_VARS` consumed by the 6 canonical MCPs plus the ATLASSIAN_* family used by acli + scripts/sync-jira-*.ts. Missing keys do not block setup, but every `bun run setup:doctor` will list them under `pending_actions` with the canonical `where` URL (token-generation page) until they are filled.
+`cli/lib/variables-manifest.ts` declares the `VAR_MANIFEST` that `cli/doctor.ts` reads (via `varsFor('local')`) — the vars consumed by the 6 canonical MCPs plus the ATLASSIAN_* family used by acli + scripts/sync-jira-*.ts. Missing keys do not block setup, but every `bun run setup:doctor` will list them under `pending_actions` with the canonical `where` URL (token-generation page) until they are filled.
 
 ```
 TAVILY_API_KEY                                  → https://app.tavily.com/ → API keys
@@ -329,7 +329,7 @@ This repo uses gentle-ai exclusively for **Engram persistent memory**. We invoke
 
 **Rationale**: this is a QA repo. Our workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`) already cover Plan → Code → Verify natively. SDD ceremony was designed for software-design workflows (specs, archives, strict TDD) that don't apply to authoring E2E/API tests. Adding them at install time would create overlap and confusion. Adversarial review is covered by the vendored `judgment-day` skill committed under `.claude/skills/judgment-day/` — no upstream dependency.
 
-The integration is **not strict**. If you choose to skip gentle-ai, the repo still works: workflow skills committed locally keep functioning, and the 7 canonical MCPs are still configured. What you lose is persistent cross-session memory (engram).
+The integration is **not strict**. If you choose to skip gentle-ai, the repo still works: workflow skills committed locally keep functioning, and the 6 canonical MCPs are still configured. What you lose is persistent cross-session memory (engram).
 
 ---
 
@@ -379,7 +379,7 @@ Installed into `.claude/skills/` via `bunx skills add` (project mode). Not commi
 | `playwright-best-practices` | `currents-dev/playwright-best-practices-skill` | Patterns / anti-flaky / axe-core / fixtures reference. Auto-loaded by `/test-automation` during the Code phase.                                        |
 | `resend-cli`                | `resend/resend-skills`                         | Resend email testing CLI. Pairs with the `resend` external binary verified in step 11. Project-level because email provider choice varies per project. |
 
-### User-level (global, 6 skills)
+### User-level (global, 7 skills)
 
 Installed with `bunx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack.
 
@@ -391,6 +391,7 @@ Installed with `bunx skills add <package> [--skill <name>] --global --yes` and u
 | `brainstorming`       | `obra/superpowers`         | Pre-implementation ideation (framework features, test design edge cases) — universal |
 | `html-ppt`            | `lewislulu/html-ppt-skill` | HTML presentations for sprint planning / retro / demo decks — universal              |
 | `bun`                 | `bun.sh/docs`              | Bun runtime reference — universal across every project that uses bun                 |
+| `wokitoki`            | `upex-galaxy/agentic-user-skills` | Human-in-the-loop feedback CLI (`toki`) the AI drives mid-conversation to collect structured, anchored answers in a browser UI — universal |
 
 ### Skipping or re-running
 
@@ -502,7 +503,7 @@ The right choice when the change is to the boilerplate's own infrastructure (KAT
 If you prefer not to use gentle-ai, the installer accepts a "skip" choice. To make it permanent:
 
 1. Edit `.template/installer.state.json` and set `"gentleAi": { "status": "skipped" }`.
-2. Re-run `bun run setup`. The installer detects the skipped state and only configures the 7 canonical MCPs.
+2. Re-run `bun run setup`. The installer detects the skipped state and only configures the 6 canonical MCPs.
 
 What you lose:
 

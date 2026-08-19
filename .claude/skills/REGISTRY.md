@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-08-18T06:51:29.923Z`
+> Generated: `2026-08-19T17:33:42.140Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.claude/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -126,7 +126,7 @@ Skills indexed: 15
 - `cli/install.ts` — installer flow; required reading when evolving the installer, adding install steps, or modifying boilerplate scaffold behavior.
 - `scripts/sync-openapi.ts` + `api/schemas/` — OpenAPI-derived TypeScript types pipeline; required reading when touching the API contract pipeline, schema generation, or any consumer of generated facades.
 - `package.json` + `bun.lockb` — dep landscape; required reading before bumping Playwright / Bun / TypeScript / fixture-runtime versions or adding/removing scripts.
-- **Plan artifact location**: `.session/framework-development/<change-name>/plan.md`. The `.session/` tree is gitignored — the plan is local, not committed. Recovery on mid-run crash: the file persists; the orchestrator reads it back on the next session via Phase 0 resume check (see `./session-management.md` §4).
+- **Plan artifact location**: `.session/framework-development/<change-name>/plan.md`. The `.session/` tree is gitignored — the plan is local, not committed. Recovery on mid-run crash: the file persists; the orchestrator reads it back on the next session via Phase 0 resume check (see `agentic-qa-core/references/session-management.md` §4).
 - **Grace period for legacy path**: prior versions wrote to `.scratch/framework-changes/<change-name>/{plan.md, apply-progress.md}`. Phase 0 also checks the legacy path during the grace period — if found, the orchestrator offers to copy state to the new `.session/...` location before resuming.
 - **Path guardrails injected per dispatch**: every Plan and Code subagent briefing MUST include the line `KATA invariants and ALLOWED/FORBIDDEN paths: .claude/skills/framework-development/references/kata-invariants.md (read §10 before touching any file).` Do NOT inline the path tables — the reference is authoritative.
 - **On any subagent failure**: STOP, return the failing report, do NOT auto-rerun. The orchestrator decides retry / skip / abort. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
@@ -204,8 +204,8 @@ Skills indexed: 15
 **Purpose**: Acts as a QA Lead / QA Architect reviewing a pull request's test-automation work against this repo's KATA doctrine (or the target repo's...
 
 **Compact Rules**:
-- `agentic-qa-core/references/briefing-template.md`, `./dispatch-patterns.md`, `./orchestration-doctrine.md` — when a PR is large enough to warrant subagent fan-out (see Step 2).
-- The default doctrine set for KATA/test-automation PRs, read fresh every invocation (never from memory of a prior session): `test-automation/references/kata-architecture.md`, `./typescript-patterns.md`, `./review-checklists.md`, `agentic-qa-core/references/test-design-doctrine.md`, `./defect-management-doctrine.md`.
+- `agentic-qa-core/references/briefing-template.md`, `agentic-qa-core/references/dispatch-patterns.md`, `agentic-qa-core/references/orchestration-doctrine.md` — when a PR is large enough to warrant subagent fan-out (see Step 2).
+- The default doctrine set for KATA/test-automation PRs, read fresh every invocation (never from memory of a prior session): `test-automation/references/kata-architecture.md`, `test-automation/references/typescript-patterns.md`, `test-automation/references/review-checklists.md`, `agentic-qa-core/references/test-design-doctrine.md`, `agentic-qa-core/references/defect-management-doctrine.md`.
 - `references/severity-and-scoring.md`, `references/evidence-and-doctrine-lookup.md`, `references/output-and-posting-flow.md` — this skill's own reference material, read at the step noted below.
 - **Flexible** — only flag things that are evidently wrong or could hurt test reliability/design: real bugs, hardcoded secrets, flaky-prone data dependencies, missing coverage that's genuinely unaddressed. A pattern that diverges from "textbook" KATA but works fine is not a finding.
 - **Standard (recommended default)** — same real-defect bar as Flexible, plus doctrine-pattern deviations surface as light observations, explicitly framed as a comparison ("the documented pattern does X, this PR does Y") rather than an error. Never let a pattern note drag the score the way a real defect does.

@@ -15,7 +15,7 @@ This directory contains all the documentation that the AI reads to work on the p
 ├── PRD/                PHASE 2: Architecture - Product Requirements
 ├── SRS/                PHASE 2: Architecture - Software Requirements
 ├── ADR/                Architecture Decision Records — test architecture (append-only)
-├── PBI/                PHASES 4+: Product Backlog (Specification, Testing)
+├── PBI/                Gitignored Jira cache — rebuilt by `bun run context:hydrate`
 ├── reports/            Sprint-level testing frameworks (managed by /sprint-testing)
 └── master-test-plan.md                 # /master-test-plan — what to test and why
 ```
@@ -38,7 +38,7 @@ Load the `/project-discovery` skill in your AI assistant. It:
 - Business constitution -> generates `business/business-model.md` and `business/domain-glossary.md`
 - Architecture -> generates `PRD/` and `SRS/`
 - Infrastructure -> complements `SRS/`
-- Specification -> generates `PBI/`
+- Specification -> `PBI/` is NOT generated here: it is a gitignored Jira cache, rebuilt by `bun run context:hydrate`
 
 **QA workflow (iterative, via skills):**
 

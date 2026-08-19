@@ -234,13 +234,13 @@ Every dispatch uses the **6-component briefing format** defined in `.claude/skil
 Goal: Fetch ticket <TICKET_KEY> from the issue tracker, load relevant context, create the PBI folder, and return a session-start report.
 
 Context docs:
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/CLAUDE.md (§"Local Context (PBI)" folder convention)
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/master-test-plan.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-data-map.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-feature-map.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-api-map.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/session-entry-points.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.agents/project.yaml (project metadata + active env)
+  - <<REPO_ROOT>>/CLAUDE.md (§"Local Context (PBI)" folder convention)
+  - <<REPO_ROOT>>/.context/master-test-plan.md
+  - <<REPO_ROOT>>/.context/business/business-data-map.md
+  - <<REPO_ROOT>>/.context/business/business-feature-map.md
+  - <<REPO_ROOT>>/.context/business/business-api-map.md
+  - <<REPO_ROOT>>/.claude/skills/sprint-testing/references/session-entry-points.md
+  - <<REPO_ROOT>>/.agents/project.yaml (project metadata + active env)
 
 Skills to load: none required for the read (detailed fetch uses bun run jira:sync-issues, not /acli)
 
@@ -293,10 +293,10 @@ Goal: Produce ATP, risk-triage, and draft TCs for <TICKET_KEY> in <PBI_FOLDER>; 
 Context docs:
   - <PBI_FOLDER>/context.md (output of Session Start)
   - <SESSION_DIR>/test-session-memory.md (READ FIRST — shared memory)
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/acceptance-test-planning.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-feature-map.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-api-map.md (if API-affecting)
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/PBI/epics/EPIC-<EPIC_KEY>-<EPIC_SLUG>/module-context.md (if it exists)
+  - <<REPO_ROOT>>/.claude/skills/sprint-testing/references/acceptance-test-planning.md
+  - <<REPO_ROOT>>/.context/business/business-feature-map.md
+  - <<REPO_ROOT>>/.context/business/business-api-map.md (if API-affecting)
+  - <<REPO_ROOT>>/.context/PBI/epics/EPIC-<EPIC_KEY>-<EPIC_SLUG>/module-context.md (if it exists)
 
 Skills to load: /acli (for ATP/ATR WRITE + Story link); in Modality jira-xray also /xray-cli (for [TMS_TOOL] Test Plan / Test Execution issues). Detailed reads (ACs, parent feature plan) use bun run jira:sync-issues, not /acli.
 
@@ -343,9 +343,9 @@ Context docs:
   - <PBI_FOLDER>/acceptance-test-plan.md (the ATP from Stage 1 — Jira-synced cache; Modality jira-xray: .context/PBI/test-plans/TESTPLAN-<ATP_KEY>-<slug>.md)
   - <SESSION_DIR>/test-session-memory.md (READ FIRST — shared memory)
   - <PBI_FOLDER>/context.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/exploration-patterns.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.agents/project.yaml (active env URLs and MCP names)
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/business/business-data-map.md (entity flows for DB exploration)
+  - <<REPO_ROOT>>/.claude/skills/sprint-testing/references/exploration-patterns.md
+  - <<REPO_ROOT>>/.agents/project.yaml (active env URLs and MCP names)
+  - <<REPO_ROOT>>/.context/business/business-data-map.md (entity flows for DB exploration)
 
 Skills to load: /playwright-cli (UI exploration); the active environment's API and DB MCPs ({{API_MCP}} and {{DB_MCP}} from project.yaml). For Bug tickets: same set, no extras.
 
@@ -399,8 +399,8 @@ Context docs:
   - <SESSION_DIR>/test-session-memory.md (READ FIRST — shared memory; contains Stage 2 results)
   - <PBI_FOLDER>/evidence/ (Stage 2 evidence)
   - <PBI_FOLDER>/context.md (ticket summary)
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/sprint-testing/references/reporting-templates.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.agents/jira-fields.json (custom field IDs for ATR/ATP — Modality jira-native only)
+  - <<REPO_ROOT>>/.claude/skills/sprint-testing/references/reporting-templates.md
+  - <<REPO_ROOT>>/.agents/jira-fields.json (custom field IDs for ATR/ATP — Modality jira-native only)
 
 Skills to load: /acli (issue updates + comments + transitions + bug creation); in Modality jira-xray also /xray-cli (only when ATR is an Xray Test Execution and Test Run statuses must be updated).
 

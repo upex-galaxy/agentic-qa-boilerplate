@@ -19,6 +19,16 @@ A feature plan exists to capture shared risks, integration points, and critical 
 
 ---
 
+## A living document, and its sibling stories
+
+Two properties follow from the feature altitude. Both change how the plan is used downstream, and neither is optional.
+
+**The FTP is living, not frozen.** It is authored once per epic and then refined continuously across it. Every story that ships teaches the team something the plan did not know — an integration boundary that turned out to be real, a risk that never materialized, an answer the PO finally gave. Fold that back into the plan (see Gotcha 6, "Regeneration"). A feature plan that has not moved since the first story of a long epic is stale, not stable.
+
+**Analyze the sibling stories, not just the one in hand.** When a tester picks up a story, the unit of analysis is the epic, not the ticket: read the siblings that already shipped, the ones currently in development, and the ones that are only defined and not yet built. That full-feature picture is what makes the per-story ATPs good — it surfaces shared preconditions, cross-story state, and regression surface that a single-story reading cannot see. The sibling list comes free from the JQL child-story query in "Inputs required".
+
+---
+
 ## Inputs required
 
 Read before starting. All paths relative to repo root.

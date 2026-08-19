@@ -293,7 +293,7 @@ Three tiers. **`[SYNC]`** mirrors a Jira field, is materialized by `scripts/sync
 
 The PBI tree as a whole is gitignored precisely because it regenerates: two sessions re-syncing at different times would otherwise commit conflicting copies of the same generated text. Per-ticket session state (`test-session-memory.md`) lives in `.session/sprint-testing/<scope>/`, outside the cache, so a re-sync cannot clobber it mid-run.
 
-The canonical shape is documented in `.context/README.md`. The strategic reasoning behind the three-tier split lives in `CONTEXT.md` (repo root) — read that for the full rationale.
+The canonical shape is documented in `.context/README.md`. The strategic reasoning behind the three-tier split lives in `.context/PBI/README.md` §"Three tiers, three lifecycles" — read that for the full rationale.
 
 ### Cross-skill references
 

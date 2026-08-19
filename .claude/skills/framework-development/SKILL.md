@@ -29,25 +29,25 @@ Canonical reading order for any AI starting cold on a framework-development work
 
 ## Subagent Dispatch Strategy
 
-> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
+> **Orchestration & Session contracts**: this skill follows `agentic-qa-core/references/orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `agentic-qa-core/references/session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
 
 This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The four phases — Plan, Code, Verify, Archive — mirror the shape of `/test-automation` (Plan → Code → Review) extended with an inline Archive step. Phase 0 stays inline because the path self-check + session resume check are short orchestrator decisions that do not benefit from a fresh-context subagent.
 
-**Session scope**: `<change-name>` (kebab-case, user-provided at session start). Session state lives at `.session/framework-development/<change-name>/{plan.md, progress.md}` per `./session-management.md` §9.
+**Session scope**: `<change-name>` (kebab-case, user-provided at session start). Session state lives at `.session/framework-development/<change-name>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §9.
 
 | Phase                                              | Pattern              | Subagent role                                                                                                                                                  |
 |----------------------------------------------------|----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Phase 0 — Path self-check + session resume check   | inline               | orchestrator only; no subagent. Lists target paths against `references/kata-invariants.md` §10; aborts on FORBIDDEN. Also checks `.session/framework-development/<change-name>/` for prior plan/progress and offers resume per `./session-management.md` §4 |
-| Phase 1 — Plan (`plan.md`)                         | Single               | one Plan subagent writes `.session/framework-development/<change-name>/plan.md` per `./session-management.md` §6 schema; collapses prior explore + propose + spec + design + tasks into one artifact |
-| Phase 2 — Code (per task batch)                    | Sequential           | one Code subagent per task batch from the plan; orchestrator appends to `progress.md` per `./session-management.md` §7 schema; on verification failure: STOP, no auto-fix |
+| Phase 0 — Path self-check + session resume check   | inline               | orchestrator only; no subagent. Lists target paths against `references/kata-invariants.md` §10; aborts on FORBIDDEN. Also checks `.session/framework-development/<change-name>/` for prior plan/progress and offers resume per `agentic-qa-core/references/session-management.md` §4 |
+| Phase 1 — Plan (`plan.md`)                         | Single               | one Plan subagent writes `.session/framework-development/<change-name>/plan.md` per `agentic-qa-core/references/session-management.md` §6 schema; collapses prior explore + propose + spec + design + tasks into one artifact |
+| Phase 2 — Code (per task batch)                    | Sequential           | one Code subagent per task batch from the plan; orchestrator appends to `progress.md` per `agentic-qa-core/references/session-management.md` §7 schema; on verification failure: STOP, no auto-fix |
 | Phase 3 — Verify — `bun run test`                  | Parallel (sub-stage) | one Verifier subagent runs the test suite                                                                                                                       |
 | Phase 3 — Verify — `bun run types:check`           | Parallel (sub-stage) | one Verifier subagent runs typecheck                                                                                                                            |
 | Phase 3 — Verify — `bun run lint:check`            | Parallel (sub-stage) | one Verifier subagent runs ESLint                                                                                                                               |
 | Phase 3 — Verify — `bun run skills:check`          | Parallel (sub-stage) | one Verifier subagent runs the skill-registry lint (framework changes can affect `.claude/skills/`, `CLAUDE.md`, `cli/install.ts`)                              |
 | Phase 3 — Aggregation + accept/reject decision     | inline               | orchestrator reads the 4 Verifier reports and decides; on any non-zero exit, presents retry / skip / abort                                                       |
-| Phase 4 — Archive (move plan + progress)           | inline               | orchestrator only; moves `.session/framework-development/<change-name>/` to `.session/.archive/<YYYY-MM-DD>-framework-development-<change-name>/` (two-file dir preserved per `./session-management.md` §8); references in commit |
+| Phase 4 — Archive (move plan + progress)           | inline               | orchestrator only; moves `.session/framework-development/<change-name>/` to `.session/.archive/<YYYY-MM-DD>-framework-development-<change-name>/` (two-file dir preserved per `agentic-qa-core/references/session-management.md` §8); references in commit |
 
-- **Plan artifact location**: `.session/framework-development/<change-name>/plan.md`. The `.session/` tree is gitignored — the plan is local, not committed. Recovery on mid-run crash: the file persists; the orchestrator reads it back on the next session via Phase 0 resume check (see `./session-management.md` §4).
+- **Plan artifact location**: `.session/framework-development/<change-name>/plan.md`. The `.session/` tree is gitignored — the plan is local, not committed. Recovery on mid-run crash: the file persists; the orchestrator reads it back on the next session via Phase 0 resume check (see `agentic-qa-core/references/session-management.md` §4).
 - **Grace period for legacy path**: prior versions wrote to `.scratch/framework-changes/<change-name>/{plan.md, apply-progress.md}`. Phase 0 also checks the legacy path during the grace period — if found, the orchestrator offers to copy state to the new `.session/...` location before resuming.
 - **Path guardrails injected per dispatch**: every Plan and Code subagent briefing MUST include the line `KATA invariants and ALLOWED/FORBIDDEN paths: .claude/skills/framework-development/references/kata-invariants.md (read §10 before touching any file).` Do NOT inline the path tables — the reference is authoritative.
 - **On any subagent failure**: STOP, return the failing report, do NOT auto-rerun. The orchestrator decides retry / skip / abort. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
@@ -72,14 +72,14 @@ Active env, test-user creds, OpenAPI/`API_TOKEN`, DBHub, issue-tracker, TMS and 
 
 ## Phase 0 — Path self-check + session resume check (mandatory, runs first)
 
-Before invoking any subagent, the orchestrator MUST (a) list the files / directories the change will touch and verify each one against the ALLOWED / FORBIDDEN tables in `references/kata-invariants.md` §10, and (b) run the session resume check per `./session-management.md` §4. Skipping Phase 0 is the most common way framework changes leak into ticket-owned surface area OR lose mid-run state on interruption.
+Before invoking any subagent, the orchestrator MUST (a) list the files / directories the change will touch and verify each one against the ALLOWED / FORBIDDEN tables in `references/kata-invariants.md` §10, and (b) run the session resume check per `agentic-qa-core/references/session-management.md` §4. Skipping Phase 0 is the most common way framework changes leak into ticket-owned surface area OR lose mid-run state on interruption.
 
 1. Read `references/kata-invariants.md` §10 (ALLOWED + FORBIDDEN paths).
 2. Ask the user (or infer from the request): "Which paths will this change touch?"
 3. For each path, look it up in §10 ALLOWED → proceed. Or §10 FORBIDDEN → abort and redirect to the skill named in the row.
 4. If a path matches neither table, ASK the user explicitly — never assume.
 5. If a single change spans both ALLOWED and FORBIDDEN paths (e.g. "refactor `tests/components/ui/UiBase.ts` AND update the e2e tests that consume it"), split the work: framework-development handles the base-class change; `/test-automation` handles the test-spec migration in a follow-up.
-6. **Session resume check** (per `./session-management.md` §4): check `.session/framework-development/<change-name>/progress.md`. If it exists, read `plan.md` + the tail of `progress.md`, surface the last completed phase + next planned phase + any blocking notes, and offer **resume / restart / abort**. On `restart`, archive the current directory to `.session/.archive/<YYYY-MM-DD>-framework-development-<change-name>-aborted/` before proceeding.
+6. **Session resume check** (per `agentic-qa-core/references/session-management.md` §4): check `.session/framework-development/<change-name>/progress.md`. If it exists, read `plan.md` + the tail of `progress.md`, surface the last completed phase + next planned phase + any blocking notes, and offer **resume / restart / abort**. On `restart`, archive the current directory to `.session/.archive/<YYYY-MM-DD>-framework-development-<change-name>-aborted/` before proceeding.
 7. **Legacy path check** (grace period): also check `.scratch/framework-changes/<change-name>/` for prior plan/progress under the old layout. If found, offer to migrate the state to the new `.session/...` location.
 
 Phase 0 is one short inline decision — it does NOT write a file. If the change is approved, the decision is captured later in Phase 1's `plan.md` §Investigation.
@@ -129,7 +129,7 @@ Phase 0 (inline) -> Phase 1 Plan (Single) -> Phase 2 Code (Sequential per batch)
 
 ### Phase 1 — Plan
 
-Dispatch: **Single**. The Plan subagent writes one consolidated artifact at `.session/framework-development/<change-name>/plan.md` covering: Goal, Investigation, Approach options, Chosen approach, Invariants touched, Public API delta, Task breakdown, Strict TDD flag, Risks, Verification checklist. One file, ten sections — not five separate documents. The seven base sections from `./session-management.md` §6 are mandatory; framework-development extends them with three skill-specific sections (Invariants touched, Public API delta, Strict TDD flag).
+Dispatch: **Single**. The Plan subagent writes one consolidated artifact at `.session/framework-development/<change-name>/plan.md` covering: Goal, Investigation, Approach options, Chosen approach, Invariants touched, Public API delta, Task breakdown, Strict TDD flag, Risks, Verification checklist. One file, ten sections — not five separate documents. The seven base sections from `agentic-qa-core/references/session-management.md` §6 are mandatory; framework-development extends them with three skill-specific sections (Invariants touched, Public API delta, Strict TDD flag).
 
 Present the plan to the user. Wait for approval before Phase 2.
 
@@ -145,7 +145,7 @@ Each subagent:
 3. Returns a one-line summary per task to the orchestrator.
 4. On verification failure: STOP, report, do not auto-fix.
 
-The orchestrator never reads diffs from the Code subagent — only the summary. If the user wants to see actual changes, the orchestrator runs `git diff` inline after the batch returns. After each batch returns, the orchestrator appends a phase entry to `.session/framework-development/<change-name>/progress.md` per `./session-management.md` §7 (subagents never write to `progress.md` directly — that is an orchestrator-only file).
+The orchestrator never reads diffs from the Code subagent — only the summary. If the user wants to see actual changes, the orchestrator runs `git diff` inline after the batch returns. After each batch returns, the orchestrator appends a phase entry to `.session/framework-development/<change-name>/progress.md` per `agentic-qa-core/references/session-management.md` §7 (subagents never write to `progress.md` directly — that is an orchestrator-only file).
 
 ### Phase 3 — Verify
 
@@ -167,11 +167,11 @@ After all four return, the orchestrator inline-aggregates:
 
 ### Phase 4 — Archive
 
-Dispatch: **inline** — no subagent. The orchestrator performs the archive flow from `./session-management.md` §8:
+Dispatch: **inline** — no subagent. The orchestrator performs the archive flow from `agentic-qa-core/references/session-management.md` §8:
 
 1. Verifies the Verification checklist in `plan.md` passes (all four Phase 3 verifiers returned exit 0).
 2. Moves the entire working directory: `mv .session/framework-development/<change-name>/ .session/.archive/<YYYY-MM-DD>-framework-development-<change-name>/`. Both `plan.md` and `progress.md` are preserved side by side (no concatenation) so future resume-replay stays possible.
-3. Calls Engram `mem_session_summary` with the session template per `./session-management.md` §11. The summary MUST include the archive path so `mem_search "session framework-development <change-name>"` resolves back to the artifacts.
+3. Calls Engram `mem_session_summary` with the session template per `agentic-qa-core/references/session-management.md` §11. The summary MUST include the archive path so `mem_search "session framework-development <change-name>"` resolves back to the artifacts.
 4. Surfaces the archive path so `/git-flow-master` can include it in the commit message body.
 
 Archive is a "close-the-loop" step, not "ship-the-code". Code is shipped by `/git-flow-master` based on the diff that Phase 2 produced and Phase 3 verified. On Phase 3 REJECT, archive does NOT run — the working directory stays in place so the user can debug, resume, or abort.

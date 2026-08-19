@@ -12,8 +12,7 @@
 >
 > For implementation-specific guides (mandatory for AI), load the `/test-automation` skill. Its `references/` directory includes:
 >
-> - **AI Entry Point**: `references/kata-ai-index.md`
-> - **Architecture**: `references/kata-architecture.md`
+> - **AI Entry Point / Architecture**: `references/kata-architecture.md`
 > - **Standards**: `references/automation-standards.md`
 >
 > All code examples use **TypeScript + Playwright + Bun**.

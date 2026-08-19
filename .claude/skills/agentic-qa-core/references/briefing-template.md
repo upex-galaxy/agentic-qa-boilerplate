@@ -6,7 +6,7 @@
 ## The 7 components
 
 1. **Goal** — one sentence. What outcome the subagent must achieve.
-2. **Context docs** — files the subagent reads before acting. Absolute paths.
+2. **Context docs** — files the subagent reads before acting. Absolute paths. The repo root is written as `<<REPO_ROOT>>` — a session variable per `.agents/README.md` §Variable syntax conventions — which the orchestrator resolves to the real absolute root at dispatch time (a subagent's cwd resets between calls, so relative paths are unsafe).
 3. **Project Standards (auto-resolved)** — REQUIRED. Compact rules of skills relevant to this dispatch. Pulled from `.claude/skills/REGISTRY.md` (built once per session by `bun run skills:registry`). The subagent treats this section as authoritative for the listed conventions and does NOT re-read the full SKILL.md unless explicitly told to. Protocol: `agentic-qa-core/references/skill-resolver.md`.
 4. **Skills to load** — skill triggers (e.g. `/acli`, `/xray-cli`, `/playwright-cli`) the subagent must invoke before issuing tool calls. The orchestrator never inlines tool syntax — that lives in the owning skill.
 5. **Exact instructions** — numbered steps. No ambiguity. Each step names the tool / skill action.
@@ -64,8 +64,8 @@ When a CI run finishes in `regression-testing` Stage 6, the orchestrator fans ou
 Goal: Download the Allure report artifact for run <<RUN_ID>> and unpack it into the local reports directory.
 
 Context docs:
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.github/workflows/regression.yml
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/regression-testing/SKILL.md
+  - <<REPO_ROOT>>/.github/workflows/regression.yml
+  - <<REPO_ROOT>>/.claude/skills/regression-testing/SKILL.md
 
 Skills to load: (none — this is a pure gh CLI task)
 
@@ -100,7 +100,7 @@ A regression run takes 20-60 minutes. The orchestrator dispatches ONE background
 Goal: Block on `gh run watch <<RUN_ID>>` until the workflow run reaches a terminal state, then return the verdict.
 
 Context docs:
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.github/workflows/regression.yml
+  - <<REPO_ROOT>>/.github/workflows/regression.yml
 
 Skills to load: (none — pure gh CLI)
 
@@ -138,11 +138,11 @@ Stage 1 — Plan agent
 Goal: Produce a feature-level test plan and an implementation plan for ticket <<ISSUE_KEY>> under .context/PBI/epics/EPIC-<<EPIC_KEY>>-<<EPIC_SLUG>>/stories/STORY-<<ISSUE_KEY>>-<<SLUG>>/.
 
 Context docs:
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/master-test-plan.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/PBI/epics/EPIC-<<EPIC_KEY>>-<<EPIC_SLUG>>/module-context.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.context/PBI/epics/EPIC-<<EPIC_KEY>>-<<EPIC_SLUG>>/test-specs/ROADMAP.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/tests/components/TestFixture.ts
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/test-automation/references/planning-playbook.md
+  - <<REPO_ROOT>>/.context/master-test-plan.md
+  - <<REPO_ROOT>>/.context/PBI/epics/EPIC-<<EPIC_KEY>>-<<EPIC_SLUG>>/module-context.md
+  - <<REPO_ROOT>>/.context/PBI/epics/EPIC-<<EPIC_KEY>>-<<EPIC_SLUG>>/test-specs/ROADMAP.md
+  - <<REPO_ROOT>>/tests/components/TestFixture.ts
+  - <<REPO_ROOT>>/.claude/skills/test-automation/references/planning-playbook.md
 
 Skills to load: /acli (to fetch the ticket), /xray-cli (to read existing TCs)
 
@@ -177,8 +177,8 @@ Sometimes there is exactly one task with no fan-out and no follow-up. Use Single
 Goal: Add the standard Dependencies block to .claude/skills/test-documentation/SKILL.md and verify the markdown still renders cleanly.
 
 Context docs:
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/agentic-qa-core/SKILL.md
-  - /home/sai/Desktop/upex/web-apps/agentic-qa-boilerplate/.claude/skills/test-documentation/SKILL.md
+  - <<REPO_ROOT>>/.claude/skills/agentic-qa-core/SKILL.md
+  - <<REPO_ROOT>>/.claude/skills/test-documentation/SKILL.md
 
 Skills to load: (none)
 

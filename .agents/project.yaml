@@ -64,8 +64,9 @@ qa:
       key: null # discovered/created at runtime, then cached here (e.g. PROJ-123)
 
 # Git workflow for THIS project — the SOURCE OF TRUTH read by the git-flow-master skill
-# before any git/gh operation. Ships `null` (template): on the first git intent git-flow-master
-# OFFERS "Strategy Setup" and fills these fields (it never auto-picks). Tracked + frozen by the
+# before any git/gh operation. Ships `strategy: solo-main` as an inherited DEFAULT, not a
+# decision — `meta.strategy_source` records the difference (`inherited` until the Strategy
+# Setup questionnaire actually runs and stamps `chosen`). Tracked + frozen by the
 # updater (bootstrapOnly), so each project keeps its own. Filled by git-flow-master, NOT by
 # `agents:setup`. These leaves are read directly (not {{VAR}} template vars) → skipped by vars:check.
 git_strategy:
@@ -95,7 +96,7 @@ git_strategy:
   policy: # how strictly protected branches are guarded (set by Strategy Setup Q4; defaults are safe)
     direct_push_to_protected: allowed # forbidden | confirm | allowed (solo-main = allowed)
     admin_bypass: true # normal flow here: the admin push credential auto-bypasses the ProtectPublic ruleset on every push (no flag needed). "Bypassed rule violations" is expected — never open a PR.
-    require_pr_reviews: 1 # VERIFIED 2026-08-18 against ruleset 16809536: required_approving_review_count = 1. Informational here, because this repo pushes directly and the admin credential bypasses the rule (see description) — but the number must still state what the host asks of anyone who does open a PR.
+    require_pr_reviews: 1 # VERIFIED 2026-08-18 against ruleset 16809531: required_approving_review_count = 1. Informational here, because this repo pushes directly and the admin credential bypasses the rule (see description) — but the number must still state what the host asks of anyone who does open a PR.
   branch_prefixes:
     precedence: [feat, fix, refactor, test, docs, chore]
     naming_with_key: '{prefix}/{ISSUE-KEY}-{kebab-slug}'

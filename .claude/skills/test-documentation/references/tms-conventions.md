@@ -127,7 +127,7 @@ Every TC in the TMS must have these fields populated. Exact field names vary by 
 | Summary / Title | Text | TC name following naming convention | `GX-101: TC1: should ...` |
 | Description / Steps | Long text | Gherkin or traditional step table | See §6 |
 | Test Status | Select | Execution state | `NOT RUN` / `PASSED` / `FAILED` |
-| Workflow Status | Select | Lifecycle state | `Draft`, `Ready`, `Candidate`, `Automated`, ... |
+| Workflow Status | Select | Lifecycle state | `Draft`, `In Design`, `READY`, `In Review`, `Candidate`, `In Automation`, `Pull Request`, `AUTOMATED`, `MANUAL`, `DEPRECATED` (§5) |
 | Priority | Select | Business risk priority | `Critical` / `High` / `Medium` / `Low` |
 | Labels | Multi-select | Classification tags | `regression`, `smoke`, `e2e` |
 | Automation Candidate | Boolean | Automation flag | true / false |
@@ -150,7 +150,7 @@ These are **two independent fields** with two independent lifecycles. Mixing the
 |-----------|----------------------------|-----------------------------|
 | Lives on | The Test issue itself | A single Test Run inside a Test Execution (Xray) or a Test Status custom field on the Test issue (Jira-native) |
 | Answers | "Where is this TC in its documentation / automation lifecycle?" | "Did the TC pass the last time we ran it?" |
-| Values | `Draft` / `In Design` / `Ready` / `Manual` / `In Review` / `Candidate` / `In Automation` / `Pull Request` / `Automated` / `Deprecated` | `TODO` / `EXECUTING` / `PASS` / `FAIL` / `ABORTED` / `BLOCKED` |
+| Values | `Draft` / `In Design` / `READY` / `MANUAL` / `In Review` / `Candidate` / `In Automation` / `Pull Request` / `AUTOMATED` / `DEPRECATED` | `TODO` / `EXECUTING` / `PASS` / `FAIL` / `ABORTED` / `BLOCKED` |
 | Changed by | QA analyst, QA engineer (manual transitions) | Execution — either a human runner or `[TMS_TOOL] Import Results` in CI |
 | Persists across runs | Yes (workflow is the long-lived state) | No (each Test Run carries its own status; history lives in the Test Execution) |
 | Used by | Planning, ROI prioritization, automation intake | Regression reporting, GO / NO-GO, CI health |
@@ -168,7 +168,7 @@ These are **two independent fields** with two independent lifecycles. Mixing the
 
 **What this means for reporting**:
 
-- "TC is `Automated`" (workflow) is compatible with "last Test Run was `FAIL`" (run). The TC is live in CI, but it failed today.
+- "TC is `AUTOMATED`" (workflow) is compatible with "last Test Run was `FAIL`" (run). The TC is live in CI, but it failed today.
 - ATR's "PASSED / FAILED / PASSED WITH ISSUES" rollup comes from the **Execution Status** across all TCs in the ATR, not from the Test Status.
 - A TC in `Draft` (workflow) never has an Execution Status — it has not been executed yet.
 - When the legacy / current skill says "Test Status: NOT RUN / PASSED / FAILED", that refers to the **Execution Status** field in Jira-native mode (where there is no separate Test Run entity); in Xray mode, the equivalent lives on the Test Run and `NOT RUN` maps to `TODO`.
@@ -177,7 +177,7 @@ These are **two independent fields** with two independent lifecycles. Mixing the
 
 ## 5. Workflow state machine
 
-> **Substrate reference**: status and transition names below match the canonical UPEX Jira workflow declared in `.agents/jira-workflows.json` (see `.agents/jira-required.yaml` `work_types.test_case` for the methodology's required slugs). Skills resolve these via `{{jira.status.test_case.<slug>}}` and `{{jira.transition.test_case.<slug>}}`. If your project's Jira renames any state or transition, run `bun run jira:sync-workflows` to refresh the substrate so slug -> literal-name mapping stays correct.
+> **Substrate reference — AUTHORITATIVE**: `.agents/jira-workflows.json` (`work_types.test_case`) is the source of truth for every status and transition name below; a status absent from that file does not exist in the instance (`Approved`, `Automating`, `Merge Request` are common inventions and none of them exist). Names below are copied from the canonical UPEX Jira workflow declared in `.agents/jira-workflows.json` (see `.agents/jira-required.yaml` `work_types.test_case` for the methodology's required slugs). Skills resolve these via `{{jira.status.test_case.<slug>}}` and `{{jira.transition.test_case.<slug>}}`. If your project's Jira renames any state or transition, run `bun run jira:sync-workflows` to refresh the substrate so slug -> literal-name mapping stays correct.
 
 ### The full lifecycle
 
@@ -188,7 +188,7 @@ These are **two independent fields** with two independent lifecycles. Mixing the
                                                           ^
                                                           | Any state
                                                           |
-  Draft -> In Design -> Ready -+-- for manual --> Manual -+
+  Draft -> In Design -> READY -+-- for manual --> MANUAL -+
                          ^     |                          |
               back       |     +-- automation review --> In Review
                          |                                   |
@@ -198,7 +198,7 @@ These are **two independent fields** with two independent lifecycles. Mixing the
                          |                                                                                                |
                          |                                                                                                +-- create PR --> Pull Request
                          |                                                                                                                      |
-                         |                                                                                                                      +-- merged --> Automated
+                         |                                                                                                                      +-- merged --> AUTOMATED
                          |                                                                                                                                        |
                          +---------------------------------------------------------------------------------------------------------- back (rework) ---------------+
 ```
@@ -209,34 +209,36 @@ These are **two independent fields** with two independent lifecycles. Mixing the
 |-------|-------------|-------|------|
 | **Draft** | Newly created, placeholder | TC artifact created | Steps / Gherkin writing begins |
 | **In Design** | Steps being written | Draft + linked story | Steps reviewable |
-| **Ready** | Documented and complete | Steps reviewed | Manual or automation decision |
-| **Manual** | Manual regression only | Not an automation candidate | Can be reconsidered later |
+| **READY** | Documented and complete | Steps reviewed | Manual or automation decision |
+| **MANUAL** | Manual regression only | Not an automation candidate | Can be reconsidered later |
 | **In Review** | Automation ROI under evaluation | Marked as candidate | Approved or rejected |
 | **Candidate** | Approved for automation | Positive ROI | Automation begins |
 | **In Automation** | ATC being implemented | Developer starts coding | PR created |
 | **Pull Request** | Code submitted, awaiting merge | PR opened | PR merged |
-| **Automated** | Running in CI/CD | PR merged | Final (unless deprecated) |
-| **Deprecated** | Obsolete | Feature removed | Can be recovered |
+| **AUTOMATED** | Running in CI/CD | PR merged | Final (unless deprecated) |
+| **DEPRECATED** | Obsolete | Feature removed | Can be recovered (`recover` -> Draft) |
 
 ### Rules
 
-1. **No skipping** — Draft cannot jump to Automated.
-2. **Backward transitions are limited** — only "back to In Design" and "any state to Deprecated".
-3. **Manual is not a dead end** — Manual can later move to In Review if ROI changes.
-4. **Automated is the goal** — move as many as reasonable into Automated.
+1. **No skipping** — Draft cannot jump to AUTOMATED.
+2. **Backward transitions are limited** — the `back_*` family (one step back per state) plus "any state to DEPRECATED".
+3. **MANUAL is not a dead end** — MANUAL can later move to In Review, Candidate, or AUTOMATED if ROI changes.
+4. **AUTOMATED is the goal** — move as many as reasonable into AUTOMATED.
 
 ### Transition names (used in `[ISSUE_TRACKER_TOOL] Transition Issue`)
 
 | Transition | From -> To | Trigger |
 |-----------|-----------|---------|
 | `start design` | Draft -> In Design | Documentation begins |
-| `ready to run` | In Design -> Ready | Documentation complete |
-| `for manual` | Ready -> Manual | Not a candidate |
-| `automation review` | Ready -> In Review | Evaluate ROI |
+| `ready to run` | In Design -> READY | Documentation complete |
+| `for manual` | READY -> MANUAL | Not a candidate |
+| `automation review` | READY -> In Review | Evaluate ROI |
 | `approve to automate` | In Review -> Candidate | Positive ROI |
 | `start automation` | Candidate -> In Automation | Stage 5 begins |
 | `create PR` | In Automation -> Pull Request | PR created (often auto) |
-| `merged` | Pull Request -> Automated | PR merged (often auto) |
+| `merged` | Pull Request -> AUTOMATED | PR merged (often auto) |
+| `Deprecated` | Any -> DEPRECATED | TC retired |
+| `recover` | DEPRECATED -> Draft | TC revived |
 
 ---
 
@@ -679,7 +681,7 @@ Automated results flow from CI to the TMS:
 - Create TCs before exploring the feature.
 - Create TCs without a parent (Regression Epic).
 - Create TCs without traceability to a requirement.
-- Skip workflow states (e.g., Draft directly to Automated).
+- Skip workflow states (e.g., Draft directly to AUTOMATED).
 - Automate without evaluating ROI first.
 - Duplicate TCs for the same scenario (same precondition + action = same TC).
 - Leave status stale after automating (update the TMS when the PR merges).

@@ -105,7 +105,7 @@ The reporter array is load-bearing. Reporters run in order and the first one can
 
 1. **`KataReporter`** (custom) — colored terminal tree, prints step boundaries, reads the NDJSON written by `@atc` to show per-ATC status. Goes first so its step events are registered before Allure grabs them.
 2. **`html`** — Playwright's built-in HTML report. Lives in `playwright-report/`. `open: 'never'` prevents it from auto-opening locally (annoying in CI-like local runs).
-3. **`allure-playwright`** — writes `allure-results/`. The `bun run test:allure` script post-processes this directory into a static site.
+3. **`allure-playwright`** — writes `allure-results/`. The `bun run allure:generate` script post-processes this directory into a static site.
 4. **`json`** — machine-readable summary for tooling (`test-results/results.json`).
 5. **`github` / `list`** — the environment-dependent human reporter. `github` annotates PRs with failure locations when run in GitHub Actions. `list` is cleaner locally.
 
@@ -279,7 +279,7 @@ bun run test -- --project=e2e --browser=firefox
 bunx playwright show-report
 
 # Generate Allure site from allure-results/
-bun run test:allure
+bun run allure:generate
 
 # Produce kata-manifest.json (static registry of components / ATCs)
 bun run kata:manifest

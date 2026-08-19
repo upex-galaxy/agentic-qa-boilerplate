@@ -1,11 +1,11 @@
 # Session Management — Long-Skill Resume Contract
 
 > Cited by: every long/medium official workflow skill in this repo. Loaded on demand at the start of every retrofitted skill (Phase 0 resume check) and at the end (Phase N archive).
-> Sibling references: `./orchestration-doctrine.md` (mandatory subagent dispatch), `./briefing-template.md` (6-component briefing format), `./dispatch-patterns.md` (Single / Sequential / Parallel / Background), `./topic-key-conventions.md` (file-first artifact tagging, Engram mirror).
+> Sibling references: `./orchestration-doctrine.md` (mandatory subagent dispatch), `./briefing-template.md` (6-component briefing format), `./dispatch-patterns.md` (Single / Sequential / Parallel / Background). Topic-key conventions (file-first artifact tagging, Engram mirror) are inlined in §15 of this document.
 
 ## 1. Purpose & scope
 
-Long official workflow skills (project-foundation, project-bootstrap, project-discovery, test-automation, sprint-testing, regression-testing, test-documentation, shift-left-testing, framework-development, sprint-development, etc.) regularly run for 30 minutes to several hours. Without a persistent resume contract, mid-execution interruption (terminal close, network drop, MCP failure, user pause) costs the entire run — the AI has to restart phases, re-prompt the user, or reverse-engineer state from artifact existence checks.
+Long official workflow skills (project-discovery, test-automation, sprint-testing, regression-testing, test-documentation, shift-left-testing, framework-development, etc.) regularly run for 30 minutes to several hours. Without a persistent resume contract, mid-execution interruption (terminal close, network drop, MCP failure, user pause) costs the entire run — the AI has to restart phases, re-prompt the user, or reverse-engineer state from artifact existence checks.
 
 This document is the **single source of truth** for the session contract that every retrofitted skill follows:
 
@@ -23,7 +23,7 @@ The pattern composes with — does not replace — the existing orchestration do
 | Subagent dispatch (when, why, anti-patterns) | `./orchestration-doctrine.md` | Per-phase progress checkpoints around each dispatch |
 | Briefing format (6 components per dispatch) | `./briefing-template.md` | A 7th implied component: "Session artifact path" — the orchestrator passes the absolute path to `plan.md` / `progress.md` so the subagent can read prior state |
 | Pattern selection (Single / Sequential / Parallel / Background) | `./dispatch-patterns.md` | Each phase's pattern is recorded in `plan.md` §"Phase breakdown" so resume preserves the originally chosen pattern |
-| Artifact persistence (file-first + Engram mirror) | `./topic-key-conventions.md` | A new top-level topic prefix `session/...` (see §11) alongside the existing `pbi/...` |
+| Artifact persistence (file-first + Engram mirror) | §15 (this doc) | A new top-level topic prefix `session/...` (see §11) alongside the existing `framework/...` |
 
 When in doubt, the sibling doctrine doc is canonical for its concern. This file owns the lifecycle (Phase 0 resume → Phase 1 plan → per-phase progress → archive) and the file schemas (`plan.md`, `progress.md`).
 
@@ -96,13 +96,13 @@ Dispatch options for Phase 1:
 | Approach | When |
 |---|---|
 | **Inline** | Skill is short enough that the orchestrator drafts the plan directly from the user's trigger + context docs (typical for skills with ≤3 phases) |
-| **Single subagent** | Plan requires reading many context files or external systems (typical for project-foundation, project-discovery, regression-testing) |
+| **Single subagent** | Plan requires reading many context files or external systems (typical for project-discovery, regression-testing) |
 
 The choice is recorded in the skill's SKILL.md "Subagent Dispatch Strategy" table — not redecided per invocation.
 
 ### Special cases
 
-Some skills have a canonical plan artifact that already lives outside `.session/` and is committed to git (e.g. `sprint-development`'s `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/implementation-plan.md`). For those skills:
+Some skills have a canonical plan artifact that already lives outside `.session/` and is committed to git (e.g. `test-automation`'s `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<ID>/automation-plan.md` — a `[COMMIT]` file per `.context/PBI/README.md`, versioned with the test code). For those skills:
 
 - The committed artifact stays canonical.
 - `.session/<skill-slug>/<scope>/plan.md` MAY be omitted; the skill writes only `progress.md`.
@@ -128,7 +128,7 @@ capture_prompt: true
 ---
 ```
 
-- `topic_key` follows §11 and `./topic-key-conventions.md`.
+- `topic_key` follows §11 and §15.
 - `scope` is the literal `<scope>` value, or the string `project` for project-scope skills.
 - `status` lifecycle: `draft` on write → `approved` when the user accepts the plan → `superseded` if the orchestrator rewrites the plan mid-session (rare; an append-only changelog at the bottom of the file is preferred over rewriting).
 - `capture_prompt: true` for the initial plan write. The user's intent matters and Engram should preserve it.
@@ -230,19 +230,13 @@ The shape of `<scope>` is decided per skill, not per invocation. Each retrofitte
 
 | Skill | Scope shape | Identifier source |
 |---|---|---|
-| `sprint-development` | `<JIRA-KEY>` (e.g. `UPEX-123`) | Jira ticket from invocation trigger |
 | `sprint-testing` | `<JIRA-KEY>` (single-ticket); `sprint-<N>/` containing nested `<JIRA-KEY>/` per ticket (batch-sprint) | Jira ticket or sprint number |
 | `test-automation` | `<JIRA-KEY>` (ticket-driven, regression-driven); `<module-slug>` (module-driven) | Jira ticket or module name from scope-picker |
 | `test-documentation` | `<JIRA-KEY>` (ticket / bug); `<module-slug>` (module); `<YYYY-MM-DD>-adhoc` (ad-hoc) | Scope-picker output |
 | `framework-development` | `<change-name>` (kebab-case) | User-provided at session start |
 | `regression-testing` | `<env>-<YYYY-MM-DD>` (e.g. `staging-2026-05-20`) | Invocation env + date |
 | `shift-left-testing` | `<YYYY-MM-DD>-<descriptor>` | Session init |
-| `project-foundation` | (none — project scope) | — |
-| `project-bootstrap` | (none — project scope) | — |
 | `project-discovery` | (none — project scope) | — |
-| `design-system` | (none — project scope) | — |
-| `testability-guide` | (none — project scope) | — |
-| `product-management` | `seed` (workflow A); `<epic-slug>` (workflows B/C); workflows D/E/F/G opt out | Workflow selection |
 
 A skill MUST validate its `<scope>` matches its declared shape before writing the directory. Mismatch is a lint failure.
 
@@ -250,7 +244,7 @@ A skill MUST validate its `<scope>` matches its declared shape before writing th
 
 Every retrofitted SKILL.md MUST include this banner at the top of its "Subagent Dispatch Strategy" section (or a new "Session & Dispatch" section if none exists). The banner is checked verbatim by `scripts/lint-skills.ts`:
 
-> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
+> **Orchestration & Session contracts**: this skill follows `agentic-qa-core/references/orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `agentic-qa-core/references/session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
 
 The banner anchors both doctrines side by side so a skill author cannot adopt one without the other. The two contracts are designed to compose: orchestration says HOW to dispatch; session says HOW to persist around the dispatch.
 
@@ -293,7 +287,7 @@ The file-side state is always sufficient to resume.
 
 ### Topic-key prefix
 
-`session/...` joins `pbi/...` as a top-level prefix. See `./topic-key-conventions.md` §Convention for the registered prefixes.
+`session/...` joins `framework/...` as a top-level prefix. See §15 for the registered prefixes.
 
 ## 12. Composition with `briefing-template.md`
 
@@ -327,10 +321,6 @@ The subagent treats `plan.md` and `progress.md` as read-only context. Only the o
 
 See §4 "Skills that opt out".
 
-### Workflow-level carve-outs
-
-`product-management` retrofits only workflows A (initial backlog seed), B (incremental feature), C (epic creation). Workflows D (story refinement), E (AC quality), F (edge-case enumeration), G (sprint reporting) are short, single-actor, non-interruptible tasks where session ceremony adds overhead without enabling resume. The skill's Phase 0 documents this carve-out explicitly so users do not expect a `.session/` directory for those workflows.
-
 ## 14. Lint checks
 
 `scripts/lint-skills.ts` enforces three checks on top of the existing skill-registry lints:
@@ -339,10 +329,27 @@ See §4 "Skills that opt out".
 2. **Phase 0 present.** Every retrofitted SKILL.md has a section titled `## Phase 0` (or `## Phase -1` for skills with a pre-existing `## Phase 0` like `test-documentation`) that mentions `.session/` path read. Missing Phase 0 → ERROR.
 3. **Scope shape valid.** When a session directory exists under `.session/<skill-slug>/`, its name matches the regex registered for that skill in §9. Mismatch → WARN.
 
+## 15. Topic-key conventions
+
+Engram topic keys are **file-first artifact tags**: the file on disk is canonical, and the Engram observation mirrors it for cross-session search. Keys are stable, lowercase, slash-separated; the same evolving artifact keeps the same key (upsert), and different artifacts never share one.
+
+Registered top-level prefixes in this repo:
+
+| Prefix | Shape | Producer |
+|---|---|---|
+| `session/` | `session/<skill-slug>/<scope>/<artifact>` where `<artifact>` is `plan`, `progress`, or `phase-<N>` (§6, §7, §11) | Every retrofitted skill listed in §13 |
+| `framework/` | `framework/<change-name>/<phase>` | `framework-development` (Plan / Code / Verify / Archive artifacts) |
+
+Rules:
+
+- `<skill-slug>` and `<scope>` match the values used for the `.session/` directory (§3, §9), so any key maps back to its file deterministically.
+- A new top-level prefix MUST be registered in this table before first use — unregistered prefixes fragment cross-session search.
+- Prefixes never cross families: a `session/...` save never upserts a `framework/...` observation, and vice versa.
+
 ## Cross-references
 
 Pointers to sibling doctrine and supporting surfaces.
 
 - **Producers** (skills that emit session state): see §13 for the per-repo list. Each cited skill's `SKILL.md` "Subagent Dispatch Strategy" section names this doc.
-- **Sibling doctrine**: `./orchestration-doctrine.md`, `./briefing-template.md`, `./dispatch-patterns.md`, `./topic-key-conventions.md`. All four loaded on demand alongside this one.
+- **Sibling doctrine**: `./orchestration-doctrine.md`, `./briefing-template.md`, `./dispatch-patterns.md`. All three loaded on demand alongside this one. Topic-key conventions are inlined in §15.
 - **Engram MCP surface used**: `mem_save` (per-phase checkpoints), `mem_session_summary` (at archive), `mem_search` + `mem_get_observation` (for resume discovery from other sessions).

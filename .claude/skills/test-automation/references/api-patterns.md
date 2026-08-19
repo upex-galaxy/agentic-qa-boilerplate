@@ -543,7 +543,7 @@ bun run test --grep @critical
 bun run test:integration --debug
 
 # Allure report
-bun run test:allure
+bun run allure:generate
 
 # Regenerate types from a fresh OpenAPI spec (run before writing new API ATCs)
 bun run api:sync

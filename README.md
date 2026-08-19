@@ -94,7 +94,7 @@ These are **not optional** for the workflow — each one is required by a specif
 
 ### MCP credentials (`.env` keys)
 
-`.mcp.json` (Claude Code) and `opencode.jsonc` ship with `${VAR}` / `{env:VAR}` placeholders that read from `.env`. Eight keys are required for the 7 canonical MCPs:
+`.mcp.json` (Claude Code) and `opencode.jsonc` ship with `${VAR}` / `{env:VAR}` placeholders that read from `.env`. Seven keys are required for the 6 canonical MCPs:
 
 ```
 TAVILY_API_KEY
@@ -116,7 +116,7 @@ POSTMAN_API_KEY
 | Step 4 — agents          | Path probe — checks if `~/.claude/` or `~/.config/opencode/` directory exists.                                                  | Neither found: prints both docs URLs, hard exit 1.                                                                                                                                                        |
 | Step 10 — per-skill CLIs | PATH probe — runs `which <name>` (POSIX) or `where <name>` (Windows). Presence only, no version check.                          | Prints `found`/`missing` table; for missing entries adds `quick:` install command (when cross-platform) + `docs:` URL. Non-blocking.                                                                      |
 | direnv (optional)        | Presence + `.envrc` allow status + shell-rc hook line.                                                                          | Pure convenience nudge — `bun run claude` / `bun run opencode` wrappers already work without it. If absent, lists `system_install` action with install command; safe to decline (recommended on Windows). |
-| `bun run setup:doctor`   | Re-runs everything above + 8 MCP `.env` vars + Playwright browser cache.                                                        | Human-readable or `--json` report. Every `pending_action` carries a `where` hint or URL — re-run any time after partial setup.                                                                            |
+| `bun run setup:doctor`   | Re-runs everything above + 7 MCP `.env` vars + Playwright browser cache.                                                        | Human-readable or `--json` report. Every `pending_action` carries a `where` hint or URL — re-run any time after partial setup.                                                                            |
 
 > **TL;DR**: install **Bun** + **Claude Code (or OpenCode)** before you run setup. Everything else, the installer points you at when you hit it.
 
@@ -160,7 +160,7 @@ What it does:
 2. Rewrites `package.json` name + `.agents/project.yaml` `project.name`.
 3. Initializes a fresh `git init -b main` with an initial commit.
 4. Runs `bun install`.
-5. Hands off to `bun run setup` — gentle-ai, 14 skills, 9 community skills, 7 MCPs, `.env`, direnv autoload, optional `gh repo create`.
+5. Hands off to `bun run setup` — gentle-ai, 15 skills, 10 community skills, 6 MCPs, `.env`, direnv autoload, optional `gh repo create`.
 
 Useful flags (full list in [`packages/create-agentic-qa/README.md`](packages/create-agentic-qa/README.md)):
 
@@ -560,6 +560,8 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run allure:run`           | Generate and open Allure |
 | `bun run allure:generate`      | Generate Allure only     |
 | `bun run allure:open`          | Open existing Allure     |
+| `bun run allure:agent`         | Run tests through the Allure agent |
+| `bun run allure:watch`         | Live-watch `allure-results`        |
 | `bun run test:sync`            | Sync results to TMS      |
 
 ### Code Quality
@@ -568,8 +570,11 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | ----------------------- | -------------------- |
 | `bun run lint:check`    | Run ESLint           |
 | `bun run lint:fix`      | Fix linting issues   |
+| `bun run format:check`  | Prettier check only  |
 | `bun run format:fix`    | Format with Prettier |
 | `bun run types:check`   | TypeScript check     |
+| `bun run repo:check`    | Full quality suite (format + lint + types + vars + skills + registry + env) — the checks the pre-push hook approximates |
+| `bun run repo:fix`      | Same suite, auto-fixing format + lint first |
 
 ### Utilities
 
@@ -593,11 +598,11 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run jira:sync-fields`    | Sync Jira custom-field catalog into `.agents/jira-fields.json`. **Requires Jira `Administer` permission** — non-admin users get a friendly skip + the UPEX-standard fallback below. |
 | `bun run jira:sync-workflows` | Sync Jira workflow statuses + transitions into `.agents/jira-workflows.json`. Same admin requirement as `jira:sync-fields`. |
 | `bun run jira:sync-link-types`| Sync workspace issue-link types into `.agents/jira-link-types.json`. USER-OK (no admin needed). Manual-only — not auto-invoked by setup. |
-| `bun run jira:sync-issues`    | Pull Jira Epics/Stories into `.context/PBI/` markdown files                  |
+| `bun run jira:sync-issues`    | Pull Jira Epics/Stories/Bugs into `.context/PBI/` markdown files             |
 | `bun run context:hydrate`     | Rebuild the whole gitignored `.context/PBI/` cache from Jira                 |
 | `bun run jira:check`          | Verify Jira workspace has required custom fields configured                  |
 
-> **`--upex` flag** — every `jira:sync-*` script accepts `--upex` to download the UPEX-standard reference JSON from `upex-galaxy/agentic-qa-boilerplate@main` instead of hitting Jira. Use when you don't have admin access, when you want a working catalog without setting up auth, or when you want the canonical UPEX standard as a reference. Examples: `bun run jira:sync-fields --upex`, `bun run jira:sync-workflows --upex`, `bun run jira:sync-link-types --upex`.
+> **`--upex` flag** — the catalog sync scripts (`jira:sync-fields`, `jira:sync-workflows`, `jira:sync-link-types`) accept `--upex` to download the UPEX-standard reference JSON from `upex-galaxy/agentic-qa-boilerplate@main` instead of hitting Jira. Use when you don't have admin access, when you want a working catalog without setting up auth, or when you want the canonical UPEX standard as a reference. Examples: `bun run jira:sync-fields --upex`, `bun run jira:sync-workflows --upex`, `bun run jira:sync-link-types --upex`. `jira:sync-issues` does not take the flag — it always pulls from your Jira instance.
 
 <br />
 
@@ -715,18 +720,21 @@ BUILD_ID
 | ---------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `agentic-qa-core`            | (auto, cited by other skills) | Foundation: passive reference host for shared doctrine (briefing template, dispatch patterns, orchestration, skill-composition strategy). Loaded on demand by workflow skills — not invoked directly.                                                                                                |
 | `/project-discovery`         | `/project-discovery`          | Onboard a project to this boilerplate. 4-phase discovery (Constitution → Architecture → Infrastructure → Specification) producing PRD, SRS, domain glossary; orchestrates the `/business-*-map` and `/master-test-plan` commands. Reverse-engineering only.                                          |
-| `/shift-left-testing`        | `/shift-left-testing`         | **Stage 0**. Pre-sprint Shift-Left QA on a batch of backlog Stories. Refines ACs, surfaces gaps + ambiguities, drafts ATP outlines, transitions `backlog → shift_left_qa → estimation`. Adds label `shift-left-reviewed` so `/sprint-testing` Stage 1 short-circuits Phases 1-3 later.            |
+| `/shift-left-testing`        | `/shift-left-testing`         | **Stage 0**. Pre-sprint Shift-Left QA on a batch of backlog Stories. Refines ACs, surfaces gaps + ambiguities, authors the Story's ATP early (same field + same Test Plan that `/sprint-testing` later refines — no separate DRAFT artifact), transitions `backlog → shift_left_qa → estimation`. Adds labels `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` so `/sprint-testing` Stage 1 short-circuits Phases 1-3 later. |
 | `/sprint-testing`            | `/sprint-testing`             | Orchestrate in-sprint manual QA per ticket across **Stages 1-3** (Planning, Execution, Reporting).                                                                                                                                                                                                   |
 | `/test-documentation`        | `/test-documentation`         | **Stage 4**. Analyze, prioritize (ROI) and document test cases in the TMS. Produces Candidate / Manual / Deferred verdicts.                                                                                                                                                                          |
 | `/test-automation`           | `/test-automation`            | **Stage 5**. Plan → Code → Review automated tests on KATA + Playwright + TypeScript.                                                                                                                                                                                                                 |
 | `/regression-testing`        | `/regression-testing`         | **Stage 6**. Execute regression / smoke / sanity suites via CI/CD, classify failures, emit GO / CAUTION / NO-GO.                                                                                                                                                                                     |
-| `/playwright-cli`            | `/playwright-cli`             | Browser automation CLI: screenshots, tracing, video recording, session management, request mocking. _(community skill — installed at PROJECT level by `bun run install`; not committed in repo.)_                                                                                                    |
-| `/playwright-best-practices` | `/playwright-best-practices`  | Playwright + TypeScript reference: flaky-test fixes, POM vs fixtures, axe-core, auth/OAuth, perf budgets, i18n, component testing. Auto-loads in the Code phase of `/test-automation`. _(community skill by currents.dev — installed at PROJECT level by `bun run install`; not committed in repo.)_ |
+| `/playwright-cli`            | `/playwright-cli`             | Browser automation CLI: screenshots, tracing, video recording, session management, request mocking. _(community skill — installed at PROJECT level by `bun run setup`; not committed in repo.)_                                                                                                    |
+| `/playwright-best-practices` | `/playwright-best-practices`  | Playwright + TypeScript reference: flaky-test fixes, POM vs fixtures, axe-core, auth/OAuth, perf budgets, i18n, component testing. Auto-loads in the Code phase of `/test-automation`. _(community skill by currents.dev — installed at PROJECT level by `bun run setup`; not committed in repo.)_ |
+| `/resend-cli`                | `/resend-cli`                 | Resend email testing CLI. Pairs with the `resend` external binary. _(community skill — installed at PROJECT level by `bun run setup`; not committed in repo.)_                                                                                                                                      |
+| `bug-screenshot-annotation`  | "annotate bug screenshot", "anota este bug" | Turns a raw bug screenshot into QA-style annotated evidence (circles/arrows/callouts/corner badge/axis ticks) via HTML+CSS overlays rendered 100% locally (loopback HTTP + playwright-cli capture — never an external image service). Loaded inline by `/sprint-testing` Stage 2 for visual/positional bugs.                          |
 | `/xray-cli`                  | `/xray-cli`                   | Xray Cloud test management CLI: tests, executions, plans, JUnit/Cucumber/Xray JSON imports, project backup/restore.                                                                                                                                                                                  |
 | `/acli`                      | `/acli`                       | Atlassian CLI for Jira Cloud — resolves `[ISSUE_TRACKER_TOOL]` and (in Modality jira-native) `[TMS_TOOL]`.                                                                                                                                                                                                     |
 | `/git-flow-master`           | (auto on git/PR intents)      | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR.                                                                                                                                                                                  |
 | `/framework-development`     | `/framework-development`      | Gateway for evolving the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. Self-contained Plan → Code → Verify → Archive pipeline; runs under the `gentle-ai install --preset minimal` install. |
 | `/judgment-day`              | `/judgment-day`, `juzgar`     | Vendored T2 (gentle-ai, Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, fix loop, re-judge). Optional gate cited by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. Never auto-invoked.                                                                                |
+| `pr-review-lead`             | `pr-review-lead`, "review this PR", "revisa este PR" | QA Lead / QA Architect review of a PR's test-automation work against KATA doctrine (or the target repo's own), grounding every finding in a doctrine citation or code location. Works on this repo or external repos (`owner/repo#PR` via `gh`). Never posts to GitHub without your explicit final OK.        |
 | `/agentic-qa-onboard`        | `/agentic-qa-onboard`         | Walks new users through the repo's QA flow, MCPs, env vars, workflow skills.                                                                                                                                                                                                                         |
 
 ### Reusable community skills (installed by `bun run setup`)
@@ -759,6 +767,7 @@ Validation: `bun run skills:check` checks tier coherence (orphan categories, tie
 | `/master-test-plan`     | Refresh `.context/master-test-plan.md` (what to test and why).                                                                                |
 | `/break-down-tests`     | Plain-English breakdown of automated tests for a module / spec.                                                                               |
 | `/fix-traceability`     | Repair broken US-ATP-ATR-TC traceability links in the TMS.                                                                                    |
+| `/jira-instance-migration` | Repoint the repo at a new Atlassian instance (`.env` + `.agents/project.yaml` + machine-global `acli` session) and regenerate the `.agents/` catalogs the migration invalidated.        |
 
 <br />
 

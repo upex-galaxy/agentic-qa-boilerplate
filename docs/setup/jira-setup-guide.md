@@ -36,7 +36,7 @@ Before starting, ensure you have:
 | Concept | Purpose | Example Values |
 |---------|---------|----------------|
 | **Test Type** | Classification of test | Manual, Cucumber, Generic |
-| **Test Status** | Jira workflow status | Draft, Ready, Automated |
+| **Test Status** | Jira workflow status | Draft, In Design, READY, MANUAL, In Review, Candidate, In Automation, Pull Request, AUTOMATED, DEPRECATED |
 | **Test Run Status** | Execution result | TODO, PASS, FAIL, BLOCKED |
 | **Requirement** | Coverable issue type | Story, Epic, Bug |
 
@@ -134,17 +134,23 @@ Xray supports three test types out of the box:
 
 ### Step 4.3: Create Test Statuses (Workflow States)
 
-Create these workflow statuses for Test issues:
+Create these workflow statuses for Test issues. Names and categories match the reference
+instance catalogued in `.agents/jira-workflows.json` (`work_types.test_case`) — that file is the
+authoritative source once the project is live, and `bun run jira:sync-workflows` regenerates it.
+Do not invent statuses: `Approved` and `Automating` are NOT part of this workflow.
 
 | Status | Category | Description | IQL Stage |
 |--------|----------|-------------|-----------|
 | Draft | To Do | Initial state, being written | TMLC |
-| Ready | To Do | Ready for review | TMLC |
-| Approved | In Progress | Reviewed and approved | TMLC |
-| Manual | Done | Will remain manual | TMLC |
-| Automating | In Progress | Being automated | TALC |
-| Automated | Done | Fully automated | TALC |
-| Deprecated | Done | No longer valid | Any |
+| In Design | In Progress | Steps, data and expected results being written | TMLC |
+| READY | Done | Documented, ready for execution or review | TMLC |
+| MANUAL | Done | Will remain manual | TMLC |
+| In Review | In Progress | Automation ROI under evaluation | TALC |
+| Candidate | To Do | Approved for automation, in backlog | TALC |
+| In Automation | In Progress | Script being developed | TALC |
+| Pull Request | In Progress | Code submitted, awaiting merge | TALC |
+| AUTOMATED | Done | Fully automated, part of the regression suite | TALC |
+| DEPRECATED | Done | No longer valid | Any |
 
 ---
 
@@ -207,37 +213,71 @@ You can add custom fields for your project:
 ```
 TEST WORKFLOW:
 
-┌─────────┐        ┌─────────┐        ┌──────────┐
-│  Draft  │───────▶│  Ready  │───────▶│ Approved │
-└─────────┘ Submit └─────────┘ Approve └────┬─────┘
-                                            │
-              ┌─────────────────────────────┼─────────────────────┐
-              │                             │                     │
-              ▼                             ▼                     ▼
-        ┌──────────┐               ┌─────────────┐        ┌────────────┐
-        │  Manual  │               │ Automating  │        │ Deprecated │
-        └──────────┘               └──────┬──────┘        └────────────┘
-                                          │
-                                          ▼
-                                   ┌───────────┐
-                                   │ Automated │
-                                   └───────────┘
+┌─────────┐  start   ┌───────────┐  ready   ┌─────────┐
+│  Draft  │─design──▶│ In Design │──to run─▶│  READY  │
+└─────────┘          └───────────┘          └────┬────┘
+                                                 │
+              ┌──────────────────────────────────┴──────────┐
+              │ for manual                                  │ automation review
+              ▼                                             ▼
+        ┌──────────┐   manual execution              ┌─────────────┐
+        │  MANUAL  │◀────────────────────────────────│  In Review  │
+        └──────────┘                                 └──────┬──────┘
+              │ for automation                              │ approve to automate
+              └──────────────────────┐         ┌────────────┘
+                                     ▼         ▼
+                                  ┌─────────────┐
+                                  │  Candidate  │
+                                  └──────┬──────┘
+                                         │ start automation
+                                         ▼
+                                 ┌───────────────┐
+                                 │ In Automation │
+                                 └───────┬───────┘
+                                         │ create PR
+                                         ▼
+                                 ┌───────────────┐
+                                 │ Pull Request  │
+                                 └───────┬───────┘
+                                         │ merged
+                                         ▼
+                                 ┌───────────────┐
+                                 │   AUTOMATED   │
+                                 └───────────────┘
+
+  Any status ──Deprecated──▶ DEPRECATED ──recover──▶ Draft
 ```
 
 ### Step 6.2: Define Transitions
 
+Transition names are lowercase in the reference instance — copy them verbatim from
+`.agents/jira-workflows.json` (`work_types.test_case.transitions`), which is authoritative.
+
 | From | To | Transition Name | Conditions |
 |------|-----|-----------------|------------|
-| Draft | Ready | Submit | Summary not empty |
-| Ready | Approved | Approve | - |
-| Ready | Draft | Reject | - |
-| Approved | Manual | Mark as Manual | - |
-| Approved | Automating | Start Automation | - |
-| Approved | Deprecated | Deprecate | - |
-| Automating | Automated | Complete Automation | - |
-| Automating | Approved | Cancel Automation | - |
-| Manual | Automated | Automate | - |
-| Any | Deprecated | Deprecate | - |
+| Draft | In Design | start design | Summary not empty |
+| Draft | In Review | automation review | - |
+| In Design | READY | ready to run | - |
+| In Design | Draft | back | - |
+| READY | MANUAL | for manual | - |
+| READY | In Review | automation review | - |
+| READY | In Design | back | - |
+| In Review | Candidate | approve to automate | - |
+| In Review | READY | back | - |
+| Candidate | In Automation | start automation | - |
+| Candidate | MANUAL | manual execution | - |
+| Candidate | In Review | back | - |
+| In Automation | Pull Request | create PR | - |
+| In Automation | Candidate | back | - |
+| Pull Request | AUTOMATED | merged | - |
+| Pull Request | In Automation | back | - |
+| MANUAL | In Review | automation review | - |
+| MANUAL | Candidate | for automation | - |
+| MANUAL | AUTOMATED | automated | - |
+| AUTOMATED | Pull Request | Fix | - |
+| AUTOMATED | MANUAL | manual execution | - |
+| Any | DEPRECATED | Deprecated | - |
+| DEPRECATED | Draft | recover | - |
 
 ### Step 6.3: Assign Workflow to Project
 
@@ -511,7 +551,7 @@ test_execution_naming: "CI Run #[number] - [Environment]"
 
 ```jql
 # Find all automated tests
-project = PROJ AND issuetype = Test AND status = Automated
+project = PROJ AND issuetype = Test AND status = AUTOMATED
 
 # Find tests without coverage
 project = PROJ AND issuetype = Test AND "Requirement Status" is EMPTY
@@ -553,4 +593,4 @@ After completing this setup:
 
 **Document Created**: 2026-02-09
 **IQL Version**: 2.0
-**Compatible With**: jira-platform.md v1.0, cli/xray.ts v1.0.0
+**Compatible With**: jira-platform.md v1.0, cli/xray/index.ts v1.0.0

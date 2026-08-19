@@ -33,7 +33,7 @@ KATA (Komponent Action Test Architecture) rewires the usual Page Object pattern.
 Requires `agentic-qa-core`. Loads on demand:
 
 - `agentic-qa-core/references/test-design-doctrine.md` — **MANDATORY before planning which ATCs to write from acceptance criteria.** Governs the 1:N ATC derivation, the formal-technique triggers (incl. BVA, which KATA's EP-merge rule does NOT replace), and the floor-not-ceiling coverage model.
-- `agentic-qa-core/references/briefing-template.md`, `./dispatch-patterns.md`, `./orchestration-doctrine.md`, `./session-management.md`, `./preflight-gate.md`, `./adr-doctrine.md` — cited inline by the sections that use them.
+- `agentic-qa-core/references/briefing-template.md`, `agentic-qa-core/references/dispatch-patterns.md`, `agentic-qa-core/references/orchestration-doctrine.md`, `agentic-qa-core/references/session-management.md`, `agentic-qa-core/references/preflight-gate.md`, `agentic-qa-core/references/adr-doctrine.md` — cited inline by the sections that use them.
 
 ## Compact Rules
 
@@ -59,7 +59,7 @@ Requires `agentic-qa-core`. Loads on demand:
 
 ## Subagent Dispatch Strategy
 
-> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional. The orchestrator also applies the per-stage **Definition-of-Done gates** in `./stage-gates.md`: verify a stage's DoD (planning stages include the Test-Design Checklist) BEFORE recording its progress checkpoint and advancing.
+> **Orchestration & Session contracts**: this skill follows `agentic-qa-core/references/orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `agentic-qa-core/references/session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional. The orchestrator also applies the per-stage **Definition-of-Done gates** in `agentic-qa-core/references/stage-gates.md`: verify a stage's DoD (planning stages include the Test-Design Checklist) BEFORE recording its progress checkpoint and advancing.
 
 This skill is **per-scope**: `<scope>` = `<JIRA-KEY>` (ticket-driven / regression-driven) or `<module-slug>` (module-driven). Session state lives at `.session/test-automation/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The session `plan.md` is a thin INDEX that cites the canonical domain artifacts (`spec.md`, `automation-plan.md`, `atc/*.md`) under the Epic's `test-specs/` tree (`.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/`) — domain content stays in the existing PBI tree, not duplicated.
 

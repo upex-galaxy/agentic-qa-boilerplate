@@ -518,7 +518,7 @@ bun run test --debug tests/e2e/auth/login.test.ts
 bun run test --trace on tests/e2e/auth/login.test.ts
 
 # Report
-bun run test:allure
+bun run allure:generate
 ```
 
 ---

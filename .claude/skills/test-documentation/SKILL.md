@@ -36,7 +36,7 @@ Requires `agentic-qa-core`. Loads on demand:
 
 - `agentic-qa-core/references/test-design-doctrine.md` — **MANDATORY before deriving TCs from acceptance criteria.** Governs the 1:N TC explosion, the formal-technique triggers, and the floor-not-ceiling coverage model. EP + BVA are operationalized here against the canon.
 - `agentic-qa-core/references/defect-management-doctrine.md` — **MANDATORY before parenting a Test or raising an Improvement.** Governs QA process-epic parenting (every `Test` hangs from the **QA Test Repository** epic, Part 4), the mandatory `components` axis (Part 3), and the Improvement bridge for under-specified ACs (Part 1). This skill files no Bugs.
-- `agentic-qa-core/references/briefing-template.md`, `./dispatch-patterns.md`, `./orchestration-doctrine.md`, `./session-management.md`, `./preflight-gate.md`, `./traceability-linking.md` — cited inline by the sections that use them.
+- `agentic-qa-core/references/briefing-template.md`, `agentic-qa-core/references/dispatch-patterns.md`, `agentic-qa-core/references/orchestration-doctrine.md`, `agentic-qa-core/references/session-management.md`, `agentic-qa-core/references/preflight-gate.md`, `agentic-qa-core/references/traceability-linking.md` — cited inline by the sections that use them.
 
 ## Compact Rules
 
@@ -62,7 +62,7 @@ Requires `agentic-qa-core`. Loads on demand:
 
 ## Subagent Dispatch Strategy
 
-> **Orchestration & Session contracts**: this skill follows `./orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `./session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional. The orchestrator also applies the per-stage **Definition-of-Done gates** in `./stage-gates.md`: verify a stage's DoD (planning stages include the Test-Design Checklist) BEFORE recording its progress checkpoint and advancing.
+> **Orchestration & Session contracts**: this skill follows `agentic-qa-core/references/orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `agentic-qa-core/references/session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional. The orchestrator also applies the per-stage **Definition-of-Done gates** in `agentic-qa-core/references/stage-gates.md`: verify a stage's DoD (planning stages include the Test-Design Checklist) BEFORE recording its progress checkpoint and advancing.
 
 This skill is **per-scope**: `<scope>` = `<JIRA-KEY>` (ticket / bug scope), `<module-slug>` (module scope), or `<YYYY-MM-DD>-adhoc` (ad-hoc scope). Session state lives at `.session/test-documentation/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9.
 
@@ -72,7 +72,7 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 
 | Phase                                                  | Pattern    | Subagent role                                                                                                                                              |
 |--------------------------------------------------------|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Phase -1 — Session resume check                        | inline     | orchestrator only; reads `.session/test-documentation/<scope>/progress.md` if present, offers resume / restart / abort per `./session-management.md` §4    |
+| Phase -1 — Session resume check                        | inline     | orchestrator only; reads `.session/test-documentation/<scope>/progress.md` if present, offers resume / restart / abort per `agentic-qa-core/references/session-management.md` §4    |
 | Phase 0 — Resolve TMS modality                         | inline     | orchestrator only; existing 4-step probe — unchanged                                                                                                        |
 | Phase 1 — Analyze scope                                | Single     | inline — planning lives in the orchestrator (anti-pattern to delegate)                                                                                      |
 | Phase 2 — ROI / Candidate-Manual-Deferred verdict      | Single     | inline — decisions live in the orchestrator                                                                                                                 |
@@ -469,15 +469,15 @@ Every TC gets at least one scope label and one status label:
 
 Full reference in `references/tms-conventions.md` §Labels.
 
-### Local cache (Claude Code convention)
+### Local cache (synced — never hand-authored)
 
-After TMS creation, write one markdown file per TC into `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/{TC-ID}-{slug}.md`. Template in `references/jira-test-management.md` §Local cache. This per-TC cache is NON-Jira (hand-authored) — it is NOT a synced Jira mirror, so author it locally. The directory is `test-cases/` (NOT `tests/` — the sync script owns the top-level `.context/PBI/tests/` tree for Jira Test issues). This prevents re-reading the TMS in future sessions and gives `test-automation` an immediate handoff.
+After TMS creation, materialize the per-TC cache by running `bun run jira:sync-issues get <STORY_KEY>` — the sync writes one markdown file per linked `Test` issue into `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/TEST-<KEY>-<slug>.md`. This directory is `[SYNC]` (Jira mirror, gitignored — see `CLAUDE.md` §9): this skill CREATES the `Test` issues in the TMS, links them to the Story, runs the sync, and READS the materialized files — it never authors files in `test-cases/`. File format in `references/jira-test-management.md` §Local cache. This prevents re-reading the TMS in future sessions and gives `test-automation` an immediate handoff.
 
 ### Per-phase progress + Archive
 
 After each Phase 1 / Phase 2 / Phase 3 step completes (including each Parallel TC-creation chunk in Phase 3), the orchestrator appends a phase entry to `.session/test-documentation/<scope>/progress.md` per `agentic-qa-core/references/session-management.md` §7. Per-chunk entries are critical: a 60-TC batch dispatched as 6 chunks of 10 produces 6 separate `## Phase 3.chunk-<N>` entries, each recording which TC IDs landed. Resume reads completed chunks and dispatches only the missing ones.
 
-After Phase 3 Final report + coverage matrix land, the orchestrator runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/test-documentation/<scope>/` to `.session/.archive/<YYYY-MM-DD>-test-documentation-<scope>/` (two-file dir preserved) and calls `mem_session_summary` with the archive path. The canonical per-TC `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/*.md` files + coverage matrix in `.context/reports/` stay in place as committed deliverables.
+After Phase 3 Final report + coverage matrix land, the orchestrator runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/test-documentation/<scope>/` to `.session/.archive/<YYYY-MM-DD>-test-documentation-<scope>/` (two-file dir preserved) and calls `mem_session_summary` with the archive path. The coverage matrix in `.context/reports/` stays in place as the committed deliverable; the per-TC `test-cases/*.md` files are a gitignored synced cache, recoverable via `bun run context:hydrate`.
 
 On Phase 3 partial failure (some chunks 429-rate-limited, some succeeded), archive does NOT run — `progress.md` retains the per-chunk state so resume picks up the missing ones.
 
