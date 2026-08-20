@@ -25,4 +25,4 @@
 
 **Ver También:**
 - `docs/setup/mcp-dbhub.md` - Configuración de DBHub MCP
-- `docs/architectures/supabase-nextjs/connection-setup.md` - Conexión específica de Supabase
+- `docs/architectures/` - Guías de conexión específicas por stack (placeholder: aún no hay arquitecturas documentadas)

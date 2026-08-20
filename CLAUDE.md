@@ -278,6 +278,7 @@ Skills using `[TMS_TOOL]` MUST include parallel pseudocode branches for both mod
 | `jq` | `/acli` (primary consumer of jq pipelines) |
 | `bun` | `/bun` (community USER) |
 | `bun xray` | `/xray-cli` (in-repo) |
+| `supabase` / `wrangler` / `vercel` | `/regression-testing` (in-repo — private report hosting; protocol: `regression-testing/references/private-hosting-setup.md`) |
 
 **RULE**: Before any Bash call naming these binaries, check matching skill loaded. If not → load via Skill tool first. Hard gate, not suggestion.
 

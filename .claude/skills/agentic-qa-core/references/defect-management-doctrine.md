@@ -147,14 +147,30 @@ JQL filters, and dashboards.
   product Epics: an Epic is a unit of work, a component is a unit of the running
   system, and a filter is only as useful as it is discriminating. Set the
   component to the area the issue or test *touches*.
+- **A component may be declared ahead of the code.** "Mirrors the app's surface"
+  describes the *shape* of a component, not a precondition that the module already
+  ships. A feature under refinement has Stories, ACs and often Tests before it has
+  a route, and all of them need somewhere to hang — refusing to name the component
+  until the code lands leaves that work uncomponented exactly when planning
+  metrics would be useful. Declare it when the module becomes a known part of the
+  product, and treat the source as evidence of what exists rather than as the
+  gate.
+  The reconciler is built for this: it is re-run as the map evolves, `create` is
+  additive, and `rename` re-labels a component without touching a single issue
+  assignment. So a forward-declared component costs nothing if the feature ships
+  under a different name, and nothing if it never ships at all.
 - **Components must pre-exist.** Their options are defined in the project's
   *Components* admin module, not from the issue dropdown; Jira rejects unknown
   names. `acli` cannot create or edit them (`acli/SKILL.md` §Hard limits), so
   populating them is either an admin task or a REST operation — driven by
   `scripts/sync-jira-components.ts` through the `/jira-components` command,
-  which is plan-based on purpose: the AI proposes the module map from the app's
-  source, a human approves it, and only the approved plan is written. Renaming
-  (which preserves issue assignments) is a separate operation from creating.
+  which is plan-based on purpose: the AI proposes the module map, a human
+  approves it, and only the approved plan is written. Renaming (which preserves
+  issue assignments) is a separate operation from creating.
+  The module map is proposed from **two** inputs, not one: the app's source
+  (what exists) and the backlog's own scope — Epics and Stories describing work
+  not yet built (what is coming). Deriving from source alone silently drops every
+  planned module, which shows up later as an issue nobody can classify.
 - **Prefix components with the product name when the product's domain
   vocabulary overlaps QA's** (conditional recommendation, not a blanket rule).
   A test-management product has features literally named Tests, Runs, Bugs — so

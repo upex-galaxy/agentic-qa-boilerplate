@@ -32,14 +32,32 @@ Why the flow is plan-driven at all (from the script's own header): deriving modu
 
 ---
 
-## Phase 1 — Derive the module map from the app's source
+## Phase 1 — Derive the module map
 
-This phase is judgement, not mechanics: **the AI proposes, it does not decide.** Read the target application's source and extract its real surface:
+This phase is judgement, not mechanics: **the AI proposes, it does not decide.**
+
+The map comes from **two** inputs. Using only the first is the easy mistake, and it silently drops every module the team has planned but not yet built.
+
+### 1a — What exists: the app's source
+
+Read the target application and extract its real surface:
 
 - **Next.js App Router**: the route tree — `app/**/page.tsx` for UI surface, `app/api/**/route.ts` for API surface.
 - **Other stacks**: the equivalent — router config, controllers, blueprints, whatever declares what the running app actually serves.
 
-Collapse routes into functional modules using the product's own vocabulary (`/checkout/cart` and `/checkout/payment` are probably one `Checkout` module; `/auth/login` and `/auth/register` are `Auth`). Group by what a user or an API client would call one area of the product, not by directory count. Present the proposed module list with the routes each one absorbs, so the user can see and correct the grouping.
+Collapse routes into functional modules using the product's own vocabulary (`/checkout/cart` and `/checkout/payment` are probably one `Checkout` module; `/auth/login` and `/auth/register` are `Auth`). Group by what a user or an API client would call one area of the product, not by directory count.
+
+### 1b — What is coming: the backlog's own scope
+
+Read the project's Epics and Stories (`bun run jira:sync-issues pull --dry-run`, or the already-synced `.context/PBI/epics/`) and look for product areas the source does not have yet.
+
+A component may be declared **ahead of the code** — see the doctrine, Part 3. A feature in refinement has Stories, ACs and often Tests before it has a route, and every one of them needs a component. Waiting for the code means that work stays uncomponented exactly while planning metrics would be useful, and it produces the failure this step exists to prevent: an issue that fits no component, discovered when someone tries to file it.
+
+Forward-declaring is cheap and safe. `create` is additive, `rename` re-labels without touching a single issue assignment, and the command is re-run as the map evolves — so a module that ships under a different name is a rename, and one that never ships is one unused row.
+
+### 1c — Present the proposal
+
+Show the module list with what each one absorbs — routes for existing modules, the Epic or Story for forward-declared ones — and mark which is which, so the user can see and correct the grouping. Also apply the naming-collision check below.
 
 **Naming-collision check (doctrine Part 3).** While proposing, check whether the product's domain vocabulary overlaps QA's own — `Tests`, `Runs`, `Bugs`, `Suites` as product features. If it does, raise it and propose prefixing every component with the product name (`{{PROJECT_NAME}} Tests`, `{{PROJECT_NAME}} Runs`). This is the normal case for developer tools, testing products, and project-management products, and unnecessary where nothing collides. Do not apply the prefix silently — it is part of the plan the user approves.
 

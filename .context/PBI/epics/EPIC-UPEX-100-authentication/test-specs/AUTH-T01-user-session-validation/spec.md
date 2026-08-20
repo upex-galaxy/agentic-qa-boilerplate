@@ -20,6 +20,8 @@ Validate that the authentication API and UI correctly manage user sessions: logi
 
 ## Test Cases
 
+> **Note (current model):** in a real project the TC bodies below live in Jira `Test` issues and sync into the covering Story's `test-cases/` folder — `spec.md` carries only the TMS-ID table plus the automation batch plan (`/test-automation` skill, `references/planning-playbook.md` §4). They are inlined here only because this offline example has no Jira instance behind it.
+
 ### AUTH-001: Validate successful authentication when valid credentials are provided (API)
 
 **Preconditions**: Valid test user exists in the system

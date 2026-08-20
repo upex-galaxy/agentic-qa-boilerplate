@@ -6,7 +6,7 @@ bun run vars:check
 bun run skills:check
 
 # kata-manifest freshness gate — only runs when staged files affect it.
-STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
+STAGED=$(git diff --cached --name-only --diff-filter=ACMRD)
 if echo "$STAGED" | grep -qE '^(tests/components/|scripts/kata-manifest\.ts$|kata-manifest\.json$)'; then
   bun run kata:manifest:check || {
     echo ""

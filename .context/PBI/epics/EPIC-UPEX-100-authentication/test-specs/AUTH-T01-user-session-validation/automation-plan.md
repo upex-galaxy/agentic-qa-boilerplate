@@ -1,4 +1,4 @@
-# Test Implementation Plan: UPEX-100
+# Automation Plan: UPEX-100
 
 > **Ticket**: [UPEX-100: Validate User Session Management](https://your-org.atlassian.net/browse/UPEX-100)
 > **Type**: `integration`
@@ -95,7 +95,7 @@ _None — existing ATCs cover all scenarios._
 |-----------|--------|---------|-------------|
 | `AuthApi` | `getCurrentUser()` | `[APIResponse, UserInfoResponse]` | Read-only GET /auth/me — used for verification steps and test-level assertions |
 
-> **Design Decision:** `getCurrentUser()` is a **helper**, not an ATC. Per `test-design-principles.md`, simple GETs that just retrieve data are not ATCs. The GET /auth/me call is absorbed as a verification step inside `authenticateSuccessfully()` and `loginWithInvalidCredentials()`, where it validates that a session was (or was not) created.
+> **Design Decision:** `getCurrentUser()` is a **helper**, not an ATC. Per `kata-architecture.md` (Rule 7 — Helpers vs ATCs), simple GETs that just retrieve data are not ATCs. The GET /auth/me call is absorbed as a verification step inside `authenticateSuccessfully()` and `loginWithInvalidCredentials()`, where it validates that a session was (or was not) created.
 
 ---
 
@@ -181,7 +181,7 @@ Teardown: None
 
 ## Cross-References
 
-- **ATC Spec (PROJ-101)**: `.context/PBI/auth/test-specs/AUTH-T01-user-session-validation/atc/UPEX-101-authenticate-successfully.md`
+- **ATC Spec (PROJ-101)**: `.context/PBI/epics/EPIC-UPEX-100-authentication/test-specs/AUTH-T01-user-session-validation/atc/UPEX-101-authenticate-successfully.md`
 - **ATC Spec (PROJ-102)**: Part of AuthApi, follows same pattern as PROJ-101
 - **Component**: `tests/components/api/AuthApi.ts`
 - **Test file**: `tests/integration/auth/user-session.test.ts`

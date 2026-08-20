@@ -169,6 +169,16 @@ dbhub.local.toml
 # ===== Skill-creator eval workspaces (local iteration artifacts, never committed) =====
 .claude/skills/*-workspace/
 
+# ===== T3 community skills (re-fetched, never committed) =====
+# These three are installed into .claude/skills/ by cli/install.ts
+# (PROJECT_LEVEL_SKILLS) and re-fetched from upstream on every install.
+# Committing them would turn the installer's re-fetch into merge conflicts
+# against the committed copies — so they are deliberately ignored. Keep this
+# list in sync with PROJECT_LEVEL_SKILLS in cli/install.ts.
+.claude/skills/playwright-cli/
+.claude/skills/playwright-best-practices/
+.claude/skills/resend-cli/
+
 # ===== refcheck per-dev config (local-only) =====
 .refcheckrc.toml
 

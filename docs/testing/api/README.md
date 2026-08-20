@@ -29,4 +29,4 @@
 
 **Ver También:**
 - `docs/setup/mcp-openapi.md` - Configuración de OpenAPI MCP
-- `docs/architectures/supabase-nextjs/` - Guías específicas de Supabase
+- `docs/architectures/` - Guías específicas por stack (placeholder: aún no hay arquitecturas documentadas)
