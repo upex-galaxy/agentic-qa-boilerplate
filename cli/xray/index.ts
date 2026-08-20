@@ -90,6 +90,17 @@ ${colors.bold}TEST MANAGEMENT${colors.reset}
                      --test <id>        Test issue ID (required)
                      --type <name>      New test type (required)
 
+  test enrich        Backfill the synced Test .md cache (.context/PBI) with the
+                     Xray-only associations the Jira REST sync cannot see:
+                     inlined Preconditions + Test Set membership. Re-run safe —
+                     replaces its own delimited section. Also writes
+                     test-sets/<KEY>.md member indexes.
+                     --dir <path>       PBI cache root (default: .context/PBI)
+                     --project <key>    Only enrich Tests of this project
+                     --batch <n>        Keys per GraphQL request (default: 50)
+                     --dry-run          Report without writing files
+                     --no-set-index     Skip the test-sets/<KEY>.md indexes
+
 ${colors.bold}PRECONDITIONS${colors.reset}
   precondition create      Create a Precondition issue
                      --project <key>    Project key (required)
@@ -286,6 +297,10 @@ ${colors.bold}EXAMPLES${colors.reset}
   xray run evidence --id 5acc7ab0a3fe1b --file a.png --file b.png --file c.png
   xray run evidence --id 5acc7ab0a3fe1b --dir ./.context/PBI/{{PROJECT_KEY}}-8/evidence/
 
+  # Enrich the synced Test cache with Preconditions + Test Set membership
+  xray test enrich --project {{PROJECT_KEY}}
+  xray test enrich --dry-run
+
   # Import JUnit results
   xray import junit --file results.xml --project DEMO
 
@@ -400,9 +415,12 @@ async function main(): Promise<void> {
           case 'update-type':
             await test.updateType(flags);
             break;
+          case 'enrich':
+            await test.enrich(flags);
+            break;
           default:
             log.error(`Unknown test command: ${subcommand}`);
-            log.info('Available: create, get, list, add-step, remove-step, update-gherkin, update-definition, update-type');
+            log.info('Available: create, get, list, add-step, remove-step, update-gherkin, update-definition, update-type, enrich');
         }
         break;
 

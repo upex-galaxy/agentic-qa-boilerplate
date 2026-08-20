@@ -1,7 +1,7 @@
 /**
  * Xray CLI - Test Commands
  *
- * Commands: create, get, list, add-step
+ * Commands: create, get, list, add-step, enrich (see ./enrich.ts)
  */
 
 import type { Flags, PreconditionResult, TestResult, TestStepResponse } from '../types/index.js';
@@ -281,3 +281,12 @@ export async function updateType(flags: Flags): Promise<void> {
 
   log.success(`Test type updated to ${response.updateTestType.testType.name} (issueId: ${response.updateTestType.issueId})`);
 }
+
+// ============================================================================
+// ENRICH (re-export)
+// ============================================================================
+
+// `test enrich` routes through this module like every other test subcommand,
+// but its implementation is large enough (fs walking + batch fetching) to
+// live in its own file.
+export { enrich } from './enrich.js';

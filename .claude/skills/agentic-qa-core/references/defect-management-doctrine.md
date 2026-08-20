@@ -150,9 +150,22 @@ JQL filters, and dashboards.
 - **Components must pre-exist.** Their options are defined in the project's
   *Components* admin module, not from the issue dropdown; Jira rejects unknown
   names. `acli` cannot create or edit them (`acli/SKILL.md` §Hard limits), so
-  populating them is either an admin task or a direct REST call
-  (`POST /rest/api/3/component`) — the same escape hatch `jira-attach-media.ts`
-  uses for attachments.
+  populating them is either an admin task or a REST operation — driven by
+  `scripts/sync-jira-components.ts` through the `/jira-components` command,
+  which is plan-based on purpose: the AI proposes the module map from the app's
+  source, a human approves it, and only the approved plan is written. Renaming
+  (which preserves issue assignments) is a separate operation from creating.
+- **Prefix components with the product name when the product's domain
+  vocabulary overlaps QA's** (conditional recommendation, not a blanket rule).
+  A test-management product has features literally named Tests, Runs, Bugs — so
+  a component called `Tests` is ambiguous: the product's Tests feature, or the
+  QA artifacts about the product? Prefixing with the product name (`Bunkai
+  Tests`, `Bunkai Runs`) removes the ambiguity. The overlap is the normal case
+  for developer tools, testing products, and project-management products; it is
+  absent for, say, an e-commerce site, where `Checkout` collides with nothing
+  and the prefix is just noise. The AI raises this with the user when it
+  detects the overlap while proposing a component plan — it does not apply the
+  prefix silently.
 - **Multiple components are allowed** when an issue genuinely spans areas; prefer
   the single most-affected module otherwise. On a `Test`, they are metadata that
   travels in the synced `.md` — placement on disk follows the covering Story, so

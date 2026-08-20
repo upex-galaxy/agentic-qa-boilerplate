@@ -255,6 +255,36 @@ export const QUERIES = {
     }
   `,
 
+  // Xray-only associations for `test enrich`: Precondition content (inlined
+  // into the synced Test .md, so the definition is selected, not just the key)
+  // and Test Set membership. Neither is a Jira issue link, which is exactly why
+  // the Jira REST sync cannot see them and this query exists.
+  getTestsEnrichment: `
+    query GetTestsEnrichment($jql: String, $limit: Int!) {
+      getTests(jql: $jql, limit: $limit) {
+        total
+        results {
+          issueId
+          jira(fields: ["key"])
+          preconditions(limit: 50) {
+            results {
+              issueId
+              preconditionType { name }
+              definition
+              jira(fields: ["key", "summary"])
+            }
+          }
+          testSets(limit: 50) {
+            results {
+              issueId
+              jira(fields: ["key", "summary"])
+            }
+          }
+        }
+      }
+    }
+  `,
+
   getTestsFullData: `
     query GetTestsFullData($jql: String, $limit: Int!, $start: Int!) {
       getTests(jql: $jql, limit: $limit, start: $start) {

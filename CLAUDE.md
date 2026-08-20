@@ -211,6 +211,7 @@ Full contract: `.claude/skills/agentic-qa-core/references/skill-composition-stra
 | `/break-down-tests` | Plain-English breakdown of automated tests for a module / spec. |
 | `/fix-traceability` | Repair broken US-ATP-ATR-TC traceability links in TMS. |
 | `/jira-instance-migration` | Repoint the repo at a new Atlassian instance (`.env` + `.agents/project.yaml` + machine-global `acli` session) and regenerate the `.agents/` catalogs the migration invalidated. Takes source + target instance as arguments; asks for whatever is missing. |
+| `/jira-components` | Reconcile the Jira project's Components against the target app's real functional modules via `scripts/sync-jira-components.ts`. 4-phase plan-driven flow (derive modules from app source → list live components with issue counts → author plan file for approval → `--apply` + verify); no Jira writes before explicit approval; renames preserve issue assignments. Doctrine: defect-management Part 3. |
 
 ### MCPs (decision rules)
 

@@ -65,6 +65,15 @@ function resolveJiraBaseUrl(configuredBaseUrl: string | undefined): string | nul
 }
 
 /**
+ * Public accessor for the resolved Jira host, same precedence as every REST
+ * lookup above. Used by `test enrich` to render `/browse/` links matching the
+ * ones `sync-jira-issues` already writes; `null` degrades to plain keys.
+ */
+export function getJiraBaseUrl(): string | null {
+  return resolveJiraBaseUrl(loadConfig()?.jira_base_url);
+}
+
+/**
  * Look up a Jira issue by key to get its numeric ID
  * Requires Jira credentials configured via auth login --jira-*
  */
