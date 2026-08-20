@@ -196,4 +196,47 @@ describe('pruneBootstrapExcludes', () => {
     await pruneBootstrapExcludes(dir);
     expect(existsSync(join(dir, 'keep.txt'))).toBe(true);
   });
+
+  // Our design material about evolving the framework is not framework the
+  // consumer inherits. Mirrored by `repoOnlyPaths` so `bun run up` cannot
+  // re-deliver what this prunes.
+  test('removes the boilerplate qa-standard docs but keeps the rest of docs/', async () => {
+    mkdirSync(join(dir, 'docs', 'qa-standard'), { recursive: true });
+    writeFileSync(join(dir, 'docs', 'qa-standard', 'planning-ladder-proposal.md'), '# Proposal');
+    mkdirSync(join(dir, 'docs', 'methodology'), { recursive: true });
+    writeFileSync(join(dir, 'docs', 'methodology', 'kata-fundamentals.md'), '# KATA');
+
+    await pruneBootstrapExcludes(dir);
+
+    expect(existsSync(join(dir, 'docs', 'qa-standard'))).toBe(false);
+    expect(existsSync(join(dir, 'docs', 'methodology', 'kata-fundamentals.md'))).toBe(true);
+  });
+
+  // The consumer inherits the CAPABILITY to record ADRs — the README that says
+  // when to write one and the template to copy — but none of OUR decisions.
+  test('prunes recorded ADRs while keeping the ADR README and template', async () => {
+    mkdirSync(join(dir, '.context', 'ADR'), { recursive: true });
+    writeFileSync(join(dir, '.context', 'ADR', 'README.md'), '# When to write an ADR');
+    writeFileSync(join(dir, '.context', 'ADR', 'ADR-NNNN-template.md'), '# Template');
+    writeFileSync(join(dir, '.context', 'ADR', 'ADR-0001-pbi-is-a-cache.md'), '# Decision');
+    writeFileSync(join(dir, '.context', 'ADR', 'ADR-0002-one-atp.md'), '# Decision');
+
+    await pruneBootstrapExcludes(dir);
+
+    expect(existsSync(join(dir, '.context', 'ADR', 'README.md'))).toBe(true);
+    // "NNNN" is not a digit run, so the template survives the same filter that
+    // drops every numbered decision.
+    expect(existsSync(join(dir, '.context', 'ADR', 'ADR-NNNN-template.md'))).toBe(true);
+    expect(existsSync(join(dir, '.context', 'ADR', 'ADR-0001-pbi-is-a-cache.md'))).toBe(false);
+    expect(existsSync(join(dir, '.context', 'ADR', 'ADR-0002-one-atp.md'))).toBe(false);
+  });
+
+  test('leaves the ADR directory alone when it holds no recorded decisions', async () => {
+    mkdirSync(join(dir, '.context', 'ADR'), { recursive: true });
+    writeFileSync(join(dir, '.context', 'ADR', 'README.md'), '# When to write an ADR');
+
+    await pruneBootstrapExcludes(dir);
+
+    expect(existsSync(join(dir, '.context', 'ADR', 'README.md'))).toBe(true);
+  });
 });

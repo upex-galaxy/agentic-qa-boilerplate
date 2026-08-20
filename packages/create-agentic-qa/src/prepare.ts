@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -194,7 +194,28 @@ const TEMPLATE_EXCLUDES = [
   // "already populated" on first install).
   '.agents/jira-fields.json',
   '.agents/jira-workflows.json',
+  // The boilerplate's own QA-standard design material (proposals, naming-gap
+  // backlogs). Framework documentation travels; our working notes about evolving
+  // the framework do not. Mirrored in `repoOnlyPaths` (cli/update-boilerplate.ts)
+  // so `bun run up` cannot re-deliver what this prunes.
+  'docs/qa-standard',
 ] as const;
+
+/**
+ * Directories the consumer keeps, but from which the boilerplate's own content is
+ * pruned. Unlike TEMPLATE_EXCLUDES the folder survives — what goes is the
+ * boilerplate-authored material inside it.
+ */
+const TEMPLATE_EXCLUDE_MATCHES: Array<{ dir: string, match: RegExp, why: string }> = [
+  {
+    dir: '.context/ADR',
+    // A real ADR is `ADR-<digits>-<slug>.md`. The shipped template is literally
+    // `ADR-NNNN-template.md`, so anchoring on a digit keeps the template (and the
+    // README) while dropping every decision we recorded about OUR boilerplate.
+    match: /^ADR-\d+-.*\.md$/,
+    why: 'boilerplate-owned architecture decisions',
+  },
+];
 
 /**
  * Delete every path in TEMPLATE_EXCLUDES from the freshly extracted project.
@@ -210,5 +231,17 @@ export async function pruneBootstrapExcludes(projectDir: string): Promise<void> 
       pruned++;
     }
   }
+
+  // Directories the project keeps, minus the boilerplate's own content inside them.
+  for (const { dir, match } of TEMPLATE_EXCLUDE_MATCHES) {
+    const abs = join(projectDir, dir);
+    if (!existsSync(abs)) { continue; }
+    for (const name of readdirSync(abs)) {
+      if (!match.test(name)) { continue; }
+      await rm(join(abs, name), { recursive: true, force: true });
+      pruned++;
+    }
+  }
+
   log.dim(`  Pruned ${pruned} template artifact path(s).`);
 }

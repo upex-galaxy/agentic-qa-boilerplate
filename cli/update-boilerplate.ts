@@ -958,6 +958,17 @@ async function main(): Promise<void> {
       path.join(SKILLS_CANONICAL_DIR, 'REGISTRY.md').replace(/\\/g, '/'),
       'scripts/api-login.ts',
     ],
+    // The boilerplate's own design material. `docs` is a synced component, so
+    // without this every consumer project inherits our proposals and backlogs as
+    // if they were framework documentation. Mirrored in TEMPLATE_EXCLUDES
+    // (packages/create-agentic-qa/src/prepare.ts) — the scaffold prunes them on
+    // first install and this keeps `bun run up` from putting them back.
+    //
+    // `.context/ADR/` needs no entry here: `.context` is not a synced component,
+    // so ADRs only ever travel through the scaffold tarball, which prunes them.
+    repoOnlyPaths: [
+      'docs/qa-standard',
+    ],
     // Watchlist files are NOT synced — included in the sparse clone only so
     // the protected-drift hook can read their upstream copies.
     sparseExtraPaths: PROTECTED_WATCHLIST.map(e => e.path),
