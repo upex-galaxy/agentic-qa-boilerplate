@@ -137,17 +137,26 @@ issue has its own QA owner; clobbering it destroys accountability and metrics.
 
 `components` is a **native Jira field** (not a custom field — it is set directly,
 not via `{{jira.*}}`). It is **mandatory** on every Bug / Defect / Improvement
-and is the primary grouping axis for defect metrics, JQL filters, and dashboards.
+**and on every `Test`**, and is the primary grouping axis for quality metrics,
+JQL filters, and dashboards.
 
-- **Convention (binding): one component = one software module = one product
-  Epic.** Components mirror the product's Epics / system areas. Set the component
-  to the product area the issue *affects*.
+- **Convention (binding): one component = one functional module of the
+  application.** Components mirror the app's real surface — routes, features,
+  bounded areas of the source (`/checkout/cart` → `Cart`, `/auth/login` →
+  `Login`) — not the planning taxonomy. Deliberately finer-grained than the
+  product Epics: an Epic is a unit of work, a component is a unit of the running
+  system, and a filter is only as useful as it is discriminating. Set the
+  component to the area the issue or test *touches*.
 - **Components must pre-exist.** Their options are defined in the project's
   *Components* admin module, not from the issue dropdown; Jira rejects unknown
-  names. Creating/curating component definitions is an out-of-band admin setup
-  (acli cannot create them) — keep the Components module in sync with the Epics.
+  names. `acli` cannot create or edit them (`acli/SKILL.md` §Hard limits), so
+  populating them is either an admin task or a direct REST call
+  (`POST /rest/api/3/component`) — the same escape hatch `jira-attach-media.ts`
+  uses for attachments.
 - **Multiple components are allowed** when an issue genuinely spans areas; prefer
-  the single most-affected module otherwise.
+  the single most-affected module otherwise. On a `Test`, they are metadata that
+  travels in the synced `.md` — placement on disk follows the covering Story, so
+  a Test spanning two modules costs nothing.
 - Components answer **"what part of the product broke"** — a different axis from
   `parent` (**"which QA bucket tracks it"**, Part 4). Do not conflate them.
 

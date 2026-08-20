@@ -32,7 +32,7 @@ Skills to load: (none — planning skill is loaded by orchestrator already)
 Exact instructions:
   1. Load kata-manifest.json FIRST. Cross-check every candidate Component name against components.api[].name + components.ui[].name; cross-check every candidate ATC ID against components.{api,ui}[].atcs[].id. Treat any match as a reuse signal — never plan a duplicate.
   2. Read remaining context docs to understand scope, business risks, and any coverage the manifest does not surface.
-  3. Draft spec.md with: scope summary, ATCs (with ATC-identity rule applied), parameter sets (Equivalence Partitioning), data fixtures needed.
+  3. Draft spec.md with: scope summary, the TMS-ID table of TCs in scope, and the Automation Plan (order, shared fixtures, blockers). Do NOT restate TC bodies — they live in Jira and sync into test-cases/.
   4. Draft automation-plan.md with: target file paths, fixture selection (api / ui / test), reused-vs-new components (cite manifest entries), dependency order, estimated complexity per ATC.
   5. Write both files to .context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope-slug>/.
 Report format:
@@ -50,7 +50,9 @@ The orchestrator reads the JSON report, surfaces open_questions to the user if a
 
 ## 1. Plan document map
 
-Three document types, each tied to a scope. Every scope produces at least `spec.md`; ticket and regression scopes add `automation-plan.md`; complex ATCs add per-ATC specs under `atc/`. All live at the Epic level under `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/`. These are NON-Jira hand-authored files (committed to git).
+Three document types, each tied to a scope. Every scope produces at least `spec.md`; ticket and regression scopes add `automation-plan.md`; complex ATCs add per-ATC specs under `atc/`. All live at the Epic level under `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/`.
+
+`test-specs/` is the one `[COMMIT]` island inside an otherwise gitignored Jira cache (`CLAUDE.md` §9). These files describe the **test code**: they must land in the same commit as the code they produce, or a reviewer cannot contrast plan against implementation. That is also the line that decides what belongs here — a Jira `Test` issue holds the test case, an `atc/*.md` holds how to implement it in KATA. Same ID, two documents, two owners.
 
 | Document | Scope that produces it | Location |
 |----------|-----------------------|----------|
@@ -152,7 +154,11 @@ Local `{PREFIX}-T{NN}` naming is filesystem scaffolding. All TC headings inside 
 
 ## 4. `spec.md` structure
 
-The spec is the business-facing contract. A reader with zero context should understand **what** to test and **why**. Use the template below, omit sections that do not apply.
+The spec is the **automation batch plan**: which TCs this scope automates, in what order, and what they share. It does NOT restate the test cases.
+
+> **Why it stopped carrying the Gherkin.** The TC body — preconditions, action, expected output, Gherkin — lives in the Jira `Test` issue, and `bun run jira:sync-issues` now materializes every Test linked to a Story into `test-cases/TEST-<KEY>-<slug>.md` under that Story. Copying it here too put the same text on disk twice, and the copy nobody re-synced was the one people read. Reference the TMS ID; the body is one sync away.
+
+> **Reference TCs by Jira key, never by path.** Folder slugs are derived from issue summaries, so a Story retitled in Jira renames its folder and breaks every hardcoded link — relative or aliased. The key is the only stable identifier.
 
 ```markdown
 # {PREFIX}-T{NN}: {Title}
@@ -167,31 +173,29 @@ The spec is the business-facing contract. A reader with zero context should unde
 | **Source** | Story: {TICKET-ID} / Bug: {brief} / Gap: {brief} |
 
 ## Summary
-{What this spec covers and why it matters. 2–4 sentences.}
-
-## Preconditions
-- {Entities, states, conditions required before running these tests}
+{What this scope automates and why it matters. 2–4 sentences.}
 
 ## Test Cases
 
-### {TMS_TC_ID}: should {behavior} when {condition}
+> Bodies live in Jira. Synced copies sit under the covering Story's `test-cases/`
+> (or `epics/_orphans/tests/` when the Test covers nothing); run
+> `bun run jira:sync-issues get {TICKET-ID}` if they are not on disk.
 
-**Preconditions**: {System state}
-**Action**: {User action — the trigger}
-**Expected Output**:
-- {Assertion 1}
-- {Assertion 2}
-- {What should NOT be visible}
+| TMS ID | Title | Type | Priority |
+|--------|-------|------|----------|
+| {TMS_TC_ID} | should {behavior} when {condition} | Positive / Negative / Boundary | P0 |
 
-\`\`\`gherkin
-Scenario: {TMS_TC_ID} - should {behavior} when {condition}
-  Given {state}
-  When the user {active action}
-  Then {outcome}
-  And {additional assertion}
-\`\`\`
+## Automation Plan
 
----
+**Order**: {execution order and why — e.g. "PROJ-501 first: it seeds the coupon
+the rest reuse"}
+
+**Shared fixtures**: {fixtures these TCs have in common, and which ATC creates each}
+
+**Blocked by**: {missing mock, unavailable env, unbuilt helper — or "Nothing"}
+
+**Preconditions for the whole scope**: {entities, states, accounts required before
+any of these run — distinct from a single TC's own preconditions, which live in Jira}
 
 ## Merged TCs (if any)
 | Removed ID | Merged Into | Reason |
@@ -206,11 +210,11 @@ Scenario: {TMS_TC_ID} - should {behavior} when {condition}
 
 Rules for `spec.md`:
 
-- TC heading format — `### {TMS_TC_ID}: should {behavior} when {condition}`.
-- Gherkin `When` describes a **user action**, not a passive system event.
-- No hardcoded values in Gherkin — use variables `{user_id}`, `{order_id}`, `{month}`.
+- Every row in the Test Cases table carries a **TMS-generated ID**. A local-only ID means the TC was never created in the TMS — go create it first (§3).
+- Do NOT paste the Gherkin, the steps, or the expected output. If you find yourself explaining what a TC verifies, that belongs in the Jira issue.
 - Multi-step flows (2+ actions with intermediate verifications) are flagged as multi-ATC tests, not a single TC.
 - Priority levels: P0 (release-blocker), P1 (high value), P2 (edge cases).
+- The Automation Plan section is the part only this file can hold: order, shared fixtures and blockers are properties of the batch, not of any one test case.
 
 ---
 
