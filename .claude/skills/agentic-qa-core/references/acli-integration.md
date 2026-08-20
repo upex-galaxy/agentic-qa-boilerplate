@@ -54,8 +54,8 @@ The command shapes live in `acli/SKILL.md` §Quick Start. The QA flow uses the s
 | Auth | `jira auth login` | `--site "$(bun run --silent jira:url --slug)"` (host from `.agents/project.yaml`, NOT an env var), `--email "$ATLASSIAN_EMAIL"`, token piped from `$ATLASSIAN_API_TOKEN` (both from `.env`) |
 | Verify auth | `jira auth status` | None (same as generic). MUST run before any bulk mutation — see Q6 below. |
 | Fetch a story DETAIL (input for `/sprint-testing` Phase 1) | **NOT acli** → `bun run jira:sync-issues get <KEY> --include-comments` | `<KEY>` = `{{PROJECT_KEY}}-NNN`. Reads ACs / scope / ATP / comments from the synced `.md` files — `acli view` returns null for custom fields. See "Reads vs writes" above. |
-| Transition Ready For QA → In Testing | `jira workitem transition --key <KEY> --status <STATUS>` | `<STATUS>` = `{{jira.status.story.in_test}}` |
-| Search QA work in flight (sprint dashboard) | `jira workitem search --jql <JQL> --paginate --json` | `<JQL>` = `project = {{PROJECT_KEY}} AND assignee = currentUser() AND status in ('Ready For QA','In Testing','Tested')` |
+| Transition Ready For QA → In Test | `jira workitem transition --key <KEY> --status <STATUS>` | `<STATUS>` = `{{jira.status.story.in_test}}` |
+| Search QA work in flight (sprint dashboard) | `jira workitem search --jql <JQL> --paginate --json` | `<JQL>` = `project = {{PROJECT_KEY}} AND assignee = currentUser() AND status in ('Ready For QA','In Test','QA Approved')` |
 | File a bug found mid-session | `jira workitem create --project <P> --type Bug --summary <S> --parent <PARENT>` | `<P>` = `{{PROJECT_KEY}}`; `<PARENT>` = parent Story key (`{{PROJECT_KEY}}-NNN`) |
 
 Slug resolution rule: anything wrapped in `{{jira.<slug>}}` MUST be resolved against `.agents/jira-fields.json` (custom-field IDs) or `.agents/jira-workflows.json` (status / transition names) before the command runs. Never substitute literal `customfield_` IDs or literal status names — see anti-patterns below.
@@ -81,13 +81,13 @@ These are repo-flavored companions to the tool-level anti-patterns T1-T4 in `acl
 | File | Owns | Regenerate with |
 |---|---|---|
 | `.agents/jira-fields.json` | Custom-field slug → numeric ID map | `bun run jira:sync-fields` |
-| `.agents/jira-workflows.json` | Status + transition slugs per work type | `bun run jira:sync-workflows` |
+| `.agents/jira-workflows.json` | Status + transition slugs per work type — **the authoritative source for every status / transition name; if a name is not there, it does not exist in the instance** | `bun run jira:sync-workflows` |
 | `.agents/jira-required.yaml` | Which fields are required per work type | Hand-curated; aligns with `jira-fields.json` |
 
 Slug syntax (per `CLAUDE.md` §7):
 
 - `{{jira.<slug>}}` — custom field ID (e.g. `{{jira.acceptance_criteria}}` → numeric workspace-specific ID)
-- `{{jira.status.<work_type>.<slug>}}` — status name (`{{jira.status.story.in_test}}` → `"In Testing"`)
+- `{{jira.status.<work_type>.<slug>}}` — status name (`{{jira.status.story.in_test}}` → `"In Test"`)
 - `{{jira.transition.<work_type>.<slug>}}` — transition name (`{{jira.transition.story.start_testing}}` → `"Start Testing"`)
 - `{{jira.work_type.<slug>}}` — Jira issue-type name (e.g. `{{jira.work_type.story}}` → `"Story"`)
 

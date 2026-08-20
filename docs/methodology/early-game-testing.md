@@ -66,11 +66,13 @@ Entender los requisitos y finalizar los criterios de aceptación de la US antes 
 **Actividades Clave:**
 
 - QA discute ambigüedades con stakeholders
-- QA crea un Feature Test Plan (FTP) describiendo escenarios iniciales
-- La subtarea 'QA: AC Review' y 'QA: Feature Test Plan' pasa de Open → In Progress → Done
+- QA crea el Acceptance Test Plan (ATP) de la US describiendo escenarios iniciales
+- La subtarea 'QA: AC Review' y 'QA: Acceptance Test Plan' pasa de Open → In Progress → Done
+
+> **El FTP no se crea aquí.** El Feature Test Plan es **uno por épica/feature** y es un documento vivo que se refina a lo largo de toda la épica; lo que produce una historia es su **ATP**. El ATP hereda del FTP los riesgos, los puntos de integración y las personas compartidas. Canon: `.claude/skills/sprint-testing/references/feature-test-planning.md`.
 
 **Resultado Esperado:**
-Un conjunto claro de criterios de aceptación y un FTP para guiar el testing específico en la US.
+Un conjunto claro de criterios de aceptación y un ATP para guiar el testing específico en la US.
 
 **Herramientas:** Jira, Confluence, Slack, Claude Code
 
@@ -99,11 +101,11 @@ Un ambiente funcional donde el equipo de QA puede comenzar a testear.
 
 **TMLC - Test Manual Life Cycle (2do Stage) - Early-Gank**
 
-Validar rápidamente la US usando Feature Test Execution (FTX) definido en el FTP.
+Validar rápidamente la US ejecutando los escenarios definidos en el ATP; los resultados se registran en el **ATR** (Acceptance Test Results).
 
 **Actividades Clave:**
 
-- La subtarea 'QA: Feature Testing' pasa de Open → In Progress → Done
+- La subtarea 'QA: Story Testing' pasa de Open → In Progress → Done
 - QA realiza testing exploratorio dirigido en áreas críticas o de alto riesgo
 - Los hallazgos y defectos se reportan inmediatamente
 
@@ -118,7 +120,7 @@ La User Story puede desplegarse a producción una vez que QA la aprueba. La US s
 
 **TMLC - Test Manual Life Cycle (3er Stage) - Risk-Based**
 
-Decidir qué escenarios del FTP merecen test cases formales vs quedarse como exploratorios.
+Decidir qué escenarios del ATP merecen test cases formales vs quedarse como exploratorios.
 
 **Actividades Clave:**
 

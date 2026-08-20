@@ -1272,8 +1272,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <table class="dtable mt-s" style="font-size:14px">
     <thead><tr><th>Veredicto</th><th>Lo dispara</th><th>A dónde va</th></tr></thead>
     <tbody>
-      <tr><td><b style="color:var(--good)">Candidate</b></td><td>ROI &gt; 3.0, O (ROI 1.5-3.0 Y bug previo), O happy path crítico</td><td>Alimenta <span class="mono">/test-automation</span>. Draft→In Design→Ready→In Review→Candidate</td></tr>
-      <tr><td><b style="color:var(--warn)">Manual</b></td><td>ROI 0.5-1.5 Y no automatizable (juicio humano, inspección visual)</td><td>Terminal: suite de regresión manual. No es callejón sin salida — puede volver a In Review si el ROI cambia</td></tr>
+      <tr><td><b style="color:var(--good)">Candidate</b></td><td>ROI &gt; 3.0, O (ROI 1.5-3.0 Y bug previo), O happy path crítico</td><td>Alimenta <span class="mono">/test-automation</span>. Draft→In Design→READY→In Review→Candidate</td></tr>
+      <tr><td><b style="color:var(--warn)">Manual</b></td><td>ROI 0.5-1.5 Y no automatizable (juicio humano, inspección visual)</td><td>Terminal: suite de regresión manual (estado <span class="mono">MANUAL</span>). No es callejón sin salida — puede volver a In Review, Candidate o AUTOMATED si el ROI cambia</td></tr>
       <tr><td><b style="color:var(--text-3)">Deferred</b></td><td>ROI &lt; 0.5, O falla un filtro Phase-0, O validación de una sola vez</td><td>Terminal: NO entra a regresión. <b>jira-native</b>: no se crea TC, va al reporte. <b>jira-xray</b>: el Test de sprint queda sin promover</td></tr>
     </tbody>
   </table>
@@ -1375,7 +1375,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="card card-accent">
       <h4>Test Status — el ciclo de vida</h4>
       <p class="dim mb-s">"¿Dónde está el TC en su vida de documentación/automatización?" Persiste entre corridas.</p>
-      <div class="row wrap" style="gap:6px"><span class="tag">Draft</span><span class="tag">In Design</span><span class="tag">Ready</span><span class="tag">In Review</span><span class="tag">Candidate</span><span class="tag">In Automation</span><span class="tag">Pull Request</span><span class="tag">Automated</span><span class="tag">Manual</span><span class="tag">Deprecated</span></div>
+      <div class="row wrap" style="gap:6px"><span class="tag">Draft</span><span class="tag">In Design</span><span class="tag">READY</span><span class="tag">In Review</span><span class="tag">Candidate</span><span class="tag">In Automation</span><span class="tag">Pull Request</span><span class="tag">AUTOMATED</span><span class="tag">MANUAL</span><span class="tag">DEPRECATED</span></div>
     </div>
     <div class="card card-accent">
       <h4>Execution Status — el resultado de la corrida</h4>
@@ -1383,34 +1383,34 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="row wrap" style="gap:6px"><span class="tag">TODO</span><span class="tag">EXECUTING</span><span class="tag ok">PASS</span><span class="tag no">FAIL</span><span class="tag warn">BLOCKED</span><span class="tag warn">ABORTED</span></div>
     </div>
   </div>
-  <div class="callout warn mt-m"><h4>Son dos campos independientes</h4><p><span class="mono">Automated</span> (workflow) + <span class="mono">FAIL</span> (última corrida) es una combinación válida y común: el TC está vivo en CI, pero hoy falló. El rollup PASSED/FAILED del ATR viene del <b>Execution Status</b>, no del Test Status. Confundirlos es la causa #1 de dashboards y JQL malos.</p></div>
+  <div class="callout warn mt-m"><h4>Son dos campos independientes</h4><p><span class="mono">AUTOMATED</span> (workflow) + <span class="mono">FAIL</span> (última corrida) es una combinación válida y común: el TC está vivo en CI, pero hoy falló. El rollup PASSED/FAILED del ATR viene del <b>Execution Status</b>, no del Test Status. Confundirlos es la causa #1 de dashboards y JQL malos.</p></div>
   <div class="notes">La distinción load-bearing. Test Status = vida larga (planning/ROI/intake de automatización). Execution Status = por corrida (reporting de regresión, GO/NO-GO, salud de CI).</div>
 </section>
 
 <!-- 34. LIFECYCLE -->
 <section class="slide" data-title="Ciclo de vida TC">
   <p class="kicker">el state machine del TC</p>
-  <h2 class="h2" data-anim="fade-up">Del Draft al Automated — Sin Saltos</h2>
+  <h2 class="h2" data-anim="fade-up">Del Draft al AUTOMATED — Sin Saltos</h2>
   <div class="lifecycle">
     <span class="lstate new">Draft</span><span class="arr">→</span>
     <span class="lstate prog">In Design</span><span class="arr">→</span>
-    <span class="lstate new">Ready</span><span class="arr">→</span>
+    <span class="lstate new">READY</span><span class="arr">→</span>
     <span class="lstate prog">In Review</span><span class="arr">→</span>
     <span class="lstate good">Candidate</span><span class="arr">→</span>
     <span class="lstate prog">In Automation</span><span class="arr">→</span>
     <span class="lstate new">Pull Request</span><span class="arr">→</span>
-    <span class="lstate good">Automated ✓</span>
+    <span class="lstate good">AUTOMATED ✓</span>
   </div>
   <div class="lifecycle mt-m">
     <span class="dim2 mono" style="font-size:13px">ramas terminales:</span>
-    <span class="lstate warn" style="color:var(--warn);background:color-mix(in srgb,var(--warn) 13%,transparent);border-color:color-mix(in srgb,var(--warn) 40%,transparent)">Ready → Manual</span>
-    <span class="lstate bad">cualquiera → Deprecated</span>
+    <span class="lstate warn" style="color:var(--warn);background:color-mix(in srgb,var(--warn) 13%,transparent);border-color:color-mix(in srgb,var(--warn) 40%,transparent)">READY → MANUAL</span>
+    <span class="lstate bad">cualquiera → DEPRECATED</span>
   </div>
   <div class="grid g4 mt-l">
-    <div class="card card-soft"><h4 class="mono" style="font-size:14px">No saltar</h4><p class="dim">Draft no salta a Automated.</p></div>
-    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Back limitado</h4><p class="dim">Solo "back to In Design" y "→ Deprecated".</p></div>
-    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Manual no es final</h4><p class="dim">Manual puede volver a In Review si el ROI cambia.</p></div>
-    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Automated es la meta</h4><p class="dim">Mueve cuantos razonables a Automated.</p></div>
+    <div class="card card-soft"><h4 class="mono" style="font-size:14px">No saltar</h4><p class="dim">Draft no salta a AUTOMATED.</p></div>
+    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Back limitado</h4><p class="dim">Familia <span class="mono">back_*</span> (un paso atrás) y "→ DEPRECATED".</p></div>
+    <div class="card card-soft"><h4 class="mono" style="font-size:14px">MANUAL no es final</h4><p class="dim">MANUAL puede volver a In Review, Candidate o AUTOMATED si el ROI cambia.</p></div>
+    <div class="card card-soft"><h4 class="mono" style="font-size:14px">AUTOMATED es la meta</h4><p class="dim">Mueve cuantos razonables a AUTOMATED.</p></div>
   </div>
   <div class="notes">El veredicto ROI mapea a estados: Candidate→In Review→Candidate; Manual→for_manual. Mismo state machine en ambas modalidades. Nunca saltes estados; rework usa back_from_*.</div>
 </section>

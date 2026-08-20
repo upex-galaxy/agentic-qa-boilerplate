@@ -141,7 +141,7 @@ Crear un Pull Request detallado para revisión y aprobación de nuevos tests aut
 
 **Actividades Clave:**
 
-- Transiciones de Estado: Merge Request → Automated
+- Transiciones de Estado: In Automation --create PR--> Pull Request --merged--> AUTOMATED (nombres exactos en `.agents/jira-workflows.json`, la fuente autoritativa; no existe un estado `Merge Request`)
 - Se crea un Pull Request detallando los nuevos cambios del Repository
 - El Pull Request es revisado y aprobado por otro QA/Dev
 - El Merge se realiza una vez aprobado

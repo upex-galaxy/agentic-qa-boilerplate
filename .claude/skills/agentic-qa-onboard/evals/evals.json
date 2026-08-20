@@ -18,7 +18,7 @@
       "name": "should-trigger-explain-this-repo",
       "prompt": "Explain what this repo does and how the QA flow works.",
       "expected_skill": "agentic-qa-onboard",
-      "expected_behavior": "Activates agentic-qa-onboard. Describes the boilerplate purpose (QA-only Playwright + KATA scaffold), the 6-stage pipeline (Stages 1-3 manual QA → Stage 4 TMS docs → Stage 5 automation → Stage 6 regression), the QA Jira state machine (Ready For QA → In Testing → Tested → Closed), the local skills vs gentle-ai skills, and the MCPs. No testing or automation work.",
+      "expected_behavior": "Activates agentic-qa-onboard. Describes the boilerplate purpose (QA-only Playwright + KATA scaffold), the 6-stage pipeline (Stages 1-3 manual QA → Stage 4 TMS docs → Stage 5 automation → Stage 6 regression), the QA Jira state machine (Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production), the local skills vs gentle-ai skills, and the MCPs. No testing or automation work.",
       "category": "positive"
     },
     {

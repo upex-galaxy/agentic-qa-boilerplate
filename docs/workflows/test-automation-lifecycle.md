@@ -355,7 +355,7 @@ El skill `/test-automation` deja los tests listos; el merge es trabajo humano, p
 │         │                                                        │
 │   5. Merge a staging → (luego) main                             │
 │         │                                                        │
-│   6. Update TMS: TC.status → Automated; link al PR              │
+│   6. Update TMS: TC.status → AUTOMATED; link al PR             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 

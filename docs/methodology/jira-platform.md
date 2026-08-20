@@ -3,7 +3,7 @@
 > **Purpose**: Complete reference for Jira/Xray integration in QA Automation (IQL-Aligned)
 > **Last Updated**: February 2026
 > **Methodology**: Integrated Quality Lifecycle (IQL) — this document is the canonical IQL reference for Jira/Xray usage.
-> **Related**: `cli/xray.ts` (CLI tool), `tests/utils/jiraSync.ts` (Sync utility)
+> **Related**: `cli/xray/index.ts` (CLI tool), `tests/utils/jiraSync.ts` (Sync utility)
 
 ---
 
@@ -65,8 +65,8 @@ Xray is a **native Test Management app for Jira** that extends Jira with testing
 ║  │ Key      │ Summary                      │ Test Type   │ Status      │ Test Repo    │   ║
 ║  │ (Auto)   │ (Text)                       │ (Select)    │ (Workflow)  │ (Folder)     │   ║
 ║  ├──────────┼──────────────────────────────┼─────────────┼─────────────┼──────────────┤   ║
-║  │ PROJ-101 │ Login with valid credentials │ Generic     │ Automated   │ /Auth/Login  │   ║
-║  │ PROJ-102 │ Password validation rules    │ Manual      │ Ready       │ /Auth/Login  │   ║
+║  │ PROJ-101 │ Login with valid credentials │ Generic     │ AUTOMATED   │ /Auth/Login  │   ║
+║  │ PROJ-102 │ Password validation rules    │ Manual      │ READY       │ /Auth/Login  │   ║
 ║  │ PROJ-103 │ Visual alignment check       │ Manual      │ Draft       │ /Auth/UI     │   ║
 ║  └──────────┴──────────────────────────────┴─────────────┴─────────────┴──────────────┘   ║
 ║                                                                                            ║
@@ -124,7 +124,7 @@ The main issue type for test case documentation. Supports three test types.
 | Summary | Text | Test case title | Descriptive name |
 | Description | Rich Text | Detailed description | Markdown/wiki supported |
 | Test Type | Select | Category of test | Manual, Cucumber, Generic |
-| Status | Workflow | Jira workflow status | Draft, Ready, Automated, Deprecated |
+| Status | Workflow | Jira workflow status | Draft, In Design, READY, MANUAL, In Review, Candidate, In Automation, Pull Request, AUTOMATED, DEPRECATED |
 | Priority | Select | Business priority | Highest, High, Medium, Low, Lowest |
 | Labels | Multi-select | Tags | regression, smoke, api, e2e |
 | Component | Select | Feature area | Auth, Bookings, Invoices, etc. |
@@ -145,27 +145,47 @@ The main issue type for test case documentation. Supports three test types.
 
 #### Test Status Workflow (IQL Lifecycle)
 
-```
-TEST STATUS LIFECYCLE FLOW (Jira Workflow):
+> **Authoritative source: `.agents/jira-workflows.json`** (`work_types.test_case`). Every status and
+> transition name below is copied from that file — regenerate it with `bun run jira:sync-workflows`.
+> If a status is not in that file, it does not exist in the instance: never write one from memory.
+> `Approved` and `Automating` are two such non-existent statuses; the real path is
+> `READY → In Review → Candidate → In Automation`.
 
-  ┌────────┐       ┌───────────┐       ┌─────────┐
-  │ Draft  │──────▶│   Ready   │──────▶│ Approved│
-  └────────┘       └───────────┘       └────┬────┘
-                                            │
-                        ┌───────────────────┼───────────────────┐
-                        │                   │                   │
-                        ▼                   ▼                   ▼
-                   ┌────────┐         ┌───────────┐       ┌───────────┐
-                   │ Manual │         │Automating │       │Deprecated │
-                   └────────┘         └─────┬─────┘       └───────────┘
-                        │                   │
-                        │                   ▼
-                        │            ┌──────────────┐
-                        │            │  Automated   │
-                        │            └──────────────┘
-                        │                   │
-                        └───────────────────┘
-                              (both are final states)
+```
+TEST CASE STATUS LIFECYCLE (Jira Workflow):
+
+  ┌────────┐  start   ┌───────────┐  ready   ┌────────┐
+  │ Draft  │─design──▶│ In Design │──to run─▶│ READY  │
+  └────────┘          └───────────┘          └───┬────┘
+                                                 │
+                        ┌────────────────────────┴────────────┐
+                        │ for manual                          │ automation review
+                        ▼                                     ▼
+                   ┌────────┐                          ┌───────────┐
+                   │ MANUAL │◀──manual execution───────│ In Review │
+                   └────────┘                          └─────┬─────┘
+                        │                                    │ approve to automate
+                        │ automation review /                ▼
+                        │ for automation               ┌───────────┐
+                        └─────────────────────────────▶│ Candidate │
+                                                       └─────┬─────┘
+                                                             │ start automation
+                                                             ▼
+                                                     ┌───────────────┐
+                                                     │ In Automation │
+                                                     └───────┬───────┘
+                                                             │ create PR
+                                                             ▼
+                                                     ┌───────────────┐
+                                                     │ Pull Request  │
+                                                     └───────┬───────┘
+                                                             │ merged
+                                                             ▼
+                                                     ┌───────────────┐
+                                                     │  AUTOMATED    │
+                                                     └───────────────┘
+
+  Any status ──Deprecated──▶ DEPRECATED ──recover──▶ Draft
 ```
 
 **Status Descriptions:**
@@ -173,12 +193,15 @@ TEST STATUS LIFECYCLE FLOW (Jira Workflow):
 | Status | Description | IQL Stage | Who |
 |--------|-------------|-----------|-----|
 | **Draft** | Test case created, initial outline | TMLC Stage 4 | QA Analyst |
-| **Ready** | Documented and ready for review | TMLC Stage 4 | QA Analyst |
-| **Approved** | Reviewed and approved for execution | TMLC | QA Lead |
-| **Manual** | Designated for manual execution only | TMLC | QA Analyst |
-| **Automating** | Script being developed | TALC Stage 2 | QA Engineer |
-| **Automated** | Script merged, part of regression suite | TALC Complete | QA Engineer |
-| **Deprecated** | No longer applicable | Any | Any |
+| **In Design** | Steps, data and expected results being written | TMLC Stage 4 | QA Analyst |
+| **READY** | Documented and ready for execution or review | TMLC Stage 4 | QA Analyst |
+| **MANUAL** | Designated for manual execution only | TMLC | QA Analyst |
+| **In Review** | Automation ROI under evaluation | TALC Stage 1 | QA Engineer |
+| **Candidate** | Approved for automation, in backlog | TALC Stage 1 | QA Engineer |
+| **In Automation** | Script being developed | TALC Stage 2 | QA Engineer |
+| **Pull Request** | Code submitted, awaiting merge | TALC Stage 3 | QA Engineer |
+| **AUTOMATED** | Script merged, part of regression suite | TALC Complete | QA Engineer |
+| **DEPRECATED** | No longer applicable (reachable from any status) | Any | Any |
 
 ### 2. Test Execution Status Values
 
@@ -202,7 +225,7 @@ Groups test cases by feature/module for organized execution.
 | Key | Auto | Jira issue key | PROJ-200, PROJ-201, ... |
 | Summary | Text | Test set name | "Authentication Suite" |
 | Description | Rich Text | Suite purpose | Markdown supported |
-| Status | Workflow | Jira status | Open, Ready, etc. |
+| Status | Workflow | Jira status | Per the Test Set workflow in `.agents/jira-workflows.json` |
 | Tests | Association | Linked test cases | PROJ-101, PROJ-102, ... |
 | Labels | Multi-select | Categorization | regression, smoke, sanity |
 
@@ -391,7 +414,7 @@ bun xray auth logout                                          # Clear credential
 ```bash
 # List tests with filters
 bun xray test list                                    # All tests
-bun xray test list --status Automated                 # Filter by workflow status
+bun xray test list --status AUTOMATED                 # Filter by workflow status
 bun xray test list --type Generic                     # Filter by test type
 bun xray test list --label regression                 # Filter by label
 
@@ -663,7 +686,7 @@ For Xray to match test results to Test issues:
 
 ## Related Files
 
-- `cli/xray.ts` - CLI tool for Xray operations
+- `cli/xray/index.ts` - CLI tool for Xray operations
 - `tests/utils/jiraSync.ts` - Sync utility for test results
 - `config/variables.ts` - Environment configuration
 - `.env` - Environment variables (XRAY_CLIENT_ID, etc.)
