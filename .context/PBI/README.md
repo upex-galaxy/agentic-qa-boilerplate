@@ -45,12 +45,13 @@ Everything under `.context/PBI/` is one of three things. Getting the tier wrong 
       context.md                                  [LOCAL] session notes about the repo, not the ticket
       evidence/                                   [LOCAL] screenshots
       shift-left-refinement.md                    [LOCAL] staging buffer — see below
+  epics/_orphans/                                 [SYNC — Stories with no parent Epic; its tests/ holds the ORPHAN Test issues]
   bugs/BUG-<KEY>-<slug>/                          [SYNC — coverable folder: bug.md + ATP + ATR + test-executions/ + defects/]
   improvements/IMPROVEMENT-<KEY>-<slug>/          [SYNC — coverable folder: improvement.md + ATP + ATR + …]
   tech-stories/TECHSTORY-<KEY>-<slug>/            [SYNC — coverable folder: tech-story.md + ATP + ATR + …]
   tech-debts/TECHDEBT-<KEY>-<slug>/               [SYNC — coverable folder: tech-debt.md + ATP + ATR + …]
   defects/                                        [SYNC — standalone defect issues]
-  tests/                                          [SYNC — ORPHAN Test issues only; covered ones live under their parent]
+  qa-artifacts/_index.md                          [SYNC — register of the QA-process Epics (QA buckets); no per-epic folders, their content is already distributed]
   test-plans/ test-executions/ test-sets/ preconditions/   [SYNC — Xray container issues (jira-xray); description holds the ATP/ATR body]
 ```
 
@@ -94,7 +95,9 @@ Every `[SYNC]` file's content originates in Jira. The flow is always **generate 
 
 **Default `pull` scope = Epics + Stories + Bugs** (plus optional types via `--types` / `JIRA_SYNC_TYPES`). **Coverable** issues — Story, Bug, Defect, Improvement, Tech Story, Tech Debt — each get their OWN folder containing the issue body, ATP, ATR, a `test-executions/` subfolder (only when >1 execution is linked), a `test-cases/` subfolder (the linked `Test` issues), and a `defects/` subfolder. **ATP/ATR source precedence:** a linked Xray Test Plan description (ATP) / Test Execution / Re-Test Execution description (ATR, newest wins) **OVERRIDES** the custom-field copy; absent that, the issue custom field; absent that, a Jira comment only with `--include-comments`; otherwise silent. The sync emits end-of-run **traceability WARNINGS** for ATP/ATR linked via the wrong link type, atypical Defect links, and orphan Defects with no coverable parent.
 
-**Tests appear exactly once.** A `Test` linked to a coverable issue is materialized under that issue's `test-cases/`. `tests/` at the root holds only the orphans — Tests no Story, Bug or Improvement covers, which is itself a coverage smell worth seeing.
+**Tests appear exactly once.** A `Test` linked to a coverable issue is materialized under that issue's `test-cases/`. `epics/_orphans/tests/` holds only the orphans — Tests no Story, Bug or Improvement covers, which is itself a coverage smell worth seeing; re-linking one in Jira moves it under its Story on the next sync.
+
+Two commands operate on this cache after a sync. `bun run tests:map` renders the whole tree as one self-contained HTML page (`.context/reports/test-map.html`), leading with the gaps — epics and stories without tests, orphan Tests, Tests without a component. It reads disk only, never Jira. `bun xray test enrich` backfills the synced Test `.md`s with inlined Preconditions and Test Set membership — Xray-internal associations the Jira REST sync structurally cannot see.
 
 ## Detailed reads go through the sync
 
@@ -112,7 +115,7 @@ A fresh clone has an almost-empty `.context/PBI/` — this README, `templates/`,
 bun run context:hydrate     # jira:sync-issues pull --include-comments
 ```
 
-Requires `ATLASSIAN_URL`, `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` in `.env` (see `.env.example`); validate the whole setup with `bun run jira:check`. Someone without Jira access cannot hydrate and will keep an empty cache: they can still read and review `test-specs/`, run the test suite, and work on framework code, but not per-ticket QA. That is a Jira permissions question, not a repo one.
+Requires `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` in `.env` (see `.env.example`); the Atlassian host comes from `.agents/project.yaml` → `issue_tracker.atlassian_url` (`ATLASSIAN_URL` is a last-resort fallback only). Validate the whole setup with `bun run jira:check`. Someone without Jira access cannot hydrate and will keep an empty cache: they can still read and review `test-specs/`, run the test suite, and work on framework code, but not per-ticket QA. That is a Jira permissions question, not a repo one.
 
 ## Conventions
 

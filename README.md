@@ -446,6 +446,7 @@ bun run test:smoke         # smoke / @critical tests
 │   ├── master-test-plan.md       # What to test and why
 │   ├── PRD/                      # Product requirements
 │   ├── SRS/                      # Technical specs
+│   ├── reports/                  # Generated output (GITIGNORED except its README): sprint trackers, test map, regression reports
 │   └── PBI/                      # Per-ticket backlog items (GITIGNORED Jira cache; `bun run context:hydrate`)
 │
 ├── .agents/                      # Agentskills.io spec layout
@@ -600,7 +601,9 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run jira:sync-link-types`| Sync workspace issue-link types into `.agents/jira-link-types.json`. USER-OK (no admin needed). Manual-only — not auto-invoked by setup. |
 | `bun run jira:sync-issues`    | Pull Jira Epics/Stories/Bugs into `.context/PBI/` markdown files             |
 | `bun run context:hydrate`     | Rebuild the whole gitignored `.context/PBI/` cache from Jira                 |
+| `bun run tests:map`           | Render the synced `.context/PBI/` cache as a self-contained HTML coverage map (`.context/reports/test-map.html`), gaps first — epics/stories without tests, orphan Tests, Tests without a component. Disk-only, no Jira calls; `--out <path>`, `--json` |
 | `bun run jira:check`          | Verify Jira workspace has required custom fields configured                  |
+| `bun run jira:components`     | Reconcile the Jira project's Components against an approved plan file (dry run by default; `--apply` writes, `--list --project <KEY>` inspects). Renames preserve issue assignments; creates are additive. Driven by `/jira-components`. |
 
 > **`--upex` flag** — the catalog sync scripts (`jira:sync-fields`, `jira:sync-workflows`, `jira:sync-link-types`) accept `--upex` to download the UPEX-standard reference JSON from `upex-galaxy/agentic-qa-boilerplate@main` instead of hitting Jira. Use when you don't have admin access, when you want a working catalog without setting up auth, or when you want the canonical UPEX standard as a reference. Examples: `bun run jira:sync-fields --upex`, `bun run jira:sync-workflows --upex`, `bun run jira:sync-link-types --upex`. `jira:sync-issues` does not take the flag — it always pulls from your Jira instance.
 
@@ -729,7 +732,7 @@ BUILD_ID
 | `/playwright-best-practices` | `/playwright-best-practices`  | Playwright + TypeScript reference: flaky-test fixes, POM vs fixtures, axe-core, auth/OAuth, perf budgets, i18n, component testing. Auto-loads in the Code phase of `/test-automation`. _(community skill by currents.dev — installed at PROJECT level by `bun run setup`; not committed in repo.)_ |
 | `/resend-cli`                | `/resend-cli`                 | Resend email testing CLI. Pairs with the `resend` external binary. _(community skill — installed at PROJECT level by `bun run setup`; not committed in repo.)_                                                                                                                                      |
 | `bug-screenshot-annotation`  | "annotate bug screenshot", "anota este bug" | Turns a raw bug screenshot into QA-style annotated evidence (circles/arrows/callouts/corner badge/axis ticks) via HTML+CSS overlays rendered 100% locally (loopback HTTP + playwright-cli capture — never an external image service). Loaded inline by `/sprint-testing` Stage 2 for visual/positional bugs.                          |
-| `/xray-cli`                  | `/xray-cli`                   | Xray Cloud test management CLI: tests, executions, plans, JUnit/Cucumber/Xray JSON imports, project backup/restore.                                                                                                                                                                                  |
+| `/xray-cli`                  | `/xray-cli`                   | Xray Cloud test management CLI: tests, executions, plans, JUnit/Cucumber/Xray JSON imports, project backup/restore, `test enrich` backfill of the synced Test `.md`s (Preconditions + Test Set membership — Xray-internal, invisible to the Jira REST sync).                                                                                                                                                                                  |
 | `/acli`                      | `/acli`                       | Atlassian CLI for Jira Cloud — resolves `[ISSUE_TRACKER_TOOL]` and (in Modality jira-native) `[TMS_TOOL]`.                                                                                                                                                                                                     |
 | `/git-flow-master`           | (auto on git/PR intents)      | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR.                                                                                                                                                                                  |
 | `/framework-development`     | `/framework-development`      | Gateway for evolving the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. Self-contained Plan → Code → Verify → Archive pipeline; runs under the `gentle-ai install --preset minimal` install. |
@@ -767,6 +770,7 @@ Validation: `bun run skills:check` checks tier coherence (orphan categories, tie
 | `/master-test-plan`     | Refresh `.context/master-test-plan.md` (what to test and why).                                                                                |
 | `/break-down-tests`     | Plain-English breakdown of automated tests for a module / spec.                                                                               |
 | `/fix-traceability`     | Repair broken US-ATP-ATR-TC traceability links in the TMS.                                                                                    |
+| `/jira-components`      | Derive the target app's functional modules from its source and reconcile the Jira project's Components against them through a plan file you approve (drives `bun run jira:components`; renames preserve issue assignments, creates are additive).             |
 | `/jira-instance-migration` | Repoint the repo at a new Atlassian instance (`.env` + `.agents/project.yaml` + machine-global `acli` session) and regenerate the `.agents/` catalogs the migration invalidated.        |
 
 <br />

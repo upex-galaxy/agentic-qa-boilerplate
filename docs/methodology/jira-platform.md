@@ -427,6 +427,10 @@ bun xray test create \
   --type Generic \
   --project PROJ \
   --labels "e2e,auth"
+
+# Backfill the synced PBI cache (.context/PBI) with Xray-only associations
+bun xray test enrich --project PROJ                   # Inline Preconditions + Test Set membership into TEST-*.md
+bun xray test enrich --dry-run                        # Report without writing
 ```
 
 ### Test Execution
