@@ -40,6 +40,16 @@ testing:
 
 qa:
   formal_blocked_gate: true # When true and the substrate exposes a `blocked` story status, FAILED stories dispatch `defect_reported` (in_test -> blocked). When false (or no `blocked` slug), the skill leaves the story in `in_test` with the linked bug — non-strict fallback. See sprint-testing/references/sprint-orchestration.md Briefing 4 Step 5.
+  # Jira LABEL that marks an Epic as a QA-artifact bucket rather than a product Epic.
+  # `sync-jira-issues` keeps labelled Epics out of `.context/PBI/epics/` (which is the product
+  # tree, one folder per Epic with its Stories nested) and indexes them in `qa-artifacts/`
+  # instead. Without it, `QA Test Repository` and friends land beside real product Epics as
+  # near-empty folders, because a Story query against them returns nothing.
+  # A label is used rather than the epic name because a product Epic may legitimately start
+  # with "QA ", and rather than the cached `qa_epics.*.key` below because those are `null`
+  # until a skill discovers them — the label works from the first sync.
+  # Whoever creates a QA-artifact Epic must apply it; the AI does so automatically.
+  qa_artifact_label: QA-Artifact
   # QA process epics — buckets that hold QA artifacts so they never pollute product epics/roadmap.
   # FOUR QA-process epics form the QA-governance cluster: Test Plans parent to `master_test_plan_epic`;
   # Test (TC) issues parent to `test_repository_epic`; Test Executions/Preconditions/Test Sets parent to

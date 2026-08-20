@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 
-import { MODULE_CONTEXT_HEADING, splitDescriptionSection } from './sync-jira-issues.ts';
+import {
+  classifyQaArtifactEpic,
+  DEFAULT_QA_ARTIFACT_LABEL,
+  MODULE_CONTEXT_HEADING,
+  splitDescriptionSection,
+} from './sync-jira-issues.ts';
 
 const H = MODULE_CONTEXT_HEADING;
 
@@ -65,5 +70,50 @@ describe('splitDescriptionSection', () => {
   test('ignores a heading that merely starts with the wanted text', () => {
     const md = `intro\n\n## ${H} Extended\n\nnope`;
     expect(splitDescriptionSection(md, H).section).toBeNull();
+  });
+});
+
+describe('classifyQaArtifactEpic', () => {
+  const cfg = { label: DEFAULT_QA_ARTIFACT_LABEL, cachedKeys: new Set(['PROJ-900']) };
+  const epic = (over: Record<string, unknown>): never =>
+    ({ key: 'PROJ-1', fields: { summary: 'Checkout', labels: [], ...over } }) as never;
+
+  test('a product epic is not an artifact bucket', () => {
+    expect(classifyQaArtifactEpic(epic({}), cfg)).toBeNull();
+  });
+
+  test('the label is authoritative', () => {
+    expect(classifyQaArtifactEpic(epic({ labels: ['QA-Artifact'] }), cfg)).toEqual({ via: 'label' });
+  });
+
+  test('a cached qa_epics key is recognized without the label', () => {
+    const e = { key: 'PROJ-900', fields: { summary: 'Anything', labels: [] } } as never;
+    expect(classifyQaArtifactEpic(e, cfg)).toEqual({ via: 'cached-key' });
+  });
+
+  test('falls back to the QA name prefix, reporting the weaker signal', () => {
+    expect(classifyQaArtifactEpic(epic({ summary: 'QA Test Repository' }), cfg))
+      .toEqual({ via: 'name-prefix' });
+  });
+
+  test('the label wins over the prefix so the signal is never downgraded', () => {
+    const e = epic({ summary: 'QA Test Repository', labels: ['QA-Artifact'] });
+    expect(classifyQaArtifactEpic(e, cfg)).toEqual({ via: 'label' });
+  });
+
+  test('"QA" without a trailing space is a product epic', () => {
+    // "QAlity Dashboard" must not be swept up by the prefix heuristic.
+    expect(classifyQaArtifactEpic(epic({ summary: 'QAlity Dashboard' }), cfg)).toBeNull();
+  });
+
+  test('tolerates an epic with no labels field', () => {
+    const e = { key: 'PROJ-2', fields: { summary: 'Checkout' } } as never;
+    expect(classifyQaArtifactEpic(e, cfg)).toBeNull();
+  });
+
+  test('honours a project-specific label instead of the default', () => {
+    const custom = { label: 'proceso-qa', cachedKeys: new Set<string>() };
+    expect(classifyQaArtifactEpic(epic({ labels: ['proceso-qa'] }), custom)).toEqual({ via: 'label' });
+    expect(classifyQaArtifactEpic(epic({ labels: ['QA-Artifact'] }), custom)).toBeNull();
   });
 });
