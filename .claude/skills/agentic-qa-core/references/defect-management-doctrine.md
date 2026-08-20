@@ -196,6 +196,31 @@ components          ->  PRODUCT module/epic  ("what part of the product it affec
   under `qa.qa_epics:` — never hardcode it in skill content. Resolve by the
   configured name; the resolver finds-or-creates and caches the key.
 
+#### Every QA process epic carries the `{{QA_ARTIFACT_LABEL}}` label (binding)
+
+Apply it at creation time, on all four. It is what tells tooling that an Epic is a
+QA bucket rather than a product module: `scripts/sync-jira-issues.ts` reads it to
+keep these Epics out of `.context/PBI/epics/`, which is the product tree, and index
+them under `qa-artifacts/` instead. Without the label they land beside real product
+Epics as near-empty folders, because a Story query against a process epic returns
+nothing.
+
+The label is the primary signal precisely because the other two are weaker. The
+cached `qa.qa_epics.*.key` values are `null` until a skill discovers them, so they
+cover nothing on a fresh project. The `QA ` name prefix is a guess that misfires on
+a product Epic legitimately named "QA Tooling" — the sync falls back to it and
+reports when it does, so a run that mentions the fallback is asking for this label.
+
+```
+[ISSUE_TRACKER_TOOL] Create Issue:
+  type: Epic
+  summary: {{jira.qa_epics.<slug>.name}}
+  labels: [{{QA_ARTIFACT_LABEL}}]
+```
+
+Adding it to an Epic that already exists is a one-field edit and is worth doing the
+first time a sync reports the name-prefix fallback.
+
 ### Find-or-create (binding setup behavior)
 
 When a skill is about to file a Bug/Defect/Improvement (or a Test), it resolves
