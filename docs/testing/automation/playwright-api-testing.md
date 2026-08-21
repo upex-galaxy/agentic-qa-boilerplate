@@ -34,8 +34,8 @@ tests/
 |   |   |-- orders-api.ts       # Orders
 |   |   |-- reviews-api.ts      # Reviews
 |   |   +-- index.ts            # Exports
-|   +-- preconditions/
-|       +-- auth-precondition.ts
+|   +-- steps/
+|       +-- auth-steps.ts
 |-- fixtures/
 |   +-- api-fixture.ts          # Layer 4: Fixture
 |-- integration/                 # Layer 5: Test files

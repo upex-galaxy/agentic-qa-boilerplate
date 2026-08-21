@@ -34,7 +34,7 @@ interface ComponentInfo {
   atcs: ATCInfo[]
 }
 
-interface PreconditionInfo {
+interface StepsInfo {
   name: string
   file: string
   relativePath: string
@@ -48,13 +48,13 @@ interface KataManifest {
     api: ComponentInfo[]
     ui: ComponentInfo[]
   }
-  preconditions: PreconditionInfo[]
+  steps: StepsInfo[]
   summary: {
     totalComponents: number
     totalATCs: number
     apiComponents: number
     uiComponents: number
-    preconditionModules: number
+    stepsModules: number
   }
 }
 
@@ -69,7 +69,7 @@ const OUTPUT_FILE = join(PROJECT_ROOT, 'kata-manifest.json');
 const COMPONENT_PATHS = {
   api: join(COMPONENTS_DIR, 'api'),
   ui: join(COMPONENTS_DIR, 'ui'),
-  preconditions: join(COMPONENTS_DIR, 'preconditions'),
+  steps: join(COMPONENTS_DIR, 'steps'),
 };
 
 // Files to exclude (base classes, fixtures, etc.)
@@ -166,9 +166,9 @@ async function extractClassName(filePath: string): Promise<string> {
 }
 
 /**
- * Extract public methods from a precondition file (non-ATC reusable flows)
+ * Extract public methods from a Steps module file (non-ATC reusable flows)
  */
-async function extractPreconditionMethods(filePath: string): Promise<string[]> {
+async function extractStepsMethods(filePath: string): Promise<string[]> {
   const content = await Bun.file(filePath).text();
   const methods: string[] = [];
 
@@ -227,13 +227,13 @@ async function generateManifest(): Promise<KataManifest> {
       api: [],
       ui: [],
     },
-    preconditions: [],
+    steps: [],
     summary: {
       totalComponents: 0,
       totalATCs: 0,
       apiComponents: 0,
       uiComponents: 0,
-      preconditionModules: 0,
+      stepsModules: 0,
     },
   };
 
@@ -265,16 +265,16 @@ async function generateManifest(): Promise<KataManifest> {
     manifest.summary.totalATCs += atcs.length;
   }
 
-  // Scan Preconditions
-  const preconditionFiles = await scanDirectory(COMPONENT_PATHS.preconditions);
-  for (const file of preconditionFiles) {
-    const precondition: PreconditionInfo = {
+  // Scan Steps modules
+  const stepsFiles = await scanDirectory(COMPONENT_PATHS.steps);
+  for (const file of stepsFiles) {
+    const steps: StepsInfo = {
       name: await extractClassName(file),
       file: basename(file),
       relativePath: relative(PROJECT_ROOT, file),
-      methods: await extractPreconditionMethods(file),
+      methods: await extractStepsMethods(file),
     };
-    manifest.preconditions.push(precondition);
+    manifest.steps.push(steps);
   }
 
   // Update summary
@@ -282,19 +282,19 @@ async function generateManifest(): Promise<KataManifest> {
   manifest.summary.uiComponents = manifest.components.ui.length;
   manifest.summary.totalComponents
     = manifest.summary.apiComponents + manifest.summary.uiComponents;
-  manifest.summary.preconditionModules = manifest.preconditions.length;
+  manifest.summary.stepsModules = manifest.steps.length;
 
   // Deterministic ordering — Bun.Glob.scan order is filesystem-dependent.
   // Sorting here keeps `kata-manifest.json` byte-stable across machines so
   // `--check` stays meaningful and PR diffs stay reviewable.
   manifest.components.api.sort((a, b) => a.name.localeCompare(b.name));
   manifest.components.ui.sort((a, b) => a.name.localeCompare(b.name));
-  manifest.preconditions.sort((a, b) => a.name.localeCompare(b.name));
+  manifest.steps.sort((a, b) => a.name.localeCompare(b.name));
   for (const component of [...manifest.components.api, ...manifest.components.ui]) {
     component.atcs.sort((a, b) => a.id.localeCompare(b.id));
   }
-  for (const precondition of manifest.preconditions) {
-    precondition.methods.sort();
+  for (const steps of manifest.steps) {
+    steps.methods.sort();
   }
 
   return manifest;
@@ -376,7 +376,7 @@ async function main() {
       console.log(`✅ Generated ${OUTPUT_FILE}`);
       console.log(`   📦 Components: ${manifest.summary.totalComponents} (${manifest.summary.apiComponents} API, ${manifest.summary.uiComponents} UI)`);
       console.log(`   🎯 ATCs: ${manifest.summary.totalATCs}`);
-      console.log(`   🔗 Preconditions: ${manifest.summary.preconditionModules}`);
+      console.log(`   🔗 Steps modules: ${manifest.summary.stepsModules}`);
     }
   };
 
@@ -387,7 +387,7 @@ async function main() {
   if (watchMode && !stdoutMode) {
     console.log('\n👀 Watching for changes...\n');
 
-    const dirsToWatch = [COMPONENT_PATHS.api, COMPONENT_PATHS.ui, COMPONENT_PATHS.preconditions];
+    const dirsToWatch = [COMPONENT_PATHS.api, COMPONENT_PATHS.ui, COMPONENT_PATHS.steps];
 
     for (const dir of dirsToWatch) {
       if (existsSync(dir)) {
