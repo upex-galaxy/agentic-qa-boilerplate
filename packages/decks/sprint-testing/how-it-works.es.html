@@ -532,13 +532,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="mk sm">.session/sprint-testing/&lt;scope&gt;/
   plan.md        &larr; índice de la sesión
   progress.md    &larr; checkpoint por etapa
-
-.context/PBI/.../STORY-&lt;KEY&gt;-&lt;slug&gt;/
   test-session-memory.md
   &uarr; payload de dominio compartido
-    entre los 4 subagentes</div>
+    entre los 4 subagentes
+
+.context/PBI/.../STORY-&lt;KEY&gt;-&lt;slug&gt;/
+  context.md · evidence/   &larr; lo local del ticket</div>
     </div>
-    <div class="card mt-m"><p class="small"><b>Dos memorias, dos preguntas.</b> <span class="dim"><span class="mono">progress.md</span> decide «¿qué etapa sigue?» · <span class="mono">test-session-memory.md</span> lleva la modalidad TMS + contexto del ticket que cada subagente lee. Ambas se consultan al retomar.</span></p></div>
+    <div class="card mt-m"><p class="small"><b>Dos memorias, dos preguntas.</b> <span class="dim"><span class="mono">progress.md</span> decide «¿qué etapa sigue?» · <span class="mono">test-session-memory.md</span> lleva la modalidad TMS + contexto del ticket que cada subagente lee. Ambas se consultan al retomar. Las dos viven en <span class="mono">.session/</span>, nunca en la carpeta PBI: un re-sync del cache PBI destruiría el archivo.</span></p></div>
     <div class="notes">El contrato de resume viene de session-management.md §4. Interrumpir una sesión no pierde nada: el próximo run detecta el estado y retoma exactamente donde quedó.</div>
   </section>
 
@@ -558,11 +559,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     story.md, acceptance-criteria.md  [SYNC]
     acceptance-test-plan.md           [SYNC]
     context.md               &larr; a mano
-    test-session-memory.md   &larr; a mano
-    evidence/                &larr; capturas</div>
+    evidence/                &larr; capturas
+
+.session/sprint-testing/&lt;scope&gt;/
+  test-session-memory.md   &larr; a mano</div>
     </div>
     <div class="card mt-m" style="border-color:var(--warn)"><p class="small"><b style="color:var(--warn)">⏸ El gate del hand-off (S10).</b> <span class="dim">Escribe la Story Explanation en lenguaje llano y <b>SE DETIENE</b>: nada transiciona a In Test sin tu OK explícito. Carpeta PBI nueva por ticket, nunca reusada (S9); los <span class="mono">[SYNC]</span> jamás se escriben a mano (S14).</span></p></div>
-    <div class="notes">Session Start es una puerta, no una formalidad: sincroniza el ticket, arma la carpeta PBI con los dos archivos hand-authored, escribe el plan.md de sesión, explica la Story y espera confirmación humana antes de continuar.</div>
+    <div class="notes">Session Start es una puerta, no una formalidad: sincroniza el ticket, arma la carpeta PBI (context.md + evidence/), escribe el plan.md y el test-session-memory.md de sesión bajo .session/, explica la Story y espera confirmación humana antes de continuar.</div>
   </section>
 
   <!-- 7. STAGE 1 FLUJO -->
@@ -783,7 +786,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="card"><p class="lbl">Stage 6</p><p class="small mt-s"><span class="mono">/regression-testing</span> — suites en CI + veredicto GO / CAUTION / NO-GO.</p></div>
       </div>
       <div class="grid g2 mt-m">
-        <div class="card"><p class="lbl">Artefactos que deja un run</p><p class="small mt-s">ATP + ATR en Jira · QA comment · ticket transicionado · bugs clasificados y linkeados · carpeta PBI con <span class="mono">context.md</span>, <span class="mono">test-session-memory.md</span> y <span class="mono">evidence/</span> · sesión archivada.</p></div>
+        <div class="card"><p class="lbl">Artefactos que deja un run</p><p class="small mt-s">ATP + ATR en Jira · QA comment · ticket transicionado · bugs clasificados y linkeados · carpeta PBI con <span class="mono">context.md</span> y <span class="mono">evidence/</span> · <span class="mono">test-session-memory.md</span> en <span class="mono">.session/sprint-testing/&lt;scope&gt;/</span> · sesión archivada.</p></div>
         <div class="card card-accent"><p class="lbl">Tres reglas de oro</p><p class="small mt-s"><b>1</b> El orden es ley: smoke antes de trifuerza, comment antes de transición. <b>2</b> Triage de todo: el veto gana, un FAIL no es auto-Critical. <b>3</b> Trazable o no ocurrió: Story↔ATP↔ATR↔TC.</p></div>
       </div>
       <p class="small dim mt-m">Pruébalo: <span class="mono">«test UPEX-277»</span> · ← → navegar · S presentador · O overview</p>

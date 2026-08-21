@@ -916,8 +916,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="lede mt-s">Un campo nativo de Jira, configurable para que aparezca en cada incidencia. Su superpoder: <b>agrupar</b> Bugs, Defects e Improvements por la parte del producto que afectan.</p>
   <div class="grid g2 mt-m">
     <div class="card card-accent">
-      <h4>Flexible según la estrategia del proyecto</h4>
-      <p class="dim">Los componentes se definen como convenga: por <b>features</b>, por <b>épicas</b>, por módulos. ¿20 épicas? → 20 components. Cada incidencia marca el/los componente(s) afectado(s).</p>
+      <h4>Módulos funcionales reales, no épicas</h4>
+      <p class="dim">Cada component = un <b>módulo funcional real</b> de la app (la ruta <span class="mono">/checkout/cart</span> → component <b>Cart</b>). Se derivan del <b>source</b> y del <b>scope del backlog</b> (un módulo aún no construido se declara por adelantado), y se reconcilian vía <span class="mono">/jira-components</span> con un plan que aprueba un humano. El eje "épica" ya lo cubren parent/link — no lo dupliques aquí.</p>
     </div>
     <div class="card card-accent">
       <h4>Para qué sirve realmente</h4>
@@ -925,7 +925,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
   </div>
   <div class="callout mt-m"><h4>Y ShopFlow lo rellena siempre</h4><p>Las <b>40 incidencias</b> de ShopFlow marcan su Component → el dashboard de ownership existe y dice qué módulo concentra los defectos. Regla en una línea: <i>lo que no rellenas no lo puedes medir</i> — por eso es la recomendación #1 de higiene, y ShopFlow no deja ninguno vacío. Lo vemos en la parte 3.</p></div>
-  <div class="notes">Énfasis: Components es flexible (épicas/features) y poderoso para agrupar. ShopFlow lo rellena en las 40 incidencias — por eso su dashboard de ownership se puede dibujar entero. Es el campo que más equipos olvidan y el que más preguntas habilita.</div>
+  <div class="notes">Énfasis: Components mapea módulos funcionales reales de la app (derivados del código y del scope del backlog, reconciliados con /jira-components bajo aprobación humana) — NO se derivan de las épicas: ese eje ya lo llevan parent e issue-link. ShopFlow lo rellena en las 40 incidencias — por eso su dashboard de ownership se puede dibujar entero. Es el campo que más equipos olvidan y el que más preguntas habilita.</div>
 </section>
 
 <!-- 21. QUIZ 2 -->

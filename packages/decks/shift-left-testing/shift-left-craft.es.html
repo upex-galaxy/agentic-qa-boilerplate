@@ -574,7 +574,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="agenda-row"><span class="anum">02</span><span class="at">El pipeline — Stage 0: Selección → Refinamiento → Handoff, y sus límites</span><span class="ad">dónde</span></div>
     <div class="agenda-row"><span class="anum">03</span><span class="at">Selección — qué Story refinar: veto, risk score, profundidad</span><span class="ad">qué</span></div>
     <div class="agenda-row"><span class="anum">04</span><span class="at">Refinamiento — el corazón: ambigüedades, huecos, el banco de preguntas</span><span class="ad">cómo bien</span></div>
-    <div class="agenda-row"><span class="anum">05</span><span class="at">Artefactos + Handoff — el ATP DRAFT, la máquina de estados, el short-circuit</span><span class="ad">entregar</span></div>
+    <div class="agenda-row"><span class="anum">05</span><span class="at">Artefactos + Handoff — el ATP pre-sprint, la máquina de estados, el short-circuit</span><span class="ad">entregar</span></div>
   </div>
   <p class="qhint mt-l">3 quizzes interactivos a lo largo del recorrido — haz clic en las respuestas.</p>
   <div class="notes">El porqué (Parte 0) y el cómo hacerlo bien (Partes 2-4) son los dos pilares que pidió el usuario. Mapea al pipeline real: Selección → Refinamiento → Handoff.</div>
@@ -654,7 +654,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="flow mt-m">
     <div class="stage"><div class="sx">1</div><div><h4>Selección</h4><p>Filtra candidatos del backlog (solo Stories), aplica veto + risk score, presenta tabla rankeada. WAIT por OK del usuario.</p></div></div>
     <div class="stage"><div class="sx">2</div><div><h4>Refinamiento <span class="dim2">(el corazón)</span></h4><p>Por Story: ambigüedades + huecos + edge cases no escritos + testabilidad. Refina ACs (Given/When/Then) y bosqueja outlines. Sin ejecutar.</p></div></div>
-    <div class="stage"><div class="sx">3</div><div><h4>Handoff</h4><p>Escribe a Jira: ACs refinados, ATP DRAFT, preguntas a PO/Dev, labels, transición backlog → estimation. Batch report.</p></div></div>
+    <div class="stage"><div class="sx">3</div><div><h4>Handoff</h4><p>Escribe a Jira: ACs refinados, ATP pre-sprint (alcance outline), preguntas a PO/Dev, labels, transición backlog → estimation. Batch report.</p></div></div>
   </div>
   <div class="callout mt-m"><h4>Batch por diseño</h4><p>No hay modo single-ticket: una sesión refina N Stories (sweet spot <b>1-12</b>) para que PO + Dev lead corran un solo pase de grooming con el equipo. >12 → divide en sesiones.</p></div>
   <div class="notes">Selección → Refinamiento → Handoff, siempre en ese orden. Cada fase tiene un gate de usuario. Batch porque shift-left se hace en grooming de equipo.</div>
@@ -671,7 +671,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td><b>Entry status</b></td><td>Backlog / Shift-Left QA / Estimation</td><td>Ready For QA</td></tr>
       <tr><td><b>Exit status</b></td><td>Estimation (refinado, sin estimar)</td><td>QA Approved (ejecutado)</td></tr>
       <tr><td><b>Audiencia</b></td><td>PO / BA + tester</td><td>Dev + tester</td></tr>
-      <tr><td><b>Output</b></td><td>ACs refinados + risk map + ATP DRAFT</td><td>ATP + ATR + bugs + evidencia</td></tr>
+      <tr><td><b>Output</b></td><td>ACs refinados + risk map + ATP (alcance outline)</td><td>el MISMO ATP como superset ejecutable + ATR + bugs + evidencia</td></tr>
       <tr><td><b>Ejecución</b></td><td><b>Ninguna</b> — la feature no existe aún</td><td>Smoke + UI/API/DB</td></tr>
     </tbody>
   </table>
@@ -1016,15 +1016,15 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div>
     <p class="part-no">PARTE 04</p>
     <h1 class="h1">Artefactos + Handoff<br><span class="grad">Entregar a PO y Dev</span></h1>
-    <p class="lede">El ATP DRAFT hace estimable la Story. El handoff la mueve a Estimation con labels que dejan que el sprint reutilice el trabajo — no lo repita.</p>
+    <p class="lede">El ATP pre-sprint hace estimable la Story. El handoff la mueve a Estimation con labels que dejan que el sprint reutilice el trabajo — no lo repita.</p>
   </div>
-  <div class="notes">Phase 3. El output llega a Jira: ACs refinados, ATP DRAFT, preguntas, labels, transición. Y el batch report.</div>
+  <div class="notes">Phase 3. El output llega a Jira: ACs refinados, ATP pre-sprint, preguntas, labels, transición. Y el batch report.</div>
 </section>
 
-<!-- 27. ATP DRAFT -->
-<section class="slide" data-title="ATP DRAFT">
+<!-- 27. EL ATP PRE-SPRINT -->
+<section class="slide" data-title="ATP pre-sprint">
   <p class="kicker">el artefacto central</p>
-  <h2 class="h2" data-anim="fade-up">El ATP DRAFT — <span class="mono" style="font-size:.7em">shift-left-refinement.md</span></h2>
+  <h2 class="h2" data-anim="fade-up">Un solo ATP — <span class="grad">nace outline, madura a ejecutable</span></h2>
   <div class="grid g2 mt-s">
     <div>
       <h4 class="mb-s">Secciones</h4>
@@ -1038,7 +1038,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </ul>
     </div>
     <div>
-      <h4 class="mb-s" style="color:var(--warn)">DRAFT, no ATP completo</h4>
+      <h4 class="mb-s" style="color:var(--warn)">Madurez outline, no otro artefacto</h4>
       <ul class="blist" style="margin-top:4px;font-size:14px">
         <li><span class="tag no">NO</span> tablas de parametrización</li>
         <li><span class="tag no">NO</span> test-data JSON por outline</li>
@@ -1049,8 +1049,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </ul>
     </div>
   </div>
-  <div class="callout mt-m"><h4>Status: "Refined — Awaiting PO Estimation"</h4><p>El DRAFT es lo que hace la Story <b>estimable</b>. Lo diferido (datos, parametrización, pasos) lo añade <span class="mono">/sprint-testing</span> Stage 1 como un <b>superset</b> de este archivo.</p></div>
-  <div class="notes">El ATP DRAFT = shift-left-refinement.md. La frontera con el ATP completo: outline NAMES only, sin test data/parametrización/TCs. La estimación de cobertura SÍ va (alimenta a PO).</div>
+  <div class="callout mt-m"><h4>Status: "Refined — Awaiting PO Estimation"</h4><p>El ATP es <b>uno y real desde el día cero</b>: vive en el Test Plan <span class="mono">"ATP: {STORY-KEY}: {título}"</span> y en el campo <span class="mono">acceptance_test_plan</span> — <span class="mono">shift-left-refinement.md</span> es solo el <b>buffer local de staging</b>. Lo que cambia después no es la identidad sino la <b>madurez</b>: hoy outline (y con eso la Story ya es <b>estimable</b>); lo diferido (datos, parametrización, pasos) lo añade <span class="mono">/sprint-testing</span> Stage 1 refinando el MISMO issue y el MISMO campo en el <b>superset ejecutable</b>.</p></div>
+  <div class="notes">Un solo ATP por Story: shift-left lo autoría temprano en madurez outline (nombres + cobertura, sin test data/parametrización/TCs) y Stage 1 refina ese mismo Test Plan y ese mismo campo al superset ejecutable. shift-left-refinement.md es solo el buffer local; los labels shift-left-reviewed + fecha marcan el pase pre-sprint. La estimación de cobertura SÍ va (alimenta a PO).</div>
 </section>
 
 <!-- 28. COVERAGE ESTIMATE -->
@@ -1085,7 +1085,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <span class="lstate bad">Ready For Dev</span>
   </div>
   <div class="grid g3 mt-l">
-    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Escribe a Jira</h4><p class="dim">ACs refinados al campo · ATP DRAFT al custom field · sección "QA Refinements" en la descripción (append, nunca overwrite).</p></div>
+    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Escribe a Jira</h4><p class="dim">ACs refinados al campo · ATP pre-sprint al Test Plan + custom field · sección "QA Refinements" en la descripción (append, nunca overwrite).</p></div>
     <div class="card card-soft"><h4 class="mono" style="font-size:14px">Notifica</h4><p class="dim">1 comentario de handoff con @PO / @Dev (solo si el handle está en project.yaml).</p></div>
     <div class="card card-soft"><h4 class="mono" style="font-size:14px">Transiciona</h4><p class="dim">analyze → estimate. Si ya pasó estimation: log warning + SKIP (el refinamiento igual aterriza).</p></div>
   </div>
@@ -1118,7 +1118,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <ul class="blist" style="margin-top:4px;font-size:14px">
         <li><span class="mono">shift-left-refinement.md</span> (working file)</li>
         <li>ACs refinados al campo de Jira</li>
-        <li>ATP DRAFT al custom field</li>
+        <li>ATP pre-sprint al Test Plan + custom field</li>
         <li>Preguntas a PO (bloquean) + a Dev</li>
         <li>2 labels + transición a estimation</li>
       </ul>
@@ -1174,7 +1174,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <li><b>L1 · No fuerces preguntas</b> para llenar checklist. Story limpia = lista vacía válida.</li>
       <li><b>L2 · No saltes el label</b> <span class="mono">shift-left-reviewed</span> al transicionar — rompe el short-circuit.</li>
       <li><b>L3 · No mezcles bugs</b> con Stories en el batch. Solo Stories.</li>
-      <li><b>L5 · No transiciones a Estimation</b> sin un ATP DRAFT poblado — sin él, PO estima a ciegas.</li>
+      <li><b>L5 · No transiciones a Estimation</b> sin el ATP pre-sprint poblado — sin él, PO estima a ciegas.</li>
     </ul>
     <ul class="blist">
       <li><b>L4 · No escribas ADF a mano</b> — Markdown local, deja que la conversión md-to-ADF actúe.</li>
@@ -1228,7 +1228,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="steps s3 mt-l">
     <div class="step"><div class="num">1</div><h4>Prevenir, no detectar</h4><p>QA entra en los requisitos, no al final. Un AC ambiguo es un defecto esperando. Costo 1× vs 100×.</p></div>
     <div class="step"><div class="num">2</div><h4>El corazón es el refinamiento</h4><p>Ambigüedades, huecos, edge cases, testabilidad. El banco de preguntas como rúbrica — calidad &gt; cantidad.</p></div>
-    <div class="step"><div class="num">3</div><h4>Entrega que se reutiliza</h4><p>ATP DRAFT estimable + labels que dejan al sprint saltar el trabajo ya hecho. Una vez, no dos.</p></div>
+    <div class="step"><div class="num">3</div><h4>Entrega que se reutiliza</h4><p>ATP pre-sprint estimable + labels que dejan al sprint saltar el trabajo ya hecho. Una vez, no dos.</p></div>
   </div>
   <div class="notes">Los tres conceptos núcleo: prevención (porqué), refinamiento (cómo), handoff reutilizable (la economía).</div>
 </section>
@@ -1237,7 +1237,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <section class="slide center tc" data-title="Cierre">
   <div>
     <h1 class="h1"><span class="grad">Mueve la Calidad a la Izquierda.</span></h1>
-    <p class="lede" style="margin:14px auto">Selecciona por riesgo → refina el corazón (ambigüedades, huecos, el banco de preguntas) → entrega un ATP DRAFT estimable que el sprint reutiliza. Previene el defecto donde cuesta 1×, no donde cuesta 100×.</p>
+    <p class="lede" style="margin:14px auto">Selecciona por riesgo → refina el corazón (ambigüedades, huecos, el banco de preguntas) → entrega un ATP pre-sprint estimable que el sprint refina — no repite. Previene el defecto donde cuesta 1×, no donde cuesta 100×.</p>
     <p class="lede" style="margin:14px auto">← → navegar · S notas del orador · O resumen · T tema</p>
   </div>
   <div class="notes">Cierra atando porqué + cómo. Shift-left no es una ceremonia extra: es la inversión más barata en calidad que un proyecto puede hacer.</div>

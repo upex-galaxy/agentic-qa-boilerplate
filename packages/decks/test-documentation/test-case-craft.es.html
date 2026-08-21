@@ -610,7 +610,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <table class="dtable mt-s" style="font-size:14px">
     <thead><tr><th>Scope</th><th>Input</th><th>Volumen</th><th>Cuándo</th></tr></thead>
     <tbody>
-      <tr><td><b>Module-driven</b></td><td>Un módulo explorado end-to-end</td><td>20-100+</td><td>Batch bajo el Epic de Regresión. La mayoría será Deferred.</td></tr>
+      <tr><td><b>Module-driven</b></td><td>Un módulo explorado end-to-end</td><td>20-100+</td><td>Batch bajo el Epic de Regresión (epic «QA Test Repository»). La mayoría será Deferred.</td></tr>
       <tr><td><b>Ticket-driven</b></td><td>Una US <span class="mono">QA Approved</span> de sprint</td><td>3-8</td><td>Salida de una sesión sprint-testing. ATP/ATR por US.</td></tr>
       <tr><td><b>Bug-driven</b></td><td>Un bug cerrado con fix verificado</td><td>0-2</td><td>Corre la decisión bug-driven. ROI sesgado arriba: "falló una vez, puede fallar de nuevo".</td></tr>
       <tr><td><b>Ad-hoc / Exploratorio</b></td><td>Escenarios nuevos de testing exploratorio</td><td>1-10</td><td>Aplica los 3 filtros con dureza — suelen ser validaciones de una sola vez.</td></tr>
@@ -627,7 +627,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="grid g2 mt-m">
     <div class="card card-accent">
       <h4>Module-driven (Macro)</h4>
-      <p class="dim">Exploras un módulo completo. 20-100+ escenarios. Batch bajo el <b>Epic de Regresión</b>, agrupado por un <b>Test Set</b> (1:1 con el Epic/feature). La mayoría termina Deferred — derivas amplio, persistes poco.</p>
+      <p class="dim">Exploras un módulo completo. 20-100+ escenarios. Batch bajo el <b>Epic de Regresión</b> (epic «QA Test Repository»), agrupado por un <b>Test Set</b> (1:1 con el Epic/feature). La mayoría termina Deferred — derivas amplio, persistes poco.</p>
       <div class="row wrap mt-s" style="gap:6px"><span class="tag">regression</span><span class="tag">e2e</span><span class="tag">integration</span></div>
     </div>
     <div class="card card-accent">
@@ -677,7 +677,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qq"><span class="qn">Q2</span><span>QA terminó de explorar end-to-end el módulo de pagos y tiene ~60 escenarios validados sin ticket asociado.</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Ticket-driven — hay que crear ATP/ATR por cada uno</span></div>
-        <div class="opt" data-correct="1"><span class="mk">B</span><span>Module-driven — batch bajo el Epic de Regresión, la mayoría Deferred</span></div>
+        <div class="opt" data-correct="1"><span class="mk">B</span><span>Module-driven — batch bajo el Epic de Regresión («QA Test Repository»), la mayoría Deferred</span></div>
         <div class="opt"><span class="mk">C</span><span>Bug-driven — son fallos potenciales</span></div>
       </div>
       <div class="qexp"><b>Module-driven.</b> El input es un módulo explorado completo (20-100+) → batch agrupado en un Test Set bajo el Epic de Regresión. Deriva amplio, persiste poco: la mayoría de los 60 será Deferred.</div>
@@ -1434,7 +1434,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="card card-soft"><h4>jira-xray — indirecto</h4><p class="dim">El TC <b>nunca</b> se enlaza al Story directo. ATP <span class="mono">designs</span> TC, ATR <span class="mono">executes</span> TC. Evita ruido de links. Crea ATP y ATR <b>antes</b> del primer TC.</p></div>
     <div class="card card-soft"><h4>jira-native — directo</h4><p class="dim">Sin issues ATP/ATR, el TC <b>sí</b> se enlaza al Story vía <span class="mono">is tested by</span> — es la única arista de trazabilidad disponible.</p></div>
   </div>
-  <div class="notes">Orden de linking inviolable: ATP→Story, ATR→Story, ATP↔ATR, luego cada TC→ATP(designs)+ATR(executes). Crear TCs antes deja referencias huérfanas. Todo TC cuelga de un Epic de Regresión (repositorio único).</div>
+  <div class="notes">Orden de linking inviolable: ATP→Story, ATR→Story, ATP↔ATR, luego cada TC→ATP(designs)+ATR(executes). Crear TCs antes deja referencias huérfanas. Todo TC cuelga del Epic de Regresión — el epic «QA Test Repository» (repositorio único).</div>
 </section>
 
 <!-- 36. THANKS -->

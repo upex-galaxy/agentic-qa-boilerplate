@@ -309,7 +309,7 @@ ul.plain b{color:var(--t1)}
         <div class="proc-hd"><span class="pid">1c</span><h3>Redacción de AC en Gherkin</h3><span class="repo dev">dev</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip">product-management (references/acceptance-criteria.md)</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div>Campo actual <code>{{jira.acceptance_criteria}}</code> · PRD/SRS como fuente de verdad</div></div>
-        <div class="io out"><span class="io-k">stdout →</span><div><code>{{jira.acceptance_criteria}}</code> reescrito en bloque <code>```gherkin```</code> · cache local <code>stories/STORY-&lt;KEY&gt;-&lt;slug&gt;/spec.md</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>{{jira.acceptance_criteria}}</code> reescrito en bloque <code>```gherkin```</code> · sync → <code>stories/STORY-&lt;KEY&gt;-&lt;slug&gt;/acceptance-criteria.md</code> (ningún <code>spec.md</code> por story: <code>spec.md</code> solo existe bajo <code>test-specs/</code> como plan de batch de automatización, con TCs referidos por clave Jira)</div></div>
       </div>
 
       <div class="proc">
@@ -364,7 +364,7 @@ ul.plain b{color:var(--t1)}
         <div class="proc-hd"><span class="pid">P3</span><h3>Handoff a Jira</h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip">references/handoff-protocol.md</span><span class="chip">acli / xray-cli</span><span class="chip">defect-management-doctrine.md</span><span class="chip">traceability-linking.md</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>shift-left-refinement.md</code> · <code>acceptance-criteria.md</code> re-sincronizado</div></div>
-        <div class="io jira"><span class="io-k">jira ⇄</span><div>Campos: <code>{{jira.acceptance_criteria}}</code> · <code>{{jira.acceptance_test_plan}}</code> (o Test Plan issue si Xray + opt-in) · <code>{{jira.qa_assignee}}</code> <b class="hi-warn">solo si está vacío</b> · Labels: <code>shift-left-reviewed</code> + <code>shift-left-{{YYYY-MM-DD}}</code> · Transiciones: <b>Backlog → Shift-Left QA → Estimation</b> · Comentario: «ATP — Shift-Left DRAFT»</div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Campos: <code>{{jira.acceptance_criteria}}</code> · <code>{{jira.acceptance_test_plan}}</code> (o Test Plan issue si Xray + opt-in) · <code>{{jira.qa_assignee}}</code> <b class="hi-warn">solo si está vacío</b> · Labels: <code>shift-left-reviewed</code> + <code>shift-left-{{YYYY-MM-DD}}</code> · Transiciones: <b>Backlog → Shift-Left QA → Estimation</b> · Comentario: puntero al campo ATP (fallback sin custom field: cuerpo bajo <code>## Acceptance Test Plan (ATP)</code>)</div></div>
       </div>
 
       <div class="exit"><b>loop 2a ⇄ 2b</b> hasta ACs firmes → <b>exit 0</b> → status <b>Ready For Dev</b></div>

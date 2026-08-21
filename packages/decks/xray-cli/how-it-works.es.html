@@ -498,7 +498,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="grid g2 mt-m" style="gap:36px;align-items:start">
       <div>
         <div class="mk" style="font-size:13.5px">$ bun xray auth status
-$ bun xray auth login                # todo desde .env
+$ bun xray auth login                # creds desde .env · host desde project.yaml
 $ bun xray auth login \
     --client-id &lt;id&gt; --client-secret &lt;secret&gt;   # override: otro site
 $ bun xray auth login --jira-url https://org.atlassian.net \
@@ -508,7 +508,7 @@ $ bun xray auth logout</div>
         <p class="small dim mt-s"><b>Dónde vive:</b> <span class="mono">~/.xray-cli/config.json</span> (creds + proyecto default) · <span class="mono">token.json</span> (token 24 h) · <b>UN site a la vez</b>.</p>
       </div>
       <div class="stack">
-        <div class="card"><p class="lbl">Dos patas de credenciales</p><p class="small mt-s"><b>Xray GraphQL:</b> <span class="mono">XRAY_CLIENT_ID/SECRET</span> · <b>Jira REST:</b> <span class="mono">ATLASSIAN_URL/EMAIL/API_TOKEN</span> — resuelven claves Jira → issueId y habilitan Sync &amp; Repair.</p></div>
+        <div class="card"><p class="lbl">Dos patas de credenciales</p><p class="small mt-s"><b>Xray GraphQL:</b> <span class="mono">XRAY_CLIENT_ID/SECRET</span> · <b>Jira REST:</b> <span class="mono">ATLASSIAN_EMAIL/API_TOKEN</span> en <span class="mono">.env</span> + host desde <span class="mono">.agents/project.yaml → issue_tracker.atlassian_url</span> (<span class="mono">ATLASSIAN_URL</span> NO es variable de <span class="mono">.env</span>) — resuelven claves Jira → issueId y habilitan Sync &amp; Repair.</p></div>
         <div class="card card-accent"><p class="lbl" style="color:var(--bad)">Gotcha X2</p><p class="small mt-s">Token &gt;24 h = <b>401 silencioso</b> que parece blip de red. Re-auth con <span class="mono">auth login</span>; no atrapes el error.</p></div>
       </div>
     </div>
@@ -526,7 +526,8 @@ $ bun xray auth logout</div>
     </div>
     <div class="mk mt-s" style="font-size:13px;line-height:1.45;padding:16px 22px">$ bun xray test create --project DEMO --summary "Verify login" --type Manual
 $ bun xray test add-step --test &lt;issueId&gt; --action "Enter credentials" --data "user@test.com" --result "Dashboard"   # un add-step POR paso
-$ bun xray test get DEMO-123        # verificar que los steps aterrizaron</div>
+$ bun xray test get DEMO-123        # verificar que los steps aterrizaron
+$ bun xray test enrich --project DEMO   # vuelca steps/preconditions/test-sets (Xray-internos) al cache .md sincronizado</div>
     <div class="card card-accent mt-s">
       <p class="small"><b style="color:var(--bad)">Gotcha:</b> los steps <b>NO persisten en <span class="mono">create</span></b> — Xray Cloud los descarta en silencio (<span class="mono">stepCount:0</span>) y <span class="mono">--step</span> está deprecado. Patrón fiable: <b>create → un <span class="mono">add-step</span> por paso → verificar con <span class="mono">test get</span></b>. Enriquecer un Test existente: <span class="mono">update-gherkin · update-definition · update-type</span>.</p>
     </div>
