@@ -1049,8 +1049,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </ul>
     </div>
   </div>
-  <div class="callout mt-m"><h4>Status: "Refined — Awaiting PO Estimation"</h4><p>El ATP es <b>uno y real desde el día cero</b>: vive en el Test Plan <span class="mono">"ATP: {STORY-KEY}: {título}"</span> y en el campo <span class="mono">acceptance_test_plan</span> — <span class="mono">shift-left-refinement.md</span> es solo el <b>buffer local de staging</b>. Lo que cambia después no es la identidad sino la <b>madurez</b>: hoy outline (y con eso la Story ya es <b>estimable</b>); lo diferido (datos, parametrización, pasos) lo añade <span class="mono">/sprint-testing</span> Stage 1 refinando el MISMO issue y el MISMO campo en el <b>superset ejecutable</b>.</p></div>
-  <div class="notes">Un solo ATP por Story: shift-left lo autoría temprano en madurez outline (nombres + cobertura, sin test data/parametrización/TCs) y Stage 1 refina ese mismo Test Plan y ese mismo campo al superset ejecutable. shift-left-refinement.md es solo el buffer local; los labels shift-left-reviewed + fecha marcan el pase pre-sprint. La estimación de cobertura SÍ va (alimenta a PO).</div>
+  <div class="callout mt-m"><h4>Status: "Refined — Awaiting PO Estimation"</h4><p>El ATP es <b>uno y real desde el día cero</b>: pre-sprint vive SOLO en el campo <span class="mono">acceptance_test_plan</span> (<b>field-first</b>) — <span class="mono">shift-left-refinement.md</span> es solo el <b>buffer local de staging</b>. Lo que cambia después no es la identidad sino la <b>madurez</b>: hoy outline (y con eso la Story ya es <b>estimable</b>); en sprint, <span class="mono">/sprint-testing</span> Stage 1 crea el Test Plan item <span class="mono">"ATP: {STORY-KEY}: {título}"</span> DESDE ese campo y añade lo diferido (datos, parametrización, pasos) en el <b>superset ejecutable</b>.</p></div>
+  <div class="notes">Un solo ATP por Story, field-first: shift-left lo autoría temprano en madurez outline dentro del campo acceptance_test_plan (nombres + cobertura, sin test data/parametrización/TCs); el Test Plan item nace en Stage 1 desde ese campo, refinado al superset ejecutable. shift-left-refinement.md es solo el buffer local; los labels shift-left-reviewed + fecha marcan el pase pre-sprint. La estimación de cobertura SÍ va (alimenta a PO).</div>
 </section>
 
 <!-- 28. COVERAGE ESTIMATE -->
@@ -1085,9 +1085,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <span class="lstate bad">Ready For Dev</span>
   </div>
   <div class="grid g3 mt-l">
-    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Escribe a Jira</h4><p class="dim">ACs refinados al campo · ATP pre-sprint al Test Plan + custom field · sección "QA Refinements" en la descripción (append, nunca overwrite).</p></div>
+    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Escribe a Jira</h4><p class="dim">ACs refinados al campo · ATP pre-sprint al campo <span class="mono">acceptance_test_plan</span> (el Test Plan item nace en Stage 1) · sección "QA Refinements" en la descripción (append, nunca overwrite).</p></div>
     <div class="card card-soft"><h4 class="mono" style="font-size:14px">Notifica</h4><p class="dim">1 comentario de handoff con @PO / @Dev (solo si el handle está en project.yaml).</p></div>
-    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Transiciona</h4><p class="dim">analyze → estimate. Si ya pasó estimation: log warning + SKIP (el refinamiento igual aterriza).</p></div>
+    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Transiciona</h4><p class="dim">analyze → estimate. Si ya pasó estimation: log warning + SKIP (el refinamiento igual aterriza). La subtask <span class="mono">[QA] Shift-Left Review</span> (In Progress desde la aceptación en Phase 1) pasa a <b>Done</b>.</p></div>
   </div>
   <div class="callout warn mt-m"><h4>Guardrail: NUNCA más allá de Estimation</h4><p>PO + Dev lead son dueños de <span class="mono">estimate → ready_for_dev</span>. Shift-left para en estimation — la Story queda lista para que el equipo le ponga puntos.</p></div>
   <div class="notes">Máquina de estados: backlog→(analyze)→shift_left_qa→(estimate)→estimation. Guardrail duro: nunca past estimation. Descripción se hace append, nunca overwrite.</div>
@@ -1118,7 +1118,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <ul class="blist" style="margin-top:4px;font-size:14px">
         <li><span class="mono">shift-left-refinement.md</span> (working file)</li>
         <li>ACs refinados al campo de Jira</li>
-        <li>ATP pre-sprint al Test Plan + custom field</li>
+        <li>ATP pre-sprint al campo <span class="mono">acceptance_test_plan</span></li>
         <li>Preguntas a PO (bloquean) + a Dev</li>
         <li>2 labels + transición a estimation</li>
       </ul>

@@ -195,10 +195,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <div class="card"><h4>TMS</h4><p class="dim" style="font-size:13.5px">Test Management System — dónde viven tests, planes y corridas (aquí, Jira + Xray).</p></div>
     <div class="card"><h4>Epic / Story / PBI</h4><p class="dim" style="font-size:13.5px">Epic = feature; Story = unidad de trabajo con criterios de aceptación; PBI = el ítem del backlog.</p></div>
     <div class="card"><h4>Test Case (TC)</h4><p class="dim" style="font-size:13.5px">Un caso individual — un comportamiento afirmado. La hoja del árbol.</p></div>
-    <div class="card"><h4>Test Set</h4><p class="dim" style="font-size:13.5px">Agrupación lógica de TCs por feature. No planifica ni ejecuta — solo agrupa.</p></div>
+    <div class="card"><h4>Test Set</h4><p class="dim" style="font-size:13.5px">Agrupación lógica de TCs. Dos formas: <b>ATS</b> per-Story (obligatorio) y <b>TS</b> por feature (opcional). No planifica ni ejecuta — solo agrupa.</p></div>
     <div class="card"><h4>Test Plan</h4><p class="dim" style="font-size:13.5px">Qué se va a probar y su alcance (Story / Feature / Sprint / Producto).</p></div>
     <div class="card"><h4>Test Execution</h4><p class="dim" style="font-size:13.5px">Una corrida de ese plan — el registro de qué pasó o falló.</p></div>
-    <div class="card"><h4>Precondition (PRC)</h4><p class="dim" style="font-size:13.5px">El estado requerido antes de ejecutar (ej. usuario autenticado).</p></div>
+    <div class="card"><h4>Precondition</h4><p class="dim" style="font-size:13.5px">El estado requerido antes de ejecutar (ej. usuario autenticado). Entidad Xray, sin acrónimo de escalera.</p></div>
     <div class="card"><h4>ATC</h4><p class="dim" style="font-size:13.5px">Acceptance Test Case — el método KATA que implementa un TC en código.</p></div>
     <div class="card"><h4>KATA</h4><p class="dim" style="font-size:13.5px">La arquitectura de pruebas en capas (L1–L4) del framework. Ver la capa CODE.</p></div>
     <div class="card"><h4>Fixture</h4><p class="dim" style="font-size:13.5px">Inyección de dependencias de KATA — entrega api/ui/test ya listos al test.</p></div>
@@ -217,7 +217,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       <thead><tr><th>Altitud</th><th>Plan (P)</th><th>Results (R)</th></tr></thead>
       <tbody>
         <tr><td>Producto</td><td class="m"><span class="lp">MTP</span> — Master Test Plan</td><td class="dim">—</td></tr>
-        <tr><td>Feature</td><td class="m"><span class="lp">FTP</span> — Feature Test Plan</td><td class="m"><span class="lp">FTR</span> — Feature Test Results</td></tr>
+        <tr><td>Feature</td><td class="m"><span class="lp">FTP</span> — Feature Test Plan</td><td class="dim">— (FTR recortado: duplicaba al STR)</td></tr>
         <tr><td>Sprint</td><td class="m"><span class="lp">STP</span> — Sprint Test Plan</td><td class="m"><span class="lp">STR</span> — Sprint Test Results</td></tr>
         <tr><td>Story</td><td class="m"><span class="lp">ATP</span> — Acceptance Test Plan</td><td class="m"><span class="lp">ATR</span> — Acceptance Test Results</td></tr>
       </tbody>
@@ -227,13 +227,13 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       <tbody>
         <tr><td class="m"><span class="lp">TC</span></td><td>Test Case</td><td class="dim">CASE</td></tr>
         <tr><td class="m"><span class="lp">ATC</span></td><td>Acceptance Test Case</td><td class="dim">CODE</td></tr>
-        <tr><td class="m"><span class="lp">TS</span></td><td>Test Set</td><td class="dim">GROUP</td></tr>
-        <tr><td class="m"><span class="lp">PRC</span></td><td>Precondition</td><td class="dim">CONTAINER</td></tr>
+        <tr><td class="m"><span class="lp">ATS</span></td><td>Acceptance Test Set</td><td class="dim">GROUP</td></tr>
+        <tr><td class="m"><span class="lp">TS</span></td><td>Test Set (feature · opcional)</td><td class="dim">GROUP</td></tr>
         <tr><td class="m"><span class="lp">PBI</span></td><td>Product Backlog Item</td><td class="dim">Jira / FS</td></tr>
       </tbody>
     </table>
   </div>
-  <div class="callout mt-m" style="padding:11px 14px"><p style="margin:0" class="dim"><b>Primera letra</b> = altitud: <b>M</b>aster · <b>F</b>eature · <b>S</b>print · <b>A</b>cceptance (Story). <b>Última letra</b>: <b>P</b> = Plan (qué se probará) · <b>R</b> = <b>Results</b> (el paraguas: la ejecución y sus runs). Un "run" = una iteración de la ejecución.</p></div>
+  <div class="callout mt-m" style="padding:11px 14px"><p style="margin:0" class="dim"><b>Primera letra</b> = altitud: <b>M</b>aster · <b>F</b>eature · <b>S</b>print · <b>A</b>cceptance (Story). <b>Última letra</b>: <b>P</b> = Plan (qué se probará) · <b>R</b> = <b>Results</b> (el paraguas: la ejecución y sus runs) · <b>S</b> = <b>Set</b> (agrupa — la familia Story es ATC/ATP/ATR/ATS). Un "run" = una iteración de la ejecución.</p></div>
 </section>
 
 <!-- 3 · LAS 7 CAPAS -->
@@ -244,7 +244,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="lstack mt-m">
     <div class="lbar" style="--ac:#22d3ee"><span class="ln">CASE</span><span class="ld">El Test Case (TC) individual — lo que se afirma</span><span class="lx">should &lt;outcome&gt;</span></div>
     <div class="lbar" style="--ac:#a3e635"><span class="ln">GROUP</span><span class="ld">El contenedor de casos — la feature bajo prueba</span><span class="lx">Validate &lt;feature&gt;</span></div>
-    <div class="lbar" style="--ac:#fbbf24"><span class="ln">CONTAINER</span><span class="ld">Vasijas de planificación y ejecución — ATP/ATR/FTP/STP + Test Set/PRC</span><span class="lx">{ACRONYM}: {scope}: …</span></div>
+    <div class="lbar" style="--ac:#fbbf24"><span class="ln">CONTAINER</span><span class="ld">Vasijas de planificación y ejecución — ATP/ATR/FTP/STP + Test Set/Precondition</span><span class="lx">{ACRONYM}: {scope}: …</span></div>
     <div class="lbar" style="--ac:#a78bfa"><span class="ln">CODE</span><span class="ld">KATA — componentes, ATCs, archivos, tags</span><span class="lx">@atc · {Resource}Api</span></div>
     <div class="lbar" style="--ac:#60a5fa"><span class="ln">JIRA</span><span class="ld">Estados de workflow, labels, títulos de issues de calidad</span><span class="lx">Epic: Component: …</span></div>
     <div class="lbar" style="--ac:#fb923c"><span class="ln">GIT</span><span class="ld">Ramas, commits, títulos de PR</span><span class="lx">type(KEY): …</span></div>
@@ -261,7 +261,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="tmpl mt-m" style="font-size:15px;line-height:1.75;--ac:#a78bfa">
 <span class="t-pre">STORY PROJ-101</span>  <span class="t-pun">— la unidad de trabajo</span><br>
 &nbsp;├─ <span style="color:#fbbf24">ATP: PROJ-101: …</span>      <span class="t-pun">PLAN: qué se probará · CONTAINER</span><br>
-&nbsp;├─ <span style="color:#a3e635">TS: Validate login</span>   <span class="t-pun">GROUP: agrupa los casos</span><br>
+&nbsp;├─ <span style="color:#a3e635">ATS: PROJ-101: …</span>   <span class="t-pun">GROUP: agrupa los casos de la Story · llena el coverage panel</span><br>
 &nbsp;│&nbsp;&nbsp;├─ <span style="color:#22d3ee">PROJ-101: TC1: should grant access…</span>  <span class="t-pun">CASE</span><br>
 &nbsp;│&nbsp;&nbsp;└─ <span style="color:#22d3ee">PROJ-101: TC2: should reject login…</span>  <span class="t-pun">CASE</span><br>
 &nbsp;├─ <span style="color:#fbbf24">ATR: PROJ-101: Story Testing</span>  <span class="t-pun">RESULTS: qué pasó/falló · CONTAINER</span><br>
@@ -342,10 +342,15 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       <div class="ex mt-s"><b>'UPEX-411:</b> Validate discount codes'</div>
       <p><span class="src">automation-standards.md</span></p>
     </div>
-    <div class="card lyr" style="--ac:#a3e635"><h4>Test Set · TS</h4>
+    <div class="card lyr" style="--ac:#a3e635"><h4>Test Set · ATS <span class="dim3" style="font-size:12px">(Story · obligatorio)</span></h4>
+      <div class="tmpl sm" style="--ac:#a3e635"><span class="t-fix" style="color:#a3e635">ATS:</span> <span class="t-pre">{US_ID}</span><span class="t-pun">: </span><span class="t-var">{story title}</span></div>
+      <div class="ex mt-s">ATS: <b>PROJ-123:</b> Apply discount at checkout</div>
+      <p class="dim3" style="font-size:12.5px">1 por Story (aunque tenga 1 TC) · familia ATC/ATP/ATR/ATS · parent QA Test Artifacts · components heredados de la Story. Sin <span class="mono">Validate</span>: el descriptor es el título de la Story.</p>
+    </div>
+    <div class="card lyr" style="--ac:#a3e635"><h4>Test Set · TS <span class="dim3" style="font-size:12px">(Feature · opcional)</span></h4>
       <div class="tmpl sm" style="--ac:#a3e635"><span class="t-fix" style="color:#a3e635">TS:</span> <span class="t-pre">{EPIC-KEY|module}</span><span class="t-pun">: </span><span class="t-fix" style="color:#a3e635">Validate</span> <span class="t-var">{feature}</span></div>
       <div class="ex mt-s">TS: <b>GX-101:</b> Validate credit card payment</div>
-      <p class="dim3" style="font-size:12.5px">La membresía es un link — nunca el prefijo del TC.</p>
+      <p class="dim3" style="font-size:12.5px">Smoke / regression / agrupación de feature. La membresía es un link — nunca el prefijo del TC.</p>
     </div>
     <div class="card lyr" style="--ac:#fbbf24"><h4>Test Plan · ATP <span class="dim3" style="font-size:12px">(Story)</span></h4>
       <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">ATP:</span> <span class="t-pre">{STORY-KEY}</span><span class="t-pun">: </span><span class="t-var">{story title}</span></div>
@@ -381,10 +386,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">ReTest:</span> <span class="t-pre">{BUG-KEY}</span><span class="t-pun">: </span><span class="t-var">{summary}</span></div>
       <div class="ex mt-s">ReTest: GX-202: Wrong error on invalid password</div>
     </div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>Precondition · PRC <span class="dim3" style="font-size:12px">(título = el estado)</span></h4>
-      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">PRC:</span> <span class="t-pre">{COMPONENT}</span><span class="t-pun">: </span><span class="t-var">{required state}</span></div>
-      <div class="ex mt-s">PRC: Payment: Authenticated user with a saved card</div>
-      <p class="dim3" style="font-size:12px">El título indica el <b>estado</b>; los pasos de setup viven en el contenido.</p>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Precondition <span class="dim3" style="font-size:12px">(título = el estado · sin acrónimo)</span></h4>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-pre">{COMPONENT}</span><span class="t-pun">: </span><span class="t-var">{required state}</span></div>
+      <div class="ex mt-s">Payment: Authenticated user with a saved card</div>
+      <p class="dim3" style="font-size:12px">El título indica el <b>estado</b>; los pasos de setup viven en el contenido. El prefijo <span class="mono">PRC:</span> está retirado — la entidad Xray sigue existiendo.</p>
     </div>
   </div>
   <p class="mt-s"><span class="src">tms-conventions.md §3 · xray-platform.md · planning-ladder</span></p>
@@ -398,22 +403,24 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="row mt-m" style="gap:9px;flex-wrap:wrap">
     <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>QA Master Test Plan · todos los Test Plans</span>
     <span class="chip" style="--ac:#a3e635"><span class="dot"></span>QA Test Repository · todos los Tests</span>
-    <span class="chip" style="--ac:#22d3ee"><span class="dot"></span>QA Test Artifacts · todos los Runs + PRC + Test Sets</span>
+    <span class="chip" style="--ac:#22d3ee"><span class="dot"></span>QA Test Artifacts · todos los Runs + Preconditions + Test Sets</span>
     <span class="chip" style="--ac:#f87171"><span class="dot"></span>QA Defect Management · todos los bug/defect/improvement</span>
   </div>
   <div class="lstack mt-m">
     <div class="lbar" style="--ac:#a78bfa"><span class="ln">PRODUCT</span><span class="ld">MTP — Master Test Plan</span><span class="lx">Epic QA Master Test Plan</span></div>
-    <div class="lbar" style="--ac:#34d399"><span class="ln">FEATURE</span><span class="ld">FTP → FTR — "Feature Testing", ≥1 run/sprint</span><span class="lx">{EPIC-KEY}</span></div>
-    <div class="lbar" style="--ac:#60a5fa"><span class="ln">SPRINT</span><span class="ld">STP → STR — "Regression Testing", 1/sprint</span><span class="lx">Sprint#{N}</span></div>
+    <div class="lbar" style="--ac:#34d399"><span class="ln">FEATURE</span><span class="ld">FTP — item-first; /sprint-testing lo crea/actualiza al cargar el Epic (sin Results: FTR recortado)</span><span class="lx">{EPIC-KEY}</span></div>
+    <div class="lbar" style="--ac:#60a5fa"><span class="ln">SPRINT</span><span class="ld">STP al inicio del sprint (/sprint-testing) → STR al cierre — "Regression Testing", 1/sprint</span><span class="lx">Sprint#{N}</span></div>
     <div class="lbar" style="--ac:#22d3ee"><span class="ln">STORY</span><span class="ld">ATP → ATR — "Story Testing", 1 run</span><span class="lx">{STORY-KEY}</span></div>
+    <div class="lbar" style="--ac:#a3e635"><span class="ln">STORY · SET</span><span class="ld">ATS — Test Set per-Story, obligatorio; su link a la Story llena el coverage panel</span><span class="lx">{US_ID}</span></div>
   </div>
   <table class="mt-m">
     <thead><tr><th>Altitud</th><th>Plan</th><th>Results</th><th>Patrón</th></tr></thead>
     <tbody>
       <tr><td>Product</td><td class="m"><span class="lp">MTP</span></td><td class="dim">—</td><td class="m">Epic <span class="dim">QA Master Test Plan</span> (+ master-test-plan.md local)</td></tr>
-      <tr><td>Feature</td><td class="m"><span class="lp">FTP</span></td><td class="m"><span class="lp">FTR</span></td><td class="m">FTP/FTR: {EPIC-KEY}: … <span class="dim">— término FTR "Feature Testing", ≥1 run/sprint</span></td></tr>
-      <tr><td>Sprint</td><td class="m"><span class="lp">STP</span></td><td class="m"><span class="lp">STR</span></td><td class="m">STP/STR: Sprint#{N}: … <span class="dim">— término STR "Regression Testing", 1/sprint</span></td></tr>
+      <tr><td>Feature</td><td class="m"><span class="lp">FTP</span></td><td class="dim">—</td><td class="m">FTP: {EPIC-KEY}: … <span class="dim">— item-first; lo crea/actualiza /sprint-testing al cargar el Epic (FTR recortado)</span></td></tr>
+      <tr><td>Sprint</td><td class="m"><span class="lp">STP</span></td><td class="m"><span class="lp">STR</span></td><td class="m">STP/STR: Sprint#{N}: … <span class="dim">— STP al inicio del sprint (/sprint-testing, lo consume regression) · STR "Regression Testing" al cierre, 1/sprint</span></td></tr>
       <tr><td>Story</td><td class="m"><span class="lp">ATP</span></td><td class="m"><span class="lp">ATR</span></td><td class="m">ATP/ATR: {STORY-KEY}: … <span class="dim">— término ATR "Story Testing", 1 run</span></td></tr>
+      <tr><td>Story · Set</td><td class="m"><span class="lp">ATS</span></td><td class="dim">—</td><td class="m">ATS: {US_ID}: {story title} <span class="dim">— per-Story, obligatorio; parent QA Test Artifacts; llena el coverage panel</span></td></tr>
     </tbody>
   </table>
   <div class="callout mt-m" style="padding:12px 15px"><p style="margin:0" class="dim"><b>Items sobre campos</b> — cada Plan es un issue Test Plan, cada Run es un issue Test Execution (ambas modalidades); el custom field de la Story es solo un fallback. 3 ejes: <b>parent</b> = epic QA · <b>link</b> = alcance · <b>components</b> = módulo.</p></div>
@@ -776,7 +783,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="grid g2 mt-m">
     <div class="card lyr" style="--ac:#22d3ee"><h4>1 · <span class="mono">should</span> = caso · <span class="mono">Validate</span> = grupo</h4><p class="dim">El caso afirma un comportamiento (<span class="mono">should</span>); el grupo solo nombra la caja (<span class="mono">Validate</span>). Nunca al revés.</p></div>
     <div class="card lyr" style="--ac:#a78bfa"><h4>2 · ATC = <b>Acceptance</b> Test Case</h4><p class="dim">No "Automated". El ATC es el método KATA mapeado 1:1 a un TC; la clave <span class="mono">@atc</span> lo ata a Jira.</p></div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>3 · R = <b>Results</b>, no Run</h4><p class="dim">ATR / FTR / STR son Test <b>Results</b>. Un "run" es solo una iteración de la ejecución; Results es el paraguas.</p></div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>3 · R = <b>Results</b>, no Run</h4><p class="dim">ATR / STR son Test <b>Results</b>. Un "run" es solo una iteración de la ejecución; Results es el paraguas.</p></div>
     <div class="card lyr" style="--ac:#60a5fa"><h4>4 · El prefijo = la clave de la Story</h4><p class="dim">El título de un TC lleva la clave de su User Story. La pertenencia a un Test Set es un <b>link</b>, nunca va en el nombre.</p></div>
     <div class="card lyr" style="--ac:#a78bfa"><h4>5 · <span class="mono">@atc('PROJ-101')</span> literal</h4><p class="dim">El decorador lleva una clave Jira literal — sin template literals, sin IDs sintéticos.</p></div>
     <div class="card lyr" style="--ac:#fb923c"><h4>6 · <span class="mono">@integration</span>, no <span class="mono">@api</span></h4><p class="dim">El tag de API tests es <span class="mono">@integration</span> (contraparte de <span class="mono">@e2e</span>). <span class="mono">@api/</span> es el alias de import — otra cosa.</p></div>
@@ -795,9 +802,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       <tr><td><span class="mono" style="color:#22d3ee">CASE</span></td><td>TC title</td><td class="m">{US_ID}: TC#: should &lt;outcome&gt; [conn cond] [given pre]</td><td class="m">PROJ-101: TC1: should grant access when valid</td></tr>
       <tr><td><span class="mono" style="color:#22d3ee">CASE</span></td><td>test() block</td><td class="m">'{KEY}: should {behavior} when {cond}'</td><td class="m">'UPEX-411: should apply discount when valid'</td></tr>
       <tr><td><span class="mono" style="color:#a3e635">GROUP</span></td><td>describe()</td><td class="m">'{KEY}: Validate {feature}'</td><td class="m">'UPEX-411: Validate discount codes'</td></tr>
-      <tr><td><span class="mono" style="color:#a3e635">GROUP</span></td><td>Test Set</td><td class="m">TS: {EPIC|module}: Validate {feature}</td><td class="m">TS: GX-101: Validate credit card payment</td></tr>
+      <tr><td><span class="mono" style="color:#a3e635">GROUP</span></td><td>Test Set (Story · obligatorio)</td><td class="m">ATS: {US_ID}: {story title}</td><td class="m">ATS: PROJ-123: Apply discount at checkout</td></tr>
+      <tr><td><span class="mono" style="color:#a3e635">GROUP</span></td><td>Test Set (Feature · opcional)</td><td class="m">TS: {EPIC|module}: Validate {feature}</td><td class="m">TS: GX-101: Validate credit card payment</td></tr>
       <tr><td><span class="mono" style="color:#fbbf24">CONTAINER</span></td><td>Plan / Run</td><td class="m">{ACRONYM}: {scope}: {desc}</td><td class="m">ATP: PROJ-123: … · STR: Sprint#30: Regression Testing</td></tr>
-      <tr><td><span class="mono" style="color:#fbbf24">CONTAINER</span></td><td>ReTest · PRC · TS</td><td class="m">ReTest: {BUG}: … · PRC: {COMPONENT}: {state} · TS: {EPIC}: Validate {feature}</td><td class="m">ReTest: GX-202: … · PRC: Payment: … · TS: GX-101: Validate …</td></tr>
+      <tr><td><span class="mono" style="color:#fbbf24">CONTAINER</span></td><td>ReTest · Precondition</td><td class="m">ReTest: {BUG}: … · Precondition (sin acrónimo): {COMPONENT}: {state}</td><td class="m">ReTest: GX-202: … · Payment: Authenticated user with a saved card</td></tr>
       <tr><td><span class="mono" style="color:#a78bfa">CODE</span></td><td>@atc · ATC · file</td><td class="m">@atc('KEY') · {verb}{Res}{Scen} · {verb}{Feat}.test.ts</td><td class="m">@atc('PROJ-101') · applyDiscount.test.ts</td></tr>
       <tr><td><span class="mono" style="color:#a78bfa">CODE</span></td><td>components</td><td class="m">{Resource}Api · {Page}Page · {Domain}Steps · {Type}Fixture</td><td class="m">UsersApi · LoginPage · AuthSteps</td></tr>
       <tr><td><span class="mono" style="color:#a78bfa">CODE</span></td><td>tags</td><td class="m">@critical @smoke @regression @e2e @integration @flaky</td><td class="m">@integration (no @api)</td></tr>

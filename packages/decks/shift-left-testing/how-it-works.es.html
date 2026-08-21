@@ -481,7 +481,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     </div>
     <div class="wf-row">
       <div class="wf-node"><span class="wf-num">0</span>Session Init</div>
-      <div class="wf-what">Resume check · modalidad TMS A/B · carga <b>/acli</b> (+ /xray-cli opt-in) · verifica <b>.context/</b> · resuelve candidatos · crea <b>.session/&lt;batch-id&gt;/</b></div>
+      <div class="wf-what">Resume check · modalidad TMS A/B · carga <b>/acli</b> · verifica <b>.context/</b> · resuelve candidatos · crea <b>.session/&lt;batch-id&gt;/</b></div>
       <div class="wf-side"><span class="fb">falta contexto → /project-discovery</span></div>
     </div>
     <div class="wf-row">
@@ -497,7 +497,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     <div class="wf-row">
       <div class="wf-node"><span class="wf-num">3</span>Handoff ×N</div>
       <div class="wf-what">6 mutaciones Jira por Story · labels · qa_assignee · transición <b>Backlog → Shift-Left QA → Estimation</b> y STOP</div>
-      <div class="wf-side"><span class="fb">campo ausente → comment fallback</span><span class="fb">Modalidad A → Test Plan opt-in</span></div>
+      <div class="wf-side"><span class="fb">campo ausente → comment fallback</span><span class="fb">subtask [QA] Shift-Left Review: In Progress al aceptar → Done al handoff</span></div>
     </div>
     <div class="wf-row">
       <div class="wf-node okey"><span class="wf-num">✓</span>Batch report</div>
@@ -521,8 +521,8 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     <thead><tr><th>Capacidad</th><th>Necesidad</th><th>Probe / por qué</th></tr></thead>
     <tbody>
       <tr><td><b>/acli</b> — issue tracker</td><td class="ok">REQUIRED</td><td><code>bun run jira:check</code> — todo el output del refinamiento aterriza en Jira</td></tr>
-      <tr><td><b>Modalidad TMS resuelta</b></td><td class="ok">REQUIRED</td><td>A: Xray · B: Jira-native — decide dónde vive el ATP pre-sprint</td></tr>
-      <tr><td><b>/xray-cli</b> + creds <code>XRAY_*</code></td><td class="opt">OPTIONAL</td><td>Solo si el usuario opta por un Test Plan por Story (default: NO)</td></tr>
+      <tr><td><b>Modalidad TMS resuelta</b></td><td class="ok">REQUIRED</td><td>A: Xray · B: Jira-native — se persiste para el pipeline; el ATP pre-sprint vive en el campo en AMBAS</td></tr>
+      <tr><td><b>/xray-cli</b> + creds <code>XRAY_*</code></td><td class="opt">N/A</td><td>No se usa pre-sprint: el ATP es field-first — el Test Plan item lo crea <code>/sprint-testing</code> Stage 1 desde el campo</td></tr>
       <tr><td><b>Contexto de negocio</b></td><td class="ok">REQUIRED</td><td><code>.context/business/*</code> + <code>master-test-plan.md</code> — sin ellos, preguntas vagas al PO</td></tr>
       <tr><td><b>Lista de candidatos</b></td><td class="ok">REQUIRED</td><td>IDs explícitos o JQL de backlog — tamaño confirmado con el usuario</td></tr>
     </tbody>
@@ -709,13 +709,13 @@ h4,.h4{font-size:17px;color:var(--text-1)}
   <div class="steps s3 anim-stagger-list">
     <div class="step"><div class="num">1</div><h4>ACs → campo</h4><p>Refined ACs al campo <code>acceptance_criteria</code>. Fallback si no existe: comentario "## Acceptance Criteria". Verifica con re-sync.</p></div>
     <div class="step"><div class="num">2</div><h4>Descripción</h4><p>Append de "QA Refinements (Shift-Left Analysis)": edge cases + reglas aclaradas + preguntas. Leer primero — NUNCA sobrescribir.</p></div>
-    <div class="step"><div class="num">3</div><h4>ATP</h4><p>Crea o actualiza el Test Plan <b>"ATP: {STORY-KEY}: {título}"</b> bajo el epic QA Master Test Plan + link a la Story — el MISMO issue que <code>/sprint-testing</code> Stage 1 refinará; nunca un segundo plan con variante de título. El campo <code>acceptance_test_plan</code> también se puebla (y es el fallback si el work type Test Plan no existe).</p></div>
+    <div class="step"><div class="num">3</div><h4>ATP</h4><p>Puebla el campo <code>acceptance_test_plan</code> con el ATP pre-sprint (madurez outline) — <b>field-first</b>: el Test Plan item <b>"ATP: {STORY-KEY}: {título}"</b> NO se crea aquí; lo crea <code>/sprint-testing</code> Stage 1 desde este MISMO campo, sin variante de título. Fallback si el campo no existe: comentario "## Acceptance Test Plan".</p></div>
     <div class="step"><div class="num">4</div><h4>Comentario</h4><p>UN comentario de handoff: puntero al campo (@PO / @Dev-lead solo si están en <code>project.yaml</code>). Body completo inline SOLO si el campo no existe.</p></div>
     <div class="step"><div class="num">5</div><h4>Labels + QA Assignee</h4><p><code>shift-left-reviewed</code> + <code>shift-left-{YYYY-MM-DD}</code>. <code>qa_assignee</code> = self, read-before-write, vía REST PUT (acli no escribe customfields).</p></div>
     <div class="step"><div class="num">6</div><h4>Transición + traza</h4><p>analyze → estimate y STOP en Estimation. Verifica con re-sync que el ATP aterrizó en el campo: el comentario es un PUNTERO, y el espejo byte a byte solo aplica en modo fallback (campo ausente) — <code>fix-traceability</code> lo audita después.</p></div>
   </div>
   <div class="callout" style="margin-top:24px"><h4>Nunca ADF a mano</h4><p>El body se autoría en Markdown local y <code>/acli</code> lo convierte en su ruta md-to-ADF. ADF artesanal corrompe el body en Jira (y el espejo byte a byte del modo fallback).</p></div>
-  <div class="notes">Secuencial, una Story a la vez, para que revises el estado de Jira antes de la siguiente mutación. El subagente devuelve un log por Story: atp_container, labels, transiciones, trace_status.</div>
+  <div class="notes">Secuencial, una Story a la vez, para que revises el estado de Jira antes de la siguiente mutación. El subagente devuelve un log por Story: atp_field, labels, transiciones, trace_status.</div>
 </section>
 
 <!-- 11. PHASE 3 · GUARDRAILS -->
@@ -740,7 +740,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
       <ul class="blist tight">
         <li>Sección ya en la descripción → skip · campo ATP → overwrite OK · comentario ya existente → skip</li>
         <li>Labels son set-based · transición lee el status antes de aplicar</li>
-        <li>Test Plan (Modalidad A): busca por título antes de crear</li>
+        <li>Subtask <b>[QA] Shift-Left Review</b>: find-or-create bajo la Story, nunca duplica (sin subtasks en el proyecto → skip con warning)</li>
         <li><b>Error de subagente</b> → STOP, estado parcial reportado, opciones retry / skip / abort. Sin auto-rollback: las mutaciones quedan registradas en el batch report para retomar.</li>
       </ul>
     </div>
