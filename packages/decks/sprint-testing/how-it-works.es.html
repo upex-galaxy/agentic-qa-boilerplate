@@ -456,7 +456,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <span class="warr">→</span>
         <div class="wnode"><span class="wn">Entry</span><div class="wt">Session Start</div><div class="wd">Sync ticket · carpeta PBI · plan</div><div class="wg">⏸ explica la Story y ESPERA tu OK</div></div>
         <span class="warr">→</span>
-        <div class="wnode"><span class="wn">Stage 1</span><div class="wt">Planning</div><div class="wd">Triage · doctrina · ATP + ATR</div><div class="wg">bug: veto SKIP → solo Code Review</div></div>
+        <div class="wnode"><span class="wn">Stage 1</span><div class="wt">Planning</div><div class="wd">Triage · doctrina · ATS + ATP + ATR</div><div class="wg">bug: veto SKIP → solo Code Review</div></div>
         <span class="warr">→</span>
         <div class="wnode"><span class="wn">Stage 2</span><div class="wt">Execution</div><div class="wd">Smoke · trifuerza UI/API/DB</div><div class="wg">smoke No-Go → STOP · bug bloqueante → ⏸</div></div>
         <span class="warr">→</span>
@@ -483,8 +483,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <table class="tt sm mt-m">
       <thead><tr><th>Modo</th><th>Entra</th><th>Sale</th></tr></thead>
       <tbody>
-        <tr><td><b>Single — User Story</b></td><td>Un ID de Story en Ready For QA</td><td>ATP + ATR + QA comment · ticket transicionado a QA approved · TC outlines (native) o Tests ejecutados (xray)</td></tr>
-        <tr><td><b>Single — Bug</b></td><td>Un ID de Bug con fix en staging</td><td>Decisión de triage → solo Code Review, O verificación completa con ATP + ATR (sin TCs en el sprint)</td></tr>
+        <tr><td><b>Single — User Story</b></td><td>Un ID de Story en Ready For QA</td><td>ATS + ATP + ATR + QA comment · ticket transicionado a QA approved · TC outlines (native) o Tests agrupados en el ATS y ejecutados (xray)</td></tr>
+        <tr><td><b>Single — Bug</b></td><td>Un ID de Bug con fix en staging</td><td>Decisión de triage → solo Code Review, O verificación completa con ATP + ATR (xray: 1 Test de repro en-sprint · native: sin TCs, difiere a Stage 4)</td></tr>
         <tr><td><b>Batch sprint</b></td><td>El framework <span class="mono">SPRINT-N-TESTING.md</span></td><td>Artefactos por ticket + framework actualizado + resumen · con soporte de interrupción y resume</td></tr>
       </tbody>
     </table>
@@ -549,7 +549,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <h2 class="h2 md">Session Start — sync, contexto, carpeta PBI</h2>
     <div class="grid g2 mt-m" style="align-items:start">
       <ul class="big tight tight">
-        <li><b>Resuelve la modalidad TMS.</b> Por excelencia ATP = issue <span class="mono">Test Plan</span> y ATR = <span class="mono">Test Execution</span>; el custom field de la Story es solo fallback.</li>
+        <li><b>Resuelve la modalidad TMS.</b> Por excelencia ATP = issue <span class="mono">Test Plan</span>, ATR = <span class="mono">Test Execution</span> y ATS = <span class="mono">Test Set</span> per-Story (tercer artefacto canónico); el custom field de la Story es solo fallback.</li>
         <li><b>Trae el ticket:</b> <span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span> → lee los <span class="mono">.md</span> sincronizados. NUNCA <span class="mono">acli view</span> para custom fields (devuelve <span class="mono">null</span>).</li>
         <li><b>Extrae el Team Discussion</b> de <span class="mono">comments.md</span>: decisiones, edge cases, bloqueos.</li>
         <li><b>Carga contexto + código:</b> business maps, master test plan, repos backend/frontend, datos candidatos vía DBHub.</li>
@@ -579,10 +579,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <tr><td><b>1-2 · Análisis</b></td><td>Contexto de negocio + técnico · ambigüedades y gaps marcados <span class="mono">NEEDS PO/DEV CONFIRMATION</span></td></tr>
         <tr><td><b>3 · ACs refinadas</b></td><td>Cada AC reescrita Given/When/Then con datos específicos</td></tr>
         <tr><td><b>4-5 · Test outlines</b></td><td>Derivación por técnica (1:N) · nombre <span class="mono">Should &lt;BEHAVIOR&gt; &lt;CONDITION&gt;</span> · edge cases + estrategia de datos</td></tr>
-        <tr><td><b>6 · Trazabilidad</b></td><td>ATP + ATR creados en Jira: <span class="mono">ATP: {KEY}: {título}</span> (Test Plan → epic QA Master Test Plan) · <span class="mono">ATR: {KEY}: Story Testing</span> (Test Execution → epic QA Test Artifacts)</td></tr>
+        <tr><td><b>6 · Trazabilidad</b></td><td>Orden Set-first (xray): <span class="mono">ATS: {KEY}: {título}</span> (Test Set → epic QA Test Artifacts, components de la Story) con TODOS los TCs → <span class="mono">ATP: {KEY}: {título}</span> (Test Plan → epic QA Master Test Plan, creado desde el field del shift-left) → <span class="mono">ATR: {KEY}: Story Testing</span> (Test Execution → epic QA Test Artifacts) SIEMPRE con Test Environment (<span class="mono">active_env</span>) · listas de Plan/Exec derivadas de la membership del ATS</td></tr>
       </tbody>
     </table>
-    <div class="card mt-m"><p class="small"><b>Verificación de traza antes de tocar un browser (Gotcha 9).</b> <span class="dim">Story ↔ ATP y Story ↔ ATR («is tested by») · cada TC ↔ ATP (designed-by) y TC ↔ ATR (executed-by). Los TCs <b>NO</b> se linkean directo a la Story — agregan vía ATP/ATR.</span></p></div>
+    <div class="card mt-m"><p class="small"><b>Verificación de traza antes de tocar un browser (Gotcha 9).</b> <span class="dim">El link ATS ↔ Story («is tested by») es el que llena el panel de coverage — verificado live. Los links ATP ↔ Story y ATR ↔ Story son administrativos: cero coverage. Cascade de resolución: TC → ATS → Story (primaria) · TC → ATP → Story (placement, sin coverage) · TC → Story directo (last resort) · si nada: orphan.</span></p></div>
     <div class="notes">El ATP es la spec del testing. Vive en Jira (S14): se escribe en el issue Test Plan (o en el custom field como fallback), se sincroniza hacia abajo y se relee — nunca se autora el .md local a mano.</div>
   </section>
 
@@ -614,7 +614,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <table class="tt sm mt-m">
       <thead><tr><th></th><th>Modality jira-native</th><th>Modality jira-xray (<span class="mono">bun xray</span>)</th></tr></thead>
       <tbody>
-        <tr><td><b>Stage 1</b></td><td><b>Solo outlines</b> en el ATP (nombre + 1 línea). Sin issues <span class="mono">Test</span>: un Test nativo es documentación y espera al gate de Stage 4.</td><td><b>Crea + ejecuta</b> issues <span class="mono">Test</span> para los outlines, a detalle ejecutable, vía un Test Execution — el Test ES la unidad de ejecución de Xray.</td></tr>
+        <tr><td><b>Stage 1</b></td><td><b>Solo outlines</b> en el ATP (nombre + 1 línea). Sin issues <span class="mono">Test</span>: un Test nativo es documentación y espera al gate de Stage 4.</td><td><b>Crea + ejecuta</b> issues <span class="mono">Test</span> para los outlines, a detalle ejecutable, agrupados en el ATS (Test Set per-Story) y ejecutados vía un Test Execution — el Test ES la unidad de ejecución de Xray.</td></tr>
         <tr><td><b>Stage 2</b></td><td>Corre los outlines + explora más allá; PASS/FAIL en la memoria de sesión.</td><td>Ejecuta los Tests + explora. Una sonda exploratoria se vuelve Test solo si halló un defecto o vale repetirla.</td></tr>
         <tr><td><b>Stage 4</b></td><td><b>Crea</b> Tests solo para lo regression-worthy, tras el ROI.</td><td><b>Selecciona + promueve</b> al Regression Test Plan + Test Set, y los enriquece.</td></tr>
       </tbody>
@@ -639,7 +639,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </table>
     <div class="grid g2 mt-m" style="align-items:start">
       <div class="card"><p class="lbl">Sin veto → risk score</p><p class="small mt-s">Feature nueva <b>+3</b> · datos dinámicos <b>+3</b> · ACs explícitas <b>+2</b> · user-facing <b>+2</b> · esfuerzo &gt;4h <b>+2</b> · prioridad alta <b>+1</b> · multi-componente <b>+1</b> → <b>0-3 LOW</b> (Code Review) · <b>4-7 MEDIUM</b> (ATP completo) · <b>8+ HIGH</b> (ATP + edges extendidos). El resultado se presenta al usuario.</p></div>
-      <div class="card"><p class="lbl">Reglas del bug run</p><p class="small mt-s">ATP + ATR pero <b>sin TCs en el sprint</b>: el bug ES el retest inmediato. Ejecuta: reproducir el original → verificar el fix → regresión en áreas adyacentes → DB si es de integridad. <b>Regla de oro:</b> si amerita regresión, Stage 4 termina con un Test persistente — reusar el fallido o crear uno.</p></div>
+      <div class="card"><p class="lbl">Reglas del bug run</p><p class="small mt-s">ATP + ATR de retest. <b>jira-xray:</b> 1 Test de repro creado en-sprint al verificar el fix (1:N si el scope lo justifica), ejecutado en la Execution <span class="mono">ReTest:</span>. <b>jira-native:</b> sin TCs en el sprint — difiere a Stage 4, como siempre. Ejecuta: reproducir el original → verificar el fix → regresión en áreas adyacentes → DB si es de integridad. <b>Regla de oro:</b> si amerita regresión, Stage 4 termina con un Test persistente — reusar el de repro o crear uno.</p></div>
     </div>
     <div class="notes">Anti-patrón S5: ninguna falla se salta el árbol veto → risk-score → severidad + root cause. Un typo hardcodeado hace SKIP; cualquier cosa que toque dinero, datos o auth se prueba aunque el diff luzca trivial.</div>
   </section>
@@ -786,8 +786,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="card"><p class="lbl">Stage 6</p><p class="small mt-s"><span class="mono">/regression-testing</span> — suites en CI + veredicto GO / CAUTION / NO-GO.</p></div>
       </div>
       <div class="grid g2 mt-m">
-        <div class="card"><p class="lbl">Artefactos que deja un run</p><p class="small mt-s">ATP + ATR en Jira · QA comment · ticket transicionado · bugs clasificados y linkeados · carpeta PBI con <span class="mono">context.md</span> y <span class="mono">evidence/</span> · <span class="mono">test-session-memory.md</span> en <span class="mono">.session/sprint-testing/&lt;scope&gt;/</span> · sesión archivada.</p></div>
-        <div class="card card-accent"><p class="lbl">Tres reglas de oro</p><p class="small mt-s"><b>1</b> El orden es ley: smoke antes de trifuerza, comment antes de transición. <b>2</b> Triage de todo: el veto gana, un FAIL no es auto-Critical. <b>3</b> Trazable o no ocurrió: Story↔ATP↔ATR↔TC.</p></div>
+        <div class="card"><p class="lbl">Artefactos que deja un run</p><p class="small mt-s">ATS + ATP + ATR en Jira · QA comment · ticket transicionado · bugs clasificados y linkeados · carpeta PBI con <span class="mono">context.md</span> y <span class="mono">evidence/</span> · <span class="mono">test-session-memory.md</span> en <span class="mono">.session/sprint-testing/&lt;scope&gt;/</span> · sesión archivada.</p></div>
+        <div class="card card-accent"><p class="lbl">Tres reglas de oro</p><p class="small mt-s"><b>1</b> El orden es ley: smoke antes de trifuerza, comment antes de transición. <b>2</b> Triage de todo: el veto gana, un FAIL no es auto-Critical. <b>3</b> Trazable o no ocurrió: la cascade TC→ATS→Story (el link ATS↔Story es el coverage; ATP/ATR son administrativos).</p></div>
       </div>
       <p class="small dim mt-m">Pruébalo: <span class="mono">«test UPEX-277»</span> · ← → navegar · S presentador · O overview</p>
     </div>

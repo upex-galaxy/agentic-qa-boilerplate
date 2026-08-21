@@ -552,7 +552,7 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
       <tr><td><b>ATP</b></td><td>Issue <b>Test Plan</b> «ATP: {STORY}: {título}»</td><td>Mismo issue Test Plan <b>por excelencia</b>; fallback: campo de la Story → comment</td></tr>
       <tr><td><b>ATR</b></td><td>Issue <b>Test Execution</b> con Test Runs por TC</td><td>Mismo issue Test Execution; fallback: campo de la Story → comment</td></tr>
       <tr><td><b>TC</b></td><td>Xray <b>Test</b> (Manual / Cucumber / Generic)</td><td>Issue type <b>Test</b> nativo; la Description lleva el template completo</td></tr>
-      <tr><td><b>Test Set / Pre-Condition</b></td><td>First-class</td><td>No existen → labels + agrupación por Epic</td></tr>
+      <tr><td><b>ATS (Test Set) / Pre-Condition</b></td><td>First-class; membership Xray-internal (GraphQL, nunca issue link)</td><td>Work type presente → mismo item, membership = links <span class="mono">TC→ATS</span>; ausente → links directos TC↔Story</td></tr>
       <tr><td><b>Result sync (CI)</b></td><td><span class="mono">Import Results</span> JUnit/Cucumber → runs auto</td><td>Script actualiza Test Status + comment por build</td></tr>
     </tbody>
   </table>
@@ -715,30 +715,34 @@ Component Value = ROI × (1 + 0.2 × N)
   <h2 class="h2" data-anim="fade-up">Epic · Test Set · Test Plan — tres cosas distintas</h2>
   <div class="grid g3 mt-m anim-stagger-list">
     <div class="card"><h4>Regression Epic</h4><p class="small dim">= el epic de proceso <b>«QA Test Repository»</b>. Resolver <i>found-or-created</i> por JQL (<span class="mono">type = Epic AND summary ~ "QA Test Repository"</span>); si falta, <b>pregunta antes de crear</b> y cachea la key en <span class="mono">.agents/project.yaml</span>. Todo TC documentado se parenta aquí — nunca a un epic de producto.</p><span class="tag mt-s">paraguas del repositorio</span></div>
-    <div class="card"><h4>Test Set <span class="tag warn">solo xray</span></h4><p class="small dim"><b>Agrupación por feature, 1:1 con el Epic</b>: <span class="mono">Test Set: &lt;EPIC_KEY&gt; &lt;feature&gt;</span>. Se crea <i>lazy</i> en esta fase solo si una promoción lo necesita — <b>preguntando primero</b>. Solo entran los Tests promovidos (C/M). Native: no existe → label de feature/Epic (<span class="mono">epic-&lt;KEY&gt;</span>).</p><span class="tag mt-s">feature</span></div>
+    <div class="card"><h4>Test Set — dos altitudes</h4><p class="small dim"><b>ATS per-Story (obligatorio)</b>: <span class="mono">ATS: {US_ID}: {story title}</span> — tercer artefacto de la familia ATP/ATR/ATS, parent «QA Test Artifacts», components heredados de la Story. Su link <span class="mono">is tested by</span> a la Story es lo que llena el panel de coverage. <b><span class="mono">TS:</span> feature-level (opcional)</b>: <span class="mono">TS: {EPIC|module}: Validate {feature}</span> — agrupa smoke/regression, components opcional. Native sin work type Test Set → links directos TC↔Story.</p><span class="tag mt-s">coverage</span></div>
     <div class="card"><h4>Test Plan</h4><p class="small dim"><b>Alcance de ejecución / regression</b> — el conjunto de Tests que corre para un release o ciclo. El ATP en jira-xray ES un issue Test Plan (parent: epic «QA Master Test Plan»).</p><span class="tag mt-s">ejecución</span></div>
   </div>
-  <div class="callout"><h4>Modelo de tres ejes (defect-management-doctrine.md)</h4><p><b>Parent</b> = bucket de proceso QA (Test → «QA Test Repository» · ATP → «QA Master Test Plan» · ATR → «QA Test Artifacts») · <b>issue-link</b> = la Story origen · <b>components</b> = el módulo de producto afectado. Tres ejes separados — el parent nunca lleva la traza de producto.</p></div>
-  <div class="notes">La gente fusiona estos contenedores rutinariamente. Epic = repositorio completo; Test Set = los Tests de regression de UNA feature; Test Plan = alcance de ejecución. En jira-native no hay entidad Test Set: la misma agrupación se logra con el Regression Epic + un label.</div>
+  <div class="callout"><h4>Modelo de tres ejes (defect-management-doctrine.md)</h4><p><b>Parent</b> = bucket de proceso QA (Test → «QA Test Repository» · ATP → «QA Master Test Plan» · ATR y ATS → «QA Test Artifacts») · <b>issue-link</b> = la Story origen · <b>components</b> = el módulo de producto afectado. Tres ejes separados — el parent nunca lleva la traza de producto.</p></div>
+  <div class="notes">La gente fusiona estos contenedores rutinariamente. Epic = repositorio completo; ATS = el Set per-Story que da coverage (TS: opcional agrupa por feature); Test Plan = alcance de ejecución. En jira-native con work type Test Set el ATS existe igual (membership = links TC→ATS); sin work type, links directos TC↔Story + Regression Epic + label.</div>
 </section>
 
 <!-- 13 · FASE 3 ENLAZADO + NAMING -->
 <section class="slide" data-title="Fase 3 · enlazado + naming">
   <p class="kicker">fase 3 — document · el orden no es opcional</p>
-  <h2 class="h2" data-anim="fade-up">ATP → ATR → enlazar → <span class="grad">recién entonces</span> cada TC</h2>
+  <h2 class="h2" data-anim="fade-up">Set-first: ATS → ATP → ATR → <span class="grad">recién entonces</span> cada TC</h2>
   <div class="grid g2t mt-m">
-    <div class="mk">1  Create ATP   → link a la US («is tested by»)
-2  Create ATR   → link a la US («is tested by»)
-3  Update ATP   → link al ATR (plan/results, 1:1)
+    <div class="mk">1  Find-or-create ATS → link a la US
+     («is tested by») ← ESTE link llena
+     el panel de coverage
+2  ATP (item nacido en sprint-testing Stage 1;
+     find-or-create aquí SOLO en module-driven)
+     → link a la US (administrativo, sin coverage)
+3  ATR → link a la US (administrativo)
+     + link ATP↔ATR (plan/results, 1:1)
 4  por cada TC:
-     Create TC  → «is designed by» ATP
-                → «is executed by» ATR
-     xray: el TC NO se enlaza a la Story
-     (agrega vía ATP/ATR; evita ruido)
-     native: Story↔TC es el edge disponible
+     membership TC ∈ ATS
+     (xray: GraphQL / native: link TC→ATS)
+     listas de ATP/ATR derivadas del ATS
+     TC→Story directo = last resort válido
 5  por cada TC PROMOVIDO:
-     xray  → Test Set + Regression Test Plan
-             + label regression-candidate
+     xray  → TS: feature (opcional) + Regression
+             Test Plan + label regression-candidate
      native→ label de feature/Epic</div>
     <div>
       <table class="dtable tight" style="margin-top:0">
@@ -746,14 +750,15 @@ Component Value = ROI × (1 + 0.2 × N)
         <tbody>
           <tr><td><b>ATP</b></td><td><span class="mono">ATP: {STORY-KEY}: {story title}</span></td></tr>
           <tr><td><b>ATR</b></td><td><span class="mono">ATR: {STORY-KEY}: Story Testing</span></td></tr>
+          <tr><td><b>ATS</b></td><td><span class="mono">ATS: {US_ID}: {story title}</span> — obligatorio per-Story, aunque tenga 1 TC</td></tr>
           <tr><td><b>TC</b></td><td><span class="mono">{US_ID}: TC#: should &lt;outcome&gt; [when &lt;condition&gt;] [given &lt;pre&gt;]</span> — prefijo SIEMPRE el US key, en toda modalidad</td></tr>
-          <tr><td><b>Agrupación</b></td><td><span class="mono">Validate &lt;feature&gt;</span> reservado para el nivel de grupo (Test Set / <span class="mono">describe()</span>)</td></tr>
+          <tr><td><b>Agrupación</b></td><td><span class="mono">TS: {EPIC|module}: Validate {feature}</span> — agrupador feature-level opcional (Test Set / <span class="mono">describe()</span>)</td></tr>
         </tbody>
       </table>
-      <div class="callout warn" style="margin-top:12px"><h4>Crear TCs primero = huérfanos</h4><p>Si el TC nace antes del ATP/ATR quedan referencias rotas y <span class="mono">/fix-traceability</span> es la única salida. D7: un ATR nunca se enlaza a dos ATPs (1:1). Rechaza títulos «Login test», «Login - error», «TC1: Test form».</p></div>
+      <div class="callout warn" style="margin-top:12px"><h4>Huérfano = TC sin NINGÚN camino a la Story</h4><p>Ni ATS, ni ATP, ni link directo → <span class="mono">/fix-traceability</span> verifica la cascade <span class="mono">TC→ATS→Story → TC→ATP→Story → TC→Story</span>. D7: un ATR nunca se enlaza a dos ATPs (1:1). Rechaza títulos «Login test», «Login - error», «TC1: Test form».</p></div>
     </div>
   </div>
-  <div class="notes">El modelo de trazabilidad jira-xray: la Story se enlaza SOLO a su ATP y ATR; los TCs agregan a través de ellos (el ATP "diseña" los TCs, el ATR los "ejecuta"). La cobertura AC→TC se registra en la matriz del ATP, no como issuelink Story↔TC. En native, sin issue ATP/ATR de por medio, Story↔TC sí es el edge de trazabilidad.</div>
+  <div class="notes">Coverage verificado live: SOLO el link ATS→Story (o los links directos Test↔Story) llenan el panel; los links ATP→Story y ATR→Story son trazabilidad administrativa. Cascade de resolución: TC→ATS→Story (primaria) → TC→ATP→Story (placement, no cubre panel) → TC→Story directo (last resort válido — el defecto es no tener ningún camino). En xray la membership es Xray-internal (GraphQL); en native se expresa como links TC→ATS.</div>
 </section>
 
 <!-- 14 · FASE 3 CREAR TCs -->
@@ -874,9 +879,9 @@ Component Value = ROI × (1 + 0.2 × N)
   <div class="grid g3 mt-m anim-stagger-list">
     <div class="card"><h4>Cómo invocarlo</h4><p class="small dim"><kbd>/test-documentation</kbd> o frases naturales: «document tests», «ROI analysis», «which tests to automate», «Candidate vs Manual», «turn this bug into a regression test», «stage 4».</p></div>
     <div class="card"><h4>Handoffs en el pipeline</h4><p class="small dim"><b>Entra</b> desde <span class="mono">/sprint-testing</span> (Story QA Approved, bug cerrado). <b>Sale</b> hacia <span class="mono">/test-automation</span>, que re-alcanza los Candidates: module → Macro · ticket → Medium · bug → Micro (ad-hoc entra donde encaje). Manual y Deferred son terminales.</p></div>
-    <div class="card"><h4>Artefactos que deja</h4><p class="small dim">TCs enlazados US↔ATP↔ATR↔TC en el TMS · Test Set / labels de feature · coverage matrix en <span class="mono">.context/reports/</span> · un md por TC en <span class="mono">test-cases/</span> · sesión archivada en <span class="mono">.session/.archive/</span>.</p></div>
+    <div class="card"><h4>Artefactos que deja</h4><p class="small dim">TCs enlazados US↔ATS↔ATP↔ATR↔TC en el TMS · ATS per-Story + TS/labels de feature · coverage matrix en <span class="mono">.context/reports/</span> · un md por TC en <span class="mono">test-cases/</span> · sesión archivada en <span class="mono">.session/.archive/</span>.</p></div>
   </div>
-  <div class="callout ok"><h4>Las tres reglas para llevar</h4><p><b>1.</b> Por defecto, Deferred — 3 filtros + ROI = (F×I×S)/(E×D). <b>2.</b> Una (precondición + acción) = un TC; los rasgos transversales viven dentro de los tests. <b>3.</b> ATP → ATR → enlazar → TC, y un bug importante siempre termina con un Test.</p></div>
+  <div class="callout ok"><h4>Las tres reglas para llevar</h4><p><b>1.</b> Por defecto, Deferred — 3 filtros + ROI = (F×I×S)/(E×D). <b>2.</b> Una (precondición + acción) = un TC; los rasgos transversales viven dentro de los tests. <b>3.</b> Set-first: ATS → ATP → ATR → TC, y un bug importante siempre termina con un Test.</p></div>
   <div class="notes">Cierre: Stage 4 es el puente entre la QA manual (Stages 1-3) y la automatización (Stage 5). La IA acelera el oficio — el criterio y las confirmaciones siguen siendo del humano.</div>
 </section>
 

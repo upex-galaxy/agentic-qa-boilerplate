@@ -713,8 +713,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="card card-soft"><h4><span class="mono">BEHAVIOR</span> — el comportamiento</h4><p class="dim">qué hace el sistema: <span class="mono">log in successfully</span>, <span class="mono">show an authentication error</span>, <span class="mono">create the order</span>.</p></div>
     <div class="card card-soft"><h4><span class="mono">CONDITION</span> — la condición que distingue</h4><p class="dim"><span class="mono">when credentials are valid</span>, <span class="mono">when password is incorrect</span>, <span class="mono">when exceeding 5 failed attempts</span>.</p></div>
   </div>
-  <div class="callout mt-m"><h4>Reglas estructurales</h4><p>Separador literal <span class="mono">: </span> (dos puntos + espacio). El verbo <span class="mono">should</span> abre el comportamiento; el conector <span class="mono">when</span> (o <span class="mono">if</span>) introduce la condición — opcional, igual que un <span class="mono">given &lt;precondición&gt;</span> al final. <span class="mono">TC#</span> = <span class="mono">TC</span> + número, sin guion ni ceros (<span class="mono">TC1</span>, no <span class="mono">TC-01</span>). El prefijo es <b>SIEMPRE el US_ID</b> de la Story, en toda modalidad; la membresía a un Test Set es un <b>link</b>, nunca el prefijo.</p></div>
-  <div class="notes">Formato: {US_ID}: TC#: should <BEHAVIOR> [when/if <CONDITION>] [given <PRECONDITION>]. El prefijo es SIEMPRE el US_ID de la Story en toda modalidad — la membresía a un Test Set es un link, nunca el prefijo. El verbo del TC es should (BDD); Validate se reserva para el Set/Suite (slide siguiente). El vocabulario sale del domain-glossary — términos canónicos.</div>
+  <div class="callout mt-m"><h4>Reglas estructurales</h4><p>Separador literal <span class="mono">: </span> (dos puntos + espacio). El verbo <span class="mono">should</span> abre el comportamiento; el conector <span class="mono">when</span> (o <span class="mono">if</span>) introduce la condición — opcional, igual que un <span class="mono">given &lt;precondición&gt;</span> al final. <span class="mono">TC#</span> = <span class="mono">TC</span> + número, sin guion ni ceros (<span class="mono">TC1</span>, no <span class="mono">TC-01</span>). El prefijo es <b>SIEMPRE el US_ID</b> de la Story, en toda modalidad; la membresía a un Test Set nunca va en el prefijo (xray: <b>Xray-internal</b>, GraphQL; native: link <span class="mono">TC→ATS</span>).</p></div>
+  <div class="notes">Formato: {US_ID}: TC#: should <BEHAVIOR> [when/if <CONDITION>] [given <PRECONDITION>]. El prefijo es SIEMPRE el US_ID de la Story en toda modalidad — la membresía a un Test Set nunca va en el prefijo (xray: Xray-internal; native: link TC→ATS). El verbo del TC es should (BDD); Validate se reserva para el Set/Suite (slide siguiente). El vocabulario sale del domain-glossary — términos canónicos.</div>
 </section>
 
 <!-- 12. GOOD VS BAD TITLES -->
@@ -772,15 +772,17 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td>User Story</td><td><span class="mono">{KEY}-{n}</span></td><td><span class="mono">PROJ-123</span></td></tr>
       <tr><td>ATP — Story Test Plan</td><td><span class="mono">ATP: {STORY-KEY}: {story title}</span></td><td><span class="mono">ATP: PROJ-123: Apply discount at checkout</span></td></tr>
       <tr><td>ATR — Story Test Execution</td><td><span class="mono">ATR: {STORY-KEY}: Story Testing</span></td><td><span class="mono">ATR: PROJ-123: Story Testing</span></td></tr>
-      <tr><td>STP/STR — Sprint</td><td><span class="mono">STP/STR: Sprint#{N}: Regression[ Testing]</span></td><td><span class="mono">STR: Sprint#30: Regression Testing</span></td></tr>
-      <tr><td><b>Test Set</b> (agrupa)</td><td><span class="mono">TS: {EPIC-KEY|module}: Validate &lt;feature&gt;</span></td><td><span class="mono">TS: GX-101: Validate credit card payment</span></td></tr>
+      <tr><td>STP — Sprint Test Plan</td><td><span class="mono">STP: Sprint#{N}: {objetivo}</span> — lo crea /sprint-testing al abrir el sprint</td><td><span class="mono">STP: Sprint#30: Checkout hardening</span></td></tr>
+      <tr><td>STR — Sprint Test Report</td><td><span class="mono">STR: Sprint#{N}: Regression Testing</span> — nace al cierre del sprint</td><td><span class="mono">STR: Sprint#30: Regression Testing</span></td></tr>
+      <tr><td><b>ATS</b> (coverage, obligatorio per-Story)</td><td><span class="mono">ATS: {US_ID}: {story title}</span></td><td><span class="mono">ATS: PROJ-123: Apply discount at checkout</span></td></tr>
+      <tr><td><b>Test Set feature-level</b> (agrupa, opcional)</td><td><span class="mono">TS: {EPIC-KEY|module}: Validate &lt;feature&gt;</span></td><td><span class="mono">TS: GX-101: Validate credit card payment</span></td></tr>
       <tr><td><b>Test Case</b> (asevera)</td><td><span class="mono">{US_ID}: TC#: should &lt;BEHAVIOR&gt; when &lt;COND&gt;</span></td><td><span class="mono">GX-101: TC1: should log in successfully when…</span></td></tr>
       <tr><td>ReTesting (bug)</td><td><span class="mono">ReTest: {BUG-KEY}: {summary}</span></td><td><span class="mono">ReTest: GX-202: wrong error on bad password</span></td></tr>
-      <tr><td>Precondition</td><td><span class="mono">PRC: {COMPONENT}: {required state}</span></td><td><span class="mono">PRC: Payment: Authenticated user with a saved card</span></td></tr>
+      <tr><td>Precondition</td><td><span class="mono">{COMPONENT}: {required state}</span> — sin prefijo de acrónimo</td><td><span class="mono">Payment: Authenticated user with a saved card</span></td></tr>
     </tbody>
   </table>
-  <div class="callout mt-m"><h4>Dos niveles: <span class="mono">Validate</span> agrupa, <span class="mono">should</span> asevera</h4><p>El <b>Set</b> nombra la feature — <span class="mono">TS: GX-101: Validate login</span> — y bajo él cada <b>TC</b> asevera un comportamiento: <span class="mono">should redirect to dashboard when credentials are valid</span>, <span class="mono">should show an error when password is incorrect</span>. El prefijo acrónimo (<span class="mono">ATP/ATR/STP/STR/TS/PRC</span>) revela altitud y plan-vs-run en el primer token; el verbo te dice el nivel: <span class="mono">Validate</span> = suite, <span class="mono">should</span> = caso.</p></div>
-  <div class="notes">El nombrado embebe la trazabilidad: cada Plan/Run lleva un prefijo acrónimo de 3 letras (ATP/ATR/STP/STR/FTP/FTR) + el key de la cosa bajo prueba; el Set agrupa por feature (TS: {EPIC|module}: Validate <feature>); el TC asevera con should…when y lleva SIEMPRE el prefijo US_ID del Story — la membresía al Set es un link. Validate=nivel suite, should=nivel caso — el verbo señala el nivel.</div>
+  <div class="callout mt-m"><h4>Dos niveles: <span class="mono">Validate</span> agrupa, <span class="mono">should</span> asevera</h4><p>El <b>Set</b> nombra la feature — <span class="mono">TS: GX-101: Validate login</span> — y bajo él cada <b>TC</b> asevera un comportamiento: <span class="mono">should redirect to dashboard when credentials are valid</span>, <span class="mono">should show an error when password is incorrect</span>. El prefijo acrónimo (<span class="mono">ATP/ATR/ATS/STP/STR/TS</span>) revela altitud y plan-vs-run en el primer token; el verbo te dice el nivel: <span class="mono">Validate</span> = suite, <span class="mono">should</span> = caso — y el <b>ATS</b> per-Story lleva el título de la Story, no un Validate.</p></div>
+  <div class="notes">El nombrado embebe la trazabilidad: cada Plan/Run lleva un prefijo acrónimo de 3 letras (ATP/ATR/ATS/STP/STR/FTP) + el key de la cosa bajo prueba; el ATS per-Story (obligatorio) lleva el título de la Story y su link a la Story llena el coverage; el TS: feature-level opcional agrupa (Validate <feature>); el TC asevera con should…when y lleva SIEMPRE el prefijo US_ID del Story — la membership al Set nunca va en el prefijo (xray: Xray-internal; native: link TC→ATS). Validate=nivel suite, should=nivel caso.</div>
 </section>
 
 <!-- 15. CODE-SIDE NAMING -->
@@ -1356,15 +1358,15 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <table class="dtable mt-s" style="font-size:13.5px">
     <thead><tr><th>Artefacto</th><th>Modality jira-xray</th><th>Modality jira-native</th></tr></thead>
     <tbody>
-      <tr><td><b>ATP</b></td><td>Issue <span class="mono">Test Plan</span>, enlazado al Story</td><td>Campo <span class="mono">{{acceptance_test_plan}}</span> del Story (o comment fallback). Sin issue.</td></tr>
-      <tr><td><b>ATR</b></td><td>Issue <span class="mono">Test Execution</span> con Test Runs por TC, Environment, fechas</td><td>Campo <span class="mono">{{acceptance_test_results}}</span> del Story. Sin issue.</td></tr>
+      <tr><td><b>ATP</b></td><td>Issue <span class="mono">Test Plan</span>, enlazado al Story (link administrativo)</td><td>Mismo issue <span class="mono">Test Plan</span> <b>por excelencia</b> (work type nativo); fallback: campo <span class="mono">{{acceptance_test_plan}}</span> → comment</td></tr>
+      <tr><td><b>ATR</b></td><td>Issue <span class="mono">Test Execution</span> con Test Runs por TC, Environment, fechas</td><td>Mismo issue <span class="mono">Test Execution</span>; fallback: campo <span class="mono">{{acceptance_test_results}}</span> → comment</td></tr>
       <tr><td><b>TC</b></td><td>Issue <span class="mono">Test</span> (Manual / Cucumber / Generic)</td><td>Issue type <span class="mono">Test</span> nativo; Description lleva el template completo</td></tr>
-      <tr><td><b>Test Set / Precondition</b></td><td>Issue types de primera clase de Xray</td><td>No existen — labels + agrupación por Epic</td></tr>
+      <tr><td><b>ATS (Test Set) / Precondition</b></td><td>Issue types de primera clase de Xray; membership Xray-internal (nunca issue link)</td><td>Work type presente → mismo item, membership = links <span class="mono">TC→ATS</span>; ausente → links directos TC↔Story</td></tr>
       <tr><td><b>Sync de resultados</b></td><td>CI importa JUnit/Cucumber → Test Runs auto-actualizan</td><td>Script custom actualiza el campo Test Status por TC</td></tr>
     </tbody>
   </table>
   <div class="callout mt-m"><h4>Resuélvela primero (Phase 0)</h4><p>¿El proyecto tiene Xray instalado y licenciado? Auto-resuelve por <span class="mono">{{TMS_CLI}}</span>, luego <span class="mono">master-test-plan.md</span>, luego listando issue types. Solo pregunta si los 3 fallan. Sticky — no la re-resuelvas a mitad de sesión.</p></div>
-  <div class="notes">Una decisión por proyecto, nunca se mezcla (anti-patrón D5). En jira-native ATP/ATR son campos del Story; en xray son issues reales, queryables por JQL y target del import de CI.</div>
+  <div class="notes">Una decisión por proyecto, nunca se mezcla (anti-patrón D5). Items-first en AMBAS modalidades: work type presente → item; el campo del Story es un fallback degradado solo cuando el work type no existe en la instancia. En xray los issues son además queryables por JQL y target del import de CI.</div>
 </section>
 
 <!-- 33. TWO STATUS FIELDS -->
@@ -1418,23 +1420,22 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <!-- 35. TRACEABILITY -->
 <section class="slide" data-title="Trazabilidad">
   <p class="kicker">cómo cuelgan los artefactos</p>
-  <h2 class="h2" data-anim="fade-up">La Cadena US → ATP → ATR → TC</h2>
+  <h2 class="h2" data-anim="fade-up">La Cadena de Coverage: US ← ATS ← TC</h2>
   <div class="terminal mt-s">
     <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>modelo de trazabilidad (jira-xray)</span></div>
 <pre>User Story (PROJ-123)
-   ├── <span class="gk">is tested by</span> ──→ ATP (ATP: PROJ-123: Apply discount at checkout)
-   └── <span class="gk">is tested by</span> ──→ ATR (ATR: PROJ-123: Story Testing)
-            ATP <span class="fn">designs</span>          ATR <span class="fn">executes</span>
-                  ╲              ╱
-                   ▼            ▼
-                  [ TC-1, TC-2, … TC-N ]   <span class="cmt"># cada uno cubre un AC</span>
-<span class="cmt"># El Story enlaza SOLO a ATP y ATR. Los TCs agregan vía ATP/ATR — nunca directo.</span></pre>
+   ├── <span class="gk">is tested by</span> ──→ ATS (ATS: PROJ-123: Apply discount at checkout)  <span class="cmt"># ← COVERAGE (verificado live)</span>
+   ├── <span class="gk">is tested by</span> ──→ ATP (ATP: PROJ-123: Apply discount at checkout)  <span class="cmt"># administrativo — NO llena coverage</span>
+   └── <span class="gk">is tested by</span> ──→ ATR (ATR: PROJ-123: Story Testing)              <span class="cmt"># administrativo</span>
+            ATS <span class="fn">∋</span> [ TC-1, TC-2, … TC-N ]   <span class="cmt"># membership: xray GraphQL / native links TC→ATS</span>
+            <span class="cmt"># listas de ATP/ATR derivadas de la membership del ATS (Set-first)</span>
+<span class="cmt"># Cascade: TC→ATS→Story (primaria) → TC→ATP→Story (placement) → TC→Story directo (last resort)</span></pre>
   </div>
   <div class="grid g2 mt-m">
-    <div class="card card-soft"><h4>jira-xray — indirecto</h4><p class="dim">El TC <b>nunca</b> se enlaza al Story directo. ATP <span class="mono">designs</span> TC, ATR <span class="mono">executes</span> TC. Evita ruido de links. Crea ATP y ATR <b>antes</b> del primer TC.</p></div>
-    <div class="card card-soft"><h4>jira-native — directo</h4><p class="dim">Sin issues ATP/ATR, el TC <b>sí</b> se enlaza al Story vía <span class="mono">is tested by</span> — es la única arista de trazabilidad disponible.</p></div>
+    <div class="card card-soft"><h4>jira-xray — Set-first</h4><p class="dim">El <b>ATS</b> agrupa los TCs (membership Xray-internal, nunca issue link) y su link a la Story es el que llena el panel de coverage. ATP y ATR se enlazan a la Story solo como traza administrativa. Crea el ATS <b>antes</b> del primer TC.</p></div>
+    <div class="card card-soft"><h4>jira-native</h4><p class="dim">Con work type Test Set → mismo modelo: ATS item, membership = links <span class="mono">TC→ATS</span> + link <span class="mono">ATS→Story</span>. Sin work type → el TC se enlaza directo a la Story vía <span class="mono">is tested by</span> — last resort válido de la cascade.</p></div>
   </div>
-  <div class="notes">Orden de linking inviolable: ATP→Story, ATR→Story, ATP↔ATR, luego cada TC→ATP(designs)+ATR(executes). Crear TCs antes deja referencias huérfanas. Todo TC cuelga del Epic de Regresión — el epic «QA Test Repository» (repositorio único).</div>
+  <div class="notes">Orden Set-first: ATS→Story (coverage), ATP→Story y ATR→Story (administrativos), ATP↔ATR 1:1, y los TCs entran por membership del ATS. TC→Story directo ya no es anti-patrón: es el último escalón de la cascade — el defecto es un TC sin NINGÚN camino a la Story (huérfano). Todo TC cuelga del epic «QA Test Repository»; el ATS, del epic «QA Test Artifacts».</div>
 </section>
 
 <!-- 36. THANKS -->

@@ -445,7 +445,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
     <p class="wf-lane">Handoffs</p>
     <div class="row wrap" style="gap:10px">
-      <span class="chip" style="font-size:16px;padding:8px 14px"><span class="dot" style="background:var(--accent)"></span>← /sprint-testing · ATP + ATR por ticket</span>
+      <span class="chip" style="font-size:16px;padding:8px 14px"><span class="dot" style="background:var(--accent)"></span>← /sprint-testing · ATS + ATP + ATR por ticket</span>
       <span class="chip" style="font-size:16px;padding:8px 14px"><span class="dot" style="background:var(--accent-2)"></span>← /test-documentation · Stage 4, TCs + ROI</span>
       <span class="chip" style="font-size:16px;padding:8px 14px"><span class="dot" style="background:var(--good)"></span>→ /regression-testing · Stage 6, GO/NO-GO</span>
     </div>
@@ -480,7 +480,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="grid g3 mt-m anim-stagger-list" data-anim-target>
       <div class="card"><span class="tag tag-test">Test</span><p class="small mt-s"><b>El QUÉ.</b> La especificación de un caso (TC). Manual, Generic o Cucumber.</p></div>
       <div class="card"><span class="tag tag-story">Precondition</span><p class="small mt-s"><b>El ANTES.</b> Estado inicial reutilizable entre Tests.</p></div>
-      <div class="card"><span class="tag tag-story">Test Set</span><p class="small mt-s"><b>El GRUPO.</b> Carpeta lógica: organiza, no ejecuta.</p></div>
+      <div class="card"><span class="tag tag-story">Test Set</span><p class="small mt-s"><b>El GRUPO.</b> En este repo: el <b>ATS</b> per-Story — su link a la Story llena el coverage. Organiza, no ejecuta.</p></div>
       <div class="card"><span class="tag tag-plan">Test Plan</span><p class="small mt-s"><b>El SEGUIMIENTO.</b> El alcance. En este repo: el <b>ATP</b>.</p></div>
       <div class="card"><span class="tag tag-exec">Test Execution</span><p class="small mt-s"><b>El CUÁNDO.</b> El ciclo de corridas. En este repo: el <b>ATR</b>.</p></div>
       <div class="card card-accent"><span class="tag tag-bug">Test Run</span><p class="small mt-s"><b>El RESULTADO.</b> Una corrida de un Test dentro de una Execution. <b>No es un issue</b>: su id es GraphQL.</p></div>
@@ -488,7 +488,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="card card-soft mt-m">
       <p class="small"><b>Claves vs ids:</b> los flags de issue (<span class="mono">--execution · --plan · --set · --tests</span>) aceptan clave Jira (<span class="mono">PROJ-194</span>) o issueId numérico. Los <b>run ids</b> son la excepción: GraphQL, nunca claves Jira.</p>
     </div>
-    <div class="notes">Mnemotécnica: QUÉ / ANTES / GRUPO / SEGUIMIENTO / CUÁNDO + RESULTADO. Mapping del repo: ATP→Test Plan, ATR→Test Execution, TC→Test. Si solo hay credenciales Xray y pasas una clave Jira, el CLI falla con un error guía que apunta a los flags --jira-*.</div>
+    <div class="notes">Mnemotécnica: QUÉ / ANTES / GRUPO / SEGUIMIENTO / CUÁNDO + RESULTADO. Mapping del repo: ATS→Test Set, ATP→Test Plan, ATR→Test Execution, TC→Test. Si solo hay credenciales Xray y pasas una clave Jira, el CLI falla con un error guía que apunta a los flags --jira-*.</div>
   </section>
 
   <!-- 5. FASE 1 · AUTH -->
@@ -551,8 +551,8 @@ $ bun xray precondition update --precondition PROJ-90 --type Generic</div>
       </div>
       <div class="card card-soft">
         <span class="tag tag-story">Test Set</span>
-        <p class="small mt-m"><b>Carpeta lógica</b> para seleccionar pruebas afines rápido. <u>No ejecuta</u> — solo organiza.</p>
-        <div class="mk mt-m" style="font-size:13px">$ bun xray set create --project DEMO --summary "Smoke Tests"
+        <p class="small mt-m"><b>ATS per-Story (obligatorio)</b>: <span class="mono">ATS: {US_ID}: {story title}</span> — su link <span class="mono">is tested by</span> a la Story llena el coverage. <span class="mono">TS: {EPIC|module}: Validate {feature}</span> = agrupador feature-level opcional. <u>No ejecuta</u> — organiza.</p>
+        <div class="mk mt-m" style="font-size:13px">$ bun xray set create --project DEMO --summary "ATS: DEMO-123: Apply discount at checkout"
 $ bun xray set add-tests --set &lt;id&gt; --tests &lt;id1&gt;,&lt;id2&gt;
 $ bun xray set remove-tests --set &lt;id&gt; --tests &lt;id1&gt;
 $ bun xray set get &lt;issueId&gt;
@@ -596,7 +596,7 @@ $ bun xray plan list --project PROJ</div>
     <p class="kicker">Fase 4 · 9 de 17</p>
     <h2 class="h2">Ejecutar: <span class="tag tag-exec">Test Execution</span> = el ATR</h2>
     <div class="mk mt-m" style="font-size:14px">$ bun xray exec create --project PROJ --summary "Auth Suite - Sprint 12 ATR" \
-    --environment staging              # repetible o CSV: --environment staging,chrome
+    --environment staging              # OBLIGATORIO para un ATR · repetible o CSV: --environment staging,chrome
 #   → PROJ-194
 $ bun xray exec add-tests --execution PROJ-194 --tests PROJ-100,PROJ-101
 $ bun xray exec remove-tests --execution PROJ-194 --tests PROJ-101
@@ -605,7 +605,7 @@ $ bun xray exec get PROJ-194
 $ bun xray exec list --project PROJ</div>
     <div class="card card-accent mt-m">
       <p class="lbl">Por qué importan los Test Environments</p>
-      <p class="small mt-s">Una ejecución fijada a un entorno (<span class="mono">staging</span> vs <span class="mono">production</span>, <span class="mono">chrome</span> vs <span class="mono">firefox</span>) hace los resultados <b>congruentes y comparables</b> — nunca compares a ciegas un run de staging contra uno de prod. Se fijan al crear con <span class="mono">--environment</span> o después con <span class="mono">exec set-environment</span>.</p>
+      <p class="small mt-s">Una ejecución fijada a un entorno (<span class="mono">staging</span> vs <span class="mono">production</span>, <span class="mono">chrome</span> vs <span class="mono">firefox</span>) hace los resultados <b>congruentes y comparables</b> — nunca compares a ciegas un run de staging contra uno de prod. Para un ATR, <span class="mono">--environment</span> es <b>obligatorio</b> al crear (el checklist de Stage 1 bloquea un ATR sin environment; el valor sale de <span class="mono">active_env</span> en <span class="mono">project.yaml</span>); se corrige después con <span class="mono">exec set-environment</span>.</p>
     </div>
     <div class="notes">La Execution es el contenedor del ATR: la tarea asignable de correr un grupo de pruebas. Contiene los Test Runs (uno por Test incluido).</div>
   </section>
@@ -669,22 +669,25 @@ $ bun xray import xray --file xray-results.json</div>
   <!-- 13. FLUJO CANONICO -->
   <section class="slide compact" data-title="Flujo canónico">
     <p class="kicker">Recap · 13 de 17</p>
-    <h2 class="h2">Flujo canónico: ATP → Tests → ATR</h2>
-    <div class="mk mt-m" style="font-size:13px;line-height:1.45"># 1. Test Plan (contenedor del ATP)
-$ bun xray plan create --project PROJ --summary "Auth Suite - Q3 ATP"              # → PROJ-110
+    <h2 class="h2">Flujo canónico Set-first: ATS → Tests → ATP → ATR</h2>
+    <div class="mk mt-m" style="font-size:13px;line-height:1.45"># 1. ATS (Test Set per-Story) — el vehículo de coverage, SIEMPRE primero
+$ bun xray set create --project PROJ --summary "ATS: PROJ-123: Apply discount at checkout"   # → PROJ-105
 # 2. Tests + steps, un add-step por paso
 $ bun xray test create --project PROJ --summary "Verify login" --type Manual       # → PROJ-100
 $ bun xray test add-step --test &lt;id-100&gt; --action "Open app" --result "Login form displayed"
-# 3. Adjuntar Tests al Plan            (membership XRAY-INTERNA, no issuelink)
+# 3. Membership TC ∈ ATS (XRAY-INTERNA, no issuelink) + link Jira ATS→Story
+#    («is tested by», vía acli/REST) — SOLO ese link llena el panel de coverage
+$ bun xray set add-tests --set PROJ-105 --tests PROJ-100,PROJ-101
+# 4. Test Plan (ATP) — lista derivada de la membership del ATS; link a la Story = administrativo
+$ bun xray plan create --project PROJ --summary "ATP: PROJ-123: Apply discount at checkout"  # → PROJ-110
 $ bun xray plan add-tests --plan PROJ-110 --tests PROJ-100,PROJ-101
-# 4. Test Execution (contenedor del ATR), fijada a entorno
-$ bun xray exec create --project PROJ --summary "Auth Suite - Sprint 12 ATR" --environment staging   # → PROJ-194
-# 5. Adjuntar Tests a la Execution     (membership XRAY-INTERNA)
+# 5. Test Execution (ATR) — --environment OBLIGATORIO; lista derivada del ATS
+$ bun xray exec create --project PROJ --summary "ATR: PROJ-123: Story Testing" --environment staging   # → PROJ-194
 $ bun xray exec add-tests --execution PROJ-194 --tests PROJ-100,PROJ-101
 # 6. Resultados: en bloque o run a run
 $ bun xray import junit --file test-results/junit.xml --execution PROJ-194   # ó runs a mano:
 $ bun xray run status --id &lt;runId&gt; --status PASSED</div>
-    <p class="small dim mt-m">Este es el <b>orden autoritativo</b> al cablear un Test Plan / Test Execution a mano. Los pasos 3 y 5 viven en la capa interna de Xray — si esa capa falta, los runs vuelven vacíos.</p>
+    <p class="small dim mt-m">Este es el <b>orden autoritativo</b> — Set-first. Las memberships (3-5) viven en la capa interna de Xray: si esa capa falta, los runs vuelven vacíos. El link <span class="mono">ATS→Story</span> es un issue link Jira y es el ÚNICO que llena coverage; los links de ATP/ATR a la Story son administrativos (verificado live).</p>
     <div class="notes">Espejo del "Canonical End-to-End Flow" del SKILL.md. Sirve como chuleta: todo lo demás del deck son variaciones y salvaguardas alrededor de estos 6 pasos.</div>
   </section>
 
@@ -752,7 +755,7 @@ $ bun xray backup restore --file demo-backup.json --project PROJ --map-keys mapp
       </div>
       <div class="card">
         <p class="lbl">Handoffs</p>
-        <p class="small mt-s">← <span class="mono">/sprint-testing</span> S1–3: ATP + ATR por ticket.<br>← <span class="mono">/test-documentation</span> Stage 4: TCs + ROI.<br>→ <span class="mono">/regression-testing</span> Stage 6: resultados para el GO/NO-GO.</p>
+        <p class="small mt-s">← <span class="mono">/sprint-testing</span> S1–3: ATS + ATP + ATR por ticket.<br>← <span class="mono">/test-documentation</span> Stage 4: TCs + ROI.<br>→ <span class="mono">/regression-testing</span> Stage 6: resultados para el GO/NO-GO.</p>
       </div>
       <div class="card">
         <p class="lbl">Fallback</p>
@@ -761,7 +764,7 @@ $ bun xray backup restore --file demo-backup.json --project PROJ --map-keys mapp
     </div>
     <div class="card card-accent mt-m">
       <p class="lbl">Artefactos que deja el skill</p>
-      <p class="small mt-s"><span class="tag tag-plan">Test Plan</span> = ATP · <span class="tag tag-exec">Test Execution</span> = ATR · <span class="tag tag-test">Test</span> + steps = TCs · Runs con evidencia y <span class="tag tag-bug">defectos</span> enlazados · backups en <span class="mono">.backups/*.json</span> · config en <span class="mono">~/.xray-cli/</span>.</p>
+      <p class="small mt-s"><span class="tag tag-story">Test Set</span> = ATS · <span class="tag tag-plan">Test Plan</span> = ATP · <span class="tag tag-exec">Test Execution</span> = ATR · <span class="tag tag-test">Test</span> + steps = TCs · Runs con evidencia y <span class="tag tag-bug">defectos</span> enlazados · backups en <span class="mono">.backups/*.json</span> · config en <span class="mono">~/.xray-cli/</span>.</p>
     </div>
     <p class="small dim mt-m">Referencias: <span class="mono">references/backup-restore.md · migration-runbook.md · graphql-api.md · test-types.md</span></p>
     <div class="notes">Fin del recorrido. El mapa del slide 2 resume todo: gate de modalidad → auth → especificar → planificar → ejecutar → reportar, con sync/backup/MCP como caminos adyacentes.</div>

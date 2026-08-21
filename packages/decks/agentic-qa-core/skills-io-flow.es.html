@@ -341,7 +341,7 @@ ul.plain b{color:var(--t1)}
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">P0</span><h3>Init / Resume de sesión</h3><span class="repo qa">qa</span></div>
-        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">agentic-qa-core (session-management)</span><span class="chip">test-documentation §Phase 0 (modalidad TMS)</span><span class="chip">acli / xray-cli</span></div></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">agentic-qa-core (session-management)</span><span class="chip">test-documentation §Phase 0 (modalidad TMS)</span><span class="chip">acli (xray-cli no se usa pre-sprint: ATP field-first)</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div>Los 3 <b>business maps</b> · <code>master-test-plan.md</code> · <code>jira-workflows.json</code> · <code>jira-required.yaml</code> · sesión previa si existe</div></div>
         <div class="io out"><span class="io-k">stdout →</span><div><code>.session/shift-left-testing/&lt;YYYY-MM-DD&gt;-&lt;descriptor&gt;/</code> con <code>{plan.md, progress.md, candidates.md, batch-report.md}</code></div></div>
       </div>
@@ -350,21 +350,21 @@ ul.plain b{color:var(--t1)}
         <div class="proc-hd"><span class="pid">P1</span><h3>Selección de candidatas</h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip">references/backlog-selection.md</span><span class="chip">acli</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>bun run jira:sync-issues get &lt;KEY&gt;</code> o <code>jql "&lt;JQL&gt;"</code> → issueType · status · labels (<code>shift-left-reviewed</code>) · priority · sprint · epic padre</div></div>
-        <div class="io out"><span class="io-k">stdout →</span><div><code>candidates.md</code> (tabla ranqueada) · lista aceptada → <code>plan.md §Inputs</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>candidates.md</code> (tabla ranqueada) · lista aceptada → <code>plan.md §Inputs</code> · por Story aceptada: subtask <b>«[QA] Shift-Left Review»</b> find-or-create → <b>In Progress</b> (skip + warning si el catálogo no tiene work type subtask)</div></div>
       </div>
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">P2</span><h3>Refinamiento <span class="muted">(loop por historia)</span></h3><span class="repo qa">qa</span></div>
-        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">sprint-testing/references/acceptance-test-planning.md §1-3+4</span><span class="chip">refinement-playbook.md</span><span class="chip">atp-draft-template.md</span><span class="chip">refinement-questions.md</span><span class="chip mand">test-design-doctrine.md — MANDATORIO</span></div></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">sprint-testing/references/acceptance-test-planning.md §1-3+4</span><span class="chip">refinement-playbook.md</span><span class="chip">atp-outline-template.md</span><span class="chip">refinement-questions.md</span><span class="chip mand">test-design-doctrine.md — MANDATORIO</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>story.md</code> · <code>acceptance-criteria.md</code> · <code>comments.md</code> sincronizados · contexto de negocio (P0)</div></div>
         <div class="io out"><span class="io-k">stdout →</span><div><code>stories/STORY-&lt;KEY&gt;-&lt;slug&gt;/shift-left-refinement.md</code> por historia (artefacto local, NO Jira)</div></div>
       </div>
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">P3</span><h3>Handoff a Jira</h3><span class="repo qa">qa</span></div>
-        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">references/handoff-protocol.md</span><span class="chip">acli / xray-cli</span><span class="chip">defect-management-doctrine.md</span><span class="chip">traceability-linking.md</span></div></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">references/handoff-protocol.md</span><span class="chip">acli</span><span class="chip">defect-management-doctrine.md</span><span class="chip">traceability-linking.md</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>shift-left-refinement.md</code> · <code>acceptance-criteria.md</code> re-sincronizado</div></div>
-        <div class="io jira"><span class="io-k">jira ⇄</span><div>Campos: <code>{{jira.acceptance_criteria}}</code> · <code>{{jira.acceptance_test_plan}}</code> (o Test Plan issue si Xray + opt-in) · <code>{{jira.qa_assignee}}</code> <b class="hi-warn">solo si está vacío</b> · Labels: <code>shift-left-reviewed</code> + <code>shift-left-{{YYYY-MM-DD}}</code> · Transiciones: <b>Backlog → Shift-Left QA → Estimation</b> · Comentario: puntero al campo ATP (fallback sin custom field: cuerpo bajo <code>## Acceptance Test Plan (ATP)</code>)</div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Campos: <code>{{jira.acceptance_criteria}}</code> · <code>{{jira.acceptance_test_plan}}</code> <b class="hi-warn">field-first en AMBAS modalidades</b> (NO Test Plan item pre-sprint — lo crea sprint-testing Stage 1 desde el field) · sección <b>«QA Refinements (Shift-Left Analysis)»</b> en la description · <code>{{jira.qa_assignee}}</code> <b class="hi-warn">solo si está vacío</b> · Labels: <code>shift-left-reviewed</code> + <code>shift-left-{{YYYY-MM-DD}}</code> · Transiciones: <b>Backlog → Shift-Left QA → Estimation</b> · Comentario: puntero al campo ATP (fallback sin custom field: cuerpo bajo <code>## Acceptance Test Plan (ATP)</code>) · subtask <b>«[QA] Shift-Left Review»</b>: anotaciones exhaustivas de sesión + transición a <b>Done</b></div></div>
       </div>
 
       <div class="exit"><b>loop 2a ⇄ 2b</b> hasta ACs firmes → <b>exit 0</b> → status <b>Ready For Dev</b></div>
@@ -434,7 +434,7 @@ ul.plain b{color:var(--t1)}
         <div class="proc-hd"><span class="pid">S1</span><h3>Planning</h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">test-design-doctrine.md — MANDATORIO</span><span class="chip mand">defect-management-doctrine.md — MANDATORIO</span><span class="chip">acli / xray-cli</span><span class="chip">shift-left-testing (short-circuit si label &lt;30 días)</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>story.md</code> · <code>acceptance-criteria.md</code> · <code>acceptance-test-plan.md</code> · <code>comments.md</code> · <code>domain-glossary.md</code> · <code>master-test-plan.md</code> · campos <code>{{jira.qa_assignee}}</code> · AC · priority · label <code>shift-left-reviewed</code></div></div>
-        <div class="io out"><span class="io-k">stdout →</span><div>Test Plan <b>«ATP: {STORY}: {título}»</b> → epic <b class="hi-jira">QA Master Test Plan</b> · (Xray) Test issues + Test Execution · links Story↔ATP · triage de riesgo en bugs: <b>0-3 LOW · 4-7 MEDIUM (pregunta) · 8+ HIGH</b></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Primer ticket del sprint: <b>STP «STP: Sprint#{N}: {objetivo}»</b> find-or-create · orden <b>Set-first</b>: Test Set <b>«ATS: {US}: {título}»</b> → epic <b class="hi-jira">QA Test Artifacts</b> con link <b>ATS→Story</b> (<b class="hi-out">el link de coverage</b>) → Test Plan <b>«ATP: {STORY}: {título}»</b> desde el field del shift-left → epic <b class="hi-jira">QA Master Test Plan</b> → Test Execution <b>«ATR: …»</b> con <code>--environment</code> <b class="hi-warn">siempre</b> (gate: sin environment no hay ATR) · listas de Plan/Exec derivadas de la membership del ATS · triage de riesgo en bugs: <b>0-3 LOW · 4-7 MEDIUM (pregunta) · 8+ HIGH</b></div></div>
         <div class="io note"><span class="io-k">nota</span><div><code>kata-manifest.json</code> se vuelve load-bearing recién en el hand-off de Stage 3 → test-automation, no en Planning.</div></div>
       </div>
 
@@ -449,7 +449,7 @@ ul.plain b{color:var(--t1)}
         <div class="proc-hd"><span class="pid">S3</span><h3>Reporting</h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip">acli / xray-cli</span><span class="chip mand">defect-management-doctrine.md</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div>Evidencia de S2 · ATP · campos <code>{{jira.severity}}</code> (deriva priority) · <code>{{jira.qa_assignee}}</code></div></div>
-        <div class="io jira"><span class="io-k">jira ⇄</span><div>Test Execution <b>«ATR: {STORY}: Story Testing»</b> → epic <b class="hi-jira">QA Test Artifacts</b> · comentario QA (PASS/FAIL) · transición a <b>qa_approved</b> o <b>blocked</b> · Bug/Defect/Improvement → epic <b class="hi-jira">QA Defect Management</b> con components + link a la Story + <code>qa_assignee</code> self-set</div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Resultados PASS/FAIL al ATR <b>«ATR: {STORY}: Story Testing»</b> creado en S1 (epic <b class="hi-jira">QA Test Artifacts</b>) · STP actualizado (scope + progreso del ticket) · comentario QA (PASS/FAIL) · transición a <b>qa_approved</b> o <b>blocked</b> · Bug/Defect/Improvement → epic <b class="hi-jira">QA Defect Management</b> con components + link a la Story + <code>qa_assignee</code> self-set · al cierre del sprint (batch-close): <b>STR «STR: Sprint#{N}: Regression Testing»</b> find-or-create como recap</div></div>
       </div>
 
       <div class="exit"><b>exit 0</b> → ticket <b>qa_approved</b> (o <b>blocked</b> con bugs filed)</div>
@@ -484,7 +484,7 @@ ul.plain b{color:var(--t1)}
         <div class="proc-hd"><span class="pid">P3</span><h3>Document</h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip">acli / xray-cli</span><span class="chip">tms-architecture.md · traceability-linking.md</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>qa.qa_epics.test_repository_epic</code> · <code>jira-required.yaml</code> · <code>jira-fields.json</code> · <code>jira-workflows.json</code></div></div>
-        <div class="io jira"><span class="io-k">jira ⇄</span><div>Test issues (TC) creados: description con template TC · labels · Test Status · links <b>Story-ATP-ATR-TC</b> · transición <b>Draft → In Design → Ready → (Manual | In Review → Candidate)</b></div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Test issues (TC) creados: description con template TC · labels · Test Status · membership <b>TC ∈ ATS</b> (Xray GraphQL; jira-native: links TC→ATS) + <b>ATS→Story</b> como link de coverage — <b>TC→Story directo solo last-resort</b> · transición <b>Draft → In Design → Ready → (Manual | In Review → Candidate)</b></div></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Cache local <code>stories/STORY-*/test-cases/{TC-ID}-{slug}.md</code></div></div>
       </div>
 
@@ -566,8 +566,8 @@ ul.plain b{color:var(--t1)}
       </div>
 
       <div class="proc">
-        <div class="proc-hd"><span class="pid">◆</span><h3>Los 3 epics QA fijos</h3><span class="repo qa">qa</span></div>
-        <div class="io jira"><span class="io-k">jira ⇄</span><div><b>QA Defect Management</b> → bugs / defects / improvements · <b>QA Master Test Plan</b> → ATP / Test Plans · <b>QA Test Artifacts</b> → ATR / Test Executions · <b class="hi-warn">nunca un epic de producto</b> — la Story origen viaja por issue-link, el módulo afectado por components (modelo de 3 ejes)</div></div>
+        <div class="proc-hd"><span class="pid">◆</span><h3>Los 4 epics QA fijos</h3><span class="repo qa">qa</span></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div><b>QA Defect Management</b> → bugs / defects / improvements · <b>QA Test Repository</b> → Tests (TC) · <b>QA Master Test Plan</b> → Test Plans (ATP · FTP · STP) · <b>QA Test Artifacts</b> → Test Executions (ATR · STR) + Test Sets (ATS · <code>TS:</code>) + Preconditions · <b class="hi-warn">nunca un epic de producto</b> — la Story origen viaja por issue-link, el módulo afectado por components (modelo de 3 ejes)</div></div>
       </div>
 
       <div class="proc">
