@@ -1,7 +1,7 @@
 # Dispatch Patterns — Decision Guide
 
 > Cited by: workflow skills' "Subagent Dispatch Strategy" tables.
-> Pairs with: `agentic-qa-core/references/briefing-template.md` (the 6-component briefing format that every dispatch must follow).
+> Pairs with: `agentic-qa-core/references/briefing-template.md` (the 7-component briefing format that every dispatch must follow).
 
 ## When to use each pattern
 

@@ -1,7 +1,7 @@
 # Session Management — Long-Skill Resume Contract
 
 > Cited by: every long/medium official workflow skill in this repo. Loaded on demand at the start of every retrofitted skill (Phase 0 resume check) and at the end (Phase N archive).
-> Sibling references: `./orchestration-doctrine.md` (mandatory subagent dispatch), `./briefing-template.md` (6-component briefing format), `./dispatch-patterns.md` (Single / Sequential / Parallel / Background). Topic-key conventions (file-first artifact tagging, Engram mirror) are inlined in §15 of this document.
+> Sibling references: `./orchestration-doctrine.md` (mandatory subagent dispatch), `./briefing-template.md` (7-component briefing format), `./dispatch-patterns.md` (Single / Sequential / Parallel / Background). Topic-key conventions (file-first artifact tagging, Engram mirror) are inlined in §15 of this document.
 
 ## 1. Purpose & scope
 
@@ -21,7 +21,7 @@ The pattern composes with — does not replace — the existing orchestration do
 | Concern | Source of truth | What this doc adds |
 |---|---|---|
 | Subagent dispatch (when, why, anti-patterns) | `./orchestration-doctrine.md` | Per-phase progress checkpoints around each dispatch |
-| Briefing format (6 components per dispatch) | `./briefing-template.md` | A 7th implied component: "Session artifact path" — the orchestrator passes the absolute path to `plan.md` / `progress.md` so the subagent can read prior state |
+| Briefing format (7 components per dispatch) | `./briefing-template.md` | An 8th implied component: "Session artifact path" — the orchestrator passes the absolute path to `plan.md` / `progress.md` so the subagent can read prior state |
 | Pattern selection (Single / Sequential / Parallel / Background) | `./dispatch-patterns.md` | Each phase's pattern is recorded in `plan.md` §"Phase breakdown" so resume preserves the originally chosen pattern |
 | Artifact persistence (file-first + Engram mirror) | §15 (this doc) | A new top-level topic prefix `session/...` (see §11) alongside the existing `framework/...` |
 
@@ -291,7 +291,7 @@ The file-side state is always sufficient to resume.
 
 ## 12. Composition with `briefing-template.md`
 
-The 6-component briefing format in `./briefing-template.md` gets an implied 7th component for any dispatch that runs inside a session context: the orchestrator passes the absolute path of the session directory so the subagent can read prior state if it needs to.
+The 7-component briefing format in `./briefing-template.md` gets an implied 8th component for any dispatch that runs inside a session context: the orchestrator passes the absolute path of the session directory so the subagent can read prior state if it needs to.
 
 ```
 Goal: <one sentence>

@@ -31,7 +31,7 @@ Canonical reading order for any AI starting cold on a framework-development work
 
 > **Orchestration & Session contracts**: this skill follows `agentic-qa-core/references/orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `agentic-qa-core/references/session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
 
-This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The four phases — Plan, Code, Verify, Archive — mirror the shape of `/test-automation` (Plan → Code → Review) extended with an inline Archive step. Phase 0 stays inline because the path self-check + session resume check are short orchestrator decisions that do not benefit from a fresh-context subagent.
+This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 7-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The four phases — Plan, Code, Verify, Archive — mirror the shape of `/test-automation` (Plan → Code → Review) extended with an inline Archive step. Phase 0 stays inline because the path self-check + session resume check are short orchestrator decisions that do not benefit from a fresh-context subagent.
 
 **Session scope**: `<change-name>` (kebab-case, user-provided at session start). Session state lives at `.session/framework-development/<change-name>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §9.
 
@@ -88,7 +88,7 @@ Phase 0 is one short inline decision — it does NOT write a file. If the change
 
 ## Native Phase Orchestration
 
-After Phase 0 passes, run the four-phase pipeline in dependency order. Each subagent dispatch follows the 6-component briefing format in `agentic-qa-core/references/briefing-template.md`. Briefing skeleton for Plan and Code phases (fill the `<...>` slots):
+After Phase 0 passes, run the four-phase pipeline in dependency order. Each subagent dispatch follows the 7-component briefing format in `agentic-qa-core/references/briefing-template.md`. Briefing skeleton for Plan and Code phases (fill the `<...>` slots):
 
 ```
 Goal: <one-sentence outcome scoped to this phase>
@@ -98,6 +98,9 @@ Context docs:
   - .session/framework-development/<change-name>/plan.md   (Code phase only)
   - .session/framework-development/<change-name>/progress.md   (Code phase, batches > 1; orchestrator-written, read-only for subagents)
   - <relevant ALLOWED-path files the phase will read or touch>
+
+Project Standards (auto-resolved):
+  <compact-rule blocks pulled from .claude/skills/REGISTRY.md per skill-resolver protocol>
 
 Skills to load: <none by default; orchestrator injects /playwright-best-practices if fixtures/tests, /github-actions-docs if CI YAML>
 
@@ -201,7 +204,7 @@ Archive is a "close-the-loop" step, not "ship-the-code". Code is shipped by `/gi
 
 - `references/kata-invariants.md` — INVARIANT vs EXTENSIBLE rules for the 4 KATA layers, fixture selection, ATC identity, DRY scope, import aliases, public-method contract, extension points, evolution checklist, out-of-scope surfaces, and §10 ALLOWED / FORBIDDEN path tables. Required reading before any Plan or Code subagent that touches `tests/components/`, `api/schemas/`, or fixtures.
 - `../agentic-qa-core/references/skill-composition-strategy.md` — T1/T2/T3/T4 tier model, category vocabulary, validation rules. The §4 anti-leak contract is informational here: framework-development no longer chains SDD by default; §4 governs users who manually install SDD and explicitly request the SDD ceremony.
-- `../agentic-qa-core/references/briefing-template.md` — 6-component briefing examples per pattern.
+- `../agentic-qa-core/references/briefing-template.md` — 7-component briefing examples per pattern.
 - `../agentic-qa-core/references/dispatch-patterns.md` — Single / Sequential / Parallel / Background decision guide.
 - `../agentic-qa-core/references/orchestration-doctrine.md` — failure protocol, ASK-on-error rule, no auto-fix.
 - `../agentic-qa-core/references/session-management.md` — Phase 0 resume contract, `plan.md` / `progress.md` schemas, archive policy, scope-naming, Engram coupling. This skill is one of the producers of `session/...` topic keys.

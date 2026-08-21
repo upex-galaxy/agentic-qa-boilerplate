@@ -36,5 +36,5 @@
 
 **DEEP DETAIL** (further references):
 
-- `.claude/skills/agentic-qa-core/references/briefing-template.md` — 6-component briefing examples per pattern
+- `.claude/skills/agentic-qa-core/references/briefing-template.md` — 7-component briefing examples per pattern
 - `.claude/skills/agentic-qa-core/references/dispatch-patterns.md` — when to Single / Parallel / Sequential / Background

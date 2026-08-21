@@ -27,7 +27,7 @@ This is a token-saving protocol, not a behavioral one. Subagents are still allow
 2. **Inject `## Project Standards (auto-resolved)` into every briefing.**
    - For each subagent dispatch, the orchestrator picks the relevant skills (see "How orchestrator picks relevant skills" below).
    - The orchestrator copies the matching skills' compact-rule blocks from `.claude/skills/REGISTRY.md` into a new briefing section titled `## Project Standards (auto-resolved)`.
-   - This section sits between `Context docs` and `Exact instructions` in the 6-component briefing template.
+   - This section sits between `Context docs` and `Skills to load` in the 7-component briefing template.
 
 3. **Subagent trusts the compact rules.**
    - The subagent treats `## Project Standards (auto-resolved)` as authoritative for the listed conventions.
