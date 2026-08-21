@@ -305,8 +305,13 @@ Exact instructions:
   2. Risk triage per acceptance-test-planning.md §"0.2 Risk score" (impact x likelihood -> P0|P1|P2 distribution).
   3. Translate ACs into ATP rows (one row per testable behavior); apply Phases 1-4 of acceptance-test-planning.md (Critical Analysis, Story Quality, Refined ACs, Test Outlines).
   4. Draft TC outlines (summary + steps + expected) — full TC bodies are formalized in Stage 4 (test-documentation), not here.
-  5. Create ATP + ATR per the modality branch in acceptance-test-planning.md §"Phase 6 — Traceability + Ticket updates":
-       - Modality jira-xray: [TMS_TOOL] Create TestPlan + Create Execution; link to Story via [ISSUE_TRACKER_TOOL] Link Issues.
+  5. Create ATP + ATS + ATR per the modality branch in acceptance-test-planning.md §"Phase 6 — Traceability + Ticket updates":
+       - Modality jira-xray — Set-first order (AUTHORITATIVE):
+           ① [TMS_TOOL] Find-or-create TestPlan `ATP: <TICKET_KEY>: {title}` (parent QA Master Test Plan) FROM the {{jira.acceptance_test_plan}} field content the shift-left pass left (pre-sprint the ATP lives ONLY in the field; author fresh — item + field — when the field is empty).
+           ② Create the sprint Test issues per the TC-timing rule, then [TMS_TOOL] Find-or-create TestSet `ATS: <TICKET_KEY>: {title}` (parent QA Test Artifacts, components inherited from the Story — mandatory) holding ALL of them (Xray-internal membership, never issue links); link ATS→Story via the `test` slug — THE coverage link (fills the Xray coverage panel).
+           ③ Derive the ATP's and the ATR Execution's test lists FROM the ATS membership — never three independent id lists.
+           ④ [TMS_TOOL] Create Execution `ATR: <TICKET_KEY>: Story Testing` (parent QA Test Artifacts) ALWAYS carrying the Test Environment from `active_env` in .agents/project.yaml (or the session env switch) — NO ATR without environment (hard gate: agentic-qa-core/references/stage-gates.md §Stage 1).
+           ATP→Story / ATR→Story links stay administrative ([ISSUE_TRACKER_TOOL] Link Issues; zero coverage).
        - Modality jira-native: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_plan}} field (or `## Acceptance Test Plan (ATP)` fallback comment when the field is absent).
   6. Materialize the local cache per modality (read-only cache; never hand-write it), then read it back to confirm:
        - Modality jira-native: `bun run jira:sync-issues get <TICKET_KEY> --include-comments` -> <PBI_FOLDER>/acceptance-test-plan.md
@@ -317,7 +322,9 @@ Report format:
   {
     "atp_path": "<PBI_FOLDER>/acceptance-test-plan.md (jira-native) | .context/PBI/test-plans/TESTPLAN-<ATP_KEY>-<slug>.md (jira-xray)",
     "atp_id": "<TMS issue key | story-field>",
+    "ats_id": "<TMS issue key | null (jira-native without Test Set work type)>",
     "atr_id": "<TMS issue key | story-field>",
+    "atr_environment": "<active_env value set on the Execution — MANDATORY in jira-xray>",
     "atc_drafts": [{ "title": "...", "type": "Positive|Negative|Boundary|Edge", "priority": "P0|P1|P2" }],
     "risk_distribution": { "P0": <int>, "P1": <int>, "P2": <int> },
     "veto_outcome": "proceed | skip | require | escalate",
@@ -328,7 +335,8 @@ Report format:
 
 Rules:
   - Do NOT execute any test (Stage 2 owns execution).
-  - Do NOT create formal TMS Test entities (Stage 4 / test-documentation owns that).
+  - TC timing is modality-aware (SKILL.md §"TC creation timing"): Modality jira-native → outlines only, NO `Test` work items (Stage 4 / test-documentation owns that); Modality jira-xray → create the sprint Test issues + the ATS per the Set-first order (persistent regression promotion still belongs to Stage 4).
+  - NEVER create the ATR without its Test Environment (`active_env`) — an environment-less Execution fails the Stage-1 DoD gate.
   - Critical Rule #2 (Plan Before Coding): outputs are plans + outlines, no test code.
   - Surface open_questions to the orchestrator instead of guessing AC behavior.
   - Source order: Jira field (or `## Acceptance Test Plan (ATP)` fallback comment) is canonical; <PBI_FOLDER>/acceptance-test-plan.md is a read-only cache emitted by bun run jira:sync-issues — never hand-written.
@@ -347,7 +355,7 @@ Context docs:
   - <<REPO_ROOT>>/.agents/project.yaml (active env URLs and MCP names)
   - <<REPO_ROOT>>/.context/business/business-data-map.md (entity flows for DB exploration)
 
-Skills to load: /playwright-cli (UI exploration); the active environment's API and DB MCPs ({{API_MCP}} and {{DB_MCP}} from project.yaml). For Bug tickets: same set, no extras.
+Skills to load: /playwright-cli (UI exploration); the active environment's API and DB MCPs ({{API_MCP}} and {{DB_MCP}} from project.yaml). For Bug tickets in Modality jira-xray: also /xray-cli (repro-Test creation at fix-verification time, step 7) + /acli (the Bug↔Test link).
 
 Exact instructions:
   1. Mark the ticket as actively testing (substrate-driven, idempotent, non-blocking). Resolve `{{jira.transition.<work_type>.start_testing}}` and `{{jira.status.<work_type>.in_test}}` from `.agents/jira-workflows.json` (per CLAUDE.md §"Project Variables"). Call `[ISSUE_TRACKER_TOOL] Get Transitions` for `<TICKET_KEY>`. Skip (and emit `skipped_reason`) if any of these hold:
@@ -361,7 +369,7 @@ Exact instructions:
   4. Triforce UI: explore edge cases, empty states, validation errors per exploration-patterns.md §1.
   5. Triforce API: hit the relevant endpoints with valid + invalid + boundary payloads via the API MCP per exploration-patterns.md §2.
   6. Triforce DB: verify state changes via the DB MCP for write-side ATCs per exploration-patterns.md §3.
-  7. Bug branch: replace steps 4-6 with reproduce-original -> verify-fix -> regression-pass on adjacent areas -> DB cross-validation if data-integrity bug (per session-entry-points.md §"Bug workflow Phase 2").
+  7. Bug branch: replace steps 4-6 with reproduce-original -> verify-fix -> (Modality jira-xray) create the repro `Test` NOW, at fix-verification time — ONE by default, 1:N only if the scope genuinely covers distinct conditions — link it Bug↔Test via the `test` slug, add it to the retest Execution and record its run PASSED/FAILED -> regression-pass on adjacent areas -> DB cross-validation if data-integrity bug (per session-entry-points.md §"Bug workflow Phase 2").
   8. Capture evidence (screenshots, traces, response samples) under <PBI_FOLDER>/evidence/ using the naming rule from exploration-patterns.md.
   9. For each defect found: build a BUG_FOUND entry with severity, repro steps, evidence paths, and classify it `blocking` vs `non-blocking` per the "Finding triage" table in exploration-patterns.md. A FAIL is not auto-Critical — assign severity per reporting-templates.md §1.4. Graduated handling: a **blocking** finding (smoke/env down, data integrity, security-exploitable) STOPS the pass — emit it and stop. A **non-blocking** finding is logged and you CONTINUE the pass to completion; report all non-blocking findings together (do not stop the pass for them).
   10. Update <SESSION_DIR>/test-session-memory.md sections: Stage Results > Execution, Bugs Found, Observations, Checklist > Execution.
@@ -518,8 +526,10 @@ Created at `<SESSION_DIR>/test-session-memory.md` — i.e. `.session/sprint-test
 | Type | ID | Name | Status |
 |------|----|------|--------|
 | ATP  | -  | -    | -      |
-| ATR  | -  | -    | -      |
+| ATS  | -  | -    | -      |
+| ATR  | -  | -    | -      | <!-- record the Test Environment (active_env) set at creation -->
 | TC   | -  | -    | -      |
+| STP  | -  | -    | -      | <!-- sprint-level, shared across tickets (Session Start §0.7) -->
 
 ## Paths
 - PBI: .context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-{{PROJECT_KEY}}-{number}-{brief-title}/
@@ -570,7 +580,10 @@ Created at `<SESSION_DIR>/test-session-memory.md` — i.e. `.session/sprint-test
 ### Planning (Feature)
 - [ ] Triage completed (veto or risk score)
 - [ ] Test data discovered via DB
-- [ ] ATP + ATR created and linked to Story; ATP linked to ATR
+- [ ] ATP item find-or-created FROM the {{jira.acceptance_test_plan}} field (xray) / field written (native); ATP linked to ATR
+- [ ] [xray] ATS created/updated with ALL the Story's TCs; ATS→Story linked via the `test` slug (coverage link); components inherited
+- [ ] [xray] ATP + ATR test lists derived FROM the ATS membership (no independent id lists)
+- [ ] [xray] ATR created WITH the Test Environment (active_env) — no environment, no ATR
 - [ ] Test Analysis filled in ATP
 - [ ] AC Gaps written (or confirmed: none)
 - [ ] TCs created with full traceability
@@ -581,7 +594,8 @@ Created at `<SESSION_DIR>/test-session-memory.md` — i.e. `.session/sprint-test
 ### Planning (Bug)
 - [ ] Veto check completed
 - [ ] Bug Analysis written in ATP
-- [ ] ATP + ATR created and linked
+- [ ] ATP + ATR created and linked (retest Execution WITH Test Environment from active_env)
+- [ ] [xray] ONE repro Test planned by default (1:N only if the scope genuinely covers distinct conditions — test-design-doctrine); created at fix-verification time (Stage 2)
 - [ ] Test data discovered
 - [ ] ATP marked complete
 
@@ -616,6 +630,7 @@ After Sub-agent 4 finishes:
    - Change Status `PENDING` -> `PASSED` / `FAILED`.
    - Fill ATP / ATR / TCs columns.
    - Update the Stats section.
+3b. **Update the sprint STP** (`STP: Sprint#{N}: {objective}` — the Test Plan item find-or-created at Session Start §0.7): append this ticket's outcome to its scope/progress. The STP is a LIVING sprint planner — every tested ticket updates it. Skip with a note when the Test Plan work type is absent (no sprint-altitude field fallback); non-blocking.
 4. Present a per-ticket summary:
 
    ```
@@ -684,6 +699,12 @@ After the table:
 Session stats: {X} tickets tested, {Y} TCs executed, {Z}% pass rate
 Remaining queue: {list remaining PENDING tickets with priority}
 ```
+
+**Sprint close (last ticket of the sprint done, no PENDING left):**
+
+1. Find-or-create the sprint recap Execution `STR: Sprint#{N}: Regression Testing` — a **Test Execution**, parent **QA Test Artifacts**, ALWAYS with the Test Environment from `active_env` — IF `/regression-testing` has not already created it (whichever arrives first creates it; the other completes it). Fill it as the recap of the sprint's results.
+2. Close the sprint STP (`STP: Sprint#{N}: {objective}`): final scope/progress update + transition to its terminal state.
+3. Both steps skip with a note when the respective work type is absent (jira-native without Test Plan / Test Execution work types); non-blocking.
 
 ---
 

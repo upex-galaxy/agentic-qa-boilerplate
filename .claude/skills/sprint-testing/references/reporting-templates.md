@@ -330,7 +330,7 @@ Apply the branch that matches the resolved modality (do not mix).
 
 > **Prerequisite (both modalities)**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` call below. In Modality jira-xray additionally load `/xray-cli` for `[TMS_TOOL] Update Run` and `[TMS_TOOL] Import Results`. Skip if Session Start §0.1 in `SKILL.md` already loaded them.
 
-> **ATR item (excellence default)** — by excellence the ATR is the **Test Execution** issue titled `ATR: {STORY-KEY}: Story Testing` (the Story-level run, named **Story Testing**, runs ONCE per sprint), created in Stage 1 and parented to the **QA Test Artifacts** epic; Stage 3 fills its body + run results below. The Story custom field (`{{jira.acceptance_test_results}}`) is a **fallback ONLY** when the Test Execution work type is unavailable.
+> **ATR item (excellence default)** — by excellence the ATR is the **Test Execution** issue titled `ATR: {STORY-KEY}: Story Testing` (the Story-level run, named **Story Testing**, runs ONCE per sprint), created in Stage 1 — ALWAYS carrying the Test Environment from `active_env` in `.agents/project.yaml` (no ATR without environment; hard gate: `agentic-qa-core/references/stage-gates.md` §Stage 1) — and parented to the **QA Test Artifacts** epic; its test list is DERIVED from the Story's ATS membership. Stage 3 fills its body + run results below. Bug retests use the Execution `ReTest: {BUG_KEY}: {summary}` (same environment rule) and record the repro Test's run there. The Story custom field (`{{jira.acceptance_test_results}}`) is a **fallback ONLY** when the Test Execution work type is unavailable.
 
 #### Modality jira-xray (ATR = Test Execution)
 
@@ -340,7 +340,7 @@ Apply the branch that matches the resolved modality (do not mix).
   issue: {ATR_KEY}
   description: {ATR body from §2.2}
   fields:
-    Environment: {from body}
+    Environment: {from body — already set at creation from active_env (Stage 1 hard gate); confirm, never blank}
     Begin Date: {from body "Tested"}
     End Date:   {now}
 
@@ -564,7 +564,7 @@ Naming: files in `evidence/` follow §1.11 (`{KEY}-step{NN}-{action}.{ext}`) or 
 | Triage SKIP (code review only) | — | — | Short code-review note on ticket |
 | Regression-only finding mid-exploration | Yes | — (fold into current ticket ATR) | (adds to A/B) |
 
-"Abridged ATR" for bugs = the same plain-text body with `TEST CASES` section omitted (bugs have no TCs, only the bug ticket itself as implicit test case); list the reproduction scenario instead.
+"Abridged ATR" for bugs = the same plain-text body with the `TEST CASES` section adapted per modality: **jira-xray** lists the repro `Test`'s run (PASSED/FAILED) recorded in the retest Execution (`ReTest: {BUG_KEY}: {summary}`); **jira-native** omits it and lists the reproduction scenario instead (no TCs in-sprint — the bug ticket itself is the implicit test case).
 
 ---
 

@@ -1,6 +1,6 @@
 # Feature Test Planning (Feature / Multi-Story Scope)
 
-Use when the Stage 1 work scope is a whole feature (epic, module, multi-story batch) rather than a single story. Output is a feature-level test plan that informs per-ticket ATPs. The `feature-test-plan.md` is now **Jira-synced** (epic level): author it → write to the epic's feature-test-plan custom field if one exists in `.agents/jira-fields.json`, otherwise to a structured comment `## Feature Test Plan` per the `fallback:` convention in `.agents/jira-required.yaml` — both via `[ISSUE_TRACKER_TOOL]` → run `bun run jira:sync-issues get <EPIC-KEY> --include-comments` → read the materialized copy at `.context/PBI/epics/EPIC-<KEY>-<slug>/feature-test-plan.md`. NEVER hand-write that file.
+Use when the Stage 1 work scope is a whole feature (epic, module, multi-story batch) rather than a single story. Output is a feature-level test plan that informs per-ticket ATPs. The FTP is **item-first**: find-or-create the **Test Plan** issue `FTP: {EPIC-KEY}: {feature}` (parent: **QA Master Test Plan** epic) whenever this skill loads the Epic's context, author/refresh the plan into its `description`, and CONSUME it as context thereafter. The Epic's feature-test-plan custom field (if one exists in `.agents/jira-fields.json`) or a structured `## Feature Test Plan` comment per the `fallback:` convention in `.agents/jira-required.yaml` is the **fallback ONLY** when the Test Plan work type is unavailable — both written via `[ISSUE_TRACKER_TOOL]`. Then materialize the local cache: `bun run jira:sync-issues get <EPIC-KEY> --include-comments` → `.context/PBI/epics/EPIC-<KEY>-<slug>/feature-test-plan.md` (fallback path; the FTP item's description syncs like any Test Plan issue). NEVER hand-write that file.
 
 For single-story Stage 1 work read `acceptance-test-planning.md` instead. Sprint-testing planning is manual / exploratory — do not confuse it with `test-automation`'s `planning-playbook.md` (which produces `spec.md` for automation code) or `test-documentation`'s ROI scoring (which decides which tests enter the regression backlog).
 
@@ -61,23 +61,27 @@ Keep the feature plan **feature-level**: no per-story test cases, no test data v
 
 ---
 
-## Nomenclature — FTP / FTR (items over fields)
+## Nomenclature — FTP (item-first)
 
-The feature altitude is this doc's home altitude, so its two artifacts are named here per the
+The feature altitude is this doc's home altitude, so its artifact is named here per the
 ratified QA Planning Ladder (`docs/qa-standard/planning-ladder-proposal.md`). Grammar:
 `{ACRONYM}: {scope-id}: {descriptor}`.
 
 | Artifact | Jira work type | Title pattern | Example | Parent Epic (axis 1) | Scope link (axis 2) |
 |----------|----------------|---------------|---------|----------------------|---------------------|
 | **FTP** — Feature Test Plan | **Test Plan** | `FTP: {EPIC-KEY}: {feature}` | `FTP: PROJ-42: Checkout & Payments` | **QA Master Test Plan** (`qa.qa_epics.master_test_plan_epic`) | `tests` the product **feature Epic** |
-| **FTR** — Feature Test Results | **Test Execution** | `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` | `FTR: PROJ-42: Feature Testing — Checkout · run 2` | **QA Test Artifacts** (`qa.qa_epics.test_artifacts_epic`) | `is tested by` feature Epic · `testPlan` → FTP |
 
-- **Items over fields (by excellence).** The FTP **Test Plan** issue is the home of the
+- **Item-first (by excellence).** The FTP **Test Plan** issue is the home of the
   feature-test-plan body (the 7 sections below); the epic feature-test-plan custom field /
-  `## Feature Test Plan` comment is the **degraded fallback only** when the Test Plan work type
+  `## Feature Test Plan` comment is the **fallback only** when the Test Plan work type
   is absent from the instance. As soon as the FTP item exists it is the single source of truth.
-- **Cardinality.** FTP = **1 per feature**. FTR uses the term **"Feature Testing"** and may run
-  **≥1 time per sprint** (`· run N` disambiguates re-runs).
+- **Lifecycle.** Find-or-created/updated whenever this skill loads the Epic's context;
+  CONSUMED as context thereafter (see "A living document" above).
+- **Cardinality.** FTP = **1 per feature**.
+- **No FTR.** The Feature Test Results rung is **RETIRED from the ladder** — feature results
+  roll up through the per-story ATRs and the sprint recap Execution
+  `STR: Sprint#{N}: Regression Testing` (created at sprint close by the batch-close recap or
+  `/regression-testing`, whichever arrives first). Do not create `FTR:` items.
 - **Roll-up (optional).** Each per-story ATP MAY link `ATP is part of FTP` for coverage
   aggregation; parent of every Plan stays the QA Master Test Plan Epic regardless of roll-up.
 
@@ -233,7 +237,7 @@ Feed this section into each child ATP so per-story planning only has to say "use
 
 ## Output rules for the AI
 
-1. **Author the plan, then write it to Jira first — never hand-write the local file.** Write the feature-test-plan content to the epic's feature-test-plan custom field (if present in `.agents/jira-fields.json`), otherwise to a structured `## Feature Test Plan` comment per the `fallback:` convention, via `[ISSUE_TRACKER_TOOL]`.
+1. **Author the plan, then write it to Jira first — never hand-write the local file.** Item-first: find-or-create the **FTP Test Plan item** `FTP: {EPIC-KEY}: {feature}` (parent: **QA Master Test Plan** epic) and write the feature-test-plan content into its `description`; link it `tests` the feature Epic via the `test` slug. ONLY when the Test Plan work type is unavailable, fall back to the epic's feature-test-plan custom field (if present in `.agents/jira-fields.json`), otherwise to a structured `## Feature Test Plan` comment per the `fallback:` convention — all via `[ISSUE_TRACKER_TOOL]`.
 2. **Update the epic in Jira / TMS** via `[ISSUE_TRACKER_TOOL]`: append a "QA Test Strategy — Shift-Left Analysis" section to the epic description with a summary (top 3 risks, total TC estimate, critical questions pointer, test strategy headline). Add label `test-plan-ready`.
 3. **Materialize the local cache**: run `bun run jira:sync-issues get <EPIC-KEY> --include-comments`, which writes `.context/PBI/epics/EPIC-<KEY>-<slug>/feature-test-plan.md`. Read it back to confirm.
 4. **Report to the user**: executive summary covering complexity, top 3 risks, open PO/Dev questions, and the estimated total test count.
@@ -252,10 +256,17 @@ If Skip or Code-Review-only:
   Comment on epic with triage result, stop
 Else:
   Section 1..7 = produce content from inputs
-  [ISSUE_TRACKER_TOOL] write feature-test-plan content to the epic field (or `## Feature Test Plan` fallback comment)
+  # Item-first (excellence path):
+  [TMS_TOOL] Find-or-create TestPlan:
+    title: FTP: <EPIC-KEY>: {feature}
+    parentEpic: QA Master Test Plan
+  [ISSUE_TRACKER_TOOL] Update Issue: issue=<FTP_KEY>, description={the 7-section plan}
+  [ISSUE_TRACKER_TOOL] Link Issues: linkType={{jira.link_types.test.name}}, outward=<FTP_KEY>, inward=<EPIC-KEY>   # FTP tests the feature Epic
+  # Fallback ONLY when the Test Plan work type is unavailable:
+  #   [ISSUE_TRACKER_TOOL] write feature-test-plan content to the epic field (or `## Feature Test Plan` fallback comment)
   [ISSUE_TRACKER_TOOL] update epic description + label `test-plan-ready`
-  bun run jira:sync-issues get <EPIC-KEY> --include-comments   # materializes feature-test-plan.md
-  Read .context/PBI/epics/EPIC-<KEY>-<slug>/feature-test-plan.md to confirm
+  bun run jira:sync-issues get <EPIC-KEY> --include-comments   # materializes feature-test-plan.md (fallback path; the FTP item syncs as a Test Plan issue)
+  Read the materialized copy to confirm
   Report executive summary to user
   Block sprint start until PO/Dev answer critical questions
 ```
@@ -283,6 +294,6 @@ Else:
 - [ ] Integration points table present and drives Section 5 strategy
 - [ ] Test matrix has a row per child story with realistic counts
 - [ ] Shared personas, fixtures, generators listed for reuse
-- [ ] feature-test-plan content written to the epic field (or `## Feature Test Plan` fallback comment) AND materialized to the local `feature-test-plan.md` via `bun run jira:sync-issues`
+- [ ] FTP item (`FTP: {EPIC-KEY}: {feature}`) find-or-created under QA Master Test Plan with the plan in its description and linked `tests` the feature Epic — field / `## Feature Test Plan` fallback comment ONLY when the Test Plan work type is unavailable — AND the local cache materialized via `bun run jira:sync-issues`
 - [ ] Epic labeled `test-plan-ready`
 - [ ] Executive summary delivered to user, blocker called out if critical questions open

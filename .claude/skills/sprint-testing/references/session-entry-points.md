@@ -18,9 +18,11 @@ Branch by ticket type:
    User Story                  Bug
    ----------                  ---
    Stage 1 Planning            Phase 1 Triage + Planning
-   (ATP+ATR; outlines native    (veto / risk score, ATP + ATR,
-    / Xray Tests; regression     no TCs in-sprint; regression Test
-    TCs persisted in Stage 4)    reused/created in Stage 4 if worthy)
+   (ATP+ATS+ATR Set-first;      (veto / risk score, ATP + ATR;
+    outlines native / Xray       xray: ONE repro Test at fix-
+    Tests; regression TCs        verification; native: no TCs
+    persisted in Stage 4)        in-sprint; regression Test
+                                 reused/created in Stage 4 if worthy)
    Stage 2 Execution           Phase 2 Execution
    (smoke + UI/API/DB)         (reproduce -> verify fix -> regression)
    Stage 3 Reporting           Phase 3 Reporting
@@ -49,6 +51,10 @@ Run this BEFORE fetching the ticket and BEFORE any ATP/Jira write — once the a
 3. **Verdict.** Reachable (and, if relevant, inbox can receive) → continue to Step 1. Unreachable, or inbox send-only → **STOP, surface to the user, do NOT author an ATP.** Offer a session env override (Step 6b) if the user has a working alternate URL.
 
 This gate answers "is the environment up / can we get the email?" — it does NOT replace the Stage 2 smoke test, which answers "does the feature work?". Both run.
+
+### Step 0b — Sprint Test Plan (STP) find-or-create (orchestrator-inline, first ticket of the sprint)
+
+Resolve the ticket's sprint number N, then find `STP: Sprint#{N}: {objective}` — a **Test Plan** item parented to the **QA Master Test Plan** epic. Missing → create it (find-or-create; `/regression-testing` creates it as fallback if it runs suites first). Present → UPDATE it: the STP is a LIVING sprint planner — add this ticket to its scope and refresh progress after each tested ticket. The sprint recap Execution `STR: Sprint#{N}: Regression Testing` is created at sprint close, not here (see `sprint-orchestration.md` §STEP 7). Modality jira-native without the Test Plan work type: skip with a note (no sprint-altitude field fallback); non-blocking.
 
 ### Step 1 — Fetch the ticket from the issue tracker
 
@@ -347,13 +353,14 @@ Actions:
 1. Read the story (ACs, business rules, dependencies) from the synced `.md` (materialized by `bun run jira:sync-issues get <KEY> --include-comments`).
 2. Triage (veto or risk score) — outputs: Full Plan vs Quick Plan vs Skip.
 3. Discover test data via `[DB_TOOL]` on `{{DB_MCP}}` (and/or `[API_TOOL]`).
-4. Create the ATP linked to the Story via `[TMS_TOOL]` (or write `{{jira.acceptance_test_plan}}` / fallback comment in Modality jira-native).
-5. Create the ATR linked to the Story. Link ATP -> ATR.
-6. Fill Test Analysis in the ATP (scope, risks, scenarios, variables, test data, AC gaps).
-7. Create TCs with FULL traceability (`--story + --test-plan + --test-result`).
-8. Verify: `[TMS_TOOL] trace {{PROJECT_KEY}}-{number}` (traceability stays on `[TMS_TOOL]`, not the sync).
-9. Mark ATP complete. Transition TCs to Ready.
-10. Materialize the read-only cache (never hand-written) per modality: jira-native -> `bun run jira:sync-issues get <KEY> --include-comments` -> `acceptance-test-plan.md` in the STORY folder; jira-xray -> `bun run jira:sync-issues get <ATP_KEY>` -> `.context/PBI/test-plans/TESTPLAN-<ATP_KEY>-<slug>.md`.
+4. **ATP item from the field (find-or-create)**: find-or-create the Test Plan item `ATP: {STORY-KEY}: {story title}` FROM the Story's `{{jira.acceptance_test_plan}}` field content — pre-sprint the ATP lives ONLY in the field (shift-left is field-first); author fresh (item + field) when the field is empty. Modality jira-native: write `{{jira.acceptance_test_plan}}` / fallback comment instead.
+5. Create the TCs per SKILL.md §"TC creation timing" (jira-xray: sprint `Test` issues at executable detail; jira-native: outlines only, no `Test` work items).
+6. **ATS (jira-xray)**: create/update the Story's `ATS: {US_ID}: {story title}` (parent **QA Test Artifacts**, components inherited from the Story — mandatory) holding ALL the Story's TCs (Xray-internal membership); link **ATS→Story** via the `test` slug — THE coverage link (fills the coverage panel).
+7. **ATR with environment**: create the ATR Execution (`ATR: {STORY-KEY}: Story Testing`) ALWAYS carrying the Test Environment from `active_env` (**no ATR without environment** — hard gate). Derive the ATP's and the ATR's test lists FROM the ATS membership — never three independent id lists. Link ATP→Story and ATR→Story (administrative traceability; zero coverage). Link ATP -> ATR.
+8. Fill Test Analysis in the ATP (scope, risks, scenarios, variables, test data, AC gaps).
+9. Verify: `[TMS_TOOL] trace {{PROJECT_KEY}}-{number}` (traceability stays on `[TMS_TOOL]`, not the sync).
+10. Mark ATP complete. Transition TCs to Ready.
+11. Materialize the read-only cache (never hand-written) per modality: jira-native -> `bun run jira:sync-issues get <KEY> --include-comments` -> `acceptance-test-plan.md` in the STORY folder; jira-xray -> `bun run jira:sync-issues get <ATP_KEY>` -> `.context/PBI/test-plans/TESTPLAN-<ATP_KEY>-<slug>.md`.
 
 Output checkpoint:
 
@@ -431,15 +438,16 @@ Output checkpoint:
 ```
 USER STORY ({{PROJECT_KEY}}-XXX)
     |
-    +--> ATP (ATP: {STORY-KEY}: {story title})
-    |        |
-    |        +--> ATR (ATR: {STORY-KEY}: Story Testing)
-    |                 |
-    +--> TCs ---------+
-         (linked to Story + ATP + ATR)
+    +--> ATS (ATS: {US_ID}: {story title})        <- `test` slug: THE coverage link (fills the panel)
+    |        holds ALL the Story's TCs (Xray-internal membership, never issue links in xray)
+    |
+    +--> ATP (ATP: {STORY-KEY}: {story title})    <- administrative link (zero coverage)
+    |        test list DERIVED from the ATS
+    +--> ATR (ATR: {STORY-KEY}: Story Testing)    <- administrative link; ALWAYS carries the
+             test list DERIVED from the ATS          Test Environment (active_env)
 ```
 
-All artifacts are created in Stage 1 with complete links.
+All artifacts are created in Stage 1 with complete links; the ATS membership is the single source of the Plan/Execution test lists. Direct TC→Story links are last-resort only (instances with no Test Set work type).
 
 ### Error table (US workflow)
 
@@ -455,7 +463,7 @@ All artifacts are created in Stage 1 with complete links.
 
 ## Bug workflow (single-ticket mode)
 
-After Session Start, run Phase 1 -> Phase 2 -> Phase 3. Bugs use the same PBI folder structure as user stories, but create NO TCs — the bug ticket itself is the implicit test case.
+After Session Start, run Phase 1 -> Phase 2 -> Phase 3. Bugs use the same PBI folder structure as user stories. TC handling is modality-aware: **Modality jira-xray** creates ONE repro `Test` by default at fix-verification time (Phase 2); **Modality jira-native** creates NO TCs in-sprint — the bug ticket itself is the implicit test case (defers to Stage 4).
 
 ### When to use this workflow
 
@@ -546,15 +554,17 @@ If triage is Code Review, skip Phases 2-3:
    ```
 4. Post via `[ISSUE_TRACKER_TOOL]`. END of Code Review workflow.
 
-#### Step 1.5 — Create ATP + ATR (no TCs in-sprint)
+#### Step 1.5 — Create ATP + ATR (repro Test modality-aware)
 
 For bugs that need Full Retesting:
 
-- ATP: "ATP: {STORY-KEY}: {story title}"
-- ATR: "ATR: {STORY-KEY}: Story Testing"
+- ATP: `ATP: {BUG_KEY}: {summary}` (Test Plan item — find-or-create)
+- ATR: the retest Execution `ReTest: {BUG_KEY}: {summary}` — ALWAYS created with the Test Environment from `active_env` (**no ATR without environment** — hard gate, `agentic-qa-core/references/stage-gates.md` §Stage 1)
 - Link ATP to ATR
 
-Why no TCs in-sprint: the bug ticket is the implicit *immediate* retest case. Reproduction steps = test steps. Expected vs Actual = pass/fail criteria. **Regression follow-up (golden rule)**: if the bug is regression-worthy, Stage 4 (`test-documentation` bug-driven decision) ensures a persistent Test covers it — reuse the existing failed Test or create one. Not every bug qualifies (a one-time typo in a stable area is treated like a failed test).
+**Repro Test (Modality jira-xray, in-sprint)**: plan ONE repro `Test` by default — 1:N only when the bug's scope genuinely covers distinct conditions (justify per `agentic-qa-core/references/test-design-doctrine.md`). It is CREATED at fix-verification time (Phase 2), linked **Bug↔Test** via the `test` slug (`{{jira.link_types.test}}`, Bug `is tested by` Test — bugs are coverable), executed in the retest Execution, and its run recorded PASSED/FAILED (Phase 3).
+
+**Modality jira-native — unchanged**: no TCs in-sprint. The bug ticket is the implicit *immediate* retest case. Reproduction steps = test steps. Expected vs Actual = pass/fail criteria. **Regression follow-up (golden rule, both modalities)**: if the bug is regression-worthy, Stage 4 (`test-documentation` bug-driven decision) ensures a persistent Test covers it — reuse the existing failed Test (or the in-sprint repro Test) or create one. Not every bug qualifies (a one-time typo in a stable area is treated like a failed test).
 
 #### Step 1.6 — Discover test data
 
@@ -600,7 +610,7 @@ Use skill: playwright-cli
 
 #### Step 1.9 — Verify traceability
 
-Confirm ATP -> ticket, ATR -> ticket, ATP -> ATR are all linked. Missing-TCs "gaps" are expected and OK for bugs (the bug is the implicit TC).
+Confirm ATP -> ticket, ATR -> ticket, ATP -> ATR are all linked. Missing-TCs "gaps" are expected and OK at this point: the repro Test (Modality jira-xray) only arrives at fix-verification time in Phase 2; in Modality jira-native the bug stays the implicit TC.
 
 ### Phase 2 — Execution
 
@@ -608,6 +618,7 @@ Detailed smoke / evidence-config / regression-check playbook lives in `reference
 
 1. **Configure evidence**: `.playwright/cli.config.json` `outputDir` -> `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-{{PROJECT_KEY}}-{number}-{brief-title}/evidence`. Remember `outputDir` does NOT apply to `.png` screenshots — always pass the full path in `--filename`.
 2. **Verify the fix**: navigate to the affected area -> reproduce original scenario -> observe the bug is GONE -> verify expected behaviour -> screenshot the correct behaviour. Evidence naming: `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-{{PROJECT_KEY}}-{number}-{brief-title}/evidence/{{PROJECT_KEY}}-{number}-{brief-description}.png`.
+2b. **Create the repro Test (Modality jira-xray only)** — now, at fix-verification time, per Step 1.5: ONE `Test` covering the repro scenario by default (1:N only if the scope genuinely covers distinct conditions — cite the test-design-doctrine justification), linked Bug↔Test via the `test` slug, added to the retest Execution. Modality jira-native: skip (defers to Stage 4).
 3. **Quick regression check**: adjacent features still work; similar scenarios still work; edge cases (empty / null / max) still handled. If a regression is found, document it and file a new bug.
 
 ### Phase 3 — Reporting
@@ -615,7 +626,7 @@ Detailed smoke / evidence-config / regression-check playbook lives in `reference
 Templates (ATR body, QA comment Template C PASSED / Template D FAILED, evidence-attachment rules) live in `references/reporting-templates.md`. Bug-specific flow:
 
 1. **Automation opportunity assessment** — rate 0-2 each: Reproducibility, Stability, Risk, Frequency, Complexity. Totals: 8-10 HIGH / 5-7 MEDIUM / 0-4 LOW. Record suggested test type (E2E / API / DB) and effort (Low / Medium / High). The `test-documentation` skill will use this for the formal ROI decision.
-2. **Update ATR** — if none exists, create "Bug Verification: {{PROJECT_KEY}}-{number}". Fill with: ticket, environment, result (PASSED/FAILED), step-by-step verification, regression check, automation assessment. Mark complete.
+2. **Update ATR** — if none exists, create the retest Execution `ReTest: {BUG_KEY}: {summary}` (ALWAYS with the Test Environment from `active_env`). Fill with: ticket, environment, result (PASSED/FAILED), step-by-step verification, regression check, automation assessment. **Modality jira-xray**: record the repro Test's run in the retest Execution as PASSED/FAILED. Mark complete.
 3. **Ticket status + comment** — PASSED: add verification summary via Template C, transition via `{{jira.transition.bug.retest_passed}}` (`ready_for_qa` -> `closed`). FAILED: add failure details via Template D, leave the bug in `{{jira.status.bug.ready_for_qa}}` and tag the developer; if the bug was already `{{jira.status.bug.closed}}` (regression caught after sign-off), use `{{jira.transition.bug.back}}` (`closed` -> `ready_for_qa`) or `{{jira.transition.bug.re_open}}` (any -> `open`) per project policy. ALWAYS prepare the comment BEFORE transitioning.
 4. **Evidence paths for the user** — after posting, tell them the 1-2 most important screenshot paths to attach (pick bug-showing-fix for PASSED; before/after for regressions; skip navigation screenshots).
 5. **Update local PBI `context.md`** — Type: Bug, Status VERIFIED/FAILED, Verified date, Bug Summary (Was/Now), Verification Result + evidence path, Automation Assessment (Candidate/Priority/Reason), Notes.
@@ -638,7 +649,7 @@ Templates (ATR body, QA comment Template C PASSED / Template D FAILED, evidence-
 
 | Avoid | Why |
 |-------|-----|
-| Creating TCs for bugs | The bug itself is the test case |
+| Creating a fleet of TCs for a bug | jira-xray: ONE repro Test by default, at fix-verification time (1:N only if the scope genuinely covers distinct conditions); jira-native: none in-sprint — the bug itself is the immediate test case |
 | Skipping Bug Analysis | The ATP is your execution guide — not ad-hoc testing |
 | Skipping test-data discovery | Test data must be reusable if retesting is needed |
 | Skipping automation assessment | Bugs are prime regression-test candidates |
@@ -650,7 +661,7 @@ Templates (ATR body, QA comment Template C PASSED / Template D FAILED, evidence-
 |--------|-----|------------|
 | Has ACs? | No — has Expected vs Actual | Yes — multiple ACs |
 | Test planning | ATP with Bug Analysis | ATP with Test Analysis |
-| Test cases | None (bug = test case) | 1 positive + 1 negative per AC (approx) |
+| Test cases | xray: ONE repro Test at fix-verification (1:N only if scope justifies); native: none in-sprint (bug = test case) | 1:N per AC by technique (see test-design-doctrine) |
 | Documentation | ATP (Bug Analysis) + ATR | ATP + ATR + TCs (full) |
 | Automation | High priority if recurring | Based on business value (Stage 4 ROI) |
 
