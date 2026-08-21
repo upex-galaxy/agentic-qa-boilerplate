@@ -134,7 +134,7 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 | Derive test cases / coverage from ACs (ANY of the 4 testing skills) | "design test cases", "what to test", "cover this AC", "is this enough coverage" | (the active testing skill) | **`agentic-qa-core/references/test-design-doctrine.md` (MANDATORY)** | - |
 | Report a bug / defect / improvement | "report bug", "file defect", "raise improvement", "found an error in the app" | (the active testing skill) | **`agentic-qa-core/references/defect-management-doctrine.md` (MANDATORY)** | `[ISSUE_TRACKER_TOOL]` |
 | Annotate a bug screenshot (visual/positional defect) | "annotate bug screenshot", "mark up evidence", "anota este bug", "marca la captura" | `/bug-screenshot-annotation` | `agentic-qa-core/references/evidence-conventions.md` | `/playwright-cli` + local HTTP |
-| Discovery / inventory | "what components exist", "list ATCs", "is TC-X automated" | - | `kata-manifest.json` | Read |
+| Discovery / inventory | "what components exist", "list ATCs", "is TC-X automated", "coverage map", "what's tested", "qué está cubierto" | - | `kata-manifest.json`; coverage map + gaps → `bun run tests:map` (reads `.context/PBI/`, offline) | Read / `bun run tests:map` |
 | Regression / release | "run regression", "GO/NO-GO" | `/regression-testing` | `.context/master-test-plan.md`, CI logs | `gh` + Allure |
 | Private report hosting (login-walled Allure) | "reportes privados", "make reports private", "protect test evidence", "login para los reportes" | `/regression-testing` | **`regression-testing/references/private-hosting-setup.md` (AI-executed protocol)**: AI clones + deploys the Test Report Portal (Supabase/R2/Vercel) and wires this repo's secrets; suite workflows are already dual-mode | CLIs (`supabase`, `wrangler`, `vercel`, `gh`) |
 | Test-architecture decision (record/supersede) | "record an ADR", "document our fixture/runner/isolation decision", "architecture decision record" |: (see `.context/ADR/README.md`) | `.context/ADR/`, `agentic-qa-core/references/adr-doctrine.md` | Read + Write |
@@ -155,6 +155,7 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 - `api/schemas/`: OpenAPI-derived TypeScript types (refresh: `bun run api:sync`)
 - `tests/components/`: KATA L2 + L3 (Api / Page / Steps). `tests/e2e/`, `tests/integration/`: spec files.
 - `kata-manifest.json`: Component + ATC registry. Source of truth (Rule #12). Regenerate: `bun run kata:manifest`. Validate: `bun run kata:manifest:check`.
+- `bun run tests:map`: coverage map — renders the synced `.context/PBI/` tree (Epic → Story → Test, orphan pile, component rollup) as one HTML page (`.context/reports/test-map.html`; `--json` for the gap summary). Disk-only, no Jira calls; hydrate first if stale.
 
 ---
 
@@ -277,7 +278,7 @@ Skills using `[TMS_TOOL]` MUST include parallel pseudocode branches for both mod
 | `resend` | `/resend-cli` (community PROJECT) |
 | `jq` | `/acli` (primary consumer of jq pipelines) |
 | `bun` | `/bun` (community USER) |
-| `bun xray` | `/xray-cli` (in-repo) |
+| `bun xray` | `/xray-cli` (in-repo). `test enrich` backfills the synced Test `.md` cache with the Xray-internal associations the REST sync cannot see: inlined Preconditions + Test Set membership |
 | `supabase` / `wrangler` / `vercel` | `/regression-testing` (in-repo — private report hosting; protocol: `regression-testing/references/private-hosting-setup.md`) |
 
 **RULE**: Before any Bash call naming these binaries, check matching skill loaded. If not → load via Skill tool first. Hard gate, not suggestion.
@@ -308,7 +309,7 @@ Project values live in **`.agents/project.yaml`**: load once per session, cache.
 2. **WAIT FOR CONFIRMATION**: after important explanations, WAIT for user response before continuing.
 3. **EXPLAIN DEFECTS**: bug / unexpected behavior → describe observed, explain why problem, suggest impact (severity, affected users, business risk).
 4. **TEST-DESIGN DOCTRINE (binding)**: verifying ACs is the FLOOR, not testing. Coverage = AC-conformance + risk-beyond-AC. One AC → multiple cases by default (1:N); collapse to one only with a written `trivially atomic` justification. Derive cases by technique-trigger: EP always; BVA on ranges/limits; State-Transition on status fields; Decision Table on 2+ interacting conditions; Pairwise on 3+ factors. Never report "% of ACs verified" as completeness. Canon: `agentic-qa-core/references/test-design-doctrine.md`.
-5. **DEFECT-MANAGEMENT DOCTRINE (binding)**: classify every quality issue as Bug / Defect / Improvement by the FEATURE's lifecycle stage, NOT where it was found (Bug = feature already live above Staging; Defect = still pre-release; Improvement = not a broken AC: an enhancement or under-/un-specified AC surfaced by a test-beyond-AC). Set `qa_assignee` to self (never overwrite an existing owner: read-before-write) on every work item (story / tech_story / tech_debt / bug / defect / improvement). Components are mandatory (affected product module). Parent quality issues to the QA PROCESS epic: "QA Defect Management" for bug/defect/improvement, "QA Test Repository" for Test issues, "QA Master Test Plan" for Test Plans (FTP/STP/ATP), "QA Test Artifacts" for Test Executions (FTR/STR/ATR) + Preconditions + Test Sets, NEVER a product/dev epic; carry the source Story via an issue-link. Fill the mandatory field matrix; auto-derive Priority from Severity. Canon: `agentic-qa-core/references/defect-management-doctrine.md`.
+5. **DEFECT-MANAGEMENT DOCTRINE (binding)**: classify every quality issue as Bug / Defect / Improvement by the FEATURE's lifecycle stage, NOT where it was found (Bug = feature already live above Staging; Defect = still pre-release; Improvement = not a broken AC: an enhancement or under-/un-specified AC surfaced by a test-beyond-AC). Set `qa_assignee` to self (never overwrite an existing owner: read-before-write) on every work item (story / tech_story / tech_debt / bug / defect / improvement). Components are mandatory (affected product module). Parent quality issues to the QA PROCESS epic: "QA Defect Management" for bug/defect/improvement, "QA Test Repository" for Test issues, "QA Master Test Plan" for Test Plans (FTP/STP/ATP), "QA Test Artifacts" for Test Executions (FTR/STR/ATR) + Preconditions + Test Sets (real, parentable Jira issues — but their Test associations / Set membership are Xray-internal, read via `bun xray test enrich`), NEVER a product/dev epic; carry the source Story via an issue-link. Fill the mandatory field matrix; auto-derive Priority from Severity. Canon: `agentic-qa-core/references/defect-management-doctrine.md`.
 6. **LANGUAGE**: see §1 #14 LANGUAGE DETECTION + MIRRORING (canonical rule).
 7. **SESSION CLOSE (every workflow skill, unprompted)**: surface repo-relative paths of every screenshot/bug-annotation captured (in-flow, the instant one exists, never wait to be asked) + a session-close footer of skills/MCPs/CLIs used and testing-pyramid levels touched (explicit "none" per untouched level). Printed in CHAT only, never in a Jira comment/ATR. Full contract + templates: `agentic-qa-core/references/session-footer-contract.md`.
 
@@ -349,7 +350,7 @@ Project values live in **`.agents/project.yaml`**: load once per session, cache.
 
 Verify any change with `git check-ignore -v` on both a `test-specs/` file (must NOT be ignored) and a `stories/.../story.md` (must be ignored).
 
-> **QA-process parenting (3-axis model).** In Jira, every `bug` / `defect` / `improvement` parents to the QA process epic **"QA Defect Management"** (every `Test` issue to **"QA Test Repository"**, every **Test Plan** FTP/STP/ATP to **"QA Master Test Plan"** (itself an Epic, not a Test Plan work type), and every **Test Execution** FTR/STR/ATR + Precondition + Test Set to **"QA Test Artifacts"**), NEVER a product/dev epic. Traceability to the source Story is carried by an **issue-link**, and the affected product area by **components**: three separate axes (parent = QA bucket · link = source Story · components = product module). Canon: `agentic-qa-core/references/defect-management-doctrine.md`.
+> **QA-process parenting (3-axis model).** In Jira, every `bug` / `defect` / `improvement` parents to the QA process epic **"QA Defect Management"** (every `Test` issue to **"QA Test Repository"**, every **Test Plan** FTP/STP/ATP to **"QA Master Test Plan"** (itself an Epic, not a Test Plan work type), and every **Test Execution** FTR/STR/ATR + Precondition + Test Set to **"QA Test Artifacts"**), NEVER a product/dev epic. Preconditions + Test Sets are real Jira issues (parentable via `acli`); their Test↔Precondition association and Test Set membership are Xray-internal — read via `bun xray test enrich`. Traceability to the source Story is carried by an **issue-link**, and the affected product area by **components**: three separate axes (parent = QA bucket · link = source Story · components = product module). Canon: `agentic-qa-core/references/defect-management-doctrine.md`.
 
 **Canonical tree** (Epic-centric; `<KEY>` = Jira key, `<slug>` from summary):
 
@@ -378,22 +379,23 @@ Verify any change with `git check-ignore -v` on both a `test-specs/` file (must 
       context.md                                 [LOCAL] notes about the repo, not the ticket
       evidence/                                  [LOCAL] screenshots
       shift-left-refinement.md                   [LOCAL] staging buffer for the shift-left publish
+  epics/_orphans/                                [SYNC - parentless Stories, plus tests/: orphan Tests with no issue-link to any coverable — a visible traceability worklist]
+  qa-artifacts/_index.md                         [SYNC - register of the QA-bucket Epics (label `QA-Artifact`): bucket name → key; no per-epic folders, their content is already distributed]
   bugs/BUG-<KEY>-<slug>/                         [SYNC - coverable folder: bug.md + ATP + ATR + test-executions/ + defects/]
   improvements/IMPROVEMENT-<KEY>-<slug>/         [SYNC - coverable folder: improvement.md + ATP + ATR + …]
   tech-stories/TECHSTORY-<KEY>-<slug>/           [SYNC - coverable folder: tech-story.md + ATP + ATR + …]
   tech-debts/TECHDEBT-<KEY>-<slug>/              [SYNC - coverable folder: tech-debt.md + ATP + ATR + …]
   defects/                                       [SYNC - standalone defect issues]
-  tests/                                         [SYNC - ORPHAN Test issues only; covered ones nest under their parent]
-  test-plans/ test-executions/ test-sets/ preconditions/   [SYNC - Xray container issues (jira-xray); description holds the ATP/ATR body]
+  test-plans/ test-executions/ test-sets/ preconditions/   [SYNC - Xray container issues (jira-xray); description holds the ATP/ATR body. Test↔Precondition association + Test Set membership are Xray-internal (GraphQL only), invisible to the REST sync: read via `bun xray test enrich`]
 ```
 
-**Default `pull` scope = Epics + Stories + Bugs** (+ optional `--types` / `JIRA_SYNC_TYPES`). **Coverable** types (Story, Bug, Defect, Improvement, Tech Story, Tech Debt) each get their OWN folder: body md + `acceptance-test-plan.md` + `acceptance-test-results.md` + `test-executions/` (only when >1 Execution linked) + nested `defects/`. **ATP/ATR precedence** (items-first: a **Test Plan** item for ATP / **Test Execution** item for ATR by excellence; the Story custom field is fallback only): linked Xray Test Plan desc (ATP) / Test Execution / Re-Test Execution desc (ATR, newest wins) OVERRIDE the Story custom-field copy → else issue field → else Jira comment (only `--include-comments`) → else silent. Sync emits end-of-run **traceability WARNINGS** for ATP/ATR linked via the wrong link type, atypical Defect links, and orphan Defects with no coverable parent.
+**`pull` scope is declared per work type via `work_types.*.sync` in `.agents/jira-required.yaml`** (shipped default: Epic + Story + Bug); `--types` / `JIRA_SYNC_TYPES` extend it. **Coverable** types (Story, Bug, Defect, Improvement, Tech Story, Tech Debt) each get their OWN folder: body md + `acceptance-test-plan.md` + `acceptance-test-results.md` + `test-executions/` (only when >1 Execution linked) + nested `defects/`. **ATP/ATR precedence** (items-first: a **Test Plan** item for ATP / **Test Execution** item for ATR by excellence; the Story custom field is fallback only): linked Xray Test Plan desc (ATP) / Test Execution / Re-Test Execution desc (ATR, newest wins) OVERRIDE the Story custom-field copy → else issue field → else Jira comment (only `--include-comments`) → else silent. Sync emits end-of-run **traceability WARNINGS** for ATP/ATR linked via the wrong link type, atypical Defect links, and orphan Defects with no coverable parent.
 
 **`[SYNC]` files = forbidden to hand-write** (overwritten on every sync: NO file is hard-protected; Jira is the source of truth). **Rule of thumb**: file mirrors a Jira/Xray field → read the synced copy, never author it locally. File holds info NOT in Jira → author it locally, then decide its tier: does another machine need it? `[COMMIT]`. Only this session? `[LOCAL]`.
 
 **MODULE CONTEXT → EPIC DESCRIPTION.** No custom field: skills APPEND a `## Module Context (QA)` section to the Epic `description` (read-first, never overwrite the PO's text) and the sync splits that section out into `module-context.md`. `description` exists on every Jira instance, so this works on a project that provisions zero custom fields.
 
-**TESTS APPEAR EXACTLY ONCE.** A `Test` linked to a coverable issue materializes under that issue's `test-cases/`. Root `tests/` holds only orphans — Tests that no Story / Bug / Improvement covers, which is itself a coverage smell worth seeing.
+**TESTS APPEAR EXACTLY ONCE.** A `Test` linked to a coverable issue materializes under that issue's `test-cases/`. Orphans materialize under `epics/_orphans/tests/` — Tests that no Story / Bug / Improvement covers, which is itself a coverage smell worth seeing; re-linking one in Jira moves it under its Story on the next sync.
 
 **ONE ATP PER STORY.** `/shift-left-testing` authors it pre-sprint into `{{jira.acceptance_test_plan}}` (and the linked Test Plan issue); `/sprint-testing` Stage 1 refines that SAME field and SAME issue into the executable superset. No `(Shift-Left DRAFT)` title variant. The pre-sprint pass is marked by the `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` labels. Stage 1's short-circuit reads the SYNCED `acceptance-test-plan.md` — never a local scratch file, which would be missing on any other machine and would degrade the short-circuit silently.
 
@@ -404,7 +406,7 @@ Verify any change with `git check-ignore -v` on both a `test-specs/` file (must 
 
 **FALLBACK**: if a custom field a skill must fill is absent from the instance, the skill writes the content as a structured Jira comment (`## <label>`) per `.agents/jira-required.yaml` → `fallback:`. The sync then emits a pointer stub for that field's `.md`. Never block on a missing field.
 
-**COLD CLONE**: a fresh checkout has an almost-empty `.context/PBI/` (this README, `templates/`, committed `test-specs/`). That is the intended state. `bun run context:hydrate` rebuilds the cache; it needs `ATLASSIAN_URL` / `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` in `.env` (validate with `bun run jira:check`). Someone without Jira access keeps an empty cache and can still review `test-specs/`, run the suite, and work on framework code — but not per-ticket QA.
+**COLD CLONE**: a fresh checkout has an almost-empty `.context/PBI/` (this README, `templates/`, committed `test-specs/`). That is the intended state. `bun run context:hydrate` rebuilds the cache; it needs `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` in `.env` plus the host from `.agents/project.yaml` → `issue_tracker.atlassian_url` (§7 anchor; validate with `bun run jira:check`). Someone without Jira access keeps an empty cache and can still review `test-specs/`, run the suite, and work on framework code — but not per-ticket QA.
 
 **ENTRY POINT**: invoke `/sprint-testing`: syncs the ticket (`jira:sync-issues get`), explains story, loads the synced PBI, explores code.
 
