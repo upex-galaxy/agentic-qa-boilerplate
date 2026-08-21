@@ -107,7 +107,7 @@ Keep reviewer output consistent across E2E and API:
 ## Summary
 | Category | Pass | Fail |
 |----------|------|------|
-| Shared (automation-standards §9) | … | … |
+| Shared (automation-standards §10) | … | … |
 | Delta (this file §2 or §3) | … | … |
 
 ## Verdict
@@ -312,7 +312,7 @@ Before marking the ticket complete and opening the PR, **every** box below must 
 - [ ] `bun run test <path>` — green, zero retries used.
 - [ ] `bun run types:check` — no errors.
 - [ ] `bun run lint:check` — no errors.
-- [ ] Component registered in `ApiFixture` / `UiFixture` / `StepsFixture` as appropriate.
+- [ ] Component registered in `ApiFixture` / `UiFixture` as appropriate (Steps classes are instantiated directly in tests — no fixture registration).
 - [ ] Every `@atc('X')` resolves to a real TMS ticket (spot-check 2 random IDs).
 
 ### 4.2 Test coverage

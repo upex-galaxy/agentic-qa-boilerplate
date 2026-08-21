@@ -63,7 +63,7 @@ Requires `agentic-qa-core`. Loads on demand:
 
 This skill is **per-scope**: `<scope>` = `<JIRA-KEY>` (ticket-driven / regression-driven) or `<module-slug>` (module-driven). Session state lives at `.session/test-automation/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The session `plan.md` is a thin INDEX that cites the canonical domain artifacts (`spec.md`, `automation-plan.md`, `atc/*.md`) under the Epic's `test-specs/` tree (`.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/`) — domain content stays in the existing PBI tree, not duplicated.
 
-This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The Plan, Code, and Review phases each carry distinct context-isolation needs — Plan keeps KATA architectural reads out of the orchestrator, Code isolates multi-file edits, Review fans out three independent verifiers in parallel.
+This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 7-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. The Plan, Code, and Review phases each carry distinct context-isolation needs — Plan keeps KATA architectural reads out of the orchestrator, Code isolates multi-file edits, Review fans out three independent verifiers in parallel.
 
 | Stage                                          | Pattern              | Subagent role                                                                                                                  |
 |------------------------------------------------|----------------------|--------------------------------------------------------------------------------------------------------------------------------|
@@ -76,7 +76,7 @@ This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (
 
 - **Code phase scope rule**: each Code subagent edits multiple files in isolation, returns a list of changed files + a one-line summary per file. The orchestrator never reads the diffs — only the summary. If the user wants to see actual diffs, the orchestrator runs `git diff` inline after the subagent returns.
 - **On any Verifier failure**: STOP, return the failing report verbatim to the user, do NOT auto-fix the test code, do NOT re-dispatch the Code phase without user approval. See `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md`.
-- **MANDATORY context doc for Plan + Code briefings**: include `kata-manifest.json` (root) in the "Context docs" component (item 2 of the 6-component briefing). Without it the subagent will scan `tests/components/**` directly, burn tokens, and risk proposing duplicates. See Critical Rule #12 in `CLAUDE.md`.
+- **MANDATORY context doc for Plan + Code briefings**: include `kata-manifest.json` (root) in the "Context docs" component (item 2 of the 7-component briefing). Without it the subagent will scan `tests/components/**` directly, burn tokens, and risk proposing duplicates. See Critical Rule #12 in `CLAUDE.md`.
 
 ---
 
@@ -181,7 +181,7 @@ Write the canonical domain plan file(s) for the chosen scope under the Epic's `t
 - Which scenarios from the ticket become tests, which become ATCs, which are shared preconditions (Steps)?
 - Which components already exist (`tests/components/api/*Api.ts`, `tests/components/ui/*Page.ts`) and which need to be created?
 - What test data is required? Classify by Discover / Modify / Generate (never assume data exists in staging).
-- Which fixture will the test use -- `{api}`, `{ui}`, `{test}`, or `{steps}`?
+- Which fixture will the test use -- `{api}`, `{ui}`, or `{test}`? Do any shared preconditions call for a Steps class (`tests/components/steps/*Steps.ts`), instantiated directly in the test?
 - Which ATC IDs (from the TMS) map to which component methods?
 
 **Also write the session index `plan.md`** at `.session/test-automation/<scope>/plan.md` per `agentic-qa-core/references/session-management.md` §6. This is a THIN INDEX — Goal, Inputs (cites the canonical artifacts above), Approach, Phase breakdown table, Risks, Verification checklist, Cross-references. It does NOT duplicate the domain content; it points to it.
@@ -200,7 +200,7 @@ Implement in this order:
 
 1. **Types** at top of component file (payloads, responses, domain DTOs).
 2. **Component class** extending `ApiBase` or `UiBase`. Helpers first (no decorator), ATCs second (`@atc('TICKET-ID')`).
-3. **Register** the component in `tests/components/ApiFixture.ts`, `UiFixture.ts`, or `StepsFixture.ts` as appropriate.
+3. **Register** the component in `tests/components/ApiFixture.ts` or `UiFixture.ts` as appropriate. Steps classes (`tests/components/steps/*Steps.ts`) are NOT registered in any fixture — tests and setup files instantiate them directly (see `ExampleSteps.ts`).
 4. **Test file** under `tests/e2e/{module}/` or `tests/integration/{module}/`, using the correct fixture.
 5. **Run + verify**, in this exact order -- do not skip steps:
 
@@ -254,7 +254,7 @@ This skill stops at a clean local review. It does **not** create branches, push,
 - The Phase 3 ACCEPT gate (3 Verifiers green: `test` / `types:check` / `lint:check`) is the skill's **local validation gate**. Under `sdet` it must pass on **both** the `local` and `staging` environments before push — re-run the suite against each (`active_env` per `.agents/project.yaml`). The Verifiers are local-only; Sanity CI on the branch is owned by `/git-flow-master` + `/regression-testing`, never by this skill.
 - After ACCEPT, surface the explicit handoff — _"Local gate green. Ready for `/git-flow-master`: cut `test/{KEY}-{slug}` from the integration trunk, push, Sanity-CI, PR into the trunk, merge `--no-ff`."_ Do not auto-invoke git operations.
 - **Append the Git Ledger line** to the suite's `progress.md` after each branch action (orchestrator-written, append-only) so a resuming session knows how the trunk was left: trunk name + SHA, last ticket merged, pending tickets, sync-gate / final-PR state. Schema in `../agentic-qa-core/references/session-management.md` §7 "The Git Ledger"; what-to-write detail in `.claude/skills/git-flow-master/references/sdet-integration-trunk.md` §Resume.
-- **TC lifecycle anchors to the ticket-branch PR, not the final `trunk → main` PR**: TCs → In Review when the ticket PR opens into the trunk; they flip to Automated only after the final suite PR merges to `main` and CI is green there. Execute transitions via `/test-documentation` + `[ISSUE_TRACKER_TOOL]`; cross-check status names against `.agents/jira-workflows.json`. Merging into the trunk is NOT "Automated".
+- **TC lifecycle anchors to the ticket-branch PR, not the final `trunk → main` PR**: TCs → **Pull Request** when the ticket PR opens into the trunk (transition `create_pr`: In Automation → Pull Request); they flip to **AUTOMATED** only via the `merged` transition, after the final suite PR merges to `main` and CI is green there. Execute transitions via `/test-documentation` + `[ISSUE_TRACKER_TOOL]`; cross-check status names against `.agents/jira-workflows.json`. Merging into the trunk is NOT "AUTOMATED".
 
 ---
 
@@ -267,10 +267,10 @@ The fixture you pick determines whether a browser opens. Wrong fixture = slow AP
 | API only (integration) | `{ api }` | No (lazy) | Pure API testing. No UI needed. |
 | UI only | `{ ui }` | Yes | UI-focused testing. No backend setup via API. |
 | Hybrid (UI + API setup) | `{ test }` | Yes | Setup data via API, drive flow via UI, verify via API. |
-| Reusable precondition chains | `{ steps }` | Depends on steps used | 3+ ATCs repeated across 3+ files. |
 
 Rules:
 
+- Only three fixtures exist: `{ api }`, `{ ui }`, `{ test }` (see `tests/components/TestFixture.ts`). Reusable precondition chains (3+ ATCs repeated across 3+ files) go in a Steps class under `tests/components/steps/` — instantiated directly in the test, never exposed as a fixture.
 - Integration tests (`tests/integration/**`) almost always use `{ api }`.
 - E2E tests (`tests/e2e/**`) use `{ ui }` if no API setup needed, otherwise `{ test }`.
 - Never request `{ ui }` for a test that never interacts with the UI -- it opens a browser for nothing.
@@ -382,7 +382,7 @@ export class UiFixture extends TestContext {
 | Tests pass | `bun run test {path}` | All green, zero retries used |
 | Types | `bun run types:check` | No errors |
 | Lint | `bun run lint:check` | No errors |
-| Fixture registered | visual | Component is in `ApiFixture` / `UiFixture` / `StepsFixture` |
+| Fixture registered | visual | Component is in `ApiFixture` / `UiFixture` (Steps classes are instantiated directly, never registered) |
 | ATC IDs linked | visual | Every `@atc('X')` matches a real TMS test case ID |
 | Naming | visual | Files PascalCase for components, camelCase verb for test files |
 | Session footer | chat | Session footer + consolidated screenshot list printed in chat per session-footer-contract (never in a Jira comment) |

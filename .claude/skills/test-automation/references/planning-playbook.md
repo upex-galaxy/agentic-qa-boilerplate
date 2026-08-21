@@ -14,7 +14,7 @@ Scope-selection rules (which scope to pick, the one-line summary of each) live i
 
 The Plan phase is delegated to a single subagent. The orchestrator does NOT read the KATA references, the existing component code, or the OpenAPI schemas during planning — that exploration lives entirely in the subagent's context.
 
-**Briefing** (6 components per `agentic-qa-core/references/briefing-template.md`):
+**Briefing** (7 components per `agentic-qa-core/references/briefing-template.md`):
 
 ```
 Goal: Produce spec.md + automation-plan.md for scope <SCOPE> (module|ticket|ATC) <SCOPE_KEY>.
@@ -28,6 +28,7 @@ Context docs:
   - .claude/skills/test-automation/references/atc-tracing.md
   - tests/components/<api|ui>/ (existing components — open ONLY when the manifest entry is ambiguous)
   - api/schemas/ (TypeScript types for API tests)
+Project Standards (auto-resolved): <compact rules pulled from .claude/skills/REGISTRY.md per agentic-qa-core/references/skill-resolver.md — authoritative for listed conventions; do not re-read full SKILL.md files>
 Skills to load: (none — planning skill is loaded by orchestrator already)
 Exact instructions:
   1. Load kata-manifest.json FIRST. Cross-check every candidate Component name against components.api[].name + components.ui[].name; cross-check every candidate ATC ID against components.{api,ui}[].atcs[].id. Treat any match as a reuse signal — never plan a duplicate.
@@ -311,7 +312,7 @@ Teardown: ...
 - [ ] Register component in fixture
 - [ ] Create test file
 - [ ] Run tests and validate
-- [ ] Update TMS status to "Automated"
+- [ ] TMS TC transitions to Pull Request when the PR opens (`create_pr` transition) — Automated only lands post-merge via the `merged` transition
 
 ## 7. Success Criteria
 - [ ] All ACs covered — **the floor, not the bar.** Also: risk-beyond-AC covered (invalid/boundary inputs, auth/error paths, state transitions, anomalies the AC is silent on) per `agentic-qa-core/references/test-design-doctrine.md`
@@ -321,7 +322,7 @@ Teardown: ...
 - [ ] No hardcoded waits
 - [ ] Aliases used
 - [ ] Tests pass locally
-- [ ] TMS marked Automated
+- [ ] TMS TC moved to Pull Request on PR open (never "Automated" after local validation — Automated is exclusively the post-merge `merged` transition, once CI is green on main)
 ```
 
 Implementation-order rule of thumb: each box in Section 6 should map to a single commit. If a commit would mix "new types" and "new ATC", split it.
@@ -463,7 +464,7 @@ Planning tasks the manifest answers:
 | "Does an `OrdersApi` component already exist?" | Look under `components.api[].name` |
 | "Is ATC `UPEX-101` already decorated somewhere?" | Grep `atcs[].id` in every component |
 | "Which component owns endpoint X?" | Component names map to domain; confirm by opening the file only if unclear |
-| "Which Steps classes already compose ATCs?" | Check `preconditions[]` and its method list |
+| "Which Steps classes already compose ATCs?" | Check the manifest's steps listing (`tests/components/steps/` scan) and its method list |
 
 Include two tables in the implementation plan based on manifest output:
 
@@ -538,7 +539,7 @@ When every box is checked, the plan is ready to hand off to Phase 2 (Code). Unti
 
 ## 12. Interrupted-session recovery
 
-When `/test-automation` is invoked mid-flow (or resumed after context loss), determine the resume step from the PBI state. The skill reads `PROGRESS.md` + `ROADMAP.md` directly — no `@`-loadable session file needed.
+When `/test-automation` is invoked mid-flow (or resumed after context loss), the FIRST stop is the mandatory Phase 0 session contract: read `.session/test-automation/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` and offer resume / restart / abort. `PROGRESS.md` + `ROADMAP.md` (in `test-specs/`) are the module-batch trackers — read them to confirm which ticket the resume applies to, but they complement the `.session/` contract, they do not replace it.
 
 | Has plan? (`automation-plan.md`) | Has test code? (`tests/e2e/**` or `tests/integration/**`) | Resume from |
 |---|---|---|
@@ -630,15 +631,15 @@ T01 ──┬──► T02 ──► T04
 
 | Ticket | Status | Test file | Done | Notes |
 |---|---|---|---|---|
-| T01 | done | tests/e2e/login.spec.ts | 3/3 | — |
-| T02 | in-progress | tests/e2e/signup.spec.ts | 1/5 | Fixture blocked on email-verify mock |
+| T01 | done | tests/e2e/login.test.ts | 3/3 | — |
+| T02 | in-progress | tests/e2e/signup.test.ts | 1/5 | Fixture blocked on email-verify mock |
 
 ## Session log
 
 | Date | Action | Actor | Artifacts |
 |---|---|---|---|
 | 2026-04-19 | Planned T02 | AI | automation-plan.md |
-| 2026-04-20 | Coded T02 ATC1 | AI | tests/e2e/signup.spec.ts |
+| 2026-04-20 | Coded T02 ATC1 | AI | tests/e2e/signup.test.ts |
 
 ## Shared components created
 

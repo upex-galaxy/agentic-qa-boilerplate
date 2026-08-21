@@ -17,11 +17,11 @@
     {
       "id": 2,
       "prompt": "The nightly smoke test failed. Analyze the results and classify the failures.",
-      "expected_output": "The assistant retrieves the failing smoke run, downloads failed logs and artifacts, and classifies each failed test into REGRESSION, FLAKY, KNOWN ISSUE, ENVIRONMENT, or NEW TEST FAILURE following the decision tree.",
+      "expected_output": "The assistant retrieves the failing smoke run, downloads failed logs and artifacts, and classifies each failed test into KNOWN-BLOCKED, KNOWN ISSUE, ENVIRONMENT, NEW TEST FAILURE, REGRESSION, or FLAKY following the decision tree.",
       "files": [],
       "expectations": [
         "The response uses `gh run view --log-failed` or `gh run download` to gather evidence",
-        "Every failed test is placed into exactly one of the five classification buckets",
+        "Every failed test is placed into exactly one of the six classification buckets",
         "At least one classification includes the error pattern that drove the decision (e.g. ECONNREFUSED -> ENVIRONMENT, or 'element not found after deploy' -> REGRESSION)",
         "The response notes severity (CRITICAL / HIGH / MEDIUM / LOW) alongside classification for any failure in a core flow",
         "The response does not classify a test as REGRESSION without history evidence (or explicitly flags 'insufficient history')"
@@ -70,7 +70,7 @@
       "expectations": [
         "The response does NOT trigger `gh workflow run regression.yml` or similar",
         "The response does not attempt to classify failures or produce a GO/NO-GO verdict",
-        "Any CI/CD advice given is consistent with the patterns in references/ci-cd-integration.md (PR = integration only, E2E critical on main, sharded nightly)"
+        "Any CI/CD advice given is consistent with the patterns in references/ci-cd-integration.md (PR = build checks only via build.yml, daily scheduled regression.yml + smoke.yml, manual sanity.yml)"
       ]
     }
   ]

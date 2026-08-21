@@ -12,63 +12,91 @@ The config has four load-bearing concerns: **projects**, **reporters**, **use** 
 
 ```typescript
 import { defineConfig, devices } from '@playwright/test';
+import { config, env } from './config/variables';
 
-const isCI = !!process.env.CI;
+// Single source of truth — the config NEVER reads process.env directly
+const baseURL = config.baseUrl;
 
 export default defineConfig({
   testDir: './tests',
-  fullyParallel: true,
-  forbidOnly: isCI,
-  retries: isCI ? 2 : 0,
-  workers: isCI ? 1 : undefined,
+  testMatch: /.*\.test\.ts/,
+
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,
+
+  // KATA doctrine: tests must be deterministic. A failure is investigated,
+  // never masked by a retry — locally AND in CI.
+  retries: 0,
+
+  // Single worker for now — increase when tests are stable and parallelizable
+  workers: 1,
 
   reporter: [
     ['./tests/KataReporter.ts'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['allure-playwright', { outputFolder: 'allure-results' }],
     ['json', { outputFile: 'test-results/results.json' }],
-    isCI ? ['github'] : ['list'],
+    ['junit', { outputFile: 'test-results/junit.xml' }],
+    ['allure-playwright', { resultsDir: config.reporting.allureResultsDir /* + detail, categories, environmentInfo */ }],
   ],
 
   use: {
-    baseURL: process.env.BASE_URL ?? 'http://localhost:3000',
-    trace: isCI ? 'retain-on-failure' : 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: isCI ? 'retain-on-failure' : 'off',
+    baseURL,
+    trace: env.isCI ? 'retain-on-failure' : 'on-first-retry',
+    screenshot: config.reporting.screenshotOnFailure ? 'only-on-failure' : 'off',
+    video: env.isCI && config.reporting.videoOnFailure ? 'retain-on-failure' : 'off',
+    headless: env.isCI || config.browser.headless,
   },
 
   projects: [
-    { name: 'global-setup', testMatch: /global\.setup\.ts/ },
-
-    { name: 'api-setup',
-      testMatch: /api-auth\.setup\.ts/,
-      dependencies: ['global-setup'] },
+    { name: 'global-setup',
+      testMatch: /global\.setup\.ts/,
+      testDir: './tests/setup',
+      teardown: 'global-teardown' },   // teardown wired as a PROJECT, not a globalTeardown hook
 
     { name: 'ui-setup',
       testMatch: /ui-auth\.setup\.ts/,
+      testDir: './tests/setup',
       dependencies: ['global-setup'] },
 
-    { name: 'integration',
-      testDir: './tests/integration',
-      dependencies: ['api-setup'],
-      use: { storageState: '.auth/api-state.json' } },
+    { name: 'api-setup',
+      testMatch: /api-auth\.setup\.ts/,
+      testDir: './tests/setup',
+      dependencies: ['global-setup'] },
 
     { name: 'e2e',
-      testDir: './tests/e2e',
+      testMatch: '**/e2e/**/*.test.ts',
       dependencies: ['ui-setup'],
-      use: { ...devices['Desktop Chrome'], storageState: '.auth/user.json' } },
+      use: { ...devices['Desktop Chrome'], storageState: config.auth.storageStatePath } },
+
+    { name: 'integration',
+      testMatch: '**/integration/**/*.test.ts',
+      dependencies: ['api-setup'],
+      use: {} },
+
+    { name: 'smoke',
+      grep: /@critical/,
+      testMatch: '**/{e2e,integration}/**/*.test.ts',
+      dependencies: ['ui-setup', 'api-setup'],
+      use: { ...devices['Desktop Chrome'], storageState: config.auth.storageStatePath } },
+
+    { name: 'global-teardown',
+      testMatch: /global\.teardown\.ts/,
+      testDir: './tests/teardown' },
   ],
 
-  globalTeardown: './tests/teardown/global.teardown.ts',
+  outputDir: 'test-results',
 });
 ```
 
 Rules this template encodes:
 
-- **One `testDir` per project** — do not point two projects at the same folder with different filters. Use `--grep` at the command line for ad-hoc selection.
+- **URLs come from `config/variables.ts`** — the config imports `config` / `env` and never reads `process.env` ad-hoc (single exception: the `CI` flag). See §5.
+- **`testMatch: /.*\.test\.ts/`** — only `*.test.ts` files run. A `*.spec.ts` file is silently ignored; name test files accordingly.
 - **Authentication via setup projects** — projects that need a logged-in state depend on `ui-setup` or `api-setup` and consume the generated `storageState` file. Do not login in `beforeEach` of every test.
-- **`forbidOnly: isCI`** — `test.only` is legal locally (fast iteration) but fails the build on CI. Catches accidental commits.
-- **`fullyParallel: true`** — every test file can run concurrently with every other. If a test depends on order, the test is wrong.
+- **`forbidOnly: !!process.env.CI`** — `test.only` is legal locally (fast iteration) but fails the build on CI. Catches accidental commits.
+- **`retries: 0` everywhere** — locally and in CI. Tests are deterministic by doctrine; a failure is a signal to investigate, never something to mask with a retry.
+- **Serial execution is the shipped default** — `fullyParallel: false` + `workers: 1`. Parallelism is a deliberate future upgrade once the suite is proven stable, not a knob to flip casually.
+- **Teardown is a PROJECT** — `global-teardown` is activated by the `teardown:` property on `global-setup`, not by a `globalTeardown` hook and not by `dependencies`.
 
 ---
 
@@ -105,9 +133,10 @@ The reporter array is load-bearing. Reporters run in order and the first one can
 
 1. **`KataReporter`** (custom) — colored terminal tree, prints step boundaries, reads the NDJSON written by `@atc` to show per-ATC status. Goes first so its step events are registered before Allure grabs them.
 2. **`html`** — Playwright's built-in HTML report. Lives in `playwright-report/`. `open: 'never'` prevents it from auto-opening locally (annoying in CI-like local runs).
-3. **`allure-playwright`** — writes `allure-results/`. The `bun run allure:generate` script post-processes this directory into a static site.
-4. **`json`** — machine-readable summary for tooling (`test-results/results.json`).
-5. **`github` / `list`** — the environment-dependent human reporter. `github` annotates PRs with failure locations when run in GitHub Actions. `list` is cleaner locally.
+3. **`json`** — machine-readable summary for tooling (`test-results/results.json`).
+4. **`junit`** — XML for CI tools (`test-results/junit.xml`). Always on, local and CI.
+5. **`allure-playwright`** — writes to `config.reporting.allureResultsDir`. The `bun run allure:generate` script post-processes this directory into a static site.
+6. **`github`** (optional, commented out in the shipped config) — annotates PRs with failure locations when enabled in GitHub Actions. Not recommended with matrix strategies (errors multiply in the UI).
 
 ### 3.1 What `KataReporter` produces
 
@@ -140,7 +169,7 @@ Allure suite / grouping labels are **derived from the Playwright tag** on the te
 |----------|------|------|
 | HTML report | `playwright-report/` | Every run |
 | JSON summary | `test-results/results.json` | Every run |
-| JUnit XML (if enabled) | `test-results/junit-results.xml` | Every run |
+| JUnit XML | `test-results/junit.xml` | Every run |
 | Allure raw | `allure-results/` | Every run |
 | Traces | `test-results/{test}/trace.zip` | Per `trace` setting |
 | Screenshots on failure | `test-results/{test}/test-failed-*.png` | On failure |
@@ -154,21 +183,19 @@ All paths except `reports/atc_results.json` should be gitignored.
 
 ## 4. Local vs CI configuration differences
 
-Deliberate divergence. Each switch has a reason.
+The deliberate divergences are few. **`retries` and `workers` are NOT among them** — `retries: 0` and `workers: 1` apply everywhere, local and CI.
 
 | Setting | Local | CI | Reason |
 |---------|-------|-----|--------|
-| `retries` | `0` | `2` | Local: surface flakiness immediately. CI: tolerate infra jitter but still count retries as flags. |
-| `workers` | `undefined` (auto) | `1` | Local: use all cores for fast feedback. CI: predictable resource usage on shared runners; trade parallelism for stability. |
 | `forbidOnly` | `false` | `true` | Let devs iterate with `.only`, block it on merge. |
 | `trace` | `'on-first-retry'` | `'retain-on-failure'` | Local: keep disk light. CI: always capture failures for postmortem. |
-| `video` | `'off'` | `'retain-on-failure'` | Same rationale. |
-| `reporter` tail | `['list']` | `['github']` | `github` writes PR annotations. `list` is the compact human view. |
-| `timeout` (test) | project default | project default + small CI multiplier (optional) | Networks are slower on CI runners. Keep deltas small. |
+| `video` | `'off'` | `'retain-on-failure'` (when `config.reporting.videoOnFailure`) | Same rationale. |
+| `headless` | `config.browser.headless` | forced `true` | CI runners have no display. |
+| `github` reporter | off | opt-in (commented in shipped config) | Writes PR annotations when enabled. |
 
-### 4.1 The `retries: 0` local rule
+### 4.1 The `retries: 0` rule — everywhere
 
-This is a discipline, not a constraint. If a test passes on retry locally, it is flaky — the failure you will chase later is already in your diff. CI keeps `retries: 2` to tolerate transient infrastructure issues, but any test that consistently needs a retry to pass in CI is promoted to a flakiness bug, not accepted.
+This is doctrine, not a local-only discipline. If a test passes on retry, it is flaky — the failure you would chase later is already in your diff. CI gets no retry allowance either: a test that needs a retry to pass in CI is a flakiness bug to fix, never something the config tolerates. Failure classification in `regression-testing` depends on this — a retry-masked pass would distort the FLAKY bucket of the GO/NO-GO analysis.
 
 ### 4.2 CI detection
 
@@ -183,11 +210,9 @@ The config reads through `config/variables.ts`, the single source of truth. It d
 | Env var | Consumed by | Purpose |
 |---------|-------------|---------|
 | `CI` | Playwright config | Toggle local vs CI switches |
-| `BASE_URL` | `use.baseURL` | Frontend URL — overridden per environment |
-| `API_BASE_URL` | `ApiBase` | API host |
+| `TEST_ENV` | `config/variables.ts` | Selects the environment entry in the internal URL map AND the credential set. `config.baseUrl` (frontend, feeds `use.baseURL`) and `config.apiUrl` (API host, feeds `ApiBase`) both come from that map — there are NO `BASE_URL` / `API_BASE_URL` env vars. |
 | `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD` | auth setup projects | Local credentials |
 | `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD` | auth setup projects | Staging credentials |
-| `TEST_ENV` | `config/variables.ts` | Selector for which credential set to use |
 | `AUTO_SYNC` | `global.teardown.ts` | Enable TMS sync (see atc-tracing reference) |
 | `TMS_PROVIDER` | `jiraSync.ts` | `xray` / `jira` / `none` |
 
@@ -205,15 +230,12 @@ The project-level sharding used in CI pipelines is out of scope here. This secti
 
 ### 6.1 Parallelism tuning
 
-- **Default**: `fullyParallel: true` + `workers: undefined` → Playwright uses `os.cpus().length / 2`.
-- **Authoring a new suite**: run with `workers: 1` to make the terminal output readable and to catch accidental shared-state bugs.
-  ```bash
-  bun run test tests/integration/orders/createOrder.test.ts -- --workers=1
-  ```
-- **Stress-testing for flakiness**: run with higher parallelism than CI uses.
+- **Default**: `fullyParallel: false` + `workers: 1` — serial execution is the shipped default, local and CI. Terminal output stays readable and shared-state bugs cannot hide behind interleaving.
+- **Stress-testing for future parallelism**: before proposing a workers bump, prove the suite survives concurrency by overriding at the command line.
   ```bash
   bun run test -- --workers=8 --repeat-each=5
   ```
+  A test that passes serially but fails here has shared state — fix it before any config-level parallelism change.
 
 ### 6.2 Sharding while authoring
 
@@ -329,12 +351,12 @@ Two-command discipline for the test author:
 ## 8. Gotchas
 
 1. **Dependency projects do not re-run between test projects.** `ui-setup` runs once per invocation. If you change auth credentials mid-session, invalidate `.auth/` manually (`rm -rf .auth`).
-2. **`fullyParallel: true` is strict.** A test that works serially but fails in parallel has shared state — locate it and remove it; do not reach for `test.describe.serial`.
+2. **Serial today does not license shared state.** The shipped config runs `fullyParallel: false` + `workers: 1`, but a test that would fail under parallelism has shared state — locate it and remove it now; do not reach for `test.describe.serial`, and do not let serial execution hide the bug that blocks the future workers bump.
 3. **Project `testMatch` is case-sensitive on Linux, case-insensitive on macOS.** CI is Linux. Match the pattern exactly on disk.
-4. **`globalTeardown` runs even if all tests were skipped.** Use it for artifact cleanup and for the TMS sync gate (which has its own `if (AUTO_SYNC)` guard).
-5. **The `baseURL` applies to `page.goto('/path')` only.** API requests go through `ApiBase` which has its own `API_BASE_URL`. They are independent.
+4. **The `global-teardown` PROJECT runs even if all tests were skipped.** It is wired via the `teardown:` property on the `global-setup` project (not a `globalTeardown` hook). Use it for artifact cleanup and for the TMS sync gate (which has its own `if (AUTO_SYNC)` guard).
+5. **The `baseURL` applies to `page.goto('/path')` only.** API requests go through `ApiBase` which uses `config.apiUrl` from `config/variables.ts`. They are independent.
 6. **Reporter order is preserved.** Moving `html` before `KataReporter` can cause the tree view to miss step events on fast tests. Keep `KataReporter` first.
-7. **`retries: 2` in CI is not an invitation to write flaky tests.** Retries mask infra jitter, not product bugs. A test that only passes on retry is still a bug.
+7. **`retries: 0` applies in CI too.** There is no retry allowance anywhere in this config. A test that would only pass on retry is a bug — fix the test or the product, never the retry count.
 8. **Setup projects produce side effects** (`.auth/*.json`, `reports/.atc_partial.ndjson`). Do not commit these. `.gitignore` covers them; do not weaken it.
 
 ---

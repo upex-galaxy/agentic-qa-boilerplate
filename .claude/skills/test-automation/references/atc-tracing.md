@@ -328,7 +328,7 @@ Scan roots (hard-coded):
 ```
 tests/components/api/**/*.ts
 tests/components/ui/**/*.ts
-tests/components/preconditions/**/*.ts
+tests/components/steps/**/*.ts
 ```
 
 Excluded files: `ApiBase.ts`, `UiBase.ts`, `TestContext.ts`, `TestFixture.ts`, `ApiFixture.ts`, `UiFixture.ts`, `index.ts`.
@@ -355,12 +355,12 @@ Extraction pattern: `@atc\s*\(\s*['"]([^'"]+)['"]` — a literal string key is r
     ],
     "ui": [ /* same shape */ ]
   },
-  "preconditions": [
+  "steps": [
     {
-      "name": "AuthSteps",
-      "file": "AuthSteps.ts",
-      "relativePath": "tests/components/preconditions/AuthSteps.ts",
-      "methods": ["loginAsAdmin", "loginAsStandardUser"]
+      "name": "ExampleSteps",
+      "file": "ExampleSteps.ts",
+      "relativePath": "tests/components/steps/ExampleSteps.ts",
+      "methods": ["authenticateUser", "createTestResource", "navigateAsAuthenticatedUser"]
     }
   ],
   "summary": {
@@ -368,7 +368,7 @@ Extraction pattern: `@atc\s*\(\s*['"]([^'"]+)['"]` — a literal string key is r
     "totalATCs": 57,
     "apiComponents": 7,
     "uiComponents": 5,
-    "preconditionModules": 3
+    "stepsModules": 1
   }
 }
 ```
@@ -411,7 +411,7 @@ The manifest is a static registry — it says what **exists in code**. `atc_resu
 | `tests/KataReporter.ts` | Terminal tree output; `generateAtcReport()` in `onEnd()` (NDJSON → JSON); NDJSON cleanup |
 | `tests/teardown/global.teardown.ts` | Reads `atc_results.json`, prints summary, calls `syncResults()` if `AUTO_SYNC=true` |
 | `tests/utils/jiraSync.ts` | `syncToXray()`, `syncToJiraDirect()`, provider router |
-| `playwright.config.ts` | Reporter chain (KataReporter must be registered), `globalTeardown` hook |
+| `playwright.config.ts` | Reporter chain (KataReporter must be registered), `global-teardown` PROJECT (wired via `teardown:` on the `global-setup` project, not a `globalTeardown` hook) |
 | `config/variables.ts` | `config.tms.*` — reads the env vars listed in §8.3 |
 | `scripts/kata-manifest.ts` | Static scanner — produces `kata-manifest.json` |
 | `reports/.atc_partial.ndjson` | Ephemeral per-run capture (deleted in `onEnd()`) |

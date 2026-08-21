@@ -8,7 +8,7 @@ Full reference for the Komponent Action Test Architecture (KATA). Load when desi
 
 ```
 Layer 4 — Fixtures (DI)
-    TestFixture, ApiFixture, UiFixture, StepsFixture
+    TestFixture, ApiFixture, UiFixture
         |
         v
 Layer 3.5 — Steps (optional)
@@ -33,7 +33,7 @@ Layer 1 — TestContext
 | 2 — Base | HTTP and Playwright helpers | `ApiBase.ts`, `UiBase.ts` |
 | 3 — Domain | Business logic, ATCs | `UsersApi.ts`, `LoginPage.ts` |
 | 3.5 — Steps | Reusable ATC chains for preconditions | `AuthSteps.ts`, `CheckoutSteps.ts` |
-| 4 — Fixtures | DI entry point | `TestFixture.ts`, `ApiFixture.ts`, `UiFixture.ts`, `StepsFixture.ts` |
+| 4 — Fixtures | DI entry point | `TestFixture.ts`, `ApiFixture.ts`, `UiFixture.ts` |
 | Tests | Orchestrate ATCs into scenarios | `tests/e2e/**`, `tests/integration/**` |
 
 Rule: a component in a higher layer may use a lower layer, never the other way round.
@@ -47,12 +47,12 @@ Rule: a component in a higher layer may use a lower layer, never the other way r
     variables.ts                 # Single source for env vars + URLs
 
 /tests
+  KataReporter.ts               # Custom Playwright reporter
   /components
     TestContext.ts              # Layer 1
     ApiFixture.ts               # Layer 4 (API only)
     UiFixture.ts                # Layer 4 (UI only)
-    StepsFixture.ts             # Layer 4 (Steps)
-    TestFixture.ts              # Layer 4 (unified: api + ui + steps)
+    TestFixture.ts              # Layer 4 (unified: api + ui)
 
     /api
       ApiBase.ts                # Layer 2
@@ -61,16 +61,20 @@ Rule: a component in a higher layer may use a lower layer, never the other way r
       UiBase.ts                 # Layer 2
       LoginPage.ts              # Layer 3
     /steps
-      AuthSteps.ts              # Layer 3.5
+      ExampleSteps.ts           # Layer 3.5 (reference pattern)
 
   /data
     DataFactory.ts              # Typed faker-backed factories
     types.ts                    # Payload / domain TypeScript types
-    constants.ts                # Static test values, boundaries
+    constants.ts                # Static test values, boundaries (create-on-demand)
     /fixtures                   # Static JSON/CSV rows
-    /mocks                      # Canned mock/stub responses
+    /mocks                      # Canned mock/stub responses (create-on-demand)
   /integration/{module}         # API-only tests
   /e2e/{module}                 # UI (+API) tests
+  /setup
+    global.setup.ts             # Global setup (+ api-auth / ui-auth setup projects)
+  /teardown
+    global.teardown.ts          # Global teardown
   /utils
     decorators.ts               # @atc, @step
 ```
@@ -385,44 +389,35 @@ Format: `{verb}{Resource}{Scenario}`
 
 ## 7. Fixtures (Layer 4)
 
-Fixtures wire components together and expose them to tests. Four kinds:
+Fixtures wire components together and expose them to tests. Three kinds (see `tests/components/TestFixture.ts` — the source of truth):
 
 | Fixture | Exposes | Opens browser? |
 |---------|---------|----------------|
 | `ApiFixture` | `api.users`, `api.orders`, ... | No |
 | `UiFixture` | `ui.login`, `ui.checkout`, ... | Yes |
-| `StepsFixture` | `steps.auth`, `steps.checkout`, ... | Depends on steps used |
-| `TestFixture` | `api`, `ui`, `steps` in one object | Yes |
+| `TestFixture` | `test.api` + `test.ui` in one object (shared context) | Yes |
+
+Steps classes are NOT a fixture — they live in `tests/components/steps/` and are instantiated directly (see §8).
 
 ### TestFixture definition
+
+The real file (`tests/components/TestFixture.ts`) extends Playwright's `test` with the three fixtures. Simplified shape:
 
 ```typescript
 import { test as base } from '@playwright/test';
 import { ApiFixture } from '@ApiFixture';
 import { UiFixture } from '@UiFixture';
-import { StepsFixture } from '@StepsFixture';
 
 export const test = base.extend<{
-  test: TestFixture;
+  test: TestFixture;   // TestFixture extends TestContext, holds .api + .ui
   api: ApiFixture;
   ui: UiFixture;
-  steps: StepsFixture;
 }>({
   test: async ({ page, request }, use) => {
-    const options = { page, request };
-    const api = new ApiFixture(options);
-    const ui = new UiFixture(options);
-    const steps = new StepsFixture(options, api, ui);
-    await use({ api, ui, steps, page, request });
+    await use(new TestFixture(page, request));
   },
   api: async ({ request }, use) => { await use(new ApiFixture({ request })); },
   ui: async ({ page, request }, use) => { await use(new UiFixture({ page, request })); },
-  steps: async ({ page, request }, use) => {
-    const options = { page, request };
-    const api = new ApiFixture(options);
-    const ui = new UiFixture(options);
-    await use(new StepsFixture(options, api, ui));
-  },
 });
 
 export { expect } from '@playwright/test';
@@ -457,7 +452,8 @@ test('TICKET-ID: should create via API and verify via UI', async ({ test }) => {
 | API only (integration) | `{ api }` | No | Pure API testing. Default for `tests/integration/**`. |
 | UI only | `{ ui }` | Yes | UI-focused testing, no API setup. |
 | Hybrid | `{ test }` | Yes | API setup + UI action + API verification. |
-| Reusable precondition chains | `{ steps }` | Depends | 3+ ATCs repeated across 3+ files. |
+
+Reusable precondition chains (3+ ATCs repeated across 3+ files) are NOT a fixture — they go in a Steps class (§8), instantiated directly in the test.
 
 ### Registration pattern
 
@@ -485,50 +481,51 @@ When three or more ATCs run in the same order across three or more tests, the ch
 
 Steps are NOT ATCs: no `@atc` decorator, not reported individually to the TMS, purpose is eliminating repetition in **preconditions**.
 
+The real pattern lives in `tests/components/steps/ExampleSteps.ts`: a Steps class extends `TestContext`, takes `TestContextOptions` in its constructor, and drives `this._page` / `this._request` directly. No fixture registration.
+
 ```typescript
 // tests/components/steps/AuthSteps.ts
-import type { UiFixture } from '@UiFixture';
-import type { ApiFixture } from '@ApiFixture';
+import type { TestContextOptions } from '@TestContext';
+import { TestContext } from '@TestContext';
 
-export class AuthSteps {
-  constructor(private ui: UiFixture, private api: ApiFixture) {}
-
-  async setupAuthenticatedUser(credentials: Credentials) {
-    await this.ui.auth.loginWithValidCredentials(credentials);
-    await this.ui.profile.completeOnboardingSuccessfully();
-    await this.ui.settings.enableFeatureFlagSuccessfully();
-  }
-
-  async setupUserWithCart(credentials: Credentials, products: string[]) {
-    await this.setupAuthenticatedUser(credentials);
-    for (const product of products) {
-      await this.ui.cart.addToCartSuccessfully(product);
-    }
-  }
-}
-```
-
-StepsFixture:
-
-```typescript
-// tests/components/StepsFixture.ts
-export class StepsFixture extends TestContext {
-  readonly auth: AuthSteps;
-
-  constructor(options: TestContextOptions, api: ApiFixture, ui: UiFixture) {
+export class AuthSteps extends TestContext {
+  constructor(options: TestContextOptions = {}) {
     super(options);
-    this.auth = new AuthSteps(ui, api);
+  }
+
+  async authenticateUser(email: string, password: string): Promise<{ token: string }> {
+    if (!this._request) {
+      throw new Error('Request context not set. Pass { request } in constructor options.');
+    }
+    const response = await this._request.post('/api/auth/login', {
+      data: { email, password },
+    });
+    const body = await response.json();
+    return { token: body.token };
+  }
+
+  async navigateAsAuthenticatedUser(path: string, email: string, password: string) {
+    if (!this._page || !this._request) {
+      throw new Error('Page and Request context must be set.');
+    }
+    const auth = await this.authenticateUser(email, password);
+    await this._page.evaluate(token => localStorage.setItem('authToken', token), auth.token);
+    await this._page.goto(path);
+    return auth;
   }
 }
 ```
 
-Usage:
+Usage — instantiate the Steps class directly in the test (there is no `{ steps }` fixture):
 
 ```typescript
-test('TICKET-ID: should display confirmation after checkout', async ({ steps, ui }) => {
-  await steps.auth.setupUserWithCart(credentials, ['Laptop']);
+import { AuthSteps } from '@steps/AuthSteps';
+
+test('TICKET-ID: should display confirmation after checkout', async ({ ui, page, request }) => {
+  const steps = new AuthSteps({ page, request });
+  await steps.navigateAsAuthenticatedUser('/checkout', config.testUser.email, config.testUser.password);
   await ui.checkout.completeCheckoutSuccessfully();
-  await expect(ui.page.locator('[data-testid="confirmation"]')).toBeVisible();
+  await expect(page.locator('[data-testid="confirmation"]')).toBeVisible();
 });
 ```
 

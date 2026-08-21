@@ -6,10 +6,11 @@ Classification dictates release-blocking behavior. A wrong classification either
 
 ---
 
-## 1. The five categories
+## 1. The six categories
 
 | Category | Definition | Release impact | Typical action |
 |----------|------------|----------------|----------------|
+| **KNOWN-BLOCKED** | Test tagged `@blocked:{BUG-KEY}` with `test.fail('Blocked by {BUG-KEY}')` — deliberately parked behind an already-filed bug | LOW — excluded from the gating pass-rate | List in the report with the blocking `{BUG-KEY}`; **no new Jira bug** (the marker already names the open one) |
 | **REGRESSION** | Test passed recently, now fails consistently due to a code or data change | HIGH — blocks release | Open issue, assign, fix, verify, re-run |
 | **FLAKY** | Test fails intermittently (> 20% failure rate over last 10 runs) on an unchanged build | MEDIUM — does not block | Quarantine or stabilize next sprint |
 | **KNOWN ISSUE** | Failure is tracked by an existing backlog ticket | LOW — documented, does not block | Reference the ticket in the report |
@@ -19,10 +20,10 @@ Classification dictates release-blocking behavior. A wrong classification either
 A failure can only belong to ONE category. When multiple rules match, apply this precedence:
 
 ```
-KNOWN ISSUE > ENVIRONMENT > NEW TEST > REGRESSION > FLAKY
+KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > REGRESSION > FLAKY
 ```
 
-Rationale: if a ticket already tracks the failure, stop looking. If the error is clearly infrastructure, do not blame the code. A test with no history cannot be a regression yet.
+Rationale: a `@blocked:{BUG-KEY}` marker is definitive — the test was parked on purpose, so no other rule applies (and it never enters the gating pass-rate; see SKILL.md §Compute metrics). If a ticket already tracks the failure, stop looking. If the error is clearly infrastructure, do not blame the code. A test with no history cannot be a regression yet.
 
 ---
 
@@ -31,20 +32,24 @@ Rationale: if a ticket already tracks the failure, stop looking. If the error is
 ```
 Input: one failed test result
 
-1. Is the test's ATC ID or title referenced in any known-issue ticket?
+1. Is the test tagged `@blocked:{BUG-KEY}` (with the `test.fail('Blocked by {BUG-KEY}')` marker)?
+   → YES: classify as KNOWN-BLOCKED with the blocking bug key. Exclude from the gating pass-rate. STOP.
+   → NO: continue.
+
+2. Is the test's ATC ID or title referenced in any known-issue ticket?
    → YES: classify as KNOWN ISSUE with the ticket URL. STOP.
    → NO: continue.
 
-2. Does the error message match any environment pattern (see §3)?
+3. Does the error message match any environment pattern (see §3)?
    → YES and other tests on the same run also failed on the same host: classify as ENVIRONMENT. STOP.
    → YES but this is the only failure in a suite of passing tests on the same host: treat as suspicious — likely REGRESSION disguised as infra. Continue.
    → NO: continue.
 
-3. Is this the test's first recorded execution (no prior Allure history or TMS run records)?
+4. Is this the test's first recorded execution (no prior Allure history or TMS run records)?
    → YES: classify as NEW TEST FAILURE. STOP.
    → NO: continue.
 
-4. Compute failure rate over the last N runs (N = min(10, available history)).
+5. Compute failure rate over the last N runs (N = min(10, available history)).
    → If failure rate > 20% and current build == previous builds (no deploy between them):
      classify as FLAKY. STOP.
    → If failure rate ≤ 20% AND the test passed in at least one of the last 5 runs:
@@ -59,7 +64,7 @@ When the failure list has more than 10 entries, classifying serially burns the o
 
 **Sharding rule**: split the failure list into chunks of ~10 failures (round up). Cap total subagents at 10 — if there are >100 failures, batches must be larger than 10 each.
 
-**Dispatch (Parallel pattern)** — one briefing per chunk, all dispatched in a single message, following the 6-component format from `agentic-qa-core/references/briefing-template.md`:
+**Dispatch (Parallel pattern)** — one briefing per chunk, all dispatched in a single message, following the 7-component format from `agentic-qa-core/references/briefing-template.md`:
 
 ```
 Goal: Classify <N> test failures in chunk <CHUNK_INDEX>/<TOTAL_CHUNKS> against the rubric.
@@ -71,7 +76,7 @@ Skills to load: (none)
 Exact instructions:
   1. For each failure in the chunk:
      a. Read its allure result + screenshot + trace summary.
-     b. Apply the decision tree: REGRESSION / FLAKY / KNOWN / ENVIRONMENT / NEW TEST.
+     b. Apply the decision tree: KNOWN-BLOCKED / KNOWN / ENVIRONMENT / NEW TEST / REGRESSION / FLAKY.
      c. Capture: { test, classification, evidence_paths, confidence: high|low, justification: <50 words }
   2. Cross-check against known-failures.json (if present) — KNOWN classifications must match a prior entry.
 Report format:
@@ -164,11 +169,13 @@ A test is FLAKY if its failure rate over the last N runs on unchanged applicatio
 5. If N < 5: output "INSUFFICIENT HISTORY" — do not guess.
 ```
 
-### Retry-aware flakiness
+### Retry-aware flakiness (conscious-divergence projects only)
 
-Playwright is configured with `retries: 2` in CI. A test that passes on retry is a hidden flake. Check Allure `retriesCount` for each result — a `passed` result with `retriesCount > 0` counts as a flake observation even though the final status is green.
+This repo ships `retries: 0` everywhere (`playwright.config.ts` — deterministic tests; a retry hides the flake). With the shipped config a retry-pass signal **cannot occur**: every flake surfaces as a plain failure and is caught by the >20% rule above. Skip this subsection unless your project has consciously diverged.
 
-When reporting flakiness rate, include retry-passes in the numerator:
+If a downstream project has deliberately enabled retries (see the "Conscious divergence: enabling retries" box in `ci-cd-integration.md`), a test that passes on retry is a hidden flake. Check Allure `retriesCount` for each result — a `passed` result with `retriesCount > 0` counts as a flake observation even though the final status is green.
+
+When reporting flakiness rate on such a project, include retry-passes in the numerator:
 ```
 effective_failure_rate = (failed + retried_passes) / total
 ```
@@ -203,8 +210,8 @@ Test passed 5 runs in a row, now fails once.
 Test fails every Monday morning but passes other days.
 - Look at scheduled jobs, cron, maintenance windows → probably ENVIRONMENT (infra cycle).
 
-### Case 3: Passes on retry consistently
-Every run shows `failed → passed on retry`.
+### Case 3: Passes on retry consistently (retry-enabled projects only)
+Every run shows `failed → passed on retry` — only possible on a project that consciously diverged from the shipped `retries: 0`.
 - This is FLAKY. The user sees green but the underlying test is unstable. Stabilize it.
 
 ### Case 4: One assertion flakes within a test with N assertions
@@ -240,6 +247,7 @@ Severity inputs:
 |----------------|----------|------|--------|-----|
 | **REGRESSION** | NO-GO | NO-GO | CAUTION | CAUTION |
 | **FLAKY**      | CAUTION + stabilize now | CAUTION | monitor | monitor |
+| **KNOWN-BLOCKED** | excluded from gating — reassess `{BUG-KEY}` urgency | excluded, document | excluded, document | excluded, document |
 | **KNOWN**      | CAUTION (reassess ticket) | document | document | document |
 | **ENV**        | re-run, escalate infra | re-run | re-run | re-run |
 | **NEW TEST**   | verify manually before GO | verify | verify | verify |
@@ -254,7 +262,7 @@ Every classified failure needs this evidence block, regardless of category:
 #### {test_name}
 - Test ID: {atc_id}
 - Suite: {suite}
-- Classification: {REGRESSION / FLAKY / KNOWN / ENVIRONMENT / NEW}
+- Classification: {KNOWN-BLOCKED / REGRESSION / FLAKY / KNOWN / ENVIRONMENT / NEW}
 - Severity: {CRITICAL / HIGH / MEDIUM / LOW}
 - Run: {run_url}
 - Last passed: {date} (run #{run})
@@ -276,7 +284,7 @@ Every classified failure needs this evidence block, regardless of category:
 - **Calling everything "flaky".** Flaky is a last resort after ruling out REGRESSION and ENVIRONMENT. Lazy flaky-tagging hides real regressions.
 - **Calling everything "environment".** If only one test in the suite fails with a network error and that endpoint is hit successfully by other tests in the same run, it is not environment — it is a bug in the code path that test exercises.
 - **Marking NEW TEST as REGRESSION.** A first-run failure has no prior pass to regress from. Mark as NEW TEST, verify manually, then reclassify.
-- **Ignoring retry-passes.** A test that passes on retry 2 is unstable. Surface it in the flaky bucket even though Allure shows green.
+- **Ignoring retry-passes (retry-enabled projects only).** With the shipped `retries: 0` there are no retry-passes to ignore. On a project that consciously enabled retries, a test that passes on retry is unstable — surface it in the flaky bucket even though Allure shows green.
 - **Guessing flakiness with < 5 runs of history.** Not enough data — mark as "insufficient history" and revisit.
 
 ---
@@ -285,6 +293,7 @@ Every classified failure needs this evidence block, regardless of category:
 
 ```
 Total failed: X
+├── KNOWN-BLOCKED:  X  ← parked behind {BUG-KEY}, excluded from gating pass-rate
 ├── REGRESSION:     X  ← release blockers (sorted by severity DESC)
 ├── FLAKY:          X  ← schedule stabilization
 ├── KNOWN ISSUE:    X  ← documented, not blocking

@@ -359,14 +359,14 @@ Commit `tests/data/fixtures/` and `tests/data/uploads/`. Gitignore `tests/data/d
 
 ## 11. Isolation & parallelism
 
-Workers run in parallel (`playwright.config.ts: workers: 4` or similar). DataFactory guarantees uniqueness by combining a prefix, an epoch-ms timestamp, and a 6-char random suffix:
+The shipped config runs a single worker (`playwright.config.ts: workers: 1`), but uniqueness still matters — for reruns against the same environment and for the future parallelism upgrade. DataFactory guarantees it by combining a prefix, an epoch-ms timestamp, and a 6-char random suffix:
 
 ```
 Email:   test.john.x7k2m9@example.com
 TestId:  order-1707312000000-x7k2m9
 ```
 
-That is enough to avoid collisions across workers AND across retries. Do not design tests that rely on sequential data (e.g., "the first order in the DB"); always tag with a unique marker first.
+That is enough to avoid collisions across reruns AND across workers once parallelism is enabled. Do not design tests that rely on sequential data (e.g., "the first order in the DB"); always tag with a unique marker first.
 
 For stabilization rules (no hardcoded waits, no retries, specific-condition waiting), see `automation-standards.md` §7.
 

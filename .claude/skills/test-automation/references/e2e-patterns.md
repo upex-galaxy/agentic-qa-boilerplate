@@ -34,9 +34,9 @@ export interface LoginCredentials { email: string; password: string; }
 
 export class LoginPage extends UiBase {
   // 1. Shared locators (only when used in 2+ ATCs)
-  private readonly emailInput = () => this.page.getByTestId('login-email-input');
-  private readonly passwordInput = () => this.page.getByTestId('login-password-input');
-  private readonly submitButton = () => this.page.getByTestId('login-submit-button');
+  private readonly emailInput = () => this.page.getByTestId('email_input');
+  private readonly passwordInput = () => this.page.getByTestId('password_input');
+  private readonly submitButton = () => this.page.getByTestId('login_submit_button');
 
   // 2. Constructor
   constructor(options: TestContextOptions) { super(options); }
@@ -89,10 +89,10 @@ Never mix priorities in one selector (`.container [data-testid="x"]`). Never cha
 
 ```typescript
 // CORRECT — getByTestId (preferred)
-const loginButton = page.getByTestId('login-submit-button');
+const loginButton = page.getByTestId('login_submit_button');
 
 // CORRECT — locator with CSS attribute (also valid, same stability)
-const loginButton = page.locator('[data-testid="login-submit-button"]');
+const loginButton = page.locator('[data-testid="login_submit_button"]');
 
 // CORRECT — role-based when no testid exists
 const loginButton = page.getByRole('button', { name: /submit/i });
@@ -142,16 +142,16 @@ page.locator('[data-testid="card"]').nth(2); // why the third one?
 page.locator('.container [data-testid="button"]');
 
 // RIGHT: Direct data-testid
-page.getByTestId('login-submit-button');
+page.getByTestId('login_submit_button');
 
 // RIGHT: Role-based for semantic elements without testid
 page.getByRole('button', { name: /submit/i });
 
 // RIGHT: Filter by content when needed
-page.getByTestId('product-card').filter({ hasText: 'iPhone' });
+page.getByTestId('product_card').filter({ hasText: 'iPhone' });
 
 // RIGHT: Specific dynamic testid
-page.getByTestId(`product-card-${productSlug}`);
+page.getByTestId(`product_card_${productSlug}`);
 ```
 
 ### When a `data-testid` is missing
@@ -167,10 +167,10 @@ Locators default to **inline** inside the ATC. Extract to a `private readonly` a
 
 ```typescript
 // inline (default) — used once
-await this.page.locator('[data-testid="forgot-password-link"]').click();
+await this.page.locator('[data-testid="forgot_password_link"]').click();
 
 // shared — used in 2+ ATCs of this class
-private readonly cartTotal = () => this.page.locator('[data-testid="cart-total"]');
+private readonly cartTotal = () => this.page.locator('[data-testid="cart_total"]');
 private readonly productRow = (name: string) =>
   this.page.locator(`[data-product="${name}"]`);
 ```
@@ -181,7 +181,7 @@ Never put locators in a separate `locators/*.ts` file. Never wrap a single `page
 
 ```typescript
 // Multiple elements with the same testid
-const cards = this.page.getByTestId('product-card');
+const cards = this.page.getByTestId('product_card');
 await expect(cards).toHaveCount(3);
 const first = cards.nth(0);
 
@@ -189,10 +189,10 @@ const first = cards.nth(0);
 const iphoneCard = cards.filter({ hasText: 'iPhone' });
 
 // Dynamic id prefix
-const editButton = this.page.locator('[data-testid^="edit-product-"]').first();
+const editButton = this.page.locator('[data-testid^="edit_product_"]').first();
 
 // Exact dynamic id
-await this.page.getByTestId(`edit-product-${productId}`).click();
+await this.page.getByTestId(`edit_product_${productId}`).click();
 ```
 
 ---
@@ -239,7 +239,7 @@ if (isVisible) await popup.locator('button:has-text("Close")').click();
 ```typescript
 await Promise.all([
   this.page.waitForResponse(r => r.url().includes('/api/cart')),
-  this.page.locator('[data-testid="add-to-cart"]').click(),
+  this.page.locator('[data-testid="add_to_cart_button"]').click(),
 ]);
 ```
 
@@ -275,13 +275,13 @@ async loginAndCaptureToken(credentials: LoginCredentials) {
 @atc('TICKET-ID')
 async loadOrdersAndVerifyCount(): Promise<void> {
   await this.goto();
-  await this.page.locator('[data-testid="apply-filter"]').click();
+  await this.page.locator('[data-testid="apply_filter_button"]').click();
 
   const { responseBody } = await this.waitForApiResponse<void, Order[]>({
     urlPattern: /\/api\/orders/,
   });
 
-  await expect(this.page.locator('[data-testid="order-row"]')).toHaveCount(responseBody?.length ?? 0);
+  await expect(this.page.locator('[data-testid="order_item"]')).toHaveCount(responseBody?.length ?? 0);
 }
 ```
 
@@ -311,7 +311,7 @@ Additional, test-specific assertions go in the test file:
 ```typescript
 test('TICKET-ID: should show welcome banner after login', async ({ ui }) => {
   await ui.login.loginWithValidCredentials(credentials);
-  await expect(ui.page.locator('[data-testid="welcome-message"]')).toContainText('Welcome');
+  await expect(ui.page.locator('[data-testid="welcome_message"]')).toContainText('Welcome');
 });
 ```
 
@@ -437,42 +437,42 @@ Use API login (not UI login) inside the setup — faster and less fragile. For m
 ### Modal / dialog
 
 ```typescript
-await expect(this.page.locator('[data-testid="confirm-modal"]')).toBeVisible();
-await this.page.locator('[data-testid="confirm-btn"]').click();
-await expect(this.page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+await expect(this.page.locator('[data-testid="confirm_modal"]')).toBeVisible();
+await this.page.locator('[data-testid="confirm_button"]').click();
+await expect(this.page.locator('[data-testid="confirm_modal"]')).not.toBeVisible();
 ```
 
 ### Lists with dynamic count
 
 ```typescript
-await this.page.waitForSelector('[data-testid="item-list"] [data-testid="item"]');
-const items = this.page.locator('[data-testid="item-list"] [data-testid="item"]');
+await this.page.waitForSelector('[data-testid="item_list"] [data-testid="item"]');
+const items = this.page.locator('[data-testid="item_list"] [data-testid="item"]');
 await expect(items).toHaveCount(expectedCount);
 ```
 
 ### Multi-step form
 
 ```typescript
-await this.page.locator('[data-testid="step-1-field"]').fill(data.step1Value);
-await this.page.locator('[data-testid="next-btn"]').click();
-await expect(this.page.locator('[data-testid="step-2-form"]')).toBeVisible();
-await this.page.locator('[data-testid="step-2-field"]').fill(data.step2Value);
-await this.page.locator('[data-testid="submit-btn"]').click();
+await this.page.locator('[data-testid="step_1_input"]').fill(data.step1Value);
+await this.page.locator('[data-testid="next_button"]').click();
+await expect(this.page.locator('[data-testid="step_2_section"]')).toBeVisible();
+await this.page.locator('[data-testid="step_2_input"]').fill(data.step2Value);
+await this.page.locator('[data-testid="submit_button"]').click();
 ```
 
 ### Element states (loading / empty / error)
 
 ```typescript
-await expect(this.page.getByTestId('products-loading')).toBeVisible();
-await expect(this.page.getByTestId('products-empty-state')).toContainText('No products found');
-await expect(this.page.getByTestId('products-error-state')).toBeVisible();
+await expect(this.page.getByTestId('products_loading')).toBeVisible();
+await expect(this.page.getByTestId('products_empty_state')).toContainText('No products found');
+await expect(this.page.getByTestId('products_error_state')).toBeVisible();
 ```
 
 ### Form field errors
 
 ```typescript
-await expect(this.page.getByTestId('form-name-error')).toHaveText('Name is required');
-await expect(this.page.getByTestId('form-email-error')).toHaveText('Invalid email');
+await expect(this.page.getByTestId('form_name_error')).toHaveText('Name is required');
+await expect(this.page.getByTestId('form_email_error')).toHaveText('Invalid email');
 ```
 
 ### Debugging: enumerate all testids on a page

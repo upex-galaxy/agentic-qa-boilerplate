@@ -8,10 +8,10 @@ Read this when configuring new workflows, modifying existing ones, debugging CI-
 
 | Trigger | Tests | Duration | Purpose |
 |---------|-------|----------|---------|
-| Pull request | Integration (API) | 2-5 min | Block PRs that break functionality |
-| Push to main | Integration + E2E `@critical` | 5-10 min | Keep main green |
-| Nightly (cron) | Full E2E suite (sharded) | 20-60 min | Regression + trend data |
-| On release | Smoke (`@critical`) | 2-3 min | Post-deploy verification |
+| Pull request (`build.yml`) | Static checks + compile only — no test execution | 2-5 min | Block PRs that break the framework build |
+| Daily 00:00 UTC (`regression.yml`) | Full suite: integration + E2E, Allure report | 20-60 min | Regression + trend data |
+| Daily 02:00 UTC (`smoke.yml`) | `@critical` smoke project | 2-5 min | Environment heartbeat |
+| Manual (`sanity.yml`) | Targeted subset (`grep` \| `test_file`) | varies | Verify a fix or a suspect area |
 
 Do NOT run the full E2E suite on every PR — it is too slow and costly. Do NOT ignore flaky tests — fix them.
 
@@ -19,305 +19,199 @@ Do NOT run the full E2E suite on every PR — it is too slow and costly. Do NOT 
 
 ## 2. Workflow file layout
 
+The shipped workflows — read the real files, never quote them from memory (Critical Rule #11 applies to workflows just as much as scripts):
+
 ```
 .github/workflows/
-├── test-pr.yml           On: pull_request        → integration only
-├── test-main.yml         On: push to main        → integration + E2E @critical + TMS sync
-├── test-nightly.yml      On: schedule (cron)     → full E2E, sharded, Allure deploy
-├── test-release.yml      On: release published   → smoke only
-├── regression.yml        On: workflow_dispatch   → manual full regression
-├── smoke.yml             On: workflow_dispatch   → manual smoke
-└── sanity.yml            On: workflow_dispatch   → manual targeted (grep | test_file)
+├── build.yml            On: pull_request → main            → TestBuild checks: env check, types, lint, playwright --list (no test execution)
+├── regression.yml       On: schedule (daily 00:00 UTC) + workflow_dispatch → full regression (integration + e2e jobs, merged Allure report)
+├── smoke.yml            On: schedule (daily 02:00 UTC) + workflow_dispatch → @critical smoke suite
+├── sanity.yml           On: workflow_dispatch              → targeted run (grep | test_file inputs)
+├── pages.yml            On: push to main + workflow_dispatch → GitHub Pages docs hub deploy
+└── pages-squash.yml     On: schedule (monthly) + workflow_dispatch → squash Pages branch history
 ```
 
-The three manual-dispatch workflows (`regression`, `smoke`, `sanity`) are what the regression-testing skill triggers via `gh workflow run`.
+The three test workflows with `workflow_dispatch` (`regression`, `smoke`, `sanity`) are what the regression-testing skill triggers via `gh workflow run`. The two `pages-*` workflows are report/docs plumbing, not test suites.
 
 ---
 
-## 3. PR workflow — integration tests only
+## 3. PR workflow — the shipped `build.yml` (framework validation, no test execution)
+
+The shipped PR gate deliberately runs NO tests. It validates that the framework compiles and passes static checks — a smoke test for the test framework itself:
 
 ```yaml
-name: Test - Pull Request
+name: TestBuild Checks
 on:
   pull_request:
-    branches: [main, develop]
-    paths:
-      - 'tests/**'
-      - 'config/**'
-      - 'package.json'
-      - 'playwright.config.ts'
+    branches:
+      - main
+
+env:
+  CI: true
+  TEST_ENV: 'staging'
+  STAGING_USER_EMAIL: ${{ secrets.STAGING_USER_EMAIL }}
+  STAGING_USER_PASSWORD: ${{ secrets.STAGING_USER_PASSWORD }}
 
 jobs:
-  integration:
-    name: Integration Tests
+  TestBuild:
+    name: Framework Validation
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install
-      - run: bunx playwright install --with-deps chromium
-      - run: bun run lint:check
-      - run: bun run types:check
-      - run: bun run test:integration
-        env:
-          TEST_ENV: ${{ vars.TEST_ENV }}
-          API_BASE_URL: ${{ secrets.API_BASE_URL }}
-          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results-pr
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 7
-```
-
-Key points:
-- `paths:` filter avoids running on pure doc changes.
-- Always install only `chromium` for PR speed; multi-browser matrix belongs in nightly.
-- `if: always()` on artifact upload — otherwise a failed test step skips the upload and there is no evidence.
-
----
-
-## 4. Main branch — integration + E2E critical + TMS sync
-
-```yaml
-name: Test - Main Branch
-on:
-  push:
-    branches: [main]
-
-jobs:
-  integration:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install
-      - run: bunx playwright install --with-deps
-      - run: bun run test:integration
-        env:
-          TEST_ENV: ${{ vars.TEST_ENV }}
-          API_BASE_URL: ${{ secrets.API_BASE_URL }}
-          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-
-  e2e-critical:
-    runs-on: ubuntu-latest
-    needs: integration
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox, webkit]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: oven-sh/setup-bun@v2
       - run: bun install
-      - run: bunx playwright install --with-deps ${{ matrix.browser }}
-      - run: bun run test:e2e:critical
-        env:
-          TEST_ENV: ${{ vars.TEST_ENV }}
-          BASE_URL: ${{ secrets.BASE_URL }}
-          API_BASE_URL: ${{ secrets.API_BASE_URL }}
-          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report-${{ matrix.browser }}
-          path: playwright-report/
-          retention-days: 7
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: playwright-failures-${{ matrix.browser }}
-          path: test-results/
-          retention-days: 7
-
-  sync-results:
-    runs-on: ubuntu-latest
-    needs: [integration, e2e-critical]
-    if: always()
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bun run test:sync
-        env:
-          AUTO_SYNC: true
-          TMS_PROVIDER: xray
-          XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}
-          XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
-          BUILD_ID: ${{ github.run_id }}
+      - run: bun run test:env:check     # validates env configuration
+      - run: bun run types:check
+      - run: bun run lint:check
+      - run: bunx playwright test --list   # compile check — lists tests without running them
 ```
 
 Key points:
-- `fail-fast: false` on the browser matrix — one browser failing should not cancel the others.
-- `sync-results` runs `if: always()` so failures still sync to TMS.
-- `needs:` ordering: integration must pass before E2E starts (save CI minutes).
+- No test execution on PRs — actual suite runs live in the scheduled `regression.yml` / `smoke.yml` and the manual `sanity.yml`.
+- Credentials are the env-prefixed pair for the selected `TEST_ENV` (`STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD`), needed only so `test:env:check` and config resolution pass. URLs are NOT secrets — they resolve from `.agents/project.yaml` via `config/variables.ts`.
+- `bunx playwright test --list` catches broken imports and type errors in specs without spending CI minutes on browsers.
 
 ---
 
-## 5. Nightly — full suite, sharded, report published
+## 4. Daily regression — the shipped `regression.yml`
 
-```yaml
-name: Test - Nightly Full Suite
-on:
-  schedule:
-    - cron: '0 2 * * *'   # 2 AM UTC
-  workflow_dispatch:
+Runs daily at 00:00 UTC and on `workflow_dispatch` (with `environment` and `generate_allure` inputs). Read the real file — this is the shape, not a copy:
 
-jobs:
-  full-e2e:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox, webkit]
-        shard: [1/4, 2/4, 3/4, 4/4]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install
-      - run: bunx playwright install --with-deps ${{ matrix.browser }}
-      - run: bun run test:e2e -- --shard=${{ matrix.shard }}
-        env:
-          TEST_ENV: ${{ vars.TEST_ENV }}
-          BASE_URL: ${{ secrets.BASE_URL }}
-          API_BASE_URL: ${{ secrets.API_BASE_URL }}
-          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report-${{ matrix.browser }}-${{ strategy.job-index }}
-          path: playwright-report/
-          retention-days: 14
-
-  merge-reports:
-    runs-on: ubuntu-latest
-    needs: full-e2e
-    if: always()
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          path: all-reports/
-      - run: bunx playwright merge-reports all-reports/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: nightly-full-report
-          path: playwright-report/
-          retention-days: 30
-
-  notify-failures:
-    runs-on: ubuntu-latest
-    needs: merge-reports
-    if: failure()
-    steps:
-      - uses: slackapi/slack-github-action@v1
-        with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          payload: |
-            {
-              "text": "Nightly E2E tests failed",
-              "blocks": [{
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*Nightly E2E Tests Failed*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View results>"
-                }
-              }]
-            }
+```
+regression.yml
+├── env: TEST_ENV = inputs.environment || 'staging'
+│        LOCAL_USER_EMAIL / LOCAL_USER_PASSWORD       (secrets)
+│        STAGING_USER_EMAIL / STAGING_USER_PASSWORD   (secrets)
+│        AUTO_SYNC + XRAY_CLIENT_ID / XRAY_CLIENT_SECRET (TMS sync, optional)
+├── job: integration   → bun run test:integration  → uploads integration-allure-results
+├── job: e2e           → bun run test:e2e          → uploads e2e-allure-results
+└── job: allure-report (if: always, unless generate_allure=false)
+        merges both allure-results dirs → merged-allure-results-<TEST_ENV>
+        generates + publishes the Allure report (same allurerc.mjs as local runs)
 ```
 
-Sharding: 3 browsers × 4 shards = 12 parallel jobs. A 60-minute suite completes in ~5-10 minutes wall time.
+Key points:
+- Credentials are the env-prefixed pairs (`LOCAL_*` / `STAGING_*`) matching `config/variables.ts` — there are no `TEST_USER_*` secrets, and no URL secrets: `config.baseUrl` resolves from `.agents/project.yaml` by `TEST_ENV`.
+- TMS sync (Xray) runs off `AUTO_SYNC` + `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET`; the Jira-Direct alternative uses `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` (present in the file, commented until enabled).
+- The `allure-report` job runs `if: always()` so failures still produce a report; the Slack failure notification block exists but ships commented out.
+- The artifact name the analysis phase downloads is `merged-allure-results-<TEST_ENV>`.
+
+---
+
+## 5. Smoke + sanity — the shipped `smoke.yml` and `sanity.yml`
+
+**`smoke.yml`** — daily at 02:00 UTC and on `workflow_dispatch` (`environment` input):
+
+- Same env block as regression (`TEST_ENV` selector + `LOCAL_*` / `STAGING_*` credential secrets).
+- Single job: `bun run pw:install` → `bun run test:smoke` (the `smoke` Playwright project — `@critical` tagged tests across e2e + integration).
+- Publishes its Allure report per environment; the run summary prints the published URL (`.../<TEST_ENV>/smoke/`).
+
+**`sanity.yml`** — `workflow_dispatch` only, with inputs for `environment`, test type, `grep`, and `test_file`:
+
+- Routes to `bun run test`, `bun run test:e2e`, or `bun run test:integration` with the optional `--grep` filter, or runs a single `test_file`.
+- `grep` and `test_file` are mutually exclusive — passing both silently ignores one (see the skill's Gotchas).
+- Uploads `sanity-playwright-report` + test-results artifacts; report publishing supports both the private Portal and GitHub Pages paths.
+
+Neither shipped suite uses sharding or a multi-browser matrix today — the suite runs single-worker (see §6). The sharding recipes in §9 are the scaling path for a downstream project whose suite outgrows one runner.
 
 ---
 
 ## 6. Playwright config for CI
 
+The shipped `playwright.config.ts` is the source of truth — read it, don't quote it from memory. The load-bearing choices:
+
 ```typescript
 import { defineConfig, devices } from '@playwright/test';
-
-const isCI = !!process.env.CI;
+import { config, env } from './config/variables';
 
 export default defineConfig({
   testDir: './tests',
-  fullyParallel: true,
-  forbidOnly: isCI,        // Fail the build if someone committed test.only()
-  retries: isCI ? 2 : 0,   // Retry flakes twice in CI
-  workers: isCI ? 1 : undefined,  // Conservative to avoid CI OOM
+  testMatch: /.*\.test\.ts/,
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,   // Fail the build if someone committed test.only()
+
+  // KATA Recommendation: Avoid retries - tests should be deterministic
+  // If a test fails, investigate immediately rather than masking with retries
+  retries: 0,
+
+  // Single worker for now - increase when tests are stable and parallelizable
+  workers: 1,
+
   reporter: [
-    ['html', { outputFolder: 'playwright-report' }],
-    ['json', { outputFile: 'test-results.json' }],
-    ['junit', { outputFile: 'junit-results.xml' }],
-    isCI ? ['github'] : ['list'],
+    ['./tests/KataReporter.ts'],   // rich terminal output, local + CI
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['json', { outputFile: 'test-results/results.json' }],
+    ['junit', { outputFile: 'test-results/junit.xml' }],
+    ['allure-playwright', { resultsDir: config.reporting.allureResultsDir, /* ... */ }],
   ],
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
-    trace: isCI ? 'retain-on-failure' : 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: isCI ? 'retain-on-failure' : 'off',
+    baseURL: config.baseUrl,   // resolved from .agents/project.yaml by TEST_ENV — never a BASE_URL env secret
+    trace: env.isCI ? 'retain-on-failure' : 'on-first-retry',
+    screenshot: config.reporting.screenshotOnFailure ? 'only-on-failure' : 'off',
+    video: env.isCI && config.reporting.videoOnFailure ? 'retain-on-failure' : 'off',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox',  use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit',   use: { ...devices['Desktop Safari'] } },
+    // global-setup → ui-setup / api-setup → e2e | integration | smoke → global-teardown
+    // (dependency-chained projects; see the real file for the full list, incl. sandbox)
   ],
 });
 ```
 
 Rules:
-- `forbidOnly: isCI` — non-negotiable. Prevents test.only() slipping into main.
-- `retries: 2` — retries mask flakiness but stabilize pipelines. The Analyze phase must still flag tests that need a retry as flaky candidates.
-- `workers: 1` in CI — avoid OOM on shared runners. Parallelize via sharding at workflow level instead.
+- `forbidOnly` in CI — non-negotiable. Prevents test.only() slipping into main.
+- `retries: 0` **everywhere, local and CI** — tests must be deterministic. A retry does not fix a flake, it hides it; the failure surfaces immediately and gets investigated, and the classification phase never has to unmask retry-passes.
+- `workers: 1` + `fullyParallel: false` — the shipped suite runs serially. Raise parallelism only when tests are proven independent; scale via workflow-level sharding (§9) before per-runner workers.
+- No `process.env` reads in the config: everything routes through `config/variables.ts` (single source of truth; URLs from `.agents/project.yaml`, credentials from env-prefixed `LOCAL_*` / `STAGING_*` vars).
+
+> **Conscious divergence: enabling retries.** Some downstream projects deliberately set
+> `retries: 1-2` in CI to stabilize a large legacy suite while it is being cleaned up. If
+> you make that call, own its consequences: (1) a green run no longer means a stable
+> suite — a test that passes on retry is still flaky; (2) the Analyze phase MUST read
+> Allure's retry data (`retriesCount > 0` on a `passed` result = a flake observation)
+> and count retry-passes in the flakiness numerator —
+> `effective_failure_rate = (failed + retried_passes) / total`
+> (see `failure-classification.md` §5 "Retry-aware flakiness"); (3) `trace:
+> 'on-first-retry'` starts earning its keep in CI too. Record the decision as an ADR
+> (`.context/ADR/`) — it is a flake-policy decision. With the shipped `retries: 0`, none
+> of this machinery applies: a retry-pass signal cannot occur.
 
 ---
 
 ## 7. package.json scripts
 
-```json
-{
-  "scripts": {
-    "test": "playwright test",
-    "test:integration": "playwright test --project=integration",
-    "test:e2e": "playwright test --project=e2e",
-    "test:e2e:critical": "playwright test --project=e2e --grep @critical",
-    "test:smoke": "playwright test --grep @critical",
-    "test:sync": "bun run tests/utils/jiraSync.ts",
-    "lint": "eslint .",
-    "type-check": "tsc --noEmit"
-  }
-}
-```
+**Read `package.json` directly before quoting any command** (Critical Rule #11) — script names drift, and this doc will not be updated in lockstep. The names CI leans on today:
+
+| Script | Role in CI |
+|--------|-----------|
+| `test` / `test:e2e` / `test:integration` | Full run / `e2e` project / `integration` project |
+| `test:smoke` | `smoke` project (`@critical` grep across e2e + integration) |
+| `test:env:check` | Validates env configuration before any suite runs |
+| `test:sync` | TMS results sync (`tests/utils/jiraSync.ts`) |
+| `lint:check` / `types:check` | Static gates in `build.yml` |
+| `pw:install` | `playwright install --with-deps chromium` |
+
+Exact commands, flags, and the rest of the script catalogue: open `package.json`.
 
 ---
 
 ## 8. Secrets and variables
 
-Repository Settings → Secrets → Actions:
+Repository Settings → Secrets → Actions (the names match `config/variables.ts` — env-prefixed credentials, one pair per environment):
 
 | Secret | Value |
 |--------|-------|
-| `BASE_URL` | Frontend URL (e.g. `https://staging.example.com`) |
-| `API_BASE_URL` | API URL (e.g. `https://api.staging.example.com`) |
-| `TEST_USER_EMAIL` | Test account email |
-| `TEST_USER_PASSWORD` | Test account password |
-| `XRAY_CLIENT_ID` | Xray Cloud API client ID |
-| `XRAY_CLIENT_SECRET` | Xray Cloud API client secret |
-| `SLACK_WEBHOOK_URL` | Slack incoming webhook for failure alerts |
+| `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD` | Test account for `TEST_ENV=local` |
+| `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD` | Test account for `TEST_ENV=staging` |
+| `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET` | Xray Cloud API credentials (TMS sync, Modality jira-xray) |
+| `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` | Jira-Direct TMS sync alternative (commented in the workflows until enabled) |
+| `PORTAL_URL` / `PORTAL_PROJECT` / `PORTAL_API_KEY`, `R2_*` | Private report portal publishing (optional; see `references/private-hosting-setup.md`) |
 
-Variables (non-secret):
+There is **no `BASE_URL` / `API_BASE_URL` secret and no `TEST_USER_*` pair**: URLs are not secrets — they resolve from the versioned `.agents/project.yaml` through `config/variables.ts`, selected by `TEST_ENV`.
 
-| Variable | Value |
-|----------|-------|
-| `TEST_ENV` | `staging` / `production` (selector for the running job) |
+`TEST_ENV` itself is not a stored variable either: the workflows derive it from the `environment` dispatch input, defaulting to `staging`.
 
 Never copy local `.env` values into workflow YAML. Always reference `${{ secrets.NAME }}`.
 
@@ -343,7 +237,7 @@ steps:
 - uses: actions/cache@v4
   with:
     path: ~/.cache/ms-playwright
-    key: playwright-${{ runner.os }}-${{ hashFiles('bun.lockb') }}
+    key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 ```
 
 Saves 2-3 minutes per run.
@@ -379,7 +273,7 @@ Skips the entire workflow on doc-only PRs.
 In Settings → Branches → Branch protection:
 
 - Require status checks to pass before merging.
-- Select: `Test - Pull Request / integration`.
+- Select: `TestBuild Checks / Framework Validation` (the `build.yml` job).
 - Require branches to be up to date before merging.
 
 Result: no PR merges to `main` with red integration tests.
@@ -392,18 +286,14 @@ Result: no PR merges to `main` with red integration tests.
 Use `bunx playwright install --with-deps chromium`. The `--with-deps` flag installs system libraries.
 
 ### "Out of memory in CI"
-Reduce `workers` in playwright.config.ts:
-```typescript
-workers: process.env.CI ? 1 : undefined
-```
+The shipped config already runs `workers: 1`. If a downstream project raised it, drop it back down — and shard at the workflow level (§9) instead of stacking workers on one runner.
 
 ### "Tests flaky in CI, pass locally"
-Three knobs, in order:
-1. Bump timeouts: `timeout: isCI ? 60000 : 30000`.
-2. Ensure retries are on: `retries: isCI ? 2 : 0`.
-3. Add explicit waits for network idle on navigations: `await page.waitForLoadState('networkidle')`.
+Two knobs, in order:
+1. Bump timeouts: the shipped config uses `timeout: 60000` with a 10s `expect` timeout — widen per-test with `test.slow()` before touching globals.
+2. Add explicit waits on navigations: `await page.waitForLoadState('networkidle')` (or, better, a deterministic `waitForResponse` on the request the page depends on).
 
-If the test still fails intermittently, it is genuinely flaky — surface it in the Analyze phase and schedule stabilization.
+Do NOT reach for retries — the doctrine is `retries: 0` (a retry hides the flake; see §6). If the test still fails intermittently after real waits, it is genuinely flaky — surface it in the Analyze phase and schedule stabilization.
 
 ### "Artifacts not uploaded"
 Add `if: always()`:
@@ -426,8 +316,8 @@ Race condition — `gh run list` queries before the run registers. Always `sleep
 ## 12. Do / don't
 
 ### Do
-- Run integration on every PR (fast feedback).
-- Run E2E critical on main + nightly full suite.
+- Run the build checks (`build.yml`) on every PR — fast feedback without spending CI minutes on suites.
+- Let the scheduled `regression.yml` + `smoke.yml` carry suite execution; use `sanity.yml` for targeted verification.
 - Use sharding for any E2E suite > 10 minutes.
 - Cache `~/.cache/ms-playwright` and `node_modules`.
 - Always upload artifacts with `if: always()`.
@@ -438,7 +328,7 @@ Race condition — `gh run list` queries before the run registers. Always `sleep
 - Run full E2E on every PR.
 - Ignore flaky tests — either fix or quarantine with a tracking ticket.
 - Skip cleanup between runs (test data pollution accumulates).
-- Run without retries in CI (retries stabilize; analysis flags flakiness).
+- Enable retries to "stabilize" the pipeline — the shipped doctrine is `retries: 0` (deterministic tests; a retry hides the flake). Diverge only consciously, per the divergence box in §6.
 - Upload sensitive data in artifacts (screenshots can contain PII).
 - Hard-code credentials in workflow YAML.
 
@@ -452,7 +342,7 @@ The CI run is long (20-60 min). Blocking the main thread on `gh run watch` is wa
 
 **Dispatch (Background pattern)**:
 
-Briefing (follows the 6-component format from `agentic-qa-core/references/briefing-template.md`):
+Briefing (follows the 7-component format from `agentic-qa-core/references/briefing-template.md`):
 
 ```
 Goal: Watch GitHub Actions run <RUN_ID> until it terminates and report final status.

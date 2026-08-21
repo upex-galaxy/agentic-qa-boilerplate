@@ -254,20 +254,21 @@ No relative imports. Configure once in `tsconfig.json`:
 {
   "compilerOptions": {
     "paths": {
-      "@config/*": ["./config/*"],
-      "@variables": ["./config/variables.ts"],
-      "@components/*": ["./tests/components/*"],
-      "@api/*": ["./tests/components/api/*"],
+      "@/*": ["./*"],
       "@ui/*": ["./tests/components/ui/*"],
+      "@api/*": ["./tests/components/api/*"],
       "@steps/*": ["./tests/components/steps/*"],
       "@utils/*": ["./tests/utils/*"],
-      "@schemas/*": ["./api/schemas/*"],
+      "@data/*": ["./tests/data/*"],
+      "@variables": ["./config/variables.ts"],
       "@TestContext": ["./tests/components/TestContext.ts"],
-      "@TestFixture": ["./tests/components/TestFixture.ts"],
-      "@ApiFixture": ["./tests/components/ApiFixture.ts"],
       "@UiFixture": ["./tests/components/UiFixture.ts"],
-      "@StepsFixture": ["./tests/components/StepsFixture.ts"],
-      "@data/*": ["./tests/data/*"]
+      "@ApiFixture": ["./tests/components/ApiFixture.ts"],
+      "@TestFixture": ["./tests/components/TestFixture.ts"],
+      "@DataFactory": ["./tests/data/DataFactory.ts"],
+      "@openapi": ["./api/openapi-types.ts"],
+      "@schemas/*": ["./api/schemas/*"],
+      "@schemas": ["./api/schemas/index.ts"]
     }
   }
 }

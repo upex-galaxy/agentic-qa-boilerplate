@@ -16,7 +16,7 @@ Canonical conventions for naming, tagging, folder layout, data management, anti-
 | API Component | `{Resource}Api` | `UsersApi.ts`, `OrdersApi.ts` |
 | UI Component | `{Page}Page` | `LoginPage.ts`, `CheckoutPage.ts` |
 | Steps | `{Domain}Steps` | `AuthSteps.ts`, `CheckoutSteps.ts` |
-| Fixture | `{Type}Fixture` | `ApiFixture.ts`, `UiFixture.ts`, `StepsFixture.ts`, `TestFixture.ts` |
+| Fixture | `{Type}Fixture` | `ApiFixture.ts`, `UiFixture.ts`, `TestFixture.ts` |
 
 File naming: PascalCase, matches class name exactly. All code in English (components, ATCs, variables, comments). Documentation may be Spanish or English per team preference; skills and context docs are English-only.
 
@@ -247,7 +247,6 @@ Assertions are checkpoints along a flow, not the purpose of the test. The test i
     TestContext.ts
     ApiFixture.ts
     UiFixture.ts
-    StepsFixture.ts
     TestFixture.ts
     /api
       ApiBase.ts
@@ -259,18 +258,20 @@ Assertions are checkpoints along a flow, not the purpose of the test. The test i
       {Domain}Steps.ts
   /data
     /fixtures                    # JSON/CSV for parameterization (commit)
-    /mocks                       # Mock/stub API responses {endpoint}/{METHOD}.{status}.json (commit)
+    /mocks                       # Mock/stub API responses {endpoint}/{METHOD}.{status}.json (commit; create-on-demand)
     /uploads                     # Files for upload tests (commit)
     /downloads                   # Download destination (gitignore)
   /integration
     /{module}/{verbFeature}.test.ts
   /e2e
     /{module}/{verbFeature}.test.ts
+  /setup
+    global.setup.ts
+  /teardown
+    global.teardown.ts
   /utils
     decorators.ts
-    KataReporter.ts
-  globalSetup.ts
-  globalTeardown.ts
+  KataReporter.ts
 
 /test-results                    # Playwright artifacts (gitignore)
   /screenshots
@@ -295,7 +296,7 @@ export default defineConfig({
 });
 ```
 
-`test-results/` and `tests/data/downloads/` are gitignored. `tests/data/fixtures/`, `tests/data/mocks/`, and `tests/data/uploads/` are committed.
+`test-results/` and `tests/data/downloads/` are gitignored. `tests/data/fixtures/` and `tests/data/uploads/` are committed. `tests/data/mocks/` is committed when it exists, but is create-on-demand — it is not present until a scope needs canned mock responses.
 
 ### Test module folders (`{module}`)
 
@@ -468,18 +469,26 @@ KATA distinguishes three sources of test data. Classify every data need in the p
 
 Defined in `config/variables.ts` and `.env` before the run:
 
+Credentials are env-prefixed per environment and selected by `TEST_ENV` (the real pattern in `config/variables.ts`):
+
 ```typescript
-// config/variables.ts
+// config/variables.ts (real pattern, simplified)
+const { TEST_ENV = 'local', LOCAL_USER_EMAIL, LOCAL_USER_PASSWORD, STAGING_USER_EMAIL, STAGING_USER_PASSWORD } = process.env;
+
+const userCredentialsMap: Record<Environment, { email: string, password: string }> = {
+  local: { email: LOCAL_USER_EMAIL ?? '', password: LOCAL_USER_PASSWORD ?? '' },
+  staging: { email: STAGING_USER_EMAIL ?? '', password: STAGING_USER_PASSWORD ?? '' },
+};
+
 export const config = {
-  testUser: {
-    email: process.env.TEST_USER_EMAIL,
-    password: process.env.TEST_USER_PASSWORD,
-  },
-  apiKey: process.env.API_KEY,
+  testUser: userCredentialsMap[TEST_ENV as Environment],
+  // ...
 };
 ```
 
-Rule: credentials come from `.env` only. Never hardcode, never check into git.
+Tests read `config.testUser` from `@variables` — never `process.env` directly.
+
+Rule: credentials come from `.env` only (only the current `TEST_ENV`'s pair is required). Never hardcode, never check into git.
 
 ### Dynamic variables (runtime)
 
@@ -720,7 +729,7 @@ Every component and every test file is gated by a checklist before merge. Paste 
 - [ ] File under `tests/integration/{module}/` or `tests/e2e/{module}/`.
 - [ ] Name follows `{verb}{Feature}.test.ts` camelCase with a user-action verb.
 - [ ] Every `test()` has the ticket ID prefix and `should {behavior} when {condition}` format.
-- [ ] Uses the correct fixture: `{ api }`, `{ ui }`, `{ test }`, or `{ steps }`.
+- [ ] Uses the correct fixture: `{ api }`, `{ ui }`, or `{ test }` (Steps classes are instantiated directly, not requested as a fixture).
 - [ ] Creates its own test data — no shared state with other tests.
 - [ ] Test-level assertions validate business logic, not individual fields of a single response.
 - [ ] Tags applied where needed (`@critical`, `@smoke`, `@regression`).
@@ -743,7 +752,7 @@ Common mistakes that fail code review.
 | `waitForTimeout(3000)` | Arbitrary, flaky, slow | Wait for specific condition |
 | Relying on retries (`retries > 0`) | Masks real issues | Investigate failure, fix root cause |
 | Shared state between tests | Tests become order-dependent | Each test creates its own data |
-| Component not registered in fixture | Tests cannot access it | Add to `ApiFixture` / `UiFixture` / `StepsFixture` |
+| Component not registered in fixture | Tests cannot access it | Add to `ApiFixture` / `UiFixture` (Steps classes need no registration) |
 | Relative imports (`../../../config`) | Breaks lint, hurts refactors | Use alias (`@variables`, `@api/`, ...) |
 | Test name without ticket ID | Breaks TMS traceability | `test('TICKET-ID: should ... when ...')` |
 | Six tests checking six fields of one response | Violates TC Identity rule | One test with multiple assertions |
