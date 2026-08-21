@@ -290,9 +290,10 @@ const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/obra/superpowers', skill: 'brainstorming' },
   { package: 'https://github.com/lewislulu/html-ppt-skill', skill: 'html-ppt' },
   { package: 'https://bun.sh/docs', skill: 'bun' },
-  // Cross-project human-in-the-loop feedback CLI (`toki`): a blocking browser UI
-  // the AI drives mid-conversation to collect structured, anchored answers.
-  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'wokitoki' },
+  // Cross-project decision-deck CLI (`mkd`, Make Decision): the AI writes a spec
+  // of items (decision / question / report / table) and the user answers in a
+  // browser deck, pasting the Result JSON back into the chat (non-blocking).
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'mkd' },
 ];
 
 // Matches Claude Code ${VAR} and ${VAR:-default} placeholders in .mcp.json.
