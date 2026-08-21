@@ -210,7 +210,10 @@ components          ->  PRODUCT module/epic  ("what part of the product it affec
 - **parent** = the QA process epic (below). Never a product/dev epic.
 - **issue link** = the originating Story/feature via the causal/coverage link
   (`problem_incident` → *causes* / *is caused by*; `blocks` when it gates a
-  release; `test` for Test↔Story coverage). Traceability is preserved here, NOT
+  release; `test` for container→Story coverage — the per-Story **ATS**→Story
+  link is the coverage-bearing edge, live-verified; ATP→Story / ATR→Story are
+  administrative; direct TC→Story is the cascade's last resort — see
+  `traceability-linking.md` §3). Traceability is preserved here, NOT
   via the parent.
 - **components** = the affected product area (Part 3).
 
@@ -220,7 +223,7 @@ components          ->  PRODUCT module/epic  ("what part of the product it affec
 |---|---|---|
 | **Master Test Plan epic** | every **Test Plan** (FTP/STP/ATP) | `qa.qa_epics.master_test_plan_epic.name` — **"QA Master Test Plan"** |
 | **Test Repository epic** | every **Test** (TC) | `qa.qa_epics.test_repository_epic.name` — **"QA Test Repository"** |
-| **Test Artifacts epic** | every **Test Execution** (FTR/STR/ATR), **Precondition**, **Test Set** | `qa.qa_epics.test_artifacts_epic.name` — **"QA Test Artifacts"** |
+| **Test Artifacts epic** | every **Test Execution** (STR/ATR), **Precondition**, and **Test Set** — both the per-Story **ATS** (`ATS: {US_ID}: {story title}` — MANDATORY per Story, components INHERITED from the Story) and the optional feature-level **`TS:`** (`TS: {EPIC\|module}: Validate {feature}` — components optional, may cross modules) | `qa.qa_epics.test_artifacts_epic.name` — **"QA Test Artifacts"** |
 | **Defect epic** | every **bug/defect/improvement** | `qa.qa_epics.defect_epic.name` — **"QA Defect Management"** |
 
 - The **Master Test Plan epic has a special role**: it is an **Epic** (not a Test
@@ -228,6 +231,15 @@ components          ->  PRODUCT module/epic  ("what part of the product it affec
   `.context/master-test-plan.md` + points to the official QA team repository, and is
   cross-linked (`relates to`) to its three sibling QA epics (Test Repository, Test
   Artifacts, Defect Management) — so the four form a navigable QA-governance cluster.
+- **Test Sets split by altitude.** The per-Story **ATS** (Acceptance Test Set,
+  `ATS: {US_ID}: {story title}`) is a MANDATORY canonical artifact — one per
+  Story, even for a single Test — and inherits its **components from the Story**
+  (mandatory, like ATP/ATR). The components exemption applies ONLY to the
+  optional feature-level **`TS:`** set (`TS: {EPIC|module}: Validate {feature}`),
+  which may legitimately cross modules (smoke / regression / feature grouping).
+  Both altitudes parent to the **Test Artifacts epic**; the ATS additionally
+  carries the coverage-bearing `test` link to its Story
+  (`traceability-linking.md` §3).
 - The **`QA `/ project prefix is deliberate**: a reader scanning epics sees `QA …`
   and knows it is a *process* epic, not a product feature.
 - Epic identity (name + key) is configured per project in `.agents/project.yaml`
