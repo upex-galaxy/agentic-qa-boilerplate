@@ -107,6 +107,20 @@ git_strategy:
     direct_push_to_protected: allowed # forbidden | confirm | allowed (solo-main = allowed)
     admin_bypass: true # normal flow here: the admin push credential auto-bypasses the ProtectPublic ruleset on every push (no flag needed). "Bypassed rule violations" is expected — never open a PR.
     require_pr_reviews: 1 # VERIFIED 2026-08-18 against ruleset 16809531: required_approving_review_count = 1. Informational here, because this repo pushes directly and the admin credential bypasses the rule (see description) — but the number must still state what the host asks of anyone who does open a PR.
+    # Host divergences that are ACCEPTED, not drift. Each `field` names a `git:policy verify`
+    # finding verbatim (`<branch>.<policy_field>`); verify moves matching findings from DRIFT
+    # to ACCEPTED (exit 0) and warns when an entry no longer matches anything (stale entry).
+    # `apply` preserves the host's side for accepted fields instead of deriving its own rule.
+    accepted_divergences:
+      - field: main.direct_push_to_protected
+        enforced: blocked (pull_request rule)
+        accepted: 2026-08-21
+        reason: >
+          The ProtectPublic ruleset requires a PR so non-bypass contributors cannot push
+          main directly; this repo's admin credential is on the bypass list and pushes
+          directly (standing authorization — see description). `allowed` describes how
+          work actually lands here; the host rule keeps protecting everyone else. Both
+          sides are correct on purpose.
   branch_prefixes:
     precedence: [feat, fix, refactor, test, docs, chore]
     naming_with_key: '{prefix}/{ISSUE-KEY}-{kebab-slug}'
@@ -114,8 +128,8 @@ git_strategy:
   meta:
     setup_version: 1
     created: 2026-06-20 # YYYY-MM-DD stamped by Strategy Setup
-    policy_verified: 2026-08-18 # YYYY-MM-DD of the last `bun run git:policy verify`. null = never reconciled against the host
-    policy_source: declared # verified | declared. Stays `declared` while the accepted divergence below is open — see the note on direct_push_to_protected
+    policy_verified: 2026-08-21 # YYYY-MM-DD of the last `bun run git:policy verify`. null = never reconciled against the host
+    policy_source: accepted # verified | accepted | declared. `verified` = host matches the yaml exactly; `accepted` = every divergence is formally listed in policy.accepted_divergences (stamped by `git:policy verify --stamp`); `declared` = never reconciled, or an unaccepted drift is open.
     # Did anyone actually CHOOSE this strategy, or is it just the shipped default?
     # `strategy:` above is never null, so its value alone cannot answer that. Strategy
     # Setup flips this to `chosen` when the questionnaire actually runs.

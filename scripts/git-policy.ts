@@ -17,7 +17,9 @@
  * COMMANDS
  *   verify   Read the host, diff against git_strategy, report. Read-only.
  *            `--stamp` writes meta.policy_verified / policy_source when clean.
- *            Exit 1 on drift, 0 when in parity.
+ *            Exit 1 on UNACCEPTED drift; 0 in parity, when every drift is listed
+ *            in `policy.accepted_divergences`, or when the host is unreachable
+ *            (warned, not verified — absence of data is not drift). Hook-safe.
  *   apply    Derive a ruleset from git_strategy and write it to the host.
  *            Dry-run by DEFAULT; `--yes` performs the write.
  *            Refuses to LOOSEN protection unless `--allow-loosening`.
@@ -54,12 +56,24 @@ const RULESET_NAME = 'ProtectPublic';
 // Types
 // ---------------------------------------------------------------------------
 
+interface AcceptedDivergence {
+  field: string
+  enforced?: string
+  reason?: string
+  accepted?: string
+}
+
 interface GitStrategy {
   strategy: string
   branches: { production: string | null, integration: string | null, ephemeral_pattern: string | null }
   protected: string[]
   decisions: { promote_method: string, feature_merge: string, hotfix_policy: string }
-  policy: { direct_push_to_protected: string, admin_bypass: boolean, require_pr_reviews: number | null }
+  policy: {
+    direct_push_to_protected: string
+    admin_bypass: boolean
+    require_pr_reviews: number | null
+    accepted_divergences?: AcceptedDivergence[]
+  }
   meta: Record<string, unknown>
 }
 
@@ -75,7 +89,7 @@ interface PullRequestParams {
 interface Rule { type: string, parameters?: Record<string, unknown> }
 
 interface Finding {
-  severity: 'drift' | 'info'
+  severity: 'drift' | 'accepted' | 'info'
   field: string
   declared: string
   enforced: string
@@ -99,18 +113,21 @@ function fail(msg: string): never {
   process.exit(1);
 }
 
-/** `gh api` wrapper. Returns null on any non-zero exit (404 / 403 / no network). */
+/** `gh api` wrapper. Returns null on any non-zero exit (404 / 403 / no network / no gh binary). */
 function gh(path: string, args: string[] = []): unknown | null {
-  const p = Bun.spawnSync(['gh', 'api', path, ...args], { stdout: 'pipe', stderr: 'pipe' });
-  if (p.exitCode !== 0) { return null; }
-  const out = p.stdout.toString().trim();
-  if (out === '') { return null; }
-  try { return JSON.parse(out); }
-  catch { return null; }
+  try {
+    const p = Bun.spawnSync(['gh', 'api', path, ...args], { stdout: 'pipe', stderr: 'pipe' });
+    if (p.exitCode !== 0) { return null; }
+    const out = p.stdout.toString().trim();
+    if (out === '') { return null; }
+    return JSON.parse(out);
+  }
+  catch { return null; } // gh binary absent, or non-JSON output
 }
 
 function ghExitCode(path: string): number {
-  return Bun.spawnSync(['gh', 'api', path], { stdout: 'pipe', stderr: 'pipe' }).exitCode ?? 1;
+  try { return Bun.spawnSync(['gh', 'api', path], { stdout: 'pipe', stderr: 'pipe' }).exitCode ?? 1; }
+  catch { return 1; }
 }
 
 function readStrategy(): GitStrategy {
@@ -188,6 +205,13 @@ export function allowedMergeMethods(gs: GitStrategy): string[] | null {
  */
 export const MANAGED_RULE_TYPES = new Set(['deletion', 'non_fast_forward', 'creation', 'pull_request']);
 
+/** Fields formally accepted as divergent in `policy.accepted_divergences`. */
+export function acceptedFields(gs: GitStrategy): string[] {
+  return (gs.policy?.accepted_divergences ?? [])
+    .map(d => d?.field)
+    .filter((f): f is string => typeof f === 'string' && f.length > 0);
+}
+
 export function buildRules(gs: GitStrategy, codeowners: boolean, current: Rule[] = []): Rule[] {
   const rules: Rule[] = [
     { type: 'deletion' },
@@ -195,7 +219,15 @@ export function buildRules(gs: GitStrategy, codeowners: boolean, current: Rule[]
     { type: 'creation' },
   ];
 
-  if (gs.policy?.direct_push_to_protected !== 'allowed') {
+  // An accepted divergence on direct_push_to_protected means "the host's side of
+  // this field is intended". Deriving our own pull_request rule (or omitting it)
+  // would overwrite exactly what was accepted — carry the host's rule forward as-is.
+  const acceptedDirectPush = acceptedFields(gs).some(f => f.endsWith('.direct_push_to_protected'));
+  if (acceptedDirectPush) {
+    const hostPr = current.find(r => r.type === 'pull_request');
+    if (hostPr) { rules.push(hostPr); }
+  }
+  else if (gs.policy?.direct_push_to_protected !== 'allowed') {
     const currentPr = current.find(r => r.type === 'pull_request');
     const currentMethods = (currentPr?.parameters as Partial<PullRequestParams> | undefined)?.allowed_merge_methods;
     const params: PullRequestParams = {
@@ -243,9 +275,19 @@ function readHost(slug: string, branch: string): HostReading {
 }
 
 function verify(gs: GitStrategy, slug: string, stamp: boolean): number {
+  // Preflight: no host reading means no finding, not a drift. Exit 0 with a loud
+  // warning so hooks (pre-push) and `repo:check` never block on a machine that is
+  // offline, unauthenticated, or missing `gh` — absence of data is not parity.
+  if (gh(`repos/${slug}`) === null) {
+    log.warn(`Cannot reach ${slug} via \`gh api\` (no gh binary, no auth, or no network).`);
+    log.dim('Parity NOT verified — skipping. Run `bun run git:policy verify` from a connected, authenticated shell.');
+    return 0;
+  }
+
   const branches = protectedBranches(gs);
   const codeowners = hasCodeowners();
   const findings: Finding[] = [];
+  const accepted = gs.policy?.accepted_divergences ?? [];
 
   console.log(pc.bold('\nGit Policy Parity Report'));
   console.log('='.repeat(50));
@@ -365,8 +407,28 @@ function verify(gs: GitStrategy, slug: string, stamp: boolean): number {
     console.log('');
   }
 
+  // --- accepted divergences: declared drift the project has formally signed off ---
+  const acceptedByField = new Map(accepted.filter(a => a?.field).map(a => [a.field, a]));
+  for (const f of findings) {
+    if (f.severity === 'drift' && acceptedByField.has(f.field)) { f.severity = 'accepted'; }
+  }
+  // A stale entry accepts a divergence that no longer exists — surface it so the
+  // list cannot silently accumulate dead exceptions.
+  const matched = new Set(findings.filter(f => f.severity === 'accepted').map(f => f.field));
+  for (const a of acceptedByField.keys()) {
+    if (!matched.has(a)) {
+      findings.push({
+        severity: 'info',
+        field: a,
+        declared: 'accepted divergence (policy.accepted_divergences)',
+        enforced: 'no matching drift — STALE entry, remove it from the yaml',
+      });
+    }
+  }
+
   // --- report ---
   const drifts = findings.filter(f => f.severity === 'drift');
+  const accepts = findings.filter(f => f.severity === 'accepted');
   const infos = findings.filter(f => f.severity === 'info');
 
   console.log(pc.bold(`DRIFT (${drifts.length}):`));
@@ -376,6 +438,14 @@ function verify(gs: GitStrategy, slug: string, stamp: boolean): number {
     console.log(`      declared: ${f.declared}`);
     console.log(`      enforced: ${f.enforced}`);
     if (f.note) { console.log(pc.dim(`      ${f.note}`)); }
+  }
+  if (accepts.length > 0) {
+    console.log(`\n${pc.bold(`ACCEPTED (${accepts.length}):`)}`);
+    for (const f of accepts) {
+      const entry = acceptedByField.get(f.field);
+      console.log(`  ${pc.green('✔')} ${f.field}  declared ${f.declared} / enforced ${f.enforced}`);
+      if (entry?.reason) { console.log(pc.dim(`      ${String(entry.reason).trim().replace(/\s+/g, ' ')}`)); }
+    }
   }
   if (infos.length > 0) {
     console.log(`\n${pc.bold(`NOTES (${infos.length}):`)}`);
@@ -387,18 +457,20 @@ function verify(gs: GitStrategy, slug: string, stamp: boolean): number {
     log.warn('Declared policy does not match the host.');
     log.dim('Fix the host:  bun run git:policy apply --yes');
     log.dim('Fix the yaml:  edit .agents/project.yaml -> git_strategy.policy, then re-run verify');
-    log.dim('Accept it:     record WHY in this project\'s CLAUDE.md -> ## Git Strategy');
+    log.dim('Accept it:     add the finding\'s field to git_strategy.policy.accepted_divergences with a reason');
     return 1;
   }
 
-  log.ok('Declared policy matches the host.');
-  if (stamp) { stampVerified(); }
-  else { log.dim('Re-run with --stamp to record meta.policy_verified / policy_source: verified'); }
+  const source = accepts.length > 0 ? 'accepted' : 'verified';
+  if (accepts.length > 0) { log.ok('Declared policy matches the host, modulo formally accepted divergences.'); }
+  else { log.ok('Declared policy matches the host.'); }
+  if (stamp) { stampVerified(source); }
+  else { log.dim(`Re-run with --stamp to record meta.policy_verified / policy_source: ${source}`); }
   return 0;
 }
 
 /** Append-only edit of the two meta fields. Never rewrites anything else. */
-function stampVerified(): void {
+function stampVerified(source: 'verified' | 'accepted'): void {
   const today = new Date().toISOString().slice(0, 10);
   const verifiedRe = /^(\s*)policy_verified:\s*\S+/m;
   const sourceRe = /^(\s*)policy_source:\s*\S+/m;
@@ -414,13 +486,13 @@ function stampVerified(): void {
 
   const before = text;
   text = text.replace(verifiedRe, `$1policy_verified: ${today}`);
-  text = text.replace(sourceRe, '$1policy_source: verified');
+  text = text.replace(sourceRe, `$1policy_source: ${source}`);
   if (text === before) {
-    log.ok(`Already stamped: policy_verified: ${today}, policy_source: verified`);
+    log.ok(`Already stamped: policy_verified: ${today}, policy_source: ${source}`);
     return;
   }
   writeFileSync(PROJECT_YAML, text);
-  log.ok(`Stamped meta.policy_verified: ${today}, meta.policy_source: verified`);
+  log.ok(`Stamped meta.policy_verified: ${today}, meta.policy_source: ${source}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -463,6 +535,14 @@ function detectLoosening(current: Rule[], next: Rule[], slug: string, branch: st
 }
 
 function apply(gs: GitStrategy, slug: string, write: boolean, allowLoosening: boolean): number {
+  // Unlike verify, an unreachable host here is FATAL: apply derives its payload
+  // from the host's current rules, and an empty reading would masquerade as
+  // "no ruleset exists" and produce a CREATE payload that drops every host rule.
+  if (gh(`repos/${slug}`) === null) {
+    log.err(`Cannot reach ${slug} via \`gh api\` (no gh binary, no auth, or no network). Refusing to derive a ruleset from an empty host reading.`);
+    return 1;
+  }
+
   const branches = protectedBranches(gs);
   const codeowners = hasCodeowners();
 
@@ -557,8 +637,12 @@ USAGE
   bun run git:policy <command> [flags]
 
 COMMANDS
-  verify              Read the host, diff against git_strategy, report. Exit 1 on drift.
+  verify              Read the host, diff against git_strategy, report. Exit 1 on
+                      unaccepted drift; divergences listed in
+                      git_strategy.policy.accepted_divergences report as ACCEPTED
+                      (exit 0). Unreachable host = warn + exit 0 (hook-safe).
   apply               Write the ruleset git_strategy implies. Dry-run unless --yes.
+                      Preserves the host's side of any accepted-divergent field.
   plan                Print the implied ruleset. No host calls.
 
 FLAGS
