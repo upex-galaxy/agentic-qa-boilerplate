@@ -114,8 +114,8 @@
           "source": "https://bun.sh/docs"
         },
         {
-          "name": "wokitoki",
-          "purpose": "Community skill: wokitoki",
+          "name": "mkd",
+          "purpose": "Community skill: mkd (Make Decision) — decision-deck UI the AI drives via a spec JSON",
           "source": "https://github.com/upex-galaxy/agentic-user-skills"
         }
       ]

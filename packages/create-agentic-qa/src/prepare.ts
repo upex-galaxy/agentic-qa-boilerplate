@@ -123,6 +123,97 @@ function escapeReg(s: string): string {
   return s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
+/**
+ * Reset the git-strategy PROVENANCE in a freshly scaffolded `.agents/project.yaml`.
+ *
+ * The boilerplate repo ships its `git_strategy:` block with the maintainer's own
+ * provenance stamps: `meta.strategy_source: chosen`, `meta.policy_source:
+ * accepted`, a `meta.policy_verified` date, and a `policy.accepted_divergences`
+ * list whose entries name THIS repo's GitHub ruleset — all of which are false in
+ * any other repository. The strategy itself (`solo-main`) and the policy VALUES
+ * are kept as a sane shipped default; only the "someone decided and verified
+ * this" claims are reset. With `strategy_source: inherited`, git-flow-master's
+ * bootstrap offer fires on the consumer's first git action and they define
+ * their own strategy explicitly.
+ *
+ * Same regex-line-edit pattern as the project_name rewrite: zero-dep, preserves
+ * comments and formatting, and a template without the block (older tag) is a
+ * silent no-op per field.
+ */
+export async function resetGitStrategyMeta(projectDir: string): Promise<void> {
+  const yamlPath = join(projectDir, '.agents', 'project.yaml');
+  if (!existsSync(yamlPath)) { return; } // older template — rewriteProjectYaml already warned.
+
+  let content = await readFile(yamlPath, 'utf8');
+  if (!/^git_strategy:/m.test(content)) { return; } // template predates the block.
+
+  const reset: string[] = [];
+  for (const [field, value] of [
+    ['strategy_source', 'inherited'],
+    ['policy_source', 'declared'],
+    ['policy_verified', 'null'],
+  ] as Array<[string, string]>) {
+    const next = resetYamlLeafValue(content, field, value);
+    if (next !== null) {
+      content = next;
+      reset.push(`${field}=${value}`);
+    }
+  }
+
+  const withoutDivergences = removeYamlBlock(content, 'accepted_divergences');
+  if (withoutDivergences !== content) {
+    content = withoutDivergences;
+    reset.push('accepted_divergences removed');
+  }
+
+  await writeFile(yamlPath, content, 'utf8');
+  if (reset.length > 0) {
+    log.dim(`  Reset git_strategy provenance (${reset.join(', ')}).`);
+  }
+}
+
+/**
+ * Replace a scalar leaf's VALUE anywhere in the YAML (first occurrence),
+ * preserving indentation and any trailing `#` comment. Returns null when the
+ * field is absent.
+ */
+function resetYamlLeafValue(content: string, field: string, value: string): string | null {
+  const pattern = new RegExp(`^([ \\t]*${escapeReg(field)}:)[^#\\n]*(#.*)?$`, 'm');
+  if (!pattern.test(content)) { return null; }
+  // Function replacer: a `$` inside the preserved comment must stay literal.
+  return content.replace(pattern, (_m, head: string, comment?: string) =>
+    `${head} ${value}${comment ? ` ${comment}` : ''}`);
+}
+
+/**
+ * Remove a mapping key, its indented body, and the contiguous same-indent
+ * comment header immediately above it. Returns the content unchanged when the
+ * key is absent.
+ */
+function removeYamlBlock(content: string, field: string): string {
+  const lines = content.split('\n');
+  const keyRe = new RegExp(`^[ \\t]*${escapeReg(field)}:`);
+  const keyIdx = lines.findIndex(l => keyRe.test(l));
+  if (keyIdx === -1) { return content; }
+  const indent = lines[keyIdx].match(/^[ \t]*/)![0];
+
+  // Contiguous comment header at the same indent (documents the removed key).
+  let start = keyIdx;
+  while (start - 1 >= 0 && lines[start - 1].startsWith(`${indent}#`)) { start -= 1; }
+
+  // Body: every line more indented than the key (blank lines tolerated).
+  let end = keyIdx;
+  for (let i = keyIdx + 1; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (line.trim() === '') { continue; }
+    const leading = line.match(/^[ \t]*/)![0];
+    if (leading.length > indent.length) { end = i; continue; }
+    break;
+  }
+
+  return [...lines.slice(0, start), ...lines.slice(end + 1)].join('\n');
+}
+
 export function initGitRepo(projectDir: string): void {
   // `git init -b <branch>` needs git >= 2.28 (Jul 2020). Ubuntu 20.04 ships
   // 2.25, Debian 10 ships 2.20, Catalina's CLT ship 2.24 — on those it exits

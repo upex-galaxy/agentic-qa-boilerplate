@@ -18,6 +18,8 @@ import pc from 'picocolors';
 import * as tui from './lib/tui';
 import { cleanupTempDir, detectGitVersion, gitVersionMeetsMin, runUpdate } from './lib/updater-core';
 import { makeProtectedDriftHook } from './lib/updater-drift';
+import { groupIgnoreLines } from './lib/updater-ignore';
+import { makePbiCacheMigrationHook } from './lib/updater-pbi';
 import { parseDotEnvExampleKeys, requiredNow, VAR_MANIFEST } from './lib/variables-manifest.ts';
 
 // --- CONFIGURATION ---
@@ -325,6 +327,30 @@ function makeSkillsRegistryHook(
   };
 }
 
+// --- KATA MANIFEST REGEN (afterApply hook) ---
+//
+// `kata-manifest.json` is generated, per-repo (see the deliberately-not-watched
+// list below): upstream's copy never syncs. But the GENERATOR
+// (`scripts/kata-manifest.ts`) and the test tree it scans (`tests/`) do travel
+// through the sync. When either changed this run, regenerate the manifest in
+// the consumer repo so the pre-commit staleness gate (`kata:manifest:check`)
+// does not flag it after a routine `bun run up`. Best-effort: a failure warns
+// (e.g. bun missing from PATH), never aborts.
+function makeKataManifestHook(
+  sink: ReportSink,
+): (summary: RunSummary) => Promise<void> {
+  return async (summary: RunSummary): Promise<void> => {
+    const manifestInputsTouched = summary.applied.some(a =>
+      a.entry.path === 'scripts/kata-manifest.ts' || a.entry.path.startsWith('tests/'));
+    if (!manifestInputsTouched) { return; }
+    sink.step('Regenerando `kata-manifest.json` (generador o tests/ cambiaron)…');
+    const res = spawnSync('bun', ['run', 'kata:manifest'], { stdio: 'inherit' });
+    if (res.status !== 0) {
+      sink.warn('No se pudo regenerar kata-manifest.json. Ejecuta `bun run kata:manifest` manualmente.');
+    }
+  };
+}
+
 // --- GIT_STRATEGY UPSERT (afterApply hook) ---
 //
 // The `git_strategy:` block in `.agents/project.yaml` (git workflow definition,
@@ -528,6 +554,20 @@ const QA_ASSIGNEE_BACKFILL: YamlBackfillSpec = {
   label: 'qa_assignee',
 };
 
+// The `subtask` work_type feeds /shift-left-testing's per-Story "[QA]
+// Shift-Left Review" tracking subtask. Like qa_assignee, it landed in
+// `jira-required.yaml` AFTER some projects were scaffolded — and since the file
+// is bootstrapOnly AND is the input `jira:sync-workflows` catalogs from, a
+// consumer without the block silently regenerates a jira-workflows.json that
+// does not know subtasks exist.
+const SUBTASK_WORKTYPE_BACKFILL: YamlBackfillSpec = {
+  consumerRel: path.join('.agents', 'jira-required.yaml'),
+  presence: /^[ \t]*subtask:/m,
+  extract: y => extractIndentedYamlBlock(y, 'subtask', '  '),
+  insert: (y, b) => insertBlockAtEndOfSection(y, 'work_types', b),
+  label: 'subtask',
+};
+
 /**
  * Build an afterApply hook that back-fills one missing methodology YAML block
  * into a bootstrapOnly consumer file. Mirrors makeGitStrategyUpsertHook: the
@@ -705,6 +745,7 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
 //  - `README.md` is rewritten wholesale per project; an advisory would be noise.
 
 const DRIFT_PROMPT_PATH = path.join('.agents', 'prompts', 'boilerplate-drift-prompt.md');
+const PBI_MIGRATION_PROMPT_PATH = path.join('.agents', 'prompts', 'pbi-cache-migration-prompt.md');
 
 // --- SINK ---
 function abortOnCancel<T>(v: T | symbol): T {
@@ -770,15 +811,32 @@ function buildSink(): ReportSink {
 
     pickIgnoreLines: async (file, options) => {
       if (options.length === 0) { return []; }
-      const opts = options.map(o => ({ value: o.value, label: o.label }));
-      const initialValues = options.filter(o => o.checked).map(o => o.value);
+      // Collapse pattern+negation ladders (e.g. the `.context/PBI/` gitignore
+      // ladder) into ONE all-or-nothing option: applying the exclusion without
+      // its `!` re-inclusions (or vice versa) would corrupt what git tracks.
+      const byValue = new Map(options.map(o => [o.value, o]));
+      const groups = groupIgnoreLines(options.map(o => o.value));
+      const opts = groups.map((g) => {
+        if (!g.atomic) {
+          const o = byValue.get(g.lines[0])!;
+          return { value: o.value, label: o.label };
+        }
+        return {
+          value: g.lines.join('\n'),
+          label: `${g.lines[0]}  (+${g.lines.length - 1} línea(s) ligadas — todo o nada)`,
+        };
+      });
+      const initialValues = groups
+        .filter(g => g.lines.every(l => byValue.get(l)?.checked))
+        .map(g => (g.atomic ? g.lines.join('\n') : g.lines[0]));
       const r = await tui.multiselect({
         message: `${file} — líneas nuevas en upstream (no en tu archivo):`,
         options: opts,
         initialValues,
         required: false,
       });
-      return abortOnCancel<string[]>(r);
+      // Expand atomic groups back into their individual lines for the core.
+      return abortOnCancel<string[]>(r).flatMap(v => v.split('\n'));
     },
 
     resolvePackageJsonKey: async (file, section, key, drift) => {
@@ -930,8 +988,11 @@ async function main(): Promise<void> {
     versionFile: VERSION_FILE,
     components,
     ignoreFiles: ['.gitignore', '.prettierignore'].map(p => ({ path: p, sentinel: '# ===== Synced from boilerplate' })),
-    // Append-only per section: upstream-only keys are added, same-key/
-    // different-value is reported FYI and NEVER overwritten. `dependencies` is
+    // Per section: upstream-only keys are APPENDED. Diverged keys (same key,
+    // different value) follow the run mode: the DEFAULT force mode resolves
+    // them 'theirs' (upstream value overwrites local — backed up, restorable
+    // with --rollback), --interactive prompts per key, and legacy --auto keeps
+    // the local value and re-surfaces next run. `dependencies` is
     // here because the `cli` component is synced wholesale and imports
     // picocolors / yaml / boxen / cli-table3 / figures / @clack/prompts /
     // @inquirer/prompts at RUNTIME, all declared only there — syncing the code
@@ -984,10 +1045,13 @@ async function main(): Promise<void> {
         : composeHooks(
             sink,
             makeSkillsRegistryHook(sink),
+            makeKataManifestHook(sink),
             makeEnvDriftHook(TEMP_DIR, sink, nonInteractive),
             makeGitStrategyUpsertHook(TEMP_DIR, sink, nonInteractive),
             makeYamlBackfillHook(QA_EPICS_BACKFILL, TEMP_DIR, sink, nonInteractive),
             makeYamlBackfillHook(QA_ASSIGNEE_BACKFILL, TEMP_DIR, sink, nonInteractive),
+            makeYamlBackfillHook(SUBTASK_WORKTYPE_BACKFILL, TEMP_DIR, sink, nonInteractive),
+            makePbiCacheMigrationHook({ promptOutPath: path.join(process.cwd(), PBI_MIGRATION_PROMPT_PATH) }, sink),
             makeProtectedDriftHook({
               entries: PROTECTED_WATCHLIST,
               tempDir: TEMP_DIR,

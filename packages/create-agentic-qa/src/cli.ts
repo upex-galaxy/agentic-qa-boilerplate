@@ -18,6 +18,7 @@ import { runMenu } from './menu.ts';
 import {
   initGitRepo,
   pruneBootstrapExcludes,
+  resetGitStrategyMeta,
   rewritePackageJson,
   rewriteProjectYaml,
   sanitizeProjectName,
@@ -165,6 +166,7 @@ async function main(): Promise<number> {
         projectName,
         projectKey: args.projectKey,
       });
+      await resetGitStrategyMeta(projectDir);
       s2.stop('Project prepared');
     }
     catch (err) {

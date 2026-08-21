@@ -180,6 +180,12 @@ export function buildDriftPrompt(drifted: DriftedEntry[], templateRepo: string):
     'appends new devDependencies but never bumps existing ones, so new config options may',
     'not exist in the locally pinned version.',
     '',
+    'POST-MERGE COMMANDS (each reconciled file feeds a generated catalog — regenerate it):',
+    ' - after reconciling `.agents/jira-required.yaml`, run `bun run jira:sync-workflows`',
+    '   (it catalogs ONLY the work_types the manifest declares — stale input, truncated catalog);',
+    ' - after reconciling skills (`.claude/skills/**`), run `bun run skills:registry`;',
+    ' - after reconciling test files (`tests/**`), run `bun run kata:manifest`.',
+    '',
     'After migrating, run the project verification (tests -> types -> lint) and report results.',
   ].join('\n');
 }

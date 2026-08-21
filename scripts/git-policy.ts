@@ -134,8 +134,26 @@ function readStrategy(): GitStrategy {
   if (!existsSync(PROJECT_YAML)) { fail(`.agents/project.yaml not found at ${PROJECT_YAML}`); }
   const doc = parseYaml(readFileSync(PROJECT_YAML, 'utf8')) as Record<string, unknown>;
   const gs = doc?.git_strategy as GitStrategy | undefined;
-  if (!gs) { fail('`git_strategy:` block missing from .agents/project.yaml. Run Strategy Setup first ("set up our git strategy").'); }
-  if (!gs.strategy || gs.strategy === 'null') { fail('`git_strategy.strategy` is unset. Run Strategy Setup first.'); }
+  // Teach, don't just refuse: a missing block means this project never ran its
+  // Git Strategy Setup. Nothing is auto-generated here on purpose — branch
+  // policy is a per-project decision, and a silently appended default would
+  // record a strategy nobody chose.
+  if (!gs) {
+    fail([
+      '`git_strategy:` block missing from .agents/project.yaml — this project has not run its Git Strategy Setup.',
+      '  Branch policy is a per-project decision; this script never invents one, so the block is not auto-created.',
+      '  Fix: ask your AI agent to "set up our git strategy" — git-flow-master\'s Strategy Setup questionnaire',
+      '  writes the `git_strategy:` block (strategy, branches, protection policy) into .agents/project.yaml.',
+      '  Until then, this check keeps failing — including the pre-push hook that runs it on every push.',
+    ].join('\n'));
+  }
+  if (!gs.strategy || gs.strategy === 'null') {
+    fail([
+      '`git_strategy.strategy` is unset in .agents/project.yaml — the block exists but no strategy was ever chosen.',
+      '  Fix: ask your AI agent to "set up our git strategy" (git-flow-master Strategy Setup) to fill it in.',
+      '  Until then, this check keeps failing — including the pre-push hook that runs it on every push.',
+    ].join('\n'));
+  }
   return gs;
 }
 

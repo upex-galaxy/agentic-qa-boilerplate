@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { parseArgs } from '../src/args.ts';
 import { buildTarArgs } from '../src/download.ts';
 import { CliError } from '../src/errors.ts';
-import { pruneBootstrapExcludes, rewriteProjectYaml, sanitizeProjectName } from '../src/prepare.ts';
+import { pruneBootstrapExcludes, resetGitStrategyMeta, rewriteProjectYaml, sanitizeProjectName } from '../src/prepare.ts';
 
 describe('parseArgs', () => {
   test('accepts a project name as positional', () => {
@@ -130,6 +130,119 @@ describe('rewriteProjectYaml', () => {
     writeFileSync(join(dir, '.agents', 'project.yaml'), 'project:\n  unrelated: x\n');
     await rewriteProjectYaml(dir, { projectName: 'my-app' });
     expect(readYaml()).toContain('  unrelated: x');
+  });
+});
+
+describe('resetGitStrategyMeta', () => {
+  let dir: string;
+
+  // Mirrors the shape the boilerplate ships: strategy VALUES plus the
+  // maintainer's own provenance stamps and an accepted_divergences entry that
+  // names THIS repo's ruleset — false in any scaffolded consumer project.
+  const TEMPLATE_YAML = [
+    'project:',
+    '  project_name: null',
+    '',
+    'git_strategy:',
+    '  strategy: solo-main # DEFAULT, not a decision',
+    '  branches:',
+    '    production: main',
+    '  protected: [main]',
+    '  policy:',
+    '    direct_push_to_protected: allowed',
+    '    admin_bypass: true',
+    '    require_pr_reviews: 1',
+    '    # Host divergences that are ACCEPTED, not drift.',
+    '    # verify moves matching findings from DRIFT to ACCEPTED.',
+    '    accepted_divergences:',
+    '      - field: main.direct_push_to_protected',
+    '        enforced: blocked (pull_request rule)',
+    '        accepted: 2026-08-21',
+    '        reason: >',
+    '          The ProtectPublic ruleset requires a PR; the admin credential bypasses it.',
+    '  meta:',
+    '    setup_version: 1',
+    '    created: 2026-06-20',
+    '    policy_verified: 2026-08-21 # YYYY-MM-DD of the last verify. null = never reconciled',
+    '    policy_source: accepted # verified | accepted | declared',
+    '    strategy_source: chosen # inherited | chosen',
+    '',
+    'environments:',
+    '  local:',
+    '    web_url: null',
+    '',
+  ].join('\n');
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'caq-gitstrat-'));
+    mkdirSync(join(dir, '.agents'), { recursive: true });
+    writeFileSync(join(dir, '.agents', 'project.yaml'), TEMPLATE_YAML);
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  function readYaml(): string {
+    return readFileSync(join(dir, '.agents', 'project.yaml'), 'utf8');
+  }
+
+  test('resets provenance to inherited/declared/null', async () => {
+    await resetGitStrategyMeta(dir);
+    const yaml = readYaml();
+    expect(yaml).toContain('strategy_source: inherited');
+    expect(yaml).not.toContain('strategy_source: chosen');
+    expect(yaml).toContain('policy_source: declared');
+    expect(yaml).not.toContain('policy_source: accepted');
+    expect(yaml).toContain('policy_verified: null');
+    expect(yaml).not.toContain('policy_verified: 2026-08-21');
+  });
+
+  test('removes the accepted_divergences block (entries name the boilerplate ruleset)', async () => {
+    await resetGitStrategyMeta(dir);
+    const yaml = readYaml();
+    expect(yaml).not.toContain('accepted_divergences');
+    expect(yaml).not.toContain('main.direct_push_to_protected');
+    expect(yaml).not.toContain('ProtectPublic');
+    // Its contiguous comment header goes with it.
+    expect(yaml).not.toContain('Host divergences that are ACCEPTED');
+  });
+
+  test('keeps the strategy and policy VALUES as shipped', async () => {
+    await resetGitStrategyMeta(dir);
+    const yaml = readYaml();
+    expect(yaml).toContain('strategy: solo-main');
+    expect(yaml).toContain('direct_push_to_protected: allowed');
+    expect(yaml).toContain('admin_bypass: true');
+    expect(yaml).toContain('require_pr_reviews: 1');
+    expect(yaml).toContain('protected: [main]');
+  });
+
+  test('preserves inline comments on the reset leaves', async () => {
+    await resetGitStrategyMeta(dir);
+    const yaml = readYaml();
+    expect(yaml).toContain('strategy_source: inherited # inherited | chosen');
+    expect(yaml).toContain('policy_source: declared # verified | accepted | declared');
+  });
+
+  test('leaves surrounding sections untouched', async () => {
+    await resetGitStrategyMeta(dir);
+    const yaml = readYaml();
+    expect(yaml).toContain('project:');
+    expect(yaml).toContain('environments:');
+    expect(yaml).toContain('web_url: null');
+  });
+
+  test('is a no-op on a template without the git_strategy block', async () => {
+    writeFileSync(join(dir, '.agents', 'project.yaml'), 'project:\n  project_name: null\n');
+    await resetGitStrategyMeta(dir);
+    expect(readYaml()).toBe('project:\n  project_name: null\n');
+  });
+
+  test('does not throw when project.yaml is absent', async () => {
+    rmSync(join(dir, '.agents', 'project.yaml'));
+    await resetGitStrategyMeta(dir);
+    expect(existsSync(join(dir, '.agents', 'project.yaml'))).toBe(false);
   });
 });
 

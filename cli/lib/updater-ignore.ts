@@ -80,6 +80,79 @@ export function buildPatternSet(content: string): Set<string> {
 }
 
 // ============================================================================
+// GROUPING (interactive picker — atomic pattern+negation ladders)
+// ============================================================================
+
+/**
+ * A run of ignore lines the interactive picker must present as ONE option.
+ * `atomic: true` means all-or-nothing: the run mixes a pattern with `!`
+ * negations that only make sense together (e.g. the `.context/PBI/` gitignore
+ * ladder — applying the `*` exclusion without its `!` re-inclusions would
+ * silently drop `test-specs/` from version control).
+ */
+export interface IgnoreLineGroup {
+  lines: string[]
+  atomic: boolean
+}
+
+/**
+ * Reduce an ignore line to a comparable path stem: strip the leading `!`,
+ * then strip trailing glob segments and trailing slashes, so `.context/PBI/`
+ * with a `*` suffix, `!.context/PBI/epics/` and the deeper two-level glob
+ * under `epics` all reduce to a prefix-comparable path.
+ */
+export function ignoreLineStem(line: string): string {
+  let s = line.trim().replace(/^!/, '');
+  for (;;) {
+    const next = s.replace(/\/\**$/, '').replace(/\*+$/, '');
+    if (next === s) { break; }
+    s = next;
+  }
+  return s;
+}
+
+/** Path-boundary prefix relation between two stems (either direction). */
+function stemsRelated(a: string, b: string): boolean {
+  return a === b || b.startsWith(`${a}/`) || a.startsWith(`${b}/`);
+}
+
+/**
+ * Group upstream-only ignore lines for the interactive picker.
+ *
+ * A CONSECUTIVE run of lines whose stems share a path prefix AND that contains
+ * at least one `!` negation is one atomic all-or-nothing group — a gitignore
+ * re-include ladder must never apply partially. Everything else stays an
+ * individual (non-atomic) single-line group. Input order is preserved.
+ */
+export function groupIgnoreLines(lines: string[]): IgnoreLineGroup[] {
+  const groups: IgnoreLineGroup[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const run: string[] = [lines[i]];
+    let root = ignoreLineStem(lines[i]);
+    let j = i + 1;
+    while (j < lines.length) {
+      const stem = ignoreLineStem(lines[j]);
+      if (!stemsRelated(root, stem)) { break; }
+      run.push(lines[j]);
+      // Keep the shallowest stem as the run's root so later, deeper lines
+      // still compare against the ladder's base directory.
+      if (root.startsWith(`${stem}/`)) { root = stem; }
+      j += 1;
+    }
+    const hasNegation = run.some(l => l.trim().startsWith('!'));
+    if (run.length > 1 && hasNegation) {
+      groups.push({ lines: run, atomic: true });
+    }
+    else {
+      for (const line of run) { groups.push({ lines: [line], atomic: false }); }
+    }
+    i = j;
+  }
+  return groups;
+}
+
+// ============================================================================
 // DETECT
 // ============================================================================
 
