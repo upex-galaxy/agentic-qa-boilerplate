@@ -2247,7 +2247,12 @@ function loadLinkTypeNames(slugs: string[]): Set<string> {
 const STORY_ATP_PREFIX = /^ATP:/i;
 /** Story-altitude Test Set title (`ATS: {US_ID}: ...`) — cascade rung 1 gate. */
 const STORY_ATS_PREFIX = /^ATS:/i;
-/** Higher-altitude ladder artifacts a Story link must skip for its ATP/ATR. */
+/**
+ * Higher-altitude ladder artifacts a Story link must skip for its ATP/ATR.
+ * `FTR` is a legacy guard: it was retired from the ladder (its results roll up
+ * via ATRs + the sprint STR), but the prefix skip stays so pulls of
+ * pre-migration data never mistake an old FTR for a Story-altitude ATR.
+ */
 const HIGHER_ALTITUDE_PREFIX = /^(FTP|FTR|STP|STR|MTP):/i;
 
 /** Human label for a skipped higher-altitude artifact's info line. */

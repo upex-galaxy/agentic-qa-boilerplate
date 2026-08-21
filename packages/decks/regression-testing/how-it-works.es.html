@@ -661,7 +661,7 @@ table.tbl .mono{font-size:13px}
         <div class="callout"><h4>El label suite deriva del tag</h4><p><span class="mono">@smoke/@regression/@e2e/@integration/@critical</span> es la única taxonomía: el <span class="mono">suite</span> que lees ES el scope que CI corrió. Nunca reconcilies contra otro set de labels.</p></div>
       </div>
     </div>
-    <div class="callout warn mt-m"><h4>Los retries enmascaran flakiness</h4><p>CI corre con <span class="mono">retries: 2</span> — un test que pasa al reintentar sigue siendo flaky. Inspecciona el conteo de <span class="mono">retries</span> en Allure, no solo el status final (anti-patrón R3: el reporte debe exponer los retries).</p></div>
+    <div class="callout warn mt-m"><h4>Sin retries: el flake aflora como fallo</h4><p>Este repo corre con <span class="mono">retries: 0</span> en todas partes (<span class="mono">playwright.config.ts</span>) — doctrina anti-retry: un reintento solo enmascararía el flake. La flakiness aparece como fallo intermitente normal y la clasifica la regla de historial (&gt;20% en los últimos 10 runs), nunca un pass-on-retry. Si un proyecto downstream habilitó retries conscientemente, aplica el anti-patrón R3: expón el conteo de <span class="mono">retries</span> en el reporte, no solo el status final.</p></div>
     <div class="notes">Los KNOWN-BLOCKED (tests @blocked:{BUG-KEY} deliberadamente aparcados tras un bug ya archivado) no son fallos de regresión: se excluyen del pass-rate que gatea y se reportan aparte con su BUG-KEY — así la decisión no se manipula en ningún sentido.</div>
   </section>
 

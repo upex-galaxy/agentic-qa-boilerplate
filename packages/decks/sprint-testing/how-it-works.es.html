@@ -550,6 +550,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="grid g2 mt-m" style="align-items:start">
       <ul class="big tight tight">
         <li><b>Resuelve la modalidad TMS.</b> Por excelencia ATP = issue <span class="mono">Test Plan</span>, ATR = <span class="mono">Test Execution</span> y ATS = <span class="mono">Test Set</span> per-Story (tercer artefacto canónico); el custom field de la Story es solo fallback.</li>
+        <li><b>STP find-or-create</b> en el PRIMER ticket del sprint: <span class="mono">STP: Sprint#{N}: {objetivo}</span> — planificador vivo que cada ticket testeado actualiza (scope, progreso).</li>
         <li><b>Trae el ticket:</b> <span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span> → lee los <span class="mono">.md</span> sincronizados. NUNCA <span class="mono">acli view</span> para custom fields (devuelve <span class="mono">null</span>).</li>
         <li><b>Extrae el Team Discussion</b> de <span class="mono">comments.md</span>: decisiones, edge cases, bloqueos.</li>
         <li><b>Carga contexto + código:</b> business maps, master test plan, repos backend/frontend, datos candidatos vía DBHub.</li>
@@ -745,6 +746,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <li>Loop: primer ticket <b>PENDING</b> de Wave 1 → los mismos 4 despachos → resumen por ticket → <b>tu OK</b> para el siguiente.</li>
         <li>El framework file se actualiza <b>SOLO después</b> de que Stage 3 completa y verifica — nunca antes.</li>
         <li>STOP en TOOL FAILURE · ⏸ en BUG_FOUND bloqueante.</li>
+        <li><b>Cierre del sprint:</b> se crea el <span class="mono">STR: Sprint#{N}: Regression Testing</span> como recap de resultados y el STP se cierra.</li>
       </ul>
       <div class="stack">
         <div class="card"><p class="lbl">Checkpoint por etapa (S11)</p><p class="small mt-s">Tras cada subagente, el orquestador anota la etapa en <span class="mono">progress.md</span> — cada promote alimenta los Context docs del siguiente briefing.</p></div>

@@ -615,7 +615,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="steps s5 anim-stagger-list">
       <div class="step"><div class="num">1</div><h4>Types</h4><p>Payloads, responses y DTOs al tope del archivo del componente.</p></div>
       <div class="step"><div class="num">2</div><h4>Componente</h4><p>Extiende <span class="mono">ApiBase</span> / <span class="mono">UiBase</span>. Helpers primero (sin decorator), ATCs después (<span class="mono">@atc('TICKET-ID')</span>).</p></div>
-      <div class="step"><div class="num">3</div><h4>Registrar</h4><p>En <span class="mono">ApiFixture</span> / <span class="mono">UiFixture</span> / <span class="mono">StepsFixture</span>. Sin registro = inalcanzable.</p></div>
+      <div class="step"><div class="num">3</div><h4>Registrar</h4><p>En <span class="mono">ApiFixture</span> / <span class="mono">UiFixture</span>. Sin registro = inalcanzable. Los Steps NO se registran: se instancian directo.</p></div>
       <div class="step"><div class="num">4</div><h4>Test file</h4><p><span class="mono">tests/e2e/{module}/</span> o <span class="mono">tests/integration/{module}/</span>, con el fixture correcto.</p></div>
       <div class="step"><div class="num">5</div><h4>Run + verify</h4><p>Los tres comandos, en orden — si algo falla, se arregla ANTES del Review.</p></div>
     </div>
@@ -639,7 +639,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="layer"><span class="lx">L2</span><div><h4>ApiBase / UiBase</h4><p>Helpers HTTP (retornos de tupla tipados) y helpers de Playwright. Todo lo genérico vive aquí, una sola vez.</p></div></div>
       <div class="layer"><span class="lx">L3</span><div><h4>Componentes de dominio — <span class="mono">UsersApi, LoginPage</span></h4><p><span class="mono">@atc</span> vive aquí. Un componente por archivo: <span class="mono">{Resource}Api.ts</span> / <span class="mono">{Page}Page.ts</span>.</p></div></div>
       <div class="layer"><span class="lx">L3.5</span><div><h4>Steps — <span class="mono">AuthSteps, CheckoutSteps</span></h4><p>Cadenas de ATCs reusables para preconditions. NO se decoran con <span class="mono">@atc</span>.</p></div></div>
-      <div class="layer"><span class="lx">L4</span><div><h4>Fixtures — <span class="mono">TestFixture, ApiFixture, UiFixture, StepsFixture</span></h4><p>Inyección de dependencias. Los tests piden el fixture y reciben los componentes.</p></div></div>
+      <div class="layer"><span class="lx">L4</span><div><h4>Fixtures — <span class="mono">TestFixture, ApiFixture, UiFixture</span></h4><p>Inyección de dependencias. Los tests piden el fixture y reciben los componentes. Los Steps no tienen fixture: se importan e instancian directo.</p></div></div>
       <div class="layer"><span class="lx">Tests</span><div><h4><span class="mono">tests/e2e/**</span> · <span class="mono">tests/integration/**</span></h4><p>Orquestan ATCs en escenarios. Validan FLUJOS, no propiedades sueltas.</p></div></div>
     </div>
     <div class="callout"><h4>Dos reglas duras</h4><p>Una capa superior usa una inferior — <b>nunca al revés</b>. Imports SIEMPRE por alias (<span class="mono">@api/ @ui/ @utils/ @variables @TestContext @schemas/</span>) — el lint rechaza los relativos (<span class="mono">../../../</span>).</p></div>
@@ -656,7 +656,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <tr><td><b>Solo API</b> (integration)</td><td class="mono">{ api }</td><td>No (lazy)</td><td>API puro — default para <span class="mono">tests/integration/**</span></td></tr>
         <tr><td><b>Solo UI</b></td><td class="mono">{ ui }</td><td>Sí</td><td>Centrado en UI, sin setup de backend vía API</td></tr>
         <tr><td><b>Híbrido</b></td><td class="mono">{ test }</td><td>Sí</td><td>Setup de datos vía API, flujo vía UI, verificación vía API</td></tr>
-        <tr><td><b>Cadenas de precondición</b></td><td class="mono">{ steps }</td><td>Depende</td><td>3+ ATCs repetidos en 3+ archivos</td></tr>
+        <tr><td><b>Cadenas de precondición</b></td><td class="mono">Steps (import directo)</td><td>Depende</td><td>3+ ATCs repetidos en 3+ archivos — se instancia la clase Steps, nunca vía fixture</td></tr>
       </tbody>
     </table>
     <div class="callout warn mt-l"><h4>Regla de oro</h4><p>Nunca pidas <span class="mono">{ ui }</span> para un test que jamás toca la UI — abre un browser para nada. E2E usa <span class="mono">{ ui }</span> si no necesita setup por API; si lo necesita, <span class="mono">{ test }</span>.</p></div>

@@ -445,7 +445,7 @@ The orchestration model is not improvised per session — it is captured in cano
 
 - **`CLAUDE.md` §Orchestration Mode** — canonical project-level statement of the strategy (subagent-or-not decision rule, briefing format, error protocol).
 - **`agentic-qa-core/references/orchestration-doctrine.md`** — cacheable mirror loaded by subagents that need the full doctrine without re-reading `CLAUDE.md`.
-- **`agentic-qa-core/references/briefing-template.md`** — the six-component briefing format every dispatch uses (Goal · Context docs · Skills to load · Exact instructions · Report format · Rules).
+- **`agentic-qa-core/references/briefing-template.md`** — the seven-component briefing format every dispatch uses (Goal · Context docs · Project Standards (auto-resolved) · Skills to load · Exact instructions · Report format · Rules).
 - **`agentic-qa-core/references/dispatch-patterns.md`** — decision guide for the four patterns (Single, Sequential, Parallel, Background) and when each applies.
 - **`## Subagent Dispatch Strategy`** sections inside each workflow `SKILL.md` (`shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development`) — per-stage tables declaring which steps delegate to subagents and with what pattern.
 
@@ -532,7 +532,7 @@ Automated tests live in a four-layer architecture called **KATA** (Komponent Act
 ```
 ┌────────────────────────────────────────────────────────────────┐
 │  LAYER 4: TestFixture                             [injector]   │
-│  Dependency injection — { api } { ui } { test } { steps }      │
+│  Dependency injection — { api } { ui } { test }                │
 │  File: tests/components/TestFixture.ts                         │
 └────────────────────────────────────────────────────────────────┘
                               ▲

@@ -395,7 +395,7 @@ Rules: each test creates its own scenario independently; tests must not depend o
 |--------|-------------|-----|
 | Scope | API endpoint chain (2-3 endpoints) | Full user journey (UI + API) |
 | Speed | Fast (no browser) | Slower (browser required) |
-| Fixture | `{ api }` | `{ ui }` / `{ test }` / `{ steps }` |
+| Fixture | `{ api }` | `{ ui }` / `{ test }` |
 | Preconditions | API calls | API calls (setup) + UI (action) |
 | Value | Validates business logic correctness | Validates user experience |
 

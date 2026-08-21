@@ -1042,7 +1042,8 @@
 
       <p class="hero-tagline" style="font-size: 0.95rem; opacity: 0.85">
         <strong>Stage 0 — pre-sprint:</strong> <code>/shift-left-testing</code> grooms a batch of
-        backlog Stories (AC refinement, gap-spotting, ATP DRAFT, transition
+        backlog Stories (AC refinement, gap-spotting, pre-sprint ATP authored in the Story's custom
+        field — the Test Plan item is born in-sprint at Stage 1 — transition
         <code>backlog → shift_left_qa → estimation</code>) so the in-sprint pipeline below starts
         with clean requirements. The 6-stage pipeline runs in-sprint per ticket.
       </p>
@@ -2971,8 +2972,9 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <span class="gate-card-label">Path 0 · Pre-sprint</span>
                 <h4 class="gate-card-title"><code>/shift-left-testing</code> (Stage 0)</h4>
                 <p class="gate-card-when">
-                  Batch grooming of backlog Stories BEFORE sprint planning. Produces refined ACs +
-                  ATP DRAFT + PO/Dev question set per Story, transitions
+                  Batch grooming of backlog Stories BEFORE sprint planning. Produces refined ACs + a
+                  pre-sprint ATP in the Story's custom field (the Test Plan item is created
+                  in-sprint at Stage 1) + PO/Dev question set per Story, transitions
                   <code>backlog → shift_left_qa → estimation</code>.
                 </p>
                 <ul class="gate-card-checks">
@@ -2994,8 +2996,8 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <span class="gate-card-label">Path A · Manual</span>
                 <h4 class="gate-card-title"><code>/sprint-testing</code> (Stages 1–3)</h4>
                 <p class="gate-card-when">
-                  Per-ticket exploratory + verification work. Produces ATP, ATR, and bug reports in
-                  the TMS.
+                  Per-ticket exploratory + verification work. Produces ATP, ATR, ATS (the third
+                  acceptance artifact: the per-Story Test Set), and bug reports in the TMS.
                 </p>
                 <ul class="gate-card-checks">
                   <li>Jira ticket is "Ready For QA" or a bug retest</li>

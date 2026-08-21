@@ -103,7 +103,7 @@ El skill implementa en este orden:
 
 1. **Types** al tope del archivo de componente (payloads, responses, DTOs).
 2. **Componente** extendiendo `ApiBase` o `UiBase`. Helpers primero (sin decorator), ATCs después (`@atc('TICKET-ID')`).
-3. **Registrar** el componente en `ApiFixture.ts` / `UiFixture.ts` / `StepsFixture.ts`.
+3. **Registrar** el componente en `ApiFixture.ts` / `UiFixture.ts`. (Los Steps modules NO se registran en fixtures: se instancian directo en el test.)
 4. **Test file** bajo `tests/e2e/{module}/` o `tests/integration/{module}/`, con la fixture correcta.
 5. **Validar localmente** en este orden exacto — no se salta ninguna:
 
@@ -122,7 +122,8 @@ Si cualquiera falla, el skill corrige antes de pasar a Review.
 | API only (integration) | `{ api }` | No (lazy) | API pura, sin UI. |
 | UI only | `{ ui }` | Sí | UI-focused, sin setup vía API. |
 | Hybrid (UI + API setup) | `{ test }` | Sí | Setup vía API, flujo vía UI, verificación vía API. |
-| Cadenas de precondition reusables | `{ steps }` | Depende | 3+ ATCs repetidos en 3+ archivos. |
+
+Las cadenas de precondition reusables (3+ ATCs repetidos en 3+ archivos) NO son una fixture: viven en `tests/components/steps/`, extienden `TestContext` y se instancian directo en el test (`new {Domain}Steps({ request })`).
 
 Regla: nunca pedir `{ ui }` para un test que no toca la UI — abre un browser para nada.
 

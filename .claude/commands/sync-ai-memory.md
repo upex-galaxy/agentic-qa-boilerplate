@@ -217,7 +217,7 @@ Different files have different sections that must never be rewritten. Apply the 
 - §0 Preamble ("THIS IS NOT A README")
 - §1 CRITICAL RULES — ALWAYS APPLY (11 rules, caveman-compressed)
 - §2 BEHAVIORAL LAYER — HOW AI REASONS (4 UPPERCASE principles)
-- §3 ORCHESTRATION MODE — PERMANENTLY ACTIVE (6-component briefing, execution patterns)
+- §3 ORCHESTRATION MODE — PERMANENTLY ACTIVE (7-component briefing, execution patterns)
 - §4 CONTEXT LOADING MAP — TASK → WHAT TO LOAD (preserve table SHAPE; rows may be patched)
 - §5 SKILLS + COMMANDS + MCPs REGISTRY (3 tables — patched for command name changes via Step 4.5; updated manually when the skill/command set evolves)
 - §6 TOOL RESOLUTION ([TAG_TOOL] pseudocode table + MANDATORY load-skill-first rule)
@@ -366,7 +366,7 @@ This step focuses on the AI memory file (`CLAUDE.md` or equivalent). It receives
 - §0 Preamble
 - §1 CRITICAL RULES — ALWAYS APPLY (all 11 rules, including #11 "SCRIPTS = READ `package.json` DIRECTLY")
 - §2 BEHAVIORAL LAYER (4 principles, scope notes)
-- §3 ORCHESTRATION MODE — PERMANENTLY ACTIVE (6-component briefing, execution patterns, exempt-skill list)
+- §3 ORCHESTRATION MODE — PERMANENTLY ACTIVE (7-component briefing, execution patterns, exempt-skill list)
 - §6 TOOL RESOLUTION (resolution table + MANDATORY load-skill-first rule)
 - §8 AI BEHAVIOR DURING TESTING
 - §9 LOCAL CONTEXT (PBI folder layout)

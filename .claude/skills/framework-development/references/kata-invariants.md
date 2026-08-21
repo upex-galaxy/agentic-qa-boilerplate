@@ -17,7 +17,7 @@ A higher layer may use a lower layer; never the inverse. Steps (3.5) is an optio
 | 2 — UiBase | `tests/components/ui/UiBase.ts` | Playwright helpers (`interceptResponse`, `waitForApiResponse`, storage state, attachments). | Owns `Page`. Without it, every Page component re-implements Playwright wiring. |
 | 3 — Domain (`{Resource}Api`, `{Page}Page`) | `tests/components/api/*Api.ts`, `tests/components/ui/*Page.ts` | Business logic surface. ATCs (`@atc('TICKET-ID')`) live here exclusively. | Maps 1:1 to TMS tickets. Collapsing into Base loses traceability and groups unrelated resources. |
 | 3.5 — Steps (optional) | `tests/components/steps/*Steps.ts` | Reusable ATC chains used as preconditions across 3+ tests in 3+ files. NOT decorated with `@atc`. | Without Steps, callers either duplicate chains or violate Rule 5 (ATCs calling ATCs). |
-| 4 — Fixtures | `tests/components/{ApiFixture,UiFixture,StepsFixture,TestFixture}.ts` | DI entry point. Instantiates and exposes every Domain component to test files. Lazy initialization (no browser unless requested). | Tests cannot reach a component unless it is registered here. Removing Fixtures breaks Playwright's `test.extend` integration. |
+| 4 — Fixtures | `tests/components/{ApiFixture,UiFixture,TestFixture}.ts` | DI entry point. Instantiates and exposes every Domain component to test files. Lazy initialization (no browser unless requested). Steps modules are NOT fixture-registered — tests instantiate them directly (`new {Domain}Steps(options)`). | Tests cannot reach a component unless it is registered here. Removing Fixtures breaks Playwright's `test.extend` integration. |
 
 A test file is NOT a layer — it is a consumer of Layer 4.
 
@@ -32,7 +32,8 @@ Fixture choice determines whether a browser opens. Wrong fixture = slow API test
 | `{ api }` | API-only integration tests under `tests/integration/**`. | No (lazy). | Allows fast HTTP-only suites; avoids paying Playwright browser launch cost. |
 | `{ ui }` | UI-only E2E tests with no API setup. | Yes. | Pure Playwright workflow; no `APIRequestContext` overhead. |
 | `{ test }` | Hybrid: API setup + UI action + API verification. | Yes. | Shares the same `request` and `page` between Api and Ui components — required for token propagation across both surfaces. |
-| `{ steps }` | Reusable precondition chains repeated across 3+ tests in 3+ files. | Depends on the steps used. | Eliminates ATC-to-ATC calls (Rule 5 violation) without forcing tests to repeat setup. |
+
+There is NO `{ steps }` fixture. Steps modules (reusable precondition chains repeated across 3+ tests in 3+ files) live in `tests/components/steps/`, extend `TestContext`, and are instantiated directly in the test (`const steps = new {Domain}Steps({ request })`). They eliminate ATC-to-ATC calls (Rule 5 violation) without forcing tests to repeat setup — but they never enter the fixture DI surface.
 
 Hard rule: never request `{ ui }` for an API-only test. Never request `{ api }` from an `tests/e2e/**` UI-only file. Hybrid tests MUST use `{ test }`, not destructure `{ api, ui }` from separate registrations (they would not share context).
 
@@ -92,7 +93,6 @@ Required `tsconfig.json` `paths`:
 "@TestFixture"  -> ./tests/components/TestFixture.ts
 "@ApiFixture"   -> ./tests/components/ApiFixture.ts
 "@UiFixture"    -> ./tests/components/UiFixture.ts
-"@StepsFixture" -> ./tests/components/StepsFixture.ts
 "@data/*"       -> ./tests/data/*
 "@openapi"      -> ./api/openapi-types.ts (FACADE-ONLY consumer)
 ```
@@ -129,8 +129,8 @@ Where new code CAN safely land WITHOUT a major-version bump. Anything not on thi
 | New helper method on `ApiBase` | `tests/components/api/ApiBase.ts` | MUST be reusable across multiple `*Api` subclasses. Domain-specific logic stays in the Domain component. |
 | New helper method on `UiBase` | `tests/components/ui/UiBase.ts` | Same constraint — must be reusable across multiple `*Page` subclasses. |
 | New Domain component | `tests/components/api/{Resource}Api.ts` or `tests/components/ui/{Page}Page.ts` | MUST be registered in the matching Fixture (`ApiFixture`, `UiFixture`). Without registration, tests cannot reach it. ApiFixture must also forward `setRequestContext`/`setAuthToken`/`clearAuthToken`. |
-| New Steps module | `tests/components/steps/{Domain}Steps.ts` | Must be registered in `StepsFixture`. NOT decorated with `@atc`. Used only when 3+ ATCs repeat across 3+ files. |
-| New Fixture registration entry | `ApiFixture` / `UiFixture` / `StepsFixture` constructor | Must mirror auth propagation pattern (forward `setRequestContext` / `setAuthToken` / `clearAuthToken` from ApiFixture override). |
+| New Steps module | `tests/components/steps/{Domain}Steps.ts` | Extends `TestContext`; instantiated directly in tests (`new {Domain}Steps(options)`) — NEVER fixture-registered. NOT decorated with `@atc`. Used only when 3+ ATCs repeat across 3+ files. Anti-duplication check: `kata-manifest.json` `steps[]` lists every existing Steps module — consult it before proposing a new one. |
+| New Fixture registration entry | `ApiFixture` / `UiFixture` constructor | Must mirror auth propagation pattern (forward `setRequestContext` / `setAuthToken` / `clearAuthToken` from ApiFixture override). |
 | New OpenAPI facade | `api/schemas/{domain}.types.ts` | Must be re-exported from `api/schemas/index.ts` barrel. Only facade files import `@openapi`. |
 | New DataFactory generator | `tests/data/DataFactory.ts` (+ matching interface in `tests/data/types.ts`) | Use `faker` only inside DataFactory. Tests/components must NEVER import `faker` directly. |
 | New static fixture data | `tests/data/fixtures/*.json` | Only for reference data (roles, permission matrices, mock responses, configuration trees). Transactional data goes to DataFactory. |
@@ -151,7 +151,7 @@ Mandatory verification matrix when modifying load-bearing surface area. Each row
 | `ApiBase` auth methods (`setAuthToken`, `clearAuthToken`, `setRequestContext`) | Verify `ApiFixture` overrides forward to every registered Api component. Run all 401-coverage tests. |
 | `UiBase.interceptResponse` / `waitForApiResponse` signature | Re-run ALL UI ATCs that use interception; confirm Allure attachments still produce. |
 | `TestContext` constructor or option shape (`TestContextOptions`) | Audit every Layer 2/3/3.5 constructor that calls `super(options)`. Re-run full suite. |
-| Fixture signature in `TestFixture`/`ApiFixture`/`UiFixture`/`StepsFixture` | Grep all consumers (`tests/**/*.test.ts`); update destructures; re-run full suite. |
+| Fixture signature in `TestFixture`/`ApiFixture`/`UiFixture` | Grep all consumers (`tests/**/*.test.ts`); update destructures; re-run full suite. |
 | Import alias in `tsconfig.json` paths | Update tsconfig + every import in repo + ESLint config. Run `bun run types:check` + `bun run lint:check`. |
 | `@atc` / `@step` decorator API or `SENSITIVE_KEYS` set | Re-run full suite; manually inspect Allure step titles for unmasked sensitive values; verify NDJSON line schema unchanged. |
 | `KataReporter` NDJSON line schema or `atc_results.json` aggregation logic | Verify teardown summary still parses; verify TMS sync (`syncToXray`, `syncToJiraDirect`) still consumes correct fields. |

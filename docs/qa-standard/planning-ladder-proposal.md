@@ -144,7 +144,7 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 |---|---|---|---|
 | **MTP** | Epic | `QA Master Test Plan` (singleton) | `QA Master Test Plan` |
 | **FTP** | Test Plan | `FTP: {EPIC-KEY}: {feature}` | `FTP: PROJ-42: Checkout & Payments` |
-| **STP** | Test Plan | `STP: Sprint#{N}: Regression` | `STP: Sprint#30: Regression` |
+| **STP** | Test Plan | `STP: Sprint#{N}: {objective}` | `STP: Sprint#30: Payments hardening` |
 | **STR** | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#30: Regression Testing` |
 | **ATP** | Test Plan | `ATP: {STORY-KEY}: {story title}` | `ATP: PROJ-123: Apply discount at checkout` |
 | **ATR** | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-123: Story Testing` |
@@ -209,7 +209,7 @@ run/coverage engine on top.
 |---|---|---|
 | `Test Plan: PROJ-123` (ATP, often a Story field) | `ATP: PROJ-123: {title}` (Test Plan item; field = fallback) | acronym grammar + items-first |
 | `Test Results: PROJ-123` (ATR field) | `ATR: PROJ-123: Story Testing` (Test Execution item) | acronym grammar + items-first + activity term |
-| `QA: TestPlan: Regression S50` (strategy plan) | `STP: Sprint#30: Regression` | folds the "strategy plan" into the Sprint altitude |
+| `QA: TestPlan: Regression S50` (strategy plan) | `STP: Sprint#30: Payments hardening` | folds the "strategy plan" into the Sprint altitude |
 | `Regression: TP-50: Sprint 50 Regression` (exec) | `STR: Sprint#30: Regression Testing` | acronym grammar; "Sprint" comes from the scope-id |
 | `Sanity: GX-101: Validate credit card payment` (Test Set) | `TS: GX-101: Validate credit card payment` | feature-level Test Sets group by feature/module, not strategy; `TS:` prefix replaces the strategy word |
 | `Suite: {STORY-KEY}` (per-Story Set) | `ATS: {STORY-KEY}: {story title}` | the `Suite:` prefix dies; the per-Story Set becomes the mandatory ATS coverage rung |
@@ -239,7 +239,7 @@ run/coverage engine on top.
 - **B — RATIFIED** — Test Set keeps `Validate` → `TS: {scope}: Validate {feature}`.
 - **C — RATIFIED** — acronym-prefix grammar `{ACRONYM}: {scope}: {desc}` is the single standard for all Plans/Runs.
 - **D — RATIFIED** — items-over-fields is the hard default; Story custom field = fallback only.
-- **E — RATIFIED** — Sprint scope-id = `Sprint#{N}` (e.g. `Sprint#30`). STR title term = `Regression Testing` (not "Sprint Regression Testing" — "Sprint" already in the scope-id). → `STP: Sprint#30: Regression` / `STR: Sprint#30: Regression Testing`.
+- **E — RATIFIED** — Sprint scope-id = `Sprint#{N}` (e.g. `Sprint#30`). STR title term = `Regression Testing` (not "Sprint Regression Testing" — "Sprint" already in the scope-id). → `STP: Sprint#30: Payments hardening` / `STR: Sprint#30: Regression Testing`.
 
 ### Amendments — Session A, 2026-08-21 (`.session/artifact-ladder-refactor/decisions.md`)
 

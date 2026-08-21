@@ -943,7 +943,7 @@ workers: <span class="tk-n">1</span>,</pre>
       <tr><td>API pura (integration)</td><td><code>{ api }</code></td><td>No</td><td>Testing de API. Default en <code>tests/integration/</code></td></tr>
       <tr><td>Solo UI</td><td><code>{ ui }</code></td><td>Sí</td><td>Flujo de UI sin setup por API</td></tr>
       <tr><td>Híbrido</td><td><code>{ test }</code></td><td>Sí</td><td>Setup por API + acción UI + verificación API</td></tr>
-      <tr><td>Precondiciones repetidas</td><td><code>{ steps }</code></td><td>Depende</td><td>3+ ATCs repetidas en 3+ archivos</td></tr>
+      <tr><td>Precondiciones repetidas</td><td><code>Steps</code> (import directo)</td><td>Depende</td><td>3+ ATCs repetidas en 3+ archivos — la clase Steps se instancia directo, nunca vía fixture</td></tr>
     </tbody>
   </table>
   <div class="cols" style="margin-top:1.1rem">

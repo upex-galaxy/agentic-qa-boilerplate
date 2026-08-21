@@ -176,6 +176,8 @@ Backlog → Shift-Left QA → Estimation → Ready For Dev → In Progress → I
 
 (Test cases in the TMS have their own lifecycle too: `READY → In Review → Candidate → In Automation → Pull Request → AUTOMATED` — `MANUAL` is the terminal for tests that will never be automated.)
 
+Each Story gets three canonical TMS artifacts: the **ATP** (plan), the **ATR** (results), and the **ATS** (Acceptance Test Set — groups ALL the Story's TCs; its link to the Story is what fills the Xray coverage panel). Above the Story sits the planning ladder: **FTP** per feature/Epic (`/sprint-testing` feature-test-planning), **STP** at sprint start + **STR** recap at sprint close (`/sprint-testing`, with `/regression-testing` as fallback/completer), and the **MTP** Epic from `/master-test-plan`.
+
 Two conventions apply to every quality issue you file along the way. **Components** are the target app's functional modules — mandatory on bugs, defects, improvements, and Tests — and are reconciled against the app's real modules via `/jira-components`. And bugs parent to the QA process epics (e.g. "QA Defect Management"), never a product/dev epic, carrying the source Story via an issue-link: parent = QA bucket, link = source Story, components = product module (the three-axis model).
 
 `/sprint-testing` orchestrates Stages 1-3. Stage 4 onwards are explicit hand-offs. Wondering what is already covered before Stage 4/5? `bun run tests:map` renders the synced Epic → Story → Test tree (plus orphans and a component rollup) as one HTML page, and the `/xray-cli` skill's `test enrich` command backfills the synced Test cache with the Xray-internal associations (Preconditions, Test Set membership) the Jira REST sync cannot see.

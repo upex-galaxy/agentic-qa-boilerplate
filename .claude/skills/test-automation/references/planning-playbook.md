@@ -262,7 +262,7 @@ The automation plan is the technical contract — what code to write, which comp
 ### Component Strategy
 | Decision | Value | Rationale |
 | Component | {Resource}Api.ts / {Page}Page.ts | New or existing? |
-| Fixture | { api } / { ui } / { test } / { steps } | Why this fixture? |
+| Fixture | { api } / { ui } / { test } | Why this fixture? |
 | Test file | tests/{type}/{module}/{verbFeature}.test.ts | Naming rationale |
 | Preconditions | Steps module / inline | What setup is needed? |
 
@@ -485,7 +485,7 @@ Gate checklist:
 - [ ] For ticket/regression scope: `automation-plan.md` exists with §3 ATC Registry populated.
 - [ ] For complex ATCs: `atc/*.md` exists with the contract (signature + fixed assertions) defined.
 - [ ] Data strategy is documented per precondition (pattern + source + placement + cleanup).
-- [ ] Fixture decision is recorded (`{ api }` / `{ ui }` / `{ test }` / `{ steps }`).
+- [ ] Fixture decision is recorded (`{ api }` / `{ ui }` / `{ test }`).
 - [ ] Every "New ATC" in the registry has a unique `@atc` ID that does not collide with `bun run kata:manifest` output.
 - [ ] Module master doc exists (module scope only) with §4 Data Flow and §7 Data Strategy populated.
 - [ ] Implementation order is defined with one commit per step.

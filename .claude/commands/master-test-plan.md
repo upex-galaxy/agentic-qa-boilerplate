@@ -204,6 +204,38 @@ MANDATORY. List anything you could not ground in evidence:
 
 ---
 
+## Jira mirror — the MTP Epic
+
+Runs AFTER `.context/master-test-plan.md` is written (in UPDATE mode: after the user confirmed the overwrite). The file is the real plan; the Epic is its Jira anchor in the planning ladder (MTP altitude — see `docs/qa-standard/planning-ladder-proposal.md`). Load `/acli` before any `[ISSUE_TRACKER_TOOL]` call.
+
+### Step 1 — Find-or-create the Epic
+
+```
+[ISSUE_TRACKER_TOOL] Search Issues:
+  - jql: project = {{PROJECT_KEY}} AND type = Epic AND summary ~ "{qa.qa_epics.master_test_plan_epic.name}"
+```
+
+Not found → create it:
+
+```
+[ISSUE_TRACKER_TOOL] Create Issue:
+  - type: Epic
+  - summary: {qa.qa_epics.master_test_plan_epic.name}     # "QA Master Test Plan"
+  - labels: {qa.qa_artifact_label}                        # QA-Artifact — mandatory identity label
+```
+
+Cache the discovered/created key into `.agents/project.yaml` → `qa.qa_epics.master_test_plan_epic.key`.
+
+### Step 2 — Mirror the summary (read-first, never clobber)
+
+Read the Epic `description` FIRST. Replace only the content under a `## Master Test Plan (mirror)` heading (append the heading if absent); every other section — PO/human-authored text included — stays byte-for-byte untouched. The mirror holds: the executive risk map table (§2), counts (CRITICAL / HIGH / silent killers / integration failure points), generation date, and a pointer to `.context/master-test-plan.md` as the full plan.
+
+### Step 3 — Cross-link the 3 sibling QA epics
+
+Ensure a `relates to` link from the MTP Epic to each sibling (resolve by name from `qa.qa_epics.*`): **QA Test Repository**, **QA Test Artifacts**, **QA Defect Management**. Idempotent — skip links that already exist. A sibling that does not exist yet is NOT created here (its owning skill creates it); note it in the report instead.
+
+---
+
 ## After generation
 
 - Update `CLAUDE.md` / `CLAUDE.md` Context System section to reference `.context/master-test-plan.md` if not present.
@@ -214,4 +246,5 @@ MANDATORY. List anything you could not ground in evidence:
   - Silent killers flagged: N
   - Integration failure points mapped: N
   - Discovery gaps open: N
+  - MTP Epic: {key} (created | updated) — mirror refreshed, sibling links ensured (note any missing sibling)
 - If §1.2 warned, remind the user to run `/business-feature-map` and re-run this command.
