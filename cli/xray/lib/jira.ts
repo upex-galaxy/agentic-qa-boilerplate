@@ -301,3 +301,64 @@ export async function getLinkedTests(issueKey: string): Promise<LinkedTest[] | n
   }
   return out;
 }
+
+// ============================================================================
+// ISSUE LINK CREATION — the coverage write-path (`link create`)
+// ============================================================================
+
+/**
+ * Create a Jira issue link via `POST /rest/api/3/issueLink`.
+ *
+ * Direction follows Jira's own payload semantics: `outwardIssue` is the party
+ * the OUTWARD description reads from, `inwardIssue` the one the INWARD
+ * description reads from. For the link type named `Test` (outward `tests`,
+ * inward `is tested by`): outward = the test artifact (Test / Test Set),
+ * inward = the covered Story — the Story then shows "is tested by".
+ *
+ * `typeName` is the instance's DISPLAY name; callers resolve it from the
+ * `.agents/jira-required.yaml` link-type catalog, never hardcode it.
+ *
+ * Returns `null` when Jira credentials are not configured (same contract as
+ * every read above — the caller surfaces the guiding error). Throws on a
+ * non-OK Jira response, with the body included: Jira's 404 for an unknown
+ * link-type name is otherwise indistinguishable from a missing issue.
+ */
+export async function createIssueLink(
+  typeName: string,
+  outwardKey: string,
+  inwardKey: string,
+): Promise<true | null> {
+  const config = loadConfig();
+  const baseUrl = resolveJiraBaseUrl(config?.jira_base_url);
+  const email = config?.jira_email || process.env.ATLASSIAN_EMAIL;
+  const token = config?.jira_api_token || process.env.ATLASSIAN_API_TOKEN;
+
+  if (!baseUrl || !email || !token) {
+    return null;
+  }
+
+  const auth = Buffer.from(`${email}:${token}`).toString('base64');
+  const response = await fetch(`${baseUrl}/rest/api/3/issueLink`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      type: { name: typeName },
+      outwardIssue: { key: outwardKey },
+      inwardIssue: { key: inwardKey },
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Jira REST issueLink create failed (${outwardKey} -> ${inwardKey}, type "${typeName}"): `
+      + `${response.status} ${response.statusText} - ${text}`,
+    );
+  }
+
+  return true;
+}

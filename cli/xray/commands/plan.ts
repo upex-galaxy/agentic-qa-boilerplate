@@ -1,10 +1,12 @@
 /**
  * Xray CLI - Test Plan Commands
  *
- * Commands: create, list, add-tests, remove-tests
+ * Commands: create, get, list, add-tests, remove-tests, add-set,
+ * add-executions, sync
  */
 
-import type { Flags, TestPlanResult } from '../types/index.js';
+import type { Flags, TestPlanResult, TestResult, TestSetResult } from '../types/index.js';
+import { diffMembership } from '../lib/cascade.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
 import { getLinkedTests, resolveIssueId, resolveIssueIds } from '../lib/jira.js';
@@ -40,6 +42,30 @@ export async function create(flags: Flags): Promise<void> {
   const plan = result.createTestPlan.testPlan;
   log.success(`Test Plan created: ${plan.jira.key}`);
   console.log(`  Summary: ${plan.jira.summary}`);
+}
+
+// ============================================================================
+// GET
+// ============================================================================
+
+export async function get(flags: Flags, positional: string[]): Promise<void> {
+  const issueId = await resolveIssueId(positional[0] || requireFlag(flags, 'id'));
+
+  const result = await graphql<{ getTestPlan: TestPlanResult }>(QUERIES.getTestPlan, { issueId });
+  const plan = result.getTestPlan;
+
+  log.title(`Test Plan: ${plan.jira.key}`);
+  console.log(`Summary: ${plan.jira.summary}`);
+  const planStatus = typeof plan.jira.status === 'object' && plan.jira.status !== null ? plan.jira.status.name : (plan.jira.status || 'Unknown');
+  console.log(`Status: ${planStatus}`);
+  console.log(`Tests: ${plan.tests?.total || 0}`);
+
+  if (plan.tests?.results && plan.tests.results.length > 0) {
+    console.log('\nTests:');
+    plan.tests.results.forEach((t: TestResult) => {
+      console.log(`  ${t.jira.key}  ${t.jira.summary}`);
+    });
+  }
 }
 
 // ============================================================================
@@ -107,6 +133,79 @@ export async function removeTests(flags: Flags): Promise<void> {
   await graphql(MUTATIONS.removeTestsFromTestPlan, { issueId, testIssueIds });
 
   log.success(`Removed ${testIssueIds.length} tests`);
+}
+
+// ============================================================================
+// ADD SET (Set-first cascade: Set membership → Plan test list)
+// ============================================================================
+
+export async function addSet(flags: Flags, positional: string[]): Promise<void> {
+  const planId = await resolveIssueId(positional[0] || requireFlag(flags, 'plan'));
+  const setId = await resolveIssueId(requireFlag(flags, 'set'));
+
+  const setResult = await graphql<{ getTestSet: TestSetResult }>(QUERIES.getTestSet, { issueId: setId });
+  const setEntity = setResult.getTestSet;
+  const members = setEntity.tests?.results ?? [];
+
+  if (members.length === 0) {
+    log.warn(`Test Set ${setEntity.jira?.key ?? setId} has no member tests — nothing to add.`);
+    return;
+  }
+
+  const planResult = await graphql<{ getTestPlan: TestPlanResult }>(QUERIES.getTestPlan, { issueId: planId });
+  const planEntity = planResult.getTestPlan;
+  const existing = (planEntity.tests?.results ?? []).map(t => t.issueId);
+
+  const keyById = new Map(members.map(m => [m.issueId, m.jira?.key ?? m.issueId]));
+  const { missing, present } = diffMembership(members.map(m => m.issueId), existing);
+
+  log.title(`Cascade: ${setEntity.jira?.key ?? setId} → ${planEntity.jira?.key ?? planId}`);
+  console.log(`  Set members:       ${members.length}`);
+  console.log(`  Already in plan:   ${present.length}${present.length > 0 ? ` (${present.map(id => keyById.get(id)).join(', ')})` : ''}`);
+
+  if (missing.length === 0) {
+    log.success('  Plan already holds every Set member — nothing to add.');
+    return;
+  }
+
+  log.dim(`  Adding ${missing.length} test(s) to plan...`);
+  const result = await graphql<{ addTestsToTestPlan: { addedTests: string[], warning?: string } }>(MUTATIONS.addTestsToTestPlan, {
+    issueId: planId,
+    testIssueIds: missing,
+  });
+
+  const added = result.addTestsToTestPlan.addedTests ?? [];
+  log.success(`  Added ${added.length} test(s): ${missing.map(id => keyById.get(id)).join(', ')}`);
+  console.log(`  Skipped (already present): ${present.length}`);
+  if (result.addTestsToTestPlan.warning) {
+    log.warn(`  ${result.addTestsToTestPlan.warning}`);
+  }
+}
+
+// ============================================================================
+// ADD EXECUTIONS (Plan ↔ Execution association)
+// ============================================================================
+
+export async function addExecutions(flags: Flags, positional: string[]): Promise<void> {
+  const planId = await resolveIssueId(positional[0] || requireFlag(flags, 'plan'));
+  const execsStr = requireFlag(flags, 'executions');
+  const testExecIssueIds = await resolveIssueIds(execsStr.split(',').map(e => e.trim()));
+
+  log.dim(`Adding ${testExecIssueIds.length} execution(s) to plan...`);
+
+  const result = await graphql<{ addTestExecutionsToTestPlan: { addedTestExecutions: string[], warning?: string } }>(
+    MUTATIONS.addTestExecutionsToTestPlan,
+    { issueId: planId, testExecIssueIds },
+  );
+
+  const added = result.addTestExecutionsToTestPlan.addedTestExecutions ?? [];
+  log.success(`Added ${added.length} execution(s) to the plan`);
+  if (added.length < testExecIssueIds.length) {
+    log.dim(`  ${testExecIssueIds.length - added.length} execution(s) were already associated (skipped by Xray).`);
+  }
+  if (result.addTestExecutionsToTestPlan.warning) {
+    log.warn(result.addTestExecutionsToTestPlan.warning);
+  }
 }
 
 // ============================================================================

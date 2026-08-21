@@ -1,17 +1,18 @@
 /**
  * Xray CLI - Repair Command
  *
- * Bulk Jira-layer ↔ Xray-layer reconciliation across every Test Execution
- * and Test Plan in a project.
+ * Bulk Jira-layer ↔ Xray-layer reconciliation across every Test Execution,
+ * Test Plan, and Test Set in a project.
  */
 
-import type { Flags, TestExecutionResult, TestPlanResult } from '../types/index.js';
+import type { Flags, TestExecutionResult, TestPlanResult, TestSetResult } from '../types/index.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, QUERIES } from '../lib/graphql.js';
 import { log } from '../lib/logger.js';
 import { getBoolFlag, getFlag } from '../lib/parser.js';
 import { syncExecution } from './exec.js';
 import { syncPlan } from './plan.js';
+import { syncSet } from './set.js';
 
 interface DeltaCounts {
   total: number
@@ -102,11 +103,45 @@ export async function repair(flags: Flags): Promise<void> {
     }
   }
 
+  // ----- Test Sets -----
+  const setJql = `project = ${project} AND issuetype = "Test Set"`;
+  const setList = await graphql<{ getTestSets: { total: number, results: TestSetResult[] } }>(
+    QUERIES.getTestSets,
+    { jql: setJql, limit },
+  );
+
+  log.dim(`\nScanning ${setList.getTestSets.results.length} of ${setList.getTestSets.total} Test Set(s)...`);
+  const setCounts = emptyCounts();
+  for (const setEntity of setList.getTestSets.results) {
+    const key = setEntity.jira?.key ?? setEntity.issueId;
+    setCounts.total += 1;
+    try {
+      const r = await syncSet(key, { apply });
+      if (r.missingInXray.length === 0 && r.missingInJira.length === 0) {
+        setCounts.inSync += 1;
+        continue;
+      }
+      setCounts.missingInXray += r.missingInXray.length;
+      setCounts.missingInJira += r.missingInJira.length;
+      setCounts.applied += r.applied.length;
+      const flagsLabel = [
+        r.missingInXray.length > 0 ? `${r.missingInXray.length} missing@Xray` : '',
+        r.missingInJira.length > 0 ? `${r.missingInJira.length} missing@Jira` : '',
+        r.applied.length > 0 ? `${r.applied.length} re-attached` : '',
+      ].filter(Boolean).join(' / ');
+      log.warn(`  ${key}: ${flagsLabel}`);
+    }
+    catch (err) {
+      log.error(`  ${key}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   // ----- Summary -----
   log.title('\nSummary');
   console.log(`  Test Executions: ${execCounts.inSync}/${execCounts.total} in sync, ${execCounts.missingInXray} missing@Xray, ${execCounts.missingInJira} missing@Jira${apply ? `, ${execCounts.applied} re-attached` : ''}`);
   console.log(`  Test Plans:      ${planCounts.inSync}/${planCounts.total} in sync, ${planCounts.missingInXray} missing@Xray, ${planCounts.missingInJira} missing@Jira${apply ? `, ${planCounts.applied} re-attached` : ''}`);
-  if (!apply && (execCounts.missingInXray > 0 || planCounts.missingInXray > 0)) {
+  console.log(`  Test Sets:       ${setCounts.inSync}/${setCounts.total} in sync, ${setCounts.missingInXray} missing@Xray, ${setCounts.missingInJira} missing@Jira${apply ? `, ${setCounts.applied} re-attached` : ''}`);
+  if (!apply && (execCounts.missingInXray > 0 || planCounts.missingInXray > 0 || setCounts.missingInXray > 0)) {
     log.dim('\n  Re-run with --apply to re-attach Xray-layer tests for every drift detected.');
   }
 }

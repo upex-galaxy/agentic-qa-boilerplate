@@ -105,6 +105,10 @@ export interface JiraFields {
 export interface PreconditionResult {
   issueId: string
   jira: JiraFields
+  /** Populated by the `precondition list` / `precondition get` projections. */
+  preconditionType?: TestTypeInfo
+  definition?: string
+  tests?: { total: number, results: Array<{ issueId: string, jira: JiraFields }> }
 }
 
 export interface TestResult {

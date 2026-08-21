@@ -338,6 +338,41 @@ export const QUERIES = {
     }
   `,
 
+  // Lean Precondition projections for `precondition list` / `precondition get`.
+  // getPreconditionsFullData below stays the backup-oriented superset (folder,
+  // pagination); these two carry only what an operator reads at the terminal.
+  getPreconditions: `
+    query GetPreconditions($jql: String, $limit: Int!) {
+      getPreconditions(jql: $jql, limit: $limit) {
+        total
+        results {
+          issueId
+          preconditionType { name }
+          jira(fields: ["key", "summary", "status"])
+        }
+      }
+    }
+  `,
+
+  // Single Precondition detail, addressable by JQL (key) or numeric issueId —
+  // same dual-handle rationale as getTest / getTestById.
+  getPrecondition: `
+    query GetPrecondition($jql: String, $issueIds: [String]) {
+      getPreconditions(jql: $jql, issueIds: $issueIds, limit: 1) {
+        results {
+          issueId
+          preconditionType { name kind }
+          definition
+          tests(limit: 100) {
+            total
+            results { issueId jira(fields: ["key", "summary"]) }
+          }
+          jira(fields: ["key", "summary", "description", "status", "labels"])
+        }
+      }
+    }
+  `,
+
   getPreconditionsFullData: `
     query GetPreconditionsFullData($jql: String, $limit: Int!, $start: Int!) {
       getPreconditions(jql: $jql, limit: $limit, start: $start) {
@@ -775,6 +810,12 @@ export const MUTATIONS = {
     }
   `,
 
+  removePreconditionsFromTest: `
+    mutation RemovePreconditionsFromTest($issueId: String!, $preconditionIssueIds: [String!]!) {
+      removePreconditionsFromTest(issueId: $issueId, preconditionIssueIds: $preconditionIssueIds)
+    }
+  `,
+
   addTestsToTestPlan: `
     mutation AddTestsToTestPlan($issueId: String!, $testIssueIds: [String!]!) {
       addTestsToTestPlan(issueId: $issueId, testIssueIds: $testIssueIds) {
@@ -787,6 +828,24 @@ export const MUTATIONS = {
   removeTestsFromTestPlan: `
     mutation RemoveTestsFromTestPlan($issueId: String!, $testIssueIds: [String!]!) {
       removeTestsFromTestPlan(issueId: $issueId, testIssueIds: $testIssueIds)
+    }
+  `,
+
+  // Plan <-> Execution association (verified by schema introspection 2026-08).
+  // The pair mirrors addTestsToTestPlan / removeTestsFromTestPlan, over
+  // Execution issueIds instead of Test issueIds.
+  addTestExecutionsToTestPlan: `
+    mutation AddTestExecutionsToTestPlan($issueId: String!, $testExecIssueIds: [String!]!) {
+      addTestExecutionsToTestPlan(issueId: $issueId, testExecIssueIds: $testExecIssueIds) {
+        addedTestExecutions
+        warning
+      }
+    }
+  `,
+
+  removeTestExecutionsFromTestPlan: `
+    mutation RemoveTestExecutionsFromTestPlan($issueId: String!, $testExecIssueIds: [String!]!) {
+      removeTestExecutionsFromTestPlan(issueId: $issueId, testExecIssueIds: $testExecIssueIds)
     }
   `,
 
