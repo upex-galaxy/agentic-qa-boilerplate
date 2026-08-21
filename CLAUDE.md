@@ -483,7 +483,7 @@ Git / PR work → `/git-flow-master` auto-loads. Details in `.claude/skills/git-
 >
 > `git_strategy.strategy` ships **`solo-main`**, not null. That is a DEFAULT, not a decision, and `meta.strategy_source: inherited` is what records the difference. `git-flow-master` OFFERS "Strategy Setup" when a project has filled in its `project_name` and `strategy_source` is still `inherited` — a real project running a strategy nobody chose. `.agents/project.yaml` is frozen by `bun run up` (updater `bootstrapOnlyPaths`), so every project keeps its own. Downstream test-automation projects typically choose `sdet` (chained suites; see `.claude/skills/git-flow-master/references/sdet-integration-trunk.md`).
 
-This repository (the boilerplate itself) runs `solo-main`: single maintainer, commit and push directly to `main`. To pin it as a real decision rather than the inherited default, ask git-flow-master to "set up our git strategy" — that stamps `strategy_source: chosen`.
+This repository (the boilerplate itself) runs `solo-main`: single maintainer, commit and push directly to `main`. This is a CHOSEN strategy (`strategy_source: chosen`, confirmed 2026-08-21 via Strategy Setup), not the inherited default — do not re-offer Strategy Setup here unless the user asks to change the strategy.
 
 ### Accepted divergence — declared policy vs enforced ruleset
 

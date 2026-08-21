@@ -133,7 +133,10 @@ git_strategy:
     # Did anyone actually CHOOSE this strategy, or is it just the shipped default?
     # `strategy:` above is never null, so its value alone cannot answer that. Strategy
     # Setup flips this to `chosen` when the questionnaire actually runs.
-    strategy_source: inherited # inherited | chosen
+    # CHOSEN 2026-08-21: the maintainer confirmed solo-main with the shipped values
+    # (Q1-Q3 n/a — single branch; Q4 allowed / admin_bypass true / 1 review for PRs)
+    # via git-flow-master Strategy Setup. Nothing was rematerialized — main already exists.
+    strategy_source: chosen # inherited | chosen
 
 # Per-environment config. Add/remove environments freely (production, dev, qa, uat, etc.).
 # Each environment must define ALL four keys: web_url, api_url, db_mcp, api_mcp.
