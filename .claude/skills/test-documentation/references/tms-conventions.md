@@ -39,7 +39,7 @@ The prefix is **ALWAYS the User Story key** (`{US_ID}`) — never the Test Set I
 {US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]
 ```
 
-> Test Set membership is **Xray-internal state** (managed via `/xray-cli`, read via `bun xray test enrich`) — NEVER a Jira issue link and NEVER baked into the TC title.
+> Under Modality jira-xray, Test Set membership is **Xray-internal state** (managed via `/xray-cli`, read via `bun xray test enrich`) — NEVER a Jira issue link and NEVER baked into the TC title. Jira-native carve-out: with a Test Set work type present, membership IS expressed as TC→ATS issue links (still never in the TC title).
 
 ### Components
 
@@ -88,7 +88,7 @@ All Plans and Runs follow one **unified grammar** — the QA planning ladder:
 {ACRONYM}: {scope-id}: {descriptor}
 ```
 
-- **ACRONYM** — `FTP` · `STP` · `ATP` (Plans) · `FTR` · `STR` · `ATR` (Runs) · `TS` (Test Set) · `PRC` (Precondition) · `ReTest` (bug re-test Run). A reader / JQL sees altitude + plan-vs-run in the first token, and Plan pairs with Run visually.
+- **ACRONYM** — `FTP` · `STP` · `ATP` (Plans) · `STR` · `ATR` (Runs — FTR retired: feature results roll up via ATRs + the sprint STR) · `ATS` (Acceptance Test Set, per-Story — mandatory) · `TS` (feature-level Test Set — optional grouping) · `ReTest` (bug re-test Run). A reader / JQL sees altitude + plan-vs-run in the first token, and Plan pairs with Run visually.
 - **scope-id** — the key of the thing under test at that altitude: feature-Epic key, `Sprint#{N}`, or Story key.
 - **descriptor** — human-readable; embeds the testing term where required (`Story Testing`, `Feature Testing`, `Regression Testing`).
 
@@ -98,20 +98,21 @@ All Plans and Runs follow one **unified grammar** — the QA planning ladder:
 | ATP — Story Test Plan | Test Plan | `ATP: {STORY-KEY}: {story title}` | `ATP: PROJ-123: Apply discount at checkout` |
 | ATR — Story Test Execution | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-123: Story Testing` |
 | FTP — Feature Test Plan | Test Plan | `FTP: {EPIC-KEY}: {feature}` | `FTP: PROJ-42: Checkout & Payments` |
-| FTR — Feature Test Results | Test Execution | `FTR: {EPIC-KEY}: Feature Testing — {feature}{ · run N}` | `FTR: PROJ-42: Feature Testing — Checkout · run 2` |
 | STP — Sprint Test Plan | Test Plan | `STP: Sprint#{N}: Regression` | `STP: Sprint#30: Regression` |
 | STR — Sprint Test Results | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#30: Regression Testing` |
-| Test Set (TS) | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature}` | `TS: GX-101: Validate credit card payment` |
+| ATS — Acceptance Test Set (per-Story, **mandatory**) | Test Set | `ATS: {US_ID}: {story title}` | `ATS: GX-101: Pay with credit card` |
+| Test Set (TS — feature-level, **optional**) | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature}` | `TS: GX-42: Validate credit card payment` |
 | ReTesting (RTX) | Test Execution | `ReTest: {BUG-KEY}: {summary}` | `ReTest: GX-202: Does not show error when entering incorrect password` |
-| Precondition (PRC) | Precondition | `PRC: {COMPONENT}: {required state}` | `PRC: Payment: Authenticated user with a saved card` |
+| Precondition | Precondition | `{COMPONENT}: {required state}` (no ladder acronym) | `Payment: Authenticated user with a saved card` |
 
 Notes:
 
 - **Items over fields (by excellence).** Every Plan is a **Test Plan** issue and every Run is a **Test Execution** issue — in BOTH modalities (these are native Jira work types, Xray-independent). The Story custom field for ATP/ATR is a **degraded fallback ONLY**, used when those work types are unavailable in the instance. See `tms-architecture.md` §Container per modality.
-- **QA-process Epic homes** (3-axis model): every **Test Plan** (FTP/STP/ATP) parents to **QA Master Test Plan**; every **Test Execution** (FTR/STR/ATR), **Test Set**, and **Precondition** parents to **QA Test Artifacts**; every **Test** (TC) parents to **QA Test Repository**. The parent says only which QA bucket; scope (Story / feature / Sprint) travels on an issue link, product area on `components` — mandatory on Tests, Test Plans and Test Executions (Plans/Executions inherit the source Story's components); **OPTIONAL on Test Sets only** (a Set can span modules; its member Tests carry them).
+- **QA-process Epic homes** (3-axis model): every **Test Plan** (FTP/STP/ATP) parents to **QA Master Test Plan**; every **Test Execution** (STR/ATR), **Test Set** (ATS and TS), and **Precondition** parents to **QA Test Artifacts**; every **Test** (TC) parents to **QA Test Repository**. The parent says only which QA bucket; scope (Story / feature / Sprint) travels on an issue link, product area on `components` — mandatory on Tests, Test Plans, Test Executions AND the per-Story **ATS** (all inherit the source Story's components); **OPTIONAL on the feature-level `TS:` only** (a feature Set can span modules; its member Tests carry them).
 - **`ReTest:`** is already prefix-style and stays as-is. It is a Test Execution under **QA Test Artifacts**.
-- **Precondition**: the **title states the required state**, the **content holds the setup steps** — the two are kept distinct (`PRC: Payment: Authenticated user with a saved card` titles the state; the steps to reach it live in the issue body).
-- `Validate` stays the Test Set grouping word (consistent with the code `describe()` law); the `TS:` prefix adds the work-type / altitude signal on top.
+- **Precondition**: the **title states the required state**, the **content holds the setup steps** — the two are kept distinct (`Payment: Authenticated user with a saved card` titles the state; the steps to reach it live in the issue body).
+- **ATS is mandatory per Story** (even with a single TC) and holds ALL the Story's TCs; the ATP's and the Execution's test lists derive from its membership (Set-first). Its ATS→Story `is tested by` link is what fills the Xray coverage panel — ATP/ATR links do not (live-verified). The feature-level `TS:` survives as an **optional** grouping (smoke / regression / feature suite).
+- `Validate` stays the feature-level Test Set grouping word (consistent with the code `describe()` law); the `TS:` prefix adds the work-type / altitude signal on top. The per-Story `ATS:` mirrors the Story title instead.
 
 ---
 
@@ -133,7 +134,7 @@ Every TC in the TMS must have these fields populated. Exact field names vary by 
 | Components | Multi-select | Affected product module — mandatory (defect-management doctrine Part 3) | `Payments` |
 | Automation Candidate | Boolean | Automation flag | true / false |
 | Parent | Link | Regression Epic | Epic: `QA Test Repository` |
-| Linked Story | Link | Traceability to requirement — **modality-aware**: jira-native links the TC to the Story directly (`is tested by`); jira-xray routes traceability through the ATP (`is designed by`) / ATR (`is executed by`), never a direct TC→Story link | `PROJ-100` (jira-native) |
+| Linked Story | Link | Traceability to requirement — **cascade**: primary through the Story's ATS (membership + ATS→Story `is tested by`, the coverage-panel link); jira-xray adds ATP (`is designed by`) / ATR (`is executed by`) administrative edges; jira-native without a Test Set work type links the TC to the Story directly (`is tested by` — the cascade's last resort) | `PROJ-100` (direct, last resort) |
 
 ### Conditional
 
@@ -576,9 +577,10 @@ When 3+ independent factors each have multiple values (browser × locale × plan
 
 | Link | Type | When |
 |------|------|------|
-| User Story | "tests" / "is tested by" | **Modality jira-native only** — direct TC→Story link. Under jira-xray there is NO direct TC→Story link; traceability routes through the ATP (`is designed by`) / ATR (`is executed by`) |
-| ATP (Test Plan) | Parent / reference | Always, after ATP exists |
-| ATR (Test Results) | Reference | Always, after ATR exists |
+| ATS (Acceptance Test Set) | Membership — Xray-internal (jira-xray) or TC→ATS issue link (jira-native with the Test Set work type) | Always — the ATS holds ALL the Story's TCs; its ATS→Story `is tested by` link is what fills the coverage panel |
+| User Story | "tests" / "is tested by" | **Last resort only** (cascade step 3): jira-native WITHOUT a Test Set work type — no ATS possible, so the direct TC→Story link carries traceability. Never needed while an ATS covers the TC |
+| ATP (Test Plan) | Parent / reference | Always, after ATP exists (administrative — contributes no coverage) |
+| ATR (Test Results) | Reference | Always, after ATR exists (administrative — contributes no coverage) |
 | Regression Epic | Parent | Always |
 | Acceptance Criterion | Reference | Always |
 | Bug (if blocked) | "is blocked by" | When a bug prevents execution |
@@ -671,7 +673,7 @@ Automated results flow from CI to the TMS:
 ### Do
 
 - Create TCs **after** the feature is stable and validated.
-- Link every TC to its source story, ATP, ATR, and AC.
+- Add every TC to its Story's ATS (the coverage backbone) and link it to the ATP, ATR, and AC — a direct Story link only as the cascade's last resort (no ATS).
 - Use Gherkin for automatable TCs; Traditional for manual.
 - Evaluate ROI before marking candidates.
 - Keep the Regression Epic as the single source of truth.

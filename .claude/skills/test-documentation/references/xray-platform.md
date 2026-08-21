@@ -27,11 +27,11 @@ Every TMS artifact becomes one of these:
 
 | Issue type | Purpose | Notes |
 |------------|---------|-------|
-| **Test** | Individual test case (Manual / Cucumber / Generic) | Child of Regression Epic; linked to Story. |
-| **Test Set** | Groups tests by criteria (smoke / regression / domain) | Reusable across sprints; membership is Xray-internal (manage via `/xray-cli`, read via `bun xray test enrich`) — NEVER a Jira issue link, NEVER the TC prefix (the TC prefix is always `{US_ID}`). Title: `TS: {EPIC-KEY\|module}: Validate {feature}`. Components optional: a Set spans modules by design. Parented to **QA Test Artifacts**. |
+| **Test** | Individual test case (Manual / Cucumber / Generic) | Child of Regression Epic; member of its Story's ATS (coverage reaches the Story via the ATS→Story link; a direct Test↔Story link is the cascade's last resort). |
+| **Test Set** | Two altitudes: **ATS** (per-Story, MANDATORY — holds ALL the Story's TCs, even one; its `is tested by` link to the Story fills the coverage panel) and **TS** (feature-level, OPTIONAL grouping: smoke / regression / domain) | Membership is Xray-internal (manage via `/xray-cli`, read via `bun xray test enrich`) — NEVER a Jira issue link, NEVER the TC prefix (the TC prefix is always `{US_ID}`); the ATS→Story `is tested by` edge IS a Jira link and is mandatory. Titles: `ATS: {US_ID}: {story title}` / `TS: {EPIC-KEY\|module}: Validate {feature}`. Components: inherited from the Story on the ATS (mandatory); optional on the feature-level `TS:` only (a feature Set spans modules by design). Both parented to **QA Test Artifacts**. |
 | **Test Plan** | Strategic planning for a release / sprint | Planning-level container. Holds **FTP / STP / ATP** Plans (titles `FTP: …` / `STP: Sprint#{N}: Regression` / `ATP: {STORY-KEY}: {story title}`). Parented to **QA Master Test Plan**. |
-| **Test Execution** | One execution cycle; holds Test Runs | Holds **FTR / STR / ATR** Runs (titles `FTR: …` / `STR: Sprint#{N}: Regression Testing` / `ATR: {STORY-KEY}: Story Testing`). Carries Environment, Begin/End Date. Target of CI result import. Parented to **QA Test Artifacts**. |
-| **Pre-Condition** | Reusable prerequisites | Associated to Tests that share setup — an Xray-internal association (manage via `/xray-cli`, read via `bun xray test enrich`), NEVER a Jira issue link. Title: `PRC: {COMPONENT}: {required state}` — the **title states the required state**, the **content holds the setup steps** (kept distinct), e.g. `PRC: Auth: User logged in as Admin`. Parented to **QA Test Artifacts**. |
+| **Test Execution** | One execution cycle; holds Test Runs | Holds **STR / ATR** Runs (titles `STR: Sprint#{N}: Regression Testing` / `ATR: {STORY-KEY}: Story Testing`; FTR retired — feature results roll up via ATRs + the sprint STR). Carries Environment, Begin/End Date. Target of CI result import. Parented to **QA Test Artifacts**. |
+| **Pre-Condition** | Reusable prerequisites | Associated to Tests that share setup — an Xray-internal association (manage via `/xray-cli`, read via `bun xray test enrich`), NEVER a Jira issue link. Title: `{COMPONENT}: {required state}` (no ladder acronym) — the **title states the required state**, the **content holds the setup steps** (kept distinct), e.g. `Auth: User logged in as Admin`. Parented to **QA Test Artifacts**. |
 | **Test Run** | *Not a Jira issue* — internal entity inside a Test Execution | One per Test per Execution. Carries PASS/FAIL/TODO/BLOCKED/ABORTED/EXECUTING. |
 
 Typical hierarchy (parents are the QA-process Epics):
@@ -42,9 +42,9 @@ QA Master Test Plan (Epic)
   +-- Test Plan: STP: Sprint#{N}: Regression       (sprint plan)
 
 QA Test Artifacts (Epic)
-  +-- Test Set: TS: {EPIC-KEY}: Validate core auth      (optional grouping)
-  |       +-- Test (TC1, TC2, ...)
-  +-- Test Set: TS: Checkout: Validate checkout v2
+  +-- Test Set: ATS: {US_ID}: {story title}             (= ATS, MANDATORY per Story —
+  |       +-- Test (TC1, TC2, ...)                       ALL its TCs; ATS->Story link = coverage)
+  +-- Test Set: TS: Checkout: Validate checkout v2      (optional feature grouping)
   |       +-- Test (TC3, TC4, ...)
   +-- Test Execution: ATR: {STORY-KEY}: Story Testing   (= ATR)
          +-- Test Run per Test (PASS / FAIL / TODO)
@@ -104,6 +104,8 @@ Backward: "Which requirement does this test verify?"
 | Covered & Failing | At least one linked test's last run = FAIL |
 | Covered & Not Executed | Tests exist but no runs yet (TODO) |
 | Not Covered | No tests linked to this requirement |
+
+**Which link fills this panel (live-verified 2026-08-21, `.session/artifact-ladder-refactor/scoping.md` §Verificación)**: only an `is tested by` edge from a **Test Set** (the Story's ATS) or a **direct Test↔Story link** counts as coverage. A Story linked `is tested by` to a Test Plan and a Test Execution — even ones holding all its Tests — shows **UNCOVERED, 0 tests**: ATP/ATR links are administrative traceability, not coverage. This is why the per-Story ATS is mandatory: its ATS→Story link is the coverage anchor.
 
 The QA completeness checklist in `tms-architecture.md` §Completeness criteria is the application of this view at the User Story level.
 
