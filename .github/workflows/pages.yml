@@ -58,8 +58,8 @@ jobs:
           mkdir -p _site/kata _site/decks
           touch _site/.nojekyll
 
-          # Homepage dashboard
-          cp packages/pages-home/index.html _site/index.html
+          # Homepage dashboard + sibling standalone pages (architecture, release notes)
+          cp packages/pages-home/*.html _site/
 
           # KATA Academy (built with base: './' so it works under /kata/)
           cp -R packages/kata-academy/dist/. _site/kata/

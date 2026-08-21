@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Arquitectura Agentic QA — el refactor PBI + escalera de artefactos</title>
+    <meta
+      name="description"
+      content="Presentación del refactor de arquitectura del boilerplate Agentic QA: PBI como caché de Jira, la escalera de artefactos con el ATS, la evidencia de coverage verificada en vivo y la cascade de trazabilidad."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --surface-2: #1c2230;
+        --text-1: #e6edf3;
+        --text-2: #9aa6b2;
+        --text-3: #6e7681;
+        --border: rgba(139, 148, 158, 0.22);
+        --border-strong: rgba(139, 148, 158, 0.42);
+        --good: #3fb950;
+        --bad: #ff7b72;
+        --a1: #ffa657;
+        --a2: #ff7b72;
+        --a3: #d2a8ff;
+        --grad: linear-gradient(120deg, var(--a1), var(--a2) 55%, var(--a3));
+        --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+        --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+        --radius: 14px;
+        --radius-lg: 20px;
+        color-scheme: dark;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text-1);
+        font-family: var(--font-ui);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: inherit;
+      }
+      .wrap {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.86em;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.08em 0.4em;
+        white-space: nowrap;
+      }
+      header {
+        border-bottom: 1px solid var(--border);
+        padding: 16px 0;
+        position: sticky;
+        top: 0;
+        background: rgba(13, 17, 23, 0.88);
+        backdrop-filter: blur(8px);
+        z-index: 10;
+      }
+      .header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        text-decoration: none;
+      }
+      .brand strong {
+        font-size: 1.02rem;
+        font-weight: 800;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        white-space: nowrap;
+      }
+      .brand span {
+        color: var(--text-3);
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+      .header-links a {
+        color: var(--text-2);
+        text-decoration: none;
+        font-size: 0.85rem;
+      }
+      .header-links a:hover {
+        color: var(--text-1);
+      }
+
+      .hero {
+        padding: 64px 0 40px;
+      }
+      .hero .tag {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--a1);
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        padding: 4px 12px;
+        margin-bottom: 18px;
+      }
+      .hero h1 {
+        font-size: clamp(1.7rem, 4.4vw, 2.6rem);
+        font-weight: 800;
+        line-height: 1.18;
+        max-width: 20ch;
+        margin-bottom: 16px;
+        text-wrap: balance;
+      }
+      .hero h1 em {
+        font-style: normal;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .hero p {
+        color: var(--text-2);
+        max-width: 62ch;
+      }
+
+      section {
+        padding: 34px 0;
+        border-top: 1px solid var(--border);
+      }
+      .kicker {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--a3);
+        margin-bottom: 8px;
+      }
+      section h2 {
+        font-size: 1.35rem;
+        font-weight: 800;
+        margin-bottom: 10px;
+        text-wrap: balance;
+      }
+      section > .wrap > p {
+        color: var(--text-2);
+        max-width: 68ch;
+        margin-bottom: 14px;
+      }
+      section p b,
+      section li b {
+        color: var(--text-1);
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        margin-top: 14px;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 14px;
+        margin-top: 14px;
+      }
+      .card h3 {
+        font-size: 0.95rem;
+        margin-bottom: 8px;
+      }
+      .card p,
+      .card li {
+        font-size: 0.9rem;
+        color: var(--text-2);
+      }
+      .card ul {
+        padding-left: 18px;
+        display: grid;
+        gap: 5px;
+      }
+
+      .tbl-wrap {
+        overflow-x: auto;
+        margin-top: 14px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.88rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      th,
+      td {
+        border-bottom: 1px solid var(--border);
+        padding: 9px 13px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--surface-2);
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-2);
+      }
+      td {
+        color: var(--text-2);
+      }
+      td b,
+      td strong {
+        color: var(--text-1);
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      .ok {
+        color: var(--good);
+        font-weight: 600;
+      }
+      .no {
+        color: var(--bad);
+        font-weight: 600;
+      }
+
+      pre.diagram {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        line-height: 1.55;
+        color: var(--text-2);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+        overflow-x: auto;
+        margin-top: 14px;
+      }
+      pre.diagram b {
+        color: var(--a1);
+        font-weight: 700;
+      }
+      pre.diagram i {
+        color: var(--good);
+        font-style: normal;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .stat {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+      }
+      .stat .n {
+        font-family: var(--font-mono);
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .stat .t {
+        font-size: 0.78rem;
+        color: var(--text-3);
+      }
+
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 28px 0 48px;
+        margin-top: 30px;
+      }
+      footer p {
+        color: var(--text-3);
+        font-size: 0.85rem;
+      }
+      footer a {
+        color: var(--text-2);
+      }
+      @media (max-width: 640px) {
+        .hero {
+          padding: 44px 0 30px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap header-row">
+        <a class="brand" href="./index.html"
+          ><strong>Agentic QA</strong><span>UPEX Galaxy · arquitectura</span></a
+        >
+        <nav class="header-links">
+          <a href="./index.html">Hub</a>
+          <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="hero wrap">
+        <span class="tag">Release · agosto 2026</span>
+        <h1>
+          El contexto de Jira ahora es un <em>caché</em>, y la trazabilidad tiene <em>evidencia</em>
+        </h1>
+        <p>
+          Este release resuelve el problema de raíz del árbol PBI (un espejo de Jira commiteado en
+          git), ratifica la escalera completa de artefactos de testing con un integrante nuevo, y
+          corrige el modelo de coverage con verificación en vivo contra Xray. Todo lo de abajo ya
+          está en <code>main</code>.
+        </p>
+      </div>
+
+      <section>
+        <div class="wrap">
+          <div class="kicker">01 · El problema de raíz</div>
+          <h2>El PBI era una base de datos duplicada dentro de git</h2>
+          <p>
+            <code>.context/PBI/</code> espejaba las Stories, Bugs y Tests de Jira y se commiteaba.
+            Dos sesiones que re-sincronizaban en momentos distintos producían commits en conflicto
+            del mismo texto generado, y un merge de 3 vías sobre un archivo regenerado no significa
+            nada. Jira ya ES la copia versionada y compartida.
+          </p>
+          <div class="tbl-wrap">
+            <table>
+              <tr>
+                <th>Tier</th>
+                <th>Fuente de verdad</th>
+                <th>¿En git?</th>
+                <th>Se recupera con</th>
+              </tr>
+              <tr>
+                <td><b>[SYNC]</b> — espejo de Jira</td>
+                <td>Jira</td>
+                <td class="no">No (gitignorado)</td>
+                <td><code>bun run context:hydrate</code></td>
+              </tr>
+              <tr>
+                <td><b>[COMMIT]</b> — README, templates, <code>test-specs/</code></td>
+                <td>El repo</td>
+                <td class="ok">Sí</td>
+                <td><code>git checkout</code></td>
+              </tr>
+              <tr>
+                <td><b>[LOCAL]</b> — notas y evidencia de sesión</td>
+                <td>Nada durable</td>
+                <td class="no">No</td>
+                <td>No se recupera: efímero por diseño</td>
+              </tr>
+            </table>
+          </div>
+          <div class="grid2">
+            <div class="card">
+              <h3>Un solo árbol: Test → Story → Epic</h3>
+              <p>
+                Cada Test vive bajo la Story que lo cubre. Los Tests sin camino de trazabilidad caen
+                en <code>epics/_orphans/tests/</code>: una lista de trabajo visible, no una carpeta
+                más.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Epics de proceso QA separados</h3>
+              <p>
+                Los epics de artefactos QA llevan el label <code>QA-Artifact</code> y se filtran a
+                <code>qa-artifacts/</code>: nunca más un bucket de proceso disfrazado de módulo del
+                producto.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="kicker">02 · La escalera de artefactos</div>
+          <h2>Cuatro altitudes de planificación, cada una con dueño real</h2>
+          <p>
+            La escalera quedó ratificada y ejecutable: cada artefacto tiene quién lo crea y cuándo.
+            Y la familia de aceptación se completa con un integrante nuevo: el <b>ATS</b>.
+          </p>
+          <div class="tbl-wrap">
+            <table>
+              <tr>
+                <th>Artefacto</th>
+                <th>Altitud</th>
+                <th>Título</th>
+                <th>Quién lo produce</th>
+              </tr>
+              <tr>
+                <td><b>MTP</b> — Master Test Plan</td>
+                <td>Producto</td>
+                <td>Epic <code>QA Master Test Plan</code> + archivo local</td>
+                <td><code>/master-test-plan</code></td>
+              </tr>
+              <tr>
+                <td><b>FTP</b> — Feature Test Plan</td>
+                <td>Feature</td>
+                <td><code>FTP: {EPIC}: {feature}</code></td>
+                <td><code>/sprint-testing</code> al cargar el contexto del Epic</td>
+              </tr>
+              <tr>
+                <td><b>STP</b> — Sprint Test Plan</td>
+                <td>Sprint</td>
+                <td><code>STP: Sprint#{N}: {objetivo}</code></td>
+                <td><code>/sprint-testing</code> al abrir el sprint (planificador vivo)</td>
+              </tr>
+              <tr>
+                <td><b>STR</b> — Sprint Test Results</td>
+                <td>Sprint</td>
+                <td><code>STR: Sprint#{N}: Regression Testing</code></td>
+                <td>Cierre de sprint (sprint-testing o regression, el primero que llega)</td>
+              </tr>
+              <tr>
+                <td><b>ATP</b> — Acceptance Test Plan</td>
+                <td>Story</td>
+                <td><code>ATP: {US_ID}: {título}</code></td>
+                <td>Pre-sprint en el custom field (shift-left) → item en Stage 1</td>
+              </tr>
+              <tr>
+                <td><b>ATS</b> — Acceptance Test Set <span class="ok">· nuevo</span></td>
+                <td>Story</td>
+                <td><code>ATS: {US_ID}: {título}</code></td>
+                <td>Stage 1, obligatorio: agrupa TODOS los TCs de la Story</td>
+              </tr>
+              <tr>
+                <td><b>ATR</b> — Acceptance Test Results</td>
+                <td>Story</td>
+                <td><code>ATR: {US_ID}: Story Testing</code></td>
+                <td>Stage 1 (siempre con Test Environment)</td>
+              </tr>
+              <tr>
+                <td><b>TS</b> — Test Set de feature</td>
+                <td>Feature</td>
+                <td><code>TS: {EPIC|módulo}: Validate {feature}</code></td>
+                <td>Opcional: suites smoke / regression</td>
+              </tr>
+            </table>
+          </div>
+          <p style="margin-top: 12px">
+            <b>FTR</b> y el prefijo <b>PRC</b> se recortaron: el FTR duplicaba al STR, y la
+            Precondition existe como entidad de Xray sin necesidad de acrónimo de escalera.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="kicker">03 · La evidencia que cambió el diseño</div>
+          <h2>El panel de coverage ignora al ATP: lo probamos en vivo</h2>
+          <p>
+            Verificación read-only contra una instancia Xray real, con tres Stories como experimento
+            controlado. El resultado invalidó el modelo que la doctrina enseñaba:
+          </p>
+          <div class="tbl-wrap">
+            <table>
+              <tr>
+                <th>Story</th>
+                <th>Links «is tested by»</th>
+                <th>Coverage según Xray</th>
+              </tr>
+              <tr>
+                <td>BK-202</td>
+                <td>Test Plan (16 tests) + Test Execution (16)</td>
+                <td class="no">UNCOVERED · 0 tests</td>
+              </tr>
+              <tr>
+                <td>BK-337</td>
+                <td>Plan + Exec + <b>Test Set (22 tests)</b></td>
+                <td class="ok">OK · exactamente los 22 del Set</td>
+              </tr>
+              <tr>
+                <td>BK-18</td>
+                <td>Plan + Exec + <b>12 Tests directos</b></td>
+                <td class="ok">OK · exactamente esos 12</td>
+              </tr>
+            </table>
+          </div>
+          <p style="margin-top: 12px">
+            Conclusión: los links del ATP y el ATR son <b>trazabilidad administrativa</b>. Lo que
+            llena el panel es el link del <b>ATS</b> (o los links directos Test↔Story). Por eso el
+            ATS es ahora obligatorio, y por eso el shift-left dejó de crear el Test Plan temprano:
+            no compraba cobertura.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="kicker">04 · La cascade de trazabilidad</div>
+          <h2>Cómo se resuelve dónde vive cada Test</h2>
+          <pre class="diagram">
+TC → <b>ATS</b> → Story      <i>primaria: membership + link ATS→Story (llena el coverage panel)</i>
+TC → ATP → Story      placement en el árbol local; el panel NO lo cuenta
+TC → Story directo    last resort válido (deja de ser anti-patrón)
+(nada)                → epics/_orphans/tests/ · lista de trabajo de trazabilidad</pre>
+          <div class="grid2">
+            <div class="card">
+              <h3>Dos capas, nunca confundidas</h3>
+              <ul>
+                <li>
+                  <b>Links de Jira</b>: contenedor→Story (<code>is tested by</code>), visibles al
+                  REST.
+                </li>
+                <li><b>Asociaciones de Xray</b>: membership TC ∈ ATS/ATP/ATR, solo GraphQL.</li>
+                <li>
+                  En jira-native no hay capa Xray: la membership se expresa como links TC→ATS.
+                </li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Set-first en Stage 1</h3>
+              <ul>
+                <li>① ATP item creado <b>desde el field</b> del shift-left</li>
+                <li>② ATS con todos los TCs + link a la Story</li>
+                <li>③ listas de Plan y Exec <b>derivadas</b> de la membership del ATS</li>
+                <li>④ ATR siempre con Test Environment (<code>active_env</code>)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="kicker">05 · El flujo, de punta a punta</div>
+          <h2>Shift-left más liviano, sprint más completo</h2>
+          <div class="grid2">
+            <div class="card">
+              <h3>Pre-sprint (shift-left)</h3>
+              <ul>
+                <li>ACs refinados + preguntas para producto</li>
+                <li>
+                  El ATP nace en el <b>custom field</b> (cero artefactos gastados en Stories que
+                  mueren en backlog)
+                </li>
+                <li>
+                  Subtask <code>[QA] Shift-Left Review</code>: el board ve el trabajo pre-sprint, y
+                  las anotaciones largas viven ahí
+                </li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>In-sprint</h3>
+              <ul>
+                <li>STP vivo desde el primer ticket, actualizado por ticket</li>
+                <li>Bug retest (xray): 1 Test de repro creado y ejecutado en-sprint</li>
+                <li>STR al cierre como recap del sprint</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="kicker">06 · Tooling</div>
+          <h2>El CLI y el sync ahora hablan el mismo modelo</h2>
+          <div class="grid2">
+            <div class="card">
+              <h3>CLI de Xray</h3>
+              <ul>
+                <li>
+                  <code>link create</code>: el write-path de links que faltaba (coverage incluida)
+                </li>
+                <li>
+                  <code>plan add-set</code> / <code>exec add-set</code>: cascade desde la membership
+                  del ATS
+                </li>
+                <li>
+                  <code>set sync</code> + <code>plan get</code> + preconditions +
+                  <code>test update-step</code>
+                </li>
+                <li><code>exec create</code> avisa si falta <code>--environment</code></li>
+                <li><code>bun xray test enrich</code>: trae al caché lo que el REST no ve</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Sync y descubrimiento</h3>
+              <ul>
+                <li>
+                  El pull distingue altitudes (un STP linkeado ya no se archiva como ATP de la
+                  Story)
+                </li>
+                <li>Cascade de placement integrada con la enrichment GraphQL</li>
+                <li><code>bun run tests:map</code>: mapa HTML de cobertura, gaps primero</li>
+                <li>
+                  <code>/jira-components</code>: components = módulos reales de la app, plan
+                  aprobado por humano
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="kicker">07 · El release en números</div>
+          <h2>Tres tandas de trabajo, todo verificado</h2>
+          <div class="stats">
+            <div class="stat">
+              <div class="n">115+</div>
+              <div class="t">afirmaciones falsas corregidas en docs y skills</div>
+            </div>
+            <div class="stat">
+              <div class="n">22</div>
+              <div class="t">decks alineados al modelo nuevo</div>
+            </div>
+            <div class="stat">
+              <div class="n">18</div>
+              <div class="t">decisiones de diseño tomadas con evidencia</div>
+            </div>
+            <div class="stat">
+              <div class="n">3</div>
+              <div class="t">verificaciones en vivo contra Xray real</div>
+            </div>
+          </div>
+          <p style="margin-top: 14px">
+            Cada decisión quedó registrada con su porqué en los commits de <code>main</code>. Las
+            presentaciones por skill (en español) están en <a href="./decks/">/decks/</a>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <p>
+          Agentic QA Boilerplate · UPEX Galaxy ·
+          <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate">repositorio</a> ·
+          <a href="./index.html">volver al hub</a>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
