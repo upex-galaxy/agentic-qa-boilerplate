@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-08-21T10:00:17.216Z`
+> Generated: `2026-08-21T10:14:18.032Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.claude/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -390,13 +390,13 @@ Skills indexed: 15
 - *Missing at Jira layer*: tests registered with Xray but without a Jira issuelink. Reported only — sync never auto-deletes.
 - `~/.xray-cli/config.json` - Stored credentials and default project
 - `~/.xray-cli/token.json` - Cached auth token (24h validity)
-- `xray` binary is not installed in the environment.
-- Auth cannot be completed in the current session.
-- Operation is simple (single test status update, small query).
-- Bulk test import (JUnit/Cucumber/Xray JSON).
-- Backup / restore / large sync operations.
-- Anything involving Test Plans or Test Executions at scale (xray-cli is far more complete).
+- **Xray credentials missing/broken** → Critical Rule #10 applies: STOP, name the
+- **Jira-layer operations only** (issue links, summaries, transitions, comments
 - **X1.** NEVER call `bun xray ...` directly from workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`). Workflow skills use `[TMS_TOOL]` pseudo-code and load `/xray-cli` — only this skill owns the literal CLI syntax.
+- **X2.** NEVER cache Xray bearer tokens beyond their 24h TTL. Stale tokens produce silent 401s mid-import that look like network blips; re-auth via `bun xray auth login` instead of catching the error.
+- **X3.** NEVER batch-import test results without first verifying the Test Plan / Test Execution keys exist in the target project. Orphan results get rejected and the whole import aborts — pre-check with `exec get` / `plan get`.
+- **X4.** NEVER hand-craft Xray JSON payloads (`testInfo`, `iterations`, `evidences`) outside `bun xray`. The CLI owns the canonical shape; drift from it breaks future schema migrations and silently mis-attributes evidence to the wrong run.
+- **X5.** NEVER run `bun xray import` or `bun xray backup restore` against production without `--dry-run` first. These commands write irreversibly across hundreds of TCs and runs — preview the diff before applying.
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
