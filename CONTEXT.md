@@ -239,7 +239,7 @@ bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 
 | Stage | Activity | Skill |
 |-------|----------|-------|
-| **Stage 0** | Pre-sprint Shift-Left: AC refinement on backlog Stories, gap-spotting, ATP DRAFT, batch grooming | `/shift-left-testing` |
+| **Stage 0** | Pre-sprint Shift-Left: AC refinement on backlog Stories, gap-spotting, pre-sprint ATP (outline maturity, authored into the `{{jira.acceptance_test_plan}}` field; the Test Plan item is created by `/sprint-testing` Stage 1), batch grooming | `/shift-left-testing` |
 | **Stage 1** | Planning (in-sprint, AC validation, full ATP; short-circuits Phases 1-3 if Stage 0 ran <30 days ago) | `/sprint-testing` |
 | **Stage 2** | Execution (exploratory + smoke + trifuerza) | `/sprint-testing` |
 | **Stage 3** | Reporting (ATR, QA comment, bug reports) | `/sprint-testing` |
@@ -276,7 +276,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 | Task | Load First | Load If Needed |
 |------|------------|----------------|
 | **Write E2E or API Test** | `/test-automation` (SKILL.md) | The skill's own `references/` (planning playbook, KATA patterns, etc.) |
-| **Pre-sprint AC refinement / backlog grooming** | `/shift-left-testing` (SKILL.md) + `.context/business/*` | Skill `references/` (backlog-selection, refinement-playbook, atp-draft-template) |
+| **Pre-sprint AC refinement / backlog grooming** | `/shift-left-testing` (SKILL.md) + `.context/business/*` | Skill `references/` (backlog-selection, refinement-playbook, atp-outline-template) |
 | **Exploratory Testing** | `/sprint-testing` (SKILL.md) + `.context/master-test-plan.md` | Skill `references/` (exploration patterns, session entry points) |
 | **Understand System** | `.context/business/business-data-map.md` | `.context/business/*`, `.context/PRD/*`, `.context/SRS/*` |
 | **Use MCP** | `CLAUDE.md` §"MCPs Available" + §"Tool Resolution" | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |

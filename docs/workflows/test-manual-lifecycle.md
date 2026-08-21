@@ -53,7 +53,7 @@ El skill crea el PBI folder (`.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY
 
 ### Pre-sprint Shift-Left (Stage 0)
 
-> **Pre-requisito ideal**: si la story pasó por `/shift-left-testing` ANTES del sprint planning, gran parte del trabajo de Planning ya está hecho. El skill habrá refinado los ACs, surfaceado gaps + ambigüedades, y dejado un ATP DRAFT en Jira con label `shift-left-reviewed`. Stage 1 de `/sprint-testing` detecta esa label (<30 días) y short-circuitea las Phases 1-3 — solo valida que los ACs siguen vigentes y continúa con parametrización + test-data.
+> **Pre-requisito ideal**: si la story pasó por `/shift-left-testing` ANTES del sprint planning, gran parte del trabajo de Planning ya está hecho. El skill habrá refinado los ACs, surfaceado gaps + ambigüedades, y dejado el ATP pre-sprint (madurez outline) escrito en el custom field `{{jira.acceptance_test_plan}}` con label `shift-left-reviewed` — el Test Plan item lo crea `/sprint-testing` Stage 1 a partir de ese field. Stage 1 de `/sprint-testing` detecta esa label (<30 días) y short-circuitea las Phases 1-3 — solo valida que los ACs siguen vigentes y continúa con parametrización + test-data.
 >
 > Cuando NO hubo Shift-Left, el flujo Planning de abajo corre completo in-sprint (más caro, pero perfectamente válido).
 

@@ -45,7 +45,7 @@ ONBOARDING (one-time)  →  STAGE 0           →  SESSION START  →  STAGE 1  
 | Stage | Owning skill | Output |
 | ----- | ------------ | ------ |
 | **Onboarding** (one-time) | `project-discovery` (discovery) + `/adapt-framework` (KATA adaptation) | `CLAUDE.md`, `.context/` artifacts, and KATA wired to the target stack |
-| **0 — Shift-Left QA** (pre-sprint, batch) | `shift-left-testing` | Refined ACs + gap-spotting + ATP DRAFT outlines per Story, label `shift-left-reviewed`, Story transitioned `backlog → shift_left_qa → estimation` for PO/Dev to estimate |
+| **0 — Shift-Left QA** (pre-sprint, batch) | `shift-left-testing` | Refined ACs + gap-spotting + pre-sprint ATP (outline maturity, authored into the `{{jira.acceptance_test_plan}}` field — the Test Plan item is created later by `sprint-testing` Stage 1) per Story, label `shift-left-reviewed`, Story transitioned `backlog → shift_left_qa → estimation` for PO/Dev to estimate |
 | **1 — Planning** (in-sprint) | `sprint-testing` | ATP + TCs linked to ACs (short-circuits Phases 1-3 when the Story carries a fresh `shift-left-reviewed` label) |
 | **2 — Execution** | `sprint-testing` | Smoke + trifuerza (UI/API/DB) exploration, evidence captured |
 | **3 — Reporting** | `sprint-testing` | ATR, bug tickets, QA comment on the source ticket |
@@ -135,8 +135,12 @@ The rest of this document describes how that strategy is implemented in code and
 | **Command**           | A one-shot utility stored under `.claude/commands/<name>.md`. Invoked explicitly with `/<name>`. No auto-triggering.          |
 | **Subagent**          | A specialist worker dispatched by a skill for a focused task (planning, execution, reporting, verification).                 |
 | **Persistent Memory** | Facts that survive across conversations — user preferences, project rules, team decisions.                                   |
-| **ATP**               | Acceptance Test Plan. The risk triage and scenario design produced in Stage 1 (Planning).                                    |
+| **ATP**               | Acceptance Test Plan. The risk triage and scenario design; authored pre-sprint into the `{{jira.acceptance_test_plan}}` field (Stage 0), materialized as a Test Plan item in Stage 1 (Planning). |
 | **ATR**               | Acceptance Test Results. The report filed in Stage 3 (Reporting).                                                            |
+| **ATS**               | Acceptance Test Set. The mandatory per-Story Test Set (`ATS: {STORY-KEY}: {story title}`) whose link to the Story provides coverage; ATP/ATR test lists derive from its membership. |
+| **FTP**               | Feature Test Plan. One per feature Epic, maintained by `sprint-testing`'s feature-test-planning as living context.           |
+| **STP**               | Sprint Test Plan. One per sprint, opened at sprint start by `sprint-testing` (fallback: `regression-testing`), closed at sprint end. |
+| **STR**               | Sprint Test Results. One per sprint, the sprint-close recap execution (`STR: Sprint#{N}: Regression Testing`).               |
 | **TC**                | Test Case. A single, traceable verification linked to an acceptance criterion.                                               |
 | **ATC**               | Acceptance Test Case. A TC implemented as code, carrying an `@atc('{{PROJECT_KEY}}-XXX-TC#')` decorator.                     |
 | **PBI**               | Product Backlog Item. In this repo, the local folder (`.context/PBI/...`) that stores per-ticket and per-module knowledge.   |

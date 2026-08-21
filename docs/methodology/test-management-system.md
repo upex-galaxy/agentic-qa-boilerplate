@@ -618,29 +618,27 @@ QA (Main Dashboard)
 ├── 📄 Test Strategy (single document)
 │   └── Defines overall testing approach, tools, environments
 │
-├── 📄 Master Test Plan (single document)
-│   └── Scope, schedule, resources, entry/exit criteria
+├── 📁 QA Master Test Plan (MTP — Epic, mirrored by .context/master-test-plan.md)
+│   ├── 📋 FTP: {EPIC-KEY}: {feature}          (Feature Test Plan — 1 per feature)
+│   ├── 📋 STP: Sprint#{N}: {objective}        (Sprint Test Plan — 1 per sprint)
+│   └── 📋 ATP: {STORY-KEY}: {story title}     (Acceptance Test Plan — 1 per Story)
 │
-├── 📁 Test Repository (like a Roadmap/Epic container)
-│   │
+├── 📁 QA Test Repository (every Test / TC)
 │   ├── 📁 Module A
-│   │   ├── 📋 Test Suite: Feature A1
-│   │   │   ├── TC-001: Test Case 1
-│   │   │   ├── TC-002: Test Case 2
-│   │   │   └── TC-003: Test Case 3
-│   │   └── 📋 Test Suite: Feature A2
-│   │
+│   │   ├── TC-001: Test Case 1
+│   │   ├── TC-002: Test Case 2
+│   │   └── TC-003: Test Case 3
 │   ├── 📁 Module B
-│   │
 │   └── 📁 Module C
 │
-├── 📁 Test Runs (by Regression)
-│   ├── 📋 Regression [Environment] Sprint X
-│   ├── 📋 Regression [Environment] Sprint Y
-│   └── 📋 Regression [Environment] Sprint Z
+├── 📁 QA Test Artifacts (Test Executions, Test Sets, Preconditions)
+│   ├── 📋 ATS: {STORY-KEY}: {story title}     (per-Story Test Set — mandatory, drives coverage)
+│   ├── 📋 TS: {EPIC|module}: Validate {feature} (feature-level Test Set — optional)
+│   ├── 📋 STR: Sprint#{N}: Regression Testing (sprint-close recap)
+│   └── 📋 ATR: {STORY-KEY}: Story Testing     (per-Story execution)
 │
 ├── 📊 RTM (Requirements Traceability Matrix)
-│   └── Features linked to Test Suites, Test Cases, and Defects
+│   └── Stories linked to Test Sets (coverage), Test Cases, and Defects
 │
 └── 📁 Reports
     ├── 📄 Sprint Test Summary
@@ -985,8 +983,14 @@ Uses their technical expertise to:
 | **IQL**                | Integrated Quality Lifecycle - methodology that replaces STLC             |
 | **TMLC**               | Test Manual Life Cycle - stages 1-4 for manual testing activities         |
 | **TALC**               | Test Automation Life Cycle - stages 1-4 for automation activities         |
+| **MTP**                | Master Test Plan - ONE per project; the `QA Master Test Plan` Epic mirrored by `.context/master-test-plan.md` |
 | **FTP**                | Feature Test Plan - ONE per feature/Epic, a living document refined across the epic; feeds every child story's ATP |
-| **ATP**                | Acceptance Test Plan - ONE per User Story; hypotheses/outlines created before testing |
+| **STP**                | Sprint Test Plan - ONE per sprint (`STP: Sprint#{N}: {objective}`); living planner opened at sprint start, updated per tested ticket, closed at sprint end |
+| **STR**                | Sprint Test Results - ONE per sprint (`STR: Sprint#{N}: Regression Testing`); the sprint-close recap of all results |
+| **ATP**                | Acceptance Test Plan - ONE per User Story; pre-sprint it lives in the `{{jira.acceptance_test_plan}}` field (outline maturity), the Test Plan item is born in sprint Stage 1 |
+| **ATR**                | Acceptance Test Results - ONE per User Story; the Test Execution reporting what was run and found |
+| **ATS**                | Acceptance Test Set - ONE per User Story, mandatory; the Test Set whose link to the Story provides coverage, and whose membership drives the ATP/ATR test lists |
+| **TS**                 | Feature-level Test Set (`TS: {scope}: Validate {feature}`) - optional grouping for smoke / regression / feature scopes |
 | **Early-Game**         | Prevention phase (Steps 1-4) - QA Analyst led                             |
 | **Mid-Game**           | Detection phase (Steps 5-9) - QA Automation Engineer led                  |
 | **Late-Game**          | Observation phase (Steps 10-15) - QA + DevOps/SRE                         |
