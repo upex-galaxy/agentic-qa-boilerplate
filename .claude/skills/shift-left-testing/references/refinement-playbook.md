@@ -46,7 +46,7 @@ The Refinement subagent's job is to produce a high-signal artifact for PO + Dev 
 | Module context (if it exists) | `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/module-context.md` (module = Epic, 1:1) |
 | Code (light read) | `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` + `{{FRONTEND_REPO}}/{{FRONTEND_ENTRY}}` — read enough to confirm feasibility, NOT to reproduce |
 | Common gap catalog | `refinement-questions.md` (this skill) |
-| ATP draft skeleton | `atp-draft-template.md` (this skill) |
+| ATP outline skeleton | `atp-outline-template.md` (this skill) |
 
 ---
 
@@ -58,7 +58,7 @@ The Refinement subagent's job is to produce a high-signal artifact for PO + Dev 
   shift-left-refinement.md     # NON-Jira working file — this subagent's deliverable
 ```
 
-`shift-left-refinement.md` follows the skeleton in `atp-draft-template.md`. Both files are NON-Jira working artifacts authored locally. Jira-mirrored files (story.md, acceptance-criteria.md, etc.) are produced ONLY by the sync — NEVER hand-write them.
+`shift-left-refinement.md` follows the skeleton in `atp-outline-template.md`. Both files are NON-Jira working artifacts authored locally. Jira-mirrored files (story.md, acceptance-criteria.md, etc.) are produced ONLY by the sync — NEVER hand-write them.
 
 The subagent must NOT touch Jira. Phase 3 of the orchestrator skill owns all Jira mutations.
 
@@ -170,7 +170,7 @@ Format: `Should <BEHAVIOR> <CONDITION>`. Same as `acceptance-test-planning.md` �
 - `Should display "Code expired" error after OTP entry with code older than 5 minutes`
 - `Should reject negative refund amount on POST /refunds`
 
-Capture in `## Phase 4 — Test Outlines (DRAFT)` section of `shift-left-refinement.md`. Include the coverage estimate table at the top, then the outline list grouped by Type (Positive / Negative / Boundary / Integration).
+Capture in `## Phase 4 — Test Outlines (outline names only)` section of `shift-left-refinement.md`. Include the coverage estimate table at the top, then the outline list grouped by Type (Positive / Negative / Boundary / Integration).
 
 ---
 
@@ -184,7 +184,7 @@ Read sprint-testing/references/acceptance-test-planning.md §"Phase 5 — Edge c
 | Test-data categories table | **EXCLUDE**. Deferred to in-sprint. |
 | Data generation strategy (Static / Faker / Cleanup) | **EXCLUDE**. Deferred to in-sprint. |
 
-Capture in `## Phase 5 — Edge Cases (DRAFT)` section of `shift-left-refinement.md`.
+Capture in `## Phase 5 — Edge Cases (outline)` section of `shift-left-refinement.md`.
 
 ---
 
@@ -249,7 +249,7 @@ The orchestrator presents the per-Story summary to the user, waits for OK, then 
 ## Checklist before returning to the orchestrator
 
 - [ ] PBI folder bootstrapped (created or detected); minimal `context.md` written if missing
-- [ ] `shift-left-refinement.md` written with sections Phase 1 / Phase 2 / Phase 3 / Phase 4 (DRAFT) / Phase 5 (DRAFT) / Story Quality Assessment / Critical Questions / Tech Questions / Suggested Story Improvements / Data feasibility flags / Recommended testing strategy
+- [ ] `shift-left-refinement.md` written with sections Phase 1 / Phase 2 / Phase 3 / Phase 4 (outline names only) / Phase 5 (outline) / Story Quality Assessment / Critical Questions / Tech Questions / Suggested Story Improvements / Data feasibility flags / Recommended testing strategy
 - [ ] All inferred scenarios + edge cases carry `NEEDS PO/DEV CONFIRMATION`
 - [ ] Phase 4 coverage estimate table included; per-outline test-data JSON NOT included
 - [ ] Phase 5 edge-case names included; test-data generation strategy NOT included

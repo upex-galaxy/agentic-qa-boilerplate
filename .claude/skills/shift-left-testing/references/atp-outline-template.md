@@ -1,14 +1,14 @@
-# ATP DRAFT Template — Skeleton for `shift-left-refinement.md`
+# ATP Outline Template — Skeleton for `shift-left-refinement.md`
 
 > **Subagent context**: this file is the "Context docs" template the Phase 2 Refinement subagent writes into the Story's PBI folder (see `shift-left-testing/SKILL.md` §Phase 2 and `refinement-playbook.md`).
 
-This is the **DRAFT** ATP body used during pre-sprint Shift-Left. Different from sprint-testing's full ATP (`acceptance-test-planning.md`) — see §Differences from sprint-testing's ATP below.
+This is the pre-sprint ATP body at **outline maturity**. It is the Story's single, real ATP — `/sprint-testing` Stage 1 later refines the SAME field and SAME Test Plan issue into the executable superset (see `acceptance-test-planning.md` for that stage's full body). What changes between the two passes is scope, not identity.
 
-The skeleton below is the canonical body for `shift-left-refinement.md`. The same body is mirrored byte-for-byte in Jira during Phase 3 (custom field `{{jira.acceptance_test_plan}}` + Story description QA Refinements section + comment mirror).
+The skeleton below is the canonical body for `shift-left-refinement.md`, the `[LOCAL]` staging buffer. Phase 3 publishes it to Jira (custom field `{{jira.acceptance_test_plan}}` + Story description QA Refinements section); the Phase 3 comment is a POINTER to the field — full body in a comment only in fallback mode when the field is absent (see `handoff-protocol.md`).
 
-> **ATP DRAFT item title** — the `# Shift-Left Refinement: …` heading below is only the local file heading. When Phase 3 publishes the DRAFT (see `handoff-protocol.md` Step 2), by excellence it is a real **Test Plan** issue titled `ATP: {STORY-KEY}: {story title}`, parented to the **QA Master Test Plan** epic. The Story custom field is a **fallback ONLY** when the Test Plan work type is unavailable.
+> **ATP item title** — the `# Shift-Left Refinement: …` heading below is only the local file heading. When Phase 3 publishes (see `handoff-protocol.md` Step 2), by excellence it is a real **Test Plan** issue titled `ATP: {STORY-KEY}: {story title}`, parented to the **QA Master Test Plan** epic — never a title variant. The Story custom field is a **fallback ONLY** when the Test Plan work type is unavailable.
 
-> **Before Phase 3 publishes ATP DRAFT body to Jira rich-text fields**, read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
+> **Before Phase 3 publishes the ATP body to Jira rich-text fields**, read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
 
 ---
 
@@ -120,7 +120,7 @@ If Partial / No, list issues:
 
 ---
 
-## Phase 4 — Test Outlines (DRAFT — outline names only)
+## Phase 4 — Test Outlines (outline names only)
 
 ### Coverage estimate
 | Type | Count | Notes |
@@ -156,7 +156,7 @@ If Partial / No, list issues:
 
 ---
 
-## Phase 5 — Edge Cases (DRAFT)
+## Phase 5 — Edge Cases (outline)
 
 | # | Edge case | In original Story? | Criticality | Action |
 |---|-----------|-------------------|-------------|--------|

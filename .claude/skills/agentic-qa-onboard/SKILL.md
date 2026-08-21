@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-onboard
-description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Backlog → Shift-Left QA → Estimation → Ready For Dev → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production), /shift-left-testing for pre-sprint AC refinement on backlog Stories, /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /framework-development for boilerplate evolution, MCPs available (Context7, Tavily, Atlassian, Playwright, DBHub, OpenAPI, Postman), critical env vars. ALSO the front desk for anyone who is lost or wants to understand how the repo or any workflow skill works — conceptually AND visually: it explains in plain human language (suspending caveman/compressed register) and can open per-skill how-it-works presentations (Spanish, technical terms in English) in the user's default browser after asking. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`, `I don't know how to use this`, `how does sprint-testing / test-automation work`, `how does this skill work`, `show me how it works`, `teach me how QA works here`, `walk me through this skill`, `no sé cómo usar esto`, `no entiendo cómo funciona el repo`, `cómo funciona este skill`, `explícame cómo funciona`, `enséñame cómo se hace`. Do NOT use for: pre-sprint refinement (use /shift-left-testing), feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing)."
+description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Backlog → Shift-Left QA → Estimation → Ready For Dev → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production), /shift-left-testing for pre-sprint AC refinement on backlog Stories, /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /framework-development for boilerplate evolution, MCPs available (six canonical: Context7, Tavily, Playwright, DBHub, OpenAPI, Postman — Atlassian is opt-in via docs/mcp/), critical env vars. ALSO the front desk for anyone who is lost or wants to understand how the repo or any workflow skill works — conceptually AND visually: it explains in plain human language (suspending caveman/compressed register) and can open per-skill how-it-works presentations (Spanish, technical terms in English) in the user's default browser after asking. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`, `I don't know how to use this`, `how does sprint-testing / test-automation work`, `how does this skill work`, `show me how it works`, `teach me how QA works here`, `walk me through this skill`, `no sé cómo usar esto`, `no entiendo cómo funciona el repo`, `cómo funciona este skill`, `explícame cómo funciona`, `enséñame cómo se hace`. Do NOT use for: pre-sprint refinement (use /shift-left-testing), feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing)."
 license: MIT
 compatibility: [claude-code, opencode]
 phase: bootstrap
@@ -129,7 +129,7 @@ Run the interactive installer once after cloning:
 bun run setup
 ```
 
-This bootstraps `.agents/`, installs the gentle-ai `engram` component (minimal preset), configures the 7 canonical MCPs, downloads Playwright browsers, installs 6 user-level community skills + 3 project-level community skills, and writes `.mcp.json`. Full details in [`INSTALLER.md`](../../../INSTALLER.md).
+This bootstraps `.agents/`, installs the gentle-ai `engram` component (minimal preset), configures the 6 canonical MCPs, downloads Playwright browsers, installs 7 user-level community skills + 3 project-level community skills, and verifies the `${VAR}` placeholders in the committed `.mcp.json` against your `.env`. Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 After setup, fill `.env` with the credentials the rest of the workflow expects (see "Critical env vars" below).
 
@@ -141,7 +141,7 @@ The QA work in this boilerplate runs in two halves: a pre-sprint Shift-Left groo
 
 | Stage | Skill                  | When                | What happens                                                                              |
 | ----- | ---------------------- | ------------------- | ----------------------------------------------------------------------------------------- |
-| 0     | `/shift-left-testing`  | PRE-SPRINT (batch)  | AC refinement on N backlog Stories, gap-spotting, ATP DRAFT outlines, transition `backlog → shift_left_qa → estimation`. Adds label `shift-left-reviewed`. |
+| 0     | `/shift-left-testing`  | PRE-SPRINT (batch)  | AC refinement on N backlog Stories, gap-spotting, early authoring of the Story's single ATP (outline maturity — same field + same Test Plan that `/sprint-testing` Stage 1 later refines), transition `backlog → shift_left_qa → estimation`. Adds labels `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` (the dated one powers the <30-day short-circuit). |
 | 1-3   | `/sprint-testing`      | IN-SPRINT (ticket)  | Per-ticket: Planning → Execution → Reporting. Smoke + trifuerza (UI/API/DB) exploration. Short-circuits Phases 1-3 if Stage 0 ran <30 days ago. |
 | 4     | `/test-documentation`  | IN-SPRINT (post-QA) | Document test cases in TMS (Test/ATP/ATR). ROI prioritization (Candidate/Manual/Deferred).|
 | 5     | `/test-automation`     | POST-SPRINT         | KATA-compliant E2E + API tests on Playwright. Plan → Code → Review.                       |
@@ -159,7 +159,11 @@ Backlog → Shift-Left QA → Estimation → Ready For Dev → In Progress → I
 
 (For bugs found during QA: `Open → In Progress → In Review → Ready For QA → Closed` — the `ReTest Passed` transition closes it after fix verification. Non-fix terminals: `Deferred`, `Duplicated`, `Enhancement`, `Cannot Reproduce`, `REJECTED`, `ABORTED`.)
 
-`/sprint-testing` orchestrates Stages 1-3. Stage 4 onwards are explicit hand-offs.
+(Test cases in the TMS have their own lifecycle too: `READY → In Review → Candidate → In Automation → Pull Request → AUTOMATED` — `MANUAL` is the terminal for tests that will never be automated.)
+
+Two conventions apply to every quality issue you file along the way. **Components** are the target app's functional modules — mandatory on bugs, defects, improvements, and Tests — and are reconciled against the app's real modules via `/jira-components`. And bugs parent to the QA process epics (e.g. "QA Defect Management"), never a product/dev epic, carrying the source Story via an issue-link: parent = QA bucket, link = source Story, components = product module (the three-axis model).
+
+`/sprint-testing` orchestrates Stages 1-3. Stage 4 onwards are explicit hand-offs. Wondering what is already covered before Stage 4/5? `bun run tests:map` renders the synced Epic → Story → Test tree (plus orphans and a component rollup) as one HTML page, and the `/xray-cli` skill's `test enrich` command backfills the synced Test cache with the Xray-internal associations (Preconditions, Test Set membership) the Jira REST sync cannot see.
 
 ### Stage 1-3 example flow
 
@@ -172,7 +176,7 @@ Backlog → Shift-Left QA → Estimation → Ready For Dev → In Progress → I
 5. Executes smoke + trifuerza exploration (UI / API / DB).
 6. Files ATR (Acceptance Test Results) + bug reports if defects found.
 7. Transitions the ticket through QA states.
-8. Hands off to Stage 4 (`/test-documentation`) when a Candidate test case should be promoted to TMS.
+8. Hands off to Stage 4 (`/test-documentation`) to document the executed test cases in the TMS and score ROI — Stage 4's Candidate verdicts are what feed `/test-automation`.
 
 You confirm at the gates.
 
@@ -193,26 +197,27 @@ You confirm at the gates.
 
 ## MCPs available
 
-Seven canonical MCPs ship with the boilerplate:
+Six canonical MCPs ship with the boilerplate:
 
 | MCP        | Use it for                                                              |
 | ---------- | ----------------------------------------------------------------------- |
 | Context7   | Official library docs (Playwright, KATA-relevant TS, Allure…)           |
 | Tavily     | Web search, troubleshooting community Q&A                               |
-| Atlassian  | Jira ticket reads, transitions, comment posting                         |
 | Playwright | Live browser interactions for exploratory QA (when CLI is not enough)   |
 | DBHub      | DB queries to validate state-mutating tests                             |
 | OpenAPI    | API endpoint exploration, contract checking                             |
 | Postman    | Saved request collections, request replay for API tests                 |
 
+The **Atlassian MCP is opt-in** (setup in `docs/mcp/`) — the primary Jira tools are `/acli` and `bun run jira:sync-issues`.
+
 **Decision rule:**
 
 - Use **Context7** for "how to use X" — official docs, current API
 - Use **Tavily** for "how to solve X" — community fixes, troubleshooting
-- Use **Atlassian**/`/acli` for ticket WRITES (create, transition, comment, link); for detailed READS (custom fields, ACs, ATP/ATR, comments) use `bun run jira:sync-issues get`/`jql`
+- Use `/acli` for ticket WRITES (create, transition, comment, link); for detailed READS (custom fields, ACs, ATP/ATR, comments) use `bun run jira:sync-issues get`/`jql`
 - Use **Playwright MCP** for ad-hoc live browser interactions; for scripted runs use `/playwright-cli`
 
-`.mcp.json` lives at the repo root and is **gitignored** (it contains secrets).
+`.mcp.json` lives at the repo root and is **committed** — it is secret-free, referencing secrets as `${VAR}` placeholders resolved from `.env`. Only `.mcp.local.json` (personal overrides) is gitignored.
 
 ---
 
@@ -224,14 +229,14 @@ Place these in `.env` before running anything that talks to a real environment:
 | ------------------------------------------------ | -------------------------------------------------- |
 | `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD`       | Local app login (Playwright fixtures)              |
 | `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD`   | Staging smoke tests, manual exploration            |
-| `ATLASSIAN_EMAIL` / API token                    | `acli` Jira CLI + Atlassian MCP. The site HOST is NOT in `.env` — it lives in `.agents/project.yaml` -> `issue_tracker.atlassian_url`; read it with `bun run --silent jira:url` |
+| `ATLASSIAN_EMAIL` / API token                    | `acli` Jira CLI (+ Atlassian MCP, if opted in). The site HOST is NOT in `.env` — it lives in `.agents/project.yaml` -> `issue_tracker.atlassian_url`; read it with `bun run --silent jira:url` |
 | `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET`          | `bun xray` CLI (Xray Cloud authentication)         |
 | `TAVILY_API_KEY`                                 | Tavily MCP                                         |
 | `POSTMAN_API_KEY`                                | Postman MCP                                        |
 
 `.env` is **gitignored**. Never commit it. `.agents/project.yaml` (committed) holds non-secret context (URLs, project key, environment names); `.env` holds the matching secrets.
 
-`.mcp.json` is also **gitignored** — it holds the wired-up MCP configuration with secrets resolved.
+`.mcp.json` is **committed** and safe to commit — it never holds a secret value, only `${VAR}` placeholders that Claude Code resolves from `.env` at runtime. Personal overrides go in the gitignored `.mcp.local.json`.
 
 Verify your config with `bun run vars:check` (should report 0 errors when fully configured).
 
@@ -244,13 +249,14 @@ Verify your config with `bun run vars:check` (should report 0 errors when fully 
 | `agentic-qa-core`    | (auto, cited by other skills) | Passive reference host: briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy |
 | `agentic-qa-onboard` | `/agentic-qa-onboard`  | This skill — first-time orientation                                            |
 | `project-discovery`  | `/project-discovery`   | 4-phase reverse-engineering of a target project                                |
-| `shift-left-testing` | `/shift-left-testing`  | Stage 0 — pre-sprint AC refinement on a batch of backlog Stories. Drafts ATP, transitions `backlog → shift_left_qa → estimation`. |
-| `sprint-testing`     | `/sprint-testing`      | Stages 1-3 — per-ticket manual QA loop. Short-circuits Phases 1-3 when label `shift-left-reviewed` is fresh. |
+| `shift-left-testing` | `/shift-left-testing`  | Stage 0 — pre-sprint AC refinement on a batch of backlog Stories. Authors the Story's ATP early, transitions `backlog → shift_left_qa → estimation`. |
+| `sprint-testing`     | `/sprint-testing`      | Stages 1-3 — per-ticket manual QA loop. Short-circuits Phases 1-3 when the dated `shift-left-{YYYY-MM-DD}` label is <30 days old. |
 | `test-documentation` | `/test-documentation`  | Stage 4 — TMS test case authoring + ROI                                        |
 | `test-automation`    | `/test-automation`     | Stage 5 — KATA + Playwright + TS automation                                    |
 | `regression-testing` | `/regression-testing`  | Stage 6 — CI suite execution + GO/NO-GO verdict                                |
-| `playwright-cli`     | `/playwright-cli`      | Browser automation CLI helpers                                                 |
-| `playwright-best-practices` | `/playwright-best-practices` | Reference skill: flaky-test fixes, POM, accessibility (axe-core), auth/OAuth, fixtures, tags, perf budgets, i18n. Auto-loads alongside `/test-automation` |
+| `framework-development` | `/framework-development` | Framework evolution of the boilerplate itself — KATA bases, fixtures, cli/, scripts/. Plan → Code → Verify → Archive |
+| `bug-screenshot-annotation` | "annotate bug screenshot" | Turns a raw bug screenshot into annotated evidence (circles, arrows, callouts) rendered 100% locally |
+| `pr-review-lead`     | "review this PR"       | QA Lead review of a PR's test-automation work against KATA (or the target repo's) doctrine |
 | `acli`               | `/acli`                | Atlassian CLI wrapper for Jira/Confluence terminal work                        |
 | `xray-cli`           | `/xray-cli`            | Xray Cloud TMS CLI                                                             |
 | `git-flow-master`    | (auto on git intents)  | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)       |
@@ -274,7 +280,7 @@ Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 ## Community skills installed at user level
 
-`bun run setup` also runs `bunx skills add --global` for 6 cross-project skills:
+`bun run setup` also runs `bunx skills add --global` for 7 cross-project skills:
 
 | Skill | Source | Use |
 | --- | --- | --- |
@@ -284,6 +290,7 @@ Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 | `brainstorming` | obra/superpowers | Pre-implementation discovery |
 | `html-ppt` | lewislulu/html-ppt-skill | HTML presentation authoring |
 | `bun` | bun.sh/docs | Bun runtime reference |
+| `wokitoki` | upex-galaxy/agentic-user-skills | Human-in-the-loop feedback UI (`toki`) for anchored, point-by-point answers |
 
 Plus 3 project-level community skills installed into `.claude/skills/` (not committed): `playwright-cli`, `playwright-best-practices`, `resend-cli`. See `cli/install.ts` `PROJECT_LEVEL_SKILLS` and `USER_LEVEL_SKILLS` arrays.
 
@@ -299,6 +306,7 @@ Run through this checklist before you reach for your first ticket:
 - [ ] Does `bun run vars:check` exit clean (0 errors)?
 - [ ] Did you run `bun run jira:check` to verify Jira credentials?
 - [ ] Did you run `bun run pw:install` to get Playwright browsers?
+- [ ] Did you run `bun run context:hydrate` to build the `.context/PBI/` Jira cache? (gitignored and regenerable — Jira stays the source of truth)
 - [ ] Does engram persistent memory respond (try `mem_context` after restart)?
 - [ ] Ready for your first QA ticket: `/sprint-testing <UPEX-XXX>`
 

@@ -4,14 +4,14 @@
       "name": "should-trigger-first-time-orientation",
       "prompt": "I just cloned this QA repo. First time using it — where do I start?",
       "expected_skill": "agentic-qa-onboard",
-      "expected_behavior": "Activates agentic-qa-onboard. Explains the stack (Playwright + KATA + Allure + Xray), points at `bun run setup` for installation, walks through the 6-stage QA pipeline (Stages 1-3 in /sprint-testing, Stage 4 /test-documentation, Stage 5 /test-automation, Stage 6 /regression-testing) and the /sdd-* hand-off matrix, lists the 7 canonical MCPs, lists critical env vars, and ends with a checklist of next steps. Does NOT start testing or implementing anything.",
+      "expected_behavior": "Activates agentic-qa-onboard. Explains the stack (Playwright + KATA + Allure + Xray), points at `bun run setup` for installation, walks through the 6-stage QA pipeline (Stages 1-3 in /sprint-testing, Stage 4 /test-documentation, Stage 5 /test-automation, Stage 6 /regression-testing) and the /framework-development hand-off for boilerplate evolution, lists the 6 canonical MCPs, lists critical env vars, and ends with a checklist of next steps. Does NOT start testing or implementing anything.",
       "category": "positive"
     },
     {
       "name": "should-trigger-onboard-me",
       "prompt": "Onboard me to QA. I've never used an AI-driven QA workflow before.",
       "expected_skill": "agentic-qa-onboard",
-      "expected_behavior": "Activates agentic-qa-onboard as a guided tour. Explains the boilerplate, the locked stack, the workflow split between /sprint-testing (in-sprint ticket QA) and /sdd-* (spec-driven framework refactors), the MCP decision rule (Context7 vs Tavily), and the env vars required. Hands off to /sprint-testing for the user's first QA ticket.",
+      "expected_behavior": "Activates agentic-qa-onboard as a guided tour. Explains the boilerplate, the locked stack, the workflow split between /sprint-testing (in-sprint ticket QA) and /framework-development (boilerplate framework refactors), the MCP decision rule (Context7 vs Tavily), and the env vars required. Hands off to /sprint-testing for the user's first QA ticket.",
       "category": "positive"
     },
     {

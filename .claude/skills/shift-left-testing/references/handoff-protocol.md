@@ -1,11 +1,11 @@
 # Handoff Protocol — Phase 3 (Per-Story Jira Mutation + Batch Report)
 
-> **Subagent context**: this file is the "Context docs" reference for the Phase 3 Handoff subagent + Batch Report subagent (see `shift-left-testing/SKILL.md` §Subagent Dispatch Strategy and §Phase 3). Owns Jira mutations + final report only — refinement content comes from `atp-draft-template.md` and the per-Story `shift-left-refinement.md`.
+> **Subagent context**: this file is the "Context docs" reference for the Phase 3 Handoff subagent + Batch Report subagent (see `shift-left-testing/SKILL.md` §Subagent Dispatch Strategy and §Phase 3). Owns Jira mutations + final report only — refinement content comes from `atp-outline-template.md` and the per-Story `shift-left-refinement.md`.
 
 The Handoff subagent runs ONCE PER REFINED STORY. The Batch Report subagent runs ONCE PER SESSION at the end. Both are dispatched sequentially.
 
 This reference defines:
-1. Per-Story Jira mutation sequence (description update, ATP DRAFT field, comment mirror, labels, transition, trace verify).
+1. Per-Story Jira mutation sequence (description update, ATP population, handoff comment, labels, transition, trace verify).
 2. Branching per TMS modality.
 3. Transition guardrails (stop at `estimation`).
 4. Batch report template + epic-comment posting rules.
@@ -46,7 +46,7 @@ After writing, run `bun run jira:sync-issues get {STORY_KEY} --include-comments`
 
 ### Step 1b — Append supporting analysis to Story description
 
-Append a "QA Refinements (Shift-Left Analysis)" section to the Story description. The section body is a CONDENSED extract of the SUPPORTING analysis from `shift-left-refinement.md` (refined ACs themselves live in the `acceptance_criteria` field from Step 1a) — full body goes into the ATP custom field (Step 2) and comment mirror (Step 3). Description should be readable in the Jira UI without scrolling forever.
+Append a "QA Refinements (Shift-Left Analysis)" section to the Story description. The section body is a CONDENSED extract of the SUPPORTING analysis from `shift-left-refinement.md` (refined ACs themselves live in the `acceptance_criteria` field from Step 1a) — the full body goes into the ATP (Step 2); the Step 3 comment is a pointer to it. Description should be readable in the Jira UI without scrolling forever.
 
 Description section template:
 
@@ -69,7 +69,7 @@ Description section template:
 ### Technical Questions for Dev
 {Numbered list — copy verbatim from §Technical Questions for Dev.}
 
-> Full refinement (Phases 1-5, outline DRAFT, risk + data feasibility) lives in the ATP DRAFT custom field and the canonical comment below.
+> Full refinement (Phases 1-5, coverage outlines, risk + data feasibility) lives in the ATP — the Test Plan issue or the `{{jira.acceptance_test_plan}}` field (Step 2).
 ```
 
 ```
@@ -107,7 +107,7 @@ Branch on modality (resolved in Phase 0.1).
 
 > Resolve the link type by slug only and verify direction after creation — see `agentic-qa-core/references/traceability-linking.md` (§2 slug resolution, §4 directionality + mandatory verification).
 
-Then ALSO populate the custom field on the Story so the field+comment mirror works the same as Modality jira-native:
+Then ALSO populate the custom field on the Story so field-based reads work the same as Modality jira-native:
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -140,7 +140,7 @@ Jira is the source of truth: the ATP lives in the `{{jira.acceptance_test_plan}}
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
   body: |
-    ## Acceptance Test Plan (ATP) — pre-sprint draft ready for review
+    ## Acceptance Test Plan (ATP) — ready for pre-sprint review
     {@PO_HANDLE} {@DEV_LEAD_HANDLE}
     The ATP lives in the {{jira.acceptance_test_plan}} field.
     # FALLBACK ONLY (field absent): replace the pointer line above with the full staged refinement body.
@@ -216,8 +216,8 @@ bun run jira:sync-issues get {STORY_KEY} --include-comments
 # then read the synced field files + comments.md. Verify:
 #   - acceptance_criteria field (or "## Acceptance Criteria" fallback comment) != empty
 #   - field {{jira.acceptance_test_plan}} != empty
-#   - last comment body starts with "=== Shift-Left Refinement:"
-#   - field body == comment body (after stripping the "=== Shift-Left Refinement: ===" header and footer)
+#   - handoff comment "## Acceptance Test Plan (ATP)" present and points to the field
+#     (full body inline ONLY in fallback mode — field absent on this instance)
 ```
 
 ### Step 7 — Return per-Story log
@@ -332,7 +332,7 @@ Sorted by risk + dependency:
 1. **Always write** the file under `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/batch-report.md`.
 2. **If all refined Stories share ONE parent epic**, post the batch report as a comment on that epic — the team grooms by epic, so the report lands where decision-makers look.
 3. **If Stories span multiple epics or have no common parent**, do NOT post to any epic — deliver inline to the user as the session-closing message.
-4. **Never post the report on every Story**. The per-Story comment is already mirrored in Step 3; the batch report is a session-level artifact.
+4. **Never post the report on every Story**. The per-Story handoff comment already landed in Step 3; the batch report is a session-level artifact.
 
 ---
 
@@ -351,7 +351,7 @@ Each step is idempotent:
 | Step 1 description | If "QA Refinements (Shift-Left Analysis)" section already present → skip |
 | Step 2 ATP field | Overwrite OK — field is single-value |
 | Step 2 Test Plan create (Modality jira-xray) | Search by title before creating — link existing if found |
-| Step 3 comment | If a comment matching `=== Shift-Left Refinement: {STORY_KEY} ===` exists → skip |
+| Step 3 comment | If a comment headed `## Acceptance Test Plan (ATP)` already exists → skip |
 | Step 4 labels | acli labels operation is set-based; re-running adds nothing |
 | Step 5 transition | Read current status before transitioning; skip if already at target |
 | Step 6 trace | Always re-verify |
@@ -361,7 +361,7 @@ Each step is idempotent:
 ## Gotchas
 
 1. **Description append, never overwrite.** Read first, append second.
-2. **Custom field + comment must be byte-for-byte mirrors.** `fix-traceability` checks this. Diff = traceability error.
+2. **The comment is a pointer, not a mirror.** When `{{jira.acceptance_test_plan}}` exists, the handoff comment only points to the field — never paste the full body. The full body goes in the comment ONLY in fallback mode (field absent). `fix-traceability` checks the field, or the fallback comment when the field is absent.
 3. **Transition guardrail.** STOP at `estimation`. Stories past that point keep the refinement (description + field + comment + labels) but skip transition.
 4. **Test Plan opt-in is asked ONCE per session in Phase 0**, not per Story.
 5. **Mention discipline.** Only mention PO/Dev-lead handles that are explicitly listed in `.agents/project.yaml`. No guessing.
