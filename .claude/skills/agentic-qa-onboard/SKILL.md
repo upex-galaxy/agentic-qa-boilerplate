@@ -307,7 +307,7 @@ Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 | `brainstorming` | obra/superpowers | Pre-implementation discovery |
 | `html-ppt` | lewislulu/html-ppt-skill | HTML presentation authoring |
 | `bun` | bun.sh/docs | Bun runtime reference |
-| `wokitoki` | upex-galaxy/agentic-user-skills | Human-in-the-loop feedback UI (`toki`) for anchored, point-by-point answers |
+| `mkd` | upex-galaxy/agentic-user-skills | Make Decision: decision-deck browser UI (justified options + copy-JSON contract) |
 
 Plus 3 project-level community skills installed into `.claude/skills/` (not committed): `playwright-cli`, `playwright-best-practices`, `resend-cli`. See `cli/install.ts` `PROJECT_LEVEL_SKILLS` and `USER_LEVEL_SKILLS` arrays.
 

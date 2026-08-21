@@ -60,6 +60,14 @@ The installer aborts hard if the `acli` binary is missing — install it from <h
 
 Each step in Phase 5 records its completion in `state.postInstall` so re-runs skip it on the next `bun run setup`.
 
+### Phase 5b — GIT STRATEGY SETUP (agent-driven, mandatory before your first push)
+
+The scaffold ships a **default** git strategy (`solo-main`) with `strategy_source: inherited` in `.agents/project.yaml` — a placeholder nobody chose for YOUR project. Defining it is an explicit step, not an inherited fact: once your project identity is filled in, ask your AI agent:
+
+> **"set up our git strategy"**
+
+That runs git-flow-master's Strategy Setup: it resolves your branching flow (solo-main / main-integration / sdet / others), asks the merge + hotfix + protection-policy questions, materializes any long-lived branches, and writes the `git_strategy:` block with `strategy_source: chosen`. Until you do this, the agent will offer it on your first git intent, and the synced `pre-push` hook (`bun run git:policy verify`) fails with a message pointing you here — that failure is the signal that this setup is pending, not a bug.
+
 ---
 
 ## Idempotency — re-running setup safely
@@ -391,7 +399,7 @@ Installed with `bunx skills add <package> [--skill <name>] --global --yes` and u
 | `brainstorming`       | `obra/superpowers`         | Pre-implementation ideation (framework features, test design edge cases) — universal |
 | `html-ppt`            | `lewislulu/html-ppt-skill` | HTML presentations for sprint planning / retro / demo decks — universal              |
 | `bun`                 | `bun.sh/docs`              | Bun runtime reference — universal across every project that uses bun                 |
-| `wokitoki`            | `upex-galaxy/agentic-user-skills` | Human-in-the-loop feedback CLI (`toki`) the AI drives mid-conversation to collect structured, anchored answers in a browser UI — universal |
+| `mkd`                 | `upex-galaxy/agentic-user-skills` | Make Decision: decision-deck browser UI the AI drives via a spec JSON (justified options, recommended pick, copy-JSON contract) — universal |
 
 ### Skipping or re-running
 

@@ -73,7 +73,7 @@ Surface them as a **single batched checklist** with `AskUserQuestion` (≤4 ques
 
 **Never ask the user which test types / surfaces to run.** That is the skill's OWN decision, derived from story analysis + veto + risk-scoring in its planning phase (e.g. `sprint-testing` Stage 1). The gate's job is to PROBE and REPORT which surface tools are ready; the planning phase reads that report and picks trifuerza (UI/API/DB), a single surface, or code-review-only on its own. If a surface the planning later selects has a RED tool, surface that remedy then (lazy) — do not front-load a surface menu at the gate.
 
-If a single `AskUserQuestion` round cannot hold the gaps AND the user benefits from seeing the full readiness table while answering, prefer the `wokitoki` skill (point-by-point browser form) over multiple terminal rounds.
+If a single `AskUserQuestion` round cannot hold the gaps AND the user benefits from seeing the full readiness table while answering, prefer the `mkd` skill (decision-deck browser form) over multiple terminal rounds.
 
 GREEN items are reported, not asked.
 
