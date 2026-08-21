@@ -574,7 +574,7 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run format:check`  | Prettier check only  |
 | `bun run format:fix`    | Format with Prettier |
 | `bun run types:check`   | TypeScript check     |
-| `bun run repo:check`    | Full quality suite (format + lint + types + vars + skills + registry + env) — the checks the pre-push hook approximates |
+| `bun run repo:check`    | Full quality suite (format + lint + types + vars + skills + registry + env + git-policy parity) — the checks the pre-push hook approximates |
 | `bun run repo:fix`      | Same suite, auto-fixing format + lint first |
 
 ### Utilities

@@ -16,10 +16,16 @@
 #   - skills:registry:check      unconditional safety net — a commit in the push range may
 #                                have changed the registry without pre-commit catching it.
 #   - kata:manifest:check        unconditional safety net — same rationale as the registry.
+#   - git:policy verify          declared git_strategy vs the host's enforced ruleset —
+#                                pre-push is exactly when that parity matters. Hook-safe by
+#                                design: an unreachable host (offline, no gh, no auth) warns
+#                                and exits 0 (absence of data is not drift), and divergences
+#                                listed in git_strategy.policy.accepted_divergences report
+#                                as ACCEPTED, not drift. Only UNACCEPTED drift blocks a push.
 #
 # Commands are INLINED (not an aggregate npm script) on purpose: this hook syncs to
 # downstream projects via the boilerplate updater's `husky` directory component, and must
 # never depend on a package.json script key that could land in a separate, partially-applied
 # sync phase. Every command below already exists in every scaffolded project.
 # The full suite (incl. types/vars/skills) lives in `repo:check` for CI / manual runs.
-bun run format:check && bun run lint:check && VARS_ENV_CHECK_DRIFT=warn bun run vars:env:check && bun run skills:registry:check && bun run kata:manifest:check
+bun run format:check && bun run lint:check && VARS_ENV_CHECK_DRIFT=warn bun run vars:env:check && bun run skills:registry:check && bun run kata:manifest:check && bun run git:policy verify

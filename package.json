@@ -63,7 +63,7 @@
     "opencode": "dotenv -o -e .env -- opencode",
     "prepare": "husky",
     "pw:install": "playwright install --with-deps chromium",
-    "repo:check": "bun run format:check && bun run lint:check && bun run types:check && bun run vars:check && bun run skills:check && bun run skills:registry:check && bun run vars:env:check",
+    "repo:check": "bun run format:check && bun run lint:check && bun run types:check && bun run vars:check && bun run skills:check && bun run skills:registry:check && bun run vars:env:check && bun run git:policy verify",
     "repo:fix": "bun run format:fix && bun run lint:fix && bun run types:check && bun run vars:check && bun run skills:check && bun run skills:registry:check && bun run vars:env:check",
     "setup:doctor": "bun cli/doctor.ts",
     "setup": "bun cli/doctor.ts --preflight && bun cli/install.ts",
