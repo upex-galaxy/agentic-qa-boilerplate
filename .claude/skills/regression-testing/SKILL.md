@@ -405,12 +405,20 @@ the returned Jira key to reference in the report.
 
 The sprint regression maps to two Jira **items** (items-first by excellence — the Story custom field is never used at this altitude):
 
-- **STP** (Sprint Test Plan) — a **Test Plan** item titled `STP: Sprint#{N}: Regression` (e.g. `STP: Sprint#30: Regression`). Parents to the **QA Master Test Plan** epic (`qa.qa_epics.master_test_plan_epic.name`); `relates to` the Sprint.
-- **STR** (Sprint Test Results) — a **Test Execution** item titled `STR: Sprint#{N}: Regression Testing` (e.g. `STR: Sprint#30: Regression Testing`). Parents to the **QA Test Artifacts** epic (`qa.qa_epics.test_artifacts_epic.name`); `relates to` the Sprint; `testPlan` → STP. The run's term is **Regression Testing** — "Sprint" already comes from the `Sprint#{N}` scope-id, so the title carries no redundant "Sprint Regression".
+- **STP** (Sprint Test Plan) — a **Test Plan** item titled `STP: Sprint#{N}: {sprint objective}` (e.g. `STP: Sprint#30: Checkout hardening`). Parents to the **QA Master Test Plan** epic (`qa.qa_epics.master_test_plan_epic.name`); `relates to` the Sprint. **Producer: `/sprint-testing`** — its Session Start find-or-creates the STP on the FIRST ticket of the sprint, and every tested ticket updates it (a live planner: scope, progress). This skill **CONSUMES** the STP as context; it find-or-creates it **only as a fallback** when a suite runs and the STP is missing.
+- **STR** (Sprint Test Results) — a **Test Execution** item titled `STR: Sprint#{N}: Regression Testing` (e.g. `STR: Sprint#30: Regression Testing`). Parents to the **QA Test Artifacts** epic (`qa.qa_epics.test_artifacts_epic.name`); `relates to` the Sprint; `testPlan` → STP. Created at sprint **CLOSE** as the recap of all sprint results — by THIS skill when it runs the closing regression, or completed by `/sprint-testing`'s batch close if that already created it: **whoever arrives first creates it, the other completes it**. The run's term is **Regression Testing** — "Sprint" already comes from the `Sprint#{N}` scope-id, so the title carries no redundant "Sprint Regression".
 
-The `Update Test Execution` below targets the **STR** item.
+**Environment gate**: every Test Execution this skill creates — the STR included — carries the **Test Environment** taken from `active_env` in `.agents/project.yaml`, set at create time. An Execution without its environment fails the checklist: do not write results into it until the environment is set.
+
+**Find-or-create the STR before updating it** — never assume another producer already created it; if `/sprint-testing`'s batch close got there first, the find returns its item and this skill only completes it:
 
 ```
+[TMS_TOOL] Find-or-create Test Execution:
+  summary: STR: Sprint#{N}: Regression Testing
+  parent: {QA Test Artifacts epic — qa.qa_epics.test_artifacts_epic.name}
+  links: {relates to → Sprint; testPlan → STP key}
+  environment: {active_env from .agents/project.yaml}
+
 [TMS_TOOL] Update Test Execution:
   executionKey: {STR execution-key}
   results: {per-ATC status + failure comments from Phase 2}
