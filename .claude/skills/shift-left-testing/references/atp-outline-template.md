@@ -2,11 +2,11 @@
 
 > **Subagent context**: this file is the "Context docs" template the Phase 2 Refinement subagent writes into the Story's PBI folder (see `shift-left-testing/SKILL.md` §Phase 2 and `refinement-playbook.md`).
 
-This is the pre-sprint ATP body at **outline maturity**. It is the Story's single, real ATP — `/sprint-testing` Stage 1 later refines the SAME field and SAME Test Plan issue into the executable superset (see `acceptance-test-planning.md` for that stage's full body). What changes between the two passes is scope, not identity.
+This is the pre-sprint ATP body at **outline maturity**. It is the Story's single, real ATP — pre-sprint it lives in the `{{jira.acceptance_test_plan}}` field; `/sprint-testing` Stage 1 later creates the Test Plan issue FROM that field content and refines the SAME ATP into the executable superset (see `acceptance-test-planning.md` for that stage's full body). What changes between the two passes is scope (and home: field → item), not identity.
 
 The skeleton below is the canonical body for `shift-left-refinement.md`, the `[LOCAL]` staging buffer. Phase 3 publishes it to Jira (custom field `{{jira.acceptance_test_plan}}` + Story description QA Refinements section); the Phase 3 comment is a POINTER to the field — full body in a comment only in fallback mode when the field is absent (see `handoff-protocol.md`).
 
-> **ATP item title** — the `# Shift-Left Refinement: …` heading below is only the local file heading. When Phase 3 publishes (see `handoff-protocol.md` Step 2), by excellence it is a real **Test Plan** issue titled `ATP: {STORY-KEY}: {story title}`, parented to the **QA Master Test Plan** epic — never a title variant. The Story custom field is a **fallback ONLY** when the Test Plan work type is unavailable.
+> **ATP item title** — the `# Shift-Left Refinement: …` heading below is only the local file heading. Phase 3's publish target is the `{{jira.acceptance_test_plan}}` field — Shift-Left creates NO Test Plan issue. The real **Test Plan** item titled `ATP: {STORY-KEY}: {story title}`, parented to the **QA Master Test Plan** epic, is created by `/sprint-testing` Stage 1 from the field content — never a title variant, never a second ATP.
 
 > **Before Phase 3 publishes the ATP body to Jira rich-text fields**, read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
 
@@ -264,7 +264,7 @@ When `/sprint-testing` later runs Stage 1 on a Story with `shift-left-reviewed` 
 1. Validates Refined ACs still match the (possibly updated) Story description.
 2. Skips Phases 1-3 of `acceptance-test-planning.md` (already done).
 3. Adds the deferred sections: parametrization, test-data JSON, Faker recipes, numbered steps.
-4. Writes the full ATP back to the SAME Jira `acceptance_test_plan` field (or fallback comment) and the SAME linked Test Plan issue, as a SUPERSET of the pre-sprint body.
+4. Creates the Test Plan issue (`ATP: {STORY-KEY}: {story title}`, parented to the QA Master Test Plan epic, linked to the Story) from the field content, then writes the full ATP back to the SAME Jira `acceptance_test_plan` field (or fallback comment) and into that Test Plan issue, as a SUPERSET of the pre-sprint body.
 
 **One ATP per Story.** `shift-left-refinement.md` is a local staging buffer for Phase 2 → Phase 3, not a durable artifact: once Phase 3 publishes, Jira holds the canonical copy and the synced `acceptance-test-plan.md` is the readable one. Never make the in-sprint short-circuit depend on the staging file being present on disk — it lives under a gitignored path and will be missing on any other machine.
 

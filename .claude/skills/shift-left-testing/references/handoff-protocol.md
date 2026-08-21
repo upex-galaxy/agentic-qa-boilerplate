@@ -5,8 +5,8 @@
 The Handoff subagent runs ONCE PER REFINED STORY. The Batch Report subagent runs ONCE PER SESSION at the end. Both are dispatched sequentially.
 
 This reference defines:
-1. Per-Story Jira mutation sequence (description update, ATP population, handoff comment, labels, transition, trace verify).
-2. Branching per TMS modality.
+1. Per-Story Jira mutation sequence (description update, ATP field population, handoff comment, labels, transition, subtask close, trace verify).
+2. Modality handling — the ATP write is **field-first in BOTH modalities**; modality only matters downstream, when `/sprint-testing` Stage 1 creates the Test Plan item from the field.
 3. Transition guardrails (stop at `estimation`).
 4. Batch report template + epic-comment posting rules.
 
@@ -19,15 +19,16 @@ This reference defines:
 | Refined refinement file (NON-Jira working file) | `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/shift-left-refinement.md` |
 | Current Story status | `bun run jira:sync-issues get {STORY_KEY}`, then read synced status (or `acli search` for the trivial status-only lookup) |
 | Current Story labels | Same synced read — labels list |
-| Modality | From the session's `progress.md` (`.session/shift-left-testing/<batch-id>/`, resolved in shift-left-testing Phase 0.1) |
+| Modality | From the session's `progress.md` (`.session/shift-left-testing/<batch-id>/`, resolved in shift-left-testing Phase 0.1). Informational here — the ATP write is field-first in both modalities |
 | TMS field map | `.agents/jira-fields.json` → `{{jira.acceptance_criteria}}`, `{{jira.acceptance_test_plan}}` |
 | Workflow transitions | `.agents/jira-workflows.json` → `{{jira.transition.story.analyze}}`, `{{jira.transition.story.estimate}}` |
+| Tracking subtask | The `[QA] Shift-Left Review` subtask created in Phase 1 (In Progress). Work type + Done transition from `.agents/jira-workflows.json`; if the catalog has no subtask work type, Phase 1 skipped it — Step 5b then skips with a warning too |
 
 ---
 
 ## Per-Story handoff sequence
 
-> **Prerequisite**: `/acli` skill loaded (Phase 0.2). In Modality jira-xray with Test Plan opt-in, also `/xray-cli`.
+> **Prerequisite**: `/acli` skill loaded (Phase 0.2). `/xray-cli` is never needed here — this protocol creates no TMS items.
 
 ### Step 1a — Write refined ACs to the Jira `acceptance_criteria` field
 
@@ -69,7 +70,7 @@ Description section template:
 ### Technical Questions for Dev
 {Numbered list — copy verbatim from §Technical Questions for Dev.}
 
-> Full refinement (Phases 1-5, coverage outlines, risk + data feasibility) lives in the ATP — the Test Plan issue or the `{{jira.acceptance_test_plan}}` field (Step 2).
+> Full refinement (Phases 1-5, coverage outlines, risk + data feasibility) lives in the ATP — the `{{jira.acceptance_test_plan}}` field (Step 2; `/sprint-testing` Stage 1 later materializes it as the Test Plan issue).
 ```
 
 ```
@@ -80,34 +81,15 @@ Description section template:
 
 The Handoff subagent must read the current description FIRST (from the synced `.md`), then append. Never overwrite.
 
-### Step 2 — Populate the ATP
+### Step 2 — Populate the ATP (field-first — both modalities)
 
-> **ONE ATP per Story, authored early.** Shift-Left does not create a separate DRAFT artifact: it creates the Story's real ATP ahead of the sprint, and `/sprint-testing` Stage 1 refines that same Test Plan issue and that same field into the executable superset. There is no `(Shift-Left DRAFT)` title variant and no second Test Plan to reconcile later.
+> **ONE ATP per Story, authored early — as FIELD content, never as an item.** Shift-Left does not create a separate DRAFT artifact, and it does not create the Test Plan issue either. Pre-sprint, the ATP's home is the `{{jira.acceptance_test_plan}}` custom field on the Story. `/sprint-testing` Stage 1 creates the real **Test Plan** issue (titled `ATP: {STORY-KEY}: {story title}`, parented to the **QA Master Test Plan** epic, linked to the Story) FROM this field content, and refines the same ATP into the executable superset. There is no `(Shift-Left DRAFT)` title variant and no second Test Plan to reconcile later.
 >
-> **Items over fields (excellence default)** — by excellence the ATP is a real **Test Plan** issue titled `ATP: {STORY-KEY}: {story title}`, parented to the **QA Master Test Plan** epic and linked to the Story. The Story custom field (`{{jira.acceptance_test_plan}}`) is a **fallback ONLY** when the Test Plan work type is unavailable in the instance.
+> **Why field-first pre-sprint**: PO has not estimated yet and scope may shrink — creating the item this early wastes an artifact and leaves a second copy for Stage 1 to reconcile. The field IS the only pre-sprint ATP write, in BOTH modalities; modality only decides which engine Stage 1 uses later.
 >
 > What marks this ATP as pre-sprint is the Story's `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` labels, not the title. Those labels are what Stage 1 reads to decide whether to short-circuit.
 
-Branch on modality (resolved in Phase 0.1).
-
-#### Modality jira-xray — Xray (Test Plan opt-in CHOSEN by user)
-
-```
-[TMS_TOOL] Create TestPlan:
-  project: {{PROJECT_KEY}}
-  title: "ATP: {STORY-KEY}: {story title}"
-  parentEpic: QA Master Test Plan
-  description: <full shift-left-refinement.md body>
-
-[ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan — coverage edge
-  outward: {ATP_KEY}
-  inward:  {STORY_KEY}
-```
-
-> Resolve the link type by slug only and verify direction after creation — see `agentic-qa-core/references/traceability-linking.md` (§2 slug resolution, §4 directionality + mandatory verification).
-
-Then ALSO populate the custom field on the Story so field-based reads work the same as Modality jira-native:
+The write is identical in Modality jira-xray and Modality jira-native:
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -116,18 +98,7 @@ Then ALSO populate the custom field on the Story so field-based reads work the s
     {{jira.acceptance_test_plan}}: <full shift-left-refinement.md body>
 ```
 
-#### Modality jira-xray — Xray (Test Plan opt-in NOT chosen — default)
-
-OR Modality jira-native:
-
-```
-[ISSUE_TRACKER_TOOL] Update Issue:
-  issue: {STORY_KEY}
-  fields:
-    {{jira.acceptance_test_plan}}: <full shift-left-refinement.md body>
-```
-
-Custom-field write may fail in Modality jira-xray if the Jira instance has not provisioned `{{jira.acceptance_test_plan}}`. Fall back to comment-only mode and warn the user in the per-Story summary.
+FALLBACK (the instance has not provisioned `{{jira.acceptance_test_plan}}`): skip the field write and switch Step 3 to fallback mode — the `## Acceptance Test Plan (ATP)` comment carries the full body inline, per `.agents/jira-required.yaml` → `acceptance_test_plan.fallback` (`{ target: comment, label: "Acceptance Test Plan (ATP)" }`). Warn the user in the per-Story summary. Never block.
 
 ### Step 3 — Handoff notification + fallback comment
 
@@ -147,7 +118,8 @@ Jira is the source of truth: the ATP lives in the `{{jira.acceptance_test_plan}}
 
     Action Required: review ambiguities, answer critical questions, confirm edge-case behavior, validate parametrization.
     Refined on: {{YYYY-MM-DD}} — QA Shift-Left batch session
-    This ATP is refined in-sprint by /sprint-testing Stage 1 into the executable superset.
+    This ATP is refined in-sprint by /sprint-testing Stage 1, which creates the
+    Test Plan issue from this field and refines it into the executable superset.
 ```
 
 `fix-traceability` checks the `{{jira.acceptance_test_plan}}` field, or this `## Acceptance Test Plan (ATP)` fallback comment when the field is absent.
@@ -200,24 +172,37 @@ else:
 
 The skill NEVER applies the `back_from_shift_left_qa` transition automatically. That is a PO / Dev decision (Story does not meet readiness for estimation — go back to backlog).
 
+### Step 5b — Close the `[QA] Shift-Left Review` subtask
+
+Phase 1 found-or-created this subtask under the Story and moved it to In Progress. The handoff closes it:
+
+1. Locate the subtask under the Story by exact title `[QA] Shift-Left Review`.
+2. **Post the exhaustive session annotations on the SUBTASK first** — the long analysis, refinement traces, and per-phase notes that are too verbose for the Story. The Story keeps only its canonical outputs (refined ACs field, description section, ATP field, pointer comment, labels); the subtask is where the full working trail lives.
+
+```
+[ISSUE_TRACKER_TOOL] Add Comment (or Update description):
+  issue: {SUBTASK_KEY}
+  body: <exhaustive session annotations — analysis trail, refinement traces>
+
+[ISSUE_TRACKER_TOOL] Transition: <subtask Done transition>   # resolved from .agents/jira-workflows.json
+```
+
+3. If Phase 1 skipped subtask creation (no subtask work type in `.agents/jira-workflows.json`, or the project disallows subtasks): skip this step with a warning in the per-Story log. Never block the handoff on subtask support.
+
 ### Step 6 — Verify trace
 
-Modality jira-xray:
-
-```
-[TMS_TOOL] trace {STORY_KEY}
-# Verify: Test Plan link present, Test Plan description matches shift-left-refinement.md body
-```
-
-Modality jira-native:
+Both modalities (field-first — there is no Test Plan item to trace pre-sprint):
 
 ```
 bun run jira:sync-issues get {STORY_KEY} --include-comments
 # then read the synced field files + comments.md. Verify:
 #   - acceptance_criteria field (or "## Acceptance Criteria" fallback comment) != empty
 #   - field {{jira.acceptance_test_plan}} != empty
+#     (or the "## Acceptance Test Plan (ATP)" fallback comment carries the full body
+#      when the field is absent on this instance)
 #   - handoff comment "## Acceptance Test Plan (ATP)" present and points to the field
 #     (full body inline ONLY in fallback mode — field absent on this instance)
+#   - "[QA] Shift-Left Review" subtask (when created) is in Done
 ```
 
 ### Step 7 — Return per-Story log
@@ -225,8 +210,9 @@ bun run jira:sync-issues get {STORY_KEY} --include-comments
 ```json
 {
   "story": "UPEX-100",
-  "atp_container": "test_plan|custom_field",
-  "atp_key": "UPEX-201 (only Modality jira-xray with Test Plan opt-in)",
+  "atp_container": "custom_field|fallback_comment",
+  "subtask_key": "UPEX-205 (null when skipped — no subtask work type)",
+  "subtask_status": "Done|skipped",
   "description_appended": true,
   "comment_posted": true,
   "labels_added": ["shift-left-reviewed", "shift-left-2026-05-20"],
@@ -350,10 +336,10 @@ Each step is idempotent:
 |------|------------------|
 | Step 1 description | If "QA Refinements (Shift-Left Analysis)" section already present → skip |
 | Step 2 ATP field | Overwrite OK — field is single-value |
-| Step 2 Test Plan create (Modality jira-xray) | Search by title before creating — link existing if found |
 | Step 3 comment | If a comment headed `## Acceptance Test Plan (ATP)` already exists → skip |
 | Step 4 labels | acli labels operation is set-based; re-running adds nothing |
 | Step 5 transition | Read current status before transitioning; skip if already at target |
+| Step 5b subtask | Find by exact title (created in Phase 1); skip transition if already Done; append annotations as a new comment, never overwrite |
 | Step 6 trace | Always re-verify |
 
 ---
@@ -363,13 +349,14 @@ Each step is idempotent:
 1. **Description append, never overwrite.** Read first, append second.
 2. **The comment is a pointer, not a mirror.** When `{{jira.acceptance_test_plan}}` exists, the handoff comment only points to the field — never paste the full body. The full body goes in the comment ONLY in fallback mode (field absent). `fix-traceability` checks the field, or the fallback comment when the field is absent.
 3. **Transition guardrail.** STOP at `estimation`. Stories past that point keep the refinement (description + field + comment + labels) but skip transition.
-4. **Test Plan opt-in is asked ONCE per session in Phase 0**, not per Story.
+4. **No TMS items pre-sprint.** This protocol never creates the Test Plan issue — `/sprint-testing` Stage 1 creates it from the `{{jira.acceptance_test_plan}}` field content. If an older session already left a pre-sprint Test Plan on the Story, leave it, note it in the per-Story log, and let Stage 1 reconcile.
 5. **Mention discipline.** Only mention PO/Dev-lead handles that are explicitly listed in `.agents/project.yaml`. No guessing.
 6. **Dated label** (`shift-left-{date}`) is APPENDED on every refinement. `/sprint-testing` reads the most recent one. Old dated labels are NOT pruned by this skill.
 7. **Resume safety.** Every step is idempotent — re-running a partially-completed Story should converge to the same final state.
 8. **Language**: all Jira content English. Mirror user's language only in conversation. CLAUDE.md §1 Rule #14.
 9. **NO git commit.** Jira is the source of truth. The local `shift-left-refinement.md` is a gitignored working artifact.
 10. **Epic comment posting** is a courtesy. If it fails (epic doesn't exist, permission denied, network), DO NOT abort — log a warning and proceed; the local report is still authoritative.
+11. **Subtask close is best-effort.** The `[QA] Shift-Left Review` subtask holds the exhaustive session annotations and shows the team QA worked the Story pre-sprint. No subtask work type in the catalog → Step 5b skips with a warning; the handoff still completes.
 
 ---
 
@@ -378,6 +365,8 @@ Each step is idempotent:
 - [ ] All accepted Stories ran the per-Story handoff
 - [ ] Each per-Story log captured in the session's `progress.md`
 - [ ] No transition advanced beyond `{{jira.status.story.estimation}}`
+- [ ] No Test Plan item created (field-first — the item is `/sprint-testing` Stage 1's job)
+- [ ] `[QA] Shift-Left Review` subtask per Story: annotations posted + transitioned to Done (or skipped with warning)
 - [ ] Batch report written to `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/batch-report.md`
 - [ ] Batch report posted to parent epic (if all Stories share one) OR delivered inline
 - [ ] User informed: when each Story reaches `Ready For QA`, run `/sprint-testing` (short-circuit thanks to `shift-left-reviewed`)
