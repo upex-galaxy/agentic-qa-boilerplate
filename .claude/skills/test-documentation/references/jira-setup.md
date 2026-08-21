@@ -90,10 +90,10 @@ The skill writes into these fields when creating TCs. Add them to the Test issue
 | Description | Rich text (default) | Yes | Full TC template (Gherkin or steps + metadata) |
 | Priority | Select (default) | Yes | Critical / High / Medium / Low |
 | Labels | Multi-select (default) | Yes | `regression`, `smoke`, `e2e`, `automation-candidate`, etc. |
-| Components | Multi-select (default) | Optional | Module grouping |
+| Components | Multi-select (default) | Yes | Affected product module — mandatory on every Test (defect-management doctrine Part 3) |
 | Epic Link | Epic picker | Yes | Points to the Regression Epic |
 | Test Status | Select (custom) | Yes | `NOT RUN` / `PASSED` / `FAILED` / `BLOCKED` — the Execution Status per `tms-conventions.md` §IQL |
-| Workflow Status | (workflow) | Yes | `Draft` / `In Design` / `Ready` / … / `Automated` / `Deprecated` |
+| Workflow Status | (workflow) | Yes | `Draft` / `In Design` / `READY` / … / `AUTOMATED` / `DEPRECATED` |
 | Automation Candidate | Checkbox (custom) | Yes | Boolean flag — redundant with labels but easier to filter |
 | Linked Issues | Links (default) | Yes | "is tested by" → Story, "is blocked by" → Bug |
 

@@ -49,7 +49,7 @@ User Story (STORY-123)
     | is tested by
 Test (TEST-456)
     | parent epic
-Regression Epic (EPIC-001 — "Test Repository")
+Regression Epic (EPIC-001 — "QA Test Repository")
 ```
 
 **Items over fields (by excellence)**: ATP and ATR are real Jira issues even without Xray — a `Test Plan` issue titled `ATP: {STORY-KEY}: {story title}` (parented to **QA Master Test Plan**) and a `Test Execution` issue titled `ATR: {STORY-KEY}: Story Testing` (parented to **QA Test Artifacts**). These are native Jira work types; create them as such. ATP/ATR as Story custom fields (or a Task standing in) is a **degraded fallback ONLY**, used when those work types are unavailable in the instance. Linking order: (1) create ATP and link to US; (2) create ATR and link to US; (3) update ATP to link to ATR; (4) for each TC, link to US + ATP + ATR + AC.
@@ -62,7 +62,7 @@ Five extra issue types available:
 |------------|---------|--------------|
 | **Test** | Individual test case (Manual, Cucumber, Generic). | Child of Regression Epic; linked to User Story. |
 | **Test Plan** | Groups Tests for a release / sprint. Contains Tests. | Planning-level container. |
-| **Test Set** | Groups Tests by criteria (smoke, regression, domain). | Re-usable grouping; membership is a link, NEVER the TC prefix (prefix is always `{US_ID}`). |
+| **Test Set** | Groups Tests by criteria (smoke, regression, domain). | Re-usable grouping; membership is Xray-internal state (managed via `/xray-cli`, read via `bun xray test enrich`), NEVER a Jira issue link and NEVER the TC prefix (prefix is always `{US_ID}`). |
 | **Test Execution** | One execution instance. Generates Test Runs. | Executes a Test Plan or ad-hoc set of Tests. |
 | **Precondition** | Reusable prerequisite for Tests. | Referenced by Tests that share setup. |
 
@@ -79,7 +79,7 @@ QA Master Test Plan (Epic)
 QA Test Artifacts (Epic)
     |
     +-- Test Set: TS: PROJ-101: Validate credit card payment
-    |       +-- Test (TC1, TC2, ...)        (membership = link, prefix stays {US_ID})
+    |       +-- Test (TC1, TC2, ...)        (membership = Xray-internal, prefix stays {US_ID})
     +-- Test Set: TS: Checkout: Validate checkout v2
     |       +-- Test (TC3, TC4, ...)
     +-- Test Execution: ATR: PROJ-101: Story Testing
@@ -103,7 +103,7 @@ Create a **Test** issue type in the Jira project with the following fields. This
 | Automation Candidate | Checkbox | Redundant with labels but easier to filter in JQL. |
 | Priority | Select list | `Critical`, `High`, `Medium`, `Low`. |
 | Labels | Multi-select | `regression`, `smoke`, `e2e`, `integration`, `automation-candidate`, `manual-only`, etc. |
-| Components | Multi-select | Module / feature area for filtering. |
+| Components | Multi-select | Affected product module — **mandatory** on every Test (defect-management doctrine Part 3), not a filtering nicety. |
 | Epic Link | Epic picker | Must point to the Regression Epic. |
 | Linked Issues | Links | "tests" / "is tested by" -> User Story; "is blocked by" -> Bug (optional). |
 
@@ -125,7 +125,7 @@ Same concept, different storage. Use this when translating a TC design into actu
 | Title | `Summary` | `Summary` |
 | Steps (preconditions, action, expected) | Inside `Description` — as a table or Gherkin block | Xray `Test Steps` field (one row per step) OR `Cucumber` Gherkin field OR `Generic` text field |
 | Test type (Manual / Cucumber / Generic) | No native concept — infer from Description format | Xray `Test Type` field: Manual / Cucumber / Generic |
-| Preconditions | Inline at top of Description | Xray `Precondition` issue type, linked to the Test |
+| Preconditions | Inline at top of Description | Xray `Precondition` issue type, associated to the Test (Xray-internal association managed via `/xray-cli`, surfaced into the synced cache by its `test enrich` command — NOT a Jira issue link) |
 | Expected Result | Per-row column in Description steps table, or Gherkin `Then` | Per-step `Expected Result` column in Test Steps field |
 | Priority | `Priority` field | `Priority` field |
 | Labels | `Labels` field | `Labels` field |
@@ -136,8 +136,8 @@ Same concept, different storage. Use this when translating a TC design into actu
 Xray additionally exposes:
 
 - `Test Repository` folder (flat path under the project) — not required if all Tests are under a single Regression Epic.
-- `Test Sets` linked to the Test.
-- `Pre-Conditions` (dedicated issue type) — reusable across Tests.
+- `Test Sets` associated to the Test (Xray-internal membership — not a Jira issue link).
+- `Pre-Conditions` (dedicated issue type) — reusable across Tests (association is Xray-internal too).
 
 ---
 
@@ -152,10 +152,10 @@ The TC naming convention is identical in every modality — the prefix is **ALWA
 | Modality | `PREFIX` |
 |------|----------|
 | **Jira Native** | User Story ID (`PROJ-101`) |
-| **Jira + Xray with Test Sets** | User Story ID (`PROJ-101`) — Test Set membership is a link, not a prefix |
+| **Jira + Xray with Test Sets** | User Story ID (`PROJ-101`) — Test Set membership is Xray-internal, not a prefix |
 | **Jira + Xray without Test Sets** | User Story ID (`PROJ-101`) |
 
-The prefix never changes with mode. Test Set association is expressed via an issue **link** ("is part of" the Test Set), NEVER in the TC title — so JQL by Story key stays reliable across the whole project.
+The prefix never changes with mode. Test Set association is **Xray-internal membership** (managed via `/xray-cli` add-to-set, read via `bun xray test enrich`) — NEVER a Jira issue link and NEVER in the TC title — so JQL by Story key stays reliable across the whole project.
 
 Related naming — the unified planning-ladder grammar `{ACRONYM}: {scope-id}: {descriptor}` (full table: `tms-conventions.md` §3):
 
@@ -338,6 +338,7 @@ Notes:
   title: {per TC naming convention}
   gherkin: {from §7 Gherkin block}
   labels: [regression, automation-candidate, {scope}, {priority}]
+  components: [{module}]          # mandatory — affected product module
 
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {TEST_KEY}
@@ -391,6 +392,7 @@ When `/test-documentation` Stage 4 promotes a sprint Xray Test into regression, 
   project: {{PROJECT_KEY}}
   type: Manual
   title: {per TC naming convention}
+  components: [{module}]          # mandatory — affected product module
   # NO inline steps here — Xray Cloud drops steps passed on create. Create the
   # Test bare, then add each step in a follow-up call.
 
@@ -439,6 +441,7 @@ Groups Tests for a release or sprint. One per release cadence.
   issueType: Test Plan
   summary: STP: Sprint#50: Regression
   labels: [regression, {release}]
+  components: [{module}]          # mandatory — inherit the source Story's components
   # Parent Epic: QA Master Test Plan
 
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -449,7 +452,7 @@ Groups Tests for a release or sprint. One per release cadence.
 
 ### Test Set
 
-Groups Tests by domain / strategy. Reusable across sprints. The TC title prefix is **ALWAYS `{US_ID}`** (the User Story key) regardless of Test Set membership (see §5) — Test Set membership is expressed via an issue **link** ("is part of" the Test Set), NEVER the TC prefix.
+Groups Tests by domain / strategy. Reusable across sprints. The TC title prefix is **ALWAYS `{US_ID}`** (the User Story key) regardless of Test Set membership (see §5) — Test Set membership is **Xray-internal** (added via `/xray-cli`, read via `bun xray test enrich`), NEVER a Jira issue link and NEVER the TC prefix.
 
 ```
 [ISSUE_TRACKER_TOOL] Create Issue:
@@ -457,6 +460,8 @@ Groups Tests by domain / strategy. Reusable across sprints. The TC title prefix 
   issueType: Test Set
   summary: TS: {{PROJECT_KEY}}-101: Validate credit card payment
   labels: [regression, sanity]
+  # components: OPTIONAL on Test Sets — the only TMS artifact exempt from the
+  # components mandate (a Set can span modules; its member Tests carry them)
   # Parent Epic: QA Test Artifacts
 ```
 
@@ -469,6 +474,7 @@ One per execution run. Holds Test Runs with PASS / FAIL / TODO per Test.
   project: {{PROJECT_KEY}}
   title: ATR: {{PROJECT_KEY}}-101: Story Testing
   tests: [{TEST_KEY_1}, ...]
+  components: [{module}]          # mandatory — inherit the source Story's components
   # Parent Epic: QA Test Artifacts
 
 [TMS_TOOL] Import Results:
@@ -595,6 +601,7 @@ A later `test-automation` run greps the synced files for `automation-candidate` 
 - [ ] Summary follows `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` — no anti-patterns
 - [ ] Traced to the User Story: Modality jira-xray → "is designed by" ATP + "is executed by" ATR (NO direct TC → Story link); Modality jira-native → "is tested by" the Story directly
 - [ ] Linked to Regression Epic (Epic Link)
+- [ ] Components set (affected product module — mandatory, defect-management doctrine Part 3)
 - [ ] Priority set
 - [ ] Labels include scope (regression/smoke/e2e/integration) and automation intent (automation-candidate or manual-only)
 - [ ] Description uses the full template from §7 (no skeletons or TODOs)
@@ -602,7 +609,7 @@ A later `test-automation` run greps the synced files for `automation-candidate` 
 - [ ] Prior bugs covered section filled (or "none")
 - [ ] Refinement Notes filled if source-code validation found discrepancies
 - [ ] Xray mode: Test Type set (Manual / Cucumber / Generic)
-- [ ] Xray mode: Linked to Test Set (if project uses Test Sets)
+- [ ] Xray mode: Added to Test Set via Xray-internal membership (`/xray-cli`), if project uses Test Sets — never a Jira issue link
 - [ ] Workflow state = READY (or MANUAL / Candidate once decision is made)
 - [ ] Local cache materialized (never hand-written) via `bun run jira:sync-issues get <STORY_KEY>` — one `TEST-<KEY>-<slug>.md` per Test under `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/`
 

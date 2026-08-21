@@ -68,7 +68,7 @@ This skill is **per-scope**: `<scope>` = `<JIRA-KEY>` (ticket / bug scope), `<mo
 
 **Naming collision note**: this skill already owns `## Phase 0 — Resolve TMS modality` (the TMS gate). The session resume check is therefore named `## Phase -1 — Session resume check` to avoid colliding with the existing Phase 0 anchor. Resume fires FIRST, then the TMS modality gate, then the rest of the pipeline.
 
-This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 6-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. Phase 1 (Analyze) and Phase 2 (Prioritize) stay inline because planning and decisions live in the orchestrator; the only Parallel hotspot is bulk TC creation in Phase 3, which is also the only step that branches per TMS modality.
+This skill is compliant with the doctrine in `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.claude/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 7-component briefing format defined in `.claude/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.claude/skills/agentic-qa-core/references/dispatch-patterns.md`. Phase 1 (Analyze) and Phase 2 (Prioritize) stay inline because planning and decisions live in the orchestrator; the only Parallel hotspot is bulk TC creation in Phase 3, which is also the only step that branches per TMS modality.
 
 | Phase                                                  | Pattern    | Subagent role                                                                                                                                              |
 |--------------------------------------------------------|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -317,8 +317,8 @@ Every scenario ends in exactly one of these buckets. There is no fourth.
 
 | Outcome | Triggers it | Where it goes next | TMS status flow |
 |---------|------------|--------------------|------------------|
-| **Candidate** | ROI > 3.0, OR (ROI 1.5-3.0 AND prior bug), OR critical happy path | Feeds `test-automation` skill | Draft -> In Design -> Ready -> In Review -> Candidate |
-| **Manual** | ROI 0.5-1.5 AND not automatable (human judgment, visual inspection), OR explicitly manual-only | Terminal: manual regression suite | Draft -> In Design -> Ready -> Manual |
+| **Candidate** | ROI > 3.0, OR (ROI 1.5-3.0 AND prior bug), OR critical happy path | Feeds `test-automation` skill | Draft -> In Design -> READY -> In Review -> Candidate |
+| **Manual** | ROI 0.5-1.5 AND not automatable (human judgment, visual inspection), OR explicitly manual-only | Terminal: manual regression suite | Draft -> In Design -> READY -> MANUAL |
 | **Deferred** | ROI < 0.5, OR failed Phase-0 filter, OR one-time validation | Terminal: not in regression. Can be revisited if system changes | **jira-native**: do not create a TC in the TMS — document as Deferred in the prioritization report. **jira-xray**: the sprint `Test` (created in `/sprint-testing` Stage 1) is **not promoted** to the Regression Test Plan — it stays as a sprint execution artifact, not deleted. |
 
 **Rule of thumb**: if more than 50% of candidates end up Candidate or Manual, re-apply Phase 0 more strictly. Most scenarios should be Deferred.
@@ -343,13 +343,13 @@ Every documented TC must have a parent Regression Epic (single test repository f
   query: type = Epic AND summary ~ "QA Test Repository"      # resolve by configured name qa.qa_epics.test_repository_epic.name
 ```
 
-If none exists, ask the user before creating one with name `QA Test Repository` (the value of `qa.qa_epics.test_repository_epic.name`) and labels `test-repository, regression`.
+If none exists, ask the user before creating one with name `QA Test Repository` (the value of `qa.qa_epics.test_repository_epic.name`) and labels `QA-Artifact, regression` (`QA-Artifact` is the mandatory identity label on every QA process epic).
 
 ### Preflight: Test Set — feature organizer (1:1 with the Epic)
 
 A **Test Set** groups all regression Tests of ONE feature — **1:1 with the Epic/module**. It is the feature-level organizer under the Regression Epic. Three containers, do not conflate: **Regression Epic** = repository umbrella · **Test Set** = feature grouping · **Test Plan** = execution/regression scope.
 
-- **Modality jira-xray**: resolve the feature's Test Set (match by Epic key / feature name) via `[TMS_TOOL]`. If it does **not** exist, **ask the user before creating** one named `Test Set: <EPIC_KEY> <feature>` (mirror the Regression-Epic ask-before-create rule — creation is otherwise async/manual; the AI only creates it lazily here when a promotion needs it). **Only promoted, regression-worthy Tests (Candidate/Manual) are added to the Set** in this phase — Deferred sprint Tests are NOT added.
+- **Modality jira-xray**: resolve the feature's Test Set (match by Epic key / feature name) via `[TMS_TOOL]`. If it does **not** exist, **ask the user before creating** one named `TS: <EPIC_KEY|module>: Validate <feature>` (components optional on a Test Set — a Set spans modules by design; mirror the Regression-Epic ask-before-create rule — creation is otherwise async/manual; the AI only creates it lazily here when a promotion needs it). **Only promoted, regression-worthy Tests (Candidate/Manual) are added to the Set** in this phase — Deferred sprint Tests are NOT added.
 - **Modality jira-native**: there is **no Test Set entity**. Achieve the same feature grouping with the **Regression Epic + a feature/Epic label** (e.g. `epic-<EPIC_KEY>` or the feature slug). Apply the label to each documented TC.
 
 ### Entity model: ATP / ATR / TC
@@ -362,7 +362,7 @@ Four entities. **Traceability model (jira-xray):** the **Story links ONLY to its
 | **ATP** | Stage 1 (or now, if missing) | `ATP: {STORY-KEY}: {story title}` | Test Analysis + AC-to-TC coverage |
 | **ATR** | Stage 1 (or now, if missing) | `ATR: {STORY-KEY}: Story Testing` | Test Report + execution results |
 | **TC** | Stage 4 (this phase) | `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` | Precondition + Action + Expected |
-| **Test Set** (xray only) | Lazily in Stage 4 if missing (ask first); else pre-existing (async) | `Test Set: <EPIC_KEY> <feature>` | Feature-level grouping (1:1 Epic) of promoted regression Tests. Native: replaced by a feature/Epic label, no entity. |
+| **Test Set** (xray only) | Lazily in Stage 4 if missing (ask first); else pre-existing (async) | `TS: {EPIC-KEY\|module}: Validate {feature}` | Feature-level grouping (1:1 Epic) of promoted regression Tests. Components optional: a Set spans modules by design. Native: replaced by a feature/Epic label, no entity. |
 
 Read `references/tms-architecture.md` when creating ATP/ATR/TC for a ticket, checking required links, or validating that a story is fully documented.
 
@@ -451,7 +451,7 @@ Never jump states. If a TC needs rework, use a `back_from_<state>` transition (e
 {US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]
 ```
 
-- Prefix is **ALWAYS `{US_ID}`** (the User Story key) in every modality — Jira-native, Xray with Test Sets, Xray without. Test Set membership is expressed via an issue **link** ("is part of" / Test Set membership), NEVER in the TC title.
+- Prefix is **ALWAYS `{US_ID}`** (the User Story key) in every modality — Jira-native, Xray with Test Sets, Xray without. Test Set membership is **Xray-internal** (managed via `/xray-cli`, read via `bun xray test enrich`) — NEVER a Jira issue link and NEVER in the TC title.
 - `CORE` (expected outcome): verb + object phrased after `should` — the asserted behavior (`grant access`, `reject login`, `cap input length`).
 - `CONDITIONAL`: the optional connector clause (`when …` / `if …`) plus an optional `given <precondition>`. Omit entirely for unconditional behavior.
 - Vocabulary: entity and process names inside `<expected outcome>` / `<condition>` come from `.context/business/domain-glossary.md` when present — canonical terms only; anti-glossary banned terms must not appear in TC titles or bodies.
@@ -496,7 +496,7 @@ On Phase 3 partial failure (some chunks 429-rate-limited, some succeeded), archi
 - **Bug-driven: evaluate first, but if regression-worthy it MUST have a Test (reuse or create).** A closed bug is strong empirical evidence the area regresses, so most qualify and lean Candidate — but not all do (a one-time typo in a stable area is treated like a failed test → Deferred, no new Test). When it qualifies, follow the Bug-driven decision: reuse the existing failed Test if the bug came from one, else create + design a new Test. Golden rule: where an important bug exists, a test must cover it.
 - **Source-code validation is mandatory**: the ATP was written before code. Grep for `data-testid=`, routes, text formats. Log discrepancies in a Refinement Notes section on the TC.
 - **Derive widely, document only the repeatable, automate the few — three layers, three counts.** (1) DESIGN/derive (in `/sprint-testing` planning + exploration): consider many cases by technique (1:N) — this lives in the prioritization analysis, NOT yet in the TMS. (2) DOCUMENT (this skill): create a persistent TMS TC **only** for scenarios worth re-running — Candidate (automated regression) + Manual (manual regression). Deferred scenarios are recorded in the prioritization report and **NOT created in the TMS** (see Three outcomes). (3) AUTOMATE (`/test-automation`): the Candidates. So "analyzed 80 → documented 12 → automated 8" is the healthy shape — **never "document all 80"**. (jira-xray nuance: the 80 may already exist as sprint `Test` artifacts from `/sprint-testing` Stage 1; there "document 12" means **promote 12** into the Regression Test Plan, leaving the rest as unpromoted sprint artifacts.) The guiding principle: *a test enters the regression repository because it will be re-executed (manual or automated), never to hit a coverage count.* If most scenarios end up Candidate/Manual, re-apply Phase 0 harder — most should be Deferred.
-- **TC prefix is ALWAYS the User Story key (`{US_ID}`)** — no longer modality-dependent. In every modality (Jira-native, Xray with Test Sets, Xray without), the TC title is prefixed with the US key. Test Set membership is expressed via an issue link ("is part of" / Test Set membership), NEVER in the TC title.
+- **TC prefix is ALWAYS the User Story key (`{US_ID}`)** — no longer modality-dependent. In every modality (Jira-native, Xray with Test Sets, Xray without), the TC title is prefixed with the US key. Test Set membership is Xray-internal (managed via `/xray-cli`, read via `bun xray test enrich`) — NEVER a Jira issue link and NEVER in the TC title.
 - **Session-footer contract (mandatory at close)**: the final phase is not done until the two chat-facing blocks from `../agentic-qa-core/references/session-footer-contract.md` are printed: (1) consolidated screenshot list — repo-relative paths, verified on disk, bug annotations first — plus in-flow surfacing of every capture's path the instant it lands; (2) Session Footer listing skills/MCPs/CLIs actually used + testing levels touched, with explicit "none" entries for expected-but-untouched levels. Framing for this skill: curation. Multi-subagent sessions: each stage report carries the five footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`); the orchestrator compiles the footer ONCE at close. Chat only — never in a Jira comment or ATR body.
 
 ---
@@ -518,7 +518,7 @@ On Phase 3 partial failure (some chunks 429-rate-limited, some succeeded), archi
 
 Canonical reading order for any AI starting cold on a test-documentation workflow. Read in order; stop earlier when the scope is narrow enough that later inputs add no signal.
 
-> **TMS modality** (A: Xray vs B: Jira-native) is resolved live by Phase 0 from `.agents/project.yaml` `testing.tms_cli` and sticky in `plan.md`. **Regression Epic** is resolved live by Phase 3 §Preflight via JQL (`type = Epic AND labels = "test-repository"`). **Label taxonomy** defaults are hardcoded in `references/tms-conventions.md`. No external TMS config file is read.
+> **TMS modality** (A: Xray vs B: Jira-native) is resolved live by Phase 0 from `.agents/project.yaml` `testing.tms_cli` and sticky in `plan.md`. **Regression Epic** is resolved live by Phase 3 §Preflight via JQL by the configured name (`type = Epic AND summary ~ "QA Test Repository"` — the value of `qa.qa_epics.test_repository_epic.name`; identity label `QA-Artifact`). **Label taxonomy** defaults are hardcoded in `references/tms-conventions.md`. No external TMS config file is read.
 
 1. `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` — ticket-local context (module = Epic, 1:1). The detailed read materializes the **FULL synced Story folder**; read **ALL of it** — every per-field `.md` (`story.md`, `acceptance-criteria.md`, scope, business rules, etc.) **plus `comments.md`** — not just one field, so ACs / scope / business rules / comment context are never omitted. Existing ATP and ATR are **modality-aware reads** (see §Phase 0): **jira-native** → Story-folder `acceptance-test-plan.md` / `acceptance-test-results.md` (synced from Story fields `{{jira.acceptance_test_plan}}` / `{{jira.acceptance_test_results}}`); **jira-xray** → `test-plans/TESTPLAN-<KEY>-<slug>.md` (Test Plan `description`) / `test-executions/TESTEXEC-<KEY>-<slug>.md` (Test Execution `description`, sync supports these types), with per-TC run results via `[TMS_TOOL]` (xray-cli).
 2. `.agents/jira-required.yaml` — canonical slug catalog for fields, statuses, link types.
@@ -560,7 +560,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
   project: {{PROJECT_KEY}}
   issueType: Epic
   title: "QA Test Repository"
-  labels: test-repository, regression, qa
+  labels: QA-Artifact, regression, qa
 ```
 
 ### Modality jira-xray
@@ -573,6 +573,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
 [TMS_TOOL] Create TestPlan:
   project: {{PROJECT_KEY}}
   title: ATP: {STORY-KEY}: {story title}
+  components: {inherited from the source Story}   # mandatory (defect-management doctrine Part 3)
   tests: []                       # filled as TCs are created
 
 [ISSUE_TRACKER_TOOL] Link Issues:
@@ -586,6 +587,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
   project: {{PROJECT_KEY}}
   title: ATR: {STORY-KEY}: Story Testing
   testPlan: {ATP_KEY}
+  components: {inherited from the source Story}   # mandatory (defect-management doctrine Part 3)
   environment: {from .env or session context}
   tests: []                       # filled at Stage 3 or via CI import
 
@@ -601,6 +603,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
   type: Cucumber
   title: {US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]
   labels: regression, automation-candidate, e2e, critical
+  components: {affected product module}           # mandatory (defect-management doctrine Part 3)
   gherkin: {from high-quality gherkin}
 
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -672,6 +675,7 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `CLAUDE.md` §Tool Resolution.
   summary: {US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]
   priority: {Critical|High|Medium|Low}
   labels: [regression, automation-candidate, e2e, critical]
+  components: [{affected product module}]         # mandatory (defect-management doctrine Part 3)
   epic: {REGRESSION_EPIC_KEY}
 
 [ISSUE_TRACKER_TOOL] Update Issue:

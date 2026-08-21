@@ -39,7 +39,7 @@ The prefix is **ALWAYS the User Story key** (`{US_ID}`) — never the Test Set I
 {US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]
 ```
 
-> Test Set membership is expressed as an issue **link** ("is part of" the Test Set), NEVER baked into the TC title.
+> Test Set membership is **Xray-internal state** (managed via `/xray-cli`, read via `bun xray test enrich`) — NEVER a Jira issue link and NEVER baked into the TC title.
 
 ### Components
 
@@ -108,7 +108,7 @@ All Plans and Runs follow one **unified grammar** — the QA planning ladder:
 Notes:
 
 - **Items over fields (by excellence).** Every Plan is a **Test Plan** issue and every Run is a **Test Execution** issue — in BOTH modalities (these are native Jira work types, Xray-independent). The Story custom field for ATP/ATR is a **degraded fallback ONLY**, used when those work types are unavailable in the instance. See `tms-architecture.md` §Container per modality.
-- **QA-process Epic homes** (3-axis model): every **Test Plan** (FTP/STP/ATP) parents to **QA Master Test Plan**; every **Test Execution** (FTR/STR/ATR), **Test Set**, and **Precondition** parents to **QA Test Artifacts**; every **Test** (TC) parents to **QA Test Repository**. The parent says only which QA bucket; scope (Story / feature / Sprint) travels on an issue link, product area on `components`.
+- **QA-process Epic homes** (3-axis model): every **Test Plan** (FTP/STP/ATP) parents to **QA Master Test Plan**; every **Test Execution** (FTR/STR/ATR), **Test Set**, and **Precondition** parents to **QA Test Artifacts**; every **Test** (TC) parents to **QA Test Repository**. The parent says only which QA bucket; scope (Story / feature / Sprint) travels on an issue link, product area on `components` — mandatory on Tests, Test Plans and Test Executions (Plans/Executions inherit the source Story's components); **OPTIONAL on Test Sets only** (a Set can span modules; its member Tests carry them).
 - **`ReTest:`** is already prefix-style and stays as-is. It is a Test Execution under **QA Test Artifacts**.
 - **Precondition**: the **title states the required state**, the **content holds the setup steps** — the two are kept distinct (`PRC: Payment: Authenticated user with a saved card` titles the state; the steps to reach it live in the issue body).
 - `Validate` stays the Test Set grouping word (consistent with the code `describe()` law); the `TS:` prefix adds the work-type / altitude signal on top.
@@ -130,9 +130,10 @@ Every TC in the TMS must have these fields populated. Exact field names vary by 
 | Workflow Status | Select | Lifecycle state | `Draft`, `In Design`, `READY`, `In Review`, `Candidate`, `In Automation`, `Pull Request`, `AUTOMATED`, `MANUAL`, `DEPRECATED` (§5) |
 | Priority | Select | Business risk priority | `Critical` / `High` / `Medium` / `Low` |
 | Labels | Multi-select | Classification tags | `regression`, `smoke`, `e2e` |
+| Components | Multi-select | Affected product module — mandatory (defect-management doctrine Part 3) | `Payments` |
 | Automation Candidate | Boolean | Automation flag | true / false |
-| Parent | Link | Regression Epic | Epic: `Test Repository` |
-| Linked Story | Link | Traceability to requirement | `PROJ-100` |
+| Parent | Link | Regression Epic | Epic: `QA Test Repository` |
+| Linked Story | Link | Traceability to requirement — **modality-aware**: jira-native links the TC to the Story directly (`is tested by`); jira-xray routes traceability through the ATP (`is designed by`) / ATR (`is executed by`), never a direct TC→Story link | `PROJ-100` (jira-native) |
 
 ### Conditional
 
@@ -575,7 +576,7 @@ When 3+ independent factors each have multiple values (browser × locale × plan
 
 | Link | Type | When |
 |------|------|------|
-| User Story | "tests" / "is tested by" | Always |
+| User Story | "tests" / "is tested by" | **Modality jira-native only** — direct TC→Story link. Under jira-xray there is NO direct TC→Story link; traceability routes through the ATP (`is designed by`) / ATR (`is executed by`) |
 | ATP (Test Plan) | Parent / reference | Always, after ATP exists |
 | ATR (Test Results) | Reference | Always, after ATR exists |
 | Regression Epic | Parent | Always |
@@ -591,7 +592,10 @@ All TCs must belong to a Regression Epic — the permanent repository for the pr
 ```
 [ISSUE_TRACKER_TOOL] Search Issues:
   project: {{PROJECT_KEY}}
-  query: type = Epic AND (summary ~ "regression" OR summary ~ "test repository" OR labels = "test-repository")
+  query: type = Epic AND summary ~ "{qa.qa_epics.test_repository_epic.name}"
+  # Resolve by the configured name (qa.qa_epics.test_repository_epic.name — "QA Test Repository"),
+  # then fall back to the cached epic key. Identity is NOT a label lookup — the
+  # QA-Artifact label marks QA-process epics but the configured name is the resolver.
 ```
 
 If none exists, ask the user before creating:
@@ -602,7 +606,7 @@ If none exists, ask the user before creating:
   issueType: Epic
   title: "QA Test Repository"   # configured name qa.qa_epics.test_repository_epic.name
   description: "Container epic for all {{PROJECT_KEY}} regression tests."
-  labels: test-repository, regression, qa
+  labels: QA-Artifact, regression, qa   # QA-Artifact is mandatory on QA-process epics; `test-repository` is retired as an identity label
 ```
 
 Typical structure:
@@ -698,7 +702,7 @@ Automated results flow from CI to the TMS:
 | TC issue type | Xray Test |
 | Test Status field | Xray Test Status or Jira custom field |
 | Workflow Status | Jira custom workflow or Xray Test Status |
-| Regression Epic | Jira Epic with label `test-repository` |
+| Regression Epic | Jira Epic resolved by configured name (`qa.qa_epics.test_repository_epic.name` — "QA Test Repository"), then cached key; carries the `QA-Artifact` label |
 | Test Execution | Xray Test Execution |
 | Results import | Xray REST API (JUnit / Cucumber) |
 | CLI | `bun xray` (load `/xray-cli` skill) |

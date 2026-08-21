@@ -28,10 +28,10 @@ Every TMS artifact becomes one of these:
 | Issue type | Purpose | Notes |
 |------------|---------|-------|
 | **Test** | Individual test case (Manual / Cucumber / Generic) | Child of Regression Epic; linked to Story. |
-| **Test Set** | Groups tests by criteria (smoke / regression / domain) | Reusable across sprints; membership is an issue link, NEVER the TC prefix (the TC prefix is always `{US_ID}`). Title: `TS: {EPIC-KEY\|module}: Validate {feature}`. Parented to **QA Test Artifacts**. |
+| **Test Set** | Groups tests by criteria (smoke / regression / domain) | Reusable across sprints; membership is Xray-internal (manage via `/xray-cli`, read via `bun xray test enrich`) — NEVER a Jira issue link, NEVER the TC prefix (the TC prefix is always `{US_ID}`). Title: `TS: {EPIC-KEY\|module}: Validate {feature}`. Components optional: a Set spans modules by design. Parented to **QA Test Artifacts**. |
 | **Test Plan** | Strategic planning for a release / sprint | Planning-level container. Holds **FTP / STP / ATP** Plans (titles `FTP: …` / `STP: Sprint#{N}: Regression` / `ATP: {STORY-KEY}: {story title}`). Parented to **QA Master Test Plan**. |
 | **Test Execution** | One execution cycle; holds Test Runs | Holds **FTR / STR / ATR** Runs (titles `FTR: …` / `STR: Sprint#{N}: Regression Testing` / `ATR: {STORY-KEY}: Story Testing`). Carries Environment, Begin/End Date. Target of CI result import. Parented to **QA Test Artifacts**. |
-| **Pre-Condition** | Reusable prerequisites | Linked to Tests that share setup. Title: `PRC: {COMPONENT}: {required state}` — the **title states the required state**, the **content holds the setup steps** (kept distinct), e.g. `PRC: Auth: User logged in as Admin`. Parented to **QA Test Artifacts**. |
+| **Pre-Condition** | Reusable prerequisites | Associated to Tests that share setup — an Xray-internal association (manage via `/xray-cli`, read via `bun xray test enrich`), NEVER a Jira issue link. Title: `PRC: {COMPONENT}: {required state}` — the **title states the required state**, the **content holds the setup steps** (kept distinct), e.g. `PRC: Auth: User logged in as Admin`. Parented to **QA Test Artifacts**. |
 | **Test Run** | *Not a Jira issue* — internal entity inside a Test Execution | One per Test per Execution. Carries PASS/FAIL/TODO/BLOCKED/ABORTED/EXECUTING. |
 
 Typical hierarchy (parents are the QA-process Epics):

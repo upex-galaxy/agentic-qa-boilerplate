@@ -34,7 +34,7 @@ The entity model is tool-agnostic, but the **container** each entity lives in ch
 | **ATP** | A native Jira `Test Plan` issue, titled `ATP: {STORY-KEY}: {story title}`. Parented to **QA Master Test Plan**, linked to the Story via "tests". Real, queryable, JQL-filterable. Under Xray it is also the coverage anchor. | Story's `{{jira.acceptance_test_plan}}` field; else a `## Acceptance Test Plan (ATP)` comment. **No separate issue** — used only when the work type is absent. |
 | **ATR** | A native Jira `Test Execution` issue, titled `ATR: {STORY-KEY}: Story Testing`. Parented to **QA Test Artifacts**. Under Xray it holds `Test Runs` per TC, plus Environment, Begin/End Date, and is the target of `[TMS_TOOL] Import Results` at the end of every CI run. | Story's `{{jira.acceptance_test_results}}` field; else a `## Acceptance Test Results (ATR)` comment. **No separate issue.** CI updates the Test Status field on each TC directly. |
 | **TC** | Xray `Test` issue (type Manual / Cucumber / Generic), or a Jira-native `Test` custom issue type (set up per `references/jira-setup.md`) / `Task` with a `Test Type` custom field. Parented to **QA Test Repository**. | — |
-| **Test Set / Precondition** | Native Jira work types, parented to **QA Test Artifacts** (first-class under Xray; selectable plain Jira issue types otherwise). | Group by labels + the QA Test Repository / QA Test Artifacts Epic when the work type is absent. |
+| **Test Set / Precondition** | Native Jira work types, parented to **QA Test Artifacts** (first-class under Xray; selectable plain Jira issue types otherwise). `components` is OPTIONAL on Test Sets — the only TMS artifact exempt from the components mandate. | Group by labels + the QA Test Repository / QA Test Artifacts Epic when the work type is absent. |
 
 Key consequences:
 
@@ -94,6 +94,7 @@ Key consequences:
 | Workflow Status | Yes | `Draft` → `In Design` → `READY` → `In Review` → `Candidate` → `In Automation` → `Pull Request` → `AUTOMATED`, plus the `MANUAL` branch and `DEPRECATED` (any state). Exact names + full state machine in §8 — authoritative source `.agents/jira-workflows.json` (`work_types.test_case`) |
 | Priority | Yes | `Critical` / `High` / `Medium` / `Low` |
 | Labels | Yes | At least one scope label (`regression` almost always) |
+| Components | Yes | Affected product module (defect-management doctrine Part 3) |
 | Automation Candidate | Yes (boolean) | True when Candidate path |
 | Parent | Yes | Regression Epic / test repository |
 
@@ -213,11 +214,13 @@ Step 4. For each TC (as Stage 4 progresses):
 [TMS_TOOL] Create ATP:
   name: ATP: {STORY-KEY}: {story title}
   story: {from User Story title}            # Story `is tested by` ATP (test)
+  components: {inherited from the source Story}   # mandatory
   # Parent Epic: QA Master Test Plan
 
 [TMS_TOOL] Create ATR:
   name: ATR: {STORY-KEY}: Story Testing
   story: {from User Story title}            # Story `is tested by` ATR (test)
+  components: {inherited from the source Story}   # mandatory
   # Parent Epic: QA Test Artifacts
 
 [TMS_TOOL] Update ATP:
@@ -229,6 +232,7 @@ Step 4. For each TC (as Stage 4 progresses):
   test-plan: {from ATP name}                # ATP `designs` TC (test_design)
   test-result: {from ATR name}              # ATR `executes` TC (test_execute)
   ac: {from the Acceptance Criterion this TC covers}
+  components: [{module}]                    # mandatory — affected product module
   project: {{PROJECT_KEY}}
   # NO `story:` link — the TC is NOT linked to the User Story directly.
   # It aggregates to the Story through the ATP (`designs`) and ATR (`executes`).
@@ -373,33 +377,35 @@ Pseudocode splits by TMS modality — pick the block matching the resolution fro
 
 When the candidate list has more than 10 TCs, creating them serially burns the orchestrator's context with raw API responses. Shard the list into chunks of ~5-10 TCs per subagent, cap total subagents at 10. The orchestrator pre-creates the ATP / ATR (Phase 3 §Linking order steps 1-3) **before** dispatching — only the per-TC writes (step 4) are parallelised. See SKILL.md §Subagent Dispatch Strategy for the per-phase pattern table.
 
-**Sharding rule**: `ceil(N / 10)` subagents, each handling roughly equal-sized chunks. If `N > 100`, chunks must be larger than 10 each (cap is on subagent count, not chunk size). Each dispatch follows the 6-component briefing format in `.claude/skills/agentic-qa-core/references/briefing-template.md`.
+**Sharding rule**: `ceil(N / 10)` subagents, each handling roughly equal-sized chunks. If `N > 100`, chunks must be larger than 10 each (cap is on subagent count, not chunk size). Each dispatch follows the 7-component briefing format in `.claude/skills/agentic-qa-core/references/briefing-template.md`.
 
 ##### Modality jira-xray (subagent loads `/xray-cli`)
 
-Briefing (6 components per `agentic-qa-core/references/briefing-template.md`):
+Briefing (7 components per `agentic-qa-core/references/briefing-template.md`):
 
 ```
 Goal: Create <K> Xray Test issues in Jira project <PROJECT_KEY> for chunk <I>/<TOTAL>, link each to ATP <ATP_KEY> (designs) and ATR <ATR_KEY> (executes), and return their issue keys. Do NOT link the Tests to the Story <STORY_KEY> directly — the Story is linked only to the ATP and ATR.
 
 Context docs:
-  - <PBI_FOLDER>/test-specs/<spec>.md (TC definitions for this chunk)
+  - .session/test-documentation/<scope>/ (session contract artifact — the TC designs Phase 1-2 wrote; the definitions for this chunk live here, NOT in test-specs/, which holds keys only)
   - .agents/jira-fields.json (custom field IDs)
   - .claude/skills/test-documentation/references/tms-architecture.md (TC body shape, naming, linking order)
   - .claude/skills/test-documentation/references/jira-test-management.md §7 (Description template)
+
+Project Standards (auto-resolved): pulled from .claude/skills/REGISTRY.md per skill-resolver protocol
 
 Skills to load: /xray-cli, /acli
 
 Exact instructions:
   1. For each TC in the chunk:
-     a. [TMS_TOOL] Create Test: project=<PROJECT_KEY>, type={Cucumber|Manual}, title="{per TC naming convention}". For Manual: create WITHOUT inline steps (Xray Cloud drops steps on create), then add each step via [TMS_TOOL] add-step. For Cucumber: pass gherkin={from spec}.
+     a. [TMS_TOOL] Create Test: project=<PROJECT_KEY>, type={Cucumber|Manual}, title="{per TC naming convention}", components=[{module}] (mandatory — affected product module). For Manual: create WITHOUT inline steps (Xray Cloud drops steps on create), then add each step via [TMS_TOOL] add-step. For Cucumber: pass gherkin={from the session design artifact}.
      b. Capture the returned issue key as <TEST_KEY>.
      c. [ISSUE_TRACKER_TOOL] Update Issue: issue=<TEST_KEY>, description={full Description template per jira-test-management.md §7}.
      d. [TMS_TOOL] AddTests: testPlan=<ATP_KEY>, tests=[<TEST_KEY>].   # Xray-internal membership only — creates NO Jira link
      e. [TMS_TOOL] AddTests: execution=<ATR_KEY>, tests=[<TEST_KEY>].  # Xray-internal membership only — creates NO Jira link
      f. Jira-layer design/execute edges (SEPARATE from steps d/e): the Xray attach creates NO Jira links (confirmed, traceability-linking.md §9), so create them explicitly via [ISSUE_TRACKER_TOOL] (/acli): [ISSUE_TRACKER_TOOL] Link Issues linkType={{jira.link_types.test_design.name}} (ATP `designs` TC) and linkType={{jira.link_types.test_execute.name}} (ATR `executes` TC), then verify direction per traceability-linking.md §2/§4.
      g. Do NOT link the Test to the Story <STORY_KEY> directly — coverage aggregates to the Story through the ATP/ATR.
-  2. Apply labels per the methodology naming convention (see `tms-conventions.md` §Labels).
+  2. Apply labels per the methodology naming convention (see `tms-conventions.md` §Labels) and verify components landed on every created Test (mandatory field — never leave one empty).
 
 Report format:
   JSON array per TC:
@@ -428,23 +434,25 @@ Rules:
 
 ##### Modality jira-native (no Xray plugin; subagent loads `/acli`)
 
-Briefing (6 components per `agentic-qa-core/references/briefing-template.md`):
+Briefing (7 components per `agentic-qa-core/references/briefing-template.md`):
 
 ```
 Goal: Create <K> Jira Test issues in project <PROJECT_KEY> for chunk <I>/<TOTAL>, link each to the parent Story <STORY_KEY> via "is tested by", and return their issue keys.
 
 Context docs:
-  - <PBI_FOLDER>/test-specs/<spec>.md (TC definitions for this chunk)
+  - .session/test-documentation/<scope>/ (session contract artifact — the TC designs Phase 1-2 wrote; the definitions for this chunk live here, NOT in test-specs/, which holds keys only)
   - .agents/jira-fields.json (custom field IDs auto-discovered by `bun run jira:sync-fields`)
   - .agents/jira-required.yaml (custom-field manifest)
   - .claude/skills/test-documentation/references/jira-setup.md §3 (Modality jira-native field layout)
   - .claude/skills/test-documentation/references/jira-test-management.md §7 (Description template)
 
+Project Standards (auto-resolved): pulled from .claude/skills/REGISTRY.md per skill-resolver protocol
+
 Skills to load: /acli
 
 Exact instructions:
   1. For each TC in the chunk:
-     a. [ISSUE_TRACKER_TOOL] Create Issue: project=<PROJECT_KEY>, issueType=Test, summary="{per TC naming convention}", priority={Critical|High|Medium|Low}, labels=[regression, ...], epic=<REGRESSION_EPIC_KEY>.
+     a. [ISSUE_TRACKER_TOOL] Create Issue: project=<PROJECT_KEY>, issueType=Test, summary="{per TC naming convention}", priority={Critical|High|Medium|Low}, labels=[regression, ...], components=[{module}] (mandatory — affected product module), epic=<REGRESSION_EPIC_KEY>.
      b. Capture the returned issue key as <TEST_KEY>.
      c. [ISSUE_TRACKER_TOOL] Update Issue: issue=<TEST_KEY>, description={full Description template per jira-test-management.md §7}, fields={ {{jira.test_status}}: Draft, {{jira.to_be_automated}}: <bool> }.
      d. [ISSUE_TRACKER_TOOL] Link Issues: linkType={{jira.link_types.test.name}}, outward=<TEST_KEY>, inward=<STORY_KEY>.   # Story is tested by Test
@@ -492,6 +500,7 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
 [TMS_TOOL] Create TestPlan:
   project: {{PROJECT_KEY}}
   title: ATP: {STORY-KEY}: {story title}
+  components: {inherited from the source Story}   # mandatory
   # Parent Epic: QA Master Test Plan
 
 [TMS_TOOL] Create Execution:
@@ -499,6 +508,7 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
   title: ATR: {STORY-KEY}: Story Testing
   testPlan: {ATP_KEY}
   environment: {from session context}
+  components: {inherited from the source Story}   # mandatory
   # Parent Epic: QA Test Artifacts
 
 [ISSUE_TRACKER_TOOL] Link Issues:
@@ -515,6 +525,7 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
   project: {{PROJECT_KEY}}
   type: Cucumber | Manual | Generic
   title: {per TC naming convention}
+  components: [{module}]                      # mandatory — affected product module
   # Cucumber/Generic: pass gherkin/definition here.
   # Manual: create WITHOUT inline steps (Xray Cloud drops steps on create),
   #         then add each step via [TMS_TOOL] add-step.
@@ -580,6 +591,7 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
   summary: {per TC naming convention}
   epic: {REGRESSION_EPIC_KEY}
   labels: [regression, ...]
+  components: [{module}]                       # mandatory — affected product module
 
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {TEST_KEY}
@@ -666,7 +678,7 @@ The canonical implementation this file was derived from uses Jira with Xray. Map
 | Test Case issue type | Xray Test |
 | Test Plan | Jira `Test Plan` issue (items first; Story custom field = degraded fallback only) |
 | Test Execution (ATR) | Jira `Test Execution` issue (Xray adds the run engine) |
-| Regression Epic | Jira Epic with label `test-repository` |
+| Regression Epic | Jira Epic resolved by configured name (`qa.qa_epics.test_repository_epic.name` — "QA Test Repository"), then cached key; carries the `QA-Artifact` label |
 | Results import | Xray REST API (JUnit / Cucumber formats) |
 | CLI | `bun xray` (load `/xray-cli` skill) |
 
