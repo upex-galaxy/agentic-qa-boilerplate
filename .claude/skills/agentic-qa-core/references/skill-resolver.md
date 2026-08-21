@@ -137,6 +137,8 @@ When a subagent's task hits any of the above, the briefing must explicitly tell 
 
 ## Practical contract for skill authors
 
+**Frontmatter-first (authoritative).** A SKILL.md whose frontmatter carries a `compact_rules:` field owns its registry block outright: the build script uses those rules VERBATIM — no extraction, no 15-rule cap, no truncation — and stamps the entry `source: frontmatter`. Accepted shapes: a YAML list of strings (one rule per item), or a block scalar where each non-empty line is one rule (a leading `- ` is stripped). Use it for skills whose binding doctrine outgrows the extraction cap; the author is then responsible for keeping the field in sync with the body, and `bun run skills:registry` picks changes up on the next rebuild (`skills:registry:check` flags staleness). Without the field, extraction applies as below.
+
 To make a skill registry-friendly, authors SHOULD (but are not required to):
 
 1. Add an explicit `## Compact Rules` (or `## Standards`) section near the top of the SKILL.md body. The build script's Strategy A picks this up verbatim; otherwise it falls back to bullet extraction (Strategy B), which is best-effort.
