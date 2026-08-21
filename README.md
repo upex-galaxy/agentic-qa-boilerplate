@@ -594,6 +594,7 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 | `bun run api:sync`            | Sync OpenAPI spec and generate types                                         |
 | `bun run kata:manifest`       | Extract ATCs from codebase into a manifest (`--watch` flag available)        |
 | `bun run agents:setup`        | Interactive walkthrough to populate `.agents/project.yaml`                   |
+| `bun run git:policy`          | Parity between the declared `git_strategy:` (`.agents/project.yaml`) and GitHub's enforced ruleset: `verify` (read-only, runs on every push via pre-push; accepted divergences pass), `apply` (writes the ruleset, dry-run unless `--yes`), `plan`. Strategy itself is chosen via git-flow-master's "set up our git strategy" questionnaire. |
 | `bun run vars:check`          | Lint `.agents/` files for missing required values                            |
 | `bun run skills:check`        | Validate T1-T4 skill tier coherence (frontmatter, categories, anti-leak)     |
 | `bun run jira:sync-fields`    | Sync Jira custom-field catalog into `.agents/jira-fields.json`. **Requires Jira `Administer` permission** — non-admin users get a friendly skip + the UPEX-standard fallback below. |

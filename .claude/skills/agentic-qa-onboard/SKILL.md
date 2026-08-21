@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-onboard
-description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Backlog → Shift-Left QA → Estimation → Ready For Dev → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production), /shift-left-testing for pre-sprint AC refinement on backlog Stories, /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /framework-development for boilerplate evolution, MCPs available (six canonical: Context7, Tavily, Playwright, DBHub, OpenAPI, Postman — Atlassian is opt-in via docs/mcp/), critical env vars. ALSO the front desk for anyone who is lost or wants to understand how the repo or any workflow skill works — conceptually AND visually: it explains in plain human language (suspending caveman/compressed register) and can open per-skill how-it-works presentations (Spanish, technical terms in English) in the user's default browser after asking. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`, `I don't know how to use this`, `how does sprint-testing / test-automation work`, `how does this skill work`, `show me how it works`, `teach me how QA works here`, `walk me through this skill`, `no sé cómo usar esto`, `no entiendo cómo funciona el repo`, `cómo funciona este skill`, `explícame cómo funciona`, `enséñame cómo se hace`. Do NOT use for: pre-sprint refinement (use /shift-left-testing), feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing)."
+description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Backlog → Shift-Left QA → Estimation → Ready For Dev → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production), /shift-left-testing for pre-sprint AC refinement on backlog Stories, /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /framework-development for boilerplate evolution, MCPs available (six canonical: Context7, Tavily, Playwright, DBHub, OpenAPI, Postman — Atlassian is opt-in via docs/mcp/), critical env vars, and the ordered 4-phase NEW-PROJECT setup path (foundation → Jira catalogs → /project-discovery + /adapt-framework → git Strategy Setup). ALSO the front desk for anyone who is lost or wants to understand how the repo or any workflow skill works — conceptually AND visually: it explains in plain human language (suspending caveman/compressed register) and can open per-skill how-it-works presentations (Spanish, technical terms in English) in the user's default browser after asking. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`, `I don't know how to use this`, `how does sprint-testing / test-automation work`, `how does this skill work`, `show me how it works`, `teach me how QA works here`, `walk me through this skill`, `no sé cómo usar esto`, `no entiendo cómo funciona el repo`, `cómo funciona este skill`, `explícame cómo funciona`, `enséñame cómo se hace`, `how do I set this repo up for my app`, `full setup for a new project`, `cómo configuro el repo para mi proyecto`, `setup completo del repo`. Do NOT use for: pre-sprint refinement (use /shift-left-testing), feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing)."
 license: MIT
 compatibility: [claude-code, opencode]
 phase: bootstrap
@@ -132,6 +132,21 @@ bun run setup
 This bootstraps `.agents/`, installs the gentle-ai `engram` component (minimal preset), configures the 6 canonical MCPs, downloads Playwright browsers, installs 7 user-level community skills + 3 project-level community skills, and verifies the `${VAR}` placeholders in the committed `.mcp.json` against your `.env`. Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 After setup, fill `.env` with the credentials the rest of the workflow expects (see "Critical env vars" below).
+
+---
+
+## New project path — from a fresh clone to a repo adapted to YOUR app
+
+`bun run setup` is phase 1 of 4, not the whole story. A brand-new project (new app under test, new Jira project) walks this ordered sequence before the first ticket. Each phase self-defends (later steps gate on earlier ones), but knowing the order saves you from discovering it by error message:
+
+| Phase | Goal | How |
+| ----- | ---- | --- |
+| 1. Foundation | Tooling green on this machine | `bun run setup` → fill `.env` → `bun run agents:setup` (project identity + environments in `.agents/project.yaml`) → `bun run pw:install` → `bun run jira:check` |
+| 2. Jira side | The tracker's catalogs mirrored locally | `bun run jira:sync-fields` + `jira:sync-workflows` + `jira:sync-link-types` (generate the `.agents/*.json` catalogs every skill reads) → `/jira-components` (reconcile Jira Components against the app's real modules). First-time Jira provisioning: `docs/setup/jira-setup-guide.md` |
+| 3. App under test | The framework knows and fits YOUR app | `/project-discovery` (reverse-engineers the target repo → `.context/` with PRD, SRS, business maps) → `/adapt-framework` (adapts KATA, config, CI, MCPs to the stack; its Phase 0 GATES on `.context/` existing, so the order is enforced) → hands off to `/sync-ai-memory` |
+| 4. Git strategy | Branch policy is a decision, not an inherited default | Ask **"set up our git strategy"** (git-flow-master's Strategy Setup: 4 questions → `git_strategy:` block in `.agents/project.yaml`), then optionally `bun run git:policy apply` to mirror it on GitHub. If you skip this, git-flow-master OFFERS it on your first real git action anyway (template-trap guard) — and `bun run git:policy verify` runs on every push via the pre-push hook |
+
+After phase 4: `bun run context:hydrate` to pull the Jira cache, then `/sprint-testing <KEY>` for the first ticket. Joining an ALREADY-adapted project instead? Skip phases 2-4 (someone did them) and just run the checklist at the end of this tour.
 
 ---
 
@@ -298,7 +313,9 @@ Plus 3 project-level community skills installed into `.claude/skills/` (not comm
 
 ## Next steps after the onboard
 
-Run through this checklist before you reach for your first ticket:
+**On a brand-new project** (new app under test / new Jira project): follow the 4-phase "New project path" above — this checklist alone is not enough, it only covers phase 1.
+
+**Joining an already-adapted project**: run through this checklist before you reach for your first ticket:
 
 - [ ] Did you run `bun run setup`?
 - [ ] Did you fill `.env` with your own credentials (`LOCAL_*`, `STAGING_*`, `ATLASSIAN_*`, `XRAY_*`, `TAVILY_API_KEY`, `POSTMAN_API_KEY`)?
@@ -307,6 +324,7 @@ Run through this checklist before you reach for your first ticket:
 - [ ] Did you run `bun run jira:check` to verify Jira credentials?
 - [ ] Did you run `bun run pw:install` to get Playwright browsers?
 - [ ] Did you run `bun run context:hydrate` to build the `.context/PBI/` Jira cache? (gitignored and regenerable — Jira stays the source of truth)
+- [ ] Does the `git_strategy:` block in `.agents/project.yaml` reflect a CHOSEN strategy (`meta.strategy_source: chosen`)? If it still says `inherited`, git-flow-master will offer Strategy Setup on your first git action — accepting takes 4 questions.
 - [ ] Does engram persistent memory respond (try `mem_context` after restart)?
 - [ ] Ready for your first QA ticket: `/sprint-testing <UPEX-XXX>`
 
