@@ -10,8 +10,8 @@
 2. **PLAN BEFORE CODING**: Produce test plan (`spec.md` / impl plan) BEFORE writing test code. Flow: Plan → Code → Review.
 3. **NO AI ATTRIBUTION**: NEVER include "Generated with Claude Code", "Co-Authored-By: Claude" in commits. Commits look human-authored.
 4. **SHIFT-LEFT**: Evaluate ACs for clarity, testability, completeness. Raise questions ONLY when genuine gaps exist, never force questions to fill checklist.
-5. **CONFIRM BEFORE PUSH TO MAIN**: NEVER push to `main` without explicit user confirmation.
-6. **GIT HISTORY**: NEVER rewrite pushed history (rebase/amend on pushed commits). NEVER force-push to shared branches. NEVER delete remote branches without confirmation. ALWAYS add forward (new commits, not rewrite). ALWAYS preserve merge history.
+5. **PUSH TO PROTECTED = RESOLVE `git_strategy.policy.direct_push_to_protected`** (`.agents/project.yaml`; protected list = `git_strategy.protected`): `forbidden` → NEVER direct-push, route through a PR. `confirm` → ask explicit user confirmation before EVERY push. `allowed` → standing authorization, push without asking. `git_strategy` block missing or null (fresh scaffold) → behave as `confirm` (safe default: ask). NEVER hardcode the answer here — the variable is the decision.
+6. **GIT HISTORY (INVARIANTS, not strategy choices — no `git_strategy` value relaxes them)**: NEVER rewrite pushed history (rebase/amend on pushed commits). NEVER force-push a branch others may share — at minimum every branch in `git_strategy.protected`, plus integration/ephemeral trunks in `git_strategy.branches`. NEVER delete remote branches without confirmation. ALWAYS add forward (new commits, not rewrite). ALWAYS preserve merge history.
 7. **QUALITY VERIFICATION**: After code changes, verify in order: tests → types → lint. No skip steps.
 8. **FILE OPERATIONS**: ALWAYS read file before edit. Preserve formatting + indent. NEVER overwrite without reading.
 9. **SKILLS-FIRST**: All workflows live in `.claude/skills/`. NEVER paste instructions inline. Invoke matching skill, let it self-load detail. Use `[TAG_TOOL]` pseudocode + `{{VARIABLES}}` for dynamic content.
@@ -464,7 +464,7 @@ Git / PR work → `/git-flow-master` auto-loads. Details in `.claude/skills/git-
 
 | Branch | Status | Role |
 |---|---|---|
-| `main` | Always | Production + default branch. Only long-lived branch on `origin` today. PRs merged from a semantic branch (or `staging` if adopted) after review. |
+| `main` | Always | Production + default branch. Only long-lived branch on `origin` today. In this repo's `solo-main` flow work lands by DIRECT push (standing authorization — see `## Git Strategy`); a PR from a semantic branch is optional, for when a review gate is wanted. |
 | `staging` | Optional | Only if team adopts a main-integration flow. Integration branch for AI commits + pre-release validation. Does NOT exist on `origin` by default: do not assume it. |
 
 **Critical commit rules**:
@@ -472,7 +472,7 @@ Git / PR work → `/git-flow-master` auto-loads. Details in `.claude/skills/git-
 - Semantic prefixes: `feat:` / `fix:` / `docs:` / `test:` / `refactor:` / `chore:`
 - One commit = one responsibility. Clear messages.
 - **NO AI attribution** in commits.
-- **Confirm before push to `main`**.
+- **Push policy = Critical Rule #5**: resolve `git_strategy.policy.direct_push_to_protected` (this repo: `allowed` — standing authorization, no per-push confirm).
 - Test-automation PRs use `.claude/skills/git-flow-master/references/pr-test-automation.md` (auto-loaded by `/git-flow-master` on `test/*` branches). Title format: `{type}({ISSUE-KEY}): {description}`.
 
 ---
@@ -487,20 +487,21 @@ This repository (the boilerplate itself) runs `solo-main`: single maintainer, co
 
 ### Accepted divergence — declared policy vs enforced ruleset
 
-`bun run git:policy verify` reports one drift on `main`, and it is **intended**. Do not "fix" it:
+The one intended disagreement between yaml and host is **formally declared in `git_strategy.policy.accepted_divergences`** (`.agents/project.yaml`) — that entry, not this prose, is what `bun run git:policy verify` reads:
 
 ```
 main.direct_push_to_protected   declared: allowed   enforced: blocked (pull_request rule)
 ```
 
-The ruleset `ProtectPublic` (id `16809531`) does require a pull request on `main`. This repo pushes directly anyway, because the push credential is an org admin and sits in the ruleset's bypass list. The remote line `Bypassed rule violations ... Changes must be made through a pull request` is expected here and is not an error.
+The ruleset `ProtectPublic` (id `16809531`) does require a pull request on `main`. This repo pushes directly anyway, because the push credential is an org admin and sits in the ruleset's bypass list. The remote line `Bypassed rule violations ... Changes must be made through a pull request` is expected here and is not an error. The yaml stays `allowed` because that is how work actually lands (standing authorization — Critical Rule #5 resolves to it); the host rule keeps protecting every non-bypass contributor. Both sides are correct on purpose.
 
-Why the yaml stays `allowed` rather than being "corrected" to `confirm`: `allowed` describes how work actually lands in this repository, and it is the value `git-flow-master` reads before deciding whether to ask permission for each push. Flipping it would make every agent stop and confirm on a flow that has standing authorization.
+Operational consequences:
 
-Two consequences worth knowing:
+- **`verify` reports it under `ACCEPTED`, exits 0**, and warns if the entry ever goes stale (no matching drift). It runs automatically in the pre-push hook and in `bun run repo:check`; only UNACCEPTED drift blocks. Unreachable host = warn + exit 0 (absence of data is not drift).
+- **`verify --stamp` records `meta.policy_source: accepted`** — distinct from `verified`, which still means "host matches the yaml exactly".
+- **`bun run git:policy apply` preserves the host's side of accepted fields** (the `pull_request` rule is carried forward verbatim instead of being derived away), so applying no longer risks opening `main`. Still: always read the dry run before `--yes`.
 
-- **`meta.policy_source` stays `declared`** while this divergence is open. A `verified` stamp would claim the two sides agree, and they do not.
-- **`bun run git:policy apply` must NOT be run on this repository.** With `direct_push_to_protected: allowed`, the tool derives a ruleset with **no** `pull_request` rule, so applying it would strip the requirement for everyone who is not a bypass actor. The loosening guard blocks it, and that guard is the only thing standing between this config and an open `main`. Surgical host changes here go through `gh api` directly.
+Mechanism doc: `.claude/skills/git-flow-master/references/ruleset-parity.md` §2b.
 
 ---
 
