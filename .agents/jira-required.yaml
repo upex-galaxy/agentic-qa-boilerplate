@@ -833,7 +833,11 @@ work_types:
 
   test_plan:
     jira_issue_type: Test Plan
-    description: Xray Test Plan — holds the ATP body in its description (role atp)
+    description: |
+      Xray Test Plan — holds the ATP body in its description (role atp). Altitude guard
+      (sync-jira-issues): only a Plan titled `ATP:*` syncs as a Story's acceptance-test-plan.md;
+      `FTP:*` / `STP:*` / `MTP:*` Plans are higher ladder altitudes and are skipped with an info
+      line. Unprefixed titles keep the legacy behavior (any linked Plan counts).
     sync: discovery
     role: atp
     content: description
@@ -841,7 +845,11 @@ work_types:
 
   test_execution:
     jira_issue_type: Test Execution
-    description: Xray Test Execution — holds the ATR body in its description (role atr)
+    description: |
+      Xray Test Execution — holds the ATR body in its description (role atr). Altitude guard
+      (sync-jira-issues): only an Execution titled `ATR:*` / `ReTest:*` syncs as a Story's
+      acceptance-test-results.md; `STR:*` / `FTR:*` Executions are skipped with an info line.
+      Unprefixed titles keep the legacy behavior (any linked Execution counts).
     sync: discovery
     role: atr
     content: description
@@ -849,7 +857,7 @@ work_types:
 
   re_test_execution:
     jira_issue_type: Re-Test Execution
-    description: Xray Re-Test Execution (subtask) — retest ATR (role atr)
+    description: Xray Re-Test Execution (subtask) — retest ATR (role atr, same altitude guard as test_execution)
     sync: discovery
     role: atr
     content: description
@@ -857,7 +865,11 @@ work_types:
 
   test_set:
     jira_issue_type: Test Set
-    description: Xray Test Set — grouping of tests (not synced)
+    description: |
+      Xray Test Set — grouping of tests. Never synced as its own folder, but a Set titled
+      `ATS:*` linked to a coverable issue feeds cascade rung 1 of sync-jira-issues: its member
+      Tests (Xray GraphQL membership, or TC→ATS Jira links in Modality jira-native) materialize
+      under that issue's test-cases/. Feature-level `TS:*` Sets stay ignored.
     sync: never
     local_dir: test-sets
 
@@ -866,3 +878,12 @@ work_types:
     description: Xray Precondition — reusable test prerequisite (not synced)
     sync: never
     local_dir: preconditions
+
+  subtask:
+    # Instances map this to their own subtask-level issue type — the BK test
+    # instance uses "Task". Consumed by /shift-left-testing for the per-Story
+    # "[QA] Shift-Left Review" tracking subtask (find-or-create; skip with a
+    # warning when the project has no subtask-level type).
+    jira_issue_type: Sub-task
+    description: Generic subtask under a Story — tracking-only, never synced as its own folder
+    sync: never

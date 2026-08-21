@@ -91,6 +91,16 @@ import {
   instanceSourceLabel,
   resolveAtlassianInstance,
 } from '../cli/lib/atlassian-instance';
+import {
+  loadConfig as loadXrayCliConfig,
+  loadToken as loadXrayToken,
+  saveToken as saveXrayToken,
+} from '../cli/xray/lib/config';
+import {
+  QUERIES as XRAY_QUERIES,
+  authenticate as xrayAuthenticate,
+  graphql as xrayGraphql,
+} from '../cli/xray/lib/graphql';
 
 // ============================================================================
 // CONSTANTS
@@ -2223,17 +2233,48 @@ function loadLinkTypeNames(slugs: string[]): Set<string> {
   return names;
 }
 
-/** Splits an issue's links into ATP (Test Plan), ATR (Test / Re-Test Execution), Test and Defect buckets. */
+// ---------------------------------------------------------------------------
+// Artifact-ladder altitudes (title-prefix guard)
+//
+// The ladder puts ATP / ATR / ATS at Story altitude; FTP (feature), STP / STR
+// (sprint) and MTP (master) live higher and must NEVER materialize as a Story's
+// acceptance-test-plan.md / acceptance-test-results.md just because they are
+// linked to it. Titles with no recognized prefix keep the pre-ladder behavior
+// (any linked Plan / Execution counts) for backward compatibility.
+// ---------------------------------------------------------------------------
+
+/** Story-altitude Test Plan title (`ATP: {US_ID}: ...`) — cascade rung 2 gate. */
+const STORY_ATP_PREFIX = /^ATP:/i;
+/** Story-altitude Test Set title (`ATS: {US_ID}: ...`) — cascade rung 1 gate. */
+const STORY_ATS_PREFIX = /^ATS:/i;
+/** Higher-altitude ladder artifacts a Story link must skip for its ATP/ATR. */
+const HIGHER_ALTITUDE_PREFIX = /^(FTP|FTR|STP|STR|MTP):/i;
+
+/** Human label for a skipped higher-altitude artifact's info line. */
+function higherAltitudeLabel(summary: string): string {
+  const m = HIGHER_ALTITUDE_PREFIX.exec(summary.trim());
+  const p = (m?.[1] ?? '').toUpperCase();
+  if (p === 'STP' || p === 'STR') { return 'sprint-altitude'; }
+  if (p === 'FTP' || p === 'FTR') { return 'feature-altitude'; }
+  return 'master-plan-altitude';
+}
+
+/** Splits an issue's links into ATP (Test Plan), ATR (Test / Re-Test Execution), ATS (Test Set), Test and Defect buckets. */
 function classifyCoverageLinks(issue: JiraIssue, reg: Registry): {
   atp: CoverageLink[]
   atr: CoverageLink[]
+  sets: CoverageLink[]
   tests: CoverageLink[]
   defects: Array<CoverageLink & { linkOk: boolean }>
+  /** Higher-altitude Plans/Executions skipped by the title guard (info-lined, never materialized). */
+  skipped: Array<CoverageLink & { role: 'ATP' | 'ATR' }>
 } {
   const atp: CoverageLink[] = [];
   const atr: CoverageLink[] = [];
+  const sets: CoverageLink[] = [];
   const tests: CoverageLink[] = [];
   const defects: Array<CoverageLink & { linkOk: boolean }> = [];
+  const skipped: Array<CoverageLink & { role: 'ATP' | 'ATR' }> = [];
   const acceptedDefectNames = loadLinkTypeNames(reg.bySlug.get('defect')?.defectLinkTypes ?? []);
 
   for (const link of issue.fields.issuelinks ?? []) {
@@ -2247,12 +2288,147 @@ function classifyCoverageLinks(issue: JiraIssue, reg: Registry): {
       summary: other.fields.summary,
       linkTypeName: link.type.name,
     };
-    if (entry.role === 'atp') { atp.push(cl); }
-    else if (entry.role === 'atr') { atr.push(cl); }
+    if (entry.role === 'atp') {
+      if (HIGHER_ALTITUDE_PREFIX.test(cl.summary.trim())) { skipped.push({ ...cl, role: 'ATP' }); }
+      else { atp.push(cl); } // `ATP:*` or unprefixed (backward compat)
+    }
+    else if (entry.role === 'atr') {
+      if (HIGHER_ALTITUDE_PREFIX.test(cl.summary.trim())) { skipped.push({ ...cl, role: 'ATR' }); }
+      else { atr.push(cl); } // `ATR:*` / `ReTest:*` or unprefixed (backward compat)
+    }
+    else if (entry.slug === 'test_set') {
+      // Only the Story's own `ATS:*` Set feeds cascade rung 1. Feature-level
+      // `TS:*` Sets stay ignored, exactly as every Test Set was before.
+      if (STORY_ATS_PREFIX.test(cl.summary.trim())) { sets.push(cl); }
+    }
     else if (entry.slug === 'test_case') { tests.push(cl); }
     else if (entry.slug === 'defect') { defects.push({ ...cl, linkOk: acceptedDefectNames.has(link.type.name) }); }
   }
-  return { atp, atr, tests, defects };
+  return { atp, atr, sets, tests, defects, skipped };
+}
+
+// ---------------------------------------------------------------------------
+// Placement cascade (TC → ATS → Story · TC → ATP → Story · TC → Story direct)
+//
+// REST sees Jira issue links but NOT Xray membership (TC ∈ ATS / TC ∈ ATP is
+// Xray-internal, GraphQL-only). Rungs 1-2 therefore reuse the xray-cli GraphQL
+// client when its credentials are available; without them the sync degrades to
+// REST-only (links) plus ONE end-of-run advisory — never a failure.
+// ---------------------------------------------------------------------------
+
+type XrayGqlState = 'unknown' | 'ready' | 'unavailable';
+let XRAY_GQL_STATE: XrayGqlState = 'unknown';
+
+/**
+ * True when the Xray GraphQL client can authenticate: a cached token, a saved
+ * `xray auth login` config, or `XRAY_CLIENT_ID` + `XRAY_CLIENT_SECRET` in the
+ * environment (authenticated lazily, once). Any failure → unavailable, cached.
+ */
+async function xrayGraphqlReady(): Promise<boolean> {
+  if (XRAY_GQL_STATE !== 'unknown') { return XRAY_GQL_STATE === 'ready'; }
+  try {
+    if (loadXrayToken() || loadXrayCliConfig()) {
+      XRAY_GQL_STATE = 'ready';
+      return true;
+    }
+    const id = process.env.XRAY_CLIENT_ID;
+    const secret = process.env.XRAY_CLIENT_SECRET;
+    if (id && secret) {
+      saveXrayToken(await xrayAuthenticate(id, secret));
+      XRAY_GQL_STATE = 'ready';
+      return true;
+    }
+  }
+  catch { /* creds present but auth failed — degrade to REST-only, never fail the sync */ }
+  XRAY_GQL_STATE = 'unavailable';
+  return false;
+}
+
+let CASCADE_ADVISORY_EMITTED = false;
+
+/** One end-of-run advisory (per process) when membership rungs had to degrade to REST-only. */
+function pushCascadeAdvisory(result: SyncResult): void {
+  if (CASCADE_ADVISORY_EMITTED) { return; }
+  CASCADE_ADVISORY_EMITTED = true;
+  result.warnings.push(
+    'INFO: cascade rungs 1-2 (ATS / ATP membership) need Xray GraphQL credentials — Tests were resolved from Jira links only. '
+    + 'Set XRAY_CLIENT_ID + XRAY_CLIENT_SECRET (or run `bun xray auth login`) to resolve Test Set / Test Plan membership.',
+  );
+}
+
+interface XrayMemberList {
+  tests?: { results?: Array<{ jira?: { key?: string } }> }
+}
+
+/**
+ * Member Test keys of one Xray container (Test Set or Test Plan), one GraphQL
+ * call per container — never per Test. `null` = lookup failed (caller degrades
+ * to REST links and info-lines it; a hiccup here must not fail the sync).
+ */
+async function xrayContainerMembers(kind: 'set' | 'plan', issueId: string): Promise<string[] | null> {
+  try {
+    const container = kind === 'set'
+      ? (await xrayGraphql<{ getTestSet?: XrayMemberList }>(XRAY_QUERIES.getTestSet, { issueId })).getTestSet
+      : (await xrayGraphql<{ getTestPlan?: XrayMemberList }>(XRAY_QUERIES.getTestPlan, { issueId })).getTestPlan;
+    return (container?.tests?.results ?? [])
+      .map(r => r.jira?.key)
+      .filter((k): k is string => Boolean(k));
+  }
+  catch {
+    return null;
+  }
+}
+
+/**
+ * Test keys linked (Jira issue links) to a container issue — the jira-native
+ * rung-1 path, where `TC → ATS` membership IS expressed as links (the
+ * "membership is never a link" rule is a Modality jira-xray carve-out).
+ */
+function linkedTestKeys(container: JiraIssue, reg: Registry): string[] {
+  const keys: string[] = [];
+  for (const link of container.fields.issuelinks ?? []) {
+    const other = link.inwardIssue ?? link.outwardIssue;
+    if (!other) { continue; }
+    if (reg.byJiraType.get(other.fields.issuetype?.name ?? '')?.slug === 'test_case') { keys.push(other.key); }
+  }
+  return keys;
+}
+
+/**
+ * Materializes one Test under the coverable's `test-cases/`, identically for
+ * every cascade rung. A Test already placed by an earlier rung is not
+ * re-placed. The multi-coverage notice fires exactly as it did for
+ * direct-linked Tests (lowest-keyed coverer reports it).
+ */
+async function placeCascadeTest(
+  config: Config,
+  coverable: JiraIssue,
+  tcDir: string,
+  testKey: string,
+  options: SyncOptions,
+  result: SyncResult,
+  reg: Registry,
+  placed: Set<string>,
+): Promise<void> {
+  if (placed.has(testKey) || testKey === coverable.key) { return; }
+  placed.add(testKey);
+  if (!options.dryRun) { ensureDir(tcDir); }
+  const tIssue = await fetchIssue(config, testKey, TEST_FIELDS);
+  const body = generateTestMarkdown(tIssue, config);
+  const prefix = FOLDER_PREFIX.test_case ?? 'TEST';
+  bumpFile(writeIndexFile(join(tcDir, `${prefix}-${tIssue.key}-${generateSlug(tIssue.fields.summary)}.md`), body, options.dryRun).status, result);
+  result.synced.tests++;
+
+  // A Test may cover several issues; it is then written under each of them.
+  // Duplicating is safe here — every copy is generated from the same sync of
+  // the same Jira issue, so they cannot drift — but broad coverage is usually
+  // a sign the Test should be split, so it is worth naming. Reported only
+  // while processing the lowest-keyed coverer, otherwise the same Test would
+  // announce itself once per issue it covers.
+  const covered = coverableLinkKeys(tIssue, reg);
+  if (covered.length > 1 && coverable.key === covered[0]) {
+    result.warnings.push(`INFO: ${tIssue.key} covers ${covered.length} issues (${covered.join(', ')}) — materialized under each`);
+  }
 }
 
 /** Provenance footer appended to an ATP/ATR file synced from a linked Xray artifact. */
@@ -2275,9 +2451,15 @@ async function discoverCoverage(
   result: SyncResult,
 ): Promise<void> {
   const reg = loadRegistry();
-  const { atp, atr, tests, defects } = classifyCoverageLinks(issue, reg);
+  const { atp, atr, sets, tests, defects, skipped } = classifyCoverageLinks(issue, reg);
+
+  // --- Altitude guard: higher-ladder artifacts linked to this issue are named, never materialized ---
+  for (const s of skipped) {
+    result.warnings.push(`INFO: ${issue.key}: skipping ${s.summary} (${s.key}) — ${higherAltitudeLabel(s.summary)} artifact, not this Story's ${s.role}`);
+  }
 
   // --- ATP: Xray Test Plan description overrides the custom-field copy ---
+  const fetchedPlans = new Map<string, JiraIssue>();
   if (atp.length > 0) {
     const chosen = atp[0];
     if (atp.length > 1) {
@@ -2287,6 +2469,7 @@ async function discoverCoverage(
       result.warnings.push(`${issue.key} ↔ ${chosen.key} (ATP) linked via '${chosen.linkTypeName}' (expected 'is tested by') — fix Jira link`);
     }
     const tp = await fetchIssue(config, chosen.key, TEST_FIELDS);
+    fetchedPlans.set(chosen.key, tp);
     const body = generateXrayArtifactMarkdown(tp, 'ACCEPTANCE TEST PLAN (ATP)', config) + coverageProvenance('ATP', chosen, config);
     bumpFile(writeIndexFile(join(folder, 'acceptance-test-plan.md'), body, options.dryRun).status, result);
   }
@@ -2315,34 +2498,61 @@ async function discoverCoverage(
     }
   }
 
-  // --- Tests: nested under test-cases/ (the anti-duplication rule) ---
+  // --- Placement cascade: TC→ATS→Story (1) · TC→ATP→Story (2) · TC→Story direct (3) ---
+  // A Test placed by an earlier rung is never re-placed by a later one.
+  const tcDir = join(folder, 'test-cases');
+  const placedTests = new Set<string>();
+
+  // Rung 1 — members of each linked `ATS:*` Test Set. Membership comes from
+  // Xray GraphQL (one call per Set) when credentials allow; the Set's own Jira
+  // links to Tests (the jira-native membership shape) are honored either way.
+  for (const setLink of sets) {
+    const setIssue = await fetchIssue(config, setLink.key, TEST_FIELDS);
+    let members: string[] | null = null;
+    if (await xrayGraphqlReady()) {
+      members = await xrayContainerMembers('set', setIssue.id);
+      if (members === null) {
+        result.warnings.push(`INFO: ${setLink.key}: Xray GraphQL membership lookup failed — resolving from Jira links only`);
+      }
+    }
+    else {
+      pushCascadeAdvisory(result);
+    }
+    const memberKeys = new Set<string>([...(members ?? []), ...linkedTestKeys(setIssue, reg)]);
+    for (const k of memberKeys) {
+      await placeCascadeTest(config, issue, tcDir, k, options, result, reg, placedTests);
+    }
+  }
+
+  // Rung 2 — members of each linked `ATP:*` Test Plan (placement-only; a Plan
+  // link never fills the coverage panel). Plan membership has no REST shape,
+  // so this rung is GraphQL-only.
+  const cascadePlans = atp.filter(l => STORY_ATP_PREFIX.test(l.summary.trim()));
+  for (const planLink of cascadePlans) {
+    if (!(await xrayGraphqlReady())) {
+      pushCascadeAdvisory(result);
+      break;
+    }
+    const planIssue = fetchedPlans.get(planLink.key) ?? await fetchIssue(config, planLink.key, TEST_FIELDS);
+    const members = await xrayContainerMembers('plan', planIssue.id);
+    if (members === null) {
+      result.warnings.push(`INFO: ${planLink.key}: Xray GraphQL membership lookup failed — resolving from Jira links only`);
+      continue;
+    }
+    for (const k of members) {
+      await placeCascadeTest(config, issue, tcDir, k, options, result, reg, placedTests);
+    }
+  }
+
+  // Rung 3 — Tests directly linked to this issue (the anti-duplication rule).
   // A Test that covers this issue belongs to it. Materializing it here is what
   // lets `.context/PBI/tests/` shrink to genuinely orphan Tests instead of
   // holding a second copy of every Test already reachable from a Story.
-  if (tests.length > 0) {
-    const tcDir = join(folder, 'test-cases');
-    if (!options.dryRun) { ensureDir(tcDir); }
-    for (const t of tests) {
-      if (t.linkTypeName !== 'Test') {
-        result.warnings.push(`${issue.key} ↔ ${t.key} (Test) linked via '${t.linkTypeName}' (expected 'is tested by') — fix Jira link`);
-      }
-      const tIssue = await fetchIssue(config, t.key, TEST_FIELDS);
-      const body = generateTestMarkdown(tIssue, config);
-      const prefix = FOLDER_PREFIX.test_case ?? 'TEST';
-      bumpFile(writeIndexFile(join(tcDir, `${prefix}-${tIssue.key}-${generateSlug(tIssue.fields.summary)}.md`), body, options.dryRun).status, result);
-      result.synced.tests++;
-
-      // A Test may cover several issues; it is then written under each of them.
-      // Duplicating is safe here — every copy is generated from the same sync of
-      // the same Jira issue, so they cannot drift — but broad coverage is usually
-      // a sign the Test should be split, so it is worth naming. Reported only
-      // while processing the lowest-keyed coverer, otherwise the same Test would
-      // announce itself once per issue it covers.
-      const covered = coverableLinkKeys(tIssue, reg);
-      if (covered.length > 1 && issue.key === covered[0]) {
-        result.warnings.push(`INFO: ${tIssue.key} covers ${covered.length} issues (${covered.join(', ')}) — materialized under each`);
-      }
+  for (const t of tests) {
+    if (t.linkTypeName !== 'Test') {
+      result.warnings.push(`${issue.key} ↔ ${t.key} (Test) linked via '${t.linkTypeName}' (expected 'is tested by') — fix Jira link`);
     }
+    await placeCascadeTest(config, issue, tcDir, t.key, options, result, reg, placedTests);
   }
 
   // --- Defects: nested under defects/ (skipped with --no-defects) ---
@@ -2910,6 +3120,96 @@ function hasCoverableLink(issue: JiraIssue, reg: Registry): boolean {
   return coverableLinkKeys(issue, reg).length > 0;
 }
 
+/** Keys of `ATS:*` Test Sets this issue links to (the jira-native membership shape). */
+function linkedAtsSetKeys(issue: JiraIssue, reg: Registry): string[] {
+  const keys: string[] = [];
+  for (const link of issue.fields.issuelinks ?? []) {
+    const other = link.inwardIssue ?? link.outwardIssue;
+    if (!other) { continue; }
+    if (reg.byJiraType.get(other.fields.issuetype?.name ?? '')?.slug !== 'test_set') { continue; }
+    if (STORY_ATS_PREFIX.test(other.fields.summary.trim())) { keys.push(other.key); }
+  }
+  return keys;
+}
+
+interface XrayEnrichmentResult {
+  getTests?: {
+    results?: Array<{
+      jira?: { key?: string }
+      testSets?: { results?: Array<{ jira?: { key?: string, summary?: string } }> }
+    }>
+  }
+}
+
+/**
+ * Drops the false orphans: a Test with no direct coverable link is still placed
+ * by cascade rung 1 when it belongs to an `ATS:*` Set that covers a Story.
+ * Membership comes from the Test's own Jira links (jira-native shape, REST) and
+ * — when credentials allow — from Xray GraphQL enrichment, batched per 100 Tests
+ * (never one call per Test). Any lookup failure keeps the candidate an orphan:
+ * degraded output, never a failed sync.
+ */
+async function refineOrphansByMembership(
+  config: Config,
+  candidates: JiraIssue[],
+  reg: Registry,
+  result: SyncResult,
+): Promise<JiraIssue[]> {
+  if (candidates.length === 0) { return candidates; }
+
+  // Test key → ATS:* Set keys it belongs to (both membership shapes).
+  const setsByTest = new Map<string, Set<string>>();
+  for (const t of candidates) {
+    setsByTest.set(t.key, new Set(linkedAtsSetKeys(t, reg)));
+  }
+
+  if (await xrayGraphqlReady()) {
+    for (let i = 0; i < candidates.length; i += 100) {
+      const chunk = candidates.slice(i, i + 100);
+      try {
+        const data = await xrayGraphql<XrayEnrichmentResult>(XRAY_QUERIES.getTestsEnrichment, {
+          jql: `issue in (${chunk.map(t => t.key).join(', ')})`,
+          limit: 100,
+        });
+        for (const r of data.getTests?.results ?? []) {
+          const key = r.jira?.key;
+          if (!key) { continue; }
+          for (const s of r.testSets?.results ?? []) {
+            if (s.jira?.key && STORY_ATS_PREFIX.test((s.jira.summary ?? '').trim())) {
+              setsByTest.get(key)?.add(s.jira.key);
+            }
+          }
+        }
+      }
+      catch {
+        result.warnings.push('INFO: Xray GraphQL enrichment failed while checking orphan Tests — membership-only Tests may be listed as orphans');
+        break;
+      }
+    }
+  }
+
+  // A Set only rescues its members when it covers a coverable issue itself.
+  const allSetKeys = new Set<string>([...setsByTest.values()].flatMap(s => [...s]));
+  const coveringSets = new Set<string>();
+  for (const setKey of allSetKeys) {
+    try {
+      const setIssue = await fetchIssue(config, setKey, TEST_FIELDS);
+      if (hasCoverableLink(setIssue, reg)) { coveringSets.add(setKey); }
+    }
+    catch { /* unreadable Set — leave its members as orphans */ }
+  }
+
+  const kept = candidates.filter((t) => {
+    const viaSets = setsByTest.get(t.key) ?? new Set<string>();
+    return ![...viaSets].some(s => coveringSets.has(s));
+  });
+  const rescued = candidates.length - kept.length;
+  if (rescued > 0) {
+    result.warnings.push(`INFO: ${rescued} Test(s) reachable via ATS membership (cascade rung 1) — not orphans`);
+  }
+  return kept;
+}
+
 /**
  * Materializes Tests that no coverable issue covers, into `epics/_orphans/tests/`.
  *
@@ -2935,7 +3235,8 @@ async function syncOrphanTests(
   );
 
   const reg = loadRegistry();
-  const orphans = allTests.filter(t => !hasCoverableLink(t, reg));
+  const candidates = allTests.filter(t => !hasCoverableLink(t, reg));
+  const orphans = await refineOrphansByMembership(config, candidates, reg, result);
   const nested = allTests.length - orphans.length;
 
   if (!options.json) {
