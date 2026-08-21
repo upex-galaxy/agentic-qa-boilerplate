@@ -105,7 +105,7 @@ It queries BOTH GitHub protection mechanisms for every branch in `git_strategy.b
 **Facts that still bind you when reading its output:**
 
 - **A `404` from `branches/{b}/protection` does NOT mean the branch is unprotected.** A repo governed by rulesets returns `404` there while enforcing PR requirements, approvals, signed commits and non-fast-forward bans through `rules/branches/{b}`. Stopping at the classic endpoint produces a confident "unprotected" reading on a branch that requires a reviewed pull request.
-- **A push that succeeds is not evidence of an absent rule.** Org owners and anyone on the ruleset bypass list push through while the rule still binds everyone else. When a push prints `Changes must be made through a pull request`, that was a BYPASS: report it as one, never as permission.
+- **A push that succeeds is not evidence of an absent rule.** Org owners and anyone on the ruleset bypass list push through while the rule still binds everyone else. When a push prints `Changes must be made through a pull request`, that was a BYPASS: report it as one, never as permission. With `git_strategy.policy.admin_bypass: true` (or the divergence listed in `git_strategy.policy.accepted_divergences`), the `Bypassed rule violations` remote line is the DOCUMENTED norm — mention it in the report as expected, do NOT treat it as an anomaly, do NOT stall asking for confirmation, and NEVER open a PR to "satisfy" the rule.
 - **`require_code_owner_review: true` with no `CODEOWNERS` file is unsatisfiable, not strict.** Nobody outside the bypass list can clear it, so every merge becomes a bypass.
 
 **On drift, report — never auto-correct.** Three legitimate resolutions: update `.agents/project.yaml` to match the host, change the host (`bun run git:policy apply`, dry run until `--yes`), or accept the divergence and record WHY in this project's own `CLAUDE.md`. Editing either side needs the user's choice.
@@ -208,7 +208,7 @@ In a QA repo most work lands as `test/`, `fix/`, or `chore/` branches. Feature b
 2. `$ARGUMENTS` for `[A-Z]+-\d+`.
 3. Ask the user once: "Is there an issue key for this work?" — accept "no" gracefully.
 
-**Branch name format**:
+**Branch name format** — read `git_strategy.branch_prefixes` in `.agents/project.yaml` (`naming_with_key` / `naming_without_key` / `precedence`); the patterns below are the shipped defaults, used verbatim when the block is absent:
 
 - With key: `{prefix}/{ISSUE-KEY}-{kebab-slug}` (e.g. `test/UPEX-123-bulk-assign-coverage`).
 - Without key: `{prefix}/{kebab-slug}` (e.g. `refactor/split-kata-fixtures`).
@@ -263,7 +263,7 @@ Push command depends on Step 1 output:
 - Upstream behind → `git push`.
 - Upstream diverged → **stop**. Do not force. Hand to conflict resolution (3.5).
 
-**Protected-branch confirmation** — before pushing to any branch the strategy treats as protected, ask explicitly:
+**Protected branches per strategy** — the branches the policy gate below guards (union with `git_strategy.protected`):
 
 - `solo-main` → `main` is protected.
 - `main-integration` → both `main` and the integration branch are protected.
@@ -276,11 +276,11 @@ Push command depends on Step 1 output:
 
 | `git_strategy.policy.direct_push_to_protected` | Behaviour |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `allowed`                                      | Proceed after the normal protected-branch confirm (ask once, then push).                                  |
-| `confirm` (default)                            | Always ask — current behaviour. Wait for explicit yes.                                                     |
+| `allowed`                                      | **Standing authorization** — push WITHOUT a per-push confirm. The recorded value IS the authorization (stamped by Strategy Setup with the user); asking anyway collapses `allowed` into `confirm` and empties the third state. |
+| `confirm` (default)                            | Always ask. Wait for explicit yes.                                                                         |
 | `forbidden`                                    | **Refuse** the direct push. Redirect to the PR flow (3.4): propose a work branch + `gh pr create`.        |
 
-For `confirm` / `allowed`, ask: _"You are about to push directly to the protected branch `{branch}` in a `{strategy}` flow. Confirm?"_ Wait for explicit yes.
+For `confirm`, ask: _"You are about to push directly to the protected branch `{branch}` in a `{strategy}` flow. Confirm?"_ Wait for explicit yes. **Missing or null `git_strategy` block** (fresh scaffold, project never onboarded) → behave as `confirm`: the safe default is to ask, never to assume standing authorization.
 
 **Admin bypass (only when contemplating skipping PR/protection for an urgent change):** only when `git_strategy.policy.admin_bypass: true` may the skill OFFER a bypass — and it MUST re-confirm at runtime BOTH: (a) the operator actually holds admin rights on the repo (ASK — the skill cannot know the GitHub role; `admin_bypass` is a team POLICY intent, not a capability check), AND (b) the irreversible action itself. If `git_strategy.policy.admin_bypass: false`, NEVER offer a bypass regardless of the operator's role.
 

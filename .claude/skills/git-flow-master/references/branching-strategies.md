@@ -432,7 +432,7 @@ git_strategy:
     require_pr_reviews: 0
 ```
 
-Work lands on `main` directly, or via an optional PR → `main` when a review/CI gate is wanted. No promotion or hotfix ceremony — there is one branch. Q4 policy: direct push to `main` is `allowed` (still confirmed once per the Push op), no admin bypass, zero required reviews.
+Work lands on `main` directly, or via an optional PR → `main` when a review/CI gate is wanted. No promotion or hotfix ceremony — there is one branch. Q4 policy: direct push to `main` is `allowed` (standing authorization — no per-push confirm), no admin bypass, zero required reviews.
 
 ### `github-flow` — field rule (MINIMAL)
 
