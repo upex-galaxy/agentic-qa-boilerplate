@@ -64,6 +64,12 @@
  *   bun run jira:sync-workflows --verbose         # log each work_type / status / transition as processed
  *   bun run jira:sync-workflows --help            # show help
  *
+ * Every endpoint below except `/project/{key}/statuses` requires ADMINISTER, so
+ * this script is unusable for most operators (see `probeAdminPermission`). To
+ * find out whether the catalog it produced has since gone stale WITHOUT admin,
+ * use `bun run jira:check --live` — it re-reads the one non-admin endpoint and
+ * diffs the cached issue-type / status ids against live Jira.
+ *
  * ============================================================================
  * EXIT CODES
  * ============================================================================
@@ -1558,6 +1564,13 @@ function logSkipNoAdmin(): void {
   log.dim('  Alternative — download UPEX-standard reference (no admin needed):');
   log.dim('    bun run jira:sync-fields --upex');
   log.dim('    bun run jira:sync-workflows --upex');
+  log.dim('');
+  // This is the exact moment a non-admin learns they cannot refresh the catalog.
+  // Without a pointer here they also have no way to learn it went stale later —
+  // `jira:check` passes clean against a cache that no longer matches Jira.
+  log.dim('  Meanwhile, to detect whether the cached catalog has gone stale');
+  log.dim('  (read-only, no admin needed):');
+  log.dim('    bun run jira:check --live');
   err(SKIP_NO_ADMIN_MARKER);
 }
 

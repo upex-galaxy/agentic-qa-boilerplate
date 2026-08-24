@@ -28,12 +28,21 @@
  * Flags:
  *   --json      Emit a machine-readable summary instead of human-readable.
  *   --verbose   Show ✅ entries individually (default suppresses them).
+ *   --live      Additionally compare the CACHED `.agents/jira-workflows.json`
+ *               against live Jira (one read-only, non-admin REST call). Catches
+ *               the staleness class every offline check is blind to: the cache
+ *               was correct when it was written and Jira moved underneath it.
+ *               Warnings only — never changes the exit code.
+ *   --project <KEY>
+ *               Project key for --live (flag > JIRA_PROJECT_KEY > project.yaml).
  *   --help      Show usage.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { parse as parseYaml } from 'yaml';
+
+import { resolveAtlassianInstance } from '../cli/lib/atlassian-instance';
 
 // -----------------------------------------------------------------------------
 // Types
@@ -176,6 +185,7 @@ const MANIFEST_PATH = join(REPO_ROOT, '.agents', 'jira-required.yaml');
 const CATALOG_PATH = join(REPO_ROOT, '.agents', 'jira-fields.json');
 const WORKFLOWS_PATH = join(REPO_ROOT, '.agents', 'jira-workflows.json');
 const LINK_TYPES_PATH = join(REPO_ROOT, '.agents', 'jira-link-types.json');
+const PROJECT_YAML_PATH = join(REPO_ROOT, '.agents', 'project.yaml');
 
 function loadManifest(): Manifest {
   if (!existsSync(MANIFEST_PATH)) {
@@ -968,6 +978,7 @@ function printJsonReport(
   workTypeResults: WorkTypeCheckResult[],
   workTypeCounters: WorkTypeCounters,
   workflowsCatalogPresent: boolean,
+  liveOutcome: LiveCheckOutcome | null,
 ): void {
   const fieldExitTrigger = results.some(
     r => r.scope === 'required' && (r.severity === 'missing' || r.severity === 'mismatch'),
@@ -1006,6 +1017,28 @@ function printJsonReport(
       severity: r.severity,
       notes: r.notes,
     })),
+    live: liveOutcome === null
+      ? { requested: false }
+      : {
+          requested: true,
+          ran: liveOutcome.ran,
+          skipped_reason: liveOutcome.skippedReason ?? null,
+          base_url: liveOutcome.baseUrl ?? null,
+          project_key: liveOutcome.projectKey ?? null,
+          project_key_source: liveOutcome.projectKeySource ?? null,
+          issue_types_seen: liveOutcome.issueTypesSeen ?? null,
+          work_types_compared: liveOutcome.workTypesCompared ?? null,
+          statuses_compared: liveOutcome.statusesCompared ?? null,
+          drift_count: liveOutcome.findings.length,
+          findings: liveOutcome.findings.map(f => ({
+            work_type: f.workType,
+            kind: f.kind,
+            entity: f.entity,
+            cached: f.cached,
+            live: f.live,
+            note: f.note,
+          })),
+        },
   };
 
   console.log(JSON.stringify(summary, null, 2));
@@ -1015,22 +1048,51 @@ function printJsonReport(
 // CLI
 // -----------------------------------------------------------------------------
 
+/**
+ * Pull `--project <KEY>` / `--project=<KEY>` out of argv. Only consumed by
+ * `--live`; ignored (and harmless) otherwise.
+ */
+function readProjectFlag(args: string[]): string | null {
+  const inline = args.find(a => a.startsWith('--project='));
+  if (inline) {
+    const value = inline.slice('--project='.length).trim();
+    return value === '' ? null : value;
+  }
+  const idx = args.indexOf('--project');
+  if (idx !== -1 && idx + 1 < args.length) {
+    const value = args[idx + 1].trim();
+    if (value !== '' && !value.startsWith('-')) { return value; }
+  }
+  return null;
+}
+
 function printHelp(): void {
-  console.log(`Usage: bun run jira:check [--json] [--verbose] [--help]
+  console.log(`Usage: bun run jira:check [--json] [--verbose] [--live] [--project <KEY>] [--help]
 
 Compares .agents/jira-required.yaml (the methodology's required-fields manifest)
 against .agents/jira-fields.json (your Jira workspace's custom-field catalog) and
 reports MISSING / MISMATCHED / OK status for each required and optional slug.
 
+Offline by default. \`--live\` adds one read-only Jira call that compares the
+CACHED .agents/jira-workflows.json against what Jira reports right now — the one
+staleness class the offline checks structurally cannot see.
+
 Flags:
-  --json       Emit a machine-readable JSON summary.
-  --verbose    Include OK entries in the human-readable report (default hides
-               them for brevity).
-  -h, --help   Show this help.
+  --json           Emit a machine-readable JSON summary.
+  --verbose        Include OK entries in the human-readable report (default hides
+                   them for brevity).
+  --live           Also compare the cached workflow catalog against live Jira
+                   (issue-type + status ids). Needs ATLASSIAN_EMAIL /
+                   ATLASSIAN_API_TOKEN and only the non-admin Browse Projects
+                   permission. Findings are warnings; the exit code never moves.
+  --project <KEY>  Project key for --live. Precedence: this flag >
+                   JIRA_PROJECT_KEY env > .agents/project.yaml project_key.
+  -h, --help       Show this help.
 
 Exit code:
   0 — all required fields present and matching
   1 — at least one required field missing or type-mismatched
+      (--live drift is reported as a warning and never sets 1)
 `);
 }
 
@@ -1189,7 +1251,386 @@ function printLinkTypesReport(results: LinkTypeReport[], deferred: boolean): boo
   return hasMissingRequired;
 }
 
-function main(): void {
+// -----------------------------------------------------------------------------
+// Live drift detection (--live)
+// -----------------------------------------------------------------------------
+
+/**
+ * Everything above this line is OFFLINE: it compares the manifest against the
+ * CACHED catalogs. That is structurally blind to the failure mode where the
+ * cache itself went stale — a Jira admin reconfigures the project after the last
+ * `jira:sync-workflows` run, every id in `jira-workflows.json` starts pointing at
+ * the wrong thing, and `jira:check` keeps passing clean the whole time.
+ *
+ * `--live` closes that gap with ONE read-only call:
+ *
+ *   GET /rest/api/3/project/{projectIdOrKey}/statuses
+ *
+ * chosen deliberately over `createmeta/{key}/issuetypes`: it needs the same
+ * (non-admin) *Browse Projects* project permission but returns the project's
+ * issue types AND each one's full status list, so it detects status drift too —
+ * and statuses are what skills actually dereference as
+ * `{{jira.status.<work_type>.<slug>}}`.
+ *
+ * NOT covered, deliberately: `workflow`, `workflow_scheme` and `transitions`.
+ * Those come from `/workflowscheme/project` + `POST /workflows`, which require
+ * ADMINISTER — the exact permission the audience for this check does not have
+ * (`jira:sync-workflows` probes for it and exits early with
+ * `[JIRA_SYNC_SKIPPED_NO_ADMIN]`). Re-running the admin-gated sync stays the only
+ * way to revalidate those three. The report says so out loud rather than letting
+ * a clean `--live` pass imply the whole catalog was verified.
+ *
+ * Findings are WARNINGS and never move the exit code. An out-of-date catalog is
+ * a legitimate state: a non-admin operator literally cannot re-sync, and the
+ * `--upex` path intentionally ships upstream's catalog. The point here is signal,
+ * not a gate.
+ */
+
+interface LiveStatus {
+  id: string
+  name: string
+  statusCategory?: { key?: string }
+}
+
+interface LiveIssueType {
+  id: string
+  name: string
+  statuses?: LiveStatus[]
+}
+
+type LiveDriftKind
+  = | 'issue_type_absent'
+    | 'issue_type_id_changed'
+    | 'issue_type_renamed'
+    | 'status_absent'
+    | 'status_id_changed'
+    | 'status_renamed';
+
+interface LiveDriftFinding {
+  workType: string
+  kind: LiveDriftKind
+  /** Status slug, or the work_type slug itself for issue-type-level rows. */
+  entity: string
+  cached: string
+  live: string
+  note: string
+}
+
+interface LiveCheckOutcome {
+  ran: boolean
+  skippedReason?: string
+  baseUrl?: string
+  projectKey?: string
+  projectKeySource?: string
+  issueTypesSeen?: number
+  workTypesCompared?: number
+  statusesCompared?: number
+  findings: LiveDriftFinding[]
+}
+
+async function liveFetch<T>(baseUrl: string, auth: string, endpoint: string): Promise<T> {
+  const response = await fetch(`${baseUrl}${endpoint}`, {
+    headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    const body = (await response.text()).slice(0, 300);
+    throw new Error(`${response.status} ${response.statusText} — ${body}`);
+  }
+  return response.json() as Promise<T>;
+}
+
+/**
+ * Project key precedence, mirroring `scripts/sync-jira-issues.ts`:
+ * `--project` flag > `JIRA_PROJECT_KEY` env > `.agents/project.yaml`.
+ *
+ * Never prompts and never writes: this is a read-only validator, and the
+ * boilerplate ships `project_key: null` on purpose.
+ */
+function resolveLiveProjectKey(flagValue: string | null): { key: string | null, source: string } {
+  if (flagValue) { return { key: flagValue, source: '--project flag' }; }
+  const envKey = process.env.JIRA_PROJECT_KEY?.trim();
+  if (envKey) { return { key: envKey, source: 'JIRA_PROJECT_KEY env var' }; }
+  if (existsSync(PROJECT_YAML_PATH)) {
+    try {
+      const parsed = parseYaml(readFileSync(PROJECT_YAML_PATH, 'utf8')) as Record<string, unknown> | null;
+      const project = parsed?.project as Record<string, unknown> | undefined;
+      const raw = project?.project_key;
+      if (typeof raw === 'string' && raw.trim() !== '') {
+        return { key: raw.trim(), source: '.agents/project.yaml → project.project_key' };
+      }
+    }
+    catch {
+      // Unparseable project.yaml is not this validator's problem — treat the
+      // key as unresolved and let the caller report a clean SKIPPED.
+    }
+  }
+  return { key: null, source: 'none' };
+}
+
+async function runLiveDriftCheck(
+  workTypes: ManifestWorkType[],
+  catalog: WorkflowsCatalog | null,
+  projectKeyFlag: string | null,
+): Promise<LiveCheckOutcome> {
+  const findings: LiveDriftFinding[] = [];
+
+  if (catalog === null || Object.keys(catalog).length === 0) {
+    return {
+      ran: false,
+      findings,
+      skippedReason: '.agents/jira-workflows.json is absent or empty — nothing cached to compare '
+        + 'against. Run `bun run jira:sync-workflows` (or `--upex`) first.',
+    };
+  }
+
+  // Host resolution goes through the canonical resolver, never a bare env read:
+  // a stale host would silently compare this project's catalog against another
+  // site and report every single id as drift.
+  let instance: ReturnType<typeof resolveAtlassianInstance>;
+  try {
+    instance = resolveAtlassianInstance();
+  }
+  catch (err) {
+    return { ran: false, findings, skippedReason: (err as Error).message };
+  }
+
+  const email = process.env.ATLASSIAN_EMAIL?.trim();
+  const apiToken = process.env.ATLASSIAN_API_TOKEN?.trim();
+  if (!email || !apiToken) {
+    return {
+      ran: false,
+      findings,
+      baseUrl: instance.baseUrl,
+      skippedReason: 'ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN missing from the environment — add them to .env.',
+    };
+  }
+
+  const { key: projectKey, source: projectKeySource } = resolveLiveProjectKey(projectKeyFlag);
+  if (!projectKey) {
+    return {
+      ran: false,
+      findings,
+      baseUrl: instance.baseUrl,
+      skippedReason: 'no project key — pass `--project <KEY>`, set JIRA_PROJECT_KEY, or fill '
+        + '`project.project_key` in .agents/project.yaml.',
+    };
+  }
+
+  const auth = Buffer.from(`${email}:${apiToken}`).toString('base64');
+  let liveTypes: LiveIssueType[];
+  try {
+    liveTypes = await liveFetch<LiveIssueType[]>(
+      instance.baseUrl,
+      auth,
+      `/rest/api/3/project/${encodeURIComponent(projectKey)}/statuses`,
+    );
+  }
+  catch (err) {
+    return {
+      ran: false,
+      findings,
+      baseUrl: instance.baseUrl,
+      projectKey,
+      projectKeySource,
+      skippedReason: `Jira read failed for project ${projectKey}: ${(err as Error).message}`,
+    };
+  }
+
+  const liveByName = new Map<string, LiveIssueType>();
+  const liveById = new Map<string, LiveIssueType>();
+  for (const it of liveTypes) {
+    liveByName.set(it.name.trim().toLowerCase(), it);
+    liveById.set(String(it.id), it);
+  }
+  const manifestBySlug = new Map(workTypes.map(w => [w.slug, w]));
+
+  let workTypesCompared = 0;
+  let statusesCompared = 0;
+
+  for (const [slug, entry] of Object.entries(catalog)) {
+    const cachedType = entry?.jira_issue_type;
+    // Unsynced shells (`jira_issue_type: null`) are the offline block's job —
+    // it already reports them as MISSING with the re-sync hint.
+    if (!cachedType || !cachedType.name || !cachedType.id) { continue; }
+    workTypesCompared++;
+
+    const cachedName = cachedType.name.trim();
+    const cachedId = String(cachedType.id);
+    let live = liveByName.get(cachedName.toLowerCase());
+
+    if (live) {
+      if (String(live.id) !== cachedId) {
+        findings.push({
+          workType: slug,
+          kind: 'issue_type_id_changed',
+          entity: slug,
+          cached: `${cachedName} (id ${cachedId})`,
+          live: `${live.name} (id ${live.id})`,
+          note: 'same issue-type name, different id — the project was reconfigured after the last sync',
+        });
+      }
+    }
+    else {
+      // The cached name is gone. Before calling it absent, try the two ways it
+      // can still be the same thing: another alternative declared in the
+      // manifest (`Sub-task | Task`), or the same id under a new name.
+      const declared = manifestBySlug.get(slug)?.jiraIssueType;
+      const alternative = declared
+        ? issueTypeNameCandidates(declared)
+            .map(name => liveByName.get(name.trim().toLowerCase()))
+            .find(candidate => candidate !== undefined)
+        : undefined;
+      const byId = liveById.get(cachedId);
+
+      if (alternative) {
+        findings.push({
+          workType: slug,
+          kind: 'issue_type_renamed',
+          entity: slug,
+          cached: `${cachedName} (id ${cachedId})`,
+          live: `${alternative.name} (id ${alternative.id})`,
+          note: 'cached name is gone, but another alternative declared in jira-required.yaml is present',
+        });
+        live = alternative;
+      }
+      else if (byId) {
+        findings.push({
+          workType: slug,
+          kind: 'issue_type_renamed',
+          entity: slug,
+          cached: `${cachedName} (id ${cachedId})`,
+          live: `${byId.name} (id ${byId.id})`,
+          note: 'id still exists but the issue type was renamed in Jira',
+        });
+        live = byId;
+      }
+      else {
+        findings.push({
+          workType: slug,
+          kind: 'issue_type_absent',
+          entity: slug,
+          cached: `${cachedName} (id ${cachedId})`,
+          live: '(not in project)',
+          note: `neither the cached name nor the cached id exists in ${projectKey} any more`,
+        });
+        continue;
+      }
+    }
+
+    const liveStatusByName = new Map<string, LiveStatus>();
+    const liveStatusById = new Map<string, LiveStatus>();
+    for (const st of live.statuses ?? []) {
+      liveStatusByName.set(st.name.trim().toLowerCase(), st);
+      liveStatusById.set(String(st.id), st);
+    }
+
+    for (const [statusSlug, cachedStatus] of Object.entries(entry.statuses ?? {})) {
+      if (!cachedStatus?.id || !cachedStatus.name) { continue; }
+      statusesCompared++;
+      const cachedStatusName = cachedStatus.name.trim();
+      const cachedStatusId = String(cachedStatus.id);
+
+      const byName = liveStatusByName.get(cachedStatusName.toLowerCase());
+      if (byName) {
+        if (String(byName.id) !== cachedStatusId) {
+          findings.push({
+            workType: slug,
+            kind: 'status_id_changed',
+            entity: statusSlug,
+            cached: `${cachedStatusName} (id ${cachedStatusId})`,
+            live: `${byName.name} (id ${byName.id})`,
+            note: 'status name matches but the id moved — every {{jira.status.*}} reference to it is stale',
+          });
+        }
+        continue;
+      }
+
+      const byStatusId = liveStatusById.get(cachedStatusId);
+      if (byStatusId) {
+        findings.push({
+          workType: slug,
+          kind: 'status_renamed',
+          entity: statusSlug,
+          cached: `${cachedStatusName} (id ${cachedStatusId})`,
+          live: `${byStatusId.name} (id ${byStatusId.id})`,
+          note: 'same status id, renamed in Jira — ids still resolve, printed names are wrong',
+        });
+        continue;
+      }
+
+      findings.push({
+        workType: slug,
+        kind: 'status_absent',
+        entity: statusSlug,
+        cached: `${cachedStatusName} (id ${cachedStatusId})`,
+        live: '(not on this issue type)',
+        note: `neither the cached name nor the cached id is on "${live.name}" in ${projectKey} any more`,
+      });
+    }
+  }
+
+  return {
+    ran: true,
+    findings,
+    baseUrl: instance.baseUrl,
+    projectKey,
+    projectKeySource,
+    issueTypesSeen: liveTypes.length,
+    workTypesCompared,
+    statusesCompared,
+  };
+}
+
+function printLiveReport(outcome: LiveCheckOutcome): void {
+  console.log('Live Jira Drift (cached catalog ⇄ live Jira)');
+  console.log('===========================================');
+
+  if (!outcome.ran) {
+    console.log(`💡 SKIPPED — ${outcome.skippedReason}`);
+    console.log('   Offline validation above is unaffected; the exit code does not change.');
+    console.log('');
+    return;
+  }
+
+  console.log(
+    `Source: ${outcome.baseUrl}  project ${outcome.projectKey} (via ${outcome.projectKeySource})`,
+  );
+  console.log(
+    `Compared: ${outcome.workTypesCompared} work_type(s) and ${outcome.statusesCompared} cached status(es) `
+    + `against ${outcome.issueTypesSeen} live issue type(s).`,
+  );
+  console.log('');
+
+  if (outcome.findings.length === 0) {
+    console.log('✅ No drift — every cached issue-type and status id still matches live Jira.');
+  }
+  else {
+    console.log(`⚠️ ${outcome.findings.length} drift finding(s) — the cached catalog is stale:`);
+    console.log('');
+    let current = '';
+    for (const f of outcome.findings) {
+      if (f.workType !== current) {
+        current = f.workType;
+        console.log(`  ${current}`);
+      }
+      console.log(`    ⚠️  ${f.entity} [${f.kind}]`);
+      console.log(`        cached: ${f.cached}`);
+      console.log(`        live:   ${f.live}`);
+      console.log(`        ${f.note}`);
+    }
+    console.log('');
+    console.log('   Action: ask someone with Jira ADMINISTER (or ADMINISTER_PROJECTS) to run');
+    console.log('           `bun run jira:sync-workflows --force` on this checkout and commit the result.');
+  }
+
+  console.log('');
+  console.log('   Scope: issue-type and status ids only. `workflow`, `workflow_scheme` and');
+  console.log('          `transitions` are admin-gated (POST /workflows) and are NOT verified here —');
+  console.log('          a clean pass does not mean the whole catalog is current.');
+  console.log('');
+}
+
+async function main(): Promise<void> {
   const args = process.argv.slice(2);
   if (args.includes('-h') || args.includes('--help')) {
     printHelp();
@@ -1197,6 +1638,8 @@ function main(): void {
   }
   const asJson = args.includes('--json');
   const verbose = args.includes('--verbose') || args.includes('-v');
+  const live = args.includes('--live');
+  const projectKeyFlag = readProjectFlag(args);
 
   const manifest = loadManifest();
   const catalog = loadCatalog();
@@ -1244,6 +1687,13 @@ function main(): void {
   const linkTypesMissingRequired = !linkTypesDeferred
     && linkTypeResults.some(r => r.scope === 'required' && r.severity === 'missing');
 
+  // ----- live drift block (opt-in, --live) ------------------------------------
+  // Purely additive: the offline verdict above and the exit code below are
+  // untouched whether this runs, is skipped, or reports drift.
+  const liveOutcome: LiveCheckOutcome | null = live
+    ? await runLiveDriftCheck(workTypes, workflowsCatalog, projectKeyFlag)
+    : null;
+
   if (asJson) {
     printJsonReport(
       results,
@@ -1252,6 +1702,7 @@ function main(): void {
       workTypeResults,
       workTypeCounters,
       workflowsCatalogPresent,
+      liveOutcome,
     );
   }
   else {
@@ -1266,6 +1717,7 @@ function main(): void {
       workflowsCatalogPresent,
     );
     printLinkTypesReport(linkTypeResults, linkTypesDeferred);
+    if (liveOutcome) { printLiveReport(liveOutcome); }
   }
 
   const fieldExitTrigger = results.some(
@@ -1274,8 +1726,13 @@ function main(): void {
   const workTypeExitTrigger = workTypeResults.some(
     r => r.severity === 'missing' || r.severity === 'mismatch',
   );
+  // `--live` findings are deliberately absent from this expression — see the
+  // rationale on the live-drift block.
   const exitCode = fieldExitTrigger || workTypeExitTrigger || linkTypesMissingRequired ? 1 : 0;
   process.exit(exitCode);
 }
 
-main();
+main().catch((err) => {
+  console.error(`FATAL: ${(err as Error).message}`);
+  process.exit(1);
+});
