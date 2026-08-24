@@ -4,8 +4,8 @@ import { dirname, join, resolve } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { PERSONALITY_CONTRACT } from '../.agents/hooks/personality-reinject.mjs';
-import { PersonalityReinject } from '../.opencode/plugins/personality-reinject.js';
+import { PERSONALITY_CONTRACT } from '../../.agents/hooks/personality-reinject.mjs';
+import { PersonalityReinject } from '../../.opencode/plugins/personality-reinject.js';
 import {
   CODEX_HOOK_COMMAND,
   CODEX_HOOK_COMMAND_WINDOWS,
@@ -13,7 +13,7 @@ import {
   validateMcpParity,
 } from './agent-compatibility-contracts.ts';
 
-const REPO_ROOT = resolve(import.meta.dir, '..');
+const REPO_ROOT = resolve(import.meta.dir, '..', '..');
 const FIXTURE_PATHS = [
   '.agents/hooks/personality-reinject.mjs',
   '.opencode/plugins/personality-reinject.js',

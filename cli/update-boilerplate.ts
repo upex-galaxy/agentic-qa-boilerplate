@@ -19,7 +19,7 @@ import {
   checkAgentCompatibility,
   repairClaudeSkillsAlias,
   repairCommandWrappers,
-} from '../scripts/agent-compatibility.ts';
+} from './lib/agent-compatibility.ts';
 import * as tui from './lib/tui';
 import { cleanupTempDir, detectGitVersion, gitVersionMeetsMin, runUpdate } from './lib/updater-core';
 import { makeProtectedDriftHook } from './lib/updater-drift';

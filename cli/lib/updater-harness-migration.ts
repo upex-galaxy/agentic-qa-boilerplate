@@ -35,7 +35,7 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-import { CLAUDE_INSTRUCTIONS_SHIM, isInside } from '../../scripts/agent-compatibility.ts';
+import { CLAUDE_INSTRUCTIONS_SHIM, isInside } from './agent-compatibility.ts';
 
 /**
  * Repo-relative, POSIX-separated on purpose. It is written into `.gitignore` (whose

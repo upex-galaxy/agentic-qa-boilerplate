@@ -75,7 +75,7 @@ import {
   checkAgentCompatibility,
   repairClaudeSkillsAlias,
   repairCommandWrappers,
-} from '../scripts/agent-compatibility.ts';
+} from './lib/agent-compatibility.ts';
 import {
   resolveAtlassianInstance,
   toSiteSlug,

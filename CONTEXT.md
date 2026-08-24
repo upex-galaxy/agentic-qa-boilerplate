@@ -71,7 +71,7 @@ The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is 
 
 **Commands.** The 10 slash commands carry no workflow body. `.claude/commands/*.md` and `.opencode/commands/*.md` are 7-line wrappers generated from `.agents/compatibility/command-aliases.json`; each names a target skill plus a mode and forwards `$ARGUMENTS` unchanged. Codex has no wrapper layer — it invokes the skill directly. A wrapper that grows a body fails the compatibility check as `contains workflow prose`.
 
-**Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin. The contract is enforced by `scripts/agent-compatibility-contracts.ts`: no absolute personal paths, no duplicated hook file, OpenCode must mutate `output.system` in place.
+**Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin. The contract is enforced by `cli/lib/agent-compatibility-contracts.ts`: no absolute personal paths, no duplicated hook file, OpenCode must mutate `output.system` in place.
 
 **MCP.** The same six servers — `context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman` — exist in all three configs. Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape before comparison, so adding a server to one host only is a failure.
 

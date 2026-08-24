@@ -6,10 +6,6 @@ import { dirname, join, resolve } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import {
-  claudeSkillsAliasPlan,
-  repairClaudeSkillsAlias,
-} from '../scripts/agent-compatibility.ts';
 import { diagnoseAgentCompatibility } from './doctor.ts';
 import {
   buildCommunitySkillArgs,
@@ -21,6 +17,10 @@ import {
   PROJECT_SKILL_DESTINATION,
   repairRepositoryCompatibility,
 } from './install.ts';
+import {
+  claudeSkillsAliasPlan,
+  repairClaudeSkillsAlias,
+} from './lib/agent-compatibility.ts';
 import { COMPONENTS, makeAgentCompatibilityHook } from './update-boilerplate.ts';
 
 const REPO_ROOT = resolve(import.meta.dir, '..');

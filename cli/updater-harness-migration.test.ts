@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { isInside } from '../scripts/agent-compatibility.ts';
+import { isInside } from './lib/agent-compatibility.ts';
 import {
   applyHarnessMigration,
   MIGRATION_BACKUP_DIR,

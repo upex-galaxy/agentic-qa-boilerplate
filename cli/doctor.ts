@@ -35,12 +35,12 @@ import { join, resolve } from 'node:path';
 import {
   validateHookCompatibility,
   validateMcpParity,
-} from '../scripts/agent-compatibility-contracts.ts';
+} from './lib/agent-compatibility-contracts.ts';
 import {
   checkAgentCompatibility,
   commandWrapperCounts,
   validateCanonicalSources,
-} from '../scripts/agent-compatibility.ts';
+} from './lib/agent-compatibility.ts';
 import {
   formatInstanceMismatchWarning,
   resolveAtlassianInstance,
