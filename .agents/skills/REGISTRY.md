@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-08-24T04:46:43.546Z`
+> Generated: `2026-08-24T16:06:45.445Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -190,16 +190,21 @@ Skills indexed: 19
 **Purpose**: Run bounded Jira administration workflows for project Components or Atlassian instance migration.
 
 **Compact Rules**:
+- Exactly ONE mode per run: `components` (`references/components.md`) or `instance-migration` (`references/instance-migration.md`). Load only that mode's reference. Never combine the two, never fall through into the other.
+- Mode unclear → ASK. Do not infer one from a bare "fix Jira" / "sync Jira" request.
+- Load `/acli` before any Jira operation. Load other tool-owner skills only when the selected reference requires them.
+- Missing MCP or Jira credentials = HARD STOP (`AGENTS.md` Critical Rule #10). Name the exact env var, point at `.env` / `.env.example`, ask for an agent-session restart. No workaround, no partial run.
+- Read-first on every mutation: inspect the live state before authoring any plan. Nothing is created, applied, deleted, or repointed without the user's explicit approval given inside the same run.
+- `components`: derive and inspect → author the plan file → dry-run → WAIT for explicit approval → only then `--apply`.
+- `instance-migration`: resolve and confirm BOTH instances → audit and verify reachability → WAIT for explicit approval → only then change files or the `acli` session. That session lives at `~/.config/acli` and is machine-global: re-login repoints every repo on the host, not just this one.
+- The Atlassian host lives in `.agents/project.yaml` → `issue_tracker.atlassian_url` and NOWHERE else locally. A stale `ATLASSIAN_URL` in `.env` or the process environment is contamination to DELETE, never to update — a second copy is what goes stale.
+- Template-repo carve-out: if `.agents/project.yaml` → `project.project_name` is `null`, the repo is an un-onboarded template. Leave `atlassian_url` and `project_key` `null`, say so in the report, and never manufacture a commit to hide the emptiness.
+- Run only the selected reference's verification steps. Never run the other mode's.
 - Forward `$ARGUMENTS` unchanged.
-- Load `/acli` before Jira operations. Load other tool-owner skills only when the selected reference requires them.
-- Missing MCP or Jira credentials are a hard stop under `AGENTS.md` Critical Rule #10.
-- `components`: derive and inspect, author the plan, run dry-run, then wait for explicit approval before `--apply`.
-- `instance-migration`: resolve and confirm both instances, audit and verify reachability, then wait for explicit approval before changing files or the machine-global `acli` session.
-- Run only the selected reference's verification. Never fall through into the other mode.
 
-**Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
+**Read full SKILL.md when**: the mode is ambiguous, a dry-run diff or migration audit looks wrong, or you need the selected reference's step-by-step phases and verification list.
 
-> Source: `.agents/skills/jira-administration/SKILL.md` · phase: `unknown` · extraction strategy: B
+> Source: `.agents/skills/jira-administration/SKILL.md` · phase: `unknown` · extraction strategy: A
 
 ---
 
@@ -264,20 +269,19 @@ Skills indexed: 19
 **Purpose**: Generate or refresh the canonical business context maps and master test plan.
 
 **Compact Rules**:
-- `data`
-- `features`
-- `api`
-- `test-plan`
-- Read every available source required by the selected reference. Never invent business facts.
-- CREATE mode may write the missing artifact after analysis.
-- UPDATE mode must generate a candidate, show the diff summary, and wait for explicit approval before overwriting.
-- Each output includes `## Discovery Gaps` for unverified facts.
-- After a successful artifact write, update the canonical instruction/context pointers in `AGENTS.md` only when a pointer is missing. Never add operational prose to `CLAUDE.md`.
-- `$ARGUMENTS` are forwarded unchanged to the selected mode.
+- Exactly ONE mode per run: `data` · `features` · `api` · `test-plan` · `refresh-all`. Load only that mode's reference; never open a second one in the same pass.
+- Mode → reference → output: `data` → `references/data.md` → `.context/business/business-data-map.md` · `features` → `references/features.md` → `.context/business/business-feature-map.md` · `api` → `references/api.md` → `.context/business/business-api-map.md` · `test-plan` → `references/test-plan.md` → `.context/master-test-plan.md`.
+- User did not name a mode → ASK. NEVER infer `refresh-all` from a generic "refresh the context" request.
+- `refresh-all` runs strictly `data` → `features` → `api` → `test-plan`, one at a time. Each reference's own validation and approval gate must close before the next is loaded. Never skip ahead.
+- Artifact missing = CREATE mode: may write once the analysis completes. Artifact exists = UPDATE mode: generate a candidate, show the diff summary, WAIT for explicit approval. NEVER overwrite an existing artifact without that approval.
+- Stop the run on a hard dependency failure or a rejected overwrite. A missing SOFT dependency is not a stop: record it as a Discovery Gap and continue, exactly as the selected reference defines.
+- NEVER invent business facts. Read every source the selected reference requires; anything unverified belongs under the output's mandatory `## Discovery Gaps` section, not asserted in the body.
+- After a successful artifact write, add the pointer to `AGENTS.md` ONLY when that pointer is missing. Never add operational prose to `CLAUDE.md`.
+- Forward `$ARGUMENTS` unchanged to the selected mode.
 
-**Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
+**Read full SKILL.md when**: the requested mode is ambiguous, a `refresh-all` chain fails mid-sequence, or you need the selected reference's own analysis steps and validation gate.
 
-> Source: `.agents/skills/project-context/SKILL.md` · phase: `unknown` · extraction strategy: B
+> Source: `.agents/skills/project-context/SKILL.md` · phase: `unknown` · extraction strategy: A
 
 ---
 
