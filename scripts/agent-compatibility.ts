@@ -7,6 +7,9 @@ import { isAbsolute, join, normalize, relative, resolve } from 'node:path';
 import { validateHookCompatibility, validateMcpParity } from './agent-compatibility-contracts.ts';
 
 export const CLAUDE_INSTRUCTIONS_SHIM = '@AGENTS.md\n';
+
+/** OS-generated files that never count as skill content. */
+export const OS_METADATA_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini']);
 export const POSIX_CLAUDE_SKILLS_TARGET = '../.agents/skills';
 export const COMMAND_ALIAS_MANIFEST = '.agents/compatibility/command-aliases.json';
 
@@ -115,6 +118,9 @@ function isSkillsCliShim(claudeSkills: string, canonicalSkills: string): boolean
 
   const canonical = resolve(canonicalSkills);
   return entries.every((entry) => {
+    // Finder/Explorer leftovers carry no content: they must not make an otherwise
+    // reclaimable shim look like a directory holding somebody's work.
+    if (OS_METADATA_FILES.has(entry)) { return true; }
     const child = join(claudeSkills, entry);
     const stats = lstatIfPresent(child);
     if (stats === null || !stats.isSymbolicLink()) { return false; }

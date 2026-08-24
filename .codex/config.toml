@@ -1,11 +1,11 @@
+# Codex CLI + Desktop read this same file. Instructions come from AGENTS.md and
+# skills from .agents/skills/, both natively — neither needs configuring here.
+# The MCP inventory below is the Codex-format adapter of the six servers that
+# .mcp.json and opencode.jsonc also declare; `bun run agents:compat:check`
+# compares the three semantically, so a server added to one host only fails.
+
 [shell_environment_policy]
 inherit = "core"
-
-[shell_environment_policy.set]
-BASH_DEFAULT_TIMEOUT_MS = "300000"
-BASH_MAX_TIMEOUT_MS = "600000"
-BASH_MAX_OUTPUT_LENGTH = "20000"
-CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR = "1"
 
 [mcp_servers.context7]
 command = "npx"

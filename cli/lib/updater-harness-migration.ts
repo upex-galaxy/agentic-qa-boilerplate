@@ -39,6 +39,13 @@ import { CLAUDE_INSTRUCTIONS_SHIM } from '../../scripts/agent-compatibility.ts';
 
 export const MIGRATION_BACKUP_DIR = join('.template', 'pre-agents-migration');
 
+/**
+ * OS-generated files that turn up inside any browsed directory. They carry no
+ * content, so both the migration and the alias repair skip them instead of
+ * treating them as work somebody would miss.
+ */
+export const OS_METADATA_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini']);
+
 /** What the instruction files need. */
 export type InstructionsAction
   /** `AGENTS.md` already exists — nothing to do. */
@@ -194,6 +201,10 @@ export function planHarnessMigration(root = process.cwd()): HarnessMigrationPlan
         continue;
       }
       if (!stats.isDirectory()) {
+        // Finder and Explorer drop these into any directory they display. Blocking the
+        // whole migration on one would stop every macOS consumer for a file nobody
+        // authored and nobody wants kept.
+        if (OS_METADATA_FILES.has(entry)) { continue; }
         blockers.push(`.claude/skills/${entry} is a loose file, not a skill directory. Move or delete it by hand.`);
         continue;
       }

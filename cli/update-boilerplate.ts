@@ -136,6 +136,14 @@ USO:
 COMPONENTES: ${COMPONENTS.map(c => c.name).join(', ')}
 ATAJOS:      all, rollback, help
 
+PREFLIGHT CROSS-HARNESS (automatico, una sola vez, ANTES de sincronizar):
+  Si el proyecto todavia guarda sus instrucciones en CLAUDE.md y sus skills en
+  .claude/skills/, la migracion las mueve a AGENTS.md y .agents/skills/ antes de
+  tocar ningun componente. Corre con cualquier subcomando, porque sin ella el
+  sync sobreescribiria la memoria del proyecto. No borra nada: lo que no se mueve
+  queda en .template/pre-agents-migration/. Es idempotente y con --dry-run solo
+  muestra el plan.
+
 COMPORTAMIENTO POR DEFECTO (sin flags):
   Sincroniza TODO el boilerplate sin preguntar: copia archivos nuevos,
   sobreescribe divergencias con la versión upstream y borra archivos que el
@@ -968,12 +976,24 @@ function buildSink(): ReportSink {
  * actionable message when it refuses. Nothing is deleted either way — content moves
  * to its canonical home or is archived under `.template/pre-agents-migration/`.
  */
-function runHarnessMigration(sink: ReportSink): void {
+function runHarnessMigration(sink: ReportSink, dryRun: boolean): void {
   const plan = planHarnessMigration();
   if (!plan.needed && plan.blockers.length === 0) { return; }
 
   tui.log.info('Migración cross-harness (Claude → Claude + OpenCode + Codex):');
   for (const line of describeHarnessMigration(plan)) { tui.log.message(`  · ${line}`); }
+
+  // --dry-run must still SHOW this. Without it the preview claims CLAUDE.md gets
+  // overwritten by the upstream shim — the one outcome a real run never produces,
+  // because the migration below moves that content to AGENTS.md first.
+  if (dryRun) {
+    if (plan.blockers.length > 0) {
+      tui.log.warn(`Bloqueantes que detendrían la migración:\n  - ${plan.blockers.join('\n  - ')}`);
+    }
+    tui.log.message('  (--dry-run: nada de lo anterior se aplicó. La corrida real lo hace ANTES de sincronizar,');
+    tui.log.message('   así que el preview de CLAUDE.md más abajo no es lo que ocurrirá.)');
+    return;
+  }
 
   try {
     const result = applyHarnessMigration(process.cwd(), plan);
@@ -1047,10 +1067,8 @@ async function main(): Promise<void> {
   // while AGENTS.md (watchlist, never synced) still does not exist, and the
   // compatibility hook then throws on a real .claude/skills directory — taking
   // every hook behind it down with it. Idempotent: a migrated repo plans nothing.
-  // Skipped under --dry-run, which must never touch the working tree.
-  if (!parsed.dryRun) {
-    runHarnessMigration(sink);
-  }
+  // Under --dry-run it reports the plan and applies nothing.
+  runHarnessMigration(sink, parsed.dryRun);
 
   const cfg: UpdaterConfig = {
     templateRepo: TEMPLATE_REPO,
