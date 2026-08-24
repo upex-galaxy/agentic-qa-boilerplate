@@ -50,7 +50,9 @@
  *      bodies AND each skill's references/*.md (outside fenced code blocks)
  *      must resolve to existing files relative to the skill dir or repo root.
  *      Known gitignored artifacts + illustrative example paths are exempted
- *      via STALE_PATH_ALLOWED. ERROR severity.
+ *      via STALE_PATH_ALLOWED; the example components `/adapt-framework`
+ *      deletes are exempted via EXAMPLE_ARTIFACTS, so a skill body that cites
+ *      one passes here AND in an adapted repo. ERROR severity.
  *
  *   9. DUPLICATE-TIER — a skill slug appearing in more than one of
  *      PROJECT_LEVEL_SKILLS, USER_LEVEL_SKILLS is an install conflict.
@@ -585,8 +587,42 @@ const STALE_PATH_ALLOWED = new Set<string>([
   'tests/data/mocks/auth/login/POST.200.json',
   'tests/data/mocks/users/POST.201.json',
   'tests/data/mocks/users/create/POST.400.json',
-  'api/schemas/example.types.ts',
 ]);
+
+/**
+ * The example artifacts the boilerplate SHIPS and `/adapt-framework` DELETES.
+ *
+ * These exist in this repo and are gone in every adapted one, so their
+ * existence on disk says nothing about whether a doc reference is stale. Left
+ * to the plain existence check, a skill body that cites one lints clean here
+ * and fails in the consumer project — and `.husky/pre-commit` runs
+ * `bun run skills:check` unconditionally, so the whole team stops committing
+ * over a doc line that was correct all along. That is exactly how
+ * `tests/components/steps/ExampleSteps.ts` (test-automation) and
+ * `tests/data/fixtures/example.json` (adapt-framework) broke adapted repos.
+ *
+ * Note the irony worth preserving: several of these citations appear in
+ * `adapt-framework`'s own Definition of Done, whose whole job is to assert the
+ * file is GONE.
+ *
+ * Exempt in BOTH directions — present or absent, a citation here is fine.
+ * Prefix match, so a directory entry covers everything under it.
+ * Everything else still resolves normally; this is not a place to park a
+ * genuinely broken reference.
+ */
+const EXAMPLE_ARTIFACTS = [
+  'tests/components/api/ExampleApi.ts',
+  'tests/components/ui/ExamplePage.ts',
+  'tests/components/steps/ExampleSteps.ts',
+  'api/schemas/example.types.ts',
+  'tests/data/fixtures/example.json',
+  'tests/e2e/module-example',
+  'tests/integration/module-example',
+];
+
+function isExampleArtifact(path: string): boolean {
+  return EXAMPLE_ARTIFACTS.some(p => path === p || path.startsWith(`${p}/`));
+}
 
 function checkStalePaths(
   skillSlug: string,
@@ -605,6 +641,7 @@ function checkStalePaths(
     if (path.startsWith('/')) { continue; }
     if (path.endsWith('/')) { continue; } // directory-shape illustration, not a file ref
     if (STALE_PATH_ALLOWED.has(path)) { continue; } // gitignored artifact / intentional example
+    if (isExampleArtifact(path)) { continue; } // shipped here, deleted once adapted
     // Skill-dir-first resolution: shorthand like `scripts/foo.ts` inside a skill
     // body should resolve against the skill's own directory; fall back to repo
     // root for paths that are genuinely repo-rooted (e.g. `.agents/skills/...`).
