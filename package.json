@@ -33,6 +33,8 @@
     "agentic"
   ],
   "scripts": {
+    "agents:compat": "bun scripts/agent-compatibility.ts",
+    "agents:compat:check": "bun scripts/agent-compatibility.ts --check",
     "agents:setup": "bun scripts/agents-setup.ts",
     "allure:agent": "bunx allure agent -- bun test",
     "allure:generate": "bunx allure generate ./allure-results",
@@ -44,6 +46,7 @@
     "api:login": "bun scripts/api-login.ts",
     "api:sync": "bun scripts/sync-openapi.ts",
     "claude": "dotenv -o -e .env -- claude",
+    "codex": "dotenv -o -e .env -- codex",
     "context:hydrate": "bun scripts/sync-jira-issues.ts pull --include-comments",
     "format:check": "prettier --check '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
     "format:fix": "prettier --write '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
@@ -63,8 +66,8 @@
     "opencode": "dotenv -o -e .env -- opencode",
     "prepare": "husky",
     "pw:install": "playwright install --with-deps chromium",
-    "repo:check": "bun run format:check && bun run lint:check && bun run types:check && bun run vars:check && bun run skills:check && bun run skills:registry:check && bun run vars:env:check && bun run git:policy verify",
-    "repo:fix": "bun run format:fix && bun run lint:fix && bun run types:check && bun run vars:check && bun run skills:check && bun run skills:registry:check && bun run vars:env:check",
+    "repo:check": "bun run format:check && bun run lint:check && bun run types:check && bun run vars:check && bun run skills:check && bun run skills:registry:check && bun run agents:compat:check && bun run vars:env:check && bun run git:policy verify",
+    "repo:fix": "bun run format:fix && bun run lint:fix && bun run types:check && bun run vars:check && bun run skills:check && bun run skills:registry:check && bun run agents:compat && bun run vars:env:check",
     "setup:doctor": "bun cli/doctor.ts",
     "setup": "bun cli/doctor.ts --preflight && bun cli/install.ts",
     "skills:check": "bun scripts/lint-skills.ts",

@@ -16,6 +16,14 @@
 #   - skills:registry:check      unconditional safety net — a commit in the push range may
 #                                have changed the registry without pre-commit catching it.
 #   - kata:manifest:check        unconditional safety net — same rationale as the registry.
+#   - agents:compat:check        unconditional safety net for the cross-harness contract:
+#                                the generated `.claude/skills` alias, the 20 command
+#                                wrappers against `.agents/compatibility/command-aliases.json`,
+#                                the three hook adapters, and six-server MCP parity across
+#                                `.mcp.json` / `opencode.jsonc` / `.codex/config.toml`. All of
+#                                it is generated or mirrored, so nothing else notices when a
+#                                wrapper is hand-edited or an MCP is added to one host only.
+#                                Fix is always `bun run agents:compat` (regenerates + repairs).
 #   - git:policy verify          declared git_strategy vs the host's enforced ruleset —
 #                                pre-push is exactly when that parity matters. Hook-safe by
 #                                design: an unreachable host (offline, no gh, no auth) warns
@@ -28,4 +36,4 @@
 # never depend on a package.json script key that could land in a separate, partially-applied
 # sync phase. Every command below already exists in every scaffolded project.
 # The full suite (incl. types/vars/skills) lives in `repo:check` for CI / manual runs.
-bun run format:check && bun run lint:check && VARS_ENV_CHECK_DRIFT=warn bun run vars:env:check && bun run skills:registry:check && bun run kata:manifest:check && bun run git:policy verify
+bun run format:check && bun run lint:check && VARS_ENV_CHECK_DRIFT=warn bun run vars:env:check && bun run skills:registry:check && bun run kata:manifest:check && bun run agents:compat:check && bun run git:policy verify

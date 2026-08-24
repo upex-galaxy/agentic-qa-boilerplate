@@ -17,11 +17,25 @@ if echo "$STAGED" | grep -qE '^(tests/components/|scripts/kata-manifest\.ts$|kat
 fi
 
 # skill-registry freshness gate — only runs when staged files affect it.
-if echo "$STAGED" | grep -qE '^(\.claude/skills/.+/SKILL\.md$|scripts/build-skill-registry\.ts$|\.claude/skills/REGISTRY\.md$)'; then
+if echo "$STAGED" | grep -qE '^(\.agents/skills/.+/SKILL\.md$|scripts/build-skill-registry\.ts$|\.agents/skills/REGISTRY\.md$)'; then
   bun run skills:registry:check || {
     echo ""
-    echo "❌ .claude/skills/REGISTRY.md is stale. Fix:"
-    echo "   bun run skills:registry && git add .claude/skills/REGISTRY.md"
+    echo "❌ .agents/skills/REGISTRY.md is stale. Fix:"
+    echo "   bun run skills:registry && git add .agents/skills/REGISTRY.md"
+    exit 1
+  }
+fi
+
+# cross-harness compatibility gate — only runs when staged files affect it.
+# Covers the generated Claude skills alias, the command wrappers, the three hook
+# adapters and MCP parity across the three host configs. Everything it guards is
+# generated or mirrored, so a hand-edit is invisible to every other check.
+if echo "$STAGED" | grep -qE '^(\.agents/compatibility/|\.agents/hooks/|\.claude/commands/|\.opencode/commands/|\.opencode/plugins/|\.codex/|\.claude/settings\.json$|\.mcp\.json$|opencode\.jsonc$|scripts/agent-compatibility.*\.ts$)'; then
+  bun run agents:compat:check || {
+    echo ""
+    echo "❌ Cross-harness compatibility is out of contract. Fix:"
+    echo "   bun run agents:compat   # regenerates wrappers + repairs the Claude skills alias"
+    echo "   then re-stage whatever it rewrote under .claude/commands/ and .opencode/commands/"
     exit 1
   }
 fi
