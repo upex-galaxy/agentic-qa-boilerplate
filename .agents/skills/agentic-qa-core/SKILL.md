@@ -14,6 +14,32 @@ Loading a workflow skill (e.g. `shift-left-testing`, `sprint-testing`, `test-aut
 
 This skill does NOT orchestrate workflows, does NOT generate files, and does NOT bootstrap a target repo. The entire framework (skills, foundation files, scripts) ships together as one repo; à la carte adoption is not supported — see "Install model" below.
 
+## Compact Rules
+
+<!--
+  This section is Strategy A for scripts/build-skill-registry.ts, and it is
+  load-bearing for CORRECTNESS, not just for quality. Without it the builder
+  fell through to Strategy B, which scrapes bare bullets and cannot see the
+  `agentic-qa-core does not:` sentence that governs the "Out of scope" list —
+  so every prohibition below shipped into REGISTRY.md as a PERMISSION, and from
+  there into subagent briefings that AGENTS.md §3 labels authoritative.
+  Keep each rule self-contained: a rule that needs a preceding sentence to mean
+  what it says is a rule that will eventually be extracted without it.
+-->
+
+- DO NOT create, modify, or delete ANY file while acting as `agentic-qa-core`. It is a passive reference library with no write path of its own.
+- DO NOT write `.context/` artifacts here (that is `/project-discovery`), scaffold tests / fixtures / KATA components (that is `/adapt-framework` and `/test-automation`), adapt the framework to a stack (`/adapt-framework`), sync AI-critical docs (`/sync-ai-context`), or sync OpenAPI schemas (`bun run api:sync`).
+- DO NOT orchestrate a workflow or bootstrap a target repo from this skill. It hosts doctrine; the workflow skills execute it.
+- WHEN a workflow skill cites `agentic-qa-core/references/*.md`: load ONLY the files that skill's `## Dependencies` block names. Never preload the whole reference set.
+- WHEN deriving test cases or coverage from acceptance criteria in ANY testing skill: `references/test-design-doctrine.md` is mandatory reading first.
+- WHEN filing any bug / defect / improvement: `references/defect-management-doctrine.md` is mandatory reading first.
+- WHEN dispatching a subagent: use the 7-component briefing in `references/briefing-template.md` and pick the pattern via `references/dispatch-patterns.md`. A subagent that must answer the user directly also loads `references/behavioral-layer.md` — it inherits no register from the orchestrator.
+- WHEN closing a workflow stage: verify that stage's Definition of Done in `references/stage-gates.md` BEFORE advancing.
+- DO edit the owning skill's `references/*.md` when a rule changes, then run `bun run skills:registry`, then refresh the deck under `packages/decks/agentic-qa-core/`. That order keeps prose, registry, and decks from drifting.
+- DO treat this boilerplate as clone-in-full. Copying a single skill directory in isolation leaves it without the foundation files it depends on, and it will not function.
+
+**Read full SKILL.md when**: you need the full table of hosted references and who cites each one, the deck-hosting details, or the exact `## Dependencies` block shape to add to a skill.
+
 ---
 
 ## References hosted
