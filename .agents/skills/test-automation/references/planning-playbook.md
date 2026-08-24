@@ -1,0 +1,656 @@
+# Planning Playbook — spec.md, automation-plan.md, atc/*.md
+
+Load during Phase 1 (Plan) of the Plan → Code → Review pipeline. Covers the three plan documents KATA automation uses, how to populate each by scope (Module / Ticket / Regression), the Discover → Modify → Generate data-classification workflow used while planning, and the approval gate between Plan and Code.
+
+Scope-selection rules (which scope to pick, the one-line summary of each) live in SKILL.md §"Pick the planning scope first". This file assumes the scope has been chosen and documents what to produce.
+
+> **Two plans, do not confuse them.** This playbook authors the **automation plan** (`automation-plan.md`) — a NON-Jira, hand-authored file living in the Epic's `test-specs/<scope>/` tree (committed to git). It is NOT the Story's dev `implementation-plan.md`, which is a Jira-synced, read-only per-field cache in the Story folder (`.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/implementation-plan.md`) — read that as input via `bun run jira:sync-issues get <STORY-KEY>`, never hand-write it. The automation plan was historically named `implementation-plan.md`; it is renamed to `automation-plan.md` to avoid colliding with the Jira-synced dev plan.
+
+> **Path model.** All `test-specs/` artifacts live at the **Epic** level: `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/` (sibling of `stories/`). Module = Epic (1:1). `<scope>` = the ticket/regression slug or module slug.
+
+---
+
+## Plan dispatch (Single subagent)
+
+The Plan phase is delegated to a single subagent. The orchestrator does NOT read the KATA references, the existing component code, or the OpenAPI schemas during planning — that exploration lives entirely in the subagent's context.
+
+**Briefing** (7 components per `agentic-qa-core/references/briefing-template.md`):
+
+```
+Goal: Produce spec.md + automation-plan.md for scope <SCOPE> (module|ticket|ATC) <SCOPE_KEY>.
+Context docs:
+  - kata-manifest.json (root) — REQUIRED FIRST READ. Authoritative registry of every existing Component + ATC. Use it for reuse detection and ID-collision avoidance before drafting anything.
+  - .context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/ (Jira-synced caches: story.md, acceptance-criteria.md, implementation-plan.md (dev plan), acceptance-test-plan.md — READ-ONLY input; materialize via `bun run jira:sync-issues get <STORY-KEY> --include-comments`)
+  - .context/master-test-plan.md
+  - .context/business/business-data-map.md
+  - .context/business/business-feature-map.md
+  - .agents/skills/test-automation/references/kata-architecture.md
+  - .agents/skills/test-automation/references/atc-tracing.md
+  - tests/components/<api|ui>/ (existing components — open ONLY when the manifest entry is ambiguous)
+  - api/schemas/ (TypeScript types for API tests)
+Project Standards (auto-resolved): <compact rules pulled from .agents/skills/REGISTRY.md per agentic-qa-core/references/skill-resolver.md — authoritative for listed conventions; do not re-read full SKILL.md files>
+Skills to load: (none — planning skill is loaded by orchestrator already)
+Exact instructions:
+  1. Load kata-manifest.json FIRST. Cross-check every candidate Component name against components.api[].name + components.ui[].name; cross-check every candidate ATC ID against components.{api,ui}[].atcs[].id. Treat any match as a reuse signal — never plan a duplicate.
+  2. Read remaining context docs to understand scope, business risks, and any coverage the manifest does not surface.
+  3. Draft spec.md with: scope summary, the TMS-ID table of TCs in scope, and the Automation Plan (order, shared fixtures, blockers). Do NOT restate TC bodies — they live in Jira and sync into test-cases/.
+  4. Draft automation-plan.md with: target file paths, fixture selection (api / ui / test), reused-vs-new components (cite manifest entries), dependency order, estimated complexity per ATC.
+  5. Write both files to .context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope-slug>/.
+Report format:
+  JSON: { "spec_path": "...", "plan_path": "...", "atc_count": <int>, "new_components": [...], "reused_components": [...], "open_questions": [...] }
+Rules:
+  - Apply the inline-locator rule (locators inline in ATCs, extract only when reused 2+ times).
+  - Apply ATC-identity rule (same output = one parameterized ATC).
+  - Do NOT write actual test code — only spec + plan.
+  - Surface open questions to the orchestrator instead of guessing.
+```
+
+The orchestrator reads the JSON report, surfaces open_questions to the user if any, and only proceeds to Code dispatch after user approval.
+
+---
+
+## 1. Plan document map
+
+Three document types, each tied to a scope. Every scope produces at least `spec.md`; ticket and regression scopes add `automation-plan.md`; complex ATCs add per-ATC specs under `atc/`. All live at the Epic level under `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/`.
+
+`test-specs/` is the one `[COMMIT]` island inside an otherwise gitignored Jira cache (`AGENTS.md` §9). These files describe the **test code**: they must land in the same commit as the code they produce, or a reviewer cannot contrast plan against implementation. That is also the line that decides what belongs here — a Jira `Test` issue holds the test case, an `atc/*.md` holds how to implement it in KATA. Same ID, two documents, two owners.
+
+| Document | Scope that produces it | Location |
+|----------|-----------------------|----------|
+| `spec.md` | Module (N specs), Ticket (1), Regression (1) | `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/{PREFIX}-T{NN}-{name}/spec.md` |
+| `automation-plan.md` | Ticket, Regression | Same folder as spec.md — `automation-plan.md` |
+| `atc/{TICKET-ID}-{brief-title}.md` | Complex ATCs from any scope | Same folder — `atc/{TICKET-ID}-{brief-title}.md` |
+| `ROADMAP.md`, `PROGRESS.md` | Module only | `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/` |
+
+Canonical folder naming:
+
+- `{module}` — kebab-case business area (`orders-dashboard`, `user-management`).
+- `{PREFIX}` — 2–3 letter module abbreviation (`OD`, `UM`, `AUTH`). Used for filesystem only — not for TC IDs.
+- `T{NN}` — zero-padded ticket slot (`T01`, `T02`, …).
+- `{name}` — ≤5-word kebab-case title.
+- `{TICKET-ID}` — TMS ticket key (e.g., `UPEX-123`). TC IDs in spec content must always be TMS-generated; never invent local IDs.
+
+---
+
+## 2. Inputs and outputs by scope
+
+### 2.1 Module-driven (macro)
+
+Inputs:
+
+- Module name or feature area (`"Orders Dashboard"`, `"Billing"`).
+- Any stakeholder input: meeting transcript, priority list, known regressions.
+- Access to frontend and backend source for the module.
+- Access to `.context/` docs (business-data-map, api-architecture, existing PBI).
+
+Outputs:
+
+```
+.context/PBI/epics/EPIC-<KEY>-<slug>/
+  {module}-test-plan.md          # Master document (Section 4)
+  test-specs/
+    ROADMAP.md                    # Ticket index, phases, dependency graph
+    PROGRESS.md                   # Session-persistent tracker
+    {PREFIX}-T01-{name}/spec.md   # 3–7 TCs per ticket
+    {PREFIX}-T02-{name}/spec.md
+    …
+```
+
+Scope targets: 3–7 TCs per ticket. A ticket with 10+ TCs is too broad — split it. Group tickets by functional area, not by UI section.
+
+### 2.2 Ticket-driven (medium)
+
+Inputs:
+
+- Ticket ID in the TMS (e.g., `UPEX-101`).
+- Test type — `integration` or `e2e` (ask if not obvious).
+- Existing module context, if the ticket belongs to a module with prior `test-specs/`.
+
+Outputs:
+
+```
+.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/{PREFIX}-T{NN}-{name}/
+  spec.md                # 1–7 TCs derived from the ticket's ACs
+  automation-plan.md     # Architecture decisions, ATC registry, scenarios, implementation order
+  atc/*.md               # Only for ATCs complex enough to warrant a per-ATC spec
+```
+
+Expected TC count: 1–7 per ticket (story-driven).
+
+### 2.3 Regression-driven (micro)
+
+Inputs:
+
+- A single TC (often added after a bug fix) or a focused coverage gap.
+- Target component (existing or new).
+- Module name for folder placement.
+
+Outputs:
+
+```
+.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/{PREFIX}-T{NN}-{name}/
+  spec.md                # 1–3 TCs (bug-driven) or 1–2 (gap-driven)
+  automation-plan.md     # Optional — skip when the spec is trivially one method
+  atc/{TICKET-ID}-{brief-title}.md  # Usually present — regression = one ATC in detail
+```
+
+A regression-driven plan is the smallest unit of work. Often it is just `spec.md` + `atc/*.md`, no automation plan, because one ATC is the whole body of work.
+
+---
+
+## 3. TMS-first principle (applies to every scope)
+
+TCs in `spec.md` must reference TMS-generated IDs, never local-only IDs. Before writing TCs:
+
+> **Prerequisite**: Load `/xray-cli` skill (Modality jira-xray) or `/acli` (Modality jira-native) before executing the TMS commands below.
+
+1. Query the TMS for tests already linked to the ticket (via `[TMS_TOOL] List Tests` — resolve per AGENTS.md Tool Resolution).
+2. **If TCs exist** — consume them as the base for `spec.md`; do not duplicate.
+3. **If TCs are missing** — create them in the TMS first (`[TMS_TOOL] Create Test`), capture the returned IDs, then write `spec.md`.
+4. **If partial** — consume what exists, create the gaps in TMS, write `spec.md` with the combined set.
+
+Local `{PREFIX}-T{NN}` naming is filesystem scaffolding. All TC headings inside `spec.md` use the TMS IDs (`### PROJ-101: should ...`). The same IDs become `@atc('PROJ-101')` decorators during the Code phase.
+
+---
+
+## 4. `spec.md` structure
+
+The spec is the **automation batch plan**: which TCs this scope automates, in what order, and what they share. It does NOT restate the test cases.
+
+> **Why it stopped carrying the Gherkin.** The TC body — preconditions, action, expected output, Gherkin — lives in the Jira `Test` issue, and `bun run jira:sync-issues` now materializes every Test linked to a Story into `test-cases/TEST-<KEY>-<slug>.md` under that Story. Copying it here too put the same text on disk twice, and the copy nobody re-synced was the one people read. Reference the TMS ID; the body is one sync away.
+
+> **Reference TCs by Jira key, never by path.** Folder slugs are derived from issue summaries, so a Story retitled in Jira renames its folder and breaks every hardcoded link — relative or aliased. The key is the only stable identifier.
+
+```markdown
+# {PREFIX}-T{NN}: {Title}
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P0 / P1 / P2 |
+| **Phase** | {phase number + name, or "Standalone"} |
+| **Items** | {N} TCs {+ M multi-ATC tests if any} |
+| **Dependencies** | {other ticket IDs, or "None"} |
+| **Requires** | {test data, accounts, env conditions} |
+| **Source** | Story: {TICKET-ID} / Bug: {brief} / Gap: {brief} |
+
+## Summary
+{What this scope automates and why it matters. 2–4 sentences.}
+
+## Test Cases
+
+> Bodies live in Jira. Synced copies sit under the covering Story's `test-cases/`
+> (or `epics/_orphans/tests/` when the Test covers nothing); run
+> `bun run jira:sync-issues get {TICKET-ID}` if they are not on disk.
+
+| TMS ID | Title | Type | Priority |
+|--------|-------|------|----------|
+| {TMS_TC_ID} | should {behavior} when {condition} | Positive / Negative / Boundary | P0 |
+
+## Automation Plan
+
+**Order**: {execution order and why — e.g. "PROJ-501 first: it seeds the coupon
+the rest reuse"}
+
+**Shared fixtures**: {fixtures these TCs have in common, and which ATC creates each}
+
+**Blocked by**: {missing mock, unavailable env, unbuilt helper — or "Nothing"}
+
+**Preconditions for the whole scope**: {entities, states, accounts required before
+any of these run — distinct from a single TC's own preconditions, which live in Jira}
+
+## Merged TCs (if any)
+| Removed ID | Merged Into | Reason |
+
+## Updated TCs (if any)
+| TC ID | Spec File | What Was Added | Reason |
+
+## Acceptance Criteria
+- [ ] {N} TCs automated with {pattern description}
+- [ ] Tests pass on local and staging
+```
+
+Rules for `spec.md`:
+
+- Every row in the Test Cases table carries a **TMS-generated ID**. A local-only ID means the TC was never created in the TMS — go create it first (§3).
+- Do NOT paste the Gherkin, the steps, or the expected output. If you find yourself explaining what a TC verifies, that belongs in the Jira issue.
+- Multi-step flows (2+ actions with intermediate verifications) are flagged as multi-ATC tests, not a single TC.
+- Priority levels: P0 (release-blocker), P1 (high value), P2 (edge cases).
+- The Automation Plan section is the part only this file can hold: order, shared fixtures and blockers are properties of the batch, not of any one test case.
+
+---
+
+## 5. Module-scope master document (`{module}-test-plan.md`)
+
+Module scope alone produces this master doc in addition to the per-ticket specs. It is the single source of truth for module-level context that every ticket spec will reference.
+
+Sections, in order:
+
+1. **Executive Summary** — why the module matters, key risks, stakeholder priorities.
+2. **Module Overview** — what it is, who uses it, how it connects to other modules.
+3. **Page/API Architecture** — visual states, panel layout, conditional rendering, status flows.
+4. **Data Flow & API Endpoints** — all endpoints the page calls, calculation formulas, refresh triggers.
+5. **Test Scenarios (Gherkin)** — organised by functional area, each scenario with Preconditions → Action → Expected.
+6. **Implementation Roadmap** — phases ordered P0 → P2 with dependencies between tickets.
+7. **Test Data Strategy** — per-ticket feasibility table (Discover / Modify / Generate — see §7).
+8. **Key Selectors Reference** — CSS selectors or `data-testid` values the automation will target.
+
+Write it as if the reader has zero context. Include calculation formulas explicitly, stakeholder quotes where they describe priorities, and ASCII diagrams for layouts. Diagrams beat paragraphs.
+
+---
+
+## 6. `automation-plan.md` structure
+
+The automation plan is the technical contract — what code to write, which components already exist, which ATCs to reuse vs create, the implementation order. (Hand-authored in `test-specs/`; distinct from the Story's Jira-synced dev `implementation-plan.md`.)
+
+```markdown
+# Test Automation Plan: {TICKET-ID}
+
+> Ticket: {TICKET-ID} — {Title}
+> Type: integration | e2e
+> Sprint: {Sprint Name}
+> Created: {date}
+
+## 1. Ticket Summary
+- What to test
+- Acceptance Criteria (list)
+- Dependencies (other ticket IDs)
+
+## 2. Architecture Decisions
+
+> **ADR promotion check.** The decisions in this section are **ticket-local** by default — they stay in this plan. If one is **architectural AND hard to reverse** (a fixture lifecycle reused across tickets, a test-data-isolation contract, a Page-Object-vs-Screenplay shift, an auth-in-tests change, a flake-retry policy), it is no longer ticket-local: promote it to a standalone `ADR-NNNN-<slug>.md` in `.context/ADR/` and leave a `See ADR-NNNN` backlink in the table below. Detection + procedure: `agentic-qa-core/references/adr-doctrine.md` §1–§2; template + lifecycle: `.context/ADR/README.md`. AI drafts `Proposed`; the human approves.
+
+### Component Strategy
+| Decision | Value | Rationale |
+| Component | {Resource}Api.ts / {Page}Page.ts | New or existing? |
+| Fixture | { api } / { ui } / { test } | Why this fixture? |
+| Test file | tests/{type}/{module}/{verbFeature}.test.ts | Naming rationale |
+| Preconditions | Steps module / inline | What setup is needed? |
+
+### [E2E ONLY] UI Elements
+| Element | Locator Strategy | Locator Value |
+
+### [INTEGRATION ONLY] API Details
+| Aspect | Value |
+| Endpoint(s) | METHOD /api/v1/... |
+| OpenAPI Type(s) | {TypeName} from @schemas/... |
+| Auth Required | Yes / No |
+| Return Pattern | Tuple: [APIResponse, TBody] or [APIResponse, TBody, TPayload] |
+
+## 3. ATC Registry
+
+### Existing ATCs (Reuse)
+| ATC ID | Component | Method | Description |
+
+### New ATCs (Create)
+| ATC ID | Component | Method | Description |
+
+### New Helpers (No @atc)
+| Component | Method | Returns | Description |
+
+## 4. Test Data Strategy
+| Data | Source | Lifecycle |
+
+### DataFactory additions / Constants additions
+(code snippets)
+
+## 5. Test Scenarios
+### File: tests/{type}/{module}/{verbFeature}.test.ts
+Fixture: { api } / { ui } / { test }
+
+#### Scenario 1: {happy path}
+Test: "{TICKET-ID}: should {behavior} when {condition}"
+Preconditions: ...
+ATCs called: ...
+Test-level assertions: ...
+Teardown: ...
+
+## 6. Implementation Order
+- [ ] Add types to tests/data/types.ts
+- [ ] Add factory methods to tests/data/DataFactory.ts
+- [ ] Add constants to tests/data/constants.ts
+- [ ] Create/update Layer 3 component
+- [ ] Register component in fixture
+- [ ] Create test file
+- [ ] Run tests and validate
+- [ ] TMS TC transitions to Pull Request when the PR opens (`create_pr` transition) — Automated only lands post-merge via the `merged` transition
+
+## 7. Success Criteria
+- [ ] All ACs covered — **the floor, not the bar.** Also: risk-beyond-AC covered (invalid/boundary inputs, auth/error paths, state transitions, anomalies the AC is silent on) per `agentic-qa-core/references/test-design-doctrine.md`
+- [ ] Boundary cases (BVA) automated wherever an AC has a range / limit / length / date-window (EP-merge does NOT cover off-by-one)
+- [ ] KATA compliance
+- [ ] Fixture correct
+- [ ] No hardcoded waits
+- [ ] Aliases used
+- [ ] Tests pass locally
+- [ ] TMS TC moved to Pull Request on PR open (never "Automated" after local validation — Automated is exclusively the post-merge `merged` transition, once CI is green on main)
+```
+
+Implementation-order rule of thumb: each box in Section 6 should map to a single commit. If a commit would mix "new types" and "new ATC", split it.
+
+---
+
+## 7. Data classification — Discover / Modify / Generate
+
+Every precondition in a plan must be classified by how its data will be obtained. Apply this during planning — never defer to the coding phase. Priority is strict: try Discover first, then Modify, then Generate.
+
+| Priority | Pattern | Description | Feasibility check |
+|----------|---------|-------------|-------------------|
+| 1 | **Discover** | Query the system for existing data already in the required state. Zero DB impact. Preferred. | Can DB/API return an entity matching the preconditions? |
+| 2 | **Modify** | Find existing data and alter it via API to reach the required state. | Does the API expose the mutation needed? |
+| 3 | **Generate** | Create data from scratch via API (faker payload + POST). Last resort. | Does a POST/PUT endpoint exist for this entity? |
+| — | **Blocker** | No pattern is feasible. | Flag ticket as NOT automatable; document the gap and escalate. |
+
+Workflow during planning:
+
+1. List each precondition (`user in X role`, `order in Y status`, `feature flag Z enabled`).
+2. For each one, pick the lowest-priority pattern that works.
+3. Document the chosen pattern, the exact endpoint or DB query that obtains the data, and where it runs (`beforeAll`, `beforeEach`, test-level setup).
+4. For Modify and Generate, document cleanup/teardown (a test that creates state owns its cleanup).
+
+Rules:
+
+- Never hardcode entity IDs, usernames, or dates. Fetch dynamically at runtime or generate via faker.
+- Discover queries run in `beforeAll`. If the query finds nothing, the test uses `test.skip()` — never `expect(...).toBe(...)` on precondition data. Unrelated tests must not be blocked by missing data for one test.
+- If two tests need different states of the same entity, each test creates its own record. No shared mutable state.
+- Auth tokens and credentials always come from `.env` via the project's variables module — never generated and never hardcoded.
+
+Record a feasibility row per ticket inside the plan (module master doc §7 and automation-plan §4):
+
+```
+| Ticket | Precondition | Pattern | Feasibility | Notes |
+| OD-T01 | user with 0 orders | Discover | Risky | Query may be slow — add timeout guard |
+| OD-T02 | order with discount applied | Generate | Feasible | POST /orders then POST /orders/{id}/discount |
+```
+
+---
+
+## 8. `atc/{TICKET-ID}-{brief-title}.md` structure
+
+Produce a per-ATC spec when the ATC is complex enough that the implementation plan cannot carry the detail, or when a regression-driven plan is just one ATC.
+
+Template (abbreviated — full sections below):
+
+```markdown
+# ATC Spec: {TICKET-ID} — {ATC Name}
+
+> Ticket: {TICKET-ID}
+> Component: {ComponentName} (tests/components/{api|ui}/{ComponentName}.ts)
+> Type: API | UI — Mutation | Verification | Negative | Happy path | Validation | Navigation | State change
+> Parent Story: {PARENT-TICKET-ID} (if applicable)
+
+## 1. Test Case Summary
+| Name | Objective | Precondition | Acceptance Criteria |
+
+## 2. ATC Contract
+\`\`\`typescript
+/**
+ * ATC: brief description
+ * Fixed assertions:
+ *  - ...
+ */
+@atc('{TICKET-ID}')
+async {methodName}({params}): {ReturnType} { /* ... */ }
+\`\`\`
+
+## 3A. API Details (API ATCs)  — endpoint, return type, OpenAPI imports, request/response shapes
+## 3B. UI Details (UI ATCs)     — page path, locator strategy, Playwright assertions, intercept patterns
+
+## 4. Assertions Split
+### Fixed (inside ATC)           — invariants that always hold
+### Test-level (in test file)    — varies per scenario
+
+## 5. Code Template              — copy-pasteable skeleton with placeholders
+
+## 6. Technique-derivation check (decides the ATC set — 1:N per AC)
+> Full canon + triggers: `agentic-qa-core/references/test-design-doctrine.md`. EP-merge collapses inputs only WITHIN a partition — never across partitions, boundaries, or states.
+
+| AC | Technique fired | ATCs produced |
+|----|-----------------|---------------|
+| (per AC) | EP (always) / BVA (range·limit·length·date) / State-Transition (status field) / Decision Table (2+ interacting conditions) / Pairwise (3+ factors) | … |
+
+**Equivalence Partitioning detail:**
+| Input | Expected output | Same ATC? |
+
+**Boundary Value Analysis detail** (mandatory if any range/limit exists — else state N/A):
+| Field + range | Boundary ATCs (`min-1·min·min+1 … max-1·max·max+1`, zero/empty/null) |
+
+**Two reduction axes — keep them separate** (canon: doctrine §"Part 2.5"):
+- **EP/BVA decide the ATC COUNT** — how many parameterized `@atc`s the cases split across (one per partition + boundary + state).
+- **Decision Table / Pairwise reduce the DATA ROWS inside one parameterized ATC** — when an ATC's data set combines 2+ interacting conditions (Decision Table → one row per surviving rule) or 3+ factors (Pairwise → all-pairs rows instead of the full cartesian product). They shrink the fixture/`data-factory` row set, NOT the ATC count. Log the reduction in the fixture or the spec so it is visible, not a silent cap.
+
+| Parameterized ATC | Reduction applied | Rows after reduction |
+|---|---|---|
+| (per multi-factor ATC) | Decision Table / Pairwise / none | … |
+
+## 7. Dependencies
+- Precondition Steps
+- Required Components (exists? action needed)
+
+## 8. Data Context (skip if parent plan covers it)
+| Precondition | Pattern | Source | Placement | Cleanup |
+
+## 9. Checklist
+- [ ] verb{Resource}{Scenario} naming
+- [ ] Max 2 positional params
+- [ ] Correct return type (tuple for API, void for UI)
+- [ ] Fixed vs test-level assertions split
+- [ ] Not duplicating an existing ATC (EP checked)
+```
+
+ATC classification during planning:
+
+| Type | API trigger | UI trigger | Fixed assertion shape |
+|------|-------------|------------|----------------------|
+| Mutation | POST/PUT/PATCH/DELETE | Fill + Submit + Navigate | Status 2xx + created/updated fields |
+| Verification | GET + business-rule check | State-change verification | Status + business-rule invariants |
+| Negative | Any (expects 4xx/5xx) | Invalid submit | Error status + error contract |
+| Validation (UI) | — | Invalid form submit | Error visible, no navigation |
+| Navigation (UI) | — | Click + destination | URL + heading + key elements |
+
+Disguised helpers — if the method only does a GET with a status-200 assertion, or only a click without outcome assertions, it is a helper (no `@atc`), not an ATC.
+
+---
+
+## 9. Using `kata-manifest.json` during planning
+
+`kata-manifest.json` (root) is the authoritative registry of every component and every `@atc('ID')` call in `tests/components/**`. **MUST be loaded before drafting any plan** — Critical Rule #12 in `AGENTS.md`. The husky pre-commit gate keeps the file fresh, so the manifest is always trustworthy; the file system is not (a freshly added component may exist on disk but the manifest is what reviewers and downstream agents consult).
+
+Regenerate when stale: `bun run kata:manifest`. Validate: `bun run kata:manifest:check` (CI-grade; exits 1 if stale).
+
+Planning tasks the manifest answers:
+
+| Need | How |
+|------|-----|
+| "Does an `OrdersApi` component already exist?" | Look under `components.api[].name` |
+| "Is ATC `UPEX-101` already decorated somewhere?" | Grep `atcs[].id` in every component |
+| "Which component owns endpoint X?" | Component names map to domain; confirm by opening the file only if unclear |
+| "Which Steps classes already compose ATCs?" | Check the manifest's steps listing (`tests/components/steps/` scan) and its method list |
+
+Include two tables in the implementation plan based on manifest output:
+
+- **Existing ATCs (Reuse)** — populated from manifest entries whose `id` matches ACs already covered.
+- **New ATCs (Create)** — ATC IDs that must be created for this ticket.
+
+A planned "new component" that the manifest already lists is a duplicate and will be rejected in review. A planned `@atc('PROJ-XXX')` ID that already appears in `atcs[].id` is an ID collision and will be rejected. Both errors are avoidable by reading `kata-manifest.json` first.
+
+---
+
+## 10. Approval gate — Plan → Code
+
+Never start Phase 2 (Code) without a written plan the user has approved. The gate is structural, not procedural politeness: it prevents the most common failure mode (coding the wrong scope).
+
+Gate checklist:
+
+- [ ] `spec.md` exists and every TC has a TMS-generated ID.
+- [ ] For ticket/regression scope: `automation-plan.md` exists with §3 ATC Registry populated.
+- [ ] For complex ATCs: `atc/*.md` exists with the contract (signature + fixed assertions) defined.
+- [ ] Data strategy is documented per precondition (pattern + source + placement + cleanup).
+- [ ] Fixture decision is recorded (`{ api }` / `{ ui }` / `{ test }`).
+- [ ] Every "New ATC" in the registry has a unique `@atc` ID that does not collide with `bun run kata:manifest` output.
+- [ ] Module master doc exists (module scope only) with §4 Data Flow and §7 Data Strategy populated.
+- [ ] Implementation order is defined with one commit per step.
+
+Presentation to the user:
+
+1. Summarise the scope (module / ticket / regression).
+2. List the TCs from `spec.md` (IDs + titles).
+3. List the ATCs to be created and reused from `automation-plan.md` §3.
+4. Flag any preconditions classified as Risky or Blocker in §7 — the user decides whether to proceed, adjust scope, or defer.
+5. Wait for explicit approval before moving to Phase 2.
+
+On approval, Phase 2 begins. If approval is not forthcoming, revise the plan — do not start coding with an unapproved plan. On rejection, document the reason in the plan and iterate.
+
+---
+
+## 11. Checklists by scope
+
+### Module-driven
+
+- [ ] Parallel context gathering complete (frontend, backend, existing `.context/` docs).
+- [ ] Master document written with all 8 sections (§5).
+- [ ] Tickets grouped by functional area (not by page section).
+- [ ] Each ticket has 3–7 TCs; none exceed 10.
+- [ ] Equivalence Partitioning applied across TCs; merges documented.
+- [ ] Every TC has a TMS-generated ID (§3).
+- [ ] ROADMAP.md, PROGRESS.md created.
+- [ ] Data strategy table filled for every ticket (§7).
+
+### Ticket-driven
+
+- [ ] Story materialized via `bun run jira:sync-issues get <STORY-KEY> --include-comments`; ACs + dev implementation-plan + ATP read from the synced `.md` (NEVER `acli workitem view` for custom fields).
+- [ ] TMS queried for existing tests; missing ones created there first.
+- [ ] `spec.md` written with 1–7 TCs.
+- [ ] `automation-plan.md` §3 ATC Registry populated against `kata:manifest` output.
+- [ ] Fixture decision made and justified.
+- [ ] Every precondition classified (§7).
+- [ ] Implementation order written with one commit per step.
+
+### Regression-driven
+
+- [ ] Bug or gap is well-understood; the TC that would have caught it is written.
+- [ ] TMS TC exists (1–3 bug, 1–2 gap).
+- [ ] ATC spec written (`atc/*.md`) because the regression is one method's worth of work.
+- [ ] Data strategy documented on the ATC spec (§8 in the ATC template) since there is often no parent automation-plan.
+- [ ] Component placement decided — existing component vs new + fixture update.
+
+When every box is checked, the plan is ready to hand off to Phase 2 (Code). Until then, the plan is not complete and the approval gate (§10) has not been reached.
+
+---
+
+## 12. Interrupted-session recovery
+
+When `/test-automation` is invoked mid-flow (or resumed after context loss), the FIRST stop is the mandatory Phase 0 session contract: read `.session/test-automation/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` and offer resume / restart / abort. `PROGRESS.md` + `ROADMAP.md` (in `test-specs/`) are the module-batch trackers — read them to confirm which ticket the resume applies to, but they complement the `.session/` contract, they do not replace it.
+
+| Has plan? (`automation-plan.md`) | Has test code? (`tests/e2e/**` or `tests/integration/**`) | Resume from |
+|---|---|---|
+| No  | No  | **STEP 2 (Planning)** |
+| Yes | No  | **STEP 3 (Coding)** |
+| Yes | Yes | **STEP 4 (Review)** |
+
+Before classifying state, read the current ticket in `PROGRESS.md` §Current status to confirm which ticket the resume applies to.
+
+### 12.1 Revision-loop ceiling (Phase 3 · Review)
+
+Maximum revision loops: **2**. If the test is still not APPROVED after 2 revision rounds, present all remaining issues to the user and ask for guidance. Do not enter an infinite loop of reviewer ↔ coder mutations.
+
+### 12.2 Quality Gates G1–G4
+
+Named phase-transition checkpoints. Each gate blocks progression until its criteria are met.
+
+| Gate | Between | Criteria |
+|---|---|---|
+| **G1 · Plan exists** | STEP 2 → STEP 3 | `automation-plan.md` created with ATCs defined (see §10 Approval gate) |
+| **G2 · Tests pass** | STEP 3 → STEP 4 | All ATCs green locally — soft override allowed only after §12.3 bug-detection sub-protocol |
+| **G3 · Review OK** | STEP 4 → STEP 5 | Reviewer verdict = APPROVED, or §12.1 ceiling (2 rounds) reached and the user decided next steps |
+| **G4 · Progress updated** | STEP 5 → STEP 6 | `PROGRESS.md` reflects the completed ticket (status, test file path, done count, Session Log entry) |
+
+### 12.3 G2 failure protocol — legitimate bugs during automation
+
+If G2 fails because a test uncovers a real product bug (not flaky, not a coding error), follow this sub-protocol **before** invoking the soft override:
+
+> **Prerequisite**: Load `/acli` skill before executing the `[ISSUE_TRACKER_TOOL]` commands below.
+
+1. **Search the issue tracker** for an existing bug that matches the observed vs expected behaviour (`[ISSUE_TRACKER_TOOL] Search Issues`).
+2. **If the bug is already reported**:
+   - Add a test annotation tying the failure to the bug key — e.g. `test.fail('Blocked by {BUG-KEY}')` or a `@blocked:{BUG-KEY}` tag.
+   - Keep the test in the suite during automation runs (no silent skip — the failure is informative).
+   - The `@blocked:{BUG-KEY}` tag lets `/regression-testing` filter the test out of GO/NO-GO decisions until the bug is fixed.
+3. **If the bug is NOT reported**:
+   - Present the observed vs expected diff to the user and wait for explicit confirmation that it is a real defect.
+   - **Classify it first** — Bug vs Defect vs Improvement by the FEATURE's lifecycle stage, NOT by where the failing test ran (feature live above Staging → Bug; still pre-release → Defect; under-specified/absent AC surfaced by a test-beyond-AC → Improvement), per `agentic-qa-core/references/defect-management-doctrine.md` (Part 1). Also identify the affected product component. (This is the Jira classification — independent of the `@atc(...)` Allure severity, which is reporting metadata, not the Jira severity field.)
+   - On approval, delegate report creation to `/sprint-testing` (Stage 3 Reporting — see `sprint-testing/references/reporting-templates.md` §1), **passing the classification + affected component in the handoff** so `/sprint-testing` files the correct issue type. `/sprint-testing` performs the actual filing (QA Assignee, components, QA process epic).
+   - Once the issue key is issued, apply step 2 above.
+4. **Document in `PROGRESS.md`** — record each blocked test + bug key in the Session Log (and the Blocked tests table, see §13.2) so the next session does not re-investigate the same failure.
+
+Only after steps 1–4 can G2 be overridden and STEP 4 (Review) start. A failing test without a bug key behind it is never an acceptable override.
+
+---
+
+## 13. Shared state files — templates
+
+Both files live under the Epic's `test-specs/` (`.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/`) and are the single source of truth for module-wide automation progress. Populate the template blocks verbatim (copy, then fill); keep section headings stable so future sessions can grep reliably.
+
+### 13.1 `ROADMAP.md` (ticket index + dependencies)
+
+````md
+# {MODULE} · Automation Roadmap
+
+## Tickets
+
+| ID | Title | Priority | Phase | Dependencies | TCs |
+|---|---|---|---|---|---|
+| {PREFIX}-T01-{slug} | ... | P0 | Plan | — | 3 |
+| {PREFIX}-T02-{slug} | ... | P1 | Code | T01 | 5 |
+
+## Dependency graph
+
+```
+T01 ──┬──► T02 ──► T04
+      └──► T03
+```
+
+## Phase progress
+
+- Plan:   ▓▓▓▓░ 4/5
+- Code:   ▓▓░░░ 2/5
+- Review: ▓░░░░ 1/5
+````
+
+### 13.2 `PROGRESS.md` (session-persistent tracker)
+
+````md
+# {MODULE} · Automation Progress
+
+## Current status
+
+- Current ticket: {PREFIX}-T02-{slug}
+- Completed: 1/5
+- Remaining: 4/5
+
+## Tickets
+
+| Ticket | Status | Test file | Done | Notes |
+|---|---|---|---|---|
+| T01 | done | tests/e2e/login.test.ts | 3/3 | — |
+| T02 | in-progress | tests/e2e/signup.test.ts | 1/5 | Fixture blocked on email-verify mock |
+
+## Session log
+
+| Date | Action | Actor | Artifacts |
+|---|---|---|---|
+| 2026-04-19 | Planned T02 | AI | automation-plan.md |
+| 2026-04-20 | Coded T02 ATC1 | AI | tests/e2e/signup.test.ts |
+
+## Shared components created
+
+- `UserFormPage` (`tests/components/ui/UserFormPage.ts`) — used by T02, T05
+- `AuthApi.signupWithRetry` — used by T02, T04
+
+## Blocked tests
+
+| Test | Bug key | Reason | Since |
+|---|---|---|---|
+| `signup > invalid email rejects` | UPEX-999 | Server-side validation missing | 2026-04-20 |
+````
+
+The Blocked tests table is populated from §12.3 — every test marked `test.fail('Blocked by {BUG-KEY}')` + tagged `@blocked:{BUG-KEY}` (the blocked-by-bug convention defined in `automation-standards.md` §7, distinct from `softFail` and `@flaky`) must appear here with the bug key, the reason, and the date the block began. Remove a row only when the bug is closed and the test goes green.

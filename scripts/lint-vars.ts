@@ -56,13 +56,14 @@ const JIRA_WORKFLOWS_JSON = join(REPO_ROOT, '.agents', 'jira-workflows.json');
 // Directories to scan recursively.
 const SCAN_ROOTS = [
   '.claude',
+  '.agents/skills',
   'templates',
   '.context',
 ];
 
 // Single root-level file to also scan.
 const SCAN_FILES = [
-  'CLAUDE.md',
+  'AGENTS.md',
 ];
 
 // Directories to skip outright while walking.
@@ -87,15 +88,18 @@ const SKIP_DIRS = new Set([
 // the linter ignores matches where both conditions hold.
 const DOC_META_ALLOWLIST: Array<[string, string]> = [
   // §Critical Rules rule 9: "Use [TAG_TOOL] pseudocode and {{VARIABLES}} for dynamic content"
-  ['VARIABLES', 'CLAUDE.md'],
+  ['VARIABLES', 'AGENTS.md'],
   // §Project Variables bootstrap instruction explaining the {{VAR_NAME}} syntax
-  ['VAR_NAME', 'CLAUDE.md'],
+  ['VAR_NAME', 'AGENTS.md'],
   // §Context Loading Map: ".agents/project.yaml — `{{VAR}}` source-of-truth"
-  ['VAR', 'CLAUDE.md'],
+  ['VAR', 'AGENTS.md'],
   // §Tool Resolution pseudocode type list: "`{{PROJECT_VAR}}` (from `.agents/project.yaml`)"
-  ['PROJECT_VAR', 'CLAUDE.md'],
-  // §3.5 Validate / §Verify checklist: adapt-framework.md documents the {{VAR}} syntax inside vars:check comments
-  ['VAR', 'adapt-framework.md'],
+  ['PROJECT_VAR', 'AGENTS.md'],
+  // §3.5 Validate / §Verify checklist: the adapt-framework workflow documents the
+  // {{VAR}} syntax inside `bun run vars:check` shell comments. The prose moved out of
+  // the retired `.claude/commands/adapt-framework.md` command body and now lives in the
+  // skill reference — keep the entry pinned to that path, not to a bare filename.
+  ['VAR', 'adapt-framework/references/adaptation-workflow.md'],
   // resend-cli (vendored community skill) reference docs use Resend's own
   // Handlebars-style triple-mustache {{{VAR_NAME}}} email-template placeholders —
   // third-party syntax unrelated to this repo's {{VAR}} project convention.
@@ -463,9 +467,8 @@ function walkMarkdown(root: string, files: string[]): void {
   for (const name of entries) {
     const full = join(root, name);
 
-    // lstat — do not follow symlinks. CLAUDE.md is a symlink to CLAUDE.md, and
-    // we already include CLAUDE.md explicitly via SCAN_FILES; skipping symlinks
-    // avoids double-counting.
+    // lstat — do not follow symlinks. `.claude/skills` aliases the canonical
+    // `.agents/skills` tree, which SCAN_ROOTS already includes directly.
     let stat;
     try {
       stat = lstatSync(full);

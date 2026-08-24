@@ -23,7 +23,7 @@ describe('isRepoOnlyPath', () => {
 
   test('leaves unrelated paths alone', () => {
     expect(isRepoOnlyPath('docs/methodology/kata-fundamentals.md', prefixes)).toBe(false);
-    expect(isRepoOnlyPath('.claude/skills/acli/SKILL.md', prefixes)).toBe(false);
+    expect(isRepoOnlyPath('.agents/skills/acli/SKILL.md', prefixes)).toBe(false);
   });
 
   test('does not match a parent of the prefix', () => {

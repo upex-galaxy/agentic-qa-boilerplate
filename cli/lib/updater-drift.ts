@@ -7,7 +7,7 @@
  * those same files, so a downstream project would silently miss the
  * improvements forever.
  *
- * This hook generalizes the original CLAUDE.md drift advisory to a
+ * This hook generalizes the original instruction-file drift advisory to a
  * WATCHLIST of protected files. It NEVER edits any of them. Per entry it:
  *
  *  1. Reads the upstream copy from the template clone (tempDir).
@@ -42,9 +42,9 @@ export interface ProtectedWatchEntry {
   /** One-line human reason shown in the advisory table (why it is protected). */
   reason: string
   /**
-   * Override for the sha-marker file. Only used by `CLAUDE.md` to keep its
-   * legacy marker (`.template/claude-md.upstream.sha`) so repos that already
-   * received the old single-file advisory are not re-nudged.
+   * Override for the sha-marker file. `AGENTS.md` keeps the legacy
+   * `.template/claude-md.upstream.sha` marker so repos that already received
+   * the old single-file advisory are not re-nudged.
    */
   markerPath?: string
 }
@@ -183,7 +183,7 @@ export function buildDriftPrompt(drifted: DriftedEntry[], templateRepo: string):
     'POST-MERGE COMMANDS (each reconciled file feeds a generated catalog — regenerate it):',
     ' - after reconciling `.agents/jira-required.yaml`, run `bun run jira:sync-workflows`',
     '   (it catalogs ONLY the work_types the manifest declares — stale input, truncated catalog);',
-    ' - after reconciling skills (`.claude/skills/**`), run `bun run skills:registry`;',
+    ' - after reconciling skills (`.agents/skills/**`), run `bun run skills:registry`;',
     ' - after reconciling test files (`tests/**`), run `bun run kata:manifest`.',
     '',
     'After migrating, run the project verification (tests -> types -> lint) and report results.',

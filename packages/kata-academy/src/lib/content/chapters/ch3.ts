@@ -174,7 +174,7 @@ async authenticateSuccessfully(
     samples: [
       {
         title: 'AuthSteps — cadena de ATCs SIN @atc (doctrina)',
-        sourcePath: '.claude/skills/test-automation/references/kata-architecture.md',
+        sourcePath: '.agents/skills/test-automation/references/kata-architecture.md',
         code: `export class AuthSteps {
   constructor(private ui: UiFixture, private api: ApiFixture) {}
 

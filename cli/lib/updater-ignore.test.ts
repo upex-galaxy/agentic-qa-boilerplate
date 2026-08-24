@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { groupIgnoreLines, ignoreLineStem } from './updater-ignore.ts';
 
-// The exact ladder from CLAUDE.md §9 — the case the grouping exists for.
+// The exact ladder from AGENTS.md §9 — the case the grouping exists for.
 const PBI_LADDER = [
   '.context/PBI/*',
   '!.context/PBI/README.md',

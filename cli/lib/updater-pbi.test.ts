@@ -91,11 +91,11 @@ describe('buildPbiMigrationPrompt', () => {
     expect(prompt).toContain('git rm -r --cached -- ".context/PBI/epic-tree.md" ".context/PBI/epics/EPIC-UPEX-1-auth/epic.md"');
   });
 
-  test('names the exact allowlist and the CLAUDE.md §9 rationale', () => {
+  test('names the exact allowlist and the AGENTS.md §9 rationale', () => {
     expect(prompt).toContain('.context/PBI/README.md');
     expect(prompt).toContain('.context/PBI/templates/**');
     expect(prompt).toContain('.context/PBI/epics/*/test-specs/**');
-    expect(prompt).toContain('CLAUDE.md §9');
+    expect(prompt).toContain('AGENTS.md §9');
   });
 
   test('demands the push-to-Jira pass BEFORE declaring the migration done', () => {

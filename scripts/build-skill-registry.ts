@@ -1,15 +1,15 @@
 #!/usr/bin/env bun
 /**
- * build-skill-registry.ts — emits `.claude/skills/REGISTRY.md`.
+ * build-skill-registry.ts — emits `.agents/skills/REGISTRY.md`.
  *
  * Token-saving cache for the Skill Resolver protocol. Scans
- * `.claude/skills/*\/SKILL.md`, extracts a 5-15-line "Compact Rules" block per
+ * `.agents/skills/*\/SKILL.md`, extracts a 5-15-line "Compact Rules" block per
  * skill, and writes a single registry file the orchestrator pastes into every
  * subagent briefing under `## Project Standards (auto-resolved)`.
  *
  * Subagents trust the compact rules and DO NOT re-read full SKILL.md unless
  * the briefing explicitly says so. Protocol:
- *   `.claude/skills/agentic-qa-core/references/skill-resolver.md`.
+ *   `.agents/skills/agentic-qa-core/references/skill-resolver.md`.
  *
  * Extraction strategies (per skill):
  *   - frontmatter (authoritative): if the SKILL.md frontmatter carries a
@@ -42,7 +42,7 @@
  *
  * Exit codes:
  *   0 — registry written (or printed with --dry-run)
- *   1 — fatal error (no .claude/skills/, write failure, etc.)
+ *   1 — fatal error (no .agents/skills/, write failure, etc.)
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -54,7 +54,7 @@ import { parse as parseYaml } from 'yaml';
 // -----------------------------------------------------------------------------
 
 const REPO_ROOT = process.cwd();
-const SKILLS_DIR = join(REPO_ROOT, '.claude', 'skills');
+const SKILLS_DIR = join(REPO_ROOT, '.agents', 'skills');
 const CACHE_DIR = SKILLS_DIR;
 const CACHE_FILE = join(CACHE_DIR, 'REGISTRY.md');
 
@@ -93,8 +93,8 @@ function printHelp(): void {
   console.log(`Usage: bun scripts/build-skill-registry.ts [--check] [--dry-run] [--verbose] [--help]
 
 Builds the per-session skill registry consumed by the Skill Resolver protocol.
-Scans .claude/skills/*/SKILL.md, extracts compact rules per skill, and writes
-.claude/skills/REGISTRY.md.
+Scans .agents/skills/*/SKILL.md, extracts compact rules per skill, and writes
+.agents/skills/REGISTRY.md.
 
 Flags:
   --check      Verify REGISTRY.md is in sync with current SKILL.md content.
@@ -146,7 +146,7 @@ function listSkillDirs(): string[] {
   const dirs: string[] = [];
   for (const e of entries) {
     // Accept directories AND symlinks-to-directories (some skills are
-    // symlinked from outside the repo, e.g. .claude/skills/playwright-cli ->
+    // symlinked from outside the repo, e.g. .agents/skills/playwright-cli ->
     // an external clone).
     if (!e.isDirectory() && !e.isSymbolicLink()) { continue; }
     const skillPath = join(SKILLS_DIR, e.name, 'SKILL.md');
@@ -407,7 +407,7 @@ function renderRegistry(entries: SkillEntry[]): string {
     '',
     `> Generated: \`${generated}\``,
     '> Generator: `bun scripts/build-skill-registry.ts`',
-    '> Protocol: `.claude/skills/agentic-qa-core/references/skill-resolver.md`',
+    '> Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`',
     '',
     'This file is the per-session compact-rules cache for the Skill Resolver protocol.',
     'The orchestrator copies one or more `## Skill: <slug>` blocks below into every subagent briefing under `## Project Standards (auto-resolved)`.',

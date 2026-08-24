@@ -920,7 +920,7 @@ function dedupeDeltaByPath(
  *
  *   - `paths: ['.']` matches any path; specificity 0.
  *   - `paths: ['.claude']` matches `.claude/foo`; specificity 7.
- *   - `paths: ['.claude/skills']` matches `.claude/skills/foo`; specificity 14.
+ *   - `paths: ['.agents/skills']` matches `.agents/skills/foo`; specificity 14.
  *
  * Used by `dedupeDeltaByPath` to pick the most-specific owner when two
  * components both match a file.
@@ -2181,7 +2181,7 @@ export async function runUpdate(
   }
 
   // Drop generated, per-repo files that must never be synced (e.g.
-  // .claude/skills/REGISTRY.md). One filter point covers all three detection
+  // .agents/skills/REGISTRY.md). One filter point covers all three detection
   // paths — bootstrap, content reconcile, and git-log delta — since they all
   // feed into `entries`. Each repo regenerates these from its own state.
   if (cfg.excludePaths && cfg.excludePaths.length > 0) {

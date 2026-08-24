@@ -9,7 +9,7 @@
  * `issue_tracker.atlassian_url`, a versioned file that shows up in a diff.
  *
  * TypeScript callers import `cli/lib/atlassian-instance.ts` directly. Everything
- * that needs the host from a SHELL — the `curl` recipes in `.claude/skills/acli`,
+ * that needs the host from a SHELL — the `curl` recipes in `.agents/skills/acli`,
  * CI steps, ad-hoc terminal work — calls this instead of interpolating an env
  * var that may be a stale copy inherited from whatever spawned the session.
  *

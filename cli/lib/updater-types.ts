@@ -455,7 +455,7 @@ export interface UpdaterConfig {
    * be synced (each repo regenerates its own). Matched by exact repo-relative
    * path. Excluded from every detection path — bootstrap, content reconcile, and
    * git-log delta — so they are never copied, overwritten, or deleted.
-   * Example: `.claude/skills/REGISTRY.md` (built by `bun run skills:registry`
+   * Example: `.agents/skills/REGISTRY.md` (built by `bun run skills:registry`
    * from the repo's own installed skill set, including local community skills).
    */
   excludePaths?: string[]

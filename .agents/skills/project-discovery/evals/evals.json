@@ -1,0 +1,40 @@
+{
+  "evals": [
+    {
+      "name": "should-trigger-fresh-onboarding",
+      "prompt": "I need to set up this boilerplate for the Curacity project. Backend is Node.js + Express, frontend is React. Start by discovering the architecture.",
+      "expected_behavior": "Activates project-discovery. Confirms scope (Fresh onboarding). Begins Phase 1: Constitution -- asks for repo paths/access, detects stack, produces project-connection, then proceeds through project-assessment, business-model, domain-glossary. Waits for confirmation between phases before advancing.",
+      "category": "positive"
+    },
+    {
+      "name": "should-redirect-business-data-map-regeneration",
+      "prompt": "Generate the business-data-map.md for this project. Look at the source code and the database.",
+      "expected_behavior": "Does NOT generate the map inside this skill and does NOT claim to own it. Redirects to `project-context` mode `data` (legacy alias `/business-data-map`), which is where the entity/flow/state-machine extraction lives. May state which discovery artifacts that mode depends on, and offer to run Phase 1 + Phase 3 first if `.context/` has no project-config or infrastructure yet. Does not reference a context-generators file: this skill has no such reference.",
+      "category": "positive"
+    },
+    {
+      "name": "should-redirect-api-architecture-request",
+      "prompt": "The api-architecture.md is stale. Regenerate it with the current endpoints.",
+      "expected_behavior": "Does NOT regenerate api-architecture.md inside this skill. Either declines (if invoked) or activates only to redirect: explains the split — `bun run api:sync` for technical endpoint sync (TypeScript types from OpenAPI) and `project-context` mode `api` (legacy alias `/business-api-map`) for the business angle (auth flows, critical paths). Does not point at a context-generators file: that reference no longer exists, and the deferral note now lives in this skill's SKILL.md routing table.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-write-e2e-test",
+      "prompt": "Write an E2E test for the login flow.",
+      "expected_behavior": "Does NOT activate project-discovery. Should route to test-automation (KATA test authoring). project-discovery is for onboarding and context generation, not writing test code.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-kata-concept-question",
+      "prompt": "What is KATA and how does it work?",
+      "expected_behavior": "Does NOT activate project-discovery. General conceptual question answerable without a skill. project-discovery is for reverse engineering a target project; KATA adaptation belongs to `/adapt-framework`, and neither exists to explain the framework in the abstract.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-run-regression",
+      "prompt": "Run the regression suite.",
+      "expected_behavior": "Does NOT activate project-discovery. Should route to regression-testing. project-discovery never executes test suites.",
+      "category": "negative"
+    }
+  ]
+}

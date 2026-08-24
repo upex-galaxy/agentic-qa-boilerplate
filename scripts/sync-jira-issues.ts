@@ -4093,7 +4093,7 @@ export {
 };
 
 // Guarded so the pure helpers above can be imported by tests without running a
-// sync. Same convention as `.claude/skills/acli/scripts/jira-attach-media.ts`.
+// sync. Same convention as `.agents/skills/acli/scripts/jira-attach-media.ts`.
 if (import.meta.main) {
   main().catch((error) => {
     log.error(error instanceof Error ? error.message : String(error));
