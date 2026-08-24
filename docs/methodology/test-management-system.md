@@ -189,7 +189,7 @@ IQL integrates 8 complementary approaches applied strategically across different
 - Create the story's **Acceptance Test Plan (ATP)**
 - Define test outlines/hypotheses
 
-> **The FTP is NOT created here.** The Feature Test Plan is **one per feature/Epic** and is a living document refined across the whole epic; what a User Story produces is its **ATP**, which inherits the FTP's shared risks, integration points and personas. Canon: `.claude/skills/sprint-testing/references/feature-test-planning.md`.
+> **The FTP is NOT created here.** The Feature Test Plan is **one per feature/Epic** and is a living document refined across the whole epic; what a User Story produces is its **ATP**, which inherits the FTP's shared risks, integration points and personas. Canon: `.agents/skills/sprint-testing/references/feature-test-planning.md`.
 
 **Output:** Clear ACs validated + Acceptance Test Plan
 

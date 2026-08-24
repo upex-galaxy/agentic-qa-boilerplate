@@ -180,7 +180,7 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
     estilos, para que la diferencia se vea en lugar de leerse.
   </p>
   <div class="meta">
-    <span class="tag">CLAUDE.md §2</span>
+    <span class="tag">AGENTS.md §2</span>
     <span class="tag">~/.claude/CLAUDE.md → OUTPUT STYLE</span>
     <span class="tag">caveman@caveman · full</span>
     <span class="tag">2026-08-17</span>
@@ -205,7 +205,7 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
         <td>cada turno, vía hook</td>
       </tr>
       <tr>
-        <td>CLAUDE.md §2<span class="pill win">manda</span></td>
+        <td>AGENTS.md §2<span class="pill win">manda</span></td>
         <td><strong>qué</strong> se dice, granularidad y registro</td>
         <td>Butler + PM Voice + Visual Mapping</td>
         <td>cada turno, vía hook nuevo</td>
@@ -287,7 +287,7 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
     <div class="card" style="--ac:var(--rose)">
       <span class="n">04</span>
       <h4>Barrido de 173 guiones largos</h4>
-      <p>119 en <code>CLAUDE.md</code> y 54 en <code>docs/ai-personality.md</code>. El modelo imita
+      <p>119 en <code>AGENTS.md</code> y 54 en <code>docs/ai-personality.md</code>. El modelo imita
       la densidad tipográfica que ve en sus propias instrucciones, y veía 185 guiones largos contra
       una línea que los prohibía. Ahora quedan cero.</p>
       <span class="st done">aplicado</span>
@@ -315,8 +315,10 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
     <div class="card" style="--ac:var(--blue)">
       <span class="n">06</span>
       <h4>Hook de reinyección del contrato</h4>
-      <p><code>.claude/hooks/personality-reinject.js</code>, registrado como
-      <code>UserPromptSubmit</code>. Sin él, PM Voice y Butler se leen una vez y se diluyen mientras
+      <p><code>.agents/hooks/personality-reinject.mjs</code> guarda el texto una sola vez y tres
+      adaptadores finos lo registran como <code>UserPromptSubmit</code>:
+      <code>.claude/settings.json</code>, <code>.opencode/plugins/personality-reinject.js</code> y
+      <code>.codex/hooks.json</code>. Sin él, PM Voice y Butler se leen una vez y se diluyen mientras
       caveman se reinyecta cada turno: la asimetría era mecánica, no editorial. Cuesta unos 30
       tokens por turno.</p>
       <span class="st done">aplicado</span>
@@ -473,7 +475,7 @@ const VERDICT = {
   after: {
     cls: 'note good',
     ic: 'Resultado',
-    html: `Esta salida no está escrita a mano: la generó un subagente cargando el <code>CLAUDE.md</code> de esta rama y el <code>OUTPUT STYLE</code> global ya reescritos. El titular responde y se sostiene solo. La comparación va en tabla porque es una comparación. Rutas, ATCs y códigos HTTP en <code>backticks</code>, así que saltan a la vista. Frases de 6 a 30 palabras alternadas. Cero guiones largos, cero recap final. <strong>El menú deja que tires del hilo que te interese en lugar de recibirlo todo de golpe.</strong>`
+    html: `Esta salida no está escrita a mano: la generó un subagente cargando el <code>AGENTS.md</code> de esta rama y el <code>OUTPUT STYLE</code> global ya reescritos. El titular responde y se sostiene solo. La comparación va en tabla porque es una comparación. Rutas, ATCs y códigos HTTP en <code>backticks</code>, así que saltan a la vista. Frases de 6 a 30 palabras alternadas. Cero guiones largos, cero recap final. <strong>El menú deja que tires del hilo que te interese en lugar de recibirlo todo de golpe.</strong>`
   }
 }
 

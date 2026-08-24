@@ -60,7 +60,7 @@ Before running `bunx create-agentic-qa@latest` or `bun install && bun run setup`
 | Tool                                                                                                                   | Min version | Why                                                                                                         | Install                                                                                |
 | ---------------------------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | **Bun**                                                                                                                | `>= 1.0.0`  | Runtime for every script (`bun install`, `bun run setup`, `bun run test`, `bun xray`, `bun cli/doctor.ts`)  | macOS/Linux/WSL: `curl -fsSL https://bun.sh/install \| bash` · Windows: `powershell -c "irm bun.sh/install.ps1 \| iex"` · [docs](https://bun.sh/docs/installation) |
-| **Agent CLI** — [Claude Code](https://docs.claude.com/en/docs/claude-code) **or** [OpenCode](https://opencode.ai/docs) | latest      | `bun run setup` Step 4 looks for `~/.claude/` or `~/.config/opencode/`; exits 1 if neither directory exists | Claude Code: see official docs · OpenCode: see official docs                           |
+| **An agent** — [Claude Code](https://docs.claude.com/en/docs/claude-code), [OpenCode](https://opencode.ai/docs) **or** [Codex](https://developers.openai.com/codex/) | latest      | `bun run setup` Step 4 detects all three (`~/.claude/` or `claude` on PATH · `~/.config/opencode/` or `opencode` on PATH · `codex` on PATH or `.codex/config.toml` in the repo) and lets you pick which to configure; exits 1 only if none is found | See each project's official docs                           |
 | `git`                                                                                                                  | any         | Scaffolder runs `git init`; pre-commit hooks (Husky) require git                                            | [git-scm.com/downloads](https://git-scm.com/downloads)                                 |
 | `tar`                                                                                                                  | any         | Scaffolder extracts the template tarball. Either flavour works — GNU tar (Linux, WSL, Git Bash) or bsdtar   | Ships with macOS, Linux, and Windows 10 1803+ / Windows 11 (`C:\Windows\System32\tar.exe`) |
 
@@ -88,13 +88,13 @@ These are **not optional** for the workflow — each one is required by a specif
 
 | Tool     | What it buys you                                                                                                                                                                                                                                                                          | Install                                                                                       |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `direnv` | Loads `.env` automatically when you `cd` into the repo, so the bare `claude` / `opencode` binaries see MCP credentials. Without it the project ships `bun run claude` / `bun run opencode` wrappers (via `dotenv-cli`) that do the same thing — direnv just removes the `bun run` prefix. | macOS/Linux: `brew install direnv` / `apt install direnv` · [direnv.net](https://direnv.net/) |
+| `direnv` | Loads `.env` automatically when you `cd` into the repo, so the bare `claude` / `opencode` / `codex` binaries see MCP credentials. Without it the project ships `bun run claude` / `bun run opencode` / `bun run codex` wrappers (via `dotenv-cli`) that do the same thing — direnv just removes the `bun run` prefix. | macOS/Linux: `brew install direnv` / `apt install direnv` · [direnv.net](https://direnv.net/) |
 
-> **Windows users**: skip direnv. The `bun run claude` / `bun run opencode` wrappers already load `.env` cross-platform with zero setup. direnv on PowerShell needs version 2.37+ and is officially experimental; Git Bash works but at that point the wrapper is simpler. The installer will offer the direnv hook; just decline it.
+> **Windows users**: skip direnv. The `bun run claude` / `bun run opencode` / `bun run codex` wrappers already load `.env` cross-platform with zero setup. direnv on PowerShell needs version 2.37+ and is officially experimental; Git Bash works but at that point the wrapper is simpler. The installer will offer the direnv hook; just decline it.
 
 ### MCP credentials (`.env` keys)
 
-`.mcp.json` (Claude Code) and `opencode.jsonc` ship with `${VAR}` / `{env:VAR}` placeholders that read from `.env`. Seven keys are required for the 6 canonical MCPs:
+Each harness has its own MCP config — `.mcp.json` (Claude Code), `opencode.jsonc` (OpenCode), `.codex/config.toml` (Codex) — and all three ship with credential placeholders that read from `.env`. Seven keys are required for the 6 canonical MCPs:
 
 ```
 TAVILY_API_KEY
@@ -113,12 +113,12 @@ POSTMAN_API_KEY
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Preflight (Step 0)       | Version compare — reads `Bun.version`, parses semver, requires `>= 1.0.0`. Also checks `node_modules/@inquirer/prompts` exists. | Hard exit 1 with explicit `Fix:` command before any other step.                                                                                                                                           |
 | Step 2 — gentle-ai       | Version compare — runs `gentle-ai version`, parses semver, requires `>= 1.26.5`.                                                | Missing: prints brew + go install commands + docs URL, asks exit-or-continue. Too old: warns and continues with `gentle-ai update` hint.                                                                  |
-| Step 4 — agents          | Path probe — checks if `~/.claude/` or `~/.config/opencode/` directory exists.                                                  | Neither found: prints both docs URLs, hard exit 1.                                                                                                                                                        |
+| Step 4 — agents          | Detects Claude Code, OpenCode and Codex (config directory, binary on PATH, or `.codex/config.toml`), then prompts which to configure. | None of the three found: prints all three docs URLs, hard exit 1.                                                                                                                                     |
 | Step 10 — per-skill CLIs | PATH probe — runs `which <name>` (POSIX) or `where <name>` (Windows). Presence only, no version check.                          | Prints `found`/`missing` table; for missing entries adds `quick:` install command (when cross-platform) + `docs:` URL. Non-blocking.                                                                      |
-| direnv (optional)        | Presence + `.envrc` allow status + shell-rc hook line.                                                                          | Pure convenience nudge — `bun run claude` / `bun run opencode` wrappers already work without it. If absent, lists `system_install` action with install command; safe to decline (recommended on Windows). |
+| direnv (optional)        | Presence + `.envrc` allow status + shell-rc hook line.                                                                          | Pure convenience nudge — the `bun run claude` / `bun run opencode` / `bun run codex` wrappers already work without it. If absent, lists `system_install` action with install command; safe to decline (recommended on Windows). |
 | `bun run setup:doctor`   | Re-runs everything above + 7 MCP `.env` vars + Playwright browser cache.                                                        | Human-readable or `--json` report. Every `pending_action` carries a `where` hint or URL — re-run any time after partial setup.                                                                            |
 
-> **TL;DR**: install **Bun** + **Claude Code (or OpenCode)** before you run setup. Everything else, the installer points you at when you hit it.
+> **TL;DR**: install **Bun** plus at least one of **Claude Code, OpenCode, or Codex** before you run setup. Everything else, the installer points you at when you hit it.
 
 <br />
 <br />
@@ -133,7 +133,7 @@ POSTMAN_API_KEY
 | **Get oriented before installing**                    | `bun run onboarding` — opens `docs/onboarding.html` with sidebar nav                                                                                                                                   |
 | **Understand the methodology**                        | [`docs/agentic-quality-engineering.md`](docs/agentic-quality-engineering.md)                                                                                                                           |
 | **See what `bun run setup` configures**               | [`INSTALLER.md`](INSTALLER.md) — run `bun cli/doctor.ts` after setup                                                                                                                                   |
-| **You're an AI agent**                                | [`CLAUDE.md`](CLAUDE.md) (auto-loaded each session)                                                                                                                                                    |
+| **You're an AI agent**                                | [`AGENTS.md`](AGENTS.md) (auto-loaded each session on every supported harness)                                                                                                                         |
 
 > First-timers, use the scaffolder. It handles tarball download, git scrub, rename, `bun install`, and the interactive installer in one shot. The manual clone is for people hacking on the boilerplate itself.
 
@@ -201,12 +201,13 @@ bunx -y ccstatusline@latest
 
 ## Launching the agent
 
-`.mcp.json` (Claude Code) and `opencode.jsonc` ship with `${VAR}` / `{env:VAR}` placeholders — real values live in `.env`. Launch the agent via one of these so env vars actually load:
+Every MCP config ships with credential placeholders — real values live in `.env`. Launch the agent via one of these so env vars actually load:
 
 ```bash
 # Cross-platform default (uses dotenv-cli, no extra tooling required):
 bun run claude        # Claude Code
 bun run opencode      # OpenCode
+bun run codex         # Codex CLI
 
 # Optional: direnv autoload (any OS with direnv installed)
 direnv allow          # one-time per repo (the installer offers to run this)
@@ -214,8 +215,12 @@ claude                # direct binary picks up .env from your shell
 
 # Or load .env into your CURRENT shell once, then run any binary directly:
 set -a; source .env; set +a   # bash/zsh only — exports every .env key into this session
-claude                        # now claude / opencode / acli / bun xray all see the vars
+claude                        # now claude / opencode / codex / acli / bun xray all see the vars
 ```
+
+Each wrapper is `dotenv -o -e .env -- <binary>`. The `-o` forces `.env` to win over an inherited process variable; launching the bare executable skips that, so a stale value from the parent shell can silently shadow the file.
+
+**Codex Desktop** consumes the same repository configuration as the CLI — no second convention, no extra directory. One caveat applies to both: Codex loads the project's `.codex/` config and hooks **only in a repository you have marked trusted**. `bun run setup:doctor` reports that trust on its own line, because it is runtime state no file check can verify.
 
 PowerShell equivalent of that last block:
 
@@ -313,7 +318,8 @@ Project values (URLs, project key, Jira fields) live in `.agents/project.yaml` a
 | **Allure Reports**         | Rich test reports with history and trends                                          |
 | **TMS Sync**               | Automatic sync of test results to Jira/Xray                                        |
 | **Context Engineering**    | `.context/` directory with AI-friendly documentation                               |
-| **Skills-based Workflows** | Agent skills under `.claude/skills/` drive the AI-assisted QA and automation flows |
+| **Skills-based Workflows** | Agent skills under `.agents/skills/` drive the AI-assisted QA and automation flows |
+| **Multi-harness**          | One instruction body and one skill store, consumed by Claude Code, OpenCode and Codex |
 | **MCP Integration**        | Ready for Playwright, Database, and API MCPs                                       |
 
 <br />
@@ -325,7 +331,7 @@ This boilerplate has **two configuration systems** that serve different consumer
 | System                     | File                           | Consumer                                                                                                                | Loaded at            |
 | -------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | -------------------- |
 | **Runtime test config**    | `.env` + `config/variables.ts` | Playwright runner, KATA components, `bun run *` scripts (jiraSync, env validate, etc.)                                  | Test execution time  |
-| **AI context engineering** | `.agents/project.yaml`         | Claude Code, Codex, Cursor, Copilot, OpenCode — used to resolve `{{VAR}}` references in skills, commands, and templates | AI session bootstrap |
+| **AI context engineering** | `.agents/project.yaml`         | Every supported harness (Claude Code, OpenCode, Codex) — used to resolve `{{VAR}}` references in skills, commands, and templates | AI session bootstrap |
 
 Both are needed. Skip neither.
 
@@ -379,7 +385,7 @@ const envDataMap: Record<
 
 ### (c) AI context engineering — `.agents/project.yaml`
 
-The AI agents (Claude Code, Codex, Cursor, Copilot, OpenCode) resolve `{{VAR}}` references in skills, templates, and commands against `.agents/project.yaml`. Edit it manually, or run the interactive walkthrough:
+Every supported harness (Claude Code, OpenCode, Codex) resolves `{{VAR}}` references in skills, templates, and commands against `.agents/project.yaml`. Edit it manually, or run the interactive walkthrough:
 
 ```bash
 bun run agents:setup
@@ -449,21 +455,26 @@ bun run test:smoke         # smoke / @critical tests
 │   ├── reports/                  # Generated output (GITIGNORED except its README): sprint trackers, test map, regression reports
 │   └── PBI/                      # Per-ticket backlog items (GITIGNORED Jira cache; `bun run context:hydrate`)
 │
-├── .agents/                      # Agentskills.io spec layout
+├── .agents/                      # Agentskills.io spec layout — the shared, harness-agnostic substrate
 │   ├── project.yaml              # AI context vars (resolved as {{VAR}} by skills)
-│   ├── jira-fields.json                 # Jira custom-field catalog (synced by `bun run jira:sync-fields`)
+│   ├── jira-fields.json          # Jira custom-field catalog (synced by `bun run jira:sync-fields`)
 │   ├── jira-required.yaml        # Required Jira custom-field manifest
-│   └── README.md                 # Variable conventions reference
+│   ├── README.md                 # Variable conventions reference
+│   ├── compatibility/            # command-aliases.json — source for every generated slash-command wrapper
+│   ├── hooks/                    # personality-reinject.mjs — one emitter, three harness adapters
+│   └── skills/                   # THE skill store (19 committed) — read by all three harnesses
+│       ├── agentic-qa-core/      # Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine)
+│       ├── project-discovery/    # Onboarding + context generation
+│       ├── sprint-testing/       # Planning + execution + reporting
+│       ├── test-documentation/   # TMS documentation + prioritization
+│       ├── test-automation/      # KATA planning + coding + review
+│       ├── regression-testing/   # Regression execution + GO/NO-GO
+│       ├── xray-cli/             # Xray TMS helper
+│       └── acli/                 # Atlassian CLI helper ([ISSUE_TRACKER_TOOL])
 │
-├── .claude/skills/               # Claude Code Skills (workflows)
-│   ├── agentic-qa-core/           # Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine)
-│   ├── project-discovery/        # Onboarding + context generation
-│   ├── sprint-testing/           # Planning + execution + reporting
-│   ├── test-documentation/       # TMS documentation + prioritization
-│   ├── test-automation/          # KATA planning + coding + review
-│   ├── regression-testing/       # Regression execution + GO/NO-GO
-│   ├── xray-cli/                 # Xray TMS helper
-│   └── acli/                     # Atlassian CLI helper ([ISSUE_TRACKER_TOOL])
+├── .claude/                      # Claude Code adapter — settings.json (hook) + generated commands/ and skills alias
+├── .opencode/                    # OpenCode adapter — plugins/personality-reinject.js + generated commands/
+├── .codex/                       # Codex adapter — config.toml (MCP) + hooks.json. Shared by CLI and Desktop
 │
 ├── .github/workflows/            # CI/CD pipelines
 │   ├── build.yml                 # PR validation
@@ -485,7 +496,10 @@ bun run test:smoke         # smoke / @critical tests
 │
 ├── playwright.config.ts          # Playwright configuration
 ├── INSTALLER.md                  # Contract for bun run setup — what each installer layer does
-├── CLAUDE.md                     # AI memory (canonical, read by Claude Code + OpenCode)
+├── AGENTS.md                     # AI memory — the ONLY instruction body, loaded by all three harnesses
+├── CLAUDE.md                     # One-line shim (`@AGENTS.md`) so Claude Code reaches it. Never holds prose
+├── .mcp.json                     # MCP config — Claude Code
+├── opencode.jsonc                # MCP config — OpenCode
 └── package.json                  # Scripts and dependencies
 ```
 
@@ -747,24 +761,43 @@ These aren't committed in this repo. The installer fetches them via `bunx skills
 
 ### Skill tiers (T1–T4)
 
-Every skill belongs to one of four tiers. Each tier has different discovery and load rules. Full contract: [`.claude/skills/agentic-qa-core/references/skill-composition-strategy.md`](.claude/skills/agentic-qa-core/references/skill-composition-strategy.md).
+Every skill belongs to one of four tiers. Each tier has different discovery and load rules. Full contract: [`.agents/skills/agentic-qa-core/references/skill-composition-strategy.md`](.agents/skills/agentic-qa-core/references/skill-composition-strategy.md).
 
 | Tier   | What                                   | Location                                              | Load behavior                                               |
 | ------ | -------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------- |
-| T1     | Project-owned (this repo)              | `.claude/skills/`                                     | Silent — load on trigger                                    |
-| T2     | Vendored (upstream, attribution kept)  | `.claude/skills/judgment-day/`                        | Silent on explicit trigger or host orchestrator citation    |
+| T1     | Project-owned (this repo)              | `.agents/skills/`                                     | Silent — load on trigger                                    |
+| T2     | Vendored (upstream, attribution kept)  | `.agents/skills/judgment-day/`                        | Silent on explicit trigger or host orchestrator citation    |
 | T2-opt | Optional gentle-ai SDD (user-installed)| `~/.claude/skills/sdd-*` only if manually installed   | Silent inside `/framework-development` only — see anti-leak |
 | T3     | Community project-level                | Installed by `install.ts` `PROJECT_LEVEL_SKILLS`      | Silent if matched by category                               |
 | T4     | Community user-level (global)          | Installed by `install.ts` `USER_LEVEL_SKILLS`         | **ASK** user before load (cross-project, not always wanted) |
 
+T3 project-level community skills install into the same `.agents/skills/` store, so there is never a second copy per harness. T4 user-level skills stay harness-specific (`~/.claude/skills/`, and the equivalent for each host).
+
 Validation: `bun run skills:check` checks tier coherence (orphan categories, tier mismatches, missing sections, stale doc paths).
 
-### Slash commands (utilities)
+### Slash commands (transport aliases, not workflows)
+
+These ten commands carry **no workflow body**. Each is a thin alias declared in `.agents/compatibility/command-aliases.json` that names a target skill plus a mode and forwards `$ARGUMENTS`; the wrappers under `.claude/commands/` and `.opencode/commands/` are generated from that manifest by `bun run agents:compat`. Codex has no wrapper layer — invoke the target skill and mode directly.
+
+| Command | Target skill | Mode |
+| ------- | ------------ | ---- |
+| `/adapt-framework` | `adapt-framework` | `adapt` |
+| `/break-down-tests` | `test-automation` | `explain` |
+| `/business-data-map` | `project-context` | `data` |
+| `/business-feature-map` | `project-context` | `features` |
+| `/business-api-map` | `project-context` | `api` |
+| `/master-test-plan` | `project-context` | `test-plan` |
+| `/fix-traceability` | `test-documentation` | `repair-traceability` |
+| `/jira-components` | `jira-administration` | `components` |
+| `/jira-instance-migration` | `jira-administration` | `instance-migration` |
+| `/sync-ai-memory` | `sync-ai-context` | `sync` |
+
+What each one does:
 
 | Command                 | Purpose                                                                                                                                       |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/adapt-framework`      | Adapt KATA architecture + config/CI/MCP to target stack (10-phase idempotent flow; no writes before approval; re-run reports a GENERIC/ADAPTED checklist). Covers `tests/`, `api/schemas/`, `config/`, `.agents/project.yaml`, `.env`, CI workflows, MCP registry, `dbhub.toml`, `allurerc.mjs`, `kata-manifest`. Hands off to `/sync-ai-memory` for docs. |
-| `/sync-ai-memory`       | Sync all AI-critical docs (`README.md`, `CLAUDE.md`, `INSTALLER.md`, `CONTEXT.md`, `docs/**`) against current `.context/` and `package.json`. |
+| `/sync-ai-memory`       | Sync all AI-critical docs (`README.md`, `AGENTS.md`, `INSTALLER.md`, `CONTEXT.md`, `docs/**`) against current `.context/` and `package.json`. |
 | `/business-data-map`    | Refresh `.context/business/business-data-map.md` (entities, flows, state machines).                                                           |
 | `/business-feature-map` | Refresh `.context/business/business-feature-map.md` (feature catalog, CRUD matrix, integrations).                                             |
 | `/business-api-map`     | Refresh `.context/business/business-api-map.md` (auth model, critical endpoints, architecture).                                               |
@@ -804,9 +837,9 @@ bun run jira:check         # Validate jira-required.yaml against jira-fields.jso
 Two TMS modalities are supported out of the box:
 
 - **Modality jira-xray**: full Xray entities (Test, Test Plan, Test Execution, Test Run, Pre-Condition). Primary tooling is the `/xray-cli` skill plus `/acli` for generic Jira issues.
-- **Modality jira-native (no Xray)**: ATP/ATR live as Story custom fields + comment mirrors; TCs live as Jira `Test` issues. All TMS operations fall through to `/acli`. See `.claude/skills/test-documentation/references/jira-setup.md`.
+- **Modality jira-native (no Xray)**: ATP/ATR live as Story custom fields + comment mirrors; TCs live as Jira `Test` issues. All TMS operations fall through to `/acli`. See `.agents/skills/test-documentation/references/jira-setup.md`.
 
-For how skills resolve `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` tags to concrete CLIs or MCPs, see `CLAUDE.md` §Tool Resolution.
+For how skills resolve `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` tags to concrete CLIs or MCPs, see `AGENTS.md` §6 Tool Resolution.
 
 ### Configuration
 
@@ -848,7 +881,7 @@ test('@atc:UPEX-101 should validate login', async ({ loginPage }) => {
 Edit these files:
 
 - `package.json` — name, description, repository
-- `CLAUDE.md` (canonical AI memory, read by both Claude Code and OpenCode)
+- `AGENTS.md` — the canonical AI memory, loaded by Claude Code, OpenCode and Codex alike. Never edit `CLAUDE.md`: it is the generated one-line shim that points here
 - `.agents/project.yaml` — AI context vars (or run `bun run agents:setup` for an interactive walkthrough)
 - `config/variables.ts` — runtime URLs for Playwright (`envDataMap`)
 
@@ -890,15 +923,49 @@ The development side lives in [agentic-dev-boilerplate](https://github.com/upex-
 
 <br />
 
-## Cross-agent compatibility
+## Multi-harness architecture — one source, three consumers
 
-Skills declare `compatibility: [claude-code, copilot, cursor, codex, opencode]` per the [agentskills.io](https://agentskills.io) spec. Slash triggers are Claude Code specific; other agents auto-activate from the same `description` field. The variable system is agent-agnostic.
+This repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ — MCP file format, hook API, whether slash commands exist at all — each keeps a thin versioned adapter. Nothing is duplicated.
+
+> Visual walkthrough, including what happens when you update a project created before this change: [`docs/multi-harness-architecture.es.html`](docs/multi-harness-architecture.es.html) (Spanish, open in a browser).
+
+| Surface | Claude Code | OpenCode | Codex CLI + Desktop |
+| ------- | ----------- | -------- | ------------------- |
+| **Instructions** | `CLAUDE.md` → `@AGENTS.md` **[generated shim]** | `AGENTS.md` (native) | `AGENTS.md` (native) |
+| **Skills** | `.claude/skills` **[generated alias]** | `.agents/skills/` (native) | `.agents/skills/` (native) |
+| **Commands** | `.claude/commands/*.md` **[generated]** | `.opencode/commands/*.md` **[generated]** | none — invoke the skill directly |
+| **Hook** | `.claude/settings.json` → `UserPromptSubmit` | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` |
+| **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
+
+- **Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline — a documented import rather than a symlink, so it survives a Windows checkout. Operational prose in the shim is structural drift, and `/sync-ai-memory` stops rather than propagating it.
+- **Skills.** All 19 skills live committed in `.agents/skills/`, and the project-level community skills install into the same store. OpenCode and Codex read it directly; Claude Code reaches it through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored — never committed, never hand-edited. Each skill still declares `compatibility: [claude-code, copilot, cursor, codex, opencode]` per the [agentskills.io](https://agentskills.io) spec, and hosts without slash triggers auto-activate from the same `description` field.
+- **Commands.** The 10 slash commands are transport, not workflow — generated from `.agents/compatibility/command-aliases.json`, 7 lines each. A wrapper that grows a body fails the check as `contains workflow prose`.
+- **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin.
+- **MCP.** The same six servers (`context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman`) exist in all three configs. Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape before comparison, so adding a server to one host only is a failure.
+
+### Regenerating and verifying
+
+Bold `[generated]` cells above are output. Edit the source, then regenerate:
+
+| Generated artifact | Its source | Regenerate |
+| ------------------ | ---------- | ---------- |
+| `.claude/skills` (POSIX symlink / Windows junction) | `.agents/skills/` | `bun run agents:compat` |
+| 10 Claude + 10 OpenCode command wrappers | `.agents/compatibility/command-aliases.json` | `bun run agents:compat` |
+
+```bash
+bun run agents:compat         # regenerate every derived harness artifact
+bun run agents:compat:check   # validate the whole contract (also runs in repo:check + pre-push)
+```
+
+`agents:compat:check` covers the alias target, both wrapper sets byte-for-byte against the manifest, the hook adapters, and MCP parity. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit. `bun run setup:doctor` reports the same surfaces plus **Codex repository trust** — project `.codex/` config and hooks load only in a trusted repo, and that is runtime state no file read can verify.
+
+The `.agents/` variable system is harness-agnostic and unchanged across all three.
 
 <br />
 
 ## Future hooks
 
-Room for per-phase model routing, an explicit skill registry, Engram-style cross-session memory, and CI-validated cross-agent portability. Notes in `CLAUDE.md`.
+Room for per-phase model routing, an explicit skill registry, Engram-style cross-session memory, and CI-validated cross-agent portability. Notes in `AGENTS.md`.
 
 <br />
 

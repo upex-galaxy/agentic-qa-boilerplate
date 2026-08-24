@@ -12,7 +12,7 @@
 > NO para ejecutar requests autenticados. **No inyectes el token del proyecto vía `API_HEADERS`**
 > (`.mcp.json` / `opencode.jsonc` ya no lo hacen). Los requests autenticados se ejecutan con
 > **curl**, usando el token que mintea `bun run api:login` (→ `.auth/tokens.env`). Doctrina
-> canónica: `.claude/skills/agentic-qa-core/references/api-testing-doctrine.md`.
+> canónica: `.agents/skills/agentic-qa-core/references/api-testing-doctrine.md`.
 >
 > Las secciones de `API_HEADERS` / Bearer / x-api-key más abajo describen la capacidad GENÉRICA
 > del servidor MCP; permanecen como referencia, pero NO aplican al flujo de este repo.

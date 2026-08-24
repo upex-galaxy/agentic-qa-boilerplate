@@ -10,7 +10,7 @@ Esta guía explica cómo configurar MCP (Model Context Protocol) servers para di
 > Los requests autenticados se ejecutan con **curl**, usando el token que mintea
 > `bun run api:login` (→ `.auth/tokens.env`, var `API_TOKEN_<ROLE>_<ENV>`); sin reinicio del
 > agente al rotar el token. Doctrina canónica:
-> `.claude/skills/agentic-qa-core/references/api-testing-doctrine.md`.
+> `.agents/skills/agentic-qa-core/references/api-testing-doctrine.md`.
 
 ---
 

@@ -445,6 +445,6 @@ KPIs sugeridos para medir la salud del ciclo:
 ## Referencias
 
 - [TMLC — Manual Lifecycle](test-manual-lifecycle.md)
-- Skills: `.claude/skills/test-automation/`, `.claude/skills/regression-testing/`
+- Skills: `.agents/skills/test-automation/`, `.agents/skills/regression-testing/`
 - KATA architecture: `/test-automation` (carga `references/kata-architecture.md` bajo demanda)
 - Boilerplate overview: `README.md` sección "How to Use Each Skill"

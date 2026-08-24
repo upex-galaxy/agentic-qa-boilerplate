@@ -323,5 +323,5 @@ Para los TCs marcados como **Candidate**, carga el Test Automation Lifecycle:
 ## Referencias
 
 - [TALC — Automation Lifecycle](test-automation-lifecycle.md)
-- Skills: `.claude/skills/sprint-testing/`, `.claude/skills/test-documentation/`
+- Skills: `.agents/skills/sprint-testing/`, `.agents/skills/test-documentation/`
 - Boilerplate overview: `README.md` sección "How to Use Each Skill"

@@ -2,7 +2,7 @@
 
 > Fuente única para los agentes que escriben capítulos. Todo lo de aquí fue
 > extraído del boilerplate real (`agentic-qa-boilerplate`) y de su doctrina
-> (`.claude/skills/test-automation/references/*`). NO inventes reglas ni código:
+> (`.agents/skills/test-automation/references/*`). NO inventes reglas ni código:
 > usa lo que está aquí.
 
 ## 0. Audiencia y estilo de escritura (OBLIGATORIO)

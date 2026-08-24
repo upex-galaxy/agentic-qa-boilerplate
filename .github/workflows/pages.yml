@@ -7,9 +7,9 @@ name: GitHub Pages — Docs Hub
 #   /<env>/regression/ -> Allure reports (owned by regression.yml — NEVER touched here;
 #                         keep_files: true preserves them on every deploy)
 #
-# packages/decks/ is the canonical source for the published site. The copies
-# still living in .claude/skills/*/ are kept for external consumers and will
-# be removed in a later phase (see packages/decks/README.md).
+# packages/decks/ is the single source for the published site. Skills under
+# .agents/skills/ hold no HTML deck copies of their own (see
+# packages/decks/README.md).
 
 on:
   push:

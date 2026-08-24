@@ -4,7 +4,7 @@ Every HTML deck served at `https://upex-galaxy.github.io/agentic-qa-boilerplate/
 lives here, grouped by the skill it teaches. `.github/workflows/pages.yml` copies
 this directory verbatim into the site's `/decks/` path on every deploy.
 
-## Why here and not in `.claude/skills/`?
+## Why here and not in `.agents/skills/`?
 
 `packages/` is boilerplate-only: the `create-agentic-qa` scaffolder prunes it
 (`TEMPLATE_EXCLUDES`) and `bun run update` never syncs it. Keeping the decks here
@@ -15,7 +15,7 @@ skill links to it).
 ## Single home (phase 2 done)
 
 This directory is the ONLY home of the decks. The skill-side copies
-(`.claude/skills/<skill>/*.html`) were removed in phase 2 — do not reintroduce
+(`.agents/skills/<skill>/*.html`) were removed in phase 2 — do not reintroduce
 them. Edit decks here only; the published site is regenerated on push.
 
 ## Adding a new deck
@@ -25,8 +25,8 @@ them. Edit decks here only; the published site is regenerated on push.
 2. Register a card in `packages/pages-home/index.html` (the homepage catalog is
    hardcoded HTML).
 3. If the AI should proactively offer it, register it in
-   `.claude/skills/agentic-qa-onboard/SKILL.md` (deck tables) and, for
-   `agentic-qa-core` decks, in `.claude/skills/agentic-qa-core/SKILL.md`.
+   `.agents/skills/agentic-qa-onboard/SKILL.md` (deck tables) and, for
+   `agentic-qa-core` decks, in `.agents/skills/agentic-qa-core/SKILL.md`.
 4. Nothing else: `pages.yml` copies this whole directory verbatim, so the new
    file publishes automatically at
    `https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/<skill>/<file>`.

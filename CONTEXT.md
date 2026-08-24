@@ -1,8 +1,8 @@
 # Context Engineering — how this repo loads context for the AI
 
-> **Purpose**: Explain the context engineering strategy for AI-driven test automation. Top-level reference alongside `README.md`, `CLAUDE.md`, and `INSTALLER.md`.
+> **Purpose**: Explain the context engineering strategy for AI-driven test automation. Top-level reference alongside `README.md`, `AGENTS.md`, and `INSTALLER.md`.
 > **Audience**: Humans learning the system + AI when needing to understand "why".
-> **Related**: `CLAUDE.md` contains the operational context loaded each session. (`CLAUDE.md` at the repo root is a symlink on Linux/macOS — and a byte-identical copy on Windows — pointing at `CLAUDE.md`. They are the same file; structural changes belong in `CLAUDE.md` and propagate through the symlink.)
+> **Related**: `AGENTS.md` contains the operational context loaded each session. It is the only instruction body in the repo; `CLAUDE.md` is a one-line shim (`@AGENTS.md`) that Claude Code follows to reach it. Operational prose belongs in `AGENTS.md` — never in the shim. See §2.1 below.
 > **Sync**: This file is in scope of `/sync-ai-memory` — re-run it whenever the context architecture changes.
 
 ---
@@ -19,7 +19,7 @@
 | **Progressive Loading** | Start with summary, load details on demand |
 | **Context Relevance** | Different tasks need different context |
 | **Single Source of Truth** | One place for each type of information |
-| **Tool-Agnostic Context** | `.agents/` is consumed by any AI agent (Claude Code, Codex, Cursor, Copilot, OpenCode), not just Claude. Agent-specific surfaces (`.claude/`, `.cursor/`, `.gemini/`, …) layer on top of the shared substrate. |
+| **Tool-Agnostic Context** | `.agents/` holds the shared substrate — instructions, skills, hook emitter, alias manifest — consumed by every supported harness. Harness-specific directories (`.claude/`, `.opencode/`, `.codex/`) hold only thin adapters and generated artifacts, never a second copy of the content. |
 
 ---
 
@@ -30,23 +30,61 @@ This repository separates concerns into distinct directories, each with a specif
 ```
 agentic-qa-boilerplate/
 │
-├── .agents/          → Tool-agnostic project + Jira config (any AI agent reads this)
-├── .context/         → Documentation THAT the AI reads (context)
-├── .claude/skills/   → Workflow skills (task instructions + references)
-├── docs/             → Documentation for humans
-├── tests/            → KATA Architecture implementation
-└── CLAUDE.md         → Project memory (loaded every session)
+├── AGENTS.md               → Project memory: the only instruction body (loaded every session)
+├── .agents/
+│   ├── project.yaml        → Tool-agnostic project + Jira config (any harness reads this)
+│   ├── skills/             → Workflow skills (task instructions + references) — 19, committed
+│   ├── compatibility/      → Slash-command alias manifest (source for every wrapper)
+│   └── hooks/              → Shared personality-reinject emitter (one file, three adapters)
+├── .context/               → Documentation THAT the AI reads (context)
+├── docs/                   → Documentation for humans
+└── tests/                  → KATA Architecture implementation
 ```
 
 ### Why This Separation?
 
 | Directory | Contains | When Loaded |
 |-----------|----------|-------------|
-| `.agents/` | Tool-agnostic project + Jira config (`project.yaml`, `jira-fields.json`, `jira-required.yaml`) | When the AI needs to resolve `{{VAR}}` or `{{jira.<slug>}}` |
+| `AGENTS.md` | Operational rules + project state | Every session automatically |
+| `.agents/project.yaml` + Jira catalogs | Tool-agnostic project config (`project.yaml`, `jira-fields.json`, `jira-required.yaml`) | When the AI needs to resolve `{{VAR}}` or `{{jira.<slug>}}` |
+| `.agents/skills/` | Task instructions + references (what to do, step by step) | When AI loads a skill for a specific task |
 | `.context/` | Facts about the system (what exists, how it works) | When AI needs to understand the system |
-| `.claude/skills/` | Task instructions + references (what to do, step by step) | When AI loads a skill for a specific task |
 | `docs/` | Learning material for humans | When humans need to learn |
-| `CLAUDE.md` | Operational rules + project state | Every session automatically |
+
+### 2.1 Host harnesses: one source, three consumers
+
+The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ — MCP file format, hook API, whether slash commands exist at all — each keeps a thin versioned adapter. Nothing is duplicated.
+
+> Visual walkthrough: [`docs/multi-harness-architecture.es.html`](docs/multi-harness-architecture.es.html) (Spanish, open in a browser).
+
+| Surface | Claude Code | OpenCode | Codex CLI + Desktop |
+|---------|-------------|----------|---------------------|
+| **Instructions** | `CLAUDE.md` → `@AGENTS.md` **[generated shim]** | `AGENTS.md` (native) | `AGENTS.md` (native) |
+| **Skills** | `.claude/skills` **[generated alias]** | `.agents/skills/` (native) | `.agents/skills/` (native) |
+| **Commands** | `.claude/commands/*.md` **[generated]** | `.opencode/commands/*.md` **[generated]** | none — invoke the skill directly |
+| **Hook** | `.claude/settings.json` → `UserPromptSubmit` | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` |
+| **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
+
+**Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively. Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline — a documented import rather than a symlink, so it survives a Windows checkout. Writing operational prose into `CLAUDE.md` is structural drift, and `/sync-ai-memory` stops rather than propagating it.
+
+**Skills.** All 19 skills live committed under `.agents/skills/`. OpenCode and Codex discover that directory natively. Claude Code reaches the same tree through `.claude/skills`, a POSIX symlink (Windows junction) that is **generated and gitignored** — never committed, never hand-edited.
+
+**Commands.** The 10 slash commands carry no workflow body. `.claude/commands/*.md` and `.opencode/commands/*.md` are 7-line wrappers generated from `.agents/compatibility/command-aliases.json`; each names a target skill plus a mode and forwards `$ARGUMENTS` unchanged. Codex has no wrapper layer — it invokes the skill directly. A wrapper that grows a body fails the compatibility check as `contains workflow prose`.
+
+**Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin. The contract is enforced by `scripts/agent-compatibility-contracts.ts`: no absolute personal paths, no duplicated hook file, OpenCode must mutate `output.system` in place.
+
+**MCP.** The same six servers — `context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman` — exist in all three configs. Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape before comparison, so adding a server to one host only is a failure.
+
+**Generated versus versioned (hard rule).** Every bold `[generated]` cell above is output. Edit the source, then regenerate:
+
+| Generated artifact | Its source | Regenerate |
+|--------------------|------------|------------|
+| `.claude/skills` (POSIX symlink / Windows junction) | `.agents/skills/` | `bun run agents:compat` |
+| 10 Claude + 10 OpenCode command wrappers | `.agents/compatibility/command-aliases.json` | `bun run agents:compat` |
+
+`bun run agents:compat:check` validates the whole contract — alias target, both wrapper sets byte-for-byte against the manifest, hook adapters, MCP parity. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit.
+
+**Two harness-specific facts worth knowing.** Codex loads project `.codex/` config and hooks only in a repository marked trusted, and `bun run setup:doctor` reports that trust separately because it is runtime state no file read can verify. Codex Desktop consumes the same repository config as the CLI — no second convention, no extra directory.
 
 ---
 
@@ -118,25 +156,34 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 
 > **TMS configuration**: modality (Xray vs Jira-native) is derived from `.agents/project.yaml` `testing.tms_cli`. Regression Epic and label taxonomy are auto-discovered live by `/test-documentation` Phase 0 + Preflight. IQL methodology reference lives in `docs/methodology/jira-platform.md`.
 
-Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live inside agent skills under `.claude/skills/`.
+Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live inside agent skills under `.agents/skills/`.
 
-### .claude/skills/ - AI Operations Center
+### .agents/skills/ - AI Operations Center
+
+Nineteen skills, all committed here. OpenCode and Codex read this directory directly; Claude Code reaches it through the generated `.claude/skills` alias (§2.1).
 
 ```
-.claude/skills/
+.agents/skills/
 ├── agentic-qa-core/         → Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy, Skill Resolver protocol). Cited on demand by workflow skills.
 ├── agentic-qa-onboard/      → First-time orientation tour: stack + 6-stage pipeline + MCPs. Hands off to the right downstream skill.
 ├── framework-development/   → Framework-evolution orchestrator for the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). Self-contained Plan → Code → Verify → Archive pipeline. NOT for per-ticket QA.
-├── project-discovery/       → 4-phase reverse-engineering, generates `.context/` artifacts. README/CLAUDE.md upkeep is `/sync-ai-memory`. Foundation files (`CLAUDE.md`, `.agents/`, `scripts/`) ship with the boilerplate and are not generated per project.
+├── project-discovery/       → 4-phase reverse-engineering, generates `.context/` artifacts. README/`AGENTS.md` upkeep is `/sync-ai-memory`. Foundation files (`AGENTS.md`, `.agents/`, `scripts/`) ship with the boilerplate and are not generated per project.
 ├── shift-left-testing/      → Stage 0: pre-sprint AC refinement on a batch of backlog Stories. Refines ACs, surfaces gaps, drafts ATP, transitions backlog → shift_left_qa → estimation. Adds label shift-left-reviewed so /sprint-testing Stage 1 can short-circuit later.
 ├── sprint-testing/          → In-sprint QA (planning + execution + reporting, per ticket)
 ├── test-documentation/      → TMS documentation + test prioritization
 ├── test-automation/         → KATA test planning + coding + review
 ├── regression-testing/      → Regression execution + GO/NO-GO
+├── project-context/         → Regenerates the business data / feature / API maps and the master test plan (modes behind the legacy `/business-*-map` and `/master-test-plan` aliases).
+├── adapt-framework/         → Idempotent KATA adaptation: no-write analysis and plan first, mutation only after explicit approval.
+├── jira-administration/     → Components reconciliation + Atlassian instance migration, each sealed behind read-first analysis.
+├── sync-ai-context/         → Synchronizes the AI-critical repo docs against the canonical instructions, skills, aliases and `package.json`.
 ├── git-flow-master/         → End-to-end Git operator: branch / commit / push / PR / conflict / chained-PR. Auto-detects branching strategy.
+├── pr-review-lead/          → QA Lead review of a PR's test-automation work against KATA doctrine, every finding grounded in a citation.
+├── bug-screenshot-annotation/ → Turns a raw bug screenshot into annotated evidence, rendered 100% locally.
 ├── judgment-day/            → T2 vendored from gentle-ai (Apache-2.0): adversarial dual-judge review. Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR.
 ├── acli/                    → Atlassian CLI skill: Jira issue tracking + Modality jira-native TMS operations
-└── xray-cli/                → Xray TMS helper
+├── xray-cli/                → Xray TMS helper
+└── REGISTRY.md              → Generated compact-rules cache (`bun run skills:registry`) — not a skill
 
 (community, installed by `cli/install.ts` — not committed in repo)
   • playwright-cli/             → Browser automation CLI (screenshots, tracing, video, session mgmt)
@@ -148,7 +195,7 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 - `agentic-qa-core` - Passive reference host cited by other skills (no direct invocation)
 - `/test-automation` - KATA test writing pipeline
 - `/sprint-testing` - End-to-end in-sprint QA
-- `/project-discovery` - Generates `.context/` artifacts; pair with `/sync-ai-memory` for README/CLAUDE.md upkeep
+- `/project-discovery` - Generates `.context/` artifacts; pair with `/sync-ai-memory` for README / `AGENTS.md` upkeep
 - `/framework-development` - Evolves the boilerplate itself (KATA bases, fixtures, cli/, scripts/)
 
 ### docs/ - Human Documentation
@@ -163,7 +210,7 @@ docs/
 └── workflows/                     → Workflow guides (git, environments)
 ```
 
-> Context engineering strategy has moved to `CONTEXT.md` at the repo root (alongside `README.md`, `CLAUDE.md`, `INSTALLER.md`).
+> Context engineering strategy has moved to `CONTEXT.md` at the repo root (alongside `README.md`, `AGENTS.md`, `INSTALLER.md`).
 
 ### tests/ - KATA Implementation
 
@@ -190,7 +237,10 @@ These files have stable names and locations. Reference them confidently:
 
 | File / Skill | Purpose |
 |--------------|---------|
-| `CLAUDE.md` | Project memory, loaded every session |
+| `AGENTS.md` | Project memory, loaded every session — the only instruction body |
+| `CLAUDE.md` | One-line shim (`@AGENTS.md`) so Claude Code reaches `AGENTS.md`. Never holds prose of its own |
+| `.agents/compatibility/command-aliases.json` | Manifest behind every generated slash-command wrapper (`bun run agents:compat`) |
+| `.agents/hooks/personality-reinject.mjs` | Shared hook emitter; the three harness adapters call into it |
 | `.agents/project.yaml` | Tool-agnostic project variables (`{{VAR}}` source of truth) |
 | `.agents/jira-required.yaml` | Manifest of Jira custom fields the methodology requires |
 | `.agents/jira-fields.json` | Auto-generated catalog of the workspace's Jira fields (`{{jira.<slug>}}` resolution) |
@@ -217,7 +267,7 @@ Phase 3: Infrastructure  → Map technical stack
 Phase 4: Specification   → Connect to backlog
 ```
 
-> Foundation files (`CLAUDE.md`, `.agents/`, `scripts/`, `package.json`) ship with the boilerplate — clone the full repo rather than bootstrapping per project.
+> Foundation files (`AGENTS.md`, `.agents/`, `scripts/`, `package.json`) ship with the boilerplate — clone the full repo rather than bootstrapping per project.
 
 **Output**: Populated `.agents/` config + `.context/` directories.
 
@@ -258,10 +308,10 @@ The orchestration doctrine has three shared assets, all hosted by `agentic-qa-co
 
 | Asset | Path | Role |
 |-------|------|------|
-| **Orchestration doctrine** | `agentic-qa-core/references/orchestration-doctrine.md` | Cacheable mirror of `CLAUDE.md` §"Orchestration Mode (Subagent Strategy)". Subagents load this instead of pulling the full `CLAUDE.md`. |
+| **Orchestration doctrine** | `agentic-qa-core/references/orchestration-doctrine.md` | Cacheable mirror of `AGENTS.md` §3 "Orchestration Mode". Subagents load this instead of pulling the full `AGENTS.md`. |
 | **Briefing template** | `agentic-qa-core/references/briefing-template.md` | The canonical 7-component briefing format (Goal / Context docs / Project Standards (auto-resolved) / Skills to load / Exact instructions / Report format / Rules) with one filled example per dispatch pattern. |
 | **Dispatch patterns** | `agentic-qa-core/references/dispatch-patterns.md` | Decision guide and heuristic for picking Single / Sequential / Parallel / Background. |
-| **Skill Resolver Protocol** | `agentic-qa-core/references/skill-resolver.md` + `.claude/skills/REGISTRY.md` | Build-once-per-session compact-rules cache. Orchestrator runs `bun run skills:registry`, then pastes per-skill "Compact Rules" blocks into every briefing under `Project Standards (auto-resolved)`. Subagents trust these and skip re-reading full `SKILL.md`. Validated by `bun run skills:registry:check`. |
+| **Skill Resolver Protocol** | `agentic-qa-core/references/skill-resolver.md` + `.agents/skills/REGISTRY.md` | Build-once-per-session compact-rules cache. Orchestrator runs `bun run skills:registry`, then pastes per-skill "Compact Rules" blocks into every briefing under `Project Standards (auto-resolved)`. Subagents trust these and skip re-reading full `SKILL.md`. Validated by `bun run skills:registry:check`. |
 
 Each workflow skill (`shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development`) declares **its own dispatch points** in a `## Subagent Dispatch Strategy` section of its `SKILL.md`. That table maps each stage to its dispatch pattern and subagent role, so the AI knows up-front when to delegate and how to brief.
 
@@ -279,7 +329,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 | **Pre-sprint AC refinement / backlog grooming** | `/shift-left-testing` (SKILL.md) + `.context/business/*` | Skill `references/` (backlog-selection, refinement-playbook, atp-outline-template) |
 | **Exploratory Testing** | `/sprint-testing` (SKILL.md) + `.context/master-test-plan.md` | Skill `references/` (exploration patterns, session entry points) |
 | **Understand System** | `.context/business/business-data-map.md` | `.context/business/*`, `.context/PRD/*`, `.context/SRS/*` |
-| **Use MCP** | `CLAUDE.md` §"MCPs Available" + §"Tool Resolution" | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
+| **Use MCP** | `AGENTS.md` §5 "MCPs (decision rules)" + §6 "Tool Resolution" | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
 
 ### By Role
 
@@ -296,11 +346,11 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 
 ### DO
 
-- Load `CLAUDE.md` first (automatic)
+- Load `AGENTS.md` first (automatic on every harness)
 - Load task-specific guidelines
-- Use skills from `.claude/skills/` for structured tasks
+- Use skills from `.agents/skills/` for structured tasks
 - Reference code in `tests/components/` as living examples
-- From subagents, load `agentic-qa-core/references/orchestration-doctrine.md` instead of pulling full `CLAUDE.md`
+- From subagents, load `agentic-qa-core/references/orchestration-doctrine.md` instead of pulling full `AGENTS.md`
 
 ### DON'T
 
@@ -313,12 +363,20 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 
 ## 10. Maintenance Guidelines
 
-### When to Update CLAUDE.md
+### When to Update AGENTS.md
 
 - Project identity changes
-- New MCPs configured
+- New MCPs configured — add the server to all three configs (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`), then run `bun run agents:compat:check`
 - New CLI tools added
 - Testing decisions documented
+
+Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `/sync-ai-memory` refuses to propagate prose from it.
+
+### When to Update the Harness Adapters
+
+- **New slash command** → add the entry to `.agents/compatibility/command-aliases.json`, then `bun run agents:compat`. Never hand-write a wrapper under `.claude/commands/` or `.opencode/commands/`
+- **New or renamed skill** → create it under `.agents/skills/`. Nothing else to do: OpenCode and Codex read it directly, Claude Code sees it through the generated alias
+- **Hook contract text changes** → edit `.agents/hooks/personality-reinject.mjs` only. The three adapters call into it and stay untouched
 
 ### When to Update Skills
 
@@ -336,12 +394,12 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 
 ## Related Documentation
 
-- **CLAUDE.md** - Operational context (project root)
+- **AGENTS.md** - Operational context (project root), loaded by all three harnesses
 - **README.md** - Project overview for humans
 - `.agents/README.md` - Variable resolution contract (`{{VAR}}`, `<<VAR>>`, `{{jira.<slug>}}`)
 - `.context/ADR/README.md` - Test-architecture decision records (when to write one, status lifecycle, index)
 - `/test-automation` skill - KATA Architecture entry point
-- `.claude/skills/` - Workflow skills (each one self-describes via its SKILL.md)
+- `.agents/skills/` - Workflow skills (each one self-describes via its SKILL.md)
 
 ---
 

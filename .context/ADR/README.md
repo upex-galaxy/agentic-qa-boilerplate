@@ -55,7 +55,7 @@ Proposed ──→ Accepted ──→ Superseded   (by ADR-NNNN, which links bac
 3. Add a row to the **Index** below.
 4. If it supersedes an existing ADR, wire both directions (`Supersedes` / `Superseded by`) and flip the old one's `Status`.
 
-Who authors: a human QA architect / lead directly, **or** an AI workflow that detected an ADR-worthy decision and drafted it for human approval — `/project-discovery` (SRS / infrastructure test-architecture, seeds the first batch), `/framework-development` (when evolving the boilerplate's own KATA layers, fixtures, or runner), and `/sprint-testing` + `/test-automation` (Stage 1 / Phase 1 planning, when a ticket forces a hard-to-reverse test-architecture decision). Either way, the human approves before `Status: Accepted`. The detection + authoring procedure for AI workflows lives in `.claude/skills/agentic-qa-core/references/adr-doctrine.md`.
+Who authors: a human QA architect / lead directly, **or** an AI workflow that detected an ADR-worthy decision and drafted it for human approval — `/project-discovery` (SRS / infrastructure test-architecture, seeds the first batch), `/framework-development` (when evolving the boilerplate's own KATA layers, fixtures, or runner), and `/sprint-testing` + `/test-automation` (Stage 1 / Phase 1 planning, when a ticket forces a hard-to-reverse test-architecture decision). Either way, the human approves before `Status: Accepted`. The detection + authoring procedure for AI workflows lives in `.agents/skills/agentic-qa-core/references/adr-doctrine.md`.
 
 ---
 
@@ -72,6 +72,6 @@ Who authors: a human QA architect / lead directly, **or** an AI workflow that de
 ## References
 
 - Template: [`ADR-NNNN-template.md`](./ADR-NNNN-template.md)
-- AI detection + authoring doctrine: `.claude/skills/agentic-qa-core/references/adr-doctrine.md`
+- AI detection + authoring doctrine: `.agents/skills/agentic-qa-core/references/adr-doctrine.md`
 - Where this folder sits in the bigger map: `.context/README.md` and root `CONTEXT.md`
 - These records cover **test-architecture** decisions — both the boilerplate's own test framework (KATA layers, fixtures, runner — owned by `/framework-development`) and how it is wired to a specific project under test (discovered by `/project-discovery`).

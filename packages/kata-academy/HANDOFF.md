@@ -159,5 +159,5 @@ Repo padre:
 ├── packages/create-agentic-qa/  ← paquete vecino
 ├── .github/workflows/pages.yml  ← build + deploy del hub (keep_files: true)
 ├── .github/workflows/regression.yml ← YA publica Allure a gh-pages (keep_files!)
-└── .claude/skills/*/*.html      ← decks publicados en /decks/<skill>/
+└── packages/decks/*/*.html      ← decks publicados en /decks/<skill>/
 ```

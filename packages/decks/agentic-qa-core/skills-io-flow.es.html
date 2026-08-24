@@ -418,7 +418,7 @@ ul.plain b{color:var(--t1)}
       <ul class="plain">
         <li><b>unit-testing</b> — stdin: función bajo test · tests hermanos · callers · config del runner (<code>vitest.config.ts</code>/<code>jest.config.ts</code>) · helpers/fixtures (prereq: test command en <code>package.json</code>). stdout: <code>*.test.ts</code>/<code>*.spec.ts</code> — sin Jira, sin git.</li>
         <li><b>git-flow-master</b> — stdin: <code>git status/branch/log/diff</code> · bloque <code>git_strategy:</code> en <code>.agents/project.yaml</code>. stdout: branch <code>{prefix}/{ISSUE-KEY}-{slug}</code> · commit <code>{type}({KEY}): {desc}</code> · PR con body templado.</li>
-        <li><b>judgment-day</b> (opcional) — stdin: diff/PR bajo revisión · <code>CLAUDE.md</code> · <code>REGISTRY.md</code>. stdout: veredicto en chat <b>APPROVED ✅ / ESCALATED ⚠️</b> (detalle en pestaña transversal).</li>
+        <li><b>judgment-day</b> (opcional) — stdin: diff/PR bajo revisión · <code>AGENTS.md</code> · <code>REGISTRY.md</code>. stdout: veredicto en chat <b>APPROVED ✅ / ESCALATED ⚠️</b> (detalle en pestaña transversal).</li>
       </ul>
 
       <div class="exit"><b>exit 0</b> → historia en <b>Ready For QA</b></div>
@@ -549,7 +549,7 @@ ul.plain b{color:var(--t1)}
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">⚖</span><h3>judgment-day</h3><span class="repo both">dev + qa</span></div>
-        <div class="io in"><span class="io-k">stdin ←</span><div>Diff/PR bajo revisión · <code>CLAUDE.md</code> · <code>REGISTRY.md</code></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Diff/PR bajo revisión · <code>AGENTS.md</code> · <code>REGISTRY.md</code></div></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Veredicto en chat: <b>APPROVED ✅ / ESCALATED ⚠️</b> · en la fase de fix <b>sí</b> puede modificar archivos (delega un fix agent) — lo que nunca toca es Jira</div></div>
         <div class="io note"><span class="io-k">nota</span><div><b>Nunca auto-invocado.</b> Gate opcional en: Stage 3 dev · Review de test-automation · pre-PR de git-flow-master.</div></div>
       </div>

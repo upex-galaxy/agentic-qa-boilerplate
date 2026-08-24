@@ -69,7 +69,7 @@ Entender los requisitos y finalizar los criterios de aceptación de la US antes 
 - QA crea el Acceptance Test Plan (ATP) de la US describiendo escenarios iniciales
 - La subtarea 'QA: AC Review' y 'QA: Acceptance Test Plan' pasa de Open → In Progress → Done
 
-> **El FTP no se crea aquí.** El Feature Test Plan es **uno por épica/feature** y es un documento vivo que se refina a lo largo de toda la épica; lo que produce una historia es su **ATP**. El ATP hereda del FTP los riesgos, los puntos de integración y las personas compartidas. Canon: `.claude/skills/sprint-testing/references/feature-test-planning.md`.
+> **El FTP no se crea aquí.** El Feature Test Plan es **uno por épica/feature** y es un documento vivo que se refina a lo largo de toda la épica; lo que produce una historia es su **ATP**. El ATP hereda del FTP los riesgos, los puntos de integración y las personas compartidas. Canon: `.agents/skills/sprint-testing/references/feature-test-planning.md`.
 
 **Resultado Esperado:**
 Un conjunto claro de criterios de aceptación y un ATP para guiar el testing específico en la US.

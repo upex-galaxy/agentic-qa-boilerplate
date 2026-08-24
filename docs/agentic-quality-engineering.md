@@ -44,7 +44,7 @@ ONBOARDING (one-time)  →  STAGE 0           →  SESSION START  →  STAGE 1  
 
 | Stage | Owning skill | Output |
 | ----- | ------------ | ------ |
-| **Onboarding** (one-time) | `project-discovery` (discovery) + `/adapt-framework` (KATA adaptation) | `CLAUDE.md`, `.context/` artifacts, and KATA wired to the target stack |
+| **Onboarding** (one-time) | `project-discovery` (discovery) + `/adapt-framework` (KATA adaptation) | `AGENTS.md`, `.context/` artifacts, and KATA wired to the target stack |
 | **0 — Shift-Left QA** (pre-sprint, batch) | `shift-left-testing` | Refined ACs + gap-spotting + pre-sprint ATP (outline maturity, authored into the `{{jira.acceptance_test_plan}}` field — the Test Plan item is created later by `sprint-testing` Stage 1) per Story, label `shift-left-reviewed`, Story transitioned `backlog → shift_left_qa → estimation` for PO/Dev to estimate |
 | **1 — Planning** (in-sprint) | `sprint-testing` | ATP + TCs linked to ACs (short-circuits Phases 1-3 when the Story carries a fresh `shift-left-reviewed` label) |
 | **2 — Execution** | `sprint-testing` | Smoke + trifuerza (UI/API/DB) exploration, evidence captured |
@@ -131,8 +131,8 @@ The rest of this document describes how that strategy is implemented in code and
 | **Token**             | The unit an AI model reads and writes. Tokens have direct cost and occupy context window space.                              |
 | **Context Window**    | The memory available within a single conversation. Everything the AI can "see" right now.                                    |
 | **MCP**               | Model Context Protocol. A standard that lets AI tools talk to live systems — database, browser, API, TMS.                    |
-| **Skill**             | A reusable AI capability, stored under `.claude/skills/<name>/`. Auto-triggers when the user's intent matches its description. |
-| **Command**           | A one-shot utility stored under `.claude/commands/<name>.md`. Invoked explicitly with `/<name>`. No auto-triggering.          |
+| **Skill**             | A reusable AI capability, stored under `.agents/skills/<name>/` and shared by every supported harness. Auto-triggers when the user's intent matches its description. |
+| **Command**           | A generated transport alias (`.claude/commands/<name>.md`, `.opencode/commands/<name>.md`) that forwards `/<name>` to a skill + mode. Holds no workflow of its own. No auto-triggering. |
 | **Subagent**          | A specialist worker dispatched by a skill for a focused task (planning, execution, reporting, verification).                 |
 | **Persistent Memory** | Facts that survive across conversations — user preferences, project rules, team decisions.                                   |
 | **ATP**               | Acceptance Test Plan. The risk triage and scenario design; authored pre-sprint into the `{{jira.acceptance_test_plan}}` field (Stage 0), materialized as a Test Plan item in Stage 1 (Planning). |
@@ -194,7 +194,7 @@ The human sits on top. The AI never ships anything on its own. Every stage has a
 
 Six core skills handle the end-to-end pipeline (one foundation + five workflow):
 
-- **`agentic-qa-core`** — foundation skill. Hosts the canonical briefing template, dispatch patterns, and orchestration doctrine cited by every workflow skill, and provides the `init` bootstrap that writes `CLAUDE.md`, `.agents/project.yaml`, and the `agents-*` scripts when adopting the boilerplate.
+- **`agentic-qa-core`** — foundation skill. Hosts the canonical briefing template, dispatch patterns, and orchestration doctrine cited by every workflow skill, and provides the `init` bootstrap that writes `AGENTS.md`, `.agents/project.yaml`, and the `agents-*` scripts when adopting the boilerplate.
 - **`project-discovery`** — one-time onboarding. Generates the context files every other skill depends on.
 - **`sprint-testing`** — Stages 1–3. Planning, Execution, and Reporting per ticket. The everyday driver.
 - **`test-documentation`** — Stage 4. ROI analysis that decides which manual TCs are worth automating.
@@ -207,12 +207,12 @@ All skills share the **Knowledge Layer** (the `.context/` directory): business r
 
 ### Bottom tier — the systems the AI operates on
 
-- **`[ISSUE_TRACKER_TOOL]`** — Jira issue management (Stories, Bugs, Epics) accessed via the `acli` skill (Atlassian CLI) by default; swappable via the Tool Resolution table in `CLAUDE.md`.
+- **`[ISSUE_TRACKER_TOOL]`** — Jira issue management (Stories, Bugs, Epics) accessed via the `acli` skill (Atlassian CLI) by default; swappable via the Tool Resolution table in `AGENTS.md`.
 - **`[TMS_TOOL]`** — the test management system holding ATPs, ATRs, and TCs. Resolves to the `xray-cli` skill in **Modality jira-xray** or to the `acli` skill in **Modality jira-native**. The modality is decided once per project in `test-documentation/SKILL.md` §Phase 0.
 - **`[DB_TOOL]`** — the live database, accessed through an MCP (DBHub by default). Used to find, generate, or verify test data.
 - **CI / CD** — the regression suite, typically GitHub Actions, reporting to Allure.
 
-The `[TOOL]` brackets are not decorative. Every skill in this repo writes tool calls in `[TAG_TOOL]` pseudocode, which resolves against the table in `CLAUDE.md` "Tool Resolution". Swap the row, swap the backend — no skill edits required.
+The `[TOOL]` brackets are not decorative. Every skill in this repo writes tool calls in `[TAG_TOOL]` pseudocode, which resolves against the table in `AGENTS.md` "Tool Resolution". Swap the row, swap the backend — no skill edits required.
 
 ---
 
@@ -301,7 +301,7 @@ The canonical shape is documented in `.context/README.md`. The strategic reasoni
 
 ### Cross-skill references
 
-A second knowledge surface exists outside `.context/`: the `agentic-qa-core/references/*.md` files. They host the briefing template, the dispatch patterns decision guide, and the orchestration doctrine that workflow skills cite instead of duplicating. They are loaded on demand by other skills and form part of the practice's knowledge layer even though they live under `.claude/skills/` rather than `.context/`.
+A second knowledge surface exists outside `.context/`: the `agentic-qa-core/references/*.md` files. They host the briefing template, the dispatch patterns decision guide, and the orchestration doctrine that workflow skills cite instead of duplicating. They are loaded on demand by other skills and form part of the practice's knowledge layer even though they live under `.agents/skills/` rather than `.context/`.
 
 ### Project variables vs runtime credentials
 
@@ -344,7 +344,7 @@ Each source feeds the AI a specific kind of truth:
 | **UI runtime**            | Real screenshots, accessibility tree, navigation state        | `[AUTOMATION_TOOL]` — `playwright-cli` skill           |
 | **TMS**                   | Tickets, ACs, team discussion, test artefacts                 | `[TMS_TOOL]` — `xray-cli` skill (Jira/Xray) by default |
 
-The `[TAG_TOOL]` brackets map to concrete implementations via the **Tool Resolution** table in `CLAUDE.md`. Skills never hard-code a tool name — they call `[TMS_TOOL]` and let the table decide whether that means the Xray CLI, the Atlassian MCP, or something else the team plugged in.
+The `[TAG_TOOL]` brackets map to concrete implementations via the **Tool Resolution** table in `AGENTS.md`. Skills never hard-code a tool name — they call `[TMS_TOOL]` and let the table decide whether that means the Xray CLI, the Atlassian MCP, or something else the team plugged in.
 
 **TMS modality**: `[TMS_TOOL]` resolves to the `xray-cli` skill in **Modality jira-xray** or to the `acli` skill in **Modality jira-native**, per `test-documentation/SKILL.md` §Phase 0. In Modality jira-native, ATPs and ATRs live as Story custom fields with comment mirrors and TCs live as Jira `Test` issues; the workflow skills carry parallel pseudocode branches for both modalities.
 
@@ -383,7 +383,7 @@ The daily workflow is plain English. The QA engineer tells Claude Code what is n
   → Auto-triggers: test-automation skill
 ```
 
-Auto-triggering is governed by each skill's `description` field, which lists the phrases the skill should respond to. The decision tree in `CLAUDE.md` documents the full mapping. Explicit invocation is also supported — `/sprint-testing`, `/test-automation`, and so on — for cases where determinism is preferred over pattern matching.
+Auto-triggering is governed by each skill's `description` field, which lists the phrases the skill should respond to. The decision tree in `AGENTS.md` documents the full mapping. Explicit invocation is also supported — `/sprint-testing`, `/test-automation`, and so on — for cases where determinism is preferred over pattern matching.
 
 ### What happens on invocation
 
@@ -443,8 +443,8 @@ This is what gives the practice AI **speed** without losing human **judgment**. 
 
 The orchestration model is not improvised per session — it is captured in canonical references that workflow skills load on demand. Engineers and skill authors should know where to look:
 
-- **`CLAUDE.md` §Orchestration Mode** — canonical project-level statement of the strategy (subagent-or-not decision rule, briefing format, error protocol).
-- **`agentic-qa-core/references/orchestration-doctrine.md`** — cacheable mirror loaded by subagents that need the full doctrine without re-reading `CLAUDE.md`.
+- **`AGENTS.md` §Orchestration Mode** — canonical project-level statement of the strategy (subagent-or-not decision rule, briefing format, error protocol).
+- **`agentic-qa-core/references/orchestration-doctrine.md`** — cacheable mirror loaded by subagents that need the full doctrine without re-reading `AGENTS.md`.
 - **`agentic-qa-core/references/briefing-template.md`** — the seven-component briefing format every dispatch uses (Goal · Context docs · Project Standards (auto-resolved) · Skills to load · Exact instructions · Report format · Rules).
 - **`agentic-qa-core/references/dispatch-patterns.md`** — decision guide for the four patterns (Single, Sequential, Parallel, Background) and when each applies.
 - **`## Subagent Dispatch Strategy`** sections inside each workflow `SKILL.md` (`shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development`) — per-stage tables declaring which steps delegate to subagents and with what pattern.
@@ -584,7 +584,7 @@ The AI writes the implementation plan first — scenarios, components that exist
 
 Full details live in the skill's own references:
 
-- `.claude/skills/test-automation/references/`
+- `.agents/skills/test-automation/references/`
 
 ---
 
@@ -611,24 +611,26 @@ The practice uses three complementary kinds of AI capability:
 | `xray-cli`            | any          | TMS CLI operations — create tests, manage executions, import results, backup   |
 | `playwright-cli`      | any          | Browser automation — screenshots, navigation, form filling, tracing, mocking   |
 
-All skill definitions live under `.claude/skills/<name>/SKILL.md`, with detailed references under `.claude/skills/<name>/references/`.
+All skill definitions live under `.agents/skills/<name>/SKILL.md`, with detailed references under `.agents/skills/<name>/references/`. OpenCode and Codex read that tree natively; Claude Code reaches the same files through the generated `.claude/skills` alias (a symlink on POSIX, a junction on Windows — gitignored, never hand-edited).
 
-### Commands (`/<name>` — on-demand utility)
+### Commands (`/<name>` — on-demand alias)
 
-Commands are deterministic, single-purpose prompts invoked explicitly. Unlike skills, they do not auto-trigger.
+Commands are explicit, deterministic entry points. Unlike skills, they do not auto-trigger — and they carry no workflow of their own: each one is a thin transport alias that selects a skill plus a mode and forwards `$ARGUMENTS` to it.
 
-| Command                       | Purpose                                                  |
-| ----------------------------- | -------------------------------------------------------- |
-| `/adapt-framework`            | Adapt this boilerplate's KATA test architecture to a project already reverse-engineered by `/project-discovery` (Plan -> Approval -> Implement) |
-| `/sync-ai-memory`             | Sync all AI-critical documents across the repo (README.md, CLAUDE.md, INSTALLER.md, CONTEXT.md, docs/*.md, docs/onboarding.html) so they consistently reflect the current `.context/` and `package.json` state |
-| `/master-test-plan`           | Generate or refresh `.context/master-test-plan.md` — what to test and why, derived from the discovery artefacts |
-| `/business-data-map`          | Generate or refresh `.context/business/business-data-map.md` (entities, flows, state machines) |
-| `/business-feature-map`       | Generate or refresh `.context/business/business-feature-map.md` (feature catalog, CRUD matrix, integrations) |
-| `/business-api-map`           | Generate or refresh `.context/business/business-api-map.md` (auth model, critical endpoints, architecture) |
-| `/fix-traceability`           | Repair broken TMS traceability links (US → ATP → ATR → TC) |
-| `/break-down-tests`           | Plain-English breakdown of automated tests for a given module / spec |
+| Command                       | Routes to (skill · mode)             | Purpose                                                  |
+| ----------------------------- | ------------------------------------- | -------------------------------------------------------- |
+| `/adapt-framework`            | `adapt-framework` · `adapt`           | Adapt this boilerplate's KATA test architecture to a project already reverse-engineered by `/project-discovery` (Plan -> Approval -> Implement) |
+| `/sync-ai-memory`             | `sync-ai-context` · `sync`            | Sync all AI-critical documents across the repo (README.md, AGENTS.md, INSTALLER.md, CONTEXT.md, docs/*.md, docs/onboarding.html) so they consistently reflect the current `.context/` and `package.json` state |
+| `/master-test-plan`           | `project-context` · `test-plan`       | Generate or refresh `.context/master-test-plan.md` — what to test and why, derived from the discovery artefacts |
+| `/business-data-map`          | `project-context` · `data`            | Generate or refresh `.context/business/business-data-map.md` (entities, flows, state machines) |
+| `/business-feature-map`       | `project-context` · `features`        | Generate or refresh `.context/business/business-feature-map.md` (feature catalog, CRUD matrix, integrations) |
+| `/business-api-map`           | `project-context` · `api`             | Generate or refresh `.context/business/business-api-map.md` (auth model, critical endpoints, architecture) |
+| `/fix-traceability`           | `test-documentation` · `repair-traceability` | Repair broken TMS traceability links (US → ATP → ATR → TC) |
+| `/break-down-tests`           | `test-automation` · `explain`         | Plain-English breakdown of automated tests for a given module / spec |
+| `/jira-components`            | `jira-administration` · `components`  | Reconcile the project's Jira Components after a read-first analysis and explicit approval |
+| `/jira-instance-migration`    | `jira-administration` · `instance-migration` | Repoint the repo at a different Atlassian instance and regenerate the Jira catalogs |
 
-All command definitions live under `.claude/commands/<name>.md`.
+`.agents/compatibility/command-aliases.json` is the single source for all ten. The wrappers under `.claude/commands/<name>.md` and `.opencode/commands/<name>.md` are GENERATED from it (`bun run agents:compat`) and validated byte-for-byte by `bun run agents:compat:check`, which fails a wrapper that has grown a body. Never hand-edit one. Codex has no command surface — invoke the skill directly there.
 
 ### Integrations (live system access)
 
@@ -644,7 +646,7 @@ MCPs and CLIs are how the AI talks to real systems. Without them, the AI can onl
 | `context7` MCP     | Anthropic-ecosystem  | Official library documentation                        |
 | `tavily` MCP       | Anthropic-ecosystem  | Web search for community solutions                    |
 
-Each `[TAG_TOOL]` resolves via the Tool Resolution table in `CLAUDE.md`. Swap the row to swap the backend — skills keep calling the same tag.
+Each `[TAG_TOOL]` resolves via the Tool Resolution table in `AGENTS.md`. Swap the row to swap the backend — skills keep calling the same tag.
 
 **Decision rule:**
 
@@ -738,7 +740,7 @@ Treat these as a starting point, not a canon. Add fields that map to your team's
 
 ### What ships in this repository
 
-- **A foundation skill (`agentic-qa-core`)** — bootstraps `CLAUDE.md`, `.agents/project.yaml`, and the `agents-*` scripts; hosts the canonical orchestration doctrine, briefing template, and dispatch patterns cited by every workflow skill.
+- **A foundation skill (`agentic-qa-core`)** — bootstraps `AGENTS.md`, `.agents/project.yaml`, and the `agents-*` scripts; hosts the canonical orchestration doctrine, briefing template, and dispatch patterns cited by every workflow skill.
 - **A roster of stage-aware AI skills** — auto-triggered by user intent, orchestrated with human-in-the-loop checkpoints. Each stage of the pipeline has its own skill. The current roster is enumerated in Section 12.
 - **A library of utility commands** — deterministic, single-purpose, invoked with `/<name>`. The current library is enumerated in Section 12.
 - **Live system integrations** — MCPs for the database, API, TMS, and library documentation, plus first-party CLIs for TMS operations and browser automation. The current set is enumerated in Section 12.
@@ -761,16 +763,16 @@ The rest is execution.
 **Last Updated**: 2026-04-26
 
 **See also**:
-- `CLAUDE.md` — canonical project memory, Tool Resolution, and skill routing (mirrored at `CLAUDE.md`)
+- `AGENTS.md` — canonical project memory, Tool Resolution, and skill routing (Claude Code loads it through the generated one-line `CLAUDE.md` shim)
 - `CONTEXT.md` — strategy behind the three-tier context split (repo root)
 - `docs/methodology/IQL-methodology.md` — phased methodology deep-dive
-- `.claude/skills/agentic-qa-core/SKILL.md` — foundation skill internals (bootstrap + shared references)
-- `.claude/skills/agentic-qa-core/references/orchestration-doctrine.md` — canonical orchestration doctrine cited by every workflow skill
-- `.claude/skills/acli/SKILL.md` — Atlassian CLI integration for Jira work-item operations
-- `.claude/skills/test-automation/references/` — KATA architecture, `@atc` decorator, and traceability chain
+- `.agents/skills/agentic-qa-core/SKILL.md` — foundation skill internals (bootstrap + shared references)
+- `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md` — canonical orchestration doctrine cited by every workflow skill
+- `.agents/skills/acli/SKILL.md` — Atlassian CLI integration for Jira work-item operations
+- `.agents/skills/test-automation/references/` — KATA architecture, `@atc` decorator, and traceability chain
 - `.context/README.md` — canonical context layout
-- `.claude/skills/project-discovery/SKILL.md` — onboarding skill internals
-- `.claude/skills/sprint-testing/SKILL.md` — Stages 1–3 skill internals
-- `.claude/skills/test-documentation/SKILL.md` — Stage 4 skill internals
-- `.claude/skills/test-automation/SKILL.md` — Stage 5 skill internals
-- `.claude/skills/regression-testing/SKILL.md` — Stage 6 skill internals
+- `.agents/skills/project-discovery/SKILL.md` — onboarding skill internals
+- `.agents/skills/sprint-testing/SKILL.md` — Stages 1–3 skill internals
+- `.agents/skills/test-documentation/SKILL.md` — Stage 4 skill internals
+- `.agents/skills/test-automation/SKILL.md` — Stage 5 skill internals
+- `.agents/skills/regression-testing/SKILL.md` — Stage 6 skill internals
