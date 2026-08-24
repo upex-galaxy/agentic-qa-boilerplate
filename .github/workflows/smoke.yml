@@ -27,6 +27,11 @@ on:
         default: true
         type: boolean
 
+concurrency:
+  # Same gh-pages publish race as regression.yml — queue, never cancel.
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   CI: true
   TEST_ENV: ${{ github.event.inputs.environment || 'staging' }}

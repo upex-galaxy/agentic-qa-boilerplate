@@ -12,6 +12,12 @@ on:
     branches:
       - main
 
+concurrency:
+  # One build per PR branch: a force-push supersedes the run already in flight.
+  # Safe to cancel — this job only validates, it publishes nothing.
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CI: true
   TEST_ENV: 'staging'

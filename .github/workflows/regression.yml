@@ -32,6 +32,14 @@ on:
         default: true
         type: boolean
 
+concurrency:
+  # Suite runs publish Allure to gh-pages. Two overlapping runs race on that
+  # deploy and one silently overwrites the other's report. Queue instead of
+  # cancelling: a half-finished suite that still uploaded results would leave
+  # a partial report standing as if it were the full one.
+  group: regression-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   CI: true
   TEST_ENV: ${{ github.event.inputs.environment || 'staging' }}

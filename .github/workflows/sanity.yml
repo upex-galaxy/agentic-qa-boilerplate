@@ -48,6 +48,11 @@ on:
         default: 'sanity'
         type: string
 
+concurrency:
+  # Same gh-pages publish race as regression.yml — queue, never cancel.
+  group: sanity-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   CI: true
   TEST_ENV: ${{ github.event.inputs.environment || 'staging' }}

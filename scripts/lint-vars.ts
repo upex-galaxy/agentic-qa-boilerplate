@@ -621,9 +621,24 @@ const LINK_TYPE_SUBFIELDS = new Set(['name', 'outward', 'inward', 'fallback']);
  */
 const JIRA_RESERVED_SLUGS = new Set(['work_type', 'status', 'transition', 'link_types']);
 
+/**
+ * Repo paths, always `/`-separated, whatever the platform.
+ *
+ * `walkMarkdown` builds paths with `join()`, which emits `\` on Windows — including
+ * Windows-with-bash, where `process.platform` is still `win32` even though the shell
+ * is not. Every pattern in this file is written with `/`, so an unnormalised compare
+ * silently never matches there. Reported downstream (issue #26): the allowlist stopped
+ * suppressing its entries and `vars:check` failed with 7 phantom UNDECLARED errors,
+ * which blocks every commit through the pre-commit hook.
+ */
+function toPosix(filePath: string): string {
+  return filePath.replace(/\\/g, '/');
+}
+
 function isAllowlisted(varName: string, filePath: string): boolean {
+  const normalized = toPosix(filePath);
   return DOC_META_ALLOWLIST.some(
-    ([allowedName, fileSub]) => allowedName === varName && filePath.includes(fileSub),
+    ([allowedName, fileSub]) => allowedName === varName && normalized.includes(toPosix(fileSub)),
   );
 }
 

@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
+import { isInside } from '../scripts/agent-compatibility.ts';
 import {
   applyHarnessMigration,
   MIGRATION_BACKUP_DIR,
@@ -49,6 +50,28 @@ afterEach(() => {
     const root = temporaryRoots.pop();
     if (root) { rmSync(root, { recursive: true, force: true }); }
   }
+});
+
+describe('windows path separators', () => {
+  // A downstream user hit this class of bug on Windows-with-bash: `process.platform`
+  // is still `win32`, so `path` APIs emit `\` while every pattern we compare against
+  // uses `/`. Both assertions below failed before the fix.
+
+  test('containment survives a separator mismatch and rejects a sibling prefix', () => {
+    expect(isInside('/repo/.agents/skills/acli', '/repo/.agents/skills')).toBe(true);
+    expect(isInside('/repo/.agents/skills', '/repo/.agents/skills')).toBe(true);
+    expect(isInside('/repo/elsewhere/rogue', '/repo/.agents/skills')).toBe(false);
+    // The naive `startsWith(parent)` check accepted this one.
+    expect(isInside('/repo/.agents/skills-other', '/repo/.agents/skills')).toBe(false);
+  });
+
+  test('the backup dir stays POSIX-separated because .gitignore patterns always are', () => {
+    // Built with join() it became `.template\pre-agents-migration` on Windows, so the
+    // ignore rule matched nothing and the project's own pre-migration CLAUDE.md — sitting
+    // in that directory — became committable.
+    expect(MIGRATION_BACKUP_DIR).toBe('.template/pre-agents-migration');
+    expect(MIGRATION_BACKUP_DIR).not.toContain('\\');
+  });
 });
 
 describe('cross-harness migration plan', () => {

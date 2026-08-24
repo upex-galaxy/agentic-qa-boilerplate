@@ -125,8 +125,23 @@ function isSkillsCliShim(claudeSkills: string, canonicalSkills: string): boolean
     const stats = lstatIfPresent(child);
     if (stats === null || !stats.isSymbolicLink()) { return false; }
     const resolved = resolve(claudeSkills, readlinkSync(child));
-    return resolved === canonical || resolved.startsWith(`${canonical}/`);
+    return isInside(resolved, canonical);
   });
+}
+
+/**
+ * True when `target` is `parent` itself or sits under it.
+ *
+ * Uses `relative()` rather than a string prefix on purpose. `resolve()` returns
+ * `C:\repo\.agents\skills` on Windows, so comparing against `` `${parent}/` `` never
+ * matches there — every legitimate per-skill symlink would read as "content", the
+ * alias repair would refuse, and a clean Windows install would abort. Same class of
+ * separator bug a downstream user hit on Windows-with-bash, where `process.platform`
+ * is still `win32` even though the shell is not.
+ */
+export function isInside(target: string, parent: string): boolean {
+  const rel = relative(resolve(parent), resolve(target));
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
 }
 
 export function validateCanonicalSources(root = process.cwd()): string[] {
