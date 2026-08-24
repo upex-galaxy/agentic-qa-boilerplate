@@ -15,9 +15,20 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import pc from 'picocolors';
+import {
+  checkAgentCompatibility,
+  repairClaudeSkillsAlias,
+  repairCommandWrappers,
+} from '../scripts/agent-compatibility.ts';
 import * as tui from './lib/tui';
 import { cleanupTempDir, detectGitVersion, gitVersionMeetsMin, runUpdate } from './lib/updater-core';
 import { makeProtectedDriftHook } from './lib/updater-drift';
+import {
+  applyHarnessMigration,
+  describeHarnessMigration,
+  MIGRATION_BACKUP_DIR,
+  planHarnessMigration,
+} from './lib/updater-harness-migration.ts';
 import { groupIgnoreLines } from './lib/updater-ignore';
 import { makePbiCacheMigrationHook } from './lib/updater-pbi';
 import { parseDotEnvExampleKeys, requiredNow, VAR_MANIFEST } from './lib/variables-manifest.ts';
@@ -32,16 +43,17 @@ const TOOLING_FILES = ['.editorconfig', '.prettierrc', '.gitattributes'];
 const AGENTS_DOCS_FILES = ['README.md'];
 const CLAUDE_CONFIG_FILES = ['settings.json'];
 const ENV_TEMPLATE_FILES = ['.env.example'];
+const AGENT_ROOT_FILES = ['CLAUDE.md', '.mcp.json', 'opencode.jsonc'];
 
-/**
- * Canonical skills location (Claude Code) and portability symlink target.
- * Codex / Copilot / Cursor / OpenCode resolve skills from the same source.
- */
-const SKILLS_CANONICAL_DIR = path.join('.claude', 'skills');
+/** Canonical cross-harness skill source. Claude consumes it through an alias. */
+const SKILLS_CANONICAL_DIR = path.join('.agents', 'skills');
 
-const COMPONENTS: Component[] = [
-  { name: 'skills', type: 'directory', paths: ['.claude/skills'] },
-  { name: 'commands', type: 'directory', paths: ['.claude/commands'] },
+export const COMPONENTS: Component[] = [
+  { name: 'skills', type: 'directory', paths: ['.agents/skills'] },
+  { name: 'commands', type: 'directory', paths: ['.claude/commands', '.opencode/commands'] },
+  { name: 'agent-compatibility', type: 'directory', paths: ['.agents/compatibility', '.agents/hooks', '.opencode/plugins'] },
+  { name: 'codex-config', type: 'directory', paths: ['.codex'] },
+  { name: 'agent-root-config', type: 'file-list', paths: ['.'], files: AGENT_ROOT_FILES },
   { name: 'scripts', type: 'directory', paths: ['scripts'] },
   { name: 'docs', type: 'directory', paths: ['docs'] },
   { name: 'cli', type: 'directory', paths: ['cli'] },
@@ -317,13 +329,29 @@ function makeSkillsRegistryHook(
   sink: ReportSink,
 ): (summary: RunSummary) => Promise<void> {
   return async (summary: RunSummary): Promise<void> => {
-    const skillsTouched = summary.applied.some(a => a.entry.path.startsWith('.claude/skills/'));
+    const skillsTouched = summary.applied.some(a => a.entry.path.startsWith('.agents/skills/'));
     if (!skillsTouched) { return; }
-    sink.step('Regenerando `.claude/skills/REGISTRY.md` (skills cambiaron)…');
+    sink.step('Regenerando `.agents/skills/REGISTRY.md` (skills cambiaron)…');
     const res = spawnSync('bun', ['run', 'skills:registry'], { stdio: 'inherit' });
     if (res.status !== 0) {
       sink.warn('No se pudo regenerar REGISTRY.md. Ejecuta `bun run skills:registry` manualmente.');
     }
+  };
+}
+
+export function makeAgentCompatibilityHook(
+  sink: ReportSink,
+  root = process.cwd(),
+): (summary: RunSummary) => Promise<void> {
+  return async (_summary: RunSummary): Promise<void> => {
+    sink.step('Reparando adaptadores compartidos de Claude/OpenCode/Codex…');
+    const alias = repairClaudeSkillsAlias(root);
+    const wrappersWritten = repairCommandWrappers(root);
+    const check = checkAgentCompatibility(root);
+    if (!check.ok) {
+      throw new Error(`La compatibilidad agéntica quedó incompleta: ${check.errors.join('; ')}`);
+    }
+    sink.step(`Compatibilidad lista: alias Claude ${alias.status}; ${wrappersWritten} wrapper(s) actualizado(s).`);
   };
 }
 
@@ -703,11 +731,11 @@ async function resolveSkillFilter(skills: string[]): Promise<Component[]> {
 // adapts them. When the boilerplate evolves one of them, the hook (in
 // `./lib/updater-drift.ts`) prints an advisory + a copy-paste AI prompt for a
 // surgical merge, and persists it to `.agents/prompts/` (gitignored). It never
-// edits any watched file. CLAUDE.md keeps its legacy sha marker so previously
-// nudged repos are not re-nudged.
+// edits any watched file. AGENTS.md reuses the legacy CLAUDE.md sha marker so
+// previously nudged repos retain their one-nudge-per-upstream-change state.
 
 const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
-  { path: 'CLAUDE.md', reason: 'per-project AI memory (identity, env URLs, custom rules)', markerPath: '.template/claude-md.upstream.sha' },
+  { path: 'AGENTS.md', reason: 'per-project AI memory (identity, env URLs, custom rules)', markerPath: '.template/claude-md.upstream.sha' },
   { path: 'allurerc.mjs', reason: 'report name + dashboard layout adapted per project' },
   { path: 'playwright.config.ts', reason: 'projects, timeouts and reporters adapted per stack' },
   { path: 'config/variables.ts', reason: 'environment/variable map adapted per project' },
@@ -719,8 +747,6 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   { path: 'tests/components/ui/UiBase.ts', reason: 'KATA L2 UI base adapted to the target app' },
   { path: 'scripts/api-login.ts', reason: 'project auth flow (excluded from script sync)' },
   { path: '.agents/jira-required.yaml', reason: 'methodology manifest: upstream owns the baseline work_types + field slugs, the project owns its fallbacks and omissions. It is the INPUT to jira:sync-workflows, which catalogs only the work_types declared in it — a stale manifest silently regenerates a truncated jira-workflows.json and still exits 0.' },
-  { path: '.mcp.json', reason: 'MCP registry with project-specific servers/vars' },
-  { path: 'opencode.jsonc', reason: 'OpenCode MCP registry (paired with .mcp.json)' },
   { path: '.github/workflows/regression.yml', reason: 'CI suite adapted (secrets, envs, jobs)' },
   { path: '.github/workflows/smoke.yml', reason: 'CI suite adapted (secrets, envs, jobs)' },
   { path: '.github/workflows/sanity.yml', reason: 'CI suite adapted (secrets, envs, jobs)' },
@@ -739,7 +765,7 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
 //    silent-wrong-field corruption the migration runbook exists to prevent.
 //    Their correct source is the project's own `bun run jira:sync-*`.
 //    (`jira-required.yaml` IS watched: it holds slugs and structure, not IDs.)
-//  - `.claude/skills/REGISTRY.md`, `kata-manifest.json`, `bun.lock` are
+//  - `.agents/skills/REGISTRY.md`, `kata-manifest.json`, `bun.lock` are
 //    generated artefacts; upstream's copy carries no information for a
 //    downstream repo. Regenerate, never merge.
 //  - `README.md` is rewritten wholesale per project; an advisory would be noise.
@@ -937,6 +963,39 @@ function buildSink(): ReportSink {
 }
 
 // --- MAIN ---
+/**
+ * Preflight wrapper: reports what the cross-harness migration did, or exits with an
+ * actionable message when it refuses. Nothing is deleted either way — content moves
+ * to its canonical home or is archived under `.template/pre-agents-migration/`.
+ */
+function runHarnessMigration(sink: ReportSink): void {
+  const plan = planHarnessMigration();
+  if (!plan.needed && plan.blockers.length === 0) { return; }
+
+  tui.log.info('Migración cross-harness (Claude → Claude + OpenCode + Codex):');
+  for (const line of describeHarnessMigration(plan)) { tui.log.message(`  · ${line}`); }
+
+  try {
+    const result = applyHarnessMigration(process.cwd(), plan);
+    if (!result.applied) { return; }
+    if (result.promotedInstructions) {
+      sink.step('AGENTS.md creado desde CLAUDE.md; CLAUDE.md ahora es el shim `@AGENTS.md`.');
+    }
+    if (result.movedSkills.length > 0) {
+      sink.step(`${result.movedSkills.length} skill(s) movidas a .agents/skills/: ${result.movedSkills.join(', ')}`);
+    }
+    if (result.archivedSkills.length > 0) {
+      sink.warn(`${result.archivedSkills.length} skill(s) archivadas en ${MIGRATION_BACKUP_DIR}/skills/ porque .agents/skills ya tenía ese nombre: ${result.archivedSkills.join(', ')}`);
+    }
+    tui.log.message(`  Copia de seguridad: ${MIGRATION_BACKUP_DIR}/ (gitignored). Revísala antes de borrarla.`);
+  }
+  catch (error) {
+    tui.log.error(error instanceof Error ? error.message : String(error));
+    tui.log.warn('El update se detuvo ANTES de tocar nada. Resolvé lo anterior y volvé a correr `bun run up`.');
+    process.exit(1);
+  }
+}
+
 async function main(): Promise<void> {
   const parsed = parseArgs(process.argv.slice(2));
 
@@ -980,6 +1039,18 @@ async function main(): Promise<void> {
   // Single sink instance — shared by runUpdate AND the env-drift afterApply hook
   // (the hook uses `sink.confirm` to offer `setup --variables`).
   const sink = buildSink();
+
+  // Cross-harness migration — runs BEFORE any component is synced, on purpose.
+  // A repo scaffolded when instructions lived in CLAUDE.md and skills in
+  // .claude/skills/ must reach the canonical layout FIRST: otherwise the
+  // agent-root-config sync overwrites its AI memory with the `@AGENTS.md` shim
+  // while AGENTS.md (watchlist, never synced) still does not exist, and the
+  // compatibility hook then throws on a real .claude/skills directory — taking
+  // every hook behind it down with it. Idempotent: a migrated repo plans nothing.
+  // Skipped under --dry-run, which must never touch the working tree.
+  if (!parsed.dryRun) {
+    runHarnessMigration(sink);
+  }
 
   const cfg: UpdaterConfig = {
     templateRepo: TEMPLATE_REPO,
@@ -1044,6 +1115,7 @@ async function main(): Promise<void> {
         ? undefined
         : composeHooks(
             sink,
+            makeAgentCompatibilityHook(sink),
             makeSkillsRegistryHook(sink),
             makeKataManifestHook(sink),
             makeEnvDriftHook(TEMP_DIR, sink, nonInteractive),
