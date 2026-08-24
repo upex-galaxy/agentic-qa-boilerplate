@@ -880,10 +880,16 @@ work_types:
     local_dir: preconditions
 
   subtask:
-    # Instances map this to their own subtask-level issue type — the BK test
-    # instance uses "Task". Consumed by /shift-left-testing for the per-Story
-    # "[QA] Shift-Left Review" tracking subtask (find-or-create; skip with a
-    # warning when the project has no subtask-level type).
-    jira_issue_type: Sub-task
+    # `A | B | C` = ordered alternatives; the first one the project actually has
+    # wins. The subtask level is named differently per instance: Jira's default is
+    # "Sub-task", the BK instance calls it "Task", a Spanish-localized instance
+    # calls it "Subtarea". Declaring a single name made every other spelling a
+    # silent skip in jira:sync-workflows — which is exactly why this work_type was
+    # missing from the catalog while being declared right here. Add your own
+    # spelling to the list if your instance uses another.
+    # Consumed by /shift-left-testing for the per-Story "[QA] Shift-Left Review"
+    # tracking subtask (find-or-create; skip with a warning when the project has
+    # no subtask-level type at all).
+    jira_issue_type: Sub-task | Task | Subtarea
     description: Generic subtask under a Story — tracking-only, never synced as its own folder
     sync: never

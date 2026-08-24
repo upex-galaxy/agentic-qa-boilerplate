@@ -1864,5 +1864,57 @@
         "to_canonical": "active"
       }
     }
+  },
+  "subtask": {
+    "jira_issue_type": {
+      "id": "10018",
+      "name": "Task"
+    },
+    "workflow_scheme": {
+      "id": 10003,
+      "name": "UPEX PROGRAM Workflow Scheme"
+    },
+    "workflow": {
+      "id": "4cdc0ab3-56ff-479d-8f9d-88b22683db4f",
+      "name": "UPEX Subtask/TX Workflow"
+    },
+    "statuses": {
+      "close": {
+        "id": "10014",
+        "name": "Close",
+        "category": "done"
+      },
+      "active": {
+        "id": "10018",
+        "name": "ACTIVE",
+        "category": "indeterminate"
+      }
+    },
+    "transitions": {
+      "create": {
+        "id": "1",
+        "name": "Create",
+        "from_status_id": null,
+        "to_status_id": "10018",
+        "from_canonical": null,
+        "to_canonical": "active"
+      },
+      "reactive": {
+        "id": "21",
+        "name": "Reactive",
+        "from_status_id": "10014",
+        "to_status_id": "10018",
+        "from_canonical": "close",
+        "to_canonical": "active"
+      },
+      "complete": {
+        "id": "11",
+        "name": "Complete",
+        "from_status_id": "10018",
+        "to_status_id": "10014",
+        "from_canonical": "active",
+        "to_canonical": "close"
+      }
+    }
   }
 }

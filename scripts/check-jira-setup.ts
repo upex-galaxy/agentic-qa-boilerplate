@@ -227,6 +227,15 @@ function loadCatalog(): Record<string, JiraFieldEntry> {
 }
 
 /**
+ * Split a `jira_issue_type` declaration into ordered alternatives. Mirrors
+ * `scripts/sync-jira-workflows.ts:issueTypeNameCandidates` so what the sync writes
+ * is exactly what this validates.
+ */
+function issueTypeNameCandidates(declared: string): string[] {
+  return declared.split('|').map(name => name.trim()).filter(Boolean);
+}
+
+/**
  * Load `.agents/jira-workflows.json` (the discovered workflow catalog). Returns
  * `null` if the file is absent — the work-type validation block will then
  * report MISSING for every required work_type with a hint to run
@@ -606,9 +615,13 @@ function checkWorkType(
       wtSeverity = 'missing';
       wtNotes.push('work_type declared but jira_issue_type is null in jira-workflows.json — re-run `bun run jira:sync-workflows`');
     }
-    else if (foundType.name !== workType.jiraIssueType) {
+    else if (!issueTypeNameCandidates(workType.jiraIssueType)
+      .some(name => name.toLowerCase() === foundType.name.toLowerCase())) {
+      // `jira_issue_type` may declare ordered alternatives (`A | B | C`); the sync
+      // catalogs whichever one the project has. Comparing the raw declaration
+      // against the resolved name flagged every such work_type as a mismatch.
       wtSeverity = 'mismatch';
-      wtNotes.push(`expected '${workType.jiraIssueType}', found '${foundType.name}'`);
+      wtNotes.push(`expected one of '${workType.jiraIssueType}', found '${foundType.name}'`);
     }
   }
   results.push({

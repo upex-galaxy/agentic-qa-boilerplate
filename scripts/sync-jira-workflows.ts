@@ -1015,6 +1015,16 @@ interface SyncStats {
  *
  * Existing real mappings in `previousEntry` are preserved unless `--force`.
  */
+/**
+ * Split a `jira_issue_type` declaration into ordered alternatives.
+ *
+ * `Sub-task | Task | Subtarea` -> ['Sub-task', 'Task', 'Subtarea']. A plain single
+ * name returns a one-element list, so every existing declaration is unchanged.
+ */
+export function issueTypeNameCandidates(declared: string): string[] {
+  return declared.split('|').map(name => name.trim()).filter(Boolean);
+}
+
 async function syncWorkType(
   config: Config,
   flags: CliFlags,
@@ -1028,14 +1038,28 @@ async function syncWorkType(
   const stats: SyncStats = { statusesMapped: 0, transitionsMapped: 0, missingRequired: 0 };
 
   // 1. Find the issue type entry in the per-project /statuses payload.
-  const issueType = issueTypeStatuses.find(
-    it => it.name.toLowerCase() === workType.jiraIssueType.toLowerCase(),
-  );
+  //
+  // `jira_issue_type` accepts `A | B | C`: the first alternative the project
+  // actually has wins. Jira instances name the same concept differently — the
+  // subtask level is "Sub-task" by default but "Task" in the BK instance, and a
+  // translated instance calls it "Subtarea". Matching one hardcoded string made
+  // every other spelling a silent skip, which is how work_type `subtask` stayed
+  // absent from the catalog while the manifest declared it.
+  const candidates = issueTypeNameCandidates(workType.jiraIssueType);
+  const issueType = candidates
+    .map(name => issueTypeStatuses.find(it => it.name.toLowerCase() === name.toLowerCase()))
+    .find(found => found !== undefined);
   if (!issueType) {
+    const tried = candidates.length > 1
+      ? `none of [${candidates.join(', ')}] found`
+      : `issue type '${candidates[0] ?? workType.jiraIssueType}' not found`;
     log.warn(
-      `issue type '${workType.jiraIssueType}' not found in project '${projectKey}' — skipping work_type '${workType.slug}'`,
+      `${tried} in project '${projectKey}' — skipping work_type '${workType.slug}'`,
     );
     return null;
+  }
+  if (flags.verbose && candidates.length > 1) {
+    log.dim(`  ${workType.slug}: resolved to "${issueType.name}" from [${candidates.join(', ')}]`);
   }
 
   if (flags.verbose) {
@@ -1722,7 +1746,11 @@ async function main(): Promise<void> {
   // types. Purely informational — never throws, never affects the exit code.
   const declaredIssueTypeNames = new Set(
     workTypes
-      .map(w => w.jiraIssueType.trim().toLowerCase())
+      // Flatten the `A | B | C` alternatives too, otherwise a project whose
+      // subtask level is named "Task" gets advised to declare "Task" while it is
+      // already declared — as one of subtask's alternatives.
+      .flatMap(w => issueTypeNameCandidates(w.jiraIssueType))
+      .map(name => name.trim().toLowerCase())
       .filter(name => name !== ''),
   );
   for (const it of issueTypeStatuses) {
