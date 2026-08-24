@@ -143,7 +143,7 @@ dbhub.local.toml
 .scratch/
 
 # Session-management state for long workflow skills (per
-# .claude/skills/agentic-qa-core/references/session-management.md).
+# .agents/skills/agentic-qa-core/references/session-management.md).
 # Contains per-skill plan.md / progress.md and archived sessions.
 # Local-only — canonical artifacts are committed under .context/.
 .session/
@@ -204,3 +204,7 @@ dbhub.local.toml
 # matches it, but this guards against future blanket *.lock or skills.* rules.
 !skills.lock.json
 !**/skills.lock.json
+# The CLI actually writes `skills-lock.json` (hyphen). Verified by running
+# `bunx skills add` in a throwaway repo — the dotted name above never appears.
+!skills-lock.json
+!**/skills-lock.json

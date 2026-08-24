@@ -1218,7 +1218,7 @@
         </a>
         <a class="cta" href="#section-7">
           <span class="cta-title">Skills catalog</span>
-          <span class="cta-desc">All 12 skills, what they do, when to call them.</span>
+          <span class="cta-desc">All 19 skills, what they do, when to call them.</span>
         </a>
         <a class="cta" href="#section-6">
           <span class="cta-title">Cheat sheet</span>
@@ -1311,8 +1311,8 @@ bunx create-agentic-qa@latest &lt;your-repo-name&gt;</pre
                   <li>Fresh <code>git init -b main</code> + initial commit</li>
                   <li><code>bun install</code></li>
                   <li>
-                    <code>bun run setup</code> — gentle-ai, 12 T1 skills, MCPs, <code>.env</code>,
-                    optional <code>gh repo create</code>
+                    <code>bun run setup</code> — gentle-ai, 19 committed skills, MCPs,
+                    <code>.env</code>, optional <code>gh repo create</code>
                   </li>
                 </ol>
                 <p class="path-card-foot">
@@ -3256,7 +3256,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <h4>Tier — where it lives</h4>
                 <p>
                   <span class="badge badge-tier-t1">T1</span> Project-owned, committed in
-                  <code>.agents/skills/</code> (the 12 listed below).
+                  <code>.agents/skills/</code> (the 19 listed below, one of them vendored as T2).
                 </p>
                 <p>
                   <span class="badge badge-tier-t2">T2</span> gentle-ai dependency at user level via
@@ -3265,7 +3265,7 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                 <p>
                   <span class="badge badge-tier-t3">T3</span> Community project-level installed by
                   <code>cli/install.ts</code> (<code>playwright-cli</code>,
-                  <code>playwright-best-practices</code>).
+                  <code>playwright-best-practices</code>, <code>resend-cli</code>).
                 </p>
                 <p>
                   <span class="badge badge-tier-t4">T4</span> Community user-level — ALWAYS ASK
@@ -3447,6 +3447,95 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                   <strong>Strategy Setup</strong> operation can bootstrap a strategy on a fresh repo
                   — including <strong>sdet</strong> (an ephemeral per-suite integration trunk
                   recommended for chained test-automation suites).
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">project-context</span>
+                  <span class="badge badge-workflow">Workflow</span>
+                  <span class="badge badge-tier-t1">T1</span>
+                </div>
+                <p class="skill-card-trigger">
+                  project-context · legacy /business-*-map · /master-test-plan
+                </p>
+                <p class="skill-card-desc">
+                  Owns the four context artifacts as ordered modes —
+                  <code>data</code>, <code>features</code>, <code>api</code>,
+                  <code>test-plan</code> — plus <code>refresh-all</code>. UPDATE always shows a diff
+                  and waits for approval before overwriting.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">sync-ai-context</span>
+                  <span class="badge badge-workflow">Workflow</span>
+                  <span class="badge badge-tier-t1">T1</span>
+                </div>
+                <p class="skill-card-trigger">sync-ai-context · legacy /sync-ai-memory</p>
+                <p class="skill-card-desc">
+                  Synchronizes the AI-critical docs against the canonical instructions, skills,
+                  aliases and <code>package.json</code>. Named apart from Engram on purpose: it can
+                  rewrite several instruction documents at once. Never touches Engram memory.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">jira-administration</span>
+                  <span class="badge badge-workflow">Workflow</span>
+                  <span class="badge badge-tier-t1">T1</span>
+                </div>
+                <p class="skill-card-trigger">legacy /jira-components · /jira-instance-migration</p>
+                <p class="skill-card-desc">
+                  Jira administration, not testing. Two sealed modes —
+                  <code>components</code> and <code>instance-migration</code> — each behind
+                  read-first analysis and explicit approval. The migration stays isolated because it
+                  changes the global <code>acli</code> session and instance IDs.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">bug-screenshot-annotation</span>
+                  <span class="badge badge-tool">Tool</span>
+                  <span class="badge badge-tier-t1">T1</span>
+                </div>
+                <p class="skill-card-trigger">annotate bug screenshot · anota este bug</p>
+                <p class="skill-card-desc">
+                  Turns a raw screenshot into QA-style annotated evidence (circles, arrows,
+                  callouts, corner badge, axis ticks) via HTML+CSS overlays rendered entirely
+                  locally. Loaded inline by <code>/sprint-testing</code> for visual defects.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">pr-review-lead</span>
+                  <span class="badge badge-workflow">Workflow</span>
+                  <span class="badge badge-tier-t1">T1</span>
+                </div>
+                <p class="skill-card-trigger">review this PR · revisa este PR</p>
+                <p class="skill-card-desc">
+                  QA Lead review of a PR's test-automation work against KATA doctrine, every finding
+                  grounded in a citation or a code location. Works on this repo or an external one.
+                  Never posts to GitHub without an explicit final OK.
+                </p>
+              </article>
+
+              <article class="skill-card">
+                <div class="skill-card-head">
+                  <span class="skill-card-name">judgment-day</span>
+                  <span class="badge badge-tool">Tool</span>
+                  <span class="badge badge-tier-t2">T2</span>
+                </div>
+                <p class="skill-card-trigger">/judgment-day · juzgar · dual review</p>
+                <p class="skill-card-desc">
+                  Vendored from gentle-ai (Apache-2.0). Adversarial dual-judge review: two blind
+                  judges in parallel, synthesis, fix loop, re-judge. Cited as an optional gate by
+                  <code>/test-automation</code> and <code>/git-flow-master</code>. Never
+                  auto-invoked.
                 </p>
               </article>
             </div>

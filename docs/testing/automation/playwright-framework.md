@@ -176,13 +176,13 @@ bun run test --project=e2e --project=integration  # Both
 #### Run specific file or folder
 ```bash
 # Single file - Playwright auto-detects the matching project
-bun run test tests/integration/auth/auth.test.ts
+bun run test tests/integration/auth/user-session.test.ts
 
 # All tests in a folder
 bun run test tests/e2e/dashboard/
 
 # Multiple files
-bun run test tests/e2e/login.test.ts tests/e2e/logout.test.ts
+bun run test tests/e2e/dashboard/dashboard.test.ts
 ```
 
 #### Run by test name (grep)
@@ -277,7 +277,7 @@ testMatch: /.*\.test\.ts/
 
 When you run a specific file:
 ```bash
-bun run test tests/integration/auth/auth.test.ts
+bun run test tests/integration/auth/user-session.test.ts
 ```
 
 Playwright:

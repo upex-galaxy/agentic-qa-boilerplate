@@ -2,7 +2,7 @@
 
 Per-epic and per-story QA workspace shared by `/shift-left-testing`, `/sprint-testing`, `/test-documentation`, and `/test-automation`.
 
-> **This tree is a CACHE of Jira, and it is gitignored.** Jira is the source of truth. `bun run context:hydrate` rebuilds the whole thing from scratch, which is exactly why it is not committed: two sessions that re-sync at different times would otherwise produce conflicting commits of the same generated content. Authoritative ownership rules live in `CLAUDE.md` §9.
+> **This tree is a CACHE of Jira, and it is gitignored.** Jira is the source of truth. `bun run context:hydrate` rebuilds the whole thing from scratch, which is exactly why it is not committed: two sessions that re-sync at different times would otherwise produce conflicting commits of the same generated content. Authoritative ownership rules live in `AGENTS.md` §9.
 
 ## Three tiers, three lifecycles
 

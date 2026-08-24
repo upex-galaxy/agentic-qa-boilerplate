@@ -57,7 +57,7 @@ qa:
   # Skills resolve the epic by NAME (the methodology convention shipped below) and find-or-create it,
   # caching the discovered `*.key` here. NEVER parent a quality issue to a product/dev epic.
   # Read directly by skills (not {{VAR}} tokens) → skipped by vars:check, like git_strategy leaves.
-  # Doctrine: .claude/skills/agentic-qa-core/references/defect-management-doctrine.md (Part 4).
+  # Doctrine: .agents/skills/agentic-qa-core/references/defect-management-doctrine.md (Part 4).
   qa_epics:
     master_test_plan_epic:
       name: QA Master Test Plan # the MTP — parent of every Test Plan (FTP/STP/ATP); description mirrors
