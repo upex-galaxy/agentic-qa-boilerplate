@@ -1191,7 +1191,23 @@ function main(): void {
   }
   console.log('');
 
-  const totalWarnings = declaredButUnused.length + workTypeWarnings.length;
+  // Work types declared in the manifest that the workflow catalog does not carry.
+  // Distinct from the per-reference warnings above: those need something to WRITE
+  // {{jira.work_type.X}} somewhere, and a freshly declared type usually has no
+  // reference yet. That is the exact shape this missed — `subtask` was added to
+  // the manifest for /shift-left-testing, the catalog stayed at 13 types, and the
+  // two counts printed on adjacent lines above with nothing flagging the gap.
+  // Downstream that surfaces as `bun run jira:sync-workflows` demanding an
+  // ADMINISTER permission most users do not have, and the `--upex` fallback
+  // serving the same stale catalog.
+  //
+  // WARNING, never an error: a project that has not synced its catalogs yet is a
+  // legitimate state, and this file must not block its first commit.
+  const unsyncedWorkTypes = workflows === null
+    ? []
+    : [...manifest.workTypes.keys()].filter(wt => !(wt in workflows)).sort();
+
+  const totalWarnings = declaredButUnused.length + workTypeWarnings.length + unsyncedWorkTypes.length;
   console.log(`WARNINGS (${totalWarnings}):`);
   if (totalWarnings === 0) {
     console.log('  <none>');
@@ -1199,6 +1215,11 @@ function main(): void {
   else {
     for (const name of declaredButUnused) {
       console.log(`  - DECLARED_BUT_UNUSED: ${name}  (no occurrences in scanned files)`);
+    }
+    for (const wt of unsyncedWorkTypes) {
+      console.log(`  - WORK_TYPE_NOT_IN_CATALOG: '${wt}' is declared in jira-required.yaml but absent from jira-workflows.json`);
+      console.log('      Regenerate with `bun run jira:sync-workflows` (needs ADMINISTER), then commit the catalog.');
+      console.log('      Until then `--upex` serves the same stale copy, so it is not a workaround for this one.');
     }
     for (const w of workTypeWarnings) {
       const rel = relative(REPO_ROOT, w.file);

@@ -72,6 +72,18 @@ export async function login(flags: Flags): Promise<void> {
 
   Get your API keys from: Jira → Apps → Xray → Settings → API Keys
 
+  Don't see that screen? Then you do not administer Xray on this instance, and
+  retrying will not produce a key. Ask whoever owns the Xray app for a
+  client-id / client-secret pair and put them in .env as XRAY_CLIENT_ID /
+  XRAY_CLIENT_SECRET — that is where every script here reads them from.
+
+  While you wait, everything that does NOT touch Xray still works:
+    bun run jira:sync-issues get <KEY>   read tickets, ACs, comments
+    bun run test                         run the suite
+    bun run tests:map                    coverage map from the local cache
+  Test cases can also live as Jira Test issues (Modality jira-native) and be
+  imported into Xray later. This credential blocks the Xray write-path, not QA.
+
   Optional Jira credentials (for backup restore --sync):
     --jira-url <url>       Jira base URL (e.g., https://company.atlassian.net)
     --jira-email <email>   Jira account email

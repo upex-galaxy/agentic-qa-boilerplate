@@ -25,7 +25,7 @@
   "mcp": {
     "context7": {
       "type": "local",
-      "command": ["npx", "-y", "@upstash/context7-mcp"],
+      "command": ["npx", "-y", "@upstash/context7-mcp@4.0.3"],
       "enabled": true
     },
     "tavily": {
@@ -40,7 +40,7 @@
       "type": "local",
       "command": [
         "bunx",
-        "@playwright/mcp@latest",
+        "@playwright/mcp@0.0.79",
         "--caps",
         "vision,pdf,testing,tracing,tabs",
         "--timeout-action",
@@ -54,7 +54,7 @@
     },
     "dbhub": {
       "type": "local",
-      "command": ["bunx", "-y", "@bytebase/dbhub@latest", "--config", "dbhub.toml"],
+      "command": ["bunx", "-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"],
       "enabled": true
     },
     // SCHEMA-READ-ONLY: no API_TOKEN / Authorization header is injected here.
@@ -65,7 +65,7 @@
     // requirement for API auth. OPENAPI_SPEC_PATH may be a local file OR a URL.
     "openapi": {
       "type": "local",
-      "command": ["bunx", "-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
+      "command": ["bunx", "-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"],
       "enabled": true,
       "environment": {
         "API_BASE_URL": "{env:API_BASE_URL}",

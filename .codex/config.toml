@@ -12,7 +12,7 @@ command = "npx"
 enabled = true
 args = [
   "-y",
-  "@upstash/context7-mcp",
+  "@upstash/context7-mcp@4.0.3",
 ]
 
 [mcp_servers.tavily]
@@ -25,7 +25,7 @@ command = "bunx"
 enabled = true
 args = [
   "-y",
-  "@bytebase/dbhub@latest",
+  "@bytebase/dbhub@1.2.1",
   "--config",
   "dbhub.toml",
 ]
@@ -35,7 +35,7 @@ command = "bunx"
 enabled = true
 args = [
   "-y",
-  "@ivotoby/openapi-mcp-server",
+  "@ivotoby/openapi-mcp-server@1.16.1",
   "--tools",
   "dynamic",
 ]
@@ -48,7 +48,7 @@ env_vars = [
 command = "bunx"
 enabled = true
 args = [
-  "@playwright/mcp@latest",
+  "@playwright/mcp@0.0.79",
   "--caps",
   "vision,pdf,testing,tracing,tabs",
   "--timeout-action",
