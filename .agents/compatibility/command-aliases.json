@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "wrapperHosts": ["claude", "opencode"],
+  "aliases": [
+    {
+      "alias": "adapt-framework",
+      "skill": "adapt-framework",
+      "mode": "adapt",
+      "description": "Adapt KATA and repository tooling after an approved no-write analysis and plan.",
+      "argumentHint": "[entity-or-scope]",
+      "forwardArguments": true,
+      "mutability": "local-write-after-approval"
+    },
+    {
+      "alias": "break-down-tests",
+      "skill": "test-automation",
+      "mode": "explain",
+      "description": "Explain existing automated tests and assertions without editing code.",
+      "argumentHint": "<file|ATC|ticket|module>",
+      "forwardArguments": true,
+      "mutability": "read-only"
+    },
+    {
+      "alias": "business-api-map",
+      "skill": "project-context",
+      "mode": "api",
+      "description": "Generate or refresh the business-level API map.",
+      "argumentHint": "[project-path-or-module]",
+      "forwardArguments": true,
+      "mutability": "local-write-after-approval"
+    },
+    {
+      "alias": "business-data-map",
+      "skill": "project-context",
+      "mode": "data",
+      "description": "Generate or refresh the business data and flow map.",
+      "argumentHint": "[project-path]",
+      "forwardArguments": true,
+      "mutability": "local-write-after-approval"
+    },
+    {
+      "alias": "business-feature-map",
+      "skill": "project-context",
+      "mode": "features",
+      "description": "Generate or refresh the business feature inventory.",
+      "argumentHint": "[project-path-or-module]",
+      "forwardArguments": true,
+      "mutability": "local-write-after-approval"
+    },
+    {
+      "alias": "fix-traceability",
+      "skill": "test-documentation",
+      "mode": "repair-traceability",
+      "description": "Audit and repair one ticket's TMS traceability after explicit approval.",
+      "argumentHint": "<ticket-id>",
+      "forwardArguments": true,
+      "mutability": "external-write-after-approval"
+    },
+    {
+      "alias": "jira-components",
+      "skill": "jira-administration",
+      "mode": "components",
+      "description": "Plan and reconcile Jira Components after explicit approval.",
+      "argumentHint": "[project-key] [target-source]",
+      "forwardArguments": true,
+      "mutability": "external-write-after-approval"
+    },
+    {
+      "alias": "jira-instance-migration",
+      "skill": "jira-administration",
+      "mode": "instance-migration",
+      "description": "Repoint Jira configuration and regenerate catalogs after explicit approval.",
+      "argumentHint": "[source-host] [target-host]",
+      "forwardArguments": true,
+      "mutability": "external-and-local-write-after-approval"
+    },
+    {
+      "alias": "master-test-plan",
+      "skill": "project-context",
+      "mode": "test-plan",
+      "description": "Generate or refresh the risk-ranked master test plan.",
+      "argumentHint": "[project-path-or-module]",
+      "forwardArguments": true,
+      "mutability": "external-and-local-write-after-approval"
+    },
+    {
+      "alias": "sync-ai-memory",
+      "skill": "sync-ai-context",
+      "mode": "sync",
+      "description": "Synchronize AI-critical repository documents without modifying Engram memory.",
+      "argumentHint": "[repository-path]",
+      "forwardArguments": true,
+      "mutability": "local-write"
+    }
+  ]
+}
