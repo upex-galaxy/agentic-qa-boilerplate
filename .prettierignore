@@ -53,11 +53,12 @@ Thumbs.db
 # Documentation - Preserve manual formatting
 # ===========================================
 .context/
-.claude/skills/
 .claude/settings.local.json
+# Canonical skill source. `.claude/skills` needs no entry of its own: it is a
+# generated symlink/junction onto this same tree, and prettier does not follow it.
 .agents/skills/
 # Published deck HTMLs (copies of the skill decks; single-file artifacts whose
-# embedded HTML prettier cannot always parse — same rationale as .claude/skills/)
+# embedded HTML prettier cannot always parse — same rationale as .agents/skills/)
 packages/decks/
 
 # ===========================================
