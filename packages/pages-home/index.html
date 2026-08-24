@@ -3,718 +3,1588 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Agentic QA — UPEX Galaxy</title>
+    <title>Agentic QA — el pipeline de testing agéntico</title>
     <meta
       name="description"
-      content="Hub de aprendizaje y documentación del boilerplate Agentic QA: KATA Academy, decks de los workflows QA y reportes de regresión."
+      content="Boilerplate de QA agéntico: siete stages ejecutados por skills, arquitectura KATA sobre Playwright y TypeScript, trazabilidad en Jira/Xray, KATA Academy y 21 decks de doctrina."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <style>
       :root {
-        --bg: #0d1117;
-        --surface: #161b22;
-        --surface-2: #1c2230;
-        --text-1: #e6edf3;
-        --text-2: #9aa6b2;
-        --text-3: #6e7681;
-        --border: rgba(139, 148, 158, 0.22);
-        --border-strong: rgba(139, 148, 158, 0.42);
-        --good: #3fb950;
-        --a1: #ffa657;
-        --a2: #ff7b72;
-        --a3: #d2a8ff;
-        --grad: linear-gradient(120deg, var(--a1), var(--a2) 55%, var(--a3));
-        --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
-        --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
-        --radius: 14px;
-        --radius-lg: 20px;
+        --ink: #0a0e14;
+        --panel: #111823;
+        --panel-2: #182131;
+        --line: rgba(148, 163, 184, 0.2);
+        --line-2: rgba(148, 163, 184, 0.4);
+        --fg: #e3eaf2;
+        --fg-2: #98a6b8;
+        --fg-3: #67748a;
+        --amber: #ffa657;
+        --amber-dim: rgba(255, 166, 87, 0.12);
+        --violet: #d2a8ff;
+        --violet-dim: rgba(210, 168, 255, 0.12);
+        --green: #3fb950;
+        --coral: #ff7b72;
+        --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+        --r: 10px;
+        --r-lg: 16px;
+        --nav-h: 60px;
         color-scheme: dark;
       }
-      * {
+
+      *,
+      *::before,
+      *::after {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: calc(var(--nav-h) + 24px);
+      }
+
       body {
-        background: var(--bg);
-        color: var(--text-1);
-        font-family: var(--font-ui);
+        background: var(--ink);
+        color: var(--fg);
+        font-family: var(--sans);
+        font-size: 16px;
         line-height: 1.6;
         -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
       }
+
       a {
         color: inherit;
       }
+
+      :focus-visible {
+        outline: 2px solid var(--amber);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+
+      code {
+        font-family: var(--mono);
+        font-size: 0.86em;
+        color: var(--fg);
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 0.06em 0.38em;
+      }
+
       .wrap {
-        max-width: 1160px;
+        width: 100%;
+        max-width: 1120px;
         margin: 0 auto;
         padding: 0 24px;
       }
 
-      /* header */
-      header {
-        border-bottom: 1px solid var(--border);
-        padding: 18px 0;
+      .prose {
+        max-width: 68ch;
+      }
+
+      /* ── nav ─────────────────────────────────────────────── */
+      .topbar {
         position: sticky;
         top: 0;
-        background: rgba(13, 17, 23, 0.88);
-        backdrop-filter: blur(8px);
-        z-index: 10;
+        z-index: 20;
+        background: rgba(10, 14, 20, 0.9);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--line);
       }
-      .header-row {
+      .topbar-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
+        gap: 20px;
+        height: var(--nav-h);
       }
       .brand {
-        display: flex;
+        display: inline-flex;
         align-items: baseline;
-        gap: 10px;
+        gap: 9px;
         text-decoration: none;
-      }
-      .brand strong {
-        font-size: 1.05rem;
-        font-weight: 800;
-        background: var(--grad);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
         white-space: nowrap;
+      }
+      .brand b {
+        font-family: var(--mono);
+        font-size: 0.98rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--amber);
       }
       .brand span {
-        color: var(--text-3);
-        font-size: 0.8rem;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--fg-3);
+        letter-spacing: 0.06em;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        min-width: 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .nav::-webkit-scrollbar {
+        display: none;
+      }
+      .nav a {
+        position: relative;
+        font-size: 0.84rem;
         font-weight: 500;
+        color: var(--fg-3);
+        text-decoration: none;
+        white-space: nowrap;
+        padding: 4px 0;
+        transition: color 0.18s ease;
+      }
+      .nav a::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -2px;
+        height: 2px;
+        background: var(--amber);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.22s ease;
+      }
+      .nav a:hover {
+        color: var(--fg);
+      }
+      .nav a.is-active {
+        color: var(--fg);
+      }
+      .nav a.is-active::after {
+        transform: scaleX(1);
+      }
+
+      .topbar-end {
+        display: flex;
+        align-items: center;
+        gap: 14px;
         white-space: nowrap;
       }
-      .header-links {
-        display: flex;
-        gap: 18px;
-        font-size: 0.85rem;
-      }
-      .header-links a {
-        color: var(--text-2);
+      .topbar-end a {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        color: var(--fg-2);
         text-decoration: none;
-        transition: color 0.15s;
       }
-      .header-links a:hover {
-        color: var(--text-1);
+      .topbar-end a:hover {
+        color: var(--fg);
+      }
+      .topbar-end .pill {
+        border: 1px solid var(--line-2);
+        border-radius: 999px;
+        padding: 6px 14px;
+        color: var(--fg);
+      }
+      .topbar-end .pill:hover {
+        border-color: var(--amber);
+        background: var(--amber-dim);
       }
 
-      /* hero */
+      /* ── hero ────────────────────────────────────────────── */
       .hero {
-        padding: 72px 0 56px;
-        text-align: center;
+        padding: 72px 0 8px;
       }
-      .hero .kicker {
-        font-family: var(--font-mono);
-        font-size: 0.78rem;
-        letter-spacing: 0.14em;
+      .hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+        gap: 48px;
+        align-items: start;
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.16em;
         text-transform: uppercase;
-        color: var(--a1);
-        margin-bottom: 14px;
+        color: var(--fg-3);
       }
       .hero h1 {
-        font-size: clamp(2rem, 5vw, 3.2rem);
-        font-weight: 800;
-        line-height: 1.15;
-        letter-spacing: -0.02em;
-        margin-bottom: 16px;
+        margin-top: 16px;
+        font-size: clamp(2rem, 4.6vw, 3.1rem);
+        font-weight: 600;
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        text-wrap: balance;
       }
-      .hero h1 .grad {
-        background: var(--grad);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
+      .hero h1 em {
+        font-style: normal;
+        color: var(--amber);
       }
-      .hero p {
-        color: var(--text-2);
-        max-width: 640px;
-        margin: 0 auto 32px;
-        font-size: 1.05rem;
+      .hero-lead {
+        margin-top: 18px;
+        color: var(--fg-2);
+        font-size: 1.03rem;
+        max-width: 54ch;
       }
-      .cta {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        background: var(--grad);
-        color: #0d1117;
-        font-weight: 700;
-        font-size: 1.05rem;
-        padding: 14px 30px;
-        border-radius: 999px;
-        text-decoration: none;
-        transition:
-          transform 0.15s,
-          box-shadow 0.15s;
-        box-shadow: 0 8px 30px rgba(255, 123, 114, 0.25);
-      }
-      .cta:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 40px rgba(255, 123, 114, 0.35);
-      }
-      .cta-sub {
-        margin-top: 14px;
-        font-size: 0.82rem;
-        color: var(--text-3);
-        font-family: var(--font-mono);
+      .hero-lead b {
+        color: var(--fg);
+        font-weight: 600;
       }
 
-      /* sections */
-      section {
-        padding: 40px 0;
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 30px;
       }
-      .section-head {
-        margin-bottom: 22px;
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-family: var(--mono);
+        font-size: 0.86rem;
+        font-weight: 500;
+        text-decoration: none;
+        border-radius: 999px;
+        padding: 11px 22px;
+        border: 1px solid transparent;
+        transition:
+          background 0.18s ease,
+          border-color 0.18s ease,
+          color 0.18s ease;
       }
-      .section-head h2 {
+      .btn-primary {
+        background: var(--amber);
+        color: #12141a;
+        font-weight: 700;
+      }
+      .btn-primary:hover {
+        background: #ffbb80;
+      }
+      .btn-ghost {
+        border-color: var(--line-2);
+        color: var(--fg);
+      }
+      .btn-ghost:hover {
+        border-color: var(--amber);
+        background: var(--amber-dim);
+      }
+
+      .stat-rail {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 34px;
+        margin-top: 34px;
+        padding-top: 22px;
+        border-top: 1px solid var(--line);
+      }
+      .stat .n {
+        font-family: var(--mono);
         font-size: 1.35rem;
         font-weight: 700;
-        letter-spacing: -0.01em;
+        color: var(--amber);
+        font-variant-numeric: tabular-nums;
       }
-      .section-head p {
-        color: var(--text-2);
-        font-size: 0.92rem;
-        margin-top: 4px;
+      .stat .t {
+        font-size: 0.78rem;
+        color: var(--fg-3);
       }
-      .section-head .tag {
-        font-family: var(--font-mono);
+
+      /* quickstart card */
+      .quickstart {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        overflow: hidden;
+      }
+      .qs-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 16px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel-2);
+      }
+      .qs-bar i {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--line-2);
+        display: block;
+      }
+      .qs-bar span {
+        margin-left: 6px;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fg-3);
+      }
+      .qs-body {
+        padding: 18px 16px 20px;
+      }
+      .qs-cmd {
+        font-family: var(--mono);
+        font-size: 0.83rem;
+        line-height: 1.7;
+        color: var(--fg);
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 4px;
+      }
+      .qs-cmd .p {
+        color: var(--amber);
+        user-select: none;
+      }
+      .qs-steps {
+        list-style: none;
+        display: grid;
+        gap: 7px;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px dashed var(--line);
+      }
+      .qs-steps li {
+        display: grid;
+        grid-template-columns: 14px minmax(0, 1fr);
+        gap: 10px;
+        align-items: baseline;
+        font-size: 0.82rem;
+        line-height: 1.55;
+        color: var(--fg-2);
+      }
+      .qs-steps li::before {
+        content: '›';
+        font-family: var(--mono);
+        color: var(--amber);
+      }
+      .qs-steps code {
+        white-space: nowrap;
+      }
+      .qs-note {
+        margin-top: 14px;
+        font-size: 0.76rem;
+        color: var(--fg-3);
+      }
+
+      /* ── sections ────────────────────────────────────────── */
+      main > section {
+        padding: 66px 0;
+        border-top: 1px solid var(--line);
+        scroll-margin-top: calc(var(--nav-h) + 12px);
+      }
+      main > section:first-of-type {
+        border-top: none;
+        padding-top: 52px;
+      }
+      .sec-head {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 30px;
+      }
+      .sec-head h2 {
+        font-size: clamp(1.4rem, 2.6vw, 1.95rem);
+        font-weight: 600;
+        letter-spacing: -0.025em;
+        line-height: 1.2;
+        text-wrap: balance;
+        max-width: 26ch;
+      }
+      .sec-head p {
+        color: var(--fg-2);
+        max-width: 66ch;
+        font-size: 0.96rem;
+      }
+      .sec-minor .sec-head h2 {
+        font-size: clamp(1.15rem, 2vw, 1.4rem);
+      }
+
+      /* ── figures / diagrams ──────────────────────────────── */
+      figure {
+        margin: 26px 0 0;
+      }
+      .swipe {
+        display: none;
+        font-family: var(--mono);
         font-size: 0.72rem;
-        color: var(--a3);
+        letter-spacing: 0.08em;
+        color: var(--fg-3);
+        margin-bottom: 8px;
+      }
+      .fig-scroll {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        padding: 20px 18px;
+        overflow-x: auto;
+      }
+      .diagram {
+        display: block;
+        width: 100%;
+        height: auto;
+        color: var(--fg-2);
+      }
+      .d-pipeline {
+        min-width: 900px;
+      }
+      .d-ladder {
+        min-width: 660px;
+      }
+      .d-harness {
+        min-width: 640px;
+      }
+      .diagram .box {
+        fill: var(--panel-2);
+        stroke: var(--line-2);
+        stroke-width: 1;
+      }
+      .diagram .band {
+        fill: var(--amber-dim);
+        stroke: rgba(255, 166, 87, 0.34);
+        stroke-width: 1;
+      }
+      .diagram .band-t {
+        fill: var(--amber);
+        font-family: var(--mono);
+        font-size: 10.5px;
+      }
+      .diagram .t-name {
+        fill: var(--fg);
+        font-family: var(--sans);
+        font-size: 12.5px;
+        font-weight: 600;
+      }
+      .diagram .t-code {
+        fill: var(--fg);
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .diagram .t-mono {
+        fill: var(--fg-3);
+        font-family: var(--mono);
+        font-size: 9.5px;
+      }
+      .diagram .t-sub {
+        fill: var(--fg-2);
+        font-family: var(--sans);
+        font-size: 10px;
+      }
+      .diagram .t-phase {
+        fill: var(--fg-3);
+        font-family: var(--mono);
+        font-size: 9.5px;
+        letter-spacing: 0.16em;
+      }
+      .diagram .t-amber {
+        fill: var(--amber);
+      }
+      .diagram .t-green {
+        fill: var(--green);
+      }
+      .diagram .flow {
+        stroke: var(--line-2);
+        stroke-width: 1.4;
+        fill: none;
+      }
+      .diagram .rail {
+        stroke: var(--line-2);
+        stroke-width: 1.5;
+        fill: none;
+      }
+      .diagram .accent-box {
+        fill: var(--amber-dim);
+        stroke: var(--amber);
+        stroke-width: 1.2;
+      }
+      .diagram .dashed {
+        stroke: var(--line);
+        stroke-width: 1;
+        stroke-dasharray: 4 5;
+        fill: none;
+      }
+      .diagram .dot {
+        fill: var(--line-2);
+      }
+      figcaption {
+        margin-top: 12px;
+        font-size: 0.82rem;
+        color: var(--fg-3);
+        max-width: 78ch;
+      }
+
+      /* ── pipeline rail (skills as an ordered sequence) ───── */
+      .rail {
+        margin-top: 44px;
+        display: grid;
+      }
+      .rail-item {
+        display: grid;
+        grid-template-columns: 132px minmax(0, 1fr) auto;
+        gap: 28px;
+        align-items: start;
+        padding: 26px 0;
+        border-top: 1px solid var(--line);
+        position: relative;
+      }
+      .rail-item:last-child {
+        border-bottom: 1px solid var(--line);
+      }
+      .rail-stage {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--amber);
+        padding-top: 4px;
+        position: relative;
+      }
+      .rail-stage::before {
+        content: '';
+        position: absolute;
+        left: -24px;
+        top: 10px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--amber);
+      }
+      .rail-body h3 {
+        font-family: var(--mono);
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .rail-body h3 .sl {
+        color: var(--amber);
+      }
+      .rail-body p {
+        margin-top: 8px;
+        color: var(--fg-2);
+        font-size: 0.92rem;
+        max-width: 62ch;
+      }
+      .emits {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 14px;
+      }
+      .emits li {
+        list-style: none;
+        font-family: var(--mono);
+        font-size: 0.71rem;
+        color: var(--fg-2);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px 11px;
+        background: var(--panel);
+      }
+      .emits li.go {
+        color: var(--green);
+        border-color: rgba(63, 185, 80, 0.4);
+      }
+      .rail-link {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        text-decoration: none;
+        color: var(--fg-2);
+        border: 1px solid var(--line-2);
+        border-radius: 999px;
+        padding: 8px 16px;
+        white-space: nowrap;
+        margin-top: 2px;
+        transition:
+          color 0.18s ease,
+          border-color 0.18s ease,
+          background 0.18s ease;
+      }
+      .rail-link:hover {
+        color: var(--fg);
+        border-color: var(--amber);
+        background: var(--amber-dim);
+      }
+
+      .tool-strip {
+        margin-top: 22px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-left: 2px solid var(--line-2);
+        border-radius: var(--r);
+        padding: 16px 20px;
+      }
+      .tool-strip .k {
+        font-family: var(--mono);
+        font-size: 0.68rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
+        color: var(--fg-3);
+      }
+      .tool-strip h3 {
+        font-family: var(--mono);
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-top: 3px;
+      }
+      .tool-strip h3 .sl {
+        color: var(--amber);
+      }
+      .tool-strip p {
+        color: var(--fg-2);
+        font-size: 0.86rem;
+        max-width: 62ch;
+        margin-top: 4px;
+      }
+
+      /* ── harness bullets ─────────────────────────────────── */
+      .points {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 18px;
+        margin-top: 28px;
+      }
+      .points li {
+        list-style: none;
+        border-top: 2px solid var(--line-2);
+        padding-top: 12px;
+        font-size: 0.88rem;
+        color: var(--fg-2);
+      }
+      .points li b {
         display: block;
+        color: var(--fg);
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        font-weight: 700;
         margin-bottom: 6px;
       }
 
-      .grid {
+      /* ── deck lists ──────────────────────────────────────── */
+      .decks {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 16px;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 0 34px;
+        margin-top: 8px;
       }
-      .card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 18px 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        min-width: 0;
-        transition:
-          border-color 0.15s,
-          transform 0.15s;
-      }
-      .card:hover {
-        border-color: var(--border-strong);
-        transform: translateY(-2px);
-      }
-      .card .skill {
-        font-family: var(--font-mono);
-        font-size: 0.7rem;
-        color: var(--text-3);
-        letter-spacing: 0.08em;
-      }
-      .card h3 {
-        font-size: 0.98rem;
-        font-weight: 600;
-        line-height: 1.4;
-      }
-      .card .langs {
-        display: flex;
-        gap: 8px;
-        margin-top: auto;
-        padding-top: 6px;
-        flex-wrap: wrap;
-      }
-      .langs a {
-        font-family: var(--font-mono);
-        font-size: 0.75rem;
-        font-weight: 500;
+      .deck {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 6px 16px;
+        align-items: baseline;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--line);
         text-decoration: none;
-        color: var(--a1);
-        border: 1px solid var(--border);
-        border-radius: 999px;
-        padding: 4px 14px;
-        transition:
-          border-color 0.15s,
-          color 0.15s,
-          background 0.15s;
+        transition: border-color 0.18s ease;
       }
-      .langs a:hover {
-        border-color: var(--a1);
-        background: rgba(255, 166, 87, 0.08);
+      .deck:hover {
+        border-color: var(--line-2);
       }
-
-      /* numbered curriculum cards */
-      .card .num {
-        font-family: var(--font-mono);
-        font-size: 0.7rem;
-        color: var(--a2);
-        letter-spacing: 0.08em;
-      }
-
-      /* card identities: skill (orange) vs academy (violet) */
-      .card.skill-card {
-        border-left: 3px solid var(--a1);
-      }
-      .card.academy-card {
-        border-left: 3px solid var(--a3);
-      }
-      .card-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-      }
-      .chip {
-        font-family: var(--font-mono);
-        font-size: 0.62rem;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        border-radius: 999px;
-        padding: 2px 10px;
-      }
-      .chip-skill {
-        color: var(--a1);
-        background: rgba(255, 166, 87, 0.12);
-        border: 1px solid rgba(255, 166, 87, 0.35);
-      }
-      .chip-academy {
-        color: var(--a3);
-        background: rgba(210, 168, 255, 0.12);
-        border: 1px solid rgba(210, 168, 255, 0.35);
-      }
-      .stage {
-        font-family: var(--font-mono);
+      .deck .tag {
+        grid-column: 1 / -1;
+        font-family: var(--mono);
         font-size: 0.66rem;
-        color: var(--text-3);
-        letter-spacing: 0.1em;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
-        white-space: nowrap;
+        color: var(--violet);
       }
-      .card h3.mono-title {
-        font-family: var(--font-mono);
-        font-size: 1rem;
-        font-weight: 700;
-        letter-spacing: -0.01em;
+      .deck h3 {
+        font-size: 0.93rem;
+        font-weight: 600;
+        line-height: 1.35;
       }
-      .card h3.mono-title .slash {
-        background: var(--grad);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-      }
-      .card .desc {
-        color: var(--text-2);
-        font-size: 0.86rem;
+      .deck p {
+        grid-column: 1;
+        color: var(--fg-3);
+        font-size: 0.82rem;
         line-height: 1.5;
       }
+      .deck .go {
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        color: var(--fg-3);
+        transition:
+          color 0.18s ease,
+          transform 0.18s ease;
+      }
+      .deck:hover .go {
+        color: var(--amber);
+        transform: translateX(3px);
+      }
+      .deck:hover h3 {
+        color: var(--fg);
+      }
 
-      /* reports strip */
-      .report-strip {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 24px 28px;
+      /* currículum ladder */
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+        gap: 0 34px;
+        margin-top: 8px;
+        counter-reset: step;
+      }
+      .step {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: baseline;
+        padding: 15px 0;
+        border-bottom: 1px solid var(--line);
+        text-decoration: none;
+      }
+      .step .n {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--violet);
+        font-variant-numeric: tabular-nums;
+      }
+      .step h3 {
+        font-size: 0.9rem;
+        font-weight: 500;
+        line-height: 1.4;
+        color: var(--fg-2);
+      }
+      .step:hover h3 {
+        color: var(--fg);
+      }
+      .step .go {
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        color: var(--fg-3);
+        transition:
+          color 0.18s ease,
+          transform 0.18s ease;
+      }
+      .step:hover .go {
+        color: var(--violet);
+        transform: translateX(3px);
+      }
+
+      /* ── reports footnote ────────────────────────────────── */
+      .report {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 18px;
-        flex-wrap: wrap;
+        gap: 16px;
+        border: 1px solid var(--line);
+        border-radius: var(--r);
+        padding: 16px 20px;
+        background: var(--panel);
       }
-      .report-strip .info h3 {
-        font-size: 1.05rem;
-        font-weight: 700;
-        margin-bottom: 4px;
+      .report .who {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--mono);
+        font-size: 0.86rem;
       }
-      .report-strip .info p {
-        color: var(--text-2);
-        font-size: 0.88rem;
-      }
-      .report-strip .dot {
-        display: inline-block;
+      .report .who i {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: var(--good);
-        margin-right: 8px;
+        background: var(--green);
+        display: block;
       }
-      .btn-ghost {
-        font-family: var(--font-mono);
-        font-size: 0.85rem;
-        font-weight: 500;
-        text-decoration: none;
-        color: var(--text-1);
-        border: 1px solid var(--border-strong);
-        border-radius: 999px;
-        padding: 10px 22px;
-        white-space: nowrap;
-        transition:
-          border-color 0.15s,
-          background 0.15s;
-      }
-      .btn-ghost:hover {
-        border-color: var(--a1);
-        background: rgba(255, 166, 87, 0.08);
+      .report .what {
+        color: var(--fg-3);
+        font-size: 0.84rem;
       }
 
+      /* ── footer ──────────────────────────────────────────── */
       footer {
-        border-top: 1px solid var(--border);
-        margin-top: 48px;
-        padding: 28px 0 40px;
-        color: var(--text-3);
-        font-size: 0.82rem;
-        display: block;
+        border-top: 1px solid var(--line);
+        padding: 30px 0 56px;
       }
       .footer-row {
         display: flex;
-        justify-content: space-between;
-        gap: 16px;
         flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 14px;
+        font-size: 0.8rem;
+        color: var(--fg-3);
       }
       footer a {
-        color: var(--text-2);
+        color: var(--fg-2);
         text-decoration: none;
+        font-family: var(--mono);
       }
       footer a:hover {
-        color: var(--text-1);
+        color: var(--fg);
       }
 
-      @media (max-width: 640px) {
-        .hero {
-          padding: 48px 0 40px;
+      /* ── responsive ──────────────────────────────────────── */
+      @media (max-width: 940px) {
+        .hero-grid {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 34px;
         }
-        .header-links {
+        .rail-item {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 12px;
+        }
+        .rail-link {
+          justify-self: start;
+        }
+        .rail-stage::before {
           display: none;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .topbar-row {
+          height: auto;
+          flex-wrap: wrap;
+          padding: 10px 0 0;
+          gap: 8px;
+        }
+        .nav {
+          order: 3;
+          width: 100%;
+          gap: 18px;
+          padding: 4px 0 8px;
+          -webkit-overflow-scrolling: touch;
+        }
+        :root {
+          --nav-h: 78px;
+        }
+        .hero {
+          padding: 44px 0 0;
+        }
+        main > section {
+          padding: 48px 0;
+        }
+        .wrap {
+          padding: 0 18px;
+        }
+        .fig-scroll {
+          padding: 14px 12px;
+        }
+        .swipe {
+          display: block;
+        }
+        .stat-rail {
+          gap: 10px 26px;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .topbar-end .pill {
+          display: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
         }
       }
     </style>
   </head>
+
   <body>
-    <header>
-      <div class="wrap header-row">
+    <header class="topbar">
+      <div class="wrap topbar-row">
         <a class="brand" href="./">
-          <strong>Agentic QA</strong>
-          <span>UPEX Galaxy</span>
+          <b>agentic-qa</b>
+          <span>UPEX GALAXY</span>
         </a>
-        <nav class="header-links">
-          <a href="./kata/">KATA Academy</a>
+        <nav class="nav" aria-label="Secciones de la página">
+          <a href="#pipeline" data-sec="pipeline">Pipeline</a>
+          <a href="#artefactos" data-sec="artefactos">Artefactos</a>
+          <a href="#harnesses" data-sec="harnesses">Harnesses</a>
+          <a href="#academia" data-sec="academia">Academia</a>
+          <a href="#curriculum" data-sec="curriculum">Currículum</a>
+          <a href="#reportes" data-sec="reportes">Reportes</a>
+        </nav>
+        <div class="topbar-end">
           <a href="./arquitectura.es.html">Arquitectura</a>
-          <a href="#skills">Skills</a>
-          <a href="#academia">Academia</a>
-          <a href="#reportes">Reportes</a>
           <a
+            class="pill"
             href="https://github.com/upex-galaxy/agentic-qa-boilerplate"
             target="_blank"
             rel="noopener"
             >GitHub</a
           >
-        </nav>
+        </div>
       </div>
     </header>
 
     <main>
       <div class="hero wrap">
-        <div class="kicker">agentic-qa-boilerplate · hub de aprendizaje</div>
-        <h1>Aprende QA agéntico<br /><span class="grad">explorando, no leyendo</span></h1>
-        <p>
-          Documentación interactiva del boilerplate Agentic QA: KATA Academy para dominar la
-          arquitectura, los decks de cada workflow del pipeline y los reportes de regresión en vivo.
-        </p>
-        <a class="cta" href="./kata/">Entrar a KATA Academy →</a>
-        <div class="cta-sub">Svelte · 8 capítulos interactivos · modo presentación (tecla P)</div>
+        <div class="hero-grid">
+          <div>
+            <p class="eyebrow">Boilerplate · Playwright · KATA · Jira/Xray</p>
+            <h1>El pipeline de QA completo, <em>ejecutado por un agente</em>.</h1>
+            <p class="hero-lead">
+              Un repo instalable con un comando que trae el oficio entero: desde refinar los
+              acceptance criteria antes del sprint hasta la decisión de release en CI.
+              <b>Cada stage lo ejecuta un skill</b>, y la trazabilidad hacia Jira y Xray viene
+              cableada de fábrica.
+            </p>
+            <div class="cta-row">
+              <a class="btn btn-primary" href="./kata/">Entrar a KATA Academy →</a>
+              <a
+                class="btn btn-ghost"
+                href="https://github.com/upex-galaxy/agentic-qa-boilerplate"
+                target="_blank"
+                rel="noopener"
+                >Ver el repo</a
+              >
+            </div>
+            <div class="stat-rail">
+              <div class="stat">
+                <div class="n">7</div>
+                <div class="t">stages</div>
+              </div>
+              <div class="stat">
+                <div class="n">21</div>
+                <div class="t">decks publicados</div>
+              </div>
+              <div class="stat">
+                <div class="n">3</div>
+                <div class="t">harnesses</div>
+              </div>
+              <div class="stat">
+                <div class="n">6</div>
+                <div class="t">MCPs canónicos</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="quickstart">
+            <div class="qs-bar">
+              <i></i><i></i><i></i>
+              <span>quickstart</span>
+            </div>
+            <div class="qs-body">
+              <div class="qs-cmd">
+                <span class="p">$</span> bunx create-agentic-qa@latest &lt;tu-repo&gt;
+              </div>
+              <ul class="qs-steps">
+                <li><span>Limpia el historial git del boilerplate</span></li>
+                <li>
+                  <span
+                    >Renombra el proyecto en <code>package.json</code> y
+                    <code>.agents/project.yaml</code></span
+                  >
+                </li>
+                <li>
+                  <span>Corre <code>bun install</code> y el installer interactivo</span>
+                </li>
+                <li>
+                  <span>Crea el repo en GitHub vía <code>gh</code> si se lo pedís</span>
+                </li>
+              </ul>
+              <p class="qs-note">
+                Requisitos duros: Bun y al menos uno de Claude Code, OpenCode o Codex.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <section id="skills" class="wrap">
-        <div class="section-head">
-          <span class="tag">⚡ Skills · cómo trabaja el agente</span>
-          <h2>Workflows del pipeline QA</h2>
-          <p>
-            Un deck <em>how-it-works</em> por skill: el workflow paso a paso, en el orden del
-            pipeline.
+      <span id="skills" aria-hidden="true"></span>
+      <section id="pipeline">
+        <div class="wrap">
+          <div class="sec-head">
+            <p class="eyebrow">01 · El pipeline</p>
+            <h2>Siete stages, cinco skills, un solo hilo de trazabilidad</h2>
+            <p>
+              No son seis carpetas sueltas: es una secuencia. Cada stage recibe el artefacto del
+              anterior y produce el que el siguiente necesita. Lo que empieza como un acceptance
+              criterion ambiguo en el backlog termina siendo un test automatizado que vota en la
+              decisión de release.
+            </p>
+          </div>
+
+          <figure>
+            <p class="swipe">→ deslizá el diagrama</p>
+            <div class="fig-scroll">
+              <svg
+                class="diagram d-pipeline"
+                viewBox="0 0 1180 192"
+                role="img"
+                aria-label="Pipeline de siete stages: Stage 0 Shift-Left QA ejecutado por shift-left-testing; Stages 1 a 3 Planning, Execution y Reporting ejecutados por sprint-testing; Stage 4 Documentation por test-documentation; Stage 5 Automation por test-automation; Stage 6 Regression por regression-testing. Cada stage produce artefactos que alimentan al siguiente."
+              >
+                <defs>
+                  <marker
+                    id="ah"
+                    viewBox="0 0 8 8"
+                    refX="7"
+                    refY="4"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto"
+                  >
+                    <path d="M0,0 L8,4 L0,8 z" fill="rgba(148,163,184,0.6)" />
+                  </marker>
+                </defs>
+
+                <!-- fases -->
+                <text class="t-phase" x="74" y="12" text-anchor="middle">PRE-SPRINT</text>
+                <text class="t-phase" x="512" y="12" text-anchor="middle">EN SPRINT · MANUAL</text>
+                <text class="t-phase" x="1028" y="12" text-anchor="middle">
+                  AUTOMATIZACIÓN + CI
+                </text>
+
+                <!-- bandas de skill dueño -->
+                <rect class="band" x="9" y="26" width="130" height="26" rx="6" />
+                <text class="band-t" x="74" y="43" text-anchor="middle">/shift-left-testing</text>
+                <rect class="band" x="213" y="26" width="442" height="26" rx="6" />
+                <text class="band-t" x="434" y="43" text-anchor="middle">/sprint-testing</text>
+                <rect class="band" x="681" y="26" width="130" height="26" rx="6" />
+                <text class="band-t" x="746" y="43" text-anchor="middle">/test-documentation</text>
+                <rect class="band" x="885" y="26" width="130" height="26" rx="6" />
+                <text class="band-t" x="950" y="43" text-anchor="middle">/test-automation</text>
+                <rect class="band" x="1041" y="26" width="130" height="26" rx="6" />
+                <text class="band-t" x="1106" y="43" text-anchor="middle">/regression-testing</text>
+
+                <!-- stages -->
+                <rect class="box" x="9" y="76" width="130" height="62" rx="8" />
+                <text class="t-mono" x="74" y="98" text-anchor="middle">STAGE 0</text>
+                <text class="t-name" x="74" y="119" text-anchor="middle">Shift-Left QA</text>
+
+                <rect class="box" x="213" y="76" width="130" height="62" rx="8" />
+                <text class="t-mono" x="278" y="98" text-anchor="middle">STAGE 1</text>
+                <text class="t-name" x="278" y="119" text-anchor="middle">Planning</text>
+
+                <rect class="box" x="369" y="76" width="130" height="62" rx="8" />
+                <text class="t-mono" x="434" y="98" text-anchor="middle">STAGE 2</text>
+                <text class="t-name" x="434" y="119" text-anchor="middle">Execution</text>
+
+                <rect class="box" x="525" y="76" width="130" height="62" rx="8" />
+                <text class="t-mono" x="590" y="98" text-anchor="middle">STAGE 3</text>
+                <text class="t-name" x="590" y="119" text-anchor="middle">Reporting</text>
+
+                <rect class="box" x="681" y="76" width="130" height="62" rx="8" />
+                <text class="t-mono" x="746" y="98" text-anchor="middle">STAGE 4</text>
+                <text class="t-name" x="746" y="119" text-anchor="middle">Documentation</text>
+
+                <rect class="box" x="885" y="76" width="130" height="62" rx="8" />
+                <text class="t-mono" x="950" y="98" text-anchor="middle">STAGE 5</text>
+                <text class="t-name" x="950" y="119" text-anchor="middle">Automation</text>
+
+                <rect class="box" x="1041" y="76" width="130" height="62" rx="8" />
+                <text class="t-mono" x="1106" y="98" text-anchor="middle">STAGE 6</text>
+                <text class="t-name" x="1106" y="119" text-anchor="middle">Regression</text>
+
+                <!-- flechas -->
+                <line class="flow" x1="144" y1="107" x2="204" y2="107" marker-end="url(#ah)" />
+                <text class="t-mono" x="176" y="70" text-anchor="middle">Story refinada + ATP</text>
+                <line class="flow" x1="348" y1="107" x2="360" y2="107" marker-end="url(#ah)" />
+                <line class="flow" x1="504" y1="107" x2="516" y2="107" marker-end="url(#ah)" />
+                <line class="flow" x1="660" y1="107" x2="672" y2="107" marker-end="url(#ah)" />
+                <line class="flow" x1="816" y1="107" x2="876" y2="107" marker-end="url(#ah)" />
+                <text class="t-mono" x="846" y="70" text-anchor="middle">verdict: Candidate</text>
+                <line class="flow" x1="1020" y1="107" x2="1032" y2="107" marker-end="url(#ah)" />
+
+                <!-- artefactos que produce cada stage -->
+                <text class="t-mono" x="74" y="160" text-anchor="middle">ATP · outline</text>
+                <text class="t-mono" x="74" y="175" text-anchor="middle">ACs refinados</text>
+                <text class="t-mono" x="278" y="160" text-anchor="middle">ATP · ATS · ATR</text>
+                <text class="t-mono" x="278" y="175" text-anchor="middle">test cases</text>
+                <text class="t-mono" x="434" y="160" text-anchor="middle">
+                  evidencia UI · API · DB
+                </text>
+                <text class="t-mono" x="434" y="175" text-anchor="middle">bugs · defects</text>
+                <text class="t-mono" x="590" y="160" text-anchor="middle">ATR final</text>
+                <text class="t-mono" x="590" y="175" text-anchor="middle">comentario QA</text>
+                <text class="t-mono" x="746" y="160" text-anchor="middle">Test issues</text>
+                <text class="t-mono" x="746" y="175" text-anchor="middle">score ROI</text>
+                <text class="t-mono" x="950" y="160" text-anchor="middle">ATCs + PR</text>
+                <text class="t-mono" x="950" y="175" text-anchor="middle">KATA · Playwright</text>
+                <text class="t-mono t-green" x="1106" y="160" text-anchor="middle">
+                  GO / CAUTION / NO-GO
+                </text>
+                <text class="t-mono" x="1106" y="175" text-anchor="middle">Allure + CI</text>
+              </svg>
+            </div>
+            <figcaption>
+              La secuencia real y quién la ejecuta. Las bandas superiores son el skill dueño:
+              <code>/sprint-testing</code> cubre tres stages seguidos, el resto uno cada uno. Abajo,
+              lo que cada stage deja escrito. Los dos saltos anchos son los únicos handoffs con
+              condición: una Story sale del backlog cuando el shift-left la firma, y un test case
+              cruza a automatización solo con verdict <em>Candidate</em>.
+            </figcaption>
+          </figure>
+
+          <div class="rail">
+            <article class="rail-item">
+              <div class="rail-stage">Stage 0</div>
+              <div class="rail-body">
+                <h3><span class="sl">/</span>shift-left-testing</h3>
+                <p>
+                  Refina los acceptance criteria del backlog antes de que la Story entre al sprint:
+                  gaps, ambigüedades y el ATP a nivel outline escrito directo en el custom field de
+                  Jira. El defecto se previene en el requisito, no se detecta después.
+                </p>
+                <ul class="emits">
+                  <li>ATP (field)</li>
+                  <li>ACs refinados</li>
+                  <li>label shift-left-reviewed</li>
+                </ul>
+              </div>
+              <a class="rail-link" href="./decks/shift-left-testing/how-it-works.es.html"
+                >Ver deck →</a
+              >
+            </article>
+
+            <article class="rail-item">
+              <div class="rail-stage">Stages 1-3</div>
+              <div class="rail-body">
+                <h3><span class="sl">/</span>sprint-testing</h3>
+                <p>
+                  QA manual por ticket, de punta a punta: planning con la familia ATP / ATS / ATR,
+                  ejecución explorando con la Trifuerza (UI · API · DB) y reporte final con los bugs
+                  clasificados y trazados a la Story.
+                </p>
+                <ul class="emits">
+                  <li>ATS</li>
+                  <li>ATR</li>
+                  <li>bug reports</li>
+                  <li>evidencia</li>
+                </ul>
+              </div>
+              <a class="rail-link" href="./decks/sprint-testing/how-it-works.es.html">Ver deck →</a>
+            </article>
+
+            <article class="rail-item">
+              <div class="rail-stage">Stage 4</div>
+              <div class="rail-body">
+                <h3><span class="sl">/</span>test-documentation</h3>
+                <p>
+                  Documenta los test cases en el TMS y los puntúa por ROI: qué se automatiza, qué
+                  queda manual y qué se difiere. El verdict <em>Candidate</em> es la única puerta
+                  hacia el Stage 5.
+                </p>
+                <ul class="emits">
+                  <li>Test issues</li>
+                  <li>score ROI</li>
+                  <li>verdict</li>
+                </ul>
+              </div>
+              <a class="rail-link" href="./decks/test-documentation/how-it-works.es.html"
+                >Ver deck →</a
+              >
+            </article>
+
+            <article class="rail-item">
+              <div class="rail-stage">Stage 5</div>
+              <div class="rail-body">
+                <h3><span class="sl">/</span>test-automation</h3>
+                <p>
+                  Plan → Code → Review sobre KATA + Playwright + TypeScript. Cada test case
+                  Candidate se convierte en un ATC con su ID de trazabilidad y viaja en un Pull
+                  Request revisable.
+                </p>
+                <ul class="emits">
+                  <li>ATCs</li>
+                  <li>Pull Request</li>
+                  <li>kata-manifest</li>
+                </ul>
+              </div>
+              <a class="rail-link" href="./decks/test-automation/how-it-works.es.html"
+                >Ver deck →</a
+              >
+            </article>
+
+            <article class="rail-item">
+              <div class="rail-stage">Stage 6</div>
+              <div class="rail-body">
+                <h3><span class="sl">/</span>regression-testing</h3>
+                <p>
+                  Corre las suites por CI/CD, clasifica cada fallo (bug real, test frágil o entorno)
+                  y emite la decisión de release. Es el único stage que le contesta al equipo con un
+                  veredicto, no con un artefacto.
+                </p>
+                <ul class="emits">
+                  <li class="go">GO / CAUTION / NO-GO</li>
+                  <li>reporte Allure</li>
+                </ul>
+              </div>
+              <a class="rail-link" href="./decks/regression-testing/how-it-works.es.html"
+                >Ver deck →</a
+              >
+            </article>
+          </div>
+
+          <div class="tool-strip">
+            <div>
+              <div class="k">Herramienta transversal</div>
+              <h3><span class="sl">/</span>xray-cli</h3>
+              <p>
+                Test management de Xray desde la terminal: tests, planes, ejecuciones e import de
+                resultados. Es el brazo que escribe en el TMS lo que los stages deciden.
+              </p>
+            </div>
+            <a class="rail-link" href="./decks/xray-cli/how-it-works.es.html">Ver deck →</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="artefactos">
+        <div class="wrap">
+          <div class="sec-head">
+            <p class="eyebrow">02 · Trazabilidad</p>
+            <h2>La escalera de artefactos, de producto a Story</h2>
+            <p>
+              Cada altitud de planificación tiene su artefacto, y cada artefacto tiene dueño y
+              momento. Lo que parece burocracia de acrónimos es el mecanismo que hace que un test
+              corriendo en CI se pueda rastrear hasta el acceptance criterion que lo originó.
+            </p>
+          </div>
+
+          <figure>
+            <p class="swipe">→ deslizá el diagrama</p>
+            <div class="fig-scroll">
+              <svg
+                class="diagram d-ladder"
+                viewBox="0 0 700 332"
+                role="img"
+                aria-label="Escalera de artefactos en cuatro altitudes: a nivel producto el MTP Master Test Plan; a nivel feature el FTP Feature Test Plan y el TS Test Set opcional; a nivel sprint el STP Sprint Test Plan y el STR Sprint Test Results; a nivel story el ATP Acceptance Test Plan, el ATS Acceptance Test Set y el ATR Acceptance Test Results. El ATS es el único link que llena el coverage panel de Xray."
+              >
+                <defs>
+                  <marker
+                    id="ah2"
+                    viewBox="0 0 8 8"
+                    refX="7"
+                    refY="4"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto"
+                  >
+                    <path d="M0,0 L8,4 L0,8 z" fill="rgba(148,163,184,0.6)" />
+                  </marker>
+                </defs>
+
+                <!-- spine -->
+                <line class="rail" x1="40" y1="46" x2="40" y2="112" marker-end="url(#ah2)" />
+                <line class="rail" x1="40" y1="120" x2="40" y2="186" marker-end="url(#ah2)" />
+                <line class="rail" x1="40" y1="194" x2="40" y2="260" marker-end="url(#ah2)" />
+                <circle class="dot" cx="40" cy="46" r="3.5" />
+                <circle class="dot" cx="40" cy="120" r="3.5" />
+                <circle class="dot" cx="40" cy="194" r="3.5" />
+                <circle class="dot" cx="40" cy="268" r="3.5" />
+                <line class="rail" x1="44" y1="46" x2="186" y2="46" />
+                <line class="rail" x1="44" y1="120" x2="186" y2="120" />
+                <line class="rail" x1="44" y1="194" x2="186" y2="194" />
+                <line class="rail" x1="44" y1="268" x2="186" y2="268" />
+                <text class="t-mono" x="52" y="86">se abre por feature</text>
+                <text class="t-mono" x="52" y="160">se abre por sprint</text>
+                <text class="t-mono" x="52" y="234">se abre por story</text>
+
+                <!-- producto -->
+                <text class="t-phase" x="190" y="16">PRODUCTO</text>
+                <rect class="box" x="190" y="22" width="148" height="48" rx="8" />
+                <text class="t-code" x="204" y="44">MTP</text>
+                <text class="t-sub" x="204" y="60">Master Test Plan</text>
+
+                <!-- feature -->
+                <text class="t-phase" x="190" y="90">FEATURE</text>
+                <rect class="box" x="190" y="96" width="148" height="48" rx="8" />
+                <text class="t-code" x="204" y="118">FTP</text>
+                <text class="t-sub" x="204" y="134">Feature Test Plan</text>
+                <rect class="box" x="352" y="96" width="148" height="48" rx="8" />
+                <text class="t-code" x="366" y="118">TS</text>
+                <text class="t-sub" x="366" y="134">Test Set · opcional</text>
+
+                <!-- sprint -->
+                <text class="t-phase" x="190" y="164">SPRINT</text>
+                <rect class="box" x="190" y="170" width="148" height="48" rx="8" />
+                <text class="t-code" x="204" y="192">STP</text>
+                <text class="t-sub" x="204" y="208">Sprint Test Plan</text>
+                <rect class="box" x="352" y="170" width="148" height="48" rx="8" />
+                <text class="t-code" x="366" y="192">STR</text>
+                <text class="t-sub" x="366" y="208">Sprint Test Results</text>
+
+                <!-- story -->
+                <text class="t-phase" x="190" y="238">STORY</text>
+                <rect class="box" x="190" y="244" width="148" height="48" rx="8" />
+                <text class="t-code" x="204" y="266">ATP</text>
+                <text class="t-sub" x="204" y="282">Acceptance Test Plan</text>
+                <rect class="accent-box" x="352" y="244" width="148" height="48" rx="8" />
+                <text class="t-code t-amber" x="366" y="266">ATS</text>
+                <text class="t-sub" x="366" y="282">Acceptance Test Set</text>
+                <rect class="box" x="514" y="244" width="148" height="48" rx="8" />
+                <text class="t-code" x="528" y="266">ATR</text>
+                <text class="t-sub" x="528" y="282">Acceptance Test Results</text>
+
+                <rect x="190" y="308" width="9" height="9" rx="2" fill="#ffa657" />
+                <text class="t-sub" x="206" y="317">
+                  El ATS es el único link que llena el coverage panel de Xray.
+                </text>
+              </svg>
+            </div>
+            <figcaption>
+              Cuatro altitudes, un descenso. El MTP se abre en FTPs por feature, cada sprint corta
+              su STP, y cada Story recibe su trío de aceptación. El ATS lleva borde ámbar porque es
+              el único de los tres cuya asociación de Tests cuenta como coverage: el ATP y el ATR
+              son trazabilidad administrativa.
+            </figcaption>
+          </figure>
+
+          <p class="prose" style="margin-top: 22px; color: var(--fg-2); font-size: 0.92rem">
+            El release de agosto reescribió esta parte: el árbol PBI dejó de commitearse en git,
+            apareció el ATS y el modelo de coverage se verificó en vivo contra una instancia real de
+            Xray.
+            <a href="./arquitectura.es.html" style="color: var(--amber)"
+              >Leer el release de arquitectura →</a
+            >
           </p>
         </div>
-        <div class="grid">
-          <div class="card skill-card">
-            <div class="card-top">
-              <span class="chip chip-skill">Skill</span>
-              <span class="stage">Stage 0</span>
-            </div>
-            <h3 class="mono-title"><span class="slash">/</span>shift-left-testing</h3>
-            <p class="desc">
-              Refinar ACs del backlog antes del sprint: gaps, ambigüedades y el ATP pre-sprint a
-              nivel outline en el custom field — prevenir, no detectar.
+      </section>
+
+      <section id="harnesses">
+        <div class="wrap">
+          <div class="sec-head">
+            <p class="eyebrow">03 · Compatibilidad</p>
+            <h2>Un solo origen, tres harnesses</h2>
+            <p>
+              El repo corre igual en Claude Code, OpenCode y Codex, en CLI y en Desktop. No hay tres
+              copias de las instrucciones ni tres carpetas de skills: hay una sola fuente y
+              adaptadores finos donde los hosts realmente difieren.
             </p>
-            <div class="langs">
-              <a href="./decks/shift-left-testing/how-it-works.es.html">Ver deck →</a>
-            </div>
           </div>
-          <div class="card skill-card">
-            <div class="card-top">
-              <span class="chip chip-skill">Skill</span>
-              <span class="stage">Stages 1-3</span>
+
+          <figure>
+            <p class="swipe">→ deslizá el diagrama</p>
+            <div class="fig-scroll">
+              <svg
+                class="diagram d-harness"
+                viewBox="0 0 720 306"
+                role="img"
+                aria-label="Claude Code, OpenCode y Codex convergen en una sola fuente: AGENTS.md y .agents/skills/. OpenCode y Codex la leen nativo; Claude Code entra por un shim generado. Los adaptadores generados (comandos, hook, MCP y alias de skills) se verifican con bun run agents:compat:check."
+              >
+                <defs>
+                  <marker
+                    id="ah3"
+                    viewBox="0 0 8 8"
+                    refX="7"
+                    refY="4"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto"
+                  >
+                    <path d="M0,0 L8,4 L0,8 z" fill="rgba(148,163,184,0.6)" />
+                  </marker>
+                </defs>
+
+                <rect class="box" x="16" y="16" width="176" height="56" rx="8" />
+                <text class="t-name" x="32" y="41">Claude Code</text>
+                <text class="t-mono" x="32" y="58">.mcp.json</text>
+
+                <rect class="box" x="16" y="96" width="176" height="56" rx="8" />
+                <text class="t-name" x="32" y="121">OpenCode</text>
+                <text class="t-mono" x="32" y="138">opencode.jsonc</text>
+
+                <rect class="box" x="16" y="176" width="176" height="56" rx="8" />
+                <text class="t-name" x="32" y="201">Codex · CLI + Desktop</text>
+                <text class="t-mono" x="32" y="218">.codex/config.toml</text>
+
+                <path class="flow" d="M192,44 H272 V124" />
+                <path class="flow" d="M192,204 H272 V124" />
+                <line class="flow" x1="192" y1="124" x2="348" y2="124" marker-end="url(#ah3)" />
+                <text class="t-mono" x="200" y="36">shim generado</text>
+                <text class="t-mono" x="200" y="116">nativo</text>
+                <text class="t-mono" x="200" y="196">nativo</text>
+
+                <rect class="accent-box" x="356" y="70" width="308" height="108" rx="10" />
+                <text class="t-phase t-amber" x="510" y="94" text-anchor="middle">
+                  UNA SOLA FUENTE
+                </text>
+                <text class="t-code" x="510" y="122" text-anchor="middle">AGENTS.md</text>
+                <text class="t-code" x="510" y="146" text-anchor="middle">.agents/skills/</text>
+                <text class="t-sub" x="510" y="165" text-anchor="middle">
+                  instrucciones y skills, sin copias
+                </text>
+
+                <rect class="dashed" x="16" y="252" width="648" height="44" rx="8" />
+                <text class="t-phase" x="32" y="272">ADAPTADORES GENERADOS</text>
+                <text class="t-mono" x="32" y="288">
+                  commands · hook · MCP · alias de skills — bun run agents:compat:check
+                </text>
+              </svg>
             </div>
-            <h3 class="mono-title"><span class="slash">/</span>sprint-testing</h3>
-            <p class="desc">
-              QA manual por ticket: planning, ejecución con la Trifuerza (UI · API · DB) y reporte
-              final.
-            </p>
-            <div class="langs">
-              <a href="./decks/sprint-testing/how-it-works.es.html">Ver deck →</a>
-            </div>
-          </div>
-          <div class="card skill-card">
-            <div class="card-top">
-              <span class="chip chip-skill">Skill</span>
-              <span class="stage">Stage 4</span>
-            </div>
-            <h3 class="mono-title"><span class="slash">/</span>test-documentation</h3>
-            <p class="desc">
-              Test cases en el TMS + ROI: decidir qué se automatiza, qué queda manual y qué se
-              difiere.
-            </p>
-            <div class="langs">
-              <a href="./decks/test-documentation/how-it-works.es.html">Ver deck →</a>
-            </div>
-          </div>
-          <div class="card skill-card">
-            <div class="card-top">
-              <span class="chip chip-skill">Skill</span>
-              <span class="stage">Stage 5</span>
-            </div>
-            <h3 class="mono-title"><span class="slash">/</span>test-automation</h3>
-            <p class="desc">
-              Plan → Code → Review sobre KATA + Playwright + TypeScript, del Candidate al PR.
-            </p>
-            <div class="langs">
-              <a href="./decks/test-automation/how-it-works.es.html">Ver deck →</a>
-            </div>
-          </div>
-          <div class="card skill-card">
-            <div class="card-top">
-              <span class="chip chip-skill">Skill</span>
-              <span class="stage">Stage 6</span>
-            </div>
-            <h3 class="mono-title"><span class="slash">/</span>regression-testing</h3>
-            <p class="desc">
-              Suites por CI/CD, clasificación de fallos y decisión de release: GO / CAUTION / NO-GO.
-            </p>
-            <div class="langs">
-              <a href="./decks/regression-testing/how-it-works.es.html">Ver deck →</a>
-            </div>
-          </div>
-          <div class="card skill-card">
-            <div class="card-top">
-              <span class="chip chip-skill">Skill</span>
-              <span class="stage">Herramienta</span>
-            </div>
-            <h3 class="mono-title"><span class="slash">/</span>xray-cli</h3>
-            <p class="desc">
-              Test management de Xray desde la terminal: tests, planes, ejecuciones e import de
-              resultados.
-            </p>
-            <div class="langs">
-              <a href="./decks/xray-cli/how-it-works.es.html">Ver deck →</a>
-            </div>
+            <figcaption>
+              Las tres flechas entran al mismo bloque. Lo único que cambia por host es el formato de
+              config de MCP y cómo llega a las instrucciones: OpenCode y Codex leen
+              <code>AGENTS.md</code> nativo, Claude Code lo alcanza por un shim de una línea. Todo
+              lo generado se verifica en el pre-push.
+            </figcaption>
+          </figure>
+
+          <ul class="points">
+            <li>
+              <b>Instrucciones</b>
+              <code>AGENTS.md</code> es el único cuerpo. <code>CLAUDE.md</code> es un shim generado
+              que solo lo importa: prosa operativa ahí adentro es drift y falla el check.
+            </li>
+            <li>
+              <b>Skills</b>
+              Todas viven committeadas en <code>.agents/skills/</code>. Claude Code las alcanza por
+              un alias generado y gitignoreado, nunca por una copia.
+            </li>
+            <li>
+              <b>Paridad verificada</b>
+              Los seis MCP canónicos existen en las tres configs y se comparan normalizadas: agregar
+              un server en un solo host es un fallo, no un olvido.
+            </li>
+          </ul>
+
+          <div class="cta-row">
+            <a class="btn btn-ghost" href="./harnesses.es.html">Ver la compatibilidad completa →</a>
           </div>
         </div>
       </section>
 
-      <section id="academia" class="wrap">
-        <div class="section-head">
-          <span class="tag">🎓 Academia · doctrina aplicada</span>
-          <h2>El oficio QA</h2>
-          <p>Temarios del testing manual, ordenados por la etapa del pipeline donde se aplican.</p>
-        </div>
-        <div class="grid">
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="stage">Transversal</span>
-            </div>
-            <h3>El Códice de Nomenclatura — convenciones de QA &amp; automatización</h3>
-            <p class="desc">Cómo se nombra todo en el pipeline: artefactos, tests, ramas, IDs.</p>
-            <div class="langs">
-              <a href="./decks/agentic-qa-core/naming-conventions.es.html">Abrir deck</a>
-            </div>
-          </div>
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="stage">Transversal</span>
-            </div>
-            <h3>skills-io — el flujo E2E visto por inputs &amp; outputs</h3>
-            <p class="desc">
-              Historia → refinamiento → dev → testing: qué lee y qué produce cada skill, en una
-              terminal con pestañas por fase.
+      <section id="academia" class="sec-minor">
+        <div class="wrap">
+          <div class="sec-head">
+            <p class="eyebrow">04 · Academia</p>
+            <h2>Doctrina aplicada</h2>
+            <p>
+              Los decks que explican el porqué detrás de cada stage: cómo se nombra, cómo se
+              explora, cómo se clasifica un defecto y cómo habla el agente.
             </p>
-            <div class="langs">
-              <a href="./decks/agentic-qa-core/skills-io-flow.es.html">Abrir deck</a>
-            </div>
           </div>
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="stage">Stage 0</span>
-            </div>
-            <h3>El Arte del Shift-Left — prevenir, no detectar</h3>
-            <p class="desc">La doctrina detrás del skill: defectos que mueren en los requisitos.</p>
-            <div class="langs">
-              <a href="./decks/shift-left-testing/shift-left-craft.es.html">Abrir deck</a>
-            </div>
-          </div>
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="stage">Stage 2</span>
-            </div>
-            <h3>La Trifuerza — probar features por capas (UI · API · DB)</h3>
-            <p class="desc">
-              Exploración en tres frentes: lo que se ve, lo que viaja, lo que queda.
-            </p>
-            <div class="langs">
-              <a href="./decks/sprint-testing/triforce-exploration.es.html">Abrir deck</a>
-            </div>
-          </div>
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="stage">Stages 2-3</span>
-            </div>
-            <h3>Defect Management — gestionar la calidad por sus incidencias</h3>
-            <p class="desc">
-              Bug vs Defect vs Improvement, severidad, prioridad y traza a la Story.
-            </p>
-            <div class="langs">
-              <a href="./decks/sprint-testing/defect-management.es.html">Abrir deck</a>
-            </div>
-          </div>
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="stage">Stage 4</span>
-            </div>
-            <h3>El Arte de Documentar Test Cases — scopes, nomenclatura, ROI</h3>
-            <p class="desc">Del hallazgo al test case bien escrito que otro pueda ejecutar.</p>
-            <div class="langs">
-              <a href="./decks/test-documentation/test-case-craft.es.html">Abrir deck</a>
-            </div>
+
+          <div class="decks">
+            <a class="deck" href="./decks/agentic-qa-core/naming-conventions.es.html">
+              <span class="tag">Transversal</span>
+              <h3>El Códice de Nomenclatura</h3>
+              <span class="go">→</span>
+              <p>Cómo se nombra todo en el pipeline: artefactos, tests, ramas, IDs.</p>
+            </a>
+            <a class="deck" href="./decks/agentic-qa-core/skills-io-flow.es.html">
+              <span class="tag">Transversal</span>
+              <h3>skills-io — el flujo E2E por inputs y outputs</h3>
+              <span class="go">→</span>
+              <p>Qué lee y qué produce cada skill, con una pestaña por fase.</p>
+            </a>
+            <a class="deck" href="./decks/agentic-qa-core/output-style.es.html">
+              <span class="tag">Transversal</span>
+              <h3>Output Style — cómo escribe la IA</h3>
+              <span class="go">→</span>
+              <p>El contrato de voz del agente: qué dice, con cuánto detalle y en qué registro.</p>
+            </a>
+            <a class="deck" href="./decks/shift-left-testing/shift-left-craft.es.html">
+              <span class="tag">Stage 0</span>
+              <h3>El Arte del Shift-Left</h3>
+              <span class="go">→</span>
+              <p>Prevenir, no detectar: los defectos que mueren en los requisitos.</p>
+            </a>
+            <a class="deck" href="./decks/sprint-testing/triforce-exploration.es.html">
+              <span class="tag">Stage 2</span>
+              <h3>La Trifuerza — UI · API · DB</h3>
+              <span class="go">→</span>
+              <p>Lo que se ve, lo que viaja y lo que queda, probados por separado.</p>
+            </a>
+            <a class="deck" href="./decks/sprint-testing/defect-management.es.html">
+              <span class="tag">Stages 2-3</span>
+              <h3>Defect Management</h3>
+              <span class="go">→</span>
+              <p>Bug vs Defect vs Improvement, severidad, prioridad y traza a la Story.</p>
+            </a>
+            <a class="deck" href="./decks/test-documentation/test-case-craft.es.html">
+              <span class="tag">Stage 4</span>
+              <h3>El Arte de Documentar Test Cases</h3>
+              <span class="go">→</span>
+              <p>Del hallazgo suelto al test case que otro pueda ejecutar sin preguntarte.</p>
+            </a>
           </div>
         </div>
       </section>
 
-      <section id="curriculum" class="wrap">
-        <div class="section-head">
-          <span class="tag">🎓 Academia · de cero a KATA</span>
-          <h2>Currículum de automatización</h2>
-          <p>
-            Ruta pedagógica secuencial — seguir en orden: fundamentos de código → Playwright →
-            arquitectura KATA.
-          </p>
-        </div>
-        <div class="grid">
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="num">01</span>
-            </div>
-            <h3>Coding Base — fundamentos de programación para QA Testers</h3>
-            <div class="langs">
-              <a href="./decks/test-automation/coding-base.es.html">Abrir deck</a>
-            </div>
+      <section id="curriculum" class="sec-minor">
+        <div class="wrap">
+          <div class="sec-head">
+            <p class="eyebrow">05 · Currículum</p>
+            <h2>De cero a KATA</h2>
+            <p>
+              Ruta pedagógica secuencial para testers que arrancan sin código. Se sigue en orden:
+              fundamentos → Playwright → arquitectura KATA.
+            </p>
           </div>
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="num">02</span>
-            </div>
-            <h3>Coding Classes — del código a las clases</h3>
-            <div class="langs">
-              <a href="./decks/test-automation/coding-classes.es.html">Abrir deck</a>
-            </div>
+
+          <div class="steps">
+            <a class="step" href="./decks/test-automation/coding-base.es.html">
+              <span class="n">01</span>
+              <h3>Coding Base — fundamentos de programación para QA Testers</h3>
+              <span class="go">→</span>
+            </a>
+            <a class="step" href="./decks/test-automation/coding-classes.es.html">
+              <span class="n">02</span>
+              <h3>Coding Classes — del código a las clases</h3>
+              <span class="go">→</span>
+            </a>
+            <a class="step" href="./decks/test-automation/dev-craft.es.html">
+              <span class="n">03</span>
+              <h3>Dev Craft — terminal, Git y tu primer Pull Request</h3>
+              <span class="go">→</span>
+            </a>
+            <a class="step" href="./decks/test-automation/playwright-pro.es.html">
+              <span class="n">04</span>
+              <h3>Playwright Pro — de scripts sueltos a suite profesional</h3>
+              <span class="go">→</span>
+            </a>
+            <a class="step" href="./decks/test-automation/dojo-lab-1.es.html">
+              <span class="n">05</span>
+              <h3>Dojo Lab I — primeros specs contra una app real</h3>
+              <span class="go">→</span>
+            </a>
+            <a class="step" href="./decks/test-automation/kata-bridge.es.html">
+              <span class="n">06</span>
+              <h3>KATA Bridge — del Page Object al framework profesional</h3>
+              <span class="go">→</span>
+            </a>
+            <a class="step" href="./decks/test-automation/automation-patterns.es.html">
+              <span class="n">07</span>
+              <h3>Automation Patterns — POM · Fixtures · Paralelización · KATA</h3>
+              <span class="go">→</span>
+            </a>
+            <a class="step" href="./decks/test-automation/api-automation-playwright.es.html">
+              <span class="n">08</span>
+              <h3>API Automation con Playwright — request · aserciones · KATA</h3>
+              <span class="go">→</span>
+            </a>
           </div>
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="num">03</span>
-            </div>
-            <h3>Dev Craft — terminal, Git y tu primer Pull Request</h3>
-            <div class="langs">
-              <a href="./decks/test-automation/dev-craft.es.html">Abrir deck</a>
-            </div>
-          </div>
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="num">04</span>
-            </div>
-            <h3>Playwright Pro — de scripts sueltos a suite profesional</h3>
-            <div class="langs">
-              <a href="./decks/test-automation/playwright-pro.es.html">Abrir deck</a>
-            </div>
-          </div>
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="num">05</span>
-            </div>
-            <h3>Dojo Lab I — primeros specs contra una app real</h3>
-            <div class="langs">
-              <a href="./decks/test-automation/dojo-lab-1.es.html">Abrir deck</a>
-            </div>
-          </div>
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="num">06</span>
-            </div>
-            <h3>KATA Bridge — del Page Object al framework profesional</h3>
-            <div class="langs">
-              <a href="./decks/test-automation/kata-bridge.es.html">Abrir deck</a>
-            </div>
-          </div>
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="num">07</span>
-            </div>
-            <h3>Automation Patterns — POM · Fixtures · Paralelización · KATA</h3>
-            <div class="langs">
-              <a href="./decks/test-automation/automation-patterns.es.html">Abrir deck</a>
-            </div>
-          </div>
-          <div class="card academy-card">
-            <div class="card-top">
-              <span class="chip chip-academy">Academia</span>
-              <span class="num">08</span>
-            </div>
-            <h3>API Automation con Playwright — request · aserciones · KATA</h3>
-            <div class="langs">
-              <a href="./decks/test-automation/api-automation-playwright.es.html">Abrir deck</a>
-            </div>
+
+          <div class="cta-row">
+            <a class="btn btn-ghost" href="./kata/">KATA Academy — 8 capítulos interactivos →</a>
           </div>
         </div>
       </section>
 
-      <section id="reportes" class="wrap">
-        <div class="section-head">
-          <span class="tag">CI/CD en vivo</span>
-          <h2>Reportes de regresión</h2>
-        </div>
-        <div class="report-strip">
-          <div class="info">
-            <h3><span class="dot"></span>Allure — staging</h3>
-            <p>Último reporte de la suite de regresión publicado por el workflow de CI.</p>
+      <section id="reportes" class="sec-minor">
+        <div class="wrap">
+          <div class="sec-head">
+            <p class="eyebrow">06 · CI/CD en vivo</p>
+            <h2>Reportes de regresión</h2>
           </div>
-          <a class="btn-ghost" href="./staging/regression/">Ver reporte →</a>
+          <div class="report">
+            <div class="who"><i></i>Allure · staging</div>
+            <p class="what">Último reporte publicado por el workflow de regresión.</p>
+            <a class="rail-link" href="./staging/regression/">Ver reporte →</a>
+          </div>
         </div>
       </section>
     </main>
@@ -722,15 +1592,78 @@
     <footer>
       <div class="wrap footer-row">
         <span>Agentic QA · UPEX Galaxy</span>
-        <span>
-          <a
-            href="https://github.com/upex-galaxy/agentic-qa-boilerplate"
-            target="_blank"
-            rel="noopener"
-            >github.com/upex-galaxy/agentic-qa-boilerplate</a
-          >
-        </span>
+        <a
+          href="https://github.com/upex-galaxy/agentic-qa-boilerplate"
+          target="_blank"
+          rel="noopener"
+          >github.com/upex-galaxy/agentic-qa-boilerplate</a
+        >
       </div>
     </footer>
+
+    <script>
+      (function () {
+        var links = Array.prototype.slice.call(document.querySelectorAll('.nav a[data-sec]'));
+        var sections = links
+          .map(function (a) {
+            return document.getElementById(a.dataset.sec);
+          })
+          .filter(Boolean);
+        if (!sections.length || !('IntersectionObserver' in window)) return;
+
+        var visible = Object.create(null);
+
+        function paint() {
+          // the last section in document order that is inside the band is the
+          // one the reader has most recently entered
+          var current = null;
+          for (var i = sections.length - 1; i >= 0; i--) {
+            if (visible[sections[i].id]) {
+              current = sections[i].id;
+              break;
+            }
+          }
+          // the final section is too short to ever reach the band on its own
+          if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+            current = sections[sections.length - 1].id;
+          }
+          if (!current) return;
+          links.forEach(function (a) {
+            var on = a.dataset.sec === current;
+            a.classList.toggle('is-active', on);
+            if (on) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        }
+
+        var io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              visible[e.target.id] = e.isIntersecting;
+            });
+            paint();
+          },
+          { rootMargin: '-100px 0px -70% 0px', threshold: 0 }
+        );
+
+        sections.forEach(function (s) {
+          io.observe(s);
+        });
+
+        var queued = false;
+        window.addEventListener(
+          'scroll',
+          function () {
+            if (queued) return;
+            queued = true;
+            requestAnimationFrame(function () {
+              queued = false;
+              paint();
+            });
+          },
+          { passive: true }
+        );
+      })();
+    </script>
   </body>
 </html>

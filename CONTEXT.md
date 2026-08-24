@@ -55,7 +55,7 @@ agentic-qa-boilerplate/
 
 The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ — MCP file format, hook API, whether slash commands exist at all — each keeps a thin versioned adapter. Nothing is duplicated.
 
-> Visual walkthrough: [`docs/multi-harness-architecture.es.html`](docs/multi-harness-architecture.es.html) (Spanish, open in a browser).
+> Visual walkthrough: [**Una fuente, tres harnesses**](https://upex-galaxy.github.io/agentic-qa-boilerplate/harnesses.es.html) (Spanish, published page with diagrams).
 
 | Surface | Claude Code | OpenCode | Codex CLI + Desktop |
 |---------|-------------|----------|---------------------|

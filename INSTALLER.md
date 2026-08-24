@@ -47,7 +47,7 @@ Wires runtime configuration:
 
 Validates the environment is usable:
 
-- External CLI table — `which`-checks all 6 CLIs (`bun`, `gh`, `acli`, `playwright-cli`, `jq`, `resend`) and prints a status table with purpose and install hint for missing entries
+- External CLI table — `which`-checks all 7 CLIs (`bun`, `gh`, `rg`, `acli`, `playwright-cli`, `jq`, `resend`) and prints a status table with purpose and install hint for missing entries
 - State persistence — writes updated `.template/installer.state.json`
 
 ### Phase 5 — INITIAL CONFIGURATION
@@ -458,7 +458,7 @@ A project scaffolded when instructions lived in `CLAUDE.md` and skills in `.clau
 
 The migration moves the project's memory from `CLAUDE.md` to `AGENTS.md` and leaves `CLAUDE.md` as the shim; moves every skill under `.claude/skills/` into `.agents/skills/`, project-authored ones included; and archives — never overwrites — any legacy skill whose name the canonical store already owns. Nothing is deleted: what is not moved is preserved under `.template/pre-agents-migration/` (gitignored). The pass is idempotent, and if a single item cannot be resolved without guessing it refuses in full, before touching anything, rather than applying halfway.
 
-After that one update, the project works in Claude Code, OpenCode and Codex from the same source. See [multi-harness-architecture.es.html](./docs/multi-harness-architecture.es.html) for the full picture.
+After that one update, the project works in Claude Code, OpenCode and Codex from the same source. See [**Una fuente, tres harnesses**](https://upex-galaxy.github.io/agentic-qa-boilerplate/harnesses.es.html) for the full picture.
 
 ---
 
@@ -531,6 +531,7 @@ The installer's step 10 (`verifyExternalClis`) runs a PATH probe — `which <bin
 | `playwright-cli` | Agent-driven browser automation (`/playwright-cli` skill)                                                | `bun add -g @playwright/cli@latest` | [playwright.dev/agent-cli](https://playwright.dev/agent-cli/introduction)                             |
 | `resend`         | Email testing flows                                                                                      | See official docs                   | [resend.com/docs/cli](https://resend.com/docs/cli)                                                    |
 | `jq`             | JSON parsing in acli Jira pipelines (advanced `acli --json \| jq …`)                                     | See official docs                   | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)                                  |
+| `rg`             | Repo search every agent leans on. Claude Code bundles its own; **OpenCode and Codex fall through to the system binary** | See official docs                   | [github.com/BurntSushi/ripgrep](https://github.com/BurntSushi/ripgrep#installation)                   |
 
 > **Important — `playwright-cli` is NOT `@playwright/test`**: this is the agent-driven browser CLI from the `@playwright/cli` npm package, installed **globally**. It produces a binary literally named `playwright-cli` (not `playwright`). The `@playwright/test` library that ships as a devDependency in this repo is a separate thing — it powers the test runner (`bun run test`), not the `/playwright-cli` skill. Don't confuse them.
 

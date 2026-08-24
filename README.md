@@ -83,6 +83,7 @@ These are **not optional** for the workflow — each one is required by a specif
 | `playwright-cli` | `/playwright-cli` skill (agent-driven browser automation)                           | `bun add -g @playwright/cli@latest`                                               |
 | `resend`         | `/resend-cli` (email testing flows)                                                 | [resend.com/docs/cli](https://resend.com/docs/cli)                                |
 | `jq`             | `acli` JSON pipelines (`acli ... --json \| jq ...`)                                 | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)              |
+| `rg`             | Repo search used by every agent. **Claude Code bundles it; OpenCode and Codex use the system binary** | `brew install ripgrep` · `apt install ripgrep` · `winget install BurntSushi.ripgrep.MSVC` |
 
 ### Convenience opt-ins (pure UX, never required)
 
@@ -927,7 +928,7 @@ The development side lives in [agentic-dev-boilerplate](https://github.com/upex-
 
 This repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ — MCP file format, hook API, whether slash commands exist at all — each keeps a thin versioned adapter. Nothing is duplicated.
 
-> Visual walkthrough, including what happens when you update a project created before this change: [`docs/multi-harness-architecture.es.html`](docs/multi-harness-architecture.es.html) (Spanish, open in a browser).
+> Visual walkthrough, including what happens when you update a project created before this change: [**Una fuente, tres harnesses**](https://upex-galaxy.github.io/agentic-qa-boilerplate/harnesses.es.html) (Spanish, published page with diagrams).
 
 | Surface | Claude Code | OpenCode | Codex CLI + Desktop |
 | ------- | ----------- | -------- | ------------------- |
