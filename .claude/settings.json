@@ -54,7 +54,10 @@
       "Skill(agentic-qa-core)",
       "Skill(agentic-qa-onboard)",
       "Skill(project-discovery)",
+      "Skill(project-context)",
+      "Skill(sync-ai-context)",
       "Skill(adapt-framework)",
+      "Skill(jira-administration)",
       "Skill(shift-left-testing)",
       "Skill(sprint-testing)",
       "Skill(test-documentation)",
@@ -63,14 +66,7 @@
       "Skill(playwright-cli)",
       "Skill(acli)",
       "Skill(xray-cli)",
-      "Skill(git-flow-master)",
-      "Skill(refresh-ai-memory)",
-      "Skill(fix-traceability)",
-      "Skill(business-data-map)",
-      "Skill(business-feature-map)",
-      "Skill(business-api-map)",
-      "Skill(master-test-plan)",
-      "Skill(break-down-tests)"
+      "Skill(git-flow-master)"
     ],
     "deny": [
       "Bash(rm -rf *)",
@@ -96,7 +92,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/personality-reinject.js\"",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.agents/hooks/personality-reinject.mjs\"",
             "timeout": 5,
             "statusMessage": "Loading output contract..."
           }

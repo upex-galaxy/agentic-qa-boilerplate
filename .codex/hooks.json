@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "root=\"$(git rev-parse --show-toplevel)\" && node \"$root/.agents/hooks/personality-reinject.mjs\"",
+            "commandWindows": "powershell.exe -NoProfile -Command \"$root = git rev-parse --show-toplevel; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; node (Join-Path $root '.agents/hooks/personality-reinject.mjs')\"",
+            "timeout": 5,
+            "statusMessage": "Loading output contract..."
+          }
+        ]
+      }
+    ]
+  }
+}

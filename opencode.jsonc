@@ -8,7 +8,7 @@
   //   - Env var expansion uses {env:VAR_NAME}  (NOT ${VAR})
   //   - MCP root key is "mcp"                  (NOT "mcpServers")
   //   - MCP env field is "environment"         (NOT "env")
-  //   - Missing env vars resolve to empty string (no hard failure) — see CLAUDE.md
+  //   - Missing env vars resolve to empty string (no hard failure) — see AGENTS.md
   //     Critical Reminder about stopping immediately when MCP credentials fail.
   "$schema": "https://opencode.ai/config.json",
 
@@ -29,14 +29,12 @@
       "enabled": true
     },
     "tavily": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "mcp-remote",
-        "https://mcp.tavily.com/mcp/?tavilyApiKey={env:TAVILY_API_KEY}"
-      ],
-      "enabled": true
+      "type": "remote",
+      "url": "https://mcp.tavily.com/mcp/",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:TAVILY_API_KEY}"
+      }
     },
     "playwright": {
       "type": "local",

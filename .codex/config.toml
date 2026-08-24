@@ -1,0 +1,65 @@
+[shell_environment_policy]
+inherit = "core"
+
+[shell_environment_policy.set]
+BASH_DEFAULT_TIMEOUT_MS = "300000"
+BASH_MAX_TIMEOUT_MS = "600000"
+BASH_MAX_OUTPUT_LENGTH = "20000"
+CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR = "1"
+
+[mcp_servers.context7]
+command = "npx"
+enabled = true
+args = [
+  "-y",
+  "@upstash/context7-mcp",
+]
+
+[mcp_servers.tavily]
+url = "https://mcp.tavily.com/mcp/"
+bearer_token_env_var = "TAVILY_API_KEY"
+enabled = true
+
+[mcp_servers.dbhub]
+command = "bunx"
+enabled = true
+args = [
+  "-y",
+  "@bytebase/dbhub@latest",
+  "--config",
+  "dbhub.toml",
+]
+
+[mcp_servers.openapi]
+command = "bunx"
+enabled = true
+args = [
+  "-y",
+  "@ivotoby/openapi-mcp-server",
+  "--tools",
+  "dynamic",
+]
+env_vars = [
+  "API_BASE_URL",
+  "OPENAPI_SPEC_PATH",
+]
+
+[mcp_servers.playwright]
+command = "bunx"
+enabled = true
+args = [
+  "@playwright/mcp@latest",
+  "--caps",
+  "vision,pdf,testing,tracing,tabs",
+  "--timeout-action",
+  "10000",
+  "--timeout-navigation",
+  "30000",
+  "--viewport-size",
+  "1920x1080",
+]
+
+[mcp_servers.postman]
+url = "https://mcp.postman.com/mcp"
+bearer_token_env_var = "POSTMAN_API_KEY"
+enabled = true
