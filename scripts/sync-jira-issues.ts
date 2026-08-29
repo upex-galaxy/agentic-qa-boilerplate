@@ -82,7 +82,7 @@
  */
 
 import type { AtlassianUrlSource } from '../cli/lib/atlassian-instance';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
 import { parse as parseYaml } from 'yaml';
@@ -333,6 +333,92 @@ const FOLDER_PREFIX: Record<string, string> = {
   precondition: 'PRECONDITION',
 };
 
+// ---------------------------------------------------------------------------
+// Ladder-aware filenames
+//
+// The ratified title grammar is `{ACRONYM}: {scope}: {desc}`
+// (docs/qa-standard/planning-ladder-proposal.md §3), so altitude is legible in
+// the first token of a Jira title. The filename mirrors that signal: one `ls`
+// of `test-plans/` then shows the ladder state (FTP / STP / ATP) at a glance
+// instead of a wall of identical `TESTPLAN-` files.
+// ---------------------------------------------------------------------------
+
+/**
+ * Ladder acronyms a conforming title may open with, per work-type slug.
+ *
+ * Scoped PER SLUG on purpose: a Test Plan titled `ATR: …` is a mis-titled Plan,
+ * not an Execution, and must never be filed on disk as one. `RETEST` covers the
+ * `ReTest:` spelling the Re-Test Execution subtask has always used.
+ */
+const LADDER_TITLE_ACRONYMS: Record<string, readonly string[]> = {
+  test_plan: ['FTP', 'STP', 'ATP'],
+  test_execution: ['STR', 'ATR'],
+  re_test_execution: ['RETEST'],
+};
+
+/**
+ * The ladder acronym opening an issue title, or null when the title does not
+ * conform to the grammar (or names an acronym that does not belong to this work
+ * type). Case- and hyphen-insensitive, so `ReTest:` and `RE-TEST:` both
+ * normalize to `RETEST`.
+ */
+function ladderTitleAcronym(slug: string, summary: string): string | null {
+  const allowed = LADDER_TITLE_ACRONYMS[slug];
+  if (!allowed) { return null; }
+  const m = /^\s*([a-z][a-z-]{1,9})\s*:/i.exec(summary);
+  if (!m) { return null; }
+  const acronym = m[1].replace(/-/g, '').toUpperCase();
+  return allowed.includes(acronym) ? acronym : null;
+}
+
+/**
+ * Story-altitude Plans and Runs, which the QA-epic sweep must NOT materialize.
+ *
+ * Their BODY already has a canonical home: the ATP lands in the Story's
+ * `acceptance-test-plan.md` and the ATR / ReTest in `acceptance-test-results.md`,
+ * both written by the coverage walk that descends from the Story itself. Sweeping
+ * them too would write a second copy of the same text under a different path, and
+ * on a project with 200 Stories it would bury the handful of FTP / STP / STR files
+ * the sweep exists to surface.
+ *
+ * Deliberately NOT here: `ATS:`. A Test Set has no mirrored body anywhere — only
+ * its MEMBERS are placed, under the Story's `test-cases/` — so `test-sets/` is its
+ * only local home and the sweep is what puts it there.
+ *
+ * This is a sweep-only exclusion. An explicit `jira:sync-issues get <ATP-KEY>`
+ * still writes `test-plans/ATP-<KEY>-<slug>.md`, which is the flow
+ * `sprint-testing` Stage 1 documents.
+ */
+const STORY_ALTITUDE_PREFIX = /^(?:ATP|ATR|RE-?TEST)\s*:/i;
+
+/**
+ * Filename prefix for an issue of this work type. A title that follows the
+ * grammar lends its acronym to the file; a NON-conforming title falls back to
+ * the slug-based prefix above, so a project that has not adopted the grammar
+ * syncs exactly as it does today.
+ */
+function fileNamePrefix(slug: string, summary: string): string {
+  return ladderTitleAcronym(slug, summary) ?? FOLDER_PREFIX[slug] ?? slug.toUpperCase();
+}
+
+/**
+ * Removes a file left behind for the SAME issue under a different name — the
+ * ladder prefix changing (`TESTPLAN-` → `ATP-`) or a retitled issue changing its
+ * slug. Without it an adopted grammar leaves two copies of the same Plan in
+ * `test-plans/` and the `ls` stops telling the truth. Safe by construction: this
+ * whole tree is a regenerable cache of Jira, and only `*-<KEY>-*.md` siblings of
+ * the file just written are considered.
+ */
+function pruneStaleIssueFiles(dir: string, key: string, keepName: string, dryRun: boolean): void {
+  if (dryRun || !existsSync(dir)) { return; }
+  for (const d of readdirSync(dir, { withFileTypes: true })) {
+    if (!d.isFile() || d.name === keepName) { continue; }
+    if (d.name.endsWith('.md') && d.name.includes(`-${key}-`)) {
+      unlinkSync(join(dir, d.name));
+    }
+  }
+}
+
 let REGISTRY_CACHE: Registry | null = null;
 
 /**
@@ -538,6 +624,7 @@ interface SyncOptions {
   sprints?: string // sprint selector: active | current | closed | >=N | 7,8,10
   types?: string[] // optional extra work-type slugs to pull (beyond the default scope)
   noDefects?: boolean // skip defect discovery/nesting
+  noQaArtifacts?: boolean // skip the QA-process-epic sweep (higher-altitude ladder artifacts)
 }
 
 interface SyncResult {
@@ -551,6 +638,8 @@ interface SyncResult {
     tests: number
     tech_stories: number
     tech_debts: number
+    /** Higher-altitude ladder artifacts (FTP/STP/ATP · STR/ATR · Test Sets · Preconditions). */
+    qa_artifacts: number
   }
   warnings: string[]
   files: {
@@ -574,6 +663,7 @@ interface ParsedArgs {
   sprints?: string
   types?: string[]
   noDefects?: boolean
+  noQaArtifacts?: boolean
   project?: string
 }
 
@@ -668,6 +758,9 @@ function parseArgs(args: string[]): ParsedArgs {
         break;
       case '--no-defects':
         result.noDefects = true;
+        break;
+      case '--no-qa-artifacts':
+        result.noQaArtifacts = true;
         break;
       case '--project':
         result.project = nextArg;
@@ -2249,19 +2342,23 @@ const STORY_ATP_PREFIX = /^ATP:/i;
 const STORY_ATS_PREFIX = /^ATS:/i;
 /**
  * Higher-altitude ladder artifacts a Story link must skip for its ATP/ATR.
- * `FTR` is a legacy guard: it was retired from the ladder (its results roll up
- * via ATRs + the sprint STR), but the prefix skip stays so pulls of
- * pre-migration data never mistake an old FTR for a Story-altitude ATR.
+ *
+ * `FTR` stays as a deliberate LEGACY guard: it was retired from the ladder (its
+ * results roll up via ATRs + the sprint STR), but the prefix skip survives so a
+ * pull of pre-migration data never mistakes an old FTR for a Story-altitude ATR.
+ *
+ * `MTP` was REMOVED (it defended a shape doctrine forbids): the Master Test Plan
+ * is an **Epic**, never a Test Plan work type — see
+ * `agentic-qa-core/references/defect-management-doctrine.md` Part 4 — so no Test
+ * Plan can legitimately carry that prefix, and an Epic never reaches this guard.
  */
-const HIGHER_ALTITUDE_PREFIX = /^(FTP|FTR|STP|STR|MTP):/i;
+const HIGHER_ALTITUDE_PREFIX = /^(FTP|FTR|STP|STR):/i;
 
 /** Human label for a skipped higher-altitude artifact's info line. */
 function higherAltitudeLabel(summary: string): string {
   const m = HIGHER_ALTITUDE_PREFIX.exec(summary.trim());
   const p = (m?.[1] ?? '').toUpperCase();
-  if (p === 'STP' || p === 'STR') { return 'sprint-altitude'; }
-  if (p === 'FTP' || p === 'FTR') { return 'feature-altitude'; }
-  return 'master-plan-altitude';
+  return p === 'STP' || p === 'STR' ? 'sprint-altitude' : 'feature-altitude';
 }
 
 /** Splits an issue's links into ATP (Test Plan), ATR (Test / Re-Test Execution), ATS (Test Set), Test and Defect buckets. */
@@ -2496,9 +2593,12 @@ async function discoverCoverage(
       const exDir = join(folder, 'test-executions');
       if (!options.dryRun) { ensureDir(exDir); }
       for (const { ex, link } of indexed) {
-        const prefix = FOLDER_PREFIX[reg.byJiraType.get(link.issueType)?.slug ?? 'test_execution'] ?? 'TESTEXEC';
+        const slug = reg.byJiraType.get(link.issueType)?.slug ?? 'test_execution';
+        const prefix = fileNamePrefix(slug, ex.fields.summary);
         const exBody = generateXrayArtifactMarkdown(ex, link.issueType.toUpperCase(), config);
-        bumpFile(writeIndexFile(join(exDir, `${prefix}-${ex.key}-${generateSlug(ex.fields.summary)}.md`), exBody, options.dryRun).status, result);
+        const fileName = `${prefix}-${ex.key}-${generateSlug(ex.fields.summary)}.md`;
+        pruneStaleIssueFiles(exDir, ex.key, fileName, options.dryRun);
+        bumpFile(writeIndexFile(join(exDir, fileName), exBody, options.dryRun).status, result);
       }
     }
   }
@@ -2792,12 +2892,79 @@ function writeQaArtifactsIndex(
   bumpFile(writeIndexFile(join(dir, '_index.md'), lines.join('\n'), dryRun).status, result);
 }
 
+/**
+ * Decides whether a child of a QA-process Epic is materialized by the sweep below.
+ *
+ * The sweep exists for the artifacts NOTHING else can reach — the higher-altitude
+ * ladder (FTP / STP / STR) plus the supporting Test Sets and Preconditions. Every
+ * other child of a QA bucket already has an owner and must be left to it, or the
+ * sweep writes a second copy of work the rest of the pipeline placed correctly:
+ *
+ *   coverable (Bug / Defect / Improvement / Tech Story / Tech Debt)
+ *       → its own type sweep, and nested under whatever it blocks
+ *   test_case → the TC placement cascade, with `epics/_orphans/tests/` as the net
+ *   container / story / epic → routed by the Epic + Story walk
+ *   sync: never → the declaration means never (see standaloneSkipReason)
+ *   ATP: / ATR: / ReTest: → Story altitude; see STORY_ALTITUDE_PREFIX below
+ */
+function sweptFromQaEpic(entry: WorkTypeEntry, summary: string): boolean {
+  if (entry.coverable || entry.slug === 'test_case') { return false; }
+  if (STORY_ALTITUDE_PREFIX.test(summary.trim())) { return false; }
+  return standaloneSkipReason(entry) === null;
+}
+
+/**
+ * Sweeps the children of the QA-process Epics so the top rungs of the planning
+ * ladder materialize locally.
+ *
+ * WHY a separate path: FTP / STP / STR sit ABOVE a Story, so the coverage walk —
+ * which descends from a coverable issue through its links — structurally cannot
+ * reach them, and the Story-altitude guard (HIGHER_ALTITUDE_PREFIX) is right to
+ * keep skipping them there. The QA Epics ARE the index of these artifacts, which
+ * is why no new configuration is invented here: the buckets were already resolved
+ * for `qa-artifacts/_index.md`, by the `QA-Artifact` label or the cached
+ * `qa.qa_epics.*.key` in `.agents/project.yaml`.
+ *
+ * Bounded on purpose: one `parent = <epic>` search per bucket, and only the
+ * work types `sweptFromQaEpic` admits. A project with no QA-process Epics runs
+ * zero extra queries.
+ */
+async function syncQaArtifactChildren(
+  config: Config,
+  qaEpics: JiraIssue[],
+  options: SyncOptions,
+  result: SyncResult,
+): Promise<void> {
+  const reg = loadRegistry();
+
+  for (const epic of qaEpics) {
+    const children = await searchIssues(
+      config,
+      `project = ${config.project} AND parent = ${epic.key}${sprintAndClause(options)} ORDER BY key ASC`,
+      ['issuetype', 'summary'],
+    );
+    const wanted = children.filter((c) => {
+      const entry = reg.byJiraType.get(c.fields.issuetype?.name ?? '');
+      return entry ? sweptFromQaEpic(entry, c.fields.summary ?? '') : false;
+    });
+    if (wanted.length === 0) { continue; }
+
+    if (!options.json) { log.info(`Syncing ${wanted.length} artifact(s) under ${epic.key} ${epic.fields.summary}`); }
+    for (let i = 0; i < wanted.length; i++) {
+      const c = wanted[i];
+      if (!options.json) { log.tree(c.key, c.fields.summary, i === wanted.length - 1); }
+      await syncStandaloneIssue(config, c.key, c.fields.issuetype?.name ?? '', options, result);
+      result.synced.qa_artifacts++;
+    }
+  }
+}
+
 async function syncAll(config: Config, options: SyncOptions): Promise<SyncResult> {
   const startTime = Date.now();
 
   const result: SyncResult = {
     success: true,
-    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0 },
+    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0, qa_artifacts: 0 },
     warnings: [],
     files: { created: 0, updated: 0, skipped: 0 },
     duration_ms: 0,
@@ -2867,6 +3034,13 @@ async function syncAll(config: Config, options: SyncOptions): Promise<SyncResult
       if (!options.json) {
         const qaNote = qaArtifactEpics.length > 0 ? ` (+${qaArtifactEpics.length} QA-artifact, indexed separately)` : '';
         log.success(`Found ${epics.length} product epics${qaNote}`);
+      }
+
+      // The QA buckets are also the only index of the higher-altitude ladder
+      // (FTP / STP / STR) — nothing reachable from a Story leads to them. Swept
+      // here, where the buckets are already resolved, so no extra epic query runs.
+      if (qaArtifactEpics.length > 0 && !options.noQaArtifacts) {
+        await syncQaArtifactChildren(config, qaArtifactEpics.map(e => e.epic), options, result);
       }
 
       // Also find orphan stories (stories without parent epic)
@@ -2995,7 +3169,7 @@ async function syncDefects(config: Config, options: SyncOptions): Promise<SyncRe
 
   const result: SyncResult = {
     success: true,
-    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0 },
+    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0, qa_artifacts: 0 },
     warnings: [],
     files: { created: 0, updated: 0, skipped: 0 },
     duration_ms: 0,
@@ -3271,7 +3445,7 @@ async function syncTests(config: Config, options: SyncOptions): Promise<SyncResu
 
   const result: SyncResult = {
     success: true,
-    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0 },
+    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0, qa_artifacts: 0 },
     warnings: [],
     files: { created: 0, updated: 0, skipped: 0 },
     duration_ms: 0,
@@ -3297,7 +3471,7 @@ async function syncTests(config: Config, options: SyncOptions): Promise<SyncResu
 function emptyResult(): SyncResult {
   return {
     success: true,
-    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0 },
+    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0, qa_artifacts: 0 },
     warnings: [],
     files: { created: 0, updated: 0, skipped: 0 },
     duration_ms: 0,
@@ -3338,6 +3512,24 @@ function bumpSyncedCounter(slug: string, result: SyncResult): void {
   else if (slug === 'test_case') { result.synced.tests++; }
   else if (slug === 'tech_story') { result.synced.tech_stories++; }
   else if (slug === 'tech_debt') { result.synced.tech_debts++; }
+}
+
+/**
+ * Why a work type must NOT be written as a standalone file, or null when it may.
+ *
+ * `sync: never` is a DECLARATION, not a hint: a type that says it is never
+ * synced must not materialize through `get` / `jql` either. It used to, because
+ * the routing gated only on `container` / `story` — declaration and code
+ * disagreed, and the yaml lost. The declaration wins now.
+ */
+function standaloneSkipReason(entry: WorkTypeEntry): string | null {
+  if (entry.sync === 'never') {
+    return 'declares `sync: never` in .agents/jira-required.yaml — skipped';
+  }
+  if (entry.container || entry.slug === 'story') {
+    return 'is routed via pull/epic/story, not as a standalone issue — skipped';
+  }
+  return null;
 }
 
 /** Reuses an existing `PREFIX-<key>-*` folder under baseDir so re-syncs stay idempotent. */
@@ -3493,8 +3685,9 @@ async function syncStandaloneIssue(
     );
     return;
   }
-  if (entry.container || entry.slug === 'story') {
-    result.warnings.push(`${key}: '${type}' is routed via pull/epic/story, not as a standalone issue — skipped`);
+  const skip = standaloneSkipReason(entry);
+  if (skip) {
+    result.warnings.push(`${key}: '${type}' ${skip}`);
     return;
   }
 
@@ -3506,12 +3699,16 @@ async function syncStandaloneIssue(
   }
 
   const subdir = entry.localDir ?? entry.slug;
-  const prefix = FOLDER_PREFIX[entry.slug] ?? entry.slug.toUpperCase();
 
   const issue = await fetchIssue(config, key, fieldsForEntry(entry));
+  // Ladder-aware: a conforming title (`ATP: …` / `STR: …`) names the file after
+  // its altitude; anything else keeps the slug-based prefix.
+  const prefix = fileNamePrefix(entry.slug, issue.fields.summary);
   const dir = join(config.outputDir, subdir);
   if (!options.dryRun) { ensureDir(dir); }
-  const filePath = join(dir, `${prefix}-${key}-${generateSlug(issue.fields.summary)}.md`);
+  const fileName = `${prefix}-${key}-${generateSlug(issue.fields.summary)}.md`;
+  pruneStaleIssueFiles(dir, key, fileName, options.dryRun);
+  const filePath = join(dir, fileName);
 
   const content = renderStandaloneContent(entry, issue, type, config);
 
@@ -3800,6 +3997,7 @@ async function cmdPull(options: SyncOptions): Promise<void> {
         if (result.synced.improvements > 0) { log.line(`Improvements synced: ${result.synced.improvements}`); }
         if (result.synced.tech_stories > 0) { log.line(`Tech Stories synced: ${result.synced.tech_stories}`); }
         if (result.synced.tech_debts > 0) { log.line(`Tech Debts synced: ${result.synced.tech_debts}`); }
+        if (result.synced.qa_artifacts > 0) { log.line(`QA artifacts synced: ${result.synced.qa_artifacts}`); }
       }
       else if (options.issueType === 'bugs') {
         log.line(`Bugs synced:    ${result.synced.bugs}`);
@@ -3942,6 +4140,17 @@ ${colors.bold}COVERABLE FOLDERS${colors.reset}
   Standalone dirs: bugs/, improvements/, tech-stories/, tech-debts/. Stories stay
   under epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/.
 
+${colors.bold}PLANNING LADDER (higher-altitude artifacts)${colors.reset}
+  Test Plans / Test Executions parented to a QA-process Epic (QA Master Test Plan,
+  QA Test Artifacts, QA Test Repository, QA Defect Management — resolved by the
+  QA-Artifact label or the cached qa.qa_epics.*.key) are swept by an unfiltered
+  \`pull\` into test-plans/ · test-executions/ · test-sets/ · preconditions/.
+  Filenames mirror the ratified title grammar \`{ACRONYM}: {scope}: {desc}\`:
+    test-plans/       FTP-<KEY>-<slug>.md · STP-… · ATP-…
+    test-executions/  STR-<KEY>-<slug>.md · ATR-… · RETEST-…
+  A title that does not follow the grammar keeps the legacy prefix (TESTPLAN- /
+  TESTEXEC- / RETESTEXEC-). Skip the whole sweep with --no-qa-artifacts.
+
 ${colors.bold}TRACEABILITY VALIDATION${colors.reset}
   End-of-run WARNINGS flag: an ATP/ATR linked via the wrong link type (expected the
   'Test' type, i.e. "is tested by" from the Story); a Defect linked via an atypical
@@ -3955,6 +4164,7 @@ ${colors.bold}OPTIONS${colors.reset}
                       (active/current → openSprints(); closed → closedSprints())
   --types <csv>       Extra coverable types to pull (e.g. improvement,tech-story,tech-debt)
   --no-defects        Skip defect discovery / nesting and the orphan-Defect audit
+  --no-qa-artifacts   Skip the QA-process-epic sweep (higher-altitude ladder artifacts)
   --project <KEY>     Override the project key for this run (beats env + project.yaml)
   --include-comments  Include Jira comments in comments.md
   --dry-run           Show what would be done without writing files
@@ -4040,6 +4250,7 @@ async function main(): Promise<void> {
         sprints: args.sprints,
         types: args.types,
         noDefects: args.noDefects,
+        noQaArtifacts: args.noQaArtifacts,
       });
       break;
 
@@ -4087,9 +4298,15 @@ async function main(): Promise<void> {
 export {
   classifyQaArtifactEpic,
   DEFAULT_QA_ARTIFACT_LABEL,
+  fileNamePrefix,
+  HIGHER_ALTITUDE_PREFIX,
+  higherAltitudeLabel,
+  ladderTitleAcronym,
   MODULE_CONTEXT_FILE,
   MODULE_CONTEXT_HEADING,
   splitDescriptionSection,
+  standaloneSkipReason,
+  sweptFromQaEpic,
 };
 
 // Guarded so the pure helpers above can be imported by tests without running a

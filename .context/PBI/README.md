@@ -40,7 +40,7 @@ Everything under `.context/PBI/` is one of three things. Getting the tier wrong 
       acceptance-test-plan.md  acceptance-test-results.md   [SYNC ← Xray Test Plan/Execution desc OVERRIDES Story field, else field, else stub]
       comments.md                                 [SYNC, --include-comments]
       test-cases/                                 [SYNC ← the Test issues linked to this Story]
-      test-executions/                            [SYNC — only when >1 Execution linked]
+      test-executions/                            [SYNC — only when >1 Execution linked; ATR-/STR-/RETEST-<KEY>-<slug>.md]
       defects/<PREFIX>-<KEY>-<slug>/              [SYNC — linked defects nested as coverable folders]
       context.md                                  [LOCAL] session notes about the repo, not the ticket
       evidence/                                   [LOCAL] screenshots
@@ -51,13 +51,38 @@ Everything under `.context/PBI/` is one of three things. Getting the tier wrong 
   tech-stories/TECHSTORY-<KEY>-<slug>/            [SYNC — coverable folder: tech-story.md + ATP + ATR + …]
   tech-debts/TECHDEBT-<KEY>-<slug>/               [SYNC — coverable folder: tech-debt.md + ATP + ATR + …]
   defects/                                        [SYNC — standalone defect issues]
-  qa-artifacts/_index.md                          [SYNC — register of the QA-process Epics (QA buckets); no per-epic folders, their content is already distributed]
-  test-plans/ test-executions/ test-sets/ preconditions/   [SYNC — Xray container issues (jira-xray); description holds the ATP/ATR body]
+  qa-artifacts/_index.md                          [SYNC — register of the QA-process Epics (QA buckets); no per-epic folders, their content is distributed into the dirs below]
+  test-plans/                                     [SYNC — FTP-/STP-/ATP-<KEY>-<slug>.md; description holds the plan body]
+  test-executions/                                [SYNC — STR-/ATR-/RETEST-<KEY>-<slug>.md; description holds the run body]
+  test-sets/ preconditions/                       [SYNC — TESTSET-/PRECONDITION-<KEY>-<slug>.md]
 ```
 
 Folder naming follows Jira IDs verbatim — `<KEY>` is the Jira issue key, `<slug>` is `kebab-case` from the summary. Epic and Story folders are prefixed `EPIC-` / `STORY-`. Every Story lives under its Epic's `stories/` (Module = Epic, 1:1).
 
 **Not in this tree**: `test-session-memory.md` lives in `.session/sprint-testing/<scope>/`, beside `plan.md` and `progress.md`. It used to sit in the Story folder, which was wrong: a re-sync rewrites this cache wholesale and that file is the payload every resume and every sub-agent reads.
+
+## The planning ladder on disk
+
+The top three rungs of the ladder — **FTP** (feature), **STP** / **STR** (sprint) — sit *above* a Story, so the coverage walk that descends from a coverable issue through its links structurally cannot reach them. They used to never materialize at all. Two rules fix that.
+
+**Discovery goes through the QA-process Epics.** An unfiltered `pull` sweeps the children of the four QA buckets (`QA Master Test Plan`, `QA Test Artifacts`, `QA Test Repository`, `QA Defect Management`), resolved exactly as `qa-artifacts/_index.md` resolves them: the `QA-Artifact` label, then the cached `qa.qa_epics.*.key` in `.agents/project.yaml`, then the `QA ` name prefix. No new configuration — the Epics already *are* the index. The sweep only takes what nothing else owns (Test Plans, Test Executions, Test Sets, Preconditions); Bugs, Defects, Improvements and Tests keep their existing owners so no artifact is written twice. A project with no QA-process Epics runs zero extra queries. Skip it with `pull --no-qa-artifacts`.
+
+**Filenames mirror the Jira title grammar.** The ratified grammar is `{ACRONYM}: {scope}: {desc}` (`docs/qa-standard/planning-ladder-proposal.md` §3), so the file takes the acronym from the title:
+
+| Dir | Conforming title | File |
+| --- | ---------------- | ---- |
+| `test-plans/` | `FTP: PROJ-42: Checkout` | `FTP-PROJ-42-checkout.md` |
+| `test-plans/` | `STP: Sprint#30: Hardening` | `STP-PROJ-51-hardening.md` |
+| `test-plans/` | `ATP: PROJ-123: Apply discount` | `ATP-PROJ-123-apply-discount.md` |
+| `test-executions/` | `STR: Sprint#30: Regression Testing` | `STR-PROJ-52-regression-testing.md` |
+| `test-executions/` | `ATR: PROJ-123: Story Testing` | `ATR-PROJ-124-story-testing.md` |
+| `test-executions/` | `ReTest: PROJ-123: Story Testing` | `RETEST-PROJ-130-story-testing.md` |
+
+One `ls test-plans/` then shows the ladder state at a glance. A title that does **not** follow the grammar keeps the legacy prefix — `TESTPLAN-` / `TESTEXEC-` / `RETESTEXEC-` — so a project that has not adopted the grammar syncs exactly as it did before. The acronym is scoped per work type: a Test Plan mis-titled `ATR: …` is filed as `TESTPLAN-`, never as a run.
+
+Renaming is free here (the tree is a regenerable cache), and the sync deletes the same issue's file under its old name so an adopted grammar does not leave two copies of one Plan.
+
+**The Story-altitude guard is unchanged.** An `FTP:` / `STP:` / `STR:` Plan or Execution linked to a Story is still *never* materialized as that Story's `acceptance-test-plan.md` / `acceptance-test-results.md` — it is named in an INFO line and skipped. An FTP linked to a Story is not that Story's ATP. The two paths are separate: the guard keeps the Story folder honest, the sweep gives the higher rungs their own home.
 
 ## What the `.gitignore` actually does
 
@@ -104,8 +129,9 @@ Two commands operate on this cache after a sync. `bun run tests:map` renders the
 Custom-field content (ACs, ATP/ATR, scope, business rules, comments) is **only** read via the sync — `acli view` returns null for `customfield_*`:
 
 - `bun run jira:sync-issues get <KEY> --include-comments` → one issue, ALL custom fields + comments → read the generated `.md`.
-- `bun run jira:sync-issues jql "<query>"` → batch. `pull --epic <KEY>` / `--story <KEY>` → scoped. `pull --sprint <active|current|closed|>=N|7,8,10>` → sprint-scoped; `pull --types <csv>` → add optional coverable types; `pull --no-defects` → skip defect discovery; `pull --project <KEY>` → override project key.
+- `bun run jira:sync-issues jql "<query>"` → batch. `pull --epic <KEY>` / `--story <KEY>` → scoped. `pull --sprint <active|current|closed|>=N|7,8,10>` → sprint-scoped; `pull --types <csv>` → add optional coverable types; `pull --no-defects` → skip defect discovery; `pull --no-qa-artifacts` → skip the QA-process-epic sweep; `pull --project <KEY>` → override project key.
 - Traceability link-graph (Story↔ATP↔ATR↔TC) + Xray run status stay on `acli` / `xray-cli` — the script only mirrors field content.
+- What each work type does on a `get` is declared by its `sync:` mode in `.agents/jira-required.yaml`: `default` is swept by a plain `pull`, `discovery` materializes only when explicitly asked for (`get` / `jql`) or reached through a link or the QA-epic sweep, and `never` means never — the sync refuses to write it and says which declaration stopped it.
 
 ## Cold clone
 

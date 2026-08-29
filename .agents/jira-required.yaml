@@ -836,8 +836,12 @@ work_types:
     description: |
       Xray Test Plan — holds the ATP body in its description (role atp). Altitude guard
       (sync-jira-issues): only a Plan titled `ATP:*` syncs as a Story's acceptance-test-plan.md;
-      `FTP:*` / `STP:*` / `MTP:*` Plans are higher ladder altitudes and are skipped with an info
-      line. Unprefixed titles keep the legacy behavior (any linked Plan counts).
+      `FTP:*` / `STP:*` Plans are higher ladder altitudes and are skipped with an info line.
+      No `MTP:*` guard: the Master Test Plan is an Epic, never a Test Plan (defect-management
+      doctrine Part 4), so no Plan can legitimately carry that prefix. Unprefixed titles keep
+      the legacy behavior (any linked Plan counts). Higher altitudes still MATERIALIZE — the
+      QA-process-epic sweep writes them to test-plans/ as FTP-/STP-/ATP-<KEY>-<slug>.md
+      (non-conforming titles fall back to TESTPLAN-).
     sync: discovery
     role: atp
     content: description
@@ -848,8 +852,11 @@ work_types:
     description: |
       Xray Test Execution — holds the ATR body in its description (role atr). Altitude guard
       (sync-jira-issues): only an Execution titled `ATR:*` / `ReTest:*` syncs as a Story's
-      acceptance-test-results.md; `STR:*` / `FTR:*` Executions are skipped with an info line.
-      Unprefixed titles keep the legacy behavior (any linked Execution counts).
+      acceptance-test-results.md; `STR:*` / `FTR:*` Executions are skipped with an info line
+      (`FTR` is a legacy guard — the rung was cut, the skip stays for pre-migration data).
+      Unprefixed titles keep the legacy behavior (any linked Execution counts). Higher
+      altitudes still MATERIALIZE — the QA-process-epic sweep writes them to test-executions/
+      as STR-/ATR-<KEY>-<slug>.md (non-conforming titles fall back to TESTEXEC-).
     sync: discovery
     role: atr
     content: description
@@ -857,7 +864,9 @@ work_types:
 
   re_test_execution:
     jira_issue_type: Re-Test Execution
-    description: Xray Re-Test Execution (subtask) — retest ATR (role atr, same altitude guard as test_execution)
+    description: |
+      Xray Re-Test Execution (subtask) — retest ATR (role atr, same altitude guard as
+      test_execution). Files as RETEST-<KEY>-<slug>.md when titled `ReTest:*`, else RETESTEXEC-.
     sync: discovery
     role: atr
     content: description
@@ -866,17 +875,23 @@ work_types:
   test_set:
     jira_issue_type: Test Set
     description: |
-      Xray Test Set — grouping of tests. Never synced as its own folder, but a Set titled
-      `ATS:*` linked to a coverable issue feeds cascade rung 1 of sync-jira-issues: its member
-      Tests (Xray GraphQL membership, or TC→ATS Jira links in Modality jira-native) materialize
-      under that issue's test-cases/. Feature-level `TS:*` Sets stay ignored.
-    sync: never
+      Xray Test Set — grouping of tests. A Set titled `ATS:*` linked to a coverable issue feeds
+      cascade rung 1 of sync-jira-issues: its member Tests (Xray GraphQL membership, or TC→ATS
+      Jira links in Modality jira-native) materialize under that issue's test-cases/.
+      Feature-level `TS:*` Sets stay ignored by the cascade.
+      `sync: discovery` — reachable by an explicit `get <KEY>` / `jql`, and swept from the QA
+      Test Artifacts epic, but never by a plain type sweep. It was `never` while the code wrote
+      it anyway on `get`: declaration and behavior now agree (`sync: never` is honored).
+    sync: discovery
     local_dir: test-sets
 
   precondition:
     jira_issue_type: Precondition
-    description: Xray Precondition — reusable test prerequisite (not synced)
-    sync: never
+    description: |
+      Xray Precondition — reusable test prerequisite. `sync: discovery` — reachable by an
+      explicit `get <KEY>` / `jql`, and swept from the QA Test Artifacts epic, but never by a
+      plain type sweep. Was `never` while the code wrote it anyway on `get`; the two now agree.
+    sync: discovery
     local_dir: preconditions
 
   subtask:
