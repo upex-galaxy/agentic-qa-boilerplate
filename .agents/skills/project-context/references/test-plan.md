@@ -189,7 +189,7 @@ Explicit delegation to stop scope creep:
 - Feature catalog, CRUD matrix, feature flags → `.context/business/business-feature-map.md`
 - API endpoint inventory / contracts → `bun run api:sync` + `project-context` mode `api` (when available)
 - Detailed test case definitions and traceability → TMS (see `/test-documentation`)
-- Sprint-level execution order → `.context/reports/SPRINT-{N}-TESTING.md` (see `/sprint-testing`)
+- Sprint-level execution order → the sprint's **STP** in Jira (see `/sprint-testing` sprint-wide mode)
 ```
 
 ### 11. Discovery gaps

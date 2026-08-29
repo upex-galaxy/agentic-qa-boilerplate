@@ -453,7 +453,7 @@ bun run test:smoke         # smoke / @critical tests
 │   ├── master-test-plan.md       # What to test and why
 │   ├── PRD/                      # Product requirements
 │   ├── SRS/                      # Technical specs
-│   ├── reports/                  # Generated output (GITIGNORED except its README): sprint trackers, test map, regression reports
+│   ├── reports/                  # Generated output (GITIGNORED except its README): test map, regression reports
 │   └── PBI/                      # Per-ticket backlog items (GITIGNORED Jira cache; `bun run context:hydrate`)
 │
 ├── .agents/                      # Agentskills.io spec layout — the shared, harness-agnostic substrate

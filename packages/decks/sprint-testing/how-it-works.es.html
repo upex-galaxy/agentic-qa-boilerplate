@@ -430,7 +430,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <p class="lede mt-m">QA manual por ticket dentro del sprint: <b>Planning → Execution → Reporting</b>, con gates humanos en cada checkpoint.</p>
       <div class="row wrap mt-l" style="gap:12px">
         <span class="chip"><span class="dot" style="background:var(--accent)"></span>Stages 1-3 del pipeline QA</span>
-        <span class="chip"><span class="dot" style="background:var(--good)"></span>Story · Bug · Batch sprint</span>
+        <span class="chip"><span class="dot" style="background:var(--good)"></span>Story · Bug · Sprint-wide</span>
         <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>Jira = fuente de verdad</span>
       </div>
     </div>
@@ -446,7 +446,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <span class="wlbl">Entrada</span>
         <span class="wchip"><b>Story</b> en Ready For QA</span>
         <span class="wchip"><b>Bug</b> desplegado en staging</span>
-        <span class="wchip"><b>Batch</b> «process sprint N»</span>
+        <span class="wchip"><b>Sprint-wide</b> «process sprint N»</span>
         <span class="wchip">← viene de <b>/shift-left-testing</b> (label <span class="mono">shift-left-reviewed</span> acorta el Planning)</span>
       </div>
       <div class="wrow">
@@ -469,11 +469,11 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="wnode out"><span class="wn">Stage 4</span><div class="wd"><span class="mono">/test-documentation</span> — TCs de regresión + ROI</div></div>
         <div class="wnode out"><span class="wn">Stage 5</span><div class="wd"><span class="mono">/test-automation</span> — código KATA</div></div>
         <div class="wnode out"><span class="wn">Stage 6</span><div class="wd"><span class="mono">/regression-testing</span> — suites en CI</div></div>
-        <div class="wnode out"><span class="wn">Batch ↩</span><div class="wd">siguiente ticket PENDING del sprint file</div></div>
+        <div class="wnode out"><span class="wn">Sprint ↩</span><div class="wd">siguiente issue PENDING del <span class="mono">plan.md</span> del sprint</div></div>
       </div>
     </div>
     <p class="small dim mt-m">Las 4 fases del camino principal se despachan como <b>subagentes secuenciales</b> — cada reporte alimenta el briefing del siguiente. Este mapa es el índice: cada nodo tiene su slide.</p>
-    <div class="notes">El índice mental del deck. Camino principal: Preflight → Phase 0 → Session Start → Stage 1 → 2 → 3 → Archive. Adyacentes: los tres modos de entrada, el handoff desde shift-left, el veto de bugs que colapsa a Code-Review-only, los STOP/pausa de Stage 2, y los handoffs a Stages 4/5/6. Batch loopea el mismo camino por ticket.</div>
+    <div class="notes">El índice mental del deck. Camino principal: Preflight → Phase 0 → Session Start → Stage 1 → 2 → 3 → Archive. Adyacentes: los tres modos de entrada, el handoff desde shift-left, el veto de bugs que colapsa a Code-Review-only, los STOP/pausa de Stage 2, y los handoffs a Stages 4/5/6. El modo sprint-wide loopea el mismo camino por issue.</div>
   </section>
 
   <!-- 3. MODOS -->
@@ -483,16 +483,16 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <table class="tt sm mt-m">
       <thead><tr><th>Modo</th><th>Entra</th><th>Sale</th></tr></thead>
       <tbody>
-        <tr><td><b>Single — User Story</b></td><td>Un ID de Story en Ready For QA</td><td>ATS + ATP + ATR + QA comment · ticket transicionado a QA approved · TC outlines (native) o Tests agrupados en el ATS y ejecutados (xray)</td></tr>
-        <tr><td><b>Single — Bug</b></td><td>Un ID de Bug con fix en staging</td><td>Decisión de triage → solo Code Review, O verificación completa con ATP + ATR (xray: 1 Test de repro en-sprint · native: sin TCs, difiere a Stage 4)</td></tr>
-        <tr><td><b>Batch sprint</b></td><td>El framework <span class="mono">SPRINT-N-TESTING.md</span></td><td>Artefactos por ticket + framework actualizado + resumen · con soporte de interrupción y resume</td></tr>
+        <tr><td><b>Single-issue — User Story</b></td><td>Un ID de Story en Ready For QA</td><td>ATS + ATP + ATR + QA comment · ticket transicionado a QA approved · TC outlines (native) o Tests agrupados en el ATS y ejecutados (xray)</td></tr>
+        <tr><td><b>Single-issue — Bug</b></td><td>Un ID de Bug con fix en staging</td><td>Decisión de triage → solo Code Review, O verificación completa con ATP + ATR (xray: 1 Test de repro en-sprint · native: sin TCs, difiere a Stage 4)</td></tr>
+        <tr><td><b>Sprint-wide</b></td><td>Un número de sprint («process sprint 5») → JQL construido con los work types <i>coverable</i> que el proyecto declara</td><td>Artefactos por issue + <span class="mono">STP</span> actualizado en Jira + resumen · con soporte de interrupción y resume</td></tr>
       </tbody>
     </table>
     <div class="grid g2 mt-m">
-      <div class="card"><p class="lbl">Regla de selección</p><p class="small mt-s">Story → story run · Bug → bug run · «process sprint 5» → batch. Si el sprint file no existe, se <b>genera primero</b> desde el backlog del sprint.</p></div>
-      <div class="card card-accent"><p class="lbl">Misma cadencia siempre</p><p class="small mt-s">Ambos modos pagan los mismos <b>4 despachos</b> por ticket: Session Start → Stage 1 → 2 → 3. Batch solo los repite por ticket.</p></div>
+      <div class="card"><p class="lbl">Regla de selección</p><p class="small mt-s">Story → story run · Bug → bug run · «process sprint 5» → sprint-wide. El alcance del sprint no es una lista fija de tipos: sale de una <b>JQL construida con los work types coverable que el proyecto declara</b>, resolviendo las alternativas <span class="mono">A | B | C</span> e intersectando con lo que la instancia realmente tiene. Un tipo declarado que la instancia no tiene se salta con una nota, nunca bloquea.</p></div>
+      <div class="card card-accent"><p class="lbl">Misma cadencia siempre</p><p class="small mt-s">Ambos modos pagan los mismos <b>4 despachos</b> por issue: Session Start → Stage 1 → 2 → 3. Sprint-wide solo los repite por issue.</p></div>
     </div>
-    <div class="notes">No hay un camino "inline" para un solo ticket: single y batch corren la misma secuencia de 4 subagentes para que el comportamiento sea uniforme y auditable.</div>
+    <div class="notes">No hay un camino "inline" para un solo issue: single-issue y sprint-wide corren la misma secuencia de 4 subagentes para que el comportamiento sea uniforme y auditable. Se dice "issue" y no "story" porque bugs, defects, tech debt e improvements también son coverables.</div>
   </section>
 
   <!-- 4. PREFLIGHT GATE -->
@@ -523,10 +523,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="grid g2 mt-m" style="align-items:start">
       <div class="stack">
         <ul class="big tight tight">
-          <li>Calcula el <span class="mono">&lt;scope&gt;</span>: <span class="mono">UPEX-123</span> o <span class="mono">sprint-7/UPEX-123</span> (batch).</li>
+          <li>Calcula el <span class="mono">&lt;scope&gt;</span>: <span class="mono">UPEX-123</span> o <span class="mono">sprint-7/UPEX-123</span> (sprint-wide).</li>
           <li>Lee <span class="mono">progress.md</span>: última etapa completada, BUG_FOUND o TOOL FAILURE pendientes.</li>
           <li>Ofrece <b>resume / restart / abort</b> — en restart, primero archiva la sesión abortada.</li>
-          <li>En batch corre <b>una vez por ticket</b> al entrar al loop, no una vez por sprint.</li>
+          <li>En sprint-wide corre <b>una vez por issue</b> al entrar al loop, no una vez por sprint.</li>
         </ul>
       </div>
       <div class="mk sm">.session/sprint-testing/&lt;scope&gt;/
@@ -736,24 +736,25 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="notes">Canon: agentic-qa-core/references/defect-management-doctrine.md — carga obligatoria antes de reportar. La clasificación sigue el ciclo de vida de la FEATURE, no dónde se encontró el problema.</div>
   </section>
 
-  <!-- 16. BATCH + CHECKPOINTS -->
-  <section class="slide" data-title="Batch sprint">
-    <p class="kicker">Modo batch · procesar el sprint entero</p>
-    <h2 class="h2 md">Un framework file conduce el loop</h2>
+  <!-- 16. SPRINT-WIDE + CHECKPOINTS -->
+  <section class="slide" data-title="Sprint-wide">
+    <p class="kicker">Modo sprint-wide · procesar el sprint entero</p>
+    <h2 class="h2 md">El plan es local, el <span class="grad">estado</span> vive en Jira</h2>
     <div class="grid g2 mt-m" style="align-items:start">
       <ul class="big tight tight">
-        <li><span class="mono">SPRINT-N-TESTING.md</span> se genera del backlog si falta; se regenera si tiene &gt;24h (con confirmación).</li>
-        <li>Loop: primer ticket <b>PENDING</b> de Wave 1 → los mismos 4 despachos → resumen por ticket → <b>tu OK</b> para el siguiente.</li>
-        <li>El framework file se actualiza <b>SOLO después</b> de que Stage 3 completa y verifica — nunca antes.</li>
+        <li>El alcance sale de una <b>JQL</b> construida con los work types coverable que declara el proyecto — no de una lista fija de tipos.</li>
+        <li>Local: el par de sesión de siempre en <span class="mono">.session/sprint-testing/sprint-&lt;N&gt;/</span> — <span class="mono">plan.md</span> (scope, waves, asignación) y <span class="mono">progress.md</span> (append-only, una entrada por issue cerrado).</li>
+        <li>Loop: primer issue <b>PENDING</b> de Wave 1 → los mismos 4 despachos → resumen por issue → <b>tu OK</b> para el siguiente.</li>
         <li>STOP en TOOL FAILURE · ⏸ en BUG_FOUND bloqueante.</li>
         <li><b>Cierre del sprint:</b> se crea el <span class="mono">STR: Sprint#{N}: Regression Testing</span> como recap de resultados y el STP se cierra.</li>
       </ul>
       <div class="stack">
+        <div class="card card-accent"><p class="lbl">El estado que ve el equipo = el STP</p><p class="small mt-s">La <b>descripción</b> del STP lleva el plan estable (un solo escritor, read-first); los <b>comentarios</b> llevan el progreso append-only, uno por issue cerrado. Si el log de comentarios y el ATR de una Story se contradicen, <b>manda el ATR</b>.</p></div>
         <div class="card"><p class="lbl">Checkpoint por etapa (S11)</p><p class="small mt-s">Tras cada subagente, el orquestador anota la etapa en <span class="mono">progress.md</span> — cada promote alimenta los Context docs del siguiente briefing.</p></div>
-        <div class="card"><p class="lbl">Archive al cerrar</p><p class="small mt-s"><span class="mono">.session/…</span> → <span class="mono">.session/.archive/&lt;fecha&gt;-…</span> + resumen a memoria persistente. Los artefactos PBI y el framework file <b>quedan</b>: son los entregables.</p></div>
+        <div class="card"><p class="lbl">Archive al cerrar</p><p class="small mt-s"><span class="mono">.session/…</span> → <span class="mono">.session/.archive/&lt;fecha&gt;-…</span> + resumen a memoria persistente. Los artefactos PBI y el STP en Jira <b>quedan</b>: son los entregables.</p></div>
       </div>
     </div>
-    <div class="notes">Phase 0 corre por ticket dentro del loop, así el resume de un sprint interrumpido es fino: retoma el ticket exacto y la etapa exacta.</div>
+    <div class="notes">El par plan.md + progress.md es el mismo convenio que ya usan otras seis skills — andamiaje local, no entregable: nunca viaja a otra máquina. Lo que el equipo consulta es el STP en Jira. Phase 0 corre por issue dentro del loop, así el resume de un sprint interrumpido es fino: retoma el issue exacto y la etapa exacta.</div>
   </section>
 
   <!-- 17. INVOCACION -->

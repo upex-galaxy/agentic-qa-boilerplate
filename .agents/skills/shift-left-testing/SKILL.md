@@ -36,7 +36,7 @@ any `/sdd-` mention outside this section. See:
 
 Drive Stage 0 — the pre-sprint Shift-Left loop — on a set of backlog Stories. Three phases, always in this order: **Phase 1 Selection -> Phase 2 Refinement -> Phase 3 Handoff**. Hand off afterwards to `/sprint-testing` once each Story reaches `Ready For QA`.
 
-The skill is **batch-by-design**: one session refines N Stories from the backlog so PO + Dev lead can run a single grooming pass with the team. There is no single-ticket mode — for a one-off urgent refinement, pass a list of length 1; the cadence stays the same.
+The skill is **batch-by-design**: one session refines N Stories from the backlog so PO + Dev lead can run a single grooming pass with the team. There is no single-issue mode — for a one-off urgent refinement, pass a list of length 1; the cadence stays the same.
 
 ---
 

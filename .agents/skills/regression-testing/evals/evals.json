@@ -54,7 +54,7 @@
     {
       "id": 5,
       "prompt": "Manually test whether the bug fix for UPEX-123 actually works.",
-      "expected_output": "This is manual retest work owned by the sprint-testing skill (single-ticket QA flow), not regression-testing. The assistant should not trigger the regression pipeline.",
+      "expected_output": "This is manual retest work owned by the sprint-testing skill (single-issue QA flow), not regression-testing. The assistant should not trigger the regression pipeline.",
       "files": [],
       "expectations": [
         "The response does NOT trigger `gh workflow run` for regression, smoke, or sanity",

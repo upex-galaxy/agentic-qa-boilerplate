@@ -571,7 +571,12 @@ TC → Story directo    last resort válido (deja de ser anti-patrón)
             <div class="card">
               <h3>In-sprint</h3>
               <ul>
-                <li>STP vivo desde el primer ticket, actualizado por ticket</li>
+                <li>
+                  STP vivo desde el primer ticket: su <b>descripción</b> lleva el plan del sprint
+                  (un solo escritor, read-first) y sus <b>comentarios</b> el progreso append-only,
+                  uno por issue cerrado. Es el estado de sprint que ve el equipo — si el log y el
+                  ATR de una Story se contradicen, manda el ATR
+                </li>
                 <li>Bug retest (xray): 1 Test de repro creado y ejecutado en-sprint</li>
                 <li>STR al cierre como recap del sprint</li>
               </ul>
