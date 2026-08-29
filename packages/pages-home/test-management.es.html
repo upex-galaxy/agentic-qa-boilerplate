@@ -1,0 +1,2184 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Test Management Architecture — la escalera de artefactos QA</title>
+    <meta
+      name="description"
+      content="Cómo el boilerplate Agentic QA organiza la gestión de pruebas: la escalera MTP / FTP / STP / ATP con sus corredores STR y ATR, los cuatro epics de proceso en Jira, quién produce cada artefacto y cómo bajan al caché local."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --surface-2: #1c2230;
+        --text-1: #e6edf3;
+        --text-2: #9aa6b2;
+        --text-3: #6e7681;
+        --border: rgba(139, 148, 158, 0.22);
+        --border-strong: rgba(139, 148, 158, 0.42);
+        --good: #3fb950;
+        --bad: #ff7b72;
+        --warn: #e3b341;
+        --a1: #ffa657;
+        --a2: #ff7b72;
+        --a3: #d2a8ff;
+        --grad: linear-gradient(120deg, var(--a1), var(--a2) 55%, var(--a3));
+        --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+        --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+        --radius: 14px;
+        --radius-lg: 20px;
+        color-scheme: dark;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text-1);
+        font-family: var(--font-ui);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: inherit;
+      }
+      .wrap {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.86em;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.08em 0.4em;
+        white-space: nowrap;
+      }
+
+      header {
+        border-bottom: 1px solid var(--border);
+        padding: 16px 0;
+        position: sticky;
+        top: 0;
+        background: rgba(13, 17, 23, 0.88);
+        backdrop-filter: blur(8px);
+        z-index: 10;
+      }
+      .header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .brand {
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-decoration: none;
+        letter-spacing: -0.01em;
+      }
+      .brand span {
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .header-links {
+        display: flex;
+        gap: 18px;
+        font-size: 0.82rem;
+        color: var(--text-2);
+      }
+      .header-links a {
+        text-decoration: none;
+      }
+      .header-links a:hover {
+        color: var(--text-1);
+      }
+
+      .hero {
+        padding: 72px 0 48px;
+        border-bottom: 1px solid var(--border);
+      }
+      .eyebrow {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--a1);
+        margin-bottom: 18px;
+      }
+      h1 {
+        font-size: clamp(2rem, 4.5vw, 3.1rem);
+        line-height: 1.08;
+        letter-spacing: -0.03em;
+        font-weight: 800;
+        margin-bottom: 20px;
+      }
+      h1 em {
+        font-style: normal;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .lede {
+        font-size: 1.08rem;
+        color: var(--text-2);
+        max-width: 66ch;
+      }
+
+      section {
+        padding: 64px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      h2 {
+        font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+        letter-spacing: -0.02em;
+        font-weight: 700;
+        margin-bottom: 14px;
+      }
+      h3 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+        letter-spacing: -0.01em;
+      }
+      section > p,
+      section > .wrap > p {
+        color: var(--text-2);
+        max-width: 72ch;
+        margin-bottom: 16px;
+      }
+      .sec-eyebrow {
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        margin-bottom: 12px;
+      }
+
+      .fig-wrap {
+        margin: 28px 0 8px;
+        overflow-x: auto;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface);
+        padding: 20px;
+      }
+      svg.fig {
+        width: 100%;
+        min-width: 880px;
+        display: block;
+      }
+      .caption {
+        font-size: 0.82rem;
+        color: var(--text-3);
+        font-family: var(--font-mono);
+        margin-top: 10px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+        margin-top: 26px;
+      }
+      .grid-3 {
+        grid-template-columns: 1.1fr 1fr 0.95fr;
+      }
+      .grid-2 {
+        grid-template-columns: 1.15fr 0.85fr;
+      }
+      @media (max-width: 860px) {
+        .grid-3,
+        .grid-2 {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+      }
+      .card h3 {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .dot.a {
+        background: var(--a1);
+      }
+      .dot.g {
+        background: var(--good);
+      }
+      .dot.b {
+        background: var(--bad);
+      }
+      .dot.m {
+        background: var(--text-3);
+      }
+      .card ul {
+        list-style: none;
+      }
+      .card li {
+        font-size: 0.87rem;
+        color: var(--text-2);
+        padding-left: 14px;
+        position: relative;
+        margin-bottom: 8px;
+      }
+      .card li::before {
+        content: '·';
+        position: absolute;
+        left: 0;
+        color: var(--text-3);
+      }
+
+      .tbl {
+        overflow-x: auto;
+        margin-top: 22px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.86rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        font-family: var(--font-mono);
+        font-size: 0.66rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        border-bottom: 1px solid var(--border-strong);
+      }
+      td {
+        color: var(--text-2);
+      }
+      td strong {
+        color: var(--text-1);
+      }
+      .st {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+      }
+      .st-ok {
+        color: var(--good);
+      }
+      .st-part {
+        color: var(--warn);
+      }
+      .st-gap {
+        color: var(--bad);
+      }
+      .st-cut {
+        color: var(--text-3);
+      }
+
+      pre {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        overflow-x: auto;
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        line-height: 1.7;
+        color: var(--text-2);
+        margin: 20px 0;
+      }
+      pre b {
+        color: var(--a1);
+        font-weight: 500;
+      }
+
+      .pull {
+        border-left: 3px solid var(--a1);
+        padding: 4px 0 4px 18px;
+        margin: 28px 0;
+        max-width: 68ch;
+        font-size: 1.05rem;
+        color: var(--text-1);
+      }
+
+      footer {
+        padding: 40px 0 64px;
+        font-family: var(--font-mono);
+        font-size: 0.74rem;
+        color: var(--text-3);
+        line-height: 2;
+      }
+      footer a {
+        color: var(--text-2);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap header-row">
+        <a class="brand" href="./">Agentic <span>QA</span></a>
+        <nav class="header-links">
+          <a href="./">Inicio</a>
+          <a href="./arquitectura.es.html">Arquitectura</a>
+          <a href="./harnesses.es.html">Harnesses</a>
+          <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap hero">
+      <p class="eyebrow">Test Management Architecture</p>
+      <h1>Cuatro altitudes, un plan y un corredor <em>en cada una</em>.</h1>
+      <p class="lede">
+        Cómo este repositorio organiza la gestión de pruebas: la escalera MTP → FTP → STP → ATP con
+        sus corredores STR y ATR, los cuatro epics de proceso que los sostienen en Jira, qué skill
+        produce cada artefacto y cómo bajan todos al caché local. Todo lo que sigue está verificado
+        contra el código, no contra la intención.
+      </p>
+    </div>
+
+    <!-- ══════════ 1 · LA ESCALERA ══════════ -->
+    <section>
+      <div class="wrap">
+        <p class="sec-eyebrow">01 · altitudes</p>
+        <h2>La escalera</h2>
+        <p>
+          La gramática de títulos es <code>{ACRONYM}: {scope}: {desc}</code>, elegida para que la
+          altitud se lea en el primer token. Antes de esa regla, el mismo tipo de issue
+          <code>Test Plan</code> se titulaba de tres formas distintas y nadie podía saber, mirando
+          un título, si era el plan de un sprint o el de una historia.
+        </p>
+
+        <div class="fig-wrap">
+          <svg
+            class="fig"
+            viewBox="0 0 1000 420"
+            role="img"
+            aria-labelledby="tm-ladder-title tm-ladder-desc"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <title id="tm-ladder-title">Escalera de artefactos QA por altitud</title>
+            <desc id="tm-ladder-desc">
+              Cuatro bandas apiladas de alcance más amplio a más puntual: Master con el MTP, Feature
+              con el FTP, Sprint con el STP y el STR, y Story con el ATP, el ATS y el ATR. Cada
+              banda muestra su tipo de issue en Jira y quién lo produce.
+            </desc>
+
+            <rect width="1000" height="420" fill="#161b22" />
+            <defs>
+              <marker id="tm-ar" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#9aa6b2" />
+              </marker>
+            </defs>
+
+            <text
+              x="64"
+              y="32"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+              letter-spacing="0.14em"
+            >
+              AMPLIO
+            </text>
+            <line
+              x1="64"
+              y1="316"
+              x2="64"
+              y2="48"
+              stroke="#9aa6b2"
+              stroke-width="1"
+              marker-end="url(#tm-ar)"
+            />
+            <text
+              x="64"
+              y="336"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+              letter-spacing="0.14em"
+            >
+              PUNTUAL
+            </text>
+
+            <!-- MASTER -->
+            <rect
+              x="120"
+              y="40"
+              width="800"
+              height="64"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="1"
+            />
+            <rect
+              x="136"
+              y="56"
+              width="88"
+              height="16"
+              rx="4"
+              fill="none"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="0.8"
+            />
+            <text
+              x="180"
+              y="68"
+              fill="#9aa6b2"
+              font-size="7"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+              letter-spacing="0.14em"
+            >
+              MASTER
+            </text>
+            <text
+              x="248"
+              y="66"
+              fill="#e6edf3"
+              font-size="13"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              MTP
+            </text>
+            <text
+              x="248"
+              y="84"
+              fill="#6e7681"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              Epic — no es un Test Plan
+            </text>
+            <text x="592" y="66" fill="#9aa6b2" font-size="11" font-family="'Inter', sans-serif">
+              sin corredor
+            </text>
+            <text
+              x="592"
+              y="84"
+              fill="#6e7681"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              project-context
+            </text>
+            <text
+              x="904"
+              y="76"
+              fill="#6e7681"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="end"
+            >
+              1 por proyecto
+            </text>
+
+            <!-- FEATURE -->
+            <rect
+              x="120"
+              y="116"
+              width="800"
+              height="64"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="1"
+            />
+            <rect
+              x="136"
+              y="132"
+              width="88"
+              height="16"
+              rx="4"
+              fill="none"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="0.8"
+            />
+            <text
+              x="180"
+              y="144"
+              fill="#9aa6b2"
+              font-size="7"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+              letter-spacing="0.14em"
+            >
+              FEATURE
+            </text>
+            <text
+              x="248"
+              y="142"
+              fill="#e6edf3"
+              font-size="13"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              FTP
+            </text>
+            <text
+              x="248"
+              y="160"
+              fill="#6e7681"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              Test Plan — 1 por epic
+            </text>
+            <text x="592" y="142" fill="#9aa6b2" font-size="11" font-family="'Inter', sans-serif">
+              FTR retirado
+            </text>
+            <text
+              x="592"
+              y="160"
+              fill="#6e7681"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              sube por los ATR
+            </text>
+            <text
+              x="904"
+              y="152"
+              fill="#6e7681"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="end"
+            >
+              sprint-testing
+            </text>
+
+            <!-- SPRINT -->
+            <rect
+              x="120"
+              y="192"
+              width="800"
+              height="64"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="1"
+            />
+            <rect
+              x="136"
+              y="208"
+              width="88"
+              height="16"
+              rx="4"
+              fill="none"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="0.8"
+            />
+            <text
+              x="180"
+              y="220"
+              fill="#9aa6b2"
+              font-size="7"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+              letter-spacing="0.14em"
+            >
+              SPRINT
+            </text>
+            <text
+              x="248"
+              y="218"
+              fill="#e6edf3"
+              font-size="13"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              STP
+            </text>
+            <text
+              x="248"
+              y="236"
+              fill="#6e7681"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              Test Plan — vivo desde el 1er ticket
+            </text>
+            <text
+              x="592"
+              y="218"
+              fill="#e6edf3"
+              font-size="13"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              STR
+            </text>
+            <text
+              x="592"
+              y="236"
+              fill="#6e7681"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              Test Execution — recap al cierre
+            </text>
+            <text
+              x="904"
+              y="228"
+              fill="#6e7681"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="end"
+            >
+              1 por sprint
+            </text>
+
+            <!-- STORY (focal) -->
+            <rect
+              x="120"
+              y="268"
+              width="800"
+              height="64"
+              rx="8"
+              fill="rgba(255,166,87,0.08)"
+              stroke="#ffa657"
+              stroke-width="1"
+            />
+            <rect
+              x="136"
+              y="284"
+              width="88"
+              height="16"
+              rx="4"
+              fill="none"
+              stroke="rgba(255,166,87,0.55)"
+              stroke-width="0.8"
+            />
+            <text
+              x="180"
+              y="296"
+              fill="#ffa657"
+              font-size="7"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+              letter-spacing="0.14em"
+            >
+              STORY
+            </text>
+            <text
+              x="248"
+              y="294"
+              fill="#e6edf3"
+              font-size="13"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              ATP + ATS
+            </text>
+            <text
+              x="248"
+              y="312"
+              fill="#9aa6b2"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              Test Plan + Test Set — el ATS da la cobertura
+            </text>
+            <text
+              x="592"
+              y="294"
+              fill="#e6edf3"
+              font-size="13"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              ATR
+            </text>
+            <text
+              x="592"
+              y="312"
+              fill="#9aa6b2"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              Test Execution — siempre con environment
+            </text>
+            <text
+              x="904"
+              y="304"
+              fill="#ffa657"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="end"
+            >
+              1 por historia
+            </text>
+
+            <line
+              x1="40"
+              y1="364"
+              x2="960"
+              y2="364"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="0.8"
+            />
+            <text
+              x="40"
+              y="384"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              letter-spacing="0.14em"
+            >
+              LEYENDA
+            </text>
+            <rect
+              x="132"
+              y="374"
+              width="20"
+              height="12"
+              rx="3"
+              fill="rgba(255,166,87,0.08)"
+              stroke="#ffa657"
+              stroke-width="0.8"
+            />
+            <text x="160" y="384" fill="#9aa6b2" font-size="9" font-family="'Inter', sans-serif">
+              la altitud donde se ejecuta el trabajo diario
+            </text>
+            <text x="520" y="384" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              Todo plan cuelga del epic QA Master Test Plan. Todo corredor, de QA Test Artifacts.
+            </text>
+          </svg>
+          <p class="caption">
+            Fig. 1 — un plan por altitud, un corredor arriba del Master. El FTR fue cortado a
+            propósito: los resultados de feature suben por los ATR de cada historia.
+          </p>
+        </div>
+
+        <div class="pull">
+          Un plan describe lo que se va a probar. Un corredor registra lo que efectivamente pasó.
+          Emparejarlos por altitud es lo que hace que la trazabilidad no dependa de la memoria de
+          nadie.
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ 2 · JIRA POR DENTRO ══════════ -->
+    <section>
+      <div class="wrap">
+        <p class="sec-eyebrow">02 · topología en Jira</p>
+        <h2>Cuatro epics de proceso, y ningún artefacto de QA en un epic de producto</h2>
+        <p>
+          El modelo de tres ejes es la regla que evita que la trazabilidad se convierta en una sola
+          jerarquía sobrecargada. El <strong>padre</strong> dice en qué balde de QA vive el
+          artefacto. El <strong>link</strong> dice de qué historia salió. Los
+          <strong>components</strong> dicen qué módulo del producto toca. Nunca se mezclan, y por
+          eso el roadmap de producto no se contamina con artefactos de prueba.
+        </p>
+
+        <div class="fig-wrap">
+          <svg
+            class="fig"
+            viewBox="0 0 1000 480"
+            role="img"
+            aria-labelledby="tm-jira-title tm-jira-desc"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <title id="tm-jira-title">Los cuatro epics de proceso QA en Jira</title>
+            <desc id="tm-jira-desc">
+              Cuadrícula de cuatro contenedores: QA Master Test Plan agrupa los Test Plan de toda
+              altitud, QA Test Repository agrupa los Test, QA Test Artifacts agrupa Test Execution,
+              Test Set y Precondition, y QA Defect Management agrupa bugs, defectos y mejoras.
+              Abajo, los tres ejes de trazabilidad.
+            </desc>
+
+            <rect width="1000" height="480" fill="#161b22" />
+
+            <rect
+              x="40"
+              y="48"
+              width="440"
+              height="144"
+              rx="12"
+              fill="rgba(255,166,87,0.08)"
+              stroke="#ffa657"
+              stroke-width="1"
+            />
+            <rect x="56" y="40" width="216" height="14" rx="3" fill="#161b22" />
+            <text
+              x="60"
+              y="51"
+              fill="#ffa657"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              letter-spacing="0.14em"
+            >
+              QA MASTER TEST PLAN
+            </text>
+            <text
+              x="64"
+              y="86"
+              fill="#e6edf3"
+              font-size="12"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              Todo Test Plan, de cualquier altitud
+            </text>
+            <text
+              x="64"
+              y="110"
+              fill="#9aa6b2"
+              font-size="10"
+              font-family="'JetBrains Mono', monospace"
+            >
+              FTP: {EPIC}: {feature}
+            </text>
+            <text
+              x="64"
+              y="130"
+              fill="#9aa6b2"
+              font-size="10"
+              font-family="'JetBrains Mono', monospace"
+            >
+              STP: Sprint#{N}: {objective}
+            </text>
+            <text
+              x="64"
+              y="150"
+              fill="#9aa6b2"
+              font-size="10"
+              font-family="'JetBrains Mono', monospace"
+            >
+              ATP: {STORY}: {title}
+            </text>
+            <text x="64" y="174" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              El epic mismo ES el MTP.
+            </text>
+
+            <rect
+              x="520"
+              y="48"
+              width="440"
+              height="144"
+              rx="12"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="1"
+            />
+            <rect x="536" y="40" width="204" height="14" rx="3" fill="#161b22" />
+            <text
+              x="540"
+              y="51"
+              fill="#9aa6b2"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              letter-spacing="0.14em"
+            >
+              QA TEST REPOSITORY
+            </text>
+            <text
+              x="544"
+              y="86"
+              fill="#e6edf3"
+              font-size="12"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              Todo Test — el caso de prueba
+            </text>
+            <text
+              x="544"
+              y="110"
+              fill="#9aa6b2"
+              font-size="10"
+              font-family="'JetBrains Mono', monospace"
+            >
+              Test · should …
+            </text>
+            <text x="544" y="136" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              Entran por el gate de ROI, no por defecto:
+            </text>
+            <text x="544" y="154" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              analizados 80 → documentados 12 → automatizados 8
+            </text>
+            <text x="544" y="174" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              Un verdicto Deferred nunca persiste un Test.
+            </text>
+
+            <rect
+              x="40"
+              y="224"
+              width="440"
+              height="144"
+              rx="12"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="1"
+            />
+            <rect x="56" y="216" width="184" height="14" rx="3" fill="#161b22" />
+            <text
+              x="60"
+              y="227"
+              fill="#9aa6b2"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              letter-spacing="0.14em"
+            >
+              QA TEST ARTIFACTS
+            </text>
+            <text
+              x="64"
+              y="262"
+              fill="#e6edf3"
+              font-size="12"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              Corredores, sets y precondiciones
+            </text>
+            <text
+              x="64"
+              y="286"
+              fill="#9aa6b2"
+              font-size="10"
+              font-family="'JetBrains Mono', monospace"
+            >
+              ATR: {STORY}: Story Testing
+            </text>
+            <text
+              x="64"
+              y="306"
+              fill="#9aa6b2"
+              font-size="10"
+              font-family="'JetBrains Mono', monospace"
+            >
+              STR: Sprint#{N}: Regression Testing
+            </text>
+            <text
+              x="64"
+              y="326"
+              fill="#9aa6b2"
+              font-size="10"
+              font-family="'JetBrains Mono', monospace"
+            >
+              ATS: {STORY}: {title}
+            </text>
+            <text x="64" y="350" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              El ATS es obligatorio aunque haya un solo caso.
+            </text>
+
+            <rect
+              x="520"
+              y="224"
+              width="440"
+              height="144"
+              rx="12"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="1"
+            />
+            <rect x="536" y="216" width="216" height="14" rx="3" fill="#161b22" />
+            <text
+              x="540"
+              y="227"
+              fill="#9aa6b2"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              letter-spacing="0.14em"
+            >
+              QA DEFECT MANAGEMENT
+            </text>
+            <text
+              x="544"
+              y="262"
+              fill="#e6edf3"
+              font-size="12"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              Todo reporte de calidad
+            </text>
+            <text
+              x="544"
+              y="286"
+              fill="#9aa6b2"
+              font-size="10"
+              font-family="'JetBrains Mono', monospace"
+            >
+              Bug · Defect · Improvement
+            </text>
+            <text x="544" y="312" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              Se clasifican por la etapa de vida de la FEATURE,
+            </text>
+            <text x="544" y="330" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              no por dónde apareció el problema.
+            </text>
+            <text x="544" y="350" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              La historia de origen viaja por link, no por padre.
+            </text>
+
+            <line
+              x1="40"
+              y1="400"
+              x2="960"
+              y2="400"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="0.8"
+            />
+            <text
+              x="40"
+              y="420"
+              fill="#9aa6b2"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              letter-spacing="0.14em"
+            >
+              LOS TRES EJES, NUNCA MEZCLADOS
+            </text>
+
+            <rect
+              x="40"
+              y="432"
+              width="12"
+              height="12"
+              rx="3"
+              fill="none"
+              stroke="#9aa6b2"
+              stroke-width="0.8"
+            />
+            <text
+              x="60"
+              y="442"
+              fill="#e6edf3"
+              font-size="10"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              padre
+            </text>
+            <text x="112" y="442" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              el balde de QA donde vive
+            </text>
+
+            <rect
+              x="340"
+              y="432"
+              width="12"
+              height="12"
+              rx="3"
+              fill="none"
+              stroke="#9aa6b2"
+              stroke-width="0.8"
+            />
+            <text
+              x="360"
+              y="442"
+              fill="#e6edf3"
+              font-size="10"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              link
+            </text>
+            <text x="404" y="442" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              la historia de la que salió
+            </text>
+
+            <rect
+              x="640"
+              y="432"
+              width="12"
+              height="12"
+              rx="3"
+              fill="none"
+              stroke="#9aa6b2"
+              stroke-width="0.8"
+            />
+            <text
+              x="660"
+              y="442"
+              fill="#e6edf3"
+              font-size="10"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              components
+            </text>
+            <text x="756" y="442" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              el módulo del producto afectado
+            </text>
+
+            <text
+              x="40"
+              y="468"
+              fill="#ffa657"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              COBERTURA: la llena el link ATS→Story, o un link directo Test→Story. ATP→Story y
+              ATR→Story dan CERO.
+            </text>
+          </svg>
+          <p class="caption">
+            Fig. 2 — verificado en vivo contra Xray: una historia enlazada solo a su Test Plan y su
+            Test Execution aparece como <em>UNCOVERED, 0 tests</em>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ 3 · QUIÉN PRODUCE QUÉ ══════════ -->
+    <section>
+      <div class="wrap">
+        <p class="sec-eyebrow">03 · productores</p>
+        <h2>Qué skill crea cada artefacto, y cuándo</h2>
+        <p>
+          El traspaso que define la metodología es el primero. Antes del sprint, el plan de
+          aceptación vive <strong>solo en un campo</strong> de la historia; el issue de Jira recién
+          nace cuando la historia entra al sprint. Una historia que muere en el backlog no consume
+          ni un artefacto.
+        </p>
+
+        <div class="fig-wrap">
+          <svg
+            class="fig"
+            viewBox="0 0 1000 452"
+            role="img"
+            aria-labelledby="tm-lanes-title tm-lanes-desc"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <title id="tm-lanes-title">Skills productoras de artefactos a lo largo del ciclo</title>
+            <desc id="tm-lanes-desc">
+              Cinco carriles horizontales, uno por skill, sobre un eje que va de pre-sprint al
+              cierre del sprint. Shift-left escribe el plan de aceptación en el campo de la
+              historia; sprint-testing crea los issues en Stage 1, los llena en Stage 3 y cierra el
+              sprint; test-documentation filtra casos por ROI; test-automation escribe los
+              decoradores; regression-testing comparte la creación del recap.
+            </desc>
+
+            <rect width="1000" height="452" fill="#161b22" />
+            <defs>
+              <marker id="tm-sw" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#9aa6b2" />
+              </marker>
+              <marker id="tm-sw-a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#ffa657" />
+              </marker>
+            </defs>
+
+            <text
+              x="216"
+              y="30"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+              letter-spacing="0.14em"
+            >
+              PRE-SPRINT
+            </text>
+            <text
+              x="428"
+              y="30"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+              letter-spacing="0.14em"
+            >
+              STAGE 1
+            </text>
+            <text
+              x="614"
+              y="30"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+              letter-spacing="0.14em"
+            >
+              STAGE 2-3
+            </text>
+            <text
+              x="800"
+              y="30"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+              letter-spacing="0.14em"
+            >
+              STAGE 4-5
+            </text>
+            <text
+              x="916"
+              y="30"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+              letter-spacing="0.14em"
+            >
+              CIERRE
+            </text>
+            <line
+              x1="140"
+              y1="42"
+              x2="960"
+              y2="42"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="0.8"
+            />
+
+            <path
+              d="M 292 88 H 308 A 8 8 0 0 1 316 96 V 128 A 8 8 0 0 0 324 136 H 340"
+              fill="none"
+              stroke="#ffa657"
+              stroke-width="1"
+              marker-end="url(#tm-sw-a)"
+            />
+            <path
+              d="M 700 240 H 708 A 8 8 0 0 1 716 248 V 304 A 8 8 0 0 0 724 312 H 732"
+              fill="none"
+              stroke="#9aa6b2"
+              stroke-width="1"
+              marker-end="url(#tm-sw)"
+            />
+            <path
+              d="M 900 184 V 368"
+              fill="none"
+              stroke="#9aa6b2"
+              stroke-width="1"
+              stroke-dasharray="5,4"
+              marker-end="url(#tm-sw)"
+            />
+
+            <line
+              x1="140"
+              y1="116"
+              x2="960"
+              y2="116"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="0.8"
+            />
+            <text
+              x="40"
+              y="84"
+              fill="#9aa6b2"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              shift-left
+            </text>
+            <text
+              x="40"
+              y="98"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+            >
+              -testing
+            </text>
+            <rect x="140" y="64" width="152" height="44" rx="8" fill="#161b22" />
+            <rect
+              x="140"
+              y="64"
+              width="152"
+              height="44"
+              rx="8"
+              fill="rgba(255,166,87,0.08)"
+              stroke="#ffa657"
+              stroke-width="1"
+            />
+            <text
+              x="216"
+              y="82"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              ATP en el campo
+            </text>
+            <text
+              x="216"
+              y="98"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              sin issue de Jira
+            </text>
+
+            <line
+              x1="140"
+              y1="192"
+              x2="960"
+              y2="192"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="0.8"
+            />
+            <text
+              x="40"
+              y="160"
+              fill="#9aa6b2"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              sprint
+            </text>
+            <text
+              x="40"
+              y="174"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+            >
+              -testing
+            </text>
+            <rect x="340" y="140" width="176" height="44" rx="8" fill="#161b22" />
+            <rect
+              x="340"
+              y="140"
+              width="176"
+              height="44"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="1"
+            />
+            <text
+              x="428"
+              y="158"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              ATS · Test · ATP · ATR
+            </text>
+            <text
+              x="428"
+              y="174"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              orden Set-first
+            </text>
+
+            <rect x="548" y="140" width="132" height="44" rx="8" fill="#161b22" />
+            <rect
+              x="548"
+              y="140"
+              width="132"
+              height="44"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="1"
+            />
+            <text
+              x="614"
+              y="158"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              ATR lleno
+            </text>
+            <text
+              x="614"
+              y="174"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              con environment
+            </text>
+
+            <rect x="836" y="140" width="128" height="44" rx="8" fill="#161b22" />
+            <rect
+              x="836"
+              y="140"
+              width="128"
+              height="44"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="1"
+            />
+            <text
+              x="900"
+              y="158"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              STR
+            </text>
+            <text
+              x="900"
+              y="174"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              recap del sprint
+            </text>
+
+            <line
+              x1="140"
+              y1="268"
+              x2="960"
+              y2="268"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="0.8"
+            />
+            <text
+              x="40"
+              y="236"
+              fill="#9aa6b2"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              test-doc
+            </text>
+            <text
+              x="40"
+              y="250"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+            >
+              umentation
+            </text>
+            <rect x="568" y="216" width="132" height="44" rx="8" fill="#161b22" />
+            <rect
+              x="568"
+              y="216"
+              width="132"
+              height="44"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="1"
+            />
+            <text
+              x="634"
+              y="234"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              Test por ROI
+            </text>
+            <text
+              x="634"
+              y="250"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              80 → 12 → 8
+            </text>
+
+            <line
+              x1="140"
+              y1="344"
+              x2="960"
+              y2="344"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="0.8"
+            />
+            <text
+              x="40"
+              y="312"
+              fill="#9aa6b2"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              test-auto
+            </text>
+            <text
+              x="40"
+              y="326"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+            >
+              mation
+            </text>
+            <rect x="732" y="292" width="140" height="44" rx="8" fill="#161b22" />
+            <rect
+              x="732"
+              y="292"
+              width="140"
+              height="44"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="1"
+            />
+            <text
+              x="802"
+              y="310"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              @atc('KEY')
+            </text>
+            <text
+              x="802"
+              y="326"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              decorador, no issue
+            </text>
+
+            <line
+              x1="140"
+              y1="420"
+              x2="960"
+              y2="420"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="0.8"
+            />
+            <text
+              x="40"
+              y="388"
+              fill="#9aa6b2"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              regression
+            </text>
+            <text
+              x="40"
+              y="402"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+            >
+              -testing
+            </text>
+            <rect x="836" y="368" width="128" height="44" rx="8" fill="#161b22" />
+            <rect
+              x="836"
+              y="368"
+              width="128"
+              height="44"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="1"
+              stroke-dasharray="4,3"
+            />
+            <text
+              x="900"
+              y="386"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              STR
+            </text>
+            <text
+              x="900"
+              y="402"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              el que llegue primero
+            </text>
+          </svg>
+          <p class="caption">
+            Fig. 3 — la flecha naranja es el traspaso campo → issue. La punteada marca el STR, que
+            crea quien llegue primero entre el cierre de sprint y la corrida de regresión.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ 4 · EL CACHÉ LOCAL ══════════ -->
+    <section>
+      <div class="wrap">
+        <p class="sec-eyebrow">04 · caché local</p>
+        <h2>Cómo bajan los artefactos al repositorio</h2>
+        <p>
+          Jira es la fuente de verdad; <code>.context/PBI/</code> es un caché gitignoreado que
+          <code>bun run context:hydrate</code> reconstruye en un comando. La regla de diseño es que
+          <strong
+            >el nombre del archivo en disco lleve el mismo acrónimo que el título en Jira</strong
+          >, para que la altitud se lea igual de rápido en un <code>ls</code> que en el backlog.
+        </p>
+
+        <pre>
+.context/PBI/
+├─ <b>epics/</b>EPIC-&lt;KEY&gt;-&lt;slug&gt;/
+│  ├─ epic.md · module-context.md
+│  ├─ feature-test-plan.md          ← espejo del FTP
+│  └─ <b>stories/</b>STORY-&lt;KEY&gt;-&lt;slug&gt;/
+│     ├─ story.md · acceptance-criteria.md
+│     ├─ acceptance-test-plan.md    ← espejo del ATP
+│     ├─ acceptance-test-results.md ← espejo del ATR
+│     └─ test-cases/                ← los Test, colocados por la cascade
+│
+├─ <b>test-plans/</b>       FTP-&lt;KEY&gt;-&lt;slug&gt;.md · STP-&lt;KEY&gt;-&lt;slug&gt;.md · ATP-&lt;KEY&gt;-&lt;slug&gt;.md
+├─ <b>test-executions/</b>  STR-&lt;KEY&gt;-&lt;slug&gt;.md · ATR-&lt;KEY&gt;-&lt;slug&gt;.md · RETEST-&lt;KEY&gt;-&lt;slug&gt;.md
+├─ <b>test-sets/</b> · <b>preconditions/</b>
+└─ <b>qa-artifacts/</b>_index.md    ← registro de los cuatro epics de proceso</pre
+        >
+
+        <div class="grid grid-3">
+          <div class="card">
+            <h3><span class="dot a"></span>El nombre dice la altitud</h3>
+            <ul>
+              <li>El prefijo sale del <em>título</em>, no del tipo de issue</li>
+              <li>
+                Un <code>ls test-plans/</code> muestra el estado de la escalera sin abrir nada
+              </li>
+              <li>
+                Un título que no sigue la gramática cae al prefijo genérico y sincroniza igual
+              </li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3><span class="dot m"></span>Los epics son el índice</h3>
+            <ul>
+              <li>
+                Las altitudes altas no cuelgan de ninguna historia, así que la caminata de links
+                nunca las alcanza
+              </li>
+              <li><code>pull</code> barre los hijos de los cuatro epics de proceso</li>
+              <li>Cero configuración nueva: la estructura ya existía en Jira</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3><span class="dot g"></span>Dos vistas del mismo dato</h3>
+            <ul>
+              <li>
+                Dentro de la historia: el cuerpo del plan y del resultado, como los lee quien testea
+              </li>
+              <li>En <code>test-plans/</code>: el issue completo, como lo ve quien audita</li>
+              <li>El item de Jira siempre gana sobre la copia del custom field</li>
+            </ul>
+          </div>
+        </div>
+
+        <p style="margin-top: 26px">
+          Un detalle que parece menor y no lo es: la guarda que impide que un FTP enlazado a una
+          historia sea confundido con el plan de esa historia <strong>se queda igual</strong>.
+          Materializar las altitudes altas es un camino aparte. Mezclar las dos cosas era lo que
+          dejaba tres peldaños invisibles en disco.
+        </p>
+      </div>
+    </section>
+
+    <!-- ══════════ 5 · LA CADENA ══════════ -->
+    <section>
+      <div class="wrap">
+        <p class="sec-eyebrow">05 · el circuito completo</p>
+        <h2>Del criterio de aceptación al test automatizado</h2>
+        <p>
+          El circuito cierra cuando el resultado de una corrida automatizada vuelve al issue del que
+          salió el caso. Ese retorno es la parte que más fácil se rompe, porque entre el código y
+          Jira lo único que ata las dos puntas es que dos strings sean iguales.
+        </p>
+
+        <div class="fig-wrap">
+          <svg
+            class="fig"
+            viewBox="0 0 1000 260"
+            role="img"
+            aria-labelledby="tm-chain-title tm-chain-desc"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <title id="tm-chain-title">
+              Circuito del criterio de aceptación al resultado automatizado
+            </title>
+            <desc id="tm-chain-desc">
+              Cadena horizontal de seis etapas: criterio de aceptación, esquemas en el campo de la
+              historia, Test más Test Set que aporta la cobertura, ejecución manual registrada en el
+              resultado de aceptación, verdicto de ROI y decorador en el código, y el retorno de
+              resultados a Jira.
+            </desc>
+
+            <rect width="1000" height="260" fill="#161b22" />
+            <defs>
+              <marker id="tm-ch" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#9aa6b2" />
+              </marker>
+              <marker id="tm-ch-a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#ffa657" />
+              </marker>
+            </defs>
+
+            <line
+              x1="156"
+              y1="120"
+              x2="188"
+              y2="120"
+              stroke="#9aa6b2"
+              stroke-width="1"
+              marker-end="url(#tm-ch)"
+            />
+            <line
+              x1="316"
+              y1="120"
+              x2="348"
+              y2="120"
+              stroke="#9aa6b2"
+              stroke-width="1"
+              marker-end="url(#tm-ch)"
+            />
+            <line
+              x1="476"
+              y1="120"
+              x2="508"
+              y2="120"
+              stroke="#9aa6b2"
+              stroke-width="1"
+              marker-end="url(#tm-ch)"
+            />
+            <line
+              x1="636"
+              y1="120"
+              x2="668"
+              y2="120"
+              stroke="#9aa6b2"
+              stroke-width="1"
+              marker-end="url(#tm-ch)"
+            />
+            <line
+              x1="796"
+              y1="120"
+              x2="828"
+              y2="120"
+              stroke="#ffa657"
+              stroke-width="1"
+              marker-end="url(#tm-ch-a)"
+            />
+
+            <rect x="152" y="100" width="40" height="12" rx="3" fill="#161b22" />
+            <text
+              x="172"
+              y="109"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              1:N
+            </text>
+            <rect x="308" y="100" width="48" height="12" rx="3" fill="#161b22" />
+            <text
+              x="332"
+              y="109"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              STAGE 1
+            </text>
+            <rect x="468" y="100" width="48" height="12" rx="3" fill="#161b22" />
+            <text
+              x="492"
+              y="109"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              STAGE 3
+            </text>
+            <rect x="628" y="100" width="48" height="12" rx="3" fill="#161b22" />
+            <text
+              x="652"
+              y="109"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              ROI
+            </text>
+            <rect x="788" y="100" width="48" height="12" rx="3" fill="#161b22" />
+            <text
+              x="812"
+              y="109"
+              fill="#ffa657"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              SYNC
+            </text>
+
+            <rect
+              x="32"
+              y="84"
+              width="124"
+              height="72"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="1"
+            />
+            <text
+              x="94"
+              y="124"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              Criterio
+            </text>
+            <text
+              x="94"
+              y="142"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              campo de la historia
+            </text>
+
+            <rect
+              x="192"
+              y="84"
+              width="124"
+              height="72"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="1"
+            />
+            <text
+              x="254"
+              y="124"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              Esquemas
+            </text>
+            <text
+              x="254"
+              y="142"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              ATP, solo en el campo
+            </text>
+
+            <rect
+              x="352"
+              y="84"
+              width="124"
+              height="72"
+              rx="8"
+              fill="rgba(255,166,87,0.08)"
+              stroke="#ffa657"
+              stroke-width="1"
+            />
+            <text
+              x="414"
+              y="124"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              Test + Set
+            </text>
+            <text
+              x="414"
+              y="142"
+              fill="#9aa6b2"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              aca nace la cobertura
+            </text>
+
+            <rect
+              x="512"
+              y="84"
+              width="124"
+              height="72"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="1"
+            />
+            <text
+              x="574"
+              y="124"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              Ejecución
+            </text>
+            <text
+              x="574"
+              y="142"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              ATR con environment
+            </text>
+
+            <rect
+              x="672"
+              y="84"
+              width="124"
+              height="72"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="1"
+            />
+            <text
+              x="734"
+              y="124"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              Decorador
+            </text>
+            <text
+              x="734"
+              y="142"
+              fill="#6e7681"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              @atc('PROJ-101')
+            </text>
+
+            <rect
+              x="832"
+              y="84"
+              width="124"
+              height="72"
+              rx="8"
+              fill="#1c2230"
+              stroke="#ffa657"
+              stroke-width="1"
+            />
+            <text
+              x="894"
+              y="124"
+              fill="#e6edf3"
+              font-size="11"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+              text-anchor="middle"
+            >
+              Resultados
+            </text>
+            <text
+              x="894"
+              y="142"
+              fill="#9aa6b2"
+              font-size="8"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+            >
+              vuelven al Test
+            </text>
+
+            <line
+              x1="40"
+              y1="196"
+              x2="960"
+              y2="196"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="0.8"
+            />
+            <text x="40" y="222" fill="#9aa6b2" font-size="9" font-family="'Inter', sans-serif">
+              El identificador del decorador ES la clave del issue de Jira. No hay traducción, no
+              hay mapa: son el mismo string.
+            </text>
+            <text x="40" y="242" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+              Por eso el caso tiene que existir en el TMS antes de escribir el decorador — la
+              sincronización no crea tickets.
+            </text>
+          </svg>
+          <p class="caption">
+            Fig. 4 — el circuito. Los once primeros saltos son sólidos; el último, el retorno de
+            resultados, es el que hay que mantener encendido.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ 6 · TABLA ══════════ -->
+    <section>
+      <div class="wrap">
+        <p class="sec-eyebrow">06 · referencia</p>
+        <h2>Artefacto por artefacto</h2>
+
+        <div class="tbl">
+          <table>
+            <thead>
+              <tr>
+                <th>Artefacto</th>
+                <th>Productor</th>
+                <th>Tipo en Jira</th>
+                <th>Epic padre</th>
+                <th>Cardinalidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>MTP</strong> Master Test Plan</td>
+                <td><code>project-context</code></td>
+                <td>Epic</td>
+                <td>es uno de los cuatro</td>
+                <td>1 por proyecto</td>
+              </tr>
+              <tr>
+                <td><strong>FTP</strong> Feature Test Plan</td>
+                <td><code>sprint-testing</code></td>
+                <td>Test Plan</td>
+                <td>QA Master Test Plan</td>
+                <td>1 por feature</td>
+              </tr>
+              <tr>
+                <td><strong>STP</strong> Sprint Test Plan</td>
+                <td><code>sprint-testing</code> §0.7</td>
+                <td>Test Plan</td>
+                <td>QA Master Test Plan</td>
+                <td>1 por sprint</td>
+              </tr>
+              <tr>
+                <td><strong>STR</strong> Sprint Test Results</td>
+                <td><code>regression-testing</code> o <code>sprint-testing</code></td>
+                <td>Test Execution</td>
+                <td>QA Test Artifacts</td>
+                <td>1 por sprint</td>
+              </tr>
+              <tr>
+                <td><strong>ATP</strong> Acceptance Test Plan</td>
+                <td>shift-left al campo → sprint-testing al issue</td>
+                <td>Test Plan</td>
+                <td>QA Master Test Plan</td>
+                <td>1 por historia</td>
+              </tr>
+              <tr>
+                <td><strong>ATS</strong> Acceptance Test Set</td>
+                <td><code>sprint-testing</code> Stage 1</td>
+                <td>Test Set</td>
+                <td>QA Test Artifacts</td>
+                <td>1 por historia, obligatorio</td>
+              </tr>
+              <tr>
+                <td><strong>ATR</strong> Acceptance Test Results</td>
+                <td><code>sprint-testing</code> S1 crea, S3 llena</td>
+                <td>Test Execution</td>
+                <td>QA Test Artifacts</td>
+                <td>1 por historia por sprint</td>
+              </tr>
+              <tr>
+                <td><strong>Test</strong> el caso</td>
+                <td><code>test-documentation</code>, gate de ROI</td>
+                <td>Test</td>
+                <td>QA Test Repository</td>
+                <td>N por historia</td>
+              </tr>
+              <tr>
+                <td><strong>ATC</strong> el decorador</td>
+                <td><code>test-automation</code></td>
+                <td>no es issue</td>
+                <td>—</td>
+                <td>1:1 con un Test</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        Agentic QA Boilerplate ·
+        <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate"
+          >upex-galaxy/agentic-qa-boilerplate</a
+        ><br />
+        Doctrina: <code>docs/qa-standard/planning-ladder-proposal.md</code> ·
+        <code>.agents/skills/agentic-qa-core/references/traceability-linking.md</code><br />
+        Decisión de caché: <code>.context/ADR/ADR-0001-artifact-ladder-local-cache.md</code>
+      </div>
+    </footer>
+  </body>
+</html>
