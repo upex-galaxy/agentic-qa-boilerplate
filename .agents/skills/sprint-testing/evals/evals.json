@@ -3,19 +3,19 @@
     {
       "name": "should-trigger-single-user-story",
       "prompt": "Test the user story UPEX-277. It's a story about empty states in the dashboard.",
-      "expected_behavior": "Activates sprint-testing in single-ticket / user-story mode. Runs session-start (fetch ticket, load context, create PBI folder, write Story Explanation, wait for user OK), then Stage 1 Planning (triage + ATP + ATR + TCs with traceability), Stage 2 Execution (smoke first, then UI/API/DB exploration), Stage 3 Reporting (ATR + QA comment + ticket transition).",
+      "expected_behavior": "Activates sprint-testing in single-issue / user-story mode. Runs session-start (fetch ticket, load context, create PBI folder, write Story Explanation, wait for user OK), then Stage 1 Planning (triage + ATP + ATR + TCs with traceability), Stage 2 Execution (smoke first, then UI/API/DB exploration), Stage 3 Reporting (ATR + QA comment + ticket transition).",
       "category": "positive"
     },
     {
       "name": "should-trigger-bug-verification",
       "prompt": "I need to retest bug PROJ-445. The checkout button was broken on mobile and dev says it's fixed now.",
-      "expected_behavior": "Activates sprint-testing in single-ticket / bug mode. Runs session-start, then Triage (veto table first -> risk score if no veto), presents decision and waits for user OK, creates ATP + ATR (no TCs) with Bug Analysis, verifies fix + regression + DB cross-validation, posts QA verification comment (Template C or D) with evidence paths.",
+      "expected_behavior": "Activates sprint-testing in single-issue / bug mode. Runs session-start, then Triage (veto table first -> risk score if no veto), presents decision and waits for user OK, creates ATP + ATR (no TCs) with Bug Analysis, verifies fix + regression + DB cross-validation, posts QA verification comment (Template C or D) with evidence paths.",
       "category": "positive"
     },
     {
       "name": "should-trigger-batch-sprint",
       "prompt": "Run QA on this sprint. We have 8 tickets to process in Sprint 5. Generate the framework and work through them.",
-      "expected_behavior": "Activates sprint-testing in batch-sprint mode. Generates SPRINT-5-TESTING.md if not present, then loops: auto-detects next Wave 1 PENDING ticket, dispatches per-stage sub-agents sequentially, updates the framework file after Stage 3, presents per-ticket summary and waits for user OK before next ticket. Stops on TOOL FAILURE, pauses on BUG_FOUND.",
+      "expected_behavior": "Asks the mode question, then activates sprint-testing in sprint-wide mode. Builds the sprint session pair .session/sprint-testing/sprint-5/{plan.md, progress.md} if not present (queue resolved by JQL from the project's coverable work types) and finds-or-creates the STP, then loops: auto-detects the next Wave 1 PENDING row, dispatches per-stage sub-agents sequentially, appends one sprint progress.md entry mirrored as one STP comment after Stage 3, presents a per-issue summary and waits for user OK before the next issue. Stops on TOOL FAILURE, pauses on BUG_FOUND.",
       "category": "positive"
     },
     {

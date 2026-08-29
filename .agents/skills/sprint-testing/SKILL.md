@@ -1,6 +1,6 @@
 ---
 name: sprint-testing
-description: "Orchestrates in-sprint manual QA per ticket across Stages 1 (Planning), 2 (Execution) and 3 (Reporting). Use for user-story testing, bug retesting, and batch-sprint QA loops. Creates the PBI folder, drives session-start, runs the triage + veto + risk-score decision tree on bugs, produces the ATP + ATR + TC artifacts in the TMS, executes smoke and trifuerza (UI/API/DB) exploration, and files the final QA comment + bug reports. Triggers on: test this ticket, QA this user story, retest this bug, verify bug fix, run exploratory testing, smoke test a feature, process the sprint, next ticket in sprint, generate the SPRINT-N-TESTING framework, resume sprint testing, continue-from a ticket. Do NOT use for Stage 4 TMS documentation + ROI (test-documentation), Stage 5 automation coding (test-automation), Stage 6 regression suite execution (regression-testing), or onboarding a new repo (project-discovery)."
+description: "Orchestrates in-sprint manual QA per issue across Stages 1 (Planning), 2 (Execution) and 3 (Reporting). Use for user-story testing, bug retesting, and sprint-wide QA loops. Creates the PBI folder, drives session-start, runs the triage + veto + risk-score decision tree on bugs, produces the ATP + ATR + TC artifacts in the TMS, executes smoke and trifuerza (UI/API/DB) exploration, and files the final QA comment + bug reports. Triggers on: test this ticket, QA this user story, retest this bug, verify bug fix, run exploratory testing, smoke test a feature, process the sprint, plan the sprint QA backlog, next ticket in sprint, resume sprint testing, continue-from a ticket. Do NOT use for Stage 4 TMS documentation + ROI (test-documentation), Stage 5 automation coding (test-automation), Stage 6 regression suite execution (regression-testing), or onboarding a new repo (project-discovery)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, testing-api, issue-tracker]
@@ -30,6 +30,10 @@ compact_rules: |
   - TC∈ATS / TC∈ATP / TC∈ATR membership is Xray-internal (GraphQL) — NEVER expressed as Jira issue links in Modality jira-xray. Do NOT link TCs directly to the Story (last-resort only, for instances with no Test Set work type).
   - Bug retest (Modality jira-xray): ONE repro `Test` by default, created at fix-verification time (Stage 2), linked Bug↔Test via the `test` slug and executed in the retest Execution (`ReTest: {BUG_KEY}: {summary}`); 1:N only with a written test-design justification. Modality jira-native: no in-sprint TCs (the bug is the immediate retest case) — persistent-Test decisions defer to Stage 4.
   - STP find-or-create fires on the sprint's FIRST ticket: `STP: Sprint#{N}: {objective}` (Test Plan item, parent: QA Master Test Plan; a LIVING planner — append each tested ticket, keep progress current). The sprint recap Execution `STR: Sprint#{N}: Regression Testing` (parent: QA Test Artifacts) is created at sprint close.
+  - Two modes, ASKED at Session Start, never inferred: **sprint-wide** (the whole sprint's QA backlog) or **single-issue** (one issue from it). Only `sprint-wide` creates/updates the STP and the sprint session pair; `single-issue` creates neither.
+  - `sprint-wide` is a REAL session scope, not a folder: `.session/sprint-testing/sprint-<N>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §6/§7, holding one nested `<JIRA-KEY>/` sub-scope per issue. `plan.md` is the local STP (queue + waves + assignment); `progress.md` is the append-only sprint log, one entry per issue close. There is NO local sprint tracker file — anything the team needs lives in the STP in Jira.
+  - Sprint scope is a JQL QUERY, never a hardcoded issue-type list: take the work types declared `coverable: true` in `.agents/jira-required.yaml`, resolve each one's `jira_issue_type` (`A | B | C` = ordered alternatives, first the instance has wins), intersect with `.agents/jira-workflows.json`. A declared type the instance lacks is SKIPPED WITH A NOTE, never a blocker.
+  - STP maintenance parity (concurrent testers): `plan.md` ↔ the STP issue DESCRIPTION — rewritten wholesale, so ONE writer (whoever plans the sprint), read-first before writing. `progress.md` ↔ the STP issue COMMENTS — append-only on both sides, one comment per issue close, so two testers never clobber each other. Where the comment log and a Story's ATR disagree, the **ATR wins** — it is the artifact of record.
 ---
 
 ## Forbidden invocations
@@ -50,7 +54,9 @@ any `/sdd-` mention outside this section. See:
 
 Drive the manual / exploratory QA loop for a single ticket during a sprint. Three stages, always in this order: **Stage 1 Planning -> Stage 2 Execution -> Stage 3 Reporting**. Hand off afterwards to the skills that own Stage 4, 5 and 6.
 
-The same three-stage pipeline runs in every mode. Only the entry point and the bookkeeping differ: one ticket at a time (single-ticket), or N tickets managed by a framework file (batch-sprint).
+The same three-stage pipeline runs in every mode. Only the entry point and the bookkeeping differ: one issue at a time (**single-issue**), or the whole sprint's QA backlog driven by a sprint-level session pair (**sprint-wide**).
+
+"Issue", not "story", throughout: Story, Bug, Defect, Improvement, Tech Story and Tech Debt are all coverable, and the sprint queue holds whichever of them the project declares.
 
 ---
 
@@ -88,8 +94,10 @@ Requires `agentic-qa-core`. Loads on demand:
 - API testing = three-tool maneuver: OpenAPI MCP for schema (READ-ONLY) → `bun run api:login` for the token (→ `.auth/tokens.env`) → **curl** for authenticated requests. NEVER execute via the OpenAPI MCP. Canon: `agentic-qa-core/references/api-testing-doctrine.md`.
 - Consult `domain-glossary.md` (if present) before authoring the ATP, refined ACs, and TC outlines.
 - On any subagent failure: STOP, report partial state, offer retry / skip-stage / abort. No auto-fix, no auto-rollback.
+- Two modes, ASKED at Session Start, never inferred: **sprint-wide** (the whole sprint's QA backlog) or **single-issue** (one issue from it). Only `sprint-wide` creates the sprint session pair `.session/sprint-testing/sprint-<N>/{plan.md, progress.md}` and the STP; `single-issue` creates neither.
+- The sprint scope is a JQL query built from the work types declared `coverable: true` in `.agents/jira-required.yaml`, intersected with what `.agents/jira-workflows.json` says the instance actually has. Never a hardcoded issue-type list.
 
-**Read full SKILL.md when**: starting a sprint cold, resuming a session, or handling a bug-triage / batch-sprint flow not covered by the rules above.
+**Read full SKILL.md when**: starting a sprint cold, resuming a session, or handling a bug-triage / sprint-wide flow not covered by the rules above.
 
 ---
 
@@ -117,39 +125,73 @@ Canonical reading order for any AI starting cold on a sprint-testing workflow. R
 
 > **Orchestration & Session contracts**: this skill follows `agentic-qa-core/references/orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `agentic-qa-core/references/session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional. The orchestrator also applies the per-stage **Definition-of-Done gates** in `agentic-qa-core/references/stage-gates.md`: verify a stage's DoD (planning stages include the Test-Design Checklist) BEFORE recording its progress checkpoint and advancing.
 
-This skill scopes per ticket. Single-ticket mode: `<scope>` = `<JIRA-KEY>` (e.g. `UPEX-123`). Batch-sprint mode: `<scope>` = `sprint-<N>/<JIRA-KEY>` (one nested directory per ticket in the wave). Session state lives at `.session/sprint-testing/<scope>/{plan.md, progress.md, test-session-memory.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. `test-session-memory.md` is a SEPARATE concern from `plan.md`: it carries TMS modality + ticket context + stage state shared across the 4 sub-agent dispatches (domain memory). All three coexist — `plan.md` indexes the session, `progress.md` decides the next stage, `test-session-memory.md` holds the cross-stage shared payload.
+This skill runs at two altitudes, and each is a real session scope per `agentic-qa-core/references/session-management.md` §3 + §9 (§9 "Nested scopes"):
 
-This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.agents/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 7-component briefing format defined in `.agents/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.agents/skills/agentic-qa-core/references/dispatch-patterns.md`. This skill operates in two modes (single-ticket and batch-sprint) and BOTH modes use the same four dispatch points per ticket — Session Start -> Stage 1 -> Stage 2 -> Stage 3. The only difference is that batch mode loops them once per ticket. The full briefings (Goal / Context docs / Project Standards (auto-resolved) / Skills to load / Exact instructions / Report format / Rules) live in `references/sprint-orchestration.md` §"Sub-agent prompt templates".
+```
+.session/sprint-testing/
+├── <JIRA-KEY>/              # single-issue mode
+│   ├── plan.md  progress.md  test-session-memory.md
+└── sprint-<N>/              # sprint-wide mode
+    ├── plan.md              # the local STP: scope, waves, assignment
+    ├── progress.md          # append-only sprint log, one entry per issue close
+    └── <JIRA-KEY>/          # per-issue sub-scope, identical to single-issue
+        └── plan.md  progress.md  test-session-memory.md
+```
+
+**Single-issue** mode: `<scope>` = `<JIRA-KEY>` (e.g. `UPEX-123`). **Sprint-wide** mode: the sprint scope is `sprint-<N>` and each issue's scope is `sprint-<N>/<JIRA-KEY>`. Both `plan.md` files follow the §6 schema and both `progress.md` files the §7 append-only schema — one file format, two altitudes. What a "phase" means is the only difference: at issue altitude a phase is a stage of this skill, at sprint altitude a phase is one issue in the queue.
+
+`test-session-memory.md` exists at the ISSUE altitude only and is a SEPARATE concern from `plan.md`: it carries TMS modality + issue context + stage state shared across the 4 sub-agent dispatches (domain memory). All three coexist per issue — `plan.md` indexes the session, `progress.md` decides the next stage, `test-session-memory.md` holds the cross-stage shared payload.
+
+This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.agents/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 7-component briefing format defined in `.agents/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.agents/skills/agentic-qa-core/references/dispatch-patterns.md`. This skill operates in two modes (single-issue and sprint-wide) and BOTH modes use the same four dispatch points per issue — Session Start -> Stage 1 -> Stage 2 -> Stage 3. The only difference is that sprint-wide loops them once per issue. The full briefings (Goal / Context docs / Project Standards (auto-resolved) / Skills to load / Exact instructions / Report format / Rules) live in `references/sprint-orchestration.md` §"Sub-agent prompt templates".
 
 | Stage                                              | Pattern    | Subagent role                                                                                                                                                                  |
 |----------------------------------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Session Start (per-ticket)                         | Single     | dispatch a session-start subagent: fetch ticket from issue tracker, load `.context/`, create the PBI folder + `context.md` and the session dir + `test-session-memory.md`, return ticket summary + AC list |
+| Session Start (per-issue)                          | Single     | dispatch a session-start subagent: fetch the issue from the issue tracker, load `.context/`, create the PBI folder + `context.md` and the session dir + `test-session-memory.md`, return issue summary + AC list |
 | Stage 1 — Planning (ATP + draft TCs + risk triage) | Sequential | dispatch a Planning subagent: produce the ATP artifact + risk score + draft TC outlines; bug tickets get the veto + triage decision tree applied                                |
 | Stage 2 — Execution (smoke + UI/API/DB exploration)| Sequential | dispatch an Execution subagent: smoke pass first, then triforce (UI/API/DB) exploration; capture evidence under the PBI folder; surface BUG_FOUND if applicable                  |
 | Stage 3 — Reporting (ATR + QA comment + transition)| Sequential | dispatch a Reporting subagent: fill the ATR, post the QA comment, transition the issue, file bug reports if any                                                                 |
 
-> **Modes are equivalent in dispatch shape**. Single-ticket mode runs ONE pass through these four dispatches. Batch mode loops them per ticket. There is no longer a "single-ticket inline" path — both modes pay the same 4-dispatch cost so behavior is uniform and reviews are consistent.
+> **Modes are equivalent in dispatch shape**. Single-issue mode runs ONE pass through these four dispatches. Sprint-wide loops them per issue. There is no longer a "single-issue inline" path — both modes pay the same 4-dispatch cost so behavior is uniform and reviews are consistent.
 
-> **Sequential, not Parallel**: each stage feeds the next (Session Start's PBI folder is read by Stage 1; Stage 1's ATP is read by Stage 2; Stage 2's evidences are read by Stage 3). Parallelism inside a single ticket would race on shared PBI state.
+> **Sequential, not Parallel**: each stage feeds the next (Session Start's PBI folder is read by Stage 1; Stage 1's ATP is read by Stage 2; Stage 2's evidences are read by Stage 3). Parallelism inside a single issue would race on shared PBI state.
 
 > **On any subagent failure**: STOP, report the partial state (which stages completed, what artifacts landed), present retry / skip-stage / abort options. Do NOT auto-fix nor auto-rollback. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`.
 
 ---
 
-## Scope — pick the mode first
+## Scope — ASK for the mode first
 
 | Mode | Input | Output | Use when |
 |------|-------|--------|----------|
-| **Single ticket — User Story** | One story ID (e.g. `{{PROJECT_KEY}}-123`) | ATP + ATR + QA comment + ticket moved to {{jira.status.story.qa_approved}}. TC artifacts depend on modality: jira-native → outlines only (regression TCs created in Stage 4); jira-xray → created + executed `Test`s this sprint, promoted to regression in Stage 4 (see "TC creation timing") | Full QA on one story end to end |
-| **Single ticket — Bug** | One bug ID | Triage decision, then either Code-Review-only OR ATP + ATR + verification report | Retesting a bug fix on staging |
-| **Batch sprint** | `SPRINT-{N}-TESTING.md` framework file | Per-ticket artifacts + updated framework file + session summary | Processing a whole sprint backlog, with interruption + resume support |
+| **single-issue — User Story** | One story key (e.g. `{{PROJECT_KEY}}-123`) | ATP + ATR + QA comment + issue moved to {{jira.status.story.qa_approved}}. TC artifacts depend on modality: jira-native → outlines only (regression TCs created in Stage 4); jira-xray → created + executed `Test`s this sprint, promoted to regression in Stage 4 (see "TC creation timing") | Full QA on one story end to end |
+| **single-issue — Bug** | One bug key | Triage decision, then either Code-Review-only OR ATP + ATR + verification report | Retesting a bug fix on staging |
+| **sprint-wide** | Sprint number `N` | Sprint session pair (`plan.md` queue + append-only `progress.md`) · STP found-or-created and maintained · per-issue artifacts · session summary | Running the whole sprint's QA backlog, with interruption + resume support |
 
-Rules for picking:
+### The mode question (MANDATORY — asked, never inferred)
 
-1. Story ID with status Ready-for-QA -> Single ticket / User Story.
-2. Bug ID deployed to staging -> Single ticket / Bug.
-3. Sprint number, "process sprint X", or an existing `SPRINT-{N}-TESTING.md` -> Batch sprint.
-4. If the framework file does not exist yet, generate it first (see `sprint-orchestration.md`).
+Session Start asks this explicitly, in one question, before anything else:
+
+> Run **the whole sprint's QA backlog** (`sprint-wide`), or **one issue from it** (`single-issue`)?
+
+A sprint number in the invocation is a strong hint, not an answer — "QA sprint 12" can mean either. Ask, then apply:
+
+| Answer | Sprint session pair | STP | Per-issue sub-scopes |
+|---|---|---|---|
+| `sprint-wide` | created at `.session/sprint-testing/sprint-<N>/` | found-or-created and kept current | `sprint-<N>/<JIRA-KEY>/`, one per issue |
+| `single-issue` | **not created** | **not created** (exactly as today) | `<JIRA-KEY>/` at the top level |
+
+### Sprint scope is a JQL query, never a hardcoded type list
+
+The sprint's QA backlog is resolved by QUERY. **NEVER write a literal issue-type list as the rule** — a project whose Jira has only `Story` must work, and so must one that added `Tech Debt`. Resolve it in four steps:
+
+1. Read `.agents/jira-required.yaml` and take every work type declared `coverable: true`.
+2. For each, resolve `jira_issue_type`. A value of the form `A | B | C` is an **ordered list of alternatives** — the first name the instance actually has wins (the `subtask` entry documents the established pattern and why: the subtask level is spelled `Sub-task`, `Task` or `Subtarea` depending on the instance).
+3. Intersect with `.agents/jira-workflows.json`, the synced catalog of what the instance really exposes. A work type absent from that file does not exist here.
+4. A declared type the instance lacks is **SKIPPED WITH A NOTE** in the sprint `plan.md` §Risks. It is never a blocker and never a reason to stop.
+
+The JQL is then built from the surviving names plus the sprint filter. *Illustrative only — do NOT copy this list into the plan or any reference:* on an instance that happens to expose all six coverable types, step 4 yields `sprint = {N} AND project = {{PROJECT_KEY}} AND issuetype in (Story, Bug, Defect, Improvement, "Tech Story", "Tech Debt")`. On an instance with only `Story` it yields `issuetype = Story`, and that is a correct, complete run.
+
+Execute it with `bun run jira:sync-issues jql "<query>"` (resolves every slug and materializes the per-issue `.md`), or `pull --sprint <N> --types <csv>` for the same roster.
 
 ---
 
@@ -249,7 +291,7 @@ See `agentic-qa-core/references/test-design-doctrine.md` (derive widely) + `test
        Stage 6 -> regression-testing
 ```
 
-Session-start is the universal entry. **Single-ticket mode runs the same 4 dispatches as batch mode**: Session Start -> Stage 1 -> Stage 2 -> Stage 3. The orchestrator dispatches them sequentially (each subagent's report feeds the next briefing's "Context docs"). The full briefings live in `references/sprint-orchestration.md`. Use them verbatim — do NOT inline any stage just because there is only one ticket. Batch mode loops these same four dispatches through Wave 1 PENDING tickets in the framework file and updates the framework file after each ticket.
+Session-start is the universal entry. **Single-issue mode runs the same 4 dispatches as sprint-wide**: Session Start -> Stage 1 -> Stage 2 -> Stage 3. The orchestrator dispatches them sequentially (each subagent's report feeds the next briefing's "Context docs"). The full briefings live in `references/sprint-orchestration.md`. Use them verbatim — do NOT inline any stage just because there is only one issue. Sprint-wide loops these same four dispatches through the `PENDING` rows of the sprint `plan.md` queue and, after each issue closes, appends one entry to the sprint `progress.md` and one comment to the STP.
 
 ---
 
@@ -278,22 +320,27 @@ Surfaces (UI / API / DB / code-review-only) are decided by **Stage 1 Planning's 
 
 Before Session Start dispatch, run the resume contract from `agentic-qa-core/references/session-management.md` §4:
 
-1. Compute prospective `<scope>` from invocation: `<JIRA-KEY>` (single-ticket) or `sprint-<N>/<JIRA-KEY>` (batch — once per ticket in the wave loop).
+1. Compute prospective `<scope>` from the mode answer: `<JIRA-KEY>` (single-issue) or `sprint-<N>` then `sprint-<N>/<JIRA-KEY>` (sprint-wide — see the two-altitude note below).
 2. Check `.session/sprint-testing/<scope>/progress.md`.
 3. If it does NOT exist → proceed to Session Start (writes `plan.md`).
 4. If it DOES exist:
    - Read `plan.md` + tail of `progress.md`.
-   - Optionally read `.session/sprint-testing/<scope>/test-session-memory.md` for the per-ticket domain state (load-bearing across the 4 sub-agent dispatches).
-   - Surface to the user: last completed stage (Session Start / Stage 1 / Stage 2 / Stage 3) + next stage + any unresolved BUG_FOUND or TOOL FAILURE from the last entry.
+   - Optionally read `.session/sprint-testing/<scope>/test-session-memory.md` for the per-issue domain state (load-bearing across the 4 sub-agent dispatches; issue altitude only).
+   - Surface to the user: last completed stage (Session Start / Stage 1 / Stage 2 / Stage 3) — or, at sprint altitude, the last closed issue and the next `PENDING` one — plus any unresolved BUG_FOUND or TOOL FAILURE from the last entry.
    - Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>-aborted/` first.
 
-Batch-sprint mode: Phase 0 fires once per ticket as the loop enters it (NOT once at sprint-loop entry). Per-ticket resume keeps batch progress fine-grained.
+**Sprint-wide runs Phase 0 twice over, at two altitudes** (`agentic-qa-core/references/session-management.md` §9 "Nested scopes"):
+
+- **Once on `sprint-<N>`** at sprint entry. Existing pair → the resume summary is "queue of {n}, {k} closed, next is `<KEY>`". No pair → Session Start §0.5 builds it.
+- **Then once per issue on `sprint-<N>/<JIRA-KEY>`**, as the loop enters that issue (NOT once at sprint-loop entry). Per-issue resume keeps sprint progress fine-grained.
+
+`restart` at sprint altitude archives the whole `sprint-<N>/` tree, nested sub-scopes included — never offer it while an issue is mid-flight.
 
 ---
 
 ## Session Start — the universal entry
 
-Every invocation starts by initializing the session, even in batch mode. Session Start:
+Every invocation starts by initializing the session, even in sprint-wide mode. Session Start:
 
 0. **Resolve TMS modality** (Xray on Jira vs Jira-native). By excellence ATP/ATR/ATS are real Jira items — a `Test Plan` issue (`ATP: {STORY-KEY}: {story title}`) parented to the **QA Master Test Plan** epic, a `Test Execution` issue (`ATR: {STORY-KEY}: Story Testing`) parented to the **QA Test Artifacts** epic, and a `Test Set` issue (`ATS: {US_ID}: {story title}`, the Story's coverage backbone) also parented to **QA Test Artifacts**; the Story custom-field + comment mirror (Modality jira-native) is a **fallback ONLY** when those work types are unavailable. Pre-sprint the ATP lives ONLY in the `{{jira.acceptance_test_plan}}` field — Stage 1 is where the Test Plan item is born (find-or-create from the field). The modality probe decides which path is live. Title grammar + epic parenting + the Feature-altitude FTP name: `references/acceptance-test-planning.md`. Full resolution algorithm lives in `test-documentation/SKILL.md` §Phase 0 — apply the same four-step probe here (AGENTS.md -> master-test-plan.md -> list issue types -> ask the user). Persist the result into `test-session-memory.md`.
 0.1. **Load required tool skills** — based on the TMS modality resolved in Step 0:
@@ -301,24 +348,33 @@ Every invocation starts by initializing the session, even in batch mode. Session
    - In **Modality jira-xray**: also load `/xray-cli` for Test / Test Execution / Test Plan / Test Run operations and traceability reads.
    - In **Modality jira-native**: `/acli` covers `[ISSUE_TRACKER_TOOL]` writes and `[TMS_TOOL]` operations — no additional skill needed. Detailed reads still route through the sync script.
    This step is **mandatory before any pseudocode block below executes**. The skills carry the concrete syntax, flags, and JSON payloads this skill intentionally omits.
-0.5. **Sprint roadmap checkpoint** (batch-sprint mode only — skip in single-ticket mode):
-   - Detect batch mode from the user invocation ("process sprint N", "continue sprint", a `sprint-file` parameter, or any phrase that implies a sprint loop).
-   - Check whether `.context/reports/SPRINT-{N}-TESTING.md` exists for the target sprint.
-     - **Missing** -> generate it before entering the ticket loop. Delegate to `sprint-orchestration.md` §Part 1 — Sprint Roadmap Generator.
-     - **Present but older than 24h, OR the user explicitly asks for a refresh** -> regenerate (warn + confirm overwrite).
-     - **Present and fresh** -> proceed.
-   - Single-ticket and bug-only invocations skip this step entirely — they do not need a roadmap file.
+0.5. **Sprint session pair** (sprint-wide mode only — skip in single-issue mode):
+   - The mode came from the §"The mode question" ask, not from guessing at the invocation wording.
+   - Phase 0 already checked `.session/sprint-testing/sprint-<N>/progress.md`. Act on what it found:
+     - **Missing** -> build the pair before entering the issue loop: resolve the JQL scope (§"Sprint scope is a JQL query"), write `plan.md` per `agentic-qa-core/references/session-management.md` §6, and open `progress.md` with its frontmatter. Procedure: `sprint-orchestration.md` §Part 1 — Sprint plan + STP.
+     - **Present** -> resume against it. `plan.md` is NOT regenerated on a schedule: it is the sprint's agreement, and a wholesale rewrite would silently destroy hand-written wave notes and assignments. Newly-arrived issues are appended to the queue and the change is recorded in `## Changelog` (append-only, §6).
+   - Single-issue and bug-only invocations skip this step entirely — they own no sprint-altitude state.
 0.6. **Environment + inbox preflight** (orchestrator-inline, blocking gate — runs BEFORE Stage 1 authors any ATP):
    - Probe the active environment for reachability: a generic HTTP request to `{{WEB_URL}}` and `{{API_URL}}` root (HEAD or GET, e.g. `curl -sI {{WEB_URL}}`). Expect a 2xx/3xx (a login redirect counts as reachable). A hard failure on root — 404 / 410 / 5xx, connection refused, or a dead-deployment page (`DEPLOYMENT_NOT_FOUND` etc.) — means the env is not testable.
    - On hard failure: **STOP and surface to the user before Stage 1.** Do NOT dispatch the Session Start subagent and do NOT author an ATP against a dead env — that is the single highest-cost waste in a run. Offer the user a session env override (see Gotcha 15) if they have a working alternate URL.
    - **Inbox receive-check** (only when the ticket is email / magic-link / auth-token dependent — inferred from the invocation, ticket type, labels, or title): confirm the configured mailbox/provider can actually *receive*, not just send. A send-only provider (e.g. a domain configured for outbound only) cannot complete a magic-link flow. If it cannot receive, STOP and surface before Stage 1.
    - This is a *reachability* gate (is the env even up? can we get the email?), distinct from the Stage 2 smoke test (does the *feature* work?). Both run; they answer different questions — keep anti-pattern S7 and the smoke pass as-is.
 0.7. **Sprint Test Plan (STP) find-or-create** (orchestrator-inline; fires on the FIRST ticket of a sprint, any mode):
-   - **Resolve N** from the ticket's Sprint field: `bun run jira:sync-issues get <KEY>`, then read the sprint value in the generated `.md` (the script also accepts `--sprint <active|current|closed|>=N|7,8,10>` and the `JIRA_SYNC_SPRINTS` env default — that is the batch path, resolving N once for a whole sprint pull). Ticket carries NO sprint → **ASK the user** for N; never guess or invent it.
+   - **Resolve N** from the ticket's Sprint field: `bun run jira:sync-issues get <KEY>`, then read the sprint value in the generated `.md` (the script also accepts `--sprint <active|current|closed|>=N|7,8,10>` and the `JIRA_SYNC_SPRINTS` env default — that is the sprint-wide path, resolving N once for a whole sprint pull). Issue carries NO sprint → **ASK the user** for N; never guess or invent it.
    - Search for `STP: Sprint#{N}: {objective}` — a **Test Plan** item parented to the **QA Master Test Plan** epic.
    - **Missing** → create it (find-or-create; `/regression-testing` creates it as fallback if it runs suites first). **Present** → UPDATE it: the STP is a LIVING sprint planner — append this ticket to its scope and keep progress current after every tested ticket.
-   - It closes at sprint end; the sprint recap Execution `STR: Sprint#{N}: Regression Testing` (parent: **QA Test Artifacts**) is created at sprint close — batch-close recap or `/regression-testing`, whichever arrives first creates it, the other completes it (see `references/sprint-orchestration.md` §STEP 7).
+   - It closes at sprint end; the sprint recap Execution `STR: Sprint#{N}: Regression Testing` (parent: **QA Test Artifacts**) is created at sprint close — sprint-wide close recap or `/regression-testing`, whichever arrives first creates it, the other completes it (see `references/sprint-orchestration.md` §STEP 7).
    - Modality jira-native without the Test Plan work type: skip with a note (there is no field fallback at sprint altitude); non-blocking.
+   - **STP maintenance under concurrent testers (BINDING).** The sprint session pair and the STP issue are the same artifact at two addresses, and the split is exact:
+
+     | Local file | STP surface | Write mode | Writers |
+     |---|---|---|---|
+     | `plan.md` | the issue **description** | rewritten wholesale | **ONE** — whoever plans the sprint |
+     | `progress.md` | the issue **comments** | **append-only, both sides** | every tester |
+
+     A description is replaced on each write, so two people editing it clobber each other; a comment is added, so two people commenting never can. That is the whole reason the pair is split this way. Read-first before touching the description (never overwrite someone's scope edit), and when an issue closes append ONE comment carrying the same content as that issue's `progress.md` entry.
+     **When the comment log and a Story's ATR disagree, the ATR wins** — the ATR is the artifact of record; the comment is a running log that can lag or be written from stale state.
+     No new tooling is needed to read the log back: `bun run jira:sync-issues get <STP-KEY> --include-comments` already materializes it locally.
 1. Fetches the ticket via `bun run jira:sync-issues get <KEY> --include-comments` (title, ACs, priority, comments), then reads the synced `.md` files under the STORY folder. NEVER `acli workitem view` for custom fields.
 2. Extracts Team Discussion from the synced `comments.md` (decisions, tech notes, edge cases, blockers). Non-blocking.
 3. Loads the project-wide context files: `.context/business/business-data-map.md`, `.context/business/business-feature-map.md`, `.context/business/business-api-map.md`, `.context/master-test-plan.md`.
@@ -347,9 +403,9 @@ Details, templates and error table live in `references/session-entry-points.md`.
 
 ## Mode branches — what changes after Session Start
 
-> Both single-ticket and batch modes run the SAME 4-dispatch cadence (Session Start -> Stage 1 -> Stage 2 -> Stage 3) per ticket. Use the briefings in `references/sprint-orchestration.md` §"Sub-agent prompt templates" verbatim — do NOT inline a stage just because there is only one ticket. The previous "single-ticket inline" path is **REMOVED**. The notes below describe only what is *different* per ticket type or per mode (TMS payload shape, framework-file update timing, etc.). The dispatch sequence itself is invariant.
+> Both single-issue and sprint-wide modes run the SAME 4-dispatch cadence (Session Start -> Stage 1 -> Stage 2 -> Stage 3) per issue. Use the briefings in `references/sprint-orchestration.md` §"Sub-agent prompt templates" verbatim — do NOT inline a stage just because there is only one issue. The previous "single-issue inline" path is **REMOVED**. The notes below describe only what is *different* per issue type or per mode (TMS payload shape, when the sprint log is appended, etc.). The dispatch sequence itself is invariant.
 
-### Single-ticket, User Story (Stages 1 -> 2 -> 3)
+### single-issue, User Story (Stages 1 -> 2 -> 3)
 
 Run the same 4 dispatches. Per-stage payload differences:
 
@@ -360,7 +416,7 @@ Run the same 4 dispatches. Per-stage payload differences:
 - **Archive after Stage 3**: when Stage 3 completes (or veto-skip Code-Review variant finishes), the orchestrator moves `.session/sprint-testing/<scope>/` to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>/` and calls `mem_session_summary` per `agentic-qa-core/references/session-management.md` §8. PBI artifacts under `.context/PBI/` stay.
 - Afterwards: hand off to `test-documentation` for ROI + Stage 4.
 
-### Single-ticket, Bug (Triage -> Verify -> Report)
+### single-issue, Bug (Triage -> Verify -> Report)
 
 Run the same 4 dispatches; the Stage 1 briefing additionally applies the veto + risk-score decision tree before producing the ATP.
 
@@ -372,13 +428,14 @@ Run the same 4 dispatches; the Stage 1 briefing additionally applies the veto + 
 - Execute: reproduce original bug -> verify fix -> regression pass on adjacent areas -> DB cross-validation if data-integrity bug.
 - Report: update ATR, post comment (Template C PASSED or Template D FAILED), provide 1-2 evidence screenshot paths to the user.
 
-### Batch sprint
+### sprint-wide
 
-- Pre-step: generate `SPRINT-{N}-TESTING.md` from the sprint backlog if it does not exist (see `sprint-orchestration.md`).
-- Loop: read Wave 1 for the first `PENDING` ticket, dispatch the same 4-stage sequence per ticket, after each ticket update the framework file + present a per-ticket summary + wait for user OK.
-- **Interrupted session resume**: on loop entry per ticket, Phase 0 reads `.session/sprint-testing/sprint-<N>/<TICKET>/progress.md` (canonical resume signal per `agentic-qa-core/references/session-management.md` §4). Domain state for an in-flight ticket sits beside it in `.session/sprint-testing/sprint-<N>/<TICKET>/test-session-memory.md` (load-bearing for the 4 sub-agent dispatches). The two files serve different concerns: `progress.md` decides "which stage is next?"; `test-session-memory.md` carries the per-ticket payload that each sub-agent reads. Both are checked, and both survive a `jira:sync-issues` re-pull because neither lives in the PBI cache.
-- After each stage subagent returns, the orchestrator appends a phase entry to `progress.md` per `agentic-qa-core/references/session-management.md` §7. After Stage 3 completes, the orchestrator runs Archive: moves `.session/sprint-testing/<scope>/` to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>/` and calls `mem_session_summary`. The PBI artifacts under `.context/PBI/` and the framework file `SPRINT-{N}-TESTING.md` stay in place — those are the canonical deliverables.
-- Stop on TOOL FAILURE. Pause on BUG_FOUND. Update framework file ONLY after Stage 3 completes.
+- Pre-step: build the sprint session pair if it does not exist — `plan.md` (the local STP: JQL-resolved queue, waves, assignment) + an empty `progress.md` — and find-or-create the STP issue from it (see `sprint-orchestration.md` §Part 1).
+- Loop: read the `plan.md` queue for the first `PENDING` row, dispatch the same 4-stage sequence per issue, then append one entry to the sprint `progress.md` + one comment to the STP + present a per-issue summary + wait for user OK.
+- **Interrupted session resume**: Phase 0 runs at both altitudes — once on `sprint-<N>/progress.md` at sprint entry (answers "how far did this sprint get?"), then per issue on `sprint-<N>/<ISSUE>/progress.md` (canonical resume signal per `agentic-qa-core/references/session-management.md` §4). Domain state for an in-flight issue sits beside the latter in `sprint-<N>/<ISSUE>/test-session-memory.md` (load-bearing for the 4 sub-agent dispatches). The files serve different concerns: `progress.md` decides "which stage is next?"; `test-session-memory.md` carries the per-issue payload that each sub-agent reads. All survive a `jira:sync-issues` re-pull because none lives in the PBI cache.
+- After each stage subagent returns, the orchestrator appends a phase entry to the ISSUE's `progress.md` per `agentic-qa-core/references/session-management.md` §7. After Stage 3 completes, the orchestrator (a) appends ONE entry to the SPRINT's `progress.md` and mirrors it as one STP comment, then (b) runs Archive on the issue sub-scope: moves `.session/sprint-testing/sprint-<N>/<ISSUE>/` to `.session/.archive/<YYYY-MM-DD>-sprint-testing-sprint-<N>-<ISSUE>/` and calls `mem_session_summary`. The PBI artifacts under `.context/PBI/` stay. The sprint pair is archived only at sprint close (§STEP 7), never while an issue is mid-flight.
+- **Nothing local is a deliverable.** `.session/` is gitignored and exists only on this machine. The sprint's shareable record is the STP in Jira (description ← `plan.md`, comments ← `progress.md`) and the per-Story ATP / ATS / ATR items. Never tell the user a local file is the canonical output.
+- Stop on TOOL FAILURE. Pause on BUG_FOUND. Append the sprint `progress.md` entry ONLY after Stage 3 completes.
 
 ---
 
@@ -394,7 +451,7 @@ Run the same 4 dispatches; the Stage 1 briefing additionally applies the veto + 
 8. **Evidence directory**: always configure `.playwright/cli.config.json` `outputDir` to `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/evidence/` BEFORE using `[AUTOMATION_TOOL]`. Screenshots need the full path in `--filename` because `outputDir` does not apply to `.png`.
 9. **Traceability check after Stage 1** (Modality jira-xray): run `[TMS_TOOL] trace {TICKET}` and verify the Set-first model — the **coverage backbone is the ATS**: `ATS: {US_ID}: {story title}` linked to the Story via the `test` slug ("is tested by") and holding ALL the Story's TCs (Xray-internal membership, never issue links in this modality). **Story↔ATP and Story↔ATR** links exist as administrative traceability — they contribute ZERO coverage (live-verified). The ATP's and the ATR's test lists are DERIVED from the ATS membership. **Individual TCs are NOT linked directly to the Story** (last-resort only, for instances with no Test Set work type). So verify: Story↔ATS (`test` slug) + ATS membership complete + Story↔ATP, Story↔ATR (administrative) + Plan/Exec lists matching the ATS. Full doctrine: `agentic-qa-core/references/traceability-linking.md` + `test-documentation/references/tms-architecture.md`. Bugs: the repro Test links Bug↔Test via the `test` slug at fix-verification time; before that, traceability "gaps" for missing TCs are expected and OK.
 10. **Graduated stop/pause protocol**: TOOL FAILURE -> stop, report, await user. **Blocking** BUG_FOUND (smoke/env down, data integrity, security-exploitable) -> pause, present bug, await decision; NEVER dispatch the next sub-agent while unresolved. **Non-blocking** finding (cosmetic, minor validation, edge-case on a non-critical TC, framework-default pending recalibration) -> the Execution subagent logs it and CONTINUES the pass; the orchestrator surfaces it at Stage 2 close. A FAIL is not auto-Critical — triage first (severity per `references/reporting-templates.md` §1.4; security/auth/framework-default recalibrated at §5.0). See `references/exploration-patterns.md` "Finding triage".
-11. **Framework file update timing**: only update `SPRINT-{N}-TESTING.md` AFTER Stage 3 completes and the orchestrator-side checklist verifies. Not earlier.
+11. **Sprint log timing (sprint-wide)**: append the sprint-altitude `progress.md` entry — and its mirror STP comment — only AFTER Stage 3 completes and the orchestrator-side checklist verifies. Not earlier. `progress.md` is append-only in both directions: never rewrite an entry, never edit a posted comment; a correction is a NEW entry and a NEW comment. There is no local sprint tracker file to update — that artifact is retired.
 12. **Language**: all artifacts, TMS content, and commit messages in English. Mirror the user's language only in conversation.
 13. **Environment + inbox preflight before ATP**: Session Start §0.6 probes `{{WEB_URL}}` / `{{API_URL}}` for reachability (and, for email/auth-dependent stories, that the inbox can *receive*) BEFORE any ATP/Jira write. A dead env or send-only inbox is caught here with a STOP, not at Stage 2 after the ATP is already authored. Reachability gate ≠ Stage 2 smoke — see S7.
 14. **Severity recalibration before blocking a Story**: a Story TC FAIL is NOT automatically a blocking defect. When the failing TC is security/auth/framework-default class (cookie flags, CSP/HSTS headers, SDK-by-design behavior), run the recalibration gate (`references/reporting-templates.md` §5.0) BEFORE firing `{{jira.transition.story.defect_reported}}`/blocked: state the framework-default/mitigation hypothesis, cite one verification fact, surface to the user. A recalibrated finding becomes GO-with-debt (`PASSED WITH ISSUES`), not a blocker. Mechanical path stays the default for ordinary functional FAILs. **Once the gate confirms a real blocking defect and the `defect_reported` → `blocked` transition fires, also create the Story `is blocked by` Bug issuelink** via `{{jira.link_types.blocks.name}}` (the Bug `blocks` the Story) — methodology step in `references/reporting-templates.md` §5.1, mechanics in `agentic-qa-core/references/traceability-linking.md` (§2/§4/§6). The status transition alone does not record the dependency edge.
@@ -442,7 +499,7 @@ All references are self-contained. Load one at a time.
 
 | Reference | Read when |
 |-----------|-----------|
-| `sprint-orchestration.md` | Running batch-sprint mode, generating the `SPRINT-{N}-TESTING.md` framework file, resuming a session, updating framework tables, dispatching stage sub-agents, handling stop/pause/`continue-from`. |
+| `sprint-orchestration.md` | Running sprint-wide mode, building the sprint session pair + the STP, resuming a session, appending the sprint log, dispatching stage sub-agents, handling stop/pause/`continue-from`. |
 | `session-entry-points.md` | Initializing a session (any mode), loading project + module context, creating the PBI folder + `context.md` and the session dir + `test-session-memory.md`, Team Discussion extraction rules, user-story workflow step order, bug Triage -> Verify -> Report workflow. |
 | `acceptance-test-planning.md` | Stage 1 Planning — generating the ATP (Acceptance Test Plan) for a ticket, Test Analysis structure, TC nomenclature `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]`, traceability creation + verification, and the Bug Analysis variant. |
 | `feature-test-planning.md` | Stage 1 Planning at feature / multi-story level — building a feature test plan, risk triage rubric, scenario decomposition, and variable + test-data identification. |
@@ -477,7 +534,8 @@ All references are self-contained. Load one at a time.
 ## Pre-flight checklist
 
 - [ ] Phase 0 — Session resume check ran (read `.session/sprint-testing/<scope>/progress.md`); user chose resume / restart / abort if prior state existed
-- [ ] Mode picked (single-ticket / bug / batch)
+- [ ] Mode ASKED and answered (`sprint-wide` / `single-issue`) — never inferred from the invocation wording
+- [ ] Sprint-wide: `.session/sprint-testing/sprint-<N>/plan.md` written with the JQL-resolved queue; skipped work types noted, not treated as blockers
 - [ ] Session Start complete, user confirmed the story explanation
 - [ ] `.session/sprint-testing/<scope>/plan.md` written (per `session-management.md` §6 schema)
 - [ ] Project-wide context files present (if missing, hand off to `project-discovery`)
@@ -493,5 +551,5 @@ All references are self-contained. Load one at a time.
 - [ ] Per-stage progress checkpoint appended to `.session/sprint-testing/<scope>/progress.md` after each Stage subagent returned
 - [ ] Archive: `.session/sprint-testing/<scope>/` moved to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>/` and `mem_session_summary` called after Stage 3
 - [ ] Hand-off identified for Stages 4 / 5 / 6 if applicable
-- [ ] Batch mode: framework file updated AFTER Stage 3 only, user OK'd next ticket
+- [ ] Sprint-wide: sprint `progress.md` entry appended + mirrored as ONE STP comment AFTER Stage 3 only, user OK'd the next issue
 - [ ] Session footer + consolidated screenshot list printed in chat per session-footer-contract (never in a Jira comment)

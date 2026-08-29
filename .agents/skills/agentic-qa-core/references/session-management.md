@@ -230,7 +230,7 @@ The shape of `<scope>` is decided per skill, not per invocation. Each retrofitte
 
 | Skill | Scope shape | Identifier source |
 |---|---|---|
-| `sprint-testing` | `<JIRA-KEY>` (single-ticket); `sprint-<N>/` containing nested `<JIRA-KEY>/` per ticket (batch-sprint) | Jira ticket or sprint number |
+| `sprint-testing` | `<JIRA-KEY>` (single-issue); `sprint-<N>` (sprint-wide — a scope in its own right, holding one nested `<JIRA-KEY>/` sub-scope per issue) | Jira issue key or sprint number |
 | `test-automation` | `<JIRA-KEY>` (ticket-driven, regression-driven); `<module-slug>` (module-driven) | Jira ticket or module name from scope-picker |
 | `test-documentation` | `<JIRA-KEY>` (ticket / bug); `<module-slug>` (module); `<YYYY-MM-DD>-adhoc` (ad-hoc) | Scope-picker output |
 | `framework-development` | `<change-name>` (kebab-case) | User-provided at session start |
@@ -239,6 +239,30 @@ The shape of `<scope>` is decided per skill, not per invocation. Each retrofitte
 | `project-discovery` | (none — project scope) | — |
 
 A skill MUST validate its `<scope>` matches its declared shape before writing the directory. Mismatch is a lint failure.
+
+### Nested scopes
+
+A scope MAY itself contain sub-scopes when the skill genuinely runs at two altitudes. Today only `sprint-testing` does: `sprint-<N>` is a scope AND the parent of one `<JIRA-KEY>/` sub-scope per issue in the sprint.
+
+```
+.session/sprint-testing/
+├── <JIRA-KEY>/                 # single-issue mode
+│   ├── plan.md
+│   └── progress.md
+└── sprint-<N>/                 # sprint-wide mode
+    ├── plan.md                 # the sprint's queue, waves and assignment
+    ├── progress.md             # append-only, one entry per issue close
+    └── <JIRA-KEY>/             # one sub-scope per issue, unchanged
+        ├── plan.md
+        └── progress.md
+```
+
+Rules for a nested pair:
+
+- **Both altitudes use the SAME schemas** — §6 for `plan.md`, §7 for `progress.md`. There is no second file format, and no bespoke tracker file beside them. What differs is only what a "phase" means: at issue altitude a phase is a stage of the skill, at sprint altitude a phase is one issue in the queue.
+- **Phase 0 runs at both altitudes** — once on the parent scope when the sprint run is entered, then once per sub-scope as the loop enters that issue. Per-issue resume stays fine-grained; the parent resume answers "where was this sprint left?".
+- **Archive is bottom-up** (§8) — a sub-scope archives when its own final phase completes; the parent archives only when the queue is exhausted. Moving the parent moves any sub-scope still inside it, so never archive the parent while an issue is mid-flight.
+- **The scope-shape regex in §14 check 3 applies to the immediate child of `.session/<skill-slug>/` only.** A nested sub-scope is validated by the skill, not by the lint.
 
 ## 10. Orchestration enforcement banner
 

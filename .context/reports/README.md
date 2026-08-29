@@ -1,6 +1,6 @@
 # reports/ — generated output
 
-Everything in this directory is **generated**. Six different commands write here, each owning its own filenames. Nothing here is a source of truth: the command that produced a file rebuilds it.
+Everything in this directory is **generated**. Five different commands write here, each owning its own filenames. Nothing here is a source of truth: the command that produced a file rebuilds it.
 
 ## Tier
 
@@ -19,22 +19,27 @@ Verify with `git check-ignore -v .context/reports/<file>`.
 
 | File | Producer | What it is |
 |---|---|---|
-| `SPRINT-{N}-TESTING.md` | `/sprint-testing` batch mode, Session Start §0.5 | Sprint orchestration tracker |
 | `regression-{env}-{date}.md` | `/regression-testing` | Suite run report + GO / CAUTION / NO-GO verdict |
 | `adapt-framework-plan.md` | `/adapt-framework` | Adaptation plan, written before the approval gate |
 | `jira-components-plan.json` | `/jira-administration` mode `components` | Component sync plan, written before the approval gate |
 | `test-map.html` | `bun run tests:map` | Coverage map rendered from the synced `.context/PBI/` tree |
 | coverage matrix | `/test-documentation` | **No filename convention defined yet** — see the gap below |
 
-Adding a seventh writer means adding a row here. A file in this directory whose producer is not listed is orphaned output.
+Adding a sixth writer means adding a row here. A file in this directory whose producer is not listed is orphaned output.
 
-## `SPRINT-{N}-TESTING.md` is not the STP
+## The sprint tracker that used to live here
 
-Worth stating plainly, because the names invite the confusion. It is **neither the Sprint Test Plan nor the Sprint Test Results**: it is a third thing, a local orchestration tracker whose declared purpose is *"track QA testing progress; provide AI context for resuming sessions"*. Its Status column is what the orchestrator scans to pick the next ticket. That is a work queue.
+`SPRINT-{N}-TESTING.md` was a local orchestration tracker written by `/sprint-testing` in what was then called batch mode. It is **retired**. It followed none of the session doctrine every other long-running skill follows — no frontmatter, no append-only rule, no archive policy — and it was regenerated wholesale after 24 hours behind a "warn + confirm overwrite" prompt, which quietly put hand-written wave notes at risk.
 
-The STP and the STR are Jira items (`Test Plan` and `Test Execution`, parented to the QA process epics) and are **never materialized on disk** — the sync skips them by title prefix. The same `/sprint-testing` run creates the tracker at Session Start §0.5 and the STP at §0.7, and updates both from the same post-ticket step. Two artifacts, one loop.
+Its content moved to where each half belongs:
 
-Naming convention: `{N}` is the sprint number. Examples: `SPRINT-9-TESTING.md`, `SPRINT-10-TESTING.md`.
+| What it held | Where it lives now |
+|---|---|
+| The queue: which issues, in what order, who took each | `.session/sprint-testing/sprint-<N>/plan.md` (session-management §6) |
+| What happened, per closed issue | `.session/sprint-testing/sprint-<N>/progress.md` (append-only, §7) |
+| Anything the TEAM needs, not just this machine | the **STP** in Jira — `plan.md` mirrors its description, `progress.md` its comments |
+
+The STP and the STR are Jira items (`Test Plan` and `Test Execution`, parented to the QA process epics) and are **never materialized on disk** — the sync skips them by title prefix. That is the point: a local file exists only on the machine that wrote it, so anything shared has to be in Jira.
 
 ## Known gap
 

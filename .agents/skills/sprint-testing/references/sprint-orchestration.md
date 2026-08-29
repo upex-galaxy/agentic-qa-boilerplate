@@ -1,6 +1,8 @@
-# Sprint Orchestration — Batch-Sprint Mode
+# Sprint Orchestration — Sprint-Wide Mode
 
-Use this reference when iterating multiple tickets in a sprint. Covers: generating the `SPRINT-{N}-TESTING.md` framework file, the per-ticket orchestration loop, checkpoint mechanics, stop/pause/resume logic, and the `continue-from` parameter. Single-ticket mode is described in `session-entry-points.md`.
+Use this reference when iterating multiple issues in a sprint. Covers: building the sprint session pair (`plan.md` + `progress.md`) and the STP that mirrors it, the per-issue orchestration loop, checkpoint mechanics, stop/pause/resume logic, and the `continue-from` parameter. Single-issue mode is described in `session-entry-points.md`.
+
+> "Issue", not "story": Story, Bug, Defect, Improvement, Tech Story and Tech Debt are all coverable, and the sprint queue holds whichever of them the project declares (see §Part 1 Step 1).
 
 ---
 
@@ -8,14 +10,14 @@ Use this reference when iterating multiple tickets in a sprint. Covers: generati
 
 | Parameter | Required | Meaning |
 |-----------|----------|---------|
-| `sprint-file` | YES | Path to the framework file, e.g. `.context/reports/SPRINT-5-TESTING.md`. |
-| `continue-from` | NO | Ticket ID (e.g. `{{PROJECT_KEY}}-277`) to resume from. |
+| `sprint` | YES | Sprint number `N`. Resolved from the issue's Sprint field when only an issue key was given; ASK the user when the issue carries no sprint. Never guessed. |
+| `continue-from` | NO | Issue key (e.g. `{{PROJECT_KEY}}-277`) to resume from. |
 
 If a parameter is missing, ASK the user before proceeding. Before starting, verify:
 
-1. The file exists and is readable.
-2. It contains at least one ticket row with a recognizable status (`PENDING`, `PASSED`, `FAILED`, `BLOCKED`, `DEFERRED`, `SKIPPED`).
-3. If `continue-from` was provided, the ticket ID exists in the file. If not, list the available tickets and ask.
+1. `.session/sprint-testing/sprint-<N>/plan.md` exists and is readable — if not, build it (§Part 1).
+2. Its `## Phase breakdown` queue contains at least one row with a recognizable status (`PENDING`, `PASSED`, `FAILED`, `BLOCKED`, `DEFERRED`, `SKIPPED`).
+3. If `continue-from` was provided, the issue key exists in the queue. If not, list the queued issues and ask.
 
 ---
 
@@ -31,26 +33,44 @@ You are the ORCHESTRATOR for in-sprint QA on `{{PROJECT_NAME}}`. Manage the work
 
 ---
 
-## Part 1 — Sprint Roadmap Generator
+## Part 1 — Sprint plan + STP
 
-Use when the user asks "generate the sprint testing framework", "set up sprint N", or when `sprint-file` is missing. **Auto-invoked by `SKILL.md` §Session Start step 0.5** in batch-sprint mode whenever `.context/reports/SPRINT-{N}-TESTING.md` is missing or stale (>24h). Never run as a standalone command — it is a precondition of the skill.
+Use when the user answers `sprint-wide` to the mode question and no sprint session pair exists yet. **Auto-invoked by `SKILL.md` §Session Start step 0.5**. Never run as a standalone command — it is a precondition of the skill.
+
+It produces exactly two things, and neither is a bespoke tracker file:
+
+| Artifact | Address | Schema | Write mode |
+|---|---|---|---|
+| Sprint plan | `.session/sprint-testing/sprint-<N>/plan.md` | `agentic-qa-core/references/session-management.md` §6 | rewritten wholesale → ONE writer |
+| Sprint log | `.session/sprint-testing/sprint-<N>/progress.md` | same doc §7 | append-only |
+
+and mirrors them onto the **STP** issue (`STP: Sprint#{N}: {objective}`, a Test Plan parented to the QA Master Test Plan epic): `plan.md` → its **description**, `progress.md` → its **comments**. The parity is the point — see §"STP parity" below.
 
 ### Inputs
 
 | Parameter | Required | Description | Example |
 |-----------|----------|-------------|---------|
-| `sprint_number` | YES | Sprint to generate | `10` |
+| `sprint_number` | YES | Sprint to plan | `10` |
 | `qa_lead` | NO | Defaults to `git config user.name`, ask if missing | `Jane Doe` |
-| `previous_sprint_file` | NO | For carryover detection | `.context/reports/SPRINT-9-TESTING.md` |
+| `previous_sprint` | NO | Prior sprint number, for carryover detection | `9` |
 
-Output path: `.context/reports/SPRINT-{sprint_number}-TESTING.md`. If it already exists, warn + ask before overwriting.
-
-> **Prerequisite**: The sprint roster query in Step 1 is a batch read — use `bun run jira:sync-issues jql "<query>"` (resolves every slug, materializes per-issue `.md`). Load `/acli` only for the later WRITEs (transitions). Sprint Roadmap Generator runs before per-ticket Session Start, so §0.1 has not yet executed — load `/acli` explicitly when a write is reached.
+> **Prerequisite**: The sprint roster query in Step 1 is a bulk read — use `bun run jira:sync-issues jql "<query>"` (resolves every slug, materializes per-issue `.md`). Load `/acli` only for the later WRITEs (the STP, transitions). Part 1 runs before per-issue Session Start, so §0.1 has not yet executed — load `/acli` explicitly when a write is reached.
 
 ### Steps
 
-1. **Query tickets** via `bun run jira:sync-issues jql "sprint = {N} AND project = {{PROJECT_KEY}}"` for the roster: Ticket ID, Type, Title, Priority, Status, QA Assignee, Developer, Project/Epic, Platform read from the synced `.md`. (A trivial `[ISSUE_TRACKER_TOOL]` search is fine only if you need nothing beyond key/summary/status — any custom field requires the sync.) Sort by Priority DESC, Status ASC.
-2. **Classify** each ticket's board status (resolve canonical slugs via `.agents/jira-workflows.json`):
+1. **Resolve the scope by QUERY — never a hardcoded issue-type list.** The work types in scope come from the PROJECT's own declaration, so a Jira with only `Story` and one with six coverable types both work:
+
+   | Step | Source | Rule |
+   |---|---|---|
+   | a. Declared | `.agents/jira-required.yaml` | every work type with `coverable: true` |
+   | b. Named | that work type's `jira_issue_type` | `A \| B \| C` = ORDERED alternatives; the first name the instance actually has wins (the `subtask` entry documents this pattern) |
+   | c. Present | `.agents/jira-workflows.json` | the synced catalog of what the instance really exposes — a work type absent here does not exist |
+   | d. Missing | — | **SKIP WITH A NOTE** in `plan.md` §"Risks & open questions". Never a blocker, never a stop |
+
+   Build the JQL from the surviving names plus the sprint filter. *Illustrative only, do NOT copy this list anywhere:* an instance exposing all six coverable types yields `sprint = {N} AND project = {{PROJECT_KEY}} AND issuetype in (Story, Bug, Defect, Improvement, "Tech Story", "Tech Debt")`; an instance with only `Story` yields `issuetype = Story`, which is a correct and complete run.
+
+2. **Query the roster** via `bun run jira:sync-issues jql "<the query from Step 1>"`: Issue key, Type, Title, Priority, Status, QA Assignee, Developer, Project/Epic, Platform read from the synced `.md`. (A trivial `[ISSUE_TRACKER_TOOL]` search is fine only if you need nothing beyond key/summary/status — any custom field requires the sync.) Sort by Priority DESC, Status ASC.
+3. **Classify** each issue's board status (resolve canonical slugs via `.agents/jira-workflows.json`):
 
    | Canonical Status (Story) | QA Category | Wave |
    |---|---|---|
@@ -64,113 +84,130 @@ Output path: `.context/reports/SPRINT-{sprint_number}-TESTING.md`. If it already
    | `{{jira.status.story.qa_approved}}` *with artifacts* / `ready_for_release` / `deployed_to_production` | Verified / released | Done |
    | `{{jira.status.story.aborted}}` | Cancelled (terminal) | Cancelled |
 
-   Principle: stories already mid-test or queued for QA go to Wave 1; previously-approved stories missing ATP/ATR get retroactive Wave-1-priority treatment. If the project's substrate lacks a slug (e.g. no `blocked` status), drop that row gracefully and continue.
+   Principle: issues already mid-test or queued for QA go to Wave 1; previously-approved issues missing ATP/ATR get retroactive Wave-1-priority treatment. The slugs above are shown for the `story` work type; resolve the equivalent slug per work type for the other coverable types (`{{jira.status.<work_type>.<slug>}}`). If the project's substrate lacks a slug (e.g. no `blocked` status), drop that row gracefully and continue.
 
-3. **Detect carryovers** if `previous_sprint_file` was provided. Scan it for tickets whose status is NOT `PASSED` / `CANCELLED` / `Done`. For each, check whether it appears in the current sprint; if yes mark as carryover with prior context; if no note as "dropped from sprint" and inform the user.
-4. **Organize waves** (substrate-driven; skip slugs the project does not expose):
+4. **Detect carryovers** if `previous_sprint` was given. Read the prior sprint's archived log (`.session/.archive/<date>-sprint-testing-sprint-<N-1>/progress.md`) and, when it is gone or was never on this machine, the prior STP's comments via `bun run jira:sync-issues get <STP-KEY> --include-comments`. **The STP is the authoritative source** — the archive is local and may not exist. For each issue whose last recorded status is NOT `PASSED` / `CANCELLED` / `Done`: if it appears in the current sprint, mark it a carryover with prior context; if not, note it "dropped from sprint" and inform the user.
+5. **Organize waves** (substrate-driven; skip slugs the project does not expose):
    - Wave 1 = `{{jira.status.story.in_test}}` + `{{jira.status.story.ready_for_qa}}` + retroactive `{{jira.status.story.qa_approved}}` (no ATP/ATR). Sort: Priority then QA assignment.
    - Wave 2 = `{{jira.status.story.in_review}}` (Dev Complete — PR open). Sort by Priority.
    - Pipeline = `{{jira.status.story.in_progress}}` + `{{jira.status.story.blocked}}`, grouped separately.
    - Backlog = `{{jira.status.story.backlog}}` / `shift_left_qa` / `estimation` / `ready_for_dev`.
    - Done = `{{jira.status.story.qa_approved}}` (with artifacts) / `ready_for_release` / `deployed_to_production`.
    - Cancelled = `{{jira.status.story.aborted}}`.
-5. **Detect QA automation tasks**: `Type = QA Task` OR title contains "E2E Tests" / "Integration Tests", assigned to `qa_lead`. Collect into their own section.
-6. **Write** the file using the structure below.
-7. **Report** a short board summary: totals, wave counts, carryovers.
+6. **Detect QA automation tasks**: `Type = QA Task` OR title contains "E2E Tests" / "Integration Tests", assigned to `qa_lead`. Collect them as their own wave in the queue.
+7. **Write the sprint session pair** using the two schemas below.
+8. **Find-or-create the STP** (`SKILL.md` §Session Start 0.7) and seed its **description** from `plan.md`. Present → read-first, then update the description in place; never blind-overwrite another planner's edit.
+9. **Report** a short board summary: totals, wave counts, carryovers, and every work type skipped in Step 1d.
 
-### Framework file structure
+### `plan.md` — the sprint's local STP
+
+Follows `agentic-qa-core/references/session-management.md` §6 exactly: the frontmatter below, then the seven H2s in that order. No extra H2s, no substitute file.
 
 ```markdown
-# Sprint {N} - In-Sprint Testing Tracker
+---
+topic_key: session/sprint-testing/sprint-{N}/plan
+skill: sprint-testing
+scope: sprint-{N}
+created_at: {ISO-8601 UTC}
+created_by: {model-id}
+status: draft
+capture_prompt: true
+---
 
-> Purpose: track QA testing progress; provide AI context for resuming sessions.
-> Sprint: {N} | QA: {qa_lead} | Started: {YYYY-MM-DD} | Last Updated: {date} (initial generation)
+## Goal
+Run in-sprint QA across the Sprint {N} backlog: {objective}, closing each issue with an ATP, an ATR and a QA verdict.
 
-## Board Summary
-| Status | Count | QA Relevant |
-|--------|-------|-------------|
-| ... | ... | YES - reason / NO |
-| Total Sprint {N} | {total} | |
+## Inputs
+- JQL scope: `{the query resolved in Step 1}`
+- Work types in scope: {resolved names} · SKIPPED (absent from this instance): {names, or "none"}
+- Roster: {n} issues · QA lead: {qa_lead} · TMS modality: {jira-xray | jira-native}
+- STP: {STP-KEY or "pending creation"}
+- Carryovers from Sprint {N-1}: {keys, or "none"}
 
-## Testing Queue (Priority Order)
+## Approach
+Sprint-wide mode. One nested sub-scope per issue at `.session/sprint-testing/sprint-{N}/<KEY>/`, each running the invariant 4-dispatch cadence (Session Start -> Stage 1 -> Stage 2 -> Stage 3) Sequentially. Waves are executed in order; inside a wave, by the `#` column.
 
-### Wave 1 - QA Queue ({date})
-> Includes `{{jira.status.story.in_test}}`, `{{jira.status.story.ready_for_qa}}`, and retroactive `{{jira.status.story.qa_approved}}` (no ATP/ATR).
+## Phase breakdown
+{The QUEUE. One row per issue, in execution order. The four columns of §6 are mandatory;
+ sprint-wide adds Wave / Priority / Owner because this table is also the assignment board.}
 
-| # | Ticket | Type | Title | Priority | Dev | Project | Platform | ATP | ATR | TCs | Status |
-|---|--------|------|-------|----------|-----|---------|----------|-----|-----|-----|--------|
-| 1 | {ID} | {type} | {title} | {priority} | {dev} | {project} | {platform} | - | - | - | PENDING |
+| # | Wave | Phase | Pattern | Dispatch payload pointer | Priority | Owner | Exit condition |
+|---|------|-------|---------|--------------------------|----------|-------|----------------|
+| 1 | 1 | {KEY} — {title} | Sequential | `.session/sprint-testing/sprint-{N}/{KEY}/` | {priority} | {qa_lead or unassigned} | PENDING |
 
-#### Wave 1 Notes
-- {Ticket ID}: {context, shift-left work, special considerations}
+{Status lives in "Exit condition": PENDING while queued, then PASSED / FAILED / BLOCKED /
+ DEFERRED / SKIPPED once Stage 3 closed the issue. The orchestrator scans for the
+ lowest-numbered PENDING to pick the next issue.}
 
-#### Wave 1 Dependencies
-- {Ticket A} relates to {Ticket B} — {reason}
+## Risks & open questions
+- {risk} — mitigation: {…}
+- Work types declared coverable but absent from this instance: {names} — skipped, not blocking.
 
-### Missing Formal Testing (`qa_approved` without ATP/ATR)
-{include ONLY if present}
-| Ticket | Type | Title | Priority | Dev | Project | Platform | ATP | ATR | TCs | Issue |
+## Verification checklist
+- [ ] Every Wave-1 row reached a terminal status (not PENDING)
+- [ ] Every closed issue has an ATP, an ATR carrying the Test Environment, and a QA comment
+- [ ] Every closed issue appended one `progress.md` entry AND one STP comment
+- [ ] STP description reflects the final queue; STP transitioned to its terminal state
+- [ ] `STR: Sprint#{N}: Regression Testing` found-or-created at sprint close
 
-### Wave 2 - Pipeline (PR Open)
-#### `{{jira.status.story.in_review}}` - {count}
-| Ticket | Type | Title | Priority | Dev | Project | Platform | ATP | ATR | TCs | Notes |
-
-### `{{jira.status.story.in_progress}}` ({count})
-### `{{jira.status.story.blocked}}` ({count})
-### Backlog & Estimation ({count})
-> Includes `{{jira.status.story.backlog}}`, `shift_left_qa`, `estimation`, `ready_for_dev`.
-
-### Done ({count})
-> Includes `{{jira.status.story.qa_approved}}` (with artifacts), `ready_for_release`, `deployed_to_production`.
-
-### Cancelled ({count})
-> `{{jira.status.story.aborted}}`
-
-## Sprint Carryovers from Sprint {N-1}
-{include ONLY if previous_sprint_file was provided}
-| Ticket | Sprint {N-1} Status | Sprint {N} Status | Notes |
-
-## QA Automation Tasks (Our Work)
-{include ONLY if detected}
-| Ticket | Title | Status | Notes |
-
-## Sprint {N} Stats
-| Metric | Value |
-|--------|-------|
-| Total Sprint Tickets | {total} |
-| Wave 1 (QA Queue) | {count} |
-| Wave 1 Tested (PASSED) | 0/{wave1_count} |
-| Pipeline (`in_review` + `in_progress`) | {count} |
-| `blocked` / Backlog / Done / Cancelled | {counts} |
-| Carryovers from Sprint {N-1} | {count or 0} |
-| Total Tested So Far | 0 |
-
-## Session Log
-### {YYYY-MM-DD} - Sprint {N} Setup & Triage
-- Queried {{ISSUE_TRACKER}}: {total} tickets in Sprint {N}
-- {wave1_count} Wave 1 tickets identified ({list IDs})
-- {assigned_count} assigned to {qa_lead}, {unassigned_count} unassigned
-- {carryover_count} carryovers from Sprint {N-1}: {list}
-- Created SPRINT-{N}-TESTING.md tracker
+## Cross-references
+- STP: {STP-KEY}
+- Per-issue sub-scopes: `.session/sprint-testing/sprint-{N}/<KEY>/{plan.md, progress.md, test-session-memory.md}`
+- `.context/master-test-plan.md`, `.context/business/business-feature-map.md`
 ```
 
-### Framework file conventions
+**`plan.md` is rewritten wholesale, so it has exactly ONE writer** — whoever plans the sprint. Mid-sprint changes (an issue arrives, a wave is promoted, an owner changes) are appended under `## Changelog` per §6, which is append-only; the body sections above it are never edited in place, because they record the agreement the sprint started from.
 
-1. **Status column in Wave 1**: the orchestrator scans for `PENDING` to pick the next ticket. Valid values during a sprint: `PENDING`, `PASSED`, `FAILED`, `BLOCKED`, `DEFERRED`, `SKIPPED`.
-2. **ATP / ATR / TCs columns**: initialized as `-`; updated AFTER Stage 3 completes for each ticket (e.g. `51`, `61`, `4`).
-3. **Priority order** inside Wave 1: the `#` column determines testing order — pick the lowest-numbered `PENDING`. Order: Critical bugs -> Critical features -> High -> Medium -> Low.
-4. **Wave promotion**: when tickets move to `{{jira.status.story.ready_for_qa}}` mid-sprint, append them to a new wave section (Wave 2 becomes active, renumber). Read the latest wave with `PENDING` tickets.
-5. **Session Log**: each testing session appends an entry. Provides continuity across AI sessions.
+### `progress.md` — the append-only sprint log
+
+Follows `agentic-qa-core/references/session-management.md` §7 exactly. One entry per issue close, appended by the orchestrator after Stage 3 verified. At sprint altitude a "phase" is one issue.
+
+```markdown
+---
+topic_key: session/sprint-testing/sprint-{N}/progress
+skill: sprint-testing
+scope: sprint-{N}
+---
+
+## Phase {n} — {KEY} {title} — {ISO-8601 UTC}
+- status: completed | failed | skipped
+- dispatched_as: Sequential
+- subagent_report: {verdict} · TCs {passed}/{total} ({rate}) · bugs: {keys or none}
+- artifacts_touched: [{ATP-KEY}, {ATS-KEY}, {ATR-KEY}, {bug keys}]
+- next: {next KEY | stop}
+- notes: {one line — AC gaps, recalibrations, blockers}
+```
+
+Append-only, in both directions: never rewrite an entry. A correction is a NEW entry, exactly as a retry after a failure is (§7 "Why append-only") — the resulting log is the sprint's execution audit.
+
+### STP parity — why the split is exactly this
+
+The sprint pair and the STP issue are one artifact at two addresses:
+
+| Local file | STP surface | Write mode | Writers | Failure mode it avoids |
+|---|---|---|---|---|
+| `plan.md` | issue **description** | rewritten wholesale | **ONE** (the planner) | two people editing a description overwrite each other |
+| `progress.md` | issue **comments** | **append-only, both sides** | every tester | none — appends never collide |
+
+So: one comment per issue close, carrying the same content as that issue's `progress.md` entry. Two testers closing two issues at the same time each add a comment and nothing is lost; two testers rewriting a description would lose one of the two.
+
+**When the comment log and a Story's ATR disagree, the ATR wins.** The ATR is the artifact of record for that issue; the STP comment is a running log that can lag, or be written from stale state.
+
+Read the log back with `bun run jira:sync-issues get <STP-KEY> --include-comments` — it already materializes the comments locally, so this needs no new tooling.
+
+### Nothing local is a deliverable
+
+`.session/` is gitignored and lives only on the machine that wrote it. The sprint's shareable record is the **STP in Jira** plus the per-issue ATP / ATS / ATR items. Never describe a local file as the canonical output, and never let a downstream step depend on one existing.
 
 ---
 
-## Part 2 — The per-ticket loop
+## Part 2 — The per-issue loop
 
 ```
 ORCHESTRATOR                           SUB-AGENTS
     |
-    |-> Read SPRINT-{N}-TESTING.md
-    |-> Pick next ticket (see STEP 1)
+    |-> Read sprint plan.md queue + tail of sprint progress.md
+    |-> Pick next issue (see STEP 1)
     |
     |-> Dispatch SESSION START ------> Creates PBI + context.md · session dir + test-session-memory.md
     |-> Present Story Explanation, WAIT for user OK
@@ -184,25 +221,28 @@ ORCHESTRATOR                           SUB-AGENTS
     |
     |-> Dispatch REPORTING ---------> Updates memory (final status)
     |-> Verify Checklist
-    |-> Update SPRINT-{N}-TESTING.md (Status, ATP, ATR, TCs)
-    |-> Present per-ticket summary, WAIT for user OK
-    |-> Loop to next ticket
+    |-> APPEND one entry to sprint progress.md + one comment to the STP
+    |-> Archive the issue sub-scope
+    |-> Present per-issue summary, WAIT for user OK
+    |-> Loop to next issue
 ```
 
-### STEP 1 — Auto-detect the next ticket
+### STEP 1 — Auto-detect the next issue
 
-Scan the sprint file in this order:
+Read the sprint `plan.md` queue (`## Phase breakdown`) and the tail of the sprint `progress.md`, in this order:
 
-1. If `continue-from` was provided, jump directly to that ticket.
-2. "Missing Formal Testing" section — tickets in a tested state with no ATP/ATR. Process these first (retroactive formal testing).
-3. Current wave (Wave 1 by default) — first ticket with `Status = PENDING`.
+1. If `continue-from` was provided, jump directly to that issue.
+2. Retroactive rows — issues in a tested state with no ATP/ATR (Wave 1 priority per Part 1 Step 3). Process these first.
+3. Current wave (Wave 1 by default) — lowest-numbered row still `PENDING` in its Exit condition.
 4. If the current wave is done, check whether a new wave has formed and repeat.
 
-Once chosen: note ID / type / title / priority, check for an existing `test-session-memory.md` (interrupted session), tell the user which ticket and why.
+`progress.md` is the authority on what actually closed: a row still reading `PENDING` whose key already has a `completed` entry means the queue was not updated, so trust the log and say so.
+
+Once chosen: note key / type / title / priority, check for an existing `test-session-memory.md` (interrupted session), tell the user which issue and why.
 
 ### STEP 2 — Dispatch sub-agents per workflow
 
-| Ticket Type | Sub-agent 1 | Sub-agent 2 | Sub-agent 3 | Sub-agent 4 |
+| Issue Type | Sub-agent 1 | Sub-agent 2 | Sub-agent 3 | Sub-agent 4 |
 |-------------|-------------|-------------|-------------|-------------|
 | Feature / Product Roadmap / UX-UI / Task / QA Task | Session Start | Stage 1 Planning (Feature) | Stage 2 Execution | Stage 3 Reporting |
 | Bug | Session Start | Bug Planning (Phase 1: Triage + Planning) | Bug Execution (Phase 2) | Bug Reporting (Phase 3) |
@@ -211,14 +251,14 @@ Once chosen: note ID / type / title / priority, check for an existing `test-sess
 
 ## Sub-agent prompt templates
 
-Every dispatch uses the **7-component briefing format** defined in `.agents/skills/agentic-qa-core/references/briefing-template.md` (Goal / Context docs / Project Standards (auto-resolved) / Skills to load / Exact instructions / Report format / Rules). The four briefings below cover the per-ticket cadence (Session Start -> Stage 1 -> Stage 2 -> Stage 3) and are used VERBATIM in BOTH single-ticket and batch modes — single-ticket runs them once, batch loops them per Wave 1 PENDING ticket. Detailed step instructions live in the stage-specific reference — do NOT duplicate them here.
+Every dispatch uses the **7-component briefing format** defined in `.agents/skills/agentic-qa-core/references/briefing-template.md` (Goal / Context docs / Project Standards (auto-resolved) / Skills to load / Exact instructions / Report format / Rules). The four briefings below cover the per-issue cadence (Session Start -> Stage 1 -> Stage 2 -> Stage 3) and are used VERBATIM in BOTH single-issue and sprint-wide modes — single-issue runs them once, sprint-wide loops them per Wave 1 PENDING row. Detailed step instructions live in the stage-specific reference — do NOT duplicate them here.
 
 > **Variable resolution**: `<TICKET_KEY>`, `<EPIC_KEY>`, `<EPIC_SLUG>`, `<STORY_SLUG>`, `<PBI_FOLDER>`, `<SESSION_DIR>`, `<ENV>` are session variables filled by the orchestrator before dispatch. `{{PROJECT_KEY}}`, `{{WEB_URL}}`, `{{API_URL}}`, `{{API_MCP}}`, `{{DB_MCP}}` resolve from `.agents/project.yaml` per `AGENTS.md` §"Project Variables".
 >
 > | Variable | Resolves to | Holds |
 > |---|---|---|
 > | `<PBI_FOLDER>` | `.context/PBI/epics/EPIC-<EPIC_KEY>-<EPIC_SLUG>/stories/STORY-<TICKET_KEY>-<STORY_SLUG>/` (module = Epic, 1:1) | The Jira cache for this ticket, plus local-only `context.md` and `evidence/`. Regenerable with `bun run jira:sync-issues`. |
-> | `<SESSION_DIR>` | `.session/sprint-testing/<scope>/` where `<scope>` is `<TICKET_KEY>` (single) or `sprint-<N>/<TICKET_KEY>` (batch) | Session state: `plan.md`, `progress.md`, and `test-session-memory.md`. |
+> | `<SESSION_DIR>` | `.session/sprint-testing/<scope>/` where `<scope>` is `<TICKET_KEY>` (single-issue) or `sprint-<N>/<TICKET_KEY>` (sprint-wide) | Session state: `plan.md`, `progress.md`, and `test-session-memory.md`. In sprint-wide mode the PARENT directory `.session/sprint-testing/sprint-<N>/` holds the sprint's own `plan.md` + `progress.md` — orchestrator-owned, never written by a sub-agent. |
 >
 > Both are absolute paths. They are separate on purpose: `<PBI_FOLDER>` is a cache that a re-sync overwrites wholesale, so anything a resume depends on must live in `<SESSION_DIR>` instead.
 
@@ -484,7 +524,7 @@ IMPORTANT: credentials always from .env. Never hardcode. Never ask the user for
 
 ## test-session-memory.md template
 
-Created at `<SESSION_DIR>/test-session-memory.md` — i.e. `.session/sprint-testing/<TICKET_KEY>/test-session-memory.md`, or `.session/sprint-testing/sprint-<N>/<TICKET_KEY>/test-session-memory.md` in batch mode. Hand-authored (NON-Jira) shared memory across sub-agents; gitignored with the rest of `.session/`.
+Created at `<SESSION_DIR>/test-session-memory.md` — i.e. `.session/sprint-testing/<TICKET_KEY>/test-session-memory.md`, or `.session/sprint-testing/sprint-<N>/<TICKET_KEY>/test-session-memory.md` in sprint-wide mode. Issue altitude only — the sprint scope has no `test-session-memory.md`, because nothing is shared across sub-agents at that altitude. Hand-authored (NON-Jira) shared memory across sub-agents; gitignored with the rest of `.session/`.
 
 ```markdown
 # Test Session Memory: {{PROJECT_KEY}}-{number}
@@ -620,32 +660,31 @@ Created at `<SESSION_DIR>/test-session-memory.md` — i.e. `.session/sprint-test
 
 ---
 
-## STEP 4 — Post-ticket actions (orchestrator-owned)
+## STEP 4 — Post-issue actions (orchestrator-owned)
 
 After Sub-agent 4 finishes:
 
 1. Read the final `test-session-memory.md`.
-2. Verify the Checklist (STEP 5 below).
-3. Update `SPRINT-{N}-TESTING.md`:
-   - Change Status `PENDING` -> `PASSED` / `FAILED`.
-   - Fill ATP / ATR / TCs columns.
-   - Update the Stats section.
-3b. **Update the sprint STP** (`STP: Sprint#{N}: {objective}` — the Test Plan item find-or-created at Session Start §0.7): append this ticket's outcome to its scope/progress. The STP is a LIVING sprint planner — every tested ticket updates it. Skip with a note when the Test Plan work type is absent (no sprint-altitude field fallback); non-blocking.
-4. Present a per-ticket summary:
+2. Verify the Checklist (STEP 5 below). Nothing below runs until it passes.
+3. **Append ONE entry to the sprint `progress.md`** (`.session/sprint-testing/sprint-{N}/progress.md`) in the §7 block shape — `## Phase {n} — {KEY} {title} — {ts}`, `status`, `dispatched_as: Sequential`, `subagent_report` (verdict + TC pass rate + bug keys), `artifacts_touched` (ATP / ATS / ATR / bug keys), `next`, `notes`. Append-only: never rewrite an earlier entry.
+3b. **Mirror it as ONE comment on the sprint STP** (`STP: Sprint#{N}: {objective}` — the Test Plan item find-or-created at Session Start §0.7), same content. Comments are append-only on both sides, which is what lets several testers close issues concurrently without clobbering each other. Do NOT rewrite the STP description here — that mirrors `plan.md` and belongs to the sprint's single planner. Skip with a note when the Test Plan work type is absent (no sprint-altitude field fallback); non-blocking.
+3c. **Update the queue row** in `plan.md` `## Phase breakdown`: `PENDING` -> `PASSED` / `FAILED` / `BLOCKED` / `DEFERRED` / `SKIPPED` in its Exit-condition cell. This is the ONE in-place edit the plan takes during a sprint; anything larger (a new issue, a promoted wave, a changed owner) goes under `## Changelog` instead.
+3d. **Archive the issue sub-scope** per `agentic-qa-core/references/session-management.md` §8: move `.session/sprint-testing/sprint-{N}/{KEY}/` to `.session/.archive/{YYYY-MM-DD}-sprint-testing-sprint-{N}-{KEY}/`. A FAILED issue is NOT archived — the artifacts are needed to debug it. The sprint pair itself stays put until sprint close.
+4. Present a per-issue summary:
 
    ```
-   TICKET: {{PROJECT_KEY}}-{XXX} -- {title}
+   ISSUE: {{PROJECT_KEY}}-{XXX} -- {title}
    TYPE: {type} | PRIORITY: {priority} | RESULT: {PASSED/FAILED}
    ARTIFACTS: ATP-{N}, ATR-{N}, TCs: {list}
    BUGS: {count or none} | AC GAPS: {count or none}
    OBSERVATIONS: {if any}
 
    Remaining queue:
-   {list remaining PENDING tickets with priority}
+   {list remaining PENDING issues with priority}
 
-   Ready for next ticket? (waiting for OK)
+   Ready for the next issue? (waiting for OK)
    ```
-5. WAIT for user OK before the next ticket.
+5. WAIT for user OK before the next issue.
 
 ---
 
@@ -653,15 +692,16 @@ After Sub-agent 4 finishes:
 
 Inspect `test-session-memory.md > Checklist`.
 
-1. Count `[x]` vs `[ ]` across all stages, filtering by ticket type (Feature or Bug).
-2. All applicable `[x]`: proceed to update the sprint file.
+1. Count `[x]` vs `[ ]` across all stages, filtering by issue type (Feature or Bug).
+2. All applicable `[x]`: proceed to STEP 4's log + STP + queue updates.
 3. Any applicable `[ ]` still:
    - Check Observations for the reason.
    - Valid reason (e.g. "N/A — no UI changes"): proceed.
    - Missing / unclear: inform the user and ask before marking done.
 4. Orchestrator-only items:
    - [ ] Story explained and confirmation received
-   - [ ] Sprint testing file updated
+   - [ ] Sprint `progress.md` entry appended + mirrored as one STP comment
+   - [ ] Queue row moved off `PENDING`
    - [ ] Final summary presented to user
 
 ---
@@ -674,6 +714,7 @@ If `test-session-memory.md` already exists for the next ticket:
 2. Inform the user: "Found interrupted session for `{{PROJECT_KEY}}-{XXX}`. Last completed: {stage}. Resuming from {next stage}."
 3. Skip completed stages; dispatch the next sub-agent in sequence.
 4. The sub-agent reads the existing memory and continues from there.
+5. Sprint altitude: the sprint `progress.md` gets its entry only when Stage 3 finally closes the issue — a resumed issue produces ONE sprint-level entry, not one per resume.
 
 Same procedure when `continue-from` is given.
 
@@ -686,7 +727,7 @@ When the user indicates they are done (or wrapping up), present:
 ```markdown
 ## Sprint {N} -- Session Summary ({date})
 
-| # | Ticket | Type | Priority | Title | Result | Board Status | Dev | TCs | AC Gaps | Bugs | Artifacts |
+| # | Issue | Type | Priority | Title | Result | Board Status | Dev | TCs | AC Gaps | Bugs | Artifacts |
 |---|--------|------|----------|-------|--------|--------------|-----|-----|---------|------|-----------|
 | 1 | {{PROJECT_KEY}}-{X} | {type} | {priority} | {title} | {PASSED/FAILED/SKIPPED} | {board status} | {dev} | {X/Y (rate%)} | {count or None} | {count or None} | ATP-{N}, ATR-{N}, TCs {list} |
 ```
@@ -696,15 +737,18 @@ When the user indicates they are done (or wrapping up), present:
 After the table:
 
 ```
-Session stats: {X} tickets tested, {Y} TCs executed, {Z}% pass rate
-Remaining queue: {list remaining PENDING tickets with priority}
+Session stats: {X} issues tested, {Y} TCs executed, {Z}% pass rate
+Remaining queue: {list remaining PENDING issues with priority}
 ```
 
-**Sprint close (last ticket of the sprint done, no PENDING left):**
+The table is a CHAT rendering derived from the sprint `progress.md` — do not persist a second copy of it anywhere on disk.
+
+**Sprint close (last issue of the sprint done, no PENDING left):**
 
 1. Find-or-create the sprint recap Execution `STR: Sprint#{N}: Regression Testing` — a **Test Execution**, parent **QA Test Artifacts**, ALWAYS with the Test Environment from `active_env` — IF `/regression-testing` has not already created it (whichever arrives first creates it; the other completes it). Fill it as the recap of the sprint's results.
-2. Close the sprint STP (`STP: Sprint#{N}: {objective}`): final scope/progress update + transition to its terminal state.
-3. Both steps skip with a note when the respective work type is absent (jira-native without Test Plan / Test Execution work types); non-blocking.
+2. Close the sprint STP (`STP: Sprint#{N}: {objective}`): final description update from `plan.md` (read-first) + transition to its terminal state.
+3. **Archive the sprint session pair** per `agentic-qa-core/references/session-management.md` §8: move `.session/sprint-testing/sprint-{N}/` to `.session/.archive/{YYYY-MM-DD}-sprint-testing-sprint-{N}/`, then call `mem_session_summary` with the archive path. Moving the parent moves whatever sub-scope is still inside it, so verify the queue holds no PENDING and no in-flight issue first. Leave the pair in place if any issue failed.
+4. Steps 1 and 2 skip with a note when the respective work type is absent (jira-native without Test Plan / Test Execution work types); non-blocking.
 
 ---
 
@@ -716,7 +760,9 @@ Remaining queue: {list remaining PENDING tickets with priority}
 | Sub-agent reports TOOL FAILURE (MCP / `[AUTOMATION_TOOL]` / `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]`) | Stop, surface error, wait for user instructions. |
 | Sub-agent reports a **blocking** BUG_FOUND (smoke/env down, data integrity, security-exploitable) | Pause, present bug, wait for user decision. |
 | Sub-agent reports a **non-blocking** finding | Do NOT pause — the subagent finished the pass; surface the finding at Stage 2 close and continue. |
-| Framework file missing / malformed | Offer to (re)generate via Part 1. |
-| `continue-from` ticket not in file | List available tickets, ask user to confirm. |
+| Sprint `plan.md` missing / malformed | Offer to build it via Part 1. Never fabricate a queue from memory. |
+| Sprint `plan.md` and `progress.md` disagree on an issue's status | `progress.md` wins (append-only audit); fix the queue row and say so. |
+| STP comment log and a Story's ATR disagree | The **ATR** wins — it is the artifact of record. Append a correcting comment; never edit the posted one. |
+| `continue-from` issue not in the queue | List the queued issues, ask user to confirm. |
 
 Never proceed silently past an error.

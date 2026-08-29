@@ -2,7 +2,7 @@
 
 > **Subagent context**: this file is part of the "Context docs" briefing component for the Session Start subagent (see `sprint-testing/SKILL.md` §Subagent Dispatch Strategy and `sprint-orchestration.md` §"Briefing 1 — Session Start subagent").
 
-Load this reference whenever you enter sprint-testing in any mode. Session Start is universal — every mode runs it first. The User-Story and Bug sections describe what happens after Session Start in single-ticket mode. Batch-sprint mode wraps these same stages in the orchestration loop from `sprint-orchestration.md`.
+Load this reference whenever you enter sprint-testing in any mode. Session Start is universal — every mode runs it first. The User-Story and Bug sections describe what happens after Session Start in single-issue mode. Sprint-wide mode wraps these same stages in the orchestration loop from `sprint-orchestration.md`.
 
 ---
 
@@ -54,7 +54,7 @@ This gate answers "is the environment up / can we get the email?" — it does NO
 
 ### Step 0b — Sprint Test Plan (STP) find-or-create (orchestrator-inline, first ticket of the sprint)
 
-Resolve the ticket's sprint number N from its Sprint field — `bun run jira:sync-issues get <KEY>`, then read the sprint value in the generated `.md`; for a whole-sprint pull use `--sprint <active|current|closed|>=N|7,8,10>` (or the `JIRA_SYNC_SPRINTS` env default), which resolves N once for the batch. Ticket with NO sprint → **ASK the user**; never guess. Then find `STP: Sprint#{N}: {objective}` — a **Test Plan** item parented to the **QA Master Test Plan** epic. Missing → create it (find-or-create; `/regression-testing` creates it as fallback if it runs suites first). Present → UPDATE it: the STP is a LIVING sprint planner — add this ticket to its scope and refresh progress after each tested ticket. The sprint recap Execution `STR: Sprint#{N}: Regression Testing` is created at sprint close, not here (see `sprint-orchestration.md` §STEP 7). Modality jira-native without the Test Plan work type: skip with a note (no sprint-altitude field fallback); non-blocking.
+Resolve the ticket's sprint number N from its Sprint field — `bun run jira:sync-issues get <KEY>`, then read the sprint value in the generated `.md`; for a whole-sprint pull use `--sprint <active|current|closed|>=N|7,8,10>` (or the `JIRA_SYNC_SPRINTS` env default), which resolves N once for the whole sprint. Ticket with NO sprint → **ASK the user**; never guess. Then find `STP: Sprint#{N}: {objective}` — a **Test Plan** item parented to the **QA Master Test Plan** epic. Missing → create it (find-or-create; `/regression-testing` creates it as fallback if it runs suites first). Present → UPDATE it: the STP is a LIVING sprint planner — add this ticket to its scope and refresh progress after each tested ticket. The STP's DESCRIPTION mirrors the sprint `plan.md` (rewritten wholesale — read-first, one writer) and its COMMENTS mirror the sprint `progress.md` (append-only, one comment per issue close, so concurrent testers never clobber each other); where a comment and a Story's ATR disagree, the ATR wins. The sprint recap Execution `STR: Sprint#{N}: Regression Testing` is created at sprint close, not here (see `sprint-orchestration.md` §STEP 7). Modality jira-native without the Test Plan work type: skip with a note (no sprint-altitude field fallback); non-blocking.
 
 ### Step 1 — Fetch the ticket from the issue tracker
 
@@ -136,7 +136,7 @@ If team discussions reveal decisions that modify or extend the ACs, highlight th
 
 **MANDATORY:** WAIT for user confirmation before continuing.
 
-> Batch-sprint mode exception: when running as a sub-agent, do NOT ask the user — just write the Story Explanation into `test-session-memory.md` and finish. The orchestrator shows it to the user.
+> Sub-agent exception (both modes): when running as a sub-agent, do NOT ask the user — just write the Story Explanation into `test-session-memory.md` and finish. The orchestrator shows it to the user.
 
 ### Step 3 — Load project context
 
@@ -280,7 +280,7 @@ Every stage resolves `{{WEB_URL}}` / `{{API_URL}}` through this slot first (over
 Context loaded / Code explored / Environment
 ```
 
-### Output summary (single-ticket mode)
+### Output summary (single-issue mode)
 
 ```markdown
 ## Session Initialized: {{PROJECT_KEY}}-{number}
@@ -309,7 +309,7 @@ Context loaded / Code explored / Environment
 ### Behaviour reminders
 
 1. Always explain the story before proceeding.
-2. WAIT for user confirmation; never auto-advance (except batch-sprint sub-agent mode).
+2. WAIT for user confirmation; never auto-advance (except sprint-wide sub-agent mode).
 3. All documentation and TMS content in English.
 4. ALWAYS load / create module context — do not skip exploration.
 5. Persist everything into the PBI folder.
@@ -317,7 +317,7 @@ Context loaded / Code explored / Environment
 
 ---
 
-## User-Story workflow (single-ticket mode)
+## User-Story workflow (single-issue mode)
 
 After Session Start, run Stages 1 -> 2 -> 3 for the story. Then hand off to Stage 4 / 5 / 6.
 
@@ -461,7 +461,7 @@ All artifacts are created in Stage 1 with complete links; the ATS membership is 
 
 ---
 
-## Bug workflow (single-ticket mode)
+## Bug workflow (single-issue mode)
 
 After Session Start, run Phase 1 -> Phase 2 -> Phase 3. Bugs use the same PBI folder structure as user stories. TC handling is modality-aware: **Modality jira-xray** creates ONE repro `Test` by default at fix-verification time (Phase 2); **Modality jira-native** creates NO TCs in-sprint — the bug ticket itself is the implicit test case (defers to Stage 4).
 
