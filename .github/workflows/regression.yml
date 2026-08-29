@@ -53,6 +53,11 @@ env:
   AUTO_SYNC: ${{ secrets.AUTO_SYNC || 'false' }}
   XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}
   XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
+  # Key of the Test Execution results are written onto (the STR/ATR item created
+  # by /regression-testing or /sprint-testing, already parented to the
+  # "QA Test Artifacts" epic). Empty = the XrayImport job below skips, because
+  # importing with no target mints a new, unparented Execution on every run.
+  TMS_EXECUTION_KEY: ${{ secrets.TMS_EXECUTION_KEY }}
   # Atlassian credentials — uncomment when AUTO_SYNC=true (Jira issue lookups
   # during sync). Also consumed by MCP, acli, xray-cli and the Jira-Direct TMS
   # provider when run locally. Add as repo Secrets first.
@@ -325,6 +330,98 @@ jobs:
               --results merged-allure-results --pages gh-pages --keep 10
             echo "## Allure Report" >> $GITHUB_STEP_SUMMARY
             echo "View the report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ env.TEST_ENV }}/regression/" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ============================================
+  # Job 4: Import JUnit Results to Xray
+  # ============================================
+  # The write-back leg. Playwright always emits test-results/junit.xml (see
+  # playwright.config.ts), both test jobs upload it, and this job pushes it into
+  # the Test Execution the QA process already created.
+  #
+  # OPT-IN AND NON-BLOCKING BY CONSTRUCTION. This boilerplate is used by projects
+  # with no TMS at all, so every gate below exits 0 with a GitHub annotation
+  # instead of failing, and the import step is continue-on-error so an Xray
+  # outage never turns a green suite red. A repo without Xray sees a skip note.
+  # ============================================
+  XrayImport:
+    name: Import Results to Xray
+    needs: [IntegrationTests, E2ETests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: always()
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Download Integration Test Results
+        uses: actions/download-artifact@v4
+        with:
+          name: integration-test-results
+          path: xray-artifacts/integration
+        continue-on-error: true
+
+      - name: Download E2E Test Results
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-test-results
+          path: xray-artifacts/e2e
+        continue-on-error: true
+
+      - name: Import JUnit Results to Xray
+        continue-on-error: true
+        shell: bash
+        env:
+          XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}
+          XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ "${AUTO_SYNC:-false}" != "true" ]; then
+            echo "::notice title=Xray import skipped::AUTO_SYNC is not 'true', so no result reached the TMS. Set the AUTO_SYNC repo secret to 'true' to turn the write-back on."
+            exit 0
+          fi
+
+          if [ -z "${XRAY_CLIENT_ID:-}" ] || [ -z "${XRAY_CLIENT_SECRET:-}" ]; then
+            echo "::notice title=Xray import skipped::XRAY_CLIENT_ID / XRAY_CLIENT_SECRET are not configured as repo secrets."
+            exit 0
+          fi
+
+          # No target key = no import. Importing with only a project key mints a
+          # fresh Test Execution per run, and Xray's import API cannot parent it
+          # to the "QA Test Artifacts" epic afterwards. Skipping beats orphaning.
+          if [ -z "${TMS_EXECUTION_KEY:-}" ]; then
+            echo "::warning title=Xray import skipped::TMS_EXECUTION_KEY is not set, so results were NOT imported. Create the STR/ATR Test Execution under the 'QA Test Artifacts' epic and set its key as the TMS_EXECUTION_KEY secret."
+            exit 0
+          fi
+
+          bun xray auth login
+
+          imported=0
+          for report in xray-artifacts/integration/junit.xml xray-artifacts/e2e/junit.xml; do
+            if [ -f "$report" ]; then
+              echo "Importing $report into ${TMS_EXECUTION_KEY}..."
+              bun xray import junit --file "$report" --execution "${TMS_EXECUTION_KEY}"
+              imported=$((imported + 1))
+            fi
+          done
+
+          if [ "$imported" -eq 0 ]; then
+            echo "::warning title=Xray import::No junit.xml found in the downloaded artifacts — nothing to import."
+          else
+            echo "## Xray Import" >> $GITHUB_STEP_SUMMARY
+            echo "Imported $imported JUnit report(s) into Test Execution \`${TMS_EXECUTION_KEY}\`." >> $GITHUB_STEP_SUMMARY
           fi
 
   # ============================================

@@ -24,6 +24,31 @@ interface XrayTestExecution {
   comment: string
 }
 
+/**
+ * Body of `POST /api/v2/import/execution` (Xray JSON result format).
+ *
+ * Two mutually exclusive modes:
+ *   - `testExecutionKey` — write the runs onto an EXISTING Test Execution.
+ *   - `info` — let Xray create a new one from these fields.
+ *
+ * The `info` schema is closed (`additionalProperties: false`) and admits only
+ * project / summary / description / version / revision / user / startDate /
+ * finishDate / testPlanKey / testEnvironments. There is NO parent field, so an
+ * Execution created here CANNOT be attached to the "QA Test Artifacts" epic by
+ * this call — only `testExecutionKey`, pointing at an item somebody already
+ * parented, satisfies the artifact doctrine. See the comment on `payload` below.
+ */
+interface XrayImportPayload {
+  testExecutionKey?: string
+  info?: {
+    project: string
+    summary: string
+    description: string
+    testEnvironments: string[]
+  }
+  tests: XrayTestExecution[]
+}
+
 interface SyncResult {
   provider: string
   success: boolean
@@ -37,7 +62,9 @@ interface SyncResult {
 
 export async function syncResults(reportPath = 'reports/atc_results.json'): Promise<SyncResult> {
   if (!config.tms.autoSync) {
-    console.log('[SKIP] TMS sync disabled. Set AUTO_SYNC=true to enable.');
+    console.log(
+      '[SKIP] TMS sync is OFF — no result was written back to the TMS. Enable it with AUTO_SYNC=true.',
+    );
     return { provider: 'none', success: true, message: 'Sync disabled' };
   }
 
@@ -79,6 +106,7 @@ export async function syncResults(reportPath = 'reports/atc_results.json'): Prom
 
 async function syncToXray(results: Record<string, AtcResult[]>): Promise<SyncResult> {
   const { clientId, clientSecret, projectKey } = config.tms.xray;
+  const executionKey = config.tms.executionKey;
 
   if (!clientId || !clientSecret) {
     console.error(
@@ -126,16 +154,45 @@ async function syncToXray(results: Record<string, AtcResult[]>): Promise<SyncRes
       });
     }
 
-    const payload = {
-      info: {
-        project: projectKey,
-        summary: `KATA Execution - ${env.buildId}`,
-        description: `Automated test execution via KATA Architecture\nEnvironment: ${env.current}`,
-      },
-      tests,
-    };
+    // Preferred path: write onto an Execution that already exists in Jira. That
+    // item was created by /regression-testing or /sprint-testing, so it already
+    // carries its parent ("QA Test Artifacts" epic), its Test Environment and a
+    // title in the ratified grammar. Nothing is invented here.
+    //
+    // Fallback path (no TMS_EXECUTION_KEY): Xray creates the Execution from
+    // `info`. That schema has no parent field, so the item lands UNPARENTED and
+    // no later call in this file can adopt it — reparenting is a Jira REST
+    // `PUT /issue/{key}` on the parent field, which needs Atlassian credentials
+    // the Xray provider does not have. We do what the API does allow: the
+    // ratified title shape and the Test Environment from the active env.
+    const payload: XrayImportPayload = executionKey
+      ? { testExecutionKey: executionKey, tests }
+      : {
+          info: {
+            project: projectKey,
+            // {ACRONYM}: {scope-id}: {descriptor} — docs/qa-standard/planning-ladder-proposal.md
+            summary: `STR: Build#${env.buildId}: Regression Testing`,
+            description:
+              `Automated test execution via KATA Architecture\nEnvironment: ${env.current}\n\n`
+              + 'Created by the test run itself, so it has no parent Epic. Set '
+              + 'TMS_EXECUTION_KEY to an existing Test Execution under the "QA Test '
+              + 'Artifacts" epic to keep results on a parented item instead.',
+            testEnvironments: [env.current],
+          },
+          tests,
+        };
 
-    console.log('[UPLOAD] Importing results to X-Ray...');
+    if (executionKey) {
+      console.log(`[UPLOAD] Importing results into existing Test Execution ${executionKey}...`);
+    }
+    else {
+      console.warn(
+        '[WARN] TMS_EXECUTION_KEY is not set — Xray will create a NEW, unparented '
+        + 'Test Execution for this run. Point it at the STR/ATR item under the '
+        + '"QA Test Artifacts" epic to avoid orphan executions.',
+      );
+      console.log('[UPLOAD] Importing results to X-Ray...');
+    }
 
     const importResponse = await fetch('https://xray.cloud.getxray.app/api/v2/import/execution', {
       method: 'POST',

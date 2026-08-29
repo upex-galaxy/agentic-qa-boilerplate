@@ -13,6 +13,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { test as teardown } from '@playwright/test';
 import { ATC_PARTIAL_PATH } from '@utils/decorators';
 import { syncResults } from '@utils/jiraSync';
+import { config } from '@variables';
 
 /**
  * Global Teardown: generate reports and sync TMS
@@ -76,10 +77,10 @@ teardown('Global Teardown: generate reports and sync TMS', async () => {
     console.log('\n[INFO] No ATC results found (no @atc decorators executed)');
   }
 
-  // Sync results to TMS
-  const { AUTO_SYNC } = process.env;
-
-  if (AUTO_SYNC === 'true') {
+  // Sync results to TMS.
+  // Read through `config`, not process.env: config/variables.ts is the single
+  // place this repo resolves environment variables from.
+  if (config.tms.autoSync) {
     console.log('\n[SYNC] Syncing results to TMS...');
     try {
       const result = await syncResults();
@@ -94,7 +95,14 @@ teardown('Global Teardown: generate reports and sync TMS', async () => {
     }
   }
   else {
-    console.log('\n[SKIP] TMS sync disabled (set AUTO_SYNC=true to enable)');
+    // Say it out loud. A silent no-op here is why nobody noticed that automated
+    // results never reached Jira in the shipped configuration.
+    console.log(
+      '\n[SKIP] TMS sync is OFF — these results were NOT written back to the TMS. Set AUTO_SYNC=true to enable it.',
+    );
+    console.log(
+      '       Then set TMS_EXECUTION_KEY to an existing Test Execution key, or a new (unparented) one is created per run.',
+    );
   }
 
   console.log(`\n${'='.repeat(60)}`);

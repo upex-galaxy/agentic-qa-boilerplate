@@ -62,6 +62,11 @@ const {
   // === TMS Configuration ===
   TMS_PROVIDER = 'xray', // Used: config.tms.provider (jiraSync) - 'xray' | 'jira'
   AUTO_SYNC = 'false', // Used: config.tms.autoSync (jiraSync, global.teardown)
+  // Key of an EXISTING Test Execution to write results onto (e.g. the STR/ATR
+  // item created by /regression-testing or /sprint-testing, already parented to
+  // the "QA Test Artifacts" epic). Empty = the sync mints its own Execution,
+  // which no API call can parent afterwards. See tests/utils/jiraSync.ts.
+  TMS_EXECUTION_KEY = '', // Used: config.tms.executionKey (jiraSync)
 
   // === Xray Cloud (required only if TMS_PROVIDER=xray AND AUTO_SYNC=true) ===
   XRAY_CLIENT_ID = '', // Required if AUTO_SYNC=true (jiraSync)
@@ -190,6 +195,7 @@ export const config = {
   tms: {
     provider: TMS_PROVIDER as 'xray' | 'jira' | 'none',
     autoSync: AUTO_SYNC === 'true',
+    executionKey: TMS_EXECUTION_KEY,
     xray: {
       clientId: XRAY_CLIENT_ID,
       clientSecret: XRAY_CLIENT_SECRET,

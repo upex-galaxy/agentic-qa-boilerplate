@@ -202,6 +202,21 @@ export const VAR_MANIFEST: VarSpec[] = [
     obtainHint: 'your Xray project key (only if your project uses Xray TMS).',
     note: 'Xray project key. Optional operational param.',
   },
+  {
+    name: 'TMS_EXECUTION_KEY',
+    destinations: ['local', 'github'],
+    secret: false,
+    required: false,
+    critical: false,
+    obtainHint: 'key of the STR/ATR Test Execution that already hangs off the "QA Test Artifacts" epic.',
+    // Without it, an import mints a NEW Test Execution on every run. Xray's
+    // import API cannot set a parent (`info` is `additionalProperties: false`),
+    // so that item is orphaned: no QA-process epic, outside the ladder. Pointing
+    // at an already-parented Execution is the only way results land where the
+    // artifact ladder expects them. CI refuses to import without it rather than
+    // industrialising the orphan.
+    note: 'Target Test Execution for the results write-back. Referenced by regression.yml; optional.',
+  },
 
   // --- Operational CI flag ---
   {
