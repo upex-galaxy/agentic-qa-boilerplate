@@ -67,7 +67,7 @@ qa:
       name: QA Test Repository # convention name; holds every Test (TC) issue
       key: null # discovered/created at runtime, then cached here (e.g. PROJ-456)
     test_artifacts_epic:
-      name: QA Test Artifacts # holds every Test Execution (FTR/STR/ATR), Precondition, Test Set
+      name: QA Test Artifacts # holds every Test Execution (STR/ATR), Precondition, Test Set
       key: null # discovered/created at runtime, then cached here (e.g. PROJ-789)
     defect_epic:
       name: QA Defect Management # convention name; the `QA ` prefix marks a process epic, not product

@@ -88,7 +88,7 @@ All Plans and Runs follow one **unified grammar** — the QA planning ladder:
 {ACRONYM}: {scope-id}: {descriptor}
 ```
 
-- **ACRONYM** — `FTP` · `STP` · `ATP` (Plans) · `STR` · `ATR` (Runs — FTR retired: feature results roll up via ATRs + the sprint STR) · `ATS` (Acceptance Test Set, per-Story — mandatory) · `TS` (feature-level Test Set — optional grouping) · `ReTest` (bug re-test Run). A reader / JQL sees altitude + plan-vs-run in the first token, and Plan pairs with Run visually.
+- **ACRONYM** — `FTP` · `STP` · `ATP` (Plans) · `STR` · `ATR` (Runs — FTR retired: feature results are read from the per-Story ATRs and reviewed at sprint close next to the STR; the results side has NO aggregation edge) · `ATS` (Acceptance Test Set, per-Story — mandatory) · `TS` (feature-level Test Set — optional grouping) · `ReTest` (bug re-test Run). A reader / JQL sees altitude + plan-vs-run in the first token, and Plan pairs with Run visually.
 - **scope-id** — the key of the thing under test at that altitude: feature-Epic key, `Sprint#{N}`, or Story key.
 - **descriptor** — human-readable; embeds the testing term where required (`Story Testing`, `Feature Testing`, `Regression Testing`).
 
@@ -98,7 +98,7 @@ All Plans and Runs follow one **unified grammar** — the QA planning ladder:
 | ATP — Story Test Plan | Test Plan | `ATP: {STORY-KEY}: {story title}` | `ATP: PROJ-123: Apply discount at checkout` |
 | ATR — Story Test Execution | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-123: Story Testing` |
 | FTP — Feature Test Plan | Test Plan | `FTP: {EPIC-KEY}: {feature}` | `FTP: PROJ-42: Checkout & Payments` |
-| STP — Sprint Test Plan | Test Plan | `STP: Sprint#{N}: Regression` | `STP: Sprint#30: Regression` |
+| STP — Sprint Test Plan | Test Plan | `STP: Sprint#{N}: {objective}` | `STP: Sprint#30: Payments hardening` |
 | STR — Sprint Test Results | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#30: Regression Testing` |
 | ATS — Acceptance Test Set (per-Story, **mandatory**) | Test Set | `ATS: {US_ID}: {story title}` | `ATS: GX-101: Pay with credit card` |
 | Test Set (TS — feature-level, **optional**) | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature}` | `TS: GX-42: Validate credit card payment` |

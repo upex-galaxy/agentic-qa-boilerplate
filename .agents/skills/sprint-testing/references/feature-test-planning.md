@@ -78,10 +78,12 @@ ratified QA Planning Ladder (`docs/qa-standard/planning-ladder-proposal.md`). Gr
 - **Lifecycle.** Find-or-created/updated whenever this skill loads the Epic's context;
   CONSUMED as context thereafter (see "A living document" above).
 - **Cardinality.** FTP = **1 per feature**.
-- **No FTR.** The Feature Test Results rung is **RETIRED from the ladder** — feature results
-  roll up through the per-story ATRs and the sprint recap Execution
-  `STR: Sprint#{N}: Regression Testing` (created at sprint close by the batch-close recap or
-  `/regression-testing`, whichever arrives first). Do not create `FTR:` items.
+- **No FTR.** The Feature Test Results rung is **RETIRED from the ladder** — feature results are
+  read from the per-story ATRs directly and REVIEWED together at sprint close alongside the sprint
+  recap Execution `STR: Sprint#{N}: Regression Testing` (created at sprint close by the batch-close
+  recap or `/regression-testing`, whichever arrives first). There is **no structural aggregation**
+  on the results side — no `ATR is part of STR` edge exists (see
+  `agentic-qa-core/references/traceability-linking.md` §3). Do not create `FTR:` items.
 - **Roll-up (optional).** Each per-story ATP MAY link `ATP is part of FTP` for coverage
   aggregation; parent of every Plan stays the QA Master Test Plan Epic regardless of roll-up.
 

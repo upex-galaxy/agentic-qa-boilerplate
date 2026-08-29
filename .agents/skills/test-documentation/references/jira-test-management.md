@@ -76,7 +76,7 @@ Typical hierarchy (parents are the QA-process Epics — Plans under **QA Master 
 ```
 QA Master Test Plan (Epic)
     |
-    +-- Test Plan: STP: Sprint#50: Regression           (sprint plan)
+    +-- Test Plan: STP: Sprint#50: Payments hardening   (sprint plan)
     +-- Test Plan: ATP: PROJ-101: Pay with credit card  (story plan)
             |
             +-- (Test Set / Tests grouped via links)
@@ -170,7 +170,7 @@ Related naming — the unified planning-ladder grammar `{ACRONYM}: {scope-id}: {
 | Story Test Plan (ATP) | Test Plan | `ATP: {STORY-KEY}: {story title}` | `ATP: PROJ-101: Pay with credit card` |
 | Story Test Execution (ATR) | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-101: Story Testing` |
 | Feature Test Plan (FTP) | Test Plan | `FTP: {EPIC-KEY}: {feature}` | `FTP: PROJ-42: Checkout & Payments` |
-| Sprint Test Plan (STP) | Test Plan | `STP: Sprint#{N}: Regression` | `STP: Sprint#50: Regression` |
+| Sprint Test Plan (STP) | Test Plan | `STP: Sprint#{N}: {objective}` | `STP: Sprint#50: Payments hardening` |
 | Sprint Test Results (STR) | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#50: Regression Testing` |
 | Acceptance Test Set (ATS — per-Story, **mandatory**) | Test Set | `ATS: {US_ID}: {story title}` | `ATS: PROJ-101: Pay with credit card` |
 | Test Set (TS — feature-level, **optional**) | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature}` | `TS: PROJ-42: Validate credit card payment` |
@@ -461,7 +461,7 @@ Groups Tests for a release or sprint. One per release cadence.
 [ISSUE_TRACKER_TOOL] Create Issue:
   project: {{PROJECT_KEY}}
   issueType: Test Plan
-  summary: STP: Sprint#50: Regression
+  summary: STP: Sprint#50: Payments hardening
   labels: [regression, {release}]
   components: [{module}]          # mandatory — inherit the source Story's components
   # Parent Epic: QA Master Test Plan

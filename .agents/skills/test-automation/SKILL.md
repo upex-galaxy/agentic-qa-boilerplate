@@ -223,6 +223,20 @@ bun run lint:check                         # ESLint, no errors
 
 If any step fails, fix before moving to Review.
 
+6. **Signal it in the TMS** — per TC, both signals, neither optional:
+   - **Link**: bind the automated test to the manual `Test` it automates via the `test_automation`
+     link type (`{{jira.link_types.test_automation}}`, outward `automation test for` — slug-resolved,
+     never a literal; catalog: `agentic-qa-core/references/traceability-linking.md` §3).
+   - **Labels**: ADD `automated` on the `Test` and REMOVE `automation-candidate` — the two are
+     mutually exclusive (`test-documentation/SKILL.md` §Labels). Flip them at the point the TC
+     actually reaches **AUTOMATED** (see §Git & TMS handoff: the `merged` transition after the
+     suite PR lands on `main` with CI green), not on a merge into the integration trunk.
+
+```
+[ISSUE_TRACKER_TOOL] Link work items: {AUTOMATED_TEST_KEY} -> {TC_KEY}  type: {{jira.link_types.test_automation}}
+[ISSUE_TRACKER_TOOL] Update work item: {TC_KEY}  labels: + automated  - automation-candidate
+```
+
 **Progress checkpoint**: after each Code subagent returns (per scope unit — one per TC for module-driven, one total for ticket-driven), the orchestrator appends a phase entry to `.session/test-automation/<scope>/progress.md` per `agentic-qa-core/references/session-management.md` §7. For module-driven scope, mid-batch resume reads the entries and skips already-coded ATCs.
 
 #### AI-readable verification (optional, recommended)
