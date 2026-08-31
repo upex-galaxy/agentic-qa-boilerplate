@@ -78,6 +78,14 @@ See `tms-conventions.md` §IQL for the full treatment. One-liner here:
 
 These are different fields. `AUTOMATED` (Test Status) + `FAIL` (Execution Status of last run) is a valid, common combination — the TC is live in CI, and it failed today.
 
+### Test Plan roll-up: latest status wins
+
+A **Test Plan aggregates the LATEST status of each of its Tests, across every Execution.** `PROJ-101` passing in yesterday's ATR and failing in today's STR reads **FAIL** on the Plan; a re-run flips it back. The Plan owns no Test Run of its own.
+
+The consequence is the load-bearing part: **results are never written INTO a Test Plan** — its status is *derived*, not stored. So the plan-altitude items (**FTP / STP / ATP**) carry the **plan** (description) plus **human observations** (comments), and the Execution-altitude items (**ATR / STR**) carry the **results**: the per-Story ATRs as the sprint runs, then the closing regression days before sprint close, which adds ONE more Execution over the plan's Tests — that Execution is the **STR**. The STP's roll-up updates itself as they accumulate; nobody maintains it.
+
+This is also why `STP_EXECUTION_KEY` (`.env` / CI) names the *plan* but must hold the **STR** key — the Test Execution linked to that STP, never the STP itself. `tests/utils/jiraSync.ts` reads the target's issue type and refuses a Test Plan outright.
+
 ---
 
 ## 5. Requirements Traceability Matrix (RTM)

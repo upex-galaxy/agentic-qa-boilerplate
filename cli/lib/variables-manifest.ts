@@ -203,19 +203,24 @@ export const VAR_MANIFEST: VarSpec[] = [
     note: 'Xray project key. Optional operational param.',
   },
   {
-    name: 'TMS_EXECUTION_KEY',
+    name: 'STP_EXECUTION_KEY',
     destinations: ['local', 'github'],
     secret: false,
     required: false,
     critical: false,
-    obtainHint: 'key of the STR/ATR Test Execution that already hangs off the "QA Test Artifacts" epic.',
+    obtainHint: 'key of the STR — the Test Execution linked to the sprint STP, already hanging off the "QA Test Artifacts" epic. NOT the key of the STP itself.',
     // Without it, an import mints a NEW Test Execution on every run. Xray's
     // import API cannot set a parent (`info` is `additionalProperties: false`),
     // so that item is orphaned: no QA-process epic, outside the ladder. Pointing
     // at an already-parented Execution is the only way results land where the
     // artifact ladder expects them. CI refuses to import without it rather than
     // industrialising the orphan.
-    note: 'Target Test Execution for the results write-back. Referenced by regression.yml; optional.',
+    //
+    // The name says which Plan the Execution belongs to, not which issue to
+    // pass: a Test Plan derives its status from its Executions and is never
+    // written into, so handing this the STP key is a mistake the sync detects
+    // and refuses. Xray-only — Modality jira-native has no Test Executions.
+    note: 'Target STR Test Execution for the results write-back (never the STP itself). Referenced by regression.yml; Xray-only, optional.',
   },
 
   // --- Operational CI flag ---

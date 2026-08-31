@@ -100,9 +100,19 @@ teardown('Global Teardown: generate reports and sync TMS', async () => {
     console.log(
       '\n[SKIP] TMS sync is OFF — these results were NOT written back to the TMS. Set AUTO_SYNC=true to enable it.',
     );
-    console.log(
-      '       Then set TMS_EXECUTION_KEY to an existing Test Execution key, or a new (unparented) one is created per run.',
-    );
+    // Name the variable that actually applies. Modality jira-native has no Test
+    // Executions at all, so pointing its users at an execution key teaches a
+    // model of the TMS that does not exist on their instance.
+    if (config.tms.provider === 'xray') {
+      console.log(
+        '       Then set STP_EXECUTION_KEY to the STR (the Test Execution linked to the sprint STP), or a new (unparented) one is created per run.',
+      );
+    }
+    else if (config.tms.provider === 'jira') {
+      console.log(
+        '       Results then land on each Test issue: the status field from .agents/jira-fields.json (`test_status`), or JIRA_TEST_STATUS_FIELD to override it.',
+      );
+    }
   }
 
   console.log(`\n${'='.repeat(60)}`);

@@ -104,15 +104,83 @@ export async function syncResults(reportPath = 'reports/atc_results.json'): Prom
 // X-Ray Cloud Sync
 // ============================================
 
+/**
+ * Read the Jira issue type of `issueKey`, or null when it cannot be determined.
+ *
+ * Diagnostic only. The Xray provider needs no Atlassian credentials of its own,
+ * so a missing credential, an unreachable Jira or an unexpected payload all
+ * return null — a diagnostic must never become a new blocker.
+ */
+async function readIssueType(issueKey: string): Promise<string | null> {
+  const { url, user, apiToken } = config.tms.jira;
+
+  if (!url || !user || !apiToken) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${url}/rest/api/3/issue/${issueKey}?fields=issuetype`, {
+      headers: {
+        Authorization: `Basic ${btoa(`${user}:${apiToken}`)}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const issue = (await response.json()) as { fields?: { issuetype?: { name?: string } } };
+    return issue.fields?.issuetype?.name ?? null;
+  }
+  catch {
+    return null;
+  }
+}
+
 async function syncToXray(results: Record<string, AtcResult[]>): Promise<SyncResult> {
   const { clientId, clientSecret, projectKey } = config.tms.xray;
-  const executionKey = config.tms.executionKey;
+  const stpExecutionKey = config.tms.stpExecutionKey;
 
   if (!clientId || !clientSecret) {
     console.error(
       '[ERROR] Missing X-Ray credentials. Check XRAY_CLIENT_ID and XRAY_CLIENT_SECRET.',
     );
     return { provider: 'xray', success: false, message: 'Missing credentials' };
+  }
+
+  // Guard the one mistake the variable NAME invites: handing it the STP key.
+  // Xray writes runs into Test EXECUTIONS only; a Test Plan derives its status
+  // from them, so an import aimed at one lands nowhere useful.
+  if (stpExecutionKey) {
+    const issueType = await readIssueType(stpExecutionKey);
+    const kind = issueType?.toLowerCase() ?? '';
+
+    if (issueType === null) {
+      console.log(
+        `[INFO] Could not read the issue type of ${stpExecutionKey} (no Atlassian `
+        + 'credentials, or Jira unreachable) — importing without the STP/STR check.',
+      );
+    }
+    else if (kind.includes('test plan')) {
+      console.error(
+        `[ERROR] STP_EXECUTION_KEY=${stpExecutionKey} is a "${issueType}" — that is the `
+        + 'key OF the STP. Pass the key of the STR instead: the Test Execution linked '
+        + 'to the STP. A Test Plan derives its status from its Executions, so results '
+        + 'are never written into one.',
+      );
+      return {
+        provider: 'xray',
+        success: false,
+        message: 'STP_EXECUTION_KEY points at a Test Plan, not at the STR Test Execution',
+      };
+    }
+    else if (!kind.includes('test execution')) {
+      console.warn(
+        `[WARN] STP_EXECUTION_KEY=${stpExecutionKey} is a "${issueType}", not a Test `
+        + 'Execution. Importing anyway — Xray decides whether it accepts the target.',
+      );
+    }
   }
 
   try {
@@ -159,14 +227,14 @@ async function syncToXray(results: Record<string, AtcResult[]>): Promise<SyncRes
     // carries its parent ("QA Test Artifacts" epic), its Test Environment and a
     // title in the ratified grammar. Nothing is invented here.
     //
-    // Fallback path (no TMS_EXECUTION_KEY): Xray creates the Execution from
+    // Fallback path (no STP_EXECUTION_KEY): Xray creates the Execution from
     // `info`. That schema has no parent field, so the item lands UNPARENTED and
     // no later call in this file can adopt it — reparenting is a Jira REST
     // `PUT /issue/{key}` on the parent field, which needs Atlassian credentials
     // the Xray provider does not have. We do what the API does allow: the
     // ratified title shape and the Test Environment from the active env.
-    const payload: XrayImportPayload = executionKey
-      ? { testExecutionKey: executionKey, tests }
+    const payload: XrayImportPayload = stpExecutionKey
+      ? { testExecutionKey: stpExecutionKey, tests }
       : {
           info: {
             project: projectKey,
@@ -175,19 +243,19 @@ async function syncToXray(results: Record<string, AtcResult[]>): Promise<SyncRes
             description:
               `Automated test execution via KATA Architecture\nEnvironment: ${env.current}\n\n`
               + 'Created by the test run itself, so it has no parent Epic. Set '
-              + 'TMS_EXECUTION_KEY to an existing Test Execution under the "QA Test '
+              + 'STP_EXECUTION_KEY to an existing Test Execution under the "QA Test '
               + 'Artifacts" epic to keep results on a parented item instead.',
             testEnvironments: [env.current],
           },
           tests,
         };
 
-    if (executionKey) {
-      console.log(`[UPLOAD] Importing results into existing Test Execution ${executionKey}...`);
+    if (stpExecutionKey) {
+      console.log(`[UPLOAD] Importing results into existing Test Execution ${stpExecutionKey}...`);
     }
     else {
       console.warn(
-        '[WARN] TMS_EXECUTION_KEY is not set — Xray will create a NEW, unparented '
+        '[WARN] STP_EXECUTION_KEY is not set — Xray will create a NEW, unparented '
         + 'Test Execution for this run. Point it at the STR/ATR item under the '
         + '"QA Test Artifacts" epic to avoid orphan executions.',
       );

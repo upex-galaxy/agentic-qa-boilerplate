@@ -50,14 +50,21 @@ env:
   STAGING_USER_EMAIL: ${{ secrets.STAGING_USER_EMAIL }}
   STAGING_USER_PASSWORD: ${{ secrets.STAGING_USER_PASSWORD }}
   # TMS Configuration (for Xray sync)
+  # TMS modality. Only 'xray' has Test Executions to import into — a jira-native
+  # project writes a per-Test status field instead, so the XrayImport job below
+  # is skipped outright for it. A repo VARIABLE, not a secret: it is plain
+  # configuration, and a job-level `if:` can read `vars` but never `secrets`.
+  TMS_PROVIDER: ${{ vars.TMS_PROVIDER || 'xray' }}
   AUTO_SYNC: ${{ secrets.AUTO_SYNC || 'false' }}
   XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}
   XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
-  # Key of the Test Execution results are written onto (the STR/ATR item created
-  # by /regression-testing or /sprint-testing, already parented to the
-  # "QA Test Artifacts" epic). Empty = the XrayImport job below skips, because
-  # importing with no target mints a new, unparented Execution on every run.
-  TMS_EXECUTION_KEY: ${{ secrets.TMS_EXECUTION_KEY }}
+  # Key of the STR — the Test Execution linked to the sprint's STP, created by
+  # /regression-testing or /sprint-testing and already parented to the
+  # "QA Test Artifacts" epic. NOT the STP's own key: a Test Plan derives its
+  # status from its Executions and is never written into. Empty = the XrayImport
+  # job below skips, because importing with no target mints a new, unparented
+  # Execution on every run.
+  STP_EXECUTION_KEY: ${{ secrets.STP_EXECUTION_KEY }}
   # Atlassian credentials — uncomment when AUTO_SYNC=true (Jira issue lookups
   # during sync). Also consumed by MCP, acli, xray-cli and the Jira-Direct TMS
   # provider when run locally. Add as repo Secrets first.
@@ -343,13 +350,21 @@ jobs:
   # with no TMS at all, so every gate below exits 0 with a GitHub annotation
   # instead of failing, and the import step is continue-on-error so an Xray
   # outage never turns a green suite red. A repo without Xray sees a skip note.
+  #
+  # The modality gate is different in kind: it is not "Xray is misconfigured"
+  # but "this project has no Xray", so it skips the whole job SILENTLY. A
+  # jira-native repo must see no Xray annotation at all — an annotation about a
+  # platform it does not use is noise that teaches the wrong model.
   # ============================================
   XrayImport:
     name: Import Results to Xray
     needs: [IntegrationTests, E2ETests]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: always()
+    # `always()` so results still reach the TMS after a failing suite. The
+    # `vars` expression is repeated rather than read from `env.TMS_PROVIDER`:
+    # a job-level `if:` cannot read the `env` context.
+    if: always() && (vars.TMS_PROVIDER || 'xray') == 'xray'
 
     steps:
       - name: Checkout Repo
@@ -401,8 +416,8 @@ jobs:
           # No target key = no import. Importing with only a project key mints a
           # fresh Test Execution per run, and Xray's import API cannot parent it
           # to the "QA Test Artifacts" epic afterwards. Skipping beats orphaning.
-          if [ -z "${TMS_EXECUTION_KEY:-}" ]; then
-            echo "::warning title=Xray import skipped::TMS_EXECUTION_KEY is not set, so results were NOT imported. Create the STR/ATR Test Execution under the 'QA Test Artifacts' epic and set its key as the TMS_EXECUTION_KEY secret."
+          if [ -z "${STP_EXECUTION_KEY:-}" ]; then
+            echo "::warning title=Xray import skipped::STP_EXECUTION_KEY is not set, so results were NOT imported. Set it to the key of the STR — the Test Execution linked to the sprint's STP, under the 'QA Test Artifacts' epic — not to the STP's own key."
             exit 0
           fi
 
@@ -411,8 +426,8 @@ jobs:
           imported=0
           for report in xray-artifacts/integration/junit.xml xray-artifacts/e2e/junit.xml; do
             if [ -f "$report" ]; then
-              echo "Importing $report into ${TMS_EXECUTION_KEY}..."
-              bun xray import junit --file "$report" --execution "${TMS_EXECUTION_KEY}"
+              echo "Importing $report into ${STP_EXECUTION_KEY}..."
+              bun xray import junit --file "$report" --execution "${STP_EXECUTION_KEY}"
               imported=$((imported + 1))
             fi
           done
@@ -421,7 +436,7 @@ jobs:
             echo "::warning title=Xray import::No junit.xml found in the downloaded artifacts — nothing to import."
           else
             echo "## Xray Import" >> $GITHUB_STEP_SUMMARY
-            echo "Imported $imported JUnit report(s) into Test Execution \`${TMS_EXECUTION_KEY}\`." >> $GITHUB_STEP_SUMMARY
+            echo "Imported $imported JUnit report(s) into Test Execution \`${STP_EXECUTION_KEY}\`." >> $GITHUB_STEP_SUMMARY
           fi
 
   # ============================================
