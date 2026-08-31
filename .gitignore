@@ -99,7 +99,11 @@ build/
 # Matches the .prettierignore entry that already calls it "not this tree".
 .claude/worktrees/
 .playwright-mcp
-.backups/
+# Trailing glob on purpose: the updater's migration path RENAMES this dir
+# (`.backups.old-69to71-migration/`), and a bare `.backups/` stopped matching
+# it — so machine-generated Xray dumps and key-mapping CSVs reappeared as
+# untracked files that lint:check and format:check then failed on.
+.backups*/
 
 # `.template/installer.lock.json` is TRACKED (small, immutable sentinel that
 # marks a repo as bootstrapped from this boilerplate).
