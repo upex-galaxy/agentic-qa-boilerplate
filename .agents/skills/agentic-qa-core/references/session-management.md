@@ -140,12 +140,30 @@ Subagents read the plan by H2 header, so the order and exact spelling are requir
 1. `## Goal` — one sentence. What outcome the skill must produce.
 2. `## Inputs` — files, URLs, Jira refs, env vars the plan was built from.
 3. `## Approach` — narrative explanation of why this approach was chosen. Names the composable skills loaded (e.g. `/playwright-cli`, `/acli`).
-4. `## Phase breakdown` — table with columns: `Phase | Pattern | Dispatch payload pointer | Exit condition`.
+4. `## Phase breakdown` — table. Four columns are REQUIRED and keep this spelling and order: `Phase | Pattern | Dispatch payload pointer | Exit condition`. See "Queue columns" below when the table is also a work queue.
 5. `## Risks & open questions` — bulleted list. Each item names the risk and the mitigation.
 6. `## Verification checklist` — bulleted list of observable signals that mean "done" before Archive.
 7. `## Cross-references` — sibling artifacts this session reads or writes (e.g. `.context/PBI/epics/EPIC-UPEX-100-<slug>/stories/STORY-UPEX-123-<slug>/implementation-plan.md`, `DESIGN.md`).
 
 A plan with all seven headers (even if a section is empty) is valid. Missing a header fails the lint check.
+
+### Queue columns (optional, for a `## Phase breakdown` that is also a work queue)
+
+Some skills run a LIST of units of work rather than a fixed pipeline — one nested sub-scope per issue, per module, per environment. For those, the Phase breakdown table doubles as the queue AND the assignment board, and four columns cannot carry that. Rather than let each skill invent its own spelling, these four are standard:
+
+| Column | Meaning |
+|---|---|
+| `#` | Execution order inside the current group. The orchestrator picks the lowest-numbered unit still queued. |
+| `Wave` | Group label, when the queue is executed in ordered batches (wave 1 before wave 2). Omit when there is only one group. |
+| `Priority` | The unit's own priority, carried from its source of record (a Jira field, a risk score). Never re-derived. |
+| `Owner` | Who took this unit. `unassigned` until someone does. This is what makes the table shareable in a team. |
+
+Rules that keep the extension from becoming drift:
+
+- **Append, never reorder.** The four required columns keep their spelling and relative order; queue columns sit around them. A subagent reading by column NAME must not break.
+- **Take all four or take none of the ones you need.** Adding `Owner` without `#` produces a board nobody can execute in order.
+- **`Exit condition` carries status.** Do not add a `Status` column: the required column already holds it (queued → the terminal state the unit reached). A second status column is a second source of truth.
+- Any column beyond these six needs a one-line justification in the table's preamble, so the next reader can tell a decision from an accident.
 
 ### Changelog (optional, append-only)
 

@@ -128,8 +128,9 @@ Run in-sprint QA across the Sprint {N} backlog: {objective}, closing each issue 
 Sprint-wide mode. One nested sub-scope per issue at `.session/sprint-testing/sprint-{N}/<KEY>/`, each running the invariant 4-dispatch cadence (Session Start -> Stage 1 -> Stage 2 -> Stage 3) Sequentially. Waves are executed in order; inside a wave, by the `#` column.
 
 ## Phase breakdown
-{The QUEUE. One row per issue, in execution order. The four columns of §6 are mandatory;
- sprint-wide adds Wave / Priority / Owner because this table is also the assignment board.}
+{The QUEUE. One row per issue, in execution order. The four required columns of
+ session-management.md §6 plus its standard queue columns (# / Wave / Priority / Owner) —
+ this table is the assignment board as well as the plan.}
 
 | # | Wave | Phase | Pattern | Dispatch payload pointer | Priority | Owner | Exit condition |
 |---|------|-------|---------|--------------------------|----------|-------|----------------|
