@@ -2368,7 +2368,12 @@ function classifyCoverageLinks(issue: JiraIssue, reg: Registry): {
   sets: CoverageLink[]
   tests: CoverageLink[]
   defects: Array<CoverageLink & { linkOk: boolean }>
-  /** Higher-altitude Plans/Executions skipped by the title guard (info-lined, never materialized). */
+  /**
+   * Higher-altitude Plans/Executions skipped by the title guard (info-lined).
+   * Skipped HERE ONLY, not unmaterialized: they are written by the QA-process-epic
+   * sweep, under their own acronym prefix (ADR-0001). This guard exists so an FTP or
+   * STP linked to a Story is never mistaken for that Story's own ATP/ATR.
+   */
   skipped: Array<CoverageLink & { role: 'ATP' | 'ATR' }>
 } {
   const atp: CoverageLink[] = [];
@@ -2555,7 +2560,9 @@ async function discoverCoverage(
   const reg = loadRegistry();
   const { atp, atr, sets, tests, defects, skipped } = classifyCoverageLinks(issue, reg);
 
-  // --- Altitude guard: higher-ladder artifacts linked to this issue are named, never materialized ---
+  // --- Altitude guard: higher-ladder artifacts linked to this issue are named, not
+  // filed as this Story's ATP/ATR. They still materialize, via the QA-process-epic
+  // sweep, under their own acronym prefix (ADR-0001) ---
   for (const s of skipped) {
     result.warnings.push(`INFO: ${issue.key}: skipping ${s.summary} (${s.key}) — ${higherAltitudeLabel(s.summary)} artifact, not this Story's ${s.role}`);
   }

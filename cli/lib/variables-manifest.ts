@@ -182,7 +182,7 @@ export const VAR_MANIFEST: VarSpec[] = [
     required: false,
     critical: false,
     obtainHint: 'Xray Cloud → API keys (only if your project uses Xray TMS).',
-    note: 'Xray Cloud client id. Referenced by regression.yml:46; optional (needed only when AUTO_SYNC && xray).',
+    note: 'Xray Cloud client id. Referenced by regression.yml §env; optional (needed only when AUTO_SYNC && xray).',
   },
   {
     name: 'XRAY_CLIENT_SECRET',
@@ -191,7 +191,7 @@ export const VAR_MANIFEST: VarSpec[] = [
     required: false,
     critical: false,
     obtainHint: 'Xray Cloud → API keys (only if your project uses Xray TMS).',
-    note: 'Xray Cloud client secret. Referenced by regression.yml:47; optional (needed only when AUTO_SYNC && xray).',
+    note: 'Xray Cloud client secret. Referenced by regression.yml §env; optional (needed only when AUTO_SYNC && xray).',
   },
   {
     name: 'XRAY_PROJECT_KEY',
@@ -231,7 +231,7 @@ export const VAR_MANIFEST: VarSpec[] = [
     required: false,
     critical: false,
     obtainHint: 'CI flag — set to "true" in GitHub secrets only if you auto-sync Xray results from CI.',
-    note: 'CI operational flag (default false). Referenced by regression.yml:45. GitHub-only.',
+    note: 'CI operational flag (default false). Referenced by regression.yml §env. GitHub-only.',
   },
 
   // --- Atlassian (Day-0 credentials) ---

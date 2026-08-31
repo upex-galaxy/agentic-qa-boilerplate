@@ -178,6 +178,7 @@ The KATA convention `@atc('PROJ-101')` + `test('PROJ-101: should ...', ...)` ens
 | `JIRA_PROJECT_KEY` | Default project key | Optional (fallback to `{{PROJECT_KEY}}`) |
 | `XRAY_TEST_PLAN_KEY` | Default Test Plan for imports | Optional |
 | `XRAY_ENVIRONMENT` | Default test environment label | Optional |
+| `STP_EXECUTION_KEY` | Target of the automated write-back: the **STR** Test Execution linked to the sprint STP — **never the STP's own key** (`tests/utils/jiraSync.ts` reads the issue type and refuses a Test Plan; see §4). Unset → each run mints a new, unparented Execution. | Xray only; required for write-back |
 
 Never hardcode these — always from `.env`. The `/xray-cli` skill reads them from the environment automatically.
 

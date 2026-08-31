@@ -107,8 +107,11 @@ required:
     fallback: { target: comment, label: Feature Test Plan (QA) }
     description: |
       Epic-level QA test plan (strategy + coverage approach for the whole feature/epic).
-      Authored by sprint-testing/feature-test-planning, written to this field, then synced
-      to `.context/PBI/epics/EPIC-<KEY>-<slug>/feature-test-plan.md`.
+      Authored by sprint-testing/feature-test-planning. ITEM-FIRST: the home of the FTP body
+      is the `FTP: {EPIC-KEY}: {feature}` Test Plan item (parent: QA Master Test Plan), which
+      syncs to `.context/PBI/test-plans/FTP-<KEY>-<slug>.md`. THIS FIELD IS THE FALLBACK ONLY,
+      for an instance without the Test Plan work type; when used, it syncs to
+      `.context/PBI/epics/EPIC-<KEY>-<slug>/feature-test-plan.md`.
     used_by: [sprint-testing, sync-jira-issues]
 
   feature_implementation_plan:

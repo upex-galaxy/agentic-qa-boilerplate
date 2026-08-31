@@ -557,9 +557,13 @@ bun xray test add-step --test <issueId> --action "Submit form" --result "Success
 
 # 3. Create a test execution pinned to the environment under test
 bun xray exec create --project DEMO --summary "Registration Tests - Sprint 5" --environment staging
+#    -> DEMO-123
 
-# 4. Run automated tests and import results
-bun xray import junit --file test-results/junit.xml --project DEMO
+# 4. Run automated tests and import results INTO the execution created above.
+#    Import onto an existing Execution key, never with --project: Xray's import
+#    API cannot set a parent, so a --project import mints a fresh, unparented
+#    Execution on every run — outside the QA Test Artifacts epic and the ladder.
+bun xray import junit --file test-results/junit.xml --execution DEMO-123
 
 # 5. Check execution status
 bun xray exec list --project DEMO --limit 5
@@ -589,9 +593,11 @@ bun xray set create --project {{PROJECT_KEY}} --summary "ATS: {{PROJECT_KEY}}-42
   --tests {{PROJECT_KEY}}-100,{{PROJECT_KEY}}-101
 #    -> {{PROJECT_KEY}}-180
 
-# 2. Link the ATS to the Story — the ONLY link that fills the coverage panel
+# 2. Link the ATS to the Story — the PRIMARY link that fills the coverage panel
 #    (live-verified: ATP->Story and ATR->Story links are administrative
-#    traceability and contribute NOTHING to coverage)
+#    traceability and contribute NOTHING to coverage). A direct TC->Story link
+#    is the only other link that covers, and it is a LAST RESORT — for an
+#    instance with no Test Set work type. Prefer the ATS.
 bun xray link create {{PROJECT_KEY}}-180 {{PROJECT_KEY}}-42 --type test
 
 # 3. Create the Test Plan (ATP container) and derive its list from the ATS

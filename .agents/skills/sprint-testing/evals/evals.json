@@ -13,7 +13,7 @@
       "category": "positive"
     },
     {
-      "name": "should-trigger-batch-sprint",
+      "name": "should-trigger-sprint-wide",
       "prompt": "Run QA on this sprint. We have 8 tickets to process in Sprint 5. Generate the framework and work through them.",
       "expected_behavior": "Asks the mode question, then activates sprint-testing in sprint-wide mode. Builds the sprint session pair .session/sprint-testing/sprint-5/{plan.md, progress.md} if not present (queue resolved by JQL from the project's coverable work types) and finds-or-creates the STP, then loops: auto-detects the next Wave 1 PENDING row, dispatches per-stage sub-agents sequentially, appends one sprint progress.md entry mirrored as one STP comment after Stage 3, presents a per-issue summary and waits for user OK before the next issue. Stops on TOOL FAILURE, pauses on BUG_FOUND.",
       "category": "positive"

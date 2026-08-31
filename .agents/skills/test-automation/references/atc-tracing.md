@@ -254,7 +254,13 @@ Xray Cloud:
 XRAY_CLIENT_ID=...
 XRAY_CLIENT_SECRET=...
 XRAY_PROJECT_KEY=PROJ
+STP_EXECUTION_KEY=PROJ-456   # Xray only — the STR Test Execution the run writes back to
 ```
+
+`STP_EXECUTION_KEY` decides WHERE results land. Despite the name it must hold the key of
+the **STR Test Execution** linked to the sprint STP, **never the STP's own key** —
+`tests/utils/jiraSync.ts` reads the target's issue type and refuses a Test Plan outright.
+Unset → every run mints a NEW, unparented Execution instead of appending to the STR.
 
 Jira Direct:
 

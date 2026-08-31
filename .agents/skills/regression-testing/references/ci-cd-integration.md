@@ -85,17 +85,24 @@ regression.yml
 ├── env: TEST_ENV = inputs.environment || 'staging'
 │        LOCAL_USER_EMAIL / LOCAL_USER_PASSWORD       (secrets)
 │        STAGING_USER_EMAIL / STAGING_USER_PASSWORD   (secrets)
+│        TMS_PROVIDER = vars.TMS_PROVIDER || 'xray'   (repo VARIABLE, not a secret)
 │        AUTO_SYNC + XRAY_CLIENT_ID / XRAY_CLIENT_SECRET (TMS sync, optional)
-├── job: integration   → bun run test:integration  → uploads integration-allure-results
-├── job: e2e           → bun run test:e2e          → uploads e2e-allure-results
-└── job: allure-report (if: always, unless generate_allure=false)
-        merges both allure-results dirs → merged-allure-results-<TEST_ENV>
-        generates + publishes the Allure report (same allurerc.mjs as local runs)
+│        STP_EXECUTION_KEY                            (secret — the STR's key)
+├── job: integration   → bun run test:integration  → uploads integration-allure-results + integration-test-results
+├── job: e2e           → bun run test:e2e          → uploads e2e-allure-results + e2e-test-results
+├── job: allure-report (if: always, unless generate_allure=false)
+│       merges both allure-results dirs → merged-allure-results-<TEST_ENV>
+│       generates + publishes the Allure report (same allurerc.mjs as local runs)
+└── job: XrayImport   (if: always() && vars.TMS_PROVIDER == 'xray', continue-on-error)
+        downloads the *-test-results artifacts → [TMS_TOOL] JUnit import into $STP_EXECUTION_KEY
+        skips with an annotation when AUTO_SYNC != 'true', Xray creds are missing,
+        or STP_EXECUTION_KEY is unset; a jira-native repo skips the job silently
 ```
 
 Key points:
 - Credentials are the env-prefixed pairs (`LOCAL_*` / `STAGING_*`) matching `config/variables.ts` — there are no `TEST_USER_*` secrets, and no URL secrets: `config.baseUrl` resolves from `.agents/project.yaml` by `TEST_ENV`.
 - TMS sync (Xray) runs off `AUTO_SYNC` + `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET`; the Jira-Direct alternative uses `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` (present in the file, commented until enabled).
+- **The write-back leg is the `XrayImport` job**, gated on `TMS_PROVIDER` (a repo VARIABLE — a job-level `if:` can read `vars` but never `secrets`). It runs `if: always()` so a failing suite still reports its results, and `continue-on-error` so a TMS outage never turns a green suite red. `STP_EXECUTION_KEY` names the **STR** Test Execution the JUnit reports import into — never the STP itself; unset means the job skips with a warning annotation rather than minting an orphan Execution.
 - The `allure-report` job runs `if: always()` so failures still produce a report; the Slack failure notification block exists but ships commented out.
 - The artifact name the analysis phase downloads is `merged-allure-results-<TEST_ENV>`.
 
@@ -205,9 +212,21 @@ Repository Settings → Secrets → Actions (the names match `config/variables.t
 |--------|-------|
 | `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD` | Test account for `TEST_ENV=local` |
 | `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD` | Test account for `TEST_ENV=staging` |
+| `AUTO_SYNC` | Master switch for the TMS write-back — `'true'` to enable. Absent/anything else = every suite runs with sync off (the workflow defaults it to `'false'`) |
+| `STP_EXECUTION_KEY` | Key of the **STR** — the Test Execution linked to the sprint's STP, filed under the `QA Test Artifacts` epic. **NOT the STP's own key**: a Test Plan derives its status from Executions and is never written into, so CI refuses to import without a real Execution key and skips with a warning |
 | `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET` | Xray Cloud API credentials (TMS sync, Modality jira-xray) |
 | `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` | Jira-Direct TMS sync alternative (commented in the workflows until enabled) |
 | `PORTAL_URL` / `PORTAL_PROJECT` / `PORTAL_API_KEY`, `R2_*` | Private report portal publishing (optional; see `references/private-hosting-setup.md`) |
+
+### Variables (not secrets)
+
+Repository Settings → Secrets and variables → Actions → **Variables** tab:
+
+| Variable | Value |
+|----------|-------|
+| `TMS_PROVIDER` | `xray` (default when unset) / `jira` / `none`. It must be a VARIABLE because the `XrayImport` job gates on it in a job-level `if:`, and that context can read `vars` but never `secrets` |
+
+`bun run setup --variables` **cannot** push this one: that path only writes secrets (`cli/lib/variables-flow.ts` has no `gh variable set`). Set `TMS_PROVIDER` by hand in Settings → Secrets and variables → Actions → Variables.
 
 There is **no `BASE_URL` / `API_BASE_URL` secret and no `TEST_USER_*` pair**: URLs are not secrets — they resolve from the versioned `.agents/project.yaml` through `config/variables.ts`, selected by `TEST_ENV`.
 
