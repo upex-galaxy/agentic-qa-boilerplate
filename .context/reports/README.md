@@ -39,7 +39,7 @@ Its content moved to where each half belongs:
 | What happened, per closed issue | `.session/sprint-testing/sprint-<N>/progress.md` (append-only, §7) |
 | Anything the TEAM needs, not just this machine | the **STP** in Jira — `plan.md` mirrors its description, `progress.md` its comments |
 
-The STP and the STR are Jira items (`Test Plan` and `Test Execution`, parented to the QA process epics) and are **never materialized on disk** — the sync skips them by title prefix. That is the point: a local file exists only on the machine that wrote it, so anything shared has to be in Jira.
+The STP and the STR are Jira items (`Test Plan` and `Test Execution`, parented to the QA process epics), and they **do** materialize on disk: an unfiltered `bun run jira:sync-issues pull` sweeps the four QA-process Epics and writes them as `.context/PBI/test-plans/STP-<KEY>-<slug>.md` and `.context/PBI/test-executions/STR-<KEY>-<slug>.md` (ADR-0001). What lands there is a **regenerable cache, not a deliverable** — gitignored, rebuilt by `bun run context:hydrate`, and present only on the machine that ran the sync. So the point still holds: anything the team has to share lives in Jira, and the local file is a read-only mirror of it.
 
 ## Known gap
 

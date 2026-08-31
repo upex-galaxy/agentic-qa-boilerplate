@@ -268,32 +268,45 @@ The knowledge layer is organised in three tiers, mirroring the scope at which th
     ├── README.md                 # Tier rules + gitignore ladder         [COMMIT]
     ├── templates/                # Skeletons                             [COMMIT]
     ├── epic-tree.md              # Master index of every Epic            [SYNC]
-    └── epics/
-        └── EPIC-<KEY>-<slug>/
-            ├── epic.md                          # Epic overview          [SYNC]
-            ├── module-context.md                # '## Module Context (QA)' section of the Epic description [SYNC]
-            ├── feature-implementation-plan.md   # Feature-level dev plan [SYNC]
-            ├── feature-test-plan.md             # Feature-level test plan[SYNC]
-            ├── test-specs/                      # EPIC-level             [COMMIT]
-            │   ├── ROADMAP.md   # All test IDs + automation status
-            │   ├── PROGRESS.md  # Current progress
-            │   └── <ID>/
-            │       ├── spec.md            # Test specification
-            │       ├── automation-plan.md # Code-level automation plan
-            │       └── atc/*.md           # Individual ATC designs
-            └── stories/
-                └── STORY-<KEY>-<slug>/
-                    ├── story.md                       # Story overview   [SYNC]
-                    ├── acceptance-criteria.md         # Per-field cache  [SYNC]
-                    ├── acceptance-test-plan.md        # ATP cache        [SYNC]
-                    ├── acceptance-test-results.md     # ATR cache        [SYNC]
-                    ├── comments.md                    # Jira comments    [SYNC]
-                    ├── test-cases/                    # Linked Test issues [SYNC]
-                    ├── context.md                     # Notes about the repo [LOCAL]
-                    └── evidence/*.png                 # Captured evidence  [LOCAL]
+    ├── epics/
+    │   └── EPIC-<KEY>-<slug>/
+    │       ├── epic.md                          # Epic overview          [SYNC]
+    │       ├── module-context.md                # '## Module Context (QA)' section of the Epic description [SYNC]
+    │       ├── feature-implementation-plan.md   # Feature-level dev plan [SYNC]
+    │       ├── feature-test-plan.md             # Feature-level test plan[SYNC]
+    │       ├── test-specs/                      # EPIC-level             [COMMIT]
+    │       │   ├── ROADMAP.md   # All test IDs + automation status
+    │       │   ├── PROGRESS.md  # Current progress
+    │       │   └── <ID>/
+    │       │       ├── spec.md            # Test specification
+    │       │       ├── automation-plan.md # Code-level automation plan
+    │       │       └── atc/*.md           # Individual ATC designs
+    │       └── stories/
+    │           └── STORY-<KEY>-<slug>/
+    │               ├── story.md                       # Story overview   [SYNC]
+    │               ├── acceptance-criteria.md         # Per-field cache  [SYNC]
+    │               ├── acceptance-test-plan.md        # ATP cache        [SYNC]
+    │               ├── acceptance-test-results.md     # ATR cache        [SYNC]
+    │               ├── comments.md                    # Jira comments    [SYNC]
+    │               ├── test-cases/                    # Linked Test issues [SYNC]
+    │               ├── context.md                     # Notes about the repo [LOCAL]
+    │               └── evidence/*.png                 # Captured evidence  [LOCAL]
+    ├── qa-artifacts/
+    │   └── _index.md                          # Register of the QA-bucket Epics (label `QA-Artifact`) [SYNC]
+    ├── bugs/BUG-<KEY>-<slug>/                  # Coverable folder: bug.md + ATP + ATR + defects/   [SYNC]
+    ├── improvements/IMPROVEMENT-<KEY>-<slug>/  # Same shape, one folder per coverable            [SYNC]
+    ├── tech-stories/TECHSTORY-<KEY>-<slug>/    # Same shape                                      [SYNC]
+    ├── tech-debts/TECHDEBT-<KEY>-<slug>/       # Same shape                                      [SYNC]
+    ├── defects/DEFECT-<KEY>-<slug>.md          # Standalone defect issues                        [SYNC]
+    ├── test-plans/{FTP|STP|ATP}-<KEY>-<slug>.md        # Filename mirrors the title acronym       [SYNC]
+    ├── test-executions/{STR|ATR|RETEST}-<KEY>-<slug>.md # Same rule                               [SYNC]
+    ├── test-sets/TESTSET-<KEY>-<slug>.md               # Xray container issues                    [SYNC]
+    └── preconditions/PRECONDITION-<KEY>-<slug>.md      # Xray container issues                    [SYNC]
 ```
 
 Three tiers. **`[SYNC]`** mirrors a Jira field, is materialized by `scripts/sync-jira-issues.ts`, and is never hand-written — Jira is the source of truth and `bun run context:hydrate` rebuilds the lot. **`[COMMIT]`** is versioned in git because it describes the test code, not the ticket. **`[LOCAL]`** is disposable session output; nothing downstream may depend on it existing, because it only exists on the machine that made it.
+
+Everything at Story altitude arrives through the coverage walk that starts at an Epic. The rungs above a Story — FTP, STP, STR, plus Test Sets and Preconditions — are structurally unreachable from that walk, so an unfiltered `pull` additionally sweeps the children of the four QA-process Epics and writes them into `test-plans/` and `test-executions/` under their title acronym (`--no-qa-artifacts` skips the sweep; the rationale is `.context/ADR/ADR-0001-artifact-ladder-local-cache.md`).
 
 The PBI tree as a whole is gitignored precisely because it regenerates: two sessions re-syncing at different times would otherwise commit conflicting copies of the same generated text. Session state lives outside the cache, under `.session/sprint-testing/`, so a re-sync cannot clobber it mid-run: per-ticket state (`test-session-memory.md`) at `.session/sprint-testing/<KEY>/`, and — in sprint-wide mode — the sprint's own `plan.md` + `progress.md` at `.session/sprint-testing/sprint-<N>/`, with one nested `<KEY>/` directory per issue. That sprint pair is local scaffolding, not a deliverable; the team-visible sprint state is the **STP** in Jira (§4 Glossary), whose description holds the plan and whose comments hold the append-only progress log.
 

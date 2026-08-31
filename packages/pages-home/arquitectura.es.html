@@ -616,6 +616,12 @@ TC → Story directo    last resort válido (deja de ser anti-patrón)
                   Story)
                 </li>
                 <li>Cascade de placement integrada con la enrichment GraphQL</li>
+                <li>
+                  Un <code>pull</code> sin filtros barre además los cuatro epics de proceso QA: FTP
+                  / STP / STR, Test Sets y Preconditions bajan a <code>test-plans/</code> y
+                  <code>test-executions/</code> con el acrónimo del título en el nombre de archivo
+                  (ADR-0001)
+                </li>
                 <li><code>bun run tests:map</code>: mapa HTML de cobertura, gaps primero</li>
                 <li>
                   <code>/jira-components</code>: components = módulos reales de la app, plan

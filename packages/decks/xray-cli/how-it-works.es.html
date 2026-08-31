@@ -676,7 +676,7 @@ $ bun xray set create --project PROJ --summary "ATS: PROJ-123: Apply discount at
 $ bun xray test create --project PROJ --summary "Verify login" --type Manual       # → PROJ-100
 $ bun xray test add-step --test &lt;id-100&gt; --action "Open app" --result "Login form displayed"
 # 3. Membership TC ∈ ATS (XRAY-INTERNA, no issuelink) + link Jira ATS→Story
-#    («is tested by», vía acli/REST) — SOLO ese link llena el panel de coverage
+#    («is tested by», vía acli/REST) — ese link es el que llena el panel de coverage
 $ bun xray set add-tests --set PROJ-105 --tests PROJ-100,PROJ-101
 # 4. Test Plan (ATP) — lista derivada de la membership del ATS; link a la Story = administrativo
 $ bun xray plan create --project PROJ --summary "ATP: PROJ-123: Apply discount at checkout"  # → PROJ-110
@@ -687,7 +687,7 @@ $ bun xray exec add-tests --execution PROJ-194 --tests PROJ-100,PROJ-101
 # 6. Resultados: en bloque o run a run
 $ bun xray import junit --file test-results/junit.xml --execution PROJ-194   # ó runs a mano:
 $ bun xray run status --id &lt;runId&gt; --status PASSED</div>
-    <p class="small dim mt-m">Este es el <b>orden autoritativo</b> — Set-first. Las memberships (3-5) viven en la capa interna de Xray: si esa capa falta, los runs vuelven vacíos. El link <span class="mono">ATS→Story</span> es un issue link Jira y es el ÚNICO que llena coverage; los links de ATP/ATR a la Story son administrativos (verificado live).</p>
+    <p class="small dim mt-m">Este es el <b>orden autoritativo</b> — Set-first. Las memberships (3-5) viven en la capa interna de Xray: si esa capa falta, los runs vuelven vacíos. El link <span class="mono">ATS→Story</span> es un issue link Jira y es el que llena coverage. Cascade de resolución: <span class="mono">TC→ATS→Story</span> (primaria) · <span class="mono">TC→ATP→Story</span> (placement, sin coverage) · <span class="mono">TC→Story</span> directo (last resort, sí cuenta como coverage cuando no puede existir un ATS) · si nada: orphan. Los links de ATP/ATR a la Story son administrativos (verificado live).</p>
     <div class="notes">Espejo del "Canonical End-to-End Flow" del SKILL.md. Sirve como chuleta: todo lo demás del deck son variaciones y salvaguardas alrededor de estos 6 pasos.</div>
   </section>
 

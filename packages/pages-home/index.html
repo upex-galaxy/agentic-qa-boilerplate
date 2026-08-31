@@ -1261,7 +1261,7 @@
                 class="diagram d-ladder"
                 viewBox="0 0 700 332"
                 role="img"
-                aria-label="Escalera de artefactos en cuatro altitudes: a nivel producto el MTP Master Test Plan; a nivel feature el FTP Feature Test Plan y el TS Test Set opcional; a nivel sprint el STP Sprint Test Plan y el STR Sprint Test Results; a nivel story el ATP Acceptance Test Plan, el ATS Acceptance Test Set y el ATR Acceptance Test Results. El ATS es el único link que llena el coverage panel de Xray."
+                aria-label="Escalera de artefactos en cuatro altitudes: a nivel producto el MTP Master Test Plan; a nivel feature el FTP Feature Test Plan y el TS Test Set opcional; a nivel sprint el STP Sprint Test Plan y el STR Sprint Test Results; a nivel story el ATP Acceptance Test Plan, el ATS Acceptance Test Set y el ATR Acceptance Test Results. El link ATS→Story es el que llena el coverage panel de Xray; un link directo TC→Story es el único otro que cuenta, como último recurso cuando no puede existir un ATS."
               >
                 <defs>
                   <marker
@@ -1331,7 +1331,7 @@
 
                 <rect x="190" y="308" width="9" height="9" rx="2" fill="#ffa657" />
                 <text class="t-sub" x="206" y="317">
-                  El ATS es el único link que llena el coverage panel de Xray.
+                  ATS→Story llena el coverage panel. TC→Story directo cuenta como last resort.
                 </text>
               </svg>
             </div>

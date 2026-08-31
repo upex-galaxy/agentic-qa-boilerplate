@@ -840,6 +840,8 @@ class LoansApi(ApiBase):
 
 KATA supports multiple Test Management Tools. The template is configured for **Xray** (Jira integration), but you can easily switch to TestRail or other TMS solutions.
 
+> **ANTI-PATTERN — do not copy the `summary` line below.** The illustrative script (and its commented TestRail twin) mints a per-run Test Execution titled `KATA Execution - {BUILD_ID}`. That is exactly the shape this repo removed: a brand-new, unparented item per run, outside the ratified `{ACRONYM}: {scope}: {desc}` title grammar, which Xray's import API can never re-parent afterwards (its `info` schema has no parent field). The real path imports onto an **existing STR** whose key is `STP_EXECUTION_KEY` — the Test Execution linked to the sprint's STP, under the `QA Test Artifacts` epic. See `tests/utils/jiraSync.ts` for the implementation that validates the key's issue type and refuses a Test Plan. The block below is kept only as a language-agnostic illustration of the payload shape.
+
 ```python
 # utils/tms_sync.py
 """

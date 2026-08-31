@@ -360,6 +360,7 @@ AUTO_SYNC=false
 XRAY_CLIENT_ID=
 XRAY_CLIENT_SECRET=
 XRAY_PROJECT_KEY=
+STP_EXECUTION_KEY=          # key of the STR (not the STP) that results are imported onto
 ```
 
 ### (b) Runtime URLs — `config/variables.ts`
@@ -710,6 +711,7 @@ AUTO_SYNC                   # default: false
 XRAY_CLIENT_ID
 XRAY_CLIENT_SECRET
 XRAY_PROJECT_KEY
+STP_EXECUTION_KEY           # key of the STR (not the STP) that results are imported onto
 
 # Atlassian credentials (required if TMS_PROVIDER=jira AND AUTO_SYNC=true; also
 # used by MCP atlassian, acli, xray-cli, and scripts/sync-jira-*.ts).
@@ -728,6 +730,8 @@ VIDEO_ON_FAILURE            # default: true
 CI
 BUILD_ID
 ```
+
+`TMS_PROVIDER` is the one entry above that is **not** a secret. `.github/workflows/regression.yml` reads it as `${{ vars.TMS_PROVIDER || 'xray' }}`, so set it as a repository **Variable** (Settings → Secrets and variables → Actions → Variables), not as a secret. A job-level `if:` can read `vars` but never `secrets`, and the Xray import job gates on exactly that expression — stored as a secret it is invisible to the gate and the step stays on the default forever.
 
 <br />
 
@@ -852,6 +856,11 @@ XRAY_CLIENT_ID=your-client-id
 XRAY_CLIENT_SECRET=your-client-secret
 XRAY_PROJECT_KEY=YOUR-PROJECT
 AUTO_SYNC=true
+
+# Key of the STR (not the STP) that results are imported onto — the Test Execution
+# linked to the sprint's STP, under the "QA Test Artifacts" epic. Leave it empty and
+# every run mints a brand-new, unparented Test Execution instead.
+STP_EXECUTION_KEY=YOUR-PROJECT-194
 ```
 
 ### Sync Test Results

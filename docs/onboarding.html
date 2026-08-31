@@ -3782,17 +3782,26 @@ bun run jira:check            # verify both catalogs against the manifest</code>
                     <code>bun run jira:sync-issues</code>
                     <span class="muted"
                       >Registry-driven pull of Jira issues into <code>.context/PBI/</code> markdown
-                      (default scope: Epics + Stories + Bugs). Each coverable type
-                      (Story&nbsp;/&nbsp;Bug&nbsp;/&nbsp;Defect&nbsp;/&nbsp;Improvement&nbsp;/&nbsp;Tech&nbsp;Story&nbsp;/&nbsp;Tech&nbsp;Debt)
+                      (default scope: Epics + Stories + Bugs). Every work type your
+                      <code>.agents/jira-required.yaml</code> declares
+                      <code>coverable: true</code> (shipped default:
+                      Story&nbsp;/&nbsp;Bug&nbsp;/&nbsp;Defect&nbsp;/&nbsp;Improvement&nbsp;/&nbsp;Tech&nbsp;Story&nbsp;/&nbsp;Tech&nbsp;Debt)
                       gets its own folder with auto-discovered ATP&nbsp;/&nbsp;ATR (a linked Xray
                       Test Plan&nbsp;/&nbsp;Execution description overrides the custom-field copy),
                       nested defects, and traceability + orphan-defect warnings. Sub-commands
                       <code>get &lt;KEY&gt;</code> (one issue, all custom fields;
                       <code>--include-comments</code>) and <code>jql "&lt;query&gt;"</code> (batch);
                       flags <code>--sprint</code>, <code>--types</code>, <code>--no-defects</code>,
-                      <code>--project</code> (env defaults <code>JIRA_SYNC_SPRINTS</code> /
-                      <code>JIRA_SYNC_TYPES</code>;
-                      flag&nbsp;&gt;&nbsp;env&nbsp;&gt;&nbsp;default).</span
+                      <code>--no-qa-artifacts</code>, <code>--project</code> (env defaults
+                      <code>JIRA_SYNC_SPRINTS</code> / <code>JIRA_SYNC_TYPES</code>;
+                      flag&nbsp;&gt;&nbsp;env&nbsp;&gt;&nbsp;default). An unfiltered
+                      <code>pull</code> also sweeps the four QA-process Epics, materializing the
+                      higher-altitude FTP&nbsp;/&nbsp;STP&nbsp;/&nbsp;STR plus Test Sets and
+                      Preconditions into <code>test-plans/</code> and
+                      <code>test-executions/</code> under their title acronym (<code
+                        >--no-qa-artifacts</code
+                      >
+                      skips it).</span
                     >
                   </li>
                   <li>
