@@ -70,14 +70,14 @@
     "exists_in_workspace": true
   },
   "test_design": {
-    "id": "10008",
+    "id": "10009",
     "name": "Test Design",
     "outward": "designs",
     "inward": "is designed by",
     "exists_in_workspace": true
   },
   "test_execute": {
-    "id": "10009",
+    "id": "10008",
     "name": "Test Execute",
     "outward": "executes",
     "inward": "is executed by",

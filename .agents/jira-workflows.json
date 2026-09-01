@@ -9,7 +9,7 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "fa5ca7c6-5170-49dc-af11-f540731f8109",
+      "id": "9c7b67cf-6ad9-41a0-b8a5-7cb58b0f4df1",
       "name": "UPEX Feature (US) Workflow"
     },
     "statuses": {
@@ -18,30 +18,20 @@
         "name": "Estimation",
         "category": "indeterminate"
       },
-      "qa_approved": {
-        "id": "10020",
-        "name": "QA Approved",
-        "category": "done"
+      "in_test": {
+        "id": "10041",
+        "name": "In Test",
+        "category": "indeterminate"
       },
-      "blocked": {
-        "id": "10026",
-        "name": "BLOCKED",
-        "category": "new"
-      },
-      "deployed_to_production": {
-        "id": "10043",
-        "name": "Deployed to Production",
-        "category": "done"
+      "in_progress": {
+        "id": "3",
+        "name": "In Progress",
+        "category": "indeterminate"
       },
       "ready_for_dev": {
         "id": "10012",
         "name": "Ready For Dev",
         "category": "new"
-      },
-      "in_test": {
-        "id": "10041",
-        "name": "In Test",
-        "category": "indeterminate"
       },
       "ready_for_release": {
         "id": "10042",
@@ -58,25 +48,35 @@
         "name": "Ready For QA",
         "category": "new"
       },
-      "aborted": {
-        "id": "10025",
-        "name": "ABORTED",
-        "category": "done"
+      "blocked": {
+        "id": "10026",
+        "name": "BLOCKED",
+        "category": "new"
       },
       "in_review": {
         "id": "10033",
         "name": "In Review",
         "category": "indeterminate"
       },
+      "qa_approved": {
+        "id": "10020",
+        "name": "QA Approved",
+        "category": "done"
+      },
+      "aborted": {
+        "id": "10025",
+        "name": "ABORTED",
+        "category": "done"
+      },
+      "deployed_to_production": {
+        "id": "10043",
+        "name": "Deployed to Production",
+        "category": "done"
+      },
       "backlog": {
         "id": "10038",
         "name": "Backlog",
         "category": "new"
-      },
-      "in_progress": {
-        "id": "3",
-        "name": "In Progress",
-        "category": "indeterminate"
       }
     },
     "transitions": {
@@ -300,7 +300,7 @@
   },
   "bug": {
     "jira_issue_type": {
-      "id": "10020",
+      "id": "10014",
       "name": "Bug"
     },
     "workflow_scheme": {
@@ -308,7 +308,7 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "c1c74189-51d6-4ea5-a2a1-3860ee125e8f",
+      "id": "90578e78-a195-4652-9a43-ba3eb039d179",
       "name": "UPEX BUG/DEFECT LIFE CYCLE"
     },
     "statuses": {
@@ -317,34 +317,9 @@
         "name": "Open",
         "category": "new"
       },
-      "ready_for_qa": {
-        "id": "10007",
-        "name": "Ready For QA",
-        "category": "new"
-      },
-      "closed": {
-        "id": "6",
-        "name": "Closed",
-        "category": "done"
-      },
       "cannot_reproduce": {
         "id": "10044",
         "name": "Cannot Reproduce",
-        "category": "done"
-      },
-      "aborted": {
-        "id": "10025",
-        "name": "ABORTED",
-        "category": "done"
-      },
-      "in_review": {
-        "id": "10033",
-        "name": "In Review",
-        "category": "indeterminate"
-      },
-      "duplicated": {
-        "id": "10016",
-        "name": "Duplicated",
         "category": "done"
       },
       "enhancement": {
@@ -352,9 +327,34 @@
         "name": "Enhancement",
         "category": "done"
       },
+      "aborted": {
+        "id": "10025",
+        "name": "ABORTED",
+        "category": "done"
+      },
       "in_progress": {
         "id": "3",
         "name": "In Progress",
+        "category": "indeterminate"
+      },
+      "closed": {
+        "id": "6",
+        "name": "Closed",
+        "category": "done"
+      },
+      "duplicated": {
+        "id": "10016",
+        "name": "Duplicated",
+        "category": "done"
+      },
+      "ready_for_qa": {
+        "id": "10007",
+        "name": "Ready For QA",
+        "category": "new"
+      },
+      "deferred": {
+        "id": "10015",
+        "name": "Deferred",
         "category": "indeterminate"
       },
       "rejected": {
@@ -362,9 +362,9 @@
         "name": "REJECTED",
         "category": "done"
       },
-      "deferred": {
-        "id": "10015",
-        "name": "Deferred",
+      "in_review": {
+        "id": "10033",
+        "name": "In Review",
         "category": "indeterminate"
       }
     },
@@ -501,25 +501,10 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "369109e5-e51c-4776-a895-a6800b310c70",
+      "id": "33c86e6b-d585-4e16-9d25-54cc4526fe9d",
       "name": "UPEX Test (TC) Workflow"
     },
     "statuses": {
-      "in_automation": {
-        "id": "10034",
-        "name": "In Automation",
-        "category": "indeterminate"
-      },
-      "in_review": {
-        "id": "10033",
-        "name": "In Review",
-        "category": "indeterminate"
-      },
-      "automated": {
-        "id": "10029",
-        "name": "AUTOMATED",
-        "category": "done"
-      },
       "ready": {
         "id": "10013",
         "name": "READY",
@@ -530,30 +515,45 @@
         "name": "MANUAL",
         "category": "done"
       },
-      "pull_request": {
-        "id": "10035",
-        "name": "Pull Request",
-        "category": "indeterminate"
-      },
       "draft": {
         "id": "10032",
         "name": "Draft",
         "category": "new"
+      },
+      "deprecated": {
+        "id": "10037",
+        "name": "DEPRECATED",
+        "category": "done"
+      },
+      "in_automation": {
+        "id": "10034",
+        "name": "In Automation",
+        "category": "indeterminate"
+      },
+      "automated": {
+        "id": "10029",
+        "name": "AUTOMATED",
+        "category": "done"
       },
       "candidate": {
         "id": "10030",
         "name": "Candidate",
         "category": "new"
       },
+      "in_review": {
+        "id": "10033",
+        "name": "In Review",
+        "category": "indeterminate"
+      },
       "in_design": {
         "id": "10017",
         "name": "In Design",
         "category": "indeterminate"
       },
-      "deprecated": {
-        "id": "10037",
-        "name": "DEPRECATED",
-        "category": "done"
+      "pull_request": {
+        "id": "10035",
+        "name": "Pull Request",
+        "category": "indeterminate"
       }
     },
     "transitions": {
@@ -769,10 +769,15 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "4e44bef3-7b11-426c-b941-2aa5e48b98d4",
+      "id": "372a661a-3ca3-4823-b2ee-9e370c87df66",
       "name": "UPEX Epic Workflow"
     },
     "statuses": {
+      "in_progress": {
+        "id": "3",
+        "name": "In Progress",
+        "category": "indeterminate"
+      },
       "planning": {
         "id": "10008",
         "name": "Planning",
@@ -792,11 +797,6 @@
         "id": "10038",
         "name": "Backlog",
         "category": "new"
-      },
-      "in_progress": {
-        "id": "3",
-        "name": "In Progress",
-        "category": "indeterminate"
       }
     },
     "transitions": {
@@ -844,7 +844,7 @@
   },
   "defect": {
     "jira_issue_type": {
-      "id": "10017",
+      "id": "10019",
       "name": "Defect"
     },
     "workflow_scheme": {
@@ -852,7 +852,7 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "c1c74189-51d6-4ea5-a2a1-3860ee125e8f",
+      "id": "90578e78-a195-4652-9a43-ba3eb039d179",
       "name": "UPEX BUG/DEFECT LIFE CYCLE"
     },
     "statuses": {
@@ -861,34 +861,9 @@
         "name": "Open",
         "category": "new"
       },
-      "ready_for_qa": {
-        "id": "10007",
-        "name": "Ready For QA",
-        "category": "new"
-      },
-      "closed": {
-        "id": "6",
-        "name": "Closed",
-        "category": "done"
-      },
       "cannot_reproduce": {
         "id": "10044",
         "name": "Cannot Reproduce",
-        "category": "done"
-      },
-      "aborted": {
-        "id": "10025",
-        "name": "ABORTED",
-        "category": "done"
-      },
-      "in_review": {
-        "id": "10033",
-        "name": "In Review",
-        "category": "indeterminate"
-      },
-      "duplicated": {
-        "id": "10016",
-        "name": "Duplicated",
         "category": "done"
       },
       "enhancement": {
@@ -896,9 +871,34 @@
         "name": "Enhancement",
         "category": "done"
       },
+      "aborted": {
+        "id": "10025",
+        "name": "ABORTED",
+        "category": "done"
+      },
       "in_progress": {
         "id": "3",
         "name": "In Progress",
+        "category": "indeterminate"
+      },
+      "closed": {
+        "id": "6",
+        "name": "Closed",
+        "category": "done"
+      },
+      "duplicated": {
+        "id": "10016",
+        "name": "Duplicated",
+        "category": "done"
+      },
+      "ready_for_qa": {
+        "id": "10007",
+        "name": "Ready For QA",
+        "category": "new"
+      },
+      "deferred": {
+        "id": "10015",
+        "name": "Deferred",
         "category": "indeterminate"
       },
       "rejected": {
@@ -906,9 +906,9 @@
         "name": "REJECTED",
         "category": "done"
       },
-      "deferred": {
-        "id": "10015",
-        "name": "Deferred",
+      "in_review": {
+        "id": "10033",
+        "name": "In Review",
         "category": "indeterminate"
       }
     },
@@ -1045,7 +1045,7 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "c1c74189-51d6-4ea5-a2a1-3860ee125e8f",
+      "id": "90578e78-a195-4652-9a43-ba3eb039d179",
       "name": "UPEX BUG/DEFECT LIFE CYCLE"
     },
     "statuses": {
@@ -1054,34 +1054,9 @@
         "name": "Open",
         "category": "new"
       },
-      "ready_for_qa": {
-        "id": "10007",
-        "name": "Ready For QA",
-        "category": "new"
-      },
-      "closed": {
-        "id": "6",
-        "name": "Closed",
-        "category": "done"
-      },
       "cannot_reproduce": {
         "id": "10044",
         "name": "Cannot Reproduce",
-        "category": "done"
-      },
-      "aborted": {
-        "id": "10025",
-        "name": "ABORTED",
-        "category": "done"
-      },
-      "in_review": {
-        "id": "10033",
-        "name": "In Review",
-        "category": "indeterminate"
-      },
-      "duplicated": {
-        "id": "10016",
-        "name": "Duplicated",
         "category": "done"
       },
       "enhancement": {
@@ -1089,9 +1064,34 @@
         "name": "Enhancement",
         "category": "done"
       },
+      "aborted": {
+        "id": "10025",
+        "name": "ABORTED",
+        "category": "done"
+      },
       "in_progress": {
         "id": "3",
         "name": "In Progress",
+        "category": "indeterminate"
+      },
+      "closed": {
+        "id": "6",
+        "name": "Closed",
+        "category": "done"
+      },
+      "duplicated": {
+        "id": "10016",
+        "name": "Duplicated",
+        "category": "done"
+      },
+      "ready_for_qa": {
+        "id": "10007",
+        "name": "Ready For QA",
+        "category": "new"
+      },
+      "deferred": {
+        "id": "10015",
+        "name": "Deferred",
         "category": "indeterminate"
       },
       "rejected": {
@@ -1099,9 +1099,9 @@
         "name": "REJECTED",
         "category": "done"
       },
-      "deferred": {
-        "id": "10015",
-        "name": "Deferred",
+      "in_review": {
+        "id": "10033",
+        "name": "In Review",
         "category": "indeterminate"
       }
     },
@@ -1230,7 +1230,7 @@
   },
   "tech_story": {
     "jira_issue_type": {
-      "id": "10012",
+      "id": "10018",
       "name": "Tech Story"
     },
     "workflow_scheme": {
@@ -1238,7 +1238,7 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "3eb10a53-cc82-43db-9a0a-380450e373cd",
+      "id": "99314724-6888-422a-89f8-489e9314f421",
       "name": "UPEX Tech Task/Debt (TD) Workflow"
     },
     "statuses": {
@@ -1257,14 +1257,9 @@
         "name": "To Do",
         "category": "new"
       },
-      "automated": {
-        "id": "10029",
-        "name": "AUTOMATED",
-        "category": "done"
-      },
-      "in_review": {
-        "id": "10033",
-        "name": "In Review",
+      "in_progress": {
+        "id": "3",
+        "name": "In Progress",
         "category": "indeterminate"
       },
       "fixed": {
@@ -1272,14 +1267,19 @@
         "name": "FIXED",
         "category": "done"
       },
+      "automated": {
+        "id": "10029",
+        "name": "AUTOMATED",
+        "category": "done"
+      },
       "blocked": {
         "id": "10026",
         "name": "BLOCKED",
         "category": "new"
       },
-      "in_progress": {
-        "id": "3",
-        "name": "In Progress",
+      "in_review": {
+        "id": "10033",
+        "name": "In Review",
         "category": "indeterminate"
       }
     },
@@ -1416,7 +1416,7 @@
   },
   "tech_debt": {
     "jira_issue_type": {
-      "id": "10015",
+      "id": "10012",
       "name": "Tech Debt"
     },
     "workflow_scheme": {
@@ -1424,7 +1424,7 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "3eb10a53-cc82-43db-9a0a-380450e373cd",
+      "id": "99314724-6888-422a-89f8-489e9314f421",
       "name": "UPEX Tech Task/Debt (TD) Workflow"
     },
     "statuses": {
@@ -1443,14 +1443,9 @@
         "name": "To Do",
         "category": "new"
       },
-      "automated": {
-        "id": "10029",
-        "name": "AUTOMATED",
-        "category": "done"
-      },
-      "in_review": {
-        "id": "10033",
-        "name": "In Review",
+      "in_progress": {
+        "id": "3",
+        "name": "In Progress",
         "category": "indeterminate"
       },
       "fixed": {
@@ -1458,14 +1453,19 @@
         "name": "FIXED",
         "category": "done"
       },
+      "automated": {
+        "id": "10029",
+        "name": "AUTOMATED",
+        "category": "done"
+      },
       "blocked": {
         "id": "10026",
         "name": "BLOCKED",
         "category": "new"
       },
-      "in_progress": {
-        "id": "3",
-        "name": "In Progress",
+      "in_review": {
+        "id": "10033",
+        "name": "In Review",
         "category": "indeterminate"
       }
     },
@@ -1610,28 +1610,28 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "0fd906bf-ff2c-4e62-ba30-4fbfc58b2c3b",
+      "id": "99ce4d61-2b4a-491f-9192-00816781ba0a",
       "name": "UPEX Test Planning Workflow"
     },
     "statuses": {
-      "plan_automated": {
-        "id": "10031",
-        "name": "Plan Automated",
-        "category": "done"
-      },
       "completed": {
-        "id": "10009",
+        "id": "10006",
         "name": "Completed",
         "category": "done"
       },
+      "ready": {
+        "id": "10010",
+        "name": "READY",
+        "category": "done"
+      },
       "planning": {
-        "id": "10008",
+        "id": "10005",
         "name": "Planning",
         "category": "indeterminate"
       },
-      "ready": {
-        "id": "10013",
-        "name": "READY",
+      "plan_automated": {
+        "id": "10028",
+        "name": "Plan Automated",
         "category": "done"
       }
     },
@@ -1640,7 +1640,7 @@
         "id": "31",
         "name": "Planned",
         "from_status_id": null,
-        "to_status_id": "10031",
+        "to_status_id": "10028",
         "from_canonical": null,
         "to_canonical": "plan_automated"
       },
@@ -1648,31 +1648,31 @@
         "id": "1",
         "name": "Create",
         "from_status_id": null,
-        "to_status_id": "10008",
+        "to_status_id": "10005",
         "from_canonical": null,
         "to_canonical": "planning"
       },
       "complete": {
         "id": "11",
         "name": "Complete",
-        "from_status_id": "10013",
-        "to_status_id": "10009",
+        "from_status_id": "10010",
+        "to_status_id": "10006",
         "from_canonical": "ready",
         "to_canonical": "completed"
       },
       "designed": {
         "id": "21",
         "name": "Designed",
-        "from_status_id": "10008",
-        "to_status_id": "10013",
+        "from_status_id": "10005",
+        "to_status_id": "10010",
         "from_canonical": "planning",
         "to_canonical": "ready"
       },
       "ready_to_execute": {
         "id": "41",
         "name": "Ready to Execute",
-        "from_status_id": "10031",
-        "to_status_id": "10013",
+        "from_status_id": "10028",
+        "to_status_id": "10010",
         "from_canonical": "plan_automated",
         "to_canonical": "ready"
       }
@@ -1688,19 +1688,19 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "4cdc0ab3-56ff-479d-8f9d-88b22683db4f",
+      "id": "c3861e28-056d-4082-bb79-ed14c445efcf",
       "name": "UPEX Subtask/TX Workflow"
     },
     "statuses": {
-      "close": {
-        "id": "10014",
-        "name": "Close",
-        "category": "done"
-      },
       "active": {
-        "id": "10018",
+        "id": "10015",
         "name": "ACTIVE",
         "category": "indeterminate"
+      },
+      "close": {
+        "id": "10011",
+        "name": "Close",
+        "category": "done"
       }
     },
     "transitions": {
@@ -1708,23 +1708,23 @@
         "id": "1",
         "name": "Create",
         "from_status_id": null,
-        "to_status_id": "10018",
+        "to_status_id": "10015",
         "from_canonical": null,
         "to_canonical": "active"
       },
       "reactive": {
         "id": "21",
         "name": "Reactive",
-        "from_status_id": "10014",
-        "to_status_id": "10018",
+        "from_status_id": "10011",
+        "to_status_id": "10015",
         "from_canonical": "close",
         "to_canonical": "active"
       },
       "complete": {
         "id": "11",
         "name": "Complete",
-        "from_status_id": "10018",
-        "to_status_id": "10014",
+        "from_status_id": "10015",
+        "to_status_id": "10011",
         "from_canonical": "active",
         "to_canonical": "close"
       }
@@ -1732,7 +1732,7 @@
   },
   "re_test_execution": {
     "jira_issue_type": {
-      "id": "10019",
+      "id": "10013",
       "name": "Re-Test Execution"
     },
     "workflow_scheme": {
@@ -1740,19 +1740,19 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "4cdc0ab3-56ff-479d-8f9d-88b22683db4f",
+      "id": "c3861e28-056d-4082-bb79-ed14c445efcf",
       "name": "UPEX Subtask/TX Workflow"
     },
     "statuses": {
-      "close": {
-        "id": "10014",
-        "name": "Close",
-        "category": "done"
-      },
       "active": {
-        "id": "10018",
+        "id": "10015",
         "name": "ACTIVE",
         "category": "indeterminate"
+      },
+      "close": {
+        "id": "10011",
+        "name": "Close",
+        "category": "done"
       }
     },
     "transitions": {
@@ -1760,23 +1760,23 @@
         "id": "1",
         "name": "Create",
         "from_status_id": null,
-        "to_status_id": "10018",
+        "to_status_id": "10015",
         "from_canonical": null,
         "to_canonical": "active"
       },
       "reactive": {
         "id": "21",
         "name": "Reactive",
-        "from_status_id": "10014",
-        "to_status_id": "10018",
+        "from_status_id": "10011",
+        "to_status_id": "10015",
         "from_canonical": "close",
         "to_canonical": "active"
       },
       "complete": {
         "id": "11",
         "name": "Complete",
-        "from_status_id": "10018",
-        "to_status_id": "10014",
+        "from_status_id": "10015",
+        "to_status_id": "10011",
         "from_canonical": "active",
         "to_canonical": "close"
       }
@@ -1792,17 +1792,17 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "68a3e65c-ad6f-4704-9624-282ef7d7c65c",
+      "id": "18d2dcf3-55d3-4202-83ff-a492ecc43e34",
       "name": "UPEX Test Suite (TS) Workflow"
     },
     "statuses": {
       "designing": {
-        "id": "10024",
+        "id": "10021",
         "name": "Designing",
         "category": "indeterminate"
       },
       "close": {
-        "id": "10014",
+        "id": "10011",
         "name": "Close",
         "category": "done"
       }
@@ -1812,23 +1812,23 @@
         "id": "1",
         "name": "Create",
         "from_status_id": null,
-        "to_status_id": "10024",
+        "to_status_id": "10021",
         "from_canonical": null,
         "to_canonical": "designing"
       },
       "error": {
         "id": "21",
         "name": "Error",
-        "from_status_id": "10014",
-        "to_status_id": "10024",
+        "from_status_id": "10011",
+        "to_status_id": "10021",
         "from_canonical": "close",
         "to_canonical": "designing"
       },
       "done": {
         "id": "11",
         "name": "Done",
-        "from_status_id": "10024",
-        "to_status_id": "10014",
+        "from_status_id": "10021",
+        "to_status_id": "10011",
         "from_canonical": "designing",
         "to_canonical": "close"
       }
@@ -1844,12 +1844,12 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "75bb55fa-97b5-4bf3-a78b-79dc27d4c922",
+      "id": "96461128-6389-4b20-a6ac-e9d97b8f5de9",
       "name": "UPEX Active Item Workflow"
     },
     "statuses": {
       "active": {
-        "id": "10018",
+        "id": "10015",
         "name": "ACTIVE",
         "category": "indeterminate"
       }
@@ -1859,7 +1859,7 @@
         "id": "1",
         "name": "Create",
         "from_status_id": null,
-        "to_status_id": "10018",
+        "to_status_id": "10015",
         "from_canonical": null,
         "to_canonical": "active"
       }
@@ -1867,7 +1867,7 @@
   },
   "subtask": {
     "jira_issue_type": {
-      "id": "10018",
+      "id": "10020",
       "name": "Task"
     },
     "workflow_scheme": {
@@ -1875,19 +1875,19 @@
       "name": "UPEX PROGRAM Workflow Scheme"
     },
     "workflow": {
-      "id": "4cdc0ab3-56ff-479d-8f9d-88b22683db4f",
+      "id": "c3861e28-056d-4082-bb79-ed14c445efcf",
       "name": "UPEX Subtask/TX Workflow"
     },
     "statuses": {
-      "close": {
-        "id": "10014",
-        "name": "Close",
-        "category": "done"
-      },
       "active": {
-        "id": "10018",
+        "id": "10015",
         "name": "ACTIVE",
         "category": "indeterminate"
+      },
+      "close": {
+        "id": "10011",
+        "name": "Close",
+        "category": "done"
       }
     },
     "transitions": {
@@ -1895,23 +1895,23 @@
         "id": "1",
         "name": "Create",
         "from_status_id": null,
-        "to_status_id": "10018",
+        "to_status_id": "10015",
         "from_canonical": null,
         "to_canonical": "active"
       },
       "reactive": {
         "id": "21",
         "name": "Reactive",
-        "from_status_id": "10014",
-        "to_status_id": "10018",
+        "from_status_id": "10011",
+        "to_status_id": "10015",
         "from_canonical": "close",
         "to_canonical": "active"
       },
       "complete": {
         "id": "11",
         "name": "Complete",
-        "from_status_id": "10018",
-        "to_status_id": "10014",
+        "from_status_id": "10015",
+        "to_status_id": "10011",
         "from_canonical": "active",
         "to_canonical": "close"
       }
