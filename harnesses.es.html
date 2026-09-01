@@ -1,0 +1,2600 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Una fuente, tres harnesses</title>
+    <meta
+      name="description"
+      content="Cómo el boilerplate Agentic QA corre igual en Claude Code, OpenCode y Codex con un solo cuerpo de instrucciones, un solo store de skills y adaptadores finos donde los harnesses difieren de verdad."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --surface-2: #1c2230;
+        --text-1: #e6edf3;
+        --text-2: #9aa6b2;
+        --text-3: #6e7681;
+        --border: rgba(139, 148, 158, 0.22);
+        --border-strong: rgba(139, 148, 158, 0.44);
+        --good: #3fb950;
+        --bad: #ff7b72;
+        --claude: #ffa657;
+        --opencode: #d2a8ff;
+        --codex: #79c0ff;
+        --grad: linear-gradient(120deg, var(--claude), var(--opencode) 52%, var(--codex));
+        --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+        --radius: 14px;
+        color-scheme: dark;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text-1);
+        font-family: var(--font-ui);
+        line-height: 1.62;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 2px solid var(--claude);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        * {
+          transition: none !important;
+        }
+      }
+      .wrap {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.85em;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.08em 0.4em;
+        white-space: nowrap;
+      }
+
+      /* ---------- header ---------- */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: rgba(13, 17, 23, 0.9);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+      }
+      .header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-top: 14px;
+        padding-bottom: 12px;
+      }
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        text-decoration: none;
+        min-width: 0;
+      }
+      .brand strong {
+        font-size: 1rem;
+        font-weight: 800;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        white-space: nowrap;
+      }
+      .brand span {
+        color: var(--text-3);
+        font-size: 0.78rem;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .header-links {
+        display: flex;
+        gap: 14px;
+        flex-shrink: 0;
+      }
+      .header-links a {
+        color: var(--text-2);
+        text-decoration: none;
+        font-size: 0.83rem;
+      }
+      .header-links a:hover {
+        color: var(--text-1);
+      }
+      .surfnav {
+        overflow-x: auto;
+        border-top: 1px solid var(--border);
+        scrollbar-width: thin;
+      }
+      .surfnav ul {
+        display: flex;
+        gap: 2px;
+        list-style: none;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      .surfnav a {
+        display: block;
+        white-space: nowrap;
+        text-decoration: none;
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        padding: 9px 10px;
+        border-bottom: 2px solid transparent;
+        transition: color 0.15s;
+      }
+      .surfnav a:hover {
+        color: var(--text-1);
+      }
+      .surfnav a.on {
+        color: var(--text-1);
+        border-bottom-color: var(--claude);
+      }
+
+      /* ---------- hero ---------- */
+      .hero {
+        padding-top: 60px;
+        padding-bottom: 34px;
+      }
+      .tag {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--claude);
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        padding: 4px 12px;
+        margin-bottom: 20px;
+      }
+      .hero h1 {
+        font-size: clamp(1.75rem, 5vw, 2.85rem);
+        font-weight: 800;
+        letter-spacing: -0.022em;
+        line-height: 1.12;
+        max-width: 19ch;
+        text-wrap: balance;
+        margin-bottom: 18px;
+      }
+      .hero h1 em {
+        font-style: normal;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .hero p.lead {
+        color: var(--text-2);
+        max-width: 64ch;
+        font-size: 1.02rem;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 28px;
+      }
+      @media (max-width: 900px) {
+        .stats {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 480px) {
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      .stat {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .stat .n {
+        font-family: var(--font-mono);
+        font-size: 1.4rem;
+        font-weight: 700;
+        line-height: 1.2;
+        font-variant-numeric: tabular-nums;
+        color: var(--text-1);
+      }
+      .stat .t {
+        font-size: 0.74rem;
+        color: var(--text-3);
+        line-height: 1.35;
+      }
+
+      /* ---------- sections ---------- */
+      section {
+        padding: 40px 0;
+        border-top: 1px solid var(--border);
+        scroll-margin-top: 92px;
+      }
+      .kicker {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+      .kicker::before {
+        content: '';
+        width: 22px;
+        height: 1px;
+        background: var(--border-strong);
+      }
+      section h2 {
+        font-size: clamp(1.25rem, 2.6vw, 1.6rem);
+        font-weight: 800;
+        letter-spacing: -0.015em;
+        margin-bottom: 12px;
+        text-wrap: balance;
+        max-width: 26ch;
+      }
+      section p {
+        color: var(--text-2);
+        max-width: 68ch;
+        margin-bottom: 14px;
+      }
+      section p b,
+      section li b,
+      td b {
+        color: var(--text-1);
+        font-weight: 600;
+      }
+      .lede {
+        font-size: 1.02rem;
+      }
+
+      /* ---------- cards ---------- */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 17px 19px;
+      }
+      .card h3 {
+        font-size: 0.93rem;
+        font-weight: 700;
+        margin-bottom: 7px;
+      }
+      .card p {
+        font-size: 0.9rem;
+        margin-bottom: 0;
+      }
+      .card p + p {
+        margin-top: 8px;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(272px, 1fr));
+        gap: 12px;
+        margin: 16px 0;
+      }
+      .note {
+        border-left: 2px solid var(--claude);
+        background: var(--surface);
+        border-radius: 0 10px 10px 0;
+        padding: 13px 17px;
+        margin: 16px 0;
+      }
+      .note p {
+        font-size: 0.9rem;
+        margin: 0;
+        max-width: 72ch;
+      }
+      .note.warn {
+        border-left-color: var(--bad);
+      }
+
+      /* ---------- tables ---------- */
+      .tbl {
+        overflow-x: auto;
+        margin: 18px 0;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        min-width: 560px;
+        font-size: 0.87rem;
+      }
+      th,
+      td {
+        border-bottom: 1px solid var(--border);
+        padding: 9px 13px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--surface-2);
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-2);
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      td {
+        color: var(--text-2);
+      }
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+      th.h-claude {
+        color: var(--claude);
+      }
+      th.h-opencode {
+        color: var(--opencode);
+      }
+      th.h-codex {
+        color: var(--codex);
+      }
+      td.rowlabel {
+        color: var(--text-1);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      /* ---------- chips ---------- */
+      .chip {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 1px 7px;
+        border-radius: 5px;
+        margin-bottom: 5px;
+        white-space: nowrap;
+      }
+      .chip.nat {
+        color: var(--good);
+        border: 1px solid rgba(63, 185, 80, 0.45);
+        background: rgba(63, 185, 80, 0.08);
+      }
+      .chip.gen {
+        color: var(--claude);
+        border: 1px dashed rgba(255, 166, 87, 0.6);
+        background: rgba(255, 166, 87, 0.07);
+      }
+      .chip.none {
+        color: var(--text-3);
+        border: 1px solid var(--border);
+      }
+      .cellsub {
+        display: block;
+        font-size: 0.79rem;
+        color: var(--text-3);
+        margin-top: 2px;
+      }
+
+      /* ---------- code ---------- */
+      pre.code {
+        font-family: var(--font-mono);
+        font-size: 0.79rem;
+        line-height: 1.65;
+        color: var(--text-2);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 15px 17px;
+        overflow-x: auto;
+        margin: 16px 0;
+      }
+      pre.code .c {
+        color: var(--text-3);
+      }
+      pre.code .k {
+        color: var(--claude);
+      }
+      pre.code .g {
+        color: var(--good);
+      }
+      pre.code b {
+        color: var(--text-1);
+        font-weight: 500;
+      }
+
+      /* ---------- figures ---------- */
+      figure {
+        margin: 22px 0;
+      }
+      .figscroll {
+        overflow-x: auto;
+        position: relative;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 14px;
+      }
+      figure svg {
+        display: block;
+        width: 100%;
+        min-width: 600px;
+        height: auto;
+      }
+      figcaption {
+        font-size: 0.81rem;
+        color: var(--text-3);
+        margin-top: 9px;
+        max-width: 74ch;
+        line-height: 1.5;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        margin: 14px 0 2px;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--text-2);
+        letter-spacing: 0.04em;
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .legend i {
+        width: 22px;
+        height: 0;
+        border-top: 2px solid currentColor;
+        display: inline-block;
+      }
+      .legend i.dash {
+        border-top-style: dashed;
+      }
+      .legend .lc {
+        color: var(--claude);
+      }
+      .legend .lo {
+        color: var(--opencode);
+      }
+      .legend .lx {
+        color: var(--codex);
+      }
+
+      /* ---------- delta bars ---------- */
+      .delta {
+        margin: 18px 0;
+        display: grid;
+        gap: 12px;
+      }
+      .bar-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 5px;
+      }
+      .bar-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 0.82rem;
+        color: var(--text-2);
+      }
+      .bar-label b {
+        font-family: var(--font-mono);
+        font-variant-numeric: tabular-nums;
+        color: var(--text-1);
+        font-weight: 700;
+      }
+      .bar-track {
+        height: 12px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        border-radius: 5px;
+      }
+      .bar-fill.old {
+        width: 100%;
+        background: var(--bad);
+        opacity: 0.75;
+      }
+      .bar-fill.new {
+        width: 1.62%;
+        min-width: 4px;
+        background: var(--good);
+      }
+
+      /* ---------- lists ---------- */
+      ul.plain {
+        list-style: none;
+        display: grid;
+        gap: 10px;
+        margin: 16px 0;
+      }
+      ul.plain li {
+        position: relative;
+        padding-left: 20px;
+        color: var(--text-2);
+        font-size: 0.92rem;
+        max-width: 74ch;
+      }
+      ul.plain li::before {
+        content: '';
+        position: absolute;
+        left: 3px;
+        top: 0.62em;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--border-strong);
+      }
+      ul.plain li.warn::before {
+        background: var(--bad);
+      }
+      .servers {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 16px 0;
+      }
+      .server {
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        color: var(--text-1);
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        border-radius: 8px;
+        padding: 5px 11px;
+      }
+
+      /* ---------- footer ---------- */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 30px 0 56px;
+      }
+      .footlinks {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 20px;
+        margin-bottom: 14px;
+      }
+      .footlinks a {
+        color: var(--text-2);
+        text-decoration: none;
+        font-size: 0.88rem;
+        border-bottom: 1px solid var(--border-strong);
+        padding-bottom: 1px;
+      }
+      .footlinks a:hover {
+        color: var(--text-1);
+      }
+      footer p {
+        color: var(--text-3);
+        font-size: 0.82rem;
+        max-width: 70ch;
+      }
+
+      @media (max-width: 620px) {
+        .wrap {
+          padding: 0 16px;
+        }
+        .surfnav ul {
+          padding: 0 12px;
+        }
+        .hero {
+          padding-top: 40px;
+          padding-bottom: 26px;
+        }
+        section {
+          padding: 32px 0;
+        }
+        .figscroll {
+          padding: 12px 10px;
+        }
+        .figscroll::before {
+          content: 'deslizá el diagrama →';
+          display: block;
+          position: sticky;
+          left: 0;
+          width: max-content;
+          font-family: var(--font-mono);
+          font-size: 0.63rem;
+          letter-spacing: 0.09em;
+          text-transform: uppercase;
+          color: var(--text-3);
+          margin-bottom: 9px;
+        }
+        .brand span {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap header-row">
+        <a class="brand" href="./"
+          ><strong>Agentic QA</strong><span>UPEX Galaxy · harnesses</span></a
+        >
+        <nav class="header-links">
+          <a href="./">Hub</a>
+          <a href="./arquitectura.es.html">Arquitectura</a>
+          <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate">GitHub</a>
+        </nav>
+      </div>
+      <nav class="surfnav" aria-label="Secciones">
+        <ul>
+          <li><a href="#decision">La decisión</a></li>
+          <li><a href="#superficies">Superficies</a></li>
+          <li><a href="#generado">Generado</a></li>
+          <li><a href="#comandos">Comandos</a></li>
+          <li><a href="#hook">Hook</a></li>
+          <li><a href="#mcp">MCP</a></li>
+          <li><a href="#migracion">Migración</a></li>
+          <li><a href="#limites">Límites</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <div class="hero wrap">
+        <span class="tag">Release · agosto 2026</span>
+        <h1>Una fuente de verdad, <em>tres harnesses</em> que la leen</h1>
+        <p class="lead">
+          El repositorio corre igual en Claude Code, OpenCode y Codex (CLI y Desktop). Existe una
+          sola copia de cada instrucción y de cada skill. Donde los harnesses difieren de verdad
+          —formato de MCP, API de hook— cada uno conserva un adaptador fino, versionado y
+          verificado. Nada más está duplicado.
+        </p>
+        <div class="stats">
+          <div class="stat">
+            <div class="n">1</div>
+            <div class="t">cuerpo de instrucciones</div>
+          </div>
+          <div class="stat">
+            <div class="n">3</div>
+            <div class="t">harnesses soportados</div>
+          </div>
+          <div class="stat">
+            <div class="n">19</div>
+            <div class="t">skills en un solo store</div>
+          </div>
+          <div class="stat">
+            <div class="n">20</div>
+            <div class="t">wrappers generados</div>
+          </div>
+          <div class="stat">
+            <div class="n">6</div>
+            <div class="t">MCPs con paridad</div>
+          </div>
+          <div class="stat">
+            <div class="n">11 B</div>
+            <div class="t">pesa <code>CLAUDE.md</code></div>
+          </div>
+        </div>
+      </div>
+
+      <section id="decision">
+        <div class="wrap">
+          <div class="kicker">Instrucciones</div>
+          <h2>Ningún nombre de archivo lo descubren los tres</h2>
+          <p class="lede">
+            Claude Code carga <code>CLAUDE.md</code>. OpenCode y Codex cargan
+            <code>AGENTS.md</code>. Mantener dos documentos completos y compararlos en CI no elimina
+            el drift: lo detecta tarde, después de que alguien ya trabajó con la copia vieja.
+          </p>
+          <p>
+            Por eso la relación se invirtió.
+            <b><code>AGENTS.md</code> es el único cuerpo de instrucciones</b> y
+            <code>CLAUDE.md</code> quedó en once bytes. Ese <code>@</code> es la sintaxis de import
+            documentada de Claude Code: trae el archivo al contexto de la sesión. Se eligió por
+            encima de un symlink justamente porque un checkout de Windows lo trata igual que uno de
+            macOS o Linux.
+          </p>
+
+          <figure>
+            <div class="figscroll">
+              <svg
+                viewBox="0 0 720 320"
+                role="img"
+                aria-label="Los tres harnesses convergen en AGENTS.md: OpenCode y Codex lo cargan nativamente, Claude Code llega a través de un shim generado de once bytes llamado CLAUDE.md"
+              >
+                <defs>
+                  <marker
+                    id="d1c"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#ffa657" />
+                  </marker>
+                  <marker
+                    id="d1o"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#d2a8ff" />
+                  </marker>
+                  <marker
+                    id="d1x"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#79c0ff" />
+                  </marker>
+                </defs>
+
+                <rect
+                  x="24"
+                  y="20"
+                  width="190"
+                  height="54"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="119"
+                  y="43"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="12"
+                  font-weight="700"
+                  fill="#ffa657"
+                  letter-spacing="0.06em"
+                >
+                  CLAUDE CODE
+                </text>
+                <text
+                  x="119"
+                  y="61"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="10.5"
+                  fill="#9aa6b2"
+                >
+                  busca CLAUDE.md
+                </text>
+
+                <rect
+                  x="265"
+                  y="20"
+                  width="190"
+                  height="54"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#d2a8ff"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="360"
+                  y="43"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="12"
+                  font-weight="700"
+                  fill="#d2a8ff"
+                  letter-spacing="0.06em"
+                >
+                  OPENCODE
+                </text>
+                <text
+                  x="360"
+                  y="61"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="10.5"
+                  fill="#9aa6b2"
+                >
+                  busca AGENTS.md
+                </text>
+
+                <rect
+                  x="506"
+                  y="20"
+                  width="190"
+                  height="54"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#79c0ff"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="601"
+                  y="43"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="12"
+                  font-weight="700"
+                  fill="#79c0ff"
+                  letter-spacing="0.06em"
+                >
+                  CODEX CLI + DESKTOP
+                </text>
+                <text
+                  x="601"
+                  y="61"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="10.5"
+                  fill="#9aa6b2"
+                >
+                  busca AGENTS.md
+                </text>
+
+                <line
+                  x1="119"
+                  y1="74"
+                  x2="119"
+                  y2="136"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                  marker-end="url(#d1c)"
+                />
+                <text
+                  x="128"
+                  y="110"
+                  font-family="Inter, sans-serif"
+                  font-size="10.5"
+                  fill="#9aa6b2"
+                >
+                  carga nativa
+                </text>
+
+                <rect
+                  x="29"
+                  y="142"
+                  width="180"
+                  height="48"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                  stroke-dasharray="5 4"
+                />
+                <text
+                  x="119"
+                  y="164"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="12"
+                  font-weight="700"
+                  fill="#e6edf3"
+                >
+                  CLAUDE.md
+                </text>
+                <text
+                  x="119"
+                  y="180"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="10"
+                  fill="#6e7681"
+                >
+                  11 bytes · shim generado
+                </text>
+
+                <polyline
+                  points="119,190 119,224 244,224 244,242"
+                  fill="none"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                  marker-end="url(#d1c)"
+                />
+                <text
+                  x="130"
+                  y="216"
+                  font-family="Inter, sans-serif"
+                  font-size="10.5"
+                  fill="#9aa6b2"
+                >
+                  import
+                  <tspan font-family="JetBrains Mono, monospace" fill="#e6edf3">@AGENTS.md</tspan>
+                </text>
+
+                <line
+                  x1="360"
+                  y1="74"
+                  x2="360"
+                  y2="242"
+                  stroke="#d2a8ff"
+                  stroke-width="1.5"
+                  marker-end="url(#d1o)"
+                />
+                <text
+                  x="369"
+                  y="160"
+                  font-family="Inter, sans-serif"
+                  font-size="10.5"
+                  fill="#9aa6b2"
+                >
+                  carga nativa
+                </text>
+
+                <polyline
+                  points="601,74 601,224 476,224 476,242"
+                  fill="none"
+                  stroke="#79c0ff"
+                  stroke-width="1.5"
+                  marker-end="url(#d1x)"
+                />
+                <text
+                  x="592"
+                  y="160"
+                  text-anchor="end"
+                  font-family="Inter, sans-serif"
+                  font-size="10.5"
+                  fill="#9aa6b2"
+                >
+                  carga nativa
+                </text>
+
+                <rect
+                  x="170"
+                  y="248"
+                  width="380"
+                  height="58"
+                  rx="12"
+                  fill="#1c2230"
+                  stroke="#e6edf3"
+                  stroke-width="2"
+                />
+                <text
+                  x="360"
+                  y="273"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="15"
+                  font-weight="700"
+                  fill="#e6edf3"
+                >
+                  AGENTS.md
+                </text>
+                <text
+                  x="360"
+                  y="292"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="11"
+                  fill="#9aa6b2"
+                >
+                  único cuerpo de instrucciones · versionado
+                </text>
+              </svg>
+            </div>
+            <div class="legend">
+              <span class="lc"><i></i> Claude Code</span>
+              <span class="lo"><i></i> OpenCode</span>
+              <span class="lx"><i></i> Codex</span>
+              <span><i class="dash"></i> artefacto generado</span>
+            </div>
+            <figcaption>
+              Dos de los tres llegan directo. El tercero llega por un salto de once bytes que nadie
+              escribe a mano. Ese salto es toda la diferencia entre los harnesses en la superficie
+              de instrucciones.
+            </figcaption>
+          </figure>
+
+          <pre class="code"><span class="c"># CLAUDE.md — el archivo entero, sin recortar</span>
+<b>@AGENTS.md</b></pre>
+
+          <div class="note warn">
+            <p>
+              Escribir prosa operativa dentro de <code>CLAUDE.md</code> es drift estructural. La
+              skill <code>sync-ai-context</code> se detiene y lo reporta en vez de propagarlo, y
+              <code>bun run agents:compat:check</code> falla si el archivo deja de ser exactamente
+              el shim.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="superficies">
+        <div class="wrap">
+          <div class="kicker">Las cinco superficies</div>
+          <h2>Qué consume cada harness, superficie por superficie</h2>
+          <p>
+            Cinco superficies por tres harnesses. Lo marcado como
+            <span class="chip nat">nativo</span> lo descubre el harness por su cuenta; lo marcado
+            como <span class="chip gen">generado</span> es salida de un script y no se edita a mano.
+          </p>
+          <div class="tbl">
+            <table>
+              <thead>
+                <tr>
+                  <th>Superficie</th>
+                  <th class="h-claude">Claude Code</th>
+                  <th class="h-opencode">OpenCode</th>
+                  <th class="h-codex">Codex CLI + Desktop</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="rowlabel">Instrucciones</td>
+                  <td>
+                    <span class="chip gen">generado</span><br /><code>CLAUDE.md</code>
+                    <span class="cellsub">un import: <code>@AGENTS.md</code></span>
+                  </td>
+                  <td><span class="chip nat">nativo</span><br /><code>AGENTS.md</code></td>
+                  <td><span class="chip nat">nativo</span><br /><code>AGENTS.md</code></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel">Skills</td>
+                  <td>
+                    <span class="chip gen">generado</span><br /><code>.claude/skills</code>
+                    <span class="cellsub">symlink en POSIX, junction en Windows</span>
+                  </td>
+                  <td><span class="chip nat">nativo</span><br /><code>.agents/skills/</code></td>
+                  <td><span class="chip nat">nativo</span><br /><code>.agents/skills/</code></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel">Comandos</td>
+                  <td>
+                    <span class="chip gen">generado</span><br /><code>.claude/commands/*.md</code>
+                    <span class="cellsub">10 wrappers de 7 líneas</span>
+                  </td>
+                  <td>
+                    <span class="chip gen">generado</span><br /><code>.opencode/commands/*.md</code>
+                    <span class="cellsub">10 wrappers de 7 líneas</span>
+                  </td>
+                  <td>
+                    <span class="chip none">ninguno</span>
+                    <span class="cellsub">invoca la skill directamente</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="rowlabel">Hook</td>
+                  <td>
+                    <code>.claude/settings.json</code>
+                    <span class="cellsub"><code>UserPromptSubmit</code></span>
+                  </td>
+                  <td>
+                    <code>.opencode/plugins/</code>
+                    <span class="cellsub">plugin de proyecto</span>
+                  </td>
+                  <td>
+                    <code>.codex/hooks.json</code>
+                    <span class="cellsub"
+                      ><code>UserPromptSubmit</code> + <code>commandWindows</code></span
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <td class="rowlabel">MCP</td>
+                  <td><code>.mcp.json</code><span class="cellsub">JSON</span></td>
+                  <td><code>opencode.jsonc</code><span class="cellsub">JSONC</span></td>
+                  <td><code>.codex/config.toml</code><span class="cellsub">TOML</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="grid2">
+            <div class="card">
+              <h3>Codex Desktop no agrega convención</h3>
+              <p>
+                CLI y Desktop consumen exactamente la misma configuración del repositorio. Desktop
+                agrega interfaz, no un segundo contrato ni un directorio extra.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Los adaptadores son delgados a propósito</h3>
+              <p>
+                Solo dos superficies tienen adaptador real: el hook y el MCP. Ahí los harnesses
+                difieren en la API, no en la intención. Las otras tres son la misma fuente vista
+                desde tres lugares.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="generado">
+        <div class="wrap">
+          <div class="kicker">Skills · regla dura</div>
+          <h2>Lo generado nunca se edita a mano ni se commitea</h2>
+          <p class="lede">
+            Hay un solo store de skills, <code>.agents/skills/</code>, versionado, con las 19 skills
+            adentro. Todo lo demás que un harness necesita ver son punteros hacia ahí. Si un puntero
+            se rompe, se regenera; nunca se parchea.
+          </p>
+
+          <figure>
+            <div class="figscroll">
+              <svg
+                viewBox="0 0 720 350"
+                role="img"
+                aria-label="El directorio .agents es la fuente versionada; bun run agents:compat genera el alias de skills y los veinte wrappers de comandos; bun run agents:compat:check compara esas salidas contra la fuente"
+              >
+                <defs>
+                  <marker
+                    id="d2n"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#9aa6b2" />
+                  </marker>
+                  <marker
+                    id="d2g"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#ffa657" />
+                  </marker>
+                  <marker
+                    id="d2v"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#3fb950" />
+                  </marker>
+                </defs>
+
+                <text
+                  x="24"
+                  y="20"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="10"
+                  fill="#6e7681"
+                  letter-spacing="0.1em"
+                >
+                  FUENTE · VERSIONADA
+                </text>
+                <text
+                  x="386"
+                  y="20"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="10"
+                  fill="#6e7681"
+                  letter-spacing="0.1em"
+                >
+                  GENERADOR
+                </text>
+                <text
+                  x="696"
+                  y="20"
+                  text-anchor="end"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="10"
+                  fill="#6e7681"
+                  letter-spacing="0.1em"
+                >
+                  SALIDA · GITIGNORADA
+                </text>
+
+                <rect
+                  x="24"
+                  y="34"
+                  width="252"
+                  height="212"
+                  rx="12"
+                  fill="#161b22"
+                  stroke="#e6edf3"
+                  stroke-width="2"
+                />
+                <text
+                  x="40"
+                  y="58"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="13"
+                  font-weight="700"
+                  fill="#e6edf3"
+                >
+                  .agents/
+                </text>
+                <line
+                  x1="40"
+                  y1="70"
+                  x2="260"
+                  y2="70"
+                  stroke="rgba(139,148,158,0.28)"
+                  stroke-width="1"
+                />
+                <text
+                  x="40"
+                  y="94"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#9aa6b2"
+                >
+                  skills/
+                </text>
+                <text x="40" y="110" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
+                  19 skills · el store canónico
+                </text>
+                <text
+                  x="40"
+                  y="142"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#9aa6b2"
+                >
+                  compatibility/
+                </text>
+                <text x="40" y="158" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
+                  command-aliases.json · 10 entradas
+                </text>
+                <text
+                  x="40"
+                  y="190"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#9aa6b2"
+                >
+                  hooks/
+                </text>
+                <text x="40" y="206" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
+                  personality-reinject.mjs
+                </text>
+                <text x="40" y="230" font-family="Inter, sans-serif" font-size="10" fill="#3fb950">
+                  se edita acá, siempre
+                </text>
+
+                <line
+                  x1="276"
+                  y1="140"
+                  x2="308"
+                  y2="140"
+                  stroke="#9aa6b2"
+                  stroke-width="1.5"
+                  marker-end="url(#d2n)"
+                />
+
+                <rect
+                  x="312"
+                  y="116"
+                  width="148"
+                  height="48"
+                  rx="24"
+                  fill="#1c2230"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="386"
+                  y="136"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="10.5"
+                  font-weight="700"
+                  fill="#ffa657"
+                >
+                  bun run
+                </text>
+                <text
+                  x="386"
+                  y="152"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="10.5"
+                  font-weight="700"
+                  fill="#ffa657"
+                >
+                  agents:compat
+                </text>
+
+                <polyline
+                  points="460,140 482,140 482,60 496,60"
+                  fill="none"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                  marker-end="url(#d2g)"
+                />
+                <line
+                  x1="460"
+                  y1="140"
+                  x2="496"
+                  y2="140"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                  marker-end="url(#d2g)"
+                />
+                <polyline
+                  points="460,140 482,140 482,220 496,220"
+                  fill="none"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                  marker-end="url(#d2g)"
+                />
+
+                <rect
+                  x="500"
+                  y="34"
+                  width="196"
+                  height="52"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                  stroke-dasharray="5 4"
+                />
+                <text
+                  x="514"
+                  y="56"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#e6edf3"
+                >
+                  .claude/skills
+                </text>
+                <text x="514" y="72" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
+                  symlink POSIX · junction Windows
+                </text>
+
+                <rect
+                  x="500"
+                  y="114"
+                  width="196"
+                  height="52"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                  stroke-dasharray="5 4"
+                />
+                <text
+                  x="514"
+                  y="136"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#e6edf3"
+                >
+                  .claude/commands/
+                </text>
+                <text x="514" y="152" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
+                  10 wrappers de 7 líneas
+                </text>
+
+                <rect
+                  x="500"
+                  y="194"
+                  width="196"
+                  height="52"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                  stroke-dasharray="5 4"
+                />
+                <text
+                  x="514"
+                  y="216"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#e6edf3"
+                >
+                  .opencode/commands/
+                </text>
+                <text x="514" y="232" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
+                  10 wrappers de 7 líneas
+                </text>
+
+                <polyline
+                  points="598,246 598,278 470,278 470,296"
+                  fill="none"
+                  stroke="#3fb950"
+                  stroke-width="1.5"
+                  stroke-dasharray="4 3"
+                  marker-end="url(#d2v)"
+                />
+                <polyline
+                  points="150,246 150,278 268,278 268,296"
+                  fill="none"
+                  stroke="#3fb950"
+                  stroke-width="1.5"
+                  stroke-dasharray="4 3"
+                  marker-end="url(#d2v)"
+                />
+                <text
+                  x="360"
+                  y="274"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="10.5"
+                  fill="#3fb950"
+                >
+                  compara byte a byte
+                </text>
+
+                <rect
+                  x="24"
+                  y="300"
+                  width="672"
+                  height="40"
+                  rx="10"
+                  fill="#1c2230"
+                  stroke="#3fb950"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="40"
+                  y="318"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11.5"
+                  font-weight="700"
+                  fill="#3fb950"
+                >
+                  bun run agents:compat:check
+                </text>
+                <text x="40" y="333" font-family="Inter, sans-serif" font-size="10" fill="#9aa6b2">
+                  corre en repo:check · en pre-push · condicionalmente en pre-commit
+                </text>
+              </svg>
+            </div>
+            <figcaption>
+              La fuente sale una vez del lado izquierdo y vuelve a entrar por abajo como
+              verificación. Un wrapper editado a mano no sobrevive a ese ciclo: la comparación es
+              contra el manifiesto, no contra la última versión que alguien guardó.
+            </figcaption>
+          </figure>
+
+          <div class="tbl">
+            <table>
+              <thead>
+                <tr>
+                  <th>Artefacto generado</th>
+                  <th>Su fuente</th>
+                  <th>Se repara con</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="rowlabel"><code>.claude/skills</code></td>
+                  <td>
+                    <code>.agents/skills/</code><span class="cellsub">symlink o junction</span>
+                  </td>
+                  <td><code>bun run agents:compat</code></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel">10 wrappers Claude + 10 OpenCode</td>
+                  <td>
+                    <code>.agents/compatibility/command-aliases.json</code>
+                  </td>
+                  <td><code>bun run agents:compat</code></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel"><code>CLAUDE.md</code></td>
+                  <td><code>AGENTS.md</code><span class="cellsub">un import de 11 bytes</span></td>
+                  <td><code>bun run agents:compat</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="note">
+            <p>
+              La reparación del alias tiene una salvaguarda: si <code>.claude/skills</code> es un
+              directorio real con contenido propio, se niega a borrarlo y nombra el conflicto. La
+              única excepción es la forma que escribe la CLI de skills —un directorio cuyas entradas
+              son todas punteros hacia <code>.agents/skills</code>— porque ahí no hay nada que
+              perder.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="comandos">
+        <div class="wrap">
+          <div class="kicker">Comandos</div>
+          <h2>Los slash commands son transporte, no workflow</h2>
+          <p class="lede">
+            Antes cada comando llevaba el workflow entero escrito adentro.
+            <code>adapt-framework</code> solo tenía 590 líneas. Eso era instrucción duplicada que
+            ningún harness fuera de Claude podía descubrir, y que se desincronizaba de su skill en
+            cuanto alguien editaba una de las dos copias.
+          </p>
+
+          <div class="delta">
+            <div class="bar-row">
+              <div class="bar-label">
+                <span>Workflow duplicado dentro de los diez comandos</span>
+                <b>2 531 líneas</b>
+              </div>
+              <div class="bar-track"><div class="bar-fill old"></div></div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label">
+                <span>Wrappers que los reemplazan</span>
+                <b>41 líneas</b>
+              </div>
+              <div class="bar-track"><div class="bar-fill new"></div></div>
+            </div>
+          </div>
+
+          <p>
+            Los diez nombres sobreviven como alias. El wrapper solo selecciona skill y modo, y
+            reenvía <code>$ARGUMENTS</code> sin tocarlo. Este es un archivo completo, no un
+            fragmento:
+          </p>
+
+          <pre
+            class="code"
+          ><span class="c"># .claude/commands/business-data-map.md — las 7 líneas, enteras</span>
+<span class="c">---</span>
+<span class="k">description:</span> Generate or refresh the business data and flow map.
+<span class="k">argument-hint:</span> [project-path]
+<span class="c">---</span>
+
+Invoke skill <b>`project-context`</b> in mode <b>`data`</b>.
+Forward `$ARGUMENTS` unchanged.</pre>
+
+          <div class="tbl">
+            <table>
+              <thead>
+                <tr>
+                  <th>Alias</th>
+                  <th>Skill destino</th>
+                  <th>Modo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="rowlabel"><code>/adapt-framework</code></td>
+                  <td><code>adapt-framework</code></td>
+                  <td><code>adapt</code></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel"><code>/break-down-tests</code></td>
+                  <td><code>test-automation</code></td>
+                  <td><code>explain</code><span class="cellsub">sellado, solo lectura</span></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel"><code>/business-data-map</code></td>
+                  <td><code>project-context</code></td>
+                  <td><code>data</code></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel"><code>/business-feature-map</code></td>
+                  <td><code>project-context</code></td>
+                  <td><code>features</code></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel"><code>/business-api-map</code></td>
+                  <td><code>project-context</code></td>
+                  <td><code>api</code></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel"><code>/master-test-plan</code></td>
+                  <td><code>project-context</code></td>
+                  <td><code>test-plan</code></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel"><code>/fix-traceability</code></td>
+                  <td><code>test-documentation</code></td>
+                  <td>
+                    <code>repair-traceability</code>
+                    <span class="cellsub">conserva el gate de aprobación</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="rowlabel"><code>/jira-components</code></td>
+                  <td><code>jira-administration</code></td>
+                  <td><code>components</code></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel"><code>/jira-instance-migration</code></td>
+                  <td><code>jira-administration</code></td>
+                  <td><code>instance-migration</code></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel"><code>/sync-ai-memory</code></td>
+                  <td><code>sync-ai-context</code></td>
+                  <td><code>sync</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="grid2">
+            <div class="card">
+              <h3>Codex no usa wrappers</h3>
+              <p>
+                No hay una tercera copia de los diez archivos. Codex invoca la skill directamente,
+                que es exactamente lo que el wrapper hace por vos en los otros dos.
+              </p>
+            </div>
+            <div class="card">
+              <h3>La verificación no es cosmética</h3>
+              <p>
+                <code>agents:compat:check</code> rechaza un alias cuya skill destino no exista o
+                cuyo modo no esté declarado. Y a un wrapper al que le crece un cuerpo lo falla con
+                el mensaje <code>contains workflow prose</code>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="hook">
+        <div class="wrap">
+          <div class="kicker">Hook</div>
+          <h2>Un emisor, tres adaptadores</h2>
+          <p class="lede">
+            El contrato de personalidad que se reinyecta en cada prompt vive una sola vez, en
+            <code>.agents/hooks/personality-reinject.mjs</code>. El archivo exporta la constante y
+            además la escribe a <code>stdout</code> cuando se lo ejecuta como script. Esas dos
+            formas de consumirlo son las que necesitan los tres harnesses.
+          </p>
+
+          <figure>
+            <div class="figscroll">
+              <svg
+                viewBox="0 0 720 272"
+                role="img"
+                aria-label="Un único emisor de hook alimenta tres adaptadores: Claude y Codex lo ejecutan como command hook y su stdout se agrega como contexto de desarrollador, mientras OpenCode importa la constante desde un plugin"
+              >
+                <defs>
+                  <marker
+                    id="d3c"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#ffa657" />
+                  </marker>
+                  <marker
+                    id="d3o"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#d2a8ff" />
+                  </marker>
+                  <marker
+                    id="d3x"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#79c0ff" />
+                  </marker>
+                </defs>
+
+                <rect
+                  x="24"
+                  y="100"
+                  width="270"
+                  height="66"
+                  rx="12"
+                  fill="#1c2230"
+                  stroke="#e6edf3"
+                  stroke-width="2"
+                />
+                <text
+                  x="40"
+                  y="124"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  font-weight="700"
+                  fill="#e6edf3"
+                >
+                  personality-reinject.mjs
+                </text>
+                <text x="40" y="141" font-family="Inter, sans-serif" font-size="10" fill="#9aa6b2">
+                  en .agents/hooks/ · el contrato, una vez
+                </text>
+                <text x="40" y="157" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
+                  exporta la constante · la imprime a stdout
+                </text>
+
+                <line x1="294" y1="133" x2="338" y2="133" stroke="#9aa6b2" stroke-width="1.5" />
+                <polyline
+                  points="336,133 336,47 424,47"
+                  fill="none"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                  marker-end="url(#d3c)"
+                />
+                <text x="342" y="40" font-family="Inter, sans-serif" font-size="10" fill="#ffa657">
+                  ejecuta
+                </text>
+
+                <line
+                  x1="336"
+                  y1="133"
+                  x2="424"
+                  y2="133"
+                  stroke="#79c0ff"
+                  stroke-width="1.5"
+                  marker-end="url(#d3x)"
+                />
+                <text x="342" y="126" font-family="Inter, sans-serif" font-size="10" fill="#79c0ff">
+                  ejecuta
+                </text>
+
+                <polyline
+                  points="336,133 336,219 424,219"
+                  fill="none"
+                  stroke="#d2a8ff"
+                  stroke-width="1.5"
+                  marker-end="url(#d3o)"
+                />
+                <text x="342" y="212" font-family="Inter, sans-serif" font-size="10" fill="#d2a8ff">
+                  importa
+                </text>
+
+                <rect
+                  x="428"
+                  y="18"
+                  width="268"
+                  height="58"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="442"
+                  y="40"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#e6edf3"
+                >
+                  .claude/settings.json
+                </text>
+                <text x="442" y="56" font-family="Inter, sans-serif" font-size="9.5" fill="#9aa6b2">
+                  UserPromptSubmit · stdout → developer context
+                </text>
+
+                <rect
+                  x="428"
+                  y="104"
+                  width="268"
+                  height="58"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#79c0ff"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="442"
+                  y="126"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#e6edf3"
+                >
+                  .codex/hooks.json
+                </text>
+                <text
+                  x="442"
+                  y="142"
+                  font-family="Inter, sans-serif"
+                  font-size="9.5"
+                  fill="#9aa6b2"
+                >
+                  UserPromptSubmit · stdout → developer context
+                </text>
+
+                <rect
+                  x="428"
+                  y="190"
+                  width="268"
+                  height="58"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#d2a8ff"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="442"
+                  y="212"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#e6edf3"
+                >
+                  .opencode/plugins/
+                </text>
+                <text
+                  x="442"
+                  y="228"
+                  font-family="Inter, sans-serif"
+                  font-size="9.5"
+                  fill="#9aa6b2"
+                >
+                  muta output.system en el lugar
+                </text>
+              </svg>
+            </div>
+            <figcaption>
+              Los verbos de las flechas son la diferencia real: dos harnesses ejecutan el archivo y
+              leen su salida, uno lo importa como módulo. El texto del contrato es idéntico en los
+              tres porque nunca se copió.
+            </figcaption>
+          </figure>
+
+          <p>El validador de contrato rechaza, con nombre y línea:</p>
+          <ul class="plain">
+            <li class="warn">
+              Rutas absolutas personales dentro de cualquier comando de hook, que romperían en la
+              máquina de cualquier otra persona.
+            </li>
+            <li class="warn">
+              Un emisor compartido que trate <code>CLAUDE.md</code> como el archivo canónico, que es
+              exactamente la inversión que este release deshizo.
+            </li>
+            <li class="warn">
+              Un plugin de OpenCode que reemplace <code>output.system</code> en vez de mutarlo, lo
+              que descartaría el system prompt del harness.
+            </li>
+            <li class="warn">
+              La reaparición de los archivos de hook duplicados que se eliminaron.
+            </li>
+          </ul>
+          <p>
+            El adaptador de Codex además carga <code>commandWindows</code> para PowerShell y
+            resuelve la raíz del repositorio con <code>git rev-parse --show-toplevel</code>, en vez
+            de asumir el directorio de trabajo.
+          </p>
+        </div>
+      </section>
+
+      <section id="mcp">
+        <div class="wrap">
+          <div class="kicker">MCP</div>
+          <h2>Seis servidores, tres formatos, paridad semántica</h2>
+          <p class="lede">
+            Los seis servidores canónicos existen en las tres configuraciones. La comparación no
+            puede ser textual: los archivos ni siquiera comparten lenguaje.
+          </p>
+          <div class="servers">
+            <span class="server">context7</span>
+            <span class="server">tavily</span>
+            <span class="server">playwright</span>
+            <span class="server">dbhub</span>
+            <span class="server">openapi</span>
+            <span class="server">postman</span>
+          </div>
+
+          <figure>
+            <div class="figscroll">
+              <svg
+                viewBox="0 0 720 230"
+                role="img"
+                aria-label="Los tres formatos nativos de configuración MCP se normalizan a una forma común de transporte, comando, argumentos, url, variables de entorno y estado, y recién ahí se comparan entre sí"
+              >
+                <defs>
+                  <marker
+                    id="d4n"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#9aa6b2" />
+                  </marker>
+                  <marker
+                    id="d4v"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#3fb950" />
+                  </marker>
+                </defs>
+
+                <rect
+                  x="24"
+                  y="20"
+                  width="180"
+                  height="48"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="38"
+                  y="42"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#e6edf3"
+                >
+                  .mcp.json
+                </text>
+                <text x="38" y="58" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
+                  JSON · Claude Code
+                </text>
+
+                <rect
+                  x="24"
+                  y="88"
+                  width="180"
+                  height="48"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#d2a8ff"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="38"
+                  y="110"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#e6edf3"
+                >
+                  opencode.jsonc
+                </text>
+                <text x="38" y="126" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
+                  JSONC · OpenCode
+                </text>
+
+                <rect
+                  x="24"
+                  y="156"
+                  width="180"
+                  height="48"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#79c0ff"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="38"
+                  y="178"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#e6edf3"
+                >
+                  .codex/config.toml
+                </text>
+                <text x="38" y="194" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
+                  TOML · Codex
+                </text>
+
+                <line
+                  x1="204"
+                  y1="44"
+                  x2="244"
+                  y2="86"
+                  stroke="#9aa6b2"
+                  stroke-width="1.5"
+                  marker-end="url(#d4n)"
+                />
+                <line
+                  x1="204"
+                  y1="112"
+                  x2="244"
+                  y2="112"
+                  stroke="#9aa6b2"
+                  stroke-width="1.5"
+                  marker-end="url(#d4n)"
+                />
+                <line
+                  x1="204"
+                  y1="180"
+                  x2="244"
+                  y2="138"
+                  stroke="#9aa6b2"
+                  stroke-width="1.5"
+                  marker-end="url(#d4n)"
+                />
+
+                <rect
+                  x="248"
+                  y="62"
+                  width="204"
+                  height="100"
+                  rx="12"
+                  fill="#1c2230"
+                  stroke="#e6edf3"
+                  stroke-width="2"
+                />
+                <text
+                  x="350"
+                  y="88"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="12"
+                  font-weight="700"
+                  fill="#e6edf3"
+                >
+                  normalización
+                </text>
+                <text
+                  x="350"
+                  y="112"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="10"
+                  fill="#9aa6b2"
+                >
+                  transporte · comando · args
+                </text>
+                <text
+                  x="350"
+                  y="128"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="10"
+                  fill="#9aa6b2"
+                >
+                  url · env vars · estado
+                </text>
+                <text
+                  x="350"
+                  y="148"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="10"
+                  fill="#6e7681"
+                >
+                  una forma común, sin sintaxis
+                </text>
+
+                <line
+                  x1="452"
+                  y1="112"
+                  x2="500"
+                  y2="112"
+                  stroke="#3fb950"
+                  stroke-width="1.5"
+                  marker-end="url(#d4v)"
+                />
+                <text
+                  x="476"
+                  y="104"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="10"
+                  fill="#3fb950"
+                >
+                  compara
+                </text>
+
+                <rect
+                  x="504"
+                  y="80"
+                  width="192"
+                  height="64"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#3fb950"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="518"
+                  y="104"
+                  font-family="Inter, sans-serif"
+                  font-size="12"
+                  font-weight="700"
+                  fill="#e6edf3"
+                >
+                  6 servidores × 3 hosts
+                </text>
+                <text x="518" y="122" font-family="Inter, sans-serif" font-size="10" fill="#9aa6b2">
+                  agregarlo a uno solo
+                </text>
+                <text x="518" y="136" font-family="Inter, sans-serif" font-size="10" fill="#ff7b72">
+                  es un fallo, no un aviso
+                </text>
+              </svg>
+            </div>
+            <figcaption>
+              Sin el paso del medio, la comparación solo podría decir que los tres archivos son
+              distintos. Con él, dice si describen los mismos seis servidores.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="migracion">
+        <div class="wrap">
+          <div class="kicker">Migración</div>
+          <h2>Si venís de la versión anterior</h2>
+          <p class="lede">
+            Un proyecto creado cuando las instrucciones vivían en <code>CLAUDE.md</code> y las
+            skills en <code>.claude/skills/</code> recibe una migración preflight la primera vez que
+            corre <code>bun run up</code> — antes de que se sincronice un solo componente, porque
+            sincronizar primero sobre una estructura vieja es exactamente cómo se pierde trabajo.
+          </p>
+
+          <figure>
+            <div class="figscroll">
+              <svg
+                viewBox="0 0 720 400"
+                role="img"
+                aria-label="El comando bun run up abre con una migración preflight que solo avanza si todo es resoluble sin adivinar: si no lo es se niega entera sin tocar nada, y si lo es mueve la memoria, mueve las skills y archiva las colisiones antes de sincronizar los componentes"
+              >
+                <defs>
+                  <marker
+                    id="d5n"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#9aa6b2" />
+                  </marker>
+                  <marker
+                    id="d5b"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#ff7b72" />
+                  </marker>
+                  <marker
+                    id="d5g"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#3fb950" />
+                  </marker>
+                </defs>
+
+                <rect
+                  x="266"
+                  y="12"
+                  width="188"
+                  height="42"
+                  rx="21"
+                  fill="#1c2230"
+                  stroke="#e6edf3"
+                  stroke-width="2"
+                />
+                <text
+                  x="360"
+                  y="31"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="12"
+                  font-weight="700"
+                  fill="#e6edf3"
+                >
+                  bun run up
+                </text>
+                <text
+                  x="360"
+                  y="46"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="9.5"
+                  fill="#6e7681"
+                >
+                  en un proyecto de la era Claude
+                </text>
+
+                <line
+                  x1="360"
+                  y1="54"
+                  x2="360"
+                  y2="82"
+                  stroke="#9aa6b2"
+                  stroke-width="1.5"
+                  marker-end="url(#d5n)"
+                />
+
+                <rect
+                  x="200"
+                  y="86"
+                  width="320"
+                  height="46"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#ffa657"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="360"
+                  y="106"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="12"
+                  font-weight="700"
+                  fill="#ffa657"
+                >
+                  migración preflight
+                </text>
+                <text
+                  x="360"
+                  y="122"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="10"
+                  fill="#9aa6b2"
+                >
+                  antes de sincronizar ningún componente
+                </text>
+
+                <line
+                  x1="360"
+                  y1="132"
+                  x2="360"
+                  y2="158"
+                  stroke="#9aa6b2"
+                  stroke-width="1.5"
+                  marker-end="url(#d5n)"
+                />
+
+                <rect
+                  x="242"
+                  y="162"
+                  width="236"
+                  height="44"
+                  rx="10"
+                  fill="#1c2230"
+                  stroke="#e6edf3"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="360"
+                  y="181"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="11.5"
+                  font-weight="700"
+                  fill="#e6edf3"
+                >
+                  ¿todo resoluble sin adivinar?
+                </text>
+                <text
+                  x="360"
+                  y="196"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="9.5"
+                  fill="#6e7681"
+                >
+                  se evalúa el árbol entero, no archivo por archivo
+                </text>
+
+                <polyline
+                  points="242,184 150,184 150,214"
+                  fill="none"
+                  stroke="#ff7b72"
+                  stroke-width="1.5"
+                  marker-end="url(#d5b)"
+                />
+                <text
+                  x="196"
+                  y="177"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="10.5"
+                  font-weight="700"
+                  fill="#ff7b72"
+                >
+                  no
+                </text>
+
+                <polyline
+                  points="478,184 570,184 570,214"
+                  fill="none"
+                  stroke="#3fb950"
+                  stroke-width="1.5"
+                  marker-end="url(#d5g)"
+                />
+                <text
+                  x="524"
+                  y="177"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="10.5"
+                  font-weight="700"
+                  fill="#3fb950"
+                >
+                  sí
+                </text>
+
+                <rect
+                  x="24"
+                  y="218"
+                  width="252"
+                  height="58"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#ff7b72"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="150"
+                  y="240"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="12"
+                  font-weight="700"
+                  fill="#ff7b72"
+                >
+                  se niega entera
+                </text>
+                <text
+                  x="150"
+                  y="257"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="10"
+                  fill="#9aa6b2"
+                >
+                  no toca nada · nada a medias
+                </text>
+                <text
+                  x="150"
+                  y="270"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="10"
+                  fill="#6e7681"
+                >
+                  nombra el archivo que la bloqueó
+                </text>
+
+                <rect
+                  x="430"
+                  y="218"
+                  width="266"
+                  height="106"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#3fb950"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="444"
+                  y="240"
+                  font-family="Inter, sans-serif"
+                  font-size="11.5"
+                  font-weight="700"
+                  fill="#e6edf3"
+                >
+                  migra, en este orden
+                </text>
+                <text x="444" y="262" font-family="Inter, sans-serif" font-size="10" fill="#9aa6b2">
+                  memoria → AGENTS.md, shim de 11 bytes
+                </text>
+                <text x="444" y="281" font-family="Inter, sans-serif" font-size="10" fill="#9aa6b2">
+                  skills → .agents/skills/, propias incluidas
+                </text>
+                <text x="444" y="300" font-family="Inter, sans-serif" font-size="10" fill="#9aa6b2">
+                  colisión de nombre → se archiva la legacy
+                </text>
+                <text
+                  x="444"
+                  y="316"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="9.5"
+                  fill="#6e7681"
+                >
+                  .template/pre-agents-migration/
+                </text>
+
+                <polyline
+                  points="563,324 563,352 424,352 424,368"
+                  fill="none"
+                  stroke="#3fb950"
+                  stroke-width="1.5"
+                  marker-end="url(#d5g)"
+                />
+                <text
+                  x="494"
+                  y="346"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="10"
+                  fill="#3fb950"
+                >
+                  recién ahora
+                </text>
+
+                <rect
+                  x="180"
+                  y="358"
+                  width="360"
+                  height="40"
+                  rx="10"
+                  fill="#1c2230"
+                  stroke="#e6edf3"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="360"
+                  y="382"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="11.5"
+                  font-weight="700"
+                  fill="#e6edf3"
+                >
+                  se sincronizan los componentes
+                </text>
+              </svg>
+            </div>
+            <figcaption>
+              La rama izquierda es la que importa: una migración que no puede resolver un elemento
+              sin adivinar aborta completa en vez de dejar el proyecto mitad viejo y mitad nuevo.
+            </figcaption>
+          </figure>
+
+          <div class="grid2">
+            <div class="card">
+              <h3>Nada se borra</h3>
+              <p>
+                Todo se mueve o se respalda. Lo que no se puede mover a su lugar canónico queda en
+                <code>.template/pre-agents-migration/</code>, con su contenido intacto.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Es idempotente</h3>
+              <p>
+                Correrla dos veces no hace nada la segunda vez. Un proyecto ya migrado pasa de largo
+                sin escribir.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="limites">
+        <div class="wrap">
+          <div class="kicker">Límites conocidos</div>
+          <h2>Lo que todavía no está cerrado</h2>
+          <p>
+            Cuatro cosas que conviene saber antes de apoyarse en esto, dichas como límites y no como
+            notas al pie.
+          </p>
+          <ul class="plain">
+            <li class="warn">
+              <b>El adaptador de OpenCode usa <code>experimental.chat.system.transform</code>.</b>
+              Es una API oficial, pero marcada como experimental por el proyecto. Claude y Codex
+              están sobre APIs de hook estables. Hay que re-verificar al actualizar OpenCode.
+            </li>
+            <li class="warn">
+              <b>El junction de Windows está cubierto por tests unitarios</b> de construcción de
+              ruta y de comando. La verificación en una máquina Windows real sigue pendiente.
+            </li>
+            <li class="warn">
+              <b>Codex necesita que el repositorio esté marcado como confiable.</b> La configuración
+              de proyecto bajo <code>.codex/</code> y sus hooks no cargan si no lo está.
+              <code>bun run setup:doctor</code> reporta esa confianza por separado de la corrección
+              de los archivos, porque es estado de runtime que no se puede verificar leyendo el
+              disco.
+            </li>
+            <li class="warn">
+              <b
+                >Lanzá siempre con <code>bun run claude</code>, <code>bun run opencode</code> o
+                <code>bun run codex</code>.</b
+              >
+              Cada uno pasa por <code>dotenv -o</code>, que fuerza que <code>.env</code> gane sobre
+              una variable heredada del proceso padre. Ejecutar el binario pelado se saltea eso y
+              puede dejar un valor viejo tapando el del archivo.
+            </li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <div class="footlinks">
+          <a href="./">Volver al hub</a>
+          <a href="./arquitectura.es.html">Arquitectura: el refactor PBI</a>
+          <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate">Repositorio en GitHub</a>
+        </div>
+        <p>
+          Todo lo descrito acá ya está en <code>main</code>. El contrato completo vive en
+          <code>AGENTS.md</code> §4.5, y se verifica con <code>bun run agents:compat:check</code>.
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      (function () {
+        var links = Array.prototype.slice.call(document.querySelectorAll('.surfnav a'));
+        var byId = {};
+        links.forEach(function (a) {
+          byId[a.getAttribute('href').slice(1)] = a;
+        });
+        var targets = Object.keys(byId)
+          .map(function (id) {
+            return document.getElementById(id);
+          })
+          .filter(Boolean);
+        if (!targets.length || !('IntersectionObserver' in window)) return;
+        var obs = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (!e.isIntersecting) return;
+              links.forEach(function (a) {
+                a.classList.remove('on');
+              });
+              var a = byId[e.target.id];
+              if (a) a.classList.add('on');
+            });
+          },
+          { rootMargin: '-96px 0px -70% 0px' }
+        );
+        targets.forEach(function (t) {
+          obs.observe(t);
+        });
+      })();
+    </script>
+  </body>
+</html>

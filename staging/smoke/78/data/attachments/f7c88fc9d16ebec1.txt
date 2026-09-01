@@ -1,0 +1,1 @@
+---- API OK: 200 - https://dojo.upexgalaxy.com/api/auth/me

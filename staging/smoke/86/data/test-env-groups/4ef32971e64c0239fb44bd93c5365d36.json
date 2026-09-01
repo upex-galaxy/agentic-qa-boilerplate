@@ -1,0 +1,1 @@
+{"id":"4ef32971e64c0239fb44bd93c5365d36","fullName":"integration/auth/user-session.test.ts:35:3","name":"UPEX-100: should fail without token","status":"failed","testResultsByEnv":{"default":"4bbfc0c3ef311b21f6ce2b0fb271c5a9"}}

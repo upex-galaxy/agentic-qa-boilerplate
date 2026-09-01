@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coding Base — Fundamentos de programación para QA Testers</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ===================== TOKYO NIGHT TOKENS ===================== */
+:root{
+  --bg:#16161e; --bg-2:#1a1b26; --surface:#24283b; --surface-2:#1f2335;
+  --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16);
+  --text-1:#c0caf5; --text-2:#9aa5ce; --text-3:#565f89;
+  --blue:#7aa2f7; --purple:#bb9af7; --cyan:#7dcfff; --green:#9ece6a;
+  --red:#f7768e; --orange:#ff9e64; --yellow:#e0af68;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#7dcfff);
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 14px 40px rgba(0,0,0,.45);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono',Menlo,monospace;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden}
+code,pre,kbd,textarea{font-family:var(--font-mono)}
+b,strong{color:var(--text-1)}
+::selection{background:rgba(122,162,247,.35)}
+
+/* ===================== SLIDE SYSTEM ===================== */
+.slide{position:fixed;inset:0;display:none;flex-direction:column;justify-content:center;
+  padding:7vh 7vw 10vh;background:var(--bg)}
+.slide.is-active{display:flex}
+.slide h1{font-size:clamp(2.4rem,5.6vw,4.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .4em}
+.slide h2{font-size:clamp(1.7rem,3.4vw,2.7rem);font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 .55em}
+.slide h3{font-size:clamp(1.05rem,1.7vw,1.35rem);font-weight:700;margin:0 0 .5em}
+.slide p,.slide li{font-size:clamp(.95rem,1.45vw,1.18rem);color:var(--text-2)}
+.kicker{font-size:.78rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2.2rem;align-items:start}
+.cols-32{display:grid;grid-template-columns:1.25fr 1fr;gap:2.2rem;align-items:start}
+.notes{display:none}
+
+/* chrome */
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--grad);width:0%;z-index:60;transition:width .3s var(--ease)}
+#counter{position:fixed;bottom:18px;right:24px;font-family:var(--font-mono);font-size:.75rem;color:var(--text-3);z-index:60}
+#act-label{position:fixed;bottom:18px;left:24px;font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);z-index:60}
+#score-chip{position:fixed;top:16px;right:22px;z-index:60;font-family:var(--font-mono);font-size:.82rem;font-weight:700;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:999px;padding:.4rem .9rem;color:var(--yellow);
+  box-shadow:var(--shadow);transition:transform .25s var(--ease)}
+#score-chip.bump{transform:scale(1.25)}
+#help-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-size:.7rem;color:var(--text-3);z-index:60;font-family:var(--font-mono)}
+
+/* notes drawer */
+#notes-drawer{position:fixed;left:0;right:0;bottom:0;max-height:34vh;overflow:auto;background:var(--surface-2);
+  border-top:2px solid var(--blue);padding:1rem 2.2rem 1.4rem;z-index:80;transform:translateY(100%);transition:transform .3s var(--ease)}
+#notes-drawer.open{transform:translateY(0)}
+#notes-drawer .nd-tag{font-size:.7rem;font-weight:800;letter-spacing:.2em;color:var(--blue);text-transform:uppercase;margin-bottom:.4rem}
+#notes-drawer p{margin:.3rem 0;font-size:.95rem;color:var(--text-2)}
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+@keyframes slideL{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.slide.is-active [data-anim="fade-up"]{animation:fadeUp .7s var(--ease) both}
+.slide.is-active [data-anim="pop"]{animation:popIn .55s var(--ease) both}
+.slide.is-active [data-anim="slide-l"]{animation:slideL .6s var(--ease) both}
+.slide.is-active [data-stagger]>*{animation:fadeUp .55s var(--ease) both}
+.slide.is-active [data-stagger]>*:nth-child(1){animation-delay:.05s}
+.slide.is-active [data-stagger]>*:nth-child(2){animation-delay:.15s}
+.slide.is-active [data-stagger]>*:nth-child(3){animation-delay:.25s}
+.slide.is-active [data-stagger]>*:nth-child(4){animation-delay:.35s}
+.slide.is-active [data-stagger]>*:nth-child(5){animation-delay:.45s}
+.slide.is-active [data-stagger]>*:nth-child(6){animation-delay:.55s}
+.slide.is-active [data-stagger]>*:nth-child(7){animation-delay:.65s}
+.slide.is-active [data-stagger]>*:nth-child(8){animation-delay:.75s}
+
+/* ===================== CODE BLOCKS ===================== */
+pre.code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:1.1rem 1.3rem;font-size:clamp(.85rem,1.35vw,1.05rem);line-height:1.7;overflow:auto;margin:0;
+  box-shadow:var(--shadow);white-space:pre}
+pre.code.big{font-size:clamp(1rem,1.7vw,1.35rem)}
+.tk-k{color:var(--purple)} .tk-s{color:var(--green)} .tk-n{color:var(--orange)}
+.tk-b{color:var(--orange)} .tk-f{color:var(--blue)} .tk-c{color:var(--text-3);font-style:italic}
+.code-window{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.code-window .cw-bar{display:flex;align-items:center;gap:.45rem;padding:.6rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.cw-bar .dot{width:11px;height:11px;border-radius:50%}
+.cw-bar .dot:nth-child(1){background:#f7768e}.cw-bar .dot:nth-child(2){background:#e0af68}.cw-bar .dot:nth-child(3){background:#9ece6a}
+.cw-bar .cw-title{margin-left:.5rem;font-family:var(--font-mono);font-size:.74rem;color:var(--text-3)}
+.code-window pre.code{border:none;border-radius:0;box-shadow:none}
+
+/* zoom breadcrumb */
+.zoomline{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.3rem}
+.zoomline span{font-family:var(--font-mono);font-size:.72rem;padding:.25rem .7rem;border-radius:999px;
+  border:1px solid var(--border);color:var(--text-3)}
+.zoomline span.on{background:rgba(122,162,247,.16);border-color:var(--blue);color:var(--blue);font-weight:700}
+
+/* cards */
+.cards{display:grid;gap:1.1rem}
+.cards.c3{grid-template-columns:repeat(3,1fr)}
+.cards.c2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem 1.4rem;box-shadow:var(--shadow)}
+.card .ico{font-size:1.9rem;margin-bottom:.5rem}
+.card h3{margin-bottom:.3rem}
+.card p{font-size:.95rem;margin:.2rem 0}
+.card.hl{border-color:var(--blue);background:linear-gradient(160deg,rgba(122,162,247,.12),rgba(187,154,247,.08))}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:.78rem;padding:.2rem .65rem;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--border-strong);color:var(--cyan);margin:.15rem .2rem}
+
+/* compare table */
+table.cmp{width:100%;border-collapse:collapse;font-size:clamp(.9rem,1.4vw,1.1rem)}
+table.cmp th{text-align:left;padding:.7rem 1rem;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);border-bottom:2px solid var(--border-strong)}
+table.cmp td{padding:.7rem 1rem;border-bottom:1px solid var(--border);color:var(--text-2)}
+table.cmp td:first-child{color:var(--text-1)}
+table.cmp td code{color:var(--cyan);font-size:.92em}
+
+/* callout */
+.callout{display:flex;gap:.9rem;align-items:flex-start;background:rgba(158,206,106,.1);border:1px solid rgba(158,206,106,.35);
+  border-radius:var(--radius-sm);padding:.9rem 1.2rem;margin-top:1.4rem}
+.callout.warn{background:rgba(247,118,142,.1);border-color:rgba(247,118,142,.4)}
+.callout.info{background:rgba(122,162,247,.1);border-color:rgba(122,162,247,.4)}
+.callout .co-ico{font-size:1.4rem;line-height:1.3}
+.callout p{margin:0;font-size:clamp(.9rem,1.35vw,1.08rem)}
+
+/* ===================== QUIZ ===================== */
+.quiz{max-width:880px;width:100%;margin:0 auto}
+.quiz-tag{display:inline-block;font-family:var(--font-mono);font-size:.75rem;font-weight:700;letter-spacing:.2em;
+  color:var(--yellow);background:rgba(224,175,104,.12);border:1px solid rgba(224,175,104,.4);
+  border-radius:999px;padding:.3rem .9rem;margin-bottom:1.1rem}
+.quiz-q{font-size:clamp(1.3rem,2.4vw,1.9rem);font-weight:800;margin:0 0 1.3rem;line-height:1.25}
+.quiz-opts{display:grid;gap:.8rem}
+.quiz .opt{display:flex;align-items:center;gap:1rem;text-align:left;width:100%;cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
+  padding:.95rem 1.2rem;color:var(--text-1);font-family:var(--font-sans);font-size:clamp(.95rem,1.5vw,1.15rem);
+  transition:border-color .2s,background .2s,transform .15s}
+.quiz .opt:hover{border-color:var(--blue);transform:translateX(4px)}
+.quiz .opt .key{flex:0 0 auto;font-family:var(--font-mono);font-weight:700;font-size:.8rem;width:1.8rem;height:1.8rem;
+  display:grid;place-items:center;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-3)}
+.quiz .opt code{color:var(--cyan)}
+.quiz .opt.correct{border-color:var(--green);background:rgba(158,206,106,.14)}
+.quiz .opt.correct .key{background:var(--green);color:#16161e;border-color:var(--green)}
+.quiz .opt.wrong{border-color:var(--red);background:rgba(247,118,142,.12);animation:shake .4s}
+.quiz.locked .opt{pointer-events:none;opacity:.8}
+.quiz.locked .opt.correct{opacity:1}
+.quiz-expl{display:none;margin-top:1.2rem;background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);
+  border-radius:var(--radius-sm);padding:.9rem 1.2rem;color:var(--text-2);font-size:clamp(.9rem,1.4vw,1.08rem)}
+.quiz-expl.show{display:block;animation:fadeUp .4s var(--ease)}
+
+/* ===================== LIVE CELL ===================== */
+.livecell{background:var(--bg-2);border:1px solid var(--border-strong);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;width:100%}
+.lc-bar{display:flex;align-items:center;gap:.6rem;padding:.55rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.lc-bar .lc-name{font-family:var(--font-mono);font-size:.76rem;color:var(--text-3);margin-right:auto}
+.lc-bar button{cursor:pointer;font-family:var(--font-mono);font-size:.78rem;font-weight:700;border-radius:8px;
+  padding:.4rem .95rem;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);transition:all .2s}
+.lc-bar button.lc-run{background:rgba(158,206,106,.16);border-color:var(--green);color:var(--green)}
+.lc-bar button:hover{transform:translateY(-1px);filter:brightness(1.2)}
+.lc-editor{position:relative;min-height:120px}
+.lc-editor pre,.lc-editor textarea{margin:0;padding:1rem 1.2rem;font-size:clamp(.85rem,1.3vw,1rem);line-height:1.65;
+  font-family:var(--font-mono);white-space:pre;overflow:auto;tab-size:2}
+.lc-editor pre{position:absolute;inset:0;pointer-events:none;color:var(--text-1)}
+.lc-editor textarea{position:relative;width:100%;height:100%;min-height:inherit;display:block;background:transparent;
+  color:transparent;caret-color:#c0caf5;border:none;outline:none;resize:none;-webkit-text-fill-color:transparent}
+.lc-console{border-top:1px solid var(--border);background:#13131a;padding:.8rem 1.2rem;min-height:2.6rem;max-height:160px;overflow:auto}
+.lc-console .ln{font-family:var(--font-mono);font-size:.85rem;color:var(--green);padding:.08rem 0}
+.lc-console .ln.err{color:var(--red)}
+.lc-console .ln.dim{color:var(--text-3);font-style:italic}
+
+/* ===================== MEMORY VISUALIZER ===================== */
+.memviz{display:grid;grid-template-columns:1.3fr 1fr;gap:1.4rem;width:100%}
+.mv-code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem 0;box-shadow:var(--shadow)}
+.mv-code .cl{font-family:var(--font-mono);font-size:clamp(.85rem,1.35vw,1.05rem);line-height:1.9;padding:0 1.2rem;white-space:pre;transition:background .25s;border-left:3px solid transparent}
+.mv-code .cl.cur{background:rgba(122,162,247,.16);border-left-color:var(--blue)}
+.mv-side{display:flex;flex-direction:column;gap:1rem}
+.mv-vars{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem 1.2rem;flex:1}
+.mv-vars h4{margin:0 0 .7rem;font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3)}
+.mv-var{display:flex;align-items:center;gap:.7rem;margin:.45rem 0;animation:popIn .3s var(--ease)}
+.mv-var .vn{font-family:var(--font-mono);font-size:.88rem;color:var(--cyan);min-width:5.5rem}
+.mv-var .vv{font-family:var(--font-mono);font-size:.88rem;background:var(--bg-2);border:1px solid var(--border-strong);
+  border-radius:8px;padding:.25rem .7rem;color:var(--orange)}
+.mv-note{background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);border-radius:var(--radius-sm);
+  padding:.7rem 1rem;font-size:.92rem;color:var(--text-2);min-height:3.4rem}
+.mv-out{background:#13131a;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.7rem 1rem;min-height:5.2rem}
+.mv-out .ln{font-family:var(--font-mono);font-size:.85rem;color:var(--green);padding:.05rem 0}
+.mv-ctrl{display:flex;gap:.7rem;align-items:center;margin-top:1.1rem}
+.mv-ctrl button{cursor:pointer;font-family:var(--font-mono);font-weight:700;font-size:.85rem;border-radius:10px;
+  padding:.55rem 1.3rem;border:1px solid var(--blue);background:rgba(122,162,247,.15);color:var(--blue);transition:all .2s}
+.mv-ctrl button:hover{filter:brightness(1.25);transform:translateY(-1px)}
+.mv-ctrl button.ghost{border-color:var(--border-strong);background:var(--surface);color:var(--text-2)}
+.mv-ctrl .mv-step{font-family:var(--font-mono);font-size:.8rem;color:var(--text-3);margin-left:auto}
+
+/* ===================== MINI APP + SIMULATOR ===================== */
+.playground{display:grid;grid-template-columns:1fr 1.15fr;gap:1.6rem;width:100%;align-items:stretch}
+.app-frame{position:relative;background:#e8ecf4;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);min-height:380px;display:flex;flex-direction:column}
+.app-frame .af-bar{display:flex;align-items:center;gap:.45rem;background:#cdd4e3;padding:.5rem .8rem}
+.af-bar .dot{width:10px;height:10px;border-radius:50%}
+.af-bar .dot:nth-child(1){background:#f06a6a}.af-bar .dot:nth-child(2){background:#e8b04e}.af-bar .dot:nth-child(3){background:#67c46f}
+.af-bar .af-url{flex:1;background:#fff;border-radius:6px;font-family:var(--font-mono);font-size:.68rem;color:#5a6478;padding:.22rem .7rem;margin-left:.4rem}
+.app-body{flex:1;display:flex;align-items:center;justify-content:center;padding:1.6rem}
+.app-card{background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(30,40,80,.18);padding:1.6rem 1.7rem;width:min(320px,90%)}
+.app-card h4{margin:0 0 .2rem;color:#1d2540;font-size:1.15rem}
+.app-card .app-sub{color:#7c86a0;font-size:.8rem;margin:0 0 1.1rem}
+.app-card label{display:block;font-size:.72rem;font-weight:700;color:#5a6478;letter-spacing:.06em;text-transform:uppercase;margin:.7rem 0 .25rem}
+.app-card input{width:100%;border:1.5px solid #cdd4e3;border-radius:8px;padding:.55rem .8rem;font-size:.92rem;color:#1d2540;
+  font-family:var(--font-sans);outline:none;transition:border-color .2s;background:#fff}
+.app-card input:focus{border-color:#5b7cfa}
+.app-card button.app-login{width:100%;margin-top:1.1rem;background:#5b7cfa;color:#fff;border:none;border-radius:8px;
+  padding:.65rem;font-weight:700;font-size:.95rem;cursor:pointer;font-family:var(--font-sans);transition:background .2s}
+.app-card button.app-login:hover{background:#4a69e8}
+.app-msg{margin-top:.9rem;border-radius:8px;padding:.6rem .8rem;font-size:.85rem;font-weight:600;display:none}
+.app-msg.ok{background:#e3f6e6;color:#1e7c32;border:1px solid #9adfa6}
+.app-msg.bad{background:#fde8eb;color:#c22743;border:1px solid #f5b3c0}
+.app-msg.show{display:block}
+/* inspector */
+.inspect-tip{position:absolute;z-index:30;background:#1d2540;color:#7dcfff;font-family:var(--font-mono);font-size:.75rem;
+  font-weight:700;padding:.3rem .7rem;border-radius:7px;pointer-events:none;display:none;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.inspect-on .app-card :is(input,button,h4,p){cursor:crosshair}
+.inspect-hover{outline:2.5px dashed #ff9e64 !important;outline-offset:2px}
+.toggle-inspect{cursor:pointer;font-family:var(--font-mono);font-weight:700;font-size:.8rem;border-radius:999px;
+  padding:.45rem 1.1rem;border:1.5px solid var(--orange);background:rgba(255,158,100,.12);color:var(--orange);transition:all .2s}
+.toggle-inspect.on{background:var(--orange);color:#16161e}
+/* ghost cursor */
+.ghost-cursor{position:absolute;z-index:40;width:26px;height:26px;pointer-events:none;opacity:0;
+  transition:left .55s var(--ease),top .55s var(--ease),opacity .3s;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4))}
+.ghost-cursor.click-pulse{animation:cursorPulse .35s}
+@keyframes cursorPulse{50%{transform:scale(.7)}}
+/* sim editor */
+.sim-right{display:flex;flex-direction:column;gap:.9rem}
+.sim-log{background:#13131a;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.7rem 1rem;flex:1;min-height:90px;max-height:170px;overflow:auto}
+.sim-log .ln{font-family:var(--font-mono);font-size:.8rem;padding:.07rem 0;color:var(--text-2)}
+.sim-log .ln.ok{color:var(--green)} .sim-log .ln.fail{color:var(--red)} .sim-log .ln.info{color:var(--cyan)}
+.sim-banner{display:none;border-radius:var(--radius-sm);padding:.7rem 1.1rem;font-weight:800;font-size:1rem;text-align:center;letter-spacing:.08em}
+.sim-banner.pass{display:block;background:rgba(158,206,106,.16);border:1.5px solid var(--green);color:var(--green)}
+.sim-banner.fail{display:block;background:rgba(247,118,142,.14);border:1.5px solid var(--red);color:var(--red)}
+
+/* fake VS Code error */
+.ts-squiggle{text-decoration:underline wavy var(--red) 2px;text-underline-offset:5px}
+.ts-tooltip{margin-top:1rem;background:#1d1e2e;border:1px solid var(--border-strong);border-left:4px solid var(--red);
+  border-radius:var(--radius-sm);padding:.85rem 1.1rem;font-family:var(--font-mono);font-size:clamp(.78rem,1.25vw,.95rem);color:var(--red);box-shadow:var(--shadow)}
+.ts-tooltip .tt-dim{color:var(--text-3);display:block;margin-top:.3rem;font-size:.85em}
+
+/* terminal */
+.term{background:#0d0d14;border:1px solid var(--border-strong);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.term .term-bar{background:#1d1e2e;padding:.5rem .9rem;display:flex;gap:.45rem;align-items:center}
+.term pre{margin:0;padding:1rem 1.3rem;font-size:clamp(.8rem,1.3vw,1rem);line-height:1.75;color:var(--text-2);white-space:pre;overflow:auto}
+.t-green{color:var(--green)} .t-red{color:var(--red)} .t-dim{color:var(--text-3)} .t-cyan{color:var(--cyan)} .t-yellow{color:var(--yellow)}
+
+/* repo tree */
+.tree{font-family:var(--font-mono);font-size:clamp(.95rem,1.6vw,1.25rem);line-height:2}
+.tree .tr-c{color:var(--text-3);font-size:.82em;margin-left:1.2rem}
+.tree .tr-dir{color:var(--blue);font-weight:700} .tree .tr-file{color:var(--text-1)} .tree .tr-star{color:var(--yellow)}
+
+/* cover */
+#fx-cover{position:absolute;inset:0;z-index:0}
+.cover-inner{position:relative;z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.1rem}
+.cover-chips{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+.big-mono{font-family:var(--font-mono);font-size:clamp(3rem,9vw,7rem);font-weight:700;color:var(--green)}
+
+/* final score */
+#final-score{font-family:var(--font-mono);font-size:clamp(2.6rem,7vw,5rem);font-weight:700;color:var(--yellow)}
+
+#confetti-canvas{position:fixed;inset:0;z-index:200;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="score-chip">⭐ 0/8</div>
+<div id="counter">1 / 35</div>
+<div id="act-label"></div>
+<div id="help-hint">← → navegar · N notas presentador · F pantalla completa</div>
+<canvas id="confetti-canvas"></canvas>
+<div id="notes-drawer"><div class="nd-tag">🎙 Notas del presentador</div><div id="nd-content"></div></div>
+
+<!-- ================================================================ -->
+<!-- ACTO 0 · BIENVENIDA -->
+<!-- ================================================================ -->
+
+<!-- 1 · Portada -->
+<section class="slide" data-act="Acto 0 · Bienvenida" style="align-items:center">
+  <canvas id="fx-cover"></canvas>
+  <div class="cover-inner">
+    <div class="kicker" data-anim="fade-up">Clase especial · QA Engineering</div>
+    <h1 data-anim="fade-up" style="animation-delay:.1s">Coding <span class="grad-text">Base</span></h1>
+    <p data-anim="fade-up" style="animation-delay:.2s;max-width:640px;font-size:clamp(1.05rem,1.8vw,1.35rem)">
+      Fundamentos de programación para QA Testers.<br>De tester manual a <b>Quality Engineer</b>, un concepto a la vez.</p>
+    <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
+      <span class="pill">JavaScript</span><span class="pill">TypeScript</span><span class="pill">Playwright</span><span class="pill">8 quizzes ⭐</span><span class="pill">playgrounds en vivo 🎮</span>
+    </div>
+  </div>
+  <div class="notes"><p>Bienvenida. Encuadre: hoy NO vamos a automatizar — hoy construimos las bases para que la próxima sesión escribamos scripts reales con Playwright. Menciona que hay quizzes con puntaje (esquina superior derecha) y zonas interactivas donde ellos participan. Pide que nadie se quede con dudas: el objetivo es entender CADA palabra del código.</p></div>
+</section>
+
+<!-- 2 · Ya sabes programar -->
+<section class="slide" data-act="Acto 0 · Bienvenida">
+  <div class="kicker">Spoiler</div>
+  <h2 data-anim="fade-up">Ya sabes programar. <span class="grad-text">Solo que en papel.</span></h2>
+  <table class="cmp" data-stagger>
+    <tr><th>Test case manual</th><th>Script automatizado</th></tr>
+    <tr><td>Pasos numerados (1, 2, 3…)</td><td>Líneas de código (se ejecutan en orden)</td></tr>
+    <tr><td>Datos de prueba ("usuario: ana@qa.com")</td><td>Variables (<code>const email = "ana@qa.com"</code>)</td></tr>
+    <tr><td>Resultado esperado</td><td><code>expect(...)</code> — la aserción</td></tr>
+    <tr><td>Precondiciones</td><td>Setup / hooks</td></tr>
+    <tr><td>Lo ejecuta un humano 🧍</td><td>Lo ejecuta la máquina 🤖 (miles de veces, sin café)</td></tr>
+  </table>
+  <div class="callout" data-anim="fade-up"><span class="co-ico">💡</span><p><b>Un script es un test case que la máquina ejecuta por ti.</b> Hoy solo aprendemos el idioma para escribirlo.</p></div>
+  <div class="notes"><p>Mensaje anti-miedo: ellos YA piensan como programadores cuando escriben un test case — pasos ordenados, datos, resultado esperado. Programar es traducir eso a un idioma que la máquina entiende. Pregunta a la audiencia: "¿qué pasa si el paso 3 de tu test case es ambiguo?" — igual en código, la máquina necesita instrucciones exactas.</p></div>
+</section>
+
+<!-- 3 · Mapa de la clase -->
+<section class="slide" data-act="Acto 0 · Bienvenida">
+  <div class="kicker">El plan</div>
+  <h2 data-anim="fade-up">Una sola idea: <span class="grad-text">zoom-out infinito</span> 🔍</h2>
+  <p data-anim="fade-up">Empezamos en un dato diminuto y alejamos la cámara slide a slide hasta ver un repositorio completo.</p>
+  <div class="cards c3" data-stagger style="margin-top:1rem">
+    <div class="card"><div class="ico">⚛️</div><h3>Acto 1 · Átomos</h3><p>Valores, tipos, variables, operadores.</p></div>
+    <div class="card"><div class="ico">🧠</div><h3>Acto 2 · Lógica</h3><p>Funciones, decisiones, loops, datos.</p></div>
+    <div class="card"><div class="ico">🛡️</div><h3>Acto 3 · TypeScript + async</h3><p>Tipos que te protegen. Esperas elegantes.</p></div>
+    <div class="card"><div class="ico">🎭</div><h3>Acto 4 · Tu primer test</h3><p>Anatomía Playwright + playground en vivo.</p></div>
+    <div class="card"><div class="ico">🛰️</div><h3>Acto 5 · Vista satelital</h3><p>El repo completo. Ejecutar y leer resultados.</p></div>
+    <div class="card hl"><div class="ico">⭐</div><h3>Reglas del juego</h3><p>8 quizzes. Tu puntaje vive arriba a la derecha. Los playgrounds se tocan.</p></div>
+  </div>
+  <div class="notes"><p>Explica la mecánica del zoom: el mismo código va a crecer frente a ellos — primero un valor, luego una variable, luego una función… hasta un repo. Nada aparece de la nada. Anuncia los quizzes: uno por concepto, puntaje acumulado, sin castigo por equivocarse. Duración estimada: 90-120 min con pausas.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 1 · ÁTOMOS -->
+<!-- ================================================================ -->
+
+<!-- 4 · El valor -->
+<section class="slide" data-act="Acto 1 · Átomos" style="align-items:center;text-align:center">
+  <div class="zoomline"><span class="on">valor</span><span>variable</span><span>función</span><span>lógica</span><span>archivo</span><span>repo</span></div>
+  <div class="kicker">Zoom nivel 1</div>
+  <h2 data-anim="fade-up">Todo empieza con <span class="grad-text">un dato</span></h2>
+  <div class="big-mono" data-anim="pop">"Ana"</div>
+  <p data-anim="fade-up" style="max-width:620px">Esto es un <b>valor</b>: la pieza más pequeña de información que un programa puede manejar.
+  Las comillas dicen "esto es texto". Sin contexto, sin nombre, sin lógica. Un átomo.</p>
+  <div class="notes"><p>Slide minimalista a propósito: UNA idea. Un valor es un dato suelto. Compáralo con una celda suelta de su tabla de test data. Pregunta retórica: "¿de qué sirve un dato sin nombre?" — eso conecta con la siguiente slide (variables).</p></div>
+</section>
+
+<!-- 5 · Tipos -->
+<section class="slide" data-act="Acto 1 · Átomos">
+  <div class="zoomline"><span class="on">valor</span><span>variable</span><span>función</span><span>lógica</span><span>archivo</span><span>repo</span></div>
+  <h2 data-anim="fade-up">Los valores tienen <span class="grad-text">tipos</span></h2>
+  <div class="cards c3" data-stagger>
+    <div class="card"><div class="ico">📝</div><h3>string</h3><pre class="code">"Ana"
+"ana@qa.com"
+"Login exitoso"</pre><p style="margin-top:.6rem">Texto. Siempre entre comillas.</p></div>
+    <div class="card"><div class="ico">🔢</div><h3>number</h3><pre class="code">25
+3.14
+404</pre><p style="margin-top:.6rem">Números. Sin comillas. <code class="pill">404</code> ≠ <code class="pill">"404"</code></p></div>
+    <div class="card"><div class="ico">🚦</div><h3>boolean</h3><pre class="code">true
+false</pre><p style="margin-top:.6rem">Verdadero o falso. El tipo favorito de QA: <b>¿pasó o falló?</b></p></div>
+  </div>
+  <div class="callout info" data-anim="fade-up"><span class="co-ico">🧪</span><p>Analogía QA: los campos de un formulario. Nombre = string, edad = number, "acepto términos" = boolean.</p></div>
+  <div class="notes"><p>Tres tipos primitivos bastan para el 90% de los tests. Enfatiza la trampa de 404 vs "404": un status code numérico y un texto que parece número NO son lo mismo — esto vuelve en el quiz de operadores. Boolean es EL tipo de QA: toda aserción termina en true/false.</p></div>
+</section>
+
+<!-- 6 · Variables -->
+<section class="slide" data-act="Acto 1 · Átomos">
+  <div class="zoomline"><span>valor</span><span class="on">variable</span><span>función</span><span>lógica</span><span>archivo</span><span>repo</span></div>
+  <h2 data-anim="fade-up">Variables: <span class="grad-text">cajas con etiqueta</span> 📦</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-k">const</span> nombre = <span class="tk-s">"Ana"</span>;
+<span class="tk-k">const</span> edad = <span class="tk-n">25</span>;
+<span class="tk-k">let</span> intentos = <span class="tk-n">0</span>;</pre>
+      <p style="margin-top:1rem;font-family:var(--font-mono);font-size:.85rem">
+        <span style="color:var(--purple)">const/let</span> &nbsp;→ "voy a crear una caja"<br>
+        <span style="color:var(--cyan)">nombre</span> &nbsp;&nbsp;&nbsp;&nbsp;→ la etiqueta de la caja<br>
+        <span style="color:var(--text-2)">=</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ "guarda esto adentro"<br>
+        <span style="color:var(--green)">"Ana"</span> &nbsp;&nbsp;&nbsp;&nbsp;→ el valor guardado</p>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🔒 const</h3><p>Caja sellada. El valor <b>no se puede reemplazar</b>. Tu opción por defecto.</p></div>
+      <div class="card" style="margin-top:1rem"><h3>🔓 let</h3><p>Caja reutilizable. El valor <b>puede cambiar</b> (contadores, reintentos).</p></div>
+      <div class="card hl" style="margin-top:1rem"><h3>🧪 En testing</h3><p><code class="pill">const email = "ana@qa.com"</code><br>Tus datos de prueba con nombre propio.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>El desglose palabra por palabra es la clave de esta slide — léelo despacio. Regla práctica: usa const siempre; let solo cuando NECESITES cambiar el valor (la herramienta te avisará). En el playground siguiente van a romper un const a propósito para ver el error.</p></div>
+</section>
+
+<!-- 7 · LIVE CELL 1 -->
+<section class="slide" data-act="Acto 1 · Átomos">
+  <div class="kicker">🎮 Playground en vivo</div>
+  <h2 data-anim="fade-up">Tócalo. Rómpelo. <span class="grad-text">Arréglalo.</span></h2>
+  <div class="livecell" data-anim="fade-up">
+    <div class="lc-bar"><span class="lc-name">variables.js — editable</span>
+      <button class="lc-reset">↺ Reset</button><button class="lc-run">▶ Ejecutar</button></div>
+    <div class="lc-editor"><pre class="lc-hl"></pre><textarea spellcheck="false">// Cambia los valores y vuelve a ejecutar
+const tester = "Ana";
+let bugsFound = 3;
+
+console.log("Tester: " + tester);
+
+bugsFound = bugsFound + 1;
+console.log("Bugs encontrados: " + bugsFound);
+
+// Reto 1: crea una variable "rol" y muéstrala
+// Reto 2: intenta reasignar tester = "Luis"  (¿qué pasa?)</textarea></div>
+    <div class="lc-console"><div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div></div>
+  </div>
+  <div class="notes"><p>Primer momento interactivo: pide a alguien de la audiencia que dicte un cambio. Ejecuta el reto 2 — reasignar un const lanza "Assignment to constant variable" y ES BUENO: el lenguaje los protege. console.log = "muéstrame esto en la consola"; es la linterna del programador. Dedica 3-4 minutos.</p></div>
+</section>
+
+<!-- 8 · QUIZ 1 -->
+<section class="slide" data-act="Acto 1 · Átomos" style="align-items:center">
+  <div class="quiz" data-quiz="q1">
+    <div class="quiz-tag">⭐ QUIZ 1 · Variables y tipos</div>
+    <h3 class="quiz-q">¿Cuál de estas líneas lanza un ERROR?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span><code>let retries = 1; retries = 2;</code></span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span><code>const user = "Ana"; user = "Luis";</code></span></button>
+      <button class="opt"><span class="key">C</span><span><code>const passed = true;</code></span></button>
+    </div>
+    <div class="quiz-expl">💡 <b>const</b> crea una caja sellada: reasignarla lanza <code>TypeError: Assignment to constant variable</code>. <b>let</b> sí permite cambiar el valor.</div>
+  </div>
+  <div class="notes"><p>Primer quiz — establece el ritmo: leen, alguien vota en voz alta, click. Si aciertan a la primera suma punto. Refuerza: el error de const no es un bug tuyo, es el lenguaje protegiéndote de cambios accidentales.</p></div>
+</section>
+
+<!-- 9 · Operadores -->
+<section class="slide" data-act="Acto 1 · Átomos">
+  <div class="zoomline"><span>valor</span><span class="on">variable</span><span>función</span><span>lógica</span><span>archivo</span><span>repo</span></div>
+  <h2 data-anim="fade-up">Operadores: <span class="grad-text">hacer y comparar</span></h2>
+  <div class="cards c3" data-stagger>
+    <div class="card"><h3>➕ Matemáticos</h3><pre class="code">5 + 3      <span class="tk-c">// 8</span>
+10 - 4     <span class="tk-c">// 6</span>
+"QA" + "!" <span class="tk-c">// "QA!"</span></pre><p style="margin-top:.6rem">Con strings, <code class="pill">+</code> une texto.</p></div>
+    <div class="card"><h3>⚖️ Comparación</h3><pre class="code">5 === 5    <span class="tk-c">// true</span>
+5 !== 3    <span class="tk-c">// true</span>
+10 > 7     <span class="tk-c">// true</span></pre><p style="margin-top:.6rem">Siempre devuelven <b>boolean</b>.</p></div>
+    <div class="card"><h3>🔗 Lógicos</h3><pre class="code">a && b  <span class="tk-c">// Y: ambas</span>
+a || b  <span class="tk-c">// O: alguna</span>
+!a      <span class="tk-c">// NO: invierte</span></pre><p style="margin-top:.6rem">Combinan condiciones.</p></div>
+  </div>
+  <div class="callout warn" data-anim="fade-up"><span class="co-ico">⚠️</span><p><b>La trampa #1:</b> <code class="pill">=</code> asigna (guarda en la caja) · <code class="pill">===</code> compara (¿son iguales?). Confundirlos es el bug clásico de principiante.</p></div>
+  <div class="notes"><p>Tres familias, pero el 80% del tiempo usarán === para comparar. Insiste en la trampa = vs ===: una asigna, la otra pregunta. Menciona que existe == (doble), pero la regla profesional es usar SIEMPRE === (triple), que también compara el tipo — perfecto puente al quiz.</p></div>
+</section>
+
+<!-- 10 · QUIZ 2 -->
+<section class="slide" data-act="Acto 1 · Átomos" style="align-items:center">
+  <div class="quiz" data-quiz="q2">
+    <div class="quiz-tag">⭐ QUIZ 2 · Operadores</div>
+    <h3 class="quiz-q">¿Qué imprime <code style="color:var(--cyan)">console.log(5 === "5")</code>?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span><code>true</code> — cinco es cinco</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span><code>false</code> — número y texto no son lo mismo</span></button>
+      <button class="opt"><span class="key">C</span><span>Error — no se pueden comparar</span></button>
+    </div>
+    <div class="quiz-expl">💡 <code>===</code> compara valor <b>y tipo</b>. <code>5</code> es number, <code>"5"</code> es string → <code>false</code>. En testing esto importa: un API que devuelve <code>"404"</code> (texto) no es lo mismo que <code>404</code> (número).</div>
+  </div>
+  <div class="notes"><p>Este quiz suele dividir a la sala. La explicación conecta con APIs: status codes como texto vs número es un bug real que verán en integración. Si alguien menciona ==, celebra la pregunta y reafirma: siempre ===.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 2 · LÓGICA -->
+<!-- ================================================================ -->
+
+<!-- 11 · Funciones anatomía -->
+<section class="slide" data-act="Acto 2 · Lógica">
+  <div class="zoomline"><span>valor</span><span>variable</span><span class="on">función</span><span>lógica</span><span>archivo</span><span>repo</span></div>
+  <h2 data-anim="fade-up">Funciones: <span class="grad-text">recetas con nombre</span> 🍳</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-k">function</span> <span class="tk-f">login</span>(email, password) {
+  <span class="tk-k">const</span> mensaje = <span class="tk-s">"Bienvenida "</span> + email;
+  <span class="tk-k">return</span> mensaje;
+}
+
+<span class="tk-k">const</span> resultado = <span class="tk-f">login</span>(<span class="tk-s">"ana@qa.com"</span>, <span class="tk-s">"secreto123"</span>);</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3 style="color:var(--purple)">function</h3><p>"Voy a definir una receta."</p></div>
+      <div class="card" style="margin-top:.8rem"><h3 style="color:var(--blue)">login(email, password)</h3><p>Nombre + <b>parámetros</b>: los ingredientes que recibirá.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3 style="color:var(--purple)">return</h3><p>Lo que la receta <b>entrega</b> al terminar.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3 style="color:var(--cyan)">login("ana@qa.com", …)</h3><p><b>Llamarla</b> = ejecutar la receta con ingredientes reales.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Distinción clave que confunde a todos: DEFINIR una función (escribir la receta) no la ejecuta; LLAMARLA (con paréntesis y argumentos) sí. Parámetros = nombres genéricos en la receta; argumentos = ingredientes concretos al llamar. El zoom creció: la variable de hace 5 slides ahora vive DENTRO de una función.</p></div>
+</section>
+
+<!-- 12 · Funciones = pasos reutilizables -->
+<section class="slide" data-act="Acto 2 · Lógica">
+  <h2 data-anim="fade-up">¿Por qué te importan? <span class="grad-text">Reutilización</span></h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>😫 Tester manual</h3>
+      <div class="card"><p>TC-101: abrir login, escribir email, escribir password, click…<br>
+      TC-102: abrir login, escribir email, escribir password, click…<br>
+      TC-103: abrir login, escribir email… <b>otra vez. y otra. y otra.</b></p></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>😎 Con una función</h3>
+      <pre class="code">
+<span class="tk-f">login</span>(<span class="tk-s">"ana@qa.com"</span>, <span class="tk-s">"secreto123"</span>);
+<span class="tk-f">login</span>(<span class="tk-s">"luis@qa.com"</span>, <span class="tk-s">"otraClave9"</span>);
+<span class="tk-f">login</span>(<span class="tk-s">"mia@qa.com"</span>, <span class="tk-s">"claveMia55"</span>);</pre>
+      <p style="margin-top:.8rem">Escribes los pasos <b>una vez</b>, los ejecutas con mil datos distintos.</p>
+    </div>
+  </div>
+  <div class="callout" data-anim="fade-up"><span class="co-ico">💡</span><p>Una función es un <b>test step reutilizable</b>. Cuando el botón de login cambie, corriges UN lugar — no 40 test cases.</p></div>
+  <div class="notes"><p>Este es el argumento de venta de la automatización entera: mantenimiento. Pregunta: "¿cuántos test cases tuyos repiten los mismos 4 pasos de login?" La respuesta emocional a esa pregunta ES la motivación para aprender funciones.</p></div>
+</section>
+
+<!-- 13 · LIVE CELL 2 -->
+<section class="slide" data-act="Acto 2 · Lógica">
+  <div class="kicker">🎮 Playground en vivo</div>
+  <h2 data-anim="fade-up">Tu primera <span class="grad-text">función</span></h2>
+  <div class="livecell" data-anim="fade-up">
+    <div class="lc-bar"><span class="lc-name">functions.js — editable</span>
+      <button class="lc-reset">↺ Reset</button><button class="lc-run">▶ Ejecutar</button></div>
+    <div class="lc-editor"><pre class="lc-hl"></pre><textarea spellcheck="false">function greet(name) {
+  return "Hola, " + name + " 👋";
+}
+
+console.log(greet("Ana"));
+console.log(greet("Luis"));
+
+// Reto 1: llama a greet con TU nombre
+// Reto 2: crea una función farewell(name) que
+//         devuelva "Chau, <name>" y úsala</textarea></div>
+    <div class="lc-console"><div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div></div>
+  </div>
+  <div class="notes"><p>Deja que alguien resuelva el reto 2 en vivo (o guíalos línea a línea). Errores esperables: olvidar return (imprime undefined — explícalo: la función no entregó nada), olvidar paréntesis al llamar. Ambos errores son ORO pedagógico, no los esquives.</p></div>
+</section>
+
+<!-- 14 · QUIZ 3 -->
+<section class="slide" data-act="Acto 2 · Lógica" style="align-items:center">
+  <div class="quiz" data-quiz="q3">
+    <div class="quiz-tag">⭐ QUIZ 3 · Funciones</div>
+    <h3 class="quiz-q">¿Qué imprime este código?</h3>
+    <pre class="code" style="margin-bottom:1.3rem">
+<span class="tk-k">function</span> <span class="tk-f">sum</span>(a, b) {
+  <span class="tk-k">return</span> a + b;
+}
+console.<span class="tk-f">log</span>(<span class="tk-f">sum</span>(<span class="tk-n">2</span>, <span class="tk-n">3</span>));</pre>
+    <div class="quiz-opts">
+      <button class="opt" data-ok="1"><span class="key">A</span><span><code>5</code> — suma los dos numbers</span></button>
+      <button class="opt"><span class="key">B</span><span><code>"23"</code> — los pega como texto</span></button>
+      <button class="opt"><span class="key">C</span><span><code>undefined</code> — falta algo</span></button>
+    </div>
+    <div class="quiz-expl">💡 <code>2</code> y <code>3</code> son <b>numbers</b> (sin comillas) → <code>+</code> suma: <code>5</code>. Si fueran <code>"2"</code> y <code>"3"</code> (strings), <code>+</code> los pegaría: <code>"23"</code>. El tipo decide el comportamiento.</div>
+  </div>
+  <div class="notes"><p>Combina funciones con la lección de tipos: el MISMO operador + se comporta distinto según el tipo. Si la sala duda entre A y B, vuelve un segundo a la slide de tipos. Este "aha" previene bugs reales de concatenación accidental.</p></div>
+</section>
+
+<!-- 15 · if/else -->
+<section class="slide" data-act="Acto 2 · Lógica">
+  <div class="zoomline"><span>valor</span><span>variable</span><span>función</span><span class="on">lógica</span><span>archivo</span><span>repo</span></div>
+  <h2 data-anim="fade-up">if / else: <span class="grad-text">el código decide</span> 🔀</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-k">if</span> (statusCode === <span class="tk-n">200</span>) {
+  console.<span class="tk-f">log</span>(<span class="tk-s">"✅ Test PASSED"</span>);
+} <span class="tk-k">else</span> {
+  console.<span class="tk-f">log</span>(<span class="tk-s">"❌ Test FAILED"</span>);
+}</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🤔 La pregunta</h3><p><code class="pill">statusCode === 200</code> se evalúa a <b>true</b> o <b>false</b> (¡los booleans del Acto 1!).</p></div>
+      <div class="card" style="margin-top:.9rem"><h3>✅ true → primer bloque</h3><p>❌ false → bloque del <code class="pill">else</code>. Nunca ambos.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🧪 ¿Te suena?</h3><p>Es tu <b>resultado esperado</b>: "SI el sistema muestra X, el test pasa; SI NO, falla". Llevas años escribiendo if/else en español.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Conecta con el boolean del Acto 1: la condición del if ES una expresión que produce true/false. El paralelo con "resultado esperado" de sus test cases es literal — toda aserción de Playwright es un if/else glorificado que decide PASSED o FAILED.</p></div>
+</section>
+
+<!-- 16 · Loops -->
+<section class="slide" data-act="Acto 2 · Lógica">
+  <div class="zoomline"><span>valor</span><span>variable</span><span>función</span><span class="on">lógica</span><span>archivo</span><span>repo</span></div>
+  <h2 data-anim="fade-up">Loops: <span class="grad-text">repetir sin sufrir</span> 🔁</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>El clásico: <code style="color:var(--purple)">for</code></h3>
+      <pre class="code">
+<span class="tk-k">for</span> (<span class="tk-k">let</span> i = <span class="tk-n">0</span>; i < <span class="tk-n">3</span>; i++) {
+  console.<span class="tk-f">log</span>(<span class="tk-s">"Intento #"</span> + i);
+}
+<span class="tk-c">// Intento #0, #1, #2</span></pre>
+      <p style="margin-top:.7rem;font-size:.95rem">Tres piezas: <b>inicio</b> (<code class="pill">i = 0</code>) · <b>condición</b> (<code class="pill">i < 3</code>: ¿sigo?) · <b>paso</b> (<code class="pill">i++</code>: suma 1).</p>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>El elegante: <code style="color:var(--purple)">for...of</code></h3>
+      <pre class="code">
+<span class="tk-k">const</span> users = [<span class="tk-s">"Ana"</span>, <span class="tk-s">"Luis"</span>, <span class="tk-s">"Mia"</span>];
+
+<span class="tk-k">for</span> (<span class="tk-k">const</span> user <span class="tk-k">of</span> users) {
+  <span class="tk-f">login</span>(user);
+}</pre>
+      <p style="margin-top:.7rem;font-size:.95rem">"Por cada user de la lista, haz login." Esto es <b>data-driven testing</b>: mismos pasos, N datos.</p>
+    </div>
+  </div>
+  <div class="notes"><p>No profundices en la sintaxis del for clásico todavía — la siguiente slide lo ejecuta paso a paso visualmente. El mensaje: loops convierten "ejecutar el mismo test con 50 usuarios" de una pesadilla manual a 3 líneas. for...of es el que más usarán.</p></div>
+</section>
+
+<!-- 17 · MEMORY VISUALIZER -->
+<section class="slide" data-act="Acto 2 · Lógica">
+  <div class="kicker">🧠 Visualizador de memoria</div>
+  <h2 data-anim="fade-up">El loop, <span class="grad-text">paso a paso</span></h2>
+  <div class="memviz" data-anim="fade-up">
+    <div>
+      <div class="mv-code" id="mv-code">
+        <div class="cl" data-l="1"><span class="tk-k">const</span> users = [<span class="tk-s">"Ana"</span>, <span class="tk-s">"Luis"</span>, <span class="tk-s">"Mia"</span>];</div>
+        <div class="cl" data-l="2"><span class="tk-k">for</span> (<span class="tk-k">let</span> i = <span class="tk-n">0</span>; i < users.length; i++) {</div>
+        <div class="cl" data-l="3">  console.<span class="tk-f">log</span>(<span class="tk-s">"Login de "</span> + users[i]);</div>
+        <div class="cl" data-l="4">}</div>
+      </div>
+      <div class="mv-ctrl">
+        <button id="mv-next">▶ Siguiente paso</button>
+        <button class="ghost" id="mv-reset">↺ Reiniciar</button>
+        <span class="mv-step" id="mv-stepn">paso 0 / 9</span>
+      </div>
+    </div>
+    <div class="mv-side">
+      <div class="mv-vars"><h4>📦 Memoria</h4><div id="mv-vars"><p style="font-size:.85rem;color:var(--text-3);margin:0">— vacía —</p></div></div>
+      <div class="mv-note" id="mv-note">Presiona "Siguiente paso" y mira cómo la máquina ejecuta línea por línea.</div>
+      <div class="mv-out" id="mv-out"><div class="ln" style="color:var(--text-3);font-style:italic">consola…</div></div>
+    </div>
+  </div>
+  <div class="notes"><p>La slide más importante del Acto 2. Avanza paso a paso PREGUNTANDO antes de cada click: "¿qué línea sigue? ¿cuánto vale i?". Los loops dejan de ser magia cuando VEN a i mutar 0→1→2→3 y la condición volverse false. Tómate tu tiempo: 5 minutos aquí valen oro.</p></div>
+</section>
+
+<!-- 18 · QUIZ 4 -->
+<section class="slide" data-act="Acto 2 · Lógica" style="align-items:center">
+  <div class="quiz" data-quiz="q4">
+    <div class="quiz-tag">⭐ QUIZ 4 · Condicionales y loops</div>
+    <h3 class="quiz-q">¿Qué imprime <code style="color:var(--cyan)">for (let i = 0; i < 3; i++) console.log(i)</code>?</h3>
+    <div class="quiz-opts">
+      <button class="opt" data-ok="1"><span class="key">A</span><span><code>0 1 2</code></span></button>
+      <button class="opt"><span class="key">B</span><span><code>1 2 3</code></span></button>
+      <button class="opt"><span class="key">C</span><span><code>0 1 2 3</code></span></button>
+    </div>
+    <div class="quiz-expl">💡 <code>i</code> empieza en <b>0</b> (los programadores cuentan desde cero) y el loop corre mientras <code>i < 3</code> — cuando i llega a 3, la condición es false y se detiene <b>sin</b> imprimir el 3.</div>
+  </div>
+  <div class="notes"><p>Acaban de VER esto en el visualizador, así que la tasa de acierto debería ser alta — refuerzo positivo. Si fallan, vuelve una slide y repite los pasos 2-3 del visualizador. "Contar desde cero" reaparece en arrays a continuación.</p></div>
+</section>
+
+<!-- 19 · Arrays -->
+<section class="slide" data-act="Acto 2 · Lógica">
+  <div class="zoomline"><span>valor</span><span>variable</span><span>función</span><span class="on">lógica</span><span>archivo</span><span>repo</span></div>
+  <h2 data-anim="fade-up">Arrays: <span class="grad-text">listas ordenadas</span> 📋</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-k">const</span> browsers = [<span class="tk-s">"chrome"</span>, <span class="tk-s">"firefox"</span>, <span class="tk-s">"safari"</span>];
+
+browsers[<span class="tk-n">0</span>]      <span class="tk-c">// "chrome"  ← ¡desde cero!</span>
+browsers[<span class="tk-n">2</span>]      <span class="tk-c">// "safari"</span>
+browsers.length  <span class="tk-c">// 3</span>
+
+browsers.<span class="tk-f">push</span>(<span class="tk-s">"edge"</span>);  <span class="tk-c">// agrega al final</span></pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🔢 Índice</h3><p>Cada posición tiene número, <b>empezando en 0</b>. El primero es <code class="pill">[0]</code>, no <code class="pill">[1]</code>.</p></div>
+      <div class="card" style="margin-top:.9rem"><h3>📏 .length</h3><p>Cuántos elementos hay. Lo usaste en el loop: <code class="pill">i < users.length</code>.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🧪 En testing</h3><p>Una <b>columna de tu tabla de test data</b>: lista de emails, de browsers, de roles a probar.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>El índice desde cero ya lo vieron dos veces (loop, quiz) — tercera exposición, ya debería asentarse. push es el único método que muestro: suficiente para armar datos. La analogía columna-de-test-data prepara la siguiente slide donde objetos = fila completa.</p></div>
+</section>
+
+<!-- 20 · Objetos -->
+<section class="slide" data-act="Acto 2 · Lógica">
+  <div class="zoomline"><span>valor</span><span>variable</span><span>función</span><span class="on">lógica</span><span>archivo</span><span>repo</span></div>
+  <h2 data-anim="fade-up">Objetos: <span class="grad-text">fichas con campos</span> 🗂️</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-k">const</span> user = {
+  email: <span class="tk-s">"ana@qa.com"</span>,
+  password: <span class="tk-s">"secreto123"</span>,
+  role: <span class="tk-s">"admin"</span>,
+  active: <span class="tk-b">true</span>,
+};
+
+user.email   <span class="tk-c">// "ana@qa.com"</span>
+user.role    <span class="tk-c">// "admin"</span></pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🏷️ Propiedades</h3><p>Pares <b>nombre: valor</b>. Como un formulario relleno: cada campo tiene etiqueta y contenido.</p></div>
+      <div class="card" style="margin-top:.9rem"><h3>📍 El punto</h3><p><code class="pill">user.email</code> = "del objeto user, dame email". Lo verás MIL veces: <code class="pill">page.click</code> es exactamente esto.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🧪 Combo final</h3><p>Array de objetos = <b>tu tabla de test data completa</b>: cada objeto una fila, cada propiedad una columna.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>EL insight de esta slide: el punto de user.email es el MISMO punto de page.click() y expect().toBeVisible(). Cuando lleguen a Playwright ya habrán usado esa sintaxis 20 veces. Array de objetos = tabla de test data: cierra el círculo con su mundo conocido.</p></div>
+</section>
+
+<!-- 21 · LIVE CELL 3 -->
+<section class="slide" data-act="Acto 2 · Lógica">
+  <div class="kicker">🎮 Playground en vivo</div>
+  <h2 data-anim="fade-up">Todo junto: <span class="grad-text">datos + loop</span></h2>
+  <div class="livecell" data-anim="fade-up">
+    <div class="lc-bar"><span class="lc-name">test-data.js — editable</span>
+      <button class="lc-reset">↺ Reset</button><button class="lc-run">▶ Ejecutar</button></div>
+    <div class="lc-editor"><pre class="lc-hl"></pre><textarea spellcheck="false">const users = [
+  { name: "Ana", role: "admin" },
+  { name: "Luis", role: "viewer" },
+];
+
+for (const u of users) {
+  if (u.role === "admin") {
+    console.log(u.name + " puede borrar proyectos 🔑");
+  } else {
+    console.log(u.name + " solo puede mirar 👀");
+  }
+}
+
+// Reto: agrega un tercer usuario con role "editor"
+//       y dale su propio mensaje con else if</textarea></div>
+    <div class="lc-console"><div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div></div>
+  </div>
+  <div class="notes"><p>Este playground integra TODO el acto: array + objetos + for...of + if/else + comparación. Díselos explícitamente: "hace 30 minutos no podían leer esto; ahora pueden escribirlo". El reto introduce else if naturalmente. Es además un mini test RBAC real — admin vs viewer es exactamente lo que se prueba en apps multi-rol.</p></div>
+</section>
+
+<!-- 22 · QUIZ 5 -->
+<section class="slide" data-act="Acto 2 · Lógica" style="align-items:center">
+  <div class="quiz" data-quiz="q5">
+    <div class="quiz-tag">⭐ QUIZ 5 · Arrays y objetos</div>
+    <h3 class="quiz-q">¿Qué imprime este código?</h3>
+    <pre class="code" style="margin-bottom:1.3rem">
+<span class="tk-k">const</span> fruits = [<span class="tk-s">"uva"</span>, <span class="tk-s">"kiwi"</span>, <span class="tk-s">"mango"</span>];
+console.<span class="tk-f">log</span>(fruits[<span class="tk-n">1</span>]);</pre>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span><code>"uva"</code> — el primero</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span><code>"kiwi"</code> — índice 1 = segunda posición</span></button>
+      <button class="opt"><span class="key">C</span><span><code>"mango"</code> — el último</span></button>
+    </div>
+    <div class="quiz-expl">💡 Los arrays cuentan desde <b>0</b>: <code>fruits[0]</code> es "uva", <code>fruits[1]</code> es "kiwi". Error clásico de todo principiante (y de varios seniors a las 6pm).</div>
+  </div>
+  <div class="notes"><p>Cuarta exposición al índice-desde-cero. A esta altura deberían acertar casi todos — celebra el progreso del score. Cierra el Acto 2: "ya tienen TODA la lógica que un test necesita". Buen punto para pausa de 5 minutos si la sesión es de 2 horas.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 3 · TYPESCRIPT + ASYNC -->
+<!-- ================================================================ -->
+
+<!-- 23 · TypeScript -->
+<section class="slide" data-act="Acto 3 · TypeScript + async">
+  <div class="kicker">Nivel siguiente</div>
+  <h2 data-anim="fade-up">TypeScript = JavaScript + <span class="grad-text">red de seguridad</span> 🛡️</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <div class="code-window">
+        <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">login.ts — Visual Studio Code</span></div>
+        <pre class="code">
+<span class="tk-k">function</span> <span class="tk-f">login</span>(email: <span class="tk-k">string</span>, password: <span class="tk-k">string</span>) {
+  <span class="tk-c">// ...</span>
+}
+
+<span class="tk-f">login</span>(<span class="tk-s">"ana@qa.com"</span>, <span class="ts-squiggle"><span class="tk-n">12345</span></span>);</pre>
+      </div>
+      <div class="ts-tooltip">⛔ Argument of type 'number' is not assignable to parameter of type 'string'.<span class="tt-dim">login.ts(5, 22) — ts(2345)</span></div>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🏷️ Tipos explícitos</h3><p><code class="pill">email: string</code> declara qué tipo acepta cada parámetro. El contrato queda escrito.</p></div>
+      <div class="card" style="margin-top:.9rem"><h3>⚡ Error ANTES de ejecutar</h3><p>El subrayado rojo aparece <b>mientras escribes</b> — no en producción, no en el test run de las 3am.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🧪 ¿Te suena el concepto?</h3><p>Encontrar el defecto lo más temprano posible… <b>TypeScript es shift-left para tu propio código.</b> 😉</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Frame ganador: TypeScript no es "JS más difícil", es JS con un revisor automático. La conexión con shift-left les llega directo — detectan el bug en la fase más barata. El subrayado rojo de la slide es idéntico al que verán en VS Code. Bonus: los tipos alimentan el autocompletado, su mejor amigo al empezar.</p></div>
+</section>
+
+<!-- 24 · Tipos en práctica -->
+<section class="slide" data-act="Acto 3 · TypeScript + async">
+  <h2 data-anim="fade-up">Tipos que usarás <span class="grad-text">desde el día 1</span></h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <pre class="code big">
+<span class="tk-k">const</span> email: <span class="tk-k">string</span> = <span class="tk-s">"ana@qa.com"</span>;
+<span class="tk-k">const</span> retries: <span class="tk-k">number</span> = <span class="tk-n">3</span>;
+<span class="tk-k">const</span> passed: <span class="tk-k">boolean</span> = <span class="tk-b">true</span>;
+
+<span class="tk-k">interface</span> User {
+  email: <span class="tk-k">string</span>;
+  role: <span class="tk-s">"admin"</span> | <span class="tk-s">"viewer"</span>;
+}</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>📐 Anotación</h3><p><code class="pill">: tipo</code> después del nombre. La mayoría de veces TypeScript lo <b>deduce solo</b> y ni lo escribes.</p></div>
+      <div class="card" style="margin-top:.9rem"><h3>📋 interface</h3><p>El "plano" de un objeto: qué campos y de qué tipo. Tu test data con contrato.</p></div>
+      <div class="card" style="margin-top:.9rem"><h3>🚧 Union: <code style="font-size:.85em">"admin" | "viewer"</code></h3><p>Solo estos valores exactos. Escribes <code class="pill">"admni"</code> → error al instante. Adiós typos silenciosos.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>No memorizar sintaxis — reconocerla al leerla. La inferencia es importante para bajar ansiedad: casi nunca anotan tipos a mano al empezar. El union type es el ejemplo más QA-friendly: un typo en un rol o un status es un bug que TypeScript mata gratis.</p></div>
+</section>
+
+<!-- 25 · async/await -->
+<section class="slide" data-act="Acto 3 · TypeScript + async">
+  <h2 data-anim="fade-up">async / await: <span class="grad-text">saber esperar</span> ⏳</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>El problema</h3>
+      <p>La web es <b>lenta</b>: la página carga, el servidor responde, la animación termina… Tu código corre en <b>milisegundos</b>; la web responde en <b>segundos</b>.</p>
+      <pre class="code" style="margin-top:.8rem">
+<span class="tk-c">// 🤖💥 robot impaciente (SIN await):</span>
+page.<span class="tk-f">goto</span>(<span class="tk-s">"https://app.com/login"</span>);
+page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
+<span class="tk-c">// click sobre una página que AÚN NO CARGÓ ❌</span></pre>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>La solución</h3>
+      <pre class="code">
+<span class="tk-k">async</span> <span class="tk-k">function</span> <span class="tk-f">runTest</span>() {
+  <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"https://app.com/login"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
+}</pre>
+      <div class="card" style="margin-top:.9rem"><p><code class="pill">await</code> = "espera a que esto <b>termine</b> antes de seguir".<br><code class="pill">async</code> = "esta función contiene esperas".</p></div>
+      <div class="callout" style="margin-top:.9rem"><span class="co-ico">📜</span><p><b>Regla de oro Playwright:</b> casi toda acción lleva <code>await</code>. Olvidarlo = tests intermitentes (flaky).</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>NO expliques promesas ni event loop — agujero negro innecesario hoy. El modelo mental del robot impaciente basta: la máquina es más rápida que la web y hay que frenarla. Regla mecánica: acción de Playwright → await adelante; función con awaits → async adelante. El 90% de tests flaky de principiante = un await olvidado.</p></div>
+</section>
+
+<!-- 26 · QUIZ 6 -->
+<section class="slide" data-act="Acto 3 · TypeScript + async" style="align-items:center">
+  <div class="quiz" data-quiz="q6">
+    <div class="quiz-tag">⭐ QUIZ 6 · TypeScript + async</div>
+    <h3 class="quiz-q">¿Por qué escribimos <code style="color:var(--cyan)">await page.click("#save-btn")</code>?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Decoración — el test corre igual sin await</span></button>
+      <button class="opt"><span class="key">B</span><span>Hace que el click sea más rápido</span></button>
+      <button class="opt" data-ok="1"><span class="key">C</span><span>El click tarda — el código debe <b>esperar a que termine</b> antes de seguir</span></button>
+    </div>
+    <div class="quiz-expl">💡 Sin <code>await</code>, el código sigue corriendo sin esperar el click → el siguiente paso actúa sobre una página a medio cambiar → test <b>flaky</b> (a veces pasa, a veces no). El await olvidado es la causa #1 de tests intermitentes.</div>
+  </div>
+  <div class="notes"><p>La opción A es la trampa peligrosa: sin await a veces SÍ funciona (por suerte de timing) y por eso el bug es traicionero. Introduce la palabra "flaky" aquí — la van a escuchar toda su carrera. Fin del Acto 3: ya tienen todas las piezas del idioma.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 4 · TU PRIMER TEST -->
+<!-- ================================================================ -->
+
+<!-- 27 · Anatomía del test -->
+<section class="slide" data-act="Acto 4 · Tu primer test">
+  <div class="zoomline"><span>valor</span><span>variable</span><span>función</span><span>lógica</span><span class="on">archivo</span><span>repo</span></div>
+  <h2 data-anim="fade-up">Anatomía de un test real — <span class="grad-text">ya conoces cada pieza</span></h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <div class="code-window">
+        <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">login.spec.ts</span></div>
+        <pre class="code">
+<span class="tk-k">import</span> { test, expect } <span class="tk-k">from</span> <span class="tk-s">"@playwright/test"</span>;
+
+<span class="tk-f">test</span>(<span class="tk-s">"login exitoso"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"https://app.com/login"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#email"</span>, <span class="tk-s">"ana@qa.com"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#password"</span>, <span class="tk-s">"secreto123"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
+
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">"#welcome"</span>)).<span class="tk-f">toBeVisible</span>();
+});</pre>
+      </div>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>📦 import</h3><p>"Tráeme las herramientas <code class="pill">test</code> y <code class="pill">expect</code> de la caja Playwright."</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>🧪 test("…", async … )</h3><p>¡Una <b>función</b> que recibe el nombre del caso… y otra función con los pasos! Sí: las funciones viajan como valores.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>🤖 page.fill / page.click</h3><p>Funciones con parámetros (Acto 2) + el punto de objetos (Acto 2) + await (Acto 3).</p></div>
+      <div class="card hl" style="margin-top:.75rem"><h3>✅ expect(...).toBeVisible()</h3><p>Tu <b>resultado esperado</b> hecho código. Si no se cumple → test FAILED.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Slide cumbre: recorre el código línea por línea preguntando "¿qué reconocen aquí?" — strings, funciones, params, el punto, async/await: TODO visto. Único concepto nuevo: pasar una función como argumento a test(); no lo teorices, di "le entregamos al runner los pasos para que los ejecute cuando toque". El expect es su resultado esperado de toda la vida.</p></div>
+</section>
+
+<!-- 28 · Locators -->
+<section class="slide" data-act="Acto 4 · Tu primer test">
+  <h2 data-anim="fade-up">Locators: <span class="grad-text">cómo el robot "ve"</span> 👁️</h2>
+  <table class="cmp" data-stagger>
+    <tr><th>Tú ves…</th><th>Playwright necesita…</th></tr>
+    <tr><td>"el campo de email"</td><td><code>page.fill("#email", …)</code> — por su <b>id</b> (#)</td></tr>
+    <tr><td>"el botón azul de Login"</td><td><code>page.getByRole("button", { name: "Login" })</code> — por su rol visible</td></tr>
+    <tr><td>"el mensaje de bienvenida"</td><td><code>page.locator("#welcome")</code> — apunta al elemento, listo para verificar</td></tr>
+  </table>
+  <div class="callout info" data-anim="fade-up"><span class="co-ico">🕵️</span><p>Cada elemento de una página tiene "dirección": su <b>selector</b>. Encontrarla es destreza detective de QA — y la vas a practicar AHORA mismo.</p></div>
+  <div class="notes"><p>Concepto puente: el robot no ve píxeles, ve el árbol HTML, y el selector es la dirección postal del elemento. Hoy usamos ids (#email) por simplicidad; menciona que getByRole es la práctica profesional moderna y la verán en la sesión hands-on. Transición directa al playground de inspección.</p></div>
+</section>
+
+<!-- 29 · PLAYGROUND inspección -->
+<section class="slide" data-act="Acto 4 · Tu primer test">
+  <div class="kicker">🎮 Playground · Modo detective</div>
+  <h2 data-anim="fade-up">Inspecciona la app — <span class="grad-text">pasa el mouse</span> 🔍</h2>
+  <div class="playground">
+    <div class="app-frame" id="inspect-frame">
+      <div class="af-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="af-url">https://bunkai-bank.test/login</span></div>
+      <div class="app-body">
+        <div class="app-card">
+          <h4>🏦 Bunkai Bank</h4>
+          <p class="app-sub">Acceso a tu cuenta</p>
+          <label>Email</label><input id="email" type="text" placeholder="tu@email.com">
+          <label>Password</label><input id="password" type="password" placeholder="••••••••">
+          <button class="app-login" id="login-btn">Entrar</button>
+          <div class="app-msg ok" id="welcome">✅ ¡Bienvenida, Ana!</div>
+          <div class="app-msg bad" id="error-msg">❌ Credenciales inválidas</div>
+        </div>
+      </div>
+      <div class="inspect-tip" id="inspect-tip"></div>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>1️⃣ Activa el modo inspección</h3><p style="margin-bottom:.8rem">Y pasa el mouse sobre la mini-app.</p>
+        <button class="toggle-inspect" id="toggle-inspect">🔍 Modo inspección: OFF</button></div>
+      <div class="card" style="margin-top:.9rem"><h3>2️⃣ Misión</h3><p>Encuentra el selector del campo email, del password y del botón. <b>Apúntalos</b>: los usarás en la próxima slide.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>💡 En la vida real</h3><p>Esto mismo se hace con <b>DevTools</b> (click derecho → Inspeccionar) o con el inspector de Playwright.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Momento lúdico: activa el modo inspección y deja que la audiencia te dirija. El tooltip naranja muestra el selector de cada elemento (#email, #password, #login-btn, #welcome). Pídeles anotar los selectores — en la siguiente slide los usan de verdad. La app también funciona: pueden tipear y hacer login manual (ana@qa.com / secreto123).</p></div>
+</section>
+
+<!-- 30 · PLAYGROUND simulador -->
+<section class="slide" data-act="Acto 4 · Tu primer test">
+  <div class="kicker">🎮 Playground · El gran momento</div>
+  <h2 data-anim="fade-up">Tu primer test, <span class="grad-text">ejecutándose en vivo</span> 🤖</h2>
+  <div class="playground">
+    <div class="app-frame" id="sim-frame">
+      <div class="af-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="af-url">https://bunkai-bank.test/login</span></div>
+      <div class="app-body">
+        <div class="app-card">
+          <h4>🏦 Bunkai Bank</h4>
+          <p class="app-sub">Acceso a tu cuenta</p>
+          <label>Email</label><input id="s-email" data-sel="#email" type="text" placeholder="tu@email.com">
+          <label>Password</label><input id="s-password" data-sel="#password" type="password" placeholder="••••••••">
+          <button class="app-login" id="s-login-btn" data-sel="#login-btn">Entrar</button>
+          <div class="app-msg ok" id="s-welcome" data-sel="#welcome">✅ ¡Bienvenida, Ana!</div>
+          <div class="app-msg bad" id="s-error-msg" data-sel="#error-msg">❌ Credenciales inválidas</div>
+        </div>
+      </div>
+      <svg class="ghost-cursor" id="ghost-cursor" viewBox="0 0 24 24" fill="#ffd166" stroke="#1d2540" stroke-width="1.4"><path d="M5 2 L5 19 L9.5 15.5 L12.5 21.5 L15 20 L12 14.5 L18 14 Z"/></svg>
+    </div>
+    <div class="sim-right">
+      <div class="livecell" style="flex:0 0 auto">
+        <div class="lc-bar"><span class="lc-name">mi-primer-test.spec.ts</span>
+          <button class="lc-reset" id="sim-reset">↺ Reset</button><button class="lc-run" id="sim-run">▶ Ejecutar test</button></div>
+        <div class="lc-editor" style="min-height:190px"><pre class="lc-hl" id="sim-hl"></pre><textarea id="sim-src" spellcheck="false">test("login exitoso", async ({ page }) => {
+  await page.fill("#email", "ana@qa.com");
+  await page.fill("#password", "secreto123");
+  await page.click("#login-btn");
+  await expect(page.locator("#welcome")).toBeVisible();
+});</textarea></div>
+      </div>
+      <div class="sim-log" id="sim-log"><div class="ln" style="color:var(--text-3);font-style:italic">▶ Ejecuta el test y mira el cursor fantasma…</div></div>
+      <div class="sim-banner" id="sim-banner"></div>
+    </div>
+  </div>
+  <div class="notes"><p>EL momento wow de la clase — no lo apures. Ejecuta el script tal cual: el cursor fantasma se mueve, tipea y clickea; el expect pasa en verde. Luego ROMPE el test en vivo: cambia la password a "incorrecta" y re-ejecuta → aparece el error y el banner FAILED. Lección: el test no "se rompió" — ENCONTRÓ algo. Eso es exactamente su trabajo. Invita a alguien a dictar otra variación (email vacío, expect del #error-msg…).</p></div>
+</section>
+
+<!-- 31 · QUIZ 7 -->
+<section class="slide" data-act="Acto 4 · Tu primer test" style="align-items:center">
+  <div class="quiz" data-quiz="q7">
+    <div class="quiz-tag">⭐ QUIZ 7 · Anatomía Playwright</div>
+    <h3 class="quiz-q">¿Qué hace <code style="color:var(--cyan)">await page.fill("#email", "ana@qa.com")</code>?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Hace click en el campo email</span></button>
+      <button class="opt"><span class="key">B</span><span>Verifica que el campo contiene ese texto</span></button>
+      <button class="opt" data-ok="1"><span class="key">C</span><span>Escribe <code>"ana@qa.com"</code> dentro del elemento con id <code>email</code></span></button>
+    </div>
+    <div class="quiz-expl">💡 <code>fill</code> = rellenar: primer argumento el <b>selector</b> (dónde), segundo el <b>texto</b> (qué). Verificar contenido sería <code>expect(...).toHaveValue(...)</code> — las acciones actúan, los <b>expect</b> verifican.</div>
+  </div>
+  <div class="notes"><p>Refuerza la distinción acciones (goto, fill, click — hacen cosas) vs aserciones (expect — verifican cosas). Un test = acciones que llevan la app a un estado + aserciones que comprueban el resultado esperado. Esa estructura es universal en cualquier framework de pruebas.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 5 · VISTA SATELITAL -->
+<!-- ================================================================ -->
+
+<!-- 32 · Zoom final -->
+<section class="slide" data-act="Acto 5 · Vista satelital">
+  <div class="zoomline"><span>valor</span><span>variable</span><span>función</span><span>lógica</span><span>archivo</span><span class="on">repo</span></div>
+  <h2 data-anim="fade-up">Zoom final: <span class="grad-text">del átomo al repositorio</span> 🛰️</h2>
+  <div class="cols">
+    <div class="tree" data-stagger>
+      <div><span class="tr-dir">mi-proyecto/</span></div>
+      <div>├─ <span class="tr-file">package.json</span> <span class="tr-c">← la "cédula": nombre, dependencias, comandos</span></div>
+      <div>├─ <span class="tr-file">playwright.config.ts</span> <span class="tr-c">← configuración: browsers, URL base, timeouts</span></div>
+      <div>├─ <span class="tr-dir">node_modules/</span> <span class="tr-c">← las herramientas instaladas (no se toca)</span></div>
+      <div>└─ <span class="tr-dir">tests/</span></div>
+      <div>&nbsp;&nbsp;&nbsp;├─ <span class="tr-star">login.spec.ts</span> <span class="tr-c">← ⭐ tu test vive aquí</span></div>
+      <div>&nbsp;&nbsp;&nbsp;└─ <span class="tr-file">signup.spec.ts</span> <span class="tr-c">← cada feature, su archivo</span></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.3s">
+      <div class="card hl"><h3>🔭 El viaje completo</h3>
+        <p style="font-family:var(--font-mono);font-size:.86rem;line-height:2.1">
+        <span style="color:var(--green)">"Ana"</span> — un valor<br>
+        ↳ <span style="color:var(--cyan)">const email</span> — con nombre<br>
+        ↳ <span style="color:var(--blue)">login(email, pass)</span> — dentro de una función<br>
+        ↳ <span style="color:var(--purple)">if / for</span> — con lógica<br>
+        ↳ <span style="color:var(--yellow)">login.spec.ts</span> — en un archivo<br>
+        ↳ <span style="color:var(--orange)">tests/</span> — en una carpeta<br>
+        ↳ <span style="color:var(--red)">mi-proyecto/</span> — en un repositorio 🎉</p></div>
+      <p style="margin-top:1rem">Un repo es solo <b>carpetas y archivos organizados</b>. Nada de magia: cada nivel lo construiste hoy.</p>
+    </div>
+  </div>
+  <div class="notes"><p>Cierre del arco del zoom-out: recorre la columna derecha de abajo hacia arriba o de arriba a abajo y muestra que CADA nivel lo construyeron en la sesión. Del árbol solo importan tres cosas: package.json (la cédula), tests/ (donde escriben) y config. node_modules se instala solo y no se toca. Spec = especificación: cada archivo .spec.ts especifica el comportamiento esperado de una feature.</p></div>
+</section>
+
+<!-- 33 · Ejecutar y leer resultados -->
+<section class="slide" data-act="Acto 5 · Vista satelital">
+  <h2 data-anim="fade-up">Ejecutar y <span class="grad-text">leer el veredicto</span> 🏁</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>✅ Cuando todo pasa</h3>
+      <div class="term"><div class="term-bar"><span class="dot" style="background:#f7768e"></span><span class="dot" style="background:#e0af68"></span><span class="dot" style="background:#9ece6a"></span></div>
+      <pre><span class="t-cyan">$</span> npx playwright test
+
+Running 1 test using 1 worker
+
+  <span class="t-green">✓</span> login.spec.ts:3 › login exitoso <span class="t-dim">(2.1s)</span>
+
+  <span class="t-green">1 passed</span> <span class="t-dim">(2.5s)</span></pre></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>❌ Cuando algo falla — lee con calma</h3>
+      <div class="term"><div class="term-bar"><span class="dot" style="background:#f7768e"></span><span class="dot" style="background:#e0af68"></span><span class="dot" style="background:#9ece6a"></span></div>
+      <pre>  <span class="t-red">✗</span> login.spec.ts:3 › login exitoso
+
+  <span class="t-red">Error: expect(locator).toBeVisible()</span>
+  Locator: locator(<span class="t-yellow">"#welcome"</span>)
+  Expected: <span class="t-green">visible</span>
+  Received: <span class="t-red">hidden</span>
+    <span class="t-dim">at login.spec.ts:8:48</span></pre></div>
+      <p style="margin-top:.7rem;font-size:.95rem">El error te dice <b>qué</b> esperaba, <b>qué</b> encontró y <b>en qué línea</b>. Leer errores con calma = tu superpoder QA.</p>
+    </div>
+  </div>
+  <div class="notes"><p>Desactiva el pánico al rojo: el error de Playwright es un reporte de bug bien escrito — expected vs received más la línea exacta. Ellos LEEN reportes de bugs todos los días; esto es lo mismo. Un test que falla puede significar bug encontrado (¡victoria!) o test mal escrito — distinguir ambos es el oficio que practicarán en hands-on.</p></div>
+</section>
+
+<!-- 34 · QUIZ 8 -->
+<section class="slide" data-act="Acto 5 · Vista satelital" style="align-items:center">
+  <div class="quiz" data-quiz="q8">
+    <div class="quiz-tag">⭐ QUIZ 8 · El integrador final</div>
+    <h3 class="quiz-q">A este test le falta UNA palabra. ¿Cuál?</h3>
+    <pre class="code" style="margin-bottom:1.3rem">
+<span class="tk-f">test</span>(<span class="tk-s">"guardar cambios"</span>, <span class="tk-k">async</span> ({ page }) => {
+  page.<span class="tk-f">click</span>(<span class="tk-s">"#save-btn"</span>);   <span class="tk-c">// ⚠️ algo falta aquí…</span>
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">"#saved-msg"</span>)).<span class="tk-f">toBeVisible</span>();
+});</pre>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span><code>return</code> antes de <code>page.click</code></span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span><code>await</code> antes de <code>page.click</code> — hay que esperar el click</span></button>
+      <button class="opt"><span class="key">C</span><span><code>const</code> antes de <code>page.click</code></span></button>
+    </div>
+    <div class="quiz-expl">💡 Sin <code>await</code>, el test NO espera el click y corre directo al <code>expect</code> → el mensaje aún no existe → falla intermitente (flaky). Acabas de diagnosticar el bug más común de la automatización. <b>Bienvenida/o al oficio.</b> 🎓</div>
+  </div>
+  <div class="notes"><p>Quiz final integrador: diagnostican un bug REAL de código de automatización — el await faltante que produce flakiness. Si la mayoría acierta, la clase cumplió su objetivo. Conecta con el quiz 6: misma causa, ahora ELLOS la detectan en código ajeno.</p></div>
+</section>
+
+<!-- 35 · Cierre -->
+<section class="slide" data-act="Acto 5 · Vista satelital" style="align-items:center;text-align:center">
+  <div class="kicker" data-anim="fade-up">Misión cumplida</div>
+  <h2 data-anim="fade-up" style="animation-delay:.1s">Tu puntaje final</h2>
+  <div id="final-score" data-anim="pop">— / 8</div>
+  <p id="final-msg" data-anim="fade-up" style="animation-delay:.25s;max-width:560px"></p>
+  <div class="cards c3" data-stagger style="margin-top:1.6rem;max-width:1000px">
+    <div class="card"><div class="ico">1️⃣</div><h3>Instala el kit</h3><p>VS Code + Node.js. 10 minutos, gratis.</p></div>
+    <div class="card"><div class="ico">2️⃣</div><h3>Crea tu proyecto</h3><p><code class="pill">npm init playwright@latest</code><br>y el árbol de la slide 32 aparece solo.</p></div>
+    <div class="card hl"><div class="ico">3️⃣</div><h3>Sesión hands-on</h3><p>Escribimos tests reales <b>juntos</b>, contra una app de verdad. Trae tu laptop. 🚀</p></div>
+  </div>
+  <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.4rem;color:var(--text-3);font-size:.95rem">Hoy: valores → variables → funciones → lógica → TypeScript → async → tu primer test. <b style="color:var(--text-2)">Ya hablas el idioma.</b></p>
+  <div class="notes"><p>Lee el puntaje grupal y celebra sin importar el número — el score mide participación, no aptitud. Cierra con el mapa del viaje completo en una frase. Anuncia fecha/formato de la sesión hands-on y los 2 prerequisitos (VS Code + Node instalados). Comparte este archivo HTML: los playgrounds funcionan offline y pueden re-practicar solos en casa.</p></div>
+</section>
+
+<script>
+/* ================================================================
+   RUNTIME — navegación, quizzes, playgrounds. Sin dependencias.
+   ================================================================ */
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* simple syntax highlighter (escaped input) */
+function hl(src){
+  return esc(src).replace(
+    /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|of|while|async|await|import|from|export|new|interface|type|class|string|number|boolean)\b|\b(true|false|null|undefined)\b|\b(\d+(?:\.\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()/g,
+    function(m,c,s,k,b,n,f){
+      if(c) return '<span class="tk-c">'+c+'</span>';
+      if(s) return '<span class="tk-s">'+s+'</span>';
+      if(k) return '<span class="tk-k">'+k+'</span>';
+      if(b) return '<span class="tk-b">'+b+'</span>';
+      if(n) return '<span class="tk-n">'+n+'</span>';
+      if(f) return '<span class="tk-f">'+f+'</span>';
+      return m;
+    });
+}
+
+/* ---------- slide navigation ---------- */
+const slides = $$('.slide');
+const N = slides.length;
+let cur = 0;
+const progress = $('#progress'), counter = $('#counter'), actLabel = $('#act-label');
+const drawer = $('#notes-drawer'), ndContent = $('#nd-content');
+
+function go(i){
+  cur = Math.max(0, Math.min(N-1, i));
+  slides.forEach((s,k)=> s.classList.toggle('is-active', k===cur));
+  progress.style.width = ((cur+1)/N*100) + '%';
+  counter.textContent = (cur+1) + ' / ' + N;
+  actLabel.textContent = slides[cur].dataset.act || '';
+  history.replaceState(null,'','#/'+(cur+1));
+  const notes = $('.notes', slides[cur]);
+  ndContent.innerHTML = notes ? notes.innerHTML : '<p>(sin notas para esta slide)</p>';
+  if(cur === N-1) renderFinal();
+  /* re-fit editors now that the slide is visible (hidden slides report height 0) */
+  requestAnimationFrame(()=>{ $$('textarea', slides[cur]).forEach(t=>{ if(t.__fit) t.__fit(); }); });
+}
+const fromHash = ()=>{ const m = location.hash.match(/^#\/(\d+)/); go(m ? parseInt(m[1],10)-1 : 0); };
+window.addEventListener('hashchange', fromHash);
+
+document.addEventListener('keydown', e=>{
+  const t = e.target;
+  if(t && (t.tagName==='TEXTAREA' || t.tagName==='INPUT')) return;
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown') { e.preventDefault(); go(cur+1); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp') { e.preventDefault(); go(cur-1); }
+  else if(e.key==='Home') go(0);
+  else if(e.key==='End') go(N-1);
+  else if(e.key==='f'||e.key==='F'){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+  else if(e.key==='n'||e.key==='N'||e.key==='s'||e.key==='S') drawer.classList.toggle('open');
+  else if(e.key==='Escape') drawer.classList.remove('open');
+});
+
+/* ---------- confetti ---------- */
+const cv = $('#confetti-canvas'), cx = cv.getContext('2d');
+let parts = [], rafC = null;
+function sizeCanvas(){ cv.width = innerWidth; cv.height = innerHeight; }
+sizeCanvas(); window.addEventListener('resize', sizeCanvas);
+const COLORS = ['#7aa2f7','#bb9af7','#7dcfff','#9ece6a','#ff9e64','#e0af68','#f7768e'];
+function confetti(x, y, n){
+  for(let i=0;i<(n||70);i++){
+    const a = Math.PI*2*Math.random(), v = 3+Math.random()*7;
+    parts.push({x:x, y:y, vx:Math.cos(a)*v, vy:Math.sin(a)*v-3, g:.22, life:1, d:.012+Math.random()*.012,
+      c:COLORS[(Math.random()*COLORS.length)|0], r:3+Math.random()*4, rot:Math.random()*Math.PI});
+  }
+  if(!rafC) tick();
+}
+function tick(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts = parts.filter(p=>p.life>0);
+  for(const p of parts){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.life-=p.d; p.rot+=.08;
+    cx.save(); cx.globalAlpha=Math.max(p.life,0); cx.translate(p.x,p.y); cx.rotate(p.rot);
+    cx.fillStyle=p.c; cx.fillRect(-p.r,-p.r/2,p.r*2,p.r); cx.restore();
+  }
+  rafC = parts.length ? requestAnimationFrame(tick) : null;
+}
+
+/* ---------- quiz engine ---------- */
+const TOTAL_Q = $$('.quiz').length;
+const answered = {};           // quizId -> true once first attempt made
+let score = 0;
+/* ---------- quiz score persistence ---------- */
+const SCORE_KEY = 'coding-base.es.html-score:' + location.pathname;
+let qstate = { q:{}, score:0 };
+try { const _s = JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); if(_s && typeof _s === 'object'){ qstate.q = _s.q || {}; qstate.score = _s.score || 0; } } catch(e){ qstate = { q:{}, score:0 }; }
+score = qstate.score;
+function saveQuiz(){ qstate.score = score; try { localStorage.setItem(SCORE_KEY, JSON.stringify(qstate)); } catch(e){} }
+const chip = $('#score-chip');
+function updateChip(){
+  chip.textContent = '⭐ ' + score + '/' + TOTAL_Q;
+  chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump');
+}
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz;
+  $$('.opt', qz).forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const ok = btn.dataset.ok === '1';
+      const first = !answered[id];
+      if(first) answered[id] = true;
+      if(ok){
+        btn.classList.add('correct');
+        qz.classList.add('locked');
+        $('.quiz-expl', qz).classList.add('show');
+        const r = btn.getBoundingClientRect();
+        confetti(r.left + r.width/2, r.top + r.height/2, 80);
+        if(first){ score++; updateChip(); }
+      } else {
+        btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong');
+      }
+      qstate.q[id] = { a:true, c: ok || (qstate.q[id] && qstate.q[id].c) || false };
+      saveQuiz();
+    });
+  });
+});
+/* ---------- restore answered quizzes on load (no confetti) ---------- */
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz, st = qstate.q[id];
+  if(!st) return;
+  if(st.a) answered[id] = true;
+  if(st.c){
+    const okBtn = $('.opt[data-ok="1"]', qz);
+    if(okBtn) okBtn.classList.add('correct');
+    qz.classList.add('locked');
+    const ex = $('.quiz-expl', qz);
+    if(ex) ex.classList.add('show');
+  }
+});
+
+function renderFinal(){
+  $('#final-score').textContent = score + ' / ' + TOTAL_Q;
+  const pct = score/TOTAL_Q;
+  $('#final-msg').textContent =
+    pct === 1 ? '¡Perfecto! Naciste para esto. La sesión hands-on te va a quedar corta. 🏆' :
+    pct >= .75 ? '¡Excelente! Tienes las bases firmes — a la sesión hands-on llegas con ventaja. 💪' :
+    pct >= .5 ? 'Muy buen arranque. Repasa los quizzes fallados con este mismo archivo y llegas lista/o al hands-on. 👍' :
+    'Lo importante: ahora RECONOCES el código. Re-juega los playgrounds de este archivo en casa — la segunda pasada todo encaja. 🌱';
+  setTimeout(()=>{ confetti(innerWidth/2, innerHeight*0.32, 140); }, 450);
+}
+
+/* ---------- cover FX: constellation ---------- */
+(function(){
+  const c = $('#fx-cover'); if(!c) return;
+  const ctx = c.getContext('2d');
+  let pts = [], raf = null;
+  function size(){ c.width = c.offsetWidth; c.height = c.offsetHeight; }
+  function init(){
+    size();
+    pts = Array.from({length:70}, ()=>({
+      x:Math.random()*c.width, y:Math.random()*c.height,
+      vx:(Math.random()-.5)*.45, vy:(Math.random()-.5)*.45, r:1+Math.random()*1.8}));
+  }
+  function frame(){
+    if(!slides[0].classList.contains('is-active')){ raf=null; return; }
+    ctx.clearRect(0,0,c.width,c.height);
+    for(const p of pts){
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>c.width) p.vx*=-1;
+      if(p.y<0||p.y>c.height) p.vy*=-1;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7);
+      ctx.fillStyle='rgba(122,162,247,.55)'; ctx.fill();
+    }
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const a=pts[i], b=pts[j], dx=a.x-b.x, dy=a.y-b.y, d=dx*dx+dy*dy;
+      if(d<150*150){
+        ctx.strokeStyle='rgba(187,154,247,'+(0.16*(1-d/22500)).toFixed(3)+')';
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', init);
+  init();
+  new MutationObserver(()=>{ if(slides[0].classList.contains('is-active') && !raf) raf=requestAnimationFrame(frame); })
+    .observe(slides[0], {attributes:true, attributeFilter:['class']});
+  raf = requestAnimationFrame(frame);
+})();
+
+/* ---------- live cells ---------- */
+function fmt(v){
+  if(typeof v==='string') return v;
+  if(typeof v==='object' && v!==null){ try{ return JSON.stringify(v); }catch(e){ return String(v); } }
+  return String(v);
+}
+$$('.livecell').forEach(cell=>{
+  const ta = $('textarea', cell), pre = $('.lc-hl', cell), out = $('.lc-console', cell);
+  if(!ta || !pre) return;
+  if(ta.id === 'sim-src') return; // simulator wires its own
+  const initial = ta.value;
+  const render = ()=>{ pre.innerHTML = hl(ta.value) + '\n'; };
+  const sync = ()=>{ pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; };
+  ta.addEventListener('input', render);
+  ta.addEventListener('scroll', sync);
+  render();
+  // auto-size editor to content, capped so the console below stays visible
+  const fit = ()=>{
+    ta.style.height='auto';
+    const cap = Math.round(innerHeight * 0.52);
+    const h = Math.min(Math.max(ta.scrollHeight + 4, 120), cap);
+    ta.style.height = h + 'px'; pre.style.height = h + 'px';
+  };
+  ta.__fit = fit;
+  ta.addEventListener('input', fit); fit();
+  $('.lc-run', cell).addEventListener('click', ()=>{
+    if(!out) return;
+    out.innerHTML='';
+    const logs = [];
+    const fake = { log: (...a)=>logs.push({t:a.map(fmt).join(' ')}),
+                   error:(...a)=>logs.push({t:a.map(fmt).join(' '),e:1}),
+                   warn: (...a)=>logs.push({t:a.map(fmt).join(' ')}) };
+    try { new Function('console', '"use strict";\n'+ta.value)(fake); }
+    catch(err){ logs.push({t:'⛔ '+err.name+': '+err.message, e:1}); }
+    if(!logs.length) logs.push({t:'(sin salida — ¿olvidaste console.log?)', d:1});
+    logs.forEach(l=>{
+      const d = document.createElement('div');
+      d.className = 'ln' + (l.e?' err':'') + (l.d?' dim':'');
+      d.textContent = l.t; out.appendChild(d);
+    });
+  });
+  $('.lc-reset', cell).addEventListener('click', ()=>{
+    ta.value = initial; render(); fit();
+    if(out) out.innerHTML = '<div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div>';
+  });
+});
+
+/* ---------- memory visualizer ---------- */
+(function(){
+  const codeBox = $('#mv-code'); if(!codeBox) return;
+  const steps = [
+    {l:1, vars:{users:'["Ana","Luis","Mia"]'}, note:'Se crea el array users con 3 elementos.'},
+    {l:2, vars:{users:'["Ana","Luis","Mia"]', i:'0'}, note:'i nace en 0. ¿0 < 3? Sí → entramos al loop.'},
+    {l:3, vars:{users:'["Ana","Luis","Mia"]', i:'0'}, out:'Login de Ana', note:'users[0] es "Ana". Se imprime.'},
+    {l:2, vars:{users:'["Ana","Luis","Mia"]', i:'1'}, note:'i++ → i vale 1. ¿1 < 3? Sí → otra vuelta.'},
+    {l:3, vars:{users:'["Ana","Luis","Mia"]', i:'1'}, out:'Login de Luis', note:'users[1] es "Luis".'},
+    {l:2, vars:{users:'["Ana","Luis","Mia"]', i:'2'}, note:'i++ → i vale 2. ¿2 < 3? Sí → última vuelta.'},
+    {l:3, vars:{users:'["Ana","Luis","Mia"]', i:'2'}, out:'Login de Mia', note:'users[2] es "Mia".'},
+    {l:2, vars:{users:'["Ana","Luis","Mia"]', i:'3'}, note:'i++ → i vale 3. ¿3 < 3? NO → el loop termina.'},
+    {l:4, vars:{users:'["Ana","Luis","Mia"]', i:'3'}, note:'Fin. 3 usuarios probados con 3 líneas de código. 🎉'}
+  ];
+  let s = 0;
+  const varsBox = $('#mv-vars'), note = $('#mv-note'), out = $('#mv-out'), stepn = $('#mv-stepn');
+  function paint(){
+    $$('.cl', codeBox).forEach(cl=> cl.classList.toggle('cur', s>0 && +cl.dataset.l === steps[s-1].l));
+    stepn.textContent = 'paso ' + s + ' / ' + steps.length;
+    if(s===0){
+      varsBox.innerHTML = '<p style="font-size:.85rem;color:var(--text-3);margin:0">— vacía —</p>';
+      note.textContent = 'Presiona "Siguiente paso" y mira cómo la máquina ejecuta línea por línea.';
+      out.innerHTML = '<div class="ln" style="color:var(--text-3);font-style:italic">consola…</div>';
+      return;
+    }
+    const st = steps[s-1];
+    varsBox.innerHTML = Object.entries(st.vars).map(([k,v])=>
+      '<div class="mv-var"><span class="vn">'+k+'</span><span class="vv">'+esc(v)+'</span></div>').join('');
+    note.textContent = st.note;
+    const lines = steps.slice(0,s).filter(x=>x.out).map(x=>'<div class="ln">'+x.out+'</div>');
+    out.innerHTML = lines.length ? lines.join('') : '<div class="ln" style="color:var(--text-3);font-style:italic">consola…</div>';
+  }
+  $('#mv-next').addEventListener('click', ()=>{ if(s<steps.length){ s++; paint(); } });
+  $('#mv-reset').addEventListener('click', ()=>{ s=0; paint(); });
+  paint();
+})();
+
+/* ---------- mini app wiring (login logic, scoped) ---------- */
+const CREDS = { email:'ana@qa.com', password:'secreto123' };
+function wireApp(frame, ids){
+  const em = $(ids.email, frame), pw = $(ids.password, frame),
+        btn = $(ids.btn, frame), ok = $(ids.ok, frame), bad = $(ids.bad, frame);
+  function attempt(){
+    ok.classList.remove('show'); bad.classList.remove('show');
+    if(em.value.trim() === CREDS.email && pw.value === CREDS.password) ok.classList.add('show');
+    else bad.classList.add('show');
+  }
+  btn.addEventListener('click', attempt);
+  return { em, pw, btn, ok, bad,
+    reset(){ em.value=''; pw.value=''; ok.classList.remove('show'); bad.classList.remove('show'); } };
+}
+
+/* inspection app */
+(function(){
+  const frame = $('#inspect-frame'); if(!frame) return;
+  wireApp(frame, {email:'#email', password:'#password', btn:'#login-btn', ok:'#welcome', bad:'#error-msg'});
+  const tip = $('#inspect-tip'), toggle = $('#toggle-inspect');
+  let on = false;
+  toggle.addEventListener('click', ()=>{
+    on = !on;
+    toggle.classList.toggle('on', on);
+    toggle.textContent = '🔍 Modo inspección: ' + (on ? 'ON' : 'OFF');
+    frame.classList.toggle('inspect-on', on);
+    if(!on){ tip.style.display='none'; $$('.inspect-hover', frame).forEach(el=>el.classList.remove('inspect-hover')); }
+  });
+  frame.addEventListener('mouseover', e=>{
+    if(!on) return;
+    const el = e.target.closest('.app-card input, .app-card button, .app-card h4, .app-card .app-msg');
+    if(!el) return;
+    el.classList.add('inspect-hover');
+    tip.textContent = el.id ? '#'+el.id : el.tagName.toLowerCase();
+    const fr = frame.getBoundingClientRect(), r = el.getBoundingClientRect();
+    tip.style.display = 'block';
+    tip.style.left = (r.left - fr.left) + 'px';
+    tip.style.top  = (r.top - fr.top - 34) + 'px';
+  });
+  frame.addEventListener('mouseout', e=>{
+    const el = e.target.closest && e.target.closest('.app-card input, .app-card button, .app-card h4, .app-card .app-msg');
+    if(el) el.classList.remove('inspect-hover');
+  });
+})();
+
+/* ---------- playwright simulator ---------- */
+(function(){
+  const frame = $('#sim-frame'); if(!frame) return;
+  const app = wireApp(frame, {email:'#s-email', password:'#s-password', btn:'#s-login-btn', ok:'#s-welcome', bad:'#s-error-msg'});
+  const cursor = $('#ghost-cursor'), ta = $('#sim-src'), pre = $('#sim-hl'),
+        logBox = $('#sim-log'), banner = $('#sim-banner');
+  const initial = ta.value;
+  const render = ()=>{ pre.innerHTML = hl(ta.value) + '\n'; };
+  ta.addEventListener('input', render);
+  ta.addEventListener('scroll', ()=>{ pre.scrollTop=ta.scrollTop; pre.scrollLeft=ta.scrollLeft; });
+  render();
+  // auto-size sim editor, tighter cap (log + banner share the column)
+  const fitSim = ()=>{
+    ta.style.height='auto';
+    const cap = Math.round(innerHeight * 0.42);
+    const h = Math.min(Math.max(ta.scrollHeight + 4, 190), cap);
+    ta.style.height = h + 'px'; pre.style.height = h + 'px';
+  };
+  ta.__fit = fitSim;
+  ta.addEventListener('input', fitSim); fitSim();
+
+  function bySel(sel){ return frame.querySelector('[data-sel="'+sel+'"]'); }
+  function log(t, cls){
+    const d = document.createElement('div'); d.className='ln'+(cls?' '+cls:''); d.textContent=t;
+    logBox.appendChild(d); logBox.scrollTop = logBox.scrollHeight;
+  }
+  async function moveTo(el){
+    const fr = frame.getBoundingClientRect(), r = el.getBoundingClientRect();
+    cursor.style.opacity = '1';
+    cursor.style.left = (r.left - fr.left + r.width/2 - 6) + 'px';
+    cursor.style.top  = (r.top - fr.top + r.height/2 - 4) + 'px';
+    await sleep(620);
+  }
+  async function typeInto(el, text){
+    el.value = '';
+    for(const ch of text){ el.value += ch; await sleep(38); }
+  }
+  async function clickEl(el){
+    cursor.classList.add('click-pulse');
+    await sleep(220);
+    cursor.classList.remove('click-pulse');
+    el.click();
+    await sleep(320);
+  }
+  let running = false;
+  async function run(){
+    if(running) return;
+    running = true;
+    logBox.innerHTML=''; banner.className='sim-banner'; banner.textContent='';
+    app.reset();
+    let failed = false;
+    const lines = ta.value.split('\n').map(l=>l.trim()).filter(l=>l.length);
+    for(const line of lines){
+      if(/^(\/\/|import\b)/.test(line)) continue;
+      if(/^test\s*\(/.test(line)){ log('🧪 ' + line.replace(/[,{(]+\s*$/,''), 'info'); continue; }
+      if(/^\}\s*\)\s*;?$/.test(line) || line==='{' || line==='}') continue;
+      let m;
+      if((m = line.match(/^await\s+page\.fill\(\s*["']([^"']+)["']\s*,\s*["']([^"']*)["']\s*\)\s*;?$/))){
+        const el = bySel(m[1]);
+        if(!el){ log('✗ No existe ningún elemento "'+m[1]+'" en la página', 'fail'); failed=true; break; }
+        await moveTo(el); await typeInto(el, m[2]);
+        log('✓ page.fill("'+m[1]+'", "'+m[2]+'")', 'ok');
+      }
+      else if((m = line.match(/^await\s+page\.click\(\s*["']([^"']+)["']\s*\)\s*;?$/))){
+        const el = bySel(m[1]);
+        if(!el){ log('✗ No existe ningún elemento "'+m[1]+'" en la página', 'fail'); failed=true; break; }
+        await moveTo(el); await clickEl(el);
+        log('✓ page.click("'+m[1]+'")', 'ok');
+      }
+      else if((m = line.match(/^await\s+expect\(\s*page\.locator\(\s*["']([^"']+)["']\s*\)\s*\)\.toBeVisible\(\)\s*;?$/))){
+        const el = bySel(m[1]);
+        const visible = !!el && getComputedStyle(el).display !== 'none';
+        if(visible) log('✓ expect("'+m[1]+'").toBeVisible() → PASSED', 'ok');
+        else { log('✗ expect("'+m[1]+'").toBeVisible()', 'fail');
+               log('   Expected: visible · Received: hidden', 'fail'); failed = true; break; }
+      }
+      else if((m = line.match(/^await\s+expect\(\s*page\.locator\(\s*["']([^"']+)["']\s*\)\s*\)\.toHaveText\(\s*["']([^"']*)["']\s*\)\s*;?$/))){
+        const el = bySel(m[1]);
+        const actual = el ? el.textContent.trim() : '(no existe)';
+        if(el && actual === m[2]) log('✓ expect("'+m[1]+'").toHaveText("'+m[2]+'") → PASSED', 'ok');
+        else { log('✗ expect("'+m[1]+'").toHaveText("'+m[2]+'")', 'fail');
+               log('   Expected: "'+m[2]+'" · Received: "'+actual+'"', 'fail'); failed = true; break; }
+      }
+      else {
+        log('⚠ Línea no soportada: ' + line, 'fail');
+        log('   Soportados: page.fill · page.click · expect(...).toBeVisible() · expect(...).toHaveText()', 'info');
+      }
+    }
+    cursor.style.opacity = '0';
+    if(failed){
+      banner.className = 'sim-banner fail'; banner.textContent = '✗ 1 failed — el test encontró algo. ¡Eso es trabajo de QA bien hecho!';
+    } else {
+      banner.className = 'sim-banner pass'; banner.textContent = '✓ 1 passed (' + (lines.length) + ' pasos) — ¡tu primer test automatizado!';
+      const r = banner.getBoundingClientRect();
+      confetti(r.left + r.width/2, r.top, 110);
+    }
+    running = false;
+  }
+  $('#sim-run').addEventListener('click', run);
+  $('#sim-reset').addEventListener('click', ()=>{
+    ta.value = initial; render(); fitSim(); app.reset();
+    logBox.innerHTML = '<div class="ln" style="color:var(--text-3);font-style:italic">▶ Ejecuta el test y mira el cursor fantasma…</div>';
+    banner.className='sim-banner'; banner.textContent='';
+  });
+})();
+
+/* ---------- init ---------- */
+updateChip();
+fromHash();
+})();
+</script>
+<!-- ============ MOBILE PATCH v3 (UPEX) — swipe + layout responsive + tip desktop ============ -->
+<style id="upex-mobile-style">
+/* Layout en pantallas angostas: 1 columna + scroll vertical dentro del slide */
+@media (max-width:768px){
+  .slide{padding:max(6vh,52px) 5vw 10vh;overflow-y:auto;justify-content:flex-start}
+  /* spacers flexibles: centran verticalmente cuando el contenido cabe y
+     colapsan a 0 cuando desborda (permitiendo scroll desde arriba) */
+  .slide::before{content:"";margin-top:auto}
+  .slide::after{content:"";margin-bottom:auto}
+  .cols,.cols-32,.cards.c3,.cards.c2,.memviz,.playground,.ba,.stepper,.termsim,.api-playground{grid-template-columns:1fr}
+  #help-hint,#act-label{display:none}
+  /* score chip compacto y pegado al borde superior para no tapar títulos */
+  #score-chip{top:6px;right:8px;font-size:.62rem;padding:.16rem .5rem;box-shadow:none}
+}
+@media (pointer:coarse){
+  #help-hint{display:none}
+}
+/* Tip de una sola vez en móvil: los playgrounds se disfrutan mejor en desktop */
+#upex-tip{position:fixed;left:50%;transform:translateX(-50%);bottom:44px;z-index:90;
+  max-width:min(92vw,420px);display:flex;align-items:flex-start;gap:.6rem;
+  background:rgba(36,40,59,.96);border:1px solid rgba(255,255,255,.18);border-radius:12px;
+  padding:.65rem .8rem;font-size:.78rem;line-height:1.45;color:#9aa5ce;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);animation:upexTipIn .4s ease both}
+#upex-tip b{color:#c0caf5}
+#upex-tip-x{flex:0 0 auto;background:none;border:none;color:#565f89;font-size:.95rem;
+  cursor:pointer;padding:0 .15rem;margin-left:auto;line-height:1.3}
+@keyframes upexTipIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%)}}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Navega despachando eventos de teclado sintéticos — el runtime del deck ya
+   escucha keydown (ArrowLeft/ArrowRight) y protege textareas/inputs. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+/* Swipe horizontal — ignora gestos que empiezan en zonas interactivas/scrollables */
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,.quiz,.lc-editor,.memviz,.playground'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Tip de una sola vez (compartido entre todos los decks del dominio vía
+   localStorage). ?tip=1 lo fuerza para QA en navegadores sin touch. */
+var KEY='upex-deck-mobile-tip-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]tip=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var tip=document.createElement('div'); tip.id='upex-tip';
+  var msg=document.createElement('span');
+  msg.innerHTML='💻 <b>Tip:</b> para practicar en los playgrounds de código, vuelve a este deck desde tu computadora.';
+  var x=document.createElement('button'); x.id='upex-tip-x'; x.textContent='✕'; x.setAttribute('aria-label','Cerrar tip');
+  var close=function(){ if(tip.isConnected) tip.remove(); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  x.addEventListener('click',close);
+  tip.appendChild(msg); tip.appendChild(x); document.body.appendChild(tip);
+  setTimeout(close,12000);
+}
+})();
+</script>
+
+</body>
+</html>
