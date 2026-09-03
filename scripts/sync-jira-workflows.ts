@@ -1009,6 +1009,7 @@ interface SyncStats {
   statusesMapped: number
   transitionsMapped: number
   missingRequired: number
+  idsRefreshed: number
 }
 
 /**
@@ -1041,7 +1042,7 @@ async function syncWorkType(
   workType: ManifestWorkType,
   previousEntry: OutputWorkType | undefined,
 ): Promise<{ entry: OutputWorkType, stats: SyncStats } | null> {
-  const stats: SyncStats = { statusesMapped: 0, transitionsMapped: 0, missingRequired: 0 };
+  const stats: SyncStats = { statusesMapped: 0, transitionsMapped: 0, missingRequired: 0, idsRefreshed: 0 };
 
   // 1. Find the issue type entry in the per-project /statuses payload.
   //
@@ -1115,8 +1116,10 @@ async function syncWorkType(
   // type). Workflow status `statusReference` is the cross-key.
   const discoveredStatuses = new Map<string, JiraStatus[]>(); // base slug → matches
   const idToStatus = new Map<string, JiraStatus>();
+  const nameToStatus = new Map<string, JiraStatus>(); // lowercased live name → live status
   for (const s of issueType.statuses) {
     idToStatus.set(s.id, s);
+    nameToStatus.set(s.name.trim().toLowerCase(), s);
     const slug = slugify(s.name);
     if (!slug) { continue; }
     const arr = discoveredStatuses.get(slug) ?? [];
@@ -1154,13 +1157,34 @@ async function syncWorkType(
     // not set, keep it.
     const existing = previousEntry?.statuses?.[reqStatus.slug];
     if (existing && existing.id && !flags.force) {
-      // Re-emit it (in case the discovered map didn't already cover this slug
-      // — e.g. if Jira renamed the status, the slug under canonical key wins).
-      entry.statuses[reqStatus.slug] = existing;
-      stats.statusesMapped++;
-      if (flags.verbose) {
-        log.dim(`  ${workType.slug}.${reqStatus.slug}: kept existing mapping → "${existing.name}" (id ${existing.id})`);
+      // What idempotency preserves is the SLUG DECISION — which live status this
+      // canonical slug points at — never the id that carries it. So re-resolve the
+      // cached NAME against this run's live payload: a site migration reissues every
+      // status id, and re-emitting the cached one silently ships ids that no longer
+      // exist on the instance.
+      const live = nameToStatus.get(existing.name.trim().toLowerCase()) ?? null;
+      if (live) {
+        entry.statuses[reqStatus.slug] = {
+          id: live.id,
+          name: live.name,
+          category: live.statusCategory?.key ?? null,
+        };
+        if (live.id !== existing.id) {
+          stats.idsRefreshed++;
+          log.info(`  ${workType.slug}.${reqStatus.slug}: "${live.name}" id ${existing.id} → ${live.id} (refreshed from live Jira; the cached id had expired)`);
+        }
+        else if (flags.verbose) {
+          log.dim(`  ${workType.slug}.${reqStatus.slug}: kept existing mapping → "${existing.name}" (id ${existing.id})`);
+        }
       }
+      else {
+        // Renamed or deleted in Jira: there is nothing live to re-resolve against, so
+        // the cached row stands as the last known answer and the operator is told how
+        // to re-pick it deliberately.
+        entry.statuses[reqStatus.slug] = existing;
+        log.warn(`  ${workType.slug}.${reqStatus.slug}: "${existing.name}" no longer exists on this issue type — keeping the cached id ${existing.id}. Re-run with --force to re-pick it.`);
+      }
+      stats.statusesMapped++;
       continue;
     }
 
@@ -1284,6 +1308,7 @@ async function syncWorkType(
   // the same finalSlug (rare but possible with weird naming), suffix _2, _3.
   const transitionFinalSlugCounts = new Map<string, number>();
   const transitionsBySlug = new Map<string, DiscoveredTransition>();
+  const transitionsByNameFrom = new Map<string, DiscoveredTransition[]>(); // `<lowercased name>::<fromCanonical>` → matches
   for (const dt of discoveredTransitions) {
     const occ = (transitionFinalSlugCounts.get(dt.finalSlug) ?? 0) + 1;
     transitionFinalSlugCounts.set(dt.finalSlug, occ);
@@ -1297,17 +1322,67 @@ async function syncWorkType(
       to_canonical: dt.toCanonical,
     };
     transitionsBySlug.set(slug, dt);
+    const nameFromKey = `${dt.transition.name.trim().toLowerCase()}::${dt.fromCanonical ?? ''}`;
+    const sameNameFrom = transitionsByNameFrom.get(nameFromKey) ?? [];
+    sameNameFrom.push(dt);
+    transitionsByNameFrom.set(nameFromKey, sameNameFrom);
   }
 
   // 6c. For each required canonical transition, try to find a match.
   for (const reqTrans of workType.requiredTransitions) {
     const existing = previousEntry?.transitions?.[reqTrans.slug];
     if (existing && existing.id && !flags.force) {
-      entry.transitions[reqTrans.slug] = existing;
-      stats.transitionsMapped++;
-      if (flags.verbose) {
-        log.dim(`  ${workType.slug}.${reqTrans.slug}: kept existing mapping → "${existing.name}" (id ${existing.id})`);
+      // Same rule as 5b: keep the slug decision, re-resolve the ids from live. Name
+      // alone is not a key — `back` is three different transitions inside one
+      // workflow — so the match is name + from_canonical, both of which derive from
+      // status NAMES and therefore survive an id migration untouched. Two live rows
+      // under one key means we cannot tell which was chosen, so that is not a match.
+      const nameFromKey = `${existing.name.trim().toLowerCase()}::${existing.from_canonical ?? ''}`;
+      const liveMatches = transitionsByNameFrom.get(nameFromKey) ?? [];
+      const live = liveMatches.length === 1 ? liveMatches[0] : null;
+      if (live) {
+        entry.transitions[reqTrans.slug] = {
+          id: live.transition.id,
+          name: live.transition.name,
+          from_status_id: live.fromStatusId,
+          to_status_id: live.toStatusId,
+          from_canonical: live.fromCanonical,
+          to_canonical: live.toCanonical,
+        };
+        const moved = live.transition.id !== existing.id
+          || live.fromStatusId !== existing.from_status_id
+          || live.toStatusId !== existing.to_status_id;
+        if (moved) {
+          stats.idsRefreshed++;
+          const field = (label: string, before: string | null, after: string | null): string =>
+            (before === after ? `${label} ${after}` : `${label} ${before} → ${after}`);
+          log.info(
+            `  ${workType.slug}.${reqTrans.slug}: "${live.transition.name}" re-resolved from live Jira — `
+            + `${field('id', existing.id, live.transition.id)}, `
+            + `${field('from_status_id', existing.from_status_id, live.fromStatusId)}, `
+            + `${field('to_status_id', existing.to_status_id, live.toStatusId)}`,
+          );
+        }
+        else if (flags.verbose) {
+          log.dim(`  ${workType.slug}.${reqTrans.slug}: kept existing mapping → "${existing.name}" (id ${existing.id})`);
+        }
       }
+      else {
+        // 0 or >1 live candidates. The cached transition id is the last known answer
+        // and stays, but the endpoint ids are re-derived from the canonicals exactly
+        // as a fresh mapping does (step 6a) — so a null canonical yields null, and a
+        // missing endpoint is NEVER backfilled from the cached id.
+        entry.transitions[reqTrans.slug] = {
+          id: existing.id,
+          name: existing.name,
+          from_status_id: existing.from_canonical ? entry.statuses[existing.from_canonical]?.id ?? null : null,
+          to_status_id: existing.to_canonical ? entry.statuses[existing.to_canonical]?.id ?? null : null,
+          from_canonical: existing.from_canonical,
+          to_canonical: existing.to_canonical,
+        };
+        log.warn(`  ${workType.slug}.${reqTrans.slug}: "${existing.name}" (from ${existing.from_canonical ?? 'any'}) matched ${liveMatches.length} live transitions — keeping the cached id ${existing.id} with re-derived endpoints. Re-run with --force to re-pick it.`);
+      }
+      stats.transitionsMapped++;
       continue;
     }
 
@@ -1795,7 +1870,8 @@ async function main(): Promise<void> {
     }
     log.dim(
       `   - ${wt.slug}: ${s.statusesMapped} statuses mapped, `
-      + `${s.transitionsMapped} transitions mapped, ${s.missingRequired} missing required`,
+      + `${s.transitionsMapped} transitions mapped, ${s.missingRequired} missing required, `
+      + `${s.idsRefreshed} ids refreshed`,
     );
   }
 
