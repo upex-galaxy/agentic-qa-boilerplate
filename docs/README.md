@@ -16,6 +16,7 @@ Esta documentación está orientada a **humanos** - para aprender conceptos, ent
 |-----------|-------------|
 | [agentic-quality-engineering.md](agentic-quality-engineering.md) | **El documento por excelencia** — qué es esta práctica, cómo funciona, y qué entrega. Estrategia, arquitectura, skills, modelo de orquestación, KATA y quality gate en un solo lugar. |
 | [Una fuente, tres harnesses](https://upex-galaxy.github.io/agentic-qa-boilerplate/harnesses.es.html) | Cómo el mismo repositorio corre en Claude Code, OpenCode y Codex desde una sola fuente: qué es canónico, qué se genera, y qué pasa al actualizar un proyecto creado antes del cambio. Página publicada, con diagramas. |
+| [Harnesses del dev boilerplate](https://upex-galaxy.github.io/agentic-dev-boilerplate/harnesses.es.html) | La misma arquitectura vista desde el boilerplate de desarrollo: release del updater y tabla de paridad contra este repositorio. Página publicada. |
 | [CONTEXT.md](../CONTEXT.md) | Estrategia de estructuración de contexto para AI (docs/ vs .context/ vs .agents/skills/). |
 
 ---

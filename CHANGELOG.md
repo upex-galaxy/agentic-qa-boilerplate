@@ -16,6 +16,54 @@ below names which one it applies to:
 
 ## [Unreleased]
 
+### Fixed (updater 8.3, ported from the dev boilerplate)
+
+`CLI_VERSION` 8.2 -> 8.3. The dev boilerplate's 8.3 lands here: two items that
+were born in this repo's 8.2 port and went back upstream (the write-surface
+guard, the added-upstream rule for local edits), plus four polish items from
+the live runs on bunkai-qa-engineering and upex-bunkai-tms.
+
+- **The dirty-tree guard blocks only on what the sync writes.** Uncommitted
+  work inside the write surface (a synced component file, an ignore file,
+  `package.json`, a deprecated file) still aborts `--auto` and names the
+  paths; dirt anywhere else (`tests/`, KATA code, a protected or bootstrap-only
+  file, generated surfaces) is listed as `N ruta(s) con cambios sin commitear
+  fuera de lo que este updater escribe; no bloquean` and never blocks. The
+  last-apply hash and the updater-owned exemptions are unchanged. Same
+  `isWithinWriteSurface` as upstream now; the 8.2 port had its own copy.
+- **No "project edit overwritten" row for a path upstream added after the
+  lock cursor.** A file with no base copy at the cursor (`status A`, no
+  `templateOldSha`) cannot be told apart from one that arrived another way;
+  a migrated Claude-era repo had every moved skill in that state and got one
+  false row each. Unknown is never reported as an edit.
+- **`.context/PBI/` migration is one parity row.** A repo that still tracks
+  the Jira cache in git gets one Componentes row (`N tracked path(s) still in
+  git ...; migration recipe saved to .agents/prompts/pbi-cache-migration.md`)
+  and the full recipe in that file; the terminal no longer receives the path
+  list (370 lines on one live run, next to eight parity rows). The 8.2 file
+  name `pbi-cache-migration-prompt.md` is removed when the recipe is written.
+  `--dry-run` shows the row without writing the file. The QA allowlist
+  (`README.md`, `templates/**`, `epics/*/test-specs/**`) is unchanged.
+- **A freshly protected path gets no residual row.** A path just declared in
+  `updater.protected_paths` (any project-declared entry with no marker yet)
+  has its upstream marker seeded silently, with a one-line note; the drift
+  row fires on the next upstream change. Before, the first dry-run and the
+  first real run after declaring it both showed a `content differs` row that
+  only went away once a real run had persisted the marker.
+- **The `cli` lock cursor advances after a self-update.** The re-exec child
+  found `cli/` identical to upstream (its parent had just written it), walked
+  no entry for the component and never moved its cursor, so the lock kept
+  `cli@<scaffold sha>` release after release. The parent now hands the sha it
+  refreshed `cli/` to through `UPEX_UPDATER_SELF_UPDATED` and the child
+  settles the component at it (only when it equals the HEAD the child
+  fetched; otherwise the files differ again and sync as usual).
+- **MCP registries are compared per server.** `.mcp.json`, `opencode.jsonc`
+  and `.codex/config.toml` rows no longer say `same keys and values` when a
+  server's args, env, url or command differ: a nested server object is
+  compared whole and the evidence names it (`context7: args differ`,
+  `supabase: env keys differ`), at most three servers named, the rest
+  counted.
+
 ### Added
 
 **Boilerplate (updater 8.2, cross-harness compatibility)**

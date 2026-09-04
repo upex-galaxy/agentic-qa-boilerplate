@@ -486,6 +486,17 @@ One more thing on the migration run itself: the `.claude/skills` alias is NOT cr
 - **Host-agnostic `cli/**`.** `cli/updater-host-types.test.ts` compiles `cli/**` with a required `NODE_ENV` on `ProcessEnv` on every `bun test`, so the synced tests never break under a host that augments `ProcessEnv`.
 - **`UPEX_TEMPLATE_REPO`.** Points the updater at a fork (`OWNER/REPO`, via `gh`) or a local clone (absolute path or `file://`, via `git`, no `gh` session), which is how an unpublished branch is tested against a consumer.
 
+### What updater 8.3 adds
+
+`CLI_VERSION` 8.2 -> 8.3, ported from the dev boilerplate. Two of the six items were born in this repo's 8.2 port and came back upstream; the other four are polish from two more live runs.
+
+- **Guard scope.** The dirty-tree guard blocks only on uncommitted work the sync would overwrite: a synced component file, an ignore file, `package.json`, a deprecated file. Dirt anywhere else (`tests/`, KATA code, a protected or bootstrap-only file) is listed as `N ruta(s) con cambios sin commitear fuera de lo que este updater escribe; no bloquean` and never aborts `--auto`.
+- **No overwritten-edit row for a path upstream added after the lock cursor.** A file with no base copy at the cursor cannot be told apart from one that arrived another way (a migrated Claude-era repo had every moved skill in that state); unknown is never reported as an edit.
+- **`.context/PBI/` still tracked in git.** One Componentes row (`N tracked path(s) still in git ...; migration recipe saved to .agents/prompts/pbi-cache-migration.md`); the recipe (tag, `git rm --cached`, commit, resync, push-to-Jira pass) lives in that gitignored file, never in the terminal. `--dry-run` shows the row without writing the file; the 8.2 file name `pbi-cache-migration-prompt.md` is removed when the recipe is written.
+- **A freshly protected path gets no residual row.** A path just declared in `updater.protected_paths` has its upstream marker seeded silently (one `sin fila esta vez` note); its drift row fires on the next upstream change.
+- **The `cli` lock cursor advances after a self-update.** The parent hands the sha it refreshed `cli/` to through `UPEX_UPDATER_SELF_UPDATED`; the re-exec child, which finds nothing left to sync there, settles the component at that sha instead of leaving `cli@<scaffold sha>` in the lock.
+- **MCP registries are compared per server.** `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` rows name the server and the fields that differ (`context7: args differ`, `supabase: env keys differ`), at most three servers named, the rest counted, instead of `same keys and values` when only a nested field changed.
+
 ---
 
 ## What stays local (committed in this repo)
