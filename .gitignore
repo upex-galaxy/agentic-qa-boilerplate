@@ -119,6 +119,10 @@ build/
 # CLAUDE.md plus any legacy skill whose name .agents/skills already owned. Local
 # recovery material, never repo content — review it, then delete it).
 .template/pre-agents-migration/
+# `.template/last-apply.json` is GITIGNORED (per-dev record of what the last
+# `bun run up` wrote, with hashes: the next run's dirty-tree guard recognises
+# that uncommitted output as its own instead of aborting on it).
+.template/last-apply.json
 .template/installer.state.json
 .template/claude-md.upstream.sha
 .template/upstream-sha/

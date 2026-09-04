@@ -19,7 +19,7 @@
 #   - agents:compat:check        unconditional safety net for the cross-harness contract:
 #                                the generated `.claude/skills` alias, the 20 command
 #                                wrappers against `.agents/compatibility/command-aliases.json`,
-#                                the three hook adapters, and six-server MCP parity across
+#                                the three hook adapters, and MCP parity for every server declared in .mcp.json across
 #                                `.mcp.json` / `opencode.jsonc` / `.codex/config.toml`. All of
 #                                it is generated or mirrored, so nothing else notices when a
 #                                wrapper is hand-edited or an MCP is added to one host only.

@@ -138,6 +138,20 @@ git_strategy:
     # via git-flow-master Strategy Setup. Nothing was rematerialized — main already exists.
     strategy_source: chosen # inherited | chosen
 
+# Files `bun run up` must keep as THIS project's own. Read by `cli/update-boilerplate.ts`
+# at the start of every run and merged into the protected watchlist (AGENTS.md,
+# .agents/project.yaml, .mcp.json, opencode.jsonc, .codex/config.toml,
+# .claude/settings.json, .husky/pre-commit, .husky/pre-push, allurerc.mjs,
+# playwright.config.ts, the KATA bases under tests/components/, ...): a listed path is
+# never overwritten, is delivered once from upstream when missing, and shows a drift row
+# with hunk evidence when upstream's copy changes. List a SYNCED file you merged by hand
+# (the parity row "project edit overwritten" names the path to add); repo-relative FILE
+# paths only, no directories, nothing under .git. An invalid entry is reported and
+# ignored. Empty by default. Read directly by the updater (not a {{VAR}} source): the
+# nested list is skipped by vars:check like git_strategy and qa.qa_epics.
+updater:
+  protected_paths: [] # e.g. [scripts/lint-vars.ts, .agents/skills/acli/SKILL.md]
+
 # Per-environment config. Add/remove environments freely (production, dev, qa, uat, etc.).
 # Each environment must define ALL four keys: web_url, api_url, db_mcp, api_mcp.
 # Skills referencing {{WEB_URL}} / {{API_URL}} / {{DB_MCP}} / {{API_MCP}} resolve to the
