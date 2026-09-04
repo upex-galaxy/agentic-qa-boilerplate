@@ -1,15 +1,27 @@
 # MCP Configuration Templates
 
-This directory contains **pre-configured MCP server templates** for different AI CLI tools, plus the canonical reference for the opt-in Atlassian MCP server.
+This directory contains **pre-configured MCP server templates** for different AI CLI tools, the syntax reference for each host's env-var expansion, plus the canonical reference for the opt-in Atlassian MCP server.
+
+## Runtime configs committed in this repo
+
+The boilerplate runs on three harnesses from one source (`AGENTS.md` + `.agents/skills/`, see `AGENTS.md` §4.5). The MCP inventory is the one surface that genuinely differs per host, so it exists once per format, committed, with the same server set on every host: whatever `.mcp.json` declares (`context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman` out of the box):
+
+| Harness             | Committed config     | Env-var syntax                                        | Launcher (loads `.env` first) |
+| ------------------- | -------------------- | ----------------------------------------------------- | ----------------------------- |
+| Claude Code         | `.mcp.json`          | `${VAR}` inside args / env values / headers           | `bun run claude`              |
+| OpenCode            | `opencode.jsonc`     | `{env:VAR}` inside command / environment / headers    | `bun run opencode`            |
+| Codex CLI + Desktop | `.codex/config.toml` | `env_vars = ["VAR"]` / `bearer_token_env_var` by name | `bun run codex`               |
+
+`bun run agents:compat:check` normalizes the three files into one shape (transport, command, args, url, `.env` dependencies, literal env, enabled) and compares them. The canonical set is whatever `.mcp.json` declares: a server missing from another host, present in one host only, or depending on a different set of `.env` variables, fails the check (it runs inside `repo:check` and the pre-push hook). The six ids the boilerplate ships additionally get a strict per-host shape check when the project declares them; a project that declares a different set (say `supabase` instead of `postman`) passes on the generic check alone. `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` are project-owned: `bun run up` never overwrites them, it only reports drift from upstream in its parity prompt. Gemini CLI and Cursor have no runtime adapter: they stay template-only below. `.codex/config.toml` is read only in a repository Codex trusts; `bun run setup:doctor` warns about that.
 
 ## Available Templates
 
-| File                     | For Tool    | Format | Description                         |
-| ------------------------ | ----------- | ------ | ----------------------------------- |
-| `claude.template.json`   | Claude Code | JSON   | `.mcp.json` in project root         |
-| `opencode.template.json` | OpenCode    | JSON   | `opencode.jsonc` in project root    |
-| `codex.template.toml`    | Codex CLI   | TOML   | `~/.codex/config.toml` or `.codex/` |
-| `gemini.template.json`   | Gemini CLI  | JSON   | `~/.gemini/settings.json`           |
+| File                     | For Tool    | Format | Description                                                                                        |
+| ------------------------ | ----------- | ------ | -------------------------------------------------------------------------------------------------- |
+| `claude.template.json`   | Claude Code | JSON   | `.mcp.json` in project root                                                                        |
+| `opencode.template.json` | OpenCode    | JSON   | `opencode.jsonc` in project root                                                                   |
+| `codex.template.toml`    | Codex CLI   | TOML   | Derived from the committed `.codex/config.toml` (same server set) plus opt-in extras with `{{VAR}}` |
+| `gemini.template.json`   | Gemini CLI  | JSON   | `~/.gemini/settings.json` (template only, no runtime adapter in this repo)                         |
 
 ## Atlassian MCP (opt-in)
 
@@ -40,17 +52,19 @@ Templates use tool-native env-var expansion (and `{{VARIABLE}}` placeholders for
 | ----------- | ---------------------------- | ----------------- | ------------------------------------ |
 | Claude Code | `${VAR}` / `${VAR:-default}` | `${API_TOKEN}`    | Fails to parse the config (safe)     |
 | OpenCode    | `{env:VAR}`                  | `{env:API_TOKEN}` | Substitutes empty string (footgun)   |
-| Codex CLI   | `${VAR}`                     | `${API_TOKEN}`    | Depends on field                     |
+| Codex CLI   | `env_vars = ["VAR"]` (stdio) / `bearer_token_env_var = "VAR"` (HTTP), by name | `env_vars = ["API_TOKEN"]` | Variable is not forwarded; the server fails at auth (401/403) |
 | Gemini CLI  | `$VAR` / `${VAR}`            | `$API_TOKEN`      | Depends on field                     |
+
+Codex never expands `${VAR}` inside `args` or `env` values, so a placeholder there is passed to the server as literal text. The committed `.codex/config.toml` therefore forwards every secret by name: `tavily` and `postman` (HTTP) carry `bearer_token_env_var`, `openapi` (stdio) lists `API_BASE_URL` and `OPENAPI_SPEC_PATH` in `env_vars`. `[mcp_servers.X.env]` tables hold literal settings only; `agents:compat:check` rejects a placeholder there. Details in [`mcp-configuration-guide.md`](./mcp-configuration-guide.md) § Codex CLI.
 
 For strategy B, also need a `.env` loader so the agent process has the vars at spawn time:
 
-- Cross-platform: `bun claude` / `bun opencode` (`dotenv-cli` wrapper in `package.json`)
+- Cross-platform: `bun run claude` / `bun run opencode` / `bun run codex` (`dotenv -o -e .env` wrappers in `package.json`; `-o` makes `.env` win over an inherited shell variable)
 - macOS/Linux optional: a `.envrc` with `dotenv_if_exists .env` + `direnv allow`
 
-**Working example**: see `.mcp.json`, `opencode.jsonc`, and `.env.example` in this repo's root.
+**Working example**: see `.mcp.json`, `opencode.jsonc`, `.codex/config.toml`, and `.env.example` in this repo's root.
 
-## MCP Servers Included (default — committed in `.mcp.json` / `opencode.jsonc`)
+## MCP Servers Included (what `.mcp.json` declares out of the box, mirrored in `opencode.jsonc` / `.codex/config.toml`)
 
 | Server         | Type   | Description                                  |
 | -------------- | ------ | -------------------------------------------- |
@@ -122,7 +136,7 @@ Run your agent and verify with:
 ## Security
 
 - **Templates** (this folder) = safe for git, uses `${VAR}` / `{env:VAR}` / `{{VAR}}` placeholders
-- **Active configs** (`.mcp.json`, `opencode.jsonc`) = committed but only reference env vars; secrets live in `.env` (gitignored)
+- **Active configs** (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`) = committed but only reference env vars by placeholder or by name; secrets live in `.env` (gitignored)
 
 ## Documentation
 

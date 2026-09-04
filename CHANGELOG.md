@@ -16,7 +16,69 @@ below names which one it applies to:
 
 ## [Unreleased]
 
+### Added
+
+**Boilerplate (updater 8.2, cross-harness compatibility)**
+
+- **Project-aware MCP parity.** The canonical server set is whatever
+  `.mcp.json` declares; `opencode.jsonc` and `.codex/config.toml` must declare
+  exactly that set, and every declared server must agree across hosts on the
+  `.env` variables it depends on and on its literal env settings. A server
+  missing from a host, or present in one host only, fails naming the server
+  and the host. The six ids the boilerplate ships (`KNOWN_MCP_IDS`) keep a
+  strict per-host shape check whenever the project declares them; any other
+  server gets the generic check only, so a downstream project may add or drop
+  servers freely. `declaredMcpIds(root)` exposes the set; `setup:doctor` and
+  the "MCP parity (N servers x 3 harnesses)" row derive N from it.
+- **Command-alias overlay.** `.agents/compatibility/command-aliases.project.json`
+  (same schema as the upstream manifest, optional, never synced) adds or
+  overrides aliases by name; `wrapperHosts` always come from upstream. A
+  wrapper file under `.claude/commands/` or `.opencode/commands/` that no
+  manifest produced is reported by name (`Command wrapper not declared in any
+  manifest: <path>`) and never deleted by the repair.
+- **`repairAgentSurfaces`.** One call renders the wrappers, repairs the alias
+  and runs the check; `{ deferSkillsAlias: true }` writes the
+  `.template/upstream-sha/claude-skills-alias.deferred` marker so the check
+  reports the alias as `deferred` (not missing) until the migration commit,
+  and the next `bun run agents:compat` creates it and removes the marker.
+- **Grouped compat report.** `bun run agents:compat:check` and `setup:doctor`
+  always print the alias status line (created / OK / deferred / missing /
+  invalid) and bucket errors per surface (instructions, alias, wrappers,
+  hooks, MCP). Doctor `--json` gains `agent_compatibility.alias` and
+  `agent_compatibility.errors_by_surface`.
+- **`scripts/lint-skills.test.ts`.** Regression tests for the tier
+  classification below, run against fixture repos through the new
+  `LINT_SKILLS_ROOT` override.
+
+### Changed
+
+**Boilerplate**
+
+- `opencode.jsonc` parsing strips trailing commas as well as comments (what
+  Prettier writes), and a `${VAR}` placeholder inside a Codex
+  `[mcp_servers.X.env]` table is rejected with the fix (`Forward the variable
+  through env_vars instead`).
+- The doctor's "Command wrappers (N Claude + N OpenCode)" row derives N from
+  the merged manifest instead of the literal 10; `command_wrappers.ok` means
+  "every declared wrapper is present on both hosts".
+- Docs (`README.md`, `INSTALLER.md`, `AGENTS.md`, `CONTEXT.md`, `docs/mcp/`)
+  describe the MCP contract as project-declared instead of "the same six
+  servers", document the overlay, and describe updater 8.2 (parity prompt,
+  `--strict`, `--no-gates`, `--dry-run` with the new updater, safe re-runs,
+  protected watchlist, `updater.protected_paths`).
+
 ### Fixed
+
+**Boilerplate (`scripts/lint-skills.ts`)**
+
+- A community skill committed as a real directory in `.agents/skills/`
+  (downstream projects commit their `bunx skills add` output) is no longer
+  reclassified as T1: `cli/install.ts` stays the tier authority, the T1-only
+  checks (frontmatter, categories, STALE-PATH, session contract) skip the
+  vendor body, and the summary line counts it separately (`N T1 skills (+ M
+  community skills committed in the store, tiers from cli/install.ts)`). The
+  AGENTS.md §5 cross-check still applies to it, so a committed community skill
+  missing from the registry is a TIER-MISMATCH instead of a silent T1 exemption.
 
 **Scaffolder (`create-agentic-qa` 1.1.2)**
 

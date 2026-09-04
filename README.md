@@ -161,7 +161,7 @@ What it does:
 2. Rewrites `package.json` name + `.agents/project.yaml` `project.name`.
 3. Initializes a fresh `git init -b main` with an initial commit.
 4. Runs `bun install`.
-5. Hands off to `bun run setup` — gentle-ai, 19 committed skills, community skills, 6 MCPs, `.env`, direnv autoload, optional `gh repo create`.
+5. Hands off to `bun run setup` — gentle-ai, 19 committed skills, community skills, the MCP servers `.mcp.json` declares, `.env`, direnv autoload, optional `gh repo create`.
 
 Useful flags (full list in [`packages/create-agentic-qa/README.md`](packages/create-agentic-qa/README.md)):
 
@@ -628,45 +628,49 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 
 ## Keeping your project in sync with the boilerplate
 
-The `bun run up` CLI keeps your project aligned with the official template by tracking which upstream commit each piece of the framework (`skills/`, `scripts/`, `cli/`, …) was last synced from. Instead of overwriting framework files blindly, it:
+`bun run up` (updater 8.2) keeps your project aligned with the official template by tracking which upstream commit each piece of the framework (`.agents/skills/`, `scripts/`, `cli/`, `.husky/`, ...) was last synced from. Instead of overwriting framework files blindly, it:
 
 1. Reads `.template/boilerplate.lock.json` (committed in your repo) to find the last-synced SHA per component
 2. Clones the template lazily (sparse checkout, only the dirs that get synced)
 3. Computes the exact list of changed files between your synced SHA and template HEAD
 4. Classifies each file: clean fast-forward, locally diverged, new upstream, deleted upstream, binary, or whitespace-only
-5. **Default mode (no flags)**: applies everything without prompting — copies new files, overwrites local divergences with the upstream version, and deletes files upstream removed. The boilerplate is canonical (1:1 match). A safety gate runs first: if you have uncommitted changes in paths the updater syncs, it aborts and lists them (commit/stash and re-run). Uncommitted changes elsewhere (your tests, your code) never block. Every overwrite is backed up (`.backups/`, restorable with `--rollback`) and the exact diff stays visible in git history
-6. In `--interactive` mode: shows you a space-bar checkbox menu with `[M/A/D]` badges and `+N/-M` line counts. For files where you edited locally, shows you both diffs and lets you pick `theirs`, `mine`, or `skip`
-7. Writes the new SHA only for components where every changed file was processed (skip = no SHA advance, so a skipped file resurfaces next run)
+5. Applies the plan for the mode you chose (see the flags below). Every overwrite is backed up (`.backups/`, restorable with `--rollback`) and the exact diff stays visible in git history
+6. Regenerates the derived surfaces from their sources (`bun run agents:compat`, `skills:registry`, `kata:manifest` logic) and runs the project's own gates
+7. Closes with one "Estado por superficie" table and ONE parity prompt for your AI (details below)
 
-**Requirements**: git ≥ 2.25 (for partial-clone with `--filter=blob:none`), Bun, GitHub CLI authenticated.
+**Requirements**: git 2.25 or newer (partial clone with `--filter=blob:none`), Bun, GitHub CLI authenticated (or `UPEX_TEMPLATE_REPO` pointing at a local clone).
 
-Run (default — sync everything, no prompts):
+| Flag | Effect |
+| ---- | ------ |
+| (none) | Interactive 5-phase flow: pick components, resolve divergences, confirm deletions |
+| `--auto` | Non-interactive: copies new files and overwrites divergences with upstream. Never deletes files upstream removed |
+| `--force` | Like `--auto`, and also deletes files upstream removed (backup + `--rollback` still apply) |
+| `--interactive`, `-i` | Keeps the prompts even when stdin is not a terminal |
+| `--dry-run` | Preview without writing. Prints the parity table; the prompt is not saved. With a newer updater upstream, the preview runs the NEW updater from the upstream clone, so it shows what the real run will do |
+| `--strict` | Exit 1 when the run ends with a BLOCKING parity finding (compat contract broken: alias, wrappers, hooks, MCP). Default: warn, exit 0. Drift on protected files never blocks |
+| `--no-gates` | Skip the post-sync gates (`types:check`, `lint:check`, `kata:manifest:check`) |
+| `--rollback` | Restore the most recent backup |
+| `--skill a,b` / `--list` | Sync only the named skills / list the skills the template offers |
+
+Without a TTY on stdin and no `--auto` / `--interactive`, the run assumes `--auto` and says so in one line instead of waiting on the phase-3 multi-select. `UPEX_TEMPLATE_REPO` points the updater at a fork (`OWNER/REPO`) or at a local clone (absolute path or `file://`), which is how an unpublished branch is tested against a consumer.
+
+**What a run leaves behind.** Every run ends with a single "Estado por superficie" table (10 rows: Instrucciones y config / Skills / Comandos / Hooks / MCP / Env / Componentes / package.json / Git / Verificación, one ok or warn glyph per row) followed by ONE parity prompt, also saved to `.agents/prompts/parity-plan.md` (gitignored, single-use). The prompt lists every difference between the project and upstream as a numbered row with concrete evidence (headings added or removed in `AGENTS.md`, hunk counts, server ids missing from a host, wrapper files no manifest produced, archived skill collisions) and asks the AI to present the table and WAIT for a per-row decision, `keep project | take upstream | merge`, before editing anything. One row per path: a stray wrapper is a single `add to overlay` row, and a watched file that also fails a compat contract (say `.codex/config.toml` missing a server) is one blocking row carrying both pieces of evidence. `take upstream` is suggested only where the project lacks the content entirely; a row naming project-only servers, keys, headings or edits says `merge`, and every `merge` on a watched file says what to port and what to keep (`port upstream additions only: <keys>; keep project-only: <keys>`). Rows on `package.json` (a key kept at the project's value, both values in the saved file) and on `Verificación` (a gate that failed: exit code, first error lines, which applied files it names) are informational, never blocking.
+
+**Protected files and `updater.protected_paths`.** `AGENTS.md`, `.mcp.json`, `opencode.jsonc`, `.codex/config.toml`, `.claude/settings.json`, `.husky/pre-commit`, `.husky/pre-push`, `allurerc.mjs`, `playwright.config.ts`, the KATA bases under `tests/components/` and the CI workflows are never overwritten (also under `--auto` and `--force`): they only appear in the parity report, one drift row per upstream change. `.claude/settings.json`, `.codex/` and the two husky hooks are delivered once when missing (bootstrap-only). A project protects any other synced file it merged by hand through `updater.protected_paths` in `.agents/project.yaml` (repo-relative file paths, same semantics; a path outside the repo, under `.git`, a directory or a non-string is reported and ignored). The row for an overwritten project edit names its `.backups/` copy and ends with that fix; the saved prompt repeats it as the YAML to paste. `.agents/project.yaml` and `.agents/jira-required.yaml` are compared by structure only: an `informational` row for keys upstream added, no row for value differences (project identity).
+
+**Safe re-runs and aborts.** The sync leaves its files uncommitted on purpose (review the prompt first). The run records what it wrote in `.template/last-apply.json` (gitignored, hashed), and the dirty-tree guard recognises those paths while their hash still matches, so `bun run up` twice in a row without committing is a no-op instead of an abort. A synced path edited by hand since, or an unrelated dirty synced path, still aborts, naming `Commit sugerido` and the prompt path. Uncommitted changes outside the paths the updater writes (your tests, your code, protected files) never block. A run that applies nothing leaves the tree byte-identical (the lock is not rewritten). An aborted run (dirty tree, corrupt lock, failed clone, declined migration or self-update) prints `Abortado.` and exits 1, never a success line.
+
+**Generated surfaces.** `CLAUDE.md` (the `@AGENTS.md` shim), `.claude/skills` (the alias), `.claude/commands/*.md` and `.opencode/commands/*.md` (wrappers), `.agents/skills/REGISTRY.md` and `kata-manifest.json` are rebuilt after every sync and never reported as drift. On the run that migrates a Claude-era project, the `.claude/skills` alias is deliberately NOT created (git cannot rewrite the staged `.claude/skills/*` deletions behind a symlink, so the pre-commit hook would fail): commit the migration, then `bun run agents:compat` creates it; the closing box says so, and any re-run before that commit keeps deferring it.
 
 ```bash
-bun run up
+bun run up                # interactive
+bun run up --auto         # unattended, no deletions
+bun run up --dry-run      # preview (parity table included)
+bun run up --strict       # CI: exit 1 on a blocking parity finding
+bun run up --rollback     # restore the latest backup
 ```
 
-Run interactively (per-file review):
-
-```bash
-bun run up --interactive
-```
-
-> Legacy `--auto` / `--force` flags are still accepted: they print an informational note (the default behavior already covers them) and run normally.
-
-Preview without writing:
-
-```bash
-bun run up --dry-run
-```
-
-Rollback the latest sync:
-
-```bash
-bun run up --rollback
-```
-
-The `.template/boilerplate.lock.json` file is committable — commit it so your team and CI know exactly which template version each component is on.
+The `.template/boilerplate.lock.json` file is committable: commit it so your team and CI know exactly which template version each component is on.
 
 <br />
 
@@ -933,9 +937,9 @@ The development side lives in [agentic-dev-boilerplate](https://github.com/upex-
 
 <br />
 
-## Multi-harness architecture — one source, three consumers
+## Multi-harness architecture: one source, three consumers
 
-This repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ — MCP file format, hook API, whether slash commands exist at all — each keeps a thin versioned adapter. Nothing is duplicated.
+This repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ (MCP file format, hook API, whether slash commands exist at all) each keeps a thin versioned adapter. Nothing is duplicated.
 
 > Visual walkthrough, including what happens when you update a project created before this change: [**Una fuente, tres harnesses**](https://upex-galaxy.github.io/agentic-qa-boilerplate/harnesses.es.html) (Spanish, published page with diagrams).
 
@@ -943,15 +947,15 @@ This repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is
 | ------- | ----------- | -------- | ------------------- |
 | **Instructions** | `CLAUDE.md` → `@AGENTS.md` **[generated shim]** | `AGENTS.md` (native) | `AGENTS.md` (native) |
 | **Skills** | `.claude/skills` **[generated alias]** | `.agents/skills/` (native) | `.agents/skills/` (native) |
-| **Commands** | `.claude/commands/*.md` **[generated]** | `.opencode/commands/*.md` **[generated]** | none — invoke the skill directly |
+| **Commands** | `.claude/commands/*.md` **[generated]** | `.opencode/commands/*.md` **[generated]** | none: invoke the skill + mode directly |
 | **Hook** | `.claude/settings.json` → `UserPromptSubmit` | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` |
 | **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
 
-- **Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline — a documented import rather than a symlink, so it survives a Windows checkout. Operational prose in the shim is structural drift, and `/sync-ai-memory` stops rather than propagating it.
-- **Skills.** All 19 skills live committed in `.agents/skills/`, and the project-level community skills install into the same store. OpenCode and Codex read it directly; Claude Code reaches it through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored — never committed, never hand-edited. Each skill still declares `compatibility: [claude-code, copilot, cursor, codex, opencode]` per the [agentskills.io](https://agentskills.io) spec, and hosts without slash triggers auto-activate from the same `description` field.
-- **Commands.** The 10 slash commands are transport, not workflow — generated from `.agents/compatibility/command-aliases.json`, 7 lines each. A wrapper that grows a body fails the check as `contains workflow prose`.
+- **Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline: a documented import rather than a symlink, so it survives a Windows checkout. Operational prose in the shim is structural drift, and `/sync-ai-memory` stops rather than propagating it.
+- **Skills.** All 19 skills live committed in `.agents/skills/`, and the project-level community skills install into the same store. OpenCode and Codex read it directly; Claude Code reaches it through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited. Each skill still declares `compatibility: [claude-code, copilot, cursor, codex, opencode]` per the [agentskills.io](https://agentskills.io) spec, and hosts without slash triggers auto-activate from the same `description` field.
+- **Commands.** The 10 slash commands are transport, not workflow: generated from `.agents/compatibility/command-aliases.json`, 7 lines each. A wrapper that grows a body fails the check as `contains workflow prose`.
 - **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin.
-- **MCP.** The same six servers (`context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman`) exist in all three configs. Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape before comparison, so adding a server to one host only is a failure.
+- **MCP.** Every server declared in `.mcp.json` must exist in the other two configs with the same `.env` dependencies. Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape, then compared on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The six the boilerplate ships (`context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman`) additionally get a strict per-host shape check when declared; a downstream project with a different set passes on the generic check alone. Codex cannot expand `${VAR}`, so its adapter names every secret by variable (`bearer_token_env_var` for the two HTTP servers, `env_vars` for `openapi`).
 
 ### Regenerating and verifying
 
@@ -959,15 +963,18 @@ Bold `[generated]` cells above are output. Edit the source, then regenerate:
 
 | Generated artifact | Its source | Regenerate |
 | ------------------ | ---------- | ---------- |
+| `CLAUDE.md` (one-line `@AGENTS.md` shim) | `AGENTS.md` | `bun run agents:compat` |
 | `.claude/skills` (POSIX symlink / Windows junction) | `.agents/skills/` | `bun run agents:compat` |
-| 10 Claude + 10 OpenCode command wrappers | `.agents/compatibility/command-aliases.json` | `bun run agents:compat` |
+| One Claude + one OpenCode wrapper per alias (10 upstream, plus any project-declared) | `.agents/compatibility/command-aliases.json`, overlaid by the optional `command-aliases.project.json` | `bun run agents:compat` |
 
 ```bash
-bun run agents:compat         # regenerate every derived harness artifact
+bun run agents:compat         # regenerate every derived harness artifact, then check
 bun run agents:compat:check   # validate the whole contract (also runs in repo:check + pre-push)
 ```
 
-`agents:compat:check` covers the alias target, both wrapper sets byte-for-byte against the manifest, the hook adapters, and MCP parity. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit. `bun run setup:doctor` reports the same surfaces plus **Codex repository trust** — project `.codex/` config and hooks load only in a trusted repo, and that is runtime state no file read can verify.
+**Project-owned slash commands** live in `.agents/compatibility/command-aliases.project.json` (same schema as the upstream manifest, optional, never synced by `bun run up`). Upstream aliases are read first; an overlay entry with the same `alias` replaces it, a new `alias` is added, and `wrapperHosts` always come from the upstream manifest. A wrapper file under `.claude/commands/` or `.opencode/commands/` that neither manifest produced fails the check by name (`Command wrapper not declared in any manifest: <path>`); declare it in the overlay or delete it, the repair never deletes for you.
+
+`agents:compat:check` covers the shim bytes, the alias target, both wrapper sets byte-for-byte against the merged manifest, the hook adapters, and MCP parity. It prints the alias status line on every run (created, OK, deferred until the migration commit, missing) and groups the errors per surface (instructions, alias, wrappers, hooks, MCP), so "alias pending commit" and "MCP drift" never read as one flat failure. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit. `bun run setup:doctor` reports the same surfaces (the wrapper and server counts come from the merged manifest and from `.mcp.json`) plus **Codex repository trust**: project `.codex/` config and hooks load only in a trusted repo, and that is runtime state no file read can verify.
 
 The `.agents/` variable system is harness-agnostic and unchanged across all three.
 
