@@ -228,6 +228,26 @@ export function detectProtectedDrift(
 }
 
 /**
+ * Split the drifted entries into the ones to ADVISE and the ones whose marker
+ * is only SEEDED this run: a project-declared path (`updater.protected_paths`)
+ * with no marker yet. The project just merged that file by hand against the
+ * very upstream on disk (that is why it declared it), so a row saying the two
+ * differ is noise: the marker is written silently and the row fires on the
+ * NEXT upstream change. Upstream entries keep their first advice: nobody has
+ * told the project about them yet. Live finding (Bunkai, third run): the
+ * freshly protected `scripts/lint-skills.ts` kept one residual row through
+ * the dry-run and the re-run until a real run had persisted its marker.
+ */
+export function splitFirstProjectAdvice(drifted: readonly DriftedEntry[]): { advised: DriftedEntry[], seeded: DriftedEntry[] } {
+  const advised: DriftedEntry[] = [];
+  const seeded: DriftedEntry[] = [];
+  for (const entry of drifted) {
+    (entry.source === 'project' && entry.firstAdvice ? seeded : advised).push(entry);
+  }
+  return { advised, seeded };
+}
+
+/**
  * Persist the upstream sha markers for the advised entries so each upstream
  * change nudges exactly once, even if the user ignores the advice.
  * Non-fatal on write failure — worst case we advise again next run.

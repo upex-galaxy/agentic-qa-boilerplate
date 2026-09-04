@@ -10,20 +10,19 @@
  * the repo.
  *
  * This hook detects that legacy state after every sync: it lists what git
- * tracks under `.context/PBI/`, subtracts the committed allowlist, and — when
- * anything remains — prints a prominent warning AND persists a migration
- * prompt for the consumer's AI agent (same mechanism as the protected-file
- * drift prompt in `updater-drift.ts`). It NEVER touches the git index itself:
- * untracking is destructive-adjacent work the agent performs with a recovery
- * tag in place.
+ * tracks under `.context/PBI/`, subtracts the committed allowlist and, when
+ * anything remains, persists a migration recipe for the consumer's AI agent
+ * and reports ONE fact (count + recipe path) that the parity report renders
+ * as a single row on Componentes. The terminal never gets the path list: on a
+ * live run 370 paths dumped inline dwarfed the eight parity rows they were
+ * competing with. It NEVER touches the git index itself: untracking is
+ * destructive-adjacent work the agent performs with a recovery tag in place.
  */
 
 import type { ReportSink, RunSummary } from './updater-types';
 import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-
-import pc from 'picocolors';
 
 // ============================================================================
 // ALLOWLIST
@@ -119,13 +118,13 @@ export function buildPbiMigrationPrompt(outOfAllowlist: string[]): string {
   ].join('\n');
 }
 
-/** Markdown wrapper for the persisted prompt file (mirror of the drift prompt). */
+/** Markdown wrapper for the persisted recipe file (mirror of the parity prompt file). */
 export function buildPbiPromptFileContent(outOfAllowlist: string[]): string {
   const today = new Date().toISOString().slice(0, 10);
   return [
-    '# PBI cache migration — AI agent prompt',
+    '# PBI cache migration recipe (AI agent prompt)',
     '',
-    `> **AUTO-GENERATED, SINGLE-USE.** Written by \`bun run update\` on ${today}.`,
+    `> **AUTO-GENERATED, SINGLE-USE.** Written by \`bun run up\` on ${today}.`,
     '> Paste the prompt below into your AI session, then delete this file.',
     '> It is regenerated (overwritten) while `.context/PBI/` still tracks files',
     '> outside the committed allowlist.',
@@ -155,33 +154,42 @@ function listTrackedPbiPaths(cwd: string): string[] {
   }
 }
 
+/** What the hook learned, for the parity report: one row, the recipe in its file. */
+export interface PbiCacheFact {
+  /** Tracked paths outside the committed allowlist. */
+  tracked: number
+  /** Repo-relative path of the saved recipe (forward slashes). */
+  recipePath: string
+}
+
+/** The recipe file's name before 8.3: removed when the new one is written, so a stale dump never lingers. */
+const LEGACY_RECIPE_BASENAME = 'pbi-cache-migration-prompt.md';
+
 /**
- * Build the `afterApply` hook. Detects a legacy git-tracked PBI cache, prints
- * a prominent warning and persists the agent migration prompt. Never mutates
- * the git index or any file under `.context/PBI/`.
+ * Build the `afterApply` hook. Detects a legacy git-tracked PBI cache, saves
+ * the agent migration recipe (a real run only) and hands the count plus the
+ * recipe path to `report`, which the wrapper turns into one parity row. Never
+ * mutates the git index or any file under `.context/PBI/`.
  */
 export function makePbiCacheMigrationHook(
-  cfg: { promptOutPath: string },
+  cfg: { promptOutPath: string, dryRun?: boolean },
   sink: ReportSink,
+  report: (fact: PbiCacheFact) => void,
 ): (summary: RunSummary) => Promise<void> {
   return async (_summary: RunSummary): Promise<void> => {
     const cwd = process.cwd();
     const outOfAllowlist = filterPbiTrackedPaths(listTrackedPbiPaths(cwd));
     if (outOfAllowlist.length === 0) { return; }
-
-    sink.warn(`Git aún TRACKEA ${outOfAllowlist.length} archivo(s) del cache \`.context/PBI/\` fuera del allowlist versionado (README.md, templates/**, epics/*/test-specs/**).`);
-    sink.warn('`.context/PBI/` es un CACHE de Jira (AGENTS.md §9): esos archivos se regeneran y NO deben vivir en git.');
-    sink.step('Nada fue modificado. Pega el prompt de abajo en tu IA para migrar con punto de recuperación (tag) y sin perder contenido local:');
-
-    const prompt = buildPbiMigrationPrompt(outOfAllowlist);
+    const recipePath = path.relative(cwd, cfg.promptOutPath).replace(/\\/g, '/');
+    report({ tracked: outOfAllowlist.length, recipePath });
+    if (cfg.dryRun) { return; }
     try {
       fs.mkdirSync(path.dirname(cfg.promptOutPath), { recursive: true });
       fs.writeFileSync(cfg.promptOutPath, buildPbiPromptFileContent(outOfAllowlist));
-      sink.step(`Prompt guardado en ${pc.cyan(path.relative(cwd, cfg.promptOutPath))} (auto-generado, un solo uso).`);
+      fs.rmSync(path.join(path.dirname(cfg.promptOutPath), LEGACY_RECIPE_BASENAME), { force: true });
     }
-    catch { /* non-fatal — the stdout block below still carries the prompt */ }
-
-    // Plain stdout (no log-prefix bullets) so the block copy-pastes cleanly.
-    process.stdout.write(`\n${pc.dim('────────  COPY PROMPT BELOW  ────────')}\n${prompt}\n${pc.dim('────────  COPY PROMPT ABOVE  ────────')}\n\n`);
+    catch (err) {
+      sink.warn(`No se pudo guardar ${recipePath}: ${err instanceof Error ? err.message : String(err)}`);
+    }
   };
 }

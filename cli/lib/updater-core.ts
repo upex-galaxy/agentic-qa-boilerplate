@@ -981,6 +981,33 @@ function dedupeDeltaByPath(
 export const UPDATER_OWNED_PATHS_ENV = 'UPEX_UPDATER_OWNED_PATHS';
 
 /**
+ * Env var through which the parent tells its self-update re-exec child which
+ * upstream sha it refreshed the self-update component to. The child finds
+ * those files identical to upstream and walks no entry for the component, so
+ * without this the `cli` lock cursor never advanced past the release the
+ * project was scaffolded at. See `selfUpdatedComponents`.
+ */
+export const UPDATER_SELF_UPDATED_ENV = 'UPEX_UPDATER_SELF_UPDATED';
+
+/**
+ * The self-update component when the parent process refreshed it to exactly
+ * `newHeadSha` before re-exec'ing us: it has no delta entry left to advance
+ * its cursor through, yet it IS at upstream HEAD, so the lock must say so.
+ * Empty when there was no self-update, or when upstream moved between the
+ * parent's fetch and ours (the files then differ again and sync as ordinary
+ * entries, which advance the cursor the usual way).
+ */
+export function selfUpdatedComponents(
+  cfg: Pick<UpdaterConfig, 'selfUpdateComponent'>,
+  newHeadSha: string,
+  env: NodeJS.ProcessEnv = process.env,
+): string[] {
+  const refreshed = env[UPDATER_SELF_UPDATED_ENV];
+  if (!cfg.selfUpdateComponent || !refreshed || refreshed !== newHeadSha) { return []; }
+  return [cfg.selfUpdateComponent];
+}
+
+/**
  * Where a run records what it wrote. Gitignored. A sync deliberately leaves
  * its output uncommitted (the parity prompt is reviewed first), so the NEXT
  * run's dirty-tree guard must recognise that output as its own: a dirty path
@@ -1640,11 +1667,13 @@ export function planAuto(
  * `deferredEntries` (deleted-upstream files held back in auto-mode) also block advancement
  * because the delete hasn't been confirmed yet.
  *
- * `bootstrappedComponents` are the components this run bootstrapped (no lock
- * cursor yet). One of them with NO entry at all had nothing to deliver, e.g. a
- * bootstrap-only file the project already owns (`.claude/settings.json`,
- * `.codex/config.toml`): it advances too, or the lock never learns it and
- * every later run repeats "bootstrap parcial" for it.
+ * `settledComponents` are the components that advance WITHOUT an entry of
+ * their own: the ones this run bootstrapped (no lock cursor yet) that had
+ * nothing to deliver, e.g. a bootstrap-only file the project already owns
+ * (`.claude/settings.json`, `.codex/config.toml`), and the self-update
+ * component the parent process refreshed to this very sha before re-exec'ing
+ * (`selfUpdatedComponents`). Either way the lock must learn the sha, or every
+ * later run repeats "bootstrap parcial" / keeps `cli` at the scaffold release.
  */
 export function computeComponentAdvancement(
   summary: {
@@ -1653,7 +1682,7 @@ export function computeComponentAdvancement(
     failed: FailedFile[]
   },
   deferredEntries: DeltaEntry[] = [],
-  bootstrappedComponents: readonly string[] = [],
+  settledComponents: readonly string[] = [],
 ): { componentsAdvanced: string[], componentsHeldBack: string[] } {
   const allEntryComponents = new Set([
     ...summary.applied.map(a => a.entry.component),
@@ -1665,7 +1694,7 @@ export function computeComponentAdvancement(
     ...summary.skipped.map(s => s.component),
     ...summary.failed.map(f => f.entry.component),
   ]);
-  const settled = bootstrappedComponents.filter(c => !allEntryComponents.has(c));
+  const settled = settledComponents.filter(c => !allEntryComponents.has(c));
   return {
     componentsAdvanced: [...allEntryComponents, ...settled].filter(c => !blockedComponents.has(c)),
     componentsHeldBack: [...blockedComponents],
@@ -2511,7 +2540,9 @@ export async function runUpdate(
         const ownedPaths = dirtyTreeExemptions(cfg, opts).concat(stale);
         const child = spawnSync(process.execPath, [process.argv[1], ...process.argv.slice(2)], {
           stdio: 'inherit',
-          env: { ...process.env, UPEX_UPDATER_REEXEC: '1', [UPDATER_OWNED_PATHS_ENV]: ownedPaths.join('\n') },
+          // The sha we just put `cli/` at: the child advances that cursor even
+          // though it finds nothing left to sync there (`selfUpdatedComponents`).
+          env: { ...process.env, UPEX_UPDATER_REEXEC: '1', [UPDATER_OWNED_PATHS_ENV]: ownedPaths.join('\n'), [UPDATER_SELF_UPDATED_ENV]: newHeadSha },
         });
         cleanupTempDir(cfg.tempDir);
         if (child.error) {
@@ -2695,7 +2726,13 @@ export async function runUpdate(
 
   // A bootstrapped component with nothing to deliver still needs its lock
   // cursor recorded (see computeComponentAdvancement), so it is not a no-op.
-  const settledBootstrap = bootstrapComponents.filter(c => !entries.some(e => e.component === c.name)).map(c => c.name);
+  // So does the component the parent's self-update already put at upstream
+  // HEAD: no entry to walk, but a cursor that must move to this sha.
+  const settledSelfUpdate = selfUpdatedComponents(cfg, newHeadSha).filter(name => !entries.some(e => e.component === name));
+  const settledBootstrap = [...new Set([
+    ...bootstrapComponents.filter(c => !entries.some(e => e.component === c.name)).map(c => c.name),
+    ...settledSelfUpdate,
+  ])];
   // The afterApply hooks still run on a no-op: they are idempotent (alias,
   // wrappers, registry) and they own the parity report, which is the run's
   // end state whatever was applied. A re-run over an uncommitted sync lands
@@ -2730,8 +2767,11 @@ export async function runUpdate(
   else if (ignoreDeltasPre.length > 0) {
     sink.step(`Sin cambios de archivos — solo líneas nuevas en ${ignoreDeltasPre.length} ignore-file(s).`);
   }
-  else {
+  else if (pkgJsonDeltasPre.length > 0) {
     sink.step(`Sin cambios de archivos — solo keys nuevas en ${pkgJsonDeltasPre.length} package.json.`);
+  }
+  else {
+    sink.step(`Sin cambios de archivos; solo se registra el cursor de ${settledBootstrap.join(', ')} en el lock.`);
   }
 
   // Non-interactive when EITHER --auto (CI-safe) OR --force (upstream wins).
@@ -3251,7 +3291,9 @@ export async function runUpdate(
     // Deferred-deletes are already represented in `skipped`, so no separate
     // deferred list is passed (the old `bootstrapMode ? [] : []` was a no-op).
     [],
-    bootstrapComponents.map(c => c.name),
+    // Settled without an entry: bootstrapped with nothing to deliver, or
+    // refreshed by the parent's self-update (see `settledBootstrap`).
+    [...new Set([...bootstrapComponents.map(c => c.name), ...settledSelfUpdate])],
   );
 
   const summary: RunSummary = {

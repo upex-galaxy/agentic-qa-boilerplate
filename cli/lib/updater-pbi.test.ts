@@ -1,3 +1,10 @@
+import type { PbiCacheFact } from './updater-pbi.ts';
+import type { ReportSink } from './updater-types.ts';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+
 import { describe, expect, test } from 'bun:test';
 
 import {
@@ -5,6 +12,7 @@ import {
   buildPbiPromptFileContent,
   filterPbiTrackedPaths,
   isPbiAllowlisted,
+  makePbiCacheMigrationHook,
 } from './updater-pbi.ts';
 
 describe('isPbiAllowlisted', () => {
@@ -110,5 +118,67 @@ describe('buildPbiPromptFileContent', () => {
     expect(md).toContain('AUTO-GENERATED, SINGLE-USE');
     expect(md).toContain('```text');
     expect(md).toContain('git tag pbi-pre-cache-migration');
+  });
+});
+
+describe('the afterApply hook', () => {
+  // Live finding (Bunkai, 8.2 port): 370 tracked paths dumped inline dwarfed
+  // the eight parity rows. The hook now writes the recipe and reports one
+  // fact; the terminal gets nothing from it.
+  function git(root: string, args: string[]): void {
+    const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
+    if (res.status !== 0) { throw new Error(`git ${args.join(' ')} failed: ${res.stderr}`); }
+  }
+  function write(root: string, rel: string, body: string): void {
+    mkdirSync(dirname(join(root, rel)), { recursive: true });
+    writeFileSync(join(root, rel), body);
+  }
+  const lines: string[] = [];
+  const sink = { step: (m: string) => lines.push(m), warn: (m: string) => lines.push(m), error: (m: string) => lines.push(m) } as unknown as ReportSink;
+  const summary = { applied: [], skipped: [], failed: [], newHeadSha: '', componentsAdvanced: [], componentsHeldBack: [] };
+
+  test('reports the count and the recipe path, writes the recipe, prints nothing; a dry-run writes nothing', async () => {
+    // realpath: macOS hands out /var/..., and process.cwd() reports /private/var/...
+    const root = realpathSync(mkdtempSync(join(tmpdir(), 'pbi hook ')));
+    const previousCwd = process.cwd();
+    try {
+      git(root, ['init', '--quiet', '--initial-branch=main']);
+      git(root, ['config', 'user.email', 'test@example.com']);
+      git(root, ['config', 'user.name', 'test']);
+      write(root, '.context/PBI/README.md', 'tiers\n');
+      write(root, '.context/PBI/epic-tree.md', 'synced\n');
+      write(root, '.context/PBI/epics/EPIC-X-1/epic.md', 'synced\n');
+      write(root, '.agents/prompts/pbi-cache-migration-prompt.md', 'stale 8.2 dump\n');
+      git(root, ['add', '-A']);
+      git(root, ['commit', '--quiet', '-m', 'legacy']);
+      process.chdir(root);
+      const out = join(root, '.agents', 'prompts', 'pbi-cache-migration.md');
+      const facts: PbiCacheFact[] = [];
+
+      await makePbiCacheMigrationHook({ promptOutPath: out, dryRun: true }, sink, f => facts.push(f))(summary);
+      expect(facts).toEqual([{ tracked: 2, recipePath: '.agents/prompts/pbi-cache-migration.md' }]);
+      expect(existsSync(out)).toBe(false);
+
+      await makePbiCacheMigrationHook({ promptOutPath: out }, sink, f => facts.push(f))(summary);
+      expect(facts).toHaveLength(2);
+      const recipe = readFileSync(out, 'utf8');
+      expect(recipe).toContain('git rm -r --cached -- ".context/PBI/epic-tree.md" ".context/PBI/epics/EPIC-X-1/epic.md"');
+      expect(recipe).not.toContain('.context/PBI/README.md"');
+      // The 8.2 file name is gone, so a stale dump never lingers next to the recipe.
+      expect(existsSync(join(root, '.agents/prompts/pbi-cache-migration-prompt.md'))).toBe(false);
+      expect(lines).toEqual([]);
+
+      // A compliant repo: no fact, no file.
+      git(root, ['rm', '-r', '--cached', '--quiet', '.context/PBI/epic-tree.md', '.context/PBI/epics']);
+      git(root, ['commit', '--quiet', '-m', 'untrack']);
+      rmSync(out);
+      await makePbiCacheMigrationHook({ promptOutPath: out }, sink, f => facts.push(f))(summary);
+      expect(facts).toHaveLength(2);
+      expect(existsSync(out)).toBe(false);
+    }
+    finally {
+      process.chdir(previousCwd);
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

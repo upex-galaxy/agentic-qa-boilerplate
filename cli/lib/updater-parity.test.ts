@@ -144,12 +144,12 @@ describe('section-level evidence', () => {
   });
 
   test('key delta separates upstream additions from project-only keys', () => {
-    expect(configKeyDelta(['a', 'b.x'], ['a', 'b.y'])).toEqual({ added: ['b.y'], projectOnly: ['b.x'], changed: [] });
+    expect(configKeyDelta(['a', 'b.x'], ['a', 'b.y'])).toEqual({ added: ['b.y'], projectOnly: ['b.x'], changed: [], changedDetail: {} });
     // With values (Maps) the shared keys whose values differ are named; a top
     // key with object children is judged through its children only.
     const mine = configEntries('{"a":1,"b":{"x":1,"y":[1]},"c":{"z":1}}', 'x.json')!;
     const theirs = configEntries('{"a":2,"b":{"x":1,"y":[2]},"c":{"z":1}}', 'x.json')!;
-    expect(configKeyDelta(mine, theirs)).toEqual({ added: [], projectOnly: [], changed: ['a', 'b.y'] });
+    expect(configKeyDelta(mine, theirs)).toEqual({ added: [], projectOnly: [], changed: ['a', 'b.y'], changedDetail: {} });
   });
 
   test('watched-file evidence names sections for markdown and keys for config, plus hunk counts', () => {
@@ -673,5 +673,67 @@ describe('rows the diff-based table could not see before', () => {
     expect(report.fileBody).toContain('```text\ncli/lib/updater-core.test.ts(84,19)');
     // Never blocking: --strict does not fail on a gate.
     expect(strictVerdict(true, findings).exitCode).toBe(0);
+  });
+});
+
+describe('MCP registries are compared per server, args and env included', () => {
+  // Live finding (Bunkai, 8.2 port): `.codex/config.toml` read "same keys and
+  // values; formatting or comments differ" while a server's args differed,
+  // because the two-level view stopped at the server object.
+  const diff = '--- a\n+++ b\n@@ -1 +1 @@\n-old\n+new\n';
+  const row = (project: string, upstream: string, file: string): [string, string] => {
+    const e = watchedFileEvidence(file, project, upstream, diff);
+    return [e.suggested, e.evidence.replace(/; 1 hunk \(\+1\/-1\)$/, '')];
+  };
+
+  test('a nested server object is compared whole; the evidence names the server and the fields that differ', () => {
+    const mine = configEntries('{"mcpServers":{"context7":{"command":"npx","args":["-y","@upstash/context7-mcp@1"],"env":{"CONTEXT7_API_KEY":"ref"}}}}', '.mcp.json')!;
+    const theirs = configEntries('{"mcpServers":{"context7":{"command":"npx","args":["-y","@upstash/context7-mcp@2"],"env":{"CONTEXT7_API_KEY":"ref"}}}}', '.mcp.json')!;
+    expect(configKeyDelta(mine, theirs)).toEqual({ added: [], projectOnly: [], changed: ['mcpServers.context7'], changedDetail: { 'mcpServers.context7': 'args differ' } });
+
+    expect(row(
+      '{"mcpServers":{"context7":{"command":"npx","args":["a"]},"supabase":{"command":"npx","args":["s"],"env":{"SUPABASE_ACCESS_TOKEN":"ref"}}}}',
+      '{"mcpServers":{"context7":{"command":"npx","args":["b"]},"supabase":{"command":"npx","args":["s"],"env":{"SUPABASE_ACCESS_TOKEN":"ref","SUPABASE_PROJECT_REF":"ref"}}}}',
+      '.mcp.json',
+    )).toEqual(['merge', 'same keys, context7: args differ; supabase: env keys differ (port what you want, keep the rest)']);
+    // Same env keys, different values; several fields at once.
+    expect(row(
+      '{"mcp":{"tavily":{"type":"remote","url":"https://a","headers":{"Authorization":"Bearer {env:TAVILY_API_KEY}"}}}}',
+      '{"mcp":{"tavily":{"type":"remote","url":"https://b","headers":{"Authorization":"Bearer {env:TAVILY_KEY}"}}}}',
+      'opencode.jsonc',
+    )[1]).toBe('same keys, tavily: url and headers differ (port what you want, keep the rest)');
+    expect(row('[mcp_servers.n8n]\ncommand = "npx"\n[mcp_servers.n8n.env]\nA = "1"\n', '[mcp_servers.n8n]\ncommand = "npx"\n[mcp_servers.n8n.env]\nA = "2"\n', '.codex/config.toml')[1])
+      .toBe('same keys, n8n: env values differ (port what you want, keep the rest)');
+    // Truly identical registries still read as identical.
+    expect(row('{"mcpServers":{"a":{"args":[1]}}}', '{ "mcpServers": { "a": { "args": [1] } } }', '.mcp.json')).toEqual(['keep project', 'same keys and values; formatting or comments differ']);
+  });
+
+  test('at most three servers are named, the rest counted; scalars keep their own phrase', () => {
+    const servers = (v: string): string => `{"x":1,"mcpServers":{${['a', 'b', 'c', 'd', 'e'].map(s => `"${s}":{"args":["${v}"]}`).join(',')}}}`;
+    expect(row(servers('1'), servers('2'), '.mcp.json')[1]).toBe('same keys, a: args differ; b: args differ; c: args differ; +2 more (port what you want, keep the rest)');
+    expect(row('{"x":1,"mcpServers":{"a":{"args":["1"]}}}', '{"x":2,"mcpServers":{"a":{"args":["2"]}}}', '.mcp.json')[1])
+      .toBe('same keys, values differ at: "x"; a: args differ (port what you want, keep the rest)');
+  });
+});
+
+describe('a git-tracked .context/PBI/ cache is one row on Componentes', () => {
+  test('the row carries the count and the recipe path; the path list stays in the file', () => {
+    const root = temporaryRoot();
+    const findings = collectParityFindings({
+      root,
+      upstreamDir: temporaryRoot(),
+      drift: [],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, 'x'),
+      heldBack: [],
+      envNewKeys: [],
+      pbiCache: { tracked: 370, recipePath: '.agents/prompts/pbi-cache-migration.md' },
+    });
+    expect(findings.map(f => [f.surface, f.path, f.suggested, f.blocking])).toEqual([['components', '.context/PBI/', 'decide', false]]);
+    expect(findings[0].evidence).toBe('370 tracked path(s) still in git (Jira cache, gitignored by design); migration recipe saved to .agents/prompts/pbi-cache-migration.md');
+    expect(renderParityReport(findings, META).surfaces.find(s => s.surface === 'components')?.cell).toBe('1 hallazgo: .context/PBI/');
+    // Nothing tracked: no row.
+    expect(collectParityFindings({ root, upstreamDir: temporaryRoot(), drift: [], compatErrors: [], archivedSkills: [], archivedSkillsDir: join(root, 'x'), heldBack: [], envNewKeys: [], pbiCache: null })).toEqual([]);
   });
 });

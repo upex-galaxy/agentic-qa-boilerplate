@@ -141,6 +141,15 @@ export interface ParityInput {
   packageJsonKept?: PackageJsonKeptInput[]
   /** Quality gates run after the apply; only failed / timed-out ones become rows. */
   gates?: GateResult[]
+  /** A legacy git-tracked `.context/PBI/` cache (see `updater-pbi.ts`): one row, the recipe in its file. */
+  pbiCache?: PbiCacheInput | null
+}
+
+export interface PbiCacheInput {
+  /** Tracked paths outside the committed allowlist. */
+  tracked: number
+  /** Repo-relative path of the saved migration recipe. */
+  recipePath: string
 }
 
 export interface ParityMeta {
@@ -390,8 +399,74 @@ function yamlKeys(text: string): string[] {
 export interface KeyDelta {
   added: string[]
   projectOnly: string[]
-  /** Keys both copies have with a different value (a top key whose children differ counts through its children only). */
+  /**
+   * Keys both copies have with a different value. A top key whose children
+   * are entries of their own counts through them only; a nested object (an
+   * MCP server entry under `mcpServers` / `mcp` / `mcp_servers`) is compared
+   * whole, args, env and url included.
+   */
   changed: string[]
+  /** For each `changed` key holding an object on both sides: which fields differ (`args differ`, `env keys differ`). */
+  changedDetail: Record<string, string>
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** `a`, `a and b`, `a, b and c`. */
+function joinAnd(items: string[]): string {
+  if (items.length <= 1) { return items.join(''); }
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+/** Field order in an object-diff phrase: what an MCP server entry is made of, then the rest alphabetically. */
+const OBJECT_FIELD_ORDER = ['type', 'transport', 'command', 'args', 'url', 'headers', 'env', 'env_vars', 'environment', 'enabled', 'disabled'];
+
+/**
+ * Which fields of two objects differ, as one phrase: `args differ`,
+ * `args and env keys differ`, `command, args and url differ`. An env table
+ * (`env`, `env_vars`, `environment`) is compared by key set first: `env keys
+ * differ` when the variable names differ, `env values differ` when only the
+ * values do.
+ */
+function describeObjectDelta(mine: Record<string, unknown>, theirs: Record<string, unknown>): string {
+  const rank = (field: string): number => {
+    const at = OBJECT_FIELD_ORDER.indexOf(field);
+    return at === -1 ? OBJECT_FIELD_ORDER.length : at;
+  };
+  const fields = [...new Set([...Object.keys(mine), ...Object.keys(theirs)])].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  const differing: string[] = [];
+  for (const field of fields) {
+    const own = mine[field];
+    const other = theirs[field];
+    if (stableValue(own) === stableValue(other)) { continue; }
+    if ((field === 'env' || field === 'env_vars' || field === 'environment') && isPlainObject(own) && isPlainObject(other)) {
+      const sameKeys = stableValue(Object.keys(own).sort()) === stableValue(Object.keys(other).sort());
+      differing.push(sameKeys ? `${field} values` : `${field} keys`);
+      continue;
+    }
+    differing.push(field);
+  }
+  return `${joinAnd(differing)} differ`;
+}
+
+/**
+ * The changed keys as evidence: scalars by name (`values differ at: "a.x"`),
+ * object entries by what differs inside (`context7: args differ`), at most
+ * `MAX_NAMES` of each named, the rest counted.
+ */
+function describeChangedKeys(changed: string[], detail: Record<string, string>): string {
+  const scalars = changed.filter(k => !(k in detail));
+  const objects = changed.filter(k => k in detail);
+  const parts: string[] = [];
+  if (scalars.length > 0) { parts.push(`values differ at: ${listNames(scalars)}`); }
+  if (objects.length > 0) {
+    // The entry's own name: the key minus the registry it sits under.
+    const shown = objects.slice(0, MAX_NAMES).map(k => `${k.slice(k.indexOf('.') + 1)}: ${detail[k]}`).join('; ');
+    parts.push(objects.length > MAX_NAMES ? `${shown}; +${objects.length - MAX_NAMES} more` : shown);
+  }
+  return parts.join('; ');
 }
 
 /** Stable serialization for value comparison (key order of objects normalized). */
@@ -413,15 +488,25 @@ export function configKeyDelta(project: readonly string[] | ReadonlyMap<string, 
   const added = [...theirs.keys()].filter(k => !mine.has(k));
   const projectOnly = [...mine.keys()].filter(k => !theirs.has(k));
   const changed: string[] = [];
+  const changedDetail: Record<string, string> = {};
   if (withValues) {
+    // A key whose children are entries of their own (a top key holding an
+    // object) is judged through them; anything else is compared whole.
+    const expanded = (key: string): boolean => {
+      const prefix = `${key}.`;
+      for (const k of theirs.keys()) { if (k.startsWith(prefix)) { return true; } }
+      for (const k of mine.keys()) { if (k.startsWith(prefix)) { return true; } }
+      return false;
+    };
     for (const [key, value] of theirs) {
-      if (!mine.has(key)) { continue; }
-      // A top key with object children is judged through its children.
-      if (typeof value === 'object' && value !== null && !Array.isArray(value)) { continue; }
-      if (stableValue(mine.get(key)) !== stableValue(value)) { changed.push(key); }
+      if (!mine.has(key) || expanded(key)) { continue; }
+      const own = mine.get(key);
+      if (stableValue(own) === stableValue(value)) { continue; }
+      changed.push(key);
+      if (isPlainObject(own) && isPlainObject(value)) { changedDetail[key] = describeObjectDelta(own, value); }
     }
   }
-  return { added, projectOnly, changed };
+  return { added, projectOnly, changed, changedDetail };
 }
 
 export interface WatchedFileEvidence {
@@ -437,9 +522,9 @@ export interface WatchedFileEvidence {
  * lack. `unit` names the structure compared ("key" / "heading"). Never a bare
  * `merge`: the evidence says what to port and what to keep.
  */
-function costSignal(unit: string, added: string[], projectOnly: string[], changed: string[]): { parts: string[], suggested: ParitySuggestion } {
+function costSignal(unit: string, added: string[], projectOnly: string[], changed: string[], changedDetail: Record<string, string> = {}): { parts: string[], suggested: ParitySuggestion } {
   const units = (n: number): string => `${unit}${n === 1 ? '' : 's'}`;
-  const changedNote = unit === 'heading' ? `body differs in ${changed.length}: ${listNames(changed)}` : `values differ at: ${listNames(changed)}`;
+  const changedNote = unit === 'heading' ? `body differs in ${changed.length}: ${listNames(changed)}` : describeChangedKeys(changed, changedDetail);
   if (added.length > 0 && projectOnly.length > 0) {
     const parts = [`port upstream additions only: ${listNames(added)}`, `keep project-only ${units(projectOnly.length)}: ${listNames(projectOnly)}`];
     if (changed.length > 0) { parts.push(changedNote); }
@@ -474,7 +559,7 @@ export function watchedFileEvidence(filePath: string, project: string, upstream:
     if (mine && theirs) {
       const delta = configKeyDelta(mine, theirs);
       projectOnly = delta.projectOnly.length > 0;
-      ({ parts, suggested } = costSignal('key', delta.added, delta.projectOnly, delta.changed));
+      ({ parts, suggested } = costSignal('key', delta.added, delta.projectOnly, delta.changed, delta.changedDetail));
     }
     else {
       // No key structure (a shell hook, a JS config): the hunks are the evidence.
@@ -774,6 +859,19 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       surface: 'components',
       path: '.template/boilerplate.lock.json',
       evidence: `held back: ${input.heldBack.map(h => `${h.component}@${h.lockCommit ? h.lockCommit.slice(0, 7) : 'no lock'}`).join(', ')}`,
+      suggested: 'decide',
+      blocking: false,
+    });
+  }
+
+  // 5b. `.context/PBI/` still tracked in git: one row on Componentes. The
+  //     path list (hundreds of lines on a live run) lives in the recipe file,
+  //     never in the prompt.
+  if (input.pbiCache && input.pbiCache.tracked > 0) {
+    findings.push({
+      surface: 'components',
+      path: '.context/PBI/',
+      evidence: `${input.pbiCache.tracked} tracked path(s) still in git (Jira cache, gitignored by design); migration recipe saved to ${input.pbiCache.recipePath}`,
       suggested: 'decide',
       blocking: false,
     });

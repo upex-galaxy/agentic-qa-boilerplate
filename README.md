@@ -628,7 +628,7 @@ See the `/test-automation` skill (`references/kata-architecture.md`) for complet
 
 ## Keeping your project in sync with the boilerplate
 
-`bun run up` (updater 8.2) keeps your project aligned with the official template by tracking which upstream commit each piece of the framework (`.agents/skills/`, `scripts/`, `cli/`, `.husky/`, ...) was last synced from. Instead of overwriting framework files blindly, it:
+`bun run up` (updater 8.3) keeps your project aligned with the official template by tracking which upstream commit each piece of the framework (`.agents/skills/`, `scripts/`, `cli/`, `.husky/`, ...) was last synced from. Instead of overwriting framework files blindly, it:
 
 1. Reads `.template/boilerplate.lock.json` (committed in your repo) to find the last-synced SHA per component
 2. Clones the template lazily (sparse checkout, only the dirs that get synced)
@@ -661,6 +661,8 @@ Without a TTY on stdin and no `--auto` / `--interactive`, the run assumes `--aut
 **Safe re-runs and aborts.** The sync leaves its files uncommitted on purpose (review the prompt first). The run records what it wrote in `.template/last-apply.json` (gitignored, hashed), and the dirty-tree guard recognises those paths while their hash still matches, so `bun run up` twice in a row without committing is a no-op instead of an abort. A synced path edited by hand since, or an unrelated dirty synced path, still aborts, naming `Commit sugerido` and the prompt path. Uncommitted changes outside the paths the updater writes (your tests, your code, protected files) never block. A run that applies nothing leaves the tree byte-identical (the lock is not rewritten). An aborted run (dirty tree, corrupt lock, failed clone, declined migration or self-update) prints `Abortado.` and exits 1, never a success line.
 
 **Generated surfaces.** `CLAUDE.md` (the `@AGENTS.md` shim), `.claude/skills` (the alias), `.claude/commands/*.md` and `.opencode/commands/*.md` (wrappers), `.agents/skills/REGISTRY.md` and `kata-manifest.json` are rebuilt after every sync and never reported as drift. On the run that migrates a Claude-era project, the `.claude/skills` alias is deliberately NOT created (git cannot rewrite the staged `.claude/skills/*` deletions behind a symlink, so the pre-commit hook would fail): commit the migration, then `bun run agents:compat` creates it; the closing box says so, and any re-run before that commit keeps deferring it.
+
+**Updater 8.3 (ported from the dev boilerplate).** The dirty-tree guard blocks only on uncommitted work the sync would overwrite (a synced component file, an ignore file, `package.json`); dirt anywhere else (`tests/`, KATA code, a protected file) is listed as `N ruta(s) con cambios sin commitear fuera de lo que este updater escribe; no bloquean` and never aborts `--auto`. A path upstream added after the lock cursor never gets a "project edit overwritten" row (a migrated Claude-era repo had every moved skill in that state). A repo that still tracks `.context/PBI/` in git gets ONE Componentes row (`N tracked path(s) still in git ...; migration recipe saved to .agents/prompts/pbi-cache-migration.md`) with the full recipe in that file, never a terminal dump. A path just declared in `updater.protected_paths` gets its marker seeded with no row; its drift row fires on the next upstream change. The `cli` lock cursor advances after a self-update (the re-exec child used to find nothing left to sync and left `cli@<scaffold sha>` in the lock). MCP registry rows compare each server whole and say what differs: `context7: args differ`, `supabase: env keys differ`, at most three servers named.
 
 ```bash
 bun run up                # interactive
@@ -941,7 +943,7 @@ The development side lives in [agentic-dev-boilerplate](https://github.com/upex-
 
 This repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ (MCP file format, hook API, whether slash commands exist at all) each keeps a thin versioned adapter. Nothing is duplicated.
 
-> Visual walkthrough, including what happens when you update a project created before this change: [**Una fuente, tres harnesses**](https://upex-galaxy.github.io/agentic-qa-boilerplate/harnesses.es.html) (Spanish, published page with diagrams).
+> Visual walkthrough, including what happens when you update a project created before this change: [**Una fuente, tres harnesses**](https://upex-galaxy.github.io/agentic-qa-boilerplate/harnesses.es.html) (Spanish, published page with diagrams). The dev boilerplate publishes its own release page, with a parity table against this repo: [agentic-dev-boilerplate: harnesses](https://upex-galaxy.github.io/agentic-dev-boilerplate/harnesses.es.html).
 
 | Surface | Claude Code | OpenCode | Codex CLI + Desktop |
 | ------- | ----------- | -------- | ------------------- |
