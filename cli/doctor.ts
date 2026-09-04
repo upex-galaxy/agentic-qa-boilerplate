@@ -26,6 +26,7 @@
  * Side effects: none. This script never edits files or installs anything.
  */
 
+import type { CompatibilityCheck, CompatibilityErrorGroup } from './lib/agent-compatibility.ts';
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
@@ -33,12 +34,15 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import {
+  declaredMcpIds,
   validateHookCompatibility,
   validateMcpParity,
 } from './lib/agent-compatibility-contracts.ts';
 import {
   checkAgentCompatibility,
   commandWrapperCounts,
+  describeAliasStatus,
+  groupCompatibilityErrors,
   validateCanonicalSources,
 } from './lib/agent-compatibility.ts';
 import {
@@ -160,16 +164,23 @@ interface DirenvState {
 }
 
 export interface AgentCompatibilityDiagnostic {
+  /** Every file-verifiable part of the contract holds (alias, wrappers, hooks, MCP parity, shim). */
   file_correct: boolean
   errors: string[]
+  /** Errors bucketed per surface, so "alias pending" and "MCP drift" never read as one flat failure. */
+  errors_by_surface: Array<{ group: CompatibilityErrorGroup, label: string, errors: string[] }>
+  /** The alias on its own, whatever the verdict: `deferred` is expected right after the migration. */
+  alias: CompatibilityCheck['alias']
   instructions: {
     agents_md: boolean
     claude_shim: boolean
     canonical_skills: boolean
     claude_alias: boolean
   }
+  /** `expected` is the merged manifest count (upstream aliases plus the project overlay). */
   command_wrappers: { expected: number, claude: number, opencode: number, ok: boolean }
   hooks: { claude: boolean, opencode: boolean, codex: boolean, ok: boolean }
+  /** `expected_servers` is whatever `.mcp.json` declares, never a literal count. */
   mcp: { expected_servers: number, claude: boolean, opencode: boolean, codex: boolean, parity: boolean }
   codex: {
     config_exists: boolean
@@ -344,6 +355,9 @@ export function diagnoseAgentCompatibility(
   let wrappers = { expected: 0, claude: 0, opencode: 0 };
   try { wrappers = commandWrapperCounts(root); }
   catch { /* compatibility.errors already carries manifest diagnostics */ }
+  let expectedServers = 0;
+  try { expectedServers = declaredMcpIds(root).length; }
+  catch { /* mcpErrors already carries the .mcp.json diagnostics */ }
 
   const hasHookError = (needle: string): boolean => hookErrors.some(error => error.includes(needle));
   const hasMcpError = (needle: string): boolean => mcpErrors.some(error => error.includes(needle));
@@ -356,6 +370,8 @@ export function diagnoseAgentCompatibility(
   return {
     file_correct: compatibility.ok,
     errors: [...new Set(compatibility.errors)],
+    errors_by_surface: groupCompatibilityErrors([...new Set(compatibility.errors)]),
+    alias: compatibility.alias,
     instructions: {
       agents_md: !agentsError,
       claude_shim: !claudeShimError,
@@ -364,7 +380,7 @@ export function diagnoseAgentCompatibility(
     },
     command_wrappers: {
       ...wrappers,
-      ok: wrappers.expected === 10
+      ok: wrappers.expected > 0
         && wrappers.claude === wrappers.expected
         && wrappers.opencode === wrappers.expected,
     },
@@ -375,7 +391,7 @@ export function diagnoseAgentCompatibility(
       ok: hookErrors.length === 0,
     },
     mcp: {
-      expected_servers: 6,
+      expected_servers: expectedServers,
       claude: !hasMcpError('.mcp.json'),
       opencode: !hasMcpError('opencode.jsonc'),
       codex: codexConfigExists && !hasMcpError('.codex/config.toml'),
@@ -636,17 +652,20 @@ function printHuman(report: DoctorReport): void {
   process.stdout.write('\n');
 
   // File + dep checks as a table
+  const compat = report.agent_compatibility;
+  const hostList = (hosts: { claude: boolean, opencode: boolean, codex: boolean }): string =>
+    (['claude', 'opencode', 'codex'] as const).map(host => `${host}:${hosts[host] ? 'ok' : 'FAIL'}`).join(' ');
   const checks: string[][] = [
     ['.env file', report.env_file_exists ? tui.statusIcon('ok') : tui.statusIcon('fail')],
     ['.mcp.json', report.mcp_json_exists ? tui.statusIcon('ok') : tui.statusIcon('fail')],
     ['opencode.jsonc', report.opencode_jsonc_exists ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['AGENTS.md + CLAUDE.md shim', report.agent_compatibility.instructions.agents_md && report.agent_compatibility.instructions.claude_shim ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['Canonical .agents/skills + Claude alias', report.agent_compatibility.instructions.canonical_skills && report.agent_compatibility.instructions.claude_alias ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['Command wrappers (10 Claude + 10 OpenCode)', report.agent_compatibility.command_wrappers.ok ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['Hook adapters (Claude/OpenCode/Codex)', report.agent_compatibility.hooks.ok ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['MCP parity (6 servers x 3 harnesses)', report.agent_compatibility.mcp.parity ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['Codex repository config', report.agent_compatibility.codex.repository_configured ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['Codex CLI executable', report.agent_compatibility.codex.cli_detected ? tui.statusIcon('ok') : `${tui.statusIcon('warn')} not found; Desktop remains configured`],
+    ['AGENTS.md + CLAUDE.md shim', compat.instructions.agents_md && compat.instructions.claude_shim ? tui.statusIcon('ok') : tui.statusIcon('fail')],
+    ['Canonical .agents/skills + Claude alias', compat.instructions.canonical_skills && compat.instructions.claude_alias ? tui.statusIcon('ok') : tui.statusIcon('fail')],
+    [`Command wrappers (${compat.command_wrappers.expected} Claude + ${compat.command_wrappers.expected} OpenCode)`, compat.command_wrappers.ok ? tui.statusIcon('ok') : `${tui.statusIcon('fail')} ${compat.command_wrappers.claude}/${compat.command_wrappers.opencode} of ${compat.command_wrappers.expected}`],
+    ['Hook adapters (Claude/OpenCode/Codex)', compat.hooks.ok ? tui.statusIcon('ok') : `${tui.statusIcon('fail')} ${hostList(compat.hooks)}`],
+    [`MCP parity (${compat.mcp.expected_servers} servers x 3 harnesses)`, compat.mcp.parity ? tui.statusIcon('ok') : `${tui.statusIcon('fail')} ${hostList(compat.mcp)}`],
+    ['Codex repository config', compat.codex.repository_configured ? tui.statusIcon('ok') : tui.statusIcon('fail')],
+    ['Codex CLI executable', compat.codex.cli_detected ? tui.statusIcon('ok') : `${tui.statusIcon('warn')} not found; Desktop remains configured`],
     ['Codex repository trust', `${tui.statusIcon('warn')} required; runtime state is not file-verifiable`],
     ['node_modules', report.deps_installed ? tui.statusIcon('ok') : tui.statusIcon('fail')],
     ['Playwright browsers', report.playwright_browsers ? tui.statusIcon('ok') : tui.statusIcon('warn')],
@@ -678,6 +697,20 @@ function printHuman(report: DoctorReport): void {
     v === 'set' ? 'set' : 'missing',
   ]);
   process.stdout.write(`${tui.table(['Variable', 'Status', 'Value'], envRows)}\n`);
+
+  if (compat.errors.length > 0) {
+    tui.section('Cross-harness compatibility errors');
+    // The alias line stands on its own: right after the migration it is
+    // deferred on purpose, and that must not read as one more broken contract.
+    process.stdout.write(`  ${tui.statusIcon(compat.alias.status === 'valid' ? 'ok' : compat.alias.status === 'deferred' ? 'warn' : 'fail')} ${describeAliasStatus(compat.alias)}\n`);
+    for (const bucket of compat.errors_by_surface) {
+      process.stdout.write(`  [${bucket.group}] ${bucket.label}\n`);
+      for (const error of bucket.errors) {
+        process.stdout.write(`    ${tui.statusIcon('fail')} ${error}\n`);
+      }
+    }
+    process.stdout.write('  Generated artifacts: bun run agents:compat. Canonical/config files: fix by hand, then re-run doctor.\n\n');
+  }
 
   if (report.pending_actions.length > 0) {
     tui.section('Pending actions');

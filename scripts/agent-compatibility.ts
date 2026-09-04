@@ -7,11 +7,18 @@
  * file's header for the failure this split prevents. This file is the CLI
  * surface only: argument parsing, printing, exit code. It also re-exports the
  * engine so `scripts/agent-compatibility.ts` stays a valid import path.
+ *
+ * Output contract: the alias status line is printed on EVERY run, whatever
+ * the overall verdict, and the errors are grouped per surface (instructions,
+ * alias, wrappers, hooks, MCP). "Alias pending the migration commit" and "MCP
+ * drift" must be distinguishable at a glance, never one flat failure.
  */
 
 import type { CompatibilityCheck } from '../cli/lib/agent-compatibility.ts';
 import {
   checkAgentCompatibility,
+  describeAliasStatus,
+  groupCompatibilityErrors,
   repairClaudeSkillsAlias,
   repairCommandWrappers,
 } from '../cli/lib/agent-compatibility.ts';
@@ -19,12 +26,18 @@ import {
 export * from '../cli/lib/agent-compatibility.ts';
 
 function printCheck(result: CompatibilityCheck): void {
+  console.log(describeAliasStatus(result.alias));
   if (result.ok) {
-    console.log(`Agent compatibility OK: ${result.alias.path} -> ${result.alias.target} (${result.alias.type})`);
+    console.log('Agent compatibility OK.');
     return;
   }
-  for (const error of result.errors) {
-    console.error(`ERROR: ${error}`);
+  const groups = groupCompatibilityErrors(result.errors);
+  console.error(`Agent compatibility FAILED: ${result.errors.length} error(s) across ${groups.length} surface(s).`);
+  for (const bucket of groups) {
+    console.error(`[${bucket.group}] ${bucket.label}`);
+    for (const error of bucket.errors) {
+      console.error(`  ERROR: ${error}`);
+    }
   }
 }
 
@@ -33,7 +46,7 @@ if (import.meta.main) {
   try {
     if (!checkOnly) {
       const alias = repairClaudeSkillsAlias();
-      console.log(`Claude skills alias ${alias.status}: ${alias.path} -> ${alias.target} (${alias.type})`);
+      console.log(describeAliasStatus(alias));
       const wrappers = repairCommandWrappers();
       console.log(`Command wrappers synchronized: ${wrappers} updated`);
     }
