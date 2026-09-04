@@ -23,9 +23,11 @@ import {
   prefetchedUpstreamDir,
   readLastApply,
   reconcileComponentsByContent,
+  selfUpdatedComponents,
   splitByLastApply,
   syncStateWriteNeeded,
   UPDATER_OWNED_PATHS_ENV,
+  UPDATER_SELF_UPDATED_ENV,
   UPDATER_UPSTREAM_DIR_ENV,
   writeLastApply,
 } from './updater-core.ts';
@@ -498,7 +500,7 @@ describe('isWithinWriteSurface (the dirty-tree guard blocks only on paths the sy
     deprecatedFiles: [],
     excludePaths: ['.agents/skills/REGISTRY.md'],
     repoOnlyPaths: ['docs/qa-standard'],
-    bootstrapOnlyPaths: ['.husky/pre-push', '.agents/project.yaml'],
+    bootstrapOnlyPaths: ['.husky/pre-push', '.agents/project.yaml', 'scripts/lint-skills.ts'],
   };
 
   test('synced component files, ignore files and package.json are inside', () => {
@@ -512,14 +514,44 @@ describe('isWithinWriteSurface (the dirty-tree guard blocks only on paths the sy
 
   test('project code, protected paths, bootstrap-only components, excluded and repo-only paths are outside', () => {
     expect(isWithinWriteSurface(cfg, 'tests/e2e/login.spec.ts')).toBe(false);
+    expect(isWithinWriteSurface(cfg, 'tests/components/pages/login.page.ts')).toBe(false);
     expect(isWithinWriteSurface(cfg, 'AGENTS.md')).toBe(false);
     expect(isWithinWriteSurface(cfg, '.husky/pre-push')).toBe(false);
+    expect(isWithinWriteSurface(cfg, 'scripts/lint-skills.ts')).toBe(false);
     expect(isWithinWriteSurface(cfg, '.agents/project.yaml')).toBe(false);
     expect(isWithinWriteSurface(cfg, '.codex/config.toml')).toBe(false);
     expect(isWithinWriteSurface(cfg, '.agents/skills/REGISTRY.md')).toBe(false);
     expect(isWithinWriteSurface(cfg, 'docs/qa-standard/x.md')).toBe(false);
     // Segment-aware: `.husky` never swallows `.husky-old`.
     expect(isWithinWriteSurface(cfg, '.husky-old/pre-push')).toBe(false);
+  });
+});
+
+describe('cli lock cursor after a self-update', () => {
+  // Live finding: the re-exec child found `cli/` identical to upstream (the
+  // parent had just written it), walked no entry for the component and never
+  // advanced its cursor, so the lock kept `cli@<scaffold sha>` forever.
+  const cfg = { selfUpdateComponent: 'cli' };
+  const head = 'a'.repeat(40);
+
+  test('the component the parent refreshed to this very sha is settled without an entry', () => {
+    expect(selfUpdatedComponents(cfg, head, fakeEnv({ [UPDATER_SELF_UPDATED_ENV]: head }))).toEqual(['cli']);
+    // No self-update, an upstream that moved since the parent's fetch, or no self-update component: nothing.
+    expect(selfUpdatedComponents(cfg, head, fakeEnv())).toEqual([]);
+    expect(selfUpdatedComponents(cfg, head, fakeEnv({ [UPDATER_SELF_UPDATED_ENV]: 'b'.repeat(40) }))).toEqual([]);
+    expect(selfUpdatedComponents({}, head, fakeEnv({ [UPDATER_SELF_UPDATED_ENV]: head }))).toEqual([]);
+  });
+
+  test('a settled component advances next to the ones with entries; one with a skipped entry is still held back', () => {
+    const entry = { component: 'docs', path: 'docs/a.md', status: 'M' as const, fromSha: '', toSha: 'x', added: 1, removed: 0, isBinary: false, templateOldSha: 'y', templateNewSha: 'x', classification: 'clean-fastforward' as const };
+    const advanced = computeComponentAdvancement({ applied: [{ entry, resolution: 'theirs' }], skipped: [], failed: [] }, [], ['cli']);
+    expect(advanced.componentsAdvanced.sort()).toEqual(['cli', 'docs']);
+    expect(advanced.componentsHeldBack).toEqual([]);
+    // Settled alone (a no-op run after the self-update): the cursor still moves.
+    expect(computeComponentAdvancement({ applied: [], skipped: [], failed: [] }, [], ['cli'])).toEqual({ componentsAdvanced: ['cli'], componentsHeldBack: [] });
+    // A component with a skipped entry of its own is never settled by the list.
+    const cliEntry = { ...entry, component: 'cli', path: 'cli/x.ts' };
+    expect(computeComponentAdvancement({ applied: [], skipped: [cliEntry], failed: [] }, [], ['cli'])).toEqual({ componentsAdvanced: [], componentsHeldBack: ['cli'] });
   });
 });
 

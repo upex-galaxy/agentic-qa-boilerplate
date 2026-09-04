@@ -12,6 +12,7 @@ import {
   projectProtectedPaths,
   readProjectProtectedPaths,
   resolveMarkerPath,
+  splitFirstProjectAdvice,
 } from './updater-drift.ts';
 
 const temporaryRoots: string[] = [];
@@ -123,5 +124,35 @@ describe('detectProtectedDrift over a project-declared entry', () => {
     // Upstream changed: one more nudge.
     write(upstream, '.husky/pre-push', '#!/bin/sh\nbun run repo:check\nbun run new:gate\n');
     expect(detectProtectedDrift(watchlist, upstream, project).map(d => [d.path, d.firstAdvice])).toEqual([['.husky/pre-push', false]]);
+  });
+});
+
+describe('a freshly protected path gets its marker seeded, not a row', () => {
+  // Live finding (Bunkai, third run): `scripts/lint-skills.ts` was merged by
+  // hand, declared in `updater.protected_paths` and left uncommitted; the
+  // dry-run and the re-run both showed one residual "content differs" row
+  // for it until a real run had persisted the marker.
+  test('project-declared first advice is seeded; upstream first advice and later upstream changes are advised', () => {
+    const upstream = temporaryRoot();
+    const project = temporaryRoot();
+    write(upstream, 'AGENTS.md', '# upstream memory\n');
+    write(project, 'AGENTS.md', '# project memory\n');
+    write(upstream, 'scripts/lint-skills.ts', 'upstream\n');
+    write(project, 'scripts/lint-skills.ts', 'project merge, uncommitted\n');
+    const watchlist = mergeProtectedWatchlist([{ path: 'AGENTS.md', reason: 'memory' }], ['scripts/lint-skills.ts']);
+
+    const first = splitFirstProjectAdvice(detectProtectedDrift(watchlist, upstream, project));
+    expect(first.advised.map(d => d.path)).toEqual(['AGENTS.md']);
+    expect(first.seeded.map(d => [d.path, d.firstAdvice])).toEqual([['scripts/lint-skills.ts', true]]);
+    // The wrapper persists both: the seeded marker holds the current upstream sha.
+    persistMarkers([...first.advised, ...first.seeded], project);
+    expect(readFileSync(resolveMarkerPath(first.seeded[0], project), 'utf8').trim()).toBe(first.seeded[0].upstreamSha);
+    // Same upstream, still uncommitted locally: nothing at all.
+    expect(detectProtectedDrift(watchlist, upstream, project)).toEqual([]);
+    // Upstream changed the protected file: now the row is due, as second advice.
+    write(upstream, 'scripts/lint-skills.ts', 'upstream v2\n');
+    const second = splitFirstProjectAdvice(detectProtectedDrift(watchlist, upstream, project));
+    expect(second.seeded).toEqual([]);
+    expect(second.advised.map(d => [d.path, d.firstAdvice])).toEqual([['scripts/lint-skills.ts', false]]);
   });
 });
