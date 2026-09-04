@@ -69,20 +69,23 @@ The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is 
 
 **Skills.** All 19 skills live committed under `.agents/skills/`. OpenCode and Codex discover that directory natively. Claude Code reaches the same tree through `.claude/skills`, a POSIX symlink (Windows junction) that is **generated and gitignored** — never committed, never hand-edited.
 
-**Commands.** The 10 slash commands carry no workflow body. `.claude/commands/*.md` and `.opencode/commands/*.md` are 7-line wrappers generated from `.agents/compatibility/command-aliases.json`; each names a target skill plus a mode and forwards `$ARGUMENTS` unchanged. Codex has no wrapper layer — it invokes the skill directly. A wrapper that grows a body fails the compatibility check as `contains workflow prose`.
+**Commands.** The 10 slash commands carry no workflow body. `.claude/commands/*.md` and `.opencode/commands/*.md` are 7-line wrappers generated from `.agents/compatibility/command-aliases.json`, overlaid by the optional project manifest `command-aliases.project.json`; each names a target skill plus a mode and forwards `$ARGUMENTS` unchanged. Codex has no wrapper layer: it invokes the skill directly. A wrapper that grows a body fails the compatibility check as `contains workflow prose`; a wrapper file no manifest produced fails by name.
 
 **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin. The contract is enforced by `cli/lib/agent-compatibility-contracts.ts`: no absolute personal paths, no duplicated hook file, OpenCode must mutate `output.system` in place.
 
-**MCP.** The same six servers — `context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman` — exist in all three configs. Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape before comparison, so adding a server to one host only is a failure.
+**MCP.** The canonical server set is whatever `.mcp.json` declares (`context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman` out of the box); every server there must exist in the other two configs. Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape and compared on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The six boilerplate-known ids additionally get a strict per-host shape check when the project declares them; any other server gets the generic check only. Codex never expands `${VAR}`, so `.codex/config.toml` names every secret by variable (`bearer_token_env_var`, `env_vars`).
 
 **Generated versus versioned (hard rule).** Every bold `[generated]` cell above is output. Edit the source, then regenerate:
 
 | Generated artifact | Its source | Regenerate |
 |--------------------|------------|------------|
+| `CLAUDE.md` (one-line `@AGENTS.md` shim) | `AGENTS.md` | `bun run agents:compat` |
 | `.claude/skills` (POSIX symlink / Windows junction) | `.agents/skills/` | `bun run agents:compat` |
-| 10 Claude + 10 OpenCode command wrappers | `.agents/compatibility/command-aliases.json` | `bun run agents:compat` |
+| One Claude + one OpenCode wrapper per alias (10 upstream, plus any project-declared) | `.agents/compatibility/command-aliases.json`, overlaid by the optional `command-aliases.project.json` | `bun run agents:compat` |
 
-`bun run agents:compat:check` validates the whole contract — alias target, both wrapper sets byte-for-byte against the manifest, hook adapters, MCP parity. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit.
+`bun run agents:compat:check` validates the whole contract (shim bytes, alias target, both wrapper sets byte-for-byte against the merged manifest, hook adapters, MCP parity), prints the alias status line on every run and groups errors per surface. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit.
+
+**Project-owned commands and the updater.** A project declares its own slash commands in `.agents/compatibility/command-aliases.project.json` (same schema, optional, never synced): upstream aliases first, overlay overrides by `alias` name or adds, `wrapperHosts` from upstream. A wrapper file no manifest produced fails the check by name instead of being ignored. `bun run up` (8.2) closes with one "Estado por superficie" table (10 rows) and ONE parity prompt saved to `.agents/prompts/parity-plan.md`: numbered rows with evidence, one per path, each awaiting `keep project | take upstream | merge` before the AI edits anything; `take upstream` is suggested only where the project lacks the content entirely, and every `merge` on a watched file says what to port and what to keep. `--strict` turns a blocking parity finding into exit 1; an aborted run prints `Abortado.` and exits 1; `.claude/settings.json`, `.codex/` and the husky hooks ship once when missing and then sit on the protected watchlist next to `AGENTS.md`, `.mcp.json`, `opencode.jsonc` and `.codex/config.toml`, never overwritten. A project extends that watchlist through `updater.protected_paths` in `.agents/project.yaml`. On the migration run the `.claude/skills` alias waits for the migration commit (`bun run agents:compat` creates it).
 
 **Two harness-specific facts worth knowing.** Codex loads project `.codex/` config and hooks only in a repository marked trusted, and `bun run setup:doctor` reports that trust separately because it is runtime state no file read can verify. Codex Desktop consumes the same repository config as the CLI — no second convention, no extra directory.
 
@@ -374,7 +377,9 @@ Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `/
 
 ### When to Update the Harness Adapters
 
-- **New slash command** → add the entry to `.agents/compatibility/command-aliases.json`, then `bun run agents:compat`. Never hand-write a wrapper under `.claude/commands/` or `.opencode/commands/`
+- **New slash command (boilerplate)** → add the entry to `.agents/compatibility/command-aliases.json`, then `bun run agents:compat`. Never hand-write a wrapper under `.claude/commands/` or `.opencode/commands/`
+- **New slash command (a downstream project)** → declare it in `.agents/compatibility/command-aliases.project.json` (same schema; never synced by `bun run up`), then `bun run agents:compat`. A wrapper file neither manifest produced fails `agents:compat:check` by name
+- **New MCP server** → declare it in `.mcp.json` first, then mirror it in `opencode.jsonc` and `.codex/config.toml` with the same `.env` dependencies (Codex: `env_vars` / `bearer_token_env_var`, never `${VAR}`). `agents:compat:check` names the server and the host that lacks it
 - **New or renamed skill** → create it under `.agents/skills/`. Nothing else to do: OpenCode and Codex read it directly, Claude Code sees it through the generated alias
 - **Hook contract text changes** → edit `.agents/hooks/personality-reinject.mjs` only. The three adapters call into it and stay untouched
 

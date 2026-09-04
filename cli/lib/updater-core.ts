@@ -34,7 +34,9 @@ import type {
   GitVersion,
   IgnoreDelta,
   IgnoreLineOption,
+  LocalEditOverwritten,
   PackageJsonDelta,
+  PackageJsonKeptKey,
   PackageJsonKeyOption,
   PairedDiff,
   ReportSink,
@@ -79,16 +81,14 @@ export function errorMessage(err: unknown): string {
 }
 
 /**
- * Recursive count of plain files under a directory. Returns 0 when the dir is missing.
- */
-/**
  * True when a repo-relative path falls under one of the `repoOnlyPaths` prefixes
  * — the boilerplate's own material, which never travels to a consumer project.
  *
  * A prefix matches the path itself or anything beneath it, and only at a segment
  * boundary: `docs/qa-standard` must not swallow a sibling called
  * `docs/qa-standards` or `docs/qa-standard-archive`. Backslashes are normalized
- * so a Windows-shaped entry path compares equal to a POSIX-shaped prefix.
+ * so a Windows-shaped entry path compares equal to a POSIX-shaped prefix. An
+ * empty prefix never matches, so a stray entry cannot blank the whole sync.
  */
 export function isRepoOnlyPath(filePath: string, prefixes: string[]): boolean {
   const p = filePath.replace(/\\/g, '/');
@@ -99,6 +99,9 @@ export function isRepoOnlyPath(filePath: string, prefixes: string[]): boolean {
   });
 }
 
+/**
+ * Recursive count of plain files under a directory. Returns 0 when the dir is missing.
+ */
 export function countFilesInDir(dir: string): number {
   if (!fs.existsSync(dir)) { return 0; }
   let count = 0;
@@ -388,7 +391,7 @@ export function normalizeWhitespace(s: string): string {
  *  10. else → 'locally-diverged'
  *
  * Repo-specific config flows through `components` (for `bootstrapOnly`) and
- * `agentsBootstrapFiles` (for the `agents` component's basename allowlist).
+ * `agentsBootstrapFiles` (bootstrap-only paths; see `isBootstrapOnlyFile`).
  */
 /**
  * Match a delta path against a component's file-list whitelist.
@@ -416,6 +419,61 @@ export function entryMatchesFileList(filePath: string, component: Component): bo
   return false;
 }
 
+/**
+ * Whether a file is framework-exempt — i.e. its basename matches the component's
+ * `frameworkFiles` allowlist (so it flows through despite `bootstrapOnly`), UNLESS
+ * its full repo-relative path is re-exempted via `frameworkFilesExcept` (project
+ * state that must be preserved, e.g. `.context/ADR/README.md`).
+ *
+ * Single source of truth for both `classifyFile` and the batch loop in
+ * `computeDelta` — they MUST agree or bootstrap/diverged classification drifts.
+ */
+export function isFrameworkExemptPath(
+  component: Component | undefined,
+  relPath: string,
+): boolean {
+  if (component?.bootstrapOnly !== true) { return false; }
+  const basename = path.basename(relPath);
+  if (component.frameworkFiles?.includes(basename) !== true) { return false; }
+  // Path-level re-exemption: keep this file project-owned (bootstrap), not flow-through.
+  if (component.frameworkFilesExcept?.includes(relPath) === true) { return false; }
+  return true;
+}
+
+/**
+ * True when `relPath` is bootstrap-only: delivered once when missing, then
+ * project-owned and never overwritten. Three ways in:
+ *
+ *  1. the whole component is `bootstrapOnly`, except its framework-exempt
+ *     files (`frameworkFiles` minus `frameworkFilesExcept`), which flow through;
+ *  2. the repo-relative path is listed in `bootstrapOnlyPaths`, whatever
+ *     component owns it (`.agents/compatibility/command-aliases.project.json`
+ *     belongs to `agent-compatibility`, not `agents`);
+ *  3. legacy `agents` contract: a basename listed there (`project.yaml`,
+ *     `jira-*.json`) is bootstrap-only for the `agents` root file-list, unless
+ *     `agentsFrameworkFiles` names it as boilerplate-owned (`README.md`).
+ *
+ * Single source of truth for `classifyFile`, `reconcileComponentsByContent`
+ * and the fresh-install bootstrap walk: they MUST agree.
+ */
+export function isBootstrapOnlyFile(
+  relPath: string,
+  component: Component | undefined,
+  bootstrapOnlyPaths: readonly string[],
+  agentsFrameworkFiles: readonly string[] = [],
+): boolean {
+  if (isFrameworkExemptPath(component, relPath)) { return false; }
+  if (component?.bootstrapOnly === true) { return true; }
+  const rel = relPath.replace(/\\/g, '/');
+  const basename = path.basename(rel);
+  const isAgentsRoot = component?.name === 'agents';
+  if (isAgentsRoot && agentsFrameworkFiles.includes(basename)) { return false; }
+  return bootstrapOnlyPaths.some((raw) => {
+    const p = raw.replace(/\\/g, '/');
+    return p === rel || (isAgentsRoot && path.basename(p) === basename);
+  });
+}
+
 export function classifyFile(
   entry: Omit<DeltaEntry, 'classification'>,
   templateDir: string,
@@ -439,15 +497,7 @@ export function classifyFile(
 
   // 4. Bootstrap-aware override
   const component = components.find(c => c.name === entry.component);
-  const basename = path.basename(entry.path);
-  const isFrameworkExempt = (
-    component?.bootstrapOnly === true
-    && component.frameworkFiles?.includes(basename) === true
-  );
-  const isBootstrapFile = !isFrameworkExempt && (
-    (component?.bootstrapOnly === true)
-    || (entry.component === 'agents' && agentsBootstrapFiles.includes(basename))
-  );
+  const isBootstrapFile = isBootstrapOnlyFile(entry.path, component, agentsBootstrapFiles);
   if (isBootstrapFile) {
     return localExists ? 'unchanged' : 'new-upstream';
   }
@@ -807,13 +857,7 @@ export function reconcileComponentsByContent(
       const ext = path.extname(relPath).toLowerCase();
       if (BINARY_EXTENSIONS.has(ext)) { continue; } // mirror classifyFile rule 1
 
-      const basename = path.basename(relPath);
-      const isFrameworkExempt = component.bootstrapOnly === true
-        && component.frameworkFiles?.includes(basename) === true;
-      const isBootstrapFile = !isFrameworkExempt && (
-        component.bootstrapOnly === true
-        || (component.name === 'agents' && agentsBootstrapFiles.includes(basename))
-      );
+      const isBootstrapFile = isBootstrapOnlyFile(relPath, component, agentsBootstrapFiles);
 
       const localExists = fs.existsSync(path.join(localRepoRoot, relPath));
       if (isBootstrapFile) {
@@ -925,6 +969,284 @@ function dedupeDeltaByPath(
  * Used by `dedupeDeltaByPath` to pick the most-specific owner when two
  * components both match a file.
  */
+// ============================================================================
+// DIRTY-TREE GUARD HELPERS (pure; exported for tests)
+// ============================================================================
+
+/**
+ * Env var through which the parent process tells its self-update re-exec child
+ * which repo-relative paths the updater ITSELF dirtied before spawning it
+ * (cross-harness migration output, the refreshed CLI files). Newline-separated.
+ */
+export const UPDATER_OWNED_PATHS_ENV = 'UPEX_UPDATER_OWNED_PATHS';
+
+/**
+ * Where a run records what it wrote. Gitignored. A sync deliberately leaves
+ * its output uncommitted (the parity prompt is reviewed first), so the NEXT
+ * run's dirty-tree guard must recognise that output as its own: a dirty path
+ * whose current sha256 equals the recorded one was not edited by the user and
+ * is exempt. Anything else (an unrelated file, or a synced file the user
+ * edited since) still aborts. See `splitByLastApply`.
+ */
+export const LAST_APPLY_FILE = '.template/last-apply.json';
+
+/**
+ * Paths named by `git status --porcelain` output. Renames (`R  old -> new`)
+ * report BOTH sides: either one being foreign is reason enough to stop.
+ * Quoted paths (spaces, unicode) lose their quotes. Tolerates a line whose
+ * leading status column was trimmed away (` D path` -> `D path`).
+ */
+export function parsePorcelainPaths(porcelain: string): string[] {
+  const out: string[] = [];
+  for (const raw of porcelain.split('\n')) {
+    if (raw.trim() === '') { continue; }
+    // `XY <path>`: two status columns, one space, then the path. A line whose
+    // leading column was trimmed away (`D path`) has one column, then a space.
+    let rest: string;
+    if (raw.length > 3 && raw[2] === ' ') { rest = raw.slice(3); }
+    else if (raw.length > 2 && raw[1] === ' ') { rest = raw.slice(2); }
+    else { rest = raw.trim(); }
+    for (const side of rest.split(' -> ')) {
+      const unquoted = side.trim().replace(/^"(.*)"$/, '$1');
+      if (unquoted !== '') { out.push(unquoted.replace(/\\/g, '/')); }
+    }
+  }
+  return out;
+}
+
+/**
+ * Dirty paths that are NOT confined to `exemptPrefixes` (exact path or
+ * directory prefix at a segment boundary). These are the ones the guard must
+ * still refuse: work the user has not committed. Everything under an exempt
+ * prefix was produced by the updater itself.
+ */
+export function foreignDirtyPaths(porcelain: string, exemptPrefixes: string[]): string[] {
+  return parsePorcelainPaths(porcelain).filter(p => !isRepoOnlyPath(p, exemptPrefixes));
+}
+
+/** Repo-relative paths a component owns: file-list literals or directory trees. */
+export function componentOwnedPaths(component: Component): string[] {
+  const claim = componentClaims(component);
+  return [...claim.literals, ...claim.trees].map(p => p.replace(/\\/g, '/'));
+}
+
+/**
+ * Paths whose dirtiness the guard ignores because the updater wrote them:
+ *
+ *  - the lock file, `.backups/` and the last-apply record, always: all three
+ *    are updater-owned, and a lock left uncommitted by the previous run is
+ *    not the user's work;
+ *  - whatever the wrapper reports as its own preflight output
+ *    (`opts.updaterOwnedPaths`, e.g. the cross-harness migration), plus the
+ *    same list handed down by a parent process through UPDATER_OWNED_PATHS_ENV;
+ *  - in the self-update re-exec child ONLY (`UPEX_UPDATER_REEXEC=1`): the
+ *    self-update component's own paths. The parent refreshed those files
+ *    moments ago and re-launched us on purpose; refusing to continue over them
+ *    is what forced downstream projects to reach for `--force` after every CLI
+ *    release.
+ *
+ * Never exempts anything else: a genuinely uncommitted user file still aborts.
+ */
+export function dirtyTreeExemptions(
+  cfg: Pick<UpdaterConfig, 'components' | 'selfUpdateComponent' | 'versionFile'>,
+  opts: { updaterOwnedPaths?: string[] },
+  env: NodeJS.ProcessEnv = process.env,
+): string[] {
+  // The last-apply record is updater-owned like the lock (and gitignored once
+  // the synced `.gitignore` line lands; exempt either way).
+  const exempt = new Set<string>([cfg.versionFile, '.backups', LAST_APPLY_FILE, ...(opts.updaterOwnedPaths ?? [])]);
+  for (const p of (env[UPDATER_OWNED_PATHS_ENV] ?? '').split('\n')) {
+    if (p.trim() !== '') { exempt.add(p.trim()); }
+  }
+  if (env.UPEX_UPDATER_REEXEC === '1' && cfg.selfUpdateComponent) {
+    const selfComp = cfg.components.find(c => c.name === cfg.selfUpdateComponent);
+    if (selfComp) { for (const p of componentOwnedPaths(selfComp)) { exempt.add(p); } }
+  }
+  return [...exempt];
+}
+
+/**
+ * True when the sync could WRITE `relPath`: it sits inside a component the run
+ * syncs (file-list literal or directory tree), or it is an ignore file, a
+ * `package.json` spec, or a deprecated file. Never true for a path the sync
+ * refuses to touch: a bootstrap-only component, a bootstrap-only path (the
+ * protected watchlist inside a synced component), an excluded path, or the
+ * boilerplate's own material.
+ *
+ * The dirty-tree guard blocks ONLY on user work inside this surface: those
+ * files would be overwritten and their pre-write backup lives in `.backups/`
+ * (gitignored). Uncommitted work anywhere else (`tests/`, project code, a
+ * protected file) is listed and never blocks: the sync does not write there.
+ */
+export function isWithinWriteSurface(
+  cfg: Pick<UpdaterConfig, 'components' | 'ignoreFiles' | 'packageJsonSpecs' | 'deprecatedFiles' | 'excludePaths' | 'repoOnlyPaths' | 'bootstrapOnlyPaths'>,
+  relPath: string,
+): boolean {
+  const p = relPath.replace(/\\/g, '/');
+  const never = new Set([...(cfg.excludePaths ?? []), ...cfg.bootstrapOnlyPaths].map(x => x.replace(/\\/g, '/')));
+  if (never.has(p) || isRepoOnlyPath(p, cfg.repoOnlyPaths ?? [])) { return false; }
+  const exact = new Set<string>([
+    ...cfg.ignoreFiles.map(ig => ig.path),
+    ...(cfg.packageJsonSpecs ?? []).map(spec => spec.path),
+    ...cfg.deprecatedFiles.map(dep => dep.path),
+  ].map(x => x.replace(/\\/g, '/')));
+  if (exact.has(p)) { return true; }
+  for (const c of cfg.components) {
+    if (c.bootstrapOnly) { continue; }
+    if (isRepoOnlyPath(p, componentOwnedPaths(c))) { return true; }
+  }
+  return false;
+}
+
+// ============================================================================
+// LAST-APPLY RECORD (re-run safety after an uncommitted sync)
+// ============================================================================
+
+export interface LastApplyRecord {
+  upstreamSha: string
+  writtenAt: string
+  /** The commit message the closing box suggested for that sync. */
+  suggestedCommit: string
+  /** Repo-relative path of the saved parity prompt, or null when the run had no findings. */
+  promptFile: string | null
+  /** Repo-relative path -> sha256 of the content written, or null for a path the run deleted / unindexed. */
+  files: Record<string, string | null>
+}
+
+/** sha256 (hex) of a file's bytes, or null when it does not exist / is not a plain file. */
+export function sha256File(absPath: string): string | null {
+  try {
+    if (!fs.statSync(absPath).isFile()) { return null; }
+    const hasher = new Bun.CryptoHasher('sha256');
+    hasher.update(fs.readFileSync(absPath));
+    return hasher.digest('hex');
+  }
+  catch {
+    return null;
+  }
+}
+
+export function readLastApply(repoRoot: string): LastApplyRecord | null {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(path.join(repoRoot, LAST_APPLY_FILE), 'utf8')) as Partial<LastApplyRecord>;
+    if (typeof parsed !== 'object' || parsed === null || typeof parsed.files !== 'object' || parsed.files === null) { return null; }
+    return {
+      upstreamSha: typeof parsed.upstreamSha === 'string' ? parsed.upstreamSha : '',
+      writtenAt: typeof parsed.writtenAt === 'string' ? parsed.writtenAt : '',
+      suggestedCommit: typeof parsed.suggestedCommit === 'string' ? parsed.suggestedCommit : '',
+      promptFile: typeof parsed.promptFile === 'string' ? parsed.promptFile : null,
+      files: parsed.files,
+    };
+  }
+  catch {
+    return null;
+  }
+}
+
+/**
+ * Record `paths` (repo-relative, as `git status` names them) with the sha256 of
+ * what is on disk right now. Non-fatal: without the record the next run simply
+ * falls back to the plain guard.
+ */
+export function writeLastApply(
+  repoRoot: string,
+  paths: readonly string[],
+  meta: { upstreamSha: string, suggestedCommit: string, promptFile: string | null },
+): LastApplyRecord | null {
+  const files: Record<string, string | null> = {};
+  for (const p of [...new Set(paths)].sort()) { files[p] = sha256File(path.join(repoRoot, p)); }
+  const record: LastApplyRecord = { ...meta, writtenAt: new Date().toISOString(), files };
+  try {
+    const out = path.join(repoRoot, LAST_APPLY_FILE);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, `${JSON.stringify(record, null, 2)}\n`);
+    return record;
+  }
+  catch {
+    return null;
+  }
+}
+
+/**
+ * Split the guard's foreign dirty paths into the ones the last run wrote and
+ * nobody touched since (same sha256 now, or deleted then and still absent) and
+ * the ones that are genuinely the user's (unrecorded, or recorded with a
+ * different hash).
+ */
+export function splitByLastApply(
+  foreign: readonly string[],
+  record: LastApplyRecord | null,
+  repoRoot: string,
+): { recorded: string[], userOwned: string[] } {
+  if (!record) { return { recorded: [], userOwned: [...foreign] }; }
+  const recorded: string[] = [];
+  const userOwned: string[] = [];
+  for (const p of foreign) {
+    const expected = record.files[p];
+    if (expected !== undefined && sha256File(path.join(repoRoot, p)) === expected) { recorded.push(p); }
+    else { userOwned.push(p); }
+  }
+  return { recorded, userOwned };
+}
+
+// ============================================================================
+// LOCAL EDITS (3-way: local vs the upstream copy at the lock cursor)
+// ============================================================================
+
+/**
+ * Among the reconciled entries (every synced file whose local bytes differ
+ * from upstream HEAD), the ones the PROJECT edited: local also differs from
+ * the upstream copy at the component's lock cursor. A file that merely lags
+ * upstream (local == old upstream) is a fast-forward, not an edit.
+ *
+ * Per component, `git diff --name-only <cursor> HEAD` (tree-level, no blobs)
+ * says which paths upstream changed since the lock:
+ *   - not changed upstream: local != HEAD == old upstream, so the project edited it;
+ *   - changed upstream: `computeDelta` already byte-compared local against the
+ *     old blob (`classifyFile`), so its verdict is reused.
+ * A component whose cursor git cannot diff (unreachable sha) yields nothing,
+ * and so does a path upstream ADDED after the cursor (no base copy): unknown
+ * is never reported as an edit.
+ */
+export function detectLocalEdits(
+  templateDir: string,
+  components: readonly Component[],
+  perComponentCommit: Readonly<Record<string, string>>,
+  deltaEntries: readonly DeltaEntry[],
+  reconciled: readonly DeltaEntry[],
+  localRepoRoot: string,
+): Set<string> {
+  const edited = new Set<string>();
+  const delta = new Map(deltaEntries.map(e => [e.path, e] as const));
+  for (const component of components) {
+    const cursor = perComponentCommit[component.name];
+    if (!cursor) { continue; }
+    let changedUpstream: Set<string>;
+    try {
+      const pathArgs = component.paths.map(p => `"${p}"`).join(' ');
+      const out = execSync(`git -C "${templateDir}" diff --name-only ${cursor} HEAD -- ${pathArgs}`, { stdio: ['pipe', 'pipe', 'pipe'] }).toString();
+      changedUpstream = new Set(out.split('\n').map(l => l.trim()).filter(l => l !== ''));
+    }
+    catch {
+      continue;
+    }
+    for (const entry of reconciled) {
+      if (entry.component !== component.name || entry.classification !== 'locally-diverged') { continue; }
+      if (!fs.existsSync(path.join(localRepoRoot, entry.path))) { continue; }
+      if (!changedUpstream.has(entry.path)) { edited.add(entry.path); continue; }
+      const d = delta.get(entry.path);
+      // Added upstream since the cursor: there is no base copy to compare the
+      // project's bytes against, so "edited" cannot be told from "arrived
+      // another way" (a migrated Claude-era repo has every skill in this
+      // state, moved from `.claude/skills/` by the preflight). Unknown is
+      // never reported as an edit.
+      if (!d || d.status === 'A' || d.templateOldSha === null) { continue; }
+      if (d.classification === 'locally-diverged') { edited.add(entry.path); }
+    }
+  }
+  return edited;
+}
+
 // ============================================================================
 // COMPONENT REGISTRY VALIDATION (Level 3 — fatal at startup)
 // ============================================================================
@@ -1317,6 +1639,12 @@ export function planAuto(
  *
  * `deferredEntries` (deleted-upstream files held back in auto-mode) also block advancement
  * because the delete hasn't been confirmed yet.
+ *
+ * `bootstrappedComponents` are the components this run bootstrapped (no lock
+ * cursor yet). One of them with NO entry at all had nothing to deliver, e.g. a
+ * bootstrap-only file the project already owns (`.claude/settings.json`,
+ * `.codex/config.toml`): it advances too, or the lock never learns it and
+ * every later run repeats "bootstrap parcial" for it.
  */
 export function computeComponentAdvancement(
   summary: {
@@ -1325,6 +1653,7 @@ export function computeComponentAdvancement(
     failed: FailedFile[]
   },
   deferredEntries: DeltaEntry[] = [],
+  bootstrappedComponents: readonly string[] = [],
 ): { componentsAdvanced: string[], componentsHeldBack: string[] } {
   const allEntryComponents = new Set([
     ...summary.applied.map(a => a.entry.component),
@@ -1336,8 +1665,9 @@ export function computeComponentAdvancement(
     ...summary.skipped.map(s => s.component),
     ...summary.failed.map(f => f.entry.component),
   ]);
+  const settled = bootstrappedComponents.filter(c => !allEntryComponents.has(c));
   return {
-    componentsAdvanced: [...allEntryComponents].filter(c => !blockedComponents.has(c)),
+    componentsAdvanced: [...allEntryComponents, ...settled].filter(c => !blockedComponents.has(c)),
     componentsHeldBack: [...blockedComponents],
   };
 }
@@ -1481,6 +1811,33 @@ export function writeSyncStateV7(
   logger.success(`Version registrada en ${versionFile}`);
 }
 
+/** JSON with keys sorted at every level, so two states compare by content, not by key order. */
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) { return `[${value.map(stableJson).join(',')}]`; }
+  if (typeof value === 'object' && value !== null) {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableJson(v)}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * True when `next` carries something the lock on disk (`existing`, its raw
+ * text, or null when absent) does not, `lastSyncedAt` excluded. A run that
+ * applied nothing must leave the tree byte-identical: rewriting the lock only
+ * to bump the timestamp dirties `git status` for no information.
+ */
+export function syncStateWriteNeeded(existing: string | null, next: SyncStateV7): boolean {
+  if (existing === null) { return true; }
+  let prior: unknown;
+  try { prior = JSON.parse(existing); }
+  catch { return true; }
+  if (typeof prior !== 'object' || prior === null) { return true; }
+  const withoutStamp = (o: object): Record<string, unknown> =>
+    Object.fromEntries(Object.entries(o).filter(([k]) => k !== 'lastSyncedAt'));
+  return stableJson(withoutStamp(prior)) !== stableJson(withoutStamp(next));
+}
+
 /**
  * Advance perComponentCommit SHAs for a v7 state — mirror of `advanceSyncState`
  * but preserves the v7-only `ignoreFileSync` block.
@@ -1535,26 +1892,7 @@ export async function partialCloneTemplate(
     fs.rmSync(dest, { recursive: true, force: true });
   }
 
-  // Verify gh auth (the wrapper has already done a pre-flight check, but the
-  // window between that check and this clone can be long; re-check is cheap).
-  try {
-    execSync('gh auth status', { stdio: 'pipe' });
-  }
-  catch {
-    throw new Error('GH_AUTH_MISSING');
-  }
-
-  try {
-    execSync(
-      `gh repo clone ${templateRepo} "${dest}" -- --filter=blob:none --no-checkout --quiet`,
-      { stdio: ['pipe', 'pipe', 'pipe'], timeout: 60000 },
-    );
-  }
-  catch (error) {
-    const err = error as { killed?: boolean };
-    if (err.killed) { throw new Error('CLONE_TIMEOUT'); }
-    throw new Error('CLONE_FAILED');
-  }
+  cloneTemplate(templateRepo, dest, ['--no-checkout'], !isLocalTemplateSource(templateRepo));
 
   try {
     execSync(`git -C "${dest}" sparse-checkout init --no-cone`, { stdio: ['pipe', 'pipe', 'pipe'] });
@@ -1569,23 +1907,78 @@ export async function partialCloneTemplate(
 }
 
 /**
+ * Env var through which a parent process hands its child an upstream clone
+ * that is ALREADY on disk (the `--dry-run` preview of a pending self-update
+ * runs the freshly fetched updater against the parent's clone). The child
+ * widens that clone's sparse-checkout to its own patterns instead of cloning
+ * again, and leaves its cleanup to the parent.
+ */
+export const UPDATER_UPSTREAM_DIR_ENV = 'UPEX_UPDATER_UPSTREAM_DIR';
+
+/** The pre-fetched upstream dir a parent handed down, when it exists. */
+export function prefetchedUpstreamDir(env: NodeJS.ProcessEnv = process.env): string | null {
+  const dir = env[UPDATER_UPSTREAM_DIR_ENV];
+  return dir && fs.existsSync(path.join(dir, '.git')) ? dir : null;
+}
+
+/**
+ * Re-apply the sparse-checkout of an existing partial clone with a (wider)
+ * pattern set. A promisor clone fetches the missing blobs lazily.
+ */
+export function widenSparseCheckout(dest: string, allowedPaths: string[]): void {
+  const patterns = allowedPaths.map(p => `"${p}"`).join(' ');
+  execSync(`git -C "${dest}" sparse-checkout set ${patterns}`, { stdio: ['pipe', 'pipe', 'pipe'] });
+  execSync(`git -C "${dest}" checkout`, { stdio: ['pipe', 'pipe', 'pipe'] });
+}
+
+/**
  * Shallow clone fallback (no sparse-checkout). Used when partialCloneTemplate fails.
  */
 export async function shallowCloneTemplate(templateRepo: string, dest: string): Promise<void> {
   if (fs.existsSync(dest)) {
     fs.rmSync(dest, { recursive: true, force: true });
   }
-  try {
-    execSync('gh auth status', { stdio: 'pipe' });
+  cloneTemplate(templateRepo, dest, ['--depth', '1'], !isLocalTemplateSource(templateRepo));
+}
+
+/**
+ * True when `templateRepo` names a LOCAL git repository (absolute or relative
+ * path, or a `file://` URL) instead of a GitHub `OWNER/REPO` handle. Local
+ * sources are cloned with plain `git clone` and need no `gh` session: this is
+ * how the updater is exercised against an unpublished branch of the
+ * boilerplate (`UPEX_TEMPLATE_REPO=/path/to/clone bun run up`).
+ */
+export function isLocalTemplateSource(templateRepo: string): boolean {
+  return templateRepo.startsWith('file://')
+    || path.isAbsolute(templateRepo)
+    || /^[A-Z]:[\\/]/i.test(templateRepo)
+    || /^\.{1,2}[\\/]/.test(templateRepo);
+}
+
+/**
+ * Shared clone step for both acquisition strategies. GitHub handles go through
+ * `gh repo clone` (which resolves the URL and reuses the `gh` credential);
+ * local sources go straight to `git clone`. Partial-clone filters are only
+ * requested from GitHub: a local clone hardlinks objects anyway and git prints
+ * a warning for a filter the local transport ignores.
+ */
+function cloneTemplate(templateRepo: string, dest: string, gitArgs: string[], viaGh: boolean): void {
+  if (viaGh) {
+    // Verify gh auth (the wrapper has already done a pre-flight check, but the
+    // window between that check and this clone can be long; re-check is cheap).
+    try {
+      execSync('gh auth status', { stdio: 'pipe' });
+    }
+    catch {
+      throw new Error('GH_AUTH_MISSING');
+    }
   }
-  catch {
-    throw new Error('GH_AUTH_MISSING');
-  }
+  const filter = viaGh && gitArgs.includes('--no-checkout') ? ['--filter=blob:none'] : [];
+  const command = viaGh
+    ? `gh repo clone ${templateRepo} "${dest}" -- ${[...filter, ...gitArgs, '--quiet'].join(' ')}`
+    : `git clone ${[...gitArgs, '--quiet'].join(' ')} "${templateRepo.replace(/^file:\/\//, '')}" "${dest}"`;
   try {
-    execSync(
-      `gh repo clone ${templateRepo} "${dest}" -- --depth 1 --quiet`,
-      { stdio: ['pipe', 'pipe', 'pipe'], timeout: 60000 },
-    );
+    execSync(command, { stdio: ['pipe', 'pipe', 'pipe'], timeout: 60000 });
   }
   catch (error) {
     const err = error as { killed?: boolean };
@@ -1759,62 +2152,6 @@ export function cleanupDeprecated(
   return removed;
 }
 
-/**
- * List uncommitted working-tree paths that fall INSIDE the updater's write
- * surface (component dirs/files, ignore-files, package.json specs, deprecated
- * files). Paths outside that surface (tests/, .context/, user code…) are never
- * touched by the sync, so they must never trigger the dirty gate.
- *
- * bootstrapOnly components are excluded: when their files exist locally the
- * classifier forces `unchanged`, so local edits there are never overwritten.
- * Rename lines ("old -> new") match if EITHER side is watched.
- */
-export function scopedDirtyPaths(cfg: UpdaterConfig, repoRoot: string, extraExcludedPaths: string[] = []): string[] {
-  let lines: string[] = [];
-  try {
-    lines = execSync(`git -C "${repoRoot}" status --porcelain`, { encoding: 'utf8' })
-      .split('\n')
-      .map(l => l.slice(3).trim())
-      .filter(Boolean);
-  }
-  catch {
-    return []; // not a git repo / git unavailable — nothing to guard against
-  }
-
-  const prefixes: string[] = [];
-  const exact = new Set<string>();
-  for (const c of cfg.components) {
-    if (c.bootstrapOnly) { continue; }
-    if (c.type === 'directory' || c.type === 'mixed') {
-      for (const p of c.paths) { prefixes.push(`${p.replace(/\/+$/, '')}/`); }
-    }
-    if (c.files) {
-      const base = c.paths[0] === '.' ? '' : `${c.paths[0].replace(/\/+$/, '')}/`;
-      for (const f of c.files) { exact.add(`${base}${f}`); }
-    }
-  }
-  for (const ig of cfg.ignoreFiles) { exact.add(ig.path); }
-  for (const spec of cfg.packageJsonSpecs ?? []) { exact.add(spec.path); }
-  for (const dep of cfg.deprecatedFiles) { exact.add(dep.path); }
-
-  // cfg.excludePaths are never written by the sync (e.g. the per-repo generated
-  // REGISTRY.md, project-adapted api-login.ts) — dirty state there is normal
-  // and must not block the run.
-  const excluded = new Set([
-    ...(cfg.excludePaths ?? []),
-    ...extraExcludedPaths,
-  ].map(p => p.replace(/\\/g, '/')));
-
-  const strip = (p: string): string => p.replace(/^"|"$/g, ''); // porcelain quotes paths with spaces
-  const watched = (p: string): boolean =>
-    !excluded.has(p) && (exact.has(p) || prefixes.some(pre => p.startsWith(pre)));
-
-  return lines.filter((line) => {
-    const sides = line.split(' -> ').map(s => strip(s.trim()));
-    return sides.some(watched);
-  });
-}
-
 // ============================================================================
 // ORCHESTRATOR — runUpdate (Phase B mega-flow)
 // ============================================================================
@@ -1836,7 +2173,7 @@ export function scopedDirtyPaths(cfg: UpdaterConfig, repoRoot: string, extraExcl
 export async function runUpdate(
   cfg: UpdaterConfig,
   sink: ReportSink,
-  opts: { auto: boolean, dryRun: boolean, rollback: boolean, force?: boolean },
+  opts: { auto: boolean, dryRun: boolean, rollback: boolean, force?: boolean, updaterOwnedPaths?: string[] },
 ): Promise<RunSummary> {
   if (opts.rollback) {
     // Wrapper handles rollback; reaching runUpdate with rollback=true is a contract error.
@@ -1866,34 +2203,94 @@ export async function runUpdate(
     componentsAdvanced: [],
     componentsHeldBack: [],
   };
+  // A preflight refusal: the wrapper prints `Abortado.` and exits 1 on it.
+  const abortedSummary: RunSummary = { ...emptySummary, aborted: true };
 
-  // --- SCOPED DIRTY WORKING TREE GATE (data-loss safety, pre-fetch) ---
-  // Only uncommitted changes INSIDE the updater's write surface block the run:
-  // those files would be overwritten and their pre-write backups live in
-  // .backups/ (gitignored), so a later `git clean` could lose both copies.
-  // Dirty paths OUTSIDE the surface (tests/, user code…) never trigger this.
-  // Interactive mode may override with an explicit confirm; the default
-  // (non-interactive) mode always aborts — commit/stash/restore and re-run.
+  // --- DIRTY WORKING TREE GUARD (data-loss safety, pre-fetch) ---
+  // Pre-write backups live in .backups/, which is gitignored — so an
+  // uncommitted user who proceeds and later runs `git clean` / `git stash` can
+  // lose both the working copy and the backup. Refuse on a dirty tree unless
+  // --force; interactive mode offers an explicit override.
+  //
+  // Dirtiness the updater produced itself (cross-harness migration output, the
+  // CLI files a parent process refreshed before re-exec'ing us) is exempt: see
+  // `dirtyTreeExemptions`. A clean tree before `bun run up --auto` must never
+  // abort because of the updater's own writes.
+  //
+  // The previous run's own output is exempt too, even uncommitted: a sync
+  // leaves its files for review on purpose, and `.template/last-apply.json`
+  // holds their hashes. A recorded path with the same hash is the updater's;
+  // one the user edited since (hash differs) or never recorded still aborts.
+  const readPorcelain = (): string => {
+    try {
+      // `-uall` lists untracked FILES, not a collapsed `?? dir/` entry, so a
+      // directory the updater created can be matched file by file against the
+      // exemptions instead of hiding (or exposing) everything beneath it.
+      return execSync(`git -C "${repoRoot}" status --porcelain --untracked-files=all`, { encoding: 'utf8' }).trimEnd();
+    }
+    catch {
+      return ''; // not a git repo / git unavailable — nothing to guard against
+    }
+  };
+  // Paths that were the USER's dirt when the run started: never recorded as
+  // updater output at the end, so the next guard still refuses them.
+  let userDirtBefore: string[] = [];
   if (!opts.dryRun) {
-    // Files the self-update parent just wrote from upstream are excluded: they
-    // match upstream exactly, so overwriting them loses nothing (see re-exec env).
-    const selfUpdatedPaths = (process.env.UPEX_UPDATER_SELFUPDATED ?? '').split('\n').filter(Boolean);
-    const dirtyWatched = scopedDirtyPaths(cfg, repoRoot, selfUpdatedPaths);
-    if (dirtyWatched.length > 0) {
-      sink.warn(`Hay ${dirtyWatched.length} ruta(s) con cambios sin commitear que este updater SINCRONIZA (serían sobrescritas; sus backups van a .backups/, que está gitignored):`);
-      for (const p of dirtyWatched.slice(0, 20)) { sink.step(`  ${p}`); }
-      if (dirtyWatched.length > 20) { sink.step(`  … y ${dirtyWatched.length - 20} más`); }
-      const interactive = !opts.auto && opts.force !== true;
-      if (!interactive) {
-        sink.error('Abortado: commitea, stashea o restaura esas rutas y vuelve a ejecutar. (Con --interactive puedes continuar bajo confirmación explícita.)');
-        return emptySummary;
+    const dirty = readPorcelain();
+    const foreign = dirty.trim() ? foreignDirtyPaths(dirty, dirtyTreeExemptions(cfg, opts)) : [];
+    const lastApply = readLastApply(repoRoot);
+    const { recorded, userOwned } = splitByLastApply(foreign, lastApply, repoRoot);
+    userDirtBefore = userOwned;
+    // Only user work the sync would OVERWRITE can be lost; dirt outside the
+    // write surface (tests/, project code, protected files) is listed and
+    // never blocks. See `isWithinWriteSurface`.
+    const blocking = userOwned.filter(p => isWithinWriteSurface(cfg, p));
+    const outside = userOwned.filter(p => !isWithinWriteSurface(cfg, p));
+    if (!opts.force) {
+      if (dirty.trim() && foreign.length === 0) {
+        sink.step('Árbol de trabajo con cambios propios del updater (migración / self-update); el guard los ignora.');
       }
-      const proceed = await sink.confirm('¿Continuar de todas formas pese a los cambios sin commitear?', false);
-      if (!proceed) {
-        return emptySummary;
+      if (recorded.length > 0) {
+        sink.step(`Árbol con la salida del sync anterior sin commitear (${recorded.length} ruta(s), hash intacto); el guard las reconoce como propias.`);
+      }
+      if (outside.length > 0) {
+        const shownOutside = outside.slice(0, 5).join(', ') + (outside.length > 5 ? ` (+${outside.length - 5} más)` : '');
+        sink.step(`${outside.length} ruta(s) con cambios sin commitear fuera de lo que este updater escribe (${shownOutside}); no bloquean.`);
+      }
+      if (blocking.length > 0) {
+        const shown = blocking.slice(0, 5).join(', ') + (blocking.length > 5 ? ` (+${blocking.length - 5} más)` : '');
+        sink.warn(`El árbol de trabajo tiene cambios sin commitear en rutas que este updater SINCRONIZA (${shown}). Serían sobrescritas y sus backups van a .backups/ (gitignored); un \`git clean\` posterior podría perderlos. Commitea o haz stash antes de actualizar.`);
+        if (lastApply && recorded.length > 0) {
+          sink.warn(`El sync anterior sigue sin commitear. Commit sugerido: ${lastApply.suggestedCommit}${lastApply.promptFile ? `; prompt de paridad: ${lastApply.promptFile}` : ''}.`);
+        }
+        if (opts.auto) {
+          sink.error('Abortado: árbol sucio en modo --auto. Re-ejecuta con --force para forzar.');
+          return abortedSummary;
+        }
+        const proceed = await sink.confirm('¿Continuar de todas formas pese a los cambios sin commitear?', false);
+        if (!proceed) {
+          return abortedSummary;
+        }
       }
     }
   }
+  /**
+   * Record what this run left uncommitted (everything dirty now minus the
+   * user's own dirt from before), so the next guard recognises it. Runs after
+   * the afterApply hooks: wrappers, the registry and the prompt count too.
+   */
+  const recordLastApply = (summary: RunSummary, promptFile: string | null): void => {
+    if (opts.dryRun) { return; }
+    const dirtyNow = readPorcelain();
+    const userDirt = new Set(userDirtBefore);
+    const paths = (dirtyNow.trim() ? parsePorcelainPaths(dirtyNow) : []).filter(p => !userDirt.has(p));
+    const record = writeLastApply(repoRoot, paths, {
+      upstreamSha: summary.newHeadSha,
+      suggestedCommit: suggestCommitMessage(summary),
+      promptFile,
+    });
+    summary.lastApplyPaths = record ? Object.keys(record.files).length : 0;
+  };
 
   // --- STATE LOAD + MIGRATION (pre-Phase 1) ---
   let rawState: SyncState | null;
@@ -1903,7 +2300,7 @@ export async function runUpdate(
   catch (err) {
     if (err instanceof CorruptStateError) {
       sink.error(err.message);
-      return emptySummary;
+      return abortedSummary;
     }
     throw err;
   }
@@ -1921,7 +2318,7 @@ export async function runUpdate(
       : await sink.confirm(`Migrar esquema ${sourceLabel} → v7 (rastreo per-component SHA + ignore-files + flags ampliados)?`, true);
     if (!ok) {
       sink.warn('Migración cancelada. Ejecuta de nuevo cuando quieras migrar.');
-      return emptySummary;
+      return abortedSummary;
     }
     const v6 = fromV5 ? migrateSyncState(rawState as SyncStateV5, cfg.cliVersion) : (rawState as SyncStateV6);
     v7State = migrateV6ToV7(v6, cfg.templateRepo, cfg.cliVersion);
@@ -1943,23 +2340,38 @@ export async function runUpdate(
 
   // --- PHASE 1 — FETCH ---
   sink.phase(1, 'FETCH');
+  // Sparse-checkout must include component paths, ignore-file paths AND
+  // package.json paths so Phase 4.5 / 4.5b can read them out of the partial
+  // clone — plus any extra paths hooks need to read from upstream (e.g. the
+  // protected-file drift watchlist; without them the advisory silently
+  // skips every entry because the upstream copy "does not exist").
+  const sparsePatterns = [
+    ...buildSparseCheckoutPatterns(cfg.components),
+    ...cfg.ignoreFiles.map(spec => spec.path),
+    ...(cfg.packageJsonSpecs ?? []).map(spec => spec.path),
+    ...(cfg.sparseExtraPaths ?? []),
+  ];
+  // A parent process (the --dry-run preview of a pending self-update) may hand
+  // down the clone it already fetched: widen it to our patterns, never re-clone,
+  // and leave its cleanup to the parent.
+  const prefetched = prefetchedUpstreamDir();
+  const templateDir = prefetched ?? cfg.tempDir;
+  if (prefetched) {
+    try {
+      widenSparseCheckout(prefetched, sparsePatterns);
+      sink.step(`Upstream ya descargado por el proceso padre: ${path.basename(prefetched)}`);
+    }
+    catch (err) {
+      sink.warn(`No se pudo ampliar el sparse-checkout del upstream heredado: ${errorMessage(err)}`);
+    }
+  }
   const fetchSpin = sink.spinner();
-  fetchSpin.start(`Cloning upstream (${cfg.templateRepo})…`);
-  const templateDir = cfg.tempDir;
+  if (!prefetched) { fetchSpin.start(`Cloning upstream (${cfg.templateRepo})…`); }
   try {
-    // Sparse-checkout must include component paths, ignore-file paths AND
-    // package.json paths so Phase 4.5 / 4.5b can read them out of the partial
-    // clone — plus any extra paths hooks need to read from upstream (e.g. the
-    // protected-file drift watchlist; without them the advisory silently
-    // skips every entry because the upstream copy "does not exist").
-    const sparsePatterns = [
-      ...buildSparseCheckoutPatterns(cfg.components),
-      ...cfg.ignoreFiles.map(spec => spec.path),
-      ...(cfg.packageJsonSpecs ?? []).map(spec => spec.path),
-      ...(cfg.sparseExtraPaths ?? []),
-    ];
-    await partialCloneTemplate(cfg.templateRepo, cfg.tempDir, sparsePatterns);
-    fetchSpin.stop(`Template descargado (sparse-checkout): ${cfg.templateRepo}`);
+    if (!prefetched) {
+      await partialCloneTemplate(cfg.templateRepo, cfg.tempDir, sparsePatterns);
+      fetchSpin.stop(`Template descargado (sparse-checkout): ${cfg.templateRepo}`);
+    }
   }
   catch (firstErr) {
     fetchSpin.stop('Partial clone falló — intentando shallow clone…');
@@ -1976,7 +2388,7 @@ export async function runUpdate(
       // Surface the first error too for diagnostics
       const firstMsg = firstErr instanceof Error ? firstErr.message : String(firstErr);
       sink.error(`Causa partial-clone: ${firstMsg}`);
-      return emptySummary;
+      return abortedSummary;
     }
   }
 
@@ -1988,7 +2400,12 @@ export async function runUpdate(
   // itself (e.g. `cli/`), refresh those files in-place and re-exec the script
   // so the rest of the flow runs against the fresh code. Skipped when the
   // child process is already a re-exec (UPEX_UPDATER_REEXEC=1).
-  if (cfg.selfUpdateComponent && process.env.UPEX_UPDATER_REEXEC !== '1' && !opts.dryRun) {
+  //
+  // Under --dry-run nothing is written: the fetched updater is run straight
+  // from the upstream clone against this project (same flags, same cwd), so
+  // the preview shows what the NEW code would do (its migration plan, its
+  // components, its parity table) instead of the current code's opinion.
+  if (cfg.selfUpdateComponent && process.env.UPEX_UPDATER_REEXEC !== '1') {
     const selfComp = cfg.components.find(c => c.name === cfg.selfUpdateComponent);
     if (selfComp) {
       const selfFiles = collectComponentRelPaths(selfComp, templateDir);
@@ -2021,7 +2438,42 @@ export async function runUpdate(
           stale.push(relPath);
         }
       }
-      if (stale.length > 0) {
+      if (stale.length > 0 && opts.dryRun) {
+        // The running script, located inside the self-update component: by its
+        // repo-relative path when launched from the project, else by basename
+        // (a copy of the updater launched from elsewhere, as in the smoke tests).
+        const argvEntry = path.resolve(process.argv[1] ?? '');
+        const argvRel = path.relative(repoRoot, argvEntry).replace(/\\/g, '/');
+        const posixSelf = selfFiles.map(f => f.replace(/\\/g, '/'));
+        const entryRel = posixSelf.find(f => f === argvRel) ?? posixSelf.find(f => path.basename(f) === path.basename(argvEntry)) ?? '';
+        const upstreamEntry = path.join(templateDir, entryRel);
+        if (!entryRel || !fs.existsSync(upstreamEntry)) {
+          sink.warn(`Self-update pendiente (${stale.length} archivo(s) del CLI difieren de upstream). --dry-run no puede previsualizar con el updater nuevo: la corrida real lo aplica primero.`);
+        }
+        else {
+          sink.warn(`Self-update pendiente: ${stale.length} archivo(s) del CLI difieren de upstream. --dry-run: previsualizando con el updater nuevo (${entryRel} del clon upstream), sin escribir cli/…`);
+          // The upstream clone has no node_modules: point it at ours so the
+          // fetched updater resolves its dependencies. Outside the repo tree.
+          const localModules = path.join(repoRoot, 'node_modules');
+          const cloneModules = path.join(templateDir, 'node_modules');
+          if (fs.existsSync(localModules) && !fs.existsSync(cloneModules)) {
+            try { fs.symlinkSync(localModules, cloneModules, process.platform === 'win32' ? 'junction' : 'dir'); }
+            catch (err) { sink.warn(`No se pudo enlazar node_modules en el clon upstream: ${errorMessage(err)}`); }
+          }
+          const child = spawnSync(process.execPath, [upstreamEntry, ...process.argv.slice(2)], {
+            stdio: 'inherit',
+            cwd: repoRoot,
+            env: { ...process.env, UPEX_UPDATER_REEXEC: '1', [UPDATER_UPSTREAM_DIR_ENV]: templateDir },
+          });
+          cleanupTempDir(cfg.tempDir);
+          if (child.error) {
+            sink.error(`Preview con el updater nuevo falló: ${child.error.message}`);
+            process.exit(1);
+          }
+          process.exit(child.status ?? 1);
+        }
+      }
+      else if (stale.length > 0) {
         sink.warn(`Self-update: actualizando ${stale.length} archivo(s) del CLI antes de continuar…`);
         // A2: confirm before clobbering cli/. A user who customized the updater
         // gets a chance to bail; files are backed up + restorable via --rollback,
@@ -2031,7 +2483,7 @@ export async function runUpdate(
           if (!okSelf) {
             sink.warn('Self-update cancelado. Re-ejecuta cuando quieras actualizar el CLI.');
             cleanupTempDir(cfg.tempDir);
-            return emptySummary;
+            return abortedSummary;
           }
         }
         // Pre-write backup contract: mirror each existing local file into a
@@ -2053,13 +2505,13 @@ export async function runUpdate(
         }
         sink.step(`Backup en ${path.relative(repoRoot, selfBackupDir)}`);
         sink.step('Re-ejecutando con código actualizado…');
+        // The child inherits what WE dirtied (preflight output + the CLI files
+        // just written) so its own dirty-tree guard can tell it apart from
+        // uncommitted user work; see `dirtyTreeExemptions`.
+        const ownedPaths = dirtyTreeExemptions(cfg, opts).concat(stale);
         const child = spawnSync(process.execPath, [process.argv[1], ...process.argv.slice(2)], {
           stdio: 'inherit',
-          // UPEX_UPDATER_SELFUPDATED: the cli/ files THIS parent just wrote from
-          // upstream. The child's scoped dirty check excludes them — they match
-          // upstream byte-for-byte, so "would be overwritten" loses nothing, and
-          // without the exclusion every self-update aborts on its own writes.
-          env: { ...process.env, UPEX_UPDATER_REEXEC: '1', UPEX_UPDATER_SELFUPDATED: stale.join('\n') },
+          env: { ...process.env, UPEX_UPDATER_REEXEC: '1', [UPDATER_OWNED_PATHS_ENV]: ownedPaths.join('\n') },
         });
         cleanupTempDir(cfg.tempDir);
         if (child.error) {
@@ -2079,6 +2531,9 @@ export async function runUpdate(
   let entries: DeltaEntry[] = [];
   let bootstrapMode = false;
   let bootstrapComponents: Component[] = [];
+  // Synced files the PROJECT edited (3-way, see detectLocalEdits): an
+  // overwrite of one of these gets a parity row, with its backup path.
+  let localEdits = new Set<string>();
 
   // Three sync modes:
   //   1. Fresh install     — no prior state at all → ALL components bootstrap.
@@ -2094,10 +2549,7 @@ export async function runUpdate(
     for (const component of comps) {
       const relPaths = collectComponentRelPaths(component, templateDir);
       for (const relPath of relPaths) {
-        const basename = path.basename(relPath);
-        const isBootstrapFile = component.bootstrapOnly === true
-          || (component.name === 'agents' && (cfg.agentsFrameworkFiles ?? []).includes(basename) === false
-            && cfg.bootstrapOnlyPaths.some(p => relPath === p || relPath.endsWith(`/${basename}`)));
+        const isBootstrapFile = isBootstrapOnlyFile(relPath, component, cfg.bootstrapOnlyPaths, cfg.agentsFrameworkFiles);
         const localPath = path.join(repoRoot, relPath);
         if (isBootstrapFile && fs.existsSync(localPath)) {
           continue;
@@ -2137,9 +2589,9 @@ export async function runUpdate(
         variableSystemVersion: v7State!.variableSystemVersion,
         perComponentCommit: v7State!.perComponentCommit,
       };
-      const agentsBootstrapBasenames = cfg.bootstrapOnlyPaths
-        .filter(p => p.startsWith('.agents/'))
-        .map(p => path.basename(p));
+      // Full repo-relative paths: `isBootstrapOnlyFile` matches them exactly
+      // for any component, and by basename for the legacy `agents` root list.
+      const bootstrapOnlyPaths = cfg.bootstrapOnlyPaths;
 
       // Content reconcile (Profundidad B) is the authoritative source for
       // new + diverged files: it walks the FULL upstream tree and compares by
@@ -2149,7 +2601,7 @@ export async function runUpdate(
         templateDir,
         deltaComponents,
         repoRoot,
-        agentsBootstrapBasenames,
+        bootstrapOnlyPaths,
       );
 
       // computeDelta is still run, but ONLY its deleted-upstream entries are
@@ -2161,10 +2613,11 @@ export async function runUpdate(
         deltaComponents,
         v6Shape,
         repoRoot,
-        agentsBootstrapBasenames,
+        bootstrapOnlyPaths,
         makeCoreLoggerFromSink(sink),
       );
       const deletes = deltaEntries.filter(e => e.classification === 'deleted-upstream');
+      localEdits = detectLocalEdits(templateDir, deltaComponents, v6Shape.perComponentCommit, deltaEntries, reconciled, repoRoot);
 
       // Merge + dedupe by path (reconcile wins; deletes never overlap since a
       // removed-upstream file is absent from the reconcile tree walk).
@@ -2190,8 +2643,8 @@ export async function runUpdate(
   }
 
   // Drop the boilerplate's own working material, which no consumer inherits
-  // (e.g. `docs/qa-standard/`). Same filter point as excludePaths for the same
-  // reason: all three detection paths converge on `entries`.
+  // (e.g. `docs/qa-standard/`). Same filter point as excludePaths
+  // for the same reason: all detection paths converge on `entries`.
   if (cfg.repoOnlyPaths && cfg.repoOnlyPaths.length > 0) {
     entries = entries.filter(e => !isRepoOnlyPath(e.path, cfg.repoOnlyPaths ?? []));
   }
@@ -2240,22 +2693,31 @@ export async function runUpdate(
     }
   }
 
-  if (visible.length === 0 && ignoreDeltasPre.length === 0 && pkgJsonDeltasPre.length === 0) {
-    sink.step('Sin cambios detectados respecto al upstream. Nada que sincronizar.');
-    // Advisory hooks still run: protected watchlist files (not synced
-    // components) can drift upstream even when every component is current,
-    // and the template clone they read from is still on disk here.
-    if (cfg.hooks?.afterApply && !opts.dryRun) {
-      try {
-        await cfg.hooks.afterApply(emptySummary);
-      }
-      catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        sink.warn(`afterApply hook falló: ${msg}`);
-      }
+  // A bootstrapped component with nothing to deliver still needs its lock
+  // cursor recorded (see computeComponentAdvancement), so it is not a no-op.
+  const settledBootstrap = bootstrapComponents.filter(c => !entries.some(e => e.component === c.name)).map(c => c.name);
+  // The afterApply hooks still run on a no-op: they are idempotent (alias,
+  // wrappers, registry) and they own the parity report, which is the run's
+  // end state whatever was applied. A re-run over an uncommitted sync lands
+  // here and ends with the same table instead of an abort.
+  const runAfterApply = async (summary: RunSummary): Promise<void> => {
+    if (!cfg.hooks?.afterApply) { return; }
+    try {
+      await cfg.hooks.afterApply(summary);
     }
-    cleanupTempDir(cfg.tempDir);
-    return emptySummary;
+    catch (err) {
+      sink.warn(`afterApply hook falló: ${errorMessage(err)}`);
+    }
+  };
+  const finish = async (summary: RunSummary): Promise<RunSummary> => {
+    await runAfterApply(summary);
+    recordLastApply(summary, summary.promptSaved ? (cfg.promptFile ?? null) : null);
+    if (!prefetched) { cleanupTempDir(cfg.tempDir); }
+    return summary;
+  };
+  if (visible.length === 0 && ignoreDeltasPre.length === 0 && pkgJsonDeltasPre.length === 0 && settledBootstrap.length === 0) {
+    sink.step('Sin cambios detectados respecto al upstream. Nada que sincronizar.');
+    return finish({ ...emptySummary, newHeadSha });
   }
   if (visible.length > 0) {
     let suffix = '';
@@ -2312,12 +2774,20 @@ export async function runUpdate(
   const applied: AppliedFile[] = [];
   const skipped: DeltaEntry[] = [];
   const failed: FailedFile[] = [];
+  const localEditsOverwritten: LocalEditOverwritten[] = [];
   let backupDir: string | null = null;
   const ensureBackup = (): string => {
     if (backupDir === null) {
       backupDir = createBackupDir(repoRoot);
     }
     return backupDir;
+  };
+  /** Bookkeeping after a successful 'theirs' write over a file the project had edited. */
+  const noteOverwrite = (item: AppliedFile): void => {
+    applied.push(item);
+    if (item.resolution === 'theirs' && localEdits.has(item.entry.path)) {
+      localEditsOverwritten.push({ path: item.entry.path, component: item.entry.component });
+    }
   };
 
   for (const scope of chosenScopes) {
@@ -2355,7 +2825,7 @@ export async function runUpdate(
             false,
             makeCoreLoggerFromSink(sink),
           );
-          applied.push(item);
+          noteOverwrite(item);
         }
         catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -2426,7 +2896,7 @@ export async function runUpdate(
             false,
             makeCoreLoggerFromSink(sink),
           );
-          applied.push({ entry, resolution: 'theirs' });
+          noteOverwrite({ entry, resolution: 'theirs' });
         }
         catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -2540,6 +3010,10 @@ export async function runUpdate(
     overrides: Record<string, Record<string, string>>
     kept: Record<string, Record<string, string>>
   }>();
+  // Every key kept at the project's value ('skip' or 'mine'): the parity
+  // report gets one row per key, so a non-interactive run does not lose the
+  // FYI in the terminal scrollback.
+  const packageJsonKept: PackageJsonKeptKey[] = [];
   if (pkgJsonDeltasPre.length > 0) {
     sink.subphase('PACKAGE.JSON KEYS');
     for (const delta of pkgJsonDeltasPre) {
@@ -2576,7 +3050,10 @@ export async function runUpdate(
           else if (resolution === 'mine') {
             (kept[section] ??= {})[key] = drift.upstreamValue;
           }
-          // 'skip' → record nothing (re-prompts next run by design)
+          // 'skip' → record nothing in the lock (re-prompts next run by design)
+          if (resolution !== 'theirs') {
+            packageJsonKept.push({ file: delta.file, section, key, localValue: drift.localValue, upstreamValue: drift.upstreamValue, resolution });
+          }
         }
       }
 
@@ -2774,6 +3251,7 @@ export async function runUpdate(
     // Deferred-deletes are already represented in `skipped`, so no separate
     // deferred list is passed (the old `bootstrapMode ? [] : []` was a no-op).
     [],
+    bootstrapComponents.map(c => c.name),
   );
 
   const summary: RunSummary = {
@@ -2783,6 +3261,9 @@ export async function runUpdate(
     newHeadSha,
     componentsAdvanced: advancement.componentsAdvanced,
     componentsHeldBack: advancement.componentsHeldBack,
+    backupDir,
+    localEditsOverwritten,
+    packageJsonKept,
   };
 
   // State write
@@ -2800,24 +3281,21 @@ export async function runUpdate(
       variableSystemVersion: 1,
     };
     const nextState = advanceSyncStateV7(baseV7, summary, cfg.components, newHeadSha, cfg.cliVersion);
-    writeSyncStateV7(repoRoot, cfg.versionFile, nextState, makeCoreLoggerFromSink(sink));
+    // The lock is updater-owned and gets committed with the sync: a run that
+    // changed nothing in it must not dirty it just to bump the timestamp.
+    let existingLock: string | null = null;
+    try { existingLock = fs.readFileSync(path.join(repoRoot, cfg.versionFile), 'utf8'); }
+    catch { existingLock = null; }
+    if (syncStateWriteNeeded(existingLock, nextState)) {
+      writeSyncStateV7(repoRoot, cfg.versionFile, nextState, makeCoreLoggerFromSink(sink));
+    }
+    else {
+      sink.step(`Lock sin cambios (${cfg.versionFile} intacto).`);
+    }
   }
 
-  // After-apply hook (DEV uses for MCP template refresh, etc.)
-  if (cfg.hooks?.afterApply) {
-    try {
-      await cfg.hooks.afterApply(summary);
-    }
-    catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      sink.warn(`afterApply hook falló: ${msg}`);
-    }
-  }
-
-  // Cleanup temp dir
-  cleanupTempDir(cfg.tempDir);
-
-  return summary;
+  // After-apply hooks, the last-apply record, temp dir cleanup.
+  return finish(summary);
 }
 
 // ============================================================================

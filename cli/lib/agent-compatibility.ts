@@ -31,6 +31,26 @@ export const CLAUDE_INSTRUCTIONS_SHIM = '@AGENTS.md\n';
 export const OS_METADATA_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini']);
 export const POSIX_CLAUDE_SKILLS_TARGET = '../.agents/skills';
 export const COMMAND_ALIAS_MANIFEST = '.agents/compatibility/command-aliases.json';
+/**
+ * Optional project overlay, same schema as the upstream manifest. Never synced
+ * by `bun run up` (bootstrap-only): a downstream project declares its own slash
+ * commands here, so they survive every update and never collide with upstream
+ * edits to `command-aliases.json`. Merge rule: upstream aliases first, then the
+ * overlay overrides by `alias` name and may add new ones. `wrapperHosts` always
+ * come from the upstream manifest.
+ */
+export const COMMAND_ALIAS_PROJECT_MANIFEST = '.agents/compatibility/command-aliases.project.json';
+/** The check's message when `.claude/skills` does not exist and nothing says it should not yet. */
+export const SKILLS_ALIAS_MISSING_ERROR = 'Claude skills alias missing: .claude/skills';
+/**
+ * Written by `repairAgentSurfaces({ deferSkillsAlias: true })` on the run that
+ * applies the cross-harness migration, under the gitignored marker directory
+ * the updater already owns. While it exists the check reports the alias as
+ * `deferred` instead of missing, so the migration commit passes the pre-commit
+ * gate; the next `repairClaudeSkillsAlias` (`bun run agents:compat`) creates
+ * the alias and removes it.
+ */
+export const SKILLS_ALIAS_DEFERRED_MARKER = '.template/upstream-sha/claude-skills-alias.deferred';
 
 const WRAPPER_HOSTS = [
   { id: 'claude', directory: '.claude/commands' },
@@ -53,6 +73,25 @@ interface CommandAliasManifest {
   aliases: CommandAlias[]
 }
 
+/** The overlay may omit `wrapperHosts`; when present it is ignored (upstream owns it). */
+interface CommandAliasOverlay {
+  version: 1
+  wrapperHosts?: CommandAliasManifest['wrapperHosts']
+  aliases: CommandAlias[]
+}
+
+export interface MergedCommandAlias extends CommandAlias {
+  /** Which manifest the winning definition came from. */
+  source: 'upstream' | 'project'
+}
+
+export interface MergedCommandAliases {
+  wrapperHosts: CommandAliasManifest['wrapperHosts']
+  aliases: MergedCommandAlias[]
+  /** True when `.agents/compatibility/command-aliases.project.json` exists. */
+  overlayPresent: boolean
+}
+
 export interface CompatibilityPaths {
   root: string
   instructions: string
@@ -71,7 +110,59 @@ export interface AliasStatus {
 export interface CompatibilityCheck {
   ok: boolean
   errors: string[]
-  alias: Omit<AliasStatus, 'status'> & { status: 'missing' | 'invalid' | 'valid' }
+  /** `deferred`: absent on purpose until the migration commit (see SKILLS_ALIAS_DEFERRED_MARKER). */
+  alias: Omit<AliasStatus, 'status'> & { status: 'missing' | 'invalid' | 'valid' | 'deferred' }
+}
+
+/** The surface a compatibility error belongs to, so a report can group them. */
+export type CompatibilityErrorGroup = 'alias' | 'wrappers' | 'hooks' | 'mcp' | 'instructions';
+
+export const COMPATIBILITY_GROUP_ORDER: CompatibilityErrorGroup[] = ['instructions', 'alias', 'wrappers', 'hooks', 'mcp'];
+
+export const COMPATIBILITY_GROUP_LABEL: Record<CompatibilityErrorGroup, string> = {
+  instructions: 'Instructions (AGENTS.md + CLAUDE.md shim, canonical skills)',
+  alias: 'Claude skills alias (.claude/skills)',
+  wrappers: 'Command wrappers (.claude/commands, .opencode/commands)',
+  hooks: 'Hook adapters',
+  mcp: 'MCP parity (.mcp.json, opencode.jsonc, .codex/config.toml)',
+};
+
+/** Classify one error message by its wording (the messages are ours). */
+export function compatibilityErrorGroup(message: string): CompatibilityErrorGroup {
+  if (/\bMCP\b/.test(message)) { return 'mcp'; }
+  if (/command wrapper|command alias/i.test(message)) { return 'wrappers'; }
+  if (/skills alias|\.claude\/skills/i.test(message)) { return 'alias'; }
+  if (/hook/i.test(message)) { return 'hooks'; }
+  return 'instructions';
+}
+
+/** Errors bucketed per surface, in `COMPATIBILITY_GROUP_ORDER`; empty groups omitted. */
+export function groupCompatibilityErrors(errors: readonly string[]): Array<{ group: CompatibilityErrorGroup, label: string, errors: string[] }> {
+  const buckets = new Map<CompatibilityErrorGroup, string[]>();
+  for (const error of errors) {
+    const group = compatibilityErrorGroup(error);
+    buckets.set(group, [...(buckets.get(group) ?? []), error]);
+  }
+  return COMPATIBILITY_GROUP_ORDER
+    .filter(group => buckets.has(group))
+    .map(group => ({ group, label: COMPATIBILITY_GROUP_LABEL[group], errors: buckets.get(group)! }));
+}
+
+/**
+ * One line about the alias, printed whatever the overall verdict: "alias
+ * pending the migration commit" and "MCP drift" must never collapse into one
+ * flat failure.
+ */
+export function describeAliasStatus(alias: CompatibilityCheck['alias'] | AliasStatus): string {
+  const where = `${alias.path} -> ${alias.target} (${alias.type})`;
+  switch (alias.status) {
+    case 'created': return `Claude skills alias created: ${where}`;
+    case 'repaired': return `Claude skills alias repaired: ${where}`;
+    case 'valid': return `Claude skills alias OK: ${where}`;
+    case 'deferred': return 'Claude skills alias deferred until the migration commit (`bun run agents:compat` creates it afterwards).';
+    case 'missing': return `Claude skills alias missing: ${alias.path} (run \`bun run agents:compat\`).`;
+    case 'invalid': return `Claude skills alias invalid: ${alias.path} is not the generated ${alias.type} to ${alias.target}.`;
+  }
 }
 
 export function compatibilityPaths(root = process.cwd()): CompatibilityPaths {
@@ -207,11 +298,70 @@ function readCommandAliasManifest(root: string): CommandAliasManifest {
   return manifest;
 }
 
+function readCommandAliasOverlay(root: string): CommandAliasOverlay | null {
+  const overlayPath = join(root, COMMAND_ALIAS_PROJECT_MANIFEST);
+  if (!existsSync(overlayPath)) { return null; }
+
+  const overlay = JSON.parse(readFileSync(overlayPath, 'utf8')) as CommandAliasOverlay;
+  if (overlay.version !== 1 || !Array.isArray(overlay.aliases)) {
+    throw new Error(`Project command alias overlay must have version 1 and an aliases array: ${COMMAND_ALIAS_PROJECT_MANIFEST}`);
+  }
+  return overlay;
+}
+
+/**
+ * Upstream manifest merged with the optional project overlay. Order is
+ * upstream first, so an overlay entry with the same `alias` replaces the
+ * upstream definition in place and a new alias lands at the end.
+ */
+export function mergedCommandAliases(root = process.cwd()): MergedCommandAliases {
+  const resolvedRoot = resolve(root);
+  const upstream = readCommandAliasManifest(resolvedRoot);
+  const overlay = readCommandAliasOverlay(resolvedRoot);
+
+  const merged = new Map<string, MergedCommandAlias>();
+  for (const alias of upstream.aliases) {
+    merged.set(alias.alias, { ...alias, source: 'upstream' });
+  }
+  for (const alias of overlay?.aliases ?? []) {
+    merged.set(alias.alias, { ...alias, source: 'project' });
+  }
+  return {
+    wrapperHosts: upstream.wrapperHosts,
+    aliases: [...merged.values()],
+    overlayPresent: overlay !== null,
+  };
+}
+
+/**
+ * Wrapper files under the host command directories that no manifest produced,
+ * as repo-relative paths. Never deleted by the repair: a project either declares
+ * the alias in the overlay or removes the file itself.
+ */
+export function undeclaredCommandWrappers(root = process.cwd()): string[] {
+  const resolvedRoot = resolve(root);
+  const declared = new Set(mergedCommandAliases(resolvedRoot).aliases.map(alias => `${alias.alias}.md`));
+  const extra: string[] = [];
+  for (const host of WRAPPER_HOSTS) {
+    const directory = join(resolvedRoot, host.directory);
+    let entries: string[];
+    try { entries = readdirSync(directory); }
+    catch { continue; }
+    for (const entry of entries.sort()) {
+      if (OS_METADATA_FILES.has(entry) || !entry.endsWith('.md') || declared.has(entry)) { continue; }
+      const stats = lstatIfPresent(join(directory, entry));
+      if (stats === null || !stats.isFile()) { continue; }
+      extra.push(`${host.directory}/${entry}`);
+    }
+  }
+  return extra;
+}
+
 export function validateCommandAliases(root: string): string[] {
   const errors: string[] = [];
-  let manifest: CommandAliasManifest;
+  let manifest: MergedCommandAliases;
   try {
-    manifest = readCommandAliasManifest(root);
+    manifest = mergedCommandAliases(root);
   }
   catch (error) {
     return [error instanceof Error ? error.message : String(error)];
@@ -266,6 +416,10 @@ export function validateCommandAliases(root: string): string[] {
     }
   }
 
+  for (const wrapper of undeclaredCommandWrappers(root)) {
+    errors.push(`Command wrapper not declared in any manifest: ${wrapper}; add it to ${COMMAND_ALIAS_PROJECT_MANIFEST} or delete it`);
+  }
+
   return errors;
 }
 
@@ -275,7 +429,7 @@ export function commandWrapperCounts(root = process.cwd()): {
   opencode: number
 } {
   const resolvedRoot = resolve(root);
-  const manifest = readCommandAliasManifest(resolvedRoot);
+  const manifest = mergedCommandAliases(resolvedRoot);
   const aliases = new Set(manifest.aliases.map(alias => `${alias.alias}.md`));
   const count = (directory: string): number => [...aliases]
     .filter(name => existsSync(join(resolvedRoot, directory, name)))
@@ -301,7 +455,7 @@ export function claudeSkillsAliasPlan(
 
 export function repairCommandWrappers(root = process.cwd()): number {
   const resolvedRoot = resolve(root);
-  const manifest = readCommandAliasManifest(resolvedRoot);
+  const manifest = mergedCommandAliases(resolvedRoot);
   let written = 0;
   for (const host of WRAPPER_HOSTS) {
     const directory = join(resolvedRoot, host.directory);
@@ -339,7 +493,10 @@ export function checkAgentCompatibility(
 
   const entry = lstatIfPresent(paths.claudeSkills);
   if (entry === null) {
-    errors.push('Claude skills alias missing: .claude/skills');
+    if (existsSync(join(paths.root, SKILLS_ALIAS_DEFERRED_MARKER))) {
+      return { ok: errors.length === 0, errors, alias: { path: paths.claudeSkills, target, type, status: 'deferred' } };
+    }
+    errors.push(SKILLS_ALIAS_MISSING_ERROR);
     return { ok: false, errors, alias: { path: paths.claudeSkills, target, type, status: 'missing' } };
   }
 
@@ -364,6 +521,48 @@ export function checkAgentCompatibility(
   };
 }
 
+export interface AgentSurfaceRepair {
+  /** Null when the alias was deferred (see `deferSkillsAlias`). */
+  alias: AliasStatus | null
+  /** Null when the manifest is absent (the wrappers cannot be rendered yet). */
+  wrappersWritten: number | null
+  check: CompatibilityCheck
+  aliasDeferred: boolean
+}
+
+/**
+ * What `bun run up` does after every apply, and `bun run agents:compat` on
+ * demand: render the wrappers, repair the alias, run the check.
+ *
+ * `deferSkillsAlias` is for the run in which the cross-harness migration just
+ * unindexed a committed `.claude/skills/` tree: those deletions are staged, and
+ * git refuses to touch an index entry behind a symlink (`is beyond a symbolic
+ * link`), so creating the alias now would break lint-staged on the very commit
+ * that records the migration. The alias waits for `bun run agents:compat`
+ * after that commit; the marker makes the check (and the pre-commit gate that
+ * runs it) treat its absence as expected rather than as a broken contract, and
+ * every other contract is still enforced.
+ */
+export function repairAgentSurfaces(
+  root = process.cwd(),
+  options: { deferSkillsAlias?: boolean } = {},
+  platform: NodeJS.Platform = process.platform,
+): AgentSurfaceRepair {
+  const resolvedRoot = resolve(root);
+  let alias: AliasStatus | null = null;
+  if (options.deferSkillsAlias) {
+    const marker = join(resolvedRoot, SKILLS_ALIAS_DEFERRED_MARKER);
+    mkdirSync(join(marker, '..'), { recursive: true });
+    writeFileSync(marker, `${new Date().toISOString()}\n`);
+  }
+  else {
+    alias = repairClaudeSkillsAlias(resolvedRoot, platform);
+  }
+  const wrappersWritten = existsSync(join(resolvedRoot, COMMAND_ALIAS_MANIFEST)) ? repairCommandWrappers(resolvedRoot) : null;
+  const check = checkAgentCompatibility(resolvedRoot, platform);
+  return { alias, wrappersWritten, check, aliasDeferred: options.deferSkillsAlias === true };
+}
+
 export function repairClaudeSkillsAlias(
   root = process.cwd(),
   platform: NodeJS.Platform = process.platform,
@@ -371,6 +570,8 @@ export function repairClaudeSkillsAlias(
   const paths = compatibilityPaths(root);
   assertCanonicalSources(paths);
   mkdirSync(join(paths.root, '.claude'), { recursive: true });
+  // The alias exists (or is about to) from here on: the deferral is over.
+  rmSync(join(paths.root, SKILLS_ALIAS_DEFERRED_MARKER), { force: true });
 
   const target = desiredAliasTarget(paths, platform);
   const type = aliasType(platform);

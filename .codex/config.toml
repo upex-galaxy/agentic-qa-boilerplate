@@ -1,6 +1,6 @@
 # Codex CLI + Desktop read this same file. Instructions come from AGENTS.md and
 # skills from .agents/skills/, both natively — neither needs configuring here.
-# The MCP inventory below is the Codex-format adapter of the six servers that
+# The MCP inventory below is the Codex-format adapter of the servers that
 # .mcp.json and opencode.jsonc also declare; `bun run agents:compat:check`
 # compares the three semantically, so a server added to one host only fails.
 

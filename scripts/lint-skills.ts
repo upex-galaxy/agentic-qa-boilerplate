@@ -44,7 +44,12 @@
  *   7. TIER-MISMATCH — skill named in AGENTS.md §5 but absent from
  *      cli/install.ts matching tier array, or vice versa. T1 + T4 skills
  *      exempt (T1 lives in .agents/skills/; T4 is auto-discovered at runtime).
- *      WARN severity (does not fail CI).
+ *      install.ts is the tier authority for community skills: one committed
+ *      as a real directory inside `.agents/skills/` (downstream projects commit
+ *      their `bunx skills add` output) keeps its install.ts tier and is never
+ *      reclassified as T1, so the T1-only checks (frontmatter, categories,
+ *      STALE-PATH, session contract) do not run over a body the project does
+ *      not author. WARN severity (does not fail CI).
  *
  *   8. STALE-PATH — path-like literals in inline backtick spans of T1 SKILL.md
  *      bodies AND each skill's references/*.md (outside fenced code blocks)
@@ -89,7 +94,9 @@ import { dirname, join } from 'node:path';
 // Constants
 // -----------------------------------------------------------------------------
 
-const REPO_ROOT = join(import.meta.dir, '..');
+// `LINT_SKILLS_ROOT` exists for the regression tests (fixture repos); every
+// normal run resolves the repo from this file's location.
+const REPO_ROOT = process.env.LINT_SKILLS_ROOT ?? join(import.meta.dir, '..');
 const SKILLS_DIR = join(REPO_ROOT, '.agents/skills');
 const INSTALL_TS = join(REPO_ROOT, 'cli/install.ts');
 const AGENTS_MD = join(REPO_ROOT, 'AGENTS.md');
@@ -975,6 +982,7 @@ function main(): void {
   }
   const t1Skills: T1Skill[] = [];
   const t1WithFrameworkEvolution: string[] = [];
+  const committedCommunity = new Set<string>();
 
   for (const entry of readdirSync(SKILLS_DIR)) {
     const slugPath = join(SKILLS_DIR, entry);
@@ -992,6 +1000,12 @@ function main(): void {
       }
       continue;
     }
+
+    // A community skill committed as a real directory in the store (downstream
+    // projects commit their `bunx skills add` output) is still the tier
+    // install.ts says. Classifying it T1 linted a vendor body as if the project
+    // authored it and exempted it from the AGENTS.md §5 cross-check.
+    if (t3Slugs.has(entry) || t4Slugs.has(entry)) { committedCommunity.add(entry); continue; }
 
     const content = readFileSync(skillMd, 'utf8');
     // Extract body (everything after frontmatter) for STALE-PATH check.
@@ -1114,6 +1128,10 @@ function main(): void {
   checkSkillLiteralTools(skillFiles);
 
   // ---- Report ----
+  const communityNote = committedCommunity.size > 0
+    ? ` (+ ${committedCommunity.size} community skills committed in the store, tiers from cli/install.ts)`
+    : '';
+  console.log(`Scanning .agents/skills ... ${t1Skills.length} T1 skills${communityNote}`);
   const checkNames = [
     'T1 frontmatter parseability',
     'T3 PROJECT_LEVEL_SKILLS shape',

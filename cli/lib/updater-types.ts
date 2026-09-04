@@ -154,6 +154,22 @@ export interface Component {
    * Ignored when `bootstrapOnly` is false/undefined.
    */
   frameworkFiles?: string[]
+  /**
+   * Repo-relative path allowlist that RE-EXEMPTS files back to bootstrap-only
+   * (project-owned) behavior even though their basename matches `frameworkFiles`.
+   *
+   * Use case: the `README.md` under each `.context` sub-directory is framework
+   * scaffolding and flows through (`frameworkFiles: ['README.md']`), but
+   * `.context/ADR/README.md` carries a
+   * project-maintained ADR index table — it is hybrid (framework guidance +
+   * project state). Listing it here keeps it from being overwritten on update,
+   * since the basename-only `frameworkFiles` rule is too coarse to tell the two
+   * apart. Without this, an update silently clobbers the project's ADR index.
+   *
+   * Matching is on the full repo-relative path (e.g. `.context/ADR/README.md`),
+   * not the basename. Ignored when `bootstrapOnly` is false/undefined.
+   */
+  frameworkFilesExcept?: string[]
 }
 
 export type ChangeStatus = 'M' | 'A' | 'D';
@@ -192,6 +208,22 @@ export interface FailedFile {
   reason: string
 }
 
+/** A synced file the project had edited (3-way: local differed from the upstream copy at the lock cursor) that this run overwrote. */
+export interface LocalEditOverwritten {
+  path: string
+  component: string
+}
+
+/** A `package.json` key kept at the project's value although upstream differs (Phase 4.5b, `skip` or `mine`). */
+export interface PackageJsonKeptKey {
+  file: string
+  section: string
+  key: string
+  localValue: string
+  upstreamValue: string
+  resolution: 'skip' | 'mine'
+}
+
 export interface RunSummary {
   applied: AppliedFile[]
   skipped: DeltaEntry[]
@@ -199,6 +231,23 @@ export interface RunSummary {
   newHeadSha: string
   componentsAdvanced: string[]
   componentsHeldBack: string[]
+  /**
+   * True when a preflight refusal ended the run before any sync (dirty tree,
+   * corrupt lock, clone failure, a declined migration or self-update). The
+   * wrapper must not report success on it. A run that found nothing to sync
+   * is NOT aborted.
+   */
+  aborted?: boolean
+  /** Absolute path of this run's pre-write backup directory (`.backups/update-<ts>/`), when one was created. */
+  backupDir?: string | null
+  /** Files overwritten this run whose local copy carried a project edit; each has a copy under `backupDir`. */
+  localEditsOverwritten?: LocalEditOverwritten[]
+  /** `package.json` keys kept at the project's value this run (upstream differs). */
+  packageJsonKept?: PackageJsonKeptKey[]
+  /** Paths recorded in `.template/last-apply.json`: the updater's own uncommitted output, exempt from the next dirty-tree guard. */
+  lastApplyPaths?: number
+  /** Set by the wrapper's parity hook when it saved the prompt file (`UpdaterConfig.promptFile`). */
+  promptSaved?: boolean
 }
 
 export interface MergeResult {
@@ -461,9 +510,10 @@ export interface UpdaterConfig {
   excludePaths?: string[]
   /**
    * Paths that live in the template repo but must never reach a consumer project
-   * — the boilerplate's OWN working material rather than framework the consumer
-   * inherits. Matched as a repo-relative path or as a directory prefix, so
-   * `docs/qa-standard` covers everything under it.
+   * — the boilerplate's OWN material rather than framework the consumer
+   * inherits. Matched as a repo-relative path or as a directory prefix at a
+   * segment boundary, so `docs/qa-standard` covers everything under it without
+   * swallowing a sibling `docs/qa-standards`.
    *
    * Distinct from the two neighbours above, which both describe a file the
    * consumer DOES have:
@@ -472,8 +522,9 @@ export interface UpdaterConfig {
    *   - `repoOnlyPaths` never travels at all.
    *
    * The scaffold side is enforced separately by `TEMPLATE_EXCLUDES` in
-   * `packages/create-agentic-qa/src/prepare.ts`; an entry usually belongs in
-   * both, or `bun run up` re-delivers what the scaffold pruned.
+   * `packages/create-agentic-qa/src/prepare.ts`; a sync-reachable entry
+   * usually belongs in both, or `bun run up` re-delivers what the scaffold
+   * pruned.
    */
   repoOnlyPaths?: string[]
   /**
@@ -492,24 +543,14 @@ export interface UpdaterConfig {
    * child sets `UPEX_UPDATER_REEXEC=1` to prevent infinite re-exec loops.
    */
   selfUpdateComponent?: string
+  /**
+   * Repo-relative path of the parity prompt the wrapper saves. Named by the
+   * dirty-tree guard when it refuses a tree that still holds the previous
+   * run's uncommitted output plus user edits, next to the suggested commit.
+   */
+  promptFile?: string
   hooks?: {
     afterApply?: (summary: RunSummary) => Promise<void>
     skillsResolver?: (templateDir: string) => string[]
   }
-}
-
-// ============================================================================
-// PARSED CLI ARGS — kept exported so the wrapper's parseArgs can return it.
-// Repo-specific commands stay union-typed via plain string[] to avoid pinning
-// updater-core to a particular repo's command vocabulary.
-// ============================================================================
-
-export interface ParsedArgs {
-  commands: string[]
-  help: boolean
-  dryRun: boolean
-  rollback: boolean
-  auto: boolean
-  /** Repo-specific subcommand value (e.g. DEV's MCP agent). Typed loosely on purpose. */
-  updateMcpTemplate: string | null
 }

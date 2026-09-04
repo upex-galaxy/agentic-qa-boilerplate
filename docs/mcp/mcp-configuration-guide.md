@@ -265,6 +265,39 @@ url = "https://mcp.example.com/mcp"
 bearer_token_env_var = "TOKEN_ENV_VAR"
 ```
 
+### Por qué Codex no expande `${VAR}` (y cómo lo resuelve este repo)
+
+Codex no interpola placeholders dentro de `args` ni dentro de los valores de `[mcp_servers.X.env]`: un `${TAVILY_API_KEY}` escrito ahí llega al server como texto literal. La única forma de pasar un secreto es **por nombre**, y Codex lo toma del entorno del proceso (el que carga `bun run codex` desde `.env`):
+
+- `env_vars = ["NOMBRE", ...]` en un server stdio: reenvía esas variables al proceso hijo tal cual están en el entorno.
+- `bearer_token_env_var = "NOMBRE"` en un server HTTP: envía `Authorization: Bearer <valor>` leyendo esa variable.
+- `[mcp_servers.X.env]` queda solo para settings literales (`LOG_LEVEL = "error"`); `bun run agents:compat:check` rechaza un placeholder ahí y dice cómo corregirlo.
+
+Así quedan los servers de este repo en `.codex/config.toml` frente a `.mcp.json` / `opencode.jsonc`:
+
+| Server                         | Claude / OpenCode                                            | Codex                                                                 | Por qué                                                                                   |
+| ------------------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `tavily`, `postman`            | HTTP con `headers.Authorization = "Bearer ${VAR}"`           | `url` + `bearer_token_env_var = "VAR"`                                | Mismo endpoint; el header lo arma Codex a partir del nombre de la variable.               |
+| `openapi`                      | `env` / `environment` con `${API_BASE_URL}` y `${OPENAPI_SPEC_PATH}` | `env_vars = ["API_BASE_URL", "OPENAPI_SPEC_PATH"]`                  | Sin interpolación, las dos variables viajan por nombre.                                   |
+| `context7`, `playwright`, `dbhub` | sin secretos                                              | idéntico                                                              | No dependen de `.env` (DBHub lee `dbhub.toml`).                                           |
+
+`bun run agents:compat:check` compara **los nombres de variables de `.env`** de los que depende cada host y los settings literales, no la forma del comando, así que estas adaptaciones pasan el gate. El conjunto canónico de servers es el que declara `.mcp.json`: un server que falta en `opencode.jsonc` o en `.codex/config.toml`, o que existe solo en uno de ellos, falla nombrando el server y el host. Los seis que trae el boilerplate reciben además una verificación estricta de forma por host cuando el proyecto los declara; cualquier otro server (por ejemplo `supabase` en un proyecto derivado) solo pasa por la comparación genérica.
+
+Bloques reales de `.codex/config.toml` de este repo:
+
+```toml
+[mcp_servers.tavily]
+url = "https://mcp.tavily.com/mcp/"
+bearer_token_env_var = "TAVILY_API_KEY"
+enabled = true
+
+[mcp_servers.openapi]
+command = "bunx"
+enabled = true
+args = ["-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"]
+env_vars = ["API_BASE_URL", "OPENAPI_SPEC_PATH"]
+```
+
 ### Comandos Útiles
 
 ```bash
