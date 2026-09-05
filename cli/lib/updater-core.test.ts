@@ -23,6 +23,7 @@ import {
   prefetchedUpstreamDir,
   readLastApply,
   reconcileComponentsByContent,
+  selfUpdateComponentByContent,
   selfUpdatedComponents,
   splitByLastApply,
   syncStateWriteNeeded,
@@ -552,6 +553,105 @@ describe('cli lock cursor after a self-update', () => {
     // A component with a skipped entry of its own is never settled by the list.
     const cliEntry = { ...entry, component: 'cli', path: 'cli/x.ts' };
     expect(computeComponentAdvancement({ applied: [], skipped: [cliEntry], failed: [] }, [], ['cli'])).toEqual({ componentsAdvanced: [], componentsHeldBack: ['cli'] });
+  });
+
+  // Live finding: a pre-8.1 (7.x) parent predates UPDATER_SELF_UPDATED_ENV, so
+  // it re-execs on UPEX_UPDATER_REEXEC=1 alone. The child must detect the same
+  // settle-worthy fact by content instead of the missing env signal.
+  describe('the content fallback for a pre-8.1 parent', () => {
+    const cliComponent: Component = { name: 'cli', type: 'directory', paths: ['cli'] };
+    const cfg = { components: [cliComponent], selfUpdateComponent: 'cli' };
+    const scaffoldSha = 'a'.repeat(40);
+
+    function upstreamAtHead(): { dir: string, sha: string } {
+      const dir = temporaryRoot();
+      git(dir, ['init', '--quiet', '--initial-branch=main']);
+      git(dir, ['config', 'user.email', 'test@example.com']);
+      git(dir, ['config', 'user.name', 'test']);
+      write(dir, 'cli/update-boilerplate.ts', 'new code\n');
+      write(dir, 'cli/lib/updater-core.ts', 'new core\n');
+      git(dir, ['add', '-A']);
+      git(dir, ['commit', '--quiet', '-m', 'upstream']);
+      return { dir, sha: git(dir, ['rev-parse', 'HEAD']).trim() };
+    }
+
+    test('every cli/ file already matching upstream settles the component in the re-exec child', () => {
+      const { dir: upstream, sha: head } = upstreamAtHead();
+      const project = temporaryRoot();
+      // The 7.x parent already overwrote cli/ with upstream's content before re-exec'ing.
+      write(project, 'cli/update-boilerplate.ts', 'new code\n');
+      write(project, 'cli/lib/updater-core.ts', 'new core\n');
+      const reexecEnv = fakeEnv({ UPEX_UPDATER_REEXEC: '1' }); // no UPEX_UPDATER_SELF_UPDATED
+
+      expect(selfUpdateComponentByContent(cfg, upstream, project, head, scaffoldSha, reexecEnv)).toEqual(['cli']);
+    });
+
+    test('not the re-exec child: no signal to act on', () => {
+      const { dir: upstream, sha: head } = upstreamAtHead();
+      const project = temporaryRoot();
+      write(project, 'cli/update-boilerplate.ts', 'new code\n');
+      write(project, 'cli/lib/updater-core.ts', 'new core\n');
+      expect(selfUpdateComponentByContent(cfg, upstream, project, head, scaffoldSha, fakeEnv())).toEqual([]);
+    });
+
+    test('cursor already at HEAD: nothing left to settle', () => {
+      const { dir: upstream, sha: head } = upstreamAtHead();
+      const project = temporaryRoot();
+      write(project, 'cli/update-boilerplate.ts', 'new code\n');
+      write(project, 'cli/lib/updater-core.ts', 'new core\n');
+      const reexecEnv = fakeEnv({ UPEX_UPDATER_REEXEC: '1' });
+      expect(selfUpdateComponentByContent(cfg, upstream, project, head, head, reexecEnv)).toEqual([]);
+    });
+
+    test('no prior cursor at all (fresh install): nothing to settle, bootstrap handles it', () => {
+      const { dir: upstream, sha: head } = upstreamAtHead();
+      const project = temporaryRoot();
+      write(project, 'cli/update-boilerplate.ts', 'new code\n');
+      write(project, 'cli/lib/updater-core.ts', 'new core\n');
+      const reexecEnv = fakeEnv({ UPEX_UPDATER_REEXEC: '1' });
+      expect(selfUpdateComponentByContent(cfg, upstream, project, head, undefined, reexecEnv)).toEqual([]);
+    });
+
+    test('upstream moved again since the parent fetched: files differ again, syncs as usual', () => {
+      const { dir: upstream, sha: head } = upstreamAtHead();
+      const project = temporaryRoot();
+      write(project, 'cli/update-boilerplate.ts', 'new code\n');
+      write(project, 'cli/lib/updater-core.ts', 'stale core\n');
+      const reexecEnv = fakeEnv({ UPEX_UPDATER_REEXEC: '1' });
+      expect(selfUpdateComponentByContent(cfg, upstream, project, head, scaffoldSha, reexecEnv)).toEqual([]);
+    });
+
+    // Live shape: the --dry-run preview's re-exec (UPEX_UPDATER_REEXEC=1, no
+    // UPEX_UPDATER_SELF_UPDATED) runs the fetched updater from the upstream
+    // clone WITHOUT ever writing cli/ in the project (see the SELF-UPDATE
+    // block's opts.dryRun branch). Local content is untouched and still
+    // differs from upstream, so nothing settles: a preview must never move
+    // the lock cursor.
+    test('dry-run preview re-exec: cli/ was never written, content still differs, nothing settles', () => {
+      const { dir: upstream, sha: head } = upstreamAtHead();
+      const project = temporaryRoot();
+      // The preview never wrote cli/: the project keeps its pre-existing (stale) copy.
+      write(project, 'cli/update-boilerplate.ts', 'old code\n');
+      write(project, 'cli/lib/updater-core.ts', 'old core\n');
+      const reexecEnv = fakeEnv({ UPEX_UPDATER_REEXEC: '1' }); // no UPEX_UPDATER_SELF_UPDATED
+      expect(selfUpdateComponentByContent(cfg, upstream, project, head, scaffoldSha, reexecEnv)).toEqual([]);
+    });
+
+    test('guard branches all short-circuit to []: no self-update component, component not declared, no files to walk', () => {
+      const { dir: upstream, sha: head } = upstreamAtHead();
+      const project = temporaryRoot();
+      write(project, 'cli/update-boilerplate.ts', 'new code\n');
+      write(project, 'cli/lib/updater-core.ts', 'new core\n');
+      const reexecEnv = fakeEnv({ UPEX_UPDATER_REEXEC: '1' });
+
+      // !cfg.selfUpdateComponent
+      expect(selfUpdateComponentByContent({ components: [cliComponent] }, upstream, project, head, scaffoldSha, reexecEnv)).toEqual([]);
+      // component not found among cfg.components
+      expect(selfUpdateComponentByContent({ components: [], selfUpdateComponent: 'cli' }, upstream, project, head, scaffoldSha, reexecEnv)).toEqual([]);
+      // no relPaths: the declared component's path does not exist in the upstream clone
+      const missingPathComp: Component = { name: 'cli', type: 'directory', paths: ['does-not-exist'] };
+      expect(selfUpdateComponentByContent({ components: [missingPathComp], selfUpdateComponent: 'cli' }, upstream, project, head, scaffoldSha, reexecEnv)).toEqual([]);
+    });
   });
 });
 

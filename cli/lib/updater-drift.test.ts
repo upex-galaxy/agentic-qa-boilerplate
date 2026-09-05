@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -27,6 +28,12 @@ function write(root: string, relativePath: string, contents: string): void {
   const destination = join(root, relativePath);
   mkdirSync(dirname(destination), { recursive: true });
   writeFileSync(destination, contents);
+}
+
+function git(root: string, args: string[]): string {
+  const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
+  if (res.status !== 0) { throw new Error(`git ${args.join(' ')} failed: ${res.stderr}`); }
+  return res.stdout;
 }
 
 afterEach(() => {
@@ -154,5 +161,85 @@ describe('a freshly protected path gets its marker seeded, not a row', () => {
     const second = splitFirstProjectAdvice(detectProtectedDrift(watchlist, upstream, project));
     expect(second.seeded).toEqual([]);
     expect(second.advised.map(d => [d.path, d.firstAdvice])).toEqual([['scripts/lint-skills.ts', false]]);
+  });
+});
+
+describe('a first-advice entry with no upstream change since the lock cursor gets no row either', () => {
+  // Live finding: a migrated repo (or one running the per-file marker
+  // tracking for the first time) has no marker on ANY watched file yet, so
+  // every one of them reads as first advice even when upstream genuinely
+  // never touched it since the project's own lock cursor — noise, not a new
+  // upstream change to review.
+  function upstreamRepoAtCursor(): { dir: string, cursor: string } {
+    const dir = temporaryRoot();
+    git(dir, ['init', '--quiet', '--initial-branch=main']);
+    git(dir, ['config', 'user.email', 'test@example.com']);
+    git(dir, ['config', 'user.name', 'test']);
+    write(dir, 'AGENTS.md', '# memory v1\n');
+    write(dir, 'docs/conventions.md', '# conventions v1\n');
+    git(dir, ['add', '-A']);
+    git(dir, ['commit', '--quiet', '-m', 'cursor']);
+    const cursor = git(dir, ['rev-parse', 'HEAD']).trim();
+    // Upstream moves one watched file after the cursor, leaves the other alone.
+    write(dir, 'docs/conventions.md', '# conventions v2\n');
+    git(dir, ['add', '-A']);
+    git(dir, ['commit', '--quiet', '-m', 'later']);
+    return { dir, cursor };
+  }
+
+  test('seeded silently when unchanged since the cursor; advised when it changed, the cursor is unknown, or no check is given at all', () => {
+    const { dir: upstream, cursor } = upstreamRepoAtCursor();
+    const project = temporaryRoot();
+    // A migrated repo: both files were customized long before markers existed.
+    write(project, 'AGENTS.md', '# project memory, predates markers\n');
+    write(project, 'docs/conventions.md', '# project conventions, predates markers\n');
+    const watchlist = mergeProtectedWatchlist(
+      [{ path: 'AGENTS.md', reason: 'memory' }, { path: 'docs/conventions.md', reason: 'conventions' }],
+      [],
+    );
+    const drifted = detectProtectedDrift(watchlist, upstream, project);
+    expect(drifted.map(d => [d.path, d.firstAdvice]).sort()).toEqual([['AGENTS.md', true], ['docs/conventions.md', true]]);
+
+    const withCursor = splitFirstProjectAdvice(drifted, { tempDir: upstream, lockCursor: cursor });
+    expect(withCursor.seededNoUpstreamChange.map(d => d.path)).toEqual(['AGENTS.md']);
+    expect(withCursor.advised.map(d => d.path)).toEqual(['docs/conventions.md']);
+    expect(withCursor.seeded).toEqual([]);
+    // The wrapper persists all three buckets: the seeded marker holds the current upstream sha.
+    persistMarkers([...withCursor.advised, ...withCursor.seeded, ...withCursor.seededNoUpstreamChange], project);
+    expect(readFileSync(resolveMarkerPath(withCursor.seededNoUpstreamChange[0], project), 'utf8').trim()).toBe(withCursor.seededNoUpstreamChange[0].upstreamSha);
+
+    // Unknown cursor (no lock yet): today's first advice is kept for both.
+    const unknownCursor = splitFirstProjectAdvice(drifted, { tempDir: upstream, lockCursor: null });
+    expect(unknownCursor.advised.map(d => d.path).sort()).toEqual(['AGENTS.md', 'docs/conventions.md']);
+    expect(unknownCursor.seededNoUpstreamChange).toEqual([]);
+
+    // No cursor check passed at all: same as before this feature existed.
+    const noCheck = splitFirstProjectAdvice(drifted);
+    expect(noCheck.advised.map(d => d.path).sort()).toEqual(['AGENTS.md', 'docs/conventions.md']);
+    expect(noCheck.seededNoUpstreamChange).toEqual([]);
+  });
+
+  test('a project-declared entry keeps its own unconditional seed rule, even when upstream did move since the cursor', () => {
+    const { dir: upstream, cursor } = upstreamRepoAtCursor();
+    const project = temporaryRoot();
+    write(project, 'docs/conventions.md', 'project merge, uncommitted\n');
+    const watchlist = mergeProtectedWatchlist([], ['docs/conventions.md']);
+    const drifted = detectProtectedDrift(watchlist, upstream, project);
+    const split = splitFirstProjectAdvice(drifted, { tempDir: upstream, lockCursor: cursor });
+    expect(split.seeded.map(d => d.path)).toEqual(['docs/conventions.md']);
+    expect(split.advised).toEqual([]);
+    expect(split.seededNoUpstreamChange).toEqual([]);
+  });
+
+  test('a non-git tempDir (or an unreachable cursor) falls back to advised, never silently drops the row', () => {
+    const upstream = temporaryRoot(); // plain directory, no git init
+    write(upstream, 'AGENTS.md', '# memory\n');
+    const project = temporaryRoot();
+    write(project, 'AGENTS.md', '# project memory\n');
+    const watchlist = mergeProtectedWatchlist([{ path: 'AGENTS.md', reason: 'memory' }], []);
+    const drifted = detectProtectedDrift(watchlist, upstream, project);
+    const split = splitFirstProjectAdvice(drifted, { tempDir: upstream, lockCursor: 'deadbeef'.repeat(5) });
+    expect(split.advised.map(d => d.path)).toEqual(['AGENTS.md']);
+    expect(split.seededNoUpstreamChange).toEqual([]);
   });
 });

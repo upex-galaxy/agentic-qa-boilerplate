@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import { validateComponentRegistry } from './lib/updater-core.ts';
-import { COMPONENTS, GATE_SCRIPTS, parseArgs, resolveProtectedWatchlist, runGate, summarizeGates } from './update-boilerplate.ts';
+import { COMPONENTS, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, runGate, summarizeGates } from './update-boilerplate.ts';
 
 const temporaryRoots: string[] = [];
 
@@ -141,5 +141,17 @@ describe('post-apply gates', () => {
       { script: 'lint:check', status: 'pass', exitCode: 0, seconds: 3, errorCount: 0, firstErrors: [], failingApplied: [], output: '' },
       { script: 'kata:manifest:check', status: 'timeout', exitCode: null, seconds: 120, errorCount: 0, firstErrors: [], failingApplied: [], output: '' },
     ])).toBe('types:check FAIL (5 errores); lint:check OK; kata:manifest:check omitido (>120 s)');
+  });
+
+  // Live finding: a no-op run (nothing applied) or one launched with
+  // `--no-gates` used to drop the `Gates:` line entirely — reading as
+  // "nothing to say" when it actually means "nothing ran".
+  test('a skipped run names WHY, never just drops the line; a real result always wins over the reason', () => {
+    expect(gatesSummaryLine([], null)).toBeNull();
+    expect(gatesSummaryLine([], 'no-gates')).toBe('omitidas (--no-gates)');
+    expect(gatesSummaryLine([], 'no-changes')).toBe('omitidas (sin cambios)');
+    expect(gatesSummaryLine([
+      { script: 'types:check', status: 'pass', exitCode: 0, seconds: 3, errorCount: 0, firstErrors: [], failingApplied: [], output: '' },
+    ], 'no-changes')).toBe('types:check OK');
   });
 });
