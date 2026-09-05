@@ -16,6 +16,42 @@ below names which one it applies to:
 
 ## [Unreleased]
 
+### Fixed (updater 8.4)
+
+`CLI_VERSION` 8.3 -> 8.4, ported from the dev boilerplate. Five polish items.
+
+- **The `cli` lock cursor also advances after a self-update from a pre-8.1
+  parent.** A 7.x parent predates `UPEX_UPDATER_SELF_UPDATED` and re-execs the
+  child on `UPEX_UPDATER_REEXEC=1` alone, so the env-signal fast path never
+  fires. The re-exec child now detects the same fact independently: when
+  `cli/` is byte-identical to the fetched upstream and the lock's prior
+  cursor for the component is not already at that sha, the component settles
+  there anyway, same as the env signal.
+- **A heading changed only by punctuation is not a heading change.** The
+  markdown evidence normalizes an em dash, an en dash, a spaced hyphen and a
+  colon to one canonical separator before comparing headings (`## A - B` and
+  `## A: B` now compare equal). Case-sensitive otherwise. Hunk counts still
+  come from the real diff, untouched.
+- **The skills registry regenerates after everything else, including a
+  restored overwrite.** `bun run skills:registry` now reruns as the very last
+  afterApply hook, after the parity report; an overwritten-edit row for a
+  path under `.agents/skills/` now ends with `after restoring, run bun run
+  skills:registry`, so `skills:registry:check` does not go red the moment the
+  project restores its own edit from the backup. The KATA manifest hook
+  keeps its own place ahead of the gates: `kata:manifest:check` still judges
+  the manifest the run just rebuilt.
+- **First-run noise for a watched file no upstream ever touched.** A watched
+  path with no marker yet (a migrated repo, or one running the per-file
+  marker tracking for the first time) whose upstream copy has not changed
+  since the project's own lock cursor seeds its marker silently instead of
+  firing a row: the same treatment `updater.protected_paths` first advice
+  already got in 8.3, now for any watched path when the cursor proves nothing
+  moved. An unknown cursor (no lock yet) keeps today's first advice.
+- **The closing box names why gates did not run.** `Gates:` used to be
+  omitted entirely on a no-op run (nothing applied) or with `--no-gates`,
+  reading as "nothing to say"; it now prints `omitidas (sin cambios)` or
+  `omitidas (--no-gates)`.
+
 ### Fixed (updater 8.3, ported from the dev boilerplate)
 
 `CLI_VERSION` 8.2 -> 8.3. The dev boilerplate's 8.3 lands here: two items that

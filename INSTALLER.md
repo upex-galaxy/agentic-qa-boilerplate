@@ -486,6 +486,16 @@ One more thing on the migration run itself: the `.claude/skills` alias is NOT cr
 - **Host-agnostic `cli/**`.** `cli/updater-host-types.test.ts` compiles `cli/**` with a required `NODE_ENV` on `ProcessEnv` on every `bun test`, so the synced tests never break under a host that augments `ProcessEnv`.
 - **`UPEX_TEMPLATE_REPO`.** Points the updater at a fork (`OWNER/REPO`, via `gh`) or a local clone (absolute path or `file://`, via `git`, no `gh` session), which is how an unpublished branch is tested against a consumer.
 
+### What updater 8.4 adds
+
+`CLI_VERSION` 8.3 -> 8.4, ported from the dev boilerplate. Five polish items.
+
+- **Self-update cursor unstuck from a 7.x parent.** A project's first self-update from a 7.x parent predates `UPEX_UPDATER_SELF_UPDATED`: that code re-execs the child on `UPEX_UPDATER_REEXEC=1` alone, with no signal that `cli/` was just written at upstream HEAD, so the lock cursor for that component never advanced. The re-exec child now checks for itself: it compares every file the self-update component owns against upstream by blob SHA and settles the cursor there when they all match, same effect as the env signal.
+- **Punctuation-insensitive heading comparison.** The parity report's markdown heading diff now normalizes separators before comparing: `## Setup — Config` and `## Setup: Config` read as the same heading instead of firing a spurious added/removed pair. Whitespace is collapsed too, so a stray double space never causes a false mismatch.
+- **Skills registry regenerated after parity.** `REGISTRY.md` now rebuilds after the parity hook runs, not before, so it reflects `.agents/skills/` as every hook left it, parity included. A skill row reporting a project edit overwritten now ends with `run bun run skills:registry`, since the registry the sync just wrote was built from the upstream content the overwrite applied, not the project's edit. The KATA manifest hook keeps its own place ahead of the gates.
+- **Silently seeded watched files.** A watched file with no marker yet, whose upstream copy provably has not changed since the project's own lock cursor, is seeded silently too now, same treatment as a freshly declared `updater.protected_paths` path but for a different reason: first-run noise on a migrated repo, or a project running per-file marker tracking for the first time, not a new upstream change to review.
+- **`Gates: omitidas (...)` line.** A run that skips the gates entirely (`--no-gates`, or nothing applied) now says so in the closing box instead of dropping the `Gates:` line: `Gates: omitidas (--no-gates)` or `Gates: omitidas (sin cambios)`.
+
 ### What updater 8.3 adds
 
 `CLI_VERSION` 8.2 -> 8.3, ported from the dev boilerplate. Two of the six items were born in this repo's 8.2 port and came back upstream; the other four are polish from two more live runs.
