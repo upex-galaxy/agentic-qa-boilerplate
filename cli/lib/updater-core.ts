@@ -1008,6 +1008,52 @@ export function selfUpdatedComponents(
 }
 
 /**
+ * Fallback for the first self-update from a pre-8.1 parent (7.x): that code
+ * predates `UPEX_UPDATER_SELF_UPDATED`, so it re-execs the child on
+ * `UPEX_UPDATER_REEXEC=1` alone, without the sha it just wrote `cli/` at.
+ * `selfUpdatedComponents` then sees nothing and the lock cursor never moves
+ * past the scaffold release, forever.
+ *
+ * The re-exec child detects the same fact independently: it walks the
+ * self-update component's own file list and compares each one's content
+ * against the fetched upstream by blob SHA (same mechanism the parent uses
+ * before writing `cli/`, see the SELF-UPDATE block). Every file identical, and
+ * the lock's prior cursor for the component is not already at `newHeadSha`,
+ * settles the component there, same effect as the env signal.
+ *
+ * Only meaningful in the re-exec child: a fresh (non-re-exec) process has no
+ * reason to believe a self-update just happened, so it returns `[]` there too.
+ * Invariant: the `--dry-run` preview's own re-exec (see the SELF-UPDATE block's
+ * `opts.dryRun` branch) never writes `cli/` before re-executing, so local
+ * content there still differs from upstream and this never settles the
+ * cursor from a preview run.
+ */
+export function selfUpdateComponentByContent(
+  cfg: Pick<UpdaterConfig, 'components' | 'selfUpdateComponent'>,
+  templateDir: string,
+  repoRoot: string,
+  newHeadSha: string,
+  priorCursor: string | null | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): string[] {
+  if (env.UPEX_UPDATER_REEXEC !== '1' || !cfg.selfUpdateComponent) { return []; }
+  if (!priorCursor || priorCursor === newHeadSha) { return []; }
+  const selfComp = cfg.components.find(c => c.name === cfg.selfUpdateComponent);
+  if (!selfComp) { return []; }
+  const relPaths = collectComponentRelPaths(selfComp, templateDir);
+  if (relPaths.length === 0) { return []; }
+  const pathspecs = selfComp.type === 'file-list' ? relPaths : selfComp.paths;
+  const upstreamShas = batchUpstreamShas(templateDir, pathspecs);
+  const localShas = batchLocalShas(repoRoot, relPaths);
+  const identical = relPaths.every((relPath) => {
+    const upstreamSha = upstreamShas.get(relPath);
+    const localSha = localShas.get(relPath);
+    return upstreamSha !== undefined && localSha !== undefined && upstreamSha === localSha;
+  });
+  return identical ? [cfg.selfUpdateComponent] : [];
+}
+
+/**
  * Where a run records what it wrote. Gitignored. A sync deliberately leaves
  * its output uncommitted (the parity prompt is reviewed first), so the NEXT
  * run's dirty-tree guard must recognise that output as its own: a dirty path
@@ -2727,8 +2773,16 @@ export async function runUpdate(
   // A bootstrapped component with nothing to deliver still needs its lock
   // cursor recorded (see computeComponentAdvancement), so it is not a no-op.
   // So does the component the parent's self-update already put at upstream
-  // HEAD: no entry to walk, but a cursor that must move to this sha.
-  const settledSelfUpdate = selfUpdatedComponents(cfg, newHeadSha).filter(name => !entries.some(e => e.component === name));
+  // HEAD: no entry to walk, but a cursor that must move to this sha. The env
+  // signal is the fast path; a pre-8.1 parent never sets it, so the content
+  // fallback (selfUpdateComponentByContent) catches that case independently.
+  const priorSelfUpdateCursor = cfg.selfUpdateComponent ? v7State?.perComponentCommit[cfg.selfUpdateComponent] : undefined;
+  const settledSelfUpdateSignal = selfUpdatedComponents(cfg, newHeadSha);
+  const settledSelfUpdate = (
+    settledSelfUpdateSignal.length > 0
+      ? settledSelfUpdateSignal
+      : selfUpdateComponentByContent(cfg, templateDir, repoRoot, newHeadSha, priorSelfUpdateCursor)
+  ).filter(name => !entries.some(e => e.component === name));
   const settledBootstrap = [...new Set([
     ...bootstrapComponents.filter(c => !entries.some(e => e.component === c.name)).map(c => c.name),
     ...settledSelfUpdate,

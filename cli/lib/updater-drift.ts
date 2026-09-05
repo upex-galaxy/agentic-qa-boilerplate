@@ -28,6 +28,7 @@
  * parity report next to compat errors, MCP set drift and held-back components.
  */
 
+import { execSync } from 'node:child_process';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -228,23 +229,79 @@ export function detectProtectedDrift(
 }
 
 /**
- * Split the drifted entries into the ones to ADVISE and the ones whose marker
- * is only SEEDED this run: a project-declared path (`updater.protected_paths`)
- * with no marker yet. The project just merged that file by hand against the
- * very upstream on disk (that is why it declared it), so a row saying the two
- * differ is noise: the marker is written silently and the row fires on the
- * NEXT upstream change. Upstream entries keep their first advice: nobody has
- * told the project about them yet. Live finding (Bunkai, third run): the
- * freshly protected `scripts/lint-skills.ts` kept one residual row through
- * the dry-run and the re-run until a real run had persisted its marker.
+ * True when upstream's own copy of `entryPath` is byte-for-byte the same at
+ * `lockCursor` and at the clone's current HEAD: a tree-level comparison
+ * (`git diff --name-only`), so it needs no blob content and works against a
+ * `--filter=blob:none` partial clone. `false` on any git failure (an
+ * unreachable cursor, a non-git tempDir in a test): the caller then keeps
+ * today's first advice, never silently drops it.
  */
-export function splitFirstProjectAdvice(drifted: readonly DriftedEntry[]): { advised: DriftedEntry[], seeded: DriftedEntry[] } {
+function upstreamUnchangedSinceCursor(tempDir: string, lockCursor: string, entryPath: string): boolean {
+  try {
+    const out = execSync(
+      `git -C "${tempDir}" diff --name-only ${lockCursor} HEAD -- "${entryPath}"`,
+      { stdio: ['pipe', 'pipe', 'pipe'] },
+    ).toString().trim();
+    return out === '';
+  }
+  catch {
+    return false;
+  }
+}
+
+export interface SplitFirstAdviceResult {
+  advised: DriftedEntry[]
+  /** First advice for a project-declared entry: seeded, see the function doc. */
+  seeded: DriftedEntry[]
+  /**
+   * First advice for any entry (no marker yet) whose upstream copy provably
+   * did not change since the project's own lock cursor: also seeded, for a
+   * different reason (see `upstreamUnchangedSinceCursor`). Always empty when
+   * `cursorCheck` is omitted or its cursor is unknown.
+   */
+  seededNoUpstreamChange: DriftedEntry[]
+}
+
+/**
+ * Split the drifted entries into the ones to ADVISE and the ones whose marker
+ * is only SEEDED this run:
+ *
+ *  - a project-declared path (`updater.protected_paths`) with no marker yet.
+ *    The project just merged that file by hand against the very upstream on
+ *    disk (that is why it declared it), so a row saying the two differ is
+ *    noise: the marker is written silently and the row fires on the NEXT
+ *    upstream change. Live finding (Bunkai, third run): the freshly protected
+ *    `scripts/lint-skills.ts` kept one residual row through the dry-run and
+ *    the re-run until a real run had persisted its marker.
+ *  - ANY entry with no marker yet whose upstream copy has not changed since
+ *    the project's lock cursor (`cursorCheck`), regardless of source. A
+ *    migrated repo (or one running the per-file marker tracking for the
+ *    first time) diffs against a project customization that predates
+ *    markers entirely, not a new upstream change to review, the same first-
+ *    run noise the project-declared rule above already avoids for a
+ *    narrower case. Skipped when `cursorCheck` is omitted or its `lockCursor`
+ *    is unknown (no lock yet): first advice is kept, exactly as before.
+ */
+export function splitFirstProjectAdvice(
+  drifted: readonly DriftedEntry[],
+  cursorCheck?: { tempDir: string, lockCursor: string | null },
+): SplitFirstAdviceResult {
   const advised: DriftedEntry[] = [];
   const seeded: DriftedEntry[] = [];
+  const seededNoUpstreamChange: DriftedEntry[] = [];
   for (const entry of drifted) {
-    (entry.source === 'project' && entry.firstAdvice ? seeded : advised).push(entry);
+    if (entry.source === 'project' && entry.firstAdvice) { seeded.push(entry); continue; }
+    if (
+      entry.firstAdvice
+      && cursorCheck?.lockCursor
+      && upstreamUnchangedSinceCursor(cursorCheck.tempDir, cursorCheck.lockCursor, entry.path)
+    ) {
+      seededNoUpstreamChange.push(entry);
+      continue;
+    }
+    advised.push(entry);
   }
-  return { advised, seeded };
+  return { advised, seeded, seededNoUpstreamChange };
 }
 
 /**

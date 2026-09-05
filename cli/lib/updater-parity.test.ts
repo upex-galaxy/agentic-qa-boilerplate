@@ -134,6 +134,33 @@ describe('section-level evidence', () => {
     expect(delta.removed).toEqual(['C']);
   });
 
+  test('a heading changed only by punctuation counts as unchanged; hunk counts still come from the real diff', () => {
+    // Em dash, en dash, spaced hyphen and colon are interchangeable separators.
+    const sameBody = markdownSectionDelta(
+      `# T\n\n## A ${'—'} B\n\nsame\n`,
+      '# T\n\n## A: B\n\nsame\n',
+    );
+    expect(sameBody).toEqual({ added: [], removed: [], changed: [] });
+    const alsoUnchanged = markdownSectionDelta(
+      '# T\n\n## A - B\n\nsame\n',
+      `# T\n\n## A ${'–'} B\n\nsame\n`,
+    );
+    expect(alsoUnchanged).toEqual({ added: [], removed: [], changed: [] });
+    // A genuine body change under a punctuation-only heading rename is still caught.
+    const changedBody = markdownSectionDelta(
+      '# T\n\n## A - B\n\nmine\n',
+      `# T\n\n## A ${'–'} B\n\ntheirs\n`,
+    );
+    expect(changedBody).toEqual({ added: [], removed: [], changed: [`A ${'–'} B`] });
+    // A heading that is genuinely different (not just punctuation) still reports.
+    const genuinelyDifferent = markdownSectionDelta('# T\n\n## A: B\n\nx\n', '# T\n\n## A: C\n\nx\n');
+    expect(genuinelyDifferent).toEqual({ added: ['A: C'], removed: ['A: B'], changed: [] });
+    // Hunk counts are a separate path from heading evidence: unaffected.
+    const diff = '--- a\n+++ b\n@@ -1 +1 @@\n-old\n+new\n';
+    expect(describeWatchedFile('AGENTS.md', `## A ${'—'} B\n\nsame\n`, '## A: B\n\nsame\n', diff))
+      .toBe('same headings and bodies; formatting or comments differ; 1 hunk (+1/-1)');
+  });
+
   test('config keys go two levels deep for JSON, JSONC, TOML and YAML', () => {
     expect(configKeys('{"mcpServers":{"n8n":{}},"x":1}', '.mcp.json')).toEqual(['mcpServers', 'mcpServers.n8n', 'x']);
     expect(configKeys('{\n  // c\n  "mcp": { "n8n": {}, },\n}', 'opencode.jsonc')).toEqual(['mcp', 'mcp.n8n']);
@@ -567,7 +594,7 @@ describe('rows the diff-based table could not see before', () => {
     expect(skill.surface).toBe('skills');
     expect(skill.suggested).toBe('merge');
     expect(skill.blocking).toBe(false);
-    expect(skill.evidence).toBe('project edit overwritten; backup: .backups/update-1/.agents/skills/acli/SKILL.md; 1 hunk (+1/-1) vs applied; add the path to updater.protected_paths in .agents/project.yaml so the next sync keeps your merge');
+    expect(skill.evidence).toBe('project edit overwritten; backup: .backups/update-1/.agents/skills/acli/SKILL.md; 1 hunk (+1/-1) vs applied; add the path to updater.protected_paths in .agents/project.yaml so the next sync keeps your merge; after restoring, run bun run skills:registry');
     expect(skill.note).toBe(protectNote('.agents/skills/acli/SKILL.md'));
     expect(skill.diff).toContain('-project body');
     expect(skill.diff).toContain('+upstream body');
