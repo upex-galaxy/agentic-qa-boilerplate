@@ -18,7 +18,7 @@
 > the samples as conceptual illustration only. The executable reference is
 > `.agents/skills/test-automation/references/kata-architecture.md`, whose canonical formula is:
 > *KATA organises automation in four layers with a single direction of dependency — TestContext,
-> Base, domain Komponents and Fixtures — with Steps as an optional intermediate layer, and test
+> Base, domain Components and Fixtures — with Steps as an optional intermediate layer, and test
 > files as consumers, never a layer.*
 
 **Komponent Action Test Architecture**
@@ -54,7 +54,7 @@ Traditional test automation faces recurring problems:
 
 KATA solves these problems through two complementary strategies:
 
-1. **Komponent Strategy**: Organizes code into clear layers with dependency injection
+1. **Component Strategy**: Organizes code into clear layers with dependency injection
 2. **Action Strategy**: Converts test cases into reusable actions with automatic traceability
 
 ### What problems does KATA solve
@@ -206,7 +206,7 @@ async fillOptionalSection(data: FormData) {
 
 ---
 
-## 3. Layer Architecture (Komponent Strategy)
+## 3. Layer Architecture (Component Strategy)
 
 KATA organizes code into hierarchical layers with clear responsibilities.
 

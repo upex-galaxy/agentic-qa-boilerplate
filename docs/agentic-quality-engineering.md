@@ -161,7 +161,7 @@ The rest of this document describes how that strategy is implemented in code and
 | **TC**                | Test Case. A single, traceable verification linked to an acceptance criterion.                                               |
 | **ATC**               | Acceptance Test Case — the test case itself. `@atc('PROJ-101')` is its representation in code: the decorator carries the TMS ticket key, nothing else. |
 | **PBI**               | Product Backlog Item. In this repo, the local folder (`.context/PBI/...`) that stores per-ticket and per-module knowledge.   |
-| **KATA**              | Komponent Action Test Architecture. Four named layers (TestContext · Base · domain Komponents · Fixtures) plus optional Steps; test files consume the Fixtures. |
+| **KATA**              | Komponent Action Test Architecture. Four named layers (TestContext · Base · domain Components · Fixtures) plus optional Steps; test files consume the Fixtures. |
 | **Subagent Dispatch Strategy** | Per-skill table declaring which stages delegate to subagents and with what pattern (Single / Sequential / Parallel / Background). Lives in each workflow `SKILL.md` under `## Subagent Dispatch Strategy`. |
 
 ---
@@ -563,7 +563,7 @@ These three phases map cleanly to the dispatch patterns: **Single** (Plan — on
 
 Automated tests live in **KATA** (Komponent Action Test Architecture). The canonical formula, and the only phrasing any surface should reproduce:
 
-> **KATA organises automation in four layers with a single direction of dependency: TestContext, Base, domain Komponents and Fixtures. Steps is an optional intermediate layer between Komponents and Fixtures. Test files consume the Fixtures — they are not a layer.**
+> **KATA organises automation in four layers with a single direction of dependency: TestContext, Base, domain Components and Fixtures. Steps is an optional intermediate layer between Components and Fixtures. Test files consume the Fixtures — they are not a layer.**
 
 Short form for a chip or a title: **"four named layers, plus optional Steps"**. Never a bare number. The layering is intentional: each layer has a single responsibility, and each layer can be tested or swapped independently. The authority for the detail is `.agents/skills/test-automation/references/kata-architecture.md`; the invariants that gate a framework change are in `.agents/skills/framework-development/references/kata-invariants.md`.
 
@@ -582,7 +582,7 @@ Short form for a chip or a title: **"four named layers, plus optional Steps"**. 
 └────────────────────────────────────────────────────────────────┘
                               ▲
 ┌────────────────────────────────────────────────────────────────┐
-│  LAYER 3: Komponents (domain)                   [your code]    │
+│  LAYER 3: Components (domain)                   [your code]    │
 │  {{Domain}}Api · {{Domain}}Page · {{Domain}}Flow               │
 │  Each ATC carries @atc('PROJ-101')                             │
 │  Dirs: tests/components/api/  ·  tests/components/ui/          │

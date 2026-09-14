@@ -14,6 +14,16 @@ below names which one it applies to:
   `packages/create-agentic-qa/`. Release runbook:
   [packages/create-agentic-qa/README.md → Releasing a new version to npm](./packages/create-agentic-qa/README.md#releasing-a-new-version-to-npm).
 
+## Unreleased — Boilerplate
+
+### Changed
+- KATA spelling rule narrowed (owner decision, 2026-09-14): the K lives **only** in the
+  expansion "Komponent Action Test Architecture". Everywhere else the word is spelled
+  normally: the third layer is "domain Components", and the legacy doc says
+  "Component Strategy" again. Touches `kata-architecture.md`, `kata-invariants.md`,
+  `agentic-quality-engineering.md` and `kata-fundamentals.md`. Earlier entries below that
+  quote "domain Komponents" describe the state at that time and are left as written.
+
 ## [Unreleased]
 
 ### Changed (Boilerplate — doctrine: named stages and the agentic contract)

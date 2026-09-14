@@ -7,13 +7,14 @@ Terminology preserved verbatim: ATC, fixture, locator, Component, Steps, Helper,
 > **Canonical formula — the one sentence every KATA surface must agree with:**
 >
 > **KATA organises automation in four layers with a single direction of dependency: TestContext,
-> Base, domain Komponents and Fixtures. Steps is an optional intermediate layer between Komponents
+> Base, domain Components and Fixtures. Steps is an optional intermediate layer between Components
 > and Fixtures. Test files consume the Fixtures — they are not a layer.**
 >
 > Short form: **"four named layers, plus optional Steps"**. Never publish a bare number. Banned on
 > every surface: "three layers", "five layers", "6 layers", "Test files" as a layer, and
-> "Component"/"Components" spelled with a C inside KATA. The spelling is **Komponent Action Test
-> Architecture**. DRY zones that are NOT layers: `tests/utils/`, `tests/data/`, `config/`.
+> the acronym expanded with a C ("Component Action Test Architecture"). The expansion is
+> **Komponent Action Test Architecture**: the K lives only in the name; the layer is "domain
+> Components", spelled normally. DRY zones that are NOT layers: `tests/utils/`, `tests/data/`, `config/`.
 > Consumers: `tests/e2e/`, `tests/integration/`. Mirrored verbatim in
 > `test-automation/references/kata-architecture.md`; if the two ever differ, that is the drift.
 
