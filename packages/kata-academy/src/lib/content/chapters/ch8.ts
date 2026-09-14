@@ -68,6 +68,6 @@ export const FULL_CIRCLE: { icon: string, label: string }[] = [
   { icon: '🎫', label: 'ticket en Jira' },
   { icon: '🧩', label: 'ATC en código — @atc(\'PROJ-101\')' },
   { icon: '🌙', label: 'ejecución nocturna en CI' },
-  { icon: '📊', label: 'resultado en Xray' },
+  { icon: '📊', label: 'resultado sincronizado al TMS (Xray o campos nativos de Jira)' },
   { icon: '🚦', label: 'veredicto de release' },
 ];

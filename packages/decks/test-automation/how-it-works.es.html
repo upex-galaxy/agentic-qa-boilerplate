@@ -458,7 +458,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <h1 class="cover-title" data-anim="fade-up"><span class="slash">/</span>test-automation</h1>
     <p class="lede">Planifica, escribe y revisa tests automatizados KATA sobre Playwright + TypeScript — tres fases en orden estricto, <b>Plan → Code → Review</b>, nunca directo al código.</p>
     <div class="chips anim-stagger-list">
-      <span class="chip"><b>Stage 5</b> — Test Automation</span>
+      <span class="chip"><b>Automation</b> <span class="dim">(históricamente Stage 5)</span></span>
       <span class="chip">Plan → Code → Review</span>
       <span class="chip">KATA · Playwright · TypeScript</span>
     </div>
@@ -470,9 +470,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <p class="kicker">el mapa — índice mental del deck</p>
     <h2 class="h2" data-anim="fade-up">Plan → Code → Review, con sus <span class="grad">gates</span></h2>
     <div class="wf" data-anim-target>
-      <div class="wf-node side down" style="grid-column:1;grid-row:1"><span class="n">← /test-documentation</span><h4>Solo veredictos Candidate</h4><p>Manual y Deferred son terminales — jamás se automatizan (Stage 4 decide).</p></div>
+      <div class="wf-node side down" style="grid-column:1;grid-row:1"><span class="n">← /test-documentation</span><h4>Solo veredictos Candidate</h4><p>Manual y Deferred son terminales — jamás se automatizan (Documentation decide).</p></div>
       <div class="wf-node side down" style="grid-column:3;grid-row:1"><span class="n">gate anti-duplicación</span><h4><span class="mono">kata-manifest.json</span></h4><p>Registro de Componentes + IDs <span class="mono">@atc</span>. Se consulta ANTES de proponer nada (Critical Rule #12).</p></div>
-      <div class="wf-node side down" style="grid-column:5;grid-row:1"><span class="n">/judgment-day · opcional</span><h4>Doble juez ciego</h4><p>Para cambios de alto riesgo (fixtures nuevos, bases compartidas). Nunca automático.</p></div>
+      <div class="wf-node side down" style="grid-column:5;grid-row:1"><span class="n">verificador · REQUERIDO</span><h4>/pr-review-lead o /judgment-day</h4><p>Automation es el único stage con verificador separado obligatorio antes del merge. Lo opcional es cuál de los dos, no si lo hay.</p></div>
       <div class="wf-node m" style="grid-column:1;grid-row:2"><span class="n">Gate 0 · Preflight</span><h4>Readiness</h4><p>Framework adaptado, toolchain, env + creds, browsers. STOP en RED.</p></div>
       <div class="wf-node m" style="grid-column:2;grid-row:2"><span class="n">Phase 0</span><h4>Resume + scope</h4><p><span class="mono">.session/…</span> → resume / restart / abort. Scope: module · ticket · regression.</p></div>
       <div class="wf-node m" style="grid-column:3;grid-row:2"><span class="n">Phase 1</span><h4>Plan ✋</h4><p><span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span>. TÚ apruebas antes de codear.</p></div>
@@ -480,7 +480,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="wf-node m" style="grid-column:5;grid-row:2"><span class="n">Phase 3</span><h4>Review</h4><p>3 Verifiers paralelos: <span class="mono">test</span> · <span class="mono">types:check</span> · <span class="mono">lint:check</span>.</p></div>
       <div class="wf-node m last" style="grid-column:6;grid-row:2"><span class="n">Accept</span><h4>Handoff</h4><p>Checkpoint + archivo de sesión. La skill se detiene aquí — sin git.</p></div>
       <div class="wf-node side loop" style="grid-column:4/6;grid-row:3"><span class="n">reject</span><h4>STOP — sin auto-fix</h4><p>Reporte fallido verbatim; re-despachar Code SOLO con tu aprobación. Bug real → confirma y crea el bug.</p></div>
-      <div class="wf-node side next" style="grid-column:6;grid-row:3"><span class="n">→ siguiente</span><h4><span class="mono">/git-flow-master</span></h4><p>Branch <span class="mono">test/*</span>, PR, merge. Luego <span class="mono">/regression-testing</span> (Stage 6) en CI.</p></div>
+      <div class="wf-node side next" style="grid-column:6;grid-row:3"><span class="n">→ siguiente</span><h4><span class="mono">/git-flow-master</span></h4><p>Branch <span class="mono">test/*</span>, PR, merge. Luego <span class="mono">/regression-testing</span> (Regression) en CI.</p></div>
     </div>
     <p class="small dim2 mt-m">Cada fase del mapa = una sección de este deck, en el mismo orden.</p>
     <div class="notes">Camino principal: Preflight → Phase 0 → Plan → Code → Review → Handoff. Adyacentes: la entrada desde test-documentation, el gate del manifest en Plan, judgment-day opcional en Review, el loop de REJECT y el handoff a git-flow-master + regression-testing.</div>
@@ -490,7 +490,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <section class="slide" data-title="Entrada + scope">
     <p class="kicker">antes de nada — qué entra y a qué tamaño</p>
     <h2 class="h2" data-anim="fade-up">Elige el <span class="grad">scope</span> primero, una sola vez</h2>
-    <div class="callout"><h4>La entrada viene de /test-documentation (Stage 4)</h4><p>Solo los TCs con veredicto <b>Candidate</b> llegan a automation. <b>Manual</b> y <b>Deferred</b> son terminales. Mapeo: Module ← module-driven · Ticket ← ticket-driven · Regression ← bug-driven · ad-hoc → donde encaje.</p></div>
+    <div class="callout"><h4>La entrada viene de /test-documentation (Documentation)</h4><p>Solo los TCs con veredicto <b>Candidate</b> llegan a automation. <b>Manual</b> y <b>Deferred</b> son terminales. Mapeo: Module ← module-driven · Ticket ← ticket-driven · Regression ← bug-driven · ad-hoc → donde encaje.</p></div>
     <table class="tt">
       <thead><tr><th>Scope</th><th>Entrada</th><th>Salida</th><th>Úsalo cuando</th></tr></thead>
       <tbody>
@@ -545,7 +545,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <li><b>Doctrina KATA.</b> <span class="mono">references/kata-architecture.md</span> + <span class="mono">typescript-patterns.md</span> — capas, identidad del ATC, fixtures, aliases.</li>
       <li><b><span class="mono">tests/components/</span>.</b> Las formas Api / Page / Steps que ya existen en disco — naming y patrones a seguir.</li>
       <li><b>La Story sincronizada.</b> <span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span> → lee la carpeta ENTERA: ACs, scope, business rules Y <span class="mono">comments.md</span>. NUNCA <span class="mono">acli view</span> para <span class="mono">customfield_*</span> (devuelve null).</li>
-      <li><b>El ATP, items-first (ambas modalidades).</b> El sync materializa el ganador en <span class="mono">acceptance-test-plan.md</span>: description del Test Plan item «ATP: …» linkeado (lo crea <span class="mono">/sprint-testing</span> Stage 1) si existe; si no, el campo <span class="mono">acceptance_test_plan</span> del Story.</li>
+      <li><b>El ATP, items-first (ambas modalidades).</b> El sync materializa el ganador en <span class="mono">acceptance-test-plan.md</span>: description del Test Plan item «ATP: …» linkeado (lo crea <span class="mono">/sprint-testing</span> en Planning) si existe; si no, el campo <span class="mono">acceptance_test_plan</span> del Story.</li>
       <li><b><span class="mono">api/schemas/</span> + <span class="mono">.env</span>.</b> Types de OpenAPI (refresca con <span class="mono">bun run api:sync</span>); credenciales vía <span class="mono">config.testUser</span> — jamás hardcodear.</li>
     </ul>
     <div class="notes">Saltarse el manifest produce Pages duplicadas, IDs @atc repetidos y reuso perdido — todo rechazado en review. Leer solo un campo de la Story produce ATCs incompletos: los comments suelen contener el contexto que cambia el plan.</div>
@@ -563,7 +563,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <li><b>1 · Escenarios:</b> ¿cuáles se vuelven tests, cuáles ATCs, cuáles preconditions compartidas (Steps)?</li>
       <li><b>2 · Componentes:</b> ¿qué <span class="mono">*Api.ts</span> / <span class="mono">*Page.ts</span> ya existen y cuáles se crean?</li>
       <li><b>3 · Datos:</b> clasificados Discover / Modify / Generate — nunca asumas que existen en staging.</li>
-      <li><b>4 · Fixture:</b> <span class="mono">{api}</span>, <span class="mono">{ui}</span>, <span class="mono">{test}</span> o <span class="mono">{steps}</span>.</li>
+      <li><b>4 · Fixture:</b> <span class="mono">{api}</span>, <span class="mono">{ui}</span> o <span class="mono">{test}</span> — los Steps no tienen fixture: se instancian directo.</li>
       <li><b>5 · Trazabilidad:</b> qué ATC ID del TMS mapea a qué método del componente.</li>
     </ul>
     <div class="callout good"><h4>Gate de fase</h4><p>Un subagente Plan (patrón Single) produce los artefactos; el orquestador te presenta el plan y <b>ESPERA tu aprobación</b>. Phase 2 jamás arranca sin ella (anti-pattern T2: nunca saltar el Plan, ni para un test "simple").</p></div>
@@ -640,8 +640,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="layer"><span class="lx">L3</span><div><h4>Componentes de dominio — <span class="mono">UsersApi, LoginPage</span></h4><p><span class="mono">@atc</span> vive aquí. Un componente por archivo: <span class="mono">{Resource}Api.ts</span> / <span class="mono">{Page}Page.ts</span>.</p></div></div>
       <div class="layer"><span class="lx">L3.5</span><div><h4>Steps — <span class="mono">AuthSteps, CheckoutSteps</span></h4><p>Cadenas de ATCs reusables para preconditions. NO se decoran con <span class="mono">@atc</span>.</p></div></div>
       <div class="layer"><span class="lx">L4</span><div><h4>Fixtures — <span class="mono">TestFixture, ApiFixture, UiFixture</span></h4><p>Inyección de dependencias. Los tests piden el fixture y reciben los componentes. Los Steps no tienen fixture: se importan e instancian directo.</p></div></div>
-      <div class="layer"><span class="lx">Tests</span><div><h4><span class="mono">tests/e2e/**</span> · <span class="mono">tests/integration/**</span></h4><p>Orquestan ATCs en escenarios. Validan FLUJOS, no propiedades sueltas.</p></div></div>
     </div>
+    <div class="callout"><h4>Los consumidores no son una capa</h4><p><span class="mono">tests/e2e/**</span> y <span class="mono">tests/integration/**</span> orquestan ATCs en escenarios y validan FLUJOS: <b>consumen</b> los Fixtures (L4), no son una quinta capa. Son <b>cuatro capas nombradas, más Steps opcional</b>.</p></div>
     <div class="callout"><h4>Dos reglas duras</h4><p>Una capa superior usa una inferior — <b>nunca al revés</b>. Imports SIEMPRE por alias (<span class="mono">@api/ @ui/ @utils/ @variables @TestContext @schemas/</span>) — el lint rechaza los relativos (<span class="mono">../../../</span>).</p></div>
     <div class="notes">Aplanar capas es rechazo automático en Review (anti-pattern T3). La separación permite que helpers HTTP, helpers UI y utilidades agnósticas tengan un solo hogar cada uno.</div>
   </section>
@@ -722,7 +722,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="callout bad" style="margin-top:0"><h4>REJECT — protocolo de error</h4><p>STOP: el reporte fallido se te muestra <b>verbatim</b>. Sin auto-fix, sin re-despachar Code sin tu aprobación. La sesión NO se archiva — queda para debug.</p></div>
       <div class="callout good" style="margin-top:0"><h4>ACCEPT — cierre limpio</h4><p>Checkpoint final en <span class="mono">progress.md</span> → sesión archivada en <span class="mono">.session/.archive/</span> → <span class="mono">bun run kata:manifest</span> + <span class="mono">git add</span> para el gate de husky.</p></div>
     </div>
-    <div class="callout"><h4>Gate adversarial opcional — /judgment-day</h4><p>Para cambios de alto riesgo (fixtures nuevos, modificaciones a bases Page/Api compartidas, refactors multi-ATC): dos jueces ciegos en paralelo; solo aprueba si ambos coinciden. Opt-in por ticket, nunca automático.</p></div>
+    <div class="callout"><h4>Verificador separado — requerido antes del merge</h4><p>El contrato de Automation exige un verificador separado en contexto limpio: <span class="mono">/pr-review-lead</span> por defecto, o <span class="mono">/judgment-day</span> (dos jueces ciegos en paralelo, aprueba solo si ambos coinciden) para cambios de alto riesgo — fixtures nuevos, bases Page/Api compartidas, refactors multi-ATC. Es el único stage con esta obligación, y es el precio de ser el único que llega a autonomía 3.</p></div>
     <div class="notes">La agregación es inline: el orquestador lee los 3 reportes y decide. Si un test falla por un bug REAL de producto: busca bug existente, anota test.fail('Blocked by {BUG-KEY}') o crea el bug con tu confirmación — un test rojo sin bug key nunca es override aceptable.</div>
   </section>
 
@@ -740,9 +740,24 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <li><b>Bajo estrategia <span class="mono">sdet</span></b> (suites encadenadas): el gate local debe pasar en <b>local Y staging</b> antes del push; el Git Ledger se apendiza a <span class="mono">progress.md</span> tras cada acción de branch.</li>
       <li><b>Ciclo de vida del TC:</b> → <b>In Review</b> cuando abre el PR del ticket hacia el trunk; → <b>Automated</b> SOLO cuando el PR final <span class="mono">trunk → main</span> mergea con CI verde. Mergear al trunk NO es "Automated".</li>
       <li><b>Transiciones</b> vía <span class="mono">/test-documentation</span> + <span class="mono">acli</span>; nombres de estado contra <span class="mono">.agents/jira-workflows.json</span>.</li>
-      <li><b>Después, en el pipeline:</b> <span class="mono">/regression-testing</span> (Stage 6) corre las suites en CI y emite GO / CAUTION / NO-GO.</li>
+      <li><b>Después, en el pipeline:</b> <span class="mono">/regression-testing</span> (Regression) corre las suites en CI y emite GO / CAUTION / NO-GO.</li>
     </ul>
     <div class="notes">Los PRs de test siguen la convención test/* con título {type}({ISSUE-KEY}): {description}. Nunca mezclar código de producto y de test en el mismo PR (anti-pattern T8).</div>
+  </section>
+
+  <!-- 16b · CONTRATO AGÉNTICO -->
+  <section class="slide" data-title="Contrato agéntico">
+    <p class="kicker">quién decide qué — el contrato de Automation</p>
+    <h2 class="h2" data-anim="fade-up">El agente ejecuta. La evidencia prueba. <span class="grad">La persona decide.</span></h2>
+    <ul class="blist anim-stagger-list">
+      <li><b>El agente hace:</b> escribe <span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span>, después el código KATA con <span class="mono">@atc</span>, corre los tres verificadores y abre el PR.</li>
+      <li><b>La persona firma:</b> el plan <b>antes de una línea de código</b>, el merge, y la llamada en el tercer loop de revisión.</li>
+      <li><b>La evidencia que sobrevive:</b> tests verdes, types limpios, lint limpio, ids <span class="mono">@atc</span> que resuelven a tickets reales, manifest fresco.</li>
+      <li><b>Autonomía CSA 2 → 3</b>, y solo dentro del plan aprobado. Ningún stage del pipeline pasa de 3.</li>
+      <li><b>Verificador separado: REQUERIDO.</b> <span class="mono">/pr-review-lead</span> o <span class="mono">/judgment-day</span>, en contexto limpio. Automation es el <b>único</b> stage con esta obligación — es el precio de ser también el único que llega a autonomía 3.</li>
+    </ul>
+    <div class="callout mt-m"><h4>Por qué justo acá</h4><p>Feedforward y feedback se compensan: más cuerda a la entrada se paga con un control más duro a la salida. El plan aprobado antes del código es el feedforward; el verificador separado antes del merge es el feedback.</p></div>
+    <div class="notes">Fuente: agentic-qa-core/references/stage-gates.md — contrato agéntico por stage, escala CSA 0-5. El DoD dice qué tiene que ser verdad al salir; el contrato dice quién tuvo permiso de hacerlo mientras el stage corría. Ambos son gates.</div>
   </section>
 
   <!-- 17 · CIERRE -->
@@ -752,14 +767,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="cols c3 mt-m anim-stagger-list">
       <div class="card"><h4>Cómo se invoca</h4><p><span class="kbd">/test-automation</span> o frases como <i>"write test"</i>, <i>"automate ticket"</i>, <i>"create API test"</i>, <i>"KATA"</i>, <i>"review test code"</i>. Siempre se carga ANTES de escribir código de test.</p></div>
       <div class="card"><h4>Artefactos clave</h4><p><span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span> + <span class="mono">atc/*.md</span> · componentes y tests en <span class="mono">tests/**</span> · <span class="mono">kata-manifest.json</span> regenerado · sesión archivada.</p></div>
-      <div class="card"><h4>En el pipeline</h4><p>← <span class="mono">/test-documentation</span> (Stage 4, veredictos Candidate) · → <span class="mono">/git-flow-master</span> (branch + PR) · → <span class="mono">/regression-testing</span> (Stage 6, CI).</p></div>
+      <div class="card"><h4>En el pipeline</h4><p>← <span class="mono">/test-documentation</span> (Documentation, veredictos Candidate) · → <span class="mono">/git-flow-master</span> (branch + PR) · → <span class="mono">/regression-testing</span> (Regression, CI).</p></div>
     </div>
     <div class="callout good"><h4>Las tres reglas para llevarte</h4><p><b>1</b> · Un ATC = un test case atómico, trazado con <span class="mono">@atc('TICKET-ID')</span>. <b>2</b> · Plan → Code → Review, siempre en orden y con tu aprobación en medio. <b>3</b> · La estabilidad es disciplina: <span class="mono">retries: 0</span>, sin waits fijos, datos propios por test.</p></div>
     <p class="small dim2 mt-m tc">← → navegar · <b>O</b> resumen · <b>S</b> presentador · <b>N</b> notas · <b>F</b> pantalla completa</p>
     <div class="notes">Cierre: la skill no reemplaza la metodología — ejecuta exactamente esta metodología, más rápido, con el humano aprobando el plan y revisando las fallas.</div>
   </section>
 
-  <div class="deck-footer"><span class="mono">/test-automation · Plan → Code → Review · KATA</span><span class="slide-number" data-current="1" data-total="17"></span></div>
+  <div class="deck-footer"><span class="mono">/test-automation · Plan → Code → Review · KATA</span><span class="slide-number" data-current="1" data-total="18"></span></div>
 
 </div>
 

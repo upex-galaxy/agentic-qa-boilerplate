@@ -562,7 +562,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="bigstat"><span class="grad">80 → 12 → 8</span></div>
     <h3>Analizas <b>80</b> escenarios, documentas <b>12</b>, automatizas <b>8</b>. La mayoría debe terminar <b>Deferred</b>. Documentar todo es el anti-patrón: un test entra al repositorio porque se va a re-ejecutar, nunca para llegar a un número de cobertura.</h3>
   </div>
-  <div class="notes">Tesis del deck: derivar es gratis, persistir es caro. Tres capas, tres conteos: derivar (1:N por técnica) → documentar (solo lo repetible) → automatizar (los pocos). Si más del 50% queda Candidate/Manual, re-aplica el filtro más duro.</div>
+  <div class="notes">Tesis del deck: derivar es gratis, persistir es caro. Tres filtros, tres conteos: derivar (1:N por técnica) → documentar (solo lo repetible) → automatizar (los pocos). Si más del 50% queda Candidate/Manual, re-aplica el filtro más duro.</div>
 </section>
 
 <!-- 3. AGENDA -->
@@ -773,7 +773,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td>ATP — Story Test Plan</td><td><span class="mono">ATP: {STORY-KEY}: {story title}</span></td><td><span class="mono">ATP: PROJ-123: Apply discount at checkout</span></td></tr>
       <tr><td>ATR — Story Test Execution</td><td><span class="mono">ATR: {STORY-KEY}: Story Testing</span></td><td><span class="mono">ATR: PROJ-123: Story Testing</span></td></tr>
       <tr><td>STP — Sprint Test Plan</td><td><span class="mono">STP: Sprint#{N}: {objetivo}</span> — lo crea /sprint-testing al abrir el sprint</td><td><span class="mono">STP: Sprint#30: Checkout hardening</span></td></tr>
-      <tr><td>STR — Sprint Test Report</td><td><span class="mono">STR: Sprint#{N}: Regression Testing</span> — nace al cierre del sprint</td><td><span class="mono">STR: Sprint#30: Regression Testing</span></td></tr>
+      <tr><td>STR — Sprint Test Results</td><td><span class="mono">STR: Sprint#{N}: Regression Testing</span> — nace al cierre del sprint</td><td><span class="mono">STR: Sprint#30: Regression Testing</span></td></tr>
       <tr><td><b>ATS</b> (coverage, obligatorio per-Story)</td><td><span class="mono">ATS: {US_ID}: {story title}</span></td><td><span class="mono">ATS: PROJ-123: Apply discount at checkout</span></td></tr>
       <tr><td><b>Test Set feature-level</b> (agrupa, opcional)</td><td><span class="mono">TS: {EPIC-KEY|module}: Validate &lt;feature&gt;</span></td><td><span class="mono">TS: GX-101: Validate credit card payment</span></td></tr>
       <tr><td><b>Test Case</b> (asevera)</td><td><span class="mono">{US_ID}: TC#: should &lt;BEHAVIOR&gt; when &lt;COND&gt;</span></td><td><span class="mono">GX-101: TC1: should log in successfully when…</span></td></tr>
@@ -1214,16 +1214,16 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 24. THREE LAYERS -->
-<section class="slide" data-title="Tres capas">
+<section class="slide" data-title="Tres filtros">
   <p class="kicker">deriva amplio, persiste poco</p>
-  <h2 class="h2" data-anim="fade-up">Tres Capas, Tres Conteos</h2>
+  <h2 class="h2" data-anim="fade-up">Tres Filtros, Tres Conteos</h2>
   <div class="steps s3 mt-l">
     <div class="step"><div class="num">1</div><h4>Derivar (Diseño)</h4><p>Considera muchos casos por técnica (1:N). Vive en el análisis de priorización, <b>no aún</b> en el TMS. Gratis.</p></div>
     <div class="step"><div class="num">2</div><h4>Documentar (este skill)</h4><p>Crea un TC persistente <b>solo</b> para lo que vale re-ejecutar: Candidate + Manual. Deferred va al reporte, <b>no</b> al TMS.</p></div>
     <div class="step"><div class="num">3</div><h4>Automatizar</h4><p>Los Candidates fluyen a <span class="mono">/test-automation</span>. Los pocos.</p></div>
   </div>
   <div class="callout warn mt-m"><h4>La forma sana: "80 → 12 → 8"</h4><p>Analizaste 80, documentaste 12, automatizaste 8 — nunca "documenta los 80". Un test entra al repositorio porque se va a re-ejecutar, jamás para llegar a un conteo. Si &gt;50% queda Candidate/Manual, re-aplica el filtro más duro.</p></div>
-  <div class="notes">Tres capas, tres conteos. La regla rectora: persistir es ROI-gated. La mayoría debe ser Deferred (no se crea TC en el TMS).</div>
+  <div class="notes">Tres filtros, tres conteos (decimos "filtros", no "capas": las capas son las de KATA y son otra cosa). La regla rectora: persistir es ROI-gated. La mayoría debe ser Deferred (no se crea TC en el TMS).</div>
 </section>
 
 <!-- 25. PHASE 0 FILTERS -->
@@ -1280,7 +1280,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </tbody>
   </table>
   <div class="callout mt-m"><h4>La modalidad cambia el verbo, no el veredicto</h4><p>El veredicto ROI es idéntico en ambas modalidades. <b>jira-native</b>: Phase 3 <i>crea</i> Tests para Candidate+Manual. <b>jira-xray</b>: los Tests ya existen del sprint; Phase 3 los <i>promueve</i> al Test Plan de regresión y los enriquece.</p></div>
-  <div class="notes">Tres buckets, no hay cuarto. Regla de oro: si >50% queda Candidate/Manual, el filtro Phase-0 se aplicó flojo. La mayoría debe ser Deferred.</div>
+  <div class="callout mt-m"><h4>El veredicto lo firma la persona</h4><p>El agente deriva, puntúa el ROI y <b>propone</b> Candidate / Manual / Deferred. <b>Cada veredicto lo firma la persona</b>, junto con la épica de regresión y el Test Set. Autonomía CSA <b>2</b> (aprobación por plan o por lote) y verificador separado <b>recomendado</b>: un segundo agente re-lee los veredictos contra el ATR. La alarma del &gt;50% se responde, no se ignora.</p></div>
+  <div class="notes">Tres buckets, no hay cuarto. Regla de oro: si >50% queda Candidate/Manual, el filtro Phase-0 se aplicó flojo. La mayoría debe ser Deferred. El contrato agéntico de Documentation vive en agentic-qa-core/references/stage-gates.md.</div>
 </section>
 
 <!-- 29. WORKED EXAMPLE -->

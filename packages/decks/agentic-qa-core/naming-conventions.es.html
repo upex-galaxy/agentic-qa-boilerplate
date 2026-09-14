@@ -199,7 +199,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <div class="card"><h4>Test Plan</h4><p class="dim" style="font-size:13.5px">Qué se va a probar y su alcance (Story / Feature / Sprint / Producto).</p></div>
     <div class="card"><h4>Test Execution</h4><p class="dim" style="font-size:13.5px">Una corrida de ese plan — el registro de qué pasó o falló.</p></div>
     <div class="card"><h4>Precondition</h4><p class="dim" style="font-size:13.5px">El estado requerido antes de ejecutar (ej. usuario autenticado). Entidad Xray, sin acrónimo de escalera.</p></div>
-    <div class="card"><h4>ATC</h4><p class="dim" style="font-size:13.5px">Acceptance Test Case — el método KATA que implementa un TC en código.</p></div>
+    <div class="card"><h4>ATC</h4><p class="dim" style="font-size:13.5px">Acceptance Test Case — el caso de prueba en sí. <span class="mono">@atc('PROJ-101')</span> es su representación en código.</p></div>
     <div class="card"><h4>KATA</h4><p class="dim" style="font-size:13.5px">La arquitectura de pruebas en capas (L1–L4) del framework. Ver la capa CODE.</p></div>
     <div class="card"><h4>Fixture</h4><p class="dim" style="font-size:13.5px">Inyección de dependencias de KATA — entrega api/ui/test ya listos al test.</p></div>
     <div class="card"><h4>Xray</h4><p class="dim" style="font-size:13.5px">El plugin de TMS sobre Jira que aporta Test, Test Set, Test Plan, Test Execution.</p></div>
@@ -361,8 +361,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       <div class="ex mt-s">FTP: PROJ-42: Checkout &amp; Payments</div>
     </div>
     <div class="card lyr" style="--ac:#fbbf24"><h4>Test Plan · STP <span class="dim3" style="font-size:12px">(Sprint)</span></h4>
-      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">STP:</span> <span class="t-pre">Sprint#{N}</span><span class="t-pun">: </span><span class="t-var">Regression</span></div>
-      <div class="ex mt-s">STP: Sprint#30: Regression</div>
+      <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">STP:</span> <span class="t-pre">Sprint#{N}</span><span class="t-pun">: </span><span class="t-var">{objetivo}</span></div>
+      <div class="ex mt-s">STP: Sprint#30: Checkout &amp; Payments hardening</div>
     </div>
   </div>
   <p class="mt-s"><span class="src">tms-conventions.md §3 · jira-test-management.md §5 · planning-ladder</span></p>
@@ -782,7 +782,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <h2>Errores &amp; Reglas de Oro</h2>
   <div class="grid g2 mt-m">
     <div class="card lyr" style="--ac:#22d3ee"><h4>1 · <span class="mono">should</span> = caso · <span class="mono">Validate</span> = grupo</h4><p class="dim">El caso afirma un comportamiento (<span class="mono">should</span>); el grupo solo nombra la caja (<span class="mono">Validate</span>). Nunca al revés.</p></div>
-    <div class="card lyr" style="--ac:#a78bfa"><h4>2 · ATC = <b>Acceptance</b> Test Case</h4><p class="dim">No "Automated". El ATC es el método KATA mapeado 1:1 a un TC; la clave <span class="mono">@atc</span> lo ata a Jira.</p></div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>2 · ATC = <b>Acceptance</b> Test Case</h4><p class="dim">No "Automated". El ATC <b>es</b> el caso de prueba; <span class="mono">@atc</span> es su representación en código, y lo ata a Jira.</p></div>
     <div class="card lyr" style="--ac:#fbbf24"><h4>3 · R = <b>Results</b>, no Run</h4><p class="dim">ATR / STR son Test <b>Results</b>. Un "run" es solo una iteración de la ejecución; Results es el paraguas.</p></div>
     <div class="card lyr" style="--ac:#60a5fa"><h4>4 · El prefijo = la clave de la Story</h4><p class="dim">El título de un TC lleva la clave de su User Story. La pertenencia a un Test Set es <b>membership</b> (asociación Xray; issue link solo en jira-native), nunca va en el nombre.</p></div>
     <div class="card lyr" style="--ac:#a78bfa"><h4>5 · <span class="mono">@atc('PROJ-101')</span> literal</h4><p class="dim">El decorador lleva una clave Jira literal — sin template literals, sin IDs sintéticos.</p></div>
