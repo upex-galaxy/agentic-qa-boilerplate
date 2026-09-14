@@ -456,11 +456,11 @@ h4,.h4{font-size:17px;color:var(--text-1)}
 <section class="slide is-active" data-title="Portada">
   <div class="fx-host" data-fx="constellation"></div>
   <div class="above">
-    <p class="eyebrow">AGENTIC QA · WORKFLOW SKILL · STAGE 0</p>
+    <p class="eyebrow">AGENTIC QA · WORKFLOW SKILL · SHIFT-LEFT</p>
     <h1 class="h1 mono-title anim-rise-in" data-anim="rise-in"><span class="grad">/</span>shift-left-testing</h1>
     <p class="lede mt-m">QA pre-sprint sobre un lote de Stories del backlog: refina los Acceptance Criteria, saca a la luz gaps y ambigüedades, y deja redactado el ATP real de cada Story en madurez outline — los defectos se <b>previenen en los requisitos</b>, no se detectan tras implementar.</p>
     <div class="row wrap mt-l" style="gap:10px">
-      <span class="chip"><span class="cdot" style="background:var(--accent)"></span>Stage 0 · Pre-sprint</span>
+      <span class="chip"><span class="cdot" style="background:var(--accent)"></span>Shift-Left <span class="dim">(históricamente Stage 0)</span> · Pre-sprint</span>
       <span class="chip"><span class="cdot" style="background:var(--accent-2)"></span>Batch de 1-12 Stories</span>
       <span class="chip"><span class="cdot" style="background:var(--warn)"></span>Sin ejecución — la feature no existe</span>
       <span class="chip"><span class="cdot" style="background:var(--good)"></span>Jira es canónico</span>
@@ -506,6 +506,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     </div>
   </div>
   <p class="dim2 mt-s" style="font-size:13px"><span class="gate">GATE</span> espera aprobación humana &nbsp;·&nbsp; <span class="fb">caja punteada</span> fallback / camino adyacente &nbsp;·&nbsp; <span class="hand">→</span> handoff a otra skill</p>
+  <div class="callout mt-m"><h4>El contrato agéntico de Shift-Left</h4><p>El <b>agente</b> reescribe los ACs como Given/When/Then con datos concretos, saca a la luz gaps y ambigüedades, redacta el ATP pre-sprint en el campo de la Story y aplica el Test-Design Checklist. La <b>persona</b> firma el lote de Stories candidatas y el resumen por Story, y nunca deja pasar una Story a <span class="mono">Estimation</span> sin eso. <b>Evidencia que sobrevive</b>: los ACs reescritos, los gaps como preguntas abiertas a PO/Dev, la label fechada y la subtask de revisión. Autonomía CSA <b>2</b> y <b>sin verificador separado</b>: el PO o el dev que refina la Story es el revisor natural.</p></div>
   <div class="notes">Memoriza esta columna: Preflight → Init → Selection → Refinement → Handoff → Batch report. Cada fila es una sección del deck. A la derecha viven los caminos adyacentes: gates de aprobación, fallbacks y handoffs hacia otras skills.</div>
 </section>
 
@@ -522,7 +523,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     <tbody>
       <tr><td><b>/acli</b> — issue tracker</td><td class="ok">REQUIRED</td><td><code>bun run jira:check</code> — todo el output del refinamiento aterriza en Jira</td></tr>
       <tr><td><b>Modalidad TMS resuelta</b></td><td class="ok">REQUIRED</td><td>A: Xray · B: Jira-native — se persiste para el pipeline; el ATP pre-sprint vive en el campo en AMBAS</td></tr>
-      <tr><td><b>/xray-cli</b> + creds <code>XRAY_*</code></td><td class="opt">N/A</td><td>No se usa pre-sprint: el ATP es field-first — el Test Plan item lo crea <code>/sprint-testing</code> Stage 1 desde el campo</td></tr>
+      <tr><td><b>/xray-cli</b> + creds <code>XRAY_*</code></td><td class="opt">N/A</td><td>No se usa pre-sprint: el ATP es field-first — el Test Plan item lo crea <code>/sprint-testing</code> Planning desde el campo</td></tr>
       <tr><td><b>Contexto de negocio</b></td><td class="ok">REQUIRED</td><td><code>.context/business/*</code> + <code>master-test-plan.md</code> — sin ellos, preguntas vagas al PO</td></tr>
       <tr><td><b>Lista de candidatos</b></td><td class="ok">REQUIRED</td><td>IDs explícitos o JQL de backlog — tamaño confirmado con el usuario</td></tr>
     </tbody>
@@ -628,7 +629,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
       <h3>Difiere o prohíbe</h3>
       <ul>
         <li>Tablas de parametrización, test-data JSON, recetas Faker → in-sprint (<code>/sprint-testing</code>)</li>
-        <li>Creación de TCs en el TMS → Stage 4 (<code>/test-documentation</code>)</li>
+        <li>Creación de TCs en el TMS → Documentation (<code>/test-documentation</code>)</li>
         <li>Mutaciones Jira → las hace Phase 3, nunca el subagente</li>
         <li>Ejecución: smoke, queries DB, API calls → NADA corre</li>
         <li>Git: sin branch, sin commit — Jira es canónico</li>
@@ -709,7 +710,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
   <div class="steps s3 anim-stagger-list">
     <div class="step"><div class="num">1</div><h4>ACs → campo</h4><p>Refined ACs al campo <code>acceptance_criteria</code>. Fallback si no existe: comentario "## Acceptance Criteria". Verifica con re-sync.</p></div>
     <div class="step"><div class="num">2</div><h4>Descripción</h4><p>Append de "QA Refinements (Shift-Left Analysis)": edge cases + reglas aclaradas + preguntas. Leer primero — NUNCA sobrescribir.</p></div>
-    <div class="step"><div class="num">3</div><h4>ATP</h4><p>Puebla el campo <code>acceptance_test_plan</code> con el ATP pre-sprint (madurez outline) — <b>field-first</b>: el Test Plan item <b>"ATP: {STORY-KEY}: {título}"</b> NO se crea aquí; lo crea <code>/sprint-testing</code> Stage 1 desde este MISMO campo, sin variante de título. Fallback si el campo no existe: comentario "## Acceptance Test Plan".</p></div>
+    <div class="step"><div class="num">3</div><h4>ATP</h4><p>Puebla el campo <code>acceptance_test_plan</code> con el ATP pre-sprint (madurez outline) — <b>field-first</b>: el Test Plan item <b>"ATP: {STORY-KEY}: {título}"</b> NO se crea aquí; lo crea <code>/sprint-testing</code> Planning desde este MISMO campo, sin variante de título. Fallback si el campo no existe: comentario "## Acceptance Test Plan".</p></div>
     <div class="step"><div class="num">4</div><h4>Comentario</h4><p>UN comentario de handoff: puntero al campo (@PO / @Dev-lead solo si están en <code>project.yaml</code>). Body completo inline SOLO si el campo no existe.</p></div>
     <div class="step"><div class="num">5</div><h4>Labels + QA Assignee</h4><p><code>shift-left-reviewed</code> + <code>shift-left-{YYYY-MM-DD}</code>. <code>qa_assignee</code> = self, read-before-write, vía REST PUT (acli no escribe customfields).</p></div>
     <div class="step"><div class="num">6</div><h4>Transición + subtask + traza</h4><p>analyze → estimate y STOP en Estimation. La subtask <b>[QA] Shift-Left Review</b> recibe las anotaciones exhaustivas de sesión y pasa a <b>Done</b> (la Story queda limpia). Verifica con re-sync que el ATP aterrizó en el campo: el comentario es un PUNTERO, y el espejo byte a byte solo aplica en modo fallback (campo ausente) — <code>fix-traceability</code> lo audita después.</p></div>
@@ -804,8 +805,8 @@ h4,.h4{font-size:17px;color:var(--text-1)}
       <thead><tr><th>Después necesitas…</th><th>Skill</th></tr></thead>
       <tbody>
         <tr><td>La Story llega a <b>Ready For QA</b></td><td><code>/sprint-testing</code> — lee <code>shift-left-reviewed</code> (&lt;30 días) y cortocircuita sus fases de planning</td></tr>
-        <tr><td>TCs formales + ROI, cuando la Story shippea</td><td><code>/test-documentation</code> — Stage 4</td></tr>
-        <tr><td>Código de test automatizado</td><td><code>/test-automation</code> — Stage 5 · luego <code>/regression-testing</code> — Stage 6</td></tr>
+        <tr><td>TCs formales + ROI, cuando la Story shippea</td><td><code>/test-documentation</code> — Documentation</td></tr>
+        <tr><td>Código de test automatizado</td><td><code>/test-automation</code> — Automation · luego <code>/regression-testing</code> — Regression</td></tr>
         <tr><td>Falta contexto de negocio</td><td><code>/project-discovery</code> + <code>/business-*-map</code> + <code>/master-test-plan</code></td></tr>
         <tr><td>Revisión adversarial del refinamiento (opcional)</td><td><code>/judgment-day</code> — nunca auto-invocado</td></tr>
       </tbody>
@@ -815,7 +816,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
   <div class="notes">Recuerda tres cosas: prevenir antes que detectar; el veto vence al score y la señal vence al volumen; un comando conduce las tres fases con un gate humano en cada paso de consecuencia. El label que pones hoy le ahorra trabajo al equipo el próximo sprint.</div>
 </section>
 
-  <div class="deck-footer"><span class="mono">/shift-left-testing · Stage 0 · Pre-sprint QA</span><span class="slide-number" data-current="1" data-total="13"></span></div>
+  <div class="deck-footer"><span class="mono">/shift-left-testing · Shift-Left · Pre-sprint QA</span><span class="slide-number" data-current="1" data-total="13"></span></div>
 </div>
 <!-- keyboard-nav hint (ported from defect-management deck) -->
 <div id="help-hint">← → navegar · O resumen · S presentador · N notas · F pantalla</div>
