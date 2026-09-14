@@ -2,6 +2,18 @@
 
 Full reference for the Komponent Action Test Architecture (KATA). Load when designing new components, picking fixtures, wiring ATCs, or building Steps chains.
 
+> **Canonical formula — the one sentence every KATA surface must agree with:**
+>
+> **KATA organises automation in four layers with a single direction of dependency: TestContext,
+> Base, domain Komponents and Fixtures. Steps is an optional intermediate layer between Komponents
+> and Fixtures. Test files consume the Fixtures — they are not a layer.**
+>
+> Short form, for a chip or a title: **"four named layers, plus optional Steps"**. Never publish a
+> bare number. Banned on every surface: "three layers", "five layers", "6 layers", "Test files" as
+> a layer, and "Component"/"Components" spelled with a C inside KATA. The spelling is **Komponent
+> Action Test Architecture**. DRY zones that are NOT layers: `tests/utils/`, `tests/data/`,
+> `config/`. Consumers: `tests/e2e/`, `tests/integration/`.
+
 ---
 
 ## 1. The Four Layers
