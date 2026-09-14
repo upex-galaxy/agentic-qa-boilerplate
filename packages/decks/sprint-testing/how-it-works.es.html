@@ -419,7 +419,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
 <div class="deck">
 
-  <div class="deck-footer"><span class="mono">/sprint-testing · stages 1-3</span><span class="slide-number" data-current="1" data-total="18"></span></div>
+  <div class="deck-footer"><span class="mono">/sprint-testing · planning · execution · reporting</span><span class="slide-number" data-current="1" data-total="19"></span></div>
 
   <!-- 1. PORTADA -->
   <section class="slide is-active" data-title="Portada">
@@ -429,7 +429,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <h1 class="h1 mono anim-rise-in" data-anim="rise-in" style="font-size:80px"><span class="grad">/</span>sprint-testing</h1>
       <p class="lede mt-m">QA manual por ticket dentro del sprint: <b>Planning → Execution → Reporting</b>, con gates humanos en cada checkpoint.</p>
       <div class="row wrap mt-l" style="gap:12px">
-        <span class="chip"><span class="dot" style="background:var(--accent)"></span>Stages 1-3 del pipeline QA</span>
+        <span class="chip"><span class="dot" style="background:var(--accent)"></span>Planning · Execution · Reporting</span>
         <span class="chip"><span class="dot" style="background:var(--good)"></span>Story · Bug · Sprint-wide</span>
         <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>Jira = fuente de verdad</span>
       </div>
@@ -456,24 +456,25 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <span class="warr">→</span>
         <div class="wnode"><span class="wn">Entry</span><div class="wt">Session Start</div><div class="wd">Sync ticket · carpeta PBI · plan</div><div class="wg">⏸ explica la Story y ESPERA tu OK</div></div>
         <span class="warr">→</span>
-        <div class="wnode"><span class="wn">Stage 1</span><div class="wt">Planning</div><div class="wd">Triage · doctrina · ATS + ATP + ATR</div><div class="wg">bug: veto SKIP → solo Code Review</div></div>
+        <div class="wnode"><span class="wn">Planning</span><div class="wt">Planning</div><div class="wd">Triage · doctrina · ATS + ATP + ATR</div><div class="wg">bug: veto SKIP → solo Code Review</div></div>
         <span class="warr">→</span>
-        <div class="wnode"><span class="wn">Stage 2</span><div class="wt">Execution</div><div class="wd">Smoke · trifuerza UI/API/DB</div><div class="wg">smoke No-Go → STOP · bug bloqueante → ⏸</div></div>
+        <div class="wnode"><span class="wn">Execution</span><div class="wt">Execution</div><div class="wd">Smoke · trifuerza UI/API/DB</div><div class="wg">smoke No-Go → STOP · bug bloqueante → ⏸</div></div>
         <span class="warr">→</span>
-        <div class="wnode"><span class="wn">Stage 3</span><div class="wt">Reporting</div><div class="wd">ATR · QA comment · transición</div><div class="wg">bug solo con tu confirmación</div></div>
+        <div class="wnode"><span class="wn">Reporting</span><div class="wt">Reporting</div><div class="wd">ATR · QA comment · transición</div><div class="wg">bug solo con tu confirmación</div></div>
       </div>
       <div class="wrow">
         <span class="wlbl">Salida</span>
         <div class="wnode"><span class="wn">Archive</span><div class="wd"><span class="mono">.session/</span> → <span class="mono">.archive/</span> + memoria de sesión · los artefactos PBI quedan</div></div>
         <span class="warr">→</span>
-        <div class="wnode out"><span class="wn">Stage 4</span><div class="wd"><span class="mono">/test-documentation</span> — TCs de regresión + ROI</div></div>
-        <div class="wnode out"><span class="wn">Stage 5</span><div class="wd"><span class="mono">/test-automation</span> — código KATA</div></div>
-        <div class="wnode out"><span class="wn">Stage 6</span><div class="wd"><span class="mono">/regression-testing</span> — suites en CI</div></div>
+        <div class="wnode out"><span class="wn">Documentation</span><div class="wd"><span class="mono">/test-documentation</span> — TCs de regresión + ROI</div></div>
+        <div class="wnode out"><span class="wn">Automation</span><div class="wd"><span class="mono">/test-automation</span> — código KATA</div></div>
+        <div class="wnode out"><span class="wn">Regression</span><div class="wd"><span class="mono">/regression-testing</span> — suites en CI</div></div>
+        <div class="wnode out"><span class="wn">Observation</span><div class="wd">producción · L4 — rutina agéntica, sin skill: realimenta el próximo Shift-Left</div></div>
         <div class="wnode out"><span class="wn">Sprint ↩</span><div class="wd">siguiente issue PENDING del <span class="mono">plan.md</span> del sprint</div></div>
       </div>
     </div>
     <p class="small dim mt-m">Las 4 fases del camino principal se despachan como <b>subagentes secuenciales</b> — cada reporte alimenta el briefing del siguiente. Este mapa es el índice: cada nodo tiene su slide.</p>
-    <div class="notes">El índice mental del deck. Camino principal: Preflight → Phase 0 → Session Start → Stage 1 → 2 → 3 → Archive. Adyacentes: los tres modos de entrada, el handoff desde shift-left, el veto de bugs que colapsa a Code-Review-only, los STOP/pausa de Stage 2, y los handoffs a Stages 4/5/6. El modo sprint-wide loopea el mismo camino por issue.</div>
+    <div class="notes">El índice mental del deck. Camino principal: Preflight → Phase 0 → Session Start → Planning → Execution → Reporting → Archive. Adyacentes: los tres modos de entrada, el handoff desde shift-left, el veto de bugs que colapsa a Code-Review-only, los STOP/pausa de Execution, y los handoffs a Documentation / Automation / Regression. Más abajo, en producción, Observation: declarado, sin skill todavía. El modo sprint-wide loopea el mismo camino por issue.</div>
   </section>
 
   <!-- 3. MODOS -->
@@ -484,13 +485,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <thead><tr><th>Modo</th><th>Entra</th><th>Sale</th></tr></thead>
       <tbody>
         <tr><td><b>Single-issue — User Story</b></td><td>Un ID de Story en Ready For QA</td><td>ATS + ATP + ATR + QA comment · ticket transicionado a QA approved · TC outlines (native) o Tests agrupados en el ATS y ejecutados (xray)</td></tr>
-        <tr><td><b>Single-issue — Bug</b></td><td>Un ID de Bug con fix en staging</td><td>Decisión de triage → solo Code Review, O verificación completa con ATP + ATR (xray: 1 Test de repro en-sprint · native: sin TCs, difiere a Stage 4)</td></tr>
+        <tr><td><b>Single-issue — Bug</b></td><td>Un ID de Bug con fix en staging</td><td>Decisión de triage → solo Code Review, O verificación completa con ATP + ATR (xray: 1 Test de repro en-sprint · native: sin TCs, difiere a Documentation)</td></tr>
         <tr><td><b>Sprint-wide</b></td><td>Un número de sprint («process sprint 5») → JQL construido con los work types <i>coverable</i> que el proyecto declara</td><td>Artefactos por issue + <span class="mono">STP</span> actualizado en Jira + resumen · con soporte de interrupción y resume</td></tr>
       </tbody>
     </table>
     <div class="grid g2 mt-m">
       <div class="card"><p class="lbl">Regla de selección</p><p class="small mt-s">Story → story run · Bug → bug run · «process sprint 5» → sprint-wide. El alcance del sprint no es una lista fija de tipos: sale de una <b>JQL construida con los work types coverable que el proyecto declara</b>, resolviendo las alternativas <span class="mono">A | B | C</span> e intersectando con lo que la instancia realmente tiene. Un tipo declarado que la instancia no tiene se salta con una nota, nunca bloquea.</p></div>
-      <div class="card card-accent"><p class="lbl">Misma cadencia siempre</p><p class="small mt-s">Ambos modos pagan los mismos <b>4 despachos</b> por issue: Session Start → Stage 1 → 2 → 3. Sprint-wide solo los repite por issue.</p></div>
+      <div class="card card-accent"><p class="lbl">Misma cadencia siempre</p><p class="small mt-s">Ambos modos pagan los mismos <b>4 despachos</b> por issue: Session Start → Planning → Execution → Reporting. Sprint-wide solo los repite por issue.</p></div>
     </div>
     <div class="notes">No hay un camino "inline" para un solo issue: single-issue y sprint-wide corren la misma secuencia de 4 subagentes para que el comportamiento sea uniforme y auditable. Se dice "issue" y no "story" porque bugs, defects, tech debt e improvements también son coverables.</div>
   </section>
@@ -512,8 +513,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <tr><td><b>Por superficie</b> (según alcance)</td><td>OpenAPI MCP (solo schema) · DBHub MCP · Playwright · inbox que pueda <b>recibir</b> (magic-link)</td></tr>
       </tbody>
     </table>
-    <p class="small dim mt-m">Framework aún genérico (URLs <span class="mono">null</span>) → STOP: correr antes <span class="mono">/project-discovery</span> → <span class="mono">/adapt-framework</span>. Las superficies UI/API/DB las decide el <b>triage de Stage 1</b>, nunca se le preguntan al usuario.</p>
-    <div class="notes">El gate más pesado del repo porque Stage 2 ejercita UI + API + DB en vivo. Autorar un ATP contra un entorno muerto es el desperdicio más caro de un run — se atrapa aquí, a t=0.</div>
+    <p class="small dim mt-m">Framework aún genérico (URLs <span class="mono">null</span>) → STOP: correr antes <span class="mono">/project-discovery</span> → <span class="mono">/adapt-framework</span>. Las superficies UI/API/DB las decide el <b>triage de Planning</b>, nunca se le preguntan al usuario.</p>
+    <div class="notes">El gate más pesado del repo porque Execution ejercita UI + API + DB en vivo. Autorar un ATP contra un entorno muerto es el desperdicio más caro de un run — se atrapa aquí, a t=0.</div>
   </section>
 
   <!-- 5. PHASE 0 -->
@@ -570,8 +571,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
 
   <!-- 7. STAGE 1 FLUJO -->
-  <section class="slide" data-title="Stage 1 · Planning">
-    <p class="kicker">Stage 1 · Planning — de los ACs a un plan ejecutable</p>
+  <section class="slide" data-title="Planning">
+    <p class="kicker">Planning <span class="dim">(históricamente Stage 1)</span> — de los ACs a un plan ejecutable</p>
     <h2 class="h2 md">Siete fases, del triage al <span class="grad">ATP</span> en Jira</h2>
     <table class="tt sm mt-m">
       <thead><tr><th>Fase</th><th>Qué produce</th></tr></thead>
@@ -589,7 +590,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 8. DOCTRINA DE DISEÑO -->
   <section class="slide" data-title="Doctrina de diseño">
-    <p class="kicker">Stage 1 · la doctrina que gobierna el plan</p>
+    <p class="kicker">Planning · la doctrina que gobierna el plan</p>
     <h2 class="h2 md">Verificar ACs es el <span class="grad">piso</span>, no el testing</h2>
     <div class="grid g3 mt-m anim-stagger-list" data-anim-target>
       <div class="card"><p class="lbl">Piso, no techo</p><p class="small mt-s">Cobertura = conformidad-AC <b>+ riesgo más allá del AC</b> (límites, errores, estados, anomalías). Nunca reportar «% de ACs verificados» como completitud.</p></div>
@@ -610,44 +611,44 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 9. TC TIMING -->
   <section class="slide" data-title="TC timing">
-    <p class="kicker">Stage 1 · la regla que define la forma del skill</p>
+    <p class="kicker">Planning · la regla que define la forma del skill</p>
     <h2 class="h2 md">¿Cuándo un TC se vuelve <span class="grad">work item</span>?</h2>
     <table class="tt sm mt-m">
       <thead><tr><th></th><th>Modality jira-native</th><th>Modality jira-xray (<span class="mono">bun xray</span>)</th></tr></thead>
       <tbody>
-        <tr><td><b>Stage 1</b></td><td><b>Solo outlines</b> en el ATP (nombre + 1 línea). Sin issues <span class="mono">Test</span>: un Test nativo es documentación y espera al gate de Stage 4.</td><td><b>Crea + ejecuta</b> issues <span class="mono">Test</span> para los outlines, a detalle ejecutable, agrupados en el ATS (Test Set per-Story) y ejecutados vía un Test Execution — el Test ES la unidad de ejecución de Xray.</td></tr>
-        <tr><td><b>Stage 2</b></td><td>Corre los outlines + explora más allá; PASS/FAIL en la memoria de sesión.</td><td>Ejecuta los Tests + explora. Una sonda exploratoria se vuelve Test solo si halló un defecto o vale repetirla.</td></tr>
-        <tr><td><b>Stage 4</b></td><td><b>Crea</b> Tests solo para lo regression-worthy, tras el ROI.</td><td><b>Selecciona + promueve</b> al Regression Test Plan + Test Set, y los enriquece.</td></tr>
+        <tr><td><b>Planning</b></td><td><b>Solo outlines</b> en el ATP (nombre + 1 línea). Sin issues <span class="mono">Test</span>: un Test nativo es documentación y espera al gate de Documentation.</td><td><b>Crea + ejecuta</b> issues <span class="mono">Test</span> para los outlines, a detalle ejecutable, agrupados en el ATS (Test Set per-Story) y ejecutados vía un Test Execution — el Test ES la unidad de ejecución de Xray.</td></tr>
+        <tr><td><b>Execution</b></td><td>Corre los outlines + explora más allá; PASS/FAIL en la memoria de sesión.</td><td>Ejecuta los Tests + explora. Una sonda exploratoria se vuelve Test solo si halló un defecto o vale repetirla.</td></tr>
+        <tr><td><b>Documentation</b></td><td><b>Crea</b> Tests solo para lo regression-worthy, tras el ROI.</td><td><b>Selecciona + promueve</b> al Regression Test Plan + Test Set, y los enriquece.</td></tr>
       </tbody>
     </table>
     <div class="grid g2 mt-m">
       <div class="card"><p class="lbl">Pregunta única por batch (xray)</p><p class="small mt-s">Antes de crear los Tests: ¿formato <b>Manual</b> o <b>Gherkin/Cucumber</b>? Se sugiere (Gherkin si es candidato a automatizar), <b>tú eliges</b>, y aplica a todo el batch.</p></div>
       <div class="card"><p class="lbl">Manual = creación en dos pasos</p><p class="small mt-s">Xray Cloud <b>descarta en silencio</b> los steps inline: crear el Test sin steps y agregarlos <b>uno a uno</b> vía Add Test Step.</p></div>
     </div>
-    <div class="notes">Principio rector: un test se persiste al repositorio de REGRESIÓN porque se va a re-ejecutar, nunca para inflar un conteo. El artefacto de ejecución del sprint no es el repositorio curado — ese lo decide el ROI en Stage 4.</div>
+    <div class="notes">Principio rector: un test se persiste al repositorio de REGRESIÓN porque se va a re-ejecutar, nunca para inflar un conteo. El artefacto de ejecución del sprint no es el repositorio curado — ese lo decide el ROI en Documentation.</div>
   </section>
 
   <!-- 10. CAMINO BUG -->
   <section class="slide" data-title="Camino Bug">
-    <p class="kicker">Stage 1 · rama Bug — triage antes que plan</p>
+    <p class="kicker">Planning · rama Bug — triage antes que plan</p>
     <h2 class="h2 md">El <span class="grad">veto</span> le gana al risk score, siempre</h2>
     <table class="tt sm mt-m">
       <thead><tr><th>Veredicto</th><th>Disparadores</th></tr></thead>
       <tbody>
-        <tr><td><b style="color:var(--good)">SKIP — solo Code Review</b></td><td>texto/label puro, CSS/visual, docs, config/infra, refactor sin cambio de comportamiento — Stages 2-3 colapsan al comentario + transición</td></tr>
+        <tr><td><b style="color:var(--good)">SKIP — solo Code Review</b></td><td>texto/label puro, CSS/visual, docs, config/infra, refactor sin cambio de comportamiento — Execution y Reporting colapsan al comentario + transición</td></tr>
         <tr><td><b style="color:var(--bad)">REQUIRE — test completo</b></td><td>dinero/billing, integridad de datos, auth/autorización, integraciones externas, máquinas de estado, cálculos — sin importar el score</td></tr>
       </tbody>
     </table>
     <div class="grid g2 mt-m" style="align-items:start">
       <div class="card"><p class="lbl">Sin veto → risk score</p><p class="small mt-s">Feature nueva <b>+3</b> · datos dinámicos <b>+3</b> · ACs explícitas <b>+2</b> · user-facing <b>+2</b> · esfuerzo &gt;4h <b>+2</b> · prioridad alta <b>+1</b> · multi-componente <b>+1</b> → <b>0-3 LOW</b> (Code Review) · <b>4-7 MEDIUM</b> (ATP completo) · <b>8+ HIGH</b> (ATP + edges extendidos). El resultado se presenta al usuario.</p></div>
-      <div class="card"><p class="lbl">Reglas del bug run</p><p class="small mt-s">ATP + ATR de retest. <b>jira-xray:</b> 1 Test de repro creado en-sprint al verificar el fix (1:N si el scope lo justifica), ejecutado en la Execution <span class="mono">ReTest:</span>. <b>jira-native:</b> sin TCs en el sprint — difiere a Stage 4, como siempre. Ejecuta: reproducir el original → verificar el fix → regresión en áreas adyacentes → DB si es de integridad. <b>Regla de oro:</b> si amerita regresión, Stage 4 termina con un Test persistente — reusar el de repro o crear uno.</p></div>
+      <div class="card"><p class="lbl">Reglas del bug run</p><p class="small mt-s">ATP + ATR de retest. <b>jira-xray:</b> 1 Test de repro creado en-sprint al verificar el fix (1:N si el scope lo justifica), ejecutado en la Execution <span class="mono">ReTest:</span>. <b>jira-native:</b> sin TCs en el sprint — difiere a Documentation, como siempre. Ejecuta: reproducir el original → verificar el fix → regresión en áreas adyacentes → DB si es de integridad. <b>Regla de oro:</b> si amerita regresión, Documentation termina con un Test persistente — reusar el de repro o crear uno.</p></div>
     </div>
     <div class="notes">Anti-patrón S5: ninguna falla se salta el árbol veto → risk-score → severidad + root cause. Un typo hardcodeado hace SKIP; cualquier cosa que toque dinero, datos o auth se prueba aunque el diff luzca trivial.</div>
   </section>
 
   <!-- 11. SMOKE -->
-  <section class="slide" data-title="Stage 2 · Smoke">
-    <p class="kicker">Stage 2 · Execution — primera acción obligatoria</p>
+  <section class="slide" data-title="Execution · Smoke">
+    <p class="kicker">Execution — primera acción obligatoria</p>
     <h2 class="h2 md">Smoke test: una puerta <span class="grad">Go / No-Go</span> de ≤10 min</h2>
     <div class="grid g2 mt-m" style="align-items:start">
       <ul class="big tight tight">
@@ -666,7 +667,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 12. TRIFUERZA -->
   <section class="slide" data-title="Trifuerza">
-    <p class="kicker">Stage 2 · exploración por capas</p>
+    <p class="kicker">Execution · exploración por capas</p>
     <h2 class="h2 md">La <span class="grad">trifuerza</span>: UI · API · DB</h2>
     <div class="grid g3 mt-m anim-stagger-list" data-anim-target>
       <div class="card"><span class="tag tag-test">UI</span><p class="small mt-s"><span class="mono">playwright-cli</span> — happy path + edges: vacío, largo máximo, 0/−1/MAX_INT, <span class="mono">&lt;script&gt;</span>, refresh a mitad de flujo, botón atrás. Screenshot en el estado FALLIDO, a <span class="mono">evidence/</span> (configurar <span class="mono">outputDir</span> antes).</p></div>
@@ -682,13 +683,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 13. TRIAGE DE HALLAZGOS -->
   <section class="slide" data-title="Triage de hallazgos">
-    <p class="kicker">Stage 2 · pausa graduada</p>
+    <p class="kicker">Execution · pausa graduada</p>
     <h2 class="h2 md">Un FAIL no es auto-Critical — <span class="grad">triage</span> primero</h2>
     <table class="tt sm mt-m">
       <thead><tr><th>Clase</th><th>Ejemplos</th><th>Acción</th></tr></thead>
       <tbody>
         <tr><td><b style="color:var(--bad)">BLOCKING</b></td><td>smoke/env caído · corrupción de datos · explotable en seguridad (auth bypass, cross-tenant)</td><td><b>⏸ pausa YA</b> — se presenta el bug y se espera tu decisión; no se despacha la siguiente etapa</td></tr>
-        <tr><td><b style="color:var(--warn)">NON-BLOCKING</b></td><td>cosmético · gap menor de validación · edge en TC no crítico · default de framework por recalibrar</td><td>se registra, TC FAILED, y <b>se terminan los TCs restantes</b> — todo se lleva al cierre de Stage 2</td></tr>
+        <tr><td><b style="color:var(--warn)">NON-BLOCKING</b></td><td>cosmético · gap menor de validación · edge en TC no crítico · default de framework por recalibrar</td><td>se registra, TC FAILED, y <b>se terminan los TCs restantes</b> — todo se lleva al cierre de Execution</td></tr>
         <tr><td><b>TOOL FAILURE</b></td><td>cualquier herramienta rota a mitad del pase</td><td><b>STOP</b> — estado parcial reportado, tú eliges retry / skip / abort</td></tr>
       </tbody>
     </table>
@@ -700,8 +701,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
 
   <!-- 14. STAGE 3 CIERRE -->
-  <section class="slide" data-title="Stage 3 · Cierre">
-    <p class="kicker">Stage 3 · Reporting — el veredicto auditable</p>
+  <section class="slide" data-title="Reporting · Cierre">
+    <p class="kicker">Reporting — el veredicto auditable</p>
     <h2 class="h2 md">ATR → QA comment → <span class="grad">transición</span>, en ese orden</h2>
     <table class="tt sm mt-m">
       <thead><tr><th>Resultado</th><th>QA comment</th><th>Transición</th></tr></thead>
@@ -716,12 +717,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="card"><p class="lbl">ATR por modalidad</p><p class="small mt-s"><b>jira-xray:</b> actualizar la descripción del Test Execution + status de cada Test Run. <b>jira-native:</b> custom field <span class="mono">acceptance_test_results</span> (o comentario fallback) → sync → releer. Sin snapshot de ATR no se reporta nada (S3).</p></div>
       <div class="card"><p class="lbl">Recalibración de severidad (§5.0)</p><p class="small mt-s">FAIL de seguridad/auth que huele a default de framework (cookie flags, CSP/HSTS): hipótesis + <b>un hecho</b> de verificación + decisión humana → <span class="mono">PASSED WITH ISSUES</span> (GO-con-deuda), no un blocker.</p></div>
     </div>
-    <div class="notes">El QA comment es un resumen; el ATR es el registro de auditoría — nunca duplicarlo en un segundo store (S4). Resultados mixtos usan PASSED WITH ISSUES y aún entregan los TCs en pass a Stage 4.</div>
+    <div class="notes">El QA comment es un resumen; el ATR es el registro de auditoría — nunca duplicarlo en un segundo store (S4). Resultados mixtos usan PASSED WITH ISSUES y aún entregan los TCs en pass a Documentation.</div>
   </section>
 
   <!-- 15. REPORTAR QUALITY ISSUES -->
   <section class="slide" data-title="Reportar bugs">
-    <p class="kicker">Stage 3 · doctrina de defect management</p>
+    <p class="kicker">Reporting · doctrina de defect management</p>
     <h2 class="h2 md">Clasifica antes de reportar — <span class="grad">Bug ≠ Defect ≠ Improvement</span></h2>
     <div class="grid g3 mt-m anim-stagger-list" data-anim-target>
       <div class="card"><span class="tag tag-bug">Bug</span><p class="small mt-s">La feature ya vive <b>arriba de Staging</b> (visible al usuario final).</p></div>
@@ -777,16 +778,30 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="notes">No se pegan instrucciones: cualquier frase de la lista dispara el skill, que resuelve modo, contexto y herramientas con el orden de lectura fijo de la sección Inputs.</div>
   </section>
 
+  <!-- 17b. CONTRATO AGÉNTICO -->
+  <section class="slide" data-title="Contrato agéntico">
+    <p class="kicker">quién decide qué — los tres stages de esta skill</p>
+    <h2 class="h2" data-anim="fade-up">El agente ejecuta. La evidencia prueba. <span class="grad">La persona decide.</span></h2>
+    <table class="tt sm mt-m">
+      <tr><th>Stage</th><th>El agente hace</th><th>La persona firma</th><th>Autonomía</th></tr>
+      <tr><td><b>Planning</b></td><td>crea el set ATS → ATP → ATR, deriva TCs u outlines según la modalidad, decide las superficies UI / API / DB por triage, veto y risk score</td><td>el checkpoint de explicación de la Story: la skill explica y espera</td><td><b>2</b></td></tr>
+      <tr><td><b>Execution</b></td><td>corre el smoke como Go/No-Go, ejecuta los outlines, explora más allá de ellos por la trifuerza, propone bugs con la severidad ya derivada</td><td>el triage de cada bug y el <b>alta</b> de cada bug; cualquier recalibración de severidad en seguridad o auth</td><td><b>3</b></td></tr>
+      <tr><td><b>Reporting</b></td><td>llena el ATR, escribe el comentario de QA, crea y verifica los links de trazabilidad</td><td>la transición del workflow (<span class="mono">qa_sign_off</span> / <span class="mono">defect_reported</span>)</td><td><b>2</b></td></tr>
+    </table>
+    <div class="callout mt-m"><h4>La escala, y su techo</h4><p>CSA 0-5: 0 lo hace la persona · 1 aprobación por acción · 2 aprobación por plan o por lote · 3 decide dentro de límites declarados y escala fuera de ellos · 4 supervisión por monitoreo · 5 sin intervención. <b>Ningún stage de este pipeline pasa de 3</b>, y eso es una decisión de arquitectura, no un accidente de lo que se alcanzó a construir. Ninguno de los tres lleva verificador separado: el PO/Dev y el propio checkpoint humano cumplen ese papel.</p></div>
+    <div class="notes">Fuente: agentic-qa-core/references/stage-gates.md. El DoD dice qué tiene que ser verdad para avanzar; el contrato dice quién tuvo permiso de hacerlo mientras el stage corría. Los dos son gates: avanzar un stage cuyo contrato no se honró es saltarse un gate igual que tildar un DoD que nunca se verificó.</div>
+  </section>
+
   <!-- 18. CIERRE -->
   <section class="slide" data-title="Cierre">
     <div class="fx-host" data-fx="constellation"></div>
     <div class="above">
       <p class="kicker">Para llevarte · handoffs y artefactos</p>
-      <h2 class="h2 md">Stages 1-3 listos — el pipeline <span class="grad">continúa</span></h2>
+      <h2 class="h2 md">Planning · Execution · Reporting listos — el pipeline <span class="grad">continúa</span></h2>
       <div class="grid g3 mt-m anim-stagger-list" data-anim-target>
-        <div class="card"><p class="lbl">Stage 4</p><p class="small mt-s"><span class="mono">/test-documentation</span> — ROI + veredictos Candidate / Manual / Deferred; crea o promueve los Tests de regresión.</p></div>
-        <div class="card"><p class="lbl">Stage 5</p><p class="small mt-s"><span class="mono">/test-automation</span> — Plan → Code → Review sobre KATA + Playwright (chequea <span class="mono">kata-manifest.json</span> antes de proponer ATCs).</p></div>
-        <div class="card"><p class="lbl">Stage 6</p><p class="small mt-s"><span class="mono">/regression-testing</span> — suites en CI + veredicto GO / CAUTION / NO-GO.</p></div>
+        <div class="card"><p class="lbl">Documentation</p><p class="small mt-s"><span class="mono">/test-documentation</span> — ROI + veredictos Candidate / Manual / Deferred; crea o promueve los Tests de regresión.</p></div>
+        <div class="card"><p class="lbl">Automation</p><p class="small mt-s"><span class="mono">/test-automation</span> — Plan → Code → Review sobre KATA + Playwright (chequea <span class="mono">kata-manifest.json</span> antes de proponer ATCs).</p></div>
+        <div class="card"><p class="lbl">Regression</p><p class="small mt-s"><span class="mono">/regression-testing</span> — suites en CI + veredicto GO / CAUTION / NO-GO.</p></div>
       </div>
       <div class="grid g2 mt-m">
         <div class="card"><p class="lbl">Artefactos que deja un run</p><p class="small mt-s">ATS + ATP + ATR en Jira · QA comment · ticket transicionado · bugs clasificados y linkeados · carpeta PBI con <span class="mono">context.md</span> y <span class="mono">evidence/</span> · <span class="mono">test-session-memory.md</span> en <span class="mono">.session/sprint-testing/&lt;scope&gt;/</span> · sesión archivada.</p></div>

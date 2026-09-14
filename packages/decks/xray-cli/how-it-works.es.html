@@ -414,7 +414,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <p class="lede mt-m">Gestión de pruebas en <b>Xray Cloud</b> desde la terminal: Tests, Test Plans, Test Executions, import de resultados, evidencia, defectos, backup y migración — todo vía <span class="mono">bun xray</span>.</p>
     <div class="row wrap mt-l" style="gap:12px">
       <span class="chip"><span class="dot" style="background:var(--accent)"></span><span class="mono" style="font-size:17px">[TMS_TOOL]</span>&nbsp;· Modality jira-xray</span>
-      <span class="chip"><span class="dot" style="background:var(--good)"></span>Sirve a Stages 1–6 del pipeline QA</span>
+      <span class="chip"><span class="dot" style="background:var(--good)"></span>Sirve a Planning · Execution · Reporting · Documentation · Automation · Regression</span>
       <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>Xray GraphQL + Jira REST</span>
     </div>
     <div class="notes">Deck del skill xray-cli: el operador de Xray Cloud del repo. Es un skill utilitario: los workflow skills (sprint-testing, test-documentation, regression-testing) lo cargan cuando resuelven [TMS_TOOL] en modalidad jira-xray. Pulsa → para avanzar, S para modo presentador, O para overview, F para pantalla completa.</div>
@@ -446,8 +446,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <p class="wf-lane">Handoffs</p>
     <div class="row wrap" style="gap:10px">
       <span class="chip" style="font-size:16px;padding:8px 14px"><span class="dot" style="background:var(--accent)"></span>← /sprint-testing · ATS + ATP + ATR por ticket</span>
-      <span class="chip" style="font-size:16px;padding:8px 14px"><span class="dot" style="background:var(--accent-2)"></span>← /test-documentation · Stage 4, TCs + ROI</span>
-      <span class="chip" style="font-size:16px;padding:8px 14px"><span class="dot" style="background:var(--good)"></span>→ /regression-testing · Stage 6, GO/NO-GO</span>
+      <span class="chip" style="font-size:16px;padding:8px 14px"><span class="dot" style="background:var(--accent-2)"></span>← /test-documentation · Documentation, TCs + ROI</span>
+      <span class="chip" style="font-size:16px;padding:8px 14px"><span class="dot" style="background:var(--good)"></span>→ /regression-testing · Regression, GO/NO-GO</span>
     </div>
     <div class="notes">Índice mental del deck: un gate de modalidad, cinco fases del camino principal, tres caminos adyacentes y los handoffs con las demás skills. Cada nodo del mapa es una sección de las que siguen.</div>
   </section>
@@ -531,7 +531,7 @@ $ bun xray test enrich --project DEMO   # vuelca steps/preconditions/test-sets (
     <div class="card card-accent mt-s">
       <p class="small"><b style="color:var(--bad)">Gotcha:</b> los steps <b>NO persisten en <span class="mono">create</span></b> — Xray Cloud los descarta en silencio (<span class="mono">stepCount:0</span>) y <span class="mono">--step</span> está deprecado. Patrón fiable: <b>create → un <span class="mono">add-step</span> por paso → verificar con <span class="mono">test get</span></b>. Enriquecer un Test existente: <span class="mono">update-gherkin · update-definition · update-type</span>.</p>
     </div>
-    <div class="notes">También: test list --jql "project = DEMO AND labels = critical", test remove-step. La promoción de Stage 4 (regresión) usa update-gherkin sobre tests creados en sprint.</div>
+    <div class="notes">También: test list --jql "project = DEMO AND labels = critical", test remove-step. La promoción de Documentation (regresión) usa update-gherkin sobre tests creados en sprint.</div>
   </section>
 
   <!-- 7. FASE 2 · PRECONDITIONS + SETS -->
@@ -605,7 +605,7 @@ $ bun xray exec get PROJ-194
 $ bun xray exec list --project PROJ</div>
     <div class="card card-accent mt-m">
       <p class="lbl">Por qué importan los Test Environments</p>
-      <p class="small mt-s">Una ejecución fijada a un entorno (<span class="mono">staging</span> vs <span class="mono">production</span>, <span class="mono">chrome</span> vs <span class="mono">firefox</span>) hace los resultados <b>congruentes y comparables</b> — nunca compares a ciegas un run de staging contra uno de prod. Para un ATR, <span class="mono">--environment</span> es <b>obligatorio</b> al crear (el checklist de Stage 1 bloquea un ATR sin environment; el valor sale de <span class="mono">active_env</span> en <span class="mono">project.yaml</span>); se corrige después con <span class="mono">exec set-environment</span>.</p>
+      <p class="small mt-s">Una ejecución fijada a un entorno (<span class="mono">staging</span> vs <span class="mono">production</span>, <span class="mono">chrome</span> vs <span class="mono">firefox</span>) hace los resultados <b>congruentes y comparables</b> — nunca compares a ciegas un run de staging contra uno de prod. Para un ATR, <span class="mono">--environment</span> es <b>obligatorio</b> al crear (el checklist de Planning bloquea un ATR sin environment; el valor sale de <span class="mono">active_env</span> en <span class="mono">project.yaml</span>); se corrige después con <span class="mono">exec set-environment</span>.</p>
     </div>
     <div class="notes">La Execution es el contenedor del ATR: la tarea asignable de correr un grupo de pruebas. Contiene los Test Runs (uno por Test incluido).</div>
   </section>
@@ -663,7 +663,7 @@ $ bun xray import xray --file xray-results.json</div>
       <div class="card"><p class="lbl" style="color:var(--warn)">X5 · dry-run primero</p><p class="small mt-s">Nunca contra producción sin previsualizar: <span class="mono">import</span> y <span class="mono">restore</span> escriben de forma irreversible sobre cientos de TCs y runs.</p></div>
       <div class="card"><p class="lbl" style="color:var(--warn)">X4 · JSON canónico</p><p class="small mt-s">Nunca fabriques a mano payloads Xray (<span class="mono">testInfo, iterations, evidences</span>): el CLI es dueño de la forma canónica.</p></div>
     </div>
-    <div class="notes">Es el camino natural tras una corrida automatizada (Playwright → junit.xml). regression-testing (Stage 6) consume estos resultados para el GO/NO-GO.</div>
+    <div class="notes">Es el camino natural tras una corrida automatizada (Playwright → junit.xml). regression-testing (Regression) consume estos resultados para el GO/NO-GO.</div>
   </section>
 
   <!-- 13. FLUJO CANONICO -->
@@ -755,7 +755,7 @@ $ bun xray backup restore --file demo-backup.json --project PROJ --map-keys mapp
       </div>
       <div class="card">
         <p class="lbl">Handoffs</p>
-        <p class="small mt-s">← <span class="mono">/sprint-testing</span> S1–3: ATS + ATP + ATR por ticket.<br>← <span class="mono">/test-documentation</span> Stage 4: TCs + ROI.<br>→ <span class="mono">/regression-testing</span> Stage 6: resultados para el GO/NO-GO.</p>
+        <p class="small mt-s">← <span class="mono">/sprint-testing</span> S1–3: ATS + ATP + ATR por ticket.<br>← <span class="mono">/test-documentation</span> Documentation: TCs + ROI.<br>→ <span class="mono">/regression-testing</span> Regression: resultados para el GO/NO-GO.</p>
       </div>
       <div class="card">
         <p class="lbl">Fallback</p>

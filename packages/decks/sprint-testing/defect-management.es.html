@@ -632,9 +632,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <section class="slide" data-title="Mismo término">
   <p class="kicker">la idea central</p>
   <h2 class="h2" data-anim="fade-up">Mismo Término, Distinta Gestión</h2>
-  <p class="lede mt-s">"Bug" y "defecto" son sinónimos en el lenguaje. La diferencia vive en la <b>línea de tiempo del producto</b>: ¿la funcionalidad sigue en desarrollo, o ya fue liberada?</p>
-  <div class="callout mt-l"><h4>El eje que decide todo</h4><p>Una falla detectada <b>durante el sprint</b>, sobre una funcionalidad que aún se está construyendo → <b>Defect</b>. La misma clase de falla, descubierta <b>después del release</b> sobre algo que ya funcionaba → <b>Bug</b>. El Improvement es el tercer camino: ni una ni otra, sino una mejora.</p></div>
-  <div class="notes">El usuario lo resume así: defecto = bajo sprint, en desarrollo; bug = regresión post-release; improvement = mejora, muchas veces trivial o reclasificada tras análisis de causa raíz.</div>
+  <p class="lede mt-s">"Bug" y "defecto" son sinónimos en el lenguaje. La diferencia vive en la <b>etapa de vida de la feature</b>: ¿ya está viva por encima de Staging, o sigue pre-release?</p>
+  <div class="callout mt-l"><h4>El eje que decide todo</h4><p>Una sola pregunta: <b>¿la feature afectada ya está viva por encima de Staging?</b> Si NO — sigue pre-release, la esté construyendo el sprint actual o no → <b>Defect</b>. Si SÍ — el usuario final puede toparse con ella → <b>Bug</b>. El Improvement es el tercer camino: no rompe ningún criterio, propone una mejora.</p><p class="mt-s"><b>Sin importar cuándo ni dónde lo encontraste.</b> Podés reproducir la falla en <span class="mono">localhost</span> o en <span class="mono">qa</span> y seguir siendo un Defect; podés verla por primera vez en Staging y ser un Bug, si la feature ya está en producción.</p></div>
+  <div class="notes">La doctrina es literal: «Classification follows the lifecycle stage of the FEATURE, not the environment where you happened to find the problem» (defect-management-doctrine.md). El caso que más se equivoca: probando la Story A tropezás con una falla de la Story B. Mirá la etapa de B, no dónde estabas vos. Si B ya está en producción → Bug, aunque lo hayas visto en Staging.</div>
 </section>
 
 <!-- 6. DEFECT -->
@@ -648,7 +648,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
     <div class="card card-accent">
       <h4>Cuándo nace</h4>
-      <p class="dim">Durante el desarrollo / la fase de QA del sprint. Es lo <b>normal y deseable</b>: el sprint existe para destapar defectos y cerrarlos.</p>
+      <p class="dim">Cuando la feature <b>aún no cruzó Staging</b> hacia ambientes superiores, sin importar cuándo se descubra la falla. Es lo <b>normal y deseable</b>: el sprint existe para destapar defectos y cerrarlos. Están <b>contenidos</b>, no escapados.</p>
     </div>
   </div>
   <ul class="blist">
@@ -670,7 +670,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
     <div class="card card-accent">
       <h4>Cuándo nace</h4>
-      <p class="dim">Pasado el sprint — semanas o meses después — típicamente como un <b>edge case</b> o una <b>regresión</b> sobre código ya validado.</p>
+      <p class="dim">Cuando la feature afectada <b>ya está viva en producción</b> — aunque la falla se descubra dentro del sprint, probando otra Story. Toda feature se presume aprobada por el gate de calidad antes del release: una falla en algo ya liberado <b>escapó</b> ese gate.</p>
     </div>
   </div>
   <ul class="blist">
@@ -849,6 +849,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <li><b>Severity</b> · <b>Priority</b></li>
         <li><b>Error Type</b> · <b>Test Environment</b></li>
         <li><b>Evidence</b> — captura / trace / log</li>
+        <li><b>QA Assignee</b> — vos mismo; se lee antes de escribir y <b>nunca se pisa</b> un dueño existente</li>
       </ul>
     </div>
     <div>
@@ -918,6 +919,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="card card-accent">
       <h4>Módulos funcionales reales, no épicas</h4>
       <p class="dim">Cada component = un <b>módulo funcional real</b> de la app (la ruta <span class="mono">/checkout/cart</span> → component <b>Cart</b>). Se derivan del <b>source</b> y del <b>scope del backlog</b> (un módulo aún no construido se declara por adelantado), y se reconcilian vía <span class="mono">/jira-components</span> con un plan que aprueba un humano. El eje "épica" ya lo cubren parent/link — no lo dupliques aquí.</p>
+      <p class="dim mt-s"><b>Los tres ejes, sin mezclarlos:</b> el <b>parent</b> es siempre la épica de <i>proceso QA</i> — "QA Defect Management" para bug / defect / improvement — <b>nunca</b> una épica de producto o de desarrollo. El <b>issue-link</b> carga la Story de origen. Los <b>components</b> cargan el módulo afectado.</p>
     </div>
     <div class="card card-accent">
       <h4>Para qué sirve realmente</h4>
@@ -1388,7 +1390,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Disciplina de Defect Management</h2>
   <div class="grid g2 mt-s">
     <ul class="blist">
-      <li><b>Usa el work type correcto</b> — Defect en sprint, Bug post-release. Es lo que hace medible el escape.</li>
+      <li><b>Usa el work type correcto</b> — Defect si la feature no cruzó Staging, Bug si ya está viva arriba. Es lo que hace medible el escape.</li>
       <li><b>Rellena Components siempre</b> — sin él, no hay dashboard de ownership.</li>
       <li><b>Severity ≠ Priority</b> — dos ejes, dos campos, dos preguntas.</li>
       <li><b>Evidencia siempre</b> — captura, trace o log embebidos.</li>
@@ -1408,7 +1410,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">para llevar</p>
   <h2 class="h2" data-anim="fade-up">Tres Ideas que se Quedan</h2>
   <div class="steps s3 mt-l">
-    <div class="step"><div class="num">1</div><h4>El momento define el tipo</h4><p>Bug = defecto = síntoma idéntico. Lo que cambia es cuándo nace y qué le dice al equipo. Defect contiene; Bug se fuga; Improvement mejora.</p></div>
+    <div class="step"><div class="num">1</div><h4>La etapa de la feature define el tipo</h4><p>Bug = defecto = síntoma idéntico. Lo que cambia es si la feature ya está viva por encima de Staging, no dónde ni cuándo lo encontraste. Defect contiene; Bug se fuga; Improvement mejora.</p></div>
     <div class="step"><div class="num">2</div><h4>Un workflow, los mismos campos</h4><p>El estándar de calidad: las tres incidencias comparten esquema. La disciplina al rellenar — sobre todo Components — es la materia prima de toda métrica.</p></div>
     <div class="step"><div class="num">3</div><h4>Mide preguntas, no datos</h4><p>Un dashboard es un set de respuestas. Pregunta primero, métrica después, campo al final. Escape Rate es la estrella del shift-left.</p></div>
   </div>

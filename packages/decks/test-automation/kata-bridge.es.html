@@ -183,6 +183,10 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 .kata-stack .layer.star{border-color:var(--green);background:rgba(158,206,106,.12);color:var(--green);font-weight:700;
   box-shadow:0 0 24px rgba(158,206,106,.15)}
 .kata-stack .layer.star .ly-note{color:var(--green)}
+.kata-stack .consumer{display:flex;align-items:center;gap:1rem;background:transparent;border:1.5px dashed var(--border-strong);
+  border-radius:var(--radius-sm);padding:.7rem 1.2rem;font-family:var(--font-mono);font-size:clamp(.8rem,1.28vw,.98rem);color:var(--text-3)}
+.kata-stack .consumer .ly-tag{font-size:.68rem;color:var(--text-3);font-weight:700;flex:0 0 auto;width:2rem}
+.kata-stack .consumer .ly-note{margin-left:auto;font-family:var(--font-sans);font-size:.76rem;color:var(--text-3);text-align:right}
 .kata-stack .arrow{text-align:center;color:var(--text-3);font-size:.78rem;line-height:1;font-family:var(--font-mono)}
 
 /* tree */
@@ -288,8 +292,8 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="layer star"><span class="ly-tag">L3</span>⭐ YourPage / YourApi <span class="ly-note">aquí escribes TÚ — los ATCs viven aquí</span></div>
     <div class="arrow">↓ inyectadas por</div>
     <div class="layer"><span class="ly-tag">L4</span>TestFixture <span class="ly-note">({ api }) · ({ ui }) · ({ test })</span></div>
-    <div class="arrow">↓ usadas por</div>
-    <div class="layer"><span class="ly-tag">—</span>login.spec.ts <span class="ly-note">specs que cuentan historias</span></div>
+    <div class="arrow">↓ consumidas por</div>
+    <div class="consumer"><span class="ly-tag">—</span>login.spec.ts <span class="ly-note">consume el Fixture: no es una capa</span></div>
   </div>
   <div class="callout info" data-anim="fade-up" style="max-width:680px;margin:1.1rem auto 0"><span class="co-ico">🥋</span><p><b>KATA</b> como en artes marciales: una <i>forma</i> ensayada hasta que sale sola. Dos mecanismos que ya dominas la sostienen: <b>extends</b> (Coding Classes) y <b>fixtures</b> (Playwright Pro). Nada más.</p></div>
   <div class="notes"><p>LA slide de la sesión — el mapa al que volverás en cada capa. Punto clave: solo hay DOS mecanismos (herencia y fixtures) y ambos los dominan. La estrella verde en L3 delimita su territorio: las otras capas se HEREDAN o se RECIBEN, no se tocan en el trabajo diario. Las siguientes 3 slides recorren las capas de abajo... de arriba hacia abajo.</p></div>
@@ -337,7 +341,8 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         <pre class="code" style="font-size:clamp(.72rem,1.1vw,.9rem)">
 <span class="tk-k">export</span> <span class="tk-k">class</span> LoginPage <span class="tk-k">extends</span> UiBase {
 
-  <span class="tk-c">/** @atc TC-101 — login con credenciales válidas */</span>
+  <span class="tk-c">// login con credenciales válidas</span>
+  <span class="tk-f">@atc</span>(<span class="tk-s">'PROJ-101'</span>)
   <span class="tk-k">async</span> <span class="tk-f">loginAs</span>(user: { email: <span class="tk-k">string</span>; password: <span class="tk-k">string</span> }) {
     <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">goto</span>(<span class="tk-k">this</span>.config.webUrl + <span class="tk-s">"/login"</span>);
     <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Email"</span>).<span class="tk-f">fill</span>(user.email);
@@ -349,11 +354,11 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     </div>
     <div data-stagger>
       <div class="card hl"><h3>⚛️ ATC</h3><p><b>Acceptance Test Case</b>: un método que ejecuta un <b>mini-flujo completo y atómico</b>. Tu <code class="pill">login()</code> de siempre — con identidad y reglas.</p></div>
-      <div class="card" style="margin-top:.75rem"><h3>🏷️ TC-101</h3><p>Cada ATC lleva el ID de su test case del TMS — <b>trazabilidad</b>: del código al test documentado y de vuelta.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>🏷️ PROJ-101</h3><p>Cada ATC lleva la <b>clave Jira literal</b> del ticket que cubre — <b>trazabilidad</b>: del código al test documentado y de vuelta. Nunca un id sintético ni un template literal.</p></div>
       <div class="card" style="margin-top:.75rem"><h3>📦 Objeto en vez de 2 params</h3><p>Nota la firma: <code class="pill">loginAs(user)</code> recibe un objeto — regla de la casa para 3+ datos.</p></div>
     </div>
   </div>
-  <div class="notes"><p>ATC = el corazón conceptual de KATA. Es su método login() de toda la serie, elevado: identidad (TC id → trazabilidad con el TMS), atomicidad (regla de la próxima slide) y convención de firma. El this.config.webUrl muestra a TestContext en acción: cero URLs hardcodeadas. El término "atómico" se define formalmente en la siguiente slide — aquí basta "completo e independiente".</p></div>
+  <div class="notes"><p>ATC = el corazón conceptual de KATA. El ATC ES el caso de prueba; @atc('PROJ-101') es su representación en código. Es su método login() de toda la serie, elevado: identidad (clave Jira → trazabilidad con el TMS), atomicidad (regla de la próxima slide) y convención de firma. El this.config.webUrl muestra a TestContext en acción: cero URLs hardcodeadas. El término "atómico" se define formalmente en la siguiente slide — aquí basta "completo e independiente".</p></div>
 </section>
 
 <!-- 7 · Reglas del ATC -->
@@ -399,6 +404,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <span class="tk-k">await</span> <span class="tk-f">expect</span>(ui.page.<span class="tk-f">getByText</span>(<span class="tk-s">"Demo"</span>)).<span class="tk-f">toBeVisible</span>();
 });</pre>
       <p style="margin-top:.7rem;font-size:.92rem"><code class="pill">ui</code> llega con TODAS las páginas instanciadas + contexto + datos. Cero <code class="pill">new</code>, cero setup — como tu fixture <code class="pill">loginPage</code>, multiplicado.</p>
+      <div class="callout info" style="margin-top:.8rem"><span class="co-ico">🎯</span><p><b>Ojo con las aserciones.</b> En POM aprendiste "acciones en la página, aserciones en el test". KATA lo matiza: las aserciones <b>fijas</b> — status code, campos requeridos, redirect — viven <b>dentro</b> del ATC, porque son parte de su contrato. Solo las aserciones de <b>flujo</b>, las que dependen del escenario, van en el spec.</p></div>
     </div>
     <div data-stagger>
       <div class="card"><h3>🎛️ La regla de selección</h3>
@@ -443,11 +449,11 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <span class="tk-s">"components"</span>: {
     <span class="tk-s">"LoginPage"</span>: {
       <span class="tk-s">"file"</span>: <span class="tk-s">"tests/components/pages/login.page.ts"</span>,
-      <span class="tk-s">"atcs"</span>: [<span class="tk-s">"TC-101"</span>, <span class="tk-s">"TC-102"</span>]
+      <span class="tk-s">"atcs"</span>: [<span class="tk-s">"PROJ-101"</span>, <span class="tk-s">"PROJ-102"</span>]
     },
     <span class="tk-s">"AuthApi"</span>: {
       <span class="tk-s">"file"</span>: <span class="tk-s">"tests/components/api/auth.api.ts"</span>,
-      <span class="tk-s">"atcs"</span>: [<span class="tk-s">"TC-201"</span>]
+      <span class="tk-s">"atcs"</span>: [<span class="tk-s">"PROJ-201"</span>]
     }
   }
 }</pre>

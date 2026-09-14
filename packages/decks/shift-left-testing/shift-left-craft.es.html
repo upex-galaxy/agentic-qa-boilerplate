@@ -550,7 +550,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker run">how-it-works · agentic-qa · shift-left-testing</p>
   <h1 class="h1 anim-fade-up" data-anim="fade-up">El Arte del <span class="grad">Shift-Left Testing</span></h1>
   <p class="lede mt-m">Prevenir el defecto en los requisitos, no detectarlo tras la implementación. Cómo QA refina los Acceptance Criteria <b>antes</b> del sprint — y por qué todo proyecto lo necesita.</p>
-  <div class="speaker"><div class="av"></div><div><b>Seleccionar → Refinar → Entregar</b><span>Stage 0 · QA entra en el backlog, no al final</span></div></div>
+  <div class="speaker"><div class="av"></div><div><b>Seleccionar → Refinar → Entregar</b><span>Shift-Left · QA entra en el backlog, no al final</span></div></div>
   <div class="deck-footer"><span class="mono">Jira · estándar UPEX · /shift-left-testing</span><span class="slide-number" data-current="1" data-total="37"></span></div>
   <div class="notes">Encuadre: shift-left mueve la QA hacia la izquierda del ciclo — a la fase de requisitos. Refina ACs de Stories en backlog, destapa ambigüedades y huecos, y los entrega a PO/Dev ANTES del sprint. Dos pilares del deck: el CÓMO hacerlo bien y el POR QUÉ hacerlo en cada proyecto.</div>
 </section>
@@ -571,7 +571,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">El Porqué y el Cómo</h2>
   <div class="stack mt-l anim-stagger-list">
     <div class="agenda-row"><span class="anum">01</span><span class="at">El porqué — prevención vs detección y la curva de costo del defecto</span><span class="ad">por qué</span></div>
-    <div class="agenda-row"><span class="anum">02</span><span class="at">El pipeline — Stage 0: Selección → Refinamiento → Handoff, y sus límites</span><span class="ad">dónde</span></div>
+    <div class="agenda-row"><span class="anum">02</span><span class="at">El pipeline — Shift-Left: Selección → Refinamiento → Handoff, y sus límites</span><span class="ad">dónde</span></div>
     <div class="agenda-row"><span class="anum">03</span><span class="at">Selección — qué Story refinar: veto, risk score, profundidad</span><span class="ad">qué</span></div>
     <div class="agenda-row"><span class="anum">04</span><span class="at">Refinamiento — el corazón: ambigüedades, huecos, el banco de preguntas</span><span class="ad">cómo bien</span></div>
     <div class="agenda-row"><span class="anum">05</span><span class="at">Artefactos + Handoff — el ATP pre-sprint, la máquina de estados, el short-circuit</span><span class="ad">entregar</span></div>
@@ -641,10 +641,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <section class="slide divider" data-title="Parte 1">
   <div>
     <p class="part-no">PARTE 01</p>
-    <h1 class="h1">El Pipeline<br><span class="grad">Stage 0 — Antes del Sprint</span></h1>
+    <h1 class="h1">El Pipeline<br><span class="grad">Shift-Left — Antes del Sprint</span></h1>
     <p class="lede">Tres fases, siempre en orden: Selección → Refinamiento → Handoff. Batch por diseño: una sesión refina N Stories para un solo pase de grooming con el equipo.</p>
   </div>
-  <div class="notes">Shift-left es Stage 0 del pipeline QA. Entra en el backlog, sale en estimation. Batch de 1-12 Stories.</div>
+  <div class="notes">Shift-Left es el primer stage del pipeline QA (históricamente Stage 0). Entra en el backlog, sale en estimation. Batch de 1-12 Stories.</div>
 </section>
 
 <!-- 8. THE PIPELINE -->
@@ -692,10 +692,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <ul class="blist">
       <li><b>Sin código, sin commit</b> — Jira es canónico. El <span class="mono">shift-left-refinement.md</span> es working artifact gitignored.</li>
       <li><b>Sin test data, sin parametrización</b> — outline names only. Eso se difiere a in-sprint.</li>
-      <li><b>Sin TCs</b> — los Test Cases se formalizan en Stage 4 (<span class="mono">/test-documentation</span>), no aquí.</li>
+      <li><b>Sin TCs</b> — los Test Cases se formalizan en Documentation (<span class="mono">/test-documentation</span>), no aquí.</li>
     </ul>
   </div>
-  <div class="callout warn mt-m"><h4>La línea con sprint-testing</h4><p>Todo lo que requiere correr el sistema (generación de datos, parametrización, fixtures) pertenece a <span class="mono">/sprint-testing</span> Stage 1. Shift-left es <b>doc-only</b>.</p></div>
+  <div class="callout warn mt-m"><h4>La línea con sprint-testing</h4><p>Todo lo que requiere correr el sistema (generación de datos, parametrización, fixtures) pertenece a <span class="mono">/sprint-testing</span> Planning. Shift-left es <b>doc-only</b>.</p></div>
   <div class="notes">Límites claros: Stories only, no ejecución, para en estimation, no código. La feature aún no existe — por eso nada de datos/fixtures/TCs.</div>
 </section>
 
@@ -1049,8 +1049,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </ul>
     </div>
   </div>
-  <div class="callout mt-m"><h4>Status: "Refined — Awaiting PO Estimation"</h4><p>El ATP es <b>uno y real desde el día cero</b>: pre-sprint vive SOLO en el campo <span class="mono">acceptance_test_plan</span> (<b>field-first</b>) — <span class="mono">shift-left-refinement.md</span> es solo el <b>buffer local de staging</b>. Lo que cambia después no es la identidad sino la <b>madurez</b>: hoy outline (y con eso la Story ya es <b>estimable</b>); en sprint, <span class="mono">/sprint-testing</span> Stage 1 crea el Test Plan item <span class="mono">"ATP: {STORY-KEY}: {título}"</span> DESDE ese campo y añade lo diferido (datos, parametrización, pasos) en el <b>superset ejecutable</b>.</p></div>
-  <div class="notes">Un solo ATP por Story, field-first: shift-left lo autoría temprano en madurez outline dentro del campo acceptance_test_plan (nombres + cobertura, sin test data/parametrización/TCs); el Test Plan item nace en Stage 1 desde ese campo, refinado al superset ejecutable. shift-left-refinement.md es solo el buffer local; los labels shift-left-reviewed + fecha marcan el pase pre-sprint. La estimación de cobertura SÍ va (alimenta a PO).</div>
+  <div class="callout mt-m"><h4>Status: "Refined — Awaiting PO Estimation"</h4><p>El ATP es <b>uno y real desde el día cero</b>: pre-sprint vive SOLO en el campo <span class="mono">acceptance_test_plan</span> (<b>field-first</b>) — <span class="mono">shift-left-refinement.md</span> es solo el <b>buffer local de staging</b>. Lo que cambia después no es la identidad sino la <b>madurez</b>: hoy outline (y con eso la Story ya es <b>estimable</b>); en sprint, <span class="mono">/sprint-testing</span> Planning crea el Test Plan item <span class="mono">"ATP: {STORY-KEY}: {título}"</span> DESDE ese campo y añade lo diferido (datos, parametrización, pasos) en el <b>superset ejecutable</b>.</p></div>
+  <div class="callout mt-m"><h4>Las dos modalidades TMS</h4><p>Esto aplica igual en <span class="mono">jira-native</span> (la modalidad default) y en <span class="mono">jira-xray</span>: ninguna de las dos crea el item Test Plan en esta etapa — pre-sprint solo existe el campo <span class="mono">acceptance_test_plan</span>.</p></div>
+  <div class="notes">Un solo ATP por Story, field-first: shift-left lo autoría temprano en madurez outline dentro del campo acceptance_test_plan (nombres + cobertura, sin test data/parametrización/TCs); el Test Plan item nace en Planning desde ese campo, refinado al superset ejecutable. shift-left-refinement.md es solo el buffer local; los labels shift-left-reviewed + fecha marcan el pase pre-sprint. La estimación de cobertura SÍ va (alimenta a PO).</div>
 </section>
 
 <!-- 28. COVERAGE ESTIMATE -->
@@ -1085,7 +1086,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <span class="lstate bad">Ready For Dev</span>
   </div>
   <div class="grid g3 mt-l">
-    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Escribe a Jira</h4><p class="dim">ACs refinados al campo · ATP pre-sprint al campo <span class="mono">acceptance_test_plan</span> (el Test Plan item nace en Stage 1) · sección "QA Refinements" en la descripción (append, nunca overwrite).</p></div>
+    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Escribe a Jira</h4><p class="dim">ACs refinados al campo · ATP pre-sprint al campo <span class="mono">acceptance_test_plan</span> (el Test Plan item nace en Planning) · sección "QA Refinements" en la descripción (append, nunca overwrite).</p></div>
     <div class="card card-soft"><h4 class="mono" style="font-size:14px">Notifica</h4><p class="dim">1 comentario de handoff con @PO / @Dev (solo si el handle está en project.yaml).</p></div>
     <div class="card card-soft"><h4 class="mono" style="font-size:14px">Transiciona</h4><p class="dim">analyze → estimate. Si ya pasó estimation: log warning + SKIP (el refinamiento igual aterriza). La subtask <span class="mono">[QA] Shift-Left Review</span> (In Progress desde la aceptación en Phase 1) pasa a <b>Done</b>.</p></div>
   </div>
@@ -1098,7 +1099,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">trabajo hecho una vez, reutilizado</p>
   <h2 class="h2" data-anim="fade-up">Los Labels y el Short-Circuit</h2>
   <div class="grid g2 mt-s">
-    <div class="card card-accent"><h4><span class="mono">shift-left-reviewed</span></h4><p class="dim">El <b>marcador suave</b>. <span class="mono">/sprint-testing</span> Stage 1 lo lee para saber que el refinamiento pre-sprint ya ocurrió.</p></div>
+    <div class="card card-accent"><h4><span class="mono">shift-left-reviewed</span></h4><p class="dim">El <b>marcador suave</b>. <span class="mono">/sprint-testing</span> Planning lo lee para saber que el refinamiento pre-sprint ya ocurrió.</p></div>
     <div class="card card-accent"><h4><span class="mono">shift-left-{YYYY-MM-DD}</span></h4><p class="dim">El <b>marcador de frescura</b>. Si &lt;30 días, el refinamiento se considera vigente y se puede short-circuitar.</p></div>
   </div>
   <div class="flow mt-m">
@@ -1159,7 +1160,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="opt" data-correct="1"><span class="mk">B</span><span>Deja que /sprint-testing salte las Phases 1-3 — el trabajo se reutiliza, no se repite</span></div>
         <div class="opt"><span class="mk">C</span><span>Bloquea que la Story entre al sprint</span></div>
       </div>
-      <div class="qexp"><b>Short-circuit.</b> /sprint-testing Stage 1 lo detecta y salta las Phases 1-3 de planning (ya hechas pre-sprint). Esa reutilización es la economía del shift-left: refinas una vez en la fase 1×, no repites en la 10×.</div>
+      <div class="qexp"><b>Short-circuit.</b> /sprint-testing Planning lo detecta y salta las Phases 1-3 de planning (ya hechas pre-sprint). Esa reutilización es la economía del shift-left: refinas una vez en la fase 1×, no repites en la 10×.</div>
     </div>
   </div>
   <div class="notes">Guardrail (para en estimation) y el short-circuit (el label permite reutilizar el trabajo in-sprint). Las dos claves del handoff.</div>

@@ -432,7 +432,7 @@ table.tbl .mono{font-size:13px}
 
 <div class="deck">
 
-  <div class="deck-footer"><span class="mono">upex-galaxy · agentic-qa-boilerplate</span><span class="slide-number" data-current="1" data-total="16"></span></div>
+  <div class="deck-footer"><span class="mono">upex-galaxy · agentic-qa-boilerplate</span><span class="slide-number" data-current="1" data-total="17"></span></div>
 
   <!-- 1. PORTADA -->
   <section class="slide is-active" data-title="Portada">
@@ -440,7 +440,7 @@ table.tbl .mono{font-size:13px}
     <h1 class="cover-cmd anim-rise-in" data-anim="rise-in"><span class="sl">/</span>regression-testing</h1>
     <p class="lede" style="max-width:58ch">Ejecuta la suite en CI, clasifica cada fallo con evidencia y convierte el resultado en un veredicto de release defendible: <b class="grad">GO / CAUTION / NO-GO</b>.</p>
     <div class="row wrap mt-l" style="gap:11px">
-      <span class="chip"><span class="dot" style="background:var(--accent)"></span><b>Stage 6</b> · Regression / Smoke / Sanity</span>
+      <span class="chip"><span class="dot" style="background:var(--accent)"></span><b>Regression</b> <span class="dim">(históricamente Stage 6)</span> · Smoke / Sanity</span>
       <span class="chip"><span class="dot" style="background:var(--good)"></span>Execute → Analyze → Report</span>
       <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>gh CLI · Allure 3 · /acli · /xray-cli</span>
     </div>
@@ -501,7 +501,7 @@ table.tbl .mono{font-size:13px}
         <span class="wf-lbl alt">ADYACENTES</span>
         <div class="wf-node nogo"><small>NO-GO → <b>Jira Bug/Defect</b> vía /acli → fix → re-run ⟲ Fase 1</small></div>
         <div class="wf-node"><small>ENVIRONMENT → re-run tras infra-check</small></div>
-        <div class="wf-node"><small>TMS sync <b>STP/STR</b> (/xray-cli)</small></div>
+        <div class="wf-node"><small>TMS sync <b>STP/STR</b> (/xray-cli · /acli)</small></div>
         <div class="wf-node"><small>Archive session + memoria</small></div>
       </div>
       <div class="wf-row">
@@ -798,6 +798,18 @@ table.tbl .mono{font-size:13px}
     <div class="notes">El reporte canónico queda commiteado en .context/reports/ como entregable; el estado de sesión se archiva aparte. Misma estructura en cada run para que stakeholders aprendan a escanearla.</div>
   </section>
 
+  <!-- 15b. CONTRATO AGÉNTICO + OBSERVATION -->
+  <section class="slide" data-title="Contrato agéntico">
+    <p class="kicker">quién decide qué — y qué pasa después del GO</p>
+    <h2 class="h2">El agente ejecuta. La evidencia prueba. <span class="grad">La persona decide.</span></h2>
+    <div class="cards c2 mt-m" style="align-items:start">
+      <div class="callout"><h4>El contrato de Regression</h4><p>El <b>agente</b> corre la suite, clasifica cada fallo, computa pass-rate y tendencia, emite GO / CAUTION / NO-GO y escribe el STR. La <b>persona</b> firma el veredicto CAUTION, y nunca deja que el agente invente el número de sprint. La <b>evidencia que sobrevive</b>: el reporte Allure, el STR enlazado a su STP, y la historia de corridas que autoriza la palabra FLAKY.</p></div>
+      <div class="callout"><h4>Autonomía CSA <b>3</b>, y <b>4</b> para un GO limpio</h4><p>Decide dentro de límites declarados y escala fuera de ellos; con un GO sin fallos la supervisión es por monitoreo, no por aprobación. <b>Sin verificador separado</b>: el único stage que lo exige es Automation, que es también el único que sube su autonomía a 3 dentro de un plan aprobado. Ningún stage del pipeline pasa de 3.</p></div>
+    </div>
+    <div class="callout mt-m"><h4>Y después del GO viene <b>Observation</b></h4><p>El pipeline no termina cuando la suite pasa. <b>Observation</b> es el octavo stage: producción, capacidad <b>L4</b>. No tiene skill — su unidad operativa es una <b>rutina agéntica</b> que vigila SLOs, error budget, RUM y señales de canary, abre items al backlog y alimenta el próximo Shift-Left. La persona firma los SLOs, la política de error budget y la decisión de frenar releases. Está <b>declarado, no implementado</b>: hoy nada bajo <span class="mono">.agents/skills/</span> lo ejecuta, y decirlo así es parte de la honestidad del método.</p></div>
+    <div class="notes">Fuente: agentic-qa-core/references/stage-gates.md — contrato agéntico por stage y escala CSA 0-5. El punto pedagógico: el DoD dice qué tiene que ser verdad; el contrato dice quién tuvo permiso de hacerlo. Un orquestador que avanza un stage sin honrar el contrato se salteó un gate exactamente igual que uno que tildó un DoD que no verificó. Y Observation existe para que nadie crea que el ciclo cierra en CI.</div>
+  </section>
+
   <!-- 16. CIERRE -->
   <section class="slide" data-title="Cierre">
     <p class="kicker run">cierre — cómo se invoca y qué sigue</p>
@@ -809,7 +821,7 @@ table.tbl .mono{font-size:13px}
       </div>
       <div class="card acc">
         <h4>Handoffs</h4>
-        <p>Entra desde <span class="mono">/test-automation</span> (Stage 5: escribe los tests y el marker <span class="mono">@blocked</span>). Sale hacia <span class="mono">/sprint-testing</span> (verificar el fix a mano) y de vuelta a <span class="mono">/test-automation</span> (estabilizar flaky, nuevos tests).</p>
+        <p>Entra desde <span class="mono">/test-automation</span> (Automation: escribe los tests y el marker <span class="mono">@blocked</span>). Sale hacia <span class="mono">/sprint-testing</span> (verificar el fix a mano) y de vuelta a <span class="mono">/test-automation</span> (estabilizar flaky, nuevos tests). Tras un <b>GO</b>, el ciclo no termina: entra en <b>Observation</b>.</p>
       </div>
       <div class="card acc">
         <h4>Artefactos clave</h4>

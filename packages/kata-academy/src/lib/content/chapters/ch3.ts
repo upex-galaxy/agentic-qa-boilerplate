@@ -32,7 +32,7 @@ export const floors: Floor[] = [
     level: 'specs',
     name: 'Tests',
     tenants: 'tests/e2e/*.test.ts · tests/integration/*.test.ts',
-    role: 'Los specs ORQUESTAN: destructuran el fixture, llaman ATCs y añaden aserciones de flujo. Casi no tienen lógica propia.',
+    role: 'Los specs ORQUESTAN: destructuran el fixture, llaman ATCs y añaden aserciones de flujo. Casi no tienen lógica propia. NO es una capa: consume el Fixture (L4).',
     rules: [
       'Jerarquía: carpeta = módulo → archivo = feature → describe = ticket → test = escenario.',
       'Las aserciones fijas viven dentro del ATC; el spec solo añade las de flujo.',
@@ -175,13 +175,21 @@ async authenticateSuccessfully(
       {
         title: 'AuthSteps — cadena de ATCs SIN @atc (doctrina)',
         sourcePath: '.agents/skills/test-automation/references/kata-architecture.md',
-        code: `export class AuthSteps {
-  constructor(private ui: UiFixture, private api: ApiFixture) {}
+        code: `// tests/components/steps/AuthSteps.ts
+import type { TestContextOptions } from '@TestContext';
+import { TestContext } from '@TestContext';
 
-  async setupAuthenticatedUser(credentials: Credentials) {
-    await this.ui.auth.loginWithValidCredentials(credentials);
-    await this.ui.profile.completeOnboardingSuccessfully();
-    await this.ui.settings.enableFeatureFlagSuccessfully();
+export class AuthSteps extends TestContext {
+  constructor(options: TestContextOptions = {}) {
+    super(options);
+  }
+
+  async navigateAsAuthenticatedUser(path: string, email: string, password: string) {
+    if (!this._page || !this._request) {
+      throw new Error('Page and Request context must be set.');
+    }
+    const auth = await this.authenticateUser(email, password);
+    await this._page.evaluate(token => localStorage.setItem('authToken', token), auth.token);
   }
 }
 `,

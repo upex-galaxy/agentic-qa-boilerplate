@@ -239,6 +239,9 @@ table.cmp td code{color:var(--cyan);font-size:.92em}
 .kata-stack .layer .ly-note{margin-left:auto;font-family:var(--font-sans);font-size:.78rem}
 .kata-stack .layer.star{border-color:var(--green);background:rgba(158,206,106,.12);color:var(--green);font-weight:700;
   box-shadow:0 0 24px rgba(158,206,106,.15)}
+.kata-stack .consumer{display:flex;align-items:center;gap:1rem;background:transparent;border:1.5px dashed var(--border-strong);
+  border-radius:var(--radius-sm);padding:.75rem 1.2rem;font-family:var(--font-mono);font-size:clamp(.82rem,1.3vw,1rem);color:var(--text-3);opacity:.85}
+.kata-stack .consumer .ly-note{margin-left:auto;font-family:var(--font-sans);font-size:.78rem}
 .kata-stack .arrow{text-align:center;color:var(--text-3);font-size:.85rem;line-height:.6}
 
 /* cover + final */
@@ -997,10 +1000,10 @@ test("login con Page Object", async ({ page }) => {
     <div class="layer star">⭐ LoginPage <span class="ly-note" style="color:var(--green)">¡ESTO ya lo sabes construir!</span></div>
     <div class="arrow">↓ usada por</div>
     <div class="layer">TestFixture <span class="ly-note">el ({ page }) pero con tus clases</span></div>
-    <div class="arrow">↓ usada por</div>
-    <div class="layer">login.spec.ts <span class="ly-note">tests que cuentan historias</span></div>
+    <div class="arrow">↓ consumida por</div>
+    <div class="consumer">login.spec.ts <span class="ly-note">consume el Fixture: no es una capa</span></div>
   </div>
-  <div class="callout" data-anim="fade-up" style="max-width:720px;margin:1.4rem auto 0"><span class="co-ico">🗺️</span><p>Cada capa es una clase que <code>extends</code> la anterior — la cadena de herencia que acabas de dominar. Tu LoginPage de hoy es el corazón del framework profesional.</p></div>
+  <div class="callout" data-anim="fade-up" style="max-width:720px;margin:1.4rem auto 0"><span class="co-ico">🗺️</span><p>Las <b>cuatro capas</b> (TestContext → UiBase → LoginPage → TestFixture) son clases encadenadas por la herencia que acabas de dominar; el spec solo <b>consume</b> el Fixture, no es una capa más. Tu LoginPage de hoy es el corazón del framework profesional.</p></div>
   <div class="notes"><p>Teaser, NO lección: no expliques cada capa — solo muestra que la estrella verde (la Page que construyeron HOY) es el centro del framework, y que el resto son las mismas dos herramientas de esta sesión (extends + fixtures/destructuring) aplicadas con más capas. El miedo a la arquitectura muere cuando reconocen las piezas. Próximos pasos del roadmap: práctica real con Playwright contra el dojo, luego el puente KATA completo.</p></div>
 </section>
 
