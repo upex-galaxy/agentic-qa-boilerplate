@@ -16,6 +16,76 @@ below names which one it applies to:
 
 ## [Unreleased]
 
+### Changed (Boilerplate — doctrine: named stages and the agentic contract)
+
+Documentation only. No behaviour change in tests, CLI, scripts or the installer.
+
+- **`stage-gates.md` gained the agentic contract per stage.** Alongside the
+  existing Definition-of-Done checklists (untouched, word for word) every stage
+  now declares what the agent does, what the person signs, what evidence must
+  survive, its autonomy level on a CSA 0-5 scale, and whether a separate
+  verifier is required. The ceiling is 3 and never 5, which is the written form
+  of "skills do not run end-to-end autonomously". The feedforward (skills,
+  specs, briefing) / feedback (gates, linters, suites, verifier) pair is
+  declared with it.
+- **Stages are named by word, not by number.** The number collided in two
+  directions: the old "Stage 4" hosted IQL steps 4 *and* 5, and "Stage 1"
+  already meant a TMLC etapa in the legacy prose under `docs/methodology/`. The
+  historical numbering now survives in exactly one place, the mapping table at
+  the top of `stage-gates.md`, so anything still citing `§Stage N` resolves
+  through it.
+- **New stage: Observation.** Declared as production-altitude, capability L4,
+  **no skill** — its operating unit is an agentic routine that this repo does not
+  ship. It deliberately carries no DoD checklist: an empty checklist reads as an
+  implemented gate.
+- **Execution profiles.** `docs/agentic-quality-engineering.md` now states that
+  the method is agnostic to its executor: `manual` and `agentic` run the same
+  stages, gates, artefacts and evidence bar. The agentic profile buys speed on
+  the mechanical half and nothing on the deciding half.
+- **One KATA formula, everywhere.** "four-layer" is replaced by the canonical
+  sentence — *four layers with a single direction of dependency (TestContext,
+  Base, domain Komponents, Fixtures), Steps as an optional intermediate layer,
+  test files as consumers and never a layer* — in
+  `test-automation/references/kata-architecture.md`,
+  `framework-development/references/kata-invariants.md` and
+  `docs/agentic-quality-engineering.md`, whose diagram gained the Steps box and
+  the DRY zones. The `@atc` id is unified to `@atc('PROJ-101')`, the form the
+  manifest and the code actually use.
+- **`kata-invariants.md` describes the repo that exists.** It no longer claims a
+  lint that rejects relative imports across `tests/**` (the only
+  `no-restricted-imports` block is scoped to `cli/**`, and there is no
+  `eslint-plugin-import`), and its alias list is now the one in
+  `tsconfig.json` — `@config/*` and `@components/*` never existed there. No lint
+  rule was added; the doc was corrected to match.
+- **`agentic-qa-core/SKILL.md` stops under-declaring itself.** The references
+  table lists all **18** files on disk (seven were invisible, including
+  `session-management.md`, `traceability-linking.md` and
+  `defect-management-doctrine.md`) and the deck table all **3**.
+- **`docs/agentic-quality-engineering.md` enumerates `stage-gates.md`** among the
+  orchestration doctrine surfaces. The document that `docs/README.md` calls the
+  flagship was describing the checkpoints without naming the layer that enforces
+  them.
+- **`playwright-cli` is no longer listed as a skill of this repo.** It is a
+  community skill installed at project level by `cli/install.ts` and not
+  committed; the doc's own universal claim that every skill lives under
+  `.agents/skills/<name>/SKILL.md` was falsified by its own roster.
+- **`docs/methodology/` and `docs/workflows/` are marked LEGACY.** Nothing was
+  deleted. Each file carries a banner at its head: TAUS era, not a source of
+  truth, the live layer is `.agents/skills/**` plus the `.agents/jira-*`
+  catalogs, KATA replaced TAUS, TDC is retired, and the Jira states named inside
+  may not exist. `kata-fundamentals.md` additionally warns that its pytest
+  samples are not this repo's runtime (TypeScript + Playwright + Bun;
+  `conftest.py` and `pytest.ini` do not exist) and its "Component Strategy" is
+  corrected to "Komponent Strategy". `IQL-methodology.md` step 7 stops saying
+  "TAUS". `AGENTS.md` §11 stops routing to `docs/workflows/git-flow.md` as a live
+  detail — it mandates a `staging` branch that does not exist on `origin`.
+- **`docs/qa-standard/` self-contradictions closed.** The planning ladder is
+  titled a ratified Standard instead of a Proposal (filename kept: it is cited by
+  path). `naming-gaps-backlog.md` rows 4, 8, 9 and 10 now print the conventions
+  its own ratification deltas chose, not the ones they rejected.
+- **`REGISTRY.md` regenerated** so the per-session compact-rules cache is not
+  served from a two-week-old timestamp.
+
 ### Fixed (updater 8.4)
 
 `CLI_VERSION` 8.3 -> 8.4, ported from the dev boilerplate. Five polish items.

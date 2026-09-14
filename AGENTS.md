@@ -513,7 +513,7 @@ Test files (orchestrate ATCs)
 
 ## 11. GIT WORKFLOW: POINTERS
 
-Git / PR work → `/git-flow-master` auto-loads. Details in `.agents/skills/git-flow-master/` + `docs/workflows/git-flow.md`.
+Git / PR work → `/git-flow-master` auto-loads. Details in `.agents/skills/git-flow-master/`. **NOT `docs/workflows/git-flow.md`**: that file is LEGACY (banner at its head), it mandates a `staging` branch and a PR flow that this repo does not run, and `staging` does not exist on `origin`. The live policy is the `git_strategy:` block in `.agents/project.yaml`, enforced by `bun run git:policy verify`.
 
 **Active strategy + branch policy = the `git_strategy:` block in `.agents/project.yaml`** (source of truth; see `## Git Strategy` below). This repo operates as `solo-main`.
 

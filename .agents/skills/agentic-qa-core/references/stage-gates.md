@@ -1,11 +1,12 @@
-# Stage Gates — Definition-of-Done per workflow stage
+# Stage Gates — Definition-of-Done and agentic contract per workflow stage
 
 > Shared doctrine cited by every workflow skill's `## Subagent Dispatch Strategy`.
 > Companion to `briefing-template.md` (the 7-component dispatch) and
 > `session-management.md` (the per-stage progress checkpoint). Where the briefing
 > says *what to send a subagent* and session-management says *how to record that
 > it ran*, this file says **what must be TRUE before the orchestrator advances to
-> the next stage or hands off.**
+> the next stage or hands off** — and **who was allowed to decide what** while the
+> stage ran.
 
 ## The gate rule
 
@@ -31,9 +32,98 @@ answered YES or a justified N/A) — not vibes. "N/A" is a valid answer only whe
 
 ---
 
+## The stages, by name
+
+The pipeline is **eight named stages**. Stages are named by word, never by number.
+The number collided in two directions at once: the old "Stage 4" hosted IQL steps
+4 *and* 5, and "Stage 1" already meant something else inside the legacy TMLC prose
+under `docs/methodology/`. The table below is the **only** place the historical
+numbering appears; anything that still cites `stage-gates.md §Stage N` resolves
+through it.
+
+| Stage | Owning skill | Moment | Capability | Historical number |
+|---|---|---|---|---|
+| **Shift-Left** | `shift-left-testing` | pre-sprint (batch) | L1 — Prevention | (Stage 0) |
+| **Planning** | `sprint-testing` | in-sprint | L1 — Prevention | (Stage 1) |
+| **Execution** | `sprint-testing` | in-sprint | L2 — Early Detection | (Stage 2) |
+| **Reporting** | `sprint-testing` | in-sprint | L2 — Early Detection | (Stage 3) |
+| **Documentation** | `test-documentation` | post-sprint | L3 — Continuous Detection | (Stage 4) |
+| **Automation** | `test-automation` | post-sprint | L3 — Continuous Detection | (Stage 5) |
+| **Regression** | `regression-testing` | post-sprint | L3 — Continuous Detection | (Stage 6) |
+| **Observation** | *none yet* | production | L4 — Production Observation | (never had one) |
+
+**Observation is declared, not implemented.** It has **no skill**; its operating
+unit is an **agentic routine** (a recurring or autonomous run, not a user-invoked
+skill), and its capability level is **L4**. It is named here so the pipeline is
+honest about where it currently stops: nothing under `.agents/skills/` executes it
+today. It deliberately carries **no DoD checklist** below — an empty checklist
+would read as an implemented gate that an orchestrator could tick.
+
+**Sprint close is not a stage.** It is the batch boundary where the sprint-altitude
+artifacts (STP / STR) are closed out, and it is reached from Reporting or from
+Regression, whichever arrives there first. It keeps its own DoD block below.
+
+---
+
+## The agentic contract per stage
+
+A DoD says what must be TRUE. The contract says **who did it, who signed it, what
+evidence survives, how much rope the agent had, and whether a second agent checked
+the first one.** Both are gates. An orchestrator that advances a stage whose
+contract was not honoured has skipped a gate exactly as much as one that ticked a
+DoD item it never verified.
+
+### Autonomy scale (CSA 0-5)
+
+| Level | Means |
+|---|---|
+| 0 | none — the human performs the work |
+| 1 | assisted — approval per action |
+| 2 | supervised — approval per plan or per batch |
+| 3 | conditional — decides inside stated limits, escalates outside them |
+| 4 | high — supervision by monitoring, not by approval |
+| 5 | full — no routine human involvement |
+
+**No stage in this pipeline runs above 3.** That ceiling is the architectural
+decision behind "skills do not run end-to-end autonomously", not an accident of
+how much has been built.
+
+### Contract table
+
+| Stage | The agent does | The person signs | Evidence that must survive | Autonomy | Separate verifier |
+|---|---|---|---|---|---|
+| **Shift-Left** | Rewrites ACs as Given/When/Then with concrete data, surfaces gaps and ambiguities, authors the pre-sprint ATP into the Story field, applies the Test-Design Checklist | The batch of candidate Stories and the per-Story summary; never lets the Story pass `Estimation` | Rewritten ACs, gaps as open questions to PO/Dev, dated label, review subtask | **2** | **none** — the PO/Dev refining the Story is the natural reviewer |
+| **Planning** | Creates ATS → ATP → ATR set-first, derives TCs or outlines per modality, decides the UI/API/DB surfaces by triage + veto + risk score | The Story Explanation checkpoint (the skill explains the story and waits) | ATP as a Test Plan item, ATR carrying its Test Environment (hard gate), coverage stated on both axes | **2** | **none** |
+| **Execution** | Runs smoke as Go/No-Go, executes the outlines, explores past them across the trifuerza, proposes bugs with derived severity | The triage of every bug and the **filing** of every bug; any security/auth severity recalibration | Screenshots under the PBI `evidence/` folder, smoke demonstrably run first | **3** | **none** |
+| **Reporting** | Fills the ATR, writes the QA comment, creates and verifies the traceability links | The workflow transition (`qa_sign_off` / `defect_reported`) | ATR as a Test Execution item, links resolved and verified in direction | **2** | **none** |
+| **Documentation** | Derives scenarios by technique, scores ROI, proposes Candidate / Manual / Deferred, persists only the regression-worthy ones | **Every ROI verdict**, the regression epic, the Test Set | ROI score per scenario; the >50% Candidate/Manual alarm answered | **2** | **recommended** — a second agent re-reads the verdicts against the ATR |
+| **Automation** | Writes `spec.md` + `automation-plan.md`, then KATA code with `@atc`, then runs the three verifiers and opens the PR | The plan **before a line of code**; the merge; the call at the third revision loop | Tests green, types clean, lint clean, `@atc` ids resolving to real tickets, manifest fresh | **2 → 3** inside the approved plan | **required** — `/pr-review-lead` or `/judgment-day`, in a clean context |
+| **Regression** | Runs the suite, classifies every failure, computes pass-rate and trend, emits GO / CAUTION / NO-GO, writes the STR | The CAUTION verdict; never invents the sprint number | Allure report, ≥5 runs of history before the word FLAKY is allowed, STR → STP | **3** (4 for a clean GO) | **none** |
+| **Observation** | *(agentic routine, no skill)* Watches SLOs, error budget, RUM and canary signals; opens items into the backlog; feeds the next Shift-Left pass | The SLOs and the error-budget policy; the decision to stop releases | Product metrics against the project's own targets | **3** | **n/a** |
+
+Read the table with the DoD checklist of the same stage, not instead of it: the
+DoD is the exit bar, the contract is the operating licence.
+
+### Feedforward and feedback
+
+Every stage is governed on two paths. A stage with only one of them is not
+governed — it is either unguided or uncorrected.
+
+| Path | Direction | What it is, concretely |
+|---|---|---|
+| **Feedforward** | conditions the work *before* it happens | the skill itself (`SKILL.md` + its `references/`), the compact rules resolved from `.agents/skills/REGISTRY.md` into the briefing, and the spec written and approved first — the ATP, `spec.md`, `automation-plan.md` |
+| **Feedback** | corrects the work *after* it happens | the DoD checklists below; the executable gates (`bun run test`, `types:check`, `lint:check`, `skills:check`, `kata:manifest:check`); the regression suite and its failure classification; the separate verifier where the contract demands one |
+
+Feedforward is cheap and pre-emptive, feedback is expensive and late, and the two
+trade off against each other. That is why **Automation** — the only stage whose
+autonomy reaches 3 — is also the only stage with a mandatory separate verifier:
+more rope on the way in is paid for with a harder check on the way out.
+
+---
+
 ## Per-stage DoD checklists
 
-### shift-left-testing — per-Story refinement
+### Shift-Left — `shift-left-testing`, per-Story refinement
 
 ```
 [ ] Refined ACs written as Given/When/Then with specific data
@@ -46,7 +136,7 @@ answered YES or a justified N/A) — not vibes. "N/A" is a valid answer only whe
 [ ] NO TMS test entities created (outlines only); label + transition applied
 ```
 
-### sprint-testing — Stage 1 Planning
+### Planning — `sprint-testing`
 
 ```
 [ ] ATP authored as a **Test Plan** item (`ATP: {STORY-KEY}: {title}`), find-or-created FROM the
@@ -72,7 +162,7 @@ answered YES or a justified N/A) — not vibes. "N/A" is a valid answer only whe
     instance (there is NO field fallback at sprint altitude)
 ```
 
-### sprint-testing — Stage 2 Execution
+### Execution — `sprint-testing`
 
 ```
 [ ] Smoke pass run first (Go/No-Go) before deep exploration
@@ -82,7 +172,7 @@ answered YES or a justified N/A) — not vibes. "N/A" is a valid answer only whe
 [ ] Bugs filed with story + AC traceability where found
 ```
 
-### sprint-testing — Stage 3 Reporting
+### Reporting — `sprint-testing`
 
 ```
 [ ] ATR authored as a **Test Execution** item (`ATR: {STORY-KEY}: Story Testing`); Story custom field only as fallback
@@ -93,7 +183,7 @@ answered YES or a justified N/A) — not vibes. "N/A" is a valid answer only whe
     Story↔ATP / Story↔ATR (administrative); native: field/comment containers populated
 ```
 
-### sprint-testing — Sprint close (batch close, or `/regression-testing` if it arrives first)
+### Sprint close — `sprint-testing` (batch close, or `/regression-testing` if it arrives first)
 
 ```
 [ ] The sprint **STR** (`STR: Sprint#{N}: Regression Testing`, Test Execution item, parent
@@ -105,7 +195,7 @@ answered YES or a justified N/A) — not vibes. "N/A" is a valid answer only whe
     (no field fallback at sprint altitude) — never a silent skip
 ```
 
-### test-documentation — Analyze / Prioritize / Document
+### Documentation — `test-documentation`, Analyze / Prioritize / Document
 
 ```
 Analyze:
@@ -123,7 +213,7 @@ Document:
     added to the Story's ATS + the Test Plan (xray) or feature/Epic label (native)
 ```
 
-### test-automation — Plan / Code / Review
+### Automation — `test-automation`, Plan / Code / Review
 
 ```
 Plan:
@@ -138,7 +228,7 @@ Review:
 [ ] tests green, types clean, lint clean; @atc IDs resolve to real TMS tickets
 ```
 
-### regression-testing — Run / Classify / Decide
+### Regression — `regression-testing`, Run / Classify / Decide
 
 ```
 [ ] Suite run completed; results + Allure artifacts collected
@@ -149,7 +239,17 @@ Review:
 
 ---
 
+### Observation — no checklist
+
+Intentionally empty. Observation has no owning skill and no DoD; its operating
+unit is an agentic routine that does not exist in this repo yet. Writing a
+checklist here would hand an orchestrator a gate it cannot actually verify.
+
+---
+
 These checklists are the **minimum** exit bar per stage; a skill may add stage-
 specific items in its own reference. Keep them observable, keep N/A explicit, and
 verify them in the main thread before advancing — that is what turns the prose
-doctrine into an enforced gate.
+doctrine into an enforced gate. The contract table above is verified the same way:
+name the stage's autonomy level and its verifier in the briefing, and check on
+return that the human signatures it lists were actually collected.

@@ -1,4 +1,10 @@
-# QA Planning Ladder — Nomenclature Proposal (RATIFIED, amended 2026-08-21)
+# QA Planning Ladder — Nomenclature Standard (ratified 2026-06-26, amended 2026-08-21)
+
+> **This is ratified doctrine, not an open proposal.** The skills treat it as settled
+> (`agentic-qa-core/references/defect-management-doctrine.md`, `traceability-linking.md`), so do not
+> re-litigate the ladder from this file. The filename still ends in `-proposal.md` on purpose: it is
+> cited by path from several `references/*.md`, and renaming the file would break those citations for
+> no gain. The title is what people read; the filename is an address.
 
 > **Status**: core decisions **RATIFIED** by the user (2026-06-26) and most of §6 has **LANDED**:
 > the four QA-process Epics, the acronym grammar, ATP/ATR items and Test Set naming are live in

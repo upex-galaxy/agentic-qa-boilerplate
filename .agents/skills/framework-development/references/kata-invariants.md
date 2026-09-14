@@ -4,6 +4,19 @@ Canonical knowledge source for `framework-development`. Distinguishes what is IN
 
 Terminology preserved verbatim: ATC, fixture, locator, Component, Steps, Helper, Page, Api, TestContext, ApiBase, UiBase, TestFixture.
 
+> **Canonical formula — the one sentence every KATA surface must agree with:**
+>
+> **KATA organises automation in four layers with a single direction of dependency: TestContext,
+> Base, domain Komponents and Fixtures. Steps is an optional intermediate layer between Komponents
+> and Fixtures. Test files consume the Fixtures — they are not a layer.**
+>
+> Short form: **"four named layers, plus optional Steps"**. Never publish a bare number. Banned on
+> every surface: "three layers", "five layers", "6 layers", "Test files" as a layer, and
+> "Component"/"Components" spelled with a C inside KATA. The spelling is **Komponent Action Test
+> Architecture**. DRY zones that are NOT layers: `tests/utils/`, `tests/data/`, `config/`.
+> Consumers: `tests/e2e/`, `tests/integration/`. Mirrored verbatim in
+> `test-automation/references/kata-architecture.md`; if the two ever differ, that is the drift.
+
 ---
 
 ## 1. The 4 layers (INVARIANT)
@@ -76,26 +89,39 @@ If you are tempted to put an API helper in `tests/utils/`, stop — it depends o
 
 ## 5. Import aliases (INVARIANT)
 
-Aliases are mandatory. Lint rejects relative imports across layers via `eslint-plugin-import`. Disabling the rule is FORBIDDEN.
+Aliases are mandatory across `tests/**`. **This one is doctrine, not a compiler**: the alias set is
+declared in `tsconfig.json`, but nothing rejects a relative import inside `tests/**`. The only
+`no-restricted-imports` block in `eslint.config.js` is scoped to `cli/**`, and it exists to keep the
+updater import-closed — it says nothing about the test layers. There is no `eslint-plugin-import` in
+this repo. So the enforcement point for this invariant is review (`/pr-review-lead`), not CI. Do not
+cite a lint rule here that a reader can grep for and fail to find; if the rule is ever added, this
+paragraph is what changes.
 
-Required `tsconfig.json` `paths`:
+The alias set actually declared in `tsconfig.json` `paths` (the authority — read it, do not trust a
+copy):
 
 ```
-"@config/*"     -> ./config/*
-"@variables"    -> ./config/variables.ts
-"@components/*" -> ./tests/components/*
-"@api/*"        -> ./tests/components/api/*
+"@/*"           -> ./*
 "@ui/*"         -> ./tests/components/ui/*
+"@api/*"        -> ./tests/components/api/*
 "@steps/*"      -> ./tests/components/steps/*
 "@utils/*"      -> ./tests/utils/*
-"@schemas/*"    -> ./api/schemas/*
-"@TestContext"  -> ./tests/components/TestContext.ts
-"@TestFixture"  -> ./tests/components/TestFixture.ts
-"@ApiFixture"   -> ./tests/components/ApiFixture.ts
-"@UiFixture"    -> ./tests/components/UiFixture.ts
 "@data/*"       -> ./tests/data/*
+"@variables"    -> ./config/variables.ts
+"@TestContext"  -> ./tests/components/TestContext.ts
+"@UiFixture"    -> ./tests/components/UiFixture.ts
+"@ApiFixture"   -> ./tests/components/ApiFixture.ts
+"@TestFixture"  -> ./tests/components/TestFixture.ts
+"@DataFactory"  -> ./tests/data/DataFactory.ts
 "@openapi"      -> ./api/openapi-types.ts (FACADE-ONLY consumer)
+"@schemas/*"    -> ./api/schemas/*
+"@schemas"      -> ./api/schemas/index.ts
 ```
+
+There is no `@config/*` and no `@components/*`: config is reached through `@variables`, and the
+component tree through the per-layer aliases (`@ui/*`, `@api/*`, `@steps/*`) or the named fixture /
+context entries. Earlier revisions of this file listed both; they never existed in `tsconfig.json`,
+and a framework change that assumes them will not resolve.
 
 Rule: Domain components import from `@schemas/{domain}.types`, NEVER from `@openapi`. Only files under `api/schemas/` may import `@openapi`. Test files import `test` from `@TestFixture`, NOT from `@playwright/test`.
 
