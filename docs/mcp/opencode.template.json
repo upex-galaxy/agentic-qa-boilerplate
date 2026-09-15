@@ -49,7 +49,15 @@
     "dbhub": {
       "type": "local",
       "command": ["bunx", "-y", "@bytebase/dbhub@latest", "--config", "dbhub.toml"],
-      "enabled": true
+      "enabled": true,
+      "environment": {
+        "DBHUB_DATABASE": "{env:DBHUB_DATABASE}",
+        "DBHUB_HOST": "{env:DBHUB_HOST}",
+        "DBHUB_PASSWORD": "{env:DBHUB_PASSWORD}",
+        "DBHUB_PORT": "{env:DBHUB_PORT}",
+        "DBHUB_TYPE": "{env:DBHUB_TYPE}",
+        "DBHUB_USER": "{env:DBHUB_USER}"
+      }
     },
     "openapi": {
       "type": "local",

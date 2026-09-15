@@ -125,7 +125,7 @@ function canonical(shape: Pick<NormalizedMcpServer, 'transport'> & Partial<Norma
 const server = canonical;
 
 const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
-  context7: server({ transport: 'stdio', command: 'npx', args: ['-y', '@upstash/context7-mcp@4.0.3'] }),
+  context7: server({ transport: 'stdio', command: 'bunx', args: ['-y', '@upstash/context7-mcp@4.0.3'] }),
   tavily: server({
     transport: 'http',
     url: 'https://mcp.tavily.com/mcp/',
@@ -150,6 +150,12 @@ const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
     transport: 'stdio',
     command: 'bunx',
     args: ['-y', '@bytebase/dbhub@1.2.1', '--config', 'dbhub.toml'],
+    // `dbhub.toml` interpolates these from the environment the server is
+    // LAUNCHED with, which is why they are declared at the MCP layer on all
+    // three hosts rather than left to process inheritance: Codex forwards only
+    // what it is told to, and dbhub substitutes the literal `${DBHUB_HOST}`
+    // when a variable is absent instead of failing at startup.
+    dependsOn: ['DBHUB_DATABASE', 'DBHUB_HOST', 'DBHUB_PASSWORD', 'DBHUB_PORT', 'DBHUB_TYPE', 'DBHUB_USER'],
   }),
   openapi: server({
     transport: 'stdio',

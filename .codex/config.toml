@@ -8,7 +8,7 @@
 inherit = "core"
 
 [mcp_servers.context7]
-command = "npx"
+command = "bunx"
 enabled = true
 args = [
   "-y",
@@ -28,6 +28,20 @@ args = [
   "@bytebase/dbhub@1.2.1",
   "--config",
   "dbhub.toml",
+]
+# dbhub.toml interpolates these six from the environment the server is launched
+# with, and `shell_environment_policy.inherit = "core"` above forwards nothing
+# else. Without this list Codex starts dbhub with none of them set, and dbhub
+# substitutes the literal "${DBHUB_HOST}" instead of failing — a connection
+# error that reads like bad credentials. Codex never expands placeholders: the
+# values come from the process environment by NAME.
+env_vars = [
+  "DBHUB_DATABASE",
+  "DBHUB_HOST",
+  "DBHUB_PASSWORD",
+  "DBHUB_PORT",
+  "DBHUB_TYPE",
+  "DBHUB_USER",
 ]
 
 [mcp_servers.openapi]

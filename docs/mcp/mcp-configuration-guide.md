@@ -279,7 +279,8 @@ Así quedan los servers de este repo en `.codex/config.toml` frente a `.mcp.json
 | ------------------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `tavily`, `postman`            | HTTP con `headers.Authorization = "Bearer ${VAR}"`           | `url` + `bearer_token_env_var = "VAR"`                                | Mismo endpoint; el header lo arma Codex a partir del nombre de la variable.               |
 | `openapi`                      | `env` / `environment` con `${API_BASE_URL}` y `${OPENAPI_SPEC_PATH}` | `env_vars = ["API_BASE_URL", "OPENAPI_SPEC_PATH"]`                  | Sin interpolación, las dos variables viajan por nombre.                                   |
-| `context7`, `playwright`, `dbhub` | sin secretos                                              | idéntico                                                              | No dependen de `.env` (DBHub lee `dbhub.toml`).                                           |
+| `dbhub`                        | `env` / `environment` con los seis `${DBHUB_*}`              | `env_vars = ["DBHUB_DATABASE", ...]` (los seis)                       | `dbhub.toml` interpola desde el entorno con el que se lanza el server, no desde el archivo. |
+| `context7`, `playwright`       | sin secretos                                                 | idéntico                                                              | No dependen de `.env`.                                                                    |
 
 `bun run agents:compat:check` compara **los nombres de variables de `.env`** de los que depende cada host y los settings literales, no la forma del comando, así que estas adaptaciones pasan el gate. El conjunto canónico de servers es el que declara `.mcp.json`: un server que falta en `opencode.jsonc` o en `.codex/config.toml`, o que existe solo en uno de ellos, falla nombrando el server y el host. Los seis que trae el boilerplate reciben además una verificación estricta de forma por host cuando el proyecto los declara; cualquier otro server (por ejemplo `supabase` en un proyecto derivado) solo pasa por la comparación genérica.
 
@@ -454,6 +455,8 @@ DBHUB_USER=tu_usuario
 DBHUB_PASSWORD=tu_password
 ```
 
+> **De dónde saca DBHub la conexión.** `dbhub.toml` interpola `${VAR}` desde el **entorno con el que se lanza el server**, no desde el archivo ni desde `.env` directamente. Por eso los seis `DBHUB_*` se declaran además en la capa MCP de los tres hosts (`env` en `.mcp.json`, `environment` en `opencode.jsonc`, `env_vars` en `.codex/config.toml`): es lo único que garantiza que lleguen al proceso hijo. Codex es el caso que lo obliga — su `shell_environment_policy.inherit = "core"` no reenvía nada que no esté listado, así que sin ese bloque DBHub arranca sin ninguna de las seis. No hay que parchear esto en cada proyecto: ya viene en el boilerplate.
+
 > **⚠️ Importante — silent substitution:** DBHub sustituye literalmente la cadena `${VAR}` si la variable no está exportada en el entorno, produciendo un error críptico de autenticación en lugar de un error claro al arrancar. Antes de lanzar el MCP, verificá:
 >
 > ```bash
@@ -469,9 +472,17 @@ DBHUB_PASSWORD=tu_password
 #### Claude Code (`.mcp.json`)
 
 ```json
-"sql": {
-  "command": "npx",
-  "args": ["-y", "@bytebase/dbhub@latest", "--config", "dbhub.toml"]
+"dbhub": {
+  "command": "bunx",
+  "args": ["-y", "@bytebase/dbhub@latest", "--config", "dbhub.toml"],
+  "env": {
+    "DBHUB_DATABASE": "${DBHUB_DATABASE}",
+    "DBHUB_HOST": "${DBHUB_HOST}",
+    "DBHUB_PASSWORD": "${DBHUB_PASSWORD}",
+    "DBHUB_PORT": "${DBHUB_PORT}",
+    "DBHUB_TYPE": "${DBHUB_TYPE}",
+    "DBHUB_USER": "${DBHUB_USER}"
+  }
 }
 ```
 

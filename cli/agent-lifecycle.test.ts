@@ -155,8 +155,18 @@ describe('installer Codex lifecycle', () => {
   });
 
   test('discovers Codex MCP environment contracts and exposes launch guidance', async () => {
+    // The six DBHUB_* arrive through `env_vars` on the dbhub server: Codex
+    // inherits only `core`, so anything dbhub.toml interpolates has to be
+    // forwarded by name. All six are in INSTALLER_DEFERRED_VARS, so the
+    // installer defers them to `bun run doctor` instead of prompting.
     expect(await discoverRequiredEnvVars(['codex'], REPO_ROOT)).toEqual([
       'API_BASE_URL',
+      'DBHUB_DATABASE',
+      'DBHUB_HOST',
+      'DBHUB_PASSWORD',
+      'DBHUB_PORT',
+      'DBHUB_TYPE',
+      'DBHUB_USER',
       'OPENAPI_SPEC_PATH',
       'POSTMAN_API_KEY',
       'TAVILY_API_KEY',

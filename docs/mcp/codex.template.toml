@@ -47,12 +47,20 @@ args = [
 ]
 
 [mcp_servers.dbhub]
-command = "npx"
+command = "bunx"
 args = [
   "-y",
   "@bytebase/dbhub@latest",
   "--config",
   "dbhub.toml"
+]
+env_vars = [
+  "DBHUB_DATABASE",
+  "DBHUB_HOST",
+  "DBHUB_PASSWORD",
+  "DBHUB_PORT",
+  "DBHUB_TYPE",
+  "DBHUB_USER",
 ]
 
 [mcp_servers.openapi]

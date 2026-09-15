@@ -25,7 +25,7 @@
   "mcp": {
     "context7": {
       "type": "local",
-      "command": ["npx", "-y", "@upstash/context7-mcp@4.0.3"],
+      "command": ["bunx", "-y", "@upstash/context7-mcp@4.0.3"],
       "enabled": true
     },
     "tavily": {
@@ -52,10 +52,23 @@
       ],
       "enabled": true
     },
+    // dbhub.toml reads these six through ${VAR} interpolation, but only from the
+    // environment the server is LAUNCHED with. Declaring them here is what puts
+    // them there on every host — Codex forwards nothing it was not told to.
+    // A missing one resolves to an empty string on OpenCode and dbhub then fails
+    // on connect rather than at startup: see docs/mcp/.
     "dbhub": {
       "type": "local",
       "command": ["bunx", "-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"],
-      "enabled": true
+      "enabled": true,
+      "environment": {
+        "DBHUB_DATABASE": "{env:DBHUB_DATABASE}",
+        "DBHUB_HOST": "{env:DBHUB_HOST}",
+        "DBHUB_PASSWORD": "{env:DBHUB_PASSWORD}",
+        "DBHUB_PORT": "{env:DBHUB_PORT}",
+        "DBHUB_TYPE": "{env:DBHUB_TYPE}",
+        "DBHUB_USER": "{env:DBHUB_USER}"
+      }
     },
     // SCHEMA-READ-ONLY: no API_TOKEN / Authorization header is injected here.
     // The OpenAPI MCP is used ONLY to discover endpoints + read schemas

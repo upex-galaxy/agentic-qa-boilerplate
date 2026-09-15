@@ -85,7 +85,7 @@ const BOILERPLATE_IDS = ['context7', 'tavily', 'playwright', 'dbhub', 'openapi',
 const PROJECT_IDS = ['context7', 'tavily', 'playwright', 'openapi', 'supabase'];
 
 const MCP_SERVERS: Record<string, unknown> = {
-  context7: { command: 'npx', args: ['-y', '@upstash/context7-mcp@4.0.3'] },
+  context7: { command: 'bunx', args: ['-y', '@upstash/context7-mcp@4.0.3'] },
   tavily: {
     type: 'http',
     url: 'https://mcp.tavily.com/mcp/',
@@ -105,7 +105,11 @@ const MCP_SERVERS: Record<string, unknown> = {
       '1920x1080',
     ],
   },
-  dbhub: { command: 'bunx', args: ['-y', '@bytebase/dbhub@1.2.1', '--config', 'dbhub.toml'] },
+  dbhub: {
+    command: 'bunx',
+    args: ['-y', '@bytebase/dbhub@1.2.1', '--config', 'dbhub.toml'],
+    env: { DBHUB_DATABASE: '${DBHUB_DATABASE}', DBHUB_HOST: '${DBHUB_HOST}', DBHUB_PASSWORD: '${DBHUB_PASSWORD}', DBHUB_PORT: '${DBHUB_PORT}', DBHUB_TYPE: '${DBHUB_TYPE}', DBHUB_USER: '${DBHUB_USER}' },
+  },
   openapi: {
     command: 'bunx',
     args: ['-y', '@ivotoby/openapi-mcp-server@1.16.1', '--tools', 'dynamic'],
@@ -127,7 +131,7 @@ const MCP_SERVERS: Record<string, unknown> = {
 const OPENCODE_SERVERS: Record<string, string> = {
   context7: `    "context7": {
       "type": "local",
-      "command": ["npx", "-y", "@upstash/context7-mcp@4.0.3"],
+      "command": ["bunx", "-y", "@upstash/context7-mcp@4.0.3"],
       "enabled": true,
     },`,
   tavily: `    "tavily": {
@@ -158,6 +162,14 @@ const OPENCODE_SERVERS: Record<string, string> = {
       "type": "local",
       "command": ["bunx", "-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"],
       "enabled": true,
+      "environment": {
+        "DBHUB_DATABASE": "{env:DBHUB_DATABASE}",
+        "DBHUB_HOST": "{env:DBHUB_HOST}",
+        "DBHUB_PASSWORD": "{env:DBHUB_PASSWORD}",
+        "DBHUB_PORT": "{env:DBHUB_PORT}",
+        "DBHUB_TYPE": "{env:DBHUB_TYPE}",
+        "DBHUB_USER": "{env:DBHUB_USER}",
+      },
     },`,
   openapi: `    // schema-read-only: no token here
     "openapi": {
@@ -190,7 +202,7 @@ const OPENCODE_SERVERS: Record<string, string> = {
 
 const CODEX_SERVERS: Record<string, string> = {
   context7: `[mcp_servers.context7]
-command = "npx"
+command = "bunx"
 enabled = true
 args = ["-y", "@upstash/context7-mcp@4.0.3"]
 `,
@@ -208,6 +220,7 @@ args = ["@playwright/mcp@0.0.79", "--caps", "vision,pdf,testing,tracing,tabs", "
 command = "bunx"
 enabled = true
 args = ["-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"]
+env_vars = ["DBHUB_DATABASE", "DBHUB_HOST", "DBHUB_PASSWORD", "DBHUB_PORT", "DBHUB_TYPE", "DBHUB_USER"]
 `,
   openapi: `[mcp_servers.openapi]
 command = "bunx"
