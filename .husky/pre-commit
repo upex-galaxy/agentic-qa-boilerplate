@@ -1,4 +1,4 @@
-bunx lint-staged
+bunx lint-staged --no-stash
 
 # Light-weight repo health checks on every commit (fast, cover full repo).
 bun run types:check
