@@ -129,6 +129,20 @@ min-1 | min | min+1 ............ max-1 | max | max+1
   length, collection size, date/time window, pagination, quota, or limit → BVA
   cases are mandatory. EP without BVA misses off-by-one defects.
 
+#### BVA on the derived value — REQUIRED wherever the functionality rounds or truncates
+
+- **Trigger (binding):** the AC or its implementation rounds or truncates a
+  computed value (percentage, ratio, average, currency, or similar) → derive
+  BVA cases against the **output boundary**: the raw inputs nearest the point
+  where rounding crosses into an extreme displayed value, in addition to the
+  literal input min/max. No rounding/truncation involved → this trigger is N/A.
+- Worked example (real defect from a downstream project):
+  `coveragePercent = Math.round(bound / total * 100)`. Input-boundary BVA
+  covered `bound = 0 → 0%` and `bound = total → 100%`, but missed
+  `(199, 200) → 100%` and `(1, 201) → 0%`: inputs nowhere near the input
+  boundary that round into the same displayed extreme and contradicted the
+  breakdown shown on the same screen.
+
 ### State-Transition testing — REQUIRED for stateful entities
 
 When an entity moves through states (draft → submitted → approved; cart → paid →
@@ -239,6 +253,9 @@ a justified N/A) to each is not done.
         silent on?
 [ ] EP   Partitions identified (valid + each distinct invalid)?
 [ ] BVA  Every range/limit/length/date-window has boundary cases? (or N/A: no ranges)
+[ ] BVA-D Does the feature round/truncate a computed value? If so, are there
+         cases at the OUTPUT boundary, not just the raw-input boundary?
+         (or N/A: no rounding/truncation)
 [ ] ST   Stateful entity → transition table covered, incl. invalid transitions?
          (or N/A: stateless)
 [ ] DT   2+ interacting conditions → decision table built? (or N/A: ≤1 condition)
