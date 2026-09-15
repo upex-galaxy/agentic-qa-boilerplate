@@ -491,7 +491,7 @@ Jira is source of truth; the synced file is a read-only cache — NEVER hand-wri
 
 ### Traceability check
 
-After materializing, run `[TMS_TOOL] trace {TICKET}` (Modality jira-xray) or verify the Story's `{{jira.acceptance_test_plan}}` is populated (or the `## Acceptance Test Plan (ATP)` fallback comment exists) (Modality jira-native). Traceability reads stay on `[TMS_TOOL]` / `/acli` — not the sync. In Modality jira-xray verify the Set-first model: **Story↔ATS via the `test` slug (the coverage link) + ATS membership complete + ATP/ATR test lists matching the ATS + Story↔ATP / Story↔ATR (administrative)**. Bugs produce ATP + ATR with the repro Test arriving at fix-verification time (jira-xray) or no TCs at all (jira-native); "missing TC" warnings on bugs before fix-verification are expected.
+After materializing, run the **three-edge check** (`agentic-qa-core/references/traceability-linking.md` §Traceability verification: Link List on Story + ATP + ATR, or `bun xray trace {TICKET}` once available) (Modality jira-xray) or verify the Story's `{{jira.acceptance_test_plan}}` is populated (or the `## Acceptance Test Plan (ATP)` fallback comment exists) (Modality jira-native). Traceability reads stay on `[TMS_TOOL]` / `/acli` — not the sync. In Modality jira-xray verify the Set-first model: **Story↔ATS via the `test` slug (the coverage link) + ATS membership complete + ATP/ATR test lists matching the ATS + Story↔ATP / Story↔ATR (administrative)**. Bugs produce ATP + ATR with the repro Test arriving at fix-verification time (jira-xray) or no TCs at all (jira-native); "missing TC" warnings on bugs before fix-verification are expected.
 
 ---
 
@@ -562,6 +562,6 @@ See SKILL.md veto rules — veto beats risk score for bugs too.
 - [ ] jira-xray: Set-first order honored — ATP item find-or-created FROM the field · ATS created/updated with ALL the Story's TCs + linked to the Story via the `test` slug (components inherited) · ATP/ATR test lists derived from the ATS membership
 - [ ] jira-xray: ATR created WITH the Test Environment (`active_env`) — no environment, no ATR
 - [ ] Synced ATP cache materialized (not hand-written) — jira-native: `acceptance-test-plan.md` via `bun run jira:sync-issues get <STORY_KEY> --include-comments`; jira-xray: `test-plans/ATP-<ATP_KEY>-<slug>.md` via `bun run jira:sync-issues get <ATP_KEY>`
-- [ ] Trace verified via `[TMS_TOOL] trace {TICKET}`
+- [ ] Three-edge traceability check passed (Story↔ATS coverage + ATP↔Story + ATR↔Story administrative + lists match)
 - [ ] Final report delivered to user with open questions + blocker note if needed
 - [ ] Nothing committed — synced ATP cache left untracked (gitignored; Jira is canonical)

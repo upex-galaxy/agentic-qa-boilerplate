@@ -358,7 +358,7 @@ Actions:
 6. **ATS (jira-xray)**: create/update the Story's `ATS: {US_ID}: {story title}` (parent **QA Test Artifacts**, components inherited from the Story — mandatory) holding ALL the Story's TCs (Xray-internal membership); link **ATS→Story** via the `test` slug — THE coverage link (fills the coverage panel).
 7. **ATR with environment**: create the ATR Execution (`ATR: {STORY-KEY}: Story Testing`) ALWAYS carrying the Test Environment from `active_env` (**no ATR without environment** — hard gate). Derive the ATP's and the ATR's test lists FROM the ATS membership — never three independent id lists. Link ATP→Story and ATR→Story (administrative traceability; zero coverage). Link ATP -> ATR.
 8. Fill Test Analysis in the ATP (scope, risks, scenarios, variables, test data, AC gaps).
-9. Verify: `[TMS_TOOL] trace {{PROJECT_KEY}}-{number}` (traceability stays on `[TMS_TOOL]`, not the sync).
+9. Verify: run the **three-edge check** (`agentic-qa-core/references/traceability-linking.md` §Traceability verification: Link List on Story + ATP + ATR, or `bun xray trace {{PROJECT_KEY}}-{number}` once available) (traceability reads stay on `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]`, not the sync).
 10. Mark ATP complete. Transition TCs to Ready.
 11. Materialize the read-only cache (never hand-written) per modality: jira-native -> `bun run jira:sync-issues get <KEY> --include-comments` -> `acceptance-test-plan.md` in the STORY folder; jira-xray -> `bun run jira:sync-issues get <ATP_KEY>` -> `.context/PBI/test-plans/ATP-<ATP_KEY>-<slug>.md`. Filename note: the acronym prefix comes from a conforming ladder title; a Plan or Execution whose title does not follow the grammar keeps the legacy `TESTPLAN-` / `TESTEXEC-` / `RETESTEXEC-` prefix.
 

@@ -629,7 +629,7 @@ Created at `<SESSION_DIR>/test-session-memory.md` — i.e. `.session/sprint-test
 - [ ] Test Analysis filled in ATP
 - [ ] AC Gaps written (or confirmed: none)
 - [ ] TCs created with full traceability
-- [ ] Traceability verified ([TMS_TOOL] trace)
+- [ ] Three-edge traceability check passed (Story↔ATS coverage + ATP↔Story + ATR↔Story administrative + lists match)
 - [ ] ATP marked complete; TCs transitioned to Ready
 - [ ] acceptance-test-plan.md materialized via bun run jira:sync-issues in PBI
 
