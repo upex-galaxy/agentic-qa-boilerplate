@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import { isInside } from './lib/agent-compatibility.ts';
+import { dirtyTreeExemptions, foreignDirtyPaths, isWithinWriteSurface } from './lib/updater-core.ts';
 import {
   applyHarnessMigration,
   describeHarnessMigration,
@@ -345,6 +346,82 @@ describe('cross-harness migration apply', () => {
     expect(applyHarnessMigration(root).applied).toBe(false);
     expect(readFileSync(join(root, 'AGENTS.md'), 'utf8')).toBe(PROJECT_MEMORY);
     expect(lstatSync(join(root, '.claude/skills')).isSymbolicLink()).toBe(true);
+  });
+});
+
+describe('first non-interactive migration vs the dirty-tree guard', () => {
+  // Issue #28 bug 1: on v7.0 the migration wrote to disk in the preflight and the
+  // guard that ran afterwards counted that output as the user's uncommitted work,
+  // so `bun run up` (non-interactive) aborted on every first cross-harness
+  // migration — three times in a row, from a clean tree. The pieces of the fix are
+  // unit-tested separately (`harnessMigrationTouchedPaths` below, and
+  // `dirtyTreeExemptions` in updater-core.test.ts); this joins them on a real repo
+  // so the regression cannot come back through the seam between the two.
+
+  /** Shape of `runUpdate`'s guard: what it would refuse, given this porcelain. */
+  function blockingPaths(root: string, owned: string[]): string[] {
+    const porcelain = spawnSync(
+      'git',
+      ['-C', root, 'status', '--porcelain', '--untracked-files=all'],
+      { encoding: 'utf8' },
+    ).stdout ?? '';
+    // The production shape, trimmed to what the migration can touch: the skills
+    // store and `.gitignore` are inside the write surface (so they WOULD block),
+    // `AGENTS.md` is on the watchlist and `CLAUDE.md` is generated (so they never do).
+    const cfg = {
+      components: [
+        { name: 'skills', type: 'directory' as const, paths: ['.agents/skills'] },
+        { name: 'cli', type: 'directory' as const, paths: ['cli'] },
+      ],
+      selfUpdateComponent: 'cli',
+      versionFile: '.template/boilerplate.lock.json',
+      ignoreFiles: [{ path: '.gitignore', sentinel: '# ===== Synced from boilerplate' }],
+      packageJsonSpecs: [],
+      deprecatedFiles: [],
+      excludePaths: ['CLAUDE.md'],
+      repoOnlyPaths: [],
+      bootstrapOnlyPaths: ['AGENTS.md'],
+    };
+    const foreign = foreignDirtyPaths(porcelain, dirtyTreeExemptions(cfg, { updaterOwnedPaths: owned }, fakeEnv()));
+    return foreign.filter(p => isWithinWriteSurface(cfg, p)).sort();
+  }
+
+  test('a clean legacy repo migrates and the guard finds nothing of its own to refuse', () => {
+    const root = legacyConsumer();
+    write(root, 'cli/update-boilerplate.ts', 'old cli\n');
+    write(root, '.gitignore', '.backups/\n');
+    git(root, ['init', '--quiet', '--initial-branch=main']);
+    git(root, ['config', 'user.email', 'test@example.com']);
+    git(root, ['config', 'user.name', 'test']);
+    git(root, ['add', '-A']);
+    git(root, ['commit', '--quiet', '-m', 'baseline']);
+    expect(git(root, ['status', '--porcelain', '--untracked-files=all']).trim()).toBe('');
+
+    const result = applyHarnessMigration(root);
+    expect(result.applied).toBe(true);
+    // The preflight really did dirty the tree — that is the premise of the bug.
+    expect(git(root, ['status', '--porcelain', '--untracked-files=all']).trim()).not.toBe('');
+
+    expect(blockingPaths(root, harnessMigrationTouchedPaths(result))).toEqual([]);
+    // Without the exemption list the same tree is refused: the guard is doing its job,
+    // the exemption is what makes the first migration pass in one non-interactive run.
+    expect(blockingPaths(root, []).length).toBeGreaterThan(0);
+  });
+
+  test('genuine user work is still refused across the migration', () => {
+    const root = legacyConsumer();
+    write(root, 'cli/update-boilerplate.ts', 'old cli\n');
+    write(root, '.gitignore', '.backups/\n');
+    git(root, ['init', '--quiet', '--initial-branch=main']);
+    git(root, ['config', 'user.email', 'test@example.com']);
+    git(root, ['config', 'user.name', 'test']);
+    git(root, ['add', '-A']);
+    git(root, ['commit', '--quiet', '-m', 'baseline']);
+    // Uncommitted work inside a synced component, there before `bun run up` started.
+    write(root, 'cli/update-boilerplate.ts', 'hand-edited, never committed\n');
+
+    const result = applyHarnessMigration(root);
+    expect(blockingPaths(root, harnessMigrationTouchedPaths(result))).toEqual(['cli/update-boilerplate.ts']);
   });
 });
 
