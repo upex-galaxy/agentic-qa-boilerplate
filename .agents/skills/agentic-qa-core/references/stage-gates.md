@@ -96,9 +96,10 @@ how much has been built.
 | **Planning** | Creates ATS → ATP → ATR set-first, derives TCs or outlines per modality, decides the UI/API/DB surfaces by triage + veto + risk score | The Story Explanation checkpoint (the skill explains the story and waits) | ATP as a Test Plan item, ATR carrying its Test Environment (hard gate), coverage stated on both axes | **2** | **none** |
 | **Execution** | Runs smoke as Go/No-Go, executes the outlines, explores past them across the trifuerza, proposes bugs with derived severity | The triage of every bug and the **filing** of every bug; any security/auth severity recalibration | Screenshots under the PBI `evidence/` folder, smoke demonstrably run first | **3** | **none** |
 | **Reporting** | Fills the ATR, writes the QA comment, creates and verifies the traceability links | The workflow transition (`qa_sign_off` / `defect_reported`) | ATR as a Test Execution item, links resolved and verified in direction | **2** | **none** |
+| **Sprint close** | Creates or completes the sprint STR (first-to-arrive creates it, the other completes it), sets its Test Environment, links STR → STP via the `testPlan` edge | The STP's closure — its final scope/progress and the transition to its terminal state | STR as a Test Execution item carrying its Test Environment, STR → STP link resolved, STP at its terminal state | **2** | **none** |
 | **Documentation** | Derives scenarios by technique, scores ROI, proposes Candidate / Manual / Deferred, persists only the regression-worthy ones | **Every ROI verdict**, the regression epic, the Test Set | ROI score per scenario; the >50% Candidate/Manual alarm answered | **2** | **recommended** — a second agent re-reads the verdicts against the ATR |
 | **Automation** | Writes `spec.md` + `automation-plan.md`, then KATA code with `@atc`, then runs the three verifiers and opens the PR | The plan **before a line of code**; the merge; the call at the third revision loop | Tests green, types clean, lint clean, `@atc` ids resolving to real tickets, manifest fresh | **2 → 3** inside the approved plan | **required** — `/pr-review-lead` or `/judgment-day`, in a clean context |
-| **Regression** | Runs the suite, classifies every failure, computes pass-rate and trend, emits GO / CAUTION / NO-GO, writes the STR | The CAUTION verdict; never invents the sprint number | Allure report, ≥5 runs of history before the word FLAKY is allowed, STR → STP | **3** (4 for a clean GO) | **none** |
+| **Regression** | Runs the suite, classifies every failure, computes pass-rate and trend, emits GO / CAUTION / NO-GO, writes the STR | The CAUTION verdict; never invents the sprint number | Allure report, ≥10 runs of history before the word FLAKY is allowed, STR → STP | **3** (4 for a clean GO) | **none** |
 | **Observation** | *(agentic routine, no skill)* Watches SLOs, error budget, RUM and canary signals; opens items into the backlog; feeds the next Shift-Left pass | The SLOs and the error-budget policy; the decision to stop releases | Product metrics against the project's own targets | **3** | **n/a** |
 
 Read the table with the DoD checklist of the same stage, not instead of it: the
@@ -226,6 +227,8 @@ Review:
 [ ] Review checklist passes: §3.4.1 input-domain (EP+BVA) + §3.4.2 state/temporal
     covered or explicit N/A; coverage exceeds the AC floor
 [ ] tests green, types clean, lint clean; @atc IDs resolve to real TMS tickets
+[ ] Separate verifier run in a clean context (`/pr-review-lead` or `/judgment-day`)
+    — REQUIRED, not opt-in; skipping it is a DoD failure, not a high-risk-only step
 ```
 
 ### Regression — `regression-testing`, Run / Classify / Decide

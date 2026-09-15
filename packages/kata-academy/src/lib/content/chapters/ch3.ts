@@ -209,8 +209,8 @@ export class AuthSteps extends TestContext {
     chainNode: 'ApiBase',
     samples: [
       {
-        title: 'tests/components/ApiBase.ts — apiPOST (fragmento)',
-        sourcePath: 'tests/components/ApiBase.ts',
+        title: 'tests/components/api/ApiBase.ts — apiPOST (fragmento)',
+        sourcePath: 'tests/components/api/ApiBase.ts',
         code: `async apiPOST<TBody, TPayload>(
   endpoint: string,
   data: TPayload,
@@ -229,8 +229,8 @@ export class AuthSteps extends TestContext {
 `,
       },
       {
-        title: 'tests/components/UiBase.ts — el guardián fail-fast',
-        sourcePath: 'tests/components/UiBase.ts',
+        title: 'tests/components/ui/UiBase.ts — el guardián fail-fast',
+        sourcePath: 'tests/components/ui/UiBase.ts',
         code: `get page(): Page {
   if (!this._page) {
     throw new Error(
