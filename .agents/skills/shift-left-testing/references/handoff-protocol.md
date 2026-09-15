@@ -22,7 +22,8 @@ This reference defines:
 | Modality | From the session's `progress.md` (`.session/shift-left-testing/<batch-id>/`, resolved in shift-left-testing Phase 0.1). Informational here — the ATP write is field-first in both modalities |
 | TMS field map | `.agents/jira-fields.json` → `{{jira.acceptance_criteria}}`, `{{jira.acceptance_test_plan}}` |
 | Workflow transitions | `.agents/jira-workflows.json` → `{{jira.transition.story.analyze}}`, `{{jira.transition.story.estimate}}` |
-| Tracking subtask | The `[QA] Shift-Left Review` subtask created in Phase 1 (In Progress). Work type + Done transition from `.agents/jira-workflows.json`; if the catalog has no subtask work type, Phase 1 skipped it — Step 5b then skips with a warning too |
+| Tracking subtask | The `[QA] Shift-Left Review` subtask created in Phase 1 (`{{jira.status.subtask.active}}` — the subtask workflow's names are `ACTIVE` / `Close`, NOT "In Progress" / "Done"). Closed at Step 5b via `{{jira.transition.subtask.complete}}`; if the catalog has no subtask work type, Phase 1 skipped it — Step 5b then skips with a warning too |
+| Artifact lifecycle | `agentic-qa-core/references/artifact-lifecycle.md` — §1 (Story + subtask rows), §2 (assignee = self on the subtask at create), §4 (unmapped-status fallback), §5 (light stage verifier) |
 
 ---
 
@@ -174,7 +175,7 @@ The skill NEVER applies the `back_from_shift_left_qa` transition automatically. 
 
 ### Step 5b — Close the `[QA] Shift-Left Review` subtask
 
-Phase 1 found-or-created this subtask under the Story and moved it to In Progress. The handoff closes it:
+Phase 1 found-or-created this subtask under the Story (assignee = self per `agentic-qa-core/references/artifact-lifecycle.md` §2), where Jira's `create` transition lands it in `{{jira.status.subtask.active}}`. The handoff closes it:
 
 1. Locate the subtask under the Story by exact title `[QA] Shift-Left Review`.
 2. **Post the exhaustive session annotations on the SUBTASK first** — the long analysis, refinement traces, and per-phase notes that are too verbose for the Story. The Story keeps only its canonical outputs (refined ACs field, description section, ATP field, pointer comment, labels); the subtask is where the full working trail lives.
@@ -184,8 +185,13 @@ Phase 1 found-or-created this subtask under the Story and moved it to In Progres
   issue: {SUBTASK_KEY}
   body: <exhaustive session annotations — analysis trail, refinement traces>
 
-[ISSUE_TRACKER_TOOL] Transition: <subtask Done transition>   # resolved from .agents/jira-workflows.json
+[ISSUE_TRACKER_TOOL] Transition: {{jira.transition.subtask.complete}}   # active -> close
 ```
+
+> **On an unmapped slug** (this project renamed the subtask statuses, or the catalog is
+> stale): run the fallback protocol in `agentic-qa-core/references/artifact-lifecycle.md`
+> §4 — list the LIVE transitions, propose the closest synonym in ONE `AskUserQuestion`,
+> fire the live id on yes, and recommend `bun run jira:sync-workflows`. Never skip silently.
 
 3. If Phase 1 skipped subtask creation (no subtask work type in `.agents/jira-workflows.json`, or the project disallows subtasks): skip this step with a warning in the per-Story log. Never block the handoff on subtask support.
 
@@ -202,7 +208,21 @@ bun run jira:sync-issues get {STORY_KEY} --include-comments
 #      when the field is absent on this instance)
 #   - handoff comment "## Acceptance Test Plan (ATP)" present and points to the field
 #     (full body inline ONLY in fallback mode — field absent on this instance)
-#   - "[QA] Shift-Left Review" subtask (when created) is in Done
+#   - "[QA] Shift-Left Review" subtask (when created) is at {{jira.status.subtask.close}}
+```
+
+### Step 6b — Light stage verifier (closes the Shift-Left stage)
+
+Run the eight-line template in `agentic-qa-core/references/artifact-lifecycle.md` §5.
+The stage-specific status lines are:
+
+```
+[ ] Story at {{jira.status.story.estimation}} — via analyze -> estimate, and STOPPED there
+    (a Story already past estimation keeps the refinement and skips the transition)
+[ ] `[QA] Shift-Left Review` subtask at {{jira.status.subtask.close}} — via complete
+    (stated N/A when the instance has no subtask work type)
+[ ] Subtask assignee = self, set at create time
+[ ] Any unmapped slug went through the §4 fallback (asked), never a silent skip
 ```
 
 ### Step 7 — Return per-Story log
@@ -212,7 +232,8 @@ bun run jira:sync-issues get {STORY_KEY} --include-comments
   "story": "UPEX-100",
   "atp_container": "custom_field|fallback_comment",
   "subtask_key": "UPEX-205 (null when skipped — no subtask work type)",
-  "subtask_status": "Done|skipped",
+  "subtask_status": "close|skipped",
+  "light_verifier": "8/8 (N/A: <stated reasons>)",
   "description_appended": true,
   "comment_posted": true,
   "labels_added": ["shift-left-reviewed", "shift-left-2026-05-20"],

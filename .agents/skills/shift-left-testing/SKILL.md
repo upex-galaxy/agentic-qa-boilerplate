@@ -79,7 +79,7 @@ Requires `agentic-qa-core`. Loads on demand:
 
 - Stories ONLY (no bugs — nothing to refine upstream). Entry status Backlog / Shift-Left QA / Estimation / Ready For Dev.
 - Output = refined ACs + gap/ambiguity questions + the pre-sprint ATP in the `{{jira.acceptance_test_plan}}` field (outline NAMES + coverage estimate, no test code, no execution, NO Test Plan item — `/sprint-testing` Stage 1 creates the item from the field) + the closed `[QA] Shift-Left Review` subtask + the batch report.
-- Tracking subtask `[QA] Shift-Left Review` per accepted Story: find-or-create in Phase 1 (transition to In Progress), close in Phase 3 handoff (transition to Done). Exhaustive session annotations (long analysis, refinement traces) go on the SUBTASK, keeping the Story clean. Work type + transitions resolved from `.agents/jira-workflows.json`; no subtask work type in the catalog → skip with a warning, never block.
+- Tracking subtask `[QA] Shift-Left Review` per accepted Story: find-or-create in Phase 1 (assignee = self; Jira's `create` lands it in `{{jira.status.subtask.active}}`), close in Phase 3 handoff via `{{jira.transition.subtask.complete}}` (-> `{{jira.status.subtask.close}}`). The subtask workflow's status NAMES are `ACTIVE` / `Close`, not "In Progress" / "Done". Exhaustive session annotations (long analysis, refinement traces) go on the SUBTASK, keeping the Story clean. Work type + transitions resolved from `.agents/jira-workflows.json`; no subtask work type in the catalog → skip with a warning, never block.
 - The heart of the skill (Phase 2) = edge cases not in story + ambiguities + gaps — feed them to PO/Dev as questions AND as derived outlines.
 - On taking a Story into refinement (first QA pickup), set `qa_assignee` to self — read-before-write, never overwrite an existing owner (`agentic-qa-core/references/defect-management-doctrine.md` Part 2). This skill files NO Bug/Defect/Improvement; only the QA-Assignee hook applies.
 - On completion: add label `shift-left-reviewed`; transition Backlog → Shift-Left QA → Estimation.
@@ -98,7 +98,7 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 
 | Phase | Pattern | Subagent role |
 |-------|---------|---------------|
-| Phase 1 — Selection | Single | Backlog Selection subagent: pull candidate Stories via `[ISSUE_TRACKER_TOOL]`, apply veto + risk-score triage, return ranked candidate table. After user OK: find-or-create the `[QA] Shift-Left Review` subtask under each accepted Story + transition it to In Progress (skip with warning if the catalog has no subtask work type) |
+| Phase 1 — Selection | Single | Backlog Selection subagent: pull candidate Stories via `[ISSUE_TRACKER_TOOL]`, apply veto + risk-score triage, return ranked candidate table. After user OK: find-or-create the `[QA] Shift-Left Review` subtask under each accepted Story with assignee = self, left at `{{jira.status.subtask.active}}` where `create` lands it (skip with warning if the catalog has no subtask work type) |
 | Phase 2 — Refinement (per Story) | Sequential — looped per Story | Refinement subagent: load `acceptance-test-planning.md` Phases 1-3 + outline-only Phase 4, write `shift-left-refinement.md`, append PO/Dev questions, return summary block. ONE subagent per Story. NEVER parallel across Stories (each subagent writes a different PBI file but the orchestrator must present each summary to the user sequentially before the next dispatch) |
 | Phase 3 — Handoff (per Story) | Sequential — looped per Story | Handoff subagent: update Jira description + `{{jira.acceptance_test_plan}}` custom field (both modalities — no Test Plan item pre-sprint) + handoff comment + labels + subtask annotations + subtask transition to Done + Story transition `backlog -> shift_left_qa -> estimation`. Returns transition log + trace verification |
 | Phase 3 — Batch report | Single | Batch Report subagent: aggregate per-Story summaries into `.session/shift-left-testing/<batch-id>/batch-report.md` + post to parent epic if Stories share one |
@@ -129,7 +129,8 @@ Phase 1 — Selection
     -> Apply veto + risk-score triage per candidate
     -> Present ranked candidate table -> WAIT for user OK
     -> Per accepted Story: find-or-create subtask "[QA] Shift-Left Review"
-       -> In Progress (skip + warn if no subtask work type in the catalog)
+       -> assignee = self; stays at {{jira.status.subtask.active}} (skip + warn if no
+          subtask work type in the catalog)
 
 Phase 2 — Refinement (loop per accepted Story)
     -> Dispatch Refinement subagent: produce shift-left-refinement.md
@@ -146,7 +147,8 @@ Phase 3 — Handoff
            NO Test Plan item — /sprint-testing Stage 1 creates it from the field)
          - Labels: shift-left-reviewed + shift-left-{YYYY-MM-DD}
          - Transition: backlog -> shift_left_qa (analyze) -> estimation (estimate)
-         - Subtask "[QA] Shift-Left Review": post session annotations -> Done
+         - Subtask "[QA] Shift-Left Review": post session annotations -> complete -> close
+       -> Light stage verifier (artifact-lifecycle.md §5) closes the stage
          - Verify trace
     -> Batch report posted to .session/shift-left-testing/<batch-id>/batch-report.md
        + posted as comment on parent epic if Stories share one
@@ -248,7 +250,7 @@ Decides which Stories actually enter the refinement loop and at what depth.
    - **Score 4-7 MEDIUM** -> Full refinement (standard).
    - **Score 8+ HIGH** -> Full refinement + extended ambiguity / edge-case scan.
 5. **Present the ranked candidate table** (see `references/backlog-selection.md` §Output format) and **WAIT for user OK** before Phase 2. Same pattern as sprint-testing's Story Explanation gate.
-6. **Tracking subtask per accepted Story** (after user OK): find-or-create a subtask titled `[QA] Shift-Left Review` under the Story and transition it to In Progress. Resolve the subtask work type + its transitions from `.agents/jira-workflows.json`; if the catalog has no subtask work type (or the project disallows subtasks), log a warning in `progress.md` + the batch report and SKIP — never block the batch. Find-or-create: match the Story's existing subtasks by exact title before creating; an existing one in Done is re-transitioned to In Progress (refresh run). This makes QA's pre-sprint work visible on the board, and the subtask later receives the exhaustive session annotations in Phase 3.
+6. **Tracking subtask per accepted Story** (after user OK): find-or-create a subtask titled `[QA] Shift-Left Review` under the Story, **with `assignee` = the authenticated session user** (`agentic-qa-core/references/artifact-lifecycle.md` §2 — an unassigned QA artifact is a blocker waiting to happen). Jira's `create` transition lands it in `{{jira.status.subtask.active}}`; leave it there, Phase 3 closes it. Resolve the subtask work type from `.agents/jira-workflows.json`; if the catalog has no subtask work type (or the project disallows subtasks), log a warning in `progress.md` + the batch report and SKIP — never block the batch. Find-or-create: match the Story's existing subtasks by exact title before creating; an existing one already at `{{jira.status.subtask.close}}` is re-opened with `{{jira.transition.subtask.reactive}}` (refresh run). This makes QA's pre-sprint work visible on the board, and the subtask later receives the exhaustive session annotations in Phase 3.
 
 Persist the accepted list into `plan.md` §Inputs so a resumed session reads the same canonical decision. After user OK, append a progress entry: `## Phase 1 — Selection — <ts>` with `status: completed`, `artifacts_touched: [candidates.md, plan.md]`, `next: Phase 2 — Refinement`.
 
@@ -365,14 +367,18 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
      [ISSUE_TRACKER_TOOL] Add Comment / Update description:
        issue: {SUBTASK_KEY}          # "[QA] Shift-Left Review" under {STORY_KEY}
        body: <exhaustive session annotations>
-     [ISSUE_TRACKER_TOOL] Transition: <subtask done transition from .agents/jira-workflows.json>
+     [ISSUE_TRACKER_TOOL] Transition: {{jira.transition.subtask.complete}}   # active -> close
+     # Unmapped slug -> artifact-lifecycle.md §4 fallback (ask, never skip silently)
 
 7. Verify trace (both modalities — field-first, no Test Plan item to trace pre-sprint):
      `bun run jira:sync-issues get {STORY_KEY} --include-comments`,
                   then read back the synced acceptance-test-plan field file + handoff comment;
                   confirm the field is populated and the comment points to it
                   (full body in the comment ONLY in fallback mode — field absent);
-                  confirm the subtask (when created) is Done.
+                  confirm the subtask (when created) is at {{jira.status.subtask.close}}.
+
+8. Run the **light stage verifier** (`agentic-qa-core/references/artifact-lifecycle.md` §5)
+   — the stage-specific lines are in `references/handoff-protocol.md` §Step 6b.
 ```
 
 The Handoff subagent returns a per-Story log: `{story: KEY, atp_container: <field|fallback_comment>, subtask: <done|skipped>, labels_added: [...], transitions: [...], trace_status: ok|warning|fail}`.
@@ -482,6 +488,7 @@ All references are self-contained. Load one at a time.
 | `references/atp-outline-template.md` | Phase 2 — body skeleton for `shift-left-refinement.md` (the pre-sprint ATP at outline maturity). Different from sprint-testing's full ATP body. |
 | `references/refinement-questions.md` | Phase 2 — catalog of typical PO / Dev / Design gap-spotting questions, grouped by AC archetype (auth, money, search, state machine, etc.). Use as a checklist when the Story is sparse. |
 | `references/handoff-protocol.md` | Phase 3 — exact Jira mutation sequence per Story (field-first ATP write, subtask close), label + transition rules, batch report template + epic-comment posting rules. |
+| `../agentic-qa-core/references/artifact-lifecycle.md` | Before any transition — the Story + subtask lifecycle rows (§1), assignee-at-create (§2), the unmapped-status fallback protocol (§4), the light stage verifier template (§5). |
 | `../agentic-qa-core/references/session-management.md` | Phase 0 + Phase 4 — resume contract, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint. This skill is a producer of `session/shift-left-testing/<batch-id>/...` topic keys. |
 
 ---
@@ -495,11 +502,12 @@ All references are self-contained. Load one at a time.
 - [ ] Candidate Story list resolved (explicit IDs or backlog JQL) + confirmed with user
 - [ ] Session folder `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/` created with `plan.md` written
 - [ ] Phase 1 produced the ranked candidate table, user OK'd the refinement set
-- [ ] Phase 1 found-or-created the `[QA] Shift-Left Review` subtask per accepted Story → In Progress (or skipped with warning — no subtask work type)
+- [ ] Phase 1 found-or-created the `[QA] Shift-Left Review` subtask per accepted Story, assignee = self, at `{{jira.status.subtask.active}}` (or skipped with warning — no subtask work type)
 - [ ] Phase 2 ran ONE refinement subagent per accepted Story, user OK'd each summary
 - [ ] Per-Story `shift-left-refinement.md` written under each Story's PBI folder
 - [ ] Phase 3 handoff applied per Story: Jira description + ATP field (`{{jira.acceptance_test_plan}}`, both modalities) + handoff comment + labels + transition (stops at `estimation`) — NO Test Plan item created
-- [ ] Subtask closed per Story: session annotations posted on it + transitioned to Done (or skipped with warning)
+- [ ] Subtask closed per Story: session annotations posted on it + `{{jira.transition.subtask.complete}}` fired → `{{jira.status.subtask.close}}` (or skipped with warning)
+- [ ] Light stage verifier run per `agentic-qa-core/references/artifact-lifecycle.md` §5 — every line YES or a stated N/A
 - [ ] Trace verified per Story (both modalities: field populated + pointer comment; full body in comment only in fallback mode)
 - [ ] Batch report written + posted to parent epic (if applicable)
 - [ ] Archive: `.session/shift-left-testing/<batch-id>/` moved to `.session/.archive/<YYYY-MM-DD>-shift-left-testing-<batch-id>/` and `mem_session_summary` called

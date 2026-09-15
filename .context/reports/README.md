@@ -44,10 +44,6 @@ Its content moved to where each half belongs:
 
 The STP and the STR are Jira items (`Test Plan` and `Test Execution`, parented to the QA process epics), and they **do** materialize on disk: an unfiltered `bun run jira:sync-issues pull` sweeps the four QA-process Epics and writes them as `.context/PBI/test-plans/STP-<KEY>-<slug>.md` and `.context/PBI/test-executions/STR-<KEY>-<slug>.md` (ADR-0001). What lands there is a **regenerable cache, not a deliverable** — gitignored, rebuilt by `bun run context:hydrate`, and present only on the machine that ran the sync. So the point still holds: anything the team has to share lives in Jira, and the local file is a read-only mirror of it.
 
-## Known gap
-
-`regression-testing/SKILL.md` still describes its output in this directory as "the committed deliverable" — false, per the gitignore above. Tracked as GitHub issue #12. (`/test-documentation` no longer does: its two reports are named above, declared `[LOCAL]`, and its Deferred verdicts are mirrored to Jira as a `## Prioritization — Deferred scenarios` comment so they survive off this machine.)
-
 ## Related
 
 - Ticket-level artifacts (ATP, ATS, ATR, Tests, evidence) → `.context/PBI/`, a gitignored cache of Jira

@@ -431,6 +431,17 @@ Read `references/tms-architecture.md` when creating ATP/ATR/TC for a ticket, che
      jira-native -> [ISSUE_TRACKER_TOOL] apply the feature/Epic label (or add to a feature TS item when the work type exists)
 ```
 
+**Every artifact this skill CREATES carries `assignee` = the authenticated session user, set at create time** — the RTP, the ATS, the optional feature TS, every `Test`, every Precondition (`agentic-qa-core/references/artifact-lifecycle.md` §2). This is load-bearing, not bookkeeping: **Xray refuses membership edits on a Test Plan the caller does not own**, so an unassigned Regression Test Plan cannot have promoted Tests added to it, and the failure surfaces as a mid-flow blocker long after the Plan exists. If the find-or-create step RETURNS an artifact owned by someone else, do not reassign it silently — ask the user first.
+
+**Plan and Set lifecycle** (`agentic-qa-core/references/artifact-lifecycle.md` §1):
+
+| Artifact | Born | This skill moves it to | Then |
+|---|---|---|---|
+| **RTP** (Regression Test Plan) | `{{jira.status.test_plan.planning}}` | `{{jira.status.test_plan.ready}}` via `{{jira.transition.test_plan.designed}}` on the first promotion | **stays `ready` forever** — the RTP is long-lived. NEVER fire `{{jira.transition.test_plan.complete}}` on it |
+| **ATS** (per-Story Set) | `{{jira.status.test_set.designing}}` | closed by `/sprint-testing` Reporting, not here | — |
+| **TS** (optional feature Set) | `{{jira.status.test_set.designing}}` | **stays `designing`** for the life of the feature | `{{jira.transition.test_set.done}}` only when its Epic closes |
+| **Precondition** | `{{jira.status.precondition.active}}` | nothing — the workflow has no transition out of `active` | stays `active`; that is correct, not a gap |
+
 > Per-op tool resolution + the Gherkin-enrichment CLI gap: `references/jira-test-management.md` §"Stage-4 promote + enrich — tool resolution map". Load `/xray-cli` for command syntax — never hardcode it here.
 
 Creating a TC before the ATS, ATP and ATR exist leaves orphaned references. Fix any broken links with `references/tms-architecture.md` §Traceability Rules.
@@ -494,6 +505,18 @@ Draft --start_design--> In Design --ready_to_run--> Ready --+-- for_manual      
 
 Never jump states. If a TC needs rework, use a `back_from_<state>` transition (e.g. `back_from_ready` -> in_design).
 
+**The ROI verdict decides which branch a TC takes — all three are a status, none is "leave it wherever":**
+
+| Verdict | Transitions to fire | TC ends at |
+|---|---|---|
+| **Candidate** | `{{jira.transition.test_case.automation_review_from_ready}}` then `{{jira.transition.test_case.approve_to_automate}}` | `{{jira.status.test_case.candidate}}` (this is what `/test-automation` picks up) |
+| **Manual** | `{{jira.transition.test_case.for_manual}}` — **fired from `ready`, NOT routed through `in_review`** | `{{jira.status.test_case.manual}}` |
+| **Deferred** | none | stays `{{jira.status.test_case.ready}}` (jira-xray: the unpromoted sprint Test; jira-native: no TC was created at all) |
+
+The Manual branch is a catalog fact, not a style choice: **there is no `in_review` → `manual` edge**. A TC already sitting at `candidate` demotes via `{{jira.transition.test_case.manual_execution_from_candidate}}` instead. Canon: `agentic-qa-core/references/artifact-lifecycle.md` §1.1.
+
+**On an unmapped slug** (the project renamed its Test statuses, or the catalog is stale): run the fallback protocol in `agentic-qa-core/references/artifact-lifecycle.md` §4 — list the LIVE transitions, propose the closest synonym in ONE `AskUserQuestion`, fire the live id on yes, and recommend `bun run jira:sync-workflows`. Never leave a TC at `draft` because a slug did not resolve.
+
 ### Naming — the one rule that matters
 
 ```
@@ -550,6 +573,22 @@ Phase 3 writes exactly two files to `.context/reports/`, both named from the ses
 
 Read-before-write: if the comment already exists from an earlier run on this scope, replace that comment rather than appending a second one. For module scope with no single owning issue, comment on the Regression Epic.
 
+### Light stage verifier (closes the Documentation stage)
+
+Run the eight-line template in `agentic-qa-core/references/artifact-lifecycle.md` §5. Stage-specific lines:
+
+```
+[ ] Every documented TC exists by KEY, parented to the QA Test Repository epic,
+    with components set and assignee = self
+[ ] Every TC left its {{jira.status.test_case.draft}} birth status — Candidate at
+    {{jira.status.test_case.candidate}}, Manual at {{jira.status.test_case.manual}},
+    Deferred stated as deliberately left at {{jira.status.test_case.ready}}
+[ ] RTP at {{jira.status.test_plan.ready}}, assignee = self, NOT completed
+[ ] Promoted TCs added to the RTP (and the optional feature TS) — membership verified
+[ ] Preconditions at {{jira.status.precondition.active}} (no transition exists — stated N/A)
+[ ] Any unmapped slug went through the §4 fallback (asked), never a silent skip
+```
+
 ### Per-phase progress + Archive
 
 After each Phase 1 / Phase 2 / Phase 3 step completes (including each Parallel TC-creation chunk in Phase 3), the orchestrator appends a phase entry to `.session/test-documentation/<scope>/progress.md` per `agentic-qa-core/references/session-management.md` §7. Per-chunk entries are critical: a 60-TC batch dispatched as 6 chunks of 10 produces 6 separate `## Phase 3.chunk-<N>` entries, each recording which TC IDs landed. Resume reads completed chunks and dispatches only the missing ones.
@@ -601,6 +640,7 @@ Canonical reading order for any AI starting cold on a test-documentation workflo
 2. `.agents/jira-required.yaml` — canonical slug catalog for fields, statuses, link types.
 3. `.agents/jira-fields.json` — slug → numeric custom-field-ID mapping for ADF / API calls.
 4. `.agents/jira-workflows.json` — `test_case` workflow + transition catalog (Draft → In Design → Ready → …).
+4b. `agentic-qa-core/references/artifact-lifecycle.md` — **canonical authority** for artifact statuses: the verdict→status mapping for TCs, the RTP that stays `ready`, assignee-at-create on every artifact this skill makes, the unmapped-status fallback (§4), and the light stage verifier that closes the stage (§5). Read BEFORE firing any transition.
 5. `.context/master-test-plan.md` — regression Epic, prioritization rubric, what to test and why.
 6. The Story's AC + spec via `bun run jira:sync-issues get <STORY> --include-comments`, then read **every** synced `.md` in the materialized folder — current Description, AC, scope, business rules, `comments.md`, linked bugs — not just one field. NEVER use `[ISSUE_TRACKER_TOOL]` `view` (returns null for custom fields). **TC note**: a TC body = the `Test` issue `description` (synced both modalities via `bun run jira:sync-issues get <TEST-KEY>`); the Xray Gherkin / Test-Steps plugin field is NOT synced — it mirrors the description, so read the synced TC `.md` for Gherkin/steps.
 

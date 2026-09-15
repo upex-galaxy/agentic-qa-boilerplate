@@ -388,10 +388,14 @@ for each {TEST_KEY, result} in run:
 
 ### 2.4 "Mark ATR complete" semantics
 
+"Complete" is a **transition**, not a state of mind. Canon: `agentic-qa-core/references/artifact-lifecycle.md` §1.
+
 | Modality | Completion signal |
 |----------|-------------------|
-| A (Xray) | Test Execution issue transitioned to `Done`; all Test Runs have terminal status (PASS/FAIL/BLOCKED/ABORTED, not TODO/EXECUTING). |
-| B (Jira-native) | `{{jira.acceptance_test_results}}` populated with full body (not placeholder), or the `## Acceptance Test Results (ATR)` fallback comment when the field is absent; every linked TC has a terminal Test Status. |
+| A (Xray) | All Test Runs at a terminal status (PASS/FAIL/BLOCKED/ABORTED, not TODO/EXECUTING), THEN the Test Execution issue transitioned via `{{jira.transition.test_execution.complete}}` to `{{jira.status.test_execution.close}}` (the status is named `Close`, not `Done`). A bug retest closes its `ReTest:` Execution with `{{jira.transition.re_test_execution.complete}}`. |
+| B (Jira-native) | `{{jira.acceptance_test_results}}` populated with full body (not placeholder), or the `## Acceptance Test Results (ATR)` fallback comment when the field is absent; every linked TC has a terminal Test Status. No Execution item exists at this altitude — state that as the N/A. |
+
+Stage 3 closes the ATS and the ATP in the same pass (Modality jira-xray): ATS via `{{jira.transition.test_set.done}}` → `{{jira.status.test_set.close}}` (membership final), ATP via `{{jira.transition.test_plan.complete}}` → `{{jira.status.test_plan.completed}}` (results are in; fire `{{jira.transition.test_plan.designed}}` first if Stage 1 left it at `planning`). On an unmapped slug run the `artifact-lifecycle.md` §4 fallback — ask, never skip silently.
 
 > **TC body**: the test-case body = the `Test` issue's `description` (synced in both modalities). The Xray Gherkin / Test-Steps plugin field is NOT synced — it only mirrors the description.
 
@@ -595,7 +599,7 @@ Record the gate outcome (hypothesis, cited fact, decision) in the ATR Observatio
 
 ### 5.1 Actions at close
 
-1. ATR marked complete in TMS via `[TMS_TOOL]`.
+1. ATR marked complete in TMS via `[TMS_TOOL]`, then TRANSITIONED to `{{jira.status.test_execution.close}}` per §2.4 — together with the ATS (→ `{{jira.status.test_set.close}}`) and the ATP (→ `{{jira.status.test_plan.completed}}`). Leaving any of the three where `create` dropped it is a Reporting DoD failure (sprint-testing anti-pattern S18).
 2. QA comment posted (Template A, B, C or D) via `[ISSUE_TRACKER_TOOL]`.
 3. Evidence Handoff emitted per §3.5 (ranked + captioned, absolute paths, auto-embed offered via the §1.3 helper).
 4. Ticket transitioned — Story PASSED -> `{{jira.status.story.qa_approved}}` (via `{{jira.transition.story.qa_sign_off}}`); Bug VERIFIED -> `{{jira.status.bug.closed}}` (via `{{jira.transition.bug.retest_passed}}`); Story FAILED **(run the §5.0 recalibration gate first for any security/auth/framework-default FAIL — a recalibrated finding becomes GO-with-debt and takes the PASSED path, not a blocking transition)** with `{{FORMAL_BLOCKED_GATE}}=true` -> `{{jira.status.story.blocked}}` (via `{{jira.transition.story.defect_reported}}`); Story FAILED non-strict -> left in `{{jira.status.story.in_test}}` with linked bug; Bug NOT FIXED -> left in `{{jira.status.bug.ready_for_qa}}` pending dev. See `sprint-orchestration.md` Briefing 4 Step 5 for the full decision tree.

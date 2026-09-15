@@ -58,6 +58,7 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 - `kata-manifest.json` — registry of tests and ATCs available; used to cross-reference failed test IDs.
 - `.agents/jira-required.yaml` — Jira refs (project key, work types, transitions) for filing regression issues.
 - `agentic-qa-core/references/defect-management-doctrine.md` — **canonical authority** for classifying (Bug/Defect/Improvement), the mandatory field matrix, QA-Assignee ownership, and the QA process epic when a confirmed regression is filed in Jira (Phase 3). Read BEFORE filing any defect.
+- `agentic-qa-core/references/artifact-lifecycle.md` — **canonical authority** for artifact statuses: the STR closes at `{{jira.status.test_execution.close}}` after the verdict, the RTP stays at `{{jira.status.test_plan.ready}}`, every created artifact carries `assignee` = self, and an unmapped transition slug goes through the §4 fallback instead of a silent skip. Read BEFORE firing any transition.
 
 ---
 
@@ -433,6 +434,15 @@ The sprint regression maps to two Jira **items** (items-first by excellence — 
 
 **Environment gate**: every Test Execution this skill creates — the STR included — carries the **Test Environment** taken from `active_env` in `.agents/project.yaml`, set at create time. An Execution without its environment fails the checklist: do not write results into it until the environment is set.
 
+**Ownership gate**: every artifact this skill CREATES (the STR, and the STP in the fallback case) carries `assignee` = the authenticated session user, set at create time — `agentic-qa-core/references/artifact-lifecycle.md` §2. Xray refuses membership edits on a Test Plan the caller does not own, so an unassigned Plan turns into a blocker the moment tests must be added to it. If the find returns an artifact someone ELSE owns, do not reassign it silently: ask first.
+
+**Lifecycle gate** (`agentic-qa-core/references/artifact-lifecycle.md` §1):
+
+- The **STR** is born `{{jira.status.test_execution.active}}` and MUST be transitioned to `{{jira.status.test_execution.close}}` via `{{jira.transition.test_execution.complete}}` **after the GO / CAUTION / NO-GO verdict is written** — never before the verdict, never left open.
+- The **RTP** (and any Test Plan this skill only consumed) stays at `{{jira.status.test_plan.ready}}` and is **never completed** by a regression run: the RTP is long-lived, and a suite execution does not finish the plan it ran from. Do NOT fire `{{jira.transition.test_plan.complete}}` here.
+- The **STP** is closed by whoever owns sprint close, not by this skill — unless this skill IS the sprint close (see the sprint-close DoD in `stage-gates.md`), in which case `{{jira.transition.test_plan.complete}}` moves it to `{{jira.status.test_plan.completed}}` after the STR is closed.
+- **Unmapped slug** → `artifact-lifecycle.md` §4 fallback: list the LIVE transitions, propose the closest synonym in ONE `AskUserQuestion`, fire the live id on yes, recommend `bun run jira:sync-workflows`. Never skip silently, never guess an id.
+
 **Find-or-create the STR before updating it** — never assume another producer already created it; if `/sprint-testing`'s batch close got there first, the find returns its item and this skill only completes it:
 
 ```
@@ -445,6 +455,10 @@ The sprint regression maps to two Jira **items** (items-first by excellence — 
 [TMS_TOOL] Update Test Execution:
   executionKey: {STR execution-key}
   results: {per-ATC status + failure comments from Phase 2}
+
+# After the Phase 3 verdict is written — close the run, never leave it ACTIVE:
+[ISSUE_TRACKER_TOOL] Transition: {{jira.transition.test_execution.complete}}   # active -> close
+  issue: {STR execution-key}
 ```
 
 ### Write the report
@@ -506,11 +520,22 @@ Score: {score}/9. {one-line rationale}
 | CAUTION | Review with team lead; document accepted risks; proceed deliberately |
 | NO-GO | Block release; assign regression issues; schedule fix verification; plan re-run |
 
+Whatever the verdict, close the run: transition the STR to `{{jira.status.test_execution.close}}` via `{{jira.transition.test_execution.complete}}`, leave the RTP at `{{jira.status.test_plan.ready}}`, then run the **light stage verifier** (`agentic-qa-core/references/artifact-lifecycle.md` §5). Stage-specific lines:
+
+```
+[ ] STR exists by KEY, carries its Test Environment, assignee = self
+[ ] STR at {{jira.status.test_execution.close}} — via complete, AFTER the verdict
+[ ] STR -> STP linked via the `testPlan` edge
+[ ] RTP untouched at {{jira.status.test_plan.ready}} (a regression run never completes it)
+[ ] Verdict comment posted in the TMS (the durable record — not the local report file)
+[ ] Any unmapped slug went through the §4 fallback (asked), never a silent skip
+```
+
 ### Per-phase progress + Archive
 
 After Phase 1 Monitor returns, after each Phase 2 step (Collect / Parse / Compute / Classify / Severity), and after Phase 3 Verdict, the orchestrator appends a phase entry to `.session/regression-testing/<scope>/progress.md` per `agentic-qa-core/references/session-management.md` §7. `artifacts_touched` records the downloaded CI artifacts (allure / evidence / playwright dirs) + the final `.context/reports/regression-<env>-<date>.md`.
 
-After the Verdict emits, the orchestrator runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/regression-testing/<scope>/` to `.session/.archive/<YYYY-MM-DD>-regression-testing-<scope>/` (two-file dir preserved) and calls `mem_session_summary` with the archive path. The canonical `.context/reports/regression-<env>-<date>.md` stays in the reports dir as the committed deliverable.
+After the Verdict emits, the orchestrator runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/regression-testing/<scope>/` to `.session/.archive/<YYYY-MM-DD>-regression-testing-<scope>/` (two-file dir preserved) and calls `mem_session_summary` with the archive path. `.context/reports/regression-<env>-<date>.md` stays in the reports dir as a **local generated report** — that directory is gitignored `[LOCAL]` output (`.context/reports/README.md`), so the file exists only on the machine that ran the suite and nothing downstream may depend on it. **The durable record is the STR in the TMS plus the GO / CAUTION / NO-GO comment** posted with it.
 
 On Verdict = NO-GO with regressions still being filed as issues, archive WAITS until the issue-creation step completes (so the session state still references the open issue list at archive time).
 

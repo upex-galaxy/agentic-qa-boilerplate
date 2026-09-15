@@ -109,6 +109,7 @@ Canonical reading order for any AI starting cold on a sprint-testing workflow. R
 2. `.agents/jira-required.yaml` — canonical slug catalog (custom fields, statuses, transitions) for the active workspace.
 3. `.agents/jira-fields.json` — slug → numeric custom-field-ID mapping for `{{jira.<slug>}}` resolution at runtime.
 4. `.agents/jira-workflows.json` — workflow + transition catalog, **the authoritative source of every status / transition name** (resolves Ready For QA → In Test → QA Approved for Story / Bug / Test Case work types). A status that is not in this file does not exist in the instance.
+4b. `agentic-qa-core/references/artifact-lifecycle.md` — **canonical authority** for which status every artifact this skill creates must END in (ATP `ready`→`completed`, ATS `designing`→`close`, ATR `active`→`close`, TCs `draft`→`ready`), assignee-at-create on all of them, the unmapped-status fallback (§4), and the light stage verifier that closes each stage (§5). Read BEFORE firing any transition.
 5. `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/context.md` — ticket-local context: session notes, open questions (hand-authored; read if it already exists from a prior Session Start). NON-Jira file — never a Jira mirror.
 6. `.context/master-test-plan.md` — regression Epic pointer, modality decision (Xray vs Jira-native), what to test and why.
 7. `.context/business/business-feature-map.md` — feature catalog vocabulary; resolves "what epic owns this story" for the `epics/EPIC-<KEY>-<slug>/` PBI folder naming (module = Epic, 1:1).
@@ -232,7 +233,12 @@ Stage 2 — Execution
 
 Stage 3 — Reporting
     -> Fill ATR, post QA comment, transition ticket
+    -> CLOSE the artifacts Stage 1 opened (artifact-lifecycle.md §1):
+         ATR  complete -> {{jira.status.test_execution.close}}   (after every run status is recorded)
+         ATS  done     -> {{jira.status.test_set.close}}         (membership now final)
+         ATP  complete -> {{jira.status.test_plan.completed}}    (results are in)
     -> File bugs via bug-report template when found
+    -> Light stage verifier (artifact-lifecycle.md §5) closes the stage
     -> See references/reporting-templates.md
 
 ---> Hand off (cross-skill, NOT this skill):
@@ -275,6 +281,20 @@ The Story's coverage backbone is its **ATS** (Acceptance Test Set — `ATS: {US_
 2. **ATP item FROM the field (find-or-create).** Pre-sprint the ATP lives ONLY in `{{jira.acceptance_test_plan}}` — the shift-left pass is field-first and does NOT create the item. Find-or-create the Test Plan issue `ATP: {STORY-KEY}: {story title}` (parent: **QA Master Test Plan** epic) and seed its description from the field content; if the field is empty (no shift-left pass), author the ATP normally and write both the item and the field.
 3. **Derive, never re-list.** The ATP's test list and the ATR Execution's test list are DERIVED from the ATS membership — never maintained as three independent id lists.
 4. **ATR always with environment.** Create the ATR Execution (`ATR: {STORY-KEY}: Story Testing`, parent: **QA Test Artifacts**) ALWAYS carrying the Test Environment resolved from `active_env` in `.agents/project.yaml` (or the session env switch). **No ATR without environment** — hard gate: `agentic-qa-core/references/stage-gates.md` §Stage 1.
+5. **Assignee = self on every artifact created here** (ATP, ATS, ATR, every `Test`), set at create time — `agentic-qa-core/references/artifact-lifecycle.md` §2. **Xray refuses membership edits on a Test Plan the caller does not own**, so an unassigned ATP cannot have its test list updated later; the failure surfaces mid-flow, after the Plan already exists. A find-or-create that RETURNS someone else's artifact is not reassigned silently — ask the user first.
+6. **Statuses — the artifacts must LEAVE the status `create` dropped them in** (`artifact-lifecycle.md` §1). At the END of Stage 1:
+
+   | Artifact | Born | Stage 1 leaves it at | Transition |
+   |---|---|---|---|
+   | sprint `Test` (TC) | `{{jira.status.test_case.draft}}` | `{{jira.status.test_case.ready}}` | `{{jira.transition.test_case.start_design}}` then `{{jira.transition.test_case.ready_to_run}}` |
+   | ATP | `{{jira.status.test_plan.planning}}` | `{{jira.status.test_plan.ready}}` | `{{jira.transition.test_plan.designed}}` |
+   | ATS | `{{jira.status.test_set.designing}}` | **stays `designing`** — membership is not final until Stage 3 | — |
+   | ATR | `{{jira.status.test_execution.active}}` | **stays `active`** — the run has not happened yet | — |
+   | STP (sprint altitude) | `{{jira.status.test_plan.planning}}` | `{{jira.status.test_plan.ready}}` once the sprint scope is set | `{{jira.transition.test_plan.designed}}` |
+
+   Each sprint `Test` is **parented to the QA Test Repository epic** (`qa.qa_epics.test_repository_epic`) — never the product Epic, never unparented (`AGENTS.md` §9). A TC left at `draft` and unparented is the exact defect this rule exists to kill.
+
+7. **On an unmapped slug**: run the fallback protocol in `agentic-qa-core/references/artifact-lifecycle.md` §4 — list the LIVE transitions, propose the closest synonym in ONE `AskUserQuestion`, fire the live id on yes, recommend `bun run jira:sync-workflows`. Never skip a transition silently.
 
 TC∈ATS / TC∈ATP / TC∈ATR membership is Xray-internal (GraphQL) — NEVER expressed as Jira issue links in this modality. In jira-native, an instance WITH the Test Set work type expresses membership as `TC→ATS` issue links (explicit carve-out from the no-membership-links rule, which is xray-only); an instance WITHOUT it has no ATS — fall back to direct `TC→Story` links.
 
@@ -505,6 +525,7 @@ All references are self-contained. Load one at a time.
 | `feature-test-planning.md` | Stage 1 Planning at feature / multi-story level — building a feature test plan, risk triage rubric, scenario decomposition, and variable + test-data identification. |
 | `exploration-patterns.md` | Stage 2 Execution — smoke-test Go/No-Go playbook, UI exploration on `{{WEB_URL}}`, API exploration on `{{API_URL}}`, DB cross-validation via `{{DB_MCP}}`, evidence naming + capture rules, edge-case checklist. |
 | `reporting-templates.md` | Stage 3 Reporting — ATR Test Report body, bug report template (summary, reproduction, severity, priority, labels), QA comment templates (story PASSED/FAILED, bug Template C/D), evidence-attachment guidance. |
+| `../agentic-qa-core/references/artifact-lifecycle.md` | Before any transition — the ATP / ATS / ATR / TC / Story lifecycle rows (§1), the three edges that do not exist (§1.1), assignee-at-create (§2), the unmapped-status fallback protocol (§4), the light stage verifier template (§5). |
 | `../agentic-qa-core/references/session-management.md` | Phase 0 + Session Start + per-stage checkpoints + Archive — resume contract, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint. This skill is a producer of `session/sprint-testing/<scope>/...` topic keys. |
 
 ---
@@ -528,6 +549,8 @@ All references are self-contained. Load one at a time.
 - **S15.** NEVER bury a hard-to-reverse test-architecture decision in a ticket plan. If Stage 1 planning forces a decision that is architectural AND hard to reverse (test-data-isolation contract, auth-in-tests change, fixture topology, flake-retry policy spanning 3+ tests or 2+ tickets), promote it to `.context/ADR/ADR-NNNN-<slug>.md` (append-only; supersede, never edit) and leave a `See ADR-NNNN` backlink in the plan's `## Technical Decisions`. Ticket-local trade-offs stay in the plan. AI drafts `Proposed`; the human approves. See `agentic-qa-core/references/adr-doctrine.md` §1–§2.
 - **S16.** NEVER create an ATR / retest Execution without a Test Environment. The environment resolves from `active_env` in `.agents/project.yaml` (or the session env switch) and is set at creation time. An environment-less Execution fails the Stage-1 DoD gate (`agentic-qa-core/references/stage-gates.md`) — no ATR without environment.
 - **S17.** NEVER maintain the ATS's, the ATP's, and the ATR's test lists as independent id lists (Modality jira-xray). The ATS membership is the single source; the Plan and the Execution DERIVE their lists from it. Three hand-maintained lists drift silently and corrupt coverage.
+- **S18.** NEVER leave an artifact in the status Jira's `create` transition dropped it in. An ATP frozen at `{{jira.status.test_plan.planning}}`, an ATS at `{{jira.status.test_set.designing}}`, an ATR at `{{jira.status.test_execution.active}}` or a TC at `{{jira.status.test_case.draft}}` after the stage that owns it closed is a reported defect of this harness, not a cosmetic detail — it tells the team the work never happened. Fire the transition, or run the `agentic-qa-core/references/artifact-lifecycle.md` §4 fallback and ask. A silent skip is never an option.
+- **S19.** NEVER create a Test Plan, Test Execution, Test Set or `Test` without an `assignee`. Xray refuses membership edits on a Plan the caller does not own, so an unassigned ATP becomes a blocker the moment its test list must change (`agentic-qa-core/references/artifact-lifecycle.md` §2). A find-or-create that returns someone ELSE's artifact is never reassigned silently — ask first.
 
 ---
 
@@ -545,9 +568,12 @@ All references are self-contained. Load one at a time.
 - [ ] Sprint STP found-or-created (first ticket) / updated (Session Start §0.7; skip note if the work type is absent)
 - [ ] Stage 1 artifacts created with full traceability, verified via the **three-edge check** (Story↔ATS coverage + ATP↔Story + ATR↔Story administrative + lists match — `agentic-qa-core/references/traceability-linking.md` §Traceability verification) — jira-xray: Set-first order honored (ATP item from the field · ATS with ALL TCs linked to the Story via the `test` slug · Plan/Exec lists derived from the ATS membership)
 - [ ] ATR / retest Execution carries the Test Environment (`active_env`) — no environment, no ATR (S16)
+- [ ] Stage 1 statuses left correct: TCs at `{{jira.status.test_case.ready}}` (parented to QA Test Repository), ATP at `{{jira.status.test_plan.ready}}`, ATS still `designing`, ATR still `active` — and every one of them has `assignee` = self (S18 / S19)
 - [ ] Stage 2 smoke test executed FIRST, Go/No-Go recorded
 - [ ] Evidence captured under the ticket's `evidence/` folder
 - [ ] Stage 3 ATR filled + QA comment posted + ticket transitioned
+- [ ] Stage 3 closed the Stage-1 artifacts: ATR → `{{jira.status.test_execution.close}}` · ATS → `{{jira.status.test_set.close}}` · ATP → `{{jira.status.test_plan.completed}}` (or each one's unmapped slug went through the `artifact-lifecycle.md` §4 fallback and was ASKED, never silently skipped)
+- [ ] Light stage verifier run at the close of each stage per `agentic-qa-core/references/artifact-lifecycle.md` §5 — every line YES or a stated N/A
 - [ ] Per-stage progress checkpoint appended to `.session/sprint-testing/<scope>/progress.md` after each Stage subagent returned
 - [ ] Archive: `.session/sprint-testing/<scope>/` moved to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>/` and `mem_session_summary` called after Stage 3
 - [ ] Hand-off identified for Stages 4 / 5 / 6 if applicable

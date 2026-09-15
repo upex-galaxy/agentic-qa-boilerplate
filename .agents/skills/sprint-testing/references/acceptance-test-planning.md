@@ -489,6 +489,24 @@ After the ATP content is in Jira, materialize the read-only cache per modality, 
 
 Jira is source of truth; the synced file is a read-only cache — NEVER hand-write it.
 
+### Status + ownership check (before the traceability check)
+
+Every artifact this phase created carries `assignee` = the authenticated session user, set at
+create time — an unassigned Test Plan cannot have its test list edited in Xray later
+(`agentic-qa-core/references/artifact-lifecycle.md` §2). And every artifact leaves the status
+Jira's `create` transition dropped it in (§1):
+
+| Artifact | Fire | Ends Stage 1 at |
+|---|---|---|
+| each sprint `Test` | `{{jira.transition.test_case.start_design}}` → `{{jira.transition.test_case.ready_to_run}}` | `{{jira.status.test_case.ready}}` (parent: **QA Test Repository**) |
+| ATP | `{{jira.transition.test_plan.designed}}` | `{{jira.status.test_plan.ready}}` — **not** `completed`, that is Stage 3 |
+| ATS | — | stays `{{jira.status.test_set.designing}}` (membership final at Stage 3) |
+| ATR | — | stays `{{jira.status.test_execution.active}}` (the run has not happened) |
+
+On an unmapped slug run the fallback protocol in `agentic-qa-core/references/artifact-lifecycle.md`
+§4: list the LIVE transitions, propose the closest synonym in ONE `AskUserQuestion`, fire the live
+id on yes, recommend `bun run jira:sync-workflows`. Never skip silently, never guess an id.
+
 ### Traceability check
 
 After materializing, run the **three-edge check** (`agentic-qa-core/references/traceability-linking.md` §Traceability verification: Link List on Story + ATP + ATR, or `bun xray trace {TICKET}` once available) (Modality jira-xray) or verify the Story's `{{jira.acceptance_test_plan}}` is populated (or the `## Acceptance Test Plan (ATP)` fallback comment exists) (Modality jira-native). Traceability reads stay on `[TMS_TOOL]` / `/acli` — not the sync. In Modality jira-xray verify the Set-first model: **Story↔ATS via the `test` slug (the coverage link) + ATS membership complete + ATP/ATR test lists matching the ATS + Story↔ATP / Story↔ATR (administrative)**. Bugs produce ATP + ATR with the repro Test arriving at fix-verification time (jira-xray) or no TCs at all (jira-native); "missing TC" warnings on bugs before fix-verification are expected.
