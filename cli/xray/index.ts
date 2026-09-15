@@ -26,6 +26,7 @@ import * as repairCmd from './commands/repair.js';
 import * as run from './commands/run.js';
 import * as set from './commands/set.js';
 import * as test from './commands/test.js';
+import * as traceCmd from './commands/trace.js';
 import { colors, log } from './lib/logger.js';
 import { parseArgs } from './lib/parser.js';
 
@@ -260,6 +261,16 @@ ${colors.bold}ISSUE LINKS${colors.reset}
                      Xray coverage panel reads. Also: TC→Story (last resort),
                      Bug↔Test.
 
+${colors.bold}TRACEABILITY${colors.reset}
+  trace <STORY_KEY>  Verify the three-edge traceability check in one call:
+                     Story↔ATS (coverage, link type 'test' — the only edge the
+                     Xray coverage panel counts), ATP↔Story and ATR↔Story
+                     (administrative), plus ATS membership == ATP test list ==
+                     ATR test list. Read-only.
+                     --json             Machine-readable verdict
+                     Exits 0 only when ALL four edges pass; every failed edge
+                     prints the exact command that repairs it.
+
 ${colors.bold}IMPORT RESULTS${colors.reset}
   import junit       Import JUnit XML results
                      --file <path>      XML file path (required)
@@ -376,6 +387,10 @@ ${colors.bold}EXAMPLES${colors.reset}
 
   # Coverage link: the Story ends up "is tested by" the Test Set
   xray link create {{PROJECT_KEY}}-180 {{PROJECT_KEY}}-42 --type test
+
+  # Verify a Story's full traceability in one call (exit 0 = all four edges hold)
+  xray trace {{PROJECT_KEY}}-42
+  xray trace {{PROJECT_KEY}}-42 --json
 
   # Diff Jira-layer vs Xray-layer for a Test Execution and (optionally) repair
   xray exec sync --execution {{PROJECT_KEY}}-194
@@ -691,6 +706,12 @@ async function main(): Promise<void> {
             log.error(`Unknown backup command: ${subcommand}`);
             log.info('Available: export, restore, preflight');
         }
+        break;
+
+      case 'trace':
+        // Single-word command: the Story key arrives as `subcommand` when it is
+        // the first token, or as a positional after a flag.
+        await traceCmd.trace(flags, [subcommand, ...positional].filter(a => a !== ''));
         break;
 
       case 'repair':

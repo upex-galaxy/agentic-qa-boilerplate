@@ -35,14 +35,20 @@ function appendFlag(flags: Flags, key: string, value: string | true): void {
 }
 
 export function parseArgs(args: string[]): ParsedArgs {
+  // A single-word command (`repair`, `trace`) is followed by flags, not by a
+  // subcommand. Claiming args[1] unconditionally swallowed the first flag NAME
+  // into `subcommand` and left its VALUE as a positional, so
+  // `xray repair --project DEMO` silently ran against the stored default
+  // project instead of DEMO. A token starting with `-` is never a subcommand.
+  const hasSubcommand = args[1] !== undefined && !args[1].startsWith('-');
   const result: ParsedArgs = {
     command: args[0] || 'help',
-    subcommand: args[1] || '',
+    subcommand: hasSubcommand ? args[1] : '',
     flags: {},
     positional: [],
   };
 
-  let i = 2;
+  let i = hasSubcommand ? 2 : 1;
   while (i < args.length) {
     const arg = args[i];
     if (arg.startsWith('--')) {

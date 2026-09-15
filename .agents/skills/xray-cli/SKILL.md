@@ -18,6 +18,7 @@ complementary_categories: [tms]
 - DO: pin every ATR execution to a Test Environment (value from `active_env`), so results stay comparable across runs. An execution that slipped through without one is repaired in place, not left.
 - DO: keep the Set-first cascade: the per-Story ATS holds the membership, and the Plan (ATP) and Execution (ATR) derive their test lists from it rather than maintaining their own.
 - DO: fill Story coverage with the Jira-layer issue link from the ATS to the Story. Plan→Story and Execution→Story links are administrative traceability and cover nothing; a direct Test→Story link is a last resort for an instance with no Test Set work type. Plan/Execution/Set MEMBERSHIP is Xray-internal GraphQL and is never an issue link.
+- DO: verify traceability with the one-call three-edge check, never from the coverage edge alone — a missing ATP→Story or ATR→Story link is a FAIL, not a warning, and the same call compares the ATS membership against the Plan and Execution test lists.
 - WHEN a Jira-fallback path created the container without authenticated Xray: the Xray layer never registered the tests and runs come back empty. Reconcile with the per-entity sync (or the bulk repair scan) before importing results.
 - DO: import results onto an existing Execution key, never scoped to a project — the import API cannot set a parent, so a project-scoped import mints a fresh unparented Execution on every run, outside the artifact ladder.
 - DO NOT: hand-craft Xray JSON payloads outside this CLI, or reuse a bearer token past its 24h TTL. A stale token produces silent 401s mid-import that read like network blips.
@@ -433,6 +434,43 @@ bun xray link create {{PROJECT_KEY}}-110 {{PROJECT_KEY}}-42 --type test_design
 > (coverage, traceability). Plan/Execution/Set *membership* (`plan add-tests`,
 > `exec add-set`, `set add-tests`, ...) is **Xray-internal** GraphQL and is never
 > expressed as an issue link in Modality jira-xray.
+
+### Traceability verification (`trace` — the three-edge check in one call)
+
+`trace` is the read-only counterpart of `link create`: it verifies, in one call,
+every edge the three-edge check requires
+(`agentic-qa-core/references/traceability-linking.md` §10). It exists because
+the check used to be four separate reads that nobody ran in full — consumers
+verified the coverage edge alone and logged "traceability verified", leaving a
+Story whose ATP or ATR was unlinked with an incomplete audit trail.
+
+It reports PASS/FAIL per edge:
+
+| Edge | What must hold |
+|---|---|
+| `Story↔ATS` | a Test Set is linked by the `test` link type, with the **Story as the inward party** (`is tested by`). The only edge Xray's coverage panel counts |
+| `ATP↔Story` | same link type and direction, from the Test Plan. Administrative — covers nothing |
+| `ATR↔Story` | same, from the Test Execution. Administrative |
+| list parity | ATS membership == ATP test list == ATR test list. Read over GraphQL, because that membership is Xray-internal and invisible to a link read |
+
+```bash
+# Verify one Story; exits 0 only when all four edges hold
+bun xray trace {{PROJECT_KEY}}-42
+
+# Machine-readable: per-edge status, the resolved ATS/ATP/ATR keys, the three test lists
+bun xray trace {{PROJECT_KEY}}-42 --json
+```
+
+Every failed edge prints the exact command that repairs it — a `link create` for
+a missing or inverted link, a `plan add-set` / `exec add-set` cascade for a list
+that drifted from the ATS. An inverted link FAILS even though the link exists:
+it carries no coverage. The link-type name is resolved from
+`.agents/jira-required.yaml` → `link_types`, so a workspace that renamed its
+`Test` type is matched by its own name.
+
+Artifact selection follows the ratified title grammar: among several linked Test
+Sets, `ATS: {STORY_KEY}` wins over a feature-level `TS:` Set, and every unpicked
+candidate is reported as ambiguity rather than dropped.
 
 ### Import Results
 

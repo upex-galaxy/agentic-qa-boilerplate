@@ -302,6 +302,76 @@ export async function getLinkedTests(issueKey: string): Promise<LinkedTest[] | n
   return out;
 }
 
+/** One `issuelinks` entry as seen FROM the issue that was read. */
+export interface IssueLinkView {
+  key: string
+  id: string
+  /** Jira issue type display name of the LINKED issue. */
+  issueType: string
+  summary: string
+  /** Display name of the link type on this instance. */
+  linkTypeName: string
+  /**
+   * Which side the READ issue sits on. `inward` means the linked issue is the
+   * outward party, so the read issue reads the inward description
+   * ("is tested by") — the direction the coverage edge requires.
+   */
+  side: 'inward' | 'outward'
+}
+
+/**
+ * Read every `issuelinks` entry of `issueKey`, typed and with direction kept.
+ *
+ * Unlike `getLinkedTests` this filters nothing: the three-edge traceability
+ * check (`trace`) needs Test Sets, Test Plans and Test Executions, and it needs
+ * to know which side the Story sits on, because an inverted `test` link still
+ * exists and still reads as a link — it just carries no coverage.
+ *
+ * Returns `null` when Jira credentials are not configured, same contract as
+ * every read above. Throws on a non-OK Jira response.
+ */
+export async function getIssueLinks(issueKey: string): Promise<IssueLinkView[] | null> {
+  const config = loadConfig();
+  const baseUrl = resolveJiraBaseUrl(config?.jira_base_url);
+  const email = config?.jira_email || process.env.ATLASSIAN_EMAIL;
+  const token = config?.jira_api_token || process.env.ATLASSIAN_API_TOKEN;
+
+  if (!baseUrl || !email || !token) {
+    return null;
+  }
+
+  const auth = Buffer.from(`${email}:${token}`).toString('base64');
+  const response = await fetch(`${baseUrl}/rest/api/3/issue/${issueKey}?fields=issuelinks,summary,issuetype`, {
+    headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Jira REST request failed for ${issueKey}: ${response.status} ${response.statusText}`);
+  }
+
+  const issue = (await response.json()) as JiraIssueWithLinks;
+  const out: IssueLinkView[] = [];
+  for (const link of issue.fields?.issuelinks ?? []) {
+    // `outwardIssue` on the record means the READ issue is the outward party,
+    // so it reads the OUTWARD description and the linked issue is inward.
+    const outward = link.outwardIssue;
+    const inward = link.inwardIssue;
+    const linked = outward ?? inward;
+    if (!linked) {
+      continue;
+    }
+    out.push({
+      key: linked.key,
+      id: linked.id,
+      issueType: linked.fields?.issuetype?.name ?? 'unknown',
+      summary: linked.fields?.summary ?? '',
+      linkTypeName: link.type?.name ?? 'unknown',
+      side: outward ? 'outward' : 'inward',
+    });
+  }
+  return out;
+}
+
 // ============================================================================
 // ISSUE LINK CREATION — the coverage write-path (`link create`)
 // ============================================================================
