@@ -379,8 +379,12 @@ Load `/acli` first — it owns the syntax, auth, and the REST-PUT pattern below.
 [x] Bug/Defect/Improvement parented to a product/dev Epic     -> use the QA process epic
 [x] Empty components on a quality report                       -> components are mandatory
 [x] Overwriting an existing QA Assignee silently              -> never-overwrite (Part 2)
-[x] Filing "Bug" for a pre-release failure                    -> it is a Defect (Part 1)
-[x] Filing "Defect" for a production-live failure             -> it is a Bug (Part 1)
+[x] Filing "Bug" for a feature still pre-release (not yet live above Staging),
+    based on when/where you found it rather than the feature's own lifecycle
+    stage                                                      -> it is a Defect (Part 1)
+[x] Filing "Defect" for a feature already live above Staging, based on when/
+    where you found it rather than the feature's own lifecycle stage
+                                                                 -> it is a Bug (Part 1)
 [x] Widening a Story's ACs silently after a test finds a gap  -> file an Improvement
 [x] Reporting "% of ACs verified" as completeness            -> see test-design-doctrine.md
 ```

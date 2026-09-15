@@ -54,6 +54,13 @@ jobs:
       - name: ESLint Check
         run: bun run lint:check
 
+      - name: Skill Activation Evals Check
+        run: bun run skills:evals
+        # Structural validation of .agents/skills/*/evals/evals.json — catches
+        # malformed cases, bad polarity fields, dangling expected_skill
+        # references. Does not invoke a model; see scripts/run-skill-evals.ts
+        # header for scope.
+
       - name: Playwright Compile Check
         run: bunx playwright test --list
         # This validates that all test files compile correctly without executing them

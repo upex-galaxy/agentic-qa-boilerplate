@@ -71,6 +71,7 @@
     "setup:doctor": "bun cli/doctor.ts",
     "setup": "bun cli/doctor.ts --preflight && bun cli/install.ts",
     "skills:check": "bun scripts/lint-skills.ts",
+    "skills:evals": "bun scripts/run-skill-evals.ts",
     "skills:registry:check": "bun scripts/build-skill-registry.ts --check",
     "skills:registry": "bun scripts/build-skill-registry.ts",
     "test:clean": "rm -rf test-results playwright-report allure-results allure-report reports",
