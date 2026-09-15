@@ -1,6 +1,6 @@
 # reports/ — generated output
 
-Everything in this directory is **generated**. Five different commands write here, each owning its own filenames. Nothing here is a source of truth: the command that produced a file rebuilds it.
+Everything in this directory is **generated**. Five different commands write here across six filename patterns, each owning its own. Nothing here is a source of truth: the command that produced a file rebuilds it.
 
 ## Tier
 
@@ -23,7 +23,10 @@ Verify with `git check-ignore -v .context/reports/<file>`.
 | `adapt-framework-plan.md` | `/adapt-framework` | Adaptation plan, written before the approval gate |
 | `jira-components-plan.json` | `/jira-administration` mode `components` | Component sync plan, written before the approval gate |
 | `test-map.html` | `bun run tests:map` | Coverage map rendered from the synced `.context/PBI/` tree |
-| coverage matrix | `/test-documentation` | **No filename convention defined yet** — see the gap below |
+| `COVERAGE-MATRIX-{scope}.md` | `/test-documentation` | AC → scenario → TC → verdict grid for one documentation session |
+| `PRIORITIZATION-{scope}.md` | `/test-documentation` | ROI factors, score and Candidate / Manual / Deferred verdict per scenario |
+
+`{scope}` is the session scope — the same value as `.session/test-documentation/<scope>/`: a Jira key, a module slug, or `<YYYY-MM-DD>-adhoc`.
 
 Adding a sixth writer means adding a row here. A file in this directory whose producer is not listed is orphaned output.
 
@@ -43,7 +46,7 @@ The STP and the STR are Jira items (`Test Plan` and `Test Execution`, parented t
 
 ## Known gap
 
-`/test-documentation` writes a coverage matrix here with no agreed filename, and both `test-documentation/SKILL.md` and `regression-testing/SKILL.md` describe their output in this directory as "the committed deliverable" — false, per the gitignore above. Tracked as GitHub issue #12.
+`regression-testing/SKILL.md` still describes its output in this directory as "the committed deliverable" — false, per the gitignore above. Tracked as GitHub issue #12. (`/test-documentation` no longer does: its two reports are named above, declared `[LOCAL]`, and its Deferred verdicts are mirrored to Jira as a `## Prioritization — Deferred scenarios` comment so they survive off this machine.)
 
 ## Related
 

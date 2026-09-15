@@ -108,7 +108,7 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 | Phase 3 — TMS TC creation (N > 10 TCs)                 | Parallel   | M subagents, chunks of ~5-10 TCs per agent; cap = 10 to avoid Jira/Xray rate limits; each subagent loads `/xray-cli` (Modality jira-xray) or `/acli` (Modality jira-native)  |
 | Phase 3 — TMS TC creation (N ≤ 10 TCs)                 | Single     | inline — dispatch overhead is not justified for small batches                                                                                               |
 | Phase 3 — Traceability linking (US <-> ATS/ATP/ATR <-> TCs) | Single     | inline — requires aggregated state of all created entities                                                                                                  |
-| Phase 3 — Final report / coverage matrix               | Single     | inline — synthesis lives in the orchestrator                                                                                                                |
+| Phase 3 — Final report / reports (`COVERAGE-MATRIX-<scope>.md`, `PRIORITIZATION-<scope>.md`) | Single | inline — synthesis lives in the orchestrator                                                                                                                |
 
 - **Concurrency cap = 10 subagents** for Parallel TC creation. Jira and Xray APIs both rate-limit at ~10 writes/sec sustained; fanning out wider triggers 429 responses. If a module has >100 TCs, batches per subagent must be larger than 10 each (cap is on subagent count, not chunk size).
 - **Error protocol**: On any subagent failure: STOP, report the partial success state (which TCs landed, which failed, with their issue keys / errors), present retry / skip / abort options. Do NOT auto-fix nor auto-rollback. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`.
@@ -221,7 +221,7 @@ This **overrides** sprint-testing's "the bug is the test case" — that phrase c
 
 **Scope handoff to `/test-automation`.** The `Candidate` TCs produced here flow downstream to `/test-automation`, which **re-scopes** them into its own 3 planning scopes: `module-driven → Module (Macro)`, `ticket-driven → Ticket (Medium)`, `bug-driven → Regression-driven (Micro)`. `ad-hoc / exploratory` Candidates have no 1:1 automation scope — they enter under whichever fits (a module batch, or regression-driven for a single TC). `Manual` and `Deferred` verdicts are terminal and never reach automation.
 
-After scope confirmation, **write `.session/test-documentation/<scope>/plan.md`** per `agentic-qa-core/references/session-management.md` §6 — Goal (scope + TMS modality + expected TC count), Inputs (PBI references, ATP source, prior bugs), Approach (per-phase dispatch table above), Phase breakdown (Phase 1 Analyze → Phase 2 Prioritize → Phase 3 TC creation with chunk count → Traceability → Final report), Risks, Verification checklist (all TCs created with traceability + coverage matrix written), Cross-references (`.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/*.md` per-TC files + `.context/reports/` coverage matrix). Append `## Phase -1 — Session resume check — <ts>` with `status: completed`, `next: Phase 0 — Resolve TMS modality` to `progress.md`.
+After scope confirmation, **write `.session/test-documentation/<scope>/plan.md`** per `agentic-qa-core/references/session-management.md` §6 — Goal (scope + TMS modality + expected TC count), Inputs (PBI references, ATP source, prior bugs), Approach (per-phase dispatch table above), Phase breakdown (Phase 1 Analyze → Phase 2 Prioritize → Phase 3 TC creation with chunk count → Traceability → Final report), Risks, Verification checklist (all TCs created with traceability + both reports written + the Deferred list mirrored to Jira), Cross-references (`.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/*.md` per-TC files + `.context/reports/COVERAGE-MATRIX-<scope>.md` + `.context/reports/PRIORITIZATION-<scope>.md` — filenames per §"Reports — fixed filenames"). Append `## Phase -1 — Session resume check — <ts>` with `status: completed`, `next: Phase 0 — Resolve TMS modality` to `progress.md`.
 
 ---
 
@@ -316,8 +316,10 @@ Every scenario passes three gates in order. Fail any gate -> Deferred.
 ### ROI formula (load-bearing)
 
 ```
-ROI = (Frequency x Impact x Stability) / (Effort x Dependencies)
+ROI = (Frequency x Impact x Stability) / (Effort x Dependencies) / 10
 ```
+
+The trailing `/ 10` is a **normalization constant, not a sixth factor**. The raw quotient over 1-5 factors spans `0.04 .. 125`, while every threshold and worked example in this skill reads on a `0.004 .. 12.5` scale — so divide by 10, always. A neutral all-3s scenario lands at `(3x3x3)/(3x3)/10 = 0.3` → Deferred, which is the intended default (most scenarios should be Deferred).
 
 Each factor is scored 1-5 independently:
 
@@ -339,7 +341,7 @@ If a TC is reusable across multiple E2E flows:
 Component Value = Base ROI x (1 + 0.2 x N)
 ```
 
-where `N` = number of E2E flows that consume it. A low-ROI atomic like `authenticateSuccessfully` can become automate-worthy purely through reuse.
+where `N` = number of E2E flows that consume it. A moderate-ROI atomic like `authenticateSuccessfully` can cross out of the defer bands purely through reuse. **`N` is a qualitative estimate, capped at 3** (max multiplier `x1.6`): no tool counts call-sites, so read it off the ATP / feature map and record the estimate in the ROI comment. Full rule: `references/tms-conventions.md` §9 "Component value bonus".
 
 ### Three outcomes (load-bearing)
 
@@ -349,7 +351,7 @@ Every scenario ends in exactly one of these buckets. There is no fourth.
 |---------|------------|--------------------|------------------|
 | **Candidate** | ROI > 3.0, OR (ROI 1.5-3.0 AND prior bug), OR critical happy path | Feeds `test-automation` skill | Draft -> In Design -> READY -> In Review -> Candidate |
 | **Manual** | ROI 0.5-1.5 AND not automatable (human judgment, visual inspection), OR explicitly manual-only | Terminal: manual regression suite | Draft -> In Design -> READY -> MANUAL |
-| **Deferred** | ROI < 0.5, OR failed Phase-0 filter, OR one-time validation, OR **it matched neither row above** (Deferred is the default bucket: ROI under 3.0 with no prior bug and no critical-path justification lands here) | Terminal: not in regression. Can be revisited if system changes | **jira-native**: do not create a TC in the TMS — document as Deferred in the prioritization report. **jira-xray**: the sprint `Test` (created in `/sprint-testing` Stage 1) is **not promoted** to the Regression Test Plan — it stays as a sprint execution artifact, not deleted. |
+| **Deferred** | ROI < 0.5, OR failed Phase-0 filter, OR one-time validation, OR **it matched neither row above** (Deferred is the default bucket: ROI under 3.0 with no prior bug and no critical-path justification lands here) | Terminal: not in regression. Can be revisited if system changes | **jira-native**: do not create a TC in the TMS — document as Deferred in `.context/reports/PRIORITIZATION-<scope>.md` AND in the mirrored Jira comment (§"Reports — fixed filenames"; the local file is `[LOCAL]`, the comment is the durable record). **jira-xray**: the sprint `Test` (created in `/sprint-testing` Stage 1) is **not promoted** to the Regression Test Plan — it stays as a sprint execution artifact, not deleted. |
 
 > **Band authority**: the three outcomes above are the *TMS-action* collapse of the 5-band table in `references/tms-conventions.md` §9 ("ROI decision thresholds (strict)"). That table is the authority on band boundaries and it resolves the middle bands explicitly — `1.5-3.0` is "Case by case: prior bug? critical flow? **If no, defer**", `0.5-1.5` is "Probably defer: include only if prior bug". Read it whenever a score falls between `0.5` and `3.0`.
 
@@ -520,11 +522,39 @@ Full reference in `references/tms-conventions.md` §Labels.
 
 After TMS creation, materialize the per-TC cache by running `bun run jira:sync-issues get <STORY_KEY>` — the sync writes one markdown file per linked `Test` issue into `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/TEST-<KEY>-<slug>.md`. This directory is `[SYNC]` (Jira mirror, gitignored — see `AGENTS.md` §9): this skill CREATES the `Test` issues in the TMS, links them to the Story, runs the sync, and READS the materialized files — it never authors files in `test-cases/`. File format in `references/jira-test-management.md` §Local cache. This prevents re-reading the TMS in future sessions and gives `test-automation` an immediate handoff.
 
+### Reports — fixed filenames
+
+Phase 3 writes exactly two files to `.context/reports/`, both named from the session `<scope>`:
+
+| File | Holds |
+|---|---|
+| `.context/reports/COVERAGE-MATRIX-<scope>.md` | AC → scenario → TC key → verdict grid; the uncovered-AC list |
+| `.context/reports/PRIORITIZATION-<scope>.md` | Every scenario with its five ROI factors, score, and Candidate / Manual / Deferred verdict |
+
+`<scope>` is the SAME value as the session directory `.session/test-documentation/<scope>/`: `<JIRA-KEY>` for ticket / bug scope, `<module-slug>` for module scope, `<YYYY-MM-DD>-adhoc` for ad-hoc scope. One session, one pair of files; a re-run on the same scope overwrites its own pair and nothing else.
+
+**Both files are `[LOCAL]`, not deliverables.** `.context/reports/` is gitignored and every file in it exists only on the machine that generated it (`.context/reports/README.md`). Nothing downstream may depend on either file being present.
+
+**So the Deferred verdicts must ALSO be recorded durably.** Candidate and Manual verdicts already survive as TMS `Test` issues carrying their ROI comment — but Deferred scenarios create no TMS item by design, so without a second home the reasoning dies with the directory. After `PRIORITIZATION-<scope>.md` is written, mirror its Deferred list as a Jira comment on the scope's Story / Epic (same fallback-comment pattern as `.agents/jira-required.yaml` `fallback:`):
+
+```
+[ISSUE_TRACKER_TOOL] Add comment:
+  issue: {SCOPE_KEY}
+  body: |
+    ## Prioritization — Deferred scenarios
+
+    | Scenario | ROI | Why deferred |
+    |---|---|---|
+    | <scenario> | <score> | <Phase-0 gate failed / band / one-time validation> |
+```
+
+Read-before-write: if the comment already exists from an earlier run on this scope, replace that comment rather than appending a second one. For module scope with no single owning issue, comment on the Regression Epic.
+
 ### Per-phase progress + Archive
 
 After each Phase 1 / Phase 2 / Phase 3 step completes (including each Parallel TC-creation chunk in Phase 3), the orchestrator appends a phase entry to `.session/test-documentation/<scope>/progress.md` per `agentic-qa-core/references/session-management.md` §7. Per-chunk entries are critical: a 60-TC batch dispatched as 6 chunks of 10 produces 6 separate `## Phase 3.chunk-<N>` entries, each recording which TC IDs landed. Resume reads completed chunks and dispatches only the missing ones.
 
-After Phase 3 Final report + coverage matrix land, the orchestrator runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/test-documentation/<scope>/` to `.session/.archive/<YYYY-MM-DD>-test-documentation-<scope>/` (two-file dir preserved) and calls `mem_session_summary` with the archive path. The coverage matrix in `.context/reports/` stays in place as the committed deliverable; the per-TC `test-cases/*.md` files are a gitignored synced cache, recoverable via `bun run context:hydrate`.
+After Phase 3 Final report + both reports land (and the Deferred list is mirrored to Jira), the orchestrator runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/test-documentation/<scope>/` to `.session/.archive/<YYYY-MM-DD>-test-documentation-<scope>/` (two-file dir preserved) and calls `mem_session_summary` with the archive path. **Neither report is a deliverable**: both are `[LOCAL]` generated output in a gitignored directory (`.context/reports/README.md`), present only on the machine that ran the session. The durable record is the TMS — the `Test` issues with their ROI comments for Candidate + Manual, and the mirrored `## Prioritization — Deferred scenarios` Jira comment for everything Deferred. The per-TC `test-cases/*.md` files are likewise a gitignored synced cache, recoverable via `bun run context:hydrate`.
 
 On Phase 3 partial failure (some chunks 429-rate-limited, some succeeded), archive does NOT run — `progress.md` retains the per-chunk state so resume picks up the missing ones.
 

@@ -228,7 +228,7 @@ The Description is load-bearing in Jira Native mode and still recommended in Xra
 
 ## Priority / ROI
 - Priority: {Critical|High|Medium|Low}
-- ROI score: {number} (Frequency x Impact x Stability / Effort x Dependencies)
+- ROI score: {number} (Frequency x Impact x Stability / Effort x Dependencies / 10 — the `/ 10` normalization, see `tms-conventions.md` §9)
 - Outcome: {Candidate|Manual|Deferred}
 
 ## Prior bugs covered

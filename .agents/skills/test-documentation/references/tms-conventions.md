@@ -442,8 +442,10 @@ Every TC with variables must include a table explaining how to obtain each one:
 ### The formula
 
 ```
-ROI = (Frequency x Impact x Stability) / (Effort x Dependencies)
+ROI = (Frequency x Impact x Stability) / (Effort x Dependencies) / 10
 ```
+
+The trailing `/ 10` is a **normalization constant, not a sixth factor**. Raw, the quotient over 1-5 factors spans `0.04 .. 125`; normalized it spans `0.004 .. 12.5`, which is the scale every threshold and worked example below reads on. Divide by 10, always. A neutral all-3s scenario scores `(3x3x3)/(3x3)/10 = 0.3` → Defer, consistent with "most scenarios should be Deferred".
 
 Each factor scored 1-5:
 
@@ -479,7 +481,15 @@ These thresholds are strict by design:
 Component Value = Base ROI x (1 + 0.2 x N)
 ```
 
-where `N` = number of E2E flows that reuse the TC. A low-ROI atomic like `authenticateSuccessfully` can become automate-worthy purely through reuse (used in 5 flows: 1.5 x 2.0 = 3.0 -> Automate).
+where `N` = number of E2E flows that reuse the TC. A moderate-ROI atomic like `authenticateSuccessfully` can cross out of the defer bands purely through reuse (base ROI 2.0, reused in 3+ flows: `2.0 x 1.6 = 3.2` -> Automate with caution).
+
+**`N` is a qualitative heuristic, not a measurement.** Nothing tracks it: `kata-manifest.json` registers Components and ATCs but records no call-sites, and no other tool in this repo counts how many E2E flows consume a given TC. So the formula above is an **illustration of the shape of the bonus**, not an arithmetic you can look up. Rules:
+
+1. **Estimate `N` qualitatively** from the ATP and the feature map — how many documented flows plausibly pass through this step — never from a grep or a manifest field that does not exist.
+2. **Cap the bonus at `N = 3`** (max multiplier `x1.6`). An estimate you cannot verify must not be able to triple a score.
+3. **Record the estimate in the ROI comment** alongside the five factors, e.g. `Reuse: N~3 (estimated from ATP: login, checkout, profile-edit). Bonus x1.6.` An unrecorded bonus is an unauditable one.
+
+> Future work: a manifest field (e.g. ATC call-site counts emitted by `bun run kata:manifest`) would make `N` measurable and let this bonus drop the cap.
 
 ### Phase 0 filter (applied BEFORE ROI)
 
