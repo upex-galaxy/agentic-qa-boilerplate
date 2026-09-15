@@ -10,8 +10,16 @@
  * `expected_behavior` / `expected_output` needs a real model invocation and a
  * grader (that is what `claude plugin eval` does for `case.yaml` +
  * `graders/*.md` suites). Wiring these `evals.json` files into that pipeline
- * is future work, not this script's job. What this script DOES check, for
- * every case, deterministically and without any network/API call:
+ * is future work, not this script's job.
+ *
+ * PENDING: this script only validates STRUCTURE. It does not invoke a model,
+ * so a green run here does NOT mean the 66 cases' skills actually activate
+ * (or don't) for their prompts — that question is still open. See
+ * docs/reports/2026-09-15-ola-f-doctrina.md "Qué queda abierto" for the full
+ * note; this comment is the other half of that pointer.
+ *
+ * What this script DOES check, for every case, deterministically and
+ * without any network/API call:
  *
  *   - the file is valid JSON with a non-empty `evals` array
  *   - every case has a non-empty prompt and a non-empty expected-outcome

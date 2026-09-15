@@ -33,32 +33,49 @@ separado obligatorio. El SKILL.md estaba desalineado con su propio stage-gates.
 
 ---
 
-### Deuda 2 — FLAKY: 5 corridas vs 10 corridas
+### Deuda 2 — FLAKY: piso 5 vs ventana 10 (DOS cifras, no una)
 
 **Antes:**
-- `stage-gates.md` contract table, fila **Regression**, columna "Evidence": *"≥5 runs of history
-  before the word FLAKY is allowed"*.
-- `regression-testing/SKILL.md:290`: *"Failure rate > 20% over last **10** runs? → FLAKY"*.
-- `regression-testing/SKILL.md:506`: *"Flakiness needs **10** runs of history minimum."*
-- `references/failure-classification.md` (mismo skill): usa 10 en 6+ lugares como ventana real de
-  cálculo — `N = min(10, available history)`, ejemplos de `gh run list` pidiendo "last 10 runs",
-  y el umbral de 5 aparece ahí solo como **piso mínimo** para no marcar "insufficient history"
-  (`N < 5` → no hay señal, nunca declarar FLAKY todavía).
+- `stage-gates.md:102` (contract table, fila **Regression**, columna "Evidence"): *"≥5 runs of
+  history before the word FLAKY is allowed"* — este ya era el piso correcto.
+- `regression-testing/SKILL.md:290`: *"Failure rate > 20% over last **10** runs? → FLAKY"* — la
+  ventana correcta.
+- `regression-testing/SKILL.md:506`: *"Flakiness needs **10** runs of history minimum."* — **este
+  era el archivo atrasado**: mezclaba piso y ventana en una sola cifra equivocada (10 en vez de 5
+  para el piso), contradiciendo a su propio `references/failure-classification.md` (líneas 57, 169
+  y 288, que usan 5 como piso — `N < 5` → `INSUFFICIENT HISTORY` — y 10 como ventana,
+  `N = min(10, available)`, línea 52). El syllabus de la webapp (`syllabus-edition-4.json:337` y
+  `:723`) también sostiene 5 como piso.
 
-**Ahora:** `stage-gates.md` cambiado a **"≥10 runs of history before the word FLAKY is allowed"**.
+**Primer intento (revertido) — colapsé mal la deuda:** leí "5 vs 10" como una contradicción entre
+dos cifras que medían lo mismo y elegí una sola (10), editando `stage-gates.md` — el archivo que
+en realidad ya estaba bien — y dejando sin tocar `SKILL.md:506`, que era el que tenía el error real.
+Mandé `PREGUNTA:` al coordinador con esa lectura equivocada y seguí con el resto de las deudas
+mientras esperaba respuesta. El coordinador verificó la rama pusheada y marcó la deuda 2 como no
+resuelta.
 
-**Por qué esta cifra:** no estaba decidida formalmente (el brief lo marca como abierto), pero el
-peso de la evidencia es asimétrico: 10 es la cifra que el pipeline usa de verdad en 6+ lugares del
-skill que ejecuta Regression (la ventana real de cómputo del failure-rate), mientras que el 5 de
-`stage-gates.md` describía en realidad el piso mínimo de historial para no caer en
-"insufficient history" — un concepto distinto que el brief pedía colapsar en una sola cifra. Elegí
-la cifra que sostiene el skill operativo, no la del resumen de una sola celda de tabla.
+**Corrección aplicada:** piso y ventana son dos medidas distintas, ambas correctas, y hay que
+nombrarlas las dos — no colapsar a una:
+- **Piso = 5**: el mínimo de historial antes de poder usar la palabra FLAKY en absoluto; por debajo,
+  `INSUFFICIENT HISTORY`, nunca FLAKY.
+- **Ventana = 10**: cuántas corridas entran en el cálculo del failure-rate, `N = min(10, available)`.
 
-**PREGUNTA enviada al coordinador** (no bloqueante, seguí con el resto mientras esperaba):
-confirmar que 10 es la cifra correcta si la webapp sostiene otra en `plan-refactor.md` §4. Sin
-respuesta al momento de cerrar este informe.
+**Ahora:**
+- `stage-gates.md:102` revertido a su forma correcta original y precisado: *"Allure report; ≥5 runs
+  of history before the word FLAKY is allowed (below that: INSUFFICIENT HISTORY); rate computed
+  over the last N = min(10, available); STR → STP"*.
+- `regression-testing/SKILL.md:506` corregido (era el atrasado): de "needs 10 runs of history
+  minimum" a "needs 5 runs of history minimum before you can call it at all... The failure-rate
+  itself is computed over a wider window: the last N = min(10, available) runs... 5 is the floor to
+  have any signal; 10 is the window the percentage is actually computed over."
+- `SKILL.md:290` y `failure-classification.md` no cambiaron: ya usaban las dos cifras correctamente,
+  cada una en su rol.
 
-**Archivo:** `.agents/skills/agentic-qa-core/references/stage-gates.md`
+**No se tocó** el syllabus/deck de la webapp — es otro repo, ya está alineado, y está fuera de lo
+que este worker puede editar.
+
+**Archivos:** `.agents/skills/agentic-qa-core/references/stage-gates.md`,
+`.agents/skills/regression-testing/SKILL.md`
 
 ---
 
@@ -251,7 +268,21 @@ instrucción explícita del brief.
 
 ## Qué queda abierto
 
-- **Deuda 2 (FLAKY)**: cifra resuelta a 10 con evidencia del propio pipeline, pero el brief la
-  marcaba como no decidida formalmente contra lo que sostiene la webapp. Pregunta enviada al
-  coordinador (`--type question`); sin respuesta al cierre de esta tarea. Si la webapp confirma
-  otra cifra, es un cambio de una sola línea en `stage-gates.md`.
+- **Deuda 2 (FLAKY): cerrada.** Piso 5 / ventana 10, las dos cifras nombradas donde corresponde
+  (`stage-gates.md:102`, `regression-testing/SKILL.md:506`), confirmado por el coordinador contra
+  `failure-classification.md` y el syllabus de la webapp. Ver el detalle del primer intento fallido
+  en la sección de la Deuda 2 arriba — quedó documentado a propósito, no se reescribió la historia.
+
+- **PENDIENTE — el runner de evals valida ESTRUCTURA, no activación real.**
+  `scripts/run-skill-evals.ts` confirma que los 66 casos están bien formados (prompt no vacío,
+  polaridad válida, `expected_skill` resuelve a un skill real, sin duplicados) — eso es lo que
+  corre hoy en CI y lo que da 66/66 verde. Lo que **no** hace, y que el nombre "activation eval"
+  promete: invocar un modelo de verdad con cada `prompt` y verificar que el skill correcto se
+  dispare (o no se dispare, en los casos negativos). Verificar eso necesita una llamada real a un
+  modelo y un juez sobre la transcripción — es exactamente lo que `claude plugin eval` hace para
+  su propio formato (`case.yaml` + `graders/*.md`), pero estos 9 `evals.json` no están en ese
+  formato, y este worktree no tiene `ANTHROPIC_API_KEY` provisionada para correrlo en CI. Migrar los
+  9 archivos a ese formato u operar un juez propio es trabajo aparte, explícitamente fuera de
+  alcance de esta tarea ("no construyas un framework"). Anotado acá porque este repo no tiene un
+  registro de pendientes dedicado — el punto de verdad hoy es este informe y el comentario de
+  cabecera de `scripts/run-skill-evals.ts`, que dice lo mismo.
