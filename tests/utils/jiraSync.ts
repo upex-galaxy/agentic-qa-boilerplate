@@ -4,9 +4,14 @@
  * Syncs ATC results to Test Management Systems.
  * Supports: X-Ray Cloud, Jira Direct
  *
- * Usage:
- *   bun run test:sync
- *   AUTO_SYNC=true bun test
+ * Usage: run it AFTER the Playwright process exits, gated on AUTO_SYNC=true.
+ *
+ *   bun run test           # writes reports/atc_results.json on exit
+ *   bun run test:sync      # reads that file and writes the results back
+ *
+ * It is deliberately NOT called from tests/teardown/global.teardown.ts: the
+ * report it reads is written by KataReporter.onEnd(), which fires after the
+ * teardown project, so an in-process call reads a stale file or none at all.
  */
 
 import type { AtcResult } from '@utils/decorators';
@@ -76,7 +81,24 @@ export async function syncResults(reportPath = 'reports/atc_results.json'): Prom
     results = reportData.results ?? {};
   }
   else {
-    console.warn('[WARN] ATC report file not found:', reportPath);
+    // A missing report in CI means the pipeline is wired wrong: this command
+    // runs AFTER the Playwright process, so KataReporter.onEnd() has already
+    // written the file. Failing loudly is the whole point of the fix for #27 —
+    // the old silent return is how the write-back went unnoticed for months.
+    // Locally the same state is ordinary (no suite has been run yet), so it
+    // stays a warning there.
+    const message = `ATC report file not found: ${reportPath}`;
+
+    if (env.isCI) {
+      console.error(
+        `[ERROR] ${message}. It is written by KataReporter.onEnd() when the `
+        + 'Playwright process exits, so run `bun run test:sync` as a step AFTER '
+        + 'the test step, not before it and not inside the suite.',
+      );
+      return { provider: config.tms.provider, success: false, message };
+    }
+
+    console.warn(`[WARN] ${message} — run the suite first, then \`bun run test:sync\`.`);
     results = {};
   }
 

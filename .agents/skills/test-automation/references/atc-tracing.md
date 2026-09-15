@@ -13,11 +13,20 @@ Test workers (N)                 Coordinator (1)                Teardown (1)
 -----------------                ---------------                ------------
 @atc/@step ──► test.step()       KataReporter.onEnd()           global.teardown
      │                               │                                │
-     ├─► KataReporter (terminal)     ├─► read NDJSON lines            ├─► read atc_results.json
-     ├─► allure-playwright (auto)    ├─► aggregate by testId           ├─► show ATC Coverage summary
-     └─► storeResult() → NDJSON      ├─► write atc_results.json        └─► if AUTO_SYNC=true
-                                     └─► delete NDJSON                      call syncResults()
+     ├─► KataReporter (terminal)     ├─► read NDJSON lines            ├─► read .atc_partial.ndjson
+     ├─► allure-playwright (auto)    ├─► aggregate by testId           └─► show ATC Coverage summary
+     └─► storeResult() → NDJSON      ├─► write atc_results.json
+                                     └─► delete NDJSON
+
+                                 ── process exits ──
+                                          │
+                                          └─► bun run test:sync → syncResults()
 ```
+
+The teardown project finishes BEFORE `onEnd()`, so it reads the NDJSON partial
+file, not the aggregate — and it cannot sync, because the file the sync reads
+does not exist yet. The TMS write-back is a separate command run after the
+Playwright process exits.
 
 Key invariants:
 
@@ -193,7 +202,7 @@ Filter criterion: KataReporter only prints steps where `step.category === 'test.
 
 ## 7. Global teardown summary
 
-After the reporter fires, the teardown prints a stand-alone summary from `reports/atc_results.json`:
+Before the reporter fires, the teardown prints a stand-alone summary from `reports/.atc_partial.ndjson`:
 
 ```
 ============================================================
@@ -202,12 +211,13 @@ KATA Architecture - Global Teardown
 ATC Coverage:
    1 unique ATC tracked (2 total executions)
    ✅ Passed: 1 | ❌ Failed: 0 | ⏭️ Skipped: 0
-[SKIP] TMS sync disabled (set AUTO_SYNC=true to enable)
+[SKIP] TMS sync is OFF — these results were NOT written back to the TMS. Set AUTO_SYNC=true to enable it, then run `bun run test:sync` after the suite.
 ============================================================
 📊 ATC Report generated: reports/atc_results.json
 ```
 
-If `AUTO_SYNC=true`, `syncResults()` runs next and routes to the configured provider.
+The sync does not run here. With `AUTO_SYNC=true` the teardown only says so; the
+write-back happens when `bun run test:sync` runs after the process exits.
 
 ---
 
@@ -215,12 +225,20 @@ If `AUTO_SYNC=true`, `syncResults()` runs next and routes to the configured prov
 
 ### 8.1 Trigger
 
-```typescript
-// tests/teardown/global.teardown.ts
-if (process.env.AUTO_SYNC === 'true') {
-  await syncResults();
-}
+A separate command, never an in-process call. `reports/atc_results.json` is
+written by `KataReporter.onEnd()`, which fires after every project — the
+teardown included — so anything that syncs from inside the run reads the
+previous run's file (local) or none at all (CI).
+
+```bash
+AUTO_SYNC=true bun run test   # writes reports/atc_results.json on exit
+bun run test:sync             # reads it and writes the results back
 ```
+
+The suite workflows under `.github/workflows/` run the second line as a
+`Sync Results to TMS` step gated on `AUTO_SYNC == 'true'`, right after the test
+step. `syncResults()` itself still honours the `AUTO_SYNC` gate, and in CI it
+exits non-zero when the report file is missing rather than returning silently.
 
 ### 8.2 Provider routing
 
@@ -415,11 +433,11 @@ The manifest is a static registry — it says what **exists in code**. `atc_resu
 |------|----------------|
 | `tests/utils/decorators.ts` | `@atc`, `@step`, `formatArgs`, `storeResult` (NDJSON writer), `SENSITIVE_KEYS` |
 | `tests/KataReporter.ts` | Terminal tree output; `generateAtcReport()` in `onEnd()` (NDJSON → JSON); NDJSON cleanup |
-| `tests/teardown/global.teardown.ts` | Reads `atc_results.json`, prints summary, calls `syncResults()` if `AUTO_SYNC=true` |
+| `tests/teardown/global.teardown.ts` | Reads `.atc_partial.ndjson`, prints the ATC Coverage summary, states whether the write-back is on. Does NOT sync |
 | `tests/utils/jiraSync.ts` | `syncToXray()`, `syncToJiraDirect()`, provider router |
 | `playwright.config.ts` | Reporter chain (KataReporter must be registered), `global-teardown` PROJECT (wired via `teardown:` on the `global-setup` project, not a `globalTeardown` hook) |
 | `config/variables.ts` | `config.tms.*` — reads the env vars listed in §8.3 |
 | `scripts/kata-manifest.ts` | Static scanner — produces `kata-manifest.json` |
 | `reports/.atc_partial.ndjson` | Ephemeral per-run capture (deleted in `onEnd()`) |
-| `reports/atc_results.json` | Persistent aggregated result — input to teardown and sync |
+| `reports/atc_results.json` | Persistent aggregated result — input to `bun run test:sync` (written too late for the teardown) |
 | `kata-manifest.json` | Static registry of components and ATCs in source |

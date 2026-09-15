@@ -213,7 +213,7 @@ The config reads through `config/variables.ts`, the single source of truth. It d
 | `TEST_ENV` | `config/variables.ts` | Selects the environment entry in the internal URL map AND the credential set. `config.baseUrl` (frontend, feeds `use.baseURL`) and `config.apiUrl` (API host, feeds `ApiBase`) both come from that map — there are NO `BASE_URL` / `API_BASE_URL` env vars. |
 | `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD` | auth setup projects | Local credentials |
 | `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD` | auth setup projects | Staging credentials |
-| `AUTO_SYNC` | `global.teardown.ts` | Enable TMS sync (see atc-tracing reference) |
+| `AUTO_SYNC` | `jiraSync.ts`, the workflows' `Sync Results to TMS` step | Enable the TMS write-back. It runs as a step AFTER the test step, not inside the teardown (see atc-tracing reference) |
 | `TMS_PROVIDER` | `jiraSync.ts` | `xray` / `jira` / `none` |
 | `STP_EXECUTION_KEY` | `jiraSync.ts` | **Xray only.** Target of the write-back: the key of the **STR** Test Execution linked to the sprint STP — never the STP itself (the sync reads the issue type and refuses a Test Plan). Unset → each run mints a new, unparented Execution. |
 
@@ -354,7 +354,7 @@ Two-command discipline for the test author:
 1. **Dependency projects do not re-run between test projects.** `ui-setup` runs once per invocation. If you change auth credentials mid-session, invalidate `.auth/` manually (`rm -rf .auth`).
 2. **Serial today does not license shared state.** The shipped config runs `fullyParallel: false` + `workers: 1`, but a test that would fail under parallelism has shared state — locate it and remove it now; do not reach for `test.describe.serial`, and do not let serial execution hide the bug that blocks the future workers bump.
 3. **Project `testMatch` is case-sensitive on Linux, case-insensitive on macOS.** CI is Linux. Match the pattern exactly on disk.
-4. **The `global-teardown` PROJECT runs even if all tests were skipped.** It is wired via the `teardown:` property on the `global-setup` project (not a `globalTeardown` hook). Use it for artifact cleanup and for the TMS sync gate (which has its own `if (AUTO_SYNC)` guard).
+4. **The `global-teardown` PROJECT runs even if all tests were skipped.** It is wired via the `teardown:` property on the `global-setup` project (not a `globalTeardown` hook). Use it for artifact cleanup and the run summary — but NOT for the TMS sync: it finishes before `KataReporter.onEnd()` writes `reports/atc_results.json`, so the write-back is a separate `bun run test:sync` step after the process exits.
 5. **The `baseURL` applies to `page.goto('/path')` only.** API requests go through `ApiBase` which uses `config.apiUrl` from `config/variables.ts`. They are independent.
 6. **Reporter order is preserved.** Moving `html` before `KataReporter` can cause the tree view to miss step events on fast tests. Keep `KataReporter` first.
 7. **`retries: 0` applies in CI too.** There is no retry allowance anywhere in this config. A test that would only pass on retry is a bug — fix the test or the product, never the retry count.

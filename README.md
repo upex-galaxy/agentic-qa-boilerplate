@@ -874,12 +874,15 @@ STP_EXECUTION_KEY=YOUR-PROJECT-194
 ### Sync Test Results
 
 ```bash
-# After test run
-bun run test:sync
-
-# Or enable auto-sync in CI
+# Always a separate step, AFTER the Playwright process exits: reports/atc_results.json
+# is written by KataReporter.onEnd(), so nothing inside the run can read it.
 AUTO_SYNC=true bun run test
+bun run test:sync
 ```
+
+In CI the suite workflows do exactly that: a `Sync Results to TMS` step gated on
+`AUTO_SYNC == 'true'` runs right after the test step. The global teardown only
+prints the ATC coverage summary; it never syncs.
 
 ### Link Tests to Test Cases
 

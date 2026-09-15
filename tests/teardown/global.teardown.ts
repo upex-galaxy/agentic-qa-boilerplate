@@ -2,7 +2,11 @@
  * KATA Architecture - Global Teardown (Project)
  *
  * Runs LAST after all test projects complete.
- * Generates reports, syncs to TMS, cleans up resources.
+ * Prints the ATC coverage summary and says where the TMS write-back happens.
+ *
+ * It does NOT sync: `reports/atc_results.json` is written by
+ * KataReporter.onEnd(), which fires after this project. `bun run test:sync`
+ * does the write-back once the Playwright process has exited.
  *
  * Dependencies: e2e, integration (runs after all tests)
  * Dependents: None (this is the final step)
@@ -12,15 +16,15 @@ import { existsSync, readFileSync } from 'node:fs';
 
 import { test as teardown } from '@playwright/test';
 import { ATC_PARTIAL_PATH } from '@utils/decorators';
-import { syncResults } from '@utils/jiraSync';
 import { config } from '@variables';
 
 /**
- * Global Teardown: generate reports and sync TMS
+ * Global Teardown: report ATC coverage
  *
- * Generates ATC execution report and syncs results to TMS if enabled.
+ * Summarises the ATC executions of this run from the NDJSON partial file and
+ * states whether the TMS write-back is enabled for the follow-up sync step.
  */
-teardown('Global Teardown: generate reports and sync TMS', async () => {
+teardown('Global Teardown: report ATC coverage', () => {
   console.log(`\n${'='.repeat(60)}`);
   console.log('KATA Architecture - Global Teardown');
   console.log('='.repeat(60));
@@ -77,28 +81,24 @@ teardown('Global Teardown: generate reports and sync TMS', async () => {
     console.log('\n[INFO] No ATC results found (no @atc decorators executed)');
   }
 
-  // Sync results to TMS.
-  // Read through `config`, not process.env: config/variables.ts is the single
-  // place this repo resolves environment variables from.
+  // TMS sync does NOT happen here.
+  //
+  // `reports/atc_results.json` is written by KataReporter.onEnd(), and a
+  // Playwright reporter's onEnd() fires after EVERY project has finished —
+  // this teardown project included. Any sync started from inside this test
+  // would read a file that does not exist yet (CI) or the previous run's file
+  // (local). The write-back therefore runs as a separate step once the
+  // Playwright process has exited: `bun run test:sync`.
   if (config.tms.autoSync) {
-    console.log('\n[SYNC] Syncing results to TMS...');
-    try {
-      const result = await syncResults();
-      if (result) {
-        console.log(`   Provider: ${result.provider}`);
-        console.log(`   Status: ${result.success ? 'Success' : 'Failed'}`);
-        console.log(`   Message: ${result.message}`);
-      }
-    }
-    catch (error) {
-      console.error('[ERROR] TMS sync failed:', error);
-    }
+    console.log(
+      '\n[SYNC] TMS sync is ON — results are synced by the `bun run test:sync` step that runs after this process exits.',
+    );
   }
   else {
     // Say it out loud. A silent no-op here is why nobody noticed that automated
     // results never reached Jira in the shipped configuration.
     console.log(
-      '\n[SKIP] TMS sync is OFF — these results were NOT written back to the TMS. Set AUTO_SYNC=true to enable it.',
+      '\n[SKIP] TMS sync is OFF — these results were NOT written back to the TMS. Set AUTO_SYNC=true to enable it, then run `bun run test:sync` after the suite.',
     );
     // Name the variable that actually applies. Modality jira-native has no Test
     // Executions at all, so pointing its users at an execution key teaches a
