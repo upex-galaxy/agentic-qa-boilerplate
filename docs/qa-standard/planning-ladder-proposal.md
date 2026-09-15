@@ -142,7 +142,7 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 {ACRONYM}: {scope-id}: {descriptor}
 ```
 
-- **ACRONYM** — `MTP` (epic) · `FTP` · `STP` · `ATP` (plans) · `STR` · `ATR` (runs) · `ATS` (per-Story Test Set — the ATC/ATP/ATR/ATS family).
+- **ACRONYM** — `MTP` (epic) · `FTP` · `STP` · `ATP` (plans) · `STR` · `ATR` (runs) · `ATS` (per-Story Test Set — the ATC/ATP/ATR/ATS family) · `RTP` (Regression Test Plan — *added 2026-09-15, pending maintainer ratification*; see the addendum below the table).
 - **scope-id** — the key of the thing under test at that altitude (feature-Epic key, `Sprint N`, Story key).
 - **descriptor** — human-readable, embeds the testing-term where the user requires it.
 
@@ -155,6 +155,15 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 | **ATP** | Test Plan | `ATP: {STORY-KEY}: {story title}` | `ATP: PROJ-123: Apply discount at checkout` |
 | **ATR** | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-123: Story Testing` |
 | **ATS** | Test Set | `ATS: {STORY-KEY}: {story title}` | `ATS: PROJ-123: Apply discount at checkout` |
+| **RTP** | Test Plan | `RTP: {PROJECT_KEY\|module}: Regression Test Plan` | `RTP: PROJ: Regression Test Plan` |
+
+> **RTP addendum** *(added 2026-09-15, pending maintainer ratification)* — the long-lived
+> **Regression Test Plan** the live layer already had under that full name, given the ladder's
+> acronym so it reads beside ATP / STP / FTP. One per project (or per module), created by
+> `/test-documentation` as the promotion target for every `regression-candidate` TC, parented to
+> the **QA Master Test Plan** epic. Unlike every other Plan it has **no terminal**: it reaches
+> `ready` on the first promotion and stays there for the life of the product — a regression run
+> never completes the plan it ran from.
 
 > **No "ATP DRAFT" variant exists.** The pre-sprint pass (`/shift-left-testing`) authors the ATP
 > at outline maturity **into the `{{jira.acceptance_test_plan}}` custom field only** — no Test

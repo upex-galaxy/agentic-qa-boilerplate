@@ -212,7 +212,8 @@ Stage 1 — Planning
                                  FROM the {{jira.acceptance_test_plan}} field content ③ ATP/ATR test
                                  lists DERIVED from the ATS membership ④ ATR always created WITH the
                                  Test Environment.
-                                 Stage 4 promotes the regression-worthy ones into the Regression Test Plan.
+                                 Stage 4 promotes the regression-worthy ones into the Regression
+                                 Test Plan (RTP), re-deriving the canonical title on the way in.
     -> For Bug:   veto check + Bug Analysis + ATP/ATR.
                   jira-xray   -> ONE repro `Test` by default, created at fix-verification time (1:N
                                  only if the scope genuinely covers distinct conditions — justify per
@@ -254,6 +255,22 @@ Stage 3 — Reporting
 | | **Modality jira-native** | **Modality jira-xray** (`bun xray` CLI) |
 |---|---|---|
 | Stage 1 (Planning) | TC **outlines only** (names + 1-line precond/expected in the ATP). **No `Test` work items** — a native `Test` issue IS documentation, so it waits for the Stage-4 regression-worthy gate. | **ASK the format once per batch** (see "Test-case format — ask once per batch" below), then **create + execute** Xray `Test` issues for the **planned outlines**, at *executable* detail (preconditions + runnable steps), and run them via a **Test Execution** — all in one pass. By Xray's plugin design the `Test` is the execution unit, so generating these artifacts is what makes the rest of the Xray flow work. All created Tests are aggregated into the Story's **ATS** and the Plan/Execution lists derive from that membership (see "Stage 1 Set-first order" below). **Manual** tests are created **without inline steps**, then steps are added one-by-one (see "Manual Xray test steps — two-step creation"). |
+
+**Whenever this stage DOES create a `Test` work item, its summary MUST already match the canonical form** `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` — `{US_ID}` = the Story key, `#` = a stable index within that Story, assigned once and never renumbered. A sprint-era title is not a draft to be tidied later: Stage 4 re-derives and verifies it on promotion (`test-documentation/SKILL.md` §"Title on promotion"), and a Test created outside the form forces a rename there. Full grammar + anti-patterns: `references/acceptance-test-planning.md` §TC nomenclature.
+
+#### Which stage creates the TCs — `{{TC_CREATION_STAGE}}` (project knob) — AUTHORITATIVE
+
+The table above is the **`auto`** behavior, which is the shipped default. `.agents/project.yaml` → `testing.tc_creation_stage` (referenced as `{{TC_CREATION_STAGE}}`) lets a project override it. **Resolve it at the modality gate (Session Start step 0), alongside `{{TMS_CLI}}`, and record the resolved value in `test-session-memory.md` next to the modality** — it is sticky for the session, exactly like the modality.
+
+| Value | Stage 1 (this skill) creates `Test` work items? | Notes |
+|---|---|---|
+| `auto` (default) | jira-xray → **yes** · jira-native → **no** (outlines only) | the table above, unchanged |
+| `sprint-testing` | **yes**, in both modalities | a jira-native project that wants in-sprint Test items (e.g. its dashboards count Test issues per sprint). Stage 4 then REFINES + promotes them instead of creating them |
+| `test-documentation` | **no**, in both modalities | an Xray project that wants a clean regression repository. **Cost, state it to the user before honouring it**: Xray's `Test` is the execution unit, so with no Test items there is no Test Execution to run them in — Stage 1's ATR carries no runs and per-TC PASSED/FAILED evidence lives only in the ATR body. Traceability degrades to the ATP text |
+
+**Why the knob exists** (maintainer's rationale, 2026-09-14): the two modalities pull in opposite directions and neither default is universally right. Under **jira-native** a `Test` issue IS documentation, so creating one per sprint outline fills the regression repository with cases that were never ROI-gated — noise that a later reader cannot distinguish from a curated regression case. Under **jira-xray** the `Test` is what Xray executes, and its whole traceability design (coverage panel, Test Execution runs, Test Plan membership) needs the item to exist during the sprint — deferring creation to Stage 4 costs the project its in-sprint evidence. So the default follows the tool (`auto`), and the knob exists because a project may legitimately weigh repository cleanliness against traceability differently.
+
+**On an unset / unrecognized value**: treat it as `auto` and say so once. Do not ask the user mid-stage; a missing knob is the shipped default, not a gap.
 
 #### Test-case format — ask once per batch (Modality jira-xray, Stage 1) — AUTHORITATIVE
 
@@ -362,7 +379,7 @@ Before Session Start dispatch, run the resume contract from `agentic-qa-core/ref
 
 Every invocation starts by initializing the session, even in sprint-wide mode. Session Start:
 
-0. **Resolve TMS modality** (Xray on Jira vs Jira-native). By excellence ATP/ATR/ATS are real Jira items — a `Test Plan` issue (`ATP: {STORY-KEY}: {story title}`) parented to the **QA Master Test Plan** epic, a `Test Execution` issue (`ATR: {STORY-KEY}: Story Testing`) parented to the **QA Test Artifacts** epic, and a `Test Set` issue (`ATS: {US_ID}: {story title}`, the Story's coverage backbone) also parented to **QA Test Artifacts**; the Story custom-field + comment mirror (Modality jira-native) is a **fallback ONLY** when those work types are unavailable. Pre-sprint the ATP lives ONLY in the `{{jira.acceptance_test_plan}}` field — Stage 1 is where the Test Plan item is born (find-or-create from the field). The modality probe decides which path is live. Title grammar + epic parenting + the Feature-altitude FTP name: `references/acceptance-test-planning.md`. Full resolution algorithm lives in `test-documentation/SKILL.md` §Phase 0 — apply the same four-step probe here (AGENTS.md -> master-test-plan.md -> list issue types -> ask the user). Persist the result into `test-session-memory.md`.
+0. **Resolve TMS modality** (Xray on Jira vs Jira-native). By excellence ATP/ATR/ATS are real Jira items — a `Test Plan` issue (`ATP: {STORY-KEY}: {story title}`) parented to the **QA Master Test Plan** epic, a `Test Execution` issue (`ATR: {STORY-KEY}: Story Testing`) parented to the **QA Test Artifacts** epic, and a `Test Set` issue (`ATS: {US_ID}: {story title}`, the Story's coverage backbone) also parented to **QA Test Artifacts**; the Story custom-field + comment mirror (Modality jira-native) is a **fallback ONLY** when those work types are unavailable. Pre-sprint the ATP lives ONLY in the `{{jira.acceptance_test_plan}}` field — Stage 1 is where the Test Plan item is born (find-or-create from the field). The modality probe decides which path is live. Title grammar + epic parenting + the Feature-altitude FTP name: `references/acceptance-test-planning.md`. Full resolution algorithm lives in `test-documentation/SKILL.md` §Phase 0 — apply the same four-step probe here (AGENTS.md -> master-test-plan.md -> list issue types -> ask the user). Persist the result into `test-session-memory.md`. **In the same breath, resolve `{{TC_CREATION_STAGE}}`** from `.agents/project.yaml` → `testing.tc_creation_stage` (unset / unrecognized → `auto`) and persist it next to the modality: it decides whether Stage 1 creates `Test` work items at all (§"Which stage creates the TCs"). Both values are sticky for the session and are NOT re-resolved mid-stage.
 0.1. **Load required tool skills** — based on the TMS modality resolved in Step 0:
    - Always load `/acli` (Jira WRITE operations: comment, transition, link, custom-field update, bug creation). Detailed READS (ACs, ATP/ATR, description, comments) do NOT use `/acli` — they use `bun run jira:sync-issues get <KEY> --include-comments` then read the synced `.md`. See `agentic-qa-core/references/acli-integration.md` §"Reads vs writes".
    - In **Modality jira-xray**: also load `/xray-cli` for Test / Test Execution / Test Plan / Test Run operations and traceability reads.

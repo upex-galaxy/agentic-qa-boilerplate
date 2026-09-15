@@ -212,7 +212,7 @@ Two conventions apply to every quality issue you file along the way. **Component
 5. Executes smoke + trifuerza exploration (UI / API / DB).
 6. Files ATR (Acceptance Test Results) + bug reports if defects found.
 7. Transitions the ticket through QA states.
-8. Hands off to Stage 4 (`/test-documentation`) to document the executed test cases in the TMS and score ROI — Stage 4's Candidate verdicts are what feed `/test-automation`.
+8. Hands off to Stage 4 (`/test-documentation`) to document the executed test cases in the TMS and score ROI — Stage 4's Candidate verdicts are what feed `/test-automation`. Where those Candidates physically go: Stage 4 refines each one (the sprint TC is a draft, its title re-derived to the canonical `{US_ID}: TC#: should …` form), groups them into named e2e regression flows, and adds every one to the project's long-lived **Regression Test Plan (RTP)** with the `regression-candidate` label — that RTP membership, not any local report, is what `/test-automation` and `/regression-testing` read downstream.
 
 You confirm at the gates.
 
