@@ -146,8 +146,10 @@ TCs in `spec.md` must reference TMS-generated IDs, never local-only IDs. Before 
 
 1. Query the TMS for tests already linked to the ticket (via `[TMS_TOOL] List Tests` — resolve per AGENTS.md Tool Resolution).
 2. **If TCs exist** — consume them as the base for `spec.md`; do not duplicate.
-3. **If TCs are missing** — create them in the TMS first (`[TMS_TOOL] Create Test`), capture the returned IDs, then write `spec.md`.
-4. **If partial** — consume what exists, create the gaps in TMS, write `spec.md` with the combined set.
+3. **If TCs are missing** — create them in the TMS first (`[TMS_TOOL] Create Test`), titled to the canonical form `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` (`#` = a stable per-Story index, never renumbered), capture the returned IDs, then write `spec.md`.
+4. **If partial** — consume what exists, create the gaps in TMS under the same title form, write `spec.md` with the combined set.
+
+> A Test created here enters the regression repository the same way a promoted one does, so the same title rule binds — full grammar, the re-derive-then-verify order, and the anti-patterns: `test-documentation/SKILL.md` §"Naming — the one rule that matters" + §"Title on promotion".
 
 Local `{PREFIX}-T{NN}` naming is filesystem scaffolding. All TC headings inside `spec.md` use the TMS IDs (`### PROJ-101: should ...`). The same IDs become `@atc('PROJ-101')` decorators during the Code phase.
 
