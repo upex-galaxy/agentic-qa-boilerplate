@@ -700,7 +700,7 @@ Component Value = ROI × (1 + 0.2 × N)
   <table class="dtable tight">
     <thead><tr><th>Veredicto</th><th>Lo dispara</th><th>A dónde va</th><th>Fase 3: jira-native</th><th>Fase 3: jira-xray</th></tr></thead>
     <tbody>
-      <tr><td><b>Candidate</b></td><td>ROI &gt; 3.0 · O 1.5-3.0 + bug previo · O happy path crítico</td><td>alimenta <span class="mono">/test-automation</span></td><td rowspan="2">se <b>CREA</b> el work item <span class="mono">Test</span> (solo C + M)</td><td rowspan="2">el <span class="mono">Test</span> ya existe (Planning de sprint-testing) → se <b>PROMUEVE</b> al Regression Test Plan + Test Set, label <span class="mono">regression-candidate</span>, y se <b>ENRIQUECE</b> (Gherkin rico, parametrización, edge cases)</td></tr>
+      <tr><td><b>Candidate</b></td><td>ROI &gt; 3.0 · O 1.5-3.0 + bug previo · O happy path crítico</td><td>alimenta <span class="mono">/test-automation</span></td><td rowspan="2">se <b>CREA</b> el work item <span class="mono">Test</span> (solo C + M)</td><td rowspan="2">el <span class="mono">Test</span> ya existe (Planning de sprint-testing) → se <b>PROMUEVE</b> al <b>Regression Test Plan (RTP)</b> + Test Set, label <span class="mono">regression-candidate</span>, y se <b>ENRIQUECE</b> (Gherkin rico, parametrización, edge cases)</td></tr>
       <tr><td><b>Manual</b></td><td>ROI 0.5-1.5 y no automatizable, o solo-manual explícito</td><td>suite de regression manual (terminal)</td></tr>
       <tr><td><b>Deferred</b></td><td>ROI &lt; 0.5 · O falló un filtro · O validación one-time</td><td>fuera de regression (terminal, revisitable)</td><td><b>NO se crea</b> — queda solo en el reporte</td><td>el Test de sprint queda <b>sin promover</b> — no se borra</td></tr>
     </tbody>
@@ -717,7 +717,7 @@ Component Value = ROI × (1 + 0.2 × N)
   <div class="grid g3 mt-m anim-stagger-list">
     <div class="card"><h4>Regression Epic</h4><p class="small dim">= el epic de proceso <b>«QA Test Repository»</b>. Resolver <i>found-or-created</i> por JQL (<span class="mono">type = Epic AND summary ~ "QA Test Repository"</span>); si falta, <b>pregunta antes de crear</b> y cachea la key en <span class="mono">.agents/project.yaml</span>. Todo TC documentado se parenta aquí — nunca a un epic de producto.</p><span class="tag mt-s">paraguas del repositorio</span></div>
     <div class="card"><h4>Test Set — dos altitudes</h4><p class="small dim"><b>ATS per-Story (obligatorio)</b>: <span class="mono">ATS: {US_ID}: {story title}</span> — tercer artefacto de la familia ATP/ATR/ATS, parent «QA Test Artifacts», components heredados de la Story. Su link <span class="mono">is tested by</span> a la Story es lo que llena el panel de coverage. <b><span class="mono">TS:</span> feature-level (opcional)</b>: <span class="mono">TS: {EPIC|module}: Validate {feature}</span> — agrupa smoke/regression, components opcional. Native sin work type Test Set → links directos TC↔Story.</p><span class="tag mt-s">coverage</span></div>
-    <div class="card"><h4>Test Plan</h4><p class="small dim"><b>Alcance de ejecución / regression</b> — el conjunto de Tests que corre para un release o ciclo. El ATP en jira-xray ES un issue Test Plan (parent: epic «QA Master Test Plan»).</p><span class="tag mt-s">ejecución</span></div>
+    <div class="card"><h4>Test Plan</h4><p class="small dim"><b>Alcance de ejecución / regression</b> — el conjunto de Tests que corre para un release o ciclo. El ATP en jira-xray ES un issue Test Plan (parent: epic «QA Master Test Plan»). El <b>RTP</b> (<span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span>) es el Test Plan long-lived de regression bajo ese mismo epic: destino de cada TC promovido con label <span class="mono">regression-candidate</span>, y nunca se completa.</p><span class="tag mt-s">ejecución</span></div>
   </div>
   <div class="callout"><h4>Modelo de tres ejes (defect-management-doctrine.md)</h4><p><b>Parent</b> = bucket de proceso QA (Test → «QA Test Repository» · ATP → «QA Master Test Plan» · ATR y ATS → «QA Test Artifacts») · <b>issue-link</b> = la Story origen · <b>components</b> = el módulo de producto afectado. Tres ejes separados — el parent nunca lleva la traza de producto.</p></div>
   <div class="notes">La gente fusiona estos contenedores rutinariamente. Epic = repositorio completo; ATS = el Set per-Story que da coverage (TS: opcional agrupa por feature); Test Plan = alcance de ejecución. En jira-native con work type Test Set el ATS existe igual (membership = links TC→ATS); sin work type, links directos TC↔Story + Regression Epic + label.</div>
@@ -742,8 +742,8 @@ Component Value = ROI × (1 + 0.2 × N)
      listas de ATP/ATR derivadas del ATS
      TC→Story directo = last resort válido
 5  por cada TC PROMOVIDO:
-     xray  → TS: feature (opcional) + Regression
-             Test Plan + label regression-candidate
+     xray  → TS: feature (opcional) + RTP
+             + label regression-candidate
      native→ label de feature/Epic</div>
     <div>
       <table class="dtable tight" style="margin-top:0">
@@ -752,6 +752,7 @@ Component Value = ROI × (1 + 0.2 × N)
           <tr><td><b>ATP</b></td><td><span class="mono">ATP: {STORY-KEY}: {story title}</span></td></tr>
           <tr><td><b>ATR</b></td><td><span class="mono">ATR: {STORY-KEY}: Story Testing</span></td></tr>
           <tr><td><b>ATS</b></td><td><span class="mono">ATS: {US_ID}: {story title}</span> — obligatorio per-Story, aunque tenga 1 TC</td></tr>
+          <tr><td><b>RTP</b></td><td><span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span> — plan long-lived de regression, uno por proyecto: destino de cada TC promovido</td></tr>
           <tr><td><b>TC</b></td><td><span class="mono">{US_ID}: TC#: should &lt;outcome&gt; [when &lt;condition&gt;] [given &lt;pre&gt;]</span> — prefijo SIEMPRE el US key, en toda modalidad</td></tr>
           <tr><td><b>Agrupación</b></td><td><span class="mono">TS: {EPIC|module}: Validate {feature}</span> — agrupador feature-level opcional (Test Set / <span class="mono">describe()</span>)</td></tr>
         </tbody>

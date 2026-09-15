@@ -1,4 +1,4 @@
-# QA Planning Ladder — Nomenclature Standard (ratified 2026-06-26, amended 2026-08-21)
+# QA Planning Ladder — Nomenclature Standard (ratified 2026-06-26, amended 2026-08-21 and 2026-09-15)
 
 > **This is ratified doctrine, not an open proposal.** The skills treat it as settled
 > (`agentic-qa-core/references/defect-management-doctrine.md`, `traceability-linking.md`), so do not
@@ -62,7 +62,7 @@ QA artifact type has a dedicated governance Epic.
 
 | QA-process Epic | `qa.qa_epics.<key>` | Holds (child work types) | Status |
 |---|---|---|---|
-| **QA Master Test Plan** (the MTP) | `master_test_plan_epic` | every **Test Plan** (FTP · STP · ATP) | NEW |
+| **QA Master Test Plan** (the MTP) | `master_test_plan_epic` | every **Test Plan** (FTP · STP · ATP · RTP) | NEW |
 | **QA Test Repository** | `test_repository_epic` | every **Test** (Test Case) | exists |
 | **QA Test Artifacts** | `test_artifacts_epic` | every **Test Execution** (STR · ATR), **Precondition**, **Test Set** (ATS · TS) | NEW |
 | **QA Defect Management** | `defect_epic` | every **Bug / Defect / Improvement** | exists |
@@ -80,7 +80,7 @@ reads **`QA Master Test Plan`** for family consistency (the user's intent — "M
 
 `QA Master Test Plan` is **both** an Epic **and** the local file `.context/master-test-plan.md`
 (they mirror each other). The Epic is NOT a Test Plan work type — it is the umbrella Epic
-whose **children are every Test Plan in the project** (FTP/STP/ATP). Its description holds:
+whose **children are every Test Plan in the project** (FTP/STP/ATP/RTP). Its description holds:
 
 - the master test strategy (same content as `.context/master-test-plan.md`: what to test, why,
   risk ranking, regression Epic pointer, pass-rate SLOs);
@@ -89,6 +89,11 @@ whose **children are every Test Plan in the project** (FTP/STP/ATP). Its descrip
 
 It is **cross-linked to its three sibling QA Epics** (`relates to`): QA Test Repository,
 QA Test Artifacts, QA Defect Management — so the four form a navigable QA-governance cluster.
+
+**MTP ≠ RTP.** The MTP is the Epic plus `.context/master-test-plan.md` — the strategy and the
+bucket every Plan hangs from, never a Test Plan item. The **RTP** is one of the items *inside*
+that bucket: an executable Test Plan whose membership is the regression suite that actually
+runs. Strategy versus suite — the two never collapse into each other.
 
 ### 1.2 The three axes per artifact (unchanged model, extended buckets)
 
@@ -104,6 +109,7 @@ components          ->  PRODUCT module     (what part of the product it touches)
 | FTP | Test Plan | QA Master Test Plan | `tests` the product **feature Epic** |
 | STP | Test Plan | QA Master Test Plan | `relates to` the **Sprint** (+ regression scope) |
 | ATP | Test Plan | QA Master Test Plan | `tests` the **User Story** |
+| RTP | Test Plan | QA Master Test Plan | `relates to` the Regression Epic (if any); membership = `regression-candidate` Tests |
 | STR | Test Execution | QA Test Artifacts | `relates to` Sprint · `testPlan` → STP |
 | ATR | Test Execution | QA Test Artifacts | `is tested by` Story · `testPlan` → ATP |
 | ATS | Test Set | QA Test Artifacts | `tests` the **User Story** — **this link is what fills the coverage panel** |
@@ -133,6 +139,7 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 | **Sprint** | **STP** Sprint Test Plan | **STR** Sprint Test Results | Test Plan → Test Execution | **STP** created at sprint START — find-or-create in the Session Start of the FIRST sprint ticket in `/sprint-testing` (fallback: `/regression-testing` creates it when running suites); a LIVING planner updated per tested ticket, closed at sprint end. **STR** created at sprint CLOSE as the recap of all results (`/sprint-testing` batch-close or `/regression-testing` — first to arrive creates it, the other completes it) | 1 per sprint (term: "Regression Testing"; "Sprint" comes from the `Sprint#{N}` scope-id) |
 | **User Story** | **ATP** Acceptance Test Plan | **ATR** Acceptance Test Results | Test Plan → Test Execution | pre-sprint the ATP lives ONLY in `{{jira.acceptance_test_plan}}` (authored by `/shift-left-testing`); the Test Plan ITEM is born in sprint-testing S1 from that field. ATR item created in S1, filled in S3 | ATP 1 per Story · ATR 1 run ("Story Testing") |
 | **User Story (coverage)** | **ATS** Acceptance Test Set | — (membership, not a run) | Test Set | sprint-testing S1, **Set-first**: create/update the ATS with the TCs BEFORE the ATP/ATR items — Plan and Exec derive their test lists from the ATS membership | 1 per Story, **mandatory** (even with a single TC) |
+| **Product (regression, long-lived)** | **RTP** Regression Test Plan | — (the **STR** runs it: a regression execution derives its test list from the RTP membership) | Test Plan | `/test-documentation` find-or-creates it and promotes every `regression-candidate` TC into it (Phase 3). Unlike every other Plan it has **no terminal**: it reaches `ready` on the first promotion and stays there for the life of the product — a regression run never completes the plan it ran from | 1 per project (or per module) |
 
 ---
 
@@ -142,7 +149,7 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 {ACRONYM}: {scope-id}: {descriptor}
 ```
 
-- **ACRONYM** — `MTP` (epic) · `FTP` · `STP` · `ATP` (plans) · `STR` · `ATR` (runs) · `ATS` (per-Story Test Set — the ATC/ATP/ATR/ATS family) · `RTP` (Regression Test Plan — *added 2026-09-15, pending maintainer ratification*; see the addendum below the table).
+- **ACRONYM** — `MTP` (epic) · `FTP` · `STP` · `ATP` · `RTP` (plans) · `STR` · `ATR` (runs) · `ATS` (per-Story Test Set — the ATC/ATP/ATR/ATS family).
 - **scope-id** — the key of the thing under test at that altitude (feature-Epic key, `Sprint N`, Story key).
 - **descriptor** — human-readable, embeds the testing-term where the user requires it.
 
@@ -156,14 +163,6 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 | **ATR** | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-123: Story Testing` |
 | **ATS** | Test Set | `ATS: {STORY-KEY}: {story title}` | `ATS: PROJ-123: Apply discount at checkout` |
 | **RTP** | Test Plan | `RTP: {PROJECT_KEY\|module}: Regression Test Plan` | `RTP: PROJ: Regression Test Plan` |
-
-> **RTP addendum** *(added 2026-09-15, pending maintainer ratification)* — the long-lived
-> **Regression Test Plan** the live layer already had under that full name, given the ladder's
-> acronym so it reads beside ATP / STP / FTP. One per project (or per module), created by
-> `/test-documentation` as the promotion target for every `regression-candidate` TC, parented to
-> the **QA Master Test Plan** epic. Unlike every other Plan it has **no terminal**: it reaches
-> `ready` on the first promotion and stays there for the life of the product — a regression run
-> never completes the plan it ran from.
 
 > **No "ATP DRAFT" variant exists.** The pre-sprint pass (`/shift-left-testing`) authors the ATP
 > at outline maturity **into the `{{jira.acceptance_test_plan}}` custom field only** — no Test
@@ -262,3 +261,7 @@ run/coverage engine on top.
 - **FTR and PRC cut** — FTR duplicated the STR; Precondition stays an entity but needs no ladder acronym.
 - **Producers assigned** — MTP: `/master-test-plan` (file + Epic). FTP: `feature-test-planning` in `/sprint-testing`, item-first. STP: sprint-start find-or-create (`/sprint-testing` Session Start of the first ticket; `/regression-testing` fallback). STR: sprint-close recap (first-to-arrive creates).
 - **ATP field-first pre-sprint (D5)** — the "ATP DRAFT" identity is dead; pre-sprint the ATP lives only in `{{jira.acceptance_test_plan}}`, the item is born in `/sprint-testing` Stage 1.
+
+### Amendment — RTP ratified 2026-09-15
+
+- **RTP added to the ladder** — the long-lived **Regression Test Plan** the live layer already ran under that full name now carries the ladder acronym, so it reads beside FTP / STP / ATP instead of being invented ad hoc by each reader. One per project (or per module), `RTP: {PROJECT_KEY|module}: Regression Test Plan`, parented to the **QA Master Test Plan** Epic, produced by `/test-documentation` as the promotion target for every `regression-candidate` TC and consumed by `/regression-testing` (the STR derives its test list from the RTP membership). It is the only Plan with **no terminal**: `ready` on the first promotion, `ready` for the life of the product.

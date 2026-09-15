@@ -52,9 +52,9 @@ ONBOARDING (one-time) →   SHIFT-LEFT        →  SESSION START → PLANNING �
 | **Planning** (in-sprint) | `sprint-testing` | ATP + TCs linked to ACs (short-circuits Phases 1-3 when the Story carries a fresh `shift-left-reviewed` label) |
 | **Execution** | `sprint-testing` | Smoke + trifuerza (UI/API/DB) exploration, evidence captured |
 | **Reporting** | `sprint-testing` | ATR, bug tickets, QA comment on the source ticket |
-| **Documentation** | `test-documentation` | TMS artefacts with ROI verdict (Candidate / Manual / Deferred) |
+| **Documentation** | `test-documentation` | TMS artefacts with ROI verdict (Candidate / Manual / Deferred); every Candidate promoted into the project's **Regression Test Plan (RTP)** with the `regression-candidate` label |
 | **Automation** | `test-automation` | KATA Playwright tests, `@atc` decorated and traceable |
-| **Regression** | `regression-testing` | CI pass-rate, failure classification, GO / CAUTION / NO-GO verdict |
+| **Regression** | `regression-testing` | CI pass-rate, failure classification, GO / CAUTION / NO-GO verdict — the STR derives its test list from the RTP membership, and leaves the RTP itself open |
 | **Observation** (production) | *none yet — the operating unit is an **agentic routine**, capability L4* | Production signals (SLO burn, error budget, RUM, canary) turned into backlog items that reopen the next Shift-Left pass |
 
 **Observation is declared, not implemented.** Nothing under `.agents/skills/` executes it today, and it deliberately carries no Definition-of-Done checklist — an empty checklist reads as an implemented gate. It is named here because a pipeline that stops at Regression describes a release, not a lifecycle: without it the loop above is a straight line, and the method's own claim to extend past the release has no owner.
@@ -156,6 +156,7 @@ The rest of this document describes how that strategy is implemented in code and
 | **ATR**               | Acceptance Test Results. The report filed in the Reporting stage.                                                            |
 | **ATS**               | Acceptance Test Set. The mandatory per-Story Test Set (`ATS: {STORY-KEY}: {story title}`) whose link to the Story provides coverage; ATP/ATR test lists derive from its membership. |
 | **FTP**               | Feature Test Plan. One per feature Epic, maintained by `sprint-testing`'s feature-test-planning as living context.           |
+| **RTP**               | Regression Test Plan. One long-lived Test Plan item per project (or module), `RTP: {PROJECT_KEY\|module}: Regression Test Plan`, parented to the QA Master Test Plan Epic. The Documentation stage promotes every Candidate TC into it; the Regression stage runs its membership. It has no terminal status — a regression run never completes the plan it ran from. Distinct from the MTP, which is the Epic plus `.context/master-test-plan.md` (strategy and bucket, never a Plan item). |
 | **STP**               | Sprint Test Plan. One per sprint, opened at sprint start by `sprint-testing` (fallback: `regression-testing`), closed at sprint end. Its description carries the sprint plan (one writer, read-first); its comments carry the append-only progress log, one entry per issue closed. It is the team-visible sprint state — when the comment log and a Story's ATR disagree, the ATR wins. |
 | **STR**               | Sprint Test Results. One per sprint, the sprint-close recap execution (`STR: Sprint#{N}: Regression Testing`).               |
 | **TC**                | Test Case. A single, traceable verification linked to an acceptance criterion.                                               |
@@ -543,7 +544,7 @@ At the end of the cycle, every ticket has: a PBI folder on disk, an ATP and ATR 
 
 ## 11. Test Automation Engineering
 
-Automation is not the goal. **Automating the right tests with engineering rigor** is the goal. This is why the Documentation stage (`test-documentation`) runs an ROI analysis first — only manual TCs that protect real regression risk get automated. The result is a lean, maintainable suite, not test bloat.
+Automation is not the goal. **Automating the right tests with engineering rigor** is the goal. This is why the Documentation stage (`test-documentation`) runs an ROI analysis first — only manual TCs that protect real regression risk get automated. Those Candidates are promoted into the project's `RTP`, and that membership — not any local report — is what this stage picks up. The result is a lean, maintainable suite, not test bloat.
 
 The Automation stage (`test-automation`) is structured as a three-phase pipeline — Plan, Code, Review:
 
@@ -732,6 +733,7 @@ Classification decides the release verdict. Five flaky tests do not block a rele
 
 ### The artefacts
 
+- The suite's scope is the membership of the project's `RTP` — the Documentation stage promotes every `regression-candidate` TC into it, and the STR is written against that list.
 - GitHub Actions runs the regression suite nightly and on-demand (`.github/workflows/`).
 - Allure generates the report dashboard.
 - The skill emits a release note with the verdict, the pass rate, the critical failures (if any), and the classification summary.

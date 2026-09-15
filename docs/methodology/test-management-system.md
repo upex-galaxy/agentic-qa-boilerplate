@@ -1006,6 +1006,7 @@ Uses their technical expertise to:
 | **ATR**                | Acceptance Test Results - ONE per User Story; the Test Execution reporting what was run and found |
 | **ATS**                | Acceptance Test Set - ONE per User Story, mandatory; the Test Set whose link to the Story provides coverage, and whose membership drives the ATP/ATR test lists |
 | **TS**                 | Feature-level Test Set (`TS: {scope}: Validate {feature}`) - optional grouping for smoke / regression / feature scopes |
+| **RTP**                | Regression Test Plan - ONE long-lived Test Plan per project/module (`RTP: {PROJECT_KEY\|module}: Regression Test Plan`); the promotion target for every `regression-candidate` TC and the list the regression Execution runs from - it never reaches a terminal status |
 | **Early-Game**         | Prevention phase (Steps 1-4) - QA Analyst led                             |
 | **Mid-Game**           | Detection phase (Steps 5-9) - QA Automation Engineer led                  |
 | **Late-Game**          | Observation phase (Steps 10-15) - QA + DevOps/SRE                         |
