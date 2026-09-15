@@ -37,6 +37,18 @@ issue_tracker:
 testing:
   default_env: null # TODO: Default testing environment — must match a key under `environments:` (e.g. staging)
   tms_cli: null # TODO: Test management CLI command (e.g. bun xray)
+  # Which stage turns a test case into a `Test` work item in the TMS. One of:
+  # auto | sprint-testing | test-documentation. `auto` (the shipped default) follows the
+  # TMS modality resolved from `tms_cli`: jira-xray -> /sprint-testing Stage 1 (Xray's
+  # `Test` IS the execution unit, so the item must exist during the sprint for the Test
+  # Execution, coverage panel and Test Plan membership to work); jira-native -> Stage 4
+  # /test-documentation (a native `Test` issue IS documentation, so creating one per sprint
+  # outline fills the regression repository with cases that were never ROI-gated).
+  # Override only when the project weighs repository cleanliness against in-sprint
+  # traceability differently — the cost of each override is stated in
+  # `.agents/skills/sprint-testing/SKILL.md` §"Which stage creates the TCs".
+  # Read as {{TC_CREATION_STAGE}}; unset or unrecognized is treated as `auto`.
+  tc_creation_stage: auto
 
 qa:
   formal_blocked_gate: true # When true and the substrate exposes a `blocked` story status, FAILED stories dispatch `defect_reported` (in_test -> blocked). When false (or no `blocked` slug), the skill leaves the story in `in_test` with the linked bug — non-strict fallback. See sprint-testing/references/sprint-orchestration.md Briefing 4 Step 5.

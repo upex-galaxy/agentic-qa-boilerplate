@@ -99,6 +99,20 @@ The `{{…}}` vs `<<…>>` distinction is intentional: it removes the previous a
 
 When a document genuinely needs to compare environments (e.g. the constitution's environment-table or context-generator examples that demonstrate URL-shape differences), use the explicit form `{{environments.local.web_url}}` / `{{environments.staging.web_url}}` instead. Both forms are validated by `bun run vars:check`.
 
+### TC creation stage
+
+`testing.tc_creation_stage` (read as the flat project variable `{{TC_CREATION_STAGE}}`) decides **which stage turns a test case into a `Test` work item in the TMS**. It is the one testing knob that is not a URL or a tool name, so it is documented here rather than inferred:
+
+| Value | Meaning |
+|---|---|
+| `auto` (shipped default) | follow the TMS modality: jira-xray → `/sprint-testing` Stage 1 · jira-native → `/test-documentation` Stage 4 |
+| `sprint-testing` | Stage 1 creates the `Test` items in **both** modalities; Stage 4 refines + promotes them |
+| `test-documentation` | Stage 4 creates them in **both** modalities; Stage 1 produces outlines only |
+
+Both `/sprint-testing` and `/test-documentation` resolve it at their modality gate, alongside `{{TMS_CLI}}`, and keep it sticky for the session. An unset or unrecognized value is treated as `auto` — a missing knob is the default, never a hard stop. The rationale for each value (and the cost of each override) is in `.agents/skills/sprint-testing/SKILL.md` §"Which stage creates the TCs", which is the authoritative section.
+
+Because it is a scalar leaf of a top-level section, `bun run vars:check` validates `{{TC_CREATION_STAGE}}` like any other flat project variable — no linter change was needed to register it.
+
 ## Workflows
 
 ### 5.1 New user setup
