@@ -243,6 +243,38 @@ export function protectNote(filePath: string): string {
   ].join('\n');
 }
 
+/** The hook whose `lint-staged` invocation the symlinked skills alias breaks. */
+export const HUSKY_PRE_COMMIT = '.husky/pre-commit';
+
+/**
+ * `.husky/pre-commit` runs `bunx lint-staged`, and lint-staged's backup stash
+ * cannot traverse the `.claude/skills` symlink the cross-harness migration
+ * creates: `error: '.claude/skills/REGISTRY.md' is beyond a symbolic link` ->
+ * `Cannot save the current worktree state` -> the hook fails, on that commit and
+ * every one after it. Upstream ships `--no-stash`, but the hook is bootstrap-only
+ * (the project's own gates live there), so a repo that already has the file keeps
+ * its own copy and has to apply the flag by hand. Issue #28, bug 2.
+ *
+ * Returns the note when the project's hook still invokes lint-staged without the
+ * flag; null when it already has it, or when no live invocation is there to fix.
+ */
+export function lintStagedNoStashNote(projectHook: string): string | null {
+  const invocation = projectHook
+    .split('\n')
+    .find(line => !line.trimStart().startsWith('#') && /\blint-staged\b/.test(line));
+  if (invocation === undefined || /--no-stash\b/.test(invocation)) { return null; }
+  return [
+    `Apply upstream's one-line fix to ${HUSKY_PRE_COMMIT} — without it every commit that stages a path under the`,
+    '`.claude/skills` alias dies on `Cannot save the current worktree state`:',
+    '',
+    `    -${invocation.trimEnd()}`,
+    `    +${invocation.trimEnd()} --no-stash`,
+    '',
+    '`--no-stash` only drops lint-staged\'s protection for unstaged hunks that collide with its own auto-fix.',
+    'What gets committed is unchanged.',
+  ].join('\n');
+}
+
 // ============================================================================
 // DIFF HELPERS
 // ============================================================================
@@ -773,14 +805,20 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       continue;
     }
     const { evidence, projectOnly, suggested } = watchedFileEvidence(entry.path, project, upstream, diff);
+    // The pre-commit hook is never overwritten, so a consumer only learns about
+    // the `--no-stash` fix if the row says so (issue #28, bug 2).
+    const noStash = entry.path === HUSKY_PRE_COMMIT ? lintStagedNoStashNote(project) : null;
     drifted.set(entry.path, {
       surface: watchedSurface(entry.path, entry.source),
       path: entry.path,
-      evidence,
+      evidence: noStash === null
+        ? evidence
+        : `${evidence}; lint-staged still runs without --no-stash, which breaks every commit behind the .claude/skills symlink`,
       suggested,
       blocking: false,
       diff,
       projectOnly,
+      ...(noStash === null ? {} : { note: noStash }),
     });
   }
 

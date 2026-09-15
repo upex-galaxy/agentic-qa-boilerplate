@@ -19,6 +19,7 @@ import {
   describeWatchedFile,
   diffNoIndex,
   diffStats,
+  lintStagedNoStashNote,
   markdownSectionDelta,
   persistArchivedSkillMarkers,
   protectNote,
@@ -403,6 +404,74 @@ describe('collectParityFindings', () => {
     expect(readGitStrategyStamp('name: x\n')).toEqual({ present: false, strategy: null, source: null });
     expect(readGitStrategyStamp('git_strategy:\n  strategy: gitflow # c\n  meta:\n    strategy_source: chosen\n'))
       .toEqual({ present: true, strategy: 'gitflow', source: 'chosen' });
+  });
+});
+
+describe('the pre-commit hook carries the --no-stash fix downstream', () => {
+  // Issue #28 bug 2: lint-staged's backup stash cannot traverse the
+  // `.claude/skills` symlink, so every commit after the cross-harness migration
+  // dies on `Cannot save the current worktree state`. `.husky/pre-commit` is
+  // bootstrap-only (project gates live there), so a consumer never receives
+  // upstream's fixed copy — the parity row has to tell them.
+
+  test('the note fires only for a hook that still lacks the flag', () => {
+    expect(lintStagedNoStashNote('bunx lint-staged\nbun run types:check\n')).toContain('--no-stash');
+    expect(lintStagedNoStashNote('bunx lint-staged\n')).toContain('+bunx lint-staged --no-stash');
+    expect(lintStagedNoStashNote('bunx lint-staged --no-stash\n')).toBeNull();
+    expect(lintStagedNoStashNote('npx lint-staged --no-stash --concurrent false\n')).toBeNull();
+    // A hook that does not run lint-staged at all has nothing to fix.
+    expect(lintStagedNoStashNote('bun run types:check\n')).toBeNull();
+    // A commented-out invocation is not a live one.
+    expect(lintStagedNoStashNote('# bunx lint-staged\nbun run lint:check\n')).toBeNull();
+  });
+
+  test('the drift row on .husky/pre-commit names the fix and repeats it in the saved file', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, '.husky/pre-commit', 'bunx lint-staged\nbun run types:check\n');
+    write(upstream, '.husky/pre-commit', 'bunx lint-staged --no-stash\nbun run types:check\n');
+
+    const findings = collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [{ path: '.husky/pre-commit', reason: 'project gates live here' }],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+    });
+
+    const hook = findings.find(f => f.path === '.husky/pre-commit');
+    expect(hook).toBeDefined();
+    expect(hook!.surface).toBe('components');
+    expect(hook!.blocking).toBe(false);
+    expect(hook!.evidence).toContain('lint-staged still runs without --no-stash');
+    expect(hook!.note).toContain('+bunx lint-staged --no-stash');
+    expect(buildParityFileBody(findings, META)).toContain('+bunx lint-staged --no-stash');
+  });
+
+  test('a hook that already has the flag drifts without the note', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, '.husky/pre-commit', 'bunx lint-staged --no-stash\nbun run types:check\n');
+    write(upstream, '.husky/pre-commit', 'bunx lint-staged --no-stash\nbun run types:check\nbun run vars:check\n');
+
+    const findings = collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [{ path: '.husky/pre-commit', reason: 'project gates live here' }],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+    });
+
+    const hook = findings.find(f => f.path === '.husky/pre-commit');
+    expect(hook).toBeDefined();
+    expect(hook!.evidence).not.toContain('--no-stash');
+    expect(hook!.note).toBeUndefined();
   });
 });
 

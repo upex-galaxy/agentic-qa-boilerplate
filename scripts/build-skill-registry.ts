@@ -29,6 +29,16 @@
  *     the first 15 non-empty lines of the first content section if no bullets.
  *     Same 15-rule cap.
  *
+ * Strategy B blocks are stamped LOW-CONFIDENCE. The scrape is blind: it takes
+ * whichever bullets come first, so a dependency list, a table row, or half of a
+ * prohibition whose governing sentence sits in the preceding paragraph all land
+ * in the registry looking exactly like an authored rule — and from there go
+ * into subagent briefings that AGENTS.md §3 calls authoritative. The marker is
+ * the FIRST line of the emitted block (not only the trailing `Source:` footer)
+ * so it survives a copy-paste of the block into a briefing. The fix for a
+ * marked skill is to author a `## Compact Rules` section in it, which moves it
+ * to Strategy A and drops the marker.
+ *
  * Idempotency: re-running on an unchanged repo produces a byte-identical file.
  *
  * Cache invalidation rules (the script itself does NOT decide; it always
@@ -371,10 +381,22 @@ function processSkill(slug: string): SkillEntry {
 // Render
 // -----------------------------------------------------------------------------
 
+/**
+ * Banner stamped on every Strategy-B block, as its first line, so a block
+ * pasted into a briefing carries its own warning even when the trailing
+ * `Source: … · extraction strategy: B` footer is cropped.
+ */
+const LOW_CONFIDENCE_MARKER
+  = '> ⚠ LOW-CONFIDENCE (extraction strategy B): bullets scraped without context — read the full SKILL.md before relying on any rule below.';
+
 function renderEntry(entry: SkillEntry): string {
   const lines: string[] = [];
   lines.push(`## Skill: ${entry.slug}`);
   lines.push('');
+  if (entry.strategy === 'B') {
+    lines.push(LOW_CONFIDENCE_MARKER);
+    lines.push('');
+  }
   lines.push(`**Purpose**: ${entry.purpose}`);
   lines.push('');
 
