@@ -65,9 +65,11 @@ env:
   # job below skips, because importing with no target mints a new, unparented
   # Execution on every run.
   STP_EXECUTION_KEY: ${{ secrets.STP_EXECUTION_KEY }}
-  # Atlassian credentials — uncomment when AUTO_SYNC=true (Jira issue lookups
-  # during sync). Also consumed by MCP, acli, xray-cli and the Jira-Direct TMS
-  # provider when run locally. Add as repo Secrets first.
+  # Atlassian credentials — uncomment when AUTO_SYNC=true. Required by the
+  # "Sync … Results to TMS" steps below on a jira-native project (TMS_PROVIDER=jira
+  # writes a status field and a comment on each Test issue), and by the Xray
+  # STP/STR diagnostic lookup. Also consumed by MCP, acli and xray-cli locally.
+  # Add as repo Secrets first.
   #
   # There is NO ATLASSIAN_URL secret, on purpose. The site host is read from the
   # checked-out .agents/project.yaml (issue_tracker.atlassian_url) by
@@ -110,6 +112,18 @@ jobs:
 
       - name: Run Integration Tests on ${{ env.TEST_ENV }}
         run: bun run test:integration
+
+      # The TMS write-back runs HERE, after the Playwright process has exited:
+      # reports/atc_results.json is written by KataReporter.onEnd(), which fires
+      # after the global-teardown project, so nothing inside the run can read it
+      # (issue #27). `always()` so a failing suite still reports its results.
+      #
+      # Skipped for the xray modality on purpose: the XrayImport job below
+      # already pushes this run's junit.xml into the same Test Execution, and
+      # two imports of the same runs is a double-import, not a safety net.
+      - name: Sync Integration Results to TMS
+        if: always() && env.AUTO_SYNC == 'true' && env.TMS_PROVIDER != 'xray'
+        run: bun run test:sync
 
       - name: Upload Integration Allure Results
         if: always()
@@ -168,6 +182,18 @@ jobs:
 
       - name: Run E2E Tests on ${{ env.TEST_ENV }}
         run: bun run test:e2e
+
+      # The TMS write-back runs HERE, after the Playwright process has exited:
+      # reports/atc_results.json is written by KataReporter.onEnd(), which fires
+      # after the global-teardown project, so nothing inside the run can read it
+      # (issue #27). `always()` so a failing suite still reports its results.
+      #
+      # Skipped for the xray modality on purpose: the XrayImport job below
+      # already pushes this run's junit.xml into the same Test Execution, and
+      # two imports of the same runs is a double-import, not a safety net.
+      - name: Sync E2E Results to TMS
+        if: always() && env.AUTO_SYNC == 'true' && env.TMS_PROVIDER != 'xray'
+        run: bun run test:sync
 
       - name: Upload E2E Allure Results
         if: always()

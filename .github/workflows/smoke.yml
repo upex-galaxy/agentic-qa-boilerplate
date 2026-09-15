@@ -40,6 +40,24 @@ env:
   LOCAL_USER_PASSWORD: ${{ secrets.LOCAL_USER_PASSWORD }}
   STAGING_USER_EMAIL: ${{ secrets.STAGING_USER_EMAIL }}
   STAGING_USER_PASSWORD: ${{ secrets.STAGING_USER_PASSWORD }}
+  # TMS write-back (optional, opt-in). Mirrors regression.yml so a project that
+  # turns AUTO_SYNC on gets the same behaviour from every suite. This workflow
+  # has no separate Xray JUnit-import job, so the sync step below covers both
+  # modalities: 'xray' imports the ATC runs into STP_EXECUTION_KEY, 'jira'
+  # writes a status field and a comment on each Test issue.
+  TMS_PROVIDER: ${{ vars.TMS_PROVIDER || 'xray' }}
+  AUTO_SYNC: ${{ secrets.AUTO_SYNC || 'false' }}
+  XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}
+  XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
+  # Key of the STR — the Test Execution linked to the sprint's STP, already
+  # parented to the "QA Test Artifacts" epic. NOT the STP's own key. Empty means
+  # Xray mints a new, unparented Execution per run.
+  STP_EXECUTION_KEY: ${{ secrets.STP_EXECUTION_KEY }}
+  # Atlassian credentials — uncomment when AUTO_SYNC=true on a jira-native
+  # project. There is NO ATLASSIAN_URL secret: the host is read from the
+  # checked-out .agents/project.yaml (issue_tracker.atlassian_url).
+  # ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
+  # ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
 
 jobs:
   SmokeTest:
@@ -71,6 +89,14 @@ jobs:
 
       - name: Run Smoke Tests (@critical) on ${{ env.TEST_ENV }}
         run: bun run test:smoke
+
+      # The TMS write-back runs HERE, after the Playwright process has exited:
+      # reports/atc_results.json is written by KataReporter.onEnd(), which fires
+      # after the global-teardown project, so nothing inside the run can read it
+      # (issue #27). `always()` so a failing suite still reports its results.
+      - name: Sync Results to TMS
+        if: always() && env.AUTO_SYNC == 'true'
+        run: bun run test:sync
 
       - name: Upload Allure Results
         if: always()

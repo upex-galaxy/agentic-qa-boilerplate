@@ -88,8 +88,11 @@ regression.yml
 │        TMS_PROVIDER = vars.TMS_PROVIDER || 'xray'   (repo VARIABLE, not a secret)
 │        AUTO_SYNC + XRAY_CLIENT_ID / XRAY_CLIENT_SECRET (TMS sync, optional)
 │        STP_EXECUTION_KEY                            (secret — the STR's key)
-├── job: integration   → bun run test:integration  → uploads integration-allure-results + integration-test-results
-├── job: e2e           → bun run test:e2e          → uploads e2e-allure-results + e2e-test-results
+├── job: integration   → bun run test:integration  → Sync Results to TMS → uploads integration-allure-results + integration-test-results
+├── job: e2e           → bun run test:e2e          → Sync Results to TMS → uploads e2e-allure-results + e2e-test-results
+│       (the sync step is `bun run test:sync`, gated on AUTO_SYNC == 'true' AND
+│        TMS_PROVIDER != 'xray' — the xray leg is the XrayImport job below, and
+│        running both would import the same runs twice)
 ├── job: allure-report (if: always, unless generate_allure=false)
 │       merges both allure-results dirs → merged-allure-results-<TEST_ENV>
 │       generates + publishes the Allure report (same allurerc.mjs as local runs)
@@ -102,7 +105,8 @@ regression.yml
 Key points:
 - Credentials are the env-prefixed pairs (`LOCAL_*` / `STAGING_*`) matching `config/variables.ts` — there are no `TEST_USER_*` secrets, and no URL secrets: `config.baseUrl` resolves from `.agents/project.yaml` by `TEST_ENV`.
 - TMS sync (Xray) runs off `AUTO_SYNC` + `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET`; the Jira-Direct alternative uses `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` (present in the file, commented until enabled).
-- **The write-back leg is the `XrayImport` job**, gated on `TMS_PROVIDER` (a repo VARIABLE — a job-level `if:` can read `vars` but never `secrets`). It runs `if: always()` so a failing suite still reports its results, and `continue-on-error` so a TMS outage never turns a green suite red. `STP_EXECUTION_KEY` names the **STR** Test Execution the JUnit reports import into — never the STP itself; unset means the job skips with a warning annotation rather than minting an orphan Execution.
+- **There are two write-back legs, one per modality, and they never both fire.** On a jira-native project the `Sync Results to TMS` step inside each test job runs `bun run test:sync` after the Playwright process has exited (`reports/atc_results.json` is written by `KataReporter.onEnd()`, too late for anything inside the run — issue #27). On an Xray project that step is skipped and the `XrayImport` job below does the import instead.
+- **The Xray write-back leg is the `XrayImport` job**, gated on `TMS_PROVIDER` (a repo VARIABLE — a job-level `if:` can read `vars` but never `secrets`). It runs `if: always()` so a failing suite still reports its results, and `continue-on-error` so a TMS outage never turns a green suite red. `STP_EXECUTION_KEY` names the **STR** Test Execution the JUnit reports import into — never the STP itself; unset means the job skips with a warning annotation rather than minting an orphan Execution.
 - The `allure-report` job runs `if: always()` so failures still produce a report; the Slack failure notification block exists but ships commented out.
 - The artifact name the analysis phase downloads is `merged-allure-results-<TEST_ENV>`.
 
@@ -212,7 +216,7 @@ Repository Settings → Secrets → Actions (the names match `config/variables.t
 |--------|-------|
 | `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD` | Test account for `TEST_ENV=local` |
 | `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD` | Test account for `TEST_ENV=staging` |
-| `AUTO_SYNC` | Master switch for the TMS write-back — `'true'` to enable. Absent/anything else = every suite runs with sync off (the workflow defaults it to `'false'`) |
+| `AUTO_SYNC` | Master switch for the TMS write-back — `'true'` to enable. Gates both the `Sync Results to TMS` step and the `XrayImport` job. Absent/anything else = every suite runs with sync off (the workflows default it to `'false'`) |
 | `STP_EXECUTION_KEY` | Key of the **STR** — the Test Execution linked to the sprint's STP, filed under the `QA Test Artifacts` epic. **NOT the STP's own key**: a Test Plan derives its status from Executions and is never written into, so CI refuses to import without a real Execution key and skips with a warning |
 | `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET` | Xray Cloud API credentials (TMS sync, Modality jira-xray) |
 | `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` | Jira-Direct TMS sync alternative (commented in the workflows until enabled) |
