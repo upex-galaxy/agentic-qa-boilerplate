@@ -9,6 +9,23 @@ compatibility: [claude-code, copilot, cursor, codex, opencode]
 
 Reference/utility skill (same tier as `/playwright-cli`): loaded INSIDE the subagent that is already executing a testing stage — it does not spawn agents of its own and has no dispatch strategy. Typical caller: `/sprint-testing` Stage 2, when a bug found during exploration is visual/positional (see `../sprint-testing/references/exploration-patterns.md` §"Bugs found during exploration").
 
+## Compact Rules
+
+- DO NOT route a QA screenshot through ANY external image service, generative or otherwise — real product/customer data is in the frame. Explicit user authorization in chat does NOT lift this; everything renders locally over a loopback HTTP server and a local browser capture.
+- WHEN a bug is visual or positional (overlap, misalignment, wrong date/offset on an axis, an element in the wrong place) and a raw screenshot would need a paragraph to explain: annotate it. DO NOT use this skill to file the bug itself, or on before/after shots that already read clearly raw.
+- DO: work from a screenshot that already exists on disk. This skill overlays shapes on an existing image; it never generates or edits an image from a text description.
+- DO: produce exactly ONE evidence file — the final annotated PNG in the ticket's `evidence/` folder, named `{KEY}-BUG-{BUG-KEY}-annotated.png`. The crop and the annotation HTML are scratchpad working files, never written to `evidence/` and never cited from a ticket.
+- DO: copy the commented overlay blocks from `references/shapes.html` instead of designing from scratch, and keep both its z-index scale (base image → shapes → callout boxes → corner badge topmost) and its utf-8 meta tag; a copied block that drops either produces a hidden badge or mojibake.
+- DO NOT: load the annotation HTML over `file://` — the browser-automation CLI refuses it before rendering. Serve over loopback HTTP, and kill that server before the session ends.
+- DO: size the capture viewport equal to or larger than the HTML canvas. A smaller viewport clips callouts.
+- DO: read the rendered PNG back and expect at least one adjustment pass (move a circle, rewrap callout text, nudge the badge out of a collision). It is not one-shot.
+- DO: state the final PNG's repo-relative path in chat the moment it lands, unprompted, and repeat it leading the "Bug annotations" group in the session-close screenshot list.
+- WHEN embedding the annotated PNG into the bug issue: offer it and let the human confirm first; once published it leads the bug's Evidence section, ahead of the raw capture.
+
+**Read full SKILL.md when**: building the annotation HTML, choosing shape types, or handling a case the local render cannot cover (e.g. a photo of physical signage that would need anonymization).
+
+---
+
 ## Why 100% local — the security rationale (binding)
 
 An earlier design routed screenshots through external generative image-editing services. Both attempts failed, one dangerously:

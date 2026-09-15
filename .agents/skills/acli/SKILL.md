@@ -13,6 +13,24 @@ complementary_categories: [issue-tracker]
 
 This skill teaches how to drive `acli` for any intent: one-off commands, batch mutations, scripted pipelines, and CI jobs. **Repo-specific integration** (how this skill plugs into the host repo's workflow, TMS modality, project conventions, anti-patterns) lives in the companion file `<repo-core>/references/acli-integration.md` — load it on demand. See "Navigation" below.
 
+## Compact Rules
+
+- DO: pass `--paginate` (or an explicit `--limit`) on any search whose result is counted, iterated, or decided on. Pagination is opt-in and truncation is silent — there is no warning.
+- DO NOT: read exit 0 as proof a subcommand exists. An unknown subcommand falls back to the parent help and exits 0. Check that the help body actually changed, and never invent a flag — every multi-word flag is kebab-case.
+- DO: verify auth status before any bulk mutation. Auth is per-product (jira / confluence / admin / global are separate sessions) and a silent expiry leaves the batch half-applied with no clean rollback.
+- DO: pass the non-interactive confirmation flag on every mutating command in CI, or the command hangs waiting on stdin.
+- DO NOT: hand-author raw ADF JSON, and do not pass Markdown to a rich-text flag — the CLI never converts it and stores the literal characters. Author in Markdown, convert with `scripts/md-to-adf.ts`, pass the ADF.
+- DO: let the converter's validation gate run on every ADF document before publishing, and round-trip read the field after writing. The gate catches node-level errors; only the read-back catches Jira's silent server-side coercion.
+- DO NOT: assume `workitem edit` takes custom-field values. It hard-rejects every shape with exit 1; editing a custom field on an EXISTING item works only through the REST PUT path.
+- DO NOT: hardcode a `customfield_NNNNN` id in a script or in generated output. Resolve it through the host project's slug catalog — ids differ per workspace, slugs travel.
+- DO NOT: read the Atlassian host from an environment variable. It lives in `.agents/project.yaml` under `issue_tracker.atlassian_url` and is resolved through the accessor; a stale inherited copy once pointed the sync scripts at a dead site.
+- WHEN creating an issue link: `--out` / `--in` are empirically INVERTED against Jira's semantics — `--out` takes the prerequisite, `--in` the dependent. Verify the direction by listing the link afterwards, and recreate with swapped flags if it landed backwards.
+- DO: capture and surface the trace id from any backend failure. It is the only debug signal, and Atlassian Support needs it.
+- WHEN the operation is a known blind spot (enumerate custom fields, edit custom-field values, manage workflows / issue types / versions / components, attachments, watchers, add an item to a sprint): route through REST or the opt-in Atlassian MCP rather than forcing the CLI.
+- DO: prefer API-token auth in scripted contexts, and pin the binary to an explicit version in production pipelines — tracking `latest` has caused same-day mass failures.
+
+**Read full SKILL.md when**: composing a specific command, publishing rich text, running the REST PUT workaround, or working any surface outside Jira work items.
+
 ## Why this skill exists
 
 `acli` has several traits that make it easy to misuse:
