@@ -53,6 +53,12 @@ ${colors.bold}AUTHENTICATION${colors.reset}
   auth logout    Clear stored credentials
   auth status    Show current authentication status
 
+${colors.bold}CAPTURING WHAT YOU CREATED${colors.reset}
+  Every 'create' below (test, precondition, exec, plan, set) ends with a bare
+  ANSI-free line 'KEY <PROJ-123>', and accepts --json for the same value as a
+  field. Capture from one of those; never scrape the decorated success line.
+    KEY=$(xray test create --project DEMO --summary "..." | grep '^KEY ' | cut -d' ' -f2)
+
 ${colors.bold}TEST MANAGEMENT${colors.reset}
   test create    Create a new test case
                  --project <key>        Project key (required)

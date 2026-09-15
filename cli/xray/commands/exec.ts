@@ -10,7 +10,7 @@ import { diffMembership } from '../lib/cascade.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
 import { getLinkedTests, resolveIssueId, resolveIssueIds } from '../lib/jira.js';
-import { log, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
+import { log, printCreatedKey, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
 import { getBoolFlag, getFlag, getFlagArray, requireFlag } from '../lib/parser.js';
 import { readSuggestedEnvironment } from '../lib/project-config.js';
 
@@ -56,9 +56,22 @@ export async function create(flags: Flags): Promise<void> {
   });
 
   const exec = result.createTestExecution.testExecution;
+
+  if (getBoolFlag(flags, 'json')) {
+    log.json({
+      key: exec.jira.key,
+      issueId: exec.issueId,
+      summary: exec.jira.summary,
+      testEnvironments: testEnvironments ?? [],
+      tests: testIssueIds,
+    });
+    return;
+  }
+
   log.success(`Test Execution created: ${exec.jira.key}`);
   console.log(`  Summary: ${exec.jira.summary}`);
   console.log(`  Issue ID: ${exec.issueId}`);
+  printCreatedKey(exec.jira.key);
   if (testEnvironments) {
     console.log(`  Environments: ${testEnvironments.join(', ')}`);
   }

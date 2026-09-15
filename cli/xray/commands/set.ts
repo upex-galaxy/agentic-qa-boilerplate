@@ -8,7 +8,7 @@ import type { Flags, TestResult, TestSetResult } from '../types/index.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
 import { getLinkedTests, resolveIssueId, resolveIssueIds } from '../lib/jira.js';
-import { log, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
+import { log, printCreatedKey, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
 import { getBoolFlag, getFlag, requireFlag } from '../lib/parser.js';
 
 // ============================================================================
@@ -38,9 +38,16 @@ export async function create(flags: Flags): Promise<void> {
   });
 
   const set = result.createTestSet.testSet;
+
+  if (getBoolFlag(flags, 'json')) {
+    log.json({ key: set.jira.key, issueId: set.issueId, summary: set.jira.summary, tests: testIssueIds });
+    return;
+  }
+
   log.success(`Test Set created: ${set.jira.key}`);
   console.log(`  Summary: ${set.jira.summary}`);
   console.log(`  Issue ID: ${set.issueId}`);
+  printCreatedKey(set.jira.key);
 }
 
 // ============================================================================

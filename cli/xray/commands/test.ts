@@ -8,8 +8,8 @@
 import type { Flags, PreconditionResult, TestResult, TestStepResponse } from '../types/index.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
-import { log, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
-import { getFlag, getFlagArray, requireFlag } from '../lib/parser.js';
+import { log, printCreatedKey, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
+import { getBoolFlag, getFlag, getFlagArray, requireFlag } from '../lib/parser.js';
 
 // ============================================================================
 // CREATE
@@ -64,10 +64,23 @@ export async function create(flags: Flags): Promise<void> {
   const test = result.createTest.test;
   const warnings = result.createTest.warnings;
 
+  if (getBoolFlag(flags, 'json')) {
+    log.json({
+      key: test.jira.key,
+      issueId: test.issueId,
+      summary: test.jira.summary,
+      testType: test.testType.name,
+      warnings: warnings ?? [],
+      stepsNotAdded: stepsFlags.length,
+    });
+    return;
+  }
+
   log.success(`Test created: ${test.jira.key}`);
   console.log(`  Summary: ${test.jira.summary}`);
   console.log(`  Type: ${test.testType.name}`);
   console.log(`  Issue ID: ${test.issueId}`);
+  printCreatedKey(test.jira.key);
 
   if (warnings && warnings.length > 0) {
     log.warn('Warnings:');

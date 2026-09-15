@@ -10,7 +10,7 @@ import { diffMembership } from '../lib/cascade.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
 import { getLinkedTests, resolveIssueId, resolveIssueIds } from '../lib/jira.js';
-import { log, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
+import { log, printCreatedKey, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
 import { getBoolFlag, getFlag, requireFlag } from '../lib/parser.js';
 
 // ============================================================================
@@ -40,8 +40,16 @@ export async function create(flags: Flags): Promise<void> {
   });
 
   const plan = result.createTestPlan.testPlan;
+
+  if (getBoolFlag(flags, 'json')) {
+    log.json({ key: plan.jira.key, issueId: plan.issueId, summary: plan.jira.summary, tests: testIssueIds });
+    return;
+  }
+
   log.success(`Test Plan created: ${plan.jira.key}`);
   console.log(`  Summary: ${plan.jira.summary}`);
+  console.log(`  Issue ID: ${plan.issueId}`);
+  printCreatedKey(plan.jira.key);
 }
 
 // ============================================================================

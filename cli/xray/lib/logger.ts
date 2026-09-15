@@ -56,6 +56,24 @@ export const log = {
 } as const;
 
 /**
+ * Print the key of a freshly created artifact on its own bare, ANSI-free line.
+ *
+ * Every `create` already announced the key inside a decorated success line
+ * (`✔ Test created: PROJ-123`), which a human reads fine and a caller has to
+ * guess at: the colour codes, the icon and the label all sit between the
+ * capture and the value. "Created the TC but could not get its id" was the
+ * recurring result. This line is the stable contract instead:
+ *
+ *     bun xray test create ... | grep '^KEY ' | cut -d' ' -f2
+ *
+ * `--json` on the same commands returns the identical value as a `key` field,
+ * for callers that would rather parse one object than a line.
+ */
+export function printCreatedKey(key: string): void {
+  console.log(`KEY ${key}`);
+}
+
+/**
  * Warn when a list command returned fewer rows than the server's total.
  *
  * Every `list` defaults to `--limit 20`, and a silently truncated read is

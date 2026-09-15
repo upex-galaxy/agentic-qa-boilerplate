@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-15T06:20:37.781Z`
+> Generated: `2026-09-15T06:23:45.642Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -458,6 +458,7 @@ Skills indexed: 19
 - DO: confirm the project is in Modality jira-xray before invoking anything here; a jira-native project (no Xray plugin) routes to `/acli` instead. Modality is resolved once in `/test-documentation` Phase 0 and inherited downstream, never re-decided mid-flow.
 - DO NOT: call this CLI from a workflow skill. Workflow skills write `[TMS_TOOL]` pseudocode and load this skill; only this skill owns the literal syntax.
 - DO: pass an explicit `--limit` above the expected count on every list command — all of them default to 20 rows and truncate silently. Read the true count from the `(N total)` header, never by counting rows; a truncated read looks exactly like data loss.
+- DO: capture the key of anything you create from the bare `KEY <PROJ-123>` line or from `--json`, never by scraping the decorated success line — a create whose key was not captured leaves an orphan artifact nothing downstream can link.
 - DO NOT: pass Manual steps inline when creating a test — Xray Cloud silently drops them. Create the test first, add one step per call, then verify the steps landed.
 - DO: pin every ATR execution to a Test Environment (value from `active_env`), so results stay comparable across runs. An execution that slipped through without one is repaired in place, not left.
 - DO: keep the Set-first cascade: the per-Story ATS holds the membership, and the Plan (ATP) and Execution (ATR) derive their test lists from it rather than maintaining their own.
@@ -469,7 +470,7 @@ Skills indexed: 19
 - DO: dry-run any import or backup restore before applying. Both write irreversibly across hundreds of tests and runs.
 - WHEN moving between sites: restore in sync-by-key mode (GraphQL ids are re-assigned per site, keys are not), re-authenticate between export and restore because auth holds ONE site at a time, and finish with the Jira instance-migration flow — field ids are reassigned and an old id silently resolves to a different field.
 - DO NOT: push run results for TCs the ROI verdict marked terminal-Manual. It creates audit noise and breaks the Candidate / Manual / Deferred reporting.
-- WHEN Xray credentials are missing or broken: STOP per Critical Rule #10 — name `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET`, point at `.env`, ask for a session restart. Nothing reaches the Xray GraphQL layer without them.
+- (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: composing a specific command, wiring the canonical end-to-end Story flow, running backup/restore or a cross-site migration, or enriching the synced PBI cache.
 

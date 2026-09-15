@@ -57,6 +57,7 @@ The command shapes live in `acli/SKILL.md` §Quick Start. The QA flow uses the s
 | Transition Ready For QA → In Test | `jira workitem transition --key <KEY> --status <STATUS>` | `<STATUS>` = `{{jira.status.story.in_test}}` |
 | Search QA work in flight (sprint dashboard) | `jira workitem search --jql <JQL> --paginate --json` | `<JQL>` = `project = {{PROJECT_KEY}} AND assignee = currentUser() AND status in ('Ready For QA','In Test','QA Approved')` |
 | File a bug found mid-session | `jira workitem create --project <P> --type Bug --summary <S> --parent <PARENT>` | `<P>` = `{{PROJECT_KEY}}`; `<PARENT>` = parent Story key (`{{PROJECT_KEY}}-NNN`) |
+| Capture the key of what you just created | add `--json` to the create and read the `key` field | Applies to every create on both tools. NEVER scrape the human success line: `acli` decorates it, and `/xray-cli` prints colour codes around the key. In Modality `jira-xray` the `/xray-cli` creates also emit a bare `KEY <PROJ-123>` line for shell capture. A create whose key was not captured leaves an orphan artifact nothing downstream can link. |
 
 Slug resolution rule: anything wrapped in `{{jira.<slug>}}` MUST be resolved against `.agents/jira-fields.json` (custom-field IDs) or `.agents/jira-workflows.json` (status / transition names) before the command runs. Never substitute literal `customfield_` IDs or literal status names — see anti-patterns below.
 

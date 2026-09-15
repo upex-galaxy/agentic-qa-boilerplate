@@ -14,6 +14,7 @@ complementary_categories: [tms]
 - DO: confirm the project is in Modality jira-xray before invoking anything here; a jira-native project (no Xray plugin) routes to `/acli` instead. Modality is resolved once in `/test-documentation` Phase 0 and inherited downstream, never re-decided mid-flow.
 - DO NOT: call this CLI from a workflow skill. Workflow skills write `[TMS_TOOL]` pseudocode and load this skill; only this skill owns the literal syntax.
 - DO: pass an explicit `--limit` above the expected count on every list command — all of them default to 20 rows and truncate silently. Read the true count from the `(N total)` header, never by counting rows; a truncated read looks exactly like data loss.
+- DO: capture the key of anything you create from the bare `KEY <PROJ-123>` line or from `--json`, never by scraping the decorated success line — a create whose key was not captured leaves an orphan artifact nothing downstream can link.
 - DO NOT: pass Manual steps inline when creating a test — Xray Cloud silently drops them. Create the test first, add one step per call, then verify the steps landed.
 - DO: pin every ATR execution to a Test Environment (value from `active_env`), so results stay comparable across runs. An execution that slipped through without one is repaired in place, not left.
 - DO: keep the Set-first cascade: the per-Story ATS holds the membership, and the Plan (ATP) and Execution (ATR) derive their test lists from it rather than maintaining their own.
@@ -112,6 +113,22 @@ bun xray test list --project DEMO
 bun xray test list --project DEMO --limit 50
 bun xray test list --jql "project = DEMO AND labels = critical"
 ```
+
+> **Capturing the key of what you just created.** Every `create` in this CLI
+> (`test`, `precondition`, `exec`, `plan`, `set`) ends with a bare, ANSI-free
+> `KEY <PROJ-123>` line, and accepts `--json` for the same value as a field.
+> Use one of those two; never scrape the decorated `✔ Test created: …` success
+> line — the colour codes, the icon and the label all sit between you and the
+> value, which is how "created the TC but could not get its id" keeps happening.
+>
+> ```bash
+> TC_KEY=$(bun xray test create --project DEMO --summary "Verify login" | grep '^KEY ' | cut -d' ' -f2)
+> bun xray test create --project DEMO --summary "Verify login" --json   # {"key":"DEMO-123","issueId":"1042389",...}
+> ```
+>
+> The `issueId` (numeric) is in the `--json` object too. Prefer the KEY for
+> anything a human will read or link; the numeric id is what `add-step` and the
+> other Xray-internal mutations take, and every command here accepts either.
 
 > **Every `list` command defaults to `--limit 20` and truncates silently.**
 > `test list`, `exec list`, `set list` and `plan list` all print the true total in

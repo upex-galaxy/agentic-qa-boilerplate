@@ -13,8 +13,8 @@ import type { Flags, PreconditionResult } from '../types/index.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
 import { resolveIssueId, resolveIssueIds } from '../lib/jira.js';
-import { log, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
-import { getFlag, requireFlag } from '../lib/parser.js';
+import { log, printCreatedKey, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
+import { getBoolFlag, getFlag, requireFlag } from '../lib/parser.js';
 
 // ============================================================================
 // CREATE
@@ -52,10 +52,22 @@ export async function create(flags: Flags): Promise<void> {
   const pre = result.createPrecondition.precondition;
   const warnings = result.createPrecondition.warnings;
 
+  if (getBoolFlag(flags, 'json')) {
+    log.json({
+      key: pre.jira.key,
+      issueId: pre.issueId,
+      summary: pre.jira.summary,
+      preconditionType: pre.preconditionType.name,
+      warnings: warnings ?? [],
+    });
+    return;
+  }
+
   log.success(`Precondition created: ${pre.jira.key}`);
   console.log(`  Summary: ${pre.jira.summary}`);
   console.log(`  Type: ${pre.preconditionType.name}`);
   console.log(`  Issue ID: ${pre.issueId}`);
+  printCreatedKey(pre.jira.key);
 
   if (warnings && warnings.length > 0) {
     log.warn('Warnings:');
