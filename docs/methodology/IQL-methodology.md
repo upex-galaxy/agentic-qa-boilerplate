@@ -9,6 +9,8 @@
 > **KATA replaced TAUS. TDC is retired.** Any Jira status, transition, link type or severity named
 > below may not exist in the instance — never write one from memory, read the catalogs. Where this
 > file and the live layer disagree, the live layer wins.
+> Lee en su lugar: `docs/agentic-quality-engineering.md` (stages y contrato agéntico) y
+> `docs/qa-standard/planning-ladder-proposal.md` (escalera de artefactos ratificada).
 
 > **Idioma:** Español
 > **Metodología UPEX Integral que Reemplaza el STLC Tradicional**

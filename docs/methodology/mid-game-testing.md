@@ -9,6 +9,8 @@
 > **KATA replaced TAUS. TDC is retired.** Any Jira status, transition, link type or severity named
 > below may not exist in the instance — never write one from memory, read the catalogs. Where this
 > file and the live layer disagree, the live layer wins.
+> Lee en su lugar: `docs/agentic-quality-engineering.md` (stages y contrato agéntico) y
+> `docs/qa-standard/planning-ladder-proposal.md` (escalera de artefactos ratificada).
 
 > **Idioma:** Español
 > **Fase IQL 2** · Continuous Testing · Agile Testing · AI-Driven
@@ -107,15 +109,15 @@ Clara diferenciación entre tests manuales y candidatos a automatización.
 
 ### Step 7: Automatización de Test Cases Candidatos
 
-**TALC - Test Automation Life Cycle (2do Stage) - Modelo TAUS**
+**TALC - Test Automation Life Cycle (2do Stage) - KATA (antes TAUS)**
 
-Convertir tests candidatos en scripts automatizados para CI usando el modelo TAUS.
+Convertir tests candidatos en scripts automatizados para CI usando el framework KATA.
 
 **Actividades Clave:**
 
 - Transiciones de estado: Candidate → In Automation
 - Se crea una nueva branch, se implementan los scripts de test
-- Los cambios se pushean siguiendo el patrón TAUS
+- Los cambios se pushean siguiendo el patrón KATA
 
 **Resultado Esperado:**
 Tests con scripts listos para integración continua.

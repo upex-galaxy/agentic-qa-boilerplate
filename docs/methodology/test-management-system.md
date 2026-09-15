@@ -9,6 +9,8 @@
 > **KATA replaced TAUS. TDC is retired.** Any Jira status, transition, link type or severity named
 > below may not exist in the instance — never write one from memory, read the catalogs. Where this
 > file and the live layer disagree, the live layer wins.
+> Lee en su lugar: `docs/agentic-quality-engineering.md` (stages y contrato agéntico) y
+> `docs/qa-standard/planning-ladder-proposal.md` (escalera de artefactos ratificada).
 
 ## Aligned with the Integrated Quality Lifecycle (IQL) Methodology
 
@@ -123,7 +125,7 @@ IQL integrates 8 complementary approaches applied strategically across different
 
   Step 7: Test Automation Implementation       [TALC 2nd Stage]
           • Create branch, implement scripts
-          • Follow framework patterns (TAUS model)
+          • Follow framework patterns (KATA model, formerly TAUS)
           • Push changes
 
   Step 8: CI Verification                      [TALC 3rd Stage]
@@ -206,9 +208,10 @@ IQL integrates 8 complementary approaches applied strategically across different
 
 **Subtasks Workflow:**
 ```
-'QA: AC Review'         →  Open → In Progress → Done
-'QA: Acceptance Test Plan' →  Open → In Progress → Done
+'[QA] Shift-Left Review' →  Open → In Progress → Done
 ```
+(the only subtask the live layer creates, via `/shift-left-testing`; session notes live on it,
+the Story stays clean)
 
 **⚠️ IMPORTANT: ATP = Hypotheses, NOT Formal Documentation**
 
@@ -242,10 +245,8 @@ While Dev implements the feature:
 - Report findings and defects immediately
 - Provide fast feedback to development
 
-**Subtask Workflow:**
-```
-'QA: Story Testing' →  Open → In Progress → Done
-```
+**Tracking:** `/sprint-testing` creates no subtask for this step — the work is tracked directly
+on the Story plus its ATP/ATR.
 
 **Result:** User Story can be deployed to production once QA approves
 
@@ -648,6 +649,10 @@ QA (Main Dashboard)
 │   ├── 📋 STR: Sprint#{N}: Regression Testing (sprint-close recap)
 │   └── 📋 ATR: {STORY-KEY}: Story Testing     (per-Story execution)
 │
+├── 📁 QA Defect Management (every Bug / Defect / Improvement)
+│   └── Parents every quality issue found by QA, regardless of the coverable
+│       Story it traces back to via issue-link — never a product/dev epic
+│
 ├── 📊 RTM (Requirements Traceability Matrix)
 │   └── Stories linked to Test Sets (coverage), Test Cases, and Defects
 │
@@ -676,12 +681,11 @@ Document Test Case → Add to Regression Suite → Automate (if applicable) → 
 
 **Regression Test Run naming convention:**
 ```
-Regression [Environment] [Sprint/Release]
+STR: Sprint#{N}: Regression Testing
 
 Examples:
-• Regression Staging Sprint 15
-• Regression DevStage Sprint 15
-• Regression Production Release 2.0
+• STR: Sprint#15: Regression Testing
+• STR: Sprint#30: Regression Testing
 ```
 
 ### Two Reporting Systems
@@ -734,8 +738,8 @@ The TMS works alongside the Automation Framework's reporting, each serving diffe
 | Concept         | Description                                                                                                     | Example                                           |
 | --------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | **Test Case**   | Static template defining WHAT to test. Reused across executions. Has own lifecycle (Draft → In Design → READY → … → AUTOMATED, see below) | TC-001 "Verify user login with valid credentials" |
-| **Test Run**    | Regression cycle grouping TCs for execution. Has context: sprint, release, environment                          | "Regression Staging Sprint 15"                    |
-| **Test Result** | Outcome of executing a TC in a specific Run. Status: Passed/Failed/Blocked/Skipped. Can link to defect          | TC-001 PASSED in "Regression Staging Sprint 15"   |
+| **Test Run**    | Regression cycle grouping TCs for execution. Has context: sprint, release, environment                          | "STR: Sprint#15: Regression Testing"              |
+| **Test Result** | Outcome of executing a TC in a specific Run. Status: Passed/Failed/Blocked/Skipped. Can link to defect          | TC-001 PASSED in "STR: Sprint#15: Regression Testing" |
 
 **Practical Example:**
 ```

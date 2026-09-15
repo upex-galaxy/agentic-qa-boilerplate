@@ -9,6 +9,8 @@
 > **KATA replaced TAUS. TDC is retired.** Any Jira status, transition, link type or severity named
 > below may not exist in the instance — never write one from memory, read the catalogs. Where this
 > file and the live layer disagree, the live layer wins.
+> Lee en su lugar: `docs/agentic-quality-engineering.md` (stages y contrato agéntico) y
+> `docs/qa-standard/planning-ladder-proposal.md` (escalera de artefactos ratificada).
 
 > **Idioma:** Español
 > **Fase IQL 1** · Shift-Left · BDD · Risk-Based
@@ -77,7 +79,7 @@ Entender los requisitos y finalizar los criterios de aceptación de la US antes 
 
 - QA discute ambigüedades con stakeholders
 - QA crea el Acceptance Test Plan (ATP) de la US describiendo escenarios iniciales
-- La subtarea 'QA: AC Review' y 'QA: Acceptance Test Plan' pasa de Open → In Progress → Done
+- La subtarea `[QA] Shift-Left Review` pasa de Open → In Progress → Done
 
 > **El FTP no se crea aquí.** El Feature Test Plan es **uno por épica/feature** y es un documento vivo que se refina a lo largo de toda la épica; lo que produce una historia es su **ATP**. El ATP hereda del FTP los riesgos, los puntos de integración y las personas compartidas. Canon: `.agents/skills/sprint-testing/references/feature-test-planning.md`.
 
@@ -115,7 +117,7 @@ Validar rápidamente la US ejecutando los escenarios definidos en el ATP; los re
 
 **Actividades Clave:**
 
-- La subtarea 'QA: Story Testing' pasa de Open → In Progress → Done
+- El trabajo se registra en la Story y su ATP/ATR, no en una subtarea: `/sprint-testing` no crea subtareas para este step
 - QA realiza testing exploratorio dirigido en áreas críticas o de alto riesgo
 - Los hallazgos y defectos se reportan inmediatamente
 
@@ -206,11 +208,11 @@ Definen cómo se diseñan y ejecutan los test cases:
 - **Tests Exploratorios:** Basados en objetivos o hipótesis (charters) sin pasos rígidamente definidos.
 - **Permiten:** Investigar el software libre y creativamente, descubriendo defectos en "rincones" menos explorados.
 
-### 3. El "Tridente de Testing" - Competencias Técnicas Clave
+### 3. La "Trifuerza" - Competencias Técnicas Clave
 
 Considerado el **conocimiento mínimo esencial** en UPEX. Define las **competencias técnicas fundamentales** que se aprenden y aplican con la metodología Early-Game Testing.
 
-> **Nota importante:** El Tridente no son enfoques metodológicos, sino las **áreas de conocimiento técnico** que todo QA debe dominar.
+> **Nota importante:** La Trifuerza no son enfoques metodológicos, sino las **áreas de conocimiento técnico** que todo QA debe dominar.
 
 #### E2E / Frontend Testing (Testing de Sistema)
 

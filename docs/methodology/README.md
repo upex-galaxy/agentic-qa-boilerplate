@@ -9,6 +9,8 @@
 > **KATA replaced TAUS. TDC is retired.** Any Jira status, transition, link type or severity named
 > below may not exist in the instance — never write one from memory, read the catalogs. Where this
 > file and the live layer disagree, the live layer wins.
+> Lee en su lugar: `docs/agentic-quality-engineering.md` (stages y contrato agéntico) y
+> `docs/qa-standard/planning-ladder-proposal.md` (escalera de artefactos ratificada).
 
 > **Idioma:** Español
 > Metodologías y frameworks de testing usados en este proyecto.
@@ -24,6 +26,8 @@
 | [mid-game-testing.md](./mid-game-testing.md) | IQL Fase 2: Detección y automatización |
 | [late-game-testing.md](./late-game-testing.md) | IQL Fase 3: Observación y monitoreo |
 | [kata-fundamentals.md](./kata-fundamentals.md) | Filosofía y conceptos del Framework KATA |
+| [test-management-system.md](./test-management-system.md) | Arquitectura y procesos del Test Management System (TMS) — legacy |
+| [jira-platform.md](./jira-platform.md) | Integración Jira/Xray para QA Automation — legacy |
 
 ---
 
@@ -36,7 +40,7 @@
 ---
 
 **Ver También:**
-- `/shift-left-testing` skill — ejecuta el Early-Game (Steps 1-4) como Stage 0 pre-sprint en una sesión batch sobre stories del backlog.
+- `/shift-left-testing` skill — ejecuta el Early-Game hasta Estimation (Steps 1-2) como Stage 0 pre-sprint en una sesión batch sobre stories del backlog; los Steps 3-4 quedan en `/sprint-testing` Stage 1 y `/test-documentation`.
 - `/sprint-testing` skill — orquesta Stages 1-3 in-sprint (Planning / Execution / Reporting).
 - `/test-documentation` skill — Stage 4: documentación de TCs + ROI.
 - `/test-automation` skill — Stage 5: guías de implementación para AI (KATA).
