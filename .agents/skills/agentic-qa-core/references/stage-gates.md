@@ -1,8 +1,9 @@
 # Stage Gates — Definition-of-Done and agentic contract per workflow stage
 
 > Shared doctrine cited by every workflow skill's `## Subagent Dispatch Strategy`.
-> Companion to `briefing-template.md` (the 7-component dispatch) and
-> `session-management.md` (the per-stage progress checkpoint). Where the briefing
+> Companion to `briefing-template.md` (the 7-component dispatch),
+> `session-management.md` (the per-stage progress checkpoint) and
+> `artifact-lifecycle.md` (which status every artifact must be in). Where the briefing
 > says *what to send a subagent* and session-management says *how to record that
 > it ran*, this file says **what must be TRUE before the orchestrator advances to
 > the next stage or hands off** — and **who was allowed to decide what** while the
@@ -122,6 +123,53 @@ more rope on the way in is paid for with a harder check on the way out.
 
 ---
 
+## Lifecycle expectations per stage
+
+A DoD item can be ticked while the artifact it produced sits frozen in the status
+Jira's `Create` transition dropped it in. That is the failure this section closes.
+**Every stage below owns the STATUS of the artifacts it created or finished**, not
+just their existence — and the canonical per-artifact table (born here, moved there,
+terminal there) is `artifact-lifecycle.md` §1. Do not restate it; resolve against it.
+
+| Stage | Artifacts whose status this stage owns | Where they must be when the stage closes |
+|---|---|---|
+| **Shift-Left** | Story · `[QA] Shift-Left Review` subtask | Story at `estimation` (via `analyze` → `estimate`, stopping there); subtask at `close` (via `complete`) |
+| **Planning** | ATP · ATS · ATR · sprint TCs (xray) · STP | ATP at `ready` (via `designed`); ATS still `designing` (membership is not final until Reporting); ATR `active` **carrying its Test Environment**; TCs at `ready` (via `start_design` → `ready_to_run`), parented to **QA Test Repository**; STP at `ready` once the sprint scope is set |
+| **Execution** | Story / coverable | at `in_test` (via `start_testing`), `qa_assignee` set to self |
+| **Reporting** | ATR · ATS · ATP · Story · filed Bug/Defect/Improvement | ATR at `close` (via `complete`, after every run status is recorded); ATS at `close` (via `done`); ATP at `completed` (via `complete`); Story at `qa_approved` or `blocked`; each filed issue at `open`, parented to **QA Defect Management** |
+| **Sprint close** | STP · STR | STP at `completed` (via `complete`); STR at `close` (via `complete`) after the verdict is written |
+| **Documentation** | promoted TCs · RTP · feature TS · Preconditions | Candidate TCs at `candidate` (via `automation_review_from_ready` → `approve_to_automate`); Manual TCs at `manual` (via `for_manual`, **from `ready` — there is no `in_review` → `manual` edge**); Deferred TCs stay `ready`; RTP at `ready` and **stays there** (long-lived, never `completed`); feature TS stays `designing`; Preconditions stay `active` (no transition exists) |
+| **Automation** | TCs in scope | `in_automation` at Code start (via `start_automation`); `pull_request` when the ticket PR opens (via `create_pr`); `automated` ONLY after the suite PR merges to `main` with CI green (via `merged`) |
+| **Regression** | STR · RTP | STR at `close` (via `complete`) after the verdict; RTP **untouched at `ready`** — a regression run never completes the plan it ran from |
+| **Observation** | *(no skill, no artifacts)* | n/a |
+
+**Ownership and parenting are part of the same gate.** Every artifact CREATED by a
+stage carries `assignee` = the acting QA user at create time (`artifact-lifecycle.md`
+§2 — an unassigned Xray Test Plan cannot have Tests added to it later, which surfaces
+as a blocker long after the Plan exists), and is parented to its QA process epic
+(§3). Before editing an artifact someone else owns, ask.
+
+**When the slug does not resolve**, run the unmapped-status fallback protocol
+(`artifact-lifecycle.md` §4): list the LIVE transitions, propose the closest synonym in
+ONE `AskUserQuestion`, fire the live id on yes, and recommend `bun run jira:sync-workflows`
+so the catalog learns it. Never skip silently, never guess an id.
+
+## The light stage verifier — every stage's closing step
+
+**Each stage below closes by running the light stage verifier** from
+`artifact-lifecycle.md` §5 — the eight-line checklist covering artifact keys, links,
+statuses, assignee, parent + components, Jira body written, `progress.md` checkpoint,
+and the chat session footer. It is *light*: the agent answers from what it already did
+this stage, plus at most ONE extra read (a single `Get Issue` on the stage's primary
+key) to confirm status. It is not a re-audit.
+
+The verifier composes with the DoD, it does not replace it: the DoD says the work
+happened, the verifier says nothing was silently left behind. Every line is `YES` or a
+**stated** `N/A` with its reason; a blank line is a failed verifier, and any `NO` makes
+the stage NEEDS REVISION.
+
+---
+
 ## Per-stage DoD checklists
 
 ### Shift-Left — `shift-left-testing`, per-Story refinement
@@ -135,6 +183,7 @@ more rope on the way in is paid for with a harder check on the way out.
 [ ] Coverage estimate reflects the real 1:N (not a minimized count)
 [ ] Inferred scenarios marked NEEDS PO/DEV CONFIRMATION
 [ ] NO TMS test entities created (outlines only); label + transition applied
+[ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
 
 ### Planning — `sprint-testing`
@@ -161,6 +210,7 @@ more rope on the way in is paid for with a harder check on the way out.
     QA Master Test Plan) is found-or-created on the sprint's FIRST ticket and updated on every
     later ticket — skip-with-a-stated-note ONLY when the `Test Plan` work type is absent from the
     instance (there is NO field fallback at sprint altitude)
+[ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
 
 ### Execution — `sprint-testing`
@@ -171,6 +221,7 @@ more rope on the way in is paid for with a harder check on the way out.
 [ ] Newly-discovered partition/boundary/transition folded back into the outline set
 [ ] Evidence captured under the PBI folder; outline/Test status updated
 [ ] Bugs filed with story + AC traceability where found
+[ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
 
 ### Reporting — `sprint-testing`
@@ -182,6 +233,7 @@ more rope on the way in is paid for with a harder check on the way out.
     repro Test's run recorded PASSED/FAILED in the retest Execution
 [ ] Traceability verified — xray: Story↔ATS (`test` slug, coverage) + ATS membership complete +
     Story↔ATP / Story↔ATR (administrative); native: field/comment containers populated
+[ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
 
 ### Sprint close — `sprint-testing` (batch close, or `/regression-testing` if it arrives first)
@@ -194,6 +246,7 @@ more rope on the way in is paid for with a harder check on the way out.
     with its final scope/progress and transitioned to its terminal state
 [ ] Skip-with-a-stated-note ONLY when the `Test Plan` / `Test Execution` work types are absent
     (no field fallback at sprint altitude) — never a silent skip
+[ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
 
 ### Documentation — `test-documentation`, Analyze / Prioritize / Document
@@ -212,6 +265,7 @@ Document:
 [ ] US ↔ ATS ↔ ATP ↔ ATR ↔ TC links created — the **ATS→Story** `test` edge is the coverage one
     (a direct TC→Story link is the last-resort substitute when no ATS can exist); promoted TCs
     added to the Story's ATS + the Test Plan (xray) or feature/Epic label (native)
+[ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
 
 ### Automation — `test-automation`, Plan / Code / Review
@@ -229,6 +283,7 @@ Review:
 [ ] tests green, types clean, lint clean; @atc IDs resolve to real TMS tickets
 [ ] Separate verifier run in a clean context (`/pr-review-lead` or `/judgment-day`)
     — REQUIRED, not opt-in; skipping it is a DoD failure, not a high-risk-only step
+[ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
 
 ### Regression — `regression-testing`, Run / Classify / Decide
@@ -238,6 +293,7 @@ Review:
 [ ] Every failure classified (REGRESSION / FLAKY / KNOWN / ENVIRONMENT / NEW TEST)
 [ ] Pass-rate + trend computed; no silent truncation of skipped/dropped tests
 [ ] GO / CAUTION / NO-GO verdict stated with the evidence behind it
+[ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
 
 ---

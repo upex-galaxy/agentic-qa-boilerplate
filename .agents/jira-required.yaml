@@ -849,6 +849,18 @@ work_types:
     role: atp
     content: description
     local_dir: test-plans
+    # Lifecycle: the ATP / STP / FTP / RTP all ride this workflow. Moved by
+    # /sprint-testing (ATP: Planning -> Reporting; STP: Session Start -> sprint close),
+    # /sprint-testing feature-test-planning (FTP) and /test-documentation (RTP, which
+    # stops at `ready` — it is long-lived and never completed). Doctrine:
+    # agentic-qa-core/references/artifact-lifecycle.md
+    required_statuses:
+      planning: { description: 'Plan created, body not yet designed (Create lands here)' }
+      ready: { description: Plan designed and ready to execute against }
+      completed: { description: Plan closed out after its results are in (terminal) }
+    required_transitions:
+      designed: { from: planning, to: ready, description: Plan body authored and scope agreed }
+      complete: { from: ready, to: completed, description: Plan closed out once results are in }
 
   test_execution:
     jira_issue_type: Test Execution
@@ -864,6 +876,15 @@ work_types:
     role: atr
     content: description
     local_dir: test-executions
+    # Lifecycle: the ATR and the STR both ride this workflow. Moved by /sprint-testing
+    # Reporting (ATR) and by whoever closes the sprint (STR — /sprint-testing batch close
+    # or /regression-testing). Doctrine: agentic-qa-core/references/artifact-lifecycle.md
+    required_statuses:
+      active: { description: 'Execution open, runs still being recorded (Create lands here)' }
+      close: { description: Execution closed after every run status is recorded (terminal) }
+    required_transitions:
+      complete:
+        { from: active, to: close, description: All run statuses recorded — close the Execution }
 
   re_test_execution:
     jira_issue_type: Re-Test Execution
@@ -874,6 +895,16 @@ work_types:
     role: atr
     content: description
     local_dir: test-executions
+    # Lifecycle: moved by /sprint-testing bug retest, once the repro Test's run is
+    # recorded PASSED/FAILED. Optional in practice — a project with no Re-Test Execution
+    # work type records the retest in a plain Test Execution instead.
+    # Doctrine: agentic-qa-core/references/artifact-lifecycle.md
+    required_statuses:
+      active: { description: 'Retest open, repro run not yet recorded (Create lands here)' }
+      close: { description: Retest closed after the repro run is recorded (terminal) }
+    required_transitions:
+      complete:
+        { from: active, to: close, description: Repro run recorded — close the Re-Test Execution }
 
   test_set:
     jira_issue_type: Test Set
@@ -887,6 +918,15 @@ work_types:
       it anyway on `get`: declaration and behavior now agree (`sync: never` is honored).
     sync: discovery
     local_dir: test-sets
+    # Lifecycle: the Story's ATS is closed by /sprint-testing Reporting once its
+    # membership is final. A feature-level `TS:*` Set stays `designing` for the life of
+    # the feature and closes only with its Epic.
+    # Doctrine: agentic-qa-core/references/artifact-lifecycle.md
+    required_statuses:
+      designing: { description: Set still accepting members (Create lands here) }
+      close: { description: Membership final — Set closed (terminal) }
+    required_transitions:
+      done: { from: designing, to: close, description: Membership final — close the Set }
 
   precondition:
     jira_issue_type: Precondition
@@ -896,6 +936,11 @@ work_types:
       plain type sweep. Was `never` while the code wrote it anyway on `get`; the two now agree.
     sync: discovery
     local_dir: preconditions
+    # Lifecycle: none. The Precondition workflow exposes `create` and NOTHING else, so a
+    # Precondition lives and dies `active` — that is correct, not a missing transition.
+    # Doctrine: agentic-qa-core/references/artifact-lifecycle.md
+    required_statuses:
+      active: { description: Precondition in use (Create lands here; the only status) }
 
   subtask:
     # `A | B | C` = ordered alternatives; the first one the project actually has
@@ -911,3 +956,16 @@ work_types:
     jira_issue_type: Sub-task | Task | Subtarea
     description: Generic subtask under a Story — tracking-only, never synced as its own folder
     sync: never
+    # Lifecycle: moved by /shift-left-testing — Phase 1 creates the `[QA] Shift-Left Review`
+    # subtask, the handoff closes it after the exhaustive session annotations are posted on
+    # it. Optional in practice: a project with no subtask-level type skips both steps with a
+    # warning. NOTE the status NAMES here are `ACTIVE` / `Close`, not `In Progress` / `Done`.
+    # Doctrine: agentic-qa-core/references/artifact-lifecycle.md
+    required_statuses:
+      active: { description: 'Subtask open, QA working it (Create lands here)' }
+      close: { description: Subtask closed at hand-off (terminal) }
+    required_transitions:
+      complete:
+        { from: active, to: close, description: Annotations posted — close the tracking subtask }
+      reactive:
+        { from: close, to: active, description: Re-open a closed tracking subtask (refresh run) }
