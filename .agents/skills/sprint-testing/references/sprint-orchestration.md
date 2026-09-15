@@ -650,6 +650,7 @@ Created at `<SESSION_DIR>/test-session-memory.md` — i.e. `.session/sprint-test
 - [ ] Test Analysis filled in ATP
 - [ ] AC Gaps written (or confirmed: none)
 - [ ] TCs created with full traceability
+- [ ] Every created TC's summary matches the canonical form `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` — `#` is a stable per-Story index, never renumbered (Stage 4 re-verifies it on promotion)
 - [ ] Three-edge traceability check passed (Story↔ATS coverage + ATP↔Story + ATR↔Story administrative + lists match)
 - [ ] ATP transitioned planning -> ready (designed); it is COMPLETED at Stage 3, not here
 - [ ] TCs transitioned draft -> in_design -> ready (start_design, ready_to_run), parented to QA Test Repository

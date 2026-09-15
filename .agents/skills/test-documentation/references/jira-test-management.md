@@ -390,13 +390,16 @@ When `/test-documentation` Stage 4 promotes a sprint Xray Test into regression, 
 
 | Promote / enrich op | Resolves via | Coverage |
 |---|---|---|
+| Re-derive + rewrite the canonical **title** on an existing Test (runs FIRST) | `[ISSUE_TRACKER_TOOL]` (the summary is a Jira field) | ✓ (no `[TMS_TOOL]` summary update exists; route via the issue tracker) |
 | Add Test → feature **Test Set** | `[TMS_TOOL]` (Xray-internal membership) | ✓ supported |
-| Add Test → **Regression Test Plan** | `[TMS_TOOL]` | ✓ supported |
+| Add Test → **Regression Test Plan (RTP)** | `[TMS_TOOL]` | ✓ supported |
 | Label `regression-candidate` on an **existing** Test | `[ISSUE_TRACKER_TOOL]` (labels are a Jira field) | ✓ (no `[TMS_TOOL]` update-label for an existing Test; route via the issue tracker) |
 | Enrich **Manual** Test steps | `[TMS_TOOL]` | ✓ supported |
 | Enrich **Gherkin** / definition / change **test type** on an existing Test | `[TMS_TOOL]` | ✓ supported (update-gherkin / update-definition / update-type) |
 
-**Implication for our flow**: every Stage-4 promote + enrich op now resolves through a tool — `[TMS_TOOL]` for Test Set / Test Plan membership, step + Gherkin/definition/type enrichment; `[ISSUE_TRACKER_TOOL]` for labels on an existing Test. You may either author rich Gherkin at creation time or enrich an existing sprint Test in place during promotion — both paths are supported. Load `/xray-cli` for the exact command.
+**Implication for our flow**: every Stage-4 promote + enrich op now resolves through a tool — `[TMS_TOOL]` for Test Set / Test Plan membership, step + Gherkin/definition/type enrichment; `[ISSUE_TRACKER_TOOL]` for the title and the labels on an existing Test. You may either author rich Gherkin at creation time or enrich an existing sprint Test in place during promotion — both paths are supported. Load `/xray-cli` for the exact command.
+
+**Order is load-bearing**: the title row runs **before** membership and label. A sprint Test carries a sprint-era summary; promoting it untouched is what leaves the RTP full of non-canonical titles. Re-derive → rewrite if different → verify → then add to the RTP and apply `regression-candidate`. Full rule: `SKILL.md` §"Title on promotion".
 
 ### Jira + Xray (Manual)
 
@@ -637,7 +640,7 @@ A later `test-automation` run greps the synced files for `automation-candidate` 
 
 ## 13. Completeness checklist (per TC before moving to READY)
 
-- [ ] Summary follows `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` — no anti-patterns
+- [ ] Summary follows `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` — no anti-patterns. On a **promoted** sprint Test this is re-checked against the LIVE summary, not the one you intended at create time (`SKILL.md` §"Title on promotion")
 - [ ] Traced to the User Story via the cascade: member of the Story's ATS (jira-xray: Xray-internal; jira-native with the work type: TC→ATS link) + "is designed by" ATP + "is executed by" ATR; direct TC→Story "is tested by" ONLY when no ATS exists (jira-native without the Test Set work type)
 - [ ] Linked to Regression Epic (Epic Link)
 - [ ] Components set (affected product module — mandatory, defect-management doctrine Part 3)
