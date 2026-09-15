@@ -42,6 +42,7 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 
@@ -628,7 +629,7 @@ function apply(gs: GitStrategy, slug: string, write: boolean, allowLoosening: bo
     return 0;
   }
 
-  const tmp = join('/tmp', `git-policy-${process.pid}.json`);
+  const tmp = join(tmpdir(), `git-policy-${process.pid}.json`);
   writeFileSync(tmp, JSON.stringify(body));
   const path = existing ? `repos/${slug}/rulesets/${existing.id}` : `repos/${slug}/rulesets`;
   // GitHub's "Update a repository ruleset" is PUT, not PATCH — PATCH returns 404.
